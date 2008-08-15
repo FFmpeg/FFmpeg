@@ -135,6 +135,17 @@ enum CouplingPoint {
 /**
  * Individual Channel Stream
  */
+typedef struct {
+    uint8_t max_sfb;            ///< number of scalefactor bands per group
+    enum WindowSequence window_sequence[2];
+    uint8_t use_kb_window[2];   ///< If set, use Kaiser-Bessel window, otherwise use a sinus window.
+    int num_window_groups;
+    uint8_t group_len[8];
+    const uint16_t *swb_offset; ///< table of offsets to the lowest spectral coefficient of a scalefactor band, sfb, for a particular window
+    int num_swb;                ///< number of scalefactor window bands
+    int num_windows;
+    int tns_max_bands;
+} IndividualChannelStream;
 
 /**
  * Dynamic Range Control - decoded from the bitstream but not processed further.
@@ -163,6 +174,41 @@ typedef struct {
  * coupling parameters
  */
 typedef struct {
+    enum CouplingPoint coupling_point;  ///< The point during decoding at which coupling is applied.
+    int num_coupled;       ///< number of target elements
+    enum RawDataBlockType type[8];   ///< Type of channel element to be coupled - SCE or CPE.
+    int id_select[8];      ///< element id
+    int ch_select[8];      /**< [0] shared list of gains; [1] list of gains for left channel;
+                            *   [2] list of gains for right channel; [3] lists of gains for both channels
+                            */
+    float gain[16][120];
+} ChannelCoupling;
+
+/**
+ * Single Channel Element - used for both SCE and LFE elements.
+ */
+typedef struct {
+    IndividualChannelStream ics;
+    TemporalNoiseShaping tns;
+    enum BandType band_type[120];             ///< band types
+    int band_type_run_end[120];               ///< band type run end points
+    float sf[120];                            ///< scalefactors
+    DECLARE_ALIGNED_16(float, coeffs[1024]);  ///< coefficients for IMDCT
+    DECLARE_ALIGNED_16(float, saved[1024]);   ///< overlap
+    DECLARE_ALIGNED_16(float, ret[1024]);     ///< PCM output
+} SingleChannelElement;
+
+/**
+ * channel element - generic struct for SCE/CPE/CCE/LFE
+ */
+typedef struct {
+    // CPE specific
+    uint8_t ms_mask[120];     ///< Set if mid/side stereo is used for each scalefactor window band
+    // shared
+    SingleChannelElement ch[2];
+    // CCE specific
+    ChannelCoupling coup;
+} ChannelElement;
 
 /**
  * main AAC context
