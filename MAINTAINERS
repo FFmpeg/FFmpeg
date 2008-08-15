@@ -286,6 +286,7 @@ Operating systems / CPU architectures
 =====================================
 
 Alpha                                   Mans Rullgard, Falk Hueffner
+ARM                                     Mans Rullgard
 BeOS                                    Francois Revol
 i386                                    Michael Niedermayer
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
