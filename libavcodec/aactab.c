@@ -32,6 +32,9 @@
 
 #include <stdint.h>
 
+DECLARE_ALIGNED(16, float,  ff_aac_kbd_long_1024[1024]);
+DECLARE_ALIGNED(16, float,  ff_aac_kbd_short_128[128]);
+
 const uint8_t ff_aac_num_swb_1024[] = {
     41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40
 };
@@ -982,5 +985,9 @@ const float ff_aac_pow2sf_tab[316] = {
     1.34217728e+08, 1.59612677e+08, 1.89812531e+08, 2.25726413e+08,
     2.68435456e+08, 3.19225354e+08, 3.79625062e+08, 4.51452825e+08,
 };
+
+#else
+
+float ff_aac_pow2sf_tab[316];
 
 #endif /* CONFIG_HARDCODED_TABLES */

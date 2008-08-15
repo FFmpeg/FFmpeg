@@ -40,6 +40,13 @@
  * encoder.
  */
 
+/* @name window coefficients
+ * @{
+ */
+DECLARE_ALIGNED(16, extern float,  ff_aac_kbd_long_1024[1024]);
+DECLARE_ALIGNED(16, extern float,  ff_aac_kbd_short_128[128]);
+// @}
+
 /* @name number of scalefactor window bands for long and short transform windows respectively
  * @{
  */
@@ -58,6 +65,8 @@ extern const float *ff_aac_codebook_vectors[];
 
 #ifdef CONFIG_HARDCODED_TABLES
 extern const float ff_aac_pow2sf_tab[316];
+#else
+extern       float ff_aac_pow2sf_tab[316];
 #endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* FFMPEG_AACTAB_H */
