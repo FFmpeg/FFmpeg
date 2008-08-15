@@ -366,8 +366,6 @@ int ff_wma_end(AVCodecContext *avctx)
 
     for(i = 0; i < s->nb_block_sizes; i++)
         ff_mdct_end(&s->mdct_ctx[i]);
-    for(i = 0; i < s->nb_block_sizes; i++)
-        av_free(s->windows[i]);
 
     if (s->use_exp_vlc) {
         free_vlc(&s->exp_vlc);
