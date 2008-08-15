@@ -187,6 +187,7 @@ typedef struct AVFormatParameters {
 #define AVFMT_GLOBALHEADER  0x0040 /**< format wants global header */
 #define AVFMT_NOTIMESTAMPS  0x0080 /**< format does not need / have any timestamps */
 #define AVFMT_GENERIC_INDEX 0x0100 /**< use generic index building code */
+#define AVFMT_TS_DISCONT    0x0200 /**< format allows timestamo discontinuities */
 
 typedef struct AVOutputFormat {
     const char *name;

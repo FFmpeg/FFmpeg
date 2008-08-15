@@ -1524,7 +1524,7 @@ AVInputFormat mpegts_demuxer = {
     mpegts_read_close,
     read_seek,
     mpegts_get_pcr,
-    .flags = AVFMT_SHOW_IDS,
+    .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
 };
 
 AVInputFormat mpegtsraw_demuxer = {
@@ -1537,5 +1537,5 @@ AVInputFormat mpegtsraw_demuxer = {
     mpegts_read_close,
     read_seek,
     mpegts_get_pcr,
-    .flags = AVFMT_SHOW_IDS,
+    .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
 };
