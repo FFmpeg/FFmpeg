@@ -528,7 +528,7 @@ AVInputFormat ac3_demuxer = {
 };
 #endif
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_AC3_MUXER
 AVOutputFormat ac3_muxer = {
     "ac3",
     NULL_IF_CONFIG_SMALL("raw AC-3"),
@@ -554,7 +554,7 @@ AVInputFormat dirac_demuxer = {
     .value = CODEC_ID_DIRAC,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_DIRAC_MUXER
 AVOutputFormat dirac_muxer = {
     "dirac",
     NULL_IF_CONFIG_SMALL("raw Dirac"),
@@ -581,7 +581,7 @@ AVInputFormat dts_demuxer = {
     .value = CODEC_ID_DTS,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_DTS_MUXER
 AVOutputFormat dts_muxer = {
     "dts",
     NULL_IF_CONFIG_SMALL("raw DTS"),
@@ -608,7 +608,7 @@ AVInputFormat flac_demuxer = {
     .value = CODEC_ID_FLAC,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_FLAC_MUXER
 AVOutputFormat flac_muxer = {
     "flac",
     NULL_IF_CONFIG_SMALL("raw FLAC"),
@@ -647,7 +647,7 @@ AVInputFormat h261_demuxer = {
     .value = CODEC_ID_H261,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_H261_MUXER
 AVOutputFormat h261_muxer = {
     "h261",
     NULL_IF_CONFIG_SMALL("raw H.261"),
@@ -674,7 +674,7 @@ AVInputFormat h263_demuxer = {
     .value = CODEC_ID_H263,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_H263_MUXER
 AVOutputFormat h263_muxer = {
     "h263",
     NULL_IF_CONFIG_SMALL("raw H.263"),
@@ -701,7 +701,7 @@ AVInputFormat h264_demuxer = {
     .value = CODEC_ID_H264,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_H264_MUXER
 AVOutputFormat h264_muxer = {
     "h264",
     NULL_IF_CONFIG_SMALL("raw H.264 video format"),
@@ -740,7 +740,7 @@ AVInputFormat m4v_demuxer = {
     .value = CODEC_ID_MPEG4,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_M4V_MUXER
 AVOutputFormat m4v_muxer = {
     "m4v",
     NULL_IF_CONFIG_SMALL("raw MPEG-4 video format"),
@@ -767,7 +767,7 @@ AVInputFormat mjpeg_demuxer = {
     .value = CODEC_ID_MJPEG,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_MJPEG_MUXER
 AVOutputFormat mjpeg_muxer = {
     "mjpeg",
     NULL_IF_CONFIG_SMALL("MJPEG video"),
@@ -794,7 +794,7 @@ AVInputFormat mlp_demuxer = {
     .value = CODEC_ID_MLP,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_MPEG1VIDEO_MUXER
 AVOutputFormat mpeg1video_muxer = {
     "mpeg1video",
     NULL_IF_CONFIG_SMALL("MPEG video"),
@@ -809,7 +809,7 @@ AVOutputFormat mpeg1video_muxer = {
 };
 #endif
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_MPEG2VIDEO_MUXER
 AVOutputFormat mpeg2video_muxer = {
     "mpeg2video",
     NULL_IF_CONFIG_SMALL("MPEG-2 video"),
@@ -835,7 +835,7 @@ AVInputFormat mpegvideo_demuxer = {
     .value = CODEC_ID_MPEG1VIDEO,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_NULL_MUXER
 AVOutputFormat null_muxer = {
     "null",
     NULL_IF_CONFIG_SMALL("null video format"),
@@ -866,7 +866,7 @@ AVInputFormat rawvideo_demuxer = {
     .value = CODEC_ID_RAWVIDEO,
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_RAWVIDEO_MUXER
 AVOutputFormat rawvideo_muxer = {
     "rawvideo",
     NULL_IF_CONFIG_SMALL("raw video format"),
