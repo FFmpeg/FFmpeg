@@ -198,7 +198,7 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     url_fskip(s->pb, 2);
     unk1 = get_le16(s->pb);
     unk2 = get_le16(s->pb);
-    url_fskip(s->pb, 22); // ascii timestamp
+    url_fskip(s->pb, 22); // ASCII timestamp
 
     av_log(NULL, AV_LOG_DEBUG, "Ingenient packet: size=%d, width=%d, height=%d, unk1=%d unk2=%d\n",
         size, w, h, unk1, unk2);
@@ -261,7 +261,7 @@ static int audio_read_header(AVFormatContext *s,
     return 0;
 }
 
-/* mpeg1/h263 input */
+/* MPEG-1/H.263 input */
 static int video_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
@@ -275,8 +275,8 @@ static int video_read_header(AVFormatContext *s,
     st->codec->codec_id = s->iformat->value;
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
-    /* for mjpeg, specify frame rate */
-    /* for mpeg4 specify it too (most mpeg4 streams do not have the fixed_vop_rate set ...)*/
+    /* for MJPEG, specify frame rate */
+    /* for MPEG-4 specify it, too (most MPEG-4 streams do not have the fixed_vop_rate set ...)*/
     if (ap->time_base.num) {
         av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
     } else if ( st->codec->codec_id == CODEC_ID_MJPEG ||
@@ -434,16 +434,16 @@ static int dts_probe(AVProbeData *p)
         bufp = buf;
         state = (state << 16) | bytestream_get_be16(&bufp);
 
-        /* Regular bitstream */
+        /* regular bitstream */
         if (state == DCA_MARKER_RAW_BE || state == DCA_MARKER_RAW_LE)
             return AVPROBE_SCORE_MAX/2+1;
 
-        /* 14 bits big endian bitstream */
+        /* 14 bits big-endian bitstream */
         if (state == DCA_MARKER_14B_BE)
             if ((bytestream_get_be16(&bufp) & 0xFFF0) == 0x07F0)
                 return AVPROBE_SCORE_MAX/2+1;
 
-        /* 14 bits little endian bitstream */
+        /* 14 bits little-endian bitstream */
         if (state == DCA_MARKER_14B_LE)
             if ((bytestream_get_be16(&bufp) & 0xF0FF) == 0xF007)
                 return AVPROBE_SCORE_MAX/2+1;
@@ -732,7 +732,7 @@ AVInputFormat m4v_demuxer = {
     "m4v",
     NULL_IF_CONFIG_SMALL("raw MPEG-4 video format"),
     0,
-    mpeg4video_probe, /** probing for mpeg4 data */
+    mpeg4video_probe, /** probing for MPEG-4 data */
     video_read_header,
     raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
@@ -919,7 +919,7 @@ AVInputFormat vc1_demuxer = {
     .value = CODEC_ID_VC1,
 };
 
-/* pcm formats */
+/* PCM formats */
 
 #define PCMINPUTDEF(name, long_name, ext, codec) \
 AVInputFormat pcm_ ## name ## _demuxer = {\
