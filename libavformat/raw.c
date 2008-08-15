@@ -507,6 +507,7 @@ static int flac_probe(AVProbeData *p)
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 
+#ifdef CONFIG_AAC_DEMUXER
 AVInputFormat aac_demuxer = {
     "aac",
     NULL_IF_CONFIG_SMALL("ADTS AAC"),
@@ -518,6 +519,7 @@ AVInputFormat aac_demuxer = {
     .extensions = "aac",
     .value = CODEC_ID_AAC,
 };
+#endif
 
 #ifdef CONFIG_AC3_DEMUXER
 AVInputFormat ac3_demuxer = {
@@ -548,6 +550,7 @@ AVOutputFormat ac3_muxer = {
 };
 #endif
 
+#ifdef CONFIG_DIRAC_DEMUXER
 AVInputFormat dirac_demuxer = {
     "dirac",
     NULL_IF_CONFIG_SMALL("raw Dirac"),
@@ -558,6 +561,7 @@ AVInputFormat dirac_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .value = CODEC_ID_DIRAC,
 };
+#endif
 
 #ifdef CONFIG_DIRAC_MUXER
 AVOutputFormat dirac_muxer = {
@@ -574,6 +578,7 @@ AVOutputFormat dirac_muxer = {
 };
 #endif
 
+#ifdef CONFIG_DTS_DEMUXER
 AVInputFormat dts_demuxer = {
     "dts",
     NULL_IF_CONFIG_SMALL("raw DTS"),
@@ -585,6 +590,7 @@ AVInputFormat dts_demuxer = {
     .extensions = "dts",
     .value = CODEC_ID_DTS,
 };
+#endif
 
 #ifdef CONFIG_DTS_MUXER
 AVOutputFormat dts_muxer = {
@@ -601,6 +607,7 @@ AVOutputFormat dts_muxer = {
 };
 #endif
 
+#ifdef CONFIG_FLAC_DEMUXER
 AVInputFormat flac_demuxer = {
     "flac",
     NULL_IF_CONFIG_SMALL("raw FLAC"),
@@ -612,6 +619,7 @@ AVInputFormat flac_demuxer = {
     .extensions = "flac",
     .value = CODEC_ID_FLAC,
 };
+#endif
 
 #ifdef CONFIG_FLAC_MUXER
 AVOutputFormat flac_muxer = {
@@ -628,6 +636,7 @@ AVOutputFormat flac_muxer = {
 };
 #endif
 
+#ifdef CONFIG_GSM_DEMUXER
 AVInputFormat gsm_demuxer = {
     "gsm",
     NULL_IF_CONFIG_SMALL("GSM"),
@@ -639,7 +648,9 @@ AVInputFormat gsm_demuxer = {
     .extensions = "gsm",
     .value = CODEC_ID_GSM,
 };
+#endif
 
+#ifdef CONFIG_H261_DEMUXER
 AVInputFormat h261_demuxer = {
     "h261",
     NULL_IF_CONFIG_SMALL("raw H.261"),
@@ -651,6 +662,7 @@ AVInputFormat h261_demuxer = {
     .extensions = "h261",
     .value = CODEC_ID_H261,
 };
+#endif
 
 #ifdef CONFIG_H261_MUXER
 AVOutputFormat h261_muxer = {
@@ -667,6 +679,7 @@ AVOutputFormat h261_muxer = {
 };
 #endif
 
+#ifdef CONFIG_H263_DEMUXER
 AVInputFormat h263_demuxer = {
     "h263",
     NULL_IF_CONFIG_SMALL("raw H.263"),
@@ -678,6 +691,7 @@ AVInputFormat h263_demuxer = {
 //    .extensions = "h263", //FIXME remove after writing mpeg4_probe
     .value = CODEC_ID_H263,
 };
+#endif
 
 #ifdef CONFIG_H263_MUXER
 AVOutputFormat h263_muxer = {
@@ -694,6 +708,7 @@ AVOutputFormat h263_muxer = {
 };
 #endif
 
+#ifdef CONFIG_H264_DEMUXER
 AVInputFormat h264_demuxer = {
     "h264",
     NULL_IF_CONFIG_SMALL("raw H.264 video format"),
@@ -705,6 +720,7 @@ AVInputFormat h264_demuxer = {
     .extensions = "h26l,h264,264", //FIXME remove after writing mpeg4_probe
     .value = CODEC_ID_H264,
 };
+#endif
 
 #ifdef CONFIG_H264_MUXER
 AVOutputFormat h264_muxer = {
@@ -721,6 +737,7 @@ AVOutputFormat h264_muxer = {
 };
 #endif
 
+#ifdef CONFIG_INGENIENT_DEMUXER
 AVInputFormat ingenient_demuxer = {
     "ingenient",
     NULL_IF_CONFIG_SMALL("Ingenient MJPEG"),
@@ -732,7 +749,9 @@ AVInputFormat ingenient_demuxer = {
     .extensions = "cgi", // FIXME
     .value = CODEC_ID_MJPEG,
 };
+#endif
 
+#ifdef CONFIG_M4V_DEMUXER
 AVInputFormat m4v_demuxer = {
     "m4v",
     NULL_IF_CONFIG_SMALL("raw MPEG-4 video format"),
@@ -744,6 +763,7 @@ AVInputFormat m4v_demuxer = {
     .extensions = "m4v", //FIXME remove after writing mpeg4_probe
     .value = CODEC_ID_MPEG4,
 };
+#endif
 
 #ifdef CONFIG_M4V_MUXER
 AVOutputFormat m4v_muxer = {
@@ -760,6 +780,7 @@ AVOutputFormat m4v_muxer = {
 };
 #endif
 
+#ifdef CONFIG_MJPEG_DEMUXER
 AVInputFormat mjpeg_demuxer = {
     "mjpeg",
     NULL_IF_CONFIG_SMALL("MJPEG video"),
@@ -771,6 +792,7 @@ AVInputFormat mjpeg_demuxer = {
     .extensions = "mjpg,mjpeg",
     .value = CODEC_ID_MJPEG,
 };
+#endif
 
 #ifdef CONFIG_MJPEG_MUXER
 AVOutputFormat mjpeg_muxer = {
@@ -787,6 +809,7 @@ AVOutputFormat mjpeg_muxer = {
 };
 #endif
 
+#ifdef CONFIG_MLP_DEMUXER
 AVInputFormat mlp_demuxer = {
     "mlp",
     NULL_IF_CONFIG_SMALL("raw MLP"),
@@ -798,6 +821,7 @@ AVInputFormat mlp_demuxer = {
     .extensions = "mlp",
     .value = CODEC_ID_MLP,
 };
+#endif
 
 #ifdef CONFIG_MPEG1VIDEO_MUXER
 AVOutputFormat mpeg1video_muxer = {
@@ -829,6 +853,7 @@ AVOutputFormat mpeg2video_muxer = {
 };
 #endif
 
+#ifdef CONFIG_MPEGVIDEO_DEMUXER
 AVInputFormat mpegvideo_demuxer = {
     "mpegvideo",
     NULL_IF_CONFIG_SMALL("MPEG video"),
@@ -839,6 +864,7 @@ AVInputFormat mpegvideo_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .value = CODEC_ID_MPEG1VIDEO,
 };
+#endif
 
 #ifdef CONFIG_NULL_MUXER
 AVOutputFormat null_muxer = {
@@ -859,6 +885,7 @@ AVOutputFormat null_muxer = {
 };
 #endif
 
+#ifdef CONFIG_RAWVIDEO_DEMUXER
 AVInputFormat rawvideo_demuxer = {
     "rawvideo",
     NULL_IF_CONFIG_SMALL("raw video format"),
@@ -870,6 +897,7 @@ AVInputFormat rawvideo_demuxer = {
     .extensions = "yuv,cif,qcif,rgb",
     .value = CODEC_ID_RAWVIDEO,
 };
+#endif
 
 #ifdef CONFIG_RAWVIDEO_MUXER
 AVOutputFormat rawvideo_muxer = {
@@ -901,6 +929,7 @@ AVOutputFormat roq_muxer =
 };
 #endif
 
+#ifdef CONFIG_SHORTEN_DEMUXER
 AVInputFormat shorten_demuxer = {
     "shn",
     NULL_IF_CONFIG_SMALL("raw Shorten"),
@@ -912,7 +941,9 @@ AVInputFormat shorten_demuxer = {
     .extensions = "shn",
     .value = CODEC_ID_SHORTEN,
 };
+#endif
 
+#ifdef CONFIG_VC1_DEMUXER
 AVInputFormat vc1_demuxer = {
     "vc1",
     NULL_IF_CONFIG_SMALL("raw VC-1"),
@@ -923,6 +954,7 @@ AVInputFormat vc1_demuxer = {
     .extensions = "vc1",
     .value = CODEC_ID_VC1,
 };
+#endif
 
 /* PCM formats */
 
