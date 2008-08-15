@@ -45,8 +45,6 @@
 #define MAX_CHANNELS 64
 #define MAX_ELEM_ID 16
 
-#define IVQUANT_SIZE 1024
-
 enum AudioObjectType {
     AOT_NULL,
                                // Support?                Name
@@ -165,8 +163,7 @@ typedef struct {
 
 typedef struct {
     int num_pulse;
-    int start;
-    int offset[4];
+    int pos[4];
     int amp[4];
 } Pulse;
 

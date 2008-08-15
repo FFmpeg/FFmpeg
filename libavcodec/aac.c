@@ -91,7 +91,6 @@
 #include <string.h>
 
 #ifndef CONFIG_HARDCODED_TABLES
-    static float ff_aac_ivquant_tab[IVQUANT_SIZE];
     static float ff_aac_pow2sf_tab[316];
 #endif /* CONFIG_HARDCODED_TABLES */
 
@@ -403,8 +402,6 @@ static av_cold int aac_decode_init(AVCodecContext * avccontext) {
     }
 
 #ifndef CONFIG_HARDCODED_TABLES
-    for (i = 1 - IVQUANT_SIZE/2; i < IVQUANT_SIZE/2; i++)
-        ff_aac_ivquant_tab[i + IVQUANT_SIZE/2 - 1] =  cbrt(fabs(i)) * i;
     for (i = 0; i < 316; i++)
         ff_aac_pow2sf_tab[i] = pow(2, (i - 200)/4.);
 #endif /* CONFIG_HARDCODED_TABLES */
@@ -469,19 +466,6 @@ static int decode_ics_info(AACContext * ac, IndividualChannelStream * ics, GetBi
 }
 
 /**
- * inverse quantization
- *
- * @param   a   quantized value to be dequantized
- * @return  Returns dequantized value.
- */
-static inline float ivquant(int a) {
-    if (a + (unsigned int)IVQUANT_SIZE/2 - 1 < (unsigned int)IVQUANT_SIZE - 1)
-        return ff_aac_ivquant_tab[a + IVQUANT_SIZE/2 - 1];
-    else
-        return cbrtf(fabsf(a)) * a;
-}
-
-/**
  * Decode band types (section_data payload); reference: table 4.46.
  *
  * @param   band_type           array of the used band type
@@ -535,7 +519,6 @@ static int decode_scalefactors(AACContext * ac, float sf[120], GetBitContext * g
     int offset[3] = { global_gain, global_gain - 90, 100 };
     int noise_flag = 1;
     static const char *sf_str[3] = { "Global gain", "Noise gain", "Intensity stereo position" };
-    ics->intensity_present = 0;
     for (g = 0; g < ics->num_window_groups; g++) {
         for (i = 0; i < ics->max_sfb;) {
             int run_end = band_type_run_end[idx];
@@ -543,7 +526,6 @@ static int decode_scalefactors(AACContext * ac, float sf[120], GetBitContext * g
                 for(; i < run_end; i++, idx++)
                     sf[idx] = 0.;
             }else if((band_type[idx] == INTENSITY_BT) || (band_type[idx] == INTENSITY_BT2)) {
-                ics->intensity_present = 1;
                 for(; i < run_end; i++, idx++) {
                     offset[2] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
                     if(offset[2] > 255U) {
@@ -585,13 +567,14 @@ static int decode_scalefactors(AACContext * ac, float sf[120], GetBitContext * g
 /**
  * Decode pulse data; reference: table 4.7.
  */
-static void decode_pulses(Pulse * pulse, GetBitContext * gb) {
+static void decode_pulses(Pulse * pulse, GetBitContext * gb, const uint16_t * swb_offset) {
     int i;
     pulse->num_pulse = get_bits(gb, 2) + 1;
-    pulse->start = get_bits(gb, 6);
-    for (i = 0; i < pulse->num_pulse; i++) {
-        pulse->offset[i] = get_bits(gb, 5);
-        pulse->amp   [i] = get_bits(gb, 4);
+    pulse->pos[0]    = get_bits(gb, 5) + swb_offset[get_bits(gb, 6)];
+    pulse->amp[0]    = get_bits(gb, 4);
+    for (i = 1; i < pulse->num_pulse; i++) {
+        pulse->pos[i] = get_bits(gb, 5) + pulse->pos[i-1];
+        pulse->amp[i] = get_bits(gb, 4);
     }
 }
 
@@ -614,22 +597,6 @@ static void decode_mid_side_stereo(ChannelElement * cpe, GetBitContext * gb,
 }
 
 /**
- * Add pulses with particular amplitudes to the quantized spectral data; reference: 4.6.3.3.
- *
- * @param   pulse   pointer to pulse data struct
- * @param   icoef   array of quantized spectral data
- */
-static void add_pulses(int icoef[1024], const Pulse * pulse, const IndividualChannelStream * ics) {
-    int i, off = ics->swb_offset[pulse->start];
-    for (i = 0; i < pulse->num_pulse; i++) {
-        int ic;
-        off += pulse->offset[i];
-        ic = (icoef[off] - 1)>>31;
-        icoef[off] += (pulse->amp[i]^ic) - ic;
-    }
-}
-
-/**
  * Decode an individual_channel_stream payload; reference: table 4.44.
  *
  * @param   common_window   Channels have independent [0], or shared [1], Individual Channel Stream information.
@@ -638,18 +605,16 @@ static void add_pulses(int icoef[1024], const Pulse * pulse, const IndividualCha
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static int decode_ics(AACContext * ac, SingleChannelElement * sce, GetBitContext * gb, int common_window, int scale_flag) {
-    int icoeffs[1024];
     Pulse pulse;
     TemporalNoiseShaping * tns = &sce->tns;
     IndividualChannelStream * ics = &sce->ics;
     float * out = sce->coeffs;
     int global_gain, pulse_present = 0;
 
-    /* These two assignments are to silence some GCC warnings about the
-     * variables being used uninitialised when in fact they always are.
+    /* This assignment is to silence a GCC warning about the variable being used
+     * uninitialized when in fact it always is.
      */
     pulse.num_pulse = 0;
-    pulse.start     = 0;
 
     global_gain = get_bits(gb, 8);
 
@@ -670,7 +635,7 @@ static int decode_ics(AACContext * ac, SingleChannelElement * sce, GetBitContext
                 av_log(ac->avccontext, AV_LOG_ERROR, "Pulse tool not allowed in eight short sequence.\n");
                 return -1;
             }
-            decode_pulses(&pulse, gb);
+            decode_pulses(&pulse, gb, ics->swb_offset);
         }
         if ((tns->present = get_bits1(gb)) && decode_tns(ac, tns, gb, ics))
             return -1;
@@ -680,11 +645,8 @@ static int decode_ics(AACContext * ac, SingleChannelElement * sce, GetBitContext
         }
     }
 
-    if (decode_spectrum(ac, icoeffs, gb, ics, sce->band_type) < 0)
+    if (decode_spectrum_and_dequant(ac, out, gb, sce->sf, pulse_present, &pulse, ics, sce->band_type) < 0)
         return -1;
-    if (pulse_present)
-        add_pulses(icoeffs, &pulse, ics);
-    dequant(ac, out, icoeffs, sce->sf, ics, sce->band_type);
     return 0;
 }
 
@@ -722,8 +684,7 @@ static int decode_cpe(AACContext * ac, GetBitContext * gb, int elem_id) {
     if (common_window && ms_present)
         apply_mid_side_stereo(cpe);
 
-    if (cpe->ch[1].ics.intensity_present)
-        apply_intensity_stereo(cpe, ms_present);
+    apply_intensity_stereo(cpe, ms_present);
     return 0;
 }
 
@@ -906,10 +867,10 @@ static void imdct_and_windowing(AACContext * ac, SingleChannelElement * sce) {
     float * in = sce->coeffs;
     float * out = sce->ret;
     float * saved = sce->saved;
-    const float * lwindow      = ics->use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_aac_sine_long_1024;
-    const float * swindow      = ics->use_kb_window[0] ? ff_aac_kbd_short_128 : ff_aac_sine_short_128;
-    const float * lwindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_long_1024 : ff_aac_sine_long_1024;
-    const float * swindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_short_128 : ff_aac_sine_short_128;
+    const float * lwindow      = ics->use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+    const float * swindow      = ics->use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
+    const float * lwindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+    const float * swindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
     float * buf = ac->buf_mdct;
     int i;
 
@@ -1093,7 +1054,7 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
     if (!ac->is_saved) {
         ac->is_saved = 1;
         *data_size = 0;
-        return 0;
+        return buf_size;
     }
 
     data_size_tmp = 1024 * avccontext->channels * sizeof(int16_t);
