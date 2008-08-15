@@ -74,6 +74,7 @@ static int raw_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 }
 #endif
 
+#ifdef CONFIG_DEMUXERS
 /* raw input */
 static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
@@ -161,7 +162,9 @@ static int raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->size = ret;
     return ret;
 }
+#endif
 
+#ifdef CONFIG_RAWVIDEO_DEMUXER
 static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int packet_size, ret, width, height;
@@ -185,7 +188,9 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
         return 0;
     }
 }
+#endif
 
+#ifdef CONFIG_INGENIENT_DEMUXER
 // http://www.artificis.hu/files/texts/ingenient.txt
 static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -221,7 +226,9 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->size = ret;
     return ret;
 }
+#endif
 
+#ifdef CONFIG_DEMUXERS
 int pcm_read_seek(AVFormatContext *s,
                   int stream_index, int64_t timestamp, int flags)
 {
@@ -293,7 +300,9 @@ static int video_read_header(AVFormatContext *s,
 
     return 0;
 }
+#endif
 
+#ifdef CONFIG_MPEGVIDEO_DEMUXER
 #define SEQ_START_CODE          0x000001b3
 #define GOP_START_CODE          0x000001b8
 #define PICTURE_START_CODE      0x00000100
@@ -325,7 +334,9 @@ static int mpegvideo_probe(AVProbeData *p)
         return AVPROBE_SCORE_MAX/2+1; // +1 for .mpg
     return 0;
 }
+#endif
 
+#ifdef CONFIG_M4V_DEMUXER
 #define VISUAL_OBJECT_START_CODE       0x000001b5
 #define VOP_START_CODE                 0x000001b6
 
@@ -352,7 +363,9 @@ static int mpeg4video_probe(AVProbeData *probe_packet)
         return AVPROBE_SCORE_MAX/2;
     return 0;
 }
+#endif
 
+#ifdef CONFIG_H264_DEMUXER
 static int h264_probe(AVProbeData *p)
 {
     uint32_t code= -1;
@@ -397,7 +410,9 @@ static int h264_probe(AVProbeData *p)
         return AVPROBE_SCORE_MAX/2+1; // +1 for .mpg
     return 0;
 }
+#endif
 
+#ifdef CONFIG_H263_DEMUXER
 static int h263_probe(AVProbeData *p)
 {
     int code;
@@ -410,7 +425,9 @@ static int h263_probe(AVProbeData *p)
     }
     return 0;
 }
+#endif
 
+#ifdef CONFIG_H261_DEMUXER
 static int h261_probe(AVProbeData *p)
 {
     int code;
@@ -423,7 +440,9 @@ static int h261_probe(AVProbeData *p)
     }
     return 0;
 }
+#endif
 
+#ifdef CONFIG_DTS_DEMUXER
 #define DCA_MARKER_14B_BE 0x1FFFE800
 #define DCA_MARKER_14B_LE 0xFF1F00E8
 #define DCA_MARKER_RAW_BE 0x7FFE8001
@@ -456,7 +475,9 @@ static int dts_probe(AVProbeData *p)
 
     return 0;
 }
+#endif
 
+#ifdef CONFIG_DIRAC_DEMUXER
 static int dirac_probe(AVProbeData *p)
 {
     if (AV_RL32(p->buf) == MKTAG('B', 'B', 'C', 'D'))
@@ -464,7 +485,9 @@ static int dirac_probe(AVProbeData *p)
     else
         return 0;
 }
+#endif
 
+#ifdef CONFIG_AC3_DEMUXER
 static int ac3_probe(AVProbeData *p)
 {
     int max_frames, first_frames = 0, frames;
@@ -497,12 +520,15 @@ static int ac3_probe(AVProbeData *p)
     else if(max_frames>=1) return 1;
     else                   return 0;
 }
+#endif
 
+#ifdef CONFIG_FLAC_DEMUXER
 static int flac_probe(AVProbeData *p)
 {
     if(memcmp(p->buf, "fLaC", 4)) return 0;
     else                          return AVPROBE_SCORE_MAX / 2;
 }
+#endif
 
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
