@@ -1039,9 +1039,7 @@ static void video_refresh_timer(void *opaque)
                 /* skip or repeat frame. We take into account the
                    delay to compute the threshold. I still don't know
                    if it is the best guess */
-                sync_threshold = AV_SYNC_THRESHOLD;
-                if (delay > sync_threshold)
-                    sync_threshold = delay;
+                sync_threshold = FFMAX(AV_SYNC_THRESHOLD, delay);
                 if (fabs(diff) < AV_NOSYNC_THRESHOLD) {
                     if (diff <= -sync_threshold)
                         delay = 0;
