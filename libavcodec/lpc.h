@@ -31,16 +31,16 @@
 #define ORDER_METHOD_SEARCH  4
 #define ORDER_METHOD_LOG     5
 
-#define MIN_LPC_ORDER       1
-#define MAX_LPC_ORDER      32
+#define MIN_LPC_ORDER        1
+#define MAX_LPC_ORDER       32
 
 
 /**
  * Calculate LPC coefficients for multiple orders
  */
 int ff_lpc_calc_coefs(DSPContext *s,
-                          const int32_t *samples, int blocksize, int max_order,
-                          int precision, int32_t coefs[][MAX_LPC_ORDER],
-                          int *shift, int use_lpc, int omethod, int max_shift, int zero_shift);
+                      const int32_t *samples, int blocksize, int max_order,
+                      int precision, int32_t coefs[][MAX_LPC_ORDER],
+                      int *shift, int use_lpc, int omethod, int max_shift, int zero_shift);
 
 #endif /* FFMPEG_LPC_H */
