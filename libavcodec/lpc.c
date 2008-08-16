@@ -135,9 +135,10 @@ static int estimate_best_order(double *ref, int max_order)
  * Calculate LPC coefficients for multiple orders
  */
 int ff_lpc_calc_coefs(DSPContext *s,
-                      const int32_t *samples, int blocksize, int min_order, int max_order,
-                      int precision, int32_t coefs[][MAX_LPC_ORDER],
-                      int *shift, int use_lpc, int omethod, int max_shift, int zero_shift)
+                      const int32_t *samples, int blocksize, int min_order,
+                      int max_order, int precision,
+                      int32_t coefs[][MAX_LPC_ORDER], int *shift, int use_lpc,
+                      int omethod, int max_shift, int zero_shift)
 {
     double autoc[MAX_LPC_ORDER+1];
     double ref[MAX_LPC_ORDER];

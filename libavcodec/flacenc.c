@@ -855,8 +855,9 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
     }
 
     /* LPC */
-    opt_order = ff_lpc_calc_coefs(&ctx->dsp, smp, n, min_order, max_order, precision, coefs,
-                               shift, ctx->options.use_lpc, omethod, MAX_LPC_SHIFT, 0);
+    opt_order = ff_lpc_calc_coefs(&ctx->dsp, smp, n, min_order, max_order,
+                                  precision, coefs, shift, ctx->options.use_lpc,
+                                  omethod, MAX_LPC_SHIFT, 0);
 
     if(omethod == ORDER_METHOD_2LEVEL ||
        omethod == ORDER_METHOD_4LEVEL ||
