@@ -135,7 +135,7 @@ static int estimate_best_order(double *ref, int max_order)
  * Calculate LPC coefficients for multiple orders
  */
 int ff_lpc_calc_coefs(DSPContext *s,
-                      const int32_t *samples, int blocksize, int max_order,
+                      const int32_t *samples, int blocksize, int min_order, int max_order,
                       int precision, int32_t coefs[][MAX_LPC_ORDER],
                       int *shift, int use_lpc, int omethod, int max_shift, int zero_shift)
 {
@@ -195,7 +195,7 @@ int ff_lpc_calc_coefs(DSPContext *s,
         i = opt_order-1;
         quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i], max_shift, zero_shift);
     } else {
-        for(i=0; i<max_order; i++) {
+        for(i=min_order-1; i<max_order; i++) {
             quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i], max_shift, zero_shift);
         }
     }
