@@ -172,13 +172,6 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     }
 
     switch(avctx->codec->id) {
-    case CODEC_ID_PCM_F32BE:
-    case CODEC_ID_PCM_S32BE:
-        ENCODE(int32_t, be32, samples, dst, n, 0, 0)
-        break;
-    case CODEC_ID_PCM_S32LE:
-        ENCODE(int32_t, le32, samples, dst, n, 0, 0)
-        break;
     case CODEC_ID_PCM_U32LE:
         ENCODE(uint32_t, le32, samples, dst, n, 0, 0x80000000)
         break;
@@ -206,12 +199,6 @@ static int pcm_encode_frame(AVCodecContext *avctx,
             samples++;
         }
         break;
-    case CODEC_ID_PCM_S16LE:
-        ENCODE(int16_t, le16, samples, dst, n, 0, 0)
-        break;
-    case CODEC_ID_PCM_S16BE:
-        ENCODE(int16_t, be16, samples, dst, n, 0, 0)
-        break;
     case CODEC_ID_PCM_U16LE:
         ENCODE(uint16_t, le16, samples, dst, n, 0, 0x8000)
         break;
@@ -225,9 +212,30 @@ static int pcm_encode_frame(AVCodecContext *avctx,
             *dst++ = v - 128;
         }
         break;
+#if WORDS_BIGENDIAN
+    case CODEC_ID_PCM_S32LE:
+        ENCODE(int32_t, le32, samples, dst, n, 0, 0)
+        break;
+    case CODEC_ID_PCM_S16LE:
+        ENCODE(int16_t, le16, samples, dst, n, 0, 0)
+        break;
+    case CODEC_ID_PCM_F32BE:
+    case CODEC_ID_PCM_S32BE:
+    case CODEC_ID_PCM_S16BE:
+#else
+    case CODEC_ID_PCM_F32BE:
+    case CODEC_ID_PCM_S32BE:
+        ENCODE(int32_t, be32, samples, dst, n, 0, 0)
+        break;
+    case CODEC_ID_PCM_S16BE:
+        ENCODE(int16_t, be16, samples, dst, n, 0, 0)
+        break;
+    case CODEC_ID_PCM_S32LE:
+    case CODEC_ID_PCM_S16LE:
+#endif /* WORDS_BIGENDIAN */
     case CODEC_ID_PCM_U8:
-        memcpy(dst, samples, n);
-        dst += n;
+        memcpy(dst, samples, n*sample_size);
+        dst += n*sample_size;
         break;
     case CODEC_ID_PCM_ZORK:
         for(;n>0;n--) {
@@ -347,13 +355,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     n = buf_size/sample_size;
 
     switch(avctx->codec->id) {
-    case CODEC_ID_PCM_F32BE:
-    case CODEC_ID_PCM_S32BE:
-        DECODE(int32_t, be32, src, samples, n, 0, 0)
-        break;
-    case CODEC_ID_PCM_S32LE:
-        DECODE(int32_t, le32, src, samples, n, 0, 0)
-        break;
     case CODEC_ID_PCM_U32LE:
         DECODE(uint32_t, le32, src, samples, n, 0, 0x80000000)
         break;
@@ -380,9 +381,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
                        (ff_reverse[v & 0xff] << 8);
         }
         break;
-    case CODEC_ID_PCM_S16LE:
-        DECODE(int16_t, le16, src, samples, n, 0, 0)
-        break;
     case CODEC_ID_PCM_S16LE_PLANAR:
         n /= avctx->channels;
         for(c=0;c<avctx->channels;c++)
@@ -391,9 +389,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
             for(c=0;c<avctx->channels;c++)
                 *samples++ = bytestream_get_le16(&src2[c]);
         src = src2[avctx->channels-1];
-        break;
-    case CODEC_ID_PCM_S16BE:
-        DECODE(int16_t, be16, src, samples, n, 0, 0)
         break;
     case CODEC_ID_PCM_U16LE:
         DECODE(uint16_t, le16, src, samples, n, 0, 0x8000)
@@ -408,10 +403,31 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         }
         samples= (short*)dstu8;
         break;
+#if WORDS_BIGENDIAN
+    case CODEC_ID_PCM_S32LE:
+        DECODE(int32_t, le32, src, samples, n, 0, 0)
+        break;
+    case CODEC_ID_PCM_S16LE:
+        DECODE(int16_t, le16, src, samples, n, 0, 0)
+        break;
+    case CODEC_ID_PCM_F32BE:
+    case CODEC_ID_PCM_S32BE:
+    case CODEC_ID_PCM_S16BE:
+#else
+    case CODEC_ID_PCM_F32BE:
+    case CODEC_ID_PCM_S32BE:
+        DECODE(int32_t, be32, src, samples, n, 0, 0)
+        break;
+    case CODEC_ID_PCM_S16BE:
+        DECODE(int16_t, be16, src, samples, n, 0, 0)
+        break;
+    case CODEC_ID_PCM_S32LE:
+    case CODEC_ID_PCM_S16LE:
+#endif /* WORDS_BIGENDIAN */
     case CODEC_ID_PCM_U8:
-        memcpy(samples, src, n);
-        src += n;
-        samples = (short*)((uint8_t*)data + n);
+        memcpy(samples, src, n*sample_size);
+        src += n*sample_size;
+        samples = (short*)((uint8_t*)data + n*sample_size);
         break;
     case CODEC_ID_PCM_ZORK:
         for(;n>0;n--) {
