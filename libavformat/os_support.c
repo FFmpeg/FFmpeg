@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/time.h>
 #include "os_support.h"
 
 #ifdef CONFIG_NETWORK
