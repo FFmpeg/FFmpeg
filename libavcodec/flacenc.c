@@ -680,7 +680,7 @@ static void compute_lpc_coefs(const double *autoc, int max_order,
  * Quantize LPC coefficients
  */
 static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
-                               int32_t *lpc_out, int *shift)
+                               int32_t *lpc_out, int *shift, int max_shift, int zero_shift)
 {
     int i;
     double cmax, error;
@@ -697,14 +697,14 @@ static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
     }
 
     /* if maximum value quantizes to zero, return all zeros */
-    if(cmax * (1 << MAX_LPC_SHIFT) < 1.0) {
-        *shift = 0;
+    if(cmax * (1 << max_shift) < 1.0) {
+        *shift = zero_shift;
         memset(lpc_out, 0, sizeof(int32_t) * order);
         return;
     }
 
     /* calculate level shift which scales max coeff to available bits */
-    sh = MAX_LPC_SHIFT;
+    sh = max_shift;
     while((cmax * (1 << sh) > qmax) && (sh > 0)) {
         sh--;
     }
@@ -745,10 +745,10 @@ static int estimate_best_order(double *ref, int max_order)
 /**
  * Calculate LPC coefficients for multiple orders
  */
-static int lpc_calc_coefs(FlacEncodeContext *s,
+static int lpc_calc_coefs(DSPContext *s,
                           const int32_t *samples, int blocksize, int max_order,
                           int precision, int32_t coefs[][MAX_LPC_ORDER],
-                          int *shift, int use_lpc, int omethod)
+                          int *shift, int use_lpc, int omethod, int max_shift, int zero_shift)
 {
     double autoc[MAX_LPC_ORDER+1];
     double ref[MAX_LPC_ORDER];
@@ -759,7 +759,7 @@ static int lpc_calc_coefs(FlacEncodeContext *s,
     assert(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER);
 
     if(use_lpc == 1){
-        s->dsp.flac_compute_autocorr(samples, blocksize, max_order, autoc);
+        s->flac_compute_autocorr(samples, blocksize, max_order, autoc);
 
         compute_lpc_coefs(autoc, max_order, lpc, ref);
     }else{
@@ -804,10 +804,10 @@ static int lpc_calc_coefs(FlacEncodeContext *s,
     if(omethod == ORDER_METHOD_EST) {
         opt_order = estimate_best_order(ref, max_order);
         i = opt_order-1;
-        quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
+        quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i], max_shift, zero_shift);
     } else {
         for(i=0; i<max_order; i++) {
-            quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
+            quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i], max_shift, zero_shift);
         }
     }
 
@@ -1042,7 +1042,8 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
     }
 
     /* LPC */
-    opt_order = lpc_calc_coefs(ctx, smp, n, max_order, precision, coefs, shift, ctx->options.use_lpc, omethod);
+    opt_order = lpc_calc_coefs(&ctx->dsp, smp, n, max_order, precision, coefs,
+                               shift, ctx->options.use_lpc, omethod, MAX_LPC_SHIFT, 0);
 
     if(omethod == ORDER_METHOD_2LEVEL ||
        omethod == ORDER_METHOD_4LEVEL ||
