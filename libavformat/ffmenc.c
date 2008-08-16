@@ -132,7 +132,7 @@ static int ffm_write_header(AVFormatContext *s)
             put_be16(pb, (int) (codec->qcompress * 10000.0));
             put_be16(pb, (int) (codec->qblur * 10000.0));
             put_be32(pb, codec->bit_rate_tolerance);
-            put_strz(pb, codec->rc_eq);
+            put_strz(pb, codec->rc_eq ? codec->rc_eq : "tex^qComp");
             put_be32(pb, codec->rc_max_rate);
             put_be32(pb, codec->rc_min_rate);
             put_be32(pb, codec->rc_buffer_size);
