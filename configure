@@ -1262,6 +1262,7 @@ case $target_os in
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME).$(LIBMAJOR)$(SLIBSUF)'
         FFSERVERLDFLAGS=-Wl,-bind_at_load
         objformat="macho"
+        enabled x86_64 && objformat="macho64"
         ;;
     mingw32*)
         target_os=mingw32
@@ -1561,6 +1562,7 @@ EOF
     enabled_all x86_64 shared && append YASMFLAGS "-DPIC"
     case "$objformat" in
         elf) enabled debug && append YASMFLAGS "-g dwarf2" ;;
+        macho64)              append YASMFLAGS "-DPIC -DPREFIX" ;;
         *)                    append YASMFLAGS "-DPREFIX"  ;;
     esac
     check_yasm "pabsw xmm0, xmm0" && enable yasm
