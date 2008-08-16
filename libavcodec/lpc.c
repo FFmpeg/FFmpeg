@@ -1,6 +1,6 @@
 /**
  * LPC utility code
- * Copyright (c) 2006  Justin Ruggles <jruggle@earthlink.net>
+ * Copyright (c) 2006  Justin Ruggles <justin.ruggles@gmail.com>
  *
  * This file is part of FFmpeg.
  *
