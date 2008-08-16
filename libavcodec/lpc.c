@@ -117,12 +117,12 @@ static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
     *shift = sh;
 }
 
-static int estimate_best_order(double *ref, int max_order)
+static int estimate_best_order(double *ref, int min_order, int max_order)
 {
     int i, est;
 
-    est = 1;
-    for(i=max_order-1; i>=0; i--) {
+    est = min_order;
+    for(i=max_order-1; i>=min_order-1; i--) {
         if(ref[i] > 0.10) {
             est = i+1;
             break;
@@ -192,7 +192,7 @@ int ff_lpc_calc_coefs(DSPContext *s,
     opt_order = max_order;
 
     if(omethod == ORDER_METHOD_EST) {
-        opt_order = estimate_best_order(ref, max_order);
+        opt_order = estimate_best_order(ref, min_order, max_order);
         i = opt_order-1;
         quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i], max_shift, zero_shift);
     } else {
