@@ -27,8 +27,7 @@
 /***********************************
  *              TODOs:
  * psy model selection with some option
- * change greedy codebook search into something more optimal, like Viterbi algorithm
- * determine run lengths along with codebook
+ * add sane pulse detection
  ***********************************/
 
 #include "avcodec.h"
@@ -130,6 +129,16 @@ static const uint8_t aac_chan_configs[6][5] = {
 };
 
 /**
+ * AAC encoder context
+ */
+typedef struct {
+    PutBitContext pb;
+    MDCTContext mdct1024;                        ///< long (1024 samples) frame transform context
+    MDCTContext mdct128;                         ///< short (128 samples) frame transform context
+    DSPContext  dsp;
+} AACEncContext;
+
+/**
  * Make AAC audio config object.
  * @see 1.6.2.1 "Syntax - AudioSpecificConfig"
  */
@@ -176,6 +185,11 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     dsputil_init(&s->dsp, avctx);
     ff_mdct_init(&s->mdct1024, 11, 0);
     ff_mdct_init(&s->mdct128,   8, 0);
+    // window init
+    ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
+    ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
+    ff_sine_window_init(ff_sine_1024, 1024);
+    ff_sine_window_init(ff_sine_128, 128);
 
     s->samples = av_malloc(2 * 1024 * avctx->channels * sizeof(s->samples[0]));
     s->cpe = av_mallocz(sizeof(ChannelElement) * aac_chan_configs[avctx->channels-1][0]);
@@ -208,6 +222,48 @@ static void put_ics_info(AVCodecContext *avctx, IndividualChannelStream *info)
         put_bits(&s->pb, 4, info->max_sfb);
         for(i = 1; i < info->num_windows; i++)
             put_bits(&s->pb, 1, info->group_len[i]);
+    }
+}
+
+/**
+ * Encode pulse data.
+ */
+static void encode_pulses(AVCodecContext *avctx, AACEncContext *s, Pulse *pulse, int channel)
+{
+    int i;
+
+    put_bits(&s->pb, 1, !!pulse->num_pulse);
+    if(!pulse->num_pulse) return;
+
+    put_bits(&s->pb, 2, pulse->num_pulse - 1);
+    put_bits(&s->pb, 6, pulse->start);
+    for(i = 0; i < pulse->num_pulse; i++){
+        put_bits(&s->pb, 5, pulse->offset[i]);
+        put_bits(&s->pb, 4, pulse->amp[i]);
+    }
+}
+
+/**
+ * Encode spectral coefficients processed by psychoacoustic model.
+ */
+static void encode_spectral_coeffs(AVCodecContext *avctx, AACEncContext *s, ChannelElement *cpe, int channel)
+{
+    int start, i, w, w2, wg;
+
+    w = 0;
+    for(wg = 0; wg < cpe->ch[channel].ics.num_window_groups; wg++){
+        start = 0;
+        for(i = 0; i < cpe->ch[channel].ics.max_sfb; i++){
+            if(cpe->ch[channel].zeroes[w][i]){
+                start += cpe->ch[channel].ics.swb_sizes[i];
+                continue;
+            }
+            for(w2 = w; w2 < w + cpe->ch[channel].ics.group_len[wg]; w2++){
+                encode_band_coeffs(s, cpe, channel, start + w2*128, cpe->ch[channel].ics.swb_sizes[i], cpe->ch[channel].band_type[w][i]);
+            }
+            start += cpe->ch[channel].ics.swb_sizes[i];
+        }
+        w += cpe->ch[channel].ics.group_len[wg];
     }
 }
 
