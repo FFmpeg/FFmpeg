@@ -120,12 +120,12 @@ static const uint8_t *swb_size_128[] = {
 
 /** default channel configurations */
 static const uint8_t aac_chan_configs[6][5] = {
- {1, ID_SCE},                         // 1 channel  - single channel element
- {1, ID_CPE},                         // 2 channels - channel pair
- {2, ID_SCE, ID_CPE},                 // 3 channels - center + stereo
- {3, ID_SCE, ID_CPE, ID_SCE},         // 4 channels - front center + stereo + back center
- {3, ID_SCE, ID_CPE, ID_CPE},         // 5 channels - front center + stereo + back stereo
- {4, ID_SCE, ID_CPE, ID_CPE, ID_LFE}, // 6 channels - front center + stereo + back stereo + LFE
+ {1, TYPE_SCE},                               // 1 channel  - single channel element
+ {1, TYPE_CPE},                               // 2 channels - channel pair
+ {2, TYPE_SCE, TYPE_CPE},                     // 3 channels - center + stereo
+ {3, TYPE_SCE, TYPE_CPE, TYPE_SCE},           // 4 channels - front center + stereo + back center
+ {3, TYPE_SCE, TYPE_CPE, TYPE_CPE},           // 5 channels - front center + stereo + back stereo
+ {4, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE}, // 6 channels - front center + stereo + back stereo + LFE
 };
 
 /**
@@ -238,7 +238,7 @@ static void encode_pulses(AVCodecContext *avctx, AACEncContext *s, Pulse *pulse,
     put_bits(&s->pb, 2, pulse->num_pulse - 1);
     put_bits(&s->pb, 6, pulse->start);
     for(i = 0; i < pulse->num_pulse; i++){
-        put_bits(&s->pb, 5, pulse->offset[i]);
+        put_bits(&s->pb, 5, pulse->pos[i]);
         put_bits(&s->pb, 4, pulse->amp[i]);
     }
 }
@@ -275,7 +275,7 @@ static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s, const ch
     int i, namelen, padbits;
 
     namelen = strlen(name) + 2;
-    put_bits(&s->pb, 3, ID_FIL);
+    put_bits(&s->pb, 3, TYPE_FIL);
     put_bits(&s->pb, 4, FFMIN(namelen, 15));
     if(namelen >= 15)
         put_bits(&s->pb, 8, namelen - 16);
