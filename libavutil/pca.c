@@ -149,7 +149,7 @@ int ff_pca(PCA *pca, double *eigenvector, double *eigenvalue){
     return -1;
 }
 
-#if 1
+#ifdef TEST
 
 #undef printf
 #undef random
