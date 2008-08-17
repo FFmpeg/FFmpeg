@@ -26,21 +26,24 @@
 #include "common.h"
 #include "pca.h"
 
-int ff_pca_init(PCA *pca, int n){
+PCA *ff_pca_init(int n){
+    PCA *pca;
     if(n<=0)
-        return -1;
+        return NULL;
 
+    pca= av_mallocz(sizeof(PCA));
     pca->n= n;
     pca->count=0;
     pca->covariance= av_mallocz(sizeof(double)*n*n);
     pca->mean= av_mallocz(sizeof(double)*n);
 
-    return 0;
+    return pca;
 }
 
 void ff_pca_free(PCA *pca){
     av_freep(&pca->covariance);
     av_freep(&pca->mean);
+    av_free(pca);
 }
 
 void ff_pca_add(PCA *pca, double *v){
@@ -157,13 +160,13 @@ int ff_pca(PCA *pca, double *eigenvector, double *eigenvalue){
 #include <stdlib.h>
 
 int main(){
-    PCA pca;
+    PCA *pca;
     int i, j, k;
 #define LEN 8
     double eigenvector[LEN*LEN];
     double eigenvalue[LEN];
 
-    ff_pca_init(&pca, LEN);
+    pca= ff_pca_init(LEN);
 
     for(i=0; i<9000000; i++){
         double v[2*LEN+100];
@@ -184,21 +187,21 @@ int main(){
             v[j] -= sum/LEN;
         }*/
 //        lbt1(v+100,v+100,LEN);
-        ff_pca_add(&pca, v);
+        ff_pca_add(pca, v);
     }
 
 
-    ff_pca(&pca, eigenvector, eigenvalue);
+    ff_pca(pca, eigenvector, eigenvalue);
     for(i=0; i<LEN; i++){
-        pca.count= 1;
-        pca.mean[i]= 0;
+        pca->count= 1;
+        pca->mean[i]= 0;
 
 //        (0.5^|x|)^2 = 0.5^2|x| = 0.25^|x|
 
 
 //        pca.covariance[i + i*LEN]= pow(0.5, fabs
         for(j=i; j<LEN; j++){
-            printf("%f ", pca.covariance[i + j*LEN]);
+            printf("%f ", pca->covariance[i + j*LEN]);
         }
         printf("\n");
     }
@@ -210,7 +213,7 @@ int main(){
         memset(v, 0, sizeof(v));
         for(j=0; j<LEN; j++){
             for(k=0; k<LEN; k++){
-                v[j] += pca.covariance[FFMIN(k,j) + FFMAX(k,j)*LEN] * eigenvector[i + k*LEN];
+                v[j] += pca->covariance[FFMIN(k,j) + FFMAX(k,j)*LEN] * eigenvector[i + k*LEN];
             }
             v[j] /= eigenvalue[i];
             error += fabs(v[j] - eigenvector[i + j*LEN]);
