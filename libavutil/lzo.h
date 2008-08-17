@@ -22,6 +22,8 @@
 #ifndef FFMPEG_LZO_H
 #define FFMPEG_LZO_H
 
+#include <stdint.h>
+
 #define LZO_INPUT_DEPLETED 1
 #define LZO_OUTPUT_FULL 2
 #define LZO_INVALID_BACKPTR 4
