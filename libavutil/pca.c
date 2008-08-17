@@ -23,8 +23,7 @@
  * Principal component analysis
  */
 
-#include <math.h>
-#include "avcodec.h"
+#include "common.h"
 #include "pca.h"
 
 int ff_pca_init(PCA *pca, int n){
