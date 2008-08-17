@@ -152,6 +152,7 @@ int ff_pca(PCA *pca, double *eigenvector, double *eigenvalue){
 #if 1
 
 #undef printf
+#undef random
 #include <stdio.h>
 #include <stdlib.h>
 
