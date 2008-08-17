@@ -28,7 +28,6 @@
 #define FFMPEG_AC3DEC_H
 
 #include "libavutil/lfg.h"
-#include "ac3tab.h"
 #include "ac3.h"
 #include "bitstream.h"
 #include "dsputil.h"

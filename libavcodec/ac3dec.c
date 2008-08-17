@@ -33,10 +33,7 @@
 #include <string.h>
 
 #include "libavutil/crc.h"
-#include "avcodec.h"
 #include "ac3_parser.h"
-#include "bitstream.h"
-#include "dsputil.h"
 #include "ac3dec.h"
 #include "ac3dec_data.h"
 
