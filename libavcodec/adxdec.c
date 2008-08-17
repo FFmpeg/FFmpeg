@@ -30,7 +30,7 @@
  * adx2wav & wav2adx http://www.geocities.co.jp/Playtown/2004/
  */
 
-static av_cold void adx_decode_init(AVCodecContext *avctx)
+static av_cold int adx_decode_init(AVCodecContext *avctx)
 {
     avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
