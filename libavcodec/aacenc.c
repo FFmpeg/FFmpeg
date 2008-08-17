@@ -118,6 +118,23 @@ static const uint8_t *swb_size_128[] = {
     swb_size_128_16, swb_size_128_16, swb_size_128_8
 };
 
+/** bits needed to code codebook run value for long windows */
+static const uint8_t run_value_bits_long[64] = {
+     5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
+     5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15
+};
+
+/** bits needed to code codebook run value for short windows */
+static const uint8_t run_value_bits_short[16] = {
+    3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 9
+};
+
+static const uint8_t* run_value_bits[2] = {
+    run_value_bits_long, run_value_bits_short
+};
+
 /** default channel configurations */
 static const uint8_t aac_chan_configs[6][5] = {
  {1, TYPE_SCE},                               // 1 channel  - single channel element
@@ -129,6 +146,15 @@ static const uint8_t aac_chan_configs[6][5] = {
 };
 
 /**
+ * structure used in optimal codebook search
+ */
+typedef struct BandCodingPath {
+    int prev_idx; ///< pointer to the previous path point
+    int codebook; ///< codebook for coding band run
+    int bits;     ///< number of bit needed to code given number of bands
+} BandCodingPath;
+
+/**
  * AAC encoder context
  */
 typedef struct {
@@ -136,6 +162,8 @@ typedef struct {
     MDCTContext mdct1024;                        ///< long (1024 samples) frame transform context
     MDCTContext mdct128;                         ///< short (128 samples) frame transform context
     DSPContext  dsp;
+    AACPsyContext psy;                           ///< psychoacoustic model context
+    int last_frame;
 } AACEncContext;
 
 /**
@@ -254,12 +282,12 @@ static void encode_spectral_coeffs(AVCodecContext *avctx, AACEncContext *s, Chan
     for(wg = 0; wg < cpe->ch[channel].ics.num_window_groups; wg++){
         start = 0;
         for(i = 0; i < cpe->ch[channel].ics.max_sfb; i++){
-            if(cpe->ch[channel].zeroes[w][i]){
+            if(cpe->ch[channel].zeroes[w*16 + i]){
                 start += cpe->ch[channel].ics.swb_sizes[i];
                 continue;
             }
             for(w2 = w; w2 < w + cpe->ch[channel].ics.group_len[wg]; w2++){
-                encode_band_coeffs(s, cpe, channel, start + w2*128, cpe->ch[channel].ics.swb_sizes[i], cpe->ch[channel].band_type[w][i]);
+                encode_band_coeffs(s, cpe, channel, start + w2*128, cpe->ch[channel].ics.swb_sizes[i], cpe->ch[channel].band_type[w*16 + i]);
             }
             start += cpe->ch[channel].ics.swb_sizes[i];
         }
