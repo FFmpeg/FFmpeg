@@ -1242,8 +1242,14 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     FlacEncodeContext *s;
     int16_t *samples = data;
     int out_bytes;
+    int reencoded=0;
 
     s = avctx->priv_data;
+
+    if(buf_size < s->max_framesize*2) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
+        return 0;
+    }
 
     init_frame(s);
 
@@ -1254,28 +1260,27 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     for(ch=0; ch<s->channels; ch++) {
         encode_residual(s, ch);
     }
+
+write_frame:
     init_put_bits(&s->pb, frame, buf_size);
     output_frame_header(s);
     output_subframes(s);
     output_frame_footer(s);
     out_bytes = put_bits_count(&s->pb) >> 3;
 
-    if(out_bytes > s->max_framesize || out_bytes >= buf_size) {
-        /* frame too large. use verbatim mode */
-        for(ch=0; ch<s->channels; ch++) {
-            encode_residual_v(s, ch);
-        }
-        init_put_bits(&s->pb, frame, buf_size);
-        output_frame_header(s);
-        output_subframes(s);
-        output_frame_footer(s);
-        out_bytes = put_bits_count(&s->pb) >> 3;
-
-        if(out_bytes > s->max_framesize || out_bytes >= buf_size) {
+    if(out_bytes > s->max_framesize) {
+        if(reencoded) {
             /* still too large. must be an error. */
             av_log(avctx, AV_LOG_ERROR, "error encoding frame\n");
             return -1;
         }
+
+        /* frame too large. use verbatim mode */
+        for(ch=0; ch<s->channels; ch++) {
+            encode_residual_v(s, ch);
+        }
+        reencoded = 1;
+        goto write_frame;
     }
 
     s->frame_count++;
