@@ -126,11 +126,11 @@ int ff_pca(PCA *pca, double *eigenvector, double *eigenvalue){
                 z[i] -= t*covar;
                 z[j] += t*covar;
 
-#define ROTATE(a,i,j,k,l)\
+#define ROTATE(a,i,j,k,l) {\
     double g=a[j + i*n];\
     double h=a[l + k*n];\
     a[j + i*n]=g-s*(h+g*tau);\
-    a[l + k*n]=h+s*(g-h*tau);
+    a[l + k*n]=h+s*(g-h*tau); }
                 for(k=0; k<n; k++) {
                     if(k!=i && k!=j){
                         ROTATE(pca->covariance,FFMIN(k,i),FFMAX(k,i),FFMIN(k,j),FFMAX(k,j))
