@@ -27,11 +27,3 @@ struct PCA *ff_pca_init(int n);
 void ff_pca_free(struct PCA *pca);
 void ff_pca_add(struct PCA *pca, double *v);
 int ff_pca(struct PCA *pca, double *eigenvector, double *eigenvalue);
-
-
-typedef struct PCA{
-    int count;
-    int n;
-    double *covariance;
-    double *mean;
-}PCA;
