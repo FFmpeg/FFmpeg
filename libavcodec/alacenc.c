@@ -193,5 +193,5 @@ AVCodec alac_encoder = {
     alac_encode_frame,
     alac_encode_close,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME,
-    .long_name = "ALAC (Apple Lossless Audio Codec)",
+    .long_name = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };
