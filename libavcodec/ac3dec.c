@@ -33,7 +33,6 @@
 #include <string.h>
 
 #include "libavutil/crc.h"
-#include "libavutil/random.h"
 #include "avcodec.h"
 #include "ac3_parser.h"
 #include "bitstream.h"
@@ -198,7 +197,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     ff_mdct_init(&s->imdct_512, 9, 1);
     ff_kbd_window_init(s->window, 5.0, 256);
     dsputil_init(&s->dsp, avctx);
-    av_init_random(0, &s->dith_state);
+    av_lfg_init(&s->dith_state, 0);
 
     /* set bias values for float to int16 conversion */
     if(s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
@@ -450,7 +449,7 @@ static void get_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, mant_grou
         tbap = bap[i];
         switch (tbap) {
             case 0:
-                coeffs[i] = (av_random(&s->dith_state) & 0x7FFFFF) - 0x400000;
+                coeffs[i] = (av_lfg_get(&s->dith_state) & 0x7FFFFF) - 0x400000;
                 break;
 
             case 1:

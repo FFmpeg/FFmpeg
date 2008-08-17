@@ -9,6 +9,7 @@ OBJS = adler32.o \
        des.o \
        fifo.o \
        intfloat_readwrite.o \
+       lfg.o \
        lls.o \
        log.o \
        lzo.o \

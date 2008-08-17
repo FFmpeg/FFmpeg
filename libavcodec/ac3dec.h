@@ -27,7 +27,7 @@
 #ifndef FFMPEG_AC3DEC_H
 #define FFMPEG_AC3DEC_H
 
-#include "libavutil/random.h"
+#include "libavutil/lfg.h"
 #include "ac3tab.h"
 #include "ac3.h"
 #include "bitstream.h"
@@ -143,7 +143,7 @@ typedef struct {
 ///@defgroup dithering zero-mantissa dithering
     int dither_all;                         ///< true if all channels are dithered
     int dither_flag[AC3_MAX_CHANNELS];      ///< dither flags                           (dithflg)
-    AVRandomState dith_state;               ///< for dither generation
+    AVLFG dith_state;                       ///< for dither generation
 ///@}
 
 ///@defgroup imdct IMDCT
