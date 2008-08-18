@@ -232,6 +232,14 @@ typedef struct {
     /** @} */
 
     /**
+     * @defgroup temporary aligned temporary buffers (We do not want to have these on the stack.)
+     * @{
+     */
+    DECLARE_ALIGNED_16(float, buf_mdct[2048]);
+    DECLARE_ALIGNED_16(float, revers[1024]);
+    /** @} */
+
+    /**
      * @defgroup tables   Computed / set up during initialization.
      * @{
      */

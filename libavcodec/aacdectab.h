@@ -156,4 +156,19 @@ static const uint16_t *swb_offset_128[] = {
 
 // @}
 
+/* @name tns_max_bands
+ * The maximum number of scalefactor bands on which TNS can operate for the long
+ * and short transforms respectively. The index to these tables is related to
+ * the sample rate of the audio.
+ * @{
+ */
+static const uint8_t tns_max_bands_1024[] = {
+    31, 31, 34, 40, 42, 51, 46, 46, 42, 42, 42, 39
+};
+
+static const uint8_t tns_max_bands_128[] = {
+    9, 9, 10, 14, 14, 14, 14, 14, 14, 14, 14, 14
+};
+// @}
+
 #endif /* FFMPEG_AACDECTAB_H */
