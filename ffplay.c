@@ -1773,6 +1773,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     if(thread_count>1)
         avcodec_thread_init(enc, thread_count);
     enc->thread_count= thread_count;
+    ic->streams[stream_index]->discard = AVDISCARD_DEFAULT;
     switch(enc->codec_type) {
     case CODEC_TYPE_AUDIO:
         is->audio_stream = stream_index;
@@ -1869,6 +1870,7 @@ static void stream_component_close(VideoState *is, int stream_index)
         break;
     }
 
+    ic->streams[stream_index]->discard = AVDISCARD_ALL;
     avcodec_close(enc);
     switch(enc->codec_type) {
     case CODEC_TYPE_AUDIO:
@@ -1979,6 +1981,7 @@ static int decode_thread(void *arg)
 
     for(i = 0; i < ic->nb_streams; i++) {
         AVCodecContext *enc = ic->streams[i]->codec;
+        ic->streams[i]->discard = AVDISCARD_ALL;
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
             if ((audio_index < 0 || wanted_audio_stream-- > 0) && !audio_disable)
