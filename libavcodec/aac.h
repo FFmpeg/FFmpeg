@@ -149,6 +149,18 @@ typedef struct {
 } IndividualChannelStream;
 
 /**
+ * Temporal Noise Shaping
+ */
+typedef struct {
+    int present;
+    int n_filt[8];
+    int length[8][4];
+    int direction[8][4];
+    int order[8][4];
+    float coef[8][4][TNS_MAX_ORDER];
+} TemporalNoiseShaping;
+
+/**
  * Dynamic Range Control - decoded from the bitstream but not processed further.
  */
 typedef struct {

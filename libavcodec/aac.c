@@ -605,6 +605,44 @@ static void decode_pulses(Pulse * pulse, GetBitContext * gb, const uint16_t * sw
 }
 
 /**
+ * Decode Temporal Noise Shaping data; reference: table 4.48.
+ *
+ * @return  Returns error status. 0 - OK, !0 - error
+ */
+static int decode_tns(AACContext * ac, TemporalNoiseShaping * tns,
+        GetBitContext * gb, const IndividualChannelStream * ics) {
+    int w, filt, i, coef_len, coef_res, coef_compress;
+    const int is8 = ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE;
+    const int tns_max_order = is8 ? 7 : ac->m4ac.object_type == AOT_AAC_MAIN ? 20 : 12;
+    for (w = 0; w < ics->num_windows; w++) {
+        tns->n_filt[w] = get_bits(gb, 2 - is8);
+
+        if (tns->n_filt[w])
+            coef_res = get_bits1(gb);
+
+        for (filt = 0; filt < tns->n_filt[w]; filt++) {
+            int tmp2_idx;
+            tns->length[w][filt] = get_bits(gb, 6 - 2*is8);
+
+            if ((tns->order[w][filt] = get_bits(gb, 5 - 2*is8)) > tns_max_order) {
+                av_log(ac->avccontext, AV_LOG_ERROR, "TNS filter order %d is greater than maximum %d.",
+                       tns->order[w][filt], tns_max_order);
+                tns->order[w][filt] = 0;
+                return -1;
+            }
+            tns->direction[w][filt] = get_bits1(gb);
+            coef_compress = get_bits1(gb);
+            coef_len = coef_res + 3 - coef_compress;
+            tmp2_idx = 2*coef_compress + coef_res;
+
+            for (i = 0; i < tns->order[w][filt]; i++)
+                tns->coef[w][filt][i] = tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)];
+        }
+    }
+    return 0;
+}
+
+/**
  * Decode Mid/Side data; reference: table 4.54.
  *
  * @param   ms_present  Indicates mid/side stereo presence. [0] mask is all 0s;
@@ -1064,6 +1102,25 @@ static int decode_extension_payload(AACContext * ac, GetBitContext * gb, int cnt
             break;
     };
     return res;
+}
+
+            start = ics->swb_offset[FFMIN(bottom, mmm)];
+            end   = ics->swb_offset[FFMIN(   top, mmm)];
+            if ((size = end - start) <= 0)
+                continue;
+            if (tns->direction[w][filt]) {
+                inc = -1; start = end - 1;
+            } else {
+                inc = 1;
+            }
+            start += w * 128;
+
+            // ar filter
+            for (m = 0; m < size; m++, start += inc)
+                for (i = 1; i <= FFMIN(m, order); i++)
+                    coef[start] -= coef[start - i*inc] * lpc[i];
+        }
+    }
 }
 
 /**
