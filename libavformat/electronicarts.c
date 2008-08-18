@@ -185,6 +185,7 @@ static int process_audio_header_elements(AVFormatContext *s)
         switch (revision2) {
         case  8: ea->audio_codec = CODEC_ID_PCM_S16LE_PLANAR; break;
         case 10: ea->audio_codec = CODEC_ID_ADPCM_EA_R2; break;
+        case 16: ea->audio_codec = CODEC_ID_MP3; break;
         case -1: break;
         default:
             av_log(s, AV_LOG_ERROR, "unsupported stream type; revision2=%i\n", revision2);
@@ -430,6 +431,7 @@ static int ea_read_packet(AVFormatContext *s,
     int packet_read = 0;
     unsigned int chunk_type, chunk_size;
     int key = 0;
+    int num_samples;
 
     while (!packet_read) {
         chunk_type = get_le32(pb);
@@ -448,8 +450,10 @@ static int ea_read_packet(AVFormatContext *s,
             if (!ea->audio_codec) {
                 url_fskip(pb, chunk_size);
                 break;
-            } else if (ea->audio_codec == CODEC_ID_PCM_S16LE_PLANAR) {
-                url_fskip(pb, 12);  /* planar header */
+            } else if (ea->audio_codec == CODEC_ID_PCM_S16LE_PLANAR ||
+                       ea->audio_codec == CODEC_ID_MP3) {
+                num_samples = get_le32(pb);
+                url_fskip(pb, 8);
                 chunk_size -= 12;
             }
             ret = av_get_packet(pb, pkt, chunk_size);
@@ -467,6 +471,10 @@ static int ea_read_packet(AVFormatContext *s,
                      * on stereo; chunk also has 12-byte header */
                     ea->audio_frame_counter += ((chunk_size - 12) * 2) /
                         ea->num_channels;
+                        break;
+                    case CODEC_ID_PCM_S16LE_PLANAR:
+                    case CODEC_ID_MP3:
+                        ea->audio_frame_counter += num_samples;
                         break;
                     default:
                         ea->audio_frame_counter += chunk_size /
