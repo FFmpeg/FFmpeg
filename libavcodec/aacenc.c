@@ -162,6 +162,12 @@ typedef struct {
     MDCTContext mdct1024;                        ///< long (1024 samples) frame transform context
     MDCTContext mdct128;                         ///< short (128 samples) frame transform context
     DSPContext  dsp;
+    DECLARE_ALIGNED_16(FFTSample, output[2048]); ///< temporary buffer for MDCT input coefficients
+    int16_t* samples;                            ///< saved preprocessed input
+
+    int samplerate_index;                        ///< MPEG-4 samplerate index
+
+    ChannelElement *cpe;                         ///< channel elements
     AACPsyContext psy;                           ///< psychoacoustic model context
     int last_frame;
 } AACEncContext;
@@ -221,7 +227,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     s->samples = av_malloc(2 * 1024 * avctx->channels * sizeof(s->samples[0]));
     s->cpe = av_mallocz(sizeof(ChannelElement) * aac_chan_configs[avctx->channels-1][0]);
-    if(ff_aac_psy_init(&s->psy, avctx, AAC_PSY_3GPP, aac_chan_configs[avctx->channels-1][0], 0, s->swb_sizes1024, s->swb_num1024, s->swb_sizes128, s->swb_num128) < 0){
+    if(ff_aac_psy_init(&s->psy, avctx, AAC_PSY_3GPP,
+                       aac_chan_configs[avctx->channels-1][0], 0,
+                       s->swb_sizes1024, s->swb_num1024, s->swb_sizes128, s->swb_num128) < 0){
         av_log(avctx, AV_LOG_ERROR, "Cannot initialize selected model.\n");
         return -1;
     }
@@ -256,7 +264,7 @@ static void put_ics_info(AVCodecContext *avctx, IndividualChannelStream *info)
 /**
  * Encode pulse data.
  */
-static void encode_pulses(AVCodecContext *avctx, AACEncContext *s, Pulse *pulse, int channel)
+static void encode_pulses(AACEncContext *s, Pulse *pulse, int channel)
 {
     int i;
 
@@ -274,7 +282,7 @@ static void encode_pulses(AVCodecContext *avctx, AACEncContext *s, Pulse *pulse,
 /**
  * Encode spectral coefficients processed by psychoacoustic model.
  */
-static void encode_spectral_coeffs(AVCodecContext *avctx, AACEncContext *s, ChannelElement *cpe, int channel)
+static void encode_spectral_coeffs(AACEncContext *s, ChannelElement *cpe, int channel)
 {
     int start, i, w, w2, wg;
 
@@ -287,7 +295,9 @@ static void encode_spectral_coeffs(AVCodecContext *avctx, AACEncContext *s, Chan
                 continue;
             }
             for(w2 = w; w2 < w + cpe->ch[channel].ics.group_len[wg]; w2++){
-                encode_band_coeffs(s, cpe, channel, start + w2*128, cpe->ch[channel].ics.swb_sizes[i], cpe->ch[channel].band_type[w*16 + i]);
+                encode_band_coeffs(s, cpe, channel, start + w2*128,
+                                   cpe->ch[channel].ics.swb_sizes[i],
+                                   cpe->ch[channel].band_type[w*16 + i]);
             }
             start += cpe->ch[channel].ics.swb_sizes[i];
         }
