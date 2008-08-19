@@ -29,6 +29,8 @@ static const AVCodecTag codec_aiff_tags[] = {
     { CODEC_ID_PCM_S8,       MKTAG('N','O','N','E') },
     { CODEC_ID_PCM_S24BE,    MKTAG('N','O','N','E') },
     { CODEC_ID_PCM_S32BE,    MKTAG('N','O','N','E') },
+    { CODEC_ID_PCM_F32BE,    MKTAG('f','l','3','2') },
+    { CODEC_ID_PCM_F64BE,    MKTAG('f','l','6','4') },
     { CODEC_ID_PCM_ALAW,     MKTAG('a','l','a','w') },
     { CODEC_ID_PCM_MULAW,    MKTAG('u','l','a','w') },
     { CODEC_ID_MACE3,        MKTAG('M','A','C','3') },
