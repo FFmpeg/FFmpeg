@@ -152,7 +152,7 @@ static VLC mb_ptype_vlc;
 static VLC mb_btype_vlc;
 static VLC mb_pat_vlc;
 
-static void init_vlcs(void)
+static av_cold void init_vlcs(void)
 {
     static int done = 0;
 
