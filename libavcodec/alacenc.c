@@ -217,6 +217,114 @@ static void alac_stereo_decorrelation(AlacEncodeContext *s)
     }
 }
 
+static void alac_linear_predictor(AlacEncodeContext *s, int ch)
+{
+    int i;
+    LPCContext lpc = s->lpc[ch];
+
+    if(lpc.lpc_order == 31) {
+        s->predictor_buf[0] = s->sample_buf[ch][0];
+
+        for(i=1; i<s->avctx->frame_size; i++)
+            s->predictor_buf[i] = s->sample_buf[ch][i] - s->sample_buf[ch][i-1];
+
+        return;
+    }
+
+    // generalised linear predictor
+
+    if(lpc.lpc_order > 0) {
+        int32_t *samples  = s->sample_buf[ch];
+        int32_t *residual = s->predictor_buf;
+
+        // generate warm-up samples
+        residual[0] = samples[0];
+        for(i=1;i<=lpc.lpc_order;i++)
+            residual[i] = samples[i] - samples[i-1];
+
+        // perform lpc on remaining samples
+        for(i = lpc.lpc_order + 1; i < s->avctx->frame_size; i++) {
+            int sum = 1 << (lpc.lpc_quant - 1), res_val, j;
+
+            for (j = 0; j < lpc.lpc_order; j++) {
+                sum += (samples[lpc.lpc_order-j] - samples[0]) *
+                        lpc.lpc_coeff[j];
+            }
+
+            sum >>= lpc.lpc_quant;
+            sum += samples[0];
+            residual[i] = samples[lpc.lpc_order+1] - sum;
+            res_val = residual[i];
+
+            if(res_val) {
+                int index = lpc.lpc_order - 1;
+                int neg = (res_val < 0);
+
+                while(index >= 0 && (neg ? (res_val < 0):(res_val > 0))) {
+                    int val = samples[0] - samples[lpc.lpc_order - index];
+                    int sign = (val ? FFSIGN(val) : 0);
+
+                    if(neg)
+                        sign*=-1;
+
+                    lpc.lpc_coeff[index] -= sign;
+                    val *= sign;
+                    res_val -= ((val >> lpc.lpc_quant) *
+                            (lpc.lpc_order - index));
+                    index--;
+                }
+            }
+            samples++;
+        }
+    }
+}
+
+static void alac_entropy_coder(AlacEncodeContext *s)
+{
+    unsigned int history = s->rc.initial_history;
+    int sign_modifier = 0, i, k;
+    int32_t *samples = s->predictor_buf;
+
+    for(i=0;i < s->avctx->frame_size;) {
+        int x;
+
+        k = av_log2((history >> 9) + 3);
+
+        x = -2*(*samples)-1;
+        x ^= (x>>31);
+
+        samples++;
+        i++;
+
+        encode_scalar(s, x - sign_modifier, k, s->write_sample_size);
+
+        history += x * s->rc.history_mult
+                   - ((history * s->rc.history_mult) >> 9);
+
+        sign_modifier = 0;
+        if(x > 0xFFFF)
+            history = 0xFFFF;
+
+        if((history < 128) && (i < s->avctx->frame_size)) {
+            unsigned int block_size = 0;
+
+            k = 7 - av_log2(history) + ((history + 16) >> 6);
+
+            while((*samples == 0) && (i < s->avctx->frame_size)) {
+                samples++;
+                i++;
+                block_size++;
+            }
+            encode_scalar(s, block_size, k, 16);
+
+            sign_modifier = (block_size <= 0xFFFF);
+
+            history = 0;
+        }
+
+    }
+}
+
 static void write_compressed_frame(AlacEncodeContext *s)
 {
     int i, j;
@@ -295,6 +403,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
         AV_WB8(alac_extradata+20, s->rc.k_modifier);
     }
 
+    s->min_prediction_order = DEFAULT_MIN_PRED_ORDER;
     if(avctx->min_prediction_order >= 0) {
         if(avctx->min_prediction_order < MIN_LPC_ORDER ||
             avctx->min_prediction_order > MAX_LPC_ORDER) {
@@ -305,6 +414,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
         s->min_prediction_order = avctx->min_prediction_order;
     }
 
+    s->max_prediction_order = DEFAULT_MAX_PRED_ORDER;
     if(avctx->max_prediction_order >= 0) {
         if(avctx->max_prediction_order < MIN_LPC_ORDER ||
            avctx->max_prediction_order > MAX_LPC_ORDER) {
