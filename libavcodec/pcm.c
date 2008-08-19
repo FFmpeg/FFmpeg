@@ -384,8 +384,8 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_S16LE_PLANAR:
         n /= avctx->channels;
         for(c=0;c<avctx->channels;c++)
-            src2[c] = &src[c*n];
-        for(n>>=1;n>0;n--)
+            src2[c] = &src[c*n*2];
+        for(;n>0;n--)
             for(c=0;c<avctx->channels;c++)
                 *samples++ = bytestream_get_le16(&src2[c]);
         src = src2[avctx->channels-1];
