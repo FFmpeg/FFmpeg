@@ -49,7 +49,7 @@ typedef struct DVprofile {
     AVRational       sar[2];              /* sample aspect ratios for 4:3 and 16:9 */
     const uint16_t  *video_place;         /* positions of all DV macro blocks */
     enum PixelFormat pix_fmt;             /* picture pixel format */
-
+    int              bpm;                 /* blocks per macroblock */
     int              audio_stride;        /* size of audio_shuffle table */
     int              audio_min_samples[3];/* min ammount of audio samples */
                                           /* for 48Khz, 44.1Khz and 32Khz */
@@ -2534,6 +2534,7 @@ static const DVprofile dv_profiles[] = {
       .sar = {{10, 11}, {40, 33}},
       .video_place = dv_place_411,
       .pix_fmt = PIX_FMT_YUV411P,
+      .bpm = 6,
       .audio_stride = 90,
       .audio_min_samples = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32Khz */
       .audio_samples_dist = { 1600, 1602, 1602, 1602, 1602 }, /* per SMPTE-314M */
@@ -2551,6 +2552,7 @@ static const DVprofile dv_profiles[] = {
       .sar = {{59, 54}, {118, 81}},
       .video_place = dv_place_420,
       .pix_fmt = PIX_FMT_YUV420P,
+      .bpm = 6,
       .audio_stride = 108,
       .audio_min_samples = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32Khz */
       .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },
@@ -2568,6 +2570,7 @@ static const DVprofile dv_profiles[] = {
       .sar = {{59, 54}, {118, 81}},
       .video_place = dv_place_411P,
       .pix_fmt = PIX_FMT_YUV411P,
+      .bpm = 6,
       .audio_stride = 108,
       .audio_min_samples = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32Khz */
       .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },
@@ -2585,6 +2588,7 @@ static const DVprofile dv_profiles[] = {
       .sar = {{10, 11}, {40, 33}},
       .video_place = dv_place_422_525,
       .pix_fmt = PIX_FMT_YUV422P,
+      .bpm = 6,
       .audio_stride = 90,
       .audio_min_samples = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32Khz */
       .audio_samples_dist = { 1600, 1602, 1602, 1602, 1602 }, /* per SMPTE-314M */
@@ -2602,6 +2606,7 @@ static const DVprofile dv_profiles[] = {
       .sar = {{59, 54}, {118, 81}},
       .video_place = dv_place_422_625,
       .pix_fmt = PIX_FMT_YUV422P,
+      .bpm = 6,
       .audio_stride = 108,
       .audio_min_samples = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32Khz */
       .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },

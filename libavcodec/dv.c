@@ -376,14 +376,14 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
     block1 = &sblock[0][0];
     mb1 = mb_data;
     init_put_bits(&vs_pb, vs_bit_buffer, 5 * 80);
-    for(mb_index = 0; mb_index < 5; mb_index++, mb1 += 6, block1 += 6 * 64) {
+    for(mb_index = 0; mb_index < 5; mb_index++, mb1 += s->sys->bpm, block1 += s->sys->bpm * 64) {
         /* skip header */
         quant = buf_ptr[3] & 0x0f;
         buf_ptr += 4;
         init_put_bits(&pb, mb_bit_buffer, 80);
         mb = mb1;
         block = block1;
-        for(j = 0;j < 6; j++) {
+        for(j = 0;j < s->sys->bpm; j++) {
             last_index = block_sizes[j];
             init_get_bits(&gb, buf_ptr, last_index);
 
@@ -426,7 +426,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         mb = mb1;
         init_get_bits(&gb, mb_bit_buffer, put_bits_count(&pb));
         flush_put_bits(&pb);
-        for(j = 0;j < 6; j++, block += 64, mb++) {
+        for(j = 0;j < s->sys->bpm; j++, block += 64, mb++) {
             if (mb->pos < 64 && get_bits_left(&gb) > 0) {
                 dv_decode_ac(&gb, mb, block);
                 /* if still not finished, no need to parse other blocks */
@@ -436,7 +436,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         }
         /* all blocks are finished, so the extra bytes can be used at
            the video segment level */
-        if (j >= 6)
+        if (j >= s->sys->bpm)
             bit_copy(&vs_pb, &gb);
     }
 
@@ -449,7 +449,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
     init_get_bits(&gb, vs_bit_buffer, put_bits_count(&vs_pb));
     flush_put_bits(&vs_pb);
     for(mb_index = 0; mb_index < 5; mb_index++) {
-        for(j = 0;j < 6; j++) {
+        for(j = 0;j < s->sys->bpm; j++) {
             if (mb->pos < 64) {
 #ifdef VLC_DEBUG
                 printf("start %d:%d\n", mb_index, j);
