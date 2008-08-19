@@ -299,9 +299,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     while (!url_feof(s->pb)) {
         if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
-#ifdef DEBUG
         PRINT_KEY(s, "read packet", klv.key);
-#endif
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
             int res = mxf_decrypt_triplet(s, pkt, &klv);
             if (res < 0) {
@@ -726,9 +724,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             return -1;
         }
 
-#ifdef DEBUG
         PRINT_KEY(mxf->fc, "data definition   ul", source_track->sequence->data_definition_ul);
-#endif
         st->codec->codec_type = mxf_get_codec_type(ff_mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
 
         source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref, AnyType);
@@ -753,10 +749,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             av_log(mxf->fc, AV_LOG_INFO, "source track %d: stream %d, no descriptor found\n", source_track->track_id, st->index);
             continue;
         }
-#ifdef DEBUG
         PRINT_KEY(mxf->fc, "essence codec     ul", descriptor->essence_codec_ul);
         PRINT_KEY(mxf->fc, "essence container ul", descriptor->essence_container_ul);
-#endif
         essence_container_ul = &descriptor->essence_container_ul;
         /* HACK: replacing the original key with mxf_encrypted_essence_container
          * is not allowed according to s429-6, try to find correct information anyway */
@@ -860,9 +854,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child
                 if (local_tag == tag) {
                     memcpy(uid, mxf->local_tags+i*18+2, 16);
                     dprintf(mxf->fc, "local tag 0x%04X\n", local_tag);
-#ifdef DEBUG
                     PRINT_KEY(mxf->fc, "uid", uid);
-#endif
                 }
             }
         }
@@ -893,9 +885,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
         if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
-#ifdef DEBUG
         PRINT_KEY(s, "read header", klv.key);
-#endif
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             /* FIXME avoid seek */
