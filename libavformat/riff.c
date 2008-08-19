@@ -171,6 +171,8 @@ const AVCodecTag codec_wav_tags[] = {
     { CODEC_ID_PCM_S24LE,       0x0001 },
     { CODEC_ID_PCM_S32LE,       0x0001 },
     { CODEC_ID_ADPCM_MS,        0x0002 },
+    { CODEC_ID_PCM_F32LE,       0x0003 },
+    { CODEC_ID_PCM_F64LE,       0x0003 }, /* must come after f32le in this list */
     { CODEC_ID_PCM_ALAW,        0x0006 },
     { CODEC_ID_PCM_MULAW,       0x0007 },
     { CODEC_ID_WMAVOICE,        0x000A },
@@ -252,8 +254,10 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         bps = 4;
     } else if (enc->codec_id == CODEC_ID_PCM_S24LE) {
         bps = 24;
-    } else if (enc->codec_id == CODEC_ID_PCM_S32LE) {
+    } else if (enc->codec_id == CODEC_ID_PCM_S32LE || enc->codec_id == CODEC_ID_PCM_F32LE) {
         bps = 32;
+    } else if (enc->codec_id == CODEC_ID_PCM_F64LE) {
+        bps = 64;
     } else {
         bps = 16;
     }
@@ -273,6 +277,8 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     if (enc->codec_id == CODEC_ID_PCM_U8 ||
         enc->codec_id == CODEC_ID_PCM_S24LE ||
         enc->codec_id == CODEC_ID_PCM_S32LE ||
+        enc->codec_id == CODEC_ID_PCM_F32LE ||
+        enc->codec_id == CODEC_ID_PCM_F64LE ||
         enc->codec_id == CODEC_ID_PCM_S16LE) {
         bytespersec = enc->sample_rate * blkalign;
     } else {
@@ -410,6 +416,8 @@ int wav_codec_get_id(unsigned int tag, int bps)
         id = CODEC_ID_PCM_S24LE;
     if (id == CODEC_ID_PCM_S16LE && bps == 32)
         id = CODEC_ID_PCM_S32LE;
+    if (id == CODEC_ID_PCM_F32LE && bps == 64)
+        id = CODEC_ID_PCM_F64LE;
     if (id == CODEC_ID_ADPCM_IMA_WAV && bps == 8)
         id = CODEC_ID_PCM_ZORK;
     return id;
