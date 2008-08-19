@@ -62,6 +62,8 @@ typedef struct URLPollEntry {
 
 typedef int URLInterruptCB(void);
 
+int url_open_protocol (URLContext **puc, struct URLProtocol *up,
+                       const char *filename, int flags);
 int url_open(URLContext **h, const char *filename, int flags);
 int url_read(URLContext *h, unsigned char *buf, int size);
 int url_write(URLContext *h, unsigned char *buf, int size);

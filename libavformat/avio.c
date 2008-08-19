@@ -59,41 +59,12 @@ int register_protocol(URLProtocol *protocol)
     return 0;
 }
 
-int url_open(URLContext **puc, const char *filename, int flags)
+int url_open_protocol (URLContext **puc, struct URLProtocol *up,
+                       const char *filename, int flags)
 {
     URLContext *uc;
-    URLProtocol *up;
-    const char *p;
-    char proto_str[128], *q;
     int err;
 
-    p = filename;
-    q = proto_str;
-    while (*p != '\0' && *p != ':') {
-        /* protocols can only contain alphabetic chars */
-        if (!isalpha(*p))
-            goto file_proto;
-        if ((q - proto_str) < sizeof(proto_str) - 1)
-            *q++ = *p;
-        p++;
-    }
-    /* if the protocol has length 1, we consider it is a dos drive */
-    if (*p == '\0' || (q - proto_str) <= 1) {
-    file_proto:
-        strcpy(proto_str, "file");
-    } else {
-        *q = '\0';
-    }
-
-    up = first_protocol;
-    while (up != NULL) {
-        if (!strcmp(proto_str, up->name))
-            goto found;
-        up = up->next;
-    }
-    err = AVERROR(ENOENT);
-    goto fail;
- found:
     uc = av_malloc(sizeof(URLContext) + strlen(filename) + 1);
     if (!uc) {
         err = AVERROR(ENOMEM);
@@ -117,7 +88,7 @@ int url_open(URLContext **puc, const char *filename, int flags)
 
     //We must be carefull here as url_seek() could be slow, for example for http
     if(   (flags & (URL_WRONLY | URL_RDWR))
-       || !strcmp(proto_str, "file"))
+       || !strcmp(up->name, "file"))
         if(!uc->is_streamed && url_seek(uc, 0, SEEK_SET) < 0)
             uc->is_streamed= 1;
     *puc = uc;
@@ -125,6 +96,40 @@ int url_open(URLContext **puc, const char *filename, int flags)
  fail:
     *puc = NULL;
     return err;
+}
+
+int url_open(URLContext **puc, const char *filename, int flags)
+{
+    URLProtocol *up;
+    const char *p;
+    char proto_str[128], *q;
+
+    p = filename;
+    q = proto_str;
+    while (*p != '\0' && *p != ':') {
+        /* protocols can only contain alphabetic chars */
+        if (!isalpha(*p))
+            goto file_proto;
+        if ((q - proto_str) < sizeof(proto_str) - 1)
+            *q++ = *p;
+        p++;
+    }
+    /* if the protocol has length 1, we consider it is a dos drive */
+    if (*p == '\0' || (q - proto_str) <= 1) {
+    file_proto:
+        strcpy(proto_str, "file");
+    } else {
+        *q = '\0';
+    }
+
+    up = first_protocol;
+    while (up != NULL) {
+        if (!strcmp(proto_str, up->name))
+            return url_open_protocol (puc, up, filename, flags);
+        up = up->next;
+    }
+    *puc = NULL;
+    return AVERROR(ENOENT);
 }
 
 int url_read(URLContext *h, unsigned char *buf, int size)
