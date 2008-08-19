@@ -106,8 +106,10 @@ Generic Parts:
 Codecs:
   4xm.c                                 Michael Niedermayer
   8bps.c                                Roberto Togni
+  8svx.c                                Jaikrishnan Menon
   aasc.c                                Kostya Shishkov
   ac3*                                  Justin Ruggles
+  alacenc.c                             Jaikrishnan Menon
   apedec.c                              Kostya Shishkov
   asv*                                  Michael Niedermayer
   atrac3*                               Benjamin Larsson
@@ -241,6 +243,7 @@ Muxers/Demuxers:
   gxfenc.c                              Baptiste Coudurier
   idcin.c                               Mike Melanson
   idroq.c                               Mike Melanson
+  iff.c                                 Jaikrishnan Menon
   ipmovie.c                             Mike Melanson
   img2.c                                Michael Niedermayer
   libnut.c                              Oded Shimon

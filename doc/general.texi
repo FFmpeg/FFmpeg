@@ -346,7 +346,7 @@ following image formats are supported:
     @tab Supported through an external library.
 @item AMV IMA ADPCM          @tab     @tab  X
     @tab Used in AMV files
-@item Apple lossless audio   @tab     @tab  X
+@item Apple lossless audio   @tab  X  @tab  X
     @tab QuickTime fourcc 'alac'
 @item Apple MACE 3           @tab     @tab  X
 @item Apple MACE 6           @tab     @tab  X

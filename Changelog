@@ -129,6 +129,7 @@ version <next>
 - removed animated GIF decoder/demuxer
 - D-Cinema audio muxer
 - Electronic Arts TGV decoder
+- Apple Lossless Audio Codec (ALAC) encoder
 
 version 0.4.9-pre1:
 
