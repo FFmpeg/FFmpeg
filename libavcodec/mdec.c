@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "mpeg12.h"
 
 typedef struct MDECContext{
     AVCodecContext *avctx;
@@ -223,7 +224,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     AVFrame *p= &a->picture;
 
     mdec_common_init(avctx);
-    init_vlcs();
+    ff_init_vlcs();
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, ff_zigzag_direct);
 
     p->qstride= a->mb_width;

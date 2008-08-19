@@ -39,13 +39,11 @@
 //#include <assert.h>
 
 
-#define DC_VLC_BITS 9
 #define MV_VLC_BITS 9
 #define MBINCR_VLC_BITS 9
 #define MB_PAT_VLC_BITS 9
 #define MB_PTYPE_VLC_BITS 6
 #define MB_BTYPE_VLC_BITS 6
-#define TEX_VLC_BITS 9
 
 static inline int mpeg1_decode_block_inter(MpegEncContext *s,
                               DCTELEM *block,
@@ -144,15 +142,13 @@ void ff_mpeg1_clean_buffers(MpegEncContext *s){
 /******************************************/
 /* decoding */
 
-static VLC dc_lum_vlc;
-static VLC dc_chroma_vlc;
 static VLC mv_vlc;
 static VLC mbincr_vlc;
 static VLC mb_ptype_vlc;
 static VLC mb_btype_vlc;
 static VLC mb_pat_vlc;
 
-static av_cold void init_vlcs(void)
+av_cold void ff_init_vlcs(void)
 {
     static int done = 0;
 
@@ -618,27 +614,6 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
     l= INT_BIT - 5 - shift;
     val = (val<<l)>>l;
     return val;
-}
-
-static inline int decode_dc(GetBitContext *gb, int component)
-{
-    int code, diff;
-
-    if (component == 0) {
-        code = get_vlc2(gb, dc_lum_vlc.table, DC_VLC_BITS, 2);
-    } else {
-        code = get_vlc2(gb, dc_chroma_vlc.table, DC_VLC_BITS, 2);
-    }
-    if (code < 0){
-        av_log(NULL, AV_LOG_ERROR, "invalid dc code at\n");
-        return 0xffff;
-    }
-    if (code == 0) {
-        diff = 0;
-    } else {
-        diff = get_xbits(gb, code);
-    }
-    return diff;
 }
 
 static inline int mpeg1_decode_block_intra(MpegEncContext *s,
@@ -1220,7 +1195,7 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     s->mpeg_enc_ctx.flags= avctx->flags;
     s->mpeg_enc_ctx.flags2= avctx->flags2;
     ff_mpeg12_common_init(&s->mpeg_enc_ctx);
-    init_vlcs();
+    ff_init_vlcs();
 
     s->mpeg_enc_ctx_allocated = 0;
     s->mpeg_enc_ctx.picture_number = 0;
@@ -2512,8 +2487,3 @@ AVCodec mpeg_xvmc_decoder = {
 };
 
 #endif
-
-/* this is ugly i know, but the alternative is too make
-   hundreds of vars global and prefix them with ff_mpeg1_
-   which is far uglier. */
-#include "mdec.c"
