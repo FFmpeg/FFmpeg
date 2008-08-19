@@ -130,7 +130,7 @@ static void calc_predictor_params(AlacEncodeContext *s, int ch)
     int shift[MAX_LPC_ORDER];
     int opt_order;
 
-    opt_order = ff_lpc_calc_coefs(&s->dspctx, s->sample_buf[ch], s->avctx->frame_size, DEFAULT_MIN_PRED_ORDER, DEFAULT_MAX_PRED_ORDER,
+    opt_order = ff_lpc_calc_coefs(&s->dspctx, s->sample_buf[ch], s->avctx->frame_size, s->min_prediction_order, s->max_prediction_order,
                                    ALAC_MAX_LPC_PRECISION, coefs, shift, 1, ORDER_METHOD_EST, ALAC_MAX_LPC_SHIFT, 1);
 
     s->lpc[ch].lpc_order = opt_order;
