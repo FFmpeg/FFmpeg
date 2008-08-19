@@ -38,6 +38,11 @@
 #define ALAC_MAX_LPC_PRECISION    9
 #define ALAC_MAX_LPC_SHIFT        9
 
+#define ALAC_CHMODE_LEFT_RIGHT    0
+#define ALAC_CHMODE_LEFT_SIDE     1
+#define ALAC_CHMODE_RIGHT_SIDE    2
+#define ALAC_CHMODE_MID_SIDE      3
+
 typedef struct RiceContext {
     int history_mult;
     int initial_history;
@@ -53,9 +58,12 @@ typedef struct LPCContext {
 
 typedef struct AlacEncodeContext {
     int compression_level;
+    int min_prediction_order;
+    int max_prediction_order;
     int max_coded_frame_size;
     int write_sample_size;
     int32_t sample_buf[MAX_CHANNELS][DEFAULT_FRAME_SIZE];
+    int32_t predictor_buf[DEFAULT_FRAME_SIZE];
     int interlacing_shift;
     int interlacing_leftweight;
     PutBitContext pbctx;
@@ -116,6 +124,20 @@ static void write_frame_header(AlacEncodeContext *s, int is_verbatim)
     put_bits(&s->pbctx, 32, s->avctx->frame_size);          // No. of samples in the frame
 }
 
+static void calc_predictor_params(AlacEncodeContext *s, int ch)
+{
+    int32_t coefs[MAX_LPC_ORDER][MAX_LPC_ORDER];
+    int shift[MAX_LPC_ORDER];
+    int opt_order;
+
+    opt_order = ff_lpc_calc_coefs(&s->dspctx, s->sample_buf[ch], s->avctx->frame_size, DEFAULT_MIN_PRED_ORDER, DEFAULT_MAX_PRED_ORDER,
+                                   ALAC_MAX_LPC_PRECISION, coefs, shift, 1, ORDER_METHOD_EST, ALAC_MAX_LPC_SHIFT, 1);
+
+    s->lpc[ch].lpc_order = opt_order;
+    s->lpc[ch].lpc_quant = shift[opt_order-1];
+    memcpy(s->lpc[ch].lpc_coeff, coefs[opt_order-1], opt_order*sizeof(int));
+}
+
 static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
 {
     int i, best;
@@ -147,6 +169,53 @@ static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
             best = i;
         }
     }
+    return best;
+}
+
+static void alac_stereo_decorrelation(AlacEncodeContext *s)
+{
+    int32_t *left = s->sample_buf[0], *right = s->sample_buf[1];
+    int i, mode, n = s->avctx->frame_size;
+    int32_t tmp;
+
+    mode = estimate_stereo_mode(left, right, n);
+
+    switch(mode)
+    {
+        case ALAC_CHMODE_LEFT_RIGHT:
+            s->interlacing_leftweight = 0;
+            s->interlacing_shift = 0;
+            break;
+
+        case ALAC_CHMODE_LEFT_SIDE:
+            for(i=0; i<n; i++) {
+                right[i] = left[i] - right[i];
+            }
+            s->interlacing_leftweight = 1;
+            s->interlacing_shift = 0;
+            break;
+
+        case ALAC_CHMODE_RIGHT_SIDE:
+            for(i=0; i<n; i++) {
+                tmp = right[i];
+                right[i] = left[i] - right[i];
+                left[i] = tmp + (right[i] >> 31);
+            }
+            s->interlacing_leftweight = 1;
+            s->interlacing_shift = 31;
+            break;
+
+        default:
+            for(i=0; i<n; i++) {
+                tmp = left[i];
+                left[i] = (tmp + right[i]) >> 1;
+                right[i] = tmp - right[i];
+            }
+            s->interlacing_leftweight = 1;
+            s->interlacing_shift = 1;
+            break;
+    }
+}
 
 static void write_compressed_frame(AlacEncodeContext *s)
 {
@@ -226,6 +295,32 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
         AV_WB8(alac_extradata+20, s->rc.k_modifier);
     }
 
+    if(avctx->min_prediction_order >= 0) {
+        if(avctx->min_prediction_order < MIN_LPC_ORDER ||
+            avctx->min_prediction_order > MAX_LPC_ORDER) {
+            av_log(avctx, AV_LOG_ERROR, "invalid min prediction order: %d\n", avctx->min_prediction_order);
+                return -1;
+        }
+
+        s->min_prediction_order = avctx->min_prediction_order;
+    }
+
+    if(avctx->max_prediction_order >= 0) {
+        if(avctx->max_prediction_order < MIN_LPC_ORDER ||
+           avctx->max_prediction_order > MAX_LPC_ORDER) {
+            av_log(avctx, AV_LOG_ERROR, "invalid max prediction order: %d\n", avctx->max_prediction_order);
+                return -1;
+        }
+
+        s->max_prediction_order = avctx->max_prediction_order;
+    }
+
+    if(s->max_prediction_order < s->min_prediction_order) {
+        av_log(avctx, AV_LOG_ERROR, "invalid prediction orders: min=%d max=%d\n",
+               s->min_prediction_order, s->max_prediction_order);
+        return -1;
+    }
+
     avctx->extradata = alac_extradata;
     avctx->extradata_size = ALAC_EXTRADATA_SIZE;
 
@@ -254,6 +349,9 @@ static int alac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
         av_log(avctx, AV_LOG_ERROR, "buffer size is too small\n");
         return -1;
     }
+
+verbatim:
+    init_put_bits(pb, frame, buf_size);
 
     if((s->compression_level == 0) || verbatim_flag) {
         // Verbatim mode
