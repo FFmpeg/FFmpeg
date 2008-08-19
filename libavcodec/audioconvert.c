@@ -39,7 +39,8 @@ static const SampleFmtInfo sample_fmt_info[SAMPLE_FMT_NB] = {
     [SAMPLE_FMT_S16] = { .name = "s16", .bits = 16 },
     [SAMPLE_FMT_S24] = { .name = "s24", .bits = 24 },
     [SAMPLE_FMT_S32] = { .name = "s32", .bits = 32 },
-    [SAMPLE_FMT_FLT] = { .name = "flt", .bits = 32 }
+    [SAMPLE_FMT_FLT] = { .name = "flt", .bits = 32 },
+    [SAMPLE_FMT_DBL] = { .name = "dbl", .bits = 64 },
 };
 
 const char *avcodec_get_sample_fmt_name(int sample_fmt)
@@ -127,18 +128,27 @@ if(ctx->fmt_pair == ofmt + SAMPLE_FMT_NB*ifmt){\
         else CONV(SAMPLE_FMT_S16, int16_t, SAMPLE_FMT_U8 , (*(uint8_t*)pi - 0x80)<<8)
         else CONV(SAMPLE_FMT_S32, int32_t, SAMPLE_FMT_U8 , (*(uint8_t*)pi - 0x80)<<24)
         else CONV(SAMPLE_FMT_FLT, float  , SAMPLE_FMT_U8 , (*(uint8_t*)pi - 0x80)*(1.0 / (1<<7)))
+        else CONV(SAMPLE_FMT_DBL, double , SAMPLE_FMT_U8 , (*(uint8_t*)pi - 0x80)*(1.0 / (1<<7)))
         else CONV(SAMPLE_FMT_U8 , uint8_t, SAMPLE_FMT_S16, (*(int16_t*)pi>>8) + 0x80)
         else CONV(SAMPLE_FMT_S16, int16_t, SAMPLE_FMT_S16,  *(int16_t*)pi)
         else CONV(SAMPLE_FMT_S32, int32_t, SAMPLE_FMT_S16,  *(int16_t*)pi<<16)
         else CONV(SAMPLE_FMT_FLT, float  , SAMPLE_FMT_S16,  *(int16_t*)pi*(1.0 / (1<<15)))
+        else CONV(SAMPLE_FMT_DBL, double , SAMPLE_FMT_S16,  *(int16_t*)pi*(1.0 / (1<<15)))
         else CONV(SAMPLE_FMT_U8 , uint8_t, SAMPLE_FMT_S32, (*(int32_t*)pi>>24) + 0x80)
         else CONV(SAMPLE_FMT_S16, int16_t, SAMPLE_FMT_S32,  *(int32_t*)pi>>16)
         else CONV(SAMPLE_FMT_S32, int32_t, SAMPLE_FMT_S32,  *(int32_t*)pi)
         else CONV(SAMPLE_FMT_FLT, float  , SAMPLE_FMT_S32,  *(int32_t*)pi*(1.0 / (1<<31)))
+        else CONV(SAMPLE_FMT_DBL, double , SAMPLE_FMT_S32,  *(int32_t*)pi*(1.0 / (1<<31)))
         else CONV(SAMPLE_FMT_U8 , uint8_t, SAMPLE_FMT_FLT, lrintf(*(float*)pi * (1<<7)) + 0x80)
         else CONV(SAMPLE_FMT_S16, int16_t, SAMPLE_FMT_FLT, lrintf(*(float*)pi * (1<<15)))
         else CONV(SAMPLE_FMT_S32, int32_t, SAMPLE_FMT_FLT, lrintf(*(float*)pi * (1<<31)))
         else CONV(SAMPLE_FMT_FLT, float  , SAMPLE_FMT_FLT, *(float*)pi)
+        else CONV(SAMPLE_FMT_DBL, double , SAMPLE_FMT_FLT, *(float*)pi)
+        else CONV(SAMPLE_FMT_U8 , uint8_t, SAMPLE_FMT_DBL, lrint(*(double*)pi * (1<<7)) + 0x80)
+        else CONV(SAMPLE_FMT_S16, int16_t, SAMPLE_FMT_DBL, lrint(*(double*)pi * (1<<15)))
+        else CONV(SAMPLE_FMT_S32, int32_t, SAMPLE_FMT_DBL, lrint(*(double*)pi * (1<<31)))
+        else CONV(SAMPLE_FMT_FLT, float  , SAMPLE_FMT_DBL, *(double*)pi)
+        else CONV(SAMPLE_FMT_DBL, double , SAMPLE_FMT_DBL, *(double*)pi)
         else return -1;
     }
     return 0;

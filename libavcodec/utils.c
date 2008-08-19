@@ -1329,6 +1329,8 @@ int av_get_bits_per_sample_format(enum SampleFormat sample_fmt) {
     case SAMPLE_FMT_S32:
     case SAMPLE_FMT_FLT:
         return 32;
+    case SAMPLE_FMT_DBL:
+        return 64;
     default:
         return 0;
     }
