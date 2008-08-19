@@ -406,7 +406,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     s->min_prediction_order = DEFAULT_MIN_PRED_ORDER;
     if(avctx->min_prediction_order >= 0) {
         if(avctx->min_prediction_order < MIN_LPC_ORDER ||
-            avctx->min_prediction_order > MAX_LPC_ORDER) {
+           avctx->min_prediction_order > ALAC_MAX_LPC_ORDER) {
             av_log(avctx, AV_LOG_ERROR, "invalid min prediction order: %d\n", avctx->min_prediction_order);
                 return -1;
         }
@@ -417,7 +417,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     s->max_prediction_order = DEFAULT_MAX_PRED_ORDER;
     if(avctx->max_prediction_order >= 0) {
         if(avctx->max_prediction_order < MIN_LPC_ORDER ||
-           avctx->max_prediction_order > MAX_LPC_ORDER) {
+           avctx->max_prediction_order > ALAC_MAX_LPC_ORDER) {
             av_log(avctx, AV_LOG_ERROR, "invalid max prediction order: %d\n", avctx->max_prediction_order);
                 return -1;
         }
