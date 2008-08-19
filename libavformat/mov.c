@@ -565,6 +565,12 @@ static int mov_read_enda(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         case CODEC_ID_PCM_S32BE:
             st->codec->codec_id = CODEC_ID_PCM_S32LE;
             break;
+        case CODEC_ID_PCM_F32BE:
+            st->codec->codec_id = CODEC_ID_PCM_F32LE;
+            break;
+        case CODEC_ID_PCM_F64BE:
+            st->codec->codec_id = CODEC_ID_PCM_F64LE;
+            break;
         default:
             break;
         }
