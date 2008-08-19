@@ -644,7 +644,10 @@ static void do_audio_out(AVFormatContext *s,
     /* now encode as many frames as possible */
     if (enc->frame_size > 1) {
         /* output resampled raw samples */
-        av_fifo_realloc(&ost->fifo, av_fifo_size(&ost->fifo) + size_out);
+        if (av_fifo_realloc2(&ost->fifo, av_fifo_size(&ost->fifo) + size_out) < 0) {
+            fprintf(stderr, "av_fifo_realloc2() failed\n");
+            av_exit(1);
+        }
         av_fifo_generic_write(&ost->fifo, buftmp, size_out, NULL);
 
         frame_bytes = enc->frame_size * 2 * enc->channels;
