@@ -253,10 +253,6 @@ typedef struct BlockInfo {
     int shift_offset;
 } BlockInfo;
 
-/* block size in bits */
-static const uint16_t block_sizes[6] = {
-    112, 112, 112, 112, 80, 80
-};
 /* bit budget for AC only in 5 MBs */
 static const int vs_total_ac_bits = (100 * 4 + 68*2) * 5;
 /* see dv_88_areas and dv_248_areas for details */
@@ -384,7 +380,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         mb = mb1;
         block = block1;
         for(j = 0;j < s->sys->bpm; j++) {
-            last_index = block_sizes[j];
+            last_index = s->sys->block_sizes[j];
             init_get_bits(&gb, buf_ptr, last_index);
 
             /* get the dc */
@@ -911,7 +907,7 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
                                 enc_blk->dct_mode ? dv_weight_248 : dv_weight_88,
                                 j/4);
 
-            init_put_bits(pb, ptr, block_sizes[j]/8);
+            init_put_bits(pb, ptr, s->sys->block_sizes[j]/8);
             put_bits(pb, 9, (uint16_t)(((enc_blk->mb[0] >> 3) - 1024 + 2) >> 2));
             put_bits(pb, 1, enc_blk->dct_mode);
             put_bits(pb, 2, enc_blk->cno);
@@ -920,7 +916,7 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
                            enc_blk->bit_size[2] + enc_blk->bit_size[3];
             ++enc_blk;
             ++pb;
-            ptr += block_sizes[j]/8;
+            ptr += s->sys->block_sizes[j]/8;
         }
     }
 
