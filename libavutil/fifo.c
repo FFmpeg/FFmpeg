@@ -55,18 +55,24 @@ int av_fifo_read(AVFifoBuffer *f, uint8_t *buf, int buf_size)
  * Resizes a FIFO.
  */
 void av_fifo_realloc(AVFifoBuffer *f, unsigned int new_size) {
+    av_fifo_realloc2(f, new_size);
+}
+
+int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
     unsigned int old_size= f->end - f->buffer;
 
     if(old_size <= new_size){
         int len= av_fifo_size(f);
         AVFifoBuffer f2;
 
-        av_fifo_init(&f2, new_size);
+        if (av_fifo_init(&f2, new_size) < 0)
+            return -1;
         av_fifo_read(f, f2.buffer, len);
         f2.wptr += len;
         av_free(f->buffer);
         *f= f2;
     }
+    return 0;
 }
 
 void av_fifo_write(AVFifoBuffer *f, const uint8_t *buf, int size)
