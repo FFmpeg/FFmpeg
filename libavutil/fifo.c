@@ -52,9 +52,6 @@ int av_fifo_read(AVFifoBuffer *f, uint8_t *buf, int buf_size)
 }
 
 #if LIBAVUTIL_VERSION_MAJOR < 50
-/**
- * Resizes a FIFO.
- */
 void av_fifo_realloc(AVFifoBuffer *f, unsigned int new_size) {
     av_fifo_realloc2(f, new_size);
 }
