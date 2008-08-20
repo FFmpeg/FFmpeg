@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 51
-#define LIBAVCODEC_VERSION_MINOR 67
+#define LIBAVCODEC_VERSION_MINOR 68
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -767,7 +767,16 @@ typedef struct AVPanScan{
      * - encoding: Set by user.\
      * - decoding: Set by libavcodec.\
      */\
-    int8_t *ref_index[2];
+    int8_t *ref_index[2];\
+\
+    /**\
+     * reordered opaque 64bit number (generally a PTS) from AVCodecContext.reordered_opaque\
+     * output in AVFrame.reordered_opaque\
+     * - encoding: unused\
+     * - decoding: Read by user.\
+     */\
+    int64_t reordered_opaque;\
+
 
 #define FF_QSCALE_TYPE_MPEG1 0
 #define FF_QSCALE_TYPE_MPEG2 1
@@ -2230,6 +2239,14 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     float drc_scale;
+
+    /**
+     * opaque 64bit number (generally a PTS) that will be reordered and
+     * output in AVFrame.reordered_opaque
+     * - encoding: unused
+     * - decoding: Set by user.
+     */
+    int64_t reordered_opaque;
 } AVCodecContext;
 
 /**
