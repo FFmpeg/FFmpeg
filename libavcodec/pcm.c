@@ -350,11 +350,12 @@ static int pcm_decode_frame(AVCodecContext *avctx,
 
     sample_size = av_get_bits_per_sample(avctx->codec_id)/8;
 
-    n = avctx->channels * sample_size;
     /* av_get_bits_per_sample returns 0 for CODEC_ID_PCM_DVD */
     if (CODEC_ID_PCM_DVD == avctx->codec_id)
         /* 2 samples are interleaved per block in PCM_DVD */
-        n = 2 * avctx->channels * avctx->bits_per_sample/8;
+        sample_size = avctx->bits_per_sample * 2 / 8;
+
+    n = avctx->channels * sample_size;
 
     if(n && buf_size % n){
         av_log(avctx, AV_LOG_ERROR, "invalid PCM packet\n");
