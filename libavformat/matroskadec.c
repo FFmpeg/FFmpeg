@@ -1162,6 +1162,20 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                    && (track->codec_priv.data != NULL)) {
             track->video.fourcc = AV_RL32(track->codec_priv.data);
             codec_id=codec_get_id(codec_movvideo_tags, track->video.fourcc);
+        } else if (codec_id == CODEC_ID_PCM_S16BE) {
+            switch (track->audio.bitdepth) {
+            case  8:  codec_id = CODEC_ID_PCM_U8;     break;
+            case 24:  codec_id = CODEC_ID_PCM_S24BE;  break;
+            case 32:  codec_id = CODEC_ID_PCM_S32BE;  break;
+            }
+        } else if (codec_id == CODEC_ID_PCM_S16LE) {
+            switch (track->audio.bitdepth) {
+            case  8:  codec_id = CODEC_ID_PCM_U8;     break;
+            case 24:  codec_id = CODEC_ID_PCM_S24LE;  break;
+            case 32:  codec_id = CODEC_ID_PCM_S32LE;  break;
+            }
+        } else if (codec_id==CODEC_ID_PCM_F32LE && track->audio.bitdepth==64) {
+            codec_id = CODEC_ID_PCM_F64LE;
         } else if (codec_id == CODEC_ID_AAC && !track->codec_priv.size) {
             int profile = matroska_aac_profile(track->codec_id);
             int sri = matroska_aac_sri(track->audio.samplerate);
