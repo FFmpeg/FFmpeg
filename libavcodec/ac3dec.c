@@ -657,7 +657,7 @@ void ff_ac3_downmix_c(float (*samples)[256], float (*matrix)[2], int out_ch, int
  */
 static void ac3_upmix_delay(AC3DecodeContext *s)
 {
-    int channel_data_size = 128*sizeof(float);
+    int channel_data_size = sizeof(s->delay[0]);
     switch(s->channel_mode) {
         case AC3_CHMODE_DUALMONO:
         case AC3_CHMODE_STEREO:
