@@ -37,8 +37,8 @@
 #include "ac3dec.h"
 #include "ac3dec_data.h"
 
-/** Maximum possible frame size when the specification limit is ignored */
-#define AC3_MAX_FRAME_SIZE 21695
+/** Large enough for maximum possible frame size when the specification limit is ignored */
+#define AC3_FRAME_BUFFER_SIZE 32768
 
 /**
  * table for ungrouping 3 values in 7 bits.
@@ -215,7 +215,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
 
     /* allocate context input buffer */
     if (avctx->error_resilience >= FF_ER_CAREFUL) {
-        s->input_buffer = av_mallocz(AC3_MAX_FRAME_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+        s->input_buffer = av_mallocz(AC3_FRAME_BUFFER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!s->input_buffer)
             return AVERROR_NOMEM;
     }
@@ -1042,7 +1042,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     if (s->input_buffer) {
         /* copy input buffer to decoder context to avoid reading past the end
            of the buffer, which can be caused by a damaged input stream. */
-        memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_MAX_FRAME_SIZE));
+        memcpy(s->input_buffer, buf, FFMIN(buf_size, AC3_FRAME_BUFFER_SIZE));
         init_get_bits(&s->gbc, s->input_buffer, buf_size * 8);
     } else {
         init_get_bits(&s->gbc, buf, buf_size * 8);
