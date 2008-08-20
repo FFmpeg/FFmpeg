@@ -18,13 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <avformat.h>
 #include <limits.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "libavformat/avformat.h"
 
 #define PKTFILESUFF "_%08"PRId64"_%02d_%010"PRId64"_%06d_%c.bin"
 
