@@ -148,7 +148,7 @@ static VLC mb_ptype_vlc;
 static VLC mb_btype_vlc;
 static VLC mb_pat_vlc;
 
-av_cold void ff_init_vlcs(void)
+av_cold void ff_mpeg12_init_vlcs(void)
 {
     static int done = 0;
 
@@ -1194,7 +1194,7 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     s->mpeg_enc_ctx.flags= avctx->flags;
     s->mpeg_enc_ctx.flags2= avctx->flags2;
     ff_mpeg12_common_init(&s->mpeg_enc_ctx);
-    ff_init_vlcs();
+    ff_mpeg12_init_vlcs();
 
     s->mpeg_enc_ctx_allocated = 0;
     s->mpeg_enc_ctx.picture_number = 0;

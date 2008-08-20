@@ -33,7 +33,7 @@ static VLC dc_chroma_vlc;
 extern uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 void ff_mpeg12_common_init(MpegEncContext *s);
-void ff_init_vlcs(void);
+void ff_mpeg12_init_vlcs(void);
 
 static inline int decode_dc(GetBitContext *gb, int component)
 {

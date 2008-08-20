@@ -224,7 +224,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     AVFrame *p= &a->picture;
 
     mdec_common_init(avctx);
-    ff_init_vlcs();
+    ff_mpeg12_init_vlcs();
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, ff_zigzag_direct);
 
     p->qstride= a->mb_width;
