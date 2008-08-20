@@ -1,8 +1,10 @@
 /*
  * AC-3 Audio Decoder
- * This code is developed as part of Google Summer of Code 2006 Program.
+ * This code was developed as part of Google Summer of Code 2006.
+ * E-AC-3 support was added as part of Google Summer of Code 2007.
  *
  * Copyright (c) 2006 Kartikey Mahendra BHATT (bhattkm at gmail dot com).
+ * Copyright (c) 2007-2008 Bartlomiej Wolowiec <bartek.wolowiec@gmail.com>
  * Copyright (c) 2007 Justin Ruggles <justin.ruggles@gmail.com>
  *
  * Portions of this code are derived from liba52
@@ -302,10 +304,23 @@ static int parse_frame_header(AC3DecodeContext *s)
         s->channel_in_cpl[s->lfe_ch] = 0;
     }
 
-    if(hdr.bitstream_id > 10)
-        return AC3_PARSE_ERROR_BSID;
-
+    if (hdr.bitstream_id <= 10) {
+        s->eac3                  = 0;
+        s->snr_offset_strategy   = 2;
+        s->block_switch_syntax   = 1;
+        s->dither_flag_syntax    = 1;
+        s->bit_allocation_syntax = 1;
+        s->fast_gain_syntax      = 0;
+        s->first_cpl_leak        = 0;
+        s->dba_syntax            = 1;
+        s->skip_syntax           = 1;
+        memset(s->channel_uses_aht, 0, sizeof(s->channel_uses_aht));
     return ac3_parse_header(s);
+    } else {
+        /*s->eac3 = 1;
+        return ff_eac3_parse_header(s);*/
+        return AC3_PARSE_ERROR_BSID;
+    }
 }
 
 /**
@@ -533,6 +548,25 @@ static void remove_dithering(AC3DecodeContext *s) {
     }
 }
 
+#if 0
+static void get_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
+                                    mant_groups *m)
+{
+    if (!s->channel_uses_aht[ch]) {
+        ac3_get_transform_coeffs_ch(s, ch, m);
+    } else {
+        /* if AHT is used, mantissas for all blocks are encoded in the first
+           block of the frame. */
+        int bin;
+        if (!blk)
+            ff_eac3_get_transform_coeffs_aht_ch(s, ch);
+        for (bin = s->start_freq[ch]; bin < s->end_freq[ch]; bin++) {
+            s->fixed_coeffs[ch][bin] = s->pre_mantissa[ch][bin][blk] >> s->dexps[ch][bin];
+        }
+    }
+}
+#endif
+
 /**
  * Get the transform coefficients.
  */
@@ -698,18 +732,22 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
     /* block switch flags */
     different_transforms = 0;
+    if (s->block_switch_syntax) {
     for (ch = 1; ch <= fbw_channels; ch++) {
         s->block_switch[ch] = get_bits1(gbc);
         if(ch > 1 && s->block_switch[ch] != s->block_switch[1])
             different_transforms = 1;
     }
+    }
 
     /* dithering flags */
+    if (s->dither_flag_syntax) {
     s->dither_all = 1;
     for (ch = 1; ch <= fbw_channels; ch++) {
         s->dither_flag[ch] = get_bits1(gbc);
         if(!s->dither_flag[ch])
             s->dither_all = 0;
+    }
     }
 
     /* dynamic range */
@@ -870,6 +908,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     }
 
     /* bit allocation information */
+    if (s->bit_allocation_syntax) {
     if (get_bits1(gbc)) {
         s->bit_alloc_params.slow_decay = ff_ac3_slow_decay_tab[get_bits(gbc, 2)] >> s->bit_alloc_params.sr_shift;
         s->bit_alloc_params.fast_decay = ff_ac3_fast_decay_tab[get_bits(gbc, 2)] >> s->bit_alloc_params.sr_shift;
@@ -881,6 +920,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     } else if (!blk) {
         av_log(s->avctx, AV_LOG_ERROR, "new bit allocation info must be present in block 0\n");
         return -1;
+    }
     }
 
     /* signal-to-noise ratio offsets and fast gains (signal-to-mask ratios) */
@@ -910,7 +950,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     }
 
     /* delta bit allocation information */
-    if (get_bits1(gbc)) {
+    if (s->dba_syntax && get_bits1(gbc)) {
         /* delta bit allocation exists (strategy) */
         for (ch = !cpl_in_use; ch <= fbw_channels; ch++) {
             s->dba_mode[ch] = get_bits(gbc, 2);
@@ -959,16 +999,18 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         }
         if(bit_alloc_stages[ch] > 0) {
             /* Compute bit allocation */
+            const uint8_t *bap_tab = s->channel_uses_aht[ch] ?
+                                     ff_eac3_hebap_tab : ff_ac3_bap_tab;
             ff_ac3_bit_alloc_calc_bap(s->mask[ch], s->psd[ch],
                                       s->start_freq[ch], s->end_freq[ch],
                                       s->snr_offset[ch],
                                       s->bit_alloc_params.floor,
-                                      ff_ac3_bap_tab, s->bap[ch]);
+                                      bap_tab, s->bap[ch]);
         }
     }
 
     /* unused dummy data */
-    if (get_bits1(gbc)) {
+    if (s->skip_syntax && get_bits1(gbc)) {
         int skipl = get_bits(gbc, 9);
         while(skipl--)
             skip_bits(gbc, 8);
@@ -977,6 +1019,10 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     /* unpack the transform coefficients
        this also uncouples channels if coupling is in use. */
     get_transform_coeffs(s);
+
+    /* TODO: generate enhanced coupling coordinates and uncouple */
+
+    /* TODO: apply spectral extension */
 
     /* recover coefficients if rematrixing is in use */
     if(s->channel_mode == AC3_CHMODE_STEREO)
@@ -1161,5 +1207,5 @@ AVCodec ac3_decoder = {
     .init = ac3_decode_init,
     .close = ac3_decode_end,
     .decode = ac3_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52 / AC-3"),
+    .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52 (AC-3, E-AC-3)"),
 };
