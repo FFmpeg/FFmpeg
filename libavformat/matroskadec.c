@@ -919,6 +919,8 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
         break;
     }
 #endif
+    default:
+        return -1;
     }
 
     *buf = pkt_data;
