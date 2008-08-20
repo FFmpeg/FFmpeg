@@ -1330,21 +1330,6 @@ static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1)
     return queue_picture(is, src_frame, pts);
 }
 
-static uint64_t global_video_pkt_pts= AV_NOPTS_VALUE;
-
-static int my_get_buffer(struct AVCodecContext *c, AVFrame *pic){
-    int ret= avcodec_default_get_buffer(c, pic);
-    uint64_t *pts= av_malloc(sizeof(uint64_t));
-    *pts= global_video_pkt_pts;
-    pic->opaque= pts;
-    return ret;
-}
-
-static void my_release_buffer(struct AVCodecContext *c, AVFrame *pic){
-    if(pic) av_freep(&pic->opaque);
-    avcodec_default_release_buffer(c, pic);
-}
-
 static int video_thread(void *arg)
 {
     VideoState *is = arg;
@@ -1367,14 +1352,14 @@ static int video_thread(void *arg)
 
         /* NOTE: ipts is the PTS of the _first_ picture beginning in
            this packet, if any */
-        global_video_pkt_pts= pkt->pts;
+        is->video_st->codec->reordered_opaque= pkt->pts;
         len1 = avcodec_decode_video(is->video_st->codec,
                                     frame, &got_picture,
                                     pkt->data, pkt->size);
 
         if(   (decoder_reorder_pts || pkt->dts == AV_NOPTS_VALUE)
-           && frame->opaque && *(uint64_t*)frame->opaque != AV_NOPTS_VALUE)
-            pts= *(uint64_t*)frame->opaque;
+           && frame->reordered_opaque != AV_NOPTS_VALUE)
+            pts= frame->reordered_opaque;
         else if(pkt->dts != AV_NOPTS_VALUE)
             pts= pkt->dts;
         else
@@ -1802,9 +1787,6 @@ static int stream_component_open(VideoState *is, int stream_index)
 
         packet_queue_init(&is->videoq);
         is->video_tid = SDL_CreateThread(video_thread, is);
-
-        enc->    get_buffer=     my_get_buffer;
-        enc->release_buffer= my_release_buffer;
         break;
     case CODEC_TYPE_SUBTITLE:
         is->subtitle_stream = stream_index;
