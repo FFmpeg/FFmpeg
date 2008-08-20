@@ -315,7 +315,7 @@ static int parse_frame_header(AC3DecodeContext *s)
         s->dba_syntax            = 1;
         s->skip_syntax           = 1;
         memset(s->channel_uses_aht, 0, sizeof(s->channel_uses_aht));
-    return ac3_parse_header(s);
+        return ac3_parse_header(s);
     } else {
         /*s->eac3 = 1;
         return ff_eac3_parse_header(s);*/
@@ -733,21 +733,21 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     /* block switch flags */
     different_transforms = 0;
     if (s->block_switch_syntax) {
-    for (ch = 1; ch <= fbw_channels; ch++) {
-        s->block_switch[ch] = get_bits1(gbc);
-        if(ch > 1 && s->block_switch[ch] != s->block_switch[1])
-            different_transforms = 1;
-    }
+        for (ch = 1; ch <= fbw_channels; ch++) {
+            s->block_switch[ch] = get_bits1(gbc);
+            if(ch > 1 && s->block_switch[ch] != s->block_switch[1])
+                different_transforms = 1;
+        }
     }
 
     /* dithering flags */
     if (s->dither_flag_syntax) {
-    s->dither_all = 1;
-    for (ch = 1; ch <= fbw_channels; ch++) {
-        s->dither_flag[ch] = get_bits1(gbc);
-        if(!s->dither_flag[ch])
-            s->dither_all = 0;
-    }
+        s->dither_all = 1;
+        for (ch = 1; ch <= fbw_channels; ch++) {
+            s->dither_flag[ch] = get_bits1(gbc);
+            if(!s->dither_flag[ch])
+                s->dither_all = 0;
+        }
     }
 
     /* dynamic range */
@@ -909,18 +909,18 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
     /* bit allocation information */
     if (s->bit_allocation_syntax) {
-    if (get_bits1(gbc)) {
-        s->bit_alloc_params.slow_decay = ff_ac3_slow_decay_tab[get_bits(gbc, 2)] >> s->bit_alloc_params.sr_shift;
-        s->bit_alloc_params.fast_decay = ff_ac3_fast_decay_tab[get_bits(gbc, 2)] >> s->bit_alloc_params.sr_shift;
-        s->bit_alloc_params.slow_gain  = ff_ac3_slow_gain_tab[get_bits(gbc, 2)];
-        s->bit_alloc_params.db_per_bit = ff_ac3_db_per_bit_tab[get_bits(gbc, 2)];
-        s->bit_alloc_params.floor  = ff_ac3_floor_tab[get_bits(gbc, 3)];
-        for(ch=!cpl_in_use; ch<=s->channels; ch++)
-            bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 2);
-    } else if (!blk) {
-        av_log(s->avctx, AV_LOG_ERROR, "new bit allocation info must be present in block 0\n");
-        return -1;
-    }
+        if (get_bits1(gbc)) {
+            s->bit_alloc_params.slow_decay = ff_ac3_slow_decay_tab[get_bits(gbc, 2)] >> s->bit_alloc_params.sr_shift;
+            s->bit_alloc_params.fast_decay = ff_ac3_fast_decay_tab[get_bits(gbc, 2)] >> s->bit_alloc_params.sr_shift;
+            s->bit_alloc_params.slow_gain  = ff_ac3_slow_gain_tab[get_bits(gbc, 2)];
+            s->bit_alloc_params.db_per_bit = ff_ac3_db_per_bit_tab[get_bits(gbc, 2)];
+            s->bit_alloc_params.floor  = ff_ac3_floor_tab[get_bits(gbc, 3)];
+            for(ch=!cpl_in_use; ch<=s->channels; ch++)
+                bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 2);
+        } else if (!blk) {
+            av_log(s->avctx, AV_LOG_ERROR, "new bit allocation info must be present in block 0\n");
+            return -1;
+        }
     }
 
     /* signal-to-noise ratio offsets and fast gains (signal-to-mask ratios) */
