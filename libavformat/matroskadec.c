@@ -765,7 +765,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                      return ebml_parse_nest(matroska, syntax->def.n, data);
     case EBML_PASS:  return ebml_parse_id(matroska, syntax->def.n, id, data);
     case EBML_STOP:  *(int *)data = 1;      return 1;
-    default:         url_fskip(pb, length); return 0;
+    default:         return url_fseek(pb,length,SEEK_CUR)<0 ? AVERROR(EIO) : 0;
     }
     if (res == AVERROR_INVALIDDATA)
         av_log(matroska->ctx, AV_LOG_ERROR, "Invalid element\n");
