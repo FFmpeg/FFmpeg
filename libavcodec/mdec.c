@@ -1,5 +1,5 @@
 /*
- * PSX MDEC codec
+ * Sony PlayStation MDEC (Motion DECoder)
  * Copyright (c) 2003 Michael Niedermayer
  *
  * based upon code from Sebastian Jedruszkiewicz <elf@frogger.rules.pl>
@@ -23,8 +23,8 @@
 
 /**
  * @file mdec.c
- * PSX MDEC codec.
- * This is very similar to intra only MPEG1.
+ * Sony PlayStation MDEC (Motion DECoder)
+ * This is very similar to intra-only MPEG-1.
  */
 
 #include "avcodec.h"
@@ -52,7 +52,7 @@ typedef struct MDECContext{
     int block_last_index[6];
 } MDECContext;
 
-//very similar to mpeg1
+//very similar to MPEG-1
 static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
 {
     int level, diff, i, j, run;
@@ -62,7 +62,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
     const uint16_t *quant_matrix= ff_mpeg1_default_intra_matrix;
     const int qscale= a->qscale;
 
-    /* DC coef */
+    /* DC coefficient */
     if(a->version==2){
         block[0]= 2*get_sbits(&a->gb, 10) + 1024;
     }else{
@@ -77,7 +77,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
     i = 0;
     {
         OPEN_READER(re, &a->gb);
-        /* now quantify & encode AC coefs */
+        /* now quantify & encode AC coefficients */
         for(;;) {
             UPDATE_CACHE(re, &a->gb);
             GET_RL_VLC(level, run, re, &a->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
