@@ -131,6 +131,7 @@ version <next>
 - Electronic Arts TGV decoder
 - Apple Lossless Audio Codec (ALAC) encoder
 - AAC decoder
+- floating point PCM encoder/decoder
 
 version 0.4.9-pre1:
 
