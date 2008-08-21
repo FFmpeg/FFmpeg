@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-/*
+/**
  * Track|Pulse|        Positions
  * -------------------------------------------------------------------------
  *  1   | 0   | 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75
@@ -41,7 +41,7 @@
  */
 extern const uint8_t ff_fc_4pulses_8bits_tracks_13[16];
 
-/*
+/**
  * Track|Pulse|        Positions
  * -------------------------------------------------------------------------
  *  4   | 3   | 3, 8, 13, 18, 23, 28, 33, 38, 43, 48, 53, 58, 63, 68, 73, 78
@@ -54,7 +54,7 @@ extern const uint8_t ff_fc_4pulses_8bits_tracks_13[16];
  */
 extern const uint8_t ff_fc_4pulses_8bits_track_4[32];
 
-/*
+/**
  * Track|Pulse|        Positions
  * -----------------------------------------
  *  1   | 0   | 1, 6, 11, 16, 21, 26, 31, 36
@@ -71,7 +71,7 @@ extern const uint8_t ff_fc_4pulses_8bits_track_4[32];
 extern const uint8_t ff_fc_2pulses_9bits_track1[16];
 extern const uint8_t ff_fc_2pulses_9bits_track1_gray[16];
 
-/*
+/**
  * Track|Pulse|        Positions
  * -----------------------------------------
  *  2   | 1   | 0, 7, 14, 20, 27, 34,  1, 21
