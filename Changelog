@@ -130,6 +130,7 @@ version <next>
 - D-Cinema audio muxer
 - Electronic Arts TGV decoder
 - Apple Lossless Audio Codec (ALAC) encoder
+- AAC decoder
 
 version 0.4.9-pre1:
 

@@ -1104,6 +1104,42 @@ static int decode_extension_payload(AACContext * ac, GetBitContext * gb, int cnt
     return res;
 }
 
+/**
+ * Decode Temporal Noise Shaping filter coefficients and apply all-pole filters; reference: 4.6.9.3.
+ *
+ * @param   decode  1 if tool is used normally, 0 if tool is used in LTP.
+ * @param   coef    spectral coefficients
+ */
+static void apply_tns(float coef[1024], TemporalNoiseShaping * tns, IndividualChannelStream * ics, int decode) {
+    const int mmm = FFMIN(ics->tns_max_bands,  ics->max_sfb);
+    int w, filt, m, i, ib;
+    int bottom, top, order, start, end, size, inc;
+    float lpc[TNS_MAX_ORDER];
+
+    for (w = 0; w < ics->num_windows; w++) {
+        bottom = ics->num_swb;
+        for (filt = 0; filt < tns->n_filt[w]; filt++) {
+            top    = bottom;
+            bottom = FFMAX(0, top - tns->length[w][filt]);
+            order  = tns->order[w][filt];
+            if (order == 0)
+                continue;
+
+            /* tns_decode_coef
+             * FIXME: This duplicates the functionality of some double code in lpc.c.
+             */
+            for (m = 0; m < order; m++) {
+               float tmp;
+               lpc[m] = tns->coef[w][filt][m];
+               for (i = 0; i < m/2; i++) {
+                   tmp = lpc[i];
+                   lpc[i]     += lpc[m] * lpc[m-1-i];
+                   lpc[m-1-i] += lpc[m] * tmp;
+               }
+               if(m & 1)
+                   lpc[i]     += lpc[m] * lpc[i];
+            }
+
             start = ics->swb_offset[FFMIN(bottom, mmm)];
             end   = ics->swb_offset[FFMIN(   top, mmm)];
             if ((size = end - start) <= 0)
@@ -1118,7 +1154,7 @@ static int decode_extension_payload(AACContext * ac, GetBitContext * gb, int cnt
             // ar filter
             for (m = 0; m < size; m++, start += inc)
                 for (i = 1; i <= FFMIN(m, order); i++)
-                    coef[start] -= coef[start - i*inc] * lpc[i];
+                    coef[start] -= coef[start - i*inc] * lpc[i-1];
         }
     }
 }

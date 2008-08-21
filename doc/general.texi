@@ -337,7 +337,7 @@ following image formats are supported:
 @item 4X IMA ADPCM           @tab     @tab  X
 @item 8SVX audio             @tab     @tab  X
 @item AAC                    @tab  X  @tab  X
-    @tab Supported through the external library libfaac/libfaad.
+    @tab Encoding is supported through the external library libfaac.
 @item AC-3                   @tab IX  @tab IX
     @tab liba52 can be used alternatively for decoding.
 @item AMR-NB                 @tab  X  @tab  X

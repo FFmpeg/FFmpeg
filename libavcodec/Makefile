@@ -25,6 +25,7 @@ HEADERS = avcodec.h opt.h
 
 OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
 
+OBJS-$(CONFIG_AAC_DECODER)             += aac.o aactab.o mdct.o fft.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o
 OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3tab.o ac3dec_data.o ac3.o mdct.o fft.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o ac3tab.o ac3.o
