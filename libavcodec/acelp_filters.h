@@ -26,55 +26,12 @@
 #include <stdint.h>
 
 /**
- * low-pass FIR (Finite Impulse Response) filter coefficients
+ * low-pass Finite Impulse Response filter coefficients.
  *
- *   A similar filter is named b30 in G.729.
- *
- *   G.729 specification says:
- *     b30 is based on Hamming windowed sinc functions, truncated at +/-29 and
- *     padded with zeros at +/-30 b30[30]=0.
- *     The filter has a cut-off frequency (-3 dB) at 3600 Hz in the oversampled
- *     domain.
- *
- *   After some analysis, I found this approximation:
- *
- *                                    PI * x
- *   Hamm(x,N) = 0.53836-0.46164*cos(--------)
- *                                      N-1
- *                                      ---
- *                                       2
- *
- *                                                             PI * x
- *   Hamm'(x,k) = Hamm(x - k, 2*k+1) =  0.53836 + 0.46164*cos(--------)
- *                                                                k
- *
- *             sin(PI * x)
- *   Sinc(x) = ----------- (normalized sinc function)
- *               PI * x
- *
- *   h(t,B) = 2 * B * Sinc(2 * B * t) (impulse response of sinc low-pass filter)
- *
- *   b(k,B, n) = Hamm'(n, k) * h(n, B)
- *
- *
- *       3600
- *   B = ----
- *       8000
- *
- *   3600 - cut-off frequency
- *   8000 - sampling rate
- *   k    - filter order
- *
- *   ff_acelp_interp_filter[6*i+j] = b(10, 3600/8000, i+j/6)
- *
- * The filter assumes the following order of fractions (X - integer delay):
- *
- * 1/3 precision: X     1/3      2/3      X     1/3      2/3      X
- * 1/6 precision: X 1/6 2/6 3/6  4/6  5/6 X 1/6 2/6 3/6  4/6  5/6 X
- *
- * The filter can be used for 1/3 precision, too, by
- * passing 2*pitch_delay_frac as third parameter to the interpolation routine.
- *
+ * Hamming windowed sinc filter with cutoff freq 3/40 of the sampling freq.
+ * This array only contains the right half of the filter.
+ * This filter is likely identical to the one used in G.729, though this
+ * could not be determined from the original comments with certainity.
  */
 extern const int16_t ff_acelp_interp_filter[61];
 
