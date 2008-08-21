@@ -1129,15 +1129,15 @@ static void apply_tns(float coef[1024], TemporalNoiseShaping * tns, IndividualCh
              * FIXME: This duplicates the functionality of some double code in lpc.c.
              */
             for (m = 0; m < order; m++) {
-               float tmp;
-               lpc[m] = tns->coef[w][filt][m];
-               for (i = 0; i < m/2; i++) {
-                   tmp = lpc[i];
-                   lpc[i]     += lpc[m] * lpc[m-1-i];
-                   lpc[m-1-i] += lpc[m] * tmp;
-               }
-               if(m & 1)
-                   lpc[i]     += lpc[m] * lpc[i];
+                float tmp;
+                lpc[m] = tns->coef[w][filt][m];
+                for (i = 0; i < m/2; i++) {
+                    tmp = lpc[i];
+                    lpc[i]     += lpc[m] * lpc[m-1-i];
+                    lpc[m-1-i] += lpc[m] * tmp;
+                }
+                if(m & 1)
+                    lpc[i]     += lpc[m] * lpc[i];
             }
 
             start = ics->swb_offset[FFMIN(bottom, mmm)];
