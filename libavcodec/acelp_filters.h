@@ -116,7 +116,7 @@ int ff_acelp_lp_synthesis_filter(
  * out[i] = 0.93980581 * in[i] - 1.8795834 * in[i-1] + 0.93980581 * in[i-2] +
  *          1.9330735 * out[i-1] - 0.93589199 * out[i-2]
  *
- * The filter has a cut-off frequency of 100Hz
+ * The filter has a cut-off frequency of 1/80 of the sampling freq
  *
  * @note Two items before the top of the out buffer must contain two items from the
  *       tail of the previous subframe.
