@@ -138,7 +138,7 @@ void ff_acelp_fc_pulse_per_track(
  *
  * @note It is safe to pass the same buffer for out and in_a or in_b.
  *
- *  out[i] = (in_a[i]*weight_a+in_b[i]*weight_b+rounder) >> shift
+ *  out[i] = (in_a[i]*weight_a + in_b[i]*weight_b + rounder) >> shift
  */
 void ff_acelp_weighted_vector_sum(
         int16_t* out,
