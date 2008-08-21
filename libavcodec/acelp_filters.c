@@ -92,8 +92,7 @@ void ff_acelp_convolve_circ(
     memset(fc_out, 0, subframe_size * sizeof(int16_t));
 
     /* Since there are few pulses over an entire subframe (i.e. almost
-       all fc_in[i] are zero) it is faster to swap two loops and process
-       non-zero samples only. */
+       all fc_in[i] are zero) it is faster to loop over fc_in first. */
     for(i=0; i<subframe_size; i++)
     {
         if(fc_in[i])
