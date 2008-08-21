@@ -101,7 +101,7 @@ void ff_acelp_convolve_circ(
                 fc_out[k] += (fc_in[i] * filter[len + k - i]) >> 15;
 
             for(k=i; k<len; k++)
-                fc_out[k] += (fc_in[i] * filter[k - i]) >> 15;
+                fc_out[k] += (fc_in[i] * filter[      k - i]) >> 15;
         }
     }
 }
