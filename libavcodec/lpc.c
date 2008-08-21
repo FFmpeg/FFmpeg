@@ -31,38 +31,38 @@
 static void compute_lpc_coefs(const double *autoc, int max_order,
                               double lpc[][MAX_LPC_ORDER], double *ref)
 {
-   int i, j, i2;
-   double r, err, tmp;
-   double lpc_tmp[MAX_LPC_ORDER];
+    int i, j, i2;
+    double r, err, tmp;
+    double lpc_tmp[MAX_LPC_ORDER];
 
-   for(i=0; i<max_order; i++) lpc_tmp[i] = 0;
-   err = autoc[0];
+    for(i=0; i<max_order; i++) lpc_tmp[i] = 0;
+    err = autoc[0];
 
-   for(i=0; i<max_order; i++) {
-      r = -autoc[i+1];
-      for(j=0; j<i; j++) {
-          r -= lpc_tmp[j] * autoc[i-j];
-      }
-      r /= err;
-      ref[i] = fabs(r);
+    for(i=0; i<max_order; i++) {
+        r = -autoc[i+1];
+        for(j=0; j<i; j++) {
+            r -= lpc_tmp[j] * autoc[i-j];
+        }
+        r /= err;
+        ref[i] = fabs(r);
 
-      err *= 1.0 - (r * r);
+        err *= 1.0 - (r * r);
 
-      i2 = (i >> 1);
-      lpc_tmp[i] = r;
-      for(j=0; j<i2; j++) {
-         tmp = lpc_tmp[j];
-         lpc_tmp[j] += r * lpc_tmp[i-1-j];
-         lpc_tmp[i-1-j] += r * tmp;
-      }
-      if(i & 1) {
-          lpc_tmp[j] += lpc_tmp[j] * r;
-      }
+        i2 = (i >> 1);
+        lpc_tmp[i] = r;
+        for(j=0; j<i2; j++) {
+            tmp = lpc_tmp[j];
+            lpc_tmp[j] += r * lpc_tmp[i-1-j];
+            lpc_tmp[i-1-j] += r * tmp;
+        }
+        if(i & 1) {
+            lpc_tmp[j] += lpc_tmp[j] * r;
+        }
 
-      for(j=0; j<=i; j++) {
-          lpc[i][j] = -lpc_tmp[j];
-      }
-   }
+        for(j=0; j<=i; j++) {
+            lpc[i][j] = -lpc_tmp[j];
+        }
+    }
 }
 
 /**
