@@ -615,9 +615,7 @@ static int decode_tns(AACContext * ac, TemporalNoiseShaping * tns,
     const int is8 = ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE;
     const int tns_max_order = is8 ? 7 : ac->m4ac.object_type == AOT_AAC_MAIN ? 20 : 12;
     for (w = 0; w < ics->num_windows; w++) {
-        tns->n_filt[w] = get_bits(gb, 2 - is8);
-
-        if (tns->n_filt[w])
+        if ((tns->n_filt[w] = get_bits(gb, 2 - is8))) {
             coef_res = get_bits1(gb);
 
         for (filt = 0; filt < tns->n_filt[w]; filt++) {
@@ -637,6 +635,7 @@ static int decode_tns(AACContext * ac, TemporalNoiseShaping * tns,
 
             for (i = 0; i < tns->order[w][filt]; i++)
                 tns->coef[w][filt][i] = tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)];
+        }
         }
     }
     return 0;
