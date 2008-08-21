@@ -28,7 +28,8 @@
 /**
  * low-pass Finite Impulse Response filter coefficients.
  *
- * Hamming windowed sinc filter with cutoff freq 3/40 of the sampling freq.
+ * Hamming windowed sinc filter with cutoff freq 3/40 of the sampling freq,
+ * the coefficients are scaled by 2^15.
  * This array only contains the right half of the filter.
  * This filter is likely identical to the one used in G.729, though this
  * could not be determined from the original comments with certainity.
