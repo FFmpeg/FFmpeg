@@ -75,7 +75,7 @@ void ff_acelp_convolve_circ(
         int16_t* fc_out,
         const int16_t* fc_in,
         const int16_t* filter,
-        int subframe_size);
+        int len);
 
 /**
  * LP synthesis filter.
