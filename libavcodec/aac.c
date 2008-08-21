@@ -118,7 +118,7 @@ static int output_configure(AACContext *ac, enum ChannelPosition che_pos[4][MAX_
      * Set up default 1:1 output mapping.
      *
      * For a 5.1 stream the output order will be:
-     *    [ Front Left ] [ Front Right ] [ Center ] [ LFE ] [ Surround Left ] [ Surround Right ]
+     *    [ Center ] [ Front Left ] [ Front Right ] [ LFE ] [ Surround Left ] [ Surround Right ]
      */
 
     for(i = 0; i < MAX_ELEM_ID; i++) {
