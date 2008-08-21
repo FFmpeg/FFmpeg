@@ -93,10 +93,7 @@ void ff_acelp_convolve_circ(
 
     /* Since there are few pulses over an entire subframe (i.e. almost
        all fc_in[i] are zero) it is faster to swap two loops and process
-       non-zero samples only. In the case of G.729D the buffer contains
-       two non-zero samples before the call to ff_acelp_enhance_harmonics
-       and, due to pitch_delay being bounded by [20; 143], a maximum
-       of four non-zero samples for a total of 40 after the call. */
+       non-zero samples only. */
     for(i=0; i<subframe_size; i++)
     {
         if(fc_in[i])
@@ -133,7 +130,6 @@ int ff_acelp_lp_synthesis_filter(
 
         sum = (sum >> 12) + in[n];
 
-        /* Check for overflow */
         if(sum + 0x8000 > 0xFFFFU)
         {
             if(stop_on_overflow)
@@ -171,9 +167,6 @@ void ff_acelp_high_pass_filter(
         tmp =  MULL(hpf_f[0], 15836);                     /* (14.13) = (13.13) * (1.13) */
         tmp += MULL(hpf_f[1], -7667);                     /* (13.13) = (13.13) * (0.13) */
         tmp += 7699 * (in[i] - 2*in[i-1] + in[i-2]); /* (14.13) =  (0.13) * (14.0) */
-
-        /* Multiplication by 2 with rounding can cause short type
-           overflow, thus clipping is required. */
 
         out[i] = av_clip_int16((tmp + 0x800) >> 12);      /* (15.0) = 2 * (13.13) = (14.13) */
 
