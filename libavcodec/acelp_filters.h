@@ -41,8 +41,8 @@ extern const int16_t ff_acelp_interp_filter[61];
  * @param out [out] buffer for interpolated data
  * @param in input data
  * @param filter_coeffs interpolation filter coefficients (0.15)
- * @param precision filter is able to interpolate with 1/precision precision of pitch delay
- * @param pitch_delay_frac pitch delay, fractional part [0..precision-1]
+ * @param precision sub sample factor, that is the precision of the position
+ * @param frac_pos fractional part of position [0..precision-1]
  * @param filter_length filter length
  * @param length length of output
  *
@@ -56,7 +56,7 @@ void ff_acelp_interpolate(
         const int16_t* in,
         const int16_t* filter_coeffs,
         int precision,
-        int pitch_delay_frac,
+        int frac_pos,
         int filter_length,
         int length);
 
