@@ -104,21 +104,6 @@ int ff_acelp_lp_synthesis_filter(
         int stop_on_overflow,
         int rounder);
 
-/**
- * Calculates coefficients of weighted A(z/weight) filter.
- * @param out [out] weighted A(z/weight) result
- *                  filter (-0x8000 <= (3.12) < 0x8000)
- * @param in source filter (-0x8000 <= (3.12) < 0x8000)
- * @param weight_pow array containing weight^i (-0x8000 <= (0.15) < 0x8000)
- * @param filter_length filter length (11 for 10th order LP filter)
- *
- * out[i]=weight_pow[i]*in[i] , i=0..9
- */
-void ff_acelp_weighted_filter(
-        int16_t *out,
-        const int16_t* in,
-        const int16_t *weight_pow,
-        int filter_length);
 
 /**
  * high-pass filtering and upscaling (4.2.5 of G.729).
