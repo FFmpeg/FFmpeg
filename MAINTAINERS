@@ -108,6 +108,7 @@ Codecs:
   8bps.c                                Roberto Togni
   8svx.c                                Jaikrishnan Menon
   aasc.c                                Kostya Shishkov
+  aac.(c|h), aactab.(c|h), aacdectab.h  Robert Swain
   ac3*                                  Justin Ruggles
   alacenc.c                             Jaikrishnan Menon
   apedec.c                              Kostya Shishkov
