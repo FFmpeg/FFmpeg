@@ -37,7 +37,7 @@
 extern const int16_t ff_acelp_interp_filter[61];
 
 /**
- * Generic interpolation routine.
+ * Generic FIR interpolation routine.
  * @param out [out] buffer for interpolated data
  * @param in input data
  * @param filter_coeffs interpolation filter coefficients (0.15)
