@@ -44,7 +44,7 @@ extern const int16_t ff_acelp_interp_filter[61];
  * @param precision filter is able to interpolate with 1/precision precision of pitch delay
  * @param pitch_delay_frac pitch delay, fractional part [0..precision-1]
  * @param filter_length filter length
- * @param length length of speech data to process
+ * @param length length of output
  *
  * filter_coeffs contains coefficients of the right half of the symmetric
  * interpolation filter. filter_coeffs[0] should the central (unpaired) coefficient.
