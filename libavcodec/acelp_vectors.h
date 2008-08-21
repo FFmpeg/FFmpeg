@@ -48,7 +48,7 @@ extern const uint8_t ff_fc_4pulses_8bits_tracks_13[16];
  *      |     | 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79
  * -------------------------------------------------------------------------
  *
- * \remark Track in the table should be read top-to-bottom, left-to-right.
+ * @remark Track in the table should be read top-to-bottom, left-to-right.
  *
  * Used in G.729 @8k, G.729 @4.4k, AMR @7.95k, AMR @7.40k
  */
@@ -61,9 +61,9 @@ extern const uint8_t ff_fc_4pulses_8bits_track_4[32];
  *      |     | 3, 8, 13, 18, 23, 28, 33, 38
  * -----------------------------------------
  *
- * \remark Track in the table should be read top-to-bottom, left-to-right.
+ * @remark Track in the table should be read top-to-bottom, left-to-right.
  *
- * \note (EE) Reference G.729D code also uses gray decoding for each
+ * @note (EE) Reference G.729D code also uses gray decoding for each
  *            pulse index before looking up the value in the table.
  *
  * Used in G.729 @6.4k (with gray coding), AMR @5.9k (without gray coding)
@@ -80,9 +80,9 @@ extern const uint8_t ff_fc_2pulses_9bits_track1_gray[16];
  *      |     | 5,12, 19, 25, 32, 39, 16, 36
  * -----------------------------------------
  *
- * \remark Track in the table should be read top-to-bottom, left-to-right.
+ * @remark Track in the table should be read top-to-bottom, left-to-right.
  *
- * \note (EE.1) This table (from the reference code) does not comply with
+ * @note (EE.1) This table (from the reference code) does not comply with
  *              the specification.
  *              The specification contains the following table:
  *
@@ -95,7 +95,7 @@ extern const uint8_t ff_fc_2pulses_9bits_track1_gray[16];
  *
  * -----------------------------------------
  *
- * \note (EE.2) Reference G.729D code also uses gray decoding for each
+ * @note (EE.2) Reference G.729D code also uses gray decoding for each
  *              pulse index before looking up the value in the table.
  *
  * Used in G.729 @6.4k (with gray coding)
@@ -103,16 +103,16 @@ extern const uint8_t ff_fc_2pulses_9bits_track1_gray[16];
 extern const uint8_t ff_fc_2pulses_9bits_track2_gray[32];
 
 /**
- * \brief Decode fixed-codebook vector (3.8 and D.5.8 of G.729, 5.7.1 of AMR).
- * \param fc_v [out] decoded fixed codebook vector (2.13)
- * \param tab1 table used for first pulse_count pulses
- * \param tab2 table used for last pulse
- * \param pulse_indexes fixed codebook indexes
- * \param pulse_signs signs of the excitation pulses (0 bit value
+ * Decode fixed-codebook vector (3.8 and D.5.8 of G.729, 5.7.1 of AMR).
+ * @param fc_v [out] decoded fixed codebook vector (2.13)
+ * @param tab1 table used for first pulse_count pulses
+ * @param tab2 table used for last pulse
+ * @param pulse_indexes fixed codebook indexes
+ * @param pulse_signs signs of the excitation pulses (0 bit value
  *                     means negative sign)
- * \param bits number of bits per one pulse index
- * \param pulse_count number of pulses decoded using first table
- * \param bits length of one pulse index in bits
+ * @param bits number of bits per one pulse index
+ * @param pulse_count number of pulses decoded using first table
+ * @param bits length of one pulse index in bits
  *
  * Used in G.729 @8k, G.729 @4.4k, G.729 @6.4k, AMR @7.95k, AMR @7.40k
  */
@@ -126,17 +126,17 @@ void ff_acelp_fc_pulse_per_track(
         int bits);
 
 /**
- * \brief weighted sum of two vectors with rounding
- * \param out [out] result of addition
- * \param in_a first vector
- * \param in_b second vector
- * \param weight_coeff_a first vector weight coefficient
- * \param weight_coeff_a second vector weight coefficient
- * \param rounder this value will be added to the sum of the two vectors
- * \param shift result will be shifted to right by this value
- * \param length vectors length
+ * weighted sum of two vectors with rounding.
+ * @param out [out] result of addition
+ * @param in_a first vector
+ * @param in_b second vector
+ * @param weight_coeff_a first vector weight coefficient
+ * @param weight_coeff_a second vector weight coefficient
+ * @param rounder this value will be added to the sum of the two vectors
+ * @param shift result will be shifted to right by this value
+ * @param length vectors length
  *
- * \note It is safe to pass the same buffer for out and in_a or in_b.
+ * @note It is safe to pass the same buffer for out and in_a or in_b.
  *
  *  out[i] = (in_a[i]*weight_a+in_b[i]*weight_b+rounder) >> shift
  */
