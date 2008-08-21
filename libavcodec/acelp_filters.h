@@ -46,7 +46,7 @@ extern const int16_t ff_acelp_interp_filter[61];
  * @param filter_length filter length
  * @param length length of speech data to process
  *
- * filter_coeffs contains coefficients of the positive half of the symmetric
+ * filter_coeffs contains coefficients of the right half of the symmetric
  * interpolation filter. filter_coeffs[0] should the central (unpaired) coefficient.
  * See ff_acelp_interp_filter for an example.
  *
