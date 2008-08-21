@@ -26,38 +26,38 @@
 #include <stdint.h>
 
 /**
- * \brief fixed-point implementation of cosine in [0; PI) domain
- * \param arg fixed-point cosine argument, 0 <= arg < 0x4000
+ * fixed-point implementation of cosine in [0; PI) domain.
+ * @param arg fixed-point cosine argument, 0 <= arg < 0x4000
  *
- * \return value of (1<<15) * cos(arg * PI / (1<<14)), -0x8000 <= result <= 0x7fff
+ * @return value of (1<<15) * cos(arg * PI / (1<<14)), -0x8000 <= result <= 0x7fff
  */
 int16_t ff_cos(uint16_t arg);
 
 /**
- * \brief fixed-point implementation of exp2(x) in [0; 1] domain
- * \param power argument to exp2, 0 <= power <= 0x7fff
+ * fixed-point implementation of exp2(x) in [0; 1] domain.
+ * @param power argument to exp2, 0 <= power <= 0x7fff
  *
- * \return value of (1<<20) * exp2(power / (1<<15))
+ * @return value of (1<<20) * exp2(power / (1<<15))
  *         0x8000c <= result <= 0xfffea
  */
 int ff_exp2(uint16_t power);
 
 /**
- * \brief Calculates log2(x)
- * \param value function argument, 0 < value <= 7fff ffff
+ * Calculates log2(x).
+ * @param value function argument, 0 < value <= 7fff ffff
  *
- * \return value of (1<<15) * log2(value)
+ * @return value of (1<<15) * log2(value)
  */
 int ff_log2(uint32_t value);
 
 /**
- * \brief returns the dot product
- * \param a input data array
- * \param b input data array
- * \param length number of elements
- * \param shift right shift by this value will be done after multiplication
+ * returns the dot product.
+ * @param a input data array
+ * @param b input data array
+ * @param length number of elements
+ * @param shift right shift by this value will be done after multiplication
  *
- * \return dot product = sum of elementwise products
+ * @return dot product = sum of elementwise products
  */
 static int dot_product(const int16_t* a, const int16_t* b, int length, int shift)
 {
@@ -71,11 +71,11 @@ static int dot_product(const int16_t* a, const int16_t* b, int length, int shift
 }
 
 /**
- * \brief Shift value left or right depending on sign of offset parameter.
- * \param value value to shift
- * \param offset shift offset
+ * Shift value left or right depending on sign of offset parameter.
+ * @param value value to shift
+ * @param offset shift offset
  *
- * \return value << offset, if offset>=0; value >> -offset - otherwise
+ * @return value << offset, if offset>=0; value >> -offset - otherwise
  */
 static inline int bidir_sal(int value, int offset)
 {
