@@ -1112,7 +1112,7 @@ static int decode_extension_payload(AACContext * ac, GetBitContext * gb, int cnt
  */
 static void apply_tns(float coef[1024], TemporalNoiseShaping * tns, IndividualChannelStream * ics, int decode) {
     const int mmm = FFMIN(ics->tns_max_bands,  ics->max_sfb);
-    int w, filt, m, i, ib;
+    int w, filt, m, i;
     int bottom, top, order, start, end, size, inc;
     float lpc[TNS_MAX_ORDER];
 
