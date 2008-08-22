@@ -330,7 +330,8 @@ static void write_compressed_frame(AlacEncodeContext *s)
     int i, j;
 
     /* only simple mid/side decorrelation supported as of now */
-    alac_stereo_decorrelation(s);
+    if(s->avctx->channels == 2)
+        alac_stereo_decorrelation(s);
     put_bits(&s->pbctx, 8, s->interlacing_shift);
     put_bits(&s->pbctx, 8, s->interlacing_leftweight);
 
