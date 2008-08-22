@@ -64,7 +64,11 @@ extern const MXFDataDefinitionUL ff_mxf_data_definition_uls[];
 extern const MXFCodecUL ff_mxf_codec_uls[];
 extern const MXFCodecUL ff_mxf_essence_container_uls[];
 
+#ifdef DEBUG
 #define PRINT_KEY(pc, s, x) dprintf(pc, "%s %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", s, \
                              (x)[0], (x)[1], (x)[2], (x)[3], (x)[4], (x)[5], (x)[6], (x)[7], (x)[8], (x)[9], (x)[10], (x)[11], (x)[12], (x)[13], (x)[14], (x)[15])
+#else
+#define PRINT_KEY(pc, s, x)
+#endif
 
 #endif /* FFMPEG_MXF_H */
