@@ -281,7 +281,6 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
     s->st = st;
     s->rtp_payload_data = rtp_payload_data;
     rtp_init_statistics(&s->statistics, 0); // do we know the initial sequence from sdp?
-    av_set_pts_info(s->st, 32, 1, 90000);
     if (!strcmp(ff_rtp_enc_name(payload_type), "MP2T")) {
         s->ts = mpegts_parse_open(s->ic);
         if (s->ts == NULL) {
@@ -289,6 +288,7 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
             return NULL;
         }
     } else {
+        av_set_pts_info(st, 32, 1, 90000);
         switch(st->codec->codec_id) {
         case CODEC_ID_MPEG1VIDEO:
         case CODEC_ID_MPEG2VIDEO:
