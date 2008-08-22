@@ -1173,6 +1173,7 @@ static void imdct_and_windowing(AACContext * ac, SingleChannelElement * sce) {
     float * buf = ac->buf_mdct;
     int i;
 
+    // imdct
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         if (ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE)
             av_log(ac->avccontext, AV_LOG_WARNING,
@@ -1182,43 +1183,47 @@ static void imdct_and_windowing(AACContext * ac, SingleChannelElement * sce) {
             ff_imdct_calc(&ac->mdct_small, buf + i, in + i/2);
             ac->dsp.vector_fmul_reverse(ac->revers + i/2, buf + i + 128, swindow, 128);
         }
+    } else
+        ff_imdct_calc(&ac->mdct, buf, in);
+
+    /* window overlapping
+     * NOTE: To simplify the overlapping code, all 'meaningless' short to long
+     * and long to short transitions are considered to be short to short
+     * transitions. This leaves just two cases (long to long and short to short)
+     * with a little special sauce for EIGHT_SHORT_SEQUENCE.
+     */
+    if ((ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE) &&
+        (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
+        ac->dsp.vector_fmul_add_add(out,       buf,       lwindow_prev, saved,       ac->add_bias, 1024, 1);
+    } else {
         for (i = 0; i < 448; i++)   out[i] = saved[i] + ac->add_bias;
 
+        if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         ac->dsp.vector_fmul_add_add(out + 448 + 0*128, buf + 0*128, swindow_prev, saved + 448 ,       ac->add_bias, 128, 1);
         ac->dsp.vector_fmul_add_add(out + 448 + 1*128, buf + 2*128, swindow,      ac->revers + 0*128, ac->add_bias, 128, 1);
         ac->dsp.vector_fmul_add_add(out + 448 + 2*128, buf + 4*128, swindow,      ac->revers + 1*128, ac->add_bias, 128, 1);
         ac->dsp.vector_fmul_add_add(out + 448 + 3*128, buf + 6*128, swindow,      ac->revers + 2*128, ac->add_bias, 128, 1);
         ac->dsp.vector_fmul_add_add(out + 448 + 4*128, buf + 8*128, swindow,      ac->revers + 3*128, ac->add_bias,  64, 1);
+        } else {
+            ac->dsp.vector_fmul_add_add(out + 448, buf + 448, swindow_prev, saved + 448, ac->add_bias, 128, 1);
+            for (i = 576; i < 1024; i++)   out[i] = buf[i] + saved[i] + ac->add_bias;
+        }
+    }
 
-#if 0
-        vector_fmul_add_add_add(&ac->dsp, out + 448 + 1*128, buf + 2*128, swindow,      saved + 448 + 1*128, ac->revers + 0*128, ac->add_bias, 128);
-        vector_fmul_add_add_add(&ac->dsp, out + 448 + 2*128, buf + 4*128, swindow,      saved + 448 + 2*128, ac->revers + 1*128, ac->add_bias, 128);
-        vector_fmul_add_add_add(&ac->dsp, out + 448 + 3*128, buf + 6*128, swindow,      saved + 448 + 3*128, ac->revers + 2*128, ac->add_bias, 128);
-        vector_fmul_add_add_add(&ac->dsp, out + 448 + 4*128, buf + 8*128, swindow,      saved + 448 + 4*128, ac->revers + 3*128, ac->add_bias, 64);
-#endif
-
+    // buffer update
+    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         ac->dsp.vector_fmul_add_add(saved,       buf + 1024 + 64,    swindow + 64, ac->revers + 3*128+64,  0, 64, 1);
         ac->dsp.vector_fmul_add_add(saved + 64,  buf + 1024 + 2*128, swindow,      ac->revers + 4*128,     0, 128, 1);
         ac->dsp.vector_fmul_add_add(saved + 192, buf + 1024 + 4*128, swindow,      ac->revers + 5*128,     0, 128, 1);
         ac->dsp.vector_fmul_add_add(saved + 320, buf + 1024 + 6*128, swindow,      ac->revers + 6*128,     0, 128, 1);
         memcpy(                     saved + 448, ac->revers + 7*128, 128 * sizeof(float));
         memset(                     saved + 576, 0,                  448 * sizeof(float));
-    } else {
-        ff_imdct_calc(&ac->mdct, buf, in);
-        if (ics->window_sequence[0] == LONG_STOP_SEQUENCE) {
-            for (i = 0;   i < 448;  i++)   out[i] =          saved[i] + ac->add_bias;
-            ac->dsp.vector_fmul_add_add(out + 448, buf + 448, swindow_prev, saved + 448, ac->add_bias, 128, 1);
-            for (i = 576; i < 1024; i++)   out[i] = buf[i] + saved[i] + ac->add_bias;
-        } else {
-            ac->dsp.vector_fmul_add_add(out, buf, lwindow_prev, saved, ac->add_bias, 1024, 1);
-        }
-        if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
+    } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
             memcpy(saved, buf + 1024, 448 * sizeof(float));
             ac->dsp.vector_fmul_reverse(saved + 448, buf + 1024 + 448, swindow, 128);
             memset(saved + 576, 0, 448 * sizeof(float));
-        } else {
+    } else { // LONG_STOP or ONLY_LONG
             ac->dsp.vector_fmul_reverse(saved, buf + 1024, lwindow, 1024);
-        }
     }
 }
 
