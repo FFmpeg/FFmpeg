@@ -206,7 +206,7 @@ typedef struct {
     int band_type_run_end[120];               ///< band type run end points
     float sf[120];                            ///< scalefactors
     DECLARE_ALIGNED_16(float, coeffs[1024]);  ///< coefficients for IMDCT
-    DECLARE_ALIGNED_16(float, saved[1024]);   ///< overlap
+    DECLARE_ALIGNED_16(float, saved[512]);    ///< overlap
     DECLARE_ALIGNED_16(float, ret[1024]);     ///< PCM output
 } SingleChannelElement;
 
@@ -247,8 +247,7 @@ typedef struct {
      * @defgroup temporary aligned temporary buffers (We do not want to have these on the stack.)
      * @{
      */
-    DECLARE_ALIGNED_16(float, buf_mdct[2048]);
-    DECLARE_ALIGNED_16(float, revers[1024]);
+    DECLARE_ALIGNED_16(float, buf_mdct[1024]);
     /** @} */
 
     /**
