@@ -411,7 +411,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     int channels;
     unsigned int outputsamples;
     int hassize;
-    int readsamplesize;
+    unsigned int readsamplesize;
     int wasted_bytes;
     int isnotcompressed;
     uint8_t interlacing_shift;
@@ -476,6 +476,10 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
     *outputsize = outputsamples * alac->bytespersample;
     readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8) + channels - 1;
+    if (readsamplesize > MIN_CACHE_BITS) {
+        av_log(avctx, AV_LOG_ERROR, "readsamplesize too big (%d)\n", readsamplesize);
+        return -1;
+    }
 
     if (!isnotcompressed) {
         /* so it is compressed */
