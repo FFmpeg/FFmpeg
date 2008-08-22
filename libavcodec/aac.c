@@ -1196,17 +1196,19 @@ static void imdct_and_windowing(AACContext * ac, SingleChannelElement * sce) {
         (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
         ac->dsp.vector_fmul_add_add(out,       buf,       lwindow_prev, saved,       ac->add_bias, 1024, 1);
     } else {
-        for (i = 0; i < 448; i++)   out[i] = saved[i] + ac->add_bias;
+        for (i = 0; i < 448; i++)
+            out[i] = saved[i] + ac->add_bias;
 
         if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
-        ac->dsp.vector_fmul_add_add(out + 448 + 0*128, buf + 0*128, swindow_prev, saved + 448 ,       ac->add_bias, 128, 1);
-        ac->dsp.vector_fmul_add_add(out + 448 + 1*128, buf + 2*128, swindow,      ac->revers + 0*128, ac->add_bias, 128, 1);
-        ac->dsp.vector_fmul_add_add(out + 448 + 2*128, buf + 4*128, swindow,      ac->revers + 1*128, ac->add_bias, 128, 1);
-        ac->dsp.vector_fmul_add_add(out + 448 + 3*128, buf + 6*128, swindow,      ac->revers + 2*128, ac->add_bias, 128, 1);
-        ac->dsp.vector_fmul_add_add(out + 448 + 4*128, buf + 8*128, swindow,      ac->revers + 3*128, ac->add_bias,  64, 1);
+            ac->dsp.vector_fmul_add_add(out + 448 + 0*128, buf + 0*128, swindow_prev, saved + 448 ,       ac->add_bias, 128, 1);
+            ac->dsp.vector_fmul_add_add(out + 448 + 1*128, buf + 2*128, swindow,      ac->revers + 0*128, ac->add_bias, 128, 1);
+            ac->dsp.vector_fmul_add_add(out + 448 + 2*128, buf + 4*128, swindow,      ac->revers + 1*128, ac->add_bias, 128, 1);
+            ac->dsp.vector_fmul_add_add(out + 448 + 3*128, buf + 6*128, swindow,      ac->revers + 2*128, ac->add_bias, 128, 1);
+            ac->dsp.vector_fmul_add_add(out + 448 + 4*128, buf + 8*128, swindow,      ac->revers + 3*128, ac->add_bias,  64, 1);
         } else {
-            ac->dsp.vector_fmul_add_add(out + 448, buf + 448, swindow_prev, saved + 448, ac->add_bias, 128, 1);
-            for (i = 576; i < 1024; i++)   out[i] = buf[i] + saved[i] + ac->add_bias;
+            ac->dsp.vector_fmul_add_add(out + 448,         buf + 448,   swindow_prev, saved + 448,        ac->add_bias, 128, 1);
+            for (i = 576; i < 1024; i++)
+                out[i] = buf[i] + saved[i] + ac->add_bias;
         }
     }
 
@@ -1219,11 +1221,11 @@ static void imdct_and_windowing(AACContext * ac, SingleChannelElement * sce) {
         memcpy(                     saved + 448, ac->revers + 7*128, 128 * sizeof(float));
         memset(                     saved + 576, 0,                  448 * sizeof(float));
     } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
-            memcpy(saved, buf + 1024, 448 * sizeof(float));
-            ac->dsp.vector_fmul_reverse(saved + 448, buf + 1024 + 448, swindow, 128);
-            memset(saved + 576, 0, 448 * sizeof(float));
+        memcpy(saved, buf + 1024, 448 * sizeof(float));
+        ac->dsp.vector_fmul_reverse(saved + 448, buf + 1024 + 448, swindow, 128);
+        memset(saved + 576, 0, 448 * sizeof(float));
     } else { // LONG_STOP or ONLY_LONG
-            ac->dsp.vector_fmul_reverse(saved, buf + 1024, lwindow, 1024);
+        ac->dsp.vector_fmul_reverse(saved, buf + 1024, lwindow, 1024);
     }
 }
 
