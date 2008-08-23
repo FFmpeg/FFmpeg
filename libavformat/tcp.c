@@ -49,12 +49,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (strcmp(proto,"tcp")) goto fail;
     if ((q = strchr(hostname,'@'))) { strcpy(tmp,q+1); strcpy(hostname,tmp); }
 
-    s = av_malloc(sizeof(TCPContext));
-    if (!s)
-        return AVERROR(ENOMEM);
-    h->priv_data = s;
-    h->is_streamed = 1;
-
     if (port <= 0 || port >= 65536)
         goto fail;
 
@@ -100,6 +94,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         if (ret != 0)
             goto fail;
     }
+    s = av_malloc(sizeof(TCPContext));
+    if (!s)
+        return AVERROR(ENOMEM);
+    h->priv_data = s;
+    h->is_streamed = 1;
     s->fd = fd;
     return 0;
 
@@ -108,7 +107,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
  fail1:
     if (fd >= 0)
         closesocket(fd);
-    av_free(s);
     return ret;
 }
 
