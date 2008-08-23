@@ -69,7 +69,7 @@ enum DCAMode {
 #define HEADER_SIZE 14
 #define CONVERT_BIAS 384
 
-#define DCA_MAX_FRAME_SIZE 16383
+#define DCA_MAX_FRAME_SIZE 16384
 
 /** Bit allocation */
 typedef struct {
