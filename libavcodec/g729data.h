@@ -23,7 +23,9 @@
 #define FFMPEG_G729DATA_H
 
 #include <stdint.h>
-#include "g729.h"
+
+/// Moving Average (MA) prediction order
+#define MA_NP                      4
 
 /**
  * first stage LSP codebook

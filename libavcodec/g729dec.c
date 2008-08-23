@@ -31,6 +31,24 @@
 #include "bitstream.h"
 
 /**
+ * minimum quantized LSF value (3.2.4)
+ * 0.005 in Q13
+ */
+#define LSFQ_MIN                   40
+
+/**
+ * maximum quantized LSF value (3.2.4)
+ * 3.135 in Q13
+ */
+#define LSFQ_MAX                   25681
+
+/**
+ * minimum LSF distance (3.2.4)
+ * 0.0391 in Q13
+ */
+#define LSFQ_DIFF_MIN              321
+
+/**
  * \brief pseudo random number generator
  */
 static inline uint16_t g729_random(uint16_t value)
