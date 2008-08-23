@@ -149,6 +149,17 @@ static void vector_fmul_add_add_altivec(float *dst, const float *src0,
         ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
 }
 
+
+static vector signed short
+float_to_int16_one_altivec(const float *src)
+{
+    vector float s0 = vec_ld(0, src);
+    vector float s1 = vec_ld(16, src);
+    vector signed int t0 = vec_cts(s0, 0);
+    vector signed int t1 = vec_cts(s1, 0);
+    return vec_packs(t0,t1);
+}
+
 void float_to_int16_altivec(int16_t *dst, const float *src, int len)
 {
     int i;
@@ -158,13 +169,9 @@ void float_to_int16_altivec(int16_t *dst, const float *src, int len)
     vector unsigned char align;
     if(((long)dst)&15) //FIXME
     for(i=0; i<len-7; i+=8) {
-        s0 = vec_ld(0, src+i);
-        s1 = vec_ld(16, src+i);
-        t0 = vec_cts(s0, 0);
         d0 = vec_ld(0, dst+i);
-        t1 = vec_cts(s1, 0);
+        d = float_to_int16_one_altivec(src+i);
         d1 = vec_ld(15, dst+i);
-        d = vec_packs(t0,t1);
         d1 = vec_perm(d1, d0, vec_lvsl(0,dst+i));
         align = vec_lvsr(0, dst+i);
         d0 = vec_perm(d1, d, align);
@@ -174,11 +181,7 @@ void float_to_int16_altivec(int16_t *dst, const float *src, int len)
     }
     else
     for(i=0; i<len-7; i+=8) {
-        s0 = vec_ld(0, src+i);
-        s1 = vec_ld(16, src+i);
-        t0 = vec_cts(s0, 0);
-        t1 = vec_cts(s1, 0);
-        d = vec_packs(t0,t1);
+        d = float_to_int16_one_altivec(src+i);
         vec_st(d, 0, dst+i);
     }
 }
