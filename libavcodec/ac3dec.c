@@ -776,7 +776,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     if (get_bits1(gbc)) {
         memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
         if (!s->eac3)
-        s->cpl_in_use[blk] = get_bits1(gbc);
+            s->cpl_in_use[blk] = get_bits1(gbc);
         if (s->cpl_in_use[blk]) {
             /* coupling in use */
             int cpl_begin_freq, cpl_end_freq;
@@ -798,8 +798,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                 s->channel_in_cpl[1] = 1;
                 s->channel_in_cpl[2] = 1;
             } else {
-            for (ch = 1; ch <= fbw_channels; ch++)
-                s->channel_in_cpl[ch] = get_bits1(gbc);
+                for (ch = 1; ch <= fbw_channels; ch++)
+                    s->channel_in_cpl[ch] = get_bits1(gbc);
             }
 
             /* phase flags in use */
@@ -820,7 +820,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
             /* coupling band structure */
             if (!s->eac3 || get_bits1(gbc)) {
-            for (bnd = 0; bnd < s->num_cpl_subbands - 1; bnd++) {
+                for (bnd = 0; bnd < s->num_cpl_subbands - 1; bnd++) {
                     s->cpl_band_struct[bnd] = get_bits1(gbc);
                 }
             } else if (!blk) {
@@ -842,11 +842,11 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         }
     } else if (!s->eac3) {
         if(!blk) {
-        av_log(s->avctx, AV_LOG_ERROR, "new coupling strategy must be present in block 0\n");
-        return -1;
-    } else {
-        s->cpl_in_use[blk] = s->cpl_in_use[blk-1];
-    }
+            av_log(s->avctx, AV_LOG_ERROR, "new coupling strategy must be present in block 0\n");
+            return -1;
+        } else {
+            s->cpl_in_use[blk] = s->cpl_in_use[blk-1];
+        }
     }
     cpl_in_use = s->cpl_in_use[blk];
 
