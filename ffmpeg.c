@@ -2318,12 +2318,13 @@ static int opt_verbose(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_frame_rate(const char *arg)
+static int opt_frame_rate(const char *opt, const char *arg)
 {
     if (av_parse_video_frame_rate(&frame_rate, arg) < 0) {
-        fprintf(stderr, "Incorrect frame rate\n");
+        fprintf(stderr, "Incorrect value for %s: %s\n", opt, arg);
         av_exit(1);
     }
+    return 0;
 }
 
 static int opt_bitrate(const char *opt, const char *arg)
@@ -3590,7 +3591,7 @@ static void opt_target(const char *arg)
         opt_format("vcd");
 
         opt_frame_size(norm ? "352x240" : "352x288");
-        opt_frame_rate(frame_rates[norm]);
+        opt_frame_rate(NULL, frame_rates[norm]);
         opt_default("gop", norm ? "18" : "15");
 
         opt_default("b", "1150000");
@@ -3618,7 +3619,7 @@ static void opt_target(const char *arg)
         opt_format("svcd");
 
         opt_frame_size(norm ? "480x480" : "480x576");
-        opt_frame_rate(frame_rates[norm]);
+        opt_frame_rate(NULL, frame_rates[norm]);
         opt_default("gop", norm ? "18" : "15");
 
         opt_default("b", "2040000");
@@ -3640,7 +3641,7 @@ static void opt_target(const char *arg)
         opt_format("dvd");
 
         opt_frame_size(norm ? "720x480" : "720x576");
-        opt_frame_rate(frame_rates[norm]);
+        opt_frame_rate(NULL, frame_rates[norm]);
         opt_default("gop", norm ? "18" : "15");
 
         opt_default("b", "6000000");
@@ -3661,7 +3662,7 @@ static void opt_target(const char *arg)
         opt_frame_size(norm ? "720x480" : "720x576");
         opt_frame_pix_fmt(!strncmp(arg, "dv50", 4) ? "yuv422p" :
                                              (norm ? "yuv411p" : "yuv420p"));
-        opt_frame_rate(frame_rates[norm]);
+        opt_frame_rate(NULL, frame_rates[norm]);
 
         audio_sample_rate = 48000;
         audio_channels = 2;
@@ -3807,7 +3808,7 @@ static const OptionDef options[] = {
     { "b", OPT_FUNC2 | HAS_ARG | OPT_VIDEO, {(void*)opt_bitrate}, "set bitrate (in bits/s)", "bitrate" },
     { "vb", OPT_FUNC2 | HAS_ARG | OPT_VIDEO, {(void*)opt_bitrate}, "set bitrate (in bits/s)", "bitrate" },
     { "vframes", OPT_INT | HAS_ARG | OPT_VIDEO, {(void*)&max_frames[CODEC_TYPE_VIDEO]}, "set the number of video frames to record", "number" },
-    { "r", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_rate}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
+    { "r", OPT_FUNC2 | HAS_ARG | OPT_VIDEO, {(void*)opt_frame_rate}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format, 'list' as argument shows all the pixel formats supported", "format" },
