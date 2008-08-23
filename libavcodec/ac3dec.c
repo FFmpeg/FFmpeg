@@ -837,7 +837,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                 s->channel_in_cpl[ch] = 0;
                 s->first_cpl_coords[ch] = 1;
             }
-            s->first_cpl_leak = 1;
+            s->first_cpl_leak = s->eac3;
             s->phase_flags_in_use = 0;
         }
     } else if (!s->eac3) {
