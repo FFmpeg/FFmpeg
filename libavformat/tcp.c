@@ -46,20 +46,21 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
       &port, path, sizeof(path), uri);
-    if (strcmp(proto,"tcp")) goto fail;
+    if (strcmp(proto,"tcp"))
+        return AVERROR(EINVAL);
     if ((q = strchr(hostname,'@'))) { strcpy(tmp,q+1); strcpy(hostname,tmp); }
 
     if (port <= 0 || port >= 65536)
-        goto fail;
+        return AVERROR(EINVAL);
 
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(port);
     if (resolve_host(&dest_addr.sin_addr, hostname) < 0)
-        goto fail;
+        return AVERROR(EIO);
 
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0)
-        goto fail;
+        return AVERROR(EIO);
     ff_socket_nonblock(fd, 1);
 
  redo:
