@@ -21,8 +21,6 @@
 #ifndef FFMPEG_G729_H
 #define FFMPEG_G729_H
 
-#include <stdint.h>
-
 /**
  * maximum possible subframe size
  */
