@@ -264,7 +264,7 @@ static void put_ics_info(AVCodecContext *avctx, IndividualChannelStream *info)
 /**
  * Encode pulse data.
  */
-static void encode_pulses(AACEncContext *s, Pulse *pulse, int channel)
+static void encode_pulses(AACEncContext *s, Pulse *pulse)
 {
     int i;
 
@@ -282,26 +282,26 @@ static void encode_pulses(AACEncContext *s, Pulse *pulse, int channel)
 /**
  * Encode spectral coefficients processed by psychoacoustic model.
  */
-static void encode_spectral_coeffs(AACEncContext *s, ChannelElement *cpe, int channel)
+static void encode_spectral_coeffs(AACEncContext *s, SingleChannelElement *sce)
 {
     int start, i, w, w2, wg;
 
     w = 0;
-    for(wg = 0; wg < cpe->ch[channel].ics.num_window_groups; wg++){
+    for(wg = 0; wg < sce->ics.num_window_groups; wg++){
         start = 0;
-        for(i = 0; i < cpe->ch[channel].ics.max_sfb; i++){
-            if(cpe->ch[channel].zeroes[w*16 + i]){
-                start += cpe->ch[channel].ics.swb_sizes[i];
+        for(i = 0; i < sce->ics.max_sfb; i++){
+            if(sce->zeroes[w*16 + i]){
+                start += sce->ics.swb_sizes[i];
                 continue;
             }
-            for(w2 = w; w2 < w + cpe->ch[channel].ics.group_len[wg]; w2++){
+            for(w2 = w; w2 < w + sce->ics.group_len[wg]; w2++){
                 encode_band_coeffs(s, cpe, channel, start + w2*128,
-                                   cpe->ch[channel].ics.swb_sizes[i],
-                                   cpe->ch[channel].band_type[w*16 + i]);
+                                   sce->ics.swb_sizes[i],
+                                   sce->band_type[w*16 + i]);
             }
-            start += cpe->ch[channel].ics.swb_sizes[i];
+            start += sce->ics.swb_sizes[i];
         }
-        w += cpe->ch[channel].ics.group_len[wg];
+        w += sce->ics.group_len[wg];
     }
 }
 
