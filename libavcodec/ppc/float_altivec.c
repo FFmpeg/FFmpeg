@@ -186,11 +186,64 @@ void float_to_int16_altivec(int16_t *dst, const float *src, int len)
     }
 }
 
+static void
+float_to_int16_interleave_altivec(int16_t *dst, const float **src,
+                                  long len, int channels)
+{
+    int i;
+    vector signed short d0, d1, d2, c0, c1, t0, t1;
+    vector unsigned char align;
+    if(channels == 1)
+        float_to_int16_altivec(dst, src[0], len);
+    else
+        if (channels == 2) {
+        if(((long)dst)&15)
+        for(i=0; i<len-7; i+=8) {
+            d0 = vec_ld(0, dst + i);
+            t0 = float_to_int16_one_altivec(src[0] + i);
+            d1 = vec_ld(31, dst + i);
+            t1 = float_to_int16_one_altivec(src[1] + i);
+            c0 = vec_mergeh(t0, t1);
+            c1 = vec_mergel(t0, t1);
+            d2 = vec_perm(d1, d0, vec_lvsl(0, dst + i));
+            align = vec_lvsr(0, dst + i);
+            d0 = vec_perm(d2, c0, align);
+            d1 = vec_perm(c0, c1, align);
+            vec_st(d0,  0, dst + i);
+            d0 = vec_perm(c1, d2, align);
+            vec_st(d1, 15, dst + i);
+            vec_st(d0, 31, dst + i);
+            dst+=8;
+        }
+        else
+        for(i=0; i<len-7; i+=8) {
+            t0 = float_to_int16_one_altivec(src[0] + i);
+            t1 = float_to_int16_one_altivec(src[1] + i);
+            d0 = vec_mergeh(t0, t1);
+            d1 = vec_mergel(t0, t1);
+            vec_st(d0,  0, dst + i);
+            vec_st(d1, 16, dst + i);
+            dst+=8;
+        }
+    } else {
+        DECLARE_ALIGNED(16, int16_t, tmp[len]);
+        int c, j;
+        for (c = 0; c < channels; c++) {
+            float_to_int16_altivec(tmp, src[c], len);
+            for (i = 0, j = c; i < len; i++, j+=channels) {
+                dst[j] = tmp[i];
+            }
+        }
+   }
+}
+
 void float_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
     c->vector_fmul = vector_fmul_altivec;
     c->vector_fmul_reverse = vector_fmul_reverse_altivec;
     c->vector_fmul_add_add = vector_fmul_add_add_altivec;
-    if(!(avctx->flags & CODEC_FLAG_BITEXACT))
+    if(!(avctx->flags & CODEC_FLAG_BITEXACT)) {
         c->float_to_int16 = float_to_int16_altivec;
+        c->float_to_int16_interleave = float_to_int16_interleave_altivec;
+    }
 }
