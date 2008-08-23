@@ -32,26 +32,22 @@ typedef struct TCPContext {
 static int tcp_open(URLContext *h, const char *uri, int flags)
 {
     struct sockaddr_in dest_addr;
-    char hostname[1024], *q;
     int port, fd = -1;
     TCPContext *s = NULL;
     fd_set wfds;
     int fd_max, ret;
     struct timeval tv;
     socklen_t optlen;
-    char proto[1024],path[1024],tmp[1024];
+    char hostname[1024],proto[1024],path[1024],tmp[1024],*q;
 
     if(!ff_network_init())
         return AVERROR(EIO);
 
     url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
-      &port, path, sizeof(path), uri);
-    if (strcmp(proto,"tcp"))
+        &port, path, sizeof(path), uri);
+    if (strcmp(proto,"tcp") || port <= 0 || port >= 65536)
         return AVERROR(EINVAL);
     if ((q = strchr(hostname,'@'))) { strcpy(tmp,q+1); strcpy(hostname,tmp); }
-
-    if (port <= 0 || port >= 65536)
-        return AVERROR(EINVAL);
 
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(port);
