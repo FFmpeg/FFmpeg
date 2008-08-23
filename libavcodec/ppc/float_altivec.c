@@ -163,8 +163,6 @@ float_to_int16_one_altivec(const float *src)
 void float_to_int16_altivec(int16_t *dst, const float *src, int len)
 {
     int i;
-    vector float s0, s1;
-    vector signed int t0, t1;
     vector signed short d0, d1, d;
     vector unsigned char align;
     if(((long)dst)&15) //FIXME
