@@ -887,7 +887,7 @@ static int mov_write_mdia_tag(ByteIOContext *pb, MOVTrack *track)
     return updateSize(pb, pos);
 }
 
-static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack *track)
+static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
 {
     int64_t duration = av_rescale_rnd(track->trackDuration, globalTimescale, track->timescale, AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
@@ -930,7 +930,7 @@ static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack *track)
 
     /* Track width and height, for visual only */
     if(track->enc->codec_type == CODEC_TYPE_VIDEO) {
-        double sample_aspect_ratio = av_q2d(track->enc->sample_aspect_ratio);
+        double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
         if(!sample_aspect_ratio) sample_aspect_ratio = 1;
         put_be32(pb, sample_aspect_ratio * track->enc->width*0x10000);
         put_be32(pb, track->enc->height*0x10000);
@@ -978,12 +978,12 @@ static int mov_write_uuid_tag_psp(ByteIOContext *pb, MOVTrack *mov)
     return 0x34;
 }
 
-static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack *track)
+static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
 {
     offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "trak");
-    mov_write_tkhd_tag(pb, track);
+    mov_write_tkhd_tag(pb, track, st);
     if (track->mode == MODE_PSP || track->hasBframes)
         mov_write_edts_tag(pb, track);  // PSP Movies require edts box
     mov_write_mdia_tag(pb, track);
@@ -1350,7 +1350,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
     //mov_write_iods_tag(pb, mov);
     for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry > 0) {
-            mov_write_trak_tag(pb, &(mov->tracks[i]));
+            mov_write_trak_tag(pb, &(mov->tracks[i]), s->streams[i]);
         }
     }
 

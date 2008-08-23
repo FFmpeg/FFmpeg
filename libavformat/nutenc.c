@@ -389,7 +389,8 @@ static void write_mainheader(NUTContext *nut, ByteIOContext *bc){
     }
 }
 
-static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVCodecContext *codec, int i){
+static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVStream *st, int i){
+    AVCodecContext *codec = st->codec;
     put_v(bc, i);
     switch(codec->codec_type){
     case CODEC_TYPE_VIDEO: put_v(bc, 0); break;
@@ -422,12 +423,12 @@ static int write_streamheader(NUTContext *nut, ByteIOContext *bc, AVCodecContext
         put_v(bc, codec->width);
         put_v(bc, codec->height);
 
-        if(codec->sample_aspect_ratio.num<=0 || codec->sample_aspect_ratio.den<=0){
+        if(st->sample_aspect_ratio.num<=0 || st->sample_aspect_ratio.den<=0){
             put_v(bc, 0);
             put_v(bc, 0);
         }else{
-            put_v(bc, codec->sample_aspect_ratio.num);
-            put_v(bc, codec->sample_aspect_ratio.den);
+            put_v(bc, st->sample_aspect_ratio.num);
+            put_v(bc, st->sample_aspect_ratio.den);
         }
         put_v(bc, 0); /* csp type -- unknown */
         break;
@@ -514,12 +515,10 @@ static int write_headers(NUTContext *nut, ByteIOContext *bc){
     put_packet(nut, bc, dyn_bc, 1, MAIN_STARTCODE);
 
     for (i=0; i < nut->avf->nb_streams; i++){
-        AVCodecContext *codec = nut->avf->streams[i]->codec;
-
         ret = url_open_dyn_buf(&dyn_bc);
         if(ret < 0)
             return ret;
-        write_streamheader(nut, dyn_bc, codec, i);
+        write_streamheader(nut, dyn_bc, nut->avf->streams[i], i);
         put_packet(nut, bc, dyn_bc, 1, STREAM_STARTCODE);
     }
 

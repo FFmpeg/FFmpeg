@@ -1478,7 +1478,7 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 ((int64_t) display_matrix[2][i] << 16);
 
         //sample aspect ratio is new width/height divided by old width/height
-        st->codec->sample_aspect_ratio = av_d2q(
+        st->sample_aspect_ratio = av_d2q(
             ((double) disp_transform[0] * height) /
             ((double) disp_transform[1] * width), INT_MAX);
     }

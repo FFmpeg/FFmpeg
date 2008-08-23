@@ -531,14 +531,14 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for(i=0; i<128; i++){
         int stream_num= asf->asfid2avid[i];
         if(stream_num>=0){
-            AVCodecContext *codec= s->streams[stream_num]->codec;
-            if (!codec->bit_rate)
-                codec->bit_rate = bitrate[i];
+            AVStream *st = s->streams[stream_num];
+            if (!st->codec->bit_rate)
+                st->codec->bit_rate = bitrate[i];
             if (dar[i].num > 0 && dar[i].den > 0)
-                av_reduce(&codec->sample_aspect_ratio.num,
-                          &codec->sample_aspect_ratio.den,
+                av_reduce(&st->sample_aspect_ratio.num,
+                          &st->sample_aspect_ratio.den,
                           dar[i].num, dar[i].den, INT_MAX);
-//av_log(NULL, AV_LOG_ERROR, "dar %d:%d sar=%d:%d\n", dar[i].num, dar[i].den, codec->sample_aspect_ratio.num, codec->sample_aspect_ratio.den);
+//av_log(NULL, AV_LOG_ERROR, "dar %d:%d sar=%d:%d\n", dar[i].num, dar[i].den, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
         }
     }
 

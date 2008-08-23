@@ -552,7 +552,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_le32(pb); //nbFieldsPerFrame
 
                 if(active_aspect.num && active_aspect.den && active.num && active.den){
-                    st->codec->sample_aspect_ratio= av_div_q(active_aspect, active);
+                    st->sample_aspect_ratio= av_div_q(active_aspect, active);
 //av_log(s, AV_LOG_ERROR, "vprp %d/%d %d/%d\n", active_aspect.num, active_aspect.den, active.num, active.den);
                 }
                 size -= 9*4;

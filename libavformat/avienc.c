@@ -284,10 +284,10 @@ static int avi_write_header(AVFormatContext *s)
         }
 
         if(   stream->codec_type == CODEC_TYPE_VIDEO
-           && stream->sample_aspect_ratio.num>0
-           && stream->sample_aspect_ratio.den>0){
+           && s->streams[i]->sample_aspect_ratio.num>0
+           && s->streams[i]->sample_aspect_ratio.den>0){
             int vprp= start_tag(pb, "vprp");
-            AVRational dar = av_mul_q(stream->sample_aspect_ratio,
+            AVRational dar = av_mul_q(s->streams[i]->sample_aspect_ratio,
                                       (AVRational){stream->width, stream->height});
             int num, den;
             av_reduce(&num, &den, dar.num, dar.den, 0xFFFF);

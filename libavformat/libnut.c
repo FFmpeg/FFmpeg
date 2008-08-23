@@ -246,8 +246,8 @@ static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
 
             st->codec->width = s[i].width;
             st->codec->height = s[i].height;
-            st->codec->sample_aspect_ratio.num = s[i].sample_width;
-            st->codec->sample_aspect_ratio.den = s[i].sample_height;
+            st->sample_aspect_ratio.num = s[i].sample_width;
+            st->sample_aspect_ratio.den = s[i].sample_height;
             break;
         }
         if (st->codec->codec_id == CODEC_ID_NONE) av_log(avf, AV_LOG_ERROR, "Unknown codec?!\n");

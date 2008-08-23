@@ -1274,8 +1274,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->codec_tag  = track->video.fourcc;
             st->codec->width  = track->video.pixel_width;
             st->codec->height = track->video.pixel_height;
-            av_reduce(&st->codec->sample_aspect_ratio.num,
-                      &st->codec->sample_aspect_ratio.den,
+            av_reduce(&st->sample_aspect_ratio.num,
+                      &st->sample_aspect_ratio.den,
                       st->codec->height * track->video.display_width,
                       st->codec-> width * track->video.display_height,
                       255);

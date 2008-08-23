@@ -247,7 +247,7 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t* frame)
         apt = frame[4] & 0x07;
         is16_9 = (vsc_pack && ((vsc_pack[2] & 0x07) == 0x02 ||
                                (!apt && (vsc_pack[2] & 0x07) == 0x07)));
-        avctx->sample_aspect_ratio = c->sys->sar[is16_9];
+        c->vst->sample_aspect_ratio = c->sys->sar[is16_9];
         avctx->bit_rate = av_rescale(c->sys->frame_size * 8,
                                      c->sys->frame_rate,
                                      c->sys->frame_rate_base);
