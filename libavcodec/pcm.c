@@ -327,7 +327,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     PCMDecode *s = avctx->priv_data;
     int sample_size, c, n;
     short *samples;
-    const uint8_t *src, *src2[MAX_CHANNELS];
+    const uint8_t *src, *src8, *src2[MAX_CHANNELS];
     uint8_t *dstu8;
     int16_t *dst_int16_t;
     int32_t *dst_int32_t;
@@ -467,18 +467,37 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_PCM_DVD:
-        if(avctx->bits_per_sample != 20 && avctx->bits_per_sample != 24) {
+        dst_int32_t = data;
+        n /= avctx->channels;
+        switch (avctx->bits_per_sample) {
+        case 20:
+            while (n--) {
+                c = avctx->channels;
+                src8 = src + 4*c;
+                while (c--) {
+                    *dst_int32_t++ = (bytestream_get_be16(&src) << 16) + ((*src8   &0xf0) << 8);
+                    *dst_int32_t++ = (bytestream_get_be16(&src) << 16) + ((*src8++ &0x0f) << 12);
+                }
+                src = src8;
+            }
+            break;
+        case 24:
+            while (n--) {
+                c = avctx->channels;
+                src8 = src + 4*c;
+                while (c--) {
+                    *dst_int32_t++ = (bytestream_get_be16(&src) << 16) + ((*src8++) << 8);
+                    *dst_int32_t++ = (bytestream_get_be16(&src) << 16) + ((*src8++) << 8);
+                }
+                src = src8;
+            }
+            break;
+        default:
             av_log(avctx, AV_LOG_ERROR, "PCM DVD unsupported sample depth\n");
             return -1;
-        } else {
-            int jump = avctx->channels * (avctx->bits_per_sample-16) / 4;
-            n = buf_size / (avctx->channels * 2 * avctx->bits_per_sample / 8);
-            while (n--) {
-                for (c=0; c < 2*avctx->channels; c++)
-                    *samples++ = bytestream_get_be16(&src);
-                src += jump;
-            }
+            break;
         }
+        samples = (short *) dst_int32_t;
         break;
     default:
         return -1;
@@ -528,7 +547,7 @@ AVCodec name ## _decoder = {                    \
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 PCM_CODEC  (CODEC_ID_PCM_ALAW,  SAMPLE_FMT_S16, pcm_alaw, "A-law PCM");
-PCM_CODEC  (CODEC_ID_PCM_DVD,   SAMPLE_FMT_S16, pcm_dvd, "signed 16|20|24-bit big-endian PCM");
+PCM_CODEC  (CODEC_ID_PCM_DVD,   SAMPLE_FMT_S32, pcm_dvd, "signed 20|24-bit big-endian PCM");
 PCM_CODEC  (CODEC_ID_PCM_F32BE, SAMPLE_FMT_FLT, pcm_f32be, "32-bit floating point big-endian PCM");
 PCM_CODEC  (CODEC_ID_PCM_F32LE, SAMPLE_FMT_FLT, pcm_f32le, "32-bit floating point little-endian PCM");
 PCM_CODEC  (CODEC_ID_PCM_F64BE, SAMPLE_FMT_DBL, pcm_f64be, "64-bit floating point big-endian PCM");
