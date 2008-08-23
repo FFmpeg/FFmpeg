@@ -39,12 +39,12 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     int fd_max, ret;
     struct timeval tv;
     socklen_t optlen;
-    char proto[1024],path[1024],tmp[1024];  // PETR: protocol and path strings
+    char proto[1024],path[1024],tmp[1024];
 
     url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
-      &port, path, sizeof(path), uri);  // PETR: use url_split
-    if (strcmp(proto,"tcp")) goto fail; // PETR: check protocol
-    if ((q = strchr(hostname,'@'))) { strcpy(tmp,q+1); strcpy(hostname,tmp); } // PETR: take only the part after '@' for tcp protocol
+      &port, path, sizeof(path), uri);
+    if (strcmp(proto,"tcp")) goto fail;
+    if ((q = strchr(hostname,'@'))) { strcpy(tmp,q+1); strcpy(hostname,tmp); }
 
     s = av_malloc(sizeof(TCPContext));
     if (!s)
