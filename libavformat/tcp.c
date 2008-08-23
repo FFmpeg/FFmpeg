@@ -41,6 +41,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     socklen_t optlen;
     char proto[1024],path[1024],tmp[1024];
 
+    if(!ff_network_init())
+        return AVERROR(EIO);
+
     url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
       &port, path, sizeof(path), uri);
     if (strcmp(proto,"tcp")) goto fail;
@@ -54,9 +57,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     if (port <= 0 || port >= 65536)
         goto fail;
-
-    if(!ff_network_init())
-        return AVERROR(EIO);
 
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(port);
