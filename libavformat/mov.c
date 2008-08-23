@@ -680,10 +680,10 @@ static int mov_get_lpcm_codec_id(int bps, int flags)
     if (flags & 1) { // floating point
         if (flags & 2) { // big endian
             if      (bps == 32) return CODEC_ID_PCM_F32BE;
-          //else if (bps == 64) return CODEC_ID_PCM_F64BE;
+            else if (bps == 64) return CODEC_ID_PCM_F64BE;
         } else {
-          //if      (bps == 32) return CODEC_ID_PCM_F32LE;
-          //else if (bps == 64) return CODEC_ID_PCM_F64LE;
+            if      (bps == 32) return CODEC_ID_PCM_F32LE;
+            else if (bps == 64) return CODEC_ID_PCM_F64LE;
         }
     } else {
         if (flags & 2) {
