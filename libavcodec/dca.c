@@ -1116,12 +1116,12 @@ static int dca_convert_bitstream(const uint8_t * src, int src_size, uint8_t * ds
     mrk = AV_RB32(src);
     switch (mrk) {
     case DCA_MARKER_RAW_BE:
-        memcpy(dst, src, FFMIN(src_size, max_size));
-        return FFMIN(src_size, max_size);
+        memcpy(dst, src, src_size);
+        return src_size;
     case DCA_MARKER_RAW_LE:
-        for (i = 0; i < (FFMIN(src_size, max_size) + 1) >> 1; i++)
+        for (i = 0; i < (src_size + 1) >> 1; i++)
             *sdst++ = bswap_16(*ssrc++);
-        return FFMIN(src_size, max_size);
+        return src_size;
     case DCA_MARKER_14B_BE:
     case DCA_MARKER_14B_LE:
         init_put_bits(&pb, dst, max_size);
