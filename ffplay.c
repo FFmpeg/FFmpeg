@@ -657,14 +657,15 @@ static void video_image_display(VideoState *is)
     vp = &is->pictq[is->pictq_rindex];
     if (vp->bmp) {
         /* XXX: use variable in the frame */
-        if (is->video_st->codec->sample_aspect_ratio.num == 0)
-            aspect_ratio = 0;
+        if (is->video_st->sample_aspect_ratio.num)
+            aspect_ratio = av_q2d(is->video_st->sample_aspect_ratio);
+        else if (is->video_st->codec->sample_aspect_ratio.num)
+            aspect_ratio = av_q2d(is->video_st->codec->sample_aspect_ratio);
         else
-            aspect_ratio = av_q2d(is->video_st->codec->sample_aspect_ratio)
-                * is->video_st->codec->width / is->video_st->codec->height;
+            aspect_ratio = 0;
         if (aspect_ratio <= 0.0)
-            aspect_ratio = (float)is->video_st->codec->width /
-                (float)is->video_st->codec->height;
+            aspect_ratio = 1.0;
+        aspect_ratio *= (float)is->video_st->codec->width / is->video_st->codec->height;
         /* if an active format is indicated, then it overrides the
            mpeg format */
 #if 0

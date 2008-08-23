@@ -22,7 +22,7 @@
 #define FFMPEG_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 20
+#define LIBAVFORMAT_VERSION_MINOR 21
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -402,6 +402,13 @@ typedef struct AVStream {
     AVProbeData probe_data;
 #define MAX_REORDER_DELAY 16
     int64_t pts_buffer[MAX_REORDER_DELAY+1];
+
+    /**
+     * sample aspect ratio (0 if unknown)
+     * - encoding: Set by user.
+     * - decoding: Set by libavformat.
+     */
+    AVRational sample_aspect_ratio;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1

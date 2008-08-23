@@ -2331,6 +2331,8 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     for(i=0; i<MAX_REORDER_DELAY+1; i++)
         st->pts_buffer[i]= AV_NOPTS_VALUE;
 
+    st->sample_aspect_ratio = (AVRational){0,1};
+
     s->streams[s->nb_streams++] = st;
     return st;
 }

@@ -2888,7 +2888,11 @@ static void opt_input_file(const char *filename)
             set_context_opts(enc, avctx_opts[CODEC_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
             frame_height = enc->height;
             frame_width = enc->width;
-            frame_aspect_ratio = av_q2d(enc->sample_aspect_ratio) * enc->width / enc->height;
+            if(ic->streams[i]->sample_aspect_ratio.num)
+                frame_aspect_ratio=av_q2d(ic->streams[i]->sample_aspect_ratio);
+            else
+                frame_aspect_ratio=av_q2d(enc->sample_aspect_ratio);
+            frame_aspect_ratio *= (float) enc->width / enc->height;
             frame_pix_fmt = enc->pix_fmt;
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
@@ -3019,6 +3023,7 @@ static void new_video_stream(AVFormatContext *oc)
     if (video_stream_copy) {
         st->stream_copy = 1;
         video_enc->codec_type = CODEC_TYPE_VIDEO;
+        st->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 255);
     } else {
         const char *p;
         int i;
@@ -3056,6 +3061,7 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->height = frame_height + frame_padtop + frame_padbottom;
         video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*video_enc->height/video_enc->width, 255);
         video_enc->pix_fmt = frame_pix_fmt;
+        st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
 
         if(codec && codec->pix_fmts){
             const enum PixelFormat *p= codec->pix_fmts;
