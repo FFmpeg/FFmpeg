@@ -36,7 +36,7 @@ static int voc_write_header(AVFormatContext *s)
         || s->streams[0]->codec->codec_type != CODEC_TYPE_AUDIO)
         return AVERROR_PATCHWELCOME;
 
-    put_buffer(pb, voc_magic, sizeof(voc_magic) - 1);
+    put_buffer(pb, ff_voc_magic, sizeof(ff_voc_magic) - 1);
     put_le16(pb, header_size);
     put_le16(pb, version);
     put_le16(pb, ~version + 0x1234);
@@ -99,5 +99,5 @@ AVOutputFormat voc_muxer = {
     voc_write_header,
     voc_write_packet,
     voc_write_trailer,
-    .codec_tag=(const AVCodecTag*[]){voc_codec_tags, 0},
+    .codec_tag=(const AVCodecTag*[]){ff_voc_codec_tags, 0},
 };

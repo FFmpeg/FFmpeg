@@ -42,8 +42,8 @@ typedef enum voc_type {
     VOC_TYPE_NEW_VOICE_DATA   = 0x09,
 } voc_type_t;
 
-extern const unsigned char voc_magic[21];
-extern const AVCodecTag voc_codec_tags[];
+extern const unsigned char ff_voc_magic[21];
+extern const AVCodecTag ff_voc_codec_tags[];
 
 int voc_get_packet(AVFormatContext *s, AVPacket *pkt,
                    AVStream *st, int max_size);
