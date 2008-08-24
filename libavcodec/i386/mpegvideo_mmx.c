@@ -99,7 +99,7 @@ asm volatile(
 
                 "add $16, %3                    \n\t"
                 "jng 1b                         \n\t"
-                ::"r" (block+nCoeffs), "g"(qmul), "g" (qadd), "r" (2*(-nCoeffs))
+                ::"r" (block+nCoeffs), "rm"(qmul), "rm" (qadd), "r" (2*(-nCoeffs))
                 : "memory"
         );
         block[0]= level;
@@ -162,7 +162,7 @@ asm volatile(
 
                 "add $16, %3                    \n\t"
                 "jng 1b                         \n\t"
-                ::"r" (block+nCoeffs), "g"(qmul), "g" (qadd), "r" (2*(-nCoeffs))
+                ::"r" (block+nCoeffs), "rm"(qmul), "rm" (qadd), "r" (2*(-nCoeffs))
                 : "memory"
         );
 }
@@ -260,7 +260,7 @@ asm volatile(
 
                 "add $16, %%"REG_a"             \n\t"
                 "js 1b                          \n\t"
-                ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "g" (-2*nCoeffs)
+                ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale), "g" (-2*nCoeffs)
                 : "%"REG_a, "memory"
         );
     block[0]= block0;
@@ -327,7 +327,7 @@ asm volatile(
 
                 "add $16, %%"REG_a"             \n\t"
                 "js 1b                          \n\t"
-                ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "g" (-2*nCoeffs)
+                ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale), "g" (-2*nCoeffs)
                 : "%"REG_a, "memory"
         );
 }
@@ -391,7 +391,7 @@ asm volatile(
 
                 "add $16, %%"REG_a"             \n\t"
                 "jng 1b                         \n\t"
-                ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "g" (-2*nCoeffs)
+                ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale), "g" (-2*nCoeffs)
                 : "%"REG_a, "memory"
         );
     block[0]= block0;
@@ -470,7 +470,7 @@ asm volatile(
                 "pxor %%mm7, %%mm0              \n\t"
                 "movd %%mm0, 124(%0, %3)        \n\t"
 
-                ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "r" (-2*nCoeffs)
+                ::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale), "r" (-2*nCoeffs)
                 : "%"REG_a, "memory"
         );
 }
