@@ -85,13 +85,13 @@ old_flac_header (AVFormatContext * s, int idx)
     return 0;
 }
 
-ogg_codec_t flac_codec = {
+const ogg_codec_t flac_codec = {
     .magic = "\177FLAC",
     .magicsize = 5,
     .header = flac_header
 };
 
-ogg_codec_t old_flac_codec = {
+const ogg_codec_t old_flac_codec = {
     .magic = "fLaC",
     .magicsize = 4,
     .header = old_flac_header

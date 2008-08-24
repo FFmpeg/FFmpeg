@@ -130,7 +130,7 @@ theora_gptopts(AVFormatContext *ctx, int idx, uint64_t gp)
     return iframe + pframe;
 }
 
-ogg_codec_t theora_codec = {
+const ogg_codec_t theora_codec = {
     .magic = "\200theora",
     .magicsize = 7,
     .header = theora_header,

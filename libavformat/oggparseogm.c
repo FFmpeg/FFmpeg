@@ -149,28 +149,28 @@ ogm_packet(AVFormatContext *s, int idx)
     return 0;
 }
 
-ogg_codec_t ogm_video_codec = {
+const ogg_codec_t ogm_video_codec = {
     .magic = "\001video",
     .magicsize = 6,
     .header = ogm_header,
     .packet = ogm_packet
 };
 
-ogg_codec_t ogm_audio_codec = {
+const ogg_codec_t ogm_audio_codec = {
     .magic = "\001audio",
     .magicsize = 6,
     .header = ogm_header,
     .packet = ogm_packet
 };
 
-ogg_codec_t ogm_text_codec = {
+const ogg_codec_t ogm_text_codec = {
     .magic = "\001text",
     .magicsize = 5,
     .header = ogm_header,
     .packet = ogm_packet
 };
 
-ogg_codec_t ogm_old_codec = {
+const ogg_codec_t ogm_old_codec = {
     .magic = "\001Direct Show Samples embedded in Ogg",
     .magicsize = 35,
     .header = ogm_dshow_header,

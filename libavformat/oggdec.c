@@ -37,7 +37,7 @@
 #define MAX_PAGE_SIZE 65307
 #define DECODER_BUFFER_SIZE MAX_PAGE_SIZE
 
-static ogg_codec_t *ogg_codecs[] = {
+static const ogg_codec_t * const ogg_codecs[] = {
     &speex_codec,
     &vorbis_codec,
     &theora_codec,
@@ -126,7 +126,7 @@ ogg_reset (ogg_t * ogg)
     return 0;
 }
 
-static ogg_codec_t *
+static const ogg_codec_t *
 ogg_find_codec (uint8_t * buf, int size)
 {
     int i;
