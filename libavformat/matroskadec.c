@@ -1004,7 +1004,7 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
 
 static int matroska_aac_profile(char *codec_id)
 {
-    static const char *aac_profiles[] = { "MAIN", "LC", "SSR" };
+    static const char * const aac_profiles[] = { "MAIN", "LC", "SSR" };
     int profile;
 
     for (profile=0; profile<ARRAY_SIZE(aac_profiles); profile++)
