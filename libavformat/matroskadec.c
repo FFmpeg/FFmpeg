@@ -805,7 +805,7 @@ static int matroska_probe(AVProbeData *p)
 {
     uint64_t total = 0;
     int len_mask = 0x80, size = 1, n = 1;
-    char probe_data[] = "matroska";
+    static const char probe_data[] = "matroska";
 
     /* EBML header? */
     if (AV_RB32(p->buf) != EBML_ID_HEADER)
