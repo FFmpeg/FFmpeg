@@ -290,11 +290,6 @@ static int mmf_read_packet(AVFormatContext *s,
     return ret;
 }
 
-static int mmf_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 #ifdef CONFIG_MMF_DEMUXER
 AVInputFormat mmf_demuxer = {
     "mmf",
@@ -303,7 +298,7 @@ AVInputFormat mmf_demuxer = {
     mmf_probe,
     mmf_read_header,
     mmf_read_packet,
-    mmf_read_close,
+    NULL,
     pcm_read_seek,
 };
 #endif

@@ -175,11 +175,6 @@ static int mm_read_packet(AVFormatContext *s,
     return 0;
 }
 
-static int mm_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 AVInputFormat mm_demuxer = {
     "mm",
     NULL_IF_CONFIG_SMALL("American Laser Games MM format"),
@@ -187,5 +182,4 @@ AVInputFormat mm_demuxer = {
     mm_probe,
     mm_read_header,
     mm_read_packet,
-    mm_read_close,
 };
