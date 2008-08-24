@@ -82,7 +82,7 @@ typedef struct {
     int phase_flags[18];                    ///< phase flags                            (phsflg)
     int num_cpl_subbands;                   ///< number of coupling sub bands           (ncplsubnd)
     int num_cpl_bands;                      ///< number of coupling bands               (ncplbnd)
-    int cpl_band_struct[18];                ///< coupling band structure                (cplbndstrc)
+    uint8_t cpl_band_struct[18];            ///< coupling band structure                (cplbndstrc)
     int firstchincpl;                       ///< first channel in coupling
     int first_cpl_coords[AC3_MAX_CHANNELS]; ///< first coupling coordinates states      (firstcplcos)
     int cpl_coords[AC3_MAX_CHANNELS][18];   ///< coupling coordinates                   (cplco)
@@ -167,5 +167,17 @@ typedef struct {
     DECLARE_ALIGNED_16(float, output[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE]);            ///< output after imdct transform and windowing
 ///@}
 } AC3DecodeContext;
+
+/**
+ * Parse the E-AC-3 frame header.
+ * This parses both the bit stream info and audio frame header.
+ */
+int ff_eac3_parse_header(AC3DecodeContext *s);
+
+/**
+ * Decode mantissas in a single channel for the entire frame.
+ * This is used when AHT mode is enabled.
+ */
+void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
 
 #endif /* FFMPEG_AC3DEC_H */
