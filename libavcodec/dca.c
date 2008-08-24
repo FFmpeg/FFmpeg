@@ -990,7 +990,7 @@ static int dca_subsubframe(DCAContext * s)
 /*        static float pcm_to_double[8] =
             {32768.0, 32768.0, 524288.0, 524288.0, 0, 8388608.0, 8388608.0};*/
          qmf_32_subbands(s, k, subband_samples[k], &s->samples[256 * k],
-                            2.0 / 3 /*pcm_to_double[s->source_pcm_res] */ ,
+                            M_SQRT1_2 /*pcm_to_double[s->source_pcm_res] */ ,
                             0 /*s->bias */ );
     }
 
