@@ -54,7 +54,7 @@ static int speex_header(AVFormatContext *s, int idx) {
     return 0;
 }
 
-const ogg_codec_t speex_codec = {
+const ogg_codec_t ff_speex_codec = {
     .magic = "Speex   ",
     .magicsize = 8,
     .header = speex_header

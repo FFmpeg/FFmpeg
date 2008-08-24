@@ -219,7 +219,7 @@ vorbis_header (AVFormatContext * s, int idx)
     return os->seq < 3;
 }
 
-const ogg_codec_t vorbis_codec = {
+const ogg_codec_t ff_vorbis_codec = {
     .magic = "\001vorbis",
     .magicsize = 7,
     .header = vorbis_header

@@ -75,15 +75,15 @@ typedef struct ogg {
 #define OGG_FLAG_BOS  2
 #define OGG_FLAG_EOS  4
 
-extern const ogg_codec_t flac_codec;
-extern const ogg_codec_t ogm_audio_codec;
-extern const ogg_codec_t ogm_old_codec;
-extern const ogg_codec_t ogm_text_codec;
-extern const ogg_codec_t ogm_video_codec;
-extern const ogg_codec_t old_flac_codec;
-extern const ogg_codec_t speex_codec;
-extern const ogg_codec_t theora_codec;
-extern const ogg_codec_t vorbis_codec;
+extern const ogg_codec_t ff_flac_codec;
+extern const ogg_codec_t ff_ogm_audio_codec;
+extern const ogg_codec_t ff_ogm_old_codec;
+extern const ogg_codec_t ff_ogm_text_codec;
+extern const ogg_codec_t ff_ogm_video_codec;
+extern const ogg_codec_t ff_old_flac_codec;
+extern const ogg_codec_t ff_speex_codec;
+extern const ogg_codec_t ff_theora_codec;
+extern const ogg_codec_t ff_vorbis_codec;
 
 extern int vorbis_comment(AVFormatContext *ms, uint8_t *buf, int size);
 
