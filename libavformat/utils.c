@@ -1965,7 +1965,7 @@ static void compute_chapters_end(AVFormatContext *s)
 #define MAX_STD_TIMEBASES (60*12+5)
 static int get_std_framerate(int i){
     if(i<60*12) return i*1001;
-    else        return ((int[]){24,30,60,12,15})[i-60*12]*1000*12;
+    else        return ((const int[]){24,30,60,12,15})[i-60*12]*1000*12;
 }
 
 /*
@@ -2869,11 +2869,11 @@ int64_t parse_date(const char *datestr, int duration)
     int64_t t;
     struct tm dt;
     int i;
-    static const char *date_fmt[] = {
+    static const char * const date_fmt[] = {
         "%Y-%m-%d",
         "%Y%m%d",
     };
-    static const char *time_fmt[] = {
+    static const char * const time_fmt[] = {
         "%H:%M:%S",
         "%H%M%S",
     };

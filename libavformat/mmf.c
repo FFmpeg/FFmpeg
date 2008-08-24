@@ -27,7 +27,7 @@ typedef struct {
     offset_t data_size;
 } MMFContext;
 
-static int mmf_rates[] = { 4000, 8000, 11025, 22050, 44100 };
+static const int mmf_rates[] = { 4000, 8000, 11025, 22050, 44100 };
 
 static int mmf_rate(int code)
 {

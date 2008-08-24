@@ -72,7 +72,7 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_NONE      , NULL}
 };
 
-static int sizes[][2] = {
+static const int sizes[][2] = {
     { 640, 480 },
     { 720, 480 },
     { 720, 576 },
