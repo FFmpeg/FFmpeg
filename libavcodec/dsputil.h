@@ -429,10 +429,10 @@ typedef struct DSPContext {
 #define EDGE_WIDTH 16
 
     /* h264 functions */
-    void (*h264_idct_add)(uint8_t *dst, DCTELEM *block, int stride);
-    void (*h264_idct8_add)(uint8_t *dst, DCTELEM *block, int stride);
-    void (*h264_idct_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
-    void (*h264_idct8_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
+    void (*h264_idct_add)(uint8_t *dst/*align 4*/, DCTELEM *block/*align 16*/, int stride);
+    void (*h264_idct8_add)(uint8_t *dst/*align 8*/, DCTELEM *block/*align 16*/, int stride);
+    void (*h264_idct_dc_add)(uint8_t *dst/*align 4*/, DCTELEM *block/*align 16*/, int stride);
+    void (*h264_idct8_dc_add)(uint8_t *dst/*align 8*/, DCTELEM *block/*align 16*/, int stride);
     void (*h264_dct)(DCTELEM block[4][4]);
 
     /* snow wavelet */
