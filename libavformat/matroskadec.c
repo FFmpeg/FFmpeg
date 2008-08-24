@@ -1642,6 +1642,9 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     AVStream *st = s->streams[stream_index];
     int index;
 
+    if (timestamp < 0)
+        timestamp = 0;
+
     index = av_index_search_timestamp(st, timestamp, flags);
     if (index < 0)
         return 0;
