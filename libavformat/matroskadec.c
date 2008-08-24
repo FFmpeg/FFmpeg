@@ -1618,6 +1618,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
                                      blocks[i].bin.pos,  cluster.timecode,
                                      blocks[i].duration, !blocks[i].reference);
     ebml_free(matroska_cluster, &cluster);
+    if (res < 0)  matroska->done = 1;
     return res;
 }
 
@@ -1628,8 +1629,7 @@ static int matroska_read_packet(AVFormatContext *s, AVPacket *pkt)
     while (matroska_deliver_packet(matroska, pkt)) {
         if (matroska->done)
             return AVERROR(EIO);
-        if (matroska_parse_cluster(matroska) < 0)
-            matroska->done = 1;
+        matroska_parse_cluster(matroska);
     }
 
     return 0;
