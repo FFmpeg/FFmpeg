@@ -87,19 +87,18 @@ const int16_t ff_eac3_gaq_remap_2_4_a[9][2] = {
 /**
  * Table E3.6, Gk=2 & Gk=4, B
  * Large mantissa inverse quantization, negative mantissa remapping offsets
- * Table values from the spec are right-shifted by 8 to simplify calculations.
  * ff_eac3_gaq_remap_3_4_b[hebap-8][Gk=2,4]
  */
 const int16_t ff_eac3_gaq_remap_2_4_b[9][2] = {
-    { -22,  -5 },
-    { -46, -20 },
-    { -56, -26 },
-    { -60, -29 },
-    { -62, -31 },
-    { -63, -32 },
-    { -64, -32 },
-    { -64, -32 },
-    { -64, -32 },
+    {  -5461, -1170},
+    { -11703, -4915},
+    { -14199, -6606},
+    { -15327, -7412},
+    { -15864, -7805},
+    { -16126, -7999},
+    { -16255, -8096},
+    { -16320, -8144},
+    { -16352, -8168}
 };
 
 static const int16_t vq_hebap1[4][6] = {
