@@ -41,6 +41,7 @@ enum MXFMetadataSetType {
     Identification,
     ContentStorage,
     SubDescriptor,
+    TypeBottom,// add metadata type before this
 };
 
 typedef struct {

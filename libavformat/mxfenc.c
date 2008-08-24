@@ -352,6 +352,108 @@ static void mxf_write_content_storage(AVFormatContext *s)
     mxf_write_uuid(pb, SourcePackage, 0);
 }
 
+static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
+{
+    ByteIOContext *pb = s->pb;
+    int i;
+
+    if (type == MaterialPackage) {
+        mxf_write_metadata_key(pb, 0x013600);
+        PRINT_KEY(s, "Material Package key", pb->buf_ptr - 16);
+        klv_encode_ber_length(pb, 92 + 16 * s->nb_streams);
+    }
+    else {
+        mxf_write_metadata_key(pb, 0x013700);
+        PRINT_KEY(s, "Source Package key", pb->buf_ptr - 16);
+        klv_encode_ber_length(pb, 112 + 16 * s->nb_streams); // 20 bytes length for descriptor reference
+    }
+
+    // write uid
+    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_uuid(pb, type, 0);
+    av_log(s,AV_LOG_DEBUG, "package type:%d\n", type);
+    PRINT_KEY(s, "package uid", pb->buf_ptr - 16);
+
+    // write package umid
+    mxf_write_local_tag(pb, 32, 0x4401);
+    mxf_write_umid(pb, type, 0);
+    PRINT_KEY(s, "package umid second part", pb->buf_ptr - 16);
+    // write create date
+    mxf_write_local_tag(pb, 8, 0x4405);
+    put_be64(pb, 0);
+
+    // write modified date
+    mxf_write_local_tag(pb, 8, 0x4404);
+    put_be64(pb, 0);
+
+    // write track refs
+    mxf_write_local_tag(pb, s->nb_streams * 16 + 8, 0x4403);
+    mxf_write_refs_count(pb, s->nb_streams);
+    for (i = 0; i < s->nb_streams; i++)
+        mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, i);
+
+    if (type == SourcePackage) {
+        // write multiple descriptor reference
+        mxf_write_local_tag(pb, 16, 0x4701);
+        mxf_write_uuid(pb, MultipleDescriptor, 0);
+    }
+}
+
+static void mxf_write_track(AVFormatContext *s, int stream_index, enum MXFMetadataSetType type, int *track_number_sign)
+{
+    ByteIOContext *pb = s->pb;
+    AVStream *st;
+    MXFStreamContext *sc;
+    const MXFCodecUL *element;
+    int i = 0;
+
+    mxf_write_metadata_key(pb, 0x013b00);
+    PRINT_KEY(s, "track key", pb->buf_ptr - 16);
+    klv_encode_ber_length(pb, 80);
+
+    st = s->streams[stream_index];
+    sc = st->priv_data;
+
+    // write track uid
+    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, stream_index);
+    PRINT_KEY(s, "track uid", pb->buf_ptr - 16);
+    // write track id
+    mxf_write_local_tag(pb, 4, 0x4801);
+    put_be32(pb, stream_index);
+
+    mxf_write_local_tag(pb, 4, 0x4804);
+    if (type != MaterialPackage) {
+        for (element = mxf_essence_element_key; element->id != CODEC_ID_NONE; element++) {
+            if (st->codec->codec_id== element->id) {
+                // set essence_element key
+                memcpy(sc->track_essence_element_key, element->uid, 16);
+                sc->track_essence_element_key[15] += track_number_sign[i];
+                // write track number
+                put_buffer(pb, sc->track_essence_element_key + 12, 4);
+
+                track_number_sign[i] ++;
+                break;
+            }
+            i++;
+        }
+    } else {
+        put_be32(pb, 0); // track number of material package is 0
+    }
+
+    mxf_write_local_tag(pb, 8, 0x4B01);
+    put_be32(pb, st->time_base.den);
+    put_be32(pb, st->time_base.num);
+
+    // write origin
+    mxf_write_local_tag(pb, 8, 0x4B02);
+    put_be64(pb, 0);
+
+    // write sequence refs
+    mxf_write_local_tag(pb, 16, 0x4803);
+    mxf_write_uuid(pb, type == MaterialPackage ? Sequence: Sequence + TypeBottom, stream_index);
+}
+
 static void mxf_write_common_fields(    ByteIOContext *pb, AVStream *st)
 {
     const MXFDataDefinitionUL * data_def_ul;
@@ -378,6 +480,69 @@ static int mux_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     put_flush_packet(pb);
     return 0;
+}
+
+static void mxf_write_sequence(AVFormatContext *s, int stream_index, enum MXFMetadataSetType type)
+{
+    ByteIOContext *pb = s->pb;
+    AVStream *st;
+
+    mxf_write_metadata_key(pb, 0x010f00);
+    PRINT_KEY(s, "sequence key", pb->buf_ptr - 16);
+    klv_encode_ber_length(pb, 80);
+
+    st = s->streams[stream_index];
+
+    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_uuid(pb, type == MaterialPackage ? Sequence: Sequence + TypeBottom, stream_index);
+
+    PRINT_KEY(s, "sequence uid", pb->buf_ptr - 16);
+    mxf_write_common_fields(pb, st);
+
+    // write structural component
+    mxf_write_local_tag(pb, 16 + 8, 0x1001);
+    mxf_write_refs_count(pb, 1);
+    mxf_write_uuid(pb, type == MaterialPackage ? SourceClip: SourceClip + TypeBottom, stream_index);
+}
+
+static void mxf_write_structural_component(AVFormatContext *s, int stream_index, enum MXFMetadataSetType type)
+{
+    ByteIOContext *pb = s->pb;
+    AVStream *st;
+    int i;
+
+    mxf_write_metadata_key(pb, 0x011100);
+    PRINT_KEY(s, "sturctural component key", pb->buf_ptr - 16);
+    klv_encode_ber_length(pb, 108);
+
+    st = s->streams[stream_index];
+
+    // write uid
+    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_uuid(pb, type == MaterialPackage ? SourceClip: SourceClip + TypeBottom, stream_index);
+
+    PRINT_KEY(s, "structural component uid", pb->buf_ptr - 16);
+    mxf_write_common_fields(pb, st);
+
+    // write start_position
+    mxf_write_local_tag(pb, 8, 0x1201);
+    put_be64(pb, 0);
+
+    mxf_write_local_tag(pb, 32, 0x1101);
+    if (type == SourcePackage) {
+        // write source package uid, end of the reference
+        for (i = 0; i < 4; i++) {
+            put_be64(pb, 0);
+        }
+    } else
+        mxf_write_umid(pb, SourcePackage, 0);
+
+    mxf_write_local_tag(pb, 4, 0x1102);
+    if (type == SourcePackage)
+        // write source track id
+        put_be32(pb, 0);
+    else
+        put_be32(pb, stream_index);
 }
 
 static void mxf_write_multi_descriptor(AVFormatContext *s)
@@ -539,6 +704,46 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
     mxf_build_structural_metadata(s, MaterialPackage);
     mxf_build_structural_metadata(s, SourcePackage);
     return 0;
+}
+
+static void mxf_write_partition(AVFormatContext *s, int64_t byte_position, int bodysid, const uint8_t *key)
+{
+    MXFContext *mxf = s->priv_data;
+    ByteIOContext *pb = s->pb;
+    // write klv
+    put_buffer(pb, key, 16);
+    if (!mxf->essence_container_count)
+        mxf->essence_container_count = mxf_write_essence_container_refs(s, 0);
+    klv_encode_ber_length(pb, 88 + 16 * mxf->essence_container_count);
+
+    // write partition value
+    put_be16(pb, 1); // majorVersion
+    put_be16(pb, 2); // minorVersion
+    put_be32(pb, 1); // kagSize
+
+    put_be64(pb, byte_position); // thisPartition
+    put_be64(pb, 0); // previousPartition
+
+    // set offset
+    if (!byte_position)
+        mxf->header_footer_partition_offset = url_ftell(pb);
+    put_be64(pb, byte_position); // footerPartition,update later
+
+    // set offset
+    if (!byte_position)
+        mxf->header_byte_count_offset = url_ftell(pb);
+    put_be64(pb, 0); // headerByteCount, update later
+
+    // no indexTable
+    put_be64(pb, 0); // indexByteCount
+    put_be32(pb, 0); // indexSID
+    put_be64(pb, 0); // bodyOffset
+
+    put_be32(pb, bodysid); // bodySID
+    put_buffer(pb, op1a_ul, 16); // operational pattern
+
+    // essence container
+    mxf_write_essence_container_refs(s, 1);
 }
 
 static int mux_write_header(AVFormatContext *s)
