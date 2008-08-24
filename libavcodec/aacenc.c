@@ -28,6 +28,7 @@
  *              TODOs:
  * psy model selection with some option
  * add sane pulse detection
+ * add temporal noise shaping
  ***********************************/
 
 #include "avcodec.h"
@@ -211,10 +212,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         return -1;
     }
     s->samplerate_index = i;
-    s->swb_sizes1024 = swb_size_1024[i];
-    s->swb_num1024   = ff_aac_num_swb_1024[i];
-    s->swb_sizes128  = swb_size_128[i];
-    s->swb_num128    = ff_aac_num_swb_128[i];
 
     dsputil_init(&s->dsp, avctx);
     ff_mdct_init(&s->mdct1024, 11, 0);
@@ -229,7 +226,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     s->cpe = av_mallocz(sizeof(ChannelElement) * aac_chan_configs[avctx->channels-1][0]);
     if(ff_aac_psy_init(&s->psy, avctx, AAC_PSY_3GPP,
                        aac_chan_configs[avctx->channels-1][0], 0,
-                       s->swb_sizes1024, s->swb_num1024, s->swb_sizes128, s->swb_num128) < 0){
+                       swb_size_1024[i], ff_aac_num_swb_1024[i], swb_size_128[i], ff_aac_num_swb_128[i]) < 0){
         av_log(avctx, AV_LOG_ERROR, "Cannot initialize selected model.\n");
         return -1;
     }
@@ -243,9 +240,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
  * Encode ics_info element.
  * @see Table 4.6 (syntax of ics_info)
  */
-static void put_ics_info(AVCodecContext *avctx, IndividualChannelStream *info)
+static void put_ics_info(AACEncContext *s, IndividualChannelStream *info)
 {
-    AACEncContext *s = avctx->priv_data;
     int i;
 
     put_bits(&s->pb, 1, 0);                // ics_reserved bit
@@ -259,6 +255,24 @@ static void put_ics_info(AVCodecContext *avctx, IndividualChannelStream *info)
         for(i = 1; i < info->num_windows; i++)
             put_bits(&s->pb, 1, info->group_len[i]);
     }
+}
+
+/**
+ * Calculate the number of bits needed to code all coefficient signs in current band.
+ */
+static int calculate_band_sign_bits(AACEncContext *s, SingleChannelElement *sce,
+                                    int group_len, int start, int size)
+{
+    int bits = 0;
+    int i, w;
+    for(w = 0; w < group_len; w++){
+        for(i = 0; i < size; i++){
+            if(sce->icoefs[start + i])
+                bits++;
+        }
+        start += 128;
+    }
+    return bits;
 }
 
 /**
@@ -295,7 +309,7 @@ static void encode_spectral_coeffs(AACEncContext *s, SingleChannelElement *sce)
                 continue;
             }
             for(w2 = w; w2 < w + sce->ics.group_len[wg]; w2++){
-                encode_band_coeffs(s, cpe, channel, start + w2*128,
+                encode_band_coeffs(s, sce, start + w2*128,
                                    sce->ics.swb_sizes[i],
                                    sce->band_type[w*16 + i]);
             }
