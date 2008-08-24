@@ -38,7 +38,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     int fd_max, ret;
     struct timeval tv;
     socklen_t optlen;
-    char hostname[1024],proto[1024],path[1024],tmp[1024],*q;
+    char hostname[1024],proto[1024],path[1024];
 
     if(!ff_network_init())
         return AVERROR(EIO);
@@ -47,7 +47,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         &port, path, sizeof(path), uri);
     if (strcmp(proto,"tcp") || port <= 0 || port >= 65536)
         return AVERROR(EINVAL);
-    if ((q = strchr(hostname,'@'))) { strcpy(tmp,q+1); strcpy(hostname,tmp); }
 
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(port);
