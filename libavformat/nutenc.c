@@ -820,5 +820,5 @@ AVOutputFormat nut_muxer = {
     write_packet,
     write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag= (const AVCodecTag*[]){codec_bmp_tags, codec_wav_tags, ff_nut_subtitle_tags, 0},
+    .codec_tag= (const AVCodecTag* const []){codec_bmp_tags, codec_wav_tags, ff_nut_subtitle_tags, 0},
 };

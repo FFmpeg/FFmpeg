@@ -217,7 +217,7 @@ typedef struct AVOutputFormat {
      * list of supported codec_id-codec_tag pairs, ordered by "better choice first"
      * the arrays are all CODEC_ID_NONE terminated
      */
-    const struct AVCodecTag **codec_tag;
+    const struct AVCodecTag * const *codec_tag;
 
     enum CodecID subtitle_codec; /**< default subtitle codec */
 
@@ -287,7 +287,7 @@ typedef struct AVInputFormat {
        (RTSP) */
     int (*read_pause)(struct AVFormatContext *);
 
-    const struct AVCodecTag **codec_tag;
+    const struct AVCodecTag * const *codec_tag;
 
     /* private fields */
     struct AVInputFormat *next;

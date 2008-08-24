@@ -445,7 +445,7 @@ AVInputFormat aiff_demuxer = {
     aiff_read_packet,
     NULL,
     pcm_read_seek,
-    .codec_tag= (const AVCodecTag*[]){codec_aiff_tags, 0},
+    .codec_tag= (const AVCodecTag* const []){codec_aiff_tags, 0},
 };
 #endif
 
@@ -461,6 +461,6 @@ AVOutputFormat aiff_muxer = {
     aiff_write_header,
     aiff_write_packet,
     aiff_write_trailer,
-    .codec_tag= (const AVCodecTag*[]){codec_aiff_tags, 0},
+    .codec_tag= (const AVCodecTag* const []){codec_aiff_tags, 0},
 };
 #endif

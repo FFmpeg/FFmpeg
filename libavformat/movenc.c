@@ -1703,7 +1703,7 @@ AVOutputFormat mov_muxer = {
     mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag = (const AVCodecTag*[]){codec_movvideo_tags, codec_movaudio_tags, 0},
+    .codec_tag = (const AVCodecTag* const []){codec_movvideo_tags, codec_movaudio_tags, 0},
 };
 #endif
 #ifdef CONFIG_TGP_MUXER
@@ -1719,7 +1719,7 @@ AVOutputFormat tgp_muxer = {
     mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag = (const AVCodecTag*[]){codec_3gp_tags, 0},
+    .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
 };
 #endif
 #ifdef CONFIG_MP4_MUXER
@@ -1735,7 +1735,7 @@ AVOutputFormat mp4_muxer = {
     mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag = (const AVCodecTag*[]){ff_mp4_obj_type, 0},
+    .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
 };
 #endif
 #ifdef CONFIG_PSP_MUXER
@@ -1751,7 +1751,7 @@ AVOutputFormat psp_muxer = {
     mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag = (const AVCodecTag*[]){ff_mp4_obj_type, 0},
+    .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
 };
 #endif
 #ifdef CONFIG_TG2_MUXER
@@ -1767,7 +1767,7 @@ AVOutputFormat tg2_muxer = {
     mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag = (const AVCodecTag*[]){codec_3gp_tags, 0},
+    .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
 };
 #endif
 #ifdef CONFIG_IPOD_MUXER
@@ -1783,6 +1783,6 @@ AVOutputFormat ipod_muxer = {
     mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag = (const AVCodecTag*[]){ff_mp4_obj_type, 0},
+    .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
 };
 #endif

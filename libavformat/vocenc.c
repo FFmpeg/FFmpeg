@@ -99,5 +99,5 @@ AVOutputFormat voc_muxer = {
     voc_write_header,
     voc_write_packet,
     voc_write_trailer,
-    .codec_tag=(const AVCodecTag*[]){ff_voc_codec_tags, 0},
+    .codec_tag=(const AVCodecTag* const []){ff_voc_codec_tags, 0},
 };

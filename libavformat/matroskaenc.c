@@ -846,7 +846,7 @@ AVOutputFormat matroska_muxer = {
     mkv_write_header,
     mkv_write_packet,
     mkv_write_trailer,
-    .codec_tag = (const AVCodecTag*[]){codec_bmp_tags, codec_wav_tags, 0},
+    .codec_tag = (const AVCodecTag* const []){codec_bmp_tags, codec_wav_tags, 0},
     .subtitle_codec = CODEC_ID_TEXT,
 };
 
@@ -861,5 +861,5 @@ AVOutputFormat matroska_audio_muxer = {
     mkv_write_header,
     mkv_write_packet,
     mkv_write_trailer,
-    .codec_tag = (const AVCodecTag*[]){codec_wav_tags, 0},
+    .codec_tag = (const AVCodecTag* const []){codec_wav_tags, 0},
 };
