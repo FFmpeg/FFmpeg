@@ -1670,6 +1670,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
     matroska->skip_to_stream = st;
+    matroska->done = 0;
     av_update_cur_dts(s, st, st->index_entries[index].timestamp);
     return 0;
 }
