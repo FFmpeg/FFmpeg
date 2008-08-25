@@ -203,6 +203,19 @@ static void simple_idct_ipp_add(uint8_t *dest, int line_size, DCTELEM *block)
 }
 #endif
 
+#ifdef HAVE_ARMV5TE
+static void prefetch_arm(void *mem, int stride, int h)
+{
+    asm volatile(
+        "1:              \n\t"
+        "subs %0, %0, #1 \n\t"
+        "pld  [%1]       \n\t"
+        "add  %1, %1, %2 \n\t"
+        "bgt  1b         \n\t"
+        : "+r"(h), "+r"(mem) : "r"(stride));
+}
+#endif
+
 int mm_support(void)
 {
     return ENABLE_IWMMXT * MM_IWMMXT;
@@ -278,6 +291,10 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
     c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_arm; //OK
     c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_arm; //OK
     c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_arm;
+
+#ifdef HAVE_ARMV5TE
+    c->prefetch = prefetch_arm;
+#endif
 
 #ifdef HAVE_IWMMXT
     dsputil_init_iwmmxt(c, avctx);
