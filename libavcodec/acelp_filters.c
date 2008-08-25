@@ -75,7 +75,9 @@ void ff_acelp_interpolate(
             i++;
             v += in[n - i] * filter_coeffs[idx - frac_pos];
         }
-        out[n] = av_clip_int16(v >> 15);
+        if(av_clip_int16(v>>15) != (v>>15))
+            av_log(NULL, AV_LOG_WARNING, "overflow that would need cliping in ff_acelp_interpolate()\n");
+        out[n] = v >> 15;
     }
 }
 
