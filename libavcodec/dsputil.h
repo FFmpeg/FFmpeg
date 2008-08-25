@@ -591,6 +591,11 @@ void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 
 extern int mm_flags;
 
+#ifdef HAVE_NEON
+#   define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(16, t, v)
+#   define STRIDE_ALIGN 16
+#endif
+
 #elif defined(ARCH_POWERPC)
 
 #define MM_ALTIVEC    0x0001 /* standard AltiVec */
