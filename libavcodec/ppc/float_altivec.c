@@ -160,7 +160,7 @@ float_to_int16_one_altivec(const float *src)
     return vec_packs(t0,t1);
 }
 
-void float_to_int16_altivec(int16_t *dst, const float *src, int len)
+static void float_to_int16_altivec(int16_t *dst, const float *src, int len)
 {
     int i;
     vector signed short d0, d1, d;
