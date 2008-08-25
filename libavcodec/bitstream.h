@@ -123,11 +123,18 @@ static inline void flush_put_bits(PutBitContext *s)
 #ifdef ALT_BITSTREAM_WRITER
     align_put_bits(s);
 #else
+#ifndef BITSTREAM_WRITER_LE
     s->bit_buf<<= s->bit_left;
+#endif
     while (s->bit_left < 32) {
         /* XXX: should test end of buffer */
+#ifdef BITSTREAM_WRITER_LE
+        *s->buf_ptr++=s->bit_buf;
+        s->bit_buf>>=8;
+#else
         *s->buf_ptr++=s->bit_buf >> 24;
         s->bit_buf<<=8;
+#endif
         s->bit_left+=8;
     }
     s->bit_left=32;
@@ -190,6 +197,24 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 
     //    printf("n=%d value=%x cnt=%d buf=%x\n", n, value, bit_cnt, bit_buf);
     /* XXX: optimize */
+#ifdef BITSTREAM_WRITER_LE
+    bit_buf |= value << (32 - bit_left);
+    if (n >= bit_left) {
+#ifdef UNALIGNED_STORES_ARE_BAD
+        if (3 & (intptr_t) s->buf_ptr) {
+            s->buf_ptr[0] = bit_buf      ;
+            s->buf_ptr[1] = bit_buf >>  8;
+            s->buf_ptr[2] = bit_buf >> 16;
+            s->buf_ptr[3] = bit_buf >> 24;
+        } else
+#endif
+        *(uint32_t *)s->buf_ptr = le2me_32(bit_buf);
+        s->buf_ptr+=4;
+        bit_buf = (bit_left==32)?0:value >> bit_left;
+        bit_left+=32;
+    }
+    bit_left-=n;
+#else
     if (n < bit_left) {
         bit_buf = (bit_buf<<n) | value;
         bit_left-=n;
@@ -210,6 +235,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
         bit_left+=32 - n;
         bit_buf = value;
     }
+#endif
 
     s->bit_buf = bit_buf;
     s->bit_left = bit_left;
