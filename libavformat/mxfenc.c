@@ -468,20 +468,6 @@ static void mxf_write_common_fields(    ByteIOContext *pb, AVStream *st)
     put_be64(pb, st->duration);
 }
 
-static int mux_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    ByteIOContext *pb = s->pb;
-    AVStream *st = s->streams[pkt->stream_index];
-    MXFStreamContext *sc = st->priv_data;
-
-    put_buffer(pb, sc->track_essence_element_key, 16); // write key
-    klv_encode_ber_length(pb, pkt->size); // write length
-    put_buffer(pb, pkt->data, pkt->size); // write value
-
-    put_flush_packet(pb);
-    return 0;
-}
-
 static void mxf_write_sequence(AVFormatContext *s, int stream_index, enum MXFMetadataSetType type)
 {
     ByteIOContext *pb = s->pb;
@@ -771,6 +757,20 @@ static int mux_write_header(AVFormatContext *s)
 fail:
     mxf_free(s);
     return -1;
+}
+
+static int mux_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    ByteIOContext *pb = s->pb;
+    AVStream *st = s->streams[pkt->stream_index];
+    MXFStreamContext *sc = st->priv_data;
+
+    put_buffer(pb, sc->track_essence_element_key, 16); // write key
+    klv_encode_ber_length(pb, pkt->size); // write length
+    put_buffer(pb, pkt->data, pkt->size); // write value
+
+    put_flush_packet(pb);
+    return 0;
 }
 
 static void mxf_update_header_partition(AVFormatContext *s, int64_t footer_partition_offset)
