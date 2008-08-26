@@ -95,11 +95,11 @@ static int put_pack_header(AVFormatContext *ctx,
     } else {
         put_bits(&pb, 4, 0x2);
     }
-    put_bits(&pb, 3, (uint32_t)((timestamp >> 30) & 0x07));
+    put_bits(&pb, 3,  (uint32_t)((timestamp >> 30) & 0x07));
     put_bits(&pb, 1, 1);
     put_bits(&pb, 15, (uint32_t)((timestamp >> 15) & 0x7fff));
     put_bits(&pb, 1, 1);
-    put_bits(&pb, 15, (uint32_t)((timestamp) & 0x7fff));
+    put_bits(&pb, 15, (uint32_t)((timestamp      ) & 0x7fff));
     put_bits(&pb, 1, 1);
     if (s->is_mpeg2) {
         /* clock extension */
@@ -297,12 +297,12 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     int video_bitrate;
 
     s->packet_number = 0;
-    s->is_vcd =   (ENABLE_MPEG1VCD_MUXER  && ctx->oformat == &mpeg1vcd_muxer);
-    s->is_svcd =  (ENABLE_MPEG2SVCD_MUXER && ctx->oformat == &mpeg2svcd_muxer);
+    s->is_vcd =    (ENABLE_MPEG1VCD_MUXER  && ctx->oformat == &mpeg1vcd_muxer);
+    s->is_svcd =   (ENABLE_MPEG2SVCD_MUXER && ctx->oformat == &mpeg2svcd_muxer);
     s->is_mpeg2 = ((ENABLE_MPEG2VOB_MUXER  && ctx->oformat == &mpeg2vob_muxer) ||
                    (ENABLE_MPEG2DVD_MUXER  && ctx->oformat == &mpeg2dvd_muxer) ||
                    (ENABLE_MPEG2SVCD_MUXER && ctx->oformat == &mpeg2svcd_muxer));
-    s->is_dvd =   (ENABLE_MPEG2DVD_MUXER  && ctx->oformat == &mpeg2dvd_muxer);
+    s->is_dvd =    (ENABLE_MPEG2DVD_MUXER  && ctx->oformat == &mpeg2dvd_muxer);
 
     if(ctx->packet_size)
         s->packet_size = ctx->packet_size;
@@ -331,7 +331,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
 
         switch(st->codec->codec_type) {
         case CODEC_TYPE_AUDIO:
-            if (st->codec->codec_id == CODEC_ID_AC3) {
+            if        (st->codec->codec_id == CODEC_ID_AC3) {
                 stream->id = ac3_id++;
             } else if (st->codec->codec_id == CODEC_ID_DTS) {
                 stream->id = dts_id++;
@@ -438,7 +438,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
 
         /* Add the header overhead to the data rate.
            2279 data bytes per audio pack, 2294 data bytes per video pack*/
-        overhead_rate = ((audio_bitrate / 8.0) / 2279) * (2324 - 2279);
+        overhead_rate  = ((audio_bitrate / 8.0) / 2279) * (2324 - 2279);
         overhead_rate += ((video_bitrate / 8.0) / 2294) * (2324 - 2294);
         overhead_rate *= 8;
 
@@ -489,7 +489,7 @@ static inline void put_timestamp(ByteIOContext *pb, int id, int64_t timestamp)
              (((timestamp >> 30) & 0x07) << 1) |
              1);
     put_be16(pb, (uint16_t)((((timestamp >> 15) & 0x7fff) << 1) | 1));
-    put_be16(pb, (uint16_t)((((timestamp) & 0x7fff) << 1) | 1));
+    put_be16(pb, (uint16_t)((((timestamp      ) & 0x7fff) << 1) | 1));
 }
 
 
@@ -799,7 +799,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
             header_len -= timestamp_len;
             if (s->is_dvd && stream->align_iframe) {
                 pad_packet_bytes += timestamp_len;
-                packet_size -= timestamp_len;
+                packet_size  -= timestamp_len;
             } else {
                 payload_size += timestamp_len;
             }
@@ -812,7 +812,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
             packet_size += pad_packet_bytes;
             payload_size += pad_packet_bytes; // undo the previous adjustment
             if (stuffing_size < 0) {
-                stuffing_size = pad_packet_bytes;
+                stuffing_size  = pad_packet_bytes;
             } else {
                 stuffing_size += pad_packet_bytes;
             }
@@ -823,8 +823,8 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
             stuffing_size = 0;
         if (stuffing_size > 16) {    /*<=16 for MPEG-1, <=32 for MPEG-2*/
             pad_packet_bytes += stuffing_size;
-            packet_size -= stuffing_size;
-            payload_size -= stuffing_size;
+            packet_size      -= stuffing_size;
+            payload_size     -= stuffing_size;
             stuffing_size = 0;
         }
 
@@ -869,7 +869,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
 
                 /* P-STD buffer info */
                 if (id == AUDIO_ID)
-                    put_be16(ctx->pb, 0x4000 | stream->max_buffer_size/128);
+                    put_be16(ctx->pb, 0x4000 | stream->max_buffer_size/ 128);
                 else
                     put_be16(ctx->pb, 0x6000 | stream->max_buffer_size/1024);
             }

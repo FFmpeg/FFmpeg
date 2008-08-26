@@ -67,8 +67,8 @@ static int mpegps_probe(AVProbeData *p)
             if(code == SYSTEM_HEADER_START_CODE) sys++;
             else if(code == PRIVATE_STREAM_1)    priv1++;
             else if(code == PACK_START_CODE)     pspack++;
-            else if((code & 0xf0) == VIDEO_ID && pes) vid++;
-            else if((code & 0xe0) == AUDIO_ID && pes) audio++;
+            else if((code & 0xf0) == VIDEO_ID &&  pes) vid++;
+            else if((code & 0xe0) == AUDIO_ID &&  pes) audio++;
 
             else if((code & 0xf0) == VIDEO_ID && !pes) invalid++;
             else if((code & 0xe0) == AUDIO_ID && !pes) invalid++;
@@ -211,8 +211,8 @@ static long mpegps_psm_parse(MpegDemuxContext *m, ByteIOContext *pb)
 
     /* at least one es available? */
     while (es_map_length >= 4){
-        unsigned char type = get_byte(pb);
-        unsigned char es_id = get_byte(pb);
+        unsigned char type      = get_byte(pb);
+        unsigned char es_id     = get_byte(pb);
         uint16_t es_info_length = get_be16(pb);
         /* remember mapping from stream id to stream type */
         m->psm_es_type[es_id] = type;
@@ -467,7 +467,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     } else if (startcode >= 0x80 && startcode <= 0x87) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_AC3;
-    } else if ((startcode >= 0x88 && startcode <= 0x8f)
+    } else if (  ( startcode >= 0x88 && startcode <= 0x8f)
                ||( startcode >= 0x98 && startcode <= 0x9f)) {
         /* 0x90 - 0x97 is reserved for SDDS in DVD specs */
         type = CODEC_TYPE_AUDIO;
