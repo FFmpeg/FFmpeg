@@ -152,11 +152,11 @@ void ff_acelp_high_pass_filter(
 
     for(i=0; i<length; i++)
     {
-        tmp =  (hpf_f[0]* 15836LL)>>13;                   /* (14.13) = (13.13) * (1.13) */
-        tmp += (hpf_f[1]* -7667LL)>>13;                   /* (13.13) = (13.13) * (0.13) */
-        tmp += 7699 * (in[i] - 2*in[i-1] + in[i-2]); /* (14.13) =  (0.13) * (14.0) */
+        tmp =  (hpf_f[0]* 15836LL)>>13;
+        tmp += (hpf_f[1]* -7667LL)>>13;
+        tmp += 7699 * (in[i] - 2*in[i-1] + in[i-2]);
 
-        out[i] = av_clip_int16((tmp + 0x800) >> 12);      /* (15.0) = 2 * (13.13) = (14.13) */
+        out[i] = av_clip_int16((tmp + 0x800) >> 12);
 
         hpf_f[1] = hpf_f[0];
         hpf_f[0] = tmp;
