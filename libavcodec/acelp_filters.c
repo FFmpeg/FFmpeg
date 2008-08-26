@@ -156,6 +156,8 @@ void ff_acelp_high_pass_filter(
         tmp += (hpf_f[1]* -7667LL)>>13;
         tmp += 7699 * (in[i] - 2*in[i-1] + in[i-2]);
 
+        /* With "+0x800" rounding, clipping is needed
+           for ALGTHM and SPEECH tests. */
         out[i] = av_clip_int16((tmp + 0x800) >> 12);
 
         hpf_f[1] = hpf_f[0];
