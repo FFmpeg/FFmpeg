@@ -1557,7 +1557,6 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
        /* timestamp for default must be expressed in AV_TIME_BASE units */
         timestamp = av_rescale(timestamp, st->time_base.den, AV_TIME_BASE * (int64_t)st->time_base.num);
     }
-    st= s->streams[stream_index];
 
     /* first, we try the format specific seek */
     if (s->iformat->read_seek)
