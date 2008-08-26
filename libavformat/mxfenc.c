@@ -245,6 +245,42 @@ static const MXFDataDefinitionUL *mxf_get_data_definition_ul(enum CodecType type
     return uls;
 }
 
+static int mxf_write_essence_container_refs(AVFormatContext *s, int write)
+{
+    ByteIOContext *pb = s->pb;
+    AVStream *st;
+    int i, count = 0, j = 0;
+    const MXFCodecUL *codec_ul;
+    int essence_container_ul_sign[sizeof(ff_mxf_essence_container_uls) / sizeof(MXFCodecUL)] = { 0 };
+
+    for (codec_ul = ff_mxf_essence_container_uls; codec_ul->id; codec_ul++) {
+        for (i = 0; i < s->nb_streams; i++) {
+            st = s->streams[i];
+            if (st->codec->codec_id == codec_ul->id) {
+                essence_container_ul_sign[count] = j;
+                count++;
+                break;
+            }
+        }
+        j++;
+        // considering WAV/AES3 frame wrapped, when get the first CODEC_ID_PCM_S16LE, break;
+        // this is a temporary method, when we can get  more information, modofy this.
+        if (codec_ul->id == CODEC_ID_PCM_S16LE)
+            break;
+    }
+
+    if (write) {
+        mxf_write_refs_count(pb, count);
+        for (i = 0; i < count; i++) {
+            put_buffer(pb, ff_mxf_essence_container_uls[essence_container_ul_sign[i]].uid, 16);
+        }
+        av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", count);
+        for (i = 0; i < count; i++)
+            PRINT_KEY(s, "essence container ul:\n", ff_mxf_essence_container_uls[essence_container_ul_sign[i]].uid);
+    }
+    return count;
+}
+
 static void mxf_write_preface(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;

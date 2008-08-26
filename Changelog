@@ -132,6 +132,7 @@ version <next>
 - Apple Lossless Audio Codec (ALAC) encoder
 - AAC decoder
 - floating point PCM encoder/decoder
+- MXF muxer
 
 version 0.4.9-pre1:
 
