@@ -259,7 +259,7 @@ Muxers/Demuxers:
   mpegts*                               Mans Rullgard
   msnwc_tcp.c                           Ramiro Polla
   mtv.c                                 Reynaldo H. Verdejo Pinochet
-  mxf.c                                 Baptiste Coudurier
+  mxf*                                  Baptiste Coudurier
   nsvdec.c                              Francois Revol
   nut.c                                 Michael Niedermayer
   nuv.c                                 Reimar Doeffinger
