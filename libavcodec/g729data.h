@@ -24,8 +24,7 @@
 
 #include <stdint.h>
 
-/// Moving Average (MA) prediction order
-#define MA_NP                      4
+#define MA_NP                4  ///< Moving Average (MA) prediction order
 
 #define VQ_1ST_BITS          7  ///< first stage vector of quantizer (size in bits)
 #define VQ_2ND_BITS          5  ///< second stage vector of quantizer (size in bits)
