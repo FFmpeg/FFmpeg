@@ -254,6 +254,8 @@ Muxers/Demuxers:
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
   movenc.c                              Michael Niedermayer, Baptiste Coudurier
   mpc.c                                 Kostya Shishkov
+  mpeg.c                                Michael Niedermayer
+  mpegenc.c                             Michael Niedermayer
   mpegts*                               Mans Rullgard
   msnwc_tcp.c                           Ramiro Polla
   mtv.c                                 Reynaldo H. Verdejo Pinochet
