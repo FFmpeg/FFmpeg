@@ -1337,8 +1337,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (track && track->stream)
                 av_add_index_entry(track->stream,
                                    pos[j].pos + matroska->segment_start,
-                                   index[i].time*matroska->time_scale/AV_TIME_BASE,
-                                   0, 0, AVINDEX_KEYFRAME);
+                                   index[i].time, 0, 0, AVINDEX_KEYFRAME);
         }
     }
 
@@ -1627,8 +1626,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
         }
     if (key_frame)
         av_add_index_entry(matroska->vstream, pos,
-                           cluster.timecode*matroska->time_scale/AV_TIME_BASE,
-                           0, 0, AVINDEX_KEYFRAME);
+                           cluster.timecode, 0, 0, AVINDEX_KEYFRAME);
     ebml_free(matroska_cluster, &cluster);
     if (res < 0)  matroska->done = 1;
     return res;
