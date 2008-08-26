@@ -27,6 +27,15 @@
 /// Moving Average (MA) prediction order
 #define MA_NP                      4
 
+#define VQ_1ST_BITS          7  ///< first stage vector of quantizer (size in bits)
+#define VQ_2ND_BITS          5  ///< second stage vector of quantizer (size in bits)
+
+#define GC_1ST_IDX_BITS_8K   3  ///< gain codebook (first stage) index, 8k mode (size in bits)
+#define GC_2ND_IDX_BITS_8K   4  ///< gain codebook (second stage) index, 8k mode (size in bits)
+
+#define GC_1ST_IDX_BITS_6K4  3  ///< gain codebook (first stage) index, 6.4k mode (size in bits)
+#define GC_2ND_IDX_BITS_6K4  3  ///< gain codebook (second stage) index, 6.4k mode (size in bits)
+
 /**
  * first stage LSP codebook
  * (10-dimensional, with 128 entries (3.24 of G.729)

@@ -49,6 +49,21 @@
 #define LSFQ_DIFF_MIN              321
 
 /**
+ * minimum gain pitch value (3.8, Equation 47)
+ * 0.2 in (1.14)
+ */
+#define SHARP_MIN                  3277
+
+/**
+ * maximum gain pitch value (3.8, Equation 47)
+ * (EE) This does not comply with the specification.
+ * Specification says about 0.8, which should be
+ * 13107 in (1.14), but reference C code uses
+ * 13017 (equals to 0.7945) instead of it.
+ */
+#define SHARP_MAX                  13017
+
+/**
  * \brief pseudo random number generator
  */
 static inline uint16_t g729_random(uint16_t value)
