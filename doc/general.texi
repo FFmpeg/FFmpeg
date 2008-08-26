@@ -104,7 +104,7 @@ library:
     @tab MPEG-4 is a variant of QuickTime.
 @item MSN TCP webcam            @tab   @tab X
     @tab Used by MSN Messenger webcam streams.
-@item MXF                       @tab   @tab X
+@item MXF                       @tab X @tab X
     @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
 @item Nullsoft Video            @tab   @tab X
 @item NUT                       @tab X @tab X
