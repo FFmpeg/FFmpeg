@@ -68,9 +68,6 @@ extern int XVMC_field_end(MpegEncContext *s);
 extern void XVMC_pack_pblocks(MpegEncContext *s,int cbp);
 extern void XVMC_init_block(MpegEncContext *s);//set s->block
 
-static const enum PixelFormat pixfmt_yuv_420[]= {PIX_FMT_YUV420P,PIX_FMT_NONE};
-static const enum PixelFormat pixfmt_yuv_422[]= {PIX_FMT_YUV422P,PIX_FMT_NONE};
-static const enum PixelFormat pixfmt_yuv_444[]= {PIX_FMT_YUV444P,PIX_FMT_NONE};
 static const enum PixelFormat pixfmt_xvmc_mpg2_420[] = {
                                            PIX_FMT_XVMC_MPEG2_IDCT,
                                            PIX_FMT_XVMC_MPEG2_MC,
@@ -1293,13 +1290,13 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
             avctx->pix_fmt = avctx->get_format(avctx,pixfmt_xvmc_mpg2_420);
         }else{
             if(s->chroma_format <  2){
-                avctx->pix_fmt = avctx->get_format(avctx,pixfmt_yuv_420);
+                avctx->pix_fmt = PIX_FMT_YUV420P;
             }else
             if(s->chroma_format == 2){
-                avctx->pix_fmt = avctx->get_format(avctx,pixfmt_yuv_422);
+                avctx->pix_fmt = PIX_FMT_YUV422P;
             }else
             if(s->chroma_format >  2){
-                avctx->pix_fmt = avctx->get_format(avctx,pixfmt_yuv_444);
+                avctx->pix_fmt = PIX_FMT_YUV444P;
             }
         }
         //until then pix_fmt may be changed right after codec init
@@ -2058,7 +2055,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     if(avctx->xvmc_acceleration){
         avctx->pix_fmt = avctx->get_format(avctx,pixfmt_xvmc_mpg2_420);
     }else{
-        avctx->pix_fmt = avctx->get_format(avctx,pixfmt_yuv_420);
+        avctx->pix_fmt = PIX_FMT_YUV420P;
     }
 
     if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT )
