@@ -247,7 +247,7 @@ typedef struct BlockInfo {
     const uint32_t *factor_table;
     const uint8_t *scan_table;
     uint8_t pos; /* position in block */
-    uint8_t dct_mode;
+    void (*idct_put)(uint8_t *dest, int line_size, DCTELEM *block);
     uint8_t partial_bit_count;
     uint16_t partial_bit_buffer;
     int shift_offset;
@@ -352,7 +352,6 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
     DCTELEM *block, *block1;
     int c_offset;
     uint8_t *y_ptr;
-    void (*idct_put)(uint8_t *dest, int line_size, DCTELEM *block);
     const uint8_t *buf_ptr;
     PutBitContext pb, vs_pb;
     GetBitContext gb;
@@ -386,7 +385,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
             /* get the dc */
             dc = get_sbits(&gb, 9);
             dct_mode = get_bits1(&gb);
-            mb->dct_mode = dct_mode;
+            mb->idct_put = s->idct_put[dct_mode && log2_blocksize==3];
             mb->scan_table = s->dv_zigzag[dct_mode];
             class1 = get_bits(&gb, 2);
             mb->factor_table = s->dv_idct_factor[class1 == 3][dct_mode]
@@ -471,15 +470,14 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
                      (mb_x>>((s->sys->pix_fmt == PIX_FMT_YUV411P)?2:1)))<<log2_blocksize);
 
         for(j = 0;j < 6; j++) {
-            idct_put = s->idct_put[mb->dct_mode && log2_blocksize==3];
             if (s->sys->pix_fmt == PIX_FMT_YUV422P) { /* 4:2:2 */
                 if (j == 0 || j == 2) {
                     /* Y0 Y1 */
-                    idct_put(y_ptr + ((j >> 1)<<log2_blocksize),
+                    mb->idct_put(y_ptr + ((j >> 1)<<log2_blocksize),
                              s->picture.linesize[0], block);
                 } else if(j > 3) {
                     /* Cr Cb */
-                    idct_put(s->picture.data[6 - j] + c_offset,
+                    mb->idct_put(s->picture.data[6 - j] + c_offset,
                              s->picture.linesize[6 - j], block);
                 }
                 /* note: j=1 and j=3 are "dummy" blocks in 4:2:2 */
@@ -487,9 +485,9 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
                 if (j < 4) {
                     if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x < (704 / 8)) {
                         /* NOTE: at end of line, the macroblock is handled as 420 */
-                        idct_put(y_ptr + (j<<log2_blocksize), s->picture.linesize[0], block);
+                        mb->idct_put(y_ptr + (j<<log2_blocksize), s->picture.linesize[0], block);
                     } else {
-                        idct_put(y_ptr + (((j & 1) + (j >> 1) * s->picture.linesize[0])<<log2_blocksize),
+                        mb->idct_put(y_ptr + (((j & 1) + (j >> 1) * s->picture.linesize[0])<<log2_blocksize),
                                  s->picture.linesize[0], block);
                     }
                 } else {
@@ -499,7 +497,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
                         uint8_t *c_ptr, *c_ptr1, *ptr, *ptr1;
                         int x, y, linesize;
                         /* NOTE: at end of line, the macroblock is handled as 420 */
-                        idct_put(pixels, 8, block);
+                        mb->idct_put(pixels, 8, block);
                         linesize = s->picture.linesize[6 - j];
                         c_ptr = s->picture.data[6 - j] + c_offset;
                         ptr = pixels;
@@ -514,7 +512,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
                         }
                     } else {
                         /* don't ask me why they inverted Cb and Cr ! */
-                        idct_put(s->picture.data[6 - j] + c_offset,
+                        mb->idct_put(s->picture.data[6 - j] + c_offset,
                                  s->picture.linesize[6 - j], block);
                     }
                 }
