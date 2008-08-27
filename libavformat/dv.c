@@ -192,7 +192,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
 
     smpls = as_pack[1] & 0x3f; /* samples in this frame - min. samples */
     freq = (as_pack[4] >> 3) & 0x07; /* 0 - 48KHz, 1 - 44,1kHz, 2 - 32 kHz */
-    stype = (as_pack[3] & 0x1f); /* 0 - 2CH, 2 - 4CH */
+    stype = (as_pack[3] & 0x1f); /* 0 - 2CH, 2 - 4CH, 3 - 8CH */
     quant = as_pack[4] & 0x07; /* 0 - 16bit linear, 1 - 12bit nonlinear */
 
     /* note: ach counts PAIRS of channels (i.e. stereo channels) */
@@ -276,7 +276,7 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
 
     c->sys = NULL;
     c->fctx = s;
-    c->ast[0] = c->ast[1] = NULL;
+    memset(c->ast, 0, sizeof(c->ast));
     c->ach = 0;
     c->frames = 0;
     c->abytes = 0;
