@@ -527,6 +527,12 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             rtsp_parse_range_npt(p, &start, &end);
             s->start_time= start;
             s->duration= (end==AV_NOPTS_VALUE)?AV_NOPTS_VALUE:end-start; // AV_NOPTS_VALUE means live broadcast (and can't seek)
+        } else if (s->nb_streams > 0) {
+            rtsp_st = s->streams[s->nb_streams - 1]->priv_data;
+            if (rtsp_st->dynamic_handler &&
+                rtsp_st->dynamic_handler->parse_sdp_a_line)
+                rtsp_st->dynamic_handler->parse_sdp_a_line(s->streams[s->nb_streams - 1],
+                    rtsp_st->dynamic_protocol_context, buf);
         }
         break;
     }
