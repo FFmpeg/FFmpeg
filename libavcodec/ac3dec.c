@@ -443,7 +443,7 @@ typedef struct {
  * Get the transform coefficients for a particular channel
  * reference: Section 7.3 Quantization and Decoding of Mantissas
  */
-static void get_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, mant_groups *m)
+static void decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, mant_groups *m)
 {
     GetBitContext *gbc = &s->gbc;
     int i, gcode, tbap, start, end;
@@ -549,17 +549,17 @@ static void remove_dithering(AC3DecodeContext *s) {
 }
 
 #if 0
-static void get_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
+static void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
                                     mant_groups *m)
 {
     if (!s->channel_uses_aht[ch]) {
-        ac3_get_transform_coeffs_ch(s, ch, m);
+        ac3_decode_transform_coeffs_ch(s, ch, m);
     } else {
         /* if AHT is used, mantissas for all blocks are encoded in the first
            block of the frame. */
         int bin;
         if (!blk)
-            ff_eac3_get_transform_coeffs_aht_ch(s, ch);
+            ff_eac3_decode_transform_coeffs_aht_ch(s, ch);
         for (bin = s->start_freq[ch]; bin < s->end_freq[ch]; bin++) {
             s->fixed_coeffs[ch][bin] = s->pre_mantissa[ch][bin][blk] >> s->dexps[ch][bin];
         }
@@ -570,7 +570,7 @@ static void get_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
 /**
  * Get the transform coefficients.
  */
-static void get_transform_coeffs(AC3DecodeContext *s)
+static void decode_transform_coeffs(AC3DecodeContext *s)
 {
     int ch, end;
     int got_cplchan = 0;
@@ -580,12 +580,12 @@ static void get_transform_coeffs(AC3DecodeContext *s)
 
     for (ch = 1; ch <= s->channels; ch++) {
         /* transform coefficients for full-bandwidth channel */
-        get_transform_coeffs_ch(s, ch, &m);
+        decode_transform_coeffs_ch(s, ch, &m);
         /* tranform coefficients for coupling channel come right after the
            coefficients for the first coupled channel*/
         if (s->channel_in_cpl[ch])  {
             if (!got_cplchan) {
-                get_transform_coeffs_ch(s, CPL_CH, &m);
+                decode_transform_coeffs_ch(s, CPL_CH, &m);
                 calc_transform_coeffs_cpl(s);
                 got_cplchan = 1;
             }
@@ -1075,7 +1075,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
     /* unpack the transform coefficients
        this also uncouples channels if coupling is in use. */
-    get_transform_coeffs(s);
+    decode_transform_coeffs(s);
 
     /* TODO: generate enhanced coupling coordinates and uncouple */
 
