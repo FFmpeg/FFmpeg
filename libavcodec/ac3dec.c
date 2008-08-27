@@ -903,7 +903,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     /* exponent strategies for each channel */
     for (ch = !cpl_in_use; ch <= s->channels; ch++) {
         if (!s->eac3)
-        s->exp_strategy[blk][ch] = get_bits(gbc, 2 - (ch == s->lfe_ch));
+            s->exp_strategy[blk][ch] = get_bits(gbc, 2 - (ch == s->lfe_ch));
         if(s->exp_strategy[blk][ch] != EXP_REUSE)
             bit_alloc_stages[ch] = 3;
     }
