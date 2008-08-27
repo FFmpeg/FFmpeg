@@ -385,9 +385,9 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
             /* get the dc */
             dc = get_sbits(&gb, 9);
             dct_mode = get_bits1(&gb);
+            class1 = get_bits(&gb, 2);
             mb->idct_put = s->idct_put[dct_mode && log2_blocksize==3];
             mb->scan_table = s->dv_zigzag[dct_mode];
-            class1 = get_bits(&gb, 2);
             mb->factor_table = s->dv_idct_factor[class1 == 3][dct_mode]
                 [quant + dv_quant_offset[class1]];
             dc = dc << 2;
