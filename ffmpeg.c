@@ -1635,22 +1635,22 @@ static int av_encode(AVFormatContext **output_files,
     n = 0;
     for(k=0;k<nb_output_files;k++) {
         os = output_files[k];
-        for(i=0;i<os->nb_streams;i++) {
+        for(i=0;i<os->nb_streams;i++,n++) {
             int found;
-            ost = ost_table[n++];
+            ost = ost_table[n];
             ost->file_index = k;
             ost->index = i;
             ost->st = os->streams[i];
             if (nb_stream_maps > 0) {
-                ost->source_index = file_table[stream_maps[n-1].file_index].ist_index +
-                    stream_maps[n-1].stream_index;
+                ost->source_index = file_table[stream_maps[n].file_index].ist_index +
+                    stream_maps[n].stream_index;
 
                 /* Sanity check that the stream types match */
                 if (ist_table[ost->source_index]->st->codec->codec_type != ost->st->codec->codec_type) {
                     int i= ost->file_index;
                     dump_format(output_files[i], i, output_files[i]->filename, 1);
                     fprintf(stderr, "Codec type mismatch for mapping #%d.%d -> #%d.%d\n",
-                        stream_maps[n-1].file_index, stream_maps[n-1].stream_index,
+                        stream_maps[n].file_index, stream_maps[n].stream_index,
                         ost->file_index, ost->index);
                     av_exit(1);
                 }
@@ -1700,8 +1700,8 @@ static int av_encode(AVFormatContext **output_files,
             ist = ist_table[ost->source_index];
             ist->discard = 0;
             ost->sync_ist = (nb_stream_maps > 0) ?
-                ist_table[file_table[stream_maps[n-1].sync_file_index].ist_index +
-                         stream_maps[n-1].sync_stream_index] : ist;
+                ist_table[file_table[stream_maps[n].sync_file_index].ist_index +
+                         stream_maps[n].sync_stream_index] : ist;
         }
     }
 
