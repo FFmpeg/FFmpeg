@@ -168,4 +168,16 @@ typedef struct {
 ///@}
 } AC3DecodeContext;
 
+/**
+ * Parse the E-AC-3 frame header.
+ * This parses both the bit stream info and audio frame header.
+ */
+int ff_eac3_parse_header(AC3DecodeContext *s);
+
+/**
+ * Decode mantissas in a single channel for the entire frame.
+ * This is used when AHT mode is enabled.
+ */
+void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
+
 #endif /* FFMPEG_AC3DEC_H */
