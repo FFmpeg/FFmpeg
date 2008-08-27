@@ -965,7 +965,10 @@ static int dv_decode_mt(AVCodecContext *avctx, void* sl)
     /* byte offset of this channel's data */
     int chan_offset = chan * s->sys->difseg_size * 150 * 80;
 
-    dv_decode_video_segment(s, &s->buf[((chan_slice/27)*6+(chan_slice/3)+chan_slice*5+7)*80 + chan_offset],
+    /* DIF sequence */
+    int seq = chan_slice / 27;
+
+    dv_decode_video_segment(s, &s->buf[(seq*6+(chan_slice/3)+chan_slice*5+7)*80 + chan_offset],
                             &s->sys->video_place[slice*5]);
     return 0;
 }
