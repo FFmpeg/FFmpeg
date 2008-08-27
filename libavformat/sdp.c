@@ -21,6 +21,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
 #include "avformat.h"
+#include "internal.h"
 #include "avc.h"
 #include "rtp.h"
 
@@ -135,27 +136,6 @@ static char *extradata2psets(AVCodecContext *c)
     return psets;
 }
 
-static void digit_to_char(char *dst, uint8_t src)
-{
-    if (src < 10) {
-        *dst = '0' + src;
-    } else {
-        *dst = 'A' + src - 10;
-    }
-}
-
-static char *data_to_hex(char *buff, const uint8_t *src, int s)
-{
-    int i;
-
-    for(i = 0; i < s; i++) {
-        digit_to_char(buff + 2 * i, src[i] >> 4);
-        digit_to_char(buff + 2 * i + 1, src[i] & 0xF);
-    }
-
-    return buff;
-}
-
 static char *extradata2config(AVCodecContext *c)
 {
     char *config;
@@ -171,7 +151,7 @@ static char *extradata2config(AVCodecContext *c)
         return NULL;
     }
     memcpy(config, "; config=", 9);
-    data_to_hex(config + 9, c->extradata, c->extradata_size);
+    ff_data_to_hex(config + 9, c->extradata, c->extradata_size);
     config[9 + c->extradata_size * 2] = 0;
 
     return config;

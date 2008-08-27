@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "internal.h"
 #include "libavcodec/opt.h"
 #include "libavutil/avstring.h"
 #include "riff.h"
@@ -3210,6 +3211,27 @@ void url_split(char *proto, int proto_size,
             av_strlcpy(hostname, p,
                        FFMIN(ls + 1 - p, hostname_size));
     }
+}
+
+static void digit_to_char(char *dst, uint8_t src)
+{
+    if (src < 10) {
+        *dst = '0' + src;
+    } else {
+        *dst = 'A' + src - 10;
+    }
+}
+
+char *ff_data_to_hex(char *buff, const uint8_t *src, int s)
+{
+    int i;
+
+    for(i = 0; i < s; i++) {
+        digit_to_char(buff + 2 * i, src[i] >> 4);
+        digit_to_char(buff + 2 * i + 1, src[i] & 0xF);
+    }
+
+    return buff;
 }
 
 void av_set_pts_info(AVStream *s, int pts_wrap_bits,
