@@ -1,5 +1,5 @@
 /*
- * Lowpass IIR filter
+ * IIR filter
  * Copyright (c) 2008 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
@@ -20,27 +20,48 @@
  */
 
 /**
- * @file lowpass.h
- * lowpass filter interface
+ * @file iirfilter.h
+ * IIR filter interface
  */
 
-#ifndef FFMPEG_LOWPASS_H
-#define FFMPEG_LOWPASS_H
+#ifndef FFMPEG_IIRFILTER_H
+#define FFMPEG_IIRFILTER_H
 
 #include "avcodec.h"
 
-struct FFLPFilterCoeffs;
-struct FFLPFilterState;
+struct FFIIRFilterCoeffs;
+struct FFIIRFilterState;
+
+enum IIRFilterType{
+    FF_FILTER_TYPE_BESSEL,
+    FF_FILTER_TYPE_BUTTERWORTH,
+    FF_FILTER_TYPE_CHEBYSHEV,
+    FF_FILTER_TYPE_ELLIPTIC,
+};
+
+enum IIRFilterMode{
+    FF_FILTER_MODE_LOWPASS,
+    FF_FILTER_MODE_HIGHPASS,
+    FF_FILTER_MODE_BANDPASS,
+    FF_FILTER_MODE_BANDSTOP,
+};
 
 /**
  * Initialize filter coefficients.
  *
+ * @param filt_type    filter type (e.g. Butterworth)
+ * @param filt_mode    filter mode (e.g. lowpass)
  * @param order        filter order
  * @param cutoff_ratio cutoff to input frequency ratio
+ * @param stopband     stopband to input frequency ratio (used by bandpass and bandstop filter modes)
+ * @param ripple       ripple factor (used only in Chebyshev filters)
  *
  * @return pointer to filter coefficients structure or NULL if filter cannot be created
  */
-const struct FFLPFilterCoeffs* ff_lowpass_filter_init_coeffs(int order, float cutoff_ratio);
+struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType filt_type,
+                                                    enum IIRFilterMode filt_mode,
+                                                    int order, float cutoff_ratio,
+                                                    float stopband, float ripple);
 
 /**
  * Create new filter state.
@@ -49,23 +70,21 @@ const struct FFLPFilterCoeffs* ff_lowpass_filter_init_coeffs(int order, float cu
  *
  * @return pointer to new filter state or NULL if state creation fails
  */
-struct FFLPFilterState* ff_lowpass_filter_init_state(int order);
+struct FFIIRFilterState* ff_iir_filter_init_state(int order);
 
-#if 0 //enable with arbitrary order filter implementation, use av_free() for filter state only for now
 /**
  * Free filter coefficients.
  *
- * @param coeffs pointer allocated with ff_lowpass_filter_init_coeffs()
+ * @param coeffs pointer allocated with ff_iir_filter_init_coeffs()
  */
-void ff_lowpass_filter_free_coeffs(struct FFLPFilterCoeffs *coeffs);
+void ff_iir_filter_free_coeffs(struct FFIIRFilterCoeffs *coeffs);
 
 /**
  * Free filter state.
  *
- * @param state pointer allocated with ff_lowpass_filter_init_state()
+ * @param state pointer allocated with ff_iir_filter_init_state()
  */
-void ff_lowpass_filter_free_state(struct FFLPFilterState *state);
-#endif
+void ff_iir_filter_free_state(struct FFIIRFilterState *state);
 
 /**
  * Perform lowpass filtering on input samples.
@@ -78,6 +97,7 @@ void ff_lowpass_filter_free_state(struct FFLPFilterState *state);
  * @param dst    filtered samples (destination may be the same as input)
  * @param dstep  destination stride
  */
-void ff_lowpass_filter(const struct FFLPFilterCoeffs *coeffs, struct FFLPFilterState *state, int size, int16_t *src, int sstep, int16_t *dst, int dstep);
+void ff_iir_filter(const struct FFIIRFilterCoeffs *coeffs, struct FFIIRFilterState *state,
+                   int size, const int16_t *src, int sstep, int16_t *dst, int dstep);
 
-#endif /* FFMPEG_LOWPASS_H */
+#endif /* FFMPEG_IIRFILTER_H */
