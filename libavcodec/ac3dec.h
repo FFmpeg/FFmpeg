@@ -140,7 +140,6 @@ typedef struct {
 ///@}
 
 ///@defgroup dithering zero-mantissa dithering
-    int dither_all;                         ///< true if all channels are dithered
     int dither_flag[AC3_MAX_CHANNELS];      ///< dither flags                           (dithflg)
     AVLFG dith_state;                       ///< for dither generation
 ///@}

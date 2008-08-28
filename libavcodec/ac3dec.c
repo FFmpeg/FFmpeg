@@ -599,7 +599,6 @@ static void decode_transform_coeffs(AC3DecodeContext *s, int blk)
     }
 
     /* if any channel doesn't use dithering, zero appropriate coefficients */
-    if(!s->dither_all)
         remove_dithering(s);
 }
 
@@ -742,11 +741,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
     /* dithering flags */
     if (s->dither_flag_syntax) {
-        s->dither_all = 1;
         for (ch = 1; ch <= fbw_channels; ch++) {
             s->dither_flag[ch] = get_bits1(gbc);
-            if(!s->dither_flag[ch])
-                s->dither_all = 0;
         }
     }
 
