@@ -1,6 +1,7 @@
 version <next>
 - The "device" muxers and demuxers are now in a new libavdevice library
 - DV50 AKA DVCPRO50 encoder, decoder, muxer and demuxer
+- DV100 AKA DVCPRO HD decoder and demuxer
 - TechSmith Camtasia (TSCC) video decoder
 - IBM Ultimotion (ULTI) video decoder
 - Sierra Online audio file demuxer and decoder

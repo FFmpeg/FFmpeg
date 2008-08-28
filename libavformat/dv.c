@@ -8,8 +8,9 @@
  * Raw DV format
  * Copyright (c) 2002 Fabrice Bellard.
  *
- * 50 Mbps (DVCPRO50) support
+ * 50 Mbps (DVCPRO50) and 100 Mbps (DVCPRO HD) support
  * Copyright (c) 2006 Daniel Maas <dmaas@maasdigital.com>
+ * Funded by BBC Research & Development
  *
  * This file is part of FFmpeg.
  *
@@ -36,9 +37,9 @@ struct DVDemuxContext {
     const DVprofile*  sys;    /* Current DV profile. E.g.: 525/60, 625/50 */
     AVFormatContext* fctx;
     AVStream*        vst;
-    AVStream*        ast[2];
-    AVPacket         audio_pkt[2];
-    uint8_t          audio_buf[2][8192];
+    AVStream*        ast[4];
+    AVPacket         audio_pkt[4];
+    uint8_t          audio_buf[4][8192];
     int              ach;
     int              frames;
     uint64_t         abytes;
@@ -98,12 +99,13 @@ static const uint8_t* dv_extract_pack(uint8_t* frame, enum dv_pack_type t)
  * 3. Audio is always returned as 16bit linear samples: 12bit nonlinear samples
  *    are converted into 16bit linear ones.
  */
-static int dv_extract_audio(uint8_t* frame, uint8_t* pcm, uint8_t* pcm2,
+static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
                             const DVprofile *sys)
 {
     int size, chan, i, j, d, of, smpls, freq, quant, half_ch;
     uint16_t lc, rc;
     const uint8_t* as_pack;
+    uint8_t *pcm, ipcm;
 
     as_pack = dv_extract_pack(frame, dv_audio_source);
     if (!as_pack)    /* No audio ? */
@@ -119,6 +121,10 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* pcm, uint8_t* pcm2,
     size = (sys->audio_min_samples[freq] + smpls) * 4; /* 2ch, 2bytes */
     half_ch = sys->difseg_size/2;
 
+    /* We work with 720p frames split in half, thus even frames have channels 0,1 and odd 2,3 */
+    ipcm = (sys->height == 720 && ((frame[1]>>2)&0x3) == 0)?2:0;
+    pcm = ppcm[ipcm++];
+
     /* for each DIF channel */
     for (chan = 0; chan < sys->n_difchan; chan++) {
         /* for each DIF segment */
@@ -126,10 +132,9 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* pcm, uint8_t* pcm2,
             frame += 6 * 80; /* skip DIF segment header */
             if (quant == 1 && i == half_ch) {
                 /* next stereo channel (12bit mode only) */
-                if (!pcm2)
+                pcm = ppcm[ipcm++];
+                if (!pcm)
                     break;
-                else
-                    pcm = pcm2;
             }
 
             /* for each AV sequence */
@@ -170,10 +175,10 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* pcm, uint8_t* pcm2,
             }
         }
 
-        /* next stereo channel (50Mbps only) */
-        if(!pcm2)
+        /* next stereo channel (50Mbps and 100Mbps only) */
+        pcm = ppcm[ipcm++];
+        if (!pcm)
             break;
-        pcm = pcm2;
     }
 
     return size;
@@ -196,6 +201,9 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     quant = as_pack[4] & 0x07; /* 0 - 16bit linear, 1 - 12bit nonlinear */
 
     /* note: ach counts PAIRS of channels (i.e. stereo channels) */
+    if (stype == 3) {
+        ach = 4;
+    } else
     ach = (stype == 2 || (quant && (freq == 2))) ? 2 : 1;
 
     /* Dynamic handling of the audio streams in DV */
@@ -310,6 +318,7 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
                       uint8_t* buf, int buf_size)
 {
     int size, i;
+    uint8_t *ppcm[4] = {0};
 
     if (buf_size < DV_PROFILE_BYTES ||
         !(c->sys = dv_frame_profile(buf)) ||
@@ -323,9 +332,18 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     for (i=0; i<c->ach; i++) {
        c->audio_pkt[i].size = size;
        c->audio_pkt[i].pts  = c->abytes * 30000*8 / c->ast[i]->codec->bit_rate;
+       ppcm[i] = c->audio_buf[i];
     }
-    dv_extract_audio(buf, c->audio_buf[0], c->audio_buf[1], c->sys);
+    dv_extract_audio(buf, ppcm, c->sys);
     c->abytes += size;
+
+    /* We work with 720p frames split in half, thus even frames have channels 0,1 and odd 2,3 */
+    if (c->sys->height == 720) {
+        if (((buf[1]>>2)&0x3))
+            c->audio_pkt[2].size = c->audio_pkt[3].size = 0;
+        else
+            c->audio_pkt[0].size = c->audio_pkt[1].size = 0;
+    }
 
     /* Now it's time to return video packet */
     size = dv_extract_video_info(c, buf);
@@ -366,6 +384,7 @@ void dv_offset_reset(DVDemuxContext *c, int64_t frame_offset)
                           c->ast[0]->codec->bit_rate * (int64_t)c->sys->frame_rate_base,
                           8*c->sys->frame_rate);
     c->audio_pkt[0].size = c->audio_pkt[1].size = 0;
+    c->audio_pkt[2].size = c->audio_pkt[3].size = 0;
 }
 
 /************************************************************
@@ -391,6 +410,11 @@ static int dv_read_header(AVFormatContext *s,
         return AVERROR(EIO);
 
     c->dv_demux->sys = dv_frame_profile(c->buf);
+    if (!c->dv_demux->sys) {
+        av_log(s, AV_LOG_ERROR, "Can't determine profile of DV input stream.\n");
+        return -1;
+    }
+
     s->bit_rate = av_rescale(c->dv_demux->sys->frame_size * 8,
                              c->dv_demux->sys->frame_rate,
                              c->dv_demux->sys->frame_rate_base);

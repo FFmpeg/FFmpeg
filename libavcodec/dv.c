@@ -9,6 +9,10 @@
  * 50 Mbps (DVCPRO50) support
  * Copyright (c) 2006 Daniel Maas <dmaas@maasdigital.com>
  *
+ * 100 Mbps (DVCPRO HD) support
+ * Initial code by Daniel Maas <dmaas@maasdigital.com> (funded by BBC R&D)
+ * Final code by Roman Shaposhnik
+ *
  * Many thanks to Dan Dennedy <dan@dennedy.org> for providing wealth
  * of DV technical info.
  *
@@ -51,6 +55,7 @@ typedef struct DVVideoContext {
 
     uint8_t dv_zigzag[2][64];
     uint32_t dv_idct_factor[2][2][22][64];
+    uint32_t dv100_idct_factor[4][4][16][64];
 
     void (*get_pixels)(DCTELEM *block, const uint8_t *pixels, int line_size);
     void (*fdct[2])(DCTELEM *block);
@@ -59,8 +64,8 @@ typedef struct DVVideoContext {
 
 /* MultiThreading - dv_anchor applies to entire DV codec, not just the avcontext */
 /* one element is needed for each video segment in a DV frame */
-/* at most there are 2 DIF channels * 12 DIF sequences * 27 video segments (PAL 50Mbps) */
-#define DV_ANCHOR_SIZE (2*12*27)
+/* at most there are 4 DIF channels * 12 DIF sequences * 27 video segments (1080i50) */
+#define DV_ANCHOR_SIZE (4*12*27)
 
 static void* dv_anchor[DV_ANCHOR_SIZE];
 
@@ -99,6 +104,17 @@ static void dv_build_unquantize_tables(DVVideoContext *s, uint8_t* perm)
                 /* 248 table */
                 s->dv_idct_factor[0][1][q][i] = dv_iweight_248[i]<<(dv_quant_shifts[q][a] + 1);
                 s->dv_idct_factor[1][1][q][i] = s->dv_idct_factor[0][1][q][i]<<1;
+            }
+        }
+    }
+
+    for(a = 0; a < 4; a++) {
+        for(q = 0; q < 16; q++) {
+            for(i = 1; i < 64; i++) {
+                s->dv100_idct_factor[0][a][q][i]= (dv100_qstep[q]<<(a+9))*dv_iweight_1080_y[i];
+                s->dv100_idct_factor[1][a][q][i]= (dv100_qstep[q]<<(a+9))*dv_iweight_1080_c[i];
+                s->dv100_idct_factor[2][a][q][i]= (dv100_qstep[q]<<(a+9))*dv_iweight_720_y[i];
+                s->dv100_idct_factor[3][a][q][i]= (dv100_qstep[q]<<(a+9))*dv_iweight_720_c[i];
             }
         }
     }
@@ -349,6 +365,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
 {
     int quant, dc, dct_mode, class1, j;
     int mb_index, mb_x, mb_y, v, last_index;
+    int y_stride, i;
     DCTELEM *block, *block1;
     int c_offset;
     uint8_t *y_ptr;
@@ -360,6 +377,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
     DECLARE_ALIGNED_8(uint8_t, mb_bit_buffer[80 + 4]); /* allow some slack */
     DECLARE_ALIGNED_8(uint8_t, vs_bit_buffer[5 * 80 + 4]); /* allow some slack */
     const int log2_blocksize= 3-s->avctx->lowres;
+    int is_field_mode[5];
 
     assert((((int)mb_bit_buffer)&7)==0);
     assert((((int)vs_bit_buffer)&7)==0);
@@ -378,6 +396,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         init_put_bits(&pb, mb_bit_buffer, 80);
         mb = mb1;
         block = block1;
+        is_field_mode[mb_index] = 0;
         for(j = 0;j < s->sys->bpm; j++) {
             last_index = s->sys->block_sizes[j];
             init_get_bits(&gb, buf_ptr, last_index);
@@ -386,10 +405,17 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
             dc = get_sbits(&gb, 9);
             dct_mode = get_bits1(&gb);
             class1 = get_bits(&gb, 2);
-            mb->idct_put = s->idct_put[dct_mode && log2_blocksize==3];
-            mb->scan_table = s->dv_zigzag[dct_mode];
-            mb->factor_table = s->dv_idct_factor[class1 == 3][dct_mode]
-                [quant + dv_quant_offset[class1]];
+            if (DV_PROFILE_IS_HD(s->sys)) {
+                mb->idct_put = s->idct_put[0];
+                mb->scan_table = s->dv_zigzag[0];
+                mb->factor_table = s->dv100_idct_factor[((s->sys->height == 720)<<1)&(j < 4)][class1][quant];
+                is_field_mode[mb_index] |= !j && dct_mode;
+            } else {
+                mb->idct_put = s->idct_put[dct_mode && log2_blocksize==3];
+                mb->scan_table = s->dv_zigzag[dct_mode];
+                mb->factor_table = s->dv_idct_factor[class1 == 3][dct_mode]
+                    [quant + dv_quant_offset[class1]];
+            }
             dc = dc << 2;
             /* convert to unsigned because 128 is not added in the
                standard IDCT */
@@ -465,60 +491,54 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         v = *mb_pos_ptr++;
         mb_x = v & 0xff;
         mb_y = v >> 8;
+        /* We work with 720p frames split in half. The odd half-frame (chan==2,3) is displaced :-( */
+        if (s->sys->height == 720 && ((s->buf[1]>>2)&0x3) == 0) {
+               mb_y -= (mb_y>17)?18:-72; /* shifting the Y coordinate down by 72/2 macro blocks */
+        }
+
+        /* idct_put'ting luminance */
+        if ((s->sys->pix_fmt == PIX_FMT_YUV420P) ||
+            (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
+            (s->sys->height >= 720 && mb_y != 134)) {
+            y_stride = (s->picture.linesize[0]<<((!is_field_mode[mb_index])*log2_blocksize)) - (2<<log2_blocksize);
+        } else {
+            y_stride = 0;
+        }
         y_ptr = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x)<<log2_blocksize);
+        for(j = 0; j < 2; j++, y_ptr += y_stride) {
+            for (i=0; i<2; i++, block += 64, mb++, y_ptr += (1<<log2_blocksize))
+                 if (s->sys->pix_fmt == PIX_FMT_YUV422P && s->sys->width == 720 && i)
+                     y_ptr -= (1<<log2_blocksize);
+                 else
+                     mb->idct_put(y_ptr, s->picture.linesize[0]<<is_field_mode[mb_index], block);
+        }
+
+        /* idct_put'ting chrominance */
         c_offset = (((mb_y>>(s->sys->pix_fmt == PIX_FMT_YUV420P)) * s->picture.linesize[1] +
                      (mb_x>>((s->sys->pix_fmt == PIX_FMT_YUV411P)?2:1)))<<log2_blocksize);
-
-        for(j = 0;j < 6; j++) {
-            if (s->sys->pix_fmt == PIX_FMT_YUV422P) { /* 4:2:2 */
-                if (j == 0 || j == 2) {
-                    /* Y0 Y1 */
-                    mb->idct_put(y_ptr + ((j >> 1)<<log2_blocksize),
-                             s->picture.linesize[0], block);
-                } else if(j > 3) {
-                    /* Cr Cb */
-                    mb->idct_put(s->picture.data[6 - j] + c_offset,
-                             s->picture.linesize[6 - j], block);
-                }
-                /* note: j=1 and j=3 are "dummy" blocks in 4:2:2 */
-            } else { /* 4:1:1 or 4:2:0 */
-                if (j < 4) {
-                    if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x < (704 / 8)) {
-                        /* NOTE: at end of line, the macroblock is handled as 420 */
-                        mb->idct_put(y_ptr + (j<<log2_blocksize), s->picture.linesize[0], block);
-                    } else {
-                        mb->idct_put(y_ptr + (((j & 1) + (j >> 1) * s->picture.linesize[0])<<log2_blocksize),
-                                 s->picture.linesize[0], block);
-                    }
-                } else {
-                    if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
-                        uint64_t aligned_pixels[64/8];
-                        uint8_t *pixels= (uint8_t*)aligned_pixels;
-                        uint8_t *c_ptr, *c_ptr1, *ptr, *ptr1;
-                        int x, y, linesize;
-                        /* NOTE: at end of line, the macroblock is handled as 420 */
-                        mb->idct_put(pixels, 8, block);
-                        linesize = s->picture.linesize[6 - j];
-                        c_ptr = s->picture.data[6 - j] + c_offset;
-                        ptr = pixels;
-                        for(y = 0;y < (1<<log2_blocksize); y++) {
-                            ptr1= ptr + (1<<(log2_blocksize-1));
-                            c_ptr1 = c_ptr + (linesize<<log2_blocksize);
-                            for(x=0; x < (1<<(log2_blocksize-1)); x++){
-                                c_ptr[x]= ptr[x]; c_ptr1[x]= ptr1[x];
-                            }
-                            c_ptr += linesize;
-                            ptr += 8;
-                        }
-                    } else {
-                        /* don't ask me why they inverted Cb and Cr ! */
-                        mb->idct_put(s->picture.data[6 - j] + c_offset,
-                                 s->picture.linesize[6 - j], block);
-                    }
-                }
+        for(j=2; j; j--) {
+            uint8_t *c_ptr = s->picture.data[j] + c_offset;
+            if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
+                  uint64_t aligned_pixels[64/8];
+                  uint8_t *pixels = (uint8_t*)aligned_pixels;
+                  uint8_t *c_ptr1, *ptr1;
+                  int x, y;
+                  mb->idct_put(pixels, 8, block);
+                  for(y = 0; y < (1<<log2_blocksize); y++, c_ptr += s->picture.linesize[j], pixels += 8) {
+                      ptr1= pixels + (1<<(log2_blocksize-1));
+                      c_ptr1 = c_ptr + (s->picture.linesize[j]<<log2_blocksize);
+                      for(x=0; x < (1<<(log2_blocksize-1)); x++) {
+                          c_ptr[x]= pixels[x];
+                          c_ptr1[x]= ptr1[x];
+                      }
+                  }
+                  block += 64; mb++;
+            } else {
+                  y_stride = (mb_y == 134) ? (1<<log2_blocksize) :
+                                             s->picture.linesize[j]<<((!is_field_mode[mb_index])*log2_blocksize);
+                  for (i=0; i<(1<<(s->sys->bpm==8)); i++, block += 64, mb++, c_ptr += y_stride)
+                       mb->idct_put(c_ptr, s->picture.linesize[j]<<is_field_mode[mb_index], block);
             }
-            block += 64;
-            mb++;
         }
     }
 }
@@ -967,6 +987,11 @@ static int dv_decode_mt(AVCodecContext *avctx, void* sl)
 
     /* DIF sequence */
     int seq = chan_slice / 27;
+
+    /* in 1080i50 and 720p50 some seq are unused */
+    if ((DV_PROFILE_IS_1080i50(s->sys) && chan != 0 && seq == 11) ||
+        (DV_PROFILE_IS_720p50(s->sys) && seq > 9))
+        return 0;
 
     dv_decode_video_segment(s, &s->buf[(seq*6+(chan_slice/3)+chan_slice*5+7)*80 + chan_offset],
                             &s->sys->video_place[slice*5]);
