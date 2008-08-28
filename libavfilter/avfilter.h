@@ -125,7 +125,7 @@ void avfilter_unref_pic(AVFilterPicRef *ref);
  * list of the formats supported by each input and output pad. The list
  * given for each pad need not be distinct - they may be references to the
  * same list of formats, as is often the case when a filter supports multiple
- * formats, but will always outut the same format as it is given in input.
+ * formats, but will always output the same format as it is given in input.
  *
  * In this way, a list of possible input formats and a list of possible
  * output formats are associated with each link. When a set of formats is
