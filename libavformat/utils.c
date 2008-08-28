@@ -3213,22 +3213,17 @@ void url_split(char *proto, int proto_size,
     }
 }
 
-static void digit_to_char(char *dst, uint8_t src)
-{
-    if (src < 10) {
-        *dst = '0' + src;
-    } else {
-        *dst = 'A' + src - 10;
-    }
-}
-
 char *ff_data_to_hex(char *buff, const uint8_t *src, int s)
 {
     int i;
+    static const char hex_table[16] = { '0', '1', '2', '3',
+                                        '4', '5', '6', '7',
+                                        '8', '9', 'A', 'B',
+                                        'C', 'D', 'E', 'F' };
 
     for(i = 0; i < s; i++) {
-        digit_to_char(buff + 2 * i, src[i] >> 4);
-        digit_to_char(buff + 2 * i + 1, src[i] & 0xF);
+        buff[i * 2]     = hex_table[src[i] >> 4];
+        buff[i * 2 + 1] = hex_table[src[i] & 0xF];
     }
 
     return buff;
