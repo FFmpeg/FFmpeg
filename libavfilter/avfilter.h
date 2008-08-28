@@ -184,8 +184,8 @@ AVFilterFormats *avfilter_all_colorspaces(void);
 
 /**
  * Returns a format list which contains the intersection of the formats of
- * a and b. And all the references of a and b, and a and b will be
- * deallocated.
+ * a and b. Also, all the references of a, all the references of b, and
+ * a and b themselves will be deallocated.
  *
  * If a and b do not share any common formats, neither is modified, and NULL
  * is returned.
