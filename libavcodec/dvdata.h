@@ -38,6 +38,7 @@
  */
 typedef struct DVprofile {
     int              dsf;                 /* value of the dsf in the DV header */
+    int              video_stype;         /* stype for VAUX source pack */
     int              frame_size;          /* total size of one frame in bytes */
     int              difseg_size;         /* number of DIF segments per DIF channel */
     int              n_difchan;           /* number of DIF channels per frame */
@@ -2533,6 +2534,7 @@ static const uint8_t block_sizes_dv100[8] = {
 
 static const DVprofile dv_profiles[] = {
     { .dsf = 0,
+      .video_stype = 0x0,
       .frame_size = 120000,        /* IEC 61834, SMPTE-314M - 525/60 (NTSC) */
       .difseg_size = 10,
       .n_difchan = 1,
@@ -2552,6 +2554,7 @@ static const DVprofile dv_profiles[] = {
       .audio_shuffle = dv_audio_shuffle525,
     },
     { .dsf = 1,
+      .video_stype = 0x0,
       .frame_size = 144000,        /* IEC 61834 - 625/50 (PAL) */
       .difseg_size = 12,
       .n_difchan = 1,
@@ -2571,6 +2574,7 @@ static const DVprofile dv_profiles[] = {
       .audio_shuffle = dv_audio_shuffle625,
     },
     { .dsf = 1,
+      .video_stype = 0x0,
       .frame_size = 144000,        /* SMPTE-314M - 625/50 (PAL) */
       .difseg_size = 12,
       .n_difchan = 1,
@@ -2590,6 +2594,7 @@ static const DVprofile dv_profiles[] = {
       .audio_shuffle = dv_audio_shuffle625,
     },
     { .dsf = 0,
+      .video_stype = 0x4,
       .frame_size = 240000,        /* SMPTE-314M - 525/60 (NTSC) 50 Mbps */
       .difseg_size = 10,           /* also known as "DVCPRO50" */
       .n_difchan = 2,
@@ -2609,6 +2614,7 @@ static const DVprofile dv_profiles[] = {
       .audio_shuffle = dv_audio_shuffle525,
     },
     { .dsf = 1,
+      .video_stype = 0x4,
       .frame_size = 288000,        /* SMPTE-314M - 625/50 (PAL) 50 Mbps */
       .difseg_size = 12,           /* also known as "DVCPRO50" */
       .n_difchan = 2,
@@ -2663,22 +2669,22 @@ enum dv_pack_type {
 
 static inline const DVprofile* dv_frame_profile(const uint8_t* frame)
 {
-    if ((frame[3] & 0x80) == 0) {      /* DSF flag */
-        /* it's an NTSC format */
-        if ((frame[80*5 + 48 + 3] & 0x4) && (frame[80*5 + 48] == dv_video_source)) { /* 4:2:2 sampling */
-            return &dv_profiles[3]; /* NTSC 50Mbps */
-        } else { /* 4:1:1 sampling */
-            return &dv_profiles[0]; /* NTSC 25Mbps */
-        }
-    } else {
-        /* it's a PAL format */
-        if ((frame[80*5 + 48 + 3] & 0x4) && (frame[80*5 + 48] == dv_video_source)) { /* 4:2:2 sampling */
-            return &dv_profiles[4]; /* PAL 50Mbps */
-        } else if ((frame[5] & 0x07) == 0) { /* APT flag */
-            return &dv_profiles[1]; /* PAL 25Mbps 4:2:0 */
-        } else
-            return &dv_profiles[2]; /* PAL 25Mbps 4:1:1 */
-    }
+   int i;
+
+   int dsf = (frame[3] & 0x80) >> 7;
+
+   int stype = frame[80*5 + 48 + 3] & 0x1f;
+
+   /* 576i50 25Mbps 4:1:1 is a special case */
+   if (dsf == 1 && stype == 0 && frame[5] & 0x07) {
+       return &dv_profiles[2];
+   }
+
+   for (i=0; i<sizeof(dv_profiles)/sizeof(DVprofile); i++)
+       if (dsf == dv_profiles[i].dsf && stype == dv_profiles[i].video_stype)
+           return &dv_profiles[i];
+
+   return NULL;
 }
 
 static inline const DVprofile* dv_codec_profile(AVCodecContext* codec)
