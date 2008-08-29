@@ -73,6 +73,11 @@ untested special converters
 #include "libavutil/x86_cpu.h"
 #include "libavutil/bswap.h"
 
+unsigned swscale_version(void)
+{
+    return LIBSWSCALE_VERSION_INT;
+}
+
 #undef MOVNTQ
 #undef PAVGB
 

@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBSWSCALE_VERSION_MAJOR 0
-#define LIBSWSCALE_VERSION_MINOR 5
+#define LIBSWSCALE_VERSION_MINOR 6
 #define LIBSWSCALE_VERSION_MICRO 1
 
 #define LIBSWSCALE_VERSION_INT  AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
@@ -42,6 +42,11 @@
 #define LIBSWSCALE_BUILD        LIBSWSCALE_VERSION_INT
 
 #define LIBSWSCALE_IDENT        "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
+
+/**
+ * Returns the LIBSWSCALE_VERSION_INT constant.
+ */
+unsigned swscale_version(void);
 
 /* values for the flags, the stuff on the command line is different */
 #define SWS_FAST_BILINEAR     1
