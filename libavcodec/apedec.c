@@ -372,7 +372,7 @@ static inline int ape_decode_value(APEContext * ctx, APERice *rice)
 {
     int x, overflow;
 
-    if (ctx->fileversion < 3980) {
+    if (ctx->fileversion < 3990) {
         int tmpk;
 
         overflow = range_get_symbol(ctx, counts_3970, counts_diff_3970);
