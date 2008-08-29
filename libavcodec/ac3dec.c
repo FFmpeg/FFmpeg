@@ -568,7 +568,7 @@ static void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
 }
 
 /**
- * Get the transform coefficients.
+ * Decode the transform coefficients.
  */
 static void decode_transform_coeffs(AC3DecodeContext *s, int blk)
 {
