@@ -440,7 +440,7 @@ typedef struct {
 } mant_groups;
 
 /**
- * Get the transform coefficients for a particular channel
+ * Decode the transform coefficients for a particular channel
  * reference: Section 7.3 Quantization and Decoding of Mantissas
  */
 static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, mant_groups *m)
