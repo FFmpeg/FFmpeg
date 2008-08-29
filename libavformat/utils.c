@@ -2574,26 +2574,12 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
     return 0;
 }
 
-static void truncate_ts(AVStream *st, AVPacket *pkt){
-    int64_t pts_mask = (2LL << (st->pts_wrap_bits-1)) - 1;
-
-//    if(pkt->dts < 0)
-//        pkt->dts= 0;  //this happens for low_delay=0 and B-frames, FIXME, needs further investigation about what we should do here
-
-    if (pkt->pts != AV_NOPTS_VALUE)
-        pkt->pts &= pts_mask;
-    if (pkt->dts != AV_NOPTS_VALUE)
-        pkt->dts &= pts_mask;
-}
-
 int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
     int ret = compute_pkt_fields2(s->streams[pkt->stream_index], pkt);
 
     if(ret<0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return ret;
-
-    truncate_ts(s->streams[pkt->stream_index], pkt);
 
     ret= s->oformat->write_packet(s, pkt);
     if(!ret)
@@ -2690,7 +2676,6 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
         if(ret<=0) //FIXME cleanup needed for ret<0 ?
             return ret;
 
-        truncate_ts(s->streams[opkt.stream_index], &opkt);
         ret= s->oformat->write_packet(s, &opkt);
 
         av_free_packet(&opkt);
@@ -2715,7 +2700,6 @@ int av_write_trailer(AVFormatContext *s)
         if(!ret)
             break;
 
-        truncate_ts(s->streams[pkt.stream_index], &pkt);
         ret= s->oformat->write_packet(s, &pkt);
 
         av_free_packet(&pkt);
