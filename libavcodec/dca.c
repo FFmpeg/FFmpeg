@@ -673,8 +673,6 @@ static void qmf_32_subbands(DCAContext * s, int chans,
 
     /* Reconstructed channel sample index */
     for (subindex = 0; subindex < 8; subindex++) {
-        float t1, t2;
-
         /* Load in one sample from each subband and clear inactive subbands */
         for (i = 0; i < s->subband_activity[chans]; i++)
             raXin[i] = samples_in[i][subindex];
@@ -684,8 +682,8 @@ static void qmf_32_subbands(DCAContext * s, int chans,
         /* Multiply by cosine modulation coefficients and
          * create temporary arrays SUM and DIFF */
         for (j = 0, k = 0; k < 16; k++) {
-            t1 = 0.0;
-            t2 = 0.0;
+            float t1 = 0.0;
+            float t2 = 0.0;
             for (i = 0; i < 16; i++, j++){
                 t1 += (raXin[2 * i] + raXin[2 * i + 1]) * cos_mod[j];
                 t2 += (raXin[2 * i] + raXin[2 * i - 1]) * cos_mod[j + 256];
