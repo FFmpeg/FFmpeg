@@ -164,7 +164,7 @@ typedef struct {
     int bias;                   ///< output bias
 
     DECLARE_ALIGNED_16(float, samples[1536]);  /* 6 * 256 = 1536, might only need 5 */
-    DECLARE_ALIGNED_16(int16_t, tsamples[1536]);
+    float *samples_chanptr[6];
 
     uint8_t dca_buffer[DCA_MAX_FRAME_SIZE];
     int dca_buffer_size;        ///< how much data is in the dca_buffer
@@ -1145,7 +1145,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
                             const uint8_t * buf, int buf_size)
 {
 
-    int i, j, k;
+    int i;
     int16_t *samples = data;
     DCAContext *s = avctx->priv_data;
     int channels;
@@ -1186,13 +1186,8 @@ static int dca_decode_frame(AVCodecContext * avctx,
     *data_size = 0;
     for (i = 0; i < (s->sample_blocks / 8); i++) {
         dca_decode_block(s);
-        s->dsp.float_to_int16(s->tsamples, s->samples, 256 * channels);
-        /* interleave samples */
-        for (j = 0; j < 256; j++) {
-            for (k = 0; k < channels; k++)
-                samples[k] = s->tsamples[j + k * 256];
-            samples += channels;
-        }
+        s->dsp.float_to_int16_interleave(samples, s->samples_chanptr, 256, channels);
+        samples += 256 * channels;
         *data_size += 256 * sizeof(int16_t) * channels;
     }
 
@@ -1240,6 +1235,7 @@ static av_cold void pre_calc_cosmod(DCAContext * s)
 static av_cold int dca_decode_init(AVCodecContext * avctx)
 {
     DCAContext *s = avctx->priv_data;
+    int i;
 
     s->avctx = avctx;
     dca_init_vlcs();
@@ -1252,7 +1248,8 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
             avctx->request_channels == 2) {
         avctx->channels = avctx->request_channels;
     }
-
+    for(i = 0; i < 6; i++)
+        s->samples_chanptr[i] = s->samples + i * 256;
     avctx->sample_fmt = SAMPLE_FMT_S16;
     return 0;
 }
