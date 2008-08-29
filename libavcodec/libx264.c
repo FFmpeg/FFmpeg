@@ -253,7 +253,6 @@ X264_init(AVCodecContext *avctx)
     x4->params.rc.f_ip_factor = 1/fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
-    x4->params.rc.psz_rc_eq = avctx->rc_eq;
 
     x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
     x4->params.i_log_level = X264_LOG_DEBUG;
