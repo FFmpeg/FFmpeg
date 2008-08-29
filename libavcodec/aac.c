@@ -1348,7 +1348,7 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
             ac->che[TYPE_SCE][elem_id] = ac->che[TYPE_LFE][0];
             ac->che[TYPE_LFE][0] = NULL;
         }
-        if(elem_type && elem_type < TYPE_DSE) {
+        if(elem_type < TYPE_DSE) {
             if(!ac->che[elem_type][elem_id])
                 return -1;
             if(elem_type != TYPE_CCE)
