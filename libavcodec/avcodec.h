@@ -1430,7 +1430,11 @@ typedef struct AVCodecContext {
      * - encoding: Set by libavcodec.
      * - decoding: Set by user.
      */
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
      int bits_per_sample;
+#else
+     int bits_per_coded_sample;
+#endif
 
     /**
      * prediction method (needed for huffyuv)
