@@ -1366,7 +1366,7 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
             break;
 
         case TYPE_CCE:
-            err = decode_cce(ac, &gb, ac->che[TYPE_SCE][elem_id]);
+            err = decode_cce(ac, &gb, ac->che[TYPE_CCE][elem_id]);
             break;
 
         case TYPE_LFE:
