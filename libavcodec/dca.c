@@ -164,7 +164,7 @@ typedef struct {
     int bias;                   ///< output bias
 
     DECLARE_ALIGNED_16(float, samples[1536]);  /* 6 * 256 = 1536, might only need 5 */
-    float *samples_chanptr[6];
+    const float *samples_chanptr[6];
 
     uint8_t dca_buffer[DCA_MAX_FRAME_SIZE];
     int dca_buffer_size;        ///< how much data is in the dca_buffer
