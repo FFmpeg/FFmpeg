@@ -28,6 +28,7 @@
 #include "libavformat/avformat.h"
 #include "libavfilter/avfilter.h"
 #include "libavdevice/avdevice.h"
+#include "libswscale/swscale.h"
 #include "libavutil/avstring.h"
 #include "cmdutils.h"
 #include "version.h"
@@ -211,6 +212,9 @@ void print_all_lib_versions(FILE* outstream, int indent)
     PRINT_LIB_VERSION(outstream, avdevice, AVDEVICE, indent);
 #if ENABLE_AVFILTER
     PRINT_LIB_VERSION(outstream, avfilter, AVFILTER, indent);
+#endif
+#if ENABLE_SWSCALE
+    PRINT_LIB_VERSION(outstream, swscale, SWSCALE, indent);
 #endif
 }
 
