@@ -1354,11 +1354,6 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->width= 0; /* let decoder init width/height */
         st->codec->height= 0;
         break;
-#ifdef CONFIG_VORBIS_DECODER
-    case CODEC_ID_VORBIS:
-#endif
-        st->codec->sample_rate= 0; /* let decoder init parameters properly */
-        break;
     }
 
     /* Do not need those anymore. */
