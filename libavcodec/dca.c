@@ -1183,12 +1183,11 @@ static int dca_decode_frame(AVCodecContext * avctx,
 
     if(*data_size < (s->sample_blocks / 8) * 256 * sizeof(int16_t) * channels)
         return -1;
-    *data_size = 0;
+    *data_size = 256 / 8 * s->sample_blocks * sizeof(int16_t) * channels;
     for (i = 0; i < (s->sample_blocks / 8); i++) {
         dca_decode_block(s);
         s->dsp.float_to_int16_interleave(samples, s->samples_chanptr, 256, channels);
         samples += 256 * channels;
-        *data_size += 256 * sizeof(int16_t) * channels;
     }
 
     return buf_size;
