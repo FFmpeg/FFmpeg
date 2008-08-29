@@ -159,6 +159,20 @@ only formats accepting a normal integer are suitable.
 If you want to extract just a limited number of frames, you can use the
 above command in combination with the -vframes or -t option, or in
 combination with -ss to start extracting from a certain point in time.
+
+* You can put many streams of the same type in the output:
+
+@example
+ffmpeg -i test1.avi -i test2.avi -vcodec copy -acodec copy -vcodec copy -acodec copy test12.avi -newvideo -newaudio
+@end example
+
+In addition to the first video and audio streams, the resulting
+output file @file{test12.avi} will contain the second video
+and the second audio stream found in the input streams list.
+
+The @code{-newvideo}, @code{-newaudio} and @code{-newsubtitle}
+options have to be specified immediately after the name of the output
+file to which you want to add them.
 @c man end
 
 @chapter Invocation
