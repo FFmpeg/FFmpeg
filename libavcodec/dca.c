@@ -158,7 +158,7 @@ typedef struct {
     /* Subband samples history (for ADPCM) */
     float subband_samples_hist[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][4];
     float subband_fir_hist[DCA_PRIM_CHANNELS_MAX][512];
-    float subband_fir_noidea[DCA_PRIM_CHANNELS_MAX][64];
+    float subband_fir_noidea[DCA_PRIM_CHANNELS_MAX][32];
 
     int output;                 ///< type of output
     int bias;                   ///< output bias
@@ -693,20 +693,19 @@ static void qmf_32_subbands(DCAContext * s, int chans,
         }
 
         /* Multiply by filter coefficients */
-        for (k = 31, i = 0; i < 32; i++, k--)
+        for (k = 31, i = 0; i < 32; i++, k--){
+            float a= subband_fir_hist2[i];
+            float b= 0;
             for (j = 0; j < 512; j += 64){
-                subband_fir_hist2[i]    += prCoeff[i+j]  * ( subband_fir_hist[i+j] - subband_fir_hist[j+k]);
-                subband_fir_hist2[i+32] += prCoeff[i+j+32]*(-subband_fir_hist[i+j] - subband_fir_hist[j+k]);
+                a += prCoeff[i+j   ]*( subband_fir_hist[i+j] - subband_fir_hist[j+k]);
+                b += prCoeff[i+j+32]*(-subband_fir_hist[i+j] - subband_fir_hist[j+k]);
             }
-
-        /* Create 32 PCM output samples */
-        for (i = 0; i < 32; i++)
-            samples_out[chindex++] = subband_fir_hist2[i] * scale + bias;
+            samples_out[chindex++] = a * scale + bias;
+            subband_fir_hist2[i] = b;
+        }
 
         /* Update working arrays */
         memmove(&subband_fir_hist[32], &subband_fir_hist[0], (512 - 32) * sizeof(float));
-        memmove(&subband_fir_hist2[0], &subband_fir_hist2[32], 32 * sizeof(float));
-        memset(&subband_fir_hist2[32], 0, 32 * sizeof(float));
     }
 }
 
