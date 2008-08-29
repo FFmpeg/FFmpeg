@@ -322,11 +322,13 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (type == FLV_TAG_TYPE_AUDIO) {
         is_audio=1;
         flags = get_byte(s->pb);
+        size--;
     } else if (type == FLV_TAG_TYPE_VIDEO) {
         is_audio=0;
         flags = get_byte(s->pb);
+        size--;
         if ((flags & 0xf0) == 0x50) { /* video info / command frame */
-            url_fskip(s->pb, size - 1);
+            url_fskip(s->pb, size);
             continue;
         }
     } else {
@@ -400,13 +402,13 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             get_be24(s->pb);
         }
         if (type == 0) {
-            if ((ret = flv_get_extradata(s, st, size - 1)) < 0)
+            if ((ret = flv_get_extradata(s, st, size)) < 0)
                 return ret;
             goto retry;
         }
     }
 
-    ret= av_get_packet(s->pb, pkt, size - 1);
+    ret= av_get_packet(s->pb, pkt, size);
     if (ret <= 0) {
         return AVERROR(EIO);
     }
