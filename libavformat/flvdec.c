@@ -339,6 +339,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         continue;
     }
 
+    /* skip empty data packets */
+    if (!size)
+        continue;
+
     /* now find stream */
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
