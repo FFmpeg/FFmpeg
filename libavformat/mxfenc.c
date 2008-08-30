@@ -240,7 +240,7 @@ static const MXFDataDefinitionUL *mxf_get_data_definition_ul(enum CodecType type
     while (uls->type != CODEC_TYPE_DATA) {
         if (type == uls->type)
             break;
-        uls ++;
+        uls++;
     }
     return uls;
 }
@@ -271,9 +271,8 @@ static int mxf_write_essence_container_refs(AVFormatContext *s, int write)
 
     if (write) {
         mxf_write_refs_count(pb, count);
-        for (i = 0; i < count; i++) {
+        for (i = 0; i < count; i++)
             put_buffer(pb, ff_mxf_essence_container_uls[essence_container_ul_sign[i]].uid, 16);
-        }
         av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", count);
         for (i = 0; i < count; i++)
             PRINT_KEY(s, "essence container ul:\n", ff_mxf_essence_container_uls[essence_container_ul_sign[i]].uid);
@@ -385,6 +384,7 @@ static void mxf_write_content_storage(AVFormatContext *s)
     mxf_write_local_tag(pb, 16, 0x3C0A);
     mxf_write_uuid(pb, ContentStorage, 0);
     PRINT_KEY(s, "content storage uid", pb->buf_ptr - 16);
+
     // write package reference
     mxf_write_local_tag(pb, 16 * 2 + 8, 0x1901);
     mxf_write_refs_count(pb, 2);
@@ -401,8 +401,7 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
         mxf_write_metadata_key(pb, 0x013600);
         PRINT_KEY(s, "Material Package key", pb->buf_ptr - 16);
         klv_encode_ber_length(pb, 92 + 16 * s->nb_streams);
-    }
-    else {
+    } else {
         mxf_write_metadata_key(pb, 0x013700);
         PRINT_KEY(s, "Source Package key", pb->buf_ptr - 16);
         klv_encode_ber_length(pb, 112 + 16 * s->nb_streams); // 20 bytes length for descriptor reference
@@ -418,6 +417,7 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
     mxf_write_local_tag(pb, 32, 0x4401);
     mxf_write_umid(pb, type, 0);
     PRINT_KEY(s, "package umid second part", pb->buf_ptr - 16);
+
     // write create date
     mxf_write_local_tag(pb, 8, 0x4405);
     put_be64(pb, 0);
@@ -432,8 +432,8 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
     for (i = 0; i < s->nb_streams; i++)
         mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, i);
 
+    // write multiple descriptor reference
     if (type == SourcePackage) {
-        // write multiple descriptor reference
         mxf_write_local_tag(pb, 16, 0x4701);
         mxf_write_uuid(pb, MultipleDescriptor, 0);
     }
@@ -458,6 +458,7 @@ static void mxf_write_track(AVFormatContext *s, int stream_index, enum MXFMetada
     mxf_write_local_tag(pb, 16, 0x3C0A);
     mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, stream_index);
     PRINT_KEY(s, "track uid", pb->buf_ptr - 16);
+
     // write track id
     mxf_write_local_tag(pb, 4, 0x4801);
     put_be32(pb, stream_index);
@@ -472,14 +473,13 @@ static void mxf_write_track(AVFormatContext *s, int stream_index, enum MXFMetada
                 // write track number
                 put_buffer(pb, sc->track_essence_element_key + 12, 4);
 
-                track_number_sign[i] ++;
+                track_number_sign[i]++;
                 break;
             }
             i++;
         }
-    } else {
+    } else
         put_be32(pb, 0); // track number of material package is 0
-    }
 
     mxf_write_local_tag(pb, 8, 0x4B01);
     put_be32(pb, st->time_base.den);
@@ -494,9 +494,9 @@ static void mxf_write_track(AVFormatContext *s, int stream_index, enum MXFMetada
     mxf_write_uuid(pb, type == MaterialPackage ? Sequence: Sequence + TypeBottom, stream_index);
 }
 
-static void mxf_write_common_fields(    ByteIOContext *pb, AVStream *st)
+static void mxf_write_common_fields(ByteIOContext *pb, AVStream *st)
 {
-    const MXFDataDefinitionUL * data_def_ul;
+    const MXFDataDefinitionUL *data_def_ul;
 
     // find data define uls
     data_def_ul = mxf_get_data_definition_ul(st->codec->codec_type);
@@ -554,18 +554,17 @@ static void mxf_write_structural_component(AVFormatContext *s, int stream_index,
     mxf_write_local_tag(pb, 8, 0x1201);
     put_be64(pb, 0);
 
+    // write source package uid, end of the reference
     mxf_write_local_tag(pb, 32, 0x1101);
     if (type == SourcePackage) {
-        // write source package uid, end of the reference
-        for (i = 0; i < 4; i++) {
+        for (i = 0; i < 4; i++)
             put_be64(pb, 0);
-        }
     } else
         mxf_write_umid(pb, SourcePackage, 0);
 
+    // write source track id
     mxf_write_local_tag(pb, 4, 0x1102);
     if (type == SourcePackage)
-        // write source track id
         put_be32(pb, 0);
     else
         put_be32(pb, stream_index);
@@ -596,9 +595,8 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
     // write sub descriptor refs
     mxf_write_local_tag(pb, s->nb_streams * 16 + 8, 0x3F01);
     mxf_write_refs_count(pb, s->nb_streams);
-    for (i = 0; i < s->nb_streams; i++) {
+    for (i = 0; i < s->nb_streams; i++)
         mxf_write_uuid(pb, SubDescriptor, i);
-    }
 }
 
 static void mxf_write_header_desc(ByteIOContext *pb, const MXFDescriptorWriteTableEntry *desc_tbl, AVStream *st)
@@ -623,7 +621,7 @@ static void mxf_write_header_desc(ByteIOContext *pb, const MXFDescriptorWriteTab
     put_buffer(pb, codec_ul->uid, 16);
 }
 
-static void mxf_write_mpeg_video_desc(AVFormatContext *s, const MXFDescriptorWriteTableEntry *desc_tbl, int stream_index)
+static void mxf_write_mpegvideo_desc(AVFormatContext *s, const MXFDescriptorWriteTableEntry *desc_tbl, int stream_index)
 {
     ByteIOContext *pb = s->pb;
     AVStream *st;
@@ -667,11 +665,11 @@ static void mxf_write_wav_desc(AVFormatContext *s, const MXFDescriptorWriteTable
 
     // tmp write, will modified later
     mxf_write_local_tag(pb, 16, 0x3201);
-    put_buffer(pb, (ff_mxf_codec_uls + 8) ->uid, 16);
+    put_buffer(pb, (ff_mxf_codec_uls + 8)->uid, 16);
 }
 
 static const MXFDescriptorWriteTableEntry mxf_descriptor_write_table[] = {
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x51,0x00 }, mxf_write_mpeg_video_desc, CODEC_ID_MPEG2VIDEO},
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x51,0x00 }, mxf_write_mpegvideo_desc, CODEC_ID_MPEG2VIDEO},
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x48,0x00 }, mxf_write_wav_desc, CODEC_ID_PCM_S16LE},
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL, CODEC_ID_NONE},
 };
@@ -707,10 +705,9 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
     AVStream *st;
     MXFStreamContext *sc = NULL;
     int i;
+
     mxf_write_preface(s);
-
     mxf_write_identification(s);
-
     mxf_write_content_storage(s);
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -720,11 +717,10 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
             return AVERROR(ENOMEM);
         st->priv_data = sc;
         // set pts information
-        if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+        if (st->codec->codec_type == CODEC_TYPE_VIDEO)
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
-        } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+        else if (st->codec->codec_type == CODEC_TYPE_AUDIO)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
-        }
     }
 
     mxf_build_structural_metadata(s, MaterialPackage);
@@ -736,6 +732,7 @@ static void mxf_write_partition(AVFormatContext *s, int64_t byte_position, int b
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
+
     // write klv
     put_buffer(pb, key, 16);
     if (!mxf->essence_container_count)
@@ -827,13 +824,11 @@ static void mxf_update_header_partition(AVFormatContext *s, int64_t footer_parti
 static int mux_write_footer(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
-
     int64_t byte_position= url_ftell(pb);
+
     if (!url_is_streamed(s->pb)) {
         mxf_write_partition(s, byte_position, 0, footer_partition_key);
-
         put_flush_packet(pb);
-
         mxf_update_header_partition(s, byte_position);
     }
     mxf_free(s);
