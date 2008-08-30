@@ -264,7 +264,7 @@ static int mxf_write_essence_container_refs(AVFormatContext *s, int write)
         }
         j++;
         // considering WAV/AES3 frame wrapped, when get the first CODEC_ID_PCM_S16LE, break;
-        // this is a temporary method, when we can get  more information, modofy this.
+        // this is a temporary method, when we can get more information, modify this.
         if (codec_ul->id == CODEC_ID_PCM_S16LE)
             break;
     }
