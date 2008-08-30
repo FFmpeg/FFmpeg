@@ -211,10 +211,10 @@ static void mxf_write_primer_pack(AVFormatContext *s)
     }
 }
 
-static void mxf_write_local_tag(ByteIOContext *pb, int value_size, int tag)
+static void mxf_write_local_tag(ByteIOContext *pb, int size, int tag)
 {
     put_be16(pb, tag);
-    put_be16(pb, value_size);
+    put_be16(pb, size);
 }
 
 static void mxf_write_metadata_key(ByteIOContext *pb, unsigned int value)
