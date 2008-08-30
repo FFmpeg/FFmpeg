@@ -338,6 +338,7 @@ static void mxf_write_local_tag_utf16(ByteIOContext *pb, int tag, const char *va
 static void mxf_write_identification(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
+    const char *version;
     int length, company_name_len, product_name_len, version_string_len;
 
     mxf_write_metadata_key(pb, 0x013000);
@@ -347,9 +348,11 @@ static void mxf_write_identification(AVFormatContext *s)
 
     length = 80 + company_name_len + product_name_len;
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
-        version_string_len = strlen(LIBAVFORMAT_IDENT) * 2;
-        length += 4 + version_string_len;
+        version = LIBAVFORMAT_IDENT;
+    } else {
+        version = "0.0.0";
     }
+    length += 4 + strlen(version)*2;
     klv_encode_ber_length(pb, length);
 
     // write uid
@@ -362,8 +365,7 @@ static void mxf_write_identification(AVFormatContext *s)
 
     mxf_write_local_tag_utf16(pb, 0x3C01, "FFmpeg");     // Company Name
     mxf_write_local_tag_utf16(pb, 0x3C02, "OP1a Muxer"); // Product Name
-    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
-        mxf_write_local_tag_utf16(pb, 0x3C04, LIBAVFORMAT_IDENT); // Version String
+    mxf_write_local_tag_utf16(pb, 0x3C04, version); // Version String
 
     // write product uid
     mxf_write_local_tag(pb, 16, 0x3C05);
