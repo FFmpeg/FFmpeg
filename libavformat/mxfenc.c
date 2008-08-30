@@ -325,11 +325,12 @@ static void mxf_write_preface(AVFormatContext *s)
 }
 
 /*
- * Write an ascii string as utf-16
+ * Write a local tag containing an ascii string as utf-16
  */
-static void mxf_write_utf16(ByteIOContext *pb, const char *value)
+static void mxf_write_local_tag_utf16(ByteIOContext *pb, int tag, const char *value)
 {
     int i, size = strlen(value);
+    mxf_write_local_tag(pb, size*2, tag);
     for (i = 0; i < size; i++)
         put_be16(pb, value[i]);
 }
@@ -359,16 +360,10 @@ static void mxf_write_identification(AVFormatContext *s)
     mxf_write_local_tag(pb, 16, 0x3C09);
     mxf_write_uuid(pb, Identification, 1);
 
-    mxf_write_local_tag(pb, company_name_len, 0x3C01);
-    mxf_write_utf16(pb, "FFmpeg");
-
-    mxf_write_local_tag(pb, product_name_len, 0x3C02);
-    mxf_write_utf16(pb, "OP1a Muxer");
-
-    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
-        mxf_write_local_tag(pb, version_string_len, 0x3C04);
-        mxf_write_utf16(pb, LIBAVFORMAT_IDENT);
-    }
+    mxf_write_local_tag_utf16(pb, 0x3C01, "FFmpeg");     // Company Name
+    mxf_write_local_tag_utf16(pb, 0x3C02, "OP1a Muxer"); // Product Name
+    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
+        mxf_write_local_tag_utf16(pb, 0x3C04, LIBAVFORMAT_IDENT); // Version String
 
     // write product uid
     mxf_write_local_tag(pb, 16, 0x3C05);
