@@ -159,6 +159,7 @@ typedef struct {
     float subband_samples_hist[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][4];
     float subband_fir_hist[DCA_PRIM_CHANNELS_MAX][512];
     float subband_fir_noidea[DCA_PRIM_CHANNELS_MAX][32];
+    int hist_index[DCA_PRIM_CHANNELS_MAX];
 
     int output;                 ///< type of output
     int bias;                   ///< output bias
@@ -658,7 +659,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
     int i, j, k;
     float praXin[33], *raXin = &praXin[1];
 
-    float *subband_fir_hist = s->subband_fir_hist[chans];
+    int hist_index= s->hist_index[chans];
     float *subband_fir_hist2 = s->subband_fir_noidea[chans];
 
     int chindex = 0, subindex;
@@ -673,6 +674,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
 
     /* Reconstructed channel sample index */
     for (subindex = 0; subindex < 8; subindex++) {
+        float *subband_fir_hist = s->subband_fir_hist[chans] + hist_index;
         /* Load in one sample from each subband and clear inactive subbands */
         for (i = 0; i < s->subband_activity[chans]; i++)
             raXin[i] = samples_in[i][subindex];
@@ -696,17 +698,21 @@ static void qmf_32_subbands(DCAContext * s, int chans,
         for (k = 31, i = 0; i < 32; i++, k--){
             float a= subband_fir_hist2[i];
             float b= 0;
-            for (j = 0; j < 512; j += 64){
+            for (j = 0; j < 512-hist_index; j += 64){
                 a += prCoeff[i+j   ]*( subband_fir_hist[i+j] - subband_fir_hist[j+k]);
                 b += prCoeff[i+j+32]*(-subband_fir_hist[i+j] - subband_fir_hist[j+k]);
+            }
+            for (     ; j < 512; j += 64){
+                a += prCoeff[i+j   ]*( subband_fir_hist[i+j-512] - subband_fir_hist[j+k-512]);
+                b += prCoeff[i+j+32]*(-subband_fir_hist[i+j-512] - subband_fir_hist[j+k-512]);
             }
             samples_out[chindex++] = a * scale + bias;
             subband_fir_hist2[i] = b;
         }
 
-        /* Update working arrays */
-        memmove(&subband_fir_hist[32], &subband_fir_hist[0], (512 - 32) * sizeof(float));
+        hist_index = (hist_index-32)&511;
     }
+    s->hist_index[chans]= hist_index;
 }
 
 static void lfe_interpolation_fir(int decimation_select,
