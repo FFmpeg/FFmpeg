@@ -348,7 +348,7 @@ static void mxf_write_identification(AVFormatContext *s)
 
     length = 80 + company_name_len + product_name_len;
     version = s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT ?
-        "0.0.0" : LIBAVFORMAT_IDENT;
+        "0.0.0" : AV_STRINGIFY(LIBAVFORMAT_VERSION);
     length += 4 + strlen(version)*2;
     klv_encode_ber_length(pb, length);
 
