@@ -40,6 +40,7 @@ typedef struct {
 
 typedef struct {
     UID track_essence_element_key;
+    const UID *essence_container_ul;
 } MXFStreamContext;
 
 typedef struct MXFContext {
@@ -181,15 +182,15 @@ static int klv_encode_ber_length(ByteIOContext *pb, uint64_t len)
     return 0;
 }
 
-static const MXFCodecUL *mxf_get_essence_container_ul(enum CodecID type)
+static const UID *mxf_get_essence_container_ul(enum CodecID type)
 {
     const MXFCodecUL *uls = ff_mxf_essence_container_uls;
     while (uls->id != CODEC_ID_NONE) {
         if (uls->id == type)
-            break;
+            return &uls->uid;
         uls++;
     }
-    return uls;
+    return NULL;
 }
 
 static void mxf_write_primer_pack(AVFormatContext *s)
@@ -601,7 +602,7 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
 
 static void mxf_write_generic_desc(ByteIOContext *pb, const MXFDescriptorWriteTableEntry *desc_tbl, AVStream *st)
 {
-    const MXFCodecUL *codec_ul;
+    MXFStreamContext *sc = st->priv_data;
 
     put_buffer(pb, desc_tbl->key, 16);
     klv_encode_ber_length(pb, 108);
@@ -616,9 +617,8 @@ static void mxf_write_generic_desc(ByteIOContext *pb, const MXFDescriptorWriteTa
     put_be32(pb, st->time_base.den);
     put_be32(pb, st->time_base.num);
 
-    codec_ul = mxf_get_essence_container_ul(st->codec->codec_id);
     mxf_write_local_tag(pb, 16, 0x3004);
-    put_buffer(pb, codec_ul->uid, 16);
+    put_buffer(pb, *sc->essence_container_ul, 16);
 }
 
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, const MXFDescriptorWriteTableEntry *desc_tbl, int stream_index)
@@ -769,6 +769,12 @@ static int mux_write_header(AVFormatContext *s)
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
         else if (st->codec->codec_type == CODEC_TYPE_AUDIO)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+        sc->essence_container_ul = mxf_get_essence_container_ul(st->codec->codec_id);
+        if (!sc->essence_container_ul) {
+            av_log(s, AV_LOG_ERROR, "track %d: could not find essence container ul, "
+                   "codec not currently supported in container\n", i);
+            return -1;
+        }
     }
 
     mxf_write_partition(s, 0, 1, header_partition_key);
