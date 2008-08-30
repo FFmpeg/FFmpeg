@@ -599,7 +599,7 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
         mxf_write_uuid(pb, SubDescriptor, i);
 }
 
-static void mxf_write_header_desc(ByteIOContext *pb, const MXFDescriptorWriteTableEntry *desc_tbl, AVStream *st)
+static void mxf_write_generic_desc(ByteIOContext *pb, const MXFDescriptorWriteTableEntry *desc_tbl, AVStream *st)
 {
     const MXFCodecUL *codec_ul;
 
@@ -627,7 +627,7 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, const MXFDescriptorWrit
     AVStream *st;
 
     st = s->streams[stream_index];
-    mxf_write_header_desc(pb, desc_tbl, st);
+    mxf_write_generic_desc(pb, desc_tbl, st);
 
     mxf_write_local_tag(pb, 4, 0x3203);
     put_be32(pb, st->codec->width);
@@ -650,7 +650,7 @@ static void mxf_write_wav_desc(AVFormatContext *s, const MXFDescriptorWriteTable
     AVStream *st;
 
     st = s->streams[stream_index];
-    mxf_write_header_desc(pb, desc_tbl, st);
+    mxf_write_generic_desc(pb, desc_tbl, st);
 
     // write audio sampling rate
     mxf_write_local_tag(pb, 8, 0x3D03);
