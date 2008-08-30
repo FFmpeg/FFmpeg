@@ -110,8 +110,8 @@ stddev:    6.34 PSNR: 32.07 bytes:  7603200/  7603200
 1567580 ./tests/data/a-mjpeg.avi
 18c3a76f984e717dd886d21fa04355f6 *./tests/data/mjpeg.vsynth.out.yuv
 stddev:    7.93 PSNR: 30.13 bytes:  7603200/  7603200
-5a662e3833d900b56cca79ba5ed5ec06 *./tests/data/a-ljpeg.avi
-6264498 ./tests/data/a-ljpeg.avi
+7c79e97bbe4b2eac12a4bef0568eeb93 *./tests/data/a-ljpeg.avi
+6312866 ./tests/data/a-ljpeg.avi
 799d3db687f6cdd7a837ec156efc171f *./tests/data/ljpeg.vsynth.out.yuv
 stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
 dca9d700da7857217408c310c501b9bc *./tests/data/a-jpegls.avi

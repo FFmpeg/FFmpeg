@@ -110,8 +110,8 @@ b179402bba391073b5f5f9324a834061 *./tests/data/a-mjpeg.avi
 703564 ./tests/data/a-mjpeg.avi
 b1aa72cfb6f9cc3f525b27abc86a8f51 *./tests/data/mjpeg.rotozoom.out.yuv
 stddev:    4.38 PSNR: 35.28 bytes:  7603200/  7603200
-bc0d8c868c1a05db0ff03f41768f6c5e *./tests/data/a-ljpeg.avi
-4766558 ./tests/data/a-ljpeg.avi
+554a4a6a5a9058c588f8bf2de405bc70 *./tests/data/a-ljpeg.avi
+4766914 ./tests/data/a-ljpeg.avi
 dde5895817ad9d219f79a52d0bdfb001 *./tests/data/ljpeg.rotozoom.out.yuv
 stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
 f67cd488dfd06c03ad1d6d94d81b80c8 *./tests/data/a-jpegls.avi
