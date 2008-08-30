@@ -769,7 +769,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     /* TODO: spectral extension coordinates */
 
     /* coupling strategy */
-    if (get_bits1(gbc)) {
+    if (s->eac3 ? s->cpl_strategy_exists[blk] : get_bits1(gbc)) {
         memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
         if (!s->eac3)
             s->cpl_in_use[blk] = get_bits1(gbc);
@@ -855,8 +855,9 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
         for (ch = 1; ch <= fbw_channels; ch++) {
             if (s->channel_in_cpl[ch]) {
-                if (get_bits1(gbc)) {
+                if ((s->eac3 && s->first_cpl_coords[ch]) || get_bits1(gbc)) {
                     int master_cpl_coord, cpl_coord_exp, cpl_coord_mant;
+                    s->first_cpl_coords[ch] = 0;
                     cpl_coords_exist = 1;
                     master_cpl_coord = 3 * get_bits(gbc, 2);
                     for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
@@ -872,6 +873,9 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                     av_log(s->avctx, AV_LOG_ERROR, "new coupling coordinates must be present in block 0\n");
                     return -1;
                 }
+            } else {
+                /* channel not in coupling */
+                s->first_cpl_coords[ch] = 1;
             }
         }
         /* phase flags */
