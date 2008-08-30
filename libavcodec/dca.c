@@ -157,7 +157,7 @@ typedef struct {
 
     /* Subband samples history (for ADPCM) */
     float subband_samples_hist[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][4];
-    float subband_fir_hist[DCA_PRIM_CHANNELS_MAX][512];
+    DECLARE_ALIGNED_16(float, subband_fir_hist[DCA_PRIM_CHANNELS_MAX][512]);
     float subband_fir_noidea[DCA_PRIM_CHANNELS_MAX][32];
     int hist_index[DCA_PRIM_CHANNELS_MAX];
 
@@ -177,6 +177,7 @@ typedef struct {
 
     int debug_flag;             ///< used for suppressing repeated error messages output
     DSPContext dsp;
+    MDCTContext imdct;
 } DCAContext;
 
 static av_cold void dca_init_vlcs(void)
@@ -656,15 +657,15 @@ static void qmf_32_subbands(DCAContext * s, int chans,
                             float scale, float bias)
 {
     const float *prCoeff;
-    int i, j, k;
-    float praXin[33], *raXin = &praXin[1];
+    int i, j;
+    DECLARE_ALIGNED_16(float, raXin[32]);
 
     int hist_index= s->hist_index[chans];
     float *subband_fir_hist2 = s->subband_fir_noidea[chans];
 
-    int chindex = 0, subindex;
+    int subindex;
 
-    praXin[0] = 0.0;
+    scale *= sqrt(1/8.0);
 
     /* Select filter */
     if (!s->multirate_inter)    /* Non-perfect reconstruction */
@@ -676,39 +677,39 @@ static void qmf_32_subbands(DCAContext * s, int chans,
     for (subindex = 0; subindex < 8; subindex++) {
         float *subband_fir_hist = s->subband_fir_hist[chans] + hist_index;
         /* Load in one sample from each subband and clear inactive subbands */
-        for (i = 0; i < s->subband_activity[chans]; i++)
-            raXin[i] = samples_in[i][subindex];
+        for (i = 0; i < s->subband_activity[chans]; i++){
+            if((i-1)&2) raXin[i] = -samples_in[i][subindex];
+            else        raXin[i] =  samples_in[i][subindex];
+        }
         for (; i < 32; i++)
             raXin[i] = 0.0;
 
-        /* Multiply by cosine modulation coefficients and
-         * create temporary arrays SUM and DIFF */
-        for (j = 0, k = 0; k < 16; k++) {
-            float t1 = 0.0;
-            float t2 = 0.0;
-            for (i = 0; i < 16; i++, j++){
-                t1 += (raXin[2 * i] + raXin[2 * i + 1]) * cos_mod[j];
-                t2 += (raXin[2 * i] + raXin[2 * i - 1]) * cos_mod[j + 256];
-            }
-            subband_fir_hist[   k  ] = cos_mod[k+512   ] * (t1 + t2);
-            subband_fir_hist[32-k-1] = cos_mod[k+512+16] * (t1 - t2);
-        }
+        ff_imdct_half(&s->imdct, subband_fir_hist, raXin);
 
         /* Multiply by filter coefficients */
-        for (k = 31, i = 0; i < 32; i++, k--){
-            float a= subband_fir_hist2[i];
-            float b= 0;
+        for (i = 0; i < 16; i++){
+            float a= subband_fir_hist2[i   ];
+            float b= subband_fir_hist2[i+16];
+            float c= 0;
+            float d= 0;
             for (j = 0; j < 512-hist_index; j += 64){
-                a += prCoeff[i+j   ]*( subband_fir_hist[i+j] - subband_fir_hist[j+k]);
-                b += prCoeff[i+j+32]*(-subband_fir_hist[i+j] - subband_fir_hist[j+k]);
+                a += prCoeff[i+j   ]*(-subband_fir_hist[15-i+j]);
+                b += prCoeff[i+j+16]*( subband_fir_hist[   i+j]);
+                c += prCoeff[i+j+32]*( subband_fir_hist[16+i+j]);
+                d += prCoeff[i+j+48]*( subband_fir_hist[31-i+j]);
             }
             for (     ; j < 512; j += 64){
-                a += prCoeff[i+j   ]*( subband_fir_hist[i+j-512] - subband_fir_hist[j+k-512]);
-                b += prCoeff[i+j+32]*(-subband_fir_hist[i+j-512] - subband_fir_hist[j+k-512]);
+                a += prCoeff[i+j   ]*(-subband_fir_hist[15-i+j-512]);
+                b += prCoeff[i+j+16]*( subband_fir_hist[   i+j-512]);
+                c += prCoeff[i+j+32]*( subband_fir_hist[16+i+j-512]);
+                d += prCoeff[i+j+48]*( subband_fir_hist[31-i+j-512]);
             }
-            samples_out[chindex++] = a * scale + bias;
-            subband_fir_hist2[i] = b;
+            samples_out[i   ] = a * scale + bias;
+            samples_out[i+16] = b * scale + bias;
+            subband_fir_hist2[i   ] = c;
+            subband_fir_hist2[i+16] = d;
         }
+        samples_out+= 32;
 
         hist_index = (hist_index-32)&511;
     }
@@ -1237,6 +1238,7 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
     pre_calc_cosmod(s);
 
     dsputil_init(&s->dsp, avctx);
+    ff_mdct_init(&s->imdct, 6, 1);
 
     /* allow downmixing to stereo */
     if (avctx->channels > 0 && avctx->request_channels < avctx->channels &&
@@ -1249,6 +1251,12 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
+static av_cold int dca_decode_end(AVCodecContext * avctx)
+{
+    DCAContext *s = avctx->priv_data;
+    ff_mdct_end(&s->imdct);
+    return 0;
+}
 
 AVCodec dca_decoder = {
     .name = "dca",
@@ -1257,5 +1265,6 @@ AVCodec dca_decoder = {
     .priv_data_size = sizeof(DCAContext),
     .init = dca_decode_init,
     .decode = dca_decode_frame,
+    .close = dca_decode_end,
     .long_name = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
 };
