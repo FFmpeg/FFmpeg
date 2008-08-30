@@ -324,6 +324,16 @@ static void mxf_write_preface(AVFormatContext *s)
     put_be64(pb, 0);
 }
 
+/*
+ * Write an ascii string as utf-16
+ */
+static void mxf_write_utf16(ByteIOContext *pb, const char *value)
+{
+    int i, size = strlen(value)+1;
+    for (i = 0; i < size; i++)
+        put_be16(pb, value[i]);
+}
+
 static void mxf_write_identification(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
@@ -331,12 +341,12 @@ static void mxf_write_identification(AVFormatContext *s)
 
     mxf_write_metadata_key(pb, 0x013000);
     PRINT_KEY(s, "identification key", pb->buf_ptr - 16);
-    company_name_len = sizeof("FFmpeg");
-    product_name_len = sizeof("OP1a Muxer");
+    company_name_len = sizeof("FFmpeg") * 2;
+    product_name_len = sizeof("OP1a Muxer") * 2;
 
     length = 80 + company_name_len + product_name_len;
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
-        version_string_len = sizeof(LIBAVFORMAT_IDENT);
+        version_string_len = sizeof(LIBAVFORMAT_IDENT) * 2;
         length += 4 + version_string_len;
     }
     klv_encode_ber_length(pb, length);
@@ -350,14 +360,14 @@ static void mxf_write_identification(AVFormatContext *s)
     mxf_write_uuid(pb, Identification, 1);
 
     mxf_write_local_tag(pb, company_name_len, 0x3C01);
-    put_buffer(pb, "FFmpeg", company_name_len);
+    mxf_write_utf16(pb, "FFmpeg");
 
     mxf_write_local_tag(pb, product_name_len, 0x3C02);
-    put_buffer(pb, "OP1a Muxer", product_name_len);
+    mxf_write_utf16(pb, "OP1a Muxer");
 
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
         mxf_write_local_tag(pb, version_string_len, 0x3C04);
-        put_buffer(pb, LIBAVFORMAT_IDENT, version_string_len);
+        mxf_write_utf16(pb, LIBAVFORMAT_IDENT);
     }
 
     // write product uid
