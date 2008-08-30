@@ -344,8 +344,8 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         assert(pkt->size);
         size = pkt->size;
         /* cast needed to get negative value */
-        if (!flv->delay && (int32_t)pkt->dts < 0)
-            flv->delay = -(int32_t)pkt->dts;
+        if (!flv->delay && pkt->dts < 0)
+            flv->delay = -pkt->dts;
     }
 
     ts = pkt->dts + flv->delay; // add delay to force positive dts
@@ -362,7 +362,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         put_byte(pb,1); // AAC raw
     else if (enc->codec_id == CODEC_ID_H264) {
         put_byte(pb,1); // AVC NALU
-        put_be24(pb,pkt->pts - (int32_t)pkt->dts);
+        put_be24(pb,pkt->pts - pkt->dts);
     }
     put_buffer(pb, pkt->data, size);
     put_be32(pb,size+flags_size+11); // previous tag size
