@@ -341,7 +341,6 @@ enum CodecType {
 };
 
 /**
- * Currently unused, may be used if 24/32 bits samples are ever supported.
  * all in native-endian format
  */
 enum SampleFormat {
