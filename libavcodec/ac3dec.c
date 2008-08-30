@@ -598,7 +598,7 @@ static void decode_transform_coeffs(AC3DecodeContext *s, int blk)
         while(++end < 256);
     }
 
-    /* if any channel doesn't use dithering, zero appropriate coefficients */
+    /* zero the dithered coefficients for appropriate channels */
     remove_dithering(s);
 }
 
