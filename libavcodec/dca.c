@@ -84,9 +84,6 @@ static BitAlloc dca_tmode;             ///< transition mode VLCs
 static BitAlloc dca_scalefactor;       ///< scalefactor VLCs
 static BitAlloc dca_smpl_bitalloc[11]; ///< samples VLCs
 
-/** Pre-calculated cosine modulation coefs for the QMF */
-static float cos_mod[544];
-
 static av_always_inline int get_bitalloc(GetBitContext *gb, BitAlloc *ba, int idx)
 {
     return get_vlc2(gb, ba->vlc[idx].table, ba->vlc[idx].bits, ba->wrap) + ba->offset;
@@ -1193,36 +1190,6 @@ static int dca_decode_frame(AVCodecContext * avctx,
 
 
 /**
- * Build the cosine modulation tables for the QMF
- *
- * @param s     pointer to the DCAContext
- */
-
-static av_cold void pre_calc_cosmod(DCAContext * s)
-{
-    int i, j, k;
-    static int cosmod_initialized = 0;
-
-    if(cosmod_initialized) return;
-    for (j = 0, k = 0; k < 16; k++)
-        for (i = 0; i < 16; i++)
-            cos_mod[j++] = cos((2 * i + 1) * (2 * k + 1) * M_PI / 64);
-
-    for (k = 0; k < 16; k++)
-        for (i = 0; i < 16; i++)
-            cos_mod[j++] = cos((i) * (2 * k + 1) * M_PI / 32);
-
-    for (k = 0; k < 16; k++)
-        cos_mod[j++] = 0.25 / (2 * cos((2 * k + 1) * M_PI / 128));
-
-    for (k = 0; k < 16; k++)
-        cos_mod[j++] = -0.25 / (2.0 * sin((2 * k + 1) * M_PI / 128));
-
-    cosmod_initialized = 1;
-}
-
-
-/**
  * DCA initialization
  *
  * @param avctx     pointer to the AVCodecContext
@@ -1235,7 +1202,6 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
 
     s->avctx = avctx;
     dca_init_vlcs();
-    pre_calc_cosmod(s);
 
     dsputil_init(&s->dsp, avctx);
     ff_mdct_init(&s->imdct, 6, 1);
