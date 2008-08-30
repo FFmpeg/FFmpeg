@@ -24,16 +24,15 @@
  */
 
 #include "libavcodec/dsputil.h"
+#include "dsputil_mmx.h"
 #include "mmx.h"
-
-#define IdctAdjustBeforeShift 8
 
 /* (12 * 4) 2-byte memory locations ( = 96 bytes total)
  * idct_constants[0..15] = Mask table (M(I))
  * idct_constants[16..43] = Cosine table (C(I))
  * idct_constants[44..47] = 8
  */
-static uint16_t idct_constants[(4 + 7 + 1) * 4];
+static uint16_t idct_constants[(4 + 7) * 4];
 static const uint16_t idct_cosine_table[7] = {
     64277, 60547, 54491, 46341, 36410, 25080, 12785
 };
@@ -269,9 +268,6 @@ void ff_vp3_dsp_init_mmx(void)
         p = idct_constants + ((j + 3) << 2);
         p[0] = p[1] = p[2] = p[3] = idct_cosine_table[j - 1];
     } while (++j <= 7);
-
-    idct_constants[44] = idct_constants[45] =
-    idct_constants[46] = idct_constants[47] = IdctAdjustBeforeShift;
 }
 
 void ff_vp3_idct_mmx(int16_t *output_data)
@@ -286,7 +282,7 @@ void ff_vp3_idct_mmx(int16_t *output_data)
      */
 
 #define C(x) (idct_constants + 16 + (x - 1) * 4)
-#define Eight (idct_constants + 44)
+#define Eight (&ff_pw_8)
 
     /* at this point, function has completed dequantization + dezigzag +
      * partial transposition; now do the idct itself */

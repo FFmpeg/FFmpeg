@@ -24,6 +24,7 @@
  */
 
 #include "libavcodec/dsputil.h"
+#include "dsputil_mmx.h"
 #include "mmx.h"
 
 static DECLARE_ALIGNED_16(const unsigned short, SSE2_dequant_const[]) =
@@ -35,14 +36,6 @@ static DECLARE_ALIGNED_16(const unsigned short, SSE2_dequant_const[]) =
     0,0,0,65535,65535,0,0,0,    // 0x0000 0000 0000 FFFF FFFF 0000 0000 0000
     65535,0,0,0,0,65535,0,0,    // 0x0000 0000 FFFF 0000 0000 0000 0000 FFFF
     0,0,65535,65535, 0,0,0,0    // 0x0000 0000 0000 0000 FFFF FFFF 0000 0000
-};
-
-static DECLARE_ALIGNED_16(const unsigned int, eight_data[]) =
-{
-    0x00080008,
-    0x00080008,
-    0x00080008,
-    0x00080008
 };
 
 static DECLARE_ALIGNED_16(const unsigned short, SSE2_idct_data[7 * 8]) =
@@ -803,7 +796,7 @@ void ff_vp3_idct_sse2(int16_t *input_data)
     unsigned char *input_bytes = (unsigned char *)input_data;
     unsigned char *output_data_bytes = (unsigned char *)input_data;
     const unsigned char *idct_data_bytes = (const unsigned char *)SSE2_idct_data;
-    const unsigned char *Eight = (const unsigned char *)eight_data;
+    const unsigned char *Eight = (const unsigned char *)&ff_pw_8;
 
 #define eax input_bytes
 //#define ebx dequant_matrix_bytes
