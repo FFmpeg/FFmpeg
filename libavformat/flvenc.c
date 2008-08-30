@@ -351,7 +351,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     ts = pkt->dts + flv->delay; // add delay to force positive dts
     put_be24(pb,size + flags_size);
     put_be24(pb,ts);
-    put_byte(pb,ts >> 24);
+    put_byte(pb,(ts >> 24) & 0x7F); // timestamps are 32bits _signed_
     put_be24(pb,flv->reserved);
     put_byte(pb,flags);
     if (enc->codec_id == CODEC_ID_VP6)
