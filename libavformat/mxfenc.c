@@ -347,11 +347,8 @@ static void mxf_write_identification(AVFormatContext *s)
     product_name_len = strlen("OP1a Muxer") * 2;
 
     length = 80 + company_name_len + product_name_len;
-    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
-        version = LIBAVFORMAT_IDENT;
-    } else {
-        version = "0.0.0";
-    }
+    version = s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT ?
+        "0.0.0" : LIBAVFORMAT_IDENT;
     length += 4 + strlen(version)*2;
     klv_encode_ber_length(pb, length);
 
