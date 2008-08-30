@@ -355,6 +355,7 @@ static void mxf_write_identification(AVFormatContext *s)
     mxf_write_local_tag(pb, 16, 0x3C0A);
     mxf_write_uuid(pb, Identification, 0);
     PRINT_KEY(s, "identification uid", pb->buf_ptr - 16);
+
     // write generation uid
     mxf_write_local_tag(pb, 16, 0x3C09);
     mxf_write_uuid(pb, Identification, 1);
