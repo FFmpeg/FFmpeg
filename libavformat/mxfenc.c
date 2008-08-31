@@ -190,7 +190,7 @@ static int klv_encode_ber_length(ByteIOContext *pb, uint64_t len)
 static const UID *mxf_get_essence_container_ul(enum CodecID type, int *index)
 {
     const MXFCodecUL *uls = ff_mxf_essence_container_uls;
-    for (*index = 0; *index < sizeof(ff_mxf_essence_container_uls)/sizeof(ff_mxf_essence_container_uls[0]); (*index)++)
+    for (*index = 0; *index < sizeof(ff_mxf_essence_container_uls)/sizeof(*ff_mxf_essence_container_uls); (*index)++)
         if (ff_mxf_essence_container_uls[*index].id == type)
             return &uls->uid;
     *index = -1;
