@@ -717,6 +717,9 @@ void rtsp_parse_line(RTSPHeader *reply, const char *buf)
         reply->seq = strtol(p, NULL, 10);
     } else if (av_stristart(p, "Range:", &p)) {
         rtsp_parse_range_npt(p, &reply->range_start, &reply->range_end);
+    } else if (av_stristart(p, "RealChallenge1:", &p)) {
+        skip_spaces(&p);
+        av_strlcpy(reply->real_challenge, p, sizeof(reply->real_challenge));
     }
 }
 
