@@ -131,7 +131,7 @@ void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch)
             /* Vector Quantization */
             int v = get_bits(gbc, bits);
             for (blk = 0; blk < 6; blk++) {
-                s->pre_mantissa[ch][bin][blk] = ff_eac3_vq_hebap[hebap][v][blk] << 8;
+                s->pre_mantissa[ch][bin][blk] = ff_eac3_mantissa_vq[hebap][v][blk] << 8;
             }
         } else {
             /* Gain Adaptive Quantization */
