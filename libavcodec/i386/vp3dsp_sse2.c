@@ -27,7 +27,7 @@
 #include "dsputil_mmx.h"
 #include "mmx.h"
 
-static DECLARE_ALIGNED_16(const unsigned short, SSE2_idct_data[7 * 8]) =
+DECLARE_ALIGNED_16(const unsigned short, ff_vp3_idct_data[7 * 8]) =
 {
     64277,64277,64277,64277,64277,64277,64277,64277,
     60547,60547,60547,60547,60547,60547,60547,60547,
@@ -457,7 +457,7 @@ void ff_vp3_idct_sse2(int16_t *input_data)
 {
     unsigned char *input_bytes = (unsigned char *)input_data;
     unsigned char *output_data_bytes = (unsigned char *)input_data;
-    const unsigned char *idct_data_bytes = (const unsigned char *)SSE2_idct_data;
+    const unsigned char *idct_data_bytes = (const unsigned char *)ff_vp3_idct_data;
     const unsigned char *Eight = (const unsigned char *)&ff_pw_8;
 
 #define eax input_bytes
