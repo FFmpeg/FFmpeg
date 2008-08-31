@@ -42,6 +42,12 @@ enum RTSPClientState {
     RTSP_STATE_PAUSED,
 };
 
+enum RTSPServerType {
+    RTSP_SERVER_RTP, /*< Standard-compliant RTP-server */
+    RTSP_SERVER_RDT, /*< Realmedia-style server */
+    RTSP_SERVER_LAST
+};
+
 typedef struct RTSPState {
     URLContext *rtsp_hd; /* RTSP TCP connexion handle */
     int nb_rtsp_streams;
@@ -55,6 +61,7 @@ typedef struct RTSPState {
     int seq;        /* RTSP command sequence number */
     char session_id[512];
     enum RTSPProtocol protocol;
+    enum RTSPServerType server_type;
     char last_reply[2048]; /* XXX: allocate ? */
     RTPDemuxContext *cur_rtp;
 } RTSPState;
