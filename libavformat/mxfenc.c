@@ -250,21 +250,18 @@ static const MXFDataDefinitionUL *mxf_get_data_definition_ul(enum CodecType type
     return uls;
 }
 
-static int mxf_write_essence_container_refs(AVFormatContext *s, int write)
+static void mxf_write_essence_container_refs(AVFormatContext *s)
 {
     MXFContext *c = s->priv_data;
     ByteIOContext *pb = s->pb;
     int i;
 
-    if (write) {
         mxf_write_refs_count(pb, c->essence_container_count);
         av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", c->essence_container_count);
         for (i = 0; i < c->essence_container_count; i++) {
             put_buffer(pb, ff_mxf_essence_container_uls[c->essence_containers_indices[i]].uid, 16);
             PRINT_KEY(s, "essence container ul:\n", ff_mxf_essence_container_uls[c->essence_containers_indices[i]].uid);
         }
-    }
-    return c->essence_container_count;
 }
 
 static void mxf_write_preface(AVFormatContext *s)
@@ -303,7 +300,7 @@ static void mxf_write_preface(AVFormatContext *s)
 
     // write essence_container_refs
     mxf_write_local_tag(pb, 8 + 16 * mxf->essence_container_count, 0x3B0A);
-    mxf_write_essence_container_refs(s, 1);
+    mxf_write_essence_container_refs(s);
 
     // write dm_scheme_refs
     mxf_write_local_tag(pb, 8, 0x3B0B);
@@ -703,8 +700,7 @@ static void mxf_write_partition(AVFormatContext *s, int64_t byte_position, int b
 
     // write klv
     put_buffer(pb, key, 16);
-    if (!mxf->essence_container_count)
-        mxf->essence_container_count = mxf_write_essence_container_refs(s, 0);
+
     klv_encode_ber_length(pb, 88 + 16 * mxf->essence_container_count);
 
     // write partition value
@@ -734,7 +730,7 @@ static void mxf_write_partition(AVFormatContext *s, int64_t byte_position, int b
     put_buffer(pb, op1a_ul, 16); // operational pattern
 
     // essence container
-    mxf_write_essence_container_refs(s, 1);
+    mxf_write_essence_container_refs(s);
 }
 
 static int mux_write_header(AVFormatContext *s)
