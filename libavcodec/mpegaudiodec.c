@@ -24,7 +24,6 @@
  * MPEG Audio decoder.
  */
 
-//#define DEBUG
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
@@ -430,7 +429,6 @@ static int decode_init(AVCodecContext * avctx)
 
             /* normalized to FRAC_BITS */
             table_4_3_value[i] = m;
-//            av_log(NULL, AV_LOG_DEBUG, "%d %d %f\n", i, m, pow((double)i, 4.0 / 3.0));
             table_4_3_exp[i] = -e;
         }
         for(i=0; i<512*16; i++){
@@ -485,8 +483,6 @@ static int decode_init(AVCodecContext * avctx)
             csa_table_float[i][1] = ca;
             csa_table_float[i][2] = ca + cs;
             csa_table_float[i][3] = ca - cs;
-//            printf("%d %d %d %d\n", FIX(cs), FIX(cs-1), FIX(ca), FIX(cs)-FIX(ca));
-//            av_log(NULL, AV_LOG_DEBUG,"%f %f %f %f\n", cs, ca, ca+cs, ca-cs);
         }
 
         /* compute mdct windows */
@@ -514,7 +510,6 @@ static int decode_init(AVCodecContext * avctx)
                     mdct_win[j][i/3] = FIXHR((d / (1<<5)));
                 else
                     mdct_win[j][i  ] = FIXHR((d / (1<<5)));
-//                av_log(NULL, AV_LOG_DEBUG, "%2d %d %f\n", i,j,d / (1<<5));
             }
         }
 
@@ -527,20 +522,9 @@ static int decode_init(AVCodecContext * avctx)
             }
         }
 
-#if defined(DEBUG)
-        for(j=0;j<8;j++) {
-            av_log(avctx, AV_LOG_DEBUG, "win%d=\n", j);
-            for(i=0;i<36;i++)
-                av_log(avctx, AV_LOG_DEBUG, "%f, ", (double)mdct_win[j][i] / FRAC_ONE);
-            av_log(avctx, AV_LOG_DEBUG, "\n");
-        }
-#endif
         init = 1;
     }
 
-#ifdef DEBUG
-    s->frame_count = 0;
-#endif
     if (avctx->codec_id == CODEC_ID_MP3ADU)
         s->adu_mode = 1;
     return 0;
@@ -1251,16 +1235,6 @@ static int mp_decode_layer2(MPADecodeContext *s)
         j += 1 << bit_alloc_bits;
     }
 
-#ifdef DEBUG
-    {
-        for(ch=0;ch<s->nb_channels;ch++) {
-            for(i=0;i<sblimit;i++)
-                dprintf(s->avctx, " %d", bit_alloc[ch][i]);
-            dprintf(s->avctx, "\n");
-        }
-    }
-#endif
-
     /* scale codes */
     for(i=0;i<sblimit;i++) {
         for(ch=0;ch<s->nb_channels;ch++) {
@@ -1300,20 +1274,6 @@ static int mp_decode_layer2(MPADecodeContext *s)
             }
         }
     }
-
-#ifdef DEBUG
-    for(ch=0;ch<s->nb_channels;ch++) {
-        for(i=0;i<sblimit;i++) {
-            if (bit_alloc[ch][i]) {
-                sf = scale_factors[ch][i];
-                dprintf(s->avctx, " %d %d %d", sf[0], sf[1], sf[2]);
-            } else {
-                dprintf(s->avctx, " -");
-            }
-        }
-        dprintf(s->avctx, "\n");
-    }
-#endif
 
     /* samples */
     for(k=0;k<3;k++) {
@@ -1990,49 +1950,6 @@ static void compute_imdct(MPADecodeContext *s,
     }
 }
 
-#if defined(DEBUG)
-void sample_dump(int fnum, int32_t *tab, int n)
-{
-    static FILE *files[16], *f;
-    char buf[512];
-    int i;
-    int32_t v;
-
-    f = files[fnum];
-    if (!f) {
-        snprintf(buf, sizeof(buf), "/tmp/out%d.%s.pcm",
-                fnum,
-#ifdef USE_HIGHPRECISION
-                "hp"
-#else
-                "lp"
-#endif
-                );
-        f = fopen(buf, "w");
-        if (!f)
-            return;
-        files[fnum] = f;
-    }
-
-    if (fnum == 0) {
-        static int pos = 0;
-        av_log(NULL, AV_LOG_DEBUG, "pos=%d\n", pos);
-        for(i=0;i<n;i++) {
-            av_log(NULL, AV_LOG_DEBUG, " %0.4f", (double)tab[i] / FRAC_ONE);
-            if ((i % 18) == 17)
-                av_log(NULL, AV_LOG_DEBUG, "\n");
-        }
-        pos += n;
-    }
-    for(i=0;i<n;i++) {
-        /* normalize to 23 frac bits */
-        v = tab[i] << (23 - FRAC_BITS);
-        fwrite(&v, 1, sizeof(int32_t), f);
-    }
-}
-#endif
-
-
 /* main layer3 decoding function */
 static int mp_decode_layer3(MPADecodeContext *s)
 {
@@ -2201,15 +2118,6 @@ static int mp_decode_layer3(MPADecodeContext *s)
                     }
                     g->scale_factors[j++] = 0;
                 }
-#if defined(DEBUG)
-                {
-                    dprintf(s->avctx, "scfsi=%x gr=%d ch=%d scale_factors:\n",
-                           g->scfsi, gr, ch);
-                    for(i=0;i<j;i++)
-                        dprintf(s->avctx, " %d", g->scale_factors[i]);
-                    dprintf(s->avctx, "\n");
-                }
-#endif
             } else {
                 int tindex, tindex2, slen[4], sl, sf;
 
@@ -2263,24 +2171,12 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 /* XXX: should compute exact size */
                 for(;j<40;j++)
                     g->scale_factors[j] = 0;
-#if defined(DEBUG)
-                {
-                    dprintf(s->avctx, "gr=%d ch=%d scale_factors:\n",
-                           gr, ch);
-                    for(i=0;i<40;i++)
-                        dprintf(s->avctx, " %d", g->scale_factors[i]);
-                    dprintf(s->avctx, "\n");
-                }
-#endif
             }
 
             exponents_from_scale_factors(s, g, exponents);
 
             /* read Huffman coded residue */
             huffman_decode(s, g, exponents, bits_pos + g->part2_3_length);
-#if defined(DEBUG)
-            sample_dump(0, g->sb_hybrid, 576);
-#endif
         } /* ch */
 
         if (s->nb_channels == 2)
@@ -2290,17 +2186,8 @@ static int mp_decode_layer3(MPADecodeContext *s)
             g = &granules[ch][gr];
 
             reorder_block(s, g);
-#if defined(DEBUG)
-            sample_dump(0, g->sb_hybrid, 576);
-#endif
             s->compute_antialias(s, g);
-#if defined(DEBUG)
-            sample_dump(1, g->sb_hybrid, 576);
-#endif
             compute_imdct(s, g, &s->sb_samples[ch][18 * gr][0], s->mdct_buf[ch]);
-#if defined(DEBUG)
-            sample_dump(2, &s->sb_samples[ch][18 * gr][0], 576);
-#endif
         }
     } /* gr */
     if(get_bits_count(&s->gb)<0)
@@ -2362,17 +2249,7 @@ static int mp_decode_frame(MPADecodeContext *s,
 
         break;
     }
-#if defined(DEBUG)
-    for(i=0;i<nb_frames;i++) {
-        for(ch=0;ch<s->nb_channels;ch++) {
-            int j;
-            dprintf(s->avctx, "%d-%d:", i, ch);
-            for(j=0;j<SBLIMIT;j++)
-                dprintf(s->avctx, " %0.6f", (double)s->sb_samples[ch][i][j] / FRAC_ONE);
-            dprintf(s->avctx, "\n");
-        }
-    }
-#endif
+
     /* apply the synthesis filter */
     for(ch=0;ch<s->nb_channels;ch++) {
         samples_ptr = samples + ch;
@@ -2384,9 +2261,7 @@ static int mp_decode_frame(MPADecodeContext *s,
             samples_ptr += 32 * s->nb_channels;
         }
     }
-#ifdef DEBUG
-    s->frame_count++;
-#endif
+
     return nb_frames * 32 * sizeof(OUT_INT) * s->nb_channels;
 }
 
