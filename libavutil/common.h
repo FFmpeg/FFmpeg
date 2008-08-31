@@ -23,8 +23,8 @@
  * common internal and external API header
  */
 
-#ifndef FFMPEG_COMMON_H
-#define FFMPEG_COMMON_H
+#ifndef AVUTIL_COMMON_H
+#define AVUTIL_COMMON_H
 
 #include <inttypes.h>
 
@@ -412,4 +412,4 @@ tend= AV_READ_TIME();\
 #   define NULL_IF_CONFIG_SMALL(x) x
 #endif
 
-#endif /* FFMPEG_COMMON_H */
+#endif /* AVUTIL_COMMON_H */

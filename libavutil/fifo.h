@@ -21,8 +21,8 @@
  * A very simple circular buffer FIFO implementation.
  */
 
-#ifndef FFMPEG_FIFO_H
-#define FFMPEG_FIFO_H
+#ifndef AVUTIL_FIFO_H
+#define AVUTIL_FIFO_H
 
 #include <stdint.h>
 #include "common.h"
@@ -125,4 +125,4 @@ static inline uint8_t av_fifo_peek(AVFifoBuffer *f, int offs)
         ptr -= f->end - f->buffer;
     return *ptr;
 }
-#endif /* FFMPEG_FIFO_H */
+#endif /* AVUTIL_FIFO_H */

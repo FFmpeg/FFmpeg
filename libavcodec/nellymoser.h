@@ -31,8 +31,8 @@
  * implementors. The original code is available from http://code.google.com/p/nelly2pcm/
  */
 
-#ifndef FFMPEG_NELLYMOSER_H
-#define FFMPEG_NELLYMOSER_H
+#ifndef AVCODEC_NELLYMOSER_H
+#define AVCODEC_NELLYMOSER_H
 
 #include "avcodec.h"
 

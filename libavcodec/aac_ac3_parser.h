@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AAC_AC3_PARSER_H
-#define FFMPEG_AAC_AC3_PARSER_H
+#ifndef AVCODEC_AAC_AC3_PARSER_H
+#define AVCODEC_AAC_AC3_PARSER_H
 
 #include <stdint.h>
 #include "avcodec.h"
@@ -50,4 +50,4 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
                      const uint8_t **poutbuf, int *poutbuf_size,
                      const uint8_t *buf, int buf_size);
 
-#endif /* FFMPEG_AAC_AC3_PARSER_H */
+#endif /* AVCODEC_AAC_AC3_PARSER_H */

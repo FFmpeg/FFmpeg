@@ -24,8 +24,8 @@
  * IIR filter interface
  */
 
-#ifndef FFMPEG_IIRFILTER_H
-#define FFMPEG_IIRFILTER_H
+#ifndef AVCODEC_IIRFILTER_H
+#define AVCODEC_IIRFILTER_H
 
 #include "avcodec.h"
 
@@ -100,4 +100,4 @@ void ff_iir_filter_free_state(struct FFIIRFilterState *state);
 void ff_iir_filter(const struct FFIIRFilterCoeffs *coeffs, struct FFIIRFilterState *state,
                    int size, const int16_t *src, int sstep, int16_t *dst, int dstep);
 
-#endif /* FFMPEG_IIRFILTER_H */
+#endif /* AVCODEC_IIRFILTER_H */

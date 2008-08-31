@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_VP3DSP_MMX_H
-#define FFMPEG_VP3DSP_MMX_H
+#ifndef AVCODEC_I386_VP3DSP_MMX_H
+#define AVCODEC_I386_VP3DSP_MMX_H
 
 #include <stdint.h>
 #include "libavcodec/dsputil.h"
@@ -29,4 +29,4 @@ void ff_vp3_idct_mmx(int16_t *data);
 void ff_vp3_idct_put_mmx(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block);
 
-#endif /* FFMPEG_VP3DSP_MMX_H */
+#endif /* AVCODEC_I386_VP3DSP_MMX_H */

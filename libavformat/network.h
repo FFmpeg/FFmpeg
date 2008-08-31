@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_NETWORK_H
-#define FFMPEG_NETWORK_H
+#ifndef AVFORMAT_NETWORK_H
+#define AVFORMAT_NETWORK_H
 
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
@@ -66,4 +66,4 @@ static inline void ff_network_close(void)
 int inet_aton (const char * str, struct in_addr * add);
 #endif
 
-#endif /* FFMPEG_NETWORK_H */
+#endif /* AVFORMAT_NETWORK_H */

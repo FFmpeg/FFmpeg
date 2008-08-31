@@ -23,8 +23,8 @@
  * common internal api header.
  */
 
-#ifndef FFMPEG_INTERNAL_H
-#define FFMPEG_INTERNAL_H
+#ifndef AVUTIL_INTERNAL_H
+#define AVUTIL_INTERNAL_H
 
 #if !defined(DEBUG) && !defined(NDEBUG)
 #    define NDEBUG
@@ -297,4 +297,4 @@ static av_always_inline av_const float roundf(float x)
 }
 #endif /* HAVE_ROUNDF */
 
-#endif /* FFMPEG_INTERNAL_H */
+#endif /* AVUTIL_INTERNAL_H */

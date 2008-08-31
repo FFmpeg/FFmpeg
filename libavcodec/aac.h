@@ -27,8 +27,8 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
-#ifndef FFMPEG_AAC_H
-#define FFMPEG_AAC_H
+#ifndef AVCODEC_AAC_H
+#define AVCODEC_AAC_H
 
 #include "avcodec.h"
 #include "dsputil.h"
@@ -272,4 +272,4 @@ typedef struct {
 
 } AACContext;
 
-#endif /* FFMPEG_AAC_H */
+#endif /* AVCODEC_AAC_H */

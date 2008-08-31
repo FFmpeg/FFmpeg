@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_INTRAX8HUF_H
-#define FFMPEG_INTRAX8HUF_H
+#ifndef AVCODEC_INTRAX8HUF_H
+#define AVCODEC_INTRAX8HUF_H
 
 #include <inttypes.h>
 
@@ -915,4 +915,4 @@ static const uint16_t x8_ac1_highquant_table[8][77][2]={
 };
 #define MAX_AC_VLC_BITS 16
 
-#endif /* FFMPEG_INTRAX8HUF_H */
+#endif /* AVCODEC_INTRAX8HUF_H */

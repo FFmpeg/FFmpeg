@@ -23,8 +23,8 @@
  * byte swapping routines
  */
 
-#ifndef FFMPEG_BSWAP_H
-#define FFMPEG_BSWAP_H
+#ifndef AVUTIL_BSWAP_H
+#define AVUTIL_BSWAP_H
 
 #include <stdint.h>
 #include "config.h"
@@ -129,4 +129,4 @@ static inline uint64_t av_const bswap_64(uint64_t x)
 #define le2me_64(x) (x)
 #endif
 
-#endif /* FFMPEG_BSWAP_H */
+#endif /* AVUTIL_BSWAP_H */

@@ -24,8 +24,8 @@
  * Common code between the AC-3 and E-AC-3 decoders.
  */
 
-#ifndef FFMPEG_AC3DEC_H
-#define FFMPEG_AC3DEC_H
+#ifndef AVCODEC_AC3DEC_H
+#define AVCODEC_AC3DEC_H
 
 #include "libavutil/lfg.h"
 #include "ac3.h"
@@ -179,4 +179,4 @@ int ff_eac3_parse_header(AC3DecodeContext *s);
  */
 void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
 
-#endif /* FFMPEG_AC3DEC_H */
+#endif /* AVCODEC_AC3DEC_H */

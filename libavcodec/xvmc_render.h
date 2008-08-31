@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_XVMC_RENDER_H
-#define FFMPEG_XVMC_RENDER_H
+#ifndef AVCODEC_XVMC_RENDER_H
+#define AVCODEC_XVMC_RENDER_H
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -72,4 +72,4 @@ typedef   struct{
 
 } xvmc_render_state_t;
 
-#endif /* FFMPEG_XVMC_RENDER_H */
+#endif /* AVCODEC_XVMC_RENDER_H */

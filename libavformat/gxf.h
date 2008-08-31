@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_GXF_H
-#define FFMPEG_GXF_H
+#ifndef AVFORMAT_GXF_H
+#define AVFORMAT_GXF_H
 
 /* gxf.c */
 typedef enum {
@@ -50,4 +50,4 @@ typedef enum {
     TRACK_FPF       = 0x52,
 } track_tag_t;
 
-#endif /* FFMPEG_GXF_H */
+#endif /* AVFORMAT_GXF_H */

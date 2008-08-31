@@ -18,11 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_RC4_H
-#define FFMPEG_RC4_H
+#ifndef AVUTIL_RC4_H
+#define AVUTIL_RC4_H
 
 #include <stdint.h>
 
 void ff_rc4_enc(const uint8_t *key, int keylen, uint8_t *data, int datalen);
 
-#endif /* FFMPEG_RC4_H */
+#endif /* AVUTIL_RC4_H */

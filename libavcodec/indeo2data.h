@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_INDEO2DATA_H
-#define FFMPEG_INDEO2DATA_H
+#ifndef AVCODEC_INDEO2DATA_H
+#define AVCODEC_INDEO2DATA_H
 
 #include <stdint.h>
 
@@ -138,4 +138,4 @@ static const uint8_t ir2_luma_table[256] = {
  0x3F, 0x94, 0xD9, 0xD9, 0x27, 0x27, 0x80, 0x80
 };
 
-#endif /* FFMPEG_INDEO2DATA_H */
+#endif /* AVCODEC_INDEO2DATA_H */

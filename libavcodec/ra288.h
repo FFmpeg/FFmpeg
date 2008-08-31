@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_RA288_H
-#define FFMPEG_RA288_H
+#ifndef AVCODEC_RA288_H
+#define AVCODEC_RA288_H
 
 static const float amptable[8]={
      0.515625,  0.90234375,  1.57910156,  2.76342773,
@@ -206,4 +206,4 @@ static const float gain_bw_tab[10]={
   0.553955078, 0.50201416,  0.454956055, 0.41229248,  0.373657227
 };
 
-#endif /* FFMPEG_RA288_H */
+#endif /* AVCODEC_RA288_H */

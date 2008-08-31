@@ -23,8 +23,8 @@
  * mpeg audio declarations for both encoder and decoder.
  */
 
-#ifndef FFMPEG_MPEGAUDIO_H
-#define FFMPEG_MPEGAUDIO_H
+#ifndef AVCODEC_MPEGAUDIO_H
+#define AVCODEC_MPEGAUDIO_H
 
 #include "avcodec.h"
 #include "bitstream.h"
@@ -152,4 +152,4 @@ static inline int ff_mpa_check_header(uint32_t header){
     return 0;
 }
 
-#endif /* FFMPEG_MPEGAUDIO_H */
+#endif /* AVCODEC_MPEGAUDIO_H */

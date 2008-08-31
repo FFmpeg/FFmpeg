@@ -27,8 +27,8 @@
  * absolutely necessary to call emms_c() between dsp & float/double code
  */
 
-#ifndef FFMPEG_DSPUTIL_H
-#define FFMPEG_DSPUTIL_H
+#ifndef AVCODEC_DSPUTIL_H
+#define AVCODEC_DSPUTIL_H
 
 #include "avcodec.h"
 
@@ -824,4 +824,4 @@ static inline void copy_block17(uint8_t *dst, uint8_t *src, int dstStride, int s
     }
 }
 
-#endif /* FFMPEG_DSPUTIL_H */
+#endif /* AVCODEC_DSPUTIL_H */

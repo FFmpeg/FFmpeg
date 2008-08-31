@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_MD5_H
-#define FFMPEG_MD5_H
+#ifndef AVUTIL_MD5_H
+#define AVUTIL_MD5_H
 
 #include <stdint.h>
 
@@ -32,5 +32,5 @@ void av_md5_update(struct AVMD5 *ctx, const uint8_t *src, const int len);
 void av_md5_final(struct AVMD5 *ctx, uint8_t *dst);
 void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len);
 
-#endif /* FFMPEG_MD5_H */
+#endif /* AVUTIL_MD5_H */
 

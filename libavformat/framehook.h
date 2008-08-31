@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_FRAMEHOOK_H
-#define FFMPEG_FRAMEHOOK_H
+#ifndef AVFORMAT_FRAMEHOOK_H
+#define AVFORMAT_FRAMEHOOK_H
 
 #warning VHOOK is deprecated. Please help finishing libavfilter instead of wasting your time writing new filters for this crappy filter system.
 
@@ -49,4 +49,4 @@ extern int frame_hook_add(int argc, char *argv[]);
 extern void frame_hook_process(struct AVPicture *pict, enum PixelFormat pix_fmt, int width, int height, int64_t pts);
 extern void frame_hook_release(void);
 
-#endif /* FFMPEG_FRAMEHOOK_H */
+#endif /* AVFORMAT_FRAMEHOOK_H */

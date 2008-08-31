@@ -19,11 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_H263_PARSER_H
-#define FFMPEG_H263_PARSER_H
+#ifndef AVCODEC_H263_PARSER_H
+#define AVCODEC_H263_PARSER_H
 
 #include "parser.h"
 
 int ff_h263_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size);
 
-#endif /* FFMPEG_H263_PARSER_H */
+#endif /* AVCODEC_H263_PARSER_H */

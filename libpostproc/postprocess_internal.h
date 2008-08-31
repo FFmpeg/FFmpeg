@@ -23,8 +23,8 @@
  * internal api header.
  */
 
-#ifndef FFMPEG_POSTPROCESS_INTERNAL_H
-#define FFMPEG_POSTPROCESS_INTERNAL_H
+#ifndef POSTPROCESS_POSTPROCESS_INTERNAL_H
+#define POSTPROCESS_POSTPROCESS_INTERNAL_H
 
 #include "libavutil/avutil.h"
 #include "postprocess.h"
@@ -174,4 +174,4 @@ static inline void linecpy(void *dest, const void *src, int lines, int stride) {
     }
 }
 
-#endif /* FFMPEG_POSTPROCESS_INTERNAL_H */
+#endif /* POSTPROCESS_POSTPROCESS_INTERNAL_H */

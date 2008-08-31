@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_DES_H
-#define FFMPEG_DES_H
+#ifndef AVUTIL_DES_H
+#define AVUTIL_DES_H
 
 #include <stdint.h>
 #include "common.h"
@@ -37,4 +37,4 @@
  */
 uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt) av_const;
 
-#endif /* FFMPEG_DES_H */
+#endif /* AVUTIL_DES_H */

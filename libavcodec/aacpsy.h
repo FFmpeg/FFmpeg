@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AACPSY_H
-#define FFMPEG_AACPSY_H
+#ifndef AVCODEC_AACPSY_H
+#define AVCODEC_AACPSY_H
 
 #include "avcodec.h"
 #include "aac.h"
@@ -47,4 +47,4 @@ typedef struct AACPsyContext {
  */
 void ff_aac_psy_end(AACPsyContext *ctx);
 
-#endif /* FFMPEG_AACPSY_H */
+#endif /* AVCODEC_AACPSY_H */

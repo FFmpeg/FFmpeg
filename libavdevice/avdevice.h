@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AVDEVICE_H
-#define FFMPEG_AVDEVICE_H
+#ifndef AVDEVICE_AVDEVICE_H
+#define AVDEVICE_AVDEVICE_H
 
 #define LIBAVDEVICE_VERSION_MAJOR 52
 #define LIBAVDEVICE_VERSION_MINOR  1
@@ -42,5 +42,5 @@ unsigned avdevice_version(void);
  */
 void avdevice_register_all(void);
 
-#endif /* FFMPEG_AVDEVICE_H */
+#endif /* AVDEVICE_AVDEVICE_H */
 

@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_ACELP_MATH_H
-#define FFMPEG_ACELP_MATH_H
+#ifndef AVCODEC_ACELP_MATH_H
+#define AVCODEC_ACELP_MATH_H
 
 #include <stdint.h>
 
@@ -83,4 +83,4 @@ static inline int bidir_sal(int value, int offset)
     else           return value <<  offset;
 }
 
-#endif /* FFMPEG_ACELP_MATH_H */
+#endif /* AVCODEC_ACELP_MATH_H */

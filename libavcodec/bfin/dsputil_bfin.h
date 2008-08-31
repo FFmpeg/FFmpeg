@@ -21,8 +21,8 @@
  */
 
 
-#ifndef FFMPEG_DSPUTIL_BFIN_H
-#define FFMPEG_DSPUTIL_BFIN_H
+#ifndef AVCODEC_BFIN_DSPUTIL_BFIN_H
+#define AVCODEC_BFIN_DSPUTIL_BFIN_H
 
 #ifdef __FDPIC__
 #define attribute_l1_text  __attribute__ ((l1_text))
@@ -71,4 +71,4 @@ static void bfprof (void)
 #define bfprof()
 #endif
 
-#endif /* FFMPEG_DSPUTIL_BFIN_H */
+#endif /* AVCODEC_BFIN_DSPUTIL_BFIN_H */

@@ -19,11 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_ASFCRYPT_H
-#define FFMPEG_ASFCRYPT_H
+#ifndef AVFORMAT_ASFCRYPT_H
+#define AVFORMAT_ASFCRYPT_H
 
 #include <inttypes.h>
 
 void ff_asfcrypt_dec(const uint8_t key[20], uint8_t *data, int len);
 
-#endif /* FFMPEG_ASFCRYPT_H */
+#endif /* AVFORMAT_ASFCRYPT_H */

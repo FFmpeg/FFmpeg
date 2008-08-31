@@ -25,8 +25,8 @@
  * h261codec.
  */
 
-#ifndef FFMPEG_H261_H
-#define FFMPEG_H261_H
+#ifndef AVCODEC_H261_H
+#define AVCODEC_H261_H
 
 #include "mpegvideo.h"
 
@@ -48,4 +48,4 @@ typedef struct H261Context{
 
 #define MB_TYPE_H261_FIL 0x800000
 
-#endif /* FFMPEG_H261_H */
+#endif /* AVCODEC_H261_H */

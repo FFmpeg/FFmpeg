@@ -16,11 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_IMGRESAMPLE_ALTIVEC_H
-#define FFMPEG_IMGRESAMPLE_ALTIVEC_H
+#ifndef AVCODEC_PPC_IMGRESAMPLE_ALTIVEC_H
+#define AVCODEC_PPC_IMGRESAMPLE_ALTIVEC_H
 
 #include <stdint.h>
 
 void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
                           int wrap, int16_t *filter);
-#endif /* FFMPEG_IMGRESAMPLE_ALTIVEC_H */
+#endif /* AVCODEC_PPC_IMGRESAMPLE_ALTIVEC_H */

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_OS_SUPPORT_H
-#define FFMPEG_OS_SUPPORT_H
+#ifndef AVFORMAT_OS_SUPPORT_H
+#define AVFORMAT_OS_SUPPORT_H
 
 /**
  * @file os_support.h
@@ -92,4 +92,4 @@ extern int poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #endif /* CONFIG_FFSERVER */
 #endif /* CONFIG_NETWORK */
 
-#endif /* FFMPEG_OS_SUPPORT_H */
+#endif /* AVFORMAT_OS_SUPPORT_H */

@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_X86CPU_H
-#define FFMPEG_X86CPU_H
+#ifndef AVUTIL_X86_CPU_H
+#define AVUTIL_X86_CPU_H
 
 #include <stdint.h>
 #include "config.h"
@@ -76,4 +76,4 @@ typedef int32_t x86_reg;
 #    define BROKEN_RELOCATIONS 1
 #endif
 
-#endif /* FFMPEG_X86CPU_H */
+#endif /* AVUTIL_X86_CPU_H */

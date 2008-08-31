@@ -23,8 +23,8 @@
  * header for Xvid IDCT functions
  */
 
-#ifndef FFMPEG_IDCT_XVID_H
-#define FFMPEG_IDCT_XVID_H
+#ifndef AVCODEC_I386_IDCT_XVID_H
+#define AVCODEC_I386_IDCT_XVID_H
 
 void ff_idct_xvid_mmx(short *block);
 void ff_idct_xvid_mmx2(short *block);
@@ -32,4 +32,4 @@ void ff_idct_xvid_sse2(short *block);
 void ff_idct_xvid_sse2_put(uint8_t *dest, int line_size, short *block);
 void ff_idct_xvid_sse2_add(uint8_t *dest, int line_size, short *block);
 
-#endif /* FFMPEG_IDCT_XVID_H */
+#endif /* AVCODEC_I386_IDCT_XVID_H */

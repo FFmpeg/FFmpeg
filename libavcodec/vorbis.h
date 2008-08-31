@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_VORBIS_H
-#define FFMPEG_VORBIS_H
+#ifndef AVCODEC_VORBIS_H
+#define AVCODEC_VORBIS_H
 
 #include "avcodec.h"
 
@@ -40,4 +40,4 @@ void ff_vorbis_floor1_render_list(floor1_entry_t * list, int values, uint_fast16
 
 #define ilog(i) av_log2(2*(i))
 
-#endif /* FFMPEG_VORBIS_H */
+#endif /* AVCODEC_VORBIS_H */

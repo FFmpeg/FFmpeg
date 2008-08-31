@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_VP5DATA_H
-#define FFMPEG_VP5DATA_H
+#ifndef AVCODEC_VP5DATA_H
+#define AVCODEC_VP5DATA_H
 
 #include <stdint.h>
 
@@ -172,4 +172,4 @@ static const int16_t vp5_ract_lc[3][3][5][6][2] = {
 
 static const uint8_t vp5_coord_div[] = { 2, 2, 2, 2, 4, 4 };
 
-#endif /* FFMPEG_VP5DATA_H */
+#endif /* AVCODEC_VP5DATA_H */

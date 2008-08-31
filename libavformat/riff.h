@@ -25,8 +25,8 @@
  * do NOT include this in end user applications
  */
 
-#ifndef FFMPEG_RIFF_H
-#define FFMPEG_RIFF_H
+#ifndef AVFORMAT_RIFF_H
+#define AVFORMAT_RIFF_H
 
 #include "libavcodec/avcodec.h"
 #include "avio.h"
@@ -51,4 +51,4 @@ unsigned int codec_get_tag(const AVCodecTag *tags, int id);
 enum CodecID codec_get_id(const AVCodecTag *tags, unsigned int tag);
 void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale);
 
-#endif /* FFMPEG_RIFF_H */
+#endif /* AVFORMAT_RIFF_H */

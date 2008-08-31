@@ -25,8 +25,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_DV1394_H
-#define FFMPEG_DV1394_H
+#ifndef AVDEVICE_DV1394_H
+#define AVDEVICE_DV1394_H
 
 #define DV1394_DEFAULT_CHANNEL 63
 #define DV1394_DEFAULT_CARD    0
@@ -353,4 +353,4 @@ struct dv1394_status {
 };
 
 
-#endif /* FFMPEG_DV1394_H */
+#endif /* AVDEVICE_DV1394_H */

@@ -25,8 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef FFMPEG_INTEGER_H
-#define FFMPEG_INTEGER_H
+#ifndef AVUTIL_INTEGER_H
+#define AVUTIL_INTEGER_H
 
 #include <stdint.h>
 #include "common.h"
@@ -81,4 +81,4 @@ AVInteger av_int2i(int64_t a) av_const;
  */
 int64_t av_i2int(AVInteger a) av_const;
 
-#endif /* FFMPEG_INTEGER_H */
+#endif /* AVUTIL_INTEGER_H */

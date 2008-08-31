@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_MPC7DATA_H
-#define FFMPEG_MPC7DATA_H
+#ifndef AVCODEC_MPC7DATA_H
+#define AVCODEC_MPC7DATA_H
 
 #include <stdint.h>
 
@@ -168,4 +168,4 @@ static const uint16_t mpc7_quant_vlc[MPC7_QUANT_VLC_TABLES][2][64 * 2] = {
 }
 };
 
-#endif /* FFMPEG_MPC7DATA_H */
+#endif /* AVCODEC_MPC7DATA_H */

@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_ACELP_FILTERS_H
-#define FFMPEG_ACELP_FILTERS_H
+#ifndef AVCODEC_ACELP_FILTERS_H
+#define AVCODEC_ACELP_FILTERS_H
 
 #include <stdint.h>
 
@@ -134,4 +134,4 @@ void ff_acelp_high_pass_filter(
         const int16_t* in,
         int length);
 
-#endif /* FFMPEG_ACELP_FILTERS_H */
+#endif /* AVCODEC_ACELP_FILTERS_H */

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_CAVSDATA_H
-#define FFMPEG_CAVSDATA_H
+#ifndef AVCODEC_CAVSDATA_H
+#define AVCODEC_CAVSDATA_H
 
 #include "cavs.h"
 
@@ -502,4 +502,4 @@ const int_fast8_t ff_top_modifier_l[8]  = {-1, 1, 5,-1,-1, 5, 7, 7};
 const int_fast8_t ff_left_modifier_c[7] = { 5,-1, 2,-1, 6, 5, 6};
 const int_fast8_t ff_top_modifier_c[7]  = { 4, 1,-1,-1, 4, 6, 6};
 
-#endif /* FFMPEG_CAVSDATA_H */
+#endif /* AVCODEC_CAVSDATA_H */

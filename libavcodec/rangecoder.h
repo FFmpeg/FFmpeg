@@ -24,8 +24,8 @@
  * Range coder.
  */
 
-#ifndef FFMPEG_RANGECODER_H
-#define FFMPEG_RANGECODER_H
+#ifndef AVCODEC_RANGECODER_H
+#define AVCODEC_RANGECODER_H
 
 #include <stdint.h>
 #include <assert.h>
@@ -138,4 +138,4 @@ static inline int get_rac(RangeCoder *c, uint8_t * const state){
 #endif
 }
 
-#endif /* FFMPEG_RANGECODER_H */
+#endif /* AVCODEC_RANGECODER_H */

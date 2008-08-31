@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_MPCDATA_H
-#define FFMPEG_MPCDATA_H
+#ifndef AVCODEC_MPCDATA_H
+#define AVCODEC_MPCDATA_H
 
 #include <stdint.h>
 
@@ -65,4 +65,4 @@ static const float mpc_SCF[128] = {
     0.000000044293003043, 0.000000036895215771, 0.000000030733001921, 0.000000025599996789
 };
 
-#endif /* FFMPEG_MPCDATA_H */
+#endif /* AVCODEC_MPCDATA_H */

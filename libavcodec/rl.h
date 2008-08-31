@@ -24,8 +24,8 @@
  * rl header.
  */
 
-#ifndef FFMPEG_RL_H
-#define FFMPEG_RL_H
+#ifndef AVCODEC_RL_H
+#define AVCODEC_RL_H
 
 #include <stdint.h>
 #include "bitstream.h"
@@ -83,4 +83,4 @@ static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
     return index + level - 1;
 }
 
-#endif /* FFMPEG_RL_H */
+#endif /* AVCODEC_RL_H */

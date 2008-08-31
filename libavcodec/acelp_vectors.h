@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_ACELP_VECTORS_H
-#define FFMPEG_ACELP_VECTORS_H
+#ifndef AVCODEC_ACELP_VECTORS_H
+#define AVCODEC_ACELP_VECTORS_H
 
 #include <stdint.h>
 
@@ -150,4 +150,4 @@ void ff_acelp_weighted_vector_sum(
         int shift,
         int length);
 
-#endif /* FFMPEG_ACELP_VECTORS_H */
+#endif /* AVCODEC_ACELP_VECTORS_H */

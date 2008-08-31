@@ -40,8 +40,8 @@
  * the assembler to keep the binary from becoming tainted.
  */
 
-#ifndef FFMPEG_VIS_H
-#define FFMPEG_VIS_H
+#ifndef AVCODEC_SPARC_VIS_H
+#define AVCODEC_SPARC_VIS_H
 
 #define vis_opc_base    ((0x1 << 31) | (0x36 << 19))
 #define vis_opf(X)      ((X) << 5)
@@ -329,4 +329,4 @@ static inline void vis_alignaddrl_g0(void *_ptr)
 
 #define vis_pdist(rs1,rs2,rd)           vis_dd2d(0x3e, rs1, rs2, rd)
 
-#endif /* FFMPEG_VIS_H */
+#endif /* AVCODEC_SPARC_VIS_H */

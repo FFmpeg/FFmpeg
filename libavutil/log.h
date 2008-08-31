@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_LOG_H
-#define FFMPEG_LOG_H
+#ifndef AVUTIL_LOG_H
+#define AVUTIL_LOG_H
 
 #include <stdarg.h>
 
@@ -126,4 +126,4 @@ void av_log_set_level(int);
 void av_log_set_callback(void (*)(void*, int, const char*, va_list));
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl);
 
-#endif /* FFMPEG_LOG_H */
+#endif /* AVUTIL_LOG_H */

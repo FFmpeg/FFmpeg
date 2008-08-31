@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_ACELP_PITCH_DELAY_H
-#define FFMPEG_ACELP_PITCH_DELAY_H
+#ifndef AVCODEC_ACELP_PITCH_DELAY_H
+#define AVCODEC_ACELP_PITCH_DELAY_H
 
 #include <stdint.h>
 
@@ -217,4 +217,4 @@ int16_t ff_acelp_decode_gain_code(
     int subframe_size,
     int max_pred_order);
 
-#endif /* FFMPEG_ACELP_PITCH_DELAY_H */
+#endif /* AVCODEC_ACELP_PITCH_DELAY_H */

@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_MPEG4VIDEO_PARSER_H
-#define FFMPEG_MPEG4VIDEO_PARSER_H
+#ifndef AVCODEC_MPEG4VIDEO_PARSER_H
+#define AVCODEC_MPEG4VIDEO_PARSER_H
 
 #include "parser.h"
 
@@ -31,4 +31,4 @@
  */
 int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size);
 
-#endif /* FFMPEG_MPEG4VIDEO_PARSER_H */
+#endif /* AVCODEC_MPEG4VIDEO_PARSER_H */

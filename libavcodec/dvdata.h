@@ -24,8 +24,8 @@
  * Constants for DV codec.
  */
 
-#ifndef FFMPEG_DVDATA_H
-#define FFMPEG_DVDATA_H
+#ifndef AVCODEC_DVDATA_H
+#define AVCODEC_DVDATA_H
 
 #include "libavutil/rational.h"
 #include "avcodec.h"
@@ -6443,4 +6443,4 @@ static inline int dv_write_ssyb_id(uint8_t syb_num, uint8_t fr, uint8_t* buf)
     return 3;
 }
 
-#endif /* FFMPEG_DVDATA_H */
+#endif /* AVCODEC_DVDATA_H */

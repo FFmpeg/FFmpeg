@@ -23,8 +23,8 @@
 * data structures common to libschroedingerdec.c and libschroedingerenc.c
 */
 
-#ifndef FFMPEG_LIBSCHROEDINGER_H
-#define FFMPEG_LIBSCHROEDINGER_H
+#ifndef AVCODEC_LIBSCHROEDINGER_H
+#define AVCODEC_LIBSCHROEDINGER_H
 
 #include "config.h"
 
@@ -58,4 +58,4 @@ int ff_get_schro_frame_format (SchroChromaFormat schro_chroma_fmt,
                                SchroFrameFormat  *schro_frame_fmt);
 
 #endif /* CONFIG_LIBSCHROEDINGER */
-#endif /* FFMPEG_LIBSCHROEDINGER_H */
+#endif /* AVCODEC_LIBSCHROEDINGER_H */

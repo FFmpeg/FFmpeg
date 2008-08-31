@@ -24,8 +24,8 @@
  * FLAC (Free Lossless Audio Codec) decoder/demuxer common functions
  */
 
-#ifndef FFMPEG_FLAC_H
-#define FFMPEG_FLAC_H
+#ifndef AVCODEC_FLAC_H
+#define AVCODEC_FLAC_H
 
 #include "avcodec.h"
 
@@ -54,4 +54,4 @@ typedef struct FLACStreaminfo {
 void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                               const uint8_t *buffer);
 
-#endif /* FFMPEG_FLAC_H */
+#endif /* AVCODEC_FLAC_H */

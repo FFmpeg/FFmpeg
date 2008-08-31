@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_LPC_H
-#define FFMPEG_LPC_H
+#ifndef AVCODEC_LPC_H
+#define AVCODEC_LPC_H
 
 #include <stdint.h>
 #include "dsputil.h"
@@ -45,4 +45,4 @@ int ff_lpc_calc_coefs(DSPContext *s,
                       int32_t coefs[][MAX_LPC_ORDER], int *shift, int use_lpc,
                       int omethod, int max_shift, int zero_shift);
 
-#endif /* FFMPEG_LPC_H */
+#endif /* AVCODEC_LPC_H */

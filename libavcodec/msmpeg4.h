@@ -23,8 +23,8 @@
  * @file msmpeg4.h
  */
 
-#ifndef FFMPEG_MSMPEG4_H
-#define FFMPEG_MSMPEG4_H
+#ifndef AVCODEC_MSMPEG4_H
+#define AVCODEC_MSMPEG4_H
 
 #include "config.h"
 #include "avcodec.h"
@@ -62,4 +62,4 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 #define ENABLE_WMV_DECODER (ENABLE_WMV1_DECODER || ENABLE_WMV2_DECODER)
 #define ENABLE_WMV_ENCODER (ENABLE_WMV1_ENCODER || ENABLE_WMV2_ENCODER)
 
-#endif /* FFMPEG_MSMPEG4_H */
+#endif /* AVCODEC_MSMPEG4_H */

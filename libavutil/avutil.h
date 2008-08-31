@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AVUTIL_H
-#define FFMPEG_AVUTIL_H
+#ifndef AVUTIL_AVUTIL_H
+#define AVUTIL_AVUTIL_H
 
 /**
  * @file avutil.h
@@ -144,4 +144,4 @@ enum PixelFormat {
 #define PIX_FMT_YUV422  PIX_FMT_YUYV422
 #endif
 
-#endif /* FFMPEG_AVUTIL_H */
+#endif /* AVUTIL_AVUTIL_H */

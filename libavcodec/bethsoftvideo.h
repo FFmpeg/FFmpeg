@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_BETHSOFTVIDEO_H
-#define FFMPEG_BETHSOFTVIDEO_H
+#ifndef AVCODEC_BETHSOFTVIDEO_H
+#define AVCODEC_BETHSOFTVIDEO_H
 
 enum BethsoftVidBlockType
 {
@@ -33,4 +33,4 @@ enum BethsoftVidBlockType
     EOF_BLOCK           = 0x14,
 };
 
-#endif /* FFMPEG_BETHSOFTVIDEO_H */
+#endif /* AVCODEC_BETHSOFTVIDEO_H */

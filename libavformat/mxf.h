@@ -18,8 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef FFMPEG_MXF_H
-#define FFMPEG_MXF_H
+#ifndef AVFORMAT_MXF_H
+#define AVFORMAT_MXF_H
 
 #include "avformat.h"
 #include "libavcodec/bytestream.h"
@@ -71,4 +71,4 @@ extern const MXFCodecUL ff_mxf_codec_uls[];
 #define PRINT_KEY(pc, s, x)
 #endif
 
-#endif /* FFMPEG_MXF_H */
+#endif /* AVFORMAT_MXF_H */

@@ -25,8 +25,8 @@
  * mpegvideo header.
  */
 
-#ifndef FFMPEG_MPEGVIDEO_H
-#define FFMPEG_MPEGVIDEO_H
+#ifndef AVCODEC_MPEGVIDEO_H
+#define AVCODEC_MPEGVIDEO_H
 
 #include "dsputil.h"
 #include "bitstream.h"
@@ -863,5 +863,5 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
                        DCTELEM block[6][64],
                        int motion_x, int motion_y);
 
-#endif /* FFMPEG_MPEGVIDEO_H */
+#endif /* AVCODEC_MPEGVIDEO_H */
 

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_SNOW_H
-#define FFMPEG_SNOW_H
+#ifndef AVCODEC_SNOW_H
+#define AVCODEC_SNOW_H
 
 #include "dsputil.h"
 
@@ -171,4 +171,4 @@ static av_always_inline void snow_horizontal_compose_liftS_lead_out(int i, IDWTE
         }
 }
 
-#endif /* FFMPEG_SNOW_H */
+#endif /* AVCODEC_SNOW_H */

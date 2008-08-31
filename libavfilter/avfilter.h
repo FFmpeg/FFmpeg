@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AVFILTER_H
-#define FFMPEG_AVFILTER_H
+#ifndef AVFILTER_AVFILTER_H
+#define AVFILTER_AVFILTER_H
 
 #define LIBAVFILTER_VERSION_MAJOR  0
 #define LIBAVFILTER_VERSION_MINOR  1
@@ -628,4 +628,4 @@ static inline void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
                         &f->output_pads, &f->outputs, p);
 }
 
-#endif  /* FFMPEG_AVFILTER_H */
+#endif  /* AVFILTER_AVFILTER_H */

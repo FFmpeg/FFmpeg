@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_VC1ACDATA_H
-#define FFMPEG_VC1ACDATA_H
+#ifndef AVCODEC_VC1ACDATA_H
+#define AVCODEC_VC1ACDATA_H
 
 #include <stdint.h>
 
@@ -589,4 +589,4 @@ static const uint8_t vc1_last_delta_run_table[AC_MODES][10] = {
 }
 };
 
-#endif /* FFMPEG_VC1ACDATA_H */
+#endif /* AVCODEC_VC1ACDATA_H */

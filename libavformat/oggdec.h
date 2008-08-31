@@ -22,8 +22,8 @@
     DEALINGS IN THE SOFTWARE.
 **/
 
-#ifndef FFMPEG_OGGDEC_H
-#define FFMPEG_OGGDEC_H
+#ifndef AVFORMAT_OGGDEC_H
+#define AVFORMAT_OGGDEC_H
 
 #include "avformat.h"
 
@@ -87,4 +87,4 @@ extern const ogg_codec_t ff_vorbis_codec;
 
 extern int vorbis_comment(AVFormatContext *ms, uint8_t *buf, int size);
 
-#endif /* FFMPEG_OGGDEC_H */
+#endif /* AVFORMAT_OGGDEC_H */

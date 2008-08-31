@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_RA144_H
-#define FFMPEG_RA144_H
+#ifndef AVCODEC_RA144_H
+#define AVCODEC_RA144_H
 
 #include <stdint.h>
 
@@ -1552,4 +1552,4 @@ static const int16_t * const lpc_refl_cb[10]={
     lpc_refl_cb6, lpc_refl_cb7, lpc_refl_cb8, lpc_refl_cb9, lpc_refl_cb10
 };
 
-#endif /* FFMPEG_RA144_H */
+#endif /* AVCODEC_RA144_H */

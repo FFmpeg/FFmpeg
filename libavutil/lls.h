@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_LLS_H
-#define FFMPEG_LLS_H
+#ifndef AVUTIL_LLS_H
+#define AVUTIL_LLS_H
 
 #define MAX_VARS 32
 
@@ -42,4 +42,4 @@ void av_update_lls(LLSModel *m, double *param, double decay);
 void av_solve_lls(LLSModel *m, double threshold, int min_order);
 double av_evaluate_lls(LLSModel *m, double *param, int order);
 
-#endif /* FFMPEG_LLS_H */
+#endif /* AVUTIL_LLS_H */

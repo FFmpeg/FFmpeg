@@ -17,11 +17,11 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef FFMPEG_RTP_AAC_H
-#define FFMPEG_RTP_AAC_H
+#ifndef AVFORMAT_RTP_AAC_H
+#define AVFORMAT_RTP_AAC_H
 
 #include "avformat.h"
 
 void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size);
 
-#endif /* FFMPEG_RTP_AAC_H */
+#endif /* AVFORMAT_RTP_AAC_H */

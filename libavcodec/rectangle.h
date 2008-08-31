@@ -25,8 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef FFMPEG_RECTANGLE_H
-#define FFMPEG_RECTANGLE_H
+#ifndef AVCODEC_RECTANGLE_H
+#define AVCODEC_RECTANGLE_H
 
 #include "libavutil/common.h"
 
@@ -118,4 +118,4 @@ static av_always_inline void fill_rectangle(void *vp, int w, int h, int stride, 
     assert(h==4);
 }
 
-#endif /* FFMPEG_RECTANGLE_H */
+#endif /* AVCODEC_RECTANGLE_H */

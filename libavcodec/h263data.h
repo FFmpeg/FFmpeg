@@ -26,8 +26,8 @@
  * H.263 tables.
  */
 
-#ifndef FFMPEG_H263DATA_H
-#define FFMPEG_H263DATA_H
+#ifndef AVCODEC_H263DATA_H
+#define AVCODEC_H263DATA_H
 
 #include <stdint.h>
 #include "mpegvideo.h"
@@ -311,4 +311,4 @@ const uint8_t ff_h263_loop_filter_strength[32]={
     0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9,10,10,10,11,11,11,12,12,12
 };
 
-#endif /* FFMPEG_H263DATA_H */
+#endif /* AVCODEC_H263DATA_H */

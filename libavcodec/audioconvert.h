@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AUDIOCONVERT_H
-#define FFMPEG_AUDIOCONVERT_H
+#ifndef AVCODEC_AUDIOCONVERT_H
+#define AVCODEC_AUDIOCONVERT_H
 
 /**
  * @file audioconvert.h
@@ -88,4 +88,4 @@ int av_audio_convert(AVAudioConvert *ctx,
                            void * const out[6], const int out_stride[6],
                      const void * const  in[6], const int  in_stride[6], int len);
 
-#endif /* FFMPEG_AUDIOCONVERT_H */
+#endif /* AVCODEC_AUDIOCONVERT_H */

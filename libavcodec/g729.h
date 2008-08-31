@@ -18,12 +18,12 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef FFMPEG_G729_H
-#define FFMPEG_G729_H
+#ifndef AVCODEC_G729_H
+#define AVCODEC_G729_H
 
 /**
  * maximum possible subframe size
  */
 #define MAX_SUBFRAME_SIZE 44
 
-#endif // FFMPEG_G729_H
+#endif // AVCODEC_G729_H

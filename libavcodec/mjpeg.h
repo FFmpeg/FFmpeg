@@ -30,8 +30,8 @@
  * MJPEG encoder and decoder.
  */
 
-#ifndef FFMPEG_MJPEG_H
-#define FFMPEG_MJPEG_H
+#ifndef AVCODEC_MJPEG_H
+#define AVCODEC_MJPEG_H
 
 #include "avcodec.h"
 #include "bitstream.h"
@@ -152,4 +152,4 @@ void ff_mjpeg_build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
                                   const uint8_t *bits_table,
                                   const uint8_t *val_table);
 
-#endif /* FFMPEG_MJPEG_H */
+#endif /* AVCODEC_MJPEG_H */

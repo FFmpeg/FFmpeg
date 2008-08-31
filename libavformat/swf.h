@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_SWF_H
-#define FFMPEG_SWF_H
+#ifndef AVFORMAT_SWF_H
+#define AVFORMAT_SWF_H
 
 #include "libavutil/fifo.h"
 #include "avformat.h"
@@ -94,4 +94,4 @@ static const AVCodecTag swf_audio_codec_tags[] = {
     {0, 0},
 };
 
-#endif /* FFMPEG_SWF_H */
+#endif /* AVFORMAT_SWF_H */

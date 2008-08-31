@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AC3DEC_DATA_H
-#define FFMPEG_AC3DEC_DATA_H
+#ifndef AVCODEC_AC3DEC_DATA_H
+#define AVCODEC_AC3DEC_DATA_H
 
 #include "libavutil/common.h"
 
@@ -37,4 +37,4 @@ extern const uint8_t ff_eac3_default_cpl_band_struct[18];
 
 extern const uint8_t ff_ac3_rematrix_band_tab[5];
 
-#endif /* FFMPEG_AC3DEC_DATA_H */
+#endif /* AVCODEC_AC3DEC_DATA_H */

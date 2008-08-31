@@ -28,8 +28,8 @@
  * adx2wav & wav2adx http://www.geocities.co.jp/Playtown/2004/
  */
 
-#ifndef FFMPEG_ADX_H
-#define FFMPEG_ADX_H
+#ifndef AVCODEC_ADX_H
+#define AVCODEC_ADX_H
 
 typedef struct {
     int s1,s2;
@@ -46,4 +46,4 @@ typedef struct {
 #define    SCALE1    0x7298
 #define    SCALE2    0x3350
 
-#endif /* FFMPEG_ADX_H */
+#endif /* AVCODEC_ADX_H */

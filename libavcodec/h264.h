@@ -25,8 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef FFMPEG_H264_H
-#define FFMPEG_H264_H
+#ifndef AVCODEC_H264_H
+#define AVCODEC_H264_H
 
 #include "dsputil.h"
 #include "cabac.h"
@@ -435,4 +435,4 @@ typedef struct H264Context{
 
 }H264Context;
 
-#endif /* FFMPEG_H264_H */
+#endif /* AVCODEC_H264_H */

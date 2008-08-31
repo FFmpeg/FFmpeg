@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_VORBIS_ENC_DATA_H
-#define FFMPEG_VORBIS_ENC_DATA_H
+#ifndef AVCODEC_VORBIS_ENC_DATA_H
+#define AVCODEC_VORBIS_ENC_DATA_H
 
 #include <stdint.h>
 
@@ -502,4 +502,4 @@ static const struct {
     { 3, 2, 3, (const int[]){ -1, 12, 13, 14 } },
 };
 
-#endif /* FFMPEG_VORBIS_ENC_DATA_H */
+#endif /* AVCODEC_VORBIS_ENC_DATA_H */

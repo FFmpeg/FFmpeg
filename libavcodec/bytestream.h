@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_BYTESTREAM_H
-#define FFMPEG_BYTESTREAM_H
+#ifndef AVCODEC_BYTESTREAM_H
+#define AVCODEC_BYTESTREAM_H
 
 #include "libavutil/common.h"
 
@@ -66,4 +66,4 @@ static av_always_inline void bytestream_put_buffer(uint8_t **b, const uint8_t *s
     (*b) += size;
 }
 
-#endif /* FFMPEG_BYTESTREAM_H */
+#endif /* AVCODEC_BYTESTREAM_H */

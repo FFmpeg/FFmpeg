@@ -28,8 +28,8 @@
  * svq1 code books.
  */
 
-#ifndef FFMPEG_SVQ1_CB_H
-#define FFMPEG_SVQ1_CB_H
+#ifndef AVCODEC_SVQ1_CB_H
+#define AVCODEC_SVQ1_CB_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -1520,4 +1520,4 @@ const int8_t* const ff_svq1_intra_codebooks[6] = {
     NULL, NULL,
 };
 
-#endif /* FFMPEG_SVQ1_CB_H */
+#endif /* AVCODEC_SVQ1_CB_H */

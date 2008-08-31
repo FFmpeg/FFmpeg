@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_RANDOM_H
-#define FFMPEG_RANDOM_H
+#ifndef AVUTIL_RANDOM_H
+#define AVUTIL_RANDOM_H
 
 #define AV_RANDOM_N 624
 
@@ -70,4 +70,4 @@ static inline double av_random_real1(AVRandomState *state)
     return av_random(state) * (1.0 / 4294967296.0);
 }
 
-#endif /* FFMPEG_RANDOM_H */
+#endif /* AVUTIL_RANDOM_H */

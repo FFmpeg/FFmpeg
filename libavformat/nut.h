@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_NUT_H
-#define FFMPEG_NUT_H
+#ifndef AVFORMAT_NUT_H
+#define AVFORMAT_NUT_H
 
 //#include <limits.h>
 //#include "libavutil/adler32.h"
@@ -112,4 +112,4 @@ void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts);
 
 extern const Dispositions ff_nut_dispositions[];
 
-#endif /* FFMPEG_NUT_H */
+#endif /* AVFORMAT_NUT_H */

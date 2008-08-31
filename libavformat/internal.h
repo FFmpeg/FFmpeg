@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AVFORMAT_UTILS_H
-#define FFMPEG_AVFORMAT_UTILS_H
+#ifndef AVFORMAT_INTERNAL_H
+#define AVFORMAT_INTERNAL_H
 
 char *ff_data_to_hex(char *buf, const uint8_t *src, int size);
 
-#endif /* FFMPEG_AVFORMAT_UTILS_H */
+#endif /* AVFORMAT_INTERNAL_H */

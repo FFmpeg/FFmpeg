@@ -27,8 +27,8 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
-#ifndef FFMPEG_AACDECTAB_H
-#define FFMPEG_AACDECTAB_H
+#ifndef AVCODEC_AACDECTAB_H
+#define AVCODEC_AACDECTAB_H
 
 #include "aac.h"
 
@@ -206,4 +206,4 @@ static const float *tns_tmp2_map[4] = {
 };
 // @}
 
-#endif /* FFMPEG_AACDECTAB_H */
+#endif /* AVCODEC_AACDECTAB_H */

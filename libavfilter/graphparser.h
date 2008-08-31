@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_GRAPHPARSER_H
-#define FFMPEG_GRAPHPARSER_H
+#ifndef AVFILTER_GRAPHPARSER_H
+#define AVFILTER_GRAPHPARSER_H
 
 #include "avfilter.h"
 #include "avfiltergraph.h"
@@ -48,4 +48,4 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut *inputs, AVFilterInOut *outputs,
                          AVClass *log_ctx);
 
-#endif  /* FFMPEG_GRAPHPARSER_H */
+#endif  /* AVFILTER_GRAPHPARSER_H */

@@ -23,8 +23,8 @@
  * Memory handling functions.
  */
 
-#ifndef FFMPEG_MEM_H
-#define FFMPEG_MEM_H
+#ifndef AVUTIL_MEM_H
+#define AVUTIL_MEM_H
 
 #ifdef __ICC
     #define DECLARE_ALIGNED(n,t,v)      t v __attribute__ ((aligned (n)))
@@ -116,4 +116,4 @@ char *av_strdup(const char *s) av_malloc_attrib;
  */
 void av_freep(void *ptr);
 
-#endif /* FFMPEG_MEM_H */
+#endif /* AVUTIL_MEM_H */

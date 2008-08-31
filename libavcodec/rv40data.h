@@ -24,8 +24,8 @@
  * miscellaneous RV40 tables
  */
 
-#ifndef FFMPEG_RV40DATA_H
-#define FFMPEG_RV40DATA_H
+#ifndef AVCODEC_RV40DATA_H
+#define AVCODEC_RV40DATA_H
 
 #include <stdint.h>
 
@@ -112,4 +112,4 @@ static const uint8_t rv40_filter_clip_tbl[3][32] = {
 };
 /** @} */ // end loopfilter group
 
-#endif /* FFMPEG_RV40DATA_H */
+#endif /* AVCODEC_RV40DATA_H */

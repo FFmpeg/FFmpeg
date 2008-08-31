@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_I386_MATHOPS_H
-#define FFMPEG_I386_MATHOPS_H
+#ifndef AVCODEC_I386_MATHOPS_H
+#define AVCODEC_I386_MATHOPS_H
 
 #ifdef FRAC_BITS
 #   define MULL(ra, rb) \
@@ -42,4 +42,4 @@
      asm ("imull %2\n\t" : "=A"(rt) : "a" ((int)ra), "g" ((int)rb));\
      rt; })
 
-#endif /* FFMPEG_I386_MATHOPS_H */
+#endif /* AVCODEC_I386_MATHOPS_H */

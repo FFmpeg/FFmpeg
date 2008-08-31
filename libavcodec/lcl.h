@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_LCL_H
-#define FFMPEG_LCL_H
+#ifndef AVCODEC_LCL_H
+#define AVCODEC_LCL_H
 
 #define BMPTYPE_YUV 1
 #define BMPTYPE_RGB 2
@@ -46,4 +46,4 @@
 #define CODEC_MSZH 1
 #define CODEC_ZLIB 3
 
-#endif /* FFMPEG_LCL_H */
+#endif /* AVCODEC_LCL_H */

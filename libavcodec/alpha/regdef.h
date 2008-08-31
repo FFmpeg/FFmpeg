@@ -20,8 +20,8 @@
  */
 
 /* Some BSDs don't seem to have regdef.h... sigh  */
-#ifndef FFMPEG_REGDEF_H
-#define FFMPEG_REGDEF_H
+#ifndef AVCODEC_ALPHA_REGDEF_H
+#define AVCODEC_ALPHA_REGDEF_H
 
 #define v0      $0      /* function return value */
 
@@ -63,4 +63,4 @@
 #define sp      $30     /* stack pointer */
 #define zero    $31     /* reads as zero, writes are noops */
 
-#endif /* FFMPEG_REGDEF_H */
+#endif /* AVCODEC_ALPHA_REGDEF_H */

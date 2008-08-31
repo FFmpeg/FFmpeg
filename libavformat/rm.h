@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_RM_H
-#define FFMPEG_RM_H
+#ifndef AVFORMAT_RM_H
+#define AVFORMAT_RM_H
 
 #include "avformat.h"
 
@@ -105,4 +105,4 @@ int ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len,
  */
 void ff_rm_retrieve_cache (AVFormatContext *s, AVStream *st, AVPacket *pkt);
 
-#endif /* FFMPEG_RM_H */
+#endif /* AVFORMAT_RM_H */

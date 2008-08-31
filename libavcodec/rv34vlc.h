@@ -24,8 +24,8 @@
  * RV30/40 VLC tables
  */
 
-#ifndef FFMPEG_RV34VLC_H
-#define FFMPEG_RV34VLC_H
+#ifndef AVCODEC_RV34VLC_H
+#define AVCODEC_RV34VLC_H
 
 #include <stdint.h>
 
@@ -4051,4 +4051,4 @@ static const uint8_t rv34_inter_coeff[NUM_INTER_TABLES][COEFF_VLC_SIZE] = {
 }
 };
 
-#endif /* FFMPEG_RV34VLC_H */
+#endif /* AVCODEC_RV34VLC_H */

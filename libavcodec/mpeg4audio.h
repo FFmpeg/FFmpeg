@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_MPEG4AUDIO_H
-#define FFMPEG_MPEG4AUDIO_H
+#ifndef AVCODEC_MPEG4AUDIO_H
+#define AVCODEC_MPEG4AUDIO_H
 
 #include <stdint.h>
 
@@ -46,4 +46,4 @@ extern const uint8_t ff_mpeg4audio_channels[8];
  */
 int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_size);
 
-#endif /* FFMPEG_MPEGAUDIO_H */
+#endif /* AVCODEC_MPEG4AUDIO_H */

@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AVCODEC_H
-#define FFMPEG_AVCODEC_H
+#ifndef AVCODEC_AVCODEC_H
+#define AVCODEC_AVCODEC_H
 
 /**
  * @file avcodec.h
@@ -3074,4 +3074,4 @@ void av_log_missing_feature(void *avc, const char *feature, int want_sample);
 #define AVERROR_NOENT       AVERROR(ENOENT)  /**< No such file or directory. */
 #define AVERROR_PATCHWELCOME    -MKTAG('P','A','W','E') /**< Not yet implemented in FFmpeg. Patches welcome. */
 
-#endif /* FFMPEG_AVCODEC_H */
+#endif /* AVCODEC_AVCODEC_H */

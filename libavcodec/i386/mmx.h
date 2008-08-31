@@ -18,8 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef FFMPEG_MMX_H
-#define FFMPEG_MMX_H
+#ifndef AVCODEC_I386_MMX_H
+#define AVCODEC_I386_MMX_H
 
 #warning Everything in this header is deprecated, use plain asm()! New code using this header will be rejected.
 
@@ -282,4 +282,4 @@ typedef        union {
 #define         punpckhqdq_r2r(regs,regd)   mmx_r2r (punpckhqdq, regs, regd)
 
 
-#endif /* FFMPEG_MMX_H */
+#endif /* AVCODEC_I386_MMX_H */

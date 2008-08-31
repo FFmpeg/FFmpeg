@@ -19,8 +19,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef FFMPEG_MATHOPS_H
-#define FFMPEG_MATHOPS_H
+#ifndef AVCODEC_MATHOPS_H
+#define AVCODEC_MATHOPS_H
 
 #include "libavutil/common.h"
 
@@ -83,5 +83,5 @@ static av_always_inline int MULH(int a, int b){
 #   define MLS16(rt, ra, rb) ((rt) -= (ra) * (rb))
 #endif
 
-#endif /* FFMPEG_MATHOPS_H */
+#endif /* AVCODEC_MATHOPS_H */
 

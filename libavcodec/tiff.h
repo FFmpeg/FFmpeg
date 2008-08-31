@@ -24,8 +24,8 @@
  * @file tiff.h
  * @author Konstantin Shishkov
  */
-#ifndef FFMPEG_TIFF_H
-#define FFMPEG_TIFF_H
+#ifndef AVCODEC_TIFF_H
+#define AVCODEC_TIFF_H
 
 #include <stdint.h>
 
@@ -83,4 +83,4 @@ static const uint8_t type_sizes[6] = {
     0, 1, 100, 2, 4, 8
 };
 
-#endif /* FFMPEG_TIFF_H */
+#endif /* AVCODEC_TIFF_H */

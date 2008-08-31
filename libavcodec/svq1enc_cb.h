@@ -24,8 +24,8 @@
  * svq1 code books.
  */
 
-#ifndef FFMPEG_SVQ1ENC_CB_H
-#define FFMPEG_SVQ1ENC_CB_H
+#ifndef AVCODEC_SVQ1ENC_CB_H
+#define AVCODEC_SVQ1ENC_CB_H
 
 #include <stdint.h>
 
@@ -93,4 +93,4 @@ static const int8_t svq1_intra_codebook_sum[4][16*6] = {
  }
 };
 
-#endif /* FFMPEG_SVQ1ENC_CB_H */
+#endif /* AVCODEC_SVQ1ENC_CB_H */

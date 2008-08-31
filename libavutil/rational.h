@@ -25,8 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef FFMPEG_RATIONAL_H
-#define FFMPEG_RATIONAL_H
+#ifndef AVUTIL_RATIONAL_H
+#define AVUTIL_RATIONAL_H
 
 #include <stdint.h>
 #include "common.h"
@@ -113,4 +113,4 @@ AVRational av_sub_q(AVRational b, AVRational c) av_const;
  */
 AVRational av_d2q(double d, int max) av_const;
 
-#endif /* FFMPEG_RATIONAL_H */
+#endif /* AVUTIL_RATIONAL_H */

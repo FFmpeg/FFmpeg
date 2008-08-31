@@ -18,8 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef FFMPEG_RTSP_H
-#define FFMPEG_RTSP_H
+#ifndef AVFORMAT_RTSP_H
+#define AVFORMAT_RTSP_H
 
 #include <stdint.h>
 #include "avformat.h"
@@ -95,4 +95,4 @@ extern int rtsp_rtp_port_max;
 int rtsp_pause(AVFormatContext *s);
 int rtsp_resume(AVFormatContext *s);
 
-#endif /* FFMPEG_RTSP_H */
+#endif /* AVFORMAT_RTSP_H */

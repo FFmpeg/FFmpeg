@@ -23,8 +23,8 @@
 * data structures common to libdiracenc.c and libdiracdec.c
 */
 
-#ifndef FFMPEG_LIBDIRAC_H
-#define FFMPEG_LIBDIRAC_H
+#ifndef AVCODEC_LIBDIRAC_H
+#define AVCODEC_LIBDIRAC_H
 
 #include "config.h"
 
@@ -46,4 +46,4 @@ static const struct {
 };
 
 #endif /* CONFIG_LIBDIRAC */
-#endif /* FFMPEG_LIBDIRAC_H */
+#endif /* AVCODEC_LIBDIRAC_H */

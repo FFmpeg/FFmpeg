@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AVFORMAT_H
-#define FFMPEG_AVFORMAT_H
+#ifndef AVFORMAT_AVFORMAT_H
+#define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
 #define LIBAVFORMAT_VERSION_MINOR 21
@@ -1104,4 +1104,4 @@ int match_ext(const char *filename, const char *extensions);
 
 #endif /* HAVE_AV_CONFIG_H */
 
-#endif /* FFMPEG_AVFORMAT_H */
+#endif /* AVFORMAT_AVFORMAT_H */

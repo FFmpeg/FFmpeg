@@ -24,8 +24,8 @@
  * @file dcadata.c
  */
 
-#ifndef FFMPEG_DCADATA_H
-#define FFMPEG_DCADATA_H
+#ifndef AVCODEC_DCADATA_H
+#define AVCODEC_DCADATA_H
 
 #include <stdint.h>
 
@@ -8471,4 +8471,4 @@ where Ch(n) represents the subband samples in the (n)th audio channel.
 
 */
 
-#endif /* FFMPEG_DCADATA_H */
+#endif /* AVCODEC_DCADATA_H */

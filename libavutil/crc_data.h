@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_CRC_DATA_H
-#define FFMPEG_CRC_DATA_H
+#ifndef AVUTIL_CRC_DATA_H
+#define AVUTIL_CRC_DATA_H
 
 #include "crc.h"
 
@@ -210,4 +210,4 @@ static const AVCRC av_crc_table[AV_CRC_MAX][257] = {
     },
 };
 
-#endif /* FFMPEG_CRC_DATA_H */
+#endif /* AVUTIL_CRC_DATA_H */

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_LFG_H
-#define FFMPEG_LFG_H
+#ifndef AVUTIL_LFG_H
+#define AVUTIL_LFG_H
 
 typedef struct {
     unsigned int state[64];
@@ -51,4 +51,4 @@ static inline unsigned int av_mlfg_get(AVLFG *c){
     return c->state[c->index++ & 63] = 2*a*b+a+b;
 }
 
-#endif //FFMPEG_LFG_H
+#endif /* AVUTIL_LFG_H */

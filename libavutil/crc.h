@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_CRC_H
-#define FFMPEG_CRC_H
+#ifndef AVUTIL_CRC_H
+#define AVUTIL_CRC_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -40,5 +40,5 @@ int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size);
 const AVCRC *av_crc_get_table(AVCRCId crc_id);
 uint32_t av_crc(const AVCRC *ctx, uint32_t start_crc, const uint8_t *buffer, size_t length) av_pure;
 
-#endif /* FFMPEG_CRC_H */
+#endif /* AVUTIL_CRC_H */
 

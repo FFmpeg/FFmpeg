@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_DNXHDDATA_H
-#define FFMPEG_DNXHDDATA_H
+#ifndef AVCODEC_DNXHDDATA_H
+#define AVCODEC_DNXHDDATA_H
 
 #include <stdint.h>
 #include "avcodec.h"
@@ -48,4 +48,4 @@ extern const CIDEntry ff_dnxhd_cid_table[];
 int ff_dnxhd_get_cid_table(int cid);
 int ff_dnxhd_find_cid(AVCodecContext *avctx);
 
-#endif /* FFMPEG_DNXHDDATA_H */
+#endif /* AVCODEC_DNXHDDATA_H */

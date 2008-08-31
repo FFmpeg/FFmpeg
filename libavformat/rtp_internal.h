@@ -20,8 +20,8 @@
  */
 
 // this is a bit of a misnomer, because rtp & rtsp internal structures and prototypes are in here.
-#ifndef FFMPEG_RTP_INTERNAL_H
-#define FFMPEG_RTP_INTERNAL_H
+#ifndef AVFORMAT_RTP_INTERNAL_H
+#define AVFORMAT_RTP_INTERNAL_H
 
 #include <stdint.h>
 #include "libavcodec/avcodec.h"
@@ -127,5 +127,5 @@ enum CodecID ff_rtp_codec_id(const char *buf, enum CodecType codec_type);
 
 void av_register_rtp_dynamic_payload_handlers(void);
 
-#endif /* FFMPEG_RTP_INTERNAL_H */
+#endif /* AVFORMAT_RTP_INTERNAL_H */
 

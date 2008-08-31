@@ -25,8 +25,8 @@
  * Atrac 3 AKA RealAudio 8 compatible decoder data
  */
 
-#ifndef FFMPEG_ATRAC3DATA_H
-#define FFMPEG_ATRAC3DATA_H
+#ifndef AVCODEC_ATRAC3DATA_H
+#define AVCODEC_ATRAC3DATA_H
 
 #include <stdint.h>
 
@@ -137,4 +137,4 @@ static const float qmf_48tap_half[24] = {
 /* joint stereo related tables */
 static const float matrixCoeffs[8] = {0.0, 2.0, 2.0, 2.0, 0.0, 0.0, 1.0, 1.0};
 
-#endif /* FFMPEG_ATRAC3DATA_H */
+#endif /* AVCODEC_ATRAC3DATA_H */

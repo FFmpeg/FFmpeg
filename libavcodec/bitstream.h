@@ -23,8 +23,8 @@
  * bitstream api header.
  */
 
-#ifndef FFMPEG_BITSTREAM_H
-#define FFMPEG_BITSTREAM_H
+#ifndef AVCODEC_BITSTREAM_H
+#define AVCODEC_BITSTREAM_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -954,4 +954,4 @@ static inline int decode210(GetBitContext *gb){
         return 2 - get_bits1(gb);
 }
 
-#endif /* FFMPEG_BITSTREAM_H */
+#endif /* AVCODEC_BITSTREAM_H */

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_MPC8HUFF_H
-#define FFMPEG_MPC8HUFF_H
+#ifndef AVCODEC_MPC8HUFF_H
+#define AVCODEC_MPC8HUFF_H
 
 #include <stdint.h>
 
@@ -575,4 +575,4 @@ static const int8_t mpc8_q8_bits[2][MPC8_Q8_SIZE] = {
 }
 };
 
-#endif /* FFMPEG_MPC8HUFF_H */
+#endif /* AVCODEC_MPC8HUFF_H */

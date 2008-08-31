@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_MMI_H
-#define FFMPEG_MMI_H
+#ifndef AVCODEC_PS2_MMI_H
+#define AVCODEC_PS2_MMI_H
 
 #define align16 __attribute__ ((aligned (16)))
 
@@ -168,4 +168,4 @@
 #define         pextlb(rs, rt, rd) \
         asm volatile ("pextlb  " #rd ", " #rs ", " #rt )
 
-#endif /* FFMPEG_MMI_H */
+#endif /* AVCODEC_PS2_MMI_H */

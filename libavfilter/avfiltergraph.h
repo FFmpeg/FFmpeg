@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_AVFILTERGRAPH_H
-#define FFMPEG_AVFILTERGRAPH_H
+#ifndef AVFILTER_AVFILTERGRAPH_H
+#define AVFILTER_AVFILTERGRAPH_H
 
 #include "avfilter.h"
 
@@ -51,4 +51,4 @@ int avfilter_graph_config_formats(AVFilterGraph *graphctx);
  */
 void avfilter_destroy_graph(AVFilterGraph *graph);
 
-#endif  /* FFMPEG_AVFILTERGRAPH_H */
+#endif  /* AVFILTER_AVFILTERGRAPH_H */

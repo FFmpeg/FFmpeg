@@ -26,8 +26,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef FFMPEG_H264DATA_H
-#define FFMPEG_H264DATA_H
+#ifndef AVCODEC_H264DATA_H
+#define AVCODEC_H264DATA_H
 
 #include <stdint.h>
 #include "libavutil/rational.h"
@@ -1316,4 +1316,4 @@ static const int8_t cabac_context_init_PB[3][460][2] =
     }
 };
 
-#endif /* FFMPEG_H264DATA_H */
+#endif /* AVCODEC_H264DATA_H */

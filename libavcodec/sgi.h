@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_SGI_H
-#define FFMPEG_SGI_H
+#ifndef AVCODEC_SGI_H
+#define AVCODEC_SGI_H
 
 /**
  * SGI image file signature
@@ -33,4 +33,4 @@
 #define SGI_RGB 3
 #define SGI_RGBA 4
 
-#endif /* FFMPEG_SGI_H */
+#endif /* AVCODEC_SGI_H */

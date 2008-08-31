@@ -27,8 +27,8 @@
  * Modified for use in TIFF by Konstantin Shishkov
  */
 
-#ifndef FFMPEG_LZW_H
-#define FFMPEG_LZW_H
+#ifndef AVCODEC_LZW_H
+#define AVCODEC_LZW_H
 
 #include "bitstream.h"
 
@@ -56,4 +56,4 @@ void ff_lzw_encode_init(struct LZWEncodeState * s, uint8_t * outbuf, int outsize
 int ff_lzw_encode(struct LZWEncodeState * s, const uint8_t * inbuf, int insize);
 int ff_lzw_encode_flush(struct LZWEncodeState * s);
 
-#endif /* FFMPEG_LZW_H */
+#endif /* AVCODEC_LZW_H */

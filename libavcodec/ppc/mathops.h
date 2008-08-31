@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_PPC_MATHOPS_H
-#define FFMPEG_PPC_MATHOPS_H
+#ifndef AVCODEC_PPC_MATHOPS_H
+#define AVCODEC_PPC_MATHOPS_H
 
 #if defined(ARCH_POWERPC_405)
 /* signed 16x16 -> 32 multiply add accumulate */
@@ -35,4 +35,4 @@
     __rt; })
 #endif
 
-#endif /* FFMPEG_PPC_MATHOPS_H */
+#endif /* AVCODEC_PPC_MATHOPS_H */

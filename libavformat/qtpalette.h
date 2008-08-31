@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_QTPALETTE_H
-#define FFMPEG_QTPALETTE_H
+#ifndef AVFORMAT_QTPALETTE_H
+#define AVFORMAT_QTPALETTE_H
 
 #include <inttypes.h>
 
@@ -310,4 +310,4 @@ static const uint8_t ff_qt_default_palette_256[256 * 4] = {
   /* 255, 0xFF */  0x00, 0x00, 0x00, 0x00
 };
 
-#endif /* FFMPEG_QTPALETTE_H */
+#endif /* AVFORMAT_QTPALETTE_H */

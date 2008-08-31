@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_MPC8DATA_H
-#define FFMPEG_MPC8DATA_H
+#ifndef AVCODEC_MPC8DATA_H
+#define AVCODEC_MPC8DATA_H
 
 #include <stdint.h>
 
@@ -118,4 +118,4 @@ const static uint32_t mpc8_cnk_lost[16][33] =
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 103, 55, 3347, 12419, 56459, 16987, 313105, 54177, 3076873, 3739321, 3132677, 66353813, 123012781, 236330717, 0}
 };
 
-#endif /* FFMPEG_MPC8DATA_H */
+#endif /* AVCODEC_MPC8DATA_H */

@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_INTRAX8_H
-#define FFMPEG_INTRAX8_H
+#ifndef AVCODEC_INTRAX8_H
+#define AVCODEC_INTRAX8_H
 
 #include "bitstream.h"
 #include "mpegvideo.h"
@@ -54,4 +54,4 @@ void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s);
 void ff_intrax8_common_end(IntraX8Context * w);
 int  ff_intrax8_decode_picture(IntraX8Context * w, int quant, int halfpq);
 
-#endif /* FFMPEG_INTRAX8_H */
+#endif /* AVCODEC_INTRAX8_H */

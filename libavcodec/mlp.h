@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_MLP_H
-#define FFMPEG_MLP_H
+#ifndef AVCODEC_MLP_H
+#define AVCODEC_MLP_H
 
 #include <stdint.h>
 
@@ -118,4 +118,4 @@ static inline uint8_t xor_32_to_8(uint32_t value)
     return value;
 }
 
-#endif /* FFMPEG_MLP_H */
+#endif /* AVCODEC_MLP_H */

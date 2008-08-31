@@ -25,8 +25,8 @@
  * VC-1 tables.
  */
 
-#ifndef FFMPEG_VC1DATA_H
-#define FFMPEG_VC1DATA_H
+#ifndef AVCODEC_VC1DATA_H
+#define AVCODEC_VC1DATA_H
 
 #include <stdint.h>
 #include "libavutil/rational.h"
@@ -154,4 +154,4 @@ extern const int8_t ff_vc1_adv_interlaced_4x4_zz [16];
 /* DQScale as specified in 8.1.3.9 - almost identical to 0x40000/i */
 extern const int32_t ff_vc1_dqscale[63];
 
-#endif /* FFMPEG_VC1DATA_H */
+#endif /* AVCODEC_VC1DATA_H */

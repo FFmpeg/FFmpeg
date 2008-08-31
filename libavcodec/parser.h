@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_PARSER_H
-#define FFMPEG_PARSER_H
+#ifndef AVCODEC_PARSER_H
+#define AVCODEC_PARSER_H
 
 #include "avcodec.h"
 
@@ -66,4 +66,4 @@ void ff_parse1_close(AVCodecParserContext *s);
  */
 void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove);
 
-#endif /* FFMPEG_PARSER_H */
+#endif /* AVCODEC_PARSER_H */

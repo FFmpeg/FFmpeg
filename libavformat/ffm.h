@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_FFM_H
-#define FFMPEG_FFM_H
+#ifndef AVFORMAT_FFM_H
+#define AVFORMAT_FFM_H
 
 #include <stdint.h>
 #include "avformat.h"
@@ -55,4 +55,4 @@ typedef struct FFMContext {
     uint8_t packet[FFM_PACKET_SIZE];
 } FFMContext;
 
-#endif /* FFMPEG_FFM_H */
+#endif /* AVFORMAT_FFM_H */

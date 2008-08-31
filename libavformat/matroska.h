@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_MATROSKA_H
-#define FFMPEG_MATROSKA_H
+#ifndef AVFORMAT_MATROSKA_H
+#define AVFORMAT_MATROSKA_H
 
 #include "libavcodec/avcodec.h"
 
@@ -231,4 +231,4 @@ typedef struct CodecMime{
 extern const CodecTags ff_mkv_codec_tags[];
 extern const CodecMime ff_mkv_mime_tags[];
 
-#endif /* FFMPEG_MATROSKA_H */
+#endif /* AVFORMAT_MATROSKA_H */

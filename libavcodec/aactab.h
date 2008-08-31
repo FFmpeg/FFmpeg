@@ -27,8 +27,8 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
-#ifndef FFMPEG_AACTAB_H
-#define FFMPEG_AACTAB_H
+#ifndef AVCODEC_AACTAB_H
+#define AVCODEC_AACTAB_H
 
 #include "libavutil/mem.h"
 #include "aac.h"
@@ -69,4 +69,4 @@ extern const float ff_aac_pow2sf_tab[316];
 extern       float ff_aac_pow2sf_tab[316];
 #endif /* CONFIG_HARDCODED_TABLES */
 
-#endif /* FFMPEG_AACTAB_H */
+#endif /* AVCODEC_AACTAB_H */

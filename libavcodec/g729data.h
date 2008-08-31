@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_G729DATA_H
-#define FFMPEG_G729DATA_H
+#ifndef AVCODEC_G729DATA_H
+#define AVCODEC_G729DATA_H
 
 #include <stdint.h>
 
@@ -211,4 +211,4 @@ static const int16_t cb_lsp_2nd[1<<VQ_2ND_BITS][10] =
   { -163,   674,   -11,  -886,   531, -1125,  -265,  -242,   724,   934}
 };
 
-#endif // FFMPEG_G729DATA_H
+#endif // AVCODEC_G729DATA_H

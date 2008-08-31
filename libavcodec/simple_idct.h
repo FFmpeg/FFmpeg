@@ -25,8 +25,8 @@
  * simple idct header.
  */
 
-#ifndef FFMPEG_SIMPLE_IDCT_H
-#define FFMPEG_SIMPLE_IDCT_H
+#ifndef AVCODEC_SIMPLE_IDCT_H
+#define AVCODEC_SIMPLE_IDCT_H
 
 #include <stdint.h>
 #include "dsputil.h"
@@ -44,4 +44,4 @@ void ff_simple_idct84_add(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_simple_idct48_add(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_simple_idct44_add(uint8_t *dest, int line_size, DCTELEM *block);
 
-#endif /* FFMPEG_SIMPLE_IDCT_H */
+#endif /* AVCODEC_SIMPLE_IDCT_H */

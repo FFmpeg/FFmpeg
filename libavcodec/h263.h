@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_H263_H
-#define FFMPEG_H263_H
+#ifndef AVCODEC_H263_H
+#define AVCODEC_H263_H
 
 #include "config.h"
 #include "msmpeg4.h"
@@ -43,4 +43,4 @@
                                  ENABLE_WMV_ENCODER)
 #define ENABLE_ANY_H263 (ENABLE_ANY_H263_DECODER || ENABLE_ANY_H263_ENCODER)
 
-#endif /* FFMPEG_H263_H */
+#endif /* AVCODEC_H263_H */

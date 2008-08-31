@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_PNG_H
-#define FFMPEG_PNG_H
+#ifndef AVCODEC_PNG_H
+#define AVCODEC_PNG_H
 
 #include <stdint.h>
 
@@ -74,4 +74,4 @@ extern int ff_png_get_nb_channels(int color_type);
 /* compute the row size of an interleaved pass */
 extern int ff_png_pass_row_size(int pass, int bits_per_pixel, int width);
 
-#endif /* FFMPEG_PNG_H */
+#endif /* AVCODEC_PNG_H */
