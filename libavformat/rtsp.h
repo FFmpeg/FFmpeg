@@ -62,6 +62,7 @@ typedef struct RTSPHeader {
     RTSPTransportField transports[RTSP_MAX_TRANSPORTS];
     int seq; /**< sequence number */
     char session_id[512];
+    char real_challenge[64]; /**< the RealChallenge1 field from the server */
 } RTSPHeader;
 
 /** the callback can be used to extend the connection setup/teardown step */

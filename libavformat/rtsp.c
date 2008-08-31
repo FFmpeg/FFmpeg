@@ -42,6 +42,12 @@ enum RTSPClientState {
     RTSP_STATE_PAUSED,
 };
 
+enum RTSPServerType {
+    RTSP_SERVER_RTP, /*< Standard-compliant RTP-server */
+    RTSP_SERVER_RDT, /*< Realmedia-style server */
+    RTSP_SERVER_LAST
+};
+
 typedef struct RTSPState {
     URLContext *rtsp_hd; /* RTSP TCP connexion handle */
     int nb_rtsp_streams;
@@ -55,6 +61,7 @@ typedef struct RTSPState {
     int seq;        /* RTSP command sequence number */
     char session_id[512];
     enum RTSPProtocol protocol;
+    enum RTSPServerType server_type;
     char last_reply[2048]; /* XXX: allocate ? */
     RTPDemuxContext *cur_rtp;
 } RTSPState;
@@ -710,6 +717,9 @@ void rtsp_parse_line(RTSPHeader *reply, const char *buf)
         reply->seq = strtol(p, NULL, 10);
     } else if (av_stristart(p, "Range:", &p)) {
         rtsp_parse_range_npt(p, &reply->range_start, &reply->range_end);
+    } else if (av_stristart(p, "RealChallenge1:", &p)) {
+        skip_spaces(&p);
+        av_strlcpy(reply->real_challenge, p, sizeof(reply->real_challenge));
     }
 }
 
@@ -1035,6 +1045,7 @@ static int rtsp_read_header(AVFormatContext *s,
     RTSPHeader reply1, *reply = &reply1;
     unsigned char *content = NULL;
     int protocol_mask = 0;
+    char real_challenge[64];
 
     /* extract hostname and port */
     url_split(NULL, 0, NULL, 0,
@@ -1072,6 +1083,42 @@ static int rtsp_read_header(AVFormatContext *s,
         return AVERROR(EIO);
     rt->rtsp_hd = rtsp_hd;
     rt->seq = 0;
+
+    /* request options supported by the server; this also detects server type */
+    for (rt->server_type = RTSP_SERVER_RTP;;) {
+        snprintf(cmd, sizeof(cmd),
+                 "OPTIONS %s RTSP/1.0\r\n", s->filename);
+        if (rt->server_type == RTSP_SERVER_RDT)
+            av_strlcat(cmd,
+                       /**
+                        * The following entries are required for proper
+                        * streaming from a Realmedia server. They are
+                        * interdependent in some way although we currently
+                        * don't quite understand how. Values were copied
+                        * from mplayer SVN r23589.
+                        * @param CompanyID is a 16-byte ID in base64
+                        * @param ClientChallenge is a 16-byte ID in hex
+                        */
+                       "ClientChallenge: 9e26d33f2984236010ef6253fb1887f7\r\n"
+                       "PlayerStarttime: [28/03/2003:22:50:23 00:00]\r\n"
+                       "CompanyID: KnKV4M4I/B2FjJ1TToLycw==\r\n"
+                       "GUID: 00000000-0000-0000-0000-000000000000\r\n",
+                       sizeof(cmd));
+        rtsp_send_cmd(s, cmd, reply, NULL);
+        if (reply->status_code != RTSP_STATUS_OK) {
+            err = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
+        /* detect server type if not standard-compliant RTP */
+        if (rt->server_type != RTSP_SERVER_RDT && reply->real_challenge[0]) {
+            rt->server_type = RTSP_SERVER_RDT;
+            continue;
+        } else if (rt->server_type == RTSP_SERVER_RDT) {
+            strcpy(real_challenge, reply->real_challenge);
+        }
+        break;
+    }
 
     /* describe the stream */
     snprintf(cmd, sizeof(cmd),
