@@ -43,6 +43,7 @@ typedef struct {
     const UID *essence_container_ul;
     const UID *codec_ul;
     int64_t duration;
+    void (*write_desc)();
 } MXFStreamContext;
 
 typedef struct {
@@ -50,18 +51,25 @@ typedef struct {
     UID element_ul;
     UID codec_ul;
     enum CodecID id;
+    void (*write_desc)();
 } MXFContainerEssencePair;
+
+static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st);
+static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st);
 
 static const MXFContainerEssencePair mxf_essence_container_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0x60,0x01 },
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x03,0x04,0x01,0x02,0x02,0x01,0x00,0x00,0x00 }, CODEC_ID_MPEG2VIDEO },
+      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x03,0x04,0x01,0x02,0x02,0x01,0x00,0x00,0x00 },
+      CODEC_ID_MPEG2VIDEO, mxf_write_mpegvideo_desc },
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x06,0x01,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x16,0x01,0x01,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x02,0x02,0x01,0x00,0x00,0x00,0x00 }, CODEC_ID_PCM_S16LE },
+      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x02,0x02,0x01,0x00,0x00,0x00,0x00 },
+      CODEC_ID_PCM_S16LE, mxf_write_wav_desc },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
       { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
-      { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, CODEC_ID_NONE },
+      { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
+      CODEC_ID_NONE, NULL },
 };
 
 typedef struct MXFContext {
@@ -70,12 +78,6 @@ typedef struct MXFContext {
     uint8_t essence_containers_indices[sizeof(mxf_essence_container_uls)/
                                        sizeof(*mxf_essence_container_uls)];
 } MXFContext;
-
-typedef struct {
-    const UID key;
-    void (*write)();
-    enum CodecType type;
-} MXFDescriptorWriteTableEntry;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
 static const uint8_t umid_base[]            = { 0x06,0x0A,0x2B,0x34,0x01,0x01,0x01,0x01,0x01,0x01,0x0F,0x00,0x13,0x00,0x00,0x00 };
@@ -575,11 +577,11 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
         mxf_write_uuid(pb, SubDescriptor, i);
 }
 
-static void mxf_write_generic_desc(ByteIOContext *pb, const MXFDescriptorWriteTableEntry *desc_tbl, AVStream *st)
+static void mxf_write_generic_desc(ByteIOContext *pb, AVStream *st, const UID key)
 {
     MXFStreamContext *sc = st->priv_data;
 
-    put_buffer(pb, desc_tbl->key, 16);
+    put_buffer(pb, key, 16);
     klv_encode_ber_length(pb, 108);
 
     mxf_write_local_tag(pb, 16, 0x3C0A);
@@ -599,11 +601,14 @@ static void mxf_write_generic_desc(ByteIOContext *pb, const MXFDescriptorWriteTa
     put_buffer(pb, *sc->codec_ul, 16);
 }
 
-static void mxf_write_mpegvideo_desc(AVFormatContext *s, const MXFDescriptorWriteTableEntry *desc_tbl, AVStream *st)
+static const UID mxf_mpegvideo_descriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x51,0x00 };
+static const UID mxf_wav_descriptor_key       = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x48,0x00 };
+
+static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
 {
     ByteIOContext *pb = s->pb;
 
-    mxf_write_generic_desc(pb, desc_tbl, st);
+    mxf_write_generic_desc(pb, st, mxf_mpegvideo_descriptor_key);
 
     mxf_write_local_tag(pb, 4, 0x3203);
     put_be32(pb, st->codec->width);
@@ -616,11 +621,11 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, const MXFDescriptorWrit
     put_be32(pb, st->codec->width  * st->sample_aspect_ratio.num);
 }
 
-static void mxf_write_wav_desc(AVFormatContext *s, const MXFDescriptorWriteTableEntry *desc_tbl, AVStream *st)
+static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
 {
     ByteIOContext *pb = s->pb;
 
-    mxf_write_generic_desc(pb, desc_tbl, st);
+    mxf_write_generic_desc(pb, st, mxf_wav_descriptor_key);
 
     // write audio sampling rate
     mxf_write_local_tag(pb, 8, 0x3D03);
@@ -634,16 +639,9 @@ static void mxf_write_wav_desc(AVFormatContext *s, const MXFDescriptorWriteTable
     put_be32(pb, st->codec->bits_per_sample);
 }
 
-static const MXFDescriptorWriteTableEntry mxf_descriptor_write_table[] = {
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x51,0x00 }, mxf_write_mpegvideo_desc, CODEC_ID_MPEG2VIDEO},
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x48,0x00 }, mxf_write_wav_desc, CODEC_ID_PCM_S16LE},
-    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL, CODEC_ID_NONE},
-};
-
 static void mxf_build_structural_metadata(AVFormatContext *s, enum MXFMetadataSetType type)
 {
     int i;
-    const MXFDescriptorWriteTableEntry *desc = NULL;
 
     mxf_write_package(s, type);
     if (type == SourcePackage)
@@ -656,12 +654,8 @@ static void mxf_build_structural_metadata(AVFormatContext *s, enum MXFMetadataSe
         mxf_write_structural_component(s, st, type);
 
         if (type == SourcePackage) {
-            for (desc = mxf_descriptor_write_table; desc->write; desc++) {
-                if (s->streams[i]->codec->codec_id == desc->type) {
-                    desc->write(s, desc, st);
-                    break;
-                }
-            }
+            MXFStreamContext *sc = st->priv_data;
+            sc->write_desc(s, st);
         }
     }
 }
@@ -812,6 +806,7 @@ static int mxf_write_header(AVFormatContext *s)
         memcpy(sc->track_essence_element_key, mxf_essence_container_uls[index].element_ul, 15);
         sc->track_essence_element_key[15] = present[index];
         PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
+        sc->write_desc = mxf_essence_container_uls[index].write_desc;
     }
 
     mxf_write_partition(s, 1, header_open_partition_key, 1);
