@@ -89,12 +89,6 @@ static const uint8_t primer_pack_key[]      = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x
  */
 static const uint8_t header_metadata_key[]  = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0D,0x01,0x01,0x01,0x01 };
 
-static const MXFCodecUL mxf_essence_element_key[] = {
-    { { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 }, 14, CODEC_ID_MPEG2VIDEO},
-    { { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x16,0x01,0x01,0x00 }, 14, CODEC_ID_PCM_S16LE},
-    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, 0, CODEC_ID_NONE},
-};
-
 static const uint8_t multiple_desc_ul[] = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x03,0x0D,0x01,0x03,0x01,0x02,0x7F,0x01,0x00 };
 
 /**
@@ -653,8 +647,8 @@ static void mxf_build_structural_metadata(AVFormatContext *s, enum MXFMetadataSe
 {
     int i;
     const MXFDescriptorWriteTableEntry *desc = NULL;
-    int track_number_sign[sizeof(mxf_essence_element_key)/
-                          sizeof(*mxf_essence_element_key)] = {0};
+    int track_number_sign[sizeof(mxf_essence_container_uls)/
+                          sizeof(*mxf_essence_container_uls)] = {0};
 
     mxf_write_package(s, type);
     if (type == SourcePackage)
@@ -757,7 +751,7 @@ static int mux_write_header(AVFormatContext *s)
             present[index] = 1;
         } else
             present[index]++;
-        memcpy(sc->track_essence_element_key, mxf_essence_element_key[index].uid, 15);
+        memcpy(sc->track_essence_element_key, mxf_essence_container_uls[index].element_ul, 15);
         sc->track_essence_element_key[15] = present[index];
         PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
     }
