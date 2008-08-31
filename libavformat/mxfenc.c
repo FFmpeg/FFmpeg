@@ -40,10 +40,9 @@ typedef struct {
 
 typedef struct {
     UID track_essence_element_key;
-    const UID *essence_container_ul;
+    int index; //<<< index in mxf_essence_container_uls table
     const UID *codec_ul;
     int64_t duration;
-    void (*write_desc)();
 } MXFStreamContext;
 
 typedef struct {
@@ -203,16 +202,16 @@ static int klv_encode_ber_length(ByteIOContext *pb, uint64_t len)
 }
 
 /*
- * Get essence container ul and return its index position
+ * Get essence container ul index
  */
-static const UID *mxf_get_essence_container_ul(enum CodecID type, int *index)
+static int mxf_get_essence_container_ul_index(enum CodecID id)
 {
-    for (*index = 0; *index < sizeof(mxf_essence_container_uls)/
-                              sizeof(*mxf_essence_container_uls); (*index)++)
-        if (mxf_essence_container_uls[*index].id == type)
-            return &mxf_essence_container_uls[*index].container_ul;
-    *index = -1;
-    return NULL;
+    int i;
+    for (i = 0; i < sizeof(mxf_essence_container_uls)/
+                    sizeof(*mxf_essence_container_uls); i++)
+        if (mxf_essence_container_uls[i].id == id)
+            return i;
+    return -1;
 }
 
 static void mxf_write_primer_pack(AVFormatContext *s)
@@ -595,7 +594,7 @@ static void mxf_write_generic_desc(ByteIOContext *pb, AVStream *st, const UID ke
     put_be32(pb, st->time_base.num);
 
     mxf_write_local_tag(pb, 16, 0x3004);
-    put_buffer(pb, *sc->essence_container_ul, 16);
+    put_buffer(pb, mxf_essence_container_uls[sc->index].container_ul, 16);
 
     mxf_write_local_tag(pb, 16, 0x3201);
     put_buffer(pb, *sc->codec_ul, 16);
@@ -655,7 +654,7 @@ static void mxf_build_structural_metadata(AVFormatContext *s, enum MXFMetadataSe
 
         if (type == SourcePackage) {
             MXFStreamContext *sc = st->priv_data;
-            sc->write_desc(s, st);
+            mxf_essence_container_uls[sc->index].write_desc(s, st);
         }
     }
 }
@@ -759,7 +758,7 @@ static const UID *mxf_get_mpeg2_codec_ul(AVCodecContext *avctx)
 static int mxf_write_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    int i, index;
+    int i;
     uint8_t present[sizeof(mxf_essence_container_uls)/
                     sizeof(*mxf_essence_container_uls)] = {0};
 
@@ -776,8 +775,8 @@ static int mxf_write_header(AVFormatContext *s)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
         sc->duration = -1;
 
-        sc->essence_container_ul = mxf_get_essence_container_ul(st->codec->codec_id, &index);
-        if (!sc->essence_container_ul) {
+        sc->index = mxf_get_essence_container_ul_index(st->codec->codec_id);
+        if (sc->index == -1) {
             av_log(s, AV_LOG_ERROR, "track %d: could not find essence container ul, "
                    "codec not currently supported in container\n", i);
             return -1;
@@ -796,17 +795,16 @@ static int mxf_write_header(AVFormatContext *s)
                 return -1;
             }
         } else
-            sc->codec_ul = &mxf_essence_container_uls[index].codec_ul;
+            sc->codec_ul = &mxf_essence_container_uls[sc->index].codec_ul;
 
-        if (!present[index]) {
-            mxf->essence_containers_indices[mxf->essence_container_count++] = index;
-            present[index] = 1;
+        if (!present[sc->index]) {
+            mxf->essence_containers_indices[mxf->essence_container_count++] = sc->index;
+            present[sc->index] = 1;
         } else
-            present[index]++;
-        memcpy(sc->track_essence_element_key, mxf_essence_container_uls[index].element_ul, 15);
-        sc->track_essence_element_key[15] = present[index];
+            present[sc->index]++;
+        memcpy(sc->track_essence_element_key, mxf_essence_container_uls[sc->index].element_ul, 15);
+        sc->track_essence_element_key[15] = present[sc->index];
         PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
-        sc->write_desc = mxf_essence_container_uls[index].write_desc;
     }
 
     mxf_write_partition(s, 1, header_open_partition_key, 1);
