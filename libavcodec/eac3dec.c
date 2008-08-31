@@ -415,9 +415,7 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
     /* original exponent strategies if this stream was converted from AC-3 */
     if (s->frame_type == EAC3_FRAME_TYPE_INDEPENDENT &&
             (s->num_blocks == 6 || get_bits1(gbc))) {
-        for (ch = 1; ch <= s->fbw_channels; ch++) {
-            skip_bits(gbc, 5); // skip converter channel exponent strategy
-        }
+        skip_bits(gbc, 5 * s->fbw_channels); // skip converter channel exponent strategy
     }
 
     /* determine which channels use AHT */
