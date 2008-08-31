@@ -964,17 +964,34 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     }
 
     /* signal-to-noise ratio offsets and fast gains (signal-to-mask ratios) */
-    if (get_bits1(gbc)) {
+    if(!s->eac3 || !blk){
+        if(s->snr_offset_strategy && get_bits1(gbc)) {
+        int snr = 0;
         int csnr;
         csnr = (get_bits(gbc, 6) - 15) << 4;
-        for (ch = !cpl_in_use; ch <= s->channels; ch++) { /* snr offset and fast gain */
-            s->snr_offset[ch] = (csnr + get_bits(gbc, 4)) << 2;
+        for (i = ch = !cpl_in_use; ch <= s->channels; ch++) {
+            /* snr offset */
+            if (ch == i || s->snr_offset_strategy == 2)
+                snr = (csnr + get_bits(gbc, 4)) << 2;
+            /* run at least last bit allocation stage if snr offset changes */
+            if(blk && s->snr_offset[ch] != snr) {
+                bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 1);
+            }
+            s->snr_offset[ch] = snr;
+
+                /* fast gain (normal AC-3 only) */
+                if (!s->eac3) {
+                    int prev = s->fast_gain[ch];
             s->fast_gain[ch] = ff_ac3_fast_gain_tab[get_bits(gbc, 3)];
-        }
-        memset(bit_alloc_stages, 3, AC3_MAX_CHANNELS);
-    } else if (!blk) {
+                    /* run last 2 bit allocation stages if fast gain changes */
+                    if(blk && prev != s->fast_gain[ch])
+                        bit_alloc_stages[ch] = FFMAX(bit_alloc_stages[ch], 2);
+                    }
+                }
+        } else if (!s->eac3 && !blk) {
         av_log(s->avctx, AV_LOG_ERROR, "new snr offsets must be present in block 0\n");
         return -1;
+        }
     }
 
     /* fast gain (E-AC-3 only) */
@@ -998,14 +1015,22 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
     /* coupling leak information */
     if (cpl_in_use) {
-        if (get_bits1(gbc)) {
-            s->bit_alloc_params.cpl_fast_leak = get_bits(gbc, 3);
-            s->bit_alloc_params.cpl_slow_leak = get_bits(gbc, 3);
+        if (s->first_cpl_leak || get_bits1(gbc)) {
+            int fl = get_bits(gbc, 3);
+            int sl = get_bits(gbc, 3);
+            /* run last 2 bit allocation stages for coupling channel if
+               coupling leak changes */
+            if(blk && (fl != s->bit_alloc_params.cpl_fast_leak ||
+                       sl != s->bit_alloc_params.cpl_slow_leak)) {
             bit_alloc_stages[CPL_CH] = FFMAX(bit_alloc_stages[CPL_CH], 2);
-        } else if (!blk) {
+            }
+            s->bit_alloc_params.cpl_fast_leak = fl;
+            s->bit_alloc_params.cpl_slow_leak = sl;
+        } else if (!s->eac3 && !blk) {
             av_log(s->avctx, AV_LOG_ERROR, "new coupling leak info must be present in block 0\n");
             return -1;
         }
+        s->first_cpl_leak = 0;
     }
 
     /* delta bit allocation information */
