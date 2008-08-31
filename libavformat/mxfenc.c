@@ -636,13 +636,7 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
         mxf_write_local_tag(pb, 16, 0x4701);
         mxf_write_uuid(pb, MultipleDescriptor, 0);
     }
-}
 
-static void mxf_build_structural_metadata(AVFormatContext *s, enum MXFMetadataSetType type)
-{
-    int i;
-
-    mxf_write_package(s, type);
     if (type == SourcePackage)
         mxf_write_multi_descriptor(s);
 
@@ -664,8 +658,8 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
     mxf_write_preface(s);
     mxf_write_identification(s);
     mxf_write_content_storage(s);
-    mxf_build_structural_metadata(s, MaterialPackage);
-    mxf_build_structural_metadata(s, SourcePackage);
+    mxf_write_package(s, MaterialPackage);
+    mxf_write_package(s, SourcePackage);
     return 0;
 }
 
