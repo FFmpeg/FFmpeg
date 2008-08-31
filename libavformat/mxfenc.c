@@ -693,7 +693,7 @@ static void mxf_write_partition(AVFormatContext *s, int64_t byte_position, int b
     put_be16(pb, 2); // minorVersion
     put_be32(pb, 1); // kagSize
 
-    put_be64(pb, byte_position); // thisPartition
+    put_be64(pb, url_ftell(pb) - 25); // thisPartition
     put_be64(pb, 0); // previousPartition
 
     // set offset
