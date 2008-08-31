@@ -63,7 +63,6 @@ typedef struct {
 
 extern const MXFDataDefinitionUL ff_mxf_data_definition_uls[];
 extern const MXFCodecUL ff_mxf_codec_uls[];
-extern const MXFCodecUL ff_mxf_essence_container_uls[6];
 
 #ifdef DEBUG
 #define PRINT_KEY(pc, s, x) dprintf(pc, "%s %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", s, \
