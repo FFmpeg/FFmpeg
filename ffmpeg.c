@@ -537,6 +537,10 @@ static void do_audio_out(AVFormatContext *s,
         ost->audio_resample = 1;
 
     if (ost->audio_resample && !ost->resample) {
+        if (dec->sample_fmt != SAMPLE_FMT_S16) {
+            fprintf(stderr, "Audio resampler only works with 16 bits per sample, patch welcome.\n");
+            av_exit(1);
+        }
         ost->resample = audio_resample_init(enc->channels,    dec->channels,
                                             enc->sample_rate, dec->sample_rate);
         if (!ost->resample) {
