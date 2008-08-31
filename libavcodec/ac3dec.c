@@ -317,9 +317,8 @@ static int parse_frame_header(AC3DecodeContext *s)
         memset(s->channel_uses_aht, 0, sizeof(s->channel_uses_aht));
         return ac3_parse_header(s);
     } else {
-        /*s->eac3 = 1;
-        return ff_eac3_parse_header(s);*/
-        return AC3_PARSE_ERROR_BSID;
+        s->eac3 = 1;
+        return ff_eac3_parse_header(s);
     }
 }
 
@@ -557,10 +556,8 @@ static void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
         /* if AHT is used, mantissas for all blocks are encoded in the first
            block of the frame. */
         int bin;
-        /*
         if (!blk)
             ff_eac3_decode_transform_coeffs_aht_ch(s, ch);
-        */
         for (bin = s->start_freq[ch]; bin < s->end_freq[ch]; bin++) {
             s->fixed_coeffs[ch][bin] = s->pre_mantissa[ch][bin][blk] >> s->dexps[ch][bin];
         }

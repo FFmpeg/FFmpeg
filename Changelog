@@ -134,6 +134,7 @@ version <next>
 - AAC decoder
 - floating point PCM encoder/decoder
 - MXF muxer
+- E-AC-3 support added to AC-3 decoder
 
 version 0.4.9-pre1:
 
