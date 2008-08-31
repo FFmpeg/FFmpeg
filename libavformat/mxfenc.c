@@ -43,13 +43,28 @@ typedef struct {
     const UID *essence_container_ul;
 } MXFStreamContext;
 
+typedef struct {
+    UID container_ul;
+    UID element_ul;
+    enum CodecID id;
+} MXFContainerEssencePair;
+
+static const MXFContainerEssencePair mxf_essence_container_uls[] = {
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0x60,0x01 },
+      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 }, CODEC_ID_MPEG2VIDEO },
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x06,0x01,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x16,0x01,0x01,0x00 }, CODEC_ID_PCM_S16LE },
+    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
+      { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, CODEC_ID_NONE },
+};
+
 typedef struct MXFContext {
     int64_t header_byte_count;
     int64_t header_byte_count_offset;
     int64_t header_footer_partition_offset;
     int essence_container_count;
-    uint8_t essence_containers_indices[sizeof(ff_mxf_essence_container_uls)/
-                                       sizeof(*ff_mxf_essence_container_uls)];
+    uint8_t essence_containers_indices[sizeof(mxf_essence_container_uls)/
+                                       sizeof(*mxf_essence_container_uls)];
 } MXFContext;
 
 typedef struct {
@@ -189,11 +204,11 @@ static int klv_encode_ber_length(ByteIOContext *pb, uint64_t len)
  */
 static const UID *mxf_get_essence_container_ul(enum CodecID type, int *index)
 {
-    const MXFCodecUL *uls = ff_mxf_essence_container_uls;
-    for (*index = 0; *index < sizeof(ff_mxf_essence_container_uls)/
-                              sizeof(*ff_mxf_essence_container_uls); (*index)++)
-        if (ff_mxf_essence_container_uls[*index].id == type)
-            return &uls->uid;
+    const MXFContainerEssencePair *uls = mxf_essence_container_uls;
+    for (*index = 0; *index < sizeof(mxf_essence_container_uls)/
+                              sizeof(*mxf_essence_container_uls); (*index)++)
+        if (mxf_essence_container_uls[*index].id == type)
+            return &uls->container_ul;
     *index = -1;
     return NULL;
 }
@@ -259,8 +274,8 @@ static void mxf_write_essence_container_refs(AVFormatContext *s)
     mxf_write_refs_count(pb, c->essence_container_count);
     av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", c->essence_container_count);
     for (i = 0; i < c->essence_container_count; i++) {
-        put_buffer(pb, ff_mxf_essence_container_uls[c->essence_containers_indices[i]].uid, 16);
-        PRINT_KEY(s, "essence container ul:\n", ff_mxf_essence_container_uls[c->essence_containers_indices[i]].uid);
+        put_buffer(pb, mxf_essence_container_uls[c->essence_containers_indices[i]].container_ul, 16);
+        PRINT_KEY(s, "essence container ul:\n", mxf_essence_container_uls[c->essence_containers_indices[i]].container_ul);
     }
 }
 
@@ -428,8 +443,6 @@ static void mxf_write_track(AVFormatContext *s, int stream_index, enum MXFMetada
     ByteIOContext *pb = s->pb;
     AVStream *st = s->streams[stream_index];
     MXFStreamContext *sc = st->priv_data;
-    const MXFCodecUL *element;
-    int i = 0;
 
     mxf_write_metadata_key(pb, 0x013b00);
     PRINT_KEY(s, "track key", pb->buf_ptr - 16);
@@ -444,23 +457,12 @@ static void mxf_write_track(AVFormatContext *s, int stream_index, enum MXFMetada
     mxf_write_local_tag(pb, 4, 0x4801);
     put_be32(pb, stream_index);
 
+    // write track number
     mxf_write_local_tag(pb, 4, 0x4804);
-    if (type != MaterialPackage) {
-        for (element = mxf_essence_element_key; element->id != CODEC_ID_NONE; element++) {
-            if (st->codec->codec_id== element->id) {
-                // set essence_element key
-                memcpy(sc->track_essence_element_key, element->uid, 16);
-                sc->track_essence_element_key[15] += track_number_sign[i];
-                // write track number
-                put_buffer(pb, sc->track_essence_element_key + 12, 4);
-
-                track_number_sign[i]++;
-                break;
-            }
-            i++;
-        }
-    } else
+    if (type == MaterialPackage)
         put_be32(pb, 0); // track number of material package is 0
+    else
+        put_buffer(pb, sc->track_essence_element_key + 12, 4);
 
     mxf_write_local_tag(pb, 8, 0x4B01);
     put_be32(pb, st->time_base.den);
@@ -730,8 +732,8 @@ static int mux_write_header(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     int64_t header_metadata_start, offset_now;
     int i, index;
-    uint8_t present[sizeof(ff_mxf_essence_container_uls)/
-                    sizeof(*ff_mxf_essence_container_uls)] = {0};
+    uint8_t present[sizeof(mxf_essence_container_uls)/
+                    sizeof(*mxf_essence_container_uls)] = {0};
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -753,7 +755,11 @@ static int mux_write_header(AVFormatContext *s)
         if (!present[index]) {
             mxf->essence_containers_indices[mxf->essence_container_count++] = index;
             present[index] = 1;
-        }
+        } else
+            present[index]++;
+        memcpy(sc->track_essence_element_key, mxf_essence_element_key[index].uid, 15);
+        sc->track_essence_element_key[15] = present[index];
+        PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
     }
 
     mxf_write_partition(s, 0, 1, header_partition_key);
