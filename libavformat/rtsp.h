@@ -18,8 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef AVFORMAT_RTSP_H
-#define AVFORMAT_RTSP_H
+#ifndef FFMPEG_RTSP_H
+#define FFMPEG_RTSP_H
 
 #include <stdint.h>
 #include "avformat.h"
@@ -62,7 +62,6 @@ typedef struct RTSPHeader {
     RTSPTransportField transports[RTSP_MAX_TRANSPORTS];
     int seq; /**< sequence number */
     char session_id[512];
-    char real_challenge[64]; /**< the RealChallenge1 field from the server */
 } RTSPHeader;
 
 /** the callback can be used to extend the connection setup/teardown step */
@@ -95,4 +94,4 @@ extern int rtsp_rtp_port_max;
 int rtsp_pause(AVFormatContext *s);
 int rtsp_resume(AVFormatContext *s);
 
-#endif /* AVFORMAT_RTSP_H */
+#endif /* FFMPEG_RTSP_H */
