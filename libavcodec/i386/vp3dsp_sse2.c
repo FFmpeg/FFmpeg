@@ -27,7 +27,7 @@
 #include "dsputil_mmx.h"
 #include "mmx.h"
 
-DECLARE_ALIGNED_16(const unsigned short, ff_vp3_idct_data[7 * 8]) =
+DECLARE_ALIGNED_16(const uint16_t, ff_vp3_idct_data[7 * 8]) =
 {
     64277,64277,64277,64277,64277,64277,64277,64277,
     60547,60547,60547,60547,60547,60547,60547,60547,
