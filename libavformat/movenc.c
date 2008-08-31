@@ -1613,12 +1613,10 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         assert(pkt->size);
         size = pkt->size;
     } else if (enc->codec_id == CODEC_ID_DNXHD && !trk->vosLen) {
-        /* copy frame header to create needed atoms */
-        if (size < 640)
-            return -1;
-        trk->vosLen = 640;
-        trk->vosData = av_malloc(trk->vosLen);
-        memcpy(trk->vosData, pkt->data, 640);
+        /* copy frame to create needed atoms */
+        trk->vosLen = size;
+        trk->vosData = av_malloc(size);
+        memcpy(trk->vosData, pkt->data, size);
     }
 
     if (!(trk->entry % MOV_INDEX_CLUSTER_SIZE)) {
