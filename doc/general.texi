@@ -372,7 +372,7 @@ following image formats are supported:
     @tab experimental codec
 @item Sonic lossless         @tab  X  @tab  X
     @tab experimental codec
-@item FLAC lossless audio    @tab  X  @tab  X
+@item FLAC lossless audio    @tab IX  @tab  X
 @item G.726  ADPCM           @tab  X  @tab  X
 @item id RoQ DPCM            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
