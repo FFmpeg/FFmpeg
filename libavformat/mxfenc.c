@@ -635,10 +635,8 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
     if (type == SourcePackage) {
         mxf_write_local_tag(pb, 16, 0x4701);
         mxf_write_uuid(pb, MultipleDescriptor, 0);
-    }
-
-    if (type == SourcePackage)
         mxf_write_multi_descriptor(s);
+    }
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
