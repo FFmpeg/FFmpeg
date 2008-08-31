@@ -160,14 +160,14 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x3D06, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x06,0x01,0x00,0x00,0x00,0x00}}, /* Sound Essence Compression */
 };
 
-static void mxf_write_uuid(ByteIOContext *pb, enum CodecID type, int value)
+static void mxf_write_uuid(ByteIOContext *pb, enum MXFMetadataSetType type, int value)
 {
     put_buffer(pb, uuid_base, 12);
     put_be16(pb, type);
     put_be16(pb, value);
 }
 
-static void mxf_write_umid(ByteIOContext *pb, enum CodecID type, int value)
+static void mxf_write_umid(ByteIOContext *pb, enum MXFMetadataSetType type, int value)
 {
     put_buffer(pb, umid_base, 16);
     mxf_write_uuid(pb, type, value);
