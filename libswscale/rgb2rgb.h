@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_RGB2RGB_H
-#define FFMPEG_RGB2RGB_H
+#ifndef SWSCALE_RGB2RGB_H
+#define SWSCALE_RGB2RGB_H
 
 #include <inttypes.h>
 
@@ -139,4 +139,4 @@ extern void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint
 
 void sws_rgb2rgb_init(int flags);
 
-#endif /* FFMPEG_RGB2RGB_H */
+#endif /* SWSCALE_RGB2RGB_H */

@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_SWSCALE_H
-#define FFMPEG_SWSCALE_H
+#ifndef SWSCALE_SWSCALE_H
+#define SWSCALE_SWSCALE_H
 
 /**
  * @file swscale.h
@@ -148,4 +148,4 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
                                         int dstW, int dstH, int dstFormat, int flags,
                                         SwsFilter *srcFilter, SwsFilter *dstFilter, double *param);
 
-#endif /* FFMPEG_SWSCALE_H */
+#endif /* SWSCALE_SWSCALE_H */

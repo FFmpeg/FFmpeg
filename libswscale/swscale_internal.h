@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_SWSCALE_INTERNAL_H
-#define FFMPEG_SWSCALE_INTERNAL_H
+#ifndef SWSCALE_SWSCALE_INTERNAL_H
+#define SWSCALE_SWSCALE_INTERNAL_H
 
 #include "config.h"
 
@@ -280,4 +280,4 @@ extern const DECLARE_ALIGNED(8, uint64_t, ff_dither8[2]);
 
 extern const AVClass sws_context_class;
 
-#endif /* FFMPEG_SWSCALE_INTERNAL_H */
+#endif /* SWSCALE_SWSCALE_INTERNAL_H */
