@@ -48,6 +48,8 @@ typedef struct MXFContext {
     int64_t header_byte_count_offset;
     int64_t header_footer_partition_offset;
     int essence_container_count;
+    uint8_t essence_containers_indices[sizeof(ff_mxf_essence_container_uls)/
+                                       sizeof(*ff_mxf_essence_container_uls)];
 } MXFContext;
 
 typedef struct {
@@ -182,14 +184,16 @@ static int klv_encode_ber_length(ByteIOContext *pb, uint64_t len)
     return 0;
 }
 
-static const UID *mxf_get_essence_container_ul(enum CodecID type)
+/*
+ * Get essence container ul and return its index position
+ */
+static const UID *mxf_get_essence_container_ul(enum CodecID type, int *index)
 {
     const MXFCodecUL *uls = ff_mxf_essence_container_uls;
-    while (uls->id != CODEC_ID_NONE) {
-        if (uls->id == type)
+    for (*index = 0; *index < sizeof(ff_mxf_essence_container_uls)/sizeof(ff_mxf_essence_container_uls[0]); (*index)++)
+        if (ff_mxf_essence_container_uls[*index].id == type)
             return &uls->uid;
-        uls++;
-    }
+    *index = -1;
     return NULL;
 }
 
@@ -248,37 +252,19 @@ static const MXFDataDefinitionUL *mxf_get_data_definition_ul(enum CodecType type
 
 static int mxf_write_essence_container_refs(AVFormatContext *s, int write)
 {
+    MXFContext *c = s->priv_data;
     ByteIOContext *pb = s->pb;
-    AVStream *st;
-    int i, count = 0, j = 0;
-    const MXFCodecUL *codec_ul;
-    int essence_container_ul_sign[sizeof(ff_mxf_essence_container_uls) / sizeof(MXFCodecUL)] = { 0 };
-
-    for (codec_ul = ff_mxf_essence_container_uls; codec_ul->id; codec_ul++) {
-        for (i = 0; i < s->nb_streams; i++) {
-            st = s->streams[i];
-            if (st->codec->codec_id == codec_ul->id) {
-                essence_container_ul_sign[count] = j;
-                count++;
-                break;
-            }
-        }
-        j++;
-        // considering WAV/AES3 frame wrapped, when get the first CODEC_ID_PCM_S16LE, break;
-        // this is a temporary method, when we can get more information, modify this.
-        if (codec_ul->id == CODEC_ID_PCM_S16LE)
-            break;
-    }
+    int i;
 
     if (write) {
-        mxf_write_refs_count(pb, count);
-        for (i = 0; i < count; i++)
-            put_buffer(pb, ff_mxf_essence_container_uls[essence_container_ul_sign[i]].uid, 16);
-        av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", count);
-        for (i = 0; i < count; i++)
-            PRINT_KEY(s, "essence container ul:\n", ff_mxf_essence_container_uls[essence_container_ul_sign[i]].uid);
+        mxf_write_refs_count(pb, c->essence_container_count);
+        for (i = 0; i < c->essence_container_count; i++)
+            put_buffer(pb, ff_mxf_essence_container_uls[c->essence_containers_indices[i]].uid, 16);
+        av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", c->essence_container_count);
+        for (i = 0; i < c->essence_container_count; i++)
+            PRINT_KEY(s, "essence container ul:\n", ff_mxf_essence_container_uls[c->essence_containers_indices[i]].uid);
     }
-    return count;
+    return c->essence_container_count;
 }
 
 static void mxf_write_preface(AVFormatContext *s)
@@ -756,7 +742,9 @@ static int mux_write_header(AVFormatContext *s)
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     int64_t header_metadata_start, offset_now;
-    int i;
+    int i, index;
+    uint8_t present[sizeof(ff_mxf_essence_container_uls)/
+                    sizeof(*ff_mxf_essence_container_uls)] = {0};
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -769,11 +757,15 @@ static int mux_write_header(AVFormatContext *s)
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
         else if (st->codec->codec_type == CODEC_TYPE_AUDIO)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
-        sc->essence_container_ul = mxf_get_essence_container_ul(st->codec->codec_id);
+        sc->essence_container_ul = mxf_get_essence_container_ul(st->codec->codec_id, &index);
         if (!sc->essence_container_ul) {
             av_log(s, AV_LOG_ERROR, "track %d: could not find essence container ul, "
                    "codec not currently supported in container\n", i);
             return -1;
+        }
+        if (!present[index]) {
+            mxf->essence_containers_indices[mxf->essence_container_count++] = index;
+            present[index] = 1;
         }
     }
 
