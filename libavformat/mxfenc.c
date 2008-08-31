@@ -230,11 +230,10 @@ static void mxf_write_metadata_key(ByteIOContext *pb, unsigned int value)
 
 static void mxf_free(AVFormatContext *s)
 {
-    AVStream *st;
     int i;
 
     for (i = 0; i < s->nb_streams; i++) {
-        st = s->streams[i];
+        AVStream *st = s->streams[i];
         av_freep(&st->priv_data);
     }
 }
@@ -426,17 +425,14 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
 static void mxf_write_track(AVFormatContext *s, int stream_index, enum MXFMetadataSetType type, int *track_number_sign)
 {
     ByteIOContext *pb = s->pb;
-    AVStream *st;
-    MXFStreamContext *sc;
+    AVStream *st = s->streams[stream_index];
+    MXFStreamContext *sc = st->priv_data;
     const MXFCodecUL *element;
     int i = 0;
 
     mxf_write_metadata_key(pb, 0x013b00);
     PRINT_KEY(s, "track key", pb->buf_ptr - 16);
     klv_encode_ber_length(pb, 80);
-
-    st = s->streams[stream_index];
-    sc = st->priv_data;
 
     // write track uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
@@ -480,10 +476,8 @@ static void mxf_write_track(AVFormatContext *s, int stream_index, enum MXFMetada
 
 static void mxf_write_common_fields(ByteIOContext *pb, AVStream *st)
 {
-    const MXFDataDefinitionUL *data_def_ul;
-
+    const MXFDataDefinitionUL *data_def_ul = mxf_get_data_definition_ul(st->codec->codec_type);
     // find data define uls
-    data_def_ul = mxf_get_data_definition_ul(st->codec->codec_type);
     mxf_write_local_tag(pb, 16, 0x0201);
     put_buffer(pb, data_def_ul->uid, 16);
 
@@ -495,13 +489,11 @@ static void mxf_write_common_fields(ByteIOContext *pb, AVStream *st)
 static void mxf_write_sequence(AVFormatContext *s, int stream_index, enum MXFMetadataSetType type)
 {
     ByteIOContext *pb = s->pb;
-    AVStream *st;
+    AVStream *st = s->streams[stream_index];
 
     mxf_write_metadata_key(pb, 0x010f00);
     PRINT_KEY(s, "sequence key", pb->buf_ptr - 16);
     klv_encode_ber_length(pb, 80);
-
-    st = s->streams[stream_index];
 
     mxf_write_local_tag(pb, 16, 0x3C0A);
     mxf_write_uuid(pb, type == MaterialPackage ? Sequence: Sequence + TypeBottom, stream_index);
@@ -518,14 +510,12 @@ static void mxf_write_sequence(AVFormatContext *s, int stream_index, enum MXFMet
 static void mxf_write_structural_component(AVFormatContext *s, int stream_index, enum MXFMetadataSetType type)
 {
     ByteIOContext *pb = s->pb;
-    AVStream *st;
+    AVStream *st = s->streams[stream_index];
     int i;
 
     mxf_write_metadata_key(pb, 0x011100);
     PRINT_KEY(s, "sturctural component key", pb->buf_ptr - 16);
     klv_encode_ber_length(pb, 108);
-
-    st = s->streams[stream_index];
 
     // write uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
@@ -607,9 +597,8 @@ static void mxf_write_generic_desc(ByteIOContext *pb, const MXFDescriptorWriteTa
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, const MXFDescriptorWriteTableEntry *desc_tbl, int stream_index)
 {
     ByteIOContext *pb = s->pb;
-    AVStream *st;
+    AVStream *st = s->streams[stream_index];
 
-    st = s->streams[stream_index];
     mxf_write_generic_desc(pb, desc_tbl, st);
 
     mxf_write_local_tag(pb, 4, 0x3203);
