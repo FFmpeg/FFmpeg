@@ -62,52 +62,23 @@ typedef struct QtrleContext {
     return; \
   } \
 
-static void qtrle_decode_1bpp(QtrleContext *s)
+static void qtrle_decode_1bpp(QtrleContext *s, int stream_ptr, int row_ptr, int lines_to_change)
 {
 }
 
-static void qtrle_decode_2bpp(QtrleContext *s)
+static void qtrle_decode_2bpp(QtrleContext *s, int stream_ptr, int row_ptr, int lines_to_change)
 {
 }
 
-static void qtrle_decode_4bpp(QtrleContext *s)
+static void qtrle_decode_4bpp(QtrleContext *s, int stream_ptr, int row_ptr, int lines_to_change)
 {
-    int stream_ptr;
-    int header;
-    int start_line;
-    int lines_to_change;
     int rle_code;
-    int row_ptr, pixel_ptr;
+    int pixel_ptr;
     int row_inc = s->frame.linesize[0];
     unsigned char pi1, pi2, pi3, pi4, pi5, pi6, pi7, pi8;  /* 8 palette indexes */
     unsigned char *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
-    /* check if this frame is even supposed to change */
-    if (s->size < 8)
-        return;
-
-    /* start after the chunk size */
-    stream_ptr = 4;
-
-    /* fetch the header */
-    CHECK_STREAM_PTR(2);
-    header = AV_RB16(&s->buf[stream_ptr]);
-    stream_ptr += 2;
-
-    /* if a header is present, fetch additional decoding parameters */
-    if (header & 0x0008) {
-        CHECK_STREAM_PTR(8);
-        start_line = AV_RB16(&s->buf[stream_ptr]);
-        stream_ptr += 4;
-        lines_to_change = AV_RB16(&s->buf[stream_ptr]);
-        stream_ptr += 4;
-    } else {
-        start_line = 0;
-        lines_to_change = s->avctx->height;
-    }
-
-    row_ptr = row_inc * start_line;
     while (lines_to_change--) {
         CHECK_STREAM_PTR(2);
         pixel_ptr = row_ptr + (8 * (s->buf[stream_ptr++] - 1));
@@ -161,44 +132,15 @@ static void qtrle_decode_4bpp(QtrleContext *s)
     }
 }
 
-static void qtrle_decode_8bpp(QtrleContext *s)
+static void qtrle_decode_8bpp(QtrleContext *s, int stream_ptr, int row_ptr, int lines_to_change)
 {
-    int stream_ptr;
-    int header;
-    int start_line;
-    int lines_to_change;
     int rle_code;
-    int row_ptr, pixel_ptr;
+    int pixel_ptr;
     int row_inc = s->frame.linesize[0];
     unsigned char pi1, pi2, pi3, pi4;  /* 4 palette indexes */
     unsigned char *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
-    /* check if this frame is even supposed to change */
-    if (s->size < 8)
-        return;
-
-    /* start after the chunk size */
-    stream_ptr = 4;
-
-    /* fetch the header */
-    CHECK_STREAM_PTR(2);
-    header = AV_RB16(&s->buf[stream_ptr]);
-    stream_ptr += 2;
-
-    /* if a header is present, fetch additional decoding parameters */
-    if (header & 0x0008) {
-        CHECK_STREAM_PTR(8);
-        start_line = AV_RB16(&s->buf[stream_ptr]);
-        stream_ptr += 4;
-        lines_to_change = AV_RB16(&s->buf[stream_ptr]);
-        stream_ptr += 4;
-    } else {
-        start_line = 0;
-        lines_to_change = s->avctx->height;
-    }
-
-    row_ptr = row_inc * start_line;
     while (lines_to_change--) {
         CHECK_STREAM_PTR(2);
         pixel_ptr = row_ptr + (4 * (s->buf[stream_ptr++] - 1));
@@ -243,44 +185,15 @@ static void qtrle_decode_8bpp(QtrleContext *s)
     }
 }
 
-static void qtrle_decode_16bpp(QtrleContext *s)
+static void qtrle_decode_16bpp(QtrleContext *s, int stream_ptr, int row_ptr, int lines_to_change)
 {
-    int stream_ptr;
-    int header;
-    int start_line;
-    int lines_to_change;
     int rle_code;
-    int row_ptr, pixel_ptr;
+    int pixel_ptr;
     int row_inc = s->frame.linesize[0];
     unsigned short rgb16;
     unsigned char *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
-    /* check if this frame is even supposed to change */
-    if (s->size < 8)
-        return;
-
-    /* start after the chunk size */
-    stream_ptr = 4;
-
-    /* fetch the header */
-    CHECK_STREAM_PTR(2);
-    header = AV_RB16(&s->buf[stream_ptr]);
-    stream_ptr += 2;
-
-    /* if a header is present, fetch additional decoding parameters */
-    if (header & 0x0008) {
-        CHECK_STREAM_PTR(8);
-        start_line = AV_RB16(&s->buf[stream_ptr]);
-        stream_ptr += 4;
-        lines_to_change = AV_RB16(&s->buf[stream_ptr]);
-        stream_ptr += 4;
-    } else {
-        start_line = 0;
-        lines_to_change = s->avctx->height;
-    }
-
-    row_ptr = row_inc * start_line;
     while (lines_to_change--) {
         CHECK_STREAM_PTR(2);
         pixel_ptr = row_ptr + (s->buf[stream_ptr++] - 1) * 2;
@@ -321,44 +234,15 @@ static void qtrle_decode_16bpp(QtrleContext *s)
     }
 }
 
-static void qtrle_decode_24bpp(QtrleContext *s)
+static void qtrle_decode_24bpp(QtrleContext *s, int stream_ptr, int row_ptr, int lines_to_change)
 {
-    int stream_ptr;
-    int header;
-    int start_line;
-    int lines_to_change;
     int rle_code;
-    int row_ptr, pixel_ptr;
+    int pixel_ptr;
     int row_inc = s->frame.linesize[0];
     unsigned char r, g, b;
     unsigned char *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
-    /* check if this frame is even supposed to change */
-    if (s->size < 8)
-        return;
-
-    /* start after the chunk size */
-    stream_ptr = 4;
-
-    /* fetch the header */
-    CHECK_STREAM_PTR(2);
-    header = AV_RB16(&s->buf[stream_ptr]);
-    stream_ptr += 2;
-
-    /* if a header is present, fetch additional decoding parameters */
-    if (header & 0x0008) {
-        CHECK_STREAM_PTR(8);
-        start_line = AV_RB16(&s->buf[stream_ptr]);
-        stream_ptr += 4;
-        lines_to_change = AV_RB16(&s->buf[stream_ptr]);
-        stream_ptr += 4;
-    } else {
-        start_line = 0;
-        lines_to_change = s->avctx->height;
-    }
-
-    row_ptr = row_inc * start_line;
     while (lines_to_change--) {
         CHECK_STREAM_PTR(2);
         pixel_ptr = row_ptr + (s->buf[stream_ptr++] - 1) * 3;
@@ -400,45 +284,16 @@ static void qtrle_decode_24bpp(QtrleContext *s)
     }
 }
 
-static void qtrle_decode_32bpp(QtrleContext *s)
+static void qtrle_decode_32bpp(QtrleContext *s, int stream_ptr, int row_ptr, int lines_to_change)
 {
-    int stream_ptr;
-    int header;
-    int start_line;
-    int lines_to_change;
     int rle_code;
-    int row_ptr, pixel_ptr;
+    int pixel_ptr;
     int row_inc = s->frame.linesize[0];
     unsigned char a, r, g, b;
     unsigned int argb;
     unsigned char *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
-    /* check if this frame is even supposed to change */
-    if (s->size < 8)
-        return;
-
-    /* start after the chunk size */
-    stream_ptr = 4;
-
-    /* fetch the header */
-    CHECK_STREAM_PTR(2);
-    header = AV_RB16(&s->buf[stream_ptr]);
-    stream_ptr += 2;
-
-    /* if a header is present, fetch additional decoding parameters */
-    if (header & 0x0008) {
-        CHECK_STREAM_PTR(8);
-        start_line = AV_RB16(&s->buf[stream_ptr]);
-        stream_ptr += 4;
-        lines_to_change = AV_RB16(&s->buf[stream_ptr]);
-        stream_ptr += 4;
-    } else {
-        start_line = 0;
-        lines_to_change = s->avctx->height;
-    }
-
-    row_ptr = row_inc * start_line;
     while (lines_to_change--) {
         CHECK_STREAM_PTR(2);
         pixel_ptr = row_ptr + (s->buf[stream_ptr++] - 1) * 4;
@@ -530,6 +385,8 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
                               const uint8_t *buf, int buf_size)
 {
     QtrleContext *s = avctx->priv_data;
+    int header, start_line;
+    int stream_ptr, height, row_ptr;
 
     s->buf = buf;
     s->size = buf_size;
@@ -542,20 +399,45 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
+    /* check if this frame is even supposed to change */
+    if (s->size < 8)
+        goto done;
+
+    /* start after the chunk size */
+    stream_ptr = 4;
+
+    /* fetch the header */
+    header = AV_RB16(&s->buf[stream_ptr]);
+    stream_ptr += 2;
+
+    /* if a header is present, fetch additional decoding parameters */
+    if (header & 0x0008) {
+        if(s->size < 14)
+            goto done;
+        start_line = AV_RB16(&s->buf[stream_ptr]);
+        stream_ptr += 4;
+        height = AV_RB16(&s->buf[stream_ptr]);
+        stream_ptr += 4;
+    } else {
+        start_line = 0;
+        height = s->avctx->height;
+    }
+    row_ptr = s->frame.linesize[0] * start_line;
+
     switch (avctx->bits_per_sample) {
     case 1:
     case 33:
-        qtrle_decode_1bpp(s);
+        qtrle_decode_1bpp(s, stream_ptr, row_ptr, height);
         break;
 
     case 2:
     case 34:
-        qtrle_decode_2bpp(s);
+        qtrle_decode_2bpp(s, stream_ptr, row_ptr, height);
         break;
 
     case 4:
     case 36:
-        qtrle_decode_4bpp(s);
+        qtrle_decode_4bpp(s, stream_ptr, row_ptr, height);
         /* make the palette available on the way out */
         memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
         if (s->avctx->palctrl->palette_changed) {
@@ -566,7 +448,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
 
     case 8:
     case 40:
-        qtrle_decode_8bpp(s);
+        qtrle_decode_8bpp(s, stream_ptr, row_ptr, height);
         /* make the palette available on the way out */
         memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
         if (s->avctx->palctrl->palette_changed) {
@@ -576,15 +458,15 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
         break;
 
     case 16:
-        qtrle_decode_16bpp(s);
+        qtrle_decode_16bpp(s, stream_ptr, row_ptr, height);
         break;
 
     case 24:
-        qtrle_decode_24bpp(s);
+        qtrle_decode_24bpp(s, stream_ptr, row_ptr, height);
         break;
 
     case 32:
-        qtrle_decode_32bpp(s);
+        qtrle_decode_32bpp(s, stream_ptr, row_ptr, height);
         break;
 
     default:
@@ -592,7 +474,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
             avctx->bits_per_sample);
         break;
     }
-
+done:
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
 
