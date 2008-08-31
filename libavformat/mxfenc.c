@@ -65,9 +65,8 @@ static const MXFContainerEssencePair mxf_essence_container_uls[] = {
 };
 
 typedef struct MXFContext {
-    int64_t header_byte_count;
     int64_t header_byte_count_offset;
-    int64_t header_footer_partition_offset;
+    int64_t footer_partition_offset;
     int essence_container_count;
     uint8_t essence_containers_indices[sizeof(mxf_essence_container_uls)/
                                        sizeof(*mxf_essence_container_uls)];
@@ -678,7 +677,7 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
     return 0;
 }
 
-static void mxf_write_partition(AVFormatContext *s, int64_t byte_position, int bodysid, const uint8_t *key)
+static void mxf_write_partition(AVFormatContext *s, int bodysid, const uint8_t *key, int write_metadata)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
@@ -696,14 +695,10 @@ static void mxf_write_partition(AVFormatContext *s, int64_t byte_position, int b
     put_be64(pb, url_ftell(pb) - 25); // thisPartition
     put_be64(pb, 0); // previousPartition
 
-    // set offset
-    if (!byte_position)
-        mxf->header_footer_partition_offset = url_ftell(pb);
-    put_be64(pb, byte_position); // footerPartition,update later
+    put_be64(pb, mxf->footer_partition_offset); // footerPartition
 
     // set offset
-    if (!byte_position)
-        mxf->header_byte_count_offset = url_ftell(pb);
+    mxf->header_byte_count_offset = url_ftell(pb);
     put_be64(pb, 0); // headerByteCount, update later
 
     // no indexTable
@@ -716,6 +711,20 @@ static void mxf_write_partition(AVFormatContext *s, int64_t byte_position, int b
 
     // essence container
     mxf_write_essence_container_refs(s);
+
+    if (write_metadata) {
+        // mark the start of the headermetadata and calculate metadata size
+        int64_t pos, start = url_ftell(s->pb);
+        mxf_write_primer_pack(s);
+        mxf_write_header_metadata_sets(s);
+        pos = url_ftell(s->pb);
+        // update header_byte_count
+        url_fseek(pb, mxf->header_byte_count_offset, SEEK_SET);
+        put_be64(pb, pos - start);
+        url_fseek(pb, pos, SEEK_SET);
+    }
+
+    put_flush_packet(pb);
 }
 
 static const UID mxf_mpeg2_codec_uls[] = {
@@ -756,8 +765,6 @@ static const UID *mxf_get_mpeg2_codec_ul(AVCodecContext *avctx)
 static int mxf_write_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
-    int64_t header_metadata_start, offset_now;
     int i, index;
     uint8_t present[sizeof(mxf_essence_container_uls)/
                     sizeof(*mxf_essence_container_uls)] = {0};
@@ -807,25 +814,9 @@ static int mxf_write_header(AVFormatContext *s)
         PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
     }
 
-    mxf_write_partition(s, 0, 1, header_open_partition_key);
+    mxf_write_partition(s, 1, header_open_partition_key, 1);
 
-    // mark the start of the headermetadata and calculate metadata size
-    header_metadata_start = url_ftell(s->pb);
-    mxf_write_primer_pack(s);
-    if (mxf_write_header_metadata_sets(s) < 0)
-        goto fail;
-    offset_now = url_ftell(s->pb);
-    mxf->header_byte_count = offset_now - header_metadata_start;
-    // update header_byte_count
-    url_fseek(pb, mxf->header_byte_count_offset, SEEK_SET);
-    put_be64(pb, mxf->header_byte_count);
-    url_fseek(pb, offset_now, SEEK_SET);
-
-    put_flush_packet(pb);
     return 0;
-fail:
-    mxf_free(s);
-    return -1;
 }
 
 static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
@@ -844,26 +835,17 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static void mxf_update_header_partition(AVFormatContext *s, int64_t footer_partition_offset)
+static int mxf_write_footer(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
 
-    url_fseek(pb, mxf->header_footer_partition_offset, SEEK_SET);
-    put_be64(pb, footer_partition_offset);
-    put_flush_packet(pb);
-}
-
-
-static int mxf_write_footer(AVFormatContext *s)
-{
-    ByteIOContext *pb = s->pb;
-    int64_t byte_position= url_ftell(pb);
-
-    mxf_write_partition(s, byte_position, 0, footer_partition_key);
-    put_flush_packet(pb);
-    if (!url_is_streamed(s->pb))
-        mxf_update_header_partition(s, byte_position);
+    mxf->footer_partition_offset = url_ftell(pb);
+    mxf_write_partition(s, 0, footer_partition_key, 0);
+    if (!url_is_streamed(s->pb)) {
+        url_fseek(pb, 0, SEEK_SET);
+        mxf_write_partition(s, 1, header_closed_partition_key, 1);
+    }
     mxf_free(s);
     return 0;
 }
