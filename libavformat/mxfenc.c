@@ -258,11 +258,11 @@ static int mxf_write_essence_container_refs(AVFormatContext *s, int write)
 
     if (write) {
         mxf_write_refs_count(pb, c->essence_container_count);
-        for (i = 0; i < c->essence_container_count; i++)
-            put_buffer(pb, ff_mxf_essence_container_uls[c->essence_containers_indices[i]].uid, 16);
         av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", c->essence_container_count);
-        for (i = 0; i < c->essence_container_count; i++)
+        for (i = 0; i < c->essence_container_count; i++) {
+            put_buffer(pb, ff_mxf_essence_container_uls[c->essence_containers_indices[i]].uid, 16);
             PRINT_KEY(s, "essence container ul:\n", ff_mxf_essence_container_uls[c->essence_containers_indices[i]].uid);
+        }
     }
     return c->essence_container_count;
 }
