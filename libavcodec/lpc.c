@@ -31,7 +31,7 @@
 static void compute_lpc_coefs(const double *autoc, int max_order,
                               double lpc[][MAX_LPC_ORDER], double *ref)
 {
-    int i, j, i2;
+    int i, j;
     double err = autoc[0];
     double lpc_tmp[MAX_LPC_ORDER];
 
@@ -45,9 +45,8 @@ static void compute_lpc_coefs(const double *autoc, int max_order,
 
         err *= 1.0 - (r * r);
 
-        i2 = (i >> 1);
         lpc_tmp[i] = r;
-        for(j=0; j<i2; j++) {
+        for(j=0; j < i>>1; j++) {
             double tmp = lpc_tmp[j];
             lpc_tmp[j] += r * lpc_tmp[i-1-j];
             lpc_tmp[i-1-j] += r * tmp;
