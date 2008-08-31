@@ -48,6 +48,8 @@
 typedef struct NellyMoserEncodeContext {
     AVCodecContext  *avctx;
     int             last_frame;
+    DSPContext      dsp;
+    MDCTContext     mdct_ctx;
 } NellyMoserEncodeContext;
 
 static float pow_table[POW_TABLE_SIZE];     ///< -pow(2, -i / 2048.0 - 3.0);
@@ -110,6 +112,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if (avctx->sample_rate != 8000 && avctx->sample_rate != 11025 &&
+        avctx->sample_rate != 22050 && avctx->sample_rate != 44100 &&
+        avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
+        av_log(avctx, AV_LOG_ERROR, "Nellymoser works only with 8000, 11025, 22050 and 44100 sample rate\n");
+        return -1;
+    }
+
     avctx->frame_size = NELLY_SAMPLES;
     s->avctx = avctx;
     ff_mdct_init(&s->mdct_ctx, 8, 0);
@@ -130,6 +139,12 @@ static av_cold int encode_end(AVCodecContext *avctx)
     ff_mdct_end(&s->mdct_ctx);
     return 0;
 }
+
+#define find_best(val, table, LUT, LUT_add, LUT_size) \
+    best_idx = \
+        LUT[av_clip ((lrintf(val) >> 8) + LUT_add, 0, LUT_size - 1)]; \
+    if (fabs(val - table[best_idx]) > fabs(val - table[best_idx + 1])) \
+        best_idx++;
 
 AVCodec nellymoser_encoder = {
     .name = "nellymoser",
