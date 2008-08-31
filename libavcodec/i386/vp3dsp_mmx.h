@@ -28,6 +28,5 @@
 void ff_vp3_idct_mmx(int16_t *data);
 void ff_vp3_idct_put_mmx(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_vp3_dsp_init_mmx(void);
 
 #endif /* FFMPEG_VP3DSP_MMX_H */

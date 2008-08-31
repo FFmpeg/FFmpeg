@@ -2537,7 +2537,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->idct    = ff_vp3_idct_sse2;
                     c->idct_permutation_type= FF_TRANSPOSE_IDCT_PERM;
                 }else{
-                    ff_vp3_dsp_init_mmx();
                     c->idct_put= ff_vp3_idct_put_mmx;
                     c->idct_add= ff_vp3_idct_add_mmx;
                     c->idct    = ff_vp3_idct_mmx;
