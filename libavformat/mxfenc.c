@@ -65,7 +65,6 @@ static const MXFContainerEssencePair mxf_essence_container_uls[] = {
 };
 
 typedef struct MXFContext {
-    int64_t header_byte_count_offset;
     int64_t footer_partition_offset;
     int essence_container_count;
     uint8_t essence_containers_indices[sizeof(mxf_essence_container_uls)/
@@ -681,6 +680,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid, const uint8_t *
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
+    int64_t header_byte_count_offset;
 
     // write klv
     put_buffer(pb, key, 16);
@@ -698,7 +698,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid, const uint8_t *
     put_be64(pb, mxf->footer_partition_offset); // footerPartition
 
     // set offset
-    mxf->header_byte_count_offset = url_ftell(pb);
+    header_byte_count_offset = url_ftell(pb);
     put_be64(pb, 0); // headerByteCount, update later
 
     // no indexTable
@@ -719,7 +719,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid, const uint8_t *
         mxf_write_header_metadata_sets(s);
         pos = url_ftell(s->pb);
         // update header_byte_count
-        url_fseek(pb, mxf->header_byte_count_offset, SEEK_SET);
+        url_fseek(pb, header_byte_count_offset, SEEK_SET);
         put_be64(pb, pos - start);
         url_fseek(pb, pos, SEEK_SET);
     }
