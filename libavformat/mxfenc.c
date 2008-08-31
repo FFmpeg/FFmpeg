@@ -634,8 +634,11 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
     // write multiple descriptor reference
     if (type == SourcePackage) {
         mxf_write_local_tag(pb, 16, 0x4701);
-        mxf_write_uuid(pb, MultipleDescriptor, 0);
-        mxf_write_multi_descriptor(s);
+        if (s->nb_streams > 1) {
+            mxf_write_uuid(pb, MultipleDescriptor, 0);
+            mxf_write_multi_descriptor(s);
+        } else
+            mxf_write_uuid(pb, SubDescriptor, 0);
     }
 
     for (i = 0; i < s->nb_streams; i++) {
