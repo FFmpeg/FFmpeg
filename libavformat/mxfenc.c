@@ -392,53 +392,6 @@ static void mxf_write_content_storage(AVFormatContext *s)
     mxf_write_uuid(pb, SourcePackage, 0);
 }
 
-static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
-{
-    ByteIOContext *pb = s->pb;
-    int i;
-
-    if (type == MaterialPackage) {
-        mxf_write_metadata_key(pb, 0x013600);
-        PRINT_KEY(s, "Material Package key", pb->buf_ptr - 16);
-        klv_encode_ber_length(pb, 92 + 16 * s->nb_streams);
-    } else {
-        mxf_write_metadata_key(pb, 0x013700);
-        PRINT_KEY(s, "Source Package key", pb->buf_ptr - 16);
-        klv_encode_ber_length(pb, 112 + 16 * s->nb_streams); // 20 bytes length for descriptor reference
-    }
-
-    // write uid
-    mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, type, 0);
-    av_log(s,AV_LOG_DEBUG, "package type:%d\n", type);
-    PRINT_KEY(s, "package uid", pb->buf_ptr - 16);
-
-    // write package umid
-    mxf_write_local_tag(pb, 32, 0x4401);
-    mxf_write_umid(pb, type, 0);
-    PRINT_KEY(s, "package umid second part", pb->buf_ptr - 16);
-
-    // write create date
-    mxf_write_local_tag(pb, 8, 0x4405);
-    put_be64(pb, 0);
-
-    // write modified date
-    mxf_write_local_tag(pb, 8, 0x4404);
-    put_be64(pb, 0);
-
-    // write track refs
-    mxf_write_local_tag(pb, s->nb_streams * 16 + 8, 0x4403);
-    mxf_write_refs_count(pb, s->nb_streams);
-    for (i = 0; i < s->nb_streams; i++)
-        mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, i);
-
-    // write multiple descriptor reference
-    if (type == SourcePackage) {
-        mxf_write_local_tag(pb, 16, 0x4701);
-        mxf_write_uuid(pb, MultipleDescriptor, 0);
-    }
-}
-
 static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
 {
     ByteIOContext *pb = s->pb;
@@ -636,6 +589,53 @@ static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
 
     mxf_write_local_tag(pb, 4, 0x3D01);
     put_be32(pb, st->codec->bits_per_sample);
+}
+
+static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
+{
+    ByteIOContext *pb = s->pb;
+    int i;
+
+    if (type == MaterialPackage) {
+        mxf_write_metadata_key(pb, 0x013600);
+        PRINT_KEY(s, "Material Package key", pb->buf_ptr - 16);
+        klv_encode_ber_length(pb, 92 + 16 * s->nb_streams);
+    } else {
+        mxf_write_metadata_key(pb, 0x013700);
+        PRINT_KEY(s, "Source Package key", pb->buf_ptr - 16);
+        klv_encode_ber_length(pb, 112 + 16 * s->nb_streams); // 20 bytes length for descriptor reference
+    }
+
+    // write uid
+    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_uuid(pb, type, 0);
+    av_log(s,AV_LOG_DEBUG, "package type:%d\n", type);
+    PRINT_KEY(s, "package uid", pb->buf_ptr - 16);
+
+    // write package umid
+    mxf_write_local_tag(pb, 32, 0x4401);
+    mxf_write_umid(pb, type, 0);
+    PRINT_KEY(s, "package umid second part", pb->buf_ptr - 16);
+
+    // write create date
+    mxf_write_local_tag(pb, 8, 0x4405);
+    put_be64(pb, 0);
+
+    // write modified date
+    mxf_write_local_tag(pb, 8, 0x4404);
+    put_be64(pb, 0);
+
+    // write track refs
+    mxf_write_local_tag(pb, s->nb_streams * 16 + 8, 0x4403);
+    mxf_write_refs_count(pb, s->nb_streams);
+    for (i = 0; i < s->nb_streams; i++)
+        mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, i);
+
+    // write multiple descriptor reference
+    if (type == SourcePackage) {
+        mxf_write_local_tag(pb, 16, 0x4701);
+        mxf_write_uuid(pb, MultipleDescriptor, 0);
+    }
 }
 
 static void mxf_build_structural_metadata(AVFormatContext *s, enum MXFMetadataSetType type)
