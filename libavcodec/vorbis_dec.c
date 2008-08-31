@@ -1224,7 +1224,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
 
 // Read and decode residue
 
-static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fast8_t ch, uint_fast8_t *do_not_decode, float *vec, uint_fast16_t vlen) {
+static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc, vorbis_residue *vr, uint_fast8_t ch, uint_fast8_t *do_not_decode, float *vec, uint_fast16_t vlen, int vr_type) {
     GetBitContext *gb=&vc->gb;
     uint_fast8_t c_p_c=vc->codebooks[vr->classbook].dimensions;
     uint_fast16_t n_to_read=vr->end-vr->begin;
@@ -1235,7 +1235,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
     uint_fast8_t i,j,l;
     uint_fast16_t k;
 
-    if (vr->type==2) {
+    if (vr_type==2) {
         for(j=1;j<ch;++j) {
                 do_not_decode[0]&=do_not_decode[j];  // FIXME - clobbering input
         }
@@ -1292,7 +1292,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                                               : FASTDIV(vr->partition_size, dim);
                             vorbis_codebook codebook= vc->codebooks[vqbook];
 
-                            if (vr->type==0) {
+                            if (vr_type==0) {
 
                                 voffs=voffset+j*vlen;
                                 for(k=0;k<step;++k) {
@@ -1302,7 +1302,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                                     }
                                 }
                             }
-                            else if (vr->type==1) {
+                            else if (vr_type==1) {
                                 voffs=voffset+j*vlen;
                                 for(k=0;k<step;++k) {
                                     coffs=get_vlc2(gb, codebook.vlc.table, codebook.nb_bits, 3) * dim;
@@ -1313,7 +1313,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                                     }
                                 }
                             }
-                            else if (vr->type==2 && ch==2 && (voffset&1)==0 && (dim&1)==0) { // most frequent case optimized
+                            else if (vr_type==2 && ch==2 && (voffset&1)==0 && (dim&1)==0) { // most frequent case optimized
                                 voffs=voffset>>1;
 
                                 if(dim==2) {
@@ -1342,7 +1342,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                                 }
 
                             }
-                            else if (vr->type==2) {
+                            else if (vr_type==2) {
                                 voffs=voffset;
 
                                 for(k=0;k<step;++k) {
@@ -1353,9 +1353,6 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                                         AV_DEBUG(" pass %d offs: %d curr: %f change: %f cv offs.: %d+%d  \n", pass, voffset/ch+(voffs%ch)*vlen, vec[voffset/ch+(voffs%ch)*vlen], codebook.codevectors[coffs+l], coffs, l);
                                     }
                                 }
-                            } else {
-                                av_log(vc->avccontext, AV_LOG_ERROR, " Invalid residue type while residue decode?! \n");
-                                return 1;
                             }
                         }
                     }
@@ -1367,6 +1364,20 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
         }
     }
     return 0;
+}
+
+static inline int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fast8_t ch, uint_fast8_t *do_not_decode, float *vec, uint_fast16_t vlen)
+{
+    if (vr->type==2)
+        return vorbis_residue_decode_internal(vc, vr, ch, do_not_decode, vec, vlen, 2);
+    else if (vr->type==1)
+        return vorbis_residue_decode_internal(vc, vr, ch, do_not_decode, vec, vlen, 1);
+    else if (vr->type==0)
+        return vorbis_residue_decode_internal(vc, vr, ch, do_not_decode, vec, vlen, 0);
+    else {
+        av_log(vc->avccontext, AV_LOG_ERROR, " Invalid residue type while residue decode?! \n");
+        return 1;
+    }
 }
 
 void vorbis_inverse_coupling(float *mag, float *ang, int blocksize)
