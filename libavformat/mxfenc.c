@@ -836,6 +836,8 @@ static int mux_write_packet(AVFormatContext *s, AVPacket *pkt)
     klv_encode_ber_length(pb, pkt->size); // write length
     put_buffer(pb, pkt->data, pkt->size); // write value
 
+    sc->duration = FFMAX(pkt->pts + pkt->duration, sc->duration);
+
     put_flush_packet(pb);
     return 0;
 }
