@@ -751,7 +751,7 @@ static const UID *mxf_get_mpeg2_codec_ul(AVCodecContext *avctx)
     return NULL;
 }
 
-static int mux_write_header(AVFormatContext *s)
+static int mxf_write_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
@@ -826,7 +826,7 @@ fail:
     return -1;
 }
 
-static int mux_write_packet(AVFormatContext *s, AVPacket *pkt)
+static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ByteIOContext *pb = s->pb;
     AVStream *st = s->streams[pkt->stream_index];
@@ -853,7 +853,7 @@ static void mxf_update_header_partition(AVFormatContext *s, int64_t footer_parti
 }
 
 
-static int mux_write_footer(AVFormatContext *s)
+static int mxf_write_footer(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
     int64_t byte_position= url_ftell(pb);
@@ -875,9 +875,9 @@ AVOutputFormat mxf_muxer = {
     sizeof(MXFContext),
     CODEC_ID_PCM_S16LE,
     CODEC_ID_MPEG2VIDEO,
-    mux_write_header,
-    mux_write_packet,
-    mux_write_footer,
+    mxf_write_header,
+    mxf_write_packet,
+    mxf_write_footer,
 };
 
 
