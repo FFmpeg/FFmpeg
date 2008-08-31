@@ -1616,6 +1616,8 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         /* copy frame to create needed atoms */
         trk->vosLen = size;
         trk->vosData = av_malloc(size);
+        if (!trk->vosData)
+            return AVERROR(ENOMEM);
         memcpy(trk->vosData, pkt->data, size);
     }
 
