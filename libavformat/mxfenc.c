@@ -42,6 +42,7 @@ typedef struct {
     UID track_essence_element_key;
     const UID *essence_container_ul;
     const UID *codec_ul;
+    int64_t duration;
 } MXFStreamContext;
 
 typedef struct {
@@ -478,13 +479,15 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
 static void mxf_write_common_fields(ByteIOContext *pb, AVStream *st)
 {
     const MXFDataDefinitionUL *data_def_ul = mxf_get_data_definition_ul(st->codec->codec_type);
+    MXFStreamContext *sc = st->priv_data;
+
     // find data define uls
     mxf_write_local_tag(pb, 16, 0x0201);
     put_buffer(pb, data_def_ul->uid, 16);
 
     // write duration
     mxf_write_local_tag(pb, 8, 0x0202);
-    put_be64(pb, st->duration);
+    put_be64(pb, sc->duration);
 }
 
 static void mxf_write_sequence(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
@@ -768,6 +771,8 @@ static int mux_write_header(AVFormatContext *s)
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
         else if (st->codec->codec_type == CODEC_TYPE_AUDIO)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+        sc->duration = -1;
+
         sc->essence_container_ul = mxf_get_essence_container_ul(st->codec->codec_id, &index);
         if (!sc->essence_container_ul) {
             av_log(s, AV_LOG_ERROR, "track %d: could not find essence container ul, "
