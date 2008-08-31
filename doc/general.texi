@@ -401,7 +401,7 @@ following image formats are supported:
 @item RA288                  @tab     @tab  X
     @tab Real 28800 bit/s codec
 @item RADnet                 @tab IX  @tab IX
-    @tab real low bitrate AC-3 codec
+    @tab Real low bitrate AC-3 codec
 @item Real COOK              @tab     @tab  X
     @tab All versions except 5.1 are supported.
 @item Shorten                @tab     @tab  X
