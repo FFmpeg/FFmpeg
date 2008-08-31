@@ -432,7 +432,7 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
     }
 }
 
-static void mxf_write_track(AVFormatContext *s, int stream_index, enum MXFMetadataSetType type, int *track_number_sign)
+static void mxf_write_track(AVFormatContext *s, int stream_index, enum MXFMetadataSetType type)
 {
     ByteIOContext *pb = s->pb;
     AVStream *st = s->streams[stream_index];
@@ -647,15 +647,13 @@ static void mxf_build_structural_metadata(AVFormatContext *s, enum MXFMetadataSe
 {
     int i;
     const MXFDescriptorWriteTableEntry *desc = NULL;
-    int track_number_sign[sizeof(mxf_essence_container_uls)/
-                          sizeof(*mxf_essence_container_uls)] = {0};
 
     mxf_write_package(s, type);
     if (type == SourcePackage)
         mxf_write_multi_descriptor(s);
 
     for (i = 0;i < s->nb_streams; i++) {
-        mxf_write_track(s, i, type, track_number_sign);
+        mxf_write_track(s, i, type);
         mxf_write_sequence(s, i, type);
         mxf_write_structural_component(s, i, type);
 
