@@ -400,7 +400,7 @@ following image formats are supported:
     @tab Real 14400 bit/s codec
 @item RA288                  @tab     @tab  X
     @tab Real 28800 bit/s codec
-@item RADnet                 @tab  X  @tab IX
+@item RADnet                 @tab IX  @tab IX
     @tab real low bitrate AC-3 codec
 @item Real COOK              @tab     @tab  X
     @tab All versions except 5.1 are supported.
