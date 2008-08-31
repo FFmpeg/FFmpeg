@@ -652,7 +652,7 @@ static void mxf_build_structural_metadata(AVFormatContext *s, enum MXFMetadataSe
     if (type == SourcePackage)
         mxf_write_multi_descriptor(s);
 
-    for (i = 0;i < s->nb_streams; i++) {
+    for (i = 0; i < s->nb_streams; i++) {
         mxf_write_track(s, i, type);
         mxf_write_sequence(s, i, type);
         mxf_write_structural_component(s, i, type);
