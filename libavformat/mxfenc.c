@@ -202,7 +202,7 @@ static void mxf_write_primer_pack(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     int local_tag_number, i = 0;
 
-    local_tag_number = sizeof(mxf_local_tag_batch) / sizeof(MXFLocalTagPair);
+    local_tag_number = sizeof(mxf_local_tag_batch)/sizeof(*mxf_local_tag_batch);
 
     put_buffer(pb, primer_pack_key, 16);
     klv_encode_ber_length(pb, local_tag_number * 18 + 8);
@@ -650,7 +650,8 @@ static void mxf_build_structural_metadata(AVFormatContext *s, enum MXFMetadataSe
 {
     int i;
     const MXFDescriptorWriteTableEntry *desc = NULL;
-    int track_number_sign[sizeof(mxf_essence_element_key)/sizeof(MXFCodecUL)] = { 0 };
+    int track_number_sign[sizeof(mxf_essence_element_key)/
+                          sizeof(*mxf_essence_element_key)] = {0};
 
     mxf_write_package(s, type);
     if (type == SourcePackage)
@@ -733,7 +734,7 @@ static int mux_write_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        MXFStreamContext *sc = av_mallocz(sizeof(MXFStreamContext));
+        MXFStreamContext *sc = av_mallocz(sizeof(*sc));
         if (!sc)
             return AVERROR(ENOMEM);
         st->priv_data = sc;
