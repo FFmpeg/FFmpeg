@@ -1343,10 +1343,9 @@ static int rtsp_read_play(AVFormatContext *s)
     rtsp_send_cmd(s, cmd, reply, NULL);
     if (reply->status_code != RTSP_STATUS_OK) {
         return -1;
-    } else {
-        rt->state = RTSP_STATE_PLAYING;
-        return 0;
     }
+    rt->state = RTSP_STATE_PLAYING;
+    return 0;
 }
 
 /* pause the stream */
@@ -1367,10 +1366,9 @@ static int rtsp_read_pause(AVFormatContext *s)
     rtsp_send_cmd(s, cmd, reply, NULL);
     if (reply->status_code != RTSP_STATUS_OK) {
         return -1;
-    } else {
-        rt->state = RTSP_STATE_PAUSED;
-        return 0;
     }
+    rt->state = RTSP_STATE_PAUSED;
+    return 0;
 }
 
 static int rtsp_read_seek(AVFormatContext *s, int stream_index,
