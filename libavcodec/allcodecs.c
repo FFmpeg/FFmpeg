@@ -200,7 +200,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (MP3ON4, mp3on4);
     REGISTER_DECODER (MPC7, mpc7);
     REGISTER_DECODER (MPC8, mpc8);
-    REGISTER_DECODER (NELLYMOSER, nellymoser);
+    REGISTER_ENCDEC  (NELLYMOSER, nellymoser);
     REGISTER_DECODER (QDM2, qdm2);
     REGISTER_DECODER (RA_144, ra_144);
     REGISTER_DECODER (RA_288, ra_288);

@@ -139,6 +139,7 @@ OBJS-$(CONFIG_MSRLE_DECODER)           += msrle.o
 OBJS-$(CONFIG_MSVIDEO1_DECODER)        += msvideo1.o
 OBJS-$(CONFIG_MSZH_DECODER)            += lcldec.o
 OBJS-$(CONFIG_NELLYMOSER_DECODER)      += nellymoserdec.o nellymoser.o mdct.o fft.o
+OBJS-$(CONFIG_NELLYMOSER_ENCODER)      += nellymoserenc.o nellymoser.o mdct.o fft.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
 OBJS-$(CONFIG_PAM_ENCODER)             += pnmenc.o pnm.o
 OBJS-$(CONFIG_PBM_ENCODER)             += pnmenc.o pnm.o
