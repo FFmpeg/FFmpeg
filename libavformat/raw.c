@@ -487,7 +487,7 @@ static int dirac_probe(AVProbeData *p)
 }
 #endif
 
-#if (ENABLE_AC3_DEMUXER || ENABLE_EAC3_DEMUXER)
+#if defined(CONFIG_AC3_DEMUXER) || defined(CONFIG_EAC3_DEMUXER)
 static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
 {
     int max_frames, first_frames = 0, frames;
