@@ -90,6 +90,11 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #include "postprocess.h"
 #include "postprocess_internal.h"
 
+unsigned postproc_version(void)
+{
+    return LIBPOSTPROC_VERSION_INT;
+}
+
 #ifdef HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
