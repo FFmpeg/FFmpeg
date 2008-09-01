@@ -51,7 +51,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"A_PCM/FLOAT/IEEE" , CODEC_ID_PCM_F32LE},
     {"A_PCM/FLOAT/IEEE" , CODEC_ID_PCM_F64LE},
     {"A_AC3"            , CODEC_ID_AC3},
-//    {"A_EAC3"           , CODEC_ID_EAC3},
+    {"A_EAC3"           , CODEC_ID_EAC3},
     {"A_DTS"            , CODEC_ID_DTS},
     {"A_VORBIS"         , CODEC_ID_VORBIS},
     {"A_AAC"            , CODEC_ID_AAC},
