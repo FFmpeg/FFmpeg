@@ -2775,7 +2775,8 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         ff_update_duplicate_context(s->thread_context[i], s);
     }
 
-    ff_init_me(s);
+    if(ff_init_me(s)<0)
+        return -1;
 
     /* Estimate motion for every MB */
     if(s->pict_type != FF_I_TYPE){
