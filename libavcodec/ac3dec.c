@@ -1288,5 +1288,16 @@ AVCodec ac3_decoder = {
     .init = ac3_decode_init,
     .close = ac3_decode_end,
     .decode = ac3_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52 (AC-3, E-AC-3)"),
+    .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
+};
+
+AVCodec eac3_decoder = {
+    .name = "eac3",
+    .type = CODEC_TYPE_AUDIO,
+    .id = CODEC_ID_EAC3,
+    .priv_data_size = sizeof (AC3DecodeContext),
+    .init = ac3_decode_init,
+    .close = ac3_decode_end,
+    .decode = ac3_decode_frame,
+    .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52B (AC-3, E-AC-3)"),
 };

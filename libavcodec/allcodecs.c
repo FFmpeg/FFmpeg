@@ -189,6 +189,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (COOK, cook);
     REGISTER_DECODER (DCA, dca);
     REGISTER_DECODER (DSICINAUDIO, dsicinaudio);
+    REGISTER_DECODER (EAC3, eac3);
     REGISTER_ENCDEC  (FLAC, flac);
     REGISTER_DECODER (IMC, imc);
     REGISTER_DECODER (MACE3, mace3);

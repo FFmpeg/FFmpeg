@@ -487,8 +487,8 @@ static int dirac_probe(AVProbeData *p)
 }
 #endif
 
-#ifdef CONFIG_AC3_DEMUXER
-static int ac3_probe(AVProbeData *p)
+#if (CONFIG_AC3_DEMUXER || CONFIG_EAC3_DEMUXER)
+static int ac3_eac3_probe(AVProbeData *p, int *codec_id)
 {
     int max_frames, first_frames = 0, frames;
     uint8_t *buf, *buf2, *end;
@@ -499,6 +499,7 @@ static int ac3_probe(AVProbeData *p)
     buf = p->buf;
     end = buf + p->buf_size;
 
+    *codec_id = CODEC_ID_AC3;
     for(; buf < end; buf++) {
         buf2 = buf;
 
@@ -509,6 +510,8 @@ static int ac3_probe(AVProbeData *p)
             if(buf2 + hdr.frame_size > end ||
                av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf2 + 2, hdr.frame_size - 2))
                 break;
+            if (hdr.bitstream_id > 10)
+                *codec_id = CODEC_ID_EAC3;
             buf2 += hdr.frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
@@ -519,6 +522,28 @@ static int ac3_probe(AVProbeData *p)
     else if(max_frames>=3) return AVPROBE_SCORE_MAX / 2;
     else if(max_frames>=1) return 1;
     else                   return 0;
+}
+#endif
+
+#ifdef CONFIG_AC3_DEMUXER
+static int ac3_probe(AVProbeData *p)
+{
+    int codec_id = CODEC_ID_NONE;
+    int score = ac3_eac3_probe(p, &codec_id);
+    if(codec_id == CODEC_ID_AC3)
+        return score;
+    return 0;
+}
+#endif
+
+#ifdef CONFIG_EAC3_DEMUXER
+static int eac3_probe(AVProbeData *p)
+{
+    int codec_id = CODEC_ID_NONE;
+    int score = ac3_eac3_probe(p, &codec_id);
+    if(codec_id == CODEC_ID_EAC3)
+        return score;
+    return 0;
 }
 #endif
 
@@ -626,6 +651,35 @@ AVOutputFormat dts_muxer = {
     "dts",
     0,
     CODEC_ID_DTS,
+    CODEC_ID_NONE,
+    NULL,
+    raw_write_packet,
+    .flags= AVFMT_NOTIMESTAMPS,
+};
+#endif
+
+#ifdef CONFIG_EAC3_DEMUXER
+AVInputFormat eac3_demuxer = {
+    "eac3",
+    NULL_IF_CONFIG_SMALL("raw E-AC-3"),
+    0,
+    eac3_probe,
+    audio_read_header,
+    raw_read_partial_packet,
+    .flags= AVFMT_GENERIC_INDEX,
+    .extensions = "eac3",
+    .value = CODEC_ID_EAC3,
+};
+#endif
+
+#ifdef CONFIG_EAC3_MUXER
+AVOutputFormat eac3_muxer = {
+    "eac3",
+    NULL_IF_CONFIG_SMALL("raw E-AC-3"),
+    "audio/x-eac3",
+    "eac3",
+    0,
+    CODEC_ID_EAC3,
     CODEC_ID_NONE,
     NULL,
     raw_write_packet,

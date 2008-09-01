@@ -76,6 +76,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (DXA, dxa);
     REGISTER_DEMUXER  (EA, ea);
     REGISTER_DEMUXER  (EA_CDATA, ea_cdata);
+    REGISTER_MUXDEMUX (EAC3, eac3);
     REGISTER_MUXDEMUX (FFM, ffm);
     REGISTER_MUXDEMUX (FLAC, flac);
     REGISTER_DEMUXER  (FLIC, flic);
