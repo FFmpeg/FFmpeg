@@ -118,7 +118,8 @@ static av_cold int pcm_encode_init(AVCodecContext *avctx)
         break;
     }
 
-    avctx->block_align = avctx->channels * av_get_bits_per_sample(avctx->codec->id)/8;
+    avctx->bits_per_sample = av_get_bits_per_sample(avctx->codec->id);
+    avctx->block_align = avctx->channels * avctx->bits_per_sample/8;
     avctx->coded_frame= avcodec_alloc_frame();
     avctx->coded_frame->key_frame= 1;
 
