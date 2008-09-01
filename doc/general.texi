@@ -368,10 +368,6 @@ following image formats are supported:
 @item Electronic Arts ADPCM  @tab     @tab  X
     @tab Used in various EA titles.
 @item Enhanced AC-3          @tab     @tab  X
-@item Sonic                  @tab  X  @tab  X
-    @tab experimental codec
-@item Sonic lossless         @tab  X  @tab  X
-    @tab experimental codec
 @item FLAC lossless audio    @tab IX  @tab  X
 @item G.726  ADPCM           @tab  X  @tab  X
 @item id RoQ DPCM            @tab  X  @tab  X
@@ -410,6 +406,10 @@ following image formats are supported:
 @item Smacker audio          @tab     @tab  X
 @item SMJPEG IMA ADPCM       @tab     @tab  X
     @tab Used in certain Loki game ports.
+@item Sonic                  @tab  X  @tab  X
+    @tab experimental codec
+@item Sonic lossless         @tab  X  @tab  X
+    @tab experimental codec
 @item THP ADPCM              @tab     @tab  X
     @tab Used on the Nintendo GameCube.
 @item True Audio (TTA)       @tab     @tab  X
