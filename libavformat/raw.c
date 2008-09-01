@@ -488,18 +488,18 @@ static int dirac_probe(AVProbeData *p)
 #endif
 
 #if (ENABLE_AC3_DEMUXER || ENABLE_EAC3_DEMUXER)
-static int ac3_eac3_probe(AVProbeData *p, int *codec_id)
+static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
 {
     int max_frames, first_frames = 0, frames;
     uint8_t *buf, *buf2, *end;
     AC3HeaderInfo hdr;
     GetBitContext gbc;
+    enum CodecID codec_id = CODEC_ID_AC3;
 
     max_frames = 0;
     buf = p->buf;
     end = buf + p->buf_size;
 
-    *codec_id = CODEC_ID_AC3;
     for(; buf < end; buf++) {
         buf2 = buf;
 
@@ -511,13 +511,14 @@ static int ac3_eac3_probe(AVProbeData *p, int *codec_id)
                av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf2 + 2, hdr.frame_size - 2))
                 break;
             if (hdr.bitstream_id > 10)
-                *codec_id = CODEC_ID_EAC3;
+                codec_id = CODEC_ID_EAC3;
             buf2 += hdr.frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
         if(buf == p->buf)
             first_frames = frames;
     }
+    if(codec_id != expected_codec_id) return 0;
     if   (first_frames>=3) return AVPROBE_SCORE_MAX * 3 / 4;
     else if(max_frames>=3) return AVPROBE_SCORE_MAX / 2;
     else if(max_frames>=1) return 1;
@@ -528,22 +529,14 @@ static int ac3_eac3_probe(AVProbeData *p, int *codec_id)
 #ifdef CONFIG_AC3_DEMUXER
 static int ac3_probe(AVProbeData *p)
 {
-    int codec_id = CODEC_ID_NONE;
-    int score = ac3_eac3_probe(p, &codec_id);
-    if(codec_id == CODEC_ID_AC3)
-        return score;
-    return 0;
+    return ac3_eac3_probe(p, CODEC_ID_AC3);
 }
 #endif
 
 #ifdef CONFIG_EAC3_DEMUXER
 static int eac3_probe(AVProbeData *p)
 {
-    int codec_id = CODEC_ID_NONE;
-    int score = ac3_eac3_probe(p, &codec_id);
-    if(codec_id == CODEC_ID_EAC3)
-        return score;
-    return 0;
+    return ac3_eac3_probe(p, CODEC_ID_EAC3);
 }
 #endif
 
