@@ -1125,6 +1125,15 @@ static int rtsp_read_header(AVFormatContext *s,
              "DESCRIBE %s RTSP/1.0\r\n"
              "Accept: application/sdp\r\n",
              s->filename);
+    if (rt->server_type == RTSP_SERVER_RDT) {
+        /**
+         * The Require: attribute is needed for proper streaming from
+         * Realmedia servers.
+         */
+        av_strlcat(cmd,
+                   "Require: com.real.retain-entity-for-setup\r\n",
+                   sizeof(cmd));
+    }
     rtsp_send_cmd(s, cmd, reply, &content);
     if (!content) {
         err = AVERROR_INVALIDDATA;
