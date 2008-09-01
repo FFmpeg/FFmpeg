@@ -240,7 +240,8 @@ int ff_init_me(MpegEncContext *s){
         av_log(s->avctx, AV_LOG_ERROR, "ME_MAP size is too small for SAB diamond\n");
         return -1;
     }
-    if(s->me_method!=ME_ZERO && s->me_method!=ME_EPZS && s->me_method!=ME_X1){
+    //special case of snow is needed because snow uses its own iterative ME code
+    if(s->me_method!=ME_ZERO && s->me_method!=ME_EPZS && s->me_method!=ME_X1 && s->avctx->codec_id != CODEC_ID_SNOW){
         av_log(s->avctx, AV_LOG_ERROR, "me_method is only allowed to be set to zero and epzs; for hex,umh,full and others see dia_size\n");
         return -1;
     }
