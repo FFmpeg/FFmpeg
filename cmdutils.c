@@ -29,6 +29,7 @@
 #include "libavfilter/avfilter.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
+#include "libpostproc/postprocess.h"
 #include "libavutil/avstring.h"
 #include "cmdutils.h"
 #include "version.h"
@@ -215,6 +216,9 @@ void print_all_lib_versions(FILE* outstream, int indent)
 #endif
 #if ENABLE_SWSCALE
     PRINT_LIB_VERSION(outstream, swscale,  SWSCALE,  indent);
+#endif
+#if ENABLE_POSTPROC
+    PRINT_LIB_VERSION(outstream, postproc, POSTPROC, indent);
 #endif
 }
 
