@@ -750,7 +750,7 @@ static int sonic_encode_frame(AVCodecContext *avctx,
 }
 #endif //CONFIG_ENCODERS
 
-#ifdef CONFIG_DECODERS
+#ifdef CONFIG_SONIC_DECODER
 static av_cold int sonic_decode_init(AVCodecContext *avctx)
 {
     SonicContext *s = avctx->priv_data;
@@ -935,7 +935,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 
     return (get_bits_count(&gb)+7)/8;
 }
-#endif
+#endif /* CONFIG_SONIC_DECODER */
 
 #ifdef CONFIG_ENCODERS
 AVCodec sonic_encoder = {
@@ -963,7 +963,7 @@ AVCodec sonic_ls_encoder = {
 };
 #endif
 
-#ifdef CONFIG_DECODERS
+#ifdef CONFIG_SONIC_DECODER
 AVCodec sonic_decoder = {
     "sonic",
     CODEC_TYPE_AUDIO,

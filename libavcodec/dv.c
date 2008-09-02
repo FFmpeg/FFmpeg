@@ -1019,7 +1019,7 @@ static int dv_encode_mt(AVCodecContext *avctx, void* sl)
 }
 #endif
 
-#ifdef CONFIG_DECODERS
+#ifdef CONFIG_DVVIDEO_DECODER
 /* NOTE: exactly one frame must be given (120000 bytes for NTSC,
    144000 bytes for PAL - or twice those for 50Mbps) */
 static int dvvideo_decode_frame(AVCodecContext *avctx,
@@ -1060,7 +1060,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
 
     return s->sys->frame_size;
 }
-#endif
+#endif /* CONFIG_DVVIDEO_DECODER */
 
 
 static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c, uint8_t* buf)

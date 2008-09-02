@@ -477,7 +477,7 @@ static int common_init(AVCodecContext *avctx){
     return 0;
 }
 
-#ifdef CONFIG_DECODERS
+#if defined(CONFIG_HUFFYUV_DECODER) || defined(CONFIG_FFVHUFF_DECODER)
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
@@ -573,7 +573,7 @@ s->bgr32=1;
 
     return 0;
 }
-#endif
+#endif /* defined(CONFIG_HUFFYUV_DECODER) || defined(CONFIG_FFVHUFF_DECODER) */
 
 #ifdef CONFIG_ENCODERS
 static int store_table(HYuvContext *s, uint8_t *len, uint8_t *buf){
@@ -931,7 +931,7 @@ static int encode_bgr_bitstream(HYuvContext *s, int count){
     return 0;
 }
 
-#ifdef CONFIG_DECODERS
+#if defined(CONFIG_HUFFYUV_DECODER) || defined(CONFIG_FFVHUFF_DECODER)
 static void draw_slice(HYuvContext *s, int y){
     int h, cy;
     int offset[4];
@@ -1198,7 +1198,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
 
     return (get_bits_count(&s->gb)+31)/32*4 + table_size;
 }
-#endif
+#endif /* defined(CONFIG_HUFFYUV_DECODER) || defined(CONFIG_FFVHUFF_DECODER) */
 
 static int common_end(HYuvContext *s){
     int i;
@@ -1209,7 +1209,7 @@ static int common_end(HYuvContext *s){
     return 0;
 }
 
-#ifdef CONFIG_DECODERS
+#if defined(CONFIG_HUFFYUV_DECODER) || defined(CONFIG_FFVHUFF_DECODER)
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
@@ -1224,7 +1224,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     return 0;
 }
-#endif
+#endif /* defined(CONFIG_HUFFYUV_DECODER) || defined(CONFIG_FFVHUFF_DECODER) */
 
 #ifdef CONFIG_ENCODERS
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
@@ -1433,7 +1433,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 }
 #endif /* CONFIG_ENCODERS */
 
-#ifdef CONFIG_DECODERS
+#ifdef CONFIG_HUFFYUV_DECODER
 AVCodec huffyuv_decoder = {
     "huffyuv",
     CODEC_TYPE_VIDEO,
@@ -1447,7 +1447,9 @@ AVCodec huffyuv_decoder = {
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
 };
+#endif
 
+#ifdef CONFIG_FFVHUFF_DECODER
 AVCodec ffvhuff_decoder = {
     "ffvhuff",
     CODEC_TYPE_VIDEO,
