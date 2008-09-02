@@ -362,6 +362,9 @@ static int set_codec_from_probe_data(AVStream *st, AVProbeData *pd, int score)
         } else if (!strcmp(fmt->name, "mpegvideo")) {
             st->codec->codec_id = CODEC_ID_MPEG2VIDEO;
             st->codec->codec_type = CODEC_TYPE_VIDEO;
+        } else if (!strcmp(fmt->name, "m4v")) {
+            st->codec->codec_id = CODEC_ID_MPEG4;
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
         } else if (!strcmp(fmt->name, "h264")) {
             st->codec->codec_id = CODEC_ID_H264;
             st->codec->codec_type = CODEC_TYPE_VIDEO;
