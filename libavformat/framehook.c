@@ -41,7 +41,6 @@ static FrameHookEntry *first_hook;
 /* Returns 0 on OK */
 int frame_hook_add(int argc, char *argv[])
 {
-#ifdef CONFIG_VHOOK
     void *loaded;
     FrameHookEntry *fhe, **fhep;
 
@@ -87,10 +86,6 @@ int frame_hook_add(int argc, char *argv[])
     *fhep = fhe;
 
     return 0;
-#else
-    av_log(NULL, AV_LOG_ERROR, "Video hooking not compiled into this version\n");
-    return 1;
-#endif
 }
 
 void frame_hook_process(AVPicture *pict, enum PixelFormat pix_fmt, int width, int height, int64_t pts)
