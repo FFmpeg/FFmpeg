@@ -71,6 +71,14 @@ static inline uint16_t g729_random(uint16_t value)
     return 31821 * value + 13849;
 }
 
+/**
+ * Get parity bit of bit 2..7
+ */
+static inline int g729_get_parity(uint8_t value)
+{
+   return (0x6996966996696996ULL >> (value >> 2)) & 1;
+}
+
 AVCodec g729_decoder =
 {
     "g729",
