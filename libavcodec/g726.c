@@ -301,7 +301,14 @@ static int16_t g726_encode(G726Context* c, int16_t sig)
 static av_cold int g726_init(AVCodecContext * avctx)
 {
     G726Context* c = avctx->priv_data;
-    unsigned int index= (avctx->bit_rate + avctx->sample_rate/2) / avctx->sample_rate - 2;
+    unsigned int index;
+
+    if (avctx->sample_rate <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Samplerate is invalid\n");
+        return -1;
+    }
+
+    index = (avctx->bit_rate + avctx->sample_rate/2) / avctx->sample_rate - 2;
 
     if (avctx->bit_rate % avctx->sample_rate && avctx->codec->encode) {
         av_log(avctx, AV_LOG_ERROR, "Bitrate - Samplerate combination is invalid\n");
