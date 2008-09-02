@@ -44,7 +44,7 @@ static const AVCodecTag nut_tags[] = {
     { 0, 0 },
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_LIBNUT_MUXER
 static int av_write(void * h, size_t len, const uint8_t * buf) {
     ByteIOContext * bc = h;
     put_buffer(bc, buf, len);
@@ -163,7 +163,7 @@ AVOutputFormat libnut_muxer = {
     nut_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
-#endif //CONFIG_MUXERS
+#endif /* CONFIG_LIBNUT_MUXER */
 
 static int nut_probe(AVProbeData *p) {
     if (!memcmp(p->buf, ID_STRING, ID_LENGTH)) return AVPROBE_SCORE_MAX;

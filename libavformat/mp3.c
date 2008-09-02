@@ -521,7 +521,7 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-#ifdef CONFIG_MUXERS
+#if defined(CONFIG_MP2_MUXER) || defined(CONFIG_MP3_MUXER)
 static void id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
 {
     int v, i;
@@ -639,7 +639,7 @@ static int mp3_write_trailer(struct AVFormatContext *s)
     }
     return 0;
 }
-#endif //CONFIG_MUXERS
+#endif /* defined(CONFIG_MP2_MUXER) || defined(CONFIG_MP3_MUXER) */
 
 #ifdef CONFIG_MP3_DEMUXER
 AVInputFormat mp3_demuxer = {

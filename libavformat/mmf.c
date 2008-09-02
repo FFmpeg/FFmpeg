@@ -36,7 +36,7 @@ static int mmf_rate(int code)
     return mmf_rates[code];
 }
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_MMF_MUXER
 static int mmf_rate_code(int rate)
 {
     int i;
@@ -163,7 +163,7 @@ static int mmf_write_trailer(AVFormatContext *s)
     }
     return 0;
 }
-#endif //CONFIG_MUXERS
+#endif /* CONFIG_MMF_MUXER */
 
 static int mmf_probe(AVProbeData *p)
 {

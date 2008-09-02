@@ -166,7 +166,7 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
     return num_frames;
 }
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_AIFF_MUXER
 typedef struct {
     offset_t form;
     offset_t frames;
@@ -289,7 +289,7 @@ static int aiff_write_trailer(AVFormatContext *s)
 
     return 0;
 }
-#endif //CONFIG_MUXERS
+#endif /* CONFIG_AIFF_MUXER */
 
 static int aiff_probe(AVProbeData *p)
 {

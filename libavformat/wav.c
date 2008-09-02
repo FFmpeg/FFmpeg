@@ -30,7 +30,7 @@ typedef struct {
     int last_duration;
 } WAVContext;
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_WAV_MUXER
 static int wav_write_header(AVFormatContext *s)
 {
     WAVContext *wav = s->priv_data;
@@ -113,7 +113,7 @@ static int wav_write_trailer(AVFormatContext *s)
     }
     return 0;
 }
-#endif //CONFIG_MUXERS
+#endif /* CONFIG_WAV_MUXER */
 
 /* return the size of the found tag */
 /* XXX: > 2GB ? */

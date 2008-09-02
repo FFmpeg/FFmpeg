@@ -303,7 +303,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 }
 
-#ifdef CONFIG_MUXERS
+#if defined(CONFIG_IMAGE2_MUXER) || defined(CONFIG_IMAGE2PIPE_MUXER)
 /******************************************************/
 /* image output */
 
@@ -368,7 +368,7 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-#endif /* CONFIG_MUXERS */
+#endif /* defined(CONFIG_IMAGE2_MUXER) || defined(CONFIG_IMAGE2PIPE_MUXER) */
 
 /* input */
 #ifdef CONFIG_IMAGE2_DEMUXER

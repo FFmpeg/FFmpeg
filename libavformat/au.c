@@ -47,7 +47,7 @@ static const AVCodecTag codec_au_tags[] = {
     { 0, 0 },
 };
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_AU_MUXER
 /* AUDIO_FILE header */
 static int put_au_header(ByteIOContext *pb, AVCodecContext *enc)
 {
@@ -103,7 +103,7 @@ static int au_write_trailer(AVFormatContext *s)
 
     return 0;
 }
-#endif //CONFIG_MUXERS
+#endif /* CONFIG_AU_MUXER */
 
 static int au_probe(AVProbeData *p)
 {

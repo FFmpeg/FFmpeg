@@ -30,7 +30,7 @@ Only mono files are supported.
 static const char AMR_header [] = "#!AMR\n";
 static const char AMRWB_header [] = "#!AMR-WB\n";
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_AMR_MUXER
 static int amr_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
@@ -60,7 +60,7 @@ static int amr_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_flush_packet(s->pb);
     return 0;
 }
-#endif /* CONFIG_MUXERS */
+#endif /* CONFIG_AMR_MUXER */
 
 static int amr_probe(AVProbeData *p)
 {

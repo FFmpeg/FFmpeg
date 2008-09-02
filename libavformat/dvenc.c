@@ -359,7 +359,7 @@ void dv_delete_mux(DVMuxContext *c)
         av_fifo_free(&c->audio_data[i]);
 }
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_DV_MUXER
 static int dv_write_header(AVFormatContext *s)
 {
     if (!dv_init_mux(s)) {
@@ -397,9 +397,7 @@ static int dv_write_trailer(struct AVFormatContext *s)
     dv_delete_mux(s->priv_data);
     return 0;
 }
-#endif /* CONFIG_MUXERS */
 
-#ifdef CONFIG_DV_MUXER
 AVOutputFormat dv_muxer = {
     "dv",
     NULL_IF_CONFIG_SMALL("DV video format"),
@@ -412,4 +410,4 @@ AVOutputFormat dv_muxer = {
     dv_write_packet,
     dv_write_trailer,
 };
-#endif
+#endif /* CONFIG_DV_MUXER */
