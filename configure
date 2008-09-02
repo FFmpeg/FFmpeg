@@ -848,6 +848,7 @@ byteswap_h_deps="!armv4l"
 # decoders / encoders
 ac3_decoder_deps="gpl !liba52"
 dxa_decoder_deps="zlib"
+eac3_decoder_deps="gpl"
 flashsv_decoder_deps="zlib"
 flashsv_encoder_deps="zlib"
 mlp_decoder_deps="mlp_parser"
