@@ -249,7 +249,6 @@ static int avi_write_header(AVFormatContext *s)
             break;
         case CODEC_TYPE_AUDIO:
             if (put_wav_header(pb, stream) < 0) {
-                av_free(avi);
                 return -1;
             }
             break;
