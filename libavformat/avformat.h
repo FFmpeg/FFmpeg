@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 21
+#define LIBAVFORMAT_VERSION_MINOR 22
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -78,6 +78,21 @@ typedef struct AVPacket {
     void  (*destruct)(struct AVPacket *);
     void  *priv;
     int64_t pos;                            ///< byte position in stream, -1 if unknown
+
+    /**
+     * This is the time difference in stream timebase units from the pts at which
+     * the output from the decoder has converged independent from the availability
+     * of previous frames (that is the frames are virtually identical no matter
+     * if decoding started from the very first frame or from this keyframe).
+     * is AV_NOPTS_VALUE if unknown.
+     *
+     * The purpose of this field is to allow seeking in streams that have no
+     * keyframes in the conventional sense. It corresponds to the
+     * recovery point SEI in H.264 and match_time_delta in nut. It also is
+     * essential for some types of subtitle streams to ensure that all
+     * subtitles are correctly displayed after seeking.
+     */
+    int64_t convergence_duration;
 } AVPacket;
 #define PKT_FLAG_KEY   0x0001
 

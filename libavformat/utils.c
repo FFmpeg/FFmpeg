@@ -251,6 +251,7 @@ void av_init_packet(AVPacket *pkt)
     pkt->dts   = AV_NOPTS_VALUE;
     pkt->pos   = -1;
     pkt->duration = 0;
+    pkt->convergence_duration = 0;
     pkt->flags = 0;
     pkt->stream_index = 0;
     pkt->destruct= av_destruct_packet_nofree;
