@@ -28,30 +28,30 @@
 /* http://www.mp4ra.org */
 /* ordered by muxing preference */
 const AVCodecTag ff_mp4_obj_type[] = {
-    { CODEC_ID_MPEG4     ,  32 },
-    { CODEC_ID_H264      ,  33 },
-    { CODEC_ID_AAC       ,  64 },
-    { CODEC_ID_MPEG2VIDEO,  97 }, /* MPEG2 Main */
-    { CODEC_ID_MPEG2VIDEO,  96 }, /* MPEG2 Simple */
-    { CODEC_ID_MPEG2VIDEO,  98 }, /* MPEG2 SNR */
-    { CODEC_ID_MPEG2VIDEO,  99 }, /* MPEG2 Spatial */
-    { CODEC_ID_MPEG2VIDEO, 100 }, /* MPEG2 High */
-    { CODEC_ID_MPEG2VIDEO, 101 }, /* MPEG2 422 */
-    { CODEC_ID_AAC       , 102 }, /* MPEG2 AAC Main */
-    { CODEC_ID_AAC       , 103 }, /* MPEG2 AAC Low */
-    { CODEC_ID_AAC       , 104 }, /* MPEG2 AAC SSR */
-    { CODEC_ID_MP3       , 107 }, /* 11172-3 */
-    { CODEC_ID_MP2       , 107 }, /* 11172-3 */
-    { CODEC_ID_MP3       , 105 }, /* 13818-3 */
-    { CODEC_ID_MPEG1VIDEO, 106 }, /* 11172-2 */
-    { CODEC_ID_MJPEG     , 108 }, /* 10918-1 */
-    { CODEC_ID_PNG       , 109 },
-    { CODEC_ID_JPEG2000  , 110 }, /* 15444-1 */
-    { CODEC_ID_VC1       , 163 },
-    { CODEC_ID_AC3       , 165 },
-    { CODEC_ID_VORBIS    , 221 }, /* non standard, gpac uses it */
-    { CODEC_ID_DVD_SUBTITLE, 224 }, /* non standard, see unsupported-embedded-subs-2.mp4 */
-    { CODEC_ID_QCELP     , 225 },
+    { CODEC_ID_MPEG4     , 0x20 },
+    { CODEC_ID_H264      , 0x21 },
+    { CODEC_ID_AAC       , 0x40 },
+    { CODEC_ID_MPEG2VIDEO, 0x61 }, /* MPEG2 Main */
+    { CODEC_ID_MPEG2VIDEO, 0x60 }, /* MPEG2 Simple */
+    { CODEC_ID_MPEG2VIDEO, 0x62 }, /* MPEG2 SNR */
+    { CODEC_ID_MPEG2VIDEO, 0x63 }, /* MPEG2 Spatial */
+    { CODEC_ID_MPEG2VIDEO, 0x64 }, /* MPEG2 High */
+    { CODEC_ID_MPEG2VIDEO, 0x65 }, /* MPEG2 422 */
+    { CODEC_ID_AAC       , 0x66 }, /* MPEG2 AAC Main */
+    { CODEC_ID_AAC       , 0x67 }, /* MPEG2 AAC Low */
+    { CODEC_ID_AAC       , 0x68 }, /* MPEG2 AAC SSR */
+    { CODEC_ID_MP3       , 0x6B }, /* 11172-3 */
+    { CODEC_ID_MP2       , 0x6B }, /* 11172-3 */
+    { CODEC_ID_MP3       , 0x69 }, /* 13818-3 */
+    { CODEC_ID_MPEG1VIDEO, 0x6A }, /* 11172-2 */
+    { CODEC_ID_MJPEG     , 0x6C }, /* 10918-1 */
+    { CODEC_ID_PNG       , 0x6D },
+    { CODEC_ID_JPEG2000  , 0x6E }, /* 15444-1 */
+    { CODEC_ID_VC1       , 0xA3 },
+    { CODEC_ID_AC3       , 0xA5 },
+    { CODEC_ID_VORBIS    , 0xDD }, /* non standard, gpac uses it */
+    { CODEC_ID_DVD_SUBTITLE, 0xE0 }, /* non standard, see unsupported-embedded-subs-2.mp4 */
+    { CODEC_ID_QCELP     , 0xE1 },
     { 0, 0 },
 };
 
