@@ -48,6 +48,7 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { CODEC_ID_PNG       , 0x6D },
     { CODEC_ID_JPEG2000  , 0x6E }, /* 15444-1 */
     { CODEC_ID_VC1       , 0xA3 },
+    { CODEC_ID_DIRAC     , 0xA4 },
     { CODEC_ID_AC3       , 0xA5 },
     { CODEC_ID_VORBIS    , 0xDD }, /* non standard, gpac uses it */
     { CODEC_ID_DVD_SUBTITLE, 0xE0 }, /* non standard, see unsupported-embedded-subs-2.mp4 */
@@ -155,6 +156,7 @@ const AVCodecTag codec_movvideo_tags[] = {
     { CODEC_ID_VC1, MKTAG('v', 'c', '-', '1') }, /* SMPTE RP 2025 */
     { CODEC_ID_CAVS, MKTAG('a', 'v', 's', '2') },
 
+    { CODEC_ID_DIRAC, MKTAG('d', 'r', 'a', 'c') },
     { CODEC_ID_DNXHD, MKTAG('A', 'V', 'd', 'n') }, /* AVID DNxHD */
     { CODEC_ID_SGI,   MKTAG('s', 'g', 'i', ' ') }, /* SGI  */
 
