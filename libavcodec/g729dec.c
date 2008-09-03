@@ -39,6 +39,7 @@
 #include "acelp_pitch_delay.h"
 #include "acelp_vectors.h"
 #include "g729data.h"
+#include "g729postfilter.h"
 
 /**
  * minimum quantized LSF value (3.2.4)
@@ -122,6 +123,16 @@ typedef struct {
     /// previous speech data for LP synthesis filter
     int16_t syn_filter_data[10];
 
+
+    /// residual signal buffer (used in long-term postfilter)
+    int16_t residual[SUBFRAME_SIZE + RES_PREV_DATA_SIZE];
+
+    /// previous speech data for residual calculation filter
+    int16_t res_filter_data[SUBFRAME_SIZE+10];
+
+    /// previous speech data for short-term postfilter
+    int16_t pos_filter_data[SUBFRAME_SIZE+10];
+
     /// (1.14) pitch gain of current and five previous subframes
     int16_t past_gain_pitch[6];
 
@@ -133,6 +144,7 @@ typedef struct {
 
     int16_t onset;              ///< detected onset level (0-2)
     int16_t was_periodic;       ///< whether previous frame was declared as periodic or not (4.4)
+    int16_t ht_prev_data;       ///< previous data for 4.2.3, equation 86
     uint16_t rand_value;        ///< random number generator value (4.4.4)
     int ma_predictor_prev;      ///< switched MA predictor of LSP quantizer from last good frame
 
@@ -624,6 +636,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
         /* Save data (without postfilter) for use in next subframe. */
         memcpy(ctx->syn_filter_data, synth+SUBFRAME_SIZE, 10 * sizeof(int16_t));
+
+        /* Call postfilter and also update voicing decision for use in next frame. */
+        g729_postfilter(
+                &ctx->dsp,
+                &ctx->ht_prev_data,
+                &is_periodic,
+                &lp[i][0],
+                pitch_delay_int[0],
+                ctx->residual,
+                ctx->res_filter_data,
+                ctx->pos_filter_data,
+                synth+10,
+                SUBFRAME_SIZE);
 
         if (frame_erasure)
             ctx->pitch_delay_int_prev = FFMIN(ctx->pitch_delay_int_prev + 1, PITCH_DELAY_MAX);
