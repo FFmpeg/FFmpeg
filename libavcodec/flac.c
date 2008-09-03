@@ -614,7 +614,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
     *data_size=0;
 
     if(s->max_framesize == 0){
-        s->max_framesize= 65536; // should hopefully be enough for the first header
+        s->max_framesize= FFMAX(4, buf_size); // should hopefully be enough for the first header
         s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
     }
 
