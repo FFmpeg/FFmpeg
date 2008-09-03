@@ -319,9 +319,8 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack *track) // Basic
     // Object type indication
     if ((track->enc->codec_id == CODEC_ID_MP2 ||
          track->enc->codec_id == CODEC_ID_MP3) &&
-        track->enc->sample_rate <= 24000 &&
-        track->enc->sample_rate >= 16000)
-        put_byte(pb, 105); // 13818-3
+        track->enc->sample_rate > 24000)
+        put_byte(pb, 0x6B); // 11172-3
     else
         put_byte(pb, codec_get_tag(ff_mp4_obj_type, track->enc->codec_id));
 

@@ -40,10 +40,10 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { CODEC_ID_AAC       , 0x66 }, /* MPEG2 AAC Main */
     { CODEC_ID_AAC       , 0x67 }, /* MPEG2 AAC Low */
     { CODEC_ID_AAC       , 0x68 }, /* MPEG2 AAC SSR */
+    { CODEC_ID_MP3       , 0x69 }, /* 13818-3 */
+    { CODEC_ID_MP2       , 0x69 }, /* 11172-3 */
     { CODEC_ID_MPEG1VIDEO, 0x6A }, /* 11172-2 */
     { CODEC_ID_MP3       , 0x6B }, /* 11172-3 */
-    { CODEC_ID_MP2       , 0x6B }, /* 11172-3 */
-    { CODEC_ID_MP3       , 0x69 }, /* 13818-3 */
     { CODEC_ID_MJPEG     , 0x6C }, /* 10918-1 */
     { CODEC_ID_PNG       , 0x6D },
     { CODEC_ID_JPEG2000  , 0x6E }, /* 15444-1 */
