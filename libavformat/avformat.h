@@ -980,6 +980,8 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
  * @brief Write the stream trailer to an output media file and
  *        free the file private data.
  *
+ * May only be called after a successful call to av_write_header.
+ *
  * @param s media file handle
  * @return 0 if OK. AVERROR_xxx if error.
  */
