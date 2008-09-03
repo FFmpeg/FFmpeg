@@ -70,9 +70,10 @@ typedef struct {
  * @param s context containing RMContext and ByteIOContext for stream reading
  * @param st the stream that the MDPR chunk belongs to and where to store the
  *           parameters read from the chunk into
+ * @param codec_data_size size of the MDPR chunk
  * @return 0 on success, errno codes on error
  */
-int ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st);
+int ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st, int codec_data_size);
 
 /**
  * Parse one rm-stream packet from the input bytestream.

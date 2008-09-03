@@ -190,14 +190,13 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
 }
 
 int
-ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st)
+ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st, int codec_data_size)
 {
     ByteIOContext *pb = s->pb;
     unsigned int v;
-    int codec_data_size, size;
+    int size;
     int64_t codec_pos;
 
-    codec_data_size = get_be32(pb);
     codec_pos = url_ftell(pb);
     v = get_be32(pb);
     if (v == MKTAG(0xfd, 'a', 'r', '.')) {
@@ -351,7 +350,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_str8(pb, buf, sizeof(buf)); /* mimetype */
             st->codec->codec_type = CODEC_TYPE_DATA;
             av_set_pts_info(st, 64, 1, 1000);
-            if (ff_rm_read_mdpr_codecdata(s, st) < 0)
+            if (ff_rm_read_mdpr_codecdata(s, st, get_be32(pb)) < 0)
                 return -1;
             break;
         case MKTAG('D', 'A', 'T', 'A'):
