@@ -30,6 +30,9 @@
 //#undef NDEBUG
 //#include <assert.h>
 
+/* Disable the encoder. */
+#undef CONFIG_VCR1_ENCODER
+
 typedef struct VCR1Context{
     AVCodecContext *avctx;
     AVFrame picture;
@@ -113,7 +116,6 @@ static int decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-#if 0
 #ifdef CONFIG_VCR1_ENCODER
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     VCR1Context * const a = avctx->priv_data;
@@ -137,7 +139,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     return size*4;
 }
 #endif
-#endif
 
 static av_cold void common_init(AVCodecContext *avctx){
     VCR1Context * const a = avctx->priv_data;
@@ -155,7 +156,6 @@ static av_cold int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-#if 0
 #ifdef CONFIG_VCR1_ENCODER
 static av_cold int encode_init(AVCodecContext *avctx){
 
@@ -163,7 +163,6 @@ static av_cold int encode_init(AVCodecContext *avctx){
 
     return 0;
 }
-#endif
 #endif
 
 AVCodec vcr1_decoder = {
@@ -178,7 +177,7 @@ AVCodec vcr1_decoder = {
     CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("ATI VCR1"),
 };
-#if 0
+
 #ifdef CONFIG_VCR1_ENCODER
 AVCodec vcr1_encoder = {
     "vcr1",
@@ -190,5 +189,4 @@ AVCodec vcr1_encoder = {
     //encode_end,
     .long_name = NULL_IF_CONFIG_SMALL("ATI VCR1"),
 };
-#endif
 #endif
