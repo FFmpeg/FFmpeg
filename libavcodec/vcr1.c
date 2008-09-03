@@ -114,6 +114,7 @@ static int decode_frame(AVCodecContext *avctx,
 }
 
 #if 0
+#ifdef CONFIG_VCR1_ENCODER
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     VCR1Context * const a = avctx->priv_data;
     AVFrame *pict = data;
@@ -136,6 +137,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     return size*4;
 }
 #endif
+#endif
 
 static av_cold void common_init(AVCodecContext *avctx){
     VCR1Context * const a = avctx->priv_data;
@@ -154,12 +156,14 @@ static av_cold int decode_init(AVCodecContext *avctx){
 }
 
 #if 0
+#ifdef CONFIG_VCR1_ENCODER
 static av_cold int encode_init(AVCodecContext *avctx){
 
     common_init(avctx);
 
     return 0;
 }
+#endif
 #endif
 
 AVCodec vcr1_decoder = {
