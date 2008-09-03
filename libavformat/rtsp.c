@@ -32,6 +32,7 @@
 #include "rtsp.h"
 
 #include "rtp_internal.h"
+#include "rdt.h"
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP
@@ -870,7 +871,8 @@ static void rtsp_close_streams(RTSPState *rt)
  * @returns 0 on success, <0 on error, 1 if protocol is unavailable.
  */
 static int
-make_setup_request (AVFormatContext *s, const char *host, int port, int protocol)
+make_setup_request (AVFormatContext *s, const char *host, int port,
+                    int protocol, const char *real_challenge)
 {
     RTSPState *rt = s->priv_data;
     int j, i, err;
@@ -878,6 +880,12 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
     AVStream *st;
     RTSPHeader reply1, *reply = &reply1;
     char cmd[2048];
+    const char *trans_pref;
+
+    if (rt->server_type == RTSP_SERVER_RDT)
+        trans_pref = "x-pn-tng";
+    else
+        trans_pref = "RTP/AVP";
 
     /* for each stream, make the setup request */
     /* XXX: we assume the same server is used for the control of each
@@ -918,8 +926,10 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
             if (transport[0] != '\0')
                 av_strlcat(transport, ",", sizeof(transport));
             snprintf(transport + strlen(transport), sizeof(transport) - strlen(transport) - 1,
-                     "RTP/AVP/UDP;unicast;client_port=%d-%d",
-                     port, port + 1);
+                     "%s/UDP;unicast;client_port=%d",
+                     trans_pref, port);
+            if (rt->server_type == RTSP_SERVER_RTP)
+                av_strlcatf(transport, sizeof(transport), "-%d", port + 1);
         }
 
         /* RTP/TCP */
@@ -927,7 +937,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
             if (transport[0] != '\0')
                 av_strlcat(transport, ",", sizeof(transport));
             snprintf(transport + strlen(transport), sizeof(transport) - strlen(transport) - 1,
-                     "RTP/AVP/TCP");
+                     "%s/TCP", trans_pref);
         }
 
         else if (protocol == RTSP_PROTOCOL_RTP_UDP_MULTICAST) {
@@ -935,12 +945,23 @@ make_setup_request (AVFormatContext *s, const char *host, int port, int protocol
                 av_strlcat(transport, ",", sizeof(transport));
             snprintf(transport + strlen(transport),
                      sizeof(transport) - strlen(transport) - 1,
-                     "RTP/AVP/UDP;multicast");
+                     "%s/UDP;multicast", trans_pref);
         }
+        if (rt->server_type == RTSP_SERVER_RDT)
+            av_strlcat(transport, ";mode=play", sizeof(transport));
         snprintf(cmd, sizeof(cmd),
                  "SETUP %s RTSP/1.0\r\n"
                  "Transport: %s\r\n",
                  rtsp_st->control_url, transport);
+        if (i == 0 && rt->server_type == RTSP_SERVER_RDT) {
+            char real_res[41], real_csum[9];
+            ff_rdt_calc_response_and_checksum(real_res, real_csum,
+                                              real_challenge);
+            av_strlcatf(cmd, sizeof(cmd),
+                        "If-Match: %s\r\n"
+                        "RealChallenge2: %s, sd=%s\r\n",
+                        rt->session_id, real_res, real_csum);
+        }
         rtsp_send_cmd(s, cmd, reply, NULL);
         if (reply->status_code == 461 /* Unsupported protocol */ && i == 0) {
             err = 1;
@@ -1155,7 +1176,9 @@ static int rtsp_read_header(AVFormatContext *s,
     do {
         int protocol = ff_log2_tab[protocol_mask & ~(protocol_mask - 1)];
 
-        err = make_setup_request(s, host, port, protocol);
+        err = make_setup_request(s, host, port, protocol,
+                                 rt->server_type == RTSP_SERVER_RDT ?
+                                     real_challenge : NULL);
         if (err < 0)
             goto fail;
         protocol_mask &= ~(1 << protocol);
