@@ -1448,6 +1448,7 @@ typedef struct AVCodecContext {
 
     /**
      * sample aspect ratio (0 if unknown)
+     * That is the width of a pixel divided by the height of the pixel.
      * Numerator and denominator must be relatively prime and smaller than 256 for some video standards.
      * - encoding: Set by user.
      * - decoding: Set by libavcodec.
