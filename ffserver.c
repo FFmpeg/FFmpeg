@@ -62,9 +62,6 @@ const int program_birth_year = 2000;
 
 static const OptionDef options[];
 
-/* maximum number of simultaneous HTTP connections */
-#define HTTP_MAX_CONNECTIONS 2000
-
 enum HTTPState {
     HTTPSTATE_WAIT_REQUEST,
     HTTPSTATE_SEND_HEADER,
@@ -295,6 +292,8 @@ static int ffserver_daemon;
 static int no_launch;
 static int need_to_start_children;
 
+/* maximum number of simultaneous HTTP connections */
+static unsigned int nb_max_http_connections = 2000;
 static int nb_max_connections = 5;
 static int nb_connections;
 
@@ -543,8 +542,13 @@ static int http_server(void)
 {
     int server_fd = 0, rtsp_server_fd = 0;
     int ret, delay, delay1;
-    struct pollfd poll_table[HTTP_MAX_CONNECTIONS + 2], *poll_entry;
+    struct pollfd *poll_table, *poll_entry;
     HTTPContext *c, *c_next;
+
+    if(!(poll_table = av_mallocz(nb_max_http_connections + 2))) {
+        http_log("Impossible to allocate a poll table handling %d connections.\n", nb_max_http_connections);
+        return -1;
+    }
 
     if (my_http_addr.sin_port) {
         server_fd = socket_open_listen(&my_http_addr);
@@ -3816,10 +3820,19 @@ static int parse_ffconfig(const char *filename)
                         filename, line_num, arg);
                 errors++;
             }
+        } else if (!strcasecmp(cmd, "MaxHTTPConnections")) {
+            get_arg(arg, sizeof(arg), &p);
+            val = atoi(arg);
+            if (val < 1 || val > 65536) {
+                fprintf(stderr, "%s:%d: Invalid MaxHTTPConnections: %s\n",
+                        filename, line_num, arg);
+                errors++;
+            }
+            nb_max_http_connections = val;
         } else if (!strcasecmp(cmd, "MaxClients")) {
             get_arg(arg, sizeof(arg), &p);
             val = atoi(arg);
-            if (val < 1 || val > HTTP_MAX_CONNECTIONS) {
+            if (val < 1 || val > nb_max_http_connections) {
                 fprintf(stderr, "%s:%d: Invalid MaxClients: %s\n",
                         filename, line_num, arg);
                 errors++;
