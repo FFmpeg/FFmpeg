@@ -73,6 +73,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (BFI, bfi);
     REGISTER_DEMUXER  (BINTEXT, bintext);
     REGISTER_DEMUXER  (BINK, bink);
+    REGISTER_MUXDEMUX (BIT, bit);
     REGISTER_DEMUXER  (C93, c93);
     REGISTER_MUXDEMUX (CAF, caf);
     REGISTER_MUXDEMUX (CAVSVIDEO, cavsvideo);
