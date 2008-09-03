@@ -211,4 +211,18 @@ static const int16_t cb_lsp_2nd[1<<VQ_2ND_BITS][10] =
   { -163,   674,   -11,  -886,   531, -1125,  -265,  -242,   724,   934}
 };
 
+/**
+ * gain codebook (first stage), 8k mode (3.9.2 of G.729)
+ */
+static const int16_t cb_gain_1st_8k[1<<GC_1ST_IDX_BITS_8K][2] =
+{ /*(0.14) (2.13) */
+  { 3242 ,  9949 },
+  { 1551 ,  2425 },
+  { 2678 , 27162 },
+  { 1921 ,  9291 },
+  { 1831 ,  5022 },
+  {    1 ,  1516 },
+  {  356 , 14756 },
+  {   57 ,  5404 },
+};
 #endif // AVCODEC_G729DATA_H
