@@ -294,8 +294,8 @@ static int need_to_start_children;
 
 /* maximum number of simultaneous HTTP connections */
 static unsigned int nb_max_http_connections = 2000;
-static int nb_max_connections = 5;
-static int nb_connections;
+static unsigned int nb_max_connections = 5;
+static unsigned int nb_connections;
 
 static uint64_t max_bandwidth = 1000;
 static uint64_t current_bandwidth;
