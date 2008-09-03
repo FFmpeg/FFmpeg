@@ -143,8 +143,7 @@ AVCodec cljr_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
 };
 #if 0
-#ifdef CONFIG_ENCODERS
-
+#ifdef CONFIG_CLJR_ENCODER
 AVCodec cljr_encoder = {
     "cljr",
     CODEC_TYPE_VIDEO,
@@ -155,6 +154,5 @@ AVCodec cljr_encoder = {
     //encode_end,
     .long_name = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
 };
-
-#endif //CONFIG_ENCODERS
+#endif
 #endif

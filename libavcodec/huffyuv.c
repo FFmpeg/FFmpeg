@@ -261,7 +261,7 @@ static int generate_bits_table(uint32_t *dst, uint8_t *len_table){
     return 0;
 }
 
-#ifdef CONFIG_ENCODERS
+#if defined(CONFIG_HUFFYUV_ENCODER) || defined(CONFIG_FFVHUFF_ENCODER)
 typedef struct {
     uint64_t val;
     int name;
@@ -317,7 +317,7 @@ static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
         if(i==size) break;
     }
 }
-#endif /* CONFIG_ENCODERS */
+#endif /* defined(CONFIG_HUFFYUV_ENCODER) || defined(CONFIG_FFVHUFF_ENCODER) */
 
 static void generate_joint_tables(HYuvContext *s){
     uint16_t symbols[1<<VLC_BITS];
@@ -575,7 +575,7 @@ s->bgr32=1;
 }
 #endif /* defined(CONFIG_HUFFYUV_DECODER) || defined(CONFIG_FFVHUFF_DECODER) */
 
-#ifdef CONFIG_ENCODERS
+#if defined(CONFIG_HUFFYUV_ENCODER) || defined(CONFIG_FFVHUFF_ENCODER)
 static int store_table(HYuvContext *s, uint8_t *len, uint8_t *buf){
     int i;
     int index= 0;
@@ -725,7 +725,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     return 0;
 }
-#endif /* CONFIG_ENCODERS */
+#endif /* defined(CONFIG_HUFFYUV_ENCODER) || defined(CONFIG_FFVHUFF_ENCODER) */
 
 /* TODO instead of restarting the read when the code isn't in the first level
  * of the joint table, jump into the 2nd level of the individual table. */
@@ -761,7 +761,7 @@ static void decode_gray_bitstream(HYuvContext *s, int count){
     }
 }
 
-#ifdef CONFIG_ENCODERS
+#if defined(CONFIG_HUFFYUV_ENCODER) || defined(CONFIG_FFVHUFF_ENCODER)
 static int encode_422_bitstream(HYuvContext *s, int count){
     int i;
 
@@ -854,7 +854,7 @@ static int encode_gray_bitstream(HYuvContext *s, int count){
     }
     return 0;
 }
-#endif /* CONFIG_ENCODERS */
+#endif /* defined(CONFIG_HUFFYUV_ENCODER) || defined(CONFIG_FFVHUFF_ENCODER) */
 
 static av_always_inline void decode_bgr_1(HYuvContext *s, int count, int decorrelate, int alpha){
     int i;
@@ -1226,7 +1226,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 }
 #endif /* defined(CONFIG_HUFFYUV_DECODER) || defined(CONFIG_FFVHUFF_DECODER) */
 
-#ifdef CONFIG_ENCODERS
+#if defined(CONFIG_HUFFYUV_ENCODER) || defined(CONFIG_FFVHUFF_ENCODER)
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     HYuvContext *s = avctx->priv_data;
     AVFrame *pict = data;
@@ -1431,7 +1431,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
     return 0;
 }
-#endif /* CONFIG_ENCODERS */
+#endif /* defined(CONFIG_HUFFYUV_ENCODER) || defined(CONFIG_FFVHUFF_ENCODER) */
 
 #ifdef CONFIG_HUFFYUV_DECODER
 AVCodec huffyuv_decoder = {
@@ -1465,8 +1465,7 @@ AVCodec ffvhuff_decoder = {
 };
 #endif
 
-#ifdef CONFIG_ENCODERS
-
+#ifdef CONFIG_HUFFYUV_ENCODER
 AVCodec huffyuv_encoder = {
     "huffyuv",
     CODEC_TYPE_VIDEO,
@@ -1478,7 +1477,9 @@ AVCodec huffyuv_encoder = {
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_RGB32, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
 };
+#endif
 
+#ifdef CONFIG_FFVHUFF_ENCODER
 AVCodec ffvhuff_encoder = {
     "ffvhuff",
     CODEC_TYPE_VIDEO,
@@ -1490,5 +1491,4 @@ AVCodec ffvhuff_encoder = {
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_RGB32, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
 };
-
-#endif //CONFIG_ENCODERS
+#endif

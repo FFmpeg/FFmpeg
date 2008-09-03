@@ -350,7 +350,7 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState * const state, int 
     return ret;
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_FFV1_ENCODER
 static inline int encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
     PlaneContext * const p= &s->plane[plane_index];
     RangeCoder * const c= &s->c;
@@ -524,7 +524,7 @@ static void write_header(FFV1Context *f){
     for(i=0; i<5; i++)
         write_quant_table(c, f->quant_table[i]);
 }
-#endif /* CONFIG_ENCODERS */
+#endif /* CONFIG_FFV1_ENCODER */
 
 static av_cold int common_init(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
@@ -543,7 +543,7 @@ static av_cold int common_init(AVCodecContext *avctx){
     return 0;
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_FFV1_ENCODER
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
@@ -607,7 +607,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     return 0;
 }
-#endif /* CONFIG_ENCODERS */
+#endif /* CONFIG_FFV1_ENCODER */
 
 
 static void clear_state(FFV1Context *f){
@@ -632,7 +632,7 @@ static void clear_state(FFV1Context *f){
     }
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_FFV1_ENCODER
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     FFV1Context *f = avctx->priv_data;
     RangeCoder * const c= &f->c;
@@ -688,7 +688,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         return used_count + (put_bits_count(&f->pb)+7)/8;
     }
 }
-#endif /* CONFIG_ENCODERS */
+#endif /* CONFIG_FFV1_ENCODER */
 
 static av_cold int common_end(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
@@ -1025,7 +1025,7 @@ AVCodec ffv1_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("FFmpeg codec #1"),
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_FFV1_ENCODER
 AVCodec ffv1_encoder = {
     "ffv1",
     CODEC_TYPE_VIDEO,

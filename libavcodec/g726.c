@@ -285,7 +285,7 @@ static av_cold int g726_reset(G726Context* c, int index)
     return 0;
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_ADPCM_G726_ENCODER
 static int16_t g726_encode(G726Context* c, int16_t sig)
 {
     uint8_t i;
@@ -342,7 +342,7 @@ static av_cold int g726_close(AVCodecContext *avctx)
     return 0;
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_ADPCM_G726_ENCODER
 static int g726_encode_frame(AVCodecContext *avctx,
                             uint8_t *dst, int buf_size, void *data)
 {
@@ -381,7 +381,7 @@ static int g726_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_ADPCM_G726_ENCODER
 AVCodec adpcm_g726_encoder = {
     "g726",
     CODEC_TYPE_AUDIO,
@@ -394,7 +394,7 @@ AVCodec adpcm_g726_encoder = {
     .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };
-#endif //CONFIG_ENCODERS
+#endif
 
 AVCodec adpcm_g726_decoder = {
     "g726",

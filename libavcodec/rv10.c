@@ -229,8 +229,8 @@ int rv_decode_dc(MpegEncContext *s, int n)
     return -code;
 }
 
-#ifdef CONFIG_ENCODERS
 
+#if defined(CONFIG_RV10_ENCODER) || defined(CONFIG_RV20_ENCODER)
 /* write RV 1.0 compatible frame header */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 {
@@ -304,7 +304,7 @@ static int get_num(GetBitContext *gb)
 }
 #endif
 
-#endif //CONFIG_ENCODERS
+#endif /* defined(CONFIG_RV10_ENCODER) || defined(CONFIG_RV20_ENCODER) */
 
 /* read RV 1.0 compatible frame header */
 static int rv10_decode_picture_header(MpegEncContext *s)

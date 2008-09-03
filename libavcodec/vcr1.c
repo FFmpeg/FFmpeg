@@ -175,8 +175,7 @@ AVCodec vcr1_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("ATI VCR1"),
 };
 #if 0
-#ifdef CONFIG_ENCODERS
-
+#ifdef CONFIG_VCR1_ENCODER
 AVCodec vcr1_encoder = {
     "vcr1",
     CODEC_TYPE_VIDEO,
@@ -187,6 +186,5 @@ AVCodec vcr1_encoder = {
     //encode_end,
     .long_name = NULL_IF_CONFIG_SMALL("ATI VCR1"),
 };
-
-#endif //CONFIG_ENCODERS
+#endif
 #endif
