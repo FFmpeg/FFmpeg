@@ -731,10 +731,10 @@ static void video_image_display(VideoState *is)
 
         /* XXX: we suppose the screen has a 1.0 pixel ratio */
         height = is->height;
-        width = ((int)rint(height * aspect_ratio)) & -3;
+        width = ((int)rint(height * aspect_ratio)) & ~1;
         if (width > is->width) {
             width = is->width;
-            height = ((int)rint(width / aspect_ratio)) & -3;
+            height = ((int)rint(width / aspect_ratio)) & ~1;
         }
         x = (is->width - width) / 2;
         y = (is->height - height) / 2;
