@@ -1051,15 +1051,15 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                             if (s->coded_fragment_list[l] == s->macroblock_fragments[6*current_macroblock + k])
                                 break;
                         if (l < s->coded_fragment_list_index) {
-                        if (coding_mode == 0) {
-                            motion_x[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
-                            motion_y[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
-                        } else {
-                            motion_x[k] = fixed_motion_vector_table[get_bits(gb, 6)];
-                            motion_y[k] = fixed_motion_vector_table[get_bits(gb, 6)];
-                        }
-                        last_motion_x = motion_x[k];
-                        last_motion_y = motion_y[k];
+                            if (coding_mode == 0) {
+                                motion_x[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
+                                motion_y[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
+                            } else {
+                                motion_x[k] = fixed_motion_vector_table[get_bits(gb, 6)];
+                                motion_y[k] = fixed_motion_vector_table[get_bits(gb, 6)];
+                            }
+                            last_motion_x = motion_x[k];
+                            last_motion_y = motion_y[k];
                         } else {
                             motion_x[k] = 0;
                             motion_y[k] = 0;
