@@ -81,6 +81,10 @@
  */
 #define MR_ENERGY 1018156
 
+#define DECISION_NOISE        0
+#define DECISION_INTERMEDIATE 1
+#define DECISION_VOICE        2
+
 typedef enum {
     FORMAT_G729_8K = 0,
     FORMAT_G729D_6K4,
@@ -124,6 +128,10 @@ typedef struct {
     /// (14.1) gain code from current and previous subframe
     int16_t past_gain_code[2];
 
+    /// voice decision on previous subframe (0-noise, 1-intermediate, 2-voice), G.729D
+    int16_t voice_decision;
+
+    int16_t onset;              ///< detected onset level (0-2)
     int16_t was_periodic;       ///< whether previous frame was declared as periodic or not (4.4)
     uint16_t rand_value;        ///< random number generator value (4.4.4)
     int ma_predictor_prev;      ///< switched MA predictor of LSP quantizer from last good frame
@@ -230,6 +238,85 @@ static void lsf_restore_from_previous(int16_t* lsfq,
     }
 }
 
+/**
+ * Constructs new excitation signal and applies phase filter to it
+ * @param out[out] constructed speech signal
+ * @param in original excitation signal
+ * @param fc_cur (2.13) original fixed-codebook vector
+ * @param gain_code (14.1) gain code
+ * @param subframe_size length of the subframe
+ */
+void g729d_get_new_exc(
+        int16_t* out,
+        const int16_t* in,
+        const int16_t* fc_cur,
+        int dstate,
+        int gain_code,
+        int subframe_size)
+{
+    int i;
+    int16_t fc_new[SUBFRAME_SIZE];
+
+    ff_celp_convolve_circ(fc_new, fc_cur, phase_filter[dstate], subframe_size);
+
+    for(i=0; i<subframe_size; i++)
+    {
+        out[i]  = in[i];
+        out[i] -= (gain_code * fc_cur[i] + 0x2000) >> 14;
+        out[i] += (gain_code * fc_new[i] + 0x2000) >> 14;
+    }
+}
+
+/**
+ * Makes decision about onset in current subframe
+ * @param past_onset decision result of previous subframe
+ * @param past_gain_code gain code of current and previous subframe
+ *
+ * @return onset decision result for current subframe
+ */
+int g729d_onset_decision(int past_onset, const int16_t* past_gain_code)
+{
+    if((past_gain_code[0] >> 1) > past_gain_code[1])
+        return 2;
+    else
+        return FFMAX(past_onset-1, 0);
+}
+
+/**
+ * Makes decision about voice presence in current subframe
+ * @param onset onset level
+ * @param prev_voice_decision voice decision result from previous subframe
+ * @param past_gain_pitch pitch gain of current and previous subframes
+ *
+ * @return voice decision result for current subframe
+ */
+static int16_t g729d_voice_decision(int onset, int prev_voice_decision, const int16_t* past_gain_pitch)
+{
+    int i, low_gain_pitch_cnt, voice_decision;
+
+    if(past_gain_pitch[0] >= 14745)      // 0.9
+        voice_decision = DECISION_VOICE;
+    else if (past_gain_pitch[0] <= 9830) // 0.6
+        voice_decision = DECISION_NOISE;
+    else
+        voice_decision = DECISION_INTERMEDIATE;
+
+    for(i=0, low_gain_pitch_cnt=0; i<6; i++)
+        if(past_gain_pitch[i] < 9830)
+            low_gain_pitch_cnt++;
+
+    if(low_gain_pitch_cnt > 2 && !onset)
+        voice_decision = DECISION_NOISE;
+
+    if(!onset && voice_decision > prev_voice_decision + 1)
+        voice_decision--;
+
+    if(onset && voice_decision < DECISION_VOICE)
+        voice_decision++;
+
+    return voice_decision;
+}
+
 static av_cold int decoder_init(AVCodecContext * avctx)
 {
     G729Context* ctx = avctx->priv_data;
@@ -302,6 +389,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (buf_size == 10) {
         packet_type = FORMAT_G729_8K;
         format = format_g729_8k;
+        //Reset voice decision
+        ctx->onset = 0;
+        ctx->voice_decision = DECISION_VOICE;
         av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729 @ 8kbit/s");
     } else if (buf_size == 8) {
         packet_type = FORMAT_G729D_6K4;
@@ -497,11 +587,29 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             SUBFRAME_SIZE,
             10,
             1,
-            0x800)) {
+            0x800))
             /* Overflow occured, downscale excitation signal... */
             for (j = 0; j < 2 * SUBFRAME_SIZE + PITCH_DELAY_MAX + INTERPOL_LEN; j++)
                 ctx->exc_base[j] >>= 2;
 
+        /* ... and make synthesis again. */
+        if (packet_type == FORMAT_G729D_6K4) {
+            int16_t exc_new[SUBFRAME_SIZE];
+
+            ctx->onset = g729d_onset_decision(ctx->onset, ctx->past_gain_code);
+            ctx->voice_decision = g729d_voice_decision(ctx->onset, ctx->voice_decision, ctx->past_gain_pitch);
+
+            g729d_get_new_exc(exc_new, ctx->exc  + i * SUBFRAME_SIZE, fc, ctx->voice_decision, ctx->past_gain_code[0], SUBFRAME_SIZE);
+
+            ff_celp_lp_synthesis_filter(
+                    synth+10,
+                    &lp[i][1],
+                    exc_new,
+                    SUBFRAME_SIZE,
+                    10,
+                    0,
+                    0x800);
+        } else {
             ff_celp_lp_synthesis_filter(
                     synth+10,
                     &lp[i][1],
