@@ -79,6 +79,49 @@ static inline int g729_get_parity(uint8_t value)
    return (0x6996966996696996ULL >> (value >> 2)) & 1;
 }
 
+        /*
+          This filter enhances harmonic components of the fixed-codebook vector to
+          improve the quality of the reconstructed speech.
+
+                     / fc_v[i],                                    i < pitch_delay
+          fc_v[i] = <
+                     \ fc_v[i] + gain_pitch * fc_v[i-pitch_delay], i >= pitch_delay
+        */
+        ff_acelp_weighted_vector_sum(
+                fc + pitch_delay_int[i],
+                fc + pitch_delay_int[i],
+                fc,
+                1 << 14,
+                av_clip(ctx->gain_pitch, SHARP_MIN, SHARP_MAX),
+                0,
+                14,
+                ctx->subframe_size - pitch_delay_int[i]);
+
+            ctx->gain_pitch  = cb_gain_1st_8k[parm->gc_1st_index[i]][0] +
+                               cb_gain_2nd_8k[parm->gc_2nd_index[i]][0];
+            gain_corr_factor = cb_gain_1st_8k[parm->gc_1st_index[i]][1] +
+                               cb_gain_2nd_8k[parm->gc_2nd_index[i]][1];
+
+        /* Routine requires rounding to lowest. */
+        ff_acelp_interpolate(
+                ctx->exc + i*ctx->subframe_size,
+                ctx->exc + i*ctx->subframe_size - pitch_delay_3x/3,
+                ff_acelp_interp_filter,
+                6,
+                (pitch_delay_3x%3)<<1,
+                10,
+                ctx->subframe_size);
+
+        ff_acelp_weighted_vector_sum(
+                ctx->exc + i * ctx->subframe_size,
+                ctx->exc + i * ctx->subframe_size,
+                fc,
+                (!voicing && ctx->frame_erasure) ? 0 : ctx->gain_pitch,
+                ( voicing && ctx->frame_erasure) ? 0 : ctx->gain_code,
+                1<<13,
+                14,
+                ctx->subframe_size);
+
 AVCodec g729_decoder =
 {
     "g729",
