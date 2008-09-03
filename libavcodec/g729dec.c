@@ -1,5 +1,5 @@
 /*
- * G.729 decoder
+ * G.729, G729 Annex D decoders
  * Copyright (c) 2008 Vladimir Voroshilov
  *
  * This file is part of FFmpeg.
