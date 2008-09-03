@@ -963,7 +963,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
  */
 static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
 {
-    int i, j, k;
+    int i, j, k, l;
     int coding_mode;
     int motion_x[6];
     int motion_y[6];
@@ -1047,6 +1047,10 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                      * Y fragment, then average for the C fragment vectors */
                     motion_x[4] = motion_y[4] = 0;
                     for (k = 0; k < 4; k++) {
+                        for (l = 0; l < s->coded_fragment_list_index; l++)
+                            if (s->coded_fragment_list[l] == s->macroblock_fragments[6*current_macroblock + k])
+                                break;
+                        if (l < s->coded_fragment_list_index) {
                         if (coding_mode == 0) {
                             motion_x[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
                             motion_y[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
@@ -1056,6 +1060,10 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                         }
                         last_motion_x = motion_x[k];
                         last_motion_y = motion_y[k];
+                        } else {
+                            motion_x[k] = 0;
+                            motion_y[k] = 0;
+                        }
                         motion_x[4] += motion_x[k];
                         motion_y[4] += motion_y[k];
                     }
