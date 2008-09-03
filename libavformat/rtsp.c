@@ -896,9 +896,6 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
 
         rtsp_st = rt->rtsp_streams[i];
 
-        /* compute available transports */
-        transport[0] = '\0';
-
         /* RTP/UDP */
         if (protocol == RTSP_PROTOCOL_RTP_UDP) {
             char buf[256];
@@ -923,9 +920,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
 
         rtp_opened:
             port = rtp_get_local_port(rtsp_st->rtp_handle);
-            if (transport[0] != '\0')
-                av_strlcat(transport, ",", sizeof(transport));
-            snprintf(transport + strlen(transport), sizeof(transport) - strlen(transport) - 1,
+            snprintf(transport, sizeof(transport) - 1,
                      "%s/UDP;unicast;client_port=%d",
                      trans_pref, port);
             if (rt->server_type == RTSP_SERVER_RTP)
@@ -934,17 +929,12 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
 
         /* RTP/TCP */
         else if (protocol == RTSP_PROTOCOL_RTP_TCP) {
-            if (transport[0] != '\0')
-                av_strlcat(transport, ",", sizeof(transport));
-            snprintf(transport + strlen(transport), sizeof(transport) - strlen(transport) - 1,
+            snprintf(transport, sizeof(transport) - 1,
                      "%s/TCP", trans_pref);
         }
 
         else if (protocol == RTSP_PROTOCOL_RTP_UDP_MULTICAST) {
-            if (transport[0] != '\0')
-                av_strlcat(transport, ",", sizeof(transport));
-            snprintf(transport + strlen(transport),
-                     sizeof(transport) - strlen(transport) - 1,
+            snprintf(transport, sizeof(transport) - 1,
                      "%s/UDP;multicast", trans_pref);
         }
         if (rt->server_type == RTSP_SERVER_RDT)
