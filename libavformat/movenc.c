@@ -24,6 +24,7 @@
 #include "avio.h"
 #include "isom.h"
 #include "avc.h"
+#include "libavcodec/bitstream.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -219,6 +220,50 @@ static int mov_write_amr_tag(ByteIOContext *pb, MOVTrack *track)
     return 0x11;
 }
 
+static int mov_write_ac3_tag(ByteIOContext *pb, MOVTrack *track)
+{
+    GetBitContext gbc;
+    PutBitContext pbc;
+    uint8_t buf[3];
+    int fscod, bsid, bsmod, acmod, lfeon, frmsizecod;
+
+    if (track->vosLen < 7)
+        return -1;
+
+    put_be32(pb, 11);
+    put_tag(pb, "dac3");
+
+    init_get_bits(&gbc, track->vosData+2, track->vosLen-2);
+    fscod      = get_bits(&gbc, 2);
+    frmsizecod = get_bits(&gbc, 6);
+    bsid       = get_bits(&gbc, 5);
+    bsmod      = get_bits(&gbc, 3);
+    acmod      = get_bits(&gbc, 3);
+    if (acmod == 2) {
+        skip_bits(&gbc, 2); // dsurmod
+    } else {
+        if ((acmod & 1) && acmod != 1)
+            skip_bits(&gbc, 2); // cmixlev
+        if (acmod & 4)
+            skip_bits(&gbc, 2); // surmixlev
+    }
+    lfeon = get_bits1(&gbc);
+
+    init_put_bits(&pbc, buf, sizeof(buf));
+    put_bits(&pbc, 2, fscod);
+    put_bits(&pbc, 5, bsid);
+    put_bits(&pbc, 3, bsmod);
+    put_bits(&pbc, 3, acmod);
+    put_bits(&pbc, 1, lfeon);
+    put_bits(&pbc, 5, frmsizecod>>1); // bit_rate_code
+    put_bits(&pbc, 5, 0); // reserved
+
+    flush_put_bits(&pbc);
+    put_buffer(pb, buf, sizeof(buf));
+
+    return 11;
+}
+
 /**
  * This function writes extradata "as is".
  * Extradata must be formated like a valid atom (with size and tag)
@@ -330,6 +375,8 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack *track)
         mov_write_enda_tag(pb);
     } else if (track->enc->codec_id == CODEC_ID_AMR_NB) {
         mov_write_amr_tag(pb, track);
+    } else if (track->enc->codec_id == CODEC_ID_AC3) {
+        mov_write_ac3_tag(pb, track);
     } else if (track->enc->codec_id == CODEC_ID_ALAC) {
         mov_write_extradata_tag(pb, track);
     }
@@ -516,6 +563,7 @@ static const AVCodecTag codec_ipod_tags[] = {
     { CODEC_ID_MPEG4,  MKTAG('m','p','4','v') },
     { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
     { CODEC_ID_ALAC,   MKTAG('a','l','a','c') },
+    { CODEC_ID_AC3,    MKTAG('a','c','-','3') },
 };
 
 static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
@@ -525,6 +573,7 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
         if (!codec_get_tag(ff_mp4_obj_type, track->enc->codec_id))
             return 0;
         if (track->enc->codec_id == CODEC_ID_H264)           tag = MKTAG('a','v','c','1');
+        else if (track->enc->codec_id == CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
         else if (track->enc->codec_type == CODEC_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
         else if (track->enc->codec_type == CODEC_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
     } else if (track->mode == MODE_IPOD) {
@@ -1618,7 +1667,8 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         assert(pkt->size);
         size = pkt->size;
-    } else if (enc->codec_id == CODEC_ID_DNXHD && !trk->vosLen) {
+    } else if ((enc->codec_id == CODEC_ID_DNXHD ||
+                enc->codec_id == CODEC_ID_AC3) && !trk->vosLen) {
         /* copy frame to create needed atoms */
         trk->vosLen = size;
         trk->vosData = av_malloc(size);

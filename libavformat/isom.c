@@ -48,6 +48,7 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { CODEC_ID_PNG       , 109 },
     { CODEC_ID_JPEG2000  , 110 }, /* 15444-1 */
     { CODEC_ID_VC1       , 163 },
+    { CODEC_ID_AC3       , 165 },
     { CODEC_ID_VORBIS    , 221 }, /* non standard, gpac uses it */
     { CODEC_ID_DVD_SUBTITLE, 224 }, /* non standard, see unsupported-embedded-subs-2.mp4 */
     { CODEC_ID_QCELP     , 225 },
@@ -187,6 +188,7 @@ const AVCodecTag codec_movaudio_tags[] = {
 /*  { CODEC_ID_OGG_VORBIS, MKTAG('O', 'g', 'g', 'S') }, *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
 
     { CODEC_ID_AAC, MKTAG('m', 'p', '4', 'a') }, /* MPEG-4 AAC */
+    { CODEC_ID_AC3, MKTAG('a', 'c', '-', '3') }, /* ETSI TS 102 366 Annex F */
 
     { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
     { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
