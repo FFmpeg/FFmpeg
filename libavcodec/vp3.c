@@ -1039,6 +1039,10 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     break;
 
                 case MODE_INTER_FOURMV:
+                    /* vector maintenance */
+                    prior_last_motion_x = last_motion_x;
+                    prior_last_motion_y = last_motion_y;
+
                     /* fetch 4 vectors from the bitstream, one for each
                      * Y fragment, then average for the C fragment vectors */
                     motion_x[4] = motion_y[4] = 0;
@@ -1050,6 +1054,8 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                             motion_x[k] = fixed_motion_vector_table[get_bits(gb, 6)];
                             motion_y[k] = fixed_motion_vector_table[get_bits(gb, 6)];
                         }
+                        last_motion_x = motion_x[k];
+                        last_motion_y = motion_y[k];
                         motion_x[4] += motion_x[k];
                         motion_y[4] += motion_y[k];
                     }
@@ -1058,13 +1064,6 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     motion_x[4]= RSHIFT(motion_x[4], 2);
                     motion_y[5]=
                     motion_y[4]= RSHIFT(motion_y[4], 2);
-
-                    /* vector maintenance; vector[3] is treated as the
-                     * last vector in this case */
-                    prior_last_motion_x = last_motion_x;
-                    prior_last_motion_y = last_motion_y;
-                    last_motion_x = motion_x[3];
-                    last_motion_y = motion_y[3];
                     break;
 
                 case MODE_INTER_LAST_MV:
