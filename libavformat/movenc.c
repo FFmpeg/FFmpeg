@@ -572,7 +572,7 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
     if (track->mode == MODE_MP4 || track->mode == MODE_PSP) {
         if (!codec_get_tag(ff_mp4_obj_type, track->enc->codec_id))
             return 0;
-        if (track->enc->codec_id == CODEC_ID_H264)           tag = MKTAG('a','v','c','1');
+        if      (track->enc->codec_id == CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
         else if (track->enc->codec_id == CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
         else if (track->enc->codec_type == CODEC_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
         else if (track->enc->codec_type == CODEC_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
