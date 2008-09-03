@@ -70,7 +70,11 @@ typedef struct AVPacket {
     int   size;
     int   stream_index;
     int   flags;
-    int   duration;                         ///< presentation duration in time_base units (0 if not available)
+    /**
+     * Duration of this packet in time_base units, 0 if unknown.
+     * Equals next_pts - this_pts in presentation order.
+     */
+    int   duration;
     void  (*destruct)(struct AVPacket *);
     void  *priv;
     int64_t pos;                            ///< byte position in stream, -1 if unknown
