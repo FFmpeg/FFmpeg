@@ -233,7 +233,7 @@ static int mov_write_ac3_tag(ByteIOContext *pb, MOVTrack *track)
     put_be32(pb, 11);
     put_tag(pb, "dac3");
 
-    init_get_bits(&gbc, track->vosData+2, track->vosLen-2);
+    init_get_bits(&gbc, track->vosData+4, track->vosLen-4);
     fscod      = get_bits(&gbc, 2);
     frmsizecod = get_bits(&gbc, 6);
     bsid       = get_bits(&gbc, 5);
