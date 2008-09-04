@@ -440,6 +440,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
 
     if(track->mode == MODE_MOV &&
        (track->enc->codec_id == CODEC_ID_AAC ||
+        track->enc->codec_id == CODEC_ID_AC3 ||
         track->enc->codec_id == CODEC_ID_AMR_NB ||
         track->enc->codec_id == CODEC_ID_PCM_S24LE ||
         track->enc->codec_id == CODEC_ID_PCM_S32LE ||
@@ -449,6 +450,8 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
         mov_write_esds_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_AMR_NB)
         mov_write_amr_tag(pb, track);
+    else if(track->enc->codec_id == CODEC_ID_AC3)
+        mov_write_ac3_tag(pb, track);
     else if (track->enc->codec_id == CODEC_ID_ALAC)
         mov_write_extradata_tag(pb, track);
     else if(track->vosLen > 0)
