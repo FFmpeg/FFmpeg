@@ -29,36 +29,36 @@
 #include <inttypes.h>
 
 /* A full collection of RGB to RGB(BGR) converters */
-extern void (*rgb24to32)   (const uint8_t *src, uint8_t *dst, long src_size);
-extern void (*rgb24to16)   (const uint8_t *src, uint8_t *dst, long src_size);
-extern void (*rgb24to15)   (const uint8_t *src, uint8_t *dst, long src_size);
-extern void (*rgb32to24)   (const uint8_t *src, uint8_t *dst, long src_size);
+extern void (*rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long src_size);
+extern void (*rgb24tobgr16)(const uint8_t *src, uint8_t *dst, long src_size);
+extern void (*rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long src_size);
+extern void (*rgb32tobgr24)(const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb32to16)   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb32to15)   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb15to16)   (const uint8_t *src, uint8_t *dst, long src_size);
-extern void (*rgb15to24)   (const uint8_t *src, uint8_t *dst, long src_size);
+extern void (*rgb15tobgr24)(const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb15to32)   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb16to15)   (const uint8_t *src, uint8_t *dst, long src_size);
-extern void (*rgb16to24)   (const uint8_t *src, uint8_t *dst, long src_size);
+extern void (*rgb16tobgr24)(const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb16to32)   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long src_size);
-extern void (*rgb24tobgr16)(const uint8_t *src, uint8_t *dst, long src_size);
-extern void (*rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long src_size);
+extern void (*rgb24to16)   (const uint8_t *src, uint8_t *dst, long src_size);
+extern void (*rgb24to15)   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long src_size);
 
-extern void rgb24tobgr32(const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb32tobgr24(const uint8_t *src, uint8_t *dst, long src_size);
+extern void rgb24to32   (const uint8_t *src, uint8_t *dst, long src_size);
+extern void rgb32to24   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void rgb16tobgr32(const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb16tobgr24(const uint8_t *src, uint8_t *dst, long src_size);
+extern void rgb16to24   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void rgb16tobgr16(const uint8_t *src, uint8_t *dst, long src_size);
 extern void rgb16tobgr15(const uint8_t *src, uint8_t *dst, long src_size);
 extern void rgb15tobgr32(const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb15tobgr24(const uint8_t *src, uint8_t *dst, long src_size);
+extern void rgb15to24   (const uint8_t *src, uint8_t *dst, long src_size);
 extern void rgb15tobgr16(const uint8_t *src, uint8_t *dst, long src_size);
 extern void rgb15tobgr15(const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb8tobgr8  (const uint8_t *src, uint8_t *dst, long src_size);
+extern void bgr8torgb8  (const uint8_t *src, uint8_t *dst, long src_size);
 
 
 extern void palette8torgb32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);

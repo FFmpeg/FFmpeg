@@ -82,7 +82,7 @@
 #define SFENCE " # nop"
 #endif
 
-static inline void RENAME(rgb24to32)(const uint8_t *src, uint8_t *dst, long src_size)
+static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     uint8_t *dest = dst;
     const uint8_t *s = src;
@@ -142,7 +142,7 @@ static inline void RENAME(rgb24to32)(const uint8_t *src, uint8_t *dst, long src_
     }
 }
 
-static inline void RENAME(rgb32to24)(const uint8_t *src, uint8_t *dst, long src_size)
+static inline void RENAME(rgb32tobgr24)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     uint8_t *dest = dst;
     const uint8_t *s = src;
@@ -657,7 +657,7 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long s
     }
 }
 
-static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, long src_size)
+static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint8_t *s = src;
     const uint8_t *end;
@@ -720,7 +720,7 @@ static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, long src_
     }
 }
 
-static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, long src_size)
+static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint8_t *s = src;
     const uint8_t *end;
@@ -783,7 +783,7 @@ static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, long s
     }
 }
 
-static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, long src_size)
+static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint8_t *s = src;
     const uint8_t *end;
@@ -846,7 +846,7 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, long src_
     }
 }
 
-static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long src_size)
+static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint8_t *s = src;
     const uint8_t *end;
@@ -930,7 +930,7 @@ static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, long s
        |
    original bits
 */
-static inline void RENAME(rgb15to24)(const uint8_t *src, uint8_t *dst, long src_size)
+static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint16_t *end;
 #ifdef HAVE_MMX
@@ -1072,7 +1072,7 @@ static inline void RENAME(rgb15to24)(const uint8_t *src, uint8_t *dst, long src_
     }
 }
 
-static inline void RENAME(rgb16to24)(const uint8_t *src, uint8_t *dst, long src_size)
+static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint16_t *end;
 #ifdef HAVE_MMX
@@ -2707,19 +2707,19 @@ static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2
 
 static inline void RENAME(rgb2rgb_init)(void){
     rgb15to16       = RENAME(rgb15to16);
-    rgb15to24       = RENAME(rgb15to24);
+    rgb15tobgr24    = RENAME(rgb15tobgr24);
     rgb15to32       = RENAME(rgb15to32);
-    rgb16to24       = RENAME(rgb16to24);
+    rgb16tobgr24    = RENAME(rgb16tobgr24);
     rgb16to32       = RENAME(rgb16to32);
     rgb16to15       = RENAME(rgb16to15);
-    rgb24to16       = RENAME(rgb24to16);
-    rgb24to15       = RENAME(rgb24to15);
-    rgb24to32       = RENAME(rgb24to32);
+    rgb24tobgr16    = RENAME(rgb24tobgr16);
+    rgb24tobgr15    = RENAME(rgb24tobgr15);
+    rgb24tobgr32    = RENAME(rgb24tobgr32);
     rgb32to16       = RENAME(rgb32to16);
     rgb32to15       = RENAME(rgb32to15);
-    rgb32to24       = RENAME(rgb32to24);
-    rgb24tobgr15    = RENAME(rgb24tobgr15);
-    rgb24tobgr16    = RENAME(rgb24tobgr16);
+    rgb32tobgr24    = RENAME(rgb32tobgr24);
+    rgb24to15       = RENAME(rgb24to15);
+    rgb24to16       = RENAME(rgb24to16);
     rgb24tobgr24    = RENAME(rgb24tobgr24);
     rgb32tobgr32    = RENAME(rgb32tobgr32);
     rgb32tobgr16    = RENAME(rgb32tobgr16);
