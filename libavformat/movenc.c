@@ -452,7 +452,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
         mov_write_amr_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_AC3)
         mov_write_ac3_tag(pb, track);
-    else if (track->enc->codec_id == CODEC_ID_ALAC)
+    else if(track->enc->codec_id == CODEC_ID_ALAC)
         mov_write_extradata_tag(pb, track);
     else if(track->vosLen > 0)
         mov_write_glbl_tag(pb, track);
