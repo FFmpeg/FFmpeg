@@ -22,7 +22,7 @@
  */
 
 /*
-  supported Input formats: YV12, I420/IYUV, YUY2, UYVY, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8/Y800, YVU9/IF09, PAL8
+  supported Input formats: YV12, I420/IYUV, YUY2, UYVY, BGR32, BGR32_1, BGR24, BGR16, BGR15, RGB32, RGB32_1, RGB24, Y8/Y800, YVU9/IF09, PAL8
   supported output formats: YV12, I420/IYUV, YUY2, UYVY, {BGR,RGB}{1,4,8,15,16,24,32}, Y8/Y800, YVU9/IF09
   {BGR,RGB}{1,4,8,15,16} support dithering
 
@@ -104,10 +104,12 @@ unsigned swscale_version(void)
         || (x)==PIX_FMT_YUYV422     \
         || (x)==PIX_FMT_UYVY422     \
         || (x)==PIX_FMT_RGB32       \
+        || (x)==PIX_FMT_RGB32_1     \
         || (x)==PIX_FMT_BGR24       \
         || (x)==PIX_FMT_BGR565      \
         || (x)==PIX_FMT_BGR555      \
         || (x)==PIX_FMT_BGR32       \
+        || (x)==PIX_FMT_BGR32_1     \
         || (x)==PIX_FMT_RGB24       \
         || (x)==PIX_FMT_RGB565      \
         || (x)==PIX_FMT_RGB555      \
@@ -498,6 +500,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
     {\
     case PIX_FMT_RGB32:\
     case PIX_FMT_BGR32:\
+    case PIX_FMT_RGB32_1:\
+    case PIX_FMT_BGR32_1:\
         func(uint32_t)\
             ((uint32_t*)dest)[i2+0]= r[Y1] + g[Y1] + b[Y1];\
             ((uint32_t*)dest)[i2+1]= r[Y2] + g[Y2] + b[Y2];\
@@ -680,6 +684,8 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
     {
     case PIX_FMT_BGR32:
     case PIX_FMT_RGB32:
+    case PIX_FMT_BGR32_1:
+    case PIX_FMT_RGB32_1:
         YSCALE_YUV_2_RGBX_C(uint32_t)
             ((uint32_t*)dest)[i2+0]= r[Y1] + g[Y1] + b[Y1];
             ((uint32_t*)dest)[i2+1]= r[Y2] + g[Y2] + b[Y2];
@@ -1573,7 +1579,7 @@ static int PlanarToUyvyWrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
     return srcSliceH;
 }
 
-/* {RGB,BGR}{15,16,24,32} -> {RGB,BGR}{15,16,24,32} */
+/* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                           int srcSliceH, uint8_t* dst[], int dstStride[]){
     const int srcFormat= c->srcFormat;
@@ -1632,12 +1638,15 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
 
     if(conv)
     {
+        uint8_t *srcPtr= src[0];
+        if(srcFormat == PIX_FMT_RGB32_1 || srcFormat == PIX_FMT_BGR32_1)
+            srcPtr += ALT32_CORR;
+
         if (dstStride[0]*srcBpp == srcStride[0]*dstBpp && srcStride[0] > 0)
-            conv(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+            conv(srcPtr, dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
         else
         {
             int i;
-            uint8_t *srcPtr= src[0];
             uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
 
             for (i=0; i<srcSliceH; i++)
@@ -2150,6 +2159,8 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
            && srcFormat != PIX_FMT_BGR4_BYTE && dstFormat != PIX_FMT_BGR4_BYTE
            && srcFormat != PIX_FMT_RGB4_BYTE && dstFormat != PIX_FMT_RGB4_BYTE
            && srcFormat != PIX_FMT_MONOBLACK && dstFormat != PIX_FMT_MONOBLACK
+                                             && dstFormat != PIX_FMT_RGB32_1
+                                             && dstFormat != PIX_FMT_BGR32_1
            && !needsDither)
              c->swScale= rgb2rgbWrapper;
 

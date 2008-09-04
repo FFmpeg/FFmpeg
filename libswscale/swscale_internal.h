@@ -34,6 +34,12 @@
 #define VOFW 2048
 #define VOF  (VOFW*2)
 
+#ifdef WORDS_BIGENDIAN
+#define ALT32_CORR (-1)
+#else
+#define ALT32_CORR   1
+#endif
+
 typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]);
 
@@ -222,6 +228,7 @@ const char *sws_format_name(int format);
     )
 #define isRGB(x)        (           \
            (x)==PIX_FMT_RGB32       \
+        || (x)==PIX_FMT_RGB32_1     \
         || (x)==PIX_FMT_RGB24       \
         || (x)==PIX_FMT_RGB565      \
         || (x)==PIX_FMT_RGB555      \
@@ -232,6 +239,7 @@ const char *sws_format_name(int format);
     )
 #define isBGR(x)        (           \
            (x)==PIX_FMT_BGR32       \
+        || (x)==PIX_FMT_BGR32_1     \
         || (x)==PIX_FMT_BGR24       \
         || (x)==PIX_FMT_BGR565      \
         || (x)==PIX_FMT_BGR555      \

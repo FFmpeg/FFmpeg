@@ -2522,6 +2522,11 @@ static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, i
         RENAME(bgr32ToY)(formatConvBuffer, src, srcW);
         src= formatConvBuffer;
     }
+    else if (srcFormat==PIX_FMT_RGB32_1)
+    {
+        RENAME(bgr32ToY)(formatConvBuffer, src+ALT32_CORR, srcW);
+        src= formatConvBuffer;
+    }
     else if (srcFormat==PIX_FMT_BGR24)
     {
         RENAME(bgr24ToY)(formatConvBuffer, src, srcW);
@@ -2540,6 +2545,11 @@ static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, i
     else if (srcFormat==PIX_FMT_BGR32)
     {
         RENAME(rgb32ToY)(formatConvBuffer, src, srcW);
+        src= formatConvBuffer;
+    }
+    else if (srcFormat==PIX_FMT_BGR32_1)
+    {
+        RENAME(rgb32ToY)(formatConvBuffer, src+ALT32_CORR, srcW);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_RGB24)
@@ -2727,6 +2737,12 @@ inline static void RENAME(hcscale)(uint16_t *dst, long dstWidth, uint8_t *src1, 
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
+    else if (srcFormat==PIX_FMT_RGB32_1)
+    {
+        RENAME(bgr32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW);
+        src1= formatConvBuffer;
+        src2= formatConvBuffer+VOFW;
+    }
     else if (srcFormat==PIX_FMT_BGR24)
     {
         RENAME(bgr24ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
@@ -2748,6 +2764,12 @@ inline static void RENAME(hcscale)(uint16_t *dst, long dstWidth, uint8_t *src1, 
     else if (srcFormat==PIX_FMT_BGR32)
     {
         RENAME(rgb32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+        src1= formatConvBuffer;
+        src2= formatConvBuffer+VOFW;
+    }
+    else if (srcFormat==PIX_FMT_BGR32_1)
+    {
+        RENAME(rgb32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }

@@ -644,6 +644,8 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
     av_log(c, AV_LOG_WARNING, "No accelerated colorspace conversion found.\n");
 
     switch(c->dstFormat){
+    case PIX_FMT_BGR32_1:
+    case PIX_FMT_RGB32_1:
     case PIX_FMT_BGR32:
     case PIX_FMT_RGB32: return yuv2rgb_c_32;
     case PIX_FMT_RGB24: return yuv2rgb_c_24_rgb;
@@ -676,6 +678,7 @@ static int div_round (int dividend, int divisor)
 int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange, int brightness, int contrast, int saturation)
 {
     const int isRgb =      c->dstFormat==PIX_FMT_RGB32
+                        || c->dstFormat==PIX_FMT_RGB32_1
                         || c->dstFormat==PIX_FMT_BGR24
                         || c->dstFormat==PIX_FMT_RGB565
                         || c->dstFormat==PIX_FMT_RGB555
@@ -684,7 +687,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
                         || c->dstFormat==PIX_FMT_RGB4_BYTE
                         || c->dstFormat==PIX_FMT_MONOBLACK;
     const int bpp = fmt_depth(c->dstFormat);
-    int i;
+    int i, base;
     uint8_t table_Y[1024];
     uint32_t *table_32 = 0;
     uint16_t *table_16 = 0;
@@ -733,6 +736,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
     switch (bpp) {
     case 32:
         table_start= table_32 = av_malloc ((197 + 2*682 + 256 + 132) * sizeof (uint32_t));
+        base= (c->dstFormat == PIX_FMT_RGB32_1 || c->dstFormat == PIX_FMT_BGR32_1) ? 8 : 0;
 
         entry_size = sizeof (uint32_t);
         table_r = table_32 + 197;
@@ -740,11 +744,11 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
         table_g = table_32 + 197 + 2*682;
 
         for (i = -197; i < 256+197; i++)
-            ((uint32_t *)table_r)[i] = table_Y[i+384] << (isRgb ? 16 : 0);
+            ((uint32_t *)table_r)[i] = table_Y[i+384] << ((isRgb ? 16 : 0) + base);
         for (i = -132; i < 256+132; i++)
-            ((uint32_t *)table_g)[i] = table_Y[i+384] << 8;
+            ((uint32_t *)table_g)[i] = table_Y[i+384] << (8                + base);
         for (i = -232; i < 256+232; i++)
-            ((uint32_t *)table_b)[i] = table_Y[i+384] << (isRgb ? 0 : 16);
+            ((uint32_t *)table_b)[i] = table_Y[i+384] << ((isRgb ? 0 : 16) + base);
         break;
 
     case 24:
