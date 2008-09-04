@@ -233,14 +233,12 @@ static const uint16_t MACEtab4[][8] = {
     { 0x38F0, 0x7FFF, 0x8000, 0xC70F, 0, 0, 0, 0 },  { 0x3B7A, 0x7FFF, 0x8000, 0xC485, 0, 0, 0, 0 },
     { 0x3E22, 0x7FFF, 0x8000, 0xC1DD, 0, 0, 0, 0 },  { 0x40E7, 0x7FFF, 0x8000, 0xBF18, 0, 0, 0, 0 },
 };
-/* end of constants */
 
 typedef struct MACEContext {
     short index, lev, factor, prev2, previous, level;
     short *outPtr;
 } MACEContext;
 
-/* /// "chomp3()" */
 static void chomp3(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
             const uint16_t tab2[][8], uint32_t numChannels)
 {
@@ -262,9 +260,7 @@ static void chomp3(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
     if (( ctx->index += tab1[val]-(ctx->index >> 5) ) < 0)
         ctx->index = 0;
 }
-/* \\\ */
 
-/* /// "Exp1to3()" */
 static void Exp1to3(MACEContext *ctx, const uint8_t *inBuffer, void *outBuffer,
                     uint32_t cnt, uint32_t numChannels, uint32_t whichChannel)
 {
@@ -303,9 +299,7 @@ static void Exp1to3(MACEContext *ctx, const uint8_t *inBuffer, void *outBuffer,
     }
 */
 }
-/* \\\ */
 
-/* /// "chomp6()" */
 static void chomp6(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
             const uint16_t tab2[][8], uint32_t numChannels)
 {
@@ -347,9 +341,7 @@ static void chomp6(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
     if ((ctx->index += tab1[val] - (ctx->index >> 5)) < 0)
         ctx->index = 0;
 }
-/* \\\ */
 
-/* /// "Exp1to6()" */
 static void Exp1to6(MACEContext *ctx, const uint8_t *inBuffer, void *outBuffer,
              uint32_t cnt, uint32_t numChannels, uint32_t whichChannel)
 {
@@ -390,7 +382,6 @@ static void Exp1to6(MACEContext *ctx, const uint8_t *inBuffer, void *outBuffer,
    }
 */
 }
-/* \\\ */
 
 static av_cold int mace_decode_init(AVCodecContext * avctx)
 {
