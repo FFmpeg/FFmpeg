@@ -23,6 +23,7 @@
 #define ALT_BITSTREAM_READER_LE
 #include "bitstream.h"
 #include "ra288.h"
+#include "lpc.h"
 
 typedef struct {
     float sp_lpc[36];      ///< LPC coefficients for speech data (spec: A)
@@ -113,44 +114,6 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
         block[i] = av_clipf(block[i] + buffer[i], -4095, 4095);
 }
 
-/**
- * Converts autocorrelation coefficients to LPC coefficients using the
- * Levinson-Durbin algorithm. See blocks 37 and 50 of the G.728 specification.
- *
- * @return 0 if success, -1 if fail
- */
-static int eval_lpc_coeffs(const float *in, float *tgt, int n)
-{
-    int i, j;
-    double f0, f1, f2;
-
-    if (in[n] == 0)
-        return -1;
-
-    if ((f0 = *in) <= 0)
-        return -1;
-
-    in--; // To avoid a -1 subtraction in the inner loop
-
-    for (i=1; i <= n; i++) {
-        f1 = in[i+1];
-
-        for (j=0; j < i - 1; j++)
-            f1 += in[i-j]*tgt[j];
-
-        tgt[i-1] = f2 = -f1/f0;
-        for (j=0; j < i >> 1; j++) {
-            float temp = tgt[j] + tgt[i-j-2]*f2;
-            tgt[i-j-2] += tgt[j]*f2;
-            tgt[j] = temp;
-        }
-        if ((f0 += f1*f2) < 0)
-            return -1;
-    }
-
-    return 0;
-}
-
 static void convolve(float *tgt, const float *src, int len, int n)
 {
     for (; n >= 0; n--)
@@ -210,13 +173,13 @@ static void backward_filter(RA288Context *ractx)
     do_hybrid_window(36, 40, 35, ractx->sp_block+1, temp1, ractx->sp_hist,
                      ractx->sp_rec, syn_window);
 
-    if (!eval_lpc_coeffs(temp1, ractx->sp_lpc, 36))
+    if (!compute_lpc_coefs(temp1, 36, ractx->sp_lpc, 0, 1, 1))
         colmult(ractx->sp_lpc, ractx->sp_lpc, syn_bw_tab, 36);
 
     do_hybrid_window(10, 8, 20, ractx->gain_block+2, temp2, ractx->gain_hist,
                      ractx->gain_rec, gain_window);
 
-    if (!eval_lpc_coeffs(temp2, ractx->gain_lpc, 10))
+    if (!compute_lpc_coefs(temp2, 10, ractx->gain_lpc, 0, 1, 1))
         colmult(ractx->gain_lpc, ractx->gain_lpc, gain_bw_tab, 10);
 }
 

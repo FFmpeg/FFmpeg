@@ -21,45 +21,10 @@
 
 #include "libavutil/lls.h"
 #include "dsputil.h"
+
+#define LPC_USE_DOUBLE
 #include "lpc.h"
 
-
-/**
- * Levinson-Durbin recursion.
- * Produces LPC coefficients from autocorrelation data.
- */
-static void compute_lpc_coefs(const double *autoc, int max_order,
-                              double lpc[][MAX_LPC_ORDER], double *ref)
-{
-    int i, j;
-    double err = autoc[0];
-    double lpc_tmp[MAX_LPC_ORDER];
-
-    for(i=0; i<max_order; i++) {
-        double r = -autoc[i+1];
-
-        for(j=0; j<i; j++)
-            r -= lpc_tmp[j] * autoc[i-j];
-
-        r /= err;
-        ref[i] = fabs(r);
-
-        err *= 1.0 - (r * r);
-
-        lpc_tmp[i] = r;
-        for(j=0; j < i>>1; j++) {
-            double tmp = lpc_tmp[j];
-            lpc_tmp[j] += r * lpc_tmp[i-1-j];
-            lpc_tmp[i-1-j] += r * tmp;
-        }
-
-        if(i & 1)
-            lpc_tmp[j] += lpc_tmp[j] * r;
-
-        for(j=0; j<=i; j++)
-            lpc[i][j] = -lpc_tmp[j];
-    }
-}
 
 /**
  * Quantize LPC coefficients
@@ -106,7 +71,7 @@ static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
     /* output quantized coefficients and level shift */
     error=0;
     for(i=0; i<order; i++) {
-        error += lpc_in[i] * (1 << sh);
+        error -= lpc_in[i] * (1 << sh);
         lpc_out[i] = av_clip(lrintf(error), -qmax, qmax);
         error -= lpc_out[i];
     }
@@ -147,7 +112,10 @@ int ff_lpc_calc_coefs(DSPContext *s,
     if(use_lpc == 1){
         s->flac_compute_autocorr(samples, blocksize, max_order, autoc);
 
-        compute_lpc_coefs(autoc, max_order, lpc, ref);
+        compute_lpc_coefs(autoc, max_order, &lpc[0][0], MAX_LPC_ORDER, 0, 1);
+
+        for(i=0; i<max_order; i++)
+            ref[i] = fabs(lpc[i][i]);
     }else{
         LLSModel m[2];
         double var[MAX_LPC_ORDER+1], weight;
@@ -179,7 +147,7 @@ int ff_lpc_calc_coefs(DSPContext *s,
 
         for(i=0; i<max_order; i++){
             for(j=0; j<max_order; j++)
-                lpc[i][j]= m[(pass-1)&1].coeff[i][j];
+                lpc[i][j]=-m[(pass-1)&1].coeff[i][j];
             ref[i]= sqrt(m[(pass-1)&1].variance[i] / weight) * (blocksize - max_order) / 4000;
         }
         for(i=max_order-1; i>0; i--)
