@@ -524,6 +524,8 @@ static void do_audio_out(AVFormatContext *s,
     int size_out, frame_bytes, ret;
     AVCodecContext *enc= ost->st->codec;
     AVCodecContext *dec= ist->st->codec;
+    int osize= av_get_bits_per_sample_format(enc->sample_fmt)/8;
+    int isize= av_get_bits_per_sample_format(dec->sample_fmt)/8;
 
     /* SC: dynamic allocation of buffers */
     if (!audio_buf)
@@ -622,8 +624,8 @@ static void do_audio_out(AVFormatContext *s,
         buftmp = audio_buf;
         size_out = audio_resample(ost->resample,
                                   (short *)buftmp, (short *)buf,
-                                  size / (ist->st->codec->channels * 2));
-        size_out = size_out * enc->channels * 2;
+                                  size / (ist->st->codec->channels * isize));
+        size_out = size_out * enc->channels * osize;
     } else {
         buftmp = buf;
         size_out = size;
@@ -632,17 +634,15 @@ static void do_audio_out(AVFormatContext *s,
     if (dec->sample_fmt!=enc->sample_fmt) {
         const void *ibuf[6]= {buftmp};
         void *obuf[6]= {audio_out2};
-        int istride[6]= {av_get_bits_per_sample_format(dec->sample_fmt)/8};
-        int ostride[6]= {av_get_bits_per_sample_format(enc->sample_fmt)/8};
+        int istride[6]= {isize};
+        int ostride[6]= {osize};
         int len= size_out/istride[0];
         if (av_audio_convert(ost->reformat_ctx, obuf, ostride, ibuf, istride, len)<0) {
             printf("av_audio_convert() failed\n");
             return;
         }
         buftmp = audio_out2;
-        /* FIXME: existing code assume that size_out equals framesize*channels*2
-                  remove this legacy cruft */
-        size_out = len*2;
+        size_out = len*osize;
     }
 
     /* now encode as many frames as possible */
@@ -654,7 +654,7 @@ static void do_audio_out(AVFormatContext *s,
         }
         av_fifo_generic_write(&ost->fifo, buftmp, size_out, NULL);
 
-        frame_bytes = enc->frame_size * 2 * enc->channels;
+        frame_bytes = enc->frame_size * osize * enc->channels;
 
         while (av_fifo_size(&ost->fifo) >= frame_bytes) {
             AVPacket pkt;
@@ -679,36 +679,17 @@ static void do_audio_out(AVFormatContext *s,
         }
     } else {
         AVPacket pkt;
+        int coded_bps = av_get_bits_per_sample(enc->codec->id)/8;
         av_init_packet(&pkt);
 
-        ost->sync_opts += size_out / (2 * enc->channels);
+        ost->sync_opts += size_out / (osize * enc->channels);
 
         /* output a pcm frame */
-        /* XXX: change encoding codec API to avoid this ? */
-        switch(enc->codec->id) {
-        case CODEC_ID_PCM_S32LE:
-        case CODEC_ID_PCM_S32BE:
-        case CODEC_ID_PCM_U32LE:
-        case CODEC_ID_PCM_U32BE:
-        case CODEC_ID_PCM_F32BE:
-            size_out = size_out << 1;
-            break;
-        case CODEC_ID_PCM_S24LE:
-        case CODEC_ID_PCM_S24BE:
-        case CODEC_ID_PCM_U24LE:
-        case CODEC_ID_PCM_U24BE:
-        case CODEC_ID_PCM_S24DAUD:
-            size_out = size_out / 2 * 3;
-            break;
-        case CODEC_ID_PCM_S16LE:
-        case CODEC_ID_PCM_S16BE:
-        case CODEC_ID_PCM_U16LE:
-        case CODEC_ID_PCM_U16BE:
-            break;
-        default:
-            size_out = size_out >> 1;
-            break;
-        }
+        /* determine the size of the coded buffer */
+        size_out /= osize;
+        if (coded_bps)
+            size_out *= coded_bps;
+
         //FIXME pass ost->sync_opts as AVFrame.pts in avcodec_encode_audio()
         ret = avcodec_encode_audio(enc, audio_out, size_out,
                                    (short *)buftmp);
