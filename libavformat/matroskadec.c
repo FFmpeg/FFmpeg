@@ -1583,7 +1583,10 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
 
                 pkt->pts = timecode;
                 pkt->pos = pos;
-                pkt->duration = duration;
+                if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE)
+                    pkt->convergence_duration = duration;
+                else
+                    pkt->duration = duration;
 
                 dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
             }

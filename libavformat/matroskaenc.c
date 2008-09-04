@@ -749,6 +749,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     ByteIOContext *pb = s->pb;
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     int keyframe = !!(pkt->flags & PKT_FLAG_KEY);
+    int duration = pkt->duration;
     int ret;
 
     // start a new cluster every 5 MB or 5 sec
@@ -781,8 +782,9 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         mkv_write_block(s, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
     } else {
         ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(pkt));
+        duration = pkt->convergence_duration;
         mkv_write_block(s, MATROSKA_ID_BLOCK, pkt, 0);
-        put_ebml_uint(pb, MATROSKA_ID_DURATION, pkt->duration);
+        put_ebml_uint(pb, MATROSKA_ID_DURATION, duration);
         end_ebml_master(pb, blockgroup);
     }
 
@@ -791,7 +793,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0) return ret;
     }
 
-    mkv->duration = FFMAX(mkv->duration, pkt->pts + pkt->duration);
+    mkv->duration = FFMAX(mkv->duration, pkt->pts + duration);
     return 0;
 }
 
