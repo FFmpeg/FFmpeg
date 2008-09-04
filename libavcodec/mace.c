@@ -261,45 +261,6 @@ static void chomp3(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
         ctx->index = 0;
 }
 
-static void Exp1to3(MACEContext *ctx, const uint8_t *inBuffer, void *outBuffer,
-                    uint32_t cnt, uint32_t numChannels, uint32_t whichChannel)
-{
-    uint8_t pkt;
-
-/*
-    if (inState) {
-        ctx->index=inState[0];
-        ctx->lev=inState[1];
-    } else
-*/
-    ctx->index = ctx->lev = 0;
-
-    inBuffer += (whichChannel - 1)*2;
-
-    ctx->outPtr = outBuffer;
-
-    while (cnt > 0) {
-        pkt=inBuffer[0];
-        chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
-        chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
-        chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
-        pkt=inBuffer[1];
-        chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
-        chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
-        chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
-
-        inBuffer += numChannels*2;
-        --cnt;
-    }
-
-/*
-    if (outState) {
-       outState[0]=ctx->index;
-       outState[1]=ctx->lev;
-    }
-*/
-}
-
 static void chomp6(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
             const uint16_t tab2[][8], uint32_t numChannels)
 {
@@ -342,47 +303,6 @@ static void chomp6(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
         ctx->index = 0;
 }
 
-static void Exp1to6(MACEContext *ctx, const uint8_t *inBuffer, void *outBuffer,
-             uint32_t cnt, uint32_t numChannels, uint32_t whichChannel)
-{
-    uint8_t pkt;
-
-/*
-   if (inState) {
-     ctx->previous=inState[0];
-     ctx->prev2=inState[1];
-     ctx->index=inState[2];
-     ctx->level=inState[3];
-     ctx->factor=inState[4];
-   } else
-*/
-    ctx->previous = ctx->prev2 = ctx->index = ctx->level = ctx->factor = 0;
-
-    inBuffer += (whichChannel - 1);
-    ctx->outPtr = outBuffer;
-
-    while (cnt>0) {
-        pkt = *inBuffer;
-
-        chomp6(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
-        chomp6(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
-        chomp6(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
-
-        inBuffer += numChannels;
-        --cnt;
-    }
-
-/*
-   if (outState) {
-     outState[0]=ctx->previous;
-     outState[1]=ctx->prev2;
-     outState[2]=ctx->index;
-     outState[3]=ctx->level;
-     outState[4]=ctx->factor;
-   }
-*/
-}
-
 static av_cold int mace_decode_init(AVCodecContext * avctx)
 {
     if (avctx->channels > 2)
@@ -396,12 +316,26 @@ static int mace3_decode_frame(AVCodecContext *avctx,
                             const uint8_t *buf, int buf_size)
 {
     short *samples = data;
-    MACEContext *c = avctx->priv_data;
-    int i;
+    MACEContext *ctx = avctx->priv_data;
+    int i, j;
 
-    for(i = 0; i < avctx->channels; i++)
-        Exp1to3(c, buf, samples + i, buf_size / 2 / avctx->channels,
-                avctx->channels, i + 1);
+    for(i = 0; i < avctx->channels; i++) {
+        ctx->index = ctx->lev = 0;
+
+        ctx->outPtr = samples + i;
+
+        for (j=0; j < buf_size / 2 / avctx->channels; j++) {
+            uint8_t pkt = buf[i*2 + j*2*avctx->channels];
+            chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, avctx->channels);
+            chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, avctx->channels);
+            chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, avctx->channels);
+
+            pkt = buf[i*2 + j*2*avctx->channels + 1];
+            chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, avctx->channels);
+            chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, avctx->channels);
+            chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, avctx->channels);
+        }
+    }
 
     *data_size = 2 * 3 * buf_size;
 
@@ -413,12 +347,22 @@ static int mace6_decode_frame(AVCodecContext *avctx,
                             const uint8_t *buf, int buf_size)
 {
     short *samples = data;
-    MACEContext *c = avctx->priv_data;
-    int i;
+    MACEContext *ctx = avctx->priv_data;
+    int i, j;
 
-    for(i = 0; i < avctx->channels; i++)
-        Exp1to6(c, buf, samples + i, buf_size / avctx->channels,
-                avctx->channels, i + 1);
+    for(i = 0; i < avctx->channels; i++) {
+        ctx->previous = ctx->prev2 = ctx->index = ctx->level = ctx->factor = 0;
+
+        ctx->outPtr = samples + i;
+
+        for (j = 0; j < buf_size / avctx->channels; j++) {
+            uint8_t pkt = buf[i + j*avctx->channels];
+
+            chomp6(ctx, pkt >> 5     , MACEtab1, MACEtab2, avctx->channels);
+            chomp6(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, avctx->channels);
+            chomp6(ctx, pkt       & 7, MACEtab1, MACEtab2, avctx->channels);
+        }
+    }
 
     *data_size = 2 * 6 * buf_size;
 
