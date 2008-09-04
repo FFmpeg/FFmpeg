@@ -236,124 +236,124 @@ static const uint16_t MACEtab4[][8] = {
 /* end of constants */
 
 typedef struct MACEContext {
-  short index, lev, factor, prev2, previous, level;
-  short *outPtr;
+    short index, lev, factor, prev2, previous, level;
+    short *outPtr;
 } MACEContext;
 
 /* /// "chomp3()" */
-static void chomp3(MACEContext *ctx,
-            uint8_t val,
-            const uint16_t tab1[],
-            const uint16_t tab2[][8],
-            uint32_t numChannels)
+static void chomp3(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
+            const uint16_t tab2[][8], uint32_t numChannels)
 {
-  short current;
+    short current;
 
-  current=(short)tab2[(ctx->index & 0x7f0) >> 4][val];
-  if (current+ctx->lev > 32767) current=32767;
-  else if (current+ctx->lev < -32768) current=-32767;
-  else current+=ctx->lev;
-  ctx->lev=current-(current >> 3);
-//  *ctx->outPtr++=current >> 8;
-  *ctx->outPtr=current;
-  ctx->outPtr+=numChannels;
-  if ( ( ctx->index += tab1[val]-(ctx->index>>5) ) < 0 ) ctx->index = 0;
+    current = (short) tab2[(ctx->index & 0x7f0) >> 4][val];
+
+    if (current + ctx->lev > 32767)
+        current = 32767;
+    else if (current + ctx->lev < -32768)
+        current = -32767;
+    else
+        current += ctx->lev;
+
+    ctx->lev = current - (current >> 3);
+    //*ctx->outPtr++=current >> 8;
+    *ctx->outPtr = current;
+    ctx->outPtr += numChannels;
+    if (( ctx->index += tab1[val]-(ctx->index >> 5) ) < 0)
+        ctx->index = 0;
 }
 /* \\\ */
 
 /* /// "Exp1to3()" */
-static void Exp1to3(MACEContext *ctx,
-             const uint8_t *inBuffer,
-             void *outBuffer,
-             uint32_t cnt,
-             uint32_t numChannels,
-             uint32_t whichChannel)
+static void Exp1to3(MACEContext *ctx, const uint8_t *inBuffer, void *outBuffer,
+                    uint32_t cnt, uint32_t numChannels, uint32_t whichChannel)
 {
-   uint8_t pkt;
+    uint8_t pkt;
 
 /*
-   if (inState) {
-     ctx->index=inState[0];
-     ctx->lev=inState[1];
-   } else
+    if (inState) {
+        ctx->index=inState[0];
+        ctx->lev=inState[1];
+    } else
 */
-   ctx->index=ctx->lev=0;
+    ctx->index = ctx->lev = 0;
 
-   inBuffer+=(whichChannel-1)*2;
+    inBuffer += (whichChannel - 1)*2;
 
-   ctx->outPtr=outBuffer;
+    ctx->outPtr = outBuffer;
 
-   while (cnt>0) {
-     pkt=inBuffer[0];
-     chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
-     chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
-     chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
-     pkt=inBuffer[1];
-     chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
-     chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
-     chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
+    while (cnt > 0) {
+        pkt=inBuffer[0];
+        chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
+        chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
+        chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
+        pkt=inBuffer[1];
+        chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
+        chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
+        chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
 
-     inBuffer+=numChannels*2;
-     --cnt;
-   }
+        inBuffer += numChannels*2;
+        --cnt;
+    }
 
 /*
-   if (outState) {
-     outState[0]=ctx->index;
-     outState[1]=ctx->lev;
-   }
+    if (outState) {
+       outState[0]=ctx->index;
+       outState[1]=ctx->lev;
+    }
 */
 }
 /* \\\ */
 
 /* /// "chomp6()" */
-static void chomp6(MACEContext *ctx,
-            uint8_t val,
-            const uint16_t tab1[],
-            const uint16_t tab2[][8],
-            uint32_t numChannels)
+static void chomp6(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
+            const uint16_t tab2[][8], uint32_t numChannels)
 {
-  short current;
+    short current;
 
-  current=(short)tab2[(ctx->index & 0x7f0) >> 4][val];
+    current = (short)tab2[(ctx->index & 0x7f0) >> 4][val];
 
-  if ((ctx->previous^current)>=0) {
-    if (ctx->factor+506>32767) ctx->factor=32767;
-    else ctx->factor+=506;
-  } else {
-    if (ctx->factor-314<-32768) ctx->factor=-32767;
-    else ctx->factor-=314;
-  }
+    if ((ctx->previous ^ current) >= 0) {
+        if (ctx->factor + 506 > 32767)
+            ctx->factor = 32767;
+        else
+            ctx->factor += 506;
+    } else {
+        if (ctx->factor - 314 < -32768)
+            ctx->factor = -32767;
+        else
+            ctx->factor -= 314;
+    }
 
-  if (current+ctx->level>32767) current=32767;
-  else if (current+ctx->level<-32768) current=-32767;
-  else current+=ctx->level;
+    if (current + ctx->level > 32767)
+        current = 32767;
+    else if (current + ctx->level < -32768)
+        current = -32767;
+    else
+        current += ctx->level;
 
-  ctx->level=((current*ctx->factor) >> 15);
-  current>>=1;
+    ctx->level = ((current*ctx->factor) >> 15);
+    current >>= 1;
 
 //  *ctx->outPtr++=(ctx->previous+ctx->prev2-((ctx->prev2-current) >> 2)) >> 8;
 //  *ctx->outPtr++=(ctx->previous+current+((ctx->prev2-current) >> 2)) >> 8;
-  *ctx->outPtr=(ctx->previous+ctx->prev2-((ctx->prev2-current) >> 2));
-  ctx->outPtr+=numChannels;
-  *ctx->outPtr=(ctx->previous+current+((ctx->prev2-current) >> 2));
-  ctx->outPtr+=numChannels;
-  ctx->prev2=ctx->previous;
-  ctx->previous=current;
+    *ctx->outPtr = (ctx->previous + ctx->prev2 - ((ctx->prev2-current) >> 2));
+    ctx->outPtr += numChannels;
+    *ctx->outPtr = (ctx->previous + current + ((ctx->prev2-current) >> 2));
+    ctx->outPtr += numChannels;
+    ctx->prev2 = ctx->previous;
+    ctx->previous = current;
 
-  if( ( ctx->index += tab1[val]-(ctx->index>>5) ) < 0 ) ctx->index = 0;
+    if ((ctx->index += tab1[val] - (ctx->index >> 5)) < 0)
+        ctx->index = 0;
 }
 /* \\\ */
 
 /* /// "Exp1to6()" */
-static void Exp1to6(MACEContext *ctx,
-             const uint8_t *inBuffer,
-             void *outBuffer,
-             uint32_t cnt,
-             uint32_t numChannels,
-             uint32_t whichChannel)
+static void Exp1to6(MACEContext *ctx, const uint8_t *inBuffer, void *outBuffer,
+             uint32_t cnt, uint32_t numChannels, uint32_t whichChannel)
 {
-   uint8_t pkt;
+    uint8_t pkt;
 
 /*
    if (inState) {
@@ -364,21 +364,21 @@ static void Exp1to6(MACEContext *ctx,
      ctx->factor=inState[4];
    } else
 */
-   ctx->previous=ctx->prev2=ctx->index=ctx->level=ctx->factor=0;
+    ctx->previous = ctx->prev2 = ctx->index = ctx->level = ctx->factor = 0;
 
-   inBuffer+=(whichChannel-1);
-   ctx->outPtr=outBuffer;
+    inBuffer += (whichChannel - 1);
+    ctx->outPtr = outBuffer;
 
-   while (cnt>0) {
-     pkt=*inBuffer;
+    while (cnt>0) {
+        pkt = *inBuffer;
 
-     chomp6(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
-     chomp6(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
-     chomp6(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
+        chomp6(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
+        chomp6(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
+        chomp6(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
 
-     inBuffer+=numChannels;
-     --cnt;
-   }
+        inBuffer += numChannels;
+        --cnt;
+    }
 
 /*
    if (outState) {
