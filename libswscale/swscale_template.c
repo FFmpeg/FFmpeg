@@ -705,7 +705,7 @@
     " jb      1b                \n\t"
 #define WRITEBGR32(dst, dstw, index)  REAL_WRITEBGR32(dst, dstw, index)
 
-#define REAL_WRITEBGR16(dst, dstw, index) \
+#define REAL_WRITERGB16(dst, dstw, index) \
     "pand "MANGLE(bF8)", %%mm2  \n\t" /* B */\
     "pand "MANGLE(bFC)", %%mm4  \n\t" /* G */\
     "pand "MANGLE(bF8)", %%mm5  \n\t" /* R */\
@@ -731,9 +731,9 @@
     "add             $8, "#index"   \n\t"\
     "cmp        "#dstw", "#index"   \n\t"\
     " jb             1b             \n\t"
-#define WRITEBGR16(dst, dstw, index)  REAL_WRITEBGR16(dst, dstw, index)
+#define WRITERGB16(dst, dstw, index)  REAL_WRITERGB16(dst, dstw, index)
 
-#define REAL_WRITEBGR15(dst, dstw, index) \
+#define REAL_WRITERGB15(dst, dstw, index) \
     "pand "MANGLE(bF8)", %%mm2  \n\t" /* B */\
     "pand "MANGLE(bF8)", %%mm4  \n\t" /* G */\
     "pand "MANGLE(bF8)", %%mm5  \n\t" /* R */\
@@ -760,7 +760,7 @@
     "add             $8, "#index"   \n\t"\
     "cmp        "#dstw", "#index"   \n\t"\
     " jb             1b             \n\t"
-#define WRITEBGR15(dst, dstw, index)  REAL_WRITEBGR15(dst, dstw, index)
+#define WRITERGB15(dst, dstw, index)  REAL_WRITERGB15(dst, dstw, index)
 
 #define WRITEBGR24OLD(dst, dstw, index) \
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
@@ -1082,7 +1082,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
             );
             return;
-        case PIX_FMT_BGR555:
+        case PIX_FMT_RGB555:
             YSCALEYUV2PACKEDX_ACCURATE
             YSCALEYUV2RGBX
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
@@ -1092,10 +1092,10 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             "paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-            WRITEBGR15(%4, %5, %%REGa)
+            WRITERGB15(%4, %5, %%REGa)
             YSCALEYUV2PACKEDX_END
             return;
-        case PIX_FMT_BGR565:
+        case PIX_FMT_RGB565:
             YSCALEYUV2PACKEDX_ACCURATE
             YSCALEYUV2RGBX
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
@@ -1105,7 +1105,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             "paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-            WRITEBGR16(%4, %5, %%REGa)
+            WRITERGB16(%4, %5, %%REGa)
             YSCALEYUV2PACKEDX_END
             return;
         case PIX_FMT_YUYV422:
@@ -1142,7 +1142,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
             );
             return;
-        case PIX_FMT_BGR555:
+        case PIX_FMT_RGB555:
             YSCALEYUV2PACKEDX
             YSCALEYUV2RGBX
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
@@ -1152,10 +1152,10 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             "paddusb "MANGLE(r5Dither)", %%mm5  \n\t"
 #endif
 
-            WRITEBGR15(%4, %5, %%REGa)
+            WRITERGB15(%4, %5, %%REGa)
             YSCALEYUV2PACKEDX_END
             return;
-        case PIX_FMT_BGR565:
+        case PIX_FMT_RGB565:
             YSCALEYUV2PACKEDX
             YSCALEYUV2RGBX
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
@@ -1165,7 +1165,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             "paddusb "MANGLE(r5Dither)", %%mm5  \n\t"
 #endif
 
-            WRITEBGR16(%4, %5, %%REGa)
+            WRITERGB16(%4, %5, %%REGa)
             YSCALEYUV2PACKEDX_END
             return;
         case PIX_FMT_YUYV422:
@@ -1454,7 +1454,7 @@ FULL_YSCALEYUV2RGB
                 "a" (&c->redDither)
                 );
                 return;
-            case PIX_FMT_BGR555:
+            case PIX_FMT_RGB555:
                 asm volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
@@ -1467,7 +1467,7 @@ FULL_YSCALEYUV2RGB
                 "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
 #endif
 
-                WRITEBGR15(%%REGb, 8280(%5), %%REGBP)
+                WRITERGB15(%%REGb, 8280(%5), %%REGBP)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
@@ -1475,7 +1475,7 @@ FULL_YSCALEYUV2RGB
                 "a" (&c->redDither)
                 );
                 return;
-            case PIX_FMT_BGR565:
+            case PIX_FMT_RGB565:
                 asm volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
@@ -1488,7 +1488,7 @@ FULL_YSCALEYUV2RGB
                 "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
 #endif
 
-                WRITEBGR16(%%REGb, 8280(%5), %%REGBP)
+                WRITERGB16(%%REGb, 8280(%5), %%REGBP)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
                 :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
@@ -1565,7 +1565,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             "a" (&c->redDither)
             );
             return;
-        case PIX_FMT_BGR555:
+        case PIX_FMT_RGB555:
             asm volatile(
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
@@ -1577,7 +1577,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
             "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
 #endif
-            WRITEBGR15(%%REGb, 8280(%5), %%REGBP)
+            WRITERGB15(%%REGb, 8280(%5), %%REGBP)
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
@@ -1585,7 +1585,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             "a" (&c->redDither)
             );
             return;
-        case PIX_FMT_BGR565:
+        case PIX_FMT_RGB565:
             asm volatile(
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
@@ -1598,7 +1598,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
 #endif
 
-            WRITEBGR16(%%REGb, 8280(%5), %%REGBP)
+            WRITERGB16(%%REGb, 8280(%5), %%REGBP)
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
@@ -1654,7 +1654,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             "a" (&c->redDither)
             );
             return;
-        case PIX_FMT_BGR555:
+        case PIX_FMT_RGB555:
             asm volatile(
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
@@ -1666,7 +1666,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
             "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
 #endif
-            WRITEBGR15(%%REGb, 8280(%5), %%REGBP)
+            WRITERGB15(%%REGb, 8280(%5), %%REGBP)
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
@@ -1674,7 +1674,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             "a" (&c->redDither)
             );
             return;
-        case PIX_FMT_BGR565:
+        case PIX_FMT_RGB565:
             asm volatile(
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
@@ -1687,7 +1687,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
 #endif
 
-            WRITEBGR16(%%REGb, 8280(%5), %%REGBP)
+            WRITERGB16(%%REGb, 8280(%5), %%REGBP)
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
