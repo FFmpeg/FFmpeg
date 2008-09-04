@@ -600,16 +600,16 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
         switch(c->dstFormat){
         case PIX_FMT_RGB32:  return yuv420_rgb32_MMX2;
         case PIX_FMT_BGR24:  return yuv420_rgb24_MMX2;
-        case PIX_FMT_BGR565: return yuv420_rgb16_MMX2;
-        case PIX_FMT_BGR555: return yuv420_rgb15_MMX2;
+        case PIX_FMT_RGB565: return yuv420_rgb16_MMX2;
+        case PIX_FMT_RGB555: return yuv420_rgb15_MMX2;
         }
     }
     if (c->flags & SWS_CPU_CAPS_MMX){
         switch(c->dstFormat){
         case PIX_FMT_RGB32:  return yuv420_rgb32_MMX;
         case PIX_FMT_BGR24:  return yuv420_rgb24_MMX;
-        case PIX_FMT_BGR565: return yuv420_rgb16_MMX;
-        case PIX_FMT_BGR555: return yuv420_rgb15_MMX;
+        case PIX_FMT_RGB565: return yuv420_rgb16_MMX;
+        case PIX_FMT_RGB555: return yuv420_rgb15_MMX;
         }
     }
 #endif
@@ -675,7 +675,14 @@ static int div_round (int dividend, int divisor)
 
 int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange, int brightness, int contrast, int saturation)
 {
-    const int isRgb = isBGR(c->dstFormat);
+    const int isRgb =      c->dstFormat==PIX_FMT_RGB32
+                        || c->dstFormat==PIX_FMT_BGR24
+                        || c->dstFormat==PIX_FMT_RGB565
+                        || c->dstFormat==PIX_FMT_RGB555
+                        || c->dstFormat==PIX_FMT_RGB8
+                        || c->dstFormat==PIX_FMT_RGB4
+                        || c->dstFormat==PIX_FMT_RGB4_BYTE
+                        || c->dstFormat==PIX_FMT_MONOBLACK;
     const int bpp = fmt_depth(c->dstFormat);
     int i;
     uint8_t table_Y[1024];
