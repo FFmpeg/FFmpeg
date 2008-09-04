@@ -141,6 +141,10 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
             codec->block_align = 1*codec->channels;
             codec->frame_size = 6;
             break;
+        case CODEC_ID_GSM:
+            codec->block_align = 33;
+            codec->frame_size = 160;
+            break;
         default:
             break;
         }
