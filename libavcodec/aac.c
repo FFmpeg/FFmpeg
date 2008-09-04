@@ -635,7 +635,7 @@ static int decode_tns(AACContext * ac, TemporalNoiseShaping * tns,
                 tmp2_idx = 2*coef_compress + coef_res;
 
                 for (i = 0; i < tns->order[w][filt]; i++)
-                    tns->coef[w][filt][i] = -tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)];
+                    tns->coef[w][filt][i] = tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)];
             }
         }
     }
