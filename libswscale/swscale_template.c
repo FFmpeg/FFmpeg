@@ -1511,7 +1511,7 @@ FULL_YSCALEYUV2RGB
             default: break;
         }
 #endif //HAVE_MMX
-YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_PACKED2_C)
+YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_PACKED2_C, YSCALE_YUV_2_GRAY16_2_C)
 }
 
 /**
@@ -1714,9 +1714,9 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 #endif /* HAVE_MMX */
     if (uvalpha < 2048)
     {
-        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C)
+        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C, YSCALE_YUV_2_GRAY16_1_C)
     }else{
-        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1B_C, YSCALE_YUV_2_PACKED1B_C)
+        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1B_C, YSCALE_YUV_2_PACKED1B_C, YSCALE_YUV_2_GRAY16_1_C)
     }
 }
 
@@ -3221,7 +3221,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                     vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
                     dest, uDest, dstW, chrDstW, dstFormat);
             }
-            else if (isPlanarYUV(dstFormat) || isGray(dstFormat)) //YV12 like
+            else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) //YV12 like
             {
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
@@ -3281,7 +3281,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                     vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
                     dest, uDest, dstW, chrDstW, dstFormat);
             }
-            else if (isPlanarYUV(dstFormat) || isGray(dstFormat)) //YV12
+            else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) //YV12
             {
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
