@@ -155,7 +155,7 @@ int Configure(void **ctxp, int argc, char *argv[])
             case 't':
                 ci->threshold = atof(optarg) * 1000;
                 if (ci->threshold > 1000 || ci->threshold < 0) {
-                    fprintf(stderr, "Invalid threshold value '%s' (range is 0-1)\n", optarg);
+                    av_log(NULL, AV_LOG_ERROR, "Invalid threshold value '%s' (range is 0-1)\n", optarg);
                     return -1;
                 }
                 break;
@@ -169,20 +169,20 @@ int Configure(void **ctxp, int argc, char *argv[])
                 ci->dir = av_strdup(optarg);
                 break;
             default:
-                fprintf(stderr, "Unrecognized argument '%s'\n", argv[optind]);
+                av_log(NULL, AV_LOG_ERROR, "Unrecognized argument '%s'\n", argv[optind]);
                 return -1;
         }
     }
 
-    fprintf(stderr, "Fish detector configured:\n");
-    fprintf(stderr, "    HSV range: %d,%d,%d - %d,%d,%d\n",
+    av_log(NULL, AV_LOG_INFO, "Fish detector configured:\n");
+    av_log(NULL, AV_LOG_INFO, "    HSV range: %d,%d,%d - %d,%d,%d\n",
                         ci->dark.h,
                         ci->dark.s,
                         ci->dark.v,
                         ci->bright.h,
                         ci->bright.s,
                         ci->bright.v);
-    fprintf(stderr, "    Threshold is %d%% pixels\n", ci->threshold / 10);
+    av_log(NULL, AV_LOG_INFO, "    Threshold is %d%% pixels\n", ci->threshold / 10);
 
 
     return 0;
@@ -234,7 +234,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     int rowsize = picture->linesize[0];
 
 #if 0
-    printf("pix_fmt = %d, width = %d, pts = %lld, ci->next_pts = %lld\n",
+    av_log(NULL, AV_LOG_DEBUG, "pix_fmt = %d, width = %d, pts = %lld, ci->next_pts = %lld\n",
         pix_fmt, width, pts, ci->next_pts);
 #endif
 
@@ -281,7 +281,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
                 get_hsv(&hsv, r, g, b);
 
                 if (ci->debug > 1)
-                    fprintf(stderr, "(%d,%d,%d) -> (%d,%d,%d)\n",
+                    av_log(NULL, AV_LOG_DEBUG, "(%d,%d,%d) -> (%d,%d,%d)\n",
                         r,g,b,hsv.h,hsv.s,hsv.v);
 
 
@@ -306,7 +306,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         }
 
         if (ci->debug)
-            fprintf(stderr, "Fish: Inrange=%d of %d = %d threshold\n", inrange, pixcnt, 1000 * inrange / pixcnt);
+            av_log(NULL, AV_LOG_INFO, "Fish: Inrange=%d of %d = %d threshold\n", inrange, pixcnt, 1000 * inrange / pixcnt);
 
         if (inrange * 1000 / pixcnt >= ci->threshold) {
             /* Save to file */
