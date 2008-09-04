@@ -139,6 +139,7 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
                sws_format_name(dstFormat), dstW, dstH,
                flags,
                ssdY, ssdU, ssdV);
+        fflush(stdout);
     }
 
     end:
@@ -170,6 +171,7 @@ static void selfTest(uint8_t *src[3], int stride[3], int w, int h){
             printf("%s -> %s\n",
                    sws_format_name(srcFormat),
                    sws_format_name(dstFormat));
+            fflush(stdout);
 
             srcW= w;
             srcH= h;
