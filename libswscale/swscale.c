@@ -2507,6 +2507,12 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
     int i;
     uint8_t* src2[4]= {src[0], src[1], src[2]};
     uint32_t pal[256];
+    int use_pal=   c->srcFormat == PIX_FMT_PAL8
+                || c->srcFormat == PIX_FMT_BGR4_BYTE
+                || c->srcFormat == PIX_FMT_RGB4_BYTE
+                || c->srcFormat == PIX_FMT_BGR8
+                || c->srcFormat == PIX_FMT_RGB8;
+
     if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
         av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
         return 0;
@@ -2515,15 +2521,34 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
         if (srcSliceY == 0) c->sliceDir = 1; else c->sliceDir = -1;
     }
 
-    if (c->srcFormat == PIX_FMT_PAL8){
+    if (use_pal){
         for (i=0; i<256; i++){
-            int p= ((uint32_t*)(src[1]))[i];
-            int r= (p>>16)&0xFF;
-            int g= (p>> 8)&0xFF;
-            int b=  p     &0xFF;
-            int y= av_clip_uint8(((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16 );
-            int u= av_clip_uint8(((RU*r + GU*g + BU*b)>>RGB2YUV_SHIFT) + 128);
-            int v= av_clip_uint8(((RV*r + GV*g + BV*b)>>RGB2YUV_SHIFT) + 128);
+            int p, r, g, b,y,u,v;
+            if(c->srcFormat == PIX_FMT_PAL8){
+                p=((uint32_t*)(src[1]))[i];
+                r= (p>>16)&0xFF;
+                g= (p>> 8)&0xFF;
+                b=  p     &0xFF;
+            }else if(c->srcFormat == PIX_FMT_RGB8){
+                r= (i>>5    )*36;
+                g= ((i>>2)&7)*36;
+                b= (i&3     )*85;
+            }else if(c->srcFormat == PIX_FMT_BGR8){
+                b= (i>>6    )*85;
+                g= ((i>>3)&7)*36;
+                r= (i&7     )*36;
+            }else if(c->srcFormat == PIX_FMT_RGB4_BYTE){
+                r= (i>>3    )*255;
+                g= ((i>>1)&3)*85;
+                b= (i&1     )*255;
+            }else if(c->srcFormat == PIX_FMT_BGR4_BYTE){
+                b= (i>>3    )*255;
+                g= ((i>>1)&3)*85;
+                r= (i&1     )*255;
+            }
+            y= av_clip_uint8(((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16 );
+            u= av_clip_uint8(((RU*r + GU*g + BU*b)>>RGB2YUV_SHIFT) + 128);
+            v= av_clip_uint8(((RV*r + GV*g + BV*b)>>RGB2YUV_SHIFT) + 128);
             pal[i]= y + (u<<8) + (v<<16);
         }
         src2[1]= (uint8_t*)pal;
@@ -2544,7 +2569,7 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
         int dstStride2[4]= {-dstStride[0], -dstStride[1], -dstStride[2]};
 
         src2[0] += (srcSliceH-1)*srcStride[0];
-        if (c->srcFormat != PIX_FMT_PAL8)
+        if (!use_pal)
             src2[1] += ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[1];
         src2[2] += ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[2];
 
