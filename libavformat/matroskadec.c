@@ -28,6 +28,7 @@
  * Specs available on the Matroska project page: http://www.matroska.org/.
  */
 
+#include <stdio.h>
 #include "avformat.h"
 /* For codec_get_id(). */
 #include "riff.h"
@@ -932,6 +933,37 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
     return -1;
 }
 
+static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
+                                    AVPacket *pkt)
+{
+    char *line, *layer, *ptr = pkt->data, *end = ptr+pkt->size;
+    for (; *ptr!=',' && ptr<end-1; ptr++);
+    if (*ptr == ',')
+        layer = ++ptr;
+    for (; *ptr!=',' && ptr<end-1; ptr++);
+    if (*ptr == ',') {
+        int64_t end_pts = pkt->pts + pkt->convergence_duration;
+        int sc = matroska->time_scale * pkt->pts / 10000000;
+        int ec = matroska->time_scale * end_pts  / 10000000;
+        int sh, sm, ss, eh, em, es, len;
+        sh = sc/360000;  sc -= 360000*sh;
+        sm = sc/  6000;  sc -=   6000*sm;
+        ss = sc/   100;  sc -=    100*ss;
+        eh = ec/360000;  ec -= 360000*eh;
+        em = ec/  6000;  ec -=   6000*em;
+        es = ec/   100;  ec -=    100*es;
+        *ptr++ = '\0';
+        len = 50 + end-ptr + FF_INPUT_BUFFER_PADDING_SIZE;
+        if (!(line = av_malloc(len)))
+            return;
+        snprintf(line,len,"Dialogue: %s,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%s",
+                 layer, sh, sm, ss, sc, eh, em, es, ec, ptr);
+        av_free(pkt->data);
+        pkt->data = line;
+        pkt->size = strlen(line);
+    }
+}
+
 static void matroska_convert_tags(AVFormatContext *s, EbmlList *list)
 {
     MatroskaTag *tags = list->elem;
@@ -1587,6 +1619,9 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     pkt->convergence_duration = duration;
                 else
                     pkt->duration = duration;
+
+                if (st->codec->codec_id == CODEC_ID_SSA)
+                    matroska_fix_ass_packet(matroska, pkt);
 
                 dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
             }
