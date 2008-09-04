@@ -46,22 +46,22 @@ int ff_lpc_calc_coefs(DSPContext *s,
                       int omethod, int max_shift, int zero_shift);
 
 #ifdef LPC_USE_DOUBLE
-#define LPC_type double
+#define LPC_TYPE double
 #else
-#define LPC_type float
+#define LPC_TYPE float
 #endif
 
 /**
  * Levinson-Durbin recursion.
  * Produces LPC coefficients from autocorrelation data.
  */
-static inline int compute_lpc_coefs(const LPC_type *autoc, int max_order,
-                                    LPC_type *lpc, int lpc_stride, int fail,
+static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
+                                    LPC_TYPE *lpc, int lpc_stride, int fail,
                                     int normalize)
 {
     int i, j;
-    LPC_type err;
-    LPC_type *lpc_last = lpc;
+    LPC_TYPE err;
+    LPC_TYPE *lpc_last = lpc;
 
     if (normalize)
         err = *autoc++;
@@ -70,7 +70,7 @@ static inline int compute_lpc_coefs(const LPC_type *autoc, int max_order,
         return -1;
 
     for(i=0; i<max_order; i++) {
-        LPC_type r = -autoc[i];
+        LPC_TYPE r = -autoc[i];
 
         if (normalize) {
             for(j=0; j<i; j++)
@@ -83,8 +83,8 @@ static inline int compute_lpc_coefs(const LPC_type *autoc, int max_order,
         lpc[i] = r;
 
         for(j=0; j < (i+1)>>1; j++) {
-            LPC_type f = lpc_last[    j];
-            LPC_type b = lpc_last[i-1-j];
+            LPC_TYPE f = lpc_last[    j];
+            LPC_TYPE b = lpc_last[i-1-j];
             lpc[    j] = f + r * b;
             lpc[i-1-j] = b + r * f;
         }
