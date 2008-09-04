@@ -195,6 +195,7 @@ static char *video_standard;
 
 static int audio_volume = 256;
 
+static int exit_on_error = 0;
 static int using_stdin = 0;
 static int using_vhook = 0;
 static int verbose = 1;
@@ -495,6 +496,8 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx
                     bsfc->filter->name, pkt->stream_index,
                     avctx->codec ? avctx->codec->name : "copy");
             print_error("", a);
+            if (exit_on_error)
+                av_exit(1);
         }
         *pkt= new_pkt;
 
@@ -639,6 +642,8 @@ static void do_audio_out(AVFormatContext *s,
         int len= size_out/istride[0];
         if (av_audio_convert(ost->reformat_ctx, obuf, ostride, ibuf, istride, len)<0) {
             printf("av_audio_convert() failed\n");
+            if (exit_on_error)
+                av_exit(1);
             return;
         }
         buftmp = audio_out2;
@@ -768,6 +773,8 @@ static void do_subtitle_out(AVFormatContext *s,
 
     if (pts == AV_NOPTS_VALUE) {
         fprintf(stderr, "Subtitle packets must have a pts\n");
+        if (exit_on_error)
+            av_exit(1);
         return;
     }
 
@@ -861,6 +868,8 @@ static void do_video_out(AVFormatContext *s,
     if (ost->video_crop) {
         if (av_picture_crop((AVPicture *)&picture_crop_temp, (AVPicture *)in_picture, dec->pix_fmt, ost->topBand, ost->leftBand) < 0) {
             av_log(NULL, AV_LOG_ERROR, "error cropping picture\n");
+            if (exit_on_error)
+                av_exit(1);
             return;
         }
         formatted_picture = &picture_crop_temp;
@@ -876,6 +885,8 @@ static void do_video_out(AVFormatContext *s,
         if (ost->video_resample) {
             if (av_picture_crop((AVPicture *)&picture_pad_temp, (AVPicture *)final_picture, enc->pix_fmt, ost->padtop, ost->padleft) < 0) {
                 av_log(NULL, AV_LOG_ERROR, "error padding picture\n");
+                if (exit_on_error)
+                    av_exit(1);
                 return;
             }
             resampling_dst = &picture_pad_temp;
@@ -2120,7 +2131,8 @@ static int av_encode(AVFormatContext **output_files,
             if (verbose >= 0)
                 fprintf(stderr, "Error while decoding stream #%d.%d\n",
                         ist->file_index, ist->index);
-
+            if (exit_on_error)
+                av_exit(1);
             av_free_packet(&pkt);
             goto redo;
         }
@@ -3795,6 +3807,7 @@ static const OptionDef options[] = {
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
     { "dts_delta_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "threshold" },
     { "programid", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&opt_programid}, "desired program number", "" },
+    { "xerror", OPT_BOOL, {(void*)&exit_on_error}, "exit on error", "error" },
 
     /* video options */
     { "b", OPT_FUNC2 | HAS_ARG | OPT_VIDEO, {(void*)opt_bitrate}, "set bitrate (in bits/s)", "bitrate" },
