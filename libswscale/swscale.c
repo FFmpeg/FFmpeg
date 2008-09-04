@@ -2161,17 +2161,11 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
            && srcFormat != PIX_FMT_MONOBLACK && dstFormat != PIX_FMT_MONOBLACK
                                              && dstFormat != PIX_FMT_RGB32_1
                                              && dstFormat != PIX_FMT_BGR32_1
-           && !needsDither)
+           && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
              c->swScale= rgb2rgbWrapper;
 
         /* LQ converters if -sws 0 or -sws 4*/
         if (c->flags&(SWS_FAST_BILINEAR|SWS_POINT)){
-            /* rgb/bgr -> rgb/bgr (dither needed forms) */
-            if ( (isBGR(srcFormat) || isRGB(srcFormat))
-              && (isBGR(dstFormat) || isRGB(dstFormat))
-              && needsDither)
-                c->swScale= rgb2rgbWrapper;
-
             /* yv12_to_yuy2 */
             if (srcFormat == PIX_FMT_YUV420P &&
                 (dstFormat == PIX_FMT_YUYV422 || dstFormat == PIX_FMT_UYVY422))
