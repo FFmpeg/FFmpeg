@@ -221,7 +221,7 @@ const char *sws_format_name(int format);
         || (x)==PIX_FMT_GRAY16LE    \
     )
 #define isRGB(x)        (           \
-           (x)==PIX_FMT_BGR32       \
+           (x)==PIX_FMT_RGB32       \
         || (x)==PIX_FMT_RGB24       \
         || (x)==PIX_FMT_RGB565      \
         || (x)==PIX_FMT_RGB555      \
@@ -231,7 +231,7 @@ const char *sws_format_name(int format);
         || (x)==PIX_FMT_MONOBLACK   \
     )
 #define isBGR(x)        (           \
-           (x)==PIX_FMT_RGB32       \
+           (x)==PIX_FMT_BGR32       \
         || (x)==PIX_FMT_BGR24       \
         || (x)==PIX_FMT_BGR565      \
         || (x)==PIX_FMT_BGR555      \
