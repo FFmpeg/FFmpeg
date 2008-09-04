@@ -395,23 +395,26 @@ static int mace_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             const uint8_t *buf, int buf_size)
 {
-    short *samples;
+    short *samples = data;
     MACEContext *c = avctx->priv_data;
+    int i;
 
-    samples = (short *)data;
     switch (avctx->codec->id) {
     case CODEC_ID_MACE3:
         dprintf(avctx, "mace_decode_frame[3]()");
-        Exp1to3(c, buf, samples, buf_size / 2 / avctx->channels, avctx->channels, 1);
-        if (avctx->channels == 2)
-            Exp1to3(c, buf, samples+1, buf_size / 2 / 2, 2, 2);
+        for(i = 0; i < avctx->channels; i++)
+            Exp1to3(c, buf, samples + i, buf_size / 2 / avctx->channels,
+                    avctx->channels, i + 1);
+
         *data_size = 2 * 3 * buf_size;
         break;
     case CODEC_ID_MACE6:
         dprintf(avctx, "mace_decode_frame[6]()");
-        Exp1to6(c, buf, samples, buf_size / avctx->channels, avctx->channels, 1);
-        if (avctx->channels == 2)
-            Exp1to6(c, buf, samples+1, buf_size / 2, 2, 2);
+
+        for(i = 0; i < avctx->channels; i++)
+            Exp1to6(c, buf, samples + i, buf_size / avctx->channels,
+                    avctx->channels, i + 1);
+
         *data_size = 2 * 6 * buf_size;
         break;
     default:
