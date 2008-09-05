@@ -65,6 +65,9 @@ void (*yv12touyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc
 void (*yuv422ptoyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                       long width, long height,
                       long lumStride, long chromStride, long dstStride);
+void (*yuv422ptouyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
+                      long width, long height,
+                      long lumStride, long chromStride, long dstStride);
 void (*yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                    long width, long height,
                    long lumStride, long chromStride, long srcStride);

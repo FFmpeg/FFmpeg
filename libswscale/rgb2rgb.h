@@ -110,6 +110,14 @@ extern void (*yv12touyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_
                           long lumStride, long chromStride, long dstStride);
 
 /**
+ *
+ * width should be a multiple of 16
+ */
+extern void (*yuv422ptouyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
+                             long width, long height,
+                             long lumStride, long chromStride, long dstStride);
+
+/**
  * Height should be a multiple of 2 and width should be a multiple of 2.
  * (If this is a problem for anyone then tell me, and I will fix it.)
  * Chrominance data is only taken from every second line, others are ignored.

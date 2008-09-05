@@ -1648,6 +1648,24 @@ static int PlanarToUyvyWrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
     return srcSliceH;
 }
 
+static int YUV422PToYuy2Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                                int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+    uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
+
+    yuv422ptoyuy2(src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0]);
+
+    return srcSliceH;
+}
+
+static int YUV422PToUyvyWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                                int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+    uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
+
+    yuv422ptouyvy(src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0]);
+
+    return srcSliceH;
+}
+
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                           int srcSliceH, uint8_t* dst[], int dstStride[]){
@@ -2232,6 +2250,14 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
                                              && dstFormat != PIX_FMT_BGR32_1
            && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
              c->swScale= rgb2rgbWrapper;
+
+        if (srcFormat == PIX_FMT_YUV422P)
+        {
+            if (dstFormat == PIX_FMT_YUYV422)
+                c->swScale= YUV422PToYuy2Wrapper;
+            else if (dstFormat == PIX_FMT_UYVY422)
+                c->swScale= YUV422PToUyvyWrapper;
+        }
 
         /* LQ converters if -sws 0 or -sws 4*/
         if (c->flags&(SWS_FAST_BILINEAR|SWS_POINT)){
