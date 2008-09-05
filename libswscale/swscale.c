@@ -2262,24 +2262,22 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         /* LQ converters if -sws 0 or -sws 4*/
         if (c->flags&(SWS_FAST_BILINEAR|SWS_POINT)){
             /* yv12_to_yuy2 */
-            if (srcFormat == PIX_FMT_YUV420P &&
-                (dstFormat == PIX_FMT_YUYV422 || dstFormat == PIX_FMT_UYVY422))
+            if (srcFormat == PIX_FMT_YUV420P)
             {
                 if (dstFormat == PIX_FMT_YUYV422)
                     c->swScale= PlanarToYuy2Wrapper;
-                else
+                else if (dstFormat == PIX_FMT_UYVY422)
                     c->swScale= PlanarToUyvyWrapper;
             }
         }
 
 #ifdef COMPILE_ALTIVEC
         if ((c->flags & SWS_CPU_CAPS_ALTIVEC) &&
-            ((srcFormat == PIX_FMT_YUV420P &&
-             (dstFormat == PIX_FMT_YUYV422 || dstFormat == PIX_FMT_UYVY422)))) {
+            srcFormat == PIX_FMT_YUV420P) {
           // unscaled YV12 -> packed YUV, we want speed
           if (dstFormat == PIX_FMT_YUYV422)
               c->swScale= yv12toyuy2_unscaled_altivec;
-          else
+          else if (dstFormat == PIX_FMT_UYVY422)
               c->swScale= yv12touyvy_unscaled_altivec;
         }
 #endif
