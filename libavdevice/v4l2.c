@@ -114,12 +114,10 @@ static struct fmt_map fmt_conversion_table[] = {
         .ff_fmt = PIX_FMT_RGB24,
         .v4l2_fmt = V4L2_PIX_FMT_RGB24,
     },
-    /*
     {
-        .ff_fmt = PIX_FMT_RGB32,
+        .ff_fmt = PIX_FMT_BGRA,
         .v4l2_fmt = V4L2_PIX_FMT_BGR32,
     },
-    */
     {
         .ff_fmt = PIX_FMT_GRAY8,
         .v4l2_fmt = V4L2_PIX_FMT_GREY,
