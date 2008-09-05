@@ -1604,12 +1604,13 @@ static int mov_write_header(AVFormatContext *s)
         }else if(st->codec->codec_type == CODEC_TYPE_AUDIO){
             track->timescale = st->codec->sample_rate;
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
-            if(!st->codec->frame_size){
+            if(!st->codec->frame_size && !av_get_bits_per_sample(st->codec->codec_id)) {
                 av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
                 return -1;
             }else if(st->codec->frame_size > 1){ /* assume compressed audio */
                 track->audio_vbr = 1;
             }else{
+                st->codec->frame_size = 1;
                 track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
             }
             if(track->mode != MODE_MOV &&
