@@ -317,7 +317,7 @@ static int mace3_decode_frame(AVCodecContext *avctx,
 {
     short *samples = data;
     MACEContext *ctx = avctx->priv_data;
-    int i, j;
+    int i, j, k;
 
     for(i = 0; i < avctx->channels; i++) {
         ctx->index = ctx->lev = 0;
@@ -325,15 +325,12 @@ static int mace3_decode_frame(AVCodecContext *avctx,
         ctx->outPtr = samples + i;
 
         for (j=0; j < buf_size / 2 / avctx->channels; j++) {
-            uint8_t pkt = buf[i*2 + j*2*avctx->channels];
+            for (k=0; k < 2; k++) {
+            uint8_t pkt = buf[i*2 + j*2*avctx->channels + k];
             chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, avctx->channels);
             chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, avctx->channels);
             chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, avctx->channels);
-
-            pkt = buf[i*2 + j*2*avctx->channels + 1];
-            chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, avctx->channels);
-            chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, avctx->channels);
-            chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, avctx->channels);
+            }
         }
     }
 
