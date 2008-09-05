@@ -243,23 +243,12 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     put_le16(pb, enc->codec_tag);
     put_le16(pb, enc->channels);
     put_le32(pb, enc->sample_rate);
-    if (enc->codec_id == CODEC_ID_PCM_U8 ||
-        enc->codec_id == CODEC_ID_PCM_ALAW ||
-        enc->codec_id == CODEC_ID_PCM_MULAW ||
-        enc->codec_id == CODEC_ID_PCM_ZORK) {
-        bps = 8;
-    } else if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
+    if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
         bps = 0;
     } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV || enc->codec_id == CODEC_ID_ADPCM_MS || enc->codec_id == CODEC_ID_ADPCM_G726 || enc->codec_id == CODEC_ID_ADPCM_YAMAHA) { //
         bps = 4;
-    } else if (enc->codec_id == CODEC_ID_PCM_S24LE) {
-        bps = 24;
-    } else if (enc->codec_id == CODEC_ID_PCM_S32LE || enc->codec_id == CODEC_ID_PCM_F32LE) {
-        bps = 32;
-    } else if (enc->codec_id == CODEC_ID_PCM_F64LE) {
-        bps = 64;
     } else {
-        bps = 16;
+        bps = av_get_bits_per_sample(enc->codec_id);
     }
     if(bps != enc->bits_per_sample && enc->bits_per_sample){
         av_log(enc, AV_LOG_WARNING, "requested bits_per_sample (%d) and actually stored (%d) differ\n", enc->bits_per_sample, bps);
