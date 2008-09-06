@@ -205,7 +205,6 @@ typedef struct {
     AVPacket **packets;
     int num_packets;
 
-    AVStream *vstream;
     int done;
     int has_cluster_id;
 
@@ -1303,7 +1302,6 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
 
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
-            if (!matroska->vstream)  matroska->vstream = st;
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_tag  = track->video.fourcc;
             st->codec->width  = track->video.pixel_width;
@@ -1424,7 +1422,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                                 int64_t cluster_pos)
 {
     MatroskaTrack *track;
-    int is_video_key_frame = is_keyframe, res = 0;
+    int res = 0;
     AVStream *st;
     AVPacket *pkt;
     int16_t block_time;
@@ -1463,8 +1461,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             return res;
         matroska->skip_to_keyframe = 0;
     }
-
-    is_video_key_frame &= st == matroska->vstream;
 
     switch ((flags & 0x06) >> 1) {
         case 0x0: /* no lacing */
@@ -1638,7 +1634,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     }
 
     av_free(lace_size);
-    return res < 0 ? res : is_video_key_frame;
+    return res;
 }
 
 static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
