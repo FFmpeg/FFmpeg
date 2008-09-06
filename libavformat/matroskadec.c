@@ -1420,7 +1420,8 @@ static void matroska_clear_queue(MatroskaDemuxContext *matroska)
 
 static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                                 int size, int64_t pos, uint64_t cluster_time,
-                                uint64_t duration, int is_keyframe)
+                                uint64_t duration, int is_keyframe,
+                                int64_t cluster_pos)
 {
     MatroskaTrack *track;
     int is_video_key_frame = is_keyframe, res = 0;
@@ -1545,8 +1546,12 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
         uint64_t timecode = AV_NOPTS_VALUE;
 
         if (cluster_time != (uint64_t)-1
-            && (block_time >= 0 || cluster_time >= -block_time))
+            && (block_time >= 0 || cluster_time >= -block_time)) {
             timecode = cluster_time + block_time;
+            if (is_keyframe)
+                av_add_index_entry(st, cluster_pos, timecode,
+                                   0, 0, AVINDEX_KEYFRAME);
+        }
 
         for (n = 0; n < laces; n++) {
             if (st->codec->codec_id == CODEC_ID_RA_288 ||
@@ -1641,7 +1646,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     MatroskaCluster cluster = { 0 };
     EbmlList *blocks_list;
     MatroskaBlock *blocks;
-    int i, res, key_frame = 0;
+    int i, res;
     offset_t pos = url_ftell(matroska->ctx->pb);
     if (matroska->has_cluster_id){
         /* For the first cluster we parse, its ID was already read as
@@ -1659,12 +1664,9 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
             res=matroska_parse_block(matroska,
                                      blocks[i].bin.data, blocks[i].bin.size,
                                      blocks[i].bin.pos,  cluster.timecode,
-                                     blocks[i].duration, !blocks[i].reference);
-            key_frame |= res > 0;
+                                     blocks[i].duration, !blocks[i].reference,
+                                     pos);
         }
-    if (key_frame)
-        av_add_index_entry(matroska->vstream, pos,
-                           cluster.timecode, 0, 0, AVINDEX_KEYFRAME);
     ebml_free(matroska_cluster, &cluster);
     if (res < 0)  matroska->done = 1;
     return res;
