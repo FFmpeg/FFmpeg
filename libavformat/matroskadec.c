@@ -1660,13 +1660,12 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     blocks_list = &cluster.blocks;
     blocks = blocks_list->elem;
     for (i=0; i<blocks_list->nb_elem; i++)
-        if (blocks[i].bin.size > 0) {
+        if (blocks[i].bin.size > 0)
             res=matroska_parse_block(matroska,
                                      blocks[i].bin.data, blocks[i].bin.size,
                                      blocks[i].bin.pos,  cluster.timecode,
                                      blocks[i].duration, !blocks[i].reference,
                                      pos);
-        }
     ebml_free(matroska_cluster, &cluster);
     if (res < 0)  matroska->done = 1;
     return res;
