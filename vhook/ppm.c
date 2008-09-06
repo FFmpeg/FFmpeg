@@ -29,6 +29,7 @@
 #include "libavformat/framehook.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
+#undef fprintf
 
 static int sws_flags = SWS_BICUBIC;
 
