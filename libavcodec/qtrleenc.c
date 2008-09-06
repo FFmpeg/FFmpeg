@@ -3,9 +3,9 @@
  * Copyright (C) 2007 Clemens Fruhwirth
  * Copyright (C) 2007 Alexis Ballier
  *
- * This file is part of FFmpeg.
+ * This file is based on flashsvenc.c.
  *
- * This file is based on flashsvenc.c
+ * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
