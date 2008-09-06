@@ -22,7 +22,7 @@ FFmpeg README
 
 * The file libavcodec/ac3dec.c is distributed under the GNU General Public
   License.  In order for (E-)AC-3 decoding to work you need to enable GPL
- components.
+  components.
 
 * The file libavdevice/x11grab.c is distributed under the GNU General
   Public License. X11 grabbing is optional.
