@@ -1660,7 +1660,7 @@ static void compute_status(HTTPContext *c)
     url_fprintf(pb, "Pragma: no-cache\r\n");
     url_fprintf(pb, "\r\n");
 
-    url_fprintf(pb, "<HEAD><TITLE>%s Status</TITLE>\n", program_name);
+    url_fprintf(pb, "<HTML><HEAD><TITLE>%s Status</TITLE>\n", program_name);
     if (c->stream->feed_filename[0])
         url_fprintf(pb, "<link rel=\"shortcut icon\" href=\"%s\">\n", c->stream->feed_filename);
     url_fprintf(pb, "</HEAD>\n<BODY>");
