@@ -236,10 +236,10 @@ static const uint16_t MACEtab4[][8] = {
 
 typedef struct MACEContext {
     short index, lev, factor, prev2, previous, level;
-    short *outPtr;
 } MACEContext;
 
-static void chomp3(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
+static void chomp3(MACEContext *ctx, int16_t *output, uint8_t val,
+                   const uint16_t tab1[],
             const uint16_t tab2[][8], uint32_t numChannels)
 {
     short current;
@@ -255,13 +255,13 @@ static void chomp3(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
 
     ctx->lev = current - (current >> 3);
     //*ctx->outPtr++=current >> 8;
-    *ctx->outPtr = current;
-    ctx->outPtr += numChannels;
+    *output = current;
     if (( ctx->index += tab1[val]-(ctx->index >> 5) ) < 0)
         ctx->index = 0;
 }
 
-static void chomp6(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
+static void chomp6(MACEContext *ctx, int16_t *output, uint8_t val,
+                   const uint16_t tab1[],
             const uint16_t tab2[][8], uint32_t numChannels)
 {
     short current;
@@ -292,10 +292,8 @@ static void chomp6(MACEContext *ctx, uint8_t val, const uint16_t tab1[],
 
 //  *ctx->outPtr++=(ctx->previous+ctx->prev2-((ctx->prev2-current) >> 2)) >> 8;
 //  *ctx->outPtr++=(ctx->previous+current+((ctx->prev2-current) >> 2)) >> 8;
-    *ctx->outPtr = (ctx->previous + ctx->prev2 - ((ctx->prev2-current) >> 2));
-    ctx->outPtr += numChannels;
-    *ctx->outPtr = (ctx->previous + current + ((ctx->prev2-current) >> 2));
-    ctx->outPtr += numChannels;
+    output[0] = (ctx->previous + ctx->prev2 - ((ctx->prev2-current) >> 2));
+    output[numChannels] = (ctx->previous + current + ((ctx->prev2-current) >> 2));
     ctx->prev2 = ctx->previous;
     ctx->previous = current;
 
@@ -320,16 +318,18 @@ static int mace3_decode_frame(AVCodecContext *avctx,
     int i, j, k;
 
     for(i = 0; i < avctx->channels; i++) {
+        int16_t *output = samples + i;
         ctx->index = ctx->lev = 0;
-
-        ctx->outPtr = samples + i;
 
         for (j=0; j < buf_size / 2 / avctx->channels; j++)
             for (k=0; k < 2; k++) {
                 uint8_t pkt = buf[i*2 + j*2*avctx->channels + k];
-                chomp3(ctx, pkt       &7, MACEtab1, MACEtab2, avctx->channels);
-                chomp3(ctx,(pkt >> 3) &3, MACEtab3, MACEtab4, avctx->channels);
-                chomp3(ctx, pkt >> 5    , MACEtab1, MACEtab2, avctx->channels);
+                chomp3(ctx, output, pkt       &7, MACEtab1, MACEtab2, avctx->channels);
+                output += avctx->channels;
+                chomp3(ctx, output,(pkt >> 3) &3, MACEtab3, MACEtab4, avctx->channels);
+                output += avctx->channels;
+                chomp3(ctx, output, pkt >> 5    , MACEtab1, MACEtab2, avctx->channels);
+                output += avctx->channels;
             }
     }
 
@@ -347,16 +347,18 @@ static int mace6_decode_frame(AVCodecContext *avctx,
     int i, j;
 
     for(i = 0; i < avctx->channels; i++) {
+        int16_t *output = samples + i;
         ctx->previous = ctx->prev2 = ctx->index = ctx->level = ctx->factor = 0;
-
-        ctx->outPtr = samples + i;
 
         for (j = 0; j < buf_size / avctx->channels; j++) {
             uint8_t pkt = buf[i + j*avctx->channels];
 
-            chomp6(ctx, pkt >> 5     , MACEtab1, MACEtab2, avctx->channels);
-            chomp6(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, avctx->channels);
-            chomp6(ctx, pkt       & 7, MACEtab1, MACEtab2, avctx->channels);
+            chomp6(ctx, output, pkt >> 5     , MACEtab1, MACEtab2, avctx->channels);
+            output += avctx->channels << 1;
+            chomp6(ctx, output,(pkt >> 3) & 3, MACEtab3, MACEtab4, avctx->channels);
+            output += avctx->channels << 1;
+            chomp6(ctx, output, pkt       & 7, MACEtab1, MACEtab2, avctx->channels);
+            output += avctx->channels << 1;
         }
     }
 
