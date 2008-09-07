@@ -237,7 +237,7 @@ static const int16_t MACEtab4[][4] = {
 #define QT_8S_2_16S(x) (((x) & 0xFF00) | (((x) >> 8) & 0xFF))
 
 typedef struct ChannelData {
-    short index, lev, factor, prev2, previous, level;
+    int16_t index, lev, factor, prev2, previous, level;
 } ChannelData;
 
 typedef struct MACEContext {
@@ -263,7 +263,7 @@ static void chomp3(ChannelData *ctx, int16_t *output, uint8_t val,
                    const int16_t *tab2, int tab2_stride,
                    uint32_t numChannels)
 {
-    short current;
+    int16_t current;
 
     current = tab2[((ctx->index & 0x7f0) >> 4)*tab2_stride + val];
 
@@ -280,7 +280,7 @@ static void chomp6(ChannelData *ctx, int16_t *output, uint8_t val,
                    const int16_t *tab2, int tab2_stride,
                    uint32_t numChannels)
 {
-    short current;
+    int16_t current;
 
     current = tab2[((ctx->index & 0x7f0) >> 4)*tab2_stride + val];
 
@@ -321,7 +321,7 @@ static int mace3_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
                               const uint8_t *buf, int buf_size)
 {
-    short *samples = data;
+    int16_t *samples = data;
     MACEContext *ctx = avctx->priv_data;
     int i, j, k;
 
@@ -352,7 +352,7 @@ static int mace6_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
                               const uint8_t *buf, int buf_size)
 {
-    short *samples = data;
+    int16_t *samples = data;
     MACEContext *ctx = avctx->priv_data;
     int i, j;
 
