@@ -64,30 +64,74 @@ typedef struct QtrleContext {
 
 static void qtrle_decode_1bpp(QtrleContext *s, int stream_ptr, int row_ptr, int lines_to_change)
 {
-}
-
-static void qtrle_decode_2bpp(QtrleContext *s, int stream_ptr, int row_ptr, int lines_to_change)
-{
-}
-
-static void qtrle_decode_4bpp(QtrleContext *s, int stream_ptr, int row_ptr, int lines_to_change)
-{
     int rle_code;
-    int pixel_ptr;
+    int pixel_ptr = 0;
     int row_inc = s->frame.linesize[0];
-    unsigned char pi1, pi2, pi3, pi4, pi5, pi6, pi7, pi8;  /* 8 palette indexes */
+    unsigned char pi0, pi1;  /* 2 8-pixel values */
     unsigned char *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
+    int skip;
+
+    while (lines_to_change) {
+        CHECK_STREAM_PTR(2);
+        skip = s->buf[stream_ptr++];
+        rle_code = (signed char)s->buf[stream_ptr++];
+        if (rle_code == 0)
+            break;
+        if(skip & 0x80) {
+            lines_to_change--;
+            row_ptr += row_inc;
+            pixel_ptr = row_ptr + 2 * (skip & 0x7f);
+        } else
+            pixel_ptr += 2 * skip;
+        CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */
+
+        if (rle_code < 0) {
+            /* decode the run length code */
+            rle_code = -rle_code;
+            /* get the next 2 bytes from the stream, treat them as groups
+             * of 8 pixels, and output them rle_code times */
+            CHECK_STREAM_PTR(2);
+            pi0 = s->buf[stream_ptr++];
+            pi1 = s->buf[stream_ptr++];
+            CHECK_PIXEL_PTR(rle_code * 2);
+
+            while (rle_code--) {
+                rgb[pixel_ptr++] = pi0;
+                rgb[pixel_ptr++] = pi1;
+            }
+        } else {
+            /* copy the same pixel directly to output 2 times */
+            rle_code *= 2;
+            CHECK_STREAM_PTR(rle_code);
+            CHECK_PIXEL_PTR(rle_code);
+
+            while (rle_code--)
+                rgb[pixel_ptr++] = s->buf[stream_ptr++];
+        }
+    }
+}
+
+static inline void qtrle_decode_2n4bpp(QtrleContext *s, int stream_ptr,
+                             int row_ptr, int lines_to_change, int bpp)
+{
+    int rle_code, i;
+    int pixel_ptr;
+    int row_inc = s->frame.linesize[0];
+    unsigned char pi[16];  /* 16 palette indices */
+    unsigned char *rgb = s->frame.data[0];
+    int pixel_limit = s->frame.linesize[0] * s->avctx->height;
+    int num_pixels = (bpp == 4) ? 8 : 16;
 
     while (lines_to_change--) {
         CHECK_STREAM_PTR(2);
-        pixel_ptr = row_ptr + (8 * (s->buf[stream_ptr++] - 1));
+        pixel_ptr = row_ptr + (num_pixels * (s->buf[stream_ptr++] - 1));
 
         while ((rle_code = (signed char)s->buf[stream_ptr++]) != -1) {
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 CHECK_STREAM_PTR(1);
-                pixel_ptr += (8 * (s->buf[stream_ptr++] - 1));
+                pixel_ptr += (num_pixels * (s->buf[stream_ptr++] - 1));
                 CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */
             } else if (rle_code < 0) {
                 /* decode the run length code */
@@ -95,36 +139,30 @@ static void qtrle_decode_4bpp(QtrleContext *s, int stream_ptr, int row_ptr, int 
                 /* get the next 4 bytes from the stream, treat them as palette
                  * indexes, and output them rle_code times */
                 CHECK_STREAM_PTR(4);
-                pi1 = ((s->buf[stream_ptr]) >> 4) & 0x0f;
-                pi2 = (s->buf[stream_ptr++]) & 0x0f;
-                pi3 = ((s->buf[stream_ptr]) >> 4) & 0x0f;
-                pi4 = (s->buf[stream_ptr++]) & 0x0f;
-                pi5 = ((s->buf[stream_ptr]) >> 4) & 0x0f;
-                pi6 = (s->buf[stream_ptr++]) & 0x0f;
-                pi7 = ((s->buf[stream_ptr]) >> 4) & 0x0f;
-                pi8 = (s->buf[stream_ptr++]) & 0x0f;
-
-                CHECK_PIXEL_PTR(rle_code * 8);
-
+                for (i = num_pixels-1; i >= 0; i--) {
+                    pi[num_pixels-1-i] = (s->buf[stream_ptr] >> ((i*bpp) & 0x07)) & ((1<<bpp)-1);
+                    stream_ptr+= ((i & ((num_pixels>>2)-1)) == 0);
+                }
+                CHECK_PIXEL_PTR(rle_code * num_pixels);
                 while (rle_code--) {
-                    rgb[pixel_ptr++] = pi1;
-                    rgb[pixel_ptr++] = pi2;
-                    rgb[pixel_ptr++] = pi3;
-                    rgb[pixel_ptr++] = pi4;
-                    rgb[pixel_ptr++] = pi5;
-                    rgb[pixel_ptr++] = pi6;
-                    rgb[pixel_ptr++] = pi7;
-                    rgb[pixel_ptr++] = pi8;
+                    for (i = 0; i < num_pixels; i++)
+                        rgb[pixel_ptr++] = pi[i];
                 }
             } else {
                 /* copy the same pixel directly to output 4 times */
                 rle_code *= 4;
                 CHECK_STREAM_PTR(rle_code);
-                CHECK_PIXEL_PTR(rle_code*2);
-
+                CHECK_PIXEL_PTR(rle_code*(num_pixels>>2));
                 while (rle_code--) {
-                    rgb[pixel_ptr++] = ((s->buf[stream_ptr]) >> 4) & 0x0f;
-                    rgb[pixel_ptr++] = (s->buf[stream_ptr++]) & 0x0f;
+                    if(bpp == 4) {
+                        rgb[pixel_ptr++] = ((s->buf[stream_ptr]) >> 4) & 0x0f;
+                        rgb[pixel_ptr++] = (s->buf[stream_ptr++]) & 0x0f;
+                    } else {
+                        rgb[pixel_ptr++] = ((s->buf[stream_ptr]) >> 6) & 0x03;
+                        rgb[pixel_ptr++] = ((s->buf[stream_ptr]) >> 4) & 0x03;
+                        rgb[pixel_ptr++] = ((s->buf[stream_ptr]) >> 2) & 0x03;
+                        rgb[pixel_ptr++] = (s->buf[stream_ptr++]) & 0x03;
+                    }
                 }
             }
         }
@@ -347,10 +385,13 @@ static av_cold int qtrle_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     switch (avctx->bits_per_sample) {
     case 1:
+    case 33:
+        avctx->pix_fmt = PIX_FMT_MONOWHITE;
+        break;
+
     case 2:
     case 4:
     case 8:
-    case 33:
     case 34:
     case 36:
     case 40:
@@ -387,6 +428,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     QtrleContext *s = avctx->priv_data;
     int header, start_line;
     int stream_ptr, height, row_ptr;
+    int has_palette = 0;
 
     s->buf = buf;
     s->size = buf_size;
@@ -432,29 +474,20 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
 
     case 2:
     case 34:
-        qtrle_decode_2bpp(s, stream_ptr, row_ptr, height);
+        qtrle_decode_2n4bpp(s, stream_ptr, row_ptr, height, 2);
+        has_palette = 1;
         break;
 
     case 4:
     case 36:
-        qtrle_decode_4bpp(s, stream_ptr, row_ptr, height);
-        /* make the palette available on the way out */
-        memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
-        if (s->avctx->palctrl->palette_changed) {
-            s->frame.palette_has_changed = 1;
-            s->avctx->palctrl->palette_changed = 0;
-        }
+        qtrle_decode_2n4bpp(s, stream_ptr, row_ptr, height, 4);
+        has_palette = 1;
         break;
 
     case 8:
     case 40:
         qtrle_decode_8bpp(s, stream_ptr, row_ptr, height);
-        /* make the palette available on the way out */
-        memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
-        if (s->avctx->palctrl->palette_changed) {
-            s->frame.palette_has_changed = 1;
-            s->avctx->palctrl->palette_changed = 0;
-        }
+        has_palette = 1;
         break;
 
     case 16:
@@ -474,6 +507,16 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
             avctx->bits_per_sample);
         break;
     }
+
+    if(has_palette) {
+        /* make the palette available on the way out */
+        memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
+        if (s->avctx->palctrl->palette_changed) {
+            s->frame.palette_has_changed = 1;
+            s->avctx->palctrl->palette_changed = 0;
+        }
+    }
+
 done:
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
