@@ -119,19 +119,19 @@
     "1:                                                 \n\t"\
     "movq   "  x "(%%"REG_S", %%"REG_a", 2), %%mm0      \n\t" /* srcData */\
     "movq 8+"  x "(%%"REG_S", %%"REG_a", 2), %%mm2      \n\t" /* srcData */\
-    "mov                       4(%%"REG_d"), %%"REG_S"  \n\t"\
+    "mov        "STR(APCK_PTR2)"(%%"REG_d"), %%"REG_S"  \n\t"\
     "movq   "  x "(%%"REG_S", %%"REG_a", 2), %%mm1      \n\t" /* srcData */\
     "movq                             %%mm0, %%mm3      \n\t"\
     "punpcklwd                        %%mm1, %%mm0      \n\t"\
     "punpckhwd                        %%mm1, %%mm3      \n\t"\
-    "movq                      8(%%"REG_d"), %%mm1      \n\t" /* filterCoeff */\
+    "movq       "STR(APCK_COEF)"(%%"REG_d"), %%mm1      \n\t" /* filterCoeff */\
     "pmaddwd                          %%mm1, %%mm0      \n\t"\
     "pmaddwd                          %%mm1, %%mm3      \n\t"\
     "paddd                            %%mm0, %%mm4      \n\t"\
     "paddd                            %%mm3, %%mm5      \n\t"\
     "movq 8+"  x "(%%"REG_S", %%"REG_a", 2), %%mm3      \n\t" /* srcData */\
-    "mov                      16(%%"REG_d"), %%"REG_S"  \n\t"\
-    "add                                $16, %%"REG_d"  \n\t"\
+    "mov        "STR(APCK_SIZE)"(%%"REG_d"), %%"REG_S"  \n\t"\
+    "add                  $"STR(APCK_SIZE)", %%"REG_d"  \n\t"\
     "test                         %%"REG_S", %%"REG_S"  \n\t"\
     "movq                             %%mm2, %%mm0      \n\t"\
     "punpcklwd                        %%mm3, %%mm2      \n\t"\
@@ -271,19 +271,19 @@
     "2:                                             \n\t"\
     "movq     (%%"REG_S", %%"REG_a"), %%mm0         \n\t" /* UsrcData */\
     "movq "AV_STRINGIFY(VOF)"(%%"REG_S", %%"REG_a"), %%mm2         \n\t" /* VsrcData */\
-    "mov                4(%%"REG_d"), %%"REG_S"     \n\t"\
+    "mov "STR(APCK_PTR2)"(%%"REG_d"), %%"REG_S"     \n\t"\
     "movq     (%%"REG_S", %%"REG_a"), %%mm1         \n\t" /* UsrcData */\
     "movq                      %%mm0, %%mm3         \n\t"\
     "punpcklwd                 %%mm1, %%mm0         \n\t"\
     "punpckhwd                 %%mm1, %%mm3         \n\t"\
-    "movq               8(%%"REG_d"), %%mm1         \n\t" /* filterCoeff */\
+    "movq "STR(APCK_COEF)"(%%"REG_d"),%%mm1         \n\t" /* filterCoeff */\
     "pmaddwd                   %%mm1, %%mm0         \n\t"\
     "pmaddwd                   %%mm1, %%mm3         \n\t"\
     "paddd                     %%mm0, %%mm4         \n\t"\
     "paddd                     %%mm3, %%mm5         \n\t"\
     "movq "AV_STRINGIFY(VOF)"(%%"REG_S", %%"REG_a"), %%mm3         \n\t" /* VsrcData */\
-    "mov               16(%%"REG_d"), %%"REG_S"     \n\t"\
-    "add                         $16, %%"REG_d"     \n\t"\
+    "mov "STR(APCK_SIZE)"(%%"REG_d"), %%"REG_S"     \n\t"\
+    "add           $"STR(APCK_SIZE)", %%"REG_d"     \n\t"\
     "test                  %%"REG_S", %%"REG_S"     \n\t"\
     "movq                      %%mm2, %%mm0         \n\t"\
     "punpcklwd                 %%mm3, %%mm2         \n\t"\
@@ -315,19 +315,19 @@
     "2:                                             \n\t"\
     "movq  (%%"REG_S", %%"REG_a", 2), %%mm0         \n\t" /* Y1srcData */\
     "movq 8(%%"REG_S", %%"REG_a", 2), %%mm2         \n\t" /* Y2srcData */\
-    "mov                4(%%"REG_d"), %%"REG_S"     \n\t"\
+    "mov "STR(APCK_PTR2)"(%%"REG_d"), %%"REG_S"     \n\t"\
     "movq  (%%"REG_S", %%"REG_a", 2), %%mm4         \n\t" /* Y1srcData */\
     "movq                      %%mm0, %%mm3         \n\t"\
     "punpcklwd                 %%mm4, %%mm0         \n\t"\
     "punpckhwd                 %%mm4, %%mm3         \n\t"\
-    "movq               8(%%"REG_d"), %%mm4         \n\t" /* filterCoeff */\
+    "movq "STR(APCK_COEF)"(%%"REG_d"), %%mm4         \n\t" /* filterCoeff */\
     "pmaddwd                   %%mm4, %%mm0         \n\t"\
     "pmaddwd                   %%mm4, %%mm3         \n\t"\
     "paddd                     %%mm0, %%mm1         \n\t"\
     "paddd                     %%mm3, %%mm5         \n\t"\
     "movq 8(%%"REG_S", %%"REG_a", 2), %%mm3         \n\t" /* Y2srcData */\
-    "mov               16(%%"REG_d"), %%"REG_S"     \n\t"\
-    "add                         $16, %%"REG_d"     \n\t"\
+    "mov "STR(APCK_SIZE)"(%%"REG_d"), %%"REG_S"     \n\t"\
+    "add           $"STR(APCK_SIZE)", %%"REG_d"     \n\t"\
     "test                  %%"REG_S", %%"REG_S"     \n\t"\
     "movq                      %%mm2, %%mm0         \n\t"\
     "punpcklwd                 %%mm3, %%mm2         \n\t"\
@@ -3180,18 +3180,19 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
 #ifdef HAVE_MMX
             int i;
         if (flags & SWS_ACCURATE_RND){
+            int s= APCK_SIZE / 8;
             for (i=0; i<vLumFilterSize; i+=2){
-                lumMmxFilter[2*i+0]= (int32_t)lumSrcPtr[i  ];
-                lumMmxFilter[2*i+1]= (int32_t)lumSrcPtr[i+(vLumFilterSize>1)];
-                lumMmxFilter[2*i+2]=
-                lumMmxFilter[2*i+3]= vLumFilter[dstY*vLumFilterSize + i    ]
+                *(void**)&lumMmxFilter[s*i              ]= lumSrcPtr[i  ];
+                *(void**)&lumMmxFilter[s*i+APCK_PTR2/4  ]= lumSrcPtr[i+(vLumFilterSize>1)];
+                          lumMmxFilter[s*i+APCK_COEF/4  ]=
+                          lumMmxFilter[s*i+APCK_COEF/4+1]= vLumFilter[dstY*vLumFilterSize + i    ]
                     + (vLumFilterSize>1 ? vLumFilter[dstY*vLumFilterSize + i + 1]<<16 : 0);
             }
             for (i=0; i<vChrFilterSize; i+=2){
-                chrMmxFilter[2*i+0]= (int32_t)chrSrcPtr[i  ];
-                chrMmxFilter[2*i+1]= (int32_t)chrSrcPtr[i+(vChrFilterSize>1)];
-                chrMmxFilter[2*i+2]=
-                chrMmxFilter[2*i+3]= vChrFilter[chrDstY*vChrFilterSize + i    ]
+                *(void**)&chrMmxFilter[s*i              ]= chrSrcPtr[i  ];
+                *(void**)&chrMmxFilter[s*i+APCK_PTR2/4  ]= chrSrcPtr[i+(vChrFilterSize>1)];
+                          chrMmxFilter[s*i+APCK_COEF/4  ]=
+                          chrMmxFilter[s*i+APCK_COEF/4+1]= vChrFilter[chrDstY*vChrFilterSize + i    ]
                     + (vChrFilterSize>1 ? vChrFilter[chrDstY*vChrFilterSize + i + 1]<<16 : 0);
             }
         }else{

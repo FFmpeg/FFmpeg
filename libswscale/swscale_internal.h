@@ -29,6 +29,8 @@
 
 #include "libavutil/avutil.h"
 
+#define STR(s)         AV_TOSTRING(s) //AV_STINGIFY is too long
+
 #define MAX_FILTER_SIZE 256
 
 #define VOFW 2048
@@ -38,6 +40,16 @@
 #define ALT32_CORR (-1)
 #else
 #define ALT32_CORR   1
+#endif
+
+#ifdef ARCH_X86_64
+#   define APCK_PTR2 8
+#   define APCK_COEF 16
+#   define APCK_SIZE 24
+#else
+#   define APCK_PTR2 4
+#   define APCK_COEF 8
+#   define APCK_SIZE 16
 #endif
 
 typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,

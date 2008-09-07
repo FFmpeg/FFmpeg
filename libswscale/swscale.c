@@ -1293,7 +1293,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     filterSize= (minFilterSize +(filterAlign-1)) & (~(filterAlign-1));
     assert(filterSize > 0);
     filter= av_malloc(filterSize*dstW*sizeof(double));
-    if (filterSize >= MAX_FILTER_SIZE || !filter)
+    if (filterSize >= MAX_FILTER_SIZE*16/((flags&SWS_ACCURATE_RND) ? APCK_SIZE : 16) || !filter)
         goto error;
     *outFilterSize= filterSize;
 
