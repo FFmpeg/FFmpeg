@@ -244,6 +244,20 @@ typedef struct MACEContext {
     ChannelData chd[2];
 } MACEContext;
 
+/**
+ * MACE version of av_clip_int16(). We have to do this to keep binary
+ * identical output to the binary decoder.
+ */
+static inline int16_t mace_broken_clip_int16(int n)
+{
+    if (n > 32767)
+        return 32767;
+    else if (n < -32768)
+        return -32767;
+    else
+        return n;
+}
+
 static void chomp3(ChannelData *ctx, int16_t *output, uint8_t val,
                    const uint16_t tab1[],
                    const uint16_t tab2[][8], uint32_t numChannels)
@@ -252,12 +266,7 @@ static void chomp3(ChannelData *ctx, int16_t *output, uint8_t val,
 
     current = (short) tab2[(ctx->index & 0x7f0) >> 4][val];
 
-    if (current + ctx->lev > 32767)
-        current = 32767;
-    else if (current + ctx->lev < -32768)
-        current = -32767;
-    else
-        current += ctx->lev;
+    current = mace_broken_clip_int16(current + ctx->lev);
 
     ctx->lev = current - (current >> 3);
     //*ctx->outPtr++=current >> 8;
@@ -286,12 +295,7 @@ static void chomp6(ChannelData *ctx, int16_t *output, uint8_t val,
             ctx->factor -= 314;
     }
 
-    if (current + ctx->level > 32767)
-        current = 32767;
-    else if (current + ctx->level < -32768)
-        current = -32767;
-    else
-        current += ctx->level;
+    current = mace_broken_clip_int16(current + ctx->level);
 
     ctx->level = ((current*ctx->factor) >> 15);
     current >>= 1;
