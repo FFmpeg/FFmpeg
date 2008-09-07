@@ -1372,21 +1372,21 @@ static int rtsp_read_play(AVFormatContext *s)
     av_log(s, AV_LOG_DEBUG, "hello state=%d\n", rt->state);
 
     if (!(rt->server_type == RTSP_SERVER_RDT && rt->need_subscription)) {
-    if (rt->state == RTSP_STATE_PAUSED) {
-        snprintf(cmd, sizeof(cmd),
-                 "PLAY %s RTSP/1.0\r\n",
-                 s->filename);
-    } else {
-        snprintf(cmd, sizeof(cmd),
-                 "PLAY %s RTSP/1.0\r\n"
-                 "Range: npt=%0.3f-\r\n",
-                 s->filename,
-                 (double)rt->seek_timestamp / AV_TIME_BASE);
-    }
-    rtsp_send_cmd(s, cmd, reply, NULL);
-    if (reply->status_code != RTSP_STATUS_OK) {
-        return -1;
-    }
+        if (rt->state == RTSP_STATE_PAUSED) {
+            snprintf(cmd, sizeof(cmd),
+                     "PLAY %s RTSP/1.0\r\n",
+                     s->filename);
+        } else {
+            snprintf(cmd, sizeof(cmd),
+                     "PLAY %s RTSP/1.0\r\n"
+                     "Range: npt=%0.3f-\r\n",
+                     s->filename,
+                     (double)rt->seek_timestamp / AV_TIME_BASE);
+        }
+        rtsp_send_cmd(s, cmd, reply, NULL);
+        if (reply->status_code != RTSP_STATUS_OK) {
+            return -1;
+        }
     }
     rt->state = RTSP_STATE_PLAYING;
     return 0;
@@ -1404,13 +1404,13 @@ static int rtsp_read_pause(AVFormatContext *s)
     if (rt->state != RTSP_STATE_PLAYING)
         return 0;
     else if (!(rt->server_type == RTSP_SERVER_RDT && rt->need_subscription)) {
-    snprintf(cmd, sizeof(cmd),
-             "PAUSE %s RTSP/1.0\r\n",
-             s->filename);
-    rtsp_send_cmd(s, cmd, reply, NULL);
-    if (reply->status_code != RTSP_STATUS_OK) {
-        return -1;
-    }
+        snprintf(cmd, sizeof(cmd),
+                 "PAUSE %s RTSP/1.0\r\n",
+                 s->filename);
+        rtsp_send_cmd(s, cmd, reply, NULL);
+        if (reply->status_code != RTSP_STATUS_OK) {
+            return -1;
+        }
     }
     rt->state = RTSP_STATE_PAUSED;
     return 0;
