@@ -235,6 +235,11 @@ static int mace3_decode_frame(AVCodecContext *avctx,
     MACEContext *ctx = avctx->priv_data;
     int i, j, k;
 
+    if (*data_size < 2 * 3 * buf_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer too small!\n");
+        return -1;
+    }
+
     for(i = 0; i < avctx->channels; i++) {
         int16_t *output = samples + i;
 
@@ -265,6 +270,11 @@ static int mace6_decode_frame(AVCodecContext *avctx,
     int16_t *samples = data;
     MACEContext *ctx = avctx->priv_data;
     int i, j;
+
+    if (*data_size < 2 * 6 * buf_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer too small!\n");
+        return -1;
+    }
 
     for(i = 0; i < avctx->channels; i++) {
         int16_t *output = samples + i;
