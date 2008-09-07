@@ -27,11 +27,18 @@
 
 #include "avformat.h"
 #include "libavutil/avstring.h"
+#include "rtp_internal.h"
 #include "rdt.h"
 #include "libavutil/base64.h"
 #include "libavutil/md5.h"
 #include "rm.h"
 #include "internal.h"
+
+typedef struct rdt_data {
+    AVFormatContext *rmctx;
+    uint8_t *mlti_data;
+    unsigned int mlti_data_size;
+} rdt_data;
 
 void
 ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
@@ -70,4 +77,133 @@ ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
     for (i = 0; i < 8; i++)
         chksum[i] = response[i * 4];
     chksum[8] = 0;
+}
+
+static int
+rdt_load_mdpr (rdt_data *rdt, AVStream *st, int rule_nr)
+{
+    ByteIOContext *pb;
+    int size;
+    uint32_t tag;
+
+    /**
+     * Layout of the MLTI chunk:
+     * 4:MLTI
+     * 2:<number of streams>
+     * Then for each stream ([number_of_streams] times):
+     *     2:<mdpr index>
+     * 2:<number of mdpr chunks>
+     * Then for each mdpr chunk ([number_of_mdpr_chunks] times):
+     *     4:<size>
+     *     [size]:<data>
+     * we skip MDPR chunks until we reach the one of the stream
+     * we're interested in, and forward that ([size]+[data]) to
+     * the RM demuxer to parse the stream-specific header data.
+     */
+    if (!rdt->mlti_data)
+        return -1;
+    url_open_buf(&pb, rdt->mlti_data, rdt->mlti_data_size, URL_RDONLY);
+    tag = get_le32(pb);
+    if (tag == MKTAG('M', 'L', 'T', 'I')) {
+        int num, chunk_nr;
+
+        /* read index of MDPR chunk numbers */
+        num = get_be16(pb);
+        if (rule_nr < 0 || rule_nr >= num)
+            return -1;
+        url_fskip(pb, rule_nr * 2);
+        chunk_nr = get_be16(pb);
+        url_fskip(pb, (num - 1 - rule_nr) * 2);
+
+        /* read MDPR chunks */
+        num = get_be16(pb);
+        if (chunk_nr >= num)
+            return -1;
+        while (chunk_nr--)
+            url_fskip(pb, get_be32(pb));
+        size = get_be32(pb);
+    } else {
+        size = rdt->mlti_data_size;
+        url_fseek(pb, 0, SEEK_SET);
+    }
+    rdt->rmctx->pb = pb;
+    if (ff_rm_read_mdpr_codecdata(rdt->rmctx, st, size) < 0)
+        return -1;
+
+    url_close_buf(pb);
+    return 0;
+}
+
+static unsigned char *
+rdt_parse_b64buf (unsigned int *target_len, const char *p)
+{
+    unsigned char *target;
+    int len = strlen(p);
+    if (*p == '\"') {
+        p++;
+        len -= 2; /* skip embracing " at start/end */
+    }
+    *target_len = len * 3 / 4;
+    target = av_mallocz(*target_len + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_base64_decode(target, p, *target_len);
+    return target;
+}
+
+static int
+rdt_parse_sdp_line (AVStream *stream, void *d, const char *line)
+{
+    rdt_data *rdt = d;
+    const char *p = line;
+
+    if (av_strstart(p, "OpaqueData:buffer;", &p)) {
+        rdt->mlti_data = rdt_parse_b64buf(&rdt->mlti_data_size, p);
+        rdt_load_mdpr(rdt, stream, 0);
+    } else if (av_strstart(p, "StartTime:integer;", &p))
+        stream->first_dts = atoi(p);
+
+    return 0;
+}
+
+static void *
+rdt_new_extradata (void)
+{
+    rdt_data *rdt = av_mallocz(sizeof(rdt_data));
+
+    av_open_input_stream(&rdt->rmctx, NULL, "", &rdt_demuxer, NULL);
+
+    return rdt;
+}
+
+static void
+rdt_free_extradata (void *d)
+{
+    rdt_data *rdt = d;
+
+    if (rdt->rmctx)
+        av_close_input_stream(rdt->rmctx);
+    av_freep(&rdt->mlti_data);
+    av_free(rdt);
+}
+
+#define RDT_HANDLER(n, s, t) \
+static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
+    s, \
+    t, \
+    CODEC_ID_NONE, \
+    rdt_parse_sdp_line, \
+    rdt_new_extradata, \
+    rdt_free_extradata \
+};
+
+RDT_HANDLER(live_video, "x-pn-multirate-realvideo-live", CODEC_TYPE_VIDEO);
+RDT_HANDLER(live_audio, "x-pn-multirate-realaudio-live", CODEC_TYPE_AUDIO);
+RDT_HANDLER(video,      "x-pn-realvideo",                CODEC_TYPE_VIDEO);
+RDT_HANDLER(audio,      "x-pn-realaudio",                CODEC_TYPE_AUDIO);
+
+void av_register_rdt_dynamic_payload_handlers(void)
+{
+    ff_register_dynamic_payload_handler(&ff_rdt_video_handler);
+    ff_register_dynamic_payload_handler(&ff_rdt_audio_handler);
+    ff_register_dynamic_payload_handler(&ff_rdt_live_video_handler);
+    ff_register_dynamic_payload_handler(&ff_rdt_live_audio_handler);
 }

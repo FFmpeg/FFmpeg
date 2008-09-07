@@ -63,6 +63,9 @@ typedef struct {
     int sub_packet_lengths[16]; /// Length of each aac subpacket
 } RMContext;
 
+/*< input format for Realmedia-style RTSP streams */
+extern AVInputFormat rdt_demuxer;
+
 /**
  * Read the MDPR chunk, which contains stream-specific codec initialization
  * parameters.
