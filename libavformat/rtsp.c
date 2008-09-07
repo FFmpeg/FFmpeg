@@ -1326,7 +1326,10 @@ static int rtsp_read_packet(AVFormatContext *s,
 
     /* get next frames from the same RTP packet */
     if (rt->cur_rtp) {
-        ret = rtp_parse_packet(rt->cur_rtp, pkt, NULL, 0);
+        if (rt->server_type == RTSP_SERVER_RDT)
+            ret = ff_rdt_parse_packet(rt->cur_rtp, pkt, NULL, 0);
+        else
+            ret = rtp_parse_packet(rt->cur_rtp, pkt, NULL, 0);
         if (ret == 0) {
             rt->cur_rtp = NULL;
             return 0;
@@ -1353,7 +1356,10 @@ static int rtsp_read_packet(AVFormatContext *s,
     }
     if (len < 0)
         return len;
-    ret = rtp_parse_packet(rtsp_st->rtp_ctx, pkt, buf, len);
+    if (rt->server_type == RTSP_SERVER_RDT)
+        ret = ff_rdt_parse_packet(rtsp_st->rtp_ctx, pkt, buf, len);
+    else
+        ret = rtp_parse_packet(rtsp_st->rtp_ctx, pkt, buf, len);
     if (ret < 0)
         goto redo;
     if (ret == 1) {

@@ -54,4 +54,11 @@ void av_register_rdt_dynamic_payload_handlers(void);
 void ff_rdt_subscribe_rule(RTPDemuxContext *s, char *cmd, int size,
                            int stream_nr, int rule_nr);
 
+/**
+ * Parse RDT-style packet data (header + media data).
+ * Usage similar to rtp_parse_packet().
+ */
+int ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
+                        const uint8_t *buf, int len);
+
 #endif /* AVFORMAT_RDT_H */

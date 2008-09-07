@@ -38,6 +38,8 @@ typedef struct rdt_data {
     AVFormatContext *rmctx;
     uint8_t *mlti_data;
     unsigned int mlti_data_size;
+    uint32_t prev_sn, prev_ts;
+    char buffer[RTP_MAX_PACKET_LENGTH + FF_INPUT_BUFFER_PADDING_SIZE];
 } rdt_data;
 
 void
@@ -134,6 +136,103 @@ rdt_load_mdpr (rdt_data *rdt, AVStream *st, int rule_nr)
     return 0;
 }
 
+/**
+ * Actual data handling.
+ */
+
+static int rdt_parse_header(struct RTPDemuxContext *s, const uint8_t *buf,
+                            int len, int *seq, uint32_t *timestamp, int *flags)
+{
+    rdt_data *rdt = s->dynamic_protocol_context;
+    int consumed = 0, sn;
+
+    if (buf[0] < 0x40 || buf[0] > 0x42) {
+        buf += 9;
+        len -= 9;
+        consumed += 9;
+    }
+    sn = (buf[0]>>1) & 0x1f;
+    *seq = AV_RB16(buf+1);
+    *timestamp = AV_RB32(buf+4);
+    if (!(buf[3] & 1) && (sn != rdt->prev_sn || *timestamp != rdt->prev_ts)) {
+        *flags |= PKT_FLAG_KEY;
+        rdt->prev_sn = sn;
+        rdt->prev_ts = *timestamp;
+    }
+
+    return consumed + 10;
+}
+
+/**< return 0 on packet, no more left, 1 on packet, 1 on partial packet... */
+static int
+rdt_parse_packet (RTPDemuxContext *s, AVPacket *pkt, uint32_t *timestamp,
+                  const uint8_t *buf, int len, int flags)
+{
+    rdt_data *rdt = s->dynamic_protocol_context;
+    int seq = 1, res;
+    ByteIOContext *pb = rdt->rmctx->pb;
+    RMContext *rm = rdt->rmctx->priv_data;
+    AVStream *st = s->st;
+
+    if (rm->audio_pkt_cnt == 0) {
+        int pos;
+
+        url_open_buf (&pb, buf, len, URL_RDONLY);
+        flags = (flags & PKT_FLAG_KEY) ? 2 : 0;
+        rdt->rmctx->pb = pb;
+        res = ff_rm_parse_packet (rdt->rmctx, st, len, pkt,
+                                  &seq, &flags, timestamp);
+        pos = url_ftell(pb);
+        url_close_buf (pb);
+        if (res < 0)
+            return res;
+        if (rm->audio_pkt_cnt > 0 &&
+            st->codec->codec_id == CODEC_ID_AAC) {
+            memcpy (rdt->buffer, buf + pos, len - pos);
+            url_open_buf (&pb, rdt->buffer, len - pos, URL_RDONLY);
+            rdt->rmctx->pb = pb;
+        }
+    } else {
+        ff_rm_retrieve_cache (rdt->rmctx, st, pkt);
+        if (rm->audio_pkt_cnt == 0 &&
+            st->codec->codec_id == CODEC_ID_AAC)
+            url_close_buf (pb);
+    }
+    pkt->stream_index = st->index;
+    pkt->pts = *timestamp;
+
+    return rm->audio_pkt_cnt > 0;
+}
+
+int
+ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
+                    const uint8_t *buf, int len)
+{
+    int seq, flags = 0;
+    uint32_t timestamp;
+    int rv= 0;
+
+    if (!buf) {
+        /* return the next packets, if any */
+        timestamp= 0; ///< Should not be used if buf is NULL, but should be set to the timestamp of the packet returned....
+        rv= rdt_parse_packet(s, pkt, &timestamp, NULL, 0, flags);
+        return rv;
+    }
+
+    if (len < 12)
+        return -1;
+    rv = rdt_parse_header(s, buf, len, &seq, &timestamp, &flags);
+    if (rv < 0)
+        return rv;
+    buf += rv;
+    len -= rv;
+    s->seq = seq;
+
+    rv = rdt_parse_packet(s, pkt, &timestamp, buf, len, flags);
+
+    return rv;
+}
+
 void
 ff_rdt_subscribe_rule (RTPDemuxContext *s, char *cmd, int size,
                        int stream_nr, int rule_nr)
@@ -181,6 +280,8 @@ rdt_new_extradata (void)
     rdt_data *rdt = av_mallocz(sizeof(rdt_data));
 
     av_open_input_stream(&rdt->rmctx, NULL, "", &rdt_demuxer, NULL);
+    rdt->prev_ts = -1;
+    rdt->prev_sn = -1;
 
     return rdt;
 }
