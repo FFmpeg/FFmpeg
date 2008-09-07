@@ -248,7 +248,8 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV || enc->codec_id == CODEC_ID_ADPCM_MS || enc->codec_id == CODEC_ID_ADPCM_G726 || enc->codec_id == CODEC_ID_ADPCM_YAMAHA) { //
         bps = 4;
     } else {
-        bps = av_get_bits_per_sample(enc->codec_id);
+        if (!(bps = av_get_bits_per_sample(enc->codec_id)))
+            bps = 16; // default to 16
     }
     if(bps != enc->bits_per_sample && enc->bits_per_sample){
         av_log(enc, AV_LOG_WARNING, "requested bits_per_sample (%d) and actually stored (%d) differ\n", enc->bits_per_sample, bps);
