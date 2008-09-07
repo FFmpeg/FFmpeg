@@ -49,7 +49,7 @@ RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler= NULL;
 static RTPDynamicProtocolHandler mp4v_es_handler= {"MP4V-ES", CODEC_TYPE_VIDEO, CODEC_ID_MPEG4};
 static RTPDynamicProtocolHandler mpeg4_generic_handler= {"mpeg4-generic", CODEC_TYPE_AUDIO, CODEC_ID_AAC};
 
-static void register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
+void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
 {
     handler->next= RTPFirstDynamicPayloadHandler;
     RTPFirstDynamicPayloadHandler= handler;
@@ -57,9 +57,9 @@ static void register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
 
 void av_register_rtp_dynamic_payload_handlers(void)
 {
-    register_dynamic_payload_handler(&mp4v_es_handler);
-    register_dynamic_payload_handler(&mpeg4_generic_handler);
-    register_dynamic_payload_handler(&ff_h264_dynamic_handler);
+    ff_register_dynamic_payload_handler(&mp4v_es_handler);
+    ff_register_dynamic_payload_handler(&mpeg4_generic_handler);
+    ff_register_dynamic_payload_handler(&ff_h264_dynamic_handler);
 }
 
 static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int len)
