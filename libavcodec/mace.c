@@ -162,7 +162,7 @@ static inline int16_t mace_broken_clip_int16(int n)
         return n;
 }
 
-static void chomp3(ChannelData *ctx, int16_t *output, uint8_t val,
+static void chomp3(ChannelData *chd, int16_t *output, uint8_t val,
                    const uint16_t tab1[],
                    const int16_t *tab2, int tab2_stride,
                    uint32_t numChannels)
@@ -170,19 +170,19 @@ static void chomp3(ChannelData *ctx, int16_t *output, uint8_t val,
     int16_t current;
 
     if (val < tab2_stride)
-        current = tab2[((ctx->index & 0x7f0) >> 4)*tab2_stride + val];
+        current = tab2[((chd->index & 0x7f0) >> 4)*tab2_stride + val];
     else
-        current = - 1 - tab2[((ctx->index & 0x7f0) >> 4)*tab2_stride + 2*tab2_stride-val-1];
+        current = - 1 - tab2[((chd->index & 0x7f0) >> 4)*tab2_stride + 2*tab2_stride-val-1];
 
-    current = mace_broken_clip_int16(current + ctx->lev);
+    current = mace_broken_clip_int16(current + chd->lev);
 
-    ctx->lev = current - (current >> 3);
+    chd->lev = current - (current >> 3);
     *output = QT_8S_2_16S(current);
-    if (( ctx->index += tab1[val]-(ctx->index >> 5) ) < 0)
-        ctx->index = 0;
+    if (( chd->index += tab1[val]-(chd->index >> 5) ) < 0)
+        chd->index = 0;
 }
 
-static void chomp6(ChannelData *ctx, int16_t *output, uint8_t val,
+static void chomp6(ChannelData *chd, int16_t *output, uint8_t val,
                    const uint16_t tab1[],
                    const int16_t *tab2, int tab2_stride,
                    uint32_t numChannels)
@@ -190,33 +190,33 @@ static void chomp6(ChannelData *ctx, int16_t *output, uint8_t val,
     int16_t current;
 
     if (val < tab2_stride)
-        current = tab2[((ctx->index & 0x7f0) >> 4)*tab2_stride + val];
+        current = tab2[((chd->index & 0x7f0) >> 4)*tab2_stride + val];
     else
-        current =  - 1 - tab2[((ctx->index & 0x7f0) >> 4)*tab2_stride + 2*tab2_stride-val-1];
+        current =  - 1 - tab2[((chd->index & 0x7f0) >> 4)*tab2_stride + 2*tab2_stride-val-1];
 
-    if ((ctx->previous ^ current) >= 0) {
-        ctx->factor = FFMIN(ctx->factor + 506, 32767);
+    if ((chd->previous ^ current) >= 0) {
+        chd->factor = FFMIN(chd->factor + 506, 32767);
     } else {
-        if (ctx->factor - 314 < -32768)
-            ctx->factor = -32767;
+        if (chd->factor - 314 < -32768)
+            chd->factor = -32767;
         else
-            ctx->factor -= 314;
+            chd->factor -= 314;
     }
 
-    current = mace_broken_clip_int16(current + ctx->level);
+    current = mace_broken_clip_int16(current + chd->level);
 
-    ctx->level = ((current*ctx->factor) >> 15);
+    chd->level = ((current*chd->factor) >> 15);
     current >>= 1;
 
-    output[0] = QT_8S_2_16S(ctx->previous + ctx->prev2 -
-                            ((ctx->prev2-current) >> 2));
-    output[numChannels] = QT_8S_2_16S(ctx->previous + current +
-                                      ((ctx->prev2-current) >> 2));
-    ctx->prev2 = ctx->previous;
-    ctx->previous = current;
+    output[0] = QT_8S_2_16S(chd->previous + chd->prev2 -
+                            ((chd->prev2-current) >> 2));
+    output[numChannels] = QT_8S_2_16S(chd->previous + current +
+                                      ((chd->prev2-current) >> 2));
+    chd->prev2 = chd->previous;
+    chd->previous = current;
 
-    if ((ctx->index += tab1[val] - (ctx->index >> 5)) < 0)
-        ctx->index = 0;
+    if ((chd->index += tab1[val] - (chd->index >> 5)) < 0)
+        chd->index = 0;
 }
 
 static av_cold int mace_decode_init(AVCodecContext * avctx)
