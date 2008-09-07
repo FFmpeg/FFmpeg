@@ -42,4 +42,16 @@ void ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
  */
 void av_register_rdt_dynamic_payload_handlers(void);
 
+/**
+ * Add subscription information to Subscribe parameter string.
+ *
+ * @param s RDT context
+ * @param cmd string to write the subscription information into.
+ * @param size size of cmd.
+ * @param stream_nr stream number.
+ * @param rule_nr rule number to conform to.
+ */
+void ff_rdt_subscribe_rule(RTPDemuxContext *s, char *cmd, int size,
+                           int stream_nr, int rule_nr);
+
 #endif /* AVFORMAT_RDT_H */

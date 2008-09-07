@@ -65,6 +65,7 @@ typedef struct RTSPState {
     enum RTSPServerType server_type;
     char last_reply[2048]; /* XXX: allocate ? */
     RTPDemuxContext *cur_rtp;
+    int need_subscription;
 } RTSPState;
 
 typedef struct RTSPStream {
@@ -1034,6 +1035,9 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
         }
     }
 
+    if (rt->server_type == RTSP_SERVER_RDT)
+        rt->need_subscription = 1;
+
     return 0;
 
 fail:
@@ -1295,6 +1299,31 @@ static int rtsp_read_packet(AVFormatContext *s,
     int ret, len;
     uint8_t buf[RTP_MAX_PACKET_LENGTH];
 
+    if (rt->server_type == RTSP_SERVER_RDT && rt->need_subscription) {
+        int i;
+        RTSPHeader reply1, *reply = &reply1;
+        char cmd[1024];
+
+        snprintf(cmd, sizeof(cmd),
+                 "SET_PARAMETER %s RTSP/1.0\r\n"
+                 "Subscribe: ",
+                 s->filename);
+        for (i = 0; i < rt->nb_rtsp_streams; i++) {
+            if (i != 0) av_strlcat(cmd, ",", sizeof(cmd));
+            ff_rdt_subscribe_rule(
+                rt->rtsp_streams[i]->rtp_ctx,
+                cmd, sizeof(cmd), i, 0);
+        }
+        av_strlcat(cmd, "\r\n", sizeof(cmd));
+        rtsp_send_cmd(s, cmd, reply, NULL);
+        if (reply->status_code != RTSP_STATUS_OK)
+            return AVERROR_INVALIDDATA;
+        rt->need_subscription = 0;
+
+        if (rt->state == RTSP_STATE_PLAYING)
+            rtsp_read_play (s);
+    }
+
     /* get next frames from the same RTP packet */
     if (rt->cur_rtp) {
         ret = rtp_parse_packet(rt->cur_rtp, pkt, NULL, 0);
@@ -1342,6 +1371,7 @@ static int rtsp_read_play(AVFormatContext *s)
 
     av_log(s, AV_LOG_DEBUG, "hello state=%d\n", rt->state);
 
+    if (!(rt->server_type == RTSP_SERVER_RDT && rt->need_subscription)) {
     if (rt->state == RTSP_STATE_PAUSED) {
         snprintf(cmd, sizeof(cmd),
                  "PLAY %s RTSP/1.0\r\n",
@@ -1356,6 +1386,7 @@ static int rtsp_read_play(AVFormatContext *s)
     rtsp_send_cmd(s, cmd, reply, NULL);
     if (reply->status_code != RTSP_STATUS_OK) {
         return -1;
+    }
     }
     rt->state = RTSP_STATE_PLAYING;
     return 0;
@@ -1372,13 +1403,14 @@ static int rtsp_read_pause(AVFormatContext *s)
 
     if (rt->state != RTSP_STATE_PLAYING)
         return 0;
-
+    else if (!(rt->server_type == RTSP_SERVER_RDT && rt->need_subscription)) {
     snprintf(cmd, sizeof(cmd),
              "PAUSE %s RTSP/1.0\r\n",
              s->filename);
     rtsp_send_cmd(s, cmd, reply, NULL);
     if (reply->status_code != RTSP_STATUS_OK) {
         return -1;
+    }
     }
     rt->state = RTSP_STATE_PAUSED;
     return 0;

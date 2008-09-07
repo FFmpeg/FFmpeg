@@ -134,6 +134,18 @@ rdt_load_mdpr (rdt_data *rdt, AVStream *st, int rule_nr)
     return 0;
 }
 
+void
+ff_rdt_subscribe_rule (RTPDemuxContext *s, char *cmd, int size,
+                       int stream_nr, int rule_nr)
+{
+    rdt_data *rdt = s->dynamic_protocol_context;
+
+    av_strlcatf(cmd, size, "stream=%d;rule=%d,stream=%d;rule=%d",
+                stream_nr, rule_nr, stream_nr, rule_nr + 1);
+
+    rdt_load_mdpr(rdt, s->st, 0);
+}
+
 static unsigned char *
 rdt_parse_b64buf (unsigned int *target_len, const char *p)
 {
@@ -157,7 +169,6 @@ rdt_parse_sdp_line (AVStream *stream, void *d, const char *line)
 
     if (av_strstart(p, "OpaqueData:buffer;", &p)) {
         rdt->mlti_data = rdt_parse_b64buf(&rdt->mlti_data_size, p);
-        rdt_load_mdpr(rdt, stream, 0);
     } else if (av_strstart(p, "StartTime:integer;", &p))
         stream->first_dts = atoi(p);
 
