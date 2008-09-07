@@ -234,6 +234,8 @@ static const uint16_t MACEtab4[][8] = {
     { 0x3E22, 0x7FFF, 0x8000, 0xC1DD, 0, 0, 0, 0 },  { 0x40E7, 0x7FFF, 0x8000, 0xBF18, 0, 0, 0, 0 },
 };
 
+#define QT_8S_2_16S(x) (((x) & 0xFF00) | (((x) >> 8) & 0xFF))
+
 typedef struct ChannelData {
     short index, lev, factor, prev2, previous, level;
 } ChannelData;
@@ -259,7 +261,7 @@ static void chomp3(ChannelData *ctx, int16_t *output, uint8_t val,
 
     ctx->lev = current - (current >> 3);
     //*ctx->outPtr++=current >> 8;
-    *output = current;
+    *output = QT_8S_2_16S(current);
     if (( ctx->index += tab1[val]-(ctx->index >> 5) ) < 0)
         ctx->index = 0;
 }
@@ -296,8 +298,10 @@ static void chomp6(ChannelData *ctx, int16_t *output, uint8_t val,
 
 //  *ctx->outPtr++=(ctx->previous+ctx->prev2-((ctx->prev2-current) >> 2)) >> 8;
 //  *ctx->outPtr++=(ctx->previous+current+((ctx->prev2-current) >> 2)) >> 8;
-    output[0] = (ctx->previous + ctx->prev2 - ((ctx->prev2-current) >> 2));
-    output[numChannels] = (ctx->previous + current + ((ctx->prev2-current) >> 2));
+    output[0] = QT_8S_2_16S(ctx->previous + ctx->prev2 -
+                            ((ctx->prev2-current) >> 2));
+    output[numChannels] = QT_8S_2_16S(ctx->previous + current +
+                                      ((ctx->prev2-current) >> 2));
     ctx->prev2 = ctx->previous;
     ctx->previous = current;
 
