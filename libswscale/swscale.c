@@ -54,6 +54,7 @@ untested special converters
   BGR24 -> YV12
 */
 
+#define _SVID_SOURCE //needed for MAP_ANONYMOUS
 #include <inttypes.h>
 #include <string.h>
 #include <math.h>
