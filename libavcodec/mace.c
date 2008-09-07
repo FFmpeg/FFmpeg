@@ -284,10 +284,7 @@ static void chomp6(ChannelData *ctx, int16_t *output, uint8_t val,
     current = (short)tab2[(ctx->index & 0x7f0) >> 4][val];
 
     if ((ctx->previous ^ current) >= 0) {
-        if (ctx->factor + 506 > 32767)
-            ctx->factor = 32767;
-        else
-            ctx->factor += 506;
+        ctx->factor = FFMIN(ctx->factor + 506, 32767);
     } else {
         if (ctx->factor - 314 < -32768)
             ctx->factor = -32767;
