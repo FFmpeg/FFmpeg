@@ -269,7 +269,6 @@ static void chomp3(ChannelData *ctx, int16_t *output, uint8_t val,
     current = mace_broken_clip_int16(current + ctx->lev);
 
     ctx->lev = current - (current >> 3);
-    //*ctx->outPtr++=current >> 8;
     *output = QT_8S_2_16S(current);
     if (( ctx->index += tab1[val]-(ctx->index >> 5) ) < 0)
         ctx->index = 0;
@@ -297,8 +296,6 @@ static void chomp6(ChannelData *ctx, int16_t *output, uint8_t val,
     ctx->level = ((current*ctx->factor) >> 15);
     current >>= 1;
 
-//  *ctx->outPtr++=(ctx->previous+ctx->prev2-((ctx->prev2-current) >> 2)) >> 8;
-//  *ctx->outPtr++=(ctx->previous+current+((ctx->prev2-current) >> 2)) >> 8;
     output[0] = QT_8S_2_16S(ctx->previous + ctx->prev2 -
                             ((ctx->prev2-current) >> 2));
     output[numChannels] = QT_8S_2_16S(ctx->previous + current +
