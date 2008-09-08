@@ -550,6 +550,7 @@ static const AVCodecTag codec_3gp_tags[] = {
     { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
     { CODEC_ID_AMR_NB, MKTAG('s','a','m','r') },
     { CODEC_ID_AMR_WB, MKTAG('s','a','w','b') },
+    { CODEC_ID_NONE, 0 },
 };
 
 static const AVCodecTag mov_pix_fmt_tags[] = {
@@ -566,6 +567,7 @@ static const AVCodecTag codec_ipod_tags[] = {
     { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
     { CODEC_ID_ALAC,   MKTAG('a','l','a','c') },
     { CODEC_ID_AC3,    MKTAG('a','c','-','3') },
+    { CODEC_ID_NONE, 0 },
 };
 
 static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
