@@ -2619,13 +2619,6 @@ int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, v
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
 
 /**
- * @deprecated Use avcodec_decode_audio2() instead.
- */
-attribute_deprecated int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
-                         int *frame_size_ptr,
-                         const uint8_t *buf, int buf_size);
-
-/**
  * Decodes an audio frame from \p buf into \p samples.
  * The avcodec_decode_audio2() function decodes an audio frame from the input
  * buffer \p buf of size \p buf_size. To decode it, it makes use of the
