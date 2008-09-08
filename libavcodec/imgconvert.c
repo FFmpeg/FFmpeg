@@ -2087,27 +2087,6 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
     return 0;
 }
 
-#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
-void img_copy(AVPicture *dst, const AVPicture *src,
-              int pix_fmt, int width, int height)
-{
-    av_picture_copy(dst, src, pix_fmt, width, height);
-}
-
-int img_crop(AVPicture *dst, const AVPicture *src,
-              int pix_fmt, int top_band, int left_band)
-{
-    return av_picture_crop(dst, src, pix_fmt, top_band, left_band);
-}
-
-int img_pad(AVPicture *dst, const AVPicture *src, int height, int width,
-            int pix_fmt, int padtop, int padbottom, int padleft, int padright,
-            int *color)
-{
-    return av_picture_pad(dst, src, height, width, pix_fmt, padtop, padbottom, padleft, padright, color);
-}
-#endif
-
 #ifndef CONFIG_SWSCALE
 static uint8_t y_ccir_to_jpeg[256];
 static uint8_t y_jpeg_to_ccir[256];

@@ -298,9 +298,6 @@ void avcodec_register_all(void)
     REGISTER_ENCODER (LIBVORBIS, libvorbis);
     REGISTER_ENCODER (LIBX264, libx264);
     REGISTER_ENCODER (LIBXVID, libxvid);
-#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
-    REGISTER_DECODER (MPEG4AAC, mpeg4aac);
-#endif
 
     /* parsers */
     REGISTER_PARSER  (AAC, aac);

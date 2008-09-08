@@ -424,20 +424,6 @@ double ff_eval2(const char *s, double *const_value, const char **const_name,
     return d;
 }
 
-#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
-attribute_deprecated double ff_eval(char *s, double *const_value, const char **const_name,
-               double (**func1)(void *, double), const char **func1_name,
-               double (**func2)(void *, double, double), char **func2_name,
-               void *opaque){
-    const char *error=NULL;
-    double ret;
-    ret = ff_eval2(s, const_value, const_name, func1, func1_name, func2, func2_name, opaque, &error);
-    if (error)
-        av_log(NULL, AV_LOG_ERROR, "Error evaluating \"%s\": %s\n", s, error);
-    return ret;
-}
-#endif
-
 #ifdef TEST
 #undef printf
 static double const_values[]={
