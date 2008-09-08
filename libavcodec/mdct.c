@@ -59,10 +59,9 @@ float *ff_sine_windows[5] = {
 
 // Generate a sine window.
 void ff_sine_window_init(float *window, int n) {
-    float alpha = M_PI / (2.0 * n);
     int i;
     for(i = 0; i < n; i++)
-        window[i] = sin((i + 0.5) * alpha);
+        window[i] = sinf((i + 0.5) * (M_PI / (2.0 * n)));
 }
 
 /**
