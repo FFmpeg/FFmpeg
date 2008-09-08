@@ -48,7 +48,7 @@ typedef struct {
 
     /** adaptive codebook. Its size is two units bigger to avoid a
      *  buffer overflow */
-    uint16_t adapt_cb[148];
+    uint16_t adapt_cb[146+2];
 } RA144Context;
 
 static int ra144_decode_init(AVCodecContext * avctx)
