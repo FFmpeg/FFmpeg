@@ -798,8 +798,6 @@ typedef struct AVFrame {
     FF_COMMON_FRAME
 } AVFrame;
 
-#define DEFAULT_FRAME_RATE_BASE 1001000
-
 /**
  * main external API structure.
  * New fields can be added to the end with minor version bumps.

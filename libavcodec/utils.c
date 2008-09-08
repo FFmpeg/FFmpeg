@@ -1492,7 +1492,7 @@ int av_parse_video_frame_rate(AVRational *frame_rate, const char *arg)
     }
     else {
         /* Finally we give up and parse it as double */
-        AVRational time_base = av_d2q(strtod(arg, 0), DEFAULT_FRAME_RATE_BASE);
+        AVRational time_base = av_d2q(strtod(arg, 0), 1001000);
         frame_rate->den = time_base.den;
         frame_rate->num = time_base.num;
     }
