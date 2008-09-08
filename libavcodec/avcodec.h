@@ -2444,7 +2444,7 @@ int avcodec_get_pix_fmt_loss(int dst_pix_fmt, int src_pix_fmt,
  * @param[out] loss_ptr Combination of flags informing you what kind of losses will occur.
  * @return The best pixel format to convert to or -1 if none was found.
  */
-int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
+int avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, int src_pix_fmt,
                               int has_alpha, int *loss_ptr);
 
 

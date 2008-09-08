@@ -772,7 +772,7 @@ static int avg_bits_per_pixel(int pix_fmt)
     return bits;
 }
 
-static int avcodec_find_best_pix_fmt1(int pix_fmt_mask,
+static int avcodec_find_best_pix_fmt1(int64_t pix_fmt_mask,
                                       int src_pix_fmt,
                                       int has_alpha,
                                       int loss_mask)
@@ -797,7 +797,7 @@ static int avcodec_find_best_pix_fmt1(int pix_fmt_mask,
     return dst_pix_fmt;
 }
 
-int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
+int avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, int src_pix_fmt,
                               int has_alpha, int *loss_ptr)
 {
     int dst_pix_fmt, loss_mask, i;
