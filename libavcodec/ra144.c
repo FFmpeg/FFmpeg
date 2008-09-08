@@ -258,11 +258,10 @@ static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
     return 0;
 }
 
-static int interp(RA144Context *ractx, int16_t *out, int block_num,
+static int interp(RA144Context *ractx, int16_t *out, int a,
                   int copyold, int energy)
 {
     int work[10];
-    int a = block_num + 1;
     int b = NBLOCKS - a;
     int i;
 
@@ -315,10 +314,10 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
 
     energy = energy_tab[get_bits(&gb, 5)];
 
-    refl_rms[0] = interp(ractx, block_coefs[0], 0, 1, ractx->old_energy);
-    refl_rms[1] = interp(ractx, block_coefs[1], 1, energy <= ractx->old_energy,
+    refl_rms[0] = interp(ractx, block_coefs[0], 1, 1, ractx->old_energy);
+    refl_rms[1] = interp(ractx, block_coefs[1], 2, energy <= ractx->old_energy,
                     t_sqrt(energy*ractx->old_energy) >> 12);
-    refl_rms[2] = interp(ractx, block_coefs[2], 2, 0, energy);
+    refl_rms[2] = interp(ractx, block_coefs[2], 3, 0, energy);
     refl_rms[3] = rescale_rms(ractx->lpc_refl_rms[0], energy);
 
     int_to_int16(block_coefs[3], ractx->lpc_coef[0]);
