@@ -29,7 +29,7 @@
 
 #include "libavutil/avutil.h"
 
-#define STR(s)         AV_TOSTRING(s) //AV_STINGIFY is too long
+#define STR(s)         AV_TOSTRING(s) //AV_STRINGIFY is too long
 
 #define MAX_FILTER_SIZE 256
 
