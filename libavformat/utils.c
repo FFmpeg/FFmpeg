@@ -2444,6 +2444,9 @@ int av_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "sample rate not set\n");
                 return -1;
             }
+            if(!st->codec->block_align)
+                st->codec->block_align = st->codec->channels *
+                    av_get_bits_per_sample(st->codec->codec_id) >> 3;
             break;
         case CODEC_TYPE_VIDEO:
             if(st->codec->time_base.num<=0 || st->codec->time_base.den<=0){ //FIXME audio too?
