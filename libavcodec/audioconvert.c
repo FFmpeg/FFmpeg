@@ -37,7 +37,6 @@ typedef struct SampleFmtInfo {
 static const SampleFmtInfo sample_fmt_info[SAMPLE_FMT_NB] = {
     [SAMPLE_FMT_U8]  = { .name = "u8",  .bits = 8 },
     [SAMPLE_FMT_S16] = { .name = "s16", .bits = 16 },
-    [SAMPLE_FMT_S24] = { .name = "s24", .bits = 24 },
     [SAMPLE_FMT_S32] = { .name = "s32", .bits = 32 },
     [SAMPLE_FMT_FLT] = { .name = "flt", .bits = 32 },
     [SAMPLE_FMT_DBL] = { .name = "dbl", .bits = 64 },

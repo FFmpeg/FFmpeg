@@ -1310,8 +1310,6 @@ int av_get_bits_per_sample_format(enum SampleFormat sample_fmt) {
         return 8;
     case SAMPLE_FMT_S16:
         return 16;
-    case SAMPLE_FMT_S24:
-        return 24;
     case SAMPLE_FMT_S32:
     case SAMPLE_FMT_FLT:
         return 32;
