@@ -2569,7 +2569,7 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *di
     }else{
         level += pred;
         ret= level;
-        if(s->error_resilience>=3){
+        if(s->error_recognition>=3){
             if(level<0){
                 av_log(s->avctx, AV_LOG_ERROR, "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
                 return -1;
@@ -4588,7 +4588,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             level = get_bits(&s->gb, 8);
             if((level&0x7F) == 0){
                 av_log(s->avctx, AV_LOG_ERROR, "illegal dc %d at %d %d\n", level, s->mb_x, s->mb_y);
-                if(s->error_resilience >= FF_ER_COMPLIANT)
+                if(s->error_recognition >= FF_ER_COMPLIANT)
                     return -1;
             }
             if (level == 255)
@@ -4708,7 +4708,7 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
 
         if (code > 8){
             if(get_bits1(&s->gb)==0){ /* marker */
-                if(s->error_resilience>=2){
+                if(s->error_recognition>=2){
                     av_log(s->avctx, AV_LOG_ERROR, "dc marker bit missing\n");
                     return -1;
                 }
@@ -4874,7 +4874,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     }
 
 #if 0
-                    if(s->error_resilience >= FF_ER_COMPLIANT){
+                    if(s->error_recognition >= FF_ER_COMPLIANT){
                         const int abs_level= FFABS(level);
                         if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
                             const int run1= run - rl->max_run[last][abs_level] - 1;
@@ -4882,7 +4882,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                                 av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, vlc encoding possible\n");
                                 return -1;
                             }
-                            if(s->error_resilience > FF_ER_COMPLIANT){
+                            if(s->error_recognition > FF_ER_COMPLIANT){
                                 if(abs_level <= rl->max_level[last][run]*2){
                                     av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 1 encoding possible\n");
                                     return -1;
@@ -4899,7 +4899,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     else         level= level * qmul - qadd;
 
                     if((unsigned)(level + 2048) > 4095){
-                        if(s->error_resilience > FF_ER_COMPLIANT){
+                        if(s->error_recognition > FF_ER_COMPLIANT){
                             if(level > 2560 || level<-2560){
                                 av_log(s->avctx, AV_LOG_ERROR, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
                                 return -1;

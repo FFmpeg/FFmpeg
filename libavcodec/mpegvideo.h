@@ -479,7 +479,7 @@ typedef struct MpegEncContext {
     GetBitContext last_resync_gb;    ///< used to search for the next resync marker
     int mb_num_left;                 ///< number of MBs left in this video packet (for partitioned Slices only)
     int next_p_frame_damaged;        ///< set if the next p frame is damaged, to avoid showing trashed b frames
-    int error_resilience;
+    int error_recognition;
 
     ParseContext parse_context;
 

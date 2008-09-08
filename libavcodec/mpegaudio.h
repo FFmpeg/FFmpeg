@@ -116,7 +116,7 @@ typedef struct MPADecodeContext {
     void (*compute_antialias)(struct MPADecodeContext *s, struct GranuleDef *g);
     int adu_mode; ///< 0 for standard mp3, 1 for adu formatted mp3
     int dither_state;
-    int error_resilience;
+    int error_recognition;
     AVCodecContext* avctx;
 } MPADecodeContext;
 

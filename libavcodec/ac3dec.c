@@ -216,7 +216,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     s->downmixed = 1;
 
     /* allocate context input buffer */
-    if (avctx->error_resilience >= FF_ER_CAREFUL) {
+    if (avctx->error_recognition >= FF_ER_CAREFUL) {
         s->input_buffer = av_mallocz(AC3_FRAME_BUFFER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!s->input_buffer)
             return AVERROR_NOMEM;
@@ -1186,7 +1186,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     }
 
     /* check for crc mismatch */
-    if(err != AC3_PARSE_ERROR_FRAME_SIZE && avctx->error_resilience >= FF_ER_CAREFUL) {
+    if(err != AC3_PARSE_ERROR_FRAME_SIZE && avctx->error_recognition >= FF_ER_CAREFUL) {
         if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2], s->frame_size-2)) {
             av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
             err = AC3_PARSE_ERROR_CRC;

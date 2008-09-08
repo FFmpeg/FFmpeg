@@ -327,7 +327,7 @@ static int decode_init(AVCodecContext * avctx)
 #else
     avctx->sample_fmt= SAMPLE_FMT_S16;
 #endif
-    s->error_resilience= avctx->error_resilience;
+    s->error_recognition= avctx->error_recognition;
 
     if(avctx->antialias_algo != FF_AA_FLOAT)
         s->compute_antialias= compute_antialias_integer;
@@ -1565,7 +1565,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 s_index -= 4;
                 skip_bits_long(&s->gb, last_pos - pos);
                 av_log(s->avctx, AV_LOG_INFO, "overread, skip %d enddists: %d %d\n", last_pos - pos, end_pos-pos, end_pos2-pos);
-                if(s->error_resilience >= FF_ER_COMPLIANT)
+                if(s->error_recognition >= FF_ER_COMPLIANT)
                     s_index=0;
                 break;
             }
@@ -1602,7 +1602,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     if (bits_left < 0/* || bits_left > 500*/) {
         av_log(s->avctx, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
         s_index=0;
-    }else if(bits_left > 0 && s->error_resilience >= FF_ER_AGGRESSIVE){
+    }else if(bits_left > 0 && s->error_recognition >= FF_ER_AGGRESSIVE){
         av_log(s->avctx, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
         s_index=0;
     }

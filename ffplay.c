@@ -207,7 +207,7 @@ static int idct = FF_IDCT_AUTO;
 static enum AVDiscard skip_frame= AVDISCARD_DEFAULT;
 static enum AVDiscard skip_idct= AVDISCARD_DEFAULT;
 static enum AVDiscard skip_loop_filter= AVDISCARD_DEFAULT;
-static int error_resilience = FF_ER_CAREFUL;
+static int error_recognition = FF_ER_CAREFUL;
 static int error_concealment = 3;
 static int decoder_reorder_pts= 0;
 
@@ -1734,7 +1734,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     enc->skip_frame= skip_frame;
     enc->skip_idct= skip_idct;
     enc->skip_loop_filter= skip_loop_filter;
-    enc->error_resilience= error_resilience;
+    enc->error_recognition= error_recognition;
     enc->error_concealment= error_concealment;
     if (!codec ||
         avcodec_open(enc, codec) < 0)
@@ -2489,7 +2489,7 @@ static const OptionDef options[] = {
     { "skipframe", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_frame}, "", "" },
     { "skipidct", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_idct}, "", "" },
     { "idct", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&idct}, "set idct algo",  "algo" },
-    { "er", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_resilience}, "set error detection threshold (0-4)",  "threshold" },
+    { "er", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_recognition}, "set error detection threshold (0-4)",  "threshold" },
     { "ec", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_concealment}, "set error concealment options",  "bit_mask" },
     { "sync", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
     { "threads", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },

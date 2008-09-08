@@ -1822,7 +1822,7 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             i-= 192;
             if(i&(~63)){
                 const int left= s->gb.size_in_bits - get_bits_count(&s->gb);
-                if(((i+192 == 64 && level/qmul==-1) || s->error_resilience<=1) && left>=0){
+                if(((i+192 == 64 && level/qmul==-1) || s->error_recognition<=1) && left>=0){
                     av_log(s->avctx, AV_LOG_ERROR, "ignoring overflow at %d %d\n", s->mb_x, s->mb_y);
                     break;
                 }else{

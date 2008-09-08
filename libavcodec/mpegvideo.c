@@ -915,7 +915,7 @@ alloc:
     }
 
     s->hurry_up= s->avctx->hurry_up;
-    s->error_resilience= avctx->error_resilience;
+    s->error_recognition= avctx->error_recognition;
 
     /* set dequantizer, we can't do it during init as it might change for mpeg4
        and we can't do it in the header decode as init is not called for mpeg4 there yet */

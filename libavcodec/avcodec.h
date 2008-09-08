@@ -1136,12 +1136,12 @@ typedef struct AVCodecContext {
     float b_quant_offset;
 
     /**
-     * Error resilience; higher values will detect more errors but may
+     * Error recognization; higher values will detect more errors but may
      * misdetect some more or less valid parts as errors.
      * - encoding: unused
      * - decoding: Set by user.
      */
-    int error_resilience;
+    int error_recognition;
 #define FF_ER_CAREFUL         1
 #define FF_ER_COMPLIANT       2
 #define FF_ER_AGGRESSIVE      3
