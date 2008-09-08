@@ -51,7 +51,7 @@ typedef struct {
     uint16_t adapt_cb[146+2];
 } RA144Context;
 
-static int ra144_decode_init(AVCodecContext * avctx)
+static av_cold int ra144_decode_init(AVCodecContext * avctx)
 {
     RA144Context *ractx = avctx->priv_data;
 
