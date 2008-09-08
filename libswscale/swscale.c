@@ -1984,7 +1984,6 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     int64_t cy  = 1<<16;
     int64_t oy  = 0;
 
-    if (isYUV(c->dstFormat) || isGray(c->dstFormat)) return -1;
     memcpy(c->srcColorspaceTable, inv_table, sizeof(int)*4);
     memcpy(c->dstColorspaceTable,     table, sizeof(int)*4);
 
@@ -1993,6 +1992,7 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     c->saturation= saturation;
     c->srcRange  = srcRange;
     c->dstRange  = dstRange;
+    if (isYUV(c->dstFormat) || isGray(c->dstFormat)) return 0;
 
     c->uOffset=   0x0400040004000400LL;
     c->vOffset=   0x0400040004000400LL;
@@ -2213,7 +2213,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
     sws_setColorspaceDetails(c, Inverse_Table_6_9[SWS_CS_DEFAULT], srcRange, Inverse_Table_6_9[SWS_CS_DEFAULT] /* FIXME*/, dstRange, 0, 1<<16, 1<<16);
 
     /* unscaled special Cases */
-    if (unscaled && !usesHFilter && !usesVFilter)
+    if (unscaled && !usesHFilter && !usesVFilter && (srcRange == dstRange || isBGR(dstFormat) || isRGB(dstFormat)))
     {
         /* yv12_to_nv12 */
         if (srcFormat == PIX_FMT_YUV420P && (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21))

@@ -2501,7 +2501,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 #endif /* HAVE_MMX */
 }
       // *** horizontal scale Y line to temp buffer
-static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, int srcW, int xInc,
+static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, uint8_t *src, int srcW, int xInc,
                                    int flags, int canMMX2BeUsed, int16_t *hLumFilter,
                                    int16_t *hLumFilterPos, int hLumFilterSize, void *funnyYCode,
                                    int srcFormat, uint8_t *formatConvBuffer, int16_t *mmx2Filter,
@@ -2711,9 +2711,22 @@ FUNNY_Y_CODE
         }
 #endif /* defined(ARCH_X86) */
     }
+
+    if(c->srcRange != c->dstRange && !(isRGB(c->dstFormat) || isBGR(c->dstFormat))){
+        int i;
+        //FIXME all pal and rgb srcFormats could do this convertion as well
+        //FIXME all scalers more complex than bilinear could do half of this transform
+        if(c->srcRange){
+            for (i=0; i<dstWidth; i++)
+                dst[i]= (dst[i]*14071 + 33561947)>>14;
+        }else{
+            for (i=0; i<dstWidth; i++)
+                dst[i]= (dst[i]*19077 - 39057361)>>14;
+        }
+    }
 }
 
-inline static void RENAME(hcscale)(uint16_t *dst, long dstWidth, uint8_t *src1, uint8_t *src2,
+inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, uint8_t *src1, uint8_t *src2,
                                    int srcW, int xInc, int flags, int canMMX2BeUsed, int16_t *hChrFilter,
                                    int16_t *hChrFilterPos, int hChrFilterSize, void *funnyUVCode,
                                    int srcFormat, uint8_t *formatConvBuffer, int16_t *mmx2Filter,
@@ -2962,6 +2975,22 @@ FUNNY_UV_CODE
         }
 #endif /* defined(ARCH_X86) */
     }
+    if(c->srcRange != c->dstRange && !(isRGB(c->dstFormat) || isBGR(c->dstFormat))){
+        int i;
+        //FIXME all pal and rgb srcFormats could do this convertion as well
+        //FIXME all scalers more complex than bilinear could do half of this transform
+        if(c->srcRange){
+            for (i=0; i<dstWidth; i++){
+                dst[i     ]= (dst[i     ]*1799 + 4081085)>>11; //1469
+                dst[i+VOFW]= (dst[i+VOFW]*1799 + 4081085)>>11; //1469
+            }
+        }else{
+            for (i=0; i<dstWidth; i++){
+                dst[i     ]= (dst[i     ]*4663 - 9289992)>>12; //-264
+                dst[i+VOFW]= (dst[i+VOFW]*4663 - 9289992)>>12; //-264
+            }
+        }
+    }
 }
 
 static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
@@ -3097,7 +3126,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
                 assert(lastInLumBuf + 1 - srcSliceY >= 0);
                 //printf("%d %d\n", lumBufIndex, vLumBufSize);
-                RENAME(hyscale)(lumPixBuf[ lumBufIndex ], dstW, s, srcW, lumXInc,
+                RENAME(hyscale)(c, lumPixBuf[ lumBufIndex ], dstW, s, srcW, lumXInc,
                                 flags, canMMX2BeUsed, hLumFilter, hLumFilterPos, hLumFilterSize,
                                 funnyYCode, c->srcFormat, formatConvBuffer,
                                 c->lumMmx2Filter, c->lumMmx2FilterPos, pal);
@@ -3114,7 +3143,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 //FIXME replace parameters through context struct (some at least)
 
                 if (!(isGray(srcFormat) || isGray(dstFormat)))
-                    RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
+                    RENAME(hcscale)(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
                                     flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
                                     funnyUVCode, c->srcFormat, formatConvBuffer,
                                     c->chrMmx2Filter, c->chrMmx2FilterPos, pal);
@@ -3139,7 +3168,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 assert(lumBufIndex < 2*vLumBufSize);
                 assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
                 assert(lastInLumBuf + 1 - srcSliceY >= 0);
-                RENAME(hyscale)(lumPixBuf[ lumBufIndex ], dstW, s, srcW, lumXInc,
+                RENAME(hyscale)(c, lumPixBuf[ lumBufIndex ], dstW, s, srcW, lumXInc,
                                 flags, canMMX2BeUsed, hLumFilter, hLumFilterPos, hLumFilterSize,
                                 funnyYCode, c->srcFormat, formatConvBuffer,
                                 c->lumMmx2Filter, c->lumMmx2FilterPos, pal);
@@ -3155,7 +3184,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 assert(lastInChrBuf + 1 - chrSrcSliceY >= 0);
 
                 if (!(isGray(srcFormat) || isGray(dstFormat)))
-                    RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
+                    RENAME(hcscale)(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
                             flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
                             funnyUVCode, c->srcFormat, formatConvBuffer,
                             c->chrMmx2Filter, c->chrMmx2FilterPos, pal);
