@@ -112,7 +112,7 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
     codec->codec_type = CODEC_TYPE_AUDIO;
     codec->channels = get_be16(pb);
     num_frames = get_be32(pb);
-    codec->bits_per_sample = get_be16(pb);
+    codec->bits_per_coded_sample = get_be16(pb);
 
     get_buffer(pb, (uint8_t*)&ext, sizeof(ext));/* Sample rate is in */
     sample_rate = av_ext2dbl(ext);          /* 80 bits BE IEEE extended float */
@@ -126,8 +126,8 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
 
         switch (codec->codec_id) {
         case CODEC_ID_PCM_S16BE:
-            codec->codec_id = aiff_codec_get_id(codec->bits_per_sample);
-            codec->bits_per_sample = av_get_bits_per_sample(codec->codec_id);
+            codec->codec_id = aiff_codec_get_id(codec->bits_per_coded_sample);
+            codec->bits_per_coded_sample = av_get_bits_per_sample(codec->codec_id);
             break;
         case CODEC_ID_ADPCM_IMA_QT:
             codec->block_align = 34*codec->channels;
@@ -151,14 +151,14 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
         size -= 4;
     } else {
         /* Need the codec type */
-        codec->codec_id = aiff_codec_get_id(codec->bits_per_sample);
-        codec->bits_per_sample = av_get_bits_per_sample(codec->codec_id);
+        codec->codec_id = aiff_codec_get_id(codec->bits_per_coded_sample);
+        codec->bits_per_coded_sample = av_get_bits_per_sample(codec->codec_id);
     }
 
     /* Block align needs to be computed in all cases, as the definition
      * is specific to applications -> here we use the WAVE format definition */
     if (!codec->block_align)
-        codec->block_align = (codec->bits_per_sample * codec->channels) >> 3;
+        codec->block_align = (codec->bits_per_coded_sample * codec->channels) >> 3;
 
     codec->bit_rate = (codec->frame_size ? codec->sample_rate/codec->frame_size :
                        codec->sample_rate) * (codec->block_align << 3);
@@ -198,7 +198,7 @@ static int aiff_write_header(AVFormatContext *s)
     put_tag(pb, aifc ? "AIFC" : "AIFF");
 
     if (aifc) { // compressed audio
-        enc->bits_per_sample = 16;
+        enc->bits_per_coded_sample = 16;
         if (!enc->block_align) {
             av_log(s, AV_LOG_ERROR, "block align not set\n");
             return -1;
@@ -217,16 +217,16 @@ static int aiff_write_header(AVFormatContext *s)
     aiff->frames = url_ftell(pb);
     put_be32(pb, 0);              /* Number of frames */
 
-    if (!enc->bits_per_sample)
-        enc->bits_per_sample = av_get_bits_per_sample(enc->codec_id);
-    if (!enc->bits_per_sample) {
+    if (!enc->bits_per_coded_sample)
+        enc->bits_per_coded_sample = av_get_bits_per_sample(enc->codec_id);
+    if (!enc->bits_per_coded_sample) {
         av_log(s, AV_LOG_ERROR, "could not compute bits per sample\n");
         return -1;
     }
     if (!enc->block_align)
-        enc->block_align = (enc->bits_per_sample * enc->channels) >> 3;
+        enc->block_align = (enc->bits_per_coded_sample * enc->channels) >> 3;
 
-    put_be16(pb, enc->bits_per_sample); /* Sample size */
+    put_be16(pb, enc->bits_per_coded_sample); /* Sample size */
 
     sample_rate = av_dbl2ext((double)enc->sample_rate);
     put_buffer(pb, (uint8_t*)&sample_rate, sizeof(sample_rate));

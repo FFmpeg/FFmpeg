@@ -171,7 +171,7 @@ static av_cold int ape_decode_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_ERROR, "Incorrect extradata\n");
         return -1;
     }
-    if (avctx->bits_per_sample != 16) {
+    if (avctx->bits_per_coded_sample != 16) {
         av_log(avctx, AV_LOG_ERROR, "Only 16-bit samples are supported\n");
         return -1;
     }

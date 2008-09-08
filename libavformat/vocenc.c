@@ -55,7 +55,7 @@ static int voc_write_packet(AVFormatContext *s, AVPacket *pkt)
             put_byte(pb, VOC_TYPE_NEW_VOICE_DATA);
             put_le24(pb, pkt->size + 12);
             put_le32(pb, enc->sample_rate);
-            put_byte(pb, enc->bits_per_sample);
+            put_byte(pb, enc->bits_per_coded_sample);
             put_byte(pb, enc->channels);
             put_le16(pb, enc->codec_tag);
             put_le32(pb, 0);

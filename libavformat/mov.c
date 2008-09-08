@@ -796,13 +796,13 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 st->codec->codec_name[codec_name[0]] = 0;
             }
 
-            st->codec->bits_per_sample = get_be16(pb); /* depth */
+            st->codec->bits_per_coded_sample = get_be16(pb); /* depth */
             st->codec->color_table_id = get_be16(pb); /* colortable id */
             dprintf(c->fc, "depth %d, ctab id %d\n",
-                   st->codec->bits_per_sample, st->codec->color_table_id);
+                   st->codec->bits_per_coded_sample, st->codec->color_table_id);
             /* figure out the palette situation */
-            color_depth = st->codec->bits_per_sample & 0x1F;
-            color_greyscale = st->codec->bits_per_sample & 0x20;
+            color_depth = st->codec->bits_per_coded_sample & 0x1F;
+            color_greyscale = st->codec->bits_per_coded_sample & 0x20;
 
             /* if the depth is 2, 4, or 8 bpp, file is palettized */
             if ((color_depth == 2) || (color_depth == 4) ||
@@ -814,7 +814,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 if (color_greyscale) {
                     int color_index, color_dec;
                     /* compute the greyscale palette */
-                    st->codec->bits_per_sample = color_depth;
+                    st->codec->bits_per_coded_sample = color_depth;
                     color_count = 1 << color_depth;
                     color_index = 255;
                     color_dec = 256 / (color_count - 1);
@@ -882,7 +882,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
             st->codec->channels = get_be16(pb);             /* channel count */
             dprintf(c->fc, "audio channels %d\n", st->codec->channels);
-            st->codec->bits_per_sample = get_be16(pb);      /* sample size */
+            st->codec->bits_per_coded_sample = get_be16(pb);      /* sample size */
 
             sc->audio_cid = get_be16(pb);
             get_be16(pb); /* packet size = 0 */
@@ -902,26 +902,26 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                     st->codec->sample_rate = av_int2dbl(get_be64(pb)); /* float 64 */
                     st->codec->channels = get_be32(pb);
                     get_be32(pb); /* always 0x7F000000 */
-                    st->codec->bits_per_sample = get_be32(pb); /* bits per channel if sound is uncompressed */
+                    st->codec->bits_per_coded_sample = get_be32(pb); /* bits per channel if sound is uncompressed */
                     flags = get_be32(pb); /* lcpm format specific flag */
                     sc->bytes_per_frame = get_be32(pb); /* bytes per audio packet if constant */
                     sc->samples_per_frame = get_be32(pb); /* lpcm frames per audio packet if constant */
                     if (format == MKTAG('l','p','c','m'))
-                        st->codec->codec_id = mov_get_lpcm_codec_id(st->codec->bits_per_sample, flags);
+                        st->codec->codec_id = mov_get_lpcm_codec_id(st->codec->bits_per_coded_sample, flags);
                 }
             }
 
             switch (st->codec->codec_id) {
             case CODEC_ID_PCM_S8:
             case CODEC_ID_PCM_U8:
-                if (st->codec->bits_per_sample == 16)
+                if (st->codec->bits_per_coded_sample == 16)
                     st->codec->codec_id = CODEC_ID_PCM_S16BE;
                 break;
             case CODEC_ID_PCM_S16LE:
             case CODEC_ID_PCM_S16BE:
-                if (st->codec->bits_per_sample == 8)
+                if (st->codec->bits_per_coded_sample == 8)
                     st->codec->codec_id = CODEC_ID_PCM_S8;
-                else if (st->codec->bits_per_sample == 24)
+                else if (st->codec->bits_per_coded_sample == 24)
                     st->codec->codec_id =
                         st->codec->codec_id == CODEC_ID_PCM_S16BE ?
                         CODEC_ID_PCM_S24BE : CODEC_ID_PCM_S24LE;
@@ -949,7 +949,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
             bits_per_sample = av_get_bits_per_sample(st->codec->codec_id);
             if (bits_per_sample) {
-                st->codec->bits_per_sample = bits_per_sample;
+                st->codec->bits_per_coded_sample = bits_per_sample;
                 sc->sample_size = (bits_per_sample >> 3) * st->codec->channels;
             }
         } else if(st->codec->codec_type==CODEC_TYPE_SUBTITLE){

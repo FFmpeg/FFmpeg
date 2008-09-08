@@ -148,12 +148,12 @@ static av_cold int rl2_read_header(AVFormatContext *s,
         st->codec->codec_id = CODEC_ID_PCM_U8;
         st->codec->codec_tag = 1;
         st->codec->channels = channels;
-        st->codec->bits_per_sample = 8;
+        st->codec->bits_per_coded_sample = 8;
         st->codec->sample_rate = rate;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-            st->codec->bits_per_sample;
+            st->codec->bits_per_coded_sample;
         st->codec->block_align = st->codec->channels *
-            st->codec->bits_per_sample / 8;
+            st->codec->bits_per_coded_sample / 8;
         av_set_pts_info(st,32,1,rate);
     }
 

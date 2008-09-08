@@ -424,7 +424,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
     st->codec->codec_tag       = MKTAG('A', 'P', 'E', ' ');
     st->codec->channels        = ape->channels;
     st->codec->sample_rate     = ape->samplerate;
-    st->codec->bits_per_sample = ape->bps;
+    st->codec->bits_per_coded_sample = ape->bps;
     st->codec->frame_size      = MAC_SUBFRAME_SIZE;
 
     st->nb_frames = ape->totalframes;

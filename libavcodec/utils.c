@@ -544,7 +544,6 @@ static const AVOption options[]={
 {"scplx_mask", "spatial complexity masking", OFFSET(spatial_cplx_masking), FF_OPT_TYPE_FLOAT, 0, -FLT_MAX, FLT_MAX, V|E},
 {"p_mask", "inter masking", OFFSET(p_masking), FF_OPT_TYPE_FLOAT, 0, -FLT_MAX, FLT_MAX, V|E},
 {"dark_mask", "compresses dark areas stronger than medium ones", OFFSET(dark_masking), FF_OPT_TYPE_FLOAT, 0, -FLT_MAX, FLT_MAX, V|E},
-{"unused", NULL, OFFSET(unused), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"idct", "select IDCT implementation", OFFSET(idct_algo), FF_OPT_TYPE_INT, DEFAULT, 0, INT_MAX, V|E|D, "idct"},
 {"auto", NULL, 0, FF_OPT_TYPE_CONST, FF_IDCT_AUTO, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"int", NULL, 0, FF_OPT_TYPE_CONST, FF_IDCT_INT, INT_MIN, INT_MAX, V|E|D, "idct"},

@@ -315,7 +315,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st->codec->height = get_le32(pb);
                 /* not available for asf */
                 get_le16(pb); /* panes */
-                st->codec->bits_per_sample = get_le16(pb); /* depth */
+                st->codec->bits_per_coded_sample = get_le16(pb); /* depth */
                 tag1 = get_le32(pb);
                 url_fskip(pb, 20);
 //                av_log(NULL, AV_LOG_DEBUG, "size:%d tsize:%d sizeX:%d\n", size, total_size, sizeX);
@@ -329,7 +329,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         /* Extract palette from extradata if bpp <= 8 */
         /* This code assumes that extradata contains only palette */
         /* This is true for all paletted codecs implemented in ffmpeg */
-        if (st->codec->extradata_size && (st->codec->bits_per_sample <= 8)) {
+        if (st->codec->extradata_size && (st->codec->bits_per_coded_sample <= 8)) {
             st->codec->palctrl = av_mallocz(sizeof(AVPaletteControl));
 #ifdef WORDS_BIGENDIAN
             for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)

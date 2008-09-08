@@ -279,8 +279,8 @@ static av_cold int faac_decode_init(AVCodecContext *avctx)
     faac_cfg = s->faacDecGetCurrentConfiguration(s->faac_handle);
 
     if (faac_cfg) {
-        switch (avctx->bits_per_sample) {
-        case 8: av_log(avctx, AV_LOG_ERROR, "FAADlib unsupported bps %d\n", avctx->bits_per_sample); break;
+        switch (avctx->bits_per_coded_sample) {
+        case 8: av_log(avctx, AV_LOG_ERROR, "FAADlib unsupported bps %d\n", avctx->bits_per_coded_sample); break;
         default:
         case 16:
 #ifdef FAAD2_VERSION

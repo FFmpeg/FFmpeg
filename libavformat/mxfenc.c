@@ -588,7 +588,7 @@ static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
     put_be32(pb, st->codec->channels);
 
     mxf_write_local_tag(pb, 4, 0x3D01);
-    put_be32(pb, st->codec->bits_per_sample);
+    put_be32(pb, st->codec->bits_per_coded_sample);
 }
 
 static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)

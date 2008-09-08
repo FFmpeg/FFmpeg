@@ -180,7 +180,7 @@ do_video_encoding mpeg2.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video"
 do_video_decoding
 
 # mpeg2 encoding intra vlc qprd
-do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -flags +trell+qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd" "-vcodec mpeg2video -f mpeg2video"
+do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -trellis 1 -flags +qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd" "-vcodec mpeg2video -f mpeg2video"
 do_video_decoding
 
 #mpeg2 4:2:2 encoding
@@ -262,13 +262,13 @@ do_video_decoding
 fi
 
 if [ -n "$do_mpeg4adv" ] ; then
-do_video_encoding mpeg4-adv.avi "-qscale 9 -flags +mv4+part+aic+trell -mbd bits -ps 200" "-an -vcodec mpeg4"
+do_video_encoding mpeg4-adv.avi "-qscale 9 -flags +mv4+part+aic -trellis 1 -mbd bits -ps 200" "-an -vcodec mpeg4"
 do_video_decoding
 
-do_video_encoding mpeg4-qprd.avi "-b 450k -bf 2 -flags +mv4+trell+qprd+mv0 -cmp 2 -subcmp 2 -mbd rd" "-an -vcodec mpeg4"
+do_video_encoding mpeg4-qprd.avi "-b 450k -bf 2 -trellis 1 -flags +mv4+qprd+mv0 -cmp 2 -subcmp 2 -mbd rd" "-an -vcodec mpeg4"
 do_video_decoding
 
-do_video_encoding mpeg4-adap.avi "-b 550k -bf 2 -flags +mv4+trell+mv0 -cmp 1 -subcmp 2 -mbd rd -scplx_mask 0.3" "-an -vcodec mpeg4"
+do_video_encoding mpeg4-adap.avi "-b 550k -bf 2 -flags +mv4+mv0 -trellis 1 -cmp 1 -subcmp 2 -mbd rd -scplx_mask 0.3" "-an -vcodec mpeg4"
 do_video_decoding
 
 do_video_encoding mpeg4-Q.avi "-qscale 7 -flags +mv4+qpel -mbd 2 -bf 2 -cmp 1 -subcmp 2" "-an -vcodec mpeg4"
@@ -276,7 +276,7 @@ do_video_decoding
 fi
 
 if [ -n "$do_mpeg4thread" ] ; then
-do_video_encoding mpeg4-thread.avi "-b 500k -flags +mv4+part+aic+trell -mbd bits -ps 200 -bf 2" "-an -vcodec mpeg4 -threads 2"
+do_video_encoding mpeg4-thread.avi "-b 500k -flags +mv4+part+aic -trellis 1 -mbd bits -ps 200 -bf 2" "-an -vcodec mpeg4 -threads 2"
 do_video_decoding
 fi
 
@@ -341,7 +341,7 @@ do_video_decoding
 fi
 
 if [ -n "$do_snow" ] ; then
-do_video_encoding snow.avi "-strict -2" "-an -vcodec snow -qscale 2 -flags +qpel -me iter -dia_size 2 -cmp 12 -subcmp 12 -s 128x64"
+do_video_encoding snow.avi "-strict -2" "-an -vcodec snow -qscale 2 -flags +qpel -me_method iter -dia_size 2 -cmp 12 -subcmp 12 -s 128x64"
 do_video_decoding "" "-s 352x288"
 fi
 

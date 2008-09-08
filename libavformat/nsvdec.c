@@ -456,7 +456,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->codec_id = codec_get_id(nsv_codec_video_tags, vtag);
             st->codec->width = vwidth;
             st->codec->height = vheight;
-            st->codec->bits_per_sample = 24; /* depth XXX */
+            st->codec->bits_per_coded_sample = 24; /* depth XXX */
 
             av_set_pts_info(st, 64, framerate.den, framerate.num);
             st->start_time = 0;

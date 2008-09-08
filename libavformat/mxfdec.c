@@ -222,7 +222,7 @@ static int mxf_get_d10_aes3_packet(ByteIOContext *pb, AVStream *st, AVPacket *pk
     for (; buf_ptr < end_ptr; ) {
         for (i = 0; i < st->codec->channels; i++) {
             uint32_t sample = bytestream_get_le32(&buf_ptr);
-            if (st->codec->bits_per_sample == 24)
+            if (st->codec->bits_per_coded_sample == 24)
                 bytestream_put_le24(&data_ptr, (sample >> 4) & 0xffffff);
             else
                 bytestream_put_le16(&data_ptr, (sample >> 12) & 0xffff);
@@ -788,7 +788,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->codec->codec_id = container_ul->id;
             st->codec->width = descriptor->width;
             st->codec->height = descriptor->height;
-            st->codec->bits_per_sample = descriptor->bits_per_sample; /* Uncompressed */
+            st->codec->bits_per_coded_sample = descriptor->bits_per_sample; /* Uncompressed */
             st->sample_aspect_ratio = descriptor->aspect_ratio;
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
@@ -796,7 +796,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if (st->codec->codec_id == CODEC_ID_NONE)
                 st->codec->codec_id = container_ul->id;
             st->codec->channels = descriptor->channels;
-            st->codec->bits_per_sample = descriptor->bits_per_sample;
+            st->codec->bits_per_coded_sample = descriptor->bits_per_sample;
             st->codec->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
             /* TODO: implement CODEC_ID_RAWAUDIO */
             if (st->codec->codec_id == CODEC_ID_PCM_S16LE) {

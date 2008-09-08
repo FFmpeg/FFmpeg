@@ -42,7 +42,7 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_c
     switch(flv_codecid) {
         //no distinction between S16 and S8 PCM codec flags
         case FLV_CODECID_PCM:
-            acodec->codec_id = acodec->bits_per_sample == 8 ? CODEC_ID_PCM_S8 :
+            acodec->codec_id = acodec->bits_per_coded_sample == 8 ? CODEC_ID_PCM_S8 :
 #ifdef WORDS_BIGENDIAN
                                 CODEC_ID_PCM_S16BE;
 #else
@@ -50,7 +50,7 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_c
 #endif
             break;
         case FLV_CODECID_PCM_LE:
-            acodec->codec_id = acodec->bits_per_sample == 8 ? CODEC_ID_PCM_S8 : CODEC_ID_PCM_S16LE; break;
+            acodec->codec_id = acodec->bits_per_coded_sample == 8 ? CODEC_ID_PCM_S8 : CODEC_ID_PCM_S16LE; break;
         case FLV_CODECID_AAC  : acodec->codec_id = CODEC_ID_AAC;                                    break;
         case FLV_CODECID_ADPCM: acodec->codec_id = CODEC_ID_ADPCM_SWF;                              break;
         case FLV_CODECID_SPEEX: acodec->codec_id = CODEC_ID_SPEEX;                                  break;
@@ -185,7 +185,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
             else if(!strcmp(key, "videocodecid") && vcodec && 0 <= (int)num_val)
                 flv_set_video_codec(s, vstream, (int)num_val);
             else if(!strcmp(key, "audiosamplesize") && acodec && 0 < (int)num_val) {
-                acodec->bits_per_sample = num_val;
+                acodec->bits_per_coded_sample = num_val;
                 //we may have to rewrite a previously read codecid because FLV only marks PCM endianness.
                 if(num_val == 8 && (acodec->codec_id == CODEC_ID_PCM_S16BE || acodec->codec_id == CODEC_ID_PCM_S16LE))
                     acodec->codec_id = CODEC_ID_PCM_S8;
@@ -382,13 +382,13 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if(is_audio){
-        if(!st->codec->sample_rate || !st->codec->bits_per_sample || (!st->codec->codec_id && !st->codec->codec_tag)) {
+        if(!st->codec->sample_rate || !st->codec->bits_per_coded_sample || (!st->codec->codec_id && !st->codec->codec_tag)) {
             st->codec->channels = (flags & FLV_AUDIO_CHANNEL_MASK) == FLV_STEREO ? 2 : 1;
             if((flags & FLV_AUDIO_CODECID_MASK) == FLV_CODECID_NELLYMOSER_8HZ_MONO)
                 st->codec->sample_rate= 8000;
             else
                 st->codec->sample_rate = (44100 << ((flags & FLV_AUDIO_SAMPLERATE_MASK) >> FLV_AUDIO_SAMPLERATE_OFFSET) >> 3);
-            st->codec->bits_per_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
+            st->codec->bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
             flv_set_audio_codec(s, st, flags & FLV_AUDIO_CODECID_MASK);
         }
     }else{

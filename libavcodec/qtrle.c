@@ -383,7 +383,7 @@ static av_cold int qtrle_decode_init(AVCodecContext *avctx)
     QtrleContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    switch (avctx->bits_per_sample) {
+    switch (avctx->bits_per_coded_sample) {
     case 1:
     case 33:
         avctx->pix_fmt = PIX_FMT_MONOWHITE;
@@ -412,7 +412,7 @@ static av_cold int qtrle_decode_init(AVCodecContext *avctx)
 
     default:
         av_log (avctx, AV_LOG_ERROR, "Unsupported colorspace: %d bits/sample?\n",
-            avctx->bits_per_sample);
+            avctx->bits_per_coded_sample);
         break;
     }
 
@@ -466,7 +466,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     }
     row_ptr = s->frame.linesize[0] * start_line;
 
-    switch (avctx->bits_per_sample) {
+    switch (avctx->bits_per_coded_sample) {
     case 1:
     case 33:
         qtrle_decode_1bpp(s, stream_ptr, row_ptr, height);
@@ -504,7 +504,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
 
     default:
         av_log (s->avctx, AV_LOG_ERROR, "Unsupported colorspace: %d bits/sample?\n",
-            avctx->bits_per_sample);
+            avctx->bits_per_coded_sample);
         break;
     }
 

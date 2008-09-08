@@ -55,7 +55,7 @@ typedef struct FLVContext {
 } FLVContext;
 
 static int get_audio_flags(AVCodecContext *enc){
-    int flags = (enc->bits_per_sample == 16) ? FLV_SAMPLESSIZE_16BIT : FLV_SAMPLESSIZE_8BIT;
+    int flags = (enc->bits_per_coded_sample == 16) ? FLV_SAMPLESSIZE_16BIT : FLV_SAMPLESSIZE_8BIT;
 
     if (enc->codec_id == CODEC_ID_AAC) // specs force these parameters
         return FLV_CODECID_AAC | FLV_SAMPLERATE_44100HZ | FLV_SAMPLESSIZE_16BIT | FLV_STEREO;

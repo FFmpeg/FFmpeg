@@ -182,7 +182,7 @@ static int mpc8_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(ENOMEM);
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_MUSEPACK8;
-    st->codec->bits_per_sample = 16;
+    st->codec->bits_per_coded_sample = 16;
 
     st->codec->extradata_size = 2;
     st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);

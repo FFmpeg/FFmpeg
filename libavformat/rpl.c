@@ -142,7 +142,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
     vst->codec->codec_tag       = read_line_and_int(pb, &error);  // video format
     vst->codec->width           = read_line_and_int(pb, &error);  // video width
     vst->codec->height          = read_line_and_int(pb, &error);  // video height
-    vst->codec->bits_per_sample = read_line_and_int(pb, &error);  // video bits per sample
+    vst->codec->bits_per_coded_sample = read_line_and_int(pb, &error);  // video bits per sample
     error |= read_line(pb, line, sizeof(line));                   // video frames per second
     fps = read_fps(line, &error);
     av_set_pts_info(vst, 32, fps.den, fps.num);
@@ -157,7 +157,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
         case 124:
             vst->codec->codec_id = CODEC_ID_ESCAPE124;
             // The header is wrong here, at least sometimes
-            vst->codec->bits_per_sample = 16;
+            vst->codec->bits_per_coded_sample = 16;
             break;
 #if 0
         case 130:
@@ -184,20 +184,20 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
         ast->codec->codec_tag       = audio_format;
         ast->codec->sample_rate     = read_line_and_int(pb, &error);  // audio bitrate
         ast->codec->channels        = read_line_and_int(pb, &error);  // number of audio channels
-        ast->codec->bits_per_sample = read_line_and_int(pb, &error);  // audio bits per sample
+        ast->codec->bits_per_coded_sample = read_line_and_int(pb, &error);  // audio bits per sample
         // At least one sample uses 0 for ADPCM, which is really 4 bits
         // per sample.
-        if (ast->codec->bits_per_sample == 0)
-            ast->codec->bits_per_sample = 4;
+        if (ast->codec->bits_per_coded_sample == 0)
+            ast->codec->bits_per_coded_sample = 4;
 
         ast->codec->bit_rate = ast->codec->sample_rate *
-                               ast->codec->bits_per_sample *
+                               ast->codec->bits_per_coded_sample *
                                ast->codec->channels;
 
         ast->codec->codec_id = CODEC_ID_NONE;
         switch (audio_format) {
             case 1:
-                if (ast->codec->bits_per_sample == 16) {
+                if (ast->codec->bits_per_coded_sample == 16) {
                     // 16-bit audio is always signed
                     ast->codec->codec_id = CODEC_ID_PCM_S16LE;
                     break;
@@ -206,12 +206,12 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 // samples needed.
                 break;
             case 101:
-                if (ast->codec->bits_per_sample == 8) {
+                if (ast->codec->bits_per_coded_sample == 8) {
                     // The samples with this kind of audio that I have
                     // are all unsigned.
                     ast->codec->codec_id = CODEC_ID_PCM_U8;
                     break;
-                } else if (ast->codec->bits_per_sample == 4) {
+                } else if (ast->codec->bits_per_coded_sample == 4) {
                     ast->codec->codec_id = CODEC_ID_ADPCM_IMA_EA_SEAD;
                     break;
                 }

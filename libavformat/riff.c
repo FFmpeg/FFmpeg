@@ -251,8 +251,8 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         if (!(bps = av_get_bits_per_sample(enc->codec_id)))
             bps = 16; // default to 16
     }
-    if(bps != enc->bits_per_sample && enc->bits_per_sample){
-        av_log(enc, AV_LOG_WARNING, "requested bits_per_sample (%d) and actually stored (%d) differ\n", enc->bits_per_sample, bps);
+    if(bps != enc->bits_per_coded_sample && enc->bits_per_coded_sample){
+        av_log(enc, AV_LOG_WARNING, "requested bits_per_coded_sample (%d) and actually stored (%d) differ\n", enc->bits_per_coded_sample, bps);
     }
 
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_AC3) {
@@ -327,7 +327,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *ta
     put_le32(pb, enc->height);
     put_le16(pb, 1); /* planes */
 
-    put_le16(pb, enc->bits_per_sample ? enc->bits_per_sample : 24); /* depth */
+    put_le16(pb, enc->bits_per_coded_sample ? enc->bits_per_coded_sample : 24); /* depth */
     /* compression type */
     put_le32(pb, enc->codec_tag);
     put_le32(pb, enc->width * enc->height * 3);
@@ -363,15 +363,15 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
     codec->bit_rate = get_le32(pb) * 8;
     codec->block_align = get_le16(pb);
     if (size == 14) {  /* We're dealing with plain vanilla WAVEFORMAT */
-        codec->bits_per_sample = 8;
+        codec->bits_per_coded_sample = 8;
     }else
-        codec->bits_per_sample = get_le16(pb);
+        codec->bits_per_coded_sample = get_le16(pb);
     if (size >= 18) {  /* We're obviously dealing with WAVEFORMATEX */
         int cbSize = get_le16(pb); /* cbSize */
         size -= 18;
         cbSize = FFMIN(size, cbSize);
         if (cbSize >= 22 && id == 0xfffe) { /* WAVEFORMATEXTENSIBLE */
-            codec->bits_per_sample = get_le16(pb);
+            codec->bits_per_coded_sample = get_le16(pb);
             get_le32(pb); /* dwChannelMask */
             id = get_le32(pb); /* 4 first bytes of GUID */
             url_fskip(pb, 12); /* skip end of GUID */
@@ -389,7 +389,7 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
         if (size > 0)
             url_fskip(pb, size);
     }
-    codec->codec_id = wav_codec_get_id(id, codec->bits_per_sample);
+    codec->codec_id = wav_codec_get_id(id, codec->bits_per_coded_sample);
 }
 
 

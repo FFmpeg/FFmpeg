@@ -574,12 +574,12 @@ static int ipmovie_read_header(AVFormatContext *s,
         st->codec->codec_tag = 0;  /* no tag */
         st->codec->channels = ipmovie->audio_channels;
         st->codec->sample_rate = ipmovie->audio_sample_rate;
-        st->codec->bits_per_sample = ipmovie->audio_bits;
+        st->codec->bits_per_coded_sample = ipmovie->audio_bits;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-            st->codec->bits_per_sample;
+            st->codec->bits_per_coded_sample;
         if (st->codec->codec_id == CODEC_ID_INTERPLAY_DPCM)
             st->codec->bit_rate /= 2;
-        st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
+        st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
     }
 
     return 0;

@@ -154,10 +154,10 @@ static int wsaud_read_header(AVFormatContext *s,
     st->codec->codec_tag = 0;  /* no tag */
     st->codec->channels = wsaud->audio_channels;
     st->codec->sample_rate = wsaud->audio_samplerate;
-    st->codec->bits_per_sample = wsaud->audio_bits;
+    st->codec->bits_per_coded_sample = wsaud->audio_bits;
     st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-        st->codec->bits_per_sample / 4;
-    st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
+        st->codec->bits_per_coded_sample / 4;
+    st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
 
     wsaud->audio_stream_index = st->index;
     wsaud->audio_frame_counter = 0;
@@ -264,10 +264,10 @@ static int wsvqa_read_header(AVFormatContext *s,
         st->codec->channels = header[26];
         if (!st->codec->channels)
             st->codec->channels = 1;
-        st->codec->bits_per_sample = 16;
+        st->codec->bits_per_coded_sample = 16;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-            st->codec->bits_per_sample / 4;
-        st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
+            st->codec->bits_per_coded_sample / 4;
+        st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
 
         wsvqa->audio_stream_index = st->index;
         wsvqa->audio_samplerate = st->codec->sample_rate;

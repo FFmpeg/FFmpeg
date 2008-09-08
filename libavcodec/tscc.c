@@ -274,17 +274,17 @@ static av_cold int decode_init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_ERROR, "Zlib support not compiled.\n");
     return 1;
 #endif
-    switch(avctx->bits_per_sample){
+    switch(avctx->bits_per_coded_sample){
     case  8: avctx->pix_fmt = PIX_FMT_PAL8; break;
     case 16: avctx->pix_fmt = PIX_FMT_RGB555; break;
     case 24:
              avctx->pix_fmt = PIX_FMT_BGR24;
              break;
     case 32: avctx->pix_fmt = PIX_FMT_RGB32; break;
-    default: av_log(avctx, AV_LOG_ERROR, "Camtasia error: unknown depth %i bpp\n", avctx->bits_per_sample);
+    default: av_log(avctx, AV_LOG_ERROR, "Camtasia error: unknown depth %i bpp\n", avctx->bits_per_coded_sample);
              return -1;
     }
-    c->bpp = avctx->bits_per_sample;
+    c->bpp = avctx->bits_per_coded_sample;
     c->decomp_size = (avctx->width * c->bpp + (avctx->width + 254) / 255 + 2) * avctx->height + 2;//RLE in the 'best' case
 
     /* Allocate decompression buffer */

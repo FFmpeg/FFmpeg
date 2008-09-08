@@ -182,7 +182,7 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
                     avs->st_video->codec->codec_id = CODEC_ID_AVS;
                     avs->st_video->codec->width = avs->width;
                     avs->st_video->codec->height = avs->height;
-                    avs->st_video->codec->bits_per_sample=avs->bits_per_sample;
+                    avs->st_video->codec->bits_per_coded_sample=avs->bits_per_sample;
                     avs->st_video->nb_frames = avs->nb_frames;
                     avs->st_video->codec->time_base = (AVRational) {
                     1, avs->fps};

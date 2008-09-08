@@ -120,13 +120,13 @@ static int vmd_read_header(AVFormatContext *s,
         st->codec->sample_rate = vmd->sample_rate;
         st->codec->block_align = AV_RL16(&vmd->vmd_header[806]);
         if (st->codec->block_align & 0x8000) {
-            st->codec->bits_per_sample = 16;
+            st->codec->bits_per_coded_sample = 16;
             st->codec->block_align = -(st->codec->block_align - 0x10000);
         } else {
-            st->codec->bits_per_sample = 8;
+            st->codec->bits_per_coded_sample = 8;
         }
         st->codec->bit_rate = st->codec->sample_rate *
-            st->codec->bits_per_sample * st->codec->channels;
+            st->codec->bits_per_coded_sample * st->codec->channels;
 
         /* calculate pts */
         num = st->codec->block_align;

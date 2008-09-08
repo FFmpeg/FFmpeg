@@ -411,10 +411,10 @@ static int ea_read_header(AVFormatContext *s,
         st->codec->codec_tag = 0;  /* no tag */
         st->codec->channels = ea->num_channels;
         st->codec->sample_rate = ea->sample_rate;
-        st->codec->bits_per_sample = ea->bytes * 8;
+        st->codec->bits_per_coded_sample = ea->bytes * 8;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-            st->codec->bits_per_sample / 4;
-        st->codec->block_align = st->codec->channels*st->codec->bits_per_sample;
+            st->codec->bits_per_coded_sample / 4;
+        st->codec->block_align = st->codec->channels*st->codec->bits_per_coded_sample;
         ea->audio_stream_index = st->index;
         ea->audio_frame_counter = 0;
     }

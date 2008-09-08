@@ -445,7 +445,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec->width = get_le32(pb);
                     st->codec->height = get_le32(pb);
                     get_le16(pb); /* panes */
-                    st->codec->bits_per_sample= get_le16(pb); /* depth */
+                    st->codec->bits_per_coded_sample= get_le16(pb); /* depth */
                     tag1 = get_le32(pb);
                     get_le32(pb); /* ImageSize */
                     get_le32(pb); /* XPelsPerMeter */
@@ -472,7 +472,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     /* Extract palette from extradata if bpp <= 8. */
                     /* This code assumes that extradata contains only palette. */
                     /* This is true for all paletted codecs implemented in FFmpeg. */
-                    if (st->codec->extradata_size && (st->codec->bits_per_sample <= 8)) {
+                    if (st->codec->extradata_size && (st->codec->bits_per_coded_sample <= 8)) {
                         st->codec->palctrl = av_mallocz(sizeof(AVPaletteControl));
 #ifdef WORDS_BIGENDIAN
                         for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)

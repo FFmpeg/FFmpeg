@@ -193,13 +193,13 @@ static int fourxm_read_header(AVFormatContext *s,
             st->codec->codec_tag = 0;
             st->codec->channels = fourxm->tracks[current_track].channels;
             st->codec->sample_rate = fourxm->tracks[current_track].sample_rate;
-            st->codec->bits_per_sample = fourxm->tracks[current_track].bits;
+            st->codec->bits_per_coded_sample = fourxm->tracks[current_track].bits;
             st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-                st->codec->bits_per_sample;
-            st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
+                st->codec->bits_per_coded_sample;
+            st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
             if (fourxm->tracks[current_track].adpcm)
                 st->codec->codec_id = CODEC_ID_ADPCM_4XM;
-            else if (st->codec->bits_per_sample == 8)
+            else if (st->codec->bits_per_coded_sample == 8)
                 st->codec->codec_id = CODEC_ID_PCM_U8;
             else
                 st->codec->codec_id = CODEC_ID_PCM_S16LE;

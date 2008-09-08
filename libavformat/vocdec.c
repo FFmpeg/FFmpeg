@@ -84,7 +84,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
                 dec->sample_rate = sample_rate;
             dec->channels = channels;
             dec->codec_id = codec_get_id(ff_voc_codec_tags, get_byte(pb));
-            dec->bits_per_sample = av_get_bits_per_sample(dec->codec_id);
+            dec->bits_per_coded_sample = av_get_bits_per_sample(dec->codec_id);
             voc->remaining_size -= 2;
             max_size -= 2;
             channels = 1;
@@ -104,7 +104,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 
         case VOC_TYPE_NEW_VOICE_DATA:
             dec->sample_rate = get_le32(pb);
-            dec->bits_per_sample = get_byte(pb);
+            dec->bits_per_coded_sample = get_byte(pb);
             dec->channels = get_byte(pb);
             dec->codec_id = codec_get_id(ff_voc_codec_tags, get_le16(pb));
             url_fskip(pb, 4);
@@ -120,7 +120,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
         }
     }
 
-    dec->bit_rate = dec->sample_rate * dec->bits_per_sample;
+    dec->bit_rate = dec->sample_rate * dec->bits_per_coded_sample;
 
     if (max_size <= 0)
         max_size = 2048;

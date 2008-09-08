@@ -259,10 +259,10 @@ static int wc3_read_header(AVFormatContext *s,
     st->codec->codec_id = CODEC_ID_PCM_S16LE;
     st->codec->codec_tag = 1;
     st->codec->channels = WC3_AUDIO_CHANNELS;
-    st->codec->bits_per_sample = WC3_AUDIO_BITS;
+    st->codec->bits_per_coded_sample = WC3_AUDIO_BITS;
     st->codec->sample_rate = WC3_SAMPLE_RATE;
     st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-        st->codec->bits_per_sample;
+        st->codec->bits_per_coded_sample;
     st->codec->block_align = WC3_AUDIO_BITS * WC3_AUDIO_CHANNELS;
 
     return 0;

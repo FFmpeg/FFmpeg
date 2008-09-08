@@ -684,8 +684,8 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack *track)
     put_byte(pb, strlen(compressor_name));
     put_buffer(pb, compressor_name, 31);
 
-    if (track->mode == MODE_MOV && track->enc->bits_per_sample)
-        put_be16(pb, track->enc->bits_per_sample);
+    if (track->mode == MODE_MOV && track->enc->bits_per_coded_sample)
+        put_be16(pb, track->enc->bits_per_coded_sample);
     else
         put_be16(pb, 0x18); /* Reserved */
     put_be16(pb, 0xffff); /* Reserved */

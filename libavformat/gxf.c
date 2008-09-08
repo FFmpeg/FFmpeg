@@ -120,7 +120,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             st->codec->sample_rate = 48000;
             st->codec->bit_rate = 3 * 1 * 48000 * 8;
             st->codec->block_align = 3 * 1;
-            st->codec->bits_per_sample = 24;
+            st->codec->bits_per_coded_sample = 24;
             break;
         case 10:
             st->codec->codec_type = CODEC_TYPE_AUDIO;
@@ -129,7 +129,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             st->codec->sample_rate = 48000;
             st->codec->bit_rate = 2 * 1 * 48000 * 8;
             st->codec->block_align = 2 * 1;
-            st->codec->bits_per_sample = 16;
+            st->codec->bits_per_coded_sample = 16;
             break;
         case 17:
             st->codec->codec_type = CODEC_TYPE_AUDIO;

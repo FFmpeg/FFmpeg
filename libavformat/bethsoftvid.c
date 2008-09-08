@@ -89,8 +89,8 @@ static int vid_read_header(AVFormatContext *s,
     stream->codec->codec_id = CODEC_ID_PCM_U8;
     stream->codec->channels = 1;
     stream->codec->sample_rate = 11025;
-    stream->codec->bits_per_sample = 8;
-    stream->codec->bit_rate = stream->codec->channels * stream->codec->sample_rate * stream->codec->bits_per_sample;
+    stream->codec->bits_per_coded_sample = 8;
+    stream->codec->bit_rate = stream->codec->channels * stream->codec->sample_rate * stream->codec->bits_per_coded_sample;
 
     return 0;
 }
@@ -197,7 +197,7 @@ static int vid_read_packet(AVFormatContext *s,
             get_le16(pb);
             // soundblaster DAC used for sample rate, as on specification page (link above)
             s->streams[1]->codec->sample_rate = 1000000 / (256 - get_byte(pb));
-            s->streams[1]->codec->bit_rate = s->streams[1]->codec->channels * s->streams[1]->codec->sample_rate * s->streams[1]->codec->bits_per_sample;
+            s->streams[1]->codec->bit_rate = s->streams[1]->codec->channels * s->streams[1]->codec->sample_rate * s->streams[1]->codec->bits_per_coded_sample;
         case AUDIO_BLOCK:
             audio_length = get_le16(pb);
             ret_value = av_get_packet(pb, pkt, audio_length);

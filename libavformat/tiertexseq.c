@@ -230,9 +230,9 @@ static int seq_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_tag = 0;  /* no tag */
     st->codec->channels = 1;
     st->codec->sample_rate = SEQ_SAMPLE_RATE;
-    st->codec->bits_per_sample = 16;
-    st->codec->bit_rate = st->codec->sample_rate * st->codec->bits_per_sample * st->codec->channels;
-    st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
+    st->codec->bits_per_coded_sample = 16;
+    st->codec->bit_rate = st->codec->sample_rate * st->codec->bits_per_coded_sample * st->codec->channels;
+    st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
 
     return 0;
 }

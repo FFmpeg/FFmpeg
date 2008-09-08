@@ -78,7 +78,7 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Unsupported colorspace.\n");
         break;
     }
-    avctx->bits_per_sample = s->pixel_size*8;
+    avctx->bits_per_coded_sample = s->pixel_size*8;
 
     s->rlecode_table = av_mallocz(s->avctx->width);
     s->skip_table    = av_mallocz(s->avctx->width);

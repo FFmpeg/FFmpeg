@@ -469,7 +469,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
         return 1;
     }
-    c->bpp = avctx->bits_per_sample;
+    c->bpp = avctx->bits_per_coded_sample;
     c->bpp2 = c->bpp/8;
 
     switch(c->bpp){

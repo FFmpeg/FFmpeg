@@ -148,12 +148,12 @@ static int film_read_header(AVFormatContext *s,
         st->codec->codec_id = film->audio_type;
         st->codec->codec_tag = 1;
         st->codec->channels = film->audio_channels;
-        st->codec->bits_per_sample = film->audio_bits;
+        st->codec->bits_per_coded_sample = film->audio_bits;
         st->codec->sample_rate = film->audio_samplerate;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-            st->codec->bits_per_sample;
+            st->codec->bits_per_coded_sample;
         st->codec->block_align = st->codec->channels *
-            st->codec->bits_per_sample / 8;
+            st->codec->bits_per_coded_sample / 8;
     }
 
     /* load the sample table */

@@ -118,8 +118,8 @@ static av_cold int pcm_encode_init(AVCodecContext *avctx)
         break;
     }
 
-    avctx->bits_per_sample = av_get_bits_per_sample(avctx->codec->id);
-    avctx->block_align = avctx->channels * avctx->bits_per_sample/8;
+    avctx->bits_per_coded_sample = av_get_bits_per_sample(avctx->codec->id);
+    avctx->block_align = avctx->channels * avctx->bits_per_coded_sample/8;
     avctx->coded_frame= avcodec_alloc_frame();
     avctx->coded_frame->key_frame= 1;
 
@@ -354,7 +354,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     /* av_get_bits_per_sample returns 0 for CODEC_ID_PCM_DVD */
     if (CODEC_ID_PCM_DVD == avctx->codec_id)
         /* 2 samples are interleaved per block in PCM_DVD */
-        sample_size = avctx->bits_per_sample * 2 / 8;
+        sample_size = avctx->bits_per_coded_sample * 2 / 8;
 
     n = avctx->channels * sample_size;
 
@@ -470,7 +470,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_DVD:
         dst_int32_t = data;
         n /= avctx->channels;
-        switch (avctx->bits_per_sample) {
+        switch (avctx->bits_per_coded_sample) {
         case 20:
             while (n--) {
                 c = avctx->channels;

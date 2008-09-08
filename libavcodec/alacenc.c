@@ -364,7 +364,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     uint8_t *alac_extradata = av_mallocz(ALAC_EXTRADATA_SIZE+1);
 
     avctx->frame_size      = DEFAULT_FRAME_SIZE;
-    avctx->bits_per_sample = DEFAULT_SAMPLE_SIZE;
+    avctx->bits_per_coded_sample = DEFAULT_SAMPLE_SIZE;
 
     if(avctx->sample_fmt != SAMPLE_FMT_S16) {
         av_log(avctx, AV_LOG_ERROR, "only pcm_s16 input samples are supported\n");
@@ -384,17 +384,17 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     s->rc.rice_modifier   = 4;
 
     s->max_coded_frame_size = (ALAC_FRAME_HEADER_SIZE + ALAC_FRAME_FOOTER_SIZE +
-                               avctx->frame_size*avctx->channels*avctx->bits_per_sample)>>3;
+                               avctx->frame_size*avctx->channels*avctx->bits_per_coded_sample)>>3;
 
-    s->write_sample_size  = avctx->bits_per_sample + avctx->channels - 1; // FIXME: consider wasted_bytes
+    s->write_sample_size  = avctx->bits_per_coded_sample + avctx->channels - 1; // FIXME: consider wasted_bytes
 
     AV_WB32(alac_extradata,    ALAC_EXTRADATA_SIZE);
     AV_WB32(alac_extradata+4,  MKBETAG('a','l','a','c'));
     AV_WB32(alac_extradata+12, avctx->frame_size);
-    AV_WB8 (alac_extradata+17, avctx->bits_per_sample);
+    AV_WB8 (alac_extradata+17, avctx->bits_per_coded_sample);
     AV_WB8 (alac_extradata+21, avctx->channels);
     AV_WB32(alac_extradata+24, s->max_coded_frame_size);
-    AV_WB32(alac_extradata+28, avctx->sample_rate*avctx->channels*avctx->bits_per_sample); // average bitrate
+    AV_WB32(alac_extradata+28, avctx->sample_rate*avctx->channels*avctx->bits_per_coded_sample); // average bitrate
     AV_WB32(alac_extradata+32, avctx->sample_rate);
 
     // Set relevant extradata fields

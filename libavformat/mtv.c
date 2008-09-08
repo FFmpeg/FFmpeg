@@ -102,7 +102,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_tag       = MKTAG('R', 'G', 'B', mtv->img_bpp);
     st->codec->width           = mtv->img_width;
     st->codec->height          = mtv->img_height;
-    st->codec->bits_per_sample = mtv->img_bpp;
+    st->codec->bits_per_coded_sample = mtv->img_bpp;
     st->codec->sample_rate     = mtv->video_fps;
 
     /* audio - mp3 */

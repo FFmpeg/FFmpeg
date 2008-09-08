@@ -91,7 +91,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_id = CODEC_ID_TTA;
     st->codec->channels = channels;
     st->codec->sample_rate = samplerate;
-    st->codec->bits_per_sample = bps;
+    st->codec->bits_per_coded_sample = bps;
 
     st->codec->extradata_size = url_ftell(s->pb);
     if(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)st->codec->extradata_size){

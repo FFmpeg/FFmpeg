@@ -53,7 +53,7 @@ struct SwsContext {
     enum PixelFormat src_pix_fmt, dst_pix_fmt;
 };
 
-struct ImgReSampleContext {
+typedef struct ImgReSampleContext {
     int iwidth, iheight, owidth, oheight;
     int topBand, bottomBand, leftBand, rightBand;
     int padtop, padbottom, padleft, padright;
@@ -62,7 +62,7 @@ struct ImgReSampleContext {
     DECLARE_ALIGNED_8(int16_t, h_filters[NB_PHASES][NB_TAPS]); /* horizontal filters */
     DECLARE_ALIGNED_8(int16_t, v_filters[NB_PHASES][NB_TAPS]); /* vertical filters */
     uint8_t *line_buf;
-};
+} ImgReSampleContext;
 
 void av_build_filter(int16_t *filter, double factor, int tap_count, int phase_count, int scale, int type);
 
@@ -424,13 +424,6 @@ static void component_resample(ImgReSampleContext *s,
     }
 }
 
-ImgReSampleContext *img_resample_init(int owidth, int oheight,
-                                      int iwidth, int iheight)
-{
-    return img_resample_full_init(owidth, oheight, iwidth, iheight,
-            0, 0, 0, 0, 0, 0, 0, 0);
-}
-
 ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
                                       int iwidth, int iheight,
                                       int topBand, int bottomBand,
@@ -482,6 +475,13 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
 fail:
     av_free(s);
     return NULL;
+}
+
+ImgReSampleContext *img_resample_init(int owidth, int oheight,
+                                      int iwidth, int iheight)
+{
+    return img_resample_full_init(owidth, oheight, iwidth, iheight,
+            0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 void img_resample(ImgReSampleContext *s,

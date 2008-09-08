@@ -217,19 +217,19 @@ static av_cold int decode_init(AVCodecContext *avctx) {
     if (avcodec_check_dimensions(avctx, avctx->height, avctx->width) < 0) {
         return 1;
     }
-    switch (avctx->bits_per_sample) {
+    switch (avctx->bits_per_coded_sample) {
         case 16: avctx->pix_fmt = PIX_FMT_RGB555; break;
         case 24: avctx->pix_fmt = PIX_FMT_BGR24; break;
         case 32: avctx->pix_fmt = PIX_FMT_RGB32; break;
         default:
             av_log(avctx, AV_LOG_ERROR,
                    "CamStudio codec error: invalid depth %i bpp\n",
-                   avctx->bits_per_sample);
+                   avctx->bits_per_coded_sample);
              return 1;
     }
-    c->bpp = avctx->bits_per_sample;
+    c->bpp = avctx->bits_per_coded_sample;
     c->pic.data[0] = NULL;
-    c->linelen = avctx->width * avctx->bits_per_sample / 8;
+    c->linelen = avctx->width * avctx->bits_per_coded_sample / 8;
     c->height = avctx->height;
     c->decomp_size = c->height * c->linelen;
     c->decomp_buf = av_malloc(c->decomp_size + LZO_OUTPUT_PADDING);

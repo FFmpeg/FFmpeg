@@ -395,7 +395,7 @@ static av_cold int cinepak_decode_init(AVCodecContext *avctx)
     s->sega_film_skip_bytes = -1;  /* uninitialized state */
 
     // check for paletted data
-    if ((avctx->palctrl == NULL) || (avctx->bits_per_sample == 40)) {
+    if ((avctx->palctrl == NULL) || (avctx->bits_per_coded_sample == 40)) {
         s->palette_video = 0;
         avctx->pix_fmt = PIX_FMT_YUV420P;
     } else {

@@ -264,7 +264,7 @@ static int msrle_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    switch (avctx->bits_per_sample) {
+    switch (avctx->bits_per_coded_sample) {
         case 8:
             msrle_decode_pal8(s);
             break;
@@ -273,7 +273,7 @@ static int msrle_decode_frame(AVCodecContext *avctx,
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Don't know how to decode depth %u.\n",
-                   avctx->bits_per_sample);
+                   avctx->bits_per_coded_sample);
     }
 
     *data_size = sizeof(AVFrame);

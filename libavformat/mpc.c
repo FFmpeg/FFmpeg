@@ -97,7 +97,7 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_MUSEPACK7;
     st->codec->channels = 2;
-    st->codec->bits_per_sample = 16;
+    st->codec->bits_per_coded_sample = 16;
 
     st->codec->extradata_size = 16;
     st->codec->extradata = av_mallocz(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE);

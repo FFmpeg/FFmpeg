@@ -75,7 +75,7 @@ static int create_audio_stream(AVFormatContext *s, SIFFContext *c)
     ast->codec->codec_type      = CODEC_TYPE_AUDIO;
     ast->codec->codec_id        = CODEC_ID_PCM_U8;
     ast->codec->channels        = 1;
-    ast->codec->bits_per_sample = c->bits;
+    ast->codec->bits_per_coded_sample = c->bits;
     ast->codec->sample_rate     = c->rate;
     ast->codec->frame_size      = c->block_align;
     av_set_pts_info(ast, 16, 1, c->rate);

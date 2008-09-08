@@ -151,7 +151,7 @@ static int wv_read_header(AVFormatContext *s,
     st->codec->codec_id = CODEC_ID_WAVPACK;
     st->codec->channels = wc->chan;
     st->codec->sample_rate = wc->rate;
-    st->codec->bits_per_sample = wc->bpp;
+    st->codec->bits_per_coded_sample = wc->bpp;
     av_set_pts_info(st, 64, 1, wc->rate);
     s->start_time = 0;
     s->duration = (int64_t)wc->samples * AV_TIME_BASE / st->codec->sample_rate;
