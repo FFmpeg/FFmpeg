@@ -109,12 +109,9 @@ static void copy_and_dup(int16_t *target, const int16_t *source, int offset)
 {
     source += BUFFERSIZE - offset;
 
-    if (offset > BLOCKSIZE) {
-        memcpy(target, source, BLOCKSIZE*sizeof(*target));
-    } else {
-        memcpy(target, source, offset*sizeof(*target));
+    memcpy(target, source, FFMIN(BLOCKSIZE, offset)*sizeof(*target));
+    if (offset < BLOCKSIZE)
         memcpy(target + offset, source, (BLOCKSIZE - offset)*sizeof(*target));
-    }
 }
 
 /** inverse root mean square */
