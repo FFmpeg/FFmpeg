@@ -370,7 +370,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     codec->codec_id = CODEC_ID_RAWVIDEO;
     codec->pix_fmt = vfw_pixfmt(biCompression, biBitCount);
     if(biCompression == BI_RGB)
-        codec->bits_per_sample = biBitCount;
+        codec->bits_per_coded_sample = biBitCount;
 
     av_set_pts_info(st, 32, 1, 1000);
 
