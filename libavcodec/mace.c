@@ -141,7 +141,7 @@ static const int16_t MACEtab4[][2] = {
 #define QT_8S_2_16S(x) (((x) & 0xFF00) | (((x) >> 8) & 0xFF))
 
 typedef struct ChannelData {
-    int16_t index, lev, factor, prev2, previous, level;
+    int16_t index, factor, prev2, previous, level;
 } ChannelData;
 
 typedef struct MACEContext {
@@ -174,9 +174,9 @@ static void chomp3(ChannelData *chd, int16_t *output, uint8_t val,
     else
         current = - 1 - tab2[((chd->index & 0x7f0) >> 4)*tab2_stride + 2*tab2_stride-val-1];
 
-    current = mace_broken_clip_int16(current + chd->lev);
+    current = mace_broken_clip_int16(current + chd->level);
 
-    chd->lev = current - (current >> 3);
+    chd->level = current - (current >> 3);
     *output = QT_8S_2_16S(current);
     if (( chd->index += tab1[val]-(chd->index >> 5) ) < 0)
         chd->index = 0;
