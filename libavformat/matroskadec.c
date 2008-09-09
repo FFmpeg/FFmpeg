@@ -210,7 +210,7 @@ typedef struct {
 
     /* What to skip before effectively reading a packet. */
     int skip_to_keyframe;
-    AVStream *skip_to_stream;
+    uint64_t skip_to_timecode;
 } MatroskaDemuxContext;
 
 typedef struct {
@@ -1467,7 +1467,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     }
 
     if (matroska->skip_to_keyframe) {
-        if (!is_keyframe || st != matroska->skip_to_stream)
+        if (!is_keyframe || timecode < matroska->skip_to_timecode)
             return res;
         matroska->skip_to_keyframe = 0;
     }
@@ -1706,7 +1706,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
 
     url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
-    matroska->skip_to_stream = st;
+    matroska->skip_to_timecode = st->index_entries[index].timestamp;
     matroska->done = 0;
     av_update_cur_dts(s, st, st->index_entries[index].timestamp);
     return 0;
