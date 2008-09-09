@@ -237,6 +237,20 @@ DECLARE_ALIGNED(8, const uint64_t, ff_bgr2VCoeff)   = 0x00003831D0E6F6EAULL;
 DECLARE_ALIGNED(8, const uint64_t, ff_bgr2YOffset)  = 0x1010101010101010ULL;
 DECLARE_ALIGNED(8, const uint64_t, ff_bgr2UVOffset) = 0x8080808080808080ULL;
 DECLARE_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
+
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr24toY1Coeff) = 0x0C88000040870C88ULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr24toY2Coeff) = 0x20DE4087000020DEULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_rgb24toY1Coeff) = 0x20DE0000408720DEULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_rgb24toY2Coeff) = 0x0C88408700000C88ULL;
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr24toYOffset) = 0x0008400000084000ULL;
+
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr24toUV[2][4]) = {
+    {0x38380000DAC83838ULL, 0xECFFDAC80000ECFFULL, 0xF6E40000D0E3F6E4ULL, 0x3838D0E300003838ULL},
+    {0xECFF0000DAC8ECFFULL, 0x3838DAC800003838ULL, 0x38380000D0E33838ULL, 0xF6E4D0E30000F6E4ULL},
+};
+
+DECLARE_ALIGNED(8, const uint64_t, ff_bgr24toUVOffset)= 0x0040400000404000ULL;
+
 #endif /* defined(ARCH_X86) */
 
 // clipping helper table for C implementations:
@@ -2201,7 +2215,8 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
     if ((isBGR(srcFormat) || isRGB(srcFormat)) && !(flags&SWS_FULL_CHR_H_INP)
       && srcFormat!=PIX_FMT_RGB8      && srcFormat!=PIX_FMT_BGR8
       && srcFormat!=PIX_FMT_RGB4      && srcFormat!=PIX_FMT_BGR4
-      && srcFormat!=PIX_FMT_RGB4_BYTE && srcFormat!=PIX_FMT_BGR4_BYTE)
+      && srcFormat!=PIX_FMT_RGB4_BYTE && srcFormat!=PIX_FMT_BGR4_BYTE
+      && srcFormat!=PIX_FMT_BGR24     && srcFormat!=PIX_FMT_RGB24)
         c->chrSrcHSubSample=1;
 
     if (param){

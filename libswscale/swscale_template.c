@@ -1875,78 +1875,121 @@ static inline void RENAME(bgr32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
     }
 }
 
+#ifdef HAVE_MMX
+static inline void bgr24ToY_mmx(uint8_t *dst, uint8_t *src, long width, int srcFormat)
+{
+
+    if(srcFormat == PIX_FMT_BGR24){
+        asm volatile(
+            "movq  "MANGLE(ff_bgr24toY1Coeff)", %mm5       \n\t"
+            "movq  "MANGLE(ff_bgr24toY2Coeff)", %mm6       \n\t"
+        );
+    }else{
+        asm volatile(
+            "movq  "MANGLE(ff_rgb24toY1Coeff)", %mm5       \n\t"
+            "movq  "MANGLE(ff_rgb24toY2Coeff)", %mm6       \n\t"
+        );
+    }
+
+    asm volatile(
+        "movq  "MANGLE(ff_bgr24toYOffset)", %%mm4   \n\t"
+        "mov                        %2, %%"REG_a"   \n\t"
+        "pxor                    %%mm7, %%mm7       \n\t"
+        "1:                                         \n\t"
+        PREFETCH"               64(%0)              \n\t"
+        "movd                     (%0), %%mm0       \n\t"
+        "movd                    2(%0), %%mm1       \n\t"
+        "movd                    6(%0), %%mm2       \n\t"
+        "movd                    8(%0), %%mm3       \n\t"
+        "add                       $12, %0          \n\t"
+        "punpcklbw               %%mm7, %%mm0       \n\t"
+        "punpcklbw               %%mm7, %%mm1       \n\t"
+        "punpcklbw               %%mm7, %%mm2       \n\t"
+        "punpcklbw               %%mm7, %%mm3       \n\t"
+        "pmaddwd                 %%mm5, %%mm0       \n\t"
+        "pmaddwd                 %%mm6, %%mm1       \n\t"
+        "pmaddwd                 %%mm5, %%mm2       \n\t"
+        "pmaddwd                 %%mm6, %%mm3       \n\t"
+        "paddd                   %%mm1, %%mm0       \n\t"
+        "paddd                   %%mm3, %%mm2       \n\t"
+        "paddd                   %%mm4, %%mm0       \n\t"
+        "paddd                   %%mm4, %%mm2       \n\t"
+        "psrad                     $15, %%mm0       \n\t"
+        "psrad                     $15, %%mm2       \n\t"
+        "packssdw                %%mm2, %%mm0       \n\t"
+        "packuswb                %%mm0, %%mm0       \n\t"
+        "movd                %%mm0, (%1, %%"REG_a") \n\t"
+        "add                        $4, %%"REG_a"   \n\t"
+        " js                        1b              \n\t"
+    : "+r" (src)
+    : "r" (dst+width), "g" (-width)
+    : "%"REG_a
+    );
+}
+
+static inline void bgr24ToUV_mmx(uint8_t *dstU, uint8_t *dstV, uint8_t *src, long width, int srcFormat)
+{
+    asm volatile(
+        "movq                    24+%4, %%mm6       \n\t"
+        "mov                        %3, %%"REG_a"   \n\t"
+        "pxor                    %%mm7, %%mm7       \n\t"
+        "1:                                         \n\t"
+        PREFETCH"               64(%0)              \n\t"
+        "movd                     (%0), %%mm0       \n\t"
+        "movd                    2(%0), %%mm1       \n\t"
+        "punpcklbw               %%mm7, %%mm0       \n\t"
+        "punpcklbw               %%mm7, %%mm1       \n\t"
+        "movq                    %%mm0, %%mm2       \n\t"
+        "movq                    %%mm1, %%mm3       \n\t"
+        "pmaddwd                    %4, %%mm0       \n\t"
+        "pmaddwd                  8+%4, %%mm1       \n\t"
+        "pmaddwd                 16+%4, %%mm2       \n\t"
+        "pmaddwd                 %%mm6, %%mm3       \n\t"
+        "paddd                   %%mm1, %%mm0       \n\t"
+        "paddd                   %%mm3, %%mm2       \n\t"
+
+        "movd                    6(%0), %%mm1       \n\t"
+        "movd                    8(%0), %%mm3       \n\t"
+        "add                       $12, %0          \n\t"
+        "punpcklbw               %%mm7, %%mm1       \n\t"
+        "punpcklbw               %%mm7, %%mm3       \n\t"
+        "movq                    %%mm1, %%mm4       \n\t"
+        "movq                    %%mm3, %%mm5       \n\t"
+        "pmaddwd                    %4, %%mm1       \n\t"
+        "pmaddwd                  8+%4, %%mm3       \n\t"
+        "pmaddwd                 16+%4, %%mm4       \n\t"
+        "pmaddwd                 %%mm6, %%mm5       \n\t"
+        "paddd                   %%mm3, %%mm1       \n\t"
+        "paddd                   %%mm5, %%mm4       \n\t"
+
+        "movq "MANGLE(ff_bgr24toUVOffset)", %%mm3       \n\t"
+        "paddd                   %%mm3, %%mm0       \n\t"
+        "paddd                   %%mm3, %%mm2       \n\t"
+        "paddd                   %%mm3, %%mm1       \n\t"
+        "paddd                   %%mm3, %%mm4       \n\t"
+        "psrad                     $15, %%mm0       \n\t"
+        "psrad                     $15, %%mm2       \n\t"
+        "psrad                     $15, %%mm1       \n\t"
+        "psrad                     $15, %%mm4       \n\t"
+        "packssdw                %%mm1, %%mm0       \n\t"
+        "packssdw                %%mm4, %%mm2       \n\t"
+        "packuswb                %%mm0, %%mm0       \n\t"
+        "packuswb                %%mm2, %%mm2       \n\t"
+        "movd                %%mm0, (%1, %%"REG_a") \n\t"
+        "movd                %%mm2, (%2, %%"REG_a") \n\t"
+        "add                        $4, %%"REG_a"   \n\t"
+        " js                        1b              \n\t"
+    : "+r" (src)
+    : "r" (dstU+width), "r" (dstV+width), "g" (-width), "m"(ff_bgr24toUV[srcFormat == PIX_FMT_RGB24][0])
+    : "%"REG_a
+    );
+}
+#endif
+
 static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 {
 #ifdef HAVE_MMX
-    asm volatile(
-    "mov                        %2, %%"REG_a"   \n\t"
-    "movq  "MANGLE(ff_bgr2YCoeff)", %%mm6       \n\t"
-    "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
-    "pxor                    %%mm7, %%mm7       \n\t"
-    "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
-    ASMALIGN(4)
-    "1:                                         \n\t"
-    PREFETCH" 64(%0, %%"REG_d")                 \n\t"
-    "movd          (%0, %%"REG_d"), %%mm0       \n\t"
-    "movd         3(%0, %%"REG_d"), %%mm1       \n\t"
-    "punpcklbw               %%mm7, %%mm0       \n\t"
-    "punpcklbw               %%mm7, %%mm1       \n\t"
-    "movd         6(%0, %%"REG_d"), %%mm2       \n\t"
-    "movd         9(%0, %%"REG_d"), %%mm3       \n\t"
-    "punpcklbw               %%mm7, %%mm2       \n\t"
-    "punpcklbw               %%mm7, %%mm3       \n\t"
-    "pmaddwd                 %%mm6, %%mm0       \n\t"
-    "pmaddwd                 %%mm6, %%mm1       \n\t"
-    "pmaddwd                 %%mm6, %%mm2       \n\t"
-    "pmaddwd                 %%mm6, %%mm3       \n\t"
-#ifndef FAST_BGR2YV12
-    "psrad                      $8, %%mm0       \n\t"
-    "psrad                      $8, %%mm1       \n\t"
-    "psrad                      $8, %%mm2       \n\t"
-    "psrad                      $8, %%mm3       \n\t"
-#endif
-    "packssdw                %%mm1, %%mm0       \n\t"
-    "packssdw                %%mm3, %%mm2       \n\t"
-    "pmaddwd                 %%mm5, %%mm0       \n\t"
-    "pmaddwd                 %%mm5, %%mm2       \n\t"
-    "packssdw                %%mm2, %%mm0       \n\t"
-    "psraw                      $7, %%mm0       \n\t"
-
-    "movd        12(%0, %%"REG_d"), %%mm4       \n\t"
-    "movd        15(%0, %%"REG_d"), %%mm1       \n\t"
-    "punpcklbw               %%mm7, %%mm4       \n\t"
-    "punpcklbw               %%mm7, %%mm1       \n\t"
-    "movd        18(%0, %%"REG_d"), %%mm2       \n\t"
-    "movd        21(%0, %%"REG_d"), %%mm3       \n\t"
-    "punpcklbw               %%mm7, %%mm2       \n\t"
-    "punpcklbw               %%mm7, %%mm3       \n\t"
-    "pmaddwd                 %%mm6, %%mm4       \n\t"
-    "pmaddwd                 %%mm6, %%mm1       \n\t"
-    "pmaddwd                 %%mm6, %%mm2       \n\t"
-    "pmaddwd                 %%mm6, %%mm3       \n\t"
-#ifndef FAST_BGR2YV12
-    "psrad                      $8, %%mm4       \n\t"
-    "psrad                      $8, %%mm1       \n\t"
-    "psrad                      $8, %%mm2       \n\t"
-    "psrad                      $8, %%mm3       \n\t"
-#endif
-    "packssdw                %%mm1, %%mm4       \n\t"
-    "packssdw                %%mm3, %%mm2       \n\t"
-    "pmaddwd                 %%mm5, %%mm4       \n\t"
-    "pmaddwd                 %%mm5, %%mm2       \n\t"
-    "add                       $24, %%"REG_d"   \n\t"
-    "packssdw                %%mm2, %%mm4       \n\t"
-    "psraw                      $7, %%mm4       \n\t"
-
-    "packuswb                %%mm4, %%mm0       \n\t"
-    "paddusb "MANGLE(ff_bgr2YOffset)", %%mm0    \n\t"
-
-    "movq                    %%mm0, (%1, %%"REG_a") \n\t"
-    "add                        $8, %%"REG_a"   \n\t"
-    " js                        1b              \n\t"
-    : : "r" (src+width*3), "r" (dst+width), "g" (-width)
-    : "%"REG_a, "%"REG_d
-    );
+    bgr24ToY_mmx(dst, src, width, PIX_FMT_BGR24);
 #else
     int i;
     for (i=0; i<width; i++)
@@ -1963,132 +2006,17 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
 #ifdef HAVE_MMX
-    asm volatile(
-    "mov                        %3, %%"REG_a"   \n\t"
-    "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
-    "movq  "MANGLE(ff_bgr2UCoeff)", %%mm6       \n\t"
-    "pxor                    %%mm7, %%mm7       \n\t"
-    "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
-    "add                 %%"REG_d", %%"REG_d"   \n\t"
-    ASMALIGN(4)
-    "1:                                         \n\t"
-    PREFETCH" 64(%0, %%"REG_d")                 \n\t"
-#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-    "movq          (%0, %%"REG_d"), %%mm0       \n\t"
-    "movq         6(%0, %%"REG_d"), %%mm2       \n\t"
-    "movq                    %%mm0, %%mm1       \n\t"
-    "movq                    %%mm2, %%mm3       \n\t"
-    "psrlq                     $24, %%mm0       \n\t"
-    "psrlq                     $24, %%mm2       \n\t"
-    PAVGB(%%mm1, %%mm0)
-    PAVGB(%%mm3, %%mm2)
-    "punpcklbw               %%mm7, %%mm0       \n\t"
-    "punpcklbw               %%mm7, %%mm2       \n\t"
-#else
-    "movd          (%0, %%"REG_d"), %%mm0       \n\t"
-    "movd         3(%0, %%"REG_d"), %%mm2       \n\t"
-    "punpcklbw               %%mm7, %%mm0       \n\t"
-    "punpcklbw               %%mm7, %%mm2       \n\t"
-    "paddw                   %%mm2, %%mm0       \n\t"
-    "movd         6(%0, %%"REG_d"), %%mm4       \n\t"
-    "movd         9(%0, %%"REG_d"), %%mm2       \n\t"
-    "punpcklbw               %%mm7, %%mm4       \n\t"
-    "punpcklbw               %%mm7, %%mm2       \n\t"
-    "paddw                   %%mm4, %%mm2       \n\t"
-    "psrlw                      $1, %%mm0       \n\t"
-    "psrlw                      $1, %%mm2       \n\t"
-#endif
-    "movq  "MANGLE(ff_bgr2VCoeff)", %%mm1       \n\t"
-    "movq  "MANGLE(ff_bgr2VCoeff)", %%mm3       \n\t"
-
-    "pmaddwd                 %%mm0, %%mm1       \n\t"
-    "pmaddwd                 %%mm2, %%mm3       \n\t"
-    "pmaddwd                 %%mm6, %%mm0       \n\t"
-    "pmaddwd                 %%mm6, %%mm2       \n\t"
-#ifndef FAST_BGR2YV12
-    "psrad                      $8, %%mm0       \n\t"
-    "psrad                      $8, %%mm1       \n\t"
-    "psrad                      $8, %%mm2       \n\t"
-    "psrad                      $8, %%mm3       \n\t"
-#endif
-    "packssdw                %%mm2, %%mm0       \n\t"
-    "packssdw                %%mm3, %%mm1       \n\t"
-    "pmaddwd                 %%mm5, %%mm0       \n\t"
-    "pmaddwd                 %%mm5, %%mm1       \n\t"
-    "packssdw                %%mm1, %%mm0       \n\t" // V1 V0 U1 U0
-    "psraw                      $7, %%mm0       \n\t"
-
-#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-    "movq       12(%0, %%"REG_d"), %%mm4       \n\t"
-    "movq       18(%0, %%"REG_d"), %%mm2       \n\t"
-    "movq                   %%mm4, %%mm1       \n\t"
-    "movq                   %%mm2, %%mm3       \n\t"
-    "psrlq                    $24, %%mm4       \n\t"
-    "psrlq                    $24, %%mm2       \n\t"
-    PAVGB(%%mm1, %%mm4)
-    PAVGB(%%mm3, %%mm2)
-    "punpcklbw              %%mm7, %%mm4       \n\t"
-    "punpcklbw              %%mm7, %%mm2       \n\t"
-#else
-    "movd       12(%0, %%"REG_d"), %%mm4       \n\t"
-    "movd       15(%0, %%"REG_d"), %%mm2       \n\t"
-    "punpcklbw              %%mm7, %%mm4       \n\t"
-    "punpcklbw              %%mm7, %%mm2       \n\t"
-    "paddw                  %%mm2, %%mm4       \n\t"
-    "movd       18(%0, %%"REG_d"), %%mm5       \n\t"
-    "movd       21(%0, %%"REG_d"), %%mm2       \n\t"
-    "punpcklbw              %%mm7, %%mm5       \n\t"
-    "punpcklbw              %%mm7, %%mm2       \n\t"
-    "paddw                  %%mm5, %%mm2       \n\t"
-    "movq      "MANGLE(ff_w1111)", %%mm5       \n\t"
-    "psrlw                     $2, %%mm4       \n\t"
-    "psrlw                     $2, %%mm2       \n\t"
-#endif
-    "movq "MANGLE(ff_bgr2VCoeff)", %%mm1       \n\t"
-    "movq "MANGLE(ff_bgr2VCoeff)", %%mm3       \n\t"
-
-    "pmaddwd                %%mm4, %%mm1       \n\t"
-    "pmaddwd                %%mm2, %%mm3       \n\t"
-    "pmaddwd                %%mm6, %%mm4       \n\t"
-    "pmaddwd                %%mm6, %%mm2       \n\t"
-#ifndef FAST_BGR2YV12
-    "psrad                     $8, %%mm4       \n\t"
-    "psrad                     $8, %%mm1       \n\t"
-    "psrad                     $8, %%mm2       \n\t"
-    "psrad                     $8, %%mm3       \n\t"
-#endif
-    "packssdw               %%mm2, %%mm4       \n\t"
-    "packssdw               %%mm3, %%mm1       \n\t"
-    "pmaddwd                %%mm5, %%mm4       \n\t"
-    "pmaddwd                %%mm5, %%mm1       \n\t"
-    "add                      $24, %%"REG_d"   \n\t"
-    "packssdw               %%mm1, %%mm4       \n\t" // V3 V2 U3 U2
-    "psraw                     $7, %%mm4       \n\t"
-
-    "movq                   %%mm0, %%mm1       \n\t"
-    "punpckldq              %%mm4, %%mm0       \n\t"
-    "punpckhdq              %%mm4, %%mm1       \n\t"
-    "packsswb               %%mm1, %%mm0       \n\t"
-    "paddb "MANGLE(ff_bgr2UVOffset)", %%mm0    \n\t"
-
-    "movd                   %%mm0, (%1, %%"REG_a")  \n\t"
-    "punpckhdq              %%mm0, %%mm0            \n\t"
-    "movd                   %%mm0, (%2, %%"REG_a")  \n\t"
-    "add                       $4, %%"REG_a"        \n\t"
-    " js                       1b                   \n\t"
-    : : "r" (src1+width*6), "r" (dstU+width), "r" (dstV+width), "g" (-width)
-    : "%"REG_a, "%"REG_d
-    );
+    bgr24ToUV_mmx(dstU, dstV, src1, width, PIX_FMT_BGR24);
 #else
     int i;
     for (i=0; i<width; i++)
     {
-        int b= src1[6*i + 0] + src1[6*i + 3];
-        int g= src1[6*i + 1] + src1[6*i + 4];
-        int r= src1[6*i + 2] + src1[6*i + 5];
+        int b= src1[3*i + 0];
+        int g= src1[3*i + 1];
+        int r= src1[3*i + 2];
 
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT))>>(RGB2YUV_SHIFT+1);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT))>>(RGB2YUV_SHIFT+1);
+        dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
+        dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
     }
 #endif /* HAVE_MMX */
     assert(src1 == src2);
@@ -2201,6 +2129,9 @@ static inline void RENAME(rgb32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 
 static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, long width)
 {
+#ifdef HAVE_MMX
+    bgr24ToY_mmx(dst, src, width, PIX_FMT_RGB24);
+#else
     int i;
     for (i=0; i<width; i++)
     {
@@ -2210,21 +2141,26 @@ static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, long width)
 
         dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
     }
+#endif
 }
 
 static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
     int i;
     assert(src1==src2);
+#ifdef HAVE_MMX
+    bgr24ToUV_mmx(dstU, dstV, src1, width, PIX_FMT_RGB24);
+#else
     for (i=0; i<width; i++)
     {
-        int r= src1[6*i + 0] + src1[6*i + 3];
-        int g= src1[6*i + 1] + src1[6*i + 4];
-        int b= src1[6*i + 2] + src1[6*i + 5];
+        int r= src1[3*i + 0];
+        int g= src1[3*i + 1];
+        int b= src1[3*i + 2];
 
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT)))>>(RGB2YUV_SHIFT+1);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT)))>>(RGB2YUV_SHIFT+1);
+        dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
+        dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
     }
+#endif
 }
 
 static inline void RENAME(bgr16ToY)(uint8_t *dst, uint8_t *src, long width)
