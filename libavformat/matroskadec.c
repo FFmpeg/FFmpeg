@@ -1423,6 +1423,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                                 uint64_t duration, int is_keyframe,
                                 int64_t cluster_pos)
 {
+    uint64_t timecode = AV_NOPTS_VALUE;
     MatroskaTrack *track;
     int res = 0;
     AVStream *st;
@@ -1457,6 +1458,13 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     size -= 3;
     if (is_keyframe == -1)
         is_keyframe = flags & 0x80 ? PKT_FLAG_KEY : 0;
+
+    if (cluster_time != (uint64_t)-1
+        && (block_time >= 0 || cluster_time >= -block_time)) {
+        timecode = cluster_time + block_time;
+        if (is_keyframe)
+            av_add_index_entry(st, cluster_pos, timecode, 0,0,AVINDEX_KEYFRAME);
+    }
 
     if (matroska->skip_to_keyframe) {
         if (!is_keyframe || st != matroska->skip_to_stream)
@@ -1541,16 +1549,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     }
 
     if (res == 0) {
-        uint64_t timecode = AV_NOPTS_VALUE;
-
-        if (cluster_time != (uint64_t)-1
-            && (block_time >= 0 || cluster_time >= -block_time)) {
-            timecode = cluster_time + block_time;
-            if (is_keyframe)
-                av_add_index_entry(st, cluster_pos, timecode,
-                                   0, 0, AVINDEX_KEYFRAME);
-        }
-
         for (n = 0; n < laces; n++) {
             if (st->codec->codec_id == CODEC_ID_RA_288 ||
                 st->codec->codec_id == CODEC_ID_COOK ||
