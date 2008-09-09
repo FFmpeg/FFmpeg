@@ -205,7 +205,7 @@ static void chomp6(ChannelData *chd, int16_t *output, uint8_t val,
 
     current = mace_broken_clip_int16(current + chd->level);
 
-    chd->level = ((current*chd->factor) >> 15);
+    chd->level = (current*chd->factor) >> 15;
     current >>= 1;
 
     output[0] = QT_8S_2_16S(chd->previous + chd->prev2 -
