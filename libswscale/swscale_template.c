@@ -2721,7 +2721,7 @@ FUNNY_Y_CODE
                 dst[i]= (dst[i]*14071 + 33561947)>>14;
         }else{
             for (i=0; i<dstWidth; i++)
-                dst[i]= (dst[i]*19077 - 39057361)>>14;
+                dst[i]= (FFMIN(dst[i],30189)*19077 - 39057361)>>14;
         }
     }
 }
@@ -2986,8 +2986,8 @@ FUNNY_UV_CODE
             }
         }else{
             for (i=0; i<dstWidth; i++){
-                dst[i     ]= (dst[i     ]*4663 - 9289992)>>12; //-264
-                dst[i+VOFW]= (dst[i+VOFW]*4663 - 9289992)>>12; //-264
+                dst[i     ]= (FFMIN(dst[i     ],30775)*4663 - 9289992)>>12; //-264
+                dst[i+VOFW]= (FFMIN(dst[i+VOFW],30775)*4663 - 9289992)>>12; //-264
             }
         }
     }
