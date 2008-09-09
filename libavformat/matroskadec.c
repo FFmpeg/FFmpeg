@@ -1471,7 +1471,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
         track->end_timecode = FFMAX(track->end_timecode, timecode+duration);
     }
 
-    if (matroska->skip_to_keyframe) {
+    if (matroska->skip_to_keyframe && track->type != MATROSKA_TRACK_TYPE_SUBTITLE) {
         if (!is_keyframe || timecode < matroska->skip_to_timecode)
             return res;
         matroska->skip_to_keyframe = 0;
@@ -1689,8 +1689,9 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
                               int64_t timestamp, int flags)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
+    MatroskaTrack *tracks = matroska->tracks.elem;
     AVStream *st = s->streams[stream_index];
-    int index;
+    int i, index, index_sub, index_min;
 
     if (timestamp < 0)
         timestamp = 0;
@@ -1709,7 +1710,20 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     if (index < 0)
         return 0;
 
-    url_fseek(s->pb, st->index_entries[index].pos, SEEK_SET);
+    index_min = index;
+    for (i=0; i < matroska->tracks.nb_elem; i++) {
+        tracks[i].end_timecode = 0;
+        if (tracks[i].type == MATROSKA_TRACK_TYPE_SUBTITLE
+            && !tracks[i].stream->discard != AVDISCARD_ALL) {
+            index_sub = av_index_search_timestamp(tracks[i].stream, st->index_entries[index].timestamp, AVSEEK_FLAG_BACKWARD);
+            if (index_sub >= 0
+                && st->index_entries[index_sub].pos < st->index_entries[index_min].pos
+                && st->index_entries[index].timestamp - st->index_entries[index_sub].timestamp < 30000000000/matroska->time_scale)
+                index_min = index_sub;
+        }
+    }
+
+    url_fseek(s->pb, st->index_entries[index_min].pos, SEEK_SET);
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
     matroska->skip_to_timecode = st->index_entries[index].timestamp;
     matroska->done = 0;
