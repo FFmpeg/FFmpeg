@@ -2671,9 +2671,9 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                 g= ((i>>1)&3)*85;
                 r= (i&1     )*255;
             }
-            y= av_clip_uint8(((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16 );
-            u= av_clip_uint8(((RU*r + GU*g + BU*b)>>RGB2YUV_SHIFT) + 128);
-            v= av_clip_uint8(((RV*r + GV*g + BV*b)>>RGB2YUV_SHIFT) + 128);
+            y= av_clip_uint8((RY*r + GY*g + BY*b + ( 33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
+            u= av_clip_uint8((RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
+            v= av_clip_uint8((RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
             pal[i]= y + (u<<8) + (v<<16);
         }
         src2[1]= (uint8_t*)pal;
