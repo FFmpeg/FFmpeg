@@ -139,6 +139,7 @@ typedef struct {
     EbmlList encodings;
 
     AVStream *stream;
+    int64_t end_timecode;
 } MatroskaTrack;
 
 typedef struct {
@@ -1462,8 +1463,12 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     if (cluster_time != (uint64_t)-1
         && (block_time >= 0 || cluster_time >= -block_time)) {
         timecode = cluster_time + block_time;
+        if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE
+            && timecode < track->end_timecode)
+            is_keyframe = 0;  /* overlapping subtitles are not key frame */
         if (is_keyframe)
             av_add_index_entry(st, cluster_pos, timecode, 0,0,AVINDEX_KEYFRAME);
+        track->end_timecode = FFMAX(track->end_timecode, timecode+duration);
     }
 
     if (matroska->skip_to_keyframe) {
