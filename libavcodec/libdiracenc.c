@@ -175,9 +175,11 @@ static int libdirac_encode_init(AVCodecContext *avccontext)
     }
 
     /* Intra-only sequence */
-    if (avccontext->gop_size == 0 )
+    if (avccontext->gop_size == 0 ) {
         p_dirac_params->enc_ctx.enc_params.num_L1 = 0;
-    else
+        if (avccontext->coder_type == FF_CODER_TYPE_VLC)
+            p_dirac_params->enc_ctx.enc_params.using_ac = 0;
+    } else
         avccontext->has_b_frames = 1;
 
     if (avccontext->flags & CODEC_FLAG_QSCALE) {

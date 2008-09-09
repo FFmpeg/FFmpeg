@@ -149,6 +149,11 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
         schro_encoder_setting_set_double (p_schro_params->encoder,
                                           "gop_structure",
                                           SCHRO_ENCODER_GOP_INTRA_ONLY);
+
+        if (avccontext->coder_type == FF_CODER_TYPE_VLC) {
+            schro_encoder_setting_set_double (p_schro_params->encoder,
+                                              "enable_noarith", 1);
+        }
     }
     else {
         schro_encoder_setting_set_double (p_schro_params->encoder,
