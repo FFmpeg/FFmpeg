@@ -311,7 +311,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             int index = mxf_get_stream_index(s, &klv);
             if (index < 0) {
-                av_log(s, AV_LOG_ERROR, "error getting stream index %x\n", AV_RB32(klv.key+12));
+                av_log(s, AV_LOG_ERROR, "error getting stream index %d\n", AV_RB32(klv.key+12));
                 goto skip;
             }
             if (s->streams[index]->discard == AVDISCARD_ALL)
