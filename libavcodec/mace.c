@@ -32,9 +32,9 @@
  * libavcodec api, context stuff, interlaced stereo out).
  */
 
-static const uint16_t MACEtab1[] = { 0xfff3, 0x0008, 0x004c, 0x00de, 0x00de, 0x004c, 0x0008, 0xfff3 };
+static const int16_t MACEtab1[] = {-13, 8, 76, 222, 222, 76, 8, -13};
 
-static const uint16_t MACEtab3[] = { 0xffee, 0x008c, 0x008c, 0xffee };
+static const int16_t MACEtab3[] = {-18, 140, 140, -18};
 
 static const int16_t MACEtab2[][4] = {
     {    37,    116,    206,    330}, {    39,    121,    216,    346},
@@ -163,7 +163,7 @@ static inline int16_t mace_broken_clip_int16(int n)
 }
 
 static void chomp3(ChannelData *chd, int16_t *output, uint8_t val,
-                   const uint16_t tab1[],
+                   const int16_t tab1[],
                    const int16_t *tab2, int tab2_stride,
                    uint32_t numChannels)
 {
@@ -183,7 +183,7 @@ static void chomp3(ChannelData *chd, int16_t *output, uint8_t val,
 }
 
 static void chomp6(ChannelData *chd, int16_t *output, uint8_t val,
-                   const uint16_t tab1[],
+                   const int16_t tab1[],
                    const int16_t *tab2, int tab2_stride,
                    uint32_t numChannels)
 {
