@@ -118,6 +118,8 @@ typedef struct {
 
     int nmodes;
     vorbis_mode_t * modes;
+
+    int64_t sample_count;
 } venc_context_t;
 
 typedef struct {
@@ -1010,6 +1012,8 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
 
     residue_encode(venc, &venc->residues[mapping->residue[mapping->mux[0]]], &pb, venc->coeffs, samples, venc->channels);
 
+    avccontext->coded_frame->pts = venc->sample_count;
+    venc->sample_count += avccontext->frame_size;
     flush_put_bits(&pb);
     return (put_bits_count(&pb) + 7) / 8;
 }
