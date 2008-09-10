@@ -80,11 +80,13 @@ typedef struct AVPacket {
     int64_t pos;                            ///< byte position in stream, -1 if unknown
 
     /**
-     * This is the time difference in stream timebase units from the pts at which
-     * the output from the decoder has converged independent from the availability
+     * This is the time difference in stream timebase units from the pts of this
+     * packet to the point at which the output from the decoder has converged
+     * independent from the availability
      * of previous frames (that is the frames are virtually identical no matter
      * if decoding started from the very first frame or from this keyframe).
      * is AV_NOPTS_VALUE if unknown.
+     * This field is not the display duration of the current packet.
      *
      * The purpose of this field is to allow seeking in streams that have no
      * keyframes in the conventional sense. It corresponds to the
