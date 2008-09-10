@@ -1909,13 +1909,15 @@ static inline void bgr24ToY_mmx(uint8_t *dst, uint8_t *src, long width, int srcF
 
     if(srcFormat == PIX_FMT_BGR24){
         asm volatile(
-            "movq  "MANGLE(ff_bgr24toY1Coeff)", %mm5       \n\t"
-            "movq  "MANGLE(ff_bgr24toY2Coeff)", %mm6       \n\t"
+            "movq  "MANGLE(ff_bgr24toY1Coeff)", %%mm5       \n\t"
+            "movq  "MANGLE(ff_bgr24toY2Coeff)", %%mm6       \n\t"
+            :
         );
     }else{
         asm volatile(
-            "movq  "MANGLE(ff_rgb24toY1Coeff)", %mm5       \n\t"
-            "movq  "MANGLE(ff_rgb24toY2Coeff)", %mm6       \n\t"
+            "movq  "MANGLE(ff_rgb24toY1Coeff)", %%mm5       \n\t"
+            "movq  "MANGLE(ff_rgb24toY2Coeff)", %%mm6       \n\t"
+            :
         );
     }
 
