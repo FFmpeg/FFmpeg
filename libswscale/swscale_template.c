@@ -190,8 +190,8 @@
     "1:                                   \n\t"\
     "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"\
     "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"\
-    "paddw              %%mm7, %%mm0      \n\t"\
-    "paddw              %%mm7, %%mm1      \n\t"\
+    "paddsw             %%mm7, %%mm0      \n\t"\
+    "paddsw             %%mm7, %%mm1      \n\t"\
     "psraw                 $7, %%mm0      \n\t"\
     "psraw                 $7, %%mm1      \n\t"\
     "packuswb           %%mm1, %%mm0      \n\t"\
