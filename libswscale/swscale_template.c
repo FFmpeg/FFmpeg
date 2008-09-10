@@ -1891,10 +1891,8 @@ static inline void RENAME(name ## _half)(uint8_t *dstU, uint8_t *dstV, uint8_t *
 \
         g>>=shg;\
 \
-        dstU[i]= (((RU)>>1)*r + ((GU)>>1)*g + ((BU)>>1)*b + (257<<((S)-1)))>>(S);\
-        dstV[i]= (((RV)>>1)*r + ((GV)>>1)*g + ((BV)>>1)*b + (257<<((S)-1)))>>(S);\
-/*        dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (257<<(S)))>>((S)+1);\
-        dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (257<<(S)))>>((S)+1);*/\
+        dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (257<<(S)))>>((S)+1);\
+        dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (257<<(S)))>>((S)+1);\
     }\
 }
 

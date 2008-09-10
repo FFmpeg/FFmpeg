@@ -152,7 +152,7 @@ unsigned swscale_version(void)
         || isBGR(x)                 \
     )
 
-#define RGB2YUV_SHIFT 16
+#define RGB2YUV_SHIFT 15
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
 #define BV ((int)(-0.071*(1<<RGB2YUV_SHIFT)+0.5))
 #define BU ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
