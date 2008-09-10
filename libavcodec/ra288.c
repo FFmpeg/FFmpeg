@@ -93,7 +93,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     sumsum = exp(sum * 0.1151292546497) * gain; /* pow(10.0,sum/20)*gain */
 
     for (i=0; i < 5; i++)
-        buffer[i] = codetable[cb_coef][i] * sumsum;
+        buffer[i] = codetable[cb_coef][i] * sumsum * (1./2048.);
 
     sum = scalar_product_float(buffer, buffer, 5) / 5;
 
