@@ -1204,8 +1204,8 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
                           uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
 {
-    int yalpha1=yalpha^4095;
-    int uvalpha1=uvalpha^4095;
+    int  yalpha1=4095- yalpha;
+    int uvalpha1=4095-uvalpha;
     int i;
 
 #if 0 //isn't used
