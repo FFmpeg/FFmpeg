@@ -2434,11 +2434,11 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
             1;
 
         initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
-                   srcH      ,        dstH, filterAlign, (1<<12)-4,
+                   srcH      ,        dstH, filterAlign, (1<<12),
                    (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
                    srcFilter->lumV, dstFilter->lumV, c->param);
         initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
-                   c->chrSrcH, c->chrDstH, filterAlign, (1<<12)-4,
+                   c->chrSrcH, c->chrDstH, filterAlign, (1<<12),
                    (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
                    srcFilter->chrV, dstFilter->chrV, c->param);
 
