@@ -1864,21 +1864,27 @@ BGR2Y(uint16_t, bgr15ToY, 0, 0, 0, 0x001F, 0x03E0, 0x7C00, RY<<10, GY<<5, BY    
 BGR2Y(uint16_t, rgb16ToY, 0, 0, 0, 0xF800, 0x07E0, 0x001F, RY    , GY<<5, BY<<11, RGB2YUV_SHIFT+8)
 BGR2Y(uint16_t, rgb15ToY, 0, 0, 0, 0x7C00, 0x03E0, 0x001F, RY    , GY<<5, BY<<10, RGB2YUV_SHIFT+7)
 
-
-static inline void RENAME(bgr32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
-{
-    int i;
-    assert(src1 == src2);
-    for (i=0; i<width; i++)
-    {
-        int b=  ((uint32_t*)src1)[i]&0xFF;
-        int g= (((uint32_t*)src1)[i]>>8)&0xFF;
-        int r= (((uint32_t*)src1)[i]>>16)&0xFF;
-
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
-    }
+#define BGR2UV(type, name, shr, shg, shb, maskr, maskg, maskb, RU, GU, BU, RV, GV, BV, S)\
+static inline void RENAME(name)(uint8_t *dstU, uint8_t *dstV, uint8_t *src, uint8_t *dummy, long width)\
+{\
+    int i;\
+    for (i=0; i<width; i++)\
+    {\
+        int b= (((type*)src)[i]>>shb)&maskb;\
+        int g= (((type*)src)[i]>>shg)&maskg;\
+        int r= (((type*)src)[i]>>shr)&maskr;\
+\
+        dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (257<<((S)-1)))>>(S);\
+        dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (257<<((S)-1)))>>(S);\
+    }\
 }
+
+BGR2UV(uint32_t, bgr32ToUV,16, 0, 0, 0x00FF, 0xFF00, 0x00FF, RU<< 8, GU   , BU<< 8, RV<< 8, GV   , BV<< 8, RGB2YUV_SHIFT+8)
+BGR2UV(uint32_t, rgb32ToUV, 0, 0,16, 0x00FF, 0xFF00, 0x00FF, RU<< 8, GU   , BU<< 8, RV<< 8, GV   , BV<< 8, RGB2YUV_SHIFT+8)
+BGR2UV(uint16_t, bgr16ToUV, 0, 0, 0, 0x001F, 0x07E0, 0xF800, RU<<11, GU<<5, BU    , RV<<11, GV<<5, BV    , RGB2YUV_SHIFT+8)
+BGR2UV(uint16_t, bgr15ToUV, 0, 0, 0, 0x001F, 0x03E0, 0x7C00, RU<<10, GU<<5, BU    , RV<<10, GV<<5, BV    , RGB2YUV_SHIFT+7)
+BGR2UV(uint16_t, rgb16ToUV, 0, 0, 0, 0xF800, 0x07E0, 0x001F, RU    , GU<<5, BU<<11, RV    , GV<<5, BV<<11, RGB2YUV_SHIFT+8)
+BGR2UV(uint16_t, rgb15ToUV, 0, 0, 0, 0x7C00, 0x03E0, 0x001F, RU    , GU<<5, BU<<10, RV    , GV<<5, BV<<10, RGB2YUV_SHIFT+7)
 
 static inline void RENAME(bgr32ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
@@ -2061,22 +2067,6 @@ static inline void RENAME(bgr24ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t 
     assert(src1 == src2);
 }
 
-static inline void RENAME(rgb16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
-{
-    int i;
-    assert(src1==src2);
-    for (i=0; i<width; i++)
-    {
-        int d= ((uint16_t*)src1)[i];
-        int b= d&0x1F;
-        int g= (d>>5)&0x3F;
-        int r= (d>>11)&0x1F;
-
-        dstU[i]= (2*RU*r + GU*g + 2*BU*b + (257<<(RGB2YUV_SHIFT-3)))>>(RGB2YUV_SHIFT-2);
-        dstV[i]= (2*RV*r + GV*g + 2*BV*b + (257<<(RGB2YUV_SHIFT-3)))>>(RGB2YUV_SHIFT-2);
-    }
-}
-
 static inline void RENAME(rgb16ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
     int i;
@@ -2099,22 +2089,6 @@ static inline void RENAME(rgb16ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t 
     }
 }
 
-static inline void RENAME(rgb15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
-{
-    int i;
-    assert(src1==src2);
-    for (i=0; i<width; i++)
-    {
-        int d= ((uint16_t*)src1)[i];
-        int b= d&0x1F;
-        int g= (d>>5)&0x1F;
-        int r= (d>>10)&0x1F;
-
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-4)))>>(RGB2YUV_SHIFT-3);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-4)))>>(RGB2YUV_SHIFT-3);
-    }
-}
-
 static inline void RENAME(rgb15ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
     int i;
@@ -2134,21 +2108,6 @@ static inline void RENAME(rgb15ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t 
         int g= d>>21;
         dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-3)))>>(RGB2YUV_SHIFT+1-3);
         dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-3)))>>(RGB2YUV_SHIFT+1-3);
-    }
-}
-
-static inline void RENAME(rgb32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
-{
-    int i;
-    assert(src1==src2);
-    for (i=0; i<width; i++)
-    {
-        int r=  ((uint32_t*)src1)[i]&0xFF;
-        int g= (((uint32_t*)src1)[i]>>8)&0xFF;
-        int b= (((uint32_t*)src1)[i]>>16)&0xFF;
-
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
     }
 }
 
@@ -2222,22 +2181,6 @@ static inline void RENAME(rgb24ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t 
     }
 }
 
-static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
-{
-    int i;
-    assert(src1 == src2);
-    for (i=0; i<width; i++)
-    {
-        int d= ((uint16_t*)src1)[i];
-        int r= d&0x1F;
-        int g= (d>>5)&0x3F;
-        int b= (d>>11)&0x1F;
-
-        dstU[i]= (2*RU*r + GU*g + 2*BU*b + (257<<(RGB2YUV_SHIFT-3)))>>(RGB2YUV_SHIFT-2);
-        dstV[i]= (2*RV*r + GV*g + 2*BV*b + (257<<(RGB2YUV_SHIFT-3)))>>(RGB2YUV_SHIFT-2);
-    }
-}
-
 static inline void RENAME(bgr16ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
     int i;
@@ -2254,22 +2197,6 @@ static inline void RENAME(bgr16ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t 
         int g= d>>21;
         dstU[i]= (2*RU*r + GU*g + 2*BU*b + (257<<(RGB2YUV_SHIFT-2)))>>(RGB2YUV_SHIFT+1-2);
         dstV[i]= (2*RV*r + GV*g + 2*BV*b + (257<<(RGB2YUV_SHIFT-2)))>>(RGB2YUV_SHIFT+1-2);
-    }
-}
-
-static inline void RENAME(bgr15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
-{
-    int i;
-    assert(src1 == src2);
-    for (i=0; i<width; i++)
-    {
-        int d= ((uint16_t*)src1)[i];
-        int r= d&0x1F;
-        int g= (d>>5)&0x1F;
-        int b= (d>>10)&0x1F;
-
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-4)))>>(RGB2YUV_SHIFT-3);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-4)))>>(RGB2YUV_SHIFT-3);
     }
 }
 
