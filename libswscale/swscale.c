@@ -434,7 +434,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         }
 }
 
-#define YSCALE_YUV_2_PACKEDX_C(type) \
+#define YSCALE_YUV_2_PACKEDX_NOCLIP_C(type) \
     for (i=0; i<(dstW>>1); i++){\
         int j;\
         int Y1 = 1<<18;\
@@ -458,6 +458,9 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         Y2>>=19;\
         U >>=19;\
         V >>=19;\
+
+#define YSCALE_YUV_2_PACKEDX_C(type) \
+        YSCALE_YUV_2_PACKEDX_NOCLIP_C(type)\
         if ((Y1|Y2|U|V)&256)\
         {\
             if (Y1>255)   Y1=255; \
@@ -496,7 +499,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         }
 
 #define YSCALE_YUV_2_RGBX_C(type) \
-    YSCALE_YUV_2_PACKEDX_C(type)  \
+    YSCALE_YUV_2_PACKEDX_NOCLIP_C(type)  \
     r = (type *)c->table_rV[V];   \
     g = (type *)(c->table_gU[U] + c->table_gV[V]); \
     b = (type *)c->table_bU[U];   \
