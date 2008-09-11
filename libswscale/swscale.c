@@ -473,6 +473,43 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
             else if (V<0) V=0;    \
         }
 
+#define YSCALE_YUV_2_PACKEDX_FULL_C \
+    for (i=0; i<dstW; i++){\
+        int j;\
+        int Y = 0;\
+        int U = -128<<19;\
+        int V = -128<<19;\
+        int R,G,B;\
+        \
+        for (j=0; j<lumFilterSize; j++){\
+            Y += lumSrc[j][i     ] * lumFilter[j];\
+        }\
+        for (j=0; j<chrFilterSize; j++){\
+            U += chrSrc[j][i     ] * chrFilter[j];\
+            V += chrSrc[j][i+VOFW] * chrFilter[j];\
+        }\
+        Y >>=10;\
+        U >>=10;\
+        V >>=10;\
+
+#define YSCALE_YUV_2_RGBX_FULL_C(rnd) \
+    YSCALE_YUV_2_PACKEDX_FULL_C\
+        Y-= c->oy;\
+        Y*= c->cy;\
+        Y+= rnd;\
+        R= Y + V*c->cvr;\
+        G= Y + V*c->cvg + U*c->cug;\
+        B= Y +            U*c->cub;\
+        if ((R|G|B)&(0xC0000000)){\
+            if (R>=(256<<22))   R=(256<<22)-1; \
+            else if (R<0)R=0;   \
+            if (G>=(256<<22))   G=(256<<22)-1; \
+            else if (G<0)G=0;   \
+            if (B>=(256<<22))   B=(256<<22)-1; \
+            else if (B<0)B=0;   \
+        }\
+
+
 #define YSCALE_YUV_2_GRAY16_C \
     for (i=0; i<(dstW>>1); i++){\
         int j;\
@@ -756,6 +793,42 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
     YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGBX_C, YSCALE_YUV_2_PACKEDX_C(void), YSCALE_YUV_2_GRAY16_C, YSCALE_YUV_2_MONOBLACKX_C)
 }
 
+static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+                                    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+                                    uint8_t *dest, int dstW, int y)
+{
+    int i;
+    int step= fmt_depth(c->dstFormat)/8;
+
+    switch(c->dstFormat){
+    case PIX_FMT_ARGB:
+        dest++;
+    case PIX_FMT_RGB24:
+    case PIX_FMT_RGBA:
+        YSCALE_YUV_2_RGBX_FULL_C(1<<21)
+            dest[0]= R>>22;
+            dest[1]= G>>22;
+            dest[2]= B>>22;
+            dest[3]= 0;
+            dest+= step;
+        }
+        break;
+    case PIX_FMT_ABGR:
+        dest++;
+    case PIX_FMT_BGR24:
+    case PIX_FMT_BGRA:
+        YSCALE_YUV_2_RGBX_FULL_C(1<<21)
+            dest[0]= B>>22;
+            dest[1]= G>>22;
+            dest[2]= R>>22;
+            dest[3]= 0;
+            dest+= step;
+        }
+        break;
+    default:
+        assert(0);
+    }
+}
 
 //Note: we have C, X86, MMX, MMX2, 3DNOW version therse no 3DNOW+MMX2 one
 //Plain C versions
@@ -1880,6 +1953,13 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     c->ugCoeff=   roundToInt16(cgu*8192) * 0x0001000100010001ULL;
     c->yOffset=   roundToInt16(oy *   8) * 0x0001000100010001ULL;
 
+    c->cy = (int16_t)roundToInt16(cy <<13);
+    c->oy = (int16_t)roundToInt16(oy <<9);
+    c->cvr= (int16_t)roundToInt16(crv<<13);
+    c->cvg= (int16_t)roundToInt16(cgv<<13);
+    c->cug= (int16_t)roundToInt16(cgu<<13);
+    c->cub= (int16_t)roundToInt16(cbu<<13);
+
     yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness, contrast, saturation);
     //FIXME factorize
 
@@ -1993,7 +2073,13 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         av_log(NULL, AV_LOG_ERROR, "swScaler: Exactly one scaler algorithm must be choosen\n");
         return NULL;
     }
-
+if(   dstFormat != PIX_FMT_RGB32 //HACK
+   && dstFormat != PIX_FMT_RGB32_1
+   && dstFormat != PIX_FMT_RGB24
+   && dstFormat != PIX_FMT_BGR24
+   && dstFormat != PIX_FMT_BGR32
+   && dstFormat != PIX_FMT_BGR32_1)
+    flags &= ~SWS_FULL_CHR_H_INT;
 
     /* sanity check */
     if (srcW<4 || srcH<1 || dstW<8 || dstH<1) //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
