@@ -2073,13 +2073,6 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         av_log(NULL, AV_LOG_ERROR, "swScaler: Exactly one scaler algorithm must be choosen\n");
         return NULL;
     }
-if(   dstFormat != PIX_FMT_RGB32 //HACK
-   && dstFormat != PIX_FMT_RGB32_1
-   && dstFormat != PIX_FMT_RGB24
-   && dstFormat != PIX_FMT_BGR24
-   && dstFormat != PIX_FMT_BGR32
-   && dstFormat != PIX_FMT_BGR32_1)
-    flags &= ~SWS_FULL_CHR_H_INT;
 
     /* sanity check */
     if (srcW<4 || srcH<1 || dstW<8 || dstH<1) //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
