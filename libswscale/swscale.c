@@ -153,15 +153,15 @@ unsigned swscale_version(void)
     )
 
 #define RGB2YUV_SHIFT 15
-#define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
-#define BV ((int)(-0.071*(1<<RGB2YUV_SHIFT)+0.5))
-#define BU ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
-#define GY ((int)( 0.504*(1<<RGB2YUV_SHIFT)+0.5))
-#define GV ((int)(-0.368*(1<<RGB2YUV_SHIFT)+0.5))
-#define GU ((int)(-0.291*(1<<RGB2YUV_SHIFT)+0.5))
-#define RY ((int)( 0.257*(1<<RGB2YUV_SHIFT)+0.5))
-#define RV ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
-#define RU ((int)(-0.148*(1<<RGB2YUV_SHIFT)+0.5))
+#define BY ( (int)(0.114*219/255*(1<<RGB2YUV_SHIFT)+0.5))
+#define BV (-(int)(0.081*224/255*(1<<RGB2YUV_SHIFT)+0.5))
+#define BU ( (int)(0.500*224/255*(1<<RGB2YUV_SHIFT)+0.5))
+#define GY ( (int)(0.587*219/255*(1<<RGB2YUV_SHIFT)+0.5))
+#define GV (-(int)(0.419*224/255*(1<<RGB2YUV_SHIFT)+0.5))
+#define GU (-(int)(0.331*224/255*(1<<RGB2YUV_SHIFT)+0.5))
+#define RY ( (int)(0.299*219/255*(1<<RGB2YUV_SHIFT)+0.5))
+#define RV ( (int)(0.500*224/255*(1<<RGB2YUV_SHIFT)+0.5))
+#define RU (-(int)(0.169*224/255*(1<<RGB2YUV_SHIFT)+0.5))
 
 extern const int32_t Inverse_Table_6_9[8][4];
 
