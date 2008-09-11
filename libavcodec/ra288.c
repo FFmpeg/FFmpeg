@@ -60,7 +60,7 @@ static inline float scalar_product_float(const float * v1, const float * v2,
     return res;
 }
 
-static void colmult(float *tgt, const float *m1, const float *m2, int n)
+static void apply_window(float *tgt, const float *m1, const float *m2, int n)
 {
     while (n--)
         *tgt++ = *m1++ * *m2++;
@@ -148,7 +148,7 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
     memmove(hist                  , hist + n, (order + non_rec)*sizeof(*hist));
     memcpy (hist + order + non_rec, in      , n                *sizeof(*hist));
 
-    colmult(work, window, hist, order + n + non_rec);
+    apply_window(work, window, hist, order + n + non_rec);
 
     convolve(buffer1, work + order    , n      , order);
     convolve(buffer2, work + order + n, non_rec, order);
@@ -174,13 +174,13 @@ static void backward_filter(RA288Context *ractx)
                      ractx->sp_rec, syn_window);
 
     if (!compute_lpc_coefs(temp1, 36, ractx->sp_lpc, 0, 1, 1))
-        colmult(ractx->sp_lpc, ractx->sp_lpc, syn_bw_tab, 36);
+        apply_window(ractx->sp_lpc, ractx->sp_lpc, syn_bw_tab, 36);
 
     do_hybrid_window(10, 8, 20, ractx->gain_block+2, temp2, ractx->gain_hist,
                      ractx->gain_rec, gain_window);
 
     if (!compute_lpc_coefs(temp2, 10, ractx->gain_lpc, 0, 1, 1))
-        colmult(ractx->gain_lpc, ractx->gain_lpc, gain_bw_tab, 10);
+        apply_window(ractx->gain_lpc, ractx->gain_lpc, gain_bw_tab, 10);
 }
 
 static int ra288_decode_frame(AVCodecContext * avctx, void *data,
