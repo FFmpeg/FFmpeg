@@ -873,21 +873,21 @@ rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 {
     AVStream *st = NULL;
 
-        /* open the RTP context */
-        if (rtsp_st->stream_index >= 0)
-            st = s->streams[rtsp_st->stream_index];
-        if (!st)
-            s->ctx_flags |= AVFMTCTX_NOHEADER;
-        rtsp_st->rtp_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
+    /* open the RTP context */
+    if (rtsp_st->stream_index >= 0)
+        st = s->streams[rtsp_st->stream_index];
+    if (!st)
+        s->ctx_flags |= AVFMTCTX_NOHEADER;
+    rtsp_st->rtp_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
 
-        if (!rtsp_st->rtp_ctx) {
-            return AVERROR(ENOMEM);
-        } else {
-            if(rtsp_st->dynamic_handler) {
-                rtsp_st->rtp_ctx->dynamic_protocol_context= rtsp_st->dynamic_protocol_context;
-                rtsp_st->rtp_ctx->parse_packet= rtsp_st->dynamic_handler->parse_packet;
-            }
+    if (!rtsp_st->rtp_ctx) {
+         return AVERROR(ENOMEM);
+    } else {
+        if(rtsp_st->dynamic_handler) {
+            rtsp_st->rtp_ctx->dynamic_protocol_context= rtsp_st->dynamic_protocol_context;
+            rtsp_st->rtp_ctx->parse_packet= rtsp_st->dynamic_handler->parse_packet;
         }
+    }
 
     return 0;
 }
