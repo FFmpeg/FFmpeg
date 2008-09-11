@@ -877,6 +877,8 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
         av_log(avctx, AV_LOG_ERROR,
                "LOOPFILTER shell not be enabled in simple profile\n");
     }
+    if(v->s.avctx->skip_loop_filter >= AVDISCARD_ALL)
+        v->s.loop_filter = 0;
 
     v->res_x8 = get_bits1(gb); //reserved
     v->multires = get_bits1(gb);
@@ -3119,6 +3121,7 @@ static int vc1_decode_p_mb(VC1Context *v)
     int dst_idx, off;
     int skipped, fourmv;
     int block_cbp = 0, pat;
+    int apply_loop_filter;
 
     mquant = v->pq; /* Loosy initialization */
 
@@ -3133,6 +3136,7 @@ static int vc1_decode_p_mb(VC1Context *v)
 
     s->dsp.clear_blocks(s->block[0]);
 
+    apply_loop_filter = s->loop_filter && !(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY);
     if (!fourmv) /* 1MV mode */
     {
         if (!skipped)
@@ -3197,7 +3201,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                         if(v->a_avail)
                             s->dsp.vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                     }
-                    if(v->s.loop_filter && s->mb_x && s->mb_x != (s->mb_width - 1) && s->mb_y && s->mb_y != (s->mb_height - 1)){
+                    if(apply_loop_filter && s->mb_x && s->mb_x != (s->mb_width - 1) && s->mb_y && s->mb_y != (s->mb_height - 1)){
                         int left_cbp, top_cbp;
                         if(i & 4){
                             left_cbp = v->cbp[s->mb_x - 1]            >> (i * 4);
@@ -3214,7 +3218,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                     block_cbp |= 0xF << (i << 2);
                 } else if(val) {
                     int left_cbp = 0, top_cbp = 0, filter = 0;
-                    if(v->s.loop_filter && s->mb_x && s->mb_x != (s->mb_width - 1) && s->mb_y && s->mb_y != (s->mb_height - 1)){
+                    if(apply_loop_filter && s->mb_x && s->mb_x != (s->mb_width - 1) && s->mb_y && s->mb_y != (s->mb_height - 1)){
                         filter = 1;
                         if(i & 4){
                             left_cbp = v->cbp[s->mb_x - 1]            >> (i * 4);
