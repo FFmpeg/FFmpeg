@@ -126,7 +126,7 @@ static const float gain_window[38]={
   0.183868408, 0.0923461914
 };
 
-/** Synthesis bandwidth broadening table */
+/** synthesis bandwidth broadening table */
 static const float syn_bw_tab[36]={
   0.98828125,  0.976699829, 0.965254128, 0.953942537, 0.942763507, 0.931715488,
   0.920796931, 0.910006344, 0.899342179, 0.888803005, 0.878387332, 0.868093729,
@@ -136,7 +136,7 @@ static const float syn_bw_tab[36]={
   0.693900526, 0.685768902, 0.677732527, 0.669790328, 0.66194123,  0.654184103
 };
 
-/** Gain bandwidth broadening table */
+/** gain bandwidth broadening table */
 static const float gain_bw_tab[10]={
   0.90625,     0.821289063, 0.74432373,  0.674499512, 0.61126709,
   0.553955078, 0.50201416,  0.454956055, 0.41229248,  0.373657227

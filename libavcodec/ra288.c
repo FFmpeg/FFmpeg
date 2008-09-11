@@ -29,18 +29,18 @@ typedef struct {
     float sp_lpc[36];      ///< LPC coefficients for speech data (spec: A)
     float gain_lpc[10];    ///< LPC coefficients for gain (spec: GB)
 
-    float sp_hist[111];    ///< Speech data history (spec: SB)
+    float sp_hist[111];    ///< speech data history (spec: SB)
 
-    /** Speech part of the gain autocorrelation (spec: REXP) */
+    /** speech part of the gain autocorrelation (spec: REXP) */
     float sp_rec[37];
 
-    float gain_hist[38];   ///< Log-gain history (spec: SBLG)
+    float gain_hist[38];   ///< log-gain history (spec: SBLG)
 
-    /** Recursive part of the gain autocorrelation (spec: REXPLG) */
+    /** recursive part of the gain autocorrelation (spec: REXPLG) */
     float gain_rec[11];
 
-    float sp_block[41];    ///< Speech data of four blocks (spec: STTMP)
-    float gain_block[10];  ///< Gain data of four blocks (spec: GSTATE)
+    float sp_block[41];    ///< four blocks of speech data (spec: STTMP)
+    float gain_block[10];  ///< four blocks of gain data (spec: GSTATE)
 } RA288Context;
 
 static av_cold int ra288_decode_init(AVCodecContext *avctx)
@@ -71,7 +71,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     int i, j;
     double sumsum;
     float sum, buffer[5];
-    float *block = ractx->sp_block + 36; // Current block
+    float *block = ractx->sp_block + 36; // current block
 
     memmove(ractx->sp_block, ractx->sp_block + 5, 36*sizeof(*ractx->sp_block));
 
@@ -122,14 +122,14 @@ static void convolve(float *tgt, const float *src, int len, int n)
 }
 
 /**
- * Hybrid window filtering. See blocks 36 and 49 of the G.728 specification.
+ * Hybrid window filtering, see blocks 36 and 49 of the G.728 specification.
  *
- * @param order   the order of the filter
- * @param n       the length of the input
- * @param non_rec the number of non-recursive samples
- * @param out     the filter output
+ * @param order   filter order
+ * @param n       input length
+ * @param non_rec number of non-recursive samples
+ * @param out     filter output
  * @param in      pointer to the input of the filter
- * @param hist    pointer to the input history of the filter. It is updated by
+ * @param hist    Pointer to the input history of the filter, it is updated by
  *                this function.
  * @param out     pointer to the non-recursive part of the output
  * @param out2    pointer to the recursive part of the output
@@ -158,12 +158,12 @@ static void do_hybrid_window(int order, int n, int non_rec, const float *in,
         out [i] = out2[i]          + buffer2[i];
     }
 
-    /* Multiply by the white noise correcting factor (WNCF) */
+    /* Multiply by the white noise correcting factor (WNCF). */
     *out *= 257./256.;
 }
 
 /**
- * Backward synthesis filter. Find the LPC coefficients from past speech data.
+ * Backward synthesis filter, find the LPC coefficients from past speech data.
  */
 static void backward_filter(RA288Context *ractx)
 {
