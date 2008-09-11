@@ -27,20 +27,20 @@
 
 typedef struct {
     float sp_lpc[36];      ///< LPC coefficients for speech data (spec: A)
-    float gain_lpc[10];    ///< LPC coefficients for gain (spec: GB)
+    float gain_lpc[10];    ///< LPC coefficients for gain        (spec: GB)
 
-    float sp_hist[111];    ///< speech data history (spec: SB)
+    float sp_hist[111];    ///< speech data history              (spec: SB)
 
-    /** speech part of the gain autocorrelation (spec: REXP) */
+    /// speech part of the gain autocorrelation                  (spec: REXP)
     float sp_rec[37];
 
-    float gain_hist[38];   ///< log-gain history (spec: SBLG)
+    float gain_hist[38];   ///< log-gain history                 (spec: SBLG)
 
-    /** recursive part of the gain autocorrelation (spec: REXPLG) */
+    /// recursive part of the gain autocorrelation               (spec: REXPLG)
     float gain_rec[11];
 
-    float sp_block[41];    ///< four blocks of speech data (spec: STTMP)
-    float gain_block[10];  ///< four blocks of gain data (spec: GSTATE)
+    float sp_block[41];    ///< four blocks of speech data       (spec: STTMP)
+    float gain_block[10];  ///< four blocks of gain data         (spec: GSTATE)
 } RA288Context;
 
 static av_cold int ra288_decode_init(AVCodecContext *avctx)
