@@ -139,7 +139,6 @@ typedef struct {
     EbmlList encodings;
 
     AVStream *stream;
-    int64_t first_timecode;
     int64_t end_timecode;
 } MatroskaTrack;
 
@@ -1182,7 +1181,6 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st = track->stream = av_new_stream(s, 0);
         if (st == NULL)
             return AVERROR(ENOMEM);
-        track->first_timecode = AV_NOPTS_VALUE;
 
         if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC")
             && track->codec_priv.size >= 40
@@ -1468,11 +1466,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
         if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE
             && timecode < track->end_timecode)
             is_keyframe = 0;  /* overlapping subtitles are not key frame */
-        if (is_keyframe) {
+        if (is_keyframe)
             av_add_index_entry(st, cluster_pos, timecode, 0,0,AVINDEX_KEYFRAME);
-            if (track->first_timecode == AV_NOPTS_VALUE)
-                track->first_timecode = timecode;
-        }
         track->end_timecode = FFMAX(track->end_timecode, timecode+duration);
     }
 
@@ -1697,19 +1692,13 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     MatroskaTrack *tracks = matroska->tracks.elem;
     AVStream *st = s->streams[stream_index];
     int i, index, index_sub, index_min;
-    int64_t first_timecode = 0;
 
-    for (i=0; i < matroska->tracks.nb_elem; i++)
-        if (tracks[i].stream->index == stream_index &&
-            tracks[i].first_timecode != AV_NOPTS_VALUE)
-            first_timecode = tracks[i].first_timecode;
-
-    if (timestamp < first_timecode)
-        timestamp = first_timecode;
+    if (!st->nb_index_entries)
+        return 0;
+    timestamp = FFMAX(timestamp, st->index_entries[0].timestamp);
 
     if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
-        if (st->nb_index_entries)
-            url_fseek(s->pb, st->index_entries[st->nb_index_entries-1].pos, SEEK_SET);
+        url_fseek(s->pb, st->index_entries[st->nb_index_entries-1].pos, SEEK_SET);
         while ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
             matroska_clear_queue(matroska);
             if (matroska_parse_cluster(matroska) < 0)
