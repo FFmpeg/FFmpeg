@@ -2675,7 +2675,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
-    else if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || PIX_FMT_MONOWHITE)
+    else if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || srcFormat==PIX_FMT_MONOWHITE)
     {
         return;
     }
