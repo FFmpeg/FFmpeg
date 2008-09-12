@@ -75,6 +75,7 @@ unsigned swscale_version(void);
 #define SWS_FULL_CHR_H_INP    0x4000
 #define SWS_DIRECT_BGR        0x8000
 #define SWS_ACCURATE_RND      0x40000
+#define SWS_BITEXACT          0x80000
 
 #define SWS_CPU_CAPS_MMX      0x80000000
 #define SWS_CPU_CAPS_MMX2     0x20000000

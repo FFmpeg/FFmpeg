@@ -53,6 +53,7 @@ static const AVOption options[] = {
     { "bfin", "Blackfin SIMD acceleration", 0, FF_OPT_TYPE_CONST, SWS_CPU_CAPS_BFIN, INT_MIN, INT_MAX, VE, "sws_flags" },
     { "full_chroma_int", "full chroma interpolation", 0 , FF_OPT_TYPE_CONST, SWS_FULL_CHR_H_INT, INT_MIN, INT_MAX, VE, "sws_flags" },
     { "full_chroma_inp", "full chroma input", 0 , FF_OPT_TYPE_CONST, SWS_FULL_CHR_H_INP, INT_MIN, INT_MAX, VE, "sws_flags" },
+    { "bitexact", "", 0 , FF_OPT_TYPE_CONST, SWS_BITEXACT, INT_MIN, INT_MAX, VE, "sws_flags" },
     { NULL }
 };
 
