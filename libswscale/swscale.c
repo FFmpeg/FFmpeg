@@ -116,6 +116,7 @@ unsigned swscale_version(void)
         || (x)==PIX_FMT_RGB555      \
         || (x)==PIX_FMT_GRAY8       \
         || (x)==PIX_FMT_YUV410P     \
+        || (x)==PIX_FMT_YUV440P     \
         || (x)==PIX_FMT_GRAY16BE    \
         || (x)==PIX_FMT_GRAY16LE    \
         || (x)==PIX_FMT_YUV444P     \
@@ -145,6 +146,7 @@ unsigned swscale_version(void)
         || (x)==PIX_FMT_GRAY16LE    \
         || (x)==PIX_FMT_GRAY8       \
         || (x)==PIX_FMT_YUV410P     \
+        || (x)==PIX_FMT_YUV440P     \
     )
 #define isPacked(x)         (       \
            (x)==PIX_FMT_PAL8        \
