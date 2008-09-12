@@ -2160,7 +2160,8 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         }
 #ifdef CONFIG_GPL
         /* yuv2bgr */
-        if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P) && (isBGR(dstFormat) || isRGB(dstFormat)))
+        if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P) && (isBGR(dstFormat) || isRGB(dstFormat))
+            && !(flags & SWS_ACCURATE_RND))
         {
             c->swScale= yuv2rgb_get_func_ptr(c);
         }
