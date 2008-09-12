@@ -2143,6 +2143,16 @@ static inline void RENAME(palToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, 
     }
 }
 
+static inline void RENAME(mono2Y)(uint8_t *dst, uint8_t *src, long width, int format)
+{
+    int i, j;
+    for (i=0; i<width/8; i++){
+        int d= format == PIX_FMT_MONOBLACK ? src[i] : ~src[i];
+        for(j=7; j>=0; j--)
+            dst[i]= ((d>>j)&1)*255;
+    }
+}
+
 // bilinear / bicubic scaling
 static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW, int xInc,
                                   int16_t *filter, int16_t *filterPos, long filterSize)
@@ -2396,6 +2406,11 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     else if (srcFormat==PIX_FMT_RGB8 || srcFormat==PIX_FMT_BGR8 || srcFormat==PIX_FMT_PAL8 || srcFormat==PIX_FMT_BGR4_BYTE  || srcFormat==PIX_FMT_RGB4_BYTE)
     {
         RENAME(palToY)(formatConvBuffer, src, srcW, (uint32_t*)pal);
+        src= formatConvBuffer;
+    }
+    else if (srcFormat==PIX_FMT_MONOBLACK ||srcFormat==PIX_FMT_MONOWHITE)
+    {
+        RENAME(mono2Y)(formatConvBuffer, src, srcW, srcFormat);
         src= formatConvBuffer;
     }
 
@@ -2660,7 +2675,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
-    else if (isGray(srcFormat))
+    else if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || PIX_FMT_MONOWHITE)
     {
         return;
     }

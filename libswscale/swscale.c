@@ -127,6 +127,8 @@ unsigned swscale_version(void)
         || (x)==PIX_FMT_BGR4_BYTE   \
         || (x)==PIX_FMT_RGB4_BYTE   \
         || (x)==PIX_FMT_YUV440P     \
+        || (x)==PIX_FMT_MONOWHITE   \
+        || (x)==PIX_FMT_MONOBLACK   \
     )
 #define isSupportedOut(x)   (       \
            (x)==PIX_FMT_YUV420P     \
