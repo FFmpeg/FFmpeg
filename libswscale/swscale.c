@@ -2173,7 +2173,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         }
 
         /* bgr24toYV12 */
-        if (srcFormat==PIX_FMT_BGR24 && dstFormat==PIX_FMT_YUV420P)
+        if (srcFormat==PIX_FMT_BGR24 && dstFormat==PIX_FMT_YUV420P && !(flags & SWS_ACCURATE_RND))
             c->swScale= bgr24toyv12Wrapper;
 
         /* rgb/bgr -> rgb/bgr (no dither needed forms) */
