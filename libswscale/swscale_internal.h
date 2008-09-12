@@ -249,6 +249,7 @@ const char *sws_format_name(int format);
         || (x)==PIX_FMT_RGB4        \
         || (x)==PIX_FMT_RGB4_BYTE   \
         || (x)==PIX_FMT_MONOBLACK   \
+        || (x)==PIX_FMT_MONOWHITE   \
     )
 #define isBGR(x)        (           \
            (x)==PIX_FMT_BGR32       \
@@ -260,6 +261,7 @@ const char *sws_format_name(int format);
         || (x)==PIX_FMT_BGR4        \
         || (x)==PIX_FMT_BGR4_BYTE   \
         || (x)==PIX_FMT_MONOBLACK   \
+        || (x)==PIX_FMT_MONOWHITE   \
     )
 
 static inline int fmt_depth(int fmt)
@@ -290,6 +292,7 @@ static inline int fmt_depth(int fmt)
         case PIX_FMT_RGB4_BYTE:
             return 4;
         case PIX_FMT_MONOBLACK:
+        case PIX_FMT_MONOWHITE:
             return 1;
         default:
             return 0;

@@ -598,7 +598,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
     g = (type *)(c->table_gU[U] + c->table_gV[V]);\
     b = (type *)c->table_bU[U];\
 
-#define YSCALE_YUV_2_MONOBLACK2_C \
+#define YSCALE_YUV_2_MONO2_C \
     const uint8_t * const d128=dither_8x8_220[y&7];\
     uint8_t *g= c->table_gU[128] + c->table_gV[128];\
     for (i=0; i<dstW-7; i+=8){\
@@ -611,12 +611,12 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         acc+= acc + g[((buf0[i+5]*yalpha1+buf1[i+5]*yalpha)>>19) + d128[5]];\
         acc+= acc + g[((buf0[i+6]*yalpha1+buf1[i+6]*yalpha)>>19) + d128[6]];\
         acc+= acc + g[((buf0[i+7]*yalpha1+buf1[i+7]*yalpha)>>19) + d128[7]];\
-        ((uint8_t*)dest)[0]= acc;\
+        ((uint8_t*)dest)[0]= c->dstFormat == PIX_FMT_MONOBLACK ? acc : ~acc;\
         dest++;\
     }\
 
 
-#define YSCALE_YUV_2_MONOBLACKX_C \
+#define YSCALE_YUV_2_MONOX_C \
     const uint8_t * const d128=dither_8x8_220[y&7];\
     uint8_t *g= c->table_gU[128] + c->table_gV[128];\
     int acc=0;\
@@ -642,7 +642,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         acc+= acc + g[Y1+d128[(i+0)&7]];\
         acc+= acc + g[Y2+d128[(i+1)&7]];\
         if ((i&7)==6){\
-            ((uint8_t*)dest)[0]= acc;\
+            ((uint8_t*)dest)[0]= c->dstFormat == PIX_FMT_MONOBLACK ? acc : ~acc;\
             dest++;\
         }\
     }
@@ -746,6 +746,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         }\
         break;\
     case PIX_FMT_MONOBLACK:\
+    case PIX_FMT_MONOWHITE:\
         {\
             func_monoblack\
         }\
@@ -790,7 +791,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
                                   uint8_t *dest, int dstW, int y)
 {
     int i;
-    YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGBX_C, YSCALE_YUV_2_PACKEDX_C(void), YSCALE_YUV_2_GRAY16_C, YSCALE_YUV_2_MONOBLACKX_C)
+    YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGBX_C, YSCALE_YUV_2_PACKEDX_C(void), YSCALE_YUV_2_GRAY16_C, YSCALE_YUV_2_MONOX_C)
 }
 
 static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
@@ -2186,6 +2187,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
            && srcFormat != PIX_FMT_BGR4_BYTE && dstFormat != PIX_FMT_BGR4_BYTE
            && srcFormat != PIX_FMT_RGB4_BYTE && dstFormat != PIX_FMT_RGB4_BYTE
            && srcFormat != PIX_FMT_MONOBLACK && dstFormat != PIX_FMT_MONOBLACK
+           && srcFormat != PIX_FMT_MONOWHITE && dstFormat != PIX_FMT_MONOWHITE
                                              && dstFormat != PIX_FMT_RGB32_1
                                              && dstFormat != PIX_FMT_BGR32_1
            && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
