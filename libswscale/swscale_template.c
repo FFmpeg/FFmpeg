@@ -2148,8 +2148,8 @@ static inline void RENAME(mono2Y)(uint8_t *dst, uint8_t *src, long width, int fo
     int i, j;
     for (i=0; i<width/8; i++){
         int d= format == PIX_FMT_MONOBLACK ? src[i] : ~src[i];
-        for(j=7; j>=0; j--)
-            dst[i]= ((d>>j)&1)*255;
+        for(j=0; j<8; j++)
+            dst[8*i+j]= ((d>>(7-j))&1)*255;
     }
 }
 
