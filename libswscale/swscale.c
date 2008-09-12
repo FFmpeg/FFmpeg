@@ -540,7 +540,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
         }
 
 #define YSCALE_YUV_2_RGBX_C(type) \
-    YSCALE_YUV_2_PACKEDX_NOCLIP_C(type)  \
+    YSCALE_YUV_2_PACKEDX_C(type)  /* FIXME fix tables so that cliping is not needed and then use _NOCLIP*/\
     r = (type *)c->table_rV[V];   \
     g = (type *)(c->table_gU[U] + c->table_gV[V]); \
     b = (type *)c->table_bU[U];   \
