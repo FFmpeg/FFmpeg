@@ -2172,7 +2172,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
         }
 #endif
 
-        if (srcFormat==PIX_FMT_YUV410P && dstFormat==PIX_FMT_YUV420P)
+        if (srcFormat==PIX_FMT_YUV410P && dstFormat==PIX_FMT_YUV420P && !(flags & SWS_BITEXACT))
         {
             c->swScale= yvu9toyv12Wrapper;
         }
