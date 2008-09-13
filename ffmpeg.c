@@ -3630,7 +3630,7 @@ static void opt_target(const char *arg)
         opt_default("maxrate", "2516000");
         opt_default("minrate", "0"); //1145000;
         opt_default("bufsize", "1835008"); //224*1024*8;
-        opt_default("flags", "+SCAN_OFFSET");
+        opt_default("flags", "+scan_offset");
 
 
         opt_default("ab", "224000");
