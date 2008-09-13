@@ -754,12 +754,19 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
     }
 
     if (pulse_present) {
+        idx = 0;
         for(i = 0; i < pulse->num_pulse; i++){
             float co  = coef_base[ pulse->pos[i] ];
+            while(offsets[idx + 1] <= pulse->pos[i])
+                idx++;
+            if (band_type[idx] != NOISE_BT && sf[idx]) {
             float ico = -pulse->amp[i];
-            if (co)
+            if (co) {
+                co /= sf[idx];
                 ico = co / sqrtf(sqrtf(fabsf(co))) + (co > 0 ? -ico : ico);
-            coef_base[ pulse->pos[i] ] = cbrtf(fabsf(ico)) * ico;
+            }
+            coef_base[ pulse->pos[i] ] = cbrtf(fabsf(ico)) * ico * sf[idx];
+            }
         }
     }
     return 0;
