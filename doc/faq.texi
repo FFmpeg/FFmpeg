@@ -407,7 +407,7 @@ information.
 
 To get help and instructions for building FFmpeg under Windows, check out
 the FFmpeg Windows Help Forum at
-@url{http://arrozcru.no-ip.org/ffmpeg/}.
+@url{http://ffmpeg.arrozcru.org/}.
 
 @section Can you add automake, libtool or autoconf support?
 
