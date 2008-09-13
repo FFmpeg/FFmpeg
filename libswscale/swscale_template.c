@@ -1913,7 +1913,7 @@ BGR2UV(uint16_t, rgb16ToUV, 0, 0, 0, 0xF800, 0x07E0, 0x001F, RU    , GU<<5, BU<<
 BGR2UV(uint16_t, rgb15ToUV, 0, 0, 0, 0x7C00, 0x03E0, 0x001F, RU    , GU<<5, BU<<10, RV    , GV<<5, BV<<10, RGB2YUV_SHIFT+7)
 
 #ifdef HAVE_MMX
-static inline void bgr24ToY_mmx(uint8_t *dst, uint8_t *src, long width, int srcFormat)
+static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, uint8_t *src, long width, int srcFormat)
 {
 
     if(srcFormat == PIX_FMT_BGR24){
@@ -1966,7 +1966,7 @@ static inline void bgr24ToY_mmx(uint8_t *dst, uint8_t *src, long width, int srcF
     );
 }
 
-static inline void bgr24ToUV_mmx(uint8_t *dstU, uint8_t *dstV, uint8_t *src, long width, int srcFormat)
+static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, uint8_t *src, long width, int srcFormat)
 {
     asm volatile(
         "movq                    24+%4, %%mm6       \n\t"
@@ -2028,7 +2028,7 @@ static inline void bgr24ToUV_mmx(uint8_t *dstU, uint8_t *dstV, uint8_t *src, lon
 static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 {
 #ifdef HAVE_MMX
-    bgr24ToY_mmx(dst, src, width, PIX_FMT_BGR24);
+    RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_BGR24);
 #else
     int i;
     for (i=0; i<width; i++)
@@ -2045,7 +2045,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
 #ifdef HAVE_MMX
-    bgr24ToUV_mmx(dstU, dstV, src1, width, PIX_FMT_BGR24);
+    RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_BGR24);
 #else
     int i;
     for (i=0; i<width; i++)
@@ -2079,7 +2079,7 @@ static inline void RENAME(bgr24ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t 
 static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, long width)
 {
 #ifdef HAVE_MMX
-    bgr24ToY_mmx(dst, src, width, PIX_FMT_RGB24);
+    RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_RGB24);
 #else
     int i;
     for (i=0; i<width; i++)
@@ -2098,7 +2098,7 @@ static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
     int i;
     assert(src1==src2);
 #ifdef HAVE_MMX
-    bgr24ToUV_mmx(dstU, dstV, src1, width, PIX_FMT_RGB24);
+    RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_RGB24);
 #else
     for (i=0; i<width; i++)
     {
