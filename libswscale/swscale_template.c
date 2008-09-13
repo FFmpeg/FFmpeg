@@ -950,6 +950,7 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, int16_t *lumFilter, int16_t *
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, long dstW, long chrDstW)
 {
 #ifdef HAVE_MMX
+    if(!(c->flags & SWS_BITEXACT)){
     if (c->flags & SWS_ACCURATE_RND){
         if (uDest){
             YSCALEYUV2YV12X_ACCURATE(   "0", CHR_MMX_FILTER_OFFSET, uDest, chrDstW)
@@ -965,7 +966,9 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, int16_t *lumFilter, int16_t *
 
         YSCALEYUV2YV12X("0", LUM_MMX_FILTER_OFFSET, dest, dstW)
     }
-#else
+        return;
+    }
+#endif
 #ifdef HAVE_ALTIVEC
 yuv2yuvX_altivec_real(lumFilter, lumSrc, lumFilterSize,
                       chrFilter, chrSrc, chrFilterSize,
@@ -975,7 +978,6 @@ yuv2yuvXinC(lumFilter, lumSrc, lumFilterSize,
             chrFilter, chrSrc, chrFilterSize,
             dest, uDest, vDest, dstW, chrDstW);
 #endif //!HAVE_ALTIVEC
-#endif /* HAVE_MMX */
 }
 
 static inline void RENAME(yuv2nv12X)(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
@@ -990,7 +992,9 @@ yuv2nv12XinC(lumFilter, lumSrc, lumFilterSize,
 static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chrSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, long dstW, long chrDstW)
 {
+    int i;
 #ifdef HAVE_MMX
+    if(!(c->flags & SWS_BITEXACT)){
     long p= uDest ? 3 : 1;
     uint8_t *src[3]= {lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
     uint8_t *dst[3]= {dest, uDest, vDest};
@@ -1015,9 +1019,9 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chr
             );
         }
     }
-
-#else
-    int i;
+        return;
+    }
+#endif
     for (i=0; i<dstW; i++)
     {
         int val= (lumSrc[i]+64)>>7;
@@ -1046,7 +1050,6 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chr
             uDest[i]= u;
             vDest[i]= v;
         }
-#endif
 }
 
 
@@ -1059,6 +1062,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 {
 #ifdef HAVE_MMX
     long dummy=0;
+    if(!(c->flags & SWS_BITEXACT)){
     if (c->flags & SWS_ACCURATE_RND){
         switch(c->dstFormat){
         case PIX_FMT_RGB32:
@@ -1180,6 +1184,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             YSCALEYUV2PACKEDX_END
             return;
         }
+    }
     }
 #endif /* HAVE_MMX */
 #ifdef HAVE_ALTIVEC
@@ -1424,6 +1429,7 @@ FULL_YSCALEYUV2RGB
     {
 #endif // if 0
 #ifdef HAVE_MMX
+    if(!(c->flags & SWS_BITEXACT)){
         switch(c->dstFormat)
         {
             //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
@@ -1510,6 +1516,7 @@ FULL_YSCALEYUV2RGB
                 return;
             default: break;
         }
+    }
 #endif //HAVE_MMX
 YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_PACKED2_C, YSCALE_YUV_2_GRAY16_2_C, YSCALE_YUV_2_MONO2_C)
 }
@@ -1533,6 +1540,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
     }
 
 #ifdef HAVE_MMX
+    if(!(flags & SWS_BITEXACT)){
     if (uvalpha < 2048) // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
     {
         switch(dstFormat)
@@ -1710,6 +1718,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             );
             return;
         }
+    }
     }
 #endif /* HAVE_MMX */
     if (uvalpha < 2048)
