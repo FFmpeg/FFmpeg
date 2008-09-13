@@ -23,6 +23,7 @@
  */
 
 #ifdef __APPLE__
+#undef _POSIX_C_SOURCE
 #include <sys/sysctl.h>
 #elif __AMIGAOS4__
 #include <exec/exec.h>
