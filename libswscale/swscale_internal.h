@@ -126,7 +126,12 @@ typedef struct SwsContext{
     int srcColorspaceTable[4];
     int dstColorspaceTable[4];
     int srcRange, dstRange;
-    int oy,cy,cvr,cvg,cug,cub;
+    int yuv2rgb_y_offset;
+    int yuv2rgb_y_coeff;
+    int yuv2rgb_v2r_coeff;
+    int yuv2rgb_v2g_coeff;
+    int yuv2rgb_u2g_coeff;
+    int yuv2rgb_u2b_coeff;
 
 #define RED_DITHER            "0*8"
 #define GREEN_DITHER          "1*8"

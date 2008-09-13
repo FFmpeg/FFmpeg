@@ -498,12 +498,12 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 
 #define YSCALE_YUV_2_RGBX_FULL_C(rnd) \
     YSCALE_YUV_2_PACKEDX_FULL_C\
-        Y-= c->oy;\
-        Y*= c->cy;\
+        Y-= c->yuv2rgb_y_offset;\
+        Y*= c->yuv2rgb_y_coeff;\
         Y+= rnd;\
-        R= Y + V*c->cvr;\
-        G= Y + V*c->cvg + U*c->cug;\
-        B= Y +            U*c->cub;\
+        R= Y + V*c->yuv2rgb_v2r_coeff;\
+        G= Y + V*c->yuv2rgb_v2g_coeff + U*c->yuv2rgb_u2g_coeff;\
+        B= Y +                          U*c->yuv2rgb_u2b_coeff;\
         if ((R|G|B)&(0xC0000000)){\
             if (R>=(256<<22))   R=(256<<22)-1; \
             else if (R<0)R=0;   \
@@ -1960,12 +1960,12 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     c->ugCoeff=   roundToInt16(cgu*8192) * 0x0001000100010001ULL;
     c->yOffset=   roundToInt16(oy *   8) * 0x0001000100010001ULL;
 
-    c->cy = (int16_t)roundToInt16(cy <<13);
-    c->oy = (int16_t)roundToInt16(oy <<9);
-    c->cvr= (int16_t)roundToInt16(crv<<13);
-    c->cvg= (int16_t)roundToInt16(cgv<<13);
-    c->cug= (int16_t)roundToInt16(cgu<<13);
-    c->cub= (int16_t)roundToInt16(cbu<<13);
+    c->yuv2rgb_y_coeff  = (int16_t)roundToInt16(cy <<13);
+    c->yuv2rgb_y_offset = (int16_t)roundToInt16(oy << 9);
+    c->yuv2rgb_v2r_coeff= (int16_t)roundToInt16(crv<<13);
+    c->yuv2rgb_v2g_coeff= (int16_t)roundToInt16(cgv<<13);
+    c->yuv2rgb_u2g_coeff= (int16_t)roundToInt16(cgu<<13);
+    c->yuv2rgb_u2b_coeff= (int16_t)roundToInt16(cbu<<13);
 
     yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness, contrast, saturation);
     //FIXME factorize
