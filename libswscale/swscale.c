@@ -1244,6 +1244,8 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         {
             if (j>=filter2Size) filter[i*filterSize + j]= 0.0;
             else               filter[i*filterSize + j]= filter2[i*filter2Size + j];
+            if((flags & SWS_BITEXACT) && j>=minFilterSize)
+                filter[i*filterSize + j]= 0.0;
         }
     }
 
