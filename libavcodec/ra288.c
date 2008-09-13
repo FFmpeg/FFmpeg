@@ -136,9 +136,8 @@ static void convolve(float *tgt, const float *src, int len, int n)
  * @param out2    pointer to the recursive part of the output
  * @param window  pointer to the windowing function table
  */
-static void do_hybrid_window(int order, int n, int non_rec,
-                             float *out, float *hist, float *out2,
-                             const float *window)
+static void do_hybrid_window(int order, int n, int non_rec, float *out,
+                             float *hist, float *out2, const float *window)
 {
     int i;
     float buffer1[order + 1];
