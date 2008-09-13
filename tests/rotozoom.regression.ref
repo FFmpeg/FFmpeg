@@ -10,9 +10,9 @@ stddev:    4.96 PSNR: 34.19 bytes:  7603200/  7603200
 247161 ./tests/data/a-mpeg2ivlc-qprd.mpg
 cc6f08c1a24b58c19de325e79cfa40a3 *./tests/data/mpeg2.rotozoom.out.yuv
 stddev:    4.25 PSNR: 35.55 bytes:  7603200/  7603200
-6f49b4c7941d0f559c2efeeb46d7914b *./tests/data/a-mpeg2_422.mpg
-358018 ./tests/data/a-mpeg2_422.mpg
-da03fae3a0e2d23dbb415bd5005376c3 *./tests/data/mpeg2.rotozoom.out.yuv
+a144ff5d9b293b43fc13ec40119925c0 *./tests/data/a-mpeg2_422.mpg
+359045 ./tests/data/a-mpeg2_422.mpg
+5e7a85daf29ae185499cacab2b39c17f *./tests/data/mpeg2.rotozoom.out.yuv
 stddev:   54.55 PSNR: 13.38 bytes: 10137600/  7603200
 f979bcca866e6e4cad5dc6cb06e56cfb *./tests/data/a-mpeg2.mpg
 198041 ./tests/data/a-mpeg2.mpg
@@ -106,18 +106,18 @@ stddev:    4.73 PSNR: 34.62 bytes:  7603200/  7603200
 229806 ./tests/data/a-mpeg1b.mpg
 f41c60846bfb8cb6dcf6071c846c82b4 *./tests/data/mpeg1b.rotozoom.out.yuv
 stddev:    4.13 PSNR: 35.79 bytes:  7603200/  7603200
-b179402bba391073b5f5f9324a834061 *./tests/data/a-mjpeg.avi
-703564 ./tests/data/a-mjpeg.avi
-b1aa72cfb6f9cc3f525b27abc86a8f51 *./tests/data/mjpeg.rotozoom.out.yuv
+765b2637f313eda33afdcdc384bfbc06 *./tests/data/a-mjpeg.avi
+704100 ./tests/data/a-mjpeg.avi
+3dc419bf8ddc7482d811e4c9dcf9d418 *./tests/data/mjpeg.rotozoom.out.yuv
 stddev:    4.38 PSNR: 35.28 bytes:  7603200/  7603200
 554a4a6a5a9058c588f8bf2de405bc70 *./tests/data/a-ljpeg.avi
 4766914 ./tests/data/a-ljpeg.avi
 dde5895817ad9d219f79a52d0bdfb001 *./tests/data/ljpeg.rotozoom.out.yuv
 stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
-f67cd488dfd06c03ad1d6d94d81b80c8 *./tests/data/a-jpegls.avi
-8334488 ./tests/data/a-jpegls.avi
-a63d4e3ea1f0b0c0d44821da9e09b8f4 *./tests/data/jpegls.rotozoom.out.yuv
-stddev:    0.67 PSNR: 51.57 bytes:  7603200/  7603200
+4fc53937f048c900ae6d50fda9dba206 *./tests/data/a-jpegls.avi
+8334630 ./tests/data/a-jpegls.avi
+592b3321994e26a990deb3a0a1415de9 *./tests/data/jpegls.rotozoom.out.yuv
+stddev:    0.65 PSNR: 51.83 bytes:  7603200/  7603200
 989a42671603dc1a7e6b156dccf0e820 *./tests/data/a-rv10.rm
 154330 ./tests/data/a-rv10.rm
 61213b91b359697ebcefb9e0a53ac54a *./tests/data/rv10.rotozoom.out.yuv
@@ -142,34 +142,34 @@ d72b0960e162d4998b9acbabb07e99ab *./tests/data/a-ffv1.avi
 3525804 ./tests/data/a-ffv1.avi
 dde5895817ad9d219f79a52d0bdfb001 *./tests/data/ffv1.rotozoom.out.yuv
 stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
-0b404d5372a5c6c93f6087614020b096 *./tests/data/a-snow.avi
-69068 ./tests/data/a-snow.avi
-63ea1d2fe1693be57d3ab7d351af7c55 *./tests/data/snow.rotozoom.out.yuv
-stddev:   10.87 PSNR: 27.39 bytes:  7603200/  7603200
+af651d8ef0a66257ac8b2ef8b229f27b *./tests/data/a-snow.avi
+57700 ./tests/data/a-snow.avi
+8890189af71a0dd3447c4e8424c9a76b *./tests/data/snow.rotozoom.out.yuv
+stddev:   10.47 PSNR: 27.71 bytes:  7603200/  7603200
 a8fccf278bbb17d37a756ecf11672b09 *./tests/data/a-snow53.avi
 2721758 ./tests/data/a-snow53.avi
 dde5895817ad9d219f79a52d0bdfb001 *./tests/data/snowll.rotozoom.out.yuv
 stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
-54cdeaee32d1007666a1e487e739daf6 *./tests/data/a-dv.dv
+02c85b9bebb23f147ef598da7bcbf736 *./tests/data/a-dv.dv
 7200000 ./tests/data/a-dv.dv
-75bf724e37f667f36af50e2051846574 *./tests/data/dv.rotozoom.out.yuv
-stddev:    3.11 PSNR: 38.24 bytes:  7603200/  7603200
-a8f9aaab0220c8895dafa43ebcda916d *./tests/data/a-dv411.dv
+7ec62bd3350a6848364669e6e1e4b9cc *./tests/data/dv.rotozoom.out.yuv
+stddev:    1.71 PSNR: 43.46 bytes:  7603200/  7603200
+203e50e75a43fb1b26e1b53d99e1de4f *./tests/data/a-dv411.dv
 7200000 ./tests/data/a-dv411.dv
-06ab34615153162ad73696672531d448 *./tests/data/dv.rotozoom.out.yuv
-stddev:   10.17 PSNR: 27.97 bytes:  7603200/  7603200
-ac6741e4c79e9ed18f179c4124ede29c *./tests/data/a-dv50.dv
+7f9fa421028aabb11eaf4c6513a5a843 *./tests/data/dv.rotozoom.out.yuv
+stddev:   10.09 PSNR: 28.04 bytes:  7603200/  7603200
+2bae05531a24cd6764eefba64db345bc *./tests/data/a-dv50.dv
 14400000 ./tests/data/a-dv50.dv
-ad9907f4ef608f025f5fc38b4b067b37 *./tests/data/dv50.rotozoom.out.yuv
-stddev:    3.11 PSNR: 38.25 bytes:  7603200/  7603200
-c15016c75394199660ae405c5d396e28 *./tests/data/a-svq1.mov
-768399 ./tests/data/a-svq1.mov
-6bc10518bc387c3bdf117997713ee69a *./tests/data/svq1.rotozoom.out.yuv
-stddev:    3.44 PSNR: 37.39 bytes:  7603200/  7603200
-e0b42dde0cc71c294664da94721395ac *./tests/data/a-flashsv.flv
-12368839 ./tests/data/a-flashsv.flv
-a63d4e3ea1f0b0c0d44821da9e09b8f4 *./tests/data/flashsv.rotozoom.out.yuv
-stddev:    0.67 PSNR: 51.57 bytes:  7603200/  7603200
+af3f2dd5ab62c1a1d98b07d4aeb6852f *./tests/data/dv50.rotozoom.out.yuv
+stddev:    0.82 PSNR: 49.81 bytes:  7603200/  7603200
+7f9fbe4890bc1df67867bf03803dca48 *./tests/data/a-svq1.mov
+766851 ./tests/data/a-svq1.mov
+aa03471dac3f49455a33a2b19fda1098 *./tests/data/svq1.rotozoom.out.yuv
+stddev:    3.23 PSNR: 37.92 bytes:  7603200/  7603200
+2b93b46800f531ac088702e313d96c5f *./tests/data/a-flashsv.flv
+12368953 ./tests/data/a-flashsv.flv
+592b3321994e26a990deb3a0a1415de9 *./tests/data/flashsv.rotozoom.out.yuv
+stddev:    0.65 PSNR: 51.83 bytes:  7603200/  7603200
 21f8ff9f1daacd9133683bb4ea0f50a4 *./tests/data/a-mp2.mp2
 95712 ./tests/data/a-mp2.mp2
 83f8df5d5f84480566af548bb037fceb *./tests/data/mp2.rotozoom.out.wav

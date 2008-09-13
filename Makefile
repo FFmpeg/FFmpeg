@@ -263,11 +263,11 @@ LAVF_REG     = tests/data/lavf.regression
 ROTOZOOM_REG = tests/data/rotozoom.regression
 VSYNTH_REG   = tests/data/vsynth.regression
 
-ifeq ($(CONFIG_SWSCALE),yes)
+ifneq ($(CONFIG_SWSCALE),yes)
 servertest codectest $(CODEC_TESTS) libavtest: swscale_error
 swscale_error:
 	@echo
-	@echo "This regression test is incompatible with --enable-swscale."
+	@echo "This regression test requires --enable-swscale."
 	@echo
 	@exit 1
 endif

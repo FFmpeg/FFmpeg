@@ -41,7 +41,7 @@ fi
 # create the data directory if it does not exist
 mkdir -p $datadir
 
-FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple"
+FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
 
 do_ffmpeg()
 {
@@ -146,7 +146,7 @@ do_streamed_images()
 do_image_formats()
 {
     file=${outfile}libav%02d.$1
-    $ffmpeg -t 0.5 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $2 $3 -flags +bitexact $file
+    $ffmpeg -t 0.5 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $2 $3 -flags +bitexact -sws_flags +accurate_rnd+bitexact $file
     do_md5sum ${outfile}libav02.$1 >> $logfile
     do_ffmpeg_crc $file $3 -i $file
     wc -c ${outfile}libav02.$1 >> $logfile
@@ -252,8 +252,8 @@ do_video_decoding
 fi
 
 if [ -n "$do_huffyuv" ] ; then
-do_video_encoding huffyuv.avi "" "-an -vcodec huffyuv -pix_fmt yuv422p"
-do_video_decoding "" "-strict -2 -pix_fmt yuv420p"
+do_video_encoding huffyuv.avi "" "-an -vcodec huffyuv -pix_fmt yuv422p -sws_flags neighbor+bitexact"
+do_video_decoding "" "-strict -2 -pix_fmt yuv420p -sws_flags neighbor+bitexact"
 fi
 
 if [ -n "$do_rc" ] ; then
@@ -306,8 +306,8 @@ do_video_decoding
 fi
 
 if [ -n "$do_jpegls" ] ; then
-do_video_encoding jpegls.avi "" "-an -vcodec jpegls -vtag MJPG"
-do_video_decoding "" "-pix_fmt yuv420p"
+do_video_encoding jpegls.avi "" "-an -vcodec jpegls -vtag MJPG -sws_flags neighbor+full_chroma_int+accurate_rnd+bitexact"
+do_video_decoding "" "-pix_fmt yuv420p  -sws_flags area+bitexact"
 fi
 
 if [ -n "$do_rv10" ] ; then
@@ -354,13 +354,13 @@ if [ -n "$do_dv" ] ; then
 do_video_encoding dv.dv "-dct int" "-s pal -an"
 do_video_decoding "" "-s cif"
 
-do_video_encoding dv411.dv "-dct int" "-s pal -an -pix_fmt yuv411p"
-do_video_decoding "" "-s cif"
+do_video_encoding dv411.dv "-dct int" "-s pal -an -pix_fmt yuv411p -sws_flags area+accurate_rnd+bitexact"
+do_video_decoding "" "-s cif -sws_flags area+accurate_rnd+bitexact"
 fi
 
 if [ -n "$do_dv50" ] ; then
-do_video_encoding dv50.dv "-dct int" "-s pal -pix_fmt yuv422p -an"
-do_video_decoding "" "-s cif -pix_fmt yuv420p"
+do_video_encoding dv50.dv "-dct int" "-s pal -pix_fmt yuv422p -an -sws_flags neighbor+bitexact"
+do_video_decoding "" "-s cif -pix_fmt yuv420p -sws_flags neighbor+bitexact"
 fi
 
 if [ -n "$do_svq1" ] ; then
@@ -369,8 +369,8 @@ do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 if [ -n "$do_flashsv" ] ; then
-do_video_encoding flashsv.flv "" "-an -vcodec flashsv "
-do_video_decoding "" "-pix_fmt yuv420p"
+do_video_encoding flashsv.flv "" "-an -vcodec flashsv -sws_flags neighbor+full_chroma_int+accurate_rnd+bitexact"
+do_video_decoding "" "-pix_fmt yuv420p -sws_flags area+accurate_rnd+bitexact"
 fi
 
 if [ -n "$do_mp2" ] ; then
@@ -624,7 +624,7 @@ fi
 if [ -n "$do_pixfmt" ] ; then
 conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \
              yuvj422p yuvj444p rgb24 bgr24 rgb32 rgb565 rgb555 gray monow \
-             monob pal8 yuv440p yuvj440p"
+             monob yuv440p yuvj440p"
 for pix_fmt in $conversions ; do
     file=${outfile}libav-${pix_fmt}.yuv
     do_ffmpeg_nocheck $file -r 1 -t 1 -f image2 -vcodec pgmyuv -i $raw_src \
