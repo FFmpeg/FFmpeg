@@ -96,6 +96,7 @@ typedef struct FlacEncodeContext {
     int sr_code[2];
     int max_framesize;
     uint32_t frame_count;
+    uint64_t sample_count;
     FlacFrame frame;
     CompressionOptions options;
     AVCodecContext *avctx;
@@ -134,8 +135,10 @@ static void write_streaminfo(FlacEncodeContext *s, uint8_t *header)
     put_bits(&pb, 20, s->samplerate);
     put_bits(&pb, 3, s->channels-1);
     put_bits(&pb, 5, 15);       /* bits per sample - 1 */
+    /* write 36-bit sample count in 2 put_bits() calls */
+    put_bits(&pb, 24, (s->sample_count & 0xFFFFFF000LL) >> 12);
+    put_bits(&pb, 12,  s->sample_count & 0x000000FFFLL);
     flush_put_bits(&pb);
-    /* total samples = 0 */
     /* MD5 signature = 0 */
 }
 
@@ -1251,6 +1254,12 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
         return 0;
     }
 
+    /* when the last block is reached, update the header in extradata */
+    if (!data) {
+        write_streaminfo(s, avctx->extradata);
+        return 0;
+    }
+
     init_frame(s);
 
     copy_samples(s, samples);
@@ -1284,6 +1293,8 @@ write_frame:
     }
 
     s->frame_count++;
+    s->sample_count += avctx->frame_size;
+
     return out_bytes;
 }
 
@@ -1304,7 +1315,7 @@ AVCodec flac_encoder = {
     flac_encode_frame,
     flac_encode_close,
     NULL,
-    .capabilities = CODEC_CAP_SMALL_LAST_FRAME,
+    .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
     .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
 };
