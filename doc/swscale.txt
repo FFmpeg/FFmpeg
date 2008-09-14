@@ -36,12 +36,14 @@ special converter
 Main path
     The main path is used when no special converter can be used, the code
     is designed as a destination line pull architecture. That is for each
-    output line the vertical scaler pulls lines from a ring buffer that
-    when the line is unavailable pulls it from the horizontal scaler and
-    input converter of the current slice.
-    When no more output can be generated as lines from a next slice would
-    be needed then all remaining lines in the current slice are converted
-    and horizontally scaled and put in the ring buffer.
+    output line the vertical scaler pulls lines from a ring buffer. When
+    the ring buffer does not contain the wanted line then it is pulled from
+    the input slice through the input converter and horizontal scaler, and
+    the result is also stored in the ring buffer to serve future vertical
+    scaler requests.
+    When no more output can be generated because lines from a future slice
+    would be needed, then all remaining lines in the current slice are
+    converted, horizontally scaled and put in the ring buffer.
     [this is done for luma and chroma, each with possibly different numbers
      of lines per picture]
 
