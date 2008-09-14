@@ -94,7 +94,7 @@ little headroom for convolutional filters like sharpening filters and
 minimizing SIMD instructions needed to apply them.
 It would be trivial to use a different 1.0 point if some specific scaler
 would benefit from it.
-Also as already hinted at initFilter() accepts an optional convolutional
+Also as already hinted at, initFilter() accepts an optional convolutional
 filter as input that can be used for contrast, saturation, blur, sharpening
 shift, chroma vs. luma shift, ...
 
