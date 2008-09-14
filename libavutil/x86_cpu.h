@@ -43,7 +43,7 @@ typedef int64_t x86_reg;
 #    define REGd    rdx
 #    define REGSP   rsp
 
-#else
+#elif ARCH_X86_32
 
 #    define REG_a "eax"
 #    define REG_b "ebx"
