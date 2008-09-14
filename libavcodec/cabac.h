@@ -31,9 +31,7 @@
 
 //#undef NDEBUG
 #include <assert.h>
-#ifdef ARCH_X86
 #include "libavutil/x86_cpu.h"
-#endif
 
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
