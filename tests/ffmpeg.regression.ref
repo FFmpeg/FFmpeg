@@ -201,7 +201,7 @@ de1122d20d56c44cf49f028e25a67788 *./tests/data/a-adpcm_swf.flv
 267073 ./tests/data/a-adpcm_swf.flv
 e48b800e2d9be6afcd430d4f08a34eb6 *./tests/data/adpcm_swf.vsynth.out.wav
 stddev:  934.28 PSNR: 36.91 bytes:  1056812/  1058444
-c3382f03ce2efb5d475240d288a33898 *./tests/data/a-flac.flac
+77c20cb7d6846d6390e0615b7cea7401 *./tests/data/a-flac.flac
 353368 ./tests/data/a-flac.flac
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/flac.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
