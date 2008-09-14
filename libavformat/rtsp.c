@@ -44,7 +44,7 @@ enum RTSPClientState {
 };
 
 enum RTSPServerType {
-    RTSP_SERVER_RTP, /*< Standard-compliant RTP-server */
+    RTSP_SERVER_RTP,  /*< Standard-compliant RTP-server */
     RTSP_SERVER_REAL, /*< Realmedia-style server */
     RTSP_SERVER_LAST
 };
