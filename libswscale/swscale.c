@@ -1063,8 +1063,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     {
         int i;
         filterSize= 1;
-        filter= av_malloc(dstW*sizeof(double)*filterSize);
-        for (i=0; i<dstW*filterSize; i++) filter[i]=0;
+        filter= av_mallocz(dstW*sizeof(double)*filterSize);
 
         for (i=0; i<dstW; i++)
         {
