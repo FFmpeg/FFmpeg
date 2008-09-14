@@ -1063,7 +1063,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     {
         int i;
         filterSize= 1;
-        filter= av_mallocz(dstW*sizeof(double)*filterSize);
+        filter= av_mallocz(dstW*sizeof(*filter)*filterSize);
 
         for (i=0; i<dstW; i++)
         {
@@ -1077,7 +1077,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         int i;
         int xDstInSrc;
         filterSize= 1;
-        filter= av_malloc(dstW*sizeof(double)*filterSize);
+        filter= av_malloc(dstW*sizeof(*filter)*filterSize);
 
         xDstInSrc= xInc/2 - 0x8000;
         for (i=0; i<dstW; i++)
@@ -1096,7 +1096,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         if      (flags&SWS_BICUBIC) filterSize= 4;
         else if (flags&SWS_X      ) filterSize= 4;
         else                        filterSize= 2; // SWS_BILINEAR / SWS_AREA
-        filter= av_malloc(dstW*sizeof(double)*filterSize);
+        filter= av_malloc(dstW*sizeof(*filter)*filterSize);
 
         xDstInSrc= xInc/2 - 0x8000;
         for (i=0; i<dstW; i++)
@@ -1142,7 +1142,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         filterSize= (int)ceil(1 + filterSizeInSrc); // will be reduced later if possible
         if (filterSize > srcW-2) filterSize=srcW-2;
 
-        filter= av_malloc(dstW*sizeof(double)*filterSize);
+        filter= av_malloc(dstW*sizeof(*filter)*filterSize);
 
         xDstInSrc= xInc1 / 2.0 - 0.5;
         for (i=0; i<dstW; i++)
@@ -1236,7 +1236,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     if (srcFilter) filter2Size+= srcFilter->length - 1;
     if (dstFilter) filter2Size+= dstFilter->length - 1;
     assert(filter2Size>0);
-    filter2= av_malloc(filter2Size*dstW*sizeof(double));
+    filter2= av_malloc(filter2Size*dstW*sizeof(*filter2));
 
     for (i=0; i<dstW; i++)
     {
@@ -1328,7 +1328,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     assert(minFilterSize > 0);
     filterSize= (minFilterSize +(filterAlign-1)) & (~(filterAlign-1));
     assert(filterSize > 0);
-    filter= av_malloc(filterSize*dstW*sizeof(double));
+    filter= av_malloc(filterSize*dstW*sizeof(*filter));
     if (filterSize >= MAX_FILTER_SIZE*16/((flags&SWS_ACCURATE_RND) ? APCK_SIZE : 16) || !filter)
         goto error;
     *outFilterSize= filterSize;
