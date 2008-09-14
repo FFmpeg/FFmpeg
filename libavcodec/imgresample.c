@@ -408,10 +408,10 @@ static void component_resample(ImgReSampleContext *s,
         else
 #endif
 #ifdef HAVE_ALTIVEC
-            if ((mm_flags & MM_ALTIVEC) && NB_TAPS == 4 && FILTER_BITS <= 6)
-                v_resample16_altivec(output, owidth,
-                                s->line_buf + (ring_y - NB_TAPS + 1) * owidth, owidth,
-                                &s->v_filters[phase_y][0]);
+        if ((mm_flags & MM_ALTIVEC) && NB_TAPS == 4 && FILTER_BITS <= 6)
+            v_resample16_altivec(output, owidth,
+                                 s->line_buf + (ring_y - NB_TAPS + 1) * owidth,
+                                 owidth, &s->v_filters[phase_y][0]);
         else
 #endif
             v_resample(output, owidth,
