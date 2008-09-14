@@ -26,7 +26,7 @@ Current (simplified) Architecture:
 
 Swscale has 2 scaler paths. Each side must be capable of handling
 slices, that is, consecutive non-overlapping rectangles of dimension
-(0,slice_top) - (picture_width, slice_bottom)
+(0,slice_top) - (picture_width, slice_bottom).
 
 special converter
     These generally are unscaled converters of common
@@ -37,64 +37,63 @@ Main path
     The main path is used when no special converter can be used. The code
     is designed as a destination line pull architecture. That is, for each
     output line the vertical scaler pulls lines from a ring buffer. When
-    the ring buffer does not contain the wanted line then it is pulled from
-    the input slice through the input converter and horizontal scaler, and
-    the result is also stored in the ring buffer to serve future vertical
+    the ring buffer does not contain the wanted line, then it is pulled from
+    the input slice through the input converter and horizontal scaler.
+    The result is also stored in the ring buffer to serve future vertical
     scaler requests.
     When no more output can be generated because lines from a future slice
     would be needed, then all remaining lines in the current slice are
     converted, horizontally scaled and put in the ring buffer.
-    [this is done for luma and chroma, each with possibly different numbers
-     of lines per picture]
+    [This is done for luma and chroma, each with possibly different numbers
+     of lines per picture.]
 
 Input to YUV Converter
-    When the input to the main path is not planar 8bit per component yuv or
-    8bit gray then it is converted to planar 8bit YUV. 2 sets of converters
-    exist for this currently, one performing horizontal downscaling by 2
-    before the conversion and the other leaving the full chroma resolution
-    but being slightly slower. The scaler will try to preserve full chroma
+    When the input to the main path is not planar 8 bits per component YUV or
+    8-bit gray then it is converted to planar 8-bit YUV. 2 sets of converters
+    exist for this currently: One performs horizontal downscaling by 2
+    before the conversion, the other leaves the full chroma resolution
+    but is slightly slower. The scaler will try to preserve full chroma
     here when the output uses it. It is possible to force full chroma with
-    SWS_FULL_CHR_H_INP though even for cases where the scaler thinks it is
-    useless.
+    SWS_FULL_CHR_H_INP even for cases where the scaler thinks it is useless.
 
 Horizontal scaler
     There are several horizontal scalers. A special case worth mentioning is
-    the fast bilinear scaler that is made of runtime generated MMX2 code
+    the fast bilinear scaler that is made of runtime-generated MMX2 code
     using specially tuned pshufw instructions.
-    The remaining scalers are specially tuned for various filter lengths.
-    They scale 8bit unsigned planar data to 16bit signed planar data.
-    Future >8bit per component inputs will need to add a new scaler here
+    The remaining scalers are specially-tuned for various filter lengths.
+    They scale 8-bit unsigned planar data to 16-bit signed planar data.
+    Future >8 bits per component inputs will need to add a new scaler here
     that preserves the input precision.
 
 Vertical scaler and output converter
-    There is a large number of combined vertical scalers+output converters
+    There is a large number of combined vertical scalers + output converters.
     Some are:
     * unscaled output converters
     * unscaled output converters that average 2 chroma lines
     * bilinear converters                (C, MMX and accurate MMX)
     * arbitrary filter length converters (C, MMX and accurate MMX)
     And
-    * Plain C  8bit 4:2:2 YUV -> RGB converters using LUTs
-    * Plain C 17bit 4:4:4 YUV -> RGB converters using multiplies
-    * MMX     11bit 4:2:2 YUV -> RGB converters
-    * Plain C 16bit Y -> 16bit gray
+    * Plain C  8-bit 4:2:2 YUV -> RGB converters using LUTs
+    * Plain C 17-bit 4:4:4 YUV -> RGB converters using multiplies
+    * MMX     11-bit 4:2:2 YUV -> RGB converters
+    * Plain C 16-bit Y -> 16-bit gray
       ...
 
-    RGB with less than 8bit per component uses dither to improve the
-    subjective quality and low frequency accuracy.
+    RGB with less than 8 bits per component uses dither to improve the
+    subjective quality and low-frequency accuracy.
 
 
 Filter coefficients:
 --------------------
-There are several different scalers (bilinear, bicubic, lanczos, area, sinc, ...)
-Their coefficients are calculated in initFilter().
-Horizontal filter coeffs have a 1.0 point at 1<<14, vertical ones at 1<<12.
-The 1.0 points have been chosen to maximize precision while leaving a
-little headroom for convolutional filters like sharpening filters and
+There are several different scalers (bilinear, bicubic, lanczos, area,
+sinc, ...). Their coefficients are calculated in initFilter().
+Horizontal filter coefficients have a 1.0 point at 1 << 14, vertical ones at
+1 << 12. The 1.0 points have been chosen to maximize precision while leaving
+a little headroom for convolutional filters like sharpening filters and
 minimizing SIMD instructions needed to apply them.
 It would be trivial to use a different 1.0 point if some specific scaler
 would benefit from it.
-Also as already hinted at, initFilter() accepts an optional convolutional
+Also, as already hinted at, initFilter() accepts an optional convolutional
 filter as input that can be used for contrast, saturation, blur, sharpening
 shift, chroma vs. luma shift, ...
 
