@@ -24,7 +24,7 @@ Current (simplified) Architecture:
                          output
 
 
-Swscale has 2 scaler pathes, each side must be capable to handle
+Swscale has 2 scaler paths, each side must be capable to handle
 slices, that is consecutive non overlapping rectangles of dimension
 (0,slice_top) - (picture_width, slice_bottom)
 
@@ -51,7 +51,7 @@ Input to YUV Converter
     When the input to the main path is not planar 8bit per component yuv or
     8bit gray then it is converted to planar 8bit YUV, 2 sets of converters
     exist for this currently one performing horizontal downscaling by 2
-    before the convertion and the other leaving the full chroma resolution
+    before the conversion and the other leaving the full chroma resolution
     but being slightly slower. The scaler will try to preserve full chroma
     here when the output uses it, its possible to force full chroma with
     SWS_FULL_CHR_H_INP though even for cases where the scaler thinks its
@@ -59,12 +59,12 @@ Input to YUV Converter
 
 Horizontal scaler
     There are several horizontal scalers, a special case worth mentioning is
-    the fast bilinear scaler that is made of runtime generated mmx2 code
+    the fast bilinear scaler that is made of runtime generated MMX2 code
     using specially tuned pshufw instructions.
     The remaining scalers are specially tuned for various filter lengths
     they scale 8bit unsigned planar data to 16bit signed planar data.
     Future >8bit per component inputs will need to add a new scaler here
-    that preserves the input precission.
+    that preserves the input precision.
 
 Vertical scaler and output converter
     There is a large number of combined vertical scalers+output converters
@@ -88,8 +88,8 @@ Filter coefficients:
 --------------------
 There are several different scalers (bilinear, bicubic, lanczos, area, sinc, ...)
 Their coefficients are calculated in initFilter().
-Horinzontal filter coeffs have a 1.0 point at 1<<14, vertical ones at 1<<12.
-The 1.0 points have been choosen to maximize precission while leaving a
+Horizontal filter coeffs have a 1.0 point at 1<<14, vertical ones at 1<<12.
+The 1.0 points have been chosen to maximize precision while leaving a
 little headroom for convolutional filters like sharpening filters and
 minimizing SIMD instructions needed to apply them.
 It would be trivial to use a different 1.0 point if some specific scaler
