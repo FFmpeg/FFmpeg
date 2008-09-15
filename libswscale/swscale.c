@@ -1048,8 +1048,9 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     int filterSize;
     int filter2Size;
     int minFilterSize;
-    double *filter=NULL;
-    double *filter2=NULL;
+    int64_t *filter=NULL;
+    int64_t *filter2=NULL;
+    const int64_t fone= 1LL<<54;
     int ret= -1;
 #if defined(ARCH_X86)
     if (flags & SWS_CPU_CAPS_MMX)
@@ -1067,7 +1068,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 
         for (i=0; i<dstW; i++)
         {
-            filter[i*filterSize]=1;
+            filter[i*filterSize]= fone;
             (*filterPos)[i]=i;
         }
 
@@ -1085,7 +1086,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
             int xx= (xDstInSrc - ((filterSize-1)<<15) + (1<<15))>>16;
 
             (*filterPos)[i]= xx;
-            filter[i]= 1.0;
+            filter[i]= fone;
             xDstInSrc+= xInc;
         }
     }
@@ -1108,8 +1109,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
                 //Bilinear upscale / linear interpolate / Area averaging
                 for (j=0; j<filterSize; j++)
                 {
-                    double d= FFABS((xx<<16) - xDstInSrc)/(double)(1<<16);
-                    double coeff= 1.0 - d;
+                    int64_t coeff= fone - FFABS((xx<<16) - xDstInSrc)*(fone>>16);
                     if (coeff<0) coeff=0;
                     filter[i*filterSize + j]= coeff;
                     xx++;
@@ -1119,52 +1119,59 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     }
     else
     {
-        double xDstInSrc;
-        double sizeFactor, filterSizeInSrc;
-        const double xInc1= (double)xInc / (double)(1<<16);
+        int xDstInSrc;
+        int sizeFactor;
 
-        if      (flags&SWS_BICUBIC)      sizeFactor=  4.0;
-        else if (flags&SWS_X)            sizeFactor=  8.0;
-        else if (flags&SWS_AREA)         sizeFactor=  1.0; //downscale only, for upscale it is bilinear
-        else if (flags&SWS_GAUSS)        sizeFactor=  8.0;   // infinite ;)
-        else if (flags&SWS_LANCZOS)      sizeFactor= param[0] != SWS_PARAM_DEFAULT ? 2.0*param[0] : 6.0;
-        else if (flags&SWS_SINC)         sizeFactor= 20.0; // infinite ;)
-        else if (flags&SWS_SPLINE)       sizeFactor= 20.0;  // infinite ;)
-        else if (flags&SWS_BILINEAR)     sizeFactor=  2.0;
+        if      (flags&SWS_BICUBIC)      sizeFactor=  4;
+        else if (flags&SWS_X)            sizeFactor=  8;
+        else if (flags&SWS_AREA)         sizeFactor=  1; //downscale only, for upscale it is bilinear
+        else if (flags&SWS_GAUSS)        sizeFactor=  8;   // infinite ;)
+        else if (flags&SWS_LANCZOS)      sizeFactor= param[0] != SWS_PARAM_DEFAULT ? ceil(2*param[0]) : 6;
+        else if (flags&SWS_SINC)         sizeFactor= 20; // infinite ;)
+        else if (flags&SWS_SPLINE)       sizeFactor= 20;  // infinite ;)
+        else if (flags&SWS_BILINEAR)     sizeFactor=  2;
         else {
-            sizeFactor= 0.0; //GCC warning killer
+            sizeFactor= 0; //GCC warning killer
             assert(0);
         }
 
-        if (xInc1 <= 1.0)       filterSizeInSrc= sizeFactor; // upscale
-        else                    filterSizeInSrc= sizeFactor*srcW / (double)dstW;
+        if (xInc <= 1<<16)      filterSize= 1 + sizeFactor; // upscale
+        else                    filterSize= 1 + (sizeFactor*srcW + dstW - 1)/ dstW;
 
-        filterSize= (int)ceil(1 + filterSizeInSrc); // will be reduced later if possible
         if (filterSize > srcW-2) filterSize=srcW-2;
 
         filter= av_malloc(dstW*sizeof(*filter)*filterSize);
 
-        xDstInSrc= xInc1 / 2.0 - 0.5;
+        xDstInSrc= xInc - 0x10000;
         for (i=0; i<dstW; i++)
         {
-            int xx= (int)(xDstInSrc - (filterSize-1)*0.5 + 0.5);
+            int xx= (xDstInSrc - ((filterSize-2)<<16)) / (1<<17);
             int j;
             (*filterPos)[i]= xx;
             for (j=0; j<filterSize; j++)
             {
-                double d= FFABS(xx - xDstInSrc)/filterSizeInSrc*sizeFactor;
-                double coeff;
+                int64_t d= ((int64_t)FFABS((xx<<17) - xDstInSrc))<<13;
+                double floatd;
+                int64_t coeff;
+
+                if (xInc > 1<<16)
+                    d= d*dstW/srcW;
+                floatd= d * (1.0/(1<<30));
+
                 if (flags & SWS_BICUBIC)
                 {
-                    double B= param[0] != SWS_PARAM_DEFAULT ? param[0] : 0.0;
-                    double C= param[1] != SWS_PARAM_DEFAULT ? param[1] : 0.6;
+                    int64_t B= (param[0] != SWS_PARAM_DEFAULT ? param[0] :   0) * (1<<24);
+                    int64_t C= (param[1] != SWS_PARAM_DEFAULT ? param[1] : 0.6) * (1<<24);
+                    int64_t dd = ( d*d)>>30;
+                    int64_t ddd= (dd*d)>>30;
 
-                    if (d<1.0)
-                        coeff = (12-9*B-6*C)*d*d*d + (-18+12*B+6*C)*d*d + 6-2*B;
-                    else if (d<2.0)
-                        coeff = (-B-6*C)*d*d*d + (6*B+30*C)*d*d + (-12*B-48*C)*d +8*B+24*C;
+                    if      (d < 1LL<<30)
+                        coeff = (12*(1<<24)-9*B-6*C)*ddd + (-18*(1<<24)+12*B+6*C)*dd + (6*(1<<24)-2*B)*(1<<30);
+                    else if (d < 1LL<<31)
+                        coeff = (-B-6*C)*ddd + (6*B+30*C)*dd + (-12*B-48*C)*d + (8*B+24*C)*(1<<30);
                     else
                         coeff=0.0;
+                    coeff *= fone>>(30+24);
                 }
 /*                else if (flags & SWS_X)
                 {
@@ -1175,46 +1182,49 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
                 else if (flags & SWS_X)
                 {
                     double A= param[0] != SWS_PARAM_DEFAULT ? param[0] : 1.0;
+                    double c;
 
-                    if (d<1.0)
-                        coeff = cos(d*PI);
+                    if (floatd<1.0)
+                        c = cos(floatd*PI);
                     else
-                        coeff=-1.0;
-                    if (coeff<0.0)      coeff= -pow(-coeff, A);
-                    else                coeff=  pow( coeff, A);
-                    coeff= coeff*0.5 + 0.5;
+                        c=-1.0;
+                    if (c<0.0)      c= -pow(-c, A);
+                    else            c=  pow( c, A);
+                    coeff= (c*0.5 + 0.5)*fone;
                 }
                 else if (flags & SWS_AREA)
                 {
-                    double srcPixelSize= 1.0/xInc1;
-                    if      (d + srcPixelSize/2 < 0.5) coeff= 1.0;
-                    else if (d - srcPixelSize/2 < 0.5) coeff= (0.5-d)/srcPixelSize + 0.5;
+                    int64_t d2= d - (1<<29);
+                    if      (d2*xInc < -(1LL<<(29+16))) coeff= 1.0 * (1LL<<(30+16));
+                    else if (d2*xInc <  (1LL<<(29+16))) coeff= -d2*xInc + (1LL<<(29+16));
                     else coeff=0.0;
+                    coeff *= fone>>(30+16);
                 }
                 else if (flags & SWS_GAUSS)
                 {
                     double p= param[0] != SWS_PARAM_DEFAULT ? param[0] : 3.0;
-                    coeff = pow(2.0, - p*d*d);
+                    coeff = (pow(2.0, - p*floatd*floatd))*fone;
                 }
                 else if (flags & SWS_SINC)
                 {
-                    coeff = d ? sin(d*PI)/(d*PI) : 1.0;
+                    coeff = (d ? sin(floatd*PI)/(floatd*PI) : 1.0)*fone;
                 }
                 else if (flags & SWS_LANCZOS)
                 {
                     double p= param[0] != SWS_PARAM_DEFAULT ? param[0] : 3.0;
-                    coeff = d ? sin(d*PI)*sin(d*PI/p)/(d*d*PI*PI/p) : 1.0;
-                    if (d>p) coeff=0;
+                    coeff = (d ? sin(floatd*PI)*sin(floatd*PI/p)/(floatd*floatd*PI*PI/p) : 1.0)*fone;
+                    if (floatd>p) coeff=0;
                 }
                 else if (flags & SWS_BILINEAR)
                 {
-                    coeff= 1.0 - d;
+                    coeff= (1<<30) - d;
                     if (coeff<0) coeff=0;
+                    coeff *= fone >> 30;
                 }
                 else if (flags & SWS_SPLINE)
                 {
                     double p=-2.196152422706632;
-                    coeff = getSplineCoeff(1.0, 0.0, p, -p-1.0, d);
+                    coeff = getSplineCoeff(1.0, 0.0, p, -p-1.0, d) * fone;
                 }
                 else {
                     coeff= 0.0; //GCC warning killer
@@ -1224,7 +1234,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
                 filter[i*filterSize + j]= coeff;
                 xx++;
             }
-            xDstInSrc+= xInc1;
+            xDstInSrc+= 2*xInc;
         }
     }
 
@@ -1236,31 +1246,24 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     if (srcFilter) filter2Size+= srcFilter->length - 1;
     if (dstFilter) filter2Size+= dstFilter->length - 1;
     assert(filter2Size>0);
-    filter2= av_malloc(filter2Size*dstW*sizeof(*filter2));
+    filter2= av_mallocz(filter2Size*dstW*sizeof(*filter2));
 
     for (i=0; i<dstW; i++)
     {
-        int j;
-        SwsVector scaleFilter;
-        SwsVector *outVec;
+        int j, k;
 
-        scaleFilter.coeff= filter + i*filterSize;
-        scaleFilter.length= filterSize;
-
-        if (srcFilter) outVec= sws_getConvVec(srcFilter, &scaleFilter);
-        else           outVec= &scaleFilter;
-
-        assert(outVec->length == filter2Size);
+        if(srcFilter){
+            for (k=0; k<srcFilter->length; k++){
+                for (j=0; j<filterSize; j++)
+                    filter2[i*filter2Size + k + j] += srcFilter->coeff[k]*filter[i*filterSize + j];
+            }
+        }else{
+            for (j=0; j<filterSize; j++)
+                filter2[i*filter2Size + j]= filter[i*filterSize + j];
+        }
         //FIXME dstFilter
 
-        for (j=0; j<outVec->length; j++)
-        {
-            filter2[i*filter2Size + j]= outVec->coeff[j];
-        }
-
         (*filterPos)[i]+= (filterSize-1)/2 - (filter2Size-1)/2;
-
-        if (outVec != &scaleFilter) sws_freeVec(outVec);
     }
     av_freep(&filter);
 
@@ -1271,7 +1274,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     {
         int min= filter2Size;
         int j;
-        double cutOff=0.0;
+        int64_t cutOff=0.0;
 
         /* get rid off near zero elements on the left by shifting left */
         for (j=0; j<filter2Size; j++)
@@ -1279,7 +1282,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
             int k;
             cutOff += FFABS(filter2[i*filter2Size]);
 
-            if (cutOff > SWS_MAX_REDUCE_CUTOFF) break;
+            if (cutOff > SWS_MAX_REDUCE_CUTOFF*fone) break;
 
             /* preserve monotonicity because the core can't handle the filter otherwise */
             if (i<dstW-1 && (*filterPos)[i] >= (*filterPos)[i+1]) break;
@@ -1287,17 +1290,17 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
             // Move filter coeffs left
             for (k=1; k<filter2Size; k++)
                 filter2[i*filter2Size + k - 1]= filter2[i*filter2Size + k];
-            filter2[i*filter2Size + k - 1]= 0.0;
+            filter2[i*filter2Size + k - 1]= 0;
             (*filterPos)[i]++;
         }
 
-        cutOff=0.0;
+        cutOff=0;
         /* count near zeros on the right */
         for (j=filter2Size-1; j>0; j--)
         {
             cutOff += FFABS(filter2[i*filter2Size + j]);
 
-            if (cutOff > SWS_MAX_REDUCE_CUTOFF) break;
+            if (cutOff > SWS_MAX_REDUCE_CUTOFF*fone) break;
             min--;
         }
 
@@ -1342,10 +1345,10 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 
         for (j=0; j<filterSize; j++)
         {
-            if (j>=filter2Size) filter[i*filterSize + j]= 0.0;
+            if (j>=filter2Size) filter[i*filterSize + j]= 0;
             else               filter[i*filterSize + j]= filter2[i*filter2Size + j];
             if((flags & SWS_BITEXACT) && j>=minFilterSize)
-                filter[i*filterSize + j]= 0.0;
+                filter[i*filterSize + j]= 0;
         }
     }
 
@@ -1390,21 +1393,20 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     for (i=0; i<dstW; i++)
     {
         int j;
-        double error=0;
-        double sum=0;
-        double scale= one;
+        int64_t error=0;
+        int64_t sum=0;
 
         for (j=0; j<filterSize; j++)
         {
             sum+= filter[i*filterSize + j];
         }
-        scale/= sum;
+        sum= (sum + one/2)/ one;
         for (j=0; j<*outFilterSize; j++)
         {
-            double v= filter[i*filterSize + j]*scale + error;
-            int intV= floor(v + 0.5);
+            int64_t v= filter[i*filterSize + j] + error;
+            int intV= ROUNDED_DIV(v, sum);
             (*outFilter)[i*(*outFilterSize) + j]= intV;
-            error = v - intV;
+            error= v - intV*sum;
         }
     }
 
