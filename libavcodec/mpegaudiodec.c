@@ -2240,7 +2240,8 @@ static int mp_decode_frame(MPADecodeContext *s,
         i= (s->gb.size_in_bits - get_bits_count(&s->gb))>>3;
 
         if(i<0 || i > BACKSTEP_SIZE || nb_frames<0){
-            av_log(s->avctx, AV_LOG_WARNING, "invalid new backstep %d\n", i);
+            if(i<0)
+                av_log(s->avctx, AV_LOG_ERROR, "invalid new backstep %d\n", i);
             i= FFMIN(BACKSTEP_SIZE, buf_size - HEADER_SIZE);
         }
         assert(i <= buf_size - HEADER_SIZE && i>= 0);
