@@ -255,7 +255,7 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit, int 
 
     log= av_log2(buf);
 
-    if(log - k >= 32-MIN_CACHE_BITS){
+    if(log - k >= 32-MIN_CACHE_BITS && 32-log < limit){
         buf >>= log - k;
         buf += (30-log)<<k;
         LAST_SKIP_BITS(re, gb, 32 + k - log);
