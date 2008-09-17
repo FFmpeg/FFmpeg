@@ -627,7 +627,7 @@ static void init_dequantizer(Vp3DecodeContext *s)
                 int qmin= 8<<(inter + !i);
                 int qscale= i ? ac_scale_factor : dc_scale_factor;
 
-                s->qmat[inter][plane][i]= av_clip((qscale * coeff)/100 * 4, qmin, 4096);
+                s->qmat[inter][plane][s->dsp.idct_permutation[i]]= av_clip((qscale * coeff)/100 * 4, qmin, 4096);
             }
         }
     }
