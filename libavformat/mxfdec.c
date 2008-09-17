@@ -789,7 +789,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->codec->width = descriptor->width;
             st->codec->height = descriptor->height;
             st->codec->bits_per_coded_sample = descriptor->bits_per_sample; /* Uncompressed */
-            st->sample_aspect_ratio = descriptor->aspect_ratio;
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             container_ul = mxf_get_codec_ul(mxf_essence_container_uls, essence_container_ul);
