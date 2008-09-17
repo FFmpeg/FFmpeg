@@ -48,7 +48,7 @@ typedef struct {
 
 static av_cold int ra288_decode_init(AVCodecContext *avctx)
 {
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->sample_fmt = SAMPLE_FMT_FLT;
     return 0;
 }
 
@@ -189,7 +189,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
                               int *data_size, const uint8_t * buf,
                               int buf_size)
 {
-    int16_t *out = data;
+    float *out = data;
     int i, j;
     RA288Context *ractx = avctx->priv_data;
     GetBitContext gb;
@@ -201,7 +201,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         return 0;
     }
 
-    if (*data_size < 32*5*2)
+    if (*data_size < 32*5*4)
         return -1;
 
     init_get_bits(&gb, buf, avctx->block_align * 8);
@@ -213,7 +213,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         decode(ractx, gain, cb_coef);
 
         for (j=0; j < 5; j++)
-            *(out++) = 8 * ractx->sp_hist[70 + 36 + j];
+            *(out++) = (1/4096.) * ractx->sp_hist[70 + 36 + j];
 
         if ((i & 7) == 3)
             backward_filter(ractx);
