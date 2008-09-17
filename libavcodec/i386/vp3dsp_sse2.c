@@ -457,11 +457,11 @@ void ff_vp3_idct_sse2(int16_t *input_data)
 #define C(x) AV_STRINGIFY(16*(x-1))"(%1)"
 
     asm volatile (
-    SSE2_Row_IDCT()
+        SSE2_Row_IDCT()
 
-    SSE2_Transpose()
+        SSE2_Transpose()
 
-    SSE2_Column_IDCT()
+        SSE2_Column_IDCT()
         :: "r"(input_data), "r"(ff_vp3_idct_data), "m"(ff_pw_8)
     );
 }

@@ -251,30 +251,30 @@ void ff_vp3_idct_mmx(int16_t *output_data)
 #define J(x) AV_STRINGIFY(16*(x-4) + 8)"(%0)"
 
     asm volatile (
-    RowIDCT()
-    Transpose()
+        RowIDCT()
+        Transpose()
 
 #undef I
 #undef J
 #define I(x) AV_STRINGIFY(16* x    + 64)"(%0)"
 #define J(x) AV_STRINGIFY(16*(x-4) + 72)"(%0)"
 
-    RowIDCT()
-    Transpose()
+        RowIDCT()
+        Transpose()
 
 #undef I
 #undef J
 #define I(x) AV_STRINGIFY(16*x)"(%0)"
 #define J(x) AV_STRINGIFY(16*x)"(%0)"
 
-    ColumnIDCT()
+        ColumnIDCT()
 
 #undef I
 #undef J
 #define I(x) AV_STRINGIFY(16*x + 8)"(%0)"
 #define J(x) AV_STRINGIFY(16*x + 8)"(%0)"
 
-    ColumnIDCT()
+        ColumnIDCT()
         :: "r"(output_data), "r"(ff_vp3_idct_data), "m"(ff_pw_8)
     );
 #undef I
