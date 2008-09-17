@@ -2528,9 +2528,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
 #endif
             }else if((ENABLE_VP3_DECODER || ENABLE_VP5_DECODER || ENABLE_VP6_DECODER) &&
-                     idct_algo==FF_IDCT_VP3 &&
-                     avctx->codec->id!=CODEC_ID_THEORA &&
-                     !(avctx->flags & CODEC_FLAG_BITEXACT)){
+                     idct_algo==FF_IDCT_VP3){
                 if(mm_flags & MM_SSE2){
                     c->idct_put= ff_vp3_idct_put_sse2;
                     c->idct_add= ff_vp3_idct_add_sse2;
