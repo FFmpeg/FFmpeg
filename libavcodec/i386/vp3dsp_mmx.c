@@ -25,161 +25,144 @@
 
 #include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
-#include "mmx.h"
 
 extern const uint16_t ff_vp3_idct_data[];
 
-#define r0 mm0
-#define r1 mm1
-#define r2 mm2
-#define r3 mm3
-#define r4 mm4
-#define r5 mm5
-#define r6 mm6
-#define r7 mm7
-
 /* from original comments: The Macro does IDct on 4 1-D Dcts */
-#define BeginIDCT() { \
-    movq_m2r(*I(3), r2); \
-    movq_m2r(*C(3), r6); \
-    movq_r2r(r2, r4); \
-    movq_m2r(*J(5), r7); \
-    pmulhw_r2r(r6, r4);       /* r4 = c3*i3 - i3 */ \
-    movq_m2r(*C(5), r1); \
-    pmulhw_r2r(r7, r6);       /* r6 = c3*i5 - i5 */ \
-    movq_r2r(r1, r5); \
-    pmulhw_r2r(r2, r1);       /* r1 = c5*i3 - i3 */ \
-    movq_m2r(*I(1), r3); \
-    pmulhw_r2r(r7, r5);       /* r5 = c5*i5 - i5 */ \
-    movq_m2r(*C(1), r0);      /* (all registers are in use) */ \
-    paddw_r2r(r2, r4);        /* r4 = c3*i3 */ \
-    paddw_r2r(r7, r6);        /* r6 = c3*i5 */ \
-    paddw_r2r(r1, r2);        /* r2 = c5*i3 */ \
-    movq_m2r(*J(7), r1); \
-    paddw_r2r(r5, r7);        /* r7 = c5*i5 */ \
-    movq_r2r(r0, r5);         /* r5 = c1 */ \
-    pmulhw_r2r(r3, r0);       /* r0 = c1*i1 - i1 */ \
-    paddsw_r2r(r7, r4);       /* r4 = C = c3*i3 + c5*i5 */ \
-    pmulhw_r2r(r1, r5);       /* r5 = c1*i7 - i7 */ \
-    movq_m2r(*C(7), r7); \
-    psubsw_r2r(r2, r6);       /* r6 = D = c3*i5 - c5*i3 */ \
-    paddw_r2r(r3, r0);        /* r0 = c1*i1 */ \
-    pmulhw_r2r(r7, r3);       /* r3 = c7*i1 */ \
-    movq_m2r(*I(2), r2); \
-    pmulhw_r2r(r1, r7);       /* r7 = c7*i7 */ \
-    paddw_r2r(r1, r5);        /* r5 = c1*i7 */ \
-    movq_r2r(r2, r1);         /* r1 = i2 */ \
-    pmulhw_m2r(*C(2), r2);    /* r2 = c2*i2 - i2 */ \
-    psubsw_r2r(r5, r3);       /* r3 = B = c7*i1 - c1*i7 */ \
-    movq_m2r(*J(6), r5); \
-    paddsw_r2r(r7, r0);       /* r0 = A = c1*i1 + c7*i7 */ \
-    movq_r2r(r5, r7);         /* r7 = i6 */ \
-    psubsw_r2r(r4, r0);       /* r0 = A - C */ \
-    pmulhw_m2r(*C(2), r5);    /* r5 = c2*i6 - i6 */ \
-    paddw_r2r(r1, r2);        /* r2 = c2*i2 */ \
-    pmulhw_m2r(*C(6), r1);    /* r1 = c6*i2 */ \
-    paddsw_r2r(r4, r4);       /* r4 = C + C */ \
-    paddsw_r2r(r0, r4);       /* r4 = C. = A + C */ \
-    psubsw_r2r(r6, r3);       /* r3 = B - D */ \
-    paddw_r2r(r7, r5);        /* r5 = c2*i6 */ \
-    paddsw_r2r(r6, r6);       /* r6 = D + D */ \
-    pmulhw_m2r(*C(6), r7);    /* r7 = c6*i6 */ \
-    paddsw_r2r(r3, r6);       /* r6 = D. = B + D */ \
-    movq_r2m(r4, *I(1));      /* save C. at I(1) */ \
-    psubsw_r2r(r5, r1);       /* r1 = H = c6*i2 - c2*i6 */ \
-    movq_m2r(*C(4), r4); \
-    movq_r2r(r3, r5);         /* r5 = B - D */ \
-    pmulhw_r2r(r4, r3);       /* r3 = (c4 - 1) * (B - D) */ \
-    paddsw_r2r(r2, r7);       /* r7 = G = c6*i6 + c2*i2 */ \
-    movq_r2m(r6, *I(2));      /* save D. at I(2) */ \
-    movq_r2r(r0, r2);         /* r2 = A - C */ \
-    movq_m2r(*I(0), r6); \
-    pmulhw_r2r(r4, r0);       /* r0 = (c4 - 1) * (A - C) */ \
-    paddw_r2r(r3, r5);        /* r5 = B. = c4 * (B - D) */ \
-    movq_m2r(*J(4), r3); \
-    psubsw_r2r(r1, r5);       /* r5 = B.. = B. - H */ \
-    paddw_r2r(r0, r2);        /* r0 = A. = c4 * (A - C) */ \
-    psubsw_r2r(r3, r6);       /* r6 = i0 - i4 */ \
-    movq_r2r(r6, r0); \
-    pmulhw_r2r(r4, r6);       /* r6 = (c4 - 1) * (i0 - i4) */ \
-    paddsw_r2r(r3, r3);       /* r3 = i4 + i4 */ \
-    paddsw_r2r(r1, r1);       /* r1 = H + H */ \
-    paddsw_r2r(r0, r3);       /* r3 = i0 + i4 */ \
-    paddsw_r2r(r5, r1);       /* r1 = H. = B + H */ \
-    pmulhw_r2r(r3, r4);       /* r4 = (c4 - 1) * (i0 + i4) */ \
-    paddsw_r2r(r0, r6);       /* r6 = F = c4 * (i0 - i4) */ \
-    psubsw_r2r(r2, r6);       /* r6 = F. = F - A. */ \
-    paddsw_r2r(r2, r2);       /* r2 = A. + A. */ \
-    movq_m2r(*I(1), r0);      /* r0 = C. */ \
-    paddsw_r2r(r6, r2);       /* r2 = A.. = F + A. */ \
-    paddw_r2r(r3, r4);        /* r4 = E = c4 * (i0 + i4) */ \
-    psubsw_r2r(r1, r2);       /* r2 = R2 = A.. - H. */ \
-}
+#define BeginIDCT() \
+    "movq   "I(3)", %%mm2 \n\t" \
+    "movq   "C(3)", %%mm6 \n\t" \
+    "movq    %%mm2, %%mm4 \n\t" \
+    "movq   "J(5)", %%mm7 \n\t" \
+    "pmulhw  %%mm6, %%mm4 \n\t"    /* r4 = c3*i3 - i3 */ \
+    "movq   "C(5)", %%mm1 \n\t" \
+    "pmulhw  %%mm7, %%mm6 \n\t"    /* r6 = c3*i5 - i5 */ \
+    "movq    %%mm1, %%mm5 \n\t" \
+    "pmulhw  %%mm2, %%mm1 \n\t"    /* r1 = c5*i3 - i3 */ \
+    "movq   "I(1)", %%mm3 \n\t" \
+    "pmulhw  %%mm7, %%mm5 \n\t"    /* r5 = c5*i5 - i5 */ \
+    "movq   "C(1)", %%mm0 \n\t" \
+    "paddw   %%mm2, %%mm4 \n\t"    /* r4 = c3*i3 */ \
+    "paddw   %%mm7, %%mm6 \n\t"    /* r6 = c3*i5 */ \
+    "paddw   %%mm1, %%mm2 \n\t"    /* r2 = c5*i3 */ \
+    "movq   "J(7)", %%mm1 \n\t" \
+    "paddw   %%mm5, %%mm7 \n\t"    /* r7 = c5*i5 */ \
+    "movq    %%mm0, %%mm5 \n\t"    /* r5 = c1 */ \
+    "pmulhw  %%mm3, %%mm0 \n\t"    /* r0 = c1*i1 - i1 */ \
+    "paddsw  %%mm7, %%mm4 \n\t"    /* r4 = C = c3*i3 + c5*i5 */ \
+    "pmulhw  %%mm1, %%mm5 \n\t"    /* r5 = c1*i7 - i7 */ \
+    "movq   "C(7)", %%mm7 \n\t" \
+    "psubsw  %%mm2, %%mm6 \n\t"    /* r6 = D = c3*i5 - c5*i3 */ \
+    "paddw   %%mm3, %%mm0 \n\t"    /* r0 = c1*i1 */ \
+    "pmulhw  %%mm7, %%mm3 \n\t"    /* r3 = c7*i1 */ \
+    "movq   "I(2)", %%mm2 \n\t" \
+    "pmulhw  %%mm1, %%mm7 \n\t"    /* r7 = c7*i7 */ \
+    "paddw   %%mm1, %%mm5 \n\t"    /* r5 = c1*i7 */ \
+    "movq    %%mm2, %%mm1 \n\t"    /* r1 = i2 */ \
+    "pmulhw "C(2)", %%mm2 \n\t"    /* r2 = c2*i2 - i2 */ \
+    "psubsw  %%mm5, %%mm3 \n\t"    /* r3 = B = c7*i1 - c1*i7 */ \
+    "movq   "J(6)", %%mm5 \n\t" \
+    "paddsw  %%mm7, %%mm0 \n\t"    /* r0 = A = c1*i1 + c7*i7 */ \
+    "movq    %%mm5, %%mm7 \n\t"    /* r7 = i6 */ \
+    "psubsw  %%mm4, %%mm0 \n\t"    /* r0 = A - C */ \
+    "pmulhw "C(2)", %%mm5 \n\t"    /* r5 = c2*i6 - i6 */ \
+    "paddw   %%mm1, %%mm2 \n\t"    /* r2 = c2*i2 */ \
+    "pmulhw "C(6)", %%mm1 \n\t"    /* r1 = c6*i2 */ \
+    "paddsw  %%mm4, %%mm4 \n\t"    /* r4 = C + C */ \
+    "paddsw  %%mm0, %%mm4 \n\t"    /* r4 = C. = A + C */ \
+    "psubsw  %%mm6, %%mm3 \n\t"    /* r3 = B - D */ \
+    "paddw   %%mm7, %%mm5 \n\t"    /* r5 = c2*i6 */ \
+    "paddsw  %%mm6, %%mm6 \n\t"    /* r6 = D + D */ \
+    "pmulhw "C(6)", %%mm7 \n\t"    /* r7 = c6*i6 */ \
+    "paddsw  %%mm3, %%mm6 \n\t"    /* r6 = D. = B + D */ \
+    "movq    %%mm4, "I(1)"\n\t"    /* save C. at I(1) */ \
+    "psubsw  %%mm5, %%mm1 \n\t"    /* r1 = H = c6*i2 - c2*i6 */ \
+    "movq   "C(4)", %%mm4 \n\t" \
+    "movq    %%mm3, %%mm5 \n\t"    /* r5 = B - D */ \
+    "pmulhw  %%mm4, %%mm3 \n\t"    /* r3 = (c4 - 1) * (B - D) */ \
+    "paddsw  %%mm2, %%mm7 \n\t"    /* r3 = (c4 - 1) * (B - D) */ \
+    "movq    %%mm6, "I(2)"\n\t"    /* save D. at I(2) */ \
+    "movq    %%mm0, %%mm2 \n\t"    /* r2 = A - C */ \
+    "movq   "I(0)", %%mm6 \n\t" \
+    "pmulhw  %%mm4, %%mm0 \n\t"    /* r0 = (c4 - 1) * (A - C) */ \
+    "paddw   %%mm3, %%mm5 \n\t"    /* r5 = B. = c4 * (B - D) */ \
+    "movq   "J(4)", %%mm3 \n\t" \
+    "psubsw  %%mm1, %%mm5 \n\t"    /* r5 = B.. = B. - H */ \
+    "paddw   %%mm0, %%mm2 \n\t"    /* r0 = A. = c4 * (A - C) */ \
+    "psubsw  %%mm3, %%mm6 \n\t"    /* r6 = i0 - i4 */ \
+    "movq    %%mm6, %%mm0 \n\t" \
+    "pmulhw  %%mm4, %%mm6 \n\t"    /* r6 = (c4 - 1) * (i0 - i4) */ \
+    "paddsw  %%mm3, %%mm3 \n\t"    /* r3 = i4 + i4 */ \
+    "paddsw  %%mm1, %%mm1 \n\t"    /* r1 = H + H */ \
+    "paddsw  %%mm0, %%mm3 \n\t"    /* r3 = i0 + i4 */ \
+    "paddsw  %%mm5, %%mm1 \n\t"    /* r1 = H. = B + H */ \
+    "pmulhw  %%mm3, %%mm4 \n\t"    /* r4 = (c4 - 1) * (i0 + i4) */ \
+    "paddsw  %%mm0, %%mm6 \n\t"    /* r6 = F = c4 * (i0 - i4) */ \
+    "psubsw  %%mm2, %%mm6 \n\t"    /* r6 = F. = F - A. */ \
+    "paddsw  %%mm2, %%mm2 \n\t"    /* r2 = A. + A. */ \
+    "movq   "I(1)", %%mm0 \n\t"    /* r0 = C. */ \
+    "paddsw  %%mm6, %%mm2 \n\t"    /* r2 = A.. = F + A. */ \
+    "paddw   %%mm3, %%mm4 \n\t"    /* r4 = E = c4 * (i0 + i4) */ \
+    "psubsw  %%mm1, %%mm2 \n\t"    /* r2 = R2 = A.. - H. */
 
 /* RowIDCT gets ready to transpose */
-#define RowIDCT() { \
-    \
-    BeginIDCT(); \
-    \
-    movq_m2r(*I(2), r3);   /* r3 = D. */ \
-    psubsw_r2r(r7, r4);    /* r4 = E. = E - G */ \
-    paddsw_r2r(r1, r1);    /* r1 = H. + H. */ \
-    paddsw_r2r(r7, r7);    /* r7 = G + G */ \
-    paddsw_r2r(r2, r1);    /* r1 = R1 = A.. + H. */ \
-    paddsw_r2r(r4, r7);    /* r7 = G. = E + G */ \
-    psubsw_r2r(r3, r4);    /* r4 = R4 = E. - D. */ \
-    paddsw_r2r(r3, r3); \
-    psubsw_r2r(r5, r6);    /* r6 = R6 = F. - B.. */ \
-    paddsw_r2r(r5, r5); \
-    paddsw_r2r(r4, r3);    /* r3 = R3 = E. + D. */ \
-    paddsw_r2r(r6, r5);    /* r5 = R5 = F. + B.. */ \
-    psubsw_r2r(r0, r7);    /* r7 = R7 = G. - C. */ \
-    paddsw_r2r(r0, r0); \
-    movq_r2m(r1, *I(1));   /* save R1 */ \
-    paddsw_r2r(r7, r0);    /* r0 = R0 = G. + C. */ \
-}
+#define RowIDCT() \
+    BeginIDCT() \
+    "movq   "I(2)", %%mm3 \n\t"    /* r3 = D. */ \
+    "psubsw  %%mm7, %%mm4 \n\t"    /* r4 = E. = E - G */ \
+    "paddsw  %%mm1, %%mm1 \n\t"    /* r1 = H. + H. */ \
+    "paddsw  %%mm7, %%mm7 \n\t"    /* r7 = G + G */ \
+    "paddsw  %%mm2, %%mm1 \n\t"    /* r1 = R1 = A.. + H. */ \
+    "paddsw  %%mm4, %%mm7 \n\t"    /* r1 = R1 = A.. + H. */ \
+    "psubsw  %%mm3, %%mm4 \n\t"    /* r4 = R4 = E. - D. */ \
+    "paddsw  %%mm3, %%mm3 \n\t" \
+    "psubsw  %%mm5, %%mm6 \n\t"    /* r6 = R6 = F. - B.. */ \
+    "paddsw  %%mm5, %%mm5 \n\t" \
+    "paddsw  %%mm4, %%mm3 \n\t"    /* r3 = R3 = E. + D. */ \
+    "paddsw  %%mm6, %%mm5 \n\t"    /* r5 = R5 = F. + B.. */ \
+    "psubsw  %%mm0, %%mm7 \n\t"    /* r7 = R7 = G. - C. */ \
+    "paddsw  %%mm0, %%mm0 \n\t" \
+    "movq    %%mm1, "I(1)"\n\t"    /* save R1 */ \
+    "paddsw  %%mm7, %%mm0 \n\t"    /* r0 = R0 = G. + C. */
 
 /* Column IDCT normalizes and stores final results */
-#define ColumnIDCT() { \
-    \
-    BeginIDCT(); \
-    \
-    paddsw_m2r(*Eight, r2);    /* adjust R2 (and R1) for shift */ \
-    paddsw_r2r(r1, r1);        /* r1 = H. + H. */ \
-    paddsw_r2r(r2, r1);        /* r1 = R1 = A.. + H. */ \
-    psraw_i2r(4, r2);          /* r2 = NR2 */ \
-    psubsw_r2r(r7, r4);        /* r4 = E. = E - G */ \
-    psraw_i2r(4, r1);          /* r1 = NR1 */ \
-    movq_m2r(*I(2), r3);       /* r3 = D. */ \
-    paddsw_r2r(r7, r7);        /* r7 = G + G */ \
-    movq_r2m(r2, *I(2));       /* store NR2 at I2 */ \
-    paddsw_r2r(r4, r7);        /* r7 = G. = E + G */ \
-    movq_r2m(r1, *I(1));       /* store NR1 at I1 */ \
-    psubsw_r2r(r3, r4);        /* r4 = R4 = E. - D. */ \
-    paddsw_m2r(*Eight, r4);    /* adjust R4 (and R3) for shift */ \
-    paddsw_r2r(r3, r3);        /* r3 = D. + D. */ \
-    paddsw_r2r(r4, r3);        /* r3 = R3 = E. + D. */ \
-    psraw_i2r(4, r4);          /* r4 = NR4 */ \
-    psubsw_r2r(r5, r6);        /* r6 = R6 = F. - B.. */ \
-    psraw_i2r(4, r3);          /* r3 = NR3 */ \
-    paddsw_m2r(*Eight, r6);    /* adjust R6 (and R5) for shift */ \
-    paddsw_r2r(r5, r5);        /* r5 = B.. + B.. */ \
-    paddsw_r2r(r6, r5);        /* r5 = R5 = F. + B.. */ \
-    psraw_i2r(4, r6);          /* r6 = NR6 */ \
-    movq_r2m(r4, *J(4));       /* store NR4 at J4 */ \
-    psraw_i2r(4, r5);          /* r5 = NR5 */ \
-    movq_r2m(r3, *I(3));       /* store NR3 at I3 */ \
-    psubsw_r2r(r0, r7);        /* r7 = R7 = G. - C. */ \
-    paddsw_m2r(*Eight, r7);    /* adjust R7 (and R0) for shift */ \
-    paddsw_r2r(r0, r0);        /* r0 = C. + C. */ \
-    paddsw_r2r(r7, r0);        /* r0 = R0 = G. + C. */ \
-    psraw_i2r(4, r7);          /* r7 = NR7 */ \
-    movq_r2m(r6, *J(6));       /* store NR6 at J6 */ \
-    psraw_i2r(4, r0);          /* r0 = NR0 */ \
-    movq_r2m(r5, *J(5));       /* store NR5 at J5 */ \
-    movq_r2m(r7, *J(7));       /* store NR7 at J7 */ \
-    movq_r2m(r0, *I(0));       /* store NR0 at I0 */ \
-}
+#define ColumnIDCT() \
+    BeginIDCT() \
+    "paddsw "OC_8", %%mm2 \n\t"    /* adjust R2 (and R1) for shift */ \
+    "paddsw  %%mm1, %%mm1 \n\t"    /* r1 = H. + H. */ \
+    "paddsw  %%mm2, %%mm1 \n\t"    /* r1 = R1 = A.. + H. */ \
+    "psraw      $4, %%mm2 \n\t"    /* r2 = NR2 */ \
+    "psubsw  %%mm7, %%mm4 \n\t"    /* r4 = E. = E - G */ \
+    "psraw      $4, %%mm1 \n\t"    /* r1 = NR1 */ \
+    "movq   "I(2)", %%mm3 \n\t"    /* r3 = D. */ \
+    "paddsw  %%mm7, %%mm7 \n\t"    /* r7 = G + G */ \
+    "movq    %%mm2, "I(2)"\n\t"    /* store NR2 at I2 */ \
+    "paddsw  %%mm4, %%mm7 \n\t"    /* r7 = G. = E + G */ \
+    "movq    %%mm1, "I(1)"\n\t"    /* store NR1 at I1 */ \
+    "psubsw  %%mm3, %%mm4 \n\t"    /* r4 = R4 = E. - D. */ \
+    "paddsw "OC_8", %%mm4 \n\t"    /* adjust R4 (and R3) for shift */ \
+    "paddsw  %%mm3, %%mm3 \n\t"    /* r3 = D. + D. */ \
+    "paddsw  %%mm4, %%mm3 \n\t"    /* r3 = R3 = E. + D. */ \
+    "psraw      $4, %%mm4 \n\t"    /* r4 = NR4 */ \
+    "psubsw  %%mm5, %%mm6 \n\t"    /* r6 = R6 = F. - B.. */ \
+    "psraw      $4, %%mm3 \n\t"    /* r3 = NR3 */ \
+    "paddsw "OC_8", %%mm6 \n\t"    /* adjust R6 (and R5) for shift */ \
+    "paddsw  %%mm5, %%mm5 \n\t"    /* r5 = B.. + B.. */ \
+    "paddsw  %%mm6, %%mm5 \n\t"    /* r5 = R5 = F. + B.. */ \
+    "psraw      $4, %%mm6 \n\t"    /* r6 = NR6 */ \
+    "movq    %%mm4, "J(4)"\n\t"    /* store NR4 at J4 */ \
+    "psraw      $4, %%mm5 \n\t"    /* r5 = NR5 */ \
+    "movq    %%mm3, "I(3)"\n\t"    /* store NR3 at I3 */ \
+    "psubsw  %%mm0, %%mm7 \n\t"    /* r7 = R7 = G. - C. */ \
+    "paddsw "OC_8", %%mm7 \n\t"    /* adjust R7 (and R0) for shift */ \
+    "paddsw  %%mm0, %%mm0 \n\t"    /* r0 = C. + C. */ \
+    "paddsw  %%mm7, %%mm0 \n\t"    /* r0 = R0 = G. + C. */ \
+    "psraw      $4, %%mm7 \n\t"    /* r7 = NR7 */ \
+    "movq    %%mm6, "J(6)"\n\t"    /* store NR6 at J6 */ \
+    "psraw      $4, %%mm0 \n\t"    /* r0 = NR0 */ \
+    "movq    %%mm5, "J(5)"\n\t"    /* store NR5 at J5 */ \
+    "movq    %%mm7, "J(7)"\n\t"    /* store NR7 at J7 */ \
+    "movq    %%mm0, "I(0)"\n\t"    /* store NR0 at I0 */
 
 /* Following macro does two 4x4 transposes in place.
 
@@ -211,44 +194,42 @@ extern const uint16_t ff_vp3_idct_data[];
    J(4) J(5) J(6) J(7)  is the transpose of r4 r5 r6 r7.
 
    Since r1 is free at entry, we calculate the Js first. */
-
-#define Transpose() { \
-    movq_r2r(r4, r1);         /* r1 = e3 e2 e1 e0 */ \
-    punpcklwd_r2r(r5, r4);    /* r4 = f1 e1 f0 e0 */ \
-    movq_r2m(r0, *I(0));      /* save a3 a2 a1 a0 */ \
-    punpckhwd_r2r(r5, r1);    /* r1 = f3 e3 f2 e2 */ \
-    movq_r2r(r6, r0);         /* r0 = g3 g2 g1 g0 */ \
-    punpcklwd_r2r(r7, r6);    /* r6 = h1 g1 h0 g0 */ \
-    movq_r2r(r4, r5);         /* r5 = f1 e1 f0 e0 */ \
-    punpckldq_r2r(r6, r4);    /* r4 = h0 g0 f0 e0 = R4 */ \
-    punpckhdq_r2r(r6, r5);    /* r5 = h1 g1 f1 e1 = R5 */ \
-    movq_r2r(r1, r6);         /* r6 = f3 e3 f2 e2 */ \
-    movq_r2m(r4, *J(4)); \
-    punpckhwd_r2r(r7, r0);    /* r0 = h3 g3 h2 g2 */ \
-    movq_r2m(r5, *J(5)); \
-    punpckhdq_r2r(r0, r6);    /* r6 = h3 g3 f3 e3 = R7 */ \
-    movq_m2r(*I(0), r4);      /* r4 = a3 a2 a1 a0 */ \
-    punpckldq_r2r(r0, r1);    /* r1 = h2 g2 f2 e2 = R6 */ \
-    movq_m2r(*I(1), r5);      /* r5 = b3 b2 b1 b0 */ \
-    movq_r2r(r4, r0);         /* r0 = a3 a2 a1 a0 */ \
-    movq_r2m(r6, *J(7)); \
-    punpcklwd_r2r(r5, r0);    /* r0 = b1 a1 b0 a0 */ \
-    movq_r2m(r1, *J(6)); \
-    punpckhwd_r2r(r5, r4);    /* r4 = b3 a3 b2 a2 */ \
-    movq_r2r(r2, r5);         /* r5 = c3 c2 c1 c0 */ \
-    punpcklwd_r2r(r3, r2);    /* r2 = d1 c1 d0 c0 */ \
-    movq_r2r(r0, r1);         /* r1 = b1 a1 b0 a0 */ \
-    punpckldq_r2r(r2, r0);    /* r0 = d0 c0 b0 a0 = R0 */ \
-    punpckhdq_r2r(r2, r1);    /* r1 = d1 c1 b1 a1 = R1 */ \
-    movq_r2r(r4, r2);         /* r2 = b3 a3 b2 a2 */ \
-    movq_r2m(r0, *I(0)); \
-    punpckhwd_r2r(r3, r5);    /* r5 = d3 c3 d2 c2 */ \
-    movq_r2m(r1, *I(1)); \
-    punpckhdq_r2r(r5, r4);    /* r4 = d3 c3 b3 a3 = R3 */ \
-    punpckldq_r2r(r5, r2);    /* r2 = d2 c2 b2 a2 = R2 */ \
-    movq_r2m(r4, *I(3)); \
-    movq_r2m(r2, *I(2)); \
-}
+#define Transpose() \
+    "movq       %%mm4, %%mm1 \n\t"    /* r1 = e3 e2 e1 e0 */ \
+    "punpcklwd  %%mm5, %%mm4 \n\t"    /* r4 = f1 e1 f0 e0 */ \
+    "movq       %%mm0, "I(0)"\n\t"    /* save a3 a2 a1 a0 */ \
+    "punpckhwd  %%mm5, %%mm1 \n\t"    /* r1 = f3 e3 f2 e2 */ \
+    "movq       %%mm6, %%mm0 \n\t"    /* r0 = g3 g2 g1 g0 */ \
+    "punpcklwd  %%mm7, %%mm6 \n\t"    /* r6 = h1 g1 h0 g0 */ \
+    "movq       %%mm4, %%mm5 \n\t"    /* r5 = f1 e1 f0 e0 */ \
+    "punpckldq  %%mm6, %%mm4 \n\t"    /* r4 = h0 g0 f0 e0 = R4 */ \
+    "punpckhdq  %%mm6, %%mm5 \n\t"    /* r5 = h1 g1 f1 e1 = R5 */ \
+    "movq       %%mm1, %%mm6 \n\t"    /* r6 = f3 e3 f2 e2 */ \
+    "movq       %%mm4, "J(4)"\n\t" \
+    "punpckhwd  %%mm7, %%mm0 \n\t"    /* r0 = h3 g3 h2 g2 */ \
+    "movq       %%mm5, "J(5)"\n\t" \
+    "punpckhdq  %%mm0, %%mm6 \n\t"    /* r6 = h3 g3 f3 e3 = R7 */ \
+    "movq      "I(0)", %%mm4 \n\t"    /* r4 = a3 a2 a1 a0 */ \
+    "punpckldq  %%mm0, %%mm1 \n\t"    /* r1 = h2 g2 f2 e2 = R6 */ \
+    "movq      "I(1)", %%mm5 \n\t"    /* r5 = b3 b2 b1 b0 */ \
+    "movq       %%mm4, %%mm0 \n\t"    /* r0 = a3 a2 a1 a0 */ \
+    "movq       %%mm6, "J(7)"\n\t" \
+    "punpcklwd  %%mm5, %%mm0 \n\t"    /* r0 = b1 a1 b0 a0 */ \
+    "movq       %%mm1, "J(6)"\n\t" \
+    "punpckhwd  %%mm5, %%mm4 \n\t"    /* r4 = b3 a3 b2 a2 */ \
+    "movq       %%mm2, %%mm5 \n\t"    /* r5 = c3 c2 c1 c0 */ \
+    "punpcklwd  %%mm3, %%mm2 \n\t"    /* r2 = d1 c1 d0 c0 */ \
+    "movq       %%mm0, %%mm1 \n\t"    /* r1 = b1 a1 b0 a0 */ \
+    "punpckldq  %%mm2, %%mm0 \n\t"    /* r0 = d0 c0 b0 a0 = R0 */ \
+    "punpckhdq  %%mm2, %%mm1 \n\t"    /* r1 = d1 c1 b1 a1 = R1 */ \
+    "movq       %%mm4, %%mm2 \n\t"    /* r2 = b3 a3 b2 a2 */ \
+    "movq       %%mm0, "I(0)"\n\t" \
+    "punpckhwd  %%mm3, %%mm5 \n\t"    /* r5 = d3 c3 d2 c2 */ \
+    "movq       %%mm1, "I(1)"\n\t" \
+    "punpckhdq  %%mm5, %%mm4 \n\t"    /* r4 = d3 c3 b3 a3 = R3 */ \
+    "punpckldq  %%mm5, %%mm2 \n\t"    /* r2 = d2 c2 b2 a2 = R2 */ \
+    "movq       %%mm4, "I(3)"\n\t" \
+    "movq       %%mm2, "I(2)"\n\t"
 
 void ff_vp3_idct_mmx(int16_t *output_data)
 {
@@ -261,39 +242,41 @@ void ff_vp3_idct_mmx(int16_t *output_data)
      * r0..r7 = mm0..mm7
      */
 
-#define C(x) (ff_vp3_idct_data + (x - 1) * 8)
-#define Eight (&ff_pw_8)
+#define C(x) AV_STRINGIFY(16*(x-1))"(%1)"
+#define OC_8 "%2"
 
     /* at this point, function has completed dequantization + dezigzag +
      * partial transposition; now do the idct itself */
-#define I(K) (output_data + K * 8)
-#define J(K) (output_data + ((K - 4) * 8) + 4)
+#define I(x) AV_STRINGIFY(16* x       )"(%0)"
+#define J(x) AV_STRINGIFY(16*(x-4) + 8)"(%0)"
 
-    RowIDCT();
-    Transpose();
-
-#undef I
-#undef J
-#define I(K) (output_data + (K * 8) + 32)
-#define J(K) (output_data + ((K - 4) * 8) + 36)
-
-    RowIDCT();
-    Transpose();
+    asm volatile (
+    RowIDCT()
+    Transpose()
 
 #undef I
 #undef J
-#define I(K) (output_data + K * 8)
-#define J(K) (output_data + K * 8)
+#define I(x) AV_STRINGIFY(16* x    + 64)"(%0)"
+#define J(x) AV_STRINGIFY(16*(x-4) + 72)"(%0)"
 
-    ColumnIDCT();
+    RowIDCT()
+    Transpose()
 
 #undef I
 #undef J
-#define I(K) (output_data + (K * 8) + 4)
-#define J(K) (output_data + (K * 8) + 4)
+#define I(x) AV_STRINGIFY(16*x)"(%0)"
+#define J(x) AV_STRINGIFY(16*x)"(%0)"
 
-    ColumnIDCT();
+    ColumnIDCT()
 
+#undef I
+#undef J
+#define I(x) AV_STRINGIFY(16*x + 8)"(%0)"
+#define J(x) AV_STRINGIFY(16*x + 8)"(%0)"
+
+    ColumnIDCT()
+        :: "r"(output_data), "r"(ff_vp3_idct_data), "m"(ff_pw_8)
+    );
 #undef I
 #undef J
 
