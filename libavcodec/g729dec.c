@@ -30,6 +30,14 @@
 #include "libavutil/avutil.h"
 #include "bitstream.h"
 
+#include "g729.h"
+#include "lsp.h"
+#include "acelp_math.h"
+#include "acelp_filters.h"
+#include "acelp_pitch_delay.h"
+#include "acelp_vectors.h"
+#include "g729data.h"
+
 /**
  * minimum quantized LSF value (3.2.4)
  * 0.005 in Q13
@@ -63,6 +71,17 @@
  */
 #define SHARP_MAX                  13017
 
+typedef struct
+{
+    int sample_rate;
+    uint8_t packed_frame_size;  ///< input frame size(in bytes)
+    uint8_t unpacked_frame_size;///< output frame size (in bytes)
+    uint8_t fc_indexes_bits;    ///< size (in bits) of fixed-codebook index entry
+
+    /// mr_energy = mean_energy + 10 * log10(2^26  * subframe_size) in (7.13)
+    int mr_energy;
+} G729_format_description;
+
 /**
  * \brief pseudo random number generator
  */
@@ -79,6 +98,12 @@ static inline int g729_get_parity(uint8_t value)
    return (0x6996966996696996ULL >> (value >> 2)) & 1;
 }
 
+    if(avctx->channels != 1)
+    {
+        av_log(avctx, AV_LOG_ERROR, "Only mono sound is supported (requested channels: %d).\n", avctx->channels);
+        return AVERROR_NOFMT;
+    }
+
         ff_acelp_weighted_vector_sum(
                 fc + pitch_delay_int[i],
                 fc + pitch_delay_int[i],
@@ -89,6 +114,15 @@ static inline int g729_get_parity(uint8_t value)
                 14,
                 ctx->subframe_size - pitch_delay_int[i]);
 
+        if(ctx->frame_erasure)
+        {
+            ctx->gain_pitch = (29491 * ctx->gain_pitch) >> 15; // 0.9 (0.15)
+            ctx->gain_code  = (2007 * ctx->gain_code) >> 11;   // 0.98 in (0.11)
+
+            gain_corr_factor = 0;
+        }
+        else
+        {
             ctx->gain_pitch  = cb_gain_1st_8k[parm->gc_1st_index[i]][0] +
                                cb_gain_2nd_8k[parm->gc_2nd_index[i]][0];
             gain_corr_factor = cb_gain_1st_8k[parm->gc_1st_index[i]][1] +
@@ -103,6 +137,17 @@ static inline int g729_get_parity(uint8_t value)
                 1<<13,
                 14,
                 ctx->subframe_size);
+
+    if (buf_size<packed_frame_size)
+    {
+        av_log(avctx, AV_LOG_ERROR, "Error processing packet: packet size too small\n");
+        return AVERROR(EIO);
+    }
+    if (*data_size<unpacked_frame_size)
+    {
+        av_log(avctx, AV_LOG_ERROR, "Error processing packet: output buffer too small\n");
+        return AVERROR(EIO);
+    }
 
 AVCodec g729_decoder =
 {
