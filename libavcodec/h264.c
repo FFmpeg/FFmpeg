@@ -7547,9 +7547,10 @@ static int decode_frame(AVCodecContext *avctx,
         h->got_avcC = 1;
     }
 
-    if(avctx->frame_number==0 && !h->is_avc && s->avctx->extradata_size){
+    if(!h->got_avcC && !h->is_avc && s->avctx->extradata_size){
         if(decode_nal_units(h, s->avctx->extradata, s->avctx->extradata_size) < 0)
             return -1;
+        h->got_avcC = 1;
     }
 
     buf_index=decode_nal_units(h, buf, buf_size);
