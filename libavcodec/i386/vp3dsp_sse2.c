@@ -151,62 +151,6 @@ DECLARE_ALIGNED_16(const uint16_t, ff_vp3_idct_data[7 * 8]) =
     "movdqa " #r6 ", " O(6) "\n\t" \
     "movdqa " #r7 ", " O(7) "\n\t"
 
-#define SSE2_Transpose() \
-    "movdqa     "I(4)", %%xmm4 \n\t"     /* xmm4=e7e6e5e4e3e2e1e0 */ \
-    "movdqa     "I(5)", %%xmm0 \n\t"     /* xmm4=f7f6f5f4f3f2f1f0 */ \
-    "movdqa     %%xmm4, %%xmm5 \n\t"     /* make a copy */ \
-    "punpcklwd  %%xmm0, %%xmm4 \n\t"     /* xmm4=f3e3f2e2f1e1f0e0 */ \
-    "punpckhwd  %%xmm0, %%xmm5 \n\t"     /* xmm5=f7e7f6e6f5e5f4e4 */ \
-    "movdqa     "I(6)", %%xmm6 \n\t"     /* xmm6=g7g6g5g4g3g2g1g0 */ \
-    "movdqa     "I(7)", %%xmm0 \n\t"     /* xmm0=h7h6h5h4h3h2h1h0 */ \
-    "movdqa     %%xmm6, %%xmm7 \n\t"     /* make a copy */ \
-    "punpcklwd  %%xmm0, %%xmm6 \n\t"     /* xmm6=h3g3h3g2h1g1h0g0 */ \
-    "punpckhwd  %%xmm0, %%xmm7 \n\t"     /* xmm7=h7g7h6g6h5g5h4g4 */ \
-    "movdqa     %%xmm4, %%xmm3 \n\t"     /* make a copy */ \
-    "punpckldq  %%xmm6, %%xmm4 \n\t"     /* xmm4=h1g1f1e1h0g0f0e0 */ \
-    "punpckhdq  %%xmm6, %%xmm3 \n\t"     /* xmm3=h3g3g3e3h2g2f2e2 */ \
-    "movdqa     %%xmm3, "I(6)" \n\t"     /* save h3g3g3e3h2g2f2e2 */ \
-    "movdqa     %%xmm5, %%xmm6 \n\t"     /* make a copy */ \
-    "punpckldq  %%xmm7, %%xmm5 \n\t"     /* xmm5=h5g5f5e5h4g4f4e4 */ \
-    "punpckhdq  %%xmm7, %%xmm6 \n\t"     /* xmm6=h7g7f7e7h6g6f6e6 */ \
-    "movdqa     "I(0)", %%xmm0 \n\t"     /* xmm0=a7a6a5a4a3a2a1a0 */ \
-    "movdqa     "I(1)", %%xmm1 \n\t"     /* xmm1=b7b6b5b4b3b2b1b0 */ \
-    "movdqa     %%xmm0, %%xmm7 \n\t"     /* make a copy */ \
-    "punpcklwd  %%xmm1, %%xmm0 \n\t"     /* xmm0=b3a3b2a2b1a1b0a0 */ \
-    "punpckhwd  %%xmm1, %%xmm7 \n\t"     /* xmm7=b7a7b6a6b5a5b4a4 */ \
-    "movdqa     "I(2)", %%xmm2 \n\t"     /* xmm2=c7c6c5c4c3c2c1c0 */ \
-    "movdqa     "I(3)", %%xmm3 \n\t"     /* xmm3=d7d6d5d4d3d2d1d0 */ \
-    "movdqa     %%xmm2, %%xmm1 \n\t"     /* make a copy */ \
-    "punpcklwd  %%xmm3, %%xmm2 \n\t"     /* xmm2=d3c3d2c2d1c1d0c0 */ \
-    "punpckhwd  %%xmm3, %%xmm1 \n\t"     /* xmm1=d7c7d6c6d5c5d4c4 */ \
-    "movdqa     %%xmm0, %%xmm3 \n\t"     /* make a copy        */ \
-    "punpckldq  %%xmm2, %%xmm0 \n\t"     /* xmm0=d1c1b1a1d0c0b0a0 */ \
-    "punpckhdq  %%xmm2, %%xmm3 \n\t"     /* xmm3=d3c3b3a3d2c2b2a2 */ \
-    "movdqa     %%xmm7, %%xmm2 \n\t"     /* make a copy */ \
-    "punpckldq  %%xmm1, %%xmm2 \n\t"     /* xmm2=d5c5b5a5d4c4b4a4 */ \
-    "punpckhdq  %%xmm1, %%xmm7 \n\t"     /* xmm7=d7c7b7a7d6c6b6a6 */ \
-    "movdqa     %%xmm0, %%xmm1 \n\t"     /* make a copy */ \
-    "punpcklqdq %%xmm4, %%xmm0 \n\t"     /* xmm0=h0g0f0e0d0c0b0a0 */ \
-    "punpckhqdq %%xmm4, %%xmm1 \n\t"     /* xmm1=h1g1g1e1d1c1b1a1 */ \
-    "movdqa     %%xmm0, "I(0)" \n\t"     /* save I(0) */ \
-    "movdqa     %%xmm1, "I(1)" \n\t"     /* save I(1) */ \
-    "movdqa     "I(6)", %%xmm0 \n\t"     /* load h3g3g3e3h2g2f2e2 */ \
-    "movdqa     %%xmm3, %%xmm1 \n\t"     /* make a copy */ \
-    "punpcklqdq %%xmm0, %%xmm1 \n\t"     /* xmm1=h2g2f2e2d2c2b2a2 */ \
-    "punpckhqdq %%xmm0, %%xmm3 \n\t"     /* xmm3=h3g3f3e3d3c3b3a3 */ \
-    "movdqa     %%xmm2, %%xmm4 \n\t"     /* make a copy */ \
-    "punpcklqdq %%xmm5, %%xmm4 \n\t"     /* xmm4=h4g4f4e4d4c4b4a4 */ \
-    "punpckhqdq %%xmm5, %%xmm2 \n\t"     /* xmm2=h5g5f5e5d5c5b5a5 */ \
-    "movdqa     %%xmm1, "I(2)" \n\t"     /* save I(2) */ \
-    "movdqa     %%xmm3, "I(3)" \n\t"     /* save I(3) */ \
-    "movdqa     %%xmm4, "I(4)" \n\t"     /* save I(4) */ \
-    "movdqa     %%xmm2, "I(5)" \n\t"     /* save I(5) */ \
-    "movdqa     %%xmm7, %%xmm5 \n\t"     /* make a copy */ \
-    "punpcklqdq %%xmm6, %%xmm5 \n\t"     /* xmm5=h6g6f6e6d6c6b6a6 */ \
-    "punpckhqdq %%xmm6, %%xmm7 \n\t"     /* xmm7=h7g7f7e7d7c7b7a7 */ \
-    "movdqa     %%xmm5, "I(6)" \n\t"     /* save I(6) */ \
-    "movdqa     %%xmm7, "I(7)" \n\t"     /* save I(7) */
-
 #define NOP(xmm)
 #define SHIFT4(xmm) "psraw  $4, "#xmm"\n\t"
 #define ADD8(xmm)   "paddsw %2, "#xmm"\n\t"
@@ -219,9 +163,9 @@ void ff_vp3_idct_sse2(int16_t *input_data)
 
     asm volatile (
         VP3_1D_IDCT_SSE2(NOP, NOP)
-        PUT_BLOCK(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7)
 
-        SSE2_Transpose()
+        TRANSPOSE8(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7, (%0))
+        PUT_BLOCK(%%xmm0, %%xmm5, %%xmm7, %%xmm3, %%xmm6, %%xmm4, %%xmm2, %%xmm1)
 
         VP3_1D_IDCT_SSE2(ADD8, SHIFT4)
         PUT_BLOCK(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7)
