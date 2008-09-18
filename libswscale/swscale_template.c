@@ -2349,7 +2349,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
                                    int flags, int canMMX2BeUsed, int16_t *hLumFilter,
                                    int16_t *hLumFilterPos, int hLumFilterSize, void *funnyYCode,
                                    int srcFormat, uint8_t *formatConvBuffer, int16_t *mmx2Filter,
-                                   int32_t *mmx2FilterPos, uint8_t *pal)
+                                   int32_t *mmx2FilterPos, uint32_t *pal)
 {
     if (srcFormat==PIX_FMT_YUYV422 || srcFormat==PIX_FMT_GRAY16BE)
     {
@@ -2413,7 +2413,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     }
     else if (srcFormat==PIX_FMT_RGB8 || srcFormat==PIX_FMT_BGR8 || srcFormat==PIX_FMT_PAL8 || srcFormat==PIX_FMT_BGR4_BYTE  || srcFormat==PIX_FMT_RGB4_BYTE)
     {
-        RENAME(palToY)(formatConvBuffer, src, srcW, (uint32_t*)pal);
+        RENAME(palToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_MONOBLACK ||srcFormat==PIX_FMT_MONOWHITE)
@@ -2579,7 +2579,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
                                    int srcW, int xInc, int flags, int canMMX2BeUsed, int16_t *hChrFilter,
                                    int16_t *hChrFilterPos, int hChrFilterSize, void *funnyUVCode,
                                    int srcFormat, uint8_t *formatConvBuffer, int16_t *mmx2Filter,
-                                   int32_t *mmx2FilterPos, uint8_t *pal)
+                                   int32_t *mmx2FilterPos, uint32_t *pal)
 {
     if (srcFormat==PIX_FMT_YUYV422)
     {
@@ -2689,7 +2689,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     }
     else if (srcFormat==PIX_FMT_RGB8 || srcFormat==PIX_FMT_BGR8 || srcFormat==PIX_FMT_PAL8 || srcFormat==PIX_FMT_BGR4_BYTE  || srcFormat==PIX_FMT_RGB4_BYTE)
     {
-        RENAME(palToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, (uint32_t*)pal);
+        RENAME(palToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
@@ -2911,7 +2911,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
     const int chrSrcSliceY= srcSliceY >> c->chrSrcVSubSample;
     const int chrSrcSliceH= -((-srcSliceH) >> c->chrSrcVSubSample);
     int lastDstY;
-    uint8_t *pal=NULL;
+    uint32_t *pal=NULL;
 
     /* vars which will change and which we need to store back in the context */
     int dstY= c->dstY;
@@ -2921,7 +2921,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
     int lastInChrBuf= c->lastInChrBuf;
 
     if (isPacked(c->srcFormat)){
-        pal= src[1];
+        pal= (uint32_t *)src[1];
         src[0]=
         src[1]=
         src[2]= src[0];
