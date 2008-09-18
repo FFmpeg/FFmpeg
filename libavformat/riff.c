@@ -121,6 +121,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_XAN_WC4,      MKTAG('X', 'x', 'a', 'n') },
     { CODEC_ID_MSRLE,        MKTAG('m', 'r', 'l', 'e') },
     { CODEC_ID_MSRLE,        MKTAG( 1 ,  0 ,  0 ,  0 ) },
+    { CODEC_ID_MSRLE,        MKTAG( 2 ,  0 ,  0 ,  0 ) },
     { CODEC_ID_MSVIDEO1,     MKTAG('M', 'S', 'V', 'C') },
     { CODEC_ID_MSVIDEO1,     MKTAG('m', 's', 'v', 'c') },
     { CODEC_ID_MSVIDEO1,     MKTAG('C', 'R', 'A', 'M') },
