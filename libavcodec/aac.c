@@ -950,7 +950,7 @@ static int decode_cpe(AACContext * ac, GetBitContext * gb, int elem_id) {
  */
 static int decode_cce(AACContext * ac, GetBitContext * gb, ChannelElement * che) {
     int num_gain = 0;
-    int c, g, sfb, ret, idx = 0;
+    int c, g, sfb, ret;
     int sign;
     float scale;
     SingleChannelElement * sce = &che->ch[0];
@@ -985,6 +985,7 @@ static int decode_cce(AACContext * ac, GetBitContext * gb, ChannelElement * che)
         return ret;
 
     for (c = 0; c < num_gain; c++) {
+        int idx = 0;
         int cge = 1;
         int gain = 0;
         float gain_cache = 1.;
