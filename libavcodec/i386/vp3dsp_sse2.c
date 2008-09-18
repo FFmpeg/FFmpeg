@@ -121,9 +121,7 @@ DECLARE_ALIGNED_16(const uint16_t, ff_vp3_idct_data[7 * 8]) =
     SHIFT(%%xmm1)                    /* xmm1 = op1 */ \
     "movdqa "I(2)", %%xmm3 \n\t"     /* Load D. from I(2) */ \
     "paddsw %%xmm7, %%xmm7 \n\t"     /* xmm7 = G + G */ \
-    "movdqa %%xmm2, "O(2)" \n\t"     /* Write out op2 */ \
     "paddsw %%xmm4, %%xmm7 \n\t"     /* xmm7 = E + G = G. */ \
-    "movdqa %%xmm1, "O(1)" \n\t"     /* Write out op1 */ \
     "psubsw %%xmm3, %%xmm4 \n\t"     /* xmm4 = E. - D. = R4 */ \
     ADD(%%xmm4)                      /* Adjust R4 and R3 before shifting */ \
     "paddsw %%xmm3, %%xmm3 \n\t"     /* xmm3 = D. + D. */ \
@@ -135,20 +133,23 @@ DECLARE_ALIGNED_16(const uint16_t, ff_vp3_idct_data[7 * 8]) =
     "paddsw %%xmm5, %%xmm5 \n\t"     /* xmm5 = B.. + B.. */ \
     "paddsw %%xmm6, %%xmm5 \n\t"     /* xmm5 = F. + B.. = R5 */ \
     SHIFT(%%xmm6)                    /* xmm6 = op6 */ \
-    "movdqa %%xmm4, "O(4)" \n\t"     /* Write out op4 */ \
     SHIFT(%%xmm5)                    /* xmm5 = op5 */ \
-    "movdqa %%xmm3, "O(3)" \n\t"     /* Write out op3 */ \
     "psubsw %%xmm0, %%xmm7 \n\t"     /* xmm7 = G. - C. = R7 */ \
     ADD(%%xmm7)                      /* Adjust R7 and R0 before shifting */ \
     "paddsw %%xmm0, %%xmm0 \n\t"     /* xmm0 = C. + C. */ \
     "paddsw %%xmm7, %%xmm0 \n\t"     /* xmm0 = G. + C. */ \
     SHIFT(%%xmm7)                    /* xmm7 = op7 */ \
-    "movdqa %%xmm6, "O(6)" \n\t"     /* Write out op6 */ \
-    SHIFT(%%xmm0)                    /* xmm0 = op0 */ \
-    "movdqa %%xmm5, "O(5)" \n\t"     /* Write out op5 */ \
-    "movdqa %%xmm7, "O(7)" \n\t"     /* Write out op7 */ \
-    "movdqa %%xmm0, "O(0)" \n\t"     /* Write out op0 */
+    SHIFT(%%xmm0)                    /* xmm0 = op0 */
 
+#define PUT_BLOCK(r0, r1, r2, r3, r4, r5, r6, r7) \
+    "movdqa " #r0 ", " O(0) "\n\t" \
+    "movdqa " #r1 ", " O(1) "\n\t" \
+    "movdqa " #r2 ", " O(2) "\n\t" \
+    "movdqa " #r3 ", " O(3) "\n\t" \
+    "movdqa " #r4 ", " O(4) "\n\t" \
+    "movdqa " #r5 ", " O(5) "\n\t" \
+    "movdqa " #r6 ", " O(6) "\n\t" \
+    "movdqa " #r7 ", " O(7) "\n\t"
 
 #define SSE2_Transpose() \
     "movdqa     "I(4)", %%xmm4 \n\t"     /* xmm4=e7e6e5e4e3e2e1e0 */ \
@@ -218,10 +219,12 @@ void ff_vp3_idct_sse2(int16_t *input_data)
 
     asm volatile (
         VP3_1D_IDCT_SSE2(NOP, NOP)
+        PUT_BLOCK(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7)
 
         SSE2_Transpose()
 
         VP3_1D_IDCT_SSE2(ADD8, SHIFT4)
+        PUT_BLOCK(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7)
         :: "r"(input_data), "r"(ff_vp3_idct_data), "m"(ff_pw_8)
     );
 }
