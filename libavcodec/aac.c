@@ -979,7 +979,7 @@ static int decode_cce(AACContext * ac, GetBitContext * gb, ChannelElement * che)
     }
 
     sign = get_bits(gb, 1);
-    scale = pow(2., pow(2., get_bits(gb, 2) - 3));
+    scale = pow(2., pow(2., (int)get_bits(gb, 2) - 3));
 
     if ((ret = decode_ics(ac, sce, gb, 0, 0)))
         return ret;
