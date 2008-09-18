@@ -6963,9 +6963,6 @@ static void decode_scaling_matrices(H264Context *h, SPS *sps, PPS *pps, int is_s
             decode_scaling_list(h,scaling_matrix8[0],64,default_scaling8[0],fallback[2]);  // Intra, Y
             decode_scaling_list(h,scaling_matrix8[1],64,default_scaling8[1],fallback[3]);  // Inter, Y
         }
-    } else if(fallback_sps) {
-        memcpy(scaling_matrix4, sps->scaling_matrix4, 6*16*sizeof(uint8_t));
-        memcpy(scaling_matrix8, sps->scaling_matrix8, 2*64*sizeof(uint8_t));
     }
 }
 
@@ -7012,6 +7009,10 @@ static inline int decode_seq_parameter_set(H264Context *h){
     sps->profile_idc= profile_idc;
     sps->level_idc= level_idc;
 
+    memset(sps->scaling_matrix4, 16, sizeof(sps->scaling_matrix4));
+    memset(sps->scaling_matrix8, 16, sizeof(sps->scaling_matrix8));
+    sps->scaling_matrix_present = 0;
+
     if(sps->profile_idc >= 100){ //high profile
         sps->chroma_format_idc= get_ue_golomb(&s->gb);
         if(sps->chroma_format_idc == 3)
@@ -7021,7 +7022,6 @@ static inline int decode_seq_parameter_set(H264Context *h){
         sps->transform_bypass = get_bits1(&s->gb);
         decode_scaling_matrices(h, sps, NULL, 1, sps->scaling_matrix4, sps->scaling_matrix8);
     }else{
-        sps->scaling_matrix_present = 0;
         sps->chroma_format_idc= 1;
     }
 
@@ -7204,8 +7204,8 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
 
     pps->transform_8x8_mode= 0;
     h->dequant_coeff_pps= -1; //contents of sps/pps can change even if id doesn't, so reinit
-    memset(pps->scaling_matrix4, 16, 6*16*sizeof(uint8_t));
-    memset(pps->scaling_matrix8, 16, 2*64*sizeof(uint8_t));
+    memcpy(pps->scaling_matrix4, h->sps_buffers[pps->sps_id]->scaling_matrix4, sizeof(pps->scaling_matrix4));
+    memcpy(pps->scaling_matrix8, h->sps_buffers[pps->sps_id]->scaling_matrix8, sizeof(pps->scaling_matrix8));
 
     if(get_bits_count(&s->gb) < bit_length){
         pps->transform_8x8_mode= get_bits1(&s->gb);
