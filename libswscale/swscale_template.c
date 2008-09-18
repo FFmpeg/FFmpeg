@@ -1731,7 +1731,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 
 //FIXME yuy2* can read up to 7 samples too much
 
-static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, long width)
+static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
     asm volatile(
@@ -1756,7 +1756,7 @@ static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, long width)
 #endif
 }
 
-static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
+static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
     asm volatile(
@@ -1793,7 +1793,7 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
 
 /* This is almost identical to the previous, end exists only because
  * yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses. */
-static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width)
+static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
     asm volatile(
@@ -1817,7 +1817,7 @@ static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width)
 #endif
 }
 
-static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
+static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
     asm volatile(
@@ -1853,7 +1853,7 @@ static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
 }
 
 #define BGR2Y(type, name, shr, shg, shb, maskr, maskg, maskb, RY, GY, BY, S)\
-static inline void RENAME(name)(uint8_t *dst, uint8_t *src, long width)\
+static inline void RENAME(name)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)\
 {\
     int i;\
     for (i=0; i<width; i++)\
@@ -1874,7 +1874,7 @@ BGR2Y(uint16_t, rgb16ToY, 0, 0, 0, 0xF800, 0x07E0, 0x001F, RY    , GY<<5, BY<<11
 BGR2Y(uint16_t, rgb15ToY, 0, 0, 0, 0x7C00, 0x03E0, 0x001F, RY    , GY<<5, BY<<10, RGB2YUV_SHIFT+7)
 
 #define BGR2UV(type, name, shr, shg, shb, maskr, maskg, maskb, RU, GU, BU, RV, GV, BV, S)\
-static inline void RENAME(name)(uint8_t *dstU, uint8_t *dstV, uint8_t *src, uint8_t *dummy, long width)\
+static inline void RENAME(name)(uint8_t *dstU, uint8_t *dstV, uint8_t *src, uint8_t *dummy, long width, uint32_t *unused)\
 {\
     int i;\
     for (i=0; i<width; i++)\
@@ -1887,7 +1887,7 @@ static inline void RENAME(name)(uint8_t *dstU, uint8_t *dstV, uint8_t *src, uint
         dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (257<<((S)-1)))>>(S);\
     }\
 }\
-static inline void RENAME(name ## _half)(uint8_t *dstU, uint8_t *dstV, uint8_t *src, uint8_t *dummy, long width)\
+static inline void RENAME(name ## _half)(uint8_t *dstU, uint8_t *dstV, uint8_t *src, uint8_t *dummy, long width, uint32_t *unused)\
 {\
     int i;\
     for (i=0; i<width; i++)\
@@ -2025,7 +2025,7 @@ static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, uint8_t *
 }
 #endif
 
-static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
+static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_BGR24);
@@ -2042,7 +2042,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 #endif /* HAVE_MMX */
 }
 
-static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
+static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_BGR24);
@@ -2061,7 +2061,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
     assert(src1 == src2);
 }
 
-static inline void RENAME(bgr24ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
+static inline void RENAME(bgr24ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++)
@@ -2076,7 +2076,7 @@ static inline void RENAME(bgr24ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t 
     assert(src1 == src2);
 }
 
-static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, long width)
+static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_RGB24);
@@ -2093,7 +2093,7 @@ static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, long width)
 #endif
 }
 
-static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
+static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
     assert(src1==src2);
@@ -2112,7 +2112,7 @@ static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 #endif
 }
 
-static inline void RENAME(rgb24ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
+static inline void RENAME(rgb24ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
     assert(src1==src2);
@@ -2152,7 +2152,7 @@ static inline void RENAME(palToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, 
     }
 }
 
-static inline void RENAME(monowhite2Y)(uint8_t *dst, uint8_t *src, long width)
+static inline void RENAME(monowhite2Y)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
     int i, j;
     for (i=0; i<width/8; i++){
@@ -2162,7 +2162,7 @@ static inline void RENAME(monowhite2Y)(uint8_t *dst, uint8_t *src, long width)
     }
 }
 
-static inline void RENAME(monoblack2Y)(uint8_t *dst, uint8_t *src, long width)
+static inline void RENAME(monoblack2Y)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
     int i, j;
     for (i=0; i<width/8; i++){
@@ -2363,62 +2363,62 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 {
     if (srcFormat==PIX_FMT_YUYV422 || srcFormat==PIX_FMT_GRAY16BE)
     {
-        RENAME(yuy2ToY)(formatConvBuffer, src, srcW);
+        RENAME(yuy2ToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_UYVY422 || srcFormat==PIX_FMT_GRAY16LE)
     {
-        RENAME(uyvyToY)(formatConvBuffer, src, srcW);
+        RENAME(uyvyToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_RGB32)
     {
-        RENAME(bgr32ToY)(formatConvBuffer, src, srcW);
+        RENAME(bgr32ToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_RGB32_1)
     {
-        RENAME(bgr32ToY)(formatConvBuffer, src+ALT32_CORR, srcW);
+        RENAME(bgr32ToY)(formatConvBuffer, src+ALT32_CORR, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_BGR24)
     {
-        RENAME(bgr24ToY)(formatConvBuffer, src, srcW);
+        RENAME(bgr24ToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_BGR565)
     {
-        RENAME(bgr16ToY)(formatConvBuffer, src, srcW);
+        RENAME(bgr16ToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_BGR555)
     {
-        RENAME(bgr15ToY)(formatConvBuffer, src, srcW);
+        RENAME(bgr15ToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_BGR32)
     {
-        RENAME(rgb32ToY)(formatConvBuffer, src, srcW);
+        RENAME(rgb32ToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_BGR32_1)
     {
-        RENAME(rgb32ToY)(formatConvBuffer, src+ALT32_CORR, srcW);
+        RENAME(rgb32ToY)(formatConvBuffer, src+ALT32_CORR, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_RGB24)
     {
-        RENAME(rgb24ToY)(formatConvBuffer, src, srcW);
+        RENAME(rgb24ToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_RGB565)
     {
-        RENAME(rgb16ToY)(formatConvBuffer, src, srcW);
+        RENAME(rgb16ToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_RGB555)
     {
-        RENAME(rgb15ToY)(formatConvBuffer, src, srcW);
+        RENAME(rgb15ToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_RGB8 || srcFormat==PIX_FMT_BGR8 || srcFormat==PIX_FMT_PAL8 || srcFormat==PIX_FMT_BGR4_BYTE  || srcFormat==PIX_FMT_RGB4_BYTE)
@@ -2428,12 +2428,12 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     }
     else if (srcFormat==PIX_FMT_MONOBLACK)
     {
-        RENAME(monoblack2Y)(formatConvBuffer, src, srcW);
+        RENAME(monoblack2Y)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
     else if (srcFormat==PIX_FMT_MONOWHITE)
     {
-        RENAME(monowhite2Y)(formatConvBuffer, src, srcW);
+        RENAME(monowhite2Y)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
 
@@ -2598,103 +2598,103 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 {
     if (srcFormat==PIX_FMT_YUYV422)
     {
-        RENAME(yuy2ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+        RENAME(yuy2ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_UYVY422)
     {
-        RENAME(uyvyToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+        RENAME(uyvyToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_RGB32)
     {
         if(c->chrSrcHSubSample)
-            RENAME(bgr32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(bgr32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         else
-            RENAME(bgr32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(bgr32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_RGB32_1)
     {
         if(c->chrSrcHSubSample)
-            RENAME(bgr32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW);
+            RENAME(bgr32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW, pal);
         else
-            RENAME(bgr32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW);
+            RENAME(bgr32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_BGR24)
     {
         if(c->chrSrcHSubSample)
-            RENAME(bgr24ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(bgr24ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         else
-            RENAME(bgr24ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(bgr24ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_BGR565)
     {
         if(c->chrSrcHSubSample)
-            RENAME(bgr16ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(bgr16ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         else
-            RENAME(bgr16ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(bgr16ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_BGR555)
     {
         if(c->chrSrcHSubSample)
-            RENAME(bgr15ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(bgr15ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         else
-            RENAME(bgr15ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(bgr15ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_BGR32)
     {
         if(c->chrSrcHSubSample)
-            RENAME(rgb32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(rgb32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         else
-            RENAME(rgb32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(rgb32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_BGR32_1)
     {
         if(c->chrSrcHSubSample)
-            RENAME(rgb32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW);
+            RENAME(rgb32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW, pal);
         else
-            RENAME(rgb32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW);
+            RENAME(rgb32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_RGB24)
     {
         if(c->chrSrcHSubSample)
-            RENAME(rgb24ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(rgb24ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         else
-            RENAME(rgb24ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(rgb24ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_RGB565)
     {
         if(c->chrSrcHSubSample)
-            RENAME(rgb16ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(rgb16ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         else
-            RENAME(rgb16ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(rgb16ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
     else if (srcFormat==PIX_FMT_RGB555)
     {
         if(c->chrSrcHSubSample)
-            RENAME(rgb15ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(rgb15ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         else
-            RENAME(rgb15ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW);
+            RENAME(rgb15ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
