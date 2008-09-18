@@ -91,7 +91,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         width  = bytestream_get_le16(&buf);
         height = bytestream_get_le16(&buf);
     } else {
-        av_log(avctx, AV_LOG_ERROR, "unsupported BMP file, patch welcome");
+        av_log(avctx, AV_LOG_ERROR, "unsupported BMP file, patch welcome\n");
         return -1;
     }
 
