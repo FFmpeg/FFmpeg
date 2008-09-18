@@ -993,8 +993,8 @@ static int decode_cce(AACContext * ac, GetBitContext * gb, ChannelElement * che)
             gain = cge ? get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60: 0;
             gain_cache = pow(scale, gain);
         }
-        for (g = 0; g < sce->ics.num_window_groups; g++)
-            for (sfb = 0; sfb < sce->ics.max_sfb; sfb++, idx++)
+        for (g = 0; g < sce->ics.num_window_groups; g++) {
+            for (sfb = 0; sfb < sce->ics.max_sfb; sfb++, idx++) {
                 if (sce->band_type[idx] != ZERO_BT) {
                     if (!cge) {
                         int t = get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
@@ -1010,6 +1010,8 @@ static int decode_cce(AACContext * ac, GetBitContext * gb, ChannelElement * che)
                     }
                     coup->gain[c][idx] = gain_cache;
                 }
+            }
+        }
     }
     return 0;
 }
