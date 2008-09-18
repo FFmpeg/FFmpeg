@@ -39,6 +39,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
+#include "msrledec.h"
 
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
@@ -64,118 +65,6 @@ typedef struct TsccContext {
     z_stream zstream;
 #endif
 } CamtasiaContext;
-
-/*
- *
- * Decode RLE - almost identical to Windows BMP RLE8
- *              and enhanced to bigger color depths
- *
- */
-
-static int decode_rle(CamtasiaContext *c, unsigned int srcsize)
-{
-    unsigned char *src = c->decomp_buf;
-    unsigned char *output, *output_end;
-    int p1, p2, line=c->height, pos=0, i;
-    uint16_t pix16;
-    uint32_t pix32;
-
-    output = c->pic.data[0] + (c->height - 1) * c->pic.linesize[0];
-    output_end = c->pic.data[0] + (c->height) * c->pic.linesize[0];
-    while(src < c->decomp_buf + srcsize) {
-        p1 = *src++;
-        if(p1 == 0) { //Escape code
-            p2 = *src++;
-            if(p2 == 0) { //End-of-line
-                output = c->pic.data[0] + (--line) * c->pic.linesize[0];
-                if (line < 0)
-                    return -1;
-                pos = 0;
-                continue;
-            } else if(p2 == 1) { //End-of-picture
-                return 0;
-            } else if(p2 == 2) { //Skip
-                p1 = *src++;
-                p2 = *src++;
-                line -= p2;
-                if (line < 0)
-                    return -1;
-                pos += p1;
-                output = c->pic.data[0] + line * c->pic.linesize[0] + pos * (c->bpp / 8);
-                continue;
-            }
-            // Copy data
-            if (output + p2 * (c->bpp / 8) > output_end) {
-                src += p2 * (c->bpp / 8);
-                continue;
-            }
-            if ((c->bpp == 8) || (c->bpp == 24)) {
-                for(i = 0; i < p2 * (c->bpp / 8); i++) {
-                    *output++ = *src++;
-                }
-                // RLE8 copy is actually padded - and runs are not!
-                if(c->bpp == 8 && (p2 & 1)) {
-                    src++;
-                }
-            } else if (c->bpp == 16) {
-                for(i = 0; i < p2; i++) {
-                    pix16 = AV_RL16(src);
-                    src += 2;
-                    *(uint16_t*)output = pix16;
-                    output += 2;
-                }
-            } else if (c->bpp == 32) {
-                for(i = 0; i < p2; i++) {
-                    pix32 = AV_RL32(src);
-                    src += 4;
-                    *(uint32_t*)output = pix32;
-                    output += 4;
-                }
-            }
-            pos += p2;
-        } else { //Run of pixels
-            int pix[4]; //original pixel
-            switch(c->bpp){
-            case  8: pix[0] = *src++;
-                     break;
-            case 16: pix16 = AV_RL16(src);
-                     src += 2;
-                     *(uint16_t*)pix = pix16;
-                     break;
-            case 24: pix[0] = *src++;
-                     pix[1] = *src++;
-                     pix[2] = *src++;
-                     break;
-            case 32: pix32 = AV_RL32(src);
-                     src += 4;
-                     *(uint32_t*)pix = pix32;
-                     break;
-            }
-            if (output + p1 * (c->bpp / 8) > output_end)
-                continue;
-            for(i = 0; i < p1; i++) {
-                switch(c->bpp){
-                case  8: *output++ = pix[0];
-                         break;
-                case 16: *(uint16_t*)output = pix16;
-                         output += 2;
-                         break;
-                case 24: *output++ = pix[0];
-                         *output++ = pix[1];
-                         *output++ = pix[2];
-                         break;
-                case 32: *(uint32_t*)output = pix32;
-                         output += 4;
-                         break;
-                }
-            }
-            pos += p1;
-        }
-    }
-
-    av_log(c->avctx, AV_LOG_ERROR, "Camtasia warning: no End-of-picture code\n");
-    return 1;
-}
 
 /*
  *
@@ -223,7 +112,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
 
 
     if(zret != Z_DATA_ERROR)
-        decode_rle(c, c->zstream.avail_out);
+        ff_msrle_decode(avctx, &c->pic, c->bpp, c->decomp_buf, c->zstream.avail_out);
 
     /* make the palette available on the way out */
     if (c->avctx->pix_fmt == PIX_FMT_PAL8) {

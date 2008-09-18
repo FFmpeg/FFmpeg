@@ -30,6 +30,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "msrledec.h"
 
 typedef struct AascContext {
     AVCodecContext *avctx;
@@ -61,13 +62,6 @@ static int aasc_decode_frame(AVCodecContext *avctx,
                               const uint8_t *buf, int buf_size)
 {
     AascContext *s = avctx->priv_data;
-    int stream_ptr = 4;
-    unsigned char rle_code;
-    unsigned char stream_byte;
-    int pixel_ptr = 0;
-    int row_dec, row_ptr;
-    int frame_size;
-    int i;
 
     s->frame.reference = 1;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
@@ -76,72 +70,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    row_dec = s->frame.linesize[0];
-    row_ptr = (s->avctx->height - 1) * row_dec;
-    frame_size = row_dec * s->avctx->height;
-
-    while (row_ptr >= 0) {
-        FETCH_NEXT_STREAM_BYTE();
-        rle_code = stream_byte;
-        if (rle_code == 0) {
-            /* fetch the next byte to see how to handle escape code */
-            FETCH_NEXT_STREAM_BYTE();
-            if (stream_byte == 0) {
-                /* line is done, goto the next one */
-                row_ptr -= row_dec;
-                pixel_ptr = 0;
-            } else if (stream_byte == 1) {
-                /* decode is done */
-                break;
-            } else if (stream_byte == 2) {
-                /* reposition frame decode coordinates */
-                FETCH_NEXT_STREAM_BYTE();
-                pixel_ptr += stream_byte;
-                FETCH_NEXT_STREAM_BYTE();
-                row_ptr -= stream_byte * row_dec;
-            } else {
-                /* copy pixels from encoded stream */
-                if ((pixel_ptr + stream_byte > avctx->width * 3) ||
-                    (row_ptr < 0)) {
-                    av_log(s->avctx, AV_LOG_ERROR, " AASC: frame ptr just went out of bounds (copy1)\n");
-                    break;
-                }
-
-                rle_code = stream_byte;
-                if (stream_ptr + rle_code > buf_size) {
-                    av_log(s->avctx, AV_LOG_ERROR, " AASC: stream ptr just went out of bounds (copy2)\n");
-                    break;
-                }
-
-                for (i = 0; i < rle_code; i++) {
-                    FETCH_NEXT_STREAM_BYTE();
-                    s->frame.data[0][row_ptr + pixel_ptr] = stream_byte;
-                    pixel_ptr++;
-                }
-                if (rle_code & 1)
-                    stream_ptr++;
-            }
-        } else {
-            /* decode a run of data */
-            if ((pixel_ptr + rle_code > avctx->width * 3) ||
-                (row_ptr < 0)) {
-                av_log(s->avctx, AV_LOG_ERROR, " AASC: frame ptr just went out of bounds (run1)\n");
-                break;
-            }
-
-            FETCH_NEXT_STREAM_BYTE();
-
-            while(rle_code--) {
-                s->frame.data[0][row_ptr + pixel_ptr] = stream_byte;
-                pixel_ptr++;
-            }
-        }
-    }
-
-    /* one last sanity check on the way out */
-    if (stream_ptr < buf_size)
-        av_log(s->avctx, AV_LOG_ERROR, " AASC: ended frame decode with bytes left over (%d < %d)\n",
-            stream_ptr, buf_size);
+    ff_msrle_decode(avctx, &s->frame, 8, buf, buf_size);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
