@@ -49,11 +49,11 @@ Main path
 
 Input to YUV Converter
     When the input to the main path is not planar 8 bits per component YUV or
-    8-bit gray then it is converted to planar 8-bit YUV. 2 sets of converters
+    8-bit gray, it is converted to planar 8-bit YUV. Two sets of converters
     exist for this currently: One performs horizontal downscaling by 2
-    before the conversion, the other leaves the full chroma resolution
+    before the conversion, the other leaves the full chroma resolution,
     but is slightly slower. The scaler will try to preserve full chroma
-    here when the output uses it. It is possible to force full chroma with
+    when the output uses it. It is possible to force full chroma with
     SWS_FULL_CHR_H_INP even for cases where the scaler thinks it is useless.
 
 Horizontal scaler
@@ -62,8 +62,8 @@ Horizontal scaler
     using specially tuned pshufw instructions.
     The remaining scalers are specially-tuned for various filter lengths.
     They scale 8-bit unsigned planar data to 16-bit signed planar data.
-    Future >8 bits per component inputs will need to add a new scaler here
-    that preserves the input precision.
+    Future >8 bits per component inputs will need to add a new horizontal
+    scaler that preserves the input precision.
 
 Vertical scaler and output converter
     There is a large number of combined vertical scalers + output converters.
