@@ -2152,11 +2152,21 @@ static inline void RENAME(palToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, 
     }
 }
 
-static inline void RENAME(mono2Y)(uint8_t *dst, uint8_t *src, long width, int format)
+static inline void RENAME(monowhite2Y)(uint8_t *dst, uint8_t *src, long width)
 {
     int i, j;
     for (i=0; i<width/8; i++){
-        int d= format == PIX_FMT_MONOBLACK ? src[i] : ~src[i];
+        int d= ~src[i];
+        for(j=0; j<8; j++)
+            dst[8*i+j]= ((d>>(7-j))&1)*255;
+    }
+}
+
+static inline void RENAME(monoblack2Y)(uint8_t *dst, uint8_t *src, long width)
+{
+    int i, j;
+    for (i=0; i<width/8; i++){
+        int d= src[i];
         for(j=0; j<8; j++)
             dst[8*i+j]= ((d>>(7-j))&1)*255;
     }
@@ -2416,9 +2426,14 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         RENAME(palToY)(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
-    else if (srcFormat==PIX_FMT_MONOBLACK ||srcFormat==PIX_FMT_MONOWHITE)
+    else if (srcFormat==PIX_FMT_MONOBLACK)
     {
-        RENAME(mono2Y)(formatConvBuffer, src, srcW, srcFormat);
+        RENAME(monoblack2Y)(formatConvBuffer, src, srcW);
+        src= formatConvBuffer;
+    }
+    else if (srcFormat==PIX_FMT_MONOWHITE)
+    {
+        RENAME(monowhite2Y)(formatConvBuffer, src, srcW);
         src= formatConvBuffer;
     }
 
