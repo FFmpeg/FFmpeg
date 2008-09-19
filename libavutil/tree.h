@@ -45,8 +45,7 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
 
 /**
  * Inserts or removes an element.
- * If *next is NULL then the element supplied will be removed, if no such
- * element exists behavior is undefined.
+ * If *next is NULL then the element supplied will be removed if it exists.
  * If *next is not NULL then the element supplied will be inserted, unless
  * it already exists in the tree.
  * @param rootp A pointer to a pointer to the root node of the tree. Note that
