@@ -7078,9 +7078,6 @@ static inline int decode_seq_parameter_set(H264Context *h){
     if(sps->mb_aff)
         av_log(h->s.avctx, AV_LOG_ERROR, "MBAFF support not included; enable it at compile-time.\n");
 #endif
-    if(!sps->direct_8x8_inference_flag && sps->mb_aff)
-        av_log(h->s.avctx, AV_LOG_ERROR, "MBAFF + !direct_8x8_inference is not implemented\n");
-
     sps->crop= get_bits1(&s->gb);
     if(sps->crop){
         sps->crop_left  = get_ue_golomb(&s->gb);
