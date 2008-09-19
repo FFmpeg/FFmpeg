@@ -2457,6 +2457,10 @@ int av_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "dimensions not set\n");
                 return -1;
             }
+            if(av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)){
+                av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between encoder and muxer layer\n");
+                return -1;
+            }
             break;
         }
 
