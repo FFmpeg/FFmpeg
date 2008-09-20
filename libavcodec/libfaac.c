@@ -38,8 +38,10 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
     unsigned long samples_input, max_bytes_output;
 
     /* number of channels */
-    if (avctx->channels < 1 || avctx->channels > 6)
+    if (avctx->channels < 1 || avctx->channels > 6) {
+        av_log(avctx, AV_LOG_ERROR, "encoding %d channel(s) is not allowed\n", avctx->channels);
         return -1;
+    }
 
     s->faac_handle = faacEncOpen(avctx->sample_rate,
                                  avctx->channels,
