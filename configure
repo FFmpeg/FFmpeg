@@ -501,8 +501,8 @@ int main(void){ $func(); }
 EOF
 }
 
-check_func2(){
-    log check_func2 "$@"
+check_func_headers(){
+    log check_func_headers "$@"
     headers=$1
     func=$2
     shift 2
@@ -539,7 +539,7 @@ check_lib2(){
     func="$2"
     shift 2
     temp_extralibs "$@"
-    check_func2 "$headers" $func && add_extralibs "$@"
+    check_func_headers "$headers" $func && add_extralibs "$@"
     err=$?
     restore_flags
     return $err
@@ -1641,7 +1641,7 @@ check_func  getrusage
 check_func  inet_aton $network_extralibs
 check_func  memalign
 check_func  mkstemp
-check_func2 windows.h GetProcessTimes
+check_func_headers windows.h GetProcessTimes
 
 check_header byteswap.h
 check_header conio.h
@@ -1794,7 +1794,7 @@ if enabled network; then
     elif check_header winsock2.h ; then
         network_extralibs="-lws2_32"
         check_type ws2tcpip.h socklen_t
-        check_func2 winsock2.h closesocket
+        check_func_headers winsock2.h closesocket
     fi
 fi
 
@@ -1818,7 +1818,7 @@ EOF
 check_header linux/videodev.h
 check_header linux/videodev2.h
 
-check_func2 "windows.h vfw.h" capCreateCaptureWindow -lvfw32
+check_func_headers "windows.h vfw.h" capCreateCaptureWindow -lvfw32
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
 { check_header dev/bktr/ioctl_meteor.h &&
