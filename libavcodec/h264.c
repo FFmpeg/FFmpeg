@@ -987,14 +987,12 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
 #define MB_TYPE_16x16_OR_INTRA (MB_TYPE_16x16|MB_TYPE_INTRA4x4|MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM)
 
     if(IS_INTERLACED(h->ref_list[1][0].mb_type[mb_xy])){ // AFL/AFR/FR/FL -> AFL/FL
-        if(h->ref_list[1][0].reference == PICT_FRAME){   // AFL/AFR/FR/FL -> AFL
             if(!IS_INTERLACED(*mb_type)){                //     AFR/FR    -> AFL
                 int cur_poc = s->current_picture_ptr->poc;
                 int *col_poc = h->ref_list[1]->field_poc;
                 int col_parity = FFABS(col_poc[0] - cur_poc) >= FFABS(col_poc[1] - cur_poc);
                 mb_xy= s->mb_x + ((s->mb_y&~1) + col_parity)*s->mb_stride;
                 b8_stride = 0;
-            }
         }else if(!(s->picture_structure & h->ref_list[1][0].reference)){// FL -> FL & differ parity
             int fieldoff= 2*(h->ref_list[1][0].reference)-3;
             mb_xy += s->mb_stride*fieldoff;
