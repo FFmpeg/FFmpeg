@@ -35,8 +35,12 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#ifdef HAVE_SYS_VIDEOIO_H
+#include <sys/videoio.h>
+#else
 #include <asm/types.h>
 #include <linux/videodev2.h>
+#endif
 #include <time.h>
 #include <strings.h>
 

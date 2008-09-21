@@ -786,6 +786,7 @@ HAVE_LIST="
     sys_resource_h
     sys_select_h
     sys_soundcard_h
+    sys_videoio_h
     termios_h
     threads
     winsock2_h
@@ -904,7 +905,7 @@ rtp_muxer_deps="network rtp_protocol"
 rtsp_demuxer_deps="sdp_demuxer"
 sdp_demuxer_deps="rtp_protocol mpegts_demuxer"
 v4l_demuxer_deps="linux_videodev_h"
-v4l2_demuxer_deps="linux_videodev2_h"
+v4l2_demuxer_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_demuxer_deps="capCreateCaptureWindow"
 vfwcap_demuxer_extralibs="-lvfw32"
 x11_grab_device_demuxer_deps="x11grab XShmCreateImage"
@@ -1817,6 +1818,7 @@ EOF
 
 check_header linux/videodev.h
 check_header linux/videodev2.h
+check_header sys/videoio.h
 
 check_func_headers "windows.h vfw.h" capCreateCaptureWindow -lvfw32
 
