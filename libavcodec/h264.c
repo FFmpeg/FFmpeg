@@ -988,11 +988,11 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
 
     if(IS_INTERLACED(h->ref_list[1][0].mb_type[mb_xy])){ // AFL/AFR/FR/FL -> AFL/FL
         if(!IS_INTERLACED(*mb_type)){                    //     AFR/FR    -> AFL/FL
-                int cur_poc = s->current_picture_ptr->poc;
-                int *col_poc = h->ref_list[1]->field_poc;
-                int col_parity = FFABS(col_poc[0] - cur_poc) >= FFABS(col_poc[1] - cur_poc);
-                mb_xy= s->mb_x + ((s->mb_y&~1) + col_parity)*s->mb_stride;
-                b8_stride = 0;
+            int cur_poc = s->current_picture_ptr->poc;
+            int *col_poc = h->ref_list[1]->field_poc;
+            int col_parity = FFABS(col_poc[0] - cur_poc) >= FFABS(col_poc[1] - cur_poc);
+            mb_xy= s->mb_x + ((s->mb_y&~1) + col_parity)*s->mb_stride;
+            b8_stride = 0;
         }else if(!(s->picture_structure & h->ref_list[1][0].reference)){// FL -> FL & differ parity
             int fieldoff= 2*(h->ref_list[1][0].reference)-3;
             mb_xy += s->mb_stride*fieldoff;
