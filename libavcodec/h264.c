@@ -2919,9 +2919,6 @@ static int decode_ref_pic_list_reordering(H264Context *h){
         }
     }
 
-    if(h->slice_type_nos==FF_B_TYPE && !h->direct_spatial_mv_pred)
-        direct_dist_scale_factor(h);
-    direct_ref_list_init(h);
     return 0;
 }
 
@@ -3912,6 +3909,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     if(FRAME_MBAFF)
         fill_mbaff_ref_list(h);
+
+    if(h->slice_type_nos==FF_B_TYPE && !h->direct_spatial_mv_pred)
+        direct_dist_scale_factor(h);
+    direct_ref_list_init(h);
 
     if( h->slice_type_nos != FF_I_TYPE && h->pps.cabac ){
         tmp = get_ue_golomb(&s->gb);
