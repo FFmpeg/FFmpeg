@@ -2935,10 +2935,12 @@ static void fill_mbaff_ref_list(H264Context *h){
             for(j=0; j<3; j++)
                 field[0].linesize[j] <<= 1;
             field[0].reference = PICT_TOP_FIELD;
+            field[0].poc= field[0].field_poc[0];
             field[1] = field[0];
             for(j=0; j<3; j++)
                 field[1].data[j] += frame->linesize[j];
             field[1].reference = PICT_BOTTOM_FIELD;
+            field[1].poc= field[1].field_poc[1];
 
             h->luma_weight[list][16+2*i] = h->luma_weight[list][16+2*i+1] = h->luma_weight[list][i];
             h->luma_offset[list][16+2*i] = h->luma_offset[list][16+2*i+1] = h->luma_offset[list][i];
