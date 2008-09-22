@@ -25,6 +25,10 @@
 #ifdef __APPLE__
 #undef _POSIX_C_SOURCE
 #include <sys/sysctl.h>
+#elif __OpenBSD__
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <machine/cpu.h>
 #elif __AMIGAOS4__
 #include <exec/exec.h>
 #include <interfaces/exec.h>
@@ -45,8 +49,12 @@ int has_altivec(void)
     IExec->GetCPUInfoTags(GCIT_VectorUnit, &result, TAG_DONE);
     if (result == VECTORTYPE_ALTIVEC) return 1;
     return 0;
-#elif __APPLE__
+#elif defined(__APPLE__) || defined(__OpenBSD__)
+#ifdef __OpenBSD__
+    int sels[2] = {CTL_MACHDEP, CPU_ALTIVEC};
+#else
     int sels[2] = {CTL_HW, HW_VECTORUNIT};
+#endif
     int has_vu = 0;
     size_t len = sizeof(has_vu);
     int err;
