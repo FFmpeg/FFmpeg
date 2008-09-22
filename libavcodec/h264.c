@@ -938,6 +938,7 @@ static inline void direct_ref_list_init(H264Context * const h){
         memcpy(cur->ref_count[0], cur->ref_count[1], sizeof(cur->ref_count[0]));
         memcpy(cur->ref_poc  [0], cur->ref_poc  [1], sizeof(cur->ref_poc  [0]));
     }
+    cur->mbaff= FRAME_MBAFF;
     if(cur->pict_type != FF_B_TYPE || h->direct_spatial_mv_pred)
         return;
     for(list=0; list<2; list++){
@@ -1179,16 +1180,20 @@ single_col:
     }else{ /* direct temporal mv pred */
         const int *map_col_to_list0[2] = {h->map_col_to_list0[0], h->map_col_to_list0[1]};
         const int *dist_scale_factor = h->dist_scale_factor;
+        int ref_shift= 1;
 
         if(FRAME_MBAFF && IS_INTERLACED(*mb_type)){
             map_col_to_list0[0] = h->map_col_to_list0_field[s->mb_y&1][0];
             map_col_to_list0[1] = h->map_col_to_list0_field[s->mb_y&1][1];
             dist_scale_factor   =h->dist_scale_factor_field[s->mb_y&1];
+            ref_shift--;
         }
+        if(h->ref_list[1][0].mbaff && IS_INTERLACED(mb_type_col[0]))
+            ref_shift++;
+
         if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
             /* FIXME assumes direct_8x8_inference == 1 */
             int y_shift  = 2*!IS_INTERLACED(*mb_type);
-            int ref_shift= FRAME_MBAFF ? y_shift : 1;
 
             for(i8=0; i8<4; i8++){
                 const int x8 = i8&1;
@@ -1239,8 +1244,8 @@ single_col:
             if(IS_INTRA(mb_type_col[0])){
                 ref=mv0=mv1=0;
             }else{
-                const int ref0 = l1ref0[0] >= 0 ? map_col_to_list0[0][l1ref0[0]]
-                                                : map_col_to_list0[1][l1ref1[0]];
+                const int ref0 = l1ref0[0] >= 0 ? map_col_to_list0[0][(l1ref0[0]*2)>>ref_shift]
+                                                : map_col_to_list0[1][(l1ref1[0]*2)>>ref_shift];
                 const int scale = dist_scale_factor[ref0];
                 const int16_t *mv_col = l1ref0[0] >= 0 ? l1mv0[0] : l1mv1[0];
                 int mv_l0[2];
@@ -1271,11 +1276,11 @@ single_col:
                     continue;
                 }
 
-                ref0 = l1ref0[x8 + y8*b8_stride];
+                ref0 = (l1ref0[x8 + y8*b8_stride]*2)>>ref_shift;
                 if(ref0 >= 0)
                     ref0 = map_col_to_list0[0][ref0];
                 else{
-                    ref0 = map_col_to_list0[1][l1ref1[x8 + y8*b8_stride]];
+                    ref0 = map_col_to_list0[1][(l1ref1[x8 + y8*b8_stride]*2)>>ref_shift];
                     l1mv= l1mv1;
                 }
                 scale = dist_scale_factor[ref0];

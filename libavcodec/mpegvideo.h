@@ -120,6 +120,7 @@ typedef struct Picture{
     int long_ref;               ///< 1->long term reference 0->short term reference
     int ref_poc[2][2][16];      ///< h264 POCs of the frames used as reference (FIXME need per slice)
     int ref_count[2][2];        ///< number of entries in ref_poc              (FIXME need per slice)
+    int mbaff;                  ///< h264 1 -> MBAFF frame 0-> not MBAFF
 
     int mb_var_sum;             ///< sum of MB variance for current frame
     int mc_mb_var_sum;          ///< motion compensated MB variance for current frame
