@@ -922,54 +922,63 @@ static inline void direct_dist_scale_factor(H264Context * const h){
         h->dist_scale_factor[i] = get_scale_factor(h, poc, poc1, i);
     }
 }
+
+static void fill_colmap(H264Context *h, int map[2][16+32], int list, int field, int colfield, int mbafi){
+    MpegEncContext * const s = &h->s;
+    Picture * const ref1 = &h->ref_list[1][0];
+    int j, old_ref, rfield;
+    int start= mbafi ? 16                      : 0;
+    int end  = mbafi ? 16+2*h->ref_count[list] : h->ref_count[list];
+    int interl= mbafi || s->picture_structure != PICT_FRAME;
+
+    /* bogus; fills in for missing frames */
+    memset(map[list], 0, sizeof(map[list]));
+
+    for(rfield=0; rfield<2; rfield++){
+        for(old_ref=0; old_ref<ref1->ref_count[colfield][list]; old_ref++){
+            int poc = ref1->ref_poc[colfield][list][old_ref];
+
+            if     (!interl)
+                poc |= 3;
+            else if( interl && (poc&3) == 3) //FIXME store all MBAFF references so this isnt needed
+                poc= (poc&~3) + rfield + 1;
+
+            for(j=start; j<end; j++){
+                if(4*h->ref_list[list][j].frame_num + (h->ref_list[list][j].reference&3) == poc){
+                    int cur_ref= mbafi ? (j-16)^field : j;
+                    map[list][2*old_ref + (rfield^field) + 16] = cur_ref;
+                    if(rfield == field)
+                        map[list][old_ref] = cur_ref;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 static inline void direct_ref_list_init(H264Context * const h){
     MpegEncContext * const s = &h->s;
     Picture * const ref1 = &h->ref_list[1][0];
     Picture * const cur = s->current_picture_ptr;
-    int list, i, j, field, rfield;
-    int sidx= s->picture_structure&1;
-    int ref1sidx= ref1->reference&1;
+    int list, j, field, rfield;
+    int sidx= (s->picture_structure&1)^1;
+    int ref1sidx= (ref1->reference&1)^1;
     for(list=0; list<2; list++){
         cur->ref_count[sidx][list] = h->ref_count[list];
         for(j=0; j<h->ref_count[list]; j++)
             cur->ref_poc[sidx][list][j] = 4*h->ref_list[list][j].frame_num + (h->ref_list[list][j].reference&3);
     }
     if(s->picture_structure == PICT_FRAME){
-        memcpy(cur->ref_count[0], cur->ref_count[1], sizeof(cur->ref_count[0]));
-        memcpy(cur->ref_poc  [0], cur->ref_poc  [1], sizeof(cur->ref_poc  [0]));
+        memcpy(cur->ref_count[1], cur->ref_count[0], sizeof(cur->ref_count[0]));
+        memcpy(cur->ref_poc  [1], cur->ref_poc  [0], sizeof(cur->ref_poc  [0]));
     }
     cur->mbaff= FRAME_MBAFF;
     if(cur->pict_type != FF_B_TYPE || h->direct_spatial_mv_pred)
         return;
     for(list=0; list<2; list++){
-        for(field=0; field<2; field++){
-            for(i=0; i<ref1->ref_count[field][list]; i++){
-                for(rfield=0; rfield<2; rfield++){
-                    int poc = ref1->ref_poc[field][list][i];
-                    if((poc&3) == 3)
-                        poc= (poc&~3) + rfield + 1;
-
-                    h->map_col_to_list0_field[field][list][2*i+rfield] = 0; /* bogus; fills in for missing frames */
-                    for(j=16; j<16+2*h->ref_count[list]; j++)
-                        if(4*h->ref_list[list][j].frame_num + (h->ref_list[list][j].reference&3) == poc){
-                            h->map_col_to_list0_field[field][list][2*i+rfield] = j-16;
-                            break;
-                        }
-                }
-            }
-        }
-
-        for(i=0; i<ref1->ref_count[ref1sidx][list]; i++){
-            int poc = ref1->ref_poc[ref1sidx][list][i];
-            if(((poc&3) == 3) != (s->picture_structure == PICT_FRAME))
-                poc= (poc&~3) + s->picture_structure;
-            h->map_col_to_list0[list][i] = 0; /* bogus; fills in for missing frames */
-            for(j=0; j<h->ref_count[list]; j++)
-                if(4*h->ref_list[list][j].frame_num + (h->ref_list[list][j].reference&3) == poc){
-                    h->map_col_to_list0[list][i] = j;
-                    break;
-                }
-        }
+        fill_colmap(h, h->map_col_to_list0, list, sidx, ref1sidx, 0);
+        for(field=0; field<2; field++)
+            fill_colmap(h, h->map_col_to_list0_field[field], list, field, field, 1);
     }
 }
 
@@ -1180,16 +1189,15 @@ single_col:
     }else{ /* direct temporal mv pred */
         const int *map_col_to_list0[2] = {h->map_col_to_list0[0], h->map_col_to_list0[1]};
         const int *dist_scale_factor = h->dist_scale_factor;
-        int ref_shift= 1;
+        int ref_offset= 0;
 
         if(FRAME_MBAFF && IS_INTERLACED(*mb_type)){
             map_col_to_list0[0] = h->map_col_to_list0_field[s->mb_y&1][0];
             map_col_to_list0[1] = h->map_col_to_list0_field[s->mb_y&1][1];
             dist_scale_factor   =h->dist_scale_factor_field[s->mb_y&1];
-            ref_shift--;
         }
         if(h->ref_list[1][0].mbaff && IS_INTERLACED(mb_type_col[0]))
-            ref_shift++;
+            ref_offset += 16;
 
         if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
             /* FIXME assumes direct_8x8_inference == 1 */
@@ -1215,9 +1223,9 @@ single_col:
 
                 ref0 = l1ref0[x8 + y8*b8_stride];
                 if(ref0 >= 0)
-                    ref0 = map_col_to_list0[0][ref0*2>>ref_shift];
+                    ref0 = map_col_to_list0[0][ref0 + ref_offset];
                 else{
-                    ref0 = map_col_to_list0[1][l1ref1[x8 + y8*b8_stride]*2>>ref_shift];
+                    ref0 = map_col_to_list0[1][l1ref1[x8 + y8*b8_stride] + ref_offset];
                     l1mv= l1mv1;
                 }
                 scale = dist_scale_factor[ref0];
@@ -1244,8 +1252,8 @@ single_col:
             if(IS_INTRA(mb_type_col[0])){
                 ref=mv0=mv1=0;
             }else{
-                const int ref0 = l1ref0[0] >= 0 ? map_col_to_list0[0][(l1ref0[0]*2)>>ref_shift]
-                                                : map_col_to_list0[1][(l1ref1[0]*2)>>ref_shift];
+                const int ref0 = l1ref0[0] >= 0 ? map_col_to_list0[0][l1ref0[0] + ref_offset]
+                                                : map_col_to_list0[1][l1ref1[0] + ref_offset];
                 const int scale = dist_scale_factor[ref0];
                 const int16_t *mv_col = l1ref0[0] >= 0 ? l1mv0[0] : l1mv1[0];
                 int mv_l0[2];
@@ -1276,11 +1284,11 @@ single_col:
                     continue;
                 }
 
-                ref0 = (l1ref0[x8 + y8*b8_stride]*2)>>ref_shift;
+                ref0 = l1ref0[x8 + y8*b8_stride] + ref_offset;
                 if(ref0 >= 0)
                     ref0 = map_col_to_list0[0][ref0];
                 else{
-                    ref0 = map_col_to_list0[1][(l1ref1[x8 + y8*b8_stride]*2)>>ref_shift];
+                    ref0 = map_col_to_list0[1][l1ref1[x8 + y8*b8_stride] + ref_offset];
                     l1mv= l1mv1;
                 }
                 scale = dist_scale_factor[ref0];

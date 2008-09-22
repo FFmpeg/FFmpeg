@@ -332,8 +332,8 @@ typedef struct H264Context{
     int direct_spatial_mv_pred;
     int dist_scale_factor[16];
     int dist_scale_factor_field[2][32];
-    int map_col_to_list0[2][16];
-    int map_col_to_list0_field[2][2][32];
+    int map_col_to_list0[2][16+32];
+    int map_col_to_list0_field[2][2][16+32];
 
     /**
      * num_ref_idx_l0/1_active_minus1 + 1
