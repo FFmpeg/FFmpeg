@@ -36,8 +36,8 @@
 #endif /* __APPLE__ */
 
 /**
- * This function MAY rely on signal() or fork() in order to make sure altivec
- * is present
+ * This function MAY rely on signal() or fork() in order to make sure AltiVec
+ * is present.
  */
 
 int has_altivec(void)
@@ -65,7 +65,7 @@ int has_altivec(void)
     return 0;
 #elif defined(RUNTIME_CPUDETECT)
     int proc_ver;
-    // support of mfspr PVR emulation added in Linux 2.6.17
+    // Support of mfspr PVR emulation added in Linux 2.6.17.
     asm volatile("mfspr %0, 287" : "=r" (proc_ver));
     proc_ver >>= 16;
     if (proc_ver  & 0x8000 ||
@@ -76,7 +76,7 @@ int has_altivec(void)
         return 1;
     return 0;
 #else
-    // since we were compiled for altivec, just assume we have it
+    // Since we were compiled for AltiVec, just assume we have it
     // until someone comes up with a proper way (not involving signal hacks).
     return 1;
 #endif /* __AMIGAOS4__ */
