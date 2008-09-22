@@ -963,18 +963,23 @@ static inline void direct_ref_list_init(H264Context * const h){
     int list, j, field, rfield;
     int sidx= (s->picture_structure&1)^1;
     int ref1sidx= (ref1->reference&1)^1;
+
     for(list=0; list<2; list++){
         cur->ref_count[sidx][list] = h->ref_count[list];
         for(j=0; j<h->ref_count[list]; j++)
             cur->ref_poc[sidx][list][j] = 4*h->ref_list[list][j].frame_num + (h->ref_list[list][j].reference&3);
     }
+
     if(s->picture_structure == PICT_FRAME){
         memcpy(cur->ref_count[1], cur->ref_count[0], sizeof(cur->ref_count[0]));
         memcpy(cur->ref_poc  [1], cur->ref_poc  [0], sizeof(cur->ref_poc  [0]));
     }
+
     cur->mbaff= FRAME_MBAFF;
+
     if(cur->pict_type != FF_B_TYPE || h->direct_spatial_mv_pred)
         return;
+
     for(list=0; list<2; list++){
         fill_colmap(h, h->map_col_to_list0, list, sidx, ref1sidx, 0);
         for(field=0; field<2; field++)
