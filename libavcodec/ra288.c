@@ -103,16 +103,14 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     gain_block[9] = 10 * log10(sum) - 32;
 
     for (i=0; i < 5; i++) {
-        block[i] = 0;
+        block[i] = buffer[i];
         for (j=0; j < 36; j++)
             block[i] -= block[i-1-j]*ractx->sp_lpc[j];
-        for (j=0; j < i; j++)
-            buffer[i] -= buffer[i-1-j]*ractx->sp_lpc[j];
     }
 
     /* output */
     for (i=0; i < 5; i++)
-        block[i] = av_clipf(block[i] + buffer[i], -4095, 4095);
+        block[i] = av_clipf(block[i], -4095, 4095);
 }
 
 static void convolve(float *tgt, const float *src, int len, int n)
