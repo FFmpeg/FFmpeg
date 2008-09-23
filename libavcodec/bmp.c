@@ -149,6 +149,25 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     case 16:
         if(comp == BMP_RGB)
             avctx->pix_fmt = PIX_FMT_RGB555;
+        if(comp == BMP_BITFIELDS)
+            avctx->pix_fmt = rgb[1] == 0x07E0 ? PIX_FMT_RGB565 : PIX_FMT_RGB555;
+        break;
+    case 8:
+        if(hsize - ihsize - 14 > 0)
+            avctx->pix_fmt = PIX_FMT_PAL8;
+        else
+            avctx->pix_fmt = PIX_FMT_GRAY8;
+        break;
+    case 4:
+        if(hsize - ihsize - 14 > 0){
+            avctx->pix_fmt = PIX_FMT_PAL8;
+        }else{
+            av_log(avctx, AV_LOG_ERROR, "Unknown palette for 16-colour BMP\n");
+            return -1;
+        }
+        break;
+    case 1:
+        avctx->pix_fmt = PIX_FMT_MONOBLACK;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "depth %d not supported\n", depth);
@@ -183,6 +202,9 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
+    if(depth == 4 || depth == 8)
+        memset(p->data[1], 0, 1024);
+
     if(height > 0){
         ptr = p->data[0] + (avctx->height - 1) * p->linesize[0];
         linesize = -p->linesize[0];
@@ -191,7 +213,43 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         linesize = p->linesize[0];
     }
 
+    if(avctx->pix_fmt == PIX_FMT_PAL8){
+        buf = buf0 + 14 + ihsize; //palette location
+        if((hsize-ihsize-14)>>depth < 4){ // OS/2 bitmap, 3 bytes per palette entry
+            for(i = 0; i < (1 << depth); i++)
+                ((uint32_t*)p->data[1])[i] = bytestream_get_le24(&buf);
+        }else{
+            for(i = 0; i < (1 << depth); i++)
+                ((uint32_t*)p->data[1])[i] = bytestream_get_le32(&buf);
+        }
+        buf = buf0 + hsize;
+    }
     switch(depth){
+    case 1:
+        for(i = 0; i < avctx->height; i++){
+            memcpy(ptr, buf, n);
+            buf += n;
+            ptr += linesize;
+        }
+        break;
+    case 4:
+        for(i = 0; i < avctx->height; i++){
+            int j;
+            for(j = 0; j < n; j++){
+                ptr[j*2+0] = (buf[j] >> 4) & 0xF;
+                ptr[j*2+1] = buf[j] & 0xF;
+            }
+            buf += n;
+            ptr += linesize;
+        }
+        break;
+    case 8:
+        for(i = 0; i < avctx->height; i++){
+            memcpy(ptr, buf, avctx->width);
+            buf += n;
+            ptr += linesize;
+        }
+        break;
     case 24:
         for(i = 0; i < avctx->height; i++){
             memcpy(ptr, buf, avctx->width*(depth>>3));
