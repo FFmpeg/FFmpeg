@@ -79,12 +79,6 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 
     memmove(ractx->sp_hist + 70, ractx->sp_hist + 75, 36*sizeof(*block));
 
-    for (i=0; i < 5; i++) {
-        block[i] = 0.;
-        for (j=0; j < 36; j++)
-            block[i] -= block[i-1-j]*ractx->sp_lpc[j];
-    }
-
     /* block 46 of G.728 spec */
     sum = 32.;
     for (i=0; i < 10; i++)
@@ -108,9 +102,13 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 
     gain_block[9] = 10 * log10(sum) - 32;
 
-    for (i=1; i < 5; i++)
-        for (j=i-1; j >= 0; j--)
-            buffer[i] -= ractx->sp_lpc[i-j-1] * buffer[j];
+    for (i=0; i < 5; i++) {
+        block[i] = 0;
+        for (j=0; j < 36; j++)
+            block[i] -= block[i-1-j]*ractx->sp_lpc[j];
+        for (j=0; j < i; j++)
+            buffer[i] -= buffer[i-1-j]*ractx->sp_lpc[j];
+    }
 
     /* output */
     for (i=0; i < 5; i++)
