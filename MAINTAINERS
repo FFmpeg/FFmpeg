@@ -114,7 +114,7 @@ Codecs:
   apedec.c                              Kostya Shishkov
   asv*                                  Michael Niedermayer
   atrac3*                               Benjamin Larsson
-  bmp.c                                 Mans Rullgard
+  bmp.c                                 Mans Rullgard, Kostya Shishkov
   cavs*                                 Stefan Gehrer
   cinepak.c                             Roberto Togni
   cljr                                  Alex Beregszaszi
