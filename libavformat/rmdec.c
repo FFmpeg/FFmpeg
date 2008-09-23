@@ -216,7 +216,8 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st, int codec_data_size
         if (   st->codec->codec_tag != MKTAG('R', 'V', '1', '0')
             && st->codec->codec_tag != MKTAG('R', 'V', '2', '0')
             && st->codec->codec_tag != MKTAG('R', 'V', '3', '0')
-            && st->codec->codec_tag != MKTAG('R', 'V', '4', '0'))
+            && st->codec->codec_tag != MKTAG('R', 'V', '4', '0')
+            && st->codec->codec_tag != MKTAG('R', 'V', 'T', 'R'))
             goto fail1;
         st->codec->width = get_be16(pb);
         st->codec->height = get_be16(pb);
