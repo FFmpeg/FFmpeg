@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "bmp.h"
+#include "msrledec.h"
 
 static av_cold int bmp_decode_init(AVCodecContext *avctx){
     BMPContext *s = avctx->priv_data;
@@ -107,7 +108,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     else
         comp = BMP_RGB;
 
-    if(comp != BMP_RGB && comp != BMP_BITFIELDS){
+    if(comp != BMP_RGB && comp != BMP_BITFIELDS && comp != BMP_RLE4 && comp != BMP_RLE8){
         av_log(avctx, AV_LOG_ERROR, "BMP coding %d not supported\n", comp);
         return -1;
     }
@@ -196,11 +197,15 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     /* Line size in file multiple of 4 */
     n = ((avctx->width * depth) / 8 + 3) & ~3;
 
-    if(n * avctx->height > dsize){
+    if(n * avctx->height > dsize && comp != BMP_RLE4 && comp != BMP_RLE8){
         av_log(avctx, AV_LOG_ERROR, "not enough data (%d < %d)\n",
                dsize, n * avctx->height);
         return -1;
     }
+
+    // RLE may skip decoding some picture areas, so blank picture before decoding
+    if(comp == BMP_RLE4 || comp == BMP_RLE8)
+        memset(p->data[0], 0, avctx->height * p->linesize[0]);
 
     if(depth == 4 || depth == 8)
         memset(p->data[1], 0, 1024);
@@ -224,6 +229,9 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         }
         buf = buf0 + hsize;
     }
+    if(comp == BMP_RLE4 || comp == BMP_RLE8){
+        ff_msrle_decode(avctx, p, depth, buf, dsize);
+    }else{
     switch(depth){
     case 1:
         for(i = 0; i < avctx->height; i++){
@@ -289,6 +297,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     default:
         av_log(avctx, AV_LOG_ERROR, "BMP decoder is broken\n");
         return -1;
+    }
     }
 
     *picture = s->picture;
