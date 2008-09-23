@@ -232,72 +232,72 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     if(comp == BMP_RLE4 || comp == BMP_RLE8){
         ff_msrle_decode(avctx, p, depth, buf, dsize);
     }else{
-    switch(depth){
-    case 1:
-        for(i = 0; i < avctx->height; i++){
-            memcpy(ptr, buf, n);
-            buf += n;
-            ptr += linesize;
-        }
-        break;
-    case 4:
-        for(i = 0; i < avctx->height; i++){
-            int j;
-            for(j = 0; j < n; j++){
-                ptr[j*2+0] = (buf[j] >> 4) & 0xF;
-                ptr[j*2+1] = buf[j] & 0xF;
+        switch(depth){
+        case 1:
+            for(i = 0; i < avctx->height; i++){
+                memcpy(ptr, buf, n);
+                buf += n;
+                ptr += linesize;
             }
-            buf += n;
-            ptr += linesize;
-        }
-        break;
-    case 8:
-        for(i = 0; i < avctx->height; i++){
-            memcpy(ptr, buf, avctx->width);
-            buf += n;
-            ptr += linesize;
-        }
-        break;
-    case 24:
-        for(i = 0; i < avctx->height; i++){
-            memcpy(ptr, buf, avctx->width*(depth>>3));
-            buf += n;
-            ptr += linesize;
-        }
-        break;
-    case 16:
-        for(i = 0; i < avctx->height; i++){
-            const uint16_t *src = (const uint16_t *) buf;
-            uint16_t *dst = (uint16_t *) ptr;
-
-            for(j = 0; j < avctx->width; j++)
-                *dst++ = le2me_16(*src++);
-
-            buf += n;
-            ptr += linesize;
-        }
-        break;
-    case 32:
-        for(i = 0; i < avctx->height; i++){
-            const uint8_t *src = buf;
-            uint8_t *dst = ptr;
-
-            for(j = 0; j < avctx->width; j++){
-                dst[0] = src[rgb[2]];
-                dst[1] = src[rgb[1]];
-                dst[2] = src[rgb[0]];
-                dst += 3;
-                src += 4;
+            break;
+        case 4:
+            for(i = 0; i < avctx->height; i++){
+                int j;
+                for(j = 0; j < n; j++){
+                    ptr[j*2+0] = (buf[j] >> 4) & 0xF;
+                    ptr[j*2+1] = buf[j] & 0xF;
+                }
+                buf += n;
+                ptr += linesize;
             }
+            break;
+        case 8:
+            for(i = 0; i < avctx->height; i++){
+                memcpy(ptr, buf, avctx->width);
+                buf += n;
+                ptr += linesize;
+            }
+            break;
+        case 24:
+            for(i = 0; i < avctx->height; i++){
+                memcpy(ptr, buf, avctx->width*(depth>>3));
+                buf += n;
+                ptr += linesize;
+            }
+            break;
+        case 16:
+            for(i = 0; i < avctx->height; i++){
+                const uint16_t *src = (const uint16_t *) buf;
+                uint16_t *dst = (uint16_t *) ptr;
 
-            buf += n;
-            ptr += linesize;
+                for(j = 0; j < avctx->width; j++)
+                    *dst++ = le2me_16(*src++);
+
+                buf += n;
+                ptr += linesize;
+            }
+            break;
+        case 32:
+            for(i = 0; i < avctx->height; i++){
+                const uint8_t *src = buf;
+                uint8_t *dst = ptr;
+
+                for(j = 0; j < avctx->width; j++){
+                    dst[0] = src[rgb[2]];
+                    dst[1] = src[rgb[1]];
+                    dst[2] = src[rgb[0]];
+                    dst += 3;
+                    src += 4;
+                }
+
+                buf += n;
+                ptr += linesize;
+            }
+            break;
+        default:
+            av_log(avctx, AV_LOG_ERROR, "BMP decoder is broken\n");
+            return -1;
         }
-        break;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "BMP decoder is broken\n");
-        return -1;
-    }
     }
 
     *picture = s->picture;
