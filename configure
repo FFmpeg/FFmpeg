@@ -1897,7 +1897,7 @@ if enabled shared; then
     # LIBOBJFLAGS may have already been set in the OS configuration
     if test -z "$LIBOBJFLAGS" ; then
         case "$arch" in
-            x86_64|ia64|alpha|sparc*|power*|parisc*) LIBOBJFLAGS='$(PIC)' ;;
+            x86_64|ia64|alpha|sparc*|power*|parisc*|mips*) LIBOBJFLAGS='$(PIC)' ;;
         esac
     fi
 fi
