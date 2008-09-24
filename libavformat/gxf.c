@@ -238,11 +238,11 @@ static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     int i;
     pkt_len -= 8;
     if (map_cnt > 1000) {
-        av_log(s, AV_LOG_ERROR, "GXF: too many index entries %u (%x)\n", map_cnt, map_cnt);
+        av_log(s, AV_LOG_ERROR, "too many index entries %u (%x)\n", map_cnt, map_cnt);
         map_cnt = 1000;
     }
     if (pkt_len < 4 * map_cnt) {
-        av_log(s, AV_LOG_ERROR, "GXF: invalid index length\n");
+        av_log(s, AV_LOG_ERROR, "invalid index length\n");
         url_fskip(pb, pkt_len);
         return;
     }
@@ -263,18 +263,18 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     st_info_t si;
     int i;
     if (!parse_packet_header(pb, &pkt_type, &map_len) || pkt_type != PKT_MAP) {
-        av_log(s, AV_LOG_ERROR, "GXF: map packet not found\n");
+        av_log(s, AV_LOG_ERROR, "map packet not found\n");
         return 0;
     }
     map_len -= 2;
     if (get_byte(pb) != 0x0e0 || get_byte(pb) != 0xff) {
-        av_log(s, AV_LOG_ERROR, "GXF: unknown version or invalid map preamble\n");
+        av_log(s, AV_LOG_ERROR, "unknown version or invalid map preamble\n");
         return 0;
     }
     map_len -= 2;
     len = get_be16(pb); // length of material data section
     if (len > map_len) {
-        av_log(s, AV_LOG_ERROR, "GXF: material data longer than map data\n");
+        av_log(s, AV_LOG_ERROR, "material data longer than map data\n");
         return 0;
     }
     map_len -= len;
@@ -283,7 +283,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     map_len -= 2;
     len = get_be16(pb); // length of track description
     if (len > map_len) {
-        av_log(s, AV_LOG_ERROR, "GXF: track description longer than map data\n");
+        av_log(s, AV_LOG_ERROR, "track description longer than map data\n");
         return 0;
     }
     map_len -= len;
@@ -299,12 +299,12 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
         gxf_track_tags(pb, &track_len, &si);
         url_fskip(pb, track_len);
         if (!(track_type & 0x80)) {
-           av_log(s, AV_LOG_ERROR, "GXF: invalid track type %x\n", track_type);
+           av_log(s, AV_LOG_ERROR, "invalid track type %x\n", track_type);
            continue;
         }
         track_type &= 0x7f;
         if ((track_id & 0xc0) != 0xc0) {
-           av_log(s, AV_LOG_ERROR, "GXF: invalid track id %x\n", track_id);
+           av_log(s, AV_LOG_ERROR, "invalid track id %x\n", track_id);
            continue;
         }
         track_id &= 0x3f;
@@ -320,17 +320,17 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
             st->duration = si.last_field - si.first_field;
     }
     if (len < 0)
-        av_log(s, AV_LOG_ERROR, "GXF: invalid track description length specified\n");
+        av_log(s, AV_LOG_ERROR, "invalid track description length specified\n");
     if (map_len)
         url_fskip(pb, map_len);
     if (!parse_packet_header(pb, &pkt_type, &len)) {
-        av_log(s, AV_LOG_ERROR, "GXF: sync lost in header\n");
+        av_log(s, AV_LOG_ERROR, "sync lost in header\n");
         return -1;
     }
     if (pkt_type == PKT_FLT) {
         gxf_read_index(s, len);
         if (!parse_packet_header(pb, &pkt_type, &len)) {
-            av_log(s, AV_LOG_ERROR, "GXF: sync lost in header\n");
+            av_log(s, AV_LOG_ERROR, "sync lost in header\n");
             return -1;
         }
     }
@@ -347,9 +347,9 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
                 main_timebase.den = fps.num;
             }
         } else
-            av_log(s, AV_LOG_INFO, "GXF: UMF packet too short\n");
+            av_log(s, AV_LOG_INFO, "UMF packet too short\n");
     } else
-        av_log(s, AV_LOG_INFO, "GXF: UMF packet missing\n");
+        av_log(s, AV_LOG_INFO, "UMF packet missing\n");
     url_fskip(pb, len);
     if (!main_timebase.num || !main_timebase.den)
         main_timebase = (AVRational){1, 50}; // set some arbitrary fallback
@@ -421,7 +421,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         int stream_index;
         if (!parse_packet_header(pb, &pkt_type, &pkt_len)) {
             if (!url_feof(pb))
-                av_log(s, AV_LOG_ERROR, "GXF: sync lost\n");
+                av_log(s, AV_LOG_ERROR, "sync lost\n");
             return -1;
         }
         if (pkt_type == PKT_FLT) {
@@ -433,7 +433,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
             continue;
         }
         if (pkt_len < 16) {
-            av_log(s, AV_LOG_ERROR, "GXF: invalid media packet length\n");
+            av_log(s, AV_LOG_ERROR, "invalid media packet length\n");
             continue;
         }
         pkt_len -= 16;
