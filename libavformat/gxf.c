@@ -415,8 +415,9 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
     pkt_type_t pkt_type;
     int pkt_len;
     while (!url_feof(pb)) {
+        AVStream *st;
         int track_type, track_id, ret;
-        int field_nr;
+        int field_nr, field_info, skip = 0;
         int stream_index;
         if (!parse_packet_header(pb, &pkt_type, &pkt_len)) {
             if (!url_feof(pb))
@@ -441,15 +442,27 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         stream_index = get_sindex(s, track_id, track_type);
         if (stream_index < 0)
             return stream_index;
+        st = s->streams[stream_index];
         field_nr = get_be32(pb);
-        get_be32(pb); // field information
+        field_info = get_be32(pb);
         get_be32(pb); // "timeline" field number
         get_byte(pb); // flags
         get_byte(pb); // reserved
-        // NOTE: there is also data length information in the
-        // field information, it might be better to take this into account
-        // as well.
+        if (st->codec->codec_id == CODEC_ID_PCM_S24LE ||
+            st->codec->codec_id == CODEC_ID_PCM_S16LE) {
+            int first = field_info >> 16;
+            int last  = field_info & 0xffff; // last is exclusive
+            int bps = av_get_bits_per_sample(st->codec->codec_id)>>3;
+            if (first <= last && last*bps <= pkt_len) {
+                url_fskip(pb, first*bps);
+                skip = pkt_len - last*bps;
+                pkt_len = (last-first)*bps;
+            } else
+                av_log(s, AV_LOG_ERROR, "invalid first and last sample values\n");
+        }
         ret = av_get_packet(pb, pkt, pkt_len);
+        if (skip)
+            url_fskip(pb, skip);
         pkt->stream_index = stream_index;
         pkt->dts = field_nr;
         return ret;
