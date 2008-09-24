@@ -45,7 +45,7 @@ static int wav_write_header(AVFormatContext *s)
     fmt = start_tag(pb, "fmt ");
     if (put_wav_header(pb, s->streams[0]->codec) < 0) {
         av_log(s, AV_LOG_ERROR, "%s codec not supported in WAVE format\n",
-               s->streams[0]->codec->codec->name);
+               s->streams[0]->codec->codec ? s->streams[0]->codec->codec->name : "NONE");
         av_free(wav);
         return -1;
     }
