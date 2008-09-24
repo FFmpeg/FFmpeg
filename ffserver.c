@@ -796,7 +796,7 @@ static void close_connection(HTTPContext *c)
 
     ctx = &c->fmt_ctx;
 
-    if (!c->last_packet_sent) {
+    if (!c->last_packet_sent && c->state == HTTPSTATE_SEND_DATA_TRAILER) {
         if (ctx->oformat) {
             /* prepare header */
             if (url_open_dyn_buf(&ctx->pb) >= 0) {
