@@ -1379,7 +1379,7 @@ static int mov_read_udta(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         uint32_t tag      = get_le32(pb);
         uint64_t next     = url_ftell(pb) + tag_size - 8;
 
-        if (next > end) // stop if tag_size is wrong
+        if (tag_size < 8 || next > end) // stop if tag_size is wrong
             break;
 
         switch (tag) {
