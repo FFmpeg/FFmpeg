@@ -69,6 +69,13 @@ static void apply_window(float *tgt, const float *m1, const float *m2, int n)
         *tgt++ = *m1++ * *m2++;
 }
 
+static void convolve(float *tgt, const float *src, int len, int n)
+{
+    for (; n >= 0; n--)
+        tgt[n] = scalar_product_float(src, src - n, len);
+
+}
+
 static void decode(RA288Context *ractx, float gain, int cb_coef)
 {
     int i, j;
@@ -112,13 +119,6 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     /* output */
     for (i=0; i < 5; i++)
         block[i] = av_clipf(block[i], -4095, 4095);
-}
-
-static void convolve(float *tgt, const float *src, int len, int n)
-{
-    for (; n >= 0; n--)
-        tgt[n] = scalar_product_float(src, src - n, len);
-
 }
 
 /**
