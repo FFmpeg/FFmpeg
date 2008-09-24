@@ -96,12 +96,12 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 
     /* block 48 of G.728 spec */
     /* exp(sum * 0.1151292546497) == pow(10.0,sum/20) */
-    sumsum = exp(sum * 0.1151292546497) * gain / 2048.;
+    sumsum = exp(sum * 0.1151292546497) * gain / (2048 * 4096);
 
     for (i=0; i < 5; i++)
         buffer[i] = codetable[cb_coef][i] * sumsum;
 
-    sum = scalar_product_float(buffer, buffer, 5) / 5;
+    sum = (4096 * 4096) * scalar_product_float(buffer, buffer, 5) / 5;
 
     sum = FFMAX(sum, 1);
 
@@ -118,7 +118,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 
     /* output */
     for (i=0; i < 5; i++)
-        block[i] = av_clipf(block[i], -4095, 4095);
+        block[i] = av_clipf(block[i], -4095./4096., 4095./4096.);
 }
 
 /**
@@ -210,7 +210,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         decode(ractx, gain, cb_coef);
 
         for (j=0; j < 5; j++)
-            *(out++) = (1/4096.) * ractx->sp_hist[70 + 36 + j];
+            *(out++) = ractx->sp_hist[70 + 36 + j];
 
         if ((i & 7) == 3)
             backward_filter(ractx);
