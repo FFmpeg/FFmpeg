@@ -3925,6 +3925,15 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     if(h->slice_type_nos!=FF_I_TYPE && decode_ref_pic_list_reordering(h) < 0)
         return -1;
 
+    if(h->slice_type_nos!=FF_I_TYPE){
+        s->last_picture_ptr= &h->ref_list[0][0];
+        copy_picture(&s->last_picture, s->last_picture_ptr);
+    }
+    if(h->slice_type_nos==FF_B_TYPE){
+        s->next_picture_ptr= &h->ref_list[1][0];
+        copy_picture(&s->next_picture, s->next_picture_ptr);
+    }
+
     if(   (h->pps.weighted_pred          && h->slice_type_nos == FF_P_TYPE )
        ||  (h->pps.weighted_bipred_idc==1 && h->slice_type_nos== FF_B_TYPE ) )
         pred_weight_table(h);
