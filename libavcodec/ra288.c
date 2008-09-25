@@ -96,12 +96,12 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 
     /* block 48 of G.728 spec */
     /* exp(sum * 0.1151292546497) == pow(10.0,sum/20) */
-    sumsum = exp(sum * 0.1151292546497) * gain / (2048 * 4096);
+    sumsum = exp(sum * 0.1151292546497) * gain * (1.0/(1<<23));
 
     for (i=0; i < 5; i++)
         buffer[i] = codetable[cb_coef][i] * sumsum;
 
-    sum = (4096 * 4096) * scalar_product_float(buffer, buffer, 5) / 5;
+    sum = scalar_product_float(buffer, buffer, 5) * ((1<<24)/5.);
 
     sum = FFMAX(sum, 1);
 
