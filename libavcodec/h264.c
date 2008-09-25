@@ -2034,12 +2034,6 @@ static void free_tables(H264Context *h){
     av_freep(&h->mb2b_xy);
     av_freep(&h->mb2b8_xy);
 
-    for(i = 0; i < MAX_SPS_COUNT; i++)
-        av_freep(h->sps_buffers + i);
-
-    for(i = 0; i < MAX_PPS_COUNT; i++)
-        av_freep(h->pps_buffers + i);
-
     for(i = 0; i < h->s.avctx->thread_count; i++) {
         hx = h->thread_context[i];
         if(!hx) continue;
@@ -7920,10 +7914,18 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     H264Context *h = avctx->priv_data;
     MpegEncContext *s = &h->s;
+    int i;
 
     av_freep(&h->rbsp_buffer[0]);
     av_freep(&h->rbsp_buffer[1]);
     free_tables(h); //FIXME cleanup init stuff perhaps
+
+    for(i = 0; i < MAX_SPS_COUNT; i++)
+        av_freep(h->sps_buffers + i);
+
+    for(i = 0; i < MAX_PPS_COUNT; i++)
+        av_freep(h->pps_buffers + i);
+
     MPV_common_end(s);
 
 //    memset(h, 0, sizeof(H264Context));
