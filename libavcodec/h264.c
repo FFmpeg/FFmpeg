@@ -6383,8 +6383,10 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                 if( IS_INTRA( s->current_picture.mb_type[mbn_xy] ) )
                     bS[i] = 4;
                 else if( h->non_zero_count_cache[12+8*(i>>1)] != 0 ||
-                         /* FIXME: with 8x8dct + cavlc, should check cbp instead of nnz */
-                         h->non_zero_count[mbn_xy][MB_FIELD ? i&3 : (i>>2)+(mb_y&1)*2] )
+                         ((!h->pps.cabac && IS_8x8DCT(s->current_picture.mb_type[mbn_xy])) ?
+                            (h->cbp_table[mbn_xy] & ((MB_FIELD ? (i&2) : (mb_y&1)) ? 8 : 2))
+                                                                       :
+                            h->non_zero_count[mbn_xy][MB_FIELD ? i&3 : (i>>2)+(mb_y&1)*2]))
                     bS[i] = 2;
                 else
                     bS[i] = 1;
