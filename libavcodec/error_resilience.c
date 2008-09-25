@@ -551,7 +551,7 @@ score_sum+= best_score;
 static int is_intra_more_likely(MpegEncContext *s){
     int is_intra_likely, i, j, undamaged_count, skip_amount, mb_x, mb_y;
 
-    if(s->last_picture_ptr==NULL) return 1; //no previous frame available -> use spatial prediction
+    if(!s->last_picture_ptr || !s->last_picture_ptr->data[0]) return 1; //no previous frame available -> use spatial prediction
 
     undamaged_count=0;
     for(i=0; i<s->mb_num; i++){
