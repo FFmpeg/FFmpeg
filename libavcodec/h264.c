@@ -2391,7 +2391,7 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_c
         deblock_top  = h->slice_table[mb_xy] == h->slice_table[h->top_mb_xy];
     } else {
         deblock_left = (s->mb_x > 0);
-        deblock_top =  (s->mb_y > 0);
+        deblock_top =  (s->mb_y > !!MB_FIELD);
     }
 
     src_y  -=   linesize + 1;
