@@ -43,42 +43,6 @@
 
 #define BI_RGB                      0
 
-typedef struct videohdr_tag {
-    LPBYTE      lpData;
-    DWORD       dwBufferLength;
-    DWORD       dwBytesUsed;
-    DWORD       dwTimeCaptured;
-    DWORD       dwUser;
-    DWORD       dwFlags;
-    DWORD_PTR   dwReserved[4];
-} VIDEOHDR, NEAR *PVIDEOHDR, FAR * LPVIDEOHDR;
-
-typedef struct {
-    DWORD dwRequestMicroSecPerFrame;
-    BOOL  fMakeUserHitOKToCapture;
-    UINT  wPercentDropForError;
-    BOOL  fYield;
-    DWORD dwIndexSize;
-    UINT  wChunkGranularity;
-    BOOL  fUsingDOSMemory;
-    UINT  wNumVideoRequested;
-    BOOL  fCaptureAudio;
-    UINT  wNumAudioRequested;
-    UINT  vKeyAbort;
-    BOOL  fAbortLeftMouse;
-    BOOL  fAbortRightMouse;
-    BOOL  fLimitEnabled;
-    UINT  wTimeLimit;
-    BOOL  fMCIControl;
-    BOOL  fStepMCIDevice;
-    DWORD dwMCIStartTime;
-    DWORD dwMCIStopTime;
-    BOOL  fStepCaptureAt2x;
-    UINT  wStepCaptureAverageFrames;
-    DWORD dwAudioBufferSize;
-    BOOL  fDisableWriteCache;
-    UINT  AVStreamMaster;
-} CAPTUREPARMS;
 /* End of missing MinGW defines */
 
 struct vfw_ctx {
