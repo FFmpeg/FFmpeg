@@ -116,6 +116,7 @@ show_help(){
   echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
   echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
   echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
+  echo "  --extra-version=STRING   version string suffix []"
   echo "  --build-suffix=SUFFIX    suffix for application specific build []"
   echo "  --arch=ARCH              select architecture  [$arch]"
   echo "  --cpu=CPU                selects the minimum cpu required (affects"
@@ -823,6 +824,7 @@ CMDLINE_SET="
     cc
     cpu
     cross_prefix
+    extra_version
     logfile
     source_path
     target_os
@@ -1953,6 +1955,9 @@ echo "ARCH                      $arch ($cpu)"
 if test "$build_suffix" != ""; then
     echo "build suffix              $build_suffix"
 fi
+if test "$extra_version" != ""; then
+    echo "version string suffix     $extra_version"
+fi
 echo "big-endian                ${bigendian-no}"
 if test $arch = "x86_32" -o $arch = "x86_64"; then
     echo "yasm                      ${yasm-no}"
@@ -2083,6 +2088,7 @@ echo "LIBNAME=$LIBNAME" >> config.mak
 echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=$SLIBSUF" >> config.mak
 echo "EXESUF=$EXESUF" >> config.mak
+echo "EXTRA_VERSION=$extra_version" >> config.mak
 echo "DEPEND_CMD=$DEPEND_CMD" >> config.mak
 
 if enabled bigendian; then
