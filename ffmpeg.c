@@ -48,6 +48,10 @@
 #include <windows.h>
 #endif
 
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+
 #if defined(HAVE_TERMIOS_H)
 #include <fcntl.h>
 #include <sys/ioctl.h>
