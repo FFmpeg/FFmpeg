@@ -409,7 +409,7 @@ AVOutputFormat image2_muxer = {
     img_write_header,
     img_write_packet,
     NULL,
-    AVFMT_NOFILE,
+    .flags= AVFMT_NOTIMESTAMPS | AVFMT_NOFILE
 };
 #endif
 #ifdef CONFIG_IMAGE2PIPE_MUXER
@@ -423,5 +423,6 @@ AVOutputFormat image2pipe_muxer = {
     CODEC_ID_MJPEG,
     img_write_header,
     img_write_packet,
+    .flags= AVFMT_NOTIMESTAMPS
 };
 #endif
