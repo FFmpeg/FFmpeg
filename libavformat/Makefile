@@ -22,6 +22,7 @@ OBJS-$(CONFIG_ASF_DEMUXER)               += asf.o asfcrypt.o riff.o
 OBJS-$(CONFIG_ASF_MUXER)                 += asf-enc.o riff.o
 OBJS-$(CONFIG_ASF_STREAM_MUXER)          += asf-enc.o riff.o
 OBJS-$(CONFIG_ASS_DEMUXER)               += assdec.o
+OBJS-$(CONFIG_ASS_MUXER)                 += assenc.o
 OBJS-$(CONFIG_AU_DEMUXER)                += au.o raw.o
 OBJS-$(CONFIG_AU_MUXER)                  += au.o
 OBJS-$(CONFIG_AVI_DEMUXER)               += avidec.o riff.o
