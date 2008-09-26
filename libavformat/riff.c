@@ -189,6 +189,7 @@ const AVCodecTag codec_wav_tags[] = {
     { CODEC_ID_ADPCM_IMA_DK3,   0x0062 },  /* rogue format number */
     { CODEC_ID_VOXWARE,         0x0075 },
     { CODEC_ID_AAC,             0x00ff },
+    { CODEC_ID_SIPR,            0x0130 },
     { CODEC_ID_WMAV1,           0x0160 },
     { CODEC_ID_WMAV2,           0x0161 },
     { CODEC_ID_WMAPRO,          0x0162 },

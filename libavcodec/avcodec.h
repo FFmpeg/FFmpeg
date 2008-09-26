@@ -304,6 +304,7 @@ enum CodecID {
     CODEC_ID_WMALOSSLESS,
     CODEC_ID_ATRAC3P,
     CODEC_ID_EAC3,
+    CODEC_ID_SIPR,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
