@@ -158,28 +158,18 @@ static void do_hybrid_window(int order, int n, int non_rec, float *out,
 /**
  * Backward synthesis filter, find the LPC coefficients from past speech data.
  */
-static void backward_filter(RA288Context *ractx)
+static void backward_filter(float *hist, float *rec, const float *window,
+                            float *lpc, const float *tab,
+                            int order, int n, int non_rec, int move_size)
 {
-    float temp1[37]; // RTMP in the spec
-    float temp2[11]; // GPTPMP in the spec
+    float temp[order+1];
 
-    do_hybrid_window(36, 40, 35, temp1, ractx->sp_hist,
-                     ractx->sp_rec, syn_window);
+    do_hybrid_window(order, n, non_rec, temp, hist, rec, window);
 
-    if (!compute_lpc_coefs(temp1, 36, ractx->sp_lpc, 0, 1, 1))
-        apply_window(ractx->sp_lpc, ractx->sp_lpc, syn_bw_tab, 36);
+    if (!compute_lpc_coefs(temp, order, lpc, 0, 1, 1))
+        apply_window(lpc, lpc, tab, order);
 
-    do_hybrid_window(10, 8, 20, temp2, ractx->gain_hist,
-                     ractx->gain_rec, gain_window);
-
-    if (!compute_lpc_coefs(temp2, 10, ractx->gain_lpc, 0, 1, 1))
-        apply_window(ractx->gain_lpc, ractx->gain_lpc, gain_bw_tab, 10);
-
-    memmove(ractx->gain_hist, ractx->gain_hist + 8,
-                                 28*sizeof(*ractx->gain_hist));
-
-    memmove(ractx->sp_hist  , ractx->sp_hist   + 40,
-                                 70*sizeof(*ractx->sp_hist  ));
+    memmove(hist, hist + n, move_size*sizeof(*hist));
 }
 
 static int ra288_decode_frame(AVCodecContext * avctx, void *data,
@@ -212,8 +202,13 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         for (j=0; j < 5; j++)
             *(out++) = ractx->sp_hist[70 + 36 + j];
 
-        if ((i & 7) == 3)
-            backward_filter(ractx);
+        if ((i & 7) == 3) {
+            backward_filter(ractx->sp_hist, ractx->sp_rec, syn_window,
+                            ractx->sp_lpc, syn_bw_tab, 36, 40, 35, 70);
+
+            backward_filter(ractx->gain_hist, ractx->gain_rec, gain_window,
+                            ractx->gain_lpc, gain_bw_tab, 10, 8, 20, 28);
+        }
     }
 
     *data_size = (char *)out - (char *)data;
