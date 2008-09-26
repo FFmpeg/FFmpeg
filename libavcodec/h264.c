@@ -960,7 +960,7 @@ static inline void direct_ref_list_init(H264Context * const h){
     MpegEncContext * const s = &h->s;
     Picture * const ref1 = &h->ref_list[1][0];
     Picture * const cur = s->current_picture_ptr;
-    int list, j, field, rfield;
+    int list, j, field;
     int sidx= (s->picture_structure&1)^1;
     int ref1sidx= (ref1->reference&1)^1;
 
