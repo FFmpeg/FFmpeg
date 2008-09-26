@@ -127,7 +127,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             }
 
             rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
-        } else if ((!strcmp(buf, "cook")) || (!strcmp(buf, "atrc"))) {
+        } else if ((!strcmp(buf, "cook")) || (!strcmp(buf, "atrc")) || (!strcmp(buf, "sipr"))) {
             int codecdata_length, i;
             get_be16(pb); get_byte(pb);
             if (((version >> 16) & 0xff) == 5)
@@ -139,6 +139,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             }
 
             if (!strcmp(buf, "cook")) st->codec->codec_id = CODEC_ID_COOK;
+            else if (!strcmp(buf, "sipr")) st->codec->codec_id = CODEC_ID_SIPR;
             else st->codec->codec_id = CODEC_ID_ATRAC3;
             st->codec->extradata_size= codecdata_length;
             st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -557,7 +558,8 @@ ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len, AVPacket *pkt,
     } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
         if ((st->codec->codec_id == CODEC_ID_RA_288) ||
             (st->codec->codec_id == CODEC_ID_COOK) ||
-            (st->codec->codec_id == CODEC_ID_ATRAC3)) {
+            (st->codec->codec_id == CODEC_ID_ATRAC3) ||
+            (st->codec->codec_id == CODEC_ID_SIPR)) {
             int x;
             int sps = rm->sub_packet_size;
             int cfs = rm->coded_framesize;
