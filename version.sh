@@ -15,7 +15,7 @@ fi
 # no version number found
 test $revision || revision=UNKNOWN
 
-test "$3" && revision=$revision-$3
+test -n "$3" && revision=$revision-$3
 
 NEW_REVISION="#define FFMPEG_VERSION \"$revision\""
 OLD_REVISION=`cat version.h 2> /dev/null`
