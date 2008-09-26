@@ -140,7 +140,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         ass->event[i]= p;
         while(*p && *p != '\n')
             p++;
-        *p++ = 0;
+        p++;
     }
 
     qsort(ass->event, ass->event_count, sizeof(*ass->event), event_cmp);
@@ -156,14 +156,15 @@ fail:
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ASSContext *ass = s->priv_data;
-    uint8_t *p;
+    uint8_t *p, *end;
 
     if(ass->event_index >= ass->event_count)
         return AVERROR(EIO);
 
     p= ass->event[ ass->event_index ];
 
-    av_new_packet(pkt, strlen(p));
+    end= strchr(p, '\n');
+    av_new_packet(pkt, end ? end-p+1 : strlen(p));
     pkt->flags |= PKT_FLAG_KEY;
     pkt->pos= p - ass->event_buffer + s->streams[0]->codec->extradata_size;
     pkt->pts= pkt->dts= get_pts(p);
