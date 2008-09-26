@@ -1381,7 +1381,7 @@ disabled static && LIBNAME=""
 
 if enabled_any libfaad libfaadbin ; then
     if check_header faad.h; then
-        check_cc << EOF
+        check_cc <<EOF
 #include <faad.h>
 #ifndef FAAD2_VERSION
 ok faad1
@@ -2158,7 +2158,7 @@ echo "BUILD_ROOT=\"$PWD\"" >> config.mak
 # Apparently it's not possible to portably echo a backslash.
 enabled asmalign_pot &&
     printf '#define ASMALIGN(ZEROBITS) ".align " #ZEROBITS "\\n\\t"\n' >> $TMPH ||
-    printf '#define ASMALIGN(ZEROBITS) ".align 1<<" #ZEROBITS "\\n\\t"\n' >> $TMPH
+    printf '#define ASMALIGN(ZEROBITS) ".align 1 << " #ZEROBITS "\\n\\t"\n' >> $TMPH
 
 echo "#define EXTERN_PREFIX \"${extern_prefix}\"" >> $TMPH
 
