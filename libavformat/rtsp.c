@@ -26,7 +26,9 @@
 #include "avformat.h"
 
 #include <sys/time.h>
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
 #include <strings.h>
 #include "network.h"
 #include "rtsp.h"

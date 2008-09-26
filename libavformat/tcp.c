@@ -22,7 +22,9 @@
 #include <unistd.h>
 #include "network.h"
 #include "os_support.h"
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
 #include <sys/time.h>
 
 typedef struct TCPContext {
