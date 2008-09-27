@@ -289,8 +289,12 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
                  (s->h_count[2] << 12) | (s->v_count[2] <<  8) |
                  (s->h_count[3] <<  4) |  s->v_count[3];
     av_log(s->avctx, AV_LOG_DEBUG, "pix fmt id %x\n", pix_fmt_id);
+    if(!(pix_fmt_id & 0x10101010))
+        pix_fmt_id-= (pix_fmt_id & 0xF0F0F0F0)>>1;
+    if(!(pix_fmt_id & 0x01010101))
+        pix_fmt_id-= (pix_fmt_id & 0x0F0F0F0F)>>1;
+
     switch(pix_fmt_id){
-    case 0x22222200:
     case 0x11111100:
         if(s->rgb){
             s->avctx->pix_fmt = PIX_FMT_RGB32;
@@ -306,7 +310,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV440P : PIX_FMT_YUVJ440P;
         break;
     case 0x21111100:
-    case 0x22121200:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV422P : PIX_FMT_YUVJ422P;
         break;
     case 0x22111100:
