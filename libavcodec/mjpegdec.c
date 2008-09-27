@@ -284,13 +284,14 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         return 0;
 
     /* XXX: not complete test ! */
-    pix_fmt_id = (s->h_count[0] << 20) | (s->v_count[0] << 16) |
-                 (s->h_count[1] << 12) | (s->v_count[1] <<  8) |
-                 (s->h_count[2] <<  4) |  s->v_count[2];
+    pix_fmt_id = (s->h_count[0] << 28) | (s->v_count[0] << 24) |
+                 (s->h_count[1] << 20) | (s->v_count[1] << 16) |
+                 (s->h_count[2] << 12) | (s->v_count[2] <<  8) |
+                 (s->h_count[3] <<  4) |  s->v_count[3];
     av_log(s->avctx, AV_LOG_DEBUG, "pix fmt id %x\n", pix_fmt_id);
     switch(pix_fmt_id){
-    case 0x222222:
-    case 0x111111:
+    case 0x22222200:
+    case 0x11111100:
         if(s->rgb){
             s->avctx->pix_fmt = PIX_FMT_RGB32;
         }else if(s->nb_components==3)
@@ -298,17 +299,17 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             s->avctx->pix_fmt = PIX_FMT_GRAY8;
         break;
-    case 0x110000:
+    case 0x11000000:
         s->avctx->pix_fmt = PIX_FMT_GRAY8;
         break;
-    case 0x121111:
+    case 0x12111100:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV440P : PIX_FMT_YUVJ440P;
         break;
-    case 0x211111:
-    case 0x221212:
+    case 0x21111100:
+    case 0x22121200:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV422P : PIX_FMT_YUVJ422P;
         break;
-    case 0x221111:
+    case 0x22111100:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV420P : PIX_FMT_YUVJ420P;
         break;
     default:
