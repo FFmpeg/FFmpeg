@@ -37,7 +37,7 @@ static void get_line(ByteIOContext *s, char *buf, int maxlen)
 
     do{
         c = get_byte(s);
-        if (i < maxlen-1 && c != '\r')
+        if (i < maxlen-1)
             buf[i++] = c;
     }while(c != '\n' && c);
 
