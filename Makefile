@@ -75,6 +75,8 @@ tools/%$(EXESUF): tools/%.c
 
 ffplay.o ffplay.d: CFLAGS += $(SDL_CFLAGS)
 
+alltools: $(addsuffix $(EXESUF),$(addprefix tools/, cws2fws pktdumper qt-faststart trasher))
+
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
 
 BASEHOOKS = fish null watermark
@@ -329,6 +331,6 @@ tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
-.PHONY: lib videohook documentation *test regtest-* swscale-error
+.PHONY: lib videohook documentation *test regtest-* swscale-error alltools
 
 -include $(VHOOK_DEPS)
