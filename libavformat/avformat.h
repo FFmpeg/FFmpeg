@@ -1034,6 +1034,7 @@ attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
  */
 int64_t parse_date(const char *datestr, int duration);
 
+/** Gets the current time in microseconds. */
 int64_t av_gettime(void);
 
 /* ffm specific for ffserver */

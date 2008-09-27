@@ -2853,9 +2853,6 @@ int parse_frame_rate(int *frame_rate_num, int *frame_rate_den, const char *arg)
     return ret;
 }
 
-/**
- * Gets the current time in microseconds.
- */
 int64_t av_gettime(void)
 {
     struct timeval tv;
