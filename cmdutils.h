@@ -34,6 +34,17 @@ extern const char program_name[];
  */
 extern const int program_birth_year;
 
+extern const char **opt_names;
+extern AVCodecContext *avctx_opts[CODEC_TYPE_NB];
+extern AVFormatContext *avformat_opts;
+extern struct SwsContext *sws_opts;
+
+/**
+ * Fallback for options that are not explixitly handled, these will be
+ * parsed through AVOptions.
+ */
+int opt_default(const char *opt, const char *arg);
+
 /**
  * Parses a string and returns its corresponding value as a double.
  * Exits from the application if the string cannot be correctly
@@ -105,6 +116,8 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
  */
 void parse_options(int argc, char **argv, const OptionDef *options,
                    void (* parse_arg_function)(const char*));
+
+void set_context_opts(void *ctx, void *opts_ctx, int flags);
 
 void print_error(const char *filename, int err);
 
