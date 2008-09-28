@@ -205,6 +205,7 @@ typedef struct {
     /* the packet queue */
     AVPacket **packets;
     int num_packets;
+    AVPacket *prev_pkt;
 
     int done;
     int has_cluster_id;
@@ -964,6 +965,15 @@ static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
     }
 }
 
+static void matroska_merge_packets(AVPacket *out, AVPacket *in)
+{
+    out->data = av_realloc(out->data, out->size+in->size);
+    memcpy(out->data+out->size, in->data, in->size);
+    out->size += in->size;
+    av_destruct_packet(in);
+    av_free(in);
+}
+
 static void matroska_convert_tags(AVFormatContext *s, EbmlList *list)
 {
     MatroskaTag *tags = list->elem;
@@ -1629,7 +1639,14 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 if (st->codec->codec_id == CODEC_ID_SSA)
                     matroska_fix_ass_packet(matroska, pkt, duration);
 
+                if (matroska->prev_pkt &&
+                    matroska->prev_pkt->pts == timecode &&
+                    matroska->prev_pkt->stream_index == st->index)
+                    matroska_merge_packets(matroska->prev_pkt, pkt);
+                else {
                 dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
+                    matroska->prev_pkt = pkt;
+                }
             }
 
             if (timecode != AV_NOPTS_VALUE)
@@ -1649,6 +1666,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     MatroskaBlock *blocks;
     int i, res;
     offset_t pos = url_ftell(matroska->ctx->pb);
+    matroska->prev_pkt = NULL;
     if (matroska->has_cluster_id){
         /* For the first cluster we parse, its ID was already read as
            part of matroska_read_header(), so don't read it again */
