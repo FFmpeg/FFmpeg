@@ -956,7 +956,7 @@ static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
         len = 50 + end-ptr + FF_INPUT_BUFFER_PADDING_SIZE;
         if (!(line = av_malloc(len)))
             return;
-        snprintf(line,len,"Dialogue: %s,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%s",
+        snprintf(line,len,"Dialogue: %s,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%s\r\n",
                  layer, sh, sm, ss, sc, eh, em, es, ec, ptr);
         av_free(pkt->data);
         pkt->data = line;
