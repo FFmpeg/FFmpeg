@@ -2251,7 +2251,7 @@ cat <<EOF > $name/$name-uninstalled.pc
 prefix=
 exec_prefix=
 libdir=\${pcfiledir}
-includedir=\${pcfiledir}/..
+includedir=${source_path}
 
 Name: $name
 Description: $comment
