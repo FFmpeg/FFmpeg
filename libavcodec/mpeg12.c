@@ -1501,13 +1501,28 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
     }
 }
 
-static void mpeg_decode_picture_coding_extension(MpegEncContext *s)
+static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
 {
+    MpegEncContext *s= &s1->mpeg_enc_ctx;
+
     s->full_pel[0] = s->full_pel[1] = 0;
     s->mpeg_f_code[0][0] = get_bits(&s->gb, 4);
     s->mpeg_f_code[0][1] = get_bits(&s->gb, 4);
     s->mpeg_f_code[1][0] = get_bits(&s->gb, 4);
     s->mpeg_f_code[1][1] = get_bits(&s->gb, 4);
+    if(!s->pict_type && s1->mpeg_enc_ctx_allocated){
+        av_log(s->avctx, AV_LOG_ERROR, "Missing picture start code, guessing missing values\n");
+        if(s->mpeg_f_code[1][0] == 15 && s->mpeg_f_code[1][1]==15){
+            if(s->mpeg_f_code[0][0] == 15 && s->mpeg_f_code[0][1] == 15)
+                s->pict_type= FF_I_TYPE;
+            else
+                s->pict_type= FF_P_TYPE;
+        }else
+            s->pict_type= FF_B_TYPE;
+        s->current_picture.pict_type= s->pict_type;
+        s->current_picture.key_frame= s->pict_type == FF_I_TYPE;
+        s->first_slice= 1;
+    }
     s->intra_dc_precision = get_bits(&s->gb, 2);
     s->picture_structure = get_bits(&s->gb, 2);
     s->top_field_first = get_bits1(&s->gb);
@@ -1573,7 +1588,7 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
         mpeg_decode_picture_display_extension(s1);
         break;
     case 0x8:
-        mpeg_decode_picture_coding_extension(s);
+        mpeg_decode_picture_coding_extension(s1);
         break;
     }
 }
@@ -2293,6 +2308,7 @@ static int decode_chunks(AVCodecContext *avctx,
                         *data_size = sizeof(AVPicture);
                 }
             }
+            s2->pict_type= 0;
             return FFMAX(0, buf_ptr - buf - s2->parse_context.last_index);
         }
 
@@ -2311,8 +2327,9 @@ static int decode_chunks(AVCodecContext *avctx,
 
         case PICTURE_START_CODE:
             /* we have a complete image: we try to decompress it */
-            mpeg1_decode_picture(avctx,
-                                    buf_ptr, input_size);
+            if(mpeg1_decode_picture(avctx,
+                                    buf_ptr, input_size) < 0)
+                s2->pict_type=0;
             break;
         case EXT_START_CODE:
             mpeg_decode_extension(avctx,
@@ -2354,6 +2371,11 @@ static int decode_chunks(AVCodecContext *avctx,
                 if(s2->codec_id == CODEC_ID_MPEG2VIDEO){
                     if(mb_y < avctx->skip_top || mb_y >= s2->mb_height - avctx->skip_bottom)
                         break;
+                }
+
+                if(!s2->pict_type){
+                    av_log(avctx, AV_LOG_ERROR, "Missing picture start code\n");
+                    break;
                 }
 
                 if(s2->first_slice){
