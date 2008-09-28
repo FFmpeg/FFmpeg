@@ -934,7 +934,7 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
 }
 
 static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
-                                    AVPacket *pkt)
+                                    AVPacket *pkt, uint64_t display_duration)
 {
     char *line, *layer, *ptr = pkt->data, *end = ptr+pkt->size;
     for (; *ptr!=',' && ptr<end-1; ptr++);
@@ -942,7 +942,7 @@ static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
         layer = ++ptr;
     for (; *ptr!=',' && ptr<end-1; ptr++);
     if (*ptr == ',') {
-        int64_t end_pts = pkt->pts + pkt->convergence_duration;
+        int64_t end_pts = pkt->pts + display_duration;
         int sc = matroska->time_scale * pkt->pts / 10000000;
         int ec = matroska->time_scale * end_pts  / 10000000;
         int sh, sm, ss, eh, em, es, len;
@@ -1627,7 +1627,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     pkt->duration = duration;
 
                 if (st->codec->codec_id == CODEC_ID_SSA)
-                    matroska_fix_ass_packet(matroska, pkt);
+                    matroska_fix_ass_packet(matroska, pkt, duration);
 
                 dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
             }
