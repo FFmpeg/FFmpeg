@@ -2104,7 +2104,7 @@ typedef struct AVCodecContext {
 #define X264_PART_B8X8 0x100  /* Analyze b16x8, b8x16 and b8x8 */
 
     /**
-     * direct MV prediction mode - 0 (none), 1 (spatial), 2 (temporal)
+     * direct MV prediction mode - 0 (none), 1 (spatial), 2 (temporal), 3 (auto)
      * - encoding: Set by user.
      * - decoding: unused
      */
