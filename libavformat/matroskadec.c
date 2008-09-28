@@ -1621,9 +1621,9 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
 
                 pkt->pts = timecode;
                 pkt->pos = pos;
-                if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE)
+                if (st->codec->codec_id == CODEC_ID_TEXT)
                     pkt->convergence_duration = duration;
-                else
+                else if (track->type != MATROSKA_TRACK_TYPE_SUBTITLE)
                     pkt->duration = duration;
 
                 if (st->codec->codec_id == CODEC_ID_SSA)
