@@ -3732,7 +3732,7 @@ static void load_module(const char *filename)
 }
 #endif
 
-static int opt_default(const char *opt, const char *arg,
+static int ffserver_opt_default(const char *opt, const char *arg,
                        AVCodecContext *avctx, int type)
 {
     const AVOption *o  = NULL;
@@ -4179,7 +4179,7 @@ static int parse_ffconfig(const char *filename)
                 avctx = &audio_enc;
                 type = AV_OPT_FLAG_AUDIO_PARAM;
             }
-            if (opt_default(arg, arg2, avctx, type|AV_OPT_FLAG_ENCODING_PARAM)) {
+            if (ffserver_opt_default(arg, arg2, avctx, type|AV_OPT_FLAG_ENCODING_PARAM)) {
                 fprintf(stderr, "AVOption error: %s %s\n", arg, arg2);
                 errors++;
             }
