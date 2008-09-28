@@ -27,6 +27,7 @@
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
 #include "libavcodec/audioconvert.h"
+#include "libavcodec/opt.h"
 
 #include "cmdutils.h"
 
@@ -1267,6 +1268,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
         pict.linesize[0] = vp->bmp->pitches[0];
         pict.linesize[1] = vp->bmp->pitches[2];
         pict.linesize[2] = vp->bmp->pitches[1];
+        sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
         img_convert_ctx = sws_getCachedContext(img_convert_ctx,
             is->video_st->codec->width, is->video_st->codec->height,
             is->video_st->codec->pix_fmt,
@@ -1736,6 +1738,9 @@ static int stream_component_open(VideoState *is, int stream_index)
     enc->skip_loop_filter= skip_loop_filter;
     enc->error_recognition= error_recognition;
     enc->error_concealment= error_concealment;
+
+    set_context_opts(enc, avctx_opts[enc->codec_type], 0);
+
     if (!codec ||
         avcodec_open(enc, codec) < 0)
         return -1;
@@ -2493,6 +2498,7 @@ static const OptionDef options[] = {
     { "ec", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_concealment}, "set error concealment options",  "bit_mask" },
     { "sync", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
     { "threads", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
+    { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
 };
 
@@ -2529,12 +2535,18 @@ static void opt_input_file(const char *filename)
 /* Called from the main */
 int main(int argc, char **argv)
 {
-    int flags;
+    int flags, i;
 
     /* register all codecs, demux and protocols */
     avcodec_register_all();
     avdevice_register_all();
     av_register_all();
+
+    for(i=0; i<CODEC_TYPE_NB; i++){
+        avctx_opts[i]= avcodec_alloc_context2(i);
+    }
+    avformat_opts = av_alloc_format_context();
+    sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
 
     show_banner();
 
