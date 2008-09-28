@@ -212,6 +212,7 @@ static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 static int input_sync;
 static uint64_t limit_filesize = 0; //
+static int force_fps = 0;
 
 static int pgmyuv_compatibility_hack=0;
 static float dts_delta_threshold = 10;
@@ -3041,23 +3042,10 @@ static void new_video_stream(AVFormatContext *oc)
 
         set_context_opts(video_enc, avctx_opts[CODEC_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
 
+        if (codec && codec->supported_framerates && !force_fps)
+            fps = codec->supported_framerates[av_find_nearest_q_idx(fps, codec->supported_framerates)];
         video_enc->time_base.den = fps.num;
         video_enc->time_base.num = fps.den;
-        if(codec && codec->supported_framerates){
-            const AVRational *p= codec->supported_framerates;
-            const AVRational *best=NULL;
-            AVRational best_error= (AVRational){INT_MAX, 1};
-            for(; p->den!=0; p++){
-                AVRational error= av_sub_q(fps, *p);
-                if(error.num <0) error.num *= -1;
-                if(av_cmp_q(error, best_error) < 0){
-                    best_error= error;
-                    best= p;
-                }
-            }
-            video_enc->time_base.den= best->num;
-            video_enc->time_base.num= best->den;
-        }
 
         video_enc->width = frame_width + frame_padright + frame_padleft;
         video_enc->height = frame_height + frame_padtop + frame_padbottom;
@@ -3862,6 +3850,7 @@ static const OptionDef options[] = {
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "newvideo", OPT_VIDEO, {(void*)opt_new_video_stream}, "add a new video stream to the current output stream" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
+    { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&force_fps}, "force the selected framerate, disable the best supported framerate selection" },
 
     /* audio options */
     { "ab", OPT_FUNC2 | HAS_ARG | OPT_AUDIO, {(void*)opt_bitrate}, "set bitrate (in bits/s)", "bitrate" },
