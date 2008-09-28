@@ -2972,6 +2972,7 @@ static void new_video_stream(AVFormatContext *oc)
     if (video_stream_copy) {
         st->stream_copy = 1;
         video_enc->codec_type = CODEC_TYPE_VIDEO;
+        video_enc->sample_aspect_ratio =
         st->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 255);
     } else {
         const char *p;
