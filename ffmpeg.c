@@ -3740,6 +3740,9 @@ static int opt_preset(const char *opt, const char *arg)
             f= fopen(tmp, "r");
         }
     }
+    if(!f && ((arg[0]=='.' && arg[1]=='/') || arg[0]=='/')){
+        f= fopen(arg, "r");
+    }
 
     if(!f){
         fprintf(stderr, "Preset file not found\n");
