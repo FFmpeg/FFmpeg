@@ -49,7 +49,6 @@
  * Define one or more of the following compile-time variables to 1 to obtain
  * elaborate information about certain aspects of the decoding process.
  *
- * KEYFRAMES_ONLY: set this to 1 to only see keyframes (VP3 slideshow mode)
  * DEBUG_VP3: high-level decoding flow
  * DEBUG_INIT: initialization parameters
  * DEBUG_DEQUANTIZERS: display how the dequanization tables are built
@@ -61,8 +60,6 @@
  * DEBUG_DC_PRED: display the process of reversing DC prediction
  * DEBUG_IDCT: show every detail of the IDCT process
  */
-
-#define KEYFRAMES_ONLY 0
 
 #define DEBUG_VP3 0
 #define DEBUG_INIT 0
@@ -2176,6 +2173,9 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         init_loop_filter(s);
     }
 
+    if (avctx->skip_frame >= AVDISCARD_NONKEY && !s->keyframe)
+        return buf_size;
+
     if (s->keyframe) {
         if (!s->theora)
         {
@@ -2242,19 +2242,6 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     init_frame(s, &gb);
 
-#if KEYFRAMES_ONLY
-if (!s->keyframe) {
-
-    memcpy(s->current_frame.data[0], s->golden_frame.data[0],
-        s->current_frame.linesize[0] * s->height);
-    memcpy(s->current_frame.data[1], s->golden_frame.data[1],
-        s->current_frame.linesize[1] * s->height / 2);
-    memcpy(s->current_frame.data[2], s->golden_frame.data[2],
-        s->current_frame.linesize[2] * s->height / 2);
-
-} else {
-#endif
-
     if (unpack_superblocks(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_superblocks\n");
         return -1;
@@ -2284,9 +2271,6 @@ if (!s->keyframe) {
         render_slice(s, i);
 
     apply_loop_filter(s);
-#if KEYFRAMES_ONLY
-}
-#endif
 
     *data_size=sizeof(AVFrame);
     *(AVFrame*)data= s->current_frame;
