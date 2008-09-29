@@ -701,6 +701,7 @@ void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][6
                        const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra);
 
 void ff_init_block_index(MpegEncContext *s);
+void copy_picture(Picture *dst, Picture *src);
 
 static inline void ff_update_block_index(MpegEncContext *s){
     const int block_size= 8>>s->avctx->lowres;
