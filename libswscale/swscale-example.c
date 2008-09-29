@@ -154,10 +154,6 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
     return res;
 }
 
-void fast_memcpy(void *a, void *b, int s){ //FIXME
-    memcpy(a, b, s);
-}
-
 static void selfTest(uint8_t *src[3], int stride[3], int w, int h){
     enum PixelFormat srcFormat, dstFormat;
     int srcW, srcH, dstW, dstH;
