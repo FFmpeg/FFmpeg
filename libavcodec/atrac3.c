@@ -778,11 +778,11 @@ static int decodeChannelSoundUnit (ATRAC3Context *q, GetBitContext *gb, channel_
  * @param databuf       the input data
  */
 
-static int decodeFrame(ATRAC3Context *q, uint8_t* databuf)
+static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf)
 {
     int   result, i;
     float   *p1, *p2, *p3, *p4;
-    uint8_t    *ptr1, *ptr2;
+    uint8_t *ptr1;
 
     if (q->codingMode == JOINT_STEREO) {
 
@@ -796,14 +796,20 @@ static int decodeFrame(ATRAC3Context *q, uint8_t* databuf)
 
         /* Framedata of the su2 in the joint-stereo mode is encoded in
          * reverse byte order so we need to swap it first. */
-        ptr1 = databuf;
-        ptr2 = databuf+q->bytes_per_frame-1;
+        if (databuf == q->decoded_bytes_buffer) {
+            uint8_t *ptr2 = q->decoded_bytes_buffer+q->bytes_per_frame-1;
+            ptr1 = q->decoded_bytes_buffer;
         for (i = 0; i < (q->bytes_per_frame/2); i++, ptr1++, ptr2--) {
             FFSWAP(uint8_t,*ptr1,*ptr2);
         }
+        } else {
+            const uint8_t *ptr2 = databuf+q->bytes_per_frame-1;
+            for (i = 0; i < q->bytes_per_frame; i++)
+                q->decoded_bytes_buffer[i] = *ptr2--;
+        }
 
         /* Skip the sync codes (0xF8). */
-        ptr1 = databuf;
+        ptr1 = q->decoded_bytes_buffer;
         for (i = 4; *ptr1 == 0xF8; i++, ptr1++) {
             if (i >= q->bytes_per_frame)
                 return -1;
@@ -875,7 +881,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
             const uint8_t *buf, int buf_size) {
     ATRAC3Context *q = avctx->priv_data;
     int result = 0, i;
-    uint8_t* databuf;
+    const uint8_t* databuf;
     int16_t* samples = data;
 
     if (buf_size < avctx->block_align)
