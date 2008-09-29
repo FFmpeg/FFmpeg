@@ -27,7 +27,7 @@
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/avutil.h"
 #include "swscale.h"
-#include "swscale_internal.h"
+//#include "swscale_internal.h"
 #include "rgb2rgb.h"
 
 static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
@@ -133,14 +133,12 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
     ssdU/= w*h/4;
     ssdV/= w*h/4;
 
-    if (ssdY>100 || ssdU>100 || ssdV>100){
         printf(" %s %dx%d -> %s %4dx%4d flags=%2d SSD=%5lld,%5lld,%5lld\n",
                sws_format_name(srcFormat), srcW, srcH,
                sws_format_name(dstFormat), dstW, dstH,
                flags,
                ssdY, ssdU, ssdV);
         fflush(stdout);
-    }
 
     end:
 
