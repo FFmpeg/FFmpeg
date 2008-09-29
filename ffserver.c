@@ -1367,8 +1367,8 @@ static int http_parse_request(HTTPContext *c)
                       "\r\n"
                       "<html><head><title>Too busy</title></head><body>\r\n"
                       "<p>The server is too busy to serve your request at this time.</p>\r\n"
-                      "<p>The bandwidth being served (including your stream) is %lldkbit/sec, "
-                      "and this exceeds the limit of %lldkbit/sec.</p>\r\n"
+                      "<p>The bandwidth being served (including your stream) is %" PRIu64 "kbit/sec, "
+                      "and this exceeds the limit of %" PRIu64 "kbit/sec.</p>\r\n"
                       "</body></html>\r\n", current_bandwidth, max_bandwidth);
         /* prepare output buffer */
         c->buffer_ptr = c->buffer;
@@ -1860,7 +1860,7 @@ static void compute_status(HTTPContext *c)
     url_fprintf(pb, "Number of connections: %d / %d<BR>\n",
                  nb_connections, nb_max_connections);
 
-    url_fprintf(pb, "Bandwidth in use: %lldk / %lldk<BR>\n",
+    url_fprintf(pb, "Bandwidth in use: %" PRIu64 "k / %" PRIu64 "k<BR>\n",
                  current_bandwidth, max_bandwidth);
 
     url_fprintf(pb, "<TABLE>\n");
