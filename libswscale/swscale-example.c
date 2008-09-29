@@ -133,12 +133,11 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
     ssdU/= w*h/4;
     ssdV/= w*h/4;
 
-        printf(" %s %dx%d -> %s %4dx%4d flags=%2d SSD=%5lld,%5lld,%5lld\n",
-               sws_format_name(srcFormat), srcW, srcH,
-               sws_format_name(dstFormat), dstW, dstH,
-               flags,
-               ssdY, ssdU, ssdV);
-        fflush(stdout);
+    printf(" %s %dx%d -> %s %4dx%4d flags=%2d SSD=%5lld,%5lld,%5lld\n",
+           sws_format_name(srcFormat), srcW, srcH,
+           sws_format_name(dstFormat), dstW, dstH,
+           flags, ssdY, ssdU, ssdV);
+    fflush(stdout);
 
     end:
 
