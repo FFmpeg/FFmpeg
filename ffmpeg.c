@@ -52,7 +52,7 @@
 #include <sys/select.h>
 #endif
 
-#if defined(HAVE_TERMIOS_H)
+#ifdef HAVE_TERMIOS_H
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
