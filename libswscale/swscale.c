@@ -1229,7 +1229,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
                 else if (flags & SWS_SPLINE)
                 {
                     double p=-2.196152422706632;
-                    coeff = getSplineCoeff(1.0, 0.0, p, -p-1.0, d) * fone;
+                    coeff = getSplineCoeff(1.0, 0.0, p, -p-1.0, floatd) * fone;
                 }
                 else {
                     coeff= 0.0; //GCC warning killer
