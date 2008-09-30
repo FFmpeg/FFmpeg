@@ -62,11 +62,12 @@ static const uint8_t corrector_type_0[24] = {
 
 static const uint8_t corrector_type_2[8] = { 9, 7, 6, 8, 5, 4, 3, 2 };
 
-static av_cold void build_modpred(Indeo3DecodeContext *s)
+static av_cold int build_modpred(Indeo3DecodeContext *s)
 {
   int i, j;
 
-  s->ModPred = av_malloc(8 * 128);
+  if (!(s->ModPred = av_malloc(8 * 128)))
+    return AVERROR(ENOMEM);
 
   for (i=0; i < 128; ++i) {
     s->ModPred[i+0*128] = i >  126 ? 254 : 2*(i + 1 - ((i + 1) % 2));
@@ -81,7 +82,8 @@ static av_cold void build_modpred(Indeo3DecodeContext *s)
     s->ModPred[i+7*128] =                  2*(i + 5 - ((i + 4) % 9));
   }
 
-  s->corrector_type = av_malloc(24 * 256);
+  if (!(s->corrector_type = av_malloc(24 * 256)))
+    return AVERROR(ENOMEM);
 
   for (i=0; i < 24; ++i) {
     for (j=0; j < 256; ++j) {
@@ -90,6 +92,8 @@ static av_cold void build_modpred(Indeo3DecodeContext *s)
                                    corrector_type_2[j - 248];
     }
   }
+
+  return 0;
 }
 
 static void iv_Decode_Chunk(Indeo3DecodeContext *s, uint8_t *cur,
@@ -98,7 +102,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s, uint8_t *cur,
   const uint8_t *buf2, int min_width_160);
 
 /* ---------------------------------------------------------------------- */
-static av_cold void iv_alloc_frames(Indeo3DecodeContext *s)
+static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
 {
   int luma_width, luma_height, luma_pixels, chroma_width, chroma_height,
       chroma_pixels, i;
@@ -122,7 +126,7 @@ static av_cold void iv_alloc_frames(Indeo3DecodeContext *s)
     (chroma_pixels + chroma_width) * 4;
 
   if(!(s->iv_frame[0].the_buf = av_malloc(bufsize)))
-    return;
+    return AVERROR(ENOMEM);
   s->iv_frame[0].y_w = s->iv_frame[1].y_w = luma_width;
   s->iv_frame[0].y_h = s->iv_frame[1].y_h = luma_height;
   s->iv_frame[0].uv_w = s->iv_frame[1].uv_w = chroma_width;
@@ -151,6 +155,8 @@ static av_cold void iv_alloc_frames(Indeo3DecodeContext *s)
     s->iv_frame[1].Vbuf[-i] = 0x80;
     s->iv_frame[1].Vbuf[chroma_pixels+i-1] = 0x80;
   }
+
+  return 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1050,16 +1056,19 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 static av_cold int indeo3_decode_init(AVCodecContext *avctx)
 {
     Indeo3DecodeContext *s = avctx->priv_data;
+    int ret = 0;
 
     s->avctx = avctx;
     s->width = avctx->width;
     s->height = avctx->height;
     avctx->pix_fmt = PIX_FMT_YUV410P;
 
-    build_modpred(s);
-    iv_alloc_frames(s);
+    if (!(ret = build_modpred(s)))
+      ret = iv_alloc_frames(s);
+    if (ret)
+      iv_free_func(s);
 
-    return 0;
+    return ret;
 }
 
 static int indeo3_decode_frame(AVCodecContext *avctx,
