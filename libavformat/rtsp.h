@@ -25,14 +25,14 @@
 #include "avformat.h"
 #include "rtspcodes.h"
 
-enum RTSPProtocol {
-    RTSP_PROTOCOL_RTP_UDP = 0,
-    RTSP_PROTOCOL_RTP_TCP = 1,
-    RTSP_PROTOCOL_RTP_UDP_MULTICAST = 2,
+enum RTSPLowerTransport {
+    RTSP_LOWER_TRANSPORT_UDP = 0,
+    RTSP_LOWER_TRANSPORT_TCP = 1,
+    RTSP_LOWER_TRANSPORT_UDP_MULTICAST = 2,
     /**
      * This is not part of public API and shouldn't be used outside of ffmpeg.
      */
-    RTSP_PROTOCOL_RTP_LAST
+    RTSP_LOWER_TRANSPORT_LAST
 };
 
 #define RTSP_DEFAULT_PORT   554
@@ -50,7 +50,7 @@ typedef struct RTSPTransportField {
     int server_port_min, server_port_max; /**< RTP ports */
     int ttl; /**< ttl value */
     uint32_t destination; /**< destination IP address */
-    enum RTSPProtocol protocol;
+    enum RTSPLowerTransport lower_transport;
 } RTSPTransportField;
 
 typedef struct RTSPHeader {

@@ -157,7 +157,7 @@ typedef struct HTTPContext {
     int seq; /* RTSP sequence number */
 
     /* RTP state specific */
-    enum RTSPProtocol rtp_protocol;
+    enum RTSPLowerTransport rtp_protocol;
     char session_id[32]; /* session id */
     AVFormatContext *rtp_ctx[MAX_STREAMS];
 
@@ -278,7 +278,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
 /* RTP handling */
 static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
                                        FFStream *stream, const char *session_id,
-                                       enum RTSPProtocol rtp_protocol);
+                                       enum RTSPLowerTransport rtp_protocol);
 static int rtp_new_av_stream(HTTPContext *c,
                              int stream_index, struct sockaddr_in *dest_addr,
                              HTTPContext *rtsp_c);
@@ -509,7 +509,7 @@ static void start_multicast(void)
             dest_addr.sin_port = htons(stream->multicast_port);
 
             rtp_c = rtp_new_connection(&dest_addr, stream, session_id,
-                                       RTSP_PROTOCOL_RTP_UDP_MULTICAST);
+                                       RTSP_LOWER_TRANSPORT_UDP_MULTICAST);
             if (!rtp_c)
                 continue;
 
@@ -2202,7 +2202,7 @@ static int http_prepare_data(HTTPContext *c)
 
                     if (c->is_packetized) {
                         int max_packet_size;
-                        if (c->rtp_protocol == RTSP_PROTOCOL_RTP_TCP)
+                        if (c->rtp_protocol == RTSP_LOWER_TRANSPORT_TCP)
                             max_packet_size = RTSP_TCP_MAX_PACKET_SIZE;
                         else
                             max_packet_size = url_get_max_packet_size(c->rtp_handles[c->packet_stream_index]);
@@ -2306,7 +2306,7 @@ static int http_send_data(HTTPContext *c)
                 if (c->stream)
                     c->stream->bytes_served += len;
 
-                if (c->rtp_protocol == RTSP_PROTOCOL_RTP_TCP) {
+                if (c->rtp_protocol == RTSP_LOWER_TRANSPORT_TCP) {
                     /* RTP packets are sent inside the RTSP TCP connection */
                     ByteIOContext *pb;
                     int interleaved_index, size;
@@ -2798,14 +2798,14 @@ static HTTPContext *find_rtp_session(const char *session_id)
     return NULL;
 }
 
-static RTSPTransportField *find_transport(RTSPHeader *h, enum RTSPProtocol protocol)
+static RTSPTransportField *find_transport(RTSPHeader *h, enum RTSPLowerTransport lower_transport)
 {
     RTSPTransportField *th;
     int i;
 
     for(i=0;i<h->nb_transports;i++) {
         th = &h->transports[i];
-        if (th->protocol == protocol)
+        if (th->lower_transport == lower_transport)
             return th;
     }
     return NULL;
@@ -2867,9 +2867,9 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
     rtp_c = find_rtp_session(h->session_id);
     if (!rtp_c) {
         /* always prefer UDP */
-        th = find_transport(h, RTSP_PROTOCOL_RTP_UDP);
+        th = find_transport(h, RTSP_LOWER_TRANSPORT_UDP);
         if (!th) {
-            th = find_transport(h, RTSP_PROTOCOL_RTP_TCP);
+            th = find_transport(h, RTSP_LOWER_TRANSPORT_TCP);
             if (!th) {
                 rtsp_reply_error(c, RTSP_STATUS_TRANSPORT);
                 return;
@@ -2877,7 +2877,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
         }
 
         rtp_c = rtp_new_connection(&c->from_addr, stream, h->session_id,
-                                   th->protocol);
+                                   th->lower_transport);
         if (!rtp_c) {
             rtsp_reply_error(c, RTSP_STATUS_BANDWIDTH);
             return;
@@ -2905,7 +2905,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
 
     /* check transport */
     th = find_transport(h, rtp_c->rtp_protocol);
-    if (!th || (th->protocol == RTSP_PROTOCOL_RTP_UDP &&
+    if (!th || (th->lower_transport == RTSP_LOWER_TRANSPORT_UDP &&
                 th->client_port_min <= 0)) {
         rtsp_reply_error(c, RTSP_STATUS_TRANSPORT);
         return;
@@ -2928,14 +2928,14 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
     url_fprintf(c->pb, "Session: %s\r\n", rtp_c->session_id);
 
     switch(rtp_c->rtp_protocol) {
-    case RTSP_PROTOCOL_RTP_UDP:
+    case RTSP_LOWER_TRANSPORT_UDP:
         port = rtp_get_local_port(rtp_c->rtp_handles[stream_index]);
         url_fprintf(c->pb, "Transport: RTP/AVP/UDP;unicast;"
                     "client_port=%d-%d;server_port=%d-%d",
                     th->client_port_min, th->client_port_min + 1,
                     port, port + 1);
         break;
-    case RTSP_PROTOCOL_RTP_TCP:
+    case RTSP_LOWER_TRANSPORT_TCP:
         url_fprintf(c->pb, "Transport: RTP/AVP/TCP;interleaved=%d-%d",
                     stream_index * 2, stream_index * 2 + 1);
         break;
@@ -3071,7 +3071,7 @@ static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPHeader *h)
 
 static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
                                        FFStream *stream, const char *session_id,
-                                       enum RTSPProtocol rtp_protocol)
+                                       enum RTSPLowerTransport rtp_protocol)
 {
     HTTPContext *c = NULL;
     const char *proto_str;
@@ -3102,13 +3102,13 @@ static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
 
     /* protocol is shown in statistics */
     switch(c->rtp_protocol) {
-    case RTSP_PROTOCOL_RTP_UDP_MULTICAST:
+    case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
         proto_str = "MCAST";
         break;
-    case RTSP_PROTOCOL_RTP_UDP:
+    case RTSP_LOWER_TRANSPORT_UDP:
         proto_str = "UDP";
         break;
-    case RTSP_PROTOCOL_RTP_TCP:
+    case RTSP_LOWER_TRANSPORT_TCP:
         proto_str = "TCP";
         break;
     default:
@@ -3172,8 +3172,8 @@ static int rtp_new_av_stream(HTTPContext *c,
     ipaddr = inet_ntoa(dest_addr->sin_addr);
 
     switch(c->rtp_protocol) {
-    case RTSP_PROTOCOL_RTP_UDP:
-    case RTSP_PROTOCOL_RTP_UDP_MULTICAST:
+    case RTSP_LOWER_TRANSPORT_UDP:
+    case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
         /* RTP/UDP case */
 
         /* XXX: also pass as parameter to function ? */
@@ -3195,7 +3195,7 @@ static int rtp_new_av_stream(HTTPContext *c,
         c->rtp_handles[stream_index] = h;
         max_packet_size = url_get_max_packet_size(h);
         break;
-    case RTSP_PROTOCOL_RTP_TCP:
+    case RTSP_LOWER_TRANSPORT_TCP:
         /* RTP/TCP case */
         c->rtsp_c = rtsp_c;
         max_packet_size = RTSP_TCP_MAX_PACKET_SIZE;

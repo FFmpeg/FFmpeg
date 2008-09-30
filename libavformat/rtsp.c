@@ -63,7 +63,7 @@ typedef struct RTSPState {
     //    ByteIOContext rtsp_gb;
     int seq;        /* RTSP command sequence number */
     char session_id[512];
-    enum RTSPProtocol protocol;
+    enum RTSPLowerTransport lower_transport;
     enum RTSPServerType server_type;
     char last_reply[2048]; /* XXX: allocate ? */
     RTPDemuxContext *cur_rtp;
@@ -94,7 +94,7 @@ static int rtsp_read_play(AVFormatContext *s);
    changing this variable */
 
 #if LIBAVFORMAT_VERSION_INT < (53 << 16)
-int rtsp_default_protocols = (1 << RTSP_PROTOCOL_RTP_UDP);
+int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
 #endif
 
 static int rtsp_probe(AVProbeData *p)
@@ -643,9 +643,9 @@ static void rtsp_parse_transport(RTSPHeader *reply, const char *p)
             profile[0] = '\0';
         }
         if (!strcasecmp(lower_transport, "TCP"))
-            th->protocol = RTSP_PROTOCOL_RTP_TCP;
+            th->lower_transport = RTSP_LOWER_TRANSPORT_TCP;
         else
-            th->protocol = RTSP_PROTOCOL_RTP_UDP;
+            th->lower_transport = RTSP_LOWER_TRANSPORT_UDP;
 
         if (*p == ';')
             p++;
@@ -676,8 +676,8 @@ static void rtsp_parse_transport(RTSPHeader *reply, const char *p)
                                      &th->interleaved_max, &p);
                 }
             } else if (!strcmp(parameter, "multicast")) {
-                if (th->protocol == RTSP_PROTOCOL_RTP_UDP)
-                    th->protocol = RTSP_PROTOCOL_RTP_UDP_MULTICAST;
+                if (th->lower_transport == RTSP_LOWER_TRANSPORT_UDP)
+                    th->lower_transport = RTSP_LOWER_TRANSPORT_UDP_MULTICAST;
             } else if (!strcmp(parameter, "ttl")) {
                 if (*p == '=') {
                     p++;
@@ -899,7 +899,7 @@ rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
  */
 static int
 make_setup_request (AVFormatContext *s, const char *host, int port,
-                    int protocol, const char *real_challenge)
+                    int lower_transport, const char *real_challenge)
 {
     RTSPState *rt = s->priv_data;
     int j, i, err;
@@ -923,7 +923,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
         rtsp_st = rt->rtsp_streams[i];
 
         /* RTP/UDP */
-        if (protocol == RTSP_PROTOCOL_RTP_UDP) {
+        if (lower_transport == RTSP_LOWER_TRANSPORT_UDP) {
             char buf[256];
 
             /* first try in specified port range */
@@ -954,12 +954,12 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
         }
 
         /* RTP/TCP */
-        else if (protocol == RTSP_PROTOCOL_RTP_TCP) {
+        else if (lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
             snprintf(transport, sizeof(transport) - 1,
                      "%s/TCP", trans_pref);
         }
 
-        else if (protocol == RTSP_PROTOCOL_RTP_UDP_MULTICAST) {
+        else if (lower_transport == RTSP_LOWER_TRANSPORT_UDP_MULTICAST) {
             snprintf(transport, sizeof(transport) - 1,
                      "%s/UDP;multicast", trans_pref);
         }
@@ -990,28 +990,28 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
 
         /* XXX: same protocol for all streams is required */
         if (i > 0) {
-            if (reply->transports[0].protocol != rt->protocol) {
+            if (reply->transports[0].lower_transport != rt->lower_transport) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
         } else {
-            rt->protocol = reply->transports[0].protocol;
+            rt->lower_transport = reply->transports[0].lower_transport;
         }
 
         /* close RTP connection if not choosen */
-        if (reply->transports[0].protocol != RTSP_PROTOCOL_RTP_UDP &&
-            (protocol == RTSP_PROTOCOL_RTP_UDP)) {
+        if (reply->transports[0].lower_transport != RTSP_LOWER_TRANSPORT_UDP &&
+            (lower_transport == RTSP_LOWER_TRANSPORT_UDP)) {
             url_close(rtsp_st->rtp_handle);
             rtsp_st->rtp_handle = NULL;
         }
 
-        switch(reply->transports[0].protocol) {
-        case RTSP_PROTOCOL_RTP_TCP:
+        switch(reply->transports[0].lower_transport) {
+        case RTSP_LOWER_TRANSPORT_TCP:
             rtsp_st->interleaved_min = reply->transports[0].interleaved_min;
             rtsp_st->interleaved_max = reply->transports[0].interleaved_max;
             break;
 
-        case RTSP_PROTOCOL_RTP_UDP:
+        case RTSP_LOWER_TRANSPORT_UDP:
             {
                 char url[1024];
 
@@ -1024,7 +1024,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
                 }
             }
             break;
-        case RTSP_PROTOCOL_RTP_UDP_MULTICAST:
+        case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
             {
                 char url[1024];
                 struct in_addr in;
@@ -1070,7 +1070,7 @@ static int rtsp_read_header(AVFormatContext *s,
     int port, ret, err;
     RTSPHeader reply1, *reply = &reply1;
     unsigned char *content = NULL;
-    int protocol_mask = 0;
+    int lower_transport_mask = 0;
     char real_challenge[64];
 
     /* extract hostname and port */
@@ -1092,16 +1092,16 @@ static int rtsp_read_header(AVFormatContext *s,
                 *(option_list++) = 0;
             /* handle the options */
             if (strcmp(option, "udp") == 0)
-                protocol_mask = (1<< RTSP_PROTOCOL_RTP_UDP);
+                lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_UDP);
             else if (strcmp(option, "multicast") == 0)
-                protocol_mask = (1<< RTSP_PROTOCOL_RTP_UDP_MULTICAST);
+                lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_UDP_MULTICAST);
             else if (strcmp(option, "tcp") == 0)
-                protocol_mask = (1<< RTSP_PROTOCOL_RTP_TCP);
+                lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_TCP);
         }
     }
 
-    if (!protocol_mask)
-        protocol_mask = (1 << RTSP_PROTOCOL_RTP_LAST) - 1;
+    if (!lower_transport_mask)
+        lower_transport_mask = (1 << RTSP_LOWER_TRANSPORT_LAST) - 1;
 
     /* open the tcp connexion */
     snprintf(tcpname, sizeof(tcpname), "tcp://%s:%d", host, port);
@@ -1179,15 +1179,15 @@ static int rtsp_read_header(AVFormatContext *s,
     }
 
     do {
-        int protocol = ff_log2_tab[protocol_mask & ~(protocol_mask - 1)];
+        int lower_transport = ff_log2_tab[lower_transport_mask & ~(lower_transport_mask - 1)];
 
-        err = make_setup_request(s, host, port, protocol,
+        err = make_setup_request(s, host, port, lower_transport,
                                  rt->server_type == RTSP_SERVER_REAL ?
                                      real_challenge : NULL);
         if (err < 0)
             goto fail;
-        protocol_mask &= ~(1 << protocol);
-        if (protocol_mask == 0 && err == 1) {
+        lower_transport_mask &= ~(1 << lower_transport);
+        if (lower_transport_mask == 0 && err == 1) {
             err = AVERROR(FF_NETERROR(EPROTONOSUPPORT));
             goto fail;
         }
@@ -1353,13 +1353,13 @@ static int rtsp_read_packet(AVFormatContext *s,
 
     /* read next RTP packet */
  redo:
-    switch(rt->protocol) {
+    switch(rt->lower_transport) {
     default:
-    case RTSP_PROTOCOL_RTP_TCP:
+    case RTSP_LOWER_TRANSPORT_TCP:
         len = tcp_read_packet(s, &rtsp_st, buf, sizeof(buf));
         break;
-    case RTSP_PROTOCOL_RTP_UDP:
-    case RTSP_PROTOCOL_RTP_UDP_MULTICAST:
+    case RTSP_LOWER_TRANSPORT_UDP:
+    case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
         len = udp_read_packet(s, &rtsp_st, buf, sizeof(buf));
         if (len >=0 && rtsp_st->rtp_ctx)
             rtp_check_and_send_back_rr(rtsp_st->rtp_ctx, len);
@@ -1462,7 +1462,7 @@ static int rtsp_read_close(AVFormatContext *s)
 
 #if 0
     /* NOTE: it is valid to flush the buffer here */
-    if (rt->protocol == RTSP_PROTOCOL_RTP_TCP) {
+    if (rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
         url_fclose(&rt->rtsp_gb);
     }
 #endif
