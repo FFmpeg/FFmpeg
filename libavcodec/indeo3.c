@@ -121,9 +121,7 @@ static av_cold void iv_alloc_frames(Indeo3DecodeContext *s)
   bufsize = luma_pixels * 2 + luma_width * 3 +
     (chroma_pixels + chroma_width) * 4;
 
-  if((s->iv_frame[0].the_buf =
-    (s->iv_frame[0].the_buf_size == 0 ? av_malloc(bufsize) :
-      av_realloc(s->iv_frame[0].the_buf, bufsize))) == NULL)
+  if(!(s->iv_frame[0].the_buf = av_malloc(bufsize)))
     return;
   s->iv_frame[0].y_w = s->iv_frame[1].y_w = luma_width;
   s->iv_frame[0].y_h = s->iv_frame[1].y_h = luma_height;
