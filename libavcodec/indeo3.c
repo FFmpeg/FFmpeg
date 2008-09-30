@@ -66,7 +66,7 @@ static av_cold void build_modpred(Indeo3DecodeContext *s)
 {
   int i, j;
 
-  s->ModPred = (unsigned char *) av_malloc (8 * 128);
+  s->ModPred = av_malloc(8 * 128);
 
   for (i=0; i < 128; ++i) {
     s->ModPred[i+0*128] = (i > 126) ? 254 : 2*((i + 1) - ((i + 1) % 2));
@@ -80,7 +80,7 @@ static av_cold void build_modpred(Indeo3DecodeContext *s)
     s->ModPred[i+7*128] =                        2*((i + 5) - ((i + 4) % 9));
   }
 
-  s->corrector_type = (unsigned short *) av_malloc (24 * 256 * sizeof(unsigned short));
+  s->corrector_type = av_malloc(24 * 256 * sizeof(*s->corrector_type));
 
   for (i=0; i < 24; ++i) {
     for (j=0; j < 256; ++j) {
