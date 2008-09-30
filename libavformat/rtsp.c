@@ -947,8 +947,11 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
         rtp_opened:
             port = rtp_get_local_port(rtsp_st->rtp_handle);
             snprintf(transport, sizeof(transport) - 1,
-                     "%s/UDP;unicast;client_port=%d",
-                     trans_pref, port);
+                     "%s/UDP;", trans_pref);
+            if (rt->server_type != RTSP_SERVER_REAL)
+                av_strlcat(transport, "unicast;", sizeof(transport));
+            av_strlcatf(transport, sizeof(transport),
+                     "client_port=%d", port);
             if (rt->server_type == RTSP_SERVER_RTP)
                 av_strlcatf(transport, sizeof(transport), "-%d", port + 1);
         }
