@@ -35,7 +35,6 @@ typedef struct
   uint8_t *Ybuf;
   uint8_t *Ubuf;
   uint8_t *Vbuf;
-  uint8_t *the_buf;
   unsigned int the_buf_size;
   unsigned short y_w, y_h;
   unsigned short uv_w, uv_h;
@@ -46,6 +45,7 @@ typedef struct Indeo3DecodeContext {
     int width, height;
     AVFrame frame;
 
+    uint8_t *buf;
     YUVBufs iv_frame[2];
     YUVBufs *cur_frame;
     YUVBufs *ref_frame;
@@ -118,7 +118,7 @@ static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
   bufsize = luma_pixels * 2 + luma_width * 3 +
     (chroma_pixels + chroma_width) * 4;
 
-  if(!(s->iv_frame[0].the_buf = av_malloc(bufsize)))
+  if(!(s->buf = av_malloc(bufsize)))
     return AVERROR(ENOMEM);
   s->iv_frame[0].y_w = s->iv_frame[1].y_w = luma_width;
   s->iv_frame[0].y_h = s->iv_frame[1].y_h = luma_height;
@@ -126,17 +126,17 @@ static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
   s->iv_frame[0].uv_h = s->iv_frame[1].uv_h = chroma_height;
   s->iv_frame[0].the_buf_size = bufsize;
 
-  s->iv_frame[0].Ybuf = s->iv_frame[0].the_buf + luma_width;
+  s->iv_frame[0].Ybuf = s->buf + luma_width;
   i = luma_pixels + luma_width * 2;
-  s->iv_frame[1].Ybuf = s->iv_frame[0].the_buf + i;
+  s->iv_frame[1].Ybuf = s->buf + i;
   i += (luma_pixels + luma_width);
-  s->iv_frame[0].Ubuf = s->iv_frame[0].the_buf + i;
+  s->iv_frame[0].Ubuf = s->buf + i;
   i += (chroma_pixels + chroma_width);
-  s->iv_frame[1].Ubuf = s->iv_frame[0].the_buf + i;
+  s->iv_frame[1].Ubuf = s->buf + i;
   i += (chroma_pixels + chroma_width);
-  s->iv_frame[0].Vbuf = s->iv_frame[0].the_buf + i;
+  s->iv_frame[0].Vbuf = s->buf + i;
   i += (chroma_pixels + chroma_width);
-  s->iv_frame[1].Vbuf = s->iv_frame[0].the_buf + i;
+  s->iv_frame[1].Vbuf = s->buf + i;
 
   for(i = 1; i <= luma_width; i++)
     s->iv_frame[0].Ybuf[-i] = s->iv_frame[1].Ybuf[-i] =
@@ -158,11 +158,11 @@ static av_cold void iv_free_func(Indeo3DecodeContext *s)
   int i;
 
   for(i = 0 ; i < 2 ; i++) {
-    if(s->iv_frame[i].the_buf != NULL)
-      av_free(s->iv_frame[i].the_buf);
+    if(s->buf != NULL)
+      av_free(s->buf);
     s->iv_frame[i].Ybuf = s->iv_frame[i].Ubuf =
       s->iv_frame[i].Vbuf = NULL;
-    s->iv_frame[i].the_buf = NULL;
+    s->buf = NULL;
     s->iv_frame[i].the_buf_size = 0;
     s->iv_frame[i].y_w = s->iv_frame[i].y_h = 0;
     s->iv_frame[i].uv_w = s->iv_frame[i].uv_h = 0;
