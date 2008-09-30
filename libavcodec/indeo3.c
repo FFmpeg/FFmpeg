@@ -155,19 +155,7 @@ static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
 /* ---------------------------------------------------------------------- */
 static av_cold void iv_free_func(Indeo3DecodeContext *s)
 {
-  int i;
-
-  for(i = 0 ; i < 2 ; i++) {
-    if(s->buf != NULL)
       av_free(s->buf);
-    s->iv_frame[i].Ybuf = s->iv_frame[i].Ubuf =
-      s->iv_frame[i].Vbuf = NULL;
-    s->buf = NULL;
-    s->iv_frame[i].the_buf_size = 0;
-    s->iv_frame[i].y_w = s->iv_frame[i].y_h = 0;
-    s->iv_frame[i].uv_w = s->iv_frame[i].uv_h = 0;
-  }
-
   av_free(s->ModPred);
   av_free(s->corrector_type);
 }
