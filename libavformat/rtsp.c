@@ -1341,9 +1341,9 @@ static int rtsp_read_packet(AVFormatContext *s,
             if (i != 0) av_strlcat(cmd, ",", sizeof(cmd));
             ff_rdt_subscribe_rule(cmd, sizeof(cmd), i, 0);
             if (rt->transport == RTSP_TRANSPORT_RDT)
-            ff_rdt_subscribe_rule2(
-                rt->rtsp_streams[i]->rtp_ctx,
-                cmd, sizeof(cmd), i, 0);
+                ff_rdt_subscribe_rule2(
+                    rt->rtsp_streams[i]->rtp_ctx,
+                    cmd, sizeof(cmd), i, 0);
         }
         av_strlcat(cmd, "\r\n", sizeof(cmd));
         rtsp_send_cmd(s, cmd, reply, NULL);
