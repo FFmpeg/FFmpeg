@@ -1920,7 +1920,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         /* time to figure out pixel addresses? */
         if (!s->pixel_addresses_initialized)
         {
-                vp3_calculate_pixel_addresses(s);
+            vp3_calculate_pixel_addresses(s);
             s->pixel_addresses_initialized = 1;
         }
     } else {
