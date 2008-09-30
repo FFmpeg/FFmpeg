@@ -2596,8 +2596,8 @@ static int theora_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "Unknown Theora config packet: %d\n", ptype&~0x80);
             break;
     }
-    if(8*header_len[i] != get_bits_count(&gb))
-        av_log(avctx, AV_LOG_ERROR, "%d bits left in packet %X\n", 8*header_len[i] - get_bits_count(&gb), ptype);
+    if(ptype != 0x81 && 8*header_len[i] != get_bits_count(&gb))
+        av_log(avctx, AV_LOG_WARNING, "%d bits left in packet %X\n", 8*header_len[i] - get_bits_count(&gb), ptype);
     if (s->theora < 0x030200)
         break;
   }
