@@ -32,10 +32,10 @@
 
 typedef struct
 {
-  unsigned char *Ybuf;
-  unsigned char *Ubuf;
-  unsigned char *Vbuf;
-  unsigned char *the_buf;
+  uint8_t *Ybuf;
+  uint8_t *Ubuf;
+  uint8_t *Vbuf;
+  uint8_t *the_buf;
   unsigned int the_buf_size;
   unsigned short y_w, y_h;
   unsigned short uv_w, uv_h;
@@ -50,7 +50,7 @@ typedef struct Indeo3DecodeContext {
     YUVBufs *cur_frame;
     YUVBufs *ref_frame;
 
-    unsigned char *ModPred;
+    uint8_t *ModPred;
     uint8_t *corrector_type;
 } Indeo3DecodeContext;
 
@@ -91,10 +91,10 @@ static av_cold void build_modpred(Indeo3DecodeContext *s)
   }
 }
 
-static void iv_Decode_Chunk(Indeo3DecodeContext *s, unsigned char *cur,
-  unsigned char *ref, int width, int height, const unsigned char *buf1,
-  long fflags2, const unsigned char *hdr,
-  const unsigned char *buf2, int min_width_160);
+static void iv_Decode_Chunk(Indeo3DecodeContext *s, uint8_t *cur,
+  uint8_t *ref, int width, int height, const uint8_t *buf1,
+  long fflags2, const uint8_t *hdr,
+  const uint8_t *buf2, int min_width_160);
 
 /* ---------------------------------------------------------------------- */
 static av_cold void iv_alloc_frames(Indeo3DecodeContext *s)
@@ -176,12 +176,12 @@ static av_cold void iv_free_func(Indeo3DecodeContext *s)
 
 /* ---------------------------------------------------------------------- */
 static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
-                                     const unsigned char *buf, int buf_size)
+                                     const uint8_t *buf, int buf_size)
 {
   unsigned int hdr_width, hdr_height,
     chroma_width, chroma_height;
   unsigned long fflags1, fflags2, fflags3, offs1, offs2, offs3, offs;
-  const unsigned char *hdr_pos, *buf_pos;
+  const uint8_t *hdr_pos, *buf_pos;
 
   buf_pos = buf;
   buf_pos += 18;
@@ -297,15 +297,15 @@ typedef struct {
   lp2 = 4;
 
 static void iv_Decode_Chunk(Indeo3DecodeContext *s,
-  unsigned char *cur, unsigned char *ref, int width, int height,
-  const unsigned char *buf1, long fflags2, const unsigned char *hdr,
-  const unsigned char *buf2, int min_width_160)
+  uint8_t *cur, uint8_t *ref, int width, int height,
+  const uint8_t *buf1, long fflags2, const uint8_t *hdr,
+  const uint8_t *buf2, int min_width_160)
 {
-  unsigned char bit_buf;
+  uint8_t bit_buf;
   unsigned long bit_pos, lv, lv1, lv2;
   long *width_tbl, width_tbl_arr[10];
   const signed char *ref_vectors;
-  unsigned char *cur_frm_pos, *ref_frm_pos, *cp, *cp2;
+  uint8_t *cur_frm_pos, *ref_frm_pos, *cp, *cp2;
   uint32_t *cur_lp, *ref_lp;
   const uint32_t *correction_lp[2], *correctionloworder_lp[2], *correctionhighorder_lp[2];
   uint8_t *correction_type_sp[2];
@@ -1065,10 +1065,10 @@ static av_cold int indeo3_decode_init(AVCodecContext *avctx)
 
 static int indeo3_decode_frame(AVCodecContext *avctx,
                                void *data, int *data_size,
-                               const unsigned char *buf, int buf_size)
+                               const uint8_t *buf, int buf_size)
 {
     Indeo3DecodeContext *s=avctx->priv_data;
-    unsigned char *src, *dest;
+    uint8_t *src, *dest;
     int y;
 
     iv_decode_frame(s, buf, buf_size);
