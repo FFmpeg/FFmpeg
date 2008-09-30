@@ -54,13 +54,13 @@ typedef struct Indeo3DecodeContext {
     unsigned short *corrector_type;
 } Indeo3DecodeContext;
 
-static const int corrector_type_0[24] = {
+static const uint8_t corrector_type_0[24] = {
   195, 159, 133, 115, 101,  93,  87,  77,
   195, 159, 133, 115, 101,  93,  87,  77,
   128,  79,  79,  79,  79,  79,  79,  79
 };
 
-static const int corrector_type_2[8] = { 9, 7, 6, 8, 5, 4, 3, 2 };
+static const uint8_t corrector_type_2[8] = { 9, 7, 6, 8, 5, 4, 3, 2 };
 
 static av_cold void build_modpred(Indeo3DecodeContext *s)
 {
