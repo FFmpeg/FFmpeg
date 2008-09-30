@@ -101,7 +101,6 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s, uint8_t *cur,
         long fflags2, const uint8_t *hdr,
         const uint8_t *buf2, int min_width_160);
 
-/* ---------------------------------------------------------------------- */
 static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
 {
     int luma_width, luma_height, luma_pixels, chroma_width, chroma_height,
@@ -152,7 +151,6 @@ static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
     return 0;
 }
 
-/* ---------------------------------------------------------------------- */
 static av_cold void iv_free_func(Indeo3DecodeContext *s)
 {
     av_free(s->buf);
@@ -160,7 +158,6 @@ static av_cold void iv_free_func(Indeo3DecodeContext *s)
     av_free(s->corrector_type);
 }
 
-/* ---------------------------------------------------------------------- */
 static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
                                      const uint8_t *buf, int buf_size)
 {
@@ -238,7 +235,6 @@ typedef struct {
     long usl7;
 } ustr_t;
 
-/* ---------------------------------------------------------------------- */
 
 #define LV1_CHECK(buf1,rle_v3,lv1,lp2)  \
     if((lv1 & 0x80) != 0) {             \
