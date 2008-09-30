@@ -110,13 +110,6 @@ static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
 
   luma_width   = (s->width  + 3) & (~3);
   luma_height  = (s->height + 3) & (~3);
-
-  s->iv_frame[0].y_w = s->iv_frame[0].y_h =
-    s->iv_frame[0].the_buf_size = 0;
-  s->iv_frame[1].y_w = s->iv_frame[1].y_h =
-    s->iv_frame[1].the_buf_size = 0;
-  s->iv_frame[1].the_buf = NULL;
-
   chroma_width  = ((luma_width >> 2) + 3) & (~3);
   chroma_height = ((luma_height>> 2) + 3) & (~3);
   luma_pixels = luma_width * luma_height;
