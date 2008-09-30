@@ -133,6 +133,7 @@ typedef struct MOVStreamContext {
     unsigned drefs_count;
     MOV_dref_t *drefs;
     int dref_id;
+    int wrong_dts; ///< dts are wrong due to negative ctts
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -1166,15 +1167,13 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         int duration =get_be32(pb);
 
         if (duration < 0) {
-            av_log(c->fc, AV_LOG_WARNING, "negative ctts, ignoring\n");
-            sc->ctts_count = 0;
-            url_fskip(pb, 8 * (entries - i - 1));
-            break;
+            sc->wrong_dts = 1;
+            st->codec->has_b_frames = 1;
         }
         sc->ctts_data[i].count   = count;
         sc->ctts_data[i].duration= duration;
 
-        sc->time_rate= ff_gcd(sc->time_rate, duration);
+        sc->time_rate= ff_gcd(sc->time_rate, FFABS(duration));
     }
     return 0;
 }
@@ -1882,6 +1881,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             sc->sample_to_ctime_index++;
             sc->sample_to_ctime_sample = 0;
         }
+        if (sc->wrong_dts)
+            pkt->dts = AV_NOPTS_VALUE;
     } else {
         AVStream *st = s->streams[sc->ffindex];
         int64_t next_dts = (sc->current_sample < sc->sample_count) ?
