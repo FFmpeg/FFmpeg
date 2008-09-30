@@ -170,6 +170,8 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
 
     *width = ALIGN(*width , w_align);
     *height= ALIGN(*height, h_align);
+    if(s->codec_id == CODEC_ID_H264)
+        *height+=2; // some of the optimized chroma MC reads one line too much
 }
 
 int avcodec_check_dimensions(void *av_log_ctx, unsigned int w, unsigned int h){
