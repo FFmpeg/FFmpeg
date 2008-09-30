@@ -1260,8 +1260,6 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
                         else if (FFABS(predicted_dc - vul) > 128)
                             predicted_dc = vul;
                     }
-
-                    DC_COEFF(i));
                 }
 
                 /* at long last, apply the predictor */
@@ -1298,7 +1296,6 @@ static void vertical_filter(unsigned char *first_pixel, int stride,
 static void render_slice(Vp3DecodeContext *s, int slice)
 {
     int x;
-    int m, n;
     int16_t *dequantizer;
     DECLARE_ALIGNED_16(DCTELEM, block[64]);
     int motion_x = 0xdeadbeef, motion_y = 0xdeadbeef;
