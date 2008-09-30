@@ -1617,13 +1617,16 @@ static void apply_loop_filter(Vp3DecodeContext *s)
  */
 static void vp3_calculate_pixel_addresses(Vp3DecodeContext *s)
 {
+#define Y_INITIAL(chroma_shift)  s->flipped_image ? 1  : s->fragment_height >> chroma_shift
+#define Y_FINISHED(chroma_shift) s->flipped_image ? y <= s->fragment_height >> chroma_shift : y > 0
 
     int i, x, y;
+    const int y_inc = s->flipped_image ? 1 : -1;
 
     /* figure out the first pixel addresses for each of the fragments */
     /* Y plane */
     i = 0;
-    for (y = s->fragment_height; y > 0; y--) {
+    for (y = Y_INITIAL(0); Y_FINISHED(0); y += y_inc) {
         for (x = 0; x < s->fragment_width; x++) {
             s->all_fragments[i++].first_pixel =
                 s->golden_frame.linesize[0] * y * FRAGMENT_PIXELS -
@@ -1634,7 +1637,7 @@ static void vp3_calculate_pixel_addresses(Vp3DecodeContext *s)
 
     /* U plane */
     i = s->fragment_start[1];
-    for (y = s->fragment_height / 2; y > 0; y--) {
+    for (y = Y_INITIAL(1); Y_FINISHED(1); y += y_inc) {
         for (x = 0; x < s->fragment_width / 2; x++) {
             s->all_fragments[i++].first_pixel =
                 s->golden_frame.linesize[1] * y * FRAGMENT_PIXELS -
@@ -1645,48 +1648,7 @@ static void vp3_calculate_pixel_addresses(Vp3DecodeContext *s)
 
     /* V plane */
     i = s->fragment_start[2];
-    for (y = s->fragment_height / 2; y > 0; y--) {
-        for (x = 0; x < s->fragment_width / 2; x++) {
-            s->all_fragments[i++].first_pixel =
-                s->golden_frame.linesize[2] * y * FRAGMENT_PIXELS -
-                    s->golden_frame.linesize[2] +
-                    x * FRAGMENT_PIXELS;
-        }
-    }
-}
-
-/* FIXME: this should be merged with the above! */
-static void theora_calculate_pixel_addresses(Vp3DecodeContext *s)
-{
-
-    int i, x, y;
-
-    /* figure out the first pixel addresses for each of the fragments */
-    /* Y plane */
-    i = 0;
-    for (y = 1; y <= s->fragment_height; y++) {
-        for (x = 0; x < s->fragment_width; x++) {
-            s->all_fragments[i++].first_pixel =
-                s->golden_frame.linesize[0] * y * FRAGMENT_PIXELS -
-                    s->golden_frame.linesize[0] +
-                    x * FRAGMENT_PIXELS;
-        }
-    }
-
-    /* U plane */
-    i = s->fragment_start[1];
-    for (y = 1; y <= s->fragment_height / 2; y++) {
-        for (x = 0; x < s->fragment_width / 2; x++) {
-            s->all_fragments[i++].first_pixel =
-                s->golden_frame.linesize[1] * y * FRAGMENT_PIXELS -
-                    s->golden_frame.linesize[1] +
-                    x * FRAGMENT_PIXELS;
-        }
-    }
-
-    /* V plane */
-    i = s->fragment_start[2];
-    for (y = 1; y <= s->fragment_height / 2; y++) {
+    for (y = Y_INITIAL(1); Y_FINISHED(1); y += y_inc) {
         for (x = 0; x < s->fragment_width / 2; x++) {
             s->all_fragments[i++].first_pixel =
                 s->golden_frame.linesize[2] * y * FRAGMENT_PIXELS -
@@ -1958,10 +1920,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         /* time to figure out pixel addresses? */
         if (!s->pixel_addresses_initialized)
         {
-            if (!s->flipped_image)
                 vp3_calculate_pixel_addresses(s);
-            else
-                theora_calculate_pixel_addresses(s);
             s->pixel_addresses_initialized = 1;
         }
     } else {
