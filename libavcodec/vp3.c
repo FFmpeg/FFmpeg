@@ -43,95 +43,6 @@
 
 #define FRAGMENT_PIXELS 8
 
-/*
- * Debugging Variables
- *
- * Define one or more of the following compile-time variables to 1 to obtain
- * elaborate information about certain aspects of the decoding process.
- *
- * DEBUG_VP3: high-level decoding flow
- * DEBUG_INIT: initialization parameters
- * DEBUG_DEQUANTIZERS: display how the dequanization tables are built
- * DEBUG_BLOCK_CODING: unpacking the superblock/macroblock/fragment coding
- * DEBUG_MODES: unpacking the coding modes for individual fragments
- * DEBUG_VECTORS: display the motion vectors
- * DEBUG_TOKEN: display exhaustive information about each DCT token
- * DEBUG_VLC: display the VLCs as they are extracted from the stream
- * DEBUG_DC_PRED: display the process of reversing DC prediction
- * DEBUG_IDCT: show every detail of the IDCT process
- */
-
-#define DEBUG_VP3 0
-#define DEBUG_INIT 0
-#define DEBUG_DEQUANTIZERS 0
-#define DEBUG_BLOCK_CODING 0
-#define DEBUG_MODES 0
-#define DEBUG_VECTORS 0
-#define DEBUG_TOKEN 0
-#define DEBUG_VLC 0
-#define DEBUG_DC_PRED 0
-#define DEBUG_IDCT 0
-
-#if DEBUG_VP3
-#define debug_vp3(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
-#else
-static inline void debug_vp3(const char *format, ...) { }
-#endif
-
-#if DEBUG_INIT
-#define debug_init(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
-#else
-static inline void debug_init(const char *format, ...) { }
-#endif
-
-#if DEBUG_DEQUANTIZERS
-#define debug_dequantizers(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
-#else
-static inline void debug_dequantizers(const char *format, ...) { }
-#endif
-
-#if DEBUG_BLOCK_CODING
-#define debug_block_coding(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
-#else
-static inline void debug_block_coding(const char *format, ...) { }
-#endif
-
-#if DEBUG_MODES
-#define debug_modes(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
-#else
-static inline void debug_modes(const char *format, ...) { }
-#endif
-
-#if DEBUG_VECTORS
-#define debug_vectors(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
-#else
-static inline void debug_vectors(const char *format, ...) { }
-#endif
-
-#if DEBUG_TOKEN
-#define debug_token(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
-#else
-static inline void debug_token(const char *format, ...) { }
-#endif
-
-#if DEBUG_VLC
-#define debug_vlc(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
-#else
-static inline void debug_vlc(const char *format, ...) { }
-#endif
-
-#if DEBUG_DC_PRED
-#define debug_dc_pred(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
-#else
-static inline void debug_dc_pred(const char *format, ...) { }
-#endif
-
-#if DEBUG_IDCT
-#define debug_idct(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
-#else
-static inline void debug_idct(const char *format, ...) { }
-#endif
-
 typedef struct Coeff {
     struct Coeff *next;
     DCTELEM coeff;
@@ -373,8 +284,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
          0,  1,  0, -1
     };
 
-    debug_vp3("  vp3: initialize block mapping tables\n");
-
     hilbert_walk_mb[0] = 1;
     hilbert_walk_mb[1] = s->macroblock_width;
     hilbert_walk_mb[2] = 1;
@@ -382,9 +291,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
 
     /* iterate through each superblock (all planes) and map the fragments */
     for (i = 0; i < s->superblock_count; i++) {
-        debug_init("    superblock %d (u starts @ %d, v starts @ %d)\n",
-            i, s->u_superblock_start, s->v_superblock_start);
-
         /* time to re-assign the limits? */
         if (i == 0) {
 
@@ -446,14 +352,8 @@ static int init_block_mapping(Vp3DecodeContext *s)
             if ((current_width < right_edge) &&
                 (current_height < bottom_edge)) {
                 s->superblock_fragments[mapping_index] = current_fragment;
-                debug_init("    mapping fragment %d to superblock %d, position %d (%d/%d x %d/%d)\n",
-                    s->superblock_fragments[mapping_index], i, j,
-                    current_width, right_edge, current_height, bottom_edge);
             } else {
                 s->superblock_fragments[mapping_index] = -1;
-                debug_init("    superblock %d, position %d has no fragment (%d/%d x %d/%d)\n",
-                    i, j,
-                    current_width, right_edge, current_height, bottom_edge);
             }
 
             mapping_index++;
@@ -492,14 +392,8 @@ static int init_block_mapping(Vp3DecodeContext *s)
             if ((current_width < right_edge) &&
                 (current_height < bottom_edge)) {
                 s->superblock_macroblocks[mapping_index] = current_macroblock;
-                debug_init("    mapping macroblock %d to superblock %d, position %d (%d/%d x %d/%d)\n",
-                    s->superblock_macroblocks[mapping_index], i, j,
-                    current_width, right_edge, current_height, bottom_edge);
             } else {
                 s->superblock_macroblocks[mapping_index] = -1;
-                debug_init("    superblock %d, position %d has no macroblock (%d/%d x %d/%d)\n",
-                    i, j,
-                    current_width, right_edge, current_height, bottom_edge);
             }
 
             mapping_index++;
@@ -514,15 +408,12 @@ static int init_block_mapping(Vp3DecodeContext *s)
 
         for (j = 0; j < s->fragment_width; j += 2) {
 
-            debug_init("    macroblock %d contains fragments: ", current_macroblock);
             s->all_fragments[current_fragment].macroblock = current_macroblock;
             s->macroblock_fragments[mapping_index++] = current_fragment;
-            debug_init("%d ", current_fragment);
 
             if (j + 1 < s->fragment_width) {
                 s->all_fragments[current_fragment + 1].macroblock = current_macroblock;
                 s->macroblock_fragments[mapping_index++] = current_fragment + 1;
-                debug_init("%d ", current_fragment + 1);
             } else
                 s->macroblock_fragments[mapping_index++] = -1;
 
@@ -531,7 +422,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
                     current_macroblock;
                 s->macroblock_fragments[mapping_index++] =
                     current_fragment + s->fragment_width;
-                debug_init("%d ", current_fragment + s->fragment_width);
             } else
                 s->macroblock_fragments[mapping_index++] = -1;
 
@@ -540,7 +430,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
                     current_macroblock;
                 s->macroblock_fragments[mapping_index++] =
                     current_fragment + s->fragment_width + 1;
-                debug_init("%d ", current_fragment + s->fragment_width + 1);
             } else
                 s->macroblock_fragments[mapping_index++] = -1;
 
@@ -549,15 +438,11 @@ static int init_block_mapping(Vp3DecodeContext *s)
                 (i * s->fragment_width / 4) + (j / 2);
             s->all_fragments[c_fragment].macroblock = s->macroblock_count;
             s->macroblock_fragments[mapping_index++] = c_fragment;
-            debug_init("%d ", c_fragment);
 
             c_fragment = s->fragment_start[2] +
                 (i * s->fragment_width / 4) + (j / 2);
             s->all_fragments[c_fragment].macroblock = s->macroblock_count;
             s->macroblock_fragments[mapping_index++] = c_fragment;
-            debug_init("%d ", c_fragment);
-
-            debug_init("\n");
 
             if (j + 2 <= s->fragment_width)
                 current_fragment += 2;
@@ -601,8 +486,6 @@ static void init_dequantizer(Vp3DecodeContext *s)
     int ac_scale_factor = s->coded_ac_scale_factor[s->quality_index];
     int dc_scale_factor = s->coded_dc_scale_factor[s->quality_index];
     int i, plane, inter, qri, bmi, bmj, qistart;
-
-    debug_vp3("  vp3: initializing dequantization tables\n");
 
     for(inter=0; inter<2; inter++){
         for(plane=0; plane<3; plane++){
@@ -670,11 +553,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     int i, j;
     int current_fragment;
 
-    debug_vp3("  vp3: unpacking superblock coding\n");
-
     if (s->keyframe) {
-
-        debug_vp3("    keyframe-- all superblocks are fully coded\n");
         memset(s->superblock_coding, SB_FULLY_CODED, s->superblock_count);
 
     } else {
@@ -691,10 +570,6 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                     s->superblock_run_length_vlc.table, 6, 2);
                 if (current_run == 33)
                     current_run += get_bits(gb, 12);
-                debug_block_coding("      setting superblocks %d..%d to %s\n",
-                    current_superblock,
-                    current_superblock + current_run - 1,
-                    (bit) ? "partially coded" : "not coded");
 
                 /* if any of the superblocks are not partially coded, flag
                  * a boolean to decode the list of fully-coded superblocks */
@@ -732,10 +607,6 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                         if (current_run == 33)
                             current_run += get_bits(gb, 12);
                     }
-
-                    debug_block_coding("      setting superblock %d to %s\n",
-                        current_superblock,
-                        (bit) ? "fully coded" : "not coded");
                     s->superblock_coding[current_superblock] = 2*bit;
                 }
                 current_superblock++;
@@ -808,14 +679,10 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                         }
                         s->coded_fragment_list_index++;
                         s->macroblock_coding[s->all_fragments[current_fragment].macroblock] = MODE_INTER_NO_MV;
-                        debug_block_coding("      superblock %d is partially coded, fragment %d is coded\n",
-                            i, current_fragment);
                     } else {
                         /* not coded; copy this fragment from the prior frame */
                         s->all_fragments[current_fragment].coding_method =
                             MODE_COPY;
-                        debug_block_coding("      superblock %d is partially coded, fragment %d is not coded\n",
-                            i, current_fragment);
                     }
 
                 } else {
@@ -836,8 +703,6 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                     }
                     s->coded_fragment_list_index++;
                     s->macroblock_coding[s->all_fragments[current_fragment].macroblock] = MODE_INTER_NO_MV;
-                    debug_block_coding("      superblock %d is fully coded, fragment %d is coded\n",
-                        i, current_fragment);
                 }
             }
         }
@@ -849,13 +714,6 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     else
         /* end the list of coded C fragments */
         s->last_coded_c_fragment = s->coded_fragment_list_index - 1;
-
-    debug_block_coding("    %d total coded fragments, y: %d -> %d, c: %d -> %d\n",
-        s->coded_fragment_list_index,
-        s->first_coded_y_fragment,
-        s->last_coded_y_fragment,
-        s->first_coded_c_fragment,
-        s->last_coded_c_fragment);
 
     return 0;
 }
@@ -873,11 +731,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
     int coding_mode;
     int custom_mode_alphabet[CODING_MODE_COUNT];
 
-    debug_vp3("  vp3: unpacking encoding modes\n");
-
     if (s->keyframe) {
-        debug_vp3("    keyframe-- all blocks are coded as INTRA\n");
-
         for (i = 0; i < s->fragment_count; i++)
             s->all_fragments[i].coding_method = MODE_INTRA;
 
@@ -885,22 +739,11 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
 
         /* fetch the mode coding scheme for this frame */
         scheme = get_bits(gb, 3);
-        debug_modes("    using mode alphabet %d\n", scheme);
 
         /* is it a custom coding scheme? */
         if (scheme == 0) {
-            debug_modes("    custom mode alphabet ahead:\n");
             for (i = 0; i < 8; i++)
                 custom_mode_alphabet[get_bits(gb, 3)] = i;
-        }
-
-        for (i = 0; i < 8; i++) {
-            if(scheme)
-                debug_modes("      mode[%d][%d] = %d\n", scheme, i,
-                    ModeAlphabet[scheme-1][i]);
-            else
-                debug_modes("      mode[0][%d] = %d\n", i,
-                    custom_mode_alphabet[i]);
         }
 
         /* iterate through all of the macroblocks that contain 1 or more
@@ -944,9 +787,6 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                         s->all_fragments[current_fragment].coding_method =
                             coding_mode;
                 }
-
-                debug_modes("    coding method for macroblock starting @ fragment %d = %d\n",
-                    s->macroblock_fragments[current_macroblock * 6], coding_mode);
             }
         }
     }
@@ -971,20 +811,13 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
     int current_macroblock;
     int current_fragment;
 
-    debug_vp3("  vp3: unpacking motion vectors\n");
     if (s->keyframe) {
-
-        debug_vp3("    keyframe-- there are no motion vectors\n");
-
     } else {
-
         memset(motion_x, 0, 6 * sizeof(int));
         memset(motion_y, 0, 6 * sizeof(int));
 
         /* coding mode 0 is the VLC scheme; 1 is the fixed code scheme */
         coding_mode = get_bits1(gb);
-        debug_vectors("    using %s scheme for unpacking motion vectors\n",
-            (coding_mode == 0) ? "VLC" : "fixed-length");
 
         /* iterate through all of the macroblocks that contain 1 or more
          * coded fragments */
@@ -1111,9 +944,6 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 }
 
                 /* assign the motion vectors to the correct fragments */
-                debug_vectors("    vectors for macroblock starting @ fragment %d (coding method %d):\n",
-                    current_fragment,
-                    s->macroblock_coding[current_macroblock]);
                 for (k = 0; k < 6; k++) {
                     current_fragment =
                         s->macroblock_fragments[current_macroblock * 6 + k];
@@ -1126,8 +956,6 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     }
                     s->all_fragments[current_fragment].motion_x = motion_x[k];
                     s->all_fragments[current_fragment].motion_y = motion_y[k];
-                    debug_vectors("    vector %d: fragment %d = (%d, %d)\n",
-                        k, current_fragment, motion_x[k], motion_y[k]);
                 }
             }
         }
@@ -1179,7 +1007,6 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
         if (!eob_run) {
             /* decode a VLC into a token */
             token = get_vlc2(gb, table->table, 5, 3);
-            debug_vlc(" token = %2d, ", token);
             /* use the token to get a zero run, a coefficient, and an eob run */
             if (token <= 6) {
                 eob_run = eob_run_base[token];
@@ -1208,12 +1035,8 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
                 s->next_coeff->next=NULL;
                 fragment->next_coeff= s->next_coeff++;
             }
-            debug_vlc(" fragment %d coeff = %d\n",
-                s->coded_fragment_list[i], fragment->next_coeff[coeff_index]);
         } else {
             s->coeff_counts[fragment_num] |= 128;
-            debug_vlc(" fragment %d eob with %d coefficients\n",
-                s->coded_fragment_list[i], s->coeff_counts[fragment_num]&127);
             eob_run--;
         }
     }
@@ -1239,14 +1062,10 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     dc_c_table = get_bits(gb, 4);
 
     /* unpack the Y plane DC coefficients */
-    debug_vp3("  vp3: unpacking Y plane DC coefficients using table %d\n",
-        dc_y_table);
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_y_table], 0,
         s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
     /* unpack the C plane DC coefficients */
-    debug_vp3("  vp3: unpacking C plane DC coefficients using table %d\n",
-        dc_c_table);
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
         s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
 
@@ -1256,56 +1075,36 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
 
     /* unpack the group 1 AC coefficients (coeffs 1-5) */
     for (i = 1; i <= 5; i++) {
-
-        debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
-            i, ac_y_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_1[ac_y_table], i,
             s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
-        debug_vp3("  vp3: unpacking level %d C plane AC coefficients using table %d\n",
-            i, ac_c_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_1[ac_c_table], i,
             s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
     }
 
     /* unpack the group 2 AC coefficients (coeffs 6-14) */
     for (i = 6; i <= 14; i++) {
-
-        debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
-            i, ac_y_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_2[ac_y_table], i,
             s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
-        debug_vp3("  vp3: unpacking level %d C plane AC coefficients using table %d\n",
-            i, ac_c_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_2[ac_c_table], i,
             s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
     }
 
     /* unpack the group 3 AC coefficients (coeffs 15-27) */
     for (i = 15; i <= 27; i++) {
-
-        debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
-            i, ac_y_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_3[ac_y_table], i,
             s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
-        debug_vp3("  vp3: unpacking level %d C plane AC coefficients using table %d\n",
-            i, ac_c_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_3[ac_c_table], i,
             s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
     }
 
     /* unpack the group 4 AC coefficients (coeffs 28-63) */
     for (i = 28; i <= 63; i++) {
-
-        debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
-            i, ac_y_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_4[ac_y_table], i,
             s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
-        debug_vp3("  vp3: unpacking level %d C plane AC coefficients using table %d\n",
-            i, ac_c_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_4[ac_c_table], i,
             s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
     }
@@ -1394,8 +1193,6 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
 
     int transform = 0;
 
-    debug_vp3("  vp3: reversing DC prediction\n");
-
     vul = vu = vur = vl = 0;
     last_dc[0] = last_dc[1] = last_dc[2] = 0;
 
@@ -1410,8 +1207,6 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
 
                 current_frame_type =
                     compatible_frame[s->all_fragments[i].coding_method];
-                debug_dc_pred(" frag %d: orig DC = %d, ",
-                    i, DC_COEFF(i));
 
                 transform= 0;
                 if(x){
@@ -1439,16 +1234,11 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
                     }
                 }
 
-                debug_dc_pred("transform = %d, ", transform);
-
                 if (transform == 0) {
 
                     /* if there were no fragments to predict from, use last
                      * DC saved */
                     predicted_dc = last_dc[current_frame_type];
-                    debug_dc_pred("from last DC (%d) = %d\n",
-                        current_frame_type, DC_COEFF(i));
-
                 } else {
 
                     /* apply the appropriate predictor transform */
@@ -1471,7 +1261,6 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
                             predicted_dc = vul;
                     }
 
-                    debug_dc_pred("from pred DC = %d\n",
                     DC_COEFF(i));
                 }
 
@@ -1621,10 +1410,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                     }
 
                     /* dequantize the DCT coefficients */
-                    debug_idct("fragment %d, coding mode %d, DC = %d, dequant = %d:\n",
-                        i, s->all_fragments[i].coding_method,
-                        DC_COEFF(i), dequantizer[0]);
-
                     if(s->avctx->idct_algo==FF_IDCT_VP3){
                         Coeff *coeff= s->coeffs + i;
                         memset(block, 0, sizeof(block));
@@ -1656,19 +1441,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                             stride,
                             block);
                     }
-
-                    debug_idct("block after idct_%s():\n",
-                        (s->all_fragments[i].coding_method == MODE_INTRA)?
-                        "put" : "add");
-                    for (m = 0; m < 8; m++) {
-                        for (n = 0; n < 8; n++) {
-                            debug_idct(" %3d", *(output_plane +
-                                s->all_fragments[i].first_pixel + (m * stride + n)));
-                        }
-                        debug_idct("\n");
-                    }
-                    debug_idct("\n");
-
                 } else {
 
                     /* copy directly from the previous frame */
@@ -1860,8 +1632,6 @@ static void vp3_calculate_pixel_addresses(Vp3DecodeContext *s)
                 s->golden_frame.linesize[0] * y * FRAGMENT_PIXELS -
                     s->golden_frame.linesize[0] +
                     x * FRAGMENT_PIXELS;
-            debug_init("  fragment %d, first pixel @ %d\n",
-                i-1, s->all_fragments[i-1].first_pixel);
         }
     }
 
@@ -1873,8 +1643,6 @@ static void vp3_calculate_pixel_addresses(Vp3DecodeContext *s)
                 s->golden_frame.linesize[1] * y * FRAGMENT_PIXELS -
                     s->golden_frame.linesize[1] +
                     x * FRAGMENT_PIXELS;
-            debug_init("  fragment %d, first pixel @ %d\n",
-                i-1, s->all_fragments[i-1].first_pixel);
         }
     }
 
@@ -1886,8 +1654,6 @@ static void vp3_calculate_pixel_addresses(Vp3DecodeContext *s)
                 s->golden_frame.linesize[2] * y * FRAGMENT_PIXELS -
                     s->golden_frame.linesize[2] +
                     x * FRAGMENT_PIXELS;
-            debug_init("  fragment %d, first pixel @ %d\n",
-                i-1, s->all_fragments[i-1].first_pixel);
         }
     }
 }
@@ -1907,8 +1673,6 @@ static void theora_calculate_pixel_addresses(Vp3DecodeContext *s)
                 s->golden_frame.linesize[0] * y * FRAGMENT_PIXELS -
                     s->golden_frame.linesize[0] +
                     x * FRAGMENT_PIXELS;
-            debug_init("  fragment %d, first pixel @ %d\n",
-                i-1, s->all_fragments[i-1].first_pixel);
         }
     }
 
@@ -1920,8 +1684,6 @@ static void theora_calculate_pixel_addresses(Vp3DecodeContext *s)
                 s->golden_frame.linesize[1] * y * FRAGMENT_PIXELS -
                     s->golden_frame.linesize[1] +
                     x * FRAGMENT_PIXELS;
-            debug_init("  fragment %d, first pixel @ %d\n",
-                i-1, s->all_fragments[i-1].first_pixel);
         }
     }
 
@@ -1933,8 +1695,6 @@ static void theora_calculate_pixel_addresses(Vp3DecodeContext *s)
                 s->golden_frame.linesize[2] * y * FRAGMENT_PIXELS -
                     s->golden_frame.linesize[2] +
                     x * FRAGMENT_PIXELS;
-            debug_init("  fragment %d, first pixel @ %d\n",
-                i-1, s->all_fragments[i-1].first_pixel);
         }
     }
 }
@@ -1997,23 +1757,6 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     s->fragment_count = s->fragment_width * s->fragment_height * 3 / 2;
     s->fragment_start[1] = s->fragment_width * s->fragment_height;
     s->fragment_start[2] = s->fragment_width * s->fragment_height * 5 / 4;
-
-    debug_init("  Y plane: %d x %d\n", s->width, s->height);
-    debug_init("  C plane: %d x %d\n", c_width, c_height);
-    debug_init("  Y superblocks: %d x %d, %d total\n",
-        s->y_superblock_width, s->y_superblock_height, y_superblock_count);
-    debug_init("  C superblocks: %d x %d, %d total\n",
-        s->c_superblock_width, s->c_superblock_height, c_superblock_count);
-    debug_init("  total superblocks = %d, U starts @ %d, V starts @ %d\n",
-        s->superblock_count, s->u_superblock_start, s->v_superblock_start);
-    debug_init("  macroblocks: %d x %d, %d total\n",
-        s->macroblock_width, s->macroblock_height, s->macroblock_count);
-    debug_init("  %d fragments, %d x %d, u starts @ %d, v starts @ %d\n",
-        s->fragment_count,
-        s->fragment_width,
-        s->fragment_height,
-        s->fragment_start[1],
-        s->fragment_start[2]);
 
     s->all_fragments = av_malloc(s->fragment_count * sizeof(Vp3Fragment));
     s->coeff_counts = av_malloc(s->fragment_count * sizeof(*s->coeff_counts));
@@ -2569,7 +2312,6 @@ static int theora_decode_init(AVCodecContext *avctx)
     init_get_bits(&gb, header_start[i], header_len[i]);
 
     ptype = get_bits(&gb, 8);
-    debug_vp3("Theora headerpacket type: %x\n", ptype);
 
      if (!(ptype & 0x80))
      {
