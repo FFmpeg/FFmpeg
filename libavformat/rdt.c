@@ -234,15 +234,20 @@ ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
 }
 
 void
-ff_rdt_subscribe_rule (RTPDemuxContext *s, char *cmd, int size,
+ff_rdt_subscribe_rule (char *cmd, int size,
                        int stream_nr, int rule_nr)
+{
+    av_strlcatf(cmd, size, "stream=%d;rule=%d,stream=%d;rule=%d",
+                stream_nr, rule_nr * 2, stream_nr, rule_nr * 2 + 1);
+}
+
+void
+ff_rdt_subscribe_rule2 (RTPDemuxContext *s, char *cmd, int size,
+                        int stream_nr, int rule_nr)
 {
     rdt_data *rdt = s->dynamic_protocol_context;
 
-    av_strlcatf(cmd, size, "stream=%d;rule=%d,stream=%d;rule=%d",
-                stream_nr, rule_nr, stream_nr, rule_nr + 1);
-
-    rdt_load_mdpr(rdt, s->st, 0);
+    rdt_load_mdpr(rdt, s->st, rule_nr * 2);
 }
 
 static unsigned char *
