@@ -51,6 +51,12 @@ enum RTSPServerType {
     RTSP_SERVER_LAST
 };
 
+enum RTSPTransport {
+    RTSP_TRANSPORT_RTP,
+    RTSP_TRANSPORT_RDT,
+    RTSP_TRANSPORT_LAST
+};
+
 typedef struct RTSPState {
     URLContext *rtsp_hd; /* RTSP TCP connexion handle */
     int nb_rtsp_streams;
@@ -63,6 +69,7 @@ typedef struct RTSPState {
     //    ByteIOContext rtsp_gb;
     int seq;        /* RTSP command sequence number */
     char session_id[512];
+    enum RTSPTransport transport;
     enum RTSPLowerTransport lower_transport;
     enum RTSPServerType server_type;
     char last_reply[2048]; /* XXX: allocate ? */
@@ -538,6 +545,9 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             rtsp_parse_range_npt(p, &start, &end);
             s->start_time= start;
             s->duration= (end==AV_NOPTS_VALUE)?AV_NOPTS_VALUE:end-start; // AV_NOPTS_VALUE means live broadcast (and can't seek)
+        } else if (av_strstart(p, "IsRealDataType:integer;",&p)) {
+            if (atoi(p) == 1)
+                rt->transport = RTSP_TRANSPORT_RDT;
         } else if (s->nb_streams > 0) {
             rtsp_st = s->streams[s->nb_streams - 1]->priv_data;
             if (rtsp_st->dynamic_handler &&
@@ -636,11 +646,14 @@ static void rtsp_parse_transport(RTSPHeader *reply, const char *p)
                 p++;
                 get_word_sep(lower_transport, sizeof(lower_transport),
                              ";,", &p);
-                }
-        } else if (!strcasecmp (transport_protocol, "x-pn-tng")) {
+            }
+            th->transport = RTSP_TRANSPORT_RTP;
+        } else if (!strcasecmp (transport_protocol, "x-pn-tng") ||
+                   !strcasecmp (transport_protocol, "x-real-rdt")) {
             /* x-pn-tng/<protocol> */
             get_word_sep(lower_transport, sizeof(lower_transport), "/;,", &p);
             profile[0] = '\0';
+            th->transport = RTSP_TRANSPORT_RDT;
         }
         if (!strcasecmp(lower_transport, "TCP"))
             th->lower_transport = RTSP_LOWER_TRANSPORT_TCP;
@@ -908,7 +921,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
     char cmd[2048];
     const char *trans_pref;
 
-    if (rt->server_type == RTSP_SERVER_REAL)
+    if (rt->transport == RTSP_TRANSPORT_RDT)
         trans_pref = "x-pn-tng";
     else
         trans_pref = "RTP/AVP";
@@ -952,7 +965,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
                 av_strlcat(transport, "unicast;", sizeof(transport));
             av_strlcatf(transport, sizeof(transport),
                      "client_port=%d", port);
-            if (rt->server_type == RTSP_SERVER_RTP)
+            if (rt->transport == RTSP_TRANSPORT_RTP)
                 av_strlcatf(transport, sizeof(transport), "-%d", port + 1);
         }
 
@@ -993,12 +1006,14 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
 
         /* XXX: same protocol for all streams is required */
         if (i > 0) {
-            if (reply->transports[0].lower_transport != rt->lower_transport) {
+            if (reply->transports[0].lower_transport != rt->lower_transport ||
+                reply->transports[0].transport != rt->transport) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
         } else {
             rt->lower_transport = reply->transports[0].lower_transport;
+            rt->transport = reply->transports[0].transport;
         }
 
         /* close RTP connection if not choosen */
@@ -1325,6 +1340,7 @@ static int rtsp_read_packet(AVFormatContext *s,
         for (i = 0; i < rt->nb_rtsp_streams; i++) {
             if (i != 0) av_strlcat(cmd, ",", sizeof(cmd));
             ff_rdt_subscribe_rule(cmd, sizeof(cmd), i, 0);
+            if (rt->transport == RTSP_TRANSPORT_RDT)
             ff_rdt_subscribe_rule2(
                 rt->rtsp_streams[i]->rtp_ctx,
                 cmd, sizeof(cmd), i, 0);
@@ -1341,7 +1357,7 @@ static int rtsp_read_packet(AVFormatContext *s,
 
     /* get next frames from the same RTP packet */
     if (rt->cur_rtp) {
-        if (rt->server_type == RTSP_SERVER_REAL)
+        if (rt->transport == RTSP_TRANSPORT_RDT)
             ret = ff_rdt_parse_packet(rt->cur_rtp, pkt, NULL, 0);
         else
             ret = rtp_parse_packet(rt->cur_rtp, pkt, NULL, 0);
@@ -1371,7 +1387,7 @@ static int rtsp_read_packet(AVFormatContext *s,
     }
     if (len < 0)
         return len;
-    if (rt->server_type == RTSP_SERVER_REAL)
+    if (rt->transport == RTSP_TRANSPORT_RDT)
         ret = ff_rdt_parse_packet(rtsp_st->rtp_ctx, pkt, buf, len);
     else
         ret = rtp_parse_packet(rtsp_st->rtp_ctx, pkt, buf, len);

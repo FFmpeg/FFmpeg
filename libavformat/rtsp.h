@@ -50,6 +50,7 @@ typedef struct RTSPTransportField {
     int server_port_min, server_port_max; /**< RTP ports */
     int ttl; /**< ttl value */
     uint32_t destination; /**< destination IP address */
+    int transport;
     enum RTSPLowerTransport lower_transport;
 } RTSPTransportField;
 
