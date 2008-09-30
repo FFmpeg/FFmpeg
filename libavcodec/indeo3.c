@@ -51,7 +51,7 @@ typedef struct Indeo3DecodeContext {
     YUVBufs *ref_frame;
 
     unsigned char *ModPred;
-    unsigned short *corrector_type;
+    uint8_t *corrector_type;
 } Indeo3DecodeContext;
 
 static const uint8_t corrector_type_0[24] = {
@@ -80,7 +80,7 @@ static av_cold void build_modpred(Indeo3DecodeContext *s)
     s->ModPred[i+7*128] =                        2*((i + 5) - ((i + 4) % 9));
   }
 
-  s->corrector_type = av_malloc(24 * 256 * sizeof(*s->corrector_type));
+  s->corrector_type = av_malloc(24 * 256);
 
   for (i=0; i < 24; ++i) {
     for (j=0; j < 256; ++j) {
@@ -308,7 +308,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
   unsigned char *cur_frm_pos, *ref_frm_pos, *cp, *cp2;
   uint32_t *cur_lp, *ref_lp;
   const uint32_t *correction_lp[2], *correctionloworder_lp[2], *correctionhighorder_lp[2];
-  unsigned short *correction_type_sp[2];
+  uint8_t *correction_type_sp[2];
   ustr_t strip_tbl[20], *strip;
   int i, j, k, lp1, lp2, flag1, cmd, blks_width, blks_height, region_160_width,
     rle_v1, rle_v2, rle_v3;
