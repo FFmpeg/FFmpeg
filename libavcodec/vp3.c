@@ -2078,8 +2078,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
         av_log(avctx, AV_LOG_DEBUG, "Old (<alpha3) Theora bitstream, flipped image\n");
     }
 
-    s->width = get_bits(gb, 16) << 4;
-    s->height = get_bits(gb, 16) << 4;
+    visible_width  = s->width  = get_bits(gb, 16) << 4;
+    visible_height = s->height = get_bits(gb, 16) << 4;
 
     if(avcodec_check_dimensions(avctx, s->width, s->height)){
         av_log(avctx, AV_LOG_ERROR, "Invalid dimensions (%dx%d)\n", s->width, s->height);
@@ -2096,10 +2096,10 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
         skip_bits(gb, 32); /* total number of macroblocks in a frame */
     }
 
+    if (s->theora >= 0x030200) {
     visible_width  = get_bits_long(gb, 24);
     visible_height = get_bits_long(gb, 24);
 
-    if (s->theora >= 0x030200) {
         skip_bits(gb, 8); /* offset x */
         skip_bits(gb, 8); /* offset y */
     }
