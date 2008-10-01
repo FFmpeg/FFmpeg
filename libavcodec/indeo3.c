@@ -380,13 +380,13 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                                 if(lp2 == 0) {
                                     RLE_V3_CHECK(buf1,rle_v1,rle_v2,rle_v3)
 
-                                        if(rle_v1 == 1 || ref_vectors != NULL) {
-                                            for(i = 0, j = 0; i < 4; i++, j += width_tbl[1])
-                                                cur_lp[j] = ref_lp[j];
-                                        }
+                                    if(rle_v1 == 1 || ref_vectors != NULL) {
+                                        for(i = 0, j = 0; i < 4; i++, j += width_tbl[1])
+                                            cur_lp[j] = ref_lp[j];
+                                    }
 
                                     RLE_V2_CHECK(buf1,rle_v2, rle_v3,lp2)
-                                        break;
+                                    break;
                                 } else {
                                     rle_v1 = 1;
                                     rle_v2 = *buf1 - 1;
@@ -423,7 +423,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                                     cur_lp[j] = lv;
 
                                 LV1_CHECK(buf1,rle_v3,lv1,lp2)
-                                    break;
+                                break;
                             default:
                                 return;
                             }
