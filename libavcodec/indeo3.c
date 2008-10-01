@@ -35,7 +35,6 @@ typedef struct
     uint8_t *Ybuf;
     uint8_t *Ubuf;
     uint8_t *Vbuf;
-    unsigned int the_buf_size;
     unsigned short y_w, y_h;
     unsigned short uv_w, uv_h;
 } YUVBufs;
@@ -114,7 +113,6 @@ static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
     s->iv_frame[0].y_h = s->iv_frame[1].y_h = luma_height;
     s->iv_frame[0].uv_w = s->iv_frame[1].uv_w = chroma_width;
     s->iv_frame[0].uv_h = s->iv_frame[1].uv_h = chroma_height;
-    s->iv_frame[0].the_buf_size = bufsize;
 
     s->iv_frame[0].Ybuf = s->buf + luma_width;
     i = luma_pixels + luma_width * 2;
