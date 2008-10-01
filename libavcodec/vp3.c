@@ -2097,8 +2097,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     }
 
     if (s->theora >= 0x030200) {
-    visible_width  = get_bits_long(gb, 24);
-    visible_height = get_bits_long(gb, 24);
+        visible_width  = get_bits_long(gb, 24);
+        visible_height = get_bits_long(gb, 24);
 
         skip_bits(gb, 8); /* offset x */
         skip_bits(gb, 8); /* offset y */

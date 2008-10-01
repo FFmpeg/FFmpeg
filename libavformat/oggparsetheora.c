@@ -76,11 +76,11 @@ theora_header (AVFormatContext * s, int idx)
             skip_bits(&gb, 100);
 
         if (version >= 0x030200) {
-        width  = get_bits_long(&gb, 24);
-        height = get_bits_long(&gb, 24);
-        if (   width  <= st->codec->width  && width  > st->codec->width-16
-            && height <= st->codec->height && height > st->codec->height-16)
-            avcodec_set_dimensions(st->codec, width, height);
+            width  = get_bits_long(&gb, 24);
+            height = get_bits_long(&gb, 24);
+            if (   width  <= st->codec->width  && width  > st->codec->width-16
+                && height <= st->codec->height && height > st->codec->height-16)
+                avcodec_set_dimensions(st->codec, width, height);
 
             skip_bits(&gb, 16);
         }
