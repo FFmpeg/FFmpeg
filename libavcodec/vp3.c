@@ -230,7 +230,7 @@ typedef struct Vp3DecodeContext {
     int huff_code_size;
     uint16_t huffman_table[80][32][2];
 
-    uint32_t filter_limit_values[64];
+    uint8_t filter_limit_values[64];
     int bounding_values_array[256];
 } Vp3DecodeContext;
 
