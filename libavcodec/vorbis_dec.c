@@ -1426,7 +1426,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
     uint_fast8_t mode_number;
     uint_fast8_t blockflag;
     uint_fast16_t blocksize;
-    int_fast32_t i,j,dir;
+    int_fast32_t i,j;
     uint_fast8_t no_residue[vc->audio_channels];
     uint_fast8_t do_not_decode[vc->audio_channels];
     vorbis_mapping *mapping;
@@ -1518,28 +1518,26 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
         vc->dsp.vorbis_inverse_coupling(mag, ang, blocksize/2);
     }
 
-// Dotproduct
+// Dotproduct, MDCT
 
-    for(j=0, ch_floor_ptr=vc->channel_floors;j<vc->audio_channels;++j,ch_floor_ptr+=blocksize/2) {
+    for(j=vc->audio_channels-1;j>=0;j--) {
+        ch_floor_ptr=vc->channel_floors+j*blocksize/2;
         ch_res_ptr=vc->channel_residues+res_chan[j]*blocksize/2;
         vc->dsp.vector_fmul(ch_floor_ptr, ch_res_ptr, blocksize/2);
+        ff_imdct_half(&vc->mdct[blockflag], ch_res_ptr, ch_floor_ptr);
     }
 
-// MDCT, overlap/add, save data for next overlapping  FPMATH
+// Overlap/add, save data for next overlapping  FPMATH
 
     retlen = (blocksize + vc->blocksize[previous_window])/4;
-    dir = retlen <= blocksize/2; // pick an order so that ret[] can reuse floors[] without stepping on any data we need
-    for(j=dir?0:vc->audio_channels-1; (unsigned)j<vc->audio_channels; j+=dir*2-1) {
+    for(j=0;j<vc->audio_channels;j++) {
         uint_fast16_t bs0=vc->blocksize[0];
         uint_fast16_t bs1=vc->blocksize[1];
         float *residue=vc->channel_residues+res_chan[j]*blocksize/2;
-        float *floor=vc->channel_floors+j*blocksize/2;
         float *saved=vc->saved+j*bs1/4;
         float *ret=vc->channel_floors+j*retlen;
         float *buf=residue;
         const float *win=vc->win[blockflag&previous_window];
-
-        ff_imdct_half(&vc->mdct[blockflag], buf, floor);
 
         if(blockflag == previous_window) {
             vc->dsp.vector_fmul_window(ret, saved, buf, win, fadd_bias, blocksize/4);
