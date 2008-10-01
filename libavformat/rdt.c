@@ -140,27 +140,25 @@ rdt_load_mdpr (rdt_data *rdt, AVStream *st, int rule_nr)
  * Actual data handling.
  */
 
-static int rdt_parse_header(struct RTPDemuxContext *s, const uint8_t *buf,
-                            int len, int *seq, uint32_t *timestamp, int *flags)
+int
+ff_rdt_parse_header(const uint8_t *buf, int len,
+                    int *sn, int *seq, int *rn, uint32_t *ts)
 {
-    rdt_data *rdt = s->dynamic_protocol_context;
-    int consumed = 0, sn;
+    int consumed = 10;
 
-    if (buf[0] < 0x40 || buf[0] > 0x42) {
+    if (len > 0 && (buf[0] < 0x40 || buf[0] > 0x42)) {
         buf += 9;
         len -= 9;
         consumed += 9;
     }
-    sn = (buf[0]>>1) & 0x1f;
-    *seq = AV_RB16(buf+1);
-    *timestamp = AV_RB32(buf+4);
-    if (!(buf[3] & 1) && (sn != rdt->prev_sn || *timestamp != rdt->prev_ts)) {
-        *flags |= PKT_FLAG_KEY;
-        rdt->prev_sn = sn;
-        rdt->prev_ts = *timestamp;
-    }
+    if (len < 10)
+        return -1;
+    if (sn)  *sn  = (buf[0]>>1) & 0x1f;
+    if (seq) *seq = AV_RB16(buf+1);
+    if (ts)  *ts  = AV_RB32(buf+4);
+    if (rn)  *rn  = buf[3] & 0x3f;
 
-    return consumed + 10;
+    return consumed;
 }
 
 /**< return 0 on packet, no more left, 1 on packet, 1 on partial packet... */
@@ -208,7 +206,8 @@ int
 ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
                     const uint8_t *buf, int len)
 {
-    int seq, flags = 0;
+    rdt_data *rdt = s->dynamic_protocol_context;
+    int seq, flags = 0, rule, sn;
     uint32_t timestamp;
     int rv= 0;
 
@@ -221,9 +220,14 @@ ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
 
     if (len < 12)
         return -1;
-    rv = rdt_parse_header(s, buf, len, &seq, &timestamp, &flags);
+    rv = ff_rdt_parse_header(buf, len, &sn, &seq, &rule, &timestamp);
     if (rv < 0)
         return rv;
+    if (!(rule & 1) && (sn != rdt->prev_sn || timestamp != rdt->prev_ts)) {
+        flags |= PKT_FLAG_KEY;
+        rdt->prev_sn = sn;
+        rdt->prev_ts = timestamp;
+    }
     buf += rv;
     len -= rv;
     s->seq = seq;
