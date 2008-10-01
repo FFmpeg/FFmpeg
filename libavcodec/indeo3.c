@@ -98,19 +98,15 @@ static av_cold int build_modpred(Indeo3DecodeContext *s)
 
 static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
 {
-    int luma_width, luma_height, luma_pixels, chroma_width, chroma_height,
-        chroma_pixels, i;
-    unsigned int bufsize;
-
-    luma_width   = (s->width  + 3) & (~3);
-    luma_height  = (s->height + 3) & (~3);
-    chroma_width  = ((luma_width >> 2) + 3) & (~3);
-    chroma_height = ((luma_height>> 2) + 3) & (~3);
-    luma_pixels = luma_width * luma_height;
-    chroma_pixels = chroma_width * chroma_height;
-
-    bufsize = luma_pixels * 2 + luma_width * 3 +
-        (chroma_pixels + chroma_width) * 4;
+    int luma_width    = (s->width           + 3) & ~3,
+        luma_height   = (s->height          + 3) & ~3,
+        chroma_width  = ((luma_width  >> 2) + 3) & ~3,
+        chroma_height = ((luma_height >> 2) + 3) & ~3,
+        luma_pixels   = luma_width   * luma_height,
+        chroma_pixels = chroma_width * chroma_height,
+        i;
+    unsigned int bufsize = luma_pixels * 2 + luma_width * 3 +
+                          (chroma_pixels   + chroma_width) * 4;
 
     if(!(s->buf = av_malloc(bufsize)))
         return AVERROR(ENOMEM);
