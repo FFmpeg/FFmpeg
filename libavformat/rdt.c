@@ -211,10 +211,13 @@ ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     uint32_t timestamp;
     int rv= 0;
 
+    if (!s->parse_packet)
+        return -1;
+
     if (!buf) {
         /* return the next packets, if any */
         timestamp= 0; ///< Should not be used if buf is NULL, but should be set to the timestamp of the packet returned....
-        rv= rdt_parse_packet(s, pkt, &timestamp, NULL, 0, flags);
+        rv= s->parse_packet(s, pkt, &timestamp, NULL, 0, flags);
         return rv;
     }
 
@@ -232,7 +235,7 @@ ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     len -= rv;
     s->seq = seq;
 
-    rv = rdt_parse_packet(s, pkt, &timestamp, buf, len, flags);
+    rv = s->parse_packet(s, pkt, &timestamp, buf, len, flags);
 
     return rv;
 }
@@ -313,7 +316,8 @@ static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
     CODEC_ID_NONE, \
     rdt_parse_sdp_line, \
     rdt_new_extradata, \
-    rdt_free_extradata \
+    rdt_free_extradata, \
+    rdt_parse_packet \
 };
 
 RDT_HANDLER(live_video, "x-pn-multirate-realvideo-live", CODEC_TYPE_VIDEO);
