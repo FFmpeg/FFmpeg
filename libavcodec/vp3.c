@@ -811,9 +811,9 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
     int current_macroblock;
     int current_fragment;
 
-    if (s->keyframe) {
+    if (s->keyframe)
         return 0;
-    } else {
+    else {
         memset(motion_x, 0, 6 * sizeof(int));
         memset(motion_y, 0, 6 * sizeof(int));
 
