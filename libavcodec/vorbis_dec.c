@@ -960,6 +960,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext) {
     hdr_type=get_bits(gb, 8);
     if (hdr_type!=5) {
         av_log(avccontext, AV_LOG_ERROR, "Third header is not the setup header.\n");
+        vorbis_free(vc);
         return -1;
     }
     if (vorbis_parse_setup_hdr(vc)) {
