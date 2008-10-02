@@ -42,7 +42,7 @@
 
 #ifdef CONFIG_LIBFAADBIN
 #include <dlfcn.h>
-static const char* libfaadname = "libfaad.so";
+static const char* const libfaadname = "libfaad.so";
 #else
 #define dlopen(a)
 #define dlclose(a)

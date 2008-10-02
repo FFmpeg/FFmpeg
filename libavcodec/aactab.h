@@ -57,8 +57,8 @@ extern const uint8_t ff_aac_num_swb_128 [];
 extern const uint32_t ff_aac_scalefactor_code[121];
 extern const uint8_t  ff_aac_scalefactor_bits[121];
 
-extern const uint16_t *ff_aac_spectral_codes[11];
-extern const uint8_t  *ff_aac_spectral_bits [11];
+extern const uint16_t * const ff_aac_spectral_codes[11];
+extern const uint8_t  * const ff_aac_spectral_bits [11];
 extern const uint16_t  ff_aac_spectral_sizes[11];
 
 extern const float *ff_aac_codebook_vectors[];

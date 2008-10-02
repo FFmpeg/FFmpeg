@@ -1072,7 +1072,7 @@ static const int16_t vq_hebap7[512][6] = {
 {   3231,   -3284,   27336,    4174,   -1683,     497},
 };
 
-const int16_t (*ff_eac3_mantissa_vq[8])[6] = {
+const int16_t (* const ff_eac3_mantissa_vq[8])[6] = {
     NULL,
     vq_hebap1,
     vq_hebap2,

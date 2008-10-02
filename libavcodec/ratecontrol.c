@@ -94,7 +94,7 @@ int ff_rate_control_init(MpegEncContext *s)
         "avgTex",
         NULL
     };
-    static double (*func1[])(void *, double)={
+    static double (* const func1[])(void *, double)={
         (void *)bits2qp,
         (void *)qp2bits,
         NULL

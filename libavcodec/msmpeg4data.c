@@ -1979,7 +1979,7 @@ static const uint32_t table_mb_non_intra4[128][2] = {
 {0x000011,  5}, {0x0001AC,  9}, {0x0000F3,  8}, {0x000439, 11},
 };
 
-const uint32_t (*wmv2_inter_table[WMV2_INTER_CBP_TABLE_COUNT])[2]={
+const uint32_t (* const wmv2_inter_table[WMV2_INTER_CBP_TABLE_COUNT])[2]={
     table_mb_non_intra2,
     table_mb_non_intra3,
     table_mb_non_intra4,

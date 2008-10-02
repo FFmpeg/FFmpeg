@@ -198,7 +198,7 @@ static const float tns_tmp2_map_0_4[16] = {
      0.67369562,  0.52643216,  0.36124167,  0.18374951,
 };
 
-static const float *tns_tmp2_map[4] = {
+static const float * const tns_tmp2_map[4] = {
     tns_tmp2_map_0_3,
     tns_tmp2_map_0_4,
     tns_tmp2_map_1_3,

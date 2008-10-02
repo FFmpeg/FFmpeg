@@ -29,7 +29,7 @@
 
 #ifdef CONFIG_LIBA52BIN
 #include <dlfcn.h>
-static const char* liba52name = "liba52.so.0";
+static const char* const liba52name = "liba52.so.0";
 #endif
 
 /**

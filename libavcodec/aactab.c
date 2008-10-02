@@ -387,12 +387,12 @@ static const uint8_t bits11[289] = {
      5,
 };
 
-const uint16_t *ff_aac_spectral_codes[11] = {
+const uint16_t * const ff_aac_spectral_codes[11] = {
     codes1,  codes2,  codes3, codes4, codes5, codes6, codes7, codes8,
     codes9, codes10, codes11,
 };
 
-const uint8_t *ff_aac_spectral_bits[11] = {
+const uint8_t * const ff_aac_spectral_bits[11] = {
     bits1,  bits2,  bits3, bits4, bits5, bits6, bits7, bits8,
     bits9, bits10, bits11,
 };
@@ -888,7 +888,7 @@ static const float codebook_vector10[578] = {
       64.0f,      64.0f,
 };
 
-const float *ff_aac_codebook_vectors[] = {
+const float * const ff_aac_codebook_vectors[] = {
     codebook_vector0, codebook_vector0, codebook_vector2,
     codebook_vector2, codebook_vector4, codebook_vector4,
     codebook_vector6, codebook_vector6, codebook_vector8,
