@@ -77,7 +77,7 @@ struct AVAudioConvert {
 
 AVAudioConvert *av_audio_convert_alloc(enum SampleFormat out_fmt, int out_channels,
                                        enum SampleFormat in_fmt, int in_channels,
-                                       const const float *matrix, int flags)
+                                       const float *matrix, int flags)
 {
     AVAudioConvert *ctx;
     if (in_channels!=out_channels)
