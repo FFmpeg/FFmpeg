@@ -1161,7 +1161,7 @@ no_output_pic:
     if(s->reordered_input_picture[0]){
         s->reordered_input_picture[0]->reference= s->reordered_input_picture[0]->pict_type!=FF_B_TYPE ? 3 : 0;
 
-        copy_picture(&s->new_picture, s->reordered_input_picture[0]);
+        ff_copy_picture(&s->new_picture, s->reordered_input_picture[0]);
 
         if(s->reordered_input_picture[0]->type == FF_BUFFER_TYPE_SHARED || s->avctx->rc_buffer_size){
             // input is a shared pix, so we can't modifiy it -> alloc a new one & ensure that the shared one is reuseable
@@ -1193,7 +1193,7 @@ no_output_pic:
                 s->new_picture.data[i]+= INPLACE_OFFSET;
             }
         }
-        copy_picture(&s->current_picture, s->current_picture_ptr);
+        ff_copy_picture(&s->current_picture, s->current_picture_ptr);
 
         s->picture_number= s->new_picture.display_picture_number;
 //printf("dpn:%d\n", s->picture_number);

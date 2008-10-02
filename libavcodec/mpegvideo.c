@@ -153,7 +153,7 @@ int ff_dct_common_init(MpegEncContext *s)
     return 0;
 }
 
-void copy_picture(Picture *dst, Picture *src){
+void ff_copy_picture(Picture *dst, Picture *src){
     *dst = *src;
     dst->type= FF_BUFFER_TYPE_COPY;
 }
@@ -878,7 +878,7 @@ alloc:
   //      s->current_picture_ptr->quality= s->new_picture_ptr->quality;
     s->current_picture_ptr->key_frame= s->pict_type == FF_I_TYPE;
 
-    copy_picture(&s->current_picture, s->current_picture_ptr);
+    ff_copy_picture(&s->current_picture, s->current_picture_ptr);
 
     if (s->pict_type != FF_B_TYPE) {
         s->last_picture_ptr= s->next_picture_ptr;
@@ -891,8 +891,8 @@ alloc:
         s->current_picture_ptr ? s->current_picture_ptr->data[0] : NULL,
         s->pict_type, s->dropable);*/
 
-    if(s->last_picture_ptr) copy_picture(&s->last_picture, s->last_picture_ptr);
-    if(s->next_picture_ptr) copy_picture(&s->next_picture, s->next_picture_ptr);
+    if(s->last_picture_ptr) ff_copy_picture(&s->last_picture, s->last_picture_ptr);
+    if(s->next_picture_ptr) ff_copy_picture(&s->next_picture, s->next_picture_ptr);
 
     if(s->pict_type != FF_I_TYPE && (s->last_picture_ptr==NULL || s->last_picture_ptr->data[0]==NULL) && !s->dropable && s->codec_id != CODEC_ID_H264){
         av_log(avctx, AV_LOG_ERROR, "warning: first frame is no keyframe\n");
