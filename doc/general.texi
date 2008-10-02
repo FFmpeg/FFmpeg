@@ -443,10 +443,21 @@ the FFmpeg Windows Help Forum at
 @subsection Native Windows compilation
 
 FFmpeg can be built to run natively on Windows using the MinGW tools. Install
-the current versions of MSYS and MinGW from @url{http://www.mingw.org/}. Also
-install the coreutils package, and update to the latest MSYS make (note: not
-mingw32-make). You can find detailed installation
+the latest versions of MSYS and MinGW from @url{http://www.mingw.org/}.
+You can find detailed installation
 instructions in the download section and the FAQ.
+
+FFmpeg does not build out-of-the-box with the packages the automated MinGW
+installer provides. It also requires coreutils to be installed and many other
+packages updated to the latest version. The minimum version for some packages
+are listed below:
+
+@itemize
+@item bash 3.1
+@item msys-make 3.81-2 (note: not mingw32-make)
+@item w32api 3.12
+@item mingw-runtime 3.15
+@end itemize
 
 Within the MSYS shell, configure and make with:
 
@@ -463,9 +474,6 @@ to @file{/usr/local}. You may specify another install path using the
 Notes:
 
 @itemize
-
-@item Use at least bash 3.1. Older versions are known to fail on the
-configure script.
 
 @item In order to compile vhooks, you must have a POSIX-compliant libdl in
 your MinGW system. Get dlfcn-win32 from
