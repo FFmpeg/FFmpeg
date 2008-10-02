@@ -7,6 +7,10 @@
 # Copyright (c) 2005-2006 Mans Rullgard
 #
 
+# Prevent locale nonsense from breaking basic text processing.
+LC_ALL=C
+export LC_ALL
+
 # make sure we are running under a compatible shell
 # try to make this part work with most shells
 
