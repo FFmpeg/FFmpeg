@@ -799,9 +799,9 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf)
         if (databuf == q->decoded_bytes_buffer) {
             uint8_t *ptr2 = q->decoded_bytes_buffer+q->bytes_per_frame-1;
             ptr1 = q->decoded_bytes_buffer;
-        for (i = 0; i < (q->bytes_per_frame/2); i++, ptr1++, ptr2--) {
-            FFSWAP(uint8_t,*ptr1,*ptr2);
-        }
+            for (i = 0; i < (q->bytes_per_frame/2); i++, ptr1++, ptr2--) {
+                FFSWAP(uint8_t,*ptr1,*ptr2);
+            }
         } else {
             const uint8_t *ptr2 = databuf+q->bytes_per_frame-1;
             for (i = 0; i < q->bytes_per_frame; i++)
