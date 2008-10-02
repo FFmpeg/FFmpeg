@@ -267,4 +267,4 @@ static const int16_t cb_ma_predictor[2][MA_NP][10] =
     { 3024,  1592,   940,  1631,  1723,  1579,  2034,  2084,  1913,  2601}
   }
 };
-#endif // AVCODEC_G729DATA_H
+#endif /* AVCODEC_G729DATA_H */
