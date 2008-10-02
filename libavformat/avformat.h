@@ -1123,8 +1123,8 @@ void ff_dynarray_add(unsigned long **tab_ptr, int *nb_ptr, unsigned long elem);
 #ifdef __GNUC__
 #define dynarray_add(tab, nb_ptr, elem)\
 do {\
-    typeof(tab) _tab = (tab);\
-    typeof(elem) _elem = (elem);\
+    __typeof__(tab) _tab = (tab);\
+    __typeof__(elem) _elem = (elem);\
     (void)sizeof(**_tab == _elem); /* check that types are compatible */\
     ff_dynarray_add((unsigned long **)_tab, nb_ptr, (unsigned long)_elem);\
 } while(0)
