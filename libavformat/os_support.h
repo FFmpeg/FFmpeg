@@ -28,9 +28,6 @@
  */
 
 #ifdef __MINGW32__
-#  define WIN32_LEAN_AND_MEAN
-#  include <windows.h>
-#  define usleep(t)    Sleep((t) / 1000)
 #  include <fcntl.h>
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
 #endif
