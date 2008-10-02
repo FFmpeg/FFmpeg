@@ -1640,6 +1640,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     matroska_fix_ass_packet(matroska, pkt, duration);
 
                 if (matroska->prev_pkt &&
+                    timecode != AV_NOPTS_VALUE &&
                     matroska->prev_pkt->pts == timecode &&
                     matroska->prev_pkt->stream_index == st->index)
                     matroska_merge_packets(matroska->prev_pkt, pkt);
