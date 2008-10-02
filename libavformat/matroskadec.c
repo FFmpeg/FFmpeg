@@ -1645,7 +1645,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     matroska->prev_pkt->stream_index == st->index)
                     matroska_merge_packets(matroska->prev_pkt, pkt);
                 else {
-                dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
+                    dynarray_add(&matroska->packets,&matroska->num_packets,pkt);
                     matroska->prev_pkt = pkt;
                 }
             }
