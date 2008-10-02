@@ -47,7 +47,7 @@ static int sol_probe(AVProbeData *p)
 #define SOL_16BIT   4
 #define SOL_STEREO 16
 
-static int sol_codec_id(int magic, int type)
+static enum CodecID sol_codec_id(int magic, int type)
 {
     if (magic == 0x0B8D)
     {
@@ -88,7 +88,8 @@ static int sol_read_header(AVFormatContext *s,
     int size;
     unsigned int magic,tag;
     ByteIOContext *pb = s->pb;
-    unsigned int id, codec, channels, rate, type;
+    unsigned int id, channels, rate, type;
+    enum CodecID codec;
     AVStream *st;
 
     /* check ".snd" header */

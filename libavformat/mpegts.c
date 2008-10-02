@@ -934,7 +934,8 @@ static void mpegts_push_data(MpegTSFilter *filter,
 static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code)
 {
     AVStream *st;
-    int codec_type, codec_id;
+    enum CodecID codec_id;
+    enum CodecType codec_type;
 
     switch(pes->stream_type){
     case STREAM_TYPE_AUDIO_MPEG1:

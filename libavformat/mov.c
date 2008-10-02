@@ -676,7 +676,7 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
  * Compute codec id for 'lpcm' tag.
  * See CoreAudioTypes and AudioStreamBasicDescription at Apple.
  */
-static int mov_get_lpcm_codec_id(int bps, int flags)
+static enum CodecID mov_get_lpcm_codec_id(int bps, int flags)
 {
     if (flags & 1) { // floating point
         if (flags & 2) { // big endian
@@ -704,7 +704,7 @@ static int mov_get_lpcm_codec_id(int bps, int flags)
             else if (bps == 32) return CODEC_ID_PCM_S32LE;
         }
     }
-    return 0;
+    return CODEC_ID_NONE;
 }
 
 static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)

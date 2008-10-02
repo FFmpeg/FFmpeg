@@ -46,12 +46,12 @@ typedef struct FilmDemuxContext {
     int video_stream_index;
     int audio_stream_index;
 
-    unsigned int audio_type;
+    enum CodecID audio_type;
     unsigned int audio_samplerate;
     unsigned int audio_bits;
     unsigned int audio_channels;
 
-    unsigned int video_type;
+    enum CodecID video_type;
     unsigned int sample_count;
     film_sample_t *sample_table;
     unsigned int current_sample;
@@ -115,7 +115,7 @@ static int film_read_header(AVFormatContext *s,
         else if (film->audio_bits == 16)
             film->audio_type = CODEC_ID_PCM_S16BE;
         else
-            film->audio_type = 0;
+            film->audio_type = CODEC_ID_NONE;
     }
 
     if (AV_RB32(&scratch[0]) != FDSC_TAG)
@@ -124,7 +124,7 @@ static int film_read_header(AVFormatContext *s,
     if (AV_RB32(&scratch[8]) == CVID_TAG) {
         film->video_type = CODEC_ID_CINEPAK;
     } else
-        film->video_type = 0;
+        film->video_type = CODEC_ID_NONE;
 
     /* initialize the decoder streams */
     if (film->video_type) {

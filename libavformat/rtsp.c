@@ -389,7 +389,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
     RTSPState *rt = s->priv_data;
     char buf1[64], st_type[64];
     const char *p;
-    int codec_type, payload_type, i;
+    enum CodecType codec_type;
+    int payload_type, i;
     AVStream *st;
     RTSPStream *rtsp_st;
     struct in_addr sdp_ip;

@@ -197,7 +197,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             asf->hdr.max_bitrate        = get_le32(pb);
             asf->packet_size = asf->hdr.max_pktsize;
         } else if (!memcmp(&g, &stream_header, sizeof(GUID))) {
-            int type, type_specific_size, sizeX;
+            enum CodecType type;
+            int type_specific_size, sizeX;
             uint64_t total_size;
             unsigned int tag1;
             int64_t pos1, pos2, start_time;

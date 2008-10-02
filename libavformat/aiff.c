@@ -46,7 +46,7 @@ static const AVCodecTag codec_aiff_tags[] = {
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
 
-static int aiff_codec_get_id(int bps)
+static enum CodecID aiff_codec_get_id(int bps)
 {
     if (bps <= 8)
         return CODEC_ID_PCM_S8;
@@ -58,7 +58,7 @@ static int aiff_codec_get_id(int bps)
         return CODEC_ID_PCM_S32BE;
 
     /* bigger than 32 isn't allowed  */
-    return 0;
+    return CODEC_ID_NONE;
 }
 
 /* returns the size of the found tag */

@@ -66,7 +66,7 @@ typedef struct WsAudDemuxContext {
     int audio_samplerate;
     int audio_channels;
     int audio_bits;
-    int audio_type;
+    enum CodecID audio_type;
     int audio_stream_index;
     int64_t audio_frame_counter;
 } WsAudDemuxContext;

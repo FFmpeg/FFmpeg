@@ -122,7 +122,8 @@ static int au_read_header(AVFormatContext *s,
     int size;
     unsigned int tag;
     ByteIOContext *pb = s->pb;
-    unsigned int id, codec, channels, rate;
+    unsigned int id, channels, rate;
+    enum CodecID codec;
     AVStream *st;
 
     /* check ".snd" header */

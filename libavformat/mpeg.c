@@ -409,7 +409,9 @@ static int mpegps_read_packet(AVFormatContext *s,
 {
     MpegDemuxContext *m = s->priv_data;
     AVStream *st;
-    int len, startcode, i, type, codec_id = 0, es_type;
+    int len, startcode, i, es_type;
+    enum CodecID codec_id = CODEC_ID_NONE;
+    enum CodecType type;
     int64_t pts, dts, dummy_pos; //dummy_pos is needed for the index building to work
 
  redo:
