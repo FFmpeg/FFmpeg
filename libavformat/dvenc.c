@@ -38,7 +38,7 @@ struct DVMuxContext {
     const DVprofile*  sys;    /* Current DV profile. E.g.: 525/60, 625/50 */
     int         n_ast;        /* Number of stereo audio streams (up to 2) */
     AVStream   *ast[2];       /* Stereo audio streams */
-    AVFifoBuffer  audio_data[2]; /* Fifo for storing excessive amounts of PCM */
+    AVFifoBuffer  audio_data[2]; /* FIFO for storing excessive amounts of PCM */
     int         frames;       /* Number of a current frame */
     time_t      start_time;   /* Start time of recording */
     int         has_audio;    /* frame under contruction has audio */
@@ -117,7 +117,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
                  (c->sys->n_difchan & 2); /* definition: 0 -- 25Mbps, 2 -- 50Mbps */
         buf[4] = (1 << 7) | /* emphasis: 1 -- off */
                  (0 << 6) | /* emphasis time constant: 0 -- reserved */
-                 (0 << 3) | /* frequency: 0 -- 48Khz, 1 -- 44,1Khz, 2 -- 32Khz */
+                 (0 << 3) | /* frequency: 0 -- 48kHz, 1 -- 44,1kHz, 2 -- 32kHz */
                   0;        /* quantization: 0 -- 16bit linear, 1 -- 12bit nonlinear */
         va_end(ap);
         break;
@@ -189,8 +189,8 @@ static void dv_inject_audio(DVMuxContext *c, int channel, uint8_t* frame_ptr)
                 if (of*2 >= size)
                     continue;
 
-                frame_ptr[d] = av_fifo_peek(&c->audio_data[channel], of*2+1); // FIXME: may be we have to admit
-                frame_ptr[d+1] = av_fifo_peek(&c->audio_data[channel], of*2); //        that DV is a big endian PCM
+                frame_ptr[d]   = av_fifo_peek(&c->audio_data[channel], of*2+1); // FIXME: maybe we have to admit
+                frame_ptr[d+1] = av_fifo_peek(&c->audio_data[channel], of*2);   //        that DV is a big-endian PCM
             }
             frame_ptr += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
         }
@@ -365,7 +365,7 @@ static int dv_write_header(AVFormatContext *s)
     if (!dv_init_mux(s)) {
         av_log(s, AV_LOG_ERROR, "Can't initialize DV format!\n"
                     "Make sure that you supply exactly two streams:\n"
-                    "     video: 25fps or 29.97fps, audio: 2ch/48Khz/PCM\n"
+                    "     video: 25fps or 29.97fps, audio: 2ch/48kHz/PCM\n"
                     "     (50Mbps allows an optional second audio stream)\n");
         return -1;
     }

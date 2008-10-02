@@ -1201,7 +1201,7 @@ static int mpegts_probe(AVProbeData *p)
 #endif
 }
 
-/* return the 90 kHz PCR and the extension for the 27 MHz PCR. return
+/* return the 90kHz PCR and the extension for the 27MHz PCR. return
    (-1) if not available */
 static int parse_pcr(int64_t *ppcr_high, int *ppcr_low,
                      const uint8_t *packet)

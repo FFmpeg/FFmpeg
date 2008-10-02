@@ -284,7 +284,7 @@ static inline int put_bits_left(PutBitContext* s)
     return (s->buf_end - s->buf) * 8 - put_bits_count(s);
 }
 
-/* decode ac coefs */
+/* decode ac coefficients */
 static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 {
     int last_index = gb->size_in_bits;
@@ -493,7 +493,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         mb_y = v >> 8;
         /* We work with 720p frames split in half. The odd half-frame (chan==2,3) is displaced :-( */
         if (s->sys->height == 720 && ((s->buf[1]>>2)&0x3) == 0) {
-               mb_y -= (mb_y>17)?18:-72; /* shifting the Y coordinate down by 72/2 macro blocks */
+               mb_y -= (mb_y>17)?18:-72; /* shifting the Y coordinate down by 72/2 macroblocks */
         }
 
         /* idct_put'ting luminance */
@@ -663,7 +663,7 @@ static av_always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
        method suggested in SMPTE 314M Table 22, and an improved
        method. The SMPTE method is very conservative; it assigns class
        3 (i.e. severe quantization) to any block where the largest AC
-       component is greater than 36. ffmpeg's DV encoder tracks AC bit
+       component is greater than 36. FFmpeg's DV encoder tracks AC bit
        consumption precisely, so there is no need to bias most blocks
        towards strongly lossy compression. Instead, we assign class 2
        to most blocks, and use class 3 only when strictly necessary
@@ -671,7 +671,7 @@ static av_always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
 
 #if 0 /* SMPTE spec method */
     static const int classes[] = {12, 24, 36, 0xffff};
-#else /* improved ffmpeg method */
+#else /* improved FFmpeg method */
     static const int classes[] = {-1, -1, 255, 0xffff};
 #endif
     int max=classes[0];
@@ -1176,7 +1176,7 @@ static void dv_format_frame(DVVideoContext* c, uint8_t* buf)
                     buf += 77; /* audio control & shuffled PCM audio */
                 }
                 buf += dv_write_dif_id(dv_sect_video, chan, i, j, buf);
-                buf += 77; /* 1 video macro block: 1 bytes control
+                buf += 77; /* 1 video macroblock: 1 bytes control
                               4 * 14 bytes Y 8x8 data
                               10 bytes Cr 8x8 data
                               10 bytes Cb 8x8 data */

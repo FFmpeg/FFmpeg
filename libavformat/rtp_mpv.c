@@ -104,7 +104,7 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
         memcpy(q, buf1, len);
         q += len;
 
-        /* 90 KHz time stamp */
+        /* 90kHz time stamp */
         s->timestamp = s->cur_timestamp;
         ff_rtp_send_data(s1, s->buf, q - s->buf, (len == size));
 

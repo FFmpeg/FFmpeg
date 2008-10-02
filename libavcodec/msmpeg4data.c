@@ -33,7 +33,7 @@ VLC ff_msmp4_mb_i_vlc;
 VLC ff_msmp4_dc_luma_vlc[2];
 VLC ff_msmp4_dc_chroma_vlc[2];
 
-/* intra picture macro block coded block pattern */
+/* intra picture macroblock coded block pattern */
 const uint16_t ff_msmp4_mb_i_table[64][2] = {
 { 0x1, 1 },{ 0x17, 6 },{ 0x9, 5 },{ 0x5, 5 },
 { 0x6, 5 },{ 0x47, 9 },{ 0x20, 7 },{ 0x10, 7 },
@@ -53,7 +53,7 @@ const uint16_t ff_msmp4_mb_i_table[64][2] = {
 { 0xd, 8 },{ 0x713, 13 },{ 0x1da, 10 },{ 0x169, 10 },
 };
 
-/* non intra picture macro block coded block pattern + mb type */
+/* non intra picture macroblock coded block pattern + mb type */
 const uint32_t table_mb_non_intra[128][2] = {
 {   0x40,  7 },{   0x13c9, 13 },{   0x9fd, 12 },{   0x1fc, 15 },
 {  0x9fc, 12 },{    0xa83, 18 },{ 0x12d34, 17 },{  0x83bc, 16 },
@@ -304,7 +304,7 @@ static const int8_t table0_run[132] = {
  23, 24, 25, 26,
 };
 
-/* vlc table 1, for intra chroma and P macro blocks */
+/* vlc table 1, for intra chroma and P macroblocks */
 
 static const uint16_t table1_vlc[149][2] = {
 {    0x4,  3 },{   0x14,  5 },{   0x17,  7 },{   0x7f,  8 },

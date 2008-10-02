@@ -894,7 +894,7 @@ motion estimation completely (you have only I-frames, which means it
 is about as good as JPEG compression).
 
 @item To have very low audio bitrates, reduce the sampling frequency
-(down to 22050 kHz for MPEG audio, 22050 or 11025 for AC3).
+(down to 22050kHz for MPEG audio, 22050 or 11025 for AC-3).
 
 @item To have a constant quality (but a variable bitrate), use the option
 '-qscale n' when 'n' is between 1 (excellent quality) and 31 (worst

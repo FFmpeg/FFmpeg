@@ -49,7 +49,7 @@ extern VLC ff_msmp4_mb_i_vlc;
 extern VLC ff_msmp4_dc_luma_vlc[2];
 extern VLC ff_msmp4_dc_chroma_vlc[2];
 
-/* intra picture macro block coded block pattern */
+/* intra picture macroblock coded block pattern */
 extern const uint16_t ff_msmp4_mb_i_table[64][2];
 
 extern const uint8_t cbpy_tab[16][2];

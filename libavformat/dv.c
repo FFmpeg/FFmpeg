@@ -112,7 +112,7 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
         return 0;
 
     smpls = as_pack[1] & 0x3f; /* samples in this frame - min. samples */
-    freq = (as_pack[4] >> 3) & 0x07; /* 0 - 48KHz, 1 - 44,1kHz, 2 - 32 kHz */
+    freq = (as_pack[4] >> 3) & 0x07; /* 0 - 48kHz, 1 - 44,1kHz, 2 - 32kHz */
     quant = as_pack[4] & 0x07; /* 0 - 16bit linear, 1 - 12bit nonlinear */
 
     if (quant > 1)
@@ -145,8 +145,8 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
                         if (of*2 >= size)
                             continue;
 
-                        pcm[of*2] = frame[d+1]; // FIXME: may be we have to admit
-                        pcm[of*2+1] = frame[d]; //        that DV is a big endian PCM
+                        pcm[of*2]   = frame[d+1]; // FIXME: maybe we have to admit
+                        pcm[of*2+1] = frame[d];   //        that DV is a big-endian PCM
                         if (pcm[of*2+1] == 0x80 && pcm[of*2] == 0x00)
                             pcm[of*2+1] = 0;
                     } else {           /* 12bit quantization */
@@ -161,12 +161,12 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
                         if (of*2 >= size)
                             continue;
 
-                        pcm[of*2] = lc & 0xff; // FIXME: may be we have to admit
-                        pcm[of*2+1] = lc >> 8; //        that DV is a big endian PCM
+                        pcm[of*2]   = lc & 0xff; // FIXME: maybe we have to admit
+                        pcm[of*2+1] = lc >> 8;   //        that DV is a big-endian PCM
                         of = sys->audio_shuffle[i%half_ch+half_ch][j] +
                             (d - 8)/3 * sys->audio_stride;
-                        pcm[of*2] = rc & 0xff; // FIXME: may be we have to admit
-                        pcm[of*2+1] = rc >> 8; //        that DV is a big endian PCM
+                        pcm[of*2]   = rc & 0xff; // FIXME: maybe we have to admit
+                        pcm[of*2+1] = rc >> 8;   //        that DV is a big-endian PCM
                         ++d;
                     }
                 }
@@ -196,7 +196,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     }
 
     smpls = as_pack[1] & 0x3f; /* samples in this frame - min. samples */
-    freq = (as_pack[4] >> 3) & 0x07; /* 0 - 48KHz, 1 - 44,1kHz, 2 - 32 kHz */
+    freq = (as_pack[4] >> 3) & 0x07; /* 0 - 48kHz, 1 - 44,1kHz, 2 - 32kHz */
     stype = (as_pack[3] & 0x1f); /* 0 - 2CH, 2 - 4CH, 3 - 8CH */
     quant = as_pack[4] & 0x07; /* 0 - 16bit linear, 1 - 12bit nonlinear */
 
