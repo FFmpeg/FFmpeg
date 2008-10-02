@@ -32,7 +32,7 @@
 /** decoder context */
 typedef struct EightSvxContext {
     int16_t fib_acc;
-    int16_t *table;
+    const int16_t *table;
 } EightSvxContext;
 
 static const int16_t fibonacci[16]   = { -34<<8, -21<<8, -13<<8,  -8<<8, -5<<8, -3<<8, -2<<8, -1<<8,
