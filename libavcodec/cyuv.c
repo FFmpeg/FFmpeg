@@ -163,13 +163,6 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-static av_cold int cyuv_decode_end(AVCodecContext *avctx)
-{
-/*    CyuvDecodeContext *s = avctx->priv_data;*/
-
-    return 0;
-}
-
 AVCodec cyuv_decoder = {
     "cyuv",
     CODEC_TYPE_VIDEO,
@@ -177,7 +170,7 @@ AVCodec cyuv_decoder = {
     sizeof(CyuvDecodeContext),
     cyuv_decode_init,
     NULL,
-    cyuv_decode_end,
+    NULL,
     cyuv_decode_frame,
     CODEC_CAP_DR1,
     NULL,
