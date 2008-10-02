@@ -26,7 +26,7 @@
 #ifndef AVUTIL_MEM_H
 #define AVUTIL_MEM_H
 
-#ifdef __ICC
+#if defined(__ICC) || defined(__SUNPRO_C)
     #define DECLARE_ALIGNED(n,t,v)      t v __attribute__ ((aligned (n)))
     #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
 #elif defined(__GNUC__)
