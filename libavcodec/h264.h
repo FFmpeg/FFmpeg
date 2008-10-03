@@ -84,6 +84,26 @@
 #define ENABLE_H264_ENCODER 0
 #endif
 
+#define EXTENDED_SAR          255
+
+/* NAL unit types */
+enum {
+NAL_SLICE=1,
+NAL_DPA,
+NAL_DPB,
+NAL_DPC,
+NAL_IDR_SLICE,
+NAL_SEI,
+NAL_SPS,
+NAL_PPS,
+NAL_AUD,
+NAL_END_SEQUENCE,
+NAL_END_STREAM,
+NAL_FILLER_DATA,
+NAL_SPS_EXT,
+NAL_AUXILIARY_SLICE=19
+};
+
 /**
  * Sequence parameter set
  */
