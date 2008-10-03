@@ -53,6 +53,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #undef time
 #include <sys/time.h>
