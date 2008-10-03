@@ -34,7 +34,7 @@
 
 typedef struct {
   int stream_index;
-  offset_t frame_offset;
+  int64_t frame_offset;
   unsigned int frame_size;
   int64_t pts;
   int keyframe;
@@ -77,7 +77,7 @@ static int vmd_read_header(AVFormatContext *s,
     unsigned int toc_offset;
     unsigned char *raw_frame_table;
     int raw_frame_table_size;
-    offset_t current_offset;
+    int64_t current_offset;
     int i, j;
     unsigned int total_frames;
     int64_t pts_inc = 1;

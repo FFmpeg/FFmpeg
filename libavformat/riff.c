@@ -215,16 +215,16 @@ const AVCodecTag codec_wav_tags[] = {
 };
 
 #ifdef CONFIG_MUXERS
-offset_t start_tag(ByteIOContext *pb, const char *tag)
+int64_t start_tag(ByteIOContext *pb, const char *tag)
 {
     put_tag(pb, tag);
     put_le32(pb, 0);
     return url_ftell(pb);
 }
 
-void end_tag(ByteIOContext *pb, offset_t start)
+void end_tag(ByteIOContext *pb, int64_t start)
 {
-    offset_t pos;
+    int64_t pos;
 
     pos = url_ftell(pb);
     url_fseek(pb, start - 4, SEEK_SET);

@@ -88,7 +88,7 @@ static int au_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int au_write_trailer(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
-    offset_t file_size;
+    int64_t file_size;
 
     if (!url_is_streamed(s->pb)) {
 

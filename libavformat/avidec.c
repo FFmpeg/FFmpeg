@@ -51,7 +51,7 @@ typedef struct {
     int64_t  riff_end;
     int64_t  movi_end;
     int64_t  fsize;
-    offset_t movi_list;
+    int64_t movi_list;
     int index_loaded;
     int is_odml;
     int non_interleaved;
@@ -217,7 +217,7 @@ static void clean_index(AVFormatContext *s){
 
 static int avi_read_tag(ByteIOContext *pb, char *buf, int maxlen,  unsigned int size)
 {
-    offset_t i = url_ftell(pb);
+    int64_t i = url_ftell(pb);
     size += (size & 1);
     get_strz(pb, buf, maxlen);
     url_fseek(pb, i+size, SEEK_SET);
@@ -619,7 +619,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = s->pb;
     int n, d[8], size;
-    offset_t i, sync;
+    int64_t i, sync;
     void* dstr;
 
     if (ENABLE_DV_DEMUXER && avi->dv_demux) {
@@ -937,7 +937,7 @@ static int avi_load_index(AVFormatContext *s)
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = s->pb;
     uint32_t tag, size;
-    offset_t pos= url_ftell(pb);
+    int64_t pos= url_ftell(pb);
 
     url_fseek(pb, avi->movi_end, SEEK_SET);
 #ifdef DEBUG_SEEK

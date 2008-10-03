@@ -64,7 +64,7 @@ typedef struct SmackerContext {
     int buf_sizes[7];
     int stream_id[7];
     int curstream;
-    offset_t nextpos;
+    int64_t nextpos;
     int64_t aud_pts[7];
 } SmackerContext;
 

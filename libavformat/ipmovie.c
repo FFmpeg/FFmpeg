@@ -107,14 +107,14 @@ typedef struct IPMVEContext {
     int video_stream_index;
     int audio_stream_index;
 
-    offset_t audio_chunk_offset;
+    int64_t audio_chunk_offset;
     int audio_chunk_size;
-    offset_t video_chunk_offset;
+    int64_t video_chunk_offset;
     int video_chunk_size;
-    offset_t decode_map_chunk_offset;
+    int64_t decode_map_chunk_offset;
     int decode_map_chunk_size;
 
-    offset_t next_chunk_offset;
+    int64_t next_chunk_offset;
 
     AVPaletteControl palette_control;
 

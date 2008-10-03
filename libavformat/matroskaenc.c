@@ -29,7 +29,7 @@
 #include "libavcodec/mpeg4audio.h"
 
 typedef struct ebml_master {
-    offset_t        pos;                ///< absolute offset in the file where the master's elements start
+    int64_t         pos;                ///< absolute offset in the file where the master's elements start
     int             sizebytes;          ///< how many bytes were reserved for the size
 } ebml_master;
 
@@ -39,8 +39,8 @@ typedef struct mkv_seekhead_entry {
 } mkv_seekhead_entry;
 
 typedef struct mkv_seekhead {
-    offset_t                filepos;
-    offset_t                segment_offset;     ///< the file offset to the beginning of the segment
+    int64_t                 filepos;
+    int64_t                 segment_offset;     ///< the file offset to the beginning of the segment
     int                     reserved_size;      ///< -1 if appending to file
     int                     max_entries;
     mkv_seekhead_entry      *entries;
@@ -50,23 +50,23 @@ typedef struct mkv_seekhead {
 typedef struct {
     uint64_t        pts;
     int             tracknum;
-    offset_t        cluster_pos;        ///< file offset of the cluster containing the block
+    int64_t         cluster_pos;        ///< file offset of the cluster containing the block
 } mkv_cuepoint;
 
 typedef struct {
-    offset_t        segment_offset;
+    int64_t         segment_offset;
     mkv_cuepoint    *entries;
     int             num_entries;
 } mkv_cues;
 
 typedef struct MatroskaMuxContext {
     ebml_master     segment;
-    offset_t        segment_offset;
-    offset_t        segment_uid;
+    int64_t         segment_offset;
+    int64_t         segment_uid;
     ebml_master     cluster;
-    offset_t        cluster_pos;        ///< file offset of the current cluster
+    int64_t         cluster_pos;        ///< file offset of the current cluster
     uint64_t        cluster_pts;
-    offset_t        duration_offset;
+    int64_t         duration_offset;
     uint64_t        duration;
     mkv_seekhead    *main_seekhead;
     mkv_seekhead    *cluster_seekhead;
@@ -188,7 +188,7 @@ static void put_ebml_string(ByteIOContext *pb, unsigned int elementid, const cha
  */
 static void put_ebml_void(ByteIOContext *pb, uint64_t size)
 {
-    offset_t currentpos = url_ftell(pb);
+    int64_t currentpos = url_ftell(pb);
 
     assert(size >= 2);
 
@@ -214,7 +214,7 @@ static ebml_master start_ebml_master(ByteIOContext *pb, unsigned int elementid, 
 
 static void end_ebml_master(ByteIOContext *pb, ebml_master master)
 {
-    offset_t pos = url_ftell(pb);
+    int64_t pos = url_ftell(pb);
 
     // leave the unknown size for masters when streaming
     if (url_is_streamed(pb))
@@ -244,7 +244,7 @@ static void put_xiph_size(ByteIOContext *pb, int size)
  * @param numelements The maximum number of elements that will be indexed
  *                    by this seek head, 0 if unlimited.
  */
-static mkv_seekhead * mkv_start_seekhead(ByteIOContext *pb, offset_t segment_offset, int numelements)
+static mkv_seekhead * mkv_start_seekhead(ByteIOContext *pb, int64_t segment_offset, int numelements)
 {
     mkv_seekhead *new_seekhead = av_mallocz(sizeof(mkv_seekhead));
     if (new_seekhead == NULL)
@@ -291,10 +291,10 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
  *
  * @return The file offset where the seekhead was written.
  */
-static offset_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
+static int64_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
 {
     ebml_master metaseek, seekentry;
-    offset_t currentpos;
+    int64_t currentpos;
     int i;
 
     currentpos = url_ftell(pb);
@@ -330,7 +330,7 @@ static offset_t mkv_write_seekhead(ByteIOContext *pb, mkv_seekhead *seekhead)
     return currentpos;
 }
 
-static mkv_cues * mkv_start_cues(offset_t segment_offset)
+static mkv_cues * mkv_start_cues(int64_t segment_offset)
 {
     mkv_cues *cues = av_mallocz(sizeof(mkv_cues));
     if (cues == NULL)
@@ -340,7 +340,7 @@ static mkv_cues * mkv_start_cues(offset_t segment_offset)
     return cues;
 }
 
-static int mkv_add_cuepoint(mkv_cues *cues, AVPacket *pkt, offset_t cluster_pos)
+static int mkv_add_cuepoint(mkv_cues *cues, AVPacket *pkt, int64_t cluster_pos)
 {
     mkv_cuepoint *entries = cues->entries;
 
@@ -356,10 +356,10 @@ static int mkv_add_cuepoint(mkv_cues *cues, AVPacket *pkt, offset_t cluster_pos)
     return 0;
 }
 
-static offset_t mkv_write_cues(ByteIOContext *pb, mkv_cues *cues, int num_tracks)
+static int64_t mkv_write_cues(ByteIOContext *pb, mkv_cues *cues, int num_tracks)
 {
     ebml_master cues_element;
-    offset_t currentpos;
+    int64_t currentpos;
     int i, j;
 
     currentpos = url_ftell(pb);
@@ -801,7 +801,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = s->pb;
-    offset_t currentpos, second_seekhead, cuespos;
+    int64_t currentpos, second_seekhead, cuespos;
     int ret;
 
     end_ebml_master(pb, mkv->cluster);

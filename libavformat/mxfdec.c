@@ -238,7 +238,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     static const uint8_t checkv[16] = {0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b, 0x43, 0x48, 0x55, 0x4b};
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    offset_t end = url_ftell(pb) + klv->length;
+    int64_t end = url_ftell(pb) + klv->length;
     uint64_t size;
     uint64_t orig_size;
     uint64_t plaintext_size;

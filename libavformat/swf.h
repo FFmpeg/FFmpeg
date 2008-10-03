@@ -66,9 +66,9 @@
 
 typedef struct {
     int audio_stream_index;
-    offset_t duration_pos;
-    offset_t tag_pos;
-    offset_t vframes_pos;
+    int64_t duration_pos;
+    int64_t tag_pos;
+    int64_t vframes_pos;
     int samples_per_frame;
     int sound_samples;
     int swf_frame_number;

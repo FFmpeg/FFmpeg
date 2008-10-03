@@ -211,7 +211,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         if (mov_default_parse_table[i].type == 0) { /* skip leaf atoms data */
             url_fskip(pb, a.size);
         } else {
-            offset_t start_pos = url_ftell(pb);
+            int64_t start_pos = url_ftell(pb);
             int64_t left;
             err = mov_default_parse_table[i].parse(c, pb, a);
             if (url_is_streamed(pb) && c->found_moov && c->found_mdat)
@@ -247,7 +247,7 @@ static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     for (i = 0; i < sc->drefs_count; i++) {
         MOV_dref_t *dref = &sc->drefs[i];
         uint32_t size = get_be32(pb);
-        offset_t next = url_ftell(pb) + size - 4;
+        int64_t next = url_ftell(pb) + size - 4;
 
         dref->type = get_le32(pb);
         get_be32(pb); // version + flags
@@ -723,7 +723,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         enum CodecID id;
         int dref_id;
         MOV_atom_t a = { 0, 0, 0 };
-        offset_t start_pos = url_ftell(pb);
+        int64_t start_pos = url_ftell(pb);
         int size = get_be32(pb); /* size */
         uint32_t format = get_le32(pb); /* data format */
 
@@ -1181,7 +1181,7 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static void mov_build_index(MOVContext *mov, AVStream *st)
 {
     MOVStreamContext *sc = st->priv_data;
-    offset_t current_offset;
+    int64_t current_offset;
     int64_t current_dts = 0;
     unsigned int stts_index = 0;
     unsigned int stsc_index = 0;

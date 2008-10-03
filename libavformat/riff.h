@@ -31,8 +31,8 @@
 #include "libavcodec/avcodec.h"
 #include "avio.h"
 
-offset_t start_tag(ByteIOContext *pb, const char *tag);
-void end_tag(ByteIOContext *pb, offset_t start);
+int64_t start_tag(ByteIOContext *pb, const char *tag);
+void end_tag(ByteIOContext *pb, int64_t start);
 
 typedef struct AVCodecTag {
     int id;

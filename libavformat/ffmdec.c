@@ -24,7 +24,7 @@
 #ifdef CONFIG_FFSERVER
 #include <unistd.h>
 
-offset_t ffm_read_write_index(int fd)
+int64_t ffm_read_write_index(int fd)
 {
     uint8_t buf[8];
 
@@ -33,7 +33,7 @@ offset_t ffm_read_write_index(int fd)
     return AV_RB64(buf);
 }
 
-void ffm_write_write_index(int fd, offset_t pos)
+void ffm_write_write_index(int fd, int64_t pos)
 {
     uint8_t buf[8];
     int i;
@@ -44,7 +44,7 @@ void ffm_write_write_index(int fd, offset_t pos)
     write(fd, buf, 8);
 }
 
-void ffm_set_write_index(AVFormatContext *s, offset_t pos, offset_t file_size)
+void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size)
 {
     FFMContext *ffm = s->priv_data;
     ffm->write_index = pos;
@@ -55,7 +55,7 @@ void ffm_set_write_index(AVFormatContext *s, offset_t pos, offset_t file_size)
 static int ffm_is_avail_data(AVFormatContext *s, int size)
 {
     FFMContext *ffm = s->priv_data;
-    offset_t pos, avail_size;
+    int64_t pos, avail_size;
     int len;
 
     len = ffm->packet_end - ffm->packet_ptr;
@@ -141,11 +141,11 @@ static int ffm_read_data(AVFormatContext *s,
 
 /* pos is between 0 and file_size - FFM_PACKET_SIZE. It is translated
    by the write position inside this function */
-static void ffm_seek1(AVFormatContext *s, offset_t pos1)
+static void ffm_seek1(AVFormatContext *s, int64_t pos1)
 {
     FFMContext *ffm = s->priv_data;
     ByteIOContext *pb = s->pb;
-    offset_t pos;
+    int64_t pos;
 
     pos = pos1 + ffm->write_index;
     if (pos >= ffm->file_size)
@@ -156,7 +156,7 @@ static void ffm_seek1(AVFormatContext *s, offset_t pos1)
     url_fseek(pb, pos, SEEK_SET);
 }
 
-static int64_t get_dts(AVFormatContext *s, offset_t pos)
+static int64_t get_dts(AVFormatContext *s, int64_t pos)
 {
     ByteIOContext *pb = s->pb;
     int64_t dts;
@@ -175,10 +175,10 @@ static void adjust_write_index(AVFormatContext *s)
     FFMContext *ffm = s->priv_data;
     ByteIOContext *pb = s->pb;
     int64_t pts;
-    //offset_t orig_write_index = ffm->write_index;
-    offset_t pos_min, pos_max;
+    //int64_t orig_write_index = ffm->write_index;
+    int64_t pos_min, pos_max;
     int64_t pts_start;
-    offset_t ptr = url_ftell(pb);
+    int64_t ptr = url_ftell(pb);
 
 
     pos_min = 0;
@@ -199,7 +199,7 @@ static void adjust_write_index(AVFormatContext *s)
 
     if (pts - 100000 <= pts_start) {
         while (1) {
-            offset_t newpos;
+            int64_t newpos;
             int64_t newpts;
 
             newpos = ((pos_max + pos_min) / (2 * FFM_PACKET_SIZE)) * FFM_PACKET_SIZE;
@@ -419,7 +419,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, int flags)
 {
     FFMContext *ffm = s->priv_data;
-    offset_t pos_min, pos_max, pos;
+    int64_t pos_min, pos_max, pos;
     int64_t pts_min, pts_max, pts;
     double pos1;
 

@@ -23,10 +23,6 @@
 
 #include <stdint.h>
 
-/* output byte stream handling */
-
-typedef int64_t offset_t;
-
 /* unbuffered I/O */
 
 /**
@@ -67,10 +63,10 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
 int url_open(URLContext **h, const char *filename, int flags);
 int url_read(URLContext *h, unsigned char *buf, int size);
 int url_write(URLContext *h, unsigned char *buf, int size);
-offset_t url_seek(URLContext *h, offset_t pos, int whence);
+int64_t url_seek(URLContext *h, int64_t pos, int whence);
 int url_close(URLContext *h);
 int url_exist(const char *filename);
-offset_t url_filesize(URLContext *h);
+int64_t url_filesize(URLContext *h);
 
 /**
  * Return the maximum packet size associated to packetized file
@@ -118,7 +114,7 @@ int av_url_read_pause(URLContext *h, int pause);
  * @return >= 0 on success
  * @see AVInputFormat::read_seek
  */
-offset_t av_url_read_seek(URLContext *h,
+int64_t av_url_read_seek(URLContext *h,
                      int stream_index, int64_t timestamp, int flags);
 
 /**
@@ -133,11 +129,11 @@ typedef struct URLProtocol {
     int (*url_open)(URLContext *h, const char *filename, int flags);
     int (*url_read)(URLContext *h, unsigned char *buf, int size);
     int (*url_write)(URLContext *h, unsigned char *buf, int size);
-    offset_t (*url_seek)(URLContext *h, offset_t pos, int whence);
+    int64_t (*url_seek)(URLContext *h, int64_t pos, int whence);
     int (*url_close)(URLContext *h);
     struct URLProtocol *next;
     int (*url_read_pause)(URLContext *h, int pause);
-    offset_t (*url_read_seek)(URLContext *h,
+    int64_t (*url_read_seek)(URLContext *h,
                          int stream_index, int64_t timestamp, int flags);
 } URLProtocol;
 
@@ -162,8 +158,8 @@ typedef struct {
     void *opaque;
     int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
     int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
-    offset_t (*seek)(void *opaque, offset_t offset, int whence);
-    offset_t pos; /**< position in the file of the current buffer */
+    int64_t (*seek)(void *opaque, int64_t offset, int whence);
+    int64_t pos; /**< position in the file of the current buffer */
     int must_flush; /**< true if the next seek should flush */
     int eof_reached; /**< true if eof reached */
     int write_flag;  /**< true if open for writing */
@@ -174,7 +170,7 @@ typedef struct {
     unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
     int error;         ///< contains the error code or 0 if no error happened
     int (*read_pause)(void *opaque, int pause);
-    offset_t (*read_seek)(void *opaque,
+    int64_t (*read_seek)(void *opaque,
                      int stream_index, int64_t timestamp, int flags);
 } ByteIOContext;
 
@@ -185,7 +181,7 @@ int init_put_byte(ByteIOContext *s,
                   void *opaque,
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  offset_t (*seek)(void *opaque, offset_t offset, int whence));
+                  int64_t (*seek)(void *opaque, int64_t offset, int whence));
 ByteIOContext *av_alloc_put_byte(
                   unsigned char *buffer,
                   int buffer_size,
@@ -193,7 +189,7 @@ ByteIOContext *av_alloc_put_byte(
                   void *opaque,
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  offset_t (*seek)(void *opaque, offset_t offset, int whence));
+                  int64_t (*seek)(void *opaque, int64_t offset, int whence));
 
 void put_byte(ByteIOContext *s, int b);
 void put_buffer(ByteIOContext *s, const unsigned char *buf, int size);
@@ -213,25 +209,25 @@ void put_strz(ByteIOContext *s, const char *buf);
  * fseek() equivalent for ByteIOContext.
  * @return new position or AVERROR.
  */
-offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence);
+int64_t url_fseek(ByteIOContext *s, int64_t offset, int whence);
 
 /**
  * Skip given number of bytes forward.
  * @param offset number of bytes
  */
-void url_fskip(ByteIOContext *s, offset_t offset);
+void url_fskip(ByteIOContext *s, int64_t offset);
 
 /**
  * ftell() equivalent for ByteIOContext.
  * @return position or AVERROR.
  */
-offset_t url_ftell(ByteIOContext *s);
+int64_t url_ftell(ByteIOContext *s);
 
 /**
  * Gets the filesize.
  * @return filesize or AVERROR
  */
-offset_t url_fsize(ByteIOContext *s);
+int64_t url_fsize(ByteIOContext *s);
 
 /**
  * feof() equivalent for ByteIOContext.
@@ -242,7 +238,7 @@ int url_feof(ByteIOContext *s);
 int url_ferror(ByteIOContext *s);
 
 int av_url_read_fpause(ByteIOContext *h, int pause);
-offset_t av_url_read_fseek(ByteIOContext *h,
+int64_t av_url_read_fseek(ByteIOContext *h,
                       int stream_index, int64_t timestamp, int flags);
 
 #define URL_EOF (-1)

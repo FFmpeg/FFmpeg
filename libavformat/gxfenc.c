@@ -120,16 +120,16 @@ static int gxf_find_lines_index(GXFStreamContext *ctx)
     return -1;
 }
 
-static void gxf_write_padding(ByteIOContext *pb, offset_t to_pad)
+static void gxf_write_padding(ByteIOContext *pb, int64_t to_pad)
 {
     for (; to_pad > 0; to_pad--) {
         put_byte(pb, 0);
     }
 }
 
-static offset_t updatePacketSize(ByteIOContext *pb, offset_t pos)
+static int64_t updatePacketSize(ByteIOContext *pb, int64_t pos)
 {
-    offset_t curpos;
+    int64_t curpos;
     int size;
 
     size = url_ftell(pb) - pos;
@@ -144,9 +144,9 @@ static offset_t updatePacketSize(ByteIOContext *pb, offset_t pos)
     return curpos - pos;
 }
 
-static offset_t updateSize(ByteIOContext *pb, offset_t pos)
+static int64_t updateSize(ByteIOContext *pb, int64_t pos)
 {
-    offset_t curpos;
+    int64_t curpos;
 
     curpos = url_ftell(pb);
     url_fseek(pb, pos, SEEK_SET);
@@ -207,7 +207,7 @@ static int gxf_write_timecode_auxiliary(ByteIOContext *pb, GXFStreamContext *ctx
 
 static int gxf_write_track_description(ByteIOContext *pb, GXFStreamContext *stream)
 {
-    offset_t pos;
+    int64_t pos;
 
     /* track description section */
     put_byte(pb, stream->media_type + 0x80);
@@ -261,7 +261,7 @@ static int gxf_write_track_description(ByteIOContext *pb, GXFStreamContext *stre
 
 static int gxf_write_material_data_section(ByteIOContext *pb, GXFContext *ctx)
 {
-    offset_t pos;
+    int64_t pos;
     const char *filename = strrchr(ctx->fc->filename, '/');
 
     pos = url_ftell(pb);
@@ -307,7 +307,7 @@ static int gxf_write_material_data_section(ByteIOContext *pb, GXFContext *ctx)
 
 static int gxf_write_track_description_section(ByteIOContext *pb, GXFContext *ctx)
 {
-    offset_t pos;
+    int64_t pos;
     int i;
 
     pos = url_ftell(pb);
@@ -319,7 +319,7 @@ static int gxf_write_track_description_section(ByteIOContext *pb, GXFContext *ct
 
 static int gxf_write_map_packet(ByteIOContext *pb, GXFContext *ctx)
 {
-    offset_t pos = url_ftell(pb);
+    int64_t pos = url_ftell(pb);
 
     gxf_write_packet_header(pb, PKT_MAP);
 
@@ -336,7 +336,7 @@ static int gxf_write_map_packet(ByteIOContext *pb, GXFContext *ctx)
 #if 0
 static int gxf_write_flt_packet(ByteIOContext *pb, GXFContext *ctx)
 {
-    offset_t pos = url_ftell(pb);
+    int64_t pos = url_ftell(pb);
     int i;
 
     gxf_write_packet_header(pb, PKT_FLT);
@@ -390,7 +390,7 @@ static int gxf_write_umf_payload(ByteIOContext *pb, GXFContext *ctx)
 
 static int gxf_write_umf_track_description(ByteIOContext *pb, GXFContext *ctx)
 {
-    offset_t pos = url_ftell(pb);
+    int64_t pos = url_ftell(pb);
     int tracks[255]={0};
     int i;
 
@@ -486,7 +486,7 @@ static int gxf_write_umf_media_mjpeg(ByteIOContext *pb, GXFStreamContext *track)
 
 static int gxf_write_umf_media_description(ByteIOContext *pb, GXFContext *ctx)
 {
-    offset_t pos;
+    int64_t pos;
     int i;
 
     pos = url_ftell(pb);
@@ -494,7 +494,7 @@ static int gxf_write_umf_media_description(ByteIOContext *pb, GXFContext *ctx)
     for (i = 0; i < ctx->fc->nb_streams; ++i) {
         GXFStreamContext *sc = &ctx->streams[i];
         char buffer[88];
-        offset_t startpos, curpos;
+        int64_t startpos, curpos;
         int path_size = strlen(ES_NAME_PATTERN);
 
         memset(buffer, 0, 88);
@@ -538,7 +538,7 @@ static int gxf_write_umf_media_description(ByteIOContext *pb, GXFContext *ctx)
 
 static int gxf_write_umf_user_data(ByteIOContext *pb, GXFContext *ctx)
 {
-    offset_t pos = url_ftell(pb);
+    int64_t pos = url_ftell(pb);
     ctx->umf_user_data_offset = pos - ctx->umf_start_offset;
     put_le32(pb, 20);
     put_le32(pb,  0);
@@ -554,7 +554,7 @@ static int gxf_write_umf_user_data(ByteIOContext *pb, GXFContext *ctx)
 
 static int gxf_write_umf_packet(ByteIOContext *pb, GXFContext *ctx)
 {
-    offset_t pos = url_ftell(pb);
+    int64_t pos = url_ftell(pb);
 
     gxf_write_packet_header(pb, PKT_UMF);
 
@@ -663,7 +663,7 @@ static int gxf_write_header(AVFormatContext *s)
 
 static int gxf_write_eos_packet(ByteIOContext *pb, GXFContext *ctx)
 {
-    offset_t pos = url_ftell(pb);
+    int64_t pos = url_ftell(pb);
 
     gxf_write_packet_header(pb, PKT_EOS);
     return updatePacketSize(pb, pos);
@@ -673,7 +673,7 @@ static int gxf_write_trailer(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
     GXFContext *gxf = s->priv_data;
-    offset_t end;
+    int64_t end;
     int i;
 
     for (i = 0; i < s->nb_streams; ++i) {
@@ -745,7 +745,7 @@ static int gxf_write_media_preamble(ByteIOContext *pb, GXFContext *ctx, AVPacket
 static int gxf_write_media_packet(ByteIOContext *pb, GXFContext *ctx, AVPacket *pkt)
 {
     GXFStreamContext *sc = &ctx->streams[pkt->stream_index];
-    offset_t pos = url_ftell(pb);
+    int64_t pos = url_ftell(pb);
     int padding = 0;
 
     gxf_write_packet_header(pb, PKT_MEDIA);

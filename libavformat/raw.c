@@ -48,7 +48,7 @@ static int flac_write_trailer(struct AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     uint8_t *streaminfo = s->streams[0]->codec->extradata;
     int len = s->streams[0]->codec->extradata_size;
-    offset_t file_size;
+    int64_t file_size;
 
     if (streaminfo && len > 0 && !url_is_streamed(s->pb)) {
         file_size = url_ftell(pb);

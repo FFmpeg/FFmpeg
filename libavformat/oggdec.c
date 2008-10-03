@@ -438,7 +438,7 @@ ogg_get_length (AVFormatContext * s)
 {
     ogg_t *ogg = s->priv_data;
     int idx = -1, i;
-    offset_t size, end;
+    int64_t size, end;
 
     if(url_is_streamed(s->pb))
         return 0;

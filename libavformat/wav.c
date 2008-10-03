@@ -23,8 +23,8 @@
 #include "riff.h"
 
 typedef struct {
-    offset_t data;
-    offset_t data_end;
+    int64_t data;
+    int64_t data_end;
     int64_t minpts;
     int64_t maxpts;
     int last_duration;
@@ -35,7 +35,7 @@ static int wav_write_header(AVFormatContext *s)
 {
     WAVContext *wav = s->priv_data;
     ByteIOContext *pb = s->pb;
-    offset_t fmt, fact;
+    int64_t fmt, fact;
 
     put_tag(pb, "RIFF");
     put_le32(pb, 0); /* file length */
@@ -88,7 +88,7 @@ static int wav_write_trailer(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
     WAVContext *wav = s->priv_data;
-    offset_t file_size;
+    int64_t file_size;
 
     if (!url_is_streamed(s->pb)) {
         end_tag(pb, wav->data);

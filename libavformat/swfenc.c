@@ -44,7 +44,7 @@ static void put_swf_end_tag(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    offset_t pos;
+    int64_t pos;
     int tag_len, tag;
 
     pos = url_ftell(pb);

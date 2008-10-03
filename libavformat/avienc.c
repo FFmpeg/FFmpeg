@@ -35,15 +35,15 @@ typedef struct AVIIentry {
 #define AVI_INDEX_CLUSTER_SIZE 16384
 
 typedef struct AVIIndex {
-    offset_t    indx_start;
+    int64_t     indx_start;
     int         entry;
     int         ents_allocated;
     AVIIentry** cluster;
 } AVIIndex;
 
 typedef struct {
-    offset_t riff_start, movi_list, odml_list;
-    offset_t frames_hdr_all, frames_hdr_strm[MAX_STREAMS];
+    int64_t riff_start, movi_list, odml_list;
+    int64_t frames_hdr_all, frames_hdr_strm[MAX_STREAMS];
     int audio_strm_length[MAX_STREAMS];
     int riff_id;
     int packet_count[MAX_STREAMS];
@@ -58,10 +58,10 @@ static inline AVIIentry* avi_get_ientry(AVIIndex* idx, int ent_id)
     return &idx->cluster[cl][id];
 }
 
-static offset_t avi_start_new_riff(AVIContext *avi, ByteIOContext *pb,
-                                   const char* riff_tag, const char* list_tag)
+static int64_t avi_start_new_riff(AVIContext *avi, ByteIOContext *pb,
+                                  const char* riff_tag, const char* list_tag)
 {
-    offset_t loff;
+    int64_t loff;
     int i;
 
     avi->riff_id++;
@@ -108,7 +108,7 @@ static int avi_write_counters(AVFormatContext* s, int riff_id)
     ByteIOContext *pb = s->pb;
     AVIContext *avi = s->priv_data;
     int n, au_byterate, au_ssize, au_scale, nb_frames = 0;
-    offset_t file_size;
+    int64_t file_size;
     AVCodecContext* stream;
 
     file_size = url_ftell(pb);
@@ -141,7 +141,7 @@ static int avi_write_header(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     int bitrate, n, i, nb_frames, au_byterate, au_ssize, au_scale;
     AVCodecContext *stream, *video_enc;
-    offset_t list1, list2, strh, strf;
+    int64_t list1, list2, strh, strf;
 
     /* header list */
     avi->riff_id = 0;
@@ -375,7 +375,7 @@ static int avi_write_ix(AVFormatContext *s)
         return -1;
 
     for (i=0;i<s->nb_streams;i++) {
-         offset_t ix, pos;
+         int64_t ix, pos;
 
          avi_stream2fourcc(&tag[0], i, s->streams[i]->codec->codec_type);
          ix_tag[3] = '0' + i;
@@ -422,7 +422,7 @@ static int avi_write_idx1(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
     AVIContext *avi = s->priv_data;
-    offset_t idx_chunk;
+    int64_t idx_chunk;
     int i;
     char tag[5];
 
@@ -543,7 +543,7 @@ static int avi_write_trailer(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     int res = 0;
     int i, j, n, nb_frames;
-    offset_t file_size;
+    int64_t file_size;
 
     if (!url_is_streamed(pb)){
         if (avi->riff_id == 1) {

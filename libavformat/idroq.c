@@ -181,7 +181,7 @@ static int roq_read_packet(AVFormatContext *s,
     unsigned int codebook_size;
     unsigned char preamble[RoQ_CHUNK_PREAMBLE_SIZE];
     int packet_read = 0;
-    offset_t codebook_offset;
+    int64_t codebook_offset;
 
     while (!packet_read) {
 

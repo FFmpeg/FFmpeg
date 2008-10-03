@@ -224,7 +224,7 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t fl
 {
     int isv34, tlen;
     uint32_t tag;
-    offset_t next;
+    int64_t next;
     char tmp[16];
     int taghdrlen;
     const char *reason;
@@ -402,11 +402,11 @@ static int mp3_read_probe(AVProbeData *p)
 /**
  * Try to find Xing/Info/VBRI tags and compute duration from info therein
  */
-static void mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, offset_t base)
+static void mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
 {
     uint32_t v, spf;
     int frames = -1; /* Total number of frames in file */
-    const offset_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
+    const int64_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
     MPADecodeContext c;
 
     v = get_be32(s->pb);
@@ -452,7 +452,7 @@ static int mp3_read_header(AVFormatContext *s,
     AVStream *st;
     uint8_t buf[ID3v1_TAG_SIZE];
     int len, ret, filesize;
-    offset_t off;
+    int64_t off;
 
     st = av_new_stream(s, 0);
     if (!st)

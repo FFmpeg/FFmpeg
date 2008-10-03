@@ -46,7 +46,7 @@ enum MXFMetadataSetType {
 
 typedef struct {
     UID key;
-    offset_t offset;
+    int64_t offset;
     uint64_t length;
 } KLVPacket;
 

@@ -42,7 +42,7 @@ enum {
 
 typedef struct FFMContext {
     /* only reading mode */
-    offset_t write_index, file_size;
+    int64_t write_index, file_size;
     int read_state;
     uint8_t header[FRAME_HEADER_SIZE+4];
 

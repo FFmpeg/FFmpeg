@@ -200,7 +200,7 @@ typedef struct {
     EbmlList seekhead;
 
     /* byte position of the segment inside the stream */
-    offset_t segment_start;
+    int64_t segment_start;
 
     /* the packet queue */
     AVPacket **packets;
@@ -495,7 +495,7 @@ const struct {
 static int ebml_level_end(MatroskaDemuxContext *matroska)
 {
     ByteIOContext *pb = matroska->ctx->pb;
-    offset_t pos = url_ftell(pb);
+    int64_t pos = url_ftell(pb);
 
     if (matroska->num_levels > 0) {
         MatroskaLevel *level = &matroska->levels[matroska->num_levels - 1];
@@ -527,7 +527,7 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
     if (!(total = get_byte(pb))) {
         /* we might encounter EOS here */
         if (!url_feof(pb)) {
-            offset_t pos = url_ftell(pb);
+            int64_t pos = url_ftell(pb);
             av_log(matroska->ctx, AV_LOG_ERROR,
                    "Read error at pos. %"PRIu64" (0x%"PRIx64")\n",
                    pos, pos);
@@ -541,7 +541,7 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
         len_mask >>= 1;
     }
     if (read > max_size) {
-        offset_t pos = url_ftell(pb) - 1;
+        int64_t pos = url_ftell(pb) - 1;
         av_log(matroska->ctx, AV_LOG_ERROR,
                "Invalid EBML number size tag 0x%02x at pos %"PRIu64" (0x%"PRIx64")\n",
                (uint8_t) total, pos, pos);
@@ -1000,12 +1000,12 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     EbmlList *seekhead_list = &matroska->seekhead;
     MatroskaSeekhead *seekhead = seekhead_list->elem;
     uint32_t level_up = matroska->level_up;
-    offset_t before_pos = url_ftell(matroska->ctx->pb);
+    int64_t before_pos = url_ftell(matroska->ctx->pb);
     MatroskaLevel level;
     int i;
 
     for (i=0; i<seekhead_list->nb_elem; i++) {
-        offset_t offset = seekhead[i].pos + matroska->segment_start;
+        int64_t offset = seekhead[i].pos + matroska->segment_start;
 
         if (seekhead[i].pos <= before_pos
             || seekhead[i].id == MATROSKA_ID_SEEKHEAD
@@ -1666,7 +1666,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     EbmlList *blocks_list;
     MatroskaBlock *blocks;
     int i, res;
-    offset_t pos = url_ftell(matroska->ctx->pb);
+    int64_t pos = url_ftell(matroska->ctx->pb);
     matroska->prev_pkt = NULL;
     if (matroska->has_cluster_id){
         /* For the first cluster we parse, its ID was already read as

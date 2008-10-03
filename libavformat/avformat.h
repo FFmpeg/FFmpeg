@@ -1065,9 +1065,9 @@ int64_t av_gettime(void);
 
 /* ffm-specific for ffserver */
 #define FFM_PACKET_SIZE 4096
-offset_t ffm_read_write_index(int fd);
-void ffm_write_write_index(int fd, offset_t pos);
-void ffm_set_write_index(AVFormatContext *s, offset_t pos, offset_t file_size);
+int64_t ffm_read_write_index(int fd);
+void ffm_write_write_index(int fd, int64_t pos);
+void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size);
 
 /**
  * Attempts to find a specific tag in a URL.
