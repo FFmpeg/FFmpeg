@@ -1883,7 +1883,7 @@ check_cflags -fno-math-errno
 check_cflags -fno-signed-zeros
 
 # add some flags for Intel C Compiler
-if $cc --version | grep -q Intel; then
+if $cc --version 2> /dev/null | grep -q Intel; then
   # Just warnings, no remarks
   check_cflags -w1
   # -wd: Disable following warnings
