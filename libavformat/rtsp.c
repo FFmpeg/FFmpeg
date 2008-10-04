@@ -877,7 +877,7 @@ static void rtsp_close_streams(RTSPState *rt)
                 if (rt->transport == RTSP_TRANSPORT_RDT)
                     ff_rdt_parse_close(rtsp_st->tx_ctx);
                 else
-                rtp_parse_close(rtsp_st->tx_ctx);
+                    rtp_parse_close(rtsp_st->tx_ctx);
             }
             if (rtsp_st->rtp_handle)
                 url_close(rtsp_st->rtp_handle);
@@ -905,7 +905,9 @@ rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
                                             rtsp_st->dynamic_protocol_context,
                                             rtsp_st->dynamic_handler);
     else
-    rtsp_st->tx_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
+        rtsp_st->tx_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle,
+                                         rtsp_st->sdp_payload_type,
+                                         &rtsp_st->rtp_payload_data);
 
     if (!rtsp_st->tx_ctx) {
          return AVERROR(ENOMEM);
