@@ -710,9 +710,9 @@ static int mkv_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int mkv_blockgroup_size(AVPacket *pkt)
+static int mkv_blockgroup_size(int pkt_size)
 {
-    int size = pkt->size + 4;
+    int size = pkt_size + 4;
     size += ebml_num_size(size);
     size += 2;              // EBML ID for block and block duration
     size += 8;              // max size of block duration
@@ -775,7 +775,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (codec->codec_type != CODEC_TYPE_SUBTITLE) {
         mkv_write_block(s, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
     } else {
-        ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(pkt));
+        ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(pkt->size));
         duration = pkt->convergence_duration;
         mkv_write_block(s, MATROSKA_ID_BLOCK, pkt, 0);
         put_ebml_uint(pb, MATROSKA_ID_DURATION, duration);
