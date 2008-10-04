@@ -139,7 +139,7 @@ static int h264_split(AVCodecContext *avctx,
     return 0;
 }
 
-static close(AVCodecParserContext *s)
+static void close(AVCodecParserContext *s)
 {
     H264Context *h = s->priv_data;
     ParseContext *pc = &h->s.parse_context;
