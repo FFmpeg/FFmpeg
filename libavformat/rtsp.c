@@ -900,8 +900,9 @@ rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
          return AVERROR(ENOMEM);
     } else {
         if(rtsp_st->dynamic_handler) {
-            rtsp_st->rtp_ctx->dynamic_protocol_context= rtsp_st->dynamic_protocol_context;
-            rtsp_st->rtp_ctx->parse_packet= rtsp_st->dynamic_handler->parse_packet;
+            rtp_parse_set_dynamic_protocol(rtsp_st->rtp_ctx,
+                                           rtsp_st->dynamic_protocol_context,
+                                           rtsp_st->dynamic_handler);
         }
     }
 

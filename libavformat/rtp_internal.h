@@ -41,7 +41,6 @@ typedef struct {
     uint32_t jitter;            ///< estimated jitter.
 } RTPStatistics;
 
-typedef struct PayloadContext PayloadContext;
 /**
  * Packet parsing for "private" payloads in the RTP specs.
  *
@@ -60,7 +59,7 @@ typedef int (*DynamicPayloadPacketHandlerProc) (PayloadContext *s,
                                                 const uint8_t * buf,
                                                 int len, int flags);
 
-typedef struct RTPDynamicProtocolHandler_s {
+struct RTPDynamicProtocolHandler_s {
     // fields from AVRtpDynamicPayloadType_s
     const char enc_name[50];    /* XXX: still why 50 ? ;-) */
     enum CodecType codec_type;
@@ -75,7 +74,7 @@ typedef struct RTPDynamicProtocolHandler_s {
     DynamicPayloadPacketHandlerProc parse_packet; ///< parse handler for this dynamic packet.
 
     struct RTPDynamicProtocolHandler_s *next;
-} RTPDynamicProtocolHandler;
+};
 
 // moved out of rtp.c, because the h264 decoder needs to know about this structure..
 struct RTPDemuxContext {
