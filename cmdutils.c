@@ -259,7 +259,7 @@ void print_error(const char *filename, int err)
             LIB##LIBNAME##_VERSION_MAJOR, LIB##LIBNAME##_VERSION_MINOR, LIB##LIBNAME##_VERSION_MICRO, \
             version >> 16, version >> 8 & 0xff, version & 0xff);
 
-void print_all_lib_versions(FILE* outstream, int indent)
+static void print_all_lib_versions(FILE* outstream, int indent)
 {
     unsigned int version;
     PRINT_LIB_VERSION(outstream, avutil,   AVUTIL,   indent);
