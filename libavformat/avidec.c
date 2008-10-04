@@ -52,6 +52,7 @@ typedef struct {
     int64_t  movi_end;
     int64_t  fsize;
     int64_t movi_list;
+    int64_t last_pkt_pos;
     int index_loaded;
     int is_odml;
     int non_interleaved;
@@ -701,6 +702,7 @@ resync:
 
         if(size > ast->remaining)
             size= ast->remaining;
+        avi->last_pkt_pos= url_ftell(pb);
         av_get_packet(pb, pkt, size);
 
         if(ast->has_pal && pkt->data && pkt->size<(unsigned)INT_MAX/2){
@@ -781,6 +783,9 @@ resync:
         }
 
         n= get_stream_idx(d);
+
+        if(!((i-avi->last_pkt_pos)&1) && get_stream_idx(d+1) < s->nb_streams)
+            continue;
 
         //parse ##dc/##wb
         if(n < s->nb_streams){
