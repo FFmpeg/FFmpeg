@@ -1091,9 +1091,9 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
                 YSCALEYUV2RGBX
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "MANGLE(b5Dither)", %%mm2\n\t"
-                "paddusb "MANGLE(g5Dither)", %%mm4\n\t"
-                "paddusb "MANGLE(r5Dither)", %%mm5\n\t"
+                "paddusb "BLUE_DITHER"(%0), %%mm2\n\t"
+                "paddusb "GREEN_DITHER"(%0), %%mm4\n\t"
+                "paddusb "RED_DITHER"(%0), %%mm5\n\t"
 #endif
 
                 WRITERGB15(%4, %5, %%REGa)
@@ -1104,9 +1104,9 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
                 YSCALEYUV2RGBX
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "MANGLE(b5Dither)", %%mm2\n\t"
-                "paddusb "MANGLE(g5Dither)", %%mm4\n\t"
-                "paddusb "MANGLE(r5Dither)", %%mm5\n\t"
+                "paddusb "BLUE_DITHER"(%0), %%mm2\n\t"
+                "paddusb "GREEN_DITHER"(%0), %%mm4\n\t"
+                "paddusb "RED_DITHER"(%0), %%mm5\n\t"
 #endif
 
                 WRITERGB16(%4, %5, %%REGa)
@@ -1151,9 +1151,9 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
                 YSCALEYUV2RGBX
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "MANGLE(b5Dither)", %%mm2  \n\t"
-                "paddusb "MANGLE(g5Dither)", %%mm4  \n\t"
-                "paddusb "MANGLE(r5Dither)", %%mm5  \n\t"
+                "paddusb "BLUE_DITHER"(%0), %%mm2  \n\t"
+                "paddusb "GREEN_DITHER"(%0), %%mm4  \n\t"
+                "paddusb "RED_DITHER"(%0), %%mm5  \n\t"
 #endif
 
                 WRITERGB15(%4, %5, %%REGa)
@@ -1164,9 +1164,9 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
                 YSCALEYUV2RGBX
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "MANGLE(b5Dither)", %%mm2  \n\t"
-                "paddusb "MANGLE(g5Dither)", %%mm4  \n\t"
-                "paddusb "MANGLE(r5Dither)", %%mm5  \n\t"
+                "paddusb "BLUE_DITHER"(%0), %%mm2  \n\t"
+                "paddusb "GREEN_DITHER"(%0), %%mm4  \n\t"
+                "paddusb "RED_DITHER"(%0), %%mm5  \n\t"
 #endif
 
                 WRITERGB16(%4, %5, %%REGa)
@@ -1468,9 +1468,9 @@ FULL_YSCALEYUV2RGB
                 YSCALEYUV2RGB(%%REGBP, %5)
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "MANGLE(b5Dither)", %%mm2      \n\t"
-                "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
-                "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
+                "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
 #endif
 
                 WRITERGB15(%%REGb, 8280(%5), %%REGBP)
@@ -1489,9 +1489,9 @@ FULL_YSCALEYUV2RGB
                 YSCALEYUV2RGB(%%REGBP, %5)
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "MANGLE(b5Dither)", %%mm2      \n\t"
-                "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
-                "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
+                "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
 #endif
 
                 WRITERGB16(%%REGb, 8280(%5), %%REGBP)
@@ -1581,9 +1581,9 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 YSCALEYUV2RGB1(%%REGBP, %5)
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "MANGLE(b5Dither)", %%mm2      \n\t"
-                "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
-                "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
+                "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
 #endif
                 WRITERGB15(%%REGb, 8280(%5), %%REGBP)
                 "pop %%"REG_BP"                         \n\t"
@@ -1601,9 +1601,9 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 YSCALEYUV2RGB1(%%REGBP, %5)
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "MANGLE(b5Dither)", %%mm2      \n\t"
-                "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
-                "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
+                "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
 #endif
 
                 WRITERGB16(%%REGb, 8280(%5), %%REGBP)
@@ -1670,9 +1670,9 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 YSCALEYUV2RGB1b(%%REGBP, %5)
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "MANGLE(b5Dither)", %%mm2      \n\t"
-                "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
-                "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
+                "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
 #endif
                 WRITERGB15(%%REGb, 8280(%5), %%REGBP)
                 "pop %%"REG_BP"                         \n\t"
@@ -1690,9 +1690,9 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 YSCALEYUV2RGB1b(%%REGBP, %5)
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "MANGLE(b5Dither)", %%mm2      \n\t"
-                "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
-                "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
+                "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
 #endif
 
                 WRITERGB16(%%REGb, 8280(%5), %%REGBP)
@@ -3091,12 +3091,12 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
         }
 
 #ifdef HAVE_MMX
-        b5Dither= ff_dither8[dstY&1];
+        c->blueDither= ff_dither8[dstY&1];
         if (c->dstFormat == PIX_FMT_RGB555 || c->dstFormat == PIX_FMT_BGR555)
-            g5Dither= ff_dither8[dstY&1];
+            c->greenDither= ff_dither8[dstY&1];
         else
-            g5Dither= ff_dither4[dstY&1];
-        r5Dither= ff_dither8[(dstY+1)&1];
+            c->greenDither= ff_dither4[dstY&1];
+        c->redDither= ff_dither8[(dstY+1)&1];
 #endif
         if (dstY < dstH-2)
         {

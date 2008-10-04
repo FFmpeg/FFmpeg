@@ -134,7 +134,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
     if(h_size*2 > FFABS(dstStride[0])) h_size-=8;
 
     asm volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );
-    //printf("%X %X %X %X %X %X %X %X %X %X\n", (int)&c->redDither, (int)&b5Dither, (int)src[0], (int)src[1], (int)src[2], (int)dst[0],
+    //printf("%X %X %X %X %X %X %X %X %X %X\n", (int)&c->redDither, (int)&c->blueDither, (int)src[0], (int)src[1], (int)src[2], (int)dst[0],
     //srcStride[0],srcStride[1],srcStride[2],dstStride[0]);
     for (y= 0; y<srcSliceH; y++ ) {
         uint8_t *image = dst[0] + (y+srcSliceY)*dstStride[0];
@@ -143,9 +143,9 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
         uint8_t *pv = src[2] + (y>>1)*srcStride[2];
         long index= -h_size/2;
 
-        b5Dither= ff_dither8[y&1];
-        g5Dither= ff_dither4[y&1];
-        r5Dither= ff_dither8[(y+1)&1];
+        c->blueDither= ff_dither8[y&1];
+        c->greenDither= ff_dither4[y&1];
+        c->redDither= ff_dither8[(y+1)&1];
         /* This MMX assembly code deals with a SINGLE scan line at a time,
          * it converts 8 pixels in each iteration. */
         asm volatile (
@@ -164,9 +164,9 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
 YUV2RGB
 
 #ifdef DITHER1XBPP
-        "paddusb "MANGLE(b5Dither)", %%mm0;"
-        "paddusb "MANGLE(g5Dither)", %%mm2;"
-        "paddusb "MANGLE(r5Dither)", %%mm1;"
+        "paddusb "BLUE_DITHER"(%4), %%mm0;"
+        "paddusb "GREEN_DITHER"(%4), %%mm2;"
+        "paddusb "RED_DITHER"(%4), %%mm1;"
 #endif
         /* mask unneeded bits off */
         "pand "MANGLE(mmx_redmask)", %%mm0;" /* b7b6b5b4 b3_0_0_0 b7b6b5b4 b3_0_0_0 */
@@ -228,7 +228,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
     if(h_size*2 > FFABS(dstStride[0])) h_size-=8;
 
     asm volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );
-    //printf("%X %X %X %X %X %X %X %X %X %X\n", (int)&c->redDither, (int)&b5Dither, (int)src[0], (int)src[1], (int)src[2], (int)dst[0],
+    //printf("%X %X %X %X %X %X %X %X %X %X\n", (int)&c->redDither, (int)&c->blueDither, (int)src[0], (int)src[1], (int)src[2], (int)dst[0],
     //srcStride[0],srcStride[1],srcStride[2],dstStride[0]);
     for (y= 0; y<srcSliceH; y++ ) {
         uint8_t *image = dst[0] + (y+srcSliceY)*dstStride[0];
@@ -237,9 +237,9 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
         uint8_t *pv = src[2] + (y>>1)*srcStride[2];
         long index= -h_size/2;
 
-        b5Dither= ff_dither8[y&1];
-        g5Dither= ff_dither8[y&1];
-        r5Dither= ff_dither8[(y+1)&1];
+        c->blueDither= ff_dither8[y&1];
+        c->greenDither= ff_dither8[y&1];
+        c->redDither= ff_dither8[(y+1)&1];
         /* This MMX assembly code deals with a SINGLE scan line at a time,
          * it converts 8 pixels in each iteration. */
         asm volatile (
@@ -252,9 +252,9 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
 YUV2RGB
 
 #ifdef DITHER1XBPP
-        "paddusb "MANGLE(b5Dither)", %%mm0  \n\t"
-        "paddusb "MANGLE(g5Dither)", %%mm2  \n\t"
-        "paddusb "MANGLE(r5Dither)", %%mm1  \n\t"
+        "paddusb "BLUE_DITHER"(%4), %%mm0  \n\t"
+        "paddusb "GREEN_DITHER"(%4), %%mm2  \n\t"
+        "paddusb "RED_DITHER"(%4), %%mm1  \n\t"
 #endif
 
         /* mask unneeded bits off */
