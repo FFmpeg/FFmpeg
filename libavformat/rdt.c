@@ -34,11 +34,42 @@
 #include "rm.h"
 #include "internal.h"
 
+struct RDTDemuxContext {
+    AVFormatContext *ic;
+    AVStream *st;
+    void *dynamic_protocol_context;
+    DynamicPayloadPacketHandlerProc parse_packet;
+    uint32_t prev_sn, prev_ts;
+};
+
+RDTDemuxContext *
+ff_rdt_parse_open(AVFormatContext *ic, AVStream *st,
+                  void *priv_data, RTPDynamicProtocolHandler *handler)
+{
+    RDTDemuxContext *s = av_mallocz(sizeof(RDTDemuxContext));
+    if (!s)
+        return NULL;
+
+    s->ic = ic;
+    s->st = st;
+    s->prev_sn = -1;
+    s->prev_ts = -1;
+    s->parse_packet = handler->parse_packet;
+    s->dynamic_protocol_context = priv_data;
+
+    return s;
+}
+
+void
+ff_rdt_parse_close(RDTDemuxContext *s)
+{
+    av_free(s);
+}
+
 struct PayloadContext {
     AVFormatContext *rmctx;
     uint8_t *mlti_data;
     unsigned int mlti_data_size;
-    uint32_t prev_sn, prev_ts;
     char buffer[RTP_MAX_PACKET_LENGTH + FF_INPUT_BUFFER_PADDING_SIZE];
 };
 
@@ -202,10 +233,9 @@ rdt_parse_packet (PayloadContext *rdt, AVStream *st,
 }
 
 int
-ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
+ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
                     const uint8_t *buf, int len)
 {
-    PayloadContext *rdt = s->dynamic_protocol_context;
     int seq, flags = 0, rule, sn;
     uint32_t timestamp;
     int rv= 0;
@@ -226,14 +256,13 @@ ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     rv = ff_rdt_parse_header(buf, len, &sn, &seq, &rule, &timestamp);
     if (rv < 0)
         return rv;
-    if (!(rule & 1) && (sn != rdt->prev_sn || timestamp != rdt->prev_ts)) {
+    if (!(rule & 1) && (sn != s->prev_sn || timestamp != s->prev_ts)) {
         flags |= PKT_FLAG_KEY;
-        rdt->prev_sn = sn;
-        rdt->prev_ts = timestamp;
+        s->prev_sn = sn;
+        s->prev_ts = timestamp;
     }
     buf += rv;
     len -= rv;
-    s->seq = seq;
 
     rv = s->parse_packet(s->dynamic_protocol_context,
                          s->st, pkt, &timestamp, buf, len, flags);
@@ -250,7 +279,7 @@ ff_rdt_subscribe_rule (char *cmd, int size,
 }
 
 void
-ff_rdt_subscribe_rule2 (RTPDemuxContext *s, char *cmd, int size,
+ff_rdt_subscribe_rule2 (RDTDemuxContext *s, char *cmd, int size,
                         int stream_nr, int rule_nr)
 {
     PayloadContext *rdt = s->dynamic_protocol_context;
@@ -292,8 +321,6 @@ rdt_new_extradata (void)
     PayloadContext *rdt = av_mallocz(sizeof(PayloadContext));
 
     av_open_input_stream(&rdt->rmctx, NULL, "", &rdt_demuxer, NULL);
-    rdt->prev_ts = -1;
-    rdt->prev_sn = -1;
 
     return rdt;
 }

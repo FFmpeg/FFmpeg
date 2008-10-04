@@ -873,8 +873,12 @@ static void rtsp_close_streams(RTSPState *rt)
     for(i=0;i<rt->nb_rtsp_streams;i++) {
         rtsp_st = rt->rtsp_streams[i];
         if (rtsp_st) {
-            if (rtsp_st->tx_ctx)
+            if (rtsp_st->tx_ctx) {
+                if (rt->transport == RTSP_TRANSPORT_RDT)
+                    ff_rdt_parse_close(rtsp_st->tx_ctx);
+                else
                 rtp_parse_close(rtsp_st->tx_ctx);
+            }
             if (rtsp_st->rtp_handle)
                 url_close(rtsp_st->rtp_handle);
             if (rtsp_st->dynamic_handler && rtsp_st->dynamic_protocol_context)
@@ -887,6 +891,7 @@ static void rtsp_close_streams(RTSPState *rt)
 static int
 rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 {
+    RTSPState *rt = s->priv_data;
     AVStream *st = NULL;
 
     /* open the RTP context */
@@ -894,11 +899,17 @@ rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
         st = s->streams[rtsp_st->stream_index];
     if (!st)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
+
+    if (rt->transport == RTSP_TRANSPORT_RDT)
+        rtsp_st->tx_ctx = ff_rdt_parse_open(s, st,
+                                            rtsp_st->dynamic_protocol_context,
+                                            rtsp_st->dynamic_handler);
+    else
     rtsp_st->tx_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
 
     if (!rtsp_st->tx_ctx) {
          return AVERROR(ENOMEM);
-    } else {
+    } else if (rt->transport != RTSP_TRANSPORT_RDT) {
         if(rtsp_st->dynamic_handler) {
             rtp_parse_set_dynamic_protocol(rtsp_st->tx_ctx,
                                            rtsp_st->dynamic_protocol_context,

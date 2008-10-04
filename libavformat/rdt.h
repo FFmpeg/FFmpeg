@@ -22,6 +22,13 @@
 #ifndef AVFORMAT_RDT_H
 #define AVFORMAT_RDT_H
 
+typedef struct RDTDemuxContext RDTDemuxContext;
+
+RDTDemuxContext *ff_rdt_parse_open(AVFormatContext *ic, AVStream *st,
+                                   void *priv_data,
+                                   RTPDynamicProtocolHandler *handler);
+void ff_rdt_parse_close(RDTDemuxContext *s);
+
 /**
  * Calculate the response (RealChallenge2 in the RTSP header) to the
  * challenge (RealChallenge1 in the RTSP header from the Real/Helix
@@ -53,7 +60,7 @@ void av_register_rdt_dynamic_payload_handlers(void);
 void ff_rdt_subscribe_rule(char *cmd, int size,
                            int stream_nr, int rule_nr);
 // FIXME this will be removed ASAP
-void ff_rdt_subscribe_rule2(RTPDemuxContext *s, char *cmd, int size,
+void ff_rdt_subscribe_rule2(RDTDemuxContext *s, char *cmd, int size,
                             int stream_nr, int rule_nr);
 
 /**
@@ -74,7 +81,7 @@ int ff_rdt_parse_header(const uint8_t *buf, int len,
  * Parse RDT-style packet data (header + media data).
  * Usage similar to rtp_parse_packet().
  */
-int ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
+int ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
                         const uint8_t *buf, int len);
 
 #endif /* AVFORMAT_RDT_H */
