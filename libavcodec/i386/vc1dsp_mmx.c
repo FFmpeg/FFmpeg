@@ -203,8 +203,8 @@ static void vc1_put_shift2_mmx(uint8_t *dst, const uint8_t *src,
  * Filter coefficients made global to allow access by all 1 or 3 quarter shift
  * interpolation functions.
  */
-DECLARE_ALIGNED_16(const uint64_t, ff_pw_53) = 0x0035003500350035ULL;
-DECLARE_ALIGNED_16(const uint64_t, ff_pw_18) = 0x0012001200120012ULL;
+DECLARE_ASM_CONST(16, uint64_t, ff_pw_53) = 0x0035003500350035ULL;
+DECLARE_ASM_CONST(16, uint64_t, ff_pw_18) = 0x0012001200120012ULL;
 
 /**
  * Core of the 1/4 and 3/4 shift bicubic interpolation.
