@@ -30,11 +30,6 @@
 #include <stddef.h>
 #include <inttypes.h> /* for __WORDSIZE */
 
-#ifndef __WORDSIZE
-// #warning You have a misconfigured system and will probably lose performance!
-#define __WORDSIZE MP_WORDSIZE
-#endif
-
 #undef PREFETCH
 #undef MOVNTQ
 #undef EMMS
