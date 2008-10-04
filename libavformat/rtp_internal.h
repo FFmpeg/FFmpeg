@@ -41,6 +41,7 @@ typedef struct {
     uint32_t jitter;            ///< estimated jitter.
 } RTPStatistics;
 
+typedef struct PayloadContext PayloadContext;
 /**
  * Packet parsing for "private" payloads in the RTP specs.
  *
@@ -65,10 +66,10 @@ typedef struct RTPDynamicProtocolHandler_s {
 
     // may be null
     int (*parse_sdp_a_line) (AVStream * stream,
-                             void *protocol_data,
+                             PayloadContext *priv_data,
                              const char *line); ///< Parse the a= line from the sdp field
-    void *(*open) (); ///< allocate any data needed by the rtp parsing for this dynamic data.
-    void (*close)(void *protocol_data); ///< free any data needed by the rtp parsing for this dynamic data.
+    PayloadContext *(*open) (); ///< allocate any data needed by the rtp parsing for this dynamic data.
+    void (*close)(PayloadContext *protocol_data); ///< free any data needed by the rtp parsing for this dynamic data.
     DynamicPayloadPacketHandlerProc parse_packet; ///< parse handler for this dynamic packet.
 
     struct RTPDynamicProtocolHandler_s *next;
@@ -113,7 +114,7 @@ struct RTPDemuxContext {
 
     /* dynamic payload stuff */
     DynamicPayloadPacketHandlerProc parse_packet;     ///< This is also copied from the dynamic protocol handler structure
-    void *dynamic_protocol_context;        ///< This is a copy from the values setup from the sdp parsing, in rtsp.c don't free me.
+    PayloadContext *dynamic_protocol_context;        ///< This is a copy from the values setup from the sdp parsing, in rtsp.c don't free me.
     int max_frames_per_packet;
 };
 

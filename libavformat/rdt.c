@@ -34,13 +34,13 @@
 #include "rm.h"
 #include "internal.h"
 
-typedef struct rdt_data {
+struct PayloadContext {
     AVFormatContext *rmctx;
     uint8_t *mlti_data;
     unsigned int mlti_data_size;
     uint32_t prev_sn, prev_ts;
     char buffer[RTP_MAX_PACKET_LENGTH + FF_INPUT_BUFFER_PADDING_SIZE];
-} rdt_data;
+};
 
 void
 ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
@@ -82,7 +82,7 @@ ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
 }
 
 static int
-rdt_load_mdpr (rdt_data *rdt, AVStream *st, int rule_nr)
+rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
 {
     ByteIOContext *pb;
     int size;
@@ -166,7 +166,7 @@ static int
 rdt_parse_packet (RTPDemuxContext *s, AVPacket *pkt, uint32_t *timestamp,
                   const uint8_t *buf, int len, int flags)
 {
-    rdt_data *rdt = s->dynamic_protocol_context;
+    PayloadContext *rdt = s->dynamic_protocol_context;
     int seq = 1, res;
     ByteIOContext *pb = rdt->rmctx->pb;
     RMContext *rm = rdt->rmctx->priv_data;
@@ -206,7 +206,7 @@ int
 ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
                     const uint8_t *buf, int len)
 {
-    rdt_data *rdt = s->dynamic_protocol_context;
+    PayloadContext *rdt = s->dynamic_protocol_context;
     int seq, flags = 0, rule, sn;
     uint32_t timestamp;
     int rv= 0;
@@ -252,7 +252,7 @@ void
 ff_rdt_subscribe_rule2 (RTPDemuxContext *s, char *cmd, int size,
                         int stream_nr, int rule_nr)
 {
-    rdt_data *rdt = s->dynamic_protocol_context;
+    PayloadContext *rdt = s->dynamic_protocol_context;
 
     rdt_load_mdpr(rdt, s->st, rule_nr * 2);
 }
@@ -273,9 +273,8 @@ rdt_parse_b64buf (unsigned int *target_len, const char *p)
 }
 
 static int
-rdt_parse_sdp_line (AVStream *stream, void *d, const char *line)
+rdt_parse_sdp_line (AVStream *stream, PayloadContext *rdt, const char *line)
 {
-    rdt_data *rdt = d;
     const char *p = line;
 
     if (av_strstart(p, "OpaqueData:buffer;", &p)) {
@@ -286,10 +285,10 @@ rdt_parse_sdp_line (AVStream *stream, void *d, const char *line)
     return 0;
 }
 
-static void *
+static PayloadContext *
 rdt_new_extradata (void)
 {
-    rdt_data *rdt = av_mallocz(sizeof(rdt_data));
+    PayloadContext *rdt = av_mallocz(sizeof(PayloadContext));
 
     av_open_input_stream(&rdt->rmctx, NULL, "", &rdt_demuxer, NULL);
     rdt->prev_ts = -1;
@@ -299,10 +298,8 @@ rdt_new_extradata (void)
 }
 
 static void
-rdt_free_extradata (void *d)
+rdt_free_extradata (PayloadContext *rdt)
 {
-    rdt_data *rdt = d;
-
     if (rdt->rmctx)
         av_close_input_stream(rdt->rmctx);
     av_freep(&rdt->mlti_data);

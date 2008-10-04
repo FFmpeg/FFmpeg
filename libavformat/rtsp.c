@@ -92,7 +92,7 @@ typedef struct RTSPStream {
     rtp_payload_data_t rtp_payload_data; /* rtp payload parsing infos from SDP */
 
     RTPDynamicProtocolHandler *dynamic_handler; ///< Only valid if it's a dynamic protocol. (This is the handler structure)
-    void *dynamic_protocol_context; ///< Only valid if it's a dynamic protocol. (This is any private data associated with the dynamic protocol)
+    PayloadContext *dynamic_protocol_context; ///< Only valid if it's a dynamic protocol. (This is any private data associated with the dynamic protocol)
 } RTSPStream;
 
 static int rtsp_read_play(AVFormatContext *s);
