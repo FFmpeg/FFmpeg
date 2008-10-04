@@ -710,15 +710,9 @@ static int mkv_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int mkv_block_size(AVPacket *pkt)
-{
-    int size = 4;           // track num + timecode + flags
-    return size + pkt->size;
-}
-
 static int mkv_blockgroup_size(AVPacket *pkt)
 {
-    int size = mkv_block_size(pkt);
+    int size = pkt->size + 4;
     size += ebml_num_size(size);
     size += 2;              // EBML ID for block and block duration
     size += 8;              // max size of block duration
@@ -736,7 +730,7 @@ static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *
            "pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
            url_ftell(pb), pkt->size, pkt->pts, pkt->dts, pkt->duration, flags);
     put_ebml_id(pb, blockid);
-    put_ebml_num(pb, mkv_block_size(pkt), 0);
+    put_ebml_num(pb, pkt->size+4, 0);
     put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
     put_be16(pb, pkt->pts - mkv->cluster_pts);
     put_byte(pb, flags);
