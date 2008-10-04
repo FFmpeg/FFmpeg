@@ -711,7 +711,7 @@ typedef struct DynBuffer {
 static int dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
 {
     DynBuffer *d = opaque;
-    int new_size, new_allocated_size;
+    unsigned new_size, new_allocated_size;
 
     /* reallocate buffer if needed */
     new_size = d->pos + buf_size;
