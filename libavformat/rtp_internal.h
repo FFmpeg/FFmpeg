@@ -46,13 +46,15 @@ typedef struct PayloadContext PayloadContext;
  * Packet parsing for "private" payloads in the RTP specs.
  *
  * @param s stream context
+ * @param st stream that this packet belongs to
  * @param pkt packet in which to write the parsed data
  * @param timestamp pointer in which to write the timestamp of this RTP packet
  * @param buf pointer to raw RTP packet data
  * @param len length of buf
  * @param flags flags from the RTP packet header (PKT_FLAG_*)
  */
-typedef int (*DynamicPayloadPacketHandlerProc) (struct RTPDemuxContext * s,
+typedef int (*DynamicPayloadPacketHandlerProc) (PayloadContext *s,
+                                                AVStream *st,
                                                 AVPacket * pkt,
                                                 uint32_t *timestamp,
                                                 const uint8_t * buf,

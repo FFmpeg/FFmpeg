@@ -163,14 +163,13 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
 
 /**< return 0 on packet, no more left, 1 on packet, 1 on partial packet... */
 static int
-rdt_parse_packet (RTPDemuxContext *s, AVPacket *pkt, uint32_t *timestamp,
+rdt_parse_packet (PayloadContext *rdt, AVStream *st,
+                  AVPacket *pkt, uint32_t *timestamp,
                   const uint8_t *buf, int len, int flags)
 {
-    PayloadContext *rdt = s->dynamic_protocol_context;
     int seq = 1, res;
     ByteIOContext *pb = rdt->rmctx->pb;
     RMContext *rm = rdt->rmctx->priv_data;
-    AVStream *st = s->st;
 
     if (rm->audio_pkt_cnt == 0) {
         int pos;
@@ -217,7 +216,8 @@ ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     if (!buf) {
         /* return the next packets, if any */
         timestamp= 0; ///< Should not be used if buf is NULL, but should be set to the timestamp of the packet returned....
-        rv= s->parse_packet(s, pkt, &timestamp, NULL, 0, flags);
+        rv= s->parse_packet(s->dynamic_protocol_context,
+                            s->st, pkt, &timestamp, NULL, 0, flags);
         return rv;
     }
 
@@ -235,7 +235,8 @@ ff_rdt_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     len -= rv;
     s->seq = seq;
 
-    rv = s->parse_packet(s, pkt, &timestamp, buf, len, flags);
+    rv = s->parse_packet(s->dynamic_protocol_context,
+                         s->st, pkt, &timestamp, buf, len, flags);
 
     return rv;
 }

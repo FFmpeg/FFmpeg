@@ -159,15 +159,13 @@ static void sdp_parse_fmtp_config_h264(AVStream * stream,
 }
 
 // return 0 on packet, no more left, 1 on packet, 1 on partial packet...
-static int h264_handle_packet(RTPDemuxContext * s,
+static int h264_handle_packet(PayloadContext *data,
+                              AVStream *st,
                               AVPacket * pkt,
                               uint32_t * timestamp,
                               const uint8_t * buf,
                               int len, int flags)
 {
-#ifdef DEBUG
-    PayloadContext *data = s->dynamic_protocol_context;
-#endif
     uint8_t nal = buf[0];
     uint8_t type = (nal & 0x1f);
     int result= 0;
