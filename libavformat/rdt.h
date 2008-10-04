@@ -22,6 +22,10 @@
 #ifndef AVFORMAT_RDT_H
 #define AVFORMAT_RDT_H
 
+#include <stdint.h>
+#include "avformat.h"
+#include "rtp.h"
+
 typedef struct RDTDemuxContext RDTDemuxContext;
 
 RDTDemuxContext *ff_rdt_parse_open(AVFormatContext *ic, AVStream *st,

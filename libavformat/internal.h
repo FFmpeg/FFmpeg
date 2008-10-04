@@ -21,6 +21,8 @@
 #ifndef AVFORMAT_INTERNAL_H
 #define AVFORMAT_INTERNAL_H
 
+#include <stdint.h>
+
 char *ff_data_to_hex(char *buf, const uint8_t *src, int size);
 
 #endif /* AVFORMAT_INTERNAL_H */

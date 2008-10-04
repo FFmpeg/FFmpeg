@@ -24,7 +24,7 @@
 
 #include "avcodec.h"
 #include "aac.h"
-#include "lowpass.h"
+//#include "lowpass.h"
 
 enum AACPsyModelType{
     AAC_PSY_TEST,              ///< a sample model to exercise encoder

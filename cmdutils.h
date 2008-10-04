@@ -23,6 +23,9 @@
 #define FFMPEG_CMDUTILS_H
 
 #include <inttypes.h>
+#include "libavcodec/avcodec.h"
+#include "libavformat/avformat.h"
+#include "libswscale/swscale.h"
 
 /**
  * program name, defined by the program for show_version().

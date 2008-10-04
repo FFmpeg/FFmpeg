@@ -22,6 +22,8 @@
 #ifndef AVCODEC_RA288_H
 #define AVCODEC_RA288_H
 
+#include <stdint.h>
+
 static const float amptable[8]={
      0.515625,  0.90234375,  1.57910156,  2.76342773,
     -0.515625, -0.90234375, -1.57910156, -2.76342773
