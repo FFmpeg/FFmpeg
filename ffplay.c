@@ -217,13 +217,13 @@ static int is_full_screen;
 static VideoState *cur_stream;
 static int64_t audio_callback_time;
 
-AVPacket flush_pkt;
+static AVPacket flush_pkt;
 
 #define FF_ALLOC_EVENT   (SDL_USEREVENT)
 #define FF_REFRESH_EVENT (SDL_USEREVENT + 1)
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
-SDL_Surface *screen;
+static SDL_Surface *screen;
 
 /* packet queue handling */
 static void packet_queue_init(PacketQueue *q)
