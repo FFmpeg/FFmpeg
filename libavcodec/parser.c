@@ -22,7 +22,7 @@
 
 #include "parser.h"
 
-AVCodecParser *av_first_parser = NULL;
+static AVCodecParser *av_first_parser = NULL;
 
 AVCodecParser* av_parser_next(AVCodecParser *p){
     if(p) return p->next;

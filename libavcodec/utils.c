@@ -79,7 +79,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size)
 }
 
 /* encoder management */
-AVCodec *first_avcodec = NULL;
+static AVCodec *first_avcodec = NULL;
 
 AVCodec *av_codec_next(AVCodec *c){
     if(c) return c->next;
