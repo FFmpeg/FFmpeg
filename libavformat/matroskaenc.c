@@ -721,6 +721,65 @@ static int mkv_blockgroup_size(int pkt_size)
     return size;
 }
 
+static int ass_get_duration(const uint8_t *p)
+{
+    int sh, sm, ss, sc, eh, em, es, ec;
+    uint64_t start, end;
+
+    if (sscanf(p, "%*[^,],%d:%d:%d%*c%d,%d:%d:%d%*c%d",
+               &sh, &sm, &ss, &sc, &eh, &em, &es, &ec) != 8)
+        return 0;
+    start = 3600000*sh + 60000*sm + 1000*ss + 10*sc;
+    end   = 3600000*eh + 60000*em + 1000*es + 10*ec;
+    return end - start;
+}
+
+static int mkv_write_ass_blocks(AVFormatContext *s, AVPacket *pkt)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    ByteIOContext *pb = s->pb;
+    int i, layer = 0, max_duration = 0, size, line_size, data_size = pkt->size;
+    uint8_t *start, *end, *data = pkt->data;
+    ebml_master blockgroup;
+    char buffer[2048];
+
+    while (data_size) {
+        int duration = ass_get_duration(data);
+        max_duration = FFMAX(duration, max_duration);
+        end = memchr(data, '\n', data_size);
+        size = line_size = end ? end-data+1 : data_size;
+        size -= end ? (end[-1]=='\r')+1 : 0;
+        start = data;
+        for (i=0; i<3; i++, start++)
+            if (!(start = memchr(start, ',', size-(start-data))))
+                return max_duration;
+        size -= start - data;
+        sscanf(data, "Dialogue: %d,", &layer);
+        i = snprintf(buffer, sizeof(buffer), "%"PRId64",%d,",
+                     s->streams[pkt->stream_index]->nb_frames++, layer);
+        size = FFMIN(i+size, sizeof(buffer));
+        memcpy(buffer+i, start, size-i);
+
+        av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
+               "pts %" PRId64 ", duration %d\n",
+               url_ftell(pb), size, pkt->pts, duration);
+        blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(size));
+        put_ebml_id(pb, MATROSKA_ID_BLOCK);
+        put_ebml_num(pb, size+4, 0);
+        put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
+        put_be16(pb, pkt->pts - mkv->cluster_pts);
+        put_byte(pb, 0);
+        put_buffer(pb, buffer, size);
+        put_ebml_uint(pb, MATROSKA_ID_BLOCKDURATION, duration);
+        end_ebml_master(pb, blockgroup);
+
+        data += line_size;
+        data_size -= line_size;
+    }
+
+    return max_duration;
+}
+
 static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *pkt, int flags)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -774,6 +833,8 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (codec->codec_type != CODEC_TYPE_SUBTITLE) {
         mkv_write_block(s, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
+    } else if (codec->codec_id == CODEC_ID_SSA) {
+        duration = mkv_write_ass_blocks(s, pkt);
     } else {
         ebml_master blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(pkt->size));
         duration = pkt->convergence_duration;
