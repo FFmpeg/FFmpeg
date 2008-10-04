@@ -73,13 +73,13 @@ typedef struct RTSPState {
     enum RTSPLowerTransport lower_transport;
     enum RTSPServerType server_type;
     char last_reply[2048]; /* XXX: allocate ? */
-    RTPDemuxContext *cur_rtp;
+    void *cur_tx;
     int need_subscription;
 } RTSPState;
 
 typedef struct RTSPStream {
     URLContext *rtp_handle; /* RTP stream handle */
-    RTPDemuxContext *rtp_ctx; /* RTP parse context */
+    void *tx_ctx; /* RTP/RDT parse context */
 
     int stream_index; /* corresponding stream index, if any. -1 if none (MPEG2TS case) */
     int interleaved_min, interleaved_max;  /* interleave ids, if TCP transport */
@@ -873,8 +873,8 @@ static void rtsp_close_streams(RTSPState *rt)
     for(i=0;i<rt->nb_rtsp_streams;i++) {
         rtsp_st = rt->rtsp_streams[i];
         if (rtsp_st) {
-            if (rtsp_st->rtp_ctx)
-                rtp_parse_close(rtsp_st->rtp_ctx);
+            if (rtsp_st->tx_ctx)
+                rtp_parse_close(rtsp_st->tx_ctx);
             if (rtsp_st->rtp_handle)
                 url_close(rtsp_st->rtp_handle);
             if (rtsp_st->dynamic_handler && rtsp_st->dynamic_protocol_context)
@@ -894,13 +894,13 @@ rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
         st = s->streams[rtsp_st->stream_index];
     if (!st)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
-    rtsp_st->rtp_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
+    rtsp_st->tx_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
 
-    if (!rtsp_st->rtp_ctx) {
+    if (!rtsp_st->tx_ctx) {
          return AVERROR(ENOMEM);
     } else {
         if(rtsp_st->dynamic_handler) {
-            rtp_parse_set_dynamic_protocol(rtsp_st->rtp_ctx,
+            rtp_parse_set_dynamic_protocol(rtsp_st->tx_ctx,
                                            rtsp_st->dynamic_protocol_context,
                                            rtsp_st->dynamic_handler);
         }
@@ -1347,7 +1347,7 @@ static int rtsp_read_packet(AVFormatContext *s,
             ff_rdt_subscribe_rule(cmd, sizeof(cmd), i, 0);
             if (rt->transport == RTSP_TRANSPORT_RDT)
                 ff_rdt_subscribe_rule2(
-                    rt->rtsp_streams[i]->rtp_ctx,
+                    rt->rtsp_streams[i]->tx_ctx,
                     cmd, sizeof(cmd), i, 0);
         }
         av_strlcat(cmd, "\r\n", sizeof(cmd));
@@ -1361,18 +1361,18 @@ static int rtsp_read_packet(AVFormatContext *s,
     }
 
     /* get next frames from the same RTP packet */
-    if (rt->cur_rtp) {
+    if (rt->cur_tx) {
         if (rt->transport == RTSP_TRANSPORT_RDT)
-            ret = ff_rdt_parse_packet(rt->cur_rtp, pkt, NULL, 0);
+            ret = ff_rdt_parse_packet(rt->cur_tx, pkt, NULL, 0);
         else
-            ret = rtp_parse_packet(rt->cur_rtp, pkt, NULL, 0);
+            ret = rtp_parse_packet(rt->cur_tx, pkt, NULL, 0);
         if (ret == 0) {
-            rt->cur_rtp = NULL;
+            rt->cur_tx = NULL;
             return 0;
         } else if (ret == 1) {
             return 0;
         } else {
-            rt->cur_rtp = NULL;
+            rt->cur_tx = NULL;
         }
     }
 
@@ -1386,21 +1386,21 @@ static int rtsp_read_packet(AVFormatContext *s,
     case RTSP_LOWER_TRANSPORT_UDP:
     case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
         len = udp_read_packet(s, &rtsp_st, buf, sizeof(buf));
-        if (len >=0 && rtsp_st->rtp_ctx)
-            rtp_check_and_send_back_rr(rtsp_st->rtp_ctx, len);
+        if (len >=0 && rtsp_st->tx_ctx)
+            rtp_check_and_send_back_rr(rtsp_st->tx_ctx, len);
         break;
     }
     if (len < 0)
         return len;
     if (rt->transport == RTSP_TRANSPORT_RDT)
-        ret = ff_rdt_parse_packet(rtsp_st->rtp_ctx, pkt, buf, len);
+        ret = ff_rdt_parse_packet(rtsp_st->tx_ctx, pkt, buf, len);
     else
-        ret = rtp_parse_packet(rtsp_st->rtp_ctx, pkt, buf, len);
+        ret = rtp_parse_packet(rtsp_st->tx_ctx, pkt, buf, len);
     if (ret < 0)
         goto redo;
     if (ret == 1) {
         /* more packets may follow, so we save the RTP context */
-        rt->cur_rtp = rtsp_st->rtp_ctx;
+        rt->cur_tx = rtsp_st->tx_ctx;
     }
     return 0;
 }
