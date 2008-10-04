@@ -86,11 +86,11 @@ static av_always_inline uint32_t pack16to32(int a, int b){
 #endif
 }
 
-const uint8_t ff_rem6[52]={
+static const uint8_t rem6[52]={
 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3,
 };
 
-const uint8_t ff_div6[52]={
+static const uint8_t div6[52]={
 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8,
 };
 
@@ -2056,8 +2056,8 @@ static void init_dequant8_coeff_table(H264Context *h){
         }
 
         for(q=0; q<52; q++){
-            int shift = ff_div6[q];
-            int idx = ff_rem6[q];
+            int shift = div6[q];
+            int idx = rem6[q];
             for(x=0; x<64; x++)
                 h->dequant8_coeff[i][q][transpose ? (x>>3)|((x&7)<<3) : x] =
                     ((uint32_t)dequant8_coeff_init[idx][ dequant8_coeff_init_scan[((x>>1)&12) | (x&3)] ] *
@@ -2081,8 +2081,8 @@ static void init_dequant4_coeff_table(H264Context *h){
             continue;
 
         for(q=0; q<52; q++){
-            int shift = ff_div6[q] + 2;
-            int idx = ff_rem6[q];
+            int shift = div6[q] + 2;
+            int idx = rem6[q];
             for(x=0; x<16; x++)
                 h->dequant4_coeff[i][q][transpose ? (x>>2)|((x<<2)&0xF) : x] =
                     ((uint32_t)dequant4_coeff_init[idx][(x&1) + ((x>>2)&1)] *
