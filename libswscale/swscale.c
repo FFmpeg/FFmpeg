@@ -207,7 +207,6 @@ DECLARE_ASM_CONST(8, uint64_t, bm01010101)=0x00FF00FF00FF00FFLL;
 
 static volatile uint64_t attribute_used __attribute__((aligned(8))) b5Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) g5Dither;
-static volatile uint64_t attribute_used __attribute__((aligned(8))) g6Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) r5Dither;
 
 const DECLARE_ALIGNED(8, uint64_t, ff_dither4[2]) = {

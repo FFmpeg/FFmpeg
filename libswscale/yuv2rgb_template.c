@@ -144,8 +144,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
         long index= -h_size/2;
 
         b5Dither= ff_dither8[y&1];
-        g6Dither= ff_dither4[y&1];
-        g5Dither= ff_dither8[y&1];
+        g5Dither= ff_dither4[y&1];
         r5Dither= ff_dither8[(y+1)&1];
         /* This MMX assembly code deals with a SINGLE scan line at a time,
          * it converts 8 pixels in each iteration. */
@@ -166,7 +165,7 @@ YUV2RGB
 
 #ifdef DITHER1XBPP
         "paddusb "MANGLE(b5Dither)", %%mm0;"
-        "paddusb "MANGLE(g6Dither)", %%mm2;"
+        "paddusb "MANGLE(g5Dither)", %%mm2;"
         "paddusb "MANGLE(r5Dither)", %%mm1;"
 #endif
         /* mask unneeded bits off */
@@ -239,7 +238,6 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
         long index= -h_size/2;
 
         b5Dither= ff_dither8[y&1];
-        g6Dither= ff_dither4[y&1];
         g5Dither= ff_dither8[y&1];
         r5Dither= ff_dither8[(y+1)&1];
         /* This MMX assembly code deals with a SINGLE scan line at a time,

@@ -58,7 +58,6 @@ DECLARE_ASM_CONST(8, uint64_t, mmx_grnmask) = 0xfcfcfcfcfcfcfcfcULL;
 // not knowing that these are read in the ASM block.
 static volatile uint64_t attribute_used __attribute__((aligned(8))) b5Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) g5Dither;
-static volatile uint64_t attribute_used __attribute__((aligned(8))) g6Dither;
 static volatile uint64_t attribute_used __attribute__((aligned(8))) r5Dither;
 
 #undef HAVE_MMX

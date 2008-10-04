@@ -1105,7 +1105,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "MANGLE(b5Dither)", %%mm2\n\t"
-                "paddusb "MANGLE(g6Dither)", %%mm4\n\t"
+                "paddusb "MANGLE(g5Dither)", %%mm4\n\t"
                 "paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
@@ -1165,7 +1165,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "MANGLE(b5Dither)", %%mm2  \n\t"
-                "paddusb "MANGLE(g6Dither)", %%mm4  \n\t"
+                "paddusb "MANGLE(g5Dither)", %%mm4  \n\t"
                 "paddusb "MANGLE(r5Dither)", %%mm5  \n\t"
 #endif
 
@@ -1330,7 +1330,7 @@ FULL_YSCALEYUV2RGB
 
 FULL_YSCALEYUV2RGB
 #ifdef DITHER1XBPP
-            "paddusb "MANGLE(g6Dither)", %%mm1  \n\t"
+            "paddusb "MANGLE(g5Dither)", %%mm1  \n\t"
             "paddusb "MANGLE(r5Dither)", %%mm0  \n\t"
             "paddusb "MANGLE(b5Dither)", %%mm3  \n\t"
 #endif
@@ -1490,7 +1490,7 @@ FULL_YSCALEYUV2RGB
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "MANGLE(b5Dither)", %%mm2      \n\t"
-                "paddusb "MANGLE(g6Dither)", %%mm4      \n\t"
+                "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
                 "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
 #endif
 
@@ -1602,7 +1602,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "MANGLE(b5Dither)", %%mm2      \n\t"
-                "paddusb "MANGLE(g6Dither)", %%mm4      \n\t"
+                "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
                 "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
 #endif
 
@@ -1691,7 +1691,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "MANGLE(b5Dither)", %%mm2      \n\t"
-                "paddusb "MANGLE(g6Dither)", %%mm4      \n\t"
+                "paddusb "MANGLE(g5Dither)", %%mm4      \n\t"
                 "paddusb "MANGLE(r5Dither)", %%mm5      \n\t"
 #endif
 
@@ -3092,8 +3092,10 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
 
 #ifdef HAVE_MMX
         b5Dither= ff_dither8[dstY&1];
-        g6Dither= ff_dither4[dstY&1];
-        g5Dither= ff_dither8[dstY&1];
+        if (c->dstFormat == PIX_FMT_RGB555 || c->dstFormat == PIX_FMT_BGR555)
+            g5Dither= ff_dither8[dstY&1];
+        else
+            g5Dither= ff_dither4[dstY&1];
         r5Dither= ff_dither8[(dstY+1)&1];
 #endif
         if (dstY < dstH-2)
