@@ -4471,6 +4471,11 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         c->h263_v_loop_filter= h263_v_loop_filter_c;
     }
 
+    if (ENABLE_VP3_DECODER || ENABLE_THEORA_DECODER) {
+        c->vp3_h_loop_filter= ff_vp3_h_loop_filter_c;
+        c->vp3_v_loop_filter= ff_vp3_v_loop_filter_c;
+    }
+
     c->h261_loop_filter= h261_loop_filter_c;
 
     c->try_8x8basis= try_8x8basis_c;

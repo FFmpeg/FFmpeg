@@ -86,6 +86,9 @@ void ff_vp3_idct_c(DCTELEM *block/* align 16*/);
 void ff_vp3_idct_put_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 void ff_vp3_idct_add_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 
+void ff_vp3_v_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
+void ff_vp3_h_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
+
 /* 1/2^n downscaling functions from imgconvert.c */
 void ff_img_copy_plane(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 void ff_shrink22(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
@@ -358,6 +361,9 @@ typedef struct DSPContext {
 
     void (*x8_v_loop_filter)(uint8_t *src, int stride, int qscale);
     void (*x8_h_loop_filter)(uint8_t *src, int stride, int qscale);
+
+    void (*vp3_v_loop_filter)(uint8_t *src, int stride, int *bounding_values);
+    void (*vp3_h_loop_filter)(uint8_t *src, int stride, int *bounding_values);
 
     /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vorbis_inverse_coupling)(float *mag, float *ang, int blocksize);

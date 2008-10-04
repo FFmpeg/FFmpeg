@@ -1283,12 +1283,6 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
     }
 }
 
-
-static void horizontal_filter(unsigned char *first_pixel, int stride,
-    int *bounding_values);
-static void vertical_filter(unsigned char *first_pixel, int stride,
-    int *bounding_values);
-
 /*
  * Perform the final rendering for a particular slice of data.
  * The slice number ranges from 0..(macroblock_height - 1).
@@ -1495,39 +1489,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
     emms_c();
 }
 
-static void horizontal_filter(unsigned char *first_pixel, int stride,
-    int *bounding_values)
-{
-    unsigned char *end;
-    int filter_value;
-
-    for (end= first_pixel + 8*stride; first_pixel != end; first_pixel += stride) {
-        filter_value =
-            (first_pixel[-2] - first_pixel[ 1])
-         +3*(first_pixel[ 0] - first_pixel[-1]);
-        filter_value = bounding_values[(filter_value + 4) >> 3];
-        first_pixel[-1] = av_clip_uint8(first_pixel[-1] + filter_value);
-        first_pixel[ 0] = av_clip_uint8(first_pixel[ 0] - filter_value);
-    }
-}
-
-static void vertical_filter(unsigned char *first_pixel, int stride,
-    int *bounding_values)
-{
-    unsigned char *end;
-    int filter_value;
-    const int nstride= -stride;
-
-    for (end= first_pixel + 8; first_pixel < end; first_pixel++) {
-        filter_value =
-            (first_pixel[2 * nstride] - first_pixel[ stride])
-         +3*(first_pixel[0          ] - first_pixel[nstride]);
-        filter_value = bounding_values[(filter_value + 4) >> 3];
-        first_pixel[nstride] = av_clip_uint8(first_pixel[nstride] + filter_value);
-        first_pixel[0] = av_clip_uint8(first_pixel[0] - filter_value);
-    }
-}
-
 static void apply_loop_filter(Vp3DecodeContext *s)
 {
     int plane;
@@ -1569,7 +1530,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                 /* do not perform left edge filter for left columns frags */
                 if ((x > 0) &&
                     (s->all_fragments[fragment].coding_method != MODE_COPY)) {
-                    horizontal_filter(
+                    s->dsp.vp3_h_loop_filter(
                         plane_data + s->all_fragments[fragment].first_pixel,
                         stride, bounding_values);
                 }
@@ -1577,7 +1538,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                 /* do not perform top edge filter for top row fragments */
                 if ((y > 0) &&
                     (s->all_fragments[fragment].coding_method != MODE_COPY)) {
-                    vertical_filter(
+                    s->dsp.vp3_v_loop_filter(
                         plane_data + s->all_fragments[fragment].first_pixel,
                         stride, bounding_values);
                 }
@@ -1588,7 +1549,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                 if ((x < width - 1) &&
                     (s->all_fragments[fragment].coding_method != MODE_COPY) &&
                     (s->all_fragments[fragment + 1].coding_method == MODE_COPY)) {
-                    horizontal_filter(
+                    s->dsp.vp3_h_loop_filter(
                         plane_data + s->all_fragments[fragment + 1].first_pixel,
                         stride, bounding_values);
                 }
@@ -1599,7 +1560,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                 if ((y < height - 1) &&
                     (s->all_fragments[fragment].coding_method != MODE_COPY) &&
                     (s->all_fragments[fragment + width].coding_method == MODE_COPY)) {
-                    vertical_filter(
+                    s->dsp.vp3_v_loop_filter(
                         plane_data + s->all_fragments[fragment + width].first_pixel,
                         stride, bounding_values);
                 }
