@@ -238,7 +238,7 @@ static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, 
     return size;
 }
 
-void ff_find_best_tables(MpegEncContext * s)
+static void find_best_tables(MpegEncContext * s)
 {
     int i;
     int best       =-1, best_size       =9999999;
@@ -308,7 +308,7 @@ void ff_find_best_tables(MpegEncContext * s)
 /* write MSMPEG4 compatible frame header */
 void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 {
-    ff_find_best_tables(s);
+    find_best_tables(s);
 
     align_put_bits(&s->pb);
     put_bits(&s->pb, 2, s->pict_type - 1);
