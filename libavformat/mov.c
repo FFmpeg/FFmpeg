@@ -992,8 +992,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->frame_size= sc->samples_per_frame;
         st->codec->channels= 1; /* really needed */
         /* force sample rate for amr, stsd in 3gp does not store sample rate */
-        if (st->codec->codec_id != CODEC_ID_QCELP)
+        if (st->codec->codec_id == CODEC_ID_AMR_NB)
             st->codec->sample_rate = 8000;
+        else if (st->codec->codec_id == CODEC_ID_AMR_WB)
+            st->codec->sample_rate = 16000;
         break;
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
