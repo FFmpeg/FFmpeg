@@ -1310,19 +1310,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
             ist->frame++;
         }
 
-#if 0
-        /* mpeg PTS deordering : if it is a P or I frame, the PTS
-           is the one of the next displayed one */
-        /* XXX: add mpeg4 too ? */
-        if (ist->st->codec->codec_id == CODEC_ID_MPEG1VIDEO) {
-            if (ist->st->codec->pict_type != B_TYPE) {
-                int64_t tmp;
-                tmp = ist->last_ip_pts;
-                ist->last_ip_pts  = ist->frac_pts.val;
-                ist->frac_pts.val = tmp;
-            }
-        }
-#endif
         /* if output time reached then transcode raw format,
            encode packets and output them */
         if (start_time == 0 || ist->pts >= start_time)
