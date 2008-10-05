@@ -33,6 +33,9 @@
 
 #include "h264pred.h"
 
+#define MB_TYPE_SEPARATE_DC 0x01000000
+#define IS_SEPARATE_DC(a)   ((a) & MB_TYPE_SEPARATE_DC)
+
 /**
  * RV30 and RV40 Macroblock types
  */
