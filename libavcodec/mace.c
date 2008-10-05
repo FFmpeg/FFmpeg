@@ -234,7 +234,7 @@ static av_cold int mace_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static int mace3_decode_frame(AVCodecContext *avctx,
+static int mace_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
                               const uint8_t *buf, int buf_size)
 {
@@ -285,7 +285,7 @@ AVCodec mace3_decoder = {
     mace_decode_init,
     NULL,
     NULL,
-    mace3_decode_frame,
+    mace_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 3:1"),
 };
 
@@ -297,7 +297,7 @@ AVCodec mace6_decoder = {
     mace_decode_init,
     NULL,
     NULL,
-    mace3_decode_frame,
+    mace_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 6:1"),
 };
 
