@@ -52,13 +52,8 @@
 #define PREFETCHW "prefetcht0"
 #define PAVGB     "pavgb"
 #else
-#ifdef __APPLE__
-#define PREFETCH "#"
-#define PREFETCHW "#"
-#else
 #define PREFETCH  " # nop"
 #define PREFETCHW " # nop"
-#endif
 #endif
 
 #ifdef HAVE_3DNOW
