@@ -790,8 +790,8 @@ the @file{ffpresets} directory in the FFmpeg source tree for examples.
 
 Preset files are specified with the @code{vpre}, @code{apre} and
 @code{spre} options. The options specified in a preset file are
-applied to the currently selected codec of the same type as specified
-by the preset option.
+applied to the currently selected codec of the same type as the preset
+option.
 
 The argument passed to the preset options identifies the preset file
 to use according to the following rules.
