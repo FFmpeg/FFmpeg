@@ -162,10 +162,8 @@ static inline int16_t mace_broken_clip_int16(int n)
         return n;
 }
 
-static void chomp3(ChannelData *chd, int16_t *output, uint8_t val,
-                   const int16_t tab1[],
-                   const int16_t *tab2, int tab2_stride,
-                   uint32_t numChannels)
+static int16_t read_table(ChannelData *chd, uint8_t val, const int16_t tab1[],
+                       const int16_t *tab2, int tab2_stride)
 {
     int16_t current;
 
@@ -174,12 +172,24 @@ static void chomp3(ChannelData *chd, int16_t *output, uint8_t val,
     else
         current = - 1 - tab2[((chd->index & 0x7f0) >> 4)*tab2_stride + 2*tab2_stride-val-1];
 
+    if (( chd->index += tab1[val]-(chd->index >> 5) ) < 0)
+      chd->index = 0;
+
+    return current;
+}
+
+static void chomp3(ChannelData *chd, int16_t *output, uint8_t val,
+                   const int16_t tab1[],
+                   const int16_t *tab2, int tab2_stride,
+                   uint32_t numChannels)
+{
+
+    int16_t current = read_table(chd, val, tab1, tab2, tab2_stride);
+
     current = mace_broken_clip_int16(current + chd->level);
 
     chd->level = current - (current >> 3);
     *output = QT_8S_2_16S(current);
-    if (( chd->index += tab1[val]-(chd->index >> 5) ) < 0)
-        chd->index = 0;
 }
 
 static void chomp6(ChannelData *chd, int16_t *output, uint8_t val,
@@ -187,12 +197,7 @@ static void chomp6(ChannelData *chd, int16_t *output, uint8_t val,
                    const int16_t *tab2, int tab2_stride,
                    uint32_t numChannels)
 {
-    int16_t current;
-
-    if (val < tab2_stride)
-        current = tab2[((chd->index & 0x7f0) >> 4)*tab2_stride + val];
-    else
-        current =  - 1 - tab2[((chd->index & 0x7f0) >> 4)*tab2_stride + 2*tab2_stride-val-1];
+    int16_t current = read_table(chd, val, tab1, tab2, tab2_stride);
 
     if ((chd->previous ^ current) >= 0) {
         chd->factor = FFMIN(chd->factor + 506, 32767);
@@ -214,9 +219,6 @@ static void chomp6(ChannelData *chd, int16_t *output, uint8_t val,
                                       ((chd->prev2-current) >> 2));
     chd->prev2 = chd->previous;
     chd->previous = current;
-
-    if ((chd->index += tab1[val] - (chd->index >> 5)) < 0)
-        chd->index = 0;
 }
 
 static av_cold int mace_decode_init(AVCodecContext * avctx)
