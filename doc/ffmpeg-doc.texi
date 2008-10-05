@@ -780,6 +780,40 @@ Set the maximum demux-decode delay.
 Set the initial demux-decode delay.
 @end table
 
+@section Preset files
+
+A preset file contains a sequence of @var{option}=@var{value} pairs,
+one for each line, specifying a sequence of options which would be
+awkward to specify on the command line. Lines starting with the hash
+('#') character are ignored and are used to provide comments. Check
+the @file{ffpresets} directory in the FFmpeg source tree for examples.
+
+Preset files are specified with the @code{vpre}, @code{apre} and
+@code{spre} options. The options specified in a preset file are
+applied to the currently selected codec of the same type as specified
+by the preset option.
+
+The argument passed to the preset options identifies the preset file
+to use according to the following rules.
+
+First ffmpeg searches for a file named @var{arg}.ffpreset in the
+directories @file{$HOME/.ffmpeg}, @file{/usr/local/share/ffmpeg} and
+@file{/usr/share/ffmpeg} in that order. For example, if the argument
+is @code{libx264-max}, it will search for the file
+@file{libx264-max.ffpreset}.
+
+If no such file is found, then ffmpeg will search for a file named
+@var{codec_name}-@var{arg}.ffpreset in the above-mentioned
+directories, where @var{codec_name} is the name of the codec to which
+the preset file options will be applied. For example, if you select
+the video codec with @code{-vcodec libx264} and use @code{-vpre max},
+then it will search for the file @file{libx264-max.ffpreset}.
+
+Finally, if the above rules failed and the argument specifies an
+absolute pathname, ffmpeg will search for that filename. This way you
+can specify the absolute and complete filename of the preset file, for
+example @file{./ffpresets/libx264-max.ffpreset}.
+
 @node FFmpeg formula evaluator
 @section FFmpeg formula evaluator
 
