@@ -28,7 +28,6 @@
  */
 
 #include <stddef.h>
-#include <inttypes.h> /* for __WORDSIZE */
 
 #undef PREFETCH
 #undef MOVNTQ
@@ -1584,7 +1583,7 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
         ysrc += lumStride;
         dst += dstStride;
 
-#elif __WORDSIZE >= 64
+#elif HAVE_FAST_64BIT
         int i;
         uint64_t *ldst = (uint64_t *) dst;
         const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
@@ -1690,7 +1689,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
 #else
 //FIXME adapt the Alpha ASM code from yv12->yuy2
 
-#if __WORDSIZE >= 64
+#if HAVE_FAST_64BIT
         int i;
         uint64_t *ldst = (uint64_t *) dst;
         const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
