@@ -16,6 +16,5 @@ qmax=51
 qdiff=4
 refs=1
 directpred=1
-bidir_refine=0
 trellis=0
-flags2=-bpyramid-wpred-brdo-mixed_refs-dct8x8+fastpskip
+flags2=-bpyramid-wpred-mixed_refs-dct8x8+fastpskip

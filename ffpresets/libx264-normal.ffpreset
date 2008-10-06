@@ -17,6 +17,5 @@ qdiff=4
 bf=16
 refs=2
 directpred=3
-bidir_refine=1
 trellis=0
 flags2=+bpyramid+wpred+dct8x8+fastpskip
