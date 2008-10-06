@@ -87,8 +87,6 @@ show_help(){
   echo
   echo "External library support:"
   echo "  --enable-mlib            use Sun medialib [default=no]"
-  echo "  --enable-liba52          enable GPLed liba52 support [default=no]"
-  echo "  --enable-liba52bin       open liba52.so.0 at runtime [default=no]"
   echo "  --enable-avisynth        allow reading AVISynth script files [default=no]"
   echo "  --enable-libamr-nb       enable libamr-nb floating point audio codec"
   echo "  --enable-libamr-wb       enable libamr-wb floating point audio codec"
@@ -666,8 +664,6 @@ CONFIG_LIST="
     gray
     hardcoded_tables
     ipv6
-    liba52
-    liba52bin
     libamr_nb
     libamr_wb
     libdc1394
@@ -852,7 +848,7 @@ vis_deps="sparc"
 byteswap_h_deps="!armv4l"
 
 # decoders / encoders
-ac3_decoder_deps="gpl !liba52"
+ac3_decoder_deps="gpl"
 dxa_decoder_deps="zlib"
 eac3_decoder_deps="gpl"
 flashsv_decoder_deps="zlib"
@@ -865,8 +861,6 @@ zmbv_decoder_deps="zlib"
 zmbv_encoder_deps="zlib"
 
 # external libraries
-liba52_decoder_deps="liba52"
-liba52bin_decoder_extralibs='$ldl'
 libamr_nb_decoder_deps="libamr_nb"
 libamr_nb_encoder_deps="libamr_nb"
 libamr_wb_decoder_deps="libamr_wb"
@@ -1407,7 +1401,6 @@ if ! enabled gpl; then
         enabled_any $@ && die "$name is under GPL and --enable-gpl is not specified."
     }
     die_gpl_disabled "The Postprocessing code" postproc
-    die_gpl_disabled "liba52"                  liba52
     die_gpl_disabled "libx264"                 libx264
     die_gpl_disabled "libxvidcore"             libxvid
     die_gpl_disabled "FAAD2"                   libfaad2
@@ -1704,7 +1697,6 @@ done
 
 # these are off by default, so fail if requested and not available
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
-enabled liba52     && require  liba52 a52dec/a52.h a52_init -la52
 enabled libamr_nb  && require  libamrnb amrnb/interf_dec.h Speech_Decode_Frame_init -lamrnb -lm
 enabled libamr_wb  && require  libamrwb amrwb/dec_if.h D_IF_init -lamrwb -lm
 enabled libdirac   && add_cflags "$(pkg-config --cflags dirac)" \
@@ -2010,8 +2002,6 @@ if enabled sdl_too_old; then
 fi
 echo "Sun medialib support      ${mlib-no}"
 echo "AVISynth enabled          ${avisynth-no}"
-echo "liba52 support            ${liba52-no}"
-echo "liba52 dlopened           ${liba52bin-no}"
 echo "libamr-nb support         ${libamr_nb-no}"
 echo "libamr-wb support         ${libamr_wb-no}"
 echo "libdc1394 support         ${libdc1394-no}"

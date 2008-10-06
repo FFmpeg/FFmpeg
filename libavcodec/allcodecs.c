@@ -284,7 +284,6 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (DVDSUB, dvdsub);
 
     /* external libraries */
-    REGISTER_DECODER (LIBA52, liba52);
     REGISTER_ENCDEC  (LIBAMR_NB, libamr_nb);
     REGISTER_ENCDEC  (LIBAMR_WB, libamr_wb);
     REGISTER_ENCDEC  (LIBDIRAC, libdirac);

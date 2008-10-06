@@ -324,7 +324,6 @@ OBJS-$(CONFIG_OGG_MUXER)               += xiph.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o
 
 # external codec libraries
-OBJS-$(CONFIG_LIBA52)                  += liba52.o
 OBJS-$(CONFIG_LIBAMR_NB)               += libamr.o
 OBJS-$(CONFIG_LIBAMR_WB)               += libamr.o
 OBJS-$(CONFIG_LIBDIRAC_DECODER)        += libdiracdec.o
@@ -495,3 +494,4 @@ DIRS = alpha armv4l bfin i386 mlib ppc ps2 sh4 sparc
 include $(SUBDIR)../subdir.mak
 
 $(SUBDIR)dct-test$(EXESUF): $(SUBDIR)fdctref.o
+$(SUBDIR)fft-test$(EXESUF): $(SUBDIR)fdctref.o

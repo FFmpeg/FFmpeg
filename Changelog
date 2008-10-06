@@ -137,6 +137,7 @@ version <next>
 - E-AC-3 support added to AC-3 decoder
 - Nellymoser ASAO encoder
 - ASS and SSA demuxer and muxer
+- liba52 wrapper removed
 
 version 0.4.9-pre1:
 
