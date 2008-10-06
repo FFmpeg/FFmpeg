@@ -190,8 +190,8 @@ typedef struct {
     int num_coupled;       ///< number of target elements
     enum RawDataBlockType type[8];   ///< Type of channel element to be coupled - SCE or CPE.
     int id_select[8];      ///< element id
-    int ch_select[8];      /**< [0] shared list of gains; [1] list of gains for left channel;
-                            *   [2] list of gains for right channel; [3] lists of gains for both channels
+    int ch_select[8];      /**< [0] shared list of gains; [1] list of gains for right channel;
+                            *   [2] list of gains for left channel; [3] lists of gains for both channels
                             */
     float gain[16][120];
 } ChannelCoupling;
