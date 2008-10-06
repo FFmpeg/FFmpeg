@@ -1247,11 +1247,11 @@ static void imdct_and_windowing(AACContext * ac, SingleChannelElement * sce) {
  *
  * @param   index   index into coupling gain array
  */
-static void apply_dependent_coupling(AACContext * ac, SingleChannelElement * sce, ChannelElement * cc, int index) {
-    IndividualChannelStream * ics = &cc->ch[0].ics;
+static void apply_dependent_coupling(AACContext * ac, SingleChannelElement * target, ChannelElement * cce, int index) {
+    IndividualChannelStream * ics = &cce->ch[0].ics;
     const uint16_t * offsets = ics->swb_offset;
-    float * dest = sce->coeffs;
-    const float * src = cc->ch[0].coeffs;
+    float * dest = target->coeffs;
+    const float * src = cce->ch[0].coeffs;
     int g, i, group, k, idx = 0;
     if(ac->m4ac.object_type == AOT_AAC_LTP) {
         av_log(ac->avccontext, AV_LOG_ERROR,
@@ -1260,11 +1260,11 @@ static void apply_dependent_coupling(AACContext * ac, SingleChannelElement * sce
     }
     for (g = 0; g < ics->num_window_groups; g++) {
         for (i = 0; i < ics->max_sfb; i++, idx++) {
-            if (cc->ch[0].band_type[idx] != ZERO_BT) {
+            if (cce->ch[0].band_type[idx] != ZERO_BT) {
                 for (group = 0; group < ics->group_len[g]; group++) {
                     for (k = offsets[i]; k < offsets[i+1]; k++) {
                         // XXX dsputil-ize
-                        dest[group*128+k] += cc->coup.gain[index][idx] * src[group*128+k];
+                        dest[group*128+k] += cce->coup.gain[index][idx] * src[group*128+k];
                     }
                 }
             }
@@ -1279,10 +1279,10 @@ static void apply_dependent_coupling(AACContext * ac, SingleChannelElement * sce
  *
  * @param   index   index into coupling gain array
  */
-static void apply_independent_coupling(AACContext * ac, SingleChannelElement * sce, ChannelElement * cc, int index) {
+static void apply_independent_coupling(AACContext * ac, SingleChannelElement * target, ChannelElement * cce, int index) {
     int i;
     for (i = 0; i < 1024; i++)
-        sce->ret[i] += cc->coup.gain[index][0] * (cc->ch[0].ret[i] - ac->add_bias);
+        target->ret[i] += cce->coup.gain[index][0] * (cce->ch[0].ret[i] - ac->add_bias);
 }
 
 /**
@@ -1293,7 +1293,7 @@ static void apply_independent_coupling(AACContext * ac, SingleChannelElement * s
  */
 static void apply_channel_coupling(AACContext * ac, ChannelElement * cc,
         enum RawDataBlockType type, int elem_id, enum CouplingPoint coupling_point,
-        void (*apply_coupling_method)(AACContext * ac, SingleChannelElement * sce, ChannelElement * cc, int index))
+        void (*apply_coupling_method)(AACContext * ac, SingleChannelElement * target, ChannelElement * cce, int index))
 {
     int i, c;
 
