@@ -6077,41 +6077,41 @@ static const int dv_iweight_248[64] = {
  * the "inverse" DV100 weights are actually just the spec weights (zig-zagged)
  */
 static const int dv_iweight_1080_y[64] = {
-    128, 16, 16, 17, 17, 17, 18, 18,
-    18, 18, 18, 18, 19, 18, 18, 19,
-    19, 19, 19, 19, 19, 42, 38, 40,
-    40, 40, 38, 42, 44, 43, 41, 41,
-    41, 41, 43, 44, 45, 45, 42, 42,
-    42, 45, 45, 48, 46, 43, 43, 46,
-    48, 49, 48, 44, 48, 49, 101, 98,
-    98, 101, 104, 109, 104, 116, 116, 123,
+    128,  16,  16,  17,  17,  17,  18,  18,
+     18,  18,  18,  18,  19,  18,  18,  19,
+     19,  19,  19,  19,  19,  42,  38,  40,
+     40,  40,  38,  42,  44,  43,  41,  41,
+     41,  41,  43,  44,  45,  45,  42,  42,
+     42,  45,  45,  48,  46,  43,  43,  46,
+     48,  49,  48,  44,  48,  49, 101,  98,
+     98, 101, 104, 109, 104, 116, 116, 123,
 };
 static const int dv_iweight_1080_c[64] = {
-    128, 16, 16, 17, 17, 17, 25, 25,
-    25, 25, 26, 25, 26, 25, 26, 26,
-    26, 27, 27, 26, 26, 42, 38, 40,
-    40, 40, 38, 42, 44, 43, 41, 41,
-    41, 41, 43, 44, 91, 91, 84, 84,
-    84, 91, 91, 96, 93, 86, 86, 93,
-    96, 197, 191, 177, 191, 197, 203, 197,
+    128,  16,  16,  17,  17,  17,  25,  25,
+     25,  25,  26,  25,  26,  25,  26,  26,
+     26,  27,  27,  26,  26,  42,  38,  40,
+     40,  40,  38,  42,  44,  43,  41,  41,
+     41,  41,  43,  44,  91,  91,  84,  84,
+     84,  91,  91,  96,  93,  86,  86,  93,
+     96, 197, 191, 177, 191, 197, 203, 197,
     197, 203, 209, 219, 209, 232, 232, 246,
 };
 static const int dv_iweight_720_y[64] = {
-    128, 16, 16, 17, 17, 17, 18, 18,
-    18, 18, 18, 18, 19, 18, 18, 19,
-    19, 19, 19, 19, 19, 42, 38, 40,
-    40, 40, 38, 42, 44, 43, 41, 41,
-    41, 41, 43, 44, 68, 68, 63, 63,
-    63, 68, 68, 96, 92, 86, 86, 92,
-    96, 98, 96, 88, 96, 98, 202, 196,
+    128,  16,  16,  17,  17,  17,  18,  18,
+     18,  18,  18,  18,  19,  18,  18,  19,
+     19,  19,  19,  19,  19,  42,  38,  40,
+     40,  40,  38,  42,  44,  43,  41,  41,
+     41,  41,  43,  44,  68,  68,  63,  63,
+     63,  68,  68,  96,  92,  86,  86,  92,
+     96,  98,  96,  88,  96,  98, 202, 196,
     196, 202, 208, 218, 208, 232, 232, 246,
 };
 static const int dv_iweight_720_c[64] = {
-    128, 24, 24, 26, 26, 26, 36, 36,
-    36, 36, 36, 36, 38, 36, 36, 38,
-    38, 38, 38, 38, 38, 84, 76, 80,
-    80, 80, 76, 84, 88, 86, 82, 82,
-    82, 82, 86, 88, 182, 182, 168, 168,
+    128,  24,  24,  26,  26,  26,  36,  36,
+     36,  36,  36,  36,  38,  36,  36,  38,
+     38,  38,  38,  38,  38,  84,  76,  80,
+     80,  80,  76,  84,  88,  86,  82,  82,
+     82,  82,  86,  88, 182, 182, 168, 168,
     168, 182, 182, 192, 186, 192, 172, 186,
     192, 394, 382, 354, 382, 394, 406, 394,
     394, 406, 418, 438, 418, 464, 464, 492,
@@ -6177,7 +6177,7 @@ static const DVprofile dv_profiles[] = {
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
       .audio_stride = 90,
-      .audio_min_samples = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32kHz */
+      .audio_min_samples  = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32kHz */
       .audio_samples_dist = { 1600, 1602, 1602, 1602, 1602 }, /* per SMPTE-314M */
       .audio_shuffle = dv_audio_shuffle525,
     },
@@ -6197,7 +6197,7 @@ static const DVprofile dv_profiles[] = {
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
       .audio_stride = 108,
-      .audio_min_samples = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32kHz */
+      .audio_min_samples  = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32kHz */
       .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },
       .audio_shuffle = dv_audio_shuffle625,
     },
@@ -6217,7 +6217,7 @@ static const DVprofile dv_profiles[] = {
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
       .audio_stride = 108,
-      .audio_min_samples = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32kHz */
+      .audio_min_samples  = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32kHz */
       .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },
       .audio_shuffle = dv_audio_shuffle625,
     },
@@ -6237,7 +6237,7 @@ static const DVprofile dv_profiles[] = {
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
       .audio_stride = 90,
-      .audio_min_samples = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32kHz */
+      .audio_min_samples  = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32kHz */
       .audio_samples_dist = { 1600, 1602, 1602, 1602, 1602 }, /* per SMPTE-314M */
       .audio_shuffle = dv_audio_shuffle525,
     },
@@ -6257,7 +6257,7 @@ static const DVprofile dv_profiles[] = {
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
       .audio_stride = 108,
-      .audio_min_samples = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32kHz */
+      .audio_min_samples  = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32kHz */
       .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },
       .audio_shuffle = dv_audio_shuffle625,
     },
@@ -6277,7 +6277,7 @@ static const DVprofile dv_profiles[] = {
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
       .audio_stride = 90,
-      .audio_min_samples = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32kHz */
+      .audio_min_samples  = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32kHz */
       .audio_samples_dist = { 1600, 1602, 1602, 1602, 1602 }, /* per SMPTE-314M */
       .audio_shuffle = dv_audio_shuffle525,
     },
@@ -6297,7 +6297,7 @@ static const DVprofile dv_profiles[] = {
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
       .audio_stride = 108,
-      .audio_min_samples = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32kHz */
+      .audio_min_samples  = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32kHz */
       .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },
       .audio_shuffle = dv_audio_shuffle625,
     },
@@ -6317,7 +6317,7 @@ static const DVprofile dv_profiles[] = {
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
       .audio_stride = 90,
-      .audio_min_samples = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32kHz */
+      .audio_min_samples  = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32kHz */
       .audio_samples_dist = { 1600, 1602, 1602, 1602, 1602 }, /* per SMPTE-314M */
       .audio_shuffle = dv_audio_shuffle525,
     },
@@ -6337,7 +6337,7 @@ static const DVprofile dv_profiles[] = {
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
       .audio_stride = 90,
-      .audio_min_samples = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32kHz */
+      .audio_min_samples  = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32kHz */
       .audio_samples_dist = { 1600, 1602, 1602, 1602, 1602 }, /* per SMPTE-314M */
       .audio_shuffle = dv_audio_shuffle525,
     }
