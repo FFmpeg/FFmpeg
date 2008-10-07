@@ -6073,7 +6073,9 @@ static const int dv_iweight_248[64] = {
  22017, 25191, 24457, 27962, 22733, 24600, 25971, 29642,
 };
 
-/* the "inverse" DV100 weights are actually just the spec weights (zig-zagged) */
+/**
+ * the "inverse" DV100 weights are actually just the spec weights (zig-zagged)
+ */
 static const int dv_iweight_1080_y[64] = {
     128, 16, 16, 17, 17, 17, 18, 18,
     18, 18, 18, 18, 19, 18, 18, 19,
@@ -6371,10 +6373,14 @@ enum dv_pack_type {
 /* minimum number of bytes to read from a DV stream in order to determine the profile */
 #define DV_PROFILE_BYTES (6*80) /* 6 DIF blocks */
 
-/* largest possible DV frame, in bytes (1080i50) */
+/**
+ * largest possible DV frame, in bytes (1080i50)
+ */
 #define DV_MAX_FRAME_SIZE 576000
 
-/* maximum number of blocks per macroblock in any DV format */
+/**
+ * maximum number of blocks per macroblock in any DV format
+ */
 #define DV_MAX_BPM 8
 
 static inline const DVprofile* dv_frame_profile(const uint8_t* frame)

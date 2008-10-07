@@ -62,9 +62,11 @@ typedef struct DVVideoContext {
     void (*idct_put[2])(uint8_t *dest, int line_size, DCTELEM *block);
 } DVVideoContext;
 
-/* MultiThreading - dv_anchor applies to entire DV codec, not just the avcontext */
-/* one element is needed for each video segment in a DV frame */
-/* at most there are 4 DIF channels * 12 DIF sequences * 27 video segments (1080i50) */
+/**
+ * MultiThreading - dv_anchor applies to entire DV codec, not just the avcontext
+ * one element is needed for each video segment in a DV frame
+ * at most there are 4 DIF channels * 12 DIF sequences * 27 video segments (1080i50)
+ */
 #define DV_ANCHOR_SIZE (4*12*27)
 
 static void* dv_anchor[DV_ANCHOR_SIZE];
