@@ -3,6 +3,7 @@
  * Copyright (C) 1999-2001 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
  * This file is part of mpeg2dec, a free MPEG-2 video stream decoder.
+ * See http://libmpeg2.sourceforge.net/ for updates.
  *
  * mpeg2dec is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +32,7 @@
 
 #define round(bias) ((int)(((bias)+0.5) * (1<<ROW_SHIFT)))
 #define rounder(bias) {round (bias), round (bias)}
+
 
 #if 0
 /* C row IDCT - it is just here to document the MMXEXT and MMX versions */
@@ -532,6 +534,7 @@ static inline void idct_col (int16_t * col, int offset)
 #undef T3
 #undef C4
 }
+
 
 static const int32_t rounder0[] ATTR_ALIGN(8) =
     rounder ((1 << (COL_SHIFT - 1)) - 0.5);
