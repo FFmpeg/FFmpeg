@@ -6403,13 +6403,13 @@ static inline const DVprofile* dv_frame_profile(const uint8_t* frame)
    return NULL;
 }
 
-static inline const DVprofile* dv_codec_profile(AVCodecContext* codec)
+static const DVprofile* dv_codec_profile(AVCodecContext* codec)
 {
     int i;
 
     for (i=0; i<sizeof(dv_profiles)/sizeof(DVprofile); i++)
        if (codec->height == dv_profiles[i].height && codec->pix_fmt == dv_profiles[i].pix_fmt &&
-           codec->width == dv_profiles[i].width)
+           codec->width  == dv_profiles[i].width)
                return &dv_profiles[i];
 
     return NULL;
