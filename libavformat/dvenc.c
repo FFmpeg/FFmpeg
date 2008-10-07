@@ -77,8 +77,8 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
     buf[0] = (uint8_t)pack_id;
     switch (pack_id) {
     case dv_timecode:
-        ct = (time_t)(c->frames / ((float)c->sys->frame_rate /
-                                   (float)c->sys->frame_rate_base));
+        ct = (time_t)av_rescale_rnd(c->frames, c->sys->time_base.num, c->sys->time_base.den,
+                                    AV_ROUND_DOWN);
         brktimegm(ct, &tc);
         /*
          * LTC drop-frame frame counter drops two frames (0 and 1) every
@@ -138,8 +138,8 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
         break;
     case dv_audio_recdate:
     case dv_video_recdate:  /* VAUX recording date */
-        ct = c->start_time + (time_t)(c->frames /
-             ((float)c->sys->frame_rate / (float)c->sys->frame_rate_base));
+        ct = c->start_time + av_rescale_rnd(c->frames, c->sys->time_base.num,
+                                                       c->sys->time_base.den, AV_ROUND_DOWN);
         brktimegm(ct, &tc);
         buf[1] = 0xff; /* ds, tm, tens of time zone, units of time zone */
                        /* 0xff is very likely to be "unknown" */
@@ -154,8 +154,8 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
         break;
     case dv_audio_rectime:  /* AAUX recording time */
     case dv_video_rectime:  /* VAUX recording time */
-        ct = c->start_time + (time_t)(c->frames /
-             ((float)c->sys->frame_rate / (float)c->sys->frame_rate_base));
+        ct = c->start_time + av_rescale_rnd(c->frames, c->sys->time_base.num,
+                                                       c->sys->time_base.den, AV_ROUND_DOWN);
         brktimegm(ct, &tc);
         buf[1] = (3 << 6) | /* reserved -- always 1 */
                  0x3f; /* tens of frame, units of frame: 0x3f - "unknown" ? */

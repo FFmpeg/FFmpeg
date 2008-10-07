@@ -42,8 +42,7 @@ typedef struct DVprofile {
     int              frame_size;          /* total size of one frame in bytes */
     int              difseg_size;         /* number of DIF segments per DIF channel */
     int              n_difchan;           /* number of DIF channels per frame */
-    int              frame_rate;
-    int              frame_rate_base;
+    AVRational       time_base;           /* 1/framerate */
     int              ltc_divisor;         /* FPS from the LTS standpoint */
     int              height;              /* picture height in pixels */
     int              width;               /* picture width in pixels */
@@ -6166,9 +6165,8 @@ static const DVprofile dv_profiles[] = {
       .frame_size = 120000,        /* IEC 61834, SMPTE-314M - 525/60 (NTSC) */
       .difseg_size = 10,
       .n_difchan = 1,
-      .frame_rate = 30000,
+      .time_base = { 1001, 30000 },
       .ltc_divisor = 30,
-      .frame_rate_base = 1001,
       .height = 480,
       .width = 720,
       .sar = {{10, 11}, {40, 33}},
@@ -6186,8 +6184,7 @@ static const DVprofile dv_profiles[] = {
       .frame_size = 144000,        /* IEC 61834 - 625/50 (PAL) */
       .difseg_size = 12,
       .n_difchan = 1,
-      .frame_rate = 25,
-      .frame_rate_base = 1,
+      .time_base = { 1, 25 },
       .ltc_divisor = 25,
       .height = 576,
       .width = 720,
@@ -6206,8 +6203,7 @@ static const DVprofile dv_profiles[] = {
       .frame_size = 144000,        /* SMPTE-314M - 625/50 (PAL) */
       .difseg_size = 12,
       .n_difchan = 1,
-      .frame_rate = 25,
-      .frame_rate_base = 1,
+      .time_base = { 1, 25 },
       .ltc_divisor = 25,
       .height = 576,
       .width = 720,
@@ -6226,9 +6222,8 @@ static const DVprofile dv_profiles[] = {
       .frame_size = 240000,        /* SMPTE-314M - 525/60 (NTSC) 50 Mbps */
       .difseg_size = 10,           /* also known as "DVCPRO50" */
       .n_difchan = 2,
-      .frame_rate = 30000,
+      .time_base = { 1001, 30000 },
       .ltc_divisor = 30,
-      .frame_rate_base = 1001,
       .height = 480,
       .width = 720,
       .sar = {{10, 11}, {40, 33}},
@@ -6246,8 +6241,7 @@ static const DVprofile dv_profiles[] = {
       .frame_size = 288000,        /* SMPTE-314M - 625/50 (PAL) 50 Mbps */
       .difseg_size = 12,           /* also known as "DVCPRO50" */
       .n_difchan = 2,
-      .frame_rate = 25,
-      .frame_rate_base = 1,
+      .time_base = { 1, 25 },
       .ltc_divisor = 25,
       .height = 576,
       .width = 720,
@@ -6266,9 +6260,8 @@ static const DVprofile dv_profiles[] = {
       .frame_size = 480000,        /* SMPTE-370M - 1080i60 100 Mbps */
       .difseg_size = 10,           /* also known as "DVCPRO HD" */
       .n_difchan = 4,
-      .frame_rate = 30000,
+      .time_base = { 1001, 30000 },
       .ltc_divisor = 30,
-      .frame_rate_base = 1001,
       .height = 1080,
       .width = 1280,
       .sar = {{1, 1}, {1, 1}},
@@ -6286,8 +6279,7 @@ static const DVprofile dv_profiles[] = {
       .frame_size = 576000,        /* SMPTE-370M - 1080i50 100 Mbps */
       .difseg_size = 12,           /* also known as "DVCPRO HD" */
       .n_difchan = 4,
-      .frame_rate = 25,
-      .frame_rate_base = 1,
+      .time_base = { 1, 25 },
       .ltc_divisor = 25,
       .height = 1080,
       .width = 1440,
@@ -6306,9 +6298,8 @@ static const DVprofile dv_profiles[] = {
       .frame_size = 240000,        /* SMPTE-370M - 720p60 100 Mbps */
       .difseg_size = 10,           /* also known as "DVCPRO HD" */
       .n_difchan = 2,
-      .frame_rate = 60000,
+      .time_base = { 1001, 60000 },
       .ltc_divisor = 60,
-      .frame_rate_base = 1001,
       .height = 720,
       .width = 960,
       .sar = {{1, 1}, {1, 1}},
@@ -6326,9 +6317,8 @@ static const DVprofile dv_profiles[] = {
       .frame_size = 288000,        /* SMPTE-370M - 720p50 100 Mbps */
       .difseg_size = 12,           /* also known as "DVCPRO HD" */
       .n_difchan = 2,
-      .frame_rate = 50,
+      .time_base = { 1, 50 },
       .ltc_divisor = 50,
-      .frame_rate_base = 1,
       .height = 720,
       .width = 960,
       .sar = {{1, 1}, {1, 1}},

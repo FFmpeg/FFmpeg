@@ -1048,7 +1048,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     s->picture.key_frame = 1;
     s->picture.pict_type = FF_I_TYPE;
     avctx->pix_fmt = s->sys->pix_fmt;
-    avctx->time_base = (AVRational){s->sys->frame_rate_base, s->sys->frame_rate};
+    avctx->time_base = s->sys->time_base;
     avcodec_set_dimensions(avctx, s->sys->width, s->sys->height);
     if(avctx->get_buffer(avctx, &s->picture) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");

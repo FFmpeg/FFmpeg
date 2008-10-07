@@ -241,8 +241,8 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t* frame)
     if (c->sys) {
         avctx = c->vst->codec;
 
-        av_set_pts_info(c->vst, 64, c->sys->frame_rate_base, c->sys->frame_rate);
-        avctx->time_base= (AVRational){c->sys->frame_rate_base, c->sys->frame_rate};
+        av_set_pts_info(c->vst, 64, c->sys->time_base.num, c->sys->time_base.den);
+        avctx->time_base= c->sys->time_base;
         if(!avctx->width){
             avctx->width = c->sys->width;
             avctx->height = c->sys->height;
@@ -255,9 +255,8 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t* frame)
         is16_9 = (vsc_pack && ((vsc_pack[2] & 0x07) == 0x02 ||
                                (!apt && (vsc_pack[2] & 0x07) == 0x07)));
         c->vst->sample_aspect_ratio = c->sys->sar[is16_9];
-        avctx->bit_rate = av_rescale(c->sys->frame_size * 8,
-                                     c->sys->frame_rate,
-                                     c->sys->frame_rate_base);
+        avctx->bit_rate = av_rescale_q(c->sys->frame_size, (AVRational){8,1},
+                                       c->sys->time_base);
         size = c->sys->frame_size;
     }
     return size;
@@ -379,9 +378,8 @@ void dv_offset_reset(DVDemuxContext *c, int64_t frame_offset)
 {
     c->frames= frame_offset;
     if (c->ach)
-        c->abytes= av_rescale(c->frames,
-                          c->ast[0]->codec->bit_rate * (int64_t)c->sys->frame_rate_base,
-                          8*c->sys->frame_rate);
+        c->abytes= av_rescale_q(c->frames, c->sys->time_base,
+                                (AVRational){8, c->ast[0]->codec->bit_rate});
     c->audio_pkt[0].size = c->audio_pkt[1].size = 0;
     c->audio_pkt[2].size = c->audio_pkt[3].size = 0;
 }
@@ -414,9 +412,8 @@ static int dv_read_header(AVFormatContext *s,
         return -1;
     }
 
-    s->bit_rate = av_rescale(c->dv_demux->sys->frame_size * 8,
-                             c->dv_demux->sys->frame_rate,
-                             c->dv_demux->sys->frame_rate_base);
+    s->bit_rate = av_rescale_q(c->dv_demux->sys->frame_size, (AVRational){8,1},
+                               c->dv_demux->sys->time_base);
 
     return 0;
 }
