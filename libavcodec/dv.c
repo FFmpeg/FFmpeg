@@ -410,7 +410,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
             if (DV_PROFILE_IS_HD(s->sys)) {
                 mb->idct_put = s->idct_put[0];
                 mb->scan_table = s->dv_zigzag[0];
-                mb->factor_table = s->dv100_idct_factor[((s->sys->height == 720)<<1)&(j < 4)][class1][quant];
+                mb->factor_table = s->dv100_idct_factor[((s->sys->height == 720)<<1)|(j >= 4)][class1][quant];
                 is_field_mode[mb_index] |= !j && dct_mode;
             } else {
                 mb->idct_put = s->idct_put[dct_mode && log2_blocksize==3];
