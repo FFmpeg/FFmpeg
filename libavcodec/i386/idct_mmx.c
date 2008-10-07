@@ -85,7 +85,8 @@ static inline void idct_row (int16_t * row, int offset,
                                                    c5, -c1,  c3, -c1,   \
                                                    c7,  c3,  c7, -c5 }
 
-static inline void mmxext_row_head (int16_t * row, int offset, const int16_t * table)
+static inline void mmxext_row_head (int16_t * const row, const int offset,
+                                    const int16_t * const table)
 {
     movq_m2r (*(row+offset), mm2);      /* mm2 = x6 x4 x2 x0 */
 
@@ -101,7 +102,8 @@ static inline void mmxext_row_head (int16_t * row, int offset, const int16_t * t
     pshufw_r2r (mm2, mm2, 0x4e);        /* mm2 = x2 x0 x6 x4 */
 }
 
-static inline void mmxext_row (const int16_t * table, const int32_t * rounder)
+static inline void mmxext_row (const int16_t * const table,
+                               const int32_t * const rounder)
 {
     movq_m2r (*(table+8), mm1);         /* mm1 = -C5 -C1 C3 C1 */
     pmaddwd_r2r (mm2, mm4);             /* mm4 = C4*x0+C6*x2 C4*x4+C6*x6 */
@@ -140,7 +142,7 @@ static inline void mmxext_row (const int16_t * table, const int32_t * rounder)
     psubd_r2r (mm5, mm4);               /* mm4 = a3-b3 a2-b2 + rounder */
 }
 
-static inline void mmxext_row_tail (int16_t * row, int store)
+static inline void mmxext_row_tail (int16_t * const row, const int store)
 {
     psrad_i2r (ROW_SHIFT, mm0);         /* mm0 = y3 y2 */
 
@@ -158,8 +160,9 @@ static inline void mmxext_row_tail (int16_t * row, int store)
     movq_r2m (mm4, *(row+store+4));     /* save y7 y6 y5 y4 */
 }
 
-static inline void mmxext_row_mid (int16_t * row, int store,
-                                   int offset, const int16_t * table)
+static inline void mmxext_row_mid (int16_t * const row, const int store,
+                                   const int offset,
+                                   const int16_t * const table)
 {
     movq_m2r (*(row+offset), mm2);      /* mm2 = x6 x4 x2 x0 */
     psrad_i2r (ROW_SHIFT, mm0);         /* mm0 = y3 y2 */
@@ -197,7 +200,8 @@ static inline void mmxext_row_mid (int16_t * row, int store,
                                            c5, -c1,  c7, -c5,   \
                                            c7,  c3,  c3, -c1 }
 
-static inline void mmx_row_head (int16_t * row, int offset, const int16_t * table)
+static inline void mmx_row_head (int16_t * const row, const int offset,
+                                 const int16_t * const table)
 {
     movq_m2r (*(row+offset), mm2);      /* mm2 = x6 x4 x2 x0 */
 
@@ -216,7 +220,8 @@ static inline void mmx_row_head (int16_t * row, int offset, const int16_t * tabl
     punpckhdq_r2r (mm2, mm2);           /* mm2 = x6 x4 x6 x4 */
 }
 
-static inline void mmx_row (const int16_t * table, const int32_t * rounder)
+static inline void mmx_row (const int16_t * const table,
+                            const int32_t * const rounder)
 {
     pmaddwd_r2r (mm2, mm4);             /* mm4 = -C4*x4-C2*x6 C4*x4+C6*x6 */
     punpckldq_r2r (mm5, mm5);           /* mm5 = x3 x1 x3 x1 */
@@ -255,7 +260,7 @@ static inline void mmx_row (const int16_t * table, const int32_t * rounder)
     psubd_r2r (mm5, mm7);               /* mm7 = a3-b3 a2-b2 + rounder */
 }
 
-static inline void mmx_row_tail (int16_t * row, int store)
+static inline void mmx_row_tail (int16_t * const row, const int store)
 {
     psrad_i2r (ROW_SHIFT, mm0);         /* mm0 = y3 y2 */
 
@@ -279,8 +284,8 @@ static inline void mmx_row_tail (int16_t * row, int store)
     movq_r2m (mm7, *(row+store+4));     /* save y7 y6 y5 y4 */
 }
 
-static inline void mmx_row_mid (int16_t * row, int store,
-                                int offset, const int16_t * table)
+static inline void mmx_row_mid (int16_t * const row, const int store,
+                                const int offset, const int16_t * const table)
 {
     movq_m2r (*(row+offset), mm2);      /* mm2 = x6 x4 x2 x0 */
     psrad_i2r (ROW_SHIFT, mm0);         /* mm0 = y3 y2 */
@@ -387,7 +392,7 @@ static inline void idct_col (int16_t * col, int offset)
 
 
 /* MMX column IDCT */
-static inline void idct_col (int16_t * col, int offset)
+static inline void idct_col (int16_t * const col, const int offset)
 {
 #define T1 13036
 #define T2 27146
@@ -556,7 +561,7 @@ static const int32_t rounder5[] ATTR_ALIGN(8) =
 #undef ROW_SHIFT
 
 #define declare_idct(idct,table,idct_row_head,idct_row,idct_row_tail,idct_row_mid) \
-void idct (int16_t * block)                                             \
+void idct (int16_t * const block)                                       \
 {                                                                       \
     static const int16_t table04[] ATTR_ALIGN(16) =                     \
         table (22725, 21407, 19266, 16384, 12873,  8867, 4520);         \
