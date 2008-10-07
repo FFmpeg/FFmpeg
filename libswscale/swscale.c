@@ -1710,8 +1710,8 @@ static int YUV422PToUyvyWrapper(SwsContext *c, uint8_t* src[], int srcStride[], 
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                           int srcSliceH, uint8_t* dst[], int dstStride[]){
-    const int srcFormat= c->srcFormat;
-    const int dstFormat= c->dstFormat;
+    const enum PixelFormat srcFormat= c->srcFormat;
+    const enum PixelFormat dstFormat= c->dstFormat;
     const int srcBpp= (fmt_depth(srcFormat) + 7) >> 3;
     const int dstBpp= (fmt_depth(dstFormat) + 7) >> 3;
     const int srcId= fmt_depth(srcFormat) >> 2; /* 1:0, 4:1, 8:2, 15:3, 16:4, 24:6, 32:8 */
@@ -2116,7 +2116,7 @@ static int handle_jpeg(int *format)
     }
 }
 
-SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
+SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int dstW, int dstH, enum PixelFormat dstFormat, int flags,
                            SwsFilter *srcFilter, SwsFilter *dstFilter, double *param){
 
     SwsContext *c;
@@ -3082,8 +3082,8 @@ void sws_freeContext(SwsContext *c){
  * asumed to remain valid.
  */
 struct SwsContext *sws_getCachedContext(struct SwsContext *context,
-                                        int srcW, int srcH, int srcFormat,
-                                        int dstW, int dstH, int dstFormat, int flags,
+                                        int srcW, int srcH, enum PixelFormat srcFormat,
+                                        int dstW, int dstH, enum PixelFormat dstFormat, int flags,
                                         SwsFilter *srcFilter, SwsFilter *dstFilter, double *param)
 {
     static const double default_param[2] = {SWS_PARAM_DEFAULT, SWS_PARAM_DEFAULT};

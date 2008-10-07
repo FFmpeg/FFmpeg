@@ -71,7 +71,7 @@ typedef struct SwsContext{
     int chrSrcW, chrSrcH, chrDstW, chrDstH;
     int lumXInc, chrXInc;
     int lumYInc, chrYInc;
-    int dstFormat, srcFormat;               ///< format 4:2:0 type is always YV12
+    enum PixelFormat dstFormat, srcFormat;  ///< format 4:2:0 type is always YV12
     int origDstFormat, origSrcFormat;       ///< format
     int chrSrcHSubSample, chrSrcVSubSample;
     int chrIntHSubSample, chrIntVSubSample;
