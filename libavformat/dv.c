@@ -122,7 +122,7 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
     half_ch = sys->difseg_size/2;
 
     /* We work with 720p frames split in half, thus even frames have channels 0,1 and odd 2,3 */
-    ipcm = (sys->height == 720 && ((frame[1]>>2)&0x3) == 0)?2:0;
+    ipcm = (sys->height == 720 && !(frame[1]&0x0C))?2:0;
     pcm = ppcm[ipcm++];
 
     /* for each DIF channel */
@@ -339,7 +339,7 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
 
     /* We work with 720p frames split in half, thus even frames have channels 0,1 and odd 2,3 */
     if (c->sys->height == 720) {
-        if (((buf[1]>>2)&0x3))
+        if (buf[1]&0x0C)
             c->audio_pkt[2].size = c->audio_pkt[3].size = 0;
         else
             c->audio_pkt[0].size = c->audio_pkt[1].size = 0;

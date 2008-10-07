@@ -492,7 +492,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         mb_x = v & 0xff;
         mb_y = v >> 8;
         /* We work with 720p frames split in half. The odd half-frame (chan==2,3) is displaced :-( */
-        if (s->sys->height == 720 && ((s->buf[1]>>2)&0x3) == 0) {
+        if (s->sys->height == 720 && !(s->buf[1]&0x0C)) {
                mb_y -= (mb_y>17)?18:-72; /* shifting the Y coordinate down by 72/2 macroblocks */
         }
 
