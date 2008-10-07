@@ -201,10 +201,9 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     quant = as_pack[4] & 0x07; /* 0 - 16bit linear, 1 - 12bit nonlinear */
 
     /* note: ach counts PAIRS of channels (i.e. stereo channels) */
-    if (stype == 3) {
-        ach = 4;
-    } else
-    ach = (stype == 2 || (quant && (freq == 2))) ? 2 : 1;
+    ach = (int[4]){  1,  0,  2,  4}[stype];
+    if (ach == 1 && quant && freq == 2)
+        ach = 2;
 
     /* Dynamic handling of the audio streams in DV */
     for (i=0; i<ach; i++) {
