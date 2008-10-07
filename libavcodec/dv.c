@@ -367,7 +367,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
 {
     int quant, dc, dct_mode, class1, j;
     int mb_index, mb_x, mb_y, v, last_index;
-    int y_stride, i;
+    int y_stride, linesize;
     DCTELEM *block, *block1;
     int c_offset;
     uint8_t *y_ptr;
@@ -502,18 +502,22 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         if ((s->sys->pix_fmt == PIX_FMT_YUV420P) ||
             (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
             (s->sys->height >= 720 && mb_y != 134)) {
-            y_stride = (s->picture.linesize[0]<<((!is_field_mode[mb_index])*log2_blocksize)) - (2<<log2_blocksize);
+            y_stride = (s->picture.linesize[0]<<((!is_field_mode[mb_index])*log2_blocksize));
         } else {
-            y_stride = 0;
+            y_stride = (2<<log2_blocksize);
         }
         y_ptr = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x)<<log2_blocksize);
-        for(j = 0; j < 2; j++, y_ptr += y_stride) {
-            for (i=0; i<2; i++, block += 64, mb++, y_ptr += (1<<log2_blocksize))
-                 if (s->sys->pix_fmt == PIX_FMT_YUV422P && s->sys->width == 720 && i)
-                     y_ptr -= (1<<log2_blocksize);
-                 else
-                     mb->idct_put(y_ptr, s->picture.linesize[0]<<is_field_mode[mb_index], block);
+        linesize = s->picture.linesize[0]<<is_field_mode[mb_index];
+        mb[0]    .idct_put(y_ptr                                 , linesize, block + 0*64);
+        if (s->sys->video_stype == 4) { /* SD 422 */
+            mb[2].idct_put(y_ptr + (1<<log2_blocksize)           , linesize, block + 2*64);
+        } else {
+            mb[1].idct_put(y_ptr + (1<<log2_blocksize)           , linesize, block + 1*64);
+            mb[2].idct_put(y_ptr                       + y_stride, linesize, block + 2*64);
+            mb[3].idct_put(y_ptr + (1<<log2_blocksize) + y_stride, linesize, block + 3*64);
         }
+        mb += 4;
+        block += 4*64;
 
         /* idct_put'ting chrominance */
         c_offset = (((mb_y>>(s->sys->pix_fmt == PIX_FMT_YUV420P)) * s->picture.linesize[1] +
@@ -538,8 +542,11 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
             } else {
                   y_stride = (mb_y == 134) ? (1<<log2_blocksize) :
                                              s->picture.linesize[j]<<((!is_field_mode[mb_index])*log2_blocksize);
-                  for (i=0; i<(1<<(s->sys->bpm==8)); i++, block += 64, mb++, c_ptr += y_stride)
-                       mb->idct_put(c_ptr, s->picture.linesize[j]<<is_field_mode[mb_index], block);
+                  linesize = s->picture.linesize[j]<<is_field_mode[mb_index];
+                  (mb++)->    idct_put(c_ptr           , linesize, block); block+=64;
+                  if (s->sys->bpm == 8) {
+                      (mb++)->idct_put(c_ptr + y_stride, linesize, block); block+=64;
+                  }
             }
         }
     }
