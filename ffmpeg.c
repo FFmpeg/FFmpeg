@@ -1908,7 +1908,7 @@ static int av_encode(AVFormatContext **output_files,
         if (ost->encoding_needed) {
             AVCodec *codec = output_codecs[i];
             if (!codec)
-            codec = avcodec_find_encoder(ost->st->codec->codec_id);
+                codec = avcodec_find_encoder(ost->st->codec->codec_id);
             if (!codec) {
                 fprintf(stderr, "Unsupported codec for output stream #%d.%d\n",
                         ost->file_index, ost->index);
@@ -1929,7 +1929,7 @@ static int av_encode(AVFormatContext **output_files,
         if (ist->decoding_needed) {
             AVCodec *codec = input_codecs[i];
             if (!codec)
-            codec = avcodec_find_decoder(ist->st->codec->codec_id);
+                codec = avcodec_find_decoder(ist->st->codec->codec_id);
             if (!codec) {
                 fprintf(stderr, "Unsupported codec (id=%d) for input stream #%d.%d\n",
                         ist->st->codec->codec_id, ist->file_index, ist->index);
