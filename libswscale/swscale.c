@@ -2741,7 +2741,6 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
             c->pal_yuv[i]= y + (u<<8) + (v<<16);
             c->pal_rgb[i]= b + (g<<8) + (r<<16);
         }
-        src2[1]= (uint8_t*)c->pal_yuv;
     }
 
     // copy strides, so they can safely be modified
