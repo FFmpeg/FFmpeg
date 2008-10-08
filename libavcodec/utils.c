@@ -1009,6 +1009,8 @@ AVCodec *avcodec_find_encoder(enum CodecID id)
 AVCodec *avcodec_find_encoder_by_name(const char *name)
 {
     AVCodec *p;
+    if (!name)
+        return NULL;
     p = first_avcodec;
     while (p) {
         if (p->encode != NULL && strcmp(name,p->name) == 0)
@@ -1033,6 +1035,8 @@ AVCodec *avcodec_find_decoder(enum CodecID id)
 AVCodec *avcodec_find_decoder_by_name(const char *name)
 {
     AVCodec *p;
+    if (!name)
+        return NULL;
     p = first_avcodec;
     while (p) {
         if (p->decode != NULL && strcmp(name,p->name) == 0)
