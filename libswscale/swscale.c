@@ -2096,7 +2096,7 @@ int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int 
     return 0;
 }
 
-static int handle_jpeg(int *format)
+static int handle_jpeg(enum PixelFormat *format)
 {
     switch (*format) {
         case PIX_FMT_YUVJ420P:
