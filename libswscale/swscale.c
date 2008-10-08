@@ -155,6 +155,13 @@ unsigned swscale_version(void)
         || isRGB(x)                 \
         || isBGR(x)                 \
     )
+#define usePal(x)           (       \
+           (x)==PIX_FMT_PAL8        \
+        || (x)==PIX_FMT_BGR4_BYTE   \
+        || (x)==PIX_FMT_RGB4_BYTE   \
+        || (x)==PIX_FMT_BGR8        \
+        || (x)==PIX_FMT_RGB8        \
+    )
 
 #define RGB2YUV_SHIFT 15
 #define BY ( (int)(0.114*219/255*(1<<RGB2YUV_SHIFT)+0.5))
@@ -1707,6 +1714,39 @@ static int YUV422PToUyvyWrapper(SwsContext *c, uint8_t* src[], int srcStride[], 
     return srcSliceH;
 }
 
+static int pal2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                          int srcSliceH, uint8_t* dst[], int dstStride[]){
+    const int srcFormat= c->srcFormat;
+    const int dstFormat= c->dstFormat;
+    void (*conv)(const uint8_t *src, uint8_t *dst, long num_pixels,
+                 const uint8_t *palette)=NULL;
+    int i;
+    uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+    uint8_t *srcPtr= src[0];
+
+    if (!usePal(srcFormat))
+        av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
+               sws_format_name(srcFormat), sws_format_name(dstFormat));
+
+    switch(dstFormat){
+    case PIX_FMT_RGB32: conv = palette8torgb32; break;
+    case PIX_FMT_BGR32: conv = palette8tobgr32; break;
+    case PIX_FMT_RGB24: conv = palette8torgb24; break;
+    case PIX_FMT_BGR24: conv = palette8tobgr24; break;
+    default: av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
+                    sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
+    }
+
+
+    for (i=0; i<srcSliceH; i++) {
+        conv(srcPtr, dstPtr, c->srcW, c->pal_rgb);
+        srcPtr+= srcStride[0];
+        dstPtr+= dstStride[0];
+    }
+
+    return srcSliceH;
+}
+
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                           int srcSliceH, uint8_t* dst[], int dstStride[]){
@@ -2301,6 +2341,13 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
            && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
              c->swScale= rgb2rgbWrapper;
 
+        if ((usePal(srcFormat) && (
+                 dstFormat == PIX_FMT_RGB32 ||
+                 dstFormat == PIX_FMT_RGB24 ||
+                 dstFormat == PIX_FMT_BGR32 ||
+                 dstFormat == PIX_FMT_BGR24)))
+             c->swScale= pal2rgbWrapper;
+
         if (srcFormat == PIX_FMT_YUV422P)
         {
             if (dstFormat == PIX_FMT_YUYV422)
@@ -2654,12 +2701,6 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
               int srcSliceH, uint8_t* dst[], int dstStride[]){
     int i;
     uint8_t* src2[4]= {src[0], src[1], src[2]};
-    uint32_t pal[256];
-    int use_pal=   c->srcFormat == PIX_FMT_PAL8
-                || c->srcFormat == PIX_FMT_BGR4_BYTE
-                || c->srcFormat == PIX_FMT_RGB4_BYTE
-                || c->srcFormat == PIX_FMT_BGR8
-                || c->srcFormat == PIX_FMT_RGB8;
 
     if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
         av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
@@ -2669,7 +2710,7 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
         if (srcSliceY == 0) c->sliceDir = 1; else c->sliceDir = -1;
     }
 
-    if (use_pal){
+    if (usePal(c->srcFormat)){
         for (i=0; i<256; i++){
             int p, r, g, b,y,u,v;
             if(c->srcFormat == PIX_FMT_PAL8){
@@ -2697,9 +2738,10 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
             y= av_clip_uint8((RY*r + GY*g + BY*b + ( 33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
             u= av_clip_uint8((RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
             v= av_clip_uint8((RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
-            pal[i]= y + (u<<8) + (v<<16);
+            c->pal_yuv[i]= y + (u<<8) + (v<<16);
+            c->pal_rgb[i]= b + (g<<8) + (r<<16);
         }
-        src2[1]= (uint8_t*)pal;
+        src2[1]= (uint8_t*)c->pal_yuv;
     }
 
     // copy strides, so they can safely be modified
@@ -2717,7 +2759,7 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
         int dstStride2[4]= {-dstStride[0], -dstStride[1], -dstStride[2]};
 
         src2[0] += (srcSliceH-1)*srcStride[0];
-        if (!use_pal)
+        if (!usePal(c->srcFormat))
             src2[1] += ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[1];
         src2[2] += ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[2];
 

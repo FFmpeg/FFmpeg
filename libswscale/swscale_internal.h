@@ -80,6 +80,9 @@ typedef struct SwsContext{
     int sliceDir;
     double param[2];
 
+    uint32_t pal_yuv[256];
+    uint32_t pal_rgb[256];
+
     int16_t **lumPixBuf;
     int16_t **chrPixBuf;
     int16_t *hLumFilter;
