@@ -56,6 +56,40 @@ static void get_pixels_mmx(DCTELEM *block, const uint8_t *pixels, int line_size)
     );
 }
 
+static void get_pixels_sse2(DCTELEM *block, const uint8_t *pixels, int line_size)
+{
+    asm volatile(
+        "pxor %%xmm7,      %%xmm7         \n\t"
+        "movq (%0),        %%xmm0         \n\t"
+        "movq (%0, %2),    %%xmm1         \n\t"
+        "movq (%0, %2,2),  %%xmm2         \n\t"
+        "movq (%0, %3),    %%xmm3         \n\t"
+        "lea (%0,%2,4), %0                \n\t"
+        "punpcklbw %%xmm7, %%xmm0         \n\t"
+        "punpcklbw %%xmm7, %%xmm1         \n\t"
+        "punpcklbw %%xmm7, %%xmm2         \n\t"
+        "punpcklbw %%xmm7, %%xmm3         \n\t"
+        "movdqa %%xmm0,      (%1)         \n\t"
+        "movdqa %%xmm1,    16(%1)         \n\t"
+        "movdqa %%xmm2,    32(%1)         \n\t"
+        "movdqa %%xmm3,    48(%1)         \n\t"
+        "movq (%0),        %%xmm0         \n\t"
+        "movq (%0, %2),    %%xmm1         \n\t"
+        "movq (%0, %2,2),  %%xmm2         \n\t"
+        "movq (%0, %3),    %%xmm3         \n\t"
+        "punpcklbw %%xmm7, %%xmm0         \n\t"
+        "punpcklbw %%xmm7, %%xmm1         \n\t"
+        "punpcklbw %%xmm7, %%xmm2         \n\t"
+        "punpcklbw %%xmm7, %%xmm3         \n\t"
+        "movdqa %%xmm0,    64(%1)         \n\t"
+        "movdqa %%xmm1,    80(%1)         \n\t"
+        "movdqa %%xmm2,    96(%1)         \n\t"
+        "movdqa %%xmm3,   112(%1)         \n\t"
+        : "+r" (pixels)
+        : "r" (block), "r" ((x86_reg)line_size), "r" ((x86_reg)line_size*3)
+    );
+}
+
 static inline void diff_pixels_mmx(DCTELEM *block, const uint8_t *s1, const uint8_t *s2, int stride)
 {
     asm volatile(
@@ -1375,6 +1409,7 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
 
         if(mm_flags & MM_SSE2){
+            c->get_pixels = get_pixels_sse2;
             c->sum_abs_dctelem= sum_abs_dctelem_sse2;
             c->hadamard8_diff[0]= hadamard8_diff16_sse2;
             c->hadamard8_diff[1]= hadamard8_diff_sse2;
