@@ -264,12 +264,12 @@ static unsigned char clip_table[768];
 
 static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b);
 
-const uint8_t  __attribute__((aligned(8))) dither_2x2_4[2][8]={
+static const uint8_t  __attribute__((aligned(8))) dither_2x2_4[2][8]={
 {  1,   3,   1,   3,   1,   3,   1,   3, },
 {  2,   0,   2,   0,   2,   0,   2,   0, },
 };
 
-const uint8_t  __attribute__((aligned(8))) dither_2x2_8[2][8]={
+static const uint8_t  __attribute__((aligned(8))) dither_2x2_8[2][8]={
 {  6,   2,   6,   2,   6,   2,   6,   2, },
 {  0,   4,   0,   4,   0,   4,   0,   4, },
 };
