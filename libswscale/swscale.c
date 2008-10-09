@@ -1716,8 +1716,8 @@ static int YUV422PToUyvyWrapper(SwsContext *c, uint8_t* src[], int srcStride[], 
 
 static int pal2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                           int srcSliceH, uint8_t* dst[], int dstStride[]){
-    const int srcFormat= c->srcFormat;
-    const int dstFormat= c->dstFormat;
+    const enum PixelFormat srcFormat= c->srcFormat;
+    const enum PixelFormat dstFormat= c->dstFormat;
     void (*conv)(const uint8_t *src, uint8_t *dst, long num_pixels,
                  const uint8_t *palette)=NULL;
     int i;
