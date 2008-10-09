@@ -168,6 +168,9 @@ show_help(){
   echo "  --disable-protocol=NAME  disables protocol NAME"
   echo "  --disable-protocols      disables all protocols"
   echo "  --disable-devices        disables all devices"
+  echo "  --enable-filter=NAME     enables filter NAME"
+  echo "  --disable-filter=NAME    disables filter NAME"
+  echo "  --disable-filters        disables all filters"
   echo "  --list-decoders          show all available decoders"
   echo "  --list-encoders          show all available encoders"
   echo "  --list-muxers            show all available muxers"
@@ -177,6 +180,7 @@ show_help(){
   echo "  --list-bsfs              show all available bitstream filters"
   echo "  --list-indevs            show all available input devices"
   echo "  --list-outdevs           show all available output devices"
+  echo "  --list-filters           show all available filters"
   echo
   echo "Developer options (useful when working on FFmpeg itself):"
   echo "  --disable-debug          disable debugging symbols"
