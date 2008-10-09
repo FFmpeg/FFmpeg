@@ -2429,7 +2429,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
     }
 }
 
-void RENAME(interleaveBytes)(uint8_t *src1, uint8_t *src2, uint8_t *dest,
+static void RENAME(interleaveBytes)(uint8_t *src1, uint8_t *src2, uint8_t *dest,
                              long width, long height, long src1Stride,
                              long src2Stride, long dstStride){
     long h;
