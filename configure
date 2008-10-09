@@ -191,7 +191,7 @@ show_help(){
   echo "  --disable-stripping      disable stripping of executables and shared libraries"
   echo ""
   echo "NOTE: Object files are built at the place where configure is launched."
-  exit 1
+  exit 0
 }
 
 log(){
