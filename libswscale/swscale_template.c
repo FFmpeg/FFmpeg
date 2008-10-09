@@ -2964,12 +2964,12 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
 
     if (dstStride[0]%8 !=0 || dstStride[1]%8 !=0 || dstStride[2]%8 !=0)
     {
-        static int firstTime=1; //FIXME move this into the context perhaps
-        if (flags & SWS_PRINT_INFO && firstTime)
+        static int warnedAlready=0; //FIXME move this into the context perhaps
+        if (flags & SWS_PRINT_INFO && !warnedAlready)
         {
             av_log(c, AV_LOG_WARNING, "Warning: dstStride is not aligned!\n"
                    "         ->cannot do aligned memory accesses anymore\n");
-            firstTime=0;
+            warnedAlready=1;
         }
     }
 
