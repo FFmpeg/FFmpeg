@@ -32,6 +32,15 @@
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
 #endif
 
+static inline int is_dos_path(const char *path)
+{
+#ifdef HAVE_DOS_PATHS
+    if (path[0] && path[1] == ':')
+        return 1;
+#endif
+    return 0;
+}
+
 #ifdef __BEOS__
 #  include <sys/socket.h>
 #  include <netinet/in.h>

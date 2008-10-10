@@ -21,6 +21,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavcodec/opt.h"
+#include "os_support.h"
 #include "avformat.h"
 
 #if LIBAVFORMAT_VERSION_MAJOR >= 53
@@ -115,7 +116,7 @@ int url_open(URLContext **puc, const char *filename, int flags)
         p++;
     }
     /* if the protocol has length 1, we consider it is a dos drive */
-    if (*p == '\0' || (q - proto_str) <= 1) {
+    if (*p == '\0' || is_dos_path(filename)) {
     file_proto:
         strcpy(proto_str, "file");
     } else {

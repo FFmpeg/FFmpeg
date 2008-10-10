@@ -754,6 +754,7 @@ HAVE_LIST="
     dev_video_bktr_ioctl_bt848_h
     dlfcn_h
     dlopen
+    dos_paths
     ebp_available
     ebx_available
     fast_64bit
@@ -1295,6 +1296,7 @@ case $target_os in
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"'
         SHFLAGS='-shared -Wl,--output-def,$$(@:$(SLIBSUF)=.def) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
         objformat="win32"
+        enable dos_paths
         ;;
     cygwin*)
         target_os=cygwin
@@ -1312,6 +1314,7 @@ case $target_os in
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
         SHFLAGS='-shared -Wl,--enable-auto-image-base'
         objformat="win32"
+        enable dos_paths
         ;;
     *-dos|freedos|opendos)
         disable ffplay ffserver vhook
@@ -1319,6 +1322,7 @@ case $target_os in
         network_extralibs="-lsocket"
         EXESUF=".exe"
         objformat="win32"
+        enable dos_paths
         ;;
     linux)
         enable dv1394
@@ -1350,6 +1354,7 @@ case $target_os in
         SLIB_INSTALL_EXTRA_CMD='install -m 644 $(SUBDIR)$(LIBPREF)$(NAME)_dll.a $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib "$(LIBDIR)"'
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.a "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.lib'
         disable vhook
+        enable dos_paths
         ;;
     interix)
         disable vhook
