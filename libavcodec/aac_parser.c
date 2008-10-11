@@ -32,9 +32,10 @@ static int aac_sync(uint64_t state, AACAC3ParseContext *hdr_info,
 {
     GetBitContext bits;
     int size, rdb, ch, sr;
-    uint64_t tmp = be2me_64(state);
+    uint8_t tmp[8];
 
-    init_get_bits(&bits, ((uint8_t *)&tmp)+8-AAC_HEADER_SIZE, AAC_HEADER_SIZE * 8);
+    AV_WB64(tmp, state);
+    init_get_bits(&bits, tmp+8-AAC_HEADER_SIZE, AAC_HEADER_SIZE * 8);
 
     if(get_bits(&bits, 12) != 0xfff)
         return 0;
