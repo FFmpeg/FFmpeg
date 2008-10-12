@@ -527,6 +527,18 @@ int main(int argc, char **argv){
 EOF
 }
 
+check_cpp_condition(){
+    log check_cpp_condition "$@"
+    header=$1
+    condition=$2
+    check_cpp <<EOF
+#include <$header>
+#if !($condition)
+#error "unsatisfied condition: $condition"
+#endif
+EOF
+}
+
 check_lib(){
     log check_lib "$@"
     header="$1"
@@ -612,6 +624,14 @@ require2(){
     func="$3"
     shift 3
     check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
+}
+
+require_cpp_condition(){
+    name="$1"
+    header="$2"
+    cpp_condition="$3"
+    shift 3
+    check_cpp_condition $header "$cpp_condition" || die "ERROR: $name does not satisfy CPP condition: $cpp_condition"
 }
 
 check_foo_config(){
