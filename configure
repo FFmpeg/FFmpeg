@@ -1173,10 +1173,12 @@ EOF
     ;;
     "Power Macintosh"|ppc|powerpc)
         arch="powerpc"
+        enable fast_unaligned
     ;;
     ppc64)
         arch="powerpc"
         enable fast_64bit
+        enable fast_unaligned
     ;;
     mips|mipsel|IP*)
         arch="mips"
