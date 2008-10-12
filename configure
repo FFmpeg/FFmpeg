@@ -1518,7 +1518,11 @@ if test $cpu != "generic"; then
         sparc64)
             add_cflags "-mcpu=v9"
         ;;
-        arm*|cortex*)
+        arm11*|cortex*)
+            add_cflags "-mcpu=$cpu"
+            enable fast_unaligned
+        ;;
+        arm*)
             add_cflags "-mcpu=$cpu"
         ;;
         *)
