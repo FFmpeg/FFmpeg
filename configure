@@ -8,7 +8,8 @@
 #
 
 # Prevent locale nonsense from breaking basic text processing.
-export LC_ALL=C
+LC_ALL=C
+export LC_ALL
 
 # make sure we are running under a compatible shell
 # try to make this part work with most shells
