@@ -763,7 +763,6 @@ HAVE_LIST="
     altivec_h
     arpa_inet_h
     bswap
-    byteswap_h
     closesocket
     cmov
     conio_h
@@ -869,9 +868,6 @@ mmx2_deps="x86 mmx"
 neon_deps="armv4l"
 ssse3_deps="x86"
 vis_deps="sparc"
-
-# system headers and functions
-byteswap_h_deps="!armv4l"
 
 # decoders / encoders
 ac3_decoder_deps="gpl"
@@ -1673,7 +1669,6 @@ check_func  memalign
 check_func  mkstemp
 check_func_headers windows.h GetProcessTimes
 
-check_header byteswap.h
 check_header conio.h
 check_header dlfcn.h
 check_header malloc.h

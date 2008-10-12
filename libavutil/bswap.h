@@ -30,10 +30,6 @@
 #include "config.h"
 #include "common.h"
 
-#ifdef HAVE_BYTESWAP_H
-#include <byteswap.h>
-#else
-
 static av_always_inline av_const uint16_t bswap_16(uint16_t x)
 {
 #if defined(ARCH_X86)
@@ -107,8 +103,6 @@ static inline uint64_t av_const bswap_64(uint64_t x)
     return r.ll;
 #endif
 }
-
-#endif  /* !HAVE_BYTESWAP_H */
 
 // be2me ... BigEndian to MachineEndian
 // le2me ... LittleEndian to MachineEndian
