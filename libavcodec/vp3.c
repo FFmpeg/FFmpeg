@@ -140,8 +140,6 @@ typedef struct Vp3DecodeContext {
     int last_quality_index;
 
     int superblock_count;
-    int superblock_width;
-    int superblock_height;
     int y_superblock_width;
     int y_superblock_height;
     int c_superblock_width;
