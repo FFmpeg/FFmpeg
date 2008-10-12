@@ -1598,14 +1598,7 @@ fi
 # check for assembler specific support
 
 if test $arch = "powerpc"; then
-check_cc <<EOF && enable dcbzl
-int main(void) {
-    register long zero = 0;
-    char data[1024];
-    asm volatile("dcbzl %0, %1" : : "b" (data), "r" (zero));
-return 0;
-}
-EOF
+    check_asm dcbzl '"dcbzl 0, 1"'
 fi
 
 # check for SIMD availability
