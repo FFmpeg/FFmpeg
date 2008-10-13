@@ -80,7 +80,7 @@ to make it work correctly.
 
 @section What do I need?
 
-I use Linux on a 900MHz Duron with a cheapo Bt848 based TV capture card. I'm
+I use Linux on a 900 MHz Duron with a cheapo Bt848 based TV capture card. I'm
 using stock Linux 2.4.17 with the stock drivers. [Actually that isn't true,
 I needed some special drivers for my motherboard-based sound card.]
 

@@ -111,7 +111,7 @@ to MPEG file a.mpg.
 ffmpeg -i /tmp/a.wav -ar 22050 /tmp/a.mp2
 @end example
 
-Converts a.wav to MPEG audio at 22050Hz sample rate.
+Converts a.wav to MPEG audio at 22050 Hz sample rate.
 
 * You can encode to several formats at the same time and define a
 mapping from input stream to output streams:
@@ -928,7 +928,7 @@ motion estimation completely (you have only I-frames, which means it
 is about as good as JPEG compression).
 
 @item To have very low audio bitrates, reduce the sampling frequency
-(down to 22050Hz for MPEG audio, 22050 or 11025 for AC-3).
+(down to 22050 Hz for MPEG audio, 22050 or 11025 for AC-3).
 
 @item To have a constant quality (but a variable bitrate), use the option
 '-qscale n' when 'n' is between 1 (excellent quality) and 31 (worst
