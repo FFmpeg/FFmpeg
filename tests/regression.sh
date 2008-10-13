@@ -381,7 +381,8 @@ fi
 
 if [ -n "$do_ac3" ] ; then
 do_audio_encoding ac3.rm "" -vn
-#do_audio_decoding
+do_audio_decoding
+$tiny_psnr $pcm_dst $pcm_ref 2 1024 >> $logfile
 fi
 
 if [ -n "$do_g726" ] ; then

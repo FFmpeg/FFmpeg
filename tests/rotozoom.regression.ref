@@ -177,6 +177,9 @@ stddev: 9328.41 PSNR: 16.92 bytes:  1055276/  1058444
 stddev: 4394.71 PSNR: 23.46 bytes:  1053352/  1058444
 aefe11ab5067621a1c674859d6413891 *./tests/data/a-ac3.rm
 98203 ./tests/data/a-ac3.rm
+39d5646cba5a6cfedfd58845e6df3c06 *./tests/data/ac3.rotozoom.out.wav
+stddev:10496.20 PSNR: 15.90 bytes:  1056812/  1058444
+stddev: 4631.51 PSNR: 23.00 bytes:  1055788/  1058444
 39878597b1d65cce473639a7d8c93b02 *./tests/data/a-g726.wav
 24279 ./tests/data/a-g726.wav
 888f2f016e608d044a1bacbca5497ed2 *./tests/data/g726.rotozoom.out.wav
