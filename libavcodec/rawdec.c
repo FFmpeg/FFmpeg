@@ -40,7 +40,7 @@ static const PixelFormatTag pixelFormatBpsAVI[] = {
     { PIX_FMT_RGB555, 16 },
     { PIX_FMT_BGR24,  24 },
     { PIX_FMT_RGB32,  32 },
-    { -1, 0 },
+    { PIX_FMT_NONE, 0 },
 };
 
 static const PixelFormatTag pixelFormatBpsMOV[] = {
@@ -51,10 +51,10 @@ static const PixelFormatTag pixelFormatBpsMOV[] = {
     { PIX_FMT_BGR555,   16 },
     { PIX_FMT_RGB24,    24 },
     { PIX_FMT_BGR32_1,  32 },
-    { -1, 0 },
+    { PIX_FMT_NONE, 0 },
 };
 
-static int findPixelFormat(const PixelFormatTag *tags, unsigned int fourcc)
+static enum PixelFormat findPixelFormat(const PixelFormatTag *tags, unsigned int fourcc)
 {
     while (tags->pix_fmt >= 0) {
         if (tags->fourcc == fourcc)
