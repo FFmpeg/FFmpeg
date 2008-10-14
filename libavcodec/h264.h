@@ -453,6 +453,7 @@ typedef struct H264Context{
 
     int mb_xy;
 
+    uint32_t svq3_watermark_key;
 }H264Context;
 
 #endif /* AVCODEC_H264_H */
