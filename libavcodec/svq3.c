@@ -40,6 +40,10 @@
  *  ftp://ftp.mplayerhq.hu/MPlayer/samples/V-codecs/SVQ3/Vertical400kbit.sorenson3.mov
  */
 
+#ifdef CONFIG_ZLIB
+#include <zlib.h>
+#endif
+
 /**
  * @file svq3.c
  * svq3 decoder.
