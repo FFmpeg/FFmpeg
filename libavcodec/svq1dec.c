@@ -540,7 +540,7 @@ static int svq1_decode_delta_block (MpegEncContext *s, GetBitContext *bitbuf,
   return result;
 }
 
-static uint16_t svq1_packet_checksum (const uint8_t *data, const int length, int value) {
+uint16_t ff_svq1_packet_checksum (const uint8_t *data, const int length, int value) {
   int i;
 
   for (i=0; i < length; i++) {
@@ -581,7 +581,7 @@ static int svq1_decode_frame_header (GetBitContext *bitbuf,MpegEncContext *s) {
     if (s->f_code == 0x50 || s->f_code == 0x60) {
       int csum = get_bits (bitbuf, 16);
 
-      csum = svq1_packet_checksum (bitbuf->buffer, bitbuf->size_in_bits>>3, csum);
+      csum = ff_svq1_packet_checksum (bitbuf->buffer, bitbuf->size_in_bits>>3, csum);
 
 //      av_log(s->avctx, AV_LOG_INFO, "%s checksum (%02x) for packet data\n",
 //              (csum == 0) ? "correct" : "incorrect", csum);
