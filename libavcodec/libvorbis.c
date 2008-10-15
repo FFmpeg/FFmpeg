@@ -145,19 +145,17 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
         int samples = OGGVORBIS_FRAME_SIZE;
         float **buffer ;
 
-    buffer = vorbis_analysis_buffer(&context->vd, samples) ;
-
-    if(context->vi.channels == 1) {
-        for(l = 0 ; l < samples ; l++)
-            buffer[0][l]=audio[l]/32768.f;
-    } else {
-        for(l = 0 ; l < samples ; l++){
-            buffer[0][l]=audio[l*2]/32768.f;
-            buffer[1][l]=audio[l*2+1]/32768.f;
+        buffer = vorbis_analysis_buffer(&context->vd, samples) ;
+        if(context->vi.channels == 1) {
+            for(l = 0 ; l < samples ; l++)
+                buffer[0][l]=audio[l]/32768.f;
+        } else {
+            for(l = 0 ; l < samples ; l++){
+                buffer[0][l]=audio[l*2]/32768.f;
+                buffer[1][l]=audio[l*2+1]/32768.f;
+            }
         }
-    }
-
-    vorbis_analysis_wrote(&context->vd, samples) ;
+        vorbis_analysis_wrote(&context->vd, samples) ;
     } else {
         if(!context->eof)
             vorbis_analysis_wrote(&context->vd, 0) ;
