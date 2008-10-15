@@ -3685,7 +3685,8 @@ static int opt_preset(const char *opt, const char *arg)
             f= fopen(tmp, "r");
         }
     }
-    if(!f && ((arg[0]=='.' && arg[1]=='/') || arg[0]=='/')){
+    if(!f && ((arg[0]=='.' && arg[1]=='/') || arg[0]=='/' ||
+              is_dos_path(arg))){
         f= fopen(arg, "r");
     }
 
