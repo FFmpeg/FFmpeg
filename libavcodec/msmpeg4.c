@@ -654,7 +654,7 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
        fact they decided to store the quantized DC (which would lead
        to problems if Q could vary !) */
 #if (defined(ARCH_X86)) && !defined PIC
-    asm volatile(
+    __asm__ volatile(
         "movl %3, %%eax         \n\t"
         "shrl $1, %%eax         \n\t"
         "addl %%eax, %2         \n\t"

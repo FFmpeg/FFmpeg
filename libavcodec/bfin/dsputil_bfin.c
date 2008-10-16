@@ -77,7 +77,7 @@ static void bfin_clear_blocks (DCTELEM *blocks)
 {
     // This is just a simple memset.
     //
-    asm("P0=192; "
+    __asm__("P0=192; "
         "I0=%0;  "
         "R0=0;   "
         "LSETUP(clear_blocks_blkfn_lab,clear_blocks_blkfn_lab)LC0=P0;"

@@ -63,13 +63,13 @@
 static inline int RENAME(vertClassify)(uint8_t src[], int stride, PPContext *c){
     int numEq= 0, dcOk;
     src+= stride*4; // src points to begin of the 8x8 Block
-    asm volatile(
+    __asm__ volatile(
         "movq %0, %%mm7                         \n\t"
         "movq %1, %%mm6                         \n\t"
         : : "m" (c->mmxDcOffset[c->nonBQP]),  "m" (c->mmxDcThreshold[c->nonBQP])
         );
 
-    asm volatile(
+    __asm__ volatile(
         "lea (%2, %3), %%"REG_a"                \n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %1      eax     eax+%2  eax+2%2 %1+4%2  ecx     ecx+%2  ecx+2%2 %1+8%2  ecx+4%2
@@ -181,7 +181,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
     src+= stride*3;
-    asm volatile(        //"movv %0 %1 %2\n\t"
+    __asm__ volatile(        //"movv %0 %1 %2\n\t"
         "movq %2, %%mm0                         \n\t"  // QP,..., QP
         "pxor %%mm4, %%mm4                      \n\t"
 
@@ -367,7 +367,7 @@ static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
     src+= stride*3;
 // FIXME rounding
-    asm volatile(
+    __asm__ volatile(
         "pxor %%mm7, %%mm7                      \n\t" // 0
         "movq "MANGLE(b80)", %%mm6              \n\t" // MIN_SIGNED_BYTE
         "leal (%0, %1), %%"REG_a"               \n\t"
@@ -465,7 +465,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
     src+= stride*3;
 
-    asm volatile(
+    __asm__ volatile(
         "pxor %%mm7, %%mm7                      \n\t" // 0
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a", %1, 4), %%"REG_c"      \n\t"
@@ -604,7 +604,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
     memcpy(tmp+8, src+stride*8, 8);
 */
     src+= stride*4;
-    asm volatile(
+    __asm__ volatile(
 
 #if 0 //slightly more accurate and slightly slower
         "pxor %%mm7, %%mm7                      \n\t" // 0
@@ -871,7 +871,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
 */
 #elif defined (HAVE_MMX)
     src+= stride*4;
-    asm volatile(
+    __asm__ volatile(
         "pxor %%mm7, %%mm7                      \n\t"
         "lea -40(%%"REG_SP"), %%"REG_c"         \n\t" // make space for 4 8-byte vars
         "and "ALIGN_MASK", %%"REG_c"            \n\t" // align
@@ -1147,7 +1147,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
 static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-    asm volatile(
+    __asm__ volatile(
         "pxor %%mm6, %%mm6                      \n\t"
         "pcmpeqb %%mm7, %%mm7                   \n\t"
         "movq %2, %%mm0                         \n\t"
@@ -1431,7 +1431,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
                 f= (f + 8)>>4;
 
 #ifdef DEBUG_DERING_THRESHOLD
-                    asm volatile("emms\n\t":);
+                    __asm__ volatile("emms\n\t":);
                     {
                     static long long numPixels=0;
                     if(x!=1 && x!=8 && y!=1 && y!=8) numPixels++;
@@ -1501,7 +1501,7 @@ static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int strid
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
     src+= 4*stride;
-    asm volatile(
+    __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a", %1, 4), %%"REG_c"      \n\t"
 //      0       1       2       3       4       5       6       7       8       9
@@ -1554,7 +1554,7 @@ static inline void RENAME(deInterlaceInterpolateCubic)(uint8_t src[], int stride
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
     src+= stride*3;
-    asm volatile(
+    __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
         "lea (%%"REG_d", %1, 4), %%"REG_c"      \n\t"
@@ -1618,7 +1618,7 @@ static inline void RENAME(deInterlaceFF)(uint8_t src[], int stride, uint8_t *tmp
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
     src+= stride*4;
-    asm volatile(
+    __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
         "pxor %%mm7, %%mm7                      \n\t"
@@ -1697,7 +1697,7 @@ static inline void RENAME(deInterlaceL5)(uint8_t src[], int stride, uint8_t *tmp
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
     src+= stride*4;
-    asm volatile(
+    __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
         "pxor %%mm7, %%mm7                      \n\t"
@@ -1798,7 +1798,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
     src+= 4*stride;
-    asm volatile(
+    __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
 //      0       1       2       3       4       5       6       7       8       9
@@ -1900,7 +1900,7 @@ static inline void RENAME(deInterlaceMedian)(uint8_t src[], int stride)
 #ifdef HAVE_MMX
     src+= 4*stride;
 #ifdef HAVE_MMX2
-    asm volatile(
+    __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
 //      0       1       2       3       4       5       6       7       8       9
@@ -1949,7 +1949,7 @@ static inline void RENAME(deInterlaceMedian)(uint8_t src[], int stride)
     );
 
 #else // MMX without MMX2
-    asm volatile(
+    __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a", %1, 4), %%"REG_d"      \n\t"
 //      0       1       2       3       4       5       6       7       8       9
@@ -2018,7 +2018,7 @@ MEDIAN((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8))
  */
 static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, uint8_t *src, int srcStride)
 {
-    asm(
+    __asm__(
         "lea (%0, %1), %%"REG_a"                \n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1 %0+8%1  edx+4%1
@@ -2103,7 +2103,7 @@ static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, uint8_t *src
  */
 static inline void RENAME(transpose2)(uint8_t *dst, int dstStride, uint8_t *src)
 {
-    asm(
+    __asm__(
         "lea (%0, %1), %%"REG_a"                \n\t"
         "lea (%%"REG_a",%1,4), %%"REG_d"        \n\t"
 //      0       1       2       3       4       5       6       7       8       9
@@ -2192,7 +2192,7 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 #define FAST_L2_DIFF
 //#define L1_DIFF //u should change the thresholds too if u try that one
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-    asm volatile(
+    __asm__ volatile(
         "lea (%2, %2, 2), %%"REG_a"             \n\t" // 3*stride
         "lea (%2, %2, 4), %%"REG_d"             \n\t" // 5*stride
         "lea (%%"REG_d", %2, 2), %%"REG_c"      \n\t" // 7*stride
@@ -2575,13 +2575,13 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
     int64_t sums[10*8*2];
     src+= step*3; // src points to begin of the 8x8 Block
 //START_TIMER
-    asm volatile(
+    __asm__ volatile(
         "movq %0, %%mm7                         \n\t"
         "movq %1, %%mm6                         \n\t"
         : : "m" (c->mmxDcOffset[c->nonBQP]),  "m" (c->mmxDcThreshold[c->nonBQP])
         );
 
-    asm volatile(
+    __asm__ volatile(
         "lea (%2, %3), %%"REG_a"                \n\t"
 //      0       1       2       3       4       5       6       7       8       9
 //      %1      eax     eax+%2  eax+2%2 %1+4%2  ecx     ecx+%2  ecx+2%2 %1+8%2  ecx+4%2
@@ -2686,7 +2686,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
         long offset= -8*step;
         int64_t *temp_sums= sums;
 
-        asm volatile(
+        __asm__ volatile(
             "movq %2, %%mm0                         \n\t"  // QP,..., QP
             "pxor %%mm4, %%mm4                      \n\t"
 
@@ -2825,7 +2825,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
 
         src+= step; // src points to begin of the 8x8 Block
 
-        asm volatile(
+        __asm__ volatile(
             "movq %4, %%mm6                         \n\t"
             "pcmpeqb %%mm5, %%mm5                   \n\t"
             "pxor %%mm6, %%mm5                      \n\t"
@@ -2864,7 +2864,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
 
     if(eq_mask != -1LL){
         uint8_t *temp_src= src;
-        asm volatile(
+        __asm__ volatile(
             "pxor %%mm7, %%mm7                      \n\t"
             "lea -40(%%"REG_SP"), %%"REG_c"         \n\t" // make space for 4 8-byte vars
             "and "ALIGN_MASK", %%"REG_c"            \n\t" // align
@@ -3121,7 +3121,7 @@ static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, const uint8_t
 #endif
     if(levelFix){
 #ifdef HAVE_MMX
-    asm volatile(
+    __asm__ volatile(
         "movq (%%"REG_a"), %%mm2        \n\t" // packedYOffset
         "movq 8(%%"REG_a"), %%mm3       \n\t" // packedYScale
         "lea (%2,%4), %%"REG_a"         \n\t"
@@ -3204,7 +3204,7 @@ SCALED_CPY((%%REGa, %4), (%%REGa, %4, 2), (%%REGd, %5), (%%REGd, %5, 2))
 #endif //HAVE_MMX
     }else{
 #ifdef HAVE_MMX
-    asm volatile(
+    __asm__ volatile(
         "lea (%0,%2), %%"REG_a"                 \n\t"
         "lea (%1,%3), %%"REG_d"                 \n\t"
 
@@ -3244,7 +3244,7 @@ SIMPLE_CPY((%%REGa, %2), (%%REGa, %2, 2), (%%REGd, %3), (%%REGd, %3, 2))
 static inline void RENAME(duplicate)(uint8_t src[], int stride)
 {
 #ifdef HAVE_MMX
-    asm volatile(
+    __asm__ volatile(
         "movq (%0), %%mm0               \n\t"
         "add %1, %0                     \n\t"
         "movq %%mm0, (%0)               \n\t"
@@ -3392,7 +3392,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             prefetcht0(dstBlock + (((x>>2)&6) + 6)*dstStride + 32);
 */
 
-            asm(
+            __asm__(
                 "mov %4, %%"REG_a"              \n\t"
                 "shr $2, %%"REG_a"              \n\t"
                 "and $6, %%"REG_a"              \n\t"
@@ -3508,7 +3508,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             }
             c.QP= QP;
 #ifdef HAVE_MMX
-            asm volatile(
+            __asm__ volatile(
                 "movd %1, %%mm7         \n\t"
                 "packuswb %%mm7, %%mm7  \n\t" // 0, 0, 0, QP, 0, 0, 0, QP
                 "packuswb %%mm7, %%mm7  \n\t" // 0,QP, 0, QP, 0,QP, 0, QP
@@ -3528,7 +3528,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
             prefetcht0(dstBlock + (((x>>2)&6) + 6)*dstStride + 32);
 */
 
-            asm(
+            __asm__(
                 "mov %4, %%"REG_a"              \n\t"
                 "shr $2, %%"REG_a"              \n\t"
                 "and $6, %%"REG_a"              \n\t"
@@ -3700,9 +3700,9 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
         }*/
     }
 #ifdef HAVE_3DNOW
-    asm volatile("femms");
+    __asm__ volatile("femms");
 #elif defined (HAVE_MMX)
-    asm volatile("emms");
+    __asm__ volatile("emms");
 #endif
 
 #ifdef DEBUG_BRIGHTNESS

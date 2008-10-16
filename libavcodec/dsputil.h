@@ -579,7 +579,7 @@ void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int li
 
 static inline void emms(void)
 {
-    asm volatile ("emms;":::"memory");
+    __asm__ volatile ("emms;":::"memory");
 }
 
 

@@ -341,7 +341,7 @@ DECLARE_ASM_CONST(16, int32_t, walkenIdctRounders[]) = {
 
 inline void ff_idct_xvid_sse2(short *block)
 {
-    asm volatile(
+    __asm__ volatile(
     "movq     "MANGLE(m127)", %%mm0                              \n\t"
     iMTX_MULT("(%0)",     MANGLE(iTab1), ROUND(walkenIdctRounders),      PUT_EVEN(ROW0))
     iMTX_MULT("1*16(%0)", MANGLE(iTab2), ROUND(walkenIdctRounders+1*16), PUT_ODD(ROW1))

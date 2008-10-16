@@ -156,28 +156,28 @@ static const char *replaceTable[]=
 #if defined(ARCH_X86)
 static inline void prefetchnta(void *p)
 {
-    asm volatile(   "prefetchnta (%0)\n\t"
+    __asm__ volatile(   "prefetchnta (%0)\n\t"
         : : "r" (p)
     );
 }
 
 static inline void prefetcht0(void *p)
 {
-    asm volatile(   "prefetcht0 (%0)\n\t"
+    __asm__ volatile(   "prefetcht0 (%0)\n\t"
         : : "r" (p)
     );
 }
 
 static inline void prefetcht1(void *p)
 {
-    asm volatile(   "prefetcht1 (%0)\n\t"
+    __asm__ volatile(   "prefetcht1 (%0)\n\t"
         : : "r" (p)
     );
 }
 
 static inline void prefetcht2(void *p)
 {
-    asm volatile(   "prefetcht2 (%0)\n\t"
+    __asm__ volatile(   "prefetcht2 (%0)\n\t"
         : : "r" (p)
     );
 }

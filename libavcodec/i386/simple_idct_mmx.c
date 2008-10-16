@@ -212,7 +212,7 @@ static inline void idct(int16_t *block)
         DECLARE_ALIGNED(8, int64_t, align_tmp[16]);
         int16_t * const temp= (int16_t*)align_tmp;
 
-        asm volatile(
+        __asm__ volatile(
 #if 0 //Alternative, simpler variant
 
 #define ROW_IDCT(src0, src4, src1, src5, dst, rounder, shift) \

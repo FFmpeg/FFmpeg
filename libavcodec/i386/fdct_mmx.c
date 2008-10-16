@@ -371,7 +371,7 @@ FDCT_COL(sse2, xmm, movdqa)
 
 static av_always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
 {
-    asm volatile(
+    __asm__ volatile(
 #define FDCT_ROW_SSE2_H1(i,t)                    \
         "movq      " #i "(%0), %%xmm2      \n\t" \
         "movq      " #i "+8(%0), %%xmm0    \n\t" \

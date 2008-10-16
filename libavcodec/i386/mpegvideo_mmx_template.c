@@ -117,13 +117,13 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         /* note: block[0] is assumed to be positive */
         if (!s->h263_aic) {
 #if 1
-        asm volatile (
+        __asm__ volatile (
                 "mul %%ecx                \n\t"
                 : "=d" (level), "=a"(dummy)
                 : "a" ((block[0]>>2) + q), "c" (ff_inverse[q<<1])
         );
 #else
-        asm volatile (
+        __asm__ volatile (
                 "xorl %%edx, %%edx        \n\t"
                 "divw %%cx                \n\t"
                 "movzwl %%ax, %%eax       \n\t"
@@ -149,7 +149,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
 
     if((s->out_format == FMT_H263 || s->out_format == FMT_H261) && s->mpeg_quant==0){
 
-        asm volatile(
+        __asm__ volatile(
             "movd %%"REG_a", "MM"3              \n\t" // last_non_zero_p1
             SPREADW(MM"3")
             "pxor "MM"7, "MM"7                  \n\t" // 0
@@ -182,7 +182,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
               "r" (inv_zigzag_direct16+64), "r" (temp_block+64)
         );
     }else{ // FMT_H263
-        asm volatile(
+        __asm__ volatile(
             "movd %%"REG_a", "MM"3              \n\t" // last_non_zero_p1
             SPREADW(MM"3")
             "pxor "MM"7, "MM"7                  \n\t" // 0
@@ -214,7 +214,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
               "r" (inv_zigzag_direct16+64), "r" (temp_block+64)
         );
     }
-    asm volatile(
+    __asm__ volatile(
         "movd %1, "MM"1                     \n\t" // max_qcoeff
         SPREADW(MM"1")
         "psubusw "MM"1, "MM"4               \n\t"

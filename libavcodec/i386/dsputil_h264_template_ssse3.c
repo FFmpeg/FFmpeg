@@ -37,7 +37,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
     if(y==0 || x==0)
     {
         /* 1 dimensional filter only */
-        asm volatile(
+        __asm__ volatile(
             "movd %0, %%xmm7 \n\t"
             "movq %1, %%xmm6 \n\t"
             "pshuflw $0, %%xmm7, %%xmm7 \n\t"
@@ -47,7 +47,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
         );
 
         if(x) {
-            asm volatile(
+            __asm__ volatile(
                 "1: \n\t"
                 "movq (%1), %%xmm0 \n\t"
                 "movq 1(%1), %%xmm1 \n\t"
@@ -75,7 +75,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
                 :"r"((x86_reg)stride)
             );
         } else {
-            asm volatile(
+            __asm__ volatile(
                 "1: \n\t"
                 "movq (%1), %%xmm0 \n\t"
                 "movq (%1,%3), %%xmm1 \n\t"
@@ -107,7 +107,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
     }
 
     /* general case, bilinear */
-    asm volatile(
+    __asm__ volatile(
         "movd %0, %%xmm7 \n\t"
         "movd %1, %%xmm6 \n\t"
         "movdqa %2, %%xmm5 \n\t"
@@ -118,7 +118,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
         :: "r"((x*255+8)*(8-y)), "r"((x*255+8)*y), "m"(*(rnd?&ff_pw_32:&ff_pw_28))
     );
 
-    asm volatile(
+    __asm__ volatile(
         "movq (%1), %%xmm0 \n\t"
         "movq 1(%1), %%xmm1 \n\t"
         "punpcklbw %%xmm1, %%xmm0 \n\t"
@@ -160,7 +160,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
 
 static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
-    asm volatile(
+    __asm__ volatile(
         "movd %0, %%mm7 \n\t"
         "movd %1, %%mm6 \n\t"
         "movq %2, %%mm5 \n\t"
@@ -169,7 +169,7 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
         :: "r"((x*255+8)*(8-y)), "r"((x*255+8)*y), "m"(ff_pw_32)
     );
 
-    asm volatile(
+    __asm__ volatile(
         "movd (%1), %%mm0 \n\t"
         "punpcklbw 1(%1), %%mm0 \n\t"
         "add %3, %1 \n\t"

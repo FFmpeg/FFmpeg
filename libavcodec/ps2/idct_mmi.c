@@ -257,7 +257,7 @@ static short consttable[] align16 = {
         pmaxh($2, $0, $2);      \
         ppacb($0, $2, $2);      \
         sd3(2, 0, 4);           \
-        asm volatile ("add $4, $5, $4");
+        __asm__ volatile ("add $4, $5, $4");
 
 #define DCT_8_INV_COL8_PUT() \
         PUT($16);        \
@@ -277,7 +277,7 @@ static short consttable[] align16 = {
         pmaxh($2, $0, $2);   \
         ppacb($0, $2, $2);   \
         sd3(2, 0, 4); \
-        asm volatile ("add $4, $5, $4");
+        __asm__ volatile ("add $4, $5, $4");
 
 /*fixme: schedule*/
 #define DCT_8_INV_COL8_ADD() \
@@ -294,7 +294,7 @@ static short consttable[] align16 = {
 void ff_mmi_idct(int16_t * block)
 {
         /* $4 = block */
-        asm volatile("la $24, %0"::"m"(consttable[0]));
+        __asm__ volatile("la $24, %0"::"m"(consttable[0]));
         lq($24, ROUNDER_0, $8);
         lq($24, ROUNDER_1, $7);
         DCT_8_INV_ROW1($4, 0, TAB_i_04, $8, $8);
@@ -309,14 +309,14 @@ void ff_mmi_idct(int16_t * block)
         DCT_8_INV_COL8_STORE($4);
 
         //let savedtemp regs be saved
-        asm volatile(" ":::"$16", "$17", "$18", "$19", "$20", "$21", "$22", "$23");
+        __asm__ volatile(" ":::"$16", "$17", "$18", "$19", "$20", "$21", "$22", "$23");
 }
 
 
 void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
         /* $4 = dest, $5 = line_size, $6 = block */
-        asm volatile("la $24, %0"::"m"(consttable[0]));
+        __asm__ volatile("la $24, %0"::"m"(consttable[0]));
         lq($24, ROUNDER_0, $8);
         lq($24, ROUNDER_1, $7);
         DCT_8_INV_ROW1($6, 0, TAB_i_04, $8, $8);
@@ -333,14 +333,14 @@ void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
         DCT_8_INV_COL8_PUT();
 
         //let savedtemp regs be saved
-        asm volatile(" ":::"$16", "$17", "$18", "$19", "$20", "$21", "$22", "$23");
+        __asm__ volatile(" ":::"$16", "$17", "$18", "$19", "$20", "$21", "$22", "$23");
 }
 
 
 void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
         /* $4 = dest, $5 = line_size, $6 = block */
-        asm volatile("la $24, %0"::"m"(consttable[0]));
+        __asm__ volatile("la $24, %0"::"m"(consttable[0]));
         lq($24, ROUNDER_0, $8);
         lq($24, ROUNDER_1, $7);
         DCT_8_INV_ROW1($6, 0, TAB_i_04, $8, $8);
@@ -357,6 +357,6 @@ void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
         DCT_8_INV_COL8_ADD();
 
         //let savedtemp regs be saved
-        asm volatile(" ":::"$16", "$17", "$18", "$19", "$20", "$21", "$22", "$23");
+        __asm__ volatile(" ":::"$16", "$17", "$18", "$19", "$20", "$21", "$22", "$23");
 }
 

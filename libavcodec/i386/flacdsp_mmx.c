@@ -28,7 +28,7 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
     int n2 = len>>1;
     x86_reg i = -n2*sizeof(int32_t);
     x86_reg j =  n2*sizeof(int32_t);
-    asm volatile(
+    __asm__ volatile(
         "movsd   %0,     %%xmm7                \n\t"
         "movapd  "MANGLE(ff_pd_1)", %%xmm6     \n\t"
         "movapd  "MANGLE(ff_pd_2)", %%xmm5     \n\t"
@@ -38,7 +38,7 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
         ::"m"(c)
     );
 #define WELCH(MOVPD, offset)\
-    asm volatile(\
+    __asm__ volatile(\
         "1:                                    \n\t"\
         "movapd   %%xmm7,  %%xmm1              \n\t"\
         "mulpd    %%xmm1,  %%xmm1              \n\t"\
@@ -84,7 +84,7 @@ void ff_flac_compute_autocorr_sse2(const int32_t *data, int len, int lag,
     for(j=0; j<lag; j+=2){
         x86_reg i = -len*sizeof(double);
         if(j == lag-2) {
-            asm volatile(
+            __asm__ volatile(
                 "movsd    "MANGLE(ff_pd_1)", %%xmm0 \n\t"
                 "movsd    "MANGLE(ff_pd_1)", %%xmm1 \n\t"
                 "movsd    "MANGLE(ff_pd_1)", %%xmm2 \n\t"
@@ -113,7 +113,7 @@ void ff_flac_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                 :"r"(data1+len), "r"(data1+len-j)
             );
         } else {
-            asm volatile(
+            __asm__ volatile(
                 "movsd    "MANGLE(ff_pd_1)", %%xmm0 \n\t"
                 "movsd    "MANGLE(ff_pd_1)", %%xmm1 \n\t"
                 "1:                                 \n\t"

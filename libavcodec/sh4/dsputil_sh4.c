@@ -28,7 +28,7 @@ static void memzero_align8(void *dst,size_t size)
 #if defined(__SH4__) || defined(__SH4_SINGLE__) || defined(__SH4_SINGLE_ONLY__)
         (char*)dst+=size;
         size/=8*4;
-        asm(
+        __asm__(
 #if defined(__SH4__)
         " fschg\n"  //single float mode
 #endif

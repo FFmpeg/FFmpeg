@@ -42,7 +42,7 @@
 static void vector_fmul_vfp(float *dst, const float *src, int len)
 {
     int tmp;
-    asm volatile(
+    __asm__ volatile(
         "fmrx       %[tmp], fpscr\n\t"
         "orr        %[tmp], %[tmp], #(3 << 16)\n\t" /* set vector size to 4 */
         "fmxr       fpscr, %[tmp]\n\t"
@@ -90,7 +90,7 @@ static void vector_fmul_vfp(float *dst, const float *src, int len)
 static void vector_fmul_reverse_vfp(float *dst, const float *src0, const float *src1, int len)
 {
     src1 += len;
-    asm volatile(
+    __asm__ volatile(
         "fldmdbs    %[src1]!, {s0-s3}\n\t"
         "fldmias    %[src0]!, {s8-s11}\n\t"
         "fldmdbs    %[src1]!, {s4-s7}\n\t"
@@ -149,7 +149,7 @@ static void vector_fmul_reverse_vfp(float *dst, const float *src0, const float *
  */
 void float_to_int16_vfp(int16_t *dst, const float *src, int len)
 {
-    asm volatile(
+    __asm__ volatile(
         "fldmias    %[src]!, {s16-s23}\n\t"
         "ftosis     s0, s16\n\t"
         "ftosis     s1, s17\n\t"

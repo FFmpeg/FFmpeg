@@ -70,28 +70,28 @@ DECLARE_ALIGNED_8 (const uint64_t, ff_pb_FC ) = 0xFCFCFCFCFCFCFCFCULL;
 DECLARE_ALIGNED_16(const double, ff_pd_1[2]) = { 1.0, 1.0 };
 DECLARE_ALIGNED_16(const double, ff_pd_2[2]) = { 2.0, 2.0 };
 
-#define JUMPALIGN() asm volatile (ASMALIGN(3)::)
-#define MOVQ_ZERO(regd)  asm volatile ("pxor %%" #regd ", %%" #regd ::)
+#define JUMPALIGN() __asm__ volatile (ASMALIGN(3)::)
+#define MOVQ_ZERO(regd)  __asm__ volatile ("pxor %%" #regd ", %%" #regd ::)
 
 #define MOVQ_BFE(regd) \
-    asm volatile ( \
+    __asm__ volatile ( \
     "pcmpeqd %%" #regd ", %%" #regd " \n\t"\
     "paddb %%" #regd ", %%" #regd " \n\t" ::)
 
 #ifndef PIC
-#define MOVQ_BONE(regd)  asm volatile ("movq %0, %%" #regd " \n\t" ::"m"(ff_bone))
-#define MOVQ_WTWO(regd)  asm volatile ("movq %0, %%" #regd " \n\t" ::"m"(ff_wtwo))
+#define MOVQ_BONE(regd)  __asm__ volatile ("movq %0, %%" #regd " \n\t" ::"m"(ff_bone))
+#define MOVQ_WTWO(regd)  __asm__ volatile ("movq %0, %%" #regd " \n\t" ::"m"(ff_wtwo))
 #else
 // for shared library it's better to use this way for accessing constants
 // pcmpeqd -> -1
 #define MOVQ_BONE(regd) \
-    asm volatile ( \
+    __asm__ volatile ( \
     "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
     "psrlw $15, %%" #regd " \n\t" \
     "packuswb %%" #regd ", %%" #regd " \n\t" ::)
 
 #define MOVQ_WTWO(regd) \
-    asm volatile ( \
+    __asm__ volatile ( \
     "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
     "psrlw $15, %%" #regd " \n\t" \
     "psllw $1, %%" #regd " \n\t"::)
@@ -223,7 +223,7 @@ void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
     p = block;
     pix = pixels;
     /* unrolled loop */
-        asm volatile(
+        __asm__ volatile(
                 "movq   %3, %%mm0               \n\t"
                 "movq   8%3, %%mm1              \n\t"
                 "movq   16%3, %%mm2             \n\t"
@@ -248,7 +248,7 @@ void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
     // if here would be an exact copy of the code above
     // compiler would generate some very strange code
     // thus using "r"
-    asm volatile(
+    __asm__ volatile(
             "movq       (%3), %%mm0             \n\t"
             "movq       8(%3), %%mm1            \n\t"
             "movq       16(%3), %%mm2           \n\t"
@@ -299,7 +299,7 @@ void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
     MOVQ_ZERO(mm7);
     i = 4;
     do {
-        asm volatile(
+        __asm__ volatile(
                 "movq   (%2), %%mm0     \n\t"
                 "movq   8(%2), %%mm1    \n\t"
                 "movq   16(%2), %%mm2   \n\t"
@@ -330,7 +330,7 @@ void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
 
 static void put_pixels4_mmx(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
          ASMALIGN(3)
          "1:                            \n\t"
@@ -356,7 +356,7 @@ static void put_pixels4_mmx(uint8_t *block, const uint8_t *pixels, int line_size
 
 static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
          ASMALIGN(3)
          "1:                            \n\t"
@@ -382,7 +382,7 @@ static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels, int line_size
 
 static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
          ASMALIGN(3)
          "1:                            \n\t"
@@ -416,7 +416,7 @@ static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels, int line_siz
 
 static void put_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
          "1:                            \n\t"
          "movdqu (%1), %%xmm0           \n\t"
          "movdqu (%1,%3), %%xmm1        \n\t"
@@ -438,7 +438,7 @@ static void put_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_si
 
 static void avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
          "1:                            \n\t"
          "movdqu (%1), %%xmm0           \n\t"
          "movdqu (%1,%3), %%xmm1        \n\t"
@@ -464,7 +464,7 @@ static void avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_si
 
 static void clear_blocks_mmx(DCTELEM *blocks)
 {
-    asm volatile(
+    __asm__ volatile(
                 "pxor %%mm7, %%mm7              \n\t"
                 "mov $-128*6, %%"REG_a"         \n\t"
                 "1:                             \n\t"
@@ -481,7 +481,7 @@ static void clear_blocks_mmx(DCTELEM *blocks)
 
 static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
     x86_reg i=0;
-    asm volatile(
+    __asm__ volatile(
         "jmp 2f                         \n\t"
         "1:                             \n\t"
         "movq  (%1, %0), %%mm0          \n\t"
@@ -505,7 +505,7 @@ static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
 
 static void add_bytes_l2_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
     x86_reg i=0;
-    asm volatile(
+    __asm__ volatile(
         "jmp 2f                         \n\t"
         "1:                             \n\t"
         "movq   (%2, %0), %%mm0         \n\t"
@@ -600,7 +600,7 @@ static void h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale){
     if(ENABLE_ANY_H263) {
     const int strength= ff_h263_loop_filter_strength[qscale];
 
-    asm volatile(
+    __asm__ volatile(
 
         H263_LOOP_FILTER
 
@@ -618,7 +618,7 @@ static void h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale){
 }
 
 static inline void transpose4x4(uint8_t *dst, uint8_t *src, int dst_stride, int src_stride){
-    asm volatile( //FIXME could save 1 instruction if done as 8x4 ...
+    __asm__ volatile( //FIXME could save 1 instruction if done as 8x4 ...
         "movd  %4, %%mm0                \n\t"
         "movd  %5, %%mm1                \n\t"
         "movd  %6, %%mm2                \n\t"
@@ -656,7 +656,7 @@ static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
 
     transpose4x4(btemp  , src           , 8, stride);
     transpose4x4(btemp+4, src + 4*stride, 8, stride);
-    asm volatile(
+    __asm__ volatile(
         H263_LOOP_FILTER // 5 3 4 6
 
         : "+m" (temp[0]),
@@ -666,7 +666,7 @@ static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
         : "g" (2*strength), "m"(ff_pb_FC)
     );
 
-    asm volatile(
+    __asm__ volatile(
         "movq %%mm5, %%mm1              \n\t"
         "movq %%mm4, %%mm0              \n\t"
         "punpcklbw %%mm3, %%mm5         \n\t"
@@ -711,7 +711,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
     ptr = buf;
     if(w==8)
     {
-        asm volatile(
+        __asm__ volatile(
                 "1:                             \n\t"
                 "movd (%0), %%mm0               \n\t"
                 "punpcklbw %%mm0, %%mm0         \n\t"
@@ -732,7 +732,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
     }
     else
     {
-        asm volatile(
+        __asm__ volatile(
                 "1:                             \n\t"
                 "movd (%0), %%mm0               \n\t"
                 "punpcklbw %%mm0, %%mm0         \n\t"
@@ -757,7 +757,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
     for(i=0;i<w;i+=4) {
         /* top and bottom (and hopefully also the corners) */
         ptr= buf - (i + 1) * wrap - w;
-        asm volatile(
+        __asm__ volatile(
                 "1:                             \n\t"
                 "movq (%1, %0), %%mm0           \n\t"
                 "movq %%mm0, (%0)               \n\t"
@@ -771,7 +771,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
                 : "r" ((x86_reg)buf - (x86_reg)ptr - w), "r" ((x86_reg)-wrap), "r" ((x86_reg)-wrap*3), "r" (ptr+width+2*w)
         );
         ptr= last_line + (i + 1) * wrap - w;
-        asm volatile(
+        __asm__ volatile(
                 "1:                             \n\t"
                 "movq (%1, %0), %%mm0           \n\t"
                 "movq %%mm0, (%0)               \n\t"
@@ -792,7 +792,7 @@ static void add_png_paeth_prediction_##cpu(uint8_t *dst, uint8_t *src, uint8_t *
 {\
     x86_reg i = -bpp;\
     x86_reg end = w-3;\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor      %%mm7, %%mm7 \n"\
         "movd    (%1,%0), %%mm0 \n"\
         "movd    (%2,%0), %%mm1 \n"\
@@ -886,7 +886,7 @@ PAETH(ssse3, ABS3_SSSE3)
 static void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
     uint64_t temp;\
 \
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%mm7, %%mm7                \n\t"\
         "1:                               \n\t"\
         "movq  (%0), %%mm0                \n\t" /* ABCDEFGH */\
@@ -1025,7 +1025,7 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass_3dnow(uint8_t *dst, uint8_t *src, i
         temp[13]= (src[13]+src[14])*20 - (src[12]+src[15])*6 + (src[11]+src[16])*3 - (src[10]+src[16]);\
         temp[14]= (src[14]+src[15])*20 - (src[13]+src[16])*6 + (src[12]+src[16])*3 - (src[11]+src[15]);\
         temp[15]= (src[15]+src[16])*20 - (src[14]+src[16])*6 + (src[13]+src[15])*3 - (src[12]+src[14]);\
-        asm volatile(\
+        __asm__ volatile(\
             "movq (%0), %%mm0               \n\t"\
             "movq 8(%0), %%mm1              \n\t"\
             "paddw %2, %%mm0                \n\t"\
@@ -1051,7 +1051,7 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass_3dnow(uint8_t *dst, uint8_t *src, i
 }\
 \
 static void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%mm7, %%mm7                \n\t"\
         "1:                               \n\t"\
         "movq  (%0), %%mm0                \n\t" /* ABCDEFGH */\
@@ -1128,7 +1128,7 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass_3dnow(uint8_t *dst, uint8_t *src, in
         temp[ 5]= (src[ 5]+src[ 6])*20 - (src[ 4]+src[ 7])*6 + (src[ 3]+src[ 8])*3 - (src[ 2]+src[ 8]);\
         temp[ 6]= (src[ 6]+src[ 7])*20 - (src[ 5]+src[ 8])*6 + (src[ 4]+src[ 8])*3 - (src[ 3]+src[ 7]);\
         temp[ 7]= (src[ 7]+src[ 8])*20 - (src[ 6]+src[ 8])*6 + (src[ 5]+src[ 7])*3 - (src[ 4]+src[ 6]);\
-        asm volatile(\
+        __asm__ volatile(\
             "movq (%0), %%mm0           \n\t"\
             "movq 8(%0), %%mm1          \n\t"\
             "paddw %2, %%mm0            \n\t"\
@@ -1153,7 +1153,7 @@ static void OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src,
     int count= 17;\
 \
     /*FIXME unroll */\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%mm7, %%mm7              \n\t"\
         "1:                             \n\t"\
         "movq (%0), %%mm0               \n\t"\
@@ -1181,7 +1181,7 @@ static void OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src,
     count=4;\
     \
 /*FIXME reorder for speed */\
-    asm volatile(\
+    __asm__ volatile(\
         /*"pxor %%mm7, %%mm7              \n\t"*/\
         "1:                             \n\t"\
         "movq (%0), %%mm0               \n\t"\
@@ -1231,7 +1231,7 @@ static void OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, 
     int count= 9;\
 \
     /*FIXME unroll */\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%mm7, %%mm7              \n\t"\
         "1:                             \n\t"\
         "movq (%0), %%mm0               \n\t"\
@@ -1253,7 +1253,7 @@ static void OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, 
     count=2;\
     \
 /*FIXME reorder for speed */\
-    asm volatile(\
+    __asm__ volatile(\
         /*"pxor %%mm7, %%mm7              \n\t"*/\
         "1:                             \n\t"\
         "movq (%0), %%mm0               \n\t"\
@@ -1620,7 +1620,7 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
         src = edge_buf;
     }
 
-    asm volatile(
+    __asm__ volatile(
         "movd         %0, %%mm6 \n\t"
         "pxor      %%mm7, %%mm7 \n\t"
         "punpcklwd %%mm6, %%mm6 \n\t"
@@ -1639,7 +1639,7 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
                             oys - dyys + dyxs*(x+3) };
 
         for(y=0; y<h; y++){
-            asm volatile(
+            __asm__ volatile(
                 "movq   %0,  %%mm4 \n\t"
                 "movq   %1,  %%mm5 \n\t"
                 "paddw  %2,  %%mm4 \n\t"
@@ -1652,7 +1652,7 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
                 : "m"(*dxy4), "m"(*dyy4)
             );
 
-            asm volatile(
+            __asm__ volatile(
                 "movq   %%mm6, %%mm2 \n\t"
                 "movq   %%mm6, %%mm1 \n\t"
                 "psubw  %%mm4, %%mm2 \n\t"
@@ -1701,7 +1701,7 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
 static void name(void *mem, int stride, int h){\
     const uint8_t *p= mem;\
     do{\
-        asm volatile(#op" %0" :: "m"(*p));\
+        __asm__ volatile(#op" %0" :: "m"(*p));\
         p+= stride;\
     }while(--h);\
 }
@@ -1787,9 +1787,9 @@ static void ff_idct_xvid_mmx2_add(uint8_t *dest, int line_size, DCTELEM *block)
 static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
 {
     int i;
-    asm volatile("pxor %%mm7, %%mm7":);
+    __asm__ volatile("pxor %%mm7, %%mm7":);
     for(i=0; i<blocksize; i+=2) {
-        asm volatile(
+        __asm__ volatile(
             "movq    %0,    %%mm0 \n\t"
             "movq    %1,    %%mm1 \n\t"
             "movq    %%mm0, %%mm2 \n\t"
@@ -1809,18 +1809,18 @@ static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
             ::"memory"
         );
     }
-    asm volatile("femms");
+    __asm__ volatile("femms");
 }
 static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
 {
     int i;
 
-    asm volatile(
+    __asm__ volatile(
             "movaps  %0,     %%xmm5 \n\t"
         ::"m"(ff_pdw_80000000[0])
     );
     for(i=0; i<blocksize; i+=4) {
-        asm volatile(
+        __asm__ volatile(
             "movaps  %0,     %%xmm0 \n\t"
             "movaps  %1,     %%xmm1 \n\t"
             "xorps   %%xmm2, %%xmm2 \n\t"
@@ -1846,7 +1846,7 @@ static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
 #define IF0(x)
 
 #define MIX5(mono,stereo)\
-    asm volatile(\
+    __asm__ volatile(\
         "movss          0(%2), %%xmm5 \n"\
         "movss          8(%2), %%xmm6 \n"\
         "movss         24(%2), %%xmm7 \n"\
@@ -1879,7 +1879,7 @@ static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
     );
 
 #define MIX_MISC(stereo)\
-    asm volatile(\
+    __asm__ volatile(\
         "1: \n"\
         "movaps  (%3,%0), %%xmm0 \n"\
  stereo("movaps   %%xmm0, %%xmm1 \n")\
@@ -1919,7 +1919,7 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2], int out_c
     } else {
         DECLARE_ALIGNED_16(float, matrix_simd[in_ch][2][4]);
         j = 2*in_ch*sizeof(float);
-        asm volatile(
+        __asm__ volatile(
             "1: \n"
             "sub $8, %0 \n"
             "movss     (%2,%0), %%xmm6 \n"
@@ -1943,7 +1943,7 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2], int out_c
 
 static void vector_fmul_3dnow(float *dst, const float *src, int len){
     x86_reg i = (len-4)*4;
-    asm volatile(
+    __asm__ volatile(
         "1: \n\t"
         "movq    (%1,%0), %%mm0 \n\t"
         "movq   8(%1,%0), %%mm1 \n\t"
@@ -1961,7 +1961,7 @@ static void vector_fmul_3dnow(float *dst, const float *src, int len){
 }
 static void vector_fmul_sse(float *dst, const float *src, int len){
     x86_reg i = (len-8)*4;
-    asm volatile(
+    __asm__ volatile(
         "1: \n\t"
         "movaps    (%1,%0), %%xmm0 \n\t"
         "movaps  16(%1,%0), %%xmm1 \n\t"
@@ -1979,7 +1979,7 @@ static void vector_fmul_sse(float *dst, const float *src, int len){
 
 static void vector_fmul_reverse_3dnow2(float *dst, const float *src0, const float *src1, int len){
     x86_reg i = len*4-16;
-    asm volatile(
+    __asm__ volatile(
         "1: \n\t"
         "pswapd   8(%1), %%mm0 \n\t"
         "pswapd    (%1), %%mm1 \n\t"
@@ -1993,11 +1993,11 @@ static void vector_fmul_reverse_3dnow2(float *dst, const float *src0, const floa
         :"+r"(i), "+r"(src1)
         :"r"(dst), "r"(src0)
     );
-    asm volatile("femms");
+    __asm__ volatile("femms");
 }
 static void vector_fmul_reverse_sse(float *dst, const float *src0, const float *src1, int len){
     x86_reg i = len*4-32;
-    asm volatile(
+    __asm__ volatile(
         "1: \n\t"
         "movaps        16(%1), %%xmm0 \n\t"
         "movaps          (%1), %%xmm1 \n\t"
@@ -2020,7 +2020,7 @@ static void vector_fmul_add_add_3dnow(float *dst, const float *src0, const float
     x86_reg i = (len-4)*4;
     if(step == 2 && src3 == 0){
         dst += (len-4)*2;
-        asm volatile(
+        __asm__ volatile(
             "1: \n\t"
             "movq   (%2,%0),  %%mm0 \n\t"
             "movq  8(%2,%0),  %%mm1 \n\t"
@@ -2043,7 +2043,7 @@ static void vector_fmul_add_add_3dnow(float *dst, const float *src0, const float
         );
     }
     else if(step == 1 && src3 == 0){
-        asm volatile(
+        __asm__ volatile(
             "1: \n\t"
             "movq    (%2,%0), %%mm0 \n\t"
             "movq   8(%2,%0), %%mm1 \n\t"
@@ -2062,14 +2062,14 @@ static void vector_fmul_add_add_3dnow(float *dst, const float *src0, const float
     }
     else
         ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
-    asm volatile("femms");
+    __asm__ volatile("femms");
 }
 static void vector_fmul_add_add_sse(float *dst, const float *src0, const float *src1,
                                     const float *src2, int src3, int len, int step){
     x86_reg i = (len-8)*4;
     if(step == 2 && src3 == 0){
         dst += (len-8)*2;
-        asm volatile(
+        __asm__ volatile(
             "1: \n\t"
             "movaps   (%2,%0), %%xmm0 \n\t"
             "movaps 16(%2,%0), %%xmm1 \n\t"
@@ -2100,7 +2100,7 @@ static void vector_fmul_add_add_sse(float *dst, const float *src0, const float *
         );
     }
     else if(step == 1 && src3 == 0){
-        asm volatile(
+        __asm__ volatile(
             "1: \n\t"
             "movaps   (%2,%0), %%xmm0 \n\t"
             "movaps 16(%2,%0), %%xmm1 \n\t"
@@ -2127,7 +2127,7 @@ static void vector_fmul_window_3dnow2(float *dst, const float *src0, const float
     if(add_bias == 0){
         x86_reg i = -len*4;
         x86_reg j = len*4-8;
-        asm volatile(
+        __asm__ volatile(
             "1: \n"
             "pswapd  (%5,%1), %%mm1 \n"
             "movq    (%5,%0), %%mm0 \n"
@@ -2162,7 +2162,7 @@ static void vector_fmul_window_sse(float *dst, const float *src0, const float *s
     if(add_bias == 0){
         x86_reg i = -len*4;
         x86_reg j = len*4-16;
-        asm volatile(
+        __asm__ volatile(
             "1: \n"
             "movaps       (%5,%1), %%xmm1 \n"
             "movaps       (%5,%0), %%xmm0 \n"
@@ -2195,7 +2195,7 @@ static void vector_fmul_window_sse(float *dst, const float *src0, const float *s
 static void int32_to_float_fmul_scalar_sse(float *dst, const int *src, float mul, int len)
 {
     x86_reg i = -4*len;
-    asm volatile(
+    __asm__ volatile(
         "movss  %3, %%xmm4 \n"
         "shufps $0, %%xmm4, %%xmm4 \n"
         "1: \n"
@@ -2219,7 +2219,7 @@ static void int32_to_float_fmul_scalar_sse(float *dst, const int *src, float mul
 static void int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mul, int len)
 {
     x86_reg i = -4*len;
-    asm volatile(
+    __asm__ volatile(
         "movss  %3, %%xmm4 \n"
         "shufps $0, %%xmm4, %%xmm4 \n"
         "1: \n"
@@ -2238,7 +2238,7 @@ static void int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mu
 
 static void float_to_int16_3dnow(int16_t *dst, const float *src, long len){
     // not bit-exact: pf2id uses different rounding than C and SSE
-    asm volatile(
+    __asm__ volatile(
         "add        %0          , %0        \n\t"
         "lea         (%2,%0,2)  , %2        \n\t"
         "add        %0          , %1        \n\t"
@@ -2259,7 +2259,7 @@ static void float_to_int16_3dnow(int16_t *dst, const float *src, long len){
     );
 }
 static void float_to_int16_sse(int16_t *dst, const float *src, long len){
-    asm volatile(
+    __asm__ volatile(
         "add        %0          , %0        \n\t"
         "lea         (%2,%0,2)  , %2        \n\t"
         "add        %0          , %1        \n\t"
@@ -2281,7 +2281,7 @@ static void float_to_int16_sse(int16_t *dst, const float *src, long len){
 }
 
 static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
-    asm volatile(
+    __asm__ volatile(
         "add        %0          , %0        \n\t"
         "lea         (%2,%0,2)  , %2        \n\t"
         "add        %0          , %1        \n\t"
@@ -2326,7 +2326,7 @@ static void float_to_int16_interleave_##cpu(int16_t *dst, const float **src, lon
     else if(channels==2){\
         const float *src0 = src[0];\
         const float *src1 = src[1];\
-        asm volatile(\
+        __asm__ volatile(\
             "shl $2, %0 \n"\
             "add %0, %1 \n"\
             "add %0, %2 \n"\
@@ -2412,7 +2412,7 @@ static void add_int16_sse2(int16_t * v1, int16_t * v2, int order)
     x86_reg o = -(order << 1);
     v1 += order;
     v2 += order;
-    asm volatile(
+    __asm__ volatile(
         "1:                          \n\t"
         "movdqu   (%1,%2),   %%xmm0  \n\t"
         "movdqu 16(%1,%2),   %%xmm1  \n\t"
@@ -2431,7 +2431,7 @@ static void sub_int16_sse2(int16_t * v1, int16_t * v2, int order)
     x86_reg o = -(order << 1);
     v1 += order;
     v2 += order;
-    asm volatile(
+    __asm__ volatile(
         "1:                           \n\t"
         "movdqa    (%0,%2),   %%xmm0  \n\t"
         "movdqa  16(%0,%2),   %%xmm2  \n\t"
@@ -2456,7 +2456,7 @@ static int32_t scalarproduct_int16_sse2(int16_t * v1, int16_t * v2, int order, i
     v1 += order;
     v2 += order;
     sh = shift;
-    asm volatile(
+    __asm__ volatile(
         "pxor      %%xmm7,  %%xmm7        \n\t"
         "1:                               \n\t"
         "movdqu    (%0,%3), %%xmm0        \n\t"

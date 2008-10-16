@@ -22,7 +22,7 @@
 #include "libavcodec/dsputil.h"
 
 #define DEF(x, y) x ## _no_rnd_ ## y ##_iwmmxt
-#define SET_RND(regd)  asm volatile ("mov r12, #1 \n\t tbcsth " #regd ", r12":::"r12");
+#define SET_RND(regd)  __asm__ volatile ("mov r12, #1 \n\t tbcsth " #regd ", r12":::"r12");
 #define WAVG2B "wavg2b"
 #include "dsputil_iwmmxt_rnd.h"
 #undef DEF
@@ -30,7 +30,7 @@
 #undef WAVG2B
 
 #define DEF(x, y) x ## _ ## y ##_iwmmxt
-#define SET_RND(regd)  asm volatile ("mov r12, #2 \n\t tbcsth " #regd ", r12":::"r12");
+#define SET_RND(regd)  __asm__ volatile ("mov r12, #2 \n\t tbcsth " #regd ", r12":::"r12");
 #define WAVG2B "wavg2br"
 #include "dsputil_iwmmxt_rnd.h"
 #undef DEF
@@ -39,7 +39,7 @@
 
 // need scheduling
 #define OP(AVG)                                         \
-    asm volatile (                                      \
+    __asm__ volatile (                                      \
         /* alignment */                                 \
         "and r12, %[pixels], #7 \n\t"                   \
         "bic %[pixels], %[pixels], #7 \n\t"             \
@@ -89,7 +89,7 @@ void add_pixels_clamped_iwmmxt(const DCTELEM *block, uint8_t *pixels, int line_s
 {
     uint8_t *pixels2 = pixels + line_size;
 
-    asm volatile (
+    __asm__ volatile (
         "mov            r12, #4                 \n\t"
         "1:                                     \n\t"
         "pld            [%[pixels], %[line_size2]]              \n\t"
@@ -125,7 +125,7 @@ void add_pixels_clamped_iwmmxt(const DCTELEM *block, uint8_t *pixels, int line_s
 
 static void clear_blocks_iwmmxt(DCTELEM *blocks)
 {
-    asm volatile(
+    __asm__ volatile(
                 "wzero wr0                      \n\t"
                 "mov r1, #(128 * 6 / 32)        \n\t"
                 "1:                             \n\t"

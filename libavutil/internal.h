@@ -130,7 +130,7 @@ extern const uint32_t ff_inverse[256];
 #    define FASTDIV(a,b) \
     ({\
         int ret,dmy;\
-        asm volatile(\
+        __asm__ volatile(\
             "mull %3"\
             :"=d"(ret),"=a"(dmy)\
             :"1"(a),"g"(ff_inverse[b])\
@@ -141,7 +141,7 @@ extern const uint32_t ff_inverse[256];
 static inline av_const int FASTDIV(int a, int b)
 {
     int r;
-    asm volatile("cmp   %2, #0        \n\t"
+    __asm__ volatile("cmp   %2, #0        \n\t"
                  "smmul %0, %1, %2    \n\t"
                  "rsblt %0, %0, #0    \n\t"
                  : "=r"(r) : "r"(a), "r"(ff_inverse[b]));
@@ -151,7 +151,7 @@ static inline av_const int FASTDIV(int a, int b)
 #    define FASTDIV(a,b) \
     ({\
         int ret,dmy;\
-        asm volatile(\
+        __asm__ volatile(\
             "umull %1, %0, %2, %3"\
             :"=&r"(ret),"=&r"(dmy)\
             :"r"(a),"r"(ff_inverse[b])\
@@ -190,7 +190,7 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
 
 #if defined(ARCH_X86)
 #define MASK_ABS(mask, level)\
-            asm volatile(\
+            __asm__ volatile(\
                 "cltd                   \n\t"\
                 "xorl %1, %0            \n\t"\
                 "subl %1, %0            \n\t"\
@@ -204,7 +204,7 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
 
 #ifdef HAVE_CMOV
 #define COPY3_IF_LT(x,y,a,b,c,d)\
-asm volatile (\
+__asm__ volatile (\
     "cmpl %0, %3        \n\t"\
     "cmovl %3, %0       \n\t"\
     "cmovl %4, %1       \n\t"\

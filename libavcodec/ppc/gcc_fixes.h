@@ -32,7 +32,7 @@
 #if (__GNUC__ < 4)
 # define REG_v(a)
 #else
-# define REG_v(a) asm ( #a )
+# define REG_v(a) __asm__ ( #a )
 #endif
 
 #if (__GNUC__ == 3 && __GNUC_MINOR__ < 3)

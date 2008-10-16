@@ -28,7 +28,7 @@
 
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index,eax,ebx,ecx,edx)\
-    asm volatile\
+    __asm__ volatile\
         ("mov %%"REG_b", %%"REG_S"\n\t"\
          "cpuid\n\t"\
          "xchg %%"REG_b", %%"REG_S\
@@ -44,7 +44,7 @@ int mm_support(void)
     int max_std_level, max_ext_level, std_caps=0, ext_caps=0;
     x86_reg a, c;
 
-    asm volatile (
+    __asm__ volatile (
         /* See if CPUID instruction is supported ... */
         /* ... Get copies of EFLAGS into eax and ecx */
         "pushf\n\t"

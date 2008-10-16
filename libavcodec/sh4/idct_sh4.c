@@ -54,7 +54,7 @@ static const float odd_table[] __attribute__ ((aligned(8))) = {
 #if defined(__SH4_SINGLE__) || defined(__SH4_SINGLE_ONLY__)
 
 #define         load_matrix(table) \
-        asm volatile( \
+        __asm__ volatile( \
         "       fschg\n" \
         "       fmov   @%0+,xd0\n" \
         "       fmov   @%0+,xd2\n" \
@@ -71,15 +71,15 @@ static const float odd_table[] __attribute__ ((aligned(8))) = {
         )
 
 #define         ftrv() \
-                asm volatile("ftrv xmtrx,fv0" \
+                __asm__ volatile("ftrv xmtrx,fv0" \
                 : "=f"(fr0),"=f"(fr1),"=f"(fr2),"=f"(fr3) \
                 :  "0"(fr0), "1"(fr1), "2"(fr2), "3"(fr3) );
 
 #define         DEFREG        \
-        register float fr0 asm("fr0"); \
-        register float fr1 asm("fr1"); \
-        register float fr2 asm("fr2"); \
-        register float fr3 asm("fr3")
+        register float fr0 __asm__("fr0"); \
+        register float fr1 __asm__("fr1"); \
+        register float fr2 __asm__("fr2"); \
+        register float fr3 __asm__("fr3")
 
 #else
 

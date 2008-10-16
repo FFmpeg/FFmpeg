@@ -57,14 +57,14 @@ DECLARE_ALIGNED_8 (static const uint64_t, ff_pb_7_3  ) = 0x0307030703070307ULL;
 static void ff_h264_idct_add_mmx(uint8_t *dst, int16_t *block, int stride)
 {
     /* Load dct coeffs */
-    asm volatile(
+    __asm__ volatile(
         "movq   (%0), %%mm0 \n\t"
         "movq  8(%0), %%mm1 \n\t"
         "movq 16(%0), %%mm2 \n\t"
         "movq 24(%0), %%mm3 \n\t"
     :: "r"(block) );
 
-    asm volatile(
+    __asm__ volatile(
         /* mm1=s02+s13  mm2=s02-s13  mm4=d02+d13  mm0=d02-d13 */
         IDCT4_1D( %%mm2, %%mm1, %%mm0, %%mm3, %%mm4 )
 
@@ -80,7 +80,7 @@ static void ff_h264_idct_add_mmx(uint8_t *dst, int16_t *block, int stride)
         "pxor %%mm7, %%mm7    \n\t"
     :: "m"(ff_pw_32));
 
-    asm volatile(
+    __asm__ volatile(
     STORE_DIFF_4P( %%mm0, %%mm1, %%mm7)
         "add %1, %0             \n\t"
     STORE_DIFF_4P( %%mm2, %%mm1, %%mm7)
@@ -95,7 +95,7 @@ static void ff_h264_idct_add_mmx(uint8_t *dst, int16_t *block, int stride)
 
 static inline void h264_idct8_1d(int16_t *block)
 {
-    asm volatile(
+    __asm__ volatile(
         "movq 112(%0), %%mm7  \n\t"
         "movq  80(%0), %%mm0  \n\t"
         "movq  48(%0), %%mm3  \n\t"
@@ -166,7 +166,7 @@ static void ff_h264_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
 
         h264_idct8_1d(block+4*i);
 
-        asm volatile(
+        __asm__ volatile(
             "movq   %%mm7,    %0   \n\t"
             TRANSPOSE4( %%mm0, %%mm2, %%mm4, %%mm6, %%mm7 )
             "movq   %%mm0,  8(%1)  \n\t"
@@ -188,7 +188,7 @@ static void ff_h264_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
     for(i=0; i<2; i++){
         h264_idct8_1d(b2+4*i);
 
-        asm volatile(
+        __asm__ volatile(
             "psraw     $6, %%mm7  \n\t"
             "psraw     $6, %%mm6  \n\t"
             "psraw     $6, %%mm5  \n\t"
@@ -269,7 +269,7 @@ static void ff_h264_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
 
 static void ff_h264_idct8_add_sse2(uint8_t *dst, int16_t *block, int stride)
 {
-    asm volatile(
+    __asm__ volatile(
         "movdqa   0x10(%1), %%xmm1 \n"
         "movdqa   0x20(%1), %%xmm2 \n"
         "movdqa   0x30(%1), %%xmm3 \n"
@@ -304,7 +304,7 @@ static void ff_h264_idct8_add_sse2(uint8_t *dst, int16_t *block, int stride)
 static void ff_h264_idct_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
 {
     int dc = (block[0] + 32) >> 6;
-    asm volatile(
+    __asm__ volatile(
         "movd          %0, %%mm0 \n\t"
         "pshufw $0, %%mm0, %%mm0 \n\t"
         "pxor       %%mm1, %%mm1 \n\t"
@@ -313,7 +313,7 @@ static void ff_h264_idct_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
         "packuswb   %%mm1, %%mm1 \n\t"
         ::"r"(dc)
     );
-    asm volatile(
+    __asm__ volatile(
         "movd          %0, %%mm2 \n\t"
         "movd          %1, %%mm3 \n\t"
         "movd          %2, %%mm4 \n\t"
@@ -341,7 +341,7 @@ static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
 {
     int dc = (block[0] + 32) >> 6;
     int y;
-    asm volatile(
+    __asm__ volatile(
         "movd          %0, %%mm0 \n\t"
         "pshufw $0, %%mm0, %%mm0 \n\t"
         "pxor       %%mm1, %%mm1 \n\t"
@@ -351,7 +351,7 @@ static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
         ::"r"(dc)
     );
     for(y=2; y--; dst += 4*stride){
-    asm volatile(
+    __asm__ volatile(
         "movq          %0, %%mm2 \n\t"
         "movq          %1, %%mm3 \n\t"
         "movq          %2, %%mm4 \n\t"
@@ -463,7 +463,7 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
 {
     DECLARE_ALIGNED_8(uint64_t, tmp0[2]);
 
-    asm volatile(
+    __asm__ volatile(
         "movq    (%1,%3), %%mm0    \n\t" //p1
         "movq    (%1,%3,2), %%mm1  \n\t" //p0
         "movq    (%2),    %%mm2    \n\t" //q0
@@ -540,7 +540,7 @@ static void h264_h_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alpha, in
 
 static inline void h264_loop_filter_chroma_mmx2(uint8_t *pix, int stride, int alpha1, int beta1, int8_t *tc0)
 {
-    asm volatile(
+    __asm__ volatile(
         "movq    (%0),    %%mm0     \n\t" //p1
         "movq    (%0,%2), %%mm1     \n\t" //p0
         "movq    (%1),    %%mm2     \n\t" //q0
@@ -586,7 +586,7 @@ static void h264_h_loop_filter_chroma_mmx2(uint8_t *pix, int stride, int alpha, 
 
 static inline void h264_loop_filter_chroma_intra_mmx2(uint8_t *pix, int stride, int alpha1, int beta1)
 {
-    asm volatile(
+    __asm__ volatile(
         "movq    (%0),    %%mm0     \n\t"
         "movq    (%0,%2), %%mm1     \n\t"
         "movq    (%1),    %%mm2     \n\t"
@@ -628,7 +628,7 @@ static void h264_h_loop_filter_chroma_intra_mmx2(uint8_t *pix, int stride, int a
 static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40], int8_t ref[2][40], int16_t mv[2][40][2],
                                             int bidir, int edges, int step, int mask_mv0, int mask_mv1, int field ) {
     int dir;
-    asm volatile(
+    __asm__ volatile(
         "pxor %%mm7, %%mm7 \n\t"
         "movq %0, %%mm6 \n\t"
         "movq %1, %%mm5 \n\t"
@@ -636,7 +636,7 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
         ::"m"(ff_pb_1), "m"(ff_pb_3), "m"(ff_pb_7)
     );
     if(field)
-        asm volatile(
+        __asm__ volatile(
             "movq %0, %%mm5 \n\t"
             "movq %1, %%mm4 \n\t"
             ::"m"(ff_pb_3_1), "m"(ff_pb_7_3)
@@ -650,14 +650,14 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
         DECLARE_ALIGNED_8(const uint64_t, mask_dir) = dir ? 0 : 0xffffffffffffffffULL;
         int b_idx, edge, l;
         for( b_idx=12, edge=0; edge<edges; edge+=step, b_idx+=8*step ) {
-            asm volatile(
+            __asm__ volatile(
                 "pand %0, %%mm0 \n\t"
                 ::"m"(mask_dir)
             );
             if(!(mask_mv & edge)) {
-                asm volatile("pxor %%mm0, %%mm0 \n\t":);
+                __asm__ volatile("pxor %%mm0, %%mm0 \n\t":);
                 for( l = bidir; l >= 0; l-- ) {
-                    asm volatile(
+                    __asm__ volatile(
                         "movd %0, %%mm1 \n\t"
                         "punpckldq %1, %%mm1 \n\t"
                         "movq %%mm1, %%mm2 \n\t"
@@ -688,7 +688,7 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                     );
                 }
             }
-            asm volatile(
+            __asm__ volatile(
                 "movd %0, %%mm1 \n\t"
                 "por  %1, %%mm1 \n\t"
                 "punpcklbw %%mm7, %%mm1 \n\t"
@@ -696,7 +696,7 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                 ::"m"(nnz[b_idx]),
                   "m"(nnz[b_idx+d_idx])
             );
-            asm volatile(
+            __asm__ volatile(
                 "pcmpeqw %%mm7, %%mm0 \n\t"
                 "pcmpeqw %%mm7, %%mm0 \n\t"
                 "psrlw $15, %%mm0 \n\t" // nonzero -> 1
@@ -713,7 +713,7 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
         edges = 4;
         step = 1;
     }
-    asm volatile(
+    __asm__ volatile(
         "movq   (%0), %%mm0 \n\t"
         "movq  8(%0), %%mm1 \n\t"
         "movq 16(%0), %%mm2 \n\t"
@@ -774,7 +774,7 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
 static av_noinline void OPNAME ## h264_qpel4_h_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     int h=4;\
 \
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
         "movq %5, %%mm4             \n\t"\
         "movq %6, %%mm5             \n\t"\
@@ -813,14 +813,14 @@ static av_noinline void OPNAME ## h264_qpel4_h_lowpass_ ## MMX(uint8_t *dst, uin
 }\
 static av_noinline void OPNAME ## h264_qpel4_h_lowpass_l2_ ## MMX(uint8_t *dst, uint8_t *src, uint8_t *src2, int dstStride, int src2Stride){\
     int h=4;\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
         "movq %0, %%mm4             \n\t"\
         "movq %1, %%mm5             \n\t"\
         :: "m"(ff_pw_5), "m"(ff_pw_16)\
     );\
     do{\
-    asm volatile(\
+    __asm__ volatile(\
         "movd  -1(%0), %%mm1        \n\t"\
         "movd    (%0), %%mm2        \n\t"\
         "movd   1(%0), %%mm3        \n\t"\
@@ -857,7 +857,7 @@ static av_noinline void OPNAME ## h264_qpel4_h_lowpass_l2_ ## MMX(uint8_t *dst, 
 }\
 static av_noinline void OPNAME ## h264_qpel4_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     src -= 2*srcStride;\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
         "movd (%0), %%mm0           \n\t"\
         "add %2, %0                 \n\t"\
@@ -889,7 +889,7 @@ static av_noinline void OPNAME ## h264_qpel4_hv_lowpass_ ## MMX(uint8_t *dst, in
     int w=3;\
     src -= 2*srcStride+2;\
     while(w--){\
-        asm volatile(\
+        __asm__ volatile(\
             "pxor %%mm7, %%mm7      \n\t"\
             "movd (%0), %%mm0       \n\t"\
             "add %2, %0             \n\t"\
@@ -919,7 +919,7 @@ static av_noinline void OPNAME ## h264_qpel4_hv_lowpass_ ## MMX(uint8_t *dst, in
         src += 4 - 9*srcStride;\
     }\
     tmp -= 3*4;\
-    asm volatile(\
+    __asm__ volatile(\
         "1:                         \n\t"\
         "movq     (%0), %%mm0       \n\t"\
         "paddw  10(%0), %%mm0       \n\t"\
@@ -948,7 +948,7 @@ static av_noinline void OPNAME ## h264_qpel4_hv_lowpass_ ## MMX(uint8_t *dst, in
 \
 static av_noinline void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     int h=8;\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
         "movq %5, %%mm6             \n\t"\
         "1:                         \n\t"\
@@ -1005,13 +1005,13 @@ static av_noinline void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uin
 \
 static av_noinline void OPNAME ## h264_qpel8_h_lowpass_l2_ ## MMX(uint8_t *dst, uint8_t *src, uint8_t *src2, int dstStride, int src2Stride){\
     int h=8;\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
         "movq %0, %%mm6             \n\t"\
         :: "m"(ff_pw_5)\
     );\
     do{\
-    asm volatile(\
+    __asm__ volatile(\
         "movq    (%0), %%mm0        \n\t"\
         "movq   1(%0), %%mm2        \n\t"\
         "movq %%mm0, %%mm1          \n\t"\
@@ -1071,7 +1071,7 @@ static av_noinline void OPNAME ## h264_qpel8or16_v_lowpass_ ## MMX(uint8_t *dst,
     src -= 2*srcStride;\
     \
     while(w--){\
-      asm volatile(\
+      __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
         "movd (%0), %%mm0           \n\t"\
         "add %2, %0                 \n\t"\
@@ -1102,7 +1102,7 @@ static av_noinline void OPNAME ## h264_qpel8or16_v_lowpass_ ## MMX(uint8_t *dst,
         : "memory"\
      );\
      if(h==16){\
-        asm volatile(\
+        __asm__ volatile(\
             QPEL_H264V(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP)\
             QPEL_H264V(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP)\
             QPEL_H264V(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP)\
@@ -1125,7 +1125,7 @@ static av_always_inline void OPNAME ## h264_qpel8or16_hv1_lowpass_ ## MMX(int16_
     int w = (size+8)>>2;\
     src -= 2*srcStride+2;\
     while(w--){\
-        asm volatile(\
+        __asm__ volatile(\
             "pxor %%mm7, %%mm7      \n\t"\
             "movd (%0), %%mm0       \n\t"\
             "add %2, %0             \n\t"\
@@ -1155,7 +1155,7 @@ static av_always_inline void OPNAME ## h264_qpel8or16_hv1_lowpass_ ## MMX(int16_
             : "memory"\
         );\
         if(size==16){\
-            asm volatile(\
+            __asm__ volatile(\
                 QPEL_H264HV(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1,  8*48)\
                 QPEL_H264HV(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2,  9*48)\
                 QPEL_H264HV(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, 10*48)\
@@ -1177,7 +1177,7 @@ static av_always_inline void OPNAME ## h264_qpel8or16_hv2_lowpass_ ## MMX(uint8_
     int w = size>>4;\
     do{\
     int h = size;\
-    asm volatile(\
+    __asm__ volatile(\
         "1:                         \n\t"\
         "movq     (%0), %%mm0       \n\t"\
         "movq    8(%0), %%mm3       \n\t"\
@@ -1261,7 +1261,7 @@ static void OPNAME ## h264_qpel16_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp,
 \
 static av_noinline void OPNAME ## pixels4_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, uint8_t *src8, int dstStride, int src8Stride, int h)\
 {\
-    asm volatile(\
+    __asm__ volatile(\
         "movq      (%1), %%mm0          \n\t"\
         "movq    24(%1), %%mm1          \n\t"\
         "psraw      $5,  %%mm0          \n\t"\
@@ -1291,7 +1291,7 @@ static av_noinline void OPNAME ## pixels4_l2_shift5_ ## MMX(uint8_t *dst, int16_
 static av_noinline void OPNAME ## pixels8_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, uint8_t *src8, int dstStride, int src8Stride, int h)\
 {\
     do{\
-    asm volatile(\
+    __asm__ volatile(\
         "movq      (%1), %%mm0          \n\t"\
         "movq     8(%1), %%mm1          \n\t"\
         "movq    48(%1), %%mm2          \n\t"\
@@ -1325,7 +1325,7 @@ static void OPNAME ## pixels16_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, u
 #define QPEL_H264_H16_XMM(OPNAME, OP, MMX)\
 static av_noinline void OPNAME ## h264_qpel16_h_lowpass_l2_ ## MMX(uint8_t *dst, uint8_t *src, uint8_t *src2, int dstStride, int src2Stride){\
     int h=16;\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%xmm15, %%xmm15      \n\t"\
         "movdqa %6, %%xmm14         \n\t"\
         "movdqa %7, %%xmm13         \n\t"\
@@ -1403,13 +1403,13 @@ static av_noinline void OPNAME ## h264_qpel16_h_lowpass_l2_ ## MMX(uint8_t *dst,
 #define QPEL_H264_H_XMM(OPNAME, OP, MMX)\
 static av_noinline void OPNAME ## h264_qpel8_h_lowpass_l2_ ## MMX(uint8_t *dst, uint8_t *src, uint8_t *src2, int dstStride, int src2Stride){\
     int h=8;\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%xmm7, %%xmm7        \n\t"\
         "movdqa %0, %%xmm6          \n\t"\
         :: "m"(ff_pw_5)\
     );\
     do{\
-    asm volatile(\
+    __asm__ volatile(\
         "lddqu   -5(%0), %%xmm1     \n\t"\
         "movdqa  %%xmm1, %%xmm0     \n\t"\
         "punpckhbw %%xmm7, %%xmm1   \n\t"\
@@ -1450,7 +1450,7 @@ QPEL_H264_H16_XMM(OPNAME, OP, MMX)\
 \
 static av_noinline void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     int h=8;\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%xmm7, %%xmm7        \n\t"\
         "movdqa %5, %%xmm6          \n\t"\
         "1:                         \n\t"\
@@ -1501,7 +1501,7 @@ static void OPNAME ## h264_qpel16_h_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, 
 static av_noinline void OPNAME ## h264_qpel8or16_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
     src -= 2*srcStride;\
     \
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%xmm7, %%xmm7        \n\t"\
         "movq (%0), %%xmm0          \n\t"\
         "add %2, %0                 \n\t"\
@@ -1532,7 +1532,7 @@ static av_noinline void OPNAME ## h264_qpel8or16_v_lowpass_ ## MMX(uint8_t *dst,
         : "memory"\
     );\
     if(h==16){\
-        asm volatile(\
+        __asm__ volatile(\
             QPEL_H264V_XMM(%%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm0, %%xmm1, OP)\
             QPEL_H264V_XMM(%%xmm3, %%xmm4, %%xmm5, %%xmm0, %%xmm1, %%xmm2, OP)\
             QPEL_H264V_XMM(%%xmm4, %%xmm5, %%xmm0, %%xmm1, %%xmm2, %%xmm3, OP)\
@@ -1560,7 +1560,7 @@ static av_always_inline void put_h264_qpel8or16_hv1_lowpass_sse2(int16_t *tmp, u
     int w = (size+8)>>3;
     src -= 2*srcStride+2;
     while(w--){
-        asm volatile(
+        __asm__ volatile(
             "pxor %%xmm7, %%xmm7        \n\t"
             "movq (%0), %%xmm0          \n\t"
             "add %2, %0                 \n\t"
@@ -1590,7 +1590,7 @@ static av_always_inline void put_h264_qpel8or16_hv1_lowpass_sse2(int16_t *tmp, u
             : "memory"
         );
         if(size==16){
-            asm volatile(
+            __asm__ volatile(
                 QPEL_H264HV_XMM(%%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm0, %%xmm1,  8*48)
                 QPEL_H264HV_XMM(%%xmm3, %%xmm4, %%xmm5, %%xmm0, %%xmm1, %%xmm2,  9*48)
                 QPEL_H264HV_XMM(%%xmm4, %%xmm5, %%xmm0, %%xmm1, %%xmm2, %%xmm3, 10*48)
@@ -1613,7 +1613,7 @@ static av_always_inline void put_h264_qpel8or16_hv1_lowpass_sse2(int16_t *tmp, u
 static av_always_inline void OPNAME ## h264_qpel8or16_hv2_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, int dstStride, int tmpStride, int size){\
     int h = size;\
     if(size == 16){\
-        asm volatile(\
+        __asm__ volatile(\
             "1:                         \n\t"\
             "movdqa 32(%0), %%xmm4      \n\t"\
             "movdqa 16(%0), %%xmm5      \n\t"\
@@ -1668,7 +1668,7 @@ static av_always_inline void OPNAME ## h264_qpel8or16_hv2_lowpass_ ## MMX(uint8_
             : "memory"\
         );\
     }else{\
-        asm volatile(\
+        __asm__ volatile(\
             "1:                         \n\t"\
             "movdqa 16(%0), %%xmm1      \n\t"\
             "movdqa   (%0), %%xmm0      \n\t"\
@@ -2022,7 +2022,7 @@ static inline void ff_h264_weight_WxH_mmx2(uint8_t *dst, int stride, int log2_de
     int x, y;
     offset <<= log2_denom;
     offset += (1 << log2_denom) >> 1;
-    asm volatile(
+    __asm__ volatile(
         "movd    %0, %%mm4        \n\t"
         "movd    %1, %%mm5        \n\t"
         "movd    %2, %%mm6        \n\t"
@@ -2033,7 +2033,7 @@ static inline void ff_h264_weight_WxH_mmx2(uint8_t *dst, int stride, int log2_de
     );
     for(y=0; y<h; y+=2){
         for(x=0; x<w; x+=4){
-            asm volatile(
+            __asm__ volatile(
                 "movd      %0,    %%mm0 \n\t"
                 "movd      %1,    %%mm1 \n\t"
                 "punpcklbw %%mm7, %%mm0 \n\t"
@@ -2060,7 +2060,7 @@ static inline void ff_h264_biweight_WxH_mmx2(uint8_t *dst, uint8_t *src, int str
 {
     int x, y;
     offset = ((offset + 1) | 1) << log2_denom;
-    asm volatile(
+    __asm__ volatile(
         "movd    %0, %%mm3        \n\t"
         "movd    %1, %%mm4        \n\t"
         "movd    %2, %%mm5        \n\t"
@@ -2073,7 +2073,7 @@ static inline void ff_h264_biweight_WxH_mmx2(uint8_t *dst, uint8_t *src, int str
     );
     for(y=0; y<h; y++){
         for(x=0; x<w; x+=4){
-            asm volatile(
+            __asm__ volatile(
                 "movd      %0,    %%mm0 \n\t"
                 "movd      %1,    %%mm1 \n\t"
                 "punpcklbw %%mm7, %%mm0 \n\t"

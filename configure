@@ -448,7 +448,7 @@ check_asm(){
     asm="$2"
     shift 2
     check_cc "$@" <<EOF && enable $name || disable $name
-int foo(void){ asm volatile($asm); }
+int foo(void){ __asm__ volatile($asm); }
 EOF
 }
 
@@ -1574,7 +1574,7 @@ if enabled x86; then
     # base pointer is cleared in the inline assembly code.
     check_exec_crash <<EOF && enable ebp_available
     volatile int i=0;
-    asm volatile (
+    __asm__ volatile (
         "xorl %%ebp, %%ebp"
     ::: "%ebp");
     return i;
@@ -1934,7 +1934,7 @@ VHOOKCFLAGS="-fPIC"
 # Find out if the .align argument is a power of two or not.
 if test $asmalign_pot = "unknown"; then
     disable asmalign_pot
-    echo 'asm (".align 3");' | check_cc && enable asmalign_pot
+    echo '__asm__ (".align 3");' | check_cc && enable asmalign_pot
 fi
 
 enabled_any $DECODER_LIST      && enable decoders

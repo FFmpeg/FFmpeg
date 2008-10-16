@@ -30,7 +30,7 @@
 
 static void get_pixels_mmx(DCTELEM *block, const uint8_t *pixels, int line_size)
 {
-    asm volatile(
+    __asm__ volatile(
         "mov $-128, %%"REG_a"           \n\t"
         "pxor %%mm7, %%mm7              \n\t"
         ASMALIGN(4)
@@ -58,7 +58,7 @@ static void get_pixels_mmx(DCTELEM *block, const uint8_t *pixels, int line_size)
 
 static void get_pixels_sse2(DCTELEM *block, const uint8_t *pixels, int line_size)
 {
-    asm volatile(
+    __asm__ volatile(
         "pxor %%xmm7,      %%xmm7         \n\t"
         "movq (%0),        %%xmm0         \n\t"
         "movq (%0, %2),    %%xmm1         \n\t"
@@ -92,7 +92,7 @@ static void get_pixels_sse2(DCTELEM *block, const uint8_t *pixels, int line_size
 
 static inline void diff_pixels_mmx(DCTELEM *block, const uint8_t *s1, const uint8_t *s2, int stride)
 {
-    asm volatile(
+    __asm__ volatile(
         "pxor %%mm7, %%mm7              \n\t"
         "mov $-128, %%"REG_a"           \n\t"
         ASMALIGN(4)
@@ -124,7 +124,7 @@ static int pix_sum16_mmx(uint8_t * pix, int line_size){
     int sum;
     x86_reg index= -line_size*h;
 
-    asm volatile(
+    __asm__ volatile(
                 "pxor %%mm7, %%mm7              \n\t"
                 "pxor %%mm6, %%mm6              \n\t"
                 "1:                             \n\t"
@@ -159,7 +159,7 @@ static int pix_sum16_mmx(uint8_t * pix, int line_size){
 
 static int pix_norm1_mmx(uint8_t *pix, int line_size) {
     int tmp;
-  asm volatile (
+  __asm__ volatile (
       "movl $16,%%ecx\n"
       "pxor %%mm0,%%mm0\n"
       "pxor %%mm7,%%mm7\n"
@@ -202,7 +202,7 @@ static int pix_norm1_mmx(uint8_t *pix, int line_size) {
 
 static int sse8_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
     int tmp;
-  asm volatile (
+  __asm__ volatile (
       "movl %4,%%ecx\n"
       "shr $1,%%ecx\n"
       "pxor %%mm0,%%mm0\n"      /* mm0 = 0 */
@@ -263,7 +263,7 @@ static int sse8_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int 
 
 static int sse16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
     int tmp;
-  asm volatile (
+  __asm__ volatile (
       "movl %4,%%ecx\n"
       "pxor %%mm0,%%mm0\n"      /* mm0 = 0 */
       "pxor %%mm7,%%mm7\n"      /* mm7 holds the sum */
@@ -323,7 +323,7 @@ static int sse16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int
 
 static int sse16_sse2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
     int tmp;
-  asm volatile (
+  __asm__ volatile (
       "shr $1,%2\n"
       "pxor %%xmm0,%%xmm0\n"    /* mm0 = 0 */
       "pxor %%xmm7,%%xmm7\n"    /* mm7 holds the sum */
@@ -385,7 +385,7 @@ static int sse16_sse2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
 
 static int hf_noise8_mmx(uint8_t * pix1, int line_size, int h) {
     int tmp;
-  asm volatile (
+  __asm__ volatile (
       "movl %3,%%ecx\n"
       "pxor %%mm7,%%mm7\n"
       "pxor %%mm6,%%mm6\n"
@@ -511,7 +511,7 @@ static int hf_noise8_mmx(uint8_t * pix1, int line_size, int h) {
 static int hf_noise16_mmx(uint8_t * pix1, int line_size, int h) {
     int tmp;
     uint8_t * pix= pix1;
-  asm volatile (
+  __asm__ volatile (
       "movl %3,%%ecx\n"
       "pxor %%mm7,%%mm7\n"
       "pxor %%mm6,%%mm6\n"
@@ -673,7 +673,7 @@ static int vsad_intra16_mmx(void *v, uint8_t * pix, uint8_t * dummy, int line_si
       "paddw " #in0 ", %%mm6\n"
 
 
-  asm volatile (
+  __asm__ volatile (
       "movl %3,%%ecx\n"
       "pxor %%mm6,%%mm6\n"
       "pxor %%mm7,%%mm7\n"
@@ -719,7 +719,7 @@ static int vsad_intra16_mmx2(void *v, uint8_t * pix, uint8_t * dummy, int line_s
       "paddw " #in1 ", " #in0 "\n"\
       "paddw " #in0 ", %%mm6\n"
 
-  asm volatile (
+  __asm__ volatile (
       "movl %3,%%ecx\n"
       "pxor %%mm6,%%mm6\n"
       "pxor %%mm7,%%mm7\n"
@@ -782,7 +782,7 @@ static int vsad16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
       "paddw " #in0 ", %%mm6\n"
 
 
-  asm volatile (
+  __asm__ volatile (
       "movl %4,%%ecx\n"
       "pxor %%mm6,%%mm6\n"
       "pcmpeqw %%mm7,%%mm7\n"
@@ -845,7 +845,7 @@ static int vsad16_mmx2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, i
       "paddw " #in1 ", " #in0 "\n"\
       "paddw " #in0 ", %%mm6\n"
 
-  asm volatile (
+  __asm__ volatile (
       "movl %4,%%ecx\n"
       "pxor %%mm6,%%mm6\n"
       "pcmpeqw %%mm7,%%mm7\n"
@@ -881,7 +881,7 @@ static int vsad16_mmx2(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, i
 
 static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
     x86_reg i=0;
-    asm volatile(
+    __asm__ volatile(
         "1:                             \n\t"
         "movq  (%2, %0), %%mm0          \n\t"
         "movq  (%1, %0), %%mm1          \n\t"
@@ -905,7 +905,7 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
     x86_reg i=0;
     uint8_t l, lt;
 
-    asm volatile(
+    __asm__ volatile(
         "1:                             \n\t"
         "movq  -1(%1, %0), %%mm0        \n\t" // LT
         "movq  (%1, %0), %%mm1          \n\t" // T
@@ -946,7 +946,7 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
 
 #define DIFF_PIXELS_8(m0,m1,mm,p1,p2,stride,temp) {\
     uint8_t *p1b=p1, *p2b=p2;\
-    asm volatile(\
+    __asm__ volatile(\
         DIFF_PIXELS_1(m0, mm##0, mm##7, (%1), (%2))\
         DIFF_PIXELS_1(m0, mm##1, mm##7, (%1,%3), (%2,%3))\
         DIFF_PIXELS_1(m0, mm##2, mm##7, (%1,%3,2), (%2,%3,2))\
@@ -1069,7 +1069,7 @@ static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int strid
 \
     DIFF_PIXELS_4x8(src1, src2, stride, temp[0]);\
 \
-    asm volatile(\
+    __asm__ volatile(\
         HADAMARD48\
 \
         "movq %%mm7, 96(%1)             \n\t"\
@@ -1087,7 +1087,7 @@ static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int strid
 \
     DIFF_PIXELS_4x8(src1+4, src2+4, stride, temp[4]);\
 \
-    asm volatile(\
+    __asm__ volatile(\
         HADAMARD48\
 \
         "movq %%mm7, 96(%1)             \n\t"\
@@ -1152,7 +1152,7 @@ static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int strid
 \
     DIFF_PIXELS_8x8(src1, src2, stride, temp[0]);\
 \
-    asm volatile(\
+    __asm__ volatile(\
         HADAMARD8(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7)\
         TRANSPOSE8(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7, (%1))\
         HADAMARD8(%%xmm0, %%xmm5, %%xmm7, %%xmm3, %%xmm6, %%xmm4, %%xmm2, %%xmm1)\
@@ -1219,7 +1219,7 @@ HADAMARD8_DIFF_SSE2(ssse3)
 #define DCT_SAD_FUNC(cpu) \
 static int sum_abs_dctelem_##cpu(DCTELEM *block){\
     int sum;\
-    asm volatile(\
+    __asm__ volatile(\
         DCT_SAD\
         :"=r"(sum)\
         :"r"(block)\
@@ -1256,7 +1256,7 @@ DCT_SAD_FUNC(ssse3)
 static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int size){
     int sum;
     x86_reg i=size;
-    asm volatile(
+    __asm__ volatile(
         "pxor %%mm4, %%mm4 \n"
         "1: \n"
         "sub $8, %0 \n"

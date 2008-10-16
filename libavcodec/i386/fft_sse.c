@@ -36,7 +36,7 @@ void ff_fft_calc_sse(FFTContext *s, FFTComplex *z)
 
     if(n <= 16) {
         x86_reg i = -8*n;
-        asm volatile(
+        __asm__ volatile(
             "1: \n"
             "movaps     (%0,%1), %%xmm0 \n"
             "movaps      %%xmm0, %%xmm1 \n"
@@ -58,7 +58,7 @@ void ff_fft_permute_sse(FFTContext *s, FFTComplex *z)
     int n = 1 << s->nbits;
     int i;
     for(i=0; i<n; i+=2) {
-        asm volatile(
+        __asm__ volatile(
             "movaps %2, %%xmm0 \n"
             "movlps %%xmm0, %0 \n"
             "movhps %%xmm0, %1 \n"
@@ -84,7 +84,7 @@ void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input
 
     /* pre rotation */
     for(k=n8-2; k>=0; k-=2) {
-        asm volatile(
+        __asm__ volatile(
             "movaps     (%2,%1,2), %%xmm0 \n" // { z[k].re,    z[k].im,    z[k+1].re,  z[k+1].im  }
             "movaps  -16(%2,%0,2), %%xmm1 \n" // { z[-k-2].re, z[-k-2].im, z[-k-1].re, z[-k-1].im }
             "movaps        %%xmm0, %%xmm2 \n"
@@ -111,7 +111,7 @@ void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input
 #ifdef ARCH_X86_64
         // if we have enough regs, don't let gcc make the luts latency-bound
         // but if not, latency is faster than spilling
-        asm("movlps %%xmm0, %0 \n"
+        __asm__("movlps %%xmm0, %0 \n"
             "movhps %%xmm0, %1 \n"
             "movlps %%xmm1, %2 \n"
             "movhps %%xmm1, %3 \n"
@@ -121,10 +121,10 @@ void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input
              "=m"(z[revtab[ k+1]])
         );
 #else
-        asm("movlps %%xmm0, %0" :"=m"(z[revtab[-k-2]]));
-        asm("movhps %%xmm0, %0" :"=m"(z[revtab[-k-1]]));
-        asm("movlps %%xmm1, %0" :"=m"(z[revtab[ k  ]]));
-        asm("movhps %%xmm1, %0" :"=m"(z[revtab[ k+1]]));
+        __asm__("movlps %%xmm0, %0" :"=m"(z[revtab[-k-2]]));
+        __asm__("movhps %%xmm0, %0" :"=m"(z[revtab[-k-1]]));
+        __asm__("movlps %%xmm1, %0" :"=m"(z[revtab[ k  ]]));
+        __asm__("movhps %%xmm1, %0" :"=m"(z[revtab[ k+1]]));
 #endif
     }
 
@@ -146,7 +146,7 @@ void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input
 
     j = -n2;
     k = n2-16;
-    asm volatile(
+    __asm__ volatile(
         "1: \n"
         CMUL(%0, %%xmm0, %%xmm1)
         CMUL(%1, %%xmm4, %%xmm5)
@@ -181,7 +181,7 @@ void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output, const FFTSample *input
 
     j = -n;
     k = n-16;
-    asm volatile(
+    __asm__ volatile(
         "movaps %4, %%xmm7 \n"
         "1: \n"
         "movaps       (%2,%1), %%xmm0 \n"

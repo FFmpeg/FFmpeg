@@ -177,7 +177,7 @@ static inline void mmx_emms(void)
 {
 #ifdef HAVE_MMX
     if (cpu_flags & MM_MMX)
-        asm volatile ("emms\n\t");
+        __asm__ volatile ("emms\n\t");
 #endif
 }
 

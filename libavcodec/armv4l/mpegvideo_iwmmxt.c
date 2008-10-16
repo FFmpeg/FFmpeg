@@ -48,7 +48,7 @@ static void dct_unquantize_h263_intra_iwmmxt(MpegEncContext *s,
     else
         nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
 
-    asm volatile (
+    __asm__ volatile (
 /*      "movd %1, %%mm6                 \n\t" //qmul */
 /*      "packssdw %%mm6, %%mm6          \n\t" */
 /*      "packssdw %%mm6, %%mm6          \n\t" */

@@ -65,7 +65,7 @@ static inline void dct_unquantize_h263_helper_c(DCTELEM *block, int qmul, int qa
 ({ DCTELEM *xblock = xxblock; \
    int xqmul = xxqmul, xqadd = xxqadd, xcount = xxcount, xtmp; \
    int xdata1, xdata2; \
-asm volatile( \
+__asm__ volatile( \
         "subs %[count], %[count], #2       \n\t" \
         "ble 2f                            \n\t" \
         "ldrd r4, [%[block], #0]           \n\t" \

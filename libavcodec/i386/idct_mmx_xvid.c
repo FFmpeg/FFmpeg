@@ -483,7 +483,7 @@ DECLARE_ALIGNED(8, static const int16_t, tab_i_04_xmm[32*4]) = {
 
 
 void ff_idct_xvid_mmx(short *block){
-asm volatile(
+__asm__ volatile(
             //# Process each row
     DCT_8_INV_ROW_MMX(0*16(%0), 0*16(%0), 64*0(%2), 8*0(%1))
     DCT_8_INV_ROW_MMX(1*16(%0), 1*16(%0), 64*1(%2), 8*1(%1))
@@ -506,7 +506,7 @@ asm volatile(
 
 
 void ff_idct_xvid_mmx2(short *block){
-asm volatile(
+__asm__ volatile(
             //# Process each row
     DCT_8_INV_ROW_XMM(0*16(%0), 0*16(%0), 64*0(%2), 8*0(%1))
     DCT_8_INV_ROW_XMM(1*16(%0), 1*16(%0), 64*1(%2), 8*1(%1))

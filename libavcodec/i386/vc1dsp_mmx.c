@@ -74,7 +74,7 @@ static void vc1_put_ver_16b_shift2_mmx(int16_t *dst,
                                        const uint8_t *src, x86_reg stride,
                                        int rnd, int64_t shift)
 {
-    asm volatile(
+    __asm__ volatile(
         "mov       $3, %%"REG_c"           \n\t"
         LOAD_ROUNDER_MMX("%5")
         "movq      "MANGLE(ff_pw_9)", %%mm6 \n\t"
@@ -114,7 +114,7 @@ static void vc1_put_hor_16b_shift2_mmx(uint8_t *dst, x86_reg stride,
 
     src -= 1;
     rnd -= (-1+9+9-1)*1024; /* Add -1024 bias */
-    asm volatile(
+    __asm__ volatile(
         LOAD_ROUNDER_MMX("%4")
         "movq      "MANGLE(ff_pw_128)", %%mm6\n\t"
         "movq      "MANGLE(ff_pw_9)", %%mm5 \n\t"
@@ -155,7 +155,7 @@ static void vc1_put_shift2_mmx(uint8_t *dst, const uint8_t *src,
                                x86_reg stride, int rnd, x86_reg offset)
 {
     rnd = 8-rnd;
-    asm volatile(
+    __asm__ volatile(
         "mov       $8, %%"REG_c"           \n\t"
         LOAD_ROUNDER_MMX("%5")
         "movq      "MANGLE(ff_pw_9)", %%mm6\n\t"
@@ -264,7 +264,7 @@ vc1_put_ver_16b_ ## NAME ## _mmx(int16_t *dst, const uint8_t *src,      \
 {                                                                       \
     int h = 8;                                                          \
     src -= src_stride;                                                  \
-    asm volatile(                                                       \
+    __asm__ volatile(                                                       \
         LOAD_ROUNDER_MMX("%5")                                          \
         "movq      "MANGLE(ff_pw_53)", %%mm5\n\t"                       \
         "movq      "MANGLE(ff_pw_18)", %%mm6\n\t"                       \
@@ -320,7 +320,7 @@ vc1_put_hor_16b_ ## NAME ## _mmx(uint8_t *dst, x86_reg stride,         \
     int h = 8;                                                          \
     src -= 1;                                                           \
     rnd -= (-4+58+13-3)*256; /* Add -256 bias */                        \
-    asm volatile(                                                       \
+    __asm__ volatile(                                                       \
         LOAD_ROUNDER_MMX("%4")                                          \
         "movq      "MANGLE(ff_pw_18)", %%mm6   \n\t"                    \
         "movq      "MANGLE(ff_pw_53)", %%mm5   \n\t"                    \
@@ -358,7 +358,7 @@ vc1_put_## NAME ## _mmx(uint8_t *dst, const uint8_t *src,               \
     int h = 8;                                                          \
     src -= offset;                                                      \
     rnd = 32-rnd;                                                       \
-    asm volatile (                                                      \
+    __asm__ volatile (                                                      \
         LOAD_ROUNDER_MMX("%6")                                          \
         "movq      "MANGLE(ff_pw_53)", %%mm5       \n\t"                \
         "movq      "MANGLE(ff_pw_18)", %%mm6       \n\t"                \
@@ -412,7 +412,7 @@ static void vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride,
     static const vc1_mspel_mc_filter_8bits vc1_put_shift_8bits[] =
          { NULL, vc1_put_shift1_mmx, vc1_put_shift2_mmx, vc1_put_shift3_mmx };
 
-    asm volatile(
+    __asm__ volatile(
         "pxor %%mm0, %%mm0         \n\t"
         ::: "memory"
     );

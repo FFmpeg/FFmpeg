@@ -31,7 +31,7 @@ void ff_mmi_idct(DCTELEM *block);
 
 static void clear_blocks_mmi(DCTELEM * blocks)
 {
-        asm volatile(
+        __asm__ volatile(
         ".set noreorder    \n"
         "addiu $9, %0, 768 \n"
         "nop               \n"
@@ -51,7 +51,7 @@ static void clear_blocks_mmi(DCTELEM * blocks)
 
 static void get_pixels_mmi(DCTELEM *block, const uint8_t *pixels, int line_size)
 {
-        asm volatile(
+        __asm__ volatile(
         ".set   push            \n\t"
         ".set   mips3           \n\t"
         "ld     $8, 0(%0)       \n\t"
@@ -92,7 +92,7 @@ static void get_pixels_mmi(DCTELEM *block, const uint8_t *pixels, int line_size)
 
 static void put_pixels8_mmi(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-        asm volatile(
+        __asm__ volatile(
         ".set   push            \n\t"
         ".set   mips3           \n\t"
         "1:                     \n\t"
@@ -111,7 +111,7 @@ static void put_pixels8_mmi(uint8_t *block, const uint8_t *pixels, int line_size
 
 static void put_pixels16_mmi(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-        asm volatile (
+        __asm__ volatile (
         ".set   push            \n\t"
         ".set   mips3           \n\t"
         "1:                     \n\t"

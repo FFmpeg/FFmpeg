@@ -33,11 +33,11 @@
 static av_always_inline av_const uint16_t bswap_16(uint16_t x)
 {
 #if defined(ARCH_X86)
-    asm("rorw $8, %0" : "+r"(x));
+    __asm__("rorw $8, %0" : "+r"(x));
 #elif defined(ARCH_SH4)
-    asm("swap.b %0,%0" : "=r"(x) : "0"(x));
+    __asm__("swap.b %0,%0" : "=r"(x) : "0"(x));
 #elif defined(HAVE_ARMV6)
-    asm("rev16 %0, %0" : "+r"(x));
+    __asm__("rev16 %0, %0" : "+r"(x));
 #else
     x= (x>>8) | (x<<8);
 #endif
@@ -48,30 +48,30 @@ static av_always_inline av_const uint32_t bswap_32(uint32_t x)
 {
 #if defined(ARCH_X86)
 #ifdef HAVE_BSWAP
-    asm("bswap   %0" : "+r" (x));
+    __asm__("bswap   %0" : "+r" (x));
 #else
-    asm("rorw    $8,  %w0 \n\t"
+    __asm__("rorw    $8,  %w0 \n\t"
         "rorl    $16, %0  \n\t"
         "rorw    $8,  %w0"
         : "+r"(x));
 #endif
 #elif defined(ARCH_SH4)
-    asm("swap.b %0,%0\n"
+    __asm__("swap.b %0,%0\n"
         "swap.w %0,%0\n"
         "swap.b %0,%0\n"
         : "=r"(x) : "0"(x));
 #elif defined(HAVE_ARMV6)
-    asm("rev %0, %0" : "+r"(x));
+    __asm__("rev %0, %0" : "+r"(x));
 #elif defined(ARCH_ARMV4L)
     uint32_t t;
-    asm ("eor %1, %0, %0, ror #16 \n\t"
+    __asm__ ("eor %1, %0, %0, ror #16 \n\t"
          "bic %1, %1, #0xFF0000   \n\t"
          "mov %0, %0, ror #8      \n\t"
          "eor %0, %0, %1, lsr #8  \n\t"
          : "+r"(x), "+r"(t));
 #elif defined(ARCH_BFIN)
     unsigned tmp;
-    asm("%1 = %0 >> 8 (V);      \n\t"
+    __asm__("%1 = %0 >> 8 (V);      \n\t"
         "%0 = %0 << 8 (V);      \n\t"
         "%0 = %0 | %1;          \n\t"
         "%0 = PACK(%0.L, %0.H); \n\t"
@@ -90,7 +90,7 @@ static inline uint64_t av_const bswap_64(uint64_t x)
     x= ((x<<16)&0xFFFF0000FFFF0000ULL) | ((x>>16)&0x0000FFFF0000FFFFULL);
     return (x>>32) | (x<<32);
 #elif defined(ARCH_X86_64)
-  asm("bswap  %0": "=r" (x) : "0" (x));
+  __asm__("bswap  %0": "=r" (x) : "0" (x));
   return x;
 #else
     union {

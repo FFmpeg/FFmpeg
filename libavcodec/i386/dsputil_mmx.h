@@ -127,7 +127,7 @@ extern const double ff_pd_2[2];
 #endif
 
 #define MOVQ_WONE(regd) \
-    asm volatile ( \
+    __asm__ volatile ( \
     "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
     "psrlw $15, %%" #regd ::)
 

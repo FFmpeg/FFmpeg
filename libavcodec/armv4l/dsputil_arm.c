@@ -66,7 +66,7 @@ CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_arm, put_no_rnd_pixels8_xy2_arm, 8)
 
 static void add_pixels_clamped_ARM(short *block, unsigned char *dest, int line_size)
 {
-    asm volatile (
+    __asm__ volatile (
                   "mov r10, #8 \n\t"
 
                   "1: \n\t"
@@ -206,7 +206,7 @@ static void simple_idct_ipp_add(uint8_t *dest, int line_size, DCTELEM *block)
 #ifdef HAVE_ARMV5TE
 static void prefetch_arm(void *mem, int stride, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "1:              \n\t"
         "subs %0, %0, #1 \n\t"
         "pld  [%1]       \n\t"

@@ -46,7 +46,7 @@ void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z)
     int n = 1<<s->nbits;
     int i;
     ff_fft_dispatch_interleave_3dn2(z, s->nbits);
-    asm volatile("femms");
+    __asm__ volatile("femms");
     if(n <= 8)
         for(i=0; i<n; i+=2)
             FFSWAP(FFTSample, z[i].im, z[i+1].re);
@@ -69,11 +69,11 @@ void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *inpu
     in1 = input;
     in2 = input + n2 - 1;
 #ifdef EMULATE_3DNOWEXT
-    asm volatile("movd %0, %%mm7" ::"r"(1<<31));
+    __asm__ volatile("movd %0, %%mm7" ::"r"(1<<31));
 #endif
     for(k = 0; k < n4; k++) {
         // FIXME a single block is faster, but gcc 2.95 and 3.4.x on 32bit can't compile it
-        asm volatile(
+        __asm__ volatile(
             "movd         %0, %%mm0 \n"
             "movd         %2, %%mm1 \n"
             "punpckldq    %1, %%mm0 \n"
@@ -94,7 +94,7 @@ void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *inpu
             ::"m"(in2[-2*k]), "m"(in1[2*k]),
               "m"(tcos[k]), "m"(tsin[k])
         );
-        asm volatile(
+        __asm__ volatile(
             "movq    %%mm0, %0    \n\t"
             :"=m"(z[revtab[k]])
         );
@@ -117,7 +117,7 @@ void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *inpu
     /* post rotation */
     j = -n2;
     k = n2-8;
-    asm volatile(
+    __asm__ volatile(
         "1: \n"
         CMUL(%0, %%mm0, %%mm1)
         CMUL(%1, %%mm2, %%mm3)
@@ -140,7 +140,7 @@ void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *inpu
         :"r"(z+n8), "r"(tcos+n8), "r"(tsin+n8)
         :"memory"
     );
-    asm volatile("femms");
+    __asm__ volatile("femms");
 }
 
 void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input)
@@ -153,7 +153,7 @@ void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *inpu
 
     j = -n;
     k = n-8;
-    asm volatile(
+    __asm__ volatile(
         "movq %4, %%mm7 \n"
         "1: \n"
         PSWAPD((%2,%1), %%mm0)
@@ -168,6 +168,6 @@ void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *inpu
         :"r"(output+n4), "r"(output+n4*3),
          "m"(*m1m1)
     );
-    asm volatile("femms");
+    __asm__ volatile("femms");
 }
 

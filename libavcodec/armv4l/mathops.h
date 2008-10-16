@@ -25,7 +25,7 @@
 #ifdef FRAC_BITS
 #   define MULL(a, b) \
         ({  int lo, hi;\
-         asm("smull %0, %1, %2, %3     \n\t"\
+         __asm__("smull %0, %1, %2, %3     \n\t"\
              "mov   %0, %0,     lsr %4\n\t"\
              "add   %1, %0, %1, lsl %5\n\t"\
              : "=&r"(lo), "=&r"(hi)\
@@ -37,21 +37,21 @@
 static inline av_const int MULH(int a, int b)
 {
     int r;
-    asm ("smmul %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
+    __asm__ ("smmul %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
     return r;
 }
 #define MULH MULH
 #else
 #define MULH(a, b) \
     ({ int lo, hi;\
-     asm ("smull %0, %1, %2, %3" : "=&r"(lo), "=&r"(hi) : "r"(b), "r"(a));\
+     __asm__ ("smull %0, %1, %2, %3" : "=&r"(lo), "=&r"(hi) : "r"(b), "r"(a));\
      hi; })
 #endif
 
 static inline av_const int64_t MUL64(int a, int b)
 {
     union { uint64_t x; unsigned hl[2]; } x;
-    asm ("smull %0, %1, %2, %3"
+    __asm__ ("smull %0, %1, %2, %3"
          : "=r"(x.hl[0]), "=r"(x.hl[1]) : "r"(a), "r"(b));
     return x.x;
 }
@@ -60,7 +60,7 @@ static inline av_const int64_t MUL64(int a, int b)
 static inline av_const int64_t MAC64(int64_t d, int a, int b)
 {
     union { uint64_t x; unsigned hl[2]; } x = { d };
-    asm ("smlal %0, %1, %2, %3"
+    __asm__ ("smlal %0, %1, %2, %3"
          : "+r"(x.hl[0]), "+r"(x.hl[1]) : "r"(a), "r"(b));
     return x.x;
 }
@@ -71,11 +71,11 @@ static inline av_const int64_t MAC64(int64_t d, int a, int b)
 
 /* signed 16x16 -> 32 multiply add accumulate */
 #   define MAC16(rt, ra, rb) \
-        asm ("smlabb %0, %2, %3, %0" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
+        __asm__ ("smlabb %0, %2, %3, %0" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
 /* signed 16x16 -> 32 multiply */
 #   define MUL16(ra, rb)                                                \
         ({ int __rt;                                                    \
-         asm ("smulbb %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb));  \
+         __asm__ ("smulbb %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb));  \
          __rt; })
 
 #endif

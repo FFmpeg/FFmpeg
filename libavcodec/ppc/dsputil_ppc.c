@@ -148,7 +148,7 @@ POWERPC_PERF_START_COUNT(powerpc_clear_blocks_dcbz32, 1);
         i += 16;
     }
     for ( ; i < sizeof(DCTELEM)*6*64-31 ; i += 32) {
-        asm volatile("dcbz %0,%1" : : "b" (blocks), "r" (i) : "memory");
+        __asm__ volatile("dcbz %0,%1" : : "b" (blocks), "r" (i) : "memory");
     }
     if (misal) {
         ((unsigned long*)blocks)[188] = 0L;
@@ -181,7 +181,7 @@ POWERPC_PERF_START_COUNT(powerpc_clear_blocks_dcbz128, 1);
     }
     else
         for ( ; i < sizeof(DCTELEM)*6*64 ; i += 128) {
-            asm volatile("dcbzl %0,%1" : : "b" (blocks), "r" (i) : "memory");
+            __asm__ volatile("dcbzl %0,%1" : : "b" (blocks), "r" (i) : "memory");
         }
 #else
     memset(blocks, 0, sizeof(DCTELEM)*6*64);
@@ -219,7 +219,7 @@ long check_dcbzl_effect(void)
 
     /* below the constraint "b" seems to mean "Address base register"
        in gcc-3.3 / RS/6000 speaks. seems to avoid using r0, so.... */
-    asm volatile("dcbzl %0, %1" : : "b" (fakedata_middle), "r" (zero));
+    __asm__ volatile("dcbzl %0, %1" : : "b" (fakedata_middle), "r" (zero));
 
     for (i = 0; i < 1024 ; i ++) {
         if (fakedata[i] == (char)0)
@@ -241,7 +241,7 @@ static void prefetch_ppc(void *mem, int stride, int h)
 {
     register const uint8_t *p = mem;
     do {
-        asm volatile ("dcbt 0,%0" : : "r" (p));
+        __asm__ volatile ("dcbt 0,%0" : : "r" (p));
         p+= stride;
     } while(--h);
 }

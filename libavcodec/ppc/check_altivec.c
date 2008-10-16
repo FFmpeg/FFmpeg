@@ -66,7 +66,7 @@ int has_altivec(void)
 #elif defined(RUNTIME_CPUDETECT)
     int proc_ver;
     // Support of mfspr PVR emulation added in Linux 2.6.17.
-    asm volatile("mfspr %0, 287" : "=r" (proc_ver));
+    __asm__ volatile("mfspr %0, 287" : "=r" (proc_ver));
     proc_ver >>= 16;
     if (proc_ver  & 0x8000 ||
         proc_ver == 0x000c ||

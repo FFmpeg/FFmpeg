@@ -35,7 +35,7 @@
 
 static inline void cavs_idct8_1d(int16_t *block, uint64_t bias)
 {
-    asm volatile(
+    __asm__ volatile(
         "movq 112(%0), %%mm4  \n\t" /* mm4 = src7 */
         "movq  16(%0), %%mm5  \n\t" /* mm5 = src1 */
         "movq  80(%0), %%mm2  \n\t" /* mm2 = src5 */
@@ -120,7 +120,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
 
         cavs_idct8_1d(block+4*i, ff_pw_4);
 
-        asm volatile(
+        __asm__ volatile(
             "psraw     $3, %%mm7  \n\t"
             "psraw     $3, %%mm6  \n\t"
             "psraw     $3, %%mm5  \n\t"
@@ -150,7 +150,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
     for(i=0; i<2; i++){
         cavs_idct8_1d(b2+4*i, ff_pw_64);
 
-        asm volatile(
+        __asm__ volatile(
             "psraw     $7, %%mm7  \n\t"
             "psraw     $7, %%mm6  \n\t"
             "psraw     $7, %%mm5  \n\t"
@@ -175,7 +175,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
     add_pixels_clamped_mmx(b2, dst, stride);
 
     /* clear block */
-    asm volatile(
+    __asm__ volatile(
             "pxor %%mm7, %%mm7   \n\t"
             "movq %%mm7, (%0)    \n\t"
             "movq %%mm7, 8(%0)   \n\t"
@@ -275,7 +275,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
     src -= 2*srcStride;\
     \
     while(w--){\
-      asm volatile(\
+      __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
         "movd (%0), %%mm0           \n\t"\
         "add %2, %0                 \n\t"\
@@ -306,7 +306,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         : "memory"\
      );\
      if(h==16){\
-        asm volatile(\
+        __asm__ volatile(\
             VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP)\
             VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP)\
             VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP)\
@@ -328,7 +328,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
 #define QPEL_CAVS(OPNAME, OP, MMX)\
 static void OPNAME ## cavs_qpel8_h_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     int h=8;\
-    asm volatile(\
+    __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
         "movq %5, %%mm6             \n\t"\
         "1:                         \n\t"\

@@ -50,7 +50,7 @@ static void dct_unquantize_h263_mmi(MpegEncContext *s,
         nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
     }
 
-    asm volatile(
+    __asm__ volatile(
         "add    $14, $0, %3     \n\t"
         "pcpyld $8, %0, %0      \n\t"
         "pcpyh  $8, $8          \n\t"   //r8 = qmul

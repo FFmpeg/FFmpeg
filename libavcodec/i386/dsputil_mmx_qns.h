@@ -36,7 +36,7 @@ static int DEF(try_8x8basis)(int16_t rem[64], int16_t weight[64], int16_t basis[
     scale<<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
 
     SET_RND(mm6);
-    asm volatile(
+    __asm__ volatile(
         "pxor %%mm7, %%mm7              \n\t"
         "movd  %4, %%mm5                \n\t"
         "punpcklwd %%mm5, %%mm5         \n\t"
@@ -77,7 +77,7 @@ static void DEF(add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale)
     if(FFABS(scale) < MAX_ABS){
         scale<<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
         SET_RND(mm6);
-        asm volatile(
+        __asm__ volatile(
                 "movd  %3, %%mm5        \n\t"
                 "punpcklwd %%mm5, %%mm5 \n\t"
                 "punpcklwd %%mm5, %%mm5 \n\t"

@@ -43,25 +43,25 @@ typedef        union {
 
 
 #define         mmx_i2r(op,imm,reg) \
-        asm volatile (#op " %0, %%" #reg \
+        __asm__ volatile (#op " %0, %%" #reg \
                               : /* nothing */ \
                               : "i" (imm) )
 
 #define         mmx_m2r(op,mem,reg) \
-        asm volatile (#op " %0, %%" #reg \
+        __asm__ volatile (#op " %0, %%" #reg \
                               : /* nothing */ \
                               : "m" (mem))
 
 #define         mmx_r2m(op,reg,mem) \
-        asm volatile (#op " %%" #reg ", %0" \
+        __asm__ volatile (#op " %%" #reg ", %0" \
                               : "=m" (mem) \
                               : /* nothing */ )
 
 #define         mmx_r2r(op,regs,regd) \
-        asm volatile (#op " %" #regs ", %" #regd)
+        __asm__ volatile (#op " %" #regs ", %" #regd)
 
 
-#define         emms() asm volatile ("emms")
+#define         emms() __asm__ volatile ("emms")
 
 #define         movd_m2r(var,reg)           mmx_m2r (movd, var, reg)
 #define         movd_r2m(reg,var)           mmx_r2m (movd, reg, var)
@@ -200,16 +200,16 @@ typedef        union {
 
 
 #define         mmx_m2ri(op,mem,reg,imm) \
-        asm volatile (#op " %1, %0, %%" #reg \
+        __asm__ volatile (#op " %1, %0, %%" #reg \
                               : /* nothing */ \
                               : "m" (mem), "i" (imm))
 #define         mmx_r2ri(op,regs,regd,imm) \
-        asm volatile (#op " %0, %%" #regs ", %%" #regd \
+        __asm__ volatile (#op " %0, %%" #regs ", %%" #regd \
                               : /* nothing */ \
                               : "i" (imm) )
 
 #define         mmx_fetch(mem,hint) \
-        asm volatile ("prefetch" #hint " %0" \
+        __asm__ volatile ("prefetch" #hint " %0" \
                               : /* nothing */ \
                               : "m" (mem))
 
@@ -240,7 +240,7 @@ typedef        union {
 #define         pminub_r2r(regs,regd)       mmx_r2r (pminub, regs, regd)
 
 #define         pmovmskb(mmreg,reg) \
-        asm volatile ("movmskps %" #mmreg ", %" #reg)
+        __asm__ volatile ("movmskps %" #mmreg ", %" #reg)
 
 #define         pmulhuw_m2r(var,reg)        mmx_m2r (pmulhuw, var, reg)
 #define         pmulhuw_r2r(regs,regd)      mmx_r2r (pmulhuw, regs, regd)
@@ -256,7 +256,7 @@ typedef        union {
 #define         pshufw_m2r(var,reg,imm)     mmx_m2ri(pshufw, var, reg, imm)
 #define         pshufw_r2r(regs,regd,imm)   mmx_r2ri(pshufw, regs, regd, imm)
 
-#define         sfence() asm volatile ("sfence\n\t")
+#define         sfence() __asm__ volatile ("sfence\n\t")
 
 /* SSE2 */
 #define         pshufhw_m2r(var,reg,imm)    mmx_m2ri(pshufhw, var, reg, imm)

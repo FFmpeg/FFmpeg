@@ -250,7 +250,7 @@ void ff_vp3_idct_mmx(int16_t *output_data)
 #define I(x) AV_STRINGIFY(16* x       )"(%0)"
 #define J(x) AV_STRINGIFY(16*(x-4) + 8)"(%0)"
 
-    asm volatile (
+    __asm__ volatile (
         RowIDCT()
         Transpose()
 

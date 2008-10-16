@@ -388,7 +388,7 @@ inline void ff_simple_idct_vis(DCTELEM *data) {
     int out1, out2, out3, out4;
     DECLARE_ALIGNED_8(int16_t, temp[8*8]);
 
-    asm volatile(
+    __asm__ volatile(
         INIT_IDCT
 
 #define ADDROUNDER
@@ -428,7 +428,7 @@ void ff_simple_idct_put_vis(uint8_t *dest, int line_size, DCTELEM *data) {
     int out1, out2, out3, out4, out5;
     int r1, r2, r3, r4, r5, r6, r7;
 
-    asm volatile(
+    __asm__ volatile(
         "wr %%g0, 0x8, %%gsr \n\t"
 
         INIT_IDCT
@@ -478,7 +478,7 @@ void ff_simple_idct_add_vis(uint8_t *dest, int line_size, DCTELEM *data) {
     int out1, out2, out3, out4, out5, out6;
     int r1, r2, r3, r4, r5, r6, r7;
 
-    asm volatile(
+    __asm__ volatile(
         "wr %%g0, 0x8, %%gsr \n\t"
 
         INIT_IDCT

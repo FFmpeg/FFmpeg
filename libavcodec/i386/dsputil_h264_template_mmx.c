@@ -47,7 +47,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
 
         rnd_reg = rnd ? &ff_pw_4 : &ff_pw_3;
 
-        asm volatile(
+        __asm__ volatile(
             "movd %0, %%mm5\n\t"
             "movq %1, %%mm4\n\t"
             "movq %2, %%mm6\n\t"         /* mm6 = rnd */
@@ -58,13 +58,13 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
             :: "rm"(x+y), "m"(ff_pw_8), "m"(*rnd_reg));
 
         for(i=0; i<h; i++) {
-            asm volatile(
+            __asm__ volatile(
                 /* mm0 = src[0..7], mm1 = src[1..8] */
                 "movq %0, %%mm0\n\t"
                 "movq %1, %%mm2\n\t"
                 :: "m"(src[0]), "m"(src[dxy]));
 
-            asm volatile(
+            __asm__ volatile(
                 /* [mm0,mm1] = A * src[0..7] */
                 /* [mm2,mm3] = B * src[1..8] */
                 "movq %%mm0, %%mm1\n\t"
@@ -98,7 +98,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
 
     /* general case, bilinear */
     rnd_reg = rnd ? &ff_pw_32.a : &ff_pw_28.a;
-    asm volatile("movd %2, %%mm4\n\t"
+    __asm__ volatile("movd %2, %%mm4\n\t"
                  "movd %3, %%mm6\n\t"
                  "punpcklwd %%mm4, %%mm4\n\t"
                  "punpcklwd %%mm6, %%mm6\n\t"
@@ -119,7 +119,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
                  "movq %%mm4, %0\n\t"
                  : "=m" (AA), "=m" (DD) : "rm" (x), "rm" (y), "m" (ff_pw_64));
 
-    asm volatile(
+    __asm__ volatile(
         /* mm0 = src[0..7], mm1 = src[1..8] */
         "movq %0, %%mm0\n\t"
         "movq %1, %%mm1\n\t"
@@ -128,7 +128,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
     for(i=0; i<h; i++) {
         src += stride;
 
-        asm volatile(
+        __asm__ volatile(
             /* mm2 = A * src[0..3] + B * src[1..4] */
             /* mm3 = A * src[4..7] + B * src[5..8] */
             "movq %%mm0, %%mm2\n\t"
@@ -145,7 +145,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
             "paddw %%mm0, %%mm3\n\t"
             : : "m" (AA));
 
-        asm volatile(
+        __asm__ volatile(
             /* [mm2,mm3] += C * src[0..7] */
             "movq %0, %%mm0\n\t"
             "movq %%mm0, %%mm1\n\t"
@@ -157,7 +157,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
             "paddw %%mm1, %%mm3\n\t"
             : : "m" (src[0]));
 
-        asm volatile(
+        __asm__ volatile(
             /* [mm2,mm3] += D * src[1..8] */
             "movq %1, %%mm1\n\t"
             "movq %%mm1, %%mm0\n\t"
@@ -171,7 +171,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
             "movq %0, %%mm0\n\t"
             : : "m" (src[0]), "m" (src[1]), "m" (DD));
 
-        asm volatile(
+        __asm__ volatile(
             /* dst[0..7] = ([mm2,mm3] + 32) >> 6 */
             "paddw %1, %%mm2\n\t"
             "paddw %1, %%mm3\n\t"
@@ -187,7 +187,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
 
 static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
-    asm volatile(
+    __asm__ volatile(
         "pxor   %%mm7, %%mm7        \n\t"
         "movd %5, %%mm2             \n\t"
         "movd %6, %%mm3             \n\t"
@@ -259,7 +259,7 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
     int tmp = ((1<<16)-1)*x + 8;
     int CD= tmp*y;
     int AB= (tmp<<3) - CD;
-    asm volatile(
+    __asm__ volatile(
         /* mm5 = {A,B,A,B} */
         /* mm6 = {C,D,C,D} */
         "movd %0, %%mm5\n\t"
@@ -274,7 +274,7 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
         :: "r"(AB), "r"(CD), "m"(src[0]));
 
 
-    asm volatile(
+    __asm__ volatile(
         "1:\n\t"
         "add %4, %1\n\t"
         /* mm1 = A * src[0,1] + B * src[1,2] */

@@ -154,17 +154,17 @@ The minimum guaranteed alignment is written in the .h files, for example:
 General Tips:
 -------------
 Use asm loops like:
-asm(
+__asm__(
     "1: ....
     ...
     "jump_instruciton ....
 Do not use C loops:
 do{
-    asm(
+    __asm__(
         ...
 }while()
 
-Use asm() instead of intrinsics. The latter requires a good optimizing compiler
+Use __asm__() instead of intrinsics. The latter requires a good optimizing compiler
 which gcc is not.
 
 

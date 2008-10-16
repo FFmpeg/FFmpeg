@@ -24,7 +24,7 @@
 
 #ifdef CONFIG_MPEGAUDIO_HP
 #define MULH(X,Y) ({ int xxo;                           \
-    asm (                                               \
+    __asm__ (                                               \
         "a1 = %2.L * %1.L (FU);\n\t"                    \
         "a1 = a1 >> 16;\n\t"                            \
         "a1 += %2.H * %1.L (IS,M);\n\t"                 \
@@ -34,7 +34,7 @@
         : "=d" (xxo) : "d" (X), "d" (Y) : "A0","A1"); xxo; })
 #else
 #define MULH(X,Y) ({ int xxo;                           \
-    asm (                                               \
+    __asm__ (                                               \
         "a1 = %2.H * %1.L (IS,M);\n\t"                  \
         "a0 = %1.H * %2.H, a1+= %1.H * %2.L (IS,M);\n\t"\
         "a1 = a1 >>> 16;\n\t"                           \
@@ -44,7 +44,7 @@
 
 /* signed 16x16 -> 32 multiply */
 #define MUL16(a, b) ({ int xxo;                         \
-    asm (                                               \
+    __asm__ (                                               \
        "%0 = %1.l*%2.l (is);\n\t"                       \
        : "=W" (xxo) : "d" (a), "d" (b) : "A1");         \
     xxo; })

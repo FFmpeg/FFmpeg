@@ -55,97 +55,97 @@
 #define vis_rd_d(X)     (vis_dreg(X) << 25)
 
 #define vis_ss2s(opf,rs1,rs2,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rs1_s(rs1) | \
                                        vis_rs2_s(rs2) | \
                                        vis_rd_s(rd)))
 
 #define vis_dd2d(opf,rs1,rs2,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rs1_d(rs1) | \
                                        vis_rs2_d(rs2) | \
                                        vis_rd_d(rd)))
 
 #define vis_ss2d(opf,rs1,rs2,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rs1_s(rs1) | \
                                        vis_rs2_s(rs2) | \
                                        vis_rd_d(rd)))
 
 #define vis_sd2d(opf,rs1,rs2,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rs1_s(rs1) | \
                                        vis_rs2_d(rs2) | \
                                        vis_rd_d(rd)))
 
 #define vis_d2s(opf,rs2,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rs2_d(rs2) | \
                                        vis_rd_s(rd)))
 
 #define vis_s2d(opf,rs2,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rs2_s(rs2) | \
                                        vis_rd_d(rd)))
 
 #define vis_d12d(opf,rs1,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rs1_d(rs1) | \
                                        vis_rd_d(rd)))
 
 #define vis_d22d(opf,rs2,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rs2_d(rs2) | \
                                        vis_rd_d(rd)))
 
 #define vis_s12s(opf,rs1,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rs1_s(rs1) | \
                                        vis_rd_s(rd)))
 
 #define vis_s22s(opf,rs2,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rs2_s(rs2) | \
                                        vis_rd_s(rd)))
 
 #define vis_s(opf,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rd_s(rd)))
 
 #define vis_d(opf,rd) \
-        asm volatile (".word %0" \
+        __asm__ volatile (".word %0" \
                               : : "i" (vis_opc_base | vis_opf(opf) | \
                                        vis_rd_d(rd)))
 
 #define vis_r2m(op,rd,mem) \
-        asm volatile (#op "\t%%f" #rd ", [%0]" : : "r" (&(mem)) )
+        __asm__ volatile (#op "\t%%f" #rd ", [%0]" : : "r" (&(mem)) )
 
 #define vis_r2m_2(op,rd,mem1,mem2) \
-        asm volatile (#op "\t%%f" #rd ", [%0 + %1]" : : "r" (mem1), "r" (mem2) )
+        __asm__ volatile (#op "\t%%f" #rd ", [%0 + %1]" : : "r" (mem1), "r" (mem2) )
 
 #define vis_m2r(op,mem,rd) \
-        asm volatile (#op "\t[%0], %%f" #rd : : "r" (&(mem)) )
+        __asm__ volatile (#op "\t[%0], %%f" #rd : : "r" (&(mem)) )
 
 #define vis_m2r_2(op,mem1,mem2,rd) \
-        asm volatile (#op "\t[%0 + %1], %%f" #rd : : "r" (mem1), "r" (mem2) )
+        __asm__ volatile (#op "\t[%0 + %1], %%f" #rd : : "r" (mem1), "r" (mem2) )
 
 static inline void vis_set_gsr(unsigned int _val)
 {
-        register unsigned int val asm("g1");
+        register unsigned int val __asm__("g1");
 
         val = _val;
-        asm volatile(".word 0xa7804000"
+        __asm__ volatile(".word 0xa7804000"
                              : : "r" (val));
 }
 
@@ -164,9 +164,9 @@ static inline void vis_set_gsr(unsigned int _val)
 #define vis_st64_2(rs1,mem1,mem2)       vis_r2m_2(std, rs1, mem1, mem2)
 
 #define vis_ldblk(mem, rd) \
-do {        register void *__mem asm("g1"); \
+do {        register void *__mem __asm__("g1"); \
         __mem = &(mem); \
-        asm volatile(".word 0xc1985e00 | %1" \
+        __asm__ volatile(".word 0xc1985e00 | %1" \
                              : \
                              : "r" (__mem), \
                                "i" (vis_rd_d(rd)) \
@@ -174,9 +174,9 @@ do {        register void *__mem asm("g1"); \
 } while (0)
 
 #define vis_stblk(rd, mem) \
-do {        register void *__mem asm("g1"); \
+do {        register void *__mem __asm__("g1"); \
         __mem = &(mem); \
-        asm volatile(".word 0xc1b85e00 | %1" \
+        __asm__ volatile(".word 0xc1b85e00 | %1" \
                              : \
                              : "r" (__mem), \
                                "i" (vis_rd_d(rd)) \
@@ -184,10 +184,10 @@ do {        register void *__mem asm("g1"); \
 } while (0)
 
 #define vis_membar_storestore()        \
-        asm volatile(".word 0x8143e008" : : : "memory")
+        __asm__ volatile(".word 0x8143e008" : : : "memory")
 
 #define vis_membar_sync()        \
-        asm volatile(".word 0x8143e040" : : : "memory")
+        __asm__ volatile(".word 0x8143e040" : : : "memory")
 
 /* 16 and 32 bit partitioned addition and subtraction.  The normal
  * versions perform 4 16-bit or 2 32-bit additions or subtractions.
@@ -226,11 +226,11 @@ do {        register void *__mem asm("g1"); \
 
 static inline void *vis_alignaddr(void *_ptr)
 {
-        register void *ptr asm("g1");
+        register void *ptr __asm__("g1");
 
         ptr = _ptr;
 
-        asm volatile(".word %2"
+        __asm__ volatile(".word %2"
                              : "=&r" (ptr)
                              : "0" (ptr),
                                "i" (vis_opc_base | vis_opf(0x18) |
@@ -243,11 +243,11 @@ static inline void *vis_alignaddr(void *_ptr)
 
 static inline void vis_alignaddr_g0(void *_ptr)
 {
-        register void *ptr asm("g1");
+        register void *ptr __asm__("g1");
 
         ptr = _ptr;
 
-        asm volatile(".word %2"
+        __asm__ volatile(".word %2"
                              : "=&r" (ptr)
                              : "0" (ptr),
                                "i" (vis_opc_base | vis_opf(0x18) |
@@ -258,11 +258,11 @@ static inline void vis_alignaddr_g0(void *_ptr)
 
 static inline void *vis_alignaddrl(void *_ptr)
 {
-        register void *ptr asm("g1");
+        register void *ptr __asm__("g1");
 
         ptr = _ptr;
 
-        asm volatile(".word %2"
+        __asm__ volatile(".word %2"
                              : "=&r" (ptr)
                              : "0" (ptr),
                                "i" (vis_opc_base | vis_opf(0x19) |
@@ -275,11 +275,11 @@ static inline void *vis_alignaddrl(void *_ptr)
 
 static inline void vis_alignaddrl_g0(void *_ptr)
 {
-        register void *ptr asm("g1");
+        register void *ptr __asm__("g1");
 
         ptr = _ptr;
 
-        asm volatile(".word %2"
+        __asm__ volatile(".word %2"
                              : "=&r" (ptr)
                              : "0" (ptr),
                                "i" (vis_opc_base | vis_opf(0x19) |

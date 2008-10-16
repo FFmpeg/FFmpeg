@@ -161,7 +161,7 @@ void ff_vp3_idct_sse2(int16_t *input_data)
 #define O(x) I(x)
 #define C(x) AV_STRINGIFY(16*(x-1))"(%1)"
 
-    asm volatile (
+    __asm__ volatile (
         VP3_1D_IDCT_SSE2(NOP, NOP)
 
         TRANSPOSE8(%%xmm0, %%xmm1, %%xmm2, %%xmm3, %%xmm4, %%xmm5, %%xmm6, %%xmm7, (%0))

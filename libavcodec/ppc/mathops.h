@@ -26,12 +26,12 @@
 #if defined(ARCH_POWERPC_405)
 /* signed 16x16 -> 32 multiply add accumulate */
 #define MAC16(rt, ra, rb) \
-    asm ("maclhw %0, %2, %3" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
+    __asm__ ("maclhw %0, %2, %3" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
 
 /* signed 16x16 -> 32 multiply */
 #define MUL16(ra, rb) \
     ({ int __rt; \
-    asm ("mullhw %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb)); \
+    __asm__ ("mullhw %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb)); \
     __rt; })
 #endif
 

@@ -88,7 +88,7 @@ static int dct_quantize_bfin (MpegEncContext *s,
     /*      block[i] = level;                                 */
     /*  } */
 
-    asm volatile
+    __asm__ volatile
         ("i2=%1;\n\t"
          "r1=[%1++];                                                         \n\t"
          "r0=r1>>>15 (v);                                                    \n\t"
@@ -114,7 +114,7 @@ static int dct_quantize_bfin (MpegEncContext *s,
 
     PROF("zzscan",5);
 
-    asm volatile
+    __asm__ volatile
         ("r0=b[%1--] (x);         \n\t"
          "lsetup (0f,1f) lc0=%3;  \n\t"     /*    for(i=63; i>=start_i; i--) { */
          "0: p0=r0;               \n\t"     /*        j = scantable[i];        */

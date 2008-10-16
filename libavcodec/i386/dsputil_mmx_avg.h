@@ -33,7 +33,7 @@
  */
 static void DEF(put_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "lea (%3, %3), %%"REG_a"        \n\t"
         "1:                             \n\t"
         "movq (%1), %%mm0               \n\t"
@@ -61,7 +61,7 @@ static void DEF(put_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_
 
 static void DEF(put_pixels4_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "testl $1, %0                   \n\t"
             " jz 1f                     \n\t"
         "movd   (%1), %%mm0             \n\t"
@@ -112,7 +112,7 @@ static void DEF(put_pixels4_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int 
 
 static void DEF(put_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "testl $1, %0                   \n\t"
             " jz 1f                     \n\t"
         "movq   (%1), %%mm0             \n\t"
@@ -162,7 +162,7 @@ static void DEF(put_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int 
 
 static void DEF(put_no_rnd_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "pcmpeqb %%mm6, %%mm6           \n\t"
         "testl $1, %0                   \n\t"
             " jz 1f                     \n\t"
@@ -232,7 +232,7 @@ static void DEF(put_no_rnd_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src
 
 static void DEF(avg_pixels4_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "testl $1, %0                   \n\t"
             " jz 1f                     \n\t"
         "movd   (%1), %%mm0             \n\t"
@@ -284,7 +284,7 @@ static void DEF(avg_pixels4_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int 
 
 static void DEF(avg_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "testl $1, %0                   \n\t"
             " jz 1f                     \n\t"
         "movq   (%1), %%mm0             \n\t"
@@ -339,7 +339,7 @@ static void DEF(avg_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int 
 
 static void DEF(put_pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "lea (%3, %3), %%"REG_a"        \n\t"
         "1:                             \n\t"
         "movq (%1), %%mm0               \n\t"
@@ -379,7 +379,7 @@ static void DEF(put_pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line
 
 static void DEF(put_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "testl $1, %0                   \n\t"
             " jz 1f                     \n\t"
         "movq   (%1), %%mm0             \n\t"
@@ -427,7 +427,7 @@ static void DEF(put_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int
 
 static void DEF(avg_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "testl $1, %0                   \n\t"
             " jz 1f                     \n\t"
         "movq   (%1), %%mm0             \n\t"
@@ -481,7 +481,7 @@ static void DEF(avg_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int
 
 static void DEF(put_no_rnd_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "pcmpeqb %%mm6, %%mm6           \n\t"
         "testl $1, %0                   \n\t"
             " jz 1f                     \n\t"
@@ -556,7 +556,7 @@ static void DEF(put_no_rnd_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *sr
 static void DEF(put_no_rnd_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     MOVQ_BONE(mm6);
-    asm volatile(
+    __asm__ volatile(
         "lea (%3, %3), %%"REG_a"        \n\t"
         "1:                             \n\t"
         "movq (%1), %%mm0               \n\t"
@@ -592,7 +592,7 @@ static void DEF(put_no_rnd_pixels8_x2)(uint8_t *block, const uint8_t *pixels, in
 
 static void DEF(put_pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "lea (%3, %3), %%"REG_a"        \n\t"
         "movq (%1), %%mm0               \n\t"
         "sub %3, %2                     \n\t"
@@ -624,7 +624,7 @@ static void DEF(put_pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_
 static void DEF(put_no_rnd_pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     MOVQ_BONE(mm6);
-    asm volatile(
+    __asm__ volatile(
         "lea (%3, %3), %%"REG_a"        \n\t"
         "movq (%1), %%mm0               \n\t"
         "sub %3, %2                     \n\t"
@@ -656,7 +656,7 @@ static void DEF(put_no_rnd_pixels8_y2)(uint8_t *block, const uint8_t *pixels, in
 
 static void DEF(avg_pixels8)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "lea (%3, %3), %%"REG_a"        \n\t"
         "1:                             \n\t"
         "movq (%2), %%mm0               \n\t"
@@ -684,7 +684,7 @@ static void DEF(avg_pixels8)(uint8_t *block, const uint8_t *pixels, int line_siz
 
 static void DEF(avg_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "lea (%3, %3), %%"REG_a"        \n\t"
         "1:                             \n\t"
         "movq (%1), %%mm0               \n\t"
@@ -716,7 +716,7 @@ static void DEF(avg_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_
 
 static void DEF(avg_pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    asm volatile(
+    __asm__ volatile(
         "lea (%3, %3), %%"REG_a"        \n\t"
         "movq (%1), %%mm0               \n\t"
         "sub %3, %2                     \n\t"
@@ -757,7 +757,7 @@ static void DEF(avg_pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_
 static void DEF(avg_pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     MOVQ_BONE(mm6);
-    asm volatile(
+    __asm__ volatile(
         "lea (%3, %3), %%"REG_a"        \n\t"
         "movq (%1), %%mm0               \n\t"
         PAVGB" 1(%1), %%mm0             \n\t"
@@ -798,7 +798,7 @@ static void DEF(avg_pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int line
 static void DEF(avg_pixels4)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     do {
-        asm volatile(
+        __asm__ volatile(
             "movd (%1), %%mm0               \n\t"
             "movd (%1, %2), %%mm1           \n\t"
             "movd (%1, %2, 2), %%mm2        \n\t"
@@ -852,7 +852,7 @@ static void DEF(avg_pixels16_xy2)(uint8_t *block, const uint8_t *pixels, int lin
 
 #define QPEL_2TAP_L3(OPNAME) \
 static void DEF(OPNAME ## 2tap_qpel16_l3)(uint8_t *dst, uint8_t *src, int stride, int h, int off1, int off2){\
-    asm volatile(\
+    __asm__ volatile(\
         "1:                    \n\t"\
         "movq   (%1,%2), %%mm0 \n\t"\
         "movq  8(%1,%2), %%mm1 \n\t"\
@@ -874,7 +874,7 @@ static void DEF(OPNAME ## 2tap_qpel16_l3)(uint8_t *dst, uint8_t *src, int stride
     );\
 }\
 static void DEF(OPNAME ## 2tap_qpel8_l3)(uint8_t *dst, uint8_t *src, int stride, int h, int off1, int off2){\
-    asm volatile(\
+    __asm__ volatile(\
         "1:                    \n\t"\
         "movq   (%1,%2), %%mm0 \n\t"\
         PAVGB"  (%1,%3), %%mm0 \n\t"\

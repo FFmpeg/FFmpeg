@@ -154,7 +154,7 @@ static inline av_const int mid_pred(int a, int b, int c)
 {
 #ifdef HAVE_CMOV
     int i=b;
-    asm volatile(
+    __asm__ volatile(
         "cmp    %2, %1 \n\t"
         "cmovg  %1, %0 \n\t"
         "cmovg  %2, %1 \n\t"
@@ -327,7 +327,7 @@ static inline av_pure int ff_get_fourcc(const char *s){
 static inline uint64_t read_time(void)
 {
     uint64_t a, d;
-    asm volatile("rdtsc\n\t"
+    __asm__ volatile("rdtsc\n\t"
                  : "=a" (a), "=d" (d));
     return (d << 32) | (a & 0xffffffff);
 }
@@ -335,7 +335,7 @@ static inline uint64_t read_time(void)
 static inline long long read_time(void)
 {
     long long l;
-    asm volatile("rdtsc\n\t"
+    __asm__ volatile("rdtsc\n\t"
                  : "=A" (l));
     return l;
 }
@@ -349,7 +349,7 @@ static inline uint64_t read_time(void)
         } p;
         unsigned long long c;
     } t;
-    asm volatile ("%0=cycles; %1=cycles2;" : "=d" (t.p.lo), "=d" (t.p.hi));
+    __asm__ volatile ("%0=cycles; %1=cycles2;" : "=d" (t.p.lo), "=d" (t.p.hi));
     return t.c;
 }
 #else //FIXME check ppc64
@@ -358,7 +358,7 @@ static inline uint64_t read_time(void)
     uint32_t tbu, tbl, temp;
 
      /* from section 2.2.1 of the 32-bit PowerPC PEM */
-     asm volatile(
+     __asm__ volatile(
          "1:\n"
          "mftbu  %2\n"
          "mftb   %0\n"
