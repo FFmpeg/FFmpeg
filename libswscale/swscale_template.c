@@ -71,7 +71,7 @@
 #endif
 
 #define YSCALEYUV2YV12X(x, offset, dest, width) \
-    asm volatile(\
+    __asm__ volatile(\
     "xor                          %%"REG_a", %%"REG_a"  \n\t"\
     "movq             "VROUNDER_OFFSET"(%0), %%mm3      \n\t"\
     "movq                             %%mm3, %%mm4      \n\t"\
@@ -107,7 +107,7 @@
     );
 
 #define YSCALEYUV2YV12X_ACCURATE(x, offset, dest, width) \
-    asm volatile(\
+    __asm__ volatile(\
     "lea                     " offset "(%0), %%"REG_d"  \n\t"\
     "xor                          %%"REG_a", %%"REG_a"  \n\t"\
     "pxor                             %%mm4, %%mm4      \n\t"\
@@ -207,7 +207,7 @@
     : "%eax", "%ebx", "%ecx", "%edx", "%esi"
 */
 #define YSCALEYUV2PACKEDX \
-    asm volatile(\
+    __asm__ volatile(\
     "xor                   %%"REG_a", %%"REG_a"     \n\t"\
     ASMALIGN(4)\
     "nop                                            \n\t"\
@@ -256,7 +256,7 @@
     );
 
 #define YSCALEYUV2PACKEDX_ACCURATE \
-    asm volatile(\
+    __asm__ volatile(\
     "xor %%"REG_a", %%"REG_a"                       \n\t"\
     ASMALIGN(4)\
     "nop                                            \n\t"\
@@ -1002,7 +1002,7 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chr
 
         if (c->flags & SWS_ACCURATE_RND){
             while(p--){
-                asm volatile(
+                __asm__ volatile(
                     YSCALEYUV2YV121_ACCURATE
                     :: "r" (src[p]), "r" (dst[p] + counter[p]),
                     "g" (-counter[p])
@@ -1011,7 +1011,7 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chr
             }
         }else{
             while(p--){
-                asm volatile(
+                __asm__ volatile(
                     YSCALEYUV2YV121
                     :: "r" (src[p]), "r" (dst[p] + counter[p]),
                     "g" (-counter[p])
@@ -1220,7 +1220,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *
         {
 #ifdef HAVE_MMX
         case PIX_FMT_RGB32:
-            asm volatile(
+            __asm__ volatile(
 
 
 FULL_YSCALEYUV2RGB
@@ -1244,7 +1244,7 @@ FULL_YSCALEYUV2RGB
             );
             break;
         case PIX_FMT_BGR24:
-            asm volatile(
+            __asm__ volatile(
 
 FULL_YSCALEYUV2RGB
 
@@ -1293,7 +1293,7 @@ FULL_YSCALEYUV2RGB
             );
             break;
         case PIX_FMT_BGR555:
-            asm volatile(
+            __asm__ volatile(
 
 FULL_YSCALEYUV2RGB
 #ifdef DITHER1XBPP
@@ -1326,7 +1326,7 @@ FULL_YSCALEYUV2RGB
             );
             break;
         case PIX_FMT_BGR565:
-            asm volatile(
+            __asm__ volatile(
 
 FULL_YSCALEYUV2RGB
 #ifdef DITHER1XBPP
@@ -1434,7 +1434,7 @@ FULL_YSCALEYUV2RGB
         {
             //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
             case PIX_FMT_RGB32:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1448,7 +1448,7 @@ FULL_YSCALEYUV2RGB
                 );
                 return;
             case PIX_FMT_BGR24:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1461,7 +1461,7 @@ FULL_YSCALEYUV2RGB
                 );
                 return;
             case PIX_FMT_RGB555:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1482,7 +1482,7 @@ FULL_YSCALEYUV2RGB
                 );
                 return;
             case PIX_FMT_RGB565:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1502,7 +1502,7 @@ FULL_YSCALEYUV2RGB
                 );
                 return;
             case PIX_FMT_YUYV422:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov %4, %%"REG_b"                        \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1546,7 +1546,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             switch(dstFormat)
             {
             case PIX_FMT_RGB32:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1560,7 +1560,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 );
                 return;
             case PIX_FMT_BGR24:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1574,7 +1574,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 );
                 return;
             case PIX_FMT_RGB555:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1594,7 +1594,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 );
                 return;
             case PIX_FMT_RGB565:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1615,7 +1615,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 );
                 return;
             case PIX_FMT_YUYV422:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1635,7 +1635,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
             switch(dstFormat)
             {
             case PIX_FMT_RGB32:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1649,7 +1649,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 );
                 return;
             case PIX_FMT_BGR24:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1663,7 +1663,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 );
                 return;
             case PIX_FMT_RGB555:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1683,7 +1683,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 );
                 return;
             case PIX_FMT_RGB565:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1704,7 +1704,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 );
                 return;
             case PIX_FMT_YUYV422:
-                asm volatile(
+                __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1734,7 +1734,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
-    asm volatile(
+    __asm__ volatile(
     "movq "MANGLE(bm01010101)", %%mm2           \n\t"
     "mov                    %0, %%"REG_a"       \n\t"
     "1:                                         \n\t"
@@ -1759,7 +1759,7 @@ static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, long width, uint3
 static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
-    asm volatile(
+    __asm__ volatile(
     "movq "MANGLE(bm01010101)", %%mm4           \n\t"
     "mov                    %0, %%"REG_a"       \n\t"
     "1:                                         \n\t"
@@ -1796,7 +1796,7 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
 static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
-    asm volatile(
+    __asm__ volatile(
     "mov                  %0, %%"REG_a"         \n\t"
     "1:                                         \n\t"
     "movq  (%1, %%"REG_a",2), %%mm0             \n\t"
@@ -1820,7 +1820,7 @@ static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width, uint3
 static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
 #ifdef HAVE_MMX
-    asm volatile(
+    __asm__ volatile(
     "movq "MANGLE(bm01010101)", %%mm4           \n\t"
     "mov                    %0, %%"REG_a"       \n\t"
     "1:                                         \n\t"
@@ -1917,20 +1917,20 @@ static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, uint8_t *src, long width, 
 {
 
     if(srcFormat == PIX_FMT_BGR24){
-        asm volatile(
+        __asm__ volatile(
             "movq  "MANGLE(ff_bgr24toY1Coeff)", %%mm5       \n\t"
             "movq  "MANGLE(ff_bgr24toY2Coeff)", %%mm6       \n\t"
             :
         );
     }else{
-        asm volatile(
+        __asm__ volatile(
             "movq  "MANGLE(ff_rgb24toY1Coeff)", %%mm5       \n\t"
             "movq  "MANGLE(ff_rgb24toY2Coeff)", %%mm6       \n\t"
             :
         );
     }
 
-    asm volatile(
+    __asm__ volatile(
         "movq  "MANGLE(ff_bgr24toYOffset)", %%mm4   \n\t"
         "mov                        %2, %%"REG_a"   \n\t"
         "pxor                    %%mm7, %%mm7       \n\t"
@@ -1968,7 +1968,7 @@ static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, uint8_t *src, long width, 
 
 static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, uint8_t *src, long width, int srcFormat)
 {
-    asm volatile(
+    __asm__ volatile(
         "movq                    24+%4, %%mm6       \n\t"
         "mov                        %3, %%"REG_a"   \n\t"
         "pxor                    %%mm7, %%mm7       \n\t"
@@ -2184,7 +2184,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
         filter-= counter*2;
         filterPos-= counter/2;
         dst-= counter/2;
-        asm volatile(
+        __asm__ volatile(
 #if defined(PIC)
         "push            %%"REG_b"              \n\t"
 #endif
@@ -2230,7 +2230,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
         filter-= counter*4;
         filterPos-= counter/2;
         dst-= counter/2;
-        asm volatile(
+        __asm__ volatile(
 #if defined(PIC)
         "push             %%"REG_b"             \n\t"
 #endif
@@ -2288,7 +2288,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
         //filter-= counter*filterSize/2;
         filterPos-= counter/2;
         dst-= counter/2;
-        asm volatile(
+        __asm__ volatile(
         "pxor                  %%mm7, %%mm7     \n\t"
         ASMALIGN(4)
         "1:                                     \n\t"
@@ -2456,7 +2456,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 #endif
         if (canMMX2BeUsed)
         {
-            asm volatile(
+            __asm__ volatile(
 #if defined(PIC)
             "mov               %%"REG_b", %5        \n\t"
 #endif
@@ -2521,7 +2521,7 @@ FUNNY_Y_CODE
         long xInc_shr16 = xInc >> 16;
         uint16_t xInc_mask = xInc & 0xffff;
         //NO MMX just normal asm ...
-        asm volatile(
+        __asm__ volatile(
         "xor %%"REG_a", %%"REG_a"            \n\t" // i
         "xor %%"REG_d", %%"REG_d"            \n\t" // xx
         "xorl    %%ecx, %%ecx                \n\t" // 2*xalpha
@@ -2729,7 +2729,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 #endif
         if (canMMX2BeUsed)
         {
-            asm volatile(
+            __asm__ volatile(
 #if defined(PIC)
             "mov          %%"REG_b", %6         \n\t"
 #endif
@@ -2806,7 +2806,7 @@ FUNNY_UV_CODE
 #endif /* HAVE_MMX2 */
             long xInc_shr16 = (long) (xInc >> 16);
             uint16_t xInc_mask = xInc & 0xffff;
-            asm volatile(
+            __asm__ volatile(
             "xor %%"REG_a", %%"REG_a"               \n\t" // i
             "xor %%"REG_d", %%"REG_d"               \n\t" // xx
             "xorl    %%ecx, %%ecx                   \n\t" // 2*xalpha
@@ -3256,8 +3256,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
     }
 
 #ifdef HAVE_MMX
-    asm volatile(SFENCE:::"memory");
-    asm volatile(EMMS:::"memory");
+    __asm__ volatile(SFENCE:::"memory");
+    __asm__ volatile(EMMS:::"memory");
 #endif
     /* store changed local vars back in the context */
     c->dstY= dstY;

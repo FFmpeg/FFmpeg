@@ -120,7 +120,7 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
     sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
 
 #if defined(ARCH_X86)
-    asm volatile ("emms\n\t");
+    __asm__ volatile ("emms\n\t");
 #endif
 
     ssdY= getSSD(ref[0], out[0], refStride[0], refStride[0], w, h);
@@ -215,7 +215,7 @@ int main(int argc, char **argv){
     sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
 
 #if defined(ARCH_X86)
-    asm volatile ("emms\n\t");
+    __asm__ volatile ("emms\n\t");
 #endif
 
     selfTest(src, stride, W, H);

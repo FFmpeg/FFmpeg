@@ -85,7 +85,7 @@ static int vis_420P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int s
   int y, out1, out2, out3, out4, out5, out6;
 
   for(y=0;y < srcSliceH;++y) {
-      asm volatile (
+      __asm__ volatile (
           YUV2RGB_INIT
           "wr %%g0, 0xd2, %%asi        \n\t" /* ASI_FL16_P */
           "1:                          \n\t"
@@ -136,7 +136,7 @@ static int vis_422P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int s
   int y, out1, out2, out3, out4, out5, out6;
 
   for(y=0;y < srcSliceH;++y) {
-      asm volatile (
+      __asm__ volatile (
           YUV2RGB_INIT
           "wr %%g0, 0xd2, %%asi        \n\t" /* ASI_FL16_P */
           "1:                          \n\t"

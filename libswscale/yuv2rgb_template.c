@@ -133,7 +133,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
     h_size= (c->dstW+7)&~7;
     if(h_size*2 > FFABS(dstStride[0])) h_size-=8;
 
-    asm volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );
+    __asm__ volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );
     //printf("%X %X %X %X %X %X %X %X %X %X\n", (int)&c->redDither, (int)&c->blueDither, (int)src[0], (int)src[1], (int)src[2], (int)dst[0],
     //srcStride[0],srcStride[1],srcStride[2],dstStride[0]);
     for (y= 0; y<srcSliceH; y++ ) {
@@ -148,7 +148,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
         c->redDither= ff_dither8[(y+1)&1];
         /* This MMX assembly code deals with a SINGLE scan line at a time,
          * it converts 8 pixels in each iteration. */
-        asm volatile (
+        __asm__ volatile (
         /* load data for start of next scan line */
         "movd    (%2, %0), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
         "movd    (%3, %0), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
@@ -210,7 +210,7 @@ YUV2RGB
         );
     }
 
-    asm volatile (EMMS);
+    __asm__ volatile (EMMS);
 
     return srcSliceH;
 }
@@ -227,7 +227,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
     h_size= (c->dstW+7)&~7;
     if(h_size*2 > FFABS(dstStride[0])) h_size-=8;
 
-    asm volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );
+    __asm__ volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );
     //printf("%X %X %X %X %X %X %X %X %X %X\n", (int)&c->redDither, (int)&c->blueDither, (int)src[0], (int)src[1], (int)src[2], (int)dst[0],
     //srcStride[0],srcStride[1],srcStride[2],dstStride[0]);
     for (y= 0; y<srcSliceH; y++ ) {
@@ -242,7 +242,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
         c->redDither= ff_dither8[(y+1)&1];
         /* This MMX assembly code deals with a SINGLE scan line at a time,
          * it converts 8 pixels in each iteration. */
-        asm volatile (
+        __asm__ volatile (
         /* load data for start of next scan line */
         "movd    (%2, %0), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
         "movd    (%3, %0), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
@@ -299,7 +299,7 @@ YUV2RGB
         );
     }
 
-    asm volatile (EMMS);
+    __asm__ volatile (EMMS);
     return srcSliceH;
 }
 
@@ -315,7 +315,7 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
     h_size= (c->dstW+7)&~7;
     if(h_size*3 > FFABS(dstStride[0])) h_size-=8;
 
-    asm volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );
+    __asm__ volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );
 
     for (y= 0; y<srcSliceH; y++ ) {
         uint8_t *image = dst[0] + (y+srcSliceY)*dstStride[0];
@@ -326,7 +326,7 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
 
         /* This MMX assembly code deals with a SINGLE scan line at a time,
          * it converts 8 pixels in each iteration. */
-        asm volatile (
+        __asm__ volatile (
         /* load data for start of next scan line */
         "movd    (%2, %0), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
         "movd    (%3, %0), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
@@ -445,7 +445,7 @@ YUV2RGB
         );
     }
 
-    asm volatile (EMMS);
+    __asm__ volatile (EMMS);
     return srcSliceH;
 }
 
@@ -461,7 +461,7 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
     h_size= (c->dstW+7)&~7;
     if(h_size*4 > FFABS(dstStride[0])) h_size-=8;
 
-    asm volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );
+    __asm__ volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );
 
     for (y= 0; y<srcSliceH; y++ ) {
         uint8_t *image = dst[0] + (y+srcSliceY)*dstStride[0];
@@ -472,7 +472,7 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
 
         /* This MMX assembly code deals with a SINGLE scan line at a time,
          * it converts 8 pixels in each iteration. */
-        asm volatile (
+        __asm__ volatile (
         /* load data for start of next scan line */
         "movd    (%2, %0), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
         "movd    (%3, %0), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
@@ -531,6 +531,6 @@ YUV2RGB
         );
     }
 
-    asm volatile (EMMS);
+    __asm__ volatile (EMMS);
     return srcSliceH;
 }

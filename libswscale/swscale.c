@@ -1061,7 +1061,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     int ret= -1;
 #if defined(ARCH_X86)
     if (flags & SWS_CPU_CAPS_MMX)
-        asm volatile("emms\n\t"::: "memory"); //FIXME this should not be required but it IS (even for non-MMX versions)
+        __asm__ volatile("emms\n\t"::: "memory"); //FIXME this should not be required but it IS (even for non-MMX versions)
 #endif
 
     // Note the +1 is for the MMXscaler which reads over the end
@@ -1450,7 +1450,7 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
 
     //code fragment
 
-    asm volatile(
+    __asm__ volatile(
         "jmp                         9f                 \n\t"
     // Begin
         "0:                                             \n\t"
@@ -1490,7 +1490,7 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
         "=r" (fragmentLengthA)
     );
 
-    asm volatile(
+    __asm__ volatile(
         "jmp                         9f                 \n\t"
     // Begin
         "0:                                             \n\t"
@@ -2167,7 +2167,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
 #if defined(ARCH_X86)
     if (flags & SWS_CPU_CAPS_MMX)
-        asm volatile("emms\n\t"::: "memory");
+        __asm__ volatile("emms\n\t"::: "memory");
 #endif
 
 #if !defined(RUNTIME_CPUDETECT) || !defined (CONFIG_GPL) //ensure that the flags match the compiled variant if cpudetect is off
