@@ -63,7 +63,9 @@ DECLARE_ALIGNED_8 (const uint64_t, ff_pw_255) = 0x00ff00ff00ff00ffULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_1  ) = 0x0101010101010101ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_3  ) = 0x0303030303030303ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_7  ) = 0x0707070707070707ULL;
+DECLARE_ALIGNED_8 (const uint64_t, ff_pb_1F ) = 0x1F1F1F1F1F1F1F1FULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_3F ) = 0x3F3F3F3F3F3F3F3FULL;
+DECLARE_ALIGNED_8 (const uint64_t, ff_pb_81 ) = 0x8181818181818181ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_A1 ) = 0xA1A1A1A1A1A1A1A1ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_FC ) = 0xFCFCFCFCFCFCFCFCULL;
 
@@ -2590,6 +2592,11 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         if (ENABLE_ANY_H263) {
             c->h263_v_loop_filter= h263_v_loop_filter_mmx;
             c->h263_h_loop_filter= h263_h_loop_filter_mmx;
+        }
+        if ((ENABLE_VP3_DECODER || ENABLE_THEORA_DECODER) &&
+            !(avctx->flags & CODEC_FLAG_BITEXACT)) {
+            c->vp3_v_loop_filter= ff_vp3_v_loop_filter_mmx;
+            c->vp3_h_loop_filter= ff_vp3_h_loop_filter_mmx;
         }
         c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx_rnd;
         c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_mmx;

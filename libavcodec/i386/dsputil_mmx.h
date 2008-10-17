@@ -50,7 +50,9 @@ extern const uint64_t ff_pw_255;
 extern const uint64_t ff_pb_1;
 extern const uint64_t ff_pb_3;
 extern const uint64_t ff_pb_7;
+extern const uint64_t ff_pb_1F;
 extern const uint64_t ff_pb_3F;
+extern const uint64_t ff_pb_81;
 extern const uint64_t ff_pb_A1;
 extern const uint64_t ff_pb_FC;
 
@@ -85,6 +87,22 @@ extern const double ff_pd_2[2];
     SBUTTERFLY(c,d,b,wd,q) /* c=imjn b=kolp */\
     SBUTTERFLY(a,c,d,dq,q) /* a=aeim d=bfjn */\
     SBUTTERFLY(t,b,c,dq,q) /* t=cgko c=dhlp */
+
+// e,f,g,h can be memory
+// out: a,d,t,c
+#define TRANSPOSE8x4(a,b,c,d,e,f,g,h,t)\
+    "punpcklbw " #e ", " #a " \n\t" /* a0 e0 a1 e1 a2 e2 a3 e3 */\
+    "punpcklbw " #f ", " #b " \n\t" /* b0 f0 b1 f1 b2 f2 b3 f3 */\
+    "punpcklbw " #g ", " #c " \n\t" /* c0 g0 c1 g1 c2 g2 d3 g3 */\
+    "punpcklbw " #h ", " #d " \n\t" /* d0 h0 d1 h1 d2 h2 d3 h3 */\
+    SBUTTERFLY(a, b, t, bw, q)   /* a= a0 b0 e0 f0 a1 b1 e1 f1 */\
+                                 /* t= a2 b2 e2 f2 a3 b3 e3 f3 */\
+    SBUTTERFLY(c, d, b, bw, q)   /* c= c0 d0 g0 h0 c1 d1 g1 h1 */\
+                                 /* b= c2 d2 g2 h2 c3 d3 g3 h3 */\
+    SBUTTERFLY(a, c, d, wd, q)   /* a= a0 b0 c0 d0 e0 f0 g0 h0 */\
+                                 /* d= a1 b1 c1 d1 e1 f1 g1 h1 */\
+    SBUTTERFLY(t, b, c, wd, q)   /* t= a2 b2 c2 d2 e2 f2 g2 h2 */\
+                                 /* c= a3 b3 c3 d3 e3 f3 g3 h3 */
 
 #ifdef ARCH_X86_64
 // permutes 01234567 -> 05736421

@@ -229,7 +229,7 @@ typedef struct Vp3DecodeContext {
     uint16_t huffman_table[80][32][2];
 
     uint8_t filter_limit_values[64];
-    int bounding_values_array[256];
+    DECLARE_ALIGNED_8(int, bounding_values_array[256+2]);
 } Vp3DecodeContext;
 
 /************************************************************************
@@ -533,6 +533,7 @@ static void init_loop_filter(Vp3DecodeContext *s)
         bounding_values[x] = x;
         bounding_values[x + filter_limit] = filter_limit - x;
     }
+    bounding_values[129] = bounding_values[130] = filter_limit * 0x02020202;
 }
 
 /*

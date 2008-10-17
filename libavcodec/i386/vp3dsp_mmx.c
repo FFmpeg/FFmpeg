@@ -23,10 +23,111 @@
  * MMX-optimized functions cribbed from the original VP3 source code.
  */
 
+#include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
 
 extern const uint16_t ff_vp3_idct_data[];
+
+// this is off by one or two for some cases when filter_limit is greater than 63
+// in:  p0 in mm6, p1 in mm4, p2 in mm2, p3 in mm1
+// out: p1 in mm4, p2 in mm3
+#define VP3_LOOP_FILTER(flim) \
+    "movq       %%mm6, %%mm7 \n\t" \
+    "pand    "MANGLE(ff_pb_7 )", %%mm6 \n\t" /* p0&7 */ \
+    "psrlw         $3, %%mm7 \n\t" \
+    "pand    "MANGLE(ff_pb_1F)", %%mm7 \n\t" /* p0>>3 */ \
+    "movq       %%mm2, %%mm3 \n\t" /* mm3 = p2 */ \
+    "pxor       %%mm4, %%mm2 \n\t" \
+    "pand    "MANGLE(ff_pb_1 )", %%mm2 \n\t" /* (p2^p1)&1 */ \
+    "movq       %%mm2, %%mm5 \n\t" \
+    "paddb      %%mm2, %%mm2 \n\t" \
+    "paddb      %%mm5, %%mm2 \n\t" /* 3*(p2^p1)&1 */ \
+    "paddb      %%mm6, %%mm2 \n\t" /* extra bits lost in shifts */ \
+    "pcmpeqb    %%mm0, %%mm0 \n\t" \
+    "pxor       %%mm0, %%mm1 \n\t" /* 255 - p3 */ \
+    "pavgb      %%mm2, %%mm1 \n\t" /* (256 - p3 + extrabits) >> 1 */ \
+    "pxor       %%mm4, %%mm0 \n\t" /* 255 - p1 */ \
+    "pavgb      %%mm3, %%mm0 \n\t" /* (256 + p2-p1) >> 1 */ \
+    "paddb   "MANGLE(ff_pb_3 )", %%mm1 \n\t" \
+    "pavgb      %%mm0, %%mm1 \n\t" /* 128+2+(   p2-p1  - p3) >> 2 */ \
+    "pavgb      %%mm0, %%mm1 \n\t" /* 128+1+(3*(p2-p1) - p3) >> 3 */ \
+    "paddusb    %%mm1, %%mm7 \n\t" /* d+128+1 */ \
+    "movq    "MANGLE(ff_pb_81)", %%mm6 \n\t" \
+    "psubusb    %%mm7, %%mm6 \n\t" \
+    "psubusb "MANGLE(ff_pb_81)", %%mm7 \n\t" \
+\
+    "movq     "#flim", %%mm5 \n\t" \
+    "pminub     %%mm5, %%mm6 \n\t" \
+    "pminub     %%mm5, %%mm7 \n\t" \
+    "movq       %%mm6, %%mm0 \n\t" \
+    "movq       %%mm7, %%mm1 \n\t" \
+    "paddb      %%mm6, %%mm6 \n\t" \
+    "paddb      %%mm7, %%mm7 \n\t" \
+    "pminub     %%mm5, %%mm6 \n\t" \
+    "pminub     %%mm5, %%mm7 \n\t" \
+    "psubb      %%mm0, %%mm6 \n\t" \
+    "psubb      %%mm1, %%mm7 \n\t" \
+    "paddusb    %%mm7, %%mm4 \n\t" \
+    "psubusb    %%mm6, %%mm4 \n\t" \
+    "psubusb    %%mm7, %%mm3 \n\t" \
+    "paddusb    %%mm6, %%mm3 \n\t"
+
+#define STORE_4_WORDS(dst0, dst1, dst2, dst3, mm) \
+    "movd "#mm", %0        \n\t" \
+    "movw   %w0, -1"#dst0" \n\t" \
+    "psrlq  $32, "#mm"     \n\t" \
+    "shr    $16, %0        \n\t" \
+    "movw   %w0, -1"#dst1" \n\t" \
+    "movd "#mm", %0        \n\t" \
+    "movw   %w0, -1"#dst2" \n\t" \
+    "shr    $16, %0        \n\t" \
+    "movw   %w0, -1"#dst3" \n\t"
+
+void ff_vp3_v_loop_filter_mmx(uint8_t *src, int stride, int *bounding_values)
+{
+    __asm__ volatile(
+        "movq          %0, %%mm6 \n\t"
+        "movq          %1, %%mm4 \n\t"
+        "movq          %2, %%mm2 \n\t"
+        "movq          %3, %%mm1 \n\t"
+
+        VP3_LOOP_FILTER(%4)
+
+        "movq       %%mm4, %1    \n\t"
+        "movq       %%mm3, %2    \n\t"
+
+        : "+m" (*(uint64_t*)(src - 2*stride)),
+          "+m" (*(uint64_t*)(src - 1*stride)),
+          "+m" (*(uint64_t*)(src + 0*stride)),
+          "+m" (*(uint64_t*)(src + 1*stride))
+        : "m"(*(uint64_t*)(bounding_values+129))
+    );
+}
+
+void ff_vp3_h_loop_filter_mmx(uint8_t *src, int stride, int *bounding_values)
+{
+    x86_reg tmp;
+
+    __asm__ volatile(
+        "movd -2(%1),      %%mm6 \n\t"
+        "movd -2(%1,%3),   %%mm0 \n\t"
+        "movd -2(%1,%3,2), %%mm1 \n\t"
+        "movd -2(%1,%4),   %%mm4 \n\t"
+
+        TRANSPOSE8x4(%%mm6, %%mm0, %%mm1, %%mm4, -2(%2), -2(%2,%3), -2(%2,%3,2), -2(%2,%4), %%mm2)
+        VP3_LOOP_FILTER(%5)
+        SBUTTERFLY(%%mm4, %%mm3, %%mm5, bw, q)
+
+        STORE_4_WORDS((%1), (%1,%3), (%1,%3,2), (%1,%4), %%mm4)
+        STORE_4_WORDS((%2), (%2,%3), (%2,%3,2), (%2,%4), %%mm5)
+
+        : "=&r"(tmp)
+        : "r"(src), "r"(src+4*stride), "r"((x86_reg)stride), "r"((x86_reg)3*stride),
+          "m"(*(uint64_t*)(bounding_values+129))
+        : "memory"
+    );
+}
 
 /* from original comments: The Macro does IDct on 4 1-D Dcts */
 #define BeginIDCT() \
