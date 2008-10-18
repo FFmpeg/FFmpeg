@@ -103,7 +103,11 @@ static int get_audio_flags(AVCodecContext *enc){
         flags |= FLV_CODECID_ADPCM | FLV_SAMPLESSIZE_16BIT;
         break;
     case CODEC_ID_NELLYMOSER:
-        flags |= FLV_CODECID_NELLYMOSER | FLV_SAMPLESSIZE_16BIT;
+        if (enc->sample_rate == 8000) {
+            flags |= FLV_CODECID_NELLYMOSER_8KHZ_MONO | FLV_SAMPLESSIZE_16BIT;
+        } else {
+            flags |= FLV_CODECID_NELLYMOSER | FLV_SAMPLESSIZE_16BIT;
+        }
         break;
     case 0:
         flags |= enc->codec_tag<<4;
