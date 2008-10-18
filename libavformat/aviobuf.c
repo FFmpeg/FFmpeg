@@ -290,20 +290,25 @@ void put_tag(ByteIOContext *s, const char *tag)
 
 static void fill_buffer(ByteIOContext *s)
 {
-    int len=0;
+    uint8_t *dst= s->buf_end - s->buffer < s->buffer_size ? s->buf_ptr : s->buffer;
+    int len= s->buffer_size - (dst - s->buffer);
+
+    assert(s->buf_ptr == s->buf_end);
 
     /* no need to do anything if EOF already reached */
     if (s->eof_reached)
         return;
 
-    if(s->update_checksum){
+    if(s->update_checksum && dst == s->buffer){
         if(s->buf_end > s->checksum_ptr)
             s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_end - s->checksum_ptr);
         s->checksum_ptr= s->buffer;
     }
 
     if(s->read_packet)
-        len = s->read_packet(s->opaque, s->buffer, s->buffer_size);
+        len = s->read_packet(s->opaque, dst, len);
+    else
+        len = 0;
     if (len <= 0) {
         /* do not modify buffer if EOF reached so that a seek back can
            be done without rereading data */
@@ -312,8 +317,8 @@ static void fill_buffer(ByteIOContext *s)
             s->error= len;
     } else {
         s->pos += len;
-        s->buf_ptr = s->buffer;
-        s->buf_end = s->buffer + len;
+        s->buf_ptr = dst;
+        s->buf_end = dst + len;
     }
 }
 
