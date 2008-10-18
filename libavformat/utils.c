@@ -824,6 +824,15 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     int num, den, presentation_delayed, delay, i;
     int64_t offset;
 
+    /* do we have a video B-frame ? */
+    delay= st->codec->has_b_frames;
+    presentation_delayed = 0;
+    /* XXX: need has_b_frame, but cannot get it if the codec is
+        not initialized */
+    if (delay &&
+        pc && pc->pict_type != FF_B_TYPE)
+        presentation_delayed = 1;
+
     if(pkt->pts != AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE && pkt->dts > pkt->pts && st->pts_wrap_bits<63
        /*&& pkt->dts-(1LL<<st->pts_wrap_bits) < pkt->pts*/){
         pkt->dts -= 1LL<<st->pts_wrap_bits;
@@ -850,14 +859,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             pkt->dts += offset;
     }
 
-    /* do we have a video B-frame ? */
-    delay= st->codec->has_b_frames;
-    presentation_delayed = 0;
-    /* XXX: need has_b_frame, but cannot get it if the codec is
-        not initialized */
-    if (delay &&
-        pc && pc->pict_type != FF_B_TYPE)
-        presentation_delayed = 1;
     /* This may be redundant, but it should not hurt. */
     if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts > pkt->dts)
         presentation_delayed = 1;
