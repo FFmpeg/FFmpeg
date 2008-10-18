@@ -3691,7 +3691,7 @@ static int opt_preset(const char *opt, const char *arg)
     }
 
     if(!f){
-        fprintf(stderr, "Preset file not found\n");
+        fprintf(stderr, "File for preset '%s' not found\n", arg);
         av_exit(1);
     }
 
