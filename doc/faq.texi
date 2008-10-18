@@ -58,7 +58,9 @@ that it is related to FFmpeg.
 
 @section Is there a forum for FFmpeg? I do not like mailing lists.
 
-Yes, (@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user}).
+You may view our mailing lists with a more forum-alike look here:
+@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user},
+but, if you post, please remember that our mail list rules still apply there.
 
 @section I cannot read this file although this format seems to be supported by ffmpeg.
 
