@@ -3710,8 +3710,10 @@ static int opt_preset(const char *opt, const char *arg)
             opt_video_codec(tmp2);
         }else if(!strcmp(tmp, "scodec")){
             opt_subtitle_codec(tmp2);
-        }else
-            opt_default(tmp, tmp2);
+        }else if(opt_default(tmp, tmp2) < 0){
+            fprintf(stderr, "Invalid option or argument: %s=%s\n", tmp, tmp2);
+            av_exit(1);
+        }
     }
 
     fclose(f);
