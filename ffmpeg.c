@@ -3667,7 +3667,7 @@ static int opt_bsf(const char *opt, const char *arg)
 static int opt_preset(const char *opt, const char *arg)
 {
     FILE *f=NULL;
-    char tmp[1000], tmp2[1000], line[1000];
+    char filename[1000], tmp[1000], tmp2[1000], line[1000];
     int i;
     const char *base[3]= { getenv("HOME"),
                            "/usr/local/share",
@@ -3675,19 +3675,20 @@ static int opt_preset(const char *opt, const char *arg)
                          };
 
     for(i=!base[0]; i<3 && !f; i++){
-        snprintf(tmp, sizeof(tmp), "%s/%sffmpeg/%s.ffpreset", base[i], i ? "" : ".", arg);
-        f= fopen(tmp, "r");
+        snprintf(filename, sizeof(filename), "%s/%sffmpeg/%s.ffpreset", base[i], i ? "" : ".", arg);
+        f= fopen(filename, "r");
         if(!f){
             char *codec_name= *opt == 'v' ? video_codec_name :
                               *opt == 'a' ? audio_codec_name :
                                             subtitle_codec_name;
-              snprintf(tmp, sizeof(tmp), "%s/%sffmpeg/%s-%s.ffpreset", base[i],  i ? "" : ".", codec_name, arg);
-            f= fopen(tmp, "r");
+            snprintf(filename, sizeof(filename), "%s/%sffmpeg/%s-%s.ffpreset", base[i],  i ? "" : ".", codec_name, arg);
+            f= fopen(filename, "r");
         }
     }
     if(!f && ((arg[0]=='.' && arg[1]=='/') || arg[0]=='/' ||
               is_dos_path(arg))){
-        f= fopen(arg, "r");
+        snprintf(filename, sizeof(filename), arg);
+        f= fopen(filename, "r");
     }
 
     if(!f){
@@ -3701,7 +3702,7 @@ static int opt_preset(const char *opt, const char *arg)
             continue;
         e|= sscanf(line, "%999[^=]=%999[^\n]\n", tmp, tmp2) - 2;
         if(e){
-            fprintf(stderr, "Preset file invalid\n");
+            fprintf(stderr, "%s: Preset file invalid\n", filename);
             av_exit(1);
         }
         if(!strcmp(tmp, "acodec")){
@@ -3711,7 +3712,7 @@ static int opt_preset(const char *opt, const char *arg)
         }else if(!strcmp(tmp, "scodec")){
             opt_subtitle_codec(tmp2);
         }else if(opt_default(tmp, tmp2) < 0){
-            fprintf(stderr, "Invalid option or argument: %s=%s\n", tmp, tmp2);
+            fprintf(stderr, "%s: Invalid option or argument: %s=%s\n", filename, tmp, tmp2);
             av_exit(1);
         }
     }
