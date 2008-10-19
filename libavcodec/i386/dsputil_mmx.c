@@ -2632,9 +2632,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmx2;
                 c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
 
-            if (ENABLE_VP3_DECODER || ENABLE_THEORA_DECODER) {
-                c->vp3_v_loop_filter= ff_vp3_v_loop_filter_mmx2;
-                c->vp3_h_loop_filter= ff_vp3_h_loop_filter_mmx2;
+                if (ENABLE_VP3_DECODER || ENABLE_THEORA_DECODER) {
+                    c->vp3_v_loop_filter= ff_vp3_v_loop_filter_mmx2;
+                    c->vp3_h_loop_filter= ff_vp3_h_loop_filter_mmx2;
                 }
             }
 
