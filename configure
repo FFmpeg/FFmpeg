@@ -627,14 +627,6 @@ require2(){
     check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
 }
 
-require_cpp_condition(){
-    name="$1"
-    header="$2"
-    cpp_condition="$3"
-    shift 3
-    check_cpp_condition $header "$cpp_condition" || die "ERROR: $name does not satisfy CPP condition: $cpp_condition"
-}
-
 check_foo_config(){
     cfg=$1
     pkg=$2
