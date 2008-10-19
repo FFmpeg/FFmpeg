@@ -2593,11 +2593,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->h263_v_loop_filter= h263_v_loop_filter_mmx;
             c->h263_h_loop_filter= h263_h_loop_filter_mmx;
         }
-        if ((ENABLE_VP3_DECODER || ENABLE_THEORA_DECODER) &&
-            !(avctx->flags & CODEC_FLAG_BITEXACT)) {
-            c->vp3_v_loop_filter= ff_vp3_v_loop_filter_mmx;
-            c->vp3_h_loop_filter= ff_vp3_h_loop_filter_mmx;
-        }
         c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx_rnd;
         c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_mmx;
         c->put_no_rnd_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx_nornd;
@@ -2636,6 +2631,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_mmx2;
                 c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmx2;
                 c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
+            }
+
+            if ((ENABLE_VP3_DECODER || ENABLE_THEORA_DECODER) &&
+                !(avctx->flags & CODEC_FLAG_BITEXACT)) {
+                c->vp3_v_loop_filter= ff_vp3_v_loop_filter_mmx2;
+                c->vp3_h_loop_filter= ff_vp3_h_loop_filter_mmx2;
             }
 
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU) \

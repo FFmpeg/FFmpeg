@@ -84,7 +84,7 @@ extern const uint16_t ff_vp3_idct_data[];
     "shr    $16, %0        \n\t" \
     "movw   %w0, -1"#dst3" \n\t"
 
-void ff_vp3_v_loop_filter_mmx(uint8_t *src, int stride, int *bounding_values)
+void ff_vp3_v_loop_filter_mmx2(uint8_t *src, int stride, int *bounding_values)
 {
     __asm__ volatile(
         "movq          %0, %%mm6 \n\t"
@@ -105,7 +105,7 @@ void ff_vp3_v_loop_filter_mmx(uint8_t *src, int stride, int *bounding_values)
     );
 }
 
-void ff_vp3_h_loop_filter_mmx(uint8_t *src, int stride, int *bounding_values)
+void ff_vp3_h_loop_filter_mmx2(uint8_t *src, int stride, int *bounding_values)
 {
     x86_reg tmp;
 
