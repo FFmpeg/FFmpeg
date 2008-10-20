@@ -68,7 +68,7 @@ static av_always_inline av_const uint32_t bswap_32(uint32_t x)
          "bic %1, %1, #0xFF0000   \n\t"
          "mov %0, %0, ror #8      \n\t"
          "eor %0, %0, %1, lsr #8  \n\t"
-         : "+r"(x), "+r"(t));
+         : "+r"(x), "=&r"(t));
 #elif defined(ARCH_BFIN)
     unsigned tmp;
     __asm__("%1 = %0 >> 8 (V);      \n\t"
