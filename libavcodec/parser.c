@@ -291,7 +291,7 @@ void ff_parse_close(AVCodecParserContext *s)
 {
     ParseContext *pc = s->priv_data;
 
-    av_free(pc->buffer);
+    av_freep(&pc->buffer);
 }
 
 void ff_parse1_close(AVCodecParserContext *s)
