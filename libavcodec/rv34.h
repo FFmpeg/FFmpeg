@@ -107,6 +107,7 @@ typedef struct RV34DecContext{
 
     uint16_t *cbp_luma;      ///< CBP values for luma subblocks
     uint8_t  *cbp_chroma;    ///< CBP values for chroma subblocks
+    int      *deblock_coefs; ///< deblock coefficients for each macroblock
 
     /** 8x8 block available flags (for MV prediction) */
     DECLARE_ALIGNED_8(uint32_t, avail_cache[3*4]);
@@ -114,6 +115,7 @@ typedef struct RV34DecContext{
     int (*parse_slice_header)(struct RV34DecContext *r, GetBitContext *gb, SliceInfo *si);
     int (*decode_mb_info)(struct RV34DecContext *r);
     int (*decode_intra_types)(struct RV34DecContext *r, GetBitContext *gb, int8_t *dst);
+    int (*set_deblock_coef)(struct RV34DecContext *r);
     void (*loop_filter)(struct RV34DecContext *r);
 }RV34DecContext;
 

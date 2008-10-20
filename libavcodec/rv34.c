@@ -1039,6 +1039,8 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
     cbp = cbp2 = rv34_decode_mb_header(r, intra_types);
     r->cbp_luma  [s->mb_x + s->mb_y * s->mb_stride] = cbp;
     r->cbp_chroma[s->mb_x + s->mb_y * s->mb_stride] = cbp >> 16;
+    if(r->set_deblock_coef)
+        r->deblock_coefs[s->mb_x + s->mb_y * s->mb_stride] = r->set_deblock_coef(r);
     s->current_picture.qscale_table[s->mb_x + s->mb_y * s->mb_stride] = s->qscale;
 
     if(cbp == -1)
@@ -1132,6 +1134,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, uint8_t* buf, int buf_s
             r->mb_type = av_realloc(r->mb_type, r->s.mb_stride * r->s.mb_height * sizeof(*r->mb_type));
             r->cbp_luma   = av_realloc(r->cbp_luma,   r->s.mb_stride * r->s.mb_height * sizeof(*r->cbp_luma));
             r->cbp_chroma = av_realloc(r->cbp_chroma, r->s.mb_stride * r->s.mb_height * sizeof(*r->cbp_chroma));
+            r->deblock_coefs = av_realloc(r->deblock_coefs, r->s.mb_stride * r->s.mb_height * sizeof(*r->deblock_coefs));
         }
         s->pict_type = r->si.type ? r->si.type : FF_I_TYPE;
         if(MPV_frame_start(s, s->avctx) < 0)
@@ -1226,6 +1229,7 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
 
     r->cbp_luma   = av_malloc(r->s.mb_stride * r->s.mb_height * sizeof(*r->cbp_luma));
     r->cbp_chroma = av_malloc(r->s.mb_stride * r->s.mb_height * sizeof(*r->cbp_chroma));
+    r->deblock_coefs = av_malloc(r->s.mb_stride * r->s.mb_height * sizeof(*r->deblock_coefs));
 
     if(!intra_vlcs[0].cbppattern[0].bits)
         rv34_init_tables();
