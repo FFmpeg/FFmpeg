@@ -39,7 +39,7 @@
 /** translation of RV30/40 macroblock types to lavc ones */
 static const int rv34_mb_type_to_lavc[12] = {
     MB_TYPE_INTRA,
-    MB_TYPE_INTRA16x16,
+    MB_TYPE_INTRA16x16              | MB_TYPE_SEPARATE_DC,
     MB_TYPE_16x16   | MB_TYPE_L0,
     MB_TYPE_8x8     | MB_TYPE_L0,
     MB_TYPE_16x16   | MB_TYPE_L0,
@@ -49,7 +49,7 @@ static const int rv34_mb_type_to_lavc[12] = {
     MB_TYPE_16x8    | MB_TYPE_L0,
     MB_TYPE_8x16    | MB_TYPE_L0,
     MB_TYPE_16x16   | MB_TYPE_L0L1,
-    MB_TYPE_16x16   | MB_TYPE_L0
+    MB_TYPE_16x16   | MB_TYPE_L0    | MB_TYPE_SEPARATE_DC
 };
 
 
