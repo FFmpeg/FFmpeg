@@ -2239,6 +2239,7 @@ static void int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mu
 }
 
 static void float_to_int16_3dnow(int16_t *dst, const float *src, long len){
+    x86_reg reglen = len;
     // not bit-exact: pf2id uses different rounding than C and SSE
     __asm__ volatile(
         "add        %0          , %0        \n\t"
@@ -2257,10 +2258,11 @@ static void float_to_int16_3dnow(int16_t *dst, const float *src, long len){
         "add        $16         , %0        \n\t"
         " js 1b                             \n\t"
         "femms                              \n\t"
-        :"+r"(len), "+r"(dst), "+r"(src)
+        :"+r"(reglen), "+r"(dst), "+r"(src)
     );
 }
 static void float_to_int16_sse(int16_t *dst, const float *src, long len){
+    x86_reg reglen = len;
     __asm__ volatile(
         "add        %0          , %0        \n\t"
         "lea         (%2,%0,2)  , %2        \n\t"
@@ -2278,11 +2280,12 @@ static void float_to_int16_sse(int16_t *dst, const float *src, long len){
         "add        $16         , %0        \n\t"
         " js 1b                             \n\t"
         "emms                               \n\t"
-        :"+r"(len), "+r"(dst), "+r"(src)
+        :"+r"(reglen), "+r"(dst), "+r"(src)
     );
 }
 
 static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
+    x86_reg reglen = len;
     __asm__ volatile(
         "add        %0          , %0        \n\t"
         "lea         (%2,%0,2)  , %2        \n\t"
@@ -2295,7 +2298,7 @@ static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
         "movdqa     %%xmm0      ,  (%1,%0)  \n\t"
         "add        $16         , %0        \n\t"
         " js 1b                             \n\t"
-        :"+r"(len), "+r"(dst), "+r"(src)
+        :"+r"(reglen), "+r"(dst), "+r"(src)
     );
 }
 
@@ -2326,6 +2329,7 @@ static void float_to_int16_interleave_##cpu(int16_t *dst, const float **src, lon
     if(channels==1)\
         float_to_int16_##cpu(dst, src[0], len);\
     else if(channels==2){\
+        x86_reg reglen = len; \
         const float *src0 = src[0];\
         const float *src1 = src[1];\
         __asm__ volatile(\
@@ -2335,7 +2339,7 @@ static void float_to_int16_interleave_##cpu(int16_t *dst, const float **src, lon
             "add %0, %3 \n"\
             "neg %0 \n"\
             body\
-            :"+r"(len), "+r"(dst), "+r"(src0), "+r"(src1)\
+            :"+r"(reglen), "+r"(dst), "+r"(src0), "+r"(src1)\
         );\
     }else if(channels==6){\
         ff_float_to_int16_interleave6_##cpu(dst, src, len);\
