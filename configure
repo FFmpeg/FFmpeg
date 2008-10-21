@@ -1006,7 +1006,7 @@ LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 
 # gcc stupidly only outputs the basename of targets with -MM, but we need the
 # full relative path for objects in subdirectories for non-recursive Make.
-DEPEND_CMD='$(CC) $(CFLAGS) -MM -MG $< | sed -e "/^\#.*/d" -e "1s,^,$(@D)/," -e "s,\\([[:space:]]\\)\\(version\\.h\\),\\1\$$(BUILD_ROOT_REL)/\\2,"'
+DEPEND_CMD='$(CC) $(CFLAGS) -MM -MG $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o," -e "s,\\([[:space:]]\\)\\(version\\.h\\),\\1\$$(BUILD_ROOT_REL)/\\2,"'
 
 # find source path
 source_path="`dirname \"$0\"`"
