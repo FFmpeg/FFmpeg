@@ -1516,6 +1516,9 @@ if test $cpu != "generic"; then
             add_cflags "-mcpu=$cpu"
             enable fast_unaligned
         ;;
+        armv*)
+            add_cflags "-march=$cpu"
+        ;;
         arm*)
             add_cflags "-mcpu=$cpu"
         ;;
