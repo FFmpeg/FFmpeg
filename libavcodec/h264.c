@@ -1979,7 +1979,7 @@ static av_cold void decode_init_vlc(void){
          * the packed static coeff_token_vlc table sizes
          * were initialized correctly.
          */
-        assert(offset == sizeof(coeff_token_vlc_tables)/(sizeof(VLC_TYPE)*2));
+        assert(offset == FF_ARRAY_ELEMS(coeff_token_vlc_tables));
 
         for(i=0; i<3; i++){
             chroma_dc_total_zeros_vlc[i].table = chroma_dc_total_zeros_vlc_tables[i];
@@ -6888,7 +6888,7 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         if( aspect_ratio_idc == EXTENDED_SAR ) {
             sps->sar.num= get_bits(&s->gb, 16);
             sps->sar.den= get_bits(&s->gb, 16);
-        }else if(aspect_ratio_idc < sizeof(pixel_aspect)/sizeof(*pixel_aspect)){
+        }else if(aspect_ratio_idc < FF_ARRAY_ELEMS(pixel_aspect)){
             sps->sar=  pixel_aspect[aspect_ratio_idc];
         }else{
             av_log(h->s.avctx, AV_LOG_ERROR, "illegal aspect ratio\n");
@@ -7072,7 +7072,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
         sps->offset_for_top_to_bottom_field= get_se_golomb(&s->gb);
         tmp= get_ue_golomb(&s->gb);
 
-        if(tmp >= sizeof(sps->offset_for_ref_frame) / sizeof(sps->offset_for_ref_frame[0])){
+        if(tmp >= FF_ARRAY_ELEMS(sps->offset_for_ref_frame)){
             av_log(h->s.avctx, AV_LOG_ERROR, "poc_cycle_length overflow %u\n", tmp);
             return -1;
         }

@@ -6386,7 +6386,7 @@ static inline const DVprofile* dv_frame_profile(const uint8_t* frame)
        return &dv_profiles[2];
    }
 
-   for (i=0; i<sizeof(dv_profiles)/sizeof(DVprofile); i++)
+   for (i=0; i<FF_ARRAY_ELEMS(dv_profiles); i++)
        if (dsf == dv_profiles[i].dsf && stype == dv_profiles[i].video_stype)
            return &dv_profiles[i];
 
@@ -6397,7 +6397,7 @@ static const DVprofile* dv_codec_profile(AVCodecContext* codec)
 {
     int i;
 
-    for (i=0; i<sizeof(dv_profiles)/sizeof(DVprofile); i++)
+    for (i=0; i<FF_ARRAY_ELEMS(dv_profiles); i++)
        if (codec->height == dv_profiles[i].height && codec->pix_fmt == dv_profiles[i].pix_fmt &&
            codec->width  == dv_profiles[i].width)
                return &dv_profiles[i];

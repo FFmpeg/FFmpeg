@@ -418,7 +418,7 @@ const CIDEntry ff_dnxhd_cid_table[] = {
 int ff_dnxhd_get_cid_table(int cid)
 {
     int i;
-    for (i = 0; i < sizeof(ff_dnxhd_cid_table)/sizeof(CIDEntry); i++)
+    for (i = 0; i < FF_ARRAY_ELEMS(ff_dnxhd_cid_table); i++)
         if (ff_dnxhd_cid_table[i].cid == cid)
             return i;
     return -1;
@@ -430,7 +430,7 @@ int ff_dnxhd_find_cid(AVCodecContext *avctx)
     int mbs = avctx->bit_rate/1000000;
     if (!mbs)
         return 0;
-    for (i = 0; i < sizeof(ff_dnxhd_cid_table)/sizeof(CIDEntry); i++) {
+    for (i = 0; i < FF_ARRAY_ELEMS(ff_dnxhd_cid_table); i++) {
         const CIDEntry *cid = &ff_dnxhd_cid_table[i];
         if (cid->width == avctx->width && cid->height == avctx->height &&
             cid->interlaced == !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT) &&

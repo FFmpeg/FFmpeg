@@ -1341,7 +1341,7 @@ static int http_parse_request(HTTPContext *c)
     /* If this is WMP, get the rate information */
     if (extract_rates(ratebuf, sizeof(ratebuf), c->buffer)) {
         if (modify_current_stream(c, ratebuf)) {
-            for (i = 0; i < sizeof(c->feed_streams) / sizeof(c->feed_streams[0]); i++) {
+            for (i = 0; i < FF_ARRAY_ELEMS(c->feed_streams); i++) {
                 if (c->switch_feed_streams[i] >= 0)
                     do_switch_stream(c, i);
             }

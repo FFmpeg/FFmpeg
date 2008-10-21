@@ -226,8 +226,6 @@ typedef struct {
     EbmlList blocks;
 } MatroskaCluster;
 
-#define ARRAY_SIZE(x)  (sizeof(x)/sizeof(*x))
-
 static EbmlSyntax ebml_header[] = {
     { EBML_ID_EBMLREADVERSION,        EBML_UINT, 0, offsetof(Ebml,version), {.u=EBML_VERSION} },
     { EBML_ID_EBMLMAXSIZELENGTH,      EBML_UINT, 0, offsetof(Ebml,max_size), {.u=8} },
@@ -980,7 +978,7 @@ static void matroska_convert_tags(AVFormatContext *s, EbmlList *list)
     int i, j;
 
     for (i=0; i < list->nb_elem; i++) {
-        for (j=0; j < ARRAY_SIZE(metadata); j++){
+        for (j=0; j < FF_ARRAY_ELEMS(metadata); j++){
             if (!strcmp(tags[i].name, metadata[j].name)) {
                 int *ptr = (int *)((char *)s + metadata[j].offset);
                 if (*ptr)  continue;
@@ -1050,7 +1048,7 @@ static int matroska_aac_profile(char *codec_id)
     static const char * const aac_profiles[] = { "MAIN", "LC", "SSR" };
     int profile;
 
-    for (profile=0; profile<ARRAY_SIZE(aac_profiles); profile++)
+    for (profile=0; profile<FF_ARRAY_ELEMS(aac_profiles); profile++)
         if (strstr(codec_id, aac_profiles[profile]))
             break;
     return profile + 1;
@@ -1060,7 +1058,7 @@ static int matroska_aac_sri(int samplerate)
 {
     int sri;
 
-    for (sri=0; sri<ARRAY_SIZE(ff_mpeg4audio_sample_rates); sri++)
+    for (sri=0; sri<FF_ARRAY_ELEMS(ff_mpeg4audio_sample_rates); sri++)
         if (ff_mpeg4audio_sample_rates[sri] == samplerate)
             break;
     return sri;

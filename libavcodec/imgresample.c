@@ -790,7 +790,7 @@ int main(int argc, char **argv)
         }
     }
     save_pgm("/tmp/in.pgm", img, XSIZE, YSIZE);
-    for(i=0;i<sizeof(factors)/sizeof(float);i++) {
+    for(i=0;i<FF_ARRAY_ELEMS(factors);i++) {
         fact = factors[i];
         xsize = (int)(XSIZE * fact);
         ysize = (int)((YSIZE - 100) * fact);

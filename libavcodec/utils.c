@@ -1455,7 +1455,7 @@ static const VideoFrameRateAbbr video_frame_rate_abbrs[]= {
 int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str)
 {
     int i;
-    int n = sizeof(video_frame_size_abbrs) / sizeof(VideoFrameSizeAbbr);
+    int n = FF_ARRAY_ELEMS(video_frame_size_abbrs);
     const char *p;
     int frame_width = 0, frame_height = 0;
 
@@ -1483,7 +1483,7 @@ int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str)
 int av_parse_video_frame_rate(AVRational *frame_rate, const char *arg)
 {
     int i;
-    int n = sizeof(video_frame_rate_abbrs) / sizeof(VideoFrameRateAbbr);
+    int n = FF_ARRAY_ELEMS(video_frame_rate_abbrs);
     char* cp;
 
     /* First, we check our abbreviation table */

@@ -91,7 +91,7 @@ int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size){
  */
 const AVCRC *av_crc_get_table(AVCRCId crc_id){
 #ifndef CONFIG_HARDCODED_TABLES
-    if (!av_crc_table[crc_id][sizeof(av_crc_table[crc_id])/sizeof(av_crc_table[crc_id][0])-1])
+    if (!av_crc_table[crc_id][FF_ARRAY_ELEMS(av_crc_table[crc_id])-1])
         if (av_crc_init(av_crc_table[crc_id],
                         av_crc_table_params[crc_id].le,
                         av_crc_table_params[crc_id].bits,

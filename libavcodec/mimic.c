@@ -110,7 +110,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
     ctx->prev_index = 0;
     ctx->cur_index = 15;
 
-    if(init_vlc(&ctx->vlc, 11, sizeof(huffbits)/sizeof(huffbits[0]),
+    if(init_vlc(&ctx->vlc, 11, FF_ARRAY_ELEMS(huffbits),
                  huffbits, 1, 1, huffcodes, 4, 4, 0)) {
         av_log(avctx, AV_LOG_ERROR, "error initializing vlc table\n");
         return -1;

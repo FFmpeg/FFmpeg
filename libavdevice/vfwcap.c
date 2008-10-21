@@ -152,7 +152,7 @@ static int shall_we_drop(struct vfw_ctx *ctx)
 {
     AVFormatContext *s = ctx->s;
     const uint8_t dropscore[] = {62, 75, 87, 100};
-    const int ndropscores = sizeof(dropscore)/sizeof(dropscore[0]);
+    const int ndropscores = FF_ARRAY_ELEMS(dropscore);
     unsigned int buffer_fullness = (ctx->curbufsize*100)/s->max_picture_buffer;
 
     if(dropscore[++ctx->frame_num%ndropscores] <= buffer_fullness) {

@@ -74,8 +74,7 @@ static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
 typedef struct MXFContext {
     int64_t footer_partition_offset;
     int essence_container_count;
-    uint8_t essence_containers_indices[sizeof(mxf_essence_container_uls)/
-                                       sizeof(*mxf_essence_container_uls)];
+    uint8_t essence_containers_indices[FF_ARRAY_ELEMS(mxf_essence_container_uls)];
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -207,8 +206,7 @@ static int klv_encode_ber_length(ByteIOContext *pb, uint64_t len)
 static int mxf_get_essence_container_ul_index(enum CodecID id)
 {
     int i;
-    for (i = 0; i < sizeof(mxf_essence_container_uls)/
-                    sizeof(*mxf_essence_container_uls); i++)
+    for (i = 0; i < FF_ARRAY_ELEMS(mxf_essence_container_uls); i++)
         if (mxf_essence_container_uls[i].id == id)
             return i;
     return -1;
@@ -219,7 +217,7 @@ static void mxf_write_primer_pack(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     int local_tag_number, i = 0;
 
-    local_tag_number = sizeof(mxf_local_tag_batch)/sizeof(*mxf_local_tag_batch);
+    local_tag_number = FF_ARRAY_ELEMS(mxf_local_tag_batch);
 
     put_buffer(pb, primer_pack_key, 16);
     klv_encode_ber_length(pb, local_tag_number * 18 + 8);
@@ -754,8 +752,7 @@ static int mxf_write_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     int i;
-    uint8_t present[sizeof(mxf_essence_container_uls)/
-                    sizeof(*mxf_essence_container_uls)] = {0};
+    uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];

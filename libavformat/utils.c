@@ -2904,7 +2904,7 @@ int64_t parse_date(const char *datestr, int duration)
     q = NULL;
     if (!duration) {
         /* parse the year-month-day part */
-        for (i = 0; i < sizeof(date_fmt) / sizeof(date_fmt[0]); i++) {
+        for (i = 0; i < FF_ARRAY_ELEMS(date_fmt); i++) {
             q = small_strptime(p, date_fmt[i], &dt);
             if (q) {
                 break;
@@ -2928,7 +2928,7 @@ int64_t parse_date(const char *datestr, int duration)
             p++;
 
         /* parse the hour-minute-second part */
-        for (i = 0; i < sizeof(time_fmt) / sizeof(time_fmt[0]); i++) {
+        for (i = 0; i < FF_ARRAY_ELEMS(time_fmt); i++) {
             q = small_strptime(p, time_fmt[i], &dt);
             if (q) {
                 break;

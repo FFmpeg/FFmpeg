@@ -213,7 +213,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     venc->sample_rate = avccontext->sample_rate;
     venc->log2_blocksize[0] = venc->log2_blocksize[1] = 11;
 
-    venc->ncodebooks = sizeof(cvectors)/sizeof(cvectors[0]);
+    venc->ncodebooks = FF_ARRAY_ELEMS(cvectors);
     venc->codebooks = av_malloc(sizeof(codebook_t) * venc->ncodebooks);
 
     // codebook 0..14 - floor1 book, values 0..255

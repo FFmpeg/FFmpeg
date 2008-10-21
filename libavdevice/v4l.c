@@ -78,7 +78,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     struct video_audio audio;
     struct video_picture pict;
     int j;
-    int vformat_num = sizeof(video_formats) / sizeof(video_formats[0]);
+    int vformat_num = FF_ARRAY_ELEMS(video_formats);
 
     if (ap->width <= 0 || ap->height <= 0) {
         av_log(s1, AV_LOG_ERROR, "Wrong size (%dx%d)\n", ap->width, ap->height);

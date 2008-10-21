@@ -221,7 +221,7 @@ static uint32_t fmt_ff2v4l(enum PixelFormat pix_fmt)
 {
     int i;
 
-    for (i = 0; i < sizeof(fmt_conversion_table) / sizeof(struct fmt_map); i++) {
+    for (i = 0; i < FF_ARRAY_ELEMS(fmt_conversion_table); i++) {
         if (fmt_conversion_table[i].ff_fmt == pix_fmt) {
             return fmt_conversion_table[i].v4l2_fmt;
         }
@@ -234,7 +234,7 @@ static enum PixelFormat fmt_v4l2ff(uint32_t pix_fmt)
 {
     int i;
 
-    for (i = 0; i < sizeof(fmt_conversion_table) / sizeof(struct fmt_map); i++) {
+    for (i = 0; i < FF_ARRAY_ELEMS(fmt_conversion_table); i++) {
         if (fmt_conversion_table[i].v4l2_fmt == pix_fmt) {
             return fmt_conversion_table[i].ff_fmt;
         }
@@ -563,7 +563,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             } else {
                done = 1;
             }
-            if (i == sizeof(fmt_conversion_table) / sizeof(struct fmt_map)) {
+            if (i == FF_ARRAY_ELEMS(fmt_conversion_table)) {
                done = 1;
             }
         }

@@ -394,7 +394,7 @@ static int decode_init(AVCodecContext * avctx)
                      INIT_VLC_USE_NEW_STATIC);
             offset += huff_vlc_tables_sizes[i];
         }
-        assert(offset == sizeof(huff_vlc_tables)/(sizeof(VLC_TYPE)*2));
+        assert(offset == FF_ARRAY_ELEMS(huff_vlc_tables));
 
         offset = 0;
         for(i=0;i<2;i++) {
@@ -405,7 +405,7 @@ static int decode_init(AVCodecContext * avctx)
                      INIT_VLC_USE_NEW_STATIC);
             offset += huff_quad_vlc_tables_sizes[i];
         }
-        assert(offset == sizeof(huff_quad_vlc_tables)/(sizeof(VLC_TYPE)*2));
+        assert(offset == FF_ARRAY_ELEMS(huff_quad_vlc_tables));
 
         for(i=0;i<9;i++) {
             k = 0;
