@@ -1104,7 +1104,7 @@ for opt do
     --help|-h) show_help
     ;;
     *)
-    optname="${opt%=*}"
+    optname="${opt%%=*}"
     optname="${optname#--}"
     optname=$(echo "$optname" | sed 's/-/_/g')
     is_in $optname $CMDLINE_SET || die_unknown $opt
