@@ -193,6 +193,11 @@ static int device_init(AVFormatContext *ctx, int *width, int *height, int pix_fm
         *height = fmt.fmt.pix.height;
     }
 
+    if (pix_fmt != fmt.fmt.pix.pixelformat) {
+        av_log(ctx, AV_LOG_DEBUG, "The V4L2 driver changed the pixel format from 0x%08X to 0x%08X\n", pix_fmt, fmt.fmt.pix.pixelformat);
+        res = -1;
+    }
+
     return res;
 }
 
