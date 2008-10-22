@@ -1720,7 +1720,7 @@ done
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
 enabled libamr_nb  && require  libamrnb amrnb/interf_dec.h Speech_Decode_Frame_init -lamrnb -lm
 enabled libamr_wb  && require  libamrwb amrwb/dec_if.h D_IF_init -lamrwb -lm
-enabled libdirac   && add_cflags "$(pkg-config --cflags dirac)" &&
+enabled libdirac   && add_cflags $(pkg-config --cflags dirac) &&
                       require  libdirac libdirac_decoder/dirac_parser.h dirac_decoder_init -ldirac_decoder &&
                       require  libdirac libdirac_encoder/dirac_encoder.h dirac_encoder_init -ldirac_encoder
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
