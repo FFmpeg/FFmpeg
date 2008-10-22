@@ -24,12 +24,20 @@
 #include <errno.h>
 #include <math.h>
 
+/* Include only the enabled headers since some compilers (namely, Sun
+   Studio) will not omit unused inline functions and create undefined
+   references to libraries that are not being built. */
+
 #include "config.h"
 #include "libavformat/avformat.h"
+#ifdef CONFIG_AVFILTER
 #include "libavfilter/avfilter.h"
+#endif
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
+#ifdef CONFIG_POSTPROC
 #include "libpostproc/postprocess.h"
+#endif
 #include "libavutil/avstring.h"
 #include "libavcodec/opt.h"
 #include "cmdutils.h"
