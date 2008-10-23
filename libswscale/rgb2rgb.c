@@ -213,84 +213,23 @@ void sws_rgb2rgb_init(int flags){
 }
 
 /**
- * Palette is assumed to contain BGR32.
+ * Convert the palette to the same packet 32-bit format as the palette
  */
-void palette8torgb32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+void palette8topacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
     long i;
 
-/*
     for (i=0; i<num_pixels; i++)
-        ((unsigned *)dst)[i] = ((unsigned *)palette)[src[i]];
-*/
-
-    for (i=0; i<num_pixels; i++)
-    {
-        #ifdef WORDS_BIGENDIAN
-            dst[3]= palette[src[i]*4+2];
-            dst[2]= palette[src[i]*4+1];
-            dst[1]= palette[src[i]*4+0];
-        #else
-        //FIXME slow?
-            dst[0]= palette[src[i]*4+2];
-            dst[1]= palette[src[i]*4+1];
-            dst[2]= palette[src[i]*4+0];
-            //dst[3]= 0; /* do we need this cleansing? */
-        #endif
-        dst+= 4;
-    }
-}
-
-void palette8tobgr32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
-{
-    long i;
-    for (i=0; i<num_pixels; i++)
-    {
-        #ifdef WORDS_BIGENDIAN
-            dst[3]= palette[src[i]*4+0];
-            dst[2]= palette[src[i]*4+1];
-            dst[1]= palette[src[i]*4+2];
-        #else
-            //FIXME slow?
-            dst[0]= palette[src[i]*4+0];
-            dst[1]= palette[src[i]*4+1];
-            dst[2]= palette[src[i]*4+2];
-            //dst[3]= 0; /* do we need this cleansing? */
-        #endif
-
-        dst+= 4;
-    }
+        ((uint32_t *) dst)[i] = ((const uint32_t *) palette)[src[i]];
 }
 
 /**
- * Palette is assumed to contain BGR32.
+ * Palette format: ABCD -> dst format: ABC
  */
-void palette8torgb24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+void palette8topacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
     long i;
-/*
-    Writes 1 byte too much and might cause alignment issues on some architectures?
-    for (i=0; i<num_pixels; i++)
-        ((unsigned *)(&dst[i*3])) = ((unsigned *)palette)[src[i]];
-*/
-    for (i=0; i<num_pixels; i++)
-    {
-        //FIXME slow?
-        dst[0]= palette[src[i]*4+2];
-        dst[1]= palette[src[i]*4+1];
-        dst[2]= palette[src[i]*4+0];
-        dst+= 3;
-    }
-}
 
-void palette8tobgr24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
-{
-    long i;
-/*
-    Writes 1 byte too much and might cause alignment issues on some architectures?
-    for (i=0; i<num_pixels; i++)
-        ((unsigned *)(&dst[i*3])) = ((unsigned *)palette)[src[i]];
-*/
     for (i=0; i<num_pixels; i++)
     {
         //FIXME slow?

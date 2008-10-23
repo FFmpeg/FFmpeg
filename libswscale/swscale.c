@@ -1729,10 +1729,12 @@ static int pal2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
                sws_format_name(srcFormat), sws_format_name(dstFormat));
 
     switch(dstFormat){
-    case PIX_FMT_RGB32: conv = palette8torgb32; break;
-    case PIX_FMT_BGR32: conv = palette8tobgr32; break;
-    case PIX_FMT_RGB24: conv = palette8torgb24; break;
-    case PIX_FMT_BGR24: conv = palette8tobgr24; break;
+    case PIX_FMT_RGB32  : conv = palette8topacked32; break;
+    case PIX_FMT_BGR32  : conv = palette8topacked32; break;
+    case PIX_FMT_BGR32_1: conv = palette8topacked32; break;
+    case PIX_FMT_RGB32_1: conv = palette8topacked32; break;
+    case PIX_FMT_RGB24  : conv = palette8topacked24; break;
+    case PIX_FMT_BGR24  : conv = palette8topacked24; break;
     default: av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
                     sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
     }
@@ -2343,8 +2345,10 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 
         if ((usePal(srcFormat) && (
                  dstFormat == PIX_FMT_RGB32 ||
+                 dstFormat == PIX_FMT_RGB32_1 ||
                  dstFormat == PIX_FMT_RGB24 ||
                  dstFormat == PIX_FMT_BGR32 ||
+                 dstFormat == PIX_FMT_BGR32_1 ||
                  dstFormat == PIX_FMT_BGR24)))
              c->swScale= pal2rgbWrapper;
 
@@ -2739,7 +2743,34 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
             u= av_clip_uint8((RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
             v= av_clip_uint8((RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
             c->pal_yuv[i]= y + (u<<8) + (v<<16);
-            c->pal_rgb[i]= b + (g<<8) + (r<<16);
+
+
+            switch(c->dstFormat) {
+            case PIX_FMT_BGR32:
+#ifndef WORDS_BIGENDIAN
+            case PIX_FMT_RGB24:
+#endif
+                c->pal_rgb[i]=  r + (g<<8) + (b<<16);
+                break;
+            case PIX_FMT_BGR32_1:
+#ifdef  WORDS_BIGENDIAN
+            case PIX_FMT_BGR24:
+#endif
+                c->pal_rgb[i]= (r + (g<<8) + (b<<16)) << 8;
+                break;
+            case PIX_FMT_RGB32_1:
+#ifdef  WORDS_BIGENDIAN
+            case PIX_FMT_RGB24:
+#endif
+                c->pal_rgb[i]= (b + (g<<8) + (r<<16)) << 8;
+                break;
+            case PIX_FMT_RGB32:
+#ifndef WORDS_BIGENDIAN
+            case PIX_FMT_BGR24:
+#endif
+            default:
+                c->pal_rgb[i]=  b + (g<<8) + (r<<16);
+            }
         }
     }
 
