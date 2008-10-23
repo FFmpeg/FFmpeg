@@ -40,7 +40,6 @@ static av_cold int raw_init_encoder(AVCodecContext *avctx)
 static int raw_encode(AVCodecContext *avctx,
                             unsigned char *frame, int buf_size, void *data)
 {
-    avctx->coded_frame->pts = ((AVFrame *)data)->pts;
     return avpicture_layout((AVPicture *)data, avctx->pix_fmt, avctx->width,
                                                avctx->height, frame, buf_size);
 }
