@@ -2344,10 +2344,10 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
              c->swScale= rgb2rgbWrapper;
 
         if ((usePal(srcFormat) && (
-                 dstFormat == PIX_FMT_RGB32 ||
+                 dstFormat == PIX_FMT_RGB32   ||
                  dstFormat == PIX_FMT_RGB32_1 ||
-                 dstFormat == PIX_FMT_RGB24 ||
-                 dstFormat == PIX_FMT_BGR32 ||
+                 dstFormat == PIX_FMT_RGB24   ||
+                 dstFormat == PIX_FMT_BGR32   ||
                  dstFormat == PIX_FMT_BGR32_1 ||
                  dstFormat == PIX_FMT_BGR24)))
              c->swScale= pal2rgbWrapper;
