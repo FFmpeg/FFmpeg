@@ -34,6 +34,7 @@ typedef struct ParseContext{
     int frame_start_found;
     int overread;               ///< the number of bytes which where irreversibly read from the next frame
     int overread_index;         ///< the index into ParseContext.buffer of the overread bytes
+    uint64_t state64;           ///< contains the last 8 bytes in MSB order
 } ParseContext;
 
 struct MpegEncContext;

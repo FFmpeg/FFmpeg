@@ -274,6 +274,7 @@ int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_s
     /* store overread bytes */
     for(;next < 0; next++){
         pc->state = (pc->state<<8) | pc->buffer[pc->last_index + next];
+        pc->state64 = (pc->state64<<8) | pc->buffer[pc->last_index + next];
         pc->overread++;
     }
 
