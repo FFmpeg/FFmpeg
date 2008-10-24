@@ -81,65 +81,6 @@ void ff_acelp_interpolate(
     }
 }
 
-void ff_acelp_convolve_circ(
-        int16_t* fc_out,
-        const int16_t* fc_in,
-        const int16_t* filter,
-        int len)
-{
-    int i, k;
-
-    memset(fc_out, 0, len * sizeof(int16_t));
-
-    /* Since there are few pulses over an entire subframe (i.e. almost
-       all fc_in[i] are zero) it is faster to loop over fc_in first. */
-    for(i=0; i<len; i++)
-    {
-        if(fc_in[i])
-        {
-            for(k=0; k<i; k++)
-                fc_out[k] += (fc_in[i] * filter[len + k - i]) >> 15;
-
-            for(k=i; k<len; k++)
-                fc_out[k] += (fc_in[i] * filter[      k - i]) >> 15;
-        }
-    }
-}
-
-int ff_acelp_lp_synthesis_filter(
-        int16_t *out,
-        const int16_t* filter_coeffs,
-        const int16_t* in,
-        int buffer_length,
-        int filter_length,
-        int stop_on_overflow,
-        int rounder)
-{
-    int i,n;
-
-    // These two lines are to avoid a -1 subtraction in the main loop
-    filter_length++;
-    filter_coeffs--;
-
-    for(n=0; n<buffer_length; n++)
-    {
-        int sum = rounder;
-        for(i=1; i<filter_length; i++)
-            sum -= filter_coeffs[i] * out[n-i];
-
-        sum = (sum >> 12) + in[n];
-
-        if(sum + 0x8000 > 0xFFFFU)
-        {
-            if(stop_on_overflow)
-                return 1;
-            sum = (sum >> 31) ^ 32767;
-        }
-        out[n] = sum;
-    }
-
-    return 0;
-}
 
 void ff_acelp_high_pass_filter(
         int16_t* out,
