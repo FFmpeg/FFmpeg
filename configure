@@ -297,8 +297,11 @@ do_enable_deep(){
     for var; do
         enabled $var && continue
         eval sel="\$${var}_select"
-        pushvar var
+        eval sgs="\$${var}_suggest"
+        pushvar var sgs
         enable_deep $sel
+        popvar sgs
+        enable_deep_weak $sgs
         popvar var
     done
 }
@@ -373,10 +376,11 @@ check_deps(){
         eval dep_all="\$${cfg}_deps"
         eval dep_any="\$${cfg}_deps_any"
         eval dep_sel="\$${cfg}_select"
+        eval dep_sgs="\$${cfg}_suggest"
 
-        pushvar cfg dep_all dep_any dep_sel
-        check_deps $dep_all $dep_any $dep_sel
-        popvar cfg dep_all dep_any dep_sel
+        pushvar cfg dep_all dep_any dep_sel dep_sgs
+        check_deps $dep_all $dep_any $dep_sel $dep_sgs
+        popvar cfg dep_all dep_any dep_sel dep_sgs
 
         enabled_all  $dep_all || disable $cfg
         enabled_any  $dep_any || disable $cfg
@@ -386,6 +390,7 @@ check_deps(){
             eval dep_extralibs="\$${cfg}_extralibs"
             test -n "$dep_extralibs" && add_extralibs $dep_extralibs
             enable_deep $dep_sel
+            enable_deep_weak $dep_sgs
         fi
 
         disable ${cfg}_checking
