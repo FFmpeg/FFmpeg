@@ -138,7 +138,7 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
 
         done = 1;
 
-        /* dv_anchor lets each thread know its Id */
+        /* dv_anchor lets each thread know its ID */
         for (i=0; i<DV_ANCHOR_SIZE; i++)
             dv_anchor[i] = (void*)(size_t)i;
 
@@ -967,7 +967,7 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
         }
     }
 
-    /* Third and final pass over the whole vides segment space */
+    /* Third and final pass over the whole video segment space */
     pb= &pbs[0];
     for (j=0; j<5*6; j++) {
        if (enc_blks[j].partial_bit_count)
@@ -1119,7 +1119,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c, ui
           buf[1] = 0xff; /* reserved -- always 1 */
           buf[2] = (1 << 7) | /* B/W: 0 - b/w, 1 - color */
                    (1 << 6) | /* following CLF is valid - 0, invalid - 1 */
-                   (3 << 4) | /* CLF: color frames id (see ITU-R BT.470-4) */
+                   (3 << 4) | /* CLF: color frames ID (see ITU-R BT.470-4) */
                    0xf; /* reserved -- always 1 */
           buf[3] = (3 << 6) | /* reserved -- always 1 */
                    (c->sys->dsf << 5) | /*  system: 60fields/50fields */
@@ -1131,9 +1131,9 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c, ui
                    0x3f; /* reserved -- always 1 */
           buf[2] = 0xc8 | /* reserved -- always b11001xxx */
                    aspect;
-          buf[3] = (1 << 7) | /* Frame/field flag 1 -- frame, 0 -- field */
-                   (1 << 6) | /* First/second field flag 0 -- field 2, 1 -- field 1 */
-                   (1 << 5) | /* Frame change flag 0 -- same picture as before, 1 -- different */
+          buf[3] = (1 << 7) | /* frame/field flag 1 -- frame, 0 -- field */
+                   (1 << 6) | /* first/second field flag 0 -- field 2, 1 -- field 1 */
+                   (1 << 5) | /* frame change flag 0 -- same picture as before, 1 -- different */
                    (1 << 4) | /* 1 - interlaced, 0 - noninterlaced */
                    0xc; /* reserved -- always b1100 */
           buf[4] = 0xff; /* reserved -- always 1 */
@@ -1151,7 +1151,7 @@ static void dv_format_frame(DVVideoContext* c, uint8_t* buf)
 
     for (chan = 0; chan < c->sys->n_difchan; chan++) {
         for (i = 0; i < c->sys->difseg_size; i++) {
-            memset(buf, 0xff, 80 * 6); /* First 6 DIF blocks are for control data */
+            memset(buf, 0xff, 80 * 6); /* first 6 DIF blocks are for control data */
 
             /* DV header: 1DIF */
             buf += dv_write_dif_id(dv_sect_header, chan, i, 0, buf);

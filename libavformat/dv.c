@@ -116,12 +116,13 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* ppcm[4],
     quant = as_pack[4] & 0x07; /* 0 - 16bit linear, 1 - 12bit nonlinear */
 
     if (quant > 1)
-        return -1; /* Unsupported quantization */
+        return -1; /* unsupported quantization */
 
     size = (sys->audio_min_samples[freq] + smpls) * 4; /* 2ch, 2bytes */
     half_ch = sys->difseg_size/2;
 
-    /* We work with 720p frames split in half, thus even frames have channels 0,1 and odd 2,3 */
+    /* We work with 720p frames split in half, thus even frames have
+     * channels 0,1 and odd 2,3 */
     ipcm = (sys->height == 720 && !(frame[1]&0x0C))?2:0;
     pcm = ppcm[ipcm++];
 
@@ -335,7 +336,8 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     dv_extract_audio(buf, ppcm, c->sys);
     c->abytes += size;
 
-    /* We work with 720p frames split in half, thus even frames have channels 0,1 and odd 2,3 */
+    /* We work with 720p frames split in half, thus even frames have
+     * channels 0,1 and odd 2,3. */
     if (c->sys->height == 720) {
         if (buf[1]&0x0C)
             c->audio_pkt[2].size = c->audio_pkt[3].size = 0;

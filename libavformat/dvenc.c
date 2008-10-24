@@ -35,12 +35,12 @@
 #include "libavutil/fifo.h"
 
 struct DVMuxContext {
-    const DVprofile*  sys;    /* Current DV profile. E.g.: 525/60, 625/50 */
-    int         n_ast;        /* Number of stereo audio streams (up to 2) */
-    AVStream   *ast[2];       /* Stereo audio streams */
+    const DVprofile*  sys;           /* current DV profile, e.g.: 525/60, 625/50 */
+    int               n_ast;         /* number of stereo audio streams (up to 2) */
+    AVStream         *ast[2];        /* stereo audio streams */
     AVFifoBuffer  audio_data[2]; /* FIFO for storing excessive amounts of PCM */
-    int         frames;       /* Number of a current frame */
-    time_t      start_time;   /* Start time of recording */
+    int               frames;        /* current frame number */
+    time_t            start_time;    /* recording start time */
     int         has_audio;    /* frame under contruction has audio */
     int         has_video;    /* frame under contruction has video */
     uint8_t     frame_buf[DV_MAX_FRAME_SIZE]; /* frame under contruction */
@@ -85,20 +85,20 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
          * minute, unless it is exactly divisible by 10
          */
         ltc_frame = (c->frames + 2*ct/60 - 2*ct/600) % c->sys->ltc_divisor;
-        buf[1] = (0 << 7) | /* Color fame: 0 - unsync; 1 - sync mode */
-                 (1 << 6) | /* Drop frame timecode: 0 - nondrop; 1 - drop */
-                 ((ltc_frame / 10) << 4) | /* Tens of frames */
-                 (ltc_frame % 10);         /* Units of frames */
-        buf[2] = (1 << 7) | /* Biphase mark polarity correction: 0 - even; 1 - odd */
-                 ((tc.tm_sec / 10) << 4) | /* Tens of seconds */
-                 (tc.tm_sec % 10);         /* Units of seconds */
-        buf[3] = (1 << 7) | /* Binary group flag BGF0 */
-                 ((tc.tm_min / 10) << 4) | /* Tens of minutes */
-                 (tc.tm_min % 10);         /* Units of minutes */
-        buf[4] = (1 << 7) | /* Binary group flag BGF2 */
-                 (1 << 6) | /* Binary group flag BGF1 */
-                 ((tc.tm_hour / 10) << 4) | /* Tens of hours */
-                 (tc.tm_hour % 10);         /* Units of hours */
+        buf[1] = (0                 << 7) | /* color frame: 0 - unsync; 1 - sync mode */
+                 (1                 << 6) | /* drop frame timecode: 0 - nondrop; 1 - drop */
+                 ((ltc_frame / 10)  << 4) | /* tens of frames */
+                 (ltc_frame % 10);          /* units of frames */
+        buf[2] = (1                 << 7) | /* biphase mark polarity correction: 0 - even; 1 - odd */
+                 ((tc.tm_sec / 10)  << 4) | /* tens of seconds */
+                 (tc.tm_sec % 10);          /* units of seconds */
+        buf[3] = (1                 << 7) | /* binary group flag BGF0 */
+                 ((tc.tm_min / 10)  << 4) | /* tens of minutes */
+                 (tc.tm_min % 10);          /* units of minutes */
+        buf[4] = (1                 << 7) | /* binary group flag BGF2 */
+                 (1                 << 6) | /* binary group flag BGF1 */
+                 ((tc.tm_hour / 10) << 4) | /* tens of hours */
+                 (tc.tm_hour % 10);         /* units of hours */
         break;
     case dv_audio_source:  /* AAUX source pack */
         va_start(ap, buf);

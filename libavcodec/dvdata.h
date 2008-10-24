@@ -6073,7 +6073,7 @@ static const int dv_iweight_248[64] = {
 };
 
 /**
- * the "inverse" DV100 weights are actually just the spec weights (zig-zagged)
+ * The "inverse" DV100 weights are actually just the spec weights (zig-zagged).
  */
 static const int dv_iweight_1080_y[64] = {
     128,  16,  16,  17,  17,  17,  18,  18,
