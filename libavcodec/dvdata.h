@@ -37,26 +37,26 @@
  * DV specs as well (e.g. SMPTE314M vs. IEC 61834).
  */
 typedef struct DVprofile {
-    int              dsf;                 /* value of the dsf in the DV header */
-    int              video_stype;         /* stype for VAUX source pack */
-    int              frame_size;          /* total size of one frame in bytes */
-    int              difseg_size;         /* number of DIF segments per DIF channel */
-    int              n_difchan;           /* number of DIF channels per frame */
-    AVRational       time_base;           /* 1/framerate */
-    int              ltc_divisor;         /* FPS from the LTS standpoint */
-    int              height;              /* picture height in pixels */
-    int              width;               /* picture width in pixels */
-    AVRational       sar[2];              /* sample aspect ratios for 4:3 and 16:9 */
-    const uint16_t  *video_place;         /* positions of all DV macroblocks */
-    enum PixelFormat pix_fmt;             /* picture pixel format */
-    int              bpm;                 /* blocks per macroblock */
-    const uint8_t   *block_sizes;         /* AC block sizes, in bits */
-    int              audio_stride;        /* size of audio_shuffle table */
-    int              audio_min_samples[3];/* min amount of audio samples */
-                                          /* for 48kHz, 44.1kHz and 32kHz */
-    int              audio_samples_dist[5];/* how many samples are supposed to be */
-                                         /* in each frame in a 5 frames window */
-    const uint8_t  (*audio_shuffle)[9];  /* PCM shuffling table */
+    int              dsf;                   /* value of the dsf in the DV header */
+    int              video_stype;           /* stype for VAUX source pack */
+    int              frame_size;            /* total size of one frame in bytes */
+    int              difseg_size;           /* number of DIF segments per DIF channel */
+    int              n_difchan;             /* number of DIF channels per frame */
+    AVRational       time_base;             /* 1/framerate */
+    int              ltc_divisor;           /* FPS from the LTS standpoint */
+    int              height;                /* picture height in pixels */
+    int              width;                 /* picture width in pixels */
+    AVRational       sar[2];                /* sample aspect ratios for 4:3 and 16:9 */
+    const uint16_t  *video_place;           /* positions of all DV macroblocks */
+    enum PixelFormat pix_fmt;               /* picture pixel format */
+    int              bpm;                   /* blocks per macroblock */
+    const uint8_t   *block_sizes;           /* AC block sizes, in bits */
+    int              audio_stride;          /* size of audio_shuffle table */
+    int              audio_min_samples[3];  /* min amount of audio samples */
+                                            /* for 48kHz, 44.1kHz and 32kHz */
+    int              audio_samples_dist[5]; /* how many samples are supposed to be */
+                                            /* in each frame in a 5 frames window */
+    const uint8_t  (*audio_shuffle)[9];     /* PCM shuffling table */
 } DVprofile;
 
 #define NB_DV_VLC 409
@@ -232,38 +232,38 @@ static const uint8_t dv_vlc_run[409] = {
 };
 
 static const uint8_t dv_vlc_level[409] = {
-  1,  2,  1,  3,  4,  1,  2,  5,
-  6,  1,  1,  7,  8,  1,  1,  2,
-  3,  4,  9, 10, 11,  1,  1,  1,
-  1,  2,  2,  3,  5,  6,  7, 12,
- 13, 14, 15, 16, 17,  1,  1,  1,
-  1,  2,  2,  3,  3,  4,  5,  8,
- 18, 19, 20, 21, 22,  3,  4,  5,
-  6,  9, 10, 11,  0,  0,  3,  4,
-  6, 12, 13, 14,  0,  0,  0,  0,
-  2,  2,  2,  2,  3,  3,  5,  7,
-  7,  8,  9, 10, 11, 15, 16, 17,
-  0,  0,  0,  0,  0,  0,  0,  0,
-  0,  0,  0,  0,  0,  0,  0,  0,
-  0,  0,  0,  0,  0,  0,  0,  0,
-  0,  0,  0,  0,  0,  0,  0,  0,
-  0,  0,  0,  0,  0,  0,  0,  0,
-  0,  0,  0,  0,  0,  0,  0,  0,
-  0,  0,  0,  0,  0,  0,  0,  0,
-  0,  0,  0,  0,  0,  0,  0,  0,
-  0,  1,  2,  3,  4,  5,  6,  7,
-  8,  9, 10, 11, 12, 13, 14, 15,
- 16, 17, 18, 19, 20, 21, 22, 23,
- 24, 25, 26, 27, 28, 29, 30, 31,
- 32, 33, 34, 35, 36, 37, 38, 39,
- 40, 41, 42, 43, 44, 45, 46, 47,
- 48, 49, 50, 51, 52, 53, 54, 55,
- 56, 57, 58, 59, 60, 61, 62, 63,
- 64, 65, 66, 67, 68, 69, 70, 71,
- 72, 73, 74, 75, 76, 77, 78, 79,
- 80, 81, 82, 83, 84, 85, 86, 87,
- 88, 89, 90, 91, 92, 93, 94, 95,
- 96, 97, 98, 99, 100, 101, 102, 103,
+   1,   2,   1,   3,   4,   1,   2,   5,
+   6,   1,   1,   7,   8,   1,   1,   2,
+   3,   4,   9,  10,  11,   1,   1,   1,
+   1,   2,   2,   3,   5,   6,   7,  12,
+  13,  14,  15,  16,  17,   1,   1,   1,
+   1,   2,   2,   3,   3,   4,   5,   8,
+  18,  19,  20,  21,  22,   3,   4,   5,
+   6,   9,  10,  11,   0,   0,   3,   4,
+   6,  12,  13,  14,   0,   0,   0,   0,
+   2,   2,   2,   2,   3,   3,   5,   7,
+   7,   8,   9,  10,  11,  15,  16,  17,
+   0,   0,   0,   0,   0,   0,   0,   0,
+   0,   0,   0,   0,   0,   0,   0,   0,
+   0,   0,   0,   0,   0,   0,   0,   0,
+   0,   0,   0,   0,   0,   0,   0,   0,
+   0,   0,   0,   0,   0,   0,   0,   0,
+   0,   0,   0,   0,   0,   0,   0,   0,
+   0,   0,   0,   0,   0,   0,   0,   0,
+   0,   0,   0,   0,   0,   0,   0,   0,
+   0,   1,   2,   3,   4,   5,   6,   7,
+   8,   9,  10,  11,  12,  13,  14,  15,
+  16,  17,  18,  19,  20,  21,  22,  23,
+  24,  25,  26,  27,  28,  29,  30,  31,
+  32,  33,  34,  35,  36,  37,  38,  39,
+  40,  41,  42,  43,  44,  45,  46,  47,
+  48,  49,  50,  51,  52,  53,  54,  55,
+  56,  57,  58,  59,  60,  61,  62,  63,
+  64,  65,  66,  67,  68,  69,  70,  71,
+  72,  73,  74,  75,  76,  77,  78,  79,
+  80,  81,  82,  83,  84,  85,  86,  87,
+  88,  89,  90,  91,  92,  93,  94,  95,
+  96,  97,  98,  99, 100, 101, 102, 103,
  104, 105, 106, 107, 108, 109, 110, 111,
  112, 113, 114, 115, 116, 117, 118, 119,
  120, 121, 122, 123, 124, 125, 126, 127,
@@ -283,7 +283,7 @@ static const uint8_t dv_vlc_level[409] = {
  232, 233, 234, 235, 236, 237, 238, 239,
  240, 241, 242, 243, 244, 245, 246, 247,
  248, 249, 250, 251, 252, 253, 254, 255,
-  0,
+   0,
 };
 
 /* unquant tables (not used directly) */
@@ -312,8 +312,8 @@ static const uint8_t dv_quant_shifts[22][4] = {
   { 0,0,0,0 },
 };
 
-static const uint8_t dv_quant_offset[4] = { 6, 3, 0, 1 };
-static const uint8_t dv_quant_areas[4] = { 6, 21, 43, 64 };
+static const uint8_t dv_quant_offset[4] = { 6,  3,  0,  1 };
+static const uint8_t dv_quant_areas[4]  = { 6, 21, 43, 64 };
 
 /* quantization quanta by QNO for DV100 */
 static const uint8_t dv100_qstep[16] = {
@@ -6360,7 +6360,8 @@ enum dv_pack_type {
 #define DV_PROFILE_IS_1080i50(p) (((p)->video_stype == 0x14) && ((p)->dsf == 1))
 #define DV_PROFILE_IS_720p50(p)  (((p)->video_stype == 0x18) && ((p)->dsf == 1))
 
-/* minimum number of bytes to read from a DV stream in order to determine the profile */
+/* minimum number of bytes to read from a DV stream in order to
+   determine the profile */
 #define DV_PROFILE_BYTES (6*80) /* 6 DIF blocks */
 
 /**
@@ -6398,21 +6399,23 @@ static const DVprofile* dv_codec_profile(AVCodecContext* codec)
     int i;
 
     for (i=0; i<FF_ARRAY_ELEMS(dv_profiles); i++)
-       if (codec->height == dv_profiles[i].height && codec->pix_fmt == dv_profiles[i].pix_fmt &&
-           codec->width  == dv_profiles[i].width)
+       if (codec->height  == dv_profiles[i].height  &&
+           codec->pix_fmt == dv_profiles[i].pix_fmt &&
+           codec->width   == dv_profiles[i].width)
                return &dv_profiles[i];
 
     return NULL;
 }
 
-static inline int dv_write_dif_id(enum dv_section_type t, uint8_t chan_num, uint8_t seq_num,
-                                  uint8_t dif_num, uint8_t* buf)
+static inline int dv_write_dif_id(enum dv_section_type t, uint8_t chan_num,
+                                  uint8_t seq_num, uint8_t dif_num,
+                                  uint8_t* buf)
 {
-    buf[0] = (uint8_t)t;    /* Section type */
-    buf[1] = (seq_num<<4) | /* DIF seq number 0-9 for 525/60; 0-11 for 625/50 */
+    buf[0] = (uint8_t)t;       /* Section type */
+    buf[1] = (seq_num  << 4) | /* DIF seq number 0-9 for 525/60; 0-11 for 625/50 */
              (chan_num << 3) | /* FSC: for 50Mb/s 0 - first channel; 1 - second */
-             7;             /* reserved -- always 1 */
-    buf[2] = dif_num;       /* DIF block number Video: 0-134, Audio: 0-8 */
+             7;                /* reserved -- always 1 */
+    buf[2] = dif_num;          /* DIF block number Video: 0-134, Audio: 0-8 */
     return 3;
 }
 
@@ -6420,18 +6423,18 @@ static inline int dv_write_dif_id(enum dv_section_type t, uint8_t chan_num, uint
 static inline int dv_write_ssyb_id(uint8_t syb_num, uint8_t fr, uint8_t* buf)
 {
     if (syb_num == 0 || syb_num == 6) {
-        buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
-                 (0<<4)  | /* AP3 (Subcode application ID) */
-                 0x0f;     /* reserved -- always 1 */
+        buf[0] = (fr << 7) | /* FR ID 1 - first half of each channel; 0 - second */
+                 (0  << 4) | /* AP3 (Subcode application ID) */
+                 0x0f;       /* reserved -- always 1 */
     }
     else if (syb_num == 11) {
-        buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
-                 0x7f;     /* reserved -- always 1 */
+        buf[0] = (fr << 7) | /* FR ID 1 - first half of each channel; 0 - second */
+                 0x7f;       /* reserved -- always 1 */
     }
     else {
-        buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
-                 (0<<4)  | /* APT (Track application ID) */
-                 0x0f;     /* reserved -- always 1 */
+        buf[0] = (fr << 7) | /* FR ID 1 - first half of each channel; 0 - second */
+                 (0  << 4) | /* APT (Track application ID) */
+                 0x0f;       /* reserved -- always 1 */
     }
     buf[1] = 0xf0 |            /* reserved -- always 1 */
              (syb_num & 0x0f); /* SSYB number 0 - 11   */
