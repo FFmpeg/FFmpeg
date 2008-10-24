@@ -277,6 +277,21 @@ disable(){
     set_all no $*
 }
 
+do_enable_deep(){
+    for var; do
+        enabled $var && continue
+        eval sel="\$${var}_select"
+        pushvar var
+        enable_deep $sel
+        popvar var
+    done
+}
+
+enable_deep(){
+    do_enable_deep $*
+    enable $*
+}
+
 enabled(){
     test "${1#!}" = "$1" && op== || op=!=
     eval test "x\$${1#!}" $op "xyes"
@@ -349,7 +364,7 @@ check_deps(){
         if enabled $cfg; then
             eval dep_extralibs="\$${cfg}_extralibs"
             test -n "$dep_extralibs" && add_extralibs $dep_extralibs
-            enable $dep_sel
+            enable_deep $dep_sel
         fi
 
         disable ${cfg}_checking
