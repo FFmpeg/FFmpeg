@@ -388,10 +388,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if(is_audio){
         if(!st->codec->sample_rate || !st->codec->bits_per_coded_sample || (!st->codec->codec_id && !st->codec->codec_tag)) {
             st->codec->channels = (flags & FLV_AUDIO_CHANNEL_MASK) == FLV_STEREO ? 2 : 1;
-            if((flags & FLV_AUDIO_CODECID_MASK) == FLV_CODECID_NELLYMOSER_8KHZ_MONO)
-                st->codec->sample_rate= 8000;
-            else
-                st->codec->sample_rate = (44100 << ((flags & FLV_AUDIO_SAMPLERATE_MASK) >> FLV_AUDIO_SAMPLERATE_OFFSET) >> 3);
+            st->codec->sample_rate = (44100 << ((flags & FLV_AUDIO_SAMPLERATE_MASK) >> FLV_AUDIO_SAMPLERATE_OFFSET) >> 3);
             st->codec->bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
             flv_set_audio_codec(s, st, flags & FLV_AUDIO_CODECID_MASK);
         }
