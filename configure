@@ -336,17 +336,20 @@ check_deps(){
 
         eval dep_all="\$${cfg}_deps"
         eval dep_any="\$${cfg}_deps_any"
+        eval dep_sel="\$${cfg}_select"
 
-        pushvar cfg dep_all dep_any
-        check_deps $dep_all $dep_any
-        popvar cfg dep_all dep_any
+        pushvar cfg dep_all dep_any dep_sel
+        check_deps $dep_all $dep_any $dep_sel
+        popvar cfg dep_all dep_any dep_sel
 
         enabled_all $dep_all || disable $cfg
         enabled_any $dep_any || disable $cfg
+        disabled_any $dep_sel && disable $cfg
 
         if enabled $cfg; then
             eval dep_extralibs="\$${cfg}_extralibs"
             test -n "$dep_extralibs" && add_extralibs $dep_extralibs
+            enable $dep_sel
         fi
 
         disable ${cfg}_checking
