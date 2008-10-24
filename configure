@@ -681,6 +681,7 @@ CONFIG_LIST="
     ffmpeg
     ffplay
     ffserver
+    fft
     gpl
     gprof
     gray
@@ -868,15 +869,31 @@ ssse3_deps="x86"
 vis_deps="sparc"
 
 # decoders / encoders
+aac_decoder_select="fft"
 ac3_decoder_deps="gpl"
+ac3_decoder_select="fft"
+ac3_encoder_select="fft"
+atrac3_decoder_select="fft"
+cook_decoder_select="fft"
 dxa_decoder_deps="zlib"
 eac3_decoder_deps="gpl"
+eac3_decoder_select="fft"
 flashsv_decoder_deps="zlib"
 flashsv_encoder_deps="zlib"
+imc_decoder_select="fft"
 mlp_decoder_deps="mlp_parser"
 mpeg_xvmc_decoder_deps="xvmc"
+nellymoser_decoder_select="fft"
+nellymoser_encoder_select="fft"
 png_decoder_deps="zlib"
 png_encoder_deps="zlib"
+qdm2_decoder_select="fft"
+vorbis_decoder_select="fft"
+vorbis_encoder_select="fft"
+wmav1_decoder_select="fft"
+wmav1_encoder_select="fft"
+wmav2_decoder_select="fft"
+wmav2_encoder_select="fft"
 zmbv_decoder_deps="zlib"
 zmbv_encoder_deps="zlib"
 
