@@ -250,6 +250,14 @@ set_all(){
     done
 }
 
+set_weak(){
+    value=$1
+    shift
+    for var; do
+        eval : \${$var:=$value}
+    done
+}
+
 pushvar(){
     for var in $*; do
         eval level=\${${var}_level:=0}
@@ -277,6 +285,14 @@ disable(){
     set_all no $*
 }
 
+enable_weak(){
+    set_weak yes $*
+}
+
+disable_weak(){
+    set_weak no $*
+}
+
 do_enable_deep(){
     for var; do
         enabled $var && continue
@@ -290,6 +306,11 @@ do_enable_deep(){
 enable_deep(){
     do_enable_deep $*
     enable $*
+}
+
+enable_deep_weak(){
+    do_enable_deep $*
+    enable_weak $*
 }
 
 enabled(){
