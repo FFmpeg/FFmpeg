@@ -342,8 +342,8 @@ check_deps(){
         check_deps $dep_all $dep_any $dep_sel
         popvar cfg dep_all dep_any dep_sel
 
-        enabled_all $dep_all || disable $cfg
-        enabled_any $dep_any || disable $cfg
+        enabled_all  $dep_all || disable $cfg
+        enabled_any  $dep_any || disable $cfg
         disabled_any $dep_sel && disable $cfg
 
         if enabled $cfg; then
