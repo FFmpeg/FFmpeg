@@ -106,7 +106,7 @@ static int amf_get_string(ByteIOContext *ioc, char *buffer, int buffsize) {
     return length;
 }
 
-static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vstream, const char *key, unsigned int max_pos, int depth) {
+static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vstream, const char *key, int64_t max_pos, int depth) {
     AVCodecContext *acodec, *vcodec;
     ByteIOContext *ioc;
     AMFDataType amf_type;
@@ -208,7 +208,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
     return 0;
 }
 
-static int flv_read_metabody(AVFormatContext *s, unsigned int next_pos) {
+static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     AMFDataType type;
     AVStream *stream, *astream, *vstream;
     ByteIOContext *ioc;
@@ -296,7 +296,8 @@ static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
 
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, i, type, size, flags, is_audio, next, pos;
+    int ret, i, type, size, flags, is_audio;
+    int64_t next, pos;
     unsigned dts;
     AVStream *st = NULL;
 
@@ -370,8 +371,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     // if not streamed and no duration from metadata then seek to end to find the duration from the timestamps
     if(!url_is_streamed(s->pb) && s->duration==AV_NOPTS_VALUE){
         int size;
-        const int pos= url_ftell(s->pb);
-        const int fsize= url_fsize(s->pb);
+        const int64_t pos= url_ftell(s->pb);
+        const int64_t fsize= url_fsize(s->pb);
         url_fseek(s->pb, fsize-4, SEEK_SET);
         size= get_be32(s->pb);
         url_fseek(s->pb, fsize-3-size, SEEK_SET);
