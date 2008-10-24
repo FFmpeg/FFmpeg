@@ -102,6 +102,7 @@ show_help(){
   echo "  --enable-libnut          enable NUT (de)muxing via libnut,"
   echo "                           native demuxer exists [default=no]"
   echo "  --enable-libschroedinger enable Dirac support via libschroedinger [default=no]"
+  echo "  --enable-libspeex        enable Speex decoding via libspeex [default=no]"
   echo "  --enable-libtheora       enable Theora encoding via libtheora [default=no]"
   echo "  --enable-libvorbis       enable Vorbis encoding via libvorbis,"
   echo "                           native implementation exists [default=no]"
@@ -692,6 +693,7 @@ CONFIG_LIST="
     libmp3lame
     libnut
     libschroedinger
+    libspeex
     libtheora
     libvorbis
     libx264
@@ -891,6 +893,7 @@ libgsm_ms_encoder_deps="libgsm"
 libmp3lame_encoder_deps="libmp3lame"
 libschroedinger_decoder_deps="libschroedinger"
 libschroedinger_encoder_deps="libschroedinger"
+libspeex_decoder_deps="libspeex"
 libtheora_encoder_deps="libtheora"
 libvorbis_encoder_deps="libvorbis"
 libx264_encoder_deps="libx264"
@@ -1730,6 +1733,7 @@ enabled libmp3lame && require  LAME lame/lame.h lame_init -lmp3lame -lm
 enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut
 enabled libschroedinger && add_cflags $(pkg-config --cflags schroedinger-1.0) &&
                            require libschroedinger schroedinger/schro.h schro_init $(pkg-config --libs schroedinger-1.0)
+enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
 enabled libtheora  && require  libtheora theora/theora.h theora_info_init -ltheora -logg
 enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
 enabled libx264    && require  x264 x264.h x264_encoder_open -lx264 -lm &&
@@ -2036,6 +2040,7 @@ echo "libgsm enabled            ${libgsm-no}"
 echo "libmp3lame enabled        ${libmp3lame-no}"
 echo "libnut enabled            ${libnut-no}"
 echo "libschroedinger enabled   ${libschroedinger-no}"
+echo "libspeex enabled          ${libspeex-no}"
 echo "libtheora enabled         ${libtheora-no}"
 echo "libvorbis enabled         ${libvorbis-no}"
 echo "libx264 enabled           ${libx264-no}"

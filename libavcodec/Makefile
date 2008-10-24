@@ -334,6 +334,7 @@ OBJS-$(CONFIG_LIBGSM)                  += libgsm.o
 OBJS-$(CONFIG_LIBMP3LAME)              += libmp3lame.o
 OBJS-$(CONFIG_LIBSCHROEDINGER_DECODER) += libschroedingerdec.o libschroedinger.o libdirac_libschro.o
 OBJS-$(CONFIG_LIBSCHROEDINGER_ENCODER) += libschroedingerenc.o libschroedinger.o libdirac_libschro.o
+OBJS-$(CONFIG_LIBSPEEX)                += libspeexdec.o
 OBJS-$(CONFIG_LIBTHEORA)               += libtheoraenc.o
 OBJS-$(CONFIG_LIBVORBIS)               += libvorbis.o
 OBJS-$(CONFIG_LIBX264)                 += libx264.o
