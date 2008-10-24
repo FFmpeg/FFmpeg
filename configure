@@ -309,6 +309,7 @@ disabled_any(){
     for opt; do
         disabled $opt && return 0
     done
+    return 1
 }
 
 set_default(){
