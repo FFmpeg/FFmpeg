@@ -25,7 +25,7 @@
 #include <assert.h>
 
 #include "avcodec.h"
-#include "acelp_math.h"
+#include "celp_math.h"
 
 #ifdef G729_BITEXACT
 /**

@@ -32,7 +32,7 @@
 
 #include "g729.h"
 #include "lsp.h"
-#include "acelp_math.h"
+#include "celp_math.h"
 #include "acelp_filters.h"
 #include "acelp_pitch_delay.h"
 #include "acelp_vectors.h"
