@@ -505,6 +505,17 @@ static int dirac_probe(AVProbeData *p)
 }
 #endif
 
+#ifdef CONFIG_DNXHD_DEMUXER
+static int dnxhd_probe(AVProbeData *p)
+{
+    static const uint8_t header[] = {0x00,0x00,0x02,0x80,0x01};
+    if (!memcmp(p->buf, header, 5))
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+}
+#endif
+
 #if defined(CONFIG_AC3_DEMUXER) || defined(CONFIG_EAC3_DEMUXER)
 static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
 {
@@ -634,6 +645,34 @@ AVOutputFormat dirac_muxer = {
     0,
     CODEC_ID_NONE,
     CODEC_ID_DIRAC,
+    NULL,
+    raw_write_packet,
+    .flags= AVFMT_NOTIMESTAMPS,
+};
+#endif
+
+#ifdef CONFIG_DNXHD_DEMUXER
+AVInputFormat dnxhd_demuxer = {
+    "dnxhd",
+    NULL_IF_CONFIG_SMALL("raw DNxHD (SMPTE VC-3)"),
+    0,
+    dnxhd_probe,
+    video_read_header,
+    raw_read_partial_packet,
+    .flags= AVFMT_GENERIC_INDEX,
+    .value = CODEC_ID_DNXHD,
+};
+#endif
+
+#ifdef CONFIG_DNXHD_MUXER
+AVOutputFormat dnxhd_muxer = {
+    "dnxhd",
+    NULL_IF_CONFIG_SMALL("raw DNxHD (SMPTE VC-3)"),
+    NULL,
+    "dnxhd",
+    0,
+    CODEC_ID_NONE,
+    CODEC_ID_DNXHD,
     NULL,
     raw_write_packet,
     .flags= AVFMT_NOTIMESTAMPS,
