@@ -858,6 +858,11 @@ HAVE_LIST="
     yasm
 "
 
+# options emitted with CONFIG_ prefix but not available on command line
+CONFIG_EXTRA="
+    fft_mmx
+"
+
 CMDLINE_SELECT="
     $ARCH_EXT_LIST
     $CONFIG_LIST
@@ -908,6 +913,10 @@ mmx2_deps="x86 mmx"
 neon_deps="armv4l"
 ssse3_deps="x86"
 vis_deps="sparc"
+
+# common features
+fft_suggest="fft_mmx"
+fft_mmx_deps="mmx yasm"
 
 # decoders / encoders
 aac_decoder_select="fft"
@@ -2015,6 +2024,7 @@ enabled_any $PROTOCOL_LIST     && enable protocols
 enabled_any $THREADS_LIST      && enable threads
 
 check_deps $CONFIG_LIST       \
+           $CONFIG_EXTRA      \
            $HAVE_LIST         \
            $DECODER_LIST      \
            $ENCODER_LIST      \
@@ -2224,6 +2234,7 @@ echo "EXTRALIBS=$extralibs" >> config.mak
 print_config ARCH_   $TMPH config.mak $ARCH_LIST
 print_config HAVE_   $TMPH config.mak $HAVE_LIST
 print_config CONFIG_ $TMPH config.mak $CONFIG_LIST       \
+                                      $CONFIG_EXTRA      \
                                       $DECODER_LIST      \
                                       $ENCODER_LIST      \
                                       $PARSER_LIST       \
