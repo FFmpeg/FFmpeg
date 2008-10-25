@@ -4019,11 +4019,11 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "InputFormat")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-            stream->ifmt = av_find_input_format(arg);
-            if (!stream->ifmt) {
-                fprintf(stderr, "%s:%d: Unknown input format: %s\n",
-                        filename, line_num, arg);
-            }
+                stream->ifmt = av_find_input_format(arg);
+                if (!stream->ifmt) {
+                    fprintf(stderr, "%s:%d: Unknown input format: %s\n",
+                            filename, line_num, arg);
+                }
             }
         } else if (!strcasecmp(cmd, "FaviconURL")) {
             if (stream && stream->stream_type == STREAM_TYPE_STATUS) {
