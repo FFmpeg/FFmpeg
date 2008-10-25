@@ -370,6 +370,10 @@ following image formats are supported:
 @item Enhanced AC-3          @tab     @tab  X
 @item FLAC lossless audio    @tab IX  @tab  X
 @item G.726  ADPCM           @tab  X  @tab  X
+@item GSM                    @tab  X  @tab  X
+    @tab supported through external library libgsm
+@item GSM_MS                 @tab  X  @tab  X
+    @tab supported through external library libgsm
 @item id RoQ DPCM            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Intel Music Coder      @tab     @tab  X
