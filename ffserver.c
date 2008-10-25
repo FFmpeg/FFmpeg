@@ -567,7 +567,7 @@ static int http_server(void)
         return -1;
     }
 
-    http_log("ffserver started.\n");
+    http_log("FFserver started.\n");
 
     start_children(first_feed);
 
@@ -4450,7 +4450,7 @@ static void opt_debug()
 
 static void opt_show_help(void)
 {
-    printf("usage: ffserver [options]\n"
+    printf("usage: FFserver [options]\n"
            "Hyper fast multi format Audio/Video streaming server\n");
     printf("\n");
     show_help_options(options, "Main options:\n", 0, 0);
