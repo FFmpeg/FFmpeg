@@ -420,7 +420,7 @@ OBJS-$(CONFIG_VP6F_DECODER)            += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_WMV3_DECODER)            += i386/vc1dsp_mmx.o
 endif
 
-ASM_OBJS-$(ARCH_ARMV4L)                += armv4l/jrevdct_arm.o     \
+OBJS-$(ARCH_ARMV4L)                    += armv4l/jrevdct_arm.o     \
                                           armv4l/simple_idct_arm.o \
                                           armv4l/dsputil_arm_s.o   \
 
@@ -434,9 +434,9 @@ OBJS-$(HAVE_ARMV5TE)                   += armv4l/mpegvideo_armv5te.o \
 
 OBJS-$(HAVE_ARMVFP)                    += armv4l/float_arm_vfp.o \
 
-ASM_OBJS-$(HAVE_ARMV5TE)               += armv4l/simple_idct_armv5te.o \
+OBJS-$(HAVE_ARMV5TE)                   += armv4l/simple_idct_armv5te.o \
 
-ASM_OBJS-$(HAVE_ARMV6)                 += armv4l/simple_idct_armv6.o \
+OBJS-$(HAVE_ARMV6)                     += armv4l/simple_idct_armv6.o \
 
 OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o \
                                           sparc/simple_idct_vis.o \
@@ -448,7 +448,7 @@ OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o     \
                                           alpha/mpegvideo_alpha.o   \
                                           alpha/simple_idct_alpha.o \
 
-ASM_OBJS-$(ARCH_ALPHA)                 += alpha/dsputil_alpha_asm.o  \
+OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha_asm.o  \
                                           alpha/motion_est_mvi_asm.o \
 
 OBJS-$(ARCH_POWERPC)                   += ppc/dsputil_ppc.o   \
@@ -486,7 +486,7 @@ OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o \
                                           bfin/mpegvideo_bfin.o \
                                           bfin/vp3_bfin.o \
 
-ASM_OBJS-$(ARCH_BFIN)                  += bfin/pixels_bfin.o \
+OBJS-$(ARCH_BFIN)                      += bfin/pixels_bfin.o \
                                           bfin/fdct_bfin.o   \
                                           bfin/idct_bfin.o   \
                                           bfin/vp3_idct_bfin.o   \

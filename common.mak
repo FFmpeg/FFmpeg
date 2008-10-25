@@ -60,15 +60,11 @@ endif
 
 CFLAGS   += $(CFLAGS-yes)
 OBJS     += $(OBJS-yes)
-ASM_OBJS += $(ASM_OBJS-yes)
-CPP_OBJS += $(CPP_OBJS-yes)
 FFLIBS   := $(FFLIBS-yes) $(FFLIBS)
 TESTS    += $(TESTS-yes)
 
 FFEXTRALIBS := $(addprefix -l,$(addsuffix $(BUILDSUF),$(FFLIBS))) $(EXTRALIBS)
 FFLDFLAGS   := $(addprefix -L$(BUILD_ROOT)/lib,$(FFLIBS)) $(LDFLAGS)
-
-OBJS := $(OBJS) $(ASM_OBJS) $(CPP_OBJS)
 
 OBJS  := $(addprefix $(SUBDIR),$(OBJS))
 TESTS := $(addprefix $(SUBDIR),$(TESTS))
