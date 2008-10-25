@@ -41,9 +41,7 @@
 #include "avcodec.h"
 #include "msrledec.h"
 
-#ifdef CONFIG_ZLIB
 #include <zlib.h>
-#endif
 
 
 /*
@@ -61,9 +59,7 @@ typedef struct TsccContext {
     // Decompression buffer
     unsigned char* decomp_buf;
     int height;
-#ifdef CONFIG_ZLIB
     z_stream zstream;
-#endif
 } CamtasiaContext;
 
 /*
@@ -76,9 +72,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
     CamtasiaContext * const c = avctx->priv_data;
     const unsigned char *encoded = buf;
     unsigned char *outptr;
-#ifdef CONFIG_ZLIB
     int zret; // Zlib return code
-#endif
     int len = buf_size;
 
     if(c->pic.data[0])
@@ -93,7 +87,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
 
     outptr = c->pic.data[0]; // Output image pointer
 
-#ifdef CONFIG_ZLIB
     zret = inflateReset(&(c->zstream));
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
@@ -123,11 +116,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
         }
     }
 
-#else
-    av_log(avctx, AV_LOG_ERROR, "BUG! Zlib support not compiled in frame decoder.\n");
-    return -1;
-#endif
-
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = c->pic;
 
@@ -156,13 +144,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return 1;
     }
 
-#ifdef CONFIG_ZLIB
     // Needed if zlib unused or init aborted before inflateInit
     memset(&(c->zstream), 0, sizeof(z_stream));
-#else
-    av_log(avctx, AV_LOG_ERROR, "Zlib support not compiled.\n");
-    return 1;
-#endif
     switch(avctx->bits_per_coded_sample){
     case  8: avctx->pix_fmt = PIX_FMT_PAL8; break;
     case 16: avctx->pix_fmt = PIX_FMT_RGB555; break;
@@ -184,7 +167,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
-#ifdef CONFIG_ZLIB
     c->zstream.zalloc = Z_NULL;
     c->zstream.zfree = Z_NULL;
     c->zstream.opaque = Z_NULL;
@@ -193,7 +175,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return 1;
     }
-#endif
 
     return 0;
 }
@@ -213,9 +194,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     if (c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
-#ifdef CONFIG_ZLIB
     inflateEnd(&(c->zstream));
-#endif
 
     return 0;
 }
