@@ -927,15 +927,16 @@ ac3_decoder_select="fft mdct"
 atrac3_decoder_select="fft mdct"
 cavs_decoder_select="golomb"
 cook_decoder_select="fft mdct"
+cscd_decoder_suggest="zlib"
 dca_decoder_select="fft mdct"
-dxa_decoder_deps="zlib"
+dxa_decoder_select="zlib"
 eac3_decoder_deps="gpl"
 eac3_decoder_select="fft mdct"
 ffv1_decoder_select="golomb"
 flac_decoder_select="golomb"
 flac_encoder_select="golomb"
-flashsv_decoder_deps="zlib"
-flashsv_encoder_deps="zlib"
+flashsv_decoder_select="zlib"
+flashsv_encoder_select="zlib"
 h264_decoder_select="golomb"
 imc_decoder_select="fft mdct"
 jpegls_decoder_select="golomb"
@@ -944,22 +945,27 @@ loco_decoder_select="golomb"
 mpeg_xvmc_decoder_deps="xvmc"
 nellymoser_decoder_select="fft mdct"
 nellymoser_encoder_select="fft mdct"
-png_decoder_deps="zlib"
-png_encoder_deps="zlib"
+png_decoder_select="zlib"
+png_encoder_select="zlib"
 qdm2_decoder_select="fft mdct"
 shorten_decoder_select="golomb"
 sonic_decoder_select="golomb"
 sonic_encoder_select="golomb"
 sonic_ls_encoder_select="golomb"
 svq3_decoder_select="golomb"
+tiff_decoder_suggest="zlib"
+tiff_encoder_suggest="zlib"
+tscc_decoder_select="zlib"
 vorbis_decoder_select="fft mdct"
 vorbis_encoder_select="fft mdct"
 wmav1_decoder_select="fft mdct"
 wmav1_encoder_select="fft mdct"
 wmav2_decoder_select="fft mdct"
 wmav2_encoder_select="fft mdct"
-zmbv_decoder_deps="zlib"
-zmbv_encoder_deps="zlib"
+zlib_decoder_select="zlib"
+zlib_encoder_select="zlib"
+zmbv_decoder_select="zlib"
+zmbv_encoder_select="zlib"
 
 # external libraries
 libamr_nb_decoder_deps="libamr_nb"
@@ -998,6 +1004,8 @@ dv1394_demuxer_deps="dv1394 dv_demuxer"
 libdc1394_demuxer_deps="libdc1394"
 libnut_demuxer_deps="libnut"
 libnut_muxer_deps="libnut"
+matroska_demuxer_suggest="zlib bzlib"
+mov_demuxer_suggest="zlib"
 mp3_demuxer_deps="mpegaudio_parser"
 oss_demuxer_deps_any="soundcard_h sys_soundcard_h"
 oss_muxer_deps_any="soundcard_h sys_soundcard_h"
@@ -1057,10 +1065,6 @@ cpu="generic"
 
 # OS
 target_os=$(tolower $(uname -s))
-
-# libraries
-enable bzlib
-enable zlib
 
 # configurable options
 enable debug
@@ -1765,8 +1769,8 @@ if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
-enabled  zlib && check_lib  zlib.h      zlibVersion -lz   || disable  zlib
-enabled bzlib && check_lib bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
+disabled  zlib || check_lib  zlib.h      zlibVersion -lz   || disable  zlib
+disabled bzlib || check_lib bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads
