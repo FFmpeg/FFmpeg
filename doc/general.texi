@@ -409,6 +409,8 @@ following image formats are supported:
     @tab experimental codec
 @item Sonic lossless         @tab  X  @tab  X
     @tab experimental codec
+@item Speex                  @tab     @tab  X
+    @tab Supported through the external libspeex library.
 @item THP ADPCM              @tab     @tab  X
     @tab Used on the Nintendo GameCube.
 @item True Audio (TTA)       @tab     @tab  X
