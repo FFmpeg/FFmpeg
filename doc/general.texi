@@ -388,8 +388,8 @@ following image formats are supported:
     @tab Used in DVD-Audio and Blu-Ray discs.
 @item Monkey's Audio         @tab     @tab  X
     @tab Only versions 3.97-3.99 are supported.
-@item MPEG audio layer 1/3   @tab  E  @tab IX
-    @tab MP3 encoding supported through external library LAME
+@item MPEG audio layer 3     @tab  E  @tab IX
+    @tab encoding supported through external library LAME
 @item MPEG audio layer 2     @tab IX  @tab IX
 @item MS IMA ADPCM           @tab  X  @tab  X
 @item Musepack               @tab     @tab  X
