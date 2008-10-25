@@ -68,10 +68,8 @@ TESTS    += $(TESTS-yes)
 FFEXTRALIBS := $(addprefix -l,$(addsuffix $(BUILDSUF),$(FFLIBS))) $(EXTRALIBS)
 FFLDFLAGS   := $(addprefix -L$(BUILD_ROOT)/lib,$(FFLIBS)) $(LDFLAGS)
 
-SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S) $(CPP_OBJS:.o=.cpp)
 OBJS := $(OBJS) $(ASM_OBJS) $(CPP_OBJS)
 
-SRCS  := $(addprefix $(SUBDIR),$(SRCS))
 OBJS  := $(addprefix $(SUBDIR),$(OBJS))
 TESTS := $(addprefix $(SUBDIR),$(TESTS))
 
