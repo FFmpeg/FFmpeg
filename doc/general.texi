@@ -219,7 +219,7 @@ following image formats are supported:
 @item Creative YUV           @tab     @tab  X
     @tab fourcc: CYUV
 @item Dirac                  @tab  X  @tab  X
-    @tab Supported through the external libdirac/libschroedinger libraries.
+    @tab supported through external libdirac/libschroedinger libraries
 @item Duck TrueMotion v1     @tab     @tab  X
     @tab fourcc: DUCK
 @item Duck TrueMotion v2     @tab     @tab  X
@@ -242,6 +242,7 @@ following image formats are supported:
 @item H.263(+)               @tab  X  @tab  X
     @tab also known as RealVideo 1.0
 @item H.264                  @tab     @tab  X
+    @tab encoding supported through external library libx264
 @item HuffYUV                @tab  X  @tab  X
 @item IBM Ultimotion         @tab     @tab  X
     @tab fourcc: ULTI
@@ -304,7 +305,7 @@ following image formats are supported:
 @item TechSmith Camtasia     @tab     @tab  X
     @tab fourcc: TSCC
 @item Theora                 @tab  X  @tab  X
-    @tab still experimental
+    @tab encoding supported through external library libtheora
 @item THP                    @tab     @tab  X
     @tab Used on the Nintendo GameCube.
 @item Tiertex Seq video      @tab     @tab  X
@@ -337,12 +338,12 @@ following image formats are supported:
 @item 4X IMA ADPCM           @tab     @tab  X
 @item 8SVX audio             @tab     @tab  X
 @item AAC                    @tab  X  @tab  X
-    @tab Encoding is supported through the external library libfaac.
+    @tab encoding supported through external library libfaac
 @item AC-3                   @tab IX  @tab IX
 @item AMR-NB                 @tab  X  @tab  X
-    @tab Supported through an external library.
+    @tab supported through external library libamrnb
 @item AMR-WB                 @tab  X  @tab  X
-    @tab Supported through an external library.
+    @tab supported through external library libamrwb
 @item AMV IMA ADPCM          @tab     @tab  X
     @tab Used in AMV files
 @item Apple lossless audio   @tab  X  @tab  X
@@ -382,7 +383,7 @@ following image formats are supported:
 @item Monkey's Audio         @tab     @tab  X
     @tab Only versions 3.97-3.99 are supported.
 @item MPEG audio layer 1/3   @tab  X  @tab IX
-    @tab MP3 encoding is supported through the external library LAME.
+    @tab MP3 encoding supported through external library LAME
 @item MPEG audio layer 2     @tab IX  @tab IX
 @item MS IMA ADPCM           @tab  X  @tab  X
 @item Musepack               @tab     @tab  X
@@ -410,7 +411,7 @@ following image formats are supported:
 @item Sonic lossless         @tab  X  @tab  X
     @tab experimental codec
 @item Speex                  @tab     @tab  X
-    @tab Supported through the external libspeex library.
+    @tab supported through external library libspeex
 @item THP ADPCM              @tab     @tab  X
     @tab Used on the Nintendo GameCube.
 @item True Audio (TTA)       @tab     @tab  X
