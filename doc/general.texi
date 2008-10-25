@@ -437,6 +437,17 @@ following image formats are supported:
 @code{I} means that an integer-only version is available, too (ensures high
 performance on systems without hardware floating point support).
 
+@section Subtitle Formats
+
+@multitable @columnfractions .4 .1 .1 .4
+@item Name @tab Muxing @tab Demuxing @tab Encoding @tab Decoding @tab Rendering
+@item ASS/SSA      @tab X @tab X
+@item DVB          @tab X @tab X @tab X @tab X @tab X
+@item DVD          @tab X @tab X @tab X @tab X @tab X
+@end multitable
+
+@code{X} means that the feature is supported.
+
 @chapter Platform Specific information
 
 @section BSD
