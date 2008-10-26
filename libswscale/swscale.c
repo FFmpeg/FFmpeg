@@ -1741,7 +1741,7 @@ static int pal2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
 
 
     for (i=0; i<srcSliceH; i++) {
-        conv(srcPtr, dstPtr, c->srcW, c->pal_rgb);
+        conv(srcPtr, dstPtr, c->srcW, (uint8_t *) c->pal_rgb);
         srcPtr+= srcStride[0];
         dstPtr+= dstStride[0];
     }
