@@ -289,10 +289,10 @@ static int dca_parse_frame_header(DCAContext * s)
     av_log(s->avctx, AV_LOG_DEBUG, "frame size: %i bytes\n", s->frame_size);
     av_log(s->avctx, AV_LOG_DEBUG, "amode: %i (%i channels)\n",
            s->amode, dca_channels[s->amode]);
-    av_log(s->avctx, AV_LOG_DEBUG, "sample rate: %i (%i Hz)\n",
-           s->sample_rate, dca_sample_rates[s->sample_rate]);
-    av_log(s->avctx, AV_LOG_DEBUG, "bit rate: %i (%i bits/s)\n",
-           s->bit_rate, dca_bit_rates[s->bit_rate]);
+    av_log(s->avctx, AV_LOG_DEBUG, "sample rate: %i Hz\n",
+           s->sample_rate);
+    av_log(s->avctx, AV_LOG_DEBUG, "bit rate: %i bits/s\n",
+           s->bit_rate);
     av_log(s->avctx, AV_LOG_DEBUG, "downmix: %i\n", s->downmix);
     av_log(s->avctx, AV_LOG_DEBUG, "dynrange: %i\n", s->dynrange);
     av_log(s->avctx, AV_LOG_DEBUG, "timestamp: %i\n", s->timestamp);
