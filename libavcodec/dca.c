@@ -67,7 +67,6 @@ enum DCAMode {
 #define DCA_LFE 0x80
 
 #define HEADER_SIZE 14
-#define CONVERT_BIAS 384
 
 #define DCA_MAX_FRAME_SIZE 16384
 
@@ -159,7 +158,8 @@ typedef struct {
     int hist_index[DCA_PRIM_CHANNELS_MAX];
 
     int output;                 ///< type of output
-    int bias;                   ///< output bias
+    float add_bias;             ///< output bias
+    float scale_bias;           ///< output scale
 
     DECLARE_ALIGNED_16(float, samples[1536]);  /* 6 * 256 = 1536, might only need 5 */
     const float *samples_chanptr[6];
@@ -229,8 +229,6 @@ static int dca_parse_frame_header(DCAContext * s)
     static const float adj_table[4] = { 1.0, 1.1250, 1.2500, 1.4375 };
     static const int bitlen[11] = { 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 };
     static const int thr[11] = { 0, 1, 3, 3, 3, 3, 7, 7, 7, 7, 7 };
-
-    s->bias = CONVERT_BIAS;
 
     init_get_bits(&s->gb, s->dca_buffer, s->dca_buffer_size * 8);
 
@@ -748,7 +746,7 @@ static void lfe_interpolation_fir(int decimation_select,
             //FIXME the coeffs are symetric, fix that
             for (j = 0; j < 512 / decifactor; j++)
                 rTmp += samples_in[deciindex - j] * prCoeff[k + j * decifactor];
-            samples_out[interp_index++] = rTmp / scale + bias;
+            samples_out[interp_index++] = (rTmp * scale) + bias;
         }
     }
 }
@@ -984,8 +982,8 @@ static int dca_subsubframe(DCAContext * s)
 /*        static float pcm_to_double[8] =
             {32768.0, 32768.0, 524288.0, 524288.0, 0, 8388608.0, 8388608.0};*/
          qmf_32_subbands(s, k, subband_samples[k], &s->samples[256 * k],
-                            M_SQRT1_2 /*pcm_to_double[s->source_pcm_res] */ ,
-                            0 /*s->bias */ );
+                            M_SQRT1_2*s->scale_bias /*pcm_to_double[s->source_pcm_res] */ ,
+                            s->add_bias );
     }
 
     /* Down mixing */
@@ -1003,7 +1001,7 @@ static int dca_subsubframe(DCAContext * s)
                               s->lfe_data + lfe_samples +
                               2 * s->lfe * subsubframe,
                               &s->samples[256 * i_channels],
-                              256.0, 0 /* s->bias */);
+                              (1.0/256.0)*s->scale_bias,  s->add_bias);
         /* Outputs 20bits pcm samples */
     }
 
@@ -1214,6 +1212,16 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
     for(i = 0; i < 6; i++)
         s->samples_chanptr[i] = s->samples + i * 256;
     avctx->sample_fmt = SAMPLE_FMT_S16;
+
+    if(s->dsp.float_to_int16 == ff_float_to_int16_c) {
+        s->add_bias = 385.0f;
+        s->scale_bias = 1.0 / 32768.0;
+    } else {
+        s->add_bias = 0.0f;
+        s->scale_bias = 1.0;
+    }
+
+
     return 0;
 }
 
