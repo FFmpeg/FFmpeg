@@ -703,6 +703,10 @@ static int svq3_decode_slice_header (H264Context *h) {
     s->gb.size_in_bits = h->next_slice_index - 8*(length - 1);
     skip_bits(&s->gb, 8);
 
+    if (h->svq3_watermark_key) {
+        uint32_t header = AV_RL32(&s->gb.buffer[(get_bits_count(&s->gb)>>3)+1]);
+        AV_WL32(&s->gb.buffer[(get_bits_count(&s->gb)>>3)+1], header ^ h->svq3_watermark_key);
+    }
     if (length > 0) {
       memcpy ((uint8_t *) &s->gb.buffer[get_bits_count(&s->gb) >> 3],
              &s->gb.buffer[s->gb.size_in_bits >> 3], (length - 1));
@@ -828,6 +832,38 @@ static int svq3_decode_frame (AVCodecContext *avctx,
 
       h->unknown_svq3_flag = get_bits1 (&gb);
       avctx->has_b_frames = !s->low_delay;
+      if (h->unknown_svq3_flag) {
+#ifdef CONFIG_ZLIB
+          unsigned watermark_width  = svq3_get_ue_golomb(&gb);
+          unsigned watermark_height = svq3_get_ue_golomb(&gb);
+          int u1 = svq3_get_ue_golomb(&gb);
+          int u2 = get_bits(&gb, 8);
+          int u3 = get_bits(&gb, 2);
+          int u4 = svq3_get_ue_golomb(&gb);
+          unsigned buf_len = watermark_width*watermark_height*4;
+          int offset = (get_bits_count(&gb)+7)>>3;
+          uint8_t *buf;
+
+          if ((uint64_t)watermark_width*4 > UINT_MAX/watermark_height)
+              return -1;
+
+          buf = av_malloc(buf_len);
+          av_log(avctx, AV_LOG_DEBUG, "watermark size: %dx%d\n", watermark_width, watermark_height);
+          av_log(avctx, AV_LOG_DEBUG, "u1: %x u2: %x u3: %x compressed data size: %d offset: %d\n", u1, u2, u3, u4, offset);
+          if (uncompress(buf, (uLong*)&buf_len, extradata + 8 + offset, size - offset) != Z_OK) {
+              av_log(avctx, AV_LOG_ERROR, "could not uncompress watermark logo\n");
+              av_free(buf);
+              return -1;
+          }
+          h->svq3_watermark_key = ff_svq1_packet_checksum(buf, buf_len, 0);
+          h->svq3_watermark_key = h->svq3_watermark_key << 16 | h->svq3_watermark_key;
+          av_log(avctx, AV_LOG_DEBUG, "watermark key %#x\n", h->svq3_watermark_key);
+          av_free(buf);
+#else
+          av_log(avctx, AV_LOG_ERROR, "this svq3 file contains watermark which need zlib support compiled in\n");
+          return -1;
+#endif
+      }
     }
   }
 
