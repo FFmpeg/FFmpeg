@@ -2734,7 +2734,8 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                 r= (i>>3    )*255;
                 g= ((i>>1)&3)*85;
                 b= (i&1     )*255;
-            }else if(c->srcFormat == PIX_FMT_BGR4_BYTE){
+            }else {
+                assert(c->srcFormat == PIX_FMT_BGR4_BYTE);
                 b= (i>>3    )*255;
                 g= ((i>>1)&3)*85;
                 r= (i&1     )*255;
