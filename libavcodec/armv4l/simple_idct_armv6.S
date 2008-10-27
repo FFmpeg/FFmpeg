@@ -21,6 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "asm.S"
+
 #define W1  22725   /* cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5 */
 #define W2  21407   /* cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5 */
 #define W3  19266   /* cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5 */
@@ -190,10 +192,7 @@ w57:    .long W57
   a1 = source
   a2 = dest
 */
-        .align
-        .type idct_row_armv6, %function
-        .func idct_row_armv6
-idct_row_armv6:
+function idct_row_armv6
         str    lr, [sp, #-4]!
 
         ldr    lr, [a1, #12]         /* lr = row[7,5] */
@@ -245,10 +244,7 @@ idct_row_armv6:
   a1 = source
   a2 = dest
 */
-        .align
-        .type idct_col_armv6, %function
-        .func idct_col_armv6
-idct_col_armv6:
+function idct_col_armv6
         stmfd  sp!, {a2, lr}
 
         ldr    a3, [a1]              /* a3 = row[2,0] */
@@ -276,10 +272,7 @@ idct_col_armv6:
   a2 = dest
   a3 = line size
 */
-        .align
-        .type idct_col_put_armv6, %function
-        .func idct_col_put_armv6
-idct_col_put_armv6:
+function idct_col_put_armv6
         stmfd  sp!, {a2, a3, lr}
 
         ldr    a3, [a1]              /* a3 = row[2,0] */
@@ -309,10 +302,7 @@ idct_col_put_armv6:
   a2 = dest
   a3 = line size
 */
-        .align
-        .type idct_col_add_armv6, %function
-        .func idct_col_add_armv6
-idct_col_add_armv6:
+function idct_col_add_armv6
         stmfd  sp!, {a2, a3, lr}
 
         ldr    a3, [a1]              /* a3 = row[2,0] */
@@ -393,12 +383,8 @@ idct_col_add_armv6:
         sub    a1, a1, #(16*7)
         .endm
 
-        .align
-        .global ff_simple_idct_armv6
-        .type ff_simple_idct_armv6, %function
-        .func ff_simple_idct_armv6
 /* void ff_simple_idct_armv6(DCTELEM *data); */
-ff_simple_idct_armv6:
+function ff_simple_idct_armv6, export=1
         stmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, lr}
         sub    sp, sp, #128
 
@@ -412,12 +398,8 @@ ff_simple_idct_armv6:
         ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
         .endfunc
 
-        .align
-        .global ff_simple_idct_add_armv6
-        .type ff_simple_idct_add_armv6, %function
-        .func ff_simple_idct_add_armv6
 /* ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data); */
-ff_simple_idct_add_armv6:
+function ff_simple_idct_add_armv6, export=1
         stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
         sub    sp, sp, #128
 
@@ -433,12 +415,8 @@ ff_simple_idct_add_armv6:
         ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
         .endfunc
 
-        .align
-        .global ff_simple_idct_put_armv6
-        .type ff_simple_idct_put_armv6, %function
-        .func ff_simple_idct_put_armv6
 /* ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data); */
-ff_simple_idct_put_armv6:
+function ff_simple_idct_put_armv6, export=1
         stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
         sub    sp, sp, #128
 

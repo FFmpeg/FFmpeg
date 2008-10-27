@@ -24,6 +24,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "asm.S"
+
 /* useful constants for the algorithm, they are save in __constant_ptr__ at */
 /* the end of the source code.*/
 #define W1  22725
@@ -53,10 +55,8 @@
 
 
         .text
-        .align
-        .global simple_idct_ARM
 
-simple_idct_ARM:
+function simple_idct_ARM, export=1
         @@ void simple_idct_ARM(int16_t *block)
         @@ save stack for reg needed (take all of them),
         @@ R0-R3 are scratch regs, so no need to save them, but R0 contains the pointer to block

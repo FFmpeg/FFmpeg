@@ -21,6 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "asm.S"
+
 #define W1  22725   /* cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5 */
 #define W2  21407   /* cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5 */
 #define W3  19266   /* cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5 */
@@ -41,10 +43,7 @@ w13:    .long W13
 w26:    .long W26
 w57:    .long W57
 
-        .align
-        .type idct_row_armv5te, %function
-        .func idct_row_armv5te
-idct_row_armv5te:
+function idct_row_armv5te
         str    lr, [sp, #-4]!
 
         ldrd   v1, [a1, #8]
@@ -262,10 +261,7 @@ row_dc_only:
         sub    fp, fp, a4
         .endm
 
-        .align
-        .type idct_col_armv5te, %function
-        .func idct_col_armv5te
-idct_col_armv5te:
+function idct_col_armv5te
         str    lr, [sp, #-4]!
 
         idct_col
@@ -337,10 +333,7 @@ idct_col_armv5te:
         ldr    pc, [sp], #4
         .endfunc
 
-        .align
-        .type idct_col_put_armv5te, %function
-        .func idct_col_put_armv5te
-idct_col_put_armv5te:
+function idct_col_put_armv5te
         str    lr, [sp, #-4]!
 
         idct_col
@@ -457,10 +450,7 @@ idct_col_put_armv5te:
         ldr    pc, [sp], #4
         .endfunc
 
-        .align
-        .type idct_col_add_armv5te, %function
-        .func idct_col_add_armv5te
-idct_col_add_armv5te:
+function idct_col_add_armv5te
         str    lr, [sp, #-4]!
 
         idct_col
@@ -610,11 +600,7 @@ idct_col_add_armv5te:
         ldr    pc, [sp], #4
         .endfunc
 
-        .align
-        .global simple_idct_armv5te
-        .type simple_idct_armv5te, %function
-        .func simple_idct_armv5te
-simple_idct_armv5te:
+function simple_idct_armv5te, export=1
         stmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, lr}
 
         bl     idct_row_armv5te
@@ -646,11 +632,7 @@ simple_idct_armv5te:
         ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
         .endfunc
 
-        .align
-        .global simple_idct_add_armv5te
-        .type simple_idct_add_armv5te, %function
-        .func simple_idct_add_armv5te
-simple_idct_add_armv5te:
+function simple_idct_add_armv5te, export=1
         stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
 
         mov    a1, a3
@@ -685,11 +667,7 @@ simple_idct_add_armv5te:
         ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
         .endfunc
 
-        .align
-        .global simple_idct_put_armv5te
-        .type simple_idct_put_armv5te, %function
-        .func simple_idct_put_armv5te
-simple_idct_put_armv5te:
+function simple_idct_put_armv5te, export=1
         stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
 
         mov    a1, a3

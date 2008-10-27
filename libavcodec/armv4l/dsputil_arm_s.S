@@ -20,6 +20,7 @@
 @
 
 #include "config.h"
+#include "asm.S"
 
 #ifndef HAVE_PLD
 .macro pld reg
@@ -79,8 +80,7 @@
 
 @ ----------------------------------------------------------------
         .align 8
-        .global put_pixels16_arm
-put_pixels16_arm:
+function put_pixels16_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
         pld [r1]
@@ -138,11 +138,11 @@ put_pixels16_arm:
         .word 2b
         .word 3b
         .word 4b
+        .endfunc
 
 @ ----------------------------------------------------------------
         .align 8
-        .global put_pixels8_arm
-put_pixels8_arm:
+function put_pixels8_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
         pld [r1]
@@ -200,11 +200,11 @@ put_pixels8_arm:
         .word 2b
         .word 3b
         .word 4b
+        .endfunc
 
 @ ----------------------------------------------------------------
         .align 8
-        .global put_pixels8_x2_arm
-put_pixels8_x2_arm:
+function put_pixels8_x2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
         pld [r1]
@@ -270,10 +270,10 @@ put_pixels8_x2_arm:
         .word 2b
         .word 3b
         .word 4b
+        .endfunc
 
         .align 8
-        .global put_no_rnd_pixels8_x2_arm
-put_no_rnd_pixels8_x2_arm:
+function put_no_rnd_pixels8_x2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
         pld [r1]
@@ -339,12 +339,12 @@ put_no_rnd_pixels8_x2_arm:
         .word 2b
         .word 3b
         .word 4b
+        .endfunc
 
 
 @ ----------------------------------------------------------------
         .align 8
-        .global put_pixels8_y2_arm
-put_pixels8_y2_arm:
+function put_pixels8_y2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
         pld [r1]
@@ -450,10 +450,10 @@ put_pixels8_y2_arm:
         .word 2b
         .word 3b
         .word 4b
+        .endfunc
 
         .align 8
-        .global put_no_rnd_pixels8_y2_arm
-put_no_rnd_pixels8_y2_arm:
+function put_no_rnd_pixels8_y2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
         pld [r1]
@@ -558,6 +558,7 @@ put_no_rnd_pixels8_y2_arm:
         .word 2b
         .word 3b
         .word 4b
+        .endfunc
 
 @ ----------------------------------------------------------------
 .macro  RND_XY2_IT align
@@ -625,8 +626,7 @@ put_no_rnd_pixels8_y2_arm:
 .endm
 
         .align 8
-        .global put_pixels8_xy2_arm
-put_pixels8_xy2_arm:
+function put_pixels8_xy2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
         pld [r1]
@@ -659,10 +659,10 @@ put_pixels8_xy2_arm:
         .word 0x02020202
         .word 0xFCFCFCFC >> 2
         .word 0x0F0F0F0F
+        .endfunc
 
         .align 8
-        .global put_no_rnd_pixels8_xy2_arm
-put_no_rnd_pixels8_xy2_arm:
+function put_no_rnd_pixels8_xy2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
         pld [r1]
@@ -695,3 +695,4 @@ put_no_rnd_pixels8_xy2_arm:
         .word 0x01010101
         .word 0xFCFCFCFC >> 2
         .word 0x0F0F0F0F
+        .endfunc

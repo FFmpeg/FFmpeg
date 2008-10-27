@@ -24,6 +24,9 @@
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
+
+#include "asm.S"
+
 #define FIX_0_298631336 2446
 #define FIX_0_541196100 4433
 #define FIX_0_765366865 6270
@@ -54,8 +57,7 @@
         .text
         .align
 
-        .global j_rev_dct_ARM
-j_rev_dct_ARM:
+function j_rev_dct_ARM, export=1
         stmdb   sp!, { r4 - r12, lr }   @ all callee saved regs
 
         sub sp, sp, #4                  @ reserve some space on the stack
