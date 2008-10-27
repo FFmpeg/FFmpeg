@@ -13,7 +13,7 @@ OBJS-$(HAVE_VIS)           +=  yuv2rgb_vis.o
 
 ASM_OBJS-$(ARCH_BFIN)      +=  internal_bfin.o
 
-HEADERS = swscale.h rgb2rgb.h
+HEADERS = swscale.h
 
 CLEANFILES = cs_test swscale-example
 
