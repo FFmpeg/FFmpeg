@@ -28,7 +28,6 @@
 #include "libavutil/avutil.h"
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "rgb2rgb.h"
 
 static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
     int x,y;
@@ -207,11 +206,6 @@ int main(int argc, char **argv){
             rgb_data[ x + y*4*W]= random();
         }
     }
-#if defined(ARCH_X86)
-    sws_rgb2rgb_init(SWS_CPU_CAPS_MMX*0);
-#else
-    sws_rgb2rgb_init(0);
-#endif
     sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
 
 #if defined(ARCH_X86)
