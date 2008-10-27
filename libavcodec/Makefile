@@ -433,6 +433,7 @@ OBJS-$(HAVE_ARMV5TE)                   += armv4l/mpegvideo_armv5te.o    \
                                           armv4l/simple_idct_armv5te.o  \
 
 OBJS-$(HAVE_ARMVFP)                    += armv4l/float_arm_vfp.o        \
+                                          armv4l/dsputil_vfp.o          \
 
 OBJS-$(HAVE_ARMV6)                     += armv4l/simple_idct_armv6.o    \
 
