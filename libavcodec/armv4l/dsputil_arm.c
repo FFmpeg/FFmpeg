@@ -57,6 +57,8 @@ void put_no_rnd_pixels8_xy2_arm(uint8_t *block, const uint8_t *pixels, int line_
 
 void put_pixels16_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 
+extern void ff_prefetch_arm(void *mem, int stride, int h);
+
 CALL_2X_PIXELS(put_pixels16_x2_arm , put_pixels8_x2_arm , 8)
 CALL_2X_PIXELS(put_pixels16_y2_arm , put_pixels8_y2_arm , 8)
 CALL_2X_PIXELS(put_pixels16_xy2_arm, put_pixels8_xy2_arm, 8)
@@ -203,19 +205,6 @@ static void simple_idct_ipp_add(uint8_t *dest, int line_size, DCTELEM *block)
 }
 #endif
 
-#ifdef HAVE_ARMV5TE
-static void prefetch_arm(void *mem, int stride, int h)
-{
-    __asm__ volatile(
-        "1:              \n\t"
-        "subs %0, %0, #1 \n\t"
-        "pld  [%1]       \n\t"
-        "add  %1, %1, %2 \n\t"
-        "bgt  1b         \n\t"
-        : "+r"(h), "+r"(mem) : "r"(stride));
-}
-#endif
-
 int mm_support(void)
 {
     return ENABLE_IWMMXT * MM_IWMMXT;
@@ -293,7 +282,7 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
     c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_arm;
 
 #ifdef HAVE_ARMV5TE
-    c->prefetch = prefetch_arm;
+    c->prefetch = ff_prefetch_arm;
 #endif
 
 #ifdef HAVE_IWMMXT

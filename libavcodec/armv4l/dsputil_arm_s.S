@@ -22,9 +22,21 @@
 #include "config.h"
 #include "asm.S"
 
+        preserve8
+
 #ifndef HAVE_PLD
 .macro pld reg
 .endm
+#endif
+
+#ifdef HAVE_ARMV5TE
+function ff_prefetch_arm, export=1
+        subs    r2, r2, #1
+        pld     [r0]
+        add     r0, r0, r1
+        bne     ff_prefetch_arm
+        bx      lr
+        .endfunc
 #endif
 
 .macro  ADJ_ALIGN_QUADWORD_D shift, Rd0, Rd1, Rd2, Rd3, Rn0, Rn1, Rn2, Rn3, Rn4
