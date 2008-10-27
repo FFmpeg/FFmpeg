@@ -335,7 +335,7 @@ following image formats are supported:
 
 @section Audio Codecs
 
-@multitable @columnfractions .4 .1 .1 .1 .7
+@multitable @columnfractions .4 .1 .1 .4
 @item Name @tab Encoding @tab Decoding @tab Comments
 @item 4X IMA ADPCM           @tab     @tab  X
 @item 8SVX audio             @tab     @tab  X
@@ -439,7 +439,7 @@ performance on systems without hardware floating point support).
 
 @section Subtitle Formats
 
-@multitable @columnfractions .4 .1 .1 .4
+@multitable @columnfractions .4 .1 .1 .1 .1 .1
 @item Name @tab Muxing @tab Demuxing @tab Encoding @tab Decoding @tab Rendering
 @item ASS/SSA      @tab X @tab X
 @item DVB          @tab X @tab X @tab X @tab X @tab X
