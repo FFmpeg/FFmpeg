@@ -66,98 +66,8 @@ CALL_2X_PIXELS(put_no_rnd_pixels16_x2_arm , put_no_rnd_pixels8_x2_arm , 8)
 CALL_2X_PIXELS(put_no_rnd_pixels16_y2_arm , put_no_rnd_pixels8_y2_arm , 8)
 CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_arm, put_no_rnd_pixels8_xy2_arm, 8)
 
-static void add_pixels_clamped_ARM(short *block, unsigned char *dest, int line_size)
-{
-    __asm__ volatile (
-                  "mov r10, #8 \n\t"
-
-                  "1: \n\t"
-
-                  /* load dest */
-                  "ldr r4, [%1] \n\t"
-                  /* block[0] and block[1]*/
-                  "ldrsh r5, [%0] \n\t"
-                  "ldrsh r7, [%0, #2] \n\t"
-                  "and r6, r4, #0xFF \n\t"
-                  "and r8, r4, #0xFF00 \n\t"
-                  "add r6, r5, r6 \n\t"
-                  "add r8, r7, r8, lsr #8 \n\t"
-                  "mvn r5, r5 \n\t"
-                  "mvn r7, r7 \n\t"
-                  "tst r6, #0x100 \n\t"
-                  "movne r6, r5, lsr #24 \n\t"
-                  "tst r8, #0x100 \n\t"
-                  "movne r8, r7, lsr #24 \n\t"
-                  "mov r9, r6 \n\t"
-                  "ldrsh r5, [%0, #4] \n\t" /* moved form [A] */
-                  "orr r9, r9, r8, lsl #8 \n\t"
-                  /* block[2] and block[3] */
-                  /* [A] */
-                  "ldrsh r7, [%0, #6] \n\t"
-                  "and r6, r4, #0xFF0000 \n\t"
-                  "and r8, r4, #0xFF000000 \n\t"
-                  "add r6, r5, r6, lsr #16 \n\t"
-                  "add r8, r7, r8, lsr #24 \n\t"
-                  "mvn r5, r5 \n\t"
-                  "mvn r7, r7 \n\t"
-                  "tst r6, #0x100 \n\t"
-                  "movne r6, r5, lsr #24 \n\t"
-                  "tst r8, #0x100 \n\t"
-                  "movne r8, r7, lsr #24 \n\t"
-                  "orr r9, r9, r6, lsl #16 \n\t"
-                  "ldr r4, [%1, #4] \n\t"       /* moved form [B] */
-                  "orr r9, r9, r8, lsl #24 \n\t"
-                  /* store dest */
-                  "ldrsh r5, [%0, #8] \n\t" /* moved form [C] */
-                  "str r9, [%1] \n\t"
-
-                  /* load dest */
-                  /* [B] */
-                  /* block[4] and block[5] */
-                  /* [C] */
-                  "ldrsh r7, [%0, #10] \n\t"
-                  "and r6, r4, #0xFF \n\t"
-                  "and r8, r4, #0xFF00 \n\t"
-                  "add r6, r5, r6 \n\t"
-                  "add r8, r7, r8, lsr #8 \n\t"
-                  "mvn r5, r5 \n\t"
-                  "mvn r7, r7 \n\t"
-                  "tst r6, #0x100 \n\t"
-                  "movne r6, r5, lsr #24 \n\t"
-                  "tst r8, #0x100 \n\t"
-                  "movne r8, r7, lsr #24 \n\t"
-                  "mov r9, r6 \n\t"
-                  "ldrsh r5, [%0, #12] \n\t" /* moved from [D] */
-                  "orr r9, r9, r8, lsl #8 \n\t"
-                  /* block[6] and block[7] */
-                  /* [D] */
-                  "ldrsh r7, [%0, #14] \n\t"
-                  "and r6, r4, #0xFF0000 \n\t"
-                  "and r8, r4, #0xFF000000 \n\t"
-                  "add r6, r5, r6, lsr #16 \n\t"
-                  "add r8, r7, r8, lsr #24 \n\t"
-                  "mvn r5, r5 \n\t"
-                  "mvn r7, r7 \n\t"
-                  "tst r6, #0x100 \n\t"
-                  "movne r6, r5, lsr #24 \n\t"
-                  "tst r8, #0x100 \n\t"
-                  "movne r8, r7, lsr #24 \n\t"
-                  "orr r9, r9, r6, lsl #16 \n\t"
-                  "add %0, %0, #16 \n\t" /* moved from [E] */
-                  "orr r9, r9, r8, lsl #24 \n\t"
-                  "subs r10, r10, #1 \n\t" /* moved from [F] */
-                  /* store dest */
-                  "str r9, [%1, #4] \n\t"
-
-                  /* [E] */
-                  /* [F] */
-                  "add %1, %1, %2 \n\t"
-                  "bne 1b \n\t"
-                  : "+r"(block),
-                    "+r"(dest)
-                  : "r"(line_size)
-                  : "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc", "memory" );
-}
+extern void ff_add_pixels_clamped_ARM(short *block, unsigned char *dest,
+                                      int line_size);
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
@@ -200,7 +110,7 @@ static void simple_idct_ipp_add(uint8_t *dest, int line_size, DCTELEM *block)
 #ifdef HAVE_IWMMXT
     add_pixels_clamped_iwmmxt(block, dest, line_size);
 #else
-    add_pixels_clamped_ARM(block, dest, line_size);
+    ff_add_pixels_clamped_ARM(block, dest, line_size);
 #endif
 }
 #endif
