@@ -557,7 +557,7 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
         fill_rectangle(cur_pic->motion_val[!dir][mv_pos], 2, 2, s->b8_stride, 0, 4);
 }
 
-static const int chroma_coeffs[3] = { 8, 5, 3 };
+static const int chroma_coeffs[3] = { 0, 3, 5 };
 
 /**
  * generic motion compensation function
@@ -579,22 +579,29 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
 {
     MpegEncContext *s = &r->s;
     uint8_t *Y, *U, *V, *srcY, *srcU, *srcV;
-    int dxy, mx, my, lx, ly, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
+    int dxy, mx, my, umx, umy, lx, ly, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride + mv_off;
     int is16x16 = 1;
 
     if(thirdpel){
+        int chroma_mx, chroma_my;
         mx = (s->current_picture_ptr->motion_val[dir][mv_pos][0] + (3 << 24)) / 3 - (1 << 24);
         my = (s->current_picture_ptr->motion_val[dir][mv_pos][1] + (3 << 24)) / 3 - (1 << 24);
         lx = (s->current_picture_ptr->motion_val[dir][mv_pos][0] + (3 << 24)) % 3;
         ly = (s->current_picture_ptr->motion_val[dir][mv_pos][1] + (3 << 24)) % 3;
-        uvmx = chroma_coeffs[(3*(mx&1) + lx) >> 1];
-        uvmy = chroma_coeffs[(3*(my&1) + ly) >> 1];
+        chroma_mx = (s->current_picture_ptr->motion_val[dir][mv_pos][0] + 1) >> 1;
+        chroma_my = (s->current_picture_ptr->motion_val[dir][mv_pos][1] + 1) >> 1;
+        umx = (chroma_mx + (3 << 24)) / 3 - (1 << 24);
+        umy = (chroma_my + (3 << 24)) / 3 - (1 << 24);
+        uvmx = chroma_coeffs[(chroma_mx + (3 << 24)) % 3];
+        uvmy = chroma_coeffs[(chroma_my + (3 << 24)) % 3];
     }else{
         mx = s->current_picture_ptr->motion_val[dir][mv_pos][0] >> 2;
         my = s->current_picture_ptr->motion_val[dir][mv_pos][1] >> 2;
         lx = s->current_picture_ptr->motion_val[dir][mv_pos][0] & 3;
         ly = s->current_picture_ptr->motion_val[dir][mv_pos][1] & 3;
+        umx = mx >> 1;
+        umy = my >> 1;
         uvmx = mx & 6;
         uvmy = my & 6;
     }
@@ -604,8 +611,8 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     srcV = dir ? s->next_picture_ptr->data[2] : s->last_picture_ptr->data[2];
     src_x = s->mb_x * 16 + xoff + mx;
     src_y = s->mb_y * 16 + yoff + my;
-    uvsrc_x = s->mb_x * 8 + (xoff >> 1) + (mx >> 1);
-    uvsrc_y = s->mb_y * 8 + (yoff >> 1) + (my >> 1);
+    uvsrc_x = s->mb_x * 8 + (xoff >> 1) + umx;
+    uvsrc_y = s->mb_y * 8 + (yoff >> 1) + umy;
     srcY += src_y * s->linesize + src_x;
     srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
     srcV += uvsrc_y * s->uvlinesize + uvsrc_x;
