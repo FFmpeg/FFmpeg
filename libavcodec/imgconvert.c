@@ -1416,7 +1416,7 @@ static inline unsigned int bitcopy_n(unsigned int a, int n)
 
 #define BPP 2
 
-#include "imgconvert_template.h"
+#include "imgconvert_template.c"
 
 /* rgb565 handling */
 
@@ -1437,7 +1437,7 @@ static inline unsigned int bitcopy_n(unsigned int a, int n)
 
 #define BPP 2
 
-#include "imgconvert_template.h"
+#include "imgconvert_template.c"
 
 /* bgr24 handling */
 
@@ -1459,7 +1459,7 @@ static inline unsigned int bitcopy_n(unsigned int a, int n)
 
 #define BPP 3
 
-#include "imgconvert_template.h"
+#include "imgconvert_template.c"
 
 #undef RGB_IN
 #undef RGB_OUT
@@ -1486,7 +1486,7 @@ static inline unsigned int bitcopy_n(unsigned int a, int n)
 
 #define BPP 3
 
-#include "imgconvert_template.h"
+#include "imgconvert_template.c"
 
 /* rgb32 handling */
 
@@ -1517,7 +1517,7 @@ static inline unsigned int bitcopy_n(unsigned int a, int n)
 
 #define BPP 4
 
-#include "imgconvert_template.h"
+#include "imgconvert_template.c"
 
 static void mono_to_gray(AVPicture *dst, const AVPicture *src,
                          int width, int height, int xor_mask)

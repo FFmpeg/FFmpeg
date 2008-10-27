@@ -24,7 +24,7 @@
 #define DEF(x, y) x ## _no_rnd_ ## y ##_iwmmxt
 #define SET_RND(regd)  __asm__ volatile ("mov r12, #1 \n\t tbcsth " #regd ", r12":::"r12");
 #define WAVG2B "wavg2b"
-#include "dsputil_iwmmxt_rnd.h"
+#include "dsputil_iwmmxt_rnd_template.c"
 #undef DEF
 #undef SET_RND
 #undef WAVG2B
@@ -32,7 +32,7 @@
 #define DEF(x, y) x ## _ ## y ##_iwmmxt
 #define SET_RND(regd)  __asm__ volatile ("mov r12, #2 \n\t tbcsth " #regd ", r12":::"r12");
 #define WAVG2B "wavg2br"
-#include "dsputil_iwmmxt_rnd.h"
+#include "dsputil_iwmmxt_rnd_template.c"
 #undef DEF
 #undef SET_RND
 #undef WAVG2BR
