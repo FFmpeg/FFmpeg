@@ -1021,7 +1021,7 @@ static const uint8_t bitalloc_129_bits_g[129] =
 
 static const uint8_t bitalloc_sizes[10] = { 3, 5, 7, 9, 13, 17, 25, 33, 65, 129 };
 
-static const uint8_t bitalloc_offsets[10] =
+static const int8_t bitalloc_offsets[10] =
     { -1, -2, -3, -4, -6, -8, -12, -16, -32, -64 };
 
 static const uint8_t bitalloc_maxbits[10][7] = {
