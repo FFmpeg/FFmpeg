@@ -44,6 +44,8 @@
 #include <zlib.h>
 #endif
 
+#include "svq1.h"
+
 /**
  * @file svq3.c
  * svq3 decoder.
