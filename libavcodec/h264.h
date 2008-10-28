@@ -59,6 +59,12 @@
 
 #define ALLOW_NOCHROMA
 
+/**
+ * The maximum number of slices supported by the decoder.
+ * must be a power of 2
+ */
+#define MAX_SLICES 16
+
 #ifdef ALLOW_INTERLACE
 #define MB_MBAFF h->mb_mbaff
 #define MB_FIELD h->mb_field_decoding_flag
@@ -296,8 +302,8 @@ typedef struct H264Context{
     int dequant_coeff_pps;     ///< reinit tables when pps changes
 
     int slice_num;
-    uint8_t *slice_table_base;
-    uint8_t *slice_table;      ///< slice_table_base + 2*mb_stride + 1
+    uint16_t *slice_table_base;
+    uint16_t *slice_table;     ///< slice_table_base + 2*mb_stride + 1
     int slice_type;
     int slice_type_nos;        ///< S free slice type (SI/SP are remapped to I/P)
     int slice_type_fixed;
@@ -366,7 +372,7 @@ typedef struct H264Context{
     Picture ref_list[2][48];         /**< 0..15: frame refs, 16..47: mbaff field refs.
                                           Reordered version of default_ref_list
                                           according to picture reordering in slice header */
-    int ref2frm[16][2][64];          ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
+    int ref2frm[MAX_SLICES][2][64];  ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
     Picture *delayed_pic[MAX_DELAYED_PIC_COUNT+2]; //FIXME size?
     int outputed_poc;
 
