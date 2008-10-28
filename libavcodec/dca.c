@@ -248,7 +248,7 @@ static int dca_parse_frame_header(DCAContext * s)
     s->sample_rate       = dca_sample_rates[get_bits(&s->gb, 4)];
     if (!s->sample_rate)
         return -1;
-    s->bit_rate_index;   = get_bits(&s->gb, 5);
+    s->bit_rate_index    = get_bits(&s->gb, 5);
     s->bit_rate          = dca_bit_rates[s->bit_rate_index];
     if (!s->bit_rate)
         return -1;
