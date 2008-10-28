@@ -99,6 +99,7 @@ typedef struct {
     int amode;                  ///< audio channels arrangement
     int sample_rate;            ///< audio sampling rate
     int bit_rate;               ///< transmission bit rate
+    int bit_rate_index;         ///< transmission bit rate index
 
     int downmix;                ///< embedded downmix enabled
     int dynrange;               ///< embedded dynamic range flag
@@ -247,7 +248,8 @@ static int dca_parse_frame_header(DCAContext * s)
     s->sample_rate       = dca_sample_rates[get_bits(&s->gb, 4)];
     if (!s->sample_rate)
         return -1;
-    s->bit_rate          = dca_bit_rates[get_bits(&s->gb, 5)];
+    s->bit_rate_index;   = get_bits(&s->gb, 5);
+    s->bit_rate          = dca_bit_rates[s->bit_rate_index];
     if (!s->bit_rate)
         return -1;
 
@@ -852,7 +854,7 @@ static int dca_subsubframe(DCAContext * s)
      */
 
     /* Select quantization step size table */
-    if (s->bit_rate == 0x1f)
+    if (s->bit_rate_index == 0x1f)
         quant_step_table = lossless_quant_d;
     else
         quant_step_table = lossy_quant_d;
