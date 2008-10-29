@@ -951,6 +951,9 @@ should also be avoided if they don't make the code easier to understand.
 @item
     If you add a new file, give it a proper license header. Do not copy and
     paste it from a random place, use an existing file as template.
+@item
+    If you add a new header or change an existing one, make sure it passes
+    @code{make checkheaders}.
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
@@ -1025,6 +1028,8 @@ do not attach several unrelated patches to the same mail.
 @enumerate
 @item
     Do the regression tests pass with the patch applied?
+@item
+    Does @code{make checkheaders} pass with the patch applied?
 @item
     Is the patch a unified diff?
 @item
