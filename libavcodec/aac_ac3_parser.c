@@ -49,6 +49,7 @@ get_next:
             if(len<=0){
                 i=END_NOT_FOUND;
             }else{
+                s->state=0;
                 i-= s->header_size -1;
                 s->remaining_size = len;
                 if(!new_frame_start || pc->index+i<=0){
