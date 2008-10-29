@@ -138,6 +138,11 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
                 return -1;
             }
 
+            if(sub_packet_size <= 0){
+                av_log(s, AV_LOG_ERROR, "sub_packet_size is invalid\n");
+                return -1;
+            }
+
             if (!strcmp(buf, "cook")) st->codec->codec_id = CODEC_ID_COOK;
             else if (!strcmp(buf, "sipr")) st->codec->codec_id = CODEC_ID_SIPR;
             else st->codec->codec_id = CODEC_ID_ATRAC3;
