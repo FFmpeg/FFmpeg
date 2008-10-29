@@ -21,7 +21,7 @@
 #ifndef AVCODEC_I386_MMX_H
 #define AVCODEC_I386_MMX_H
 
-#warning Everything in this header is deprecated, use plain asm()! New code using this header will be rejected.
+#warning Everything in this header is deprecated, use plain __asm__()! New code using this header will be rejected.
 
 /*
  * The type of an value that fits in an MMX register (note that long
