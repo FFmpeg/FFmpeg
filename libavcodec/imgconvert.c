@@ -870,7 +870,7 @@ int ff_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane)
         break;
     case FF_PIXEL_PLANAR:
             if (plane == 1 || plane == 2)
-                width >>= pf->x_chroma_shift;
+                width= -((-width)>>pf->x_chroma_shift);
 
             return (width * pf->depth + 7) >> 3;
         break;
@@ -900,7 +900,7 @@ void av_picture_copy(AVPicture *dst, const AVPicture *src,
             h = height;
             if (i == 1 || i == 2) {
                 w >>= pf->x_chroma_shift;
-                h >>= pf->y_chroma_shift;
+                h= -((-height)>>pf->y_chroma_shift);
             }
             ff_img_copy_plane(dst->data[i], dst->linesize[i],
                            src->data[i], src->linesize[i],
