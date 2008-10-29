@@ -26,6 +26,8 @@
 #ifndef AVCODEC_I386_IDCT_XVID_H
 #define AVCODEC_I386_IDCT_XVID_H
 
+#include <stdint.h>
+
 void ff_idct_xvid_mmx(short *block);
 void ff_idct_xvid_mmx2(short *block);
 void ff_idct_xvid_sse2(short *block);

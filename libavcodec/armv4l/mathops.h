@@ -22,6 +22,9 @@
 #ifndef AVCODEC_ARMV4L_MATHOPS_H
 #define AVCODEC_ARMV4L_MATHOPS_H
 
+#include <stdint.h>
+#include "libavutil/common.h"
+
 #ifdef FRAC_BITS
 #   define MULL(a, b) \
         ({  int lo, hi;\
