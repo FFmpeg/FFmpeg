@@ -951,9 +951,6 @@ should also be avoided if they don't make the code easier to understand.
 @item
     If you add a new file, give it a proper license header. Do not copy and
     paste it from a random place, use an existing file as template.
-@item
-    If you add a new header or change an existing one, make sure it passes
-    @code{make checkheaders}.
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
