@@ -195,3 +195,14 @@ int ff_log2(uint32_t value)
 
     return (power_int << 15) + value;
 }
+
+float ff_dot_productf(const float* a, const float* b, int length)
+{
+    float sum = 0;
+    int i;
+
+    for(i=0; i<length; i++)
+        sum += a[i] * b[i];
+
+    return sum;
+}
