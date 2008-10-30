@@ -24,6 +24,222 @@
 
 #include <stdint.h>
 
+/**
+ * pre-calculated table for hammsinc function
+ * Only half of the tables is needed because of symetry.
+ *
+ * TIA/EIA/IS-733 2.4.5.2-2/3
+ */
+static const float qcelp_hammsinc_table[4] = { -0.006822,  0.041249, -0.143459,  0.588863};
+
+typedef struct {
+    uint8_t index;  /*!< index into the QCELPContext structure */
+    uint8_t bitpos; /*!< position of the lowet bit in the value's byte */
+    uint8_t bitlen; /*!< number of bits to read */
+} QCELPBitmap;
+
+#define QCELP_OF(variable, bit, len) {offsetof(QCELPContext, variable), bit, len}
+
+/**
+ * bitmap unpacking tables for RATE_FULL
+ *
+ * TIA/EIA/IS-733 Table 2.4.7.1-1
+ */
+static const QCELPBitmap qcelp_rate_full_bitmap[] = {
+                                // start on bit
+    QCELP_OF(lspv  [ 2], 0, 3), // 265
+    QCELP_OF(lspv  [ 1], 0, 7), // 262
+    QCELP_OF(lspv  [ 0], 0, 6), // 255
+    QCELP_OF(lspv  [ 4], 0, 6), // 249
+    QCELP_OF(lspv  [ 3], 0, 6), // 243
+    QCELP_OF(lspv  [ 2], 3, 4), // 237
+    QCELP_OF(cbsign[ 0], 0, 1), // 233
+    QCELP_OF(cbgain[ 0], 0, 4), // 232
+    QCELP_OF(pfrac [ 0], 0, 1), // 228
+    QCELP_OF(plag  [ 0], 0, 7), // 227
+    QCELP_OF(pgain [ 0], 0, 3), // 220
+    QCELP_OF(cindex[ 1], 0, 4), // 217
+    QCELP_OF(cbsign[ 1], 0, 1), // 213
+    QCELP_OF(cbgain[ 1], 0, 4), // 212
+    QCELP_OF(cindex[ 0], 0, 7), // 208
+    QCELP_OF(cbgain[ 3], 0, 1), // 201
+    QCELP_OF(cindex[ 2], 0, 7), // 200
+    QCELP_OF(cbsign[ 2], 0, 1), // 193
+    QCELP_OF(cbgain[ 2], 0, 4), // 192
+    QCELP_OF(cindex[ 1], 4, 3), // 188
+    QCELP_OF(plag  [ 1], 0, 3), // 185
+    QCELP_OF(pgain [ 1], 0, 3), // 182
+    QCELP_OF(cindex[ 3], 0, 7), // 179
+    QCELP_OF(cbsign[ 3], 0, 1), // 172
+    QCELP_OF(cbgain[ 3], 1, 2), // 171
+    QCELP_OF(cindex[ 4], 0, 6), // 169
+    QCELP_OF(cbsign[ 4], 0, 1), // 163
+    QCELP_OF(cbgain[ 4], 0, 4), // 162
+    QCELP_OF(pfrac [ 1], 0, 1), // 158
+    QCELP_OF(plag  [ 1], 3, 4), // 157
+    QCELP_OF(cbgain[ 6], 0, 3), // 153
+    QCELP_OF(cindex[ 5], 0, 7), // 150
+    QCELP_OF(cbsign[ 5], 0, 1), // 143
+    QCELP_OF(cbgain[ 5], 0, 4), // 142
+    QCELP_OF(cindex[ 4], 6, 1), // 138
+    QCELP_OF(cindex[ 7], 0, 3), // 137
+    QCELP_OF(cbsign[ 7], 0, 1), // 134
+    QCELP_OF(cbgain[ 7], 0, 3), // 133
+    QCELP_OF(cindex[ 6], 0, 7), // 130
+    QCELP_OF(cbsign[ 6], 0, 1), // 123
+    QCELP_OF(cbgain[ 6], 3, 1), // 122
+    QCELP_OF(cbgain[ 8], 0, 1), // 121
+    QCELP_OF(pfrac [ 2], 0, 1), // 120
+    QCELP_OF(plag  [ 2], 0, 7), // 119
+    QCELP_OF(pgain [ 2], 0, 3), // 112
+    QCELP_OF(cindex[ 7], 3, 4), // 109
+    QCELP_OF(cbsign[ 9], 0, 1), // 105
+    QCELP_OF(cbgain[ 9], 0, 4), // 104
+    QCELP_OF(cindex[ 8], 0, 7), // 100
+    QCELP_OF(cbsign[ 8], 0, 1), //  93
+    QCELP_OF(cbgain[ 8], 1, 3), //  92
+    QCELP_OF(cindex[10], 0, 4), //  89
+    QCELP_OF(cbsign[10], 0, 1), //  85
+    QCELP_OF(cbgain[10], 0, 4), //  84
+    QCELP_OF(cindex[ 9], 0, 7), //  80
+    QCELP_OF(pgain [ 3], 0, 2), //  73
+    QCELP_OF(cindex[11], 0, 7), //  71
+    QCELP_OF(cbsign[11], 0, 1), //  64
+    QCELP_OF(cbgain[11], 0, 3), //  63
+    QCELP_OF(cindex[10], 4, 3), //  60
+    QCELP_OF(cindex[12], 0, 2), //  57
+    QCELP_OF(cbsign[12], 0, 1), //  55
+    QCELP_OF(cbgain[12], 0, 4), //  54
+    QCELP_OF(pfrac [ 3], 0, 1), //  50
+    QCELP_OF(plag  [ 3], 0, 7), //  49
+    QCELP_OF(pgain [ 3], 2, 1), //  42
+    QCELP_OF(cindex[13], 0, 6), //  41
+    QCELP_OF(cbsign[13], 0, 1), //  35
+    QCELP_OF(cbgain[13], 0, 4), //  34
+    QCELP_OF(cindex[12], 2, 5), //  30
+    QCELP_OF(cbgain[15], 0, 3), //  25
+    QCELP_OF(cindex[14], 0, 7), //  22
+    QCELP_OF(cbsign[14], 0, 1), //  15
+    QCELP_OF(cbgain[14], 0, 4), //  14
+    QCELP_OF(cindex[13], 6, 1), //  10
+    QCELP_OF(reserved,   0, 2), //   9
+    QCELP_OF(cindex[15], 0, 7), //   7
+    QCELP_OF(cbsign[15], 0, 1)  //   0
+};
+
+/**
+ * bitmap unpacking tables for RATE_HALF
+ *
+ * TIA/EIA/IS-733 Table 2.4.7.2-1
+ */
+static const QCELPBitmap qcelp_rate_half_bitmap[] = {
+                               // start on bit
+    QCELP_OF(lspv  [2], 0, 3), // 123
+    QCELP_OF(lspv  [1], 0, 7), // 120
+    QCELP_OF(lspv  [0], 0, 6), // 113
+    QCELP_OF(lspv  [4], 0, 6), // 107
+    QCELP_OF(lspv  [3], 0, 6), // 101
+    QCELP_OF(lspv  [2], 3, 4), //  95
+    QCELP_OF(cbsign[0], 0, 1), //  91
+    QCELP_OF(cbgain[0], 0, 4), //  90
+    QCELP_OF(pfrac [0], 0, 1), //  86
+    QCELP_OF(plag  [0], 0, 7), //  85
+    QCELP_OF(pgain [0], 0, 3), //  78
+    QCELP_OF(plag  [1], 0, 6), //  75
+    QCELP_OF(pgain [1], 0, 3), //  69
+    QCELP_OF(cindex[0], 0, 7), //  66
+    QCELP_OF(pgain [2], 0, 2), //  59
+    QCELP_OF(cindex[1], 0, 7), //  57
+    QCELP_OF(cbsign[1], 0, 1), //  50
+    QCELP_OF(cbgain[1], 0, 4), //  49
+    QCELP_OF(pfrac [1], 0, 1), //  45
+    QCELP_OF(plag  [1], 6, 1), //  44
+    QCELP_OF(cindex[2], 0, 2), //  43
+    QCELP_OF(cbsign[2], 0, 1), //  41
+    QCELP_OF(cbgain[2], 0, 4), //  40
+    QCELP_OF(pfrac [2], 0, 1), //  36
+    QCELP_OF(plag  [2], 0, 7), //  35
+    QCELP_OF(pgain [2], 2, 1), //  28
+    QCELP_OF(pfrac [3], 0, 1), //  27
+    QCELP_OF(plag  [3], 0, 7), //  26
+    QCELP_OF(pgain [3], 0, 3), //  19
+    QCELP_OF(cindex[2], 2, 5), //  16
+    QCELP_OF(cindex[3], 0, 7), //  11
+    QCELP_OF(cbsign[3], 0, 1), //   4
+    QCELP_OF(cbgain[3], 0, 4)  //   3
+};
+
+/**
+ * bitmap unpacking tables for RATE_QUARTER
+ *
+ * TIA/EIA/IS-733 Table 2.4.7.3-1
+ */
+static const QCELPBitmap qcelp_rate_quarter_bitmap[] = {
+                               // start on bit
+    QCELP_OF(lspv  [2], 0, 3), // 53
+    QCELP_OF(lspv  [1], 0, 7), // 50
+    QCELP_OF(lspv  [0], 0, 6), // 43
+    QCELP_OF(lspv  [4], 0, 6), // 37
+    QCELP_OF(lspv  [3], 0, 6), // 31
+    QCELP_OF(lspv  [2], 3, 4), // 25
+    QCELP_OF(cbgain[3], 0, 4), // 21
+    QCELP_OF(cbgain[2], 0, 4), // 17
+    QCELP_OF(cbgain[1], 0, 4), // 13
+    QCELP_OF(cbgain[0], 0, 4), //  9
+    QCELP_OF(reserved,  0, 2), //  5
+    QCELP_OF(cbgain[4], 0, 4)  //  3
+};
+
+/**
+ * bitmap unpacking tables for RATE_OCTAVE
+ *
+ * trick: CBSEED is written into QCELPContext.cbsign[15],
+ * which is not used for RATE_OCTAVE.
+ * CBSEED is only used to ensure the occurrence of random bit
+ * patterns in the 16 first bits that are used as the seed.
+ *
+ * TIA/EIA/IS-733 Table 2.4.7.4-1
+ */
+static const QCELPBitmap qcelp_rate_octave_bitmap[] = {
+                                // start on bit
+    QCELP_OF(cbsign[15], 3, 1), // 19
+    QCELP_OF(lspv   [0], 0, 1), // 18
+    QCELP_OF(lspv   [1], 0, 1), // 17
+    QCELP_OF(lspv   [2], 0, 1), // 16
+    QCELP_OF(cbsign[15], 2, 1), // 15
+    QCELP_OF(lspv   [3], 0, 1), // 14
+    QCELP_OF(lspv   [4], 0, 1), // 13
+    QCELP_OF(lspv   [5], 0, 1), // 12
+    QCELP_OF(cbsign[15], 1, 1), // 11
+    QCELP_OF(lspv   [6], 0, 1), // 10
+    QCELP_OF(lspv   [7], 0, 1), //  9
+    QCELP_OF(lspv   [8], 0, 1), //  8
+    QCELP_OF(cbsign[15], 0, 1), //  7
+    QCELP_OF(lspv   [9], 0, 1), //  6
+    QCELP_OF(cbgain [0], 0, 2), //  7
+    QCELP_OF(reserved,   0, 4)  //  3
+};
+
+/**
+ * position of the bitmapping data for each packet type in
+ * the QCELPContext
+ */
+static const QCELPBitmap * const qcelp_unpacking_bitmaps_per_rate[5] = {
+    NULL,                     ///!< for SILENCE rate
+    qcelp_rate_octave_bitmap,
+    qcelp_rate_quarter_bitmap,
+    qcelp_rate_half_bitmap,
+    qcelp_rate_full_bitmap,
+};
+
+static const uint16_t qcelp_bits_per_rate[5] = {
+    0, ///!< for SILENCE rate
+    FF_ARRAY_ELEMS(qcelp_rate_octave_bitmap),
+    FF_ARRAY_ELEMS(qcelp_rate_quarter_bitmap),
+    FF_ARRAY_ELEMS(qcelp_rate_half_bitmap),
+    FF_ARRAY_ELEMS(qcelp_rate_full_bitmap),
+};
+
 typedef uint16_t qcelp_vector[2];
 
 /**
