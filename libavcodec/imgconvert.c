@@ -894,12 +894,10 @@ void av_picture_copy(AVPicture *dst, const AVPicture *src,
     case FF_PIXEL_PACKED:
     case FF_PIXEL_PLANAR:
         for(i = 0; i < pf->nb_channels; i++) {
-            int w, h;
+            int h;
             int bwidth = ff_get_plane_bytewidth(pix_fmt, width, i);
-            w = width;
             h = height;
             if (i == 1 || i == 2) {
-                w >>= pf->x_chroma_shift;
                 h= -((-height)>>pf->y_chroma_shift);
             }
             ff_img_copy_plane(dst->data[i], dst->linesize[i],
