@@ -73,7 +73,7 @@ static void* dv_anchor[DV_ANCHOR_SIZE];
 
 #define TEX_VLC_BITS 9
 
-#ifdef DV_CODEC_TINY_TARGET
+#if ENABLE_SMALL
 #define DV_VLC_MAP_RUN_SIZE 15
 #define DV_VLC_MAP_LEV_SIZE 23
 #else
@@ -188,7 +188,7 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
         for (i = 0; i < NB_DV_VLC - 1; i++) {
            if (dv_vlc_run[i] >= DV_VLC_MAP_RUN_SIZE)
                continue;
-#ifdef DV_CODEC_TINY_TARGET
+#if ENABLE_SMALL
            if (dv_vlc_level[i] >= DV_VLC_MAP_LEV_SIZE)
                continue;
 #endif
@@ -202,7 +202,7 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
                dv_vlc_len[i] + (!!dv_vlc_level[i]);
         }
         for (i = 0; i < DV_VLC_MAP_RUN_SIZE; i++) {
-#ifdef DV_CODEC_TINY_TARGET
+#if ENABLE_SMALL
            for (j = 1; j < DV_VLC_MAP_LEV_SIZE; j++) {
               if (dv_vlc_map[i][j].size == 0) {
                   dv_vlc_map[i][j].vlc = dv_vlc_map[0][j].vlc |
@@ -552,7 +552,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
     }
 }
 
-#ifdef DV_CODEC_TINY_TARGET
+#if ENABLE_SMALL
 /* Converts run and level (where level != 0) pair into vlc, returning bit size */
 static av_always_inline int dv_rl2vlc(int run, int level, int sign, uint32_t* vlc)
 {
