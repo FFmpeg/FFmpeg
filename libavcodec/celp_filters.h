@@ -55,7 +55,7 @@ void ff_celp_convolve_circ(
  *
  * @return 1 if overflow occurred, 0 - otherwise
  *
- * @note Output buffer must contain 10 samples of past
+ * @note Output buffer must contain filter_length samples of past
  *       speech data before pointer.
  *
  * Routine applies 1/A(z) filter to given speech data.
@@ -79,7 +79,7 @@ int ff_celp_lp_synthesis_filter(
  * @param buffer_length amount of data to process
  * @param filter_length filter length (10 for 10th order LP filter)
  *
- * @note Output buffer must contain 10 samples of past
+ * @note Output buffer must contain filter_length samples of past
  *       speech data before pointer.
  *
  * Routine applies 1/A(z) filter to given speech data.
