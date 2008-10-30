@@ -69,4 +69,28 @@ int ff_celp_lp_synthesis_filter(
         int stop_on_overflow,
         int rounder);
 
+/**
+ * LP synthesis filter.
+ * @param out [out] pointer to output buffer
+ *        - the array out[-filter_length, -1] must
+ *        contain the previous result of this filter
+ * @param filter_coeffs filter coefficients.
+ * @param in input signal
+ * @param buffer_length amount of data to process
+ * @param filter_length filter length (10 for 10th order LP filter)
+ *
+ * @return 1 if overflow occurred, 0 - otherwise
+ *
+ * @note Output buffer must contain 10 samples of past
+ *       speech data before pointer.
+ *
+ * Routine applies 1/A(z) filter to given speech data.
+ */
+void ff_celp_lp_synthesis_filterf(
+        float *out,
+        const float* filter_coeffs,
+        const float* in,
+        int buffer_length,
+        int filter_length);
+
 #endif /* AVCODEC_CELP_FILTERS_H */

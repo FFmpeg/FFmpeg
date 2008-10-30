@@ -84,3 +84,24 @@ int ff_celp_lp_synthesis_filter(
 
     return 0;
 }
+
+void ff_celp_lp_synthesis_filterf(
+        float *out,
+        const float* filter_coeffs,
+        const float* in,
+        int buffer_length,
+        int filter_length)
+{
+    int i,n;
+
+    // These two lines are to avoid a -1 subtraction in the main loop
+    filter_length++;
+    filter_coeffs--;
+
+    for(n=0; n<buffer_length; n++)
+    {
+        out[n] = in[n];
+        for(i=1; i<filter_length; i++)
+            out[n] += filter_coeffs[i] * out[n-i];
+    }
+}
