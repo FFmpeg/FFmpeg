@@ -162,6 +162,8 @@ distclean::
 
 # regression tests
 
+check: test checkheaders
+
 fulltest test: codectest libavtest seektest
 
 FFMPEG_REFFILE   = $(SRC_PATH)/tests/ffmpeg.regression.ref
@@ -331,6 +333,6 @@ tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
-.PHONY: lib videohook documentation *test regtest-* swscale-error alltools
+.PHONY: lib videohook documentation *test regtest-* swscale-error alltools check
 
 -include $(VHOOK_DEPS)
