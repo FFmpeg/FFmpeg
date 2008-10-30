@@ -1045,8 +1045,9 @@ do not attach several unrelated patches to the same mail.
     Have you checked that the patch does not introduce buffer overflows or
     other security issues?
 @item
-    If you add a new demuxer or decoder, have you checked that it does not
-    crash with damaged input (see tools/trasher)?
+    Did you test your decoder or demuxer against damaged data? If no, see
+    tools/trasher and the noise bitstream filter. Your decoder or demuxer
+    should not crash or end in a (near) infinite loop when fed damaged data.
 @item
     Is the patch created from the root of the source tree, so it can be
     applied with @code{patch -p0}?
@@ -1087,10 +1088,6 @@ do not attach several unrelated patches to the same mail.
     improves readability.
 @item
     Did you provide a suggestion for a clear commit log message?
-@item
-    Did you test your decoder or demuxer against damaged data? If no, see
-    tools/trasher and the noise bitstream filter. Your decoder or demuxer
-    should not crash or end in a (near) infinite loop when fed damaged data.
 @end enumerate
 
 @section Patch review process
