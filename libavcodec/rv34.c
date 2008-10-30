@@ -474,13 +474,12 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
 static int calc_add_mv(RV34DecContext *r, int dir, int val)
 {
     int refdist = GET_PTS_DIFF(r->next_pts, r->last_pts);
-    int dist = dir ? GET_PTS_DIFF(r->next_pts, r->cur_pts) : GET_PTS_DIFF(r->cur_pts, r->last_pts);
+    int dist = dir ? -GET_PTS_DIFF(r->next_pts, r->cur_pts) : GET_PTS_DIFF(r->cur_pts, r->last_pts);
+    int mul;
 
     if(!refdist) return 0;
-    if(!dir)
-        return (val * dist + refdist - 1) / refdist;
-    else
-        return -(val * dist / refdist);
+    mul = (dist << 14) / refdist;
+    return (val * mul + 0x2000) >> 14;
 }
 
 /**
