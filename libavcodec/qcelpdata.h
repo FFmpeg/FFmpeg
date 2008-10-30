@@ -26,7 +26,7 @@
 
 /**
  * pre-calculated table for hammsinc function
- * Only half of the tables is needed because of symetry.
+ * Only half of the table is needed because of symmetry.
  *
  * TIA/EIA/IS-733 2.4.5.2-2/3
  */
@@ -34,7 +34,7 @@ static const float qcelp_hammsinc_table[4] = { -0.006822,  0.041249, -0.143459, 
 
 typedef struct {
     uint8_t index;  /*!< index into the QCELPContext structure */
-    uint8_t bitpos; /*!< position of the lowet bit in the value's byte */
+    uint8_t bitpos; /*!< position of the lowest bit in the value's byte */
     uint8_t bitlen; /*!< number of bits to read */
 } QCELPBitmap;
 
