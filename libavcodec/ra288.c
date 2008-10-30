@@ -24,6 +24,7 @@
 #include "bitstream.h"
 #include "ra288.h"
 #include "lpc.h"
+#include "celp_math.h"
 
 typedef struct {
     float sp_lpc[36];      ///< LPC coefficients for speech data (spec: A)
@@ -52,17 +53,6 @@ static av_cold int ra288_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static inline float scalar_product_float(const float * v1, const float * v2,
-                                         int size)
-{
-    float res = 0.;
-
-    while (size--)
-        res += *v1++ * *v2++;
-
-    return res;
-}
-
 static void apply_window(float *tgt, const float *m1, const float *m2, int n)
 {
     while (n--)
@@ -72,7 +62,7 @@ static void apply_window(float *tgt, const float *m1, const float *m2, int n)
 static void convolve(float *tgt, const float *src, int len, int n)
 {
     for (; n >= 0; n--)
-        tgt[n] = scalar_product_float(src, src - n, len);
+        tgt[n] = ff_dot_productf(src, src - n, len);
 
 }
 
@@ -101,7 +91,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     for (i=0; i < 5; i++)
         buffer[i] = codetable[cb_coef][i] * sumsum;
 
-    sum = scalar_product_float(buffer, buffer, 5) * ((1<<24)/5.);
+    sum = ff_dot_productf(buffer, buffer, 5) * ((1<<24)/5.);
 
     sum = FFMAX(sum, 1);
 
