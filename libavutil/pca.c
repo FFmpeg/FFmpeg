@@ -67,7 +67,8 @@ void ff_pca_add(PCA *pca, double *v){
 }
 
 int ff_pca(PCA *pca, double *eigenvector, double *eigenvalue){
-    int i, j, k, pass;
+    int i, j, pass;
+    int k=0;
     const int n= pca->n;
     double z[n];
 
