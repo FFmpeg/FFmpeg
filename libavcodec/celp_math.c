@@ -148,7 +148,7 @@ int ff_exp2(uint16_t power)
 {
     unsigned int result= exp2a[power>>10] + 0x10000;
 
-    assert(arg <= 0x7fff);
+    assert(power <= 0x7fff);
 
     result= (result<<3) + ((result*exp2b[(power>>5)&31])>>17);
     return result + ((result*(power&31)*89)>>22);
