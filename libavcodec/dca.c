@@ -59,6 +59,52 @@ enum DCAMode {
     DCA_4F2R
 };
 
+/* Tables for mapping dts channel configurations to libavcodec multichannel api.
+ * Some compromises have been made for special configurations. Most configurations
+ * are never used so complete accuracy is not needed.
+ *
+ * L = left, R = right, C = center, S = surround, F = front, R = rear, T = total, OV = overhead.
+ * S  -> back, when both rear and back are configured move one of them to the side channel
+ * OV -> center back
+ * All 2 channel configurations -> CHANNEL_LAYOUT_STEREO
+ */
+
+static const int64_t dca_core_channel_layout[] = {
+    CHANNEL_FRONT_CENTER,                                               ///< 1, A
+    CHANNEL_LAYOUT_STEREO,                                              ///< 2, A + B (dual mono)
+    CHANNEL_LAYOUT_STEREO,                                              ///< 2, L + R (stereo)
+    CHANNEL_LAYOUT_STEREO,                                              ///< 2, (L+R) + (L-R) (sum-difference)
+    CHANNEL_LAYOUT_STEREO,                                              ///< 2, LT +RT (left and right total)
+    CHANNEL_LAYOUT_STEREO|CHANNEL_FRONT_CENTER,                         ///< 3, C+L+R
+    CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_CENTER,                          ///< 3, L+R+S
+    CHANNEL_LAYOUT_STEREO|CHANNEL_FRONT_CENTER|CHANNEL_BACK_CENTER,     ///< 4, C + L + R+ S
+    CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT,         ///< 4, L + R+ SL+SR
+    CHANNEL_LAYOUT_STEREO|CHANNEL_FRONT_CENTER|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT,                                       ///< 5, C + L + R+ SL+SR
+    CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT|CHANNEL_FRONT_LEFT_OF_CENTER|CHANNEL_FRONT_RIGHT_OF_CENTER, ///< 6, CL + CR + L + R + SL + SR
+    CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT|CHANNEL_FRONT_CENTER|CHANNEL_BACK_CENTER,                   ///< 6, C + L + R+ LR + RR + OV
+    CHANNEL_FRONT_CENTER|CHANNEL_FRONT_RIGHT_OF_CENTER|CHANNEL_FRONT_LEFT_OF_CENTER|CHANNEL_BACK_CENTER|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT,  ///< 6, CF+ CR+LF+ RF+LR + RR
+    CHANNEL_FRONT_LEFT_OF_CENTER|CHANNEL_FRONT_CENTER|CHANNEL_FRONT_RIGHT_OF_CENTER|CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT, ///< 7, CL + C + CR + L + R + SL + SR
+    CHANNEL_FRONT_LEFT_OF_CENTER|CHANNEL_FRONT_RIGHT_OF_CENTER|CHANNEL_LAYOUT_STEREO|CHANNEL_SIDE_LEFT|CHANNEL_SIDE_RIGHT|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT, ///< 8, CL + CR + L + R + SL1 + SL2+ SR1 + SR2
+    CHANNEL_FRONT_LEFT_OF_CENTER|CHANNEL_FRONT_CENTER|CHANNEL_FRONT_RIGHT_OF_CENTER|CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_LEFT|CHANNEL_BACK_CENTER|CHANNEL_BACK_RIGHT, ///< 8, CL + C+ CR + L + R + SL + S+ SR
+
+    /* The following entries adds the LFE layouts, this way we can reuse the table for the AVCodec channel_layouts member*/
+    CHANNEL_FRONT_CENTER|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_LAYOUT_STEREO|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_LAYOUT_STEREO|CHANNEL_FRONT_CENTER|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_CENTER|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_LAYOUT_STEREO|CHANNEL_FRONT_CENTER|CHANNEL_BACK_CENTER|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_LAYOUT_STEREO|CHANNEL_FRONT_CENTER|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT|CHANNEL_FRONT_LEFT_OF_CENTER|CHANNEL_FRONT_RIGHT_OF_CENTER|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT|CHANNEL_FRONT_CENTER|CHANNEL_BACK_CENTER|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_FRONT_CENTER|CHANNEL_FRONT_RIGHT_OF_CENTER|CHANNEL_FRONT_LEFT_OF_CENTER|CHANNEL_BACK_CENTER|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_FRONT_LEFT_OF_CENTER|CHANNEL_FRONT_CENTER|CHANNEL_FRONT_RIGHT_OF_CENTER|CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_FRONT_LEFT_OF_CENTER|CHANNEL_FRONT_RIGHT_OF_CENTER|CHANNEL_LAYOUT_STEREO|CHANNEL_SIDE_LEFT|CHANNEL_SIDE_RIGHT|CHANNEL_BACK_LEFT|CHANNEL_BACK_RIGHT|CHANNEL_LOW_FREQUENCY,
+    CHANNEL_FRONT_LEFT_OF_CENTER|CHANNEL_FRONT_CENTER|CHANNEL_FRONT_RIGHT_OF_CENTER|CHANNEL_LAYOUT_STEREO|CHANNEL_BACK_LEFT|CHANNEL_BACK_CENTER|CHANNEL_BACK_RIGHT|CHANNEL_LOW_FREQUENCY,
+    0,
+};
+
+
 #define DCA_DOLBY 101           /* FIXME */
 
 #define DCA_CHANNEL_BITS 6
@@ -1165,7 +1211,17 @@ static int dca_decode_frame(AVCodecContext * avctx,
     if(avctx->request_channels == 2 && s->prim_channels > 2) {
         channels = 2;
         s->output = DCA_STEREO;
+        avctx->channel_layout = CHANNEL_LAYOUT_STEREO;
     }
+    if (s->amode<16)
+        avctx->channel_layout = dca_core_channel_layout[s->amode];
+    else {
+        av_log(avctx, AV_LOG_ERROR, "Custom channel layouts not supported\n");
+        //Maybe just guess layout depending on the channel count
+        return -1;
+    }
+
+    if (s->lfe) avctx->channel_layout |= CHANNEL_LOW_FREQUENCY;
 
     /* There is nothing that prevents a dts frame to change channel configuration
        but FFmpeg doesn't support that so only set the channels if it is previously
@@ -1244,4 +1300,5 @@ AVCodec dca_decoder = {
     .decode = dca_decode_frame,
     .close = dca_decode_end,
     .long_name = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
+    .channel_layouts = dca_core_channel_layout,
 };
