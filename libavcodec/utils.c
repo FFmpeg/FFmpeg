@@ -740,6 +740,8 @@ static const AVOption options[]={
 {"drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), FF_OPT_TYPE_FLOAT, 1.0, 0.0, 1.0, A|D},
 {"reservoir", "use bit reservoir", 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_BIT_RESERVOIR, INT_MIN, INT_MAX, A|E, "flags2"},
 {"bits_per_raw_sample", NULL, OFFSET(bits_per_raw_sample), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
+{"channel_layout", NULL, OFFSET(channel_layout), FF_OPT_TYPE_INT64, DEFAULT, 0, INT64_MAX, A|E|D, "channel_layout"},
+{"request_channel_layout", NULL, OFFSET(request_channel_layout), FF_OPT_TYPE_INT64, DEFAULT, 0, INT64_MAX, A|D, "request_channel_layout"},
 {NULL},
 };
 
@@ -1051,7 +1053,6 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     const char *codec_name;
     AVCodec *p;
     char buf1[32];
-    char channels_str[100];
     int bitrate;
     AVRational display_aspect_ratio;
 
@@ -1131,26 +1132,12 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         snprintf(buf, buf_size,
                  "Audio: %s",
                  codec_name);
-        switch (enc->channels) {
-            case 1:
-                strcpy(channels_str, "mono");
-                break;
-            case 2:
-                strcpy(channels_str, "stereo");
-                break;
-            case 6:
-                strcpy(channels_str, "5:1");
-                break;
-            default:
-                snprintf(channels_str, sizeof(channels_str), "%d channels", enc->channels);
-                break;
-        }
         if (enc->sample_rate) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                     ", %d Hz, %s",
-                     enc->sample_rate,
-                     channels_str);
+                     ", %d Hz", enc->sample_rate);
         }
+        av_strlcat(buf, ", ", buf_size);
+        avcodec_get_channel_layout_string(buf + strlen(buf), buf_size - strlen(buf), enc->channels, enc->channel_layout);
         if (enc->sample_fmt != SAMPLE_FMT_NONE) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s", avcodec_get_sample_fmt_name(enc->sample_fmt));

@@ -54,6 +54,26 @@ const char *avcodec_get_sample_fmt_name(int sample_fmt);
  */
 enum SampleFormat avcodec_get_sample_fmt(const char* name);
 
+/**
+ * @return NULL on error
+ */
+const char *avcodec_get_channel_name(int channel_id);
+
+/**
+ * Return description of channel layout
+ */
+void avcodec_get_channel_layout_string(char *buf, int buf_size, int nb_channels, int64_t channel_layout);
+
+/**
+ * Guess the channel layout
+ * @param nb_channels
+ * @param codec_id Codec identifier, or CODEC_ID_NONE if unknown
+ * @param fmt_name Format name, or NULL if unknown
+ * @return Channel layout mask
+ */
+int64_t avcodec_guess_channel_layout(int nb_channels, enum CodecID codec_id, const char *fmt_name);
+
+
 struct AVAudioConvert;
 typedef struct AVAudioConvert AVAudioConvert;
 
