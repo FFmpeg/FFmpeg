@@ -1215,11 +1215,6 @@ static int dca_decode_frame(AVCodecContext * avctx,
     }
     if (s->amode<16)
         avctx->channel_layout = dca_core_channel_layout[s->amode];
-    else {
-        av_log(avctx, AV_LOG_ERROR, "Custom channel layouts not supported\n");
-        //Maybe just guess layout depending on the channel count
-        return -1;
-    }
 
     if (s->lfe) avctx->channel_layout |= CHANNEL_LOW_FREQUENCY;
 
