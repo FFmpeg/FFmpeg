@@ -1245,6 +1245,8 @@ case "$arch" in
     ;;
     x86_64|amd64)
         arch="x86_32"
+        enable cmov
+        enable fast_cmov
         enable fast_unaligned
         check_cc <<EOF && enable fast_64bit && arch="x86_64"
         int test[sizeof(char*) - 7];
