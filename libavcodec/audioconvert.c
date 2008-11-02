@@ -89,13 +89,13 @@ const char *get_channel_name(int channel_id)
 int64_t avcodec_guess_channel_layout(int nb_channels, enum CodecID codec_id, const char *fmt_name)
 {
     switch(nb_channels) {
-    case 1: return CHANNEL_LAYOUT_MONO;
-    case 2: return CHANNEL_LAYOUT_STEREO;
-    case 3: return CHANNEL_LAYOUT_SURROUND;
-    case 4: return CHANNEL_LAYOUT_QUAD;
-    case 5: return CHANNEL_LAYOUT_5POINT0;
-    case 6: return CHANNEL_LAYOUT_5POINT1;
-    case 8: return CHANNEL_LAYOUT_7POINT1;
+    case 1: return CH_LAYOUT_MONO;
+    case 2: return CH_LAYOUT_STEREO;
+    case 3: return CH_LAYOUT_SURROUND;
+    case 4: return CH_LAYOUT_QUAD;
+    case 5: return CH_LAYOUT_5POINT0;
+    case 6: return CH_LAYOUT_5POINT1;
+    case 8: return CH_LAYOUT_7POINT1;
     default: return 0;
     }
 }
@@ -105,16 +105,16 @@ static const struct {
     int         nb_channels;
     int64_t     layout;
 } const channel_layout_map[] = {
-    { "mono",        1,  CHANNEL_LAYOUT_MONO },
-    { "stereo",      2,  CHANNEL_LAYOUT_STEREO },
-    { "surround",    3,  CHANNEL_LAYOUT_SURROUND },
-    { "quad",        4,  CHANNEL_LAYOUT_QUAD },
-    { "5.0",         5,  CHANNEL_LAYOUT_5POINT0 },
-    { "5.1",         6,  CHANNEL_LAYOUT_5POINT1 },
-    { "5.1+downmix", 8,  CHANNEL_LAYOUT_5POINT1|CHANNEL_LAYOUT_STEREO_DOWNMIX, },
-    { "7.1",         8,  CHANNEL_LAYOUT_7POINT1 },
-    { "7.1(wide)",   8,  CHANNEL_LAYOUT_7POINT1_WIDE },
-    { "7.1+downmix", 10, CHANNEL_LAYOUT_7POINT1|CHANNEL_LAYOUT_STEREO_DOWNMIX, },
+    { "mono",        1,  CH_LAYOUT_MONO },
+    { "stereo",      2,  CH_LAYOUT_STEREO },
+    { "surround",    3,  CH_LAYOUT_SURROUND },
+    { "quad",        4,  CH_LAYOUT_QUAD },
+    { "5.0",         5,  CH_LAYOUT_5POINT0 },
+    { "5.1",         6,  CH_LAYOUT_5POINT1 },
+    { "5.1+downmix", 8,  CH_LAYOUT_5POINT1|CH_LAYOUT_STEREO_DOWNMIX, },
+    { "7.1",         8,  CH_LAYOUT_7POINT1 },
+    { "7.1(wide)",   8,  CH_LAYOUT_7POINT1_WIDE },
+    { "7.1+downmix", 10, CH_LAYOUT_7POINT1|CH_LAYOUT_STEREO_DOWNMIX, },
     { 0 }
 };
 
