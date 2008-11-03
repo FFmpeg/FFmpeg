@@ -15,6 +15,8 @@ OBJS-$(ARCH_BFIN)          +=  internal_bfin.o
 
 HEADERS = swscale.h
 
+TESTS = cs_test swscale-example
+
 CLEANFILES = cs_test swscale-example
 
 include $(SUBDIR)../subdir.mak
