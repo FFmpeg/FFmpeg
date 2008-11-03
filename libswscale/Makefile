@@ -11,7 +11,7 @@ OBJS-$(CONFIG_MLIB)        +=  yuv2rgb_mlib.o
 OBJS-$(HAVE_ALTIVEC)       +=  yuv2rgb_altivec.o
 OBJS-$(HAVE_VIS)           +=  yuv2rgb_vis.o
 
-ASM_OBJS-$(ARCH_BFIN)      +=  internal_bfin.o
+OBJS-$(ARCH_BFIN)          +=  internal_bfin.o
 
 HEADERS = swscale.h
 
