@@ -77,9 +77,9 @@ static inline av_const int64_t MAC64(int64_t d, int a, int b)
         __asm__ ("smlabb %0, %2, %3, %0" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
 /* signed 16x16 -> 32 multiply */
 #   define MUL16(ra, rb)                                                \
-        ({ int __rt;                                                    \
-         __asm__ ("smulbb %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb));  \
-         __rt; })
+        ({ int rt;                                                    \
+         __asm__ ("smulbb %0, %1, %2" : "=r" (rt) : "r" (ra), "r" (rb));  \
+         rt; })
 
 #endif
 
