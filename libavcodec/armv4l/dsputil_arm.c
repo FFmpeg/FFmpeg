@@ -117,7 +117,7 @@ static void simple_idct_ipp_add(uint8_t *dest, int line_size, DCTELEM *block)
 
 int mm_support(void)
 {
-    return ENABLE_IWMMXT * MM_IWMMXT;
+    return ENABLE_IWMMXT * FF_MM_IWMMXT;
 }
 
 void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)

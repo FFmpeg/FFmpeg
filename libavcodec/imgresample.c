@@ -343,7 +343,7 @@ static void h_resample(uint8_t *dst, int dst_width, const uint8_t *src,
         n = dst_width;
     }
 #ifdef HAVE_MMX
-    if ((mm_flags & MM_MMX) && NB_TAPS == 4)
+    if ((mm_flags & FF_MM_MMX) && NB_TAPS == 4)
         h_resample_fast4_mmx(dst, n,
                              src, src_width, src_start, src_incr, filters);
     else
@@ -401,14 +401,14 @@ static void component_resample(ImgReSampleContext *s,
         phase_y = get_phase(src_y);
 #ifdef HAVE_MMX
         /* desactivated MMX because loss of precision */
-        if ((mm_flags & MM_MMX) && NB_TAPS == 4 && 0)
+        if ((mm_flags & FF_MM_MMX) && NB_TAPS == 4 && 0)
             v_resample4_mmx(output, owidth,
                             s->line_buf + (ring_y - NB_TAPS + 1) * owidth, owidth,
                             &s->v_filters[phase_y][0]);
         else
 #endif
 #ifdef HAVE_ALTIVEC
-        if ((mm_flags & MM_ALTIVEC) && NB_TAPS == 4 && FILTER_BITS <= 6)
+        if ((mm_flags & FF_MM_ALTIVEC) && NB_TAPS == 4 && FILTER_BITS <= 6)
             v_resample16_altivec(output, owidth,
                                  s->line_buf + (ring_y - NB_TAPS + 1) * owidth,
                                  owidth, &s->v_filters[phase_y][0]);
@@ -811,7 +811,7 @@ int main(int argc, char **argv)
     fact = 0.72;
     xsize = (int)(XSIZE * fact);
     ysize = (int)(YSIZE * fact);
-    mm_flags = MM_MMX;
+    mm_flags = FF_MM_MMX;
     s = img_resample_init(xsize, ysize, XSIZE, YSIZE);
     component_resample(s, img1, xsize, xsize, ysize,
                        img, XSIZE, XSIZE, YSIZE);

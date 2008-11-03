@@ -619,7 +619,7 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
 
 void MPV_common_init_mmx(MpegEncContext *s)
 {
-    if (mm_flags & MM_MMX) {
+    if (mm_flags & FF_MM_MMX) {
         const int dct_algo = s->avctx->dct_algo;
 
         s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_mmx;
@@ -630,7 +630,7 @@ void MPV_common_init_mmx(MpegEncContext *s)
             s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_mmx;
         s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_mmx;
 
-        if (mm_flags & MM_SSE2) {
+        if (mm_flags & FF_MM_SSE2) {
             s->denoise_dct= denoise_dct_sse2;
         } else {
                 s->denoise_dct= denoise_dct_mmx;
@@ -638,13 +638,13 @@ void MPV_common_init_mmx(MpegEncContext *s)
 
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
 #ifdef HAVE_SSSE3
-            if(mm_flags & MM_SSSE3){
+            if(mm_flags & FF_MM_SSSE3){
                 s->dct_quantize= dct_quantize_SSSE3;
             } else
 #endif
-            if(mm_flags & MM_SSE2){
+            if(mm_flags & FF_MM_SSE2){
                 s->dct_quantize= dct_quantize_SSE2;
-            } else if(mm_flags & MM_MMXEXT){
+            } else if(mm_flags & FF_MM_MMXEXT){
                 s->dct_quantize= dct_quantize_MMX2;
             } else {
                 s->dct_quantize= dct_quantize_MMX;

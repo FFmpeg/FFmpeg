@@ -50,7 +50,7 @@ int mm_support(void)
     int result = 0;
 #ifdef HAVE_ALTIVEC
     if (has_altivec()) {
-        result |= MM_ALTIVEC;
+        result |= FF_MM_ALTIVEC;
     }
 #endif /* result */
     return result;
@@ -265,7 +265,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
     if(ENABLE_H264_DECODER) dsputil_h264_init_ppc(c, avctx);
 
     if (has_altivec()) {
-        mm_flags |= MM_ALTIVEC;
+        mm_flags |= FF_MM_ALTIVEC;
 
         dsputil_init_altivec(c, avctx);
         if(ENABLE_SNOW_DECODER) snow_init_altivec(c, avctx);

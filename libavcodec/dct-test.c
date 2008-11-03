@@ -91,23 +91,23 @@ struct algo algos[] = {
   {"SIMPLE-C",        1, ff_simple_idct,     idct, NO_PERM},
 
 #ifdef HAVE_MMX
-  {"MMX",             0, ff_fdct_mmx,        fdct, NO_PERM, MM_MMX},
+  {"MMX",             0, ff_fdct_mmx,        fdct, NO_PERM, FF_MM_MMX},
 #ifdef HAVE_MMX2
-  {"MMX2",            0, ff_fdct_mmx2,       fdct, NO_PERM, MM_MMXEXT},
+  {"MMX2",            0, ff_fdct_mmx2,       fdct, NO_PERM, FF_MM_MMXEXT},
 #endif
 
 #ifdef CONFIG_GPL
-  {"LIBMPEG2-MMX",    1, ff_mmx_idct,        idct, MMX_PERM, MM_MMX},
-  {"LIBMPEG2-MMXEXT", 1, ff_mmxext_idct,     idct, MMX_PERM, MM_MMXEXT},
+  {"LIBMPEG2-MMX",    1, ff_mmx_idct,        idct, MMX_PERM, FF_MM_MMX},
+  {"LIBMPEG2-MMXEXT", 1, ff_mmxext_idct,     idct, MMX_PERM, FF_MM_MMXEXT},
 #endif
-  {"SIMPLE-MMX",      1, ff_simple_idct_mmx, idct, MMX_SIMPLE_PERM, MM_MMX},
-  {"XVID-MMX",        1, ff_idct_xvid_mmx,   idct, NO_PERM, MM_MMX},
-  {"XVID-MMX2",       1, ff_idct_xvid_mmx2,  idct, NO_PERM, MM_MMXEXT},
-  {"XVID-SSE2",       1, ff_idct_xvid_sse2,  idct, SSE2_PERM, MM_SSE2},
+  {"SIMPLE-MMX",      1, ff_simple_idct_mmx, idct, MMX_SIMPLE_PERM, FF_MM_MMX},
+  {"XVID-MMX",        1, ff_idct_xvid_mmx,   idct, NO_PERM, FF_MM_MMX},
+  {"XVID-MMX2",       1, ff_idct_xvid_mmx2,  idct, NO_PERM, FF_MM_MMXEXT},
+  {"XVID-SSE2",       1, ff_idct_xvid_sse2,  idct, SSE2_PERM, FF_MM_SSE2},
 #endif
 
 #ifdef HAVE_ALTIVEC
-  {"altivecfdct",     0, fdct_altivec,       fdct, NO_PERM, MM_ALTIVEC},
+  {"altivecfdct",     0, fdct_altivec,       fdct, NO_PERM, FF_MM_ALTIVEC},
 #endif
 
 #ifdef ARCH_BFIN
@@ -176,7 +176,7 @@ static DCTELEM block_org[64] __attribute__ ((aligned (8)));
 static inline void mmx_emms(void)
 {
 #ifdef HAVE_MMX
-    if (cpu_flags & MM_MMX)
+    if (cpu_flags & FF_MM_MMX)
         __asm__ volatile ("emms\n\t");
 #endif
 }

@@ -93,18 +93,18 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
 
 #if defined HAVE_MMX && defined HAVE_YASM
     has_vectors = mm_support();
-    if (has_vectors & MM_SSE) {
+    if (has_vectors & FF_MM_SSE) {
         /* SSE for P3/P4/K8 */
         s->imdct_calc = ff_imdct_calc_sse;
         s->imdct_half = ff_imdct_half_sse;
         s->fft_permute = ff_fft_permute_sse;
         s->fft_calc = ff_fft_calc_sse;
-    } else if (has_vectors & MM_3DNOWEXT) {
+    } else if (has_vectors & FF_MM_3DNOWEXT) {
         /* 3DNowEx for K7 */
         s->imdct_calc = ff_imdct_calc_3dn2;
         s->imdct_half = ff_imdct_half_3dn2;
         s->fft_calc = ff_fft_calc_3dn2;
-    } else if (has_vectors & MM_3DNOW) {
+    } else if (has_vectors & FF_MM_3DNOW) {
         /* 3DNow! for K6-2/3 */
         s->imdct_calc = ff_imdct_calc_3dn;
         s->imdct_half = ff_imdct_half_3dn;
@@ -112,7 +112,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
     }
 #elif defined HAVE_ALTIVEC && !defined ALTIVEC_USE_REFERENCE_C_CODE
     has_vectors = mm_support();
-    if (has_vectors & MM_ALTIVEC) {
+    if (has_vectors & FF_MM_ALTIVEC) {
         s->fft_calc = ff_fft_calc_altivec;
         split_radix = 0;
     }

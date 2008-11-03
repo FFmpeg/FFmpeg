@@ -150,7 +150,7 @@ static void nop(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 /* A run time test is not simple. If this file is compiled in
  * then we should install the functions
  */
-int mm_flags = MM_IWMMXT; /* multimedia extension flags */
+int mm_flags = FF_MM_IWMMXT; /* multimedia extension flags */
 
 void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx)
 {
@@ -161,7 +161,7 @@ void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx)
             mm_flags &= ~(avctx->dsp_mask & 0xffff);
     }
 
-    if (!(mm_flags & MM_IWMMXT)) return;
+    if (!(mm_flags & FF_MM_IWMMXT)) return;
 
     c->add_pixels_clamped = add_pixels_clamped_iwmmxt;
 

@@ -426,7 +426,7 @@ PIX_SAD(mmx2)
 
 void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
 {
-    if (mm_flags & MM_MMX) {
+    if (mm_flags & FF_MM_MMX) {
         c->pix_abs[0][0] = sad16_mmx;
         c->pix_abs[0][1] = sad16_x2_mmx;
         c->pix_abs[0][2] = sad16_y2_mmx;
@@ -439,7 +439,7 @@ void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
         c->sad[0]= sad16_mmx;
         c->sad[1]= sad8_mmx;
     }
-    if (mm_flags & MM_MMXEXT) {
+    if (mm_flags & FF_MM_MMXEXT) {
         c->pix_abs[0][0] = sad16_mmx2;
         c->pix_abs[1][0] = sad8_mmx2;
 
@@ -455,7 +455,7 @@ void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
             c->pix_abs[1][3] = sad8_xy2_mmx2;
         }
     }
-    if ((mm_flags & MM_SSE2) && !(mm_flags & MM_3DNOW)) {
+    if ((mm_flags & FF_MM_SSE2) && !(mm_flags & FF_MM_3DNOW)) {
         c->sad[0]= sad16_sse2;
     }
 }

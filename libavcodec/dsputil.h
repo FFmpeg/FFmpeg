@@ -562,15 +562,6 @@ void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 #undef emms_c
 
-#define MM_MMX    0x0001 /* standard MMX */
-#define MM_3DNOW  0x0004 /* AMD 3DNOW */
-#define MM_MMXEXT 0x0002 /* SSE integer functions or AMD MMX ext */
-#define MM_SSE    0x0008 /* SSE functions */
-#define MM_SSE2   0x0010 /* PIV SSE2 functions */
-#define MM_3DNOWEXT  0x0020 /* AMD 3DNowExt */
-#define MM_SSE3   0x0040 /* Prescott SSE3 functions */
-#define MM_SSSE3  0x0080 /* Conroe SSSE3 functions */
-
 extern int mm_flags;
 
 void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
@@ -585,15 +576,13 @@ static inline void emms(void)
 
 #define emms_c() \
 {\
-    if (mm_flags & MM_MMX)\
+    if (mm_flags & FF_MM_MMX)\
         emms();\
 }
 
 void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(ARCH_ARMV4L)
-
-#define MM_IWMMXT    0x0100 /* XScale IWMMXT */
 
 extern int mm_flags;
 
@@ -603,8 +592,6 @@ extern int mm_flags;
 #endif
 
 #elif defined(ARCH_POWERPC)
-
-#define MM_ALTIVEC    0x0001 /* standard AltiVec */
 
 extern int mm_flags;
 
