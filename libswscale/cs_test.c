@@ -75,7 +75,7 @@ int main(int argc, char **argv)
         struct func_info_s {
             int src_bpp;
             int dst_bpp;
-            char *name;
+            const char *name;
             void (*func)(const uint8_t *src, uint8_t *dst, long src_size);
         } func_info[] = {
             FUNC(2, 2, rgb15to16),
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
                 for(srcOffset=128; srcOffset<196; srcOffset+=4){
                     uint8_t *src= srcBuffer+srcOffset;
                     uint8_t *dst= dstBuffer+dstOffset;
-                    char *name=NULL;
+                    const char *name=NULL;
 
                     if(failed) break; //don't fill the screen with shit ...
 
