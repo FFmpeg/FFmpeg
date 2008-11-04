@@ -1296,4 +1296,8 @@ static const int8_t cabac_context_init_PB[3][460][2] =
     }
 };
 
+static const uint8_t sei_num_clock_ts_table[9]={
+    1,  1,  1,  2,  2,  3,  3,  2,  3
+};
+
 #endif /* AVCODEC_H264DATA_H */

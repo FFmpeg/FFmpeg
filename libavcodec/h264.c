@@ -6803,6 +6803,53 @@ static int decode_slice(struct AVCodecContext *avctx, H264Context *h){
     return -1; //not reached
 }
 
+static int decode_picture_timing(H264Context *h){
+    MpegEncContext * const s = &h->s;
+    if(h->sps.nal_hrd_parameters_present_flag || h->sps.vcl_hrd_parameters_present_flag){
+        skip_bits(&s->gb, h->sps.cpb_removal_delay_length); /* cpb_removal_delay */
+        skip_bits(&s->gb, h->sps.dpb_output_delay_length);  /* dpb_output_delay */
+    }
+    if(h->sps.pic_struct_present_flag){
+        unsigned int i, num_clock_ts;
+        h->sei_pic_struct = get_bits(&s->gb, 4);
+
+        if (h->sei_pic_struct > SEI_PIC_STRUCT_FRAME_TRIPLING)
+            return -1;
+
+        num_clock_ts = sei_num_clock_ts_table[h->sei_pic_struct];
+
+        for (i = 0 ; i < num_clock_ts ; i++){
+            if(get_bits(&s->gb, 1)){                  /* clock_timestamp_flag */
+                unsigned int full_timestamp_flag;
+                skip_bits(&s->gb, 2);                 /* ct_type */
+                skip_bits(&s->gb, 1);                 /* nuit_field_based_flag */
+                skip_bits(&s->gb, 5);                 /* counting_type */
+                full_timestamp_flag = get_bits(&s->gb, 1);
+                skip_bits(&s->gb, 1);                 /* discontinuity_flag */
+                skip_bits(&s->gb, 1);                 /* cnt_dropped_flag */
+                skip_bits(&s->gb, 8);                 /* n_frames */
+                if(full_timestamp_flag){
+                    skip_bits(&s->gb, 6);             /* seconds_value 0..59 */
+                    skip_bits(&s->gb, 6);             /* minutes_value 0..59 */
+                    skip_bits(&s->gb, 5);             /* hours_value 0..23 */
+                }else{
+                    if(get_bits(&s->gb, 1)){          /* seconds_flag */
+                        skip_bits(&s->gb, 6);         /* seconds_value range 0..59 */
+                        if(get_bits(&s->gb, 1)){      /* minutes_flag */
+                            skip_bits(&s->gb, 6);     /* minutes_value 0..59 */
+                            if(get_bits(&s->gb, 1))   /* hours_flag */
+                                skip_bits(&s->gb, 5); /* hours_value 0..23 */
+                        }
+                    }
+                }
+                if(h->sps.time_offset_length > 0)
+                    skip_bits(&s->gb, h->sps.time_offset_length); /* time_offset */
+            }
+        }
+    }
+    return 0;
+}
+
 static int decode_unregistered_user_data(H264Context *h, int size){
     MpegEncContext * const s = &h->s;
     uint8_t user_data[16+256];
@@ -6846,6 +6893,10 @@ static int decode_sei(H264Context *h){
         }while(get_bits(&s->gb, 8) == 255);
 
         switch(type){
+        case 1: // Picture timing SEI
+            if(decode_picture_timing(h) < 0)
+                return -1;
+            break;
         case 5:
             if(decode_unregistered_user_data(h, size) < 0)
                 return -1;
@@ -6873,16 +6924,15 @@ static inline void decode_hrd_parameters(H264Context *h, SPS *sps){
         get_bits1(&s->gb);     /* cbr_flag */
     }
     get_bits(&s->gb, 5); /* initial_cpb_removal_delay_length_minus1 */
-    get_bits(&s->gb, 5); /* cpb_removal_delay_length_minus1 */
-    get_bits(&s->gb, 5); /* dpb_output_delay_length_minus1 */
-    get_bits(&s->gb, 5); /* time_offset_length */
+    sps->cpb_removal_delay_length = get_bits(&s->gb, 5) + 1;
+    sps->dpb_output_delay_length = get_bits(&s->gb, 5) + 1;
+    sps->time_offset_length = get_bits(&s->gb, 5);
 }
 
 static inline int decode_vui_parameters(H264Context *h, SPS *sps){
     MpegEncContext * const s = &h->s;
     int aspect_ratio_info_present_flag;
     unsigned int aspect_ratio_idc;
-    int nal_hrd_parameters_present_flag, vcl_hrd_parameters_present_flag;
 
     aspect_ratio_info_present_flag= get_bits1(&s->gb);
 
@@ -6929,15 +6979,15 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         sps->fixed_frame_rate_flag = get_bits1(&s->gb);
     }
 
-    nal_hrd_parameters_present_flag = get_bits1(&s->gb);
-    if(nal_hrd_parameters_present_flag)
+    sps->nal_hrd_parameters_present_flag = get_bits1(&s->gb);
+    if(sps->nal_hrd_parameters_present_flag)
         decode_hrd_parameters(h, sps);
-    vcl_hrd_parameters_present_flag = get_bits1(&s->gb);
-    if(vcl_hrd_parameters_present_flag)
+    sps->vcl_hrd_parameters_present_flag = get_bits1(&s->gb);
+    if(sps->vcl_hrd_parameters_present_flag)
         decode_hrd_parameters(h, sps);
-    if(nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
+    if(sps->nal_hrd_parameters_present_flag || sps->vcl_hrd_parameters_present_flag)
         get_bits1(&s->gb);     /* low_delay_hrd_flag */
-    get_bits1(&s->gb);         /* pic_struct_present_flag */
+    sps->pic_struct_present_flag = get_bits1(&s->gb);
 
     sps->bitstream_restriction_flag = get_bits1(&s->gb);
     if(sps->bitstream_restriction_flag){
@@ -7639,9 +7689,60 @@ static int decode_frame(AVCodecContext *avctx,
             *data_size = 0;
 
         } else {
-            cur->interlaced_frame = FIELD_OR_MBAFF_PICTURE;
-            /* Derive top_field_first from field pocs. */
-            cur->top_field_first = cur->field_poc[0] < cur->field_poc[1];
+            cur->repeat_pict = 0;
+
+            /* Signal interlacing information externally. */
+            /* Prioritize picture timing SEI information over used decoding process if it exists. */
+            if(h->sps.pic_struct_present_flag){
+                switch (h->sei_pic_struct)
+                {
+                case SEI_PIC_STRUCT_FRAME:
+                    cur->interlaced_frame = 0;
+                    break;
+                case SEI_PIC_STRUCT_TOP_FIELD:
+                case SEI_PIC_STRUCT_BOTTOM_FIELD:
+                case SEI_PIC_STRUCT_TOP_BOTTOM:
+                case SEI_PIC_STRUCT_BOTTOM_TOP:
+                    cur->interlaced_frame = 1;
+                    break;
+                case SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
+                case SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
+                    // Signal the possibility of telecined film externally (pic_struct 5,6)
+                    // From these hints, let the applications decide if they apply deinterlacing.
+                    cur->repeat_pict = 1;
+                    cur->interlaced_frame = FIELD_OR_MBAFF_PICTURE;
+                    break;
+                case SEI_PIC_STRUCT_FRAME_DOUBLING:
+                    // Force progressive here, as doubling interlaced frame is a bad idea.
+                    cur->interlaced_frame = 0;
+                    cur->repeat_pict = 2;
+                    break;
+                case SEI_PIC_STRUCT_FRAME_TRIPLING:
+                    cur->interlaced_frame = 0;
+                    cur->repeat_pict = 4;
+                    break;
+                }
+            }else{
+                /* Derive interlacing flag from used decoding process. */
+                cur->interlaced_frame = FIELD_OR_MBAFF_PICTURE;
+            }
+
+            if (cur->field_poc[0] != cur->field_poc[1]){
+                /* Derive top_field_first from field pocs. */
+                cur->top_field_first = cur->field_poc[0] < cur->field_poc[1];
+            }else{
+                if(cur->interlaced_frame || h->sps.pic_struct_present_flag){
+                    /* Use picture timing SEI information. Even if it is a information of a past frame, better than nothing. */
+                    if(h->sei_pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM
+                      || h->sei_pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM_TOP)
+                        cur->top_field_first = 1;
+                    else
+                        cur->top_field_first = 0;
+                }else{
+                    /* Most likely progressive */
+                    cur->top_field_first = 0;
+                }
+            }
 
         //FIXME do something with unavailable reference frames
 

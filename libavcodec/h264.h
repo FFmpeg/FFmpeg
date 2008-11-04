@@ -111,6 +111,21 @@ enum {
 };
 
 /**
+ * pic_struct in picture timing SEI message
+ */
+typedef enum {
+    SEI_PIC_STRUCT_FRAME             = 0, ///<  0: %frame
+    SEI_PIC_STRUCT_TOP_FIELD         = 1, ///<  1: top field
+    SEI_PIC_STRUCT_BOTTOM_FIELD      = 2, ///<  2: bottom field
+    SEI_PIC_STRUCT_TOP_BOTTOM        = 3, ///<  3: top field, bottom field, in that order
+    SEI_PIC_STRUCT_BOTTOM_TOP        = 4, ///<  4: bottom field, top field, in that order
+    SEI_PIC_STRUCT_TOP_BOTTOM_TOP    = 5, ///<  5: top field, bottom field, top field repeated, in that order
+    SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM = 6, ///<  6: bottom field, top field, bottom field repeated, in that order
+    SEI_PIC_STRUCT_FRAME_DOUBLING    = 7, ///<  7: %frame doubling
+    SEI_PIC_STRUCT_FRAME_TRIPLING    = 8  ///<  8: %frame tripling
+} SEI_PicStructType;
+
+/**
  * Sequence parameter set
  */
 typedef struct SPS{
@@ -150,6 +165,12 @@ typedef struct SPS{
     int scaling_matrix_present;
     uint8_t scaling_matrix4[6][16];
     uint8_t scaling_matrix8[2][64];
+    int nal_hrd_parameters_present_flag;
+    int vcl_hrd_parameters_present_flag;
+    int pic_struct_present_flag;
+    int time_offset_length;
+    int cpb_removal_delay_length;      ///< cpb_removal_delay_length_minus1 + 1
+    int dpb_output_delay_length;       ///< dpb_output_delay_length_minus1 + 1
 }SPS;
 
 /**
@@ -460,6 +481,11 @@ typedef struct H264Context{
     int mb_xy;
 
     uint32_t svq3_watermark_key;
+
+    /**
+     * pic_struct in picture timing SEI message
+     */
+    SEI_PicStructType sei_pic_struct;
 }H264Context;
 
 #endif /* AVCODEC_H264_H */
