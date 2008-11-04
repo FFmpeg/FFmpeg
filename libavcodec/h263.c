@@ -5751,8 +5751,10 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
         s->divx_version= ver;
         s->divx_build= build;
         s->divx_packed= e==3 && last=='p';
-        if(s->divx_packed)
+        if(s->divx_packed && !s->showed_packed_warning) {
             av_log(s->avctx, AV_LOG_WARNING, "Invalid and inefficient vfw-avi packed B frames detected\n");
+            s->showed_packed_warning=1;
+        }
     }
 
     /* ffmpeg detection */

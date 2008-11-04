@@ -487,6 +487,7 @@ typedef struct MpegEncContext {
     /* H.263 specific */
     int gob_index;
     int obmc;                       ///< overlapped block motion compensation
+    int showed_packed_warning;      ///< flag for having shown the warning about divxs invalid b frames
 
     /* H.263+ specific */
     int umvplus;                    ///< == H263+ && unrestricted_mv
