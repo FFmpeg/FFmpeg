@@ -399,7 +399,7 @@ static av_cold int aac_decode_init(AVCodecContext * avccontext) {
     }
 
 #ifndef CONFIG_HARDCODED_TABLES
-    for (i = 0; i < 316; i++)
+    for (i = 0; i < 428; i++)
         ff_aac_pow2sf_tab[i] = pow(2, (i - 200)/4.);
 #endif /* CONFIG_HARDCODED_TABLES */
 
@@ -573,7 +573,7 @@ static int decode_scalefactors(AACContext * ac, float sf[120], GetBitContext * g
                             "%s (%d) out of range.\n", sf_str[1], offset[1]);
                         return -1;
                     }
-                    sf[idx]  = -ff_aac_pow2sf_tab[ offset[1] + sf_offset];
+                    sf[idx]  = -ff_aac_pow2sf_tab[ offset[1] + sf_offset + 100];
                 }
             }else {
                 for(; i < run_end; i++, idx++) {
@@ -704,11 +704,17 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
                     memset(coef + group * 128 + offsets[i], 0, (offsets[i+1] - offsets[i])*sizeof(float));
                 }
             }else if (cur_band_type == NOISE_BT) {
-                const float scale = sf[idx] / ((offsets[i+1] - offsets[i]) * PNS_MEAN_ENERGY);
                 for (group = 0; group < ics->group_len[g]; group++) {
+                    float scale;
+                    float band_energy = 0;
                     for (k = offsets[i]; k < offsets[i+1]; k++) {
                         ac->random_state  = lcg_random(ac->random_state);
-                        coef[group*128+k] = ac->random_state * scale;
+                        coef[group*128+k] = ac->random_state;
+                        band_energy += coef[group*128+k]*coef[group*128+k];
+                    }
+                    scale = sf[idx] / sqrtf(band_energy);
+                    for (k = offsets[i]; k < offsets[i+1]; k++) {
+                        coef[group*128+k] *= scale;
                     }
                 }
             }else if (cur_band_type != INTENSITY_BT2 && cur_band_type != INTENSITY_BT) {
