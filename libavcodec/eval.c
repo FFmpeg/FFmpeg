@@ -438,13 +438,13 @@ static const char *const_names[]={
 };
 int main(void){
     int i;
-    printf("%f == 12.7\n", ff_eval("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL));
-    printf("%f == 0.931322575\n", ff_eval("80G/80Gi", const_values, const_names, NULL, NULL, NULL, NULL, NULL));
+    printf("%f == 12.7\n", ff_eval2("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL, NULL));
+    printf("%f == 0.931322575\n", ff_eval2("80G/80Gi", const_values, const_names, NULL, NULL, NULL, NULL, NULL, NULL));
 
     for(i=0; i<1050; i++){
         START_TIMER
-            ff_eval("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL);
-        STOP_TIMER("ff_eval")
+            ff_eval2("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL, NULL);
+        STOP_TIMER("ff_eval2")
     }
     return 0;
 }
