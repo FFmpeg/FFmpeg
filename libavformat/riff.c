@@ -374,7 +374,7 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
         cbSize = FFMIN(size, cbSize);
         if (cbSize >= 22 && id == 0xfffe) { /* WAVEFORMATEXTENSIBLE */
             codec->bits_per_coded_sample = get_le16(pb);
-            get_le32(pb); /* dwChannelMask */
+            codec->channel_layout = get_le32(pb); /* dwChannelMask */
             id = get_le32(pb); /* 4 first bytes of GUID */
             url_fskip(pb, 12); /* skip end of GUID */
             cbSize -= 22;
