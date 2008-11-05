@@ -28,6 +28,7 @@
 /* needed for mkstemp() */
 #define _XOPEN_SOURCE 600
 
+#include "libavutil/avstring.h"
 #include "libavutil/integer.h"
 #include "libavutil/crc.h"
 #include "avcodec.h"
