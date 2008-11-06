@@ -122,14 +122,14 @@ vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
  * [framing_flag] = read one bit | Not Used
  *    */
 
-typedef struct {
+struct oggvorbis_private {
     unsigned int len[3];
     unsigned char *packet[3];
-} oggvorbis_private_t;
+};
 
 
 static unsigned int
-fixup_vorbis_headers(AVFormatContext * as, oggvorbis_private_t *priv,
+fixup_vorbis_headers(AVFormatContext * as, struct oggvorbis_private *priv,
                      uint8_t **buf)
 {
     int i,offset, len;
@@ -154,16 +154,16 @@ fixup_vorbis_headers(AVFormatContext * as, oggvorbis_private_t *priv,
 static int
 vorbis_header (AVFormatContext * s, int idx)
 {
-    ogg_t *ogg = s->priv_data;
-    ogg_stream_t *os = ogg->streams + idx;
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
-    oggvorbis_private_t *priv;
+    struct oggvorbis_private *priv;
 
     if (os->seq > 2)
         return 0;
 
     if (os->seq == 0) {
-        os->private = av_mallocz(sizeof(oggvorbis_private_t));
+        os->private = av_mallocz(sizeof(struct oggvorbis_private));
         if (!os->private)
             return 0;
     }
@@ -219,7 +219,7 @@ vorbis_header (AVFormatContext * s, int idx)
     return os->seq < 3;
 }
 
-const ogg_codec_t ff_vorbis_codec = {
+const struct ogg_codec ff_vorbis_codec = {
     .magic = "\001vorbis",
     .magicsize = 7,
     .header = vorbis_header

@@ -28,8 +28,8 @@
 static int
 flac_header (AVFormatContext * s, int idx)
 {
-    ogg_t *ogg = s->priv_data;
-    ogg_stream_t *os = ogg->streams + idx;
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
     GetBitContext gb;
     int mdt;
@@ -85,13 +85,13 @@ old_flac_header (AVFormatContext * s, int idx)
     return 0;
 }
 
-const ogg_codec_t ff_flac_codec = {
+const struct ogg_codec ff_flac_codec = {
     .magic = "\177FLAC",
     .magicsize = 5,
     .header = flac_header
 };
 
-const ogg_codec_t ff_old_flac_codec = {
+const struct ogg_codec ff_old_flac_codec = {
     .magic = "fLaC",
     .magicsize = 4,
     .header = old_flac_header

@@ -31,8 +31,8 @@
 #include "oggdec.h"
 
 static int speex_header(AVFormatContext *s, int idx) {
-    ogg_t *ogg = s->priv_data;
-    ogg_stream_t *os = ogg->streams + idx;
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
     uint8_t *p = os->buf + os->pstart;
 
@@ -54,7 +54,7 @@ static int speex_header(AVFormatContext *s, int idx) {
     return 0;
 }
 
-const ogg_codec_t ff_speex_codec = {
+const struct ogg_codec ff_speex_codec = {
     .magic = "Speex   ",
     .magicsize = 8,
     .header = speex_header

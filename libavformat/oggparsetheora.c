@@ -28,18 +28,18 @@
 #include "avformat.h"
 #include "oggdec.h"
 
-typedef struct theora_params {
+struct theora_params {
     int gpshift;
     int gpmask;
-} theora_params_t;
+};
 
 static int
 theora_header (AVFormatContext * s, int idx)
 {
-    ogg_t *ogg = s->priv_data;
-    ogg_stream_t *os = ogg->streams + idx;
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
-    theora_params_t *thp = os->private;
+    struct theora_params *thp = os->private;
     int cds = st->codec->extradata_size + os->psize + 2;
     uint8_t *cdp;
 
@@ -119,9 +119,9 @@ theora_header (AVFormatContext * s, int idx)
 static uint64_t
 theora_gptopts(AVFormatContext *ctx, int idx, uint64_t gp)
 {
-    ogg_t *ogg = ctx->priv_data;
-    ogg_stream_t *os = ogg->streams + idx;
-    theora_params_t *thp = os->private;
+    struct ogg *ogg = ctx->priv_data;
+    struct ogg_stream *os = ogg->streams + idx;
+    struct theora_params *thp = os->private;
     uint64_t iframe = gp >> thp->gpshift;
     uint64_t pframe = gp & thp->gpmask;
 
@@ -131,7 +131,7 @@ theora_gptopts(AVFormatContext *ctx, int idx, uint64_t gp)
     return iframe + pframe;
 }
 
-const ogg_codec_t ff_theora_codec = {
+const struct ogg_codec ff_theora_codec = {
     .magic = "\200theora",
     .magicsize = 7,
     .header = theora_header,
