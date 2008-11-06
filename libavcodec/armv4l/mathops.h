@@ -39,6 +39,7 @@ static inline av_const int MULL(int a, int b)
 }
 #endif
 
+#define MULH MULH
 #ifdef HAVE_ARMV6
 static inline av_const int MULH(int a, int b)
 {
@@ -46,12 +47,13 @@ static inline av_const int MULH(int a, int b)
     __asm__ ("smmul %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
     return r;
 }
-#define MULH MULH
 #else
-#define MULH(a, b) \
-    ({ int lo, hi;\
-     __asm__ ("smull %0, %1, %2, %3" : "=&r"(lo), "=&r"(hi) : "r"(b), "r"(a));\
-     hi; })
+static inline av_const int MULH(int a, int b)
+{
+    int lo, hi;
+    __asm__ ("smull %0, %1, %2, %3" : "=&r"(lo), "=&r"(hi) : "r"(b), "r"(a));
+    return hi;
+}
 #endif
 
 static inline av_const int64_t MUL64(int a, int b)
