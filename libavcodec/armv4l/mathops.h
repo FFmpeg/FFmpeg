@@ -78,8 +78,9 @@ static inline av_const int64_t MAC64(int64_t d, int a, int b)
 #if defined(HAVE_ARMV5TE)
 
 /* signed 16x16 -> 32 multiply add accumulate */
-#   define MAC16(rt, ra, rb) \
-        __asm__ ("smlabb %0, %2, %3, %0" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
+#   define MAC16(rt, ra, rb)                                            \
+    __asm__ ("smlabb %0, %1, %2, %0" : "+r"(rt) : "r"(ra), "r"(rb));
+
 /* signed 16x16 -> 32 multiply */
 #   define MUL16(ra, rb)                                                \
         ({ int rt;                                                    \
