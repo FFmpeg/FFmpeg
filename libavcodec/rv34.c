@@ -1067,6 +1067,38 @@ static void rv34_apply_differences(RV34DecContext *r, int cbp)
         s->dsp.add_pixels_clamped(s->block[5], s->dest[2], s->uvlinesize);
 }
 
+static int is_mv_diff_gt_3(int16_t (*motion_val)[2], int step)
+{
+    int d;
+    d = motion_val[0][0] - motion_val[-step][0];
+    if(d < -3 || d > 3)
+        return 1;
+    d = motion_val[0][1] - motion_val[-step][1];
+    if(d < -3 || d > 3)
+        return 1;
+    return 0;
+}
+
+static int rv34_set_deblock_coef(RV34DecContext *r)
+{
+    MpegEncContext *s = &r->s;
+    int mvmask = 0, i, j;
+    int midx = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride;
+    int16_t (*motion_val)[2] = s->current_picture_ptr->motion_val[0][midx];
+    if(s->pict_type == FF_I_TYPE)
+        return 0;
+    for(j = 0; j < 16; j += 8){
+        for(i = 0; i < 2; i++){
+            if(is_mv_diff_gt_3(motion_val + i, 1))
+                mvmask |= 0x11 << (j + i*2);
+            if(is_mv_diff_gt_3(motion_val + i, s->b8_stride))
+                mvmask |= 0x03 << (j + i*2);
+        }
+        motion_val += s->b8_stride;
+    }
+    return mvmask;
+}
+
 static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
 {
     MpegEncContext *s = &r->s;
@@ -1097,8 +1129,10 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
     cbp = cbp2 = rv34_decode_mb_header(r, intra_types);
     r->cbp_luma  [s->mb_x + s->mb_y * s->mb_stride] = cbp;
     r->cbp_chroma[s->mb_x + s->mb_y * s->mb_stride] = cbp >> 16;
-    if(r->set_deblock_coef)
-        r->deblock_coefs[s->mb_x + s->mb_y * s->mb_stride] = r->set_deblock_coef(r);
+    if(s->pict_type == FF_I_TYPE)
+        r->deblock_coefs[mb_pos] = 0;
+    else
+        r->deblock_coefs[mb_pos] = rv34_set_deblock_coef(r);
     s->current_picture.qscale_table[s->mb_x + s->mb_y * s->mb_stride] = s->qscale;
 
     if(cbp == -1)
