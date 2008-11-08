@@ -50,6 +50,9 @@ void ff_flac_compute_autocorr(const int32_t *data, int len, int lag, double *aut
 /* pngdec.c */
 void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp);
 
+/* eaidct.c */
+void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
+
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 
@@ -4239,6 +4242,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_put= ff_faanidct_put;
             c->idct_add= ff_faanidct_add;
             c->idct    = ff_faanidct;
+            c->idct_permutation_type= FF_NO_IDCT_PERM;
+        }else if(ENABLE_EATGQ_DECODER && avctx->idct_algo==FF_IDCT_EA) {
+            c->idct_put= ff_ea_idct_put_c;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
         }else{ //accurate/default
             c->idct_put= ff_simple_idct_put;
