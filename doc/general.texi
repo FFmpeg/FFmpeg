@@ -230,6 +230,7 @@ following image formats are supported:
 @item Electronic Arts CMV    @tab     @tab  X
     @tab Used in NHL 95 game.
 @item Electronic Arts TGV    @tab     @tab  X
+@item Electronic Arts TGQ    @tab     @tab  X
 @item FFmpeg Video 1         @tab  X  @tab  X
     @tab experimental lossless codec (fourcc: FFV1)
 @item Flash Screen Video     @tab  X  @tab  X

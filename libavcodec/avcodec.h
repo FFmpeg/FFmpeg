@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR  2
+#define LIBAVCODEC_VERSION_MINOR  3
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -189,6 +189,7 @@ enum CodecID {
     CODEC_ID_CMV,
     CODEC_ID_MOTIONPIXELS,
     CODEC_ID_TGV,
+    CODEC_ID_TGQ,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -1388,6 +1389,7 @@ typedef struct AVCodecContext {
 #define FF_IDCT_SIMPLEVIS     18
 #define FF_IDCT_WMV2          19
 #define FF_IDCT_FAAN          20
+#define FF_IDCT_EA            21
 
     /**
      * slice count
