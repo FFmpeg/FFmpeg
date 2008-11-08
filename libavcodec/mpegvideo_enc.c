@@ -61,7 +61,7 @@ static const uint16_t aanscales[64] = {
     4520 ,  6270,  5906,  5315,  4520,  3552,  2446,  1247
 };
 
-static const uint16_t inv_aanscales[64] = {
+const uint16_t ff_inv_aanscales[64] = {
   4096,  2953,  3135,  3483,  4096,  5213,  7568, 14846,
   2953,  2129,  2260,  2511,  2953,  3759,  5457, 10703,
   3135,  2260,  2399,  2666,  3135,  3990,  5793, 11363,
@@ -3089,7 +3089,7 @@ int dct_quantize_trellis_c(MpegEncContext *s,
             || s->dsp.fdct == ff_faandct
 #endif
            )
-            dct_coeff= (dct_coeff*inv_aanscales[ scantable[i] ]) >> 12;
+            dct_coeff= (dct_coeff*ff_inv_aanscales[ scantable[i] ]) >> 12;
         zero_distortion= dct_coeff*dct_coeff;
 
         for(level_index=0; level_index < coeff_count[i]; level_index++){
