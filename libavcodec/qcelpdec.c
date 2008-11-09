@@ -38,6 +38,19 @@
 #undef NDEBUG
 #include <assert.h>
 
+static void weighted_vector_sumf(float *out,
+                                 const float *in_a,
+                                 const float *in_b,
+                                 float weight_coeff_a,
+                                 float weight_coeff_b,
+                                 int length) {
+    int   i;
+
+    for (i = 0; i < length; i++)
+        out[i] = weight_coeff_a * in_a[i]
+               + weight_coeff_b * in_b[i];
+}
+
 /**
  * Apply filter in pitch-subframe steps.
  *
@@ -88,6 +101,22 @@ static const float *do_pitchfilter(float memory[303],
 
     memmove(memory, memory + 160, 143 * sizeof(float));
     return memory + 143;
+}
+
+static int buf_size2framerate(const int buf_size) {
+    switch (buf_size) {
+    case 35:
+        return RATE_FULL;
+    case 17:
+        return RATE_HALF;
+    case  8:
+        return RATE_QUARTER;
+    case  4:
+        return RATE_OCTAVE;
+    case  1:
+        return SILENCE;
+    }
+    return -1;
 }
 
 static void warn_insufficient_frame_quality(AVCodecContext *avctx,
