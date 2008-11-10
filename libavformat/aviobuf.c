@@ -290,7 +290,7 @@ void put_tag(ByteIOContext *s, const char *tag)
 
 static void fill_buffer(ByteIOContext *s)
 {
-    uint8_t *dst= s->buf_end - s->buffer < s->buffer_size ? s->buf_ptr : s->buffer;
+    uint8_t *dst= !s->max_packet_size && s->buf_end - s->buffer < s->buffer_size ? s->buf_ptr : s->buffer;
     int len= s->buffer_size - (dst - s->buffer);
 
     assert(s->buf_ptr == s->buf_end);
