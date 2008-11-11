@@ -103,6 +103,39 @@ static const float *do_pitchfilter(float memory[303],
     return memory + 143;
 }
 
+/**
+ * Interpolates LSP frequencies and computes LPC coefficients
+ * for a given framerate & pitch subframe.
+ *
+ * TIA/EIA/IS-733 2.4.3.3.4
+ *
+ * @param q the context
+ * @param curr_lspf LSP frequencies vector of the current frame
+ * @param lpc float vector for the resulting LPC
+ * @param subframe_num frame number in decoded stream
+ */
+void interpolate_lpc(QCELPContext *q,
+                     const float *curr_lspf,
+                     float *lpc,
+                     const int subframe_num) {
+    float interpolated_lspf[10];
+    float weight;
+
+    if (q->framerate >= RATE_QUARTER) {
+        weight = 0.25 * (subframe_num + 1);
+    } else if (q->framerate == RATE_OCTAVE && !subframe_num) {
+        weight = 0.625;
+    } else {
+        weight = 1.0;
+    }
+
+    if (weight != 1.0) {
+        weighted_vector_sumf(interpolated_lspf, curr_lspf, q->prev_lspf, weight, 1.0 - weight, 10);
+        lspf2lpc(q, interpolated_lspf, lpc);
+    } else if (q->framerate >= RATE_QUARTER || (q->framerate == I_F_Q && !subframe_num))
+        lspf2lpc(q, curr_lspf, lpc);
+}
+
 static int buf_size2framerate(const int buf_size) {
     switch (buf_size) {
     case 35:
@@ -123,3 +156,14 @@ static void warn_insufficient_frame_quality(AVCodecContext *avctx,
                                             const char *message) {
     av_log(avctx, AV_LOG_WARNING, "Frame #%d, IFQ: %s\n", avctx->frame_number, message);
 }
+
+AVCodec qcelp_decoder =
+{
+    .name   = "qcelp",
+    .type   = CODEC_TYPE_AUDIO,
+    .id     = CODEC_ID_QCELP,
+    .init   = qcelp_decode_init,
+    .decode = qcelp_decode_frame,
+    .priv_data_size = sizeof(QCELPContext),
+    .long_name = NULL_IF_CONFIG_SMALL("QCELP / PureVoice"),
+};
