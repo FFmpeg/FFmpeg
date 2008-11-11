@@ -64,7 +64,7 @@ enum DCAMode {
  * are never used so complete accuracy is not needed.
  *
  * L = left, R = right, C = center, S = surround, F = front, R = rear, T = total, OV = overhead.
- * S  -> back, when both rear and back are configured move one of them to the side channel
+ * S  -> side, when both rear and back are configured move one of them to the side channel
  * OV -> center back
  * All 2 channel configurations -> CH_LAYOUT_STEREO
  */
