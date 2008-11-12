@@ -722,7 +722,7 @@ static void rv34_mc_2mv(RV34DecContext *r, const int block_type)
 
 static void rv34_mc_2mv_skip(RV34DecContext *r)
 {
-    int i, j, k;
+    int i, j;
     for(j = 0; j < 2; j++)
         for(i = 0; i < 2; i++){
              rv34_mc(r, RV34_MB_P_8x8, i*8, j*8, i+j*r->s.b8_stride, 1, 1, 0, r->rv30,
