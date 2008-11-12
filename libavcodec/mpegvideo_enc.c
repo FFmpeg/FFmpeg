@@ -1917,7 +1917,7 @@ static int sse_mb(MpegEncContext *s){
 }
 
 static int pre_estimate_motion_thread(AVCodecContext *c, void *arg){
-    MpegEncContext *s= arg;
+    MpegEncContext *s= *(void**)arg;
 
 
     s->me.pre_pass=1;
@@ -1936,7 +1936,7 @@ static int pre_estimate_motion_thread(AVCodecContext *c, void *arg){
 }
 
 static int estimate_motion_thread(AVCodecContext *c, void *arg){
-    MpegEncContext *s= arg;
+    MpegEncContext *s= *(void**)arg;
 
     ff_check_alignment();
 
@@ -1963,7 +1963,7 @@ static int estimate_motion_thread(AVCodecContext *c, void *arg){
 }
 
 static int mb_var_thread(AVCodecContext *c, void *arg){
-    MpegEncContext *s= arg;
+    MpegEncContext *s= *(void**)arg;
     int mb_x, mb_y;
 
     ff_check_alignment();
@@ -2005,7 +2005,7 @@ static void write_slice_end(MpegEncContext *s){
 }
 
 static int encode_thread(AVCodecContext *c, void *arg){
-    MpegEncContext *s= arg;
+    MpegEncContext *s= *(void**)arg;
     int mb_x, mb_y, pdif = 0;
     int chr_h= 16>>s->chroma_y_shift;
     int i, j;
@@ -2779,11 +2779,11 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         s->lambda2= (s->lambda2* (int64_t)s->avctx->me_penalty_compensation + 128)>>8;
         if(s->pict_type != FF_B_TYPE && s->avctx->me_threshold==0){
             if((s->avctx->pre_me && s->last_non_b_pict_type==FF_I_TYPE) || s->avctx->pre_me==2){
-                s->avctx->execute(s->avctx, pre_estimate_motion_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count);
+                s->avctx->execute(s->avctx, pre_estimate_motion_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count, sizeof(void*));
             }
         }
 
-        s->avctx->execute(s->avctx, estimate_motion_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count);
+        s->avctx->execute(s->avctx, estimate_motion_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count, sizeof(void*));
     }else /* if(s->pict_type == FF_I_TYPE) */{
         /* I-Frame */
         for(i=0; i<s->mb_stride*s->mb_height; i++)
@@ -2791,7 +2791,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
 
         if(!s->fixed_qscale){
             /* finding spatial complexity for I-frame rate control */
-            s->avctx->execute(s->avctx, mb_var_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count);
+            s->avctx->execute(s->avctx, mb_var_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count, sizeof(void*));
         }
     }
     for(i=1; i<s->avctx->thread_count; i++){
@@ -2931,7 +2931,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     for(i=1; i<s->avctx->thread_count; i++){
         update_duplicate_context_after_me(s->thread_context[i], s);
     }
-    s->avctx->execute(s->avctx, encode_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count);
+    s->avctx->execute(s->avctx, encode_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count, sizeof(void*));
     for(i=1; i<s->avctx->thread_count; i++){
         merge_context_after_encode(s, s->thread_context[i]);
     }

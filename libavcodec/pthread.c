@@ -30,10 +30,11 @@ typedef int (action_t)(AVCodecContext *c, void *arg);
 typedef struct ThreadContext {
     pthread_t *workers;
     action_t *func;
-    void **args;
+    void *args;
     int *rets;
     int rets_count;
     int job_count;
+    int job_size;
 
     pthread_cond_t last_job_cond;
     pthread_cond_t current_job_cond;
@@ -67,7 +68,7 @@ static void* attribute_align_arg worker(void *v)
         }
         pthread_mutex_unlock(&c->current_job_lock);
 
-        c->rets[our_job%c->rets_count] = c->func(avctx, c->args[our_job]);
+        c->rets[our_job%c->rets_count] = c->func(avctx, (char*)c->args + our_job*c->job_size);
 
         pthread_mutex_lock(&c->current_job_lock);
         our_job = c->current_job++;
@@ -100,7 +101,7 @@ void avcodec_thread_free(AVCodecContext *avctx)
     av_freep(&avctx->thread_opaque);
 }
 
-int avcodec_thread_execute(AVCodecContext *avctx, action_t* func, void **arg, int *ret, int job_count)
+int avcodec_thread_execute(AVCodecContext *avctx, action_t* func, void *arg, int *ret, int job_count, int job_size)
 {
     ThreadContext *c= avctx->thread_opaque;
     int dummy_ret;
@@ -112,6 +113,7 @@ int avcodec_thread_execute(AVCodecContext *avctx, action_t* func, void **arg, in
 
     c->current_job = avctx->thread_count;
     c->job_count = job_count;
+    c->job_size = job_size;
     c->args = arg;
     c->func = func;
     if (ret) {
@@ -147,6 +149,7 @@ int avcodec_thread_init(AVCodecContext *avctx, int thread_count)
     avctx->thread_count = thread_count;
     c->current_job = 0;
     c->job_count = 0;
+    c->job_size = 0;
     c->done = 0;
     pthread_cond_init(&c->current_job_cond, NULL);
     pthread_cond_init(&c->last_job_cond, NULL);

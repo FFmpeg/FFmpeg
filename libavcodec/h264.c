@@ -6626,7 +6626,8 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
     }
 }
 
-static int decode_slice(struct AVCodecContext *avctx, H264Context *h){
+static int decode_slice(struct AVCodecContext *avctx, void *arg){
+    H264Context *h = *(void**)arg;
     MpegEncContext * const s = &h->s;
     const int part_mask= s->partitioned_frame ? (AC_END|AC_ERROR) : 0x7F;
 
@@ -7346,7 +7347,7 @@ static void execute_decode_slices(H264Context *h, int context_count){
         }
 
         avctx->execute(avctx, (void *)decode_slice,
-                       (void **)h->thread_context, NULL, context_count);
+                       (void **)h->thread_context, NULL, context_count, sizeof(void*));
 
         /* pull back stuff from slices to master context */
         hx = h->thread_context[context_count - 1];

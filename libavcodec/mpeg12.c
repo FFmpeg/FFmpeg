@@ -1866,7 +1866,7 @@ eos: // end of slice
 }
 
 static int slice_decode_thread(AVCodecContext *c, void *arg){
-    MpegEncContext *s= arg;
+    MpegEncContext *s= *(void**)arg;
     const uint8_t *buf= s->gb.buffer;
     int mb_y= s->start_mb_y;
 
@@ -2299,7 +2299,7 @@ static int decode_chunks(AVCodecContext *avctx,
                 if(avctx->thread_count > 1){
                     int i;
 
-                    avctx->execute(avctx, slice_decode_thread,  (void**)&(s2->thread_context[0]), NULL, s->slice_count);
+                    avctx->execute(avctx, slice_decode_thread,  (void**)&(s2->thread_context[0]), NULL, s->slice_count, sizeof(void*));
                     for(i=0; i<s->slice_count; i++)
                         s2->error_count += s2->thread_context[i]->error_count;
                 }

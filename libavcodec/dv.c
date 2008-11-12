@@ -1013,14 +1013,14 @@ static inline void dv_encode_video_segment(DVVideoContext *s, int work_chunk)
 
 static int dv_decode_mt(AVCodecContext *avctx, void* sl)
 {
-    dv_decode_video_segment((DVVideoContext *)avctx->priv_data, (size_t)sl);
+    dv_decode_video_segment((DVVideoContext *)avctx->priv_data, *(size_t*)sl);
     return 0;
 }
 
 #ifdef CONFIG_DVVIDEO_ENCODER
 static int dv_encode_mt(AVCodecContext *avctx, void* sl)
 {
-    dv_encode_video_segment((DVVideoContext *)avctx->priv_data, (size_t)sl);
+    dv_encode_video_segment((DVVideoContext *)avctx->priv_data, *(size_t*)sl);
     return 0;
 }
 #endif
@@ -1056,7 +1056,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
 
     s->buf = buf;
     avctx->execute(avctx, dv_decode_mt, s->sys->work_chunks, NULL,
-                   dv_work_pool_size(s->sys));
+                   dv_work_pool_size(s->sys), sizeof(void*));
 
     emms_c();
 
@@ -1209,7 +1209,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
 
     s->buf = buf;
     c->execute(c, dv_encode_mt, s->sys->work_chunks, NULL,
-               dv_work_pool_size(s->sys));
+               dv_work_pool_size(s->sys), sizeof(void*));
 
     emms_c();
 
