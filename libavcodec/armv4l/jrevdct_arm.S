@@ -68,22 +68,22 @@ function j_rev_dct_ARM, export=1
         add r11, pc, #(const_array-.-8) @ r11 = base pointer to the constants array
 row_loop:
         ldrsh r0, [lr, # 0]             @ r0 = 'd0'
-        ldrsh r1, [lr, # 8]             @ r1 = 'd1'
+        ldrsh r2, [lr, # 2]             @ r2 = 'd2'
 
         @ Optimization for row that have all items except the first set to 0
         @ (this works as the DCTELEMS are always 4-byte aligned)
         ldr r5, [lr, # 0]
-        ldr r2, [lr, # 4]
+        ldr r6, [lr, # 4]
         ldr r3, [lr, # 8]
         ldr r4, [lr, #12]
         orr r3, r3, r4
-        orr r3, r3, r2
+        orr r3, r3, r6
         orrs r5, r3, r5
         beq end_of_row_loop             @ nothing to be done as ALL of them are '0'
-        orrs r2, r3, r1
+        orrs r3, r3, r2
         beq empty_row
 
-        ldrsh r2, [lr, # 2]             @ r2 = 'd2'
+        ldrsh r1, [lr, # 8]             @ r1 = 'd1'
         ldrsh r4, [lr, # 4]             @ r4 = 'd4'
         ldrsh r6, [lr, # 6]             @ r6 = 'd6'
 
