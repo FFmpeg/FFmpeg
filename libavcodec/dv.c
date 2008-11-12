@@ -92,9 +92,9 @@ static inline int dv_work_pool_size(const DVprofile *d)
 
 static int dv_init_dynamic_tables(const DVprofile *d)
 {
-    int j,i,c,s,p;
+    int j,i,c,s,p,k;
 
-    if (d->work_chunks[dv_work_pool_size(d)-1])
+    if (d->work_chunks[dv_work_pool_size(d)-1].buf_offset)
         return 0;
 
     p = i = 0;
@@ -105,7 +105,9 @@ static int dv_init_dynamic_tables(const DVprofile *d)
                  p += !(j%3);
                  if (!(DV_PROFILE_IS_1080i50(d) && c != 0 && s == 11) &&
                      !(DV_PROFILE_IS_720p50(d) && s > 9)) {
-                     d->work_chunks[i++] = (void*)(size_t)((p<<18)|(c << 16)|(s << 8)|j);
+                     for (k=0; k<5; k++)
+                         d->work_chunks[i].mb_coordinates[k] = d->video_place[(c*d->difseg_size+s)*27*5 + j*5 + k];
+                     d->work_chunks[i++].buf_offset = p;
                  }
                  p += 5;
             }
@@ -381,17 +383,10 @@ static inline void bit_copy(PutBitContext *pb, GetBitContext *gb)
     }
 }
 
-static inline void dv_calculate_mb_xy(DVVideoContext *s, int work_chunk, int m, int *mb_x, int *mb_y)
+static inline void dv_calculate_mb_xy(DVVideoContext *s, DVwork_chunk *work_chunk, int m, int *mb_x, int *mb_y)
 {
-     int i, chan, seg, slot;
-
-     chan = (work_chunk>>16)&0x03;
-     seg  = (work_chunk>>8)&0xff;
-     slot = (work_chunk)&0xff;
-
-     i = (chan*s->sys->difseg_size+seg)*27*5 + slot*5 + m;
-     *mb_x = s->sys->video_place[i] & 0xff;
-     *mb_y = s->sys->video_place[i] >> 8;
+     *mb_x = work_chunk->mb_coordinates[m] & 0xff;
+     *mb_y = work_chunk->mb_coordinates[m] >> 8;
 
      /* We work with 720p frames split in half. The odd half-frame (chan==2,3) is displaced :-( */
      if (s->sys->height == 720 && !(s->buf[1]&0x0C)) {
@@ -400,7 +395,7 @@ static inline void dv_calculate_mb_xy(DVVideoContext *s, int work_chunk, int m, 
 }
 
 /* mb_x and mb_y are in units of 8 pixels */
-static inline void dv_decode_video_segment(DVVideoContext *s, int work_chunk)
+static inline void dv_decode_video_segment(DVVideoContext *s, DVwork_chunk *work_chunk)
 {
     int quant, dc, dct_mode, class1, j;
     int mb_index, mb_x, mb_y, last_index;
@@ -424,7 +419,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s, int work_chunk)
     memset(sblock, 0, sizeof(sblock));
 
     /* pass 1 : read DC and AC coefficients in blocks */
-    buf_ptr = &s->buf[(work_chunk>>18)*80];
+    buf_ptr = &s->buf[work_chunk->buf_offset*80];
     block1  = &sblock[0][0];
     mb1     = mb_data;
     init_put_bits(&vs_pb, vs_bit_buffer, 5 * 80);
@@ -862,7 +857,7 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
     }
 }
 
-static inline void dv_encode_video_segment(DVVideoContext *s, int work_chunk)
+static inline void dv_encode_video_segment(DVVideoContext *s, DVwork_chunk *work_chunk)
 {
     int mb_index, i, j;
     int mb_x, mb_y, c_offset, linesize;
@@ -881,7 +876,7 @@ static inline void dv_encode_video_segment(DVVideoContext *s, int work_chunk)
 
     assert((((int)block) & 15) == 0);
 
-    dif = &s->buf[(work_chunk>>18)*80];
+    dif = &s->buf[work_chunk->buf_offset*80];
     enc_blk = &enc_blks[0];
     pb = &pbs[0];
     for (mb_index = 0; mb_index < 5; mb_index++) {
@@ -1013,14 +1008,14 @@ static inline void dv_encode_video_segment(DVVideoContext *s, int work_chunk)
 
 static int dv_decode_mt(AVCodecContext *avctx, void* sl)
 {
-    dv_decode_video_segment((DVVideoContext *)avctx->priv_data, *(size_t*)sl);
+    dv_decode_video_segment((DVVideoContext *)avctx->priv_data, (DVwork_chunk*)sl);
     return 0;
 }
 
 #ifdef CONFIG_DVVIDEO_ENCODER
 static int dv_encode_mt(AVCodecContext *avctx, void* sl)
 {
-    dv_encode_video_segment((DVVideoContext *)avctx->priv_data, *(size_t*)sl);
+    dv_encode_video_segment((DVVideoContext *)avctx->priv_data, (DVwork_chunk*)sl);
     return 0;
 }
 #endif
@@ -1056,7 +1051,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
 
     s->buf = buf;
     avctx->execute(avctx, dv_decode_mt, s->sys->work_chunks, NULL,
-                   dv_work_pool_size(s->sys), sizeof(void*));
+                   dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
 
     emms_c();
 
@@ -1209,7 +1204,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
 
     s->buf = buf;
     c->execute(c, dv_encode_mt, s->sys->work_chunks, NULL,
-               dv_work_pool_size(s->sys), sizeof(void*));
+               dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
 
     emms_c();
 

@@ -30,6 +30,11 @@
 #include "libavutil/rational.h"
 #include "avcodec.h"
 
+typedef struct DVwork_chunk {
+    uint16_t  buf_offset;
+    uint16_t  mb_coordinates[5];
+} DVwork_chunk;
+
 /*
  * DVprofile is used to express the differences between various
  * DV flavors. For now it's primarily used for differentiating
@@ -47,7 +52,7 @@ typedef struct DVprofile {
     int              height;                /* picture height in pixels */
     int              width;                 /* picture width in pixels */
     AVRational       sar[2];                /* sample aspect ratios for 4:3 and 16:9 */
-    void           **work_chunks;           /* each thread gets its own chunk of frame to work on */
+    DVwork_chunk    *work_chunks;           /* each thread gets its own chunk of frame to work on */
     const uint16_t  *video_place;           /* positions of all DV macroblocks */
     enum PixelFormat pix_fmt;               /* picture pixel format */
     int              bpm;                   /* blocks per macroblock */
@@ -6160,15 +6165,15 @@ static const uint8_t block_sizes_dv100[8] = {
     80, 80, 80, 80, 80, 80, 64, 64,
 };
 
-static void  *work_chunks_dv25pal   [1*12*27];
-static void  *work_chunks_dv25pal411[1*12*27];
-static void  *work_chunks_dv25ntsc  [1*10*27];
-static void  *work_chunks_dv50pal   [2*12*27];
-static void  *work_chunks_dv50ntsc  [2*10*27];
-static void  *work_chunks_dv100palp [2*12*27];
-static void  *work_chunks_dv100ntscp[2*10*27];
-static void  *work_chunks_dv100pali [4*12*27];
-static void  *work_chunks_dv100ntsci[4*10*27];
+static DVwork_chunk work_chunks_dv25pal   [1*12*27];
+static DVwork_chunk work_chunks_dv25pal411[1*12*27];
+static DVwork_chunk work_chunks_dv25ntsc  [1*10*27];
+static DVwork_chunk work_chunks_dv50pal   [2*12*27];
+static DVwork_chunk work_chunks_dv50ntsc  [2*10*27];
+static DVwork_chunk work_chunks_dv100palp [2*12*27];
+static DVwork_chunk work_chunks_dv100ntscp[2*10*27];
+static DVwork_chunk work_chunks_dv100pali [4*12*27];
+static DVwork_chunk work_chunks_dv100ntsci[4*10*27];
 
 static const DVprofile dv_profiles[] = {
     { .dsf = 0,
