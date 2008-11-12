@@ -44,6 +44,7 @@
 typedef struct {
     int udp_fd;
     int ttl;
+    int buffer_size;
     int is_multicast;
     int local_port;
     int reuse_socket;
@@ -358,6 +359,8 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     h->priv_data = s;
     s->ttl = 16;
+    s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_MAX_PKT_SIZE;
+
     p = strchr(uri, '?');
     if (p) {
         s->reuse_socket = find_info_tag(buf, sizeof(buf), "reuse", p);
@@ -369,6 +372,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
         if (find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
             h->max_packet_size = strtol(buf, NULL, 10);
+        }
+        if (find_info_tag(buf, sizeof(buf), "buffer_size", p)) {
+            s->buffer_size = strtol(buf, NULL, 10);
         }
     }
 
@@ -416,7 +422,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     if (is_output) {
         /* limit the tx buf size to limit latency */
-        tmp = UDP_TX_BUF_SIZE;
+        tmp = s->buffer_size;
         if (setsockopt(udp_fd, SOL_SOCKET, SO_SNDBUF, &tmp, sizeof(tmp)) < 0) {
             av_log(NULL, AV_LOG_ERROR, "setsockopt(SO_SNDBUF): %s\n", strerror(errno));
             goto fail;
@@ -424,8 +430,10 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     } else {
         /* set udp recv buffer size to the largest possible udp packet size to
          * avoid losing data on OSes that set this too low by default. */
-        tmp = UDP_MAX_PKT_SIZE;
-        setsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, sizeof(tmp));
+        tmp = s->buffer_size;
+        if (setsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, sizeof(tmp)) < 0) {
+            av_log(NULL, AV_LOG_WARNING, "setsockopt(SO_RECVBUF): %s\n", strerror(errno));
+        }
     }
 
     s->udp_fd = udp_fd;
