@@ -94,6 +94,7 @@ struct algo algos[] = {
   {"MMX",             0, ff_fdct_mmx,        fdct, NO_PERM, FF_MM_MMX},
 #ifdef HAVE_MMX2
   {"MMX2",            0, ff_fdct_mmx2,       fdct, NO_PERM, FF_MM_MMXEXT},
+  {"SSE2",            0, ff_fdct_sse2,       fdct, NO_PERM, FF_MM_SSE2},
 #endif
 
 #ifdef CONFIG_GPL
