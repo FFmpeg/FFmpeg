@@ -749,8 +749,8 @@ static void decode_band_structure(GetBitContext *gbc, int blk, int eac3,
     /* calculate number of bands and band sizes based on band structure.
        note that the first 4 subbands in enhanced coupling span only 6 bins
        instead of 12. */
+    n_bands = n_subbands;
     if (num_bands || band_sizes ) {
-        n_bands = n_subbands;
         bnd_sz[0] = ecpl ? 6 : 12;
         for (bnd = 0, subbnd = 1; subbnd < n_subbands; subbnd++) {
             int subbnd_size = (ecpl && subbnd < 4) ? 6 : 12;
