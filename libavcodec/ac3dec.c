@@ -938,7 +938,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             if (s->spx_in_use[blk]) {
                 cpl_end_subband = s->spx_start_subband - 1;
             } else {
-            cpl_end_subband   = get_bits(gbc, 4) + 3;
+                cpl_end_subband   = get_bits(gbc, 4) + 3;
             }
             s->num_cpl_subbands = cpl_end_subband - cpl_start_subband;
             if (s->num_cpl_subbands < 0) {
@@ -1016,7 +1016,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             s->num_rematrixing_bands = 4;
             if (cpl_in_use) {
                 if (s->start_freq[CPL_CH] <= 61)
-                s->num_rematrixing_bands -= 1 + (s->start_freq[CPL_CH] == 37);
+                    s->num_rematrixing_bands -= 1 + (s->start_freq[CPL_CH] == 37);
             } else if (s->spx_in_use[blk]) {
                 if (s->spx_start_freq <= 61)
                     s->num_rematrixing_bands -= 1 + (s->spx_start_freq <= 37) +
