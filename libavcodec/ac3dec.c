@@ -772,7 +772,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             s->cpl_in_use[blk] = get_bits1(gbc);
         if (s->cpl_in_use[blk]) {
             /* coupling in use */
-            int cpl_begin_freq, cpl_end_freq;
+            int cpl_start_subband, cpl_end_subband;
 
             if (channel_mode < AC3_CHMODE_STEREO) {
                 av_log(s->avctx, AV_LOG_ERROR, "coupling not allowed in mono or dual-mono\n");
@@ -801,15 +801,15 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 
             /* coupling frequency range */
             /* TODO: modify coupling end freq if spectral extension is used */
-            cpl_begin_freq = get_bits(gbc, 4);
-            cpl_end_freq = get_bits(gbc, 4);
-            if (3 + cpl_end_freq - cpl_begin_freq < 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "3+cplendf = %d < cplbegf = %d\n", 3+cpl_end_freq, cpl_begin_freq);
+            cpl_start_subband = get_bits(gbc, 4);
+            cpl_end_subband = get_bits(gbc, 4);
+            if (3 + cpl_end_subband - cpl_start_subband < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "3+cplendf = %d < cplbegf = %d\n", 3+cpl_end_subband, cpl_start_subband);
                 return -1;
             }
-            s->num_cpl_bands = s->num_cpl_subbands = 3 + cpl_end_freq - cpl_begin_freq;
-            s->start_freq[CPL_CH] = cpl_begin_freq * 12 + 37;
-            s->end_freq[CPL_CH] = cpl_end_freq * 12 + 73;
+            s->num_cpl_bands = s->num_cpl_subbands = 3 + cpl_end_subband - cpl_start_subband;
+            s->start_freq[CPL_CH] = cpl_start_subband * 12 + 37;
+            s->end_freq[CPL_CH] = cpl_end_subband * 12 + 73;
 
             /* coupling band structure */
             if (!s->eac3 || get_bits1(gbc)) {
@@ -818,7 +818,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
                 }
             } else if (!blk) {
                 memcpy(s->cpl_band_struct,
-                       &ff_eac3_default_cpl_band_struct[cpl_begin_freq+1],
+                       &ff_eac3_default_cpl_band_struct[cpl_start_subband+1],
                        s->num_cpl_subbands-1);
             }
             s->cpl_band_struct[s->num_cpl_subbands-1] = 0;
