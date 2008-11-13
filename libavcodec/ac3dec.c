@@ -802,16 +802,18 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             /* coupling frequency range */
             /* TODO: modify coupling end freq if spectral extension is used */
             cpl_start_subband = get_bits(gbc, 4);
-            cpl_end_subband = get_bits(gbc, 4);
-            if (3 + cpl_end_subband - cpl_start_subband < 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "3+cplendf = %d < cplbegf = %d\n", 3+cpl_end_subband, cpl_start_subband);
+            cpl_end_subband   = get_bits(gbc, 4) + 3;
+            s->num_cpl_subbands = cpl_end_subband - cpl_start_subband;
+            if (s->num_cpl_subbands < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "invalid coupling range (%d > %d)\n",
+                       cpl_start_subband, cpl_end_subband);
                 return -1;
             }
-            s->num_cpl_bands = s->num_cpl_subbands = 3 + cpl_end_subband - cpl_start_subband;
             s->start_freq[CPL_CH] = cpl_start_subband * 12 + 37;
-            s->end_freq[CPL_CH] = cpl_end_subband * 12 + 73;
+            s->end_freq[CPL_CH]   = cpl_end_subband   * 12 + 37;
 
             /* coupling band structure */
+            s->num_cpl_bands = s->num_cpl_subbands;
             if (!s->eac3 || get_bits1(gbc)) {
                 for (bnd = 0; bnd < s->num_cpl_subbands - 1; bnd++) {
                     s->cpl_band_struct[bnd] = get_bits1(gbc);
