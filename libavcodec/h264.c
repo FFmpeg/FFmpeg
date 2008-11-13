@@ -7338,7 +7338,7 @@ static void execute_decode_slices(H264Context *h, int context_count){
     int i;
 
     if(context_count == 1) {
-        decode_slice(avctx, h);
+        decode_slice(avctx, &h);
     } else {
         for(i = 1; i < context_count; i++) {
             hx = h->thread_context[i];
