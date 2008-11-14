@@ -32,7 +32,6 @@
 
 #include "libavutil/common.h"
 #include "libavcodec/dsputil.h"
-#include "mmx.h"
 
 #define ATTR_ALIGN(align) __attribute__ ((__aligned__ (align)))
 
@@ -286,84 +285,90 @@ TABLE_SSE2
 TABLE_SSE2
 }};
 
+#define S(s) AV_TOSTRING(s) //AV_STRINGIFY is too long
+
 #define FDCT_COL(cpu, mm, mov)\
 static av_always_inline void fdct_col_##cpu(const int16_t *in, int16_t *out, int offset)\
 {\
-    mov##_m2r(*(in + offset + 1 * 8), mm##0);\
-    mov##_m2r(*(in + offset + 6 * 8), mm##1);\
-    mov##_r2r(mm##0, mm##2);\
-    mov##_m2r(*(in + offset + 2 * 8), mm##3);\
-    paddsw_r2r(mm##1, mm##0);\
-    mov##_m2r(*(in + offset + 5 * 8), mm##4);\
-    psllw_i2r(SHIFT_FRW_COL, mm##0);\
-    mov##_m2r(*(in + offset + 0 * 8), mm##5);\
-    paddsw_r2r(mm##3, mm##4);\
-    paddsw_m2r(*(in + offset + 7 * 8), mm##5);\
-    psllw_i2r(SHIFT_FRW_COL, mm##4);\
-    mov##_r2r(mm##0, mm##6);\
-    psubsw_r2r(mm##1, mm##2);\
-    mov##_m2r(*(fdct_tg_all_16 + 8), mm##1);\
-    psubsw_r2r(mm##4, mm##0);\
-    mov##_m2r(*(in + offset + 3 * 8), mm##7);\
-    pmulhw_r2r(mm##0, mm##1);\
-    paddsw_m2r(*(in + offset + 4 * 8), mm##7);\
-    psllw_i2r(SHIFT_FRW_COL, mm##5);\
-    paddsw_r2r(mm##4, mm##6);\
-    psllw_i2r(SHIFT_FRW_COL, mm##7);\
-    mov##_r2r(mm##5, mm##4);\
-    psubsw_r2r(mm##7, mm##5);\
-    paddsw_r2r(mm##5, mm##1);\
-    paddsw_r2r(mm##7, mm##4);\
-    por_m2r(*fdct_one_corr, mm##1);\
-    psllw_i2r(SHIFT_FRW_COL + 1, mm##2);\
-    pmulhw_m2r(*(fdct_tg_all_16 + 8), mm##5);\
-    mov##_r2r(mm##4, mm##7);\
-    psubsw_m2r(*(in + offset + 5 * 8), mm##3);\
-    psubsw_r2r(mm##6, mm##4);\
-    mov##_r2m(mm##1, *(out + offset + 2 * 8));\
-    paddsw_r2r(mm##6, mm##7);\
-    mov##_m2r(*(in + offset + 3 * 8), mm##1);\
-    psllw_i2r(SHIFT_FRW_COL + 1, mm##3);\
-    psubsw_m2r(*(in + offset + 4 * 8), mm##1);\
-    mov##_r2r(mm##2, mm##6);\
-    mov##_r2m(mm##4, *(out + offset + 4 * 8));\
-    paddsw_r2r(mm##3, mm##2);\
-    pmulhw_m2r(*ocos_4_16, mm##2);\
-    psubsw_r2r(mm##3, mm##6);\
-    pmulhw_m2r(*ocos_4_16, mm##6);\
-    psubsw_r2r(mm##0, mm##5);\
-    por_m2r(*fdct_one_corr, mm##5);\
-    psllw_i2r(SHIFT_FRW_COL, mm##1);\
-    por_m2r(*fdct_one_corr, mm##2);\
-    mov##_r2r(mm##1, mm##4);\
-    mov##_m2r(*(in + offset + 0 * 8), mm##3);\
-    paddsw_r2r(mm##6, mm##1);\
-    psubsw_m2r(*(in + offset + 7 * 8), mm##3);\
-    psubsw_r2r(mm##6, mm##4);\
-    mov##_m2r(*(fdct_tg_all_16 + 0), mm##0);\
-    psllw_i2r(SHIFT_FRW_COL, mm##3);\
-    mov##_m2r(*(fdct_tg_all_16 + 16), mm##6);\
-    pmulhw_r2r(mm##1, mm##0);\
-    mov##_r2m(mm##7, *(out + offset + 0 * 8));\
-    pmulhw_r2r(mm##4, mm##6);\
-    mov##_r2m(mm##5, *(out + offset + 6 * 8));\
-    mov##_r2r(mm##3, mm##7);\
-    mov##_m2r(*(fdct_tg_all_16 + 16), mm##5);\
-    psubsw_r2r(mm##2, mm##7);\
-    paddsw_r2r(mm##2, mm##3);\
-    pmulhw_r2r(mm##7, mm##5);\
-    paddsw_r2r(mm##3, mm##0);\
-    paddsw_r2r(mm##4, mm##6);\
-    pmulhw_m2r(*(fdct_tg_all_16 + 0), mm##3);\
-    por_m2r(*fdct_one_corr, mm##0);\
-    paddsw_r2r(mm##7, mm##5);\
-    psubsw_r2r(mm##6, mm##7);\
-    mov##_r2m(mm##0, *(out + offset + 1 * 8));\
-    paddsw_r2r(mm##4, mm##5);\
-    mov##_r2m(mm##7, *(out + offset + 3 * 8));\
-    psubsw_r2r(mm##1, mm##3);\
-    mov##_r2m(mm##5, *(out + offset + 5 * 8));\
-    mov##_r2m(mm##3, *(out + offset + 7 * 8));\
+    __asm__ volatile (\
+        #mov"      16(%0),  %%"#mm"0 \n\t" \
+        #mov"      96(%0),  %%"#mm"1 \n\t" \
+        #mov"    %%"#mm"0,  %%"#mm"2 \n\t" \
+        #mov"      32(%0),  %%"#mm"3 \n\t" \
+        "paddsw  %%"#mm"1,  %%"#mm"0 \n\t" \
+        #mov"      80(%0),  %%"#mm"4 \n\t" \
+        "psllw  $"S(SHIFT_FRW_COL)", %%"#mm"0 \n\t" \
+        #mov"        (%0),  %%"#mm"5 \n\t" \
+        "paddsw  %%"#mm"3,  %%"#mm"4 \n\t" \
+        "paddsw   112(%0),  %%"#mm"5 \n\t" \
+        "psllw  $"S(SHIFT_FRW_COL)", %%"#mm"4 \n\t" \
+        #mov"    %%"#mm"0,  %%"#mm"6 \n\t" \
+        "psubsw  %%"#mm"1,  %%"#mm"2 \n\t" \
+        #mov"      16(%1),  %%"#mm"1 \n\t" \
+        "psubsw  %%"#mm"4,  %%"#mm"0 \n\t" \
+        #mov"      48(%0),  %%"#mm"7 \n\t" \
+        "pmulhw  %%"#mm"0,  %%"#mm"1 \n\t" \
+        "paddsw    64(%0),  %%"#mm"7 \n\t" \
+        "psllw  $"S(SHIFT_FRW_COL)", %%"#mm"5 \n\t" \
+        "paddsw  %%"#mm"4,  %%"#mm"6 \n\t" \
+        "psllw  $"S(SHIFT_FRW_COL)", %%"#mm"7 \n\t" \
+        #mov"    %%"#mm"5,  %%"#mm"4 \n\t" \
+        "psubsw  %%"#mm"7,  %%"#mm"5 \n\t" \
+        "paddsw  %%"#mm"5,  %%"#mm"1 \n\t" \
+        "paddsw  %%"#mm"7,  %%"#mm"4 \n\t" \
+        "por         (%2),  %%"#mm"1 \n\t" \
+        "psllw  $"S(SHIFT_FRW_COL)"+1, %%"#mm"2 \n\t" \
+        "pmulhw    16(%1),  %%"#mm"5 \n\t" \
+        #mov"    %%"#mm"4,  %%"#mm"7 \n\t" \
+        "psubsw    80(%0),  %%"#mm"3 \n\t" \
+        "psubsw  %%"#mm"6,  %%"#mm"4 \n\t" \
+        #mov"    %%"#mm"1,    32(%3) \n\t" \
+        "paddsw  %%"#mm"6,  %%"#mm"7 \n\t" \
+        #mov"      48(%0),  %%"#mm"1 \n\t" \
+        "psllw  $"S(SHIFT_FRW_COL)"+1, %%"#mm"3 \n\t" \
+        "psubsw    64(%0),  %%"#mm"1 \n\t" \
+        #mov"    %%"#mm"2,  %%"#mm"6 \n\t" \
+        #mov"    %%"#mm"4,    64(%3) \n\t" \
+        "paddsw  %%"#mm"3,  %%"#mm"2 \n\t" \
+        "pmulhw      (%4),  %%"#mm"2 \n\t" \
+        "psubsw  %%"#mm"3,  %%"#mm"6 \n\t" \
+        "pmulhw      (%4),  %%"#mm"6 \n\t" \
+        "psubsw  %%"#mm"0,  %%"#mm"5 \n\t" \
+        "por         (%2),  %%"#mm"5 \n\t" \
+        "psllw  $"S(SHIFT_FRW_COL)", %%"#mm"1 \n\t" \
+        "por         (%2),  %%"#mm"2 \n\t" \
+        #mov"    %%"#mm"1,  %%"#mm"4 \n\t" \
+        #mov"        (%0),  %%"#mm"3 \n\t" \
+        "paddsw  %%"#mm"6,  %%"#mm"1 \n\t" \
+        "psubsw   112(%0),  %%"#mm"3 \n\t" \
+        "psubsw  %%"#mm"6,  %%"#mm"4 \n\t" \
+        #mov"        (%1),  %%"#mm"0 \n\t" \
+        "psllw  $"S(SHIFT_FRW_COL)", %%"#mm"3 \n\t" \
+        #mov"      32(%1),  %%"#mm"6 \n\t" \
+        "pmulhw  %%"#mm"1,  %%"#mm"0 \n\t" \
+        #mov"    %%"#mm"7,      (%3) \n\t" \
+        "pmulhw  %%"#mm"4,  %%"#mm"6 \n\t" \
+        #mov"    %%"#mm"5,    96(%3) \n\t" \
+        #mov"    %%"#mm"3,  %%"#mm"7 \n\t" \
+        #mov"      32(%1),  %%"#mm"5 \n\t" \
+        "psubsw  %%"#mm"2,  %%"#mm"7 \n\t" \
+        "paddsw  %%"#mm"2,  %%"#mm"3 \n\t" \
+        "pmulhw  %%"#mm"7,  %%"#mm"5 \n\t" \
+        "paddsw  %%"#mm"3,  %%"#mm"0 \n\t" \
+        "paddsw  %%"#mm"4,  %%"#mm"6 \n\t" \
+        "pmulhw      (%1),  %%"#mm"3 \n\t" \
+        "por         (%2),  %%"#mm"0 \n\t" \
+        "paddsw  %%"#mm"7,  %%"#mm"5 \n\t" \
+        "psubsw  %%"#mm"6,  %%"#mm"7 \n\t" \
+        #mov"    %%"#mm"0,    16(%3) \n\t" \
+        "paddsw  %%"#mm"4,  %%"#mm"5 \n\t" \
+        #mov"    %%"#mm"7,    48(%3) \n\t" \
+        "psubsw  %%"#mm"1,  %%"#mm"3 \n\t" \
+        #mov"    %%"#mm"5,    80(%3) \n\t" \
+        #mov"    %%"#mm"3,   112(%3) \n\t" \
+        : \
+        : "r" (in  + offset), "r" (fdct_tg_all_16), "r" (fdct_one_corr), \
+          "r" (out + offset), "r" (ocos_4_16)); \
 }
 
 FDCT_COL(mmx, mm, movq)
@@ -433,93 +438,99 @@ static av_always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
 
 static av_always_inline void fdct_row_mmx2(const int16_t *in, int16_t *out, const int16_t *table)
 {
-    pshufw_m2r(*(in + 4), mm5, 0x1B);
-    movq_m2r(*(in + 0), mm0);
-    movq_r2r(mm0, mm1);
-    paddsw_r2r(mm5, mm0);
-    psubsw_r2r(mm5, mm1);
-    movq_r2r(mm0, mm2);
-    punpckldq_r2r(mm1, mm0);
-    punpckhdq_r2r(mm1, mm2);
-    movq_m2r(*(table + 0), mm1);
-    movq_m2r(*(table + 4), mm3);
-    movq_m2r(*(table + 8), mm4);
-    movq_m2r(*(table + 12), mm5);
-    movq_m2r(*(table + 16), mm6);
-    movq_m2r(*(table + 20), mm7);
-    pmaddwd_r2r(mm0, mm1);
-    pmaddwd_r2r(mm2, mm3);
-    pmaddwd_r2r(mm0, mm4);
-    pmaddwd_r2r(mm2, mm5);
-    pmaddwd_r2r(mm0, mm6);
-    pmaddwd_r2r(mm2, mm7);
-    pmaddwd_m2r(*(table + 24), mm0);
-    pmaddwd_m2r(*(table + 28), mm2);
-    paddd_r2r(mm1, mm3);
-    paddd_r2r(mm4, mm5);
-    paddd_r2r(mm6, mm7);
-    paddd_r2r(mm0, mm2);
-    movq_m2r(*fdct_r_row, mm0);
-    paddd_r2r(mm0, mm3);
-    paddd_r2r(mm0, mm5);
-    paddd_r2r(mm0, mm7);
-    paddd_r2r(mm0, mm2);
-    psrad_i2r(SHIFT_FRW_ROW, mm3);
-    psrad_i2r(SHIFT_FRW_ROW, mm5);
-    psrad_i2r(SHIFT_FRW_ROW, mm7);
-    psrad_i2r(SHIFT_FRW_ROW, mm2);
-    packssdw_r2r(mm5, mm3);
-    packssdw_r2r(mm2, mm7);
-    movq_r2m(mm3, *(out + 0));
-    movq_r2m(mm7, *(out + 4));
+    __asm__ volatile (
+        "pshufw    $0x1B, 8(%0), %%mm5 \n\t"
+        "movq       (%0), %%mm0 \n\t"
+        "movq      %%mm0, %%mm1 \n\t"
+        "paddsw    %%mm5, %%mm0 \n\t"
+        "psubsw    %%mm5, %%mm1 \n\t"
+        "movq      %%mm0, %%mm2 \n\t"
+        "punpckldq %%mm1, %%mm0 \n\t"
+        "punpckhdq %%mm1, %%mm2 \n\t"
+        "movq       (%1), %%mm1 \n\t"
+        "movq      8(%1), %%mm3 \n\t"
+        "movq     16(%1), %%mm4 \n\t"
+        "movq     24(%1), %%mm5 \n\t"
+        "movq     32(%1), %%mm6 \n\t"
+        "movq     40(%1), %%mm7 \n\t"
+        "pmaddwd   %%mm0, %%mm1 \n\t"
+        "pmaddwd   %%mm2, %%mm3 \n\t"
+        "pmaddwd   %%mm0, %%mm4 \n\t"
+        "pmaddwd   %%mm2, %%mm5 \n\t"
+        "pmaddwd   %%mm0, %%mm6 \n\t"
+        "pmaddwd   %%mm2, %%mm7 \n\t"
+        "pmaddwd  48(%1), %%mm0 \n\t"
+        "pmaddwd  56(%1), %%mm2 \n\t"
+        "paddd     %%mm1, %%mm3 \n\t"
+        "paddd     %%mm4, %%mm5 \n\t"
+        "paddd     %%mm6, %%mm7 \n\t"
+        "paddd     %%mm0, %%mm2 \n\t"
+        "movq       (%2), %%mm0 \n\t"
+        "paddd     %%mm0, %%mm3 \n\t"
+        "paddd     %%mm0, %%mm5 \n\t"
+        "paddd     %%mm0, %%mm7 \n\t"
+        "paddd     %%mm0, %%mm2 \n\t"
+        "psrad $"S(SHIFT_FRW_ROW)", %%mm3 \n\t"
+        "psrad $"S(SHIFT_FRW_ROW)", %%mm5 \n\t"
+        "psrad $"S(SHIFT_FRW_ROW)", %%mm7 \n\t"
+        "psrad $"S(SHIFT_FRW_ROW)", %%mm2 \n\t"
+        "packssdw  %%mm5, %%mm3 \n\t"
+        "packssdw  %%mm2, %%mm7 \n\t"
+        "movq      %%mm3,  (%3) \n\t"
+        "movq      %%mm7, 8(%3) \n\t"
+        :
+        : "r" (in), "r" (table), "r" (fdct_r_row), "r" (out));
 }
 
 static av_always_inline void fdct_row_mmx(const int16_t *in, int16_t *out, const int16_t *table)
 {
-//FIXME reorder (I do not have an old MMX-only CPU here to benchmark ...)
-    movd_m2r(*(in + 6), mm1);
-    punpcklwd_m2r(*(in + 4), mm1);
-    movq_r2r(mm1, mm2);
-    psrlq_i2r(0x20, mm1);
-    movq_m2r(*(in + 0), mm0);
-    punpcklwd_r2r(mm2, mm1);
-    movq_r2r(mm0, mm5);
-    paddsw_r2r(mm1, mm0);
-    psubsw_r2r(mm1, mm5);
-    movq_r2r(mm0, mm2);
-    punpckldq_r2r(mm5, mm0);
-    punpckhdq_r2r(mm5, mm2);
-    movq_m2r(*(table + 0), mm1);
-    movq_m2r(*(table + 4), mm3);
-    movq_m2r(*(table + 8), mm4);
-    movq_m2r(*(table + 12), mm5);
-    movq_m2r(*(table + 16), mm6);
-    movq_m2r(*(table + 20), mm7);
-    pmaddwd_r2r(mm0, mm1);
-    pmaddwd_r2r(mm2, mm3);
-    pmaddwd_r2r(mm0, mm4);
-    pmaddwd_r2r(mm2, mm5);
-    pmaddwd_r2r(mm0, mm6);
-    pmaddwd_r2r(mm2, mm7);
-    pmaddwd_m2r(*(table + 24), mm0);
-    pmaddwd_m2r(*(table + 28), mm2);
-    paddd_r2r(mm1, mm3);
-    paddd_r2r(mm4, mm5);
-    paddd_r2r(mm6, mm7);
-    paddd_r2r(mm0, mm2);
-    movq_m2r(*fdct_r_row, mm0);
-    paddd_r2r(mm0, mm3);
-    paddd_r2r(mm0, mm5);
-    paddd_r2r(mm0, mm7);
-    paddd_r2r(mm0, mm2);
-    psrad_i2r(SHIFT_FRW_ROW, mm3);
-    psrad_i2r(SHIFT_FRW_ROW, mm5);
-    psrad_i2r(SHIFT_FRW_ROW, mm7);
-    psrad_i2r(SHIFT_FRW_ROW, mm2);
-    packssdw_r2r(mm5, mm3);
-    packssdw_r2r(mm2, mm7);
-    movq_r2m(mm3, *(out + 0));
-    movq_r2m(mm7, *(out + 4));
+    //FIXME reorder (I do not have an old MMX-only CPU here to benchmark ...)
+    __asm__ volatile(
+        "movd     12(%0), %%mm1 \n\t"
+        "punpcklwd 8(%0), %%mm1 \n\t"
+        "movq      %%mm1, %%mm2 \n\t"
+        "psrlq     $0x20, %%mm1 \n\t"
+        "movq      0(%0), %%mm0 \n\t"
+        "punpcklwd %%mm2, %%mm1 \n\t"
+        "movq      %%mm0, %%mm5 \n\t"
+        "paddsw    %%mm1, %%mm0 \n\t"
+        "psubsw    %%mm1, %%mm5 \n\t"
+        "movq      %%mm0, %%mm2 \n\t"
+        "punpckldq %%mm5, %%mm0 \n\t"
+        "punpckhdq %%mm5, %%mm2 \n\t"
+        "movq      0(%1), %%mm1 \n\t"
+        "movq      8(%1), %%mm3 \n\t"
+        "movq     16(%1), %%mm4 \n\t"
+        "movq     24(%1), %%mm5 \n\t"
+        "movq     32(%1), %%mm6 \n\t"
+        "movq     40(%1), %%mm7 \n\t"
+        "pmaddwd   %%mm0, %%mm1 \n\t"
+        "pmaddwd   %%mm2, %%mm3 \n\t"
+        "pmaddwd   %%mm0, %%mm4 \n\t"
+        "pmaddwd   %%mm2, %%mm5 \n\t"
+        "pmaddwd   %%mm0, %%mm6 \n\t"
+        "pmaddwd   %%mm2, %%mm7 \n\t"
+        "pmaddwd  48(%1), %%mm0 \n\t"
+        "pmaddwd  56(%1), %%mm2 \n\t"
+        "paddd     %%mm1, %%mm3 \n\t"
+        "paddd     %%mm4, %%mm5 \n\t"
+        "paddd     %%mm6, %%mm7 \n\t"
+        "paddd     %%mm0, %%mm2 \n\t"
+        "movq       (%2), %%mm0 \n\t"
+        "paddd     %%mm0, %%mm3 \n\t"
+        "paddd     %%mm0, %%mm5 \n\t"
+        "paddd     %%mm0, %%mm7 \n\t"
+        "paddd     %%mm0, %%mm2 \n\t"
+        "psrad $"S(SHIFT_FRW_ROW)", %%mm3 \n\t"
+        "psrad $"S(SHIFT_FRW_ROW)", %%mm5 \n\t"
+        "psrad $"S(SHIFT_FRW_ROW)", %%mm7 \n\t"
+        "psrad $"S(SHIFT_FRW_ROW)", %%mm2 \n\t"
+        "packssdw  %%mm5, %%mm3 \n\t"
+        "packssdw  %%mm2, %%mm7 \n\t"
+        "movq      %%mm3, 0(%3) \n\t"
+        "movq      %%mm7, 8(%3) \n\t"
+        :
+        : "r" (in), "r" (table), "r" (fdct_r_row), "r" (out));
 }
 
 void ff_fdct_mmx(int16_t *block)
