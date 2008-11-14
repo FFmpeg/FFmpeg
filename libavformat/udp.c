@@ -29,6 +29,9 @@
 #include <unistd.h>
 #include "network.h"
 #include "os_support.h"
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
 #ifndef IPV6_ADD_MEMBERSHIP
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
@@ -449,9 +452,23 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
     int len;
+    fd_set rfds;
+    int ret;
+    struct timeval tv;
 
     for(;;) {
-        len = recv(s->udp_fd, buf, size, 0);
+        if (url_interrupt_cb())
+            return AVERROR(EINTR);
+        FD_ZERO(&rfds);
+        FD_SET(s->udp_fd, &rfds);
+        tv.tv_sec = 0;
+        tv.tv_usec = 100 * 1000;
+        ret = select(s->udp_fd + 1, &rfds, NULL, NULL, &tv);
+        if (ret < 0)
+            return AVERROR(EIO);
+        if (!(ret > 0 && FD_ISSET(s->udp_fd, &rfds)))
+            continue;
+        len = recv(s->udp_fd, buf, size, MSG_DONTWAIT);
         if (len < 0) {
             if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
                 ff_neterrno() != FF_NETERROR(EINTR))
