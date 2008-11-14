@@ -31,8 +31,6 @@
 
 #include "dsputil.h"
 
-#include "i386/mmx.h"
-
 #undef exit
 #undef printf
 #undef random
