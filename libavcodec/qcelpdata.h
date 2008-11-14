@@ -461,6 +461,15 @@ static const int8_t qcelp_rate_half_codebook[128] = {
 #define QCELP_RATE_HALF_CODEBOOK_RATIO 0.5
 
 /**
+ * sqrt(1.887) is the maximum of the pseudorandom
+ * white sequence used to generate the scaled codebook
+ * vector for framerate 1/4.
+ *
+ * TIA/EIA/IS-733 2.4.8.1.2
+ */
+#define QCELP_SQRT1887 1.373681186
+
+/**
  * table for impulse response of BPF used to filter
  * the white excitation for framerate 1/4 synthesis
  *

@@ -52,6 +52,144 @@ static void weighted_vector_sumf(float *out,
 }
 
 /**
+ * Initialize the speech codec according to the specification.
+ *
+ * TIA/EIA/IS-733 2.4.9
+ */
+static av_cold int qcelp_decode_init(AVCodecContext *avctx) {
+    QCELPContext *q = avctx->priv_data;
+    int i;
+
+    avctx->sample_fmt = SAMPLE_FMT_FLT;
+
+    for (i = 0; i < 10; i++)
+        q->prev_lspf[i] = (i + 1) / 11.;
+
+    return 0;
+}
+
+/**
+ * Computes the scaled codebook vector Cdn From INDEX and GAIN
+ * for all rates.
+ *
+ * The specification lacks some information here.
+ *
+ * TIA/EIA/IS-733 has an omission on the codebook index determination
+ * formula for RATE_FULL and RATE_HALF frames at section 2.4.8.1.1. It says
+ * you have to subtract the decoded index parameter from the given scaled
+ * codebook vector index 'n' to get the desired circular codebook index, but
+ * it does not mention that you have to clamp 'n' to [0-9] in order to get
+ * RI-compliant results.
+ *
+ * The reason for this mistake seems to be the fact they forgot to mention you
+ * have to do these calculations per codebook subframe and adjust given
+ * equation values accordingly.
+ *
+ * @param q the context
+ * @param gain array holding the 4 pitch subframe gain values
+ * @param cdn_vector array for the generated scaled codebook vector
+ */
+static void compute_svector(const QCELPContext *q,
+                            const float *gain,
+                            float *cdn_vector) {
+    int      i, j, k;
+    uint16_t cbseed, cindex;
+    float    *rnd, tmp_gain, fir_filter_value;
+
+    switch (q->framerate) {
+    case RATE_FULL:
+        for (i = 0; i < 16; i++) {
+            tmp_gain = gain[i] * QCELP_RATE_FULL_CODEBOOK_RATIO;
+            cindex = -q->cindex[i];
+            for (j = 0; j < 10; j++)
+                *cdn_vector++ = tmp_gain * qcelp_rate_full_codebook[cindex++ & 127];
+        }
+        break;
+    case RATE_HALF:
+        for (i = 0; i < 4; i++) {
+            tmp_gain = gain[i] * QCELP_RATE_HALF_CODEBOOK_RATIO;
+            cindex = -q->cindex[i];
+            for (j = 0; j < 40; j++)
+                *cdn_vector++ = tmp_gain * qcelp_rate_half_codebook[cindex++ & 127];
+        }
+        break;
+    case RATE_QUARTER:
+        cbseed = (0x0003 & q->lspv[4])<<14 |
+                 (0x003F & q->lspv[3])<< 8 |
+                 (0x0060 & q->lspv[2])<< 1 |
+                 (0x0007 & q->lspv[1])<< 3 |
+                 (0x0038 & q->lspv[0])>> 3 ;
+        rnd = q->rnd_fir_filter_mem + 20;
+        for (i = 0; i < 8; i++) {
+            tmp_gain = gain[i] * (QCELP_SQRT1887 / 32768.0);
+            for (k = 0; k < 20; k++) {
+                cbseed = 521 * cbseed + 259;
+                *rnd = (int16_t)cbseed;
+
+                // FIR filter
+                fir_filter_value = 0.0;
+                for (j = 0; j < 10; j++)
+                    fir_filter_value += qcelp_rnd_fir_coefs[j ] * (rnd[-j ] + rnd[-20+j]);
+                fir_filter_value     += qcelp_rnd_fir_coefs[10] *  rnd[-10];
+
+                *cdn_vector++ = tmp_gain * fir_filter_value;
+                rnd++;
+            }
+        }
+        memcpy(q->rnd_fir_filter_mem, q->rnd_fir_filter_mem + 160, 20 * sizeof(float));
+        break;
+    case RATE_OCTAVE:
+        cbseed = q->first16bits;
+        for (i = 0; i < 8; i++) {
+            tmp_gain = gain[i] * (QCELP_SQRT1887 / 32768.0);
+            for (j = 0; j < 20; j++) {
+                cbseed = 521 * cbseed + 259;
+                *cdn_vector++ = tmp_gain * (int16_t)cbseed;
+            }
+        }
+        break;
+    case I_F_Q:
+        cbseed = -44; // random codebook index
+        for (i = 0; i < 4; i++) {
+            tmp_gain = gain[i] * QCELP_RATE_FULL_CODEBOOK_RATIO;
+            for (j = 0; j < 40; j++)
+                *cdn_vector++ = tmp_gain * qcelp_rate_full_codebook[cbseed++ & 127];
+        }
+        break;
+    }
+}
+
+/**
+ * Apply generic gain control.
+ *
+ * @param v_out output vector
+ * @param v_in gain-controlled vector
+ * @param v_ref vector to control gain of
+ *
+ * FIXME: If v_ref is a zero vector, it energy is zero
+ *        and the behavior of the gain control is
+ *        undefined in the specs.
+ *
+ * TIA/EIA/IS-733 2.4.8.3-2/3/4/5, 2.4.8.6
+ */
+static void apply_gain_ctrl(float *v_out,
+                            const float *v_ref,
+                            const float *v_in) {
+    int   i, j, len;
+    float scalefactor;
+
+    for (i = 0, j = 0; i < 4; i++) {
+        scalefactor = ff_dot_productf(v_in + j, v_in + j, 40);
+        if (scalefactor)
+            scalefactor = sqrt(ff_dot_productf(v_ref + j, v_ref + j, 40) / scalefactor);
+        else
+            av_log_missing_feature(NULL, "Zero energy for gain control", 1);
+        for (len = j + 40; j < len; j++)
+            v_out[j] = scalefactor * v_in[j];
+    }
+}
+
+/**
  * Apply filter in pitch-subframe steps.
  *
  * @param memory buffer for the previous state of the filter
@@ -131,9 +269,9 @@ void interpolate_lpc(QCELPContext *q,
 
     if (weight != 1.0) {
         weighted_vector_sumf(interpolated_lspf, curr_lspf, q->prev_lspf, weight, 1.0 - weight, 10);
-        lspf2lpc(q, interpolated_lspf, lpc);
+        qcelp_lspf2lpc(interpolated_lspf, lpc);
     } else if (q->framerate >= RATE_QUARTER || (q->framerate == I_F_Q && !subframe_num))
-        lspf2lpc(q, curr_lspf, lpc);
+        qcelp_lspf2lpc(curr_lspf, lpc);
 }
 
 static int buf_size2framerate(const int buf_size) {
