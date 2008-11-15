@@ -1488,6 +1488,7 @@ static void print_sdp(AVFormatContext **avc, int n)
 
     avf_sdp_create(avc, n, sdp, sizeof(sdp));
     printf("SDP:\n%s\n", sdp);
+    fflush(stdout);
 }
 
 static int stream_index_from_inputs(AVFormatContext **input_files,
