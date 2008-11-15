@@ -88,6 +88,48 @@ static const int64_t dca_core_channel_layout[] = {
     CH_FRONT_LEFT_OF_CENTER|CH_FRONT_CENTER|CH_FRONT_RIGHT_OF_CENTER|CH_LAYOUT_STEREO|CH_SIDE_LEFT|CH_BACK_CENTER|CH_SIDE_RIGHT, ///< 8, CL + C+ CR + L + R + SL + S+ SR
 };
 
+static const int8_t dca_lfe_index[] = {
+    1,2,2,2,2,3,2,3,2,3,2,3,1,3,2,3
+};
+
+static const int8_t dca_channel_reorder_lfe[][8] = {
+    { 0, -1, -1, -1, -1, -1, -1, -1},
+    { 0,  1, -1, -1, -1, -1, -1, -1},
+    { 0,  1, -1, -1, -1, -1, -1, -1},
+    { 0,  1, -1, -1, -1, -1, -1, -1},
+    { 0,  1, -1, -1, -1, -1, -1, -1},
+    { 2,  0,  1, -1, -1, -1, -1, -1},
+    { 0,  1,  3, -1, -1, -1, -1, -1},
+    { 2,  0,  1,  4, -1, -1, -1, -1},
+    { 0,  1,  3,  4, -1, -1, -1, -1},
+    { 2,  0,  1,  4,  5, -1, -1, -1},
+    { 3,  4,  0,  1,  5,  6, -1, -1},
+    { 2,  0,  1,  4,  5,  6, -1, -1},
+    { 0,  6,  4,  5,  2,  3, -1, -1},
+    { 4,  2,  5,  0,  1,  6,  7, -1},
+    { 5,  6,  0,  1,  7,  3,  8,  4},
+    { 4,  2,  5,  0,  1,  6,  8,  7},
+};
+
+static const int8_t dca_channel_reorder_nolfe[][8] = {
+    { 0, -1, -1, -1, -1, -1, -1, -1},
+    { 0,  1, -1, -1, -1, -1, -1, -1},
+    { 0,  1, -1, -1, -1, -1, -1, -1},
+    { 0,  1, -1, -1, -1, -1, -1, -1},
+    { 0,  1, -1, -1, -1, -1, -1, -1},
+    { 2,  0,  1, -1, -1, -1, -1, -1},
+    { 0,  1,  2, -1, -1, -1, -1, -1},
+    { 2,  0,  1,  3, -1, -1, -1, -1},
+    { 0,  1,  2,  3, -1, -1, -1, -1},
+    { 2,  0,  1,  3,  4, -1, -1, -1},
+    { 2,  3,  0,  1,  4,  5, -1, -1},
+    { 2,  0,  1,  3,  4,  5, -1, -1},
+    { 0,  5,  3,  4,  1,  2, -1, -1},
+    { 3,  2,  4,  0,  1,  5,  6, -1},
+    { 4,  5,  0,  1,  6,  2,  7,  3},
+    { 3,  2,  4,  0,  1,  5,  7,  6},
+};
+
 
 #define DCA_DOLBY 101           /* FIXME */
 
@@ -198,6 +240,7 @@ typedef struct {
     uint8_t dca_buffer[DCA_MAX_FRAME_SIZE];
     int dca_buffer_size;        ///< how much data is in the dca_buffer
 
+    const int8_t* channel_order_tab;                             ///< channel reordering table, lfe and non lfe
     GetBitContext gb;
     /* Current position in DCA frame */
     int current_subframe;
@@ -1013,7 +1056,7 @@ static int dca_subsubframe(DCAContext * s)
     for (k = 0; k < s->prim_channels; k++) {
 /*        static float pcm_to_double[8] =
             {32768.0, 32768.0, 524288.0, 524288.0, 0, 8388608.0, 8388608.0};*/
-         qmf_32_subbands(s, k, subband_samples[k], &s->samples[256 * k],
+         qmf_32_subbands(s, k, subband_samples[k], &s->samples[256 * s->channel_order_tab[k]],
                             M_SQRT1_2*s->scale_bias /*pcm_to_double[s->source_pcm_res] */ ,
                             s->add_bias );
     }
@@ -1027,12 +1070,11 @@ static int dca_subsubframe(DCAContext * s)
     /* Generate LFE samples for this subsubframe FIXME!!! */
     if (s->output & DCA_LFE) {
         int lfe_samples = 2 * s->lfe * s->subsubframes;
-        int i_channels = dca_channels[s->output & DCA_CHANNEL_MASK];
 
         lfe_interpolation_fir(s->lfe, 2 * s->lfe,
                               s->lfe_data + lfe_samples +
                               2 * s->lfe * subsubframe,
-                              &s->samples[256 * i_channels],
+                              &s->samples[256 * dca_lfe_index[s->amode]],
                               (1.0/256.0)*s->scale_bias,  s->add_bias);
         /* Outputs 20bits pcm samples */
     }
@@ -1192,15 +1234,26 @@ static int dca_decode_frame(AVCodecContext * avctx,
     avctx->bit_rate = s->bit_rate;
 
     channels = s->prim_channels + !!s->lfe;
-    if(avctx->request_channels == 2 && s->prim_channels > 2) {
-        channels = 2;
-        s->output = DCA_STEREO;
-        avctx->channel_layout = CH_LAYOUT_STEREO;
-    }
-    if (s->amode<16)
+
+    if (s->amode<16) {
         avctx->channel_layout = dca_core_channel_layout[s->amode];
 
-    if (s->lfe) avctx->channel_layout |= CH_LOW_FREQUENCY;
+        if (s->lfe) {
+            avctx->channel_layout |= CH_LOW_FREQUENCY;
+            s->channel_order_tab = dca_channel_reorder_lfe[s->amode];
+        } else
+            s->channel_order_tab = dca_channel_reorder_nolfe[s->amode];
+
+        if(avctx->request_channels == 2 && s->prim_channels > 2) {
+            channels = 2;
+            s->output = DCA_STEREO;
+            avctx->channel_layout = CH_LAYOUT_STEREO;
+        }
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Non standard configuration %d !\n",s->amode);
+        return -1;
+    }
+
 
     /* There is nothing that prevents a dts frame to change channel configuration
        but FFmpeg doesn't support that so only set the channels if it is previously
