@@ -1399,7 +1399,7 @@ static int rtsp_read_packet(AVFormatContext *s,
     case RTSP_LOWER_TRANSPORT_UDP:
     case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
         len = udp_read_packet(s, &rtsp_st, buf, sizeof(buf));
-        if (len >=0 && rtsp_st->tx_ctx)
+        if (len >=0 && rtsp_st->tx_ctx && rt->transport == RTSP_TRANSPORT_RTP)
             rtp_check_and_send_back_rr(rtsp_st->tx_ctx, len);
         break;
     }
