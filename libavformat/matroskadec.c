@@ -1074,6 +1074,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     MatroskaTrack *tracks;
     EbmlList *index_list;
     MatroskaIndex *index;
+    int index_scale = 1;
     Ebml ebml = { 0 };
     AVStream *st;
     int i, j;
@@ -1369,6 +1370,11 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     index_list = &matroska->index;
     index = index_list->elem;
+    if (index_list->nb_elem
+        && index[0].time > 100000000000000/matroska->time_scale) {
+        av_log(matroska->ctx, AV_LOG_WARNING, "Working around broken index.\n");
+        index_scale = matroska->time_scale;
+    }
     for (i=0; i<index_list->nb_elem; i++) {
         EbmlList *pos_list = &index[i].pos;
         MatroskaIndexPos *pos = pos_list->elem;
@@ -1378,7 +1384,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (track && track->stream)
                 av_add_index_entry(track->stream,
                                    pos[j].pos + matroska->segment_start,
-                                   index[i].time, 0, 0, AVINDEX_KEYFRAME);
+                                   index[i].time/index_scale, 0, 0,
+                                   AVINDEX_KEYFRAME);
         }
     }
 
