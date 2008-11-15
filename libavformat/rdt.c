@@ -236,10 +236,10 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
      * [2] http://www.wireshark.org/docs/dfref/r/rdt.html and
      *     http://anonsvn.wireshark.org/viewvc/trunk/epan/dissectors/packet-rdt.c
      */
-    if (set_id)    *set_id    = (buf[0]>>1) & 0x1f;
-    if (seq_no)    *seq_no    = AV_RB16(buf+1);
-    if (timestamp) *timestamp = AV_RB32(buf+4);
-    if (stream_id) *stream_id = (buf[3]>>1) & 0x1f;
+    if (set_id)      *set_id      = (buf[0]>>1) & 0x1f;
+    if (seq_no)      *seq_no      = AV_RB16(buf+1);
+    if (timestamp)   *timestamp   = AV_RB32(buf+4);
+    if (stream_id)   *stream_id   = (buf[3]>>1) & 0x1f;
     if (is_keyframe) *is_keyframe = !(buf[3] & 0x1);
 
     return consumed;
