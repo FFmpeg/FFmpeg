@@ -1366,46 +1366,26 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
-static void mov_parse_udta_string(ByteIOContext *pb, char *str, int size)
+static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+    char *str = NULL;
+    int size;
     uint16_t str_size = get_be16(pb); /* string length */;
 
+    switch (atom.type) {
+    case MKTAG(0xa9,'n','a','m'):
+        str = c->fc->title; size = sizeof(c->fc->title); break;
+    case MKTAG(0xa9,'w','r','t'):
+        str = c->fc->author; size = sizeof(c->fc->author); break;
+    case MKTAG(0xa9,'c','p','y'):
+        str = c->fc->copyright; size = sizeof(c->fc->copyright); break;
+    case MKTAG(0xa9,'i','n','f'):
+        str = c->fc->comment; size = sizeof(c->fc->comment); break;
+    }
+    if (!str)
+        return 0;
     get_be16(pb); /* skip language */
     get_buffer(pb, str, FFMIN(size, str_size));
-}
-
-static int mov_read_udta(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
-{
-    uint64_t end = url_ftell(pb) + atom.size;
-
-    while (url_ftell(pb) + 8 < end) {
-        uint32_t tag_size = get_be32(pb);
-        uint32_t tag      = get_le32(pb);
-        uint64_t next     = url_ftell(pb) + tag_size - 8;
-
-        if (tag_size < 8 || next > end) // stop if tag_size is wrong
-            break;
-
-        switch (tag) {
-        case MKTAG(0xa9,'n','a','m'):
-            mov_parse_udta_string(pb, c->fc->title,     sizeof(c->fc->title));
-            break;
-        case MKTAG(0xa9,'w','r','t'):
-            mov_parse_udta_string(pb, c->fc->author,    sizeof(c->fc->author));
-            break;
-        case MKTAG(0xa9,'c','p','y'):
-            mov_parse_udta_string(pb, c->fc->copyright, sizeof(c->fc->copyright));
-            break;
-        case MKTAG(0xa9,'i','n','f'):
-            mov_parse_udta_string(pb, c->fc->comment,   sizeof(c->fc->comment));
-            break;
-        default:
-            break;
-        }
-
-        url_fseek(pb, next, SEEK_SET);
-    }
-
     return 0;
 }
 
@@ -1740,11 +1720,15 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('t','r','a','f'), mov_read_default },
 { MKTAG('t','r','e','x'), mov_read_trex },
 { MKTAG('t','r','u','n'), mov_read_trun },
-{ MKTAG('u','d','t','a'), mov_read_udta },
+{ MKTAG('u','d','t','a'), mov_read_default },
 { MKTAG('w','a','v','e'), mov_read_wave },
 { MKTAG('e','s','d','s'), mov_read_esds },
 { MKTAG('w','i','d','e'), mov_read_wide }, /* place holder */
 { MKTAG('c','m','o','v'), mov_read_cmov },
+{ MKTAG(0xa9,'n','a','m'), mov_read_udta_string },
+{ MKTAG(0xa9,'w','r','t'), mov_read_udta_string },
+{ MKTAG(0xa9,'c','p','y'), mov_read_udta_string },
+{ MKTAG(0xa9,'i','n','f'), mov_read_udta_string },
 { 0, NULL }
 };
 
