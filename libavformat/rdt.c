@@ -178,10 +178,17 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
 {
     int consumed = 10;
 
-    if (len > 0 && (buf[0] < 0x40 || buf[0] > 0x42)) {
-        buf += 9;
-        len -= 9;
-        consumed += 9;
+    /* skip status packets */
+    while (len >= 5 && buf[1] == 0xFF /* status packet */) {
+        int pkt_len;
+
+        if (!(buf[0] & 0x80))
+            return -1; /* not followed by a data packet */
+
+        pkt_len = AV_RB16(buf+3);
+        buf += pkt_len;
+        len -= pkt_len;
+        consumed += pkt_len;
     }
     if (len < 10)
         return -1;
