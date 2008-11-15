@@ -72,14 +72,14 @@ void ff_rdt_subscribe_rule2(RDTDemuxContext *s, char *cmd, int size,
  *
  * @param buf input buffer
  * @param len length of input buffer
- * @param sn will be set to the stream number this packet belongs to
- * @param seq will be set to the sequence number this packet belongs to
- * @param rn will be set to the rule number this packet belongs to
- * @param ts will be set to the timestamp of the packet
+ * @param set_id will be set to the set ID this packet belongs to
+ * @param seq_no will be set to the sequence number this packet belongs to
+ * @param stream_id will be set to the stream ID this packet belongs to
+ * @param timestamp will be set to the timestamp of the packet
  * @return the amount of bytes consumed, or <0 on error
  */
 int ff_rdt_parse_header(const uint8_t *buf, int len,
-                        int *sn, int *seq, int *rn, uint32_t *ts);
+                        int *set_id, int *seq_no, int *stream_id, uint32_t *timestamp);
 
 /**
  * Parse RDT-style packet data (header + media data).

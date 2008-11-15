@@ -39,7 +39,7 @@ struct RDTDemuxContext {
     AVStream *st;
     void *dynamic_protocol_context;
     DynamicPayloadPacketHandlerProc parse_packet;
-    uint32_t prev_sn, prev_ts;
+    uint32_t prev_set_id, prev_timestamp;
 };
 
 RDTDemuxContext *
@@ -52,8 +52,8 @@ ff_rdt_parse_open(AVFormatContext *ic, AVStream *st,
 
     s->ic = ic;
     s->st = st;
-    s->prev_sn = -1;
-    s->prev_ts = -1;
+    s->prev_set_id    = -1;
+    s->prev_timestamp = -1;
     s->parse_packet = handler->parse_packet;
     s->dynamic_protocol_context = priv_data;
 
@@ -173,7 +173,7 @@ rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
 
 int
 ff_rdt_parse_header(const uint8_t *buf, int len,
-                    int *sn, int *seq, int *rn, uint32_t *ts)
+                    int *set_id, int *seq_no, int *stream_id, uint32_t *timestamp)
 {
     int consumed = 10;
 
@@ -235,10 +235,10 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
      * [2] http://www.wireshark.org/docs/dfref/r/rdt.html and
      *     http://anonsvn.wireshark.org/viewvc/trunk/epan/dissectors/packet-rdt.c
      */
-    if (sn)  *sn  = (buf[0]>>1) & 0x1f;
-    if (seq) *seq = AV_RB16(buf+1);
-    if (ts)  *ts  = AV_RB32(buf+4);
-    if (rn)  *rn  = buf[3] & 0x3f;
+    if (set_id)    *set_id    = (buf[0]>>1) & 0x1f;
+    if (seq_no)    *seq_no    = AV_RB16(buf+1);
+    if (timestamp) *timestamp = AV_RB32(buf+4);
+    if (stream_id) *stream_id = buf[3] & 0x3f;
 
     return consumed;
 }
@@ -287,7 +287,7 @@ int
 ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
                     const uint8_t *buf, int len)
 {
-    int seq, flags = 0, rule, sn;
+    int seq_no, flags = 0, stream_id, set_id;
     uint32_t timestamp;
     int rv= 0;
 
@@ -304,13 +304,13 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
 
     if (len < 12)
         return -1;
-    rv = ff_rdt_parse_header(buf, len, &sn, &seq, &rule, &timestamp);
+    rv = ff_rdt_parse_header(buf, len, &set_id, &seq_no, &stream_id, &timestamp);
     if (rv < 0)
         return rv;
-    if (!(rule & 1) && (sn != s->prev_sn || timestamp != s->prev_ts)) {
+    if (!(stream_id & 1) && (set_id != s->prev_set_id || timestamp != s->prev_timestamp)) {
         flags |= PKT_FLAG_KEY;
-        s->prev_sn = sn;
-        s->prev_ts = timestamp;
+        s->prev_set_id    = set_id;
+        s->prev_timestamp = timestamp;
     }
     buf += rv;
     len -= rv;
