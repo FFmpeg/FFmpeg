@@ -1281,7 +1281,7 @@ static int tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     if (ret != len)
         return -1;
     if (rt->transport == RTSP_TRANSPORT_RDT &&
-        ff_rdt_parse_header(buf, len, &id, NULL, NULL, NULL) < 0)
+        ff_rdt_parse_header(buf, len, &id, NULL, NULL, NULL, NULL) < 0)
         return -1;
 
     /* find the matching stream */

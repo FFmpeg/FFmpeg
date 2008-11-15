@@ -173,7 +173,8 @@ rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
 
 int
 ff_rdt_parse_header(const uint8_t *buf, int len,
-                    int *set_id, int *seq_no, int *stream_id, uint32_t *timestamp)
+                    int *set_id, int *seq_no, int *stream_id,
+                    int *is_keyframe, uint32_t *timestamp)
 {
     int consumed = 10;
 
@@ -238,7 +239,8 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
     if (set_id)    *set_id    = (buf[0]>>1) & 0x1f;
     if (seq_no)    *seq_no    = AV_RB16(buf+1);
     if (timestamp) *timestamp = AV_RB32(buf+4);
-    if (stream_id) *stream_id = buf[3] & 0x3f;
+    if (stream_id) *stream_id = (buf[3]>>1) & 0x1f;
+    if (is_keyframe) *is_keyframe = !(buf[3] & 0x1);
 
     return consumed;
 }
@@ -287,7 +289,7 @@ int
 ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
                     const uint8_t *buf, int len)
 {
-    int seq_no, flags = 0, stream_id, set_id;
+    int seq_no, flags = 0, stream_id, set_id, is_keyframe;
     uint32_t timestamp;
     int rv= 0;
 
@@ -304,10 +306,10 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
 
     if (len < 12)
         return -1;
-    rv = ff_rdt_parse_header(buf, len, &set_id, &seq_no, &stream_id, &timestamp);
+    rv = ff_rdt_parse_header(buf, len, &set_id, &seq_no, &stream_id, &is_keyframe, &timestamp);
     if (rv < 0)
         return rv;
-    if (!(stream_id & 1) && (set_id != s->prev_set_id || timestamp != s->prev_timestamp)) {
+    if (is_keyframe && (set_id != s->prev_set_id || timestamp != s->prev_timestamp)) {
         flags |= PKT_FLAG_KEY;
         s->prev_set_id    = set_id;
         s->prev_timestamp = timestamp;

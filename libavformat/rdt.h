@@ -75,11 +75,13 @@ void ff_rdt_subscribe_rule2(RDTDemuxContext *s, char *cmd, int size,
  * @param set_id will be set to the set ID this packet belongs to
  * @param seq_no will be set to the sequence number this packet belongs to
  * @param stream_id will be set to the stream ID this packet belongs to
+ * @param is_keyframe will be whether this packet belongs to a keyframe
  * @param timestamp will be set to the timestamp of the packet
  * @return the amount of bytes consumed, or <0 on error
  */
 int ff_rdt_parse_header(const uint8_t *buf, int len,
-                        int *set_id, int *seq_no, int *stream_id, uint32_t *timestamp);
+                        int *set_id, int *seq_no, int *stream_id,
+                        int *is_keyframe, uint32_t *timestamp);
 
 /**
  * Parse RDT-style packet data (header + media data).
