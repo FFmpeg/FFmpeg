@@ -1,5 +1,5 @@
 /*
- * part of QCELP decoder
+ * QCELP decoder
  * Copyright (c) 2007 Reynaldo H. Verdejo Pinochet
  *
  * This file is part of FFmpeg.
@@ -21,6 +21,12 @@
 
 #ifndef AVCODEC_QCELPDATA_H
 #define AVCODEC_QCELPDATA_H
+
+/**
+ * @file qcelpdata.h
+ * QCELP decoder
+ * @author Reynaldo H. Verdejo Pinochet
+ */
 
 #include <stdint.h>
 
