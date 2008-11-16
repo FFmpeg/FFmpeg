@@ -1826,17 +1826,17 @@ enabled libdirac   && add_cflags $(pkg-config --cflags dirac) &&
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
 enabled libgsm     && require  libgsm gsm.h gsm_create -lgsm
-enabled libmp3lame && require  LAME lame/lame.h lame_init -lmp3lame -lm
+enabled libmp3lame && require  libmp3lame lame/lame.h lame_init -lmp3lame -lm
 enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut
 enabled libschroedinger && add_cflags $(pkg-config --cflags schroedinger-1.0) &&
                            require libschroedinger schroedinger/schro.h schro_init $(pkg-config --libs schroedinger-1.0)
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
 enabled libtheora  && require  libtheora theora/theora.h theora_info_init -ltheora -logg
 enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
-enabled libx264    && require  x264 x264.h x264_encoder_open -lx264 -lm &&
+enabled libx264    && require  libx264 x264.h x264_encoder_open -lx264 -lm &&
                       { check_cpp_condition x264.h "X264_BUILD >= 65" ||
                         die "ERROR: libx264 version must be >= 0.65."; }
-enabled libxvid    && require  Xvid xvid.h xvid_global -lxvidcore
+enabled libxvid    && require  libxvid xvid.h xvid_global -lxvidcore
 enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 
 # libdc1394 check
