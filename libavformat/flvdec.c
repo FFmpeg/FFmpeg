@@ -26,6 +26,10 @@
 #include "avformat.h"
 #include "flv.h"
 
+typedef struct {
+    int wrong_dts; ///< wrong dts due to negative cts
+} FLVContext;
+
 static int flv_probe(AVProbeData *p)
 {
     const uint8_t *d;
@@ -299,9 +303,10 @@ static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
 
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    FLVContext *flv = s->priv_data;
     int ret, i, type, size, flags, is_audio;
     int64_t next, pos;
-    unsigned dts;
+    int64_t dts, pts = AV_NOPTS_VALUE;
     AVStream *st = NULL;
 
  retry:
@@ -401,9 +406,14 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         int type = get_byte(s->pb);
         size--;
         if (st->codec->codec_id == CODEC_ID_H264) {
-            // cts offset ignored because it might to be signed
-            // and would cause pts < dts
-            get_be24(s->pb);
+            int32_t cts = (get_be24(s->pb)+0xff800000)^0xff800000; // sign extension
+            pts = dts + cts;
+            if (cts < 0) { // dts are wrong
+                flv->wrong_dts = 1;
+                av_log(s, AV_LOG_WARNING, "negative cts, previous timestamps might be wrong\n");
+            }
+            if (flv->wrong_dts)
+                dts = AV_NOPTS_VALUE;
         }
         if (type == 0) {
             if ((ret = flv_get_extradata(s, st, size)) < 0)
@@ -420,6 +430,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
        packet */
     pkt->size = ret;
     pkt->dts = dts;
+    pkt->pts = pts == AV_NOPTS_VALUE ? dts : pts;
     pkt->stream_index = st->index;
 
     if (is_audio || ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY))
@@ -431,7 +442,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 AVInputFormat flv_demuxer = {
     "flv",
     NULL_IF_CONFIG_SMALL("FLV format"),
-    0,
+    sizeof(FLVContext),
     flv_probe,
     flv_read_header,
     flv_read_packet,
