@@ -148,6 +148,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
         ff_sine_window_init(sine_window, 128);
 
     avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->channel_layout = CH_LAYOUT_MONO;
     return 0;
 }
 

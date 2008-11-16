@@ -1177,6 +1177,7 @@ static int cook_decode_init(AVCodecContext *avctx)
     }
 
     avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
 
 #ifdef COOKDEBUG
     dump_cook_context(q);
