@@ -23,6 +23,7 @@
  * @file qcelpdec.c
  * QCELP decoder
  * @author Reynaldo H. Verdejo Pinochet
+ * @remark FFmpeg merging spearheaded by Kenan Gillet
  */
 
 #include <stddef.h>
