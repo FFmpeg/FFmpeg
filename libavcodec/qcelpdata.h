@@ -24,7 +24,7 @@
 
 /**
  * @file qcelpdata.h
- * QCELP decoder
+ * Data tables for the QCELP decoder
  * @author Reynaldo H. Verdejo Pinochet
  */
 
