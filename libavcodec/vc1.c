@@ -1394,6 +1394,8 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     else v->halfpq = 0;
     if (v->quantizer_mode == QUANT_FRAME_EXPLICIT)
         v->pquantizer = get_bits1(gb);
+    if(v->postprocflag)
+        v->postproc = get_bits1(gb);
 
     if(v->s.pict_type == FF_I_TYPE || v->s.pict_type == FF_P_TYPE) v->use_ic = 0;
 
@@ -1416,8 +1418,6 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         }
         break;
     case FF_P_TYPE:
-        if(v->postprocflag)
-            v->postproc = get_bits1(gb);
         if (v->extended_mv) v->mvrange = get_unary(gb, 0, 3);
         else v->mvrange = 0;
         v->k_x = v->mvrange + 9 + (v->mvrange >> 1); //k_x can be 9 10 12 13
@@ -1507,8 +1507,6 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         }
         break;
     case FF_B_TYPE:
-        if(v->postprocflag)
-            v->postproc = get_bits1(gb);
         if (v->extended_mv) v->mvrange = get_unary(gb, 0, 3);
         else v->mvrange = 0;
         v->k_x = v->mvrange + 9 + (v->mvrange >> 1); //k_x can be 9 10 12 13
