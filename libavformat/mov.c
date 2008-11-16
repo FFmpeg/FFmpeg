@@ -149,6 +149,7 @@ typedef struct MOVContext {
     MOVFragment fragment; ///< current fragment in moof atom
     MOVTrackExt *trex_data;
     unsigned trex_count;
+    int itunes_metadata; ///< metadata are itunes style
 } MOVContext;
 
 
@@ -1366,26 +1367,66 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
+static int mov_read_ilst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    int ret;
+    c->itunes_metadata = 1;
+    ret = mov_read_default(c, pb, atom);
+    c->itunes_metadata = 0;
+    return ret;
+}
+
+static int mov_read_meta(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    url_fskip(pb, 4);
+    return mov_read_default(c, pb, atom);
+}
+
+static int mov_read_trkn(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    get_be32(pb); // type
+    get_be32(pb); // unknown
+    c->fc->track = get_be32(pb);
+    dprintf(c->fc, "%.4s %d\n", (char*)&atom.type, c->fc->track);
+    return 0;
+}
+
 static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     char *str = NULL;
     int size;
-    uint16_t str_size = get_be16(pb); /* string length */;
+    uint16_t str_size;
 
+    if (c->itunes_metadata) {
+        int data_size = get_be32(pb);
+        int tag = get_le32(pb);
+        if (tag == MKTAG('d','a','t','a')) {
+            get_be32(pb); // type
+            get_be32(pb); // unknown
+            str_size = data_size - 16;
+        } else return 0;
+    } else {
+        str_size = get_be16(pb); // string length
+        get_be16(pb); // language
+    }
     switch (atom.type) {
     case MKTAG(0xa9,'n','a','m'):
         str = c->fc->title; size = sizeof(c->fc->title); break;
+    case MKTAG(0xa9,'A','R','T'):
     case MKTAG(0xa9,'w','r','t'):
         str = c->fc->author; size = sizeof(c->fc->author); break;
     case MKTAG(0xa9,'c','p','y'):
         str = c->fc->copyright; size = sizeof(c->fc->copyright); break;
+    case MKTAG(0xa9,'c','m','t'):
     case MKTAG(0xa9,'i','n','f'):
         str = c->fc->comment; size = sizeof(c->fc->comment); break;
+    case MKTAG(0xa9,'a','l','b'):
+        str = c->fc->album; size = sizeof(c->fc->album); break;
     }
     if (!str)
         return 0;
-    get_be16(pb); /* skip language */
     get_buffer(pb, str, FFMIN(size, str_size));
+    dprintf(c->fc, "%.4s %s\n", (char*)&atom.type, str);
     return 0;
 }
 
@@ -1695,10 +1736,12 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('f','t','y','p'), mov_read_ftyp },
 { MKTAG('g','l','b','l'), mov_read_glbl },
 { MKTAG('h','d','l','r'), mov_read_hdlr },
+{ MKTAG('i','l','s','t'), mov_read_ilst },
 { MKTAG('j','p','2','h'), mov_read_extradata },
 { MKTAG('m','d','a','t'), mov_read_mdat },
 { MKTAG('m','d','h','d'), mov_read_mdhd },
 { MKTAG('m','d','i','a'), mov_read_default },
+{ MKTAG('m','e','t','a'), mov_read_meta },
 { MKTAG('m','i','n','f'), mov_read_default },
 { MKTAG('m','o','o','f'), mov_read_moof },
 { MKTAG('m','o','o','v'), mov_read_moov },
@@ -1719,6 +1762,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('t','r','a','k'), mov_read_trak },
 { MKTAG('t','r','a','f'), mov_read_default },
 { MKTAG('t','r','e','x'), mov_read_trex },
+{ MKTAG('t','r','k','n'), mov_read_trkn },
 { MKTAG('t','r','u','n'), mov_read_trun },
 { MKTAG('u','d','t','a'), mov_read_default },
 { MKTAG('w','a','v','e'), mov_read_wave },
@@ -1729,6 +1773,10 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG(0xa9,'w','r','t'), mov_read_udta_string },
 { MKTAG(0xa9,'c','p','y'), mov_read_udta_string },
 { MKTAG(0xa9,'i','n','f'), mov_read_udta_string },
+{ MKTAG(0xa9,'i','n','f'), mov_read_udta_string },
+{ MKTAG(0xa9,'A','R','T'), mov_read_udta_string },
+{ MKTAG(0xa9,'a','l','b'), mov_read_udta_string },
+{ MKTAG(0xa9,'c','m','t'), mov_read_udta_string },
 { 0, NULL }
 };
 
