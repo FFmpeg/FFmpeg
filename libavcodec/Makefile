@@ -452,19 +452,6 @@ OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
 
 OBJS-$(ARCH_POWERPC)                   += ppc/dsputil_ppc.o             \
 
-OBJS-$(ARCH_SH4)                       += sh4/idct_sh4.o                \
-                                          sh4/dsputil_align.o           \
-                                          sh4/dsputil_sh4.o             \
-
-OBJS-$(CONFIG_MLIB)                    += mlib/dsputil_mlib.o           \
-
-OBJS-$(HAVE_MMI)                       += ps2/dsputil_mmi.o             \
-                                          ps2/idct_mmi.o                \
-                                          ps2/mpegvideo_mmi.o           \
-
-OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
-                                          sparc/simple_idct_vis.o       \
-
 ALTIVEC-OBJS-yes                       += ppc/dsputil_altivec.o         \
                                           ppc/fdct_altivec.o            \
                                           ppc/fft_altivec.o             \
@@ -485,6 +472,19 @@ $(addprefix $(SUBDIR),$(ALTIVEC-OBJS-yes)): CFLAGS += -maltivec -mabi=altivec
 # check_altivec must be built without -maltivec
 OBJS-$(HAVE_ALTIVEC)                   += $(ALTIVEC-OBJS-yes)           \
                                           ppc/check_altivec.o
+
+OBJS-$(ARCH_SH4)                       += sh4/idct_sh4.o                \
+                                          sh4/dsputil_align.o           \
+                                          sh4/dsputil_sh4.o             \
+
+OBJS-$(CONFIG_MLIB)                    += mlib/dsputil_mlib.o           \
+
+OBJS-$(HAVE_MMI)                       += ps2/dsputil_mmi.o             \
+                                          ps2/idct_mmi.o                \
+                                          ps2/mpegvideo_mmi.o           \
+
+OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
+                                          sparc/simple_idct_vis.o       \
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
 TESTS-$(ARCH_X86) += i386/cpuid-test$(EXESUF) motion-test$(EXESUF)
