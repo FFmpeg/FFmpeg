@@ -437,6 +437,8 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (setsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, sizeof(tmp)) < 0) {
             av_log(NULL, AV_LOG_WARNING, "setsockopt(SO_RECVBUF): %s\n", strerror(errno));
         }
+        /* make the socket non-blocking */
+        ff_socket_nonblock(udp_fd, 1);
     }
 
     s->udp_fd = udp_fd;
@@ -468,7 +470,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
             return AVERROR(EIO);
         if (!(ret > 0 && FD_ISSET(s->udp_fd, &rfds)))
             continue;
-        len = recv(s->udp_fd, buf, size, MSG_DONTWAIT);
+        len = recv(s->udp_fd, buf, size, 0);
         if (len < 0) {
             if (ff_neterrno() != FF_NETERROR(EAGAIN) &&
                 ff_neterrno() != FF_NETERROR(EINTR))
