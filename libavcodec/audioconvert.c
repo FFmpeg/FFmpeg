@@ -104,7 +104,7 @@ static const struct {
     const char *name;
     int         nb_channels;
     int64_t     layout;
-} const channel_layout_map[] = {
+} channel_layout_map[] = {
     { "mono",        1,  CH_LAYOUT_MONO },
     { "stereo",      2,  CH_LAYOUT_STEREO },
     { "surround",    3,  CH_LAYOUT_SURROUND },
