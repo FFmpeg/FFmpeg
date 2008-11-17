@@ -398,19 +398,15 @@ OBJS += i386/fdct_mmx.o                                                 \
         i386/idct_mmx_xvid.o                                            \
         i386/idct_sse2_xvid.o                                           \
 
+OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
+OBJS-$(CONFIG_ENCODERS)                += i386/dsputilenc_mmx.o
 OBJS-$(CONFIG_FFT_MMX)                 += i386/fft_mmx.o                \
                                           i386/fft_sse.o                \
                                           i386/fft_3dn.o                \
                                           i386/fft_3dn2.o               \
 
-OBJS-$(HAVE_YASM)                      += i386/dsputil_yasm.o
-
-OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
-
-OBJS-$(CONFIG_ENCODERS)                += i386/dsputilenc_mmx.o
-
-OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
 OBJS-$(CONFIG_FLAC_ENCODER)            += i386/flacdsp_mmx.o
+OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
 OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
 OBJS-$(CONFIG_VC1_DECODER)             += i386/vc1dsp_mmx.o
 OBJS-$(CONFIG_VP3_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
@@ -419,29 +415,8 @@ OBJS-$(CONFIG_VP6_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_VP6A_DECODER)            += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_VP6F_DECODER)            += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 OBJS-$(CONFIG_WMV3_DECODER)            += i386/vc1dsp_mmx.o
+OBJS-$(HAVE_YASM)                      += i386/dsputil_yasm.o
 endif
-
-OBJS-$(ARCH_ARMV4L)                    += armv4l/jrevdct_arm.o          \
-                                          armv4l/simple_idct_arm.o      \
-                                          armv4l/dsputil_arm_s.o        \
-                                          armv4l/dsputil_arm.o          \
-                                          armv4l/mpegvideo_arm.o        \
-
-OBJS-$(HAVE_IWMMXT)                    += armv4l/dsputil_iwmmxt.o       \
-                                          armv4l/mpegvideo_iwmmxt.o     \
-
-OBJS-$(HAVE_ARMV5TE)                   += armv4l/mpegvideo_armv5te.o    \
-                                          armv4l/simple_idct_armv5te.o  \
-
-OBJS-$(HAVE_ARMVFP)                    += armv4l/float_arm_vfp.o        \
-                                          armv4l/dsputil_vfp.o          \
-
-OBJS-$(HAVE_ARMV6)                     += armv4l/simple_idct_armv6.o    \
-
-OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
-                                          sparc/simple_idct_vis.o       \
-
-OBJS-$(CONFIG_MLIB)                    += mlib/dsputil_mlib.o           \
 
 OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
                                           alpha/motion_est_alpha.o      \
@@ -450,15 +425,45 @@ OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
                                           alpha/dsputil_alpha_asm.o     \
                                           alpha/motion_est_mvi_asm.o    \
 
+OBJS-$(ARCH_ARMV4L)                    += armv4l/jrevdct_arm.o          \
+                                          armv4l/simple_idct_arm.o      \
+                                          armv4l/dsputil_arm_s.o        \
+                                          armv4l/dsputil_arm.o          \
+                                          armv4l/mpegvideo_arm.o        \
+
+OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
+                                          bfin/mpegvideo_bfin.o         \
+                                          bfin/vp3_bfin.o               \
+                                          bfin/pixels_bfin.o            \
+                                          bfin/fdct_bfin.o              \
+                                          bfin/idct_bfin.o              \
+                                          bfin/vp3_idct_bfin.o          \
+
 OBJS-$(ARCH_POWERPC)                   += ppc/dsputil_ppc.o             \
+
+OBJS-$(ARCH_SH4)                       += sh4/idct_sh4.o                \
+                                          sh4/dsputil_align.o           \
+                                          sh4/dsputil_sh4.o             \
+
+OBJS-$(CONFIG_MLIB)                    += mlib/dsputil_mlib.o           \
+
+OBJS-$(HAVE_ARMV5TE)                   += armv4l/mpegvideo_armv5te.o    \
+                                          armv4l/simple_idct_armv5te.o  \
+
+OBJS-$(HAVE_ARMV6)                     += armv4l/simple_idct_armv6.o    \
+
+OBJS-$(HAVE_ARMVFP)                    += armv4l/float_arm_vfp.o        \
+                                          armv4l/dsputil_vfp.o          \
+
+OBJS-$(HAVE_IWMMXT)                    += armv4l/dsputil_iwmmxt.o       \
+                                          armv4l/mpegvideo_iwmmxt.o     \
 
 OBJS-$(HAVE_MMI)                       += ps2/dsputil_mmi.o             \
                                           ps2/idct_mmi.o                \
                                           ps2/mpegvideo_mmi.o           \
 
-OBJS-$(ARCH_SH4)                       += sh4/idct_sh4.o                \
-                                          sh4/dsputil_align.o           \
-                                          sh4/dsputil_sh4.o             \
+OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
+                                          sparc/simple_idct_vis.o       \
 
 ALTIVEC-OBJS-yes                       += ppc/dsputil_altivec.o         \
                                           ppc/fdct_altivec.o            \
@@ -480,14 +485,6 @@ $(addprefix $(SUBDIR),$(ALTIVEC-OBJS-yes)): CFLAGS += -maltivec -mabi=altivec
 # check_altivec must be built without -maltivec
 OBJS-$(HAVE_ALTIVEC)                   += $(ALTIVEC-OBJS-yes)           \
                                           ppc/check_altivec.o
-
-OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
-                                          bfin/mpegvideo_bfin.o         \
-                                          bfin/vp3_bfin.o               \
-                                          bfin/pixels_bfin.o            \
-                                          bfin/fdct_bfin.o              \
-                                          bfin/idct_bfin.o              \
-                                          bfin/vp3_idct_bfin.o          \
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 imgresample rangecoder snow)
 TESTS-$(ARCH_X86) += i386/cpuid-test$(EXESUF) motion-test$(EXESUF)
