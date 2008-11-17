@@ -400,11 +400,11 @@ OBJS += i386/fdct_mmx.o                                                 \
 
 OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
 OBJS-$(CONFIG_ENCODERS)                += i386/dsputilenc_mmx.o
-OBJS-$(CONFIG_FFT_MMX)                 += i386/fft_mmx.o                \
-                                          i386/fft_sse.o                \
+OBJS-$(CONFIG_FFT)                     += i386/fft_sse.o                \
                                           i386/fft_3dn.o                \
                                           i386/fft_3dn2.o               \
 
+OBJS-$(CONFIG_FFT_MMX)                 += i386/fft_mmx.o
 OBJS-$(CONFIG_FLAC_ENCODER)            += i386/flacdsp_mmx.o
 OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
 OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
