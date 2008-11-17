@@ -115,7 +115,7 @@ ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
 static int
 rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
 {
-    ByteIOContext *pb;
+    ByteIOContext pb;
     int size;
     uint32_t tag;
 
@@ -135,34 +135,34 @@ rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
      */
     if (!rdt->mlti_data)
         return -1;
-    url_open_buf(&pb, rdt->mlti_data, rdt->mlti_data_size, URL_RDONLY);
-    tag = get_le32(pb);
+    init_put_byte(&pb, rdt->mlti_data, rdt->mlti_data_size, 0,
+                  NULL, NULL, NULL, NULL);
+    tag = get_le32(&pb);
     if (tag == MKTAG('M', 'L', 'T', 'I')) {
         int num, chunk_nr;
 
         /* read index of MDPR chunk numbers */
-        num = get_be16(pb);
+        num = get_be16(&pb);
         if (rule_nr < 0 || rule_nr >= num)
             return -1;
-        url_fskip(pb, rule_nr * 2);
-        chunk_nr = get_be16(pb);
-        url_fskip(pb, (num - 1 - rule_nr) * 2);
+        url_fskip(&pb, rule_nr * 2);
+        chunk_nr = get_be16(&pb);
+        url_fskip(&pb, (num - 1 - rule_nr) * 2);
 
         /* read MDPR chunks */
-        num = get_be16(pb);
+        num = get_be16(&pb);
         if (chunk_nr >= num)
             return -1;
         while (chunk_nr--)
-            url_fskip(pb, get_be32(pb));
-        size = get_be32(pb);
+            url_fskip(&pb, get_be32(&pb));
+        size = get_be32(&pb);
     } else {
         size = rdt->mlti_data_size;
-        url_fseek(pb, 0, SEEK_SET);
+        url_fseek(&pb, 0, SEEK_SET);
     }
-    if (ff_rm_read_mdpr_codecdata(rdt->rmctx, pb, st, size) < 0)
+    if (ff_rm_read_mdpr_codecdata(rdt->rmctx, &pb, st, size) < 0)
         return -1;
 
-    url_close_buf(pb);
     return 0;
 }
 
@@ -258,30 +258,30 @@ rdt_parse_packet (PayloadContext *rdt, AVStream *st,
                   const uint8_t *buf, int len, int flags)
 {
     int seq = 1, res;
-    ByteIOContext *pb;
+    ByteIOContext pb;
     RMContext *rm = rdt->rmctx->priv_data;
 
     if (rm->audio_pkt_cnt == 0) {
         int pos;
 
-        url_open_buf (&pb, buf, len, URL_RDONLY);
+        init_put_byte(&pb, buf, len, 0, NULL, NULL, NULL, NULL);
         flags = (flags & PKT_FLAG_KEY) ? 2 : 0;
-        res = ff_rm_parse_packet (rdt->rmctx, pb, st, len, pkt,
+        res = ff_rm_parse_packet (rdt->rmctx, &pb, st, len, pkt,
                                   &seq, &flags, timestamp);
-        pos = url_ftell(pb);
-        url_close_buf (pb);
+        pos = url_ftell(&pb);
         if (res < 0)
             return res;
         if (rm->audio_pkt_cnt > 0 &&
             st->codec->codec_id == CODEC_ID_AAC) {
             memcpy (rdt->buffer, buf + pos, len - pos);
-            url_open_buf (&rdt->rmctx->pb, rdt->buffer, len - pos, URL_RDONLY);
+            rdt->rmctx->pb = av_alloc_put_byte (rdt->buffer, len - pos, 0,
+                                                NULL, NULL, NULL, NULL);
         }
     } else {
         ff_rm_retrieve_cache (rdt->rmctx, rdt->rmctx->pb, st, pkt);
         if (rm->audio_pkt_cnt == 0 &&
             st->codec->codec_id == CODEC_ID_AAC)
-            url_close_buf (rdt->rmctx->pb);
+            av_freep(&rdt->rmctx->pb);
     }
     pkt->stream_index = st->index;
     pkt->pts = *timestamp;
