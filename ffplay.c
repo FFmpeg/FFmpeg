@@ -2553,7 +2553,7 @@ int main(int argc, char **argv)
     parse_options(argc, argv, options, opt_input_file);
 
     if (!input_filename) {
-        show_help();
+        fprintf(stderr, "An input file must be specified\n");
         exit(1);
     }
 

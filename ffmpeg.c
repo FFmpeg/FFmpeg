@@ -3874,10 +3874,6 @@ int main(int argc, char **argv)
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
 
     show_banner();
-    if (argc <= 1) {
-        show_help();
-        av_exit(1);
-    }
 
     /* parse options */
     parse_options(argc, argv, options, opt_output_file);
