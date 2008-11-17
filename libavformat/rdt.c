@@ -40,7 +40,8 @@ struct RDTDemuxContext {
     AVStream *st;
     void *dynamic_protocol_context;
     DynamicPayloadPacketHandlerProc parse_packet;
-    uint32_t prev_set_id, prev_timestamp;
+    uint32_t prev_timestamp;
+    int prev_set_id;
 };
 
 RDTDemuxContext *
