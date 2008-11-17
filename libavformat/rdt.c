@@ -177,7 +177,8 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
                     int *pis_keyframe, uint32_t *ptimestamp)
 {
     GetBitContext gb;
-    int consumed = 0, set_id, seq_no, stream_id, is_keyframe;
+    int consumed = 0, set_id, seq_no, stream_id, is_keyframe,
+        len_included, need_reliable;
     uint32_t timestamp;
 
     /* skip status packets */
@@ -192,7 +193,7 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
         len -= pkt_len;
         consumed += pkt_len;
     }
-    if (len < 10)
+    if (len < 16)
         return -1;
     /**
      * Layout of the header (in bits):
@@ -246,15 +247,23 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
      *     http://anonsvn.wireshark.org/viewvc/trunk/epan/dissectors/packet-rdt.c
      */
     init_get_bits(&gb, buf, len << 3);
-    skip_bits(&gb, 2);
+    len_included  = get_bits1(&gb);
+    need_reliable = get_bits1(&gb);
     set_id        = get_bits(&gb, 5);
     skip_bits(&gb, 1);
     seq_no        = get_bits(&gb, 16);
+    if (len_included)
+        skip_bits(&gb, 16);
     skip_bits(&gb, 2);
     stream_id     = get_bits(&gb, 5);
     is_keyframe   = !get_bits1(&gb);
     timestamp     = get_bits_long(&gb, 32);
+    if (set_id == 0x1f)
+        set_id    = get_bits(&gb, 16);
+    if (need_reliable)
     skip_bits(&gb, 16);
+    if (stream_id == 0x1f)
+        stream_id = get_bits(&gb, 16);
 
     if (pset_id)      *pset_id      = set_id;
     if (pseq_no)      *pseq_no      = seq_no;
