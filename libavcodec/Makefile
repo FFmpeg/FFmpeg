@@ -431,6 +431,17 @@ OBJS-$(ARCH_ARMV4L)                    += armv4l/jrevdct_arm.o          \
                                           armv4l/dsputil_arm.o          \
                                           armv4l/mpegvideo_arm.o        \
 
+OBJS-$(HAVE_ARMV5TE)                   += armv4l/mpegvideo_armv5te.o    \
+                                          armv4l/simple_idct_armv5te.o  \
+
+OBJS-$(HAVE_ARMV6)                     += armv4l/simple_idct_armv6.o    \
+
+OBJS-$(HAVE_ARMVFP)                    += armv4l/float_arm_vfp.o        \
+                                          armv4l/dsputil_vfp.o          \
+
+OBJS-$(HAVE_IWMMXT)                    += armv4l/dsputil_iwmmxt.o       \
+                                          armv4l/mpegvideo_iwmmxt.o     \
+
 OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
                                           bfin/mpegvideo_bfin.o         \
                                           bfin/vp3_bfin.o               \
@@ -446,17 +457,6 @@ OBJS-$(ARCH_SH4)                       += sh4/idct_sh4.o                \
                                           sh4/dsputil_sh4.o             \
 
 OBJS-$(CONFIG_MLIB)                    += mlib/dsputil_mlib.o           \
-
-OBJS-$(HAVE_ARMV5TE)                   += armv4l/mpegvideo_armv5te.o    \
-                                          armv4l/simple_idct_armv5te.o  \
-
-OBJS-$(HAVE_ARMV6)                     += armv4l/simple_idct_armv6.o    \
-
-OBJS-$(HAVE_ARMVFP)                    += armv4l/float_arm_vfp.o        \
-                                          armv4l/dsputil_vfp.o          \
-
-OBJS-$(HAVE_IWMMXT)                    += armv4l/dsputil_iwmmxt.o       \
-                                          armv4l/mpegvideo_iwmmxt.o     \
 
 OBJS-$(HAVE_MMI)                       += ps2/dsputil_mmi.o             \
                                           ps2/idct_mmi.o                \
