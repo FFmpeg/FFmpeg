@@ -261,7 +261,7 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
     if (set_id == 0x1f)
         set_id    = get_bits(&gb, 16);
     if (need_reliable)
-    skip_bits(&gb, 16);
+        skip_bits(&gb, 16);
     if (stream_id == 0x1f)
         stream_id = get_bits(&gb, 16);
 
