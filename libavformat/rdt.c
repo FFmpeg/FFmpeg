@@ -172,8 +172,8 @@ rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
 
 int
 ff_rdt_parse_header(const uint8_t *buf, int len,
-                    int *set_id, int *seq_no, int *stream_id,
-                    int *is_keyframe, uint32_t *timestamp)
+                    int *pset_id, int *pseq_no, int *pstream_id,
+                    int *pis_keyframe, uint32_t *ptimestamp)
 {
     int consumed = 10;
 
@@ -242,11 +242,11 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
      * [2] http://www.wireshark.org/docs/dfref/r/rdt.html and
      *     http://anonsvn.wireshark.org/viewvc/trunk/epan/dissectors/packet-rdt.c
      */
-    if (set_id)      *set_id      = (buf[0]>>1) & 0x1f;
-    if (seq_no)      *seq_no      = AV_RB16(buf+1);
-    if (timestamp)   *timestamp   = AV_RB32(buf+4);
-    if (stream_id)   *stream_id   = (buf[3]>>1) & 0x1f;
-    if (is_keyframe) *is_keyframe = !(buf[3] & 0x1);
+    if (pset_id)      *pset_id      = (buf[0]>>1) & 0x1f;
+    if (pseq_no)      *pseq_no      = AV_RB16(buf+1);
+    if (ptimestamp)   *ptimestamp   = AV_RB32(buf+4);
+    if (pstream_id)   *pstream_id   = (buf[3]>>1) & 0x1f;
+    if (pis_keyframe) *pis_keyframe = !(buf[3] & 0x1);
 
     return consumed;
 }
