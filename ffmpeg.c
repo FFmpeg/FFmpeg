@@ -1582,7 +1582,8 @@ static int av_encode(AVFormatContext **output_files,
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
         if (!os->nb_streams) {
-            fprintf(stderr, "Output file does not contain any stream\n");
+            dump_format(output_files[i], i, output_files[i]->filename, 1);
+            fprintf(stderr, "Output file #%d does not contain any stream\n", i);
             av_exit(1);
         }
         nb_ostreams += os->nb_streams;
