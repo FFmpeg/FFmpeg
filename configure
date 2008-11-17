@@ -2346,7 +2346,7 @@ fi
 
 pkgconfig_generate(){
 name=$1
-shortname=${name#lib}
+shortname=${name#lib}${build_suffix}
 comment=$2
 version=$3
 libs=$4
