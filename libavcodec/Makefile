@@ -27,6 +27,7 @@ OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
 OBJS-$(CONFIG_FFT)                     += fft.o
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
+OBJS-$(CONFIG_OLDSCALER)               += imgresample.o
 
 OBJS-$(CONFIG_AAC_DECODER)             += aac.o aactab.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
@@ -382,10 +383,6 @@ OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o
 
 OBJS-$(HAVE_XVMC)                      += xvmcvideo.o
-
-ifndef CONFIG_SWSCALE
-OBJS += imgresample.o
-endif
 
 # processor-specific code
 ifdef HAVE_MMX

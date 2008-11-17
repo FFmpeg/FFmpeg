@@ -872,6 +872,7 @@ HAVE_LIST="
 # options emitted with CONFIG_ prefix but not available on command line
 CONFIG_EXTRA="
     fft_mmx
+    oldscaler
 "
 
 CMDLINE_SELECT="
@@ -928,6 +929,7 @@ vis_deps="sparc"
 # common features
 fft_suggest="fft_mmx"
 fft_mmx_deps="mmx yasm"
+oldscaler_deps="!swscale"
 
 # decoders / encoders
 aac_decoder_select="fft mdct"
@@ -1084,6 +1086,7 @@ enable ffserver
 enable ipv6
 enable mpegaudio_hp
 enable network
+enable oldscaler
 enable optimizations
 enable protocols
 enable static
