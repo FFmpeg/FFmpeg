@@ -1826,11 +1826,12 @@ static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, long width, uint
 
 static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
-    int i;
-    assert(src1==src2);
 #ifdef HAVE_MMX
+    assert(src1==src2);
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_RGB24);
 #else
+    int i;
+    assert(src1==src2);
     for (i=0; i<width; i++)
     {
         int r= src1[3*i + 0];
