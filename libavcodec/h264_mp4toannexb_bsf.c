@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007 Benoit Fouet <benoit.fouet@purplelabs.com>
+ * Copyright (c) 2007 Benoit Fouet <benoit.fouet@free.fr>
  *
  * This file is part of FFmpeg.
  *
