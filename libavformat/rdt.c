@@ -33,6 +33,7 @@
 #include "libavutil/md5.h"
 #include "rm.h"
 #include "internal.h"
+#include <libavcodec/bitstream.h>
 
 struct RDTDemuxContext {
     AVFormatContext *ic;
@@ -175,7 +176,9 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
                     int *pset_id, int *pseq_no, int *pstream_id,
                     int *pis_keyframe, uint32_t *ptimestamp)
 {
-    int consumed = 10;
+    GetBitContext gb;
+    int consumed = 0, set_id, seq_no, stream_id, is_keyframe;
+    uint32_t timestamp;
 
     /* skip status packets */
     while (len >= 5 && buf[1] == 0xFF /* status packet */) {
@@ -242,13 +245,24 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
      * [2] http://www.wireshark.org/docs/dfref/r/rdt.html and
      *     http://anonsvn.wireshark.org/viewvc/trunk/epan/dissectors/packet-rdt.c
      */
-    if (pset_id)      *pset_id      = (buf[0]>>1) & 0x1f;
-    if (pseq_no)      *pseq_no      = AV_RB16(buf+1);
-    if (ptimestamp)   *ptimestamp   = AV_RB32(buf+4);
-    if (pstream_id)   *pstream_id   = (buf[3]>>1) & 0x1f;
-    if (pis_keyframe) *pis_keyframe = !(buf[3] & 0x1);
+    init_get_bits(&gb, buf, len << 3);
+    skip_bits(&gb, 2);
+    set_id        = get_bits(&gb, 5);
+    skip_bits(&gb, 1);
+    seq_no        = get_bits(&gb, 16);
+    skip_bits(&gb, 2);
+    stream_id     = get_bits(&gb, 5);
+    is_keyframe   = !get_bits1(&gb);
+    timestamp     = get_bits_long(&gb, 32);
+    skip_bits(&gb, 16);
 
-    return consumed;
+    if (pset_id)      *pset_id      = set_id;
+    if (pseq_no)      *pseq_no      = seq_no;
+    if (pstream_id)   *pstream_id   = stream_id;
+    if (pis_keyframe) *pis_keyframe = is_keyframe;
+    if (ptimestamp)   *ptimestamp   = timestamp;
+
+    return consumed + (get_bits_count(&gb) >> 3);
 }
 
 /**< return 0 on packet, no more left, 1 on packet, 1 on partial packet... */
