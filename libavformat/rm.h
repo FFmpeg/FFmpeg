@@ -71,17 +71,20 @@ extern AVInputFormat rdt_demuxer;
  * parameters.
  *
  * @param s context containing RMContext and ByteIOContext for stream reading
+ * @param pb context to read the data from
  * @param st the stream that the MDPR chunk belongs to and where to store the
  *           parameters read from the chunk into
  * @param codec_data_size size of the MDPR chunk
  * @return 0 on success, errno codes on error
  */
-int ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st, int codec_data_size);
+int ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
+                               AVStream *st, int codec_data_size);
 
 /**
  * Parse one rm-stream packet from the input bytestream.
  *
  * @param s context containing RMContext and ByteIOContext for stream reading
+ * @param pb context to read the data from
  * @param st stream to which the packet to be read belongs
  * @param len packet length to read from the input
  * @param pkt packet location to store the parsed packet data
@@ -92,7 +95,8 @@ int ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVStream *st, int codec_data_
  * @param ts pointer to timestamp, may be updated
  * @return 0 on success, errno codes on error
  */
-int ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len,
+int ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
+                        AVStream *st, int len,
                         AVPacket *pkt, int *seq, int *flags, int64_t *ts);
 
 /**
@@ -104,9 +108,11 @@ int ff_rm_parse_packet (AVFormatContext *s, AVStream *st, int len,
  * of those packets can be retrieved sequentially.
  *
  * @param s context containing RMContext and ByteIOContext for stream reading
+ * @param pb context to read the data from
  * @param st stream that this packet belongs to
  * @param pkt location to store the packet data
  */
-void ff_rm_retrieve_cache (AVFormatContext *s, AVStream *st, AVPacket *pkt);
+void ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
+                           AVStream *st, AVPacket *pkt);
 
 #endif /* AVFORMAT_RM_H */
