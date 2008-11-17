@@ -3880,12 +3880,12 @@ int main(int argc, char **argv)
 
     /* file converter / grab */
     if (nb_output_files <= 0) {
-        fprintf(stderr, "Must supply at least one output file\n");
+        fprintf(stderr, "At least one output file must be specified\n");
         av_exit(1);
     }
 
     if (nb_input_files == 0) {
-        fprintf(stderr, "Must supply at least one input file\n");
+        fprintf(stderr, "At least one input file must be specified\n");
         av_exit(1);
     }
 
