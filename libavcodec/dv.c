@@ -395,8 +395,9 @@ static inline void dv_calculate_mb_xy(DVVideoContext *s, DVwork_chunk *work_chun
 }
 
 /* mb_x and mb_y are in units of 8 pixels */
-static inline void dv_decode_video_segment(DVVideoContext *s, DVwork_chunk *work_chunk)
+static int dv_decode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chunk)
 {
+    DVVideoContext *s = avctx->priv_data;
     int quant, dc, dct_mode, class1, j;
     int mb_index, mb_x, mb_y, last_index;
     int y_stride, linesize;
@@ -576,6 +577,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s, DVwork_chunk *work
             }
         }
     }
+    return 0;
 }
 
 #if ENABLE_SMALL
@@ -857,8 +859,9 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
     }
 }
 
-static inline void dv_encode_video_segment(DVVideoContext *s, DVwork_chunk *work_chunk)
+static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chunk)
 {
+    DVVideoContext *s = avctx->priv_data;
     int mb_index, i, j;
     int mb_x, mb_y, c_offset, linesize;
     uint8_t*  y_ptr;
@@ -1004,21 +1007,9 @@ static inline void dv_encode_video_segment(DVVideoContext *s, DVwork_chunk *work
 
     for (j = 0; j < 5 * 6; j++)
        flush_put_bits(&pbs[j]);
-}
 
-static int dv_decode_mt(AVCodecContext *avctx, void* sl)
-{
-    dv_decode_video_segment((DVVideoContext *)avctx->priv_data, (DVwork_chunk*)sl);
     return 0;
 }
-
-#ifdef CONFIG_DVVIDEO_ENCODER
-static int dv_encode_mt(AVCodecContext *avctx, void* sl)
-{
-    dv_encode_video_segment((DVVideoContext *)avctx->priv_data, (DVwork_chunk*)sl);
-    return 0;
-}
-#endif
 
 #ifdef CONFIG_DVVIDEO_DECODER
 /* NOTE: exactly one frame must be given (120000 bytes for NTSC,
@@ -1050,7 +1041,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     s->picture.top_field_first  = 0;
 
     s->buf = buf;
-    avctx->execute(avctx, dv_decode_mt, s->sys->work_chunks, NULL,
+    avctx->execute(avctx, dv_decode_video_segment, s->sys->work_chunks, NULL,
                    dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
 
     emms_c();
@@ -1203,7 +1194,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
     s->picture.pict_type = FF_I_TYPE;
 
     s->buf = buf;
-    c->execute(c, dv_encode_mt, s->sys->work_chunks, NULL,
+    c->execute(c, dv_encode_video_segment, s->sys->work_chunks, NULL,
                dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
 
     emms_c();
