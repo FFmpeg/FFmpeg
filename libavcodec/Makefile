@@ -386,21 +386,21 @@ OBJS-$(HAVE_XVMC)                      += xvmcvideo.o
 
 # processor-specific code
 ifdef HAVE_MMX
-OBJS += i386/fdct_mmx.o                                                 \
-        i386/cpuid.o                                                    \
+OBJS += i386/cpuid.o                                                    \
         i386/dsputil_mmx.o                                              \
-        i386/mpegvideo_mmx.o                                            \
-        i386/motion_est_mmx.o                                           \
-        i386/simple_idct_mmx.o                                          \
+        i386/fdct_mmx.o                                                 \
         i386/idct_mmx_xvid.o                                            \
         i386/idct_sse2_xvid.o                                           \
+        i386/motion_est_mmx.o                                           \
+        i386/mpegvideo_mmx.o                                            \
+        i386/simple_idct_mmx.o                                          \
 
 OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
 OBJS-$(CONFIG_ENCODERS)                += i386/dsputilenc_mmx.o
-OBJS-$(CONFIG_FFT_MMX)                 += i386/fft_mmx.o                \
-                                          i386/fft_sse.o                \
-                                          i386/fft_3dn.o                \
+OBJS-$(CONFIG_FFT_MMX)                 += i386/fft_3dn.o                \
                                           i386/fft_3dn2.o               \
+                                          i386/fft_mmx.o                \
+                                          i386/fft_sse.o                \
 
 OBJS-$(CONFIG_FLAC_ENCODER)            += i386/flacdsp_mmx.o
 OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
@@ -416,35 +416,35 @@ OBJS-$(HAVE_YASM)                      += i386/dsputil_yasm.o
 endif
 
 OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
+                                          alpha/dsputil_alpha_asm.o     \
                                           alpha/motion_est_alpha.o      \
+                                          alpha/motion_est_mvi_asm.o    \
                                           alpha/mpegvideo_alpha.o       \
                                           alpha/simple_idct_alpha.o     \
-                                          alpha/dsputil_alpha_asm.o     \
-                                          alpha/motion_est_mvi_asm.o    \
 
-OBJS-$(ARCH_ARMV4L)                    += armv4l/jrevdct_arm.o          \
-                                          armv4l/simple_idct_arm.o      \
+OBJS-$(ARCH_ARMV4L)                    += armv4l/dsputil_arm.o          \
                                           armv4l/dsputil_arm_s.o        \
-                                          armv4l/dsputil_arm.o          \
+                                          armv4l/jrevdct_arm.o          \
                                           armv4l/mpegvideo_arm.o        \
+                                          armv4l/simple_idct_arm.o      \
 
 OBJS-$(HAVE_ARMV5TE)                   += armv4l/mpegvideo_armv5te.o    \
                                           armv4l/simple_idct_armv5te.o  \
 
 OBJS-$(HAVE_ARMV6)                     += armv4l/simple_idct_armv6.o    \
 
-OBJS-$(HAVE_ARMVFP)                    += armv4l/float_arm_vfp.o        \
-                                          armv4l/dsputil_vfp.o          \
+OBJS-$(HAVE_ARMVFP)                    += armv4l/dsputil_vfp.o          \
+                                          armv4l/float_arm_vfp.o        \
 
 OBJS-$(HAVE_IWMMXT)                    += armv4l/dsputil_iwmmxt.o       \
                                           armv4l/mpegvideo_iwmmxt.o     \
 
 OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
-                                          bfin/mpegvideo_bfin.o         \
-                                          bfin/vp3_bfin.o               \
-                                          bfin/pixels_bfin.o            \
                                           bfin/fdct_bfin.o              \
                                           bfin/idct_bfin.o              \
+                                          bfin/mpegvideo_bfin.o         \
+                                          bfin/pixels_bfin.o            \
+                                          bfin/vp3_bfin.o               \
                                           bfin/vp3_idct_bfin.o          \
 
 OBJS-$(ARCH_POWERPC)                   += ppc/dsputil_ppc.o             \
@@ -470,9 +470,9 @@ $(addprefix $(SUBDIR),$(ALTIVEC-OBJS-yes)): CFLAGS += -maltivec -mabi=altivec
 OBJS-$(HAVE_ALTIVEC)                   += $(ALTIVEC-OBJS-yes)           \
                                           ppc/check_altivec.o
 
-OBJS-$(ARCH_SH4)                       += sh4/idct_sh4.o                \
-                                          sh4/dsputil_align.o           \
+OBJS-$(ARCH_SH4)                       += sh4/dsputil_align.o           \
                                           sh4/dsputil_sh4.o             \
+                                          sh4/idct_sh4.o                \
 
 OBJS-$(CONFIG_MLIB)                    += mlib/dsputil_mlib.o           \
 
