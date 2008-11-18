@@ -1378,7 +1378,8 @@ static int mov_read_ilst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
 static int mov_read_meta(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    url_fskip(pb, 4);
+    url_fskip(pb, 4); // version + flags
+    atom.size -= 4;
     return mov_read_default(c, pb, atom);
 }
 
