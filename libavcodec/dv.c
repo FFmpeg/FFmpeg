@@ -209,21 +209,20 @@ static int dv_init_dynamic_tables(const DVprofile *d)
 {
     int j,i,c,s,p;
 
-    if (d->work_chunks[dv_work_pool_size(d)-1].buf_offset)
-        return 0;
-
-    p = i = 0;
-    for (c=0; c<d->n_difchan; c++) {
-        for (s=0; s<d->difseg_size; s++) {
-            p += 6;
-            for (j=0; j<27; j++) {
-                 p += !(j%3);
-                 if (!(DV_PROFILE_IS_1080i50(d) && c != 0 && s == 11) &&
-                     !(DV_PROFILE_IS_720p50(d) && s > 9)) {
-                         dv_calc_mb_coordinates(d, c, s, j, &d->work_chunks[i].mb_coordinates[0]);
-                     d->work_chunks[i++].buf_offset = p;
-                 }
-                 p += 5;
+    if (!d->work_chunks[dv_work_pool_size(d)-1].buf_offset) {
+        p = i = 0;
+        for (c=0; c<d->n_difchan; c++) {
+            for (s=0; s<d->difseg_size; s++) {
+                p += 6;
+                for (j=0; j<27; j++) {
+                    p += !(j%3);
+                    if (!(DV_PROFILE_IS_1080i50(d) && c != 0 && s == 11) &&
+                        !(DV_PROFILE_IS_720p50(d) && s > 9)) {
+                          dv_calc_mb_coordinates(d, c, s, j, &d->work_chunks[i].mb_coordinates[0]);
+                          d->work_chunks[i++].buf_offset = p;
+                    }
+                    p += 5;
+                }
             }
         }
     }
