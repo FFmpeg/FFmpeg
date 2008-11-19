@@ -370,22 +370,22 @@ void dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
 #ifdef QPEL
 
 #define dspfunc(PFX, IDX, NUM) \
-    c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_c; \
-    c->PFX ## _pixels_tab[IDX][ 1] = PFX ## NUM ## _mc10_c; \
-    c->PFX ## _pixels_tab[IDX][ 2] = PFX ## NUM ## _mc20_c; \
-    c->PFX ## _pixels_tab[IDX][ 3] = PFX ## NUM ## _mc30_c; \
-    c->PFX ## _pixels_tab[IDX][ 4] = PFX ## NUM ## _mc01_c; \
-    c->PFX ## _pixels_tab[IDX][ 5] = PFX ## NUM ## _mc11_c; \
-    c->PFX ## _pixels_tab[IDX][ 6] = PFX ## NUM ## _mc21_c; \
-    c->PFX ## _pixels_tab[IDX][ 7] = PFX ## NUM ## _mc31_c; \
-    c->PFX ## _pixels_tab[IDX][ 8] = PFX ## NUM ## _mc02_c; \
-    c->PFX ## _pixels_tab[IDX][ 9] = PFX ## NUM ## _mc12_c; \
-    c->PFX ## _pixels_tab[IDX][10] = PFX ## NUM ## _mc22_c; \
-    c->PFX ## _pixels_tab[IDX][11] = PFX ## NUM ## _mc32_c; \
-    c->PFX ## _pixels_tab[IDX][12] = PFX ## NUM ## _mc03_c; \
-    c->PFX ## _pixels_tab[IDX][13] = PFX ## NUM ## _mc13_c; \
-    c->PFX ## _pixels_tab[IDX][14] = PFX ## NUM ## _mc23_c; \
-    c->PFX ## _pixels_tab[IDX][15] = PFX ## NUM ## _mc33_c
+    c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_sh4; \
+    c->PFX ## _pixels_tab[IDX][ 1] = PFX ## NUM ## _mc10_sh4; \
+    c->PFX ## _pixels_tab[IDX][ 2] = PFX ## NUM ## _mc20_sh4; \
+    c->PFX ## _pixels_tab[IDX][ 3] = PFX ## NUM ## _mc30_sh4; \
+    c->PFX ## _pixels_tab[IDX][ 4] = PFX ## NUM ## _mc01_sh4; \
+    c->PFX ## _pixels_tab[IDX][ 5] = PFX ## NUM ## _mc11_sh4; \
+    c->PFX ## _pixels_tab[IDX][ 6] = PFX ## NUM ## _mc21_sh4; \
+    c->PFX ## _pixels_tab[IDX][ 7] = PFX ## NUM ## _mc31_sh4; \
+    c->PFX ## _pixels_tab[IDX][ 8] = PFX ## NUM ## _mc02_sh4; \
+    c->PFX ## _pixels_tab[IDX][ 9] = PFX ## NUM ## _mc12_sh4; \
+    c->PFX ## _pixels_tab[IDX][10] = PFX ## NUM ## _mc22_sh4; \
+    c->PFX ## _pixels_tab[IDX][11] = PFX ## NUM ## _mc32_sh4; \
+    c->PFX ## _pixels_tab[IDX][12] = PFX ## NUM ## _mc03_sh4; \
+    c->PFX ## _pixels_tab[IDX][13] = PFX ## NUM ## _mc13_sh4; \
+    c->PFX ## _pixels_tab[IDX][14] = PFX ## NUM ## _mc23_sh4; \
+    c->PFX ## _pixels_tab[IDX][15] = PFX ## NUM ## _mc33_sh4
 
     dspfunc(put_qpel, 0, 16);
     dspfunc(put_no_rnd_qpel, 0, 16);
@@ -407,21 +407,21 @@ void dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
     dspfunc(avg_h264_qpel, 2, 4);
 
 #undef dspfunc
-    c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_c;
-    c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_c;
-    c->put_h264_chroma_pixels_tab[2]= put_h264_chroma_mc2_c;
-    c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_c;
-    c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_c;
-    c->avg_h264_chroma_pixels_tab[2]= avg_h264_chroma_mc2_c;
+    c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_sh4;
+    c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_sh4;
+    c->put_h264_chroma_pixels_tab[2]= put_h264_chroma_mc2_sh4;
+    c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_sh4;
+    c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_sh4;
+    c->avg_h264_chroma_pixels_tab[2]= avg_h264_chroma_mc2_sh4;
 
-    c->put_mspel_pixels_tab[0]= put_mspel8_mc00_c;
-    c->put_mspel_pixels_tab[1]= put_mspel8_mc10_c;
-    c->put_mspel_pixels_tab[2]= put_mspel8_mc20_c;
-    c->put_mspel_pixels_tab[3]= put_mspel8_mc30_c;
-    c->put_mspel_pixels_tab[4]= put_mspel8_mc02_c;
-    c->put_mspel_pixels_tab[5]= put_mspel8_mc12_c;
-    c->put_mspel_pixels_tab[6]= put_mspel8_mc22_c;
-    c->put_mspel_pixels_tab[7]= put_mspel8_mc32_c;
+    c->put_mspel_pixels_tab[0]= put_mspel8_mc00_sh4;
+    c->put_mspel_pixels_tab[1]= put_mspel8_mc10_sh4;
+    c->put_mspel_pixels_tab[2]= put_mspel8_mc20_sh4;
+    c->put_mspel_pixels_tab[3]= put_mspel8_mc30_sh4;
+    c->put_mspel_pixels_tab[4]= put_mspel8_mc02_sh4;
+    c->put_mspel_pixels_tab[5]= put_mspel8_mc12_sh4;
+    c->put_mspel_pixels_tab[6]= put_mspel8_mc22_sh4;
+    c->put_mspel_pixels_tab[7]= put_mspel8_mc32_sh4;
 
     c->gmc1 = gmc1_c;
     c->gmc = gmc_c;
