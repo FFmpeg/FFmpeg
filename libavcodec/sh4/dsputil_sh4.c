@@ -66,9 +66,9 @@ static void clear_blocks_sh4(DCTELEM *blocks)
 extern void idct_sh4(DCTELEM *block);
 static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
-        idct_sh4(block);
         int i;
         uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+        idct_sh4(block);
         for(i=0;i<8;i++) {
                 dest[0] = cm[block[0]];
                 dest[1] = cm[block[1]];
@@ -84,9 +84,9 @@ static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 }
 static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
-        idct_sh4(block);
         int i;
         uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+        idct_sh4(block);
         for(i=0;i<8;i++) {
                 dest[0] = cm[dest[0]+block[0]];
                 dest[1] = cm[dest[1]+block[1]];
