@@ -138,7 +138,7 @@ void idct_sh4(DCTELEM *block)
         int ofs1,ofs2,ofs3;
 
 #if defined(__SH4__)
-#error  "FIXME!! change to single float"
+        __asm__ ("fschg");
 #endif
 
         /* row */
@@ -253,7 +253,7 @@ void idct_sh4(DCTELEM *block)
         } while(--i);
 
 #if defined(__SH4__)
-#error  "FIXME!! change to double"
+        __asm__ ("fschg");
 #endif
 }
 #else
