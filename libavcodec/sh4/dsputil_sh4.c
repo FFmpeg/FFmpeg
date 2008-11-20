@@ -22,13 +22,15 @@
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
+#include "sh4.h"
 
 static void memzero_align8(void *dst,size_t size)
 {
-        __asm__(
-#if defined(__SH4__)
-        " fschg\n"  //single float mode
-#endif
+        int fpscr;
+        fp_single_enter(fpscr);
+        dst = (char *)dst + size;
+        size /= 32;
+        __asm__ volatile (
         " fldi0 fr0\n"
         " fldi0 fr1\n"
         " fschg\n"  // double
@@ -39,10 +41,9 @@ static void memzero_align8(void *dst,size_t size)
         " fmov  dr0,@-%0\n"
         " bf.s 1b\n"
         " fmov  dr0,@-%0\n"
-#if defined(__SH4_SINGLE__) || defined(__SH4_SINGLE_ONLY__)
         " fschg" //back to single
-#endif
-        : : "r"((char*)dst+size),"r"(size/32): "memory" );
+        : "+r"(dst),"+r"(size) :: "memory" );
+        fp_single_leave(fpscr);
 }
 
 static void clear_blocks_sh4(DCTELEM *blocks)
