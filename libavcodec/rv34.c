@@ -953,11 +953,11 @@ static void rv34_output_macroblock(RV34DecContext *r, int8_t *intra_types, int c
         itype = ittrans16[intra_types[0]];
         itype = adjust_pred16(itype, r->avail_cache[5-4], r->avail_cache[5-1]);
         r->h.pred16x16[itype](Y, s->linesize);
-        dsp->add_pixels_clamped(s->block[0], Y,     s->current_picture.linesize[0]);
-        dsp->add_pixels_clamped(s->block[1], Y + 8, s->current_picture.linesize[0]);
-        Y += s->current_picture.linesize[0] * 8;
-        dsp->add_pixels_clamped(s->block[2], Y,     s->current_picture.linesize[0]);
-        dsp->add_pixels_clamped(s->block[3], Y + 8, s->current_picture.linesize[0]);
+        dsp->add_pixels_clamped(s->block[0], Y,     s->linesize);
+        dsp->add_pixels_clamped(s->block[1], Y + 8, s->linesize);
+        Y += s->linesize * 8;
+        dsp->add_pixels_clamped(s->block[2], Y,     s->linesize);
+        dsp->add_pixels_clamped(s->block[3], Y + 8, s->linesize);
 
         itype = ittrans16[intra_types[0]];
         if(itype == PLANE_PRED8x8) itype = DC_PRED8x8;
@@ -1135,7 +1135,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
         r->deblock_coefs[mb_pos] = 0;
     else
         r->deblock_coefs[mb_pos] = rv34_set_deblock_coef(r);
-    s->current_picture.qscale_table[s->mb_x + s->mb_y * s->mb_stride] = s->qscale;
+    s->current_picture_ptr->qscale_table[s->mb_x + s->mb_y * s->mb_stride] = s->qscale;
 
     if(cbp == -1)
         return -1;
@@ -1234,7 +1234,6 @@ static int rv34_decode_slice(RV34DecContext *r, int end, uint8_t* buf, int buf_s
         if(MPV_frame_start(s, s->avctx) < 0)
             return -1;
         ff_er_frame_start(s);
-        s->current_picture_ptr = &s->current_picture;
         r->cur_pts = r->si.pts;
         if(s->pict_type != FF_B_TYPE){
             r->last_pts = r->next_pts;
