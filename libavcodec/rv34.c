@@ -1046,7 +1046,7 @@ static int rv34_decode_mb_header(RV34DecContext *r, int8_t *intra_types)
  * mask for retrieving all bits in coded block pattern
  * corresponding to one 8x8 block
  */
-#define LUMA_CBP_BLOCK_MASK 0x303
+#define LUMA_CBP_BLOCK_MASK 0x33
 
 #define U_CBP_MASK 0x0F0000
 #define V_CBP_MASK 0xF00000
@@ -1059,7 +1059,7 @@ static void rv34_apply_differences(RV34DecContext *r, int cbp)
     int i;
 
     for(i = 0; i < 4; i++)
-        if(cbp & (LUMA_CBP_BLOCK_MASK << shifts[i]))
+        if((cbp & (LUMA_CBP_BLOCK_MASK << shifts[i])) || r->block_type == RV34_MB_P_MIX16x16)
             s->dsp.add_pixels_clamped(s->block[i], s->dest[0] + (i & 1)*8 + (i&2)*4*s->linesize, s->linesize);
     if(cbp & U_CBP_MASK)
         s->dsp.add_pixels_clamped(s->block[4], s->dest[1], s->uvlinesize);
