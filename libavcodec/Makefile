@@ -399,14 +399,14 @@ OBJS-$(HAVE_MMX)                       += i386/cpuid.o                  \
                                           i386/mpegvideo_mmx.o          \
                                           i386/simple_idct_mmx.o        \
 
-ifdef HAVE_MMX
-OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
-OBJS-$(CONFIG_ENCODERS)                += i386/dsputilenc_mmx.o
 OBJS-$(CONFIG_FFT_MMX)                 += i386/fft_3dn.o                \
                                           i386/fft_3dn2.o               \
                                           i386/fft_mmx.o                \
                                           i386/fft_sse.o                \
 
+ifdef HAVE_MMX
+OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
+OBJS-$(CONFIG_ENCODERS)                += i386/dsputilenc_mmx.o
 OBJS-$(CONFIG_FLAC_ENCODER)            += i386/flacdsp_mmx.o
 OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
 OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
