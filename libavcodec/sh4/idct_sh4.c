@@ -168,10 +168,6 @@ void idct_sh4(DCTELEM *block)
 
         i = 8;
 
-//        ofs1 = sizeof(float)*1;
-//        ofs2 = sizeof(float)*2;
-//        ofs3 = sizeof(float)*3;
-
         do {
                 float t0,t1,t2,t3;
                 fr0 = block[1];

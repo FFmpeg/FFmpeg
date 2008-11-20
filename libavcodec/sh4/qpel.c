@@ -22,63 +22,6 @@
  */
 
 #define PIXOP2(OPNAME, OP) \
-/*static inline void OPNAME ## _no_rnd_pixels8_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
-{\
-        do {\
-                OP(LP(dst  ),no_rnd_avg32(AV_RN32(src1  ),AV_RN32(src2  )) ); \
-                OP(LP(dst+4),no_rnd_avg32(AV_RN32(src1+4),AV_RN32(src2+4)) ); \
-                src1+=src_stride1; \
-                src2+=src_stride2; \
-                dst+=dst_stride; \
-        } while(--h); \
-}\
-\
-static inline void OPNAME ## _pixels8_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
-{\
-        do {\
-                OP(LP(dst  ),rnd_avg32(AV_RN32(src1  ),AV_RN32(src2  )) ); \
-                OP(LP(dst+4),rnd_avg32(AV_RN32(src1+4),AV_RN32(src2+4)) ); \
-                src1+=src_stride1; \
-                src2+=src_stride2; \
-                dst+=dst_stride; \
-        } while(--h); \
-}\
-\
-static inline void OPNAME ## _pixels4_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
-{\
-        do {\
-                OP(LP(dst  ),rnd_avg32(AV_RN32(src1  ),AV_RN32(src2  )) ); \
-                src1+=src_stride1; \
-                src2+=src_stride2; \
-                dst+=dst_stride; \
-        } while(--h); \
-}\
-\
-static inline void OPNAME ## _no_rnd_pixels16_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
-{\
-        do {\
-                OP(LP(dst  ),no_rnd_avg32(AV_RN32(src1  ),AV_RN32(src2  )) ); \
-                OP(LP(dst+4),no_rnd_avg32(AV_RN32(src1+4),AV_RN32(src2+4)) ); \
-                OP(LP(dst+8),no_rnd_avg32(AV_RN32(src1+8),AV_RN32(src2+8)) ); \
-                OP(LP(dst+12),no_rnd_avg32(AV_RN32(src1+12),AV_RN32(src2+12)) ); \
-                src1+=src_stride1; \
-                src2+=src_stride2; \
-                dst+=dst_stride; \
-        } while(--h); \
-}\
-\
-static inline void OPNAME ## _pixels16_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
-{\
-        do {\
-                OP(LP(dst  ),rnd_avg32(AV_RN32(src1  ),AV_RN32(src2  )) ); \
-                OP(LP(dst+4),rnd_avg32(AV_RN32(src1+4),AV_RN32(src2+4)) ); \
-                OP(LP(dst+8),rnd_avg32(AV_RN32(src1+8),AV_RN32(src2+8)) ); \
-                OP(LP(dst+12),rnd_avg32(AV_RN32(src1+12),AV_RN32(src2+12)) ); \
-                src1+=src_stride1; \
-                src2+=src_stride2; \
-                dst+=dst_stride; \
-        } while(--h); \
-}*/\
 \
 static inline void OPNAME ## _pixels4_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\

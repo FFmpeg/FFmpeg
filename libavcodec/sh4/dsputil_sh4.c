@@ -25,7 +25,6 @@
 
 static void memzero_align8(void *dst,size_t size)
 {
-#if defined(__SH4__) || defined(__SH4_SINGLE__) || defined(__SH4_SINGLE_ONLY__)
         __asm__(
 #if defined(__SH4__)
         " fschg\n"  //single float mode
@@ -44,22 +43,10 @@ static void memzero_align8(void *dst,size_t size)
         " fschg" //back to single
 #endif
         : : "r"((char*)dst+size),"r"(size/32): "memory" );
-#else
-        double *d = dst;
-        size/=8*4;
-        do {
-                d[0] = 0.0;
-                d[1] = 0.0;
-                d[2] = 0.0;
-                d[3] = 0.0;
-                d+=4;
-        } while(--size);
-#endif
 }
 
 static void clear_blocks_sh4(DCTELEM *blocks)
 {
-//        if (((int)blocks&7)==0)
         memzero_align8(blocks,sizeof(DCTELEM)*6*64);
 }
 
@@ -113,6 +100,6 @@ void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
                 c->idct_put = idct_put;
                 c->idct_add = idct_add;
                c->idct     = idct_sh4;
-                c->idct_permutation_type= FF_NO_IDCT_PERM; //FF_SIMPLE_IDCT_PERM; //FF_LIBMPEG2_IDCT_PERM;
+                c->idct_permutation_type= FF_NO_IDCT_PERM;
         }
 }
