@@ -389,6 +389,20 @@ OBJS-$(HAVE_W32THREADS)                += w32thread.o
 OBJS-$(HAVE_XVMC)                      += xvmcvideo.o
 
 # processor-specific code
+MMX-OBJS-$(CONFIG_CAVS_DECODER)        += i386/cavsdsp_mmx.o
+MMX-OBJS-$(CONFIG_ENCODERS)            += i386/dsputilenc_mmx.o
+MMX-OBJS-$(CONFIG_FLAC_ENCODER)        += i386/flacdsp_mmx.o
+MMX-OBJS-$(CONFIG_GPL)                 += i386/idct_mmx.o
+MMX-OBJS-$(CONFIG_SNOW_DECODER)        += i386/snowdsp_mmx.o
+MMX-OBJS-$(CONFIG_VC1_DECODER)         += i386/vc1dsp_mmx.o
+MMX-OBJS-$(CONFIG_VP3_DECODER)         += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VP5_DECODER)         += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VP6_DECODER)         += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VP6A_DECODER)        += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VP6F_DECODER)        += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_WMV3_DECODER)        += i386/vc1dsp_mmx.o
+MMX-OBJS-$(HAVE_YASM)                  += i386/dsputil_yasm.o
+
 OBJS-$(HAVE_MMX)                       += i386/cpuid.o                  \
                                           i386/dsputil_mmx.o            \
                                           i386/fdct_mmx.o               \
@@ -397,27 +411,12 @@ OBJS-$(HAVE_MMX)                       += i386/cpuid.o                  \
                                           i386/motion_est_mmx.o         \
                                           i386/mpegvideo_mmx.o          \
                                           i386/simple_idct_mmx.o        \
+                                          $(MMX-OBJS-yes)
 
 OBJS-$(CONFIG_FFT_MMX)                 += i386/fft_3dn.o                \
                                           i386/fft_3dn2.o               \
                                           i386/fft_mmx.o                \
                                           i386/fft_sse.o                \
-
-ifdef HAVE_MMX
-OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
-OBJS-$(CONFIG_ENCODERS)                += i386/dsputilenc_mmx.o
-OBJS-$(CONFIG_FLAC_ENCODER)            += i386/flacdsp_mmx.o
-OBJS-$(CONFIG_GPL)                     += i386/idct_mmx.o
-OBJS-$(CONFIG_SNOW_DECODER)            += i386/snowdsp_mmx.o
-OBJS-$(CONFIG_VC1_DECODER)             += i386/vc1dsp_mmx.o
-OBJS-$(CONFIG_VP3_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-OBJS-$(CONFIG_VP5_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-OBJS-$(CONFIG_VP6_DECODER)             += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-OBJS-$(CONFIG_VP6A_DECODER)            += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-OBJS-$(CONFIG_VP6F_DECODER)            += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-OBJS-$(CONFIG_WMV3_DECODER)            += i386/vc1dsp_mmx.o
-OBJS-$(HAVE_YASM)                      += i386/dsputil_yasm.o
-endif
 
 OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
                                           alpha/dsputil_alpha_asm.o     \
