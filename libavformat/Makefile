@@ -3,9 +3,9 @@ include $(SUBDIR)../config.mak
 NAME = avformat
 FFLIBS = avcodec avutil
 
-OBJS = allformats.o cutils.o os_support.o sdp.o utils.o
-
 HEADERS = avformat.h avio.h rtsp.h rtspcodes.h
+
+OBJS = allformats.o cutils.o os_support.o sdp.o utils.o
 
 # muxers/demuxers
 OBJS-$(CONFIG_AAC_DEMUXER)               += raw.o

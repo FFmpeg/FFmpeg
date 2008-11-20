@@ -3,6 +3,8 @@ include $(SUBDIR)../config.mak
 NAME = avcodec
 FFLIBS = avutil
 
+HEADERS = avcodec.h opt.h
+
 OBJS = allcodecs.o                                                      \
        audioconvert.o                                                   \
        bitstream.o                                                      \
@@ -19,9 +21,6 @@ OBJS = allcodecs.o                                                      \
        resample2.o                                                      \
        simple_idct.o                                                    \
        utils.o                                                          \
-
-
-HEADERS = avcodec.h opt.h
 
 # parts needed for many different codecs
 OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
