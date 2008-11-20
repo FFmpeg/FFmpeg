@@ -3,6 +3,8 @@ include $(SUBDIR)../config.mak
 NAME = swscale
 FFLIBS = avutil
 
+HEADERS = swscale.h
+
 OBJS = rgb2rgb.o swscale.o swscale_avoption.o
 
 OBJS-$(ARCH_BFIN)          +=  internal_bfin.o swscale_bfin.o yuv2rgb_bfin.o
@@ -10,8 +12,6 @@ OBJS-$(CONFIG_GPL)         +=  yuv2rgb.o
 OBJS-$(CONFIG_MLIB)        +=  yuv2rgb_mlib.o
 OBJS-$(HAVE_ALTIVEC)       +=  yuv2rgb_altivec.o
 OBJS-$(HAVE_VIS)           +=  yuv2rgb_vis.o
-
-HEADERS = swscale.h
 
 TESTS = cs_test swscale-example
 
