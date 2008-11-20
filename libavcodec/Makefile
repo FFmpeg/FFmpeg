@@ -391,13 +391,13 @@ OBJS-$(HAVE_XVMC)                      += xvmcvideo.o
 
 # processor-specific code
 OBJS-$(HAVE_MMX)                       += i386/cpuid.o                  \
-        i386/dsputil_mmx.o                                              \
-        i386/fdct_mmx.o                                                 \
-        i386/idct_mmx_xvid.o                                            \
-        i386/idct_sse2_xvid.o                                           \
-        i386/motion_est_mmx.o                                           \
-        i386/mpegvideo_mmx.o                                            \
-        i386/simple_idct_mmx.o                                          \
+                                          i386/dsputil_mmx.o            \
+                                          i386/fdct_mmx.o               \
+                                          i386/idct_mmx_xvid.o          \
+                                          i386/idct_sse2_xvid.o         \
+                                          i386/motion_est_mmx.o         \
+                                          i386/mpegvideo_mmx.o          \
+                                          i386/simple_idct_mmx.o        \
 
 ifdef HAVE_MMX
 OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
