@@ -390,8 +390,7 @@ OBJS-$(HAVE_W32THREADS)                += w32thread.o
 OBJS-$(HAVE_XVMC)                      += xvmcvideo.o
 
 # processor-specific code
-ifdef HAVE_MMX
-OBJS += i386/cpuid.o                                                    \
+OBJS-$(HAVE_MMX)                       += i386/cpuid.o                  \
         i386/dsputil_mmx.o                                              \
         i386/fdct_mmx.o                                                 \
         i386/idct_mmx_xvid.o                                            \
@@ -400,6 +399,7 @@ OBJS += i386/cpuid.o                                                    \
         i386/mpegvideo_mmx.o                                            \
         i386/simple_idct_mmx.o                                          \
 
+ifdef HAVE_MMX
 OBJS-$(CONFIG_CAVS_DECODER)            += i386/cavsdsp_mmx.o
 OBJS-$(CONFIG_ENCODERS)                += i386/dsputilenc_mmx.o
 OBJS-$(CONFIG_FFT_MMX)                 += i386/fft_3dn.o                \
