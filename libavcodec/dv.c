@@ -54,8 +54,6 @@ typedef struct DVVideoContext {
     uint8_t         *buf;
 
     uint8_t  dv_zigzag[2][64];
-    uint32_t dv_idct_factor[2][2][22][64];
-    uint32_t dv100_idct_factor[4][4][16][64];
 
     void (*get_pixels)(DCTELEM *block, const uint8_t *pixels, int line_size);
     void (*fdct[2])(DCTELEM *block);
@@ -208,6 +206,8 @@ static inline void dv_calc_mb_coordinates(const DVprofile *d, int chan, int seq,
 static int dv_init_dynamic_tables(const DVprofile *d)
 {
     int j,i,c,s,p;
+    uint32_t *factor1, *factor2;
+    const int *iweight1, *iweight2;
 
     if (!d->work_chunks[dv_work_pool_size(d)-1].buf_offset) {
         p = i = 0;
@@ -226,40 +226,42 @@ static int dv_init_dynamic_tables(const DVprofile *d)
             }
         }
     }
-    return 0;
+
+    if (!d->idct_factor[DV_PROFILE_IS_HD(d)?8191:5631]) {
+        factor1 = &d->idct_factor[0];
+        factor2 = &d->idct_factor[DV_PROFILE_IS_HD(d)?4096:2816];
+        if (d->height == 720) {
+            iweight1 = &dv_iweight_720_y[0];
+            iweight2 = &dv_iweight_720_c[0];
+        } else {
+            iweight1 = &dv_iweight_1080_y[0];
+            iweight2 = &dv_iweight_1080_c[0];
+            }
+        if (DV_PROFILE_IS_HD(d)) {
+            for (c = 0; c < 4; c++) {
+                for (s = 0; s < 16; s++) {
+                    for (i = 0; i < 64; i++) {
+                        *factor1++ = (dv100_qstep[s] << (c + 9)) * iweight1[i];
+                        *factor2++ = (dv100_qstep[s] << (c + 9)) * iweight2[i];
+                    }
+                }
+            }
+        } else {
+            iweight1 = &dv_iweight_88[0];
+            for (j = 0; j < 2; j++, iweight1 = &dv_iweight_248[0]) {
+                for (s = 0; s < 22; s++) {
+                    for (i = c = 0; c < 4; c++) {
+                        for (; i < dv_quant_areas[c]; i++) {
+                            *factor1   = iweight1[i] << (dv_quant_shifts[s][c] + 1);
+                            *factor2++ = (*factor1++) << 1;
+        }
+    }
+            }
+        }
+    }
 }
 
-static void dv_build_unquantize_tables(DVVideoContext *s, uint8_t* perm)
-{
-    int i, q, a;
-
-    /* NOTE: max left shift is 6 */
-    for (q = 0; q < 22; q++) {
-        /* 88DCT */
-        i = 1;
-        for (a = 0; a < 4; a++) {
-            for (; i < dv_quant_areas[a]; i++) {
-                /* 88 table */
-                s->dv_idct_factor[0][0][q][i] = dv_iweight_88[i] << (dv_quant_shifts[q][a] + 1);
-                s->dv_idct_factor[1][0][q][i] = s->dv_idct_factor[0][0][q][i] << 1;
-
-                /* 248 table */
-                s->dv_idct_factor[0][1][q][i] = dv_iweight_248[i] << (dv_quant_shifts[q][a] + 1);
-                s->dv_idct_factor[1][1][q][i] = s->dv_idct_factor[0][1][q][i] << 1;
-            }
-        }
-    }
-
-    for (a = 0; a < 4; a++) {
-        for (q = 0; q < 16; q++) {
-            for (i = 1; i < 64; i++) {
-                s->dv100_idct_factor[0][a][q][i] = (dv100_qstep[q] << (a + 9)) * dv_iweight_1080_y[i];
-                s->dv100_idct_factor[1][a][q][i] = (dv100_qstep[q] << (a + 9)) * dv_iweight_1080_c[i];
-                s->dv100_idct_factor[2][a][q][i] = (dv100_qstep[q] << (a + 9)) * dv_iweight_720_y[i];
-                s->dv100_idct_factor[3][a][q][i] = (dv100_qstep[q] << (a + 9)) * dv_iweight_720_c[i];
-            }
-        }
-    }
+    return 0;
 }
 
 static av_cold int dvvideo_init(AVCodecContext *avctx)
@@ -384,9 +386,6 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
         }
     }else
         memcpy(s->dv_zigzag[1], ff_zigzag248_direct, 64);
-
-    /* XXX: do it only for constant case */
-    dv_build_unquantize_tables(s, dsp.idct_permutation);
 
     avctx->coded_frame = &s->picture;
     s->avctx = avctx;
@@ -556,13 +555,13 @@ static int dv_decode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
             if (DV_PROFILE_IS_HD(s->sys)) {
                 mb->idct_put     = s->idct_put[0];
                 mb->scan_table   = s->dv_zigzag[0];
-                mb->factor_table = s->dv100_idct_factor[((s->sys->height == 720) << 1) | (j >= 4)][class1][quant];
+                mb->factor_table = &s->sys->idct_factor[(j >= 4)*4*16*64 + class1*16*64 + quant*64];
                 is_field_mode[mb_index] |= !j && dct_mode;
             } else {
                 mb->idct_put     = s->idct_put[dct_mode && log2_blocksize == 3];
                 mb->scan_table   = s->dv_zigzag[dct_mode];
-                mb->factor_table = s->dv_idct_factor[class1 == 3][dct_mode]
-                    [quant + dv_quant_offset[class1]];
+                mb->factor_table = &s->sys->idct_factor[(class1 == 3)*2*22*64 + dct_mode*22*64 +
+                                                        (quant + dv_quant_offset[class1])*64];
             }
             dc = dc << 2;
             /* convert to unsigned because 128 is not added in the

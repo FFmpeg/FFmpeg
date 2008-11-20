@@ -53,6 +53,7 @@ typedef struct DVprofile {
     int              width;                 /* picture width in pixels */
     AVRational       sar[2];                /* sample aspect ratios for 4:3 and 16:9 */
     DVwork_chunk    *work_chunks;           /* each thread gets its own chunk of frame to work on */
+    uint32_t        *idct_factor;           /* set of iDCT factor tables */
     enum PixelFormat pix_fmt;               /* picture pixel format */
     int              bpm;                   /* blocks per macroblock */
     const uint8_t   *block_sizes;           /* AC block sizes, in bits */
@@ -469,6 +470,10 @@ static DVwork_chunk work_chunks_dv100ntscp[2*10*27];
 static DVwork_chunk work_chunks_dv100pali [4*12*27];
 static DVwork_chunk work_chunks_dv100ntsci[4*10*27];
 
+static uint32_t dv_idct_factor_sd    [2*2*22*64];
+static uint32_t dv_idct_factor_hd1080[2*4*16*64];
+static uint32_t dv_idct_factor_hd720 [2*4*16*64];
+
 static const DVprofile dv_profiles[] = {
     { .dsf = 0,
       .video_stype = 0x0,
@@ -481,6 +486,7 @@ static const DVprofile dv_profiles[] = {
       .width = 720,
       .sar = {{10, 11}, {40, 33}},
       .work_chunks = &work_chunks_dv25ntsc[0],
+      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = PIX_FMT_YUV411P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
@@ -500,6 +506,7 @@ static const DVprofile dv_profiles[] = {
       .width = 720,
       .sar = {{59, 54}, {118, 81}},
       .work_chunks = &work_chunks_dv25pal[0],
+      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = PIX_FMT_YUV420P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
@@ -519,6 +526,7 @@ static const DVprofile dv_profiles[] = {
       .width = 720,
       .sar = {{59, 54}, {118, 81}},
       .work_chunks = &work_chunks_dv25pal411[0],
+      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = PIX_FMT_YUV411P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
@@ -538,6 +546,7 @@ static const DVprofile dv_profiles[] = {
       .width = 720,
       .sar = {{10, 11}, {40, 33}},
       .work_chunks = &work_chunks_dv50ntsc[0],
+      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = PIX_FMT_YUV422P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
@@ -557,6 +566,7 @@ static const DVprofile dv_profiles[] = {
       .width = 720,
       .sar = {{59, 54}, {118, 81}},
       .work_chunks = &work_chunks_dv50pal[0],
+      .idct_factor = &dv_idct_factor_sd[0],
       .pix_fmt = PIX_FMT_YUV422P,
       .bpm = 6,
       .block_sizes = block_sizes_dv2550,
@@ -576,6 +586,7 @@ static const DVprofile dv_profiles[] = {
       .width = 1280,
       .sar = {{1, 1}, {1, 1}},
       .work_chunks = &work_chunks_dv100ntsci[0],
+      .idct_factor = &dv_idct_factor_hd1080[0],
       .pix_fmt = PIX_FMT_YUV422P,
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
@@ -595,6 +606,7 @@ static const DVprofile dv_profiles[] = {
       .width = 1440,
       .sar = {{1, 1}, {1, 1}},
       .work_chunks = &work_chunks_dv100pali[0],
+      .idct_factor = &dv_idct_factor_hd1080[0],
       .pix_fmt = PIX_FMT_YUV422P,
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
@@ -614,6 +626,7 @@ static const DVprofile dv_profiles[] = {
       .width = 960,
       .sar = {{1, 1}, {1, 1}},
       .work_chunks = &work_chunks_dv100ntscp[0],
+      .idct_factor = &dv_idct_factor_hd720[0],
       .pix_fmt = PIX_FMT_YUV422P,
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
@@ -633,6 +646,7 @@ static const DVprofile dv_profiles[] = {
       .width = 960,
       .sar = {{1, 1}, {1, 1}},
       .work_chunks = &work_chunks_dv100palp[0],
+      .idct_factor = &dv_idct_factor_hd720[0],
       .pix_fmt = PIX_FMT_YUV422P,
       .bpm = 8,
       .block_sizes = block_sizes_dv100,
