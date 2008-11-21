@@ -3714,7 +3714,7 @@ static int opt_preset(const char *opt, const char *arg)
         }else if(!strcmp(tmp, "scodec")){
             opt_subtitle_codec(tmp2);
         }else if(opt_default(tmp, tmp2) < 0){
-            fprintf(stderr, "%s: Invalid option or argument: %s=%s\n", filename, tmp, tmp2);
+            fprintf(stderr, "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'\n", filename, line, tmp, tmp2);
             av_exit(1);
         }
     }
