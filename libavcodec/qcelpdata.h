@@ -391,6 +391,16 @@ static const qcelp_vector * const qcelp_lspvq[5] = {
 #define QCELP_SCALE 8192.
 
 /**
+ * the upper boundary of the clipping, depends on QCELP_SCALE
+ */
+#define QCELP_CLIP_UPPER_BOUND (8191.75/8192.)
+
+/**
+ * the lower boundary of the clipping, depends on QCELP_SCALE
+ */
+#define QCELP_CLIP_LOWER_BOUND -1.
+
+/**
  * table for computing Ga (decoded linear codebook gain magnitude)
  *
  * @note The table could fit in int16_t in x*8 form, but it seems
@@ -470,7 +480,7 @@ static const int8_t qcelp_rate_half_codebook[128] = {
 /**
  * sqrt(1.887) is the maximum of the pseudorandom
  * white sequence used to generate the scaled codebook
- * vector for framerate 1/4.
+ * vector for bitrate 1/4.
  *
  * TIA/EIA/IS-733 2.4.8.1.2
  */
@@ -478,7 +488,7 @@ static const int8_t qcelp_rate_half_codebook[128] = {
 
 /**
  * table for impulse response of BPF used to filter
- * the white excitation for framerate 1/4 synthesis
+ * the white excitation for bitrate 1/4 synthesis
  *
  * Only half the tables are needed because of symmetry.
  *
@@ -489,5 +499,21 @@ static const double qcelp_rnd_fir_coefs[11] = {
   -8.210701e-2, 3.041388e-2, -9.251384e-2, 3.501983e-2,
   -9.918777e-2, 3.749518e-2,  8.985137e-1
 };
+
+/**
+ * This spread factor is used, for bitrate 1/8 and I_F_Q,
+ * to force the LSP frequencies to be at least 80 Hz apart.
+ *
+ * TIA/EIA/IS-733 2.4.3.3.2
+ */
+#define QCELP_LSP_SPREAD_FACTOR 0.02
+
+/**
+ * predictor coefficient for the conversion of LSP codes
+ * to LSP frequencies for 1/8 and I_F_Q
+ *
+ * TIA/EIA/IS-733 2.4.3.2.7-2
+ */
+#define QCELP_LSP_OCTAVE_PREDICTOR 29.0/32
 
 #endif /* AVCODEC_QCELPDATA_H */

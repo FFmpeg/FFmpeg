@@ -69,6 +69,116 @@ static av_cold int qcelp_decode_init(AVCodecContext *avctx) {
 }
 
 /**
+ * Decodes the 10 quantized LSP frequencies from the LSPV/LSP
+ * transmission codes of any bitrate and checks for badly received packets.
+ *
+ * @param q the context
+ * @param lspf line spectral pair frequencies
+ *
+ * @return 0 on success, -1 if the packet is badly received
+ *
+ * TIA/EIA/IS-733 2.4.3.2.6.2-2, 2.4.8.7.3
+ */
+static int decode_lspf(QCELPContext *q,
+                       float *lspf) {
+    int i;
+    float tmp_lspf;
+
+    if (q->bitrate == RATE_OCTAVE ||
+        q->bitrate == I_F_Q) {
+        float smooth;
+        const float *predictors = (q->prev_bitrate != RATE_OCTAVE &&
+                                   q->prev_bitrate != I_F_Q ? q->prev_lspf
+                                                            : q->predictor_lspf);
+
+        if (q->bitrate == RATE_OCTAVE) {
+            q->octave_count++;
+
+            for (i = 0; i < 10; i++) {
+                q->predictor_lspf[i] =
+                             lspf[i] = (q->lspv[i] ?  QCELP_LSP_SPREAD_FACTOR
+                                                   : -QCELP_LSP_SPREAD_FACTOR)
+                                     + predictors[i] * QCELP_LSP_OCTAVE_PREDICTOR
+                                     + (i + 1) * ((1 - QCELP_LSP_OCTAVE_PREDICTOR)/11);
+            }
+            smooth = (q->octave_count < 10 ? .875 : 0.1);
+        } else {
+            float erasure_coeff = QCELP_LSP_OCTAVE_PREDICTOR;
+
+            assert(q->bitrate == I_F_Q);
+
+            if (q->erasure_count > 1)
+                erasure_coeff *= (q->erasure_count < 4 ? 0.9 : 0.7);
+
+            for (i = 0; i < 10; i++) {
+                q->predictor_lspf[i] =
+                             lspf[i] = (i + 1) * ( 1 - erasure_coeff)/11
+                                     + erasure_coeff * predictors[i];
+            }
+            smooth = 0.125;
+        }
+
+        // Check the stability of the LSP frequencies.
+        lspf[0] = FFMAX(lspf[0], QCELP_LSP_SPREAD_FACTOR);
+        for (i = 1; i < 10; i++)
+            lspf[i] = FFMAX(lspf[i], (lspf[i-1] + QCELP_LSP_SPREAD_FACTOR));
+
+        lspf[9] = FFMIN(lspf[9], (1.0 - QCELP_LSP_SPREAD_FACTOR));
+        for (i = 9; i > 0; i--)
+            lspf[i-1] = FFMIN(lspf[i-1], (lspf[i] - QCELP_LSP_SPREAD_FACTOR));
+
+        // Low-pass filter the LSP frequencies.
+        weighted_vector_sumf(lspf, lspf, q->prev_lspf, smooth, 1.0 - smooth, 10);
+    } else {
+        q->octave_count = 0;
+
+        tmp_lspf = 0.;
+        for (i = 0; i < 5 ; i++) {
+            lspf[2*i+0] = tmp_lspf += qcelp_lspvq[i][q->lspv[i]][0] * 0.0001;
+            lspf[2*i+1] = tmp_lspf += qcelp_lspvq[i][q->lspv[i]][1] * 0.0001;
+        }
+
+        // Check for badly received packets.
+        if (q->bitrate == RATE_QUARTER) {
+            if (lspf[9] <= .70 || lspf[9] >=  .97)
+                return -1;
+            for (i = 3; i < 10; i++)
+                if (fabs(lspf[i] - lspf[i-2]) < .08)
+                    return -1;
+        } else {
+            if (lspf[9] <= .66 || lspf[9] >= .985)
+                return -1;
+            for (i = 4; i < 10; i++)
+                if (fabs(lspf[i] - lspf[i-4]) < .0931)
+                    return -1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * If the received packet is Rate 1/4 a further sanity check is made of the codebook gain.
+ *
+ * @param cbgain the unpacked cbgain array
+ * @return -1 if the sanity check fails, 0 otherwise
+ *
+ * TIA/EIA/IS-733 2.4.8.7.3
+ */
+static int codebook_sanity_check_for_rate_quarter(const uint8_t *cbgain) {
+   int i, prev_diff=0;
+
+   for (i = 1; i < 5; i++) {
+       int diff = cbgain[i] - cbgain[i-1];
+       if (FFABS(diff) > 10)
+           return -1;
+       else if (FFABS(diff - prev_diff) > 12)
+           return -1;
+       prev_diff = diff;
+   }
+   return 0;
+}
+
+/**
  * Computes the scaled codebook vector Cdn From INDEX and GAIN
  * for all rates.
  *
@@ -96,7 +206,7 @@ static void compute_svector(const QCELPContext *q,
     uint16_t cbseed, cindex;
     float    *rnd, tmp_gain, fir_filter_value;
 
-    switch (q->framerate) {
+    switch (q->bitrate) {
     case RATE_FULL:
         for (i = 0; i < 16; i++) {
             tmp_gain = gain[i] * QCELP_RATE_FULL_CODEBOOK_RATIO;
@@ -248,7 +358,7 @@ static const float *do_pitchfilter(float memory[303], const float v_in[160],
 
 /**
  * Interpolates LSP frequencies and computes LPC coefficients
- * for a given framerate & pitch subframe.
+ * for a given bitrate & pitch subframe.
  *
  * TIA/EIA/IS-733 2.4.3.3.4
  *
@@ -263,9 +373,9 @@ void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
     float interpolated_lspf[10];
     float weight;
 
-    if(q->framerate >= RATE_QUARTER)
+    if(q->bitrate >= RATE_QUARTER)
         weight = 0.25 * (subframe_num + 1);
-    else if(q->framerate == RATE_OCTAVE && !subframe_num)
+    else if(q->bitrate == RATE_OCTAVE && !subframe_num)
         weight = 0.625;
     else
         weight = 1.0;
@@ -275,11 +385,11 @@ void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
         weighted_vector_sumf(interpolated_lspf, curr_lspf, q->prev_lspf,
                              weight, 1.0 - weight, 10);
         qcelp_lspf2lpc(interpolated_lspf, lpc);
-    }else if(q->framerate >= RATE_QUARTER || (q->framerate == I_F_Q && !subframe_num))
+    }else if(q->bitrate >= RATE_QUARTER || (q->bitrate == I_F_Q && !subframe_num))
         qcelp_lspf2lpc(curr_lspf, lpc);
 }
 
-static int buf_size2framerate(const int buf_size)
+static int buf_size2bitrate(const int buf_size)
 {
     switch(buf_size)
     {
