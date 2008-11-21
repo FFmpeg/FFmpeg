@@ -107,3 +107,16 @@ static uint8_t *h264_write_nal_unit(int nal_ref_idc, int nal_unit_type, uint8_t 
     return dest+destpos;
 }
 
+static const uint8_t pict_type_to_golomb[7] = {-1, 2, 0, 1, -1, 4, 3};
+
+static const uint8_t intra4x4_cbp_to_golomb[48] = {
+    3, 29, 30, 17, 31, 18, 37,  8, 32, 38, 19,  9, 20, 10, 11,  2,
+   16, 33, 34, 21, 35, 22, 39,  4, 36, 40, 23,  5, 24,  6,  7,  1,
+   41, 42, 43, 25, 44, 26, 46, 12, 45, 47, 27, 13, 28, 14, 15,  0
+};
+
+static const uint8_t inter_cbp_to_golomb[48] = {
+    0,  2,  3,  7,  4,  8, 17, 13,  5, 18,  9, 14, 10, 15, 16, 11,
+    1, 32, 33, 36, 34, 37, 44, 40, 35, 45, 38, 41, 39, 42, 43, 19,
+    6, 24, 25, 20, 26, 21, 46, 28, 27, 47, 22, 29, 23, 30, 31, 12
+};

@@ -57,9 +57,6 @@ static const AVRational pixel_aspect[17]={
 static const uint8_t golomb_to_pict_type[5]=
 {FF_P_TYPE, FF_B_TYPE, FF_I_TYPE, FF_SP_TYPE, FF_SI_TYPE};
 
-static const uint8_t pict_type_to_golomb[7]=
-{-1, 2, 0, 1, -1, 4, 3};
-
 static const uint8_t chroma_qp[52]={
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,
    12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,
@@ -78,18 +75,6 @@ static const uint8_t golomb_to_inter_cbp[48]={
   0, 16,  1,  2,  4,  8, 32,  3,  5, 10, 12, 15, 47,  7, 11, 13,
  14,  6,  9, 31, 35, 37, 42, 44, 33, 34, 36, 40, 39, 43, 45, 46,
  17, 18, 20, 24, 19, 21, 26, 28, 23, 27, 29, 30, 22, 25, 38, 41
-};
-
-static const uint8_t intra4x4_cbp_to_golomb[48]={
-  3, 29, 30, 17, 31, 18, 37,  8, 32, 38, 19,  9, 20, 10, 11,  2,
- 16, 33, 34, 21, 35, 22, 39,  4, 36, 40, 23,  5, 24,  6,  7,  1,
- 41, 42, 43, 25, 44, 26, 46, 12, 45, 47, 27, 13, 28, 14, 15,  0
-};
-
-static const uint8_t inter_cbp_to_golomb[48]={
-  0,  2,  3,  7,  4,  8, 17, 13,  5, 18,  9, 14, 10, 15, 16, 11,
-  1, 32, 33, 36, 34, 37, 44, 40, 35, 45, 38, 41, 39, 42, 43, 19,
-  6, 24, 25, 20, 26, 21, 46, 28, 27, 47, 22, 29, 23, 30, 31, 12
 };
 
 static const uint8_t golomb_to_inter_cbp_gray[16]={
