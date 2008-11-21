@@ -3704,7 +3704,7 @@ static int opt_preset(const char *opt, const char *arg)
             continue;
         e|= sscanf(line, "%999[^=]=%999[^\n]\n", tmp, tmp2) - 2;
         if(e){
-            fprintf(stderr, "%s: Preset file invalid\n", filename);
+            fprintf(stderr, "%s: Invalid syntax: '%s'\n", filename, line);
             av_exit(1);
         }
         if(!strcmp(tmp, "acodec")){
