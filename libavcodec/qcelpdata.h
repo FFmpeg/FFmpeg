@@ -480,7 +480,7 @@ static const int8_t qcelp_rate_half_codebook[128] = {
  * table for impulse response of BPF used to filter
  * the white excitation for framerate 1/4 synthesis
  *
- * Only half the tables are needed because of symetry.
+ * Only half the tables are needed because of symmetry.
  *
  * TIA/EIA/IS-733 2.4.8.1.2-1.1
  */
