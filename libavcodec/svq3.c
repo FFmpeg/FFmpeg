@@ -114,7 +114,8 @@ static const uint32_t svq3_dequant_coeff[32] = {
 };
 
 
-static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp){
+static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp)
+{
     const int qmul= svq3_dequant_coeff[qp];
 #define stride 16
     int i;
@@ -150,7 +151,8 @@ static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp){
 }
 #undef stride
 
-static void svq3_add_idct_c (uint8_t *dst, DCTELEM *block, int stride, int qp, int dc){
+static void svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc)
+{
     const int qmul= svq3_dequant_coeff[qp];
     int i;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
@@ -186,9 +188,9 @@ static void svq3_add_idct_c (uint8_t *dst, DCTELEM *block, int stride, int qp, i
     }
 }
 
-static inline int svq3_decode_block (GetBitContext *gb, DCTELEM *block,
-                                     int index, const int type) {
-
+static inline int svq3_decode_block(GetBitContext *gb, DCTELEM *block,
+                                    int index, const int type)
+{
   static const uint8_t *const scan_patterns[4] =
   { luma_dc_zigzag_scan, zigzag_scan, svq3_scan, chroma_dc_scan };
 
@@ -243,11 +245,11 @@ static inline int svq3_decode_block (GetBitContext *gb, DCTELEM *block,
   return 0;
 }
 
-static inline void svq3_mc_dir_part (MpegEncContext *s,
-                                     int x, int y, int width, int height,
-                                     int mx, int my, int dxy,
-                                     int thirdpel, int dir, int avg) {
-
+static inline void svq3_mc_dir_part(MpegEncContext *s,
+                                    int x, int y, int width, int height,
+                                    int mx, int my, int dxy,
+                                    int thirdpel, int dir, int avg)
+{
   const Picture *pic = (dir == 0) ? &s->last_picture : &s->next_picture;
   uint8_t *src, *dest;
   int i, emu = 0;
@@ -305,8 +307,9 @@ static inline void svq3_mc_dir_part (MpegEncContext *s,
   }
 }
 
-static inline int svq3_mc_dir (H264Context *h, int size, int mode, int dir, int avg) {
-
+static inline int svq3_mc_dir(H264Context *h, int size, int mode, int dir,
+                              int avg)
+{
   int i, j, k, mx, my, dx, dy, x, y;
   MpegEncContext *const s = (MpegEncContext *) h;
   const int part_width  = ((size & 5) == 4) ? 4 : 16 >> (size & 1);
@@ -411,7 +414,8 @@ static inline int svq3_mc_dir (H264Context *h, int size, int mode, int dir, int 
   return 0;
 }
 
-static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
+static int svq3_decode_mb(H264Context *h, unsigned int mb_type)
+{
   int i, j, k, m, dir, mode;
   int cbp = 0;
   uint32_t vlc;
@@ -685,7 +689,8 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
   return 0;
 }
 
-static int svq3_decode_slice_header (H264Context *h) {
+static int svq3_decode_slice_header(H264Context *h)
+{
   MpegEncContext *const s = (MpegEncContext *) h;
   const int mb_xy = h->mb_xy;
   int i, header;
@@ -768,9 +773,10 @@ static int svq3_decode_slice_header (H264Context *h) {
   return 0;
 }
 
-static int svq3_decode_frame (AVCodecContext *avctx,
-                              void *data, int *data_size,
-                              const uint8_t *buf, int buf_size) {
+static int svq3_decode_frame(AVCodecContext *avctx,
+                             void *data, int *data_size,
+                             const uint8_t *buf, int buf_size)
+{
   MpegEncContext *const s = avctx->priv_data;
   H264Context *const h = avctx->priv_data;
   int m, mb_type;
