@@ -56,7 +56,8 @@ static void weighted_vector_sumf(float *out, const float *in_a,
  *
  * TIA/EIA/IS-733 2.4.9
  */
-static av_cold int qcelp_decode_init(AVCodecContext *avctx) {
+static av_cold int qcelp_decode_init(AVCodecContext *avctx)
+{
     QCELPContext *q = avctx->priv_data;
     int i;
 
@@ -79,22 +80,24 @@ static av_cold int qcelp_decode_init(AVCodecContext *avctx) {
  *
  * TIA/EIA/IS-733 2.4.3.2.6.2-2, 2.4.8.7.3
  */
-static int decode_lspf(QCELPContext *q,
-                       float *lspf) {
+static int decode_lspf(QCELPContext *q, float *lspf)
+{
     int i;
     float tmp_lspf;
 
-    if (q->bitrate == RATE_OCTAVE ||
-        q->bitrate == I_F_Q) {
+    if(q->bitrate == RATE_OCTAVE || q->bitrate == I_F_Q)
+    {
         float smooth;
         const float *predictors = (q->prev_bitrate != RATE_OCTAVE &&
                                    q->prev_bitrate != I_F_Q ? q->prev_lspf
                                                             : q->predictor_lspf);
 
-        if (q->bitrate == RATE_OCTAVE) {
+        if(q->bitrate == RATE_OCTAVE)
+        {
             q->octave_count++;
 
-            for (i = 0; i < 10; i++) {
+            for(i=0; i<10; i++)
+            {
                 q->predictor_lspf[i] =
                              lspf[i] = (q->lspv[i] ?  QCELP_LSP_SPREAD_FACTOR
                                                    : -QCELP_LSP_SPREAD_FACTOR)
@@ -102,15 +105,17 @@ static int decode_lspf(QCELPContext *q,
                                      + (i + 1) * ((1 - QCELP_LSP_OCTAVE_PREDICTOR)/11);
             }
             smooth = (q->octave_count < 10 ? .875 : 0.1);
-        } else {
+        }else
+        {
             float erasure_coeff = QCELP_LSP_OCTAVE_PREDICTOR;
 
             assert(q->bitrate == I_F_Q);
 
-            if (q->erasure_count > 1)
+            if(q->erasure_count > 1)
                 erasure_coeff *= (q->erasure_count < 4 ? 0.9 : 0.7);
 
-            for (i = 0; i < 10; i++) {
+            for(i=0; i<10; i++)
+            {
                 q->predictor_lspf[i] =
                              lspf[i] = (i + 1) * ( 1 - erasure_coeff)/11
                                      + erasure_coeff * predictors[i];
@@ -120,35 +125,39 @@ static int decode_lspf(QCELPContext *q,
 
         // Check the stability of the LSP frequencies.
         lspf[0] = FFMAX(lspf[0], QCELP_LSP_SPREAD_FACTOR);
-        for (i = 1; i < 10; i++)
+        for(i=1; i<10; i++)
             lspf[i] = FFMAX(lspf[i], (lspf[i-1] + QCELP_LSP_SPREAD_FACTOR));
 
         lspf[9] = FFMIN(lspf[9], (1.0 - QCELP_LSP_SPREAD_FACTOR));
-        for (i = 9; i > 0; i--)
+        for(i=9; i>0; i--)
             lspf[i-1] = FFMIN(lspf[i-1], (lspf[i] - QCELP_LSP_SPREAD_FACTOR));
 
         // Low-pass filter the LSP frequencies.
-        weighted_vector_sumf(lspf, lspf, q->prev_lspf, smooth, 1.0 - smooth, 10);
-    } else {
+        weighted_vector_sumf(lspf, lspf, q->prev_lspf, smooth, 1.0-smooth, 10);
+    }else
+    {
         q->octave_count = 0;
 
         tmp_lspf = 0.;
-        for (i = 0; i < 5 ; i++) {
+        for(i=0; i<5 ; i++)
+        {
             lspf[2*i+0] = tmp_lspf += qcelp_lspvq[i][q->lspv[i]][0] * 0.0001;
             lspf[2*i+1] = tmp_lspf += qcelp_lspvq[i][q->lspv[i]][1] * 0.0001;
         }
 
         // Check for badly received packets.
-        if (q->bitrate == RATE_QUARTER) {
-            if (lspf[9] <= .70 || lspf[9] >=  .97)
+        if(q->bitrate == RATE_QUARTER)
+        {
+            if(lspf[9] <= .70 || lspf[9] >=  .97)
                 return -1;
-            for (i = 3; i < 10; i++)
-                if (fabs(lspf[i] - lspf[i-2]) < .08)
+            for(i=3; i<10; i++)
+                if(fabs(lspf[i] - lspf[i-2]) < .08)
                     return -1;
-        } else {
-            if (lspf[9] <= .66 || lspf[9] >= .985)
+        }else
+        {
+            if(lspf[9] <= .66 || lspf[9] >= .985)
                 return -1;
-            for (i = 4; i < 10; i++)
+            for(i=4; i<10; i++)
                 if (fabs(lspf[i] - lspf[i-4]) < .0931)
                     return -1;
         }
@@ -157,23 +166,26 @@ static int decode_lspf(QCELPContext *q,
 }
 
 /**
- * If the received packet is Rate 1/4 a further sanity check is made of the codebook gain.
+ * If the received packet is Rate 1/4 a further sanity check is made of the
+ * codebook gain.
  *
  * @param cbgain the unpacked cbgain array
  * @return -1 if the sanity check fails, 0 otherwise
  *
  * TIA/EIA/IS-733 2.4.8.7.3
  */
-static int codebook_sanity_check_for_rate_quarter(const uint8_t *cbgain) {
+static int codebook_sanity_check_for_rate_quarter(const uint8_t *cbgain)
+{
    int i, prev_diff=0;
 
-   for (i = 1; i < 5; i++) {
-       int diff = cbgain[i] - cbgain[i-1];
-       if (FFABS(diff) > 10)
-           return -1;
-       else if (FFABS(diff - prev_diff) > 12)
-           return -1;
-       prev_diff = diff;
+    for(i=1; i<5; i++)
+    {
+        int diff = cbgain[i] - cbgain[i-1];
+        if(FFABS(diff) > 10)
+            return -1;
+        else if(FFABS(diff - prev_diff) > 12)
+            return -1;
+        prev_diff = diff;
    }
    return 0;
 }
@@ -199,72 +211,81 @@ static int codebook_sanity_check_for_rate_quarter(const uint8_t *cbgain) {
  * @param gain array holding the 4 pitch subframe gain values
  * @param cdn_vector array for the generated scaled codebook vector
  */
-static void compute_svector(const QCELPContext *q,
-                            const float *gain,
-                            float *cdn_vector) {
+static void compute_svector(const QCELPContext *q, const float *gain,
+                            float *cdn_vector)
+{
     int      i, j, k;
     uint16_t cbseed, cindex;
     float    *rnd, tmp_gain, fir_filter_value;
 
-    switch (q->bitrate) {
-    case RATE_FULL:
-        for (i = 0; i < 16; i++) {
-            tmp_gain = gain[i] * QCELP_RATE_FULL_CODEBOOK_RATIO;
-            cindex = -q->cindex[i];
-            for (j = 0; j < 10; j++)
-                *cdn_vector++ = tmp_gain * qcelp_rate_full_codebook[cindex++ & 127];
-        }
+    switch(q->bitrate)
+    {
+        case RATE_FULL:
+            for(i=0; i<16; i++)
+            {
+                tmp_gain = gain[i] * QCELP_RATE_FULL_CODEBOOK_RATIO;
+                cindex = -q->cindex[i];
+                for(j=0; j<10; j++)
+                    *cdn_vector++ = tmp_gain * qcelp_rate_full_codebook[cindex++ & 127];
+            }
         break;
-    case RATE_HALF:
-        for (i = 0; i < 4; i++) {
-            tmp_gain = gain[i] * QCELP_RATE_HALF_CODEBOOK_RATIO;
-            cindex = -q->cindex[i];
-            for (j = 0; j < 40; j++)
+        case RATE_HALF:
+            for(i=0; i<4; i++)
+            {
+                tmp_gain = gain[i] * QCELP_RATE_HALF_CODEBOOK_RATIO;
+                cindex = -q->cindex[i];
+                for (j = 0; j < 40; j++)
                 *cdn_vector++ = tmp_gain * qcelp_rate_half_codebook[cindex++ & 127];
-        }
-        break;
-    case RATE_QUARTER:
-        cbseed = (0x0003 & q->lspv[4])<<14 |
-                 (0x003F & q->lspv[3])<< 8 |
-                 (0x0060 & q->lspv[2])<< 1 |
-                 (0x0007 & q->lspv[1])<< 3 |
-                 (0x0038 & q->lspv[0])>> 3 ;
-        rnd = q->rnd_fir_filter_mem + 20;
-        for (i = 0; i < 8; i++) {
-            tmp_gain = gain[i] * (QCELP_SQRT1887 / 32768.0);
-            for (k = 0; k < 20; k++) {
-                cbseed = 521 * cbseed + 259;
-                *rnd = (int16_t)cbseed;
-
-                // FIR filter
-                fir_filter_value = 0.0;
-                for (j = 0; j < 10; j++)
-                    fir_filter_value += qcelp_rnd_fir_coefs[j ] * (rnd[-j ] + rnd[-20+j]);
-                fir_filter_value     += qcelp_rnd_fir_coefs[10] *  rnd[-10];
-
-                *cdn_vector++ = tmp_gain * fir_filter_value;
-                rnd++;
             }
-        }
-        memcpy(q->rnd_fir_filter_mem, q->rnd_fir_filter_mem + 160, 20 * sizeof(float));
         break;
-    case RATE_OCTAVE:
-        cbseed = q->first16bits;
-        for (i = 0; i < 8; i++) {
-            tmp_gain = gain[i] * (QCELP_SQRT1887 / 32768.0);
-            for (j = 0; j < 20; j++) {
-                cbseed = 521 * cbseed + 259;
-                *cdn_vector++ = tmp_gain * (int16_t)cbseed;
+        case RATE_QUARTER:
+            cbseed = (0x0003 & q->lspv[4])<<14 |
+                     (0x003F & q->lspv[3])<< 8 |
+                     (0x0060 & q->lspv[2])<< 1 |
+                     (0x0007 & q->lspv[1])<< 3 |
+                     (0x0038 & q->lspv[0])>> 3 ;
+            rnd = q->rnd_fir_filter_mem + 20;
+            for(i=0; i<8; i++)
+            {
+                tmp_gain = gain[i] * (QCELP_SQRT1887 / 32768.0);
+                for(k=0; k<20; k++)
+                {
+                    cbseed = 521 * cbseed + 259;
+                    *rnd = (int16_t)cbseed;
+
+                    // FIR filter
+                    fir_filter_value = 0.0;
+                    for(j=0; j<10; j++)
+                        fir_filter_value += qcelp_rnd_fir_coefs[j ]
+                                          * (rnd[-j ] + rnd[-20+j]);
+
+                    fir_filter_value += qcelp_rnd_fir_coefs[10] * rnd[-10];
+                    *cdn_vector++ = tmp_gain * fir_filter_value;
+                    rnd++;
+                }
             }
-        }
+            memcpy(q->rnd_fir_filter_mem, q->rnd_fir_filter_mem + 160, 20 * sizeof(float));
         break;
-    case I_F_Q:
-        cbseed = -44; // random codebook index
-        for (i = 0; i < 4; i++) {
-            tmp_gain = gain[i] * QCELP_RATE_FULL_CODEBOOK_RATIO;
-            for (j = 0; j < 40; j++)
-                *cdn_vector++ = tmp_gain * qcelp_rate_full_codebook[cbseed++ & 127];
-        }
+        case RATE_OCTAVE:
+            cbseed = q->first16bits;
+            for(i=0; i<8; i++)
+            {
+                tmp_gain = gain[i] * (QCELP_SQRT1887 / 32768.0);
+                for(j=0; j<20; j++)
+                {
+                    cbseed = 521 * cbseed + 259;
+                    *cdn_vector++ = tmp_gain * (int16_t)cbseed;
+                }
+            }
+        break;
+        case I_F_Q:
+            cbseed = -44; // random codebook index
+            for(i=0; i<4; i++)
+            {
+                tmp_gain = gain[i] * QCELP_RATE_FULL_CODEBOOK_RATIO;
+                for(j=0; j<40; j++)
+                    *cdn_vector++ = tmp_gain * qcelp_rate_full_codebook[cbseed++ & 127];
+            }
         break;
     }
 }
@@ -282,19 +303,21 @@ static void compute_svector(const QCELPContext *q,
  *
  * TIA/EIA/IS-733 2.4.8.3-2/3/4/5, 2.4.8.6
  */
-static void apply_gain_ctrl(float *v_out,
-                            const float *v_ref,
-                            const float *v_in) {
+static void apply_gain_ctrl(float *v_out, const float *v_ref,
+                            const float *v_in)
+{
     int   i, j, len;
     float scalefactor;
 
-    for (i = 0, j = 0; i < 4; i++) {
+    for(i=0, j=0; i<4; i++)
+    {
         scalefactor = ff_dot_productf(v_in + j, v_in + j, 40);
-        if (scalefactor)
-            scalefactor = sqrt(ff_dot_productf(v_ref + j, v_ref + j, 40) / scalefactor);
+        if(scalefactor)
+            scalefactor = sqrt(ff_dot_productf(v_ref + j, v_ref + j, 40)
+                        / scalefactor);
         else
             av_log_missing_feature(NULL, "Zero energy for gain control", 1);
-        for (len = j + 40; j < len; j++)
+        for(len=j+40; j<len; j++)
             v_out[j] = scalefactor * v_in[j];
     }
 }
@@ -311,7 +334,8 @@ static void apply_gain_ctrl(float *v_out,
  * @param lag per-subframe lag array, each element is
  *        - between 16 and 143 if its corresponding pfrac is 0,
  *        - between 16 and 139 otherwise
- * @param pfrac per-subframe boolean array, 1 if the lag is fractional, 0 otherwise
+ * @param pfrac per-subframe boolean array, 1 if the lag is fractional, 0
+ *        otherwise
  *
  * @return filter output vector
  */
