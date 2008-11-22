@@ -905,11 +905,14 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   s->current_picture.key_frame = (s->pict_type == FF_I_TYPE);
 
   /* Skip B-frames if we do not have reference frames. */
-  if (s->last_picture_ptr == NULL && s->pict_type == FF_B_TYPE) return 0;
+  if (s->last_picture_ptr == NULL && s->pict_type == FF_B_TYPE)
+    return 0;
   /* Skip B-frames if we are in a hurry. */
-  if (avctx->hurry_up && s->pict_type == FF_B_TYPE) return 0;
+  if (avctx->hurry_up && s->pict_type == FF_B_TYPE)
+    return 0;
   /* Skip everything if we are in a hurry >= 5. */
-  if (avctx->hurry_up >= 5) return 0;
+  if (avctx->hurry_up >= 5)
+    return 0;
   if(  (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==FF_B_TYPE)
      ||(avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=FF_I_TYPE)
      || avctx->skip_frame >= AVDISCARD_ALL)
