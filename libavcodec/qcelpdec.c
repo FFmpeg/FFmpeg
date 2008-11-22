@@ -176,7 +176,7 @@ static int decode_lspf(QCELPContext *q, float *lspf)
  */
 static int codebook_sanity_check_for_rate_quarter(const uint8_t *cbgain)
 {
-   int i, prev_diff=0;
+    int i, prev_diff=0;
 
     for(i=1; i<5; i++)
     {
@@ -186,8 +186,8 @@ static int codebook_sanity_check_for_rate_quarter(const uint8_t *cbgain)
         else if(FFABS(diff - prev_diff) > 12)
             return -1;
         prev_diff = diff;
-   }
-   return 0;
+    }
+    return 0;
 }
 
 /**
