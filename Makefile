@@ -299,14 +299,14 @@ $(CODEC_TESTS) $(LAVF_TESTS): regtest-ref
 regtest-ref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/asynth1.sw
 
 $(CODEC_TESTS) regtest-ref: tests/tiny_psnr$(EXESUF)
-	$(SRC_PATH)/tests/regression.sh $@ vsynth   tests/vsynth1 a
-	$(SRC_PATH)/tests/regression.sh $@ rotozoom tests/vsynth2 a
+	$(SRC_PATH)/tests/regression.sh $@ vsynth   tests/vsynth1 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	$(SRC_PATH)/tests/regression.sh $@ rotozoom tests/vsynth2 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 $(LAVF_TESTS):
-	$(SRC_PATH)/tests/regression.sh $@ lavf tests/vsynth1 b
+	$(SRC_PATH)/tests/regression.sh $@ lavf tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 seektest: codectest libavtest tests/seek_test$(EXESUF)
-	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE)
+	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE) "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 servertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	@echo

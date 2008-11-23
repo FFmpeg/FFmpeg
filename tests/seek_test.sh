@@ -3,6 +3,9 @@
 LC_ALL=C
 export LC_ALL
 
+target_exec=$2
+target_path=$3
+
 datadir="tests/data"
 
 logfile="$datadir/seek.regression"
@@ -13,7 +16,7 @@ rm -f $logfile
 for i in $list ; do
     echo ---------------- >> $logfile
     echo $i >> $logfile
-    tests/seek_test $i >> $logfile
+    $target_exec $target_path/tests/seek_test $target_path/$i >> $logfile
 done
 
 if diff -u -w "$reffile" "$logfile" ; then
