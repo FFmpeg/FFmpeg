@@ -432,6 +432,7 @@ OBJS-$(ARCH_ARMV4L)                    += armv4l/dsputil_arm.o          \
                                           armv4l/simple_idct_arm.o      \
 
 OBJS-$(HAVE_ARMV5TE)                   += armv4l/mpegvideo_armv5te.o    \
+                                          armv4l/mpegvideo_armv5te_s.o  \
                                           armv4l/simple_idct_armv5te.o  \
 
 OBJS-$(HAVE_ARMV6)                     += armv4l/simple_idct_armv6.o    \
