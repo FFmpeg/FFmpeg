@@ -119,6 +119,10 @@ show_help(){
   echo "  --enable-cross-compile   assume a cross-compiler is used"
   echo "  --target-os=OS           compiler targets OS [$target_os]"
   echo "  --cc=CC                  use C compiler CC [$cc]"
+  echo "  --host-cc=HOSTCC         use host C compiler HOSTCC"
+  echo "  --host-cflags=HCFLAGS    use HCFLAGS when compiling for host"
+  echo "  --host-ldflags=HLDFLAGS  use HLDFLAGS when linking for host"
+  echo "  --host-libs=HLIBS        use libs HLIBS when linking for host"
   echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
   echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
   echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
@@ -906,6 +910,10 @@ CMDLINE_SET="
     cpu
     cross_prefix
     extra_version
+    host_cc
+    host_cflags
+    host_ldflags
+    host_libs
     logfile
     source_path
     target_os
@@ -1062,6 +1070,7 @@ shlibdir_default="$libdir_default"
 
 # toolchain
 cc_default="gcc"
+host_cc_default="gcc"
 yasmexe="yasm"
 ar="ar"
 nm="nm"
@@ -1108,6 +1117,9 @@ SLIBNAME='$(SLIBPREF)$(FULLNAME)$(SLIBSUF)'
 SLIBNAME_WITH_VERSION='$(SLIBNAME).$(LIBVERSION)'
 SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
 LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
+
+host_cflags='-O3 -g -Wall'
+host_libs='-lm'
 
 # gcc stupidly only outputs the basename of targets with -MM, but we need the
 # full relative path for objects in subdirectories for non-recursive Make.
@@ -1223,6 +1235,8 @@ disabled logging && logfile=/dev/null
 echo "# $0 $@" > $logfile
 set >> $logfile
 
+test -n "$cross_prefix" && enable cross_compile
+
 cc_default="${cross_prefix}${cc_default}"
 yasmexe="${cross_prefix}${yasmexe}"
 ar="${cross_prefix}${ar}"
@@ -1231,6 +1245,8 @@ ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
 set_default cc
+enabled cross_compile || host_cc_default=$cc
+set_default host_cc
 
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
@@ -1496,8 +1512,6 @@ add_extralibs $osextralibs
 
 # Combine FFLDFLAGS and the LDFLAGS environment variable.
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
-
-test -n "$cross_prefix" && enable cross_compile
 
 # we need to build at least one lib type
 if ! enabled_any static shared; then
@@ -2221,6 +2235,10 @@ echo "SLIBSUF=$SLIBSUF" >> config.mak
 echo "EXESUF=$EXESUF" >> config.mak
 echo "EXTRA_VERSION=$extra_version" >> config.mak
 echo "DEPEND_CMD=$DEPEND_CMD" >> config.mak
+echo "HOSTCC=$host_cc" >> config.mak
+echo "HOSTCFLAGS=$host_cflags" >> config.mak
+echo "HOSTLDFLAGS=$host_ldflags" >> config.mak
+echo "HOSTLIBS=$host_libs" >> config.mak
 
 if enabled bigendian; then
     echo "WORDS_BIGENDIAN=yes" >> config.mak
