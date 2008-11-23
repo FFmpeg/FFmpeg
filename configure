@@ -118,6 +118,8 @@ show_help(){
   echo "  --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]"
   echo "  --enable-cross-compile   assume a cross-compiler is used"
   echo "  --target-os=OS           compiler targets OS [$target_os]"
+  echo "  --target-exec=CMD        command to run executables on target"
+  echo "  --target-path=DIR        path to view of build directory on target"
   echo "  --cc=CC                  use C compiler CC [$cc]"
   echo "  --host-cc=HOSTCC         use host C compiler HOSTCC"
   echo "  --host-cflags=HCFLAGS    use HCFLAGS when compiling for host"
@@ -916,7 +918,9 @@ CMDLINE_SET="
     host_libs
     logfile
     source_path
+    target_exec
     target_os
+    target_path
 "
 
 # code dependency declarations
@@ -1120,6 +1124,8 @@ LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 
 host_cflags='-O3 -g -Wall'
 host_libs='-lm'
+
+target_path='.'
 
 # gcc stupidly only outputs the basename of targets with -MM, but we need the
 # full relative path for objects in subdirectories for non-recursive Make.
@@ -2239,6 +2245,8 @@ echo "HOSTCC=$host_cc" >> config.mak
 echo "HOSTCFLAGS=$host_cflags" >> config.mak
 echo "HOSTLDFLAGS=$host_ldflags" >> config.mak
 echo "HOSTLIBS=$host_libs" >> config.mak
+echo "TARGET_EXEC=$target_exec" >> config.mak
+echo "TARGET_PATH=$target_path" >> config.mak
 
 if enabled bigendian; then
     echo "WORDS_BIGENDIAN=yes" >> config.mak
