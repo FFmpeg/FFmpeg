@@ -36,7 +36,7 @@
 #include <libavcodec/bitstream.h>
 
 struct RDTDemuxContext {
-    AVFormatContext *ic;
+    AVFormatContext *ic; /**< the containing (RTSP) demux context */
     AVStream *st;
     void *dynamic_protocol_context;
     DynamicPayloadPacketHandlerProc parse_packet;
