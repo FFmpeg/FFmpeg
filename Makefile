@@ -326,8 +326,8 @@ tests/vsynth2/00.pgm: tests/rotozoom$(EXESUF)
 tests/asynth1.sw: tests/audiogen$(EXESUF)
 	$(BUILD_ROOT)/$< $@
 
-%$(EXESUF): %.c
-	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $<
+tests/%$(EXESUF): tests/%.c
+	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
 
 tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
