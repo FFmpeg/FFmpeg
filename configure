@@ -362,7 +362,7 @@ disabled_any(){
 
 set_default(){
     for opt; do
-        eval test -z "\$$opt" && eval $opt=\$${opt}_default
+        eval : \${$opt:=\$${opt}_default}
     done
 }
 
