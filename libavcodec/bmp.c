@@ -85,13 +85,19 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    if (ihsize == 40) {
+    switch(ihsize){
+    case  40: // windib v3
+    case  64: // OS/2 v2
+    case 108: // windib v4
+    case 124: // windib v5
         width = bytestream_get_le32(&buf);
         height = bytestream_get_le32(&buf);
-    } else if (ihsize == 12) {
+        break;
+    case  12: // OS/2 v1
         width  = bytestream_get_le16(&buf);
         height = bytestream_get_le16(&buf);
-    } else {
+        break;
+    default:
         av_log(avctx, AV_LOG_ERROR, "unsupported BMP file, patch welcome\n");
         return -1;
     }
