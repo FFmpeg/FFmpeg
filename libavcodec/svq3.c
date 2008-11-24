@@ -774,15 +774,16 @@ static int svq3_decode_slice_header(H264Context *h)
     return 0;
 }
 
-static int svq3_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
-                             const uint8_t *buf, int buf_size)
+static int svq3_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *const s = avctx->priv_data;
     H264Context *const h = avctx->priv_data;
-    int m, mb_type;
+    int m;
     unsigned char *extradata;
     unsigned int size;
+
+    if (decode_init(avctx) < 0)
+        return -1;
 
     s->flags  = avctx->flags;
     s->flags2 = avctx->flags2;
@@ -879,6 +880,17 @@ static int svq3_decode_frame(AVCodecContext *avctx,
             }
         }
     }
+
+    return 0;
+}
+
+static int svq3_decode_frame(AVCodecContext *avctx,
+                             void *data, int *data_size,
+                             const uint8_t *buf, int buf_size)
+{
+    MpegEncContext *const s = avctx->priv_data;
+    H264Context *const h = avctx->priv_data;
+    int m, mb_type;
 
     /* special case for last picture */
     if (buf_size == 0) {
@@ -1030,7 +1042,7 @@ AVCodec svq3_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_SVQ3,
     sizeof(H264Context),
-    decode_init,
+    svq3_decode_init,
     NULL,
     decode_end,
     svq3_decode_frame,
