@@ -41,7 +41,7 @@
  * N (code in SoC repo) Long Term Prediction
  * Y                    intensity stereo
  * Y                    channel coupling
- * N                    frequency domain prediction
+ * Y                    frequency domain prediction
  * Y                    Perceptual Noise Substitution
  * Y                    Mid/Side stereo
  * N                    Scalable Inverse AAC Quantization
@@ -331,6 +331,7 @@ static int decode_audio_specific_config(AACContext * ac, void *data, int data_si
     skip_bits_long(&gb, i);
 
     switch (ac->m4ac.object_type) {
+    case AOT_AAC_MAIN:
     case AOT_AAC_LC:
         if (decode_ga_specific_config(ac, &gb, ac->m4ac.chan_config))
             return -1;
@@ -352,6 +353,27 @@ static int decode_audio_specific_config(AACContext * ac, void *data, int data_si
  */
 static av_always_inline int lcg_random(int previous_val) {
     return previous_val * 1664525 + 1013904223;
+}
+
+static void reset_predict_state(PredictorState * ps) {
+    ps->r0 = 0.0f;
+    ps->r1 = 0.0f;
+    ps->cor0 = 0.0f;
+    ps->cor1 = 0.0f;
+    ps->var0 = 1.0f;
+    ps->var1 = 1.0f;
+}
+
+static void reset_all_predictors(PredictorState * ps) {
+    int i;
+    for (i = 0; i < MAX_PREDICTORS; i++)
+        reset_predict_state(&ps[i]);
+}
+
+static void reset_predictor_group(PredictorState * ps, int group_num) {
+    int i;
+    for (i = group_num-1; i < MAX_PREDICTORS; i+=30)
+        reset_predict_state(&ps[i]);
 }
 
 static av_cold int aac_decode_init(AVCodecContext * avccontext) {
@@ -432,6 +454,21 @@ static void skip_data_stream_element(GetBitContext * gb) {
     skip_bits_long(gb, 8 * count);
 }
 
+static int decode_prediction(AACContext * ac, IndividualChannelStream * ics, GetBitContext * gb) {
+    int sfb;
+    if (get_bits1(gb)) {
+        ics->predictor_reset_group = get_bits(gb, 5);
+        if (ics->predictor_reset_group == 0 || ics->predictor_reset_group > 30) {
+            av_log(ac->avccontext, AV_LOG_ERROR, "Invalid Predictor Reset Group.\n");
+            return -1;
+        }
+    }
+    for (sfb = 0; sfb < FFMIN(ics->max_sfb, ff_aac_pred_sfb_max[ac->m4ac.sampling_index]); sfb++) {
+        ics->prediction_used[sfb] = get_bits1(gb);
+    }
+    return 0;
+}
+
 /**
  * Decode Individual Channel Stream info; reference: table 4.6.
  *
@@ -464,16 +501,30 @@ static int decode_ics_info(AACContext * ac, IndividualChannelStream * ics, GetBi
         ics->swb_offset    =      swb_offset_128[ac->m4ac.sampling_index];
         ics->num_swb       =  ff_aac_num_swb_128[ac->m4ac.sampling_index];
         ics->tns_max_bands =   tns_max_bands_128[ac->m4ac.sampling_index];
+        ics->predictor_present = 0;
     } else {
         ics->max_sfb       = get_bits(gb, 6);
         ics->num_windows   = 1;
         ics->swb_offset    =     swb_offset_1024[ac->m4ac.sampling_index];
         ics->num_swb       = ff_aac_num_swb_1024[ac->m4ac.sampling_index];
         ics->tns_max_bands =  tns_max_bands_1024[ac->m4ac.sampling_index];
-        if (get_bits1(gb)) {
+        ics->predictor_present = get_bits1(gb);
+        ics->predictor_reset_group = 0;
+        if (ics->predictor_present) {
+            if (ac->m4ac.object_type == AOT_AAC_MAIN) {
+                if (decode_prediction(ac, ics, gb)) {
+                    memset(ics, 0, sizeof(IndividualChannelStream));
+                    return -1;
+                }
+            } else if (ac->m4ac.object_type == AOT_AAC_LC) {
+                av_log(ac->avccontext, AV_LOG_ERROR, "Prediction is not allowed in AAC-LC.\n");
+                memset(ics, 0, sizeof(IndividualChannelStream));
+                return -1;
+            } else {
             av_log_missing_feature(ac->avccontext, "Predictor bit set but LTP is", 1);
             memset(ics, 0, sizeof(IndividualChannelStream));
             return -1;
+            }
         }
     }
 
@@ -786,6 +837,77 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
     return 0;
 }
 
+static av_always_inline float flt16_round(float pf) {
+    int exp;
+    pf = frexpf(pf, &exp);
+    pf = ldexpf(roundf(ldexpf(pf, 8)), exp-8);
+    return pf;
+}
+
+static av_always_inline float flt16_even(float pf) {
+    int exp;
+    pf = frexpf(pf, &exp);
+    pf = ldexpf(rintf(ldexpf(pf, 8)), exp-8);
+    return pf;
+}
+
+static av_always_inline float flt16_trunc(float pf) {
+    int exp;
+    pf = frexpf(pf, &exp);
+    pf = ldexpf(truncf(ldexpf(pf, 8)), exp-8);
+    return pf;
+}
+
+static void predict(AACContext * ac, PredictorState * ps, float* coef, int output_enable) {
+    const float a     = 0.953125; // 61.0/64
+    const float alpha = 0.90625;  // 29.0/32
+    float e0, e1;
+    float pv;
+    float k1, k2;
+
+    k1 = ps->var0 > 1 ? ps->cor0 * flt16_even(a / ps->var0) : 0;
+    k2 = ps->var1 > 1 ? ps->cor1 * flt16_even(a / ps->var1) : 0;
+
+    pv = flt16_round(k1 * ps->r0 + k2 * ps->r1);
+    if (output_enable)
+        *coef += pv * ac->sf_scale;
+
+    e0 = *coef / ac->sf_scale;
+    e1 = e0 - k1 * ps->r0;
+
+    ps->cor1 = flt16_trunc(alpha * ps->cor1 + ps->r1 * e1);
+    ps->var1 = flt16_trunc(alpha * ps->var1 + 0.5 * (ps->r1 * ps->r1 + e1 * e1));
+    ps->cor0 = flt16_trunc(alpha * ps->cor0 + ps->r0 * e0);
+    ps->var0 = flt16_trunc(alpha * ps->var0 + 0.5 * (ps->r0 * ps->r0 + e0 * e0));
+
+    ps->r1 = flt16_trunc(a * (ps->r0 - k1 * e0));
+    ps->r0 = flt16_trunc(a * e0);
+}
+
+/**
+ * Apply AAC-Main style frequency domain prediction.
+ */
+static void apply_prediction(AACContext * ac, SingleChannelElement * sce) {
+    int sfb, k;
+
+    if (!sce->ics.predictor_initialized) {
+        reset_all_predictors(sce->ics.predictor_state);
+        sce->ics.predictor_initialized = 1;
+    }
+
+    if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
+        for (sfb = 0; sfb < ff_aac_pred_sfb_max[ac->m4ac.sampling_index]; sfb++) {
+            for (k = sce->ics.swb_offset[sfb]; k < sce->ics.swb_offset[sfb + 1]; k++) {
+                predict(ac, &sce->ics.predictor_state[k], &sce->coeffs[k],
+                    sce->ics.predictor_present && sce->ics.prediction_used[sfb]);
+            }
+        }
+        if (sce->ics.predictor_reset_group)
+            reset_predictor_group(sce->ics.predictor_state, sce->ics.predictor_reset_group);
+    } else
+        reset_all_predictors(sce->ics.predictor_state);
+}
+
 /**
  * Decode an individual_channel_stream payload; reference: table 4.44.
  *
@@ -840,6 +962,10 @@ static int decode_ics(AACContext * ac, SingleChannelElement * sce, GetBitContext
 
     if (decode_spectrum_and_dequant(ac, out, gb, sce->sf, pulse_present, &pulse, ics, sce->band_type) < 0)
         return -1;
+
+    if(ac->m4ac.object_type == AOT_AAC_MAIN)
+        apply_prediction(ac, sce);
+
     return 0;
 }
 

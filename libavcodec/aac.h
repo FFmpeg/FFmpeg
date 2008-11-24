@@ -133,6 +133,20 @@ enum CouplingPoint {
 };
 
 /**
+ * Predictor State
+ */
+typedef struct {
+    float cor0;
+    float cor1;
+    float var0;
+    float var1;
+    float r0;
+    float r1;
+} PredictorState;
+
+#define MAX_PREDICTORS 672
+
+/**
  * Individual Channel Stream
  */
 typedef struct {
@@ -145,6 +159,11 @@ typedef struct {
     int num_swb;                ///< number of scalefactor window bands
     int num_windows;
     int tns_max_bands;
+    int predictor_present;
+    int predictor_initialized;
+    int predictor_reset_group;
+    uint8_t prediction_used[41];
+    PredictorState predictor_state[MAX_PREDICTORS];
 } IndividualChannelStream;
 
 /**

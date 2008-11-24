@@ -54,6 +54,8 @@ extern const uint8_t ff_aac_num_swb_1024[];
 extern const uint8_t ff_aac_num_swb_128 [];
 // @}
 
+extern const uint8_t ff_aac_pred_sfb_max [];
+
 extern const uint32_t ff_aac_scalefactor_code[121];
 extern const uint8_t  ff_aac_scalefactor_bits[121];
 

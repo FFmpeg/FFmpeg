@@ -43,6 +43,10 @@ const uint8_t ff_aac_num_swb_128[] = {
     12, 12, 12, 14, 14, 14, 15, 15, 15, 15, 15, 15
 };
 
+const uint8_t ff_aac_pred_sfb_max[] = {
+    33, 33, 38, 40, 40, 40, 41, 41, 37, 37, 37, 34
+};
+
 const uint32_t ff_aac_scalefactor_code[121] = {
     0x3ffe8, 0x3ffe6, 0x3ffe7, 0x3ffe5, 0x7fff5, 0x7fff1, 0x7ffed, 0x7fff6,
     0x7ffee, 0x7ffef, 0x7fff0, 0x7fffc, 0x7fffd, 0x7ffff, 0x7fffe, 0x7fff7,
