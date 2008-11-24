@@ -29,7 +29,9 @@
  * @remark FFmpeg merging spearheaded by Kenan Gillet
  */
 
+#include <stddef.h>
 #include <stdint.h>
+#include "libavutil/common.h"
 
 /**
  * pre-calculated table for hammsinc function
