@@ -73,15 +73,19 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     buf += 2; /* reserved2 */
 
     hsize = bytestream_get_le32(&buf); /* header size */
-    if(fsize <= hsize){
-        av_log(avctx, AV_LOG_ERROR, "declared file size is less than header size (%d < %d)\n",
-               fsize, hsize);
-        return -1;
-    }
-
     ihsize = bytestream_get_le32(&buf);       /* more header size */
     if(ihsize + 14 > hsize){
         av_log(avctx, AV_LOG_ERROR, "invalid header size %d\n", hsize);
+        return -1;
+    }
+
+    /* sometimes file size is set to some headers size, set a real size in that case */
+    if(fsize == 14 || fsize == ihsize + 14)
+        fsize = buf_size - 2;
+
+    if(fsize <= hsize){
+        av_log(avctx, AV_LOG_ERROR, "declared file size is less than header size (%d < %d)\n",
+               fsize, hsize);
         return -1;
     }
 
