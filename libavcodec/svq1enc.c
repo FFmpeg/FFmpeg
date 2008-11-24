@@ -67,6 +67,8 @@ typedef struct SVQ1Context {
     int16_t (*motion_val16[3])[2];
 
     int64_t rd_total;
+
+    uint8_t *scratchbuf;
 } SVQ1Context;
 
 static void svq1_write_header(SVQ1Context *s, int frame_type)
@@ -378,7 +380,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
             uint8_t *decoded= decoded_plane + offset;
             uint8_t *ref= ref_plane + offset;
             int score[4]={0,0,0,0}, best;
-            uint8_t temp[16*stride];
+            uint8_t *temp = s->scratchbuf;
 
             if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < 3000){ //FIXME check size
                 av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
@@ -524,6 +526,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     if(!s->current_picture.data[0]){
         avctx->get_buffer(avctx, &s->current_picture);
         avctx->get_buffer(avctx, &s->last_picture);
+        s->scratchbuf = av_malloc(s->current_picture.linesize[0] * 16);
     }
 
     temp= s->current_picture;
@@ -566,6 +569,7 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
     av_freep(&s->m.me.score_map);
     av_freep(&s->mb_type);
     av_freep(&s->dummy);
+    av_freep(&s->scratchbuf);
 
     for(i=0; i<3; i++){
         av_freep(&s->motion_val8[i]);
