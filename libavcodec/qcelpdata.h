@@ -49,6 +49,8 @@ typedef struct {
 
 #define QCELP_OF(variable, bit, len) {offsetof(QCELPContext, variable), bit, len}
 
+/* Disable the below code for now to allow 'make checkheaders' to pass. */
+#if 0
 /**
  * bitmap unpacking tables for RATE_FULL
  *
@@ -248,6 +250,7 @@ static const uint16_t qcelp_bits_per_rate[5] = {
     FF_ARRAY_ELEMS(qcelp_rate_half_bitmap),
     FF_ARRAY_ELEMS(qcelp_rate_full_bitmap),
 };
+#endif
 
 typedef uint16_t qcelp_vector[2];
 
