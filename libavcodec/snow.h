@@ -129,8 +129,8 @@ extern void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride,
 int w53_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h);
 int w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h);
 #else
-static int w53_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {assert (0);}
-static int w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {assert (0);}
+static int w53_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {assert (0); return 0;}
+static int w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {assert (0); return 0;}
 #endif
 
 /* C bits used by mmx/sse2/altivec */
