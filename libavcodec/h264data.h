@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include "libavutil/rational.h"
 #include "mpegvideo.h"
+#include "h264.h"
 
 
 static const AVRational pixel_aspect[17]={
@@ -361,12 +362,6 @@ static const uint8_t field_scan8x8_cavlc[64]={
  3+7*8, 5+2*8, 4+7*8, 5+4*8,
  6+3*8, 6+5*8, 7+3*8, 7+7*8,
 };
-
-#define MB_TYPE_REF0       MB_TYPE_ACPRED //dirty but it fits in 16bit
-#define MB_TYPE_8x8DCT     0x01000000
-#define IS_REF0(a)       ((a)&MB_TYPE_REF0)
-#define IS_8x8DCT(a)     ((a)&MB_TYPE_8x8DCT)
-
 
 typedef struct IMbInfo{
     uint16_t type;

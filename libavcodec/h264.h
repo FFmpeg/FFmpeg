@@ -92,6 +92,11 @@
 
 #define EXTENDED_SAR          255
 
+#define MB_TYPE_REF0       MB_TYPE_ACPRED //dirty but it fits in 16 bit
+#define MB_TYPE_8x8DCT     0x01000000
+#define IS_REF0(a)         ((a) & MB_TYPE_REF0)
+#define IS_8x8DCT(a)       ((a) & MB_TYPE_8x8DCT)
+
 /* NAL unit types */
 enum {
     NAL_SLICE=1,
