@@ -351,9 +351,9 @@ static int decode_init(AVCodecContext * avctx)
             int n, norm;
             n = i + 2;
             norm = ((INT64_C(1) << n) * FRAC_ONE) / ((1 << n) - 1);
-            scale_factor_mult[i][0] = MULL(FIXR(1.0 * 2.0), norm);
-            scale_factor_mult[i][1] = MULL(FIXR(0.7937005259 * 2.0), norm);
-            scale_factor_mult[i][2] = MULL(FIXR(0.6299605249 * 2.0), norm);
+            scale_factor_mult[i][0] = MULL(FIXR(1.0 * 2.0), norm, FRAC_BITS);
+            scale_factor_mult[i][1] = MULL(FIXR(0.7937005259 * 2.0), norm, FRAC_BITS);
+            scale_factor_mult[i][2] = MULL(FIXR(0.6299605249 * 2.0), norm, FRAC_BITS);
             dprintf(avctx, "%d: norm=%x s=%x %x %x\n",
                     i, norm,
                     scale_factor_mult[i][0],
@@ -1097,7 +1097,7 @@ static void imdct36(int *out, int *buf, int *in, int *win)
         t2 = tmp[i + 1];
         t3 = tmp[i + 3];
         s1 = MULH(2*(t3 + t2), icos36h[j]);
-        s3 = MULL(t3 - t2, icos36[8 - j]);
+        s3 = MULL(t3 - t2, icos36[8 - j], FRAC_BITS);
 
         t0 = s0 + s1;
         t1 = s0 - s1;
@@ -1705,8 +1705,8 @@ static void compute_stereo(MPADecodeContext *s,
                     v2 = is_tab[1][sf];
                     for(j=0;j<len;j++) {
                         tmp0 = tab0[j];
-                        tab0[j] = MULL(tmp0, v1);
-                        tab1[j] = MULL(tmp0, v2);
+                        tab0[j] = MULL(tmp0, v1, FRAC_BITS);
+                        tab1[j] = MULL(tmp0, v2, FRAC_BITS);
                     }
                 } else {
                 found1:
@@ -1716,8 +1716,8 @@ static void compute_stereo(MPADecodeContext *s,
                         for(j=0;j<len;j++) {
                             tmp0 = tab0[j];
                             tmp1 = tab1[j];
-                            tab0[j] = MULL(tmp0 + tmp1, ISQRT2);
-                            tab1[j] = MULL(tmp0 - tmp1, ISQRT2);
+                            tab0[j] = MULL(tmp0 + tmp1, ISQRT2, FRAC_BITS);
+                            tab1[j] = MULL(tmp0 - tmp1, ISQRT2, FRAC_BITS);
                         }
                     }
                 }
@@ -1749,8 +1749,8 @@ static void compute_stereo(MPADecodeContext *s,
                 v2 = is_tab[1][sf];
                 for(j=0;j<len;j++) {
                     tmp0 = tab0[j];
-                    tab0[j] = MULL(tmp0, v1);
-                    tab1[j] = MULL(tmp0, v2);
+                    tab0[j] = MULL(tmp0, v1, FRAC_BITS);
+                    tab1[j] = MULL(tmp0, v2, FRAC_BITS);
                 }
             } else {
             found2:
@@ -1760,8 +1760,8 @@ static void compute_stereo(MPADecodeContext *s,
                     for(j=0;j<len;j++) {
                         tmp0 = tab0[j];
                         tmp1 = tab1[j];
-                        tab0[j] = MULL(tmp0 + tmp1, ISQRT2);
-                        tab1[j] = MULL(tmp0 - tmp1, ISQRT2);
+                        tab0[j] = MULL(tmp0 + tmp1, ISQRT2, FRAC_BITS);
+                        tab1[j] = MULL(tmp0 - tmp1, ISQRT2, FRAC_BITS);
                     }
                 }
             }

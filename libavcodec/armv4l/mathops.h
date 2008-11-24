@@ -25,19 +25,17 @@
 #include <stdint.h>
 #include "libavutil/common.h"
 
-#ifdef FRAC_BITS
 #   define MULL MULL
-static inline av_const int MULL(int a, int b)
+static inline av_const int MULL(int a, int b, unsigned shift)
 {
     int lo, hi;
     __asm__("smull %0, %1, %2, %3     \n\t"
             "mov   %0, %0,     lsr %4 \n\t"
             "add   %1, %0, %1, lsl %5 \n\t"
             : "=&r"(lo), "=&r"(hi)
-            : "r"(b), "r"(a), "i"(FRAC_BITS), "i"(32-FRAC_BITS));
+            : "r"(b), "r"(a), "i"(shift), "i"(32-shift));
     return hi;
 }
-#endif
 
 #define MULH MULH
 #ifdef HAVE_ARMV6

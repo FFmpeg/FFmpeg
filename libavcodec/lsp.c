@@ -72,7 +72,7 @@ static void lsp2poly(int* f, const int16_t* lsp, int lp_half_order)
     {
         f[i] = f[i-2];
         for(j=i; j>1; j--)
-            f[j] -= MULL(f[j-1], lsp[2*i-2]) - f[j-2];
+            f[j] -= MULL(f[j-1], lsp[2*i-2], FRAC_BITS) - f[j-2];
 
         f[1] -= lsp[2*i-2] << 8;
     }

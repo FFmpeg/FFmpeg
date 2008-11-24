@@ -22,15 +22,13 @@
 #ifndef AVCODEC_I386_MATHOPS_H
 #define AVCODEC_I386_MATHOPS_H
 
-#ifdef FRAC_BITS
-#   define MULL(ra, rb) \
+#define MULL(ra, rb, shift) \
         ({ int rt, dummy; __asm__ (\
             "imull %3               \n\t"\
             "shrdl %4, %%edx, %%eax \n\t"\
             : "=a"(rt), "=d"(dummy)\
-            : "a" ((int)ra), "rm" ((int)rb), "i"(FRAC_BITS));\
+            : "a" ((int)ra), "rm" ((int)rb), "i"(shift));\
          rt; })
-#endif
 
 #define MULH(ra, rb) \
     ({ int rt, dummy;\

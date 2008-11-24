@@ -45,7 +45,7 @@
 /* generic implementation */
 
 #ifndef MULL
-#   define MULL(a,b) (((int64_t)(a) * (int64_t)(b)) >> FRAC_BITS)
+#   define MULL(a,b,s) (((int64_t)(a) * (int64_t)(b)) >> (s))
 #endif
 
 #ifndef MULH
