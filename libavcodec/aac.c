@@ -521,9 +521,9 @@ static int decode_ics_info(AACContext * ac, IndividualChannelStream * ics, GetBi
                 memset(ics, 0, sizeof(IndividualChannelStream));
                 return -1;
             } else {
-            av_log_missing_feature(ac->avccontext, "Predictor bit set but LTP is", 1);
-            memset(ics, 0, sizeof(IndividualChannelStream));
-            return -1;
+                av_log_missing_feature(ac->avccontext, "Predictor bit set but LTP is", 1);
+                memset(ics, 0, sizeof(IndividualChannelStream));
+                return -1;
             }
         }
     }
