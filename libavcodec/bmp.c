@@ -74,7 +74,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
 
     hsize = bytestream_get_le32(&buf); /* header size */
     if(fsize <= hsize){
-        av_log(avctx, AV_LOG_ERROR, "not enough data (%d < %d)\n",
+        av_log(avctx, AV_LOG_ERROR, "declared file size is less than header size (%d < %d)\n",
                fsize, hsize);
         return -1;
     }
