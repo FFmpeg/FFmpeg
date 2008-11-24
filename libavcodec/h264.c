@@ -3631,7 +3631,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     unsigned int first_mb_in_slice;
     unsigned int pps_id;
     int num_ref_idx_active_override_flag;
-    static const uint8_t slice_type_map[5]= {FF_P_TYPE, FF_B_TYPE, FF_I_TYPE, FF_SP_TYPE, FF_SI_TYPE};
     unsigned int slice_type, tmp, i, j;
     int default_ref_list_done = 0;
     int last_pic_structure;
@@ -3665,7 +3664,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }else
         h->slice_type_fixed=0;
 
-    slice_type= slice_type_map[ slice_type ];
+    slice_type= golomb_to_pict_type[ slice_type ];
     if (slice_type == FF_I_TYPE
         || (h0->current_slice != 0 && slice_type == h0->last_slice_type) ) {
         default_ref_list_done = 1;
