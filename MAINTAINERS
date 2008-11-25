@@ -288,6 +288,9 @@ Muxers/Demuxers:
   westwood.c                            Mike Melanson
   wv.c                                  Kostya Shishkov
 
+Protocols:
+  udp.c                                 Luca Abeni
+
 
 Operating systems / CPU architectures
 =====================================
