@@ -488,6 +488,8 @@ typedef struct SnowContext{
     slice_buffer sb;
 
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
+
+    uint8_t *scratchbuf;
 }SnowContext;
 
 typedef struct {
@@ -2423,7 +2425,7 @@ static av_always_inline void add_yblock(SnowContext *s, int sliced, slice_buffer
     BlockNode *rb= lb+1;
     uint8_t *block[4];
     int tmp_step= src_stride >= 7*MB_SIZE ? MB_SIZE : MB_SIZE*src_stride;
-    uint8_t tmp[src_stride*7*MB_SIZE]; //FIXME align
+    uint8_t *tmp = s->scratchbuf;
     uint8_t *ptmp;
     int x,y;
 
@@ -2785,7 +2787,7 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
     uint8_t *dst= s->current_picture.data[plane_index];
     uint8_t *src= s->  input_picture.data[plane_index];
     IDWTELEM *pred= (IDWTELEM*)s->m.obmc_scratchpad + plane_index*block_size*block_size*4;
-    uint8_t cur[ref_stride*2*MB_SIZE]; //FIXME alignment
+    uint8_t *cur = s->scratchbuf;
     uint8_t tmp[ref_stride*(2*MB_SIZE+HTAPS_MAX-1)];
     const int b_stride = s->b_width << s->block_max_depth;
     const int b_height = s->b_height<< s->block_max_depth;
@@ -3703,6 +3705,7 @@ static av_cold int common_init(AVCodecContext *avctx){
             scale_mv_ref[i][j] = 256*(i+1)/(j+1);
 
     s->avctx->get_buffer(s->avctx, &s->mconly_picture);
+    s->scratchbuf = av_malloc(s->mconly_picture.linesize[0]*7*MB_SIZE);
 
     return 0;
 }
@@ -4438,6 +4441,7 @@ static av_cold void common_end(SnowContext *s){
     av_freep(&s->m.obmc_scratchpad);
 
     av_freep(&s->block);
+    av_freep(&s->scratchbuf);
 
     for(i=0; i<MAX_REF_FRAMES; i++){
         av_freep(&s->ref_mvs[i]);
