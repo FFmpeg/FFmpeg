@@ -33,7 +33,7 @@
 #include "bitstream.h"
 #include "bytestream.h"
 #include "dsputil.h"
-extern const uint16_t ff_inv_aanscales[64]; //mpegvideo_enc.c
+#include "aandcttab.h"
 
 typedef struct TgqContext {
     AVCodecContext *avctx;
