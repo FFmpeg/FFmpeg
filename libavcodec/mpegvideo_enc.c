@@ -49,7 +49,7 @@ static int sse_mb(MpegEncContext *s);
 
 //#define DEBUG
 
-static const uint16_t aanscales[64] = {
+static const uint16_t ff_aanscales[64] = {
     /* precomputed values scaled up by 14 bits */
     16384, 22725, 21407, 19266, 16384, 12873,  8867,  4520,
     22725, 31521, 29692, 26722, 22725, 17855, 12299,  6270,
@@ -91,9 +91,9 @@ void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][6
             for(i=0;i<64;i++) {
                 const int j= dsp->idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
-                /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
-                /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
-                /* 3444240       >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= 275 */
+                /* 19952             <= ff_aanscales[i] * qscale * quant_matrix[i]               <= 249205026 */
+                /* (1 << 36) / 19952 >= (1 << 36) / (ff_aanscales[i] * qscale * quant_matrix[i]) >= (1 << 36) / 249205026 */
+                /* 3444240           >= (1 << 36) / (ff_aanscales[i] * qscale * quant_matrix[i]) >= 275 */
 
                 qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) /
                                 (qscale * quant_matrix[j]));
@@ -106,12 +106,12 @@ void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][6
             for(i=0;i<64;i++) {
                 const int j= dsp->idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
-                /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
-                /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
-                /* 3444240       >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= 275 */
+                /* 19952             <= ff_aanscales[i] * qscale * quant_matrix[i]               <= 249205026 */
+                /* (1 << 36) / 19952 >= (1 << 36) / (ff_aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
+                /* 3444240           >= (1 << 36) / (ff_aanscales[i] * qscale * quant_matrix[i]) >= 275 */
 
                 qmat[qscale][i] = (int)((UINT64_C(1) << (QMAT_SHIFT + 14)) /
-                                (aanscales[i] * qscale * quant_matrix[j]));
+                                (ff_aanscales[i] * qscale * quant_matrix[j]));
             }
         } else {
             for(i=0;i<64;i++) {
@@ -137,7 +137,7 @@ void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][6
                    || dsp->fdct == ff_faandct
 #endif
                    ) {
-                max= (8191LL*aanscales[i]) >> 14;
+                max = (8191LL*ff_aanscales[i]) >> 14;
             }
             while(((max * qmat[qscale][i]) >> shift) > INT_MAX){
                 shift++;
