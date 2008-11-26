@@ -90,7 +90,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->dst     = dst;
     link->srcpad  = srcpad;
     link->dstpad  = dstpad;
-    link->format  = -1;
+    link->format  = PIX_FMT_NONE;
 
     return 0;
 }
