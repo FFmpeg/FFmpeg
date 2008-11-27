@@ -1304,7 +1304,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
         }
 
         /* frame rate emulation */
-        if (ist->st->codec->rate_emu) {
+        if (rate_emu) {
             int64_t pts = av_rescale(ist->pts, 1000000, AV_TIME_BASE);
             int64_t now = av_gettime() - ist->start;
             if (pts > now)
@@ -1567,7 +1567,7 @@ static int av_encode(AVFormatContext **output_files,
             ist->discard = 1; /* the stream is discarded by default
                                  (changed later) */
 
-            if (ist->st->codec->rate_emu) {
+            if (rate_emu) {
                 ist->start = av_gettime();
             }
         }
@@ -2854,7 +2854,6 @@ static void opt_input_file(const char *filename)
             frame_rate.num = rfps;
             frame_rate.den = rfps_base;
 
-            enc->rate_emu = rate_emu;
             input_codecs[nb_icodecs++] = avcodec_find_decoder_by_name(video_codec_name);
             if(video_disable)
                 ic->streams[i]->discard= AVDISCARD_ALL;
@@ -2889,7 +2888,6 @@ static void opt_input_file(const char *filename)
 
     video_channel = 0;
 
-    rate_emu = 0;
     av_freep(&video_codec_name);
     av_freep(&audio_codec_name);
     av_freep(&subtitle_codec_name);
