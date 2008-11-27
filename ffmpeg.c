@@ -280,7 +280,6 @@ typedef struct AVInputStream {
     int64_t sample_index;      /* current sample */
 
     int64_t       start;     /* time when read started */
-    unsigned long frame;     /* current frame */
     int64_t       next_pts;  /* synthetic pts for cases where pkt.pts
                                 is not defined */
     int64_t       pts;       /* current pts */
@@ -1310,8 +1309,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
             int64_t now = av_gettime() - ist->start;
             if (pts > now)
                 usleep(pts - now);
-
-            ist->frame++;
         }
 
         /* if output time reached then transcode raw format,
@@ -1572,7 +1569,6 @@ static int av_encode(AVFormatContext **output_files,
 
             if (ist->st->codec->rate_emu) {
                 ist->start = av_gettime();
-                ist->frame = 0;
             }
         }
     }
