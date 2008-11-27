@@ -1306,7 +1306,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
         /* frame rate emulation */
         if (ist->st->codec->rate_emu) {
-            int64_t pts = av_rescale((int64_t) ist->frame * ist->st->codec->time_base.num, 1000000, ist->st->codec->time_base.den);
+            int64_t pts = av_rescale(ist->pts, 1000000, AV_TIME_BASE);
             int64_t now = av_gettime() - ist->start;
             if (pts > now)
                 usleep(pts - now);
