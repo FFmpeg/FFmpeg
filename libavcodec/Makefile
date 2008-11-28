@@ -498,5 +498,5 @@ DIRS = alpha armv4l bfin i386 mlib ppc ps2 sh4 sparc
 
 include $(SUBDIR)../subdir.mak
 
-$(SUBDIR)dct-test$(EXESUF): $(SUBDIR)fdctref.o
+$(SUBDIR)dct-test$(EXESUF): $(SUBDIR)fdctref.o $(SUBDIR)aandcttab.o
 $(SUBDIR)fft-test$(EXESUF): $(SUBDIR)fdctref.o
