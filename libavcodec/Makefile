@@ -490,7 +490,7 @@ OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
 
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 rangecoder snow)
-TESTS-$(CONFIG_OLDSCALER) += imgresample$(EXESUF)
+TESTS-$(CONFIG_OLDSCALER) += imgresample-test$(EXESUF)
 TESTS-$(ARCH_X86) += i386/cpuid-test$(EXESUF) motion-test$(EXESUF)
 
 CLEANFILES = apiexample$(EXESUF)
