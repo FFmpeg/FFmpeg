@@ -151,6 +151,7 @@ static int qp_hist = 0;
 
 static int intra_only = 0;
 static int audio_sample_rate = 44100;
+static int64_t channel_layout = 0;
 #define QSCALE_NONE -99999
 static float audio_qscale = QSCALE_NONE;
 static int audio_disable = 0;
@@ -1731,6 +1732,7 @@ static int av_encode(AVFormatContext **output_files,
                     fprintf(stderr,"-acodec copy and -vol are incompatible (frames are not decoded)\n");
                     av_exit(1);
                 }
+                codec->channel_layout = icodec->channel_layout;
                 codec->sample_rate = icodec->sample_rate;
                 codec->channels = icodec->channels;
                 codec->frame_size = icodec->frame_size;
@@ -2819,6 +2821,7 @@ static void opt_input_file(const char *filename)
         case CODEC_TYPE_AUDIO:
             set_context_opts(enc, avctx_opts[CODEC_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
             //fprintf(stderr, "\nInput Audio channels: %d", enc->channels);
+            channel_layout = enc->channel_layout;
             audio_channels = enc->channels;
             audio_sample_rate = enc->sample_rate;
             audio_sample_fmt = enc->sample_fmt;
@@ -3126,6 +3129,7 @@ static void new_audio_stream(AVFormatContext *oc)
         audio_enc->thread_count = thread_count;
         audio_enc->channels = audio_channels;
         audio_enc->sample_fmt = audio_sample_fmt;
+        audio_enc->channel_layout = channel_layout;
 
         if(codec && codec->sample_fmts){
             const enum SampleFormat *p= codec->sample_fmts;
