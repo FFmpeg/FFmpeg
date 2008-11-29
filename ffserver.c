@@ -4450,7 +4450,7 @@ static void opt_debug()
 
 static void opt_show_help(void)
 {
-    printf("usage: FFserver [options]\n"
+    printf("usage: ffserver [options]\n"
            "Hyper fast multi format Audio/Video streaming server\n");
     printf("\n");
     show_help_options(options, "Main options:\n", 0, 0);
