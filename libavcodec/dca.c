@@ -1175,8 +1175,9 @@ static int dca_convert_bitstream(const uint8_t * src, int src_size, uint8_t * ds
     PutBitContext pb;
 
     if((unsigned)src_size > (unsigned)max_size) {
-        av_log(NULL, AV_LOG_ERROR, "Input frame size larger then DCA_MAX_FRAME_SIZE!\n");
-        return -1;
+//        av_log(NULL, AV_LOG_ERROR, "Input frame size larger then DCA_MAX_FRAME_SIZE!\n");
+//        return -1;
+        src_size = max_size;
     }
 
     mrk = AV_RB32(src);

@@ -31,4 +31,7 @@
 #define DCA_MARKER_14B_BE 0x1FFFE800
 #define DCA_MARKER_14B_LE 0xFF1F00E8
 
+/** DCA-HD specific block starts with this marker. */
+#define DCA_HD_MARKER     0x64582025
+
 #endif /* AVCODEC_DCA_H */
