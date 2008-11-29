@@ -1285,6 +1285,9 @@ static int rv34_decode_slice(RV34DecContext *r, int end, uint8_t* buf, int buf_s
 
             memmove(r->intra_types_hist, r->intra_types, s->b4_stride * 4 * sizeof(*r->intra_types_hist));
             memset(r->intra_types, -1, s->b4_stride * 4 * sizeof(*r->intra_types_hist));
+
+            if(r->loop_filter && s->mb_y >= 2)
+                r->loop_filter(r, s->mb_y - 2);
         }
         if(s->mb_x == s->resync_mb_x)
             s->first_slice_line=0;
@@ -1405,7 +1408,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
 
     if(last){
         if(r->loop_filter)
-            r->loop_filter(r);
+            r->loop_filter(r, s->mb_height - 1);
         ff_er_frame_end(s);
         MPV_frame_end(s);
         if (s->pict_type == FF_B_TYPE || s->low_delay) {

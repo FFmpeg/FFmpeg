@@ -115,7 +115,7 @@ typedef struct RV34DecContext{
     int (*parse_slice_header)(struct RV34DecContext *r, GetBitContext *gb, SliceInfo *si);
     int (*decode_mb_info)(struct RV34DecContext *r);
     int (*decode_intra_types)(struct RV34DecContext *r, GetBitContext *gb, int8_t *dst);
-    void (*loop_filter)(struct RV34DecContext *r);
+    void (*loop_filter)(struct RV34DecContext *r, int row);
 }RV34DecContext;
 
 /**
