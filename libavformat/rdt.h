@@ -28,6 +28,16 @@
 
 typedef struct RDTDemuxContext RDTDemuxContext;
 
+/**
+ * Allocate and init the RDT parsing context.
+ * @param ic the containing RTSP demuxer context
+ * @param first_stream_of_set_idx index to the first AVStream in the RTSP
+ *              demuxer context's ic->streams array that is part of this
+ *              particular stream's set of streams (with identical content)
+ * @param priv_data private data of the payload data handler context
+ * @param handler pointer to the parse_packet() payload parsing function
+ * @return a newly allocated RDTDemuxContext. Free with ff_rdt_parse_close().
+ */
 RDTDemuxContext *ff_rdt_parse_open(AVFormatContext *ic,
                                    int first_stream_of_set_idx,
                                    void *priv_data,
