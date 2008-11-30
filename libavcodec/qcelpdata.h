@@ -34,6 +34,33 @@
 #include "libavutil/common.h"
 
 /**
+ * QCELP unpacked data frame
+ */
+typedef struct {
+/// @defgroup qcelp_codebook_parameters QCELP excitation codebook parameters
+/// @{
+    uint8_t cbsign[16]; ///!< sign of the codebook gain for each codebook subframe
+    uint8_t cbgain[16]; ///!< unsigned codebook gain for each codebook subframe
+    uint8_t cindex[16]; ///!< codebook index for each codebook subframe
+/// @}
+
+/// @defgroup qcelp_pitch_parameters QCELP pitch prediction parameters
+/// @{
+    uint8_t plag[4];    ///!< pitch lag for each pitch subframe
+    uint8_t pfrac[4];   ///!< fractional pitch lag for each pitch subframe
+    uint8_t pgain[4];   ///!< pitch gain for each pitch subframe
+/// @}
+
+    /**
+     * line spectral pair frequencies (LSP) for RATE_OCTAVE,
+     * line spectral pair frequencies grouped into five vectors
+     * of dimension two (LSPV) for other rates
+     */
+    uint8_t lspv[10];
+
+} QCELPFrame;
+
+/**
  * pre-calculated table for hammsinc function
  * Only half of the table is needed because of symmetry.
  *
@@ -47,7 +74,7 @@ typedef struct {
     uint8_t bitlen; /*!< number of bits to read */
 } QCELPBitmap;
 
-#define QCELP_OF(variable, bit, len) {offsetof(QCELPContext, variable), bit, len}
+#define QCELP_OF(variable, bit, len) {offsetof(QCELPFrame, variable), bit, len}
 
 /* Disable the below code for now to allow 'make checkheaders' to pass. */
 #if 0
@@ -243,7 +270,7 @@ static const QCELPBitmap * const qcelp_unpacking_bitmaps_per_rate[5] = {
     qcelp_rate_full_bitmap,
 };
 
-static const uint16_t qcelp_bits_per_rate[5] = {
+static const uint16_t qcelp_unpacking_bitmaps_lengths[5] = {
     0, ///!< for SILENCE rate
     FF_ARRAY_ELEMS(qcelp_rate_octave_bitmap),
     FF_ARRAY_ELEMS(qcelp_rate_quarter_bitmap),
