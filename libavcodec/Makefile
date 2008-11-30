@@ -454,7 +454,13 @@ OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
 
 OBJS-$(ARCH_POWERPC)                   += ppc/dsputil_ppc.o             \
 
-ALTIVEC-OBJS-yes                       += ppc/dsputil_altivec.o         \
+ALTIVEC-OBJS-$(CONFIG_H264_DECODER)    += ppc/h264_altivec.o
+ALTIVEC-OBJS-$(CONFIG_SNOW_DECODER)    += ppc/snow_altivec.o
+ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o
+ALTIVEC-OBJS-$(CONFIG_WMV3_DECODER)    += ppc/vc1dsp_altivec.o
+
+OBJS-$(HAVE_ALTIVEC)                   += ppc/check_altivec.o           \
+                                          ppc/dsputil_altivec.o         \
                                           ppc/fdct_altivec.o            \
                                           ppc/fft_altivec.o             \
                                           ppc/float_altivec.o           \
@@ -462,14 +468,7 @@ ALTIVEC-OBJS-yes                       += ppc/dsputil_altivec.o         \
                                           ppc/idct_altivec.o            \
                                           ppc/int_altivec.o             \
                                           ppc/mpegvideo_altivec.o       \
-
-ALTIVEC-OBJS-$(CONFIG_H264_DECODER)    += ppc/h264_altivec.o
-ALTIVEC-OBJS-$(CONFIG_SNOW_DECODER)    += ppc/snow_altivec.o
-ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o
-ALTIVEC-OBJS-$(CONFIG_WMV3_DECODER)    += ppc/vc1dsp_altivec.o
-
-OBJS-$(HAVE_ALTIVEC)                   += $(ALTIVEC-OBJS-yes)           \
-                                          ppc/check_altivec.o
+                                          $(ALTIVEC-OBJS-yes)
 
 OBJS-$(ARCH_SH4)                       += sh4/dsputil_align.o           \
                                           sh4/dsputil_sh4.o             \
