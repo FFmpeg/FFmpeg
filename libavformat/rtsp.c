@@ -901,7 +901,7 @@ rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     if (rt->transport == RTSP_TRANSPORT_RDT)
-        rtsp_st->tx_ctx = ff_rdt_parse_open(s, st,
+        rtsp_st->tx_ctx = ff_rdt_parse_open(s, st->index,
                                             rtsp_st->dynamic_protocol_context,
                                             rtsp_st->dynamic_handler);
     else

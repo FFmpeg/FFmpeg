@@ -45,7 +45,7 @@ struct RDTDemuxContext {
 };
 
 RDTDemuxContext *
-ff_rdt_parse_open(AVFormatContext *ic, AVStream *st,
+ff_rdt_parse_open(AVFormatContext *ic, int first_stream_of_set_idx,
                   void *priv_data, RTPDynamicProtocolHandler *handler)
 {
     RDTDemuxContext *s = av_mallocz(sizeof(RDTDemuxContext));
@@ -53,7 +53,7 @@ ff_rdt_parse_open(AVFormatContext *ic, AVStream *st,
         return NULL;
 
     s->ic = ic;
-    s->st = st;
+    s->st = ic->streams[first_stream_of_set_idx];
     s->prev_set_id    = -1;
     s->prev_timestamp = -1;
     s->parse_packet = handler->parse_packet;

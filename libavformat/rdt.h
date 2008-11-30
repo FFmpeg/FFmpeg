@@ -28,7 +28,8 @@
 
 typedef struct RDTDemuxContext RDTDemuxContext;
 
-RDTDemuxContext *ff_rdt_parse_open(AVFormatContext *ic, AVStream *st,
+RDTDemuxContext *ff_rdt_parse_open(AVFormatContext *ic,
+                                   int first_stream_of_set_idx,
                                    void *priv_data,
                                    RTPDynamicProtocolHandler *handler);
 void ff_rdt_parse_close(RDTDemuxContext *s);
