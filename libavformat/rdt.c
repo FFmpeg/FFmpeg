@@ -37,7 +37,13 @@
 
 struct RDTDemuxContext {
     AVFormatContext *ic; /**< the containing (RTSP) demux context */
-    AVStream *st;
+    /** Each RDT stream-set (represented by one RTSPStream) can contain
+     * multiple streams (of the same content, but with possibly different
+     * codecs/bitrates). Each such stream is represented by one AVStream
+     * in the AVFormatContext, and this variable points to the offset in
+     * that array such that the first is the first stream of this set. */
+    AVStream **streams;
+    int n_streams; /**< streams with identifical content in this set */
     void *dynamic_protocol_context;
     DynamicPayloadPacketHandlerProc parse_packet;
     uint32_t prev_timestamp;
@@ -53,7 +59,11 @@ ff_rdt_parse_open(AVFormatContext *ic, int first_stream_of_set_idx,
         return NULL;
 
     s->ic = ic;
-    s->st = ic->streams[first_stream_of_set_idx];
+    s->streams = &ic->streams[first_stream_of_set_idx];
+    do {
+        s->n_streams++;
+    } while (first_stream_of_set_idx + s->n_streams < ic->nb_streams &&
+             s->streams[s->n_streams]->priv_data == s->streams[0]->priv_data);
     s->prev_set_id    = -1;
     s->prev_timestamp = -1;
     s->parse_packet = handler->parse_packet;
@@ -328,7 +338,7 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
         /* return the next packets, if any */
         timestamp= 0; ///< Should not be used if buf is NULL, but should be set to the timestamp of the packet returned....
         rv= s->parse_packet(s->dynamic_protocol_context,
-                            s->st, pkt, &timestamp, NULL, 0, flags);
+                            s->streams[0], pkt, &timestamp, NULL, 0, flags);
         return rv;
     }
 
@@ -346,7 +356,7 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
     len -= rv;
 
     rv = s->parse_packet(s->dynamic_protocol_context,
-                         s->st, pkt, &timestamp, buf, len, flags);
+                         s->streams[0], pkt, &timestamp, buf, len, flags);
 
     return rv;
 }
@@ -365,7 +375,7 @@ ff_rdt_subscribe_rule2 (RDTDemuxContext *s, char *cmd, int size,
 {
     PayloadContext *rdt = s->dynamic_protocol_context;
 
-    rdt_load_mdpr(rdt, s->st, rule_nr * 2);
+    rdt_load_mdpr(rdt, s->streams[0], rule_nr * 2);
 }
 
 static unsigned char *
