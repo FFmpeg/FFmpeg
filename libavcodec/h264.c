@@ -3639,6 +3639,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         if(h != h0)
             return -1;   // width / height changed during parallelized decoding
         free_tables(h);
+        flush_dpb(s->avctx);
         MPV_common_end(s);
     }
     if (!s->context_initialized) {
