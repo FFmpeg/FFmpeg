@@ -468,10 +468,6 @@ ALTIVEC-OBJS-$(CONFIG_SNOW_DECODER)    += ppc/snow_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_WMV3_DECODER)    += ppc/vc1dsp_altivec.o
 
-# -maltivec is needed in order to build AltiVec code.
-$(addprefix $(SUBDIR),$(ALTIVEC-OBJS-yes)): CFLAGS += -maltivec -mabi=altivec
-
-# check_altivec must be built without -maltivec
 OBJS-$(HAVE_ALTIVEC)                   += $(ALTIVEC-OBJS-yes)           \
                                           ppc/check_altivec.o
 
