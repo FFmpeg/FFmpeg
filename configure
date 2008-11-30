@@ -1830,7 +1830,7 @@ if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
 fi
 
 disabled  zlib || check_lib  zlib.h      zlibVersion -lz   || disable  zlib
-disabled bzlib || check_lib bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
+disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads
