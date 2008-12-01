@@ -6977,26 +6977,6 @@ static void decode_scaling_matrices(H264Context *h, SPS *sps, PPS *pps, int is_s
     }
 }
 
-/**
- * Returns and optionally allocates SPS / PPS structures in the supplied array 'vec'
- */
-static void *
-alloc_parameter_set(H264Context *h, void **vec, const unsigned int id, const unsigned int max,
-                    const size_t size, const char *name)
-{
-    if(id>=max) {
-        av_log(h->s.avctx, AV_LOG_ERROR, "%s_id (%d) out of range\n", name, id);
-        return NULL;
-    }
-
-    if(!vec[id]) {
-        vec[id] = av_mallocz(size);
-        if(vec[id] == NULL)
-            av_log(h->s.avctx, AV_LOG_ERROR, "cannot allocate memory for %s\n", name);
-    }
-    return vec[id];
-}
-
 static inline int decode_seq_parameter_set(H264Context *h){
     MpegEncContext * const s = &h->s;
     int profile_idc, level_idc;
@@ -7013,7 +6993,11 @@ static inline int decode_seq_parameter_set(H264Context *h){
     level_idc= get_bits(&s->gb, 8);
     sps_id= get_ue_golomb(&s->gb);
 
-    sps = alloc_parameter_set(h, (void **)h->sps_buffers, sps_id, MAX_SPS_COUNT, sizeof(SPS), "sps");
+    if(sps_id >= MAX_SPS_COUNT) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "sps_id (%d) out of range\n", sps_id);
+        return -1;
+    }
+    sps= av_mallocz(sizeof(SPS));
     if(sps == NULL)
         return -1;
 
@@ -7049,7 +7033,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
 
         if(tmp >= FF_ARRAY_ELEMS(sps->offset_for_ref_frame)){
             av_log(h->s.avctx, AV_LOG_ERROR, "poc_cycle_length overflow %u\n", tmp);
-            return -1;
+            goto fail;
         }
         sps->poc_cycle_length= tmp;
 
@@ -7057,13 +7041,13 @@ static inline int decode_seq_parameter_set(H264Context *h){
             sps->offset_for_ref_frame[i]= get_se_golomb(&s->gb);
     }else if(sps->poc_type != 2){
         av_log(h->s.avctx, AV_LOG_ERROR, "illegal POC type %d\n", sps->poc_type);
-        return -1;
+        goto fail;
     }
 
     tmp= get_ue_golomb(&s->gb);
     if(tmp > MAX_PICTURE_COUNT-2 || tmp >= 32){
         av_log(h->s.avctx, AV_LOG_ERROR, "too many reference frames\n");
-        return -1;
+        goto fail;
     }
     sps->ref_frame_count= tmp;
     sps->gaps_in_frame_num_allowed_flag= get_bits1(&s->gb);
@@ -7072,7 +7056,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
     if(mb_width >= INT_MAX/16 || mb_height >= INT_MAX/16 ||
        avcodec_check_dimensions(NULL, 16*mb_width, 16*mb_height)){
         av_log(h->s.avctx, AV_LOG_ERROR, "mb_width/height overflow\n");
-        return -1;
+        goto fail;
     }
     sps->mb_width = mb_width;
     sps->mb_height= mb_height;
@@ -7126,7 +7110,12 @@ static inline int decode_seq_parameter_set(H264Context *h){
                ((const char*[]){"Gray","420","422","444"})[sps->chroma_format_idc]
                );
     }
+    av_free(h->sps_buffers[sps_id]);
+    h->sps_buffers[sps_id]= sps;
     return 0;
+fail:
+    av_free(sps);
+    return -1;
 }
 
 static void
@@ -7142,15 +7131,19 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     unsigned int tmp, pps_id= get_ue_golomb(&s->gb);
     PPS *pps;
 
-    pps = alloc_parameter_set(h, (void **)h->pps_buffers, pps_id, MAX_PPS_COUNT, sizeof(PPS), "pps");
-    if(pps == NULL)
+    if(pps_id >= MAX_PPS_COUNT) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "pps_id (%d) out of range\n", pps_id);
         return -1;
+    }
 
     tmp= get_ue_golomb(&s->gb);
     if(tmp>=MAX_SPS_COUNT || h->sps_buffers[tmp] == NULL){
         av_log(h->s.avctx, AV_LOG_ERROR, "sps_id out of range\n");
         return -1;
     }
+    pps= av_mallocz(sizeof(PPS));
+    if(pps == NULL)
+        return -1;
     pps->sps_id= tmp;
 
     pps->cabac= get_bits1(&s->gb);
@@ -7198,7 +7191,7 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     if(pps->ref_count[0]-1 > 32-1 || pps->ref_count[1]-1 > 32-1){
         av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow (pps)\n");
         pps->ref_count[0]= pps->ref_count[1]= 1;
-        return -1;
+        goto fail;
     }
 
     pps->weighted_pred= get_bits1(&s->gb);
@@ -7243,7 +7236,12 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
                );
     }
 
+    av_free(h->pps_buffers[pps_id]);
+    h->pps_buffers[pps_id]= pps;
     return 0;
+fail:
+    av_free(pps);
+    return -1;
 }
 
 /**
