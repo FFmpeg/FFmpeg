@@ -31,7 +31,6 @@
 #include "avcodec.h"
 #include "bitstream.h"
 
-#include "qcelp.h"
 #include "qcelpdata.h"
 
 #include "celp_math.h"
@@ -39,6 +38,16 @@
 
 #undef NDEBUG
 #include <assert.h>
+
+typedef enum
+{
+    I_F_Q = -1,    /*!< insufficient frame quality */
+    SILENCE,
+    RATE_OCTAVE,
+    RATE_QUARTER,
+    RATE_HALF,
+    RATE_FULL
+} qcelp_packet_rate;
 
 typedef struct {
     GetBitContext     gb;
@@ -49,6 +58,9 @@ typedef struct {
     float             prev_lspf[10];
     float             predictor_lspf[10];     /*!< LSP predictor,
                                                   only use for RATE_OCTAVE and I_F_Q */
+    float             pitch_synthesis_filter_mem[303];
+    float             pitch_pre_filter_mem[303];
+    float             rnd_fir_filter_mem[180];
     float             formant_mem[170];
     float             last_codebook_gain;
     int               prev_g1[2];
@@ -57,6 +69,13 @@ typedef struct {
     uint8_t           prev_pitch_lag[4];
     uint16_t          first16bits;
 } QCELPContext;
+
+/**
+ * Reconstructs LPC coefficients from the line spectral pair frequencies.
+ *
+ * TIA/EIA/IS-733 2.4.3.3.5
+ */
+void qcelp_lspf2lpc(const float *lspf, float *lpc);
 
 static void weighted_vector_sumf(float *out, const float *in_a,
                                  const float *in_b, float weight_coeff_a,
@@ -525,6 +544,46 @@ static int buf_size2bitrate(const int buf_size)
     }
 
     return -1;
+}
+
+/**
+ * Determine the bitrate from the frame size and/or the first byte of the frame.
+ *
+ * @param avctx the AV codec context
+ * @param buf_size length of the buffer
+ * @param buf the bufffer
+ *
+ * @return the bitrate on success,
+ *         I_F_Q  if the bitrate cannot be satisfactorily determined
+ *
+ * TIA/EIA/IS-733 2.4.8.7.1
+ */
+static int determine_bitrate(AVCodecContext *avctx,
+                               const int buf_size,
+                               uint8_t **buf) {
+    qcelp_packet_rate bitrate;
+
+    if ((bitrate = buf_size2bitrate(buf_size)) >= 0) {
+        if (bitrate > **buf) {
+            av_log(avctx, AV_LOG_WARNING, "Claimed bitrate and buffer size mismatch.\n");
+            bitrate = **buf;
+        } else if (bitrate < **buf) {
+            av_log(avctx, AV_LOG_ERROR, "Buffer is too small for the claimed bitrate.\n");
+            return I_F_Q;
+        }
+        (*buf)++;
+    } else if ((bitrate = buf_size2bitrate(buf_size + 1)) >= 0) {
+        av_log(avctx, AV_LOG_WARNING,
+               "Bitrate byte is missing, guessing the bitrate from packet size.\n");
+    } else
+        return I_F_Q;
+
+    if (bitrate == SILENCE) {
+        // FIXME: the decoder should not handle SILENCE frames as I_F_Q frames
+        av_log_missing_feature(avctx, "Blank frame", 1);
+        bitrate = I_F_Q;
+    }
+    return bitrate;
 }
 
 static void warn_insufficient_frame_quality(AVCodecContext *avctx,
