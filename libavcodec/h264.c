@@ -6913,21 +6913,18 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
 
     sps->bitstream_restriction_flag = get_bits1(&s->gb);
     if(sps->bitstream_restriction_flag){
-        unsigned int num_reorder_frames;
         get_bits1(&s->gb);     /* motion_vectors_over_pic_boundaries_flag */
         get_ue_golomb(&s->gb); /* max_bytes_per_pic_denom */
         get_ue_golomb(&s->gb); /* max_bits_per_mb_denom */
         get_ue_golomb(&s->gb); /* log2_max_mv_length_horizontal */
         get_ue_golomb(&s->gb); /* log2_max_mv_length_vertical */
-        num_reorder_frames= get_ue_golomb(&s->gb);
+        sps->num_reorder_frames= get_ue_golomb(&s->gb);
         get_ue_golomb(&s->gb); /*max_dec_frame_buffering*/
 
-        if(num_reorder_frames > 16 /*max_dec_frame_buffering || max_dec_frame_buffering > 16*/){
-            av_log(h->s.avctx, AV_LOG_ERROR, "illegal num_reorder_frames %d\n", num_reorder_frames);
+        if(sps->num_reorder_frames > 16U /*max_dec_frame_buffering || max_dec_frame_buffering > 16*/){
+            av_log(h->s.avctx, AV_LOG_ERROR, "illegal num_reorder_frames %d\n", sps->num_reorder_frames);
             return -1;
         }
-
-        sps->num_reorder_frames= num_reorder_frames;
     }
 
     return 0;
@@ -6980,7 +6977,7 @@ static void decode_scaling_matrices(H264Context *h, SPS *sps, PPS *pps, int is_s
 static inline int decode_seq_parameter_set(H264Context *h){
     MpegEncContext * const s = &h->s;
     int profile_idc, level_idc;
-    unsigned int sps_id, tmp, mb_width, mb_height;
+    unsigned int sps_id;
     int i;
     SPS *sps;
 
@@ -7029,13 +7026,12 @@ static inline int decode_seq_parameter_set(H264Context *h){
         sps->delta_pic_order_always_zero_flag= get_bits1(&s->gb);
         sps->offset_for_non_ref_pic= get_se_golomb(&s->gb);
         sps->offset_for_top_to_bottom_field= get_se_golomb(&s->gb);
-        tmp= get_ue_golomb(&s->gb);
+        sps->poc_cycle_length                = get_ue_golomb(&s->gb);
 
-        if(tmp >= FF_ARRAY_ELEMS(sps->offset_for_ref_frame)){
-            av_log(h->s.avctx, AV_LOG_ERROR, "poc_cycle_length overflow %u\n", tmp);
+        if((unsigned)sps->poc_cycle_length >= FF_ARRAY_ELEMS(sps->offset_for_ref_frame)){
+            av_log(h->s.avctx, AV_LOG_ERROR, "poc_cycle_length overflow %u\n", sps->poc_cycle_length);
             goto fail;
         }
-        sps->poc_cycle_length= tmp;
 
         for(i=0; i<sps->poc_cycle_length; i++)
             sps->offset_for_ref_frame[i]= get_se_golomb(&s->gb);
@@ -7044,22 +7040,19 @@ static inline int decode_seq_parameter_set(H264Context *h){
         goto fail;
     }
 
-    tmp= get_ue_golomb(&s->gb);
-    if(tmp > MAX_PICTURE_COUNT-2 || tmp >= 32){
+    sps->ref_frame_count= get_ue_golomb(&s->gb);
+    if(sps->ref_frame_count > MAX_PICTURE_COUNT-2 || sps->ref_frame_count >= 32U){
         av_log(h->s.avctx, AV_LOG_ERROR, "too many reference frames\n");
         goto fail;
     }
-    sps->ref_frame_count= tmp;
     sps->gaps_in_frame_num_allowed_flag= get_bits1(&s->gb);
-    mb_width= get_ue_golomb(&s->gb) + 1;
-    mb_height= get_ue_golomb(&s->gb) + 1;
-    if(mb_width >= INT_MAX/16 || mb_height >= INT_MAX/16 ||
-       avcodec_check_dimensions(NULL, 16*mb_width, 16*mb_height)){
+    sps->mb_width = get_ue_golomb(&s->gb) + 1;
+    sps->mb_height= get_ue_golomb(&s->gb) + 1;
+    if((unsigned)sps->mb_width >= INT_MAX/16 || (unsigned)sps->mb_height >= INT_MAX/16 ||
+       avcodec_check_dimensions(NULL, 16*sps->mb_width, 16*sps->mb_height)){
         av_log(h->s.avctx, AV_LOG_ERROR, "mb_width/height overflow\n");
         goto fail;
     }
-    sps->mb_width = mb_width;
-    sps->mb_height= mb_height;
 
     sps->frame_mbs_only_flag= get_bits1(&s->gb);
     if(!sps->frame_mbs_only_flag)
@@ -7128,7 +7121,7 @@ build_qp_table(PPS *pps, int t, int index)
 
 static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     MpegEncContext * const s = &h->s;
-    unsigned int tmp, pps_id= get_ue_golomb(&s->gb);
+    unsigned int pps_id= get_ue_golomb(&s->gb);
     PPS *pps;
 
     if(pps_id >= MAX_PPS_COUNT) {
@@ -7136,15 +7129,14 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
         return -1;
     }
 
-    tmp= get_ue_golomb(&s->gb);
-    if(tmp>=MAX_SPS_COUNT || h->sps_buffers[tmp] == NULL){
-        av_log(h->s.avctx, AV_LOG_ERROR, "sps_id out of range\n");
-        return -1;
-    }
     pps= av_mallocz(sizeof(PPS));
     if(pps == NULL)
         return -1;
-    pps->sps_id= tmp;
+    pps->sps_id= get_ue_golomb(&s->gb);
+    if((unsigned)pps->sps_id>=MAX_SPS_COUNT || h->sps_buffers[pps->sps_id] == NULL){
+        av_log(h->s.avctx, AV_LOG_ERROR, "sps_id out of range\n");
+        goto fail;
+    }
 
     pps->cabac= get_bits1(&s->gb);
     pps->pic_order_present= get_bits1(&s->gb);
@@ -7190,7 +7182,6 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     pps->ref_count[1]= get_ue_golomb(&s->gb) + 1;
     if(pps->ref_count[0]-1 > 32-1 || pps->ref_count[1]-1 > 32-1){
         av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow (pps)\n");
-        pps->ref_count[0]= pps->ref_count[1]= 1;
         goto fail;
     }
 
