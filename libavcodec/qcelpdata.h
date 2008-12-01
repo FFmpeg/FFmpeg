@@ -58,6 +58,10 @@ typedef struct {
      */
     uint8_t lspv[10];
 
+    /**
+     * reserved bits only present in bitrate 1, 1/4 and 1/8 packets
+     */
+    uint8_t reserved;
 } QCELPFrame;
 
 /**
