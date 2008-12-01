@@ -485,6 +485,10 @@ typedef struct DSPContext {
      */
     int32_t (*scalarproduct_int16)(int16_t *v1, int16_t *v2/*align 16*/, int len, int shift);
 
+    /* rv30 functions */
+    qpel_mc_func put_rv30_tpel_pixels_tab[4][16];
+    qpel_mc_func avg_rv30_tpel_pixels_tab[4][16];
+
     /* rv40 functions */
     qpel_mc_func put_rv40_qpel_pixels_tab[4][16];
     qpel_mc_func avg_rv40_qpel_pixels_tab[4][16];

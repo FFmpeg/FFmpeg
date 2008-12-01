@@ -288,6 +288,7 @@ following image formats are supported:
     @tab fourccs: QPEG, Q1.0, Q1.1
 @item RealVideo 1.0          @tab  X  @tab  X
 @item RealVideo 2.0          @tab  X  @tab  X
+@item RealVideo 4.0          @tab     @tab  X
 @item Renderware TXD         @tab     @tab  X
     @tab Texture dictionaries used by the Renderware Engine.
 @item RTjpeg                 @tab     @tab  X
