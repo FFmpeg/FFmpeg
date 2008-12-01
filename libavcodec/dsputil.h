@@ -484,6 +484,12 @@ typedef struct DSPContext {
      * @param shift number of bits to discard from product
      */
     int32_t (*scalarproduct_int16)(int16_t *v1, int16_t *v2/*align 16*/, int len, int shift);
+
+    /* rv40 functions */
+    qpel_mc_func put_rv40_qpel_pixels_tab[4][16];
+    qpel_mc_func avg_rv40_qpel_pixels_tab[4][16];
+    h264_chroma_mc_func put_rv40_chroma_pixels_tab[3];
+    h264_chroma_mc_func avg_rv40_chroma_pixels_tab[3];
 } DSPContext;
 
 void dsputil_static_init(void);
