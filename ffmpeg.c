@@ -1841,7 +1841,7 @@ static int av_encode(AVFormatContext **output_files,
                 if (codec->flags & CODEC_FLAG_PASS1) {
                     f = fopen(logfilename, "w");
                     if (!f) {
-                        perror(logfilename);
+                        fprintf(stderr, "Cannot write log file '%s' for pass-1 encoding: %s\n", logfilename, strerror(errno));
                         av_exit(1);
                     }
                     ost->logfile = f;
@@ -1849,7 +1849,7 @@ static int av_encode(AVFormatContext **output_files,
                     /* read the log file */
                     f = fopen(logfilename, "r");
                     if (!f) {
-                        perror(logfilename);
+                        fprintf(stderr, "Cannot read log file '%s' for pass-2 encoding: %s\n", logfilename, strerror(errno));
                         av_exit(1);
                     }
                     fseek(f, 0, SEEK_END);
