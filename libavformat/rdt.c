@@ -47,7 +47,7 @@ struct RDTDemuxContext {
     void *dynamic_protocol_context;
     DynamicPayloadPacketHandlerProc parse_packet;
     uint32_t prev_timestamp;
-    int prev_set_id;
+    int prev_set_id, prev_stream_id;
 };
 
 RDTDemuxContext *
@@ -65,6 +65,7 @@ ff_rdt_parse_open(AVFormatContext *ic, int first_stream_of_set_idx,
     } while (first_stream_of_set_idx + s->n_streams < ic->nb_streams &&
              s->streams[s->n_streams]->priv_data == s->streams[0]->priv_data);
     s->prev_set_id    = -1;
+    s->prev_stream_id = -1;
     s->prev_timestamp = -1;
     s->parse_packet = handler->parse_packet;
     s->dynamic_protocol_context = priv_data;
@@ -334,11 +335,12 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
     if (!s->parse_packet)
         return -1;
 
-    if (!buf) {
+    if (!buf && s->prev_stream_id != -1) {
         /* return the next packets, if any */
         timestamp= 0; ///< Should not be used if buf is NULL, but should be set to the timestamp of the packet returned....
         rv= s->parse_packet(s->dynamic_protocol_context,
-                            s->streams[0], pkt, &timestamp, NULL, 0, flags);
+                            s->streams[s->prev_stream_id],
+                            pkt, &timestamp, NULL, 0, flags);
         return rv;
     }
 
@@ -347,16 +349,25 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
     rv = ff_rdt_parse_header(buf, len, &set_id, &seq_no, &stream_id, &is_keyframe, &timestamp);
     if (rv < 0)
         return rv;
-    if (is_keyframe && (set_id != s->prev_set_id || timestamp != s->prev_timestamp)) {
+    if (is_keyframe &&
+        (set_id != s->prev_set_id || timestamp != s->prev_timestamp ||
+         stream_id != s->prev_stream_id)) {
         flags |= PKT_FLAG_KEY;
         s->prev_set_id    = set_id;
         s->prev_timestamp = timestamp;
     }
+    s->prev_stream_id = stream_id;
     buf += rv;
     len -= rv;
 
+     if (s->prev_stream_id >= s->n_streams) {
+         s->prev_stream_id = -1;
+         return -1;
+     }
+
     rv = s->parse_packet(s->dynamic_protocol_context,
-                         s->streams[0], pkt, &timestamp, buf, len, flags);
+                         s->streams[s->prev_stream_id],
+                         pkt, &timestamp, buf, len, flags);
 
     return rv;
 }
