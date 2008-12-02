@@ -577,6 +577,38 @@ static int flac_probe(AVProbeData *p)
 }
 #endif
 
+#ifdef CONFIG_AAC_DEMUXER
+static int adts_aac_probe(AVProbeData *p)
+{
+    int max_frames = 0, first_frames = 0;
+    int fsize, frames;
+    uint8_t *buf2;
+    uint8_t *buf = p->buf;
+    uint8_t *end = buf + p->buf_size - 7;
+
+    for(; buf < end; buf= buf2+1) {
+        buf2 = buf;
+
+        for(frames = 0; buf2 < end; frames++) {
+            uint32_t header = AV_RB16(buf2);
+            if((header&0xFFF6) != 0xFFF0)
+                break;
+            fsize = (AV_RB32(buf2+3)>>13) & 0x8FFF;
+            if(fsize < 7)
+                break;
+            buf2 += fsize;
+        }
+        max_frames = FFMAX(max_frames, frames);
+        if(buf == p->buf)
+            first_frames= frames;
+    }
+    if   (first_frames>=3) return AVPROBE_SCORE_MAX/2+1;
+    else if(max_frames>500)return AVPROBE_SCORE_MAX/2;
+    else if(max_frames>=3) return AVPROBE_SCORE_MAX/4;
+    else if(max_frames>=1) return 1;
+    else                   return 0;
+}
+#endif
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 
@@ -585,7 +617,7 @@ AVInputFormat aac_demuxer = {
     "aac",
     NULL_IF_CONFIG_SMALL("ADTS AAC"),
     0,
-    NULL,
+    adts_aac_probe,
     audio_read_header,
     raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
