@@ -49,25 +49,26 @@ typedef enum
     RATE_FULL
 } qcelp_packet_rate;
 
-typedef struct {
+typedef struct
+{
     GetBitContext     gb;
     qcelp_packet_rate bitrate;
-    QCELPFrame        frame;                  /*!< unpacked data frame */
-    uint8_t           erasure_count;
-    uint8_t           octave_count;           /*!< count the consecutive RATE_OCTAVE frames */
-    float             prev_lspf[10];
-    float             predictor_lspf[10];     /*!< LSP predictor,
-                                                  only use for RATE_OCTAVE and I_F_Q */
-    float             pitch_synthesis_filter_mem[303];
-    float             pitch_pre_filter_mem[303];
-    float             rnd_fir_filter_mem[180];
-    float             formant_mem[170];
-    float             last_codebook_gain;
-    int               prev_g1[2];
-    int               prev_bitrate;
-    float             pitch_gain[4];
-    uint8_t           pitch_lag[4];
-    uint16_t          first16bits;
+    QCELPFrame        frame;    /*!< unpacked data frame */
+
+    uint8_t  erasure_count;
+    uint8_t  octave_count;      /*!< count the consecutive RATE_OCTAVE frames */
+    float    prev_lspf[10];
+    float    predictor_lspf[10];/*!< LSP predictor, only use for RATE_OCTAVE and I_F_Q */
+    float    pitch_synthesis_filter_mem[303];
+    float    pitch_pre_filter_mem[303];
+    float    rnd_fir_filter_mem[180];
+    float    formant_mem[170];
+    float    last_codebook_gain;
+    int      prev_g1[2];
+    int      prev_bitrate;
+    float    pitch_gain[4];
+    uint8_t  pitch_lag[4];
+    uint16_t first16bits;
 } QCELPContext;
 
 /**
@@ -100,8 +101,8 @@ static av_cold int qcelp_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = SAMPLE_FMT_FLT;
 
-    for (i = 0; i < 10; i++)
-        q->prev_lspf[i] = (i + 1) / 11.;
+    for(i=0; i<10; i++)
+        q->prev_lspf[i] = (i+1)/11.;
 
     return 0;
 }
@@ -120,14 +121,14 @@ static av_cold int qcelp_decode_init(AVCodecContext *avctx)
 static int decode_lspf(QCELPContext *q, float *lspf)
 {
     int i;
-    float tmp_lspf;
+    float tmp_lspf, smooth, erasure_coeff;
+    const float *predictors;
 
     if(q->bitrate == RATE_OCTAVE || q->bitrate == I_F_Q)
     {
-        float smooth;
-        const float *predictors = (q->prev_bitrate != RATE_OCTAVE &&
-                                   q->prev_bitrate != I_F_Q ? q->prev_lspf
-                                                            : q->predictor_lspf);
+        predictors = (q->prev_bitrate != RATE_OCTAVE &&
+                       q->prev_bitrate != I_F_Q ?
+                       q->prev_lspf : q->predictor_lspf);
 
         if(q->bitrate == RATE_OCTAVE)
         {
@@ -144,7 +145,7 @@ static int decode_lspf(QCELPContext *q, float *lspf)
             smooth = (q->octave_count < 10 ? .875 : 0.1);
         }else
         {
-            float erasure_coeff = QCELP_LSP_OCTAVE_PREDICTOR;
+            erasure_coeff = QCELP_LSP_OCTAVE_PREDICTOR;
 
             assert(q->bitrate == I_F_Q);
 
@@ -215,21 +216,26 @@ static void decode_gain_and_index(QCELPContext  *q,
     int   i, subframes_count, g1[16];
     float slope;
 
-    if (q->bitrate >= RATE_QUARTER) {
-        switch (q->bitrate) {
+    if(q->bitrate >= RATE_QUARTER)
+    {
+        switch(q->bitrate)
+        {
             case RATE_FULL: subframes_count = 16; break;
             case RATE_HALF: subframes_count = 4;  break;
             default:        subframes_count = 5;
         }
-        for (i = 0; i < subframes_count; i++) {
+        for(i=0; i<subframes_count; i++)
+        {
             g1[i] = 4 * q->frame.cbgain[i];
-            if (q->bitrate == RATE_FULL && !((i+1) & 3)) {
+            if(q->bitrate == RATE_FULL && !((i+1) & 3))
+            {
                 g1[i] += av_clip((g1[i-1] + g1[i-2] + g1[i-3]) / 3 - 6, 0, 32);
             }
 
             gain[i] = qcelp_g12ga[g1[i]];
 
-            if (q->frame.cbsign[i]) {
+            if(q->frame.cbsign[i])
+            {
                 gain[i] = -gain[i];
                 q->frame.cindex[i] = (q->frame.cindex[i]-89) & 127;
             }
@@ -239,7 +245,8 @@ static void decode_gain_and_index(QCELPContext  *q,
         q->prev_g1[1] = g1[i-1];
         q->last_codebook_gain = qcelp_g12ga[g1[i-1]];
 
-        if (q->bitrate == RATE_QUARTER) {
+        if(q->bitrate == RATE_QUARTER)
+        {
             // Provide smoothing of the unvoiced excitation energy.
             gain[7] =     gain[4];
             gain[6] = 0.4*gain[3] + 0.6*gain[4];
@@ -249,31 +256,35 @@ static void decode_gain_and_index(QCELPContext  *q,
             gain[2] =     gain[1];
             gain[1] = 0.6*gain[0] + 0.4*gain[1];
         }
-    } else {
-        if (q->bitrate == RATE_OCTAVE) {
+    }else
+    {
+        if(q->bitrate == RATE_OCTAVE)
+        {
             g1[0] = 2 * q->frame.cbgain[0]
                   + av_clip((q->prev_g1[0] + q->prev_g1[1]) / 2 - 5, 0, 54);
             subframes_count = 8;
-        } else {
+        }else
+        {
             assert(q->bitrate == I_F_Q);
 
             g1[0] = q->prev_g1[1];
-            switch (q->erasure_count) {
-            case 1 : break;
-            case 2 : g1[0] -= 1; break;
-            case 3 : g1[0] -= 2; break;
-            default: g1[0] -= 6;
+            switch(q->erasure_count)
+            {
+                case 1 : break;
+                case 2 : g1[0] -= 1; break;
+                case 3 : g1[0] -= 2; break;
+                default: g1[0] -= 6;
             }
-            if (g1[0] < 0)
+            if(g1[0] < 0)
                 g1[0] = 0;
             subframes_count = 4;
         }
         // This interpolation is done to produce smoother background noise.
         slope = 0.5*(qcelp_g12ga[g1[0]] - q->last_codebook_gain) / subframes_count;
-        for (i = 1; i <= subframes_count; i++)
+        for(i=1; i<=subframes_count; i++)
             gain[i-1] = q->last_codebook_gain + slope * i;
-        q->last_codebook_gain = gain[i-2];
 
+        q->last_codebook_gain = gain[i-2];
         q->prev_g1[0] = q->prev_g1[1];
         q->prev_g1[1] = g1[0];
     }
@@ -290,11 +301,11 @@ static void decode_gain_and_index(QCELPContext  *q,
  */
 static int codebook_sanity_check_for_rate_quarter(const uint8_t *cbgain)
 {
-    int i, prev_diff=0;
+    int i, diff, prev_diff=0;
 
     for(i=1; i<5; i++)
     {
-        int diff = cbgain[i] - cbgain[i-1];
+        diff = cbgain[i] - cbgain[i-1];
         if(FFABS(diff) > 10)
             return -1;
         else if(FFABS(diff - prev_diff) > 12)
@@ -501,46 +512,54 @@ static const float *do_pitchfilter(float memory[303], const float v_in[160],
  * @param q the context
  * @param cdn_vector the scaled codebook vector
  */
-static void apply_pitch_filters(QCELPContext *q,
-                                float *cdn_vector) {
+static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
+{
     int         i;
     const float *v_synthesis_filtered, *v_pre_filtered;
 
-    if (q->bitrate >= RATE_HALF ||
-       (q->bitrate == I_F_Q && (q->prev_bitrate >= RATE_HALF))) {
+    if(q->bitrate >= RATE_HALF ||
+       (q->bitrate == I_F_Q && (q->prev_bitrate >= RATE_HALF)))
+    {
 
-        if (q->bitrate >= RATE_HALF) {
+        if(q->bitrate >= RATE_HALF)
+        {
 
             // Compute gain & lag for the whole frame.
-            for (i = 0; i < 4; i++) {
+            for(i=0; i<4; i++)
+            {
                 q->pitch_gain[i] = q->frame.plag[i] ? (q->frame.pgain[i] + 1) * 0.25 : 0.0;
 
                 q->pitch_lag[i] = q->frame.plag[i] + 16;
             }
-        } else {
-            float max_pitch_gain = q->erasure_count < 3 ? 0.9 - 0.3 * (q->erasure_count - 1)
-                                                        : 0.0;
-            for (i = 0; i < 4; i++)
+        }else
+        {
+            float max_pitch_gain = q->erasure_count < 3 ? 0.9 - 0.3 * (q->erasure_count - 1) : 0.0;
+            for(i=0; i<4; i++)
                 q->pitch_gain[i] = FFMIN(q->pitch_gain[i], max_pitch_gain);
 
             memset(q->frame.pfrac, 0, sizeof(q->frame.pfrac));
         }
 
         // pitch synthesis filter
-        v_synthesis_filtered = do_pitchfilter(q->pitch_synthesis_filter_mem, cdn_vector,
-                                              q->pitch_gain, q->pitch_lag, q->frame.pfrac);
+        v_synthesis_filtered = do_pitchfilter(q->pitch_synthesis_filter_mem,
+                                              cdn_vector, q->pitch_gain,
+                                              q->pitch_lag, q->frame.pfrac);
 
         // pitch prefilter update
-        for (i = 0; i < 4; i++)
+        for(i=0; i<4; i++)
             q->pitch_gain[i] = 0.5 * FFMIN(q->pitch_gain[i], 1.0);
 
-        v_pre_filtered = do_pitchfilter(q->pitch_pre_filter_mem, v_synthesis_filtered,
-                                        q->pitch_gain, q->pitch_lag, q->frame.pfrac);
+        v_pre_filtered = do_pitchfilter(q->pitch_pre_filter_mem,
+                                        v_synthesis_filtered,
+                                        q->pitch_gain, q->pitch_lag,
+                                        q->frame.pfrac);
 
         apply_gain_ctrl(cdn_vector, v_synthesis_filtered, v_pre_filtered);
-    } else {
-        memcpy(q->pitch_synthesis_filter_mem, cdn_vector + 17, 143 * sizeof(float));
-        memcpy(q->pitch_pre_filter_mem,       cdn_vector + 17, 143 * sizeof(float));
+    }else
+    {
+        memcpy(q->pitch_synthesis_filter_mem, cdn_vector + 17,
+               143 * sizeof(float));
+        memcpy(q->pitch_pre_filter_mem, cdn_vector + 17, 143 * sizeof(float));
         memset(q->pitch_gain, 0, sizeof(q->pitch_gain));
         memset(q->pitch_lag,  0, sizeof(q->pitch_lag));
     }
@@ -575,7 +594,8 @@ void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
         weighted_vector_sumf(interpolated_lspf, curr_lspf, q->prev_lspf,
                              weight, 1.0 - weight, 10);
         ff_qcelp_lspf2lpc(interpolated_lspf, lpc);
-    }else if(q->bitrate >= RATE_QUARTER || (q->bitrate == I_F_Q && !subframe_num))
+    }else if(q->bitrate >= RATE_QUARTER ||
+             (q->bitrate == I_F_Q && !subframe_num))
         ff_qcelp_lspf2lpc(curr_lspf, lpc);
 }
 
@@ -583,16 +603,11 @@ static int buf_size2bitrate(const int buf_size)
 {
     switch(buf_size)
     {
-        case 35:
-            return RATE_FULL;
-        case 17:
-            return RATE_HALF;
-        case  8:
-            return RATE_QUARTER;
-        case  4:
-            return RATE_OCTAVE;
-        case  1:
-            return SILENCE;
+        case 35: return RATE_FULL;
+        case 17: return RATE_HALF;
+        case  8: return RATE_QUARTER;
+        case  4: return RATE_OCTAVE;
+        case  1: return SILENCE;
     }
 
     return -1;
@@ -610,27 +625,34 @@ static int buf_size2bitrate(const int buf_size)
  *
  * TIA/EIA/IS-733 2.4.8.7.1
  */
-static int determine_bitrate(AVCodecContext *avctx,
-                               const int buf_size,
-                               uint8_t **buf) {
+static int determine_bitrate(AVCodecContext *avctx, const int buf_size,
+                             uint8_t **buf)
+{
     qcelp_packet_rate bitrate;
 
-    if ((bitrate = buf_size2bitrate(buf_size)) >= 0) {
-        if (bitrate > **buf) {
-            av_log(avctx, AV_LOG_WARNING, "Claimed bitrate and buffer size mismatch.\n");
+    if((bitrate = buf_size2bitrate(buf_size)) >= 0)
+    {
+        if(bitrate > **buf)
+        {
+            av_log(avctx, AV_LOG_WARNING,
+                   "Claimed bitrate and buffer size mismatch.\n");
             bitrate = **buf;
-        } else if (bitrate < **buf) {
-            av_log(avctx, AV_LOG_ERROR, "Buffer is too small for the claimed bitrate.\n");
+        }else if(bitrate < **buf)
+        {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Buffer is too small for the claimed bitrate.\n");
             return I_F_Q;
         }
         (*buf)++;
-    } else if ((bitrate = buf_size2bitrate(buf_size + 1)) >= 0) {
+    }else if((bitrate = buf_size2bitrate(buf_size + 1)) >= 0)
+    {
         av_log(avctx, AV_LOG_WARNING,
                "Bitrate byte is missing, guessing the bitrate from packet size.\n");
-    } else
+    }else
         return I_F_Q;
 
-    if (bitrate == SILENCE) {
+    if(bitrate == SILENCE)
+    {
         // FIXME: the decoder should not handle SILENCE frames as I_F_Q frames
         av_log_missing_feature(avctx, "Blank frame", 1);
         bitrate = I_F_Q;
@@ -645,30 +667,31 @@ static void warn_insufficient_frame_quality(AVCodecContext *avctx,
            message);
 }
 
-static int qcelp_decode_frame(AVCodecContext *avctx,
-                              void *data,
-                              int *data_size,
-                              uint8_t *buf,
-                              const int buf_size) {
-    QCELPContext      *q = avctx->priv_data;
-    float             *outbuffer = data;
-    int               i;
-    float             quantized_lspf[10], lpc[10];
-    float             gain[16];
-    float             *formant_mem;
+static int qcelp_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+                              uint8_t *buf, const int buf_size)
+{
+    QCELPContext *q = avctx->priv_data;
+    float *outbuffer = data;
+    int   i;
+    float quantized_lspf[10], lpc[10];
+    float gain[16];
+    float *formant_mem;
 
-    if ((q->bitrate = determine_bitrate(avctx, buf_size, &buf)) == I_F_Q) {
+    if((q->bitrate = determine_bitrate(avctx, buf_size, &buf)) == I_F_Q)
+    {
         warn_insufficient_frame_quality(avctx, "bitrate cannot be determined.");
         goto erasure;
     }
 
-    if (q->bitrate == RATE_OCTAVE &&
-       (q->first16bits = AV_RB16(buf)) == 0xFFFF) {
+    if(q->bitrate == RATE_OCTAVE &&
+       (q->first16bits = AV_RB16(buf)) == 0xFFFF)
+    {
         warn_insufficient_frame_quality(avctx, "Bitrate is 1/8 and first 16 bits are on.");
         goto erasure;
     }
 
-    if (q->bitrate > SILENCE) {
+    if(q->bitrate > SILENCE)
+    {
         const QCELPBitmap *bitmaps     = qcelp_unpacking_bitmaps_per_rate[q->bitrate];
         const QCELPBitmap *bitmaps_end = qcelp_unpacking_bitmaps_per_rate[q->bitrate]
                                        + qcelp_unpacking_bitmaps_lengths[q->bitrate];
@@ -678,22 +701,28 @@ static int qcelp_decode_frame(AVCodecContext *avctx,
 
         memset(&q->frame, 0, sizeof(QCELPFrame));
 
-        for (; bitmaps < bitmaps_end; bitmaps++)
+        for(; bitmaps < bitmaps_end; bitmaps++)
             unpacked_data[bitmaps->index] |= get_bits(&q->gb, bitmaps->bitlen) << bitmaps->bitpos;
 
         // Check for erasures/blanks on rates 1, 1/4 and 1/8.
-        if (q->frame.reserved) {
+        if(q->frame.reserved)
+        {
             warn_insufficient_frame_quality(avctx, "Wrong data in reserved frame area.");
             goto erasure;
         }
-        if (q->bitrate == RATE_QUARTER && codebook_sanity_check_for_rate_quarter(q->frame.cbgain)) {
+        if(q->bitrate == RATE_QUARTER &&
+           codebook_sanity_check_for_rate_quarter(q->frame.cbgain))
+        {
             warn_insufficient_frame_quality(avctx, "Codebook gain sanity check failed.");
             goto erasure;
         }
 
-        if (q->bitrate >= RATE_HALF) {
-            for (i = 0; i < 4; i++) {
-                if (q->frame.pfrac[i] && q->frame.plag[i] >= 124) {
+        if(q->bitrate >= RATE_HALF)
+        {
+            for(i=0; i<4; i++)
+            {
+                if(q->frame.pfrac[i] && q->frame.plag[i] >= 124)
+                {
                     warn_insufficient_frame_quality(avctx, "Cannot initialize pitch filter.");
                     goto erasure;
                 }
@@ -704,7 +733,8 @@ static int qcelp_decode_frame(AVCodecContext *avctx,
     decode_gain_and_index(q, gain);
     compute_svector(q, gain, outbuffer);
 
-    if (decode_lspf(q, quantized_lspf) < 0) {
+    if(decode_lspf(q, quantized_lspf) < 0)
+    {
         warn_insufficient_frame_quality(avctx, "Badly received packets in frame.");
         goto erasure;
     }
@@ -712,7 +742,8 @@ static int qcelp_decode_frame(AVCodecContext *avctx,
 
     apply_pitch_filters(q, outbuffer);
 
-    if (q->bitrate == I_F_Q) {
+    if(q->bitrate == I_F_Q)
+    {
 erasure:
         q->bitrate = I_F_Q;
         q->erasure_count++;
@@ -720,13 +751,15 @@ erasure:
         compute_svector(q, gain, outbuffer);
         decode_lspf(q, quantized_lspf);
         apply_pitch_filters(q, outbuffer);
-    } else
+    }else
         q->erasure_count = 0;
 
     formant_mem = q->formant_mem + 10;
-    for (i = 0; i < 4; i++) {
+    for(i=0; i<4; i++)
+    {
         interpolate_lpc(q, quantized_lspf, lpc, i);
-        ff_celp_lp_synthesis_filterf(formant_mem, lpc, outbuffer + i * 40, 40, 10);
+        ff_celp_lp_synthesis_filterf(formant_mem, lpc, outbuffer + i * 40, 40,
+                                     10);
         formant_mem += 40;
     }
     memcpy(q->formant_mem, q->formant_mem + 160, 10 * sizeof(float));
@@ -735,8 +768,9 @@ erasure:
     // TIA/EIA/IS-733 2.4.8.6
 
     formant_mem = q->formant_mem + 10;
-    for (i = 0; i < 160; i++)
-        *outbuffer++ = av_clipf(*formant_mem++, QCELP_CLIP_LOWER_BOUND, QCELP_CLIP_UPPER_BOUND);
+    for(i=0; i<160; i++)
+        *outbuffer++ = av_clipf(*formant_mem++, QCELP_CLIP_LOWER_BOUND,
+                                QCELP_CLIP_UPPER_BOUND);
 
     memcpy(q->prev_lspf, quantized_lspf, sizeof(q->prev_lspf));
     q->prev_bitrate = q->bitrate;
