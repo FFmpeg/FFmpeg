@@ -47,12 +47,10 @@ void (*rgb15to32)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb16to15)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb16tobgr24)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb16to32)(const uint8_t *src, uint8_t *dst, long src_size);
-//void (*rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb24to16)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb24to15)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long src_size);
-//void (*rgb32tobgr24)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long src_size);
 void (*rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long src_size);
 
