@@ -397,6 +397,7 @@ following image formats are supported:
 @item Musepack               @tab     @tab  X
     @tab SV7 and SV8 are supported.
 @item Nellymoser ASAO        @tab  X  @tab  X
+@item QCELP / PureVoice      @tab     @tab  X
 @item Qdesign QDM2           @tab     @tab  X
     @tab There are still some distortions.
 @item QT IMA ADPCM           @tab  X  @tab  X

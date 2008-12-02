@@ -65,8 +65,8 @@ typedef struct {
     float             last_codebook_gain;
     int               prev_g1[2];
     int               prev_bitrate;
-    float             prev_pitch_gain[4];
-    uint8_t           prev_pitch_lag[4];
+    float             pitch_gain[4];
+    uint8_t           pitch_lag[4];
     uint16_t          first16bits;
 } QCELPContext;
 
@@ -75,7 +75,7 @@ typedef struct {
  *
  * TIA/EIA/IS-733 2.4.3.3.5
  */
-void qcelp_lspf2lpc(const float *lspf, float *lpc);
+void ff_qcelp_lspf2lpc(const float *lspf, float *lpc);
 
 static void weighted_vector_sumf(float *out, const float *in_a,
                                  const float *in_b, float weight_coeff_a,
@@ -495,6 +495,58 @@ static const float *do_pitchfilter(float memory[303], const float v_in[160],
 }
 
 /**
+ * Apply pitch synthesis filter and pitch prefilter to the scaled codebook vector.
+ * TIA/EIA/IS-733 2.4.5.2
+ *
+ * @param q the context
+ * @param cdn_vector the scaled codebook vector
+ */
+static void apply_pitch_filters(QCELPContext *q,
+                                float *cdn_vector) {
+    int         i;
+    const float *v_synthesis_filtered, *v_pre_filtered;
+
+    if (q->bitrate >= RATE_HALF ||
+       (q->bitrate == I_F_Q && (q->prev_bitrate >= RATE_HALF))) {
+
+        if (q->bitrate >= RATE_HALF) {
+
+            // Compute gain & lag for the whole frame.
+            for (i = 0; i < 4; i++) {
+                q->pitch_gain[i] = q->frame.plag[i] ? (q->frame.pgain[i] + 1) * 0.25 : 0.0;
+
+                q->pitch_lag[i] = q->frame.plag[i] + 16;
+            }
+        } else {
+            float max_pitch_gain = q->erasure_count < 3 ? 0.9 - 0.3 * (q->erasure_count - 1)
+                                                        : 0.0;
+            for (i = 0; i < 4; i++)
+                q->pitch_gain[i] = FFMIN(q->pitch_gain[i], max_pitch_gain);
+
+            memset(q->frame.pfrac, 0, sizeof(q->frame.pfrac));
+        }
+
+        // pitch synthesis filter
+        v_synthesis_filtered = do_pitchfilter(q->pitch_synthesis_filter_mem, cdn_vector,
+                                              q->pitch_gain, q->pitch_lag, q->frame.pfrac);
+
+        // pitch prefilter update
+        for (i = 0; i < 4; i++)
+            q->pitch_gain[i] = 0.5 * FFMIN(q->pitch_gain[i], 1.0);
+
+        v_pre_filtered = do_pitchfilter(q->pitch_pre_filter_mem, v_synthesis_filtered,
+                                        q->pitch_gain, q->pitch_lag, q->frame.pfrac);
+
+        apply_gain_ctrl(cdn_vector, v_synthesis_filtered, v_pre_filtered);
+    } else {
+        memcpy(q->pitch_synthesis_filter_mem, cdn_vector + 17, 143 * sizeof(float));
+        memcpy(q->pitch_pre_filter_mem,       cdn_vector + 17, 143 * sizeof(float));
+        memset(q->pitch_gain, 0, sizeof(q->pitch_gain));
+        memset(q->pitch_lag,  0, sizeof(q->pitch_lag));
+    }
+}
+
+/**
  * Interpolates LSP frequencies and computes LPC coefficients
  * for a given bitrate & pitch subframe.
  *
@@ -522,9 +574,9 @@ void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
     {
         weighted_vector_sumf(interpolated_lspf, curr_lspf, q->prev_lspf,
                              weight, 1.0 - weight, 10);
-        qcelp_lspf2lpc(interpolated_lspf, lpc);
+        ff_qcelp_lspf2lpc(interpolated_lspf, lpc);
     }else if(q->bitrate >= RATE_QUARTER || (q->bitrate == I_F_Q && !subframe_num))
-        qcelp_lspf2lpc(curr_lspf, lpc);
+        ff_qcelp_lspf2lpc(curr_lspf, lpc);
 }
 
 static int buf_size2bitrate(const int buf_size)
