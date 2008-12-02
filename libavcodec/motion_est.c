@@ -307,8 +307,6 @@ int ff_init_me(MpegEncContext *s){
         c->sub_motion_search= no_sub_motion_search;
     }
 
-    c->temp= c->scratchpad;
-
     return 0;
 }
 
