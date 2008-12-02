@@ -58,7 +58,7 @@ typedef struct
     uint8_t  erasure_count;
     uint8_t  octave_count;      /*!< count the consecutive RATE_OCTAVE frames */
     float    prev_lspf[10];
-    float    predictor_lspf[10];/*!< LSP predictor, only use for RATE_OCTAVE and I_F_Q */
+    float    predictor_lspf[10];/*!< LSP predictor for RATE_OCTAVE and I_F_Q */
     float    pitch_synthesis_filter_mem[303];
     float    pitch_pre_filter_mem[303];
     float    rnd_fir_filter_mem[180];
