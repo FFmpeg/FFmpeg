@@ -1389,6 +1389,11 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         else
             size= get_slice_offset(avctx, slices_hdr, i+1) - offset;
 
+        if(offset > buf_size){
+            av_log(avctx, AV_LOG_ERROR, "Slice offset is greater than frame size\n");
+            break;
+        }
+
         r->si.end = s->mb_width * s->mb_height;
         if(i+1 < slice_count){
             init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, i+1), (buf_size-get_slice_offset(avctx, slices_hdr, i+1))*8);
