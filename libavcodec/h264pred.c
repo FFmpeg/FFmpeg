@@ -198,28 +198,6 @@ static void pred4x4_down_left_rv40_c(uint8_t *src, uint8_t *topright, int stride
     src[3+3*stride]=(t6 + t7 + 1 + l6 + l7 + 1)>>2;
 }
 
-static void pred4x4_down_left_rv40_notop_c(uint8_t *src, uint8_t *topright, int stride){
-    LOAD_LEFT_EDGE
-    LOAD_DOWN_LEFT_EDGE
-
-    src[0+0*stride]=(l0 + l2 + 2*l1 + 2)>>2;
-    src[1+0*stride]=
-    src[0+1*stride]=(l1 + l3 + 2*l2 + 2)>>2;
-    src[2+0*stride]=
-    src[1+1*stride]=
-    src[0+2*stride]=(l2 + l4 + 2*l3 + 2)>>2;
-    src[3+0*stride]=
-    src[2+1*stride]=
-    src[1+2*stride]=
-    src[0+3*stride]=(l3 + l5 + 2*l4 + 2)>>2;
-    src[3+1*stride]=
-    src[2+2*stride]=
-    src[1+3*stride]=(l4 + l6 + 2*l5 + 2)>>2;
-    src[3+2*stride]=
-    src[2+3*stride]=(l5 + l7 + 2*l6 + 2)>>2;
-    src[3+3*stride]=(l6 + l7 + 1)>>1;
-}
-
 static void pred4x4_down_left_rv40_nodown_c(uint8_t *src, uint8_t *topright, int stride){
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
