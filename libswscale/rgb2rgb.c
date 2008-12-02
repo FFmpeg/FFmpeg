@@ -124,21 +124,6 @@ DECLARE_ASM_CONST(8, uint64_t, blue_16mask)  = 0x0000001f0000001fULL;
 DECLARE_ASM_CONST(8, uint64_t, red_15mask)   = 0x00007c0000007c00ULL;
 DECLARE_ASM_CONST(8, uint64_t, green_15mask) = 0x000003e0000003e0ULL;
 DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
-
-#if 0
-static volatile uint64_t __attribute__((aligned(8))) b5Dither;
-static volatile uint64_t __attribute__((aligned(8))) g5Dither;
-static volatile uint64_t __attribute__((aligned(8))) g6Dither;
-static volatile uint64_t __attribute__((aligned(8))) r5Dither;
-
-static uint64_t __attribute__((aligned(8))) dither4[2]={
-    0x0103010301030103LL,
-    0x0200020002000200LL,};
-
-static uint64_t __attribute__((aligned(8))) dither8[2]={
-    0x0602060206020602LL,
-    0x0004000400040004LL,};
-#endif
 #endif /* defined(ARCH_X86) */
 
 #define RGB2YUV_SHIFT 8
