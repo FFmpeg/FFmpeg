@@ -1100,7 +1100,7 @@ static int rv34_set_deblock_coef(RV34DecContext *r)
         for(i = 0; i < 2; i++){
             if(is_mv_diff_gt_3(motion_val + i, 1))
                 vmvmask |= 0x11 << (j + i*2);
-            if(is_mv_diff_gt_3(motion_val + i, s->b8_stride))
+            if((j || s->mb_y) && is_mv_diff_gt_3(motion_val + i, s->b8_stride))
                 hmvmask |= 0x03 << (j + i*2);
         }
         motion_val += s->b8_stride;
