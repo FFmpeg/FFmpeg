@@ -150,6 +150,12 @@ typedef struct MLPParseContext
     int num_substreams;
 } MLPParseContext;
 
+static av_cold int mlp_init(AVCodecParserContext *s)
+{
+    ff_mlp_init_crc();
+    return 0;
+}
+
 static int mlp_parse(AVCodecParserContext *s,
                      AVCodecContext *avctx,
                      const uint8_t **poutbuf, int *poutbuf_size,
@@ -283,7 +289,7 @@ lost_sync:
 AVCodecParser mlp_parser = {
     { CODEC_ID_MLP },
     sizeof(MLPParseContext),
-    ff_mlp_init_crc2D,
+    mlp_init,
     mlp_parse,
     NULL,
 };

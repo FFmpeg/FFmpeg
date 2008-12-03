@@ -106,8 +106,6 @@ uint8_t ff_mlp_restart_checksum(const uint8_t *buf, unsigned int bit_size);
  */
 uint8_t ff_mlp_calculate_parity(const uint8_t *buf, unsigned int buf_size);
 
-int ff_mlp_init_crc2D(AVCodecParserContext *s);
-
 void ff_mlp_init_crc();
 
 /** XOR four bytes into one. */
