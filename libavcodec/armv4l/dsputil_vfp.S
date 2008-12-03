@@ -21,6 +21,7 @@
 #include "config.h"
 #include "asm.S"
 
+        .fpu neon       @ required for gas to accept UAL syntax
 /*
  * VFP is a floating point coprocessor used in some ARM cores. VFP11 has 1 cycle
  * throughput for almost all the instructions (except for double precision
@@ -48,29 +49,29 @@ function ff_vector_fmul_vfp, export=1
         orr             r12, r12, #(3 << 16) /* set vector size to 4 */
         fmxr            fpscr, r12
 
-        fldmias         r3!, {s0-s3}
-        fldmias         r1!, {s8-s11}
-        fldmias         r3!, {s4-s7}
-        fldmias         r1!, {s12-s15}
-        fmuls           s8,  s0,  s8
+        vldmia          r3!, {s0-s3}
+        vldmia          r1!, {s8-s11}
+        vldmia          r3!, {s4-s7}
+        vldmia          r1!, {s12-s15}
+        vmul.f32        s8,  s0,  s8
 1:
         subs            r2,  r2,  #16
-        fmuls           s12, s4,  s12
-        fldmiasge       r3!, {s16-s19}
-        fldmiasge       r1!, {s24-s27}
-        fldmiasge       r3!, {s20-s23}
-        fldmiasge       r1!, {s28-s31}
-        fmulsge         s24, s16, s24
-        fstmias         r0!, {s8-s11}
-        fstmias         r0!, {s12-s15}
-        fmulsge         s28, s20, s28
-        fldmiasgt       r3!, {s0-s3}
-        fldmiasgt       r1!, {s8-s11}
-        fldmiasgt       r3!, {s4-s7}
-        fldmiasgt       r1!, {s12-s15}
-        fmulsge         s8,  s0,  s8
-        fstmiasge       r0!, {s24-s27}
-        fstmiasge       r0!, {s28-s31}
+        vmul.f32        s12, s4,  s12
+        vldmiage        r3!, {s16-s19}
+        vldmiage        r1!, {s24-s27}
+        vldmiage        r3!, {s20-s23}
+        vldmiage        r1!, {s28-s31}
+        vmulge.f32      s24, s16, s24
+        vstmia          r0!, {s8-s11}
+        vstmia          r0!, {s12-s15}
+        vmulge.f32      s28, s20, s28
+        vldmiagt        r3!, {s0-s3}
+        vldmiagt        r1!, {s8-s11}
+        vldmiagt        r3!, {s4-s7}
+        vldmiagt        r1!, {s12-s15}
+        vmulge.f32      s8,  s0,  s8
+        vstmiage        r0!, {s24-s27}
+        vstmiage        r0!, {s28-s31}
         bgt             1b
 
         bic             r12, r12, #(7 << 16) /* set vector size back to 1 */
@@ -88,44 +89,44 @@ function ff_vector_fmul_vfp, export=1
 function ff_vector_fmul_reverse_vfp, export=1
         vpush           {d8-d15}
         add             r2,  r2,  r3, lsl #2
-        fldmdbs         r2!, {s0-s3}
-        fldmias         r1!, {s8-s11}
-        fldmdbs         r2!, {s4-s7}
-        fldmias         r1!, {s12-s15}
-        fmuls           s8,  s3,  s8
-        fmuls           s9,  s2,  s9
-        fmuls           s10, s1,  s10
-        fmuls           s11, s0,  s11
+        vldmdb          r2!, {s0-s3}
+        vldmia          r1!, {s8-s11}
+        vldmdb          r2!, {s4-s7}
+        vldmia          r1!, {s12-s15}
+        vmul.f32        s8,  s3,  s8
+        vmul.f32        s9,  s2,  s9
+        vmul.f32        s10, s1,  s10
+        vmul.f32        s11, s0,  s11
 1:
         subs            r3,  r3,  #16
-        fldmdbsge       r2!, {s16-s19}
-        fmuls           s12, s7,  s12
-        fldmiasge       r1!, {s24-s27}
-        fmuls           s13, s6,  s13
-        fldmdbsge       r2!, {s20-s23}
-        fmuls           s14, s5,  s14
-        fldmiasge       r1!, {s28-s31}
-        fmuls           s15, s4,  s15
-        fmulsge         s24, s19, s24
-        fldmdbsgt       r2!, {s0-s3}
-        fmulsge         s25, s18, s25
-        fstmias         r0!, {s8-s13}
-        fmulsge         s26, s17, s26
-        fldmiasgt       r1!, {s8-s11}
-        fmulsge         s27, s16, s27
-        fmulsge         s28, s23, s28
-        fldmdbsgt       r2!, {s4-s7}
-        fmulsge         s29, s22, s29
-        fstmias         r0!, {s14-s15}
-        fmulsge         s30, s21, s30
-        fmulsge         s31, s20, s31
-        fmulsge         s8,  s3,  s8
-        fldmiasgt       r1!, {s12-s15}
-        fmulsge         s9,  s2,  s9
-        fmulsge         s10, s1,  s10
-        fstmiasge       r0!, {s24-s27}
-        fmulsge         s11, s0,  s11
-        fstmiasge       r0!, {s28-s31}
+        vldmdbge        r2!, {s16-s19}
+        vmul.f32        s12, s7,  s12
+        vldmiage        r1!, {s24-s27}
+        vmul.f32        s13, s6,  s13
+        vldmdbge        r2!, {s20-s23}
+        vmul.f32        s14, s5,  s14
+        vldmiage        r1!, {s28-s31}
+        vmul.f32        s15, s4,  s15
+        vmulge.f32      s24, s19, s24
+        vldmdbgt        r2!, {s0-s3}
+        vmulge.f32      s25, s18, s25
+        vstmia          r0!, {s8-s13}
+        vmulge.f32      s26, s17, s26
+        vldmiagt        r1!, {s8-s11}
+        vmulge.f32      s27, s16, s27
+        vmulge.f32      s28, s23, s28
+        vldmdbgt        r2!, {s4-s7}
+        vmulge.f32      s29, s22, s29
+        vstmia          r0!, {s14-s15}
+        vmulge.f32      s30, s21, s30
+        vmulge.f32      s31, s20, s31
+        vmulge.f32      s8,  s3,  s8
+        vldmiagt        r1!, {s12-s15}
+        vmulge.f32      s9,  s2,  s9
+        vmulge.f32      s10, s1,  s10
+        vstmiage        r0!, {s24-s27}
+        vmulge.f32      s11, s0,  s11
+        vstmiage        r0!, {s28-s31}
         bgt             1b
 
         vpop            {d8-d15}
@@ -143,36 +144,36 @@ function ff_vector_fmul_reverse_vfp, export=1
 function ff_float_to_int16_vfp, export=1
         push            {r4-r8,lr}
         vpush           {d8-d11}
-        fldmias         r1!, {s16-s23}
-        ftosis          s0,  s16
-        ftosis          s1,  s17
-        ftosis          s2,  s18
-        ftosis          s3,  s19
-        ftosis          s4,  s20
-        ftosis          s5,  s21
-        ftosis          s6,  s22
-        ftosis          s7,  s23
+        vldmia          r1!, {s16-s23}
+        vcvt.s32.f32    s0,  s16
+        vcvt.s32.f32    s1,  s17
+        vcvt.s32.f32    s2,  s18
+        vcvt.s32.f32    s3,  s19
+        vcvt.s32.f32    s4,  s20
+        vcvt.s32.f32    s5,  s21
+        vcvt.s32.f32    s6,  s22
+        vcvt.s32.f32    s7,  s23
 1:
         subs            r2,  r2,  #8
-        fmrrs           r3,  r4,  {s0, s1}
-        fmrrs           r5,  r6,  {s2, s3}
-        fmrrs           r7,  r8,  {s4, s5}
-        fmrrs           ip,  lr,  {s6, s7}
-        fldmiasgt       r1!, {s16-s23}
+        vmov            r3,  r4,  s0, s1
+        vmov            r5,  r6,  s2, s3
+        vmov            r7,  r8,  s4, s5
+        vmov            ip,  lr,  s6, s7
+        vldmiagt        r1!, {s16-s23}
         ssat            r4,  #16, r4
         ssat            r3,  #16, r3
         ssat            r6,  #16, r6
         ssat            r5,  #16, r5
         pkhbt           r3,  r3,  r4, lsl #16
         pkhbt           r4,  r5,  r6, lsl #16
-        ftosisgt        s0,  s16
-        ftosisgt        s1,  s17
-        ftosisgt        s2,  s18
-        ftosisgt        s3,  s19
-        ftosisgt        s4,  s20
-        ftosisgt        s5,  s21
-        ftosisgt        s6,  s22
-        ftosisgt        s7,  s23
+        vcvtgt.s32.f32  s0,  s16
+        vcvtgt.s32.f32  s1,  s17
+        vcvtgt.s32.f32  s2,  s18
+        vcvtgt.s32.f32  s3,  s19
+        vcvtgt.s32.f32  s4,  s20
+        vcvtgt.s32.f32  s5,  s21
+        vcvtgt.s32.f32  s6,  s22
+        vcvtgt.s32.f32  s7,  s23
         ssat            r8,  #16, r8
         ssat            r7,  #16, r7
         ssat            lr,  #16, lr
