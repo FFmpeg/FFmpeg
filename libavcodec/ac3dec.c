@@ -1308,6 +1308,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         const float *output[s->out_channels];
         if (!err && decode_audio_block(s, blk)) {
             av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
+            err = 1;
         }
         for (ch = 0; ch < s->out_channels; ch++)
             output[ch] = s->output[ch];
