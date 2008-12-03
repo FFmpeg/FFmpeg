@@ -2972,7 +2972,7 @@ int av_picture_crop(AVPicture *dst, const AVPicture *src,
 int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, int pix_fmt,
             int padtop, int padbottom, int padleft, int padright, int *color);
 
-extern unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
+unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
 
 /**
  * Parses \p str and put in \p width_ptr and \p height_ptr the detected values.

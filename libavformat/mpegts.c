@@ -38,8 +38,8 @@ typedef struct PESContext PESContext;
 
 static PESContext* add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid, int stream_type);
 static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code);
-extern void av_set_program_name(AVProgram *program, char *provider_name, char *name);
-extern void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx);
+void av_set_program_name(AVProgram *program, char *provider_name, char *name);
+void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int idx);
 
 enum MpegTSFilterType {
     MPEGTS_PES,

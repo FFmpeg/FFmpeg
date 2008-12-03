@@ -51,7 +51,7 @@ static void clear_blocks_sh4(DCTELEM *blocks)
         memzero_align8(blocks,sizeof(DCTELEM)*6*64);
 }
 
-extern void idct_sh4(DCTELEM *block);
+void idct_sh4(DCTELEM *block);
 static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
         int i;
@@ -89,7 +89,7 @@ static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
         }
 }
 
-extern void dsputil_init_align(DSPContext* c, AVCodecContext *avctx);
+void dsputil_init_align(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
 {

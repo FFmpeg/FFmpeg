@@ -26,7 +26,7 @@
 #include "dsputil_bfin.h"
 
 
-extern void ff_bfin_fdct (DCTELEM *block) attribute_l1_text;
+void ff_bfin_fdct (DCTELEM *block) attribute_l1_text;
 
 
 static int dct_quantize_bfin (MpegEncContext *s,

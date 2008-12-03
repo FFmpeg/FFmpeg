@@ -74,7 +74,7 @@ typedef struct {
     DECLARE_ALIGNED_16(int32_t, sb_samples[MPA_MAX_CHANNELS][36][SBLIMIT]);
 } MPCContext;
 
-extern void ff_mpc_init();
-extern void ff_mpc_dequantize_and_synth(MPCContext *c, int maxband, void *dst);
+void ff_mpc_init();
+void ff_mpc_dequantize_and_synth(MPCContext *c, int maxband, void *dst);
 
 #endif /* AVCODEC_MPC_H */

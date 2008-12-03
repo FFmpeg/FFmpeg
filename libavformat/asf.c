@@ -26,7 +26,7 @@
 #include "asf.h"
 #include "asfcrypt.h"
 
-extern void ff_mms_set_stream_selection(URLContext *h, AVFormatContext *format);
+void ff_mms_set_stream_selection(URLContext *h, AVFormatContext *format);
 
 #undef NDEBUG
 #include <assert.h>

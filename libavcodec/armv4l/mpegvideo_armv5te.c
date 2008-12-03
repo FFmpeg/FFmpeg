@@ -23,8 +23,7 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 
-extern void ff_dct_unquantize_h263_armv5te(DCTELEM *block, int qmul, int qadd,
-                                           int count);
+void ff_dct_unquantize_h263_armv5te(DCTELEM *block, int qmul, int qadd, int count);
 
 #ifdef ENABLE_ARM_TESTS
 /**

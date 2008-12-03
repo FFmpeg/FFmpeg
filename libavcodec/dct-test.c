@@ -46,22 +46,22 @@
 void *fast_memcpy(void *a, const void *b, size_t c){return memcpy(a,b,c);};
 
 /* reference fdct/idct */
-extern void fdct(DCTELEM *block);
-extern void idct(DCTELEM *block);
-extern void init_fdct();
+void fdct(DCTELEM *block);
+void idct(DCTELEM *block);
+void init_fdct();
 
-extern void ff_mmx_idct(DCTELEM *data);
-extern void ff_mmxext_idct(DCTELEM *data);
+void ff_mmx_idct(DCTELEM *data);
+void ff_mmxext_idct(DCTELEM *data);
 
-extern void odivx_idct_c (short *block);
+void odivx_idct_c(short *block);
 
 // BFIN
-extern void ff_bfin_idct (DCTELEM *block)  ;
-extern void ff_bfin_fdct (DCTELEM *block) ;
+void ff_bfin_idct(DCTELEM *block);
+void ff_bfin_fdct(DCTELEM *block);
 
 // ALTIVEC
-extern void fdct_altivec (DCTELEM *block);
-//extern void idct_altivec (DCTELEM *block);?? no routine
+void fdct_altivec(DCTELEM *block);
+//void idct_altivec(DCTELEM *block);?? no routine
 
 
 struct algo {

@@ -419,7 +419,7 @@ static int av_exit(int ret)
     av_free(video_standard);
 
 #ifdef CONFIG_POWERPC_PERF
-    extern void powerpc_display_perf_report(void);
+    void powerpc_display_perf_report(void);
     powerpc_display_perf_report();
 #endif /* CONFIG_POWERPC_PERF */
 

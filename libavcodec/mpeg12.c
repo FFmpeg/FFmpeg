@@ -63,10 +63,10 @@ static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s, DCTELEM *bloc
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred);
 static void exchange_uv(MpegEncContext *s);
 
-extern int XVMC_field_start(MpegEncContext *s, AVCodecContext *avctx);
-extern int XVMC_field_end(MpegEncContext *s);
-extern void XVMC_pack_pblocks(MpegEncContext *s,int cbp);
-extern void XVMC_init_block(MpegEncContext *s);//set s->block
+int XVMC_field_start(MpegEncContext *s, AVCodecContext *avctx);
+int XVMC_field_end(MpegEncContext *s);
+void XVMC_pack_pblocks(MpegEncContext *s,int cbp);
+void XVMC_init_block(MpegEncContext *s);//set s->block
 
 static const enum PixelFormat pixfmt_xvmc_mpg2_420[] = {
                                            PIX_FMT_XVMC_MPEG2_IDCT,

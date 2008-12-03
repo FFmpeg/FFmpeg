@@ -93,7 +93,7 @@ struct pollfd {
 #define POLLNVAL   0x1000  /* invalid file descriptor */
 
 
-extern int poll(struct pollfd *fds, nfds_t numfds, int timeout);
+int poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #endif /* HAVE_POLL_H */
 #endif /* CONFIG_FFSERVER */
 #endif /* CONFIG_NETWORK */

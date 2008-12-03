@@ -22,10 +22,10 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_bfin.h"
 
-extern void ff_bfin_vp3_idct (DCTELEM *block) attribute_l1_text;
-extern void ff_bfin_idct (DCTELEM *block) attribute_l1_text;
-extern void ff_bfin_add_pixels_clamped (DCTELEM *block, uint8_t *dest, int line_size) attribute_l1_text;
-extern void ff_bfin_put_pixels_clamped (DCTELEM *block, uint8_t *dest, int line_size) attribute_l1_text;
+void ff_bfin_vp3_idct (DCTELEM *block) attribute_l1_text;
+void ff_bfin_idct (DCTELEM *block) attribute_l1_text;
+void ff_bfin_add_pixels_clamped (DCTELEM *block, uint8_t *dest, int line_size) attribute_l1_text;
+void ff_bfin_put_pixels_clamped (DCTELEM *block, uint8_t *dest, int line_size) attribute_l1_text;
 
 /* Intra iDCT offset 128 */
 void ff_bfin_vp3_idct_put (uint8_t *dest, int line_size, DCTELEM *block)

@@ -31,9 +31,9 @@
 
 #include "vis.h"
 
-extern void ff_simple_idct_put_vis(uint8_t *dest, int line_size, DCTELEM *data);
-extern void ff_simple_idct_add_vis(uint8_t *dest, int line_size, DCTELEM *data);
-extern void ff_simple_idct_vis(DCTELEM *data);
+void ff_simple_idct_put_vis(uint8_t *dest, int line_size, DCTELEM *data);
+void ff_simple_idct_add_vis(uint8_t *dest, int line_size, DCTELEM *data);
+void ff_simple_idct_vis(DCTELEM *data);
 
 /* The trick used in some of this file is the formula from the MMX
  * motion comp code, which is:

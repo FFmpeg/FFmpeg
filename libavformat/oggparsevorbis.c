@@ -30,7 +30,7 @@
 #include "avformat.h"
 #include "oggdec.h"
 
-extern int
+int
 vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
 {
     const uint8_t *p = buf;

@@ -22,8 +22,8 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 
-extern void MPV_common_init_iwmmxt(MpegEncContext *s);
-extern void MPV_common_init_armv5te(MpegEncContext *s);
+void MPV_common_init_iwmmxt(MpegEncContext *s);
+void MPV_common_init_armv5te(MpegEncContext *s);
 
 void MPV_common_init_armv4l(MpegEncContext *s)
 {

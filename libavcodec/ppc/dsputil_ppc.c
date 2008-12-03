@@ -27,11 +27,11 @@
 #ifdef HAVE_ALTIVEC
 #include "dsputil_altivec.h"
 
-extern void fdct_altivec(int16_t *block);
-extern void gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
-                         int x16, int y16, int rounder);
-extern void idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
-extern void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
+void fdct_altivec(int16_t *block);
+void gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
+                  int x16, int y16, int rounder);
+void idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
+void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
 
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
 

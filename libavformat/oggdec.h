@@ -85,6 +85,6 @@ extern const struct ogg_codec ff_speex_codec;
 extern const struct ogg_codec ff_theora_codec;
 extern const struct ogg_codec ff_vorbis_codec;
 
-extern int vorbis_comment(AVFormatContext *ms, uint8_t *buf, int size);
+int vorbis_comment(AVFormatContext *ms, uint8_t *buf, int size);
 
 #endif /* AVFORMAT_OGGDEC_H */

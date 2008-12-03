@@ -64,14 +64,13 @@ extern const uint8_t ff_png_pass_xshift[NB_PASSES];
 /* Mask to determine which pixels are valid in a pass */
 extern const uint8_t ff_png_pass_mask[NB_PASSES];
 
-extern void *ff_png_zalloc(void *opaque, unsigned int items,
-                           unsigned int size);
+void *ff_png_zalloc(void *opaque, unsigned int items, unsigned int size);
 
-extern void ff_png_zfree(void *opaque, void *ptr);
+void ff_png_zfree(void *opaque, void *ptr);
 
-extern int ff_png_get_nb_channels(int color_type);
+int ff_png_get_nb_channels(int color_type);
 
 /* compute the row size of an interleaved pass */
-extern int ff_png_pass_row_size(int pass, int bits_per_pixel, int width);
+int ff_png_pass_row_size(int pass, int bits_per_pixel, int width);
 
 #endif /* AVCODEC_PNG_H */

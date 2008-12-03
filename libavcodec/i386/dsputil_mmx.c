@@ -2403,14 +2403,14 @@ static void float_to_int16_interleave_3dn2(int16_t *dst, const float **src, long
 }
 
 
-extern void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width);
-extern void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width);
-extern void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
-extern void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
-extern void ff_snow_inner_add_yblock_sse2(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
-                           int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
-extern void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
-                          int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
+void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, int width);
+void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width);
+void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
+void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
+void ff_snow_inner_add_yblock_sse2(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
+                                   int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
+void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
+                                  int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
 
 
 static void add_int16_sse2(int16_t * v1, int16_t * v2, int order)

@@ -91,6 +91,6 @@ static inline int bidir_sal(int value, int offset)
  *
  * @return dot product = sum of elementwise products
  */
-extern float ff_dot_productf(const float* a, const float* b, int length);
+float ff_dot_productf(const float* a, const float* b, int length);
 
 #endif /* AVCODEC_CELP_MATH_H */

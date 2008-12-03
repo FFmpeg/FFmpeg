@@ -20,10 +20,10 @@
 
 #include "libavcodec/dsputil.h"
 
-extern void ff_vector_fmul_vfp(float *dst, const float *src, int len);
-extern void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
-                                       const float *src1, int len);
-extern void ff_float_to_int16_vfp(int16_t *dst, const float *src, long len);
+void ff_vector_fmul_vfp(float *dst, const float *src, int len);
+void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
+                                const float *src1, int len);
+void ff_float_to_int16_vfp(int16_t *dst, const float *src, long len);
 
 void ff_float_init_arm_vfp(DSPContext* c, AVCodecContext *avctx)
 {

@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-extern int has_altivec(void);
+int has_altivec(void);
 
 void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 

@@ -24,23 +24,19 @@
 #include <ipp.h>
 #endif
 
-extern void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx);
-extern void ff_float_init_arm_vfp(DSPContext* c, AVCodecContext *avctx);
+void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx);
+void ff_float_init_arm_vfp(DSPContext* c, AVCodecContext *avctx);
 
-extern void j_rev_dct_ARM(DCTELEM *data);
-extern void simple_idct_ARM(DCTELEM *data);
+void j_rev_dct_ARM(DCTELEM *data);
+void simple_idct_ARM(DCTELEM *data);
 
-extern void simple_idct_armv5te(DCTELEM *data);
-extern void simple_idct_put_armv5te(uint8_t *dest, int line_size,
-                                    DCTELEM *data);
-extern void simple_idct_add_armv5te(uint8_t *dest, int line_size,
-                                    DCTELEM *data);
+void simple_idct_armv5te(DCTELEM *data);
+void simple_idct_put_armv5te(uint8_t *dest, int line_size, DCTELEM *data);
+void simple_idct_add_armv5te(uint8_t *dest, int line_size, DCTELEM *data);
 
-extern void ff_simple_idct_armv6(DCTELEM *data);
-extern void ff_simple_idct_put_armv6(uint8_t *dest, int line_size,
-                                     DCTELEM *data);
-extern void ff_simple_idct_add_armv6(uint8_t *dest, int line_size,
-                                     DCTELEM *data);
+void ff_simple_idct_armv6(DCTELEM *data);
+void ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data);
+void ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data);
 
 /* XXX: local hack */
 static void (*ff_put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
@@ -57,7 +53,7 @@ void put_no_rnd_pixels8_xy2_arm(uint8_t *block, const uint8_t *pixels, int line_
 
 void put_pixels16_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 
-extern void ff_prefetch_arm(void *mem, int stride, int h);
+void ff_prefetch_arm(void *mem, int stride, int h);
 
 CALL_2X_PIXELS(put_pixels16_x2_arm , put_pixels8_x2_arm , 8)
 CALL_2X_PIXELS(put_pixels16_y2_arm , put_pixels8_y2_arm , 8)
@@ -66,7 +62,7 @@ CALL_2X_PIXELS(put_no_rnd_pixels16_x2_arm , put_no_rnd_pixels8_x2_arm , 8)
 CALL_2X_PIXELS(put_no_rnd_pixels16_y2_arm , put_no_rnd_pixels8_y2_arm , 8)
 CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_arm, put_no_rnd_pixels8_xy2_arm, 8)
 
-extern void ff_add_pixels_clamped_ARM(short *block, unsigned char *dest,
+void ff_add_pixels_clamped_ARM(short *block, unsigned char *dest,
                                       int line_size);
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are

@@ -38,7 +38,7 @@
 #define BUFFER_CAT(x)               (&((x)[strlen(x)]))
 
 /* For PPC Use */
-extern int has_altivec(void);
+int has_altivec(void);
 
 /**
  * Structure for the private Xvid context.
