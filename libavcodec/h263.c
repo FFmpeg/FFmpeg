@@ -5666,7 +5666,58 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
              s->quarter_sample= get_bits1(gb);
         else s->quarter_sample=0;
 
-        if(!get_bits1(gb)) av_log(s->avctx, AV_LOG_ERROR, "Complexity estimation not supported\n");
+        if(!get_bits1(gb)){
+            int pos= get_bits_count(gb);
+            int estimation_method= get_bits(gb, 2);
+            if(estimation_method<2){
+                if(!get_bits1(gb)){
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //opaque
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //transparent
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //intra_cae
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //inter_cae
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //no_update
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //upampling
+                }
+                if(!get_bits1(gb)){
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //intra_blocks
+                    s->cplx_estimation_trash_p += 8*get_bits1(gb); //inter_blocks
+                    s->cplx_estimation_trash_p += 8*get_bits1(gb); //inter4v_blocks
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //not coded blocks
+                }
+                if(!check_marker(gb, "in complexity estimation part 1")){
+                    skip_bits_long(gb, pos - get_bits_count(gb));
+                    goto no_cplx_est;
+                }
+                if(!get_bits1(gb)){
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //dct_coeffs
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //dct_lines
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //vlc_syms
+                    s->cplx_estimation_trash_i += 4*get_bits1(gb); //vlc_bits
+                }
+                if(!get_bits1(gb)){
+                    s->cplx_estimation_trash_p += 8*get_bits1(gb); //apm
+                    s->cplx_estimation_trash_p += 8*get_bits1(gb); //npm
+                    s->cplx_estimation_trash_b += 8*get_bits1(gb); //interpolate_mc_q
+                    s->cplx_estimation_trash_p += 8*get_bits1(gb); //forwback_mc_q
+                    s->cplx_estimation_trash_p += 8*get_bits1(gb); //halfpel2
+                    s->cplx_estimation_trash_p += 8*get_bits1(gb); //halfpel4
+                }
+                if(!check_marker(gb, "in complexity estimation part 2")){
+                    skip_bits_long(gb, pos - get_bits_count(gb));
+                    goto no_cplx_est;
+                }
+                if(estimation_method==1){
+                    s->cplx_estimation_trash_i += 8*get_bits1(gb); //sadct
+                    s->cplx_estimation_trash_p += 8*get_bits1(gb); //qpel
+                }
+            }else
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid Complexity estimation method %d\n", estimation_method);
+        }else{
+no_cplx_est:
+            s->cplx_estimation_trash_i=
+            s->cplx_estimation_trash_p=
+            s->cplx_estimation_trash_b= 0;
+        }
 
         s->resync_marker= !get_bits1(gb); /* resync_marker_disabled */
 
@@ -5903,6 +5954,12 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
 //FIXME complexity estimation stuff
 
      if (s->shape != BIN_ONLY_SHAPE) {
+         skip_bits_long(gb, s->cplx_estimation_trash_i);
+         if(s->pict_type != FF_I_TYPE)
+            skip_bits_long(gb, s->cplx_estimation_trash_p);
+         if(s->pict_type == FF_B_TYPE)
+            skip_bits_long(gb, s->cplx_estimation_trash_b);
+
          s->intra_dc_threshold= mpeg4_dc_threshold[ get_bits(gb, 3) ];
          if(!s->progressive_sequence){
              s->top_field_first= get_bits1(gb);
@@ -5951,12 +6008,12 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
              s->b_code=1;
 
          if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-             av_log(s->avctx, AV_LOG_DEBUG, "qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d rnd:%d vot:%d%s dc:%d\n",
+             av_log(s->avctx, AV_LOG_DEBUG, "qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d rnd:%d vot:%d%s dc:%d ce:%d/%d/%d\n",
                  s->qscale, s->f_code, s->b_code,
                  s->pict_type == FF_I_TYPE ? "I" : (s->pict_type == FF_P_TYPE ? "P" : (s->pict_type == FF_B_TYPE ? "B" : "S")),
                  gb->size_in_bits,s->progressive_sequence, s->alternate_scan, s->top_field_first,
                  s->quarter_sample ? "q" : "h", s->data_partitioning, s->resync_marker, s->num_sprite_warping_points,
-                 s->sprite_warping_accuracy, 1-s->no_rounding, s->vo_type, s->vol_control_parameters ? " VOLC" : " ", s->intra_dc_threshold);
+                 s->sprite_warping_accuracy, 1-s->no_rounding, s->vo_type, s->vol_control_parameters ? " VOLC" : " ", s->intra_dc_threshold, s->cplx_estimation_trash_i, s->cplx_estimation_trash_p, s->cplx_estimation_trash_b);
          }
 
          if(!s->scalability){
