@@ -41,14 +41,14 @@
 #define L1CODE
 #endif
 
-extern void ff_bfin_yuv2rgb555_line (uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
-                                     int w, uint32_t *coeffs) L1CODE;
+void ff_bfin_yuv2rgb555_line (uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
+                              int w, uint32_t *coeffs) L1CODE;
 
-extern void ff_bfin_yuv2rgb565_line (uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
-                                     int w, uint32_t *coeffs) L1CODE;
+void ff_bfin_yuv2rgb565_line (uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
+                              int w, uint32_t *coeffs) L1CODE;
 
-extern void ff_bfin_yuv2rgb24_line (uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
-                                    int w, uint32_t *coeffs) L1CODE;
+void ff_bfin_yuv2rgb24_line (uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
+                             int w, uint32_t *coeffs) L1CODE;
 
 typedef void (* ltransform_t)(uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
                               int w, uint32_t *coeffs);

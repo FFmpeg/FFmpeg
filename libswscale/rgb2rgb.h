@@ -48,25 +48,25 @@ extern void (*rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long src_size);
 extern void (*rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long src_size);
 
-extern void rgb24to32   (const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb32to24   (const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb16tobgr32(const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb16to24   (const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb16tobgr16(const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb16tobgr15(const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb15tobgr32(const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb15to24   (const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb15tobgr16(const uint8_t *src, uint8_t *dst, long src_size);
-extern void rgb15tobgr15(const uint8_t *src, uint8_t *dst, long src_size);
-extern void bgr8torgb8  (const uint8_t *src, uint8_t *dst, long src_size);
+void rgb24to32   (const uint8_t *src, uint8_t *dst, long src_size);
+void rgb32to24   (const uint8_t *src, uint8_t *dst, long src_size);
+void rgb16tobgr32(const uint8_t *src, uint8_t *dst, long src_size);
+void rgb16to24   (const uint8_t *src, uint8_t *dst, long src_size);
+void rgb16tobgr16(const uint8_t *src, uint8_t *dst, long src_size);
+void rgb16tobgr15(const uint8_t *src, uint8_t *dst, long src_size);
+void rgb15tobgr32(const uint8_t *src, uint8_t *dst, long src_size);
+void rgb15to24   (const uint8_t *src, uint8_t *dst, long src_size);
+void rgb15tobgr16(const uint8_t *src, uint8_t *dst, long src_size);
+void rgb15tobgr15(const uint8_t *src, uint8_t *dst, long src_size);
+void bgr8torgb8  (const uint8_t *src, uint8_t *dst, long src_size);
 
 
-extern void palette8topacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-extern void palette8topacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-extern void palette8torgb16(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-extern void palette8tobgr16(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-extern void palette8torgb15(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
-extern void palette8tobgr15(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
+void palette8topacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
+void palette8topacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
+void palette8torgb16(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
+void palette8tobgr16(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
+void palette8torgb15(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
+void palette8tobgr15(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
 
 /**
  * Height should be a multiple of 2 and width should be a multiple of 16.
