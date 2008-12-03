@@ -166,11 +166,6 @@ Applying that to the previous example:
 
 Beware that there is no "jpeg" codec. Use "mjpeg" instead.
 
-@section I get "Unsupported codec (id=86043) for input stream #0.1". What is the problem?
-
-This is the Qcelp codec, FFmpeg has no support for that codec currently.
-Try MEncoder/MPlayer, it might work.
-
 @section Why do I see a slight quality degradation with multithreaded MPEG* encoding?
 
 For multithreaded MPEG* encoding, the encoded slices must be independent,
