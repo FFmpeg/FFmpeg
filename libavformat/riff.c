@@ -33,6 +33,8 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_H264,         MKTAG('a', 'v', 'c', '1') },
     { CODEC_ID_H264,         MKTAG('V', 'S', 'S', 'H') },
     { CODEC_ID_H263,         MKTAG('H', '2', '6', '3') },
+    { CODEC_ID_H263,         MKTAG('X', '2', '6', '3') },
+    { CODEC_ID_H263,         MKTAG('L', '2', '6', '3') },
     { CODEC_ID_H263P,        MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263I,        MKTAG('I', '2', '6', '3') }, /* intel h263 */
     { CODEC_ID_H261,         MKTAG('H', '2', '6', '1') },
@@ -54,7 +56,15 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('R', 'M', 'P', '4') },
     { CODEC_ID_MPEG4,        MKTAG('3', 'I', 'V', '2') },
     { CODEC_ID_MPEG4,        MKTAG('F', 'F', 'D', 'S') },
+    { CODEC_ID_MPEG4,        MKTAG('D', 'C', 'O', 'D') },
+    { CODEC_ID_MPEG4,        MKTAG('M', 'V', 'X', 'M') },
+    { CODEC_ID_MPEG4,        MKTAG('P', 'M', '4', 'V') },
+    { CODEC_ID_MPEG4,        MKTAG('S', 'M', 'P', '4') },
+    { CODEC_ID_MPEG4,        MKTAG('D', 'X', 'G', 'M') },
+    { CODEC_ID_MPEG4,        MKTAG('V', 'I', 'D', 'M') },
+    { CODEC_ID_MPEG4,        MKTAG('M', '4', 'T', '3') },
     { CODEC_ID_MPEG4,        MKTAG('G', 'E', 'O', 'X') },
+    { CODEC_ID_MPEG4,        MKTAG('H', 'D', 'X', '4') }, /* flipped video */
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', 'G', '3') },
@@ -67,6 +77,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MSMPEG4V2,    MKTAG('M', 'P', '4', '2') },
     { CODEC_ID_MSMPEG4V2,    MKTAG('D', 'I', 'V', '2') },
     { CODEC_ID_MSMPEG4V1,    MKTAG('M', 'P', 'G', '4') },
+    { CODEC_ID_MSMPEG4V1,    MKTAG('M', 'P', '4', '1') },
     { CODEC_ID_WMV1,         MKTAG('W', 'M', 'V', '1') },
     { CODEC_ID_WMV2,         MKTAG('W', 'M', 'V', '2') },
     { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 's', 'd') },
@@ -75,11 +86,13 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', '2', '5') },
     { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', '5', '0') },
     { CODEC_ID_DVVIDEO,      MKTAG('c', 'd', 'v', 'c') }, /* Canopus DV */
+    { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'c', ' ') },
     { CODEC_ID_MPEG1VIDEO,   MKTAG('m', 'p', 'g', '1') },
     { CODEC_ID_MPEG1VIDEO,   MKTAG('m', 'p', 'g', '2') },
     { CODEC_ID_MPEG2VIDEO,   MKTAG('m', 'p', 'g', '2') },
     { CODEC_ID_MPEG2VIDEO,   MKTAG('M', 'P', 'E', 'G') },
     { CODEC_ID_MPEG1VIDEO,   MKTAG('P', 'I', 'M', '1') },
+    { CODEC_ID_MPEG2VIDEO,   MKTAG('P', 'I', 'M', '2') },
     { CODEC_ID_MPEG1VIDEO,   MKTAG('V', 'C', 'R', '2') },
     { CODEC_ID_MPEG1VIDEO,   MKTAG( 1 ,  0 ,  0 ,  16) },
     { CODEC_ID_MPEG2VIDEO,   MKTAG( 2 ,  0 ,  0 ,  16) },
@@ -87,6 +100,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG2VIDEO,   MKTAG('M', 'M', 'E', 'S') },
     { CODEC_ID_MJPEG,        MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG,        MKTAG('L', 'J', 'P', 'G') },
+    { CODEC_ID_MJPEG,        MKTAG('d', 'm', 'b', '1') },
     { CODEC_ID_LJPEG,        MKTAG('L', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG,        MKTAG('J', 'P', 'G', 'L') }, /* Pegasus lossless JPEG */
     { CODEC_ID_JPEGLS,       MKTAG('M', 'J', 'L', 'S') }, /* JPEG-LS custom FOURCC for avi - encoder */
