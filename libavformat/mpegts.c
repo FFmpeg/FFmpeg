@@ -22,6 +22,7 @@
 #include "libavutil/crc.h"
 #include "avformat.h"
 #include "mpegts.h"
+#include "internal.h"
 
 //#define DEBUG_SI
 //#define DEBUG_SEEK
