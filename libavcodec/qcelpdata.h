@@ -27,6 +27,7 @@
  * Data tables for the QCELP decoder
  * @author Reynaldo H. Verdejo Pinochet
  * @remark FFmpeg merging spearheaded by Kenan Gillet
+ * @remark Development mentored by Benjamin Larson
  */
 
 #include <stddef.h>

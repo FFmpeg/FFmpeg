@@ -23,6 +23,8 @@
  * @file qcelp_lsp.c
  * QCELP decoder
  * @author Reynaldo H. Verdejo Pinochet
+ * @remark FFmpeg merging spearheaded by Kenan Gillet
+ * @remark Development mentored by Benjamin Larson
  */
 
 #include "libavutil/mathematics.h"
