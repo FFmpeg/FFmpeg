@@ -106,6 +106,8 @@ const AVCodecTag codec_movvideo_tags[] = {
     { CODEC_ID_MSRLE,   MKTAG('W', 'R', 'L', 'E') },
     { CODEC_ID_QDRAW,   MKTAG('q', 'd', 'r', 'w') }, /* QuickDraw */
 
+    { CODEC_ID_RAWVIDEO, MKTAG('W', 'R', 'A', 'W') },
+
     { CODEC_ID_H264, MKTAG('a', 'v', 'c', '1') }, /* AVC-1/H.264 */
 
     { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'e', 'g') }, /* MPEG */
