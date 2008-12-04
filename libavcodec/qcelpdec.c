@@ -627,7 +627,7 @@ static int buf_size2bitrate(const int buf_size)
  * TIA/EIA/IS-733 2.4.8.7.1
  */
 static int determine_bitrate(AVCodecContext *avctx, const int buf_size,
-                             uint8_t **buf)
+                             const uint8_t **buf)
 {
     qcelp_packet_rate bitrate;
 
@@ -669,7 +669,7 @@ static void warn_insufficient_frame_quality(AVCodecContext *avctx,
 }
 
 static int qcelp_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                              uint8_t *buf, const int buf_size)
+                              const uint8_t *buf, int buf_size)
 {
     QCELPContext *q = avctx->priv_data;
     float *outbuffer = data;
