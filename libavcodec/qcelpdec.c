@@ -336,7 +336,7 @@ static int codebook_sanity_check_for_rate_quarter(const uint8_t *cbgain)
  * @param gain array holding the 4 pitch subframe gain values
  * @param cdn_vector array for the generated scaled codebook vector
  */
-static void compute_svector(const QCELPContext *q, const float *gain,
+static void compute_svector(QCELPContext *q, const float *gain,
                             float *cdn_vector)
 {
     int      i, j, k;
