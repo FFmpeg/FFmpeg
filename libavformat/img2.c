@@ -45,6 +45,7 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_PNG       , "png"},
     { CODEC_ID_PNG       , "mng"},
     { CODEC_ID_PPM       , "ppm"},
+    { CODEC_ID_PPM       , "pnm"},
     { CODEC_ID_PGM       , "pgm"},
     { CODEC_ID_PGMYUV    , "pgmyuv"},
     { CODEC_ID_PBM       , "pbm"},
