@@ -148,10 +148,10 @@ static int decode_frame(AVCodecContext *avctx,
     version = header & 0xff;
     header_size = (header & (1<<30))? 8 : 4; /* bit 30 means pad to 8 bytes */
 
-    if (version > 2 && version != 4 && version != 5) {
+    if (version > 5) {
         av_log(avctx, AV_LOG_ERROR,
                "This file is encoded with Fraps version %d. " \
-               "This codec can only decode version 0, 1, 2 and 4.\n", version);
+               "This codec can only decode versions <= 5.\n", version);
         return -1;
     }
 
@@ -288,6 +288,7 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
         break;
+    case 3:
     case 5:
         /* Virtually the same as version 4, but is for RGB24 */
         avctx->pix_fmt = PIX_FMT_BGR24;
