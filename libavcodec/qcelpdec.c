@@ -600,7 +600,7 @@ void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
         ff_qcelp_lspf2lpc(curr_lspf, lpc);
 }
 
-static int buf_size2bitrate(const int buf_size)
+static qcelp_packet_rate buf_size2bitrate(const int buf_size)
 {
     switch(buf_size)
     {
@@ -611,7 +611,7 @@ static int buf_size2bitrate(const int buf_size)
         case  1: return SILENCE;
     }
 
-    return -1;
+    return I_F_Q;
 }
 
 /**
