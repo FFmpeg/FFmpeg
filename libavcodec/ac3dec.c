@@ -728,9 +728,10 @@ static void decode_band_structure(GetBitContext *gbc, int blk, int eac3,
                                   int ecpl, int start_subband, int end_subband,
                                   const uint8_t *default_band_struct,
                                   uint8_t *band_struct, int *num_subbands,
-                                  int *num_bands, int *band_sizes)
+                                  int *num_bands, uint8_t *band_sizes)
 {
-    int subbnd, bnd, n_subbands, n_bands, bnd_sz[22];
+    int subbnd, bnd, n_subbands, n_bands;
+    uint8_t bnd_sz[22];
 
     n_subbands = end_subband - start_subband;
 
@@ -769,7 +770,7 @@ static void decode_band_structure(GetBitContext *gbc, int blk, int eac3,
     if (num_bands)
         *num_bands = n_bands;
     if (band_sizes)
-        memcpy(band_sizes, bnd_sz, sizeof(int)*n_bands);
+        memcpy(band_sizes, bnd_sz, n_bands);
 }
 
 /**
