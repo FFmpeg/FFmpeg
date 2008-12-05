@@ -6834,10 +6834,16 @@ static int decode_sei(H264Context *h){
     return 0;
 }
 
-static inline void decode_hrd_parameters(H264Context *h, SPS *sps){
+static inline int decode_hrd_parameters(H264Context *h, SPS *sps){
     MpegEncContext * const s = &h->s;
     int cpb_count, i;
     cpb_count = get_ue_golomb(&s->gb) + 1;
+
+    if(cpb_count > 32U){
+        av_log(h->s.avctx, AV_LOG_ERROR, "cpb_count %d invalid\n", cpb_count);
+        return -1;
+    }
+
     get_bits(&s->gb, 4); /* bit_rate_scale */
     get_bits(&s->gb, 4); /* cpb_size_scale */
     for(i=0; i<cpb_count; i++){
@@ -6849,6 +6855,7 @@ static inline void decode_hrd_parameters(H264Context *h, SPS *sps){
     sps->cpb_removal_delay_length = get_bits(&s->gb, 5) + 1;
     sps->dpb_output_delay_length = get_bits(&s->gb, 5) + 1;
     sps->time_offset_length = get_bits(&s->gb, 5);
+    return 0;
 }
 
 static inline int decode_vui_parameters(H264Context *h, SPS *sps){
@@ -6903,10 +6910,12 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
 
     sps->nal_hrd_parameters_present_flag = get_bits1(&s->gb);
     if(sps->nal_hrd_parameters_present_flag)
-        decode_hrd_parameters(h, sps);
+        if(decode_hrd_parameters(h, sps) < 0)
+            return -1;
     sps->vcl_hrd_parameters_present_flag = get_bits1(&s->gb);
     if(sps->vcl_hrd_parameters_present_flag)
-        decode_hrd_parameters(h, sps);
+        if(decode_hrd_parameters(h, sps) < 0)
+            return -1;
     if(sps->nal_hrd_parameters_present_flag || sps->vcl_hrd_parameters_present_flag)
         get_bits1(&s->gb);     /* low_delay_hrd_flag */
     sps->pic_struct_present_flag = get_bits1(&s->gb);
