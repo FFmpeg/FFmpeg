@@ -35,6 +35,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_H263,         MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263,         MKTAG('X', '2', '6', '3') },
     { CODEC_ID_H263,         MKTAG('L', '2', '6', '3') },
+    { CODEC_ID_H263,         MKTAG('V', 'X', '1', 'K') },
     { CODEC_ID_H263P,        MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263I,        MKTAG('I', '2', '6', '3') }, /* intel h263 */
     { CODEC_ID_H261,         MKTAG('H', '2', '6', '1') },
@@ -65,6 +66,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('M', '4', 'T', '3') },
     { CODEC_ID_MPEG4,        MKTAG('G', 'E', 'O', 'X') },
     { CODEC_ID_MPEG4,        MKTAG('H', 'D', 'X', '4') }, /* flipped video */
+    { CODEC_ID_MPEG4,        MKTAG('D', 'M', 'K', '2') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', 'G', '3') },
