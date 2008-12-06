@@ -145,8 +145,10 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
             p2 = *src++;
             if(p2 == 0) { //End-of-line
                 output = pic->data[0] + (--line) * pic->linesize[0];
-                if (line < 0)
+                if (line < 0){
+                    av_log(avctx, AV_LOG_ERROR, "Next line is beyond picture bounds\n");
                     return -1;
+                }
                 pos = 0;
                 continue;
             } else if(p2 == 1) { //End-of-picture
@@ -155,8 +157,10 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
                 p1 = *src++;
                 p2 = *src++;
                 line -= p2;
-                if (line < 0)
+                if (line < 0){
+                    av_log(avctx, AV_LOG_ERROR, "Skip beyond picture bounds\n");
                     return -1;
+                }
                 pos += p1;
                 output = pic->data[0] + line * pic->linesize[0] + pos * (depth >> 3);
                 continue;
