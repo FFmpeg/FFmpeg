@@ -390,12 +390,15 @@ static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
 
     /* convert to absolute exps and expand groups */
     prevexp = absexp;
-    for(i=0; i<ngrps*3; i++) {
+    for(i=0,j=0; i<ngrps*3; i++) {
         prevexp += dexp[i] - 2;
         if (prevexp < 0 || prevexp > 24)
             return -1;
-        for(j=0; j<group_size; j++) {
-            dexps[(i*group_size)+j] = prevexp;
+        switch (group_size) {
+            case 4: dexps[j++] = prevexp;
+                    dexps[j++] = prevexp;
+            case 2: dexps[j++] = prevexp;
+            case 1: dexps[j++] = prevexp;
         }
     }
     return 0;
