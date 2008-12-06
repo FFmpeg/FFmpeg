@@ -993,8 +993,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         if (s->exp_strategy[blk][ch] != EXP_REUSE) {
             s->dexps[ch][0] = get_bits(gbc, 4) << !ch;
             if (decode_exponents(gbc, s->exp_strategy[blk][ch],
-                             s->num_exp_groups[ch], s->dexps[ch][0],
-                             &s->dexps[ch][s->start_freq[ch]+!!ch])) {
+                                 s->num_exp_groups[ch], s->dexps[ch][0],
+                                 &s->dexps[ch][s->start_freq[ch]+!!ch])) {
                 av_log(s->avctx, AV_LOG_ERROR, "exponent out-of-range\n");
                 return -1;
             }
