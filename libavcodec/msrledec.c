@@ -195,13 +195,12 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
             }
             pos += p2;
         } else { //Run of pixels
-            int pix[4]; //original pixel
+            uint8_t pix[3]; //original pixel
             switch(depth){
             case  8: pix[0] = *src++;
                      break;
             case 16: pix16 = AV_RL16(src);
                      src += 2;
-                     *(uint16_t*)pix = pix16;
                      break;
             case 24: pix[0] = *src++;
                      pix[1] = *src++;
@@ -209,7 +208,6 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
                      break;
             case 32: pix32 = AV_RL32(src);
                      src += 4;
-                     *(uint32_t*)pix = pix32;
                      break;
             }
             if (output + p1 * (depth >> 3) > output_end)
