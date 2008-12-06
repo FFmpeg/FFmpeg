@@ -66,7 +66,8 @@ struct RTPDynamicProtocolHandler_s {
     enum CodecID codec_id;
 
     // may be null
-    int (*parse_sdp_a_line) (AVStream * stream,
+    int (*parse_sdp_a_line) (AVFormatContext *s,
+                             int st_index,
                              PayloadContext *priv_data,
                              const char *line); ///< Parse the a= line from the sdp field
     PayloadContext *(*open) (); ///< allocate any data needed by the rtp parsing for this dynamic data.

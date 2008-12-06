@@ -405,8 +405,10 @@ rdt_parse_b64buf (unsigned int *target_len, const char *p)
 }
 
 static int
-rdt_parse_sdp_line (AVStream *stream, PayloadContext *rdt, const char *line)
+rdt_parse_sdp_line (AVFormatContext *s, int st_index,
+                    PayloadContext *rdt, const char *line)
 {
+    AVStream *stream = s->streams[st_index];
     const char *p = line;
 
     if (av_strstart(p, "OpaqueData:buffer;", &p)) {

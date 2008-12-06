@@ -518,7 +518,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 rtsp_st = st->priv_data;
                 if (rtsp_st->sdp_payload_type == payload_type) {
                     if(rtsp_st->dynamic_handler && rtsp_st->dynamic_handler->parse_sdp_a_line) {
-                        if(!rtsp_st->dynamic_handler->parse_sdp_a_line(st, rtsp_st->dynamic_protocol_context, buf)) {
+                        if(!rtsp_st->dynamic_handler->parse_sdp_a_line(s, i, rtsp_st->dynamic_protocol_context, buf)) {
                             sdp_parse_fmtp(st, p);
                         }
                     } else {
@@ -535,7 +535,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 rtsp_st = st->priv_data;
                 if (rtsp_st->sdp_payload_type == payload_type) {
                     if(rtsp_st->dynamic_handler && rtsp_st->dynamic_handler->parse_sdp_a_line) {
-                        rtsp_st->dynamic_handler->parse_sdp_a_line(st, rtsp_st->dynamic_protocol_context, buf);
+                        rtsp_st->dynamic_handler->parse_sdp_a_line(s, i, rtsp_st->dynamic_protocol_context, buf);
                     }
                 }
             }
@@ -553,7 +553,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             rtsp_st = s->streams[s->nb_streams - 1]->priv_data;
             if (rtsp_st->dynamic_handler &&
                 rtsp_st->dynamic_handler->parse_sdp_a_line)
-                rtsp_st->dynamic_handler->parse_sdp_a_line(s->streams[s->nb_streams - 1],
+                rtsp_st->dynamic_handler->parse_sdp_a_line(s, s->nb_streams - 1,
                     rtsp_st->dynamic_protocol_context, buf);
         }
         break;

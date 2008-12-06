@@ -348,9 +348,10 @@ static void h264_free_extradata(PayloadContext *data)
     av_free(data);
 }
 
-static int parse_h264_sdp_line(AVStream * stream, PayloadContext *h264_data,
-                               const char *line)
+static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
+                               PayloadContext *h264_data, const char *line)
 {
+    AVStream *stream = s->streams[st_index];
     AVCodecContext *codec = stream->codec;
     const char *p = line;
 
