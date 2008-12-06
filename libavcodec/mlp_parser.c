@@ -252,8 +252,8 @@ static int mlp_parse(AVCodecParserContext *s,
             goto lost_sync;
 
 #ifdef CONFIG_AUDIO_NONSHORT
-        avctx->bits_per_sample = mh.group1_bits;
-        if (avctx->bits_per_sample > 16)
+        avctx->bits_per_raw_sample = mh.group1_bits;
+        if (avctx->bits_per_raw_sample > 16)
             avctx->sample_fmt = SAMPLE_FMT_S32;
 #endif
         avctx->sample_rate = mh.group1_samplerate;

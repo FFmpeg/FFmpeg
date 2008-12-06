@@ -297,7 +297,7 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
     m->avctx->frame_size     = mh.access_unit_size;
 
 #ifdef CONFIG_AUDIO_NONSHORT
-    m->avctx->bits_per_sample = mh.group1_bits;
+    m->avctx->bits_per_raw_sample = mh.group1_bits;
     if (mh.group1_bits > 16) {
         m->avctx->sample_fmt = SAMPLE_FMT_S32;
     }
