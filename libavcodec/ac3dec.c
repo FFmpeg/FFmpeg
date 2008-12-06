@@ -373,7 +373,7 @@ static void set_downmix_coeffs(AC3DecodeContext *s)
  * reference: Section 7.1.3 Exponent Decoding
  */
 static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
-                             uint8_t absexp, int8_t *dexps)
+                            uint8_t absexp, int8_t *dexps)
 {
     int i, j, grp, group_size;
     int dexp[256];
