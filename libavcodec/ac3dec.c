@@ -392,7 +392,7 @@ static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
     prevexp = absexp;
     for(i=0,j=0; i<ngrps*3; i++) {
         prevexp += dexp[i] - 2;
-        if (prevexp < 0 || prevexp > 24)
+        if (prevexp > 24U)
             return -1;
         switch (group_size) {
             case 4: dexps[j++] = prevexp;
