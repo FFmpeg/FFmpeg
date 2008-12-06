@@ -476,6 +476,7 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
            It is likely the offset of each block within the frame. */
         int block_start_bits = (s->num_blocks-1) * (4 + av_log2(s->frame_size-2));
         skip_bits_long(gbc, block_start_bits);
+        av_log_missing_feature(s->avctx, "Block start info", 1);
     }
 
     /* syntax state initialization */
