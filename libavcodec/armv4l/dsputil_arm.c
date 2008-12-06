@@ -140,7 +140,7 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
             c->idct_put= j_rev_dct_ARM_put;
             c->idct_add= j_rev_dct_ARM_add;
             c->idct    = j_rev_dct_ARM;
-            c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;/* FF_NO_IDCT_PERM */
+            c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
         } else if (idct_algo==FF_IDCT_SIMPLEARM){
             c->idct_put= simple_idct_ARM_put;
             c->idct_add= simple_idct_ARM_add;
@@ -171,20 +171,20 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
     }
 
     c->put_pixels_tab[0][0] = put_pixels16_arm;
-    c->put_pixels_tab[0][1] = put_pixels16_x2_arm; //OK!
-    c->put_pixels_tab[0][2] = put_pixels16_y2_arm; //OK!
+    c->put_pixels_tab[0][1] = put_pixels16_x2_arm;
+    c->put_pixels_tab[0][2] = put_pixels16_y2_arm;
     c->put_pixels_tab[0][3] = put_pixels16_xy2_arm;
     c->put_no_rnd_pixels_tab[0][0] = put_pixels16_arm;
-    c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_arm; // OK
-    c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_arm; //OK
+    c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_arm;
+    c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_arm;
     c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_arm;
-    c->put_pixels_tab[1][0] = put_pixels8_arm; //OK
-    c->put_pixels_tab[1][1] = put_pixels8_x2_arm; //OK
+    c->put_pixels_tab[1][0] = put_pixels8_arm;
+    c->put_pixels_tab[1][1] = put_pixels8_x2_arm;
     c->put_pixels_tab[1][2] = put_pixels8_y2_arm;
     c->put_pixels_tab[1][3] = put_pixels8_xy2_arm;
-    c->put_no_rnd_pixels_tab[1][0] = put_pixels8_arm;//OK
-    c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_arm; //OK
-    c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_arm; //OK
+    c->put_no_rnd_pixels_tab[1][0] = put_pixels8_arm;
+    c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_arm;
+    c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_arm;
     c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_arm;
 
 #ifdef HAVE_ARMV5TE
