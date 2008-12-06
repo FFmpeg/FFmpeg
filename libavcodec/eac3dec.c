@@ -475,7 +475,7 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
            The spec does not say what this data is or what it's used for.
            It is likely the offset of each block within the frame. */
         int block_start_bits = (s->num_blocks-1) * (4 + av_log2(s->frame_size-2));
-        skip_bits(gbc, block_start_bits);
+        skip_bits_long(gbc, block_start_bits);
     }
 
     /* syntax state initialization */
