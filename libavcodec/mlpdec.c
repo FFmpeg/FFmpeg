@@ -222,7 +222,7 @@ static av_cold int mlp_decode_init(AVCodecContext *avctx)
     m->avctx = avctx;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
         m->substream[substr].lossless_check_data = 0xffffffff;
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+
     return 0;
 }
 
@@ -296,12 +296,12 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
     m->avctx->sample_rate    = mh.group1_samplerate;
     m->avctx->frame_size     = mh.access_unit_size;
 
-#ifdef CONFIG_AUDIO_NONSHORT
     m->avctx->bits_per_raw_sample = mh.group1_bits;
     if (mh.group1_bits > 16) {
         m->avctx->sample_fmt = SAMPLE_FMT_S32;
     }
-#endif
+    else
+        m->avctx->sample_fmt = SAMPLE_FMT_S16;
 
     m->params_valid = 1;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)

@@ -251,11 +251,11 @@ static int mlp_parse(AVCodecParserContext *s,
         if (ff_mlp_read_major_sync(avctx, &mh, &gb) < 0)
             goto lost_sync;
 
-#ifdef CONFIG_AUDIO_NONSHORT
         avctx->bits_per_raw_sample = mh.group1_bits;
         if (avctx->bits_per_raw_sample > 16)
             avctx->sample_fmt = SAMPLE_FMT_S32;
-#endif
+        else
+            avctx->sample_fmt = SAMPLE_FMT_S16;
         avctx->sample_rate = mh.group1_samplerate;
         avctx->frame_size = mh.access_unit_size;
 
