@@ -36,24 +36,23 @@
 
 typedef struct MTVDemuxContext {
 
-    unsigned int    file_size;         ///< filesize, not always right
-    unsigned int    segments;          ///< number of 512 byte segments
-    unsigned int    audio_identifier;  ///< 'MP3' on all files I have seen
-    unsigned int    audio_br;          ///< bitrate of audio chanel (mp3)
-    unsigned int    img_colorfmt;      ///< frame colorfmt rgb 565/555
-    unsigned int    img_bpp;           ///< frame bits per pixel
-    unsigned int    img_width;         //
-    unsigned int    img_height;        //
-    unsigned int    img_segment_size;  ///< size of image segment
-    unsigned int    video_fps;         //
-    unsigned int    full_segment_size;
+    unsigned int file_size;         ///< filesize, not always right
+    unsigned int segments;          ///< number of 512 byte segments
+    unsigned int audio_identifier;  ///< 'MP3' on all files I have seen
+    unsigned int audio_br;          ///< bitrate of audio chanel (mp3)
+    unsigned int img_colorfmt;      ///< frame colorfmt rgb 565/555
+    unsigned int img_bpp;           ///< frame bits per pixel
+    unsigned int img_width;         //
+    unsigned int img_height;        //
+    unsigned int img_segment_size;  ///< size of image segment
+    unsigned int video_fps;         //
+    unsigned int full_segment_size;
 
 } MTVDemuxContext;
 
 static int mtv_probe(AVProbeData *p)
 {
     /* Magic is 'AMV' */
-
     if(*(p->buf) != 'A' || *(p->buf+1) != 'M' || *(p->buf+2) != 'V')
         return 0;
 
@@ -62,11 +61,10 @@ static int mtv_probe(AVProbeData *p)
 
 static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    MTVDemuxContext    *mtv = s->priv_data;
-    ByteIOContext      *pb  = s->pb;
-    AVStream           *st;
-    unsigned int        audio_subsegments;
-
+    MTVDemuxContext *mtv = s->priv_data;
+    ByteIOContext   *pb  = s->pb;
+    AVStream        *st;
+    unsigned int    audio_subsegments;
 
     url_fskip(pb, 3);
     mtv->file_size         = get_le32(pb);
