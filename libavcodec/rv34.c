@@ -1406,6 +1406,8 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             }else
                 r->si.end = si.start;
         }
+        if(!i && si.type == FF_B_TYPE && (!s->last_picture_ptr || !s->last_picture_ptr->data[0]))
+            return -1;
         last = rv34_decode_slice(r, r->si.end, buf + offset, size);
         s->mb_num_left = r->s.mb_x + r->s.mb_y*r->s.mb_width - r->si.start;
         if(last)
