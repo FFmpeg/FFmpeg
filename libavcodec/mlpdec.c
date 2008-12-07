@@ -297,9 +297,8 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
     m->avctx->frame_size     = mh.access_unit_size;
 
     m->avctx->bits_per_raw_sample = mh.group1_bits;
-    if (mh.group1_bits > 16) {
+    if (mh.group1_bits > 16)
         m->avctx->sample_fmt = SAMPLE_FMT_S32;
-    }
     else
         m->avctx->sample_fmt = SAMPLE_FMT_S16;
 
