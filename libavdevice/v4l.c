@@ -72,7 +72,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     AVStream *st;
     int width, height;
     int video_fd, frame_size;
-    int ret, frame_rate, frame_rate_base;
+    int frame_rate, frame_rate_base;
     int desired_palette, desired_depth;
     struct video_tuner tuner;
     struct video_audio audio;
@@ -167,7 +167,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     /* try to choose a suitable video format */
     pict.palette = desired_palette;
     pict.depth= desired_depth;
-    if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCSPICT, &pict)) < 0) {
+    if (desired_palette == -1 || ioctl(video_fd, VIDIOCSPICT, &pict) < 0) {
         for (j = 0; j < vformat_num; j++) {
             pict.palette = video_formats[j].palette;
             pict.depth = video_formats[j].depth;
@@ -178,8 +178,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             goto fail1;
     }
 
-    ret = ioctl(video_fd,VIDIOCGMBUF,&s->gb_buffers);
-    if (ret < 0) {
+    if (ioctl(video_fd,VIDIOCGMBUF,&s->gb_buffers) < 0) {
         /* try to use read based access */
         struct video_window win;
         int val;
@@ -218,8 +217,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->gb_buf.width = width;
         s->gb_buf.format = pict.palette;
 
-        ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
-        if (ret < 0) {
+        if (ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf) < 0) {
             if (errno != EAGAIN) {
             fail1:
                 av_log(s1, AV_LOG_ERROR, "Fatal: grab device does not support suitable format\n");
