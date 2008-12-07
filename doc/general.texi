@@ -479,7 +479,7 @@ are listed below:
 @itemize
 @item bash 3.1
 @item msys-make 3.81-2 (note: not mingw32-make)
-@item w32api 3.12
+@item w32api 3.13
 @item mingw-runtime 3.15
 @end itemize
 
