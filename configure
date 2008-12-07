@@ -1462,8 +1462,8 @@ case $target_os in
         check_cpp_condition _mingw.h "(__MINGW32_MAJOR_VERSION > 3) || (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
             die "ERROR: MinGW runtime version must be >= 3.15."
         enabled_any avisynth vfwcap_demuxer &&
-            { check_cpp_condition w32api.h "(__W32API_MAJOR_VERSION > 3) || (__W32API_MAJOR_VERSION == 3 && __W32API_MINOR_VERSION >= 12)" ||
-              die "ERROR: avisynth and vfwcap_demuxer require w32api version 3.12 or later."; }
+            { check_cpp_condition w32api.h "(__W32API_MAJOR_VERSION > 3) || (__W32API_MAJOR_VERSION == 3 && __W32API_MINOR_VERSION >= 13)" ||
+              die "ERROR: avisynth and vfwcap_demuxer require w32api version 3.13 or later."; }
         ;;
     cygwin*)
         target_os=cygwin

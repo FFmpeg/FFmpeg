@@ -27,18 +27,6 @@
 
 /* Defines for VFW missing from MinGW.
  * Remove this when MinGW incorporates them. */
-#define WM_CAP_START                (0x0400)
-#define WM_CAP_SET_CALLBACK_VIDEOSTREAM (WM_CAP_START + 6)
-#define WM_CAP_DRIVER_CONNECT       (WM_CAP_START + 10)
-#define WM_CAP_DRIVER_DISCONNECT    (WM_CAP_START + 11)
-#define WM_CAP_GET_VIDEOFORMAT      (WM_CAP_START + 44)
-#define WM_CAP_SET_VIDEOFORMAT      (WM_CAP_START + 45)
-#define WM_CAP_SET_PREVIEW          (WM_CAP_START + 50)
-#define WM_CAP_SET_OVERLAY          (WM_CAP_START + 51)
-#define WM_CAP_SEQUENCE_NOFILE      (WM_CAP_START + 63)
-#define WM_CAP_SET_SEQUENCE_SETUP   (WM_CAP_START + 64)
-#define WM_CAP_GET_SEQUENCE_SETUP   (WM_CAP_START + 65)
-
 #define HWND_MESSAGE                ((HWND)-3)
 
 #define BI_RGB                      0
