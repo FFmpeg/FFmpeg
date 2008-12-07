@@ -336,7 +336,7 @@ int udp_get_file_handle(URLContext *h)
 static int udp_open(URLContext *h, const char *uri, int flags)
 {
     char hostname[1024];
-    int port, udp_fd = -1, tmp;
+    int port, udp_fd = -1, tmp, bind_ret = -1;
     UDPContext *s = NULL;
     int is_output;
     const char *p;
@@ -404,7 +404,13 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
 
     /* the bind is needed to give a port to the socket now */
-    if (bind(udp_fd,(struct sockaddr *)&my_addr, len) < 0)
+    /* if multicast, try the multicast address bind first */
+    if (s->is_multicast && !(h->flags & URL_WRONLY)) {
+        bind_ret = bind(udp_fd,(struct sockaddr *)&s->dest_addr, len);
+    }
+    /* bind to the local address if not multicast or if the multicast
+     * bind failed */
+    if (bind_ret < 0 && bind(udp_fd,(struct sockaddr *)&my_addr, len) < 0)
         goto fail;
 
     len = sizeof(my_addr);
