@@ -81,10 +81,10 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
 }
 
 int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
-                                int start, int end, int fast_gain, int is_lfe,
-                                int dba_mode, int dba_nsegs, uint8_t *dba_offsets,
-                                uint8_t *dba_lengths, uint8_t *dba_values,
-                                int16_t *mask)
+                               int start, int end, int fast_gain, int is_lfe,
+                               int dba_mode, int dba_nsegs, uint8_t *dba_offsets,
+                               uint8_t *dba_lengths, uint8_t *dba_values,
+                               int16_t *mask)
 {
     int16_t excite[50]; /* excitation */
     int bin, k;

@@ -1134,11 +1134,11 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             /* Compute excitation function, Compute masking curve, and
                Apply delta bit allocation */
             if (ff_ac3_bit_alloc_calc_mask(&s->bit_alloc_params, s->band_psd[ch],
-                                       s->start_freq[ch], s->end_freq[ch],
-                                       s->fast_gain[ch], (ch == s->lfe_ch),
-                                       s->dba_mode[ch], s->dba_nsegs[ch],
-                                       s->dba_offsets[ch], s->dba_lengths[ch],
-                                       s->dba_values[ch], s->mask[ch])) {
+                                           s->start_freq[ch], s->end_freq[ch],
+                                           s->fast_gain[ch], (ch == s->lfe_ch),
+                                           s->dba_mode[ch], s->dba_nsegs[ch],
+                                           s->dba_offsets[ch], s->dba_lengths[ch],
+                                           s->dba_values[ch], s->mask[ch])) {
                 av_log(s->avctx, AV_LOG_ERROR, "error in bit allocation\n");
                 return -1;
             }
