@@ -149,8 +149,9 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
  * @param[in]  dba_lengths  length of each segment
  * @param[in]  dba_values   delta bit allocation for each segment
  * @param[out] mask         calculated masking curve
+ * @return returns 0 for success, non-zero for error
  */
-void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
+int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
                                 int start, int end, int fast_gain, int is_lfe,
                                 int dba_mode, int dba_nsegs, uint8_t *dba_offsets,
                                 uint8_t *dba_lengths, uint8_t *dba_values,

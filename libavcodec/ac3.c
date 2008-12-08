@@ -80,7 +80,7 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
     } while (end > band_start_tab[k]);
 }
 
-void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
+int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
                                 int start, int end, int fast_gain, int is_lfe,
                                 int dba_mode, int dba_nsegs, uint8_t *dba_offsets,
                                 uint8_t *dba_lengths, uint8_t *dba_values,
@@ -156,9 +156,13 @@ void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
 
     if (dba_mode == DBA_REUSE || dba_mode == DBA_NEW) {
         int band, seg, delta;
+        if (dba_nsegs >= 8)
+            return -1;
         band = 0;
-        for (seg = 0; seg < FFMIN(8, dba_nsegs); seg++) {
-            band = FFMIN(49, band + dba_offsets[seg]);
+        for (seg = 0; seg < dba_nsegs; seg++) {
+            band += dba_offsets[seg];
+            if (band >= 50 || dba_lengths[seg] > 50-band)
+                return -1;
             if (dba_values[seg] >= 4) {
                 delta = (dba_values[seg] - 3) << 7;
             } else {
@@ -170,6 +174,7 @@ void ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
             }
         }
     }
+    return 0;
 }
 
 void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
