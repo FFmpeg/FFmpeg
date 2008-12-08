@@ -30,6 +30,7 @@
 #include <stddef.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "bitstream.h"
 
 #include "qcelpdata.h"
@@ -442,7 +443,7 @@ static void apply_gain_ctrl(float *v_out, const float *v_ref,
             scalefactor = sqrt(ff_dot_productf(v_ref + j, v_ref + j, 40)
                         / scalefactor);
         else
-            av_log_missing_feature(NULL, "Zero energy for gain control", 1);
+            ff_log_missing_feature(NULL, "Zero energy for gain control", 1);
         for(len=j+40; j<len; j++)
             v_out[j] = scalefactor * v_in[j];
     }
@@ -655,7 +656,7 @@ static int determine_bitrate(AVCodecContext *avctx, const int buf_size,
     if(bitrate == SILENCE)
     {
         // FIXME: the decoder should not handle SILENCE frames as I_F_Q frames
-        av_log_missing_feature(avctx, "Blank frame", 1);
+        ff_log_missing_feature(avctx, "Blank frame", 1);
         bitrate = I_F_Q;
     }
     return bitrate;

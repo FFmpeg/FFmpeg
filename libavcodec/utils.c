@@ -1508,7 +1508,7 @@ int av_parse_video_frame_rate(AVRational *frame_rate, const char *arg)
         return 0;
 }
 
-void av_log_missing_feature(void *avc, const char *feature, int want_sample)
+void ff_log_missing_feature(void *avc, const char *feature, int want_sample)
 {
     av_log(avc, AV_LOG_WARNING, "%s not implemented. Update your FFmpeg "
             "version to the newest one from SVN. If the problem still "

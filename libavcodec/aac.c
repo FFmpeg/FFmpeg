@@ -77,6 +77,7 @@
 
 
 #include "avcodec.h"
+#include "internal.h"
 #include "bitstream.h"
 #include "dsputil.h"
 #include "lpc.h"
@@ -262,7 +263,7 @@ static int decode_ga_specific_config(AACContext * ac, GetBitContext * gb, int ch
     int extension_flag, ret;
 
     if(get_bits1(gb)) {  // frameLengthFlag
-        av_log_missing_feature(ac->avccontext, "960/120 MDCT window is", 1);
+        ff_log_missing_feature(ac->avccontext, "960/120 MDCT window is", 1);
         return -1;
     }
 
@@ -521,7 +522,7 @@ static int decode_ics_info(AACContext * ac, IndividualChannelStream * ics, GetBi
                 memset(ics, 0, sizeof(IndividualChannelStream));
                 return -1;
             } else {
-                av_log_missing_feature(ac->avccontext, "Predictor bit set but LTP is", 1);
+                ff_log_missing_feature(ac->avccontext, "Predictor bit set but LTP is", 1);
                 memset(ics, 0, sizeof(IndividualChannelStream));
                 return -1;
             }
@@ -955,7 +956,7 @@ static int decode_ics(AACContext * ac, SingleChannelElement * sce, GetBitContext
         if ((tns->present = get_bits1(gb)) && decode_tns(ac, tns, gb, ics))
             return -1;
         if (get_bits1(gb)) {
-            av_log_missing_feature(ac->avccontext, "SSR", 1);
+            ff_log_missing_feature(ac->avccontext, "SSR", 1);
             return -1;
         }
     }
@@ -1159,7 +1160,7 @@ static int decode_cce(AACContext * ac, GetBitContext * gb, ChannelElement * che)
  */
 static int decode_sbr_extension(AACContext * ac, GetBitContext * gb, int crc, int cnt) {
     // TODO : sbr_extension implementation
-    av_log_missing_feature(ac->avccontext, "SBR", 0);
+    ff_log_missing_feature(ac->avccontext, "SBR", 0);
     skip_bits_long(gb, 8*cnt - 4); // -4 due to reading extension type
     return cnt;
 }

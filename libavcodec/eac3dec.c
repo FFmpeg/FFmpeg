@@ -21,6 +21,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "ac3.h"
 #include "ac3_parser.h"
 #include "ac3dec.h"
@@ -182,7 +183,7 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
        application can select from. each independent stream can also contain
        dependent streams which are used to add or replace channels. */
     if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
-        av_log_missing_feature(s->avctx, "Dependent substream decoding", 1);
+        ff_log_missing_feature(s->avctx, "Dependent substream decoding", 1);
         return AC3_PARSE_ERROR_FRAME_TYPE;
     } else if (s->frame_type == EAC3_FRAME_TYPE_RESERVED) {
         av_log(s->avctx, AV_LOG_ERROR, "Reserved frame type\n");
@@ -194,7 +195,7 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
        associated to an independent stream have matching substream id's. */
     if (s->substreamid) {
         /* only decode substream with id=0. skip any additional substreams. */
-        av_log_missing_feature(s->avctx, "Additional substreams", 1);
+        ff_log_missing_feature(s->avctx, "Additional substreams", 1);
         return AC3_PARSE_ERROR_FRAME_TYPE;
     }
 
@@ -203,7 +204,7 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
            rates in bit allocation.  The best assumption would be that it is
            handled like AC-3 DolbyNet, but we cannot be sure until we have a
            sample which utilizes this feature. */
-        av_log_missing_feature(s->avctx, "Reduced sampling rates", 1);
+        ff_log_missing_feature(s->avctx, "Reduced sampling rates", 1);
         return -1;
     }
     skip_bits(gbc, 5); // skip bitstream id
@@ -460,7 +461,7 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
 
     /* spectral extension attenuation data */
     if (parse_spx_atten_data) {
-        av_log_missing_feature(s->avctx, "Spectral extension attenuation", 1);
+        ff_log_missing_feature(s->avctx, "Spectral extension attenuation", 1);
         for (ch = 1; ch <= s->fbw_channels; ch++) {
             if (get_bits1(gbc)) { // channel has spx attenuation
                 skip_bits(gbc, 5); // skip spx attenuation code
@@ -476,7 +477,7 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
            It is likely the offset of each block within the frame. */
         int block_start_bits = (s->num_blocks-1) * (4 + av_log2(s->frame_size-2));
         skip_bits_long(gbc, block_start_bits);
-        av_log_missing_feature(s->avctx, "Block start info", 1);
+        ff_log_missing_feature(s->avctx, "Block start info", 1);
     }
 
     /* syntax state initialization */

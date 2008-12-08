@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "libavutil/crc.h"
+#include "internal.h"
 #include "ac3_parser.h"
 #include "ac3dec.h"
 #include "ac3dec_data.h"
@@ -826,7 +827,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     /* spectral extension strategy */
     if (s->eac3 && (!blk || get_bits1(gbc))) {
         if (get_bits1(gbc)) {
-            av_log_missing_feature(s->avctx, "Spectral extension", 1);
+            ff_log_missing_feature(s->avctx, "Spectral extension", 1);
             return -1;
         }
         /* TODO: parse spectral extension strategy info */
@@ -851,7 +852,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             /* check for enhanced coupling */
             if (s->eac3 && get_bits1(gbc)) {
                 /* TODO: parse enhanced coupling strategy info */
-                av_log_missing_feature(s->avctx, "Enhanced coupling", 1);
+                ff_log_missing_feature(s->avctx, "Enhanced coupling", 1);
                 return -1;
             }
 
