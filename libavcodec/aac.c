@@ -784,12 +784,19 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
                         }
                         vq_ptr = &ff_aac_codebook_vectors[cur_band_type - 1][index * dim];
                         if (is_cb_unsigned) {
-                            for (j = 0; j < dim; j++)
-                                if (vq_ptr[j])
-                                    coef[coef_tmp_idx + j] = 1 - 2*(int)get_bits1(gb);
+                            if (vq_ptr[0]) coef[coef_tmp_idx    ] = 1 - 2*(int)get_bits1(gb);
+                            if (vq_ptr[1]) coef[coef_tmp_idx + 1] = 1 - 2*(int)get_bits1(gb);
+                            if (dim == 4) {
+                                if (vq_ptr[2]) coef[coef_tmp_idx + 2] = 1 - 2*(int)get_bits1(gb);
+                                if (vq_ptr[3]) coef[coef_tmp_idx + 3] = 1 - 2*(int)get_bits1(gb);
+                            }
                         }else {
-                            for (j = 0; j < dim; j++)
-                                coef[coef_tmp_idx + j] = 1.0f;
+                            coef[coef_tmp_idx    ] = 1.0f;
+                            coef[coef_tmp_idx + 1] = 1.0f;
+                            if (dim == 4) {
+                                coef[coef_tmp_idx + 2] = 1.0f;
+                                coef[coef_tmp_idx + 3] = 1.0f;
+                            }
                         }
                         if (cur_band_type == ESC_BT) {
                             for (j = 0; j < 2; j++) {
@@ -808,10 +815,20 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
                                     coef[coef_tmp_idx + j] *= vq_ptr[j];
                             }
                         }else
-                            for (j = 0; j < dim; j++)
-                                coef[coef_tmp_idx + j] *= vq_ptr[j];
-                        for (j = 0; j < dim; j++)
-                            coef[coef_tmp_idx + j] *= sf[idx];
+                        {
+                            coef[coef_tmp_idx    ] *= vq_ptr[0];
+                            coef[coef_tmp_idx + 1] *= vq_ptr[1];
+                            if (dim == 4) {
+                                coef[coef_tmp_idx + 2] *= vq_ptr[2];
+                                coef[coef_tmp_idx + 3] *= vq_ptr[3];
+                            }
+                        }
+                        coef[coef_tmp_idx    ] *= sf[idx];
+                        coef[coef_tmp_idx + 1] *= sf[idx];
+                        if (dim == 4) {
+                            coef[coef_tmp_idx + 2] *= sf[idx];
+                            coef[coef_tmp_idx + 3] *= sf[idx];
+                        }
                     }
                 }
             }
