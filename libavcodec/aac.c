@@ -803,7 +803,7 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
                                         return -1;
                                     }
                                     n = (1<<n) + get_bits(gb, n);
-                                    coef[coef_tmp_idx + j] *= cbrtf(fabsf(n)) * n;
+                                    coef[coef_tmp_idx + j] *= cbrtf(n) * n;
                                 }else
                                     coef[coef_tmp_idx + j] *= vq_ptr[j];
                             }
