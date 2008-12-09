@@ -741,6 +741,7 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
     const int c = 1024/ics->num_windows;
     const uint16_t * offsets = ics->swb_offset;
     float *coef_base = coef;
+    static const float sign_lookup[] = { 1.0f, -1.0f };
 
     for (g = 0; g < ics->num_windows; g++)
         memset(coef + g * 128 + offsets[ics->max_sfb], 0, sizeof(float)*(c - offsets[ics->max_sfb]));
@@ -784,11 +785,11 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
                         }
                         vq_ptr = &ff_aac_codebook_vectors[cur_band_type - 1][index * dim];
                         if (is_cb_unsigned) {
-                            if (vq_ptr[0]) coef[coef_tmp_idx    ] = 1 - 2*(int)get_bits1(gb);
-                            if (vq_ptr[1]) coef[coef_tmp_idx + 1] = 1 - 2*(int)get_bits1(gb);
+                            if (vq_ptr[0]) coef[coef_tmp_idx    ] = sign_lookup[get_bits1(gb)];
+                            if (vq_ptr[1]) coef[coef_tmp_idx + 1] = sign_lookup[get_bits1(gb)];
                             if (dim == 4) {
-                                if (vq_ptr[2]) coef[coef_tmp_idx + 2] = 1 - 2*(int)get_bits1(gb);
-                                if (vq_ptr[3]) coef[coef_tmp_idx + 3] = 1 - 2*(int)get_bits1(gb);
+                                if (vq_ptr[2]) coef[coef_tmp_idx + 2] = sign_lookup[get_bits1(gb)];
+                                if (vq_ptr[3]) coef[coef_tmp_idx + 3] = sign_lookup[get_bits1(gb)];
                             }
                         }else {
                             coef[coef_tmp_idx    ] = 1.0f;
