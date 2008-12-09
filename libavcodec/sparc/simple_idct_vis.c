@@ -384,7 +384,7 @@ static const DECLARE_ALIGNED_8(uint16_t, expand[4]) = {
         "st %%f14, [%12+" dest "] \n\t"\
 
 
-inline void ff_simple_idct_vis(DCTELEM *data) {
+void ff_simple_idct_vis(DCTELEM *data) {
     int out1, out2, out3, out4;
     DECLARE_ALIGNED_8(int16_t, temp[8*8]);
 
