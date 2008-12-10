@@ -67,6 +67,7 @@ typedef struct MJpegDecodeContext {
     int width, height;
     int mb_width, mb_height;
     int nb_components;
+    int block_stride[MAX_COMPONENTS];
     int component_id[MAX_COMPONENTS];
     int h_count[MAX_COMPONENTS]; /* horizontal and vertical count for each component */
     int v_count[MAX_COMPONENTS];
@@ -83,6 +84,9 @@ typedef struct MJpegDecodeContext {
     int linesize[MAX_COMPONENTS];                   ///< linesize << interlaced
     int8_t *qscale_table;
     DECLARE_ALIGNED_16(DCTELEM, block[64]);
+    DCTELEM (*blocks[MAX_COMPONENTS])[64]; ///< intermediate sums (progressive mode)
+    uint8_t *last_nnz[MAX_COMPONENTS];
+    uint64_t coefs_finished[MAX_COMPONENTS]; ///< bitmask of which coefs have been completely decoded (progressive mode)
     ScanTable scantable;
     DSPContext dsp;
 
