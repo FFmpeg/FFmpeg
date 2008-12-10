@@ -810,7 +810,7 @@ static inline int get_p_cbp(MpegEncContext * s,
         for (i = 0; i < 6; i++) {
             if (s->block_last_index[i] >= 0 && ((cbp >> (5 - i))&1)==0 ){
                 s->block_last_index[i]= -1;
-                memset(s->block[i], 0, sizeof(DCTELEM)*64);
+                s->dsp.clear_block(s->block[i]);
             }
         }
     }else{
@@ -853,7 +853,7 @@ static inline int get_b_cbp(MpegEncContext * s, DCTELEM block[6][64],
         for (i = 0; i < 6; i++) {
             if (s->block_last_index[i] >= 0 && ((cbp >> (5 - i))&1)==0 ){
                 s->block_last_index[i]= -1;
-                memset(s->block[i], 0, sizeof(DCTELEM)*64);
+                s->dsp.clear_block(s->block[i]);
             }
         }
     }else{
@@ -4651,7 +4651,7 @@ retry:
                 rl = &rl_intra_aic;
                 i = 0;
                 s->gb= gb;
-                memset(block, 0, sizeof(DCTELEM)*64);
+                s->dsp.clear_block(block);
                 goto retry;
             }
             av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d i:%d\n", s->mb_x, s->mb_y, s->mb_intra);

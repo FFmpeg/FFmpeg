@@ -1402,14 +1402,14 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                     /* dequantize the DCT coefficients */
                     if(s->avctx->idct_algo==FF_IDCT_VP3){
                         Coeff *coeff= s->coeffs + i;
-                        memset(block, 0, sizeof(block));
+                        s->dsp.clear_block(block);
                         while(coeff->next){
                             block[coeff->index]= coeff->coeff * dequantizer[coeff->index];
                             coeff= coeff->next;
                         }
                     }else{
                         Coeff *coeff= s->coeffs + i;
-                        memset(block, 0, sizeof(block));
+                        s->dsp.clear_block(block);
                         while(coeff->next){
                             block[coeff->index]= (coeff->coeff * dequantizer[coeff->index] + 2)>>2;
                             coeff= coeff->next;

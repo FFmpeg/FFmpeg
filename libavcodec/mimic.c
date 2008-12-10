@@ -163,7 +163,7 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
     DCTELEM *block = ctx->dct_block;
     unsigned int pos;
 
-    memset(block, 0, 64 * sizeof(DCTELEM));
+    ctx->dsp.clear_block(block);
 
     block[0] = get_bits(&ctx->gb, 8) << 3;
 

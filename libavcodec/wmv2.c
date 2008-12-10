@@ -43,12 +43,12 @@ static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int st
     case 1:
         ff_simple_idct84_add(dst           , stride, block1);
         ff_simple_idct84_add(dst + 4*stride, stride, w->abt_block2[n]);
-        memset(w->abt_block2[n], 0, 64*sizeof(DCTELEM));
+        s->dsp.clear_block(w->abt_block2[n]);
         break;
     case 2:
         ff_simple_idct48_add(dst           , stride, block1);
         ff_simple_idct48_add(dst + 4       , stride, w->abt_block2[n]);
-        memset(w->abt_block2[n], 0, 64*sizeof(DCTELEM));
+        s->dsp.clear_block(w->abt_block2[n]);
         break;
     default:
         av_log(s->avctx, AV_LOG_ERROR, "internal error in WMV2 abt\n");

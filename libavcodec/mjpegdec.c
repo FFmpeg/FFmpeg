@@ -444,7 +444,7 @@ static int decode_dc_progressive(MJpegDecodeContext *s, DCTELEM *block, int comp
                                  int dc_index, int16_t *quant_matrix, int Al)
 {
     int val;
-    memset(block, 0, 64*sizeof(DCTELEM));
+    s->dsp.clear_block(block);
     val = mjpeg_decode_dc(s, dc_index);
     if (val == 0xffff) {
         av_log(s->avctx, AV_LOG_ERROR, "error dc\n");
@@ -800,7 +800,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
                     if(s->interlaced && s->bottom_field)
                         ptr += linesize[c] >> 1;
                     if(!s->progressive) {
-                        memset(s->block, 0, sizeof(s->block));
+                        s->dsp.clear_block(s->block);
                         if(decode_block(s, s->block, i,
                                      s->dc_index[i], s->ac_index[i],
                                      s->quant_matrixes[ s->quant_index[c] ]) < 0) {

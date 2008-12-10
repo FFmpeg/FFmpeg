@@ -405,7 +405,7 @@ static void vp56_decode_mb(vp56_context_t *s, int row, int col, int is_alpha)
         mb_type = vp56_decode_mv(s, row, col);
     ref_frame = vp56_reference_frame[mb_type];
 
-    memset(s->block_coeff, 0, sizeof(s->block_coeff));
+    s->dsp.clear_blocks(*s->block_coeff);
 
     s->parse_coeff(s);
 

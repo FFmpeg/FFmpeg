@@ -3420,6 +3420,11 @@ void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
     }
 }
 
+static void clear_block_c(DCTELEM *block)
+{
+    memset(block, 0, sizeof(DCTELEM)*64);
+}
+
 /**
  * memset(blocks, 0, sizeof(DCTELEM)*6*64)
  */
@@ -4288,6 +4293,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->sum_abs_dctelem = sum_abs_dctelem_c;
     c->gmc1 = gmc1_c;
     c->gmc = ff_gmc_c;
+    c->clear_block = clear_block_c;
     c->clear_blocks = clear_blocks_c;
     c->pix_sum = pix_sum_c;
     c->pix_norm1 = pix_norm1_c;

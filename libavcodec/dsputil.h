@@ -203,6 +203,7 @@ typedef struct DSPContext {
      */
     void (*gmc )(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int ox, int oy,
                     int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
+    void (*clear_block)(DCTELEM *block/*align 16*/);
     void (*clear_blocks)(DCTELEM *blocks/*align 16*/);
     int (*pix_sum)(uint8_t * pix, int line_size);
     int (*pix_norm1)(uint8_t * pix, int line_size);

@@ -511,7 +511,7 @@ static int x8_decode_intra_mb(IntraX8Context* const w, const int chroma){
     int sign;
 
     assert(w->orient<12);
-    memset(s->block[0],0x00,64*sizeof(DCTELEM));
+    s->dsp.clear_block(s->block[0]);
 
     if(chroma){
         dc_mode=2;

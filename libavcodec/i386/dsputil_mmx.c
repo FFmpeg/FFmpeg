@@ -464,21 +464,42 @@ static void avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels, int line_si
         );
 }
 
-static void clear_blocks_mmx(DCTELEM *blocks)
+#define CLEAR_BLOCKS(name,n) \
+static void name(DCTELEM *blocks)\
+{\
+    __asm__ volatile(\
+                "pxor %%mm7, %%mm7              \n\t"\
+                "mov     %1, %%"REG_a"          \n\t"\
+                "1:                             \n\t"\
+                "movq %%mm7, (%0, %%"REG_a")    \n\t"\
+                "movq %%mm7, 8(%0, %%"REG_a")   \n\t"\
+                "movq %%mm7, 16(%0, %%"REG_a")  \n\t"\
+                "movq %%mm7, 24(%0, %%"REG_a")  \n\t"\
+                "add $32, %%"REG_a"             \n\t"\
+                " js 1b                         \n\t"\
+                : : "r" (((uint8_t *)blocks)+128*n),\
+                    "i" (-128*n)\
+                : "%"REG_a\
+        );\
+}
+CLEAR_BLOCKS(clear_blocks_mmx, 6)
+CLEAR_BLOCKS(clear_block_mmx, 1)
+
+static void clear_block_sse(DCTELEM *block)
 {
     __asm__ volatile(
-                "pxor %%mm7, %%mm7              \n\t"
-                "mov $-128*6, %%"REG_a"         \n\t"
-                "1:                             \n\t"
-                "movq %%mm7, (%0, %%"REG_a")    \n\t"
-                "movq %%mm7, 8(%0, %%"REG_a")   \n\t"
-                "movq %%mm7, 16(%0, %%"REG_a")  \n\t"
-                "movq %%mm7, 24(%0, %%"REG_a")  \n\t"
-                "add $32, %%"REG_a"             \n\t"
-                " js 1b                         \n\t"
-                : : "r" (((uint8_t *)blocks)+128*6)
-                : "%"REG_a
-        );
+        "xorps  %%xmm0, %%xmm0  \n"
+        "movaps %%xmm0,    (%0) \n"
+        "movaps %%xmm0,  16(%0) \n"
+        "movaps %%xmm0,  32(%0) \n"
+        "movaps %%xmm0,  48(%0) \n"
+        "movaps %%xmm0,  64(%0) \n"
+        "movaps %%xmm0,  80(%0) \n"
+        "movaps %%xmm0,  96(%0) \n"
+        "movaps %%xmm0, 112(%0) \n"
+        :: "r"(block)
+        : "memory"
+    );
 }
 
 static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
@@ -2569,7 +2590,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->put_pixels_clamped = put_pixels_clamped_mmx;
         c->put_signed_pixels_clamped = put_signed_pixels_clamped_mmx;
         c->add_pixels_clamped = add_pixels_clamped_mmx;
+        c->clear_block  = clear_block_mmx;
         c->clear_blocks = clear_blocks_mmx;
+        if (mm_flags & FF_MM_SSE)
+            c->clear_block = clear_block_sse;
 
 #define SET_HPEL_FUNCS(PFX, IDX, SIZE, CPU) \
         c->PFX ## _pixels_tab[IDX][0] = PFX ## _pixels ## SIZE ## _ ## CPU; \
