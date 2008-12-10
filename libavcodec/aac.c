@@ -1336,7 +1336,7 @@ static void imdct_and_windowing(AACContext * ac, SingleChannelElement * sce) {
     const float * lwindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_long_1024 : ff_sine_1024;
     const float * swindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
     float * buf = ac->buf_mdct;
-    DECLARE_ALIGNED(16, float, temp[128]);
+    float * temp = ac->temp;
     int i;
 
     // imdct

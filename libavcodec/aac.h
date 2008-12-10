@@ -288,6 +288,7 @@ typedef struct {
     int sf_offset;                                    ///< offset into pow2sf_tab as appropriate for dsp.float_to_int16
     /** @} */
 
+    DECLARE_ALIGNED(16, float, temp[128]);
 } AACContext;
 
 #endif /* AVCODEC_AAC_H */
