@@ -111,6 +111,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MJPEG,        MKTAG('j', 'p', 'e', 'g') },
     { CODEC_ID_MJPEG,        MKTAG('I', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG,        MKTAG('A', 'V', 'R', 'n') },
+    { CODEC_ID_MJPEG,        MKTAG('A', 'C', 'D', 'V') },
     { CODEC_ID_HUFFYUV,      MKTAG('H', 'F', 'Y', 'U') },
     { CODEC_ID_FFVHUFF,      MKTAG('F', 'F', 'V', 'H') },
     { CODEC_ID_CYUV,         MKTAG('C', 'Y', 'U', 'V') },
@@ -182,6 +183,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_TARGA,        MKTAG('t', 'g', 'a', ' ') },
     { CODEC_ID_CLJR,         MKTAG('c', 'l', 'j', 'r') },
     { CODEC_ID_DIRAC,        MKTAG('d', 'r', 'a', 'c') },
+    { CODEC_ID_RPZA,         MKTAG('a', 'z', 'p', 'r') },
     { CODEC_ID_NONE,         0 }
 };
 
