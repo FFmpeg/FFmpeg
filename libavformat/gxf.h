@@ -22,7 +22,6 @@
 #ifndef AVFORMAT_GXF_H
 #define AVFORMAT_GXF_H
 
-/* gxf.c */
 typedef enum {
     PKT_MAP         = 0xbc,
     PKT_MEDIA       = 0xbf,
