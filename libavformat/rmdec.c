@@ -67,9 +67,9 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
         get_str8(pb, s->copyright, sizeof(s->copyright));
         get_str8(pb, s->comment, sizeof(s->comment));
         if ((startpos + (version & 0xffff)) >= url_ftell(pb) + 2) {
-        // fourcc (should always be "lpcJ")
-        get_byte(pb);
-        get_str8(pb, buf, sizeof(buf));
+            // fourcc (should always be "lpcJ")
+            get_byte(pb);
+            get_str8(pb, buf, sizeof(buf));
         }
         // Skip extra header crap (this should never happen)
         if ((startpos + (version & 0xffff)) > url_ftell(pb))
