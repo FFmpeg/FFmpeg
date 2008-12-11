@@ -71,6 +71,7 @@ typedef struct
     float    pitch_gain[4];
     uint8_t  pitch_lag[4];
     uint16_t first16bits;
+    uint8_t  warned_buf_mismatch_bitrate;
 } QCELPContext;
 
 /**
@@ -636,8 +637,13 @@ static int determine_bitrate(AVCodecContext *avctx, const int buf_size,
     {
         if(bitrate > **buf)
         {
+            QCELPContext *q = avctx->priv_data;
+            if (!q->warned_buf_mismatch_bitrate)
+            {
             av_log(avctx, AV_LOG_WARNING,
                    "Claimed bitrate and buffer size mismatch.\n");
+                q->warned_buf_mismatch_bitrate = 1;
+            }
             bitrate = **buf;
         }else if(bitrate < **buf)
         {
