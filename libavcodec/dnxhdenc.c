@@ -424,8 +424,10 @@ static av_always_inline void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, in
             dnxhd_get_pixels_4x8(ctx->blocks[5], ptr_y + ctx->dct_y_offset + 8, ctx->m.linesize);
             dnxhd_get_pixels_4x8(ctx->blocks[6], ptr_u + ctx->dct_uv_offset   , ctx->m.uvlinesize);
             dnxhd_get_pixels_4x8(ctx->blocks[7], ptr_v + ctx->dct_uv_offset   , ctx->m.uvlinesize);
-        } else
-            memset(ctx->blocks[4], 0, 4*64*sizeof(DCTELEM));
+        } else {
+            dsp->clear_block(ctx->blocks[4]); dsp->clear_block(ctx->blocks[5]);
+            dsp->clear_block(ctx->blocks[6]); dsp->clear_block(ctx->blocks[7]);
+        }
     } else {
         dsp->get_pixels(ctx->blocks[4], ptr_y + ctx->dct_y_offset    , ctx->m.linesize);
         dsp->get_pixels(ctx->blocks[5], ptr_y + ctx->dct_y_offset + 8, ctx->m.linesize);
