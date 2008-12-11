@@ -846,9 +846,9 @@ assert(0);
 static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flags){
     NUTContext *nut = s->priv_data;
     AVStream *st= s->streams[stream_index];
-    syncpoint_t dummy={.ts= pts*av_q2d(st->time_base)*AV_TIME_BASE};
-    syncpoint_t nopts_sp= {.ts= AV_NOPTS_VALUE, .back_ptr= AV_NOPTS_VALUE};
-    syncpoint_t *sp, *next_node[2]= {&nopts_sp, &nopts_sp};
+    Syncpoint dummy={.ts= pts*av_q2d(st->time_base)*AV_TIME_BASE};
+    Syncpoint nopts_sp= {.ts= AV_NOPTS_VALUE, .back_ptr= AV_NOPTS_VALUE};
+    Syncpoint *sp, *next_node[2]= {&nopts_sp, &nopts_sp};
     int64_t pos, pos2, ts;
     int i;
 

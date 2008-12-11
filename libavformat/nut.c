@@ -47,16 +47,16 @@ int64_t ff_lsb2full(StreamContext *stream, int64_t lsb){
     return  ((lsb - delta)&mask) + delta;
 }
 
-int ff_nut_sp_pos_cmp(syncpoint_t *a, syncpoint_t *b){
+int ff_nut_sp_pos_cmp(Syncpoint *a, Syncpoint *b){
     return ((a->pos - b->pos) >> 32) - ((b->pos - a->pos) >> 32);
 }
 
-int ff_nut_sp_pts_cmp(syncpoint_t *a, syncpoint_t *b){
+int ff_nut_sp_pts_cmp(Syncpoint *a, Syncpoint *b){
     return ((a->ts - b->ts) >> 32) - ((b->ts - a->ts) >> 32);
 }
 
 void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts){
-    syncpoint_t *sp= av_mallocz(sizeof(syncpoint_t));
+    Syncpoint *sp= av_mallocz(sizeof(Syncpoint));
     struct AVTreeNode *node= av_mallocz(av_tree_node_size);
 
     sp->pos= pos;
