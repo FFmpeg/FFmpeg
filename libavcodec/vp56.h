@@ -34,17 +34,17 @@ typedef struct vp56_context VP56Context;
 typedef struct vp56_mv VP56mv;
 
 typedef void (*VP56ParseVectorAdjustment)(VP56Context *s,
-                                               VP56mv *vect);
-typedef int (*VP56Adjust)(int v, int t);
+                                          VP56mv *vect);
+typedef int  (*VP56Adjust)(int v, int t);
 typedef void (*VP56Filter)(VP56Context *s, uint8_t *dst, uint8_t *src,
-                              int offset1, int offset2, int stride,
-                              VP56mv mv, int mask, int select, int luma);
+                           int offset1, int offset2, int stride,
+                           VP56mv mv, int mask, int select, int luma);
 typedef void (*VP56ParseCoeff)(VP56Context *s);
 typedef void (*VP56DefaultModelsInit)(VP56Context *s);
 typedef void (*VP56ParseVectorModels)(VP56Context *s);
 typedef void (*VP56ParseCoeffModels)(VP56Context *s);
-typedef int (*VP56ParseHeader)(VP56Context *s, const uint8_t *buf,
-                                   int buf_size, int *golden_frame);
+typedef int  (*VP56ParseHeader)(VP56Context *s, const uint8_t *buf,
+                                int buf_size, int *golden_frame);
 
 typedef struct {
     int high;

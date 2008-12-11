@@ -145,7 +145,7 @@ static void vp56_parse_mb_type_models(VP56Context *s)
 }
 
 static VP56mb vp56_parse_mb_type(VP56Context *s,
-                                    VP56mb prev_type, int ctx)
+                                 VP56mb prev_type, int ctx)
 {
     uint8_t *mb_type_model = s->modelp->mb_type[ctx][prev_type];
     VP56RangeCoder *c = &s->c;
