@@ -557,7 +557,7 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 
 //Note: we have C, MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one
 //Plain C versions
-#if !defined (HAVE_MMX) || defined (RUNTIME_CPUDETECT)
+#if !(defined (HAVE_MMX) || defined (HAVE_ALTIVEC)) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_C
 #endif
 
