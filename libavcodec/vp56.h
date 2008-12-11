@@ -30,20 +30,20 @@
 #include "bytestream.h"
 
 
-typedef struct vp56_context vp56_context_t;
-typedef struct vp56_mv vp56_mv_t;
+typedef struct vp56_context VP56Context;
+typedef struct vp56_mv VP56mv;
 
-typedef void (*vp56_parse_vector_adjustment_t)(vp56_context_t *s,
-                                               vp56_mv_t *vect);
-typedef int (*vp56_adjust_t)(int v, int t);
-typedef void (*vp56_filter_t)(vp56_context_t *s, uint8_t *dst, uint8_t *src,
+typedef void (*VP56ParseVectorAdjustment)(VP56Context *s,
+                                               VP56mv *vect);
+typedef int (*VP56Adjust)(int v, int t);
+typedef void (*VP56Filter)(VP56Context *s, uint8_t *dst, uint8_t *src,
                               int offset1, int offset2, int stride,
-                              vp56_mv_t mv, int mask, int select, int luma);
-typedef void (*vp56_parse_coeff_t)(vp56_context_t *s);
-typedef void (*vp56_default_models_init_t)(vp56_context_t *s);
-typedef void (*vp56_parse_vector_models_t)(vp56_context_t *s);
-typedef void (*vp56_parse_coeff_models_t)(vp56_context_t *s);
-typedef int (*vp56_parse_header_t)(vp56_context_t *s, const uint8_t *buf,
+                              VP56mv mv, int mask, int select, int luma);
+typedef void (*VP56ParseCoeff)(VP56Context *s);
+typedef void (*VP56DefaultModelsInit)(VP56Context *s);
+typedef void (*VP56ParseVectorModels)(VP56Context *s);
+typedef void (*VP56ParseCoeffModels)(VP56Context *s);
+typedef int (*VP56ParseHeader)(VP56Context *s, const uint8_t *buf,
                                    int buf_size, int *golden_frame);
 
 typedef struct {
@@ -51,13 +51,13 @@ typedef struct {
     int bits;
     const uint8_t *buffer;
     unsigned long code_word;
-} vp56_range_coder_t;
+} VP56RangeCoder;
 
 typedef struct {
     uint8_t not_null_dc;
-    vp56_frame_t ref_frame;
+    VP56Frame ref_frame;
     DCTELEM dc_coeff;
-} vp56_ref_dc_t;
+} VP56RefDc;
 
 struct vp56_mv {
     int x;
@@ -66,8 +66,8 @@ struct vp56_mv {
 
 typedef struct {
     uint8_t type;
-    vp56_mv_t mv;
-} vp56_macroblock_t;
+    VP56mv mv;
+} VP56Macroblock;
 
 typedef struct {
     uint8_t coeff_reorder[64];       /* used in vp6 only */
@@ -84,7 +84,7 @@ typedef struct {
     uint8_t coeff_runv[2][14];       /* run value (vp6 only) */
     uint8_t mb_type[3][10][10];      /* model for decoding MB type */
     uint8_t mb_types_stats[3][10][2];/* contextual, next MB type stats */
-} vp56_model_t;
+} Vp56Model;
 
 struct vp56_context {
     AVCodecContext *avctx;
@@ -94,9 +94,9 @@ struct vp56_context {
     AVFrame *framep[6];
     uint8_t *edge_emu_buffer_alloc;
     uint8_t *edge_emu_buffer;
-    vp56_range_coder_t c;
-    vp56_range_coder_t cc;
-    vp56_range_coder_t *ccp;
+    VP56RangeCoder c;
+    VP56RangeCoder cc;
+    VP56RangeCoder *ccp;
     int sub_version;
 
     /* frame info */
@@ -111,19 +111,19 @@ struct vp56_context {
     uint16_t dequant_ac;
 
     /* DC predictors management */
-    vp56_ref_dc_t *above_blocks;
-    vp56_ref_dc_t left_block[4];
+    VP56RefDc *above_blocks;
+    VP56RefDc left_block[4];
     int above_block_idx[6];
     DCTELEM prev_dc[3][3];    /* [plan][ref_frame] */
 
     /* blocks / macroblock */
-    vp56_mb_t mb_type;
-    vp56_macroblock_t *macroblocks;
+    VP56mb mb_type;
+    VP56Macroblock *macroblocks;
     DECLARE_ALIGNED_16(DCTELEM, block_coeff[6][64]);
 
     /* motion vectors */
-    vp56_mv_t mv[6];  /* vectors for each block in MB */
-    vp56_mv_t vector_candidate[2];
+    VP56mv mv[6];  /* vectors for each block in MB */
+    VP56mv vector_candidate[2];
     int vector_candidate_pos;
 
     /* filtering hints */
@@ -146,17 +146,17 @@ struct vp56_context {
     int stride[4];  /* stride for each plan */
 
     const uint8_t *vp56_coord_div;
-    vp56_parse_vector_adjustment_t parse_vector_adjustment;
-    vp56_adjust_t adjust;
-    vp56_filter_t filter;
-    vp56_parse_coeff_t parse_coeff;
-    vp56_default_models_init_t default_models_init;
-    vp56_parse_vector_models_t parse_vector_models;
-    vp56_parse_coeff_models_t parse_coeff_models;
-    vp56_parse_header_t parse_header;
+    VP56ParseVectorAdjustment parse_vector_adjustment;
+    VP56Adjust adjust;
+    VP56Filter filter;
+    VP56ParseCoeff parse_coeff;
+    VP56DefaultModelsInit default_models_init;
+    VP56ParseVectorModels parse_vector_models;
+    VP56ParseCoeffModels parse_coeff_models;
+    VP56ParseHeader parse_header;
 
-    vp56_model_t *modelp;
-    vp56_model_t models[2];
+    Vp56Model *modelp;
+    Vp56Model models[2];
 
     /* huffman decoding */
     int use_huffman;
@@ -170,7 +170,7 @@ struct vp56_context {
 
 void vp56_init(AVCodecContext *avctx, int flip, int has_alpha);
 int vp56_free(AVCodecContext *avctx);
-void vp56_init_dequant(vp56_context_t *s, int quantizer);
+void vp56_init_dequant(VP56Context *s, int quantizer);
 int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                       const uint8_t *buf, int buf_size);
 
@@ -179,7 +179,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
  * vp56 specific range coder implementation
  */
 
-static inline void vp56_init_range_decoder(vp56_range_coder_t *c,
+static inline void vp56_init_range_decoder(VP56RangeCoder *c,
                                            const uint8_t *buf, int buf_size)
 {
     c->high = 255;
@@ -188,7 +188,7 @@ static inline void vp56_init_range_decoder(vp56_range_coder_t *c,
     c->code_word = bytestream_get_be16(&c->buffer);
 }
 
-static inline int vp56_rac_get_prob(vp56_range_coder_t *c, uint8_t prob)
+static inline int vp56_rac_get_prob(VP56RangeCoder *c, uint8_t prob)
 {
     unsigned int low = 1 + (((c->high - 1) * prob) / 256);
     unsigned int low_shift = low << 8;
@@ -213,7 +213,7 @@ static inline int vp56_rac_get_prob(vp56_range_coder_t *c, uint8_t prob)
     return bit;
 }
 
-static inline int vp56_rac_get(vp56_range_coder_t *c)
+static inline int vp56_rac_get(VP56RangeCoder *c)
 {
     /* equiprobable */
     int low = (c->high + 1) >> 1;
@@ -235,7 +235,7 @@ static inline int vp56_rac_get(vp56_range_coder_t *c)
     return bit;
 }
 
-static inline int vp56_rac_gets(vp56_range_coder_t *c, int bits)
+static inline int vp56_rac_gets(VP56RangeCoder *c, int bits)
 {
     int value = 0;
 
@@ -246,14 +246,14 @@ static inline int vp56_rac_gets(vp56_range_coder_t *c, int bits)
     return value;
 }
 
-static inline int vp56_rac_gets_nn(vp56_range_coder_t *c, int bits)
+static inline int vp56_rac_gets_nn(VP56RangeCoder *c, int bits)
 {
     int v = vp56_rac_gets(c, 7) << 1;
     return v + !v;
 }
 
-static inline int vp56_rac_get_tree(vp56_range_coder_t *c,
-                                    const vp56_tree_t *tree,
+static inline int vp56_rac_get_tree(VP56RangeCoder *c,
+                                    const VP56Tree *tree,
                                     const uint8_t *probs)
 {
     while (tree->val > 0) {

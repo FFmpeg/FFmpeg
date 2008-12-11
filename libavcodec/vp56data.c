@@ -44,7 +44,7 @@ const uint8_t vp56_def_mb_types_stats[3][10][2] = {
       {   1,  2 }, {   0,  1 }, {  0,   1 }, {   1,  1 }, {  0,  0 }, },
 };
 
-const vp56_tree_t vp56_pva_tree[] = {
+const VP56Tree vp56_pva_tree[] = {
     { 8, 0},
     { 4, 1},
     { 2, 2}, {-0}, {-1},
@@ -54,7 +54,7 @@ const vp56_tree_t vp56_pva_tree[] = {
     { 2, 6}, {-6}, {-7},
 };
 
-const vp56_tree_t vp56_pc_tree[] = {
+const VP56Tree vp56_pc_tree[] = {
     { 4, 6},
     { 2, 7}, {-0}, {-1},
     { 4, 8},
