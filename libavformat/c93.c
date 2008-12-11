@@ -29,7 +29,7 @@ typedef struct {
 } C93BlockRecord;
 
 typedef struct {
-    voc_dec_context_t voc;
+    VocDecContext voc;
 
     C93BlockRecord block_records[512];
     int current_block;

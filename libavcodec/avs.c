@@ -25,35 +25,35 @@
 
 typedef struct {
     AVFrame picture;
-} avs_context_t;
+} AvsContext;
 
 typedef enum {
     AVS_VIDEO     = 0x01,
     AVS_AUDIO     = 0x02,
     AVS_PALETTE   = 0x03,
     AVS_GAME_DATA = 0x04,
-} avs_block_type_t;
+} AvsBlockType;
 
 typedef enum {
     AVS_I_FRAME     = 0x00,
     AVS_P_FRAME_3X3 = 0x01,
     AVS_P_FRAME_2X2 = 0x02,
     AVS_P_FRAME_2X3 = 0x03,
-} avs_video_sub_type_t;
+} AvsVideoSubType;
 
 
 static int
 avs_decode_frame(AVCodecContext * avctx,
                  void *data, int *data_size, const uint8_t * buf, int buf_size)
 {
-    avs_context_t *const avs = avctx->priv_data;
+    AvsContext *const avs = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame *const p = (AVFrame *) & avs->picture;
     const uint8_t *table, *vect;
     uint8_t *out;
     int i, j, x, y, stride, vect_w = 3, vect_h = 3;
-    int sub_type;
-    avs_block_type_t type;
+    AvsVideoSubType sub_type;
+    AvsBlockType type;
     GetBitContext change_map;
 
     if (avctx->reget_buffer(avctx, p)) {
@@ -152,7 +152,7 @@ AVCodec avs_decoder = {
     "avs",
     CODEC_TYPE_VIDEO,
     CODEC_ID_AVS,
-    sizeof(avs_context_t),
+    sizeof(AvsContext),
     avs_decode_init,
     NULL,
     NULL,

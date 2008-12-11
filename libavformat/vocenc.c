@@ -24,7 +24,7 @@
 
 typedef struct voc_enc_context {
     int param_written;
-} voc_enc_context_t;
+} VocEncContext;
 
 static int voc_write_header(AVFormatContext *s)
 {
@@ -46,7 +46,7 @@ static int voc_write_header(AVFormatContext *s)
 
 static int voc_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    voc_enc_context_t *voc = s->priv_data;
+    VocEncContext *voc = s->priv_data;
     AVCodecContext *enc = s->streams[0]->codec;
     ByteIOContext *pb = s->pb;
 
@@ -93,7 +93,7 @@ AVOutputFormat voc_muxer = {
     NULL_IF_CONFIG_SMALL("Creative Voice file format"),
     "audio/x-voc",
     "voc",
-    sizeof(voc_enc_context_t),
+    sizeof(VocEncContext),
     CODEC_ID_PCM_U8,
     CODEC_ID_NONE,
     voc_write_header,

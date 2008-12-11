@@ -38,7 +38,7 @@ static int voc_probe(AVProbeData *p)
 
 static int voc_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    voc_dec_context_t *voc = s->priv_data;
+    VocDecContext *voc = s->priv_data;
     ByteIOContext *pb = s->pb;
     int header_size;
     AVStream *st;
@@ -62,10 +62,10 @@ static int voc_read_header(AVFormatContext *s, AVFormatParameters *ap)
 int
 voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 {
-    voc_dec_context_t *voc = s->priv_data;
+    VocDecContext *voc = s->priv_data;
     AVCodecContext *dec = st->codec;
     ByteIOContext *pb = s->pb;
-    voc_type_t type;
+    VocType type;
     int size;
     int sample_rate = 0;
     int channels = 1;
@@ -137,7 +137,7 @@ static int voc_read_packet(AVFormatContext *s, AVPacket *pkt)
 AVInputFormat voc_demuxer = {
     "voc",
     NULL_IF_CONFIG_SMALL("Creative Voice file format"),
-    sizeof(voc_dec_context_t),
+    sizeof(VocDecContext),
     voc_probe,
     voc_read_header,
     voc_read_packet,
