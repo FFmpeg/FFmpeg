@@ -54,8 +54,8 @@ unsigned postproc_version(void);
 
 #include <inttypes.h>
 
-typedef void pp_context_t;
-typedef void pp_mode_t;
+typedef void pp_context;
+typedef void pp_mode;
 
 #if LIBPOSTPROC_VERSION_INT < (52<<16)
 extern const char *const pp_help; ///< a simple help text
@@ -67,19 +67,19 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
                      uint8_t * dst[3], const int dstStride[3],
                      int horizontalSize, int verticalSize,
                      const QP_STORE_T *QP_store,  int QP_stride,
-                     pp_mode_t *mode, pp_context_t *ppContext, int pict_type);
+                     pp_mode *mode, pp_context *ppContext, int pict_type);
 
 
 /**
- * returns a pp_mode_t or NULL if an error occurred
+ * returns a pp_mode or NULL if an error occurred
  * name is the string after "-pp" on the command line
  * quality is a number from 0 to PP_QUALITY_MAX
  */
-pp_mode_t *pp_get_mode_by_name_and_quality(const char *name, int quality);
-void pp_free_mode(pp_mode_t *mode);
+pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality);
+void pp_free_mode(pp_mode *mode);
 
-pp_context_t *pp_get_context(int width, int height, int flags);
-void pp_free_context(pp_context_t *ppContext);
+pp_context *pp_get_context(int width, int height, int flags);
+void pp_free_context(pp_context *ppContext);
 
 #define PP_CPU_CAPS_MMX   0x80000000
 #define PP_CPU_CAPS_MMX2  0x20000000

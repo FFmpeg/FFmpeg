@@ -634,7 +634,7 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 // minor note: the HAVE_xyz is messed up after that line so do not use it.
 
 static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-        const QP_STORE_T QPs[], int QPStride, int isColor, pp_mode_t *vm, pp_context_t *vc)
+        const QP_STORE_T QPs[], int QPStride, int isColor, pp_mode *vm, pp_context *vc)
 {
     PPContext *c= (PPContext *)vc;
     PPMode *ppMode= (PPMode *)vm;
@@ -730,7 +730,7 @@ const char pp_help[] =
 "\n"
 ;
 
-pp_mode_t *pp_get_mode_by_name_and_quality(const char *name, int quality)
+pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
 {
     char temp[GET_MODE_BUFFER_SIZE];
     char *p= temp;
@@ -905,7 +905,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(const char *name, int quality)
     return ppMode;
 }
 
-void pp_free_mode(pp_mode_t *mode){
+void pp_free_mode(pp_mode *mode){
     av_free(mode);
 }
 
@@ -947,7 +947,7 @@ static const char * context_to_name(void * ptr) {
 
 static const AVClass av_codec_context_class = { "Postproc", context_to_name, NULL };
 
-pp_context_t *pp_get_context(int width, int height, int cpuCaps){
+pp_context *pp_get_context(int width, int height, int cpuCaps){
     PPContext *c= av_malloc(sizeof(PPContext));
     int stride= (width+15)&(~15);    //assumed / will realloc if needed
     int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
@@ -995,7 +995,7 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
                      uint8_t * dst[3], const int dstStride[3],
                      int width, int height,
                      const QP_STORE_T *QP_store,  int QPStride,
-                     pp_mode_t *vm,  void *vc, int pict_type)
+                     pp_mode *vm,  void *vc, int pict_type)
 {
     int mbWidth = (width+15)>>4;
     int mbHeight= (height+15)>>4;
