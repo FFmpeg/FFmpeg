@@ -27,64 +27,9 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "dnxhddata.h"
-
-typedef struct {
-    uint16_t mb;
-    int value;
-} RCCMPEntry;
-
-typedef struct {
-    int ssd;
-    int bits;
-} RCEntry;
+#include "dnxhdenc.h"
 
 int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
-
-typedef struct DNXHDEncContext {
-    MpegEncContext m; ///< Used for quantization dsp functions
-
-    AVFrame frame;
-    int cid;
-    const CIDEntry *cid_table;
-    uint8_t *msip; ///< Macroblock Scan Indexes Payload
-    uint32_t *slice_size;
-
-    struct DNXHDEncContext *thread[MAX_THREADS];
-
-    unsigned dct_y_offset;
-    unsigned dct_uv_offset;
-    int interlaced;
-    int cur_field;
-
-    DECLARE_ALIGNED_16(DCTELEM, blocks[8][64]);
-
-    int      (*qmatrix_c)     [64];
-    int      (*qmatrix_l)     [64];
-    uint16_t (*qmatrix_l16)[2][64];
-    uint16_t (*qmatrix_c16)[2][64];
-
-    unsigned frame_bits;
-    uint8_t *src[3];
-
-    uint32_t *vlc_codes;
-    uint8_t  *vlc_bits;
-    uint16_t *run_codes;
-    uint8_t  *run_bits;
-
-    /** Rate control */
-    unsigned slice_bits;
-    unsigned qscale;
-    unsigned lambda;
-
-    unsigned thread_size;
-
-    uint16_t *mb_bits;
-    uint8_t  *mb_qscale;
-
-    RCCMPEntry *mb_cmp;
-    RCEntry   (*mb_rc)[8160];
-} DNXHDEncContext;
 
 #define LAMBDA_FRAC_BITS 10
 
