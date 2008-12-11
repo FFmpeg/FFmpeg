@@ -1485,17 +1485,17 @@ void ff_h263_loop_filter(MpegEncContext * s){
         qp_c= 0;
 
     if(s->mb_y){
-        int qp_dt, qp_t, qp_tc;
+        int qp_dt, qp_tt, qp_tc;
 
         if(IS_SKIP(s->current_picture.mb_type[xy-s->mb_stride]))
-            qp_t=0;
+            qp_tt=0;
         else
-            qp_t= s->current_picture.qscale_table[xy-s->mb_stride];
+            qp_tt= s->current_picture.qscale_table[xy-s->mb_stride];
 
         if(qp_c)
             qp_tc= qp_c;
         else
-            qp_tc= qp_t;
+            qp_tc= qp_tt;
 
         if(qp_tc){
             const int chroma_qp= s->chroma_qscale_table[qp_tc];
@@ -1506,12 +1506,12 @@ void ff_h263_loop_filter(MpegEncContext * s){
             s->dsp.h263_v_loop_filter(dest_cr , uvlinesize, chroma_qp);
         }
 
-        if(qp_t)
-            s->dsp.h263_h_loop_filter(dest_y-8*linesize+8  ,   linesize, qp_t);
+        if(qp_tt)
+            s->dsp.h263_h_loop_filter(dest_y-8*linesize+8  ,   linesize, qp_tt);
 
         if(s->mb_x){
-            if(qp_t || IS_SKIP(s->current_picture.mb_type[xy-1-s->mb_stride]))
-                qp_dt= qp_t;
+            if(qp_tt || IS_SKIP(s->current_picture.mb_type[xy-1-s->mb_stride]))
+                qp_dt= qp_tt;
             else
                 qp_dt= s->current_picture.qscale_table[xy-1-s->mb_stride];
 
