@@ -190,20 +190,20 @@ typedef struct
     int subCels[4];
     motion_vect motion;
     int cbEntry;
-} subcel_evaluation_t;
+} SubcelEvaluation;
 
 typedef struct
 {
     int eval_dist[4];
     int best_coding;
 
-    subcel_evaluation_t subCels[4];
+    SubcelEvaluation subCels[4];
 
     motion_vect motion;
     int cbEntry;
 
     int sourceX, sourceY;
-} cel_evaluation_t;
+} CelEvaluation;
 
 typedef struct
 {
@@ -214,14 +214,14 @@ typedef struct
     uint8_t unpacked_cb2[MAX_CBS_2x2*2*2*3];
     uint8_t unpacked_cb4[MAX_CBS_4x4*4*4*3];
     uint8_t unpacked_cb4_enlarged[MAX_CBS_4x4*8*8*3];
-} roq_codebooks_t;
+} RoqCodebooks;
 
 /**
  * Temporary vars
  */
 typedef struct
 {
-    cel_evaluation_t *cel_evals;
+    CelEvaluation *cel_evals;
 
     int f2i4[MAX_CBS_4x4];
     int i2f4[MAX_CBS_4x4];
@@ -233,20 +233,20 @@ typedef struct
     int numCB4;
     int numCB2;
 
-    roq_codebooks_t codebooks;
+    RoqCodebooks codebooks;
 
     int *closest_cb2;
     int used_option[4];
-} roq_tempdata_t;
+} RoqTempdata;
 
 /**
  * Initializes cel evaluators and sets their source coordinates
  */
-static void create_cel_evals(RoqContext *enc, roq_tempdata_t *tempData)
+static void create_cel_evals(RoqContext *enc, RoqTempdata *tempData)
 {
     int n=0, x, y, i;
 
-    tempData->cel_evals = av_malloc(enc->width*enc->height/64 * sizeof(cel_evaluation_t));
+    tempData->cel_evals = av_malloc(enc->width*enc->height/64 * sizeof(CelEvaluation));
 
     /* Map to the ROQ quadtree order */
     for (y=0; y<enc->height; y+=16)
@@ -395,8 +395,8 @@ static void motion_search(RoqContext *enc, int blocksize)
 /**
  * Gets distortion for all options available to a subcel
  */
-static void gather_data_for_subcel(subcel_evaluation_t *subcel, int x,
-                                   int y, RoqContext *enc, roq_tempdata_t *tempData)
+static void gather_data_for_subcel(SubcelEvaluation *subcel, int x,
+                                   int y, RoqContext *enc, RoqTempdata *tempData)
 {
     uint8_t mb4[4*4*3];
     uint8_t mb2[2*2*3];
@@ -459,8 +459,8 @@ static void gather_data_for_subcel(subcel_evaluation_t *subcel, int x,
 /**
  * Gets distortion for all options available to a cel
  */
-static void gather_data_for_cel(cel_evaluation_t *cel, RoqContext *enc,
-                                roq_tempdata_t *tempData)
+static void gather_data_for_cel(CelEvaluation *cel, RoqContext *enc,
+                                RoqTempdata *tempData)
 {
     uint8_t mb8[8*8*3];
     int index = cel->sourceY*enc->width/64 + cel->sourceX/8;
@@ -533,7 +533,7 @@ static void gather_data_for_cel(cel_evaluation_t *cel, RoqContext *enc,
         }
 }
 
-static void remap_codebooks(RoqContext *enc, roq_tempdata_t *tempData)
+static void remap_codebooks(RoqContext *enc, RoqTempdata *tempData)
 {
     int i, j, idx=0;
 
@@ -565,7 +565,7 @@ static void remap_codebooks(RoqContext *enc, roq_tempdata_t *tempData)
 /**
  * Write codebook chunk
  */
-static void write_codebooks(RoqContext *enc, roq_tempdata_t *tempData)
+static void write_codebooks(RoqContext *enc, RoqTempdata *tempData)
 {
     int i, j;
     uint8_t **outp= &enc->out_buf;
@@ -620,7 +620,7 @@ static void write_typecode(CodingSpool *s, uint8_t type)
     }
 }
 
-static void reconstruct_and_encode_image(RoqContext *enc, roq_tempdata_t *tempData, int w, int h, int numBlocks)
+static void reconstruct_and_encode_image(RoqContext *enc, RoqTempdata *tempData, int w, int h, int numBlocks)
 {
     int i, j, k;
     int x, y;
@@ -628,7 +628,7 @@ static void reconstruct_and_encode_image(RoqContext *enc, roq_tempdata_t *tempDa
     int dist=0;
 
     roq_qcell *qcell;
-    cel_evaluation_t *eval;
+    CelEvaluation *eval;
 
     CodingSpool spool;
 
@@ -789,7 +789,7 @@ static void create_clusters(AVFrame *frame, int w, int h, uint8_t *yuvClusters)
         }
 }
 
-static void generate_codebook(RoqContext *enc, roq_tempdata_t *tempdata,
+static void generate_codebook(RoqContext *enc, RoqTempdata *tempdata,
                               int *points, int inputCount, roq_cell *results,
                               int size, int cbsize)
 {
@@ -824,10 +824,10 @@ static void generate_codebook(RoqContext *enc, roq_tempdata_t *tempdata,
     av_free(codebook);
 }
 
-static void generate_new_codebooks(RoqContext *enc, roq_tempdata_t *tempData)
+static void generate_new_codebooks(RoqContext *enc, RoqTempdata *tempData)
 {
     int i,j;
-    roq_codebooks_t *codebooks = &tempData->codebooks;
+    RoqCodebooks *codebooks = &tempData->codebooks;
     int max = enc->width*enc->height/16;
     uint8_t mb2[3*4];
     roq_cell *results4 = av_malloc(sizeof(roq_cell)*MAX_CBS_4x4*4);
@@ -880,7 +880,7 @@ static void generate_new_codebooks(RoqContext *enc, roq_tempdata_t *tempData)
 
 static void roq_encode_video(RoqContext *enc)
 {
-    roq_tempdata_t tempData;
+    RoqTempdata tempData;
     int i;
 
     memset(&tempData, 0, sizeof(tempData));
