@@ -397,6 +397,7 @@ MMX-OBJS-$(CONFIG_ENCODERS)            += i386/dsputilenc_mmx.o
 MMX-OBJS-$(CONFIG_FLAC_ENCODER)        += i386/flacdsp_mmx.o
 MMX-OBJS-$(CONFIG_GPL)                 += i386/idct_mmx.o
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += i386/snowdsp_mmx.o
+MMX-OBJS-$(CONFIG_THEORA_DECODER)      += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += i386/vc1dsp_mmx.o
 MMX-OBJS-$(CONFIG_VP3_DECODER)         += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP5_DECODER)         += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
