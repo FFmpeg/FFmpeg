@@ -67,7 +67,7 @@ typedef struct {
     int16_t  pts_delta;
     uint8_t  reserved_count;
     uint8_t  header_idx;
-} FrameCode; // maybe s/FrameCode/framecode_t/ or change all to Java style but do not mix
+} FrameCode;
 
 typedef struct {
     int last_flags;
