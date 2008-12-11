@@ -430,6 +430,22 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_pasp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+{
+    const int num = get_be32(pb);
+    const int den = get_be32(pb);
+    AVStream * const st = c->fc->streams[c->fc->nb_streams-1];
+    if (den != 0) {
+        if ((st->sample_aspect_ratio.den && den != st->sample_aspect_ratio.den) ||
+            (st->sample_aspect_ratio.num && num != st->sample_aspect_ratio.num))
+            av_log(c->fc, AV_LOG_WARNING,
+                   "sample aspect ratio already set, overriding by 'pasp' atom\n");
+        st->sample_aspect_ratio.num = num;
+        st->sample_aspect_ratio.den = den;
+    }
+    return 0;
+}
+
 /* this atom contains actual media data */
 static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
@@ -1754,6 +1770,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('S','M','I',' '), mov_read_smi }, /* Sorenson extension ??? */
 { MKTAG('a','l','a','c'), mov_read_extradata }, /* alac specific atom */
 { MKTAG('a','v','c','C'), mov_read_glbl },
+{ MKTAG('p','a','s','p'), mov_read_pasp },
 { MKTAG('s','t','b','l'), mov_read_default },
 { MKTAG('s','t','c','o'), mov_read_stco },
 { MKTAG('s','t','s','c'), mov_read_stsc },
