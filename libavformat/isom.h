@@ -38,6 +38,6 @@ int ff_mov_lang_to_iso639(int code, char *to);
 typedef struct {
     int count;
     int duration;
-} MOV_stts_t;
+} MOVStts;
 
 #endif /* AVFORMAT_ISOM_H */
