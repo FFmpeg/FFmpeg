@@ -91,7 +91,7 @@ typedef struct AVOption {
  * for which it is the case that opt->flags & mask == flags).
  *
  * @param[in] obj a pointer to a struct whose first element is a
- * pointer to an #AVClass
+ * pointer to an AVClass
  * @param[in] name the name of the option to look for
  * @param[in] unit the unit of the option to look for, or any if NULL
  * @return a pointer to the option found, or NULL if no option
