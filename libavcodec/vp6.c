@@ -164,7 +164,7 @@ static void vp6_coeff_order_table_init(VP56Context *s)
 
 static void vp6_default_models_init(VP56Context *s)
 {
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
 
     model->vector_dct[0] = 0xA2;
     model->vector_dct[1] = 0xA4;
@@ -183,7 +183,7 @@ static void vp6_default_models_init(VP56Context *s)
 static void vp6_parse_vector_models(VP56Context *s)
 {
     VP56RangeCoder *c = &s->c;
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     int comp, node;
 
     for (comp=0; comp<2; comp++) {
@@ -234,7 +234,7 @@ static void vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
 static void vp6_parse_coeff_models(VP56Context *s)
 {
     VP56RangeCoder *c = &s->c;
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     int def_prob[11];
     int node, cg, ctx, pos;
     int ct;    /* code type */
@@ -299,7 +299,7 @@ static void vp6_parse_coeff_models(VP56Context *s)
 static void vp6_parse_vector_adjustment(VP56Context *s, VP56mv *vect)
 {
     VP56RangeCoder *c = &s->c;
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     int comp;
 
     *vect = (VP56mv) {0,0};
@@ -352,7 +352,7 @@ static unsigned vp6_get_nb_null(VP56Context *s)
 
 static void vp6_parse_coeff_huffman(VP56Context *s)
 {
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     uint8_t *permute = s->scantable.permutated;
     VLC *vlc_coeff;
     int coeff, sign, coeff_idx;
@@ -408,7 +408,7 @@ static void vp6_parse_coeff_huffman(VP56Context *s)
 static void vp6_parse_coeff(VP56Context *s)
 {
     VP56RangeCoder *c = s->ccp;
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     uint8_t *permute = s->scantable.permutated;
     uint8_t *model1, *model2, *model3;
     int coeff, sign, coeff_idx;

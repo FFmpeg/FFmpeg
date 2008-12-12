@@ -76,7 +76,7 @@ static int vp56_get_vectors_predictors(VP56Context *s, int row, int col,
 static void vp56_parse_mb_type_models(VP56Context *s)
 {
     VP56RangeCoder *c = &s->c;
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     int i, ctx, type;
 
     for (ctx=0; ctx<3; ctx++) {

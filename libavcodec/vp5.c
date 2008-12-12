@@ -87,7 +87,7 @@ static int vp5_adjust(int v, int t)
 static void vp5_parse_vector_adjustment(VP56Context *s, VP56mv *vect)
 {
     VP56RangeCoder *c = &s->c;
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     int comp, di;
 
     for (comp=0; comp<2; comp++) {
@@ -111,7 +111,7 @@ static void vp5_parse_vector_adjustment(VP56Context *s, VP56mv *vect)
 static void vp5_parse_vector_models(VP56Context *s)
 {
     VP56RangeCoder *c = &s->c;
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     int comp, node;
 
     for (comp=0; comp<2; comp++) {
@@ -134,7 +134,7 @@ static void vp5_parse_vector_models(VP56Context *s)
 static void vp5_parse_coeff_models(VP56Context *s)
 {
     VP56RangeCoder *c = &s->c;
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     uint8_t def_prob[11];
     int node, cg, ctx;
     int ct;    /* code type */
@@ -180,7 +180,7 @@ static void vp5_parse_coeff_models(VP56Context *s)
 static void vp5_parse_coeff(VP56Context *s)
 {
     VP56RangeCoder *c = &s->c;
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     uint8_t *permute = s->scantable.permutated;
     uint8_t *model1, *model2;
     int coeff, sign, coeff_idx;
@@ -252,7 +252,7 @@ static void vp5_parse_coeff(VP56Context *s)
 
 static void vp5_default_models_init(VP56Context *s)
 {
-    Vp56Model *model = s->modelp;
+    VP56Model *model = s->modelp;
     int i;
 
     for (i=0; i<2; i++) {

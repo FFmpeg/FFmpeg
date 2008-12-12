@@ -84,7 +84,7 @@ typedef struct {
     uint8_t coeff_runv[2][14];       /* run value (vp6 only) */
     uint8_t mb_type[3][10][10];      /* model for decoding MB type */
     uint8_t mb_types_stats[3][10][2];/* contextual, next MB type stats */
-} Vp56Model;
+} VP56Model;
 
 struct vp56_context {
     AVCodecContext *avctx;
@@ -155,8 +155,8 @@ struct vp56_context {
     VP56ParseCoeffModels parse_coeff_models;
     VP56ParseHeader parse_header;
 
-    Vp56Model *modelp;
-    Vp56Model models[2];
+    VP56Model *modelp;
+    VP56Model models[2];
 
     /* huffman decoding */
     int use_huffman;
