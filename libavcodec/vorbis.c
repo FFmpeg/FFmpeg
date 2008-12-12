@@ -111,7 +111,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num) {
     return 0;
 }
 
-void ff_vorbis_ready_floor1_list(floor1_entry_t * list, int values) {
+void ff_vorbis_ready_floor1_list(vorbis_floor1_entry * list, int values) {
     int i;
     list[0].sort = 0;
     list[1].sort = 1;
@@ -162,7 +162,7 @@ static void render_line(int x0, int y0, int x1, int y1, float * buf) {
     }
 }
 
-void ff_vorbis_floor1_render_list(floor1_entry_t * list, int values, uint_fast16_t * y_list, int * flag, int multiplier, float * out, int samples) {
+void ff_vorbis_floor1_render_list(vorbis_floor1_entry * list, int values, uint_fast16_t * y_list, int * flag, int multiplier, float * out, int samples) {
     int lx, ly, i;
     lx = 0;
     ly = y_list[0] * multiplier;

@@ -90,7 +90,7 @@ typedef struct {
             int_fast16_t subclass_books[16][8];
             uint_fast8_t multiplier;
             uint_fast16_t x_list_dim;
-            floor1_entry_t * list;
+            vorbis_floor1_entry * list;
         } t1;
     } data;
 } vorbis_floor;
@@ -511,7 +511,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
                 floor_setup->data.t1.x_list_dim+=floor_setup->data.t1.class_dimensions[floor_setup->data.t1.partition_class[j]];
             }
 
-            floor_setup->data.t1.list=av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(floor1_entry_t));
+            floor_setup->data.t1.list=av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(vorbis_floor1_entry));
 
 
             rangebits=get_bits(gb, 4);
