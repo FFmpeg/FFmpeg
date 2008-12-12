@@ -67,6 +67,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('G', 'E', 'O', 'X') },
     { CODEC_ID_MPEG4,        MKTAG('H', 'D', 'X', '4') }, /* flipped video */
     { CODEC_ID_MPEG4,        MKTAG('D', 'M', 'K', '2') },
+    { CODEC_ID_MPEG4,        MKTAG('D', 'I', 'G', 'I') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', 'G', '3') },
