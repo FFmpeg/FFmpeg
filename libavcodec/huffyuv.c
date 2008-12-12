@@ -265,16 +265,16 @@ static int generate_bits_table(uint32_t *dst, uint8_t *len_table){
 typedef struct {
     uint64_t val;
     int name;
-} heap_elem_t;
+} HeapElem;
 
-static void heap_sift(heap_elem_t *h, int root, int size)
+static void heap_sift(HeapElem *h, int root, int size)
 {
     while(root*2+1 < size) {
         int child = root*2+1;
         if(child < size-1 && h[child].val > h[child+1].val)
             child++;
         if(h[root].val > h[child].val) {
-            FFSWAP(heap_elem_t, h[root], h[child]);
+            FFSWAP(HeapElem, h[root], h[child]);
             root = child;
         } else
             break;
@@ -282,7 +282,7 @@ static void heap_sift(heap_elem_t *h, int root, int size)
 }
 
 static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
-    heap_elem_t h[size];
+    HeapElem h[size];
     int up[2*size];
     int len[2*size];
     int offset, i, next;
