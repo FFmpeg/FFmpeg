@@ -2016,14 +2016,14 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
     {
 #ifdef HAVE_MMX
         __asm__ volatile(
-        "xorl                %%eax, %%eax   \n\t"
+        "xor                 %%"REG_a", %%"REG_a"   \n\t"
         "pcmpeqw             %%mm7, %%mm7   \n\t"
         "psrlw                  $8, %%mm7   \n\t" // FF,00,FF,00...
         ASMALIGN(4)
         "1:                                 \n\t"
-        PREFETCH" 64(%0, %%eax, 4)          \n\t"
-        "movq       (%0, %%eax, 4), %%mm0   \n\t" // UYVY UYVY(0)
-        "movq      8(%0, %%eax, 4), %%mm1   \n\t" // UYVY UYVY(4)
+        PREFETCH" 64(%0, %%"REG_a", 4)          \n\t"
+        "movq       (%0, %%"REG_a", 4), %%mm0   \n\t" // UYVY UYVY(0)
+        "movq      8(%0, %%"REG_a", 4), %%mm1   \n\t" // UYVY UYVY(4)
         "movq                %%mm0, %%mm2   \n\t" // UYVY UYVY(0)
         "movq                %%mm1, %%mm3   \n\t" // UYVY UYVY(4)
         "pand                %%mm7, %%mm0   \n\t" // U0V0 U0V0(0)
@@ -2033,10 +2033,10 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
         "packuswb            %%mm1, %%mm0   \n\t" // UVUV UVUV(0)
         "packuswb            %%mm3, %%mm2   \n\t" // YYYY YYYY(0)
 
-        MOVNTQ"              %%mm2,  (%1, %%eax, 2) \n\t"
+        MOVNTQ"              %%mm2,  (%1, %%"REG_a", 2) \n\t"
 
-        "movq     16(%0, %%eax, 4), %%mm1   \n\t" // UYVY UYVY(8)
-        "movq     24(%0, %%eax, 4), %%mm2   \n\t" // UYVY UYVY(12)
+        "movq     16(%0, %%"REG_a", 4), %%mm1   \n\t" // UYVY UYVY(8)
+        "movq     24(%0, %%"REG_a", 4), %%mm2   \n\t" // UYVY UYVY(12)
         "movq                %%mm1, %%mm3   \n\t" // UYVY UYVY(8)
         "movq                %%mm2, %%mm4   \n\t" // UYVY UYVY(12)
         "pand                %%mm7, %%mm1   \n\t" // U0V0 U0V0(8)
@@ -2046,7 +2046,7 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
         "packuswb            %%mm2, %%mm1   \n\t" // UVUV UVUV(8)
         "packuswb            %%mm4, %%mm3   \n\t" // YYYY YYYY(8)
 
-        MOVNTQ"              %%mm3, 8(%1, %%eax, 2) \n\t"
+        MOVNTQ"              %%mm3, 8(%1, %%"REG_a", 2) \n\t"
 
         "movq                %%mm0, %%mm2   \n\t" // UVUV UVUV(0)
         "movq                %%mm1, %%mm3   \n\t" // UVUV UVUV(8)
@@ -2057,28 +2057,28 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
         "packuswb            %%mm1, %%mm0   \n\t" // VVVV VVVV(0)
         "packuswb            %%mm3, %%mm2   \n\t" // UUUU UUUU(0)
 
-        MOVNTQ"              %%mm0, (%3, %%eax) \n\t"
-        MOVNTQ"              %%mm2, (%2, %%eax) \n\t"
+        MOVNTQ"              %%mm0, (%3, %%"REG_a") \n\t"
+        MOVNTQ"              %%mm2, (%2, %%"REG_a") \n\t"
 
-        "addl                   $8, %%eax   \n\t"
-        "cmpl                   %4, %%eax   \n\t"
+        "add                    $8, %%"REG_a"   \n\t"
+        "cmp                    %4, %%"REG_a"   \n\t"
         " jb                    1b          \n\t"
         ::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "g" (chromWidth)
-        : "memory", "%eax"
+        : "memory", "%"REG_a
         );
 
         ydst += lumStride;
         src  += srcStride;
 
         __asm__ volatile(
-        "xorl                %%eax, %%eax   \n\t"
+        "xor                 %%"REG_a", %%"REG_a"   \n\t"
         ASMALIGN(4)
         "1:                                 \n\t"
-        PREFETCH" 64(%0, %%eax, 4)          \n\t"
-        "movq       (%0, %%eax, 4), %%mm0   \n\t" // YUYV YUYV(0)
-        "movq      8(%0, %%eax, 4), %%mm1   \n\t" // YUYV YUYV(4)
-        "movq     16(%0, %%eax, 4), %%mm2   \n\t" // YUYV YUYV(8)
-        "movq     24(%0, %%eax, 4), %%mm3   \n\t" // YUYV YUYV(12)
+        PREFETCH" 64(%0, %%"REG_a", 4)          \n\t"
+        "movq       (%0, %%"REG_a", 4), %%mm0   \n\t" // YUYV YUYV(0)
+        "movq      8(%0, %%"REG_a", 4), %%mm1   \n\t" // YUYV YUYV(4)
+        "movq     16(%0, %%"REG_a", 4), %%mm2   \n\t" // YUYV YUYV(8)
+        "movq     24(%0, %%"REG_a", 4), %%mm3   \n\t" // YUYV YUYV(12)
         "psrlw                  $8, %%mm0   \n\t" // Y0Y0 Y0Y0(0)
         "psrlw                  $8, %%mm1   \n\t" // Y0Y0 Y0Y0(4)
         "psrlw                  $8, %%mm2   \n\t" // Y0Y0 Y0Y0(8)
@@ -2086,15 +2086,15 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
         "packuswb            %%mm1, %%mm0   \n\t" // YYYY YYYY(0)
         "packuswb            %%mm3, %%mm2   \n\t" // YYYY YYYY(8)
 
-        MOVNTQ"              %%mm0,  (%1, %%eax, 2) \n\t"
-        MOVNTQ"              %%mm2, 8(%1, %%eax, 2) \n\t"
+        MOVNTQ"              %%mm0,  (%1, %%"REG_a", 2) \n\t"
+        MOVNTQ"              %%mm2, 8(%1, %%"REG_a", 2) \n\t"
 
-        "addl                   $8, %%eax   \n\t"
-        "cmpl                   %4, %%eax   \n\t"
+        "add                    $8, %%"REG_a"   \n\t"
+        "cmp                    %4, %%"REG_a"   \n\t"
         " jb                    1b          \n\t"
 
         ::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "g" (chromWidth)
-        : "memory", "%eax"
+        : "memory", "%"REG_a
         );
 #else
         long i;
