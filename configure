@@ -1100,7 +1100,6 @@ ar="ar"
 nm="nm"
 ranlib="ranlib"
 strip="strip"
-asmalign_pot="unknown"
 ln_s="ln -sf"
 objformat="elf"
 
@@ -2083,10 +2082,7 @@ fi
 VHOOKCFLAGS="-fPIC"
 
 # Find out if the .align argument is a power of two or not.
-if test $asmalign_pot = "unknown"; then
-    disable asmalign_pot
-    echo '__asm__ (".align 3");' | check_cc && enable asmalign_pot
-fi
+check_asm asmalign_pot '".align 3"'
 
 enabled_any $DECODER_LIST      && enable decoders
 enabled_any $ENCODER_LIST      && enable encoders
