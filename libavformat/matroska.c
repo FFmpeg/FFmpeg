@@ -23,6 +23,7 @@
 
 const CodecTags ff_mkv_codec_tags[]={
     {"V_UNCOMPRESSED"   , CODEC_ID_RAWVIDEO},
+    {"V_DIRAC"          , CODEC_ID_DIRAC},
     {"V_MPEG4/ISO/ASP"  , CODEC_ID_MPEG4},
     {"V_MPEG4/ISO/SP"   , CODEC_ID_MPEG4},
     {"V_MPEG4/ISO/AP"   , CODEC_ID_MPEG4},
