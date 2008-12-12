@@ -81,6 +81,8 @@ typedef struct DNXHDEncContext {
 
     RCCMPEntry *mb_cmp;
     RCEntry   (*mb_rc)[8160];
+
+    void (*get_pixels_8x4_sym)(DCTELEM */*align 16*/, const uint8_t *, int);
 } DNXHDEncContext;
 
 void ff_dnxhd_init_mmx(DNXHDEncContext *ctx);

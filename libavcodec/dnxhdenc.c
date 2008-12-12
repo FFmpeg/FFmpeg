@@ -173,8 +173,13 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
     ctx->m.mb_intra = 1;
     ctx->m.h263_aic = 1;
 
+    ctx->get_pixels_8x4_sym = dnxhd_get_pixels_8x4;
+
     dsputil_init(&ctx->m.dsp, avctx);
     ff_dct_common_init(&ctx->m);
+#ifdef HAVE_MMX
+    ff_dnxhd_init_mmx(ctx);
+#endif
     if (!ctx->m.dct_quantize)
         ctx->m.dct_quantize = dct_quantize_c;
 
@@ -361,10 +366,10 @@ static av_always_inline void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, in
 
     if (mb_y+1 == ctx->m.mb_height && ctx->m.avctx->height == 1080) {
         if (ctx->interlaced) {
-            dnxhd_get_pixels_8x4(ctx->blocks[4], ptr_y + ctx->dct_y_offset    , ctx->m.linesize);
-            dnxhd_get_pixels_8x4(ctx->blocks[5], ptr_y + ctx->dct_y_offset + 8, ctx->m.linesize);
-            dnxhd_get_pixels_8x4(ctx->blocks[6], ptr_u + ctx->dct_uv_offset   , ctx->m.uvlinesize);
-            dnxhd_get_pixels_8x4(ctx->blocks[7], ptr_v + ctx->dct_uv_offset   , ctx->m.uvlinesize);
+            ctx->get_pixels_8x4_sym(ctx->blocks[4], ptr_y + ctx->dct_y_offset    , ctx->m.linesize);
+            ctx->get_pixels_8x4_sym(ctx->blocks[5], ptr_y + ctx->dct_y_offset + 8, ctx->m.linesize);
+            ctx->get_pixels_8x4_sym(ctx->blocks[6], ptr_u + ctx->dct_uv_offset   , ctx->m.uvlinesize);
+            ctx->get_pixels_8x4_sym(ctx->blocks[7], ptr_v + ctx->dct_uv_offset   , ctx->m.uvlinesize);
         } else {
             dsp->clear_block(ctx->blocks[4]); dsp->clear_block(ctx->blocks[5]);
             dsp->clear_block(ctx->blocks[6]); dsp->clear_block(ctx->blocks[7]);

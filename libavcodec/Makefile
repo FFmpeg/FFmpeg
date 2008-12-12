@@ -408,6 +408,7 @@ MMX-OBJS-$(CONFIG_WMV3_DECODER)        += i386/vc1dsp_mmx.o
 MMX-OBJS-$(HAVE_YASM)                  += i386/dsputil_yasm.o
 
 OBJS-$(HAVE_MMX)                       += i386/cpuid.o                  \
+                                          i386/dnxhd_mmx.o              \
                                           i386/dsputil_mmx.o            \
                                           i386/fdct_mmx.o               \
                                           i386/idct_mmx_xvid.o          \
