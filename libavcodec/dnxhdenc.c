@@ -330,7 +330,7 @@ static av_always_inline int dnxhd_calc_ac_bits(DNXHDEncContext *ctx, DCTELEM *bl
     return bits;
 }
 
-static av_always_inline void dnxhd_get_pixels_4x8(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
+static av_always_inline void dnxhd_get_pixels_8x4(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
 {
     int i;
     for (i = 0; i < 4; i++) {
@@ -361,10 +361,10 @@ static av_always_inline void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, in
 
     if (mb_y+1 == ctx->m.mb_height && ctx->m.avctx->height == 1080) {
         if (ctx->interlaced) {
-            dnxhd_get_pixels_4x8(ctx->blocks[4], ptr_y + ctx->dct_y_offset    , ctx->m.linesize);
-            dnxhd_get_pixels_4x8(ctx->blocks[5], ptr_y + ctx->dct_y_offset + 8, ctx->m.linesize);
-            dnxhd_get_pixels_4x8(ctx->blocks[6], ptr_u + ctx->dct_uv_offset   , ctx->m.uvlinesize);
-            dnxhd_get_pixels_4x8(ctx->blocks[7], ptr_v + ctx->dct_uv_offset   , ctx->m.uvlinesize);
+            dnxhd_get_pixels_8x4(ctx->blocks[4], ptr_y + ctx->dct_y_offset    , ctx->m.linesize);
+            dnxhd_get_pixels_8x4(ctx->blocks[5], ptr_y + ctx->dct_y_offset + 8, ctx->m.linesize);
+            dnxhd_get_pixels_8x4(ctx->blocks[6], ptr_u + ctx->dct_uv_offset   , ctx->m.uvlinesize);
+            dnxhd_get_pixels_8x4(ctx->blocks[7], ptr_v + ctx->dct_uv_offset   , ctx->m.uvlinesize);
         } else {
             dsp->clear_block(ctx->blocks[4]); dsp->clear_block(ctx->blocks[5]);
             dsp->clear_block(ctx->blocks[6]); dsp->clear_block(ctx->blocks[7]);
