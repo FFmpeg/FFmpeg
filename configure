@@ -1332,13 +1332,13 @@ EOF
     sparc)
         arch="sparc"
     ;;
-    sh4)
+    sh4|sh)
         arch="sh4"
     ;;
-    parisc)
+    parisc|hppa)
         arch="parisc"
     ;;
-    parisc64)
+    parisc64|hppa64)
         arch="parisc"
         enable fast_64bit
     ;;
