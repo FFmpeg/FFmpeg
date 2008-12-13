@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "imgconvert.h"
 #include "libswscale/swscale.h"
 
 #ifdef HAVE_ALTIVEC
