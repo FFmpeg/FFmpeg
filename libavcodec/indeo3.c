@@ -147,7 +147,7 @@ static av_cold void iv_free_func(Indeo3DecodeContext *s)
     av_free(s->corrector_type);
 }
 
-typedef struct {
+struct ustr {
     long xpos;
     long ypos;
     long width;
@@ -155,7 +155,7 @@ typedef struct {
     long split_flag;
     long split_direction;
     long usl7;
-} ustr_t;
+};
 
 
 #define LV1_CHECK(buf1,rle_v3,lv1,lp2)  \
@@ -213,7 +213,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
     uint32_t *cur_lp, *ref_lp;
     const uint32_t *correction_lp[2], *correctionloworder_lp[2], *correctionhighorder_lp[2];
     uint8_t *correction_type_sp[2];
-    ustr_t strip_tbl[20], *strip;
+    struct ustr strip_tbl[20], *strip;
     int i, j, k, lp1, lp2, flag1, cmd, blks_width, blks_height, region_160_width,
         rle_v1, rle_v2, rle_v3;
     unsigned short res;
@@ -252,14 +252,14 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
         if(cmd == 0) {
             strip++;
-            memcpy(strip, strip-1, sizeof(ustr_t));
+            memcpy(strip, strip-1, sizeof(struct ustr));
             strip->split_flag = 1;
             strip->split_direction = 0;
             strip->height = (strip->height > 8 ? ((strip->height+8)>>4)<<3 : 4);
             continue;
         } else if(cmd == 1) {
             strip++;
-            memcpy(strip, strip-1, sizeof(ustr_t));
+            memcpy(strip, strip-1, sizeof(struct ustr));
             strip->split_flag = 1;
             strip->split_direction = 1;
             strip->width = (strip->width > 8 ? ((strip->width+8)>>4)<<3 : 4);
