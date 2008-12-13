@@ -705,7 +705,13 @@ static int asf_read_frame_header(AVFormatContext *s){
     return 0;
 }
 
-static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
+/**
+ * Parse data from individual ASF packets (which were previously loaded
+ * with asf_get_packet()).
+ * @returns 0 if data was stored in pkt, <0 on error or 1 if more ASF
+ *          packets need to be loaded (through asf_get_packet())
+ */
+static int asf_parse_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ASFContext *asf = s->priv_data;
     ASFStream *asf_st = 0;
@@ -726,11 +732,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (asf->data_object_size != (uint64_t)-1 &&
                 (asf->packet_pos - asf->data_object_offset >= asf->data_object_size))
                 return AVERROR(EIO); /* Do not exceed the size of the data object */
-            ret = asf_get_packet(s);
-            if (ret < 0)
-                assert(asf->packet_size_left < FRAME_HEADER_SIZE || asf->packet_segments < 1);
-            asf->packet_time_start = 0;
-            continue;
+            return 1;
         }
         if (asf->packet_time_start == 0) {
             if(asf_read_frame_header(s) < 0){
@@ -874,6 +876,24 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             break; // packet completed
         }
     }
+    return 0;
+}
+
+static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    ASFContext *asf = s->priv_data;
+
+    for (;;) {
+        int ret;
+
+        /* parse cached packets, if any */
+        if ((ret = asf_parse_packet(s, pkt)) <= 0)
+            return ret;
+        if ((ret = asf_get_packet(s)) < 0)
+            assert(asf->packet_size_left < FRAME_HEADER_SIZE || asf->packet_segments < 1);
+        asf->packet_time_start = 0;
+    }
+
     return 0;
 }
 
