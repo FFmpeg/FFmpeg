@@ -52,7 +52,7 @@
 
 #define PACKET_SIZE 1024
 
-typedef enum {COMP_NONE, COMP_FIB, COMP_EXP} svx8_compression_t;
+typedef enum {COMP_NONE, COMP_FIB, COMP_EXP} svx8_compression_type;
 
 typedef struct {
     uint32_t  body_size;
