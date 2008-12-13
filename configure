@@ -1322,8 +1322,12 @@ EOF
         enable fast_64bit
         enable fast_unaligned
     ;;
-    mips|mipsel|mips64|IP*)
+    mips|mipsel|IP*)
         arch="mips"
+    ;;
+    mips64)
+        arch="mips"
+        enable fast_64bit
     ;;
     sun4u|sparc64)
         arch="sparc64"
