@@ -24,45 +24,6 @@
 #include "libavcodec/avcodec.h"
 #include "avformat.h"
 
-typedef struct PayloadContext PayloadContext;
-typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
-
-#define RTP_MIN_PACKET_LENGTH 12
-#define RTP_MAX_PACKET_LENGTH 1500 /* XXX: suppress this define */
-
-int rtp_get_codec_info(AVCodecContext *codec, int payload_type);
-
-/** return < 0 if unknown payload type */
-int rtp_get_payload_type(AVCodecContext *codec);
-
-typedef struct RTPDemuxContext RTPDemuxContext;
-typedef struct rtp_payload_data_s rtp_payload_data_s;
-RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, rtp_payload_data_s *rtp_payload_data);
-void rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
-                                    RTPDynamicProtocolHandler *handler);
-int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
-                     const uint8_t *buf, int len);
-void rtp_parse_close(RTPDemuxContext *s);
-
-int rtp_get_local_port(URLContext *h);
-int rtp_set_remote_url(URLContext *h, const char *uri);
-void rtp_get_file_handles(URLContext *h, int *prtp_fd, int *prtcp_fd);
-
-/**
- * some rtp servers assume client is dead if they don't hear from them...
- * so we send a Receiver Report to the provided ByteIO context
- * (we don't have access to the rtcp handle from here)
- */
-int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count);
-
-#define RTP_PT_PRIVATE 96
-#define RTP_VERSION 2
-#define RTP_MAX_SDES 256   /**< maximum text length for SDES */
-
-/* RTCP paquets use 0.5 % of the bandwidth */
-#define RTCP_TX_RATIO_NUM 5
-#define RTCP_TX_RATIO_DEN 1000
-
 /** Structure listing useful vars to parse RTP packet payload*/
 typedef struct rtp_payload_data_s
 {
@@ -89,5 +50,43 @@ typedef struct rtp_payload_data_s
     int au_headers_length_bytes;
     int cur_au_index;
 } rtp_payload_data_t;
+
+typedef struct PayloadContext PayloadContext;
+typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
+
+#define RTP_MIN_PACKET_LENGTH 12
+#define RTP_MAX_PACKET_LENGTH 1500 /* XXX: suppress this define */
+
+int rtp_get_codec_info(AVCodecContext *codec, int payload_type);
+
+/** return < 0 if unknown payload type */
+int rtp_get_payload_type(AVCodecContext *codec);
+
+typedef struct RTPDemuxContext RTPDemuxContext;
+RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, rtp_payload_data_t *rtp_payload_data);
+void rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
+                                    RTPDynamicProtocolHandler *handler);
+int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
+                     const uint8_t *buf, int len);
+void rtp_parse_close(RTPDemuxContext *s);
+
+int rtp_get_local_port(URLContext *h);
+int rtp_set_remote_url(URLContext *h, const char *uri);
+void rtp_get_file_handles(URLContext *h, int *prtp_fd, int *prtcp_fd);
+
+/**
+ * some rtp servers assume client is dead if they don't hear from them...
+ * so we send a Receiver Report to the provided ByteIO context
+ * (we don't have access to the rtcp handle from here)
+ */
+int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count);
+
+#define RTP_PT_PRIVATE 96
+#define RTP_VERSION 2
+#define RTP_MAX_SDES 256   /**< maximum text length for SDES */
+
+/* RTCP paquets use 0.5 % of the bandwidth */
+#define RTCP_TX_RATIO_NUM 5
+#define RTCP_TX_RATIO_DEN 1000
 
 #endif /* AVFORMAT_RTP_H */
