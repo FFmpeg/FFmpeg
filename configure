@@ -1405,9 +1405,6 @@ case $target_os in
         disable need_memalign
         LIBOBJFLAGS='$(PIC)'
         SHFLAGS='-shared'
-        SLIBNAME='$(SLIBPREF)$(FULLNAME)$(SLIBSUF).$(LIBVERSION)'
-        SLIBNAME_WITH_VERSION='$(SLIBNAME)'
-        SLIBNAME_WITH_MAJOR='$(SLIBNAME)'
         oss_demuxer_extralibs="-lossaudio"
         oss_muxer_extralibs="-lossaudio"
         ;;
