@@ -24,7 +24,8 @@
  * High quality image resampling with polyphase filters - AltiVec bits
  */
 
-#include "gcc_fixes.h"
+#include "util_altivec.h"
+#define FILTER_BITS   8
 
 typedef         union {
     vector unsigned char v;
