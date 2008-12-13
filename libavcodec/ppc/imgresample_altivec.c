@@ -28,14 +28,9 @@
 #define FILTER_BITS   8
 
 typedef         union {
-    vector unsigned char v;
-    unsigned char c[16];
-} vec_uc_t;
-
-typedef         union {
     vector signed short v;
     signed short s[8];
-} vec_ss_t;
+} vec_ss;
 
 void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
                           int wrap, int16_t *filter)
@@ -43,7 +38,7 @@ void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
     int sum, i;
     const uint8_t *s;
     vector unsigned char *tv, tmp, dstv, zero;
-    vec_ss_t srchv[4], srclv[4], fv[4];
+    vec_ss srchv[4], srclv[4], fv[4];
     vector signed short zeros, sumhv, sumlv;
     s = src;
 
