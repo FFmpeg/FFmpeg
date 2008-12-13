@@ -22,17 +22,17 @@
 #include "rtp_internal.h"
 #include "rdt.h"
 
-#define REGISTER_MUXER(X,x) {
+#define REGISTER_MUXER(X,x) { \
     extern AVOutputFormat x##_muxer; \
     if(ENABLE_##X##_MUXER) av_register_output_format(&x##_muxer); }
 
-#define REGISTER_DEMUXER(X,x) {
+#define REGISTER_DEMUXER(X,x) { \
     extern AVInputFormat x##_demuxer; \
     if(ENABLE_##X##_DEMUXER) av_register_input_format(&x##_demuxer); }
 
 #define REGISTER_MUXDEMUX(X,x)  REGISTER_MUXER(X,x); REGISTER_DEMUXER(X,x)
 
-#define REGISTER_PROTOCOL(X,x) {
+#define REGISTER_PROTOCOL(X,x) { \
     extern URLProtocol x##_protocol; \
     if(ENABLE_##X##_PROTOCOL) register_protocol(&x##_protocol); }
 
