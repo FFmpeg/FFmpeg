@@ -55,7 +55,7 @@
 /**
  * X11 Device Demuxer context
  */
-typedef struct x11_grab_s
+struct x11_grab
 {
     int frame_size;          /**< Size in bytes of a grabbed frame */
     AVRational time_base;    /**< Time base */
@@ -71,7 +71,7 @@ typedef struct x11_grab_s
     int use_shm;             /**< !0 when using XShm extension */
     XShmSegmentInfo shminfo; /**< When using XShm, keeps track of XShm infos */
     int mouse_warning_shown;
-} x11_grab_t;
+};
 
 /**
  * Initializes the x11 grab device demuxer (public device demuxer API).
@@ -87,7 +87,7 @@ typedef struct x11_grab_s
 static int
 x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
-    x11_grab_t *x11grab = s1->priv_data;
+    struct x11_grab *x11grab = s1->priv_data;
     Display *dpy;
     AVStream *st = NULL;
     int input_pixfmt;
@@ -259,7 +259,7 @@ get_pointer_coordinates(int *x, int *y, Display *dpy, AVFormatContext *s1)
     if (XQueryPointer(dpy, mrootwindow, &mrootwindow, &childwindow,
                       x, y, &dummy, &dummy, (unsigned int*)&dummy)) {
     } else {
-        x11_grab_t *s = s1->priv_data;
+        struct x11_grab *s = s1->priv_data;
         if (!s->mouse_warning_shown) {
             av_log(s1, AV_LOG_INFO, "couldn't find mouse pointer\n");
             s->mouse_warning_shown = 1;
@@ -306,7 +306,7 @@ apply_masks(uint8_t *dst, int and, int or, int bits_per_pixel)
  * @param y Mouse pointer coordinate
  */
 static void
-paint_mouse_pointer(XImage *image, x11_grab_t *s, int x, int y)
+paint_mouse_pointer(XImage *image, struct x11_grab *s, int x, int y)
 {
     /* 16x20x1bpp bitmap for the black channel of the mouse pointer */
     static const uint16_t const mousePointerBlack[] =
@@ -431,7 +431,7 @@ xget_zpixmap(Display *dpy, Drawable d, XImage *image, int x, int y)
 static int
 x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
-    x11_grab_t *s = s1->priv_data;
+    struct x11_grab *s = s1->priv_data;
     Display *dpy = s->dpy;
     XImage *image = s->image;
     int x_off = s->x_off;
@@ -495,7 +495,7 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 static int
 x11grab_read_close(AVFormatContext *s1)
 {
-    x11_grab_t *x11grab = s1->priv_data;
+    struct x11_grab *x11grab = s1->priv_data;
 
     /* Detach cleanly from shared mem */
     if (x11grab->use_shm) {
@@ -520,7 +520,7 @@ AVInputFormat x11_grab_device_demuxer =
 {
     "x11grab",
     NULL_IF_CONFIG_SMALL("X11grab"),
-    sizeof(x11_grab_t),
+    sizeof(struct x11_grab),
     NULL,
     x11grab_read_header,
     x11grab_read_packet,
