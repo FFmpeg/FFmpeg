@@ -78,7 +78,7 @@ typedef struct {
     int msb_pts_shift;
     int max_pts_distance;
     int decode_delay; //FIXME duplicate of has_b_frames
-} StreamContext;// maybe s/StreamContext/streamcontext_t/
+} StreamContext;
 
 typedef struct {
     AVFormatContext *avf;
