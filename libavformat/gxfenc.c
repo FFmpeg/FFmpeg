@@ -155,7 +155,7 @@ static int64_t updateSize(ByteIOContext *pb, int64_t pos)
     return curpos - pos;
 }
 
-static void gxf_write_packet_header(ByteIOContext *pb, pkt_type_t type)
+static void gxf_write_packet_header(ByteIOContext *pb, GXFPktType type)
 {
     put_be32(pb, 0); /* packet leader for synchro */
     put_byte(pb, 1);
