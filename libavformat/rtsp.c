@@ -283,17 +283,16 @@ static void sdp_parse_fmtp_config(AVCodecContext *codec, char *attr, char *value
     return;
 }
 
-typedef struct attrname_map
-{
+typedef struct {
     const char *str;
     uint16_t type;
     uint32_t offset;
-} attrname_map_t;
+} AttrNameMap;
 
 /* All known fmtp parmeters and the corresping RTPAttrTypeEnum */
 #define ATTR_NAME_TYPE_INT 0
 #define ATTR_NAME_TYPE_STR 1
-static const attrname_map_t attr_names[]=
+static const AttrNameMap attr_names[]=
 {
     {"SizeLength",       ATTR_NAME_TYPE_INT, offsetof(rtp_payload_data_t, sizelength)},
     {"IndexLength",      ATTR_NAME_TYPE_INT, offsetof(rtp_payload_data_t, indexlength)},
