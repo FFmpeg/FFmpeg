@@ -89,7 +89,7 @@ typedef struct RTSPStream {
     struct in_addr sdp_ip; /* IP address  (from SDP content - not used in RTSP) */
     int sdp_ttl;  /* IP TTL (from SDP content - not used in RTSP) */
     int sdp_payload_type; /* payload type - only used in SDP */
-    rtp_payload_data_t rtp_payload_data; /* rtp payload parsing infos from SDP */
+    RTPPayloadData rtp_payload_data; /* rtp payload parsing infos from SDP */
 
     RTPDynamicProtocolHandler *dynamic_handler; ///< Only valid if it's a dynamic protocol. (This is the handler structure)
     PayloadContext *dynamic_protocol_context; ///< Only valid if it's a dynamic protocol. (This is any private data associated with the dynamic protocol)
@@ -294,12 +294,12 @@ typedef struct {
 #define ATTR_NAME_TYPE_STR 1
 static const AttrNameMap attr_names[]=
 {
-    {"SizeLength",       ATTR_NAME_TYPE_INT, offsetof(rtp_payload_data_t, sizelength)},
-    {"IndexLength",      ATTR_NAME_TYPE_INT, offsetof(rtp_payload_data_t, indexlength)},
-    {"IndexDeltaLength", ATTR_NAME_TYPE_INT, offsetof(rtp_payload_data_t, indexdeltalength)},
-    {"profile-level-id", ATTR_NAME_TYPE_INT, offsetof(rtp_payload_data_t, profile_level_id)},
-    {"StreamType",       ATTR_NAME_TYPE_INT, offsetof(rtp_payload_data_t, streamtype)},
-    {"mode",             ATTR_NAME_TYPE_STR, offsetof(rtp_payload_data_t, mode)},
+    {"SizeLength",       ATTR_NAME_TYPE_INT, offsetof(RTPPayloadData, sizelength)},
+    {"IndexLength",      ATTR_NAME_TYPE_INT, offsetof(RTPPayloadData, indexlength)},
+    {"IndexDeltaLength", ATTR_NAME_TYPE_INT, offsetof(RTPPayloadData, indexdeltalength)},
+    {"profile-level-id", ATTR_NAME_TYPE_INT, offsetof(RTPPayloadData, profile_level_id)},
+    {"StreamType",       ATTR_NAME_TYPE_INT, offsetof(RTPPayloadData, streamtype)},
+    {"mode",             ATTR_NAME_TYPE_STR, offsetof(RTPPayloadData, mode)},
     {NULL, -1, -1},
 };
 
@@ -331,7 +331,7 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
 
     RTSPStream *rtsp_st = st->priv_data;
     AVCodecContext *codec = st->codec;
-    rtp_payload_data_t *rtp_payload_data = &rtsp_st->rtp_payload_data;
+    RTPPayloadData *rtp_payload_data = &rtsp_st->rtp_payload_data;
 
     /* loop on each attribute */
     while(rtsp_next_attr_and_value(&p, attr, sizeof(attr), value, sizeof(value)))

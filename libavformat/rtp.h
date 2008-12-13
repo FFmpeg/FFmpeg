@@ -25,7 +25,7 @@
 #include "avformat.h"
 
 /** Structure listing useful vars to parse RTP packet payload*/
-typedef struct rtp_payload_data_s
+typedef struct rtp_payload_data
 {
     int sizelength;
     int indexlength;
@@ -49,7 +49,7 @@ typedef struct rtp_payload_data_s
     int nb_au_headers;
     int au_headers_length_bytes;
     int cur_au_index;
-} rtp_payload_data_t;
+} RTPPayloadData;
 
 typedef struct PayloadContext PayloadContext;
 typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
@@ -63,7 +63,7 @@ int rtp_get_codec_info(AVCodecContext *codec, int payload_type);
 int rtp_get_payload_type(AVCodecContext *codec);
 
 typedef struct RTPDemuxContext RTPDemuxContext;
-RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, rtp_payload_data_t *rtp_payload_data);
+RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, RTPPayloadData *rtp_payload_data);
 void rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
                                     RTPDynamicProtocolHandler *handler);
 int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,

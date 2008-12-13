@@ -267,7 +267,7 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
  * rtp demux (otherwise CODEC_ID_MPEG2TS packets are returned)
  * TODO: change this to not take rtp_payload data, and use the new dynamic payload system.
  */
-RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, rtp_payload_data_t *rtp_payload_data)
+RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, RTPPayloadData *rtp_payload_data)
 {
     RTPDemuxContext *s;
 
@@ -323,7 +323,7 @@ static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
 {
     int au_headers_length, au_header_size, i;
     GetBitContext getbitcontext;
-    rtp_payload_data_t *infos;
+    RTPPayloadData *infos;
 
     infos = s->rtp_payload_data;
 
@@ -512,7 +512,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             if (rtp_parse_mp4_au(s, buf))
                 return -1;
             {
-                rtp_payload_data_t *infos = s->rtp_payload_data;
+                RTPPayloadData *infos = s->rtp_payload_data;
                 if (infos == NULL)
                     return -1;
                 buf += infos->au_headers_length_bytes + 2;

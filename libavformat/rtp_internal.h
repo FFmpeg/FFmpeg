@@ -112,7 +112,7 @@ struct RTPDemuxContext {
     uint8_t *buf_ptr;
 
     /* special infos for au headers parsing */
-    rtp_payload_data_t *rtp_payload_data; // TODO: Move into dynamic payload handlers
+    RTPPayloadData *rtp_payload_data; // TODO: Move into dynamic payload handlers
 
     /* dynamic payload stuff */
     DynamicPayloadPacketHandlerProc parse_packet;     ///< This is also copied from the dynamic protocol handler structure
