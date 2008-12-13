@@ -93,7 +93,9 @@ int ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
  * @param flags pointer to an integer containing the packet flags, may be
                 updated
  * @param ts pointer to timestamp, may be updated
- * @return 0 on success, errno codes on error
+ * @return >=0 on success (where >0 indicates there are cached samples that
+ *         can be retrieved with subsequent calls to ff_rm_retrieve_cache()),
+ *         errno codes on error
  */
 int ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
                         AVStream *st, int len,

@@ -644,7 +644,7 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
     if (*flags & 2)
         pkt->flags |= PKT_FLAG_KEY;
 
-    return 0;
+    return st->codec->codec_type == CODEC_TYPE_AUDIO ? rm->audio_pkt_cnt : 0;
 }
 
 void
