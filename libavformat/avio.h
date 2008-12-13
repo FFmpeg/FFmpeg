@@ -114,8 +114,8 @@ int av_url_read_pause(URLContext *h, int pause);
  * @return >= 0 on success
  * @see AVInputFormat::read_seek
  */
-int64_t av_url_read_seek(URLContext *h,
-                     int stream_index, int64_t timestamp, int flags);
+int64_t av_url_read_seek(URLContext *h, int stream_index,
+                         int64_t timestamp, int flags);
 
 /**
  * Passing this as the "whence" parameter to a seek function causes it to
@@ -133,8 +133,8 @@ typedef struct URLProtocol {
     int (*url_close)(URLContext *h);
     struct URLProtocol *next;
     int (*url_read_pause)(URLContext *h, int pause);
-    int64_t (*url_read_seek)(URLContext *h,
-                         int stream_index, int64_t timestamp, int flags);
+    int64_t (*url_read_seek)(URLContext *h, int stream_index,
+                             int64_t timestamp, int flags);
 } URLProtocol;
 
 extern URLProtocol *first_protocol;
@@ -170,8 +170,8 @@ typedef struct {
     unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
     int error;         ///< contains the error code or 0 if no error happened
     int (*read_pause)(void *opaque, int pause);
-    int64_t (*read_seek)(void *opaque,
-                     int stream_index, int64_t timestamp, int flags);
+    int64_t (*read_seek)(void *opaque, int stream_index,
+                         int64_t timestamp, int flags);
 } ByteIOContext;
 
 int init_put_byte(ByteIOContext *s,
@@ -238,8 +238,8 @@ int url_feof(ByteIOContext *s);
 int url_ferror(ByteIOContext *s);
 
 int av_url_read_fpause(ByteIOContext *h, int pause);
-int64_t av_url_read_fseek(ByteIOContext *h,
-                      int stream_index, int64_t timestamp, int flags);
+int64_t av_url_read_fseek(ByteIOContext *h, int stream_index,
+                          int64_t timestamp, int flags);
 
 #define URL_EOF (-1)
 /** @note return URL_EOF (-1) if EOF */
@@ -253,7 +253,7 @@ int url_fprintf(ByteIOContext *s, const char *fmt, ...);
 #endif
 
 /** @note unlike fgets, the EOL character is not returned and a whole
-   line is parsed. return NULL if first char read was EOF */
+    line is parsed. return NULL if first char read was EOF */
 char *url_fgets(ByteIOContext *s, char *buf, int buf_size);
 
 void put_flush_packet(ByteIOContext *s);
@@ -274,7 +274,7 @@ int get_buffer(ByteIOContext *s, unsigned char *buf, int size);
 int get_partial_buffer(ByteIOContext *s, unsigned char *buf, int size);
 
 /** @note return 0 if EOF, so you cannot use it if EOF handling is
-   necessary */
+    necessary */
 int get_byte(ByteIOContext *s);
 unsigned int get_le24(ByteIOContext *s);
 unsigned int get_le32(ByteIOContext *s);
@@ -295,7 +295,7 @@ static inline int url_is_streamed(ByteIOContext *s)
 }
 
 /** @note when opened as read/write, the buffers are only used for
-   writing */
+    writing */
 int url_fdopen(ByteIOContext **s, URLContext *h);
 
 /** @warning must be called before any I/O */
@@ -307,7 +307,7 @@ int url_setbufsize(ByteIOContext *s, int buf_size);
 int url_resetbuf(ByteIOContext *s, int flags);
 
 /** @note when opened as read/write, the buffers are only used for
-   writing */
+    writing */
 int url_fopen(ByteIOContext **s, const char *filename, int flags);
 int url_fclose(ByteIOContext *s);
 URLContext *url_fileno(ByteIOContext *s);
@@ -355,9 +355,12 @@ int url_open_dyn_packet_buf(ByteIOContext **s, int max_packet_size);
  */
 int url_close_dyn_buf(ByteIOContext *s, uint8_t **pbuffer);
 
-unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len);
+unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
+                                    unsigned int len);
 unsigned long get_checksum(ByteIOContext *s);
-void init_checksum(ByteIOContext *s, unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len), unsigned long checksum);
+void init_checksum(ByteIOContext *s,
+                   unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
+                   unsigned long checksum);
 
 /* udp.c */
 int udp_set_remote_url(URLContext *h, const char *uri);

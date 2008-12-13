@@ -68,7 +68,8 @@ ByteIOContext *av_alloc_put_byte(
                   void *opaque,
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  int64_t (*seek)(void *opaque, int64_t offset, int whence)) {
+                  int64_t (*seek)(void *opaque, int64_t offset, int whence))
+{
     ByteIOContext *s = av_mallocz(sizeof(ByteIOContext));
     init_put_byte(s, buffer, buffer_size, write_flag, opaque,
                   read_packet, write_packet, seek);
@@ -322,17 +323,23 @@ static void fill_buffer(ByteIOContext *s)
     }
 }
 
-unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf, unsigned int len){
+unsigned long ff_crc04C11DB7_update(unsigned long checksum, const uint8_t *buf,
+                                    unsigned int len)
+{
     return av_crc(av_crc_get_table(AV_CRC_32_IEEE), checksum, buf, len);
 }
 
-unsigned long get_checksum(ByteIOContext *s){
+unsigned long get_checksum(ByteIOContext *s)
+{
     s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_ptr - s->checksum_ptr);
     s->update_checksum= NULL;
     return s->checksum;
 }
 
-void init_checksum(ByteIOContext *s, unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len), unsigned long checksum){
+void init_checksum(ByteIOContext *s,
+                   unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
+                   unsigned long checksum)
+{
     s->update_checksum= update_checksum;
     if(s->update_checksum){
         s->checksum= checksum;
@@ -665,8 +672,8 @@ int av_url_read_fpause(ByteIOContext *s, int pause)
     return s->read_pause(s->opaque, pause);
 }
 
-int64_t av_url_read_fseek(ByteIOContext *s,
-        int stream_index, int64_t timestamp, int flags)
+int64_t av_url_read_fseek(ByteIOContext *s, int stream_index,
+                          int64_t timestamp, int flags)
 {
     URLContext *h = s->opaque;
     int64_t ret;
