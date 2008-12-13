@@ -21,6 +21,25 @@
 #include "avformat.h"
 #include "rm.h"
 
+typedef struct {
+    int nb_packets;
+    int packet_total_size;
+    int packet_max_size;
+    /* codec related output */
+    int bit_rate;
+    float frame_rate;
+    int nb_frames;    /* current frame number */
+    int total_frames; /* total number of frames */
+    int num;
+    AVCodecContext *enc;
+} StreamInfo;
+
+typedef struct {
+    StreamInfo streams[2];
+    StreamInfo *audio_stream, *video_stream;
+    int data_pos; /* position of the data after the header */
+} RMMuxContext;
+
 /* in ms */
 #define BUFFER_DURATION 0
 
@@ -44,7 +63,7 @@ static void put_str8(ByteIOContext *s, const char *tag)
 static void rv10_write_header(AVFormatContext *ctx,
                               int data_size, int index_pos)
 {
-    RMContext *rm = ctx->priv_data;
+    RMMuxContext *rm = ctx->priv_data;
     ByteIOContext *s = ctx->pb;
     StreamInfo *stream;
     unsigned char *data_offset_ptr, *start_ptr;
@@ -271,7 +290,7 @@ static void write_packet_header(AVFormatContext *ctx, StreamInfo *stream,
 
 static int rm_write_header(AVFormatContext *s)
 {
-    RMContext *rm = s->priv_data;
+    RMMuxContext *rm = s->priv_data;
     StreamInfo *stream;
     int n;
     AVCodecContext *codec;
@@ -315,7 +334,7 @@ static int rm_write_header(AVFormatContext *s)
 static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int flags)
 {
     uint8_t *buf1;
-    RMContext *rm = s->priv_data;
+    RMMuxContext *rm = s->priv_data;
     ByteIOContext *pb = s->pb;
     StreamInfo *stream = rm->audio_stream;
     int i;
@@ -339,7 +358,7 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 
 static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int flags)
 {
-    RMContext *rm = s->priv_data;
+    RMMuxContext *rm = s->priv_data;
     ByteIOContext *pb = s->pb;
     StreamInfo *stream = rm->video_stream;
     int key_frame = !!(flags & PKT_FLAG_KEY);
@@ -393,7 +412,7 @@ static int rm_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int rm_write_trailer(AVFormatContext *s)
 {
-    RMContext *rm = s->priv_data;
+    RMMuxContext *rm = s->priv_data;
     int data_size, index_pos, i;
     ByteIOContext *pb = s->pb;
 
@@ -435,7 +454,7 @@ AVOutputFormat rm_muxer = {
     NULL_IF_CONFIG_SMALL("RM format"),
     "application/vnd.rn-realmedia",
     "rm,ra",
-    sizeof(RMContext),
+    sizeof(RMMuxContext),
     CODEC_ID_AC3,
     CODEC_ID_RV10,
     rm_write_header,
