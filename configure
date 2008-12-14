@@ -2113,11 +2113,6 @@ check_deps $CONFIG_LIST       \
            $OUTDEV_LIST       \
            $PROTOCOL_LIST     \
 
-enabled libdc1394 && append pkg_requires "libraw1394"
-enabled libdirac  && append pkg_requires "dirac"
-enabled libtheora && append pkg_requires "theora"
-enabled libvorbis && append pkg_requires "vorbisenc"
-
 echo "install prefix            $prefix"
 echo "source path               $source_path"
 echo "C compiler                $cc"
@@ -2441,16 +2436,16 @@ EOF
 }
 
 pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION"
-pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION"
-pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "$pkg_requires libavcodec = $LIBAVCODEC_VERSION"
-pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "$pkg_requires libavformat = $LIBAVFORMAT_VERSION"
+pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
+pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "libavcodec = $LIBAVCODEC_VERSION"
+pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "libavformat = $LIBAVFORMAT_VERSION"
 enabled avfilter &&
-    pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$pkg_requires libavutil = $LIBAVUTIL_VERSION"
+    pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
 enabled postproc &&
     pkgconfig_generate libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION"
 if enabled swscale; then
     pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
 else
-    pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "$pkg_requires libavcodec = $LIBAVCODEC_VERSION"
+    pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "libavcodec = $LIBAVCODEC_VERSION"
     apply libswscale/libswscale.pc sed s/^Libs:.*$/Libs:/
 fi
