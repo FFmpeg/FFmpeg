@@ -252,14 +252,14 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
         if(cmd == 0) {
             strip++;
-            memcpy(strip, strip-1, sizeof(struct ustr));
+            memcpy(strip, strip-1, sizeof(*strip));
             strip->split_flag = 1;
             strip->split_direction = 0;
             strip->height = (strip->height > 8 ? ((strip->height+8)>>4)<<3 : 4);
             continue;
         } else if(cmd == 1) {
             strip++;
-            memcpy(strip, strip-1, sizeof(struct ustr));
+            memcpy(strip, strip-1, sizeof(*strip));
             strip->split_flag = 1;
             strip->split_direction = 1;
             strip->width = (strip->width > 8 ? ((strip->width+8)>>4)<<3 : 4);
