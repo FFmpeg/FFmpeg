@@ -671,7 +671,8 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
         else{
             i= av_index_search_timestamp(best_st, best_ts, AVSEEK_FLAG_ANY);
             if(i>=0)
-                best_ast->frame_offset= best_st->index_entries[i].timestamp;
+                best_ast->frame_offset= best_st->index_entries[i].timestamp
+                                      * FFMAX(1, best_ast->sample_size);
         }
 
 //        av_log(NULL, AV_LOG_DEBUG, "%d\n", i);
