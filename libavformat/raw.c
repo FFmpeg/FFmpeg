@@ -923,7 +923,7 @@ AVInputFormat m4v_demuxer = {
     video_read_header,
     raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "m4v", //FIXME remove after writing mpeg4_probe
+    .extensions = "m4v",
     .value = CODEC_ID_MPEG4,
 };
 #endif
