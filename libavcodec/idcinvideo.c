@@ -60,7 +60,7 @@ typedef struct
   int count;
   unsigned char used;
   int children[2];
-} hnode_t;
+} hnode;
 
 typedef struct IdcinContext {
 
@@ -70,7 +70,7 @@ typedef struct IdcinContext {
     const unsigned char *buf;
     int size;
 
-    hnode_t huff_nodes[256][HUF_TOKENS*2];
+    hnode huff_nodes[256][HUF_TOKENS*2];
     int num_huff_nodes[256];
 
 } IdcinContext;
@@ -81,7 +81,7 @@ typedef struct IdcinContext {
  * Returns the node index of the lowest unused node, or -1 if all nodes
  * are used.
  */
-static int huff_smallest_node(hnode_t *hnodes, int num_hnodes) {
+static int huff_smallest_node(hnode *hnodes, int num_hnodes) {
     int i;
     int best, best_node;
 
@@ -114,7 +114,7 @@ static int huff_smallest_node(hnode_t *hnodes, int num_hnodes) {
  *    That is: huff_nodes[prev][num_huff_nodes[prev]] is the root node.
  */
 static av_cold void huff_build_tree(IdcinContext *s, int prev) {
-    hnode_t *node, *hnodes;
+    hnode *node, *hnodes;
      int num_hnodes, i;
 
     num_hnodes = HUF_TOKENS;
@@ -173,7 +173,7 @@ static av_cold int idcin_decode_init(AVCodecContext *avctx)
 
 static void idcin_decode_vlcs(IdcinContext *s)
 {
-    hnode_t *hnodes;
+    hnode *hnodes;
     long x, y;
     int prev;
     unsigned char v = 0;

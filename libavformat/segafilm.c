@@ -40,7 +40,7 @@ typedef struct {
   unsigned int sample_size;
   int64_t pts;
   int keyframe;
-} film_sample_t;
+} film_sample;
 
 typedef struct FilmDemuxContext {
     int video_stream_index;
@@ -53,7 +53,7 @@ typedef struct FilmDemuxContext {
 
     enum CodecID video_type;
     unsigned int sample_count;
-    film_sample_t *sample_table;
+    film_sample *sample_table;
     unsigned int current_sample;
 
     unsigned int base_clock;
@@ -163,9 +163,9 @@ static int film_read_header(AVFormatContext *s,
         return AVERROR_INVALIDDATA;
     film->base_clock = AV_RB32(&scratch[8]);
     film->sample_count = AV_RB32(&scratch[12]);
-    if(film->sample_count >= UINT_MAX / sizeof(film_sample_t))
+    if(film->sample_count >= UINT_MAX / sizeof(film_sample))
         return -1;
-    film->sample_table = av_malloc(film->sample_count * sizeof(film_sample_t));
+    film->sample_table = av_malloc(film->sample_count * sizeof(film_sample));
 
     for(i=0; i<s->nb_streams; i++)
         av_set_pts_info(s->streams[i], 33, 1, film->base_clock);
@@ -205,7 +205,7 @@ static int film_read_packet(AVFormatContext *s,
 {
     FilmDemuxContext *film = s->priv_data;
     ByteIOContext *pb = s->pb;
-    film_sample_t *sample;
+    film_sample *sample;
     int ret = 0;
     int i;
     int left, right;

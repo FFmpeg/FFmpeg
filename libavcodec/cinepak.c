@@ -40,7 +40,7 @@
 typedef struct {
     uint8_t  y0, y1, y2, y3;
     uint8_t  u, v;
-} cvid_codebook_t;
+} cvid_codebook;
 
 #define MAX_STRIPS      32
 
@@ -48,9 +48,9 @@ typedef struct {
     uint16_t          id;
     uint16_t          x1, y1;
     uint16_t          x2, y2;
-    cvid_codebook_t   v4_codebook[256];
-    cvid_codebook_t   v1_codebook[256];
-} cvid_strip_t;
+    cvid_codebook     v4_codebook[256];
+    cvid_codebook     v1_codebook[256];
+} cvid_strip;
 
 typedef struct CinepakContext {
 
@@ -63,13 +63,13 @@ typedef struct CinepakContext {
     int width, height;
 
     int palette_video;
-    cvid_strip_t strips[MAX_STRIPS];
+    cvid_strip strips[MAX_STRIPS];
 
     int sega_film_skip_bytes;
 
 } CinepakContext;
 
-static void cinepak_decode_codebook (cvid_codebook_t *codebook,
+static void cinepak_decode_codebook (cvid_codebook *codebook,
                                      int chunk_id, int size, const uint8_t *data)
 {
     const uint8_t *eod = (data + size);
@@ -118,12 +118,12 @@ static void cinepak_decode_codebook (cvid_codebook_t *codebook,
     }
 }
 
-static int cinepak_decode_vectors (CinepakContext *s, cvid_strip_t *strip,
+static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
                                    int chunk_id, int size, const uint8_t *data)
 {
     const uint8_t   *eod = (data + size);
     uint32_t         flag, mask;
-    cvid_codebook_t *codebook;
+    cvid_codebook   *codebook;
     unsigned int     x, y;
     uint32_t         iy[4];
     uint32_t         iu[2];
@@ -262,7 +262,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip_t *strip,
 }
 
 static int cinepak_decode_strip (CinepakContext *s,
-                                 cvid_strip_t *strip, const uint8_t *data, int size)
+                                 cvid_strip *strip, const uint8_t *data, int size)
 {
     const uint8_t *eod = (data + size);
     int      chunk_id, chunk_size;
