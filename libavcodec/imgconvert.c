@@ -784,7 +784,7 @@ static int avcodec_find_best_pix_fmt1(int64_t pix_fmt_mask,
     dst_pix_fmt = -1;
     min_dist = 0x7fffffff;
     for(i = 0;i < PIX_FMT_NB; i++) {
-        if (pix_fmt_mask & (1 << i)) {
+        if (pix_fmt_mask & (1ULL << i)) {
             loss = avcodec_get_pix_fmt_loss(i, src_pix_fmt, has_alpha) & loss_mask;
             if (loss == 0) {
                 dist = avg_bits_per_pixel(i);
