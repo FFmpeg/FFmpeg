@@ -74,15 +74,12 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
     RMDemuxContext *rm = s->priv_data;
     char buf[256];
     uint32_t version;
-    int i;
 
     /* ra type header */
     version = get_be32(pb); /* version */
     if (((version >> 16) & 0xff) == 3) {
         int64_t startpos = url_ftell(pb);
-        /* very old version */
-        for(i = 0; i < 14; i++)
-            get_byte(pb);
+        url_fskip(pb, 14);
         get_str8(pb, s->title, sizeof(s->title));
         get_str8(pb, s->author, sizeof(s->author));
         get_str8(pb, s->copyright, sizeof(s->copyright));
@@ -123,10 +120,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
         st->codec->channels = get_be16(pb);
         if (((version >> 16) & 0xff) == 5) {
             get_be32(pb);
-            buf[0] = get_byte(pb);
-            buf[1] = get_byte(pb);
-            buf[2] = get_byte(pb);
-            buf[3] = get_byte(pb);
+            get_buffer(pb, buf, 4);
             buf[4] = 0;
         } else {
             get_str8(pb, buf, sizeof(buf)); /* desc */
@@ -149,7 +143,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
 
             rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
         } else if ((!strcmp(buf, "cook")) || (!strcmp(buf, "atrc")) || (!strcmp(buf, "sipr"))) {
-            int codecdata_length, i;
+            int codecdata_length;
             get_be16(pb); get_byte(pb);
             if (((version >> 16) & 0xff) == 5)
                 get_byte(pb);
@@ -169,8 +163,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
             else st->codec->codec_id = CODEC_ID_ATRAC3;
             st->codec->extradata_size= codecdata_length;
             st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-            for(i = 0; i < codecdata_length; i++)
-                ((uint8_t*)st->codec->extradata)[i] = get_byte(pb);
+            get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
             rm->audio_framesize = st->codec->block_align;
             st->codec->block_align = rm->sub_packet_size;
 
@@ -181,7 +174,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
 
             rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
         } else if (!strcmp(buf, "raac") || !strcmp(buf, "racp")) {
-            int codecdata_length, i;
+            int codecdata_length;
             get_be16(pb); get_byte(pb);
             if (((version >> 16) & 0xff) == 5)
                 get_byte(pb);
@@ -195,8 +188,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
                 st->codec->extradata_size = codecdata_length - 1;
                 st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                 get_byte(pb);
-                for(i = 0; i < st->codec->extradata_size; i++)
-                    ((uint8_t*)st->codec->extradata)[i] = get_byte(pb);
+                get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
             }
         } else {
             st->codec->codec_id = CODEC_ID_NONE;
