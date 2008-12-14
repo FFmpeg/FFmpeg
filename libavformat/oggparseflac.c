@@ -38,21 +38,21 @@ flac_header (AVFormatContext * s, int idx)
         return 0;
 
     init_get_bits(&gb, os->buf + os->pstart, os->psize*8);
-    get_bits(&gb, 1); /* metadata_last */
+    skip_bits1(&gb); /* metadata_last */
     mdt = get_bits(&gb, 7);
 
     if (mdt == 0x7f) {
-        skip_bits(&gb, 4*8); /* "FLAC" */
+        skip_bits_long(&gb, 4*8); /* "FLAC" */
         if(get_bits(&gb, 8) != 1) /* unsupported major version */
             return -1;
-        skip_bits(&gb, 8 + 16);      /* minor version + header count */
-        skip_bits(&gb, 4*8); /* "fLaC" */
+        skip_bits_long(&gb, 8 + 16); /* minor version + header count */
+        skip_bits_long(&gb, 4*8); /* "fLaC" */
 
         /* METADATA_BLOCK_HEADER */
         if (get_bits_long(&gb, 32) != FLAC_STREAMINFO_SIZE)
             return -1;
 
-        skip_bits(&gb, 16*2+24*2);
+        skip_bits_long(&gb, 16*2+24*2);
 
         st->codec->sample_rate = get_bits_long(&gb, 20);
         st->codec->channels = get_bits(&gb, 3) + 1;
