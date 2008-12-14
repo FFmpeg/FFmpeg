@@ -668,8 +668,11 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
         best_ts= av_rescale(best_ts, best_st->time_base.den, AV_TIME_BASE * (int64_t)best_st->time_base.num); //FIXME a little ugly
         if(best_ast->remaining)
             i= av_index_search_timestamp(best_st, best_ts, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
-        else
+        else{
             i= av_index_search_timestamp(best_st, best_ts, AVSEEK_FLAG_ANY);
+            if(i>=0)
+                best_ast->frame_offset= best_st->index_entries[i].timestamp;
+        }
 
 //        av_log(NULL, AV_LOG_DEBUG, "%d\n", i);
         if(i>=0){
