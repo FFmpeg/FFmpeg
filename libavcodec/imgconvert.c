@@ -36,6 +36,7 @@
 
 #ifdef HAVE_MMX
 #include "i386/mmx.h"
+#include "i386/dsputil_mmx.h"
 #endif
 
 #define xglue(x, y) x ## y
@@ -2733,13 +2734,8 @@ static void deinterlace_line(uint8_t *dst,
 #else
 
     {
-        mmx_t rounder;
-        rounder.uw[0]=4;
-        rounder.uw[1]=4;
-        rounder.uw[2]=4;
-        rounder.uw[3]=4;
         pxor_r2r(mm7,mm7);
-        movq_m2r(rounder,mm6);
+        movq_m2r(ff_pw_4,mm6);
     }
     for (;size > 3; size-=4) {
         DEINT_LINE_LUM
@@ -2776,13 +2772,8 @@ static void deinterlace_line_inplace(uint8_t *lum_m4, uint8_t *lum_m3, uint8_t *
 #else
 
     {
-        mmx_t rounder;
-        rounder.uw[0]=4;
-        rounder.uw[1]=4;
-        rounder.uw[2]=4;
-        rounder.uw[3]=4;
         pxor_r2r(mm7,mm7);
-        movq_m2r(rounder,mm6);
+        movq_m2r(ff_pw_4,mm6);
     }
     for (;size > 3; size-=4) {
         DEINT_INPLACE_LINE_LUM

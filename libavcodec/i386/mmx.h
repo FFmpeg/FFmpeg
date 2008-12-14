@@ -23,24 +23,6 @@
 
 #warning Everything in this header is deprecated, use plain __asm__()! New code using this header will be rejected.
 
-/*
- * The type of an value that fits in an MMX register (note that long
- * long constant values MUST be suffixed by LL and unsigned long long
- * values by ULL, lest they be truncated by the compiler)
- */
-
-typedef        union {
-        long long               q;      /* Quadword (64-bit) value */
-        unsigned long long      uq;     /* Unsigned Quadword */
-        int                     d[2];   /* 2 Doubleword (32-bit) values */
-        unsigned int            ud[2];  /* 2 Unsigned Doubleword */
-        short                   w[4];   /* 4 Word (16-bit) values */
-        unsigned short          uw[4];  /* 4 Unsigned Word */
-        char                    b[8];   /* 8 Byte (8-bit) values */
-        unsigned char           ub[8];  /* 8 Unsigned Byte */
-        float                   s[2];   /* Single-precision (32-bit) value */
-} mmx_t;        /* On an 8-byte (64-bit) boundary */
-
 
 #define         mmx_i2r(op,imm,reg) \
         __asm__ volatile (#op " %0, %%" #reg \
