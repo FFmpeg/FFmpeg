@@ -2563,6 +2563,11 @@ unsigned avcodec_version(void);
  */
 void avcodec_init(void);
 
+/**
+ * Register the codec \p codec and initialize libavcodec.
+ *
+ * @see avcodec_init()
+ */
 void register_avcodec(AVCodec *codec);
 
 /**
