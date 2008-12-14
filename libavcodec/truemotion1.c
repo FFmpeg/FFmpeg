@@ -164,8 +164,7 @@ static void select_delta_tables(TrueMotion1Context *s, int delta_table_index)
     }
 }
 
-#if 0
-//#ifdef WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 static int make_ydt15_entry(int p2, int p1, int16_t *ydt)
 #else
 static int make_ydt15_entry(int p1, int p2, int16_t *ydt)
@@ -180,8 +179,7 @@ static int make_ydt15_entry(int p1, int p2, int16_t *ydt)
     return (lo + (hi << 16)) << 1;
 }
 
-#if 0
-//#ifdef WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 static int make_cdt15_entry(int p2, int p1, int16_t *cdt)
 #else
 static int make_cdt15_entry(int p1, int p2, int16_t *cdt)
@@ -195,8 +193,7 @@ static int make_cdt15_entry(int p1, int p2, int16_t *cdt)
     return (lo + (lo << 16)) << 1;
 }
 
-#if 0
-//#ifdef WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 static int make_ydt16_entry(int p2, int p1, int16_t *ydt)
 #else
 static int make_ydt16_entry(int p1, int p2, int16_t *ydt)
@@ -211,8 +208,7 @@ static int make_ydt16_entry(int p1, int p2, int16_t *ydt)
     return (lo + (hi << 16)) << 1;
 }
 
-#if 0
-//#ifdef WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 static int make_cdt16_entry(int p2, int p1, int16_t *cdt)
 #else
 static int make_cdt16_entry(int p1, int p2, int16_t *cdt)
@@ -226,8 +222,7 @@ static int make_cdt16_entry(int p1, int p2, int16_t *cdt)
     return (lo + (lo << 16)) << 1;
 }
 
-#if 0
-//#ifdef WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 static int make_ydt24_entry(int p2, int p1, int16_t *ydt)
 #else
 static int make_ydt24_entry(int p1, int p2, int16_t *ydt)
@@ -240,8 +235,7 @@ static int make_ydt24_entry(int p1, int p2, int16_t *ydt)
     return (lo + (hi << 8) + (hi << 16)) << 1;
 }
 
-#if 0
-//#ifdef WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 static int make_cdt24_entry(int p2, int p1, int16_t *cdt)
 #else
 static int make_cdt24_entry(int p1, int p2, int16_t *cdt)
