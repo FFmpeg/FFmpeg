@@ -76,24 +76,6 @@ static const AVOption *av_set_number(void *obj, const char *name, double num, in
     return o;
 }
 
-static const AVOption *set_all_opt(void *v, const char *unit, double d){
-    AVClass *c= *(AVClass**)v; //FIXME silly way of storing AVClass
-    const AVOption *o= c->option;
-    const AVOption *ret=NULL;
-
-    for(;o && o->name; o++){
-        if(o->type != FF_OPT_TYPE_CONST && o->unit && !strcmp(o->unit, unit)){
-            double tmp= d;
-            if(o->type == FF_OPT_TYPE_FLAGS)
-                tmp= av_get_int(v, o->name, NULL) | (int64_t)d;
-
-            av_set_number(v, o->name, tmp, 1, 1);
-            ret= o;
-        }
-    }
-    return ret;
-}
-
 static const double const_values[]={
     M_PI,
     M_E,
@@ -117,9 +99,6 @@ static int hexchar2int(char c) {
 
 const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc){
     const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
-    if(o && o->offset==0 && o->type == FF_OPT_TYPE_CONST && o->unit){
-        return set_all_opt(obj, o->unit, o->default_val);
-    }
     if(!o || !val || o->offset<=0)
         return NULL;
     if(o->type == FF_OPT_TYPE_BINARY){
