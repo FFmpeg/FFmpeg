@@ -563,7 +563,7 @@ static int sdp_parse(AVFormatContext *s, const char *content)
 {
     const char *p;
     int letter;
-    char buf[2048], *q;
+    char buf[8192], *q;
     SDPParseState sdp_parse_state, *s1 = &sdp_parse_state;
 
     memset(s1, 0, sizeof(SDPParseState));
