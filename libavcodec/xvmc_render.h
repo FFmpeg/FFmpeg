@@ -29,9 +29,9 @@
 #include <X11/extensions/XvMClib.h>
 
 
-//the surface should be shown, video driver manipulates this
+//the surface should be shown, the video driver manipulates this
 #define MP_XVMC_STATE_DISPLAY_PENDING 1
-//the surface is needed for prediction, codec manipulates this
+//the surface is needed for prediction, the codec manipulates this
 #define MP_XVMC_STATE_PREDICTION 2
 //this surface is needed for subpicture rendering
 #define MP_XVMC_STATE_OSD_SOURCE 4
@@ -48,21 +48,21 @@ typedef   struct{
   int total_number_of_data_blocks;
   int mc_type;//XVMC_MPEG1/2/4,XVMC_H263 without XVMC_IDCT
   int idct;//Do we use IDCT acceleration?
-  int chroma_format;//420,422,444
-  int unsigned_intra;//+-128 for intra pictures after clip
+  int chroma_format;//420, 422, 444
+  int unsigned_intra;//+-128 for intra pictures after clipping
   XvMCSurface* p_surface;//pointer to rendered surface, never changed
 
-//these are changed by decoder
-//used by XvMCRenderSurface function
+//these are changed by the decoder
+//used by the XvMCRenderSurface function
   XvMCSurface* p_past_surface;//pointer to the past surface
-  XvMCSurface* p_future_surface;//pointer to  the future prediction surface
+  XvMCSurface* p_future_surface;//pointer to the future prediction surface
 
   unsigned int picture_structure;//top/bottom fields or frame!
-  unsigned int flags;//XVMC_SECOND_FIELD - 1'st or 2'd field in the sequence
-  unsigned int display_flags; //1,2 or 1+2 fields for XvMCPutSurface,
+  unsigned int flags;//XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
+  unsigned int display_flags; //1,2 or 1+2 fields for XvMCPutSurface
 
-//these are internal communication ones
-  int state;//0-free, 1 Waiting to Display, 2 Waiting for prediction
+//these are for internal communication
+  int state;//0 - free, 1 - waiting to display, 2 - waiting for prediction
   int start_mv_blocks_num;//offset in the array for the current slice, updated by vo
   int filled_mv_blocks_num;//processed mv block in this slice, changed by decoder
 
