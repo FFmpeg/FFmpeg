@@ -116,7 +116,8 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
         rm->sub_packet_size = sub_packet_size = get_be16(pb); /* sub packet size */
         get_be16(pb); /* ??? */
         if (((version >> 16) & 0xff) == 5) {
-            get_be16(pb); get_be16(pb); get_be16(pb); }
+            get_be16(pb); get_be16(pb); get_be16(pb);
+        }
         st->codec->sample_rate = get_be16(pb);
         get_be32(pb);
         st->codec->channels = get_be16(pb);
