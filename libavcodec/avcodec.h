@@ -2563,7 +2563,7 @@ unsigned avcodec_version(void);
  */
 void avcodec_init(void);
 
-void register_avcodec(AVCodec *format);
+void register_avcodec(AVCodec *codec);
 
 /**
  * Finds a registered encoder with a matching codec ID.
