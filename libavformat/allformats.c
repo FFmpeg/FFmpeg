@@ -50,7 +50,6 @@ void av_register_all(void)
         return;
     initialized = 1;
 
-    avcodec_init();
     avcodec_register_all();
 
     /* (de)muxers */

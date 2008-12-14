@@ -90,6 +90,7 @@ AVCodec *av_codec_next(AVCodec *c){
 void register_avcodec(AVCodec *codec)
 {
     AVCodec **p;
+    avcodec_init();
     p = &first_avcodec;
     while (*p != NULL) p = &(*p)->next;
     *p = codec;
