@@ -41,16 +41,6 @@
           extern AVBitStreamFilter x##_bsf; \
           if(ENABLE_##X##_BSF)     av_register_bitstream_filter(&x##_bsf); }
 
-/**
- * Register all the codecs, parsers and bitstream filters which were enabled at
- * configuration time. If you do not call this function you can select exactly
- * which formats you want to support, by using the individual registration
- * functions.
- *
- * @see register_avcodec
- * @see av_register_codec_parser
- * @see av_register_bitstream_filter
- */
 void avcodec_register_all(void)
 {
     static int initialized;
