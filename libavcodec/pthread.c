@@ -25,11 +25,11 @@
 
 #include "avcodec.h"
 
-typedef int (action_t)(AVCodecContext *c, void *arg);
+typedef int (action_func)(AVCodecContext *c, void *arg);
 
 typedef struct ThreadContext {
     pthread_t *workers;
-    action_t *func;
+    action_func *func;
     void *args;
     int *rets;
     int rets_count;
@@ -101,7 +101,7 @@ void avcodec_thread_free(AVCodecContext *avctx)
     av_freep(&avctx->thread_opaque);
 }
 
-int avcodec_thread_execute(AVCodecContext *avctx, action_t* func, void *arg, int *ret, int job_count, int job_size)
+int avcodec_thread_execute(AVCodecContext *avctx, action_func* func, void *arg, int *ret, int job_count, int job_size)
 {
     ThreadContext *c= avctx->thread_opaque;
     int dummy_ret;
