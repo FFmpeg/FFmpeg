@@ -39,6 +39,10 @@ void ff_simple_idct_armv6(DCTELEM *data);
 void ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data);
 void ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data);
 
+void ff_simple_idct_neon(DCTELEM *data);
+void ff_simple_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
+void ff_simple_idct_add_neon(uint8_t *dest, int line_size, DCTELEM *data);
+
 /* XXX: local hack */
 static void (*ff_put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
 static void (*ff_add_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
@@ -128,6 +132,8 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
         if(idct_algo == FF_IDCT_AUTO){
 #if defined(HAVE_IPP)
             idct_algo = FF_IDCT_IPP;
+#elif defined(HAVE_NEON)
+            idct_algo = FF_IDCT_SIMPLENEON;
 #elif defined(HAVE_ARMV6)
             idct_algo = FF_IDCT_SIMPLEARMV6;
 #elif defined(HAVE_ARMV5TE)
@@ -167,6 +173,13 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
             c->idct_add= simple_idct_ipp_add;
             c->idct    = simple_idct_ipp;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
+#endif
+#ifdef HAVE_NEON
+        } else if (idct_algo==FF_IDCT_SIMPLENEON){
+            c->idct_put= ff_simple_idct_put_neon;
+            c->idct_add= ff_simple_idct_add_neon;
+            c->idct    = ff_simple_idct_neon;
+            c->idct_permutation_type = FF_PARTTRANS_IDCT_PERM;
 #endif
         }
     }

@@ -450,6 +450,7 @@ OBJS-$(HAVE_IWMMXT)                    += armv4l/dsputil_iwmmxt.o       \
 
 OBJS-$(HAVE_NEON)                      += armv4l/dsputil_neon.o         \
                                           armv4l/dsputil_neon_s.o       \
+                                          armv4l/simple_idct_neon.o     \
 
 OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
                                           bfin/fdct_bfin.o              \
