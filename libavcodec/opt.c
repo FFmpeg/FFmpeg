@@ -54,7 +54,7 @@ static const AVOption *av_set_number(void *obj, const char *name, double num, in
         return NULL;
 
     if(o->max*den < num*intnum || o->min*den > num*intnum) {
-        av_log(NULL, AV_LOG_ERROR, "Value %lf for parameter '%s' out of range.\n", num, name);
+        av_log(NULL, AV_LOG_ERROR, "Value %lf for parameter '%s' out of range\n", num, name);
         return NULL;
     }
 
