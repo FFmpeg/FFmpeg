@@ -47,15 +47,17 @@ const AVOption *av_next_option(void *obj, const AVOption *last){
     else                     return (*(AVClass**)obj)->option;
 }
 
-static const AVOption *av_set_number(void *obj, const char *name, double num, int den, int64_t intnum){
+static int av_set_number2(void *obj, const char *name, double num, int den, int64_t intnum, const AVOption **o_out){
     const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
     void *dst;
+    if(o_out)
+        *o_out= o;
     if(!o || o->offset<=0)
-        return NULL;
+        return AVERROR(ENOENT);
 
     if(o->max*den < num*intnum || o->min*den > num*intnum) {
         av_log(NULL, AV_LOG_ERROR, "Value %lf for parameter '%s' out of range\n", num, name);
-        return NULL;
+        return AVERROR(ERANGE);
     }
 
     dst= ((uint8_t*)obj) + o->offset;
@@ -71,9 +73,17 @@ static const AVOption *av_set_number(void *obj, const char *name, double num, in
         else                *(AVRational*)dst= av_d2q(num*intnum/den, 1<<24);
         break;
     default:
-        return NULL;
+        return AVERROR(EINVAL);
     }
-    return o;
+    return 0;
+}
+
+static const AVOption *av_set_number(void *obj, const char *name, double num, int den, int64_t intnum){
+    const AVOption *o = NULL;
+    if (av_set_number2(obj, name, num, den, intnum, &o) < 0)
+        return NULL;
+    else
+        return o;
 }
 
 static const double const_values[]={
