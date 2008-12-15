@@ -101,7 +101,7 @@ const vector_t ff_cavs_intra_mv = {0,0,1,REF_INTRA};
 
 #define EOB 0,0,0
 
-const dec_2dvlc_t ff_cavs_intra_dec[7] = {
+const struct dec_2dvlc ff_cavs_intra_dec[7] = {
   {
     { //level / run / table_inc
       {  1, 1, 1},{ -1, 1, 1},{  1, 2, 1},{ -1, 2, 1},{  1, 3, 1},{ -1, 3, 1},
@@ -238,7 +238,7 @@ const dec_2dvlc_t ff_cavs_intra_dec[7] = {
   }
 };
 
-const dec_2dvlc_t ff_cavs_inter_dec[7] = {
+const struct dec_2dvlc ff_cavs_inter_dec[7] = {
   {
     { //level / run
       {  1, 1, 1},{ -1, 1, 1},{  1, 2, 1},{ -1, 2, 1},{  1, 3, 1},{ -1, 3, 1},
@@ -375,7 +375,7 @@ const dec_2dvlc_t ff_cavs_inter_dec[7] = {
   }
 };
 
-const dec_2dvlc_t ff_cavs_chroma_dec[5] = {
+const struct dec_2dvlc ff_cavs_chroma_dec[5] = {
   {
     { //level / run
       {  1, 1, 1},{ -1, 1, 1},{  1, 2, 1},{ -1, 2, 1},{  1, 3, 1},{ -1, 3, 1},
