@@ -22,6 +22,39 @@
 
         .fpu neon
 
+        .macro transpose_8x8 r0 r1 r2 r3 r4 r5 r6 r7
+        vtrn.32         \r0, \r4
+        vtrn.32         \r1, \r5
+        vtrn.32         \r2, \r6
+        vtrn.32         \r3, \r7
+        vtrn.16         \r0, \r2
+        vtrn.16         \r1, \r3
+        vtrn.16         \r4, \r6
+        vtrn.16         \r5, \r7
+        vtrn.8          \r0, \r1
+        vtrn.8          \r2, \r3
+        vtrn.8          \r4, \r5
+        vtrn.8          \r6, \r7
+        .endm
+
+        .macro swap4 r0 r1 r2 r3 r4 r5 r6 r7
+        vswp            \r0, \r4
+        vswp            \r1, \r5
+        vswp            \r2, \r6
+        vswp            \r3, \r7
+        .endm
+
+        .macro transpose16_4x4 r0 r1 r2 r3 r4 r5 r6 r7
+        vtrn.32         \r0, \r2
+        vtrn.32         \r1, \r3
+        vtrn.32         \r4, \r6
+        vtrn.32         \r5, \r7
+        vtrn.16         \r0, \r1
+        vtrn.16         \r2, \r3
+        vtrn.16         \r4, \r5
+        vtrn.16         \r6, \r7
+        .endm
+
 /* chroma_mc8(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) */
         .macro  h264_chroma_mc8 avg=0
         push            {r4-r7, lr}
@@ -440,18 +473,7 @@ function ff_h264_h_loop_filter_luma_neon, export=1
         vld1.64         {d5},  [r0], r1
         vld1.64         {d27}, [r0], r1
 
-        vtrn.32         q3,  q0
-        vtrn.32         q10, q1
-        vtrn.32         q9,  q2
-        vtrn.32         q8,  q13
-        vtrn.16         q3,  q9
-        vtrn.16         q10, q8
-        vtrn.16         q0,  q2
-        vtrn.16         q1,  q13
-        vtrn.8          q3,  q10
-        vtrn.8          q9,  q8
-        vtrn.8          q0,  q1
-        vtrn.8          q2,  q13
+        transpose_8x8   q3, q10, q9, q8, q0, q1, q2, q13
 
         align_push_regs
         sub             sp,  sp,  #16
@@ -464,18 +486,7 @@ function ff_h264_h_loop_filter_luma_neon, export=1
         vld1.64         {d20,d21}, [sp,:128]!
         vld1.64         {d4, d5},  [sp,:128]!
 
-        vtrn.32         q3,  q0
-        vtrn.32         q10, q5
-        vtrn.32         q4,  q2
-        vtrn.32         q8,  q13
-        vtrn.16         q3,  q4
-        vtrn.16         q10, q8
-        vtrn.16         q0,  q2
-        vtrn.16         q5,  q13
-        vtrn.8          q3,  q10
-        vtrn.8          q4,  q8
-        vtrn.8          q0,  q5
-        vtrn.8          q2,  q13
+        transpose_8x8   q3, q10, q4, q8, q0, q5, q2, q13
 
         sub             r0,  r0,  r1, lsl #4
         vst1.64         {d6},  [r0], r1
@@ -586,4 +597,781 @@ function ff_h264_h_loop_filter_chroma_neon, export=1
         vst1.32         {d2[1]},  [r0], r1
 
         bx              lr
+        .endfunc
+
+        /* H.264 qpel MC */
+
+        .macro  lowpass_const r
+        movw            \r,  #5
+        movt            \r,  #20
+        vmov.32         d6[0], \r
+        .endm
+
+        .macro  lowpass_8 r0, r1, r2, r3, d0, d1, narrow=1
+.if \narrow
+        t0 .req q0
+        t1 .req q8
+.else
+        t0 .req \d0
+        t1 .req \d1
+.endif
+        vext.8          d2,  \r0, \r1, #2
+        vext.8          d3,  \r0, \r1, #3
+        vaddl.u8        q1,  d2,  d3
+        vext.8          d4,  \r0, \r1, #1
+        vext.8          d5,  \r0, \r1, #4
+        vaddl.u8        q2,  d4,  d5
+        vext.8          d30, \r0, \r1, #5
+        vaddl.u8        t0,  \r0, d30
+        vext.8          d18, \r2, \r3, #2
+        vmla.i16        t0,  q1,  d6[1]
+        vext.8          d19, \r2, \r3, #3
+        vaddl.u8        q9,  d18, d19
+        vext.8          d20, \r2, \r3, #1
+        vmls.i16        t0,  q2,  d6[0]
+        vext.8          d21, \r2, \r3, #4
+        vaddl.u8        q10, d20, d21
+        vext.8          d31, \r2, \r3, #5
+        vaddl.u8        t1,  \r2, d31
+        vmla.i16        t1,  q9,  d6[1]
+        vmls.i16        t1,  q10, d6[0]
+.if \narrow
+        vqrshrun.s16    \d0, t0,  #5
+        vqrshrun.s16    \d1, t1,  #5
+.endif
+        .unreq  t0
+        .unreq  t1
+        .endm
+
+        .macro  lowpass_8_1 r0, r1, d0, narrow=1
+.if \narrow
+        t0 .req q0
+.else
+        t0 .req \d0
+.endif
+        vext.8          d2,  \r0, \r1, #2
+        vext.8          d3,  \r0, \r1, #3
+        vaddl.u8        q1,  d2,  d3
+        vext.8          d4,  \r0, \r1, #1
+        vext.8          d5,  \r0, \r1, #4
+        vaddl.u8        q2,  d4,  d5
+        vext.8          d30, \r0, \r1, #5
+        vaddl.u8        t0,  \r0, d30
+        vmla.i16        t0,  q1,  d6[1]
+        vmls.i16        t0,  q2,  d6[0]
+.if \narrow
+        vqrshrun.s16    \d0, t0,  #5
+.endif
+        .unreq  t0
+        .endm
+
+        .macro  lowpass_8.16 r0, r1, l0, h0, l1, h1, d
+        vext.16         q1,  \r0, \r1, #2
+        vext.16         q0,  \r0, \r1, #3
+        vaddl.s16       q9,  d2,  d0
+        vext.16         q2,  \r0, \r1, #1
+        vaddl.s16       q1,  d3,  d1
+        vext.16         q3,  \r0, \r1, #4
+        vaddl.s16       q10, d4,  d6
+        vext.16         \r1, \r0, \r1, #5
+        vaddl.s16       q2,  d5,  d7
+        vaddl.s16       q0,  \h0, \h1
+        vaddl.s16       q8,  \l0, \l1
+
+        vshl.i32        q3,  q9,  #4
+        vshl.i32        q9,  q9,  #2
+        vshl.i32        q15, q10, #2
+        vadd.i32        q9,  q9,  q3
+        vadd.i32        q10, q10, q15
+
+        vshl.i32        q3,  q1,  #4
+        vshl.i32        q1,  q1,  #2
+        vshl.i32        q15, q2,  #2
+        vadd.i32        q1,  q1,  q3
+        vadd.i32        q2,  q2,  q15
+
+        vadd.i32        q9,  q9,  q8
+        vsub.i32        q9,  q9,  q10
+
+        vadd.i32        q1,  q1,  q0
+        vsub.i32        q1,  q1,  q2
+
+        vrshrn.s32      d18, q9,  #10
+        vrshrn.s32      d19, q1,  #10
+
+        vqmovun.s16     \d,  q9
+        .endm
+
+function put_h264_qpel16_h_lowpass_neon_packed
+        mov             r4,  lr
+        mov             ip,  #16
+        mov             r3,  #8
+        bl              put_h264_qpel8_h_lowpass_neon
+        sub             r1,  r1,  r2, lsl #4
+        add             r1,  r1,  #8
+        mov             ip,  #16
+        mov             lr,  r4
+        b               put_h264_qpel8_h_lowpass_neon
+        .endfunc
+
+function put_h264_qpel16_h_lowpass_neon
+        push            {lr}
+        mov             ip,  #16
+        bl              put_h264_qpel8_h_lowpass_neon
+        sub             r0,  r0,  r3, lsl #4
+        sub             r1,  r1,  r2, lsl #4
+        add             r0,  r0,  #8
+        add             r1,  r1,  #8
+        mov             ip,  #16
+        pop             {lr}
+        .endfunc
+
+function put_h264_qpel8_h_lowpass_neon
+1:      vld1.64         {d0, d1},  [r1], r2
+        vld1.64         {d16,d17}, [r1], r2
+        subs            ip,  ip,  #2
+        lowpass_8       d0,  d1,  d16, d17, d0,  d16
+        vst1.64         {d0},     [r0,:64], r3
+        vst1.64         {d16},    [r0,:64], r3
+        bne             1b
+        bx              lr
+        .endfunc
+
+function put_h264_qpel16_h_lowpass_l2_neon
+        push            {lr}
+        mov             ip,  #16
+        bl              put_h264_qpel8_h_lowpass_l2_neon
+        sub             r0,  r0,  r2, lsl #4
+        sub             r1,  r1,  r2, lsl #4
+        sub             r3,  r3,  r2, lsl #4
+        add             r0,  r0,  #8
+        add             r1,  r1,  #8
+        add             r3,  r3,  #8
+        mov             ip,  #16
+        pop             {lr}
+        .endfunc
+
+function put_h264_qpel8_h_lowpass_l2_neon
+1:      vld1.64         {d0, d1},  [r1], r2
+        vld1.64         {d16,d17}, [r1], r2
+        vld1.64         {d28},     [r3], r2
+        vld1.64         {d29},     [r3], r2
+        subs            ip,  ip,  #2
+        lowpass_8       d0,  d1,  d16, d17, d0,  d1
+        vrhadd.u8       q0,  q0,  q14
+        vst1.64         {d0},      [r0,:64], r2
+        vst1.64         {d1},      [r0,:64], r2
+        bne             1b
+        bx              lr
+        .endfunc
+
+function put_h264_qpel16_v_lowpass_neon_packed
+        mov             r4,  lr
+        mov             r2,  #8
+        bl              put_h264_qpel8_v_lowpass_neon
+        sub             r1,  r1,  r3, lsl #2
+        bl              put_h264_qpel8_v_lowpass_neon
+        sub             r1,  r1,  r3, lsl #4
+        sub             r1,  r1,  r3, lsl #2
+        add             r1,  r1,  #8
+        bl              put_h264_qpel8_v_lowpass_neon
+        sub             r1,  r1,  r3, lsl #2
+        mov             lr,  r4
+        b               put_h264_qpel8_v_lowpass_neon
+        .endfunc
+
+function put_h264_qpel16_v_lowpass_neon
+        mov             r4,  lr
+        bl              put_h264_qpel8_v_lowpass_neon
+        sub             r1,  r1,  r3, lsl #2
+        bl              put_h264_qpel8_v_lowpass_neon
+        sub             r0,  r0,  r2, lsl #4
+        add             r0,  r0,  #8
+        sub             r1,  r1,  r3, lsl #4
+        sub             r1,  r1,  r3, lsl #2
+        add             r1,  r1,  #8
+        bl              put_h264_qpel8_v_lowpass_neon
+        sub             r1,  r1,  r3, lsl #2
+        mov             lr,  r4
+        .endfunc
+
+function put_h264_qpel8_v_lowpass_neon
+        vld1.64         {d8},  [r1], r3
+        vld1.64         {d10}, [r1], r3
+        vld1.64         {d12}, [r1], r3
+        vld1.64         {d14}, [r1], r3
+        vld1.64         {d22}, [r1], r3
+        vld1.64         {d24}, [r1], r3
+        vld1.64         {d26}, [r1], r3
+        vld1.64         {d28}, [r1], r3
+        vld1.64         {d9},  [r1], r3
+        vld1.64         {d11}, [r1], r3
+        vld1.64         {d13}, [r1], r3
+        vld1.64         {d15}, [r1], r3
+        vld1.64         {d23}, [r1]
+
+        transpose_8x8   q4,  q5,  q6,  q7,  q11, q12, q13, q14
+        lowpass_8       d8,  d9,  d10, d11, d8,  d10
+        lowpass_8       d12, d13, d14, d15, d12, d14
+        lowpass_8       d22, d23, d24, d25, d22, d24
+        lowpass_8       d26, d27, d28, d29, d26, d28
+        transpose_8x8   d8,  d10, d12, d14, d22, d24, d26, d28
+
+        vst1.64         {d8},  [r0,:64], r2
+        vst1.64         {d10}, [r0,:64], r2
+        vst1.64         {d12}, [r0,:64], r2
+        vst1.64         {d14}, [r0,:64], r2
+        vst1.64         {d22}, [r0,:64], r2
+        vst1.64         {d24}, [r0,:64], r2
+        vst1.64         {d26}, [r0,:64], r2
+        vst1.64         {d28}, [r0,:64], r2
+
+        bx              lr
+        .endfunc
+
+function put_h264_qpel16_v_lowpass_l2_neon
+        mov             r4,  lr
+        bl              put_h264_qpel8_v_lowpass_l2_neon
+        sub             r1,  r1,  r3, lsl #2
+        bl              put_h264_qpel8_v_lowpass_l2_neon
+        sub             r0,  r0,  r3, lsl #4
+        sub             ip,  ip,  r2, lsl #4
+        add             r0,  r0,  #8
+        add             ip,  ip,  #8
+        sub             r1,  r1,  r3, lsl #4
+        sub             r1,  r1,  r3, lsl #2
+        add             r1,  r1,  #8
+        bl              put_h264_qpel8_v_lowpass_l2_neon
+        sub             r1,  r1,  r3, lsl #2
+        mov             lr,  r4
+        .endfunc
+
+function put_h264_qpel8_v_lowpass_l2_neon
+        vld1.64         {d8},  [r1], r3
+        vld1.64         {d10}, [r1], r3
+        vld1.64         {d12}, [r1], r3
+        vld1.64         {d14}, [r1], r3
+        vld1.64         {d22}, [r1], r3
+        vld1.64         {d24}, [r1], r3
+        vld1.64         {d26}, [r1], r3
+        vld1.64         {d28}, [r1], r3
+        vld1.64         {d9},  [r1], r3
+        vld1.64         {d11}, [r1], r3
+        vld1.64         {d13}, [r1], r3
+        vld1.64         {d15}, [r1], r3
+        vld1.64         {d23}, [r1]
+
+        transpose_8x8   q4,  q5,  q6,  q7,  q11, q12, q13, q14
+        lowpass_8       d8,  d9,  d10, d11, d8,  d9
+        lowpass_8       d12, d13, d14, d15, d12, d13
+        lowpass_8       d22, d23, d24, d25, d22, d23
+        lowpass_8       d26, d27, d28, d29, d26, d27
+        transpose_8x8   d8,  d9,  d12, d13, d22, d23, d26, d27
+
+        vld1.64         {d0},  [ip], r2
+        vld1.64         {d1},  [ip], r2
+        vld1.64         {d2},  [ip], r2
+        vld1.64         {d3},  [ip], r2
+        vld1.64         {d4},  [ip], r2
+        vrhadd.u8       q0,  q0,  q4
+        vld1.64         {d5},  [ip], r2
+        vrhadd.u8       q1,  q1,  q6
+        vld1.64         {d10}, [ip], r2
+        vrhadd.u8       q2,  q2,  q11
+        vld1.64         {d11}, [ip], r2
+
+        vst1.64         {d0},  [r0,:64], r3
+        vst1.64         {d1},  [r0,:64], r3
+        vrhadd.u8       q5,  q5,  q13
+        vst1.64         {d2},  [r0,:64], r3
+        vst1.64         {d3},  [r0,:64], r3
+        vst1.64         {d4},  [r0,:64], r3
+        vst1.64         {d5},  [r0,:64], r3
+        vst1.64         {d10}, [r0,:64], r3
+        vst1.64         {d11}, [r0,:64], r3
+
+        bx              lr
+        .endfunc
+
+function put_h264_qpel8_hv_lowpass_neon_top
+        lowpass_const   ip
+        mov             ip,  #12
+1:      vld1.64         {d0, d1},  [r1], r3
+        vld1.64         {d16,d17}, [r1], r3
+        subs            ip,  ip,  #2
+        lowpass_8       d0,  d1,  d16, d17, q11, q12, narrow=0
+        vst1.64         {d22-d25}, [r4,:128]!
+        bne             1b
+
+        vld1.64         {d0, d1},  [r1]
+        lowpass_8_1     d0,  d1,  q12, narrow=0
+
+        mov             ip,  #-16
+        add             r4,  r4,  ip
+        vld1.64         {d30,d31}, [r4,:128], ip
+        vld1.64         {d20,d21}, [r4,:128], ip
+        vld1.64         {d18,d19}, [r4,:128], ip
+        vld1.64         {d16,d17}, [r4,:128], ip
+        vld1.64         {d14,d15}, [r4,:128], ip
+        vld1.64         {d12,d13}, [r4,:128], ip
+        vld1.64         {d10,d11}, [r4,:128], ip
+        vld1.64         {d8, d9},  [r4,:128], ip
+        vld1.64         {d6, d7},  [r4,:128], ip
+        vld1.64         {d4, d5},  [r4,:128], ip
+        vld1.64         {d2, d3},  [r4,:128], ip
+        vld1.64         {d0, d1},  [r4,:128]
+
+        swap4           d1,  d3,  d5,  d7,  d8,  d10, d12, d14
+        transpose16_4x4 q0,  q1,  q2,  q3,  q4,  q5,  q6,  q7
+
+        swap4           d17, d19, d21, d31, d24, d26, d28, d22
+        transpose16_4x4 q8,  q9,  q10, q15, q12, q13, q14, q11
+
+        vst1.64         {d30,d31}, [r4,:128]!
+        vst1.64         {d6, d7},  [r4,:128]!
+        vst1.64         {d20,d21}, [r4,:128]!
+        vst1.64         {d4, d5},  [r4,:128]!
+        vst1.64         {d18,d19}, [r4,:128]!
+        vst1.64         {d2, d3},  [r4,:128]!
+        vst1.64         {d16,d17}, [r4,:128]!
+        vst1.64         {d0, d1},  [r4,:128]
+
+        lowpass_8.16    q4,  q12, d8,  d9,  d24, d25, d8
+        lowpass_8.16    q5,  q13, d10, d11, d26, d27, d9
+        lowpass_8.16    q6,  q14, d12, d13, d28, d29, d10
+        lowpass_8.16    q7,  q11, d14, d15, d22, d23, d11
+
+        vld1.64         {d16,d17}, [r4,:128], ip
+        vld1.64         {d30,d31}, [r4,:128], ip
+        lowpass_8.16    q8,  q15, d16, d17, d30, d31, d12
+        vld1.64         {d16,d17}, [r4,:128], ip
+        vld1.64         {d30,d31}, [r4,:128], ip
+        lowpass_8.16    q8,  q15, d16, d17, d30, d31, d13
+        vld1.64         {d16,d17}, [r4,:128], ip
+        vld1.64         {d30,d31}, [r4,:128], ip
+        lowpass_8.16    q8,  q15, d16, d17, d30, d31, d14
+        vld1.64         {d16,d17}, [r4,:128], ip
+        vld1.64         {d30,d31}, [r4,:128]
+        lowpass_8.16    q8,  q15, d16, d17, d30, d31, d15
+
+        transpose_8x8   d12, d13, d14, d15, d8,  d9,  d10, d11
+
+        bx              lr
+        .endfunc
+
+function put_h264_qpel8_hv_lowpass_neon
+        mov             r10, lr
+        bl              put_h264_qpel8_hv_lowpass_neon_top
+        vst1.64         {d12},     [r0,:64], r2
+        vst1.64         {d13},     [r0,:64], r2
+        vst1.64         {d14},     [r0,:64], r2
+        vst1.64         {d15},     [r0,:64], r2
+        vst1.64         {d8},      [r0,:64], r2
+        vst1.64         {d9},      [r0,:64], r2
+        vst1.64         {d10},     [r0,:64], r2
+        vst1.64         {d11},     [r0,:64], r2
+
+        mov             lr,  r10
+        bx              lr
+        .endfunc
+
+function put_h264_qpel8_hv_lowpass_l2_neon
+        mov             r10, lr
+        bl              put_h264_qpel8_hv_lowpass_neon_top
+
+        vld1.64         {d0, d1},  [r2,:128]!
+        vld1.64         {d2, d3},  [r2,:128]!
+        vrhadd.u8       q0,  q0,  q6
+        vld1.64         {d4, d5},  [r2,:128]!
+        vrhadd.u8       q1,  q1,  q7
+        vld1.64         {d6, d7},  [r2,:128]!
+        vrhadd.u8       q2,  q2,  q4
+
+        vst1.64         {d0},      [r0,:64], r3
+        vrhadd.u8       q3,  q3,  q5
+        vst1.64         {d1},      [r0,:64], r3
+        vst1.64         {d2},      [r0,:64], r3
+        vst1.64         {d3},      [r0,:64], r3
+        vst1.64         {d4},      [r0,:64], r3
+        vst1.64         {d5},      [r0,:64], r3
+        vst1.64         {d6},      [r0,:64], r3
+        vst1.64         {d7},      [r0,:64], r3
+
+        mov             lr,  r10
+        bx              lr
+        .endfunc
+
+function put_h264_qpel16_hv_lowpass_neon
+        mov             r9,  lr
+        bl              put_h264_qpel8_hv_lowpass_neon
+        sub             r1,  r1,  r3, lsl #2
+        bl              put_h264_qpel8_hv_lowpass_neon
+        sub             r1,  r1,  r3, lsl #4
+        sub             r1,  r1,  r3, lsl #2
+        add             r1,  r1,  #8
+        sub             r0,  r0,  r2, lsl #4
+        add             r0,  r0,  #8
+        bl              put_h264_qpel8_hv_lowpass_neon
+        sub             r1,  r1,  r3, lsl #2
+        mov             lr,  r9
+        b               put_h264_qpel8_hv_lowpass_neon
+        .endfunc
+
+function put_h264_qpel16_hv_lowpass_l2_neon
+        mov             r9,  lr
+        sub             r2,  r4,  #256
+        bl              put_h264_qpel8_hv_lowpass_l2_neon
+        sub             r1,  r1,  r3, lsl #2
+        bl              put_h264_qpel8_hv_lowpass_l2_neon
+        sub             r1,  r1,  r3, lsl #4
+        sub             r1,  r1,  r3, lsl #2
+        add             r1,  r1,  #8
+        sub             r0,  r0,  r3, lsl #4
+        add             r0,  r0,  #8
+        bl              put_h264_qpel8_hv_lowpass_l2_neon
+        sub             r1,  r1,  r3, lsl #2
+        mov             lr,  r9
+        b               put_h264_qpel8_hv_lowpass_l2_neon
+        .endfunc
+
+function ff_put_h264_qpel8_mc10_neon, export=1
+        lowpass_const   r3
+        mov             r3,  r1
+        sub             r1,  r1,  #2
+        mov             ip,  #8
+        b               put_h264_qpel8_h_lowpass_l2_neon
+        .endfunc
+
+function ff_put_h264_qpel8_mc20_neon, export=1
+        lowpass_const   r3
+        sub             r1,  r1,  #2
+        mov             r3,  r2
+        mov             ip,  #8
+        b               put_h264_qpel8_h_lowpass_neon
+        .endfunc
+
+function ff_put_h264_qpel8_mc30_neon, export=1
+        lowpass_const   r3
+        add             r3,  r1,  #1
+        sub             r1,  r1,  #2
+        mov             ip,  #8
+        b               put_h264_qpel8_h_lowpass_l2_neon
+        .endfunc
+
+function ff_put_h264_qpel8_mc01_neon, export=1
+        push            {lr}
+        mov             ip,  r1
+put_h264_qpel8_mc01:
+        lowpass_const   r3
+        mov             r3,  r2
+        sub             r1,  r1,  r2, lsl #1
+        vpush           {d8-d15}
+        bl              put_h264_qpel8_v_lowpass_l2_neon
+        vpop            {d8-d15}
+        pop             {pc}
+        .endfunc
+
+function ff_put_h264_qpel8_mc11_neon, export=1
+        push            {r0, r1, r2, lr}
+put_h264_qpel8_mc11:
+        lowpass_const   r3
+        sub             sp,  sp,  #64
+        mov             r0,  sp
+        sub             r1,  r1,  #2
+        mov             r3,  #8
+        mov             ip,  #8
+        vpush           {d8-d15}
+        bl              put_h264_qpel8_h_lowpass_neon
+        ldrd            r0,  [sp, #128]
+        mov             r3,  r2
+        add             ip,  sp,  #64
+        sub             r1,  r1,  r2, lsl #1
+        mov             r2,  #8
+        bl              put_h264_qpel8_v_lowpass_l2_neon
+        vpop            {d8-d15}
+        add             sp,  sp,  #76
+        pop             {pc}
+        .endfunc
+
+function ff_put_h264_qpel8_mc21_neon, export=1
+        push            {r0, r1, r4, r10, r11, lr}
+put_h264_qpel8_mc21:
+        lowpass_const   r3
+        mov             r11, sp
+        bic             sp,  sp,  #15
+        sub             sp,  sp,  #(8*8+16*12)
+        sub             r1,  r1,  #2
+        mov             r3,  #8
+        mov             r0,  sp
+        mov             ip,  #8
+        vpush           {d8-d15}
+        bl              put_h264_qpel8_h_lowpass_neon
+        mov             r4,  r0
+        ldrd            r0,  [r11]
+        sub             r1,  r1,  r2, lsl #1
+        sub             r1,  r1,  #2
+        mov             r3,  r2
+        sub             r2,  r4,  #64
+        bl              put_h264_qpel8_hv_lowpass_l2_neon
+        vpop            {d8-d15}
+        add             sp,  r11,  #8
+        pop             {r4, r10, r11, pc}
+        .endfunc
+
+function ff_put_h264_qpel8_mc31_neon, export=1
+        add             r1,  r1,  #1
+        push            {r0, r1, r2, lr}
+        sub             r1,  r1,  #1
+        b               put_h264_qpel8_mc11
+        .endfunc
+
+function ff_put_h264_qpel8_mc02_neon, export=1
+        push            {lr}
+        lowpass_const   r3
+        sub             r1,  r1,  r2, lsl #1
+        mov             r3,  r2
+        vpush           {d8-d15}
+        bl              put_h264_qpel8_v_lowpass_neon
+        vpop            {d8-d15}
+        pop             {pc}
+        .endfunc
+
+function ff_put_h264_qpel8_mc12_neon, export=1
+        push            {r0, r1, r4, r10, r11, lr}
+put_h264_qpel8_mc12:
+        lowpass_const   r3
+        mov             r11, sp
+        bic             sp,  sp,  #15
+        sub             sp,  sp,  #(8*8+16*12)
+        sub             r1,  r1,  r2, lsl #1
+        mov             r3,  r2
+        mov             r2,  #8
+        mov             r0,  sp
+        vpush           {d8-d15}
+        bl              put_h264_qpel8_v_lowpass_neon
+        mov             r4,  r0
+        ldrd            r0,  [r11]
+        sub             r1,  r1,  r3, lsl #1
+        sub             r1,  r1,  #2
+        sub             r2,  r4,  #64
+        bl              put_h264_qpel8_hv_lowpass_l2_neon
+        vpop            {d8-d15}
+        add             sp,  r11,  #8
+        pop             {r4, r10, r11, pc}
+        .endfunc
+
+function ff_put_h264_qpel8_mc22_neon, export=1
+        push            {r4, r10, r11, lr}
+        mov             r11, sp
+        bic             sp,  sp,  #15
+        sub             r1,  r1,  r2, lsl #1
+        sub             r1,  r1,  #2
+        mov             r3,  r2
+        sub             sp,  sp,  #(16*12)
+        mov             r4,  sp
+        vpush           {d8-d15}
+        bl              put_h264_qpel8_hv_lowpass_neon
+        vpop            {d8-d15}
+        mov             sp,  r11
+        pop             {r4, r10, r11, pc}
+        .endfunc
+
+function ff_put_h264_qpel8_mc32_neon, export=1
+        push            {r0, r1, r4, r10, r11, lr}
+        add             r1,  r1,  #1
+        b               put_h264_qpel8_mc12
+        .endfunc
+
+function ff_put_h264_qpel8_mc03_neon, export=1
+        push            {lr}
+        add             ip,  r1,  r2
+        b               put_h264_qpel8_mc01
+        .endfunc
+
+function ff_put_h264_qpel8_mc13_neon, export=1
+        push            {r0, r1, r2, lr}
+        add             r1,  r1,  r2
+        b               put_h264_qpel8_mc11
+        .endfunc
+
+function ff_put_h264_qpel8_mc23_neon, export=1
+        push            {r0, r1, r4, r10, r11, lr}
+        add             r1,  r1,  r2
+        b               put_h264_qpel8_mc21
+        .endfunc
+
+function ff_put_h264_qpel8_mc33_neon, export=1
+        add             r1,  r1,  #1
+        push            {r0, r1, r2, lr}
+        add             r1,  r1,  r2
+        sub             r1,  r1,  #1
+        b               put_h264_qpel8_mc11
+        .endfunc
+
+function ff_put_h264_qpel16_mc10_neon, export=1
+        lowpass_const   r3
+        mov             r3,  r1
+        sub             r1,  r1,  #2
+        b               put_h264_qpel16_h_lowpass_l2_neon
+        .endfunc
+
+function ff_put_h264_qpel16_mc20_neon, export=1
+        lowpass_const   r3
+        sub             r1,  r1,  #2
+        mov             r3,  r2
+        b               put_h264_qpel16_h_lowpass_neon
+        .endfunc
+
+function ff_put_h264_qpel16_mc30_neon, export=1
+        lowpass_const   r3
+        add             r3,  r1,  #1
+        sub             r1,  r1,  #2
+        b               put_h264_qpel16_h_lowpass_l2_neon
+        .endfunc
+
+function ff_put_h264_qpel16_mc01_neon, export=1
+        push            {r4, lr}
+        mov             ip,  r1
+put_h264_qpel16_mc01:
+        lowpass_const   r3
+        mov             r3,  r2
+        sub             r1,  r1,  r2, lsl #1
+        vpush           {d8-d15}
+        bl              put_h264_qpel16_v_lowpass_l2_neon
+        vpop            {d8-d15}
+        pop             {r4, pc}
+        .endfunc
+
+function ff_put_h264_qpel16_mc11_neon, export=1
+        push            {r0, r1, r4, lr}
+put_h264_qpel16_mc11:
+        lowpass_const   r3
+        sub             sp,  sp,  #256
+        mov             r0,  sp
+        sub             r1,  r1,  #2
+        mov             r3,  #16
+        vpush           {d8-d15}
+        bl              put_h264_qpel16_h_lowpass_neon
+        add             r0,  sp,  #256
+        ldrd            r0,  [r0, #64]
+        mov             r3,  r2
+        add             ip,  sp,  #64
+        sub             r1,  r1,  r2, lsl #1
+        mov             r2,  #16
+        bl              put_h264_qpel16_v_lowpass_l2_neon
+        vpop            {d8-d15}
+        add             sp,  sp,  #(256+8)
+        pop             {r4, pc}
+        .endfunc
+
+function ff_put_h264_qpel16_mc21_neon, export=1
+        push            {r0, r1, r4-r5, r9-r11, lr}
+put_h264_qpel16_mc21:
+        lowpass_const   r3
+        mov             r11, sp
+        bic             sp,  sp,  #15
+        sub             sp,  sp,  #(16*16+16*12)
+        sub             r1,  r1,  #2
+        mov             r0,  sp
+        vpush           {d8-d15}
+        bl              put_h264_qpel16_h_lowpass_neon_packed
+        mov             r4,  r0
+        ldrd            r0,  [r11]
+        sub             r1,  r1,  r2, lsl #1
+        sub             r1,  r1,  #2
+        mov             r3,  r2
+        bl              put_h264_qpel16_hv_lowpass_l2_neon
+        vpop            {d8-d15}
+        add             sp,  r11,  #8
+        pop             {r4-r5, r9-r11, pc}
+        .endfunc
+
+function ff_put_h264_qpel16_mc31_neon, export=1
+        add             r1,  r1,  #1
+        push            {r0, r1, r4, lr}
+        sub             r1,  r1,  #1
+        b               put_h264_qpel16_mc11
+        .endfunc
+
+function ff_put_h264_qpel16_mc02_neon, export=1
+        push            {r4, lr}
+        lowpass_const   r3
+        sub             r1,  r1,  r2, lsl #1
+        mov             r3,  r2
+        vpush           {d8-d15}
+        bl              put_h264_qpel16_v_lowpass_neon
+        vpop            {d8-d15}
+        pop             {r4, pc}
+        .endfunc
+
+function ff_put_h264_qpel16_mc12_neon, export=1
+        push            {r0, r1, r4-r5, r9-r11, lr}
+put_h264_qpel16_mc12:
+        lowpass_const   r3
+        mov             r11, sp
+        bic             sp,  sp,  #15
+        sub             sp,  sp,  #(16*16+16*12)
+        sub             r1,  r1,  r2, lsl #1
+        mov             r0,  sp
+        mov             r3,  r2
+        vpush           {d8-d15}
+        bl              put_h264_qpel16_v_lowpass_neon_packed
+        mov             r4,  r0
+        ldrd            r0,  [r11]
+        sub             r1,  r1,  r3, lsl #1
+        sub             r1,  r1,  #2
+        mov             r2,  r3
+        bl              put_h264_qpel16_hv_lowpass_l2_neon
+        vpop            {d8-d15}
+        add             sp,  r11,  #8
+        pop             {r4-r5, r9-r11, pc}
+        .endfunc
+
+function ff_put_h264_qpel16_mc22_neon, export=1
+        push            {r4, r9-r11, lr}
+        lowpass_const   r3
+        mov             r11, sp
+        bic             sp,  sp,  #15
+        sub             r1,  r1,  r2, lsl #1
+        sub             r1,  r1,  #2
+        mov             r3,  r2
+        sub             sp,  sp,  #(16*12)
+        mov             r4,  sp
+        vpush           {d8-d15}
+        bl              put_h264_qpel16_hv_lowpass_neon
+        vpop            {d8-d15}
+        mov             sp,  r11
+        pop             {r4, r9-r11, pc}
+        .endfunc
+
+function ff_put_h264_qpel16_mc32_neon, export=1
+        push            {r0, r1, r4-r5, r9-r11, lr}
+        add             r1,  r1,  #1
+        b               put_h264_qpel16_mc12
+        .endfunc
+
+function ff_put_h264_qpel16_mc03_neon, export=1
+        push            {r4, lr}
+        add             ip,  r1,  r2
+        b               put_h264_qpel16_mc01
+        .endfunc
+
+function ff_put_h264_qpel16_mc13_neon, export=1
+        push            {r0, r1, r4, lr}
+        add             r1,  r1,  r2
+        b               put_h264_qpel16_mc11
+        .endfunc
+
+function ff_put_h264_qpel16_mc23_neon, export=1
+        push            {r0, r1, r4-r5, r9-r11, lr}
+        add             r1,  r1,  r2
+        b               put_h264_qpel16_mc21
+        .endfunc
+
+function ff_put_h264_qpel16_mc33_neon, export=1
+        add             r1,  r1,  #1
+        push            {r0, r1, r4, lr}
+        add             r1,  r1,  r2
+        sub             r1,  r1,  #1
+        b               put_h264_qpel16_mc11
         .endfunc
