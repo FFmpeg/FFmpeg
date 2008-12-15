@@ -448,6 +448,9 @@ OBJS-$(HAVE_ARMVFP)                    += armv4l/dsputil_vfp.o          \
 OBJS-$(HAVE_IWMMXT)                    += armv4l/dsputil_iwmmxt.o       \
                                           armv4l/mpegvideo_iwmmxt.o     \
 
+OBJS-$(HAVE_NEON)                      += armv4l/dsputil_neon.o         \
+                                          armv4l/dsputil_neon_s.o       \
+
 OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
                                           bfin/fdct_bfin.o              \
                                           bfin/idct_bfin.o              \
