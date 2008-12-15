@@ -86,6 +86,7 @@ show_help(){
   echo "  --enable-pthreads        use pthreads [no]"
   echo "  --enable-w32threads      use Win32 threads [no]"
   echo "  --enable-x11grab         enable X11 grabbing [no]"
+  echo "  --enable-xvmc            enable XvMC support [no]"
   echo
   echo "External library support:"
   echo "  --enable-mlib            enable Sun medialib [no]"
@@ -775,6 +776,7 @@ CONFIG_LIST="
     swscale
     vhook
     x11grab
+    xvmc
     zlib
 "
 
@@ -980,10 +982,10 @@ mjpeg_encoder_select="aandct"
 mpeg1video_encoder_select="aandct"
 mpeg2video_encoder_select="aandct"
 mpeg4_encoder_select="aandct"
+mpeg_xvmc_decoder_deps="xvmc X11_extensions_XvMClib_h"
 msmpeg4v1_encoder_select="aandct"
 msmpeg4v2_encoder_select="aandct"
 msmpeg4v3_encoder_select="aandct"
-mpeg_xvmc_decoder_deps="xvmc"
 nellymoser_decoder_select="fft mdct"
 nellymoser_encoder_select="fft mdct"
 png_decoder_select="zlib"
@@ -1826,6 +1828,7 @@ check_header sys/mman.h
 check_header sys/resource.h
 check_header sys/select.h
 check_header termios.h
+check_header X11/extensions/XvMClib.h
 
 if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
