@@ -75,3 +75,22 @@ function ff_h264_idct_add_neon, export=1
 
         bx              lr
         .endfunc
+
+function ff_h264_idct_dc_add_neon, export=1
+        vld1.16         {d2[],d3[]}, [r1,:16]
+        vrshr.s16       q1,  q1,  #6
+        vld1.32         {d0[0]},  [r0,:32], r2
+        vld1.32         {d0[1]},  [r0,:32], r2
+        vaddw.u8        q2,  q1,  d0
+        vld1.32         {d1[0]},  [r0,:32], r2
+        vld1.32         {d1[1]},  [r0,:32], r2
+        vaddw.u8        q1,  q1,  d1
+        vqmovun.s16     d0,  q2
+        vqmovun.s16     d1,  q1
+        sub             r0,  r0,  r2, lsl #2
+        vst1.32         {d0[0]},  [r0,:32], r2
+        vst1.32         {d0[1]},  [r0,:32], r2
+        vst1.32         {d1[0]},  [r0,:32], r2
+        vst1.32         {d1[1]},  [r0,:32], r2
+        bx              lr
+        .endfunc

@@ -93,6 +93,7 @@ void ff_h264_h_loop_filter_chroma_neon(uint8_t *pix, int stride, int alpha,
                                        int beta, int8_t *tc0);
 
 void ff_h264_idct_add_neon(uint8_t *dst, DCTELEM *block, int stride);
+void ff_h264_idct_dc_add_neon(uint8_t *dst, DCTELEM *block, int stride);
 
 void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
 {
@@ -164,4 +165,5 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->h264_h_loop_filter_chroma = ff_h264_h_loop_filter_chroma_neon;
 
     c->h264_idct_add = ff_h264_idct_add_neon;
+    c->h264_idct_dc_add = ff_h264_idct_dc_add_neon;
 }
