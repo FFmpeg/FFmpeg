@@ -939,7 +939,7 @@ alloc:
         update_noise_reduction(s);
     }
 
-#ifdef HAVE_XVMC
+#ifdef CONFIG_XVMC
     if(s->avctx->xvmc_acceleration)
         return XVMC_field_start(s, avctx);
 #endif
@@ -951,7 +951,7 @@ void MPV_frame_end(MpegEncContext *s)
 {
     int i;
     /* draw edge for correct motion prediction if outside */
-#ifdef HAVE_XVMC
+#ifdef CONFIG_XVMC
 //just to make sure that all data is rendered.
     if(s->avctx->xvmc_acceleration){
         XVMC_field_end(s);
@@ -1732,7 +1732,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
 {
     int mb_x, mb_y;
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
-#ifdef HAVE_XVMC
+#ifdef CONFIG_XVMC
     if(s->avctx->xvmc_acceleration){
         XVMC_decode_mb(s);//xvmc uses pblocks
         return;
