@@ -527,6 +527,11 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     static int done=0;
 
+    if (avctx->extradata_size < 8) {
+        av_log(avctx, AV_LOG_ERROR, "Extradata is too small.\n");
+        return -1;
+    }
+
     MPV_decode_defaults(s);
 
     s->avctx= avctx;
