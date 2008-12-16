@@ -2371,9 +2371,9 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
     void (*idct_add)(uint8_t *dst, DCTELEM *block, int stride);
     void (*idct_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
 
-    dest_y  = s->current_picture.data[0] + (mb_y * 16* s->linesize  ) + mb_x * 16;
-    dest_cb = s->current_picture.data[1] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
-    dest_cr = s->current_picture.data[2] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
+    dest_y  = s->current_picture.data[0] + (mb_x + mb_y * s->linesize  ) * 16;
+    dest_cb = s->current_picture.data[1] + (mb_x + mb_y * s->uvlinesize) * 8;
+    dest_cr = s->current_picture.data[2] + (mb_x + mb_y * s->uvlinesize) * 8;
 
     s->dsp.prefetch(dest_y + (s->mb_x&3)*4*s->linesize + 64, s->linesize, 4);
     s->dsp.prefetch(dest_cb + (s->mb_x&7)*s->uvlinesize + 64, dest_cr - dest_cb, 2);
