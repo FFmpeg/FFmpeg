@@ -2610,9 +2610,7 @@ static void hl_decode_mb(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
     const int mb_type= s->current_picture.mb_type[mb_xy];
-    int is_complex = FRAME_MBAFF || MB_FIELD || IS_INTRA_PCM(mb_type) || s->codec_id != CODEC_ID_H264 ||
-                    (ENABLE_GRAY && (s->flags&CODEC_FLAG_GRAY)) || (ENABLE_H264_ENCODER && s->encoding) || ENABLE_SMALL ||
-                    s->qscale == 0;
+    int is_complex = h->is_complex || IS_INTRA_PCM(mb_type) || s->qscale == 0;
 
     if(ENABLE_H264_ENCODER && !s->decode)
         return;
@@ -6572,6 +6570,9 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
     const int part_mask= s->partitioned_frame ? (AC_END|AC_ERROR) : 0x7F;
 
     s->mb_skip_run= -1;
+
+    h->is_complex = FRAME_MBAFF || s->picture_structure != PICT_FRAME || s->codec_id != CODEC_ID_H264 ||
+                    (ENABLE_GRAY && (s->flags&CODEC_FLAG_GRAY)) || (ENABLE_H264_ENCODER && s->encoding) || ENABLE_SMALL;
 
     if( h->pps.cabac ) {
         int i;
