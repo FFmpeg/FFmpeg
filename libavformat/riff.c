@@ -185,6 +185,8 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_CLJR,         MKTAG('c', 'l', 'j', 'r') },
     { CODEC_ID_DIRAC,        MKTAG('d', 'r', 'a', 'c') },
     { CODEC_ID_RPZA,         MKTAG('a', 'z', 'p', 'r') },
+    { CODEC_ID_RPZA,         MKTAG('R', 'P', 'Z', 'A') },
+    { CODEC_ID_RPZA,         MKTAG('r', 'p', 'z', 'a') },
     { CODEC_ID_NONE,         0 }
 };
 
