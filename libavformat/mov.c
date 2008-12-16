@@ -599,9 +599,14 @@ static int mov_read_enda(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 /* FIXME modify qdm2/svq3/h264 decoders to take full atom as extradata */
 static int mov_read_extradata(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    uint64_t size= (uint64_t)st->codec->extradata_size + atom.size + 8 + FF_INPUT_BUFFER_PADDING_SIZE;
+    AVStream *st;
+    uint64_t size;
     uint8_t *buf;
+
+    if (c->fc->nb_streams < 1) // will happen with jp2 files
+        return 0;
+    st= c->fc->streams[c->fc->nb_streams-1];
+    size= (uint64_t)st->codec->extradata_size + atom.size + 8 + FF_INPUT_BUFFER_PADDING_SIZE;
     if(size > INT_MAX || (uint64_t)atom.size > INT_MAX)
         return -1;
     buf= av_realloc(st->codec->extradata, size);
