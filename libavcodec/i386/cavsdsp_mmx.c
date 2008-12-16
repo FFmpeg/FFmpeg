@@ -302,7 +302,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP)\
         \
         : "+a"(src), "+c"(dst)\
-        : "S"((x86_reg)srcStride), "D"((x86_reg)dstStride), "m"(ADD), "m"(MUL1), "m"(MUL2)\
+        : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride), "m"(ADD), "m"(MUL1), "m"(MUL2)\
         : "memory"\
      );\
      if(h==16){\
@@ -317,7 +317,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
             VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP)\
             \
            : "+a"(src), "+c"(dst)\
-           : "S"((x86_reg)srcStride), "D"((x86_reg)dstStride), "m"(ADD),  "m"(MUL1), "m"(MUL2)\
+           : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride), "m"(ADD),  "m"(MUL1), "m"(MUL2)\
            : "memory"\
         );\
      }\
