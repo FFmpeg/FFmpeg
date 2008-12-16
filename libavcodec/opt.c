@@ -107,10 +107,16 @@ static int hexchar2int(char c) {
     return -1;
 }
 
-const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc){
+int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out){
+    int ret;
     const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
-    if(!o || !val || o->offset<=0)
-        return NULL;
+    if (o_out)
+        *o_out = o;
+    if(!o)
+        return AVERROR(ENOENT);
+    if(!val || o->offset<=0)
+        return AVERROR(EINVAL);
+
     if(o->type == FF_OPT_TYPE_BINARY){
         uint8_t **dst = (uint8_t **)(((uint8_t*)obj) + o->offset);
         int *lendst = (int *)(dst + 1);
@@ -118,7 +124,7 @@ const AVOption *av_set_string2(void *obj, const char *name, const char *val, int
         int len = strlen(val);
         av_freep(dst);
         *lendst = 0;
-        if (len & 1) return NULL;
+        if (len & 1) return AVERROR(EINVAL);
         len /= 2;
         ptr = bin = av_malloc(len);
         while (*val) {
@@ -126,13 +132,13 @@ const AVOption *av_set_string2(void *obj, const char *name, const char *val, int
             int b = hexchar2int(*val++);
             if (a < 0 || b < 0) {
                 av_free(bin);
-                return NULL;
+                return AVERROR(EINVAL);
             }
             *ptr++ = (a << 4) | b;
         }
         *dst = bin;
         *lendst = len;
-        return o;
+        return 0;
     }
     if(o->type != FF_OPT_TYPE_STRING){
         int notfirst=0;
@@ -163,7 +169,7 @@ const AVOption *av_set_string2(void *obj, const char *name, const char *val, int
                 else {
                     if (error)
                         av_log(NULL, AV_LOG_ERROR, "Unable to parse option value \"%s\": %s\n", val, error);
-                    return NULL;
+                    return AVERROR(EINVAL);
                 }
             }
             if(o->type == FF_OPT_TYPE_FLAGS){
@@ -174,14 +180,14 @@ const AVOption *av_set_string2(void *obj, const char *name, const char *val, int
                 else if(cmd=='-') d= notfirst*av_get_double(obj, name, NULL) - d;
             }
 
-            if (!av_set_number(obj, name, d, 1, 1))
-                return NULL;
+            if ((ret = av_set_number2(obj, name, d, 1, 1, o_out)) < 0)
+                return ret;
             val+= i;
             if(!*val)
-                return o;
+                return 0;
             notfirst=1;
         }
-        return NULL;
+        return AVERROR(EINVAL);
     }
 
     if(alloc){
@@ -190,6 +196,13 @@ const AVOption *av_set_string2(void *obj, const char *name, const char *val, int
     }
 
     memcpy(((uint8_t*)obj) + o->offset, &val, sizeof(val));
+    return 0;
+}
+
+const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc){
+    const AVOption *o;
+    if (av_set_string3(obj, name, val, alloc, &o) < 0)
+        return NULL;
     return o;
 }
 

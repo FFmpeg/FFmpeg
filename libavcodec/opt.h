@@ -105,6 +105,14 @@ const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int m
 attribute_deprecated const AVOption *av_set_string(void *obj, const char *name, const char *val);
 
 /**
+ * @return a pointer to the AVOption corresponding to the field set or
+ * NULL if no matching AVOption exists, or if the value \p val is not
+ * valid
+ * @see av_set_string3()
+ */
+attribute_deprecated const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc);
+
+/**
  * Sets the field of obj with the given name to value.
  *
  * @param[in] obj A struct whose first element is a pointer to an
@@ -120,14 +128,15 @@ attribute_deprecated const AVOption *av_set_string(void *obj, const char *name, 
  * scalars or named flags separated by '+' or '-'. Prefixing a flag
  * with '+' causes it to be set without affecting the other flags;
  * similarly, '-' unsets a flag.
- * @return a pointer to the AVOption corresponding to the field set or
- * NULL if no matching AVOption exists, or if the value \p val is not
- * valid
+ * @param[out] o_out if non-NULL put here a pointer to the AVOption
+ * found
  * @param alloc when 1 then the old value will be av_freed() and the
  *                     new av_strduped()
  *              when 0 then no av_free() nor av_strdup() will be used
+ * @return 0 if the value has been set, an AVERROR* error code if no
+ * matching option exists, or if the value \p val is not valid
  */
-const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc);
+int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out);
 
 const AVOption *av_set_double(void *obj, const char *name, double n);
 const AVOption *av_set_q(void *obj, const char *name, AVRational n);
