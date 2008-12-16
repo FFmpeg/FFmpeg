@@ -987,6 +987,87 @@ static void pred8x8l_horizontal_up_c(uint8_t *src, int has_topleft, int has_topr
 #undef PL
 #undef SRC
 
+static void pred4x4_vertical_add_c(uint8_t *pix, const DCTELEM *block, int stride){
+    int i;
+    for(i=0; i<4; i++){
+        pix[0]= pix[0-stride] + block[0];
+        pix[1]= pix[1-stride] + block[1];
+        pix[2]= pix[2-stride] + block[2];
+        pix[3]= pix[3-stride] + block[3];
+        pix+= stride;
+        block+= 4;
+    }
+}
+
+static void pred4x4_horizontal_add_c(uint8_t *pix, const DCTELEM *block, int stride){
+    int i;
+    for(i=0; i<4; i++){
+        pix[0]= pix[-1] + block[0];
+        pix[1]= pix[ 0] + block[1];
+        pix[2]= pix[ 1] + block[2];
+        pix[3]= pix[ 2] + block[3];
+        pix+= stride;
+        block+= 4;
+    }
+}
+
+static void pred8x8l_vertical_add_c(uint8_t *pix, const DCTELEM *block, int stride){
+    int i;
+    for(i=0; i<8; i++){
+        pix[0]= pix[0-stride] + block[0];
+        pix[1]= pix[1-stride] + block[1];
+        pix[2]= pix[2-stride] + block[2];
+        pix[3]= pix[3-stride] + block[3];
+        pix[4]= pix[4-stride] + block[4];
+        pix[5]= pix[5-stride] + block[5];
+        pix[6]= pix[6-stride] + block[6];
+        pix[7]= pix[7-stride] + block[7];
+        pix+= stride;
+        block+= 8;
+    }
+}
+
+static void pred8x8l_horizontal_add_c(uint8_t *pix, const DCTELEM *block, int stride){
+    int i;
+    for(i=0; i<8; i++){
+        pix[0]= pix[-1] + block[0];
+        pix[1]= pix[ 0] + block[1];
+        pix[2]= pix[ 1] + block[2];
+        pix[3]= pix[ 2] + block[3];
+        pix[4]= pix[ 3] + block[4];
+        pix[5]= pix[ 4] + block[5];
+        pix[6]= pix[ 5] + block[6];
+        pix[7]= pix[ 6] + block[7];
+        pix+= stride;
+        block+= 8;
+    }
+}
+
+static void pred16x16_vertical_add_c(uint8_t *pix, const int *block_offset, const DCTELEM *block, int stride){
+    int i;
+    for(i=0; i<16; i++)
+        pred4x4_vertical_add_c(pix + block_offset[i], block + i*16, stride);
+}
+
+static void pred16x16_horizontal_add_c(uint8_t *pix, const int *block_offset, const DCTELEM *block, int stride){
+    int i;
+    for(i=0; i<16; i++)
+        pred4x4_horizontal_add_c(pix + block_offset[i], block + i*16, stride);
+}
+
+static void pred8x8_vertical_add_c(uint8_t *pix, const int *block_offset, const DCTELEM *block, int stride){
+    int i;
+    for(i=0; i<4; i++)
+        pred4x4_vertical_add_c(pix + block_offset[i], block + i*16, stride);
+}
+
+static void pred8x8_horizontal_add_c(uint8_t *pix, const int *block_offset, const DCTELEM *block, int stride){
+    int i;
+    for(i=0; i<4; i++)
+        pred4x4_horizontal_add_c(pix + block_offset[i], block + i*16, stride);
+}
+
+
 /**
  * Sets the intra prediction function pointers.
  */
@@ -1075,4 +1156,14 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id){
     h->pred16x16[LEFT_DC_PRED8x8]= pred16x16_left_dc_c;
     h->pred16x16[TOP_DC_PRED8x8 ]= pred16x16_top_dc_c;
     h->pred16x16[DC_128_PRED8x8 ]= pred16x16_128_dc_c;
+
+    //special lossless h/v prediction for h264
+    h->pred4x4_add  [VERT_PRED   ]= pred4x4_vertical_add_c;
+    h->pred4x4_add  [ HOR_PRED   ]= pred4x4_horizontal_add_c;
+    h->pred8x8l_add [VERT_PRED   ]= pred8x8l_vertical_add_c;
+    h->pred8x8l_add [ HOR_PRED   ]= pred8x8l_horizontal_add_c;
+    h->pred8x8_add  [VERT_PRED8x8]= pred8x8_vertical_add_c;
+    h->pred8x8_add  [ HOR_PRED8x8]= pred8x8_horizontal_add_c;
+    h->pred16x16_add[VERT_PRED8x8]= pred16x16_vertical_add_c;
+    h->pred16x16_add[ HOR_PRED8x8]= pred16x16_horizontal_add_c;
 }
