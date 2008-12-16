@@ -2366,7 +2366,8 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
     int linesize, uvlinesize /*dct_offset*/;
     int i;
     int *block_offset = &h->block_offset[0];
-    const int transform_bypass = (s->qscale == 0 && h->sps.transform_bypass), is_h264 = (simple || s->codec_id == CODEC_ID_H264);
+    const int transform_bypass = !simple && (s->qscale == 0 && h->sps.transform_bypass);
+    const int is_h264 = simple || s->codec_id == CODEC_ID_H264;
     void (*idct_add)(uint8_t *dst, DCTELEM *block, int stride);
     void (*idct_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
 
@@ -2444,6 +2445,9 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                         for(i=0; i<16; i+=4){
                             uint8_t * const ptr= dest_y + block_offset[i];
                             const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
+                            if(transform_bypass && h->sps.profile_idc==244 && dir<=1){
+                                h->hpc.pred8x8l_add[dir](ptr, h->mb + i*16, linesize);
+                            }else{
                             const int nnz = h->non_zero_count_cache[ scan8[i] ];
                             h->hpc.pred8x8l[ dir ](ptr, (h->topleft_samples_available<<i)&0x8000,
                                                    (h->topright_samples_available<<i)&0x4000, linesize);
@@ -2453,14 +2457,18 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                                 else
                                     idct_add(ptr, h->mb + i*16, linesize);
                             }
+                            }
                         }
                     }else
                     for(i=0; i<16; i++){
                         uint8_t * const ptr= dest_y + block_offset[i];
-                        uint8_t *topright;
                         const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
-                        int nnz, tr;
 
+                        if(transform_bypass && h->sps.profile_idc==244 && dir<=1){
+                            h->hpc.pred4x4_add[dir](ptr, h->mb + i*16, linesize);
+                        }else{
+                        uint8_t *topright;
+                        int nnz, tr;
                         if(dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED){
                             const int topright_avail= (h->topright_samples_available<<i)&0x8000;
                             assert(mb_y || linesize <= block_offset[i]);
@@ -2482,6 +2490,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                                     idct_add(ptr, h->mb + i*16, linesize);
                             }else
                                 svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
+                        }
                         }
                     }
                 }
@@ -2506,11 +2515,15 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
         if(!IS_INTRA4x4(mb_type)){
             if(is_h264){
                 if(IS_INTRA16x16(mb_type)){
+                    if(transform_bypass && h->sps.profile_idc==244 && (h->intra16x16_pred_mode==VERT_PRED8x8 || h->intra16x16_pred_mode==HOR_PRED8x8)){
+                        h->hpc.pred16x16_add[h->intra16x16_pred_mode](dest_y, block_offset, h->mb, linesize);
+                    }else{
                     for(i=0; i<16; i++){
                         if(h->non_zero_count_cache[ scan8[i] ])
                             idct_add(dest_y + block_offset[i], h->mb + i*16, linesize);
                         else if(h->mb[i*16])
                             idct_dc_add(dest_y + block_offset[i], h->mb + i*16, linesize);
+                    }
                     }
                 }else{
                     const int di = IS_8x8DCT(mb_type) ? 4 : 1;
@@ -2545,11 +2558,16 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                 chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp[1], h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp[1]][0]);
             }
             if(is_h264){
+                if(transform_bypass && IS_INTRA(mb_type) && h->sps.profile_idc==244 && (h->chroma_pred_mode==VERT_PRED8x8 || h->chroma_pred_mode==HOR_PRED8x8)){
+                    h->hpc.pred8x8_add[h->chroma_pred_mode](dest[0], block_offset + 16, h->mb + 16*16, uvlinesize);
+                    h->hpc.pred8x8_add[h->chroma_pred_mode](dest[1], block_offset + 20, h->mb + 20*16, uvlinesize);
+                }else{
                 for(i=16; i<16+8; i++){
                     if(h->non_zero_count_cache[ scan8[i] ])
                         idct_add(dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
                     else if(h->mb[i*16])
                         idct_dc_add(dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
+                }
                 }
             }else{
                 for(i=16; i<16+8; i++){
@@ -2593,7 +2611,8 @@ static void hl_decode_mb(H264Context *h){
     const int mb_xy= h->mb_xy;
     const int mb_type= s->current_picture.mb_type[mb_xy];
     int is_complex = FRAME_MBAFF || MB_FIELD || IS_INTRA_PCM(mb_type) || s->codec_id != CODEC_ID_H264 ||
-                    (ENABLE_GRAY && (s->flags&CODEC_FLAG_GRAY)) || (ENABLE_H264_ENCODER && s->encoding) || ENABLE_SMALL;
+                    (ENABLE_GRAY && (s->flags&CODEC_FLAG_GRAY)) || (ENABLE_H264_ENCODER && s->encoding) || ENABLE_SMALL ||
+                    s->qscale == 0;
 
     if(ENABLE_H264_ENCODER && !s->decode)
         return;
