@@ -63,6 +63,12 @@ void ff_bfin_fdct(DCTELEM *block);
 void fdct_altivec(DCTELEM *block);
 //void idct_altivec(DCTELEM *block);?? no routine
 
+// ARM
+void j_rev_dct_ARM(DCTELEM *data);
+void simple_idct_ARM(DCTELEM *data);
+void simple_idct_armv5te(DCTELEM *data);
+void ff_simple_idct_armv6(DCTELEM *data);
+void ff_simple_idct_neon(DCTELEM *data);
 
 struct algo {
   const char *name;
@@ -116,6 +122,20 @@ struct algo algos[] = {
   {"BFINfdct",        0, ff_bfin_fdct,       fdct, NO_PERM},
   {"BFINidct",        1, ff_bfin_idct,       idct, NO_PERM},
 #endif
+
+#ifdef ARCH_ARMV4L
+  {"SIMPLE-ARM",      1, simple_idct_ARM,    idct, NO_PERM },
+  {"INT-ARM",         1, j_rev_dct_ARM,      idct, MMX_PERM },
+#ifdef HAVE_ARMV5TE
+  {"SIMPLE-ARMV5TE",  1, simple_idct_armv5te, idct, NO_PERM },
+#endif
+#ifdef HAVE_ARMV6
+  {"SIMPLE-ARMV6",    1, ff_simple_idct_armv6, idct, MMX_PERM },
+#endif
+#ifdef HAVE_NEON
+  {"SIMPLE-NEON",     1, ff_simple_idct_neon, idct, PARTTRANS_PERM },
+#endif
+#endif /* ARCH_ARMV4L */
 
   { 0 }
 };
