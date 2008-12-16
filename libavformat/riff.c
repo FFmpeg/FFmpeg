@@ -186,6 +186,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_JPEG2000,     MKTAG('M', 'J', '2', 'C') },
     { CODEC_ID_VMNC,         MKTAG('V', 'M', 'n', 'c') },
     { CODEC_ID_TARGA,        MKTAG('t', 'g', 'a', ' ') },
+    { CODEC_ID_PNG,          MKTAG('M', 'P', 'N', 'G') },
     { CODEC_ID_CLJR,         MKTAG('c', 'l', 'j', 'r') },
     { CODEC_ID_DIRAC,        MKTAG('d', 'r', 'a', 'c') },
     { CODEC_ID_RPZA,         MKTAG('a', 'z', 'p', 'r') },
