@@ -163,7 +163,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
 #endif
             if(last_pos == pos || pos == base - 8)
                 avi->non_interleaved= 1;
-            else
+            if(last_pos != pos)
                 av_add_index_entry(st, pos, ast->cum_len / FFMAX(1, ast->sample_size), len, 0, key ? AVINDEX_KEYFRAME : 0);
 
             if(ast->sample_size)
