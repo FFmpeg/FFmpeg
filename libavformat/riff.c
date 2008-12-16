@@ -57,6 +57,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('R', 'M', 'P', '4') },
     { CODEC_ID_MPEG4,        MKTAG('3', 'I', 'V', '2') },
     { CODEC_ID_MPEG4,        MKTAG('F', 'F', 'D', 'S') },
+    { CODEC_ID_MPEG4,        MKTAG('F', 'V', 'F', 'W') },
     { CODEC_ID_MPEG4,        MKTAG('D', 'C', 'O', 'D') },
     { CODEC_ID_MPEG4,        MKTAG('M', 'V', 'X', 'M') },
     { CODEC_ID_MPEG4,        MKTAG('P', 'M', '4', 'V') },
@@ -68,12 +69,14 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('H', 'D', 'X', '4') }, /* flipped video */
     { CODEC_ID_MPEG4,        MKTAG('D', 'M', 'K', '2') },
     { CODEC_ID_MPEG4,        MKTAG('D', 'I', 'G', 'I') },
+    { CODEC_ID_MPEG4,        MKTAG('I', 'N', 'M', 'C') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', 'G', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '5') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '6') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '4') },
+    { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'V', 'X', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('A', 'P', '4', '1') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('C', 'O', 'L', '1') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('C', 'O', 'L', '0') },
