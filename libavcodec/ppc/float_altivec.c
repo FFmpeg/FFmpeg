@@ -150,6 +150,30 @@ static void vector_fmul_add_add_altivec(float *dst, const float *src0,
 }
 
 
+static void int32_to_float_fmul_scalar_altivec(float *dst, const int *src, float mul, int len)
+{
+    union {
+        vector float v;
+        float s[4];
+    } mul_u;
+    int i;
+    vector float src1, src2, dst1, dst2, mul_v, zero;
+
+    zero = (vector float)vec_splat_u32(0);
+    mul_u.s[0] = mul;
+    mul_v = vec_splat(mul_u.v, 0);
+
+    for(i=0; i<len; i+=8) {
+        src1 = vec_ctf(vec_ld(0,  src+i), 0);
+        src2 = vec_ctf(vec_ld(16, src+i), 0);
+        dst1 = vec_madd(src1, mul_v, zero);
+        dst2 = vec_madd(src2, mul_v, zero);
+        vec_st(dst1,  0, dst+i);
+        vec_st(dst2, 16, dst+i);
+    }
+}
+
+
 static vector signed short
 float_to_int16_one_altivec(const float *src)
 {
@@ -240,6 +264,7 @@ void float_init_altivec(DSPContext* c, AVCodecContext *avctx)
     c->vector_fmul = vector_fmul_altivec;
     c->vector_fmul_reverse = vector_fmul_reverse_altivec;
     c->vector_fmul_add_add = vector_fmul_add_add_altivec;
+    c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_altivec;
     if(!(avctx->flags & CODEC_FLAG_BITEXACT)) {
         c->float_to_int16 = float_to_int16_altivec;
         c->float_to_int16_interleave = float_to_int16_interleave_altivec;
