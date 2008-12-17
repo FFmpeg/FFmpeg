@@ -21,6 +21,7 @@
 
 #undef __STRICT_ANSI__ //workaround due to broken kernel headers
 #include "config.h"
+#include "libavutil/rational.h"
 #include "libavformat/avformat.h"
 #include "libavcodec/dsputil.h"
 #include <unistd.h>
@@ -38,8 +39,7 @@ typedef struct {
     int frame_format; /* see VIDEO_PALETTE_xxx */
     int use_mmap;
     int width, height;
-    int frame_rate;
-    int frame_rate_base;
+    AVRational time_base;
     int64_t time_frame;
     int frame_size;
     struct video_capability video_cap;
@@ -72,7 +72,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     AVStream *st;
     int width, height;
     int video_fd, frame_size;
-    int frame_rate, frame_rate_base;
     int desired_palette, desired_depth;
     struct video_tuner tuner;
     struct video_audio audio;
@@ -88,11 +87,10 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_ERROR, "Wrong time base (%d)\n", ap->time_base.den);
         return -1;
     }
+    s->time_base = ap->time_base;
 
     width = ap->width;
     height = ap->height;
-    frame_rate      = ap->time_base.den;
-    frame_rate_base = ap->time_base.num;
 
     if((unsigned)width > 32767 || (unsigned)height > 32767) {
         av_log(s1, AV_LOG_ERROR, "Capture size is out of range: %dx%d\n",
@@ -108,8 +106,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     s->width = width;
     s->height = height;
-    s->frame_rate      = frame_rate;
-    s->frame_rate_base = frame_rate_base;
 
     video_fd = open(s1->filename, O_RDWR);
     if (video_fd < 0) {
@@ -197,7 +193,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         val = 1;
         ioctl(video_fd, VIDIOCCAPTURE, &val);
 
-        s->time_frame = av_gettime() * s->frame_rate / s->frame_rate_base;
+        s->time_frame = av_gettime() * s->time_base.den / s->time_base.num;
         s->use_mmap = 0;
     } else {
         s->video_buf = mmap(0,s->gb_buffers.size,PROT_READ|PROT_WRITE,MAP_SHARED,video_fd,0);
@@ -209,7 +205,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             }
         }
         s->gb_frame = 0;
-        s->time_frame = av_gettime() * s->frame_rate / s->frame_rate_base;
+        s->time_frame = av_gettime() * s->time_base.den / s->time_base.num;
 
         /* start to grab the first frame */
         s->gb_buf.frame = s->gb_frame % s->gb_buffers.frames;
@@ -252,8 +248,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
     st->codec->width = width;
     st->codec->height = height;
-    st->codec->time_base.den      = frame_rate;
-    st->codec->time_base.num = frame_rate_base;
+    st->codec->time_base = s->time_base;
     st->codec->bit_rate = frame_size * 1/av_q2d(st->codec->time_base) * 8;
 
     return 0;
@@ -301,9 +296,9 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     /* wait based on the frame rate */
     for(;;) {
         curtime = av_gettime();
-        delay = s->time_frame  * s->frame_rate_base / s->frame_rate - curtime;
+        delay = s->time_frame * s->time_base.num / s->time_base.den - curtime;
         if (delay <= 0) {
-            if (delay < INT64_C(-1000000) * s->frame_rate_base / s->frame_rate) {
+            if (delay < INT64_C(-1000000) * s->time_base.num / s->time_base.den) {
                 /* printf("grabbing is %d frames late (dropping)\n", (int) -(delay / 16666)); */
                 s->time_frame += INT64_C(1000000);
             }
