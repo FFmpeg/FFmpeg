@@ -1220,7 +1220,7 @@ static inline int slice_compare(SliceInfo *si1, SliceInfo *si2)
            si1->pts    != si2->pts;
 }
 
-static int rv34_decode_slice(RV34DecContext *r, int end, uint8_t* buf, int buf_size)
+static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int buf_size)
 {
     MpegEncContext *s = &r->s;
     GetBitContext *gb = &s->gb;
@@ -1352,7 +1352,7 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int get_slice_offset(AVCodecContext *avctx, uint8_t *buf, int n)
+static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n)
 {
     if(avctx->slice_count) return avctx->slice_offset[n];
     else                   return AV_RL32(buf + n*8 - 4) == 1 ? AV_RL32(buf + n*8) :  AV_RB32(buf + n*8);
@@ -1368,7 +1368,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     SliceInfo si;
     int i;
     int slice_count;
-    uint8_t *slices_hdr = NULL;
+    const uint8_t *slices_hdr = NULL;
     int last = 0;
 
     /* no supplementary picture */
