@@ -78,10 +78,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int j;
     int vformat_num = FF_ARRAY_ELEMS(video_formats);
 
-    if (ap->width <= 0 || ap->height <= 0) {
-        av_log(s1, AV_LOG_ERROR, "Wrong size (%dx%d)\n", ap->width, ap->height);
-        return -1;
-    }
     if (ap->time_base.den <= 0) {
         av_log(s1, AV_LOG_ERROR, "Wrong time base (%d)\n", ap->time_base.den);
         return -1;
@@ -105,6 +101,14 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (video_fd < 0) {
         av_log(s1, AV_LOG_ERROR, "%s: %s\n", s1->filename, strerror(errno));
         goto fail;
+    }
+
+    /* no values set, autodetect them */
+    if (s->video_win.width <= 0 || s->video_win.height <= 0) {
+        if (ioctl(video_fd, VIDIOCGWIN, &s->video_win, sizeof(s->video_win)) < 0) {
+            av_log(s1, AV_LOG_ERROR, "VIDIOCGWIN: %s\n", strerror(errno));
+            goto fail;
+        }
     }
 
     if (ioctl(video_fd,VIDIOCGCAP, &s->video_cap) < 0) {
