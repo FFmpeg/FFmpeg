@@ -512,7 +512,7 @@ check_asm(){
     asm="$2"
     shift 2
     check_cc "$@" <<EOF && enable $name || disable $name
-int foo(void){ __asm__ volatile($asm); }
+void foo(void){ __asm__ volatile($asm); }
 EOF
 }
 
