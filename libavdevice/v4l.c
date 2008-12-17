@@ -38,12 +38,12 @@ typedef struct {
     int fd;
     int frame_format; /* see VIDEO_PALETTE_xxx */
     int use_mmap;
-    int width, height;
     AVRational time_base;
     int64_t time_frame;
     int frame_size;
     struct video_capability video_cap;
     struct video_audio audio_saved;
+    struct video_window video_win;
     uint8_t *video_buf;
     struct video_mbuf gb_buffers;
     struct video_mmap gb_buf;
@@ -70,7 +70,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     VideoData *s = s1->priv_data;
     AVStream *st;
-    int width, height;
     int video_fd, frame_size;
     int desired_palette, desired_depth;
     struct video_tuner tuner;
@@ -89,23 +88,18 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     s->time_base = ap->time_base;
 
-    width = ap->width;
-    height = ap->height;
-
-    if((unsigned)width > 32767 || (unsigned)height > 32767) {
+    if((unsigned)ap->width > 32767 || (unsigned)ap->height > 32767) {
         av_log(s1, AV_LOG_ERROR, "Capture size is out of range: %dx%d\n",
-            width, height);
-
+            ap->width, ap->height);
         return -1;
     }
+    s->video_win.width = ap->width;
+    s->video_win.height = ap->height;
 
     st = av_new_stream(s1, 0);
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
-
-    s->width = width;
-    s->height = height;
 
     video_fd = open(s1->filename, O_RDWR);
     if (video_fd < 0) {
@@ -176,17 +170,14 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     if (ioctl(video_fd,VIDIOCGMBUF,&s->gb_buffers) < 0) {
         /* try to use read based access */
-        struct video_window win;
         int val;
 
-        win.x = 0;
-        win.y = 0;
-        win.width = width;
-        win.height = height;
-        win.chromakey = -1;
-        win.flags = 0;
+        s->video_win.x = 0;
+        s->video_win.y = 0;
+        s->video_win.chromakey = -1;
+        s->video_win.flags = 0;
 
-        ioctl(video_fd, VIDIOCSWIN, &win);
+        ioctl(video_fd, VIDIOCSWIN, s->video_win);
 
         s->frame_format = pict.palette;
 
@@ -209,8 +200,8 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
         /* start to grab the first frame */
         s->gb_buf.frame = s->gb_frame % s->gb_buffers.frames;
-        s->gb_buf.height = height;
-        s->gb_buf.width = width;
+        s->gb_buf.height = s->video_win.height;
+        s->gb_buf.width = s->video_win.width;
         s->gb_buf.format = pict.palette;
 
         if (ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf) < 0) {
@@ -232,7 +223,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     for (j = 0; j < vformat_num; j++) {
         if (s->frame_format == video_formats[j].palette) {
-            frame_size = width * height * video_formats[j].depth / 8;
+            frame_size = s->video_win.width * s->video_win.height * video_formats[j].depth / 8;
             st->codec->pix_fmt = video_formats[j].pix_fmt;
             break;
         }
@@ -246,8 +237,8 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
-    st->codec->width = width;
-    st->codec->height = height;
+    st->codec->width = s->video_win.width;
+    st->codec->height = s->video_win.height;
     st->codec->time_base = s->time_base;
     st->codec->bit_rate = frame_size * 1/av_q2d(st->codec->time_base) * 8;
 
