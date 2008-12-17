@@ -176,6 +176,11 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             value = off;
             buf = NULL;
             break;
+        case TIFF_STRING:
+            if(count <= 4){
+                buf -= 4;
+                break;
+            }
         default:
             value = -1;
             buf = start + off;
