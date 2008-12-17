@@ -788,6 +788,7 @@ static int svq3_decode_init(AVCodecContext *avctx)
     s->flags  = avctx->flags;
     s->flags2 = avctx->flags2;
     s->unrestricted_mv = 1;
+    h->is_complex=1;
 
     if (!s->context_initialized) {
         s->width  = avctx->width;
