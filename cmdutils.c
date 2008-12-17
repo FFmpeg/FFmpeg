@@ -176,25 +176,30 @@ unknown_opt:
 
 int opt_default(const char *opt, const char *arg){
     int type;
+    int ret= 0;
     const AVOption *o= NULL;
     int opt_types[]={AV_OPT_FLAG_VIDEO_PARAM, AV_OPT_FLAG_AUDIO_PARAM, 0, AV_OPT_FLAG_SUBTITLE_PARAM, 0};
 
-    for(type=0; type<CODEC_TYPE_NB; type++){
+    for(type=0; type<CODEC_TYPE_NB && ret>= 0; type++){
         const AVOption *o2 = av_find_opt(avctx_opts[0], opt, NULL, opt_types[type], opt_types[type]);
         if(o2)
-            o = av_set_string2(avctx_opts[type], opt, arg, 1);
+            ret = av_set_string3(avctx_opts[type], opt, arg, 1, &o);
     }
     if(!o)
-        o = av_set_string2(avformat_opts, opt, arg, 1);
+        ret = av_set_string3(avformat_opts, opt, arg, 1, &o);
     if(!o)
-        o = av_set_string2(sws_opts, opt, arg, 1);
+        ret = av_set_string3(sws_opts, opt, arg, 1, &o);
     if(!o){
         if(opt[0] == 'a')
-            o = av_set_string2(avctx_opts[CODEC_TYPE_AUDIO], opt+1, arg, 1);
+            ret = av_set_string3(avctx_opts[CODEC_TYPE_AUDIO], opt+1, arg, 1, &o);
         else if(opt[0] == 'v')
-            o = av_set_string2(avctx_opts[CODEC_TYPE_VIDEO], opt+1, arg, 1);
+            ret = av_set_string3(avctx_opts[CODEC_TYPE_VIDEO], opt+1, arg, 1, &o);
         else if(opt[0] == 's')
-            o = av_set_string2(avctx_opts[CODEC_TYPE_SUBTITLE], opt+1, arg, 1);
+            ret = av_set_string3(avctx_opts[CODEC_TYPE_SUBTITLE], opt+1, arg, 1, &o);
+    }
+    if (o && ret < 0) {
+        fprintf(stderr, "Invalid value '%s' for option '%s'\n", arg, opt);
+        exit(1);
     }
     if(!o)
         return -1;
