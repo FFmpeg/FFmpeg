@@ -6383,8 +6383,8 @@ static void av_always_inline filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 int b_idx= 8 + 4 + x + 8*y;
                 int bn_idx= b_idx - (dir ? 8:1);
 
-                if( h->non_zero_count_cache[b_idx] != 0 ||
-                    h->non_zero_count_cache[bn_idx] != 0 ) {
+                if( h->non_zero_count_cache[b_idx] |
+                    h->non_zero_count_cache[bn_idx] ) {
                     bS[i] = 2;
                 }
                 else if(!mv_done)
