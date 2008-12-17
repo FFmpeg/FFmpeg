@@ -19,10 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* This header intentionally has no multiple inclusion guards. It is meant to
- * be included multiple times and generates different code depending on the
- * value of certain #defines. */
-
 void DEF(put, pixels8)(uint8_t *block, const uint8_t *pixels, const int line_size, int h)
 {
     int stride = line_size;

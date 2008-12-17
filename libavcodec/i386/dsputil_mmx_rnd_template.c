@@ -24,10 +24,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* This header intentionally has no multiple inclusion guards. It is meant to
- * be included multiple times and generates different code depending on the
- * value of certain #defines. */
-
 // put_pixels
 static void DEF(put, pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {

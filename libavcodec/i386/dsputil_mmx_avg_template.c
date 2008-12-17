@@ -24,10 +24,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* This header intentionally has no multiple inclusion guards. It is meant to
- * be included multiple times and generates different code depending on the
- * value of certain #defines. */
-
 /* XXX: we use explicit registers to avoid a gcc 2.95.2 register asm
    clobber bug - now it will work with 2.95.2 and also with -fPIC
  */

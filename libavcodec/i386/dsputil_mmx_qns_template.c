@@ -22,10 +22,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* This header intentionally has no multiple inclusion guards. It is meant to
- * be included multiple times and generates different code depending on the
- * value of certain #defines. */
-
 #define MAX_ABS (512 >> (SCALE_OFFSET>0 ? SCALE_OFFSET : 0))
 
 static int DEF(try_8x8basis)(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale)
