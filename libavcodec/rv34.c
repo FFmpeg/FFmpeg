@@ -1151,9 +1151,9 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
     r->cbp_luma  [s->mb_x + s->mb_y * s->mb_stride] = cbp;
     r->cbp_chroma[s->mb_x + s->mb_y * s->mb_stride] = cbp >> 16;
     if(s->pict_type == FF_I_TYPE)
-        r->deblock_coefs[mb_pos] = 0;
+        r->deblock_coefs[mb_pos] = 0xFFFF;
     else
-        r->deblock_coefs[mb_pos] = rv34_set_deblock_coef(r);
+        r->deblock_coefs[mb_pos] = rv34_set_deblock_coef(r) | r->cbp_luma[mb_pos];
     s->current_picture_ptr->qscale_table[s->mb_x + s->mb_y * s->mb_stride] = s->qscale;
 
     if(cbp == -1)

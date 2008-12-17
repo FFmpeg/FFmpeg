@@ -453,7 +453,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
     for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
         int mbtype = s->current_picture_ptr->mb_type[mb_pos];
         if(IS_INTRA(mbtype) || IS_SEPARATE_DC(mbtype))
-            r->cbp_luma  [mb_pos] = 0xFFFF;
+            r->cbp_luma  [mb_pos] = r->deblock_coefs[mb_pos] = 0xFFFF;
         if(IS_INTRA(mbtype))
             r->cbp_chroma[mb_pos] = 0xFF;
     }
@@ -493,9 +493,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
             mb_strong[i] = IS_INTRA(mbtype[i]) || IS_SEPARATE_DC(mbtype[i]);
             clip[i] = rv40_filter_clip_tbl[mb_strong[i] + 1][q];
         }
-        y_to_deblock =  cbp[POS_CUR]
-                     | (cbp[POS_BOTTOM]     << 16)
-                     |  mvmasks[POS_CUR]
+        y_to_deblock =  mvmasks[POS_CUR]
                      | (mvmasks[POS_BOTTOM] << 16);
         /* This pattern contains bits signalling that horizontal edges of
          * the current block can be filtered.
@@ -558,7 +556,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
                 // filter left block edge in ordinary mode (with low filtering strength)
                 if(y_v_deblock & (MASK_CUR << ij) && (i || !(mb_strong[POS_CUR] || mb_strong[POS_LEFT]))){
                     if(!i)
-                        clip_left = (cbp[POS_LEFT] | mvmasks[POS_LEFT]) & (MASK_RIGHT << j) ? clip[POS_LEFT] : 0;
+                        clip_left = mvmasks[POS_LEFT] & (MASK_RIGHT << j) ? clip[POS_LEFT] : 0;
                     else
                         clip_left = y_to_deblock & (MASK_CUR << (ij-1)) ? clip[POS_CUR] : 0;
                     rv40_v_loop_filter(Y, s->linesize, dither,
@@ -570,12 +568,12 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
                 if(!j && y_h_deblock & (MASK_CUR << i) && (mb_strong[POS_CUR] || mb_strong[POS_TOP])){
                     rv40_h_loop_filter(Y, s->linesize, dither,
                                        clip_cur,
-                                       (cbp[POS_TOP] | mvmasks[POS_TOP]) & (MASK_TOP << i) ? clip[POS_TOP] : 0,
+                                       mvmasks[POS_TOP] & (MASK_TOP << i) ? clip[POS_TOP] : 0,
                                        alpha, beta, betaY, 0, 1);
                 }
                 // filter left block edge in edge mode (with high filtering strength)
                 if(y_v_deblock & (MASK_CUR << ij) && !i && (mb_strong[POS_CUR] || mb_strong[POS_LEFT])){
-                    clip_left = (cbp[POS_LEFT] | mvmasks[POS_LEFT]) & (MASK_RIGHT << j) ? clip[POS_LEFT] : 0;
+                    clip_left = mvmasks[POS_LEFT] & (MASK_RIGHT << j) ? clip[POS_LEFT] : 0;
                     rv40_v_loop_filter(Y, s->linesize, dither,
                                        clip_cur,
                                        clip_left,
