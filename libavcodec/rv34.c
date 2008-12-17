@@ -1109,7 +1109,15 @@ static int rv34_set_deblock_coef(RV34DecContext *r)
         hmvmask &= ~0x000F;
     if(!s->mb_x)
         vmvmask &= ~0x1111;
-    return hmvmask | vmvmask; //XXX: should be stored separately for RV3
+    if(r->rv30){ //RV30 marks both subblocks on the edge for filtering
+        vmvmask |= (vmvmask & 0x4444) >> 1;
+        hmvmask |= (hmvmask & 0x0F00) >> 4;
+        if(s->mb_x)
+            r->deblock_coefs[s->mb_x - 1 + s->mb_y*s->mb_stride] |= (vmvmask & 0x1111) << 3;
+        if(!s->first_slice_line)
+            r->deblock_coefs[s->mb_x + (s->mb_y - 1)*s->mb_stride] |= (hmvmask & 0xF) << 12;
+    }
+    return hmvmask | vmvmask;
 }
 
 static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
