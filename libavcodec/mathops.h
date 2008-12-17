@@ -28,9 +28,9 @@
 
 #include "i386/mathops.h"
 
-#elif defined(ARCH_ARMV4L)
+#elif defined(ARCH_ARM)
 
-#include "armv4l/mathops.h"
+#include "arm/mathops.h"
 
 #elif defined(ARCH_POWERPC)
 

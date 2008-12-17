@@ -129,8 +129,8 @@ int ff_dct_common_init(MpegEncContext *s)
     MPV_common_init_mlib(s);
 #elif defined(HAVE_MMI)
     MPV_common_init_mmi(s);
-#elif defined(ARCH_ARMV4L)
-    MPV_common_init_armv4l(s);
+#elif defined(ARCH_ARM)
+    MPV_common_init_arm(s);
 #elif defined(HAVE_ALTIVEC)
     MPV_common_init_altivec(s);
 #elif defined(ARCH_BFIN)

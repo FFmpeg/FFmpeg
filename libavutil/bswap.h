@@ -30,7 +30,7 @@
 #include "config.h"
 #include "common.h"
 
-#if defined(ARCH_ARMV4L)
+#if defined(ARCH_ARM)
 #   include "arm/bswap.h"
 #elif defined(ARCH_BFIN)
 #   include "bfin/bswap.h"

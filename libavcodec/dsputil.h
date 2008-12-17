@@ -558,7 +558,7 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
 int mm_support(void);
 
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
-void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx);
+void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_mlib(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx);
@@ -593,7 +593,7 @@ static inline void emms(void)
 
 void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 
-#elif defined(ARCH_ARMV4L)
+#elif defined(ARCH_ARM)
 
 extern int mm_flags;
 

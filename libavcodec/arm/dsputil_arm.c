@@ -1,5 +1,5 @@
 /*
- * ARMv4L optimized DSP utils
+ * ARM optimized DSP utils
  * Copyright (c) 2001 Lionel Ulmer.
  *
  * This file is part of FFmpeg.
@@ -121,7 +121,7 @@ int mm_support(void)
     return ENABLE_IWMMXT * FF_MM_IWMMXT;
 }
 
-void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
+void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 {
     int idct_algo= avctx->idct_algo;
 

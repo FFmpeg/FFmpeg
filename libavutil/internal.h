@@ -148,7 +148,7 @@ static inline av_const int FASTDIV(int a, int b)
                      : "=&r"(r), "=&r"(t) : "r"(a), "r"(b), "r"(ff_inverse));
     return r;
 }
-#elif defined(ARCH_ARMV4L)
+#elif defined(ARCH_ARM)
 #    define FASTDIV(a,b) \
     ({\
         int ret,dmy;\

@@ -25,7 +25,7 @@
 void MPV_common_init_iwmmxt(MpegEncContext *s);
 void MPV_common_init_armv5te(MpegEncContext *s);
 
-void MPV_common_init_armv4l(MpegEncContext *s)
+void MPV_common_init_arm(MpegEncContext *s)
 {
     /* IWMMXT support is a superset of armv5te, so
      * allow optimized functions for armv5te unless

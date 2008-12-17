@@ -789,7 +789,7 @@ THREADS_LIST='
 
 ARCH_LIST='
     alpha
-    armv4l
+    arm
     bfin
     ia64
     m68k
@@ -933,14 +933,14 @@ CMDLINE_SET="
 
 # architecture extensions
 altivec_deps="powerpc"
-armv5te_deps="armv4l"
-armv6_deps="armv4l"
-armvfp_deps="armv4l"
-iwmmxt_deps="armv4l"
+armv5te_deps="arm"
+armv6_deps="arm"
+armvfp_deps="arm"
+iwmmxt_deps="arm"
 mmi_deps="mips"
 mmx_deps="x86"
 mmx2_deps="x86 mmx"
-neon_deps="armv4l"
+neon_deps="arm"
 ssse3_deps="x86"
 vis_deps="sparc"
 
@@ -1309,9 +1309,8 @@ case "$arch" in
         int test[sizeof(char*) - 7];
 EOF
     ;;
-    # armv4l is a subset of armv[567]*l
     arm|armv[4567]*l)
-        arch="armv4l"
+        arch="arm"
     ;;
     alpha)
         arch="alpha"
@@ -1785,7 +1784,7 @@ EOF
 fi
 
 # We have to check if pld is a nop and disable it.
-enabled armv4l  && check_asm pld     '"pld [r0]"'
+enabled arm     && check_asm pld     '"pld [r0]"'
 enabled armv5te && check_asm armv5te '"qadd r0, r0, r0"'
 enabled armv6   && check_asm armv6   '"sadd16 r0, r0, r0"'
 enabled armvfp  && check_asm armvfp  '"fadds s0, s0, s0"'
@@ -2136,7 +2135,7 @@ if test $arch = "x86_32" -o $arch = "x86_64"; then
     echo "EBX available             ${ebx_available-no}"
     echo "EBP available             ${ebp_available-no}"
 fi
-if test $arch = "armv4l"; then
+if test $arch = "arm"; then
     echo "ARMv5TE enabled           ${armv5te-no}"
     echo "ARMv6 enabled             ${armv6-no}"
     echo "ARM VFP enabled           ${armvfp-no}"
@@ -2358,7 +2357,7 @@ if enabled source_path_used; then
         doc               \
         libavcodec        \
         libavcodec/alpha  \
-        libavcodec/armv4l \
+        libavcodec/arm    \
         libavcodec/bfin   \
         libavcodec/i386   \
         libavcodec/mlib   \

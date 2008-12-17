@@ -684,7 +684,7 @@ void MPV_common_init_mmx(MpegEncContext *s);
 void MPV_common_init_axp(MpegEncContext *s);
 void MPV_common_init_mlib(MpegEncContext *s);
 void MPV_common_init_mmi(MpegEncContext *s);
-void MPV_common_init_armv4l(MpegEncContext *s);
+void MPV_common_init_arm(MpegEncContext *s);
 void MPV_common_init_altivec(MpegEncContext *s);
 void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_draw_horiz_band(MpegEncContext *s, int y, int h);

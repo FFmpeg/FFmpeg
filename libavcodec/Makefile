@@ -429,29 +429,29 @@ OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
                                           alpha/mpegvideo_alpha.o       \
                                           alpha/simple_idct_alpha.o     \
 
-OBJS-$(ARCH_ARMV4L)                    += armv4l/dsputil_arm.o          \
-                                          armv4l/dsputil_arm_s.o        \
-                                          armv4l/jrevdct_arm.o          \
-                                          armv4l/mpegvideo_arm.o        \
-                                          armv4l/simple_idct_arm.o      \
+OBJS-$(ARCH_ARM)                       += arm/dsputil_arm.o             \
+                                          arm/dsputil_arm_s.o           \
+                                          arm/jrevdct_arm.o             \
+                                          arm/mpegvideo_arm.o           \
+                                          arm/simple_idct_arm.o         \
 
-OBJS-$(HAVE_ARMV5TE)                   += armv4l/mpegvideo_armv5te.o    \
-                                          armv4l/mpegvideo_armv5te_s.o  \
-                                          armv4l/simple_idct_armv5te.o  \
+OBJS-$(HAVE_ARMV5TE)                   += arm/mpegvideo_armv5te.o       \
+                                          arm/mpegvideo_armv5te_s.o     \
+                                          arm/simple_idct_armv5te.o     \
 
-OBJS-$(HAVE_ARMV6)                     += armv4l/simple_idct_armv6.o    \
+OBJS-$(HAVE_ARMV6)                     += arm/simple_idct_armv6.o       \
 
-OBJS-$(HAVE_ARMVFP)                    += armv4l/dsputil_vfp.o          \
-                                          armv4l/float_arm_vfp.o        \
+OBJS-$(HAVE_ARMVFP)                    += arm/dsputil_vfp.o             \
+                                          arm/float_arm_vfp.o           \
 
-OBJS-$(HAVE_IWMMXT)                    += armv4l/dsputil_iwmmxt.o       \
-                                          armv4l/mpegvideo_iwmmxt.o     \
+OBJS-$(HAVE_IWMMXT)                    += arm/dsputil_iwmmxt.o          \
+                                          arm/mpegvideo_iwmmxt.o        \
 
-OBJS-$(HAVE_NEON)                      += armv4l/dsputil_neon.o         \
-                                          armv4l/dsputil_neon_s.o       \
-                                          armv4l/h264dsp_neon.o         \
-                                          armv4l/h264idct_neon.o        \
-                                          armv4l/simple_idct_neon.o     \
+OBJS-$(HAVE_NEON)                      += arm/dsputil_neon.o            \
+                                          arm/dsputil_neon_s.o          \
+                                          arm/h264dsp_neon.o            \
+                                          arm/h264idct_neon.o           \
+                                          arm/simple_idct_neon.o        \
 
 OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
                                           bfin/fdct_bfin.o              \
@@ -499,7 +499,7 @@ TESTS-$(CONFIG_OLDSCALER) += imgresample-test$(EXESUF)
 TESTS-$(ARCH_X86) += i386/cpuid-test$(EXESUF) motion-test$(EXESUF)
 
 CLEANFILES = apiexample$(EXESUF)
-DIRS = alpha armv4l bfin i386 mlib ppc ps2 sh4 sparc
+DIRS = alpha arm bfin i386 mlib ppc ps2 sh4 sparc
 
 include $(SUBDIR)../subdir.mak
 

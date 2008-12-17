@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_ARMV4L_MATHOPS_H
-#define AVCODEC_ARMV4L_MATHOPS_H
+#ifndef AVCODEC_ARM_MATHOPS_H
+#define AVCODEC_ARM_MATHOPS_H
 
 #include <stdint.h>
 #include "libavutil/common.h"
@@ -90,4 +90,4 @@ static inline av_const MUL16(int ra, int rb)
 
 #endif
 
-#endif /* AVCODEC_ARMV4L_MATHOPS_H */
+#endif /* AVCODEC_ARM_MATHOPS_H */

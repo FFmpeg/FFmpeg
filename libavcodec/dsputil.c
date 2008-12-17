@@ -4554,7 +4554,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     memset(c->avg_2tap_qpel_pixels_tab, 0, sizeof(c->avg_2tap_qpel_pixels_tab));
 
     if (ENABLE_MMX)      dsputil_init_mmx   (c, avctx);
-    if (ENABLE_ARMV4L)   dsputil_init_armv4l(c, avctx);
+    if (ENABLE_ARM)      dsputil_init_arm   (c, avctx);
     if (ENABLE_MLIB)     dsputil_init_mlib  (c, avctx);
     if (ENABLE_VIS)      dsputil_init_vis   (c, avctx);
     if (ENABLE_ALPHA)    dsputil_init_alpha (c, avctx);

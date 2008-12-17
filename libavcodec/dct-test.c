@@ -123,7 +123,7 @@ struct algo algos[] = {
   {"BFINidct",        1, ff_bfin_idct,       idct, NO_PERM},
 #endif
 
-#ifdef ARCH_ARMV4L
+#ifdef ARCH_ARM
   {"SIMPLE-ARM",      1, simple_idct_ARM,    idct, NO_PERM },
   {"INT-ARM",         1, j_rev_dct_ARM,      idct, MMX_PERM },
 #ifdef HAVE_ARMV5TE
@@ -135,7 +135,7 @@ struct algo algos[] = {
 #ifdef HAVE_NEON
   {"SIMPLE-NEON",     1, ff_simple_idct_neon, idct, PARTTRANS_PERM },
 #endif
-#endif /* ARCH_ARMV4L */
+#endif /* ARCH_ARM */
 
   { 0 }
 };
