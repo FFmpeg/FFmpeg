@@ -2547,7 +2547,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             }
         }
 
-        if(simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+        if((simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)) && (h->cbp&0x30)){
             uint8_t *dest[2] = {dest_cb, dest_cr};
             if(transform_bypass){
                 idct_add = idct_dc_add = s->dsp.add_pixels4;
