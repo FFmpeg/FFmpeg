@@ -4091,7 +4091,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
         level[i]= 1 - 2*get_bits1(gb);
     }
 
-    if(i<total_coeff) {
+    if(trailing_ones<total_coeff) {
         int level_code, mask;
         int suffix_length = total_coeff > 10 && trailing_ones < 3;
         int prefix= get_level_prefix(gb);
@@ -4120,11 +4120,10 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
         if(level_code > 5)
             suffix_length++;
         mask= -(level_code&1);
-        level[i]= (((2+level_code)>>1) ^ mask) - mask;
-        i++;
+        level[trailing_ones]= (((2+level_code)>>1) ^ mask) - mask;
 
         //remaining coefficients have suffix_length > 0
-        for(;i<total_coeff;i++) {
+        for(i=trailing_ones+1;i<total_coeff;i++) {
             static const int suffix_limit[7] = {0,5,11,23,47,95,INT_MAX };
             prefix = get_level_prefix(gb);
             if(prefix<15){
