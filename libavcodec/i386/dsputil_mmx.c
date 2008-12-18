@@ -2629,8 +2629,11 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->h264_idct_add= ff_h264_idct_add_mmx;
         c->h264_idct8_dc_add=
         c->h264_idct8_add= ff_h264_idct8_add_mmx;
-        if (mm_flags & FF_MM_SSE2)
-            c->h264_idct8_add= ff_h264_idct8_add_sse2;
+
+        c->h264_idct_add16     = ff_h264_idct_add16_mmx;
+        c->h264_idct8_add4     = ff_h264_idct8_add4_mmx;
+        c->h264_idct_add8      = ff_h264_idct_add8_mmx;
+        c->h264_idct_add16intra= ff_h264_idct_add16intra_mmx;
 
         if (mm_flags & FF_MM_MMXEXT) {
             c->prefetch = prefetch_mmx2;
@@ -2651,6 +2654,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
             c->h264_idct_dc_add= ff_h264_idct_dc_add_mmx2;
             c->h264_idct8_dc_add= ff_h264_idct8_dc_add_mmx2;
+            c->h264_idct_add16     = ff_h264_idct_add16_mmx2;
+            c->h264_idct8_add4     = ff_h264_idct8_add4_mmx2;
+            c->h264_idct_add8      = ff_h264_idct_add8_mmx2;
+            c->h264_idct_add16intra= ff_h264_idct_add16intra_mmx2;
 
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmx2;
@@ -2807,6 +2814,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(0, 0, sse2);
         }
         if(mm_flags & FF_MM_SSE2){
+            c->h264_idct8_add = ff_h264_idct8_add_sse2;
+            c->h264_idct8_add4= ff_h264_idct8_add4_sse2;
+
             H264_QPEL_FUNCS(0, 1, sse2);
             H264_QPEL_FUNCS(0, 2, sse2);
             H264_QPEL_FUNCS(0, 3, sse2);

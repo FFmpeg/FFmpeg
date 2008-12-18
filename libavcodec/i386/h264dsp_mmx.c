@@ -376,6 +376,101 @@ static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
     }
 }
 
+//FIXME this table is a duplicate from h264data.h, and will be removed once the tables from, h264 have been split
+static const uint8_t scan8[16 + 2*4]={
+ 4+1*8, 5+1*8, 4+2*8, 5+2*8,
+ 6+1*8, 7+1*8, 6+2*8, 7+2*8,
+ 4+3*8, 5+3*8, 4+4*8, 5+4*8,
+ 6+3*8, 7+3*8, 6+4*8, 7+4*8,
+ 1+1*8, 2+1*8,
+ 1+2*8, 2+2*8,
+ 1+4*8, 2+4*8,
+ 1+5*8, 2+5*8,
+};
+
+static void ff_h264_idct_add16_mmx(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=0; i<16; i++){
+        if(nnzc[ scan8[i] ])
+            ff_h264_idct_add_mmx(dst + block_offset[i], block + i*16, stride);
+    }
+}
+
+static void ff_h264_idct8_add4_mmx(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=0; i<16; i+=4){
+        if(nnzc[ scan8[i] ])
+            ff_h264_idct8_add_mmx(dst + block_offset[i], block + i*16, stride);
+    }
+}
+
+
+static void ff_h264_idct_add16_mmx2(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=0; i<16; i++){
+        int nnz = nnzc[ scan8[i] ];
+        if(nnz){
+            if(nnz==1 && block[i*16]) ff_h264_idct_dc_add_mmx2(dst + block_offset[i], block + i*16, stride);
+            else                      ff_h264_idct_add_mmx    (dst + block_offset[i], block + i*16, stride);
+        }
+    }
+}
+
+static void ff_h264_idct_add16intra_mmx(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=0; i<16; i++){
+        if(nnzc[ scan8[i] ] || block[i*16])
+            ff_h264_idct_add_mmx(dst + block_offset[i], block + i*16, stride);
+    }
+}
+
+static void ff_h264_idct_add16intra_mmx2(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=0; i<16; i++){
+        if(nnzc[ scan8[i] ]) ff_h264_idct_add_mmx    (dst + block_offset[i], block + i*16, stride);
+        else if(block[i*16]) ff_h264_idct_dc_add_mmx2(dst + block_offset[i], block + i*16, stride);
+    }
+}
+
+static void ff_h264_idct8_add4_mmx2(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=0; i<16; i+=4){
+        int nnz = nnzc[ scan8[i] ];
+        if(nnz){
+            if(nnz==1 && block[i*16]) ff_h264_idct8_dc_add_mmx2(dst + block_offset[i], block + i*16, stride);
+            else                      ff_h264_idct8_add_mmx    (dst + block_offset[i], block + i*16, stride);
+        }
+    }
+}
+
+static void ff_h264_idct8_add4_sse2(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=0; i<16; i+=4){
+        int nnz = nnzc[ scan8[i] ];
+        if(nnz){
+            if(nnz==1 && block[i*16]) ff_h264_idct8_dc_add_mmx2(dst + block_offset[i], block + i*16, stride);
+            else                      ff_h264_idct8_add_sse2   (dst + block_offset[i], block + i*16, stride);
+        }
+    }
+}
+
+static void ff_h264_idct_add8_mmx(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=16; i<16+8; i++){
+        if(nnzc[ scan8[i] ] || block[i*16])
+            ff_h264_idct_add_mmx    (dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
+    }
+}
+
+static void ff_h264_idct_add8_mmx2(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=16; i<16+8; i++){
+        if(nnzc[ scan8[i] ])
+            ff_h264_idct_add_mmx    (dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
+        else if(block[i*16])
+            ff_h264_idct_dc_add_mmx2(dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
+    }
+}
 
 /***********************************/
 /* deblocking */

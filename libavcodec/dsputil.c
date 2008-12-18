@@ -4281,6 +4281,10 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         c->h264_idct8_add= ff_h264_idct8_add_c;
         c->h264_idct_dc_add= ff_h264_idct_dc_add_c;
         c->h264_idct8_dc_add= ff_h264_idct8_dc_add_c;
+        c->h264_idct_add16     = ff_h264_idct_add16_c;
+        c->h264_idct8_add4     = ff_h264_idct8_add4_c;
+        c->h264_idct_add8      = ff_h264_idct_add8_c;
+        c->h264_idct_add16intra= ff_h264_idct_add16intra_c;
     }
 
     c->get_pixels = get_pixels_c;
