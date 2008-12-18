@@ -5032,8 +5032,7 @@ static int decode_cabac_mb_ref( H264Context *h, int list, int n ) {
         else
             ctx = 5;
         if(ref >= 32 /*h->ref_list[list]*/){
-            av_log(h->s.avctx, AV_LOG_ERROR, "overflow in decode_cabac_mb_ref\n");
-            return 0; //FIXME we should return -1 and check the return everywhere
+            return -1;
         }
     }
     return ref;
@@ -5547,9 +5546,13 @@ decode_intra_mb:
                 for( i = 0; i < 4; i++ ) {
                     if(IS_DIRECT(h->sub_mb_type[i])) continue;
                     if(IS_DIR(h->sub_mb_type[i], 0, list)){
-                        if( h->ref_count[list] > 1 )
+                        if( h->ref_count[list] > 1 ){
                             ref[list][i] = decode_cabac_mb_ref( h, list, 4*i );
-                        else
+                            if(ref[list][i] >= (unsigned)h->ref_count[list]){
+                                av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref[list][i], h->ref_count[list]);
+                                return -1;
+                            }
+                        }else
                             ref[list][i] = 0;
                     } else {
                         ref[list][i] = -1;
@@ -5632,7 +5635,15 @@ decode_intra_mb:
         if(IS_16X16(mb_type)){
             for(list=0; list<h->list_count; list++){
                 if(IS_DIR(mb_type, 0, list)){
-                        const int ref = h->ref_count[list] > 1 ? decode_cabac_mb_ref( h, list, 0 ) : 0;
+                    int ref;
+                    if(h->ref_count[list] > 1){
+                        ref= decode_cabac_mb_ref(h, list, 0);
+                        if(ref >= (unsigned)h->ref_count[list]){
+                            av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, h->ref_count[list]);
+                            return -1;
+                        }
+                    }else
+                        ref=0;
                         fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, ref, 1);
                 }else
                     fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, (uint8_t)LIST_NOT_USED, 1); //FIXME factorize and the other fill_rect below too
@@ -5655,7 +5666,15 @@ decode_intra_mb:
             for(list=0; list<h->list_count; list++){
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){
-                            const int ref= h->ref_count[list] > 1 ? decode_cabac_mb_ref( h, list, 8*i ) : 0;
+                            int ref;
+                            if(h->ref_count[list] > 1){
+                                ref= decode_cabac_mb_ref( h, list, 8*i );
+                                if(ref >= (unsigned)h->ref_count[list]){
+                                    av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, h->ref_count[list]);
+                                    return -1;
+                                }
+                            }else
+                                ref=0;
                             fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, ref, 1);
                         }else
                             fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, (LIST_NOT_USED&0xFF), 1);
@@ -5682,7 +5701,15 @@ decode_intra_mb:
             for(list=0; list<h->list_count; list++){
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
-                            const int ref= h->ref_count[list] > 1 ? decode_cabac_mb_ref( h, list, 4*i ) : 0;
+                            int ref;
+                            if(h->ref_count[list] > 1){
+                                ref= decode_cabac_mb_ref( h, list, 4*i );
+                                if(ref >= (unsigned)h->ref_count[list]){
+                                    av_log(s->avctx, AV_LOG_ERROR, "Reference %d >= %d\n", ref, h->ref_count[list]);
+                                    return -1;
+                                }
+                            }else
+                                ref=0;
                             fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, ref, 1);
                         }else
                             fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, (LIST_NOT_USED&0xFF), 1);
