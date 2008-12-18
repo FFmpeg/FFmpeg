@@ -1605,9 +1605,6 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
     const int pic_width  = 16*s->mb_width;
     const int pic_height = 16*s->mb_height >> MB_FIELD;
 
-    if(!pic->data[0]) //FIXME this is unacceptable, some sensible error concealment must be done for missing reference frames
-        return;
-
     if(mx&7) extra_width -= 3;
     if(my&7) extra_height -= 3;
 
