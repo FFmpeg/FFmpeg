@@ -286,4 +286,25 @@ static const GUID my_guid = {
 
 #define ASF_PL_FLAG_KEY_FRAME 0x80 //1000 0000
 
+extern AVInputFormat asf_demuxer;
+
+/**
+ * Load a single ASF packet into the demuxer.
+ * @param s demux context
+ * @param pb context to read data from
+ * @returns 0 on success, <0 on error
+ */
+int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb);
+
+/**
+ * Parse data from individual ASF packets (which were previously loaded
+ * with asf_get_packet()).
+ * @param s demux context
+ * @param pb context to read data from
+ * @param pkt pointer to store packet data into
+ * @returns 0 if data was stored in pkt, <0 on error or 1 if more ASF
+ *          packets need to be loaded (through asf_get_packet())
+ */
+int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt);
+
 #endif /* AVFORMAT_ASF_H */
