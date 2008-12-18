@@ -2410,17 +2410,6 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
 //        dct_offset = s->linesize * 16;
     }
 
-    if(transform_bypass){
-        idct_dc_add =
-        idct_add = IS_8x8DCT(mb_type) ? s->dsp.add_pixels8 : s->dsp.add_pixels4;
-    }else if(IS_8x8DCT(mb_type)){
-        idct_dc_add = s->dsp.h264_idct8_dc_add;
-        idct_add = s->dsp.h264_idct8_add;
-    }else{
-        idct_dc_add = s->dsp.h264_idct_dc_add;
-        idct_add = s->dsp.h264_idct_add;
-    }
-
     if (!simple && IS_INTRA_PCM(mb_type)) {
         for (i=0; i<16; i++) {
             memcpy(dest_y + i*  linesize, h->mb       + i*8, 16);
@@ -2442,6 +2431,13 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             if(IS_INTRA4x4(mb_type)){
                 if(simple || !s->encoding){
                     if(IS_8x8DCT(mb_type)){
+                        if(transform_bypass){
+                            idct_dc_add =
+                            idct_add    = s->dsp.add_pixels8;
+                        }else if(IS_8x8DCT(mb_type)){
+                            idct_dc_add = s->dsp.h264_idct8_dc_add;
+                            idct_add    = s->dsp.h264_idct8_add;
+                        }
                         for(i=0; i<16; i+=4){
                             uint8_t * const ptr= dest_y + block_offset[i];
                             const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
@@ -2459,7 +2455,14 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                                 }
                             }
                         }
-                    }else
+                    }else{
+                        if(transform_bypass){
+                            idct_dc_add =
+                            idct_add    = s->dsp.add_pixels4;
+                        }else{
+                            idct_dc_add = s->dsp.h264_idct_dc_add;
+                            idct_add    = s->dsp.h264_idct_add;
+                        }
                     for(i=0; i<16; i++){
                         uint8_t * const ptr= dest_y + block_offset[i];
                         const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
@@ -2493,6 +2496,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                             }
                         }
                     }
+                    }
                 }
             }else{
                 h->hpc.pred16x16[ h->intra16x16_pred_mode ](dest_y , linesize);
@@ -2521,7 +2525,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                         }else{
                             for(i=0; i<16; i++){
                                 if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16])
-                                    idct_add(dest_y + block_offset[i], h->mb + i*16, linesize);
+                                    s->dsp.add_pixels4(dest_y + block_offset[i], h->mb + i*16, linesize);
                             }
                         }
                     }else{
@@ -2530,6 +2534,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                 }else if(h->cbp&15){
                     if(transform_bypass){
                         const int di = IS_8x8DCT(mb_type) ? 4 : 1;
+                        idct_add= IS_8x8DCT(mb_type) ? s->dsp.add_pixels8 : s->dsp.add_pixels4;
                         for(i=0; i<16; i+=di){
                             if(h->non_zero_count_cache[ scan8[i] ]){
                                 idct_add(dest_y + block_offset[i], h->mb + i*16, linesize);
