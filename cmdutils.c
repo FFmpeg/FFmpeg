@@ -127,10 +127,10 @@ void parse_options(int argc, char **argv, const OptionDef *options,
         opt = argv[optindex++];
 
         if (handleoptions && opt[0] == '-' && opt[1] != '\0') {
-          if (opt[1] == '-' && opt[2] == '\0') {
-            handleoptions = 0;
-            continue;
-          }
+            if (opt[1] == '-' && opt[2] == '\0') {
+                handleoptions = 0;
+                continue;
+            }
             po= find_option(options, opt + 1);
             if (!po->name)
                 po= find_option(options, "default");
