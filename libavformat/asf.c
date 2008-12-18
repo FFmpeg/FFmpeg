@@ -559,10 +559,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
  *
  * @return <0 in case of an error
  */
-static int asf_get_packet(AVFormatContext *s)
+static int asf_get_packet(AVFormatContext *s, ByteIOContext *pb)
 {
     ASFContext *asf = s->priv_data;
-    ByteIOContext *pb = s->pb;
     uint32_t packet_length, padsize;
     int rsize = 8;
     int c, d, e, off;
@@ -634,9 +633,8 @@ static int asf_get_packet(AVFormatContext *s)
  *
  * @return <0 if error
  */
-static int asf_read_frame_header(AVFormatContext *s){
+static int asf_read_frame_header(AVFormatContext *s, ByteIOContext *pb){
     ASFContext *asf = s->priv_data;
-    ByteIOContext *pb = s->pb;
     int rsize = 1;
     int num = get_byte(pb);
     int64_t ts0, ts1;
@@ -711,11 +709,10 @@ static int asf_read_frame_header(AVFormatContext *s){
  * @returns 0 if data was stored in pkt, <0 on error or 1 if more ASF
  *          packets need to be loaded (through asf_get_packet())
  */
-static int asf_parse_packet(AVFormatContext *s, AVPacket *pkt)
+static int asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
 {
     ASFContext *asf = s->priv_data;
     ASFStream *asf_st = 0;
-    ByteIOContext *pb = s->pb;
     for (;;) {
         if(url_feof(pb))
             return AVERROR(EIO);
@@ -735,7 +732,7 @@ static int asf_parse_packet(AVFormatContext *s, AVPacket *pkt)
             return 1;
         }
         if (asf->packet_time_start == 0) {
-            if(asf_read_frame_header(s) < 0){
+            if(asf_read_frame_header(s, s->pb) < 0){
                 asf->packet_segments= 0;
                 continue;
             }
@@ -887,9 +884,9 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
         int ret;
 
         /* parse cached packets, if any */
-        if ((ret = asf_parse_packet(s, pkt)) <= 0)
+        if ((ret = asf_parse_packet(s, s->pb, pkt)) <= 0)
             return ret;
-        if ((ret = asf_get_packet(s)) < 0)
+        if ((ret = asf_get_packet(s, s->pb)) < 0)
             assert(asf->packet_size_left < FRAME_HEADER_SIZE || asf->packet_segments < 1);
         asf->packet_time_start = 0;
     }
