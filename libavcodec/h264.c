@@ -6497,16 +6497,16 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
 
         if(IS_8x8DCT(mb_type)){
             h->non_zero_count_cache[scan8[0   ]]= h->non_zero_count_cache[scan8[1   ]]=
-            h->non_zero_count_cache[scan8[2   ]]= h->non_zero_count_cache[scan8[3   ]]= h->cbp_table[mb_xy] & 1;
+            h->non_zero_count_cache[scan8[2   ]]= h->non_zero_count_cache[scan8[3   ]]= h->cbp & 1;
 
             h->non_zero_count_cache[scan8[0+ 4]]= h->non_zero_count_cache[scan8[1+ 4]]=
-            h->non_zero_count_cache[scan8[2+ 4]]= h->non_zero_count_cache[scan8[3+ 4]]= h->cbp_table[mb_xy] & 2;
+            h->non_zero_count_cache[scan8[2+ 4]]= h->non_zero_count_cache[scan8[3+ 4]]= h->cbp & 2;
 
             h->non_zero_count_cache[scan8[0+ 8]]= h->non_zero_count_cache[scan8[1+ 8]]=
-            h->non_zero_count_cache[scan8[2+ 8]]= h->non_zero_count_cache[scan8[3+ 8]]= h->cbp_table[mb_xy] & 4;
+            h->non_zero_count_cache[scan8[2+ 8]]= h->non_zero_count_cache[scan8[3+ 8]]= h->cbp & 4;
 
             h->non_zero_count_cache[scan8[0+12]]= h->non_zero_count_cache[scan8[1+12]]=
-            h->non_zero_count_cache[scan8[2+12]]= h->non_zero_count_cache[scan8[3+12]]= h->cbp_table[mb_xy] & 8;
+            h->non_zero_count_cache[scan8[2+12]]= h->non_zero_count_cache[scan8[3+12]]= h->cbp & 8;
         }
     }
 
