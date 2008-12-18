@@ -2463,39 +2463,39 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                             idct_dc_add = s->dsp.h264_idct_dc_add;
                             idct_add    = s->dsp.h264_idct_add;
                         }
-                    for(i=0; i<16; i++){
-                        uint8_t * const ptr= dest_y + block_offset[i];
-                        const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
+                        for(i=0; i<16; i++){
+                            uint8_t * const ptr= dest_y + block_offset[i];
+                            const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
 
-                        if(transform_bypass && h->sps.profile_idc==244 && dir<=1){
-                            h->hpc.pred4x4_add[dir](ptr, h->mb + i*16, linesize);
-                        }else{
-                            uint8_t *topright;
-                            int nnz, tr;
-                            if(dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED){
-                                const int topright_avail= (h->topright_samples_available<<i)&0x8000;
-                                assert(mb_y || linesize <= block_offset[i]);
-                                if(!topright_avail){
-                                    tr= ptr[3 - linesize]*0x01010101;
-                                    topright= (uint8_t*) &tr;
+                            if(transform_bypass && h->sps.profile_idc==244 && dir<=1){
+                                h->hpc.pred4x4_add[dir](ptr, h->mb + i*16, linesize);
+                            }else{
+                                uint8_t *topright;
+                                int nnz, tr;
+                                if(dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED){
+                                    const int topright_avail= (h->topright_samples_available<<i)&0x8000;
+                                    assert(mb_y || linesize <= block_offset[i]);
+                                    if(!topright_avail){
+                                        tr= ptr[3 - linesize]*0x01010101;
+                                        topright= (uint8_t*) &tr;
+                                    }else
+                                        topright= ptr + 4 - linesize;
                                 }else
-                                    topright= ptr + 4 - linesize;
-                            }else
-                                topright= NULL;
+                                    topright= NULL;
 
-                            h->hpc.pred4x4[ dir ](ptr, topright, linesize);
-                            nnz = h->non_zero_count_cache[ scan8[i] ];
-                            if(nnz){
-                                if(is_h264){
-                                    if(nnz == 1 && h->mb[i*16])
-                                        idct_dc_add(ptr, h->mb + i*16, linesize);
-                                    else
-                                        idct_add   (ptr, h->mb + i*16, linesize);
-                                }else
-                                    svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
+                                h->hpc.pred4x4[ dir ](ptr, topright, linesize);
+                                nnz = h->non_zero_count_cache[ scan8[i] ];
+                                if(nnz){
+                                    if(is_h264){
+                                        if(nnz == 1 && h->mb[i*16])
+                                            idct_dc_add(ptr, h->mb + i*16, linesize);
+                                        else
+                                            idct_add   (ptr, h->mb + i*16, linesize);
+                                    }else
+                                        svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
+                                }
                             }
                         }
-                    }
                     }
                 }
             }else{
@@ -2576,20 +2576,20 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                 idct_dc_add = s->dsp.h264_idct_dc_add;
                 chroma_dc_dequant_idct_c(h->mb + 16*16, h->chroma_qp[0], h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp[0]][0]);
                 chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp[1], h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp[1]][0]);
-            if(is_h264){
+                if(is_h264){
                     for(i=16; i<16+8; i++){
                         if(h->non_zero_count_cache[ scan8[i] ])
                             idct_add   (dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
                         else if(h->mb[i*16])
                             idct_dc_add(dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
                     }
-            }else{
-                for(i=16; i<16+8; i++){
-                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                        uint8_t * const ptr= dest[(i&4)>>2] + block_offset[i];
-                        svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
+                }else{
+                    for(i=16; i<16+8; i++){
+                        if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
+                            uint8_t * const ptr= dest[(i&4)>>2] + block_offset[i];
+                            svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
+                        }
                     }
-                }
                 }
             }
         }
