@@ -5403,10 +5403,8 @@ static int decode_mb_cabac(H264Context *h) {
     h->prev_mb_skipped = 0;
 
     compute_mb_neighbors(h);
-    if( ( mb_type = decode_cabac_mb_type( h ) ) < 0 ) {
-        av_log( h->s.avctx, AV_LOG_ERROR, "decode_cabac_mb_type failed\n" );
-        return -1;
-    }
+    mb_type = decode_cabac_mb_type( h );
+    assert(mb_type >= 0);
 
     if( h->slice_type_nos == FF_B_TYPE ) {
         if( mb_type < 23 ){
