@@ -2561,31 +2561,35 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
         if((simple || !ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)) && (h->cbp&0x30)){
             uint8_t *dest[2] = {dest_cb, dest_cr};
             if(transform_bypass){
-                idct_add = idct_dc_add = s->dsp.add_pixels4;
+                idct_add = s->dsp.add_pixels4;
+                if(IS_INTRA(mb_type) && h->sps.profile_idc==244 && (h->chroma_pred_mode==VERT_PRED8x8 || h->chroma_pred_mode==HOR_PRED8x8)){
+                    h->hpc.pred8x8_add[h->chroma_pred_mode](dest[0], block_offset + 16, h->mb + 16*16, uvlinesize);
+                    h->hpc.pred8x8_add[h->chroma_pred_mode](dest[1], block_offset + 20, h->mb + 20*16, uvlinesize);
+                }else{
+                    for(i=16; i<16+8; i++){
+                        if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16])
+                            idct_add   (dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
+                    }
+                }
             }else{
                 idct_add = s->dsp.h264_idct_add;
                 idct_dc_add = s->dsp.h264_idct_dc_add;
                 chroma_dc_dequant_idct_c(h->mb + 16*16, h->chroma_qp[0], h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp[0]][0]);
                 chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp[1], h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp[1]][0]);
-            }
             if(is_h264){
-                if(transform_bypass && IS_INTRA(mb_type) && h->sps.profile_idc==244 && (h->chroma_pred_mode==VERT_PRED8x8 || h->chroma_pred_mode==HOR_PRED8x8)){
-                    h->hpc.pred8x8_add[h->chroma_pred_mode](dest[0], block_offset + 16, h->mb + 16*16, uvlinesize);
-                    h->hpc.pred8x8_add[h->chroma_pred_mode](dest[1], block_offset + 20, h->mb + 20*16, uvlinesize);
-                }else{
                     for(i=16; i<16+8; i++){
                         if(h->non_zero_count_cache[ scan8[i] ])
                             idct_add   (dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
                         else if(h->mb[i*16])
                             idct_dc_add(dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
                     }
-                }
             }else{
                 for(i=16; i<16+8; i++){
                     if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
                         uint8_t * const ptr= dest[(i&4)>>2] + block_offset[i];
                         svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
                     }
+                }
                 }
             }
         }
