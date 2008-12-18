@@ -2525,7 +2525,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                                 idct_dc_add(dest_y + block_offset[i], h->mb + i*16, linesize);
                         }
                     }
-                }else{
+                }else if(h->cbp&15){
                     const int di = IS_8x8DCT(mb_type) ? 4 : 1;
                     for(i=0; i<16; i+=di){
                         int nnz = h->non_zero_count_cache[ scan8[i] ];
