@@ -2515,25 +2515,32 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
         if(!IS_INTRA4x4(mb_type)){
             if(is_h264){
                 if(IS_INTRA16x16(mb_type)){
-                    if(transform_bypass && h->sps.profile_idc==244 && (h->intra16x16_pred_mode==VERT_PRED8x8 || h->intra16x16_pred_mode==HOR_PRED8x8)){
+                    if(transform_bypass){
+                        if(h->sps.profile_idc==244 && (h->intra16x16_pred_mode==VERT_PRED8x8 || h->intra16x16_pred_mode==HOR_PRED8x8)){
                         h->hpc.pred16x16_add[h->intra16x16_pred_mode](dest_y, block_offset, h->mb, linesize);
                     }else{
                         for(i=0; i<16; i++){
-                            if(h->non_zero_count_cache[ scan8[i] ])
+                            if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16])
                                 idct_add   (dest_y + block_offset[i], h->mb + i*16, linesize);
-                            else if(h->mb[i*16])
-                                idct_dc_add(dest_y + block_offset[i], h->mb + i*16, linesize);
                         }
+                        }
+                    }else{
+                         s->dsp.h264_idct_add16intra(dest_y, block_offset, h->mb, linesize, h->non_zero_count_cache);
                     }
                 }else if(h->cbp&15){
+                    if(transform_bypass){
                     const int di = IS_8x8DCT(mb_type) ? 4 : 1;
                     for(i=0; i<16; i+=di){
                         int nnz = h->non_zero_count_cache[ scan8[i] ];
                         if(nnz){
-                            if(nnz==1 && h->mb[i*16])
-                                idct_dc_add(dest_y + block_offset[i], h->mb + i*16, linesize);
-                            else
                                 idct_add(dest_y + block_offset[i], h->mb + i*16, linesize);
+                        }
+                    }
+                    }else{
+                        if(IS_8x8DCT(mb_type)){
+                            s->dsp.h264_idct8_add4(dest_y, block_offset, h->mb, linesize, h->non_zero_count_cache);
+                        }else{
+                            s->dsp.h264_idct_add16(dest_y, block_offset, h->mb, linesize, h->non_zero_count_cache);
                         }
                     }
                 }
