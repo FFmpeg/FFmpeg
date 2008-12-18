@@ -1034,8 +1034,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         break;
     case CODEC_ID_ALAC:
         if (st->codec->extradata_size == 36) {
-            st->codec->frame_size = AV_RB32((st->codec->extradata+12));
-            st->codec->channels   = AV_RB8  (st->codec->extradata+21);
+            st->codec->frame_size = AV_RB32(st->codec->extradata+12);
+            st->codec->channels   = AV_RB8 (st->codec->extradata+21);
         }
         break;
     default:
