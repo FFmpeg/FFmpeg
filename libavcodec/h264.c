@@ -2434,7 +2434,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                         if(transform_bypass){
                             idct_dc_add =
                             idct_add    = s->dsp.add_pixels8;
-                        }else if(IS_8x8DCT(mb_type)){
+                        }else{
                             idct_dc_add = s->dsp.h264_idct8_dc_add;
                             idct_add    = s->dsp.h264_idct8_add;
                         }
