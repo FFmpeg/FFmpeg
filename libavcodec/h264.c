@@ -4087,9 +4087,11 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
     tprintf(h->s.avctx, "trailing:%d, total:%d\n", trailing_ones, total_coeff);
     assert(total_coeff<=16);
 
-    for(i=0; i<trailing_ones; i++){
-        level[i]= 1 - 2*get_bits1(gb);
-    }
+    i = show_bits(gb, 3);
+    skip_bits(gb, trailing_ones);
+    level[0] = 1-((i&4)>>1);
+    level[1] = 1-((i&2)   );
+    level[2] = 1-((i&1)<<1);
 
     if(trailing_ones<total_coeff) {
         int level_code, mask;
