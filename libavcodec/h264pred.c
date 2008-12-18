@@ -989,23 +989,26 @@ static void pred8x8l_horizontal_up_c(uint8_t *src, int has_topleft, int has_topr
 
 static void pred4x4_vertical_add_c(uint8_t *pix, const DCTELEM *block, int stride){
     int i;
+    pix -= stride;
     for(i=0; i<4; i++){
-        pix[0]= pix[0-stride] + block[0];
-        pix[1]= pix[1-stride] + block[1];
-        pix[2]= pix[2-stride] + block[2];
-        pix[3]= pix[3-stride] + block[3];
-        pix+= stride;
-        block+= 4;
+        uint8_t v = pix[0];
+        pix[1*stride]= v += block[0];
+        pix[2*stride]= v += block[4];
+        pix[3*stride]= v += block[8];
+        pix[4*stride]= v += block[12];
+        pix++;
+        block++;
     }
 }
 
 static void pred4x4_horizontal_add_c(uint8_t *pix, const DCTELEM *block, int stride){
     int i;
     for(i=0; i<4; i++){
-        pix[0]= pix[-1] + block[0];
-        pix[1]= pix[ 0] + block[1];
-        pix[2]= pix[ 1] + block[2];
-        pix[3]= pix[ 2] + block[3];
+        uint8_t v = pix[-1];
+        pix[0]= v += block[0];
+        pix[1]= v += block[1];
+        pix[2]= v += block[2];
+        pix[3]= v += block[3];
         pix+= stride;
         block+= 4;
     }
@@ -1013,31 +1016,34 @@ static void pred4x4_horizontal_add_c(uint8_t *pix, const DCTELEM *block, int str
 
 static void pred8x8l_vertical_add_c(uint8_t *pix, const DCTELEM *block, int stride){
     int i;
+    pix -= stride;
     for(i=0; i<8; i++){
-        pix[0]= pix[0-stride] + block[0];
-        pix[1]= pix[1-stride] + block[1];
-        pix[2]= pix[2-stride] + block[2];
-        pix[3]= pix[3-stride] + block[3];
-        pix[4]= pix[4-stride] + block[4];
-        pix[5]= pix[5-stride] + block[5];
-        pix[6]= pix[6-stride] + block[6];
-        pix[7]= pix[7-stride] + block[7];
-        pix+= stride;
-        block+= 8;
+        uint8_t v = pix[0];
+        pix[1*stride]= v += block[0];
+        pix[2*stride]= v += block[8];
+        pix[3*stride]= v += block[16];
+        pix[4*stride]= v += block[24];
+        pix[5*stride]= v += block[32];
+        pix[6*stride]= v += block[40];
+        pix[7*stride]= v += block[48];
+        pix[8*stride]= v += block[56];
+        pix++;
+        block++;
     }
 }
 
 static void pred8x8l_horizontal_add_c(uint8_t *pix, const DCTELEM *block, int stride){
     int i;
     for(i=0; i<8; i++){
-        pix[0]= pix[-1] + block[0];
-        pix[1]= pix[ 0] + block[1];
-        pix[2]= pix[ 1] + block[2];
-        pix[3]= pix[ 2] + block[3];
-        pix[4]= pix[ 3] + block[4];
-        pix[5]= pix[ 4] + block[5];
-        pix[6]= pix[ 5] + block[6];
-        pix[7]= pix[ 6] + block[7];
+        uint8_t v = pix[-1];
+        pix[0]= v += block[0];
+        pix[1]= v += block[1];
+        pix[2]= v += block[2];
+        pix[3]= v += block[3];
+        pix[4]= v += block[4];
+        pix[5]= v += block[5];
+        pix[6]= v += block[6];
+        pix[7]= v += block[7];
         pix+= stride;
         block+= 8;
     }
