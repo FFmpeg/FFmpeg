@@ -681,6 +681,7 @@ static int svq3_decode_mb(H264Context *h, unsigned int mb_type)
         }
     }
 
+    h->cbp= cbp;
     s->current_picture.mb_type[mb_xy] = mb_type;
 
     if (IS_INTRA(mb_type)) {
