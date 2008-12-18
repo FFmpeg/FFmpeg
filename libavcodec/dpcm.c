@@ -268,7 +268,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
                 n1 = (buf[in] >> 4) & 0xF;
                 n2 = buf[in++] & 0xF;
                 s->sample[0] += s->sol_table[n1];
-                 if (s->sample[0] < 0) s->sample[0] = 0;
+                if (s->sample[0] < 0) s->sample[0] = 0;
                 if (s->sample[0] > 255) s->sample[0] = 255;
                 output_samples[out++] = (s->sample[0] - 128) << 8;
                 s->sample[s->channels - 1] += s->sol_table[n2];
