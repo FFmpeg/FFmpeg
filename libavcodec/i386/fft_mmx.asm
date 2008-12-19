@@ -451,7 +451,7 @@ dispatch_tab%3%2: pointer list_of_fft
 
 ; On x86_32, this function does the register saving and restoring for all of fft.
 ; The others pass args in registers and don't spill anything.
-cglobal ff_fft_dispatch%3%2, 2,5,0, z, nbits
+cglobal fft_dispatch%3%2, 2,5,0, z, nbits
     lea r2, [dispatch_tab%3%2 GLOBAL]
     mov r2, [r2 + (nbitsq-2)*gprsize]
     call r2

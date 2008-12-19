@@ -34,7 +34,7 @@ section .text align=16
 
 %macro FLOAT_TO_INT16_INTERLEAVE6 1
 ; void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len)
-cglobal ff_float_to_int16_interleave6_%1, 2,7,0, dst, src, src1, src2, src3, src4, src5
+cglobal float_to_int16_interleave6_%1, 2,7,0, dst, src, src1, src2, src3, src4, src5
 %ifdef ARCH_X86_64
     %define lend r10d
     mov     lend, r2d

@@ -370,20 +370,14 @@ DECLARE_REG 6, ebp, ebp, bp, null, [esp + stack_offset + 28]
 
 ; Symbol prefix for C linkage
 %macro cglobal 1-2+
+    %xdefine %1 ff_%1
+    %ifdef PREFIX
+        %xdefine %1 _ %+ %1
+    %endif
     %ifidn __OUTPUT_FORMAT__,elf
-        %ifdef PREFIX
-            global _%1:function hidden
-            %define %1 _%1
-        %else
-            global %1:function hidden
-        %endif
+        global %1:function hidden
     %else
-        %ifdef PREFIX
-            global _%1
-            %define %1 _%1
-        %else
-            global %1
-        %endif
+        global %1
     %endif
     align function_align
     %1:
