@@ -3736,8 +3736,8 @@ static int ffserver_opt_default(const char *opt, const char *arg,
                        AVCodecContext *avctx, int type)
 {
     int ret = 0;
-    const AVOption *o2 = av_find_opt(avctx, opt, NULL, type, type);
-    if(o2)
+    const AVOption *o = av_find_opt(avctx, opt, NULL, type, type);
+    if(o)
         ret = av_set_string3(avctx, opt, arg, 1, NULL);
     return ret;
 }
