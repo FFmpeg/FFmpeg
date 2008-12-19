@@ -404,7 +404,8 @@ MMX-OBJS-$(CONFIG_VP6_DECODER)         += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP6A_DECODER)        += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP6F_DECODER)        += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_WMV3_DECODER)        += i386/vc1dsp_mmx.o
-MMX-OBJS-$(HAVE_YASM)                  += i386/dsputil_yasm.o
+MMX-OBJS-$(HAVE_YASM)                  += i386/dsputil_yasm.o \
+                                          i386/h264_deblock_sse2.o
 
 OBJS-$(HAVE_MMX)                       += i386/cpuid.o                  \
                                           i386/dnxhd_mmx.o              \
