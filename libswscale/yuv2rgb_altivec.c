@@ -91,9 +91,6 @@ adjustment.
 #include <inttypes.h>
 #include <assert.h>
 #include "config.h"
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
