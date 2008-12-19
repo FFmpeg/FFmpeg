@@ -1406,7 +1406,7 @@ static const uint8_t *decode_nal(H264Context *h, const uint8_t *src, int *dst_le
     }
 
     bufidx = h->nal_unit_type == NAL_DPC ? 1 : 0; // use second escape buffer for inter data
-    h->rbsp_buffer[bufidx]= av_fast_realloc(h->rbsp_buffer[bufidx], &h->rbsp_buffer_size[bufidx], length);
+    h->rbsp_buffer[bufidx]= av_fast_realloc(h->rbsp_buffer[bufidx], &h->rbsp_buffer_size[bufidx], length+FF_INPUT_BUFFER_PADDING_SIZE);
     dst= h->rbsp_buffer[bufidx];
 
     if (dst == NULL){
@@ -1429,6 +1429,8 @@ static const uint8_t *decode_nal(H264Context *h, const uint8_t *src, int *dst_le
 
         dst[di++]= src[si++];
     }
+
+    memset(dst+di, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     *dst_length= di;
     *consumed= si + 1;//+1 for the header
