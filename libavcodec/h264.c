@@ -4959,10 +4959,7 @@ static int decode_cabac_mb_dqp( H264Context *h) {
     int   val = 0;
 
     while( get_cabac_noinline( &h->cabac, &h->cabac_state[60 + ctx] ) ) {
-        if( ctx < 2 )
-            ctx = 2;
-        else
-            ctx = 3;
+        ctx= 2+(ctx>>1);
         val++;
         if(val > 102) //prevent infinite loop
             return INT_MIN;
