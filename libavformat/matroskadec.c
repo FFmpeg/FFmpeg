@@ -1304,7 +1304,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->extradata = extradata;
             st->codec->extradata_size = extradata_size;
         } else if(track->codec_priv.data && track->codec_priv.size > 0){
-            st->codec->extradata = av_malloc(track->codec_priv.size);
+            st->codec->extradata = av_mallocz(track->codec_priv.size +
+                                              FF_INPUT_BUFFER_PADDING_SIZE);
             if(st->codec->extradata == NULL)
                 return AVERROR(ENOMEM);
             st->codec->extradata_size = track->codec_priv.size;
