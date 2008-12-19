@@ -2120,6 +2120,8 @@ static av_cold void common_init(H264Context *h){
     s->unrestricted_mv=1;
     s->decode=1; //FIXME
 
+    dsputil_init(&s->dsp, s->avctx); // needed so that idct permutation is known early
+
     memset(h->pps.scaling_matrix4, 16, 6*16*sizeof(uint8_t));
     memset(h->pps.scaling_matrix8, 16, 2*64*sizeof(uint8_t));
 }
