@@ -3735,13 +3735,11 @@ static void load_module(const char *filename)
 static int ffserver_opt_default(const char *opt, const char *arg,
                        AVCodecContext *avctx, int type)
 {
-    const AVOption *o  = NULL;
+    int ret = 0;
     const AVOption *o2 = av_find_opt(avctx, opt, NULL, type, type);
     if(o2)
-        o = av_set_string2(avctx, opt, arg, 1);
-    if(!o)
-        return -1;
-    return 0;
+        ret = av_set_string3(avctx, opt, arg, 1, NULL);
+    return ret;
 }
 
 static int parse_ffconfig(const char *filename)

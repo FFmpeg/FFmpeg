@@ -207,7 +207,10 @@ const AVOption *av_set_string2(void *obj, const char *name, const char *val, int
 }
 
 const AVOption *av_set_string(void *obj, const char *name, const char *val){
-    return av_set_string2(obj, name, val, 0);
+    const AVOption *o;
+    if (av_set_string3(obj, name, val, 0, &o) < 0)
+        return NULL;
+    return o;
 }
 
 const AVOption *av_set_double(void *obj, const char *name, double n){

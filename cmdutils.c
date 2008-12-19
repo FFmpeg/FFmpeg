@@ -224,7 +224,7 @@ void set_context_opts(void *ctx, void *opts_ctx, int flags)
         const char *str= av_get_string(opts_ctx, opt_names[i], &opt, buf, sizeof(buf));
         /* if an option with name opt_names[i] is present in opts_ctx then str is non-NULL */
         if(str && ((opt->flags & flags) == flags))
-            av_set_string2(ctx, opt_names[i], str, 1);
+            av_set_string3(ctx, opt_names[i], str, 1, NULL);
     }
 }
 
