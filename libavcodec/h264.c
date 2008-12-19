@@ -5084,14 +5084,9 @@ static av_always_inline int get_cabac_cbf_ctx( H264Context *h, int cat, int idx,
             nzb = (h-> top_cbp>>(6+idx))&0x01;
         }
     } else {
-        if( cat == 4 ) {
-            nza = h->non_zero_count_cache[scan8[16+idx] - 1];
-            nzb = h->non_zero_count_cache[scan8[16+idx] - 8];
-        } else {
-            assert(cat == 1 || cat == 2);
-            nza = h->non_zero_count_cache[scan8[idx] - 1];
-            nzb = h->non_zero_count_cache[scan8[idx] - 8];
-        }
+        assert(cat == 1 || cat == 2 || cat == 4);
+        nza = h->non_zero_count_cache[scan8[idx] - 1];
+        nzb = h->non_zero_count_cache[scan8[idx] - 8];
     }
 
     if( nza > 0 )
@@ -5173,19 +5168,15 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
      *      1-> AC 16x16  n = luma4x4idx
      *      2-> Luma4x4   n = luma4x4idx
      *      3-> DC Chroma n = iCbCr
-     *      4-> AC Chroma n = 4 * iCbCr + chroma4x4idx
+     *      4-> AC Chroma n = 16 + 4 * iCbCr + chroma4x4idx
      *      5-> Luma8x8   n = 4 * luma8x8idx
      */
 
     /* read coded block flag */
     if( is_dc || cat != 5 ) {
         if( get_cabac( CC, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n, is_dc ) ] ) == 0 ) {
-            if( !is_dc ) {
-                if( cat == 4 )
-                    h->non_zero_count_cache[scan8[16+n]] = 0;
-                else
-                    h->non_zero_count_cache[scan8[n]] = 0;
-            }
+            if( !is_dc )
+                h->non_zero_count_cache[scan8[n]] = 0;
 
 #ifdef CABAC_ON_STACK
             h->cabac.range     = cc.range     ;
@@ -5240,10 +5231,8 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
     } else {
         if( cat == 5 )
             fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, coeff_count, 1);
-        else if( cat == 4 )
-            h->non_zero_count_cache[scan8[16+n]] = coeff_count;
         else {
-            assert( cat == 1 || cat == 2 );
+            assert( cat == 1 || cat == 2 || cat == 4 );
             h->non_zero_count_cache[scan8[n]] = coeff_count;
         }
     }
@@ -5825,7 +5814,7 @@ decode_intra_mb:
                 for( i = 0; i < 4; i++ ) {
                     const int index = 16 + 4 * c + i;
                     //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-AC %d\n",c, index - 16 );
-                    decode_cabac_residual(h, h->mb + 16*index, 4, index - 16, scan + 1, qmul, 15);
+                    decode_cabac_residual(h, h->mb + 16*index, 4, index, scan + 1, qmul, 15);
                 }
             }
         } else {
