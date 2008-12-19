@@ -4966,9 +4966,9 @@ static int decode_cabac_mb_dqp( H264Context *h) {
     }
 
     if( val&0x01 )
-        return (val + 1)/2;
+        return   (val + 1)>>1 ;
     else
-        return -(val + 1)/2;
+        return -((val + 1)>>1);
 }
 static int decode_cabac_p_mb_sub_type( H264Context *h ) {
     if( get_cabac( &h->cabac, &h->cabac_state[21] ) )
