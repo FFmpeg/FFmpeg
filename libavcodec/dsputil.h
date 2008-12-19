@@ -442,6 +442,10 @@ typedef struct DSPContext {
 #define EDGE_WIDTH 16
 
     /* h264 functions */
+    /* NOTE!!! if you implement any of h264_idct8_add, h264_idct8_add4 then you must implement all of them
+       NOTE!!! if you implement any of h264_idct_add, h264_idct_add16, h264_idct_add16intra, h264_idct_add8 then you must implement all of them
+        The reason for above, is that no 2 out of one list may use a different permutation.
+    */
     void (*h264_idct_add)(uint8_t *dst/*align 4*/, DCTELEM *block/*align 16*/, int stride);
     void (*h264_idct8_add)(uint8_t *dst/*align 8*/, DCTELEM *block/*align 16*/, int stride);
     void (*h264_idct_dc_add)(uint8_t *dst/*align 4*/, DCTELEM *block/*align 16*/, int stride);
