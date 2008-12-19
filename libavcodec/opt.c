@@ -199,6 +199,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
     return 0;
 }
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc){
     const AVOption *o;
     if (av_set_string3(obj, name, val, alloc, &o) < 0)
@@ -212,6 +213,7 @@ const AVOption *av_set_string(void *obj, const char *name, const char *val){
         return NULL;
     return o;
 }
+#endif
 
 const AVOption *av_set_double(void *obj, const char *name, double n){
     return av_set_number(obj, name, n, 1, 1);

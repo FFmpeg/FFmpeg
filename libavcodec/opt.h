@@ -99,6 +99,7 @@ typedef struct AVOption {
  */
 const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int mask, int flags);
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
  * @see av_set_string2()
  */
@@ -111,6 +112,7 @@ attribute_deprecated const AVOption *av_set_string(void *obj, const char *name, 
  * @see av_set_string3()
  */
 attribute_deprecated const AVOption *av_set_string2(void *obj, const char *name, const char *val, int alloc);
+#endif
 
 /**
  * Sets the field of obj with the given name to value.
