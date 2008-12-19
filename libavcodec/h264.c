@@ -4955,11 +4955,8 @@ static int decode_cabac_mb_cbp_chroma( H264Context *h) {
     return 1 + get_cabac_noinline( &h->cabac, &h->cabac_state[77 + ctx] );
 }
 static int decode_cabac_mb_dqp( H264Context *h) {
-    int   ctx = 0;
+    int   ctx= h->last_qscale_diff != 0;
     int   val = 0;
-
-    if( h->last_qscale_diff != 0 )
-        ctx++;
 
     while( get_cabac_noinline( &h->cabac, &h->cabac_state[60 + ctx] ) ) {
         if( ctx < 2 )
