@@ -112,6 +112,127 @@ static int rv30_decode_mb_info(RV34DecContext *r)
         return rv30_b_types[code];
 }
 
+static inline void rv30_weak_loop_filter(uint8_t *src, const int step,
+                                         const int stride, const int lim)
+{
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    int i, diff;
+
+    for(i = 0; i < 4; i++){
+        diff = ((src[-2*step] - src[1*step]) - (src[-1*step] - src[0*step])*4) >> 3;
+        diff = av_clip(diff, -lim, lim);
+        src[-1*step] = cm[src[-1*step] + diff];
+        src[ 0*step] = cm[src[ 0*step] - diff];
+        src += stride;
+    }
+}
+
+static void rv30_loop_filter(RV34DecContext *r, int row)
+{
+    MpegEncContext *s = &r->s;
+    int mb_pos, mb_x;
+    int i, j, k;
+    uint8_t *Y, *C;
+    int loc_lim, cur_lim, left_lim = 0, top_lim = 0;
+
+    mb_pos = row * s->mb_stride;
+    for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
+        int mbtype = s->current_picture_ptr->mb_type[mb_pos];
+        if(IS_INTRA(mbtype) || IS_SEPARATE_DC(mbtype))
+            r->deblock_coefs[mb_pos] = 0xFFFF;
+        if(IS_INTRA(mbtype))
+            r->cbp_chroma[mb_pos] = 0xFF;
+    }
+
+    /* all vertical edges are filtered first
+     * and horizontal edges are filtered on the next iteration
+     */
+    mb_pos = row * s->mb_stride;
+    for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
+        cur_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos]];
+        if(mb_x)
+            left_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos - 1]];
+        for(j = 0; j < 16; j += 4){
+            Y = s->current_picture_ptr->data[0] + mb_x*16 + (row*16 + j) * s->linesize + 4 * !mb_x;
+            for(i = !mb_x; i < 4; i++, Y += 4){
+                int ij = i + j;
+                loc_lim = 0;
+                if(r->deblock_coefs[mb_pos] & (1 << ij))
+                    loc_lim = cur_lim;
+                else if(!i && r->deblock_coefs[mb_pos - 1] & (1 << (ij + 3)))
+                    loc_lim = left_lim;
+                else if( i && r->deblock_coefs[mb_pos]     & (1 << (ij - 1)))
+                    loc_lim = cur_lim;
+                if(loc_lim)
+                    rv30_weak_loop_filter(Y, 1, s->linesize, loc_lim);
+            }
+        }
+        for(k = 0; k < 2; k++){
+            int cur_cbp, left_cbp = 0;
+            cur_cbp = (r->cbp_chroma[mb_pos] >> (k*4)) & 0xF;
+            if(mb_x)
+                left_cbp = (r->cbp_chroma[mb_pos - 1] >> (k*4)) & 0xF;
+            for(j = 0; j < 8; j += 4){
+                C = s->current_picture_ptr->data[k+1] + mb_x*8 + (row*8 + j) * s->uvlinesize + 4 * !mb_x;
+                for(i = !mb_x; i < 2; i++, C += 4){
+                    int ij = i + (j >> 1);
+                    loc_lim = 0;
+                    if(cur_cbp && (1 << ij))
+                        loc_lim = cur_lim;
+                    else if(!i && left_cbp & (1 << (ij + 1)))
+                        loc_lim = left_lim;
+                    else if( i && cur_cbp  & (1 << (ij - 1)))
+                        loc_lim = cur_lim;
+                    if(loc_lim)
+                        rv30_weak_loop_filter(C, 1, s->uvlinesize, loc_lim);
+                }
+            }
+        }
+    }
+    mb_pos = row * s->mb_stride;
+    for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
+        cur_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos]];
+        if(row)
+            top_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos - s->mb_stride]];
+        for(j = 4*!row; j < 16; j += 4){
+            Y = s->current_picture_ptr->data[0] + mb_x*16 + (row*16 + j) * s->linesize;
+            for(i = 0; i < 4; i++, Y += 4){
+                int ij = i + j;
+                loc_lim = 0;
+                if(r->deblock_coefs[mb_pos] & (1 << ij))
+                    loc_lim = cur_lim;
+                else if(!j && r->deblock_coefs[mb_pos - s->mb_stride] & (1 << (ij + 12)))
+                    loc_lim = top_lim;
+                else if( j && r->deblock_coefs[mb_pos]                & (1 << (ij - 4)))
+                    loc_lim = cur_lim;
+                if(loc_lim)
+                    rv30_weak_loop_filter(Y, s->linesize, 1, loc_lim);
+            }
+        }
+        for(k = 0; k < 2; k++){
+            int cur_cbp, top_cbp = 0;
+            cur_cbp = (r->cbp_chroma[mb_pos] >> (k*4)) & 0xF;
+            if(row)
+                top_cbp = (r->cbp_chroma[mb_pos - s->mb_stride] >> (k*4)) & 0xF;
+            for(j = 4*!row; j < 8; j += 4){
+                C = s->current_picture_ptr->data[k+1] + mb_x*8 + (row*8 + j) * s->uvlinesize;
+                for(i = 0; i < 2; i++, C += 4){
+                    int ij = i + (j >> 1);
+                    loc_lim = 0;
+                    if(r->cbp_chroma[mb_pos] && (1 << ij))
+                        loc_lim = cur_lim;
+                    else if(!j && top_cbp & (1 << (ij + 2)))
+                        loc_lim = top_lim;
+                    else if( j && cur_cbp & (1 << (ij - 2)))
+                        loc_lim = cur_lim;
+                    if(loc_lim)
+                        rv30_weak_loop_filter(C, s->uvlinesize, 1, loc_lim);
+                }
+            }
+        }
+    }
+}
+
 /**
  * Initialize decoder.
  */
@@ -130,6 +251,7 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
     r->parse_slice_header = rv30_parse_slice_header;
     r->decode_intra_types = rv30_decode_intra_types;
     r->decode_mb_info     = rv30_decode_mb_info;
+    r->loop_filter        = rv30_loop_filter;
     r->luma_dc_quant_i = rv30_luma_dc_quant;
     r->luma_dc_quant_p = rv30_luma_dc_quant;
     return 0;
