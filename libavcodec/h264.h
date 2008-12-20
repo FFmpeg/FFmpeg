@@ -339,7 +339,7 @@ typedef struct H264Context{
     int mb_field_decoding_flag;
     int mb_mbaff;              ///< mb_aff_frame && mb_field_decoding_flag
 
-    unsigned int sub_mb_type[4];
+    uint16_t sub_mb_type[4];
 
     //POC stuff
     int poc_lsb;

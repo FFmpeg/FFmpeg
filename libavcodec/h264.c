@@ -4039,13 +4039,10 @@ static inline int get_level_prefix(GetBitContext *gb){
 }
 
 static inline int get_dct8x8_allowed(H264Context *h){
-    int i;
-    for(i=0; i<4; i++){
-        if(!IS_SUB_8X8(h->sub_mb_type[i])
-           || (!h->sps.direct_8x8_inference_flag && IS_DIRECT(h->sub_mb_type[i])))
-            return 0;
-    }
-    return 1;
+    if(h->sps.direct_8x8_inference_flag)
+        return !(*(uint64_t*)h->sub_mb_type & ((MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_8x8                )*0x0001000100010001ULL));
+    else
+        return !(*(uint64_t*)h->sub_mb_type & ((MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_8x8|MB_TYPE_DIRECT2)*0x0001000100010001ULL));
 }
 
 /**
