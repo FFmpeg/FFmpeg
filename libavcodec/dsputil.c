@@ -2743,6 +2743,10 @@ void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
 /* H264 specific */
 void ff_h264dspenc_init(DSPContext* c, AVCodecContext *avctx);
 
+#if defined(CONFIG_RV30_DECODER)
+void ff_rv30dsp_init(DSPContext* c, AVCodecContext *avctx);
+#endif /* CONFIG_RV30_DECODER */
+
 #if defined(CONFIG_RV40_DECODER)
 static void put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride){
     put_pixels16_xy2_c(dst, src, stride, 16);
@@ -4494,6 +4498,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #endif
 #if defined(CONFIG_H264_ENCODER)
     ff_h264dspenc_init(c,avctx);
+#endif
+#if defined(CONFIG_RV30_DECODER)
+    ff_rv30dsp_init(c,avctx);
 #endif
 #if defined(CONFIG_RV40_DECODER)
     ff_rv40dsp_init(c,avctx);

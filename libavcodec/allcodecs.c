@@ -132,6 +132,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (RPZA, rpza);
     REGISTER_ENCDEC  (RV10, rv10);
     REGISTER_ENCDEC  (RV20, rv20);
+    REGISTER_DECODER (RV30, rv30);
     REGISTER_DECODER (RV40, rv40);
     REGISTER_ENCDEC  (SGI, sgi);
     REGISTER_DECODER (SMACKER, smacker);
