@@ -536,7 +536,12 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
             }
         }else
         {
-            float max_pitch_gain = q->erasure_count < 3 ? 0.9 - 0.3 * (q->erasure_count - 1) : 0.0;
+            float max_pitch_gain;
+
+            if (q->erasure_count < 3)
+                max_pitch_gain = 0.9 - 0.3 * (q->erasure_count - 1);
+             else
+                max_pitch_gain = 0.0;
             for(i=0; i<4; i++)
                 q->pitch_gain[i] = FFMIN(q->pitch_gain[i], max_pitch_gain);
 
