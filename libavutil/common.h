@@ -41,8 +41,10 @@
 #    include <math.h>
 #endif /* HAVE_AV_CONFIG_H */
 
+#define AV_GCC_VERSION_AT_LEAST(x,y) (defined(__GNUC__) && (__GNUC__ > x || __GNUC__ == x && __GNUC_MINOR__ >= y))
+
 #ifndef av_always_inline
-#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define av_always_inline __attribute__((always_inline)) inline
 #else
 #    define av_always_inline inline
@@ -50,7 +52,7 @@
 #endif
 
 #ifndef av_noinline
-#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define av_noinline __attribute__((noinline))
 #else
 #    define av_noinline
@@ -58,7 +60,7 @@
 #endif
 
 #ifndef av_pure
-#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define av_pure __attribute__((pure))
 #else
 #    define av_pure
@@ -66,7 +68,7 @@
 #endif
 
 #ifndef av_const
-#if defined(__GNUC__) && (__GNUC__ > 2 || __GNUC__ == 2 && __GNUC_MINOR__ > 5)
+#if AV_GCC_VERSION_AT_LEAST(2,6)
 #    define av_const __attribute__((const))
 #else
 #    define av_const
@@ -74,7 +76,7 @@
 #endif
 
 #ifndef av_cold
-#if defined(__GNUC__) && (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ > 2)
+#if AV_GCC_VERSION_AT_LEAST(4,3)
 #    define av_cold __attribute__((cold))
 #else
 #    define av_cold
@@ -86,7 +88,7 @@
 #endif /* HAVE_AV_CONFIG_H */
 
 #ifndef attribute_deprecated
-#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define attribute_deprecated __attribute__((deprecated))
 #else
 #    define attribute_deprecated
