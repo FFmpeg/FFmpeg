@@ -128,7 +128,7 @@ typedef struct HuffTable {
 } HuffTable;
 
 int ff_mpa_l2_select_table(int bitrate, int nb_channels, int freq, int lsf);
-int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate);
+int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bitrate);
 void ff_mpa_synth_init(MPA_INT *window);
 void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
                          MPA_INT *window, int *dither_state,
