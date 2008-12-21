@@ -5356,9 +5356,7 @@ static int decode_mb_cabac(H264Context *h) {
             if( FRAME_MBAFF && (s->mb_y&1)==0 ){
                 s->current_picture.mb_type[mb_xy] = MB_TYPE_SKIP;
                 h->next_mb_skipped = decode_cabac_mb_skip( h, s->mb_x, s->mb_y+1 );
-                if(h->next_mb_skipped)
-                    predict_field_decoding_flag(h);
-                else
+                if(!h->next_mb_skipped)
                     h->mb_mbaff = h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h);
             }
 
@@ -6550,7 +6548,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             if( ret >= 0 && FRAME_MBAFF ) { //FIXME optimal? or let mb_decode decode 16x32 ?
                 s->mb_y++;
 
-                if(ret>=0) ret = decode_mb_cabac(h);
+                ret = decode_mb_cabac(h);
 
                 if(ret>=0) hl_decode_mb(h);
                 s->mb_y--;
