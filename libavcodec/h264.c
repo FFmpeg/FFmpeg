@@ -2595,6 +2595,9 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
             }
         }
     }
+    if(h->cbp || IS_INTRA(mb_type))
+        s->dsp.clear_blocks(h->mb);
+
     if(h->deblocking_filter) {
         backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, simple);
         fill_caches(h, mb_type, 1); //FIXME don't fill stuff which isn't used by filter_mb
@@ -4262,8 +4265,6 @@ static int decode_mb_cavlc(H264Context *h){
 
     mb_xy = h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
 
-    s->dsp.clear_blocks(h->mb); //FIXME avoid if already clear (move after skip handlong?
-
     tprintf(s->avctx, "pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
                 down the code */
@@ -5339,8 +5340,6 @@ static int decode_mb_cabac(H264Context *h) {
     int dct8x8_allowed= h->pps.transform_8x8_mode;
 
     mb_xy = h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
-
-    s->dsp.clear_blocks(h->mb); //FIXME avoid if already clear (move after skip handlong?)
 
     tprintf(s->avctx, "pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
     if( h->slice_type_nos != FF_I_TYPE ) {
