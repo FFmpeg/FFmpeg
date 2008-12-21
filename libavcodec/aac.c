@@ -167,15 +167,16 @@ static void decode_channel_map(enum ChannelPosition *cpe_map,
  */
 static int decode_pce(AACContext * ac, enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
         GetBitContext * gb) {
-    int num_front, num_side, num_back, num_lfe, num_assoc_data, num_cc;
+    int num_front, num_side, num_back, num_lfe, num_assoc_data, num_cc, sampling_index;
 
     skip_bits(gb, 2);  // object_type
 
-    ac->m4ac.sampling_index = get_bits(gb, 4);
-    if(ac->m4ac.sampling_index > 11) {
+    sampling_index = get_bits(gb, 4);
+    if(sampling_index > 11) {
         av_log(ac->avccontext, AV_LOG_ERROR, "invalid sampling rate index %d\n", ac->m4ac.sampling_index);
         return -1;
     }
+    ac->m4ac.sampling_index = sampling_index;
     ac->m4ac.sample_rate = ff_mpeg4audio_sample_rates[ac->m4ac.sampling_index];
     num_front       = get_bits(gb, 4);
     num_side        = get_bits(gb, 4);
