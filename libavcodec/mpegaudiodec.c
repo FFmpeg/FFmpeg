@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
+#include "libavutil/common.h"
 
 /*
  * TODO:
