@@ -1088,7 +1088,7 @@ static int decode_cpe(AACContext * ac, GetBitContext * gb, int elem_id) {
 
     if (common_window) {
         if (ms_present)
-        apply_mid_side_stereo(cpe);
+            apply_mid_side_stereo(cpe);
         if (ac->m4ac.object_type == AOT_AAC_MAIN) {
             apply_prediction(ac, &cpe->ch[0]);
             apply_prediction(ac, &cpe->ch[1]);
