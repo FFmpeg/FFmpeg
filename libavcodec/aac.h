@@ -163,7 +163,6 @@ typedef struct {
     int predictor_initialized;
     int predictor_reset_group;
     uint8_t prediction_used[41];
-    PredictorState predictor_state[MAX_PREDICTORS];
 } IndividualChannelStream;
 
 /**
@@ -226,6 +225,7 @@ typedef struct {
     DECLARE_ALIGNED_16(float, coeffs[1024]);  ///< coefficients for IMDCT
     DECLARE_ALIGNED_16(float, saved[512]);    ///< overlap
     DECLARE_ALIGNED_16(float, ret[1024]);     ///< PCM output
+    PredictorState predictor_state[MAX_PREDICTORS];
 } SingleChannelElement;
 
 /**
