@@ -6137,6 +6137,7 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
 end:
     if(s->flags& CODEC_FLAG_LOW_DELAY)
         s->low_delay=1;
+    s->avctx->has_b_frames= !s->low_delay;
     return decode_vop_header(s, gb);
 }
 

@@ -1532,99 +1532,99 @@ ret: 0 st: 0 dts:0.880000 pts:-102481911520608.625000 pos:79182 size:10791 flags
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg4-Q.avi
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:11942 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:11942 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:142978 size:15562 flags:1
 ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:64442 size:13382 flags:1
 ret:-1 st: 0 ts:-0.320000 flags:1
 ret:-1 st:-1 ts:2.576668 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:101236 size:15057 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:101236 size:15057 flags:1
 ret: 0 st: 0 ts:0.360000 flags:0
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:32850 size:11813 flags:1
+ret: 0 st: 0 dts:0.400000 pts:-368934881474191040.000000 pos:32850 size:11813 flags:1
 ret:-1 st: 0 ts:-0.760000 flags:1
 ret:-1 st:-1 ts:2.153336 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:64442 size:13382 flags:1
 ret: 0 st: 0 ts:-0.040000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:11942 flags:1
 ret: 0 st: 0 ts:2.840000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:142978 size:15562 flags:1
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:142978 size:15562 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:32850 size:11813 flags:1
+ret: 0 st: 0 dts:0.400000 pts:-368934881474191040.000000 pos:32850 size:11813 flags:1
 ret: 0 st: 0 ts:-0.480000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:11942 flags:1
 ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:142978 size:15562 flags:1
 ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:101236 size:15057 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:101236 size:15057 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:11942 flags:1
 ret: 0 st: 0 ts:-0.920000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:11942 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:11942 flags:1
 ret: 0 st: 0 ts:2.000000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:142978 size:15562 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:142978 size:15562 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:64442 size:13382 flags:1
 ret:-1 st:-1 ts:-0.222493 flags:1
 ret:-1 st: 0 ts:2.680000 flags:0
 ret: 0 st: 0 ts:1.560000 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:101236 size:15057 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:101236 size:15057 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:64442 size:13382 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:64442 size:13382 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg4-adap.avi
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:6855 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:6855 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:6855 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:6855 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:175668 size:16884 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:175668 size:16884 flags:1
 ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:99006 size:16933 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:99006 size:16933 flags:1
 ret:-1 st: 0 ts:-0.320000 flags:1
 ret:-1 st:-1 ts:2.576668 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:136592 size:17435 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:136592 size:17435 flags:1
 ret: 0 st: 0 ts:0.360000 flags:0
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:59872 size:17261 flags:1
+ret: 0 st: 0 dts:0.400000 pts:-368934881474191040.000000 pos:59872 size:17261 flags:1
 ret:-1 st: 0 ts:-0.760000 flags:1
 ret:-1 st:-1 ts:2.153336 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:99006 size:16933 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:99006 size:16933 flags:1
 ret: 0 st: 0 ts:-0.040000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:6855 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:6855 flags:1
 ret: 0 st: 0 ts:2.840000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:175668 size:16884 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:175668 size:16884 flags:1
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:175668 size:16884 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:175668 size:16884 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:59872 size:17261 flags:1
+ret: 0 st: 0 dts:0.400000 pts:-368934881474191040.000000 pos:59872 size:17261 flags:1
 ret: 0 st: 0 ts:-0.480000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:6855 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:6855 flags:1
 ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:175668 size:16884 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:175668 size:16884 flags:1
 ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:136592 size:17435 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:136592 size:17435 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:6855 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:6855 flags:1
 ret: 0 st: 0 ts:-0.920000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:6855 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:6855 flags:1
 ret: 0 st: 0 ts:2.000000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:175668 size:16884 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:175668 size:16884 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:99006 size:16933 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:99006 size:16933 flags:1
 ret:-1 st:-1 ts:-0.222493 flags:1
 ret:-1 st: 0 ts:2.680000 flags:0
 ret: 0 st: 0 ts:1.560000 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:136592 size:17435 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:136592 size:17435 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:99006 size:16933 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:99006 size:16933 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg4-adv.avi
@@ -1724,147 +1724,147 @@ ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:35312 size:9987 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg4-qprd.avi
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14873 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14873 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:212738 size:14347 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:212738 size:14347 flags:1
 ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:152640 size:14348 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:152640 size:14348 flags:1
 ret:-1 st: 0 ts:-0.320000 flags:1
 ret:-1 st:-1 ts:2.576668 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:182580 size:14281 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:182580 size:14281 flags:1
 ret: 0 st: 0 ts:0.360000 flags:0
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:94070 size:29366 flags:1
+ret: 0 st: 0 dts:0.400000 pts:-368934881474191040.000000 pos:94070 size:29366 flags:1
 ret:-1 st: 0 ts:-0.760000 flags:1
 ret:-1 st:-1 ts:2.153336 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:152640 size:14348 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:152640 size:14348 flags:1
 ret: 0 st: 0 ts:-0.040000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14873 flags:1
 ret: 0 st: 0 ts:2.840000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:212738 size:14347 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:212738 size:14347 flags:1
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:212738 size:14347 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:212738 size:14347 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:94070 size:29366 flags:1
+ret: 0 st: 0 dts:0.400000 pts:-368934881474191040.000000 pos:94070 size:29366 flags:1
 ret: 0 st: 0 ts:-0.480000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14873 flags:1
 ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:212738 size:14347 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:212738 size:14347 flags:1
 ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:182580 size:14281 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:182580 size:14281 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14873 flags:1
 ret: 0 st: 0 ts:-0.920000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14873 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14873 flags:1
 ret: 0 st: 0 ts:2.000000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:212738 size:14347 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:212738 size:14347 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:152640 size:14348 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:152640 size:14348 flags:1
 ret:-1 st:-1 ts:-0.222493 flags:1
 ret:-1 st: 0 ts:2.680000 flags:0
 ret: 0 st: 0 ts:1.560000 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:182580 size:14281 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:182580 size:14281 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:152640 size:14348 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:152640 size:14348 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg4-rc.avi
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:15766 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:15766 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:15766 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:15766 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:209236 size:13826 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:209236 size:13826 flags:1
 ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:154792 size:13382 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:154792 size:13382 flags:1
 ret:-1 st: 0 ts:-0.320000 flags:1
 ret:-1 st:-1 ts:2.576668 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:182316 size:13326 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:182316 size:13326 flags:1
 ret: 0 st: 0 ts:0.360000 flags:0
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:95408 size:32807 flags:1
+ret: 0 st: 0 dts:0.400000 pts:-368934881474191040.000000 pos:95408 size:32807 flags:1
 ret:-1 st: 0 ts:-0.760000 flags:1
 ret:-1 st:-1 ts:2.153336 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:154792 size:13382 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:154792 size:13382 flags:1
 ret: 0 st: 0 ts:-0.040000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:15766 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:15766 flags:1
 ret: 0 st: 0 ts:2.840000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:209236 size:13826 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:209236 size:13826 flags:1
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:209236 size:13826 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:209236 size:13826 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:95408 size:32807 flags:1
+ret: 0 st: 0 dts:0.400000 pts:-368934881474191040.000000 pos:95408 size:32807 flags:1
 ret: 0 st: 0 ts:-0.480000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:15766 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:15766 flags:1
 ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:209236 size:13826 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:209236 size:13826 flags:1
 ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:182316 size:13326 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:182316 size:13326 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:15766 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:15766 flags:1
 ret: 0 st: 0 ts:-0.920000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:15766 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:15766 flags:1
 ret: 0 st: 0 ts:2.000000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:209236 size:13826 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:209236 size:13826 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:154792 size:13382 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:154792 size:13382 flags:1
 ret:-1 st:-1 ts:-0.222493 flags:1
 ret:-1 st: 0 ts:2.680000 flags:0
 ret: 0 st: 0 ts:1.560000 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:182316 size:13326 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:182316 size:13326 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:154792 size:13382 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:154792 size:13382 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-mpeg4-thread.avi
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14874 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14874 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14874 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14874 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:229568 size:14638 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:229568 size:14638 flags:1
 ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:163772 size:16380 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:163772 size:16380 flags:1
 ret:-1 st: 0 ts:-0.320000 flags:1
 ret:-1 st:-1 ts:2.576668 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:196664 size:16051 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:196664 size:16051 flags:1
 ret: 0 st: 0 ts:0.360000 flags:0
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:98760 size:33020 flags:1
+ret: 0 st: 0 dts:0.400000 pts:-368934881474191040.000000 pos:98760 size:33020 flags:1
 ret:-1 st: 0 ts:-0.760000 flags:1
 ret:-1 st:-1 ts:2.153336 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:163772 size:16380 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:163772 size:16380 flags:1
 ret: 0 st: 0 ts:-0.040000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14874 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14874 flags:1
 ret: 0 st: 0 ts:2.840000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:229568 size:14638 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:229568 size:14638 flags:1
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:229568 size:14638 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:229568 size:14638 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.400000 pts:0.400000 pos:98760 size:33020 flags:1
+ret: 0 st: 0 dts:0.400000 pts:-368934881474191040.000000 pos:98760 size:33020 flags:1
 ret: 0 st: 0 ts:-0.480000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14874 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14874 flags:1
 ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:229568 size:14638 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:229568 size:14638 flags:1
 ret: 0 st:-1 ts:1.306672 flags:0
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:196664 size:16051 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:196664 size:16051 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14874 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14874 flags:1
 ret: 0 st: 0 ts:-0.920000 flags:0
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:5660 size:14874 flags:1
+ret: 0 st: 0 dts:0.000000 pts:-368934881474191040.000000 pos:5660 size:14874 flags:1
 ret: 0 st: 0 ts:2.000000 flags:1
-ret: 0 st: 0 dts:1.840000 pts:1.840000 pos:229568 size:14638 flags:1
+ret: 0 st: 0 dts:1.840000 pts:-368934881474191040.000000 pos:229568 size:14638 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:163772 size:16380 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:163772 size:16380 flags:1
 ret:-1 st:-1 ts:-0.222493 flags:1
 ret:-1 st: 0 ts:2.680000 flags:0
 ret: 0 st: 0 ts:1.560000 flags:1
-ret: 0 st: 0 dts:1.360000 pts:1.360000 pos:196664 size:16051 flags:1
+ret: 0 st: 0 dts:1.360000 pts:-368934881474191040.000000 pos:196664 size:16051 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.880000 pts:0.880000 pos:163772 size:16380 flags:1
+ret: 0 st: 0 dts:0.880000 pts:-368934881474191040.000000 pos:163772 size:16380 flags:1
 ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/a-msmpeg4.avi
