@@ -6065,7 +6065,7 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
     if(s->codec_tag == ff_get_fourcc("WV1F") && show_bits(gb, 24) == 0x575630){
         skip_bits(gb, 24);
         if(get_bits(gb, 8) == 0xF0)
-            return decode_vop_header(s, gb);
+            goto end;
     }
 
     startcode = 0xff;
@@ -6128,12 +6128,16 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
             mpeg4_decode_gop_header(s, gb);
         }
         else if(startcode == VOP_STARTCODE){
-            return decode_vop_header(s, gb);
+            break;
         }
 
         align_get_bits(gb);
         startcode = 0xff;
     }
+end:
+    if(s->flags& CODEC_FLAG_LOW_DELAY)
+        s->low_delay=1;
+    return decode_vop_header(s, gb);
 }
 
 /* don't understand why they choose a different header ! */
