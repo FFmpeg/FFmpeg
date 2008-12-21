@@ -39,7 +39,7 @@
  */
 
 #include "libavcodec/dsputil.h"
-#include "libavcodec/i386/idct_xvid.h"
+#include "idct_xvid.h"
 
 /*!
  * @file idct_sse2_xvid.c
