@@ -5314,10 +5314,8 @@ static inline void compute_mb_neighbors(H264Context *h)
         const int left_mb_frame_flag = !IS_INTERLACED(s->current_picture.mb_type[pair_xy-1]);
         const int curr_mb_frame_flag = !MB_FIELD;
         const int bottom = (s->mb_y & 1);
-        if (bottom
-                ? !curr_mb_frame_flag // bottom macroblock
-                : (!curr_mb_frame_flag && !top_mb_frame_flag) // top macroblock
-                ) {
+
+        if (!curr_mb_frame_flag && (bottom || !top_mb_frame_flag)){
             h->top_mb_xy -= s->mb_stride;
         }
         if (left_mb_frame_flag != curr_mb_frame_flag) {
