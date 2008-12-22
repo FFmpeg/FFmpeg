@@ -2866,7 +2866,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
 #if defined(CONFIG_GPL) && defined(HAVE_YASM)
         if( mm_flags&FF_MM_MMXEXT ){
-#ifndef ARCH_X86_64
+#ifdef ARCH_X86_32
             c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_mmxext;
             c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_mmxext;
 #endif
