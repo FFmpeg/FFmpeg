@@ -40,8 +40,8 @@ int init_put_byte(ByteIOContext *s,
     s->buffer = buffer;
     s->buffer_size = buffer_size;
     s->buf_ptr = buffer;
-    url_resetbuf(s, write_flag ? URL_WRONLY : URL_RDONLY);
     s->opaque = opaque;
+    url_resetbuf(s, write_flag ? URL_WRONLY : URL_RDONLY);
     s->write_packet = write_packet;
     s->read_packet = read_packet;
     s->seek = seek;
