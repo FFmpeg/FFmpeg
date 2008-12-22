@@ -293,6 +293,8 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
         }
         break;
     case TIFF_ROWSPERSTRIP:
+        if(type == TIFF_LONG && value == -1)
+            value = s->avctx->height;
         if(value < 1){
             av_log(s->avctx, AV_LOG_ERROR, "Incorrect value of rows per strip\n");
             return -1;
