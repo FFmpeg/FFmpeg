@@ -4991,10 +4991,7 @@ static int decode_cabac_mb_ref( H264Context *h, int list, int n ) {
 
     while( get_cabac( &h->cabac, &h->cabac_state[54+ctx] ) ) {
         ref++;
-        if( ctx < 4 )
-            ctx = 4;
-        else
-            ctx = 5;
+        ctx = (ctx>>2)+4;
         if(ref >= 32 /*h->ref_list[list]*/){
             return -1;
         }
