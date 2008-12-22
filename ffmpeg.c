@@ -196,6 +196,7 @@ static int video_global_header = 0;
 static char *vstats_filename;
 static FILE *vstats_file;
 static int opt_programid = 0;
+static int copy_initial_nonkeyframes = 0;
 
 static int rate_emu = 0;
 
@@ -1353,7 +1354,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         AVPacket opkt;
                         av_init_packet(&opkt);
 
-                        if ((!ost->frame_number && !(pkt->flags & PKT_FLAG_KEY)) && start_time)
+                        if ((!ost->frame_number && !(pkt->flags & PKT_FLAG_KEY)) && !copy_initial_nonkeyframes)
                             continue;
 
                         /* no reencoding needed : output the packet directly */
@@ -3767,6 +3768,7 @@ static const OptionDef options[] = {
     { "dts_delta_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "threshold" },
     { "programid", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&opt_programid}, "desired program number", "" },
     { "xerror", OPT_BOOL, {(void*)&exit_on_error}, "exit on error", "error" },
+    { "copyinkf", OPT_BOOL | OPT_EXPERT, {(void*)&copy_initial_nonkeyframes}, "copy initial non-keyframes" },
 
     /* video options */
     { "b", OPT_FUNC2 | HAS_ARG | OPT_VIDEO, {(void*)opt_bitrate}, "set bitrate (in bits/s)", "bitrate" },
