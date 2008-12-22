@@ -101,7 +101,7 @@ typedef struct IPMVEContext {
     unsigned int audio_bits;
     unsigned int audio_channels;
     unsigned int audio_sample_rate;
-    unsigned int audio_type;
+    enum CodecID audio_type;
     unsigned int audio_frame_count;
 
     int video_stream_index;
@@ -544,7 +544,7 @@ static int ipmovie_read_header(AVFormatContext *s,
     url_fseek(pb, -CHUNK_PREAMBLE_SIZE, SEEK_CUR);
 
     if (chunk_type == CHUNK_VIDEO)
-        ipmovie->audio_type = 0;  /* no audio */
+        ipmovie->audio_type = CODEC_ID_NONE;  /* no audio */
     else if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_AUDIO)
         return AVERROR_INVALIDDATA;
 
