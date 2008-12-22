@@ -5298,15 +5298,15 @@ static inline void compute_mb_neighbors(H264Context *h)
     if(FRAME_MBAFF){
         const int pair_xy          = s->mb_x     + (s->mb_y & ~1)*s->mb_stride;
         const int top_pair_xy      = pair_xy     - s->mb_stride;
-        const int top_mb_frame_flag      = !IS_INTERLACED(s->current_picture.mb_type[top_pair_xy]);
-        const int left_mb_frame_flag = !IS_INTERLACED(s->current_picture.mb_type[pair_xy-1]);
-        const int curr_mb_frame_flag = !MB_FIELD;
+        const int top_mb_field_flag  = IS_INTERLACED(s->current_picture.mb_type[top_pair_xy]);
+        const int left_mb_field_flag = IS_INTERLACED(s->current_picture.mb_type[pair_xy-1]);
+        const int curr_mb_field_flag = MB_FIELD;
         const int bottom = (s->mb_y & 1);
 
-        if (!curr_mb_frame_flag && (bottom || !top_mb_frame_flag)){
+        if (curr_mb_field_flag && (bottom || top_mb_field_flag)){
             h->top_mb_xy -= s->mb_stride;
         }
-        if (left_mb_frame_flag != curr_mb_frame_flag) {
+        if (!left_mb_field_flag == curr_mb_field_flag) {
             h->left_mb_xy[0] = pair_xy - 1;
         }
     } else if (FIELD_PICTURE) {
