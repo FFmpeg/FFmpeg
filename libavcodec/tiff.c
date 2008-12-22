@@ -220,6 +220,9 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             }
         }
         switch(s->bpp){
+        case 1:
+            s->avctx->pix_fmt = PIX_FMT_MONOBLACK;
+            break;
         case 8:
             s->avctx->pix_fmt = PIX_FMT_PAL8;
             break;
