@@ -235,6 +235,9 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
     do {
         if ((enc_buf = FfmpegFindNextSchroParseUnit(&parse_ctx))) {
             /* Push buffer into decoder. */
+            if (SCHRO_PARSE_CODE_IS_PICTURE(enc_buf->data[4]) &&
+                SCHRO_PARSE_CODE_NUM_REFS(enc_buf->data[4]) > 0)
+                avccontext->has_b_frames = 1;
             state = schro_decoder_push (decoder, enc_buf);
             if (state == SCHRO_DECODER_FIRST_ACCESS_UNIT)
                   libschroedinger_handle_first_access_unit(avccontext);
