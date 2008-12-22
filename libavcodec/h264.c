@@ -577,13 +577,13 @@ static inline int check_intra4x4_pred_mode(H264Context *h){
         static const int mask[4]={0x8000,0x2000,0x80,0x20};
         for(i=0; i<4; i++){
             if(!(h->left_samples_available&mask[i])){
-            int status= left[ h->intra4x4_pred_mode_cache[scan8[0] + 8*i] ];
-            if(status<0){
-                av_log(h->s.avctx, AV_LOG_ERROR, "left block unavailable for requested intra4x4 mode %d at %d %d\n", status, s->mb_x, s->mb_y);
-                return -1;
-            } else if(status){
-                h->intra4x4_pred_mode_cache[scan8[0] + 8*i]= status;
-            }
+                int status= left[ h->intra4x4_pred_mode_cache[scan8[0] + 8*i] ];
+                if(status<0){
+                    av_log(h->s.avctx, AV_LOG_ERROR, "left block unavailable for requested intra4x4 mode %d at %d %d\n", status, s->mb_x, s->mb_y);
+                    return -1;
+                } else if(status){
+                    h->intra4x4_pred_mode_cache[scan8[0] + 8*i]= status;
+                }
             }
         }
     }
