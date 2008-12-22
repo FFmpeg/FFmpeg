@@ -155,7 +155,7 @@ static void v_resample(uint8_t *dst, int dst_width, const uint8_t *src,
 
 #ifdef HAVE_MMX
 
-#include "i386/mmx.h"
+#include "x86/mmx.h"
 
 #define FILTER4(reg) \
 {\

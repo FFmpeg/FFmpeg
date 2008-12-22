@@ -4,11 +4,11 @@ optimization Tips (for libavcodec):
 What to optimize:
 -----------------
 If you plan to do non-x86 architecture specific optimizations (SIMD normally),
-then take a look in the i386/ directory, as most important functions are
+then take a look in the x86/ directory, as most important functions are
 already optimized for MMX.
 
 If you want to do x86 optimizations then you can either try to finetune the
-stuff in the i386 directory or find some other functions in the C source to
+stuff in the x86 directory or find some other functions in the C source to
 optimize, but there aren't many left.
 
 
@@ -20,7 +20,7 @@ architecture-specific versions. It is recommended to look at older
 revisions of the interesting files (for a web frontend try ViewVC at
 http://svn.mplayerhq.hu/ffmpeg/trunk/).
 Alternatively, look into the other architecture-specific versions in
-the i386/, ppc/, alpha/ subdirectories. Even if you don't exactly
+the x86/, ppc/, alpha/ subdirectories. Even if you don't exactly
 comprehend the instructions, it could help understanding the functions
 and how they can be optimized.
 

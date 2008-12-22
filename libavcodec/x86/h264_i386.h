@@ -26,8 +26,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#ifndef AVCODEC_I386_H264_I386_H
-#define AVCODEC_I386_H264_I386_H
+#ifndef AVCODEC_X86_H264_I386_H
+#define AVCODEC_X86_H264_I386_H
 
 #include "libavcodec/cabac.h"
 
@@ -152,4 +152,4 @@ static int decode_significance_8x8_x86(CABACContext *c,
 #endif /* defined(ARCH_X86) && defined(HAVE_7REGS) &&                 */
        /* defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) */
 
-#endif /* AVCODEC_I386_H264_I386_H */
+#endif /* AVCODEC_X86_H264_I386_H */

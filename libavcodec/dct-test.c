@@ -38,7 +38,7 @@
 #include "aandcttab.h"
 #include "faandct.h"
 #include "faanidct.h"
-#include "i386/idct_xvid.h"
+#include "x86/idct_xvid.h"
 
 #undef printf
 #undef random

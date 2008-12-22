@@ -1,6 +1,5 @@
 /*
- * vp3dsp SSE2 function declarations
- * Copyright (c) 2007 Aurelien Jacobs <aurel@gnuage.org>
+ * XVID MPEG-4 VIDEO CODEC
  *
  * This file is part of FFmpeg.
  *
@@ -19,13 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_I386_VP3DSP_SSE2_H
-#define AVCODEC_I386_VP3DSP_SSE2_H
+/*!
+ * @file idct_xvid.h
+ * header for Xvid IDCT functions
+ */
 
-#include "libavcodec/dsputil.h"
+#ifndef AVCODEC_X86_IDCT_XVID_H
+#define AVCODEC_X86_IDCT_XVID_H
 
-void ff_vp3_idct_sse2(int16_t *input_data);
-void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, DCTELEM *block);
+#include <stdint.h>
 
-#endif /* AVCODEC_I386_VP3DSP_SSE2_H */
+void ff_idct_xvid_mmx(short *block);
+void ff_idct_xvid_mmx2(short *block);
+void ff_idct_xvid_sse2(short *block);
+void ff_idct_xvid_sse2_put(uint8_t *dest, int line_size, short *block);
+void ff_idct_xvid_sse2_add(uint8_t *dest, int line_size, short *block);
+
+#endif /* AVCODEC_X86_IDCT_XVID_H */

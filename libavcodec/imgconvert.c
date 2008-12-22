@@ -35,8 +35,8 @@
 #include "colorspace.h"
 
 #ifdef HAVE_MMX
-#include "i386/mmx.h"
-#include "i386/dsputil_mmx.h"
+#include "x86/mmx.h"
+#include "x86/dsputil_mmx.h"
 #endif
 
 #define xglue(x, y) x ## y

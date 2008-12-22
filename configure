@@ -2359,11 +2359,11 @@ if enabled source_path_used; then
         libavcodec/alpha  \
         libavcodec/arm    \
         libavcodec/bfin   \
-        libavcodec/i386   \
         libavcodec/mlib   \
         libavcodec/ppc    \
         libavcodec/sh4    \
         libavcodec/sparc  \
+        libavcodec/x86    \
         libavdevice       \
         libavfilter       \
         libavformat       \

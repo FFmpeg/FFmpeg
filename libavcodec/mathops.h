@@ -26,7 +26,7 @@
 
 #ifdef ARCH_X86_32
 
-#include "i386/mathops.h"
+#include "x86/mathops.h"
 
 #elif defined(ARCH_ARM)
 

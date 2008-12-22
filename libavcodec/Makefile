@@ -392,37 +392,37 @@ OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o
 
 # processor-specific code
-MMX-OBJS-$(CONFIG_CAVS_DECODER)        += i386/cavsdsp_mmx.o
-MMX-OBJS-$(CONFIG_ENCODERS)            += i386/dsputilenc_mmx.o
-MMX-OBJS-$(CONFIG_FLAC_ENCODER)        += i386/flacdsp_mmx.o
-MMX-OBJS-$(CONFIG_GPL)                 += i386/idct_mmx.o
-MMX-OBJS-$(CONFIG_SNOW_DECODER)        += i386/snowdsp_mmx.o
-MMX-OBJS-$(CONFIG_THEORA_DECODER)      += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-MMX-OBJS-$(CONFIG_VC1_DECODER)         += i386/vc1dsp_mmx.o
-MMX-OBJS-$(CONFIG_VP3_DECODER)         += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-MMX-OBJS-$(CONFIG_VP5_DECODER)         += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-MMX-OBJS-$(CONFIG_VP6_DECODER)         += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-MMX-OBJS-$(CONFIG_VP6A_DECODER)        += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-MMX-OBJS-$(CONFIG_VP6F_DECODER)        += i386/vp3dsp_mmx.o i386/vp3dsp_sse2.o
-MMX-OBJS-$(CONFIG_WMV3_DECODER)        += i386/vc1dsp_mmx.o
-MMX-OBJS-$(HAVE_YASM)                  += i386/dsputil_yasm.o \
-                                          i386/h264_deblock_sse2.o
+MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
+MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
+MMX-OBJS-$(CONFIG_FLAC_ENCODER)        += x86/flacdsp_mmx.o
+MMX-OBJS-$(CONFIG_GPL)                 += x86/idct_mmx.o
+MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp_mmx.o
+MMX-OBJS-$(CONFIG_THEORA_DECODER)      += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
+MMX-OBJS-$(CONFIG_VP3_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VP5_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VP6_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VP6A_DECODER)        += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VP6F_DECODER)        += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_WMV3_DECODER)        += x86/vc1dsp_mmx.o
+MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
+                                          x86/h264_deblock_sse2.o       \
 
-OBJS-$(HAVE_MMX)                       += i386/cpuid.o                  \
-                                          i386/dnxhd_mmx.o              \
-                                          i386/dsputil_mmx.o            \
-                                          i386/fdct_mmx.o               \
-                                          i386/idct_mmx_xvid.o          \
-                                          i386/idct_sse2_xvid.o         \
-                                          i386/motion_est_mmx.o         \
-                                          i386/mpegvideo_mmx.o          \
-                                          i386/simple_idct_mmx.o        \
+OBJS-$(HAVE_MMX)                       += x86/cpuid.o                   \
+                                          x86/dnxhd_mmx.o               \
+                                          x86/dsputil_mmx.o             \
+                                          x86/fdct_mmx.o                \
+                                          x86/idct_mmx_xvid.o           \
+                                          x86/idct_sse2_xvid.o          \
+                                          x86/motion_est_mmx.o          \
+                                          x86/mpegvideo_mmx.o           \
+                                          x86/simple_idct_mmx.o         \
                                           $(MMX-OBJS-yes)
 
-OBJS-$(CONFIG_FFT_MMX)                 += i386/fft_3dn.o                \
-                                          i386/fft_3dn2.o               \
-                                          i386/fft_mmx.o                \
-                                          i386/fft_sse.o                \
+OBJS-$(CONFIG_FFT_MMX)                 += x86/fft_3dn.o                 \
+                                          x86/fft_3dn2.o                \
+                                          x86/fft_mmx.o                 \
+                                          x86/fft_sse.o                 \
 
 OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
                                           alpha/dsputil_alpha_asm.o     \
@@ -498,10 +498,10 @@ OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 rangecoder snow)
 TESTS-$(CONFIG_OLDSCALER) += imgresample-test$(EXESUF)
-TESTS-$(ARCH_X86) += i386/cpuid-test$(EXESUF) motion-test$(EXESUF)
+TESTS-$(ARCH_X86) += x86/cpuid-test$(EXESUF) motion-test$(EXESUF)
 
 CLEANFILES = apiexample$(EXESUF)
-DIRS = alpha arm bfin i386 mlib ppc ps2 sh4 sparc
+DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
 
 include $(SUBDIR)../subdir.mak
 

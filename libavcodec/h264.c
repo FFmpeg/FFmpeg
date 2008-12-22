@@ -36,7 +36,7 @@
 
 #include "cabac.h"
 #ifdef ARCH_X86
-#include "i386/h264_i386.h"
+#include "x86/h264_i386.h"
 #endif
 
 //#undef NDEBUG
