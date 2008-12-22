@@ -4777,25 +4777,9 @@ static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_sl
     return mb_type;
 }
 
-static int decode_cabac_mb_type( H264Context *h ) {
+static int decode_cabac_mb_type_b( H264Context *h ) {
     MpegEncContext * const s = &h->s;
 
-    if( h->slice_type_nos == FF_I_TYPE ) {
-        return decode_cabac_intra_mb_type(h, 3, 1);
-    } else if( h->slice_type_nos == FF_P_TYPE ) {
-        if( get_cabac_noinline( &h->cabac, &h->cabac_state[14] ) == 0 ) {
-            /* P-type */
-            if( get_cabac_noinline( &h->cabac, &h->cabac_state[15] ) == 0 ) {
-                /* P_L0_D16x16, P_8x8 */
-                return 3 * get_cabac_noinline( &h->cabac, &h->cabac_state[16] );
-            } else {
-                /* P_L0_D8x16, P_L0_D16x8 */
-                return 2 - get_cabac_noinline( &h->cabac, &h->cabac_state[17] );
-            }
-        } else {
-            return decode_cabac_intra_mb_type(h, 17, 0) + 5;
-        }
-    } else {
         const int mba_xy = h->left_mb_xy[0];
         const int mbb_xy = h->top_mb_xy;
         int ctx = 0;
@@ -4829,7 +4813,6 @@ static int decode_cabac_mb_type( H264Context *h ) {
 
         bits= ( bits<<1 ) | get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] );
         return bits - 4; /* B_L0_Bi_* through B_Bi_Bi_* */
-    }
 }
 
 static int decode_cabac_mb_skip( H264Context *h, int mb_x, int mb_y ) {
@@ -5365,10 +5348,9 @@ static int decode_mb_cabac(H264Context *h) {
     h->prev_mb_skipped = 0;
 
     compute_mb_neighbors(h);
-    mb_type = decode_cabac_mb_type( h );
-    assert(mb_type >= 0);
 
     if( h->slice_type_nos == FF_B_TYPE ) {
+        mb_type = decode_cabac_mb_type_b( h );
         if( mb_type < 23 ){
             partition_count= b_mb_type_info[mb_type].partition_count;
             mb_type=         b_mb_type_info[mb_type].type;
@@ -5377,14 +5359,23 @@ static int decode_mb_cabac(H264Context *h) {
             goto decode_intra_mb;
         }
     } else if( h->slice_type_nos == FF_P_TYPE ) {
-        if( mb_type < 5) {
+        if( get_cabac_noinline( &h->cabac, &h->cabac_state[14] ) == 0 ) {
+            /* P-type */
+            if( get_cabac_noinline( &h->cabac, &h->cabac_state[15] ) == 0 ) {
+                /* P_L0_D16x16, P_8x8 */
+                mb_type= 3 * get_cabac_noinline( &h->cabac, &h->cabac_state[16] );
+            } else {
+                /* P_L0_D8x16, P_L0_D16x8 */
+                mb_type= 2 - get_cabac_noinline( &h->cabac, &h->cabac_state[17] );
+            }
             partition_count= p_mb_type_info[mb_type].partition_count;
             mb_type=         p_mb_type_info[mb_type].type;
         } else {
-            mb_type -= 5;
+            mb_type= decode_cabac_intra_mb_type(h, 17, 0);
             goto decode_intra_mb;
         }
     } else {
+        mb_type= decode_cabac_intra_mb_type(h, 3, 1);
         if(h->slice_type == FF_SI_TYPE && mb_type)
             mb_type--;
         assert(h->slice_type_nos == FF_I_TYPE);
