@@ -41,8 +41,9 @@ typedef struct TiffContext {
     int le;
     int compr;
     int invert;
+    int predictor;
 
-    int strips, rps;
+    int strips, rps, sstype;
     int sot;
     const uint8_t* stripdata;
     const uint8_t* stripsizes;
@@ -150,12 +151,10 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
 }
 
 
-static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *buf, const uint8_t *end_buf, AVFrame *pic)
+static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *buf, const uint8_t *end_buf)
 {
     int tag, type, count, off, value = 0;
-    const uint8_t *src;
-    uint8_t *dst;
-    int i, j, ssize, soff, stride;
+    int i, j;
     uint32_t *pal;
     const uint8_t *rp, *gp, *bp;
 
@@ -261,6 +260,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
         break;
     case TIFF_COMPR:
         s->compr = value;
+        s->predictor = 0;
         switch(s->compr){
         case TIFF_RAW:
         case TIFF_PACKBITS:
@@ -324,49 +324,14 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             s->stripsizes = start + off;
         }
         s->strips = count;
+        s->sstype = type;
         if(s->stripsizes > end_buf){
             av_log(s->avctx, AV_LOG_ERROR, "Tag referencing position outside the image\n");
             return -1;
         }
-        if(!pic->data[0]){
-            av_log(s->avctx, AV_LOG_ERROR, "Picture initialization missing\n");
-            return -1;
-        }
-        /* now we have the data and may start decoding */
-        stride = pic->linesize[0];
-        dst = pic->data[0];
-        for(i = 0; i < s->height; i += s->rps){
-            if(s->stripsizes)
-                ssize = tget(&s->stripsizes, type, s->le);
-            else
-                ssize = s->stripsize;
-
-            if(s->stripdata){
-                soff = tget(&s->stripdata, s->sot, s->le);
-            }else
-                soff = s->stripoff;
-            src = start + soff;
-            if(tiff_unpack_strip(s, dst, stride, src, ssize, FFMIN(s->rps, s->height - i)) < 0)
-                break;
-            dst += s->rps * stride;
-        }
         break;
     case TIFF_PREDICTOR:
-        if(!pic->data[0]){
-            av_log(s->avctx, AV_LOG_ERROR, "Picture initialization missing\n");
-            return -1;
-        }
-        if(value == 2){
-            dst = pic->data[0];
-            stride = pic->linesize[0];
-            soff = s->bpp >> 3;
-            ssize = s->width * soff;
-            for(i = 0; i < s->height; i++) {
-                for(j = soff; j < ssize; j++)
-                    dst[j] += dst[j - soff];
-                dst += stride;
-            }
-        }
+        s->predictor = value;
         break;
     case TIFF_INVERT:
         switch(value){
@@ -421,7 +386,9 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p= (AVFrame*)&s->picture;
     const uint8_t *orig_buf = buf, *end_buf = buf + buf_size;
     int id, le, off;
-    int i, entries;
+    int i, j, entries;
+    int stride, soff, ssize;
+    uint8_t *dst;
 
     //parse image header
     id = AV_RL16(buf); buf += 2;
@@ -449,9 +416,48 @@ static int decode_frame(AVCodecContext *avctx,
     buf = orig_buf + off;
     entries = tget_short(&buf, le);
     for(i = 0; i < entries; i++){
-        if(tiff_decode_tag(s, orig_buf, buf, end_buf, p) < 0)
+        if(tiff_decode_tag(s, orig_buf, buf, end_buf) < 0)
             return -1;
         buf += 12;
+    }
+    if(!s->stripdata && !s->stripoff){
+        av_log(avctx, AV_LOG_ERROR, "Image data is missing\n");
+        return -1;
+    }
+    /* now we have the data and may start decoding */
+    if(!p->data[0]){
+        av_log(s->avctx, AV_LOG_ERROR, "Picture initialization missing\n");
+        return -1;
+    }
+    if(s->strips == 1 && !s->stripsize){
+        av_log(avctx, AV_LOG_WARNING, "Image data size missing\n");
+        s->stripsize = buf_size - s->stripoff;
+    }
+    stride = p->linesize[0];
+    dst = p->data[0];
+    for(i = 0; i < s->height; i += s->rps){
+        if(s->stripsizes)
+            ssize = tget(&s->stripsizes, s->sstype, s->le);
+        else
+            ssize = s->stripsize;
+
+        if(s->stripdata){
+            soff = tget(&s->stripdata, s->sot, s->le);
+        }else
+            soff = s->stripoff;
+        if(tiff_unpack_strip(s, dst, stride, orig_buf + soff, ssize, FFMIN(s->rps, s->height - i)) < 0)
+            break;
+        dst += s->rps * stride;
+    }
+    if(s->predictor == 2){
+        dst = p->data[0];
+        soff = s->bpp >> 3;
+        ssize = s->width * soff;
+        for(i = 0; i < s->height; i++) {
+            for(j = soff; j < ssize; j++)
+                dst[j] += dst[j - soff];
+            dst += stride;
+        }
     }
 
     if(s->invert){
