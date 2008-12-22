@@ -425,9 +425,9 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
 }
 
 
-int wav_codec_get_id(unsigned int tag, int bps)
+enum CodecID wav_codec_get_id(unsigned int tag, int bps)
 {
-    int id;
+    enum CodecID id;
     id = codec_get_id(codec_wav_tags, tag);
     if (id <= 0)
         return id;
