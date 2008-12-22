@@ -74,7 +74,7 @@ static int tget(const uint8_t **p, int type, int le){
 static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uint8_t *src, int size, int lines){
     int c, line, pixels, code;
     const uint8_t *ssrc = src;
-    int width = s->width * (s->bpp / 8);
+    int width = s->width * s->bpp >> 3;
 #ifdef CONFIG_ZLIB
     uint8_t *zbuf; unsigned long outlen;
 
@@ -109,8 +109,8 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
         }
         switch(s->compr){
         case TIFF_RAW:
-            memcpy(dst, src, s->width * (s->bpp / 8));
-            src += s->width * (s->bpp / 8);
+            memcpy(dst, src, width);
+            src += width;
             break;
         case TIFF_PACKBITS:
             for(pixels = 0; pixels < width;){
