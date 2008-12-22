@@ -155,11 +155,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 left_xy[1] += s->mb_stride;
                 left_block = left_block_options[3];
             } else {
-                if (bottom) {
-                    left_block = left_block_options[1];
-                } else {
-                    left_block= left_block_options[2];
-                }
+                left_block= left_block_options[2 - bottom];
             }
         }
     }
