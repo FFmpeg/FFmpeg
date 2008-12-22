@@ -135,26 +135,18 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
         const int curr_mb_frame_flag = !IS_INTERLACED(mb_type);
         const int bottom = (s->mb_y & 1);
         tprintf(s->avctx, "fill_caches: curr_mb_frame_flag:%d, left_mb_frame_flag:%d, topleft_mb_frame_flag:%d, top_mb_frame_flag:%d, topright_mb_frame_flag:%d\n", curr_mb_frame_flag, left_mb_frame_flag, topleft_mb_frame_flag, top_mb_frame_flag, topright_mb_frame_flag);
-        if (bottom
-                ? !curr_mb_frame_flag // bottom macroblock
-                : (!curr_mb_frame_flag && !top_mb_frame_flag) // top macroblock
-                ) {
+
+        if (!curr_mb_frame_flag && (bottom || !top_mb_frame_flag)){
             top_xy -= s->mb_stride;
         }
-        if (bottom
-                ? !curr_mb_frame_flag // bottom macroblock
-                : (!curr_mb_frame_flag && !topleft_mb_frame_flag) // top macroblock
-                ) {
+        if (!curr_mb_frame_flag && (bottom || !topleft_mb_frame_flag)){
             topleft_xy -= s->mb_stride;
         } else if(bottom && curr_mb_frame_flag && !left_mb_frame_flag) {
             topleft_xy += s->mb_stride;
             // take top left mv from the middle of the mb, as opposed to all other modes which use the bottom right partition
             topleft_partition = 0;
         }
-        if (bottom
-                ? !curr_mb_frame_flag // bottom macroblock
-                : (!curr_mb_frame_flag && !topright_mb_frame_flag) // top macroblock
-                ) {
+        if (!curr_mb_frame_flag && (bottom || !topright_mb_frame_flag)){
             topright_xy -= s->mb_stride;
         }
         if (left_mb_frame_flag != curr_mb_frame_flag) {
