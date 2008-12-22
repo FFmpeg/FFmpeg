@@ -128,38 +128,38 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
         const int top_pair_xy      = pair_xy     - s->mb_stride;
         const int topleft_pair_xy  = top_pair_xy - 1;
         const int topright_pair_xy = top_pair_xy + 1;
-        const int topleft_mb_frame_flag  = !IS_INTERLACED(s->current_picture.mb_type[topleft_pair_xy]);
-        const int top_mb_frame_flag      = !IS_INTERLACED(s->current_picture.mb_type[top_pair_xy]);
-        const int topright_mb_frame_flag = !IS_INTERLACED(s->current_picture.mb_type[topright_pair_xy]);
-        const int left_mb_frame_flag = !IS_INTERLACED(s->current_picture.mb_type[pair_xy-1]);
-        const int curr_mb_frame_flag = !IS_INTERLACED(mb_type);
+        const int topleft_mb_field_flag  = IS_INTERLACED(s->current_picture.mb_type[topleft_pair_xy]);
+        const int top_mb_field_flag      = IS_INTERLACED(s->current_picture.mb_type[top_pair_xy]);
+        const int topright_mb_field_flag = IS_INTERLACED(s->current_picture.mb_type[topright_pair_xy]);
+        const int left_mb_field_flag     = IS_INTERLACED(s->current_picture.mb_type[pair_xy-1]);
+        const int curr_mb_field_flag     = IS_INTERLACED(mb_type);
         const int bottom = (s->mb_y & 1);
-        tprintf(s->avctx, "fill_caches: curr_mb_frame_flag:%d, left_mb_frame_flag:%d, topleft_mb_frame_flag:%d, top_mb_frame_flag:%d, topright_mb_frame_flag:%d\n", curr_mb_frame_flag, left_mb_frame_flag, topleft_mb_frame_flag, top_mb_frame_flag, topright_mb_frame_flag);
+        tprintf(s->avctx, "fill_caches: curr_mb_field_flag:%d, left_mb_field_flag:%d, topleft_mb_field_flag:%d, top_mb_field_flag:%d, topright_mb_field_flag:%d\n", curr_mb_field_flag, left_mb_field_flag, topleft_mb_field_flag, top_mb_field_flag, topright_mb_field_flag);
 
-        if (!curr_mb_frame_flag && (bottom || !top_mb_frame_flag)){
+        if (curr_mb_field_flag && (bottom || top_mb_field_flag)){
             top_xy -= s->mb_stride;
         }
-        if (!curr_mb_frame_flag && (bottom || !topleft_mb_frame_flag)){
+        if (curr_mb_field_flag && (bottom || topleft_mb_field_flag)){
             topleft_xy -= s->mb_stride;
-        } else if(bottom && curr_mb_frame_flag && !left_mb_frame_flag) {
+        } else if(bottom && !curr_mb_field_flag && left_mb_field_flag) {
             topleft_xy += s->mb_stride;
             // take top left mv from the middle of the mb, as opposed to all other modes which use the bottom right partition
             topleft_partition = 0;
         }
-        if (!curr_mb_frame_flag && (bottom || !topright_mb_frame_flag)){
+        if (curr_mb_field_flag && (bottom || topright_mb_field_flag)){
             topright_xy -= s->mb_stride;
         }
-        if (left_mb_frame_flag != curr_mb_frame_flag) {
+        if (left_mb_field_flag != curr_mb_field_flag) {
             left_xy[1] = left_xy[0] = pair_xy - 1;
-            if (curr_mb_frame_flag) {
+            if (curr_mb_field_flag) {
+                left_xy[1] += s->mb_stride;
+                left_block = left_block_options[3];
+            } else {
                 if (bottom) {
                     left_block = left_block_options[1];
                 } else {
                     left_block= left_block_options[2];
                 }
-            } else {
-                left_xy[1] += s->mb_stride;
-                left_block = left_block_options[3];
             }
         }
     }
