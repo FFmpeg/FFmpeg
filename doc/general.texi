@@ -669,7 +669,7 @@ implementation in MinGW.
 Just install your Cygwin with all the "Base" packages, plus the
 following "Devel" ones:
 @example
-binutils, gcc-core, make, subversion, mingw-runtime
+binutils, gcc-core, make, subversion, mingw-runtime, diffutils
 @end example
 
 Do not install binutils-20060709-1 (they are buggy on shared builds);
