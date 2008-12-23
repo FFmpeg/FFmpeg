@@ -4507,10 +4507,10 @@ decode_intra_mb:
                         tmp= get_bits1(&s->gb)^1;
                     }else{
                         tmp= get_ue_golomb_31(&s->gb);
-                    if(tmp>=ref_count){
-                        av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", tmp);
-                        return -1;
-                    }
+                        if(tmp>=ref_count){
+                            av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", tmp);
+                            return -1;
+                        }
                     }
                     ref[list][i]= tmp;
                 }else{
@@ -4581,11 +4581,11 @@ decode_intra_mb:
                         }else if(h->ref_count[list]==2){
                             val= get_bits1(&s->gb)^1;
                         }else{
-                        val= get_ue_golomb_31(&s->gb);
-                        if(val >= h->ref_count[list]){
-                            av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
-                            return -1;
-                        }
+                            val= get_ue_golomb_31(&s->gb);
+                            if(val >= h->ref_count[list]){
+                                av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
+                                return -1;
+                            }
                         }
                     }else
                         val= LIST_NOT_USED&0xFF;
@@ -4615,11 +4615,11 @@ decode_intra_mb:
                             }else if(h->ref_count[list] == 2){
                                 val= get_bits1(&s->gb)^1;
                             }else{
-                            val= get_ue_golomb_31(&s->gb);
-                            if(val >= h->ref_count[list]){
-                                av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
-                                return -1;
-                            }
+                                val= get_ue_golomb_31(&s->gb);
+                                if(val >= h->ref_count[list]){
+                                    av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
+                                    return -1;
+                                }
                             }
                         }else
                             val= LIST_NOT_USED&0xFF;
@@ -4652,11 +4652,11 @@ decode_intra_mb:
                             }else if(h->ref_count[list]==2){
                                 val= get_bits1(&s->gb)^1;
                             }else{
-                            val= get_ue_golomb_31(&s->gb);
-                            if(val >= h->ref_count[list]){
-                                av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
-                                return -1;
-                            }
+                                val= get_ue_golomb_31(&s->gb);
+                                if(val >= h->ref_count[list]){
+                                    av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
+                                    return -1;
+                                }
                             }
                         }else
                             val= LIST_NOT_USED&0xFF;
