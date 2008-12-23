@@ -1375,9 +1375,26 @@ static const uint8_t *decode_nal(H264Context *h, const uint8_t *src, int *dst_le
     for(i=0; i<length; i++)
         printf("%2X ", src[i]);
 #endif
+
+#ifdef HAVE_FAST_UNALIGNED
+# ifdef HAVE_FAST_64BIT
+#   define RS 7
+    for(i=0; i+1<length; i+=9){
+        if(!((~*(uint64_t*)(src+i) & (*(uint64_t*)(src+i) - 0x0100010001000101ULL)) & 0x8000800080008080ULL))
+# else
+#   define RS 3
+    for(i=0; i+1<length; i+=5){
+        if(!((~*(uint32_t*)(src+i) & (*(uint32_t*)(src+i) - 0x01000101U)) & 0x80008080U))
+# endif
+            continue;
+        if(i>0 && !src[i]) i--;
+        while(src[i]) i++;
+#else
+#   define RS 0
     for(i=0; i+1<length; i+=2){
         if(src[i]) continue;
         if(i>0 && src[i-1]==0) i--;
+#endif
         if(i+2<length && src[i+1]==0 && src[i+2]<=3){
             if(src[i+2]!=3){
                 /* startcode, so we must be past the end */
