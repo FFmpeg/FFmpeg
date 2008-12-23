@@ -699,7 +699,7 @@ to build shared libraries.
 If you want to build FFmpeg with additional libraries, download Cygwin
 "Devel" packages for Ogg and Vorbis from any Cygwin packages repository
 and/or SDL, xvid, faac, faad2 packages from Cygwin Ports,
-(@url{http://cygwinports.dotsrc.org/}).
+(@url{http://sourceware.org/cygwinports/}).
 
 @subsection Crosscompilation for Windows under Cygwin
 
