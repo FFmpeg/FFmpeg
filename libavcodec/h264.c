@@ -4153,29 +4153,29 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
             if(prefix == LEVEL_TAB_BITS)
                 prefix += get_level_prefix(gb);
 
-        //first coefficient has suffix_length equal to 0 or 1
-        if(prefix<14){ //FIXME try to build a large unified VLC table for all this
-            if(suffix_length)
-                level_code= (prefix<<suffix_length) + get_bits(gb, suffix_length); //part
-            else
-                level_code= (prefix<<suffix_length); //part
-        }else if(prefix==14){
-            if(suffix_length)
-                level_code= (prefix<<suffix_length) + get_bits(gb, suffix_length); //part
-            else
-                level_code= prefix + get_bits(gb, 4); //part
-        }else{
-            level_code= (15<<suffix_length) + get_bits(gb, prefix-3); //part
-            if(suffix_length==0) level_code+=15; //FIXME doesn't make (much)sense
-            if(prefix>=16)
-                level_code += (1<<(prefix-3))-4096;
-        }
+            //first coefficient has suffix_length equal to 0 or 1
+            if(prefix<14){ //FIXME try to build a large unified VLC table for all this
+                if(suffix_length)
+                    level_code= (prefix<<suffix_length) + get_bits(gb, suffix_length); //part
+                else
+                    level_code= (prefix<<suffix_length); //part
+            }else if(prefix==14){
+                if(suffix_length)
+                    level_code= (prefix<<suffix_length) + get_bits(gb, suffix_length); //part
+                else
+                    level_code= prefix + get_bits(gb, 4); //part
+            }else{
+                level_code= (15<<suffix_length) + get_bits(gb, prefix-3); //part
+                if(suffix_length==0) level_code+=15; //FIXME doesn't make (much)sense
+                if(prefix>=16)
+                    level_code += (1<<(prefix-3))-4096;
+            }
 
-        if(trailing_ones < 3) level_code += 2;
+            if(trailing_ones < 3) level_code += 2;
 
-        suffix_length = 2;
-        mask= -(level_code&1);
-        level[trailing_ones]= (((2+level_code)>>1) ^ mask) - mask;
+            suffix_length = 2;
+            mask= -(level_code&1);
+            level[trailing_ones]= (((2+level_code)>>1) ^ mask) - mask;
         }else{
             if(trailing_ones < 3) level_code += (level_code>>31)|1;
 
