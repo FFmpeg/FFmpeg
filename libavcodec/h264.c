@@ -1402,6 +1402,7 @@ static const uint8_t *decode_nal(H264Context *h, const uint8_t *src, int *dst_le
             }
             break;
         }
+        i-= RS;
     }
 
     if(i>=length-1){ //no escaped 0
