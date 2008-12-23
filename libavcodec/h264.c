@@ -101,6 +101,9 @@ static const int left_block_options[4][8]={
     {0,2,0,2,7,10,7,10}
 };
 
+#define LEVEL_TAB_BITS 8
+static int8_t cavlc_level_tab[7][1<<LEVEL_TAB_BITS][2];
+
 static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
@@ -1875,6 +1878,31 @@ static void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
     prefetch_motion(h, 1);
 }
 
+static av_cold void init_cavlc_level_tab(void){
+    int suffix_length, mask;
+    unsigned int i;
+
+    for(suffix_length=0; suffix_length<7; suffix_length++){
+        for(i=0; i<(1<<LEVEL_TAB_BITS); i++){
+            int prefix= LEVEL_TAB_BITS - av_log2(2*i);
+            int level_code= (prefix<<suffix_length) + (i>>(LEVEL_TAB_BITS-prefix-1-suffix_length)) - (1<<suffix_length);
+
+            mask= -(level_code&1);
+            level_code= (((2+level_code)>>1) ^ mask) - mask;
+            if(prefix + 1 + suffix_length <= LEVEL_TAB_BITS){
+                cavlc_level_tab[suffix_length][i][0]= level_code;
+                cavlc_level_tab[suffix_length][i][1]= prefix + 1 + suffix_length;
+            }else if(prefix + 1 <= LEVEL_TAB_BITS){
+                cavlc_level_tab[suffix_length][i][0]= prefix+100;
+                cavlc_level_tab[suffix_length][i][1]= prefix + 1;
+            }else{
+                cavlc_level_tab[suffix_length][i][0]= LEVEL_TAB_BITS+100;
+                cavlc_level_tab[suffix_length][i][1]= LEVEL_TAB_BITS;
+            }
+        }
+    }
+}
+
 static av_cold void decode_init_vlc(void){
     static int done = 0;
 
@@ -1941,6 +1969,8 @@ static av_cold void decode_init_vlc(void){
                  &run_len [6][0], 1, 1,
                  &run_bits[6][0], 1, 1,
                  INIT_VLC_USE_NEW_STATIC);
+
+        init_cavlc_level_tab();
     }
 }
 
@@ -4137,8 +4167,16 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 
         //remaining coefficients have suffix_length > 0
         for(i=trailing_ones+1;i<total_coeff;i++) {
-            static const int suffix_limit[7] = {0,5,11,23,47,95,INT_MAX };
-            prefix = get_level_prefix(gb);
+            static const unsigned int suffix_limit[7] = {0,3,6,12,24,48,INT_MAX };
+            int bitsi= show_bits(gb, LEVEL_TAB_BITS);
+            level_code= cavlc_level_tab[suffix_length][bitsi][0];
+
+            skip_bits(gb, cavlc_level_tab[suffix_length][bitsi][1]);
+            if(level_code >= 100){
+                prefix= level_code - 100;
+                if(prefix == LEVEL_TAB_BITS){
+                    prefix += get_level_prefix(gb);
+                }
             if(prefix<15){
                 level_code = (prefix<<suffix_length) + get_bits(gb, suffix_length);
             }else{
@@ -4147,8 +4185,11 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
                     level_code += (1<<(prefix-3))-4096;
             }
             mask= -(level_code&1);
-            level[i]= (((2+level_code)>>1) ^ mask) - mask;
-            if(level_code > suffix_limit[suffix_length])
+                level_code= (((2+level_code)>>1) ^ mask) - mask;
+            }
+            level[i]= level_code;
+
+            if(suffix_limit[suffix_length] + level_code > 2U*suffix_limit[suffix_length])
                 suffix_length++;
         }
     }
