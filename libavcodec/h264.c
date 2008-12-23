@@ -2848,7 +2848,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
             int pred= h->curr_pic_num;
 
             for(index=0; ; index++){
-                unsigned int reordering_of_pic_nums_idc= get_ue_golomb(&s->gb);
+                unsigned int reordering_of_pic_nums_idc= get_ue_golomb_31(&s->gb);
                 unsigned int pic_id;
                 int i;
                 Picture *ref = NULL;
@@ -3414,7 +3414,7 @@ static int decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
     }else{
         if(get_bits1(gb)){ // adaptive_ref_pic_marking_mode_flag
             for(i= 0; i<MAX_MMCO_COUNT; i++) {
-                MMCOOpcode opcode= get_ue_golomb(gb);
+                MMCOOpcode opcode= get_ue_golomb_31(gb);
 
                 h->mmco[i].opcode= opcode;
                 if(opcode==MMCO_SHORT2UNUSED || opcode==MMCO_SHORT2LONG){
@@ -3425,7 +3425,7 @@ static int decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
                     }*/
                 }
                 if(opcode==MMCO_SHORT2LONG || opcode==MMCO_LONG2UNUSED || opcode==MMCO_LONG || opcode==MMCO_SET_MAX_LONG){
-                    unsigned int long_arg= get_ue_golomb(gb);
+                    unsigned int long_arg= get_ue_golomb_31(gb);
                     if(long_arg >= 32 || (long_arg >= 16 && !(opcode == MMCO_LONG2UNUSED && FIELD_PICTURE))){
                         av_log(h->s.avctx, AV_LOG_ERROR, "illegal long ref in memory management control operation %d\n", opcode);
                         return -1;
@@ -3653,7 +3653,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             s->current_picture_ptr= NULL;
     }
 
-    slice_type= get_ue_golomb(&s->gb);
+    slice_type= get_ue_golomb_31(&s->gb);
     if(slice_type > 9){
         av_log(h->s.avctx, AV_LOG_ERROR, "slice type too large (%d) at %d %d\n", h->slice_type, s->mb_x, s->mb_y);
         return -1;
@@ -3947,7 +3947,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     direct_ref_list_init(h);
 
     if( h->slice_type_nos != FF_I_TYPE && h->pps.cabac ){
-        tmp = get_ue_golomb(&s->gb);
+        tmp = get_ue_golomb_31(&s->gb);
         if(tmp > 2){
             av_log(s->avctx, AV_LOG_ERROR, "cabac_init_idc overflow\n");
             return -1;
@@ -3976,7 +3976,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->slice_alpha_c0_offset = 0;
     h->slice_beta_offset = 0;
     if( h->pps.deblocking_filter_parameters_present ) {
-        tmp= get_ue_golomb(&s->gb);
+        tmp= get_ue_golomb_31(&s->gb);
         if(tmp > 2){
             av_log(s->avctx, AV_LOG_ERROR, "deblocking_filter_idc %u out of range\n", tmp);
             return -1;
@@ -4456,7 +4456,7 @@ decode_intra_mb:
                 return -1;
         }
         if(CHROMA){
-            pred_mode= check_intra_pred_mode(h, get_ue_golomb(&s->gb));
+            pred_mode= check_intra_pred_mode(h, get_ue_golomb_31(&s->gb));
             if(pred_mode < 0)
                 return -1;
             h->chroma_pred_mode= pred_mode;
@@ -4466,7 +4466,7 @@ decode_intra_mb:
 
         if(h->slice_type_nos == FF_B_TYPE){
             for(i=0; i<4; i++){
-                h->sub_mb_type[i]= get_ue_golomb(&s->gb);
+                h->sub_mb_type[i]= get_ue_golomb_31(&s->gb);
                 if(h->sub_mb_type[i] >=13){
                     av_log(h->s.avctx, AV_LOG_ERROR, "B sub_mb_type %u out of range at %d %d\n", h->sub_mb_type[i], s->mb_x, s->mb_y);
                     return -1;
@@ -4485,7 +4485,7 @@ decode_intra_mb:
         }else{
             assert(h->slice_type_nos == FF_P_TYPE); //FIXME SP correct ?
             for(i=0; i<4; i++){
-                h->sub_mb_type[i]= get_ue_golomb(&s->gb);
+                h->sub_mb_type[i]= get_ue_golomb_31(&s->gb);
                 if(h->sub_mb_type[i] >=4){
                     av_log(h->s.avctx, AV_LOG_ERROR, "P sub_mb_type %u out of range at %d %d\n", h->sub_mb_type[i], s->mb_x, s->mb_y);
                     return -1;
@@ -6843,7 +6843,7 @@ static int decode_sei(H264Context *h){
 static inline int decode_hrd_parameters(H264Context *h, SPS *sps){
     MpegEncContext * const s = &h->s;
     int cpb_count, i;
-    cpb_count = get_ue_golomb(&s->gb) + 1;
+    cpb_count = get_ue_golomb_31(&s->gb) + 1;
 
     if(cpb_count > 32U){
         av_log(h->s.avctx, AV_LOG_ERROR, "cpb_count %d invalid\n", cpb_count);
@@ -7003,7 +7003,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
     get_bits1(&s->gb);   //constraint_set3_flag
     get_bits(&s->gb, 4); // reserved
     level_idc= get_bits(&s->gb, 8);
-    sps_id= get_ue_golomb(&s->gb);
+    sps_id= get_ue_golomb_31(&s->gb);
 
     if(sps_id >= MAX_SPS_COUNT) {
         av_log(h->s.avctx, AV_LOG_ERROR, "sps_id (%d) out of range\n", sps_id);
@@ -7021,7 +7021,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
     sps->scaling_matrix_present = 0;
 
     if(sps->profile_idc >= 100){ //high profile
-        sps->chroma_format_idc= get_ue_golomb(&s->gb);
+        sps->chroma_format_idc= get_ue_golomb_31(&s->gb);
         if(sps->chroma_format_idc == 3)
             get_bits1(&s->gb);  //residual_color_transform_flag
         get_ue_golomb(&s->gb);  //bit_depth_luma_minus8
@@ -7033,7 +7033,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
     }
 
     sps->log2_max_frame_num= get_ue_golomb(&s->gb) + 4;
-    sps->poc_type= get_ue_golomb(&s->gb);
+    sps->poc_type= get_ue_golomb_31(&s->gb);
 
     if(sps->poc_type == 0){ //FIXME #define
         sps->log2_max_poc_lsb= get_ue_golomb(&s->gb) + 4;
@@ -7055,7 +7055,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
         goto fail;
     }
 
-    sps->ref_frame_count= get_ue_golomb(&s->gb);
+    sps->ref_frame_count= get_ue_golomb_31(&s->gb);
     if(sps->ref_frame_count > MAX_PICTURE_COUNT-2 || sps->ref_frame_count >= 32U){
         av_log(h->s.avctx, AV_LOG_ERROR, "too many reference frames\n");
         goto fail;
@@ -7147,7 +7147,7 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     pps= av_mallocz(sizeof(PPS));
     if(pps == NULL)
         return -1;
-    pps->sps_id= get_ue_golomb(&s->gb);
+    pps->sps_id= get_ue_golomb_31(&s->gb);
     if((unsigned)pps->sps_id>=MAX_SPS_COUNT || h->sps_buffers[pps->sps_id] == NULL){
         av_log(h->s.avctx, AV_LOG_ERROR, "sps_id out of range\n");
         goto fail;
