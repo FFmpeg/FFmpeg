@@ -672,6 +672,9 @@ following "Devel" ones:
 binutils, gcc-core, make, subversion, mingw-runtime, diffutils
 @end example
 
+The experimental gcc4 package is still buggy, hence please
+use the official gcc 3.4.4 or a 4.2.x compiled from source by yourself.
+
 Install the current binutils-20080624-2 as they work fine (the old
 binutils-20060709-1 proved buggy on shared builds).
 
