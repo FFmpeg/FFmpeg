@@ -662,9 +662,9 @@ Then you can easily test FFmpeg with Wine
 
 @subsection Compilation under Cygwin
 
-The main issue with Cygwin is that newlib, its C library, does not
-contain llrint().  However, it is possible to leverage the
-implementation in MinGW.
+The main issue with the 1.5.x Cygwin versions is that newlib, its C library,
+does not contain llrint().  You need to upgrade to the unstable 1.7.x versions,
+or leverage the implementation in MinGW (as explained below).
 
 Just install your Cygwin with all the "Base" packages, plus the
 following "Devel" ones:
@@ -672,8 +672,8 @@ following "Devel" ones:
 binutils, gcc-core, make, subversion, mingw-runtime, diffutils
 @end example
 
-Do not install binutils-20060709-1 (they are buggy on shared builds);
-use binutils-20050610-1 instead.
+Install the current binutils-20080624-2 as they work fine (the old
+binutils-20060709-1 proved buggy on shared builds).
 
 Then create a small library that just contains llrint():
 
