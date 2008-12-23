@@ -4142,9 +4142,16 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
     level[2] = 1-((i&1)<<1);
 
     if(trailing_ones<total_coeff) {
-        int level_code, mask;
+        int mask, prefix;
         int suffix_length = total_coeff > 10 && trailing_ones < 3;
-        int prefix= get_level_prefix(gb);
+        int bitsi= show_bits(gb, LEVEL_TAB_BITS);
+        int level_code= cavlc_level_tab[suffix_length][bitsi][0];
+
+        skip_bits(gb, cavlc_level_tab[suffix_length][bitsi][1]);
+        if(level_code >= 100){
+            prefix= level_code - 100;
+            if(prefix == LEVEL_TAB_BITS)
+                prefix += get_level_prefix(gb);
 
         //first coefficient has suffix_length equal to 0 or 1
         if(prefix<14){ //FIXME try to build a large unified VLC table for all this
@@ -4166,11 +4173,17 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 
         if(trailing_ones < 3) level_code += 2;
 
-        suffix_length = 1;
-        if(level_code > 5)
-            suffix_length++;
+        suffix_length = 2;
         mask= -(level_code&1);
         level[trailing_ones]= (((2+level_code)>>1) ^ mask) - mask;
+        }else{
+            if(trailing_ones < 3) level_code += (level_code>>31)|1;
+
+            suffix_length = 1;
+            if(level_code + 3U > 6U)
+                suffix_length++;
+            level[trailing_ones]= level_code;
+        }
 
         //remaining coefficients have suffix_length > 0
         for(i=trailing_ones+1;i<total_coeff;i++) {
