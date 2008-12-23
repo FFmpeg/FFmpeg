@@ -1423,21 +1423,28 @@ static const uint8_t *decode_nal(H264Context *h, const uint8_t *src, int *dst_le
     }
 
 //printf("decoding esc\n");
-    si=di=0;
-    while(si<length){
+    memcpy(dst, src, i);
+    si=di=i;
+    while(si+2<length){
         //remove escapes (very rare 1:2^22)
-        if(si+2<length && src[si]==0 && src[si+1]==0 && src[si+2]<=3){
+        if(src[si+2]>3){
+            dst[di++]= src[si++];
+            dst[di++]= src[si++];
+        }else if(src[si]==0 && src[si+1]==0){
             if(src[si+2]==3){ //escape
                 dst[di++]= 0;
                 dst[di++]= 0;
                 si+=3;
                 continue;
             }else //next start code
-                break;
+                goto nsc;
         }
 
         dst[di++]= src[si++];
     }
+    while(si<length)
+        dst[di++]= src[si++];
+nsc:
 
     memset(dst+di, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
