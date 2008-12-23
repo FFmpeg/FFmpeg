@@ -4500,10 +4500,17 @@ decode_intra_mb:
             for(i=0; i<4; i++){
                 if(IS_DIRECT(h->sub_mb_type[i])) continue;
                 if(IS_DIR(h->sub_mb_type[i], 0, list)){
-                    unsigned int tmp = get_te0_golomb(&s->gb, ref_count); //FIXME init to 0 before and skip?
+                    unsigned int tmp;
+                    if(ref_count == 1){
+                        tmp= 0;
+                    }else if(ref_count == 2){
+                        tmp= get_bits1(&s->gb)^1;
+                    }else{
+                        tmp= get_ue_golomb_31(&s->gb);
                     if(tmp>=ref_count){
                         av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", tmp);
                         return -1;
+                    }
                     }
                     ref[list][i]= tmp;
                 }else{
@@ -4569,10 +4576,16 @@ decode_intra_mb:
             for(list=0; list<h->list_count; list++){
                     unsigned int val;
                     if(IS_DIR(mb_type, 0, list)){
-                        val= get_te0_golomb(&s->gb, h->ref_count[list]);
+                        if(h->ref_count[list]==1){
+                            val= 0;
+                        }else if(h->ref_count[list]==2){
+                            val= get_bits1(&s->gb)^1;
+                        }else{
+                        val= get_ue_golomb_31(&s->gb);
                         if(val >= h->ref_count[list]){
                             av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                             return -1;
+                        }
                         }
                     }else
                         val= LIST_NOT_USED&0xFF;
@@ -4597,10 +4610,16 @@ decode_intra_mb:
                     for(i=0; i<2; i++){
                         unsigned int val;
                         if(IS_DIR(mb_type, i, list)){
-                            val= get_te0_golomb(&s->gb, h->ref_count[list]);
+                            if(h->ref_count[list] == 1){
+                                val= 0;
+                            }else if(h->ref_count[list] == 2){
+                                val= get_bits1(&s->gb)^1;
+                            }else{
+                            val= get_ue_golomb_31(&s->gb);
                             if(val >= h->ref_count[list]){
                                 av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                 return -1;
+                            }
                             }
                         }else
                             val= LIST_NOT_USED&0xFF;
@@ -4628,10 +4647,16 @@ decode_intra_mb:
                     for(i=0; i<2; i++){
                         unsigned int val;
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
-                            val= get_te0_golomb(&s->gb, h->ref_count[list]);
+                            if(h->ref_count[list]==1){
+                                val= 0;
+                            }else if(h->ref_count[list]==2){
+                                val= get_bits1(&s->gb)^1;
+                            }else{
+                            val= get_ue_golomb_31(&s->gb);
                             if(val >= h->ref_count[list]){
                                 av_log(h->s.avctx, AV_LOG_ERROR, "ref %u overflow\n", val);
                                 return -1;
+                            }
                             }
                         }else
                             val= LIST_NOT_USED&0xFF;
