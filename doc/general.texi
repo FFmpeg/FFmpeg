@@ -706,7 +706,7 @@ libogg-devel, libvorbis-devel
 @end example
 
 These library packages are only available from Cygwin Ports
-(@url{http://cygwinports.dotsrc.org/}) :
+(@url{http://sourceware.org/cygwinports/}) :
 
 @example
 yasm, libSDL-devel, libdirac-devel, libfaac-devel, libfaad-devel, libgsm-devel,
