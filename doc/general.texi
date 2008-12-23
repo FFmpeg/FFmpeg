@@ -700,9 +700,22 @@ to make a static build or
 to build shared libraries.
 
 If you want to build FFmpeg with additional libraries, download Cygwin
-"Devel" packages for Ogg and Vorbis from any Cygwin packages repository
-and/or SDL, xvid, faac, faad2 packages from Cygwin Ports,
-(@url{http://sourceware.org/cygwinports/}).
+"Devel" packages for Ogg and Vorbis from any Cygwin packages repository:
+@example
+libogg-devel, libvorbis-devel
+@end example
+
+These library packages are only available from Cygwin Ports
+(@url{http://cygwinports.dotsrc.org/}) :
+
+@example
+yasm, libSDL-devel, libdirac-devel, libfaac-devel, libfaad-devel, libgsm-devel,
+libmp3lame-devel, libschroedinger1.0-devel, speex-devel, libtheora-devel,
+libxvidcore-devel
+@end example
+
+The recommendation for libnut and x264 is to build them from source by
+yourself, as they evolve too quickly for Cygwin Ports to be up to date.
 
 @subsection Crosscompilation for Windows under Cygwin
 
