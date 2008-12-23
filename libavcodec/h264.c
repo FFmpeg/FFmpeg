@@ -4177,14 +4177,14 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
                 if(prefix == LEVEL_TAB_BITS){
                     prefix += get_level_prefix(gb);
                 }
-            if(prefix<15){
-                level_code = (prefix<<suffix_length) + get_bits(gb, suffix_length);
-            }else{
-                level_code = (15<<suffix_length) + get_bits(gb, prefix-3);
-                if(prefix>=16)
-                    level_code += (1<<(prefix-3))-4096;
-            }
-            mask= -(level_code&1);
+                if(prefix<15){
+                    level_code = (prefix<<suffix_length) + get_bits(gb, suffix_length);
+                }else{
+                    level_code = (15<<suffix_length) + get_bits(gb, prefix-3);
+                    if(prefix>=16)
+                        level_code += (1<<(prefix-3))-4096;
+                }
+                mask= -(level_code&1);
                 level_code= (((2+level_code)>>1) ^ mask) - mask;
             }
             level[i]= level_code;
