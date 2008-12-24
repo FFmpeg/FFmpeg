@@ -873,8 +873,8 @@ static inline void pred_pskip_motion(H264Context * const h, int * const mx, int 
     tprintf(h->s.avctx, "pred_pskip: (%d) (%d) at %2d %2d\n", top_ref, left_ref, h->s.mb_x, h->s.mb_y);
 
     if(top_ref == PART_NOT_AVAILABLE || left_ref == PART_NOT_AVAILABLE
-       || (top_ref == 0  && *(uint32_t*)h->mv_cache[0][ scan8[0] - 8 ] == 0)
-       || (left_ref == 0 && *(uint32_t*)h->mv_cache[0][ scan8[0] - 1 ] == 0)){
+       || !( top_ref | *(uint32_t*)h->mv_cache[0][ scan8[0] - 8 ])
+       || !(left_ref | *(uint32_t*)h->mv_cache[0][ scan8[0] - 1 ])){
 
         *mx = *my = 0;
         return;
