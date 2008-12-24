@@ -2082,7 +2082,7 @@ typedef struct AVCodecContext {
     /**
      * number of reference frames
      * - encoding: Set by user.
-     * - decoding: unused
+     * - decoding: Set by lavc.
      */
     int refs;
 
