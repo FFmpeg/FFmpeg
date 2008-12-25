@@ -52,7 +52,9 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 #define ENABLE_MSMPEG4_DECODER (ENABLE_MSMPEG4V1_DECODER || \
                                 ENABLE_MSMPEG4V2_DECODER || \
                                 ENABLE_MSMPEG4V3_DECODER || \
-                                ENABLE_WMV2_DECODER)
+                                ENABLE_WMV2_DECODER      || \
+                                ENABLE_VC1_DECODER       || \
+                                ENABLE_WMV3_DECODER)
 #define ENABLE_MSMPEG4_ENCODER (ENABLE_MSMPEG4V1_ENCODER || \
                                 ENABLE_MSMPEG4V2_ENCODER || \
                                 ENABLE_MSMPEG4V3_ENCODER || \
