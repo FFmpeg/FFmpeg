@@ -37,7 +37,7 @@
  *
  * You will know you have these parameters passed correctly when the decoder
  * correctly decodes this file:
- *  ftp://ftp.mplayerhq.hu/MPlayer/samples/V-codecs/SVQ3/Vertical400kbit.sorenson3.mov
+ *  http://samples.mplayerhq.hu/V-codecs/SVQ3/Vertical400kbit.sorenson3.mov
  */
 
 #ifdef CONFIG_ZLIB
