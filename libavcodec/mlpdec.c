@@ -40,7 +40,7 @@
 
 static const char* sample_message =
     "Please file a bug report following the instructions at "
-    "http://ffmpeg.mplayerhq.hu/bugreports.html and include "
+    "http://ffmpeg.org/bugreports.html and include "
     "a sample of this file.";
 
 typedef struct SubStream {

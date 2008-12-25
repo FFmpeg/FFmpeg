@@ -18,7 +18,7 @@ As many functions tend to be a bit difficult to understand because
 of optimizations, it can be hard to optimize them further, or write
 architecture-specific versions. It is recommended to look at older
 revisions of the interesting files (for a web frontend try ViewVC at
-http://svn.mplayerhq.hu/ffmpeg/trunk/).
+http://svn.ffmpeg.org/ffmpeg/trunk/).
 Alternatively, look into the other architecture-specific versions in
 the x86/, ppc/, alpha/ subdirectories. Even if you don't exactly
 comprehend the instructions, it could help understanding the functions
