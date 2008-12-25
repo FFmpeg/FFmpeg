@@ -72,58 +72,57 @@ void ff_h264_lowres_idct_put_c(uint8_t *dst, int stride, DCTELEM *block){
 
 void ff_h264_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride){
     int i;
-    DCTELEM (*src)[8] = (DCTELEM(*)[8])block;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     block[0] += 32;
 
     for( i = 0; i < 8; i++ )
     {
-        const int a0 =  src[i][0] + src[i][4];
-        const int a2 =  src[i][0] - src[i][4];
-        const int a4 = (src[i][2]>>1) - src[i][6];
-        const int a6 = (src[i][6]>>1) + src[i][2];
+        const int a0 =  block[0+i*8] + block[4+i*8];
+        const int a2 =  block[0+i*8] - block[4+i*8];
+        const int a4 = (block[2+i*8]>>1) - block[6+i*8];
+        const int a6 = (block[6+i*8]>>1) + block[2+i*8];
 
         const int b0 = a0 + a6;
         const int b2 = a2 + a4;
         const int b4 = a2 - a4;
         const int b6 = a0 - a6;
 
-        const int a1 = -src[i][3] + src[i][5] - src[i][7] - (src[i][7]>>1);
-        const int a3 =  src[i][1] + src[i][7] - src[i][3] - (src[i][3]>>1);
-        const int a5 = -src[i][1] + src[i][7] + src[i][5] + (src[i][5]>>1);
-        const int a7 =  src[i][3] + src[i][5] + src[i][1] + (src[i][1]>>1);
+        const int a1 = -block[3+i*8] + block[5+i*8] - block[7+i*8] - (block[7+i*8]>>1);
+        const int a3 =  block[1+i*8] + block[7+i*8] - block[3+i*8] - (block[3+i*8]>>1);
+        const int a5 = -block[1+i*8] + block[7+i*8] + block[5+i*8] + (block[5+i*8]>>1);
+        const int a7 =  block[3+i*8] + block[5+i*8] + block[1+i*8] + (block[1+i*8]>>1);
 
         const int b1 = (a7>>2) + a1;
         const int b3 =  a3 + (a5>>2);
         const int b5 = (a3>>2) - a5;
         const int b7 =  a7 - (a1>>2);
 
-        src[i][0] = b0 + b7;
-        src[i][7] = b0 - b7;
-        src[i][1] = b2 + b5;
-        src[i][6] = b2 - b5;
-        src[i][2] = b4 + b3;
-        src[i][5] = b4 - b3;
-        src[i][3] = b6 + b1;
-        src[i][4] = b6 - b1;
+        block[0+i*8] = b0 + b7;
+        block[7+i*8] = b0 - b7;
+        block[1+i*8] = b2 + b5;
+        block[6+i*8] = b2 - b5;
+        block[2+i*8] = b4 + b3;
+        block[5+i*8] = b4 - b3;
+        block[3+i*8] = b6 + b1;
+        block[4+i*8] = b6 - b1;
     }
     for( i = 0; i < 8; i++ )
     {
-        const int a0 =  src[0][i] + src[4][i];
-        const int a2 =  src[0][i] - src[4][i];
-        const int a4 = (src[2][i]>>1) - src[6][i];
-        const int a6 = (src[6][i]>>1) + src[2][i];
+        const int a0 =  block[i+0*8] + block[i+4*8];
+        const int a2 =  block[i+0*8] - block[i+4*8];
+        const int a4 = (block[i+2*8]>>1) - block[i+6*8];
+        const int a6 = (block[i+6*8]>>1) + block[i+2*8];
 
         const int b0 = a0 + a6;
         const int b2 = a2 + a4;
         const int b4 = a2 - a4;
         const int b6 = a0 - a6;
 
-        const int a1 = -src[3][i] + src[5][i] - src[7][i] - (src[7][i]>>1);
-        const int a3 =  src[1][i] + src[7][i] - src[3][i] - (src[3][i]>>1);
-        const int a5 = -src[1][i] + src[7][i] + src[5][i] + (src[5][i]>>1);
-        const int a7 =  src[3][i] + src[5][i] + src[1][i] + (src[1][i]>>1);
+        const int a1 = -block[i+3*8] + block[i+5*8] - block[i+7*8] - (block[i+7*8]>>1);
+        const int a3 =  block[i+1*8] + block[i+7*8] - block[i+3*8] - (block[i+3*8]>>1);
+        const int a5 = -block[i+1*8] + block[i+7*8] + block[i+5*8] + (block[i+5*8]>>1);
+        const int a7 =  block[i+3*8] + block[i+5*8] + block[i+1*8] + (block[i+1*8]>>1);
 
         const int b1 = (a7>>2) + a1;
         const int b3 =  a3 + (a5>>2);
