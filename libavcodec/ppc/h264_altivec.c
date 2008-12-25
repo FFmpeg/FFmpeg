@@ -19,6 +19,7 @@
  */
 
 #include "libavcodec/dsputil.h"
+#include "libavcodec/h264data.h"
 
 #include "gcc_fixes.h"
 
@@ -595,6 +596,30 @@ void ff_h264_idct8_add_altivec( uint8_t *dst, DCTELEM *dct, int stride ) {
     ALTIVEC_STORE_SUM_CLIP(&dst[7*stride], idct7, perm_ldv, perm_stv, sel);
 }
 
+// TODO: implement this in AltiVec
+static void ff_h264_idct8_dc_add_altivec(uint8_t *dst, DCTELEM *block, int stride) {
+    int i, j;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    int dc = (block[0] + 32) >> 6;
+    for( j = 0; j < 8; j++ )
+    {
+        for( i = 0; i < 8; i++ )
+            dst[i] = cm[ dst[i] + dc ];
+        dst += stride;
+    }
+}
+
+static void ff_h264_idct8_add4_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=0; i<16; i+=4){
+        int nnz = nnzc[ scan8[i] ];
+        if(nnz){
+            if(nnz==1 && block[i*16]) ff_h264_idct8_dc_add_altivec(dst + block_offset[i], block + i*16, stride);
+            else                      ff_h264_idct8_add_altivec   (dst + block_offset[i], block + i*16, stride);
+        }
+    }
+}
+
 #define transpose4x16(r0, r1, r2, r3) {      \
     register vec_u8_t r4;                    \
     register vec_u8_t r5;                    \
@@ -874,8 +899,12 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
         c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
         c->put_no_rnd_h264_chroma_pixels_tab[0] = put_no_rnd_h264_chroma_mc8_altivec;
         c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
+/* ff_h264_idct_add_altivec may be re-enabled once AltiVec versions of
+   h264_idct_add16, h264_idct_add16intra, h264_idct_add8 are implemented
         c->h264_idct_add = ff_h264_idct_add_altivec;
+*/
         c->h264_idct8_add = ff_h264_idct8_add_altivec;
+        c->h264_idct8_add4 = ff_h264_idct8_add4_altivec;
         c->h264_v_loop_filter_luma= h264_v_loop_filter_luma_altivec;
         c->h264_h_loop_filter_luma= h264_h_loop_filter_luma_altivec;
 
