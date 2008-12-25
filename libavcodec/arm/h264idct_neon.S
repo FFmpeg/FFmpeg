@@ -20,6 +20,7 @@
 
 #include "asm.S"
 
+        preserve8
         .fpu neon
 
         .text
@@ -94,3 +95,95 @@ function ff_h264_idct_dc_add_neon, export=1
         vst1.32         {d1[1]},  [r0,:32], r2
         bx              lr
         .endfunc
+
+function ff_h264_idct_add16_neon, export=1
+        push            {r4-r8,lr}
+        mov             r4,  r0
+        mov             r5,  r1
+        mov             r1,  r2
+        mov             r2,  r3
+        ldr             r6,  [sp, #24]
+        movw            r7,  #:lower16:scan8
+        movt            r7,  #:upper16:scan8
+        mov             ip,  #16
+1:      ldrb            r8,  [r7], #1
+        ldr             r0,  [r5], #4
+        ldrb            r8,  [r6, r8]
+        subs            r8,  r8,  #1
+        blt             2f
+        ldrsh           lr,  [r1]
+        add             r0,  r0,  r4
+        movne           lr,  #0
+        cmp             lr,  #0
+        adrne           lr,  ff_h264_idct_dc_add_neon
+        adreq           lr,  ff_h264_idct_add_neon
+        blx             lr
+2:      subs            ip,  ip,  #1
+        add             r1,  r1,  #32
+        bne             1b
+        pop             {r4-r8,pc}
+        .endfunc
+
+function ff_h264_idct_add16intra_neon, export=1
+        push            {r4-r8,lr}
+        mov             r4,  r0
+        mov             r5,  r1
+        mov             r1,  r2
+        mov             r2,  r3
+        ldr             r6,  [sp, #24]
+        movw            r7,  #:lower16:scan8
+        movt            r7,  #:upper16:scan8
+        mov             ip,  #16
+1:      ldrb            r8,  [r7], #1
+        ldr             r0,  [r5], #4
+        ldrb            r8,  [r6, r8]
+        add             r0,  r0,  r4
+        cmp             r8,  #0
+        ldrsh           r8,  [r1]
+        adrne           lr,  ff_h264_idct_add_neon
+        adreq           lr,  ff_h264_idct_dc_add_neon
+        cmpeq           r8,  #0
+        blxne           lr
+        subs            ip,  ip,  #1
+        add             r1,  r1,  #32
+        bne             1b
+        pop             {r4-r8,pc}
+        .endfunc
+
+function ff_h264_idct_add8_neon, export=1
+        push            {r4-r10,lr}
+        ldm             r0,  {r4,r9}
+        add             r5,  r1,  #16*4
+        add             r1,  r2,  #16*32
+        mov             r2,  r3
+        ldr             r6,  [sp, #32]
+        movw            r7,  #:lower16:scan8+16
+        movt            r7,  #:upper16:scan8+16
+        mov             ip,  #8
+1:      ldrb            r8,  [r7], #1
+        ldr             r0,  [r5], #4
+        ldrb            r8,  [r6, r8]
+        tst             ip,  #4
+        addeq           r0,  r0,  r4
+        addne           r0,  r0,  r9
+        cmp             r8,  #0
+        ldrsh           r8,  [r1]
+        adrne           lr,  ff_h264_idct_add_neon
+        adreq           lr,  ff_h264_idct_dc_add_neon
+        cmpeq           r8,  #0
+        blxne           lr
+        subs            ip,  ip,  #1
+        add             r1,  r1,  #32
+        bne             1b
+        pop             {r4-r10,pc}
+        .endfunc
+
+        .section .rodata
+scan8:  .byte           4+1*8, 5+1*8, 4+2*8, 5+2*8
+        .byte           6+1*8, 7+1*8, 6+2*8, 7+2*8
+        .byte           4+3*8, 5+3*8, 4+4*8, 5+4*8
+        .byte           6+3*8, 7+3*8, 6+4*8, 7+4*8
+        .byte           1+1*8, 2+1*8
+        .byte           1+2*8, 2+2*8
+        .byte           1+4*8, 2+4*8
+        .byte           1+5*8, 2+5*8
