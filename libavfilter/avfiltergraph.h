@@ -30,7 +30,10 @@ typedef struct AVFilterGraph {
 } AVFilterGraph;
 
 /**
- * Get a pointer to a graph by instance name
+ * Get from \p graph a filter instance with name \p name.
+ *
+ * @return the pointer to the found filter instance or NULL if it
+ * cannot be found.
  */
 AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name);
 
