@@ -415,6 +415,9 @@ static void compute_svector(QCELPContext *q, const float *gain,
                     *cdn_vector++ = tmp_gain * qcelp_rate_full_codebook[cbseed++ & 127];
             }
         break;
+        case SILENCE:
+            memset(cdn_vector, 0, 160 * sizeof(float));
+        break;
     }
 }
 
@@ -510,7 +513,7 @@ static const float *do_pitchfilter(float memory[303], const float v_in[160],
 
 /**
  * Apply pitch synthesis filter and pitch prefilter to the scaled codebook vector.
- * TIA/EIA/IS-733 2.4.5.2
+ * TIA/EIA/IS-733 2.4.5.2, 2.4.8.7.2
  *
  * @param q the context
  * @param cdn_vector the scaled codebook vector
@@ -521,6 +524,7 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
     const float *v_synthesis_filtered, *v_pre_filtered;
 
     if(q->bitrate >= RATE_HALF ||
+       q->bitrate == SILENCE ||
        (q->bitrate == I_F_Q && (q->prev_bitrate >= RATE_HALF)))
     {
 
@@ -538,10 +542,17 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
         {
             float max_pitch_gain;
 
+            if (q->bitrate == I_F_Q)
+            {
             if (q->erasure_count < 3)
                 max_pitch_gain = 0.9 - 0.3 * (q->erasure_count - 1);
              else
                 max_pitch_gain = 0.0;
+            }else
+            {
+                assert(q->bitrate == SILENCE);
+                max_pitch_gain = 1.0;
+            }
             for(i=0; i<4; i++)
                 q->pitch_gain[i] = FFMIN(q->pitch_gain[i], max_pitch_gain);
 
@@ -577,7 +588,7 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
  * Interpolates LSP frequencies and computes LPC coefficients
  * for a given bitrate & pitch subframe.
  *
- * TIA/EIA/IS-733 2.4.3.3.4
+ * TIA/EIA/IS-733 2.4.3.3.4, 2.4.8.7.2
  *
  * @param q the context
  * @param curr_lspf LSP frequencies vector of the current frame
@@ -605,6 +616,8 @@ void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
     }else if(q->bitrate >= RATE_QUARTER ||
              (q->bitrate == I_F_Q && !subframe_num))
         ff_qcelp_lspf2lpc(curr_lspf, lpc);
+    else if(q->bitrate == SILENCE && !subframe_num)
+        ff_qcelp_lspf2lpc(q->prev_lspf, lpc);
 }
 
 static qcelp_packet_rate buf_size2bitrate(const int buf_size)
@@ -666,9 +679,11 @@ static int determine_bitrate(AVCodecContext *avctx, const int buf_size,
 
     if(bitrate == SILENCE)
     {
-        // FIXME: the decoder should not handle SILENCE frames as I_F_Q frames
-        ff_log_missing_feature(avctx, "Blank frame", 1);
-        bitrate = I_F_Q;
+        //FIXME: Remove experimental warning when tested with samples.
+        av_log(avctx, AV_LOG_WARNING, "'Blank frame handling is experimental."
+                      " If you want to help, upload a sample "
+                      "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
+                      "and contact the ffmpeg-devel mailing list.\n");
     }
     return bitrate;
 }
