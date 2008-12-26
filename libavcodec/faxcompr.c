@@ -123,7 +123,7 @@ av_cold void ff_ccitt_unpack_init()
 
 
 static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
-                                 int pix_left, int *runs)
+                                 int pix_left, int *runs, const int *runend)
 {
     int mode = 0, run = 0;
     unsigned int t;
@@ -133,6 +133,10 @@ static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
         if(t < 64){
             pix_left -= run;
             *runs++ = run;
+            if(runs >= runend){
+                av_log(avctx, AV_LOG_ERROR, "Run overrun\n");
+                return -1;
+            }
             if(pix_left <= 0){
                 if(!pix_left)
                     break;
@@ -152,11 +156,13 @@ static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
 }
 
 static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
-                                 int pix_left, int *runs, const int *ref)
+                                 int pix_left, int *runs, const int *runend, const int *ref)
 {
     int mode = 0, offs = 0, run = 0, saved_run = 0, t;
     int run_off = *ref++;
     int *run_start = runs;
+
+    runend--; // for the last written 0
 
     while(pix_left > 0){
         int cmode = get_vlc2(gb, ccitt_group3_2d_vlc.table, 9, 1);
@@ -195,6 +201,10 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
                         break;
                 }
                 *runs++ = run + saved_run;
+                if(runs >= runend){
+                    av_log(avctx, AV_LOG_ERROR, "Run overrun\n");
+                    return -1;
+                }
                 saved_run = 0;
                 pix_left -= run;
                 if(pix_left < 0){
@@ -220,6 +230,10 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
             }
             offs += run;
             *runs++ = run + saved_run;
+            if(runs >= runend){
+                av_log(avctx, AV_LOG_ERROR, "Run overrun\n");
+                return -1;
+            }
             saved_run = 0;
             mode = !mode;
         }
@@ -264,7 +278,7 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
 {
     int j;
     GetBitContext gb;
-    int *runs, *ref;
+    int *runs, *ref, *runend;
     int ret;
 
     runs = av_malloc((avctx->width + 2) * sizeof(runs[0]));
@@ -274,8 +288,9 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
     ref[2] = 0;
     init_get_bits(&gb, src, srcsize*8);
     for(j = 0; j < height; j++){
+        runend = runs + avctx->width + 2;
         if(compr == TIFF_G4){
-            ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, ref);
+            ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, runend, ref);
             if(ret < 0){
                 av_free(runs);
                 av_free(ref);
@@ -285,9 +300,9 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
             if(find_group3_syncmarker(&gb, srcsize*8) < 0)
                 break;
             if(compr==TIFF_CCITT_RLE || get_bits1(&gb))
-                ret = decode_group3_1d_line(avctx, &gb, avctx->width, runs);
+                ret = decode_group3_1d_line(avctx, &gb, avctx->width, runs, runend);
             else
-                ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, ref);
+                ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, runend, ref);
         }
         if(ret < 0){
             put_line(dst, stride, avctx->width, ref);
