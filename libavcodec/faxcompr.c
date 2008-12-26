@@ -156,7 +156,7 @@ static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
 }
 
 static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
-                                 int pix_left, int *runs, const int *runend, const int *ref)
+                                 int width, int *runs, const int *runend, const int *ref)
 {
     int mode = 0, offs = 0, run = 0, saved_run = 0, t;
     int run_off = *ref++;
@@ -164,7 +164,7 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
 
     runend--; // for the last written 0
 
-    while(pix_left > 0){
+    while(offs < width){
         int cmode = get_vlc2(gb, ccitt_group3_2d_vlc.table, 9, 1);
         if(cmode == -1){
             av_log(avctx, AV_LOG_ERROR, "Incorrect mode VLC\n");
@@ -179,12 +179,11 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
             run_off += *ref++;
             run = run_off - offs;
             run_off += *ref++;
-            pix_left -= run;
-            if(pix_left < 0){
+            offs += run;
+            if(offs > width){
                 av_log(avctx, AV_LOG_ERROR, "Run went out of bounds\n");
                 return -1;
             }
-            offs += run;
             saved_run += run;
         }else if(cmode == 1){//horizontal mode
             int k;
@@ -206,12 +205,11 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
                     return -1;
                 }
                 saved_run = 0;
-                pix_left -= run;
-                if(pix_left < 0){
+                offs += run;
+                if(offs > width){
                     av_log(avctx, AV_LOG_ERROR, "Run went out of bounds\n");
                     return -1;
                 }
-                offs += run;
                 mode = !mode;
             }
         }else if(cmode == 9 || cmode == 10){
@@ -223,12 +221,11 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
                 run_off += *ref++;
             else
                 run_off -= *--ref;
-            pix_left -= run;
-            if(pix_left < 0){
+            offs += run;
+            if(offs > width){
                 av_log(avctx, AV_LOG_ERROR, "Run went out of bounds\n");
                 return -1;
             }
-            offs += run;
             *runs++ = run + saved_run;
             if(runs >= runend){
                 av_log(avctx, AV_LOG_ERROR, "Run overrun\n");
