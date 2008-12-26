@@ -544,10 +544,10 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
 
             if (q->bitrate == I_F_Q)
             {
-            if (q->erasure_count < 3)
-                max_pitch_gain = 0.9 - 0.3 * (q->erasure_count - 1);
-             else
-                max_pitch_gain = 0.0;
+                  if (q->erasure_count < 3)
+                      max_pitch_gain = 0.9 - 0.3 * (q->erasure_count - 1);
+                  else
+                      max_pitch_gain = 0.0;
             }else
             {
                 assert(q->bitrate == SILENCE);
