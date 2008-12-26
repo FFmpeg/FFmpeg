@@ -171,7 +171,7 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
             return -1;
         }
         //sync line pointers
-        if(runs != run_start)while(run_off <= offs && run_off < avctx->width){
+        if(runs != run_start)while(run_off <= offs){
             run_off += *ref++;
             run_off += *ref++;
         }
