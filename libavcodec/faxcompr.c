@@ -280,15 +280,16 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
     GetBitContext gb;
     int *runs, *ref, *runend;
     int ret;
+    int runsize= avctx->width + 2;
 
-    runs = av_malloc((avctx->width + 2) * sizeof(runs[0]));
-    ref  = av_malloc((avctx->width + 2) * sizeof(ref[0]));
+    runs = av_malloc(runsize * sizeof(runs[0]));
+    ref  = av_malloc(runsize * sizeof(ref[0]));
     ref[0] = avctx->width;
     ref[1] = 0;
     ref[2] = 0;
     init_get_bits(&gb, src, srcsize*8);
     for(j = 0; j < height; j++){
-        runend = runs + avctx->width + 2;
+        runend = runs + runsize;
         if(compr == TIFF_G4){
             ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, runend, ref);
             if(ret < 0){
