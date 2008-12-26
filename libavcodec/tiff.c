@@ -30,6 +30,7 @@
 #endif
 #include "lzw.h"
 #include "tiff.h"
+#include "faxcompr.h"
 
 
 typedef struct TiffContext {
@@ -41,6 +42,7 @@ typedef struct TiffContext {
     int le;
     int compr;
     int invert;
+    int fax_opts;
     int predictor;
 
     int strips, rps, sstype;
@@ -102,6 +104,29 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
             av_log(s->avctx, AV_LOG_ERROR, "Error initializing LZW decoder\n");
             return -1;
         }
+    }
+    if(s->compr == TIFF_CCITT_RLE || s->compr == TIFF_G3 || s->compr == TIFF_G4){
+        int i, ret = 0;
+        uint8_t *src2 = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+
+        if(!src2 || (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE < (unsigned)size){
+            av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
+            return -1;
+        }
+        for(i = 0; i < size; i++)
+            src2[i] = ff_reverse[src[i]];
+        memset(src2+size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+        if(s->compr == TIFF_G3 && !(s->fax_opts & 1))
+            s->compr = TIFF_CCITT_RLE;
+        switch(s->compr){
+        case TIFF_CCITT_RLE:
+        case TIFF_G3:
+        case TIFF_G4:
+            ret = ff_ccitt_unpack(s->avctx, src2, size, dst, lines, stride, s->compr);
+            break;
+        }
+        av_free(src2);
+        return ret;
     }
     for(line = 0; line < lines; line++){
         if(src - ssrc > size){
@@ -265,6 +290,11 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
         case TIFF_RAW:
         case TIFF_PACKBITS:
         case TIFF_LZW:
+        case TIFF_CCITT_RLE:
+            break;
+        case TIFF_G3:
+        case TIFF_G4:
+            s->fax_opts = 0;
             break;
         case TIFF_DEFLATE:
         case TIFF_ADOBE_DEFLATE:
@@ -274,15 +304,6 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             av_log(s->avctx, AV_LOG_ERROR, "Deflate: ZLib not compiled in\n");
             return -1;
 #endif
-        case TIFF_G3:
-            av_log(s->avctx, AV_LOG_ERROR, "CCITT G3 compression is not supported\n");
-            return -1;
-        case TIFF_G4:
-            av_log(s->avctx, AV_LOG_ERROR, "CCITT G4 compression is not supported\n");
-            return -1;
-        case TIFF_CCITT_RLE:
-            av_log(s->avctx, AV_LOG_ERROR, "CCITT RLE compression is not supported\n");
-            return -1;
         case TIFF_JPEG:
         case TIFF_NEWJPEG:
             av_log(s->avctx, AV_LOG_ERROR, "JPEG compression is not supported\n");
@@ -372,6 +393,10 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             av_log(s->avctx, AV_LOG_ERROR, "Planar format is not supported\n");
             return -1;
         }
+        break;
+    case TIFF_T4OPTIONS:
+    case TIFF_T6OPTIONS:
+        s->fax_opts = value;
         break;
     }
     return 0;
@@ -487,6 +512,7 @@ static av_cold int tiff_init(AVCodecContext *avctx){
     avctx->coded_frame= (AVFrame*)&s->picture;
     s->picture.data[0] = NULL;
     ff_lzw_decode_open(&s->lzw);
+    ff_ccitt_unpack_init();
 
     return 0;
 }
