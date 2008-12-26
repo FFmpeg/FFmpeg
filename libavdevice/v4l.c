@@ -70,7 +70,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     VideoData *s = s1->priv_data;
     AVStream *st;
-    int video_fd, frame_size;
+    int video_fd;
     int desired_palette, desired_depth;
     struct video_tuner tuner;
     struct video_audio audio;
@@ -230,7 +230,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     for (j = 0; j < vformat_num; j++) {
         if (s->frame_format == video_formats[j].palette) {
-            frame_size = s->video_win.width * s->video_win.height * video_formats[j].depth / 8;
+            s->frame_size = s->video_win.width * s->video_win.height * video_formats[j].depth / 8;
             st->codec->pix_fmt = video_formats[j].pix_fmt;
             break;
         }
@@ -240,14 +240,13 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         goto fail;
 
     s->fd = video_fd;
-    s->frame_size = frame_size;
 
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
     st->codec->width = s->video_win.width;
     st->codec->height = s->video_win.height;
     st->codec->time_base = s->time_base;
-    st->codec->bit_rate = frame_size * 1/av_q2d(st->codec->time_base) * 8;
+    st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
 
     return 0;
  fail:
