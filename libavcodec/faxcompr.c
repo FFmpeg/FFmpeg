@@ -156,10 +156,11 @@ static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
 }
 
 static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
-                                 int width, int *runs, const int *runend, const int *ref)
+                                 unsigned int width, int *runs, const int *runend, const int *ref)
 {
-    int mode = 0, offs = 0, run = 0, saved_run = 0, t;
+    int mode = 0, saved_run = 0, t;
     int run_off = *ref++;
+    unsigned int offs=0, run= 0;
 
     runend--; // for the last written 0
 
@@ -200,7 +201,7 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
                 }
                 saved_run = 0;
                 offs += run;
-                if(offs > width){
+                if(offs > width || run > width){
                     av_log(avctx, AV_LOG_ERROR, "Run went out of bounds\n");
                     return -1;
                 }
