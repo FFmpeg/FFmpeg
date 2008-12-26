@@ -242,7 +242,7 @@ static void put_line(uint8_t *dst, int size, int width, const int *runs)
         for(; run > 16; run -= 16)
             put_sbits(&pb, 16, mode);
         if(run)
-        put_sbits(&pb, run, mode);
+            put_sbits(&pb, run, mode);
     }
 }
 
