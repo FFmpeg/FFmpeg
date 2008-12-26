@@ -252,7 +252,7 @@ static int find_group3_syncmarker(GetBitContext *gb, int srcsize)
     srcsize -= get_bits_count(gb);
     while(srcsize-- > 0){
         state+= state + get_bits1(gb);
-        if((state & 0xFFF) != 1)
+        if((state & 0xFFF) == 1)
             return 0;
     }
     return -1;
