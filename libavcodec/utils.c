@@ -1519,6 +1519,6 @@ void ff_log_missing_feature(void *avc, const char *feature, int want_sample)
     if(want_sample)
         av_log(avc, AV_LOG_WARNING, " If you want to help, upload a sample "
                 "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
-                "and contact the FFmpeg-devel mailing list.");
+                "and contact the ffmpeg-devel mailing list.");
     av_log(avc, AV_LOG_WARNING, "\n");
 }
