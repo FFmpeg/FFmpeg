@@ -172,8 +172,8 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
         if(!cmode){//pass mode
             run_off += *ref++;
             run = run_off - offs;
+            offs= run_off;
             run_off += *ref++;
-            offs += run;
             if(offs > width){
                 av_log(avctx, AV_LOG_ERROR, "Run went out of bounds\n");
                 return -1;
