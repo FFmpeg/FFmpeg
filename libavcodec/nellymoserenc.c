@@ -28,7 +28,7 @@
  *
  * Generic codec information: libavcodec/nellymoserdec.c
  *
- * Some information also from: http://www1.mplayerhq.hu/ASAO/ASAO.zip
+ * Some information also from: http://samples.mplayerhq.hu/A-codecs/Nelly_Moser/ASAO/ASAO.zip
  *                             (Copyright Joseph Artsimovich and UAB "DKD")
  *
  * for more information about nellymoser format, visit:
