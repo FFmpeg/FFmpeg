@@ -251,14 +251,14 @@ static void put_line(uint8_t *dst, int size, int width, const int *runs)
 
 static int find_group3_syncmarker(GetBitContext *gb, int srcsize)
 {
-    int state = get_bits(gb, 12);
-    int rem = srcsize - get_bits_count(gb);
-    while((state & 0xFFF) != 1){
-        state = (state << 1) | get_bits1(gb);
-        if(--rem <= 0)
-            return -1;
+    unsigned int state = -1;
+    srcsize -= get_bits_count(gb);
+    while(srcsize-- > 0){
+        state+= state + get_bits1(gb);
+        if((state & 0xFFF) != 1)
+            return 0;
     }
-    return 0;
+    return -1;
 }
 
 int ff_ccitt_unpack_1d(AVCodecContext *avctx,
