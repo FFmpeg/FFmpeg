@@ -123,9 +123,10 @@ av_cold void ff_ccitt_unpack_init()
 
 
 static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
-                                 int pix_left, int *runs, const int *runend)
+                                 unsigned int pix_left, int *runs, const int *runend)
 {
-    int mode = 0, run = 0;
+    int mode = 0;
+    unsigned int run=0;
     unsigned int t;
     for(;;){
         t = get_vlc2(gb, ccitt_vlc[mode].table, 9, 2);
@@ -136,14 +137,13 @@ static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
                 av_log(avctx, AV_LOG_ERROR, "Run overrun\n");
                 return -1;
             }
-            pix_left -= run;
-            if(pix_left <= 0){
-                if(!pix_left)
+            if(pix_left <= run){
+                if(pix_left == run)
                     break;
-                runs[-1] += pix_left;
                 av_log(avctx, AV_LOG_ERROR, "Run went out of bounds\n");
                 return -1;
             }
+            pix_left -= run;
             run = 0;
             mode = !mode;
         }else if((int)t == -1){
