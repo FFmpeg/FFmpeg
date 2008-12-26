@@ -170,11 +170,6 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
             av_log(avctx, AV_LOG_ERROR, "Incorrect mode VLC\n");
             return -1;
         }
-        //sync line pointers
-        if(runs != run_start)while(run_off <= offs){
-            run_off += *ref++;
-            run_off += *ref++;
-        }
         if(!cmode){//pass mode
             run_off += *ref++;
             run = run_off - offs;
@@ -233,6 +228,11 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
             }
             saved_run = 0;
             mode = !mode;
+        }
+        //sync line pointers
+        while(run_off <= offs){
+            run_off += *ref++;
+            run_off += *ref++;
         }
     }
     *runs++ = saved_run;
