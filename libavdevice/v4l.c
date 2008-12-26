@@ -111,7 +111,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         }
     }
 
-    if (ioctl(video_fd,VIDIOCGCAP, &s->video_cap) < 0) {
+    if (ioctl(video_fd, VIDIOCGCAP, &s->video_cap) < 0) {
         av_log(s1, AV_LOG_ERROR, "VIDIOCGCAP: %s\n", strerror(errno));
         goto fail;
     }
@@ -172,7 +172,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             goto fail1;
     }
 
-    if (ioctl(video_fd,VIDIOCGMBUF,&s->gb_buffers) < 0) {
+    if (ioctl(video_fd, VIDIOCGMBUF, &s->gb_buffers) < 0) {
         /* try to use read based access */
         int val;
 
@@ -191,9 +191,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->time_frame = av_gettime() * s->time_base.den / s->time_base.num;
         s->use_mmap = 0;
     } else {
-        s->video_buf = mmap(0,s->gb_buffers.size,PROT_READ|PROT_WRITE,MAP_SHARED,video_fd,0);
+        s->video_buf = mmap(0, s->gb_buffers.size, PROT_READ|PROT_WRITE, MAP_SHARED, video_fd, 0);
         if ((unsigned char*)-1 == s->video_buf) {
-            s->video_buf = mmap(0,s->gb_buffers.size,PROT_READ|PROT_WRITE,MAP_PRIVATE,video_fd,0);
+            s->video_buf = mmap(0, s->gb_buffers.size, PROT_READ|PROT_WRITE, MAP_PRIVATE, video_fd, 0);
             if ((unsigned char*)-1 == s->video_buf) {
                 av_log(s1, AV_LOG_ERROR, "mmap: %s\n", strerror(errno));
                 goto fail;
@@ -213,7 +213,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             fail1:
                 av_log(s1, AV_LOG_ERROR, "Fatal: grab device does not support suitable format\n");
             } else {
-                av_log(s1, AV_LOG_ERROR,"Fatal: grab device does not receive any video signal\n");
+                av_log(s1, AV_LOG_ERROR, "Fatal: grab device does not receive any video signal\n");
             }
             goto fail;
         }
