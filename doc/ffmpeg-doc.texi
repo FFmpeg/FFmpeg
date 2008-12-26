@@ -451,9 +451,10 @@ ffmpeg -i foo.mov -vcodec libxvid -pass 1 -an -f rawvideo -y NUL
 ffmpeg -i foo.mov -vcodec libxvid -pass 1 -an -f rawvideo -y /dev/null
 @end example
 
-@item -passlogfile @var{file}
-Set two-pass log file name to @var{file}. Default name is
-@file{ffmpeg2pass-N.log}, where N is a number specific to the output
+@item -passlogfile @var{prefix}
+Set two-pass log file name prefix to @var{prefix}, the default file name
+prefix is ``ffmpeg2pass''. The complete file name will be
+@file{PREFIX-N.log}, where N is a number specific to the output
 stream.
 
 @item -newvideo
