@@ -103,14 +103,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         goto fail;
     }
 
-    /* no values set, autodetect them */
-    if (s->video_win.width <= 0 || s->video_win.height <= 0) {
-        if (ioctl(video_fd, VIDIOCGWIN, &s->video_win, sizeof(s->video_win)) < 0) {
-            av_log(s1, AV_LOG_ERROR, "VIDIOCGWIN: %s\n", strerror(errno));
-            goto fail;
-        }
-    }
-
     if (ioctl(video_fd, VIDIOCGCAP, &s->video_cap) < 0) {
         av_log(s1, AV_LOG_ERROR, "VIDIOCGCAP: %s\n", strerror(errno));
         goto fail;
@@ -119,6 +111,14 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (!(s->video_cap.type & VID_TYPE_CAPTURE)) {
         av_log(s1, AV_LOG_ERROR, "Fatal: grab device does not handle capture\n");
         goto fail;
+    }
+
+    /* no values set, autodetect them */
+    if (s->video_win.width <= 0 || s->video_win.height <= 0) {
+        if (ioctl(video_fd, VIDIOCGWIN, &s->video_win, sizeof(s->video_win)) < 0) {
+            av_log(s1, AV_LOG_ERROR, "VIDIOCGWIN: %s\n", strerror(errno));
+            goto fail;
+        }
     }
 
     desired_palette = -1;
