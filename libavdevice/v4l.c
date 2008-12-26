@@ -186,7 +186,10 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->frame_format = pict.palette;
 
         val = 1;
-        ioctl(video_fd, VIDIOCCAPTURE, &val);
+        if (ioctl(video_fd, VIDIOCCAPTURE, &val) < 0) {
+            av_log(s1, AV_LOG_ERROR, "VIDIOCCAPTURE: %s\n", strerror(errno));
+            goto fail;
+        }
 
         s->time_frame = av_gettime() * s->time_base.den / s->time_base.num;
         s->use_mmap = 0;
