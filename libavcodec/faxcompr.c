@@ -160,7 +160,6 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
 {
     int mode = 0, offs = 0, run = 0, saved_run = 0, t;
     int run_off = *ref++;
-    int *run_start = runs;
 
     runend--; // for the last written 0
 
