@@ -28,6 +28,7 @@
 #define AVCODEC_FAXCOMPR_H
 
 #include "avcodec.h"
+#include "tiff.h"
 
 /**
  * initialize upacker code
@@ -35,17 +36,10 @@
 void ff_ccitt_unpack_init();
 
 /**
- * unpack data compressed with CCITT Group 3 1-D method
+ * unpack data compressed with CCITT Group 3 1/2-D or Group 4 method
  */
-int ff_ccitt_unpack_1d(AVCodecContext *avctx,
+int ff_ccitt_unpack(AVCodecContext *avctx,
                        const uint8_t *src, int srcsize,
-                       uint8_t *dst, int height, int stride);
-
-/**
- * unpack data compressed with CCITT Group 3 2-D or Group 4 method
- */
-int ff_ccitt_unpack_2d(AVCodecContext *avctx,
-                       const uint8_t *src, int srcsize,
-                       uint8_t *dst, int height, int stride, int g4);
+                       uint8_t *dst, int height, int stride, enum TiffCompr compr);
 
 #endif /* AVCODEC_FAXCOMPR_H */

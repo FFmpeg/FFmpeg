@@ -258,36 +258,9 @@ static int find_group3_syncmarker(GetBitContext *gb, int srcsize)
     return -1;
 }
 
-int ff_ccitt_unpack_1d(AVCodecContext *avctx,
+int ff_ccitt_unpack(AVCodecContext *avctx,
                        const uint8_t *src, int srcsize,
-                       uint8_t *dst, int height, int stride)
-{
-    int j;
-    GetBitContext gb;
-    int *runs, *last;
-
-    runs = av_malloc(avctx->width * sizeof(runs[0]));
-    last = av_malloc(avctx->width * sizeof(last[0]));
-    init_get_bits(&gb, src, srcsize*8);
-    for(j = 0; j < height; j++){
-        if(find_group3_syncmarker(&gb, srcsize*8) < 0)
-            break;
-        if(decode_group3_1d_line(avctx, &gb, avctx->width, runs) < 0){
-            put_line(dst, stride, avctx->width, last);
-        }else{
-            put_line(dst, stride, avctx->width, runs);
-            FFSWAP(int*, last, runs);
-        }
-        dst += stride;
-    }
-    av_free(runs);
-    av_free(last);
-    return 0;
-}
-
-int ff_ccitt_unpack_2d(AVCodecContext *avctx,
-                       const uint8_t *src, int srcsize,
-                       uint8_t *dst, int height, int stride, int g4)
+                       uint8_t *dst, int height, int stride, enum TiffCompr compr)
 {
     int j;
     GetBitContext gb;
@@ -301,7 +274,7 @@ int ff_ccitt_unpack_2d(AVCodecContext *avctx,
     ref[2] = 0;
     init_get_bits(&gb, src, srcsize*8);
     for(j = 0; j < height; j++){
-        if(g4){
+        if(compr == TIFF_G4){
             ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, ref);
             if(ret < 0){
                 av_free(runs);
@@ -311,7 +284,7 @@ int ff_ccitt_unpack_2d(AVCodecContext *avctx,
         }else{
             if(find_group3_syncmarker(&gb, srcsize*8) < 0)
                 break;
-            if(get_bits1(&gb))
+            if(compr==TIFF_CCITT_RLE || get_bits1(&gb))
                 ret = decode_group3_1d_line(avctx, &gb, avctx->width, runs);
             else
                 ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, ref);
