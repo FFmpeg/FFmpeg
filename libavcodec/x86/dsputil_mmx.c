@@ -2331,11 +2331,13 @@ void ff_x264_deblock_v_luma_sse2(uint8_t *pix, int stride, int alpha, int beta, 
 void ff_x264_deblock_h_luma_sse2(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0);
 void ff_x264_deblock_v8_luma_intra_mmxext(uint8_t *pix, int stride, int alpha, int beta);
 void ff_x264_deblock_h_luma_intra_mmxext(uint8_t *pix, int stride, int alpha, int beta);
+#ifdef ARCH_X86_32
 static void ff_x264_deblock_v_luma_intra_mmxext(uint8_t *pix, int stride, int alpha, int beta)
 {
     ff_x264_deblock_v8_luma_intra_mmxext(pix+0, stride, alpha, beta);
     ff_x264_deblock_v8_luma_intra_mmxext(pix+8, stride, alpha, beta);
 }
+#endif
 void ff_x264_deblock_v_luma_intra_sse2(uint8_t *pix, int stride, int alpha, int beta);
 void ff_x264_deblock_h_luma_intra_sse2(uint8_t *pix, int stride, int alpha, int beta);
 #else
