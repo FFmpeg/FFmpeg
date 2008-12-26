@@ -212,9 +212,6 @@ static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
             return -1;
         }else{//vertical mode
             run = run_off - offs + (cmode - 5);
-            if(cmode >= 5)
-                run_off += *ref++;
-            else
                 run_off -= *--ref;
             offs += run;
             if(offs > width || run > width){
