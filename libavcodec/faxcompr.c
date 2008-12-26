@@ -238,12 +238,10 @@ static void put_line(uint8_t *dst, int size, int width, const int *runs)
     while(pix_left > 0){
         run = runs[run_idx++];
         mode = ~mode;
-        if(!run){
-            continue;
-        }
         pix_left -= run;
         for(; run > 16; run -= 16)
             put_sbits(&pb, 16, mode);
+        if(run)
         put_sbits(&pb, run, mode);
     }
 }
