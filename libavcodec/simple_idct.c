@@ -55,7 +55,7 @@
 #define COL_SHIFT 20 // 6
 #endif
 
-#if defined(ARCH_POWERPC_405)
+#if defined(ARCH_PPC_405)
 
 /* signed 16x16 -> 32 multiply add accumulate */
 #define MAC16(rt, ra, rb) \

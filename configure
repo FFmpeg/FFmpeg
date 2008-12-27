@@ -795,7 +795,7 @@ ARCH_LIST='
     m68k
     mips
     parisc
-    powerpc
+    ppc
     s390
     sh4
     sparc
@@ -932,7 +932,7 @@ CMDLINE_SET="
 # code dependency declarations
 
 # architecture extensions
-altivec_deps="powerpc"
+altivec_deps="ppc"
 armv5te_deps="arm"
 armv6_deps="arm"
 armvfp_deps="arm"
@@ -1317,11 +1317,11 @@ EOF
         enable fast_64bit
     ;;
     "Power Macintosh"|ppc|powerpc)
-        arch="powerpc"
+        arch="ppc"
         enable fast_unaligned
     ;;
     ppc64)
-        arch="powerpc"
+        arch="ppc"
         enable fast_64bit
         enable fast_unaligned
     ;;
@@ -1754,7 +1754,7 @@ fi
 
 # check for assembler specific support
 
-if test $arch = "powerpc"; then
+if test $arch = "ppc"; then
     check_asm dcbzl '"dcbzl 0, 1"'
 fi
 
@@ -2145,7 +2145,7 @@ fi
 if test $arch = "mips"; then
     echo "MMI enabled               ${mmi-no}"
 fi
-if test $arch = "powerpc"; then
+if test $arch = "ppc"; then
     echo "AltiVec enabled           ${altivec-no}"
     echo "dcbzl available           ${dcbzl-no}"
 fi

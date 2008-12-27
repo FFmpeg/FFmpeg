@@ -173,7 +173,7 @@ typedef struct ScanTable{
     const uint8_t *scantable;
     uint8_t permutated[64];
     uint8_t raster_end[64];
-#ifdef ARCH_POWERPC
+#ifdef ARCH_PPC
                 /** Used by dct_quantize_altivec to find last-non-zero */
     DECLARE_ALIGNED(16, uint8_t, inverse[64]);
 #endif
@@ -616,7 +616,7 @@ extern int mm_flags;
 #   define STRIDE_ALIGN 16
 #endif
 
-#elif defined(ARCH_POWERPC)
+#elif defined(ARCH_PPC)
 
 extern int mm_flags;
 

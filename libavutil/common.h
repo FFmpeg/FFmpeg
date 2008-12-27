@@ -323,7 +323,7 @@ static inline av_pure int ff_get_fourcc(const char *s){
         }\
     }
 
-#if defined(ARCH_X86) || defined(ARCH_POWERPC) || defined(ARCH_BFIN)
+#if defined(ARCH_X86) || defined(ARCH_PPC) || defined(ARCH_BFIN)
 #define AV_READ_TIME read_time
 #if defined(ARCH_X86)
 static inline uint64_t read_time(void)

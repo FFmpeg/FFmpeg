@@ -463,7 +463,7 @@ OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
                                           bfin/vp3_bfin.o               \
                                           bfin/vp3_idct_bfin.o          \
 
-OBJS-$(ARCH_POWERPC)                   += ppc/dsputil_ppc.o             \
+OBJS-$(ARCH_PPC)                       += ppc/dsputil_ppc.o             \
 
 ALTIVEC-OBJS-$(CONFIG_H264_DECODER)    += ppc/h264_altivec.o
 ALTIVEC-OBJS-$(CONFIG_OLDSCALER)       += ppc/imgresample_altivec.o

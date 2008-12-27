@@ -169,7 +169,7 @@ void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_s
         int j;
         j = src_scantable[i];
         st->permutated[i] = permutation[j];
-#ifdef ARCH_POWERPC
+#ifdef ARCH_PPC
         st->inverse[j] = i;
 #endif
     }
@@ -4628,7 +4628,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     if (ENABLE_MLIB)     dsputil_init_mlib  (c, avctx);
     if (ENABLE_VIS)      dsputil_init_vis   (c, avctx);
     if (ENABLE_ALPHA)    dsputil_init_alpha (c, avctx);
-    if (ENABLE_POWERPC)  dsputil_init_ppc   (c, avctx);
+    if (ENABLE_PPC)      dsputil_init_ppc   (c, avctx);
     if (ENABLE_MMI)      dsputil_init_mmi   (c, avctx);
     if (ENABLE_SH4)      dsputil_init_sh4   (c, avctx);
     if (ENABLE_BFIN)     dsputil_init_bfin  (c, avctx);
