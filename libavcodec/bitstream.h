@@ -179,10 +179,6 @@ typedef struct RL_VLC_ELEM {
     uint8_t run;
 } RL_VLC_ELEM;
 
-#if defined(ARCH_SPARC) || defined(ARCH_ARM) || defined(ARCH_MIPS) || defined(ARCH_BFIN)
-#define UNALIGNED_STORES_ARE_BAD
-#endif
-
 #ifndef ALT_BITSTREAM_WRITER
 static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 {
@@ -200,7 +196,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #ifdef BITSTREAM_WRITER_LE
     bit_buf |= value << (32 - bit_left);
     if (n >= bit_left) {
-#ifdef UNALIGNED_STORES_ARE_BAD
+#ifndef HAVE_FAST_UNALIGNED
         if (3 & (intptr_t) s->buf_ptr) {
             s->buf_ptr[0] = bit_buf      ;
             s->buf_ptr[1] = bit_buf >>  8;
@@ -221,7 +217,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     } else {
         bit_buf<<=bit_left;
         bit_buf |= value >> (n - bit_left);
-#ifdef UNALIGNED_STORES_ARE_BAD
+#ifndef HAVE_FAST_UNALIGNED
         if (3 & (intptr_t) s->buf_ptr) {
             s->buf_ptr[0] = bit_buf >> 24;
             s->buf_ptr[1] = bit_buf >> 16;
