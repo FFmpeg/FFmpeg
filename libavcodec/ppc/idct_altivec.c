@@ -40,16 +40,8 @@
 #include "libavcodec/dsputil.h"
 
 #include "gcc_fixes.h"
-
+#include "types_altivec.h"
 #include "dsputil_ppc.h"
-
-#define vector_s16_t vector signed short
-#define const_vector_s16_t const vector signed short
-#define vector_u16_t vector unsigned short
-#define vector_s8_t vector signed char
-#define vector_u8_t vector unsigned char
-#define vector_s32_t vector signed int
-#define vector_u32_t vector unsigned int
 
 #define IDCT_HALF                                       \
     /* 1st stage */                                     \
@@ -88,11 +80,11 @@
 
 
 #define IDCT                                                            \
-    vector_s16_t vx0, vx1, vx2, vx3, vx4, vx5, vx6, vx7;                \
-    vector_s16_t vy0, vy1, vy2, vy3, vy4, vy5, vy6, vy7;                \
-    vector_s16_t a0, a1, a2, ma2, c4, mc4, zero, bias;                  \
-    vector_s16_t t0, t1, t2, t3, t4, t5, t6, t7, t8;                    \
-    vector_u16_t shift;                                                 \
+    vec_s16 vx0, vx1, vx2, vx3, vx4, vx5, vx6, vx7;                \
+    vec_s16 vy0, vy1, vy2, vy3, vy4, vy5, vy6, vy7;                \
+    vec_s16 a0, a1, a2, ma2, c4, mc4, zero, bias;                  \
+    vec_s16 t0, t1, t2, t3, t4, t5, t6, t7, t8;                    \
+    vec_u16 shift;                                                 \
                                                                         \
     c4 = vec_splat (constants[0], 0);                                   \
     a0 = vec_splat (constants[0], 1);                                   \
@@ -100,7 +92,7 @@
     a2 = vec_splat (constants[0], 3);                                   \
     mc4 = vec_splat (constants[0], 4);                                  \
     ma2 = vec_splat (constants[0], 5);                                  \
-    bias = (vector_s16_t)vec_splat ((vector_s32_t)constants[0], 3);     \
+    bias = (vec_s16)vec_splat ((vec_s32)constants[0], 3);     \
                                                                         \
     zero = vec_splat_s16 (0);                                           \
     shift = vec_splat_u16 (4);                                          \
@@ -156,7 +148,7 @@
     vx7 = vec_sra (vy7, shift);
 
 
-static const_vector_s16_t constants[5] = {
+static const vec_s16 constants[5] = {
     {23170, 13573,  6518, 21895, -23170, -21895,    32,    31},
     {16384, 22725, 21407, 19266,  16384,  19266, 21407, 22725},
     {22725, 31521, 29692, 26722,  22725,  26722, 29692, 31521},
@@ -164,10 +156,10 @@ static const_vector_s16_t constants[5] = {
     {19266, 26722, 25172, 22654,  19266,  22654, 25172, 26722}
 };
 
-void idct_put_altivec(uint8_t* dest, int stride, vector_s16_t* block)
+void idct_put_altivec(uint8_t* dest, int stride, vec_s16* block)
 {
 POWERPC_PERF_DECLARE(altivec_idct_put_num, 1);
-    vector_u8_t tmp;
+    vec_u8 tmp;
 
 #ifdef CONFIG_POWERPC_PERF
 POWERPC_PERF_START_COUNT(altivec_idct_put_num, 1);
@@ -176,8 +168,8 @@ POWERPC_PERF_START_COUNT(altivec_idct_put_num, 1);
 
 #define COPY(dest,src)                                          \
     tmp = vec_packsu (src, src);                                \
-    vec_ste ((vector_u32_t)tmp, 0, (unsigned int *)dest);       \
-    vec_ste ((vector_u32_t)tmp, 4, (unsigned int *)dest);
+    vec_ste ((vec_u32)tmp, 0, (unsigned int *)dest);       \
+    vec_ste ((vec_u32)tmp, 4, (unsigned int *)dest);
 
     COPY (dest, vx0)    dest += stride;
     COPY (dest, vx1)    dest += stride;
@@ -191,14 +183,14 @@ POWERPC_PERF_START_COUNT(altivec_idct_put_num, 1);
 POWERPC_PERF_STOP_COUNT(altivec_idct_put_num, 1);
 }
 
-void idct_add_altivec(uint8_t* dest, int stride, vector_s16_t* block)
+void idct_add_altivec(uint8_t* dest, int stride, vec_s16* block)
 {
 POWERPC_PERF_DECLARE(altivec_idct_add_num, 1);
-    vector_u8_t tmp;
-    vector_s16_t tmp2, tmp3;
-    vector_u8_t perm0;
-    vector_u8_t perm1;
-    vector_u8_t p0, p1, p;
+    vec_u8 tmp;
+    vec_s16 tmp2, tmp3;
+    vec_u8 perm0;
+    vec_u8 perm1;
+    vec_u8 p0, p1, p;
 
 #ifdef CONFIG_POWERPC_PERF
 POWERPC_PERF_START_COUNT(altivec_idct_add_num, 1);
@@ -215,11 +207,11 @@ POWERPC_PERF_START_COUNT(altivec_idct_add_num, 1);
 #define ADD(dest,src,perm)                                              \
     /* *(uint64_t *)&tmp = *(uint64_t *)dest; */                        \
     tmp = vec_ld (0, dest);                                             \
-    tmp2 = (vector_s16_t)vec_perm (tmp, (vector_u8_t)zero, perm);       \
+    tmp2 = (vec_s16)vec_perm (tmp, (vec_u8)zero, perm);       \
     tmp3 = vec_adds (tmp2, src);                                        \
     tmp = vec_packsu (tmp3, tmp3);                                      \
-    vec_ste ((vector_u32_t)tmp, 0, (unsigned int *)dest);               \
-    vec_ste ((vector_u32_t)tmp, 4, (unsigned int *)dest);
+    vec_ste ((vec_u32)tmp, 0, (unsigned int *)dest);               \
+    vec_ste ((vec_u32)tmp, 4, (unsigned int *)dest);
 
     ADD (dest, vx0, perm0)      dest += stride;
     ADD (dest, vx1, perm1)      dest += stride;

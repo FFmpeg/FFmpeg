@@ -79,10 +79,10 @@ static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
 static void add_int16_altivec(int16_t * v1, int16_t * v2, int order)
 {
     int i;
-    register vec_s16_t vec, *pv;
+    register vec_s16 vec, *pv;
 
     for(i = 0; i < order; i += 8){
-        pv = (vec_s16_t*)v2;
+        pv = (vec_s16*)v2;
         vec = vec_perm(pv[0], pv[1], vec_lvsl(0, v2));
         vec_st(vec_add(vec_ld(0, v1), vec), 0, v1);
         v1 += 8;
@@ -93,10 +93,10 @@ static void add_int16_altivec(int16_t * v1, int16_t * v2, int order)
 static void sub_int16_altivec(int16_t * v1, int16_t * v2, int order)
 {
     int i;
-    register vec_s16_t vec, *pv;
+    register vec_s16 vec, *pv;
 
     for(i = 0; i < order; i += 8){
-        pv = (vec_s16_t*)v2;
+        pv = (vec_s16*)v2;
         vec = vec_perm(pv[0], pv[1], vec_lvsl(0, v2));
         vec_st(vec_sub(vec_ld(0, v1), vec), 0, v1);
         v1 += 8;
@@ -108,9 +108,9 @@ static int32_t scalarproduct_int16_altivec(int16_t * v1, int16_t * v2, int order
 {
     int i;
     LOAD_ZERO;
-    register vec_s16_t vec1, *pv;
-    register vec_s32_t res = vec_splat_s32(0), t;
-    register vec_u32_t shifts;
+    register vec_s16 vec1, *pv;
+    register vec_s32 res = vec_splat_s32(0), t;
+    register vec_u32 shifts;
     DECLARE_ALIGNED_16(int32_t, ires);
 
     shifts = zero_u32v;
@@ -121,7 +121,7 @@ static int32_t scalarproduct_int16_altivec(int16_t * v1, int16_t * v2, int order
     if(shift & 0x01) shifts = vec_add(shifts, vec_splat_u32(0x01));
 
     for(i = 0; i < order; i += 8){
-        pv = (vec_s16_t*)v1;
+        pv = (vec_s16*)v1;
         vec1 = vec_perm(pv[0], pv[1], vec_lvsl(0, v1));
         t = vec_msum(vec1, vec_ld(0, v2), zero_s32v);
         t = vec_sr(t, shifts);
