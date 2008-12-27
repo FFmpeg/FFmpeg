@@ -49,6 +49,7 @@ typedef struct VmdDemuxContext {
     unsigned int frames_per_block;
     vmd_frame *frame_table;
     unsigned int current_frame;
+    int is_indeo3;
 
     int sample_rate;
     int64_t audio_sample_counter;
@@ -91,6 +92,10 @@ static int vmd_read_header(AVFormatContext *s,
     if (get_buffer(pb, vmd->vmd_header, VMD_HEADER_SIZE) != VMD_HEADER_SIZE)
         return AVERROR(EIO);
 
+    if(vmd->vmd_header[16] == 'i' && vmd->vmd_header[17] == 'v' && vmd->vmd_header[18] == '3')
+        vmd->is_indeo3 = 1;
+    else
+        vmd->is_indeo3 = 1;
     /* start up the decoders */
     vst = av_new_stream(s, 0);
     if (!vst)
@@ -98,10 +103,14 @@ static int vmd_read_header(AVFormatContext *s,
     av_set_pts_info(vst, 33, 1, 10);
     vmd->video_stream_index = vst->index;
     vst->codec->codec_type = CODEC_TYPE_VIDEO;
-    vst->codec->codec_id = CODEC_ID_VMDVIDEO;
+    vst->codec->codec_id = vmd->is_indeo3 ? CODEC_ID_INDEO3 : CODEC_ID_VMDVIDEO;
     vst->codec->codec_tag = 0;  /* no fourcc */
     vst->codec->width = AV_RL16(&vmd->vmd_header[12]);
     vst->codec->height = AV_RL16(&vmd->vmd_header[14]);
+    if(vmd->is_indeo3 && vst->codec->width > 320){
+        vst->codec->width >>= 1;
+        vst->codec->height >>= 1;
+    }
     vst->codec->extradata_size = VMD_HEADER_SIZE;
     vst->codec->extradata = av_mallocz(VMD_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
     memcpy(vst->codec->extradata, vmd->vmd_header, VMD_HEADER_SIZE);
@@ -261,8 +270,11 @@ static int vmd_read_packet(AVFormatContext *s,
         return AVERROR(ENOMEM);
     pkt->pos= url_ftell(pb);
     memcpy(pkt->data, frame->frame_record, BYTES_PER_FRAME_RECORD);
-    ret = get_buffer(pb, pkt->data + BYTES_PER_FRAME_RECORD,
-        frame->frame_size);
+    if(vmd->is_indeo3)
+        ret = get_buffer(pb, pkt->data, frame->frame_size);
+    else
+        ret = get_buffer(pb, pkt->data + BYTES_PER_FRAME_RECORD,
+            frame->frame_size);
 
     if (ret != frame->frame_size) {
         av_free_packet(pkt);
