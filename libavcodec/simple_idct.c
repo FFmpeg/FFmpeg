@@ -31,6 +31,7 @@
  */
 #include "avcodec.h"
 #include "dsputil.h"
+#include "mathops.h"
 #include "simple_idct.h"
 
 #if 0
@@ -53,26 +54,6 @@
 #define W7  4520   //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define ROW_SHIFT 11
 #define COL_SHIFT 20 // 6
-#endif
-
-#if defined(ARCH_PPC_405)
-
-/* signed 16x16 -> 32 multiply add accumulate */
-#define MAC16(rt, ra, rb) \
-    __asm__ ("maclhw %0, %2, %3" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
-
-/* signed 16x16 -> 32 multiply */
-#define MUL16(rt, ra, rb) \
-    __asm__ ("mullhw %0, %1, %2" : "=r" (rt) : "r" (ra), "r" (rb));
-
-#else
-
-/* signed 16x16 -> 32 multiply add accumulate */
-#define MAC16(rt, ra, rb) rt += (ra) * (rb)
-
-/* signed 16x16 -> 32 multiply */
-#define MUL16(rt, ra, rb) rt = (ra) * (rb)
-
 #endif
 
 static inline void idctRowCondDC (DCTELEM * row)
@@ -137,13 +118,13 @@ static inline void idctRowCondDC (DCTELEM * row)
         a2 -= W6 * row[2];
         a3 -= W2 * row[2];
 
-        MUL16(b0, W1, row[1]);
+        b0 = MUL16(W1, row[1]);
         MAC16(b0, W3, row[3]);
-        MUL16(b1, W3, row[1]);
+        b1 = MUL16(W3, row[1]);
         MAC16(b1, -W7, row[3]);
-        MUL16(b2, W5, row[1]);
+        b2 = MUL16(W5, row[1]);
         MAC16(b2, -W1, row[3]);
-        MUL16(b3, W7, row[1]);
+        b3 = MUL16(W7, row[1]);
         MAC16(b3, -W5, row[3]);
 
 #ifdef HAVE_FAST_64BIT
@@ -197,10 +178,10 @@ static inline void idctSparseColPut (uint8_t *dest, int line_size,
         a2 +=  - W6*col[8*2];
         a3 +=  - W2*col[8*2];
 
-        MUL16(b0, W1, col[8*1]);
-        MUL16(b1, W3, col[8*1]);
-        MUL16(b2, W5, col[8*1]);
-        MUL16(b3, W7, col[8*1]);
+        b0 = MUL16(W1, col[8*1]);
+        b1 = MUL16(W3, col[8*1]);
+        b2 = MUL16(W5, col[8*1]);
+        b3 = MUL16(W7, col[8*1]);
 
         MAC16(b0, + W3, col[8*3]);
         MAC16(b1, - W7, col[8*3]);
@@ -269,10 +250,10 @@ static inline void idctSparseColAdd (uint8_t *dest, int line_size,
         a2 +=  - W6*col[8*2];
         a3 +=  - W2*col[8*2];
 
-        MUL16(b0, W1, col[8*1]);
-        MUL16(b1, W3, col[8*1]);
-        MUL16(b2, W5, col[8*1]);
-        MUL16(b3, W7, col[8*1]);
+        b0 = MUL16(W1, col[8*1]);
+        b1 = MUL16(W3, col[8*1]);
+        b2 = MUL16(W5, col[8*1]);
+        b3 = MUL16(W7, col[8*1]);
 
         MAC16(b0, + W3, col[8*3]);
         MAC16(b1, - W7, col[8*3]);
@@ -339,10 +320,10 @@ static inline void idctSparseCol (DCTELEM * col)
         a2 +=  - W6*col[8*2];
         a3 +=  - W2*col[8*2];
 
-        MUL16(b0, W1, col[8*1]);
-        MUL16(b1, W3, col[8*1]);
-        MUL16(b2, W5, col[8*1]);
-        MUL16(b3, W7, col[8*1]);
+        b0 = MUL16(W1, col[8*1]);
+        b1 = MUL16(W3, col[8*1]);
+        b2 = MUL16(W5, col[8*1]);
+        b3 = MUL16(W7, col[8*1]);
 
         MAC16(b0, + W3, col[8*3]);
         MAC16(b1, - W7, col[8*3]);
