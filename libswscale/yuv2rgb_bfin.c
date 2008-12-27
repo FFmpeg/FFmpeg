@@ -47,8 +47,8 @@ void ff_bfin_yuv2rgb565_line (uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
 void ff_bfin_yuv2rgb24_line (uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
                              int w, uint32_t *coeffs) L1CODE;
 
-typedef void (* ltransform_t)(uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
-                              int w, uint32_t *coeffs);
+typedef void (* ltransform)(uint8_t *Y, uint8_t *U, uint8_t *V, uint8_t *out,
+                            int w, uint32_t *coeffs);
 
 
 static void bfin_prepare_coefficients (SwsContext *c, int rgb, int masks)
@@ -92,7 +92,7 @@ static int core_yuv420_rgb (SwsContext *c,
                             uint8_t **in, int *instrides,
                             int srcSliceY, int srcSliceH,
                             uint8_t **oplanes, int *outstrides,
-                            ltransform_t lcscf, int rgb, int masks)
+                            ltransform lcscf, int rgb, int masks)
 {
     uint8_t *py,*pu,*pv,*op;
     int w  = instrides[0];
