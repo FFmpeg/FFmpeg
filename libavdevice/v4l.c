@@ -181,7 +181,10 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->video_win.chromakey = -1;
         s->video_win.flags = 0;
 
-        ioctl(video_fd, VIDIOCSWIN, s->video_win);
+        if (ioctl(video_fd, VIDIOCSWIN, s->video_win) < 0) {
+            av_log(s1, AV_LOG_ERROR, "VIDIOCSWIN: %s\n", strerror(errno));
+            goto fail;
+        }
 
         s->frame_format = pict.palette;
 
