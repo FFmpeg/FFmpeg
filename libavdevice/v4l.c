@@ -217,7 +217,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         if (ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf) < 0) {
             if (errno != EAGAIN) {
             fail1:
-                av_log(s1, AV_LOG_ERROR, "Fatal: grab device does not support suitable format\n");
+                av_log(s1, AV_LOG_ERROR, "VIDIOCMCAPTURE: %s\n", strerror(errno));
             } else {
                 av_log(s1, AV_LOG_ERROR, "Fatal: grab device does not receive any video signal\n");
             }
