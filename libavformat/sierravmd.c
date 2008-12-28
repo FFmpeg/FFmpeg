@@ -95,7 +95,7 @@ static int vmd_read_header(AVFormatContext *s,
     if(vmd->vmd_header[16] == 'i' && vmd->vmd_header[17] == 'v' && vmd->vmd_header[18] == '3')
         vmd->is_indeo3 = 1;
     else
-        vmd->is_indeo3 = 1;
+        vmd->is_indeo3 = 0;
     /* start up the decoders */
     vst = av_new_stream(s, 0);
     if (!vst)
