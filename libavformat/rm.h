@@ -83,8 +83,10 @@ int ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
  * @param st stream that this packet belongs to
  * @param rst Real-specific stream information
  * @param pkt location to store the packet data
+ * @returns the number of samples left for subsequent calls to this same
+ *          function, or 0 if all samples have been retrieved.
  */
-void ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
+int ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
                            AVStream *st, RMStream *rst, AVPacket *pkt);
 
 #endif /* AVFORMAT_RM_H */

@@ -681,7 +681,7 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
     return st->codec->codec_type == CODEC_TYPE_AUDIO ? rm->audio_pkt_cnt : 0;
 }
 
-void
+int
 ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
                       AVStream *st, RMStream *ast, AVPacket *pkt)
 {
@@ -700,6 +700,8 @@ ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
     rm->audio_pkt_cnt--;
     pkt->flags = 0;
     pkt->stream_index = st->index;
+
+    return rm->audio_pkt_cnt;
 }
 
 static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)

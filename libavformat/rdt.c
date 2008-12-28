@@ -315,6 +315,7 @@ rdt_parse_packet (PayloadContext *rdt, AVStream *st,
                                                 NULL, NULL, NULL, NULL);
         }
     } else {
+        rdt->audio_pkt_cnt =
         ff_rm_retrieve_cache (rdt->rmctx, rdt->rmctx->pb, st, rdt->rmst[0], pkt);
         if (rdt->audio_pkt_cnt == 0 &&
             st->codec->codec_id == CODEC_ID_AAC)
