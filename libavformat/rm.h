@@ -87,6 +87,6 @@ int ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
  *          function, or 0 if all samples have been retrieved.
  */
 int ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
-                           AVStream *st, RMStream *rst, AVPacket *pkt);
+                          AVStream *st, RMStream *rst, AVPacket *pkt);
 
 #endif /* AVFORMAT_RM_H */
