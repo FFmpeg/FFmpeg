@@ -646,7 +646,7 @@ static qcelp_packet_rate buf_size2bitrate(const int buf_size)
  *
  * TIA/EIA/IS-733 2.4.8.7.1
  */
-static int determine_bitrate(AVCodecContext *avctx, const int buf_size,
+static qcelp_packet_rate determine_bitrate(AVCodecContext *avctx, const int buf_size,
                              const uint8_t **buf)
 {
     qcelp_packet_rate bitrate;
