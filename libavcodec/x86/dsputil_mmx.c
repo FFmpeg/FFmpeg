@@ -2872,12 +2872,14 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_mmxext;
             c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_mmxext;
 #endif
+#if defined(ARCH_X86_64) || !defined(__ICC) || __ICC > 1100
             if( mm_flags&FF_MM_SSE2 ){
                 c->h264_v_loop_filter_luma = ff_x264_deblock_v_luma_sse2;
                 c->h264_h_loop_filter_luma = ff_x264_deblock_h_luma_sse2;
                 c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_sse2;
                 c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_sse2;
             }
+#endif
         }
 #endif
 
