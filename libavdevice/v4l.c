@@ -84,11 +84,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     s->time_base = ap->time_base;
 
-    if((unsigned)ap->width > 32767 || (unsigned)ap->height > 32767) {
-        av_log(s1, AV_LOG_ERROR, "Capture size is out of range: %dx%d\n",
-            ap->width, ap->height);
-        return -1;
-    }
     s->video_win.width = ap->width;
     s->video_win.height = ap->height;
 
@@ -120,6 +115,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             goto fail;
         }
     }
+
+    if(avcodec_check_dimensions(s1, s->video_win.width, s->video_win.height) < 0)
+        return -1;
 
     desired_palette = -1;
     desired_depth = -1;
