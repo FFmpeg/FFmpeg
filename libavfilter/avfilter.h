@@ -509,7 +509,8 @@ int avfilter_request_frame(AVFilterLink *link);
 /**
  * Poll a frame from the filter chain.
  * @param  link the input link
- * @return      the number of imediately available frames
+ * @return the number of immediately available frames, a negative
+ * number in case of error
  */
 int avfilter_poll_frame(AVFilterLink *link);
 
