@@ -81,8 +81,8 @@ RMStream *ff_rm_alloc_rmstream (void)
 
 void ff_rm_free_rmstream (RMStream *rms)
 {
-    av_free(rms->videobuf);
-    av_free(rms->audiobuf);
+    av_freep(&rms->videobuf);
+    av_freep(&rms->audiobuf);
 }
 
 static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
