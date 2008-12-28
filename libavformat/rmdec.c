@@ -83,7 +83,6 @@ void ff_rm_free_rmstream (RMStream *rms)
 {
     av_free(rms->videobuf);
     av_free(rms->audiobuf);
-    av_free(rms);
 }
 
 static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
