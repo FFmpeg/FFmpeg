@@ -87,9 +87,8 @@ void ff_rm_free_rmstream (RMStream *rms)
 }
 
 static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
-                                     AVStream *st, int read_all)
+                                     AVStream *st, RMStream *ast, int read_all)
 {
-    RMStream *ast = st->priv_data;
     char buf[256];
     uint32_t version;
 
@@ -228,20 +227,18 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
 
 int
 ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
-                           AVStream *st, int codec_data_size)
+                           AVStream *st, RMStream *rst, int codec_data_size)
 {
     unsigned int v;
     int size;
     int64_t codec_pos;
-    RMStream *rst;
 
-    st->priv_data = rst = ff_rm_alloc_rmstream();
     av_set_pts_info(st, 64, 1, 1000);
     codec_pos = url_ftell(pb);
     v = get_be32(pb);
     if (v == MKTAG(0xfd, 'a', 'r', '.')) {
         /* ra type header */
-        if (rm_read_audio_stream_info(s, pb, st, 0))
+        if (rm_read_audio_stream_info(s, pb, st, rst, 0))
             return -1;
     } else {
         int fps, fps2;
@@ -308,7 +305,8 @@ static int rm_read_header_old(AVFormatContext *s, AVFormatParameters *ap)
     st = av_new_stream(s, 0);
     if (!st)
         return -1;
-    return rm_read_audio_stream_info(s, s->pb, st, 1);
+    st->priv_data = ff_rm_alloc_rmstream();
+    return rm_read_audio_stream_info(s, s->pb, st, st->priv_data, 1);
 }
 
 static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -390,7 +388,9 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_str8(pb, buf, sizeof(buf)); /* desc */
             get_str8(pb, buf, sizeof(buf)); /* mimetype */
             st->codec->codec_type = CODEC_TYPE_DATA;
-            if (ff_rm_read_mdpr_codecdata(s, s->pb, st, get_be32(pb)) < 0)
+            st->priv_data = ff_rm_alloc_rmstream();
+            if (ff_rm_read_mdpr_codecdata(s, s->pb, st, st->priv_data,
+                                          get_be32(pb)) < 0)
                 return -1;
             break;
         case MKTAG('D', 'A', 'T', 'A'):
@@ -584,18 +584,16 @@ rm_ac3_swap_bytes (AVStream *st, AVPacket *pkt)
 
 int
 ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
-                    AVStream *st, int len, AVPacket *pkt,
+                    AVStream *st, RMStream *ast, int len, AVPacket *pkt,
                     int *seq, int *flags, int64_t *timestamp)
 {
     RMDemuxContext *rm = s->priv_data;
 
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
         rm->current_stream= st->id;
-        if(rm_assemble_video_frame(s, pb, rm, st->priv_data, pkt, len) == 1)
+        if(rm_assemble_video_frame(s, pb, rm, ast, pkt, len) == 1)
             return -1; //got partial frame
     } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
-        RMStream *ast = st->priv_data;
-
         if ((st->codec->codec_id == CODEC_ID_RA_288) ||
             (st->codec->codec_id == CODEC_ID_COOK) ||
             (st->codec->codec_id == CODEC_ID_ATRAC3) ||
@@ -685,10 +683,9 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
 
 void
 ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
-                      AVStream *st, AVPacket *pkt)
+                      AVStream *st, RMStream *ast, AVPacket *pkt)
 {
     RMDemuxContext *rm = s->priv_data;
-    RMStream *ast = st->priv_data;
 
     assert (rm->audio_pkt_cnt > 0);
 
@@ -717,7 +714,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (rm->audio_pkt_cnt) {
         // If there are queued audio packet return them first
         st = s->streams[rm->audio_stream_num];
-        ff_rm_retrieve_cache(s, s->pb, st, pkt);
+        ff_rm_retrieve_cache(s, s->pb, st, st->priv_data, pkt);
     } else if (rm->old_format) {
         RMStream *ast;
 
@@ -756,7 +753,8 @@ resync:
             return AVERROR(EIO);
         st = s->streams[i];
 
-        if (ff_rm_parse_packet (s, s->pb, st, len, pkt, &seq, &flags, &timestamp) < 0)
+        if (ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
+                                &seq, &flags, &timestamp) < 0)
             goto resync;
 
         if((flags&2) && (seq&0x7F) == 1)
