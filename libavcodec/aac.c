@@ -1482,7 +1482,8 @@ static void apply_channel_coupling(AACContext * ac, ChannelElement * cc,
  * Convert spectral data to float samples, applying all supported tools as appropriate.
  */
 static void spectral_to_sample(AACContext * ac) {
-    int i, type;
+    int i;
+    enum RawDataBlockType type;
     for(type = 3; type >= 0; type--) {
         for (i = 0; i < MAX_ELEM_ID; i++) {
             ChannelElement *che = ac->che[type][i];
