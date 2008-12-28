@@ -21,12 +21,9 @@
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
+#include "rm.h"
 
-typedef struct {
-    int nb_packets;
-    int old_format;
-    int current_stream;
-    int remaining_len;
+struct RMStream {
     uint8_t *videobuf; ///< place to store merged video frame
     int videobufsize;  ///< current assembled frame size
     int videobufpos;   ///< position for the next slice in the video buffer
@@ -38,10 +35,17 @@ typedef struct {
     int64_t audiotimestamp; ///< Audio packet timestamp
     int sub_packet_cnt; // Subpacket counter, used while reading
     int sub_packet_size, sub_packet_h, coded_framesize; ///< Descrambling parameters from container
+    int audio_framesize; /// Audio frame size from container
+    int sub_packet_lengths[16]; /// Length of each subpacket
+};
+
+typedef struct {
+    int nb_packets;
+    int old_format;
+    int current_stream;
+    int remaining_len;
     int audio_stream_num; ///< Stream number for audio packets
     int audio_pkt_cnt; ///< Output packet counter
-    int audio_framesize; /// Audio frame size from container
-    int sub_packet_lengths[16]; /// Length of each aac subpacket
 } RMDemuxContext;
 
 static inline void get_strl(ByteIOContext *pb, char *buf, int buf_size, int len)
@@ -68,10 +72,24 @@ static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
     get_strl(pb, buf, buf_size, get_byte(pb));
 }
 
+RMStream *ff_rm_alloc_rmstream (void)
+{
+    RMStream *rms = av_mallocz(sizeof(RMStream));
+    rms->curpic_num = -1;
+    return rms;
+}
+
+void ff_rm_free_rmstream (RMStream *rms)
+{
+    av_free(rms->videobuf);
+    av_free(rms->audiobuf);
+    av_free(rms);
+}
+
 static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
                                      AVStream *st, int read_all)
 {
-    RMDemuxContext *rm = s->priv_data;
+    RMStream *ast = st->priv_data;
     char buf[256];
     uint32_t version;
 
@@ -104,13 +122,13 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
         get_be16(pb); /* version2 */
         get_be32(pb); /* header size */
         flavor= get_be16(pb); /* add codec info / flavor */
-        rm->coded_framesize = coded_framesize = get_be32(pb); /* coded frame size */
+        ast->coded_framesize = coded_framesize = get_be32(pb); /* coded frame size */
         get_be32(pb); /* ??? */
         get_be32(pb); /* ??? */
         get_be32(pb); /* ??? */
-        rm->sub_packet_h = sub_packet_h = get_be16(pb); /* 1 */
+        ast->sub_packet_h = sub_packet_h = get_be16(pb); /* 1 */
         st->codec->block_align= get_be16(pb); /* frame size */
-        rm->sub_packet_size = sub_packet_size = get_be16(pb); /* sub packet size */
+        ast->sub_packet_size = sub_packet_size = get_be16(pb); /* sub packet size */
         get_be16(pb); /* ??? */
         if (((version >> 16) & 0xff) == 5) {
             get_be16(pb); get_be16(pb); get_be16(pb);
@@ -133,15 +151,15 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
         } else if (!strcmp(buf, "28_8")) {
             st->codec->codec_id = CODEC_ID_RA_288;
             st->codec->extradata_size= 0;
-            rm->audio_framesize = st->codec->block_align;
+            ast->audio_framesize = st->codec->block_align;
             st->codec->block_align = coded_framesize;
 
-            if(rm->audio_framesize >= UINT_MAX / sub_packet_h){
-                av_log(s, AV_LOG_ERROR, "rm->audio_framesize * sub_packet_h too large\n");
+            if(ast->audio_framesize >= UINT_MAX / sub_packet_h){
+                av_log(s, AV_LOG_ERROR, "ast->audio_framesize * sub_packet_h too large\n");
                 return -1;
             }
 
-            rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
+            ast->audiobuf = av_malloc(ast->audio_framesize * sub_packet_h);
         } else if ((!strcmp(buf, "cook")) || (!strcmp(buf, "atrc")) || (!strcmp(buf, "sipr"))) {
             int codecdata_length;
             get_be16(pb); get_byte(pb);
@@ -164,15 +182,15 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
             st->codec->extradata_size= codecdata_length;
             st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
-            rm->audio_framesize = st->codec->block_align;
-            st->codec->block_align = rm->sub_packet_size;
+            ast->audio_framesize = st->codec->block_align;
+            st->codec->block_align = ast->sub_packet_size;
 
-            if(rm->audio_framesize >= UINT_MAX / sub_packet_h){
+            if(ast->audio_framesize >= UINT_MAX / sub_packet_h){
                 av_log(s, AV_LOG_ERROR, "rm->audio_framesize * sub_packet_h too large\n");
                 return -1;
             }
 
-            rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
+            ast->audiobuf = av_malloc(ast->audio_framesize * sub_packet_h);
         } else if (!strcmp(buf, "raac") || !strcmp(buf, "racp")) {
             int codecdata_length;
             get_be16(pb); get_byte(pb);
@@ -215,7 +233,9 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
     unsigned int v;
     int size;
     int64_t codec_pos;
+    RMStream *rst;
 
+    st->priv_data = rst = ff_rm_alloc_rmstream();
     av_set_pts_info(st, 64, 1, 1000);
     codec_pos = url_ftell(pb);
     v = get_be32(pb);
@@ -386,7 +406,6 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!rm->nb_packets && (flags & 4))
         rm->nb_packets = 3600 * 25;
     get_be32(pb); /* next data header */
-    rm->curpic_num = -1;
     return 0;
 }
 
@@ -466,7 +485,8 @@ skip:
 }
 
 static int rm_assemble_video_frame(AVFormatContext *s, ByteIOContext *pb,
-                                   RMDemuxContext *rm, AVPacket *pkt, int len)
+                                   RMDemuxContext *rm, RMStream *vst,
+                                   AVPacket *pkt, int len)
 {
     int hdr, seq, pic_num, len2, pos;
     int type;
@@ -507,40 +527,40 @@ static int rm_assemble_video_frame(AVFormatContext *s, ByteIOContext *pb,
     }
     //now we have to deal with single slice
 
-    if((seq & 0x7F) == 1 || rm->curpic_num != pic_num){
-        rm->slices = ((hdr & 0x3F) << 1) + 1;
-        rm->videobufsize = len2 + 8*rm->slices + 1;
-        av_free(rm->videobuf);
-        if(!(rm->videobuf = av_malloc(rm->videobufsize)))
+    if((seq & 0x7F) == 1 || vst->curpic_num != pic_num){
+        vst->slices = ((hdr & 0x3F) << 1) + 1;
+        vst->videobufsize = len2 + 8*vst->slices + 1;
+        av_free(vst->videobuf);
+        if(!(vst->videobuf = av_malloc(vst->videobufsize)))
             return AVERROR(ENOMEM);
-        rm->videobufpos = 8*rm->slices + 1;
-        rm->cur_slice = 0;
-        rm->curpic_num = pic_num;
-        rm->pktpos = url_ftell(pb);
+        vst->videobufpos = 8*vst->slices + 1;
+        vst->cur_slice = 0;
+        vst->curpic_num = pic_num;
+        vst->pktpos = url_ftell(pb);
     }
     if(type == 2)
         len = FFMIN(len, pos);
 
-    if(++rm->cur_slice > rm->slices)
+    if(++vst->cur_slice > vst->slices)
         return 1;
-    AV_WL32(rm->videobuf - 7 + 8*rm->cur_slice, 1);
-    AV_WL32(rm->videobuf - 3 + 8*rm->cur_slice, rm->videobufpos - 8*rm->slices - 1);
-    if(rm->videobufpos + len > rm->videobufsize)
+    AV_WL32(vst->videobuf - 7 + 8*vst->cur_slice, 1);
+    AV_WL32(vst->videobuf - 3 + 8*vst->cur_slice, vst->videobufpos - 8*vst->slices - 1);
+    if(vst->videobufpos + len > vst->videobufsize)
         return 1;
-    if (get_buffer(pb, rm->videobuf + rm->videobufpos, len) != len)
+    if (get_buffer(pb, vst->videobuf + vst->videobufpos, len) != len)
         return AVERROR(EIO);
-    rm->videobufpos += len;
+    vst->videobufpos += len;
     rm->remaining_len-= len;
 
-    if(type == 2 || (rm->videobufpos) == rm->videobufsize){
-         rm->videobuf[0] = rm->cur_slice-1;
-         if(av_new_packet(pkt, rm->videobufpos - 8*(rm->slices - rm->cur_slice)) < 0)
+    if(type == 2 || (vst->videobufpos) == vst->videobufsize){
+         vst->videobuf[0] = vst->cur_slice-1;
+         if(av_new_packet(pkt, vst->videobufpos - 8*(vst->slices - vst->cur_slice)) < 0)
              return AVERROR(ENOMEM);
-         memcpy(pkt->data, rm->videobuf, 1 + 8*rm->cur_slice);
-         memcpy(pkt->data + 1 + 8*rm->cur_slice, rm->videobuf + 1 + 8*rm->slices,
-                rm->videobufpos - 1 - 8*rm->slices);
+         memcpy(pkt->data, vst->videobuf, 1 + 8*vst->cur_slice);
+         memcpy(pkt->data + 1 + 8*vst->cur_slice, vst->videobuf + 1 + 8*vst->slices,
+                vst->videobufpos - 1 - 8*vst->slices);
          pkt->pts = AV_NOPTS_VALUE;
-         pkt->pos = rm->pktpos;
+         pkt->pos = vst->pktpos;
          return 0;
     }
 
@@ -571,59 +591,61 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
 
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
         rm->current_stream= st->id;
-        if(rm_assemble_video_frame(s, pb, rm, pkt, len) == 1)
+        if(rm_assemble_video_frame(s, pb, rm, st->priv_data, pkt, len) == 1)
             return -1; //got partial frame
     } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+        RMStream *ast = st->priv_data;
+
         if ((st->codec->codec_id == CODEC_ID_RA_288) ||
             (st->codec->codec_id == CODEC_ID_COOK) ||
             (st->codec->codec_id == CODEC_ID_ATRAC3) ||
             (st->codec->codec_id == CODEC_ID_SIPR)) {
             int x;
-            int sps = rm->sub_packet_size;
-            int cfs = rm->coded_framesize;
-            int h = rm->sub_packet_h;
-            int y = rm->sub_packet_cnt;
-            int w = rm->audio_framesize;
+            int sps = ast->sub_packet_size;
+            int cfs = ast->coded_framesize;
+            int h = ast->sub_packet_h;
+            int y = ast->sub_packet_cnt;
+            int w = ast->audio_framesize;
 
             if (*flags & 2)
-                y = rm->sub_packet_cnt = 0;
+                y = ast->sub_packet_cnt = 0;
             if (!y)
-                rm->audiotimestamp = *timestamp;
+                ast->audiotimestamp = *timestamp;
 
             switch(st->codec->codec_id) {
                 case CODEC_ID_RA_288:
                     for (x = 0; x < h/2; x++)
-                        get_buffer(pb, rm->audiobuf+x*2*w+y*cfs, cfs);
+                        get_buffer(pb, ast->audiobuf+x*2*w+y*cfs, cfs);
                     break;
                 case CODEC_ID_ATRAC3:
                 case CODEC_ID_COOK:
                     for (x = 0; x < w/sps; x++)
-                        get_buffer(pb, rm->audiobuf+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), sps);
+                        get_buffer(pb, ast->audiobuf+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), sps);
                     break;
             }
 
-            if (++(rm->sub_packet_cnt) < h)
+            if (++(ast->sub_packet_cnt) < h)
                 return -1;
             else {
-                rm->sub_packet_cnt = 0;
+                ast->sub_packet_cnt = 0;
                 rm->audio_stream_num = st->index;
                 rm->audio_pkt_cnt = h * w / st->codec->block_align - 1;
                 // Release first audio packet
                 av_new_packet(pkt, st->codec->block_align);
-                memcpy(pkt->data, rm->audiobuf, st->codec->block_align);
-                *timestamp = rm->audiotimestamp;
+                memcpy(pkt->data, ast->audiobuf, st->codec->block_align);
+                *timestamp = ast->audiotimestamp;
                 *flags = 2; // Mark first packet as keyframe
             }
         } else if (st->codec->codec_id == CODEC_ID_AAC) {
             int x;
             rm->audio_stream_num = st->index;
-            rm->sub_packet_cnt = (get_be16(pb) & 0xf0) >> 4;
-            if (rm->sub_packet_cnt) {
-                for (x = 0; x < rm->sub_packet_cnt; x++)
-                    rm->sub_packet_lengths[x] = get_be16(pb);
+            ast->sub_packet_cnt = (get_be16(pb) & 0xf0) >> 4;
+            if (ast->sub_packet_cnt) {
+                for (x = 0; x < ast->sub_packet_cnt; x++)
+                    ast->sub_packet_lengths[x] = get_be16(pb);
                 // Release first audio packet
-                rm->audio_pkt_cnt = rm->sub_packet_cnt - 1;
-                av_get_packet(pb, pkt, rm->sub_packet_lengths[0]);
+                rm->audio_pkt_cnt = ast->sub_packet_cnt - 1;
+                av_get_packet(pb, pkt, ast->sub_packet_lengths[0]);
                 *flags = 2; // Mark first packet as keyframe
             }
         } else {
@@ -666,15 +688,16 @@ ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
                       AVStream *st, AVPacket *pkt)
 {
     RMDemuxContext *rm = s->priv_data;
+    RMStream *ast = st->priv_data;
 
     assert (rm->audio_pkt_cnt > 0);
 
     if (st->codec->codec_id == CODEC_ID_AAC)
-        av_get_packet(pb, pkt, rm->sub_packet_lengths[rm->sub_packet_cnt - rm->audio_pkt_cnt]);
+        av_get_packet(pb, pkt, ast->sub_packet_lengths[ast->sub_packet_cnt - rm->audio_pkt_cnt]);
     else {
         av_new_packet(pkt, st->codec->block_align);
-        memcpy(pkt->data, rm->audiobuf + st->codec->block_align *
-               (rm->sub_packet_h * rm->audio_framesize / st->codec->block_align - rm->audio_pkt_cnt),
+        memcpy(pkt->data, ast->audiobuf + st->codec->block_align *
+               (ast->sub_packet_h * ast->audio_framesize / st->codec->block_align - rm->audio_pkt_cnt),
                st->codec->block_align);
     }
     rm->audio_pkt_cnt--;
@@ -696,19 +719,22 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         st = s->streams[rm->audio_stream_num];
         ff_rm_retrieve_cache(s, s->pb, st, pkt);
     } else if (rm->old_format) {
+        RMStream *ast;
+
         st = s->streams[0];
+        ast = st->priv_data;
         if (st->codec->codec_id == CODEC_ID_RA_288) {
             int x, y;
 
-            for (y = 0; y < rm->sub_packet_h; y++)
-                for (x = 0; x < rm->sub_packet_h/2; x++)
-                    if (get_buffer(pb, rm->audiobuf+x*2*rm->audio_framesize+y*rm->coded_framesize, rm->coded_framesize) <= 0)
+            for (y = 0; y < ast->sub_packet_h; y++)
+                for (x = 0; x < ast->sub_packet_h/2; x++)
+                    if (get_buffer(pb, ast->audiobuf+x*2*ast->audio_framesize+y*ast->coded_framesize, ast->coded_framesize) <= 0)
                         return AVERROR(EIO);
             rm->audio_stream_num = 0;
-            rm->audio_pkt_cnt = rm->sub_packet_h * rm->audio_framesize / st->codec->block_align - 1;
+            rm->audio_pkt_cnt = ast->sub_packet_h * ast->audio_framesize / st->codec->block_align - 1;
             // Release first audio packet
             av_new_packet(pkt, st->codec->block_align);
-            memcpy(pkt->data, rm->audiobuf, st->codec->block_align);
+            memcpy(pkt->data, ast->audiobuf, st->codec->block_align);
             pkt->flags |= PKT_FLAG_KEY; // Mark first packet as keyframe
             pkt->stream_index = 0;
         } else {
@@ -742,10 +768,11 @@ resync:
 
 static int rm_read_close(AVFormatContext *s)
 {
-    RMDemuxContext *rm = s->priv_data;
+    int i;
 
-    av_free(rm->audiobuf);
-    av_free(rm->videobuf);
+    for (i=0;i<s->nb_streams;i++)
+        ff_rm_free_rmstream(s->streams[i]->priv_data);
+
     return 0;
 }
 

@@ -24,6 +24,11 @@
 
 #include "avformat.h"
 
+typedef struct RMStream RMStream;
+
+RMStream *ff_rm_alloc_rmstream (void);
+void      ff_rm_free_rmstream  (RMStream *rms);
+
 /*< input format for Realmedia-style RTSP streams */
 extern AVInputFormat rdt_demuxer;
 
