@@ -1278,20 +1278,15 @@ enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
 # set temporary file name
-if test ! -z "$TMPDIR" ; then
-    TMPDIR1="${TMPDIR}"
-elif test ! -z "$TEMPDIR" ; then
-    TMPDIR1="${TEMPDIR}"
-else
-    TMPDIR1="/tmp"
-fi
+: ${TMPDIR:=$TEMPDIR}
+: ${TMPDIR:=/tmp}
 
-TMPC="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
-TMPE="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}${EXESUF}"
-TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
-TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
-TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
-TMPSH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.sh"
+TMPC="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
+TMPE="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}${EXESUF}"
+TMPH="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
+TMPO="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
+TMPS="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
+TMPSH="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.sh"
 
 check_cflags -std=c99
 
@@ -1690,9 +1685,8 @@ EOF
 chmod +x $TMPSH >> $logfile 2>&1
 if ! $TMPSH >> $logfile 2>&1; then
     cat <<EOF
-Unable to create and execute files in $TMPDIR1.  Set the TMPDIR environment
-variable to another directory and make sure that $TMPDIR1 is not mounted
-noexec.
+Unable to create and execute files in $TMPDIR.  Set the TMPDIR environment
+variable to another directory and make sure that it is not mounted noexec.
 EOF
     die "Sanity test failed."
 fi
