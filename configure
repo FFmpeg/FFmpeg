@@ -1279,6 +1279,7 @@ set_default host_cc
 
 # set temporary file name
 : ${TMPDIR:=$TEMPDIR}
+: ${TMPDIR:=$TMP}
 : ${TMPDIR:=/tmp}
 
 TMPC="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
