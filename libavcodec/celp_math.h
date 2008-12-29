@@ -51,26 +51,6 @@ int ff_exp2(uint16_t power);
 int ff_log2(uint32_t value);
 
 /**
- * returns the dot product.
- * @param a input data array
- * @param b input data array
- * @param length number of elements
- * @param shift right shift by this value will be done after multiplication
- *
- * @return dot product = sum of elementwise products
- */
-static int dot_product(const int16_t* a, const int16_t* b, int length, int shift)
-{
-    int sum = 0;
-    int i;
-
-    for(i=0; i<length; i++)
-        sum += (a[i] * b[i]) >> shift;
-
-    return sum;
-}
-
-/**
  * Shift value left or right depending on sign of offset parameter.
  * @param value value to shift
  * @param offset shift offset
