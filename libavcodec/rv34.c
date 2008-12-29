@@ -564,7 +564,7 @@ static void rv34_pred_mv_rv3(RV34DecContext *r, int block_type, int dir)
     MpegEncContext *s = &r->s;
     int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride;
     int A[2] = {0}, B[2], C[2];
-    int i, j;
+    int i, j, k;
     int mx, my;
     int avail_index = avail_indexes[0];
 
@@ -597,12 +597,12 @@ static void rv34_pred_mv_rv3(RV34DecContext *r, int block_type, int dir)
     my += r->dmv[0][1];
     for(j = 0; j < 2; j++){
         for(i = 0; i < 2; i++){
-            s->current_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][0] = mx;
-            s->current_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][1] = my;
+            for(k = 0; k < 2; k++){
+                s->current_picture_ptr->motion_val[k][mv_pos + i + j*s->b8_stride][0] = mx;
+                s->current_picture_ptr->motion_val[k][mv_pos + i + j*s->b8_stride][1] = my;
+            }
         }
     }
-    if(block_type == RV34_MB_B_BACKWARD || block_type == RV34_MB_B_FORWARD)
-        fill_rectangle(s->current_picture_ptr->motion_val[!dir][mv_pos], 2, 2, s->b8_stride, 0, 4);
 }
 
 static const int chroma_coeffs[3] = { 0, 3, 5 };
