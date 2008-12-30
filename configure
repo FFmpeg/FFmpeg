@@ -809,6 +809,7 @@ ARCH_EXT_LIST='
     altivec
     armv5te
     armv6
+    armv6t2
     armvfp
     iwmmxt
     mmi
@@ -935,6 +936,7 @@ CMDLINE_SET="
 altivec_deps="ppc"
 armv5te_deps="arm"
 armv6_deps="arm"
+armv6t2_deps="arm"
 armvfp_deps="arm"
 iwmmxt_deps="arm"
 mmi_deps="mips"
@@ -1782,6 +1784,7 @@ fi
 enabled arm     && check_asm pld     '"pld [r0]"'
 enabled armv5te && check_asm armv5te '"qadd r0, r0, r0"'
 enabled armv6   && check_asm armv6   '"sadd16 r0, r0, r0"'
+enabled armv6t2 && check_asm armv6t2 '"movt r0, #0"'
 enabled armvfp  && check_asm armvfp  '"fadds s0, s0, s0"'
 enabled iwmmxt  && check_asm iwmmxt  '"wunpckelub wr6, wr4"'
 enabled mmi     && check_asm mmi     '"lq $2, 0($2)"'
@@ -2133,6 +2136,7 @@ fi
 if test $arch = "arm"; then
     echo "ARMv5TE enabled           ${armv5te-no}"
     echo "ARMv6 enabled             ${armv6-no}"
+    echo "ARMv6T2 enabled           ${armv6t2-no}"
     echo "ARM VFP enabled           ${armvfp-no}"
     echo "IWMMXT enabled            ${iwmmxt-no}"
     echo "NEON enabled              ${neon-no}"
