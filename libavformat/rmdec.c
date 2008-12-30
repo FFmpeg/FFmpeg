@@ -492,42 +492,30 @@ static int rm_assemble_video_frame(AVFormatContext *s, ByteIOContext *pb,
 
     hdr = get_byte(pb); len--;
     type = hdr >> 6;
-    switch(type){
-    case 0: // slice
-    case 2: // last slice
+
+    if(type != 3){  // not frame as a part of packet
         seq = get_byte(pb); len--;
+    }
+    if(type != 1){  // not whole frame
         len2 = get_num(pb, &len);
-        pos = get_num(pb, &len);
-        if(len < 1)
-            return -1;
+        pos  = get_num(pb, &len);
         pic_num = get_byte(pb); len--;
-        rm->remaining_len = len;
-        break;
-    case 1: //whole frame
-        if(len<1)
+    }
+    if(len<0)
+        return -1;
+    rm->remaining_len = len;
+    if(type&1){     // frame, not slice
+        if(type == 3)  // frame as a part of packet
+            len= len2;
+        if(rm->remaining_len < len)
             return -1;
-        seq = get_byte(pb); len--;
+        rm->remaining_len -= len;
         if(av_new_packet(pkt, len + 9) < 0)
             return AVERROR(EIO);
         pkt->data[0] = 0;
         AV_WL32(pkt->data + 1, 1);
         AV_WL32(pkt->data + 5, 0);
         get_buffer(pb, pkt->data + 9, len);
-        rm->remaining_len = 0;
-        return 0;
-    case 3: //frame as a part of packet
-        len2 = get_num(pb, &len);
-        pos = get_num(pb, &len);
-        pic_num = get_byte(pb); len--;
-        if(len < len2)
-            return -1;
-        rm->remaining_len = len - len2;
-        if(av_new_packet(pkt, len2 + 9) < 0)
-            return AVERROR(EIO);
-        pkt->data[0] = 0;
-        AV_WL32(pkt->data + 1, 1);
-        AV_WL32(pkt->data + 5, 0);
-        get_buffer(pb, pkt->data + 9, len2);
         return 0;
     }
     //now we have to deal with single slice
