@@ -3686,7 +3686,7 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
     memcpy(st->codec, av, sizeof(AVCodecContext));
 }
 
-static int opt_audio_codec(const char *arg)
+static enum CodecID opt_audio_codec(const char *arg)
 {
     AVCodec *p= avcodec_find_encoder_by_name(arg);
 
@@ -3696,7 +3696,7 @@ static int opt_audio_codec(const char *arg)
     return p->id;
 }
 
-static int opt_video_codec(const char *arg)
+static enum CodecID opt_video_codec(const char *arg)
 {
     AVCodec *p= avcodec_find_encoder_by_name(arg);
 
@@ -3753,7 +3753,7 @@ static int parse_ffconfig(const char *filename)
     FFStream **last_stream, *stream, *redirect;
     FFStream **last_feed, *feed;
     AVCodecContext audio_enc, video_enc;
-    int audio_id, video_id;
+    enum CodecID audio_id, video_id;
 
     f = fopen(filename, "r");
     if (!f) {
