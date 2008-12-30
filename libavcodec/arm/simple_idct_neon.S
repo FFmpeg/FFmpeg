@@ -230,7 +230,8 @@ function idct_col4_st8_neon
 
         .section .rodata
         .align 4
-const:  .short W1, W2, W3, W4, W5, W6, W7, W4c
+idct_coeff_neon:
+        .short W1, W2, W3, W4, W5, W6, W7, W4c
         .previous
 
         .macro idct_start data
@@ -238,8 +239,8 @@ const:  .short W1, W2, W3, W4, W5, W6, W7, W4c
         pld             [\data]
         pld             [\data, #64]
         vpush           {d8-d15}
-        movw            r3, #:lower16:const
-        movt            r3, #:upper16:const
+        movw            r3, #:lower16:idct_coeff_neon
+        movt            r3, #:upper16:idct_coeff_neon
         vld1.64         {d0,d1}, [r3,:128]
         .endm
 
