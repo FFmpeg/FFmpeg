@@ -590,7 +590,7 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
 
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
         rm->current_stream= st->id;
-        if(rm_assemble_video_frame(s, pb, rm, ast, pkt, len) == 1)
+        if(rm_assemble_video_frame(s, pb, rm, ast, pkt, len))
             return -1; //got partial frame
     } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
         if ((st->codec->codec_id == CODEC_ID_RA_288) ||
