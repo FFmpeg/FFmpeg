@@ -772,7 +772,9 @@ CONFIG_LIST="
     nonfree
     postproc
     powerpc_perf
+    shared
     small
+    static
     swscale
     vhook
     x11grab
@@ -896,8 +898,6 @@ CMDLINE_SELECT="
     extra_warnings
     logging
     optimizations
-    shared
-    static
     stripping
 "
 
