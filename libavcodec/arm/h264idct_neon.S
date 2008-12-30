@@ -103,8 +103,7 @@ function ff_h264_idct_add16_neon, export=1
         mov             r1,  r2
         mov             r2,  r3
         ldr             r6,  [sp, #24]
-        movw            r7,  #:lower16:scan8
-        movt            r7,  #:upper16:scan8
+        movrel          r7,  scan8
         mov             ip,  #16
 1:      ldrb            r8,  [r7], #1
         ldr             r0,  [r5], #4
@@ -131,8 +130,7 @@ function ff_h264_idct_add16intra_neon, export=1
         mov             r1,  r2
         mov             r2,  r3
         ldr             r6,  [sp, #24]
-        movw            r7,  #:lower16:scan8
-        movt            r7,  #:upper16:scan8
+        movrel          r7,  scan8
         mov             ip,  #16
 1:      ldrb            r8,  [r7], #1
         ldr             r0,  [r5], #4
@@ -157,8 +155,7 @@ function ff_h264_idct_add8_neon, export=1
         add             r1,  r2,  #16*32
         mov             r2,  r3
         ldr             r6,  [sp, #32]
-        movw            r7,  #:lower16:scan8+16
-        movt            r7,  #:upper16:scan8+16
+        movrel          r7,  scan8+16
         mov             ip,  #8
 1:      ldrb            r8,  [r7], #1
         ldr             r0,  [r5], #4

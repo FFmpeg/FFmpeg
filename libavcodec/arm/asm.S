@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
         .macro require8, val=1
         .eabi_attribute 24, \val
         .endm
@@ -33,4 +35,13 @@
         .type   \name, %function
         .func   \name
 \name:
+        .endm
+
+        .macro movrel rd, val
+#if defined(HAVE_ARMV6T2) && !defined(CONFIG_SHARED)
+        movw            \rd, #:lower16:\val
+        movt            \rd, #:upper16:\val
+#else
+        ldr             \rd, =\val
+#endif
         .endm

@@ -239,8 +239,7 @@ idct_coeff_neon:
         pld             [\data]
         pld             [\data, #64]
         vpush           {d8-d15}
-        movw            r3, #:lower16:idct_coeff_neon
-        movt            r3, #:upper16:idct_coeff_neon
+        movrel          r3,  idct_coeff_neon
         vld1.64         {d0,d1}, [r3,:128]
         .endm
 
