@@ -551,7 +551,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, ByteIOContext *pb,
         if(vst->slices != vst->cur_slice) //FIXME find out how to set slices correct from the begin
             memmove(pkt->data + 1 + 8*vst->cur_slice, pkt->data + 1 + 8*vst->slices,
                 vst->videobufpos - 1 - 8*vst->slices);
-        pkt->size += 8*(vst->cur_slice - vst->slices);
+        pkt->size = vst->videobufpos + 8*(vst->cur_slice - vst->slices);
         pkt->pts = AV_NOPTS_VALUE;
         pkt->pos = vst->pktpos;
         return 0;
