@@ -24,14 +24,13 @@
 #include "rm.h"
 
 struct RMStream {
-    uint8_t *videobuf; ///< place to store merged video frame
+    uint8_t *buf; ///< place to store merged video frame / reordered audio data
     int videobufsize;  ///< current assembled frame size
     int videobufpos;   ///< position for the next slice in the video buffer
     int curpic_num;    ///< picture number of current frame
     int cur_slice, slices;
     int64_t pktpos;    ///< first slice position in file
     /// Audio descrambling matrix parameters
-    uint8_t *audiobuf; ///< place to store reordered audio data
     int64_t audiotimestamp; ///< Audio packet timestamp
     int sub_packet_cnt; // Subpacket counter, used while reading
     int sub_packet_size, sub_packet_h, coded_framesize; ///< Descrambling parameters from container
@@ -81,8 +80,7 @@ RMStream *ff_rm_alloc_rmstream (void)
 
 void ff_rm_free_rmstream (RMStream *rms)
 {
-    av_freep(&rms->videobuf);
-    av_freep(&rms->audiobuf);
+    av_freep(&rms->buf);
 }
 
 static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
@@ -157,7 +155,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
                 return -1;
             }
 
-            ast->audiobuf = av_malloc(ast->audio_framesize * sub_packet_h);
+            ast->buf = av_malloc(ast->audio_framesize * sub_packet_h);
         } else if ((!strcmp(buf, "cook")) || (!strcmp(buf, "atrc")) || (!strcmp(buf, "sipr"))) {
             int codecdata_length;
             get_be16(pb); get_byte(pb);
@@ -188,7 +186,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
                 return -1;
             }
 
-            ast->audiobuf = av_malloc(ast->audio_framesize * sub_packet_h);
+            ast->buf = av_malloc(ast->audio_framesize * sub_packet_h);
         } else if (!strcmp(buf, "raac") || !strcmp(buf, "racp")) {
             int codecdata_length;
             get_be16(pb); get_byte(pb);
@@ -523,8 +521,8 @@ static int rm_assemble_video_frame(AVFormatContext *s, ByteIOContext *pb,
     if((seq & 0x7F) == 1 || vst->curpic_num != pic_num){
         vst->slices = ((hdr & 0x3F) << 1) + 1;
         vst->videobufsize = len2 + 8*vst->slices + 1;
-        av_free(vst->videobuf);
-        if(!(vst->videobuf = av_malloc(vst->videobufsize)))
+        av_free(vst->buf);
+        if(!(vst->buf = av_malloc(vst->videobufsize)))
             return AVERROR(ENOMEM);
         vst->videobufpos = 8*vst->slices + 1;
         vst->cur_slice = 0;
@@ -536,21 +534,21 @@ static int rm_assemble_video_frame(AVFormatContext *s, ByteIOContext *pb,
 
     if(++vst->cur_slice > vst->slices)
         return 1;
-    AV_WL32(vst->videobuf - 7 + 8*vst->cur_slice, 1);
-    AV_WL32(vst->videobuf - 3 + 8*vst->cur_slice, vst->videobufpos - 8*vst->slices - 1);
+    AV_WL32(vst->buf - 7 + 8*vst->cur_slice, 1);
+    AV_WL32(vst->buf - 3 + 8*vst->cur_slice, vst->videobufpos - 8*vst->slices - 1);
     if(vst->videobufpos + len > vst->videobufsize)
         return 1;
-    if (get_buffer(pb, vst->videobuf + vst->videobufpos, len) != len)
+    if (get_buffer(pb, vst->buf + vst->videobufpos, len) != len)
         return AVERROR(EIO);
     vst->videobufpos += len;
     rm->remaining_len-= len;
 
     if(type == 2 || (vst->videobufpos) == vst->videobufsize){
-         vst->videobuf[0] = vst->cur_slice-1;
+         vst->buf[0] = vst->cur_slice-1;
          if(av_new_packet(pkt, vst->videobufpos - 8*(vst->slices - vst->cur_slice)) < 0)
              return AVERROR(ENOMEM);
-         memcpy(pkt->data, vst->videobuf, 1 + 8*vst->cur_slice);
-         memcpy(pkt->data + 1 + 8*vst->cur_slice, vst->videobuf + 1 + 8*vst->slices,
+         memcpy(pkt->data, vst->buf, 1 + 8*vst->cur_slice);
+         memcpy(pkt->data + 1 + 8*vst->cur_slice, vst->buf + 1 + 8*vst->slices,
                 vst->videobufpos - 1 - 8*vst->slices);
          pkt->pts = AV_NOPTS_VALUE;
          pkt->pos = vst->pktpos;
@@ -606,12 +604,12 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
             switch(st->codec->codec_id) {
                 case CODEC_ID_RA_288:
                     for (x = 0; x < h/2; x++)
-                        get_buffer(pb, ast->audiobuf+x*2*w+y*cfs, cfs);
+                        get_buffer(pb, ast->buf+x*2*w+y*cfs, cfs);
                     break;
                 case CODEC_ID_ATRAC3:
                 case CODEC_ID_COOK:
                     for (x = 0; x < w/sps; x++)
-                        get_buffer(pb, ast->audiobuf+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), sps);
+                        get_buffer(pb, ast->buf+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), sps);
                     break;
             }
 
@@ -623,7 +621,7 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
                 rm->audio_pkt_cnt = h * w / st->codec->block_align - 1;
                 // Release first audio packet
                 av_new_packet(pkt, st->codec->block_align);
-                memcpy(pkt->data, ast->audiobuf, st->codec->block_align);
+                memcpy(pkt->data, ast->buf, st->codec->block_align);
                 *timestamp = ast->audiotimestamp;
                 *flags = 2; // Mark first packet as keyframe
             }
@@ -686,7 +684,7 @@ ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
         av_get_packet(pb, pkt, ast->sub_packet_lengths[ast->sub_packet_cnt - rm->audio_pkt_cnt]);
     else {
         av_new_packet(pkt, st->codec->block_align);
-        memcpy(pkt->data, ast->audiobuf + st->codec->block_align *
+        memcpy(pkt->data, ast->buf + st->codec->block_align *
                (ast->sub_packet_h * ast->audio_framesize / st->codec->block_align - rm->audio_pkt_cnt),
                st->codec->block_align);
     }
@@ -720,13 +718,13 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             for (y = 0; y < ast->sub_packet_h; y++)
                 for (x = 0; x < ast->sub_packet_h/2; x++)
-                    if (get_buffer(pb, ast->audiobuf+x*2*ast->audio_framesize+y*ast->coded_framesize, ast->coded_framesize) <= 0)
+                    if (get_buffer(pb, ast->buf+x*2*ast->audio_framesize+y*ast->coded_framesize, ast->coded_framesize) <= 0)
                         return AVERROR(EIO);
             rm->audio_stream_num = 0;
             rm->audio_pkt_cnt = ast->sub_packet_h * ast->audio_framesize / st->codec->block_align - 1;
             // Release first audio packet
             av_new_packet(pkt, st->codec->block_align);
-            memcpy(pkt->data, ast->audiobuf, st->codec->block_align);
+            memcpy(pkt->data, ast->buf, st->codec->block_align);
             pkt->flags |= PKT_FLAG_KEY; // Mark first packet as keyframe
             pkt->stream_index = 0;
         } else {
