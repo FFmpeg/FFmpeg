@@ -38,7 +38,7 @@
 //                     1337    IDCT MCo
 #define MP_XVMC_RENDER_MAGIC 0x1DC711C0
 
-typedef   struct  {
+struct xvmc_render_state {
     //these are not changed by the decoder!
     int  magic;
 
@@ -70,6 +70,6 @@ typedef   struct  {
     //extensions
     void * p_osd_target_surface_render; //pointer to the surface where subpicture is rendered
 
-} xvmc_render_state_t;
+};
 
 #endif /* AVCODEC_XVMC_RENDER_H */
