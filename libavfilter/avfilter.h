@@ -267,9 +267,10 @@ struct AVFilterPad
 
     /**
      * Permissions which are not accepted on incoming buffers.  Any buffer
-     * which has any of these permissions set will be automatically copied by the
-     * filter system to a new buffer which does not have those permissions.
-     * This can be used to easily disallow buffers with AV_PERM_REUSE.
+     * which has any of these permissions set will be automatically copied
+     * by the filter system to a new buffer which does not have those
+     * permissions.  This can be used to easily disallow buffers with
+     * AV_PERM_REUSE.
      *
      * Input pads only.
      */
