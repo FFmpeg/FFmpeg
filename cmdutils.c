@@ -292,7 +292,7 @@ static void print_all_lib_versions(FILE* outstream, int indent)
 
 void show_banner(void)
 {
-    fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-2008 Fabrice Bellard, et al.\n",
+    fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-2009 Fabrice Bellard, et al.\n",
             program_name, program_birth_year);
     fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
     print_all_lib_versions(stderr, 1);
