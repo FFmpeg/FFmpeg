@@ -2394,11 +2394,11 @@ enum AVSubtitleType {
 };
 
 typedef struct AVSubtitleRect {
-    uint16_t x;
-    uint16_t y;
-    uint16_t w;
-    uint16_t h;
-    uint16_t nb_colors;
+    uint16_t x;         ///< top left corner  of pict, undefined when pict is not set
+    uint16_t y;         ///< top left corner  of pict, undefined when pict is not set
+    uint16_t w;         ///< width            of pict, undefined when pict is not set
+    uint16_t h;         ///< height           of pict, undefined when pict is not set
+    uint16_t nb_colors; ///< number of colors in pict, undefined when pict is not set
     int linesize;
     uint32_t *rgba_palette;
     uint8_t *bitmap;
