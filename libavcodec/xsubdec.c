@@ -80,31 +80,32 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     // allocate sub and set values
     if (!sub->rects) {
-        sub->rects = av_mallocz(sizeof(AVSubtitleRect));
+        sub->rects =  av_mallocz(sizeof(*sub->rects));
+        sub->rects[0] = av_mallocz(sizeof(*sub->rects[0]));
         sub->num_rects = 1;
     }
-    av_freep(&sub->rects[0].bitmap);
-    sub->rects[0].x = x; sub->rects[0].y = y;
-    sub->rects[0].w = w; sub->rects[0].h = h;
-    sub->rects[0].linesize = w;
-    sub->rects[0].bitmap = av_malloc(w * h);
-    sub->rects[0].nb_colors = 4;
-    sub->rects[0].rgba_palette = av_malloc(sub->rects[0].nb_colors * 4);
+    av_freep(&sub->rects[0]->bitmap);
+    sub->rects[0]->x = x; sub->rects[0]->y = y;
+    sub->rects[0]->w = w; sub->rects[0]->h = h;
+    sub->rects[0]->linesize = w;
+    sub->rects[0]->bitmap = av_malloc(w * h);
+    sub->rects[0]->nb_colors = 4;
+    sub->rects[0]->rgba_palette = av_malloc(sub->rects[0]->nb_colors * 4);
 
     // read palette
-    for (i = 0; i < sub->rects[0].nb_colors; i++)
-        sub->rects[0].rgba_palette[i] = bytestream_get_be24(&buf);
+    for (i = 0; i < sub->rects[0]->nb_colors; i++)
+        sub->rects[0]->rgba_palette[i] = bytestream_get_be24(&buf);
     // make all except background (first entry) non-transparent
-    for (i = 1; i < sub->rects[0].nb_colors; i++)
-        sub->rects[0].rgba_palette[i] |= 0xff000000;
+    for (i = 1; i < sub->rects[0]->nb_colors; i++)
+        sub->rects[0]->rgba_palette[i] |= 0xff000000;
 
     // process RLE-compressed data
     rlelen = FFMIN(rlelen, buf_end - buf);
     init_get_bits(&gb, buf, rlelen * 8);
-    bitmap = sub->rects[0].bitmap;
+    bitmap = sub->rects[0]->bitmap;
     for (y = 0; y < h; y++) {
         // interlaced: do odd lines
-        if (y == (h + 1) / 2) bitmap = sub->rects[0].bitmap + w;
+        if (y == (h + 1) / 2) bitmap = sub->rects[0]->bitmap + w;
         for (x = 0; x < w; ) {
             int log2 = ff_log2_tab[show_bits(&gb, 8)];
             int run = get_bits(&gb, 14 - 4 * (log2 >> 1));

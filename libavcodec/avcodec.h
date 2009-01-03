@@ -2409,7 +2409,7 @@ typedef struct AVSubtitle {
     uint32_t start_display_time; /* relative to packet pts, in ms */
     uint32_t end_display_time; /* relative to packet pts, in ms */
     uint32_t num_rects;
-    AVSubtitleRect *rects;
+    AVSubtitleRect **rects;
 } AVSubtitle;
 
 

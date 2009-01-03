@@ -228,8 +228,8 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     for (region_id = 0; region_id < h->num_rects; region_id++) {
         *q++ = region_id;
         *q++ = 0xff; /* reserved */
-        bytestream_put_be16(&q, h->rects[region_id].x); /* left pos */
-        bytestream_put_be16(&q, h->rects[region_id].y); /* top pos */
+        bytestream_put_be16(&q, h->rects[region_id]->x); /* left pos */
+        bytestream_put_be16(&q, h->rects[region_id]->y); /* top pos */
     }
 
     bytestream_put_be16(&pseg_len, q - pseg_len - 2);
@@ -239,10 +239,10 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
             /* CLUT segment */
 
-            if (h->rects[clut_id].nb_colors <= 4) {
+            if (h->rects[clut_id]->nb_colors <= 4) {
                 /* 2 bpp, some decoders do not support it correctly */
                 bpp_index = 0;
-            } else if (h->rects[clut_id].nb_colors <= 16) {
+            } else if (h->rects[clut_id]->nb_colors <= 16) {
                 /* 4 bpp, standard encoding */
                 bpp_index = 1;
             } else {
@@ -257,15 +257,15 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
             *q++ = clut_id;
             *q++ = (0 << 4) | 0xf; /* version = 0 */
 
-            for(i = 0; i < h->rects[clut_id].nb_colors; i++) {
+            for(i = 0; i < h->rects[clut_id]->nb_colors; i++) {
                 *q++ = i; /* clut_entry_id */
                 *q++ = (1 << (7 - bpp_index)) | (0xf << 1) | 1; /* 2 bits/pixel full range */
                 {
                     int a, r, g, b;
-                    a = (h->rects[clut_id].rgba_palette[i] >> 24) & 0xff;
-                    r = (h->rects[clut_id].rgba_palette[i] >> 16) & 0xff;
-                    g = (h->rects[clut_id].rgba_palette[i] >> 8) & 0xff;
-                    b = (h->rects[clut_id].rgba_palette[i] >> 0) & 0xff;
+                    a = (h->rects[clut_id]->rgba_palette[i] >> 24) & 0xff;
+                    r = (h->rects[clut_id]->rgba_palette[i] >> 16) & 0xff;
+                    g = (h->rects[clut_id]->rgba_palette[i] >> 8) & 0xff;
+                    b = (h->rects[clut_id]->rgba_palette[i] >> 0) & 0xff;
 
                     *q++ = RGB_TO_Y_CCIR(r, g, b);
                     *q++ = RGB_TO_V_CCIR(r, g, b, 0);
@@ -282,10 +282,10 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
         /* region composition segment */
 
-        if (h->rects[region_id].nb_colors <= 4) {
+        if (h->rects[region_id]->nb_colors <= 4) {
             /* 2 bpp, some decoders do not support it correctly */
             bpp_index = 0;
-        } else if (h->rects[region_id].nb_colors <= 16) {
+        } else if (h->rects[region_id]->nb_colors <= 16) {
             /* 4 bpp, standard encoding */
             bpp_index = 1;
         } else {
@@ -299,8 +299,8 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
         q += 2; /* segment length */
         *q++ = region_id;
         *q++ = (s->object_version << 4) | (0 << 3) | 0x07; /* version , no fill */
-        bytestream_put_be16(&q, h->rects[region_id].w); /* region width */
-        bytestream_put_be16(&q, h->rects[region_id].h); /* region height */
+        bytestream_put_be16(&q, h->rects[region_id]->w); /* region width */
+        bytestream_put_be16(&q, h->rects[region_id]->h); /* region height */
         *q++ = ((1 + bpp_index) << 5) | ((1 + bpp_index) << 2) | 0x03;
         *q++ = region_id; /* clut_id == region_id */
         *q++ = 0; /* 8 bit fill colors */
@@ -322,10 +322,10 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
         for (object_id = 0; object_id < h->num_rects; object_id++) {
             /* Object Data segment */
 
-            if (h->rects[object_id].nb_colors <= 4) {
+            if (h->rects[object_id]->nb_colors <= 4) {
                 /* 2 bpp, some decoders do not support it correctly */
                 bpp_index = 0;
-            } else if (h->rects[object_id].nb_colors <= 16) {
+            } else if (h->rects[object_id]->nb_colors <= 16) {
                 /* 4 bpp, standard encoding */
                 bpp_index = 1;
             } else {
@@ -358,12 +358,12 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
                     dvb_encode_rle = dvb_encode_rle4;
 
                 top_ptr = q;
-                dvb_encode_rle(&q, h->rects[object_id].bitmap, h->rects[object_id].w * 2,
-                                    h->rects[object_id].w, h->rects[object_id].h >> 1);
+                dvb_encode_rle(&q, h->rects[object_id]->bitmap, h->rects[object_id]->w * 2,
+                                    h->rects[object_id]->w, h->rects[object_id]->h >> 1);
                 bottom_ptr = q;
-                dvb_encode_rle(&q, h->rects[object_id].bitmap + h->rects[object_id].w,
-                                    h->rects[object_id].w * 2, h->rects[object_id].w,
-                                    h->rects[object_id].h >> 1);
+                dvb_encode_rle(&q, h->rects[object_id]->bitmap + h->rects[object_id]->w,
+                                    h->rects[object_id]->w * 2, h->rects[object_id]->w,
+                                    h->rects[object_id]->h >> 1);
 
                 bytestream_put_be16(&ptop_field_len, bottom_ptr - top_ptr);
                 bytestream_put_be16(&pbottom_field_len, q - bottom_ptr);

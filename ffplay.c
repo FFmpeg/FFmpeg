@@ -636,8 +636,9 @@ static void free_subpicture(SubPicture *sp)
 
     for (i = 0; i < sp->sub.num_rects; i++)
     {
-        av_free(sp->sub.rects[i].bitmap);
-        av_free(sp->sub.rects[i].rgba_palette);
+        av_freep(&sp->sub.rects[i]->bitmap);
+        av_freep(&sp->sub.rects[i]->rgba_palette);
+        av_freep(&sp->sub.rects[i]);
     }
 
     av_free(sp->sub.rects);
@@ -721,7 +722,7 @@ static void video_image_display(VideoState *is)
                     pict.linesize[2] = vp->bmp->pitches[1];
 
                     for (i = 0; i < sp->sub.num_rects; i++)
-                        blend_subrect(&pict, &sp->sub.rects[i],
+                        blend_subrect(&pict, sp->sub.rects[i],
                                       vp->bmp->w, vp->bmp->h);
 
                     SDL_UnlockYUVOverlay (vp->bmp);
@@ -1435,13 +1436,13 @@ static int subtitle_thread(void *arg)
 
             for (i = 0; i < sp->sub.num_rects; i++)
             {
-                for (j = 0; j < sp->sub.rects[i].nb_colors; j++)
+                for (j = 0; j < sp->sub.rects[i]->nb_colors; j++)
                 {
-                    RGBA_IN(r, g, b, a, sp->sub.rects[i].rgba_palette + j);
+                    RGBA_IN(r, g, b, a, sp->sub.rects[i]->rgba_palette + j);
                     y = RGB_TO_Y_CCIR(r, g, b);
                     u = RGB_TO_U_CCIR(r, g, b, 0);
                     v = RGB_TO_V_CCIR(r, g, b, 0);
-                    YUVA_OUT(sp->sub.rects[i].rgba_palette + j, y, u, v, a);
+                    YUVA_OUT(sp->sub.rects[i]->rgba_palette + j, y, u, v, a);
                 }
             }
 
