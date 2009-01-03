@@ -2405,6 +2405,16 @@ typedef struct AVSubtitleRect {
      * can be set for text/ass as well once they where rendered
      */
     AVPicture pict;
+    enum AVSubtitleType type;
+
+    char *text;                     ///< 0 terminated plain UTF-8 text
+
+    /**
+     * 0 terminated ASS/SSA compatible event line.
+     * The pressentation of this is unaffected by the other values in this
+     * struct.
+     */
+    char *ass;
 } AVSubtitleRect;
 
 typedef struct AVSubtitle {
