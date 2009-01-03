@@ -1305,7 +1305,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
         rect->w = region->width;
         rect->h = region->height;
         rect->nb_colors = 16;
-        rect->linesize = region->width;
+        rect->pict.linesize[0] = region->width;
 
         clut = get_clut(ctx, region->clut);
 
@@ -1325,11 +1325,11 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
             break;
         }
 
-        rect->rgba_palette = av_malloc((1 << region->depth) * sizeof(uint32_t));
-        memcpy(rect->rgba_palette, clut_table, (1 << region->depth) * sizeof(uint32_t));
+        rect->pict.data[1] = av_malloc((1 << region->depth) * sizeof(uint32_t));
+        memcpy(rect->pict.data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
 
-        rect->bitmap = av_malloc(region->buf_size);
-        memcpy(rect->bitmap, region->pbuf, region->buf_size);
+        rect->pict.data[0] = av_malloc(region->buf_size);
+        memcpy(rect->pict.data[0], region->pbuf, region->buf_size);
 
         i++;
     }

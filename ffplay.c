@@ -452,9 +452,9 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
     width2 = (dstw + 1) >> 1;
     skip2 = dstx >> 1;
     wrap = dst->linesize[0];
-    wrap3 = rect->linesize;
-    p = rect->bitmap;
-    pal = rect->rgba_palette;  /* Now in YCrCb! */
+    wrap3 = rect->pict.linesize[0];
+    p = rect->pict.data[0];
+    pal = (const uint32_t *)rect->pict.data[1];  /* Now in YCrCb! */
 
     if (dsty & 1) {
         lum += dstx;
@@ -636,8 +636,8 @@ static void free_subpicture(SubPicture *sp)
 
     for (i = 0; i < sp->sub.num_rects; i++)
     {
-        av_freep(&sp->sub.rects[i]->bitmap);
-        av_freep(&sp->sub.rects[i]->rgba_palette);
+        av_freep(&sp->sub.rects[i]->pict.data[0]);
+        av_freep(&sp->sub.rects[i]->pict.data[1]);
         av_freep(&sp->sub.rects[i]);
     }
 
@@ -1438,11 +1438,11 @@ static int subtitle_thread(void *arg)
             {
                 for (j = 0; j < sp->sub.rects[i]->nb_colors; j++)
                 {
-                    RGBA_IN(r, g, b, a, sp->sub.rects[i]->rgba_palette + j);
+                    RGBA_IN(r, g, b, a, (uint32_t*)sp->sub.rects[i]->pict.data[1] + j);
                     y = RGB_TO_Y_CCIR(r, g, b);
                     u = RGB_TO_U_CCIR(r, g, b, 0);
                     v = RGB_TO_V_CCIR(r, g, b, 0);
-                    YUVA_OUT(sp->sub.rects[i]->rgba_palette + j, y, u, v, a);
+                    YUVA_OUT((uint32_t*)sp->sub.rects[i]->pict.data[1] + j, y, u, v, a);
                 }
             }
 

@@ -2399,9 +2399,12 @@ typedef struct AVSubtitleRect {
     int w;         ///< width            of pict, undefined when pict is not set
     int h;         ///< height           of pict, undefined when pict is not set
     int nb_colors; ///< number of colors in pict, undefined when pict is not set
-    int linesize;
-    uint32_t *rgba_palette;
-    uint8_t *bitmap;
+
+    /**
+     * data+linesize for the bitmap of this subtitle.
+     * can be set for text/ass as well once they where rendered
+     */
+    AVPicture pict;
 } AVSubtitleRect;
 
 typedef struct AVSubtitle {

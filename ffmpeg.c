@@ -1401,8 +1401,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
         if (subtitle_to_free) {
             if (subtitle_to_free->rects != NULL) {
                 for (i = 0; i < subtitle_to_free->num_rects; i++) {
-                    av_freep(&subtitle_to_free->rects[i]->bitmap);
-                    av_freep(&subtitle_to_free->rects[i]->rgba_palette);
+                    av_freep(&subtitle_to_free->rects[i]->pict.data[0]);
+                    av_freep(&subtitle_to_free->rects[i]->pict.data[1]);
                     av_freep(&subtitle_to_free->rects[i]);
                 }
                 av_freep(&subtitle_to_free->rects);

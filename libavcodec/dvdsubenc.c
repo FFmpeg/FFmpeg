@@ -109,9 +109,9 @@ static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
     }
     for (object_id = 0; object_id < rects; object_id++)
         for (i=0; i<h->rects[object_id]->w*h->rects[object_id]->h; ++i) {
-            color = h->rects[object_id]->bitmap[i];
+            color = h->rects[object_id]->pict.data[0][i];
             // only count non-transparent pixels
-            alpha = h->rects[object_id]->rgba_palette[color] >> 24;
+            alpha = ((uint32_t*)h->rects[object_id]->pict.data[1])[color] >> 24;
             hist[color] += alpha;
         }
     for (color=3;; --color) {
@@ -143,12 +143,12 @@ static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
             av_log(NULL, AV_LOG_ERROR, "dvd_subtitle too big\n");
             return -1;
         }
-        dvd_encode_rle(&q, h->rects[object_id]->bitmap,
+        dvd_encode_rle(&q, h->rects[object_id]->pict.data[0],
                        h->rects[object_id]->w*2,
                        h->rects[object_id]->w, h->rects[object_id]->h >> 1,
                        cmap);
         offset2[object_id] = q - outbuf;
-        dvd_encode_rle(&q, h->rects[object_id]->bitmap + h->rects[object_id]->w,
+        dvd_encode_rle(&q, h->rects[object_id]->pict.data[0] + h->rects[object_id]->w,
                        h->rects[object_id]->w*2,
                        h->rects[object_id]->w, h->rects[object_id]->h >> 1,
                        cmap);

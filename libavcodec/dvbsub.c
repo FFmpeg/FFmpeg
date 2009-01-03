@@ -262,10 +262,11 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
                 *q++ = (1 << (7 - bpp_index)) | (0xf << 1) | 1; /* 2 bits/pixel full range */
                 {
                     int a, r, g, b;
-                    a = (h->rects[clut_id]->rgba_palette[i] >> 24) & 0xff;
-                    r = (h->rects[clut_id]->rgba_palette[i] >> 16) & 0xff;
-                    g = (h->rects[clut_id]->rgba_palette[i] >> 8) & 0xff;
-                    b = (h->rects[clut_id]->rgba_palette[i] >> 0) & 0xff;
+                    uint32_t x= ((uint32_t*)h->rects[clut_id]->pict.data[1])[i];
+                    a = (x >> 24) & 0xff;
+                    r = (x >> 16) & 0xff;
+                    g = (x >>  8) & 0xff;
+                    b = (x >>  0) & 0xff;
 
                     *q++ = RGB_TO_Y_CCIR(r, g, b);
                     *q++ = RGB_TO_V_CCIR(r, g, b, 0);
@@ -358,10 +359,10 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
                     dvb_encode_rle = dvb_encode_rle4;
 
                 top_ptr = q;
-                dvb_encode_rle(&q, h->rects[object_id]->bitmap, h->rects[object_id]->w * 2,
+                dvb_encode_rle(&q, h->rects[object_id]->pict.data[0], h->rects[object_id]->w * 2,
                                     h->rects[object_id]->w, h->rects[object_id]->h >> 1);
                 bottom_ptr = q;
-                dvb_encode_rle(&q, h->rects[object_id]->bitmap + h->rects[object_id]->w,
+                dvb_encode_rle(&q, h->rects[object_id]->pict.data[0] + h->rects[object_id]->w,
                                     h->rects[object_id]->w * 2, h->rects[object_id]->w,
                                     h->rects[object_id]->h >> 1);
 
