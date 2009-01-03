@@ -441,10 +441,10 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
     const uint32_t *pal;
     int dstx, dsty, dstw, dsth;
 
-    dstx = FFMIN(FFMAX(rect->x, 0), imgw);
-    dstw = FFMIN(FFMAX(rect->w, 0), imgw - dstx);
-    dsty = FFMIN(FFMAX(rect->y, 0), imgh);
-    dsth = FFMIN(FFMAX(rect->h, 0), imgh - dsty);
+    dstw = av_clip(rect->w, 0, imgw);
+    dsth = av_clip(rect->h, 0, imgh);
+    dstx = av_clip(rect->x, 0, imgw - dstw);
+    dsty = av_clip(rect->y, 0, imgh - dsth);
     lum = dst->data[0] + dsty * dst->linesize[0];
     cb = dst->data[1] + (dsty >> 1) * dst->linesize[1];
     cr = dst->data[2] + (dsty >> 1) * dst->linesize[2];
