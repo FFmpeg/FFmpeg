@@ -2306,14 +2306,14 @@ void av_close_input_stream(AVFormatContext *s)
         av_free(s->chapters[s->nb_chapters]);
     }
     av_freep(&s->chapters);
-    if(s->meta_data){
-        while(s->meta_data->count--){
-            av_freep(&s->meta_data->elems[s->meta_data->count].key);
-            av_freep(&s->meta_data->elems[s->meta_data->count].value);
+    if(s->metadata){
+        while(s->metadata->count--){
+            av_freep(&s->metadata->elems[s->metadata->count].key);
+            av_freep(&s->metadata->elems[s->metadata->count].value);
         }
-        av_freep(&s->meta_data->elems);
+        av_freep(&s->metadata->elems);
     }
-    av_freep(&s->meta_data);
+    av_freep(&s->metadata);
     av_free(s);
 }
 

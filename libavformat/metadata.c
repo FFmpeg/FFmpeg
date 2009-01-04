@@ -20,8 +20,8 @@
 
 #include "metadata.h"
 
-AVMetaDataTag *
-av_metadata_get(struct AVMetaData *m, const char *key, const AVMetaDataTag *prev, int flags)
+AVMetadataTag *
+av_metadata_get(struct AVMetadata *m, const char *key, const AVMetadataTag *prev, int flags)
 {
     unsigned int i, j;
 
@@ -44,10 +44,10 @@ av_metadata_get(struct AVMetaData *m, const char *key, const AVMetaDataTag *prev
     return NULL;
 }
 
-int av_metadata_set(struct AVMetaData **pm, AVMetaDataTag elem)
+int av_metadata_set(struct AVMetadata **pm, AVMetadataTag elem)
 {
-    struct AVMetaData *m= *pm;
-    AVMetaDataTag *tag= av_metadata_get(m, elem.key, NULL, 0);
+    struct AVMetadata *m= *pm;
+    AVMetadataTag *tag= av_metadata_get(m, elem.key, NULL, 0);
 
     if(!m)
         m=*pm= av_mallocz(sizeof(*m));
@@ -57,7 +57,7 @@ int av_metadata_set(struct AVMetaData **pm, AVMetaDataTag elem)
         av_free(tag->key);
         *tag= m->elems[--m->count];
     }else{
-        AVMetaDataTag *tmp= av_realloc(m->elems, (m->count+1) * sizeof(*m->elems));
+        AVMetadataTag *tmp= av_realloc(m->elems, (m->count+1) * sizeof(*m->elems));
         if(tmp){
             m->elems= tmp;
         }else

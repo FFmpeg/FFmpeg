@@ -105,9 +105,9 @@ static void avi_write_info_tag(ByteIOContext *pb, const char *tag, const char *s
 
 static void avi_write_info_tag2(AVFormatContext *s, const char *fourcc, const char *key1, const char *key2)
 {
-    AVMetaDataTag *tag= av_metadata_get(s->meta_data, key1, NULL, AV_METADATA_IGNORE_CASE);
+    AVMetadataTag *tag= av_metadata_get(s->metadata, key1, NULL, AV_METADATA_IGNORE_CASE);
     if(!tag && key2)
-        tag= av_metadata_get(s->meta_data, key2, NULL, AV_METADATA_IGNORE_CASE);
+        tag= av_metadata_get(s->metadata, key2, NULL, AV_METADATA_IGNORE_CASE);
     if(tag)
         avi_write_info_tag(s->pb, fourcc, tag->value);
 }

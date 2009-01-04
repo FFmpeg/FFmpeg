@@ -30,9 +30,9 @@
 
 #include "avformat.h"
 
-struct AVMetaData{
+struct AVMetadata{
     int count;
-    AVMetaDataTag *elems;
+    AVMetadataTag *elems;
 };
 
 #endif /* AVFORMAT_METADATA_H */
