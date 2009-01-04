@@ -48,19 +48,22 @@ unsigned avformat_version(void);
 
 
 /*
- * public Metadata API.
- * Important concepts, to keep in mind
- * 1. keys are unique, there are never 2 tags with equal keys, this is also
- *    meant semantically that is a demuxer should not knowingly produce
- *    several keys that are litterally different but semantically identical,
- *    like key=Author5, key=Author6.
- *    All authors have to be placed in the same tag for the case of Authors.
- * 2. Metadata is flat, there are no subtags, if you for whatever obscene
- *    reason want to store the email address of the child of producer alice
- *    and actor bob, that could have key=alice_and_bobs_childs_email_address.
- * 3. A tag whichs value is translated has the ISO 639 3-letter language code
- *    with a '-' between appended. So for example Author-ger=Michael, Author-eng=Mike
- *    the original/default language is in the unqualified "Author"
+ * Public Metadata API.
+ * The metadata API allows libavformat to export metadata tags to a client
+ * application using a sequence of key/value pairs.
+ * Important concepts to keep in mind:
+ * 1. Keys are unique; there can never be 2 tags with the same key. This is
+ *    also meant semantically, i.e., a demuxer should not knowingly produce
+ *    several keys that are literally different but semantically identical.
+ *    E.g., key=Author5, key=Author6. In this example, all authors must be
+ *    placed in the same tag.
+ * 2. Metadata is flat, not hierarchical; there are no subtags. If you
+ *    want to store, e.g., the email address of the child of producer Alice
+ *    and actor Bob, that could have key=alice_and_bobs_childs_email_address.
+ * 3. A tag whose value is localized for a particular language is appended
+ *    with a dash character ('-') and the ISO 639 3-letter language code.
+ *    For example: Author-ger=Michael, Author-eng=Mike
+ *    The original/default language is in the unqualified "Author" tag.
  *    A demuxer should set a default if it sets any translated tag.
  */
 
