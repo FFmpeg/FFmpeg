@@ -21,7 +21,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "libavcodec/opt.h"
-#include "libavcodec/metadata.h"
+#include "metadata.h"
 #include "libavutil/avstring.h"
 #include "riff.h"
 #include <sys/time.h>
