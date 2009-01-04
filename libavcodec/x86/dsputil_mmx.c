@@ -1733,6 +1733,7 @@ PREFETCH(prefetch_3dnow, prefetch)
 #undef PREFETCH
 
 #include "h264dsp_mmx.c"
+#include "rv40dsp_mmx.c"
 
 /* CAVS specific */
 void ff_cavsdsp_init_mmx2(DSPContext* c, AVCodecContext *avctx);
@@ -2638,6 +2639,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_mmx;
         c->put_no_rnd_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx_nornd;
 
+        c->put_rv40_chroma_pixels_tab[0]= put_rv40_chroma_mc8_mmx;
+        c->put_rv40_chroma_pixels_tab[1]= put_rv40_chroma_mc4_mmx;
+
         c->h264_idct_dc_add=
         c->h264_idct_add= ff_h264_idct_add_mmx;
         c->h264_idct8_dc_add=
@@ -2723,6 +2727,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             SET_QPEL_FUNCS(avg_2tap_qpel, 0, 16, mmx2);
             SET_QPEL_FUNCS(avg_2tap_qpel, 1, 8, mmx2);
 
+            c->avg_rv40_chroma_pixels_tab[0]= avg_rv40_chroma_mc8_mmx2;
+            c->avg_rv40_chroma_pixels_tab[1]= avg_rv40_chroma_mc4_mmx2;
+
             c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_mmx2_rnd;
             c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_mmx2;
             c->avg_h264_chroma_pixels_tab[2]= avg_h264_chroma_mc2_mmx2;
@@ -2807,6 +2814,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
             c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_3dnow_rnd;
             c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_3dnow;
+
+            c->avg_rv40_chroma_pixels_tab[0]= avg_rv40_chroma_mc8_3dnow;
+            c->avg_rv40_chroma_pixels_tab[1]= avg_rv40_chroma_mc4_3dnow;
 
             if (ENABLE_CAVS_DECODER)
                 ff_cavsdsp_init_3dnow(c, avctx);

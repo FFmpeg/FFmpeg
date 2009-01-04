@@ -2084,22 +2084,30 @@ H264_MC_816(H264_MC_H, ssse3)
 H264_MC_816(H264_MC_HV, ssse3)
 #endif
 
+/* rnd interleaved with rnd div 8, use p+1 to access rnd div 8 */
+DECLARE_ALIGNED_8(static const uint64_t, h264_rnd_reg[4]) = {
+    0x0020002000200020ULL, 0x0004000400040004ULL, 0x001C001C001C001CULL, 0x0003000300030003ULL
+};
 
 #define H264_CHROMA_OP(S,D)
 #define H264_CHROMA_OP4(S,D,T)
-#define H264_CHROMA_MC8_TMPL put_h264_chroma_mc8_mmx
-#define H264_CHROMA_MC4_TMPL put_h264_chroma_mc4_mmx
+#define H264_CHROMA_MC8_TMPL put_h264_chroma_generic_mc8_mmx
+#define H264_CHROMA_MC4_TMPL put_h264_chroma_generic_mc4_mmx
 #define H264_CHROMA_MC2_TMPL put_h264_chroma_mc2_mmx2
 #define H264_CHROMA_MC8_MV0 put_pixels8_mmx
 #include "dsputil_h264_template_mmx.c"
 
 static void put_h264_chroma_mc8_mmx_rnd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
-    put_h264_chroma_mc8_mmx(dst, src, stride, h, x, y, 1);
+    put_h264_chroma_generic_mc8_mmx(dst, src, stride, h, x, y, h264_rnd_reg);
 }
 static void put_h264_chroma_mc8_mmx_nornd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
-    put_h264_chroma_mc8_mmx(dst, src, stride, h, x, y, 0);
+    put_h264_chroma_generic_mc8_mmx(dst, src, stride, h, x, y, h264_rnd_reg+2);
+}
+static void put_h264_chroma_mc4_mmx(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+{
+    put_h264_chroma_generic_mc4_mmx(dst, src, stride, h, x, y, h264_rnd_reg);
 }
 
 #undef H264_CHROMA_OP
@@ -2112,14 +2120,18 @@ static void put_h264_chroma_mc8_mmx_nornd(uint8_t *dst/*align 8*/, uint8_t *src/
 #define H264_CHROMA_OP(S,D) "pavgb " #S ", " #D " \n\t"
 #define H264_CHROMA_OP4(S,D,T) "movd  " #S ", " #T " \n\t"\
                                "pavgb " #T ", " #D " \n\t"
-#define H264_CHROMA_MC8_TMPL avg_h264_chroma_mc8_mmx2
-#define H264_CHROMA_MC4_TMPL avg_h264_chroma_mc4_mmx2
+#define H264_CHROMA_MC8_TMPL avg_h264_chroma_generic_mc8_mmx2
+#define H264_CHROMA_MC4_TMPL avg_h264_chroma_generic_mc4_mmx2
 #define H264_CHROMA_MC2_TMPL avg_h264_chroma_mc2_mmx2
 #define H264_CHROMA_MC8_MV0 avg_pixels8_mmx2
 #include "dsputil_h264_template_mmx.c"
 static void avg_h264_chroma_mc8_mmx2_rnd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
-    avg_h264_chroma_mc8_mmx2(dst, src, stride, h, x, y, 1);
+    avg_h264_chroma_generic_mc8_mmx2(dst, src, stride, h, x, y, h264_rnd_reg);
+}
+static void avg_h264_chroma_mc4_mmx2(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+{
+    avg_h264_chroma_generic_mc4_mmx2(dst, src, stride, h, x, y, h264_rnd_reg);
 }
 #undef H264_CHROMA_OP
 #undef H264_CHROMA_OP4
@@ -2131,13 +2143,17 @@ static void avg_h264_chroma_mc8_mmx2_rnd(uint8_t *dst/*align 8*/, uint8_t *src/*
 #define H264_CHROMA_OP(S,D) "pavgusb " #S ", " #D " \n\t"
 #define H264_CHROMA_OP4(S,D,T) "movd " #S ", " #T " \n\t"\
                                "pavgusb " #T ", " #D " \n\t"
-#define H264_CHROMA_MC8_TMPL avg_h264_chroma_mc8_3dnow
-#define H264_CHROMA_MC4_TMPL avg_h264_chroma_mc4_3dnow
+#define H264_CHROMA_MC8_TMPL avg_h264_chroma_generic_mc8_3dnow
+#define H264_CHROMA_MC4_TMPL avg_h264_chroma_generic_mc4_3dnow
 #define H264_CHROMA_MC8_MV0 avg_pixels8_3dnow
 #include "dsputil_h264_template_mmx.c"
 static void avg_h264_chroma_mc8_3dnow_rnd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
-    avg_h264_chroma_mc8_3dnow(dst, src, stride, h, x, y, 1);
+    avg_h264_chroma_generic_mc8_3dnow(dst, src, stride, h, x, y, h264_rnd_reg);
+}
+static void avg_h264_chroma_mc4_3dnow(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+{
+    avg_h264_chroma_generic_mc4_3dnow(dst, src, stride, h, x, y, h264_rnd_reg);
 }
 #undef H264_CHROMA_OP
 #undef H264_CHROMA_OP4

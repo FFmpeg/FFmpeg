@@ -25,9 +25,8 @@
  * H264_CHROMA_OP must be defined to empty for put and pavgb/pavgusb for avg
  * H264_CHROMA_MC8_MV0 must be defined to a (put|avg)_pixels8 function
  */
-static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y, int rnd)
+static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y, const uint64_t *rnd_reg)
 {
-    const uint64_t *rnd_reg;
     DECLARE_ALIGNED_8(uint64_t, AA);
     DECLARE_ALIGNED_8(uint64_t, DD);
     int i;
@@ -45,17 +44,15 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
         /* 1 dimensional filter only */
         const int dxy = x ? 1 : stride;
 
-        rnd_reg = rnd ? &ff_pw_4 : &ff_pw_3;
-
         __asm__ volatile(
             "movd %0, %%mm5\n\t"
             "movq %1, %%mm4\n\t"
-            "movq %2, %%mm6\n\t"         /* mm6 = rnd */
+            "movq %2, %%mm6\n\t"         /* mm6 = rnd >> 3 */
             "punpcklwd %%mm5, %%mm5\n\t"
             "punpckldq %%mm5, %%mm5\n\t" /* mm5 = B = x */
             "pxor %%mm7, %%mm7\n\t"
             "psubw %%mm5, %%mm4\n\t"     /* mm4 = A = 8-x */
-            :: "rm"(x+y), "m"(ff_pw_8), "m"(*rnd_reg));
+            :: "rm"(x+y), "m"(ff_pw_8), "m"(*(rnd_reg+1)));
 
         for(i=0; i<h; i++) {
             __asm__ volatile(
@@ -78,7 +75,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
                 "pmullw %%mm5, %%mm2\n\t"
                 "pmullw %%mm5, %%mm3\n\t"
 
-                /* dst[0..7] = (A * src[0..7] + B * src[1..8] + 4) >> 3 */
+                /* dst[0..7] = (A * src[0..7] + B * src[1..8] + (rnd >> 3)) >> 3 */
                 "paddw %%mm6, %%mm0\n\t"
                 "paddw %%mm6, %%mm1\n\t"
                 "paddw %%mm2, %%mm0\n\t"
@@ -97,7 +94,6 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
     }
 
     /* general case, bilinear */
-    rnd_reg = rnd ? &ff_pw_32.a : &ff_pw_28.a;
     __asm__ volatile("movd %2, %%mm4\n\t"
                  "movd %3, %%mm6\n\t"
                  "punpcklwd %%mm4, %%mm4\n\t"
@@ -172,7 +168,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
             : : "m" (src[0]), "m" (src[1]), "m" (DD));
 
         __asm__ volatile(
-            /* dst[0..7] = ([mm2,mm3] + 32) >> 6 */
+            /* dst[0..7] = ([mm2,mm3] + rnd) >> 6 */
             "paddw %1, %%mm2\n\t"
             "paddw %1, %%mm3\n\t"
             "psrlw $6, %%mm2\n\t"
@@ -185,7 +181,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
     }
 }
 
-static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y, const uint64_t *rnd_reg)
 {
     __asm__ volatile(
         "pxor   %%mm7, %%mm7        \n\t"
@@ -249,7 +245,7 @@ static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 4*/, uint8_t *src/*align 1*
         "sub $2, %2                 \n\t"
         "jnz 1b                     \n\t"
         : "+r"(dst), "+r"(src), "+r"(h)
-        : "r"((x86_reg)stride), "m"(ff_pw_32), "m"(x), "m"(y)
+        : "r"((x86_reg)stride), "m"(*rnd_reg), "m"(x), "m"(y)
     );
 }
 
