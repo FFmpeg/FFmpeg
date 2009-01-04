@@ -1018,6 +1018,7 @@ void dump_format(AVFormatContext *ic,
                  const char *url,
                  int is_output);
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 /**
  * Parses width and height out of string str.
  * @deprecated Use av_parse_video_frame_size instead.
@@ -1031,6 +1032,7 @@ attribute_deprecated int parse_image_size(int *width_ptr, int *height_ptr,
  */
 attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
                                           const char *arg);
+#endif
 
 /**
  * Parses \p datestr and returns a corresponding number of microseconds.
