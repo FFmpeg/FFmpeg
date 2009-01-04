@@ -161,7 +161,8 @@ static void close(AVCodecParserContext *s)
 
 
 AVCodecParser h264_parser = {
-    { CODEC_ID_H264 },
+    { CODEC_ID_H264,
+      CODEC_ID_H264_VDPAU },
     sizeof(H264Context),
     NULL,
     h264_parse,

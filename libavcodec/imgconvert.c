@@ -267,6 +267,9 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     [PIX_FMT_XVMC_MPEG2_IDCT] = {
         .name = "xvmcidct",
     },
+    [PIX_FMT_VDPAU_H264] = {
+        .name = "vdpau_h264",
+    },
     [PIX_FMT_UYYVYY411] = {
         .name = "uyyvyy411",
         .nb_channels = 1,

@@ -191,6 +191,9 @@ enum CodecID {
     CODEC_ID_TGV,
     CODEC_ID_TGQ,
 
+    /* "codecs" for HW decoding with VDPAU */
+    CODEC_ID_H264_VDPAU= 0x9000,
+
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
     CODEC_ID_PCM_S16BE,
@@ -527,6 +530,10 @@ typedef struct RcOverride{
  * This can be used to prevent truncation of the last audio samples.
  */
 #define CODEC_CAP_SMALL_LAST_FRAME 0x0040
+/**
+ * Codec can export data for HW decoding (VDPAU).
+ */
+#define CODEC_CAP_HWACCEL_VDPAU    0x0080
 
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001

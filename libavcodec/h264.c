@@ -33,6 +33,7 @@
 #include "h264_parser.h"
 #include "golomb.h"
 #include "rectangle.h"
+#include "vdpau_internal.h"
 
 #include "cabac.h"
 #ifdef ARCH_X86
@@ -2188,6 +2189,8 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
     if(avctx->codec_id == CODEC_ID_SVQ3)
         avctx->pix_fmt= PIX_FMT_YUVJ420P;
+    else if(avctx->codec_id == CODEC_ID_H264_VDPAU)
+        avctx->pix_fmt= PIX_FMT_VDPAU_H264;
     else
         avctx->pix_fmt= PIX_FMT_YUV420P;
 
@@ -7289,6 +7292,8 @@ static void execute_decode_slices(H264Context *h, int context_count){
     H264Context *hx;
     int i;
 
+    if(avctx->codec_id == CODEC_ID_H264_VDPAU)
+        return;
     if(context_count == 1) {
         decode_slice(avctx, &h);
     } else {
@@ -7416,8 +7421,14 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
                && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=FF_B_TYPE)
                && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==FF_I_TYPE)
-               && avctx->skip_frame < AVDISCARD_ALL)
+               && avctx->skip_frame < AVDISCARD_ALL){
+                if(ENABLE_H264_VDPAU_DECODER && avctx->codec_id == CODEC_ID_H264_VDPAU){
+                    static const uint8_t start_code[] = {0x00, 0x00, 0x01};
+                    ff_VDPAU_h264_add_data_chunk(h, start_code, sizeof(start_code));
+                    ff_VDPAU_h264_add_data_chunk(h, &buf[buf_index - consumed], consumed );
+                }else
                 context_count++;
+            }
             break;
         case NAL_DPA:
             init_get_bits(&hx->s.gb, ptr, bit_length);
@@ -7620,6 +7631,9 @@ static int decode_frame(AVCodecContext *avctx,
         h->prev_frame_num_offset= h->frame_num_offset;
         h->prev_frame_num= h->frame_num;
 
+        if (ENABLE_H264_VDPAU_DECODER && avctx->codec_id == CODEC_ID_H264_VDPAU)
+            ff_VDPAU_h264_picture_complete(h);
+
         /*
          * FIXME: Error handling code does not seem to support interlaced
          * when slices span multiple rows
@@ -7632,7 +7646,7 @@ static int decode_frame(AVCodecContext *avctx,
          * past end by one (callers fault) and resync_mb_y != 0
          * causes problems for the first MB line, too.
          */
-        if (!FIELD_PICTURE)
+        if (!avctx->codec_id == CODEC_ID_H264_VDPAU && !FIELD_PICTURE)
             ff_er_frame_end(s);
 
         MPV_frame_end(s);
@@ -8004,5 +8018,21 @@ AVCodec h264_decoder = {
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
 };
+
+#ifdef CONFIG_H264_VDPAU_DECODER
+AVCodec h264_vdpau_decoder = {
+    "h264_vdpau",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_H264_VDPAU,
+    sizeof(H264Context),
+    decode_init,
+    NULL,
+    decode_end,
+    decode_frame,
+    CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
+    .flush= flush_dpb,
+    .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),
+};
+#endif
 
 #include "svq3.c"
