@@ -14,7 +14,6 @@ OBJS = allcodecs.o                                                      \
        faanidct.o                                                       \
        imgconvert.o                                                     \
        jrevdct.o                                                        \
-       metadata.o                                                       \
        opt.o                                                            \
        parser.o                                                         \
        raw.o                                                            \

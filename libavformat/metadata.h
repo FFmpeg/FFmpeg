@@ -18,21 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_METADATA_H
-#define AVCODEC_METADATA_H
+#ifndef AVFORMAT_METADATA_H
+#define AVFORMAT_METADATA_H
 
 /**
  * @file metadata.h
  * internal metadata API header
- * see avcodec.h or the public API!
+ * see avformat.h or the public API!
  */
 
 
-#include "avcodec.h"
+#include "avformat.h"
 
 struct AVMetaData{
     int count;
     AVMetaDataTag *elems;
 };
 
-#endif /* AVCODEC_METADATA_H */
+#endif /* AVFORMAT_METADATA_H */

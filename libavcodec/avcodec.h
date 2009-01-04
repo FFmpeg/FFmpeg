@@ -401,50 +401,6 @@ enum SampleFormat {
 #define FF_MIN_BUFFER_SIZE 16384
 
 
-/*
- * public Metadata API.
- * Important concepts, to keep in mind
- * 1. keys are unique, there are never 2 tags with equal keys, this is also
- *    meant semantically that is a demuxer should not knowingly produce
- *    several keys that are litterally different but semantically identical,
- *    like key=Author5, key=Author6.
- *    All authors have to be placed in the same tag for the case of Authors.
- * 2. Metadata is flat, there are no subtags, if you for whatever obscene
- *    reason want to store the email address of the child of producer alice
- *    and actor bob, that could have key=alice_and_bobs_childs_email_address.
- * 3. A tag whichs value is translated has the ISO 639 3-letter language code
- *    with a '-' between appended. So for example Author-ger=Michael, Author-eng=Mike
- *    the original/default language is in the unqualified "Author"
- *    A demuxer should set a default if it sets any translated tag.
- */
-
-#define AV_METADATA_IGNORE_CASE     1
-#define AV_METADATA_IGNORE_SUFFIX   2
-
-typedef struct {
-    char *key;
-    char *value;
-}AVMetaDataTag;
-
-struct AVMetaData;
-
-/**
- * gets a metadata element with matching key.
- * @param prev set to the previous matching element to find the next.
- * @param flags allows case as well as suffix insensitive comparissions.
- * @return found tag or NULL, changing key or value leads to undefined behavior.
- */
-AVMetaDataTag *
-av_metadata_get(struct AVMetaData *m, const char *key, const AVMetaDataTag *prev, int flags);
-
-/**
- * sets the given tag in m, overwriting an existing tag.
- * @param tag tag to add to m, key and value will be av_strduped.
- * @return >= 0 if success otherwise error code that is <0.
- */
-int av_metadata_set(struct AVMetaData **m, AVMetaDataTag tag);
-
-
 /**
  * motion estimation type.
  */
