@@ -480,6 +480,8 @@ typedef struct AVStream {
      * - decoding: Set by libavformat.
      */
     AVRational sample_aspect_ratio;
+
+    struct AVMetaData *meta_data;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
@@ -498,6 +500,7 @@ typedef struct AVProgram {
     enum AVDiscard discard;        ///< selects which program to discard and which to feed to the caller
     unsigned int   *stream_index;
     unsigned int   nb_stream_indexes;
+    struct AVMetaData *meta_data;
 } AVProgram;
 
 #define AVFMTCTX_NOHEADER      0x0001 /**< signal that no header is present
@@ -508,6 +511,7 @@ typedef struct AVChapter {
     AVRational time_base;   ///< time base in which the start/end timestamps are specified
     int64_t start, end;     ///< chapter start/end time in time_base units
     char *title;            ///< chapter title
+    struct AVMetaData *meta_data;
 } AVChapter;
 
 #define MAX_STREAMS 20
