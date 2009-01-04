@@ -129,9 +129,9 @@ void *av_tree_insert(AVTreeNode **tp, void *key, int (*cmp)(void *key, const voi
 
 void av_tree_destroy(AVTreeNode *t){
     if(t){
-    av_tree_destroy(t->child[0]);
-    av_tree_destroy(t->child[1]);
-    av_free(t);
+        av_tree_destroy(t->child[0]);
+        av_tree_destroy(t->child[1]);
+        av_free(t);
     }
 }
 
