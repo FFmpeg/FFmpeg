@@ -402,20 +402,22 @@ static int mp3_read_probe(AVProbeData *p)
 /**
  * Try to find Xing/Info/VBRI tags and compute duration from info therein
  */
-static void mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
+static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
 {
     uint32_t v, spf;
     int frames = -1; /* Total number of frames in file */
     const int64_t xing_offtbl[2][2] = {{32, 17}, {17,9}};
     MPADecodeContext c;
+    int vbrtag_size = 0;
 
     v = get_be32(s->pb);
     if(ff_mpa_check_header(v) < 0)
-      return;
+      return -1;
 
-    ff_mpegaudio_decode_header(&c, v);
+    if (ff_mpegaudio_decode_header(&c, v) == 0)
+        vbrtag_size = c.frame_size;
     if(c.layer != 3)
-        return;
+        return -1;
 
     /* Check for Xing / Info tag */
     url_fseek(s->pb, xing_offtbl[c.lsf == 1][c.nb_channels == 1], SEEK_CUR);
@@ -439,11 +441,15 @@ static void mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
     }
 
     if(frames < 0)
-        return;
+        return -1;
+
+    /* Skip the vbr tag frame */
+    url_fseek(s->pb, base + vbrtag_size, SEEK_SET);
 
     spf = c.lsf ? 576 : 1152; /* Samples per frame, layer 3 */
     st->duration = av_rescale_q(frames, (AVRational){spf, c.sample_rate},
                                 st->time_base);
+    return 0;
 }
 
 static int mp3_read_header(AVFormatContext *s,
@@ -493,8 +499,8 @@ static int mp3_read_header(AVFormatContext *s,
     }
 
     off = url_ftell(s->pb);
-    mp3_parse_vbr_tags(s, st, off);
-    url_fseek(s->pb, off, SEEK_SET);
+    if (mp3_parse_vbr_tags(s, st, off) < 0)
+        url_fseek(s->pb, off, SEEK_SET);
 
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
