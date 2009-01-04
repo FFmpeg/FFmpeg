@@ -103,6 +103,15 @@ static void avi_write_info_tag(ByteIOContext *pb, const char *tag, const char *s
     }
 }
 
+static void avi_write_info_tag2(AVFormatContext *s, const char *fourcc, const char *key1, const char *key2)
+{
+    AVMetaDataTag *tag= av_metadata_get(s->meta_data, key1, NULL, AV_METADATA_IGNORE_CASE);
+    if(!tag && key2)
+        tag= av_metadata_get(s->meta_data, key2, NULL, AV_METADATA_IGNORE_CASE);
+    if(tag)
+        avi_write_info_tag(s->pb, fourcc, tag->value);
+}
+
 static int avi_write_counters(AVFormatContext* s, int riff_id)
 {
     ByteIOContext *pb = s->pb;
@@ -332,17 +341,13 @@ static int avi_write_header(AVFormatContext *s)
 
     list2 = start_tag(pb, "LIST");
     put_tag(pb, "INFO");
-    avi_write_info_tag(pb, "INAM", s->title);
-    avi_write_info_tag(pb, "IART", s->author);
-    avi_write_info_tag(pb, "ICOP", s->copyright);
-    avi_write_info_tag(pb, "ICMT", s->comment);
-    avi_write_info_tag(pb, "IPRD", s->album);
-    avi_write_info_tag(pb, "IGNR", s->genre);
-    if (s->track) {
-        char str_track[4];
-        snprintf(str_track, 4, "%d", s->track);
-        avi_write_info_tag(pb, "IPRT", str_track);
-    }
+    avi_write_info_tag2(s, "INAM", "Title", NULL);
+    avi_write_info_tag2(s, "IART", "Artist", "Author");
+    avi_write_info_tag2(s, "ICOP", "Copyright", NULL);
+    avi_write_info_tag2(s, "ICMT", "Comment", NULL);
+    avi_write_info_tag2(s, "IPRD", "Album", NULL);
+    avi_write_info_tag2(s, "IGNR", "Genre", NULL);
+    avi_write_info_tag2(s, "IPRT", "Track", NULL);
     if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
         avi_write_info_tag(pb, "ISFT", LIBAVFORMAT_IDENT);
     end_tag(pb, list2);

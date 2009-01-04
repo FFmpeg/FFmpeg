@@ -21,6 +21,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "libavcodec/opt.h"
+#include "libavcodec/metadata.h"
 #include "libavutil/avstring.h"
 #include "riff.h"
 #include <sys/time.h>
@@ -2305,6 +2306,14 @@ void av_close_input_stream(AVFormatContext *s)
         av_free(s->chapters[s->nb_chapters]);
     }
     av_freep(&s->chapters);
+    if(s->meta_data){
+        while(s->meta_data->count--){
+            av_freep(&s->meta_data->elems[s->meta_data->count].key);
+            av_freep(&s->meta_data->elems[s->meta_data->count].value);
+        }
+        av_freep(&s->meta_data->elems);
+    }
+    av_freep(&s->meta_data);
     av_free(s);
 }
 

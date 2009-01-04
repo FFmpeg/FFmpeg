@@ -216,13 +216,17 @@ static void clean_index(AVFormatContext *s){
     }
 }
 
-static int avi_read_tag(ByteIOContext *pb, char *buf, int maxlen,  unsigned int size)
+static int avi_read_tag(AVFormatContext *s, const char *key, unsigned int size)
 {
+    ByteIOContext *pb = s->pb;
+    uint8_t value[1024];
+
     int64_t i = url_ftell(pb);
     size += (size & 1);
-    get_strz(pb, buf, maxlen);
+    get_strz(pb, value, sizeof(value));
     url_fseek(pb, i+size, SEEK_SET);
-    return 0;
+
+    return av_metadata_set(&s->meta_data, (const AVMetaDataTag){key, value});
 }
 
 static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -235,7 +239,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int i;
     AVStream *st;
     AVIStream *ast = NULL;
-    char str_track[4];
     int avih_width=0, avih_height=0;
     int amv_file_format=0;
 
@@ -561,26 +564,25 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             url_fseek(pb, size, SEEK_CUR);
             break;
         case MKTAG('I', 'N', 'A', 'M'):
-            avi_read_tag(pb, s->title, sizeof(s->title), size);
+            avi_read_tag(s, "Title", size);
             break;
         case MKTAG('I', 'A', 'R', 'T'):
-            avi_read_tag(pb, s->author, sizeof(s->author), size);
+            avi_read_tag(s, "Artist", size);
             break;
         case MKTAG('I', 'C', 'O', 'P'):
-            avi_read_tag(pb, s->copyright, sizeof(s->copyright), size);
+            avi_read_tag(s, "Copyright", size);
             break;
         case MKTAG('I', 'C', 'M', 'T'):
-            avi_read_tag(pb, s->comment, sizeof(s->comment), size);
+            avi_read_tag(s, "Comment", size);
             break;
         case MKTAG('I', 'G', 'N', 'R'):
-            avi_read_tag(pb, s->genre, sizeof(s->genre), size);
+            avi_read_tag(s, "Genre", size);
             break;
         case MKTAG('I', 'P', 'R', 'D'):
-            avi_read_tag(pb, s->album, sizeof(s->album), size);
+            avi_read_tag(s, "Album", size);
             break;
         case MKTAG('I', 'P', 'R', 'T'):
-            avi_read_tag(pb, str_track, sizeof(str_track), size);
-            sscanf(str_track, "%d", &s->track);
+            avi_read_tag(s, "Track", size);
             break;
         default:
             if(size > 1000000){

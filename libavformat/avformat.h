@@ -608,6 +608,8 @@ typedef struct AVFormatContext {
     struct AVPacketList *raw_packet_buffer_end;
 
     struct AVPacketList *packet_buffer_end;
+
+    struct AVMetaData *meta_data;
 } AVFormatContext;
 
 typedef struct AVPacketList {
