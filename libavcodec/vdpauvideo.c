@@ -28,7 +28,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-#include "vdpau_render.h"
+#include "vdpau.h"
 #include "vdpau_internal.h"
 
 /**
