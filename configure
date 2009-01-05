@@ -1402,6 +1402,7 @@ case $target_os in
         FFSERVERLDFLAGS=""
         SHFLAGS='-shared -Wl,-h,$$(@F)'
         network_extralibs="-lsocket -lnsl"
+        add_cflags -D__EXTENSIONS__
         ;;
     netbsd)
         oss_demuxer_extralibs="-lossaudio"
