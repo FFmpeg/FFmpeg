@@ -1,8 +1,8 @@
 /*
- * Video Decode and Presentation API for UNIX (VDPAU) is used for
- * HW decode acceleration for MPEG-1/2, H.264 and VC-1.
+ * The Video Decode and Presentation API for UNIX (VDPAU) is used for
+ * hardware-accelerated decoding of MPEG-1/2, H.264 and VC-1.
  *
- * Copyright (C) 2008 NVIDIA.
+ * Copyright (C) 2008 NVIDIA
  *
  * This file is part of FFmpeg.
  *
@@ -27,15 +27,15 @@
 /**
  * \defgroup Decoder VDPAU Decoder and Renderer
  *
- * VDPAU HW acceleration has two modules
- * - VDPAU Decoding
- * - VDPAU Presentation
+ * VDPAU hardware acceleration has two modules
+ * - VDPAU decoding
+ * - VDPAU presentation
  *
- * VDPAU decoding module parses all headers using FFmpeg
- * parsing mechanism and uses VDPAU for the actual decoding.
+ * The VDPAU decoding module parses all headers using FFmpeg
+ * parsing mechanisms and uses VDPAU for the actual decoding.
  *
  * As per the current implementation, the actual decoding
- * and rendering (API calls) are done as part of VDPAU
+ * and rendering (API calls) are done as part of the VDPAU
  * presentation (vo_vdpau.c) module.
  *
  * @{
@@ -47,35 +47,33 @@
 #include "vdpau/vdpau.h"
 #include "vdpau/vdpau_x11.h"
 
-/**
- * \brief The videoSurface is used for render.
- */
+/** \brief The videoSurface is used for rendering. */
 #define FF_VDPAU_STATE_USED_FOR_RENDER 1
 
 /**
- * \brief The videoSurface is needed for reference/prediction,
- * codec manipulates this.
+ * \brief The videoSurface is needed for reference/prediction.
+ * The codec manipulates this.
  */
 #define FF_VDPAU_STATE_USED_FOR_REFERENCE 2
 
 /**
- * \brief This structure is used as a CALL-BACK between the ffmpeg
+ * \brief This structure is used as a callback between the FFmpeg
  * decoder (vd_) and presentation (vo_) module.
- * This is used for defining a video-frame containing surface,
- * picture-parameter, bitstream informations etc which are passed
- * between ffmpeg decoder and its clients.
+ * This is used for defining a video frame containing surface,
+ * picture parameter, bitstream information etc which are passed
+ * between the FFmpeg decoder and its clients.
  */
-struct vdpau_render_state{
-    VdpVideoSurface surface; ///< used as rendered surface, never changed.
+struct vdpau_render_state {
+    VdpVideoSurface surface; ///< Used as rendered surface, never changed.
 
-    int state; ///< Holds FF_VDPAU_STATE_* values
+    int state; ///< Holds FF_VDPAU_STATE_* values.
 
-    /** Picture Parameter information for all supported codecs */
+    /** picture parameter information for all supported codecs */
     union _VdpPictureInfo {
         VdpPictureInfoH264     h264;
     } info;
 
-    /** Describe size/location of the compressed video data */
+    /** Describe size/location of the compressed video data. */
     int bitstreamBuffersAlloced;
     int bitstreamBuffersUsed;
     VdpBitstreamBuffer *bitstreamBuffers;
