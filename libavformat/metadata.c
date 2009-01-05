@@ -21,7 +21,7 @@
 #include "metadata.h"
 
 AVMetadataTag *
-av_metadata_get(struct AVMetadata *m, const char *key, const AVMetadataTag *prev, int flags)
+av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int flags)
 {
     unsigned int i, j;
 
@@ -44,9 +44,9 @@ av_metadata_get(struct AVMetadata *m, const char *key, const AVMetadataTag *prev
     return NULL;
 }
 
-int av_metadata_set(struct AVMetadata **pm, AVMetadataTag elem)
+int av_metadata_set(AVMetadata **pm, AVMetadataTag elem)
 {
-    struct AVMetadata *m= *pm;
+    AVMetadata *m= *pm;
     AVMetadataTag *tag= av_metadata_get(m, elem.key, NULL, 0);
 
     if(!m)

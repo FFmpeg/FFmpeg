@@ -75,7 +75,7 @@ typedef struct {
     char *value;
 }AVMetadataTag;
 
-struct AVMetadata;
+typedef struct AVMetadata AVMetadata;
 
 /**
  * gets a metadata element with matching key.
@@ -84,14 +84,14 @@ struct AVMetadata;
  * @return found tag or NULL, changing key or value leads to undefined behavior.
  */
 AVMetadataTag *
-av_metadata_get(struct AVMetadata *m, const char *key, const AVMetadataTag *prev, int flags);
+av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int flags);
 
 /**
  * sets the given tag in m, overwriting an existing tag.
  * @param tag tag to add to m, key and value will be av_strduped.
  * @return >= 0 if success otherwise error code that is <0.
  */
-int av_metadata_set(struct AVMetadata **m, AVMetadataTag tag);
+int av_metadata_set(AVMetadata **m, AVMetadataTag tag);
 
 
 /* packet functions */
@@ -481,7 +481,7 @@ typedef struct AVStream {
      */
     AVRational sample_aspect_ratio;
 
-    struct AVMetadata *metadata;
+    AVMetadata *metadata;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
@@ -500,7 +500,7 @@ typedef struct AVProgram {
     enum AVDiscard discard;        ///< selects which program to discard and which to feed to the caller
     unsigned int   *stream_index;
     unsigned int   nb_stream_indexes;
-    struct AVMetadata *metadata;
+    AVMetadata *metadata;
 } AVProgram;
 
 #define AVFMTCTX_NOHEADER      0x0001 /**< signal that no header is present
@@ -511,7 +511,7 @@ typedef struct AVChapter {
     AVRational time_base;   ///< time base in which the start/end timestamps are specified
     int64_t start, end;     ///< chapter start/end time in time_base units
     char *title;            ///< chapter title
-    struct AVMetadata *metadata;
+    AVMetadata *metadata;
 } AVChapter;
 
 #define MAX_STREAMS 20
@@ -661,7 +661,7 @@ typedef struct AVFormatContext {
 
     struct AVPacketList *packet_buffer_end;
 
-    struct AVMetadata *metadata;
+    AVMetadata *metadata;
 } AVFormatContext;
 
 typedef struct AVPacketList {
