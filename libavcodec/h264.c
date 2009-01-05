@@ -7427,7 +7427,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                     ff_VDPAU_h264_add_data_chunk(h, start_code, sizeof(start_code));
                     ff_VDPAU_h264_add_data_chunk(h, &buf[buf_index - consumed], consumed );
                 }else
-                context_count++;
+                    context_count++;
             }
             break;
         case NAL_DPA:
