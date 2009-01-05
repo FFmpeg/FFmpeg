@@ -430,6 +430,8 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
     size = dv_get_packet(c->dv_demux, pkt);
 
     if (size < 0) {
+        if (!c->dv_demux->sys)
+            return AVERROR(EIO);
         size = c->dv_demux->sys->frame_size;
         if (get_buffer(s->pb, c->buf, size) <= 0)
             return AVERROR(EIO);
