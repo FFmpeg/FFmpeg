@@ -1599,7 +1599,7 @@ QPEL_2TAP(avg_,  8, 3dnow)
 
 
 #if 0
-static void just_return() { return; }
+static void just_return(void) { return; }
 #endif
 
 static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,

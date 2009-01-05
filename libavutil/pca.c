@@ -168,7 +168,7 @@ int ff_pca(PCA *pca, double *eigenvector, double *eigenvalue){
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(){
+int main(void){
     PCA *pca;
     int i, j, k;
 #define LEN 8

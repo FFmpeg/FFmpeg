@@ -80,7 +80,8 @@ DECLARE_ALIGNED(8, static const int16_t, coeffs[])= {
 };
 
 #if 0
-static void unused_var_killer(){
+static void unused_var_killer(void)
+{
         int a= wm1010 + d40000;
         temp[0]=a;
 }
