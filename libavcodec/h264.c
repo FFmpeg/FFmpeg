@@ -7646,7 +7646,7 @@ static int decode_frame(AVCodecContext *avctx,
          * past end by one (callers fault) and resync_mb_y != 0
          * causes problems for the first MB line, too.
          */
-        if (!avctx->codec_id == CODEC_ID_H264_VDPAU && !FIELD_PICTURE)
+        if (avctx->codec_id != CODEC_ID_H264_VDPAU && !FIELD_PICTURE)
             ff_er_frame_end(s);
 
         MPV_frame_end(s);
