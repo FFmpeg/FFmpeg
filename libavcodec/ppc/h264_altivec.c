@@ -596,17 +596,59 @@ void ff_h264_idct8_add_altivec( uint8_t *dst, DCTELEM *dct, int stride ) {
     ALTIVEC_STORE_SUM_CLIP(&dst[7*stride], idct7, perm_ldv, perm_stv, sel);
 }
 
-// TODO: implement this in AltiVec
-static void ff_h264_idct8_dc_add_altivec(uint8_t *dst, DCTELEM *block, int stride) {
-    int i, j;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
-    int dc = (block[0] + 32) >> 6;
-    for( j = 0; j < 8; j++ )
-    {
-        for( i = 0; i < 8; i++ )
-            dst[i] = cm[ dst[i] + dc ];
-        dst += stride;
+static av_always_inline void h264_idct_dc_add_internal(uint8_t *dst, DCTELEM *block, int stride, int size)
+{
+    vec_s16 dc16;
+    vec_u8 dcplus, dcminus, v0, v1, v2, v3, aligner;
+    LOAD_ZERO;
+    DECLARE_ALIGNED_16(int, dc);
+    int i;
+
+    dc = (block[0] + 32) >> 6;
+    dc16 = vec_splat((vec_s16) vec_lde(0, &dc), 1);
+
+    if (size == 4)
+        dc16 = vec_sld(dc16, zero_s16v, 8);
+    dcplus = vec_packsu(dc16, zero_s16v);
+    dcminus = vec_packsu(vec_sub(zero_s16v, dc16), zero_s16v);
+
+    aligner = vec_lvsr(0, dst);
+    dcplus = vec_perm(dcplus, dcplus, aligner);
+    dcminus = vec_perm(dcminus, dcminus, aligner);
+
+    for (i = 0; i < size; i += 4) {
+        v0 = vec_ld(0, dst+0*stride);
+        v1 = vec_ld(0, dst+1*stride);
+        v2 = vec_ld(0, dst+2*stride);
+        v3 = vec_ld(0, dst+3*stride);
+
+        v0 = vec_adds(v0, dcplus);
+        v1 = vec_adds(v1, dcplus);
+        v2 = vec_adds(v2, dcplus);
+        v3 = vec_adds(v3, dcplus);
+
+        v0 = vec_subs(v0, dcminus);
+        v1 = vec_subs(v1, dcminus);
+        v2 = vec_subs(v2, dcminus);
+        v3 = vec_subs(v3, dcminus);
+
+        vec_st(v0, 0, dst+0*stride);
+        vec_st(v1, 0, dst+1*stride);
+        vec_st(v2, 0, dst+2*stride);
+        vec_st(v3, 0, dst+3*stride);
+
+        dst += 4*stride;
     }
+}
+
+static void h264_idct_dc_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
+{
+    h264_idct_dc_add_internal(dst, block, stride, 4);
+}
+
+static void ff_h264_idct8_dc_add_altivec(uint8_t *dst, DCTELEM *block, int stride)
+{
+    h264_idct_dc_add_internal(dst, block, stride, 8);
 }
 
 static void ff_h264_idct8_add4_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
@@ -903,6 +945,8 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
    h264_idct_add16, h264_idct_add16intra, h264_idct_add8 are implemented
         c->h264_idct_add = ff_h264_idct_add_altivec;
 */
+        c->h264_idct_dc_add= h264_idct_dc_add_altivec;
+        c->h264_idct8_dc_add = ff_h264_idct8_dc_add_altivec;
         c->h264_idct8_add = ff_h264_idct8_add_altivec;
         c->h264_idct8_add4 = ff_h264_idct8_add4_altivec;
         c->h264_v_loop_filter_luma= h264_v_loop_filter_luma_altivec;
