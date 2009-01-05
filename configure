@@ -84,6 +84,7 @@ show_help(){
   echo "  --enable-beosthreads     use BeOS threads [no]"
   echo "  --enable-os2threads      use OS/2 threads [no]"
   echo "  --enable-pthreads        use pthreads [no]"
+  echo "  --enable-vdpau           enable VDPAU support [no]"
   echo "  --enable-w32threads      use Win32 threads [no]"
   echo "  --enable-x11grab         enable X11 grabbing [no]"
   echo "  --enable-xvmc            enable XvMC support [no]"
@@ -776,6 +777,7 @@ CONFIG_LIST="
     small
     static
     swscale
+    vdpau
     vhook
     x11grab
     xvmc
@@ -1041,6 +1043,7 @@ libvorbis_encoder_deps="libvorbis"
 libx264_encoder_deps="libx264"
 libxvid_encoder_deps="libxvid"
 mpeg4aac_decoder_deps="libfaad"
+vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 # demuxers / muxers
 ac3_demuxer_deps="ac3_parser"
@@ -1827,6 +1830,8 @@ check_header sys/mman.h
 check_header sys/resource.h
 check_header sys/select.h
 check_header termios.h
+check_header vdpau/vdpau.h
+check_header vdpau/vdpau_x11.h
 check_header X11/extensions/XvMClib.h
 
 if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
@@ -2192,6 +2197,7 @@ echo "libtheora enabled         ${libtheora-no}"
 echo "libvorbis enabled         ${libvorbis-no}"
 echo "libx264 enabled           ${libx264-no}"
 echo "libxvid enabled           ${libxvid-no}"
+echo "vdpau enabled             ${vdpau-no}"
 echo "zlib enabled              ${zlib-no}"
 echo "bzlib enabled             ${bzlib-no}"
 echo
