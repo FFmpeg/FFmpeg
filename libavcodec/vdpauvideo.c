@@ -119,7 +119,7 @@ void ff_VDPAU_h264_add_data_chunk(H264Context *h, const uint8_t *buf, int buf_si
 
     render->bitstreamBuffers= av_fast_realloc(
         render->bitstreamBuffers,
-        &render->bitstreamBuffersAlloced,
+        &render->bitstreamBuffersAllocated,
         sizeof(*render->bitstreamBuffers)*(render->bitstreamBuffersUsed + 1)
     );
 

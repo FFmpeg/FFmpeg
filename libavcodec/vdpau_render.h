@@ -74,7 +74,7 @@ struct vdpau_render_state {
     } info;
 
     /** Describe size/location of the compressed video data. */
-    int bitstreamBuffersAlloced;
+    int bitstreamBuffersAllocated;
     int bitstreamBuffersUsed;
     VdpBitstreamBuffer *bitstreamBuffers;
 };
