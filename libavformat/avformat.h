@@ -208,7 +208,7 @@ static inline void av_free_packet(AVPacket *pkt)
 */
 typedef struct AVFrac {
     int64_t val, num, den;
-} AVFrac attribute_deprecated;
+} AVFrac;
 
 /*************************************************/
 /* input/output formats */
