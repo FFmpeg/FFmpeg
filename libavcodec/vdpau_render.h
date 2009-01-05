@@ -69,7 +69,7 @@ struct vdpau_render_state {
     int state; ///< Holds FF_VDPAU_STATE_* values.
 
     /** picture parameter information for all supported codecs */
-    union _VdpPictureInfo {
+    union VdpPictureInfo {
         VdpPictureInfoH264     h264;
     } info;
 
