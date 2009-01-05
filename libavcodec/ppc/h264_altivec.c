@@ -935,6 +935,82 @@ static void h264_h_loop_filter_luma_altivec(uint8_t *pix, int stride, int alpha,
     write16x4(pix-2, stride, line1, line2, line3, line4);
 }
 
+
+static av_always_inline
+void biweight_h264_WxH_altivec(uint8_t *dst, uint8_t *src, int stride, int log2_denom,
+                               int weightd, int weights, int offset, int w, int h)
+{
+    int y, dst_aligned, src_aligned;
+    vec_u8 vsrc, vdst;
+    vec_u16 vtemp, vlog2_denom, vweights, vweightd, voffset, v0, v1, v2, v3;
+    DECLARE_ALIGNED_16(int32_t, temp[4]);
+    LOAD_ZERO;
+
+    offset = ((offset + 1) | 1) << log2_denom;
+    temp[0] = log2_denom+1;
+    temp[1] = weights;
+    temp[2] = weightd;
+    temp[3] = offset;
+
+    vtemp = vec_ld(0, temp);
+    vlog2_denom = vec_splat(vtemp, 1);
+    vweights = vec_splat(vtemp, 3);
+    vweightd = vec_splat(vtemp, 5);
+    voffset = vec_splat(vtemp, 7);
+    dst_aligned = !((unsigned long)dst & 0xf);
+    src_aligned = !((unsigned long)src & 0xf);
+
+    for (y=0; y<h; y++) {
+        vdst = vec_ld(0, dst);
+        vsrc = vec_ld(0, src);
+
+        v0 = vec_mergeh(zero_u8v, vdst);
+        v1 = vec_mergel(zero_u8v, vdst);
+        v2 = vec_mergeh(zero_u8v, vsrc);
+        v3 = vec_mergel(zero_u8v, vsrc);
+
+        if (w == 8) {
+            if (src_aligned)
+                v3 = v2;
+            else
+                v2 = v3;
+        }
+
+        if (w == 16 || dst_aligned) {
+            v0 = vec_mladd(v0, vweightd, zero_u16v);
+            v2 = vec_mladd(v2, vweights, zero_u16v);
+
+            v0 = vec_adds(v0, voffset);
+            v0 = vec_adds(v0, v2);
+            v0 = vec_sra(v0, vlog2_denom);
+        }
+        if (w == 16 || !dst_aligned) {
+            v1 = vec_mladd(v1, vweightd, zero_u16v);
+            v3 = vec_mladd(v3, vweights, zero_u16v);
+
+            v1 = vec_adds(v1, voffset);
+            v1 = vec_adds(v1, v3);
+            v1 = vec_sra(v1, vlog2_denom);
+        }
+        vdst = vec_packsu(v0, v1);
+        vec_st(vdst, 0, dst);
+
+        dst += stride;
+        src += stride;
+    }
+}
+
+#define H264_WEIGHT(W,H) \
+static void ff_biweight_h264_pixels ## W ## x ## H ## _altivec(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offset){ \
+    biweight_h264_WxH_altivec(dst, src, stride, log2_denom, weightd, weights, offset, W, H); \
+}
+
+H264_WEIGHT(16,16)
+H264_WEIGHT(16, 8)
+H264_WEIGHT( 8,16)
+H264_WEIGHT( 8, 8)
+H264_WEIGHT( 8, 4)
+
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
 
     if (has_altivec()) {
@@ -973,5 +1049,11 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
         dspfunc(put_h264_qpel, 0, 16);
         dspfunc(avg_h264_qpel, 0, 16);
 #undef dspfunc
+
+        c->biweight_h264_pixels_tab[0] = ff_biweight_h264_pixels16x16_altivec;
+        c->biweight_h264_pixels_tab[1] = ff_biweight_h264_pixels16x8_altivec;
+        c->biweight_h264_pixels_tab[2] = ff_biweight_h264_pixels8x16_altivec;
+        c->biweight_h264_pixels_tab[3] = ff_biweight_h264_pixels8x8_altivec;
+        c->biweight_h264_pixels_tab[4] = ff_biweight_h264_pixels8x4_altivec;
     }
 }
