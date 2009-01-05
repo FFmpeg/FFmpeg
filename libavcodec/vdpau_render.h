@@ -65,7 +65,7 @@
  * picture-parameter, bitstream informations etc which are passed
  * between ffmpeg decoder and its clients.
  */
-struct vdpau_render_state
+struct vdpau_render_state{
     VdpVideoSurface surface; ///< used as rendered surface, never changed.
 
     int state; ///< Holds FF_VDPAU_STATE_* values
