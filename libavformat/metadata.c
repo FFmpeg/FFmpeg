@@ -84,7 +84,7 @@ int av_metadata_set(AVMetadata **pm, AVMetadataTag elem)
 #define FILL_METADATA_INT(s, key) {                                           \
     char number[10];                                                          \
     snprintf(number, sizeof(number), "%d", s->key);                           \
-    FILL_METADATA(s, key, number) }
+    if(s->key)  FILL_METADATA(s, key, number) }
 
 void ff_metadata_sync_compat(AVFormatContext *ctx)
 {
