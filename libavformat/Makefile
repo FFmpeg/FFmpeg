@@ -158,9 +158,9 @@ OBJS-$(CONFIG_ROQ_DEMUXER)               += idroq.o
 OBJS-$(CONFIG_ROQ_MUXER)                 += raw.o
 OBJS-$(CONFIG_RPL_DEMUXER)               += rpl.o
 OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
-                                            rtpenc.o      \
-                                            rtp_mpv.o     \
                                             rtp_aac.o     \
+                                            rtp_mpv.o     \
+                                            rtpenc.o      \
                                             rtpenc_h264.o \
                                             avc.o
 OBJS-$(CONFIG_RTSP_DEMUXER)              += rdt.o rtsp.o
