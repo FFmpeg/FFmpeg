@@ -2501,6 +2501,10 @@ int av_write_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
     }
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+    ff_metadata_sync_compat(s);
+#endif
+
     if(s->oformat->write_header){
         ret = s->oformat->write_header(s);
         if (ret < 0)

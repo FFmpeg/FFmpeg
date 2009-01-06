@@ -73,3 +73,40 @@ int av_metadata_set(AVMetadata **pm, AVMetadataTag elem)
 
     return 0;
 }
+
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+#define FILL_METADATA(s, key, value) {                                        \
+    if (value && *value &&                                                    \
+        !av_metadata_get(s->metadata, #key, NULL, AV_METADATA_IGNORE_CASE))   \
+        av_metadata_set(&s->metadata, (const AVMetadataTag){#key, value});    \
+    }
+#define FILL_METADATA_STR(s, key)  FILL_METADATA(s, key, s->key)
+#define FILL_METADATA_INT(s, key) {                                           \
+    char number[10];                                                          \
+    snprintf(number, sizeof(number), "%d", s->key);                           \
+    FILL_METADATA(s, key, number) }
+
+void ff_metadata_sync_compat(AVFormatContext *ctx)
+{
+    int i;
+
+    FILL_METADATA_STR(ctx, title);
+    FILL_METADATA_STR(ctx, author);
+    FILL_METADATA_STR(ctx, copyright);
+    FILL_METADATA_STR(ctx, comment);
+    FILL_METADATA_STR(ctx, album);
+    FILL_METADATA_INT(ctx, year);
+    FILL_METADATA_INT(ctx, track);
+    FILL_METADATA_STR(ctx, genre);
+    for (i=0; i<ctx->nb_chapters; i++)
+        FILL_METADATA_STR(ctx->chapters[i], title);
+    for (i=0; i<ctx->nb_programs; i++) {
+        FILL_METADATA_STR(ctx->programs[i], name);
+        FILL_METADATA_STR(ctx->programs[i], provider_name);
+    }
+    for (i=0; i<ctx->nb_streams; i++) {
+        FILL_METADATA_STR(ctx->streams[i], language);
+        FILL_METADATA_STR(ctx->streams[i], filename);
+    }
+}
+#endif

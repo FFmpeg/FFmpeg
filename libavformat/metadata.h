@@ -35,4 +35,8 @@ struct AVMetadata{
     AVMetadataTag *elems;
 };
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+void ff_metadata_sync_compat(AVFormatContext *s);
+#endif
+
 #endif /* AVFORMAT_METADATA_H */
