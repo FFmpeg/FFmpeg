@@ -953,8 +953,8 @@ void biweight_h264_WxH_altivec(uint8_t *dst, uint8_t *src, int stride, int log2_
     temp[2] = weightd;
     temp[3] = offset;
 
-    vtemp = vec_ld(0, temp);
-    vlog2_denom = vec_splat(vtemp, 1);
+    vtemp = (vec_s16)vec_ld(0, temp);
+    vlog2_denom = (vec_u16)vec_splat(vtemp, 1);
     vweights = vec_splat(vtemp, 3);
     vweightd = vec_splat(vtemp, 5);
     voffset = vec_splat(vtemp, 7);
@@ -965,10 +965,10 @@ void biweight_h264_WxH_altivec(uint8_t *dst, uint8_t *src, int stride, int log2_
         vdst = vec_ld(0, dst);
         vsrc = vec_ld(0, src);
 
-        v0 = vec_mergeh(zero_u8v, vdst);
-        v1 = vec_mergel(zero_u8v, vdst);
-        v2 = vec_mergeh(zero_u8v, vsrc);
-        v3 = vec_mergel(zero_u8v, vsrc);
+        v0 = (vec_s16)vec_mergeh(zero_u8v, vdst);
+        v1 = (vec_s16)vec_mergel(zero_u8v, vdst);
+        v2 = (vec_s16)vec_mergeh(zero_u8v, vsrc);
+        v3 = (vec_s16)vec_mergel(zero_u8v, vsrc);
 
         if (w == 8) {
             if (src_aligned)
