@@ -393,6 +393,9 @@ OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o
 
 # processor-specific code
+YASM-OBJS-$(CONFIG_GPL)                += x86/h264_deblock_sse2.o       \
+                                          x86/h264_idct_sse2.o          \
+
 MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
 MMX-OBJS-$(CONFIG_FLAC_ENCODER)        += x86/flacdsp_mmx.o
@@ -407,8 +410,7 @@ MMX-OBJS-$(CONFIG_VP6A_DECODER)        += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP6F_DECODER)        += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_WMV3_DECODER)        += x86/vc1dsp_mmx.o
 MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
-                                          x86/h264_deblock_sse2.o       \
-                                          x86/h264_idct_sse2.o          \
+                                          $(YASM-OBJS-yes)
 
 OBJS-$(HAVE_MMX)                       += x86/cpuid.o                   \
                                           x86/dnxhd_mmx.o               \
