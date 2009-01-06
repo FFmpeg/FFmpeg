@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VDPAU_RENDER_H
-#define AVCODEC_VDPAU_RENDER_H
+#ifndef AVCODEC_VDPAU_H
+#define AVCODEC_VDPAU_H
 
 /**
  * \defgroup Decoder VDPAU Decoder and Renderer
@@ -81,4 +81,4 @@ struct vdpau_render_state {
 
 /* @}*/
 
-#endif /* AVCODEC_VDPAU_RENDER_H */
+#endif /* AVCODEC_VDPAU_H */
