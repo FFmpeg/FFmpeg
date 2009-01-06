@@ -2285,6 +2285,7 @@ void av_close_input_stream(AVFormatContext *s)
         if (st->parser) {
             av_parser_close(st->parser);
         }
+        av_metadata_free(&st->metadata);
         av_free(st->index_entries);
         av_free(st->codec->extradata);
         av_free(st->codec);
@@ -2295,6 +2296,7 @@ void av_close_input_stream(AVFormatContext *s)
     for(i=s->nb_programs-1; i>=0; i--) {
         av_freep(&s->programs[i]->provider_name);
         av_freep(&s->programs[i]->name);
+        av_metadata_free(&s->programs[i]->metadata);
         av_freep(&s->programs[i]->stream_index);
         av_freep(&s->programs[i]);
     }
@@ -2303,17 +2305,11 @@ void av_close_input_stream(AVFormatContext *s)
     av_freep(&s->priv_data);
     while(s->nb_chapters--) {
         av_free(s->chapters[s->nb_chapters]->title);
+        av_metadata_free(&s->chapters[s->nb_chapters]->metadata);
         av_free(s->chapters[s->nb_chapters]);
     }
     av_freep(&s->chapters);
-    if(s->metadata){
-        while(s->metadata->count--){
-            av_freep(&s->metadata->elems[s->metadata->count].key);
-            av_freep(&s->metadata->elems[s->metadata->count].value);
-        }
-        av_freep(&s->metadata->elems);
-    }
-    av_freep(&s->metadata);
+    av_metadata_free(&s->metadata);
     av_free(s);
 }
 

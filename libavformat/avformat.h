@@ -93,6 +93,11 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
  */
 int av_metadata_set(AVMetadata **m, AVMetadataTag tag);
 
+/**
+ * Free all the memory allocated for an AVMetadata struct.
+ */
+void av_metadata_free(AVMetadata **m);
+
 
 /* packet functions */
 

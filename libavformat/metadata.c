@@ -74,6 +74,20 @@ int av_metadata_set(AVMetadata **pm, AVMetadataTag elem)
     return 0;
 }
 
+void av_metadata_free(AVMetadata **pm)
+{
+    AVMetadata *m= *pm;
+
+    if(m){
+        while(m->count--){
+            av_free(m->elems[m->count].key);
+            av_free(m->elems[m->count].value);
+        }
+        av_free(m->elems);
+    }
+    av_freep(pm);
+}
+
 #if LIBAVFORMAT_VERSION_MAJOR < 53
 #define FILL_METADATA(s, key, value) {                                        \
     if (value && *value &&                                                    \

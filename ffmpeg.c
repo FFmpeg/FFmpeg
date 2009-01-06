@@ -396,9 +396,17 @@ static int av_exit(int ret)
         if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             url_fclose(s->pb);
         for(j=0;j<s->nb_streams;j++) {
+            av_metadata_free(&s->streams[j]->metadata);
             av_free(s->streams[j]->codec);
             av_free(s->streams[j]);
         }
+        for(j=0;j<s->nb_programs;j++) {
+            av_metadata_free(&s->programs[j]->metadata);
+        }
+        for(j=0;j<s->nb_chapters;j++) {
+            av_metadata_free(&s->chapters[j]->metadata);
+        }
+        av_metadata_free(&s->metadata);
         av_free(s);
     }
     for(i=0;i<nb_input_files;i++)
