@@ -23,6 +23,7 @@
 #include "gcc_fixes.h"
 
 #include "dsputil_altivec.h"
+#include "util_altivec.h"
 
 static void vector_fmul_altivec(float *dst, const float *src, int len)
 {
@@ -149,6 +150,43 @@ static void vector_fmul_add_add_altivec(float *dst, const float *src0,
         ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
 }
 
+static void vector_fmul_window_altivec(float *dst, const float *src0, const float *src1, const float *win, float add_bias, int len)
+{
+    union {
+        vector float v;
+        float s[4];
+    } vadd;
+    vector float vadd_bias, zero, t0, t1, s0, s1, wi, wj;
+    const vector unsigned char reverse = vcprm(3,2,1,0);
+    int i,j;
+
+    dst += len;
+    win += len;
+    src0+= len;
+
+    vadd.s[0] = add_bias;
+    vadd_bias = vec_splat(vadd.v, 0);
+    zero = (vector float)vec_splat_u32(0);
+
+    for(i=-len*4, j=len*4-16; i<0; i+=16, j-=16) {
+        s0 = vec_ld(i, src0);
+        s1 = vec_ld(j, src1);
+        wi = vec_ld(i, win);
+        wj = vec_ld(j, win);
+
+        s1 = vec_perm(s1, s1, reverse);
+        wj = vec_perm(wj, wj, reverse);
+
+        t0 = vec_madd(s0, wj, vadd_bias);
+        t0 = vec_nmsub(s1, wi, t0);
+        t1 = vec_madd(s0, wi, vadd_bias);
+        t1 = vec_madd(s1, wj, t1);
+        t1 = vec_perm(t1, t1, reverse);
+
+        vec_st(t0, i, dst);
+        vec_st(t1, j, dst);
+    }
+}
 
 static void int32_to_float_fmul_scalar_altivec(float *dst, const int *src, float mul, int len)
 {
@@ -266,6 +304,7 @@ void float_init_altivec(DSPContext* c, AVCodecContext *avctx)
     c->vector_fmul_add_add = vector_fmul_add_add_altivec;
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_altivec;
     if(!(avctx->flags & CODEC_FLAG_BITEXACT)) {
+        c->vector_fmul_window = vector_fmul_window_altivec;
         c->float_to_int16 = float_to_int16_altivec;
         c->float_to_int16_interleave = float_to_int16_interleave_altivec;
     }
