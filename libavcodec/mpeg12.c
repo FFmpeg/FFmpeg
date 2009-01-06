@@ -1212,6 +1212,22 @@ static void quant_matrix_rebuild(uint16_t *matrix, const uint8_t *old_perm,
     }
 }
 
+static enum PixelFormat mpeg_set_pixelformat(AVCodecContext *avctx){
+    Mpeg1Context *s1 = avctx->priv_data;
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
+
+    if(avctx->xvmc_acceleration)
+        return avctx->get_format(avctx,pixfmt_xvmc_mpg2_420);
+    else{
+        if(s->chroma_format <  2)
+            return PIX_FMT_YUV420P;
+        else if(s->chroma_format == 2)
+            return PIX_FMT_YUV422P;
+        else
+            return PIX_FMT_YUV444P;
+    }
+}
+
 /* Call this function when we know all parameters.
  * It may be called in different places for MPEG-1 and MPEG-2. */
 static int mpeg_decode_postinit(AVCodecContext *avctx){
@@ -1288,19 +1304,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
             }
         }//MPEG-2
 
-        if(avctx->xvmc_acceleration){
-            avctx->pix_fmt = avctx->get_format(avctx,pixfmt_xvmc_mpg2_420);
-        }else{
-            if(s->chroma_format <  2){
-                avctx->pix_fmt = PIX_FMT_YUV420P;
-            }else
-            if(s->chroma_format == 2){
-                avctx->pix_fmt = PIX_FMT_YUV422P;
-            }else
-            if(s->chroma_format >  2){
-                avctx->pix_fmt = PIX_FMT_YUV444P;
-            }
-        }
+        avctx->pix_fmt = mpeg_set_pixelformat(avctx);
         //until then pix_fmt may be changed right after codec init
         if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT )
             if( avctx->idct_algo == FF_IDCT_AUTO )
@@ -2069,11 +2073,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     avctx->has_b_frames= 0; //true?
     s->low_delay= 1;
 
-    if(avctx->xvmc_acceleration){
-        avctx->pix_fmt = avctx->get_format(avctx,pixfmt_xvmc_mpg2_420);
-    }else{
-        avctx->pix_fmt = PIX_FMT_YUV420P;
-    }
+    avctx->pix_fmt = mpeg_set_pixelformat(avctx);
 
     if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT )
         if( avctx->idct_algo == FF_IDCT_AUTO )
