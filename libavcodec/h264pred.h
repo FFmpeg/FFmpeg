@@ -29,6 +29,7 @@
 #define AVCODEC_H264PRED_H
 
 #include "libavutil/common.h"
+#include "dsputil.h"
 
 /**
  * Prediction types
