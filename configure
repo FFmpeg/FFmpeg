@@ -141,6 +141,7 @@ show_help(){
   echo "  --disable-altivec        disable AltiVec optimizations"
   echo "  --disable-mmx            disable MMX optimizations"
   echo "  --disable-mmx2           disable MMX2 optimizations"
+  echo "  --disable-sse            disable SSE optimizations"
   echo "  --disable-ssse3          disable SSSE3 optimizations"
   echo "  --disable-armv5te        disable armv5te optimizations"
   echo "  --disable-armv6          disable armv6 optimizations"
@@ -820,6 +821,7 @@ ARCH_EXT_LIST='
     mmx
     mmx2
     neon
+    sse
     ssse3
     vis
 '
@@ -946,7 +948,8 @@ mmi_deps="mips"
 mmx_deps="x86"
 mmx2_deps="x86 mmx"
 neon_deps="arm"
-ssse3_deps="x86"
+sse_deps="mmx"
+ssse3_deps="x86 sse"
 vis_deps="sparc"
 
 # common features
@@ -2136,6 +2139,7 @@ echo "big-endian                ${bigendian-no}"
 if test $arch = "x86_32" -o $arch = "x86_64"; then
     echo "yasm                      ${yasm-no}"
     echo "MMX enabled               ${mmx-no}"
+    echo "SSE enabled               ${sse-no}"
     echo "CMOV enabled              ${cmov-no}"
     echo "CMOV is fast              ${fast_cmov-no}"
     echo "EBX available             ${ebx_available-no}"

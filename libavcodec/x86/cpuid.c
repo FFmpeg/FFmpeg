@@ -83,7 +83,7 @@ int mm_support(void)
             rval |= FF_MM_MMX;
         if (std_caps & (1<<25))
             rval |= FF_MM_MMXEXT
-#if !defined(__GNUC__) || __GNUC__ > 2
+#ifdef HAVE_SSE
                   | FF_MM_SSE;
         if (std_caps & (1<<26))
             rval |= FF_MM_SSE2;
