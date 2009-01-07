@@ -722,7 +722,7 @@ int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
             return 1;
         }
         if (asf->packet_time_start == 0) {
-            if(asf_read_frame_header(s, s->pb) < 0){
+            if(asf_read_frame_header(s, pb) < 0){
                 asf->packet_segments= 0;
                 continue;
             }
