@@ -75,6 +75,8 @@ typedef struct RTSPState {
     char last_reply[2048]; /* XXX: allocate ? */
     void *cur_tx;
     int need_subscription;
+    enum AVDiscard real_setup_cache[MAX_STREAMS];
+    char last_subscription[1024];
 } RTSPState;
 
 typedef struct RTSPStream {
@@ -1352,27 +1354,66 @@ static int rtsp_read_packet(AVFormatContext *s,
     int ret, len;
     uint8_t buf[RTP_MAX_PACKET_LENGTH];
 
-    if (rt->server_type == RTSP_SERVER_REAL && rt->need_subscription) {
+    if (rt->server_type == RTSP_SERVER_REAL) {
         int i;
         RTSPHeader reply1, *reply = &reply1;
+        enum AVDiscard cache[MAX_STREAMS];
         char cmd[1024];
 
-        snprintf(cmd, sizeof(cmd),
-                 "SET_PARAMETER %s RTSP/1.0\r\n"
-                 "Subscribe: ",
-                 s->filename);
-        for (i = 0; i < rt->nb_rtsp_streams; i++) {
-            if (i != 0) av_strlcat(cmd, ",", sizeof(cmd));
-            ff_rdt_subscribe_rule(cmd, sizeof(cmd), i, 0);
-        }
-        av_strlcat(cmd, "\r\n", sizeof(cmd));
-        rtsp_send_cmd(s, cmd, reply, NULL);
-        if (reply->status_code != RTSP_STATUS_OK)
-            return AVERROR_INVALIDDATA;
-        rt->need_subscription = 0;
+        for (i = 0; i < s->nb_streams; i++)
+            cache[i] = s->streams[i]->discard;
 
-        if (rt->state == RTSP_STATE_PLAYING)
-            rtsp_read_play (s);
+        if (!rt->need_subscription) {
+            if (memcmp (cache, rt->real_setup_cache,
+                        sizeof(enum AVDiscard) * s->nb_streams)) {
+                av_strlcatf(cmd, sizeof(cmd),
+                            "SET_PARAMETER %s RTSP/1.0\r\n"
+                            "Unsubscribe: %s\r\n",
+                            s->filename, rt->last_subscription);
+                rtsp_send_cmd(s, cmd, reply, NULL);
+                if (reply->status_code != RTSP_STATUS_OK)
+                    return AVERROR_INVALIDDATA;
+                rt->need_subscription = 1;
+            }
+        }
+
+        if (rt->need_subscription) {
+            int r, rule_nr, first = 1;
+
+            memcpy(rt->real_setup_cache, cache,
+                   sizeof(enum AVDiscard) * s->nb_streams);
+            rt->last_subscription[0] = 0;
+
+            snprintf(cmd, sizeof(cmd),
+                     "SET_PARAMETER %s RTSP/1.0\r\n"
+                     "Subscribe: ",
+                     s->filename);
+            for (i = 0; i < rt->nb_rtsp_streams; i++) {
+                rule_nr = 0;
+                for (r = 0; r < s->nb_streams; r++) {
+                    if (s->streams[r]->priv_data == rt->rtsp_streams[i]) {
+                        if (s->streams[r]->discard != AVDISCARD_ALL) {
+                            if (!first)
+                                av_strlcat(rt->last_subscription, ",",
+                                           sizeof(rt->last_subscription));
+                            ff_rdt_subscribe_rule(
+                                rt->last_subscription,
+                                sizeof(rt->last_subscription), i, rule_nr);
+                            first = 0;
+                        }
+                        rule_nr++;
+                    }
+                }
+            }
+            av_strlcatf(cmd, sizeof(cmd), "%s\r\n", rt->last_subscription);
+            rtsp_send_cmd(s, cmd, reply, NULL);
+            if (reply->status_code != RTSP_STATUS_OK)
+                return AVERROR_INVALIDDATA;
+            rt->need_subscription = 0;
+
+            if (rt->state == RTSP_STATE_PLAYING)
+                rtsp_read_play (s);
+        }
     }
 
     /* get next frames from the same RTP packet */
