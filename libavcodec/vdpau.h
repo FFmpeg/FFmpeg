@@ -44,8 +44,8 @@
  * @{
  */
 
-#include "vdpau/vdpau.h"
-#include "vdpau/vdpau_x11.h"
+#include <vdpau/vdpau.h>
+#include <vdpau/vdpau_x11.h>
 
 /** \brief The videoSurface is used for rendering. */
 #define FF_VDPAU_STATE_USED_FOR_RENDER 1
