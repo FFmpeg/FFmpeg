@@ -866,6 +866,7 @@ HAVE_LIST="
     memalign
     mkstemp
     pld
+    posix_memalign
     ppc64
     round
     roundf
@@ -1819,6 +1820,7 @@ check_func  getrusage
 check_func  inet_aton $network_extralibs
 check_func  memalign
 check_func  mkstemp
+check_func  posix_memalign
 check_func_headers windows.h GetProcessTimes
 
 check_header conio.h
@@ -1833,8 +1835,8 @@ check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
 check_header X11/extensions/XvMClib.h
 
-if ! enabled_any memalign memalign_hack && enabled need_memalign ; then
-    die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
+if ! enabled_any memalign memalign_hack posix_memalign && enabled need_memalign ; then
+    die "Error, no aligned memory allocator but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
