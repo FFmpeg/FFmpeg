@@ -37,7 +37,7 @@
  * @{
  */
 
-static void VDPAU_h264_set_reference_frames(H264Context *h)
+static void vdpau_h264_set_reference_frames(H264Context *h)
 {
     MpegEncContext * s = &h->s;
     struct vdpau_render_state * render, * render_ref;
@@ -106,7 +106,7 @@ static void VDPAU_h264_set_reference_frames(H264Context *h)
     }
 }
 
-void ff_VDPAU_h264_add_data_chunk(H264Context *h, const uint8_t *buf, int buf_size)
+void ff_vdpau_h264_add_data_chunk(H264Context *h, const uint8_t *buf, int buf_size)
 {
     MpegEncContext * s = &h->s;
     struct vdpau_render_state * render;
@@ -115,7 +115,7 @@ void ff_VDPAU_h264_add_data_chunk(H264Context *h, const uint8_t *buf, int buf_si
     assert(render);
 
     if (!render->bitstream_buffers_used)
-        VDPAU_h264_set_reference_frames(h);
+        vdpau_h264_set_reference_frames(h);
 
     render->bitstream_buffers= av_fast_realloc(
         render->bitstream_buffers,
@@ -129,7 +129,7 @@ void ff_VDPAU_h264_add_data_chunk(H264Context *h, const uint8_t *buf, int buf_si
     render->bitstream_buffers_used++;
 }
 
-void ff_VDPAU_h264_picture_complete(H264Context *h)
+void ff_vdpau_h264_picture_complete(H264Context *h)
 {
     MpegEncContext * s = &h->s;
     struct vdpau_render_state * render;

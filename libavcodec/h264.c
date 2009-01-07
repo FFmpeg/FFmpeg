@@ -7425,8 +7425,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                && avctx->skip_frame < AVDISCARD_ALL){
                 if(ENABLE_H264_VDPAU_DECODER && avctx->codec_id == CODEC_ID_H264_VDPAU){
                     static const uint8_t start_code[] = {0x00, 0x00, 0x01};
-                    ff_VDPAU_h264_add_data_chunk(h, start_code, sizeof(start_code));
-                    ff_VDPAU_h264_add_data_chunk(h, &buf[buf_index - consumed], consumed );
+                    ff_vdpau_h264_add_data_chunk(h, start_code, sizeof(start_code));
+                    ff_vdpau_h264_add_data_chunk(h, &buf[buf_index - consumed], consumed );
                 }else
                     context_count++;
             }
@@ -7633,7 +7633,7 @@ static int decode_frame(AVCodecContext *avctx,
         h->prev_frame_num= h->frame_num;
 
         if (ENABLE_H264_VDPAU_DECODER && avctx->codec_id == CODEC_ID_H264_VDPAU)
-            ff_VDPAU_h264_picture_complete(h);
+            ff_vdpau_h264_picture_complete(h);
 
         /*
          * FIXME: Error handling code does not seem to support interlaced

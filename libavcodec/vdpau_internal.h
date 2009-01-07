@@ -27,8 +27,8 @@
 #include <stdint.h>
 #include "h264.h"
 
-void ff_VDPAU_h264_add_data_chunk(H264Context *h, const uint8_t *buf,
+void ff_vdpau_h264_add_data_chunk(H264Context *h, const uint8_t *buf,
                                   int buf_size);
-void ff_VDPAU_h264_picture_complete(H264Context *h);
+void ff_vdpau_h264_picture_complete(H264Context *h);
 
 #endif /* AVCODEC_VDPAU_INTERNAL_H */
