@@ -295,7 +295,7 @@ int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size)
 
 int av_dup_packet(AVPacket *pkt)
 {
-    if (pkt->destruct != av_destruct_packet) {
+    if (pkt->destruct != av_destruct_packet && pkt->data) {
         uint8_t *data;
         /* We duplicate the packet and don't forget to add the padding again. */
         if((unsigned)pkt->size > (unsigned)pkt->size + FF_INPUT_BUFFER_PADDING_SIZE)
