@@ -86,6 +86,7 @@
 #include "aactab.h"
 #include "aacdectab.h"
 #include "mpeg4audio.h"
+#include "aac_parser.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -384,12 +385,24 @@ static av_cold int aac_decode_init(AVCodecContext * avccontext) {
 
     ac->avccontext = avccontext;
 
-    if (avccontext->extradata_size <= 0 ||
-        decode_audio_specific_config(ac, avccontext->extradata, avccontext->extradata_size))
+    if (avccontext->extradata_size > 0) {
+        if(decode_audio_specific_config(ac, avccontext->extradata, avccontext->extradata_size))
+            return -1;
+        avccontext->sample_rate = ac->m4ac.sample_rate;
+    } else if (avccontext->channels > 0) {
+        enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
+        memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
+        if(set_default_channel_config(ac, new_che_pos, avccontext->channels - (avccontext->channels == 8)))
+            return -1;
+        if(output_configure(ac, ac->che_pos, new_che_pos))
+            return -1;
+        ac->m4ac.sample_rate = avccontext->sample_rate;
+    } else {
+        ff_log_missing_feature(ac->avccontext, "Implicit channel configuration is", 0);
         return -1;
+    }
 
     avccontext->sample_fmt  = SAMPLE_FMT_S16;
-    avccontext->sample_rate = ac->m4ac.sample_rate;
     avccontext->frame_size  = 1024;
 
     AAC_INIT_VLC_STATIC( 0, 144);
@@ -1506,6 +1519,29 @@ static void spectral_to_sample(AACContext * ac) {
     }
 }
 
+static int parse_adts_frame_header(AACContext * ac, GetBitContext * gb) {
+
+    int size;
+    AACADTSHeaderInfo hdr_info;
+
+    size = ff_aac_parse_header(gb, &hdr_info);
+    if (size > 0) {
+        if (hdr_info.chan_config)
+            ac->m4ac.chan_config = hdr_info.chan_config;
+        ac->m4ac.sample_rate     = hdr_info.sample_rate;
+        ac->m4ac.sampling_index  = hdr_info.sampling_index;
+        ac->m4ac.object_type     = hdr_info.object_type;
+    }
+    if (hdr_info.num_aac_frames == 1) {
+        if (!hdr_info.crc_absent)
+            skip_bits(gb, 16);
+    } else {
+        ff_log_missing_feature(ac->avccontext, "More than one AAC RDB per ADTS frame is", 0);
+        return -1;
+    }
+    return size;
+}
+
 static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data_size, const uint8_t * buf, int buf_size) {
     AACContext * ac = avccontext->priv_data;
     GetBitContext gb;
@@ -1513,6 +1549,13 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
     int err, elem_id, data_size_tmp;
 
     init_get_bits(&gb, buf, buf_size*8);
+
+    if (show_bits(&gb, 12) == 0xfff) {
+        if ((err = parse_adts_frame_header(ac, &gb)) < 0) {
+            av_log(avccontext, AV_LOG_ERROR, "Error decoding AAC frame header.\n");
+            return -1;
+        }
+    }
 
     // parse
     while ((elem_type = get_bits(&gb, 3)) != TYPE_END) {
