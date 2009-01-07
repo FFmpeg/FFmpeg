@@ -428,6 +428,19 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
     return 0;
 }
 
+static void
+real_parse_asm_rule(AVStream *st, const char *p, const char *end)
+{
+    do {
+        /* can be either averagebandwidth= or AverageBandwidth= */
+        if (sscanf(p, " %*1[Aa]verage%*1[Bb]andwidth=%d", &st->codec->bit_rate) == 1)
+            break;
+        if (!(p = strchr(p, ',')) || p > end)
+            p = end;
+        p++;
+    } while (p < end);
+}
+
 static AVStream *
 add_dstream(AVFormatContext *s, AVStream *orig_st)
 {
@@ -473,6 +486,7 @@ real_parse_asm_rulebook(AVFormatContext *s, AVStream *orig_st,
                 st = add_dstream(s, orig_st);
             else
                 st = orig_st;
+            real_parse_asm_rule(st, p, end);
             n_rules++;
         }
         p = end + 1;
