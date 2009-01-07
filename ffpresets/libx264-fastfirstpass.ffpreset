@@ -15,6 +15,6 @@ qmin=10
 qmax=51
 qdiff=4
 refs=1
-directpred=1
+directpred=3
 trellis=0
 flags2=-bpyramid-wpred-mixed_refs-dct8x8+fastpskip
