@@ -14,6 +14,7 @@ qcomp=0.6
 qmin=10
 qmax=51
 qdiff=4
+bf=4
 refs=1
 directpred=3
 trellis=0
