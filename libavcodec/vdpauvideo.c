@@ -114,19 +114,19 @@ void ff_VDPAU_h264_add_data_chunk(H264Context *h, const uint8_t *buf, int buf_si
     render = (struct vdpau_render_state*)s->current_picture_ptr->data[0];
     assert(render);
 
-    if (!render->bitstreamBuffersUsed)
+    if (!render->bitstream_buffers_used)
         VDPAU_h264_set_reference_frames(h);
 
-    render->bitstreamBuffers= av_fast_realloc(
-        render->bitstreamBuffers,
-        &render->bitstreamBuffersAllocated,
-        sizeof(*render->bitstreamBuffers)*(render->bitstreamBuffersUsed + 1)
+    render->bitstream_buffers= av_fast_realloc(
+        render->bitstream_buffers,
+        &render->bitstream_buffers_allocated,
+        sizeof(*render->bitstream_buffers)*(render->bitstream_buffers_used + 1)
     );
 
-    render->bitstreamBuffers[render->bitstreamBuffersUsed].struct_version  = VDP_BITSTREAM_BUFFER_VERSION;
-    render->bitstreamBuffers[render->bitstreamBuffersUsed].bitstream       = buf;
-    render->bitstreamBuffers[render->bitstreamBuffersUsed].bitstream_bytes = buf_size;
-    render->bitstreamBuffersUsed++;
+    render->bitstream_buffers[render->bitstream_buffers_used].struct_version  = VDP_BITSTREAM_BUFFER_VERSION;
+    render->bitstream_buffers[render->bitstream_buffers_used].bitstream       = buf;
+    render->bitstream_buffers[render->bitstream_buffers_used].bitstream_bytes = buf_size;
+    render->bitstream_buffers_used++;
 }
 
 void ff_VDPAU_h264_picture_complete(H264Context *h)
@@ -177,7 +177,7 @@ void ff_VDPAU_h264_picture_complete(H264Context *h)
     memcpy(render->info.h264.scaling_lists_8x8, h->pps.scaling_matrix8, sizeof(render->info.h264.scaling_lists_8x8));
 
     ff_draw_horiz_band(s, 0, s->avctx->height);
-    render->bitstreamBuffersUsed = 0;
+    render->bitstream_buffers_used = 0;
 }
 
 /* @}*/
