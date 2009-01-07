@@ -66,6 +66,7 @@ typedef struct RTSPHeader {
     int seq; /**< sequence number */
     char session_id[512];
     char real_challenge[64]; /**< the RealChallenge1 field from the server */
+    char server[64];
 } RTSPHeader;
 
 enum RTSPClientState {
@@ -77,6 +78,7 @@ enum RTSPClientState {
 enum RTSPServerType {
     RTSP_SERVER_RTP,  /*< Standard-compliant RTP-server */
     RTSP_SERVER_REAL, /*< Realmedia-style server */
+    RTSP_SERVER_WMS,  /*< Windows Media server */
     RTSP_SERVER_LAST
 };
 

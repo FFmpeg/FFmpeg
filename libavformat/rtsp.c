@@ -688,6 +688,9 @@ void rtsp_parse_line(RTSPHeader *reply, const char *buf)
     } else if (av_stristart(p, "RealChallenge1:", &p)) {
         skip_spaces(&p);
         av_strlcpy(reply->real_challenge, p, sizeof(reply->real_challenge));
+    } else if (av_stristart(p, "Server:", &p)) {
+        skip_spaces(&p);
+        av_strlcpy(reply->server, p, sizeof(reply->server));
     }
 }
 
@@ -1123,6 +1126,8 @@ static int rtsp_read_header(AVFormatContext *s,
         if (rt->server_type != RTSP_SERVER_REAL && reply->real_challenge[0]) {
             rt->server_type = RTSP_SERVER_REAL;
             continue;
+        } else if (!strncasecmp(reply->server, "WMServer/", 9)) {
+            rt->server_type = RTSP_SERVER_WMS;
         } else if (rt->server_type == RTSP_SERVER_REAL) {
             strcpy(real_challenge, reply->real_challenge);
         }
