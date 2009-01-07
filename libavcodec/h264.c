@@ -8036,4 +8036,6 @@ AVCodec h264_vdpau_decoder = {
 };
 #endif
 
+#ifdef CONFIG_SVQ3_DECODER
 #include "svq3.c"
+#endif
