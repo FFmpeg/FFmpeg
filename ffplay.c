@@ -2063,10 +2063,17 @@ static int decode_thread(void *arg)
         /* if the queue are full, no need to read more */
         if (is->audioq.size > MAX_AUDIOQ_SIZE ||
             is->videoq.size > MAX_VIDEOQ_SIZE ||
-            is->subtitleq.size > MAX_SUBTITLEQ_SIZE ||
-            url_feof(ic->pb)) {
+            is->subtitleq.size > MAX_SUBTITLEQ_SIZE) {
             /* wait 10 ms */
             SDL_Delay(10);
+            continue;
+        }
+        if(url_feof(ic->pb)) {
+            av_init_packet(pkt);
+            pkt->data=
+            pkt->size=0;
+            pkt->stream_index= is->video_stream;
+            packet_queue_put(&is->videoq, pkt);
             continue;
         }
         ret = av_read_frame(ic, pkt);
