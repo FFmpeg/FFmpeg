@@ -57,8 +57,6 @@ struct video_data {
     int frame_format; /* V4L2_PIX_FMT_* */
     enum io_method io_method;
     int width, height;
-    int frame_rate;
-    int frame_rate_base;
     int frame_size;
     int top_field_first;
 
@@ -509,22 +507,16 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     struct video_data *s = s1->priv_data;
     AVStream *st;
     int width, height;
-    int res, frame_rate, frame_rate_base;
+    int res;
     uint32_t desired_format, capabilities;
 
     if (ap->width <= 0 || ap->height <= 0) {
         av_log(s1, AV_LOG_ERROR, "Wrong size (%dx%d)\n", ap->width, ap->height);
         return -1;
     }
-    if (ap->time_base.den <= 0) {
-        av_log(s1, AV_LOG_ERROR, "Wrong time base (%d)\n", ap->time_base.den);
-        return -1;
-    }
 
     width = ap->width;
     height = ap->height;
-    frame_rate = ap->time_base.den;
-    frame_rate_base = ap->time_base.num;
 
     if(avcodec_check_dimensions(s1, ap->width, ap->height) < 0)
         return -1;
@@ -537,8 +529,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     s->width = width;
     s->height = height;
-    s->frame_rate      = frame_rate;
-    s->frame_rate_base = frame_rate_base;
 
     capabilities = 0;
     s->fd = device_open(s1, &capabilities);
@@ -599,8 +589,8 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
     st->codec->width = width;
     st->codec->height = height;
-    st->codec->time_base.den = frame_rate;
-    st->codec->time_base.num = frame_rate_base;
+    st->codec->time_base.den = ap->time_base.den;
+    st->codec->time_base.num = ap->time_base.num;
     st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
 
     return 0;
