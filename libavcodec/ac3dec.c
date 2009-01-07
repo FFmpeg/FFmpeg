@@ -36,6 +36,7 @@
 
 #include "libavutil/crc.h"
 #include "internal.h"
+#include "aac_ac3_parser.h"
 #include "ac3_parser.h"
 #include "ac3dec.h"
 #include "ac3dec_data.h"
@@ -1248,32 +1249,32 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     /* check that reported frame size fits in input buffer */
     if(s->frame_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
-        err = AC3_PARSE_ERROR_FRAME_SIZE;
+        err = AAC_AC3_PARSE_ERROR_FRAME_SIZE;
     }
 
     /* check for crc mismatch */
-    if(err != AC3_PARSE_ERROR_FRAME_SIZE && avctx->error_recognition >= FF_ER_CAREFUL) {
+    if(err != AAC_AC3_PARSE_ERROR_FRAME_SIZE && avctx->error_recognition >= FF_ER_CAREFUL) {
         if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2], s->frame_size-2)) {
             av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
-            err = AC3_PARSE_ERROR_CRC;
+            err = AAC_AC3_PARSE_ERROR_CRC;
         }
     }
 
-    if(err && err != AC3_PARSE_ERROR_CRC) {
+    if(err && err != AAC_AC3_PARSE_ERROR_CRC) {
         switch(err) {
-            case AC3_PARSE_ERROR_SYNC:
+            case AAC_AC3_PARSE_ERROR_SYNC:
                 av_log(avctx, AV_LOG_ERROR, "frame sync error\n");
                 return -1;
-            case AC3_PARSE_ERROR_BSID:
+            case AAC_AC3_PARSE_ERROR_BSID:
                 av_log(avctx, AV_LOG_ERROR, "invalid bitstream id\n");
                 break;
-            case AC3_PARSE_ERROR_SAMPLE_RATE:
+            case AAC_AC3_PARSE_ERROR_SAMPLE_RATE:
                 av_log(avctx, AV_LOG_ERROR, "invalid sample rate\n");
                 break;
-            case AC3_PARSE_ERROR_FRAME_SIZE:
+            case AAC_AC3_PARSE_ERROR_FRAME_SIZE:
                 av_log(avctx, AV_LOG_ERROR, "invalid frame size\n");
                 break;
-            case AC3_PARSE_ERROR_FRAME_TYPE:
+            case AAC_AC3_PARSE_ERROR_FRAME_TYPE:
                 /* skip frame if CRC is ok. otherwise use error concealment. */
                 /* TODO: add support for substreams and dependent frames */
                 if(s->frame_type == EAC3_FRAME_TYPE_DEPENDENT || s->substreamid) {

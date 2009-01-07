@@ -22,6 +22,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "aac_ac3_parser.h"
 #include "ac3.h"
 #include "ac3_parser.h"
 #include "ac3dec.h"
@@ -184,10 +185,10 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
        dependent streams which are used to add or replace channels. */
     if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
         ff_log_missing_feature(s->avctx, "Dependent substream decoding", 1);
-        return AC3_PARSE_ERROR_FRAME_TYPE;
+        return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
     } else if (s->frame_type == EAC3_FRAME_TYPE_RESERVED) {
         av_log(s->avctx, AV_LOG_ERROR, "Reserved frame type\n");
-        return AC3_PARSE_ERROR_FRAME_TYPE;
+        return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
     }
 
     /* The substream id indicates which substream this frame belongs to. each
@@ -196,7 +197,7 @@ int ff_eac3_parse_header(AC3DecodeContext *s)
     if (s->substreamid) {
         /* only decode substream with id=0. skip any additional substreams. */
         ff_log_missing_feature(s->avctx, "Additional substreams", 1);
-        return AC3_PARSE_ERROR_FRAME_TYPE;
+        return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
     }
 
     if (s->bit_alloc_params.sr_code == EAC3_SR_CODE_REDUCED) {

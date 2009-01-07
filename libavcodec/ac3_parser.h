@@ -26,15 +26,6 @@
 #include "ac3.h"
 #include "bitstream.h"
 
-typedef enum {
-    AC3_PARSE_ERROR_SYNC        = -1,
-    AC3_PARSE_ERROR_BSID        = -2,
-    AC3_PARSE_ERROR_SAMPLE_RATE = -3,
-    AC3_PARSE_ERROR_FRAME_SIZE  = -4,
-    AC3_PARSE_ERROR_FRAME_TYPE  = -5,
-    AC3_PARSE_ERROR_CRC         = -6,
-} AC3ParseError;
-
 /**
  * Parses AC-3 frame header.
  * Parses the header up to the lfeon element, which is the first 52 or 54 bits
