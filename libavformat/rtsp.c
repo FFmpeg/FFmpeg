@@ -549,6 +549,9 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             if (atoi(p) == 1)
                 rt->transport = RTSP_TRANSPORT_RDT;
         } else if (s->nb_streams > 0) {
+            if (rt->server_type == RTSP_SERVER_REAL)
+                ff_real_parse_sdp_a_line(s, s->nb_streams - 1, p);
+
             rtsp_st = s->streams[s->nb_streams - 1]->priv_data;
             if (rtsp_st->dynamic_handler &&
                 rtsp_st->dynamic_handler->parse_sdp_a_line)

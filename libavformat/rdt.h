@@ -101,4 +101,15 @@ int ff_rdt_parse_header(const uint8_t *buf, int len,
 int ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
                         const uint8_t *buf, int len);
 
+/**
+ * Parse a server-related SDP line.
+ *
+ * @param s the RTSP AVFormatContext
+ * @param stream_index the index of the first stream in the set represented
+ *               by the SDP m= line (in s->streams)
+ * @param buf the SDP line
+ */
+void ff_real_parse_sdp_a_line(AVFormatContext *s, int stream_index,
+                              const char *buf);
+
 #endif /* AVFORMAT_RDT_H */

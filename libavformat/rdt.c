@@ -76,6 +76,11 @@ ff_rdt_parse_open(AVFormatContext *ic, int first_stream_of_set_idx,
 void
 ff_rdt_parse_close(RDTDemuxContext *s)
 {
+    int i;
+
+    for (i = 1; i < s->n_streams; i++)
+        s->streams[i]->priv_data = NULL;
+
     av_free(s);
 }
 
@@ -421,6 +426,68 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
         stream->first_dts = atoi(p);
 
     return 0;
+}
+
+static AVStream *
+add_dstream(AVFormatContext *s, AVStream *orig_st)
+{
+    AVStream *st;
+
+    if (!(st = av_new_stream(s, 0)))
+        return NULL;
+    st->codec->codec_type = orig_st->codec->codec_type;
+    st->priv_data         = orig_st->priv_data;
+    st->first_dts         = orig_st->first_dts;
+
+    return st;
+}
+
+static void
+real_parse_asm_rulebook(AVFormatContext *s, AVStream *orig_st,
+                        const char *p)
+{
+    const char *end;
+    int n_rules, odd = 0;
+    AVStream *st;
+
+    /**
+     * The ASMRuleBook contains a list of comma-separated strings per rule,
+     * and each rule is separated by a ;. The last one also has a ; at the
+     * end so we can use it as delimiter.
+     * Every rule occurs twice, once for when the RTSP packet header marker
+     * is set and once for if it isn't. We only read the first because we
+     * don't care much (that's what the "odd" variable is for).
+     * Each rule contains a set of one or more statements, optionally
+     * preceeded by a single condition. If there's a condition, the rule
+     * starts with a '#'. Multiple conditions are merged between brackets,
+     * so there are never multiple conditions spread out over separate
+     * statements. Generally, these conditions are bitrate limits (min/max)
+     * for multi-bitrate streams.
+     */
+    if (*p == '\"') p++;
+    for (n_rules = 0; s->nb_streams < MAX_STREAMS;) {
+        if (!(end = strchr(p, ';')))
+            break;
+        if (!odd && end != p) {
+            if (n_rules > 0)
+                st = add_dstream(s, orig_st);
+            else
+                st = orig_st;
+            n_rules++;
+        }
+        p = end + 1;
+        odd ^= 1;
+    }
+}
+
+void
+ff_real_parse_sdp_a_line (AVFormatContext *s, int stream_index,
+                          const char *line)
+{
+    const char *p = line;
+
+    if (av_strstart(p, "ASMRuleBook:string;", &p))
+        real_parse_asm_rulebook(s, s->streams[stream_index], p);
 }
 
 static PayloadContext *
