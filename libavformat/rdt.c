@@ -180,7 +180,7 @@ rdt_load_mdpr (PayloadContext *rdt, AVStream *st, int rule_nr)
         size = rdt->mlti_data_size;
         url_fseek(&pb, 0, SEEK_SET);
     }
-    if (ff_rm_read_mdpr_codecdata(rdt->rmctx, &pb, st, rdt->rmst[0], size) < 0)
+    if (ff_rm_read_mdpr_codecdata(rdt->rmctx, &pb, st, rdt->rmst[st->index], size) < 0)
         return -1;
 
     return 0;
@@ -307,7 +307,7 @@ rdt_parse_packet (PayloadContext *rdt, AVStream *st,
 
         init_put_byte(&pb, buf, len, 0, NULL, NULL, NULL, NULL);
         flags = (flags & PKT_FLAG_KEY) ? 2 : 0;
-        res = ff_rm_parse_packet (rdt->rmctx, &pb, st, rdt->rmst[0], len, pkt,
+        res = ff_rm_parse_packet (rdt->rmctx, &pb, st, rdt->rmst[st->index], len, pkt,
                                   &seq, &flags, timestamp);
         pos = url_ftell(&pb);
         if (res < 0)
@@ -322,7 +322,7 @@ rdt_parse_packet (PayloadContext *rdt, AVStream *st,
     } else {
         rdt->audio_pkt_cnt =
             ff_rm_retrieve_cache (rdt->rmctx, rdt->rmctx->pb,
-                                  st, rdt->rmst[0], pkt);
+                                  st, rdt->rmst[st->index], pkt);
         if (rdt->audio_pkt_cnt == 0 &&
             st->codec->codec_id == CODEC_ID_AAC)
             av_freep(&rdt->rmctx->pb);
@@ -389,15 +389,6 @@ ff_rdt_subscribe_rule (char *cmd, int size,
                 stream_nr, rule_nr * 2, stream_nr, rule_nr * 2 + 1);
 }
 
-void
-ff_rdt_subscribe_rule2 (RDTDemuxContext *s, char *cmd, int size,
-                        int stream_nr, int rule_nr)
-{
-    PayloadContext *rdt = s->dynamic_protocol_context;
-
-    rdt_load_mdpr(rdt, s->streams[0], rule_nr * 2);
-}
-
 static unsigned char *
 rdt_parse_b64buf (unsigned int *target_len, const char *p)
 {
@@ -424,6 +415,19 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
         rdt->mlti_data = rdt_parse_b64buf(&rdt->mlti_data_size, p);
     } else if (av_strstart(p, "StartTime:integer;", &p))
         stream->first_dts = atoi(p);
+    else if (av_strstart(p, "ASMRuleBook:string;", &p)) {
+        int n = st_index, first = -1;
+
+        for (n = 0; n < s->nb_streams; n++)
+            if (s->streams[n]->priv_data == stream->priv_data) {
+                if (first == -1) first = n;
+                rdt->rmst[s->streams[n]->index] = ff_rm_alloc_rmstream();
+                rdt_load_mdpr(rdt, s->streams[n], (n - first) * 2);
+
+                if (s->streams[n]->codec->codec_id == CODEC_ID_AAC)
+                    s->streams[n]->codec->frame_size = 1; // FIXME
+           }
+    }
 
     return 0;
 }
@@ -510,7 +514,6 @@ rdt_new_extradata (void)
     PayloadContext *rdt = av_mallocz(sizeof(PayloadContext));
 
     av_open_input_stream(&rdt->rmctx, NULL, "", &rdt_demuxer, NULL);
-    rdt->rmst[0] = ff_rm_alloc_rmstream();
 
     return rdt;
 }
@@ -518,8 +521,13 @@ rdt_new_extradata (void)
 static void
 rdt_free_extradata (PayloadContext *rdt)
 {
-    ff_rm_free_rmstream(rdt->rmst[0]);
-    av_free(rdt->rmst[0]);
+    int i;
+
+    for (i = 0; i < MAX_STREAMS; i++)
+        if (rdt->rmst[i]) {
+            ff_rm_free_rmstream(rdt->rmst[i]);
+            av_freep(&rdt->rmst[i]);
+        }
     if (rdt->rmctx)
         av_close_input_stream(rdt->rmctx);
     av_freep(&rdt->mlti_data);

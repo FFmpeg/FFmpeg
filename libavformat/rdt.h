@@ -74,9 +74,6 @@ void av_register_rdt_dynamic_payload_handlers(void);
  */
 void ff_rdt_subscribe_rule(char *cmd, int size,
                            int stream_nr, int rule_nr);
-// FIXME this will be removed ASAP
-void ff_rdt_subscribe_rule2(RDTDemuxContext *s, char *cmd, int size,
-                            int stream_nr, int rule_nr);
 
 /**
  * Parse RDT-style packet header.
