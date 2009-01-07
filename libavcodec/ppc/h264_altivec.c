@@ -651,6 +651,25 @@ static void ff_h264_idct8_dc_add_altivec(uint8_t *dst, DCTELEM *block, int strid
     h264_idct_dc_add_internal(dst, block, stride, 8);
 }
 
+static void ff_h264_idct_add16_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=0; i<16; i++){
+        int nnz = nnzc[ scan8[i] ];
+        if(nnz){
+            if(nnz==1 && block[i*16]) h264_idct_dc_add_altivec(dst + block_offset[i], block + i*16, stride);
+            else                      ff_h264_idct_add_altivec(dst + block_offset[i], block + i*16, stride);
+        }
+    }
+}
+
+static void ff_h264_idct_add16intra_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=0; i<16; i++){
+        if(nnzc[ scan8[i] ]) ff_h264_idct_add_altivec(dst + block_offset[i], block + i*16, stride);
+        else if(block[i*16]) h264_idct_dc_add_altivec(dst + block_offset[i], block + i*16, stride);
+    }
+}
+
 static void ff_h264_idct8_add4_altivec(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
     int i;
     for(i=0; i<16; i+=4){
@@ -659,6 +678,16 @@ static void ff_h264_idct8_add4_altivec(uint8_t *dst, const int *block_offset, DC
             if(nnz==1 && block[i*16]) ff_h264_idct8_dc_add_altivec(dst + block_offset[i], block + i*16, stride);
             else                      ff_h264_idct8_add_altivec   (dst + block_offset[i], block + i*16, stride);
         }
+    }
+}
+
+static void ff_h264_idct_add8_altivec(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+    int i;
+    for(i=16; i<16+8; i++){
+        if(nnzc[ scan8[i] ])
+            ff_h264_idct_add_altivec(dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
+        else if(block[i*16])
+            h264_idct_dc_add_altivec(dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
     }
 }
 
@@ -1065,10 +1094,10 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
         c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
         c->put_no_rnd_h264_chroma_pixels_tab[0] = put_no_rnd_h264_chroma_mc8_altivec;
         c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
-/* ff_h264_idct_add_altivec may be re-enabled once AltiVec versions of
-   h264_idct_add16, h264_idct_add16intra, h264_idct_add8 are implemented
         c->h264_idct_add = ff_h264_idct_add_altivec;
-*/
+        c->h264_idct_add8 = ff_h264_idct_add8_altivec;
+        c->h264_idct_add16 = ff_h264_idct_add16_altivec;
+        c->h264_idct_add16intra = ff_h264_idct_add16intra_altivec;
         c->h264_idct_dc_add= h264_idct_dc_add_altivec;
         c->h264_idct8_dc_add = ff_h264_idct8_dc_add_altivec;
         c->h264_idct8_add = ff_h264_idct8_add_altivec;
