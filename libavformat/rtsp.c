@@ -39,64 +39,6 @@
 //#define DEBUG
 //#define DEBUG_RTP_TCP
 
-enum RTSPClientState {
-    RTSP_STATE_IDLE,
-    RTSP_STATE_PLAYING,
-    RTSP_STATE_PAUSED,
-};
-
-enum RTSPServerType {
-    RTSP_SERVER_RTP,  /*< Standard-compliant RTP-server */
-    RTSP_SERVER_REAL, /*< Realmedia-style server */
-    RTSP_SERVER_LAST
-};
-
-enum RTSPTransport {
-    RTSP_TRANSPORT_RTP,
-    RTSP_TRANSPORT_RDT,
-    RTSP_TRANSPORT_LAST
-};
-
-typedef struct RTSPState {
-    URLContext *rtsp_hd; /* RTSP TCP connexion handle */
-    int nb_rtsp_streams;
-    struct RTSPStream **rtsp_streams;
-
-    enum RTSPClientState state;
-    int64_t seek_timestamp;
-
-    /* XXX: currently we use unbuffered input */
-    //    ByteIOContext rtsp_gb;
-    int seq;        /* RTSP command sequence number */
-    char session_id[512];
-    enum RTSPTransport transport;
-    enum RTSPLowerTransport lower_transport;
-    enum RTSPServerType server_type;
-    char last_reply[2048]; /* XXX: allocate ? */
-    void *cur_tx;
-    int need_subscription;
-    enum AVDiscard real_setup_cache[MAX_STREAMS];
-    char last_subscription[1024];
-} RTSPState;
-
-typedef struct RTSPStream {
-    URLContext *rtp_handle; /* RTP stream handle */
-    void *tx_ctx; /* RTP/RDT parse context */
-
-    int stream_index; /* corresponding stream index, if any. -1 if none (MPEG2TS case) */
-    int interleaved_min, interleaved_max;  /* interleave ids, if TCP transport */
-    char control_url[1024]; /* url for this stream (from SDP) */
-
-    int sdp_port; /* port (from SDP content - not used in RTSP) */
-    struct in_addr sdp_ip; /* IP address  (from SDP content - not used in RTSP) */
-    int sdp_ttl;  /* IP TTL (from SDP content - not used in RTSP) */
-    int sdp_payload_type; /* payload type - only used in SDP */
-    RTPPayloadData rtp_payload_data; /* rtp payload parsing infos from SDP */
-
-    RTPDynamicProtocolHandler *dynamic_handler; ///< Only valid if it's a dynamic protocol. (This is the handler structure)
-    PayloadContext *dynamic_protocol_context; ///< Only valid if it's a dynamic protocol. (This is any private data associated with the dynamic protocol)
-} RTSPStream;
-
 static int rtsp_read_play(AVFormatContext *s);
 
 /* XXX: currently, the only way to change the protocols consists in
