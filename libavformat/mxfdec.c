@@ -104,6 +104,11 @@ typedef struct {
 typedef struct {
     UID uid;
     enum MXFMetadataSetType type;
+} MXFIndexTableSegment;
+
+typedef struct {
+    UID uid;
+    enum MXFMetadataSetType type;
     UID package_uid;
     UID *tracks_refs;
     int tracks_count;
@@ -300,6 +305,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
         PRINT_KEY(s, "read packet", klv.key);
+        dprintf(s, "size %lld offset %#llx\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
             int res = mxf_decrypt_triplet(s, pkt, &klv);
             if (res < 0) {
@@ -492,6 +498,19 @@ static int mxf_read_source_package(MXFPackage *package, ByteIOContext *pb, int t
     case 0x4701:
         get_buffer(pb, package->descriptor_ref, 16);
         break;
+    }
+    return 0;
+}
+
+static int mxf_read_index_table_segment(MXFIndexTableSegment *segment, ByteIOContext *pb, int tag)
+{
+    switch(tag) {
+    case 0x3F05: dprintf(NULL, "EditUnitByteCount %d\n", get_be32(pb)); break;
+    case 0x3F06: dprintf(NULL, "IndexSID %d\n", get_be32(pb)); break;
+    case 0x3F07: dprintf(NULL, "BodySID %d\n", get_be32(pb)); break;
+    case 0x3F0B: dprintf(NULL, "IndexEditRate %d/%d\n", get_be32(pb), get_be32(pb)); break;
+    case 0x3F0C: dprintf(NULL, "IndexStartPosition %lld\n", get_be64(pb)); break;
+    case 0x3F0D: dprintf(NULL, "IndexDuration %lld\n", get_be64(pb)); break;
     }
     return 0;
 }
@@ -837,6 +856,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3A,0x00 }, mxf_read_track, sizeof(MXFTrack), Track }, /* Static Track */
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3B,0x00 }, mxf_read_track, sizeof(MXFTrack), Track }, /* Generic Track */
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x04,0x01,0x02,0x02,0x00,0x00 }, mxf_read_cryptographic_context, sizeof(MXFCryptoContext), CryptoContext },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x10,0x01,0x00 }, mxf_read_index_table_segment, sizeof(MXFIndexTableSegment), IndexTableSegment },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL, 0, AnyType },
 };
 
@@ -854,6 +874,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child
         uint64_t next = url_ftell(pb) + size;
         UID uid = {0};
 
+        dprintf(mxf->fc, "local tag %#04X size %d\n", tag, size);
         if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
             av_log(mxf->fc, AV_LOG_ERROR, "local tag 0x%04X with 0 size\n", tag);
             continue;
@@ -897,6 +918,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
         PRINT_KEY(s, "read header", klv.key);
+        dprintf(s, "size %lld offset %#llx\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             /* FIXME avoid seek */
