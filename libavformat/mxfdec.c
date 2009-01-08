@@ -521,7 +521,7 @@ static void mxf_read_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
 
     do {
         code = get_byte(pb);
-        dprintf(NULL, "pixel layout: code 0x%x\n", code);
+        dprintf(NULL, "pixel layout: code %#x\n", code);
         switch (code) {
         case 0x52: /* R */
             descriptor->bits_per_sample += get_byte(pb);
@@ -874,9 +874,9 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child
         uint64_t next = url_ftell(pb) + size;
         UID uid = {0};
 
-        dprintf(mxf->fc, "local tag %#04X size %d\n", tag, size);
+        dprintf(mxf->fc, "local tag %#04x size %d\n", tag, size);
         if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
-            av_log(mxf->fc, AV_LOG_ERROR, "local tag 0x%04X with 0 size\n", tag);
+            av_log(mxf->fc, AV_LOG_ERROR, "local tag %#04x with 0 size\n", tag);
             continue;
         }
         if (tag > 0x7FFF) { /* dynamic tag */
@@ -885,7 +885,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child
                 int local_tag = AV_RB16(mxf->local_tags+i*18);
                 if (local_tag == tag) {
                     memcpy(uid, mxf->local_tags+i*18+2, 16);
-                    dprintf(mxf->fc, "local tag 0x%04X\n", local_tag);
+                    dprintf(mxf->fc, "local tag %#04x\n", local_tag);
                     PRINT_KEY(mxf->fc, "uid", uid);
                 }
             }
