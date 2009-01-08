@@ -452,6 +452,8 @@ const char *sws_format_name(enum PixelFormat format)
             return "nv21";
         case PIX_FMT_YUV440P:
             return "yuv440p";
+        case PIX_FMT_VDPAU_H264:
+            return "vdpau_h264";
         default:
             return "Unknown format";
     }
