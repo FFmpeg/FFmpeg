@@ -485,6 +485,10 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     if (pb && !ic->data_offset)
         ic->data_offset = url_ftell(ic->pb);
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+    ff_metadata_demux_compat(ic);
+#endif
+
     *ic_ptr = ic;
     return 0;
  fail:
