@@ -34,7 +34,7 @@
     do {                                                \
         __asm__ volatile ("or    %1,    %0     \n\t"    \
                           "lds   %0,    fpscr  \n\t"    \
-                          : "=&r"(fpscr) : "r"(1<<19)); \
+                          : "+r"(fpscr) : "r"(1<<19));  \
     } while (0)
 #else
 #   define fp_single_enter(fpscr) ((void)fpscr)
