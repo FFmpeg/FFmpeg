@@ -441,17 +441,13 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             } else {
                 av_strlcpy(rtsp_st->control_url, p,   sizeof(rtsp_st->control_url));
             }
-        } else if (av_strstart(p, "rtpmap:", &p)) {
+        } else if (av_strstart(p, "rtpmap:", &p) && s->nb_streams > 0) {
             /* NOTE: rtpmap is only supported AFTER the 'm=' tag */
             get_word(buf1, sizeof(buf1), &p);
             payload_type = atoi(buf1);
-            for(i = 0; i < s->nb_streams;i++) {
-                st = s->streams[i];
+            st = s->streams[s->nb_streams - 1];
                 rtsp_st = st->priv_data;
-                if (rtsp_st->sdp_payload_type == payload_type) {
                     sdp_parse_rtpmap(st->codec, rtsp_st, payload_type, p);
-                }
-            }
         } else if (av_strstart(p, "fmtp:", &p)) {
             /* NOTE: fmtp is only supported AFTER the 'a=rtpmap:xxx' tag */
             get_word(buf1, sizeof(buf1), &p);
