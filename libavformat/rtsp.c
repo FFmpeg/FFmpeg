@@ -506,10 +506,11 @@ static int sdp_parse(AVFormatContext *s, const char *content)
 {
     const char *p;
     int letter;
-    /* Some SDP lines, particularly for Realmedia or ASF RTSP streams, contain long SDP
-     * lines containing complete ASF Headers (several kB) or arrays of MDPR (RM stream
-     * descriptor) headers plus "rulebooks" describing their properties. Therefore, the
-     * SDP line buffer is large. */
+    /* Some SDP lines, particularly for Realmedia or ASF RTSP streams,
+     * contain long SDP lines containing complete ASF Headers (several
+     * kB) or arrays of MDPR (RM stream descriptor) headers plus
+     * "rulebooks" describing their properties. Therefore, the SDP line
+     * buffer is large. */
     char buf[8192], *q;
     SDPParseState sdp_parse_state, *s1 = &sdp_parse_state;
 
