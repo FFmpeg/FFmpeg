@@ -446,8 +446,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             get_word(buf1, sizeof(buf1), &p);
             payload_type = atoi(buf1);
             st = s->streams[s->nb_streams - 1];
-                rtsp_st = st->priv_data;
-                    sdp_parse_rtpmap(st->codec, rtsp_st, payload_type, p);
+            rtsp_st = st->priv_data;
+            sdp_parse_rtpmap(st->codec, rtsp_st, payload_type, p);
         } else if (av_strstart(p, "fmtp:", &p)) {
             /* NOTE: fmtp is only supported AFTER the 'a=rtpmap:xxx' tag */
             get_word(buf1, sizeof(buf1), &p);
