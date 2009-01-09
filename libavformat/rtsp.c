@@ -1299,7 +1299,7 @@ static int rtsp_read_packet(AVFormatContext *s,
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
     int ret, len;
-    uint8_t buf[RTP_MAX_PACKET_LENGTH];
+    uint8_t buf[10 * RTP_MAX_PACKET_LENGTH];
 
     if (rt->server_type == RTSP_SERVER_REAL) {
         int i;
