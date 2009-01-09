@@ -3507,7 +3507,7 @@ static void build_feed_streams(void)
             }
         }
         if (!url_exist(feed->feed_filename)) {
-            AVFormatContext s1, *s = &s1;
+            AVFormatContext s1 = {0}, *s = &s1;
 
             if (feed->readonly) {
                 http_log("Unable to create feed file '%s' as it is marked readonly\n",
