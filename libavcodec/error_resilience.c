@@ -681,6 +681,7 @@ void ff_er_frame_end(MpegEncContext *s){
     Picture *pic= s->current_picture_ptr;
 
     if(!s->error_recognition || s->error_count==0 || s->avctx->lowres ||
+       s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU ||
        s->error_count==3*s->mb_width*(s->avctx->skip_top + s->avctx->skip_bottom)) return;
 
     if(s->current_picture.motion_val[0] == NULL){
