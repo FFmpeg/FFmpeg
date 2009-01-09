@@ -1059,13 +1059,13 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
 static int decode_entry_point(AVCodecContext *avctx, GetBitContext *gb)
 {
     VC1Context *v = avctx->priv_data;
-    int i, blink, clentry, refdist;
+    int i, blink, clentry;
 
     av_log(avctx, AV_LOG_DEBUG, "Entry point: %08X\n", show_bits_long(gb, 32));
     blink = get_bits1(gb); // broken link
     clentry = get_bits1(gb); // closed entry
     v->panscanflag = get_bits1(gb);
-    refdist = get_bits1(gb); // refdist flag
+    v->refdist_flag = get_bits1(gb);
     v->s.loop_filter = get_bits1(gb);
     v->fastuvmc = get_bits1(gb);
     v->extended_mv = get_bits1(gb);
@@ -1099,7 +1099,7 @@ static int decode_entry_point(AVCodecContext *avctx, GetBitContext *gb)
         "BrokenLink=%i, ClosedEntry=%i, PanscanFlag=%i\n"
         "RefDist=%i, Postproc=%i, FastUVMC=%i, ExtMV=%i\n"
         "DQuant=%i, VSTransform=%i, Overlap=%i, Qmode=%i\n",
-        blink, clentry, v->panscanflag, refdist, v->s.loop_filter,
+        blink, clentry, v->panscanflag, v->refdist_flag, v->s.loop_filter,
         v->fastuvmc, v->extended_mv, v->dquant, v->vstransform, v->overlap, v->quantizer_mode);
 
     return 0;
