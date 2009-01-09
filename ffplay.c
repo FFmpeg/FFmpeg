@@ -1684,6 +1684,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
            audio_size = audio_decode_frame(is, &pts);
            if (audio_size < 0) {
                 /* if error, just output silence */
+               is->audio_buf = is->audio_buf1;
                is->audio_buf_size = 1024;
                memset(is->audio_buf, 0, is->audio_buf_size);
            } else {
