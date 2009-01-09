@@ -2502,7 +2502,7 @@ int av_write_header(AVFormatContext *s)
     }
 
 #if LIBAVFORMAT_VERSION_MAJOR < 53
-    ff_metadata_sync_compat(s);
+    ff_metadata_mux_compat(s);
 #endif
 
     if(s->oformat->write_header){

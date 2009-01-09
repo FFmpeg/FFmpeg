@@ -37,7 +37,7 @@ struct AVMetadata{
 
 #if LIBAVFORMAT_VERSION_MAJOR < 53
 void ff_metadata_demux_compat(AVFormatContext *s);
-void ff_metadata_sync_compat(AVFormatContext *s);
+void ff_metadata_mux_compat(AVFormatContext *s);
 #endif
 
 #endif /* AVFORMAT_METADATA_H */

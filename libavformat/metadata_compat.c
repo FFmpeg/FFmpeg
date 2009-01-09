@@ -114,7 +114,7 @@ void ff_metadata_demux_compat(AVFormatContext *ctx)
     snprintf(number, sizeof(number), "%d", s->key);                           \
     if(s->key)  FILL_METADATA(s, key, number) }
 
-void ff_metadata_sync_compat(AVFormatContext *ctx)
+void ff_metadata_mux_compat(AVFormatContext *ctx)
 {
     int i;
 
