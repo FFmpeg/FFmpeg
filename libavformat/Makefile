@@ -5,7 +5,7 @@ FFLIBS = avcodec avutil
 
 HEADERS = avformat.h avio.h rtsp.h rtspcodes.h
 
-OBJS = allformats.o cutils.o metadata.o metadata_compat.o os_support.o sdp.o utils.o
+OBJS = allformats.o cutils.o metadata.o metadata_compat.o options.o os_support.o sdp.o utils.o
 
 # muxers/demuxers
 OBJS-$(CONFIG_AAC_DEMUXER)               += raw.o
