@@ -1086,13 +1086,13 @@ static int decode_entry_point(AVCodecContext *avctx, GetBitContext *gb)
     }
     if(v->extended_mv)
         v->extended_dmv = get_bits1(gb);
-    if(get_bits1(gb)) {
+    if((v->range_mapy_flag = get_bits1(gb))) {
         av_log(avctx, AV_LOG_ERROR, "Luma scaling is not supported, expect wrong picture\n");
-        skip_bits(gb, 3); // Y range, ignored for now
+        v->range_mapy = get_bits(gb, 3);
     }
-    if(get_bits1(gb)) {
+    if((v->range_mapuv_flag = get_bits1(gb))) {
         av_log(avctx, AV_LOG_ERROR, "Chroma scaling is not supported, expect wrong picture\n");
-        skip_bits(gb, 3); // UV range, ignored for now
+        v->range_mapuv = get_bits(gb, 3);
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Entry point info:\n"
