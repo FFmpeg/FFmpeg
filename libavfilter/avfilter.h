@@ -347,15 +347,15 @@ struct AVFilterPad
     int (*config_props)(AVFilterLink *link);
 };
 
-/** Default handler for start_frame() for video inputs */
+/** default handler for start_frame() for video inputs */
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref);
-/** Default handler for end_frame() for video inputs */
+/** default handler for end_frame() for video inputs */
 void avfilter_default_end_frame(AVFilterLink *link);
-/** Default handler for config_props() for video outputs */
+/** default handler for config_props() for video outputs */
 int avfilter_default_config_output_link(AVFilterLink *link);
-/** Default handler for config_props() for video inputs */
+/** default handler for config_props() for video inputs */
 int avfilter_default_config_input_link (AVFilterLink *link);
-/** Default handler for get_video_buffer() for video inputs */
+/** default handler for get_video_buffer() for video inputs */
 AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link,
                                                   int perms);
 /**
@@ -430,7 +430,7 @@ struct AVFilterContext
  * destination filters between which this link exists, and the indexes of
  * the pads involved.  In addition, this link also contains the parameters
  * which have been negotiated and agreed upon between the filter, such as
- * image dimensions, format, etc
+ * image dimensions, format, etc.
  */
 struct AVFilterLink
 {
@@ -491,7 +491,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
 int avfilter_config_links(AVFilterContext *filter);
 
 /**
- * Request a picture buffer with a specific set of permissions
+ * Request a picture buffer with a specific set of permissions.
  * @param link  the output link to the filter from which the picture will
  *              be requested
  * @param perms the required access permissions
@@ -526,7 +526,7 @@ int avfilter_poll_frame(AVFilterLink *link);
 void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref);
 
 /**
- * Notify the next filter that the current frame has finished
+ * Notify the next filter that the current frame has finished.
  * @param link the output link the frame was sent over
  */
 void avfilter_end_frame(AVFilterLink *link);
@@ -614,7 +614,7 @@ void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
                          AVFilterPad **pads, AVFilterLink ***links,
                          AVFilterPad *newpad);
 
-/** insert a new input pad for the filter */
+/** Insert a new input pad for the filter. */
 static inline void avfilter_insert_inpad(AVFilterContext *f, unsigned index,
                                          AVFilterPad *p)
 {
@@ -622,7 +622,7 @@ static inline void avfilter_insert_inpad(AVFilterContext *f, unsigned index,
                         &f->input_pads, &f->inputs, p);
 }
 
-/** insert a new output pad for the filter */
+/** Insert a new output pad for the filter. */
 static inline void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
                                           AVFilterPad *p)
 {
