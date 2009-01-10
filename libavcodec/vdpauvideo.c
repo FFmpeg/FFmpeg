@@ -106,8 +106,8 @@ void ff_vdpau_h264_set_reference_frames(H264Context *h)
     }
 }
 
-void ff_vdpau_h264_add_data_chunk(MpegEncContext *s,
-                                  const uint8_t *buf, int buf_size)
+void ff_vdpau_add_data_chunk(MpegEncContext *s,
+                             const uint8_t *buf, int buf_size)
 {
     struct vdpau_render_state * render;
 
