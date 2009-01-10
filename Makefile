@@ -149,10 +149,12 @@ uninstall-vhook:
 	rm -f $(addprefix "$(SHLIBDIR)/",$(ALLHOOKS_SRCS:.c=$(SLIBSUF)))
 	-rmdir "$(SHLIBDIR)/vhook/"
 
-clean::
+testclean:
+	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
+
+clean:: testclean
 	rm -f $(ALLPROGS) $(ALLPROGS_G) output_example$(EXESUF)
 	rm -f doc/*.html doc/*.pod doc/*.1
-	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
 	rm -f $(addprefix tests/,$(addsuffix $(EXESUF),audiogen videogen rotozoom seek_test tiny_psnr))
 	rm -f $(addprefix tools/,$(addsuffix $(EXESUF),cws2fws pktdumper qt-faststart trasher))
 	rm -f vhook/*.o vhook/*~ vhook/*.so vhook/*.dylib vhook/*.dll
