@@ -174,10 +174,12 @@ static int MP3lame_encode_frame(AVCodecContext *avctx,
                 );
     }
 
+    if(lame_result < 0){
     if(lame_result==-1) {
         /* output buffer too small */
         av_log(avctx, AV_LOG_ERROR, "lame: output buffer too small (buffer index: %d, free bytes: %d)\n", s->buffer_index, BUFFER_SIZE - s->buffer_index);
-        return 0;
+    }
+        return -1;
     }
 
     s->buffer_index += lame_result;
