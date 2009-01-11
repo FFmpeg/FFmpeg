@@ -348,7 +348,6 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
             assert(pkt->size);
             size = pkt->size;
         }
-        /* cast needed to get negative value */
         if (!flv->delay && pkt->dts < 0)
             flv->delay = -pkt->dts;
     }
