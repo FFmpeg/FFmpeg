@@ -31,6 +31,7 @@
  *  http://wiki.multimedia.cx/index.php?title=American_Laser_Games_MM
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define MM_PREAMBLE_SIZE    6

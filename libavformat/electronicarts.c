@@ -25,6 +25,7 @@
  * by Robin Kay (komadori at gekkou.co.uk)
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define SCHl_TAG MKTAG('S', 'C', 'H', 'l')

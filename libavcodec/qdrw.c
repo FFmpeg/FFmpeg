@@ -24,6 +24,7 @@
  * Apple QuickDraw codec.
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
 typedef struct QdrawContext{

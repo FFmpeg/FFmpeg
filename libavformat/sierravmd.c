@@ -27,6 +27,7 @@
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define VMD_HEADER_SIZE 0x0330

@@ -36,6 +36,7 @@
 #include "matroska.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
 #include "libavutil/lzo.h"
 #ifdef CONFIG_ZLIB

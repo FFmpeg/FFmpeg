@@ -27,6 +27,7 @@
  *   http://wiki.multimedia.cx/index.php?title=Maxis_XA
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define XA00_TAG MKTAG('X', 'A', 0, 0)

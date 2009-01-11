@@ -68,6 +68,7 @@
  *       transmitting them to the video decoder
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define HUFFMAN_TABLE_SIZE (64 * 1024)

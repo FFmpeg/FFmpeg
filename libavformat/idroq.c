@@ -27,6 +27,7 @@
  *   http://www.csse.monash.edu.au/~timf/
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define RoQ_MAGIC_NUMBER 0x1084

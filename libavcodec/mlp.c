@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "libavutil/crc.h"
+#include "libavutil/intreadwrite.h"
 #include "mlp.h"
 
 const uint8_t ff_mlp_huffman_tables[3][18][2] = {

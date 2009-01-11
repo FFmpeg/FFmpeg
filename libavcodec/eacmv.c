@@ -28,6 +28,7 @@
  * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_CMV
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
 typedef struct CmvContext {

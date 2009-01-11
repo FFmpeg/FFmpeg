@@ -30,6 +30,7 @@
 #ifndef AVCODEC_DSPUTIL_H
 #define AVCODEC_DSPUTIL_H
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
 

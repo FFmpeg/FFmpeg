@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/bswap.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 // specs say that maximum block size is 1Mb

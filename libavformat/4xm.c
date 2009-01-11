@@ -27,6 +27,7 @@
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define     RIFF_TAG MKTAG('R', 'I', 'F', 'F')

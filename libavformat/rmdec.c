@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "rm.h"
 

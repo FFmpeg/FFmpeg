@@ -24,6 +24,7 @@
  * Delphine Software International CIN file demuxer
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 

@@ -26,6 +26,7 @@
  * @sa http://wiki.multimedia.cx/index.php?title=BFI
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 typedef struct BFIContext {

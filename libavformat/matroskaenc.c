@@ -24,6 +24,7 @@
 #include "isom.h"
 #include "matroska.h"
 #include "avc.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/md5.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"

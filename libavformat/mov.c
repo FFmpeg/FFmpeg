@@ -23,6 +23,7 @@
 
 //#define DEBUG
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "riff.h"
 #include "isom.h"

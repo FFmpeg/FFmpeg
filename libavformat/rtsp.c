@@ -23,6 +23,7 @@
 #define _SVID_SOURCE
 
 #include "libavutil/avstring.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #include <sys/time.h>

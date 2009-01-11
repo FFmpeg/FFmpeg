@@ -33,6 +33,7 @@
  * qualify a file. Refer to wsaud_probe() for the precise parameters.
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define AUD_HEADER_SIZE 12

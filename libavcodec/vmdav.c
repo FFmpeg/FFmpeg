@@ -44,6 +44,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
 #define VMD_HEADER_SIZE 0x330

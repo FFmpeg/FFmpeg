@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
 #include "xiph.h"
 
 int ff_split_xiph_headers(uint8_t *extradata, int extradata_size,

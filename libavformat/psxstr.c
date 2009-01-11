@@ -29,6 +29,7 @@
  * RIFF headers, followed by CD sectors.
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define RIFF_TAG MKTAG('R', 'I', 'F', 'F')

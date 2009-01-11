@@ -26,6 +26,7 @@
  * Format specified in SMPTE standard 421 Annex L
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define VC1_EXTRADATA_SIZE 4

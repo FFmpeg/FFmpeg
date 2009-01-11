@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/bswap.h"
 #include "libavutil/tree.h"
 #include "nut.h"
 

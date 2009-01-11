@@ -24,6 +24,7 @@
  * Miro VideoXL codec.
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
 typedef struct VideoXLContext{

@@ -37,6 +37,7 @@
  * the fourcc 'Axan' in the 'auds' chunk of the AVI header.
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
 typedef struct DPCMContext {

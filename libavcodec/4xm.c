@@ -24,6 +24,7 @@
  * 4XM codec.
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "bitstream.h"

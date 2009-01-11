@@ -27,6 +27,7 @@
  * @sa http://www.svatopluk.com/andux/docs/dfvid.html
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "libavcodec/bethsoftvideo.h"
 

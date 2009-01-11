@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define ENABLE_DEBUG 0

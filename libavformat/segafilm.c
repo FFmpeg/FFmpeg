@@ -27,6 +27,7 @@
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define FILM_TAG MKBETAG('F', 'I', 'L', 'M')

@@ -26,6 +26,7 @@
  *   http://www.multimedia.cx/msrle.txt
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
 #define FETCH_NEXT_STREAM_BYTE() \

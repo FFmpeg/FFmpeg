@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/crc.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"

@@ -32,6 +32,7 @@
  * up and sending out the chunks.
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 /* debugging support: #define DEBUG_IPMOVIE as non-zero to see extremely

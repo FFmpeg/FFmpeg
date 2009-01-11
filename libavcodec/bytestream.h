@@ -23,6 +23,7 @@
 #define AVCODEC_BYTESTREAM_H
 
 #include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
 
 #define DEF_T(type, name, bytes, read, write)                             \
 static av_always_inline type bytestream_get_ ## name(const uint8_t **b){\

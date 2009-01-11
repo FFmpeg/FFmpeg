@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/bswap.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define SMACKER_PAL 0x01

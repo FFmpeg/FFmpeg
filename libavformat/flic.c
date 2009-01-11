@@ -31,6 +31,7 @@
  * handles special FLIs from the PC game "Magic Carpet".
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define FLIC_FILE_MAGIC_1 0xAF11
