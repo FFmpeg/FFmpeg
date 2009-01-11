@@ -1305,15 +1305,17 @@ check_cflags -std=c99
 
 case "$arch" in
     i386|i486|i586|i686|i86pc|BePC)
-        arch="x86_32"
+        arch="x86"
+        subarch="x86_32"
         enable fast_unaligned
     ;;
     x86_64|amd64)
-        arch="x86_32"
+        arch="x86"
+        subarch="x86_32"
         enable cmov
         enable fast_cmov
         enable fast_unaligned
-        check_cc <<EOF && enable fast_64bit && arch="x86_64"
+        check_cc <<EOF && enable fast_64bit && subarch="x86_64"
         int test[sizeof(char*) - 7];
 EOF
     ;;
@@ -1341,7 +1343,8 @@ EOF
         enable fast_64bit
     ;;
     sun4u|sparc64)
-        arch="sparc64"
+        arch="sparc"
+        subarch="sparc64"
         enable fast_64bit
     ;;
     sparc)
@@ -1375,9 +1378,7 @@ EOF
     ;;
 esac
 
-enable $arch
-enabled_any x86_32 x86_64 && enable x86
-enabled     sparc64       && enable sparc
+enable $arch $subarch
 
 # OS specific
 case $target_os in
