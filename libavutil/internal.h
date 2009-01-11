@@ -294,4 +294,11 @@ static av_always_inline av_const float roundf(float x)
 }
 #endif /* HAVE_ROUNDF */
 
+#ifndef HAVE_TRUNCF
+static av_always_inline av_const float truncf(float x)
+{
+    return (x > 0) ? floor(x) : ceil(x);
+}
+#endif /* HAVE_TRUNCF */
+
 #endif /* AVUTIL_INTERNAL_H */

@@ -886,6 +886,7 @@ HAVE_LIST="
     sys_videoio_h
     termios_h
     threads
+    truncf
     winsock2_h
     yasm
 "
@@ -1875,7 +1876,7 @@ done
 check_lib math.h sin -lm
 
 # test for C99 functions in math.h
-for func in llrint lrint lrintf round roundf; do
+for func in llrint lrint lrintf round roundf truncf; do
     check_exec <<EOF && enable $func || disable $func
 #include <math.h>
 int main(void) { return ($func(3.999f) > 0)?0:1; }
