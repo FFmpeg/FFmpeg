@@ -1750,7 +1750,7 @@ EOF
 
     check_asm bswap '"bswap %%eax" ::: "%eax"'
 
-    YASMFLAGS="-f $objformat -DARCH_$(toupper $arch)"
+    YASMFLAGS="-f $objformat -DARCH_$(toupper $subarch)"
     enabled     x86_64        && append YASMFLAGS "-m amd64"
     enabled_all x86_64 shared && append YASMFLAGS "-DPIC"
     case "$objformat" in
