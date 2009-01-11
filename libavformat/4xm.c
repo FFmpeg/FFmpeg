@@ -30,7 +30,7 @@
 #include "avformat.h"
 
 #define  RIFF_TAG MKTAG('R', 'I', 'F', 'F')
-#define _4XMV_TAG MKTAG('4', 'X', 'M', 'V')
+#define  FOURXMV_TAG MKTAG('4', 'X', 'M', 'V')
 #define  LIST_TAG MKTAG('L', 'I', 'S', 'T')
 #define  HEAD_TAG MKTAG('H', 'E', 'A', 'D')
 #define  TRK__TAG MKTAG('T', 'R', 'K', '_')
@@ -83,7 +83,7 @@ typedef struct FourxmDemuxContext {
 static int fourxm_probe(AVProbeData *p)
 {
     if ((AV_RL32(&p->buf[0]) != RIFF_TAG) ||
-        (AV_RL32(&p->buf[8]) != _4XMV_TAG))
+        (AV_RL32(&p->buf[8]) != FOURXMV_TAG))
         return 0;
 
     return AVPROBE_SCORE_MAX;
