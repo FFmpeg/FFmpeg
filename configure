@@ -1497,7 +1497,7 @@ case $target_os in
         disable $INDEV_LIST $OUTDEV_LIST
         network_extralibs="-lsocket"
         EXESUF=".exe"
-        objformat="win32"
+        objformat="coff"
         enable dos_paths
         ;;
     linux)
