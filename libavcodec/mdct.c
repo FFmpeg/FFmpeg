@@ -53,8 +53,9 @@ DECLARE_ALIGNED(16, float, ff_sine_256 [ 256]);
 DECLARE_ALIGNED(16, float, ff_sine_512 [ 512]);
 DECLARE_ALIGNED(16, float, ff_sine_1024[1024]);
 DECLARE_ALIGNED(16, float, ff_sine_2048[2048]);
-float *ff_sine_windows[5] = {
-    ff_sine_128, ff_sine_256, ff_sine_512, ff_sine_1024, ff_sine_2048,
+DECLARE_ALIGNED(16, float, ff_sine_4096[4096]);
+float *ff_sine_windows[6] = {
+    ff_sine_128, ff_sine_256, ff_sine_512, ff_sine_1024, ff_sine_2048, ff_sine_4096
 };
 
 // Generate a sine window.
