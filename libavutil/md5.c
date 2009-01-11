@@ -30,8 +30,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "common.h"
 #include <string.h>
+#include "bswap.h"
 #include "md5.h"
 
 typedef struct AVMD5{
