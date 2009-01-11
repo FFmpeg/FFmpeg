@@ -250,6 +250,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
 {
     uint8_t *src[4], *dst[4];
     int i, j, hsub, vsub;
+    void (*draw_slice)(AVFilterLink *, int, int);
 
     /* copy the slice if needed for permission reasons */
     if(link->srcpic) {
@@ -279,8 +280,9 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
         }
     }
 
-    if(link_dpad(link).draw_slice)
-        link_dpad(link).draw_slice(link, y, h);
+    if(!(draw_slice = link_dpad(link).draw_slice))
+        draw_slice = avfilter_default_draw_slice;
+    draw_slice(link, y, h);
 }
 
 AVFilter *avfilter_get_by_name(const char *name)

@@ -23,7 +23,7 @@
 #define AVFILTER_AVFILTER_H
 
 #define LIBAVFILTER_VERSION_MAJOR  0
-#define LIBAVFILTER_VERSION_MINOR  1
+#define LIBAVFILTER_VERSION_MINOR  2
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -349,6 +349,8 @@ struct AVFilterPad
 
 /** default handler for start_frame() for video inputs */
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref);
+/** default handler for draw_slice() for video inputs */
+void avfilter_default_draw_slice(AVFilterLink *link, int y, int h);
 /** default handler for end_frame() for video inputs */
 void avfilter_default_end_frame(AVFilterLink *link);
 /** default handler for config_props() for video outputs */

@@ -82,6 +82,17 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     }
 }
 
+void avfilter_default_draw_slice(AVFilterLink *link, int y, int h)
+{
+    AVFilterLink *out = NULL;
+
+    if(link->dst->output_count)
+        out = link->dst->outputs[0];
+
+    if(out)
+        avfilter_draw_slice(out, y, h);
+}
+
 void avfilter_default_end_frame(AVFilterLink *link)
 {
     AVFilterLink *out = NULL;
