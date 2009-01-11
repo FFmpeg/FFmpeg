@@ -1225,11 +1225,11 @@ show_list() {
 for opt do
     optval="${opt#*=}"
     case "$opt" in
-    --extra-cflags=*) add_cflags "$optval"
+    --extra-cflags=*) add_cflags $optval
     ;;
-    --extra-ldflags=*) add_ldflags "$optval"
+    --extra-ldflags=*) add_ldflags $optval
     ;;
-    --extra-libs=*) add_extralibs "$optval"
+    --extra-libs=*) add_extralibs $optval
     ;;
     --disable-devices) disable $INDEV_LIST $OUTDEV_LIST
     ;;
@@ -1382,7 +1382,7 @@ case $target_os in
     beos|haiku|zeta)
         prefix_default="$HOME/config"
         # helps building libavcodec
-        add_cflags "-DPIC -fomit-frame-pointer"
+        add_cflags -DPIC -fomit-frame-pointer
         # 3 gcc releases known for BeOS, each with ugly bugs
         gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
         case "$gcc_version" in
@@ -1390,7 +1390,7 @@ case $target_os in
             disable mmx
             ;;
           *20010315*) echo "BeBits gcc"
-            add_cflags "-fno-expensive-optimizations"
+            add_cflags -fno-expensive-optimizations
             ;;
         esac
         SHFLAGS=-nostart
@@ -1603,11 +1603,11 @@ test -z "$need_memalign" && need_memalign="$mmx"
 #Darwin CC versions
 if test $target_os = darwin; then
     if $cc -v 2>&1 | grep -q xlc; then
-        add_cflags "-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
+        add_cflags -qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto
     else
-        add_cflags "-pipe"
-        check_cflags "-force_cpusubtype_ALL"
-        check_cflags "-Wno-sign-compare"
+        add_cflags -pipe
+        check_cflags -force_cpusubtype_ALL
+        check_cflags -Wno-sign-compare
         enabled shared || check_cflags -mdynamic-no-pic
     fi
 fi
@@ -1621,68 +1621,68 @@ if test $cpu != "generic"; then
     }
     case $cpu in
         601|ppc601|PowerPC601)
-            add_cflags "-mcpu=601"
+            add_cflags -mcpu=601
             warn_altivec enabled PPC601
         ;;
         603*|ppc603*|PowerPC603*)
-            add_cflags "-mcpu=603"
+            add_cflags -mcpu=603
             warn_altivec enabled PPC603
         ;;
         604*|ppc604*|PowerPC604*)
-            add_cflags "-mcpu=604"
+            add_cflags -mcpu=604
             warn_altivec enabled PPC604
         ;;
         G3|g3|75*|ppc75*|PowerPC75*)
-            add_cflags "-mcpu=750 -mpowerpc-gfxopt"
+            add_cflags -mcpu=750 -mpowerpc-gfxopt
             warn_altivec enabled PPC75x
         ;;
         G4|g4|745*|ppc745*|PowerPC745*)
-            add_cflags "-mcpu=7450 -mpowerpc-gfxopt"
+            add_cflags -mcpu=7450 -mpowerpc-gfxopt
             warn_altivec disabled PPC745x
         ;;
         74*|ppc74*|PowerPC74*)
-            add_cflags "-mcpu=7400 -mpowerpc-gfxopt"
+            add_cflags -mcpu=7400 -mpowerpc-gfxopt
             warn_altivec disabled PPC74xx
         ;;
         G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
-            add_cflags "-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
+            add_cflags -mcpu=970 -mpowerpc-gfxopt -mpowerpc64
             warn_altivec disabled PPC970
             enable ppc64
         ;;
         Cell|CELL|cell)
-            add_cflags "-mcpu=cell"
+            add_cflags -mcpu=cell
             warn_altivec disabled Cell
             enable ppc64
         ;;
         # targets that do NOT support conditional mov (cmov)
         i[345]86|pentium|pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
-            add_cflags "-march=$cpu"
+            add_cflags -march=$cpu
             disable cmov
         ;;
         # targets that do support conditional mov (cmov)
         i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2)
-            add_cflags "-march=$cpu"
+            add_cflags -march=$cpu
             enable cmov
             enable fast_cmov
         ;;
         # targets that do support conditional mov but on which it's slow
         pentium4|pentium4m|prescott|nocona)
-            add_cflags "-march=$cpu"
+            add_cflags -march=$cpu
             enable cmov
             disable fast_cmov
         ;;
         sparc64)
-            add_cflags "-mcpu=v9"
+            add_cflags -mcpu=v9
         ;;
         arm11*|cortex*)
-            add_cflags "-mcpu=$cpu"
+            add_cflags -mcpu=$cpu
             enable fast_unaligned
         ;;
         armv*)
-            add_cflags "-march=$cpu"
+            add_cflags -march=$cpu
         ;;
         arm*)
-            add_cflags "-mcpu=$cpu"
+            add_cflags -mcpu=$cpu
         ;;
         *)
             echo "WARNING: Unknown CPU \"$cpu\", ignored."
@@ -1800,7 +1800,7 @@ enabled mmi     && check_asm mmi     '"lq $2, 0($2)"'
 enabled neon    && check_asm neon    '"vadd.i16 q0, q0, q0"'
 enabled vis     && check_asm vis     '"pdist %f0, %f0, %f0"' -mcpu=ultrasparc
 
-enabled vis && add_cflags "-mcpu=ultrasparc -mtune=ultrasparc"
+enabled vis && add_cflags -mcpu=ultrasparc -mtune=ultrasparc
 
 # ---
 # big/little-endian test
@@ -2054,10 +2054,10 @@ if enabled small; then
     optimizations="small"
 elif enabled optimizations; then
     if $cc -v 2>&1 | grep -q xlc; then
-        add_cflags  "-O5"
-        add_ldflags "-O5"
+        add_cflags  -O5
+        add_ldflags -O5
     else
-        add_cflags "-O3"
+        add_cflags -O3
     fi
 fi
 check_cflags -fno-math-errno
@@ -2090,8 +2090,8 @@ if enabled shared; then
 fi
 
 if enabled gprof; then
-    add_cflags  "-p"
-    add_ldflags "-p"
+    add_cflags  -p
+    add_ldflags -p
 fi
 
 VHOOKCFLAGS="-fPIC"
