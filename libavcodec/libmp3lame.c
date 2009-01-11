@@ -28,7 +28,7 @@
 #include "mpegaudio.h"
 #include <lame/lame.h>
 
-#define BUFFER_SIZE (7200 + MPA_FRAME_SIZE + MPA_FRAME_SIZE/4)
+#define BUFFER_SIZE (7200 + 2*MPA_FRAME_SIZE + MPA_FRAME_SIZE/4)
 typedef struct Mp3AudioContext {
     lame_global_flags *gfp;
     int stereo;
