@@ -550,7 +550,7 @@ static const AVCodecTag codec_3gp_tags[] = {
     { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
     { CODEC_ID_AMR_NB, MKTAG('s','a','m','r') },
     { CODEC_ID_AMR_WB, MKTAG('s','a','w','b') },
-    { CODEC_ID_MOV_TEXT, MKTAG('t', 'x', '3', 'g') },
+    { CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
     { CODEC_ID_NONE, 0 },
 };
 
@@ -568,7 +568,7 @@ static const AVCodecTag codec_ipod_tags[] = {
     { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
     { CODEC_ID_ALAC,   MKTAG('a','l','a','c') },
     { CODEC_ID_AC3,    MKTAG('a','c','-','3') },
-    { CODEC_ID_MOV_TEXT, MKTAG('t', 'x', '3', 'g') },
+    { CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
     { CODEC_ID_NONE, 0 },
 };
 
@@ -950,10 +950,8 @@ static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack *track)
     else if (track->enc->codec_type == CODEC_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
     else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
-        if (track->mode == MODE_MOV)
-            mov_write_gmhd_tag(pb);
-        else
-            mov_write_nmhd_tag(pb);
+        if (track->mode == MODE_MOV) mov_write_gmhd_tag(pb);
+        else                         mov_write_nmhd_tag(pb);
     }
     if (track->mode == MODE_MOV) /* FIXME: Why do it for MODE_MOV only ? */
         mov_write_hdlr_tag(pb, NULL);
