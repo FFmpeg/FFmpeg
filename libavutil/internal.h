@@ -96,8 +96,6 @@
 #endif
 
 #include "config.h"
-#include "intreadwrite.h"
-#include "bswap.h"
 
 #ifndef offsetof
 #    define offsetof(T,F) ((unsigned int)((char *)&((T *)0)->F))
