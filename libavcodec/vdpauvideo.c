@@ -37,9 +37,9 @@
  * @{
  */
 
-void ff_vdpau_h264_set_reference_frames(H264Context *h)
+void ff_vdpau_h264_set_reference_frames(MpegEncContext *s)
 {
-    MpegEncContext * s = &h->s;
+    H264Context *h = s->avctx->priv_data;
     struct vdpau_render_state * render, * render_ref;
     VdpReferenceFrameH264 * rf, * rf2;
     Picture * pic;
@@ -126,9 +126,9 @@ void ff_vdpau_add_data_chunk(MpegEncContext *s,
     render->bitstream_buffers_used++;
 }
 
-void ff_vdpau_h264_picture_complete(H264Context *h)
+void ff_vdpau_h264_picture_complete(MpegEncContext *s)
 {
-    MpegEncContext * s = &h->s;
+    H264Context *h = s->avctx->priv_data;
     struct vdpau_render_state * render;
 
     render = (struct vdpau_render_state*)s->current_picture_ptr->data[0];

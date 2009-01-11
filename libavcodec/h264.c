@@ -7625,7 +7625,7 @@ static int decode_frame(AVCodecContext *avctx,
         s->current_picture_ptr->pict_type= s->pict_type;
 
         if (ENABLE_H264_VDPAU_DECODER && avctx->codec_id == CODEC_ID_H264_VDPAU)
-            ff_vdpau_h264_set_reference_frames(h);
+            ff_vdpau_h264_set_reference_frames(s);
 
         if(!s->dropable) {
             execute_ref_pic_marking(h, h->mmco, h->mmco_index);
@@ -7636,7 +7636,7 @@ static int decode_frame(AVCodecContext *avctx,
         h->prev_frame_num= h->frame_num;
 
         if (ENABLE_H264_VDPAU_DECODER && avctx->codec_id == CODEC_ID_H264_VDPAU)
-            ff_vdpau_h264_picture_complete(h);
+            ff_vdpau_h264_picture_complete(s);
 
         /*
          * FIXME: Error handling code does not seem to support interlaced

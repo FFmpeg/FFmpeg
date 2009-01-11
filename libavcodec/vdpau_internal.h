@@ -25,11 +25,10 @@
 #define AVCODEC_VDPAU_INTERNAL_H
 
 #include <stdint.h>
-#include "h264.h"
 
 void ff_vdpau_add_data_chunk(MpegEncContext *s, const uint8_t *buf,
                              int buf_size);
-void ff_vdpau_h264_set_reference_frames(H264Context *h);
-void ff_vdpau_h264_picture_complete(H264Context *h);
+void ff_vdpau_h264_set_reference_frames(MpegEncContext *s);
+void ff_vdpau_h264_picture_complete(MpegEncContext *s);
 
 #endif /* AVCODEC_VDPAU_INTERNAL_H */
