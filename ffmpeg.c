@@ -967,7 +967,7 @@ static void do_video_out(AVFormatContext *s,
             ret = avcodec_encode_video(enc,
                                        bit_buffer, bit_buffer_size,
                                        &big_picture);
-            if (ret == -1) {
+            if (ret < 0) {
                 fprintf(stderr, "Video encoding failed\n");
                 av_exit(1);
             }
