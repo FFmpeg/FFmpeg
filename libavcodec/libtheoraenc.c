@@ -31,6 +31,7 @@
  */
 
 /* FFmpeg includes */
+#include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "avcodec.h"
 
