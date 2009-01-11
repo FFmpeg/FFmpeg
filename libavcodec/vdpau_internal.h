@@ -25,6 +25,7 @@
 #define AVCODEC_VDPAU_INTERNAL_H
 
 #include <stdint.h>
+#include "mpegvideo.h"
 
 void ff_vdpau_add_data_chunk(MpegEncContext *s, const uint8_t *buf,
                              int buf_size);
