@@ -1447,7 +1447,7 @@ case $target_os in
     mingw32*)
         target_os=mingw32
         LIBTARGET=i386
-        if test $arch = x86_64; then
+        if enabled x86_64; then
             disable need_memalign
             LIBTARGET=x64
         fi
