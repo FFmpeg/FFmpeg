@@ -905,7 +905,7 @@ static int mov_write_vmhd_tag(ByteIOContext *pb)
 
 static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack *track)
 {
-    const char *descr, *hdlr, *hdlr_type;
+    const char *hdlr, *descr = NULL, *hdlr_type = NULL;
     int64_t pos = url_ftell(pb);
 
     if (!track) { /* no media --> data handler */
