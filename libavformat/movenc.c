@@ -550,6 +550,7 @@ static const AVCodecTag codec_3gp_tags[] = {
     { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
     { CODEC_ID_AMR_NB, MKTAG('s','a','m','r') },
     { CODEC_ID_AMR_WB, MKTAG('s','a','w','b') },
+    { CODEC_ID_MOV_TEXT, MKTAG('t', 'x', '3', 'g') },
     { CODEC_ID_NONE, 0 },
 };
 
@@ -567,6 +568,7 @@ static const AVCodecTag codec_ipod_tags[] = {
     { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
     { CODEC_ID_ALAC,   MKTAG('a','l','a','c') },
     { CODEC_ID_AC3,    MKTAG('a','c','-','3') },
+    { CODEC_ID_MOV_TEXT, MKTAG('t', 'x', '3', 'g') },
     { CODEC_ID_NONE, 0 },
 };
 
@@ -579,6 +581,7 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
         if      (track->enc->codec_id == CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
         else if (track->enc->codec_id == CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
         else if (track->enc->codec_id == CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
+        else if (track->enc->codec_id == CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
         else if (track->enc->codec_type == CODEC_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
         else if (track->enc->codec_type == CODEC_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
     } else if (track->mode == MODE_IPOD) {
@@ -621,6 +624,8 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
                                "the file may be unplayable!\n");
                     }
                 }
+            } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
+                tag = codec_get_tag(ff_codec_movsubtitle_tags, track->enc->codec_id);
             }
         }
     }
@@ -641,6 +646,21 @@ static int mov_write_uuid_tag_ipod(ByteIOContext *pb)
     put_be32(pb, 0xcf0323f3);
     put_be32(pb, 0x0);
     return 28;
+}
+
+static int mov_write_subtitle_tag(ByteIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = url_ftell(pb);
+    put_be32(pb, 0);    /* size */
+    put_le32(pb, track->tag); // store it byteswapped
+    put_be32(pb, 0);    /* Reserved */
+    put_be16(pb, 0);    /* Reserved */
+    put_be16(pb, 1);    /* Data-reference index */
+
+    if (track->enc->extradata_size)
+        put_buffer(pb, track->enc->extradata, track->enc->extradata_size);
+
+    return updateSize(pb, pos);
 }
 
 static int mov_write_video_tag(ByteIOContext *pb, MOVTrack *track)
@@ -718,6 +738,8 @@ static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack *track)
         mov_write_video_tag(pb, track);
     else if (track->enc->codec_type == CODEC_TYPE_AUDIO)
         mov_write_audio_tag(pb, track);
+    else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE)
+        mov_write_subtitle_tag(pb, track);
     return updateSize(pb, pos);
 }
 
@@ -838,6 +860,30 @@ static int mov_write_dinf_tag(ByteIOContext *pb)
     return updateSize(pb, pos);
 }
 
+static int mov_write_nmhd_tag(ByteIOContext *pb)
+{
+    put_be32(pb, 12);
+    put_tag(pb, "nmhd");
+    put_be32(pb, 0);
+    return 12;
+}
+
+static int mov_write_gmhd_tag(ByteIOContext *pb)
+{
+    put_be32(pb, 0x20);   /* size */
+    put_tag(pb, "gmhd");
+    put_be32(pb, 0x18);   /* gmin size */
+    put_tag(pb, "gmin");  /* generic media info */
+    put_be32(pb, 0);      /* version & flags */
+    put_be16(pb, 0x40);   /* graphics mode = */
+    put_be16(pb, 0x8000); /* opColor (r?) */
+    put_be16(pb, 0x8000); /* opColor (g?) */
+    put_be16(pb, 0x8000); /* opColor (b?) */
+    put_be16(pb, 0);      /* balance */
+    put_be16(pb, 0);      /* reserved */
+    return 0x20;
+}
+
 static int mov_write_smhd_tag(ByteIOContext *pb)
 {
     put_be32(pb, 16); /* size */
@@ -871,9 +917,13 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack *track)
         if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
             hdlr_type = "vide";
             descr = "VideoHandler";
-        } else {
+        } else if (track->enc->codec_type == CODEC_TYPE_AUDIO){
             hdlr_type = "soun";
             descr = "SoundHandler";
+        } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE){
+            if (track->mode == MODE_IPOD) hdlr_type = "sbtl";
+            else                          hdlr_type = "text";
+            descr = "SubtitleHandler";
         }
     }
 
@@ -897,8 +947,14 @@ static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack *track)
     put_tag(pb, "minf");
     if(track->enc->codec_type == CODEC_TYPE_VIDEO)
         mov_write_vmhd_tag(pb);
-    else
+    else if (track->enc->codec_type == CODEC_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
+    else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
+        if (track->mode == MODE_MOV)
+            mov_write_gmhd_tag(pb);
+        else
+            mov_write_nmhd_tag(pb);
+    }
     if (track->mode == MODE_MOV) /* FIXME: Why do it for MODE_MOV only ? */
         mov_write_hdlr_tag(pb, NULL);
     mov_write_dinf_tag(pb);
@@ -989,7 +1045,8 @@ static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
     put_be32(pb, 0x40000000); /* reserved */
 
     /* Track width and height, for visual only */
-    if(track->enc->codec_type == CODEC_TYPE_VIDEO) {
+    if(track->enc->codec_type == CODEC_TYPE_VIDEO ||
+       track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
         if(!sample_aspect_ratio) sample_aspect_ratio = 1;
         put_be32(pb, sample_aspect_ratio * track->enc->width*0x10000);
@@ -1624,6 +1681,9 @@ static int mov_write_header(AVFormatContext *s)
                        i, track->enc->sample_rate);
                 return -1;
             }
+        }else if(st->codec->codec_type == CODEC_TYPE_SUBTITLE){
+            track->timescale = st->codec->time_base.den;
+            av_set_pts_info(st, 64, 1, st->codec->time_base.den);
         }
     }
 
