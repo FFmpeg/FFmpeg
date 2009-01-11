@@ -43,6 +43,8 @@ OBJS = adler32.o                                                        \
 
 TESTS = $(addsuffix -test$(EXESUF), adler32 aes crc des lls md5 pca random sha1 softfloat tree)
 
+DIRS = arm bfin sh4 x86
+
 include $(SUBDIR)../subdir.mak
 
 $(SUBDIR)lzo-test$(EXESUF): EXTRALIBS += -llzo2

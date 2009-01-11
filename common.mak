@@ -71,7 +71,7 @@ TESTS := $(addprefix $(SUBDIR),$(TESTS))
 
 DEP_LIBS:=$(foreach NAME,$(FFLIBS),lib$(NAME)/$($(BUILD_SHARED:yes=S)LIBNAME))
 
-ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h))
+ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h $(SRC_DIR)/$(ARCH)/*.h))
 checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 
 DEPS := $(OBJS:.o=.d)
