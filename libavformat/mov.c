@@ -1337,6 +1337,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     st->priv_data = sc;
     st->codec->codec_type = CODEC_TYPE_DATA;
     st->start_time = 0; /* XXX: check */
+    sc->ffindex = st->index;
 
     if ((ret = mov_read_default(c, pb, atom)) < 0)
         return ret;
@@ -1363,7 +1364,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         assert(st->duration % sc->time_rate == 0);
         st->duration /= sc->time_rate;
     }
-    sc->ffindex = st->index;
+
     mov_build_index(c, st);
 
     if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
