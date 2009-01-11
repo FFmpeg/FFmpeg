@@ -340,13 +340,14 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         put_byte(pb, FLV_TAG_TYPE_AUDIO);
     }
 
-    if (enc->codec_id == CODEC_ID_H264 &&
+    if (enc->codec_id == CODEC_ID_H264) {
         /* check if extradata looks like mp4 formated */
-        enc->extradata_size > 0 && *(uint8_t*)enc->extradata != 1) {
+        if (enc->extradata_size > 0 && *(uint8_t*)enc->extradata != 1) {
         if (ff_avc_parse_nal_units(pkt->data, &pkt->data, &pkt->size) < 0)
             return -1;
         assert(pkt->size);
         size = pkt->size;
+        }
         /* cast needed to get negative value */
         if (!flv->delay && pkt->dts < 0)
             flv->delay = -pkt->dts;
