@@ -1760,9 +1760,7 @@ fi
 
 # check for assembler specific support
 
-if test $arch = "ppc"; then
-    check_asm dcbzl '"dcbzl 0, 1"'
-fi
+enabled ppc && check_asm dcbzl '"dcbzl 0, 1"'
 
 # check for SIMD availability
 
@@ -2137,7 +2135,7 @@ if test "$extra_version" != ""; then
     echo "version string suffix     $extra_version"
 fi
 echo "big-endian                ${bigendian-no}"
-if test $arch = "x86_32" -o $arch = "x86_64"; then
+if enabled x86; then
     echo "yasm                      ${yasm-no}"
     echo "MMX enabled               ${mmx-no}"
     echo "SSE enabled               ${sse-no}"
@@ -2146,7 +2144,7 @@ if test $arch = "x86_32" -o $arch = "x86_64"; then
     echo "EBX available             ${ebx_available-no}"
     echo "EBP available             ${ebp_available-no}"
 fi
-if test $arch = "arm"; then
+if enabled arm; then
     echo "ARMv5TE enabled           ${armv5te-no}"
     echo "ARMv6 enabled             ${armv6-no}"
     echo "ARMv6T2 enabled           ${armv6t2-no}"
@@ -2154,10 +2152,10 @@ if test $arch = "arm"; then
     echo "IWMMXT enabled            ${iwmmxt-no}"
     echo "NEON enabled              ${neon-no}"
 fi
-if test $arch = "mips"; then
+if enabled mips; then
     echo "MMI enabled               ${mmi-no}"
 fi
-if test $arch = "ppc"; then
+if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"
     echo "dcbzl available           ${dcbzl-no}"
 fi
