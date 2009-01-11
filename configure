@@ -875,6 +875,7 @@ HAVE_LIST="
     roundf
     sdl
     sdl_video_size
+    setmode
     socklen_t
     soundcard_h
     poll_h
@@ -1823,6 +1824,7 @@ check_func  inet_aton $network_extralibs
 check_func  memalign
 check_func  mkstemp
 check_func  posix_memalign
+check_func_headers io.h setmode
 check_func_headers windows.h GetProcessTimes
 
 check_header conio.h

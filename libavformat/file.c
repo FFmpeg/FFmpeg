@@ -22,6 +22,9 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include <fcntl.h>
+#ifdef HAVE_SETMODE
+#include <io.h>
+#endif
 #include <unistd.h>
 #include <sys/time.h>
 #include <stdlib.h>
@@ -104,7 +107,7 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
             fd = 0;
         }
     }
-#ifdef O_BINARY
+#ifdef HAVE_SETMODE
     setmode(fd, O_BINARY);
 #endif
     h->priv_data = (void *)(size_t)fd;
