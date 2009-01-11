@@ -917,10 +917,10 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack *track)
         if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
             hdlr_type = "vide";
             descr = "VideoHandler";
-        } else if (track->enc->codec_type == CODEC_TYPE_AUDIO){
+        } else if (track->enc->codec_type == CODEC_TYPE_AUDIO) {
             hdlr_type = "soun";
             descr = "SoundHandler";
-        } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE){
+        } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
             if (track->mode == MODE_IPOD) hdlr_type = "sbtl";
             else                          hdlr_type = "text";
             descr = "SubtitleHandler";
