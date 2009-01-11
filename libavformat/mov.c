@@ -977,6 +977,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                 sc->sample_size = (bits_per_sample >> 3) * st->codec->channels;
             }
         } else if(st->codec->codec_type==CODEC_TYPE_SUBTITLE){
+            // ttxt stsd contains display flags, justification, background
+            // color, fonts, and default styles, so fake an atom to read it
+            MOVAtom fake_atom = { .size = size - (url_ftell(pb) - start_pos) };
+            mov_read_glbl(c, pb, fake_atom);
             st->codec->codec_id= id;
         } else {
             /* other codec type, just skip (rtp, mp4s, tmcd ...) */
