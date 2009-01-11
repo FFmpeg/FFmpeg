@@ -135,6 +135,8 @@ typedef struct MOVStreamContext {
     MOVDref *drefs;
     int dref_id;
     int wrong_dts; ///< dts are wrong due to negative ctts
+    int width;  ///< tkhd width
+    int height; ///< tkhd height
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -983,6 +985,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
             MOVAtom fake_atom = { .size = size - (url_ftell(pb) - start_pos) };
             mov_read_glbl(c, pb, fake_atom);
             st->codec->codec_id= id;
+            st->codec->width = sc->width;
+            st->codec->height = sc->height;
         } else {
             /* other codec type, just skip (rtp, mp4s, tmcd ...) */
             url_fskip(pb, size - (url_ftell(pb) - start_pos));
@@ -1472,6 +1476,7 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     int64_t disp_transform[2];
     int display_matrix[3][2];
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    MOVStreamContext *sc = st->priv_data;
     int version = get_byte(pb);
 
     get_be24(pb); /* flags */
@@ -1513,6 +1518,8 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     width = get_be32(pb);       // 16.16 fixed point track width
     height = get_be32(pb);      // 16.16 fixed point track height
+    sc->width = width >> 16;
+    sc->height = height >> 16;
 
     //transform the display width/height according to the matrix
     // skip this if the display matrix is the default identity matrix
