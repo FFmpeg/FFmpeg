@@ -60,35 +60,35 @@ w57:    .long W57
   Output in registers r4--r11
 */
         .macro idct_row shift
-        ldr    lr, w46               /* lr = W4 | (W6 << 16) */
+        ldr    lr, w46               /* lr  = W4 | (W6 << 16) */
         mov    r1, #(1<<(\shift-1))
         smlad  r4, r2, ip, r1
         smlsd  r7, r2, ip, r1
-        ldr    ip, w13               /* ip = W1 | (W3 << 16) */
+        ldr    ip, w13               /* ip  = W1 | (W3 << 16) */
         ldr    r10,w57               /* r10 = W5 | (W7 << 16) */
         smlad  r5, r2, lr, r1
         smlsd  r6, r2, lr, r1
 
-        smuad  r8, r3, ip            /* r8 = B0 = W1*row[1] + W3*row[3] */
-        smusdx r11,r3, r10           /* r11 = B3 = W7*row[1] - W5*row[3] */
-        ldr    lr, [r0, #12]         /* lr = row[7,5] */
-        pkhtb  r2, ip, r10,asr #16   /* r3 = W7 | (W3 << 16) */
-        pkhbt  r1, ip, r10,lsl #16   /* r1 = W1 | (W5 << 16) */
-        smusdx r9, r2, r3            /* r9 = -B1 = W7*row[3] - W3*row[1] */
-        smlad  r8, lr, r10,r8        /* B0 += W5*row[5] + W7*row[7] */
-        smusdx r10,r3, r1            /* r10 = B2 = W5*row[1] - W1*row[3] */
+        smuad  r8, r3, ip            /* r8  =  B0 = W1*row[1] + W3*row[3] */
+        smusdx r11,r3, r10           /* r11 =  B3 = W7*row[1] - W5*row[3] */
+        ldr    lr, [r0, #12]         /* lr  =  row[7,5] */
+        pkhtb  r2, ip, r10,asr #16   /* r3  =  W7 | (W3 << 16) */
+        pkhbt  r1, ip, r10,lsl #16   /* r1  =  W1 | (W5 << 16) */
+        smusdx r9, r2, r3            /* r9  = -B1 = W7*row[3] - W3*row[1] */
+        smlad  r8, lr, r10,r8        /* B0  +=      W5*row[5] + W7*row[7] */
+        smusdx r10,r3, r1            /* r10 =  B2 = W5*row[1] - W1*row[3] */
 
-        ldr    r3, w42n              /* r3 = -W4 | (-W2 << 16) */
-        smlad  r10,lr, r2, r10       /* B2 += W7*row[5] + W3*row[7] */
-        ldr    r2, [r0, #4]          /* r2 = row[6,4] */
-        smlsdx r11,lr, ip, r11       /* B3 += W3*row[5] - W1*row[7] */
-        ldr    ip, w46               /* ip = W4 | (W6 << 16) */
-        smlad  r9, lr, r1, r9        /* B1 -= W1*row[5] + W5*row[7] */
+        ldr    r3, w42n              /* r3 =  -W4 | (-W2 << 16) */
+        smlad  r10,lr, r2, r10       /* B2 +=  W7*row[5] + W3*row[7] */
+        ldr    r2, [r0, #4]          /* r2 =   row[6,4] */
+        smlsdx r11,lr, ip, r11       /* B3 +=  W3*row[5] - W1*row[7] */
+        ldr    ip, w46               /* ip =   W4 | (W6 << 16) */
+        smlad  r9, lr, r1, r9        /* B1 -=  W1*row[5] + W5*row[7] */
 
         smlad  r5, r2, r3, r5        /* A1 += -W4*row[4] - W2*row[6] */
         smlsd  r6, r2, r3, r6        /* A2 += -W4*row[4] + W2*row[6] */
-        smlad  r4, r2, ip, r4        /* A0 += W4*row[4] + W6*row[6] */
-        smlsd  r7, r2, ip, r7        /* A3 += W4*row[4] - W6*row[6] */
+        smlad  r4, r2, ip, r4        /* A0 +=  W4*row[4] + W6*row[6] */
+        smlsd  r7, r2, ip, r7        /* A3 +=  W4*row[4] - W6*row[6] */
         .endm
 
 /*
@@ -101,20 +101,20 @@ w57:    .long W57
   Output in registers r4--r11
 */
         .macro idct_row4 shift
-        ldr    lr, w46               /* lr = W4 | (W6 << 16) */
+        ldr    lr, w46               /* lr =  W4 | (W6 << 16) */
         ldr    r10,w57               /* r10 = W5 | (W7 << 16) */
         mov    r1, #(1<<(\shift-1))
         smlad  r4, r2, ip, r1
         smlsd  r7, r2, ip, r1
-        ldr    ip, w13               /* ip = W1 | (W3 << 16) */
+        ldr    ip, w13               /* ip =  W1 | (W3 << 16) */
         smlad  r5, r2, lr, r1
         smlsd  r6, r2, lr, r1
-        smusdx r11,r3, r10           /* r11 = B3 = W7*row[1] - W5*row[3] */
-        smuad  r8, r3, ip            /* r8 = B0 = W1*row[1] + W3*row[3] */
-        pkhtb  r2, ip, r10,asr #16   /* r3 = W7 | (W3 << 16) */
-        pkhbt  r1, ip, r10,lsl #16   /* r1 = W1 | (W5 << 16) */
-        smusdx r9, r2, r3            /* r9 = -B1 = W7*row[3] - W3*row[1] */
-        smusdx r10,r3, r1            /* r10 = B2 = W5*row[1] - W1*row[3] */
+        smusdx r11,r3, r10           /* r11 =  B3 = W7*row[1] - W5*row[3] */
+        smuad  r8, r3, ip            /* r8  =  B0 = W1*row[1] + W3*row[3] */
+        pkhtb  r2, ip, r10,asr #16   /* r3  =  W7 | (W3 << 16) */
+        pkhbt  r1, ip, r10,lsl #16   /* r1  =  W1 | (W5 << 16) */
+        smusdx r9, r2, r3            /* r9  = -B1 = W7*row[3] - W3*row[1] */
+        smusdx r10,r3, r1            /* r10 =  B2 = W5*row[1] - W1*row[3] */
         .endm
 
 /*
