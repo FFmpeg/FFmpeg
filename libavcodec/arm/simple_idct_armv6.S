@@ -52,158 +52,158 @@ w57:    .long W57
 /*
   Compute partial IDCT of single row.
   shift = left-shift amount
-  a1 = source address
-  a3 = row[2,0] <= 2 cycles
-  a4 = row[3,1]
+  r0 = source address
+  r2 = row[2,0] <= 2 cycles
+  r3 = row[3,1]
   ip = w42      <= 2 cycles
 
-  Output in registers v1--v8
+  Output in registers r4--r11
 */
         .macro idct_row shift
         ldr    lr, [pc, #(w46-.-8)]  /* lr = W4 | (W6 << 16) */
-        mov    a2, #(1<<(\shift-1))
-        smlad  v1, a3, ip, a2
-        smlsd  v4, a3, ip, a2
+        mov    r1, #(1<<(\shift-1))
+        smlad  r4, r2, ip, r1
+        smlsd  r7, r2, ip, r1
         ldr    ip, [pc, #(w13-.-8)]  /* ip = W1 | (W3 << 16) */
-        ldr    v7, [pc, #(w57-.-8)]  /* v7 = W5 | (W7 << 16) */
-        smlad  v2, a3, lr, a2
-        smlsd  v3, a3, lr, a2
+        ldr    r10,[pc, #(w57-.-8)]  /* r10 = W5 | (W7 << 16) */
+        smlad  r5, r2, lr, r1
+        smlsd  r6, r2, lr, r1
 
-        smuad  v5, a4, ip            /* v5 = B0 = W1*row[1] + W3*row[3] */
-        smusdx fp, a4, v7            /* fp = B3 = W7*row[1] - W5*row[3] */
-        ldr    lr, [a1, #12]         /* lr = row[7,5] */
-        pkhtb  a3, ip, v7, asr #16   /* a4 = W7 | (W3 << 16) */
-        pkhbt  a2, ip, v7, lsl #16   /* a2 = W1 | (W5 << 16) */
-        smusdx v6, a3, a4            /* v6 = -B1 = W7*row[3] - W3*row[1] */
-        smlad  v5, lr, v7, v5        /* B0 += W5*row[5] + W7*row[7] */
-        smusdx v7, a4, a2            /* v7 = B2 = W5*row[1] - W1*row[3] */
+        smuad  r8, r3, ip            /* r8 = B0 = W1*row[1] + W3*row[3] */
+        smusdx r11,r3, r10           /* r11 = B3 = W7*row[1] - W5*row[3] */
+        ldr    lr, [r0, #12]         /* lr = row[7,5] */
+        pkhtb  r2, ip, r10,asr #16   /* r3 = W7 | (W3 << 16) */
+        pkhbt  r1, ip, r10,lsl #16   /* r1 = W1 | (W5 << 16) */
+        smusdx r9, r2, r3            /* r9 = -B1 = W7*row[3] - W3*row[1] */
+        smlad  r8, lr, r10,r8        /* B0 += W5*row[5] + W7*row[7] */
+        smusdx r10,r3, r1            /* r10 = B2 = W5*row[1] - W1*row[3] */
 
-        ldr    a4, [pc, #(w42n-.-8)] /* a4 = -W4 | (-W2 << 16) */
-        smlad  v7, lr, a3, v7        /* B2 += W7*row[5] + W3*row[7] */
-        ldr    a3, [a1, #4]          /* a3 = row[6,4] */
-        smlsdx fp, lr, ip, fp        /* B3 += W3*row[5] - W1*row[7] */
+        ldr    r3, [pc, #(w42n-.-8)] /* r3 = -W4 | (-W2 << 16) */
+        smlad  r10,lr, r2, r10       /* B2 += W7*row[5] + W3*row[7] */
+        ldr    r2, [r0, #4]          /* r2 = row[6,4] */
+        smlsdx r11,lr, ip, r11       /* B3 += W3*row[5] - W1*row[7] */
         ldr    ip, [pc, #(w46-.-8)]  /* ip = W4 | (W6 << 16) */
-        smlad  v6, lr, a2, v6        /* B1 -= W1*row[5] + W5*row[7] */
+        smlad  r9, lr, r1, r9        /* B1 -= W1*row[5] + W5*row[7] */
 
-        smlad  v2, a3, a4, v2        /* A1 += -W4*row[4] - W2*row[6] */
-        smlsd  v3, a3, a4, v3        /* A2 += -W4*row[4] + W2*row[6] */
-        smlad  v1, a3, ip, v1        /* A0 += W4*row[4] + W6*row[6] */
-        smlsd  v4, a3, ip, v4        /* A3 += W4*row[4] - W6*row[6] */
+        smlad  r5, r2, r3, r5        /* A1 += -W4*row[4] - W2*row[6] */
+        smlsd  r6, r2, r3, r6        /* A2 += -W4*row[4] + W2*row[6] */
+        smlad  r4, r2, ip, r4        /* A0 += W4*row[4] + W6*row[6] */
+        smlsd  r7, r2, ip, r7        /* A3 += W4*row[4] - W6*row[6] */
         .endm
 
 /*
   Compute partial IDCT of half row.
   shift = left-shift amount
-  a3 = row[2,0]
-  a4 = row[3,1]
+  r2 = row[2,0]
+  r3 = row[3,1]
   ip = w42
 
-  Output in registers v1--v8
+  Output in registers r4--r11
 */
         .macro idct_row4 shift
         ldr    lr, [pc, #(w46-.-8)]  /* lr = W4 | (W6 << 16) */
-        ldr    v7, [pc, #(w57-.-8)]  /* v7 = W5 | (W7 << 16) */
-        mov    a2, #(1<<(\shift-1))
-        smlad  v1, a3, ip, a2
-        smlsd  v4, a3, ip, a2
+        ldr    r10,[pc, #(w57-.-8)]  /* r10 = W5 | (W7 << 16) */
+        mov    r1, #(1<<(\shift-1))
+        smlad  r4, r2, ip, r1
+        smlsd  r7, r2, ip, r1
         ldr    ip, [pc, #(w13-.-8)]  /* ip = W1 | (W3 << 16) */
-        smlad  v2, a3, lr, a2
-        smlsd  v3, a3, lr, a2
-        smusdx fp, a4, v7            /* fp = B3 = W7*row[1] - W5*row[3] */
-        smuad  v5, a4, ip            /* v5 = B0 = W1*row[1] + W3*row[3] */
-        pkhtb  a3, ip, v7, asr #16   /* a4 = W7 | (W3 << 16) */
-        pkhbt  a2, ip, v7, lsl #16   /* a2 = W1 | (W5 << 16) */
-        smusdx v6, a3, a4            /* v6 = -B1 = W7*row[3] - W3*row[1] */
-        smusdx v7, a4, a2            /* v7 = B2 = W5*row[1] - W1*row[3] */
+        smlad  r5, r2, lr, r1
+        smlsd  r6, r2, lr, r1
+        smusdx r11,r3, r10           /* r11 = B3 = W7*row[1] - W5*row[3] */
+        smuad  r8, r3, ip            /* r8 = B0 = W1*row[1] + W3*row[3] */
+        pkhtb  r2, ip, r10,asr #16   /* r3 = W7 | (W3 << 16) */
+        pkhbt  r1, ip, r10,lsl #16   /* r1 = W1 | (W5 << 16) */
+        smusdx r9, r2, r3            /* r9 = -B1 = W7*row[3] - W3*row[1] */
+        smusdx r10,r3, r1            /* r10 = B2 = W5*row[1] - W1*row[3] */
         .endm
 
 /*
   Compute final part of IDCT single row without shift.
-  Input in registers v1--v8
-  Output in registers ip, v1--v3, lr, v5--v7
+  Input in registers r4--r11
+  Output in registers ip, r4--r6, lr, r8--r10
 */
         .macro idct_finish
-        add    ip, v1, v5            /* a2 = A0 + B0 */
-        sub    lr, v1, v5            /* a3 = A0 - B0 */
-        sub    v1, v2, v6            /* a3 = A1 + B1 */
-        add    v5, v2, v6            /* a3 = A1 - B1 */
-        add    v2, v3, v7            /* a2 = A2 + B2 */
-        sub    v6, v3, v7            /* a2 = A2 - B2 */
-        add    v3, v4, fp            /* a3 = A3 + B3 */
-        sub    v7, v4, fp            /* a3 = A3 - B3 */
+        add    ip, r4, r8            /* r1 = A0 + B0 */
+        sub    lr, r4, r8            /* r2 = A0 - B0 */
+        sub    r4, r5, r9            /* r2 = A1 + B1 */
+        add    r8, r5, r9            /* r2 = A1 - B1 */
+        add    r5, r6, r10           /* r1 = A2 + B2 */
+        sub    r9, r6, r10           /* r1 = A2 - B2 */
+        add    r6, r7, r11           /* r2 = A3 + B3 */
+        sub    r10,r7, r11           /* r2 = A3 - B3 */
         .endm
 
 /*
   Compute final part of IDCT single row.
   shift = right-shift amount
-  Input/output in registers v1--v8
+  Input/output in registers r4--r11
 */
         .macro idct_finish_shift shift
-        add    a4, v1, v5            /* a4 = A0 + B0 */
-        sub    a3, v1, v5            /* a3 = A0 - B0 */
-        mov    v1, a4, asr #\shift
-        mov    v5, a3, asr #\shift
+        add    r3, r4, r8            /* r3 = A0 + B0 */
+        sub    r2, r4, r8            /* r2 = A0 - B0 */
+        mov    r4, r3, asr #\shift
+        mov    r8, r2, asr #\shift
 
-        sub    a4, v2, v6            /* a4 = A1 + B1 */
-        add    a3, v2, v6            /* a3 = A1 - B1 */
-        mov    v2, a4, asr #\shift
-        mov    v6, a3, asr #\shift
+        sub    r3, r5, r9            /* r3 = A1 + B1 */
+        add    r2, r5, r9            /* r2 = A1 - B1 */
+        mov    r5, r3, asr #\shift
+        mov    r9, r2, asr #\shift
 
-        add    a4, v3, v7            /* a4 = A2 + B2 */
-        sub    a3, v3, v7            /* a3 = A2 - B2 */
-        mov    v3, a4, asr #\shift
-        mov    v7, a3, asr #\shift
+        add    r3, r6, r10           /* r3 = A2 + B2 */
+        sub    r2, r6, r10           /* r2 = A2 - B2 */
+        mov    r6, r3, asr #\shift
+        mov    r10,r2, asr #\shift
 
-        add    a4, v4, fp            /* a4 = A3 + B3 */
-        sub    a3, v4, fp            /* a3 = A3 - B3 */
-        mov    v4, a4, asr #\shift
-        mov    fp, a3, asr #\shift
+        add    r3, r7, r11           /* r3 = A3 + B3 */
+        sub    r2, r7, r11           /* r2 = A3 - B3 */
+        mov    r7, r3, asr #\shift
+        mov    r11,r2, asr #\shift
         .endm
 
 /*
   Compute final part of IDCT single row, saturating results at 8 bits.
   shift = right-shift amount
-  Input/output in registers v1--v8
+  Input/output in registers r4--r11
 */
         .macro idct_finish_shift_sat shift
-        add    a4, v1, v5            /* a4 = A0 + B0 */
-        sub    ip, v1, v5            /* ip = A0 - B0 */
-        usat   v1, #8, a4, asr #\shift
-        usat   v5, #8, ip, asr #\shift
+        add    r3, r4, r8            /* r3 = A0 + B0 */
+        sub    ip, r4, r8            /* ip = A0 - B0 */
+        usat   r4, #8, r3, asr #\shift
+        usat   r8, #8, ip, asr #\shift
 
-        sub    a4, v2, v6            /* a4 = A1 + B1 */
-        add    ip, v2, v6            /* ip = A1 - B1 */
-        usat   v2, #8, a4, asr #\shift
-        usat   v6, #8, ip, asr #\shift
+        sub    r3, r5, r9            /* r3 = A1 + B1 */
+        add    ip, r5, r9            /* ip = A1 - B1 */
+        usat   r5, #8, r3, asr #\shift
+        usat   r9, #8, ip, asr #\shift
 
-        add    a4, v3, v7            /* a4 = A2 + B2 */
-        sub    ip, v3, v7            /* ip = A2 - B2 */
-        usat   v3, #8, a4, asr #\shift
-        usat   v7, #8, ip, asr #\shift
+        add    r3, r6, r10           /* r3 = A2 + B2 */
+        sub    ip, r6, r10           /* ip = A2 - B2 */
+        usat   r6, #8, r3, asr #\shift
+        usat   r10,#8, ip, asr #\shift
 
-        add    a4, v4, fp            /* a4 = A3 + B3 */
-        sub    ip, v4, fp            /* ip = A3 - B3 */
-        usat   v4, #8, a4, asr #\shift
-        usat   fp, #8, ip, asr #\shift
+        add    r3, r7, r11           /* r3 = A3 + B3 */
+        sub    ip, r7, r11           /* ip = A3 - B3 */
+        usat   r7, #8, r3, asr #\shift
+        usat   r11,#8, ip, asr #\shift
         .endm
 
 /*
   Compute IDCT of single row, storing as column.
-  a1 = source
-  a2 = dest
+  r0 = source
+  r1 = dest
 */
 function idct_row_armv6
         str    lr, [sp, #-4]!
 
-        ldr    lr, [a1, #12]         /* lr = row[7,5] */
-        ldr    ip, [a1, #4]          /* ip = row[6,4] */
-        ldr    a4, [a1, #8]          /* a4 = row[3,1] */
-        ldr    a3, [a1]              /* a3 = row[2,0] */
+        ldr    lr, [r0, #12]         /* lr = row[7,5] */
+        ldr    ip, [r0, #4]          /* ip = row[6,4] */
+        ldr    r3, [r0, #8]          /* r3 = row[3,1] */
+        ldr    r2, [r0]              /* r2 = row[2,0] */
         orrs   lr, lr, ip
-        cmpeq  lr, a4
-        cmpeq  lr, a3, lsr #16
+        cmpeq  lr, r3
+        cmpeq  lr, r2, lsr #16
         beq    1f
-        str    a2, [sp, #-4]!
+        str    r1, [sp, #-4]!
         ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
         cmp    lr, #0
         beq    2f
@@ -213,140 +213,140 @@ function idct_row_armv6
 
 2:      idct_row4  ROW_SHIFT
 
-3:      ldr    a2, [sp], #4
+3:      ldr    r1, [sp], #4
         idct_finish_shift ROW_SHIFT
 
-        strh   v1, [a2]
-        strh   v2, [a2, #(16*2)]
-        strh   v3, [a2, #(16*4)]
-        strh   v4, [a2, #(16*6)]
-        strh   fp, [a2, #(16*1)]
-        strh   v7, [a2, #(16*3)]
-        strh   v6, [a2, #(16*5)]
-        strh   v5, [a2, #(16*7)]
+        strh   r4, [r1]
+        strh   r5, [r1, #(16*2)]
+        strh   r6, [r1, #(16*4)]
+        strh   r7, [r1, #(16*6)]
+        strh   r11,[r1, #(16*1)]
+        strh   r10,[r1, #(16*3)]
+        strh   r9, [r1, #(16*5)]
+        strh   r8, [r1, #(16*7)]
 
         ldr    pc, [sp], #4
 
-1:      mov    a3, a3, lsl #3
-        strh   a3, [a2]
-        strh   a3, [a2, #(16*2)]
-        strh   a3, [a2, #(16*4)]
-        strh   a3, [a2, #(16*6)]
-        strh   a3, [a2, #(16*1)]
-        strh   a3, [a2, #(16*3)]
-        strh   a3, [a2, #(16*5)]
-        strh   a3, [a2, #(16*7)]
+1:      mov    r2, r2, lsl #3
+        strh   r2, [r1]
+        strh   r2, [r1, #(16*2)]
+        strh   r2, [r1, #(16*4)]
+        strh   r2, [r1, #(16*6)]
+        strh   r2, [r1, #(16*1)]
+        strh   r2, [r1, #(16*3)]
+        strh   r2, [r1, #(16*5)]
+        strh   r2, [r1, #(16*7)]
         ldr    pc, [sp], #4
         .endfunc
 
 /*
   Compute IDCT of single column, read as row.
-  a1 = source
-  a2 = dest
+  r0 = source
+  r1 = dest
 */
 function idct_col_armv6
-        stmfd  sp!, {a2, lr}
+        stmfd  sp!, {r1, lr}
 
-        ldr    a3, [a1]              /* a3 = row[2,0] */
+        ldr    r2, [r0]              /* r2 = row[2,0] */
         ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
-        ldr    a4, [a1, #8]          /* a4 = row[3,1] */
+        ldr    r3, [r0, #8]          /* r3 = row[3,1] */
         idct_row COL_SHIFT
-        ldr    a2, [sp], #4
+        ldr    r1, [sp], #4
         idct_finish_shift COL_SHIFT
 
-        strh   v1, [a2]
-        strh   v2, [a2, #(16*1)]
-        strh   v3, [a2, #(16*2)]
-        strh   v4, [a2, #(16*3)]
-        strh   fp, [a2, #(16*4)]
-        strh   v7, [a2, #(16*5)]
-        strh   v6, [a2, #(16*6)]
-        strh   v5, [a2, #(16*7)]
+        strh   r4, [r1]
+        strh   r5, [r1, #(16*1)]
+        strh   r6, [r1, #(16*2)]
+        strh   r7, [r1, #(16*3)]
+        strh   r11,[r1, #(16*4)]
+        strh   r10,[r1, #(16*5)]
+        strh   r9, [r1, #(16*6)]
+        strh   r8, [r1, #(16*7)]
 
         ldr    pc, [sp], #4
         .endfunc
 
 /*
   Compute IDCT of single column, read as row, store saturated 8-bit.
-  a1 = source
-  a2 = dest
-  a3 = line size
+  r0 = source
+  r1 = dest
+  r2 = line size
 */
 function idct_col_put_armv6
-        stmfd  sp!, {a2, a3, lr}
+        stmfd  sp!, {r1, r2, lr}
 
-        ldr    a3, [a1]              /* a3 = row[2,0] */
+        ldr    r2, [r0]              /* r2 = row[2,0] */
         ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
-        ldr    a4, [a1, #8]          /* a4 = row[3,1] */
+        ldr    r3, [r0, #8]          /* r3 = row[3,1] */
         idct_row COL_SHIFT
-        ldmfd  sp!, {a2, a3}
+        ldmfd  sp!, {r1, r2}
         idct_finish_shift_sat COL_SHIFT
 
-        strb   v1, [a2], a3
-        strb   v2, [a2], a3
-        strb   v3, [a2], a3
-        strb   v4, [a2], a3
-        strb   fp, [a2], a3
-        strb   v7, [a2], a3
-        strb   v6, [a2], a3
-        strb   v5, [a2], a3
+        strb   r4, [r1], r2
+        strb   r5, [r1], r2
+        strb   r6, [r1], r2
+        strb   r7, [r1], r2
+        strb   r11,[r1], r2
+        strb   r10,[r1], r2
+        strb   r9, [r1], r2
+        strb   r8, [r1], r2
 
-        sub    a2, a2, a3, lsl #3
+        sub    r1, r1, r2, lsl #3
 
         ldr    pc, [sp], #4
         .endfunc
 
 /*
   Compute IDCT of single column, read as row, add/store saturated 8-bit.
-  a1 = source
-  a2 = dest
-  a3 = line size
+  r0 = source
+  r1 = dest
+  r2 = line size
 */
 function idct_col_add_armv6
-        stmfd  sp!, {a2, a3, lr}
+        stmfd  sp!, {r1, r2, lr}
 
-        ldr    a3, [a1]              /* a3 = row[2,0] */
+        ldr    r2, [r0]              /* r2 = row[2,0] */
         ldr    ip, [pc, #(w42-.-8)]  /* ip = W4 | (W2 << 16) */
-        ldr    a4, [a1, #8]          /* a4 = row[3,1] */
+        ldr    r3, [r0, #8]          /* r3 = row[3,1] */
         idct_row COL_SHIFT
-        ldmfd  sp!, {a2, a3}
+        ldmfd  sp!, {r1, r2}
         idct_finish
 
-        ldrb   a4, [a2]
-        ldrb   v4, [a2, a3]
-        ldrb   fp, [a2, a3, lsl #2]
-        add    ip, a4, ip, asr #COL_SHIFT
+        ldrb   r3, [r1]
+        ldrb   r7, [r1, r2]
+        ldrb   r11,[r1, r2, lsl #2]
+        add    ip, r3, ip, asr #COL_SHIFT
         usat   ip, #8, ip
-        add    v1, v4, v1, asr #COL_SHIFT
-        strb   ip, [a2], a3
-        ldrb   ip, [a2, a3]
-        usat   v1, #8, v1
-        ldrb   fp, [a2, a3, lsl #2]
-        add    v2, ip, v2, asr #COL_SHIFT
-        usat   v2, #8, v2
-        strb   v1, [a2], a3
-        ldrb   a4, [a2, a3]
-        ldrb   ip, [a2, a3, lsl #2]
-        strb   v2, [a2], a3
-        ldrb   v4, [a2, a3]
-        ldrb   v1, [a2, a3, lsl #2]
-        add    v3, a4, v3, asr #COL_SHIFT
-        usat   v3, #8, v3
-        add    v7, v4, v7, asr #COL_SHIFT
-        usat   v7, #8, v7
-        add    v6, fp, v6, asr #COL_SHIFT
-        usat   v6, #8, v6
-        add    v5, ip, v5, asr #COL_SHIFT
-        usat   v5, #8, v5
-        add    lr, v1, lr, asr #COL_SHIFT
+        add    r4, r7, r4, asr #COL_SHIFT
+        strb   ip, [r1], r2
+        ldrb   ip, [r1, r2]
+        usat   r4, #8, r4
+        ldrb   r11,[r1, r2, lsl #2]
+        add    r5, ip, r5, asr #COL_SHIFT
+        usat   r5, #8, r5
+        strb   r4, [r1], r2
+        ldrb   r3, [r1, r2]
+        ldrb   ip, [r1, r2, lsl #2]
+        strb   r5, [r1], r2
+        ldrb   r7, [r1, r2]
+        ldrb   r4, [r1, r2, lsl #2]
+        add    r6, r3, r6, asr #COL_SHIFT
+        usat   r6, #8, r6
+        add    r10,r7, r10,asr #COL_SHIFT
+        usat   r10,#8, r10
+        add    r9, r11,r9, asr #COL_SHIFT
+        usat   r9, #8, r9
+        add    r8, ip, r8, asr #COL_SHIFT
+        usat   r8, #8, r8
+        add    lr, r4, lr, asr #COL_SHIFT
         usat   lr, #8, lr
-        strb   v3, [a2], a3
-        strb   v7, [a2], a3
-        strb   v6, [a2], a3
-        strb   v5, [a2], a3
-        strb   lr, [a2], a3
+        strb   r6, [r1], r2
+        strb   r10,[r1], r2
+        strb   r9, [r1], r2
+        strb   r8, [r1], r2
+        strb   lr, [r1], r2
 
-        sub    a2, a2, a3, lsl #3
+        sub    r1, r1, r2, lsl #3
 
         ldr    pc, [sp], #4
         .endfunc
@@ -358,76 +358,76 @@ function idct_col_add_armv6
 */
         .macro idct_rows func width
         bl     \func
-        add    a1, a1, #(16*2)
-        add    a2, a2, #\width
+        add    r0, r0, #(16*2)
+        add    r1, r1, #\width
         bl     \func
-        add    a1, a1, #(16*2)
-        add    a2, a2, #\width
+        add    r0, r0, #(16*2)
+        add    r1, r1, #\width
         bl     \func
-        add    a1, a1, #(16*2)
-        add    a2, a2, #\width
+        add    r0, r0, #(16*2)
+        add    r1, r1, #\width
         bl     \func
-        sub    a1, a1, #(16*5)
-        add    a2, a2, #\width
+        sub    r0, r0, #(16*5)
+        add    r1, r1, #\width
         bl     \func
-        add    a1, a1, #(16*2)
-        add    a2, a2, #\width
+        add    r0, r0, #(16*2)
+        add    r1, r1, #\width
         bl     \func
-        add    a1, a1, #(16*2)
-        add    a2, a2, #\width
+        add    r0, r0, #(16*2)
+        add    r1, r1, #\width
         bl     \func
-        add    a1, a1, #(16*2)
-        add    a2, a2, #\width
+        add    r0, r0, #(16*2)
+        add    r1, r1, #\width
         bl     \func
 
-        sub    a1, a1, #(16*7)
+        sub    r0, r0, #(16*7)
         .endm
 
 /* void ff_simple_idct_armv6(DCTELEM *data); */
 function ff_simple_idct_armv6, export=1
-        stmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, lr}
+        stmfd  sp!, {r4-r11, lr}
         sub    sp, sp, #128
 
-        mov    a2, sp
+        mov    r1, sp
         idct_rows idct_row_armv6, 2
-        mov    a2, a1
-        mov    a1, sp
+        mov    r1, r0
+        mov    r0, sp
         idct_rows idct_col_armv6, 2
 
         add    sp, sp, #128
-        ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
+        ldmfd  sp!, {r4-r11, pc}
         .endfunc
 
 /* ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data); */
 function ff_simple_idct_add_armv6, export=1
-        stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
+        stmfd  sp!, {r0, r1, r4-r11, lr}
         sub    sp, sp, #128
 
-        mov    a1, a3
-        mov    a2, sp
+        mov    r0, r2
+        mov    r1, sp
         idct_rows idct_row_armv6, 2
-        mov    a1, sp
-        ldr    a2, [sp, #128]
-        ldr    a3, [sp, #(128+4)]
+        mov    r0, sp
+        ldr    r1, [sp, #128]
+        ldr    r2, [sp, #(128+4)]
         idct_rows idct_col_add_armv6, 1
 
         add    sp, sp, #(128+8)
-        ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
+        ldmfd  sp!, {r4-r11, pc}
         .endfunc
 
 /* ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data); */
 function ff_simple_idct_put_armv6, export=1
-        stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
+        stmfd  sp!, {r0, r1, r4-r11, lr}
         sub    sp, sp, #128
 
-        mov    a1, a3
-        mov    a2, sp
+        mov    r0, r2
+        mov    r1, sp
         idct_rows idct_row_armv6, 2
-        mov    a1, sp
-        ldr    a2, [sp, #128]
-        ldr    a3, [sp, #(128+4)]
+        mov    r0, sp
+        ldr    r1, [sp, #128]
+        ldr    r2, [sp, #(128+4)]
         idct_rows idct_col_put_armv6, 1
 
         add    sp, sp, #(128+8)
-        ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
+        ldmfd  sp!, {r4-r11, pc}
         .endfunc
