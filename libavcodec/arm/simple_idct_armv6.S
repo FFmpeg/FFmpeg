@@ -193,7 +193,7 @@ w57:    .long W57
   r1 = dest
 */
 function idct_row_armv6
-        str    lr, [sp, #-4]!
+        push   {lr}
 
         ldr    lr, [r0, #12]         /* lr = row[7,5] */
         ldr    ip, [r0, #4]          /* ip = row[6,4] */
@@ -203,7 +203,7 @@ function idct_row_armv6
         cmpeq  lr, r3
         cmpeq  lr, r2, lsr #16
         beq    1f
-        str    r1, [sp, #-4]!
+        push   {r1}
         ldr    ip, w42               /* ip = W4 | (W2 << 16) */
         cmp    lr, #0
         beq    2f
@@ -213,7 +213,7 @@ function idct_row_armv6
 
 2:      idct_row4  ROW_SHIFT
 
-3:      ldr    r1, [sp], #4
+3:      pop    {r1}
         idct_finish_shift ROW_SHIFT
 
         strh   r4, [r1]
@@ -225,7 +225,7 @@ function idct_row_armv6
         strh   r9, [r1, #(16*5)]
         strh   r8, [r1, #(16*7)]
 
-        ldr    pc, [sp], #4
+        pop    {pc}
 
 1:      mov    r2, r2, lsl #3
         strh   r2, [r1]
@@ -236,7 +236,7 @@ function idct_row_armv6
         strh   r2, [r1, #(16*3)]
         strh   r2, [r1, #(16*5)]
         strh   r2, [r1, #(16*7)]
-        ldr    pc, [sp], #4
+        pop    {pc}
         .endfunc
 
 /*
@@ -245,13 +245,13 @@ function idct_row_armv6
   r1 = dest
 */
 function idct_col_armv6
-        stmfd  sp!, {r1, lr}
+        push   {r1, lr}
 
         ldr    r2, [r0]              /* r2 = row[2,0] */
         ldr    ip, w42               /* ip = W4 | (W2 << 16) */
         ldr    r3, [r0, #8]          /* r3 = row[3,1] */
         idct_row COL_SHIFT
-        ldr    r1, [sp], #4
+        pop    {r1}
         idct_finish_shift COL_SHIFT
 
         strh   r4, [r1]
@@ -263,7 +263,7 @@ function idct_col_armv6
         strh   r9, [r1, #(16*6)]
         strh   r8, [r1, #(16*7)]
 
-        ldr    pc, [sp], #4
+        pop    {pc}
         .endfunc
 
 /*
@@ -273,13 +273,13 @@ function idct_col_armv6
   r2 = line size
 */
 function idct_col_put_armv6
-        stmfd  sp!, {r1, r2, lr}
+        push   {r1, r2, lr}
 
         ldr    r2, [r0]              /* r2 = row[2,0] */
         ldr    ip, w42               /* ip = W4 | (W2 << 16) */
         ldr    r3, [r0, #8]          /* r3 = row[3,1] */
         idct_row COL_SHIFT
-        ldmfd  sp!, {r1, r2}
+        pop    {r1, r2}
         idct_finish_shift_sat COL_SHIFT
 
         strb   r4, [r1], r2
@@ -293,7 +293,7 @@ function idct_col_put_armv6
 
         sub    r1, r1, r2, lsl #3
 
-        ldr    pc, [sp], #4
+        pop    {pc}
         .endfunc
 
 /*
@@ -303,13 +303,13 @@ function idct_col_put_armv6
   r2 = line size
 */
 function idct_col_add_armv6
-        stmfd  sp!, {r1, r2, lr}
+        push   {r1, r2, lr}
 
         ldr    r2, [r0]              /* r2 = row[2,0] */
         ldr    ip, w42               /* ip = W4 | (W2 << 16) */
         ldr    r3, [r0, #8]          /* r3 = row[3,1] */
         idct_row COL_SHIFT
-        ldmfd  sp!, {r1, r2}
+        pop    {r1, r2}
         idct_finish
 
         ldrb   r3, [r1]
@@ -348,7 +348,7 @@ function idct_col_add_armv6
 
         sub    r1, r1, r2, lsl #3
 
-        ldr    pc, [sp], #4
+        pop    {pc}
         .endfunc
 
 /*
@@ -385,7 +385,7 @@ function idct_col_add_armv6
 
 /* void ff_simple_idct_armv6(DCTELEM *data); */
 function ff_simple_idct_armv6, export=1
-        stmfd  sp!, {r4-r11, lr}
+        push   {r4-r11, lr}
         sub    sp, sp, #128
 
         mov    r1, sp
@@ -395,12 +395,12 @@ function ff_simple_idct_armv6, export=1
         idct_rows idct_col_armv6, 2
 
         add    sp, sp, #128
-        ldmfd  sp!, {r4-r11, pc}
+        pop    {r4-r11, pc}
         .endfunc
 
 /* ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data); */
 function ff_simple_idct_add_armv6, export=1
-        stmfd  sp!, {r0, r1, r4-r11, lr}
+        push   {r0, r1, r4-r11, lr}
         sub    sp, sp, #128
 
         mov    r0, r2
@@ -412,12 +412,12 @@ function ff_simple_idct_add_armv6, export=1
         idct_rows idct_col_add_armv6, 1
 
         add    sp, sp, #(128+8)
-        ldmfd  sp!, {r4-r11, pc}
+        pop    {r4-r11, pc}
         .endfunc
 
 /* ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data); */
 function ff_simple_idct_put_armv6, export=1
-        stmfd  sp!, {r0, r1, r4-r11, lr}
+        push   {r0, r1, r4-r11, lr}
         sub    sp, sp, #128
 
         mov    r0, r2
@@ -429,5 +429,5 @@ function ff_simple_idct_put_armv6, export=1
         idct_rows idct_col_put_armv6, 1
 
         add    sp, sp, #(128+8)
-        ldmfd  sp!, {r4-r11, pc}
+        pop    {r4-r11, pc}
         .endfunc
