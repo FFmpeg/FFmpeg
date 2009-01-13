@@ -78,12 +78,12 @@ static void cinepak_decode_codebook (cvid_codebook *codebook,
     int      i, n;
 
     /* check if this chunk contains 4- or 6-element vectors */
-    n    = (chunk_id & 0x0400) ? 4 : 6;
+    n    = (chunk_id & 0x04) ? 4 : 6;
     flag = 0;
     mask = 0;
 
     for (i=0; i < 256; i++) {
-        if ((chunk_id & 0x0100) && !(mask >>= 1)) {
+        if ((chunk_id & 0x01) && !(mask >>= 1)) {
             if ((data + 4) > eod)
                 break;
 
@@ -92,7 +92,7 @@ static void cinepak_decode_codebook (cvid_codebook *codebook,
             mask  = 0x80000000;
         }
 
-        if (!(chunk_id & 0x0100) || (flag & mask)) {
+        if (!(chunk_id & 0x01) || (flag & mask)) {
             if ((data + n) > eod)
                 break;
 
@@ -145,7 +145,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
         iv[1] = iv[0] + s->frame.linesize[2];
 
         for (x=strip->x1; x < strip->x2; x+=4) {
-            if ((chunk_id & 0x0100) && !(mask >>= 1)) {
+            if ((chunk_id & 0x01) && !(mask >>= 1)) {
                 if ((data + 4) > eod)
                     return -1;
 
@@ -154,8 +154,8 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
                 mask  = 0x80000000;
             }
 
-            if (!(chunk_id & 0x0100) || (flag & mask)) {
-                if (!(chunk_id & 0x0200) && !(mask >>= 1)) {
+            if (!(chunk_id & 0x01) || (flag & mask)) {
+                if (!(chunk_id & 0x02) && !(mask >>= 1)) {
                     if ((data + 4) > eod)
                         return -1;
 
@@ -164,7 +164,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
                     mask  = 0x80000000;
                 }
 
-                if ((chunk_id & 0x0200) || (~flag & mask)) {
+                if ((chunk_id & 0x02) || (~flag & mask)) {
                     if (data >= eod)
                         return -1;
 
@@ -275,8 +275,8 @@ static int cinepak_decode_strip (CinepakContext *s,
         return -1;
 
     while ((data + 4) <= eod) {
-        chunk_id   = AV_RB16 (&data[0]);
-        chunk_size = AV_RB16 (&data[2]) - 4;
+        chunk_id   = data[0];
+        chunk_size = AV_RB24 (&data[1]) - 4;
         if(chunk_size < 0)
             return -1;
 
@@ -285,25 +285,25 @@ static int cinepak_decode_strip (CinepakContext *s,
 
         switch (chunk_id) {
 
-        case 0x2000:
-        case 0x2100:
-        case 0x2400:
-        case 0x2500:
+        case 0x20:
+        case 0x21:
+        case 0x24:
+        case 0x25:
             cinepak_decode_codebook (strip->v4_codebook, chunk_id,
                 chunk_size, data);
             break;
 
-        case 0x2200:
-        case 0x2300:
-        case 0x2600:
-        case 0x2700:
+        case 0x22:
+        case 0x23:
+        case 0x26:
+        case 0x27:
             cinepak_decode_codebook (strip->v1_codebook, chunk_id,
                 chunk_size, data);
             break;
 
-        case 0x3000:
-        case 0x3100:
-        case 0x3200:
+        case 0x30:
+        case 0x31:
+        case 0x32:
             return cinepak_decode_vectors (s, strip, chunk_id,
                 chunk_size, data);
         }
@@ -364,7 +364,7 @@ static int cinepak_decode (CinepakContext *s)
         s->strips[i].y2 = y0 + AV_RB16 (&s->data[8]);
         s->strips[i].x2 = s->avctx->width;
 
-        strip_size = AV_RB16 (&s->data[2]) - 12;
+        strip_size = AV_RB24 (&s->data[1]) - 12;
         s->data   += 12;
         strip_size = ((s->data + strip_size) > eod) ? (eod - s->data) : strip_size;
 
