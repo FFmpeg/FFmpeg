@@ -1265,7 +1265,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
          * that behave like P-frames. */
         avctx->has_b_frames = !(s->low_delay);
 
-        if(avctx->sub_id==1){//s->codec_id==avctx->codec_id==CODEC_ID
+        assert((avctx->sub_id==1) == (avctx->codec_id==CODEC_ID_MPEG1VIDEO));
+        if(avctx->codec_id==CODEC_ID_MPEG1VIDEO){
             //MPEG-1 fps
             avctx->time_base.den= ff_frame_rate_tab[s->frame_rate_index].num;
             avctx->time_base.num= ff_frame_rate_tab[s->frame_rate_index].den;
