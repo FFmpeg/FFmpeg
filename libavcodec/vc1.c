@@ -1019,6 +1019,7 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
             h = get_bits(gb, 8);
             v->s.avctx->sample_aspect_ratio = (AVRational){w, h};
         }
+        av_log(v->s.avctx, AV_LOG_DEBUG, "Aspect: %i:%i\n", v->s.avctx->sample_aspect_ratio.num, v->s.avctx->sample_aspect_ratio.den);
 
         if(get_bits1(gb)){ //framerate stuff
             if(get_bits1(gb)) {
