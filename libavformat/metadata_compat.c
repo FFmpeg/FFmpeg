@@ -18,11 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if LIBAVFORMAT_VERSION_MAJOR < 53
-
 #include <strings.h>
+#include "avformat.h"
 #include "metadata.h"
 #include "libavutil/avstring.h"
+
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 
 #define SIZE_OFFSET(x) sizeof(((AVFormatContext*)0)->x),offsetof(AVFormatContext,x)
 
