@@ -830,6 +830,9 @@ The following binary operators are available: @code{+}, @code{-},
 The following unary operators are available: @code{+}, @code{-},
 @code{(...)}.
 
+The following statements are available: @code{ld}, @code{st},
+@code{while}.
+
 The following functions are available:
 @table @var
 @item sinh(x)
