@@ -25,6 +25,7 @@
 #define AVUTIL_FIFO_H
 
 #include <stdint.h>
+#include "avutil.h"
 #include "common.h"
 
 typedef struct AVFifoBuffer {

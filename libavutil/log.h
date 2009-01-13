@@ -22,6 +22,7 @@
 #define AVUTIL_LOG_H
 
 #include <stdarg.h>
+#include "avutil.h"
 
 /**
  * Describes the class of an AVClass context structure, that is an
