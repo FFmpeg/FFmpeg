@@ -28,13 +28,14 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
-#include "libavutil/random.h"
-#include "libavutil/avstring.h"
+/* avformat.h defines LIBAVFORMAT_BUILD, include it before all the other libav* headers which use it */
 #include "libavformat/avformat.h"
 #include "libavformat/network.h"
 #include "libavformat/os_support.h"
 #include "libavformat/rtp.h"
 #include "libavformat/rtsp.h"
+#include "libavutil/avstring.h"
+#include "libavutil/random.h"
 #include "libavcodec/opt.h"
 #include <stdarg.h>
 #include <unistd.h>
