@@ -1687,6 +1687,9 @@ if test $cpu != "generic"; then
         arm*)
             add_cflags -mcpu=$cpu
         ;;
+        ev4|ev45|ev5|ev56|pca56|ev6|ev67)
+            add_cflags -mcpu=$cpu
+        ;;
         *)
             echo "WARNING: Unknown CPU \"$cpu\", ignored."
         ;;
