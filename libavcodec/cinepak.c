@@ -358,7 +358,7 @@ static int cinepak_decode (CinepakContext *s)
         if ((s->data + 12) > eod)
             return -1;
 
-        s->strips[i].id = AV_RB16 (s->data);
+        s->strips[i].id = s->data[0];
         s->strips[i].y1 = y0;
         s->strips[i].x1 = 0;
         s->strips[i].y2 = y0 + AV_RB16 (&s->data[8]);
