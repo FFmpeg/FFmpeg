@@ -3205,8 +3205,8 @@ static int vc1_decode_p_mb(VC1Context *v)
                             left_cbp = v->cbp[s->mb_x - 1]            >> (i * 4);
                             top_cbp  = v->cbp[s->mb_x - s->mb_stride] >> (i * 4);
                         }else{
-                            left_cbp = (i & 1) ? (pat >> ((i-1)*4)) : (v->cbp[s->mb_x - 1]           >> ((i+1)*4));
-                            top_cbp  = (i & 2) ? (pat >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
+                            left_cbp = (i & 1) ? (cbp >> ((i-1)*4)) : (v->cbp[s->mb_x - 1]           >> ((i+1)*4));
+                            top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
                         if(left_cbp & 0xC)
                             vc1_loop_filter(s->dest[dst_idx] + off, 1, i & 4 ? s->uvlinesize : s->linesize, 8, mquant);
@@ -3222,9 +3222,13 @@ static int vc1_decode_p_mb(VC1Context *v)
                             left_cbp = v->cbp[s->mb_x - 1]            >> (i * 4);
                             top_cbp  = v->cbp[s->mb_x - s->mb_stride] >> (i * 4);
                         }else{
-                            left_cbp = (i & 1) ? (pat >> ((i-1)*4)) : (v->cbp[s->mb_x - 1]           >> ((i+1)*4));
-                            top_cbp  = (i & 2) ? (pat >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
+                            left_cbp = (i & 1) ? (cbp >> ((i-1)*4)) : (v->cbp[s->mb_x - 1]           >> ((i+1)*4));
+                            top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
+                        if(left_cbp & 0xC)
+                            vc1_loop_filter(s->dest[dst_idx] + off, 1, i & 4 ? s->uvlinesize : s->linesize, 8, mquant);
+                        if(top_cbp  & 0xA)
+                            vc1_loop_filter(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, 1, 8, mquant);
                     }
                     pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block, s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize, (i&4) && (s->flags & CODEC_FLAG_GRAY), filter, left_cbp, top_cbp);
                     block_cbp |= pat << (i << 2);
@@ -3332,8 +3336,8 @@ static int vc1_decode_p_mb(VC1Context *v)
                             left_cbp = v->cbp[s->mb_x - 1]            >> (i * 4);
                             top_cbp  = v->cbp[s->mb_x - s->mb_stride] >> (i * 4);
                         }else{
-                            left_cbp = (i & 1) ? (pat >> ((i-1)*4)) : (v->cbp[s->mb_x - 1]           >> ((i+1)*4));
-                            top_cbp  = (i & 2) ? (pat >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
+                            left_cbp = (i & 1) ? (cbp >> ((i-1)*4)) : (v->cbp[s->mb_x - 1]           >> ((i+1)*4));
+                            top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
                         if(left_cbp & 0xC)
                             vc1_loop_filter(s->dest[dst_idx] + off, 1, i & 4 ? s->uvlinesize : s->linesize, 8, mquant);
@@ -3349,9 +3353,13 @@ static int vc1_decode_p_mb(VC1Context *v)
                             left_cbp = v->cbp[s->mb_x - 1]            >> (i * 4);
                             top_cbp  = v->cbp[s->mb_x - s->mb_stride] >> (i * 4);
                         }else{
-                            left_cbp = (i & 1) ? (pat >> ((i-1)*4)) : (v->cbp[s->mb_x - 1]           >> ((i+1)*4));
-                            top_cbp  = (i & 2) ? (pat >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
+                            left_cbp = (i & 1) ? (cbp >> ((i-1)*4)) : (v->cbp[s->mb_x - 1]           >> ((i+1)*4));
+                            top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
+                        if(left_cbp & 0xC)
+                            vc1_loop_filter(s->dest[dst_idx] + off, 1, i & 4 ? s->uvlinesize : s->linesize, 8, mquant);
+                        if(top_cbp  & 0xA)
+                            vc1_loop_filter(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, 1, 8, mquant);
                     }
                     pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block, s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize, (i&4) && (s->flags & CODEC_FLAG_GRAY), filter, left_cbp, top_cbp);
                     block_cbp |= pat << (i << 2);
