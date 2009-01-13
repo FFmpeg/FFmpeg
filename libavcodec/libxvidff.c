@@ -166,9 +166,9 @@ av_cold int ff_xvid_encode_init(AVCodecContext *avctx)  {
     xvid_gbl_init.version = XVID_VERSION;
     xvid_gbl_init.debug = 0;
 
-#ifdef ARCH_PPC
+#if ARCH_PPC
     /* Xvid's PPC support is borked, use libavcodec to detect */
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
     if( has_altivec() ) {
         xvid_gbl_init.cpu_flags = XVID_CPU_FORCE | XVID_CPU_ALTIVEC;
     } else

@@ -812,14 +812,14 @@ static int asf_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-#ifdef CONFIG_ASF_MUXER
+#if CONFIG_ASF_MUXER
 AVOutputFormat asf_muxer = {
     "asf",
     NULL_IF_CONFIG_SMALL("ASF format"),
     "video/x-ms-asf",
     "asf,wmv,wma",
     sizeof(ASFContext),
-#ifdef CONFIG_LIBMP3LAME
+#if CONFIG_LIBMP3LAME
     CODEC_ID_MP3,
 #else
     CODEC_ID_MP2,
@@ -833,14 +833,14 @@ AVOutputFormat asf_muxer = {
 };
 #endif
 
-#ifdef CONFIG_ASF_STREAM_MUXER
+#if CONFIG_ASF_STREAM_MUXER
 AVOutputFormat asf_stream_muxer = {
     "asf_stream",
     NULL_IF_CONFIG_SMALL("ASF format"),
     "video/x-ms-asf",
     "asf,wmv,wma",
     sizeof(ASFContext),
-#ifdef CONFIG_LIBMP3LAME
+#if CONFIG_LIBMP3LAME
     CODEC_ID_MP3,
 #else
     CODEC_ID_MP2,

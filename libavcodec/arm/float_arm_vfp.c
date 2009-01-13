@@ -29,7 +29,7 @@ void ff_float_init_arm_vfp(DSPContext* c, AVCodecContext *avctx)
 {
     c->vector_fmul = ff_vector_fmul_vfp;
     c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
-#ifdef HAVE_ARMV6
+#if HAVE_ARMV6
     c->float_to_int16 = ff_float_to_int16_vfp;
 #endif
 }

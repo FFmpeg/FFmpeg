@@ -775,7 +775,7 @@ static void encode_residual_lpc(int32_t *res, const int32_t *smp, int n,
     for(i=0; i<order; i++) {
         res[i] = smp[i];
     }
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
     for(i=order; i<n; i+=2) {
         int j;
         int s = smp[i];

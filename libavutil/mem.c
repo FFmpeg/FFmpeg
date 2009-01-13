@@ -32,7 +32,7 @@
 #undef realloc
 
 #include <stdlib.h>
-#ifdef HAVE_MALLOC_H
+#if HAVE_MALLOC_H
 #include <malloc.h>
 #endif
 
@@ -43,7 +43,7 @@
 void *av_malloc(unsigned int size)
 {
     void *ptr = NULL;
-#ifdef CONFIG_MEMALIGN_HACK
+#if CONFIG_MEMALIGN_HACK
     long diff;
 #endif
 
@@ -51,16 +51,16 @@ void *av_malloc(unsigned int size)
     if(size > (INT_MAX-16) )
         return NULL;
 
-#ifdef CONFIG_MEMALIGN_HACK
+#if CONFIG_MEMALIGN_HACK
     ptr = malloc(size+16);
     if(!ptr)
         return ptr;
     diff= ((-(long)ptr - 1)&15) + 1;
     ptr = (char*)ptr + diff;
     ((char*)ptr)[-1]= diff;
-#elif defined (HAVE_POSIX_MEMALIGN)
+#elif HAVE_POSIX_MEMALIGN
     posix_memalign(&ptr,16,size);
-#elif defined (HAVE_MEMALIGN)
+#elif HAVE_MEMALIGN
     ptr = memalign(16,size);
     /* Why 64?
        Indeed, we should align it:
@@ -96,7 +96,7 @@ void *av_malloc(unsigned int size)
 
 void *av_realloc(void *ptr, unsigned int size)
 {
-#ifdef CONFIG_MEMALIGN_HACK
+#if CONFIG_MEMALIGN_HACK
     int diff;
 #endif
 
@@ -104,7 +104,7 @@ void *av_realloc(void *ptr, unsigned int size)
     if(size > (INT_MAX-16) )
         return NULL;
 
-#ifdef CONFIG_MEMALIGN_HACK
+#if CONFIG_MEMALIGN_HACK
     //FIXME this isn't aligned correctly, though it probably isn't needed
     if(!ptr) return av_malloc(size);
     diff= ((char*)ptr)[-1];
@@ -118,7 +118,7 @@ void av_free(void *ptr)
 {
     /* XXX: this test should not be needed on most libcs */
     if (ptr)
-#ifdef CONFIG_MEMALIGN_HACK
+#if CONFIG_MEMALIGN_HACK
         free((char*)ptr - ((char*)ptr)[-1]);
 #else
         free(ptr);

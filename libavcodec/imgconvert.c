@@ -34,7 +34,7 @@
 #include "dsputil.h"
 #include "colorspace.h"
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
 #include "x86/mmx.h"
 #include "x86/dsputil_mmx.h"
 #endif
@@ -2089,7 +2089,7 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
     return 0;
 }
 
-#ifndef CONFIG_SWSCALE
+#if !CONFIG_SWSCALE
 static uint8_t y_ccir_to_jpeg[256];
 static uint8_t y_jpeg_to_ccir[256];
 static uint8_t c_ccir_to_jpeg[256];
@@ -2662,7 +2662,7 @@ int img_get_alpha_info(const AVPicture *src,
     return ret;
 }
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
 #define DEINT_INPLACE_LINE_LUM \
                     movd_m2r(lum_m4[0],mm0);\
                     movd_m2r(lum_m3[0],mm1);\
@@ -2716,7 +2716,7 @@ static void deinterlace_line(uint8_t *dst,
                              const uint8_t *lum,
                              int size)
 {
-#ifndef HAVE_MMX
+#if !HAVE_MMX
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int sum;
 
@@ -2754,7 +2754,7 @@ static void deinterlace_line(uint8_t *dst,
 static void deinterlace_line_inplace(uint8_t *lum_m4, uint8_t *lum_m3, uint8_t *lum_m2, uint8_t *lum_m1, uint8_t *lum,
                              int size)
 {
-#ifndef HAVE_MMX
+#if !HAVE_MMX
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int sum;
 

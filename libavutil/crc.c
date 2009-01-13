@@ -22,7 +22,7 @@
 #include "bswap.h"
 #include "crc.h"
 
-#ifdef CONFIG_HARDCODED_TABLES
+#if CONFIG_HARDCODED_TABLES
 #include "crc_data.h"
 #else
 static struct {
@@ -75,7 +75,7 @@ int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size){
         }
     }
     ctx[256]=1;
-#ifndef CONFIG_SMALL
+#if !CONFIG_SMALL
     if(ctx_size >= sizeof(AVCRC)*1024)
         for (i = 0; i < 256; i++)
             for(j=0; j<3; j++)
@@ -91,7 +91,7 @@ int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size){
  * @return a pointer to the CRC table or NULL on failure
  */
 const AVCRC *av_crc_get_table(AVCRCId crc_id){
-#ifndef CONFIG_HARDCODED_TABLES
+#if !CONFIG_HARDCODED_TABLES
     if (!av_crc_table[crc_id][FF_ARRAY_ELEMS(av_crc_table[crc_id])-1])
         if (av_crc_init(av_crc_table[crc_id],
                         av_crc_table_params[crc_id].le,
@@ -113,7 +113,7 @@ const AVCRC *av_crc_get_table(AVCRCId crc_id){
 uint32_t av_crc(const AVCRC *ctx, uint32_t crc, const uint8_t *buffer, size_t length){
     const uint8_t *end= buffer+length;
 
-#ifndef CONFIG_SMALL
+#if !CONFIG_SMALL
     if(!ctx[256])
         while(buffer<end-3){
             crc ^= le2me_32(*(const uint32_t*)buffer); buffer+=4;

@@ -30,19 +30,19 @@
 
 #include "config.h"
 #include "libavformat/avformat.h"
-#ifdef CONFIG_AVFILTER
+#if CONFIG_AVFILTER
 #include "libavfilter/avfilter.h"
 #endif
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
-#ifdef CONFIG_POSTPROC
+#if CONFIG_POSTPROC
 #include "libpostproc/postprocess.h"
 #endif
 #include "libavutil/avstring.h"
 #include "libavcodec/opt.h"
 #include "cmdutils.h"
 #include "version.h"
-#ifdef CONFIG_NETWORK
+#if CONFIG_NETWORK
 #include "libavformat/network.h"
 #endif
 
@@ -255,7 +255,7 @@ void print_error(const char *filename, int err)
     case AVERROR(ENOENT):
         fprintf(stderr, "%s: no such file or directory\n", filename);
         break;
-#ifdef CONFIG_NETWORK
+#if CONFIG_NETWORK
     case AVERROR(FF_NETERROR(EPROTONOSUPPORT)):
         fprintf(stderr, "%s: Unsupported network protocol\n", filename);
         break;
@@ -279,13 +279,13 @@ static void print_all_lib_versions(FILE* outstream, int indent)
     PRINT_LIB_VERSION(outstream, avcodec,  AVCODEC,  indent);
     PRINT_LIB_VERSION(outstream, avformat, AVFORMAT, indent);
     PRINT_LIB_VERSION(outstream, avdevice, AVDEVICE, indent);
-#ifdef CONFIG_AVFILTER
+#if CONFIG_AVFILTER
     PRINT_LIB_VERSION(outstream, avfilter, AVFILTER, indent);
 #endif
-#ifdef CONFIG_SWSCALE
+#if CONFIG_SWSCALE
     PRINT_LIB_VERSION(outstream, swscale,  SWSCALE,  indent);
 #endif
-#ifdef CONFIG_POSTPROC
+#if CONFIG_POSTPROC
     PRINT_LIB_VERSION(outstream, postproc, POSTPROC, indent);
 #endif
 }
@@ -311,7 +311,7 @@ void show_version(void) {
 
 void show_license(void)
 {
-#ifdef CONFIG_NONFREE
+#if CONFIG_NONFREE
     printf(
     "This version of %s has nonfree parts compiled in.\n"
     "Therefore it is not legally redistributable.\n",

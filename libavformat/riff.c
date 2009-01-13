@@ -248,7 +248,7 @@ const AVCodecTag codec_wav_tags[] = {
     { 0, 0 },
 };
 
-#ifdef CONFIG_MUXERS
+#if CONFIG_MUXERS
 int64_t start_tag(ByteIOContext *pb, const char *tag)
 {
     put_tag(pb, tag);
@@ -379,7 +379,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *ta
 }
 #endif //CONFIG_MUXERS
 
-#ifdef CONFIG_DEMUXERS
+#if CONFIG_DEMUXERS
 /* We could be given one of the three possible structures here:
  * WAVEFORMAT, PCMWAVEFORMAT or WAVEFORMATEX. Each structure
  * is an expansion of the previous one with the fields added

@@ -36,7 +36,7 @@
 #include "vdpau_internal.h"
 
 #include "cabac.h"
-#ifdef ARCH_X86
+#if ARCH_X86
 #include "x86/h264_i386.h"
 #endif
 
@@ -1380,8 +1380,8 @@ static const uint8_t *decode_nal(H264Context *h, const uint8_t *src, int *dst_le
         printf("%2X ", src[i]);
 #endif
 
-#ifdef HAVE_FAST_UNALIGNED
-# ifdef HAVE_FAST_64BIT
+#if HAVE_FAST_UNALIGNED
+# if HAVE_FAST_64BIT
 #   define RS 7
     for(i=0; i+1<length; i+=9){
         if(!((~*(uint64_t*)(src+i) & (*(uint64_t*)(src+i) - 0x0100010001000101ULL)) & 0x8000800080008080ULL))
@@ -5224,7 +5224,7 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
     uint8_t *last_coeff_ctx_base;
     uint8_t *abs_level_m1_ctx_base;
 
-#ifndef ARCH_X86
+#if !ARCH_X86
 #define CABAC_ON_STACK
 #endif
 #ifdef CABAC_ON_STACK
@@ -5285,7 +5285,7 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
             index[coeff_count++] = last;\
         }
         const uint8_t *sig_off = significant_coeff_flag_offset_8x8[MB_FIELD];
-#if defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS)
+#if ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS)
         coeff_count= decode_significance_8x8_x86(CC, significant_coeff_ctx_base, index, sig_off);
     } else {
         coeff_count= decode_significance_x86(CC, max_coeff, significant_coeff_ctx_base, index);
@@ -5360,7 +5360,7 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
 
 }
 
-#ifndef CONFIG_SMALL
+#if !CONFIG_SMALL
 static void decode_cabac_residual_dc( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff ) {
     decode_cabac_residual_internal(h, block, cat, n, scantable, qmul, max_coeff, 1);
 }
@@ -5371,7 +5371,7 @@ static void decode_cabac_residual_nondc( H264Context *h, DCTELEM *block, int cat
 #endif
 
 static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff ) {
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
     decode_cabac_residual_internal(h, block, cat, n, scantable, qmul, max_coeff, cat == 0 || cat == 3);
 #else
     if( cat == 0 || cat == 3 ) decode_cabac_residual_dc(h, block, cat, n, scantable, qmul, max_coeff);
@@ -6572,7 +6572,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
         filter_mb_mbaff_edgecv( h, &img_cr[0], uvlinesize, bS, rqp );
     }
 
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
     for( dir = 0; dir < 2; dir++ )
         filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, dir ? 0 : first_vertical_edge_done, dir);
 #else
@@ -8023,7 +8023,7 @@ AVCodec h264_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
 };
 
-#ifdef CONFIG_H264_VDPAU_DECODER
+#if CONFIG_H264_VDPAU_DECODER
 AVCodec h264_vdpau_decoder = {
     "h264_vdpau",
     CODEC_TYPE_VIDEO,
@@ -8039,6 +8039,6 @@ AVCodec h264_vdpau_decoder = {
 };
 #endif
 
-#ifdef CONFIG_SVQ3_DECODER
+#if CONFIG_SVQ3_DECODER
 #include "svq3.c"
 #endif

@@ -37,7 +37,7 @@
 #elif defined(_MSC_VER)
     #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
     #define DECLARE_ASM_CONST(n,t,v)    __declspec(align(n)) static const t v
-#elif defined(HAVE_INLINE_ASM)
+#elif HAVE_INLINE_ASM
     #error The asm code needs alignment, but we do not know how to do it for this compiler.
 #else
     #define DECLARE_ALIGNED(n,t,v)      t v

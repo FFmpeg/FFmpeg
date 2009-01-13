@@ -371,7 +371,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
     return ret;
 }
 
-#ifdef CONFIG_WSAUD_DEMUXER
+#if CONFIG_WSAUD_DEMUXER
 AVInputFormat wsaud_demuxer = {
     "wsaud",
     NULL_IF_CONFIG_SMALL("Westwood Studios audio format"),
@@ -381,7 +381,7 @@ AVInputFormat wsaud_demuxer = {
     wsaud_read_packet,
 };
 #endif
-#ifdef CONFIG_WSVQA_DEMUXER
+#if CONFIG_WSVQA_DEMUXER
 AVInputFormat wsvqa_demuxer = {
     "wsvqa",
     NULL_IF_CONFIG_SMALL("Westwood Studios VQA format"),

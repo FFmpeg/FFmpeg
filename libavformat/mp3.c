@@ -527,7 +527,7 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-#if defined(CONFIG_MP2_MUXER) || defined(CONFIG_MP3_MUXER)
+#if CONFIG_MP2_MUXER || CONFIG_MP3_MUXER
 static void id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
 {
     int v, i;
@@ -645,9 +645,9 @@ static int mp3_write_trailer(struct AVFormatContext *s)
     }
     return 0;
 }
-#endif /* defined(CONFIG_MP2_MUXER) || defined(CONFIG_MP3_MUXER) */
+#endif /* CONFIG_MP2_MUXER || CONFIG_MP3_MUXER */
 
-#ifdef CONFIG_MP3_DEMUXER
+#if CONFIG_MP3_DEMUXER
 AVInputFormat mp3_demuxer = {
     "mp3",
     NULL_IF_CONFIG_SMALL("MPEG audio"),
@@ -659,12 +659,12 @@ AVInputFormat mp3_demuxer = {
     .extensions = "mp2,mp3,m2a", /* XXX: use probe */
 };
 #endif
-#ifdef CONFIG_MP2_MUXER
+#if CONFIG_MP2_MUXER
 AVOutputFormat mp2_muxer = {
     "mp2",
     NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
     "audio/x-mpeg",
-#ifdef CONFIG_LIBMP3LAME
+#if CONFIG_LIBMP3LAME
     "mp2,m2a",
 #else
     "mp2,mp3,m2a",
@@ -677,7 +677,7 @@ AVOutputFormat mp2_muxer = {
     mp3_write_trailer,
 };
 #endif
-#ifdef CONFIG_MP3_MUXER
+#if CONFIG_MP3_MUXER
 AVOutputFormat mp3_muxer = {
     "mp3",
     NULL_IF_CONFIG_SMALL("MPEG audio layer 3"),

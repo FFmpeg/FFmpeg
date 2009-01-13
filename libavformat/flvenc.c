@@ -382,7 +382,7 @@ AVOutputFormat flv_muxer = {
     "video/x-flv",
     "flv",
     sizeof(FLVContext),
-#ifdef CONFIG_LIBMP3LAME
+#if CONFIG_LIBMP3LAME
     CODEC_ID_MP3,
 #else // CONFIG_LIBMP3LAME
     CODEC_ID_ADPCM_SWF,

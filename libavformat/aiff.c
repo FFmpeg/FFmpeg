@@ -170,7 +170,7 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
     return num_frames;
 }
 
-#ifdef CONFIG_AIFF_MUXER
+#if CONFIG_AIFF_MUXER
 typedef struct {
     int64_t form;
     int64_t frames;
@@ -439,7 +439,7 @@ static int aiff_read_packet(AVFormatContext *s,
     return 0;
 }
 
-#ifdef CONFIG_AIFF_DEMUXER
+#if CONFIG_AIFF_DEMUXER
 AVInputFormat aiff_demuxer = {
     "aiff",
     NULL_IF_CONFIG_SMALL("Audio IFF"),
@@ -453,7 +453,7 @@ AVInputFormat aiff_demuxer = {
 };
 #endif
 
-#ifdef CONFIG_AIFF_MUXER
+#if CONFIG_AIFF_MUXER
 AVOutputFormat aiff_muxer = {
     "aiff",
     NULL_IF_CONFIG_SMALL("Audio IFF"),

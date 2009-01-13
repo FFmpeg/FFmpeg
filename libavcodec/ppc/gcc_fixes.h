@@ -25,7 +25,7 @@
 
 #include "config.h"
 
-#ifdef HAVE_ALTIVEC_H
+#if HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
 

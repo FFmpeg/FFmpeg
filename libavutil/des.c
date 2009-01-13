@@ -74,7 +74,7 @@ static const uint8_t PC2_shuffle[] = {
 };
 #undef T
 
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
 static const uint8_t S_boxes[8][32] = {
     {
     0x0e, 0xf4, 0x7d, 0x41, 0xe2, 0x2f, 0xdb, 0x18, 0xa3, 0x6a, 0xc6, 0xbc, 0x95, 0x59, 0x30, 0x87,
@@ -218,7 +218,7 @@ static uint32_t f_func(uint32_t r, uint64_t k) {
     // apply S-boxes, those compress the data again from 8 * 6 to 8 * 4 bits
     for (i = 7; i >= 0; i--) {
         uint8_t tmp = (r ^ k) & 0x3f;
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
         uint8_t v = S_boxes[i][tmp >> 1];
         if (tmp & 1) v >>= 4;
         out = (out >> 4) | (v << 28);
@@ -229,7 +229,7 @@ static uint32_t f_func(uint32_t r, uint64_t k) {
         r = (r >> 4) | (r << 28);
         k >>= 6;
     }
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
     out = shuffle(out, P_shuffle, sizeof(P_shuffle));
 #endif
     return out;

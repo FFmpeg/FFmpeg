@@ -30,7 +30,7 @@ Only mono files are supported.
 static const char AMR_header [] = "#!AMR\n";
 static const char AMRWB_header [] = "#!AMR-WB\n";
 
-#ifdef CONFIG_AMR_MUXER
+#if CONFIG_AMR_MUXER
 static int amr_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
@@ -166,7 +166,7 @@ static int amr_read_packet(AVFormatContext *s,
     return 0;
 }
 
-#ifdef CONFIG_AMR_DEMUXER
+#if CONFIG_AMR_DEMUXER
 AVInputFormat amr_demuxer = {
     "amr",
     NULL_IF_CONFIG_SMALL("3GPP AMR file format"),
@@ -178,7 +178,7 @@ AVInputFormat amr_demuxer = {
 };
 #endif
 
-#ifdef CONFIG_AMR_MUXER
+#if CONFIG_AMR_MUXER
 AVOutputFormat amr_muxer = {
     "amr",
     NULL_IF_CONFIG_SMALL("3GPP AMR file format"),

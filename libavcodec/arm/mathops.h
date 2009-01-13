@@ -38,7 +38,7 @@ static inline av_const int MULL(int a, int b, unsigned shift)
 }
 
 #define MULH MULH
-#ifdef HAVE_ARMV6
+#if HAVE_ARMV6
 static inline av_const int MULH(int a, int b)
 {
     int r;
@@ -73,7 +73,7 @@ static inline av_const int64_t MAC64(int64_t d, int a, int b)
 #define MAC64(d, a, b) ((d) = MAC64(d, a, b))
 #define MLS64(d, a, b) MAC64(d, -(a), b)
 
-#if defined(HAVE_ARMV5TE)
+#if HAVE_ARMV5TE
 
 /* signed 16x16 -> 32 multiply add accumulate */
 #   define MAC16(rt, ra, rb)                                            \

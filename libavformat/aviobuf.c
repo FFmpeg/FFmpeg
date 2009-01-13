@@ -160,12 +160,12 @@ int64_t url_fseek(ByteIOContext *s, int64_t offset, int whence)
     } else {
         int64_t res = AVERROR(EPIPE);
 
-#if defined(CONFIG_MUXERS) || defined(CONFIG_NETWORK)
+#if CONFIG_MUXERS || CONFIG_NETWORK
         if (s->write_flag) {
             flush_buffer(s);
             s->must_flush = 1;
         }
-#endif /* defined(CONFIG_MUXERS) || defined(CONFIG_NETWORK) */
+#endif /* CONFIG_MUXERS || CONFIG_NETWORK */
         if (!s->seek || (res = s->seek(s->opaque, offset, SEEK_SET)) < 0)
             return res;
         if (!s->write_flag)
@@ -624,7 +624,7 @@ URLContext *url_fileno(ByteIOContext *s)
     return s->opaque;
 }
 
-#ifdef CONFIG_MUXERS
+#if CONFIG_MUXERS
 int url_fprintf(ByteIOContext *s, const char *fmt, ...)
 {
     va_list ap;
@@ -688,8 +688,8 @@ int64_t av_url_read_fseek(ByteIOContext *s, int stream_index,
 }
 
 /* url_open_dyn_buf and url_close_dyn_buf are used in rtp.c to send a response
- * back to the server even if CONFIG_MUXERS is not set. */
-#if defined(CONFIG_MUXERS) || defined(CONFIG_NETWORK)
+ * back to the server even if CONFIG_MUXERS is false. */
+#if CONFIG_MUXERS || CONFIG_NETWORK
 /* buffer handling */
 int url_open_buf(ByteIOContext **s, uint8_t *buf, int buf_size, int flags)
 {

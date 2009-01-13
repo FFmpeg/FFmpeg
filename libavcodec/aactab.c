@@ -899,7 +899,7 @@ const float * const ff_aac_codebook_vectors[] = {
     codebook_vector8, codebook_vector10,
 };
 
-#ifdef CONFIG_HARDCODED_TABLES
+#if CONFIG_HARDCODED_TABLES
 
 /**
  * Table of pow(2, (i - 200)/4.) used for different purposes depending on the

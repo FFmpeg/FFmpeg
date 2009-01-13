@@ -45,7 +45,7 @@
 #include "bitstream.h"
 #include "lcl.h"
 
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
 #include <zlib.h>
 #endif
 
@@ -70,7 +70,7 @@ typedef struct LclEncContext {
     unsigned int max_comp_size;
     // Compression buffer
     unsigned char* comp_buf;
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
     z_stream zstream;
 #endif
 } LclEncContext;
@@ -87,7 +87,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     int i;
     int zret; // Zlib return code
 
-#ifndef CONFIG_ZLIB
+#if !CONFIG_ZLIB
     av_log(avctx, AV_LOG_ERROR, "Zlib support not compiled in.\n");
     return -1;
 #else
@@ -144,7 +144,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     LclEncContext *c = avctx->priv_data;
     int zret; // Zlib return code
 
-#ifndef CONFIG_ZLIB
+#if !CONFIG_ZLIB
     av_log(avctx, AV_LOG_ERROR, "Zlib support not compiled.\n");
     return 1;
 #else
@@ -213,7 +213,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
     av_freep(&avctx->extradata);
     av_freep(&c->comp_buf);
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
     deflateEnd(&(c->zstream));
 #endif
 

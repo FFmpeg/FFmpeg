@@ -33,7 +33,7 @@ extern "C" {
 #include "libavformat/avformat.h"
 }
 
-#ifdef HAVE_BSOUNDRECORDER
+#if HAVE_BSOUNDRECORDER
 #include <SoundRecorder.h>
 using namespace BPrivate::Media::Experimental;
 #endif
@@ -63,7 +63,7 @@ typedef struct {
     sem_id output_sem;
     int output_index;
     BSoundPlayer *player;
-#ifdef HAVE_BSOUNDRECORDER
+#if HAVE_BSOUNDRECORDER
     BSoundRecorder *recorder;
 #endif
     int has_quit; /* signal callbacks not to wait */
@@ -150,7 +150,7 @@ static void audioplay_callback(void *cookie, void *buffer, size_t bufferSize, co
     }
 }
 
-#ifdef HAVE_BSOUNDRECORDER
+#if HAVE_BSOUNDRECORDER
 /* called back by BSoundRecorder */
 static void audiorecord_callback(void *cookie, bigtime_t timestamp, void *buffer, size_t bufferSize, const media_multi_audio_format &format)
 {
@@ -192,7 +192,7 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
     media_raw_audio_format format;
     media_multi_audio_format iformat;
 
-#ifndef HAVE_BSOUNDRECORDER
+#if !HAVE_BSOUNDRECORDER
     if (!is_output)
         return AVERROR(EIO); /* not for now */
 #endif
@@ -210,7 +210,7 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
     s->frame_size = AUDIO_BLOCK_SIZE;
     /* bump up the priority (avoid realtime though) */
     set_thread_priority(find_thread(NULL), B_DISPLAY_PRIORITY+1);
-#ifdef HAVE_BSOUNDRECORDER
+#if HAVE_BSOUNDRECORDER
     if (!is_output) {
         bool wait_for_input = false;
         if (audio_device && !strcmp(audio_device, "wait:"))
@@ -273,7 +273,7 @@ static int audio_close(AudioData *s)
     }
     if (s->player)
         delete s->player;
-#ifdef HAVE_BSOUNDRECORDER
+#if HAVE_BSOUNDRECORDER
     if (s->recorder)
         delete s->recorder;
 #endif

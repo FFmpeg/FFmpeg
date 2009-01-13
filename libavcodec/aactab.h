@@ -65,7 +65,7 @@ extern const uint16_t  ff_aac_spectral_sizes[11];
 
 extern const float *ff_aac_codebook_vectors[];
 
-#ifdef CONFIG_HARDCODED_TABLES
+#if CONFIG_HARDCODED_TABLES
 extern const float ff_aac_pow2sf_tab[316];
 #else
 extern       float ff_aac_pow2sf_tab[316];

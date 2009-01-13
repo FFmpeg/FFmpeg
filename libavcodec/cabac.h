@@ -270,7 +270,7 @@ static void refill(CABACContext *c){
     c->bytestream+= CABAC_BITS/8;
 }
 
-#if ! ( defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) )
+#if ! ( ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) )
 static void refill2(CABACContext *c){
     int i, x;
 
@@ -372,7 +372,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     //FIXME gcc generates duplicate load/stores for c->low and c->range
 #define LOW          "0"
 #define RANGE        "4"
-#ifdef ARCH_X86_64
+#if ARCH_X86_64
 #define BYTESTART   "16"
 #define BYTE        "24"
 #define BYTEEND     "32"
@@ -381,7 +381,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
 #define BYTE        "16"
 #define BYTEEND     "20"
 #endif
-#if defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS)
+#if ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS)
     int bit;
 
 #ifndef BRANCHLESS_CABAC_DECODER
@@ -467,7 +467,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
 #else /* BRANCHLESS_CABAC_DECODER */
 
 
-#if defined HAVE_FAST_CMOV
+#if HAVE_FAST_CMOV
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
         "mov    "tmp"       , %%ecx                                     \n\t"\
         "shl    $17         , "tmp"                                     \n\t"\
@@ -537,7 +537,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     );
     bit&=1;
 #endif /* BRANCHLESS_CABAC_DECODER */
-#else /* defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) */
+#else /* ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) */
     int s = *state;
     int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + s];
     int bit, lps_mask av_unused;
@@ -576,7 +576,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     if(!(c->low & CABAC_MASK))
         refill2(c);
 #endif /* BRANCHLESS_CABAC_DECODER */
-#endif /* defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) */
+#endif /* ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) */
     return bit;
 }
 
@@ -637,7 +637,7 @@ static int av_unused get_cabac_bypass(CABACContext *c){
 
 
 static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
-#if defined(ARCH_X86) && !(defined(PIC) && defined(__GNUC__))
+#if ARCH_X86 && !(defined(PIC) && defined(__GNUC__))
     __asm__ volatile(
         "movl "RANGE    "(%1), %%ebx            \n\t"
         "movl "LOW      "(%1), %%eax            \n\t"

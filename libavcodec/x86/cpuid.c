@@ -44,7 +44,7 @@ int mm_support(void)
     int max_std_level, max_ext_level, std_caps=0, ext_caps=0;
     x86_reg a, c;
 
-#ifdef ARCH_X86_64
+#if ARCH_X86_64
 #define PUSHF "pushfq\n\t"
 #define POPF "popfq\n\t"
 #else
@@ -83,7 +83,7 @@ int mm_support(void)
             rval |= FF_MM_MMX;
         if (std_caps & (1<<25))
             rval |= FF_MM_MMXEXT
-#ifdef HAVE_SSE
+#if HAVE_SSE
                   | FF_MM_SSE;
         if (std_caps & (1<<26))
             rval |= FF_MM_SSE2;

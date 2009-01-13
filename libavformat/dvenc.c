@@ -359,7 +359,7 @@ void dv_delete_mux(DVMuxContext *c)
         av_fifo_free(&c->audio_data[i]);
 }
 
-#ifdef CONFIG_DV_MUXER
+#if CONFIG_DV_MUXER
 static int dv_write_header(AVFormatContext *s)
 {
     if (!dv_init_mux(s)) {

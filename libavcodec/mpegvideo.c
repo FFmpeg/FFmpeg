@@ -121,19 +121,19 @@ int ff_dct_common_init(MpegEncContext *s)
         s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_bitexact;
     s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
 
-#if defined(HAVE_MMX)
+#if   HAVE_MMX
     MPV_common_init_mmx(s);
-#elif defined(ARCH_ALPHA)
+#elif ARCH_ALPHA
     MPV_common_init_axp(s);
-#elif defined(CONFIG_MLIB)
+#elif CONFIG_MLIB
     MPV_common_init_mlib(s);
-#elif defined(HAVE_MMI)
+#elif HAVE_MMI
     MPV_common_init_mmi(s);
-#elif defined(ARCH_ARM)
+#elif ARCH_ARM
     MPV_common_init_arm(s);
-#elif defined(HAVE_ALTIVEC)
+#elif HAVE_ALTIVEC
     MPV_common_init_altivec(s);
-#elif defined(ARCH_BFIN)
+#elif ARCH_BFIN
     MPV_common_init_bfin(s);
 #endif
 
@@ -939,7 +939,7 @@ alloc:
         update_noise_reduction(s);
     }
 
-#ifdef CONFIG_XVMC
+#if CONFIG_XVMC
     if(s->avctx->xvmc_acceleration)
         return XVMC_field_start(s, avctx);
 #endif
@@ -951,7 +951,7 @@ void MPV_frame_end(MpegEncContext *s)
 {
     int i;
     /* draw edge for correct motion prediction if outside */
-#ifdef CONFIG_XVMC
+#if CONFIG_XVMC
 //just to make sure that all data is rendered.
     if(s->avctx->xvmc_acceleration){
         XVMC_field_end(s);
@@ -1736,7 +1736,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
 {
     int mb_x, mb_y;
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
-#ifdef CONFIG_XVMC
+#if CONFIG_XVMC
     if(s->avctx->xvmc_acceleration){
         XVMC_decode_mb(s);//xvmc uses pblocks
         return;
@@ -1974,7 +1974,7 @@ skip_idct:
 }
 
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[12][64]){
-#ifndef CONFIG_SMALL
+#if !CONFIG_SMALL
     if(s->out_format == FMT_MPEG1) {
         if(s->avctx->lowres) MPV_decode_mb_internal(s, block, 1, 1);
         else                 MPV_decode_mb_internal(s, block, 0, 1);

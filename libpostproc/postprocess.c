@@ -92,7 +92,7 @@ unsigned postproc_version(void)
     return LIBPOSTPROC_VERSION_INT;
 }
 
-#ifdef HAVE_ALTIVEC_H
+#if HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
 
@@ -102,7 +102,7 @@ unsigned postproc_version(void)
 #define TEMP_STRIDE 8
 //#define NUM_BLOCKS_AT_ONCE 16 //not used yet
 
-#if defined(ARCH_X86)
+#if ARCH_X86
 DECLARE_ASM_CONST(8, uint64_t, w05)= 0x0005000500050005LL;
 DECLARE_ASM_CONST(8, uint64_t, w04)= 0x0004000400040004LL;
 DECLARE_ASM_CONST(8, uint64_t, w20)= 0x0020002000200020LL;
@@ -150,7 +150,7 @@ static const char *replaceTable[]=
 };
 
 
-#if defined(ARCH_X86)
+#if ARCH_X86
 static inline void prefetchnta(void *p)
 {
     __asm__ volatile(   "prefetchnta (%0)\n\t"
@@ -554,45 +554,47 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 
 //Note: we have C, MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one
 //Plain C versions
-#if !(defined (HAVE_MMX) || defined (HAVE_ALTIVEC)) || defined (RUNTIME_CPUDETECT)
+#if !(HAVE_MMX || HAVE_ALTIVEC) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_C
 #endif
 
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
 #define COMPILE_ALTIVEC
 #endif //HAVE_ALTIVEC
 
-#if defined(ARCH_X86)
+#if ARCH_X86
 
-#if (defined (HAVE_MMX) && !defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
+#if (HAVE_MMX && !HAVE_3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_MMX
 #endif
 
-#if defined (HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
+#if HAVE_MMX2 || defined (RUNTIME_CPUDETECT)
 #define COMPILE_MMX2
 #endif
 
-#if (defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
+#if (HAVE_3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_3DNOW
 #endif
-#endif /* defined(ARCH_X86) */
+#endif /* ARCH_X86 */
 
 #undef HAVE_MMX
+#define HAVE_MMX 0
 #undef HAVE_MMX2
+#define HAVE_MMX2 0
 #undef HAVE_3DNOW
+#define HAVE_3DNOW 0
 #undef HAVE_ALTIVEC
+#define HAVE_ALTIVEC 0
 
 #ifdef COMPILE_C
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_3DNOW
 #define RENAME(a) a ## _C
 #include "postprocess_template.c"
 #endif
 
 #ifdef COMPILE_ALTIVEC
 #undef RENAME
-#define HAVE_ALTIVEC
+#undef HAVE_ALTIVEC
+#define HAVE_ALTIVEC 1
 #define RENAME(a) a ## _altivec
 #include "postprocess_altivec_template.c"
 #include "postprocess_template.c"
@@ -601,9 +603,8 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 //MMX versions
 #ifdef COMPILE_MMX
 #undef RENAME
-#define HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_3DNOW
+#undef HAVE_MMX
+#define HAVE_MMX 1
 #define RENAME(a) a ## _MMX
 #include "postprocess_template.c"
 #endif
@@ -611,9 +612,10 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 //MMX2 versions
 #ifdef COMPILE_MMX2
 #undef RENAME
-#define HAVE_MMX
-#define HAVE_MMX2
-#undef HAVE_3DNOW
+#undef HAVE_MMX
+#undef HAVE_MMX2
+#define HAVE_MMX 1
+#define HAVE_MMX2 1
 #define RENAME(a) a ## _MMX2
 #include "postprocess_template.c"
 #endif
@@ -621,9 +623,12 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 //3DNOW versions
 #ifdef COMPILE_3DNOW
 #undef RENAME
-#define HAVE_MMX
+#undef HAVE_MMX
 #undef HAVE_MMX2
-#define HAVE_3DNOW
+#undef HAVE_3DNOW
+#define HAVE_MMX 1
+#define HAVE_MMX2 0
+#define HAVE_3DNOW 1
 #define RENAME(a) a ## _3DNow
 #include "postprocess_template.c"
 #endif
@@ -641,7 +646,7 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
     // difference would not be measurable here but it is much better because
     // someone might exchange the CPU whithout restarting MPlayer ;)
 #ifdef RUNTIME_CPUDETECT
-#if defined(ARCH_X86)
+#if ARCH_X86
     // ordered per speed fastest first
     if(c->cpuCaps & PP_CPU_CAPS_MMX2)
         postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
@@ -652,7 +657,7 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
     else
         postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #else
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
     if(c->cpuCaps & PP_CPU_CAPS_ALTIVEC)
             postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
     else
@@ -660,13 +665,13 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
             postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #endif
 #else //RUNTIME_CPUDETECT
-#ifdef HAVE_MMX2
+#if   HAVE_MMX2
             postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-#elif defined (HAVE_3DNOW)
+#elif HAVE_3DNOW
             postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-#elif defined (HAVE_MMX)
+#elif HAVE_MMX
             postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-#elif defined (HAVE_ALTIVEC)
+#elif HAVE_ALTIVEC
             postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #else
             postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);

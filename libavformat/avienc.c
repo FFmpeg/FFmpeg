@@ -27,7 +27,7 @@
  *  - fill all fields if non streamed (nb_frames for example)
  */
 
-#ifdef CONFIG_AVI_MUXER
+#if CONFIG_AVI_MUXER
 typedef struct AVIIentry {
     unsigned int flags, pos, len;
 } AVIIentry;

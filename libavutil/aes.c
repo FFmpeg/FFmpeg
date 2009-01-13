@@ -39,7 +39,7 @@ static const uint8_t rcon[10] = {
 
 static uint8_t     sbox[256];
 static uint8_t inv_sbox[256];
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
 static uint32_t enc_multbl[1][256];
 static uint32_t dec_multbl[1][256];
 #else
@@ -62,7 +62,7 @@ static void subshift(uint8_t s0[2][16], int s, uint8_t *box){
 }
 
 static inline int mix_core(uint32_t multbl[4][256], int a, int b, int c, int d){
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
 #define ROT(x,s) ((x<<s)|(x>>(32-s)))
     return multbl[0][a] ^ ROT(multbl[0][b], 8) ^ ROT(multbl[0][c], 16) ^ ROT(multbl[0][d], 24);
 #else
@@ -114,7 +114,7 @@ static void init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *al
         int x= sbox[i>>2];
         if(x) tbl[i]= alog8[ log8[x] + log8[c[i&3]] ];
     }
-#ifndef CONFIG_SMALL
+#if !CONFIG_SMALL
     for(j=256; j<1024; j++)
         for(i=0; i<4; i++)
             tbl[4*j+i]= tbl[4*j + ((i-1)&3) - 1024];

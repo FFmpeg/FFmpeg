@@ -1819,7 +1819,7 @@ static int mov_write_trailer(AVFormatContext *s)
     return res;
 }
 
-#ifdef CONFIG_MOV_MUXER
+#if CONFIG_MOV_MUXER
 AVOutputFormat mov_muxer = {
     "mov",
     NULL_IF_CONFIG_SMALL("MOV format"),
@@ -1835,7 +1835,7 @@ AVOutputFormat mov_muxer = {
     .codec_tag = (const AVCodecTag* const []){codec_movvideo_tags, codec_movaudio_tags, 0},
 };
 #endif
-#ifdef CONFIG_TGP_MUXER
+#if CONFIG_TGP_MUXER
 AVOutputFormat tgp_muxer = {
     "3gp",
     NULL_IF_CONFIG_SMALL("3GP format"),
@@ -1851,7 +1851,7 @@ AVOutputFormat tgp_muxer = {
     .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
 };
 #endif
-#ifdef CONFIG_MP4_MUXER
+#if CONFIG_MP4_MUXER
 AVOutputFormat mp4_muxer = {
     "mp4",
     NULL_IF_CONFIG_SMALL("MP4 format"),
@@ -1867,7 +1867,7 @@ AVOutputFormat mp4_muxer = {
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
 };
 #endif
-#ifdef CONFIG_PSP_MUXER
+#if CONFIG_PSP_MUXER
 AVOutputFormat psp_muxer = {
     "psp",
     NULL_IF_CONFIG_SMALL("PSP MP4 format"),
@@ -1883,7 +1883,7 @@ AVOutputFormat psp_muxer = {
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
 };
 #endif
-#ifdef CONFIG_TG2_MUXER
+#if CONFIG_TG2_MUXER
 AVOutputFormat tg2_muxer = {
     "3g2",
     NULL_IF_CONFIG_SMALL("3GP2 format"),
@@ -1899,7 +1899,7 @@ AVOutputFormat tg2_muxer = {
     .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
 };
 #endif
-#ifdef CONFIG_IPOD_MUXER
+#if CONFIG_IPOD_MUXER
 AVOutputFormat ipod_muxer = {
     "ipod",
     NULL_IF_CONFIG_SMALL("iPod H.264 MP4 format"),

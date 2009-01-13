@@ -507,7 +507,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     return src - buf;
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 #define PCM_ENCODER(id,sample_fmt_,name,long_name_) \
 AVCodec name ## _encoder = {                    \
     #name,                                      \
@@ -525,7 +525,7 @@ AVCodec name ## _encoder = {                    \
 #define PCM_ENCODER(id,sample_fmt_,name,long_name_)
 #endif
 
-#ifdef CONFIG_DECODERS
+#if CONFIG_DECODERS
 #define PCM_DECODER(id,sample_fmt_,name,long_name_)         \
 AVCodec name ## _decoder = {                    \
     #name,                                      \

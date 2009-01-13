@@ -97,14 +97,14 @@ struct algo algos[] = {
   {"INT",             1, j_rev_dct,          idct, MMX_PERM},
   {"SIMPLE-C",        1, ff_simple_idct,     idct, NO_PERM},
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
   {"MMX",             0, ff_fdct_mmx,        fdct, NO_PERM, FF_MM_MMX},
-#ifdef HAVE_MMX2
+#if HAVE_MMX2
   {"MMX2",            0, ff_fdct_mmx2,       fdct, NO_PERM, FF_MM_MMXEXT},
   {"SSE2",            0, ff_fdct_sse2,       fdct, NO_PERM, FF_MM_SSE2},
 #endif
 
-#ifdef CONFIG_GPL
+#if CONFIG_GPL
   {"LIBMPEG2-MMX",    1, ff_mmx_idct,        idct, MMX_PERM, FF_MM_MMX},
   {"LIBMPEG2-MMXEXT", 1, ff_mmxext_idct,     idct, MMX_PERM, FF_MM_MMXEXT},
 #endif
@@ -114,25 +114,25 @@ struct algo algos[] = {
   {"XVID-SSE2",       1, ff_idct_xvid_sse2,  idct, SSE2_PERM, FF_MM_SSE2},
 #endif
 
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
   {"altivecfdct",     0, fdct_altivec,       fdct, NO_PERM, FF_MM_ALTIVEC},
 #endif
 
-#ifdef ARCH_BFIN
+#if ARCH_BFIN
   {"BFINfdct",        0, ff_bfin_fdct,       fdct, NO_PERM},
   {"BFINidct",        1, ff_bfin_idct,       idct, NO_PERM},
 #endif
 
-#ifdef ARCH_ARM
+#if ARCH_ARM
   {"SIMPLE-ARM",      1, simple_idct_ARM,    idct, NO_PERM },
   {"INT-ARM",         1, j_rev_dct_ARM,      idct, MMX_PERM },
-#ifdef HAVE_ARMV5TE
+#if HAVE_ARMV5TE
   {"SIMPLE-ARMV5TE",  1, simple_idct_armv5te, idct, NO_PERM },
 #endif
-#ifdef HAVE_ARMV6
+#if HAVE_ARMV6
   {"SIMPLE-ARMV6",    1, ff_simple_idct_armv6, idct, MMX_PERM },
 #endif
-#ifdef HAVE_NEON
+#if HAVE_NEON
   {"SIMPLE-NEON",     1, ff_simple_idct_neon, idct, PARTTRANS_PERM },
 #endif
 #endif /* ARCH_ARM */
@@ -186,7 +186,7 @@ static DCTELEM block_org[64] __attribute__ ((aligned (8)));
 
 static inline void mmx_emms(void)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     if (cpu_flags & FF_MM_MMX)
         __asm__ volatile ("emms\n\t");
 #endif

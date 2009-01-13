@@ -23,7 +23,7 @@
 #ifndef AVCODEC_PPC_MATHOPS_H
 #define AVCODEC_PPC_MATHOPS_H
 
-#if defined(ARCH_PPC_405)
+#if ARCH_PPC_405
 /* signed 16x16 -> 32 multiply add accumulate */
 #define MAC16(rt, ra, rb) \
     __asm__ ("maclhw %0, %2, %3" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));

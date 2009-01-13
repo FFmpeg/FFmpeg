@@ -169,7 +169,7 @@ void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_s
         int j;
         j = src_scantable[i];
         st->permutated[i] = permutation[j];
-#ifdef ARCH_PPC
+#if ARCH_PPC
         st->inverse[j] = i;
 #endif
     }
@@ -340,7 +340,7 @@ static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 }
 
 
-#ifdef CONFIG_SNOW_ENCODER //dwt is in snow.c
+#if CONFIG_SNOW_ENCODER //dwt is in snow.c
 static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int w, int h, int type){
     int s, i, j;
     const int dec_count= w==8 ? 3 : 4;
@@ -2711,7 +2711,7 @@ static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int
     }
 }
 
-#ifdef CONFIG_CAVS_DECODER
+#if CONFIG_CAVS_DECODER
 /* AVS specific */
 void ff_cavsdsp_init(DSPContext* c, AVCodecContext *avctx);
 
@@ -2729,7 +2729,7 @@ void ff_avg_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
 }
 #endif /* CONFIG_CAVS_DECODER */
 
-#if defined(CONFIG_VC1_DECODER) || defined(CONFIG_WMV3_DECODER)
+#if CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER
 /* VC-1 specific */
 void ff_vc1dsp_init(DSPContext* c, AVCodecContext *avctx);
 
@@ -2743,11 +2743,11 @@ void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
 /* H264 specific */
 void ff_h264dspenc_init(DSPContext* c, AVCodecContext *avctx);
 
-#if defined(CONFIG_RV30_DECODER)
+#if CONFIG_RV30_DECODER
 void ff_rv30dsp_init(DSPContext* c, AVCodecContext *avctx);
 #endif /* CONFIG_RV30_DECODER */
 
-#if defined(CONFIG_RV40_DECODER)
+#if CONFIG_RV40_DECODER
 static void put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride){
     put_pixels16_xy2_c(dst, src, stride, 16);
 }
@@ -3467,7 +3467,7 @@ void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
         case FF_CMP_NSSE:
             cmp[i]= c->nsse[i];
             break;
-#ifdef CONFIG_SNOW_ENCODER
+#if CONFIG_SNOW_ENCODER
         case FF_CMP_W53:
             cmp[i]= c->w53[i];
             break;
@@ -3518,7 +3518,7 @@ static void add_bytes_l2_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
 
 static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
     long i;
-#ifndef HAVE_FAST_UNALIGNED
+#if !HAVE_FAST_UNALIGNED
     if((long)src2 & (sizeof(long)-1)){
         for(i=0; i+7<w; i+=8){
             dst[i+0] = src1[i+0]-src2[i+0];
@@ -3686,7 +3686,7 @@ static int dct_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2
     return s->dsp.sum_abs_dctelem(temp);
 }
 
-#ifdef CONFIG_GPL
+#if CONFIG_GPL
 #define DCT8_1D {\
     const int s07 = SRC(0) + SRC(7);\
     const int s16 = SRC(1) + SRC(6);\
@@ -3992,7 +3992,7 @@ static int ssd_int8_vs_int16_c(const int8_t *pix1, const int16_t *pix2,
 WRAPPER8_16_SQ(hadamard8_diff8x8_c, hadamard8_diff16_c)
 WRAPPER8_16_SQ(hadamard8_intra8x8_c, hadamard8_intra16_c)
 WRAPPER8_16_SQ(dct_sad8x8_c, dct_sad16_c)
-#ifdef CONFIG_GPL
+#if CONFIG_GPL
 WRAPPER8_16_SQ(dct264_sad8x8_c, dct264_sad16_c)
 #endif
 WRAPPER8_16_SQ(dct_max8x8_c, dct_max16_c)
@@ -4249,7 +4249,7 @@ int ff_check_alignment(void){
 
     if((long)&aligned & 15){
         if(!did_fail){
-#if defined(HAVE_MMX) || defined(HAVE_ALTIVEC)
+#if HAVE_MMX || HAVE_ALTIVEC
             av_log(NULL, AV_LOG_ERROR,
                 "Compiler did not align stack variables. Libavcodec has been miscompiled\n"
                 "and may be very slow or crash. This is not a bug in libavcodec,\n"
@@ -4269,7 +4269,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     ff_check_alignment();
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
     if(avctx->dct_algo==FF_DCT_FASTINT) {
         c->fdct = fdct_ifast;
         c->fdct248 = fdct_ifast248;
@@ -4487,22 +4487,22 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     c->draw_edges = draw_edges_c;
 
-#ifdef CONFIG_CAVS_DECODER
+#if CONFIG_CAVS_DECODER
     ff_cavsdsp_init(c,avctx);
 #endif
-#if defined(CONFIG_VC1_DECODER) || defined(CONFIG_WMV3_DECODER)
+#if CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER
     ff_vc1dsp_init(c,avctx);
 #endif
-#if defined(CONFIG_WMV2_DECODER) || defined(CONFIG_VC1_DECODER) || defined(CONFIG_WMV3_DECODER)
+#if CONFIG_WMV2_DECODER || CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER
     ff_intrax8dsp_init(c,avctx);
 #endif
-#if defined(CONFIG_H264_ENCODER)
+#if CONFIG_H264_ENCODER
     ff_h264dspenc_init(c,avctx);
 #endif
-#if defined(CONFIG_RV30_DECODER)
+#if CONFIG_RV30_DECODER
     ff_rv30dsp_init(c,avctx);
 #endif
-#if defined(CONFIG_RV40_DECODER)
+#if CONFIG_RV40_DECODER
     ff_rv40dsp_init(c,avctx);
     c->put_rv40_qpel_pixels_tab[0][15] = put_rv40_qpel16_mc33_c;
     c->avg_rv40_qpel_pixels_tab[0][15] = avg_rv40_qpel16_mc33_c;
@@ -4527,7 +4527,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->hadamard8_diff[4]= hadamard8_intra16_c;
     SET_CMP_FUNC(dct_sad)
     SET_CMP_FUNC(dct_max)
-#ifdef CONFIG_GPL
+#if CONFIG_GPL
     SET_CMP_FUNC(dct264_sad)
 #endif
     c->sad[0]= pix_abs16_c;
@@ -4544,7 +4544,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vsse[4]= vsse_intra16_c;
     c->nsse[0]= nsse16_c;
     c->nsse[1]= nsse8_c;
-#ifdef CONFIG_SNOW_ENCODER
+#if CONFIG_SNOW_ENCODER
     c->w53[0]= w53_16_c;
     c->w53[1]= w53_8_c;
     c->w97[0]= w97_16_c;
@@ -4558,7 +4558,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->diff_bytes= diff_bytes_c;
     c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_c;
     c->bswap_buf= bswap_buf;
-#ifdef CONFIG_PNG_DECODER
+#if CONFIG_PNG_DECODER
     c->add_png_paeth_prediction= ff_add_png_paeth_prediction;
 #endif
 
@@ -4587,19 +4587,19 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->try_8x8basis= try_8x8basis_c;
     c->add_8x8basis= add_8x8basis_c;
 
-#ifdef CONFIG_SNOW_DECODER
+#if CONFIG_SNOW_DECODER
     c->vertical_compose97i = ff_snow_vertical_compose97i;
     c->horizontal_compose97i = ff_snow_horizontal_compose97i;
     c->inner_add_yblock = ff_snow_inner_add_yblock;
 #endif
 
-#ifdef CONFIG_VORBIS_DECODER
+#if CONFIG_VORBIS_DECODER
     c->vorbis_inverse_coupling = vorbis_inverse_coupling;
 #endif
-#ifdef CONFIG_AC3_DECODER
+#if CONFIG_AC3_DECODER
     c->ac3_downmix = ff_ac3_downmix_c;
 #endif
-#ifdef CONFIG_FLAC_ENCODER
+#if CONFIG_FLAC_ENCODER
     c->flac_compute_autocorr = ff_flac_compute_autocorr;
 #endif
     c->vector_fmul = vector_fmul_c;

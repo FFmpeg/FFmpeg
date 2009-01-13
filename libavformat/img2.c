@@ -305,7 +305,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 }
 
-#if defined(CONFIG_IMAGE2_MUXER) || defined(CONFIG_IMAGE2PIPE_MUXER)
+#if CONFIG_IMAGE2_MUXER || CONFIG_IMAGE2PIPE_MUXER
 /******************************************************/
 /* image output */
 
@@ -370,10 +370,10 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-#endif /* defined(CONFIG_IMAGE2_MUXER) || defined(CONFIG_IMAGE2PIPE_MUXER) */
+#endif /* CONFIG_IMAGE2_MUXER || CONFIG_IMAGE2PIPE_MUXER */
 
 /* input */
-#ifdef CONFIG_IMAGE2_DEMUXER
+#if CONFIG_IMAGE2_DEMUXER
 AVInputFormat image2_demuxer = {
     "image2",
     NULL_IF_CONFIG_SMALL("image2 sequence"),
@@ -387,7 +387,7 @@ AVInputFormat image2_demuxer = {
     AVFMT_NOFILE,
 };
 #endif
-#ifdef CONFIG_IMAGE2PIPE_DEMUXER
+#if CONFIG_IMAGE2PIPE_DEMUXER
 AVInputFormat image2pipe_demuxer = {
     "image2pipe",
     NULL_IF_CONFIG_SMALL("piped image2 sequence"),
@@ -399,7 +399,7 @@ AVInputFormat image2pipe_demuxer = {
 #endif
 
 /* output */
-#ifdef CONFIG_IMAGE2_MUXER
+#if CONFIG_IMAGE2_MUXER
 AVOutputFormat image2_muxer = {
     "image2",
     NULL_IF_CONFIG_SMALL("image2 sequence"),
@@ -414,7 +414,7 @@ AVOutputFormat image2_muxer = {
     .flags= AVFMT_NOTIMESTAMPS | AVFMT_NOFILE
 };
 #endif
-#ifdef CONFIG_IMAGE2PIPE_MUXER
+#if CONFIG_IMAGE2PIPE_MUXER
 AVOutputFormat image2pipe_muxer = {
     "image2pipe",
     NULL_IF_CONFIG_SMALL("piped image2 sequence"),

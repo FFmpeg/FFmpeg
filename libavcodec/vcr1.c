@@ -32,6 +32,7 @@
 
 /* Disable the encoder. */
 #undef CONFIG_VCR1_ENCODER
+#define CONFIG_VCR1_ENCODER 0
 
 typedef struct VCR1Context{
     AVCodecContext *avctx;
@@ -116,7 +117,7 @@ static int decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-#ifdef CONFIG_VCR1_ENCODER
+#if CONFIG_VCR1_ENCODER
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     VCR1Context * const a = avctx->priv_data;
     AVFrame *pict = data;
@@ -156,7 +157,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-#ifdef CONFIG_VCR1_ENCODER
+#if CONFIG_VCR1_ENCODER
 static av_cold int encode_init(AVCodecContext *avctx){
 
     common_init(avctx);
@@ -178,7 +179,7 @@ AVCodec vcr1_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("ATI VCR1"),
 };
 
-#ifdef CONFIG_VCR1_ENCODER
+#if CONFIG_VCR1_ENCODER
 AVCodec vcr1_encoder = {
     "vcr1",
     CODEC_TYPE_VIDEO,

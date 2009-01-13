@@ -184,7 +184,7 @@ int ff_rate_control_init(MpegEncContext *s)
 
         //FIXME maybe move to end
         if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID) {
-#ifdef CONFIG_LIBXVID
+#if CONFIG_LIBXVID
             return ff_xvid_rate_control_init(s);
 #else
             av_log(s->avctx, AV_LOG_ERROR, "Xvid ratecontrol requires libavcodec compiled with Xvid support.\n");
@@ -260,7 +260,7 @@ void ff_rate_control_uninit(MpegEncContext *s)
     ff_eval_free(rcc->rc_eq_eval);
     av_freep(&rcc->entry);
 
-#ifdef CONFIG_LIBXVID
+#if CONFIG_LIBXVID
     if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
         ff_xvid_rate_control_uninit(s);
 #endif
@@ -678,7 +678,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     Picture * const pic= &s->current_picture;
     emms_c();
 
-#ifdef CONFIG_LIBXVID
+#if CONFIG_LIBXVID
     if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
         return ff_xvid_rate_estimate_qscale(s, dry_run);
 #endif

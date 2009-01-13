@@ -54,7 +54,7 @@
 #define H263_MBTYPE_B_VLC_BITS 6
 #define CBPC_B_VLC_BITS 3
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
                               int n);
 static void h263p_encode_umotion(MpegEncContext * s, int val);
@@ -72,7 +72,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
 static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded, int intra, int rvlc);
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr);
 static void mpeg4_encode_visual_object_header(MpegEncContext * s);
 static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_number);
@@ -80,7 +80,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
 static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb);
 static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *dir_ptr, int encoding);
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 static uint8_t uni_DCtab_lum_len[512];
 static uint8_t uni_DCtab_chrom_len[512];
 static uint16_t uni_DCtab_lum_bits[512];
@@ -155,7 +155,7 @@ static void show_pict_info(MpegEncContext *s){
     );
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 
 static void aspect_to_info(MpegEncContext * s, AVRational aspect){
     int i;
@@ -736,7 +736,7 @@ void ff_h263_update_motion_val(MpegEncContext * s){
     }
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 
 static inline int h263_get_motion_length(MpegEncContext * s, int val, int f_code){
     int l, bit_size, code;
@@ -1549,7 +1549,7 @@ void ff_h263_loop_filter(MpegEncContext * s){
     }
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
 {
     int x, y, wrap, a, c, pred_dc, scale;
@@ -1741,7 +1741,7 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block, int dir,
     return *mot_val;
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code)
 {
     int range, l, bit_size, sign, code, bits;
@@ -2652,7 +2652,7 @@ void mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
 
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 
 /**
  * encodes the dc value.
@@ -3049,7 +3049,7 @@ static inline void memsetw(short *tab, int val, int n)
         tab[i] = val;
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 
 void ff_mpeg4_init_partitions(MpegEncContext *s)
 {
@@ -3106,7 +3106,7 @@ int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s){
     }
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s)
 {
@@ -4563,7 +4563,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
     } else if (s->mb_intra) {
         /* DC coef */
         if(s->codec_id == CODEC_ID_RV10){
-#ifdef CONFIG_RV10_DECODER
+#if CONFIG_RV10_DECODER
           if (s->rv10_version == 3 && s->pict_type == FF_I_TYPE) {
             int component, diff;
             component = (n <= 3 ? 0 : n - 4 + 1);

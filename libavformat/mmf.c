@@ -36,7 +36,7 @@ static int mmf_rate(int code)
     return mmf_rates[code];
 }
 
-#ifdef CONFIG_MMF_MUXER
+#if CONFIG_MMF_MUXER
 static int mmf_rate_code(int rate)
 {
     int i;
@@ -290,7 +290,7 @@ static int mmf_read_packet(AVFormatContext *s,
     return ret;
 }
 
-#ifdef CONFIG_MMF_DEMUXER
+#if CONFIG_MMF_DEMUXER
 AVInputFormat mmf_demuxer = {
     "mmf",
     NULL_IF_CONFIG_SMALL("mmf format"),
@@ -302,7 +302,7 @@ AVInputFormat mmf_demuxer = {
     pcm_read_seek,
 };
 #endif
-#ifdef CONFIG_MMF_MUXER
+#if CONFIG_MMF_MUXER
 AVOutputFormat mmf_muxer = {
     "mmf",
     NULL_IF_CONFIG_SMALL("mmf format"),

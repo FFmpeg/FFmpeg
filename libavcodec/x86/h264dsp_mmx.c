@@ -472,7 +472,7 @@ static void ff_h264_idct_add8_mmx2(uint8_t **dest, const int *block_offset, DCTE
     }
 }
 
-#if defined(CONFIG_GPL) && defined(HAVE_YASM)
+#if CONFIG_GPL && HAVE_YASM
 static void ff_h264_idct_dc_add8_mmx2(uint8_t *dst, int16_t *block, int stride)
 {
     __asm__ volatile(
@@ -1488,7 +1488,7 @@ static void OPNAME ## pixels16_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, u
 }\
 
 
-#ifdef ARCH_X86_64
+#if ARCH_X86_64
 #define QPEL_H264_H16_XMM(OPNAME, OP, MMX)\
 static av_noinline void OPNAME ## h264_qpel16_h_lowpass_l2_ ## MMX(uint8_t *dst, uint8_t *src, uint8_t *src2, int dstStride, int src2Stride){\
     int h=16;\
@@ -2065,7 +2065,7 @@ QPEL_H264_V_XMM(put_,       PUT_OP, sse2)
 QPEL_H264_V_XMM(avg_,  AVG_MMX2_OP, sse2)
 QPEL_H264_HV_XMM(put_,       PUT_OP, sse2)
 QPEL_H264_HV_XMM(avg_,  AVG_MMX2_OP, sse2)
-#ifdef HAVE_SSSE3
+#if HAVE_SSSE3
 QPEL_H264_H_XMM(put_,       PUT_OP, ssse3)
 QPEL_H264_H_XMM(avg_,  AVG_MMX2_OP, ssse3)
 QPEL_H264_HV2_XMM(put_,       PUT_OP, ssse3)
@@ -2079,7 +2079,7 @@ H264_MC_4816(3dnow)
 H264_MC_4816(mmx2)
 H264_MC_816(H264_MC_V, sse2)
 H264_MC_816(H264_MC_HV, sse2)
-#ifdef HAVE_SSSE3
+#if HAVE_SSSE3
 H264_MC_816(H264_MC_H, ssse3)
 H264_MC_816(H264_MC_HV, ssse3)
 #endif
@@ -2161,7 +2161,7 @@ static void avg_h264_chroma_mc4_3dnow(uint8_t *dst/*align 8*/, uint8_t *src/*ali
 #undef H264_CHROMA_MC4_TMPL
 #undef H264_CHROMA_MC8_MV0
 
-#ifdef HAVE_SSSE3
+#if HAVE_SSSE3
 #define AVG_OP(X)
 #undef H264_CHROMA_MC8_TMPL
 #undef H264_CHROMA_MC4_TMPL

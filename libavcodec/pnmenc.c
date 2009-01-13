@@ -354,7 +354,7 @@ static int pam_probe(AVProbeData *pd)
 #endif
 
 
-#ifdef CONFIG_PGM_ENCODER
+#if CONFIG_PGM_ENCODER
 AVCodec pgm_encoder = {
     "pgm",
     CODEC_TYPE_VIDEO,
@@ -369,7 +369,7 @@ AVCodec pgm_encoder = {
 };
 #endif // CONFIG_PGM_ENCODER
 
-#ifdef CONFIG_PGMYUV_ENCODER
+#if CONFIG_PGMYUV_ENCODER
 AVCodec pgmyuv_encoder = {
     "pgmyuv",
     CODEC_TYPE_VIDEO,
@@ -384,7 +384,7 @@ AVCodec pgmyuv_encoder = {
 };
 #endif // CONFIG_PGMYUV_ENCODER
 
-#ifdef CONFIG_PPM_ENCODER
+#if CONFIG_PPM_ENCODER
 AVCodec ppm_encoder = {
     "ppm",
     CODEC_TYPE_VIDEO,
@@ -399,7 +399,7 @@ AVCodec ppm_encoder = {
 };
 #endif // CONFIG_PPM_ENCODER
 
-#ifdef CONFIG_PBM_ENCODER
+#if CONFIG_PBM_ENCODER
 AVCodec pbm_encoder = {
     "pbm",
     CODEC_TYPE_VIDEO,
@@ -414,7 +414,7 @@ AVCodec pbm_encoder = {
 };
 #endif // CONFIG_PBM_ENCODER
 
-#ifdef CONFIG_PAM_ENCODER
+#if CONFIG_PAM_ENCODER
 AVCodec pam_encoder = {
     "pam",
     CODEC_TYPE_VIDEO,

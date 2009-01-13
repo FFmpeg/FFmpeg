@@ -64,7 +64,7 @@ static av_always_inline void fill_rectangle(void *vp, int w, int h, int stride, 
         *(uint32_t*)(p + 3*stride)= v;
     }else if(w==8){
     //gcc can't optimize 64bit math on x86_32
-#ifdef HAVE_FAST_64BIT
+#if HAVE_FAST_64BIT
         const uint64_t v= val*0x0100000001ULL;
         *(uint64_t*)(p + 0*stride)= v;
         if(h==1) return;

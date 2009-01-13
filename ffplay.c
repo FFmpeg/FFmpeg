@@ -2019,7 +2019,7 @@ static int decode_thread(void *arg)
             else
                 av_read_play(ic);
         }
-#if defined(CONFIG_RTSP_DEMUXER) || defined(CONFIG_MMSH_PROTOCOL)
+#if CONFIG_RTSP_DEMUXER || CONFIG_MMSH_PROTOCOL
         if (is->paused &&
                 (!strcmp(ic->iformat->name, "rtsp") ||
                  (ic->pb && !strcmp(url_fileno(ic->pb)->prot->name, "mmsh")))) {
@@ -2467,7 +2467,7 @@ static int opt_vismv(const char *opt, const char *arg)
 static int opt_thread_count(const char *opt, const char *arg)
 {
     thread_count= parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
-#if !defined(HAVE_THREADS)
+#if !HAVE_THREADS
     fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
 #endif
     return 0;
@@ -2579,7 +2579,7 @@ int main(int argc, char **argv)
     }
 
     if (!display_disable) {
-#ifdef HAVE_SDL_VIDEO_SIZE
+#if HAVE_SDL_VIDEO_SIZE
         const SDL_VideoInfo *vi = SDL_GetVideoInfo();
         fs_screen_width = vi->current_w;
         fs_screen_height = vi->current_h;

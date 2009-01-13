@@ -168,7 +168,7 @@ void av_register_all(void)
     REGISTER_MUXER    (RTP, rtp);
     REGISTER_DEMUXER  (RTSP, rtsp);
     REGISTER_DEMUXER  (SDP, sdp);
-#ifdef CONFIG_SDP_DEMUXER
+#if CONFIG_SDP_DEMUXER
     av_register_rtp_dynamic_payload_handlers();
     av_register_rdt_dynamic_payload_handlers();
 #endif

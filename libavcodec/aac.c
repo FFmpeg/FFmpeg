@@ -435,7 +435,7 @@ static av_cold int aac_decode_init(AVCodecContext * avccontext) {
         ac->sf_offset = 60;
     }
 
-#ifndef CONFIG_HARDCODED_TABLES
+#if !CONFIG_HARDCODED_TABLES
     for (i = 0; i < 428; i++)
         ff_aac_pow2sf_tab[i] = pow(2, (i - 200)/4.);
 #endif /* CONFIG_HARDCODED_TABLES */

@@ -27,7 +27,7 @@
 #include "avformat.h"
 
 #include <sys/time.h>
-#ifdef HAVE_SYS_SELECT_H
+#if HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
 #include <strings.h>
@@ -1502,7 +1502,7 @@ static int rtsp_read_close(AVFormatContext *s)
     return 0;
 }
 
-#ifdef CONFIG_RTSP_DEMUXER
+#if CONFIG_RTSP_DEMUXER
 AVInputFormat rtsp_demuxer = {
     "rtsp",
     NULL_IF_CONFIG_SMALL("RTSP input format"),
@@ -1595,7 +1595,7 @@ static int sdp_read_close(AVFormatContext *s)
     return 0;
 }
 
-#ifdef CONFIG_SDP_DEMUXER
+#if CONFIG_SDP_DEMUXER
 AVInputFormat sdp_demuxer = {
     "sdp",
     NULL_IF_CONFIG_SMALL("SDP"),
@@ -1607,7 +1607,7 @@ AVInputFormat sdp_demuxer = {
 };
 #endif
 
-#ifdef CONFIG_REDIR_DEMUXER
+#if CONFIG_REDIR_DEMUXER
 /* dummy redirector format (used directly in av_open_input_file now) */
 static int redir_probe(AVProbeData *pd)
 {

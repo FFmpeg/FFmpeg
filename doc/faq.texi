@@ -426,7 +426,7 @@ you need the debug information, used the *_g versions.
 @section I do not like the LGPL, can I contribute code under the GPL instead?
 
 Yes, as long as the code is optional and can easily and cleanly be placed
-under #ifdef CONFIG_GPL without breaking anything. So for example a new codec
+under #if CONFIG_GPL without breaking anything. So for example a new codec
 or filter would be OK under GPL while a bug fix to LGPL code would not.
 
 @section I want to compile xyz.c alone but my compiler produced many errors.

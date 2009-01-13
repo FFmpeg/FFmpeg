@@ -503,7 +503,7 @@ static int swf_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-#ifdef CONFIG_SWF_MUXER
+#if CONFIG_SWF_MUXER
 AVOutputFormat swf_muxer = {
     "swf",
     NULL_IF_CONFIG_SMALL("Flash format"),
@@ -517,7 +517,7 @@ AVOutputFormat swf_muxer = {
     swf_write_trailer,
 };
 #endif
-#ifdef CONFIG_AVM2_MUXER
+#if CONFIG_AVM2_MUXER
 AVOutputFormat avm2_muxer = {
     "avm2",
     NULL_IF_CONFIG_SMALL("Flash 9 (AVM2) format"),

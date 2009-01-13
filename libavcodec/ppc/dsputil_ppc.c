@@ -24,7 +24,7 @@
 
 #include "dsputil_ppc.h"
 
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
 #include "dsputil_altivec.h"
 
 void fdct_altivec(int16_t *block);
@@ -48,7 +48,7 @@ int mm_flags = 0;
 int mm_support(void)
 {
     int result = 0;
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
     if (has_altivec()) {
         result |= FF_MM_ALTIVEC;
     }
@@ -56,7 +56,7 @@ int mm_support(void)
     return result;
 }
 
-#ifdef CONFIG_POWERPC_PERF
+#if CONFIG_POWERPC_PERF
 unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][powerpc_data_total];
 /* list below must match enum in dsputil_ppc.h */
 static unsigned char* perfname[] = {
@@ -91,7 +91,7 @@ static unsigned char* perfname[] = {
 #include <stdio.h>
 #endif
 
-#ifdef CONFIG_POWERPC_PERF
+#if CONFIG_POWERPC_PERF
 void powerpc_display_perf_report(void)
 {
     int i, j;
@@ -165,7 +165,7 @@ POWERPC_PERF_STOP_COUNT(powerpc_clear_blocks_dcbz32, 1);
 
 /* same as above, when dcbzl clear a whole 128B cache line
    i.e. the PPC970 aka G5 */
-#ifdef HAVE_DCBZL
+#if HAVE_DCBZL
 void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
 {
 POWERPC_PERF_DECLARE(powerpc_clear_blocks_dcbz128, 1);
@@ -195,7 +195,7 @@ void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
 }
 #endif
 
-#ifdef HAVE_DCBZL
+#if HAVE_DCBZL
 /* check dcbz report how many bytes are set to 0 by dcbz */
 /* update 24/06/2003 : replace dcbz by dcbzl to get
    the intended effect (Apple "fixed" dcbz)
@@ -261,7 +261,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
             break;
     }
 
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
     if(ENABLE_H264_DECODER) dsputil_h264_init_ppc(c, avctx);
 
     if (has_altivec()) {
@@ -275,7 +275,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         int_init_altivec(c, avctx);
         c->gmc1 = gmc1_altivec;
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
         if (avctx->dct_algo == FF_DCT_AUTO ||
             avctx->dct_algo == FF_DCT_ALTIVEC) {
             c->fdct = fdct_altivec;
@@ -291,7 +291,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
             }
         }
 
-#ifdef CONFIG_POWERPC_PERF
+#if CONFIG_POWERPC_PERF
         {
             int i, j;
             for (i = 0 ; i < powerpc_perf_total ; i++) {

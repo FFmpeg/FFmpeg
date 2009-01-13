@@ -25,7 +25,7 @@
  * @author Bartlomiej Wolowiec
  */
 #include "avcodec.h"
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
 #include <zlib.h>
 #endif
 #include "bytestream.h"
@@ -151,7 +151,7 @@ static int encode_strip(TiffEncoderContext * s, const int8_t * src,
 {
 
     switch (compr) {
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
     case TIFF_DEFLATE:
     case TIFF_ADOBE_DEFLATE:
         {
@@ -229,7 +229,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         s->compr = TIFF_RAW;
     } else if(avctx->compression_level == 2) {
         s->compr = TIFF_LZW;
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
     } else if ((avctx->compression_level >= 3)) {
         s->compr = TIFF_DEFLATE;
 #endif
@@ -315,7 +315,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         }
     }
 
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE) {
         uint8_t *zbuf;
         int zlen, zn;

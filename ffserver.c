@@ -22,7 +22,7 @@
 #define _XOPEN_SOURCE 600
 
 #include "config.h"
-#ifndef HAVE_CLOSESOCKET
+#if !HAVE_CLOSESOCKET
 #define closesocket close
 #endif
 #include <string.h>
@@ -41,7 +41,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#ifdef HAVE_POLL_H
+#if HAVE_POLL_H
 #include <poll.h>
 #endif
 #include <errno.h>
@@ -50,7 +50,7 @@
 #include <time.h>
 #include <sys/wait.h>
 #include <signal.h>
-#ifdef HAVE_DLFCN_H
+#if HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
 
@@ -3709,7 +3709,7 @@ static enum CodecID opt_video_codec(const char *arg)
 
 /* simplistic plugin support */
 
-#ifdef HAVE_DLOPEN
+#if HAVE_DLOPEN
 static void load_module(const char *filename)
 {
     void *dll;
@@ -4394,7 +4394,7 @@ static int parse_ffconfig(const char *filename)
             }
         } else if (!strcasecmp(cmd, "LoadModule")) {
             get_arg(arg, sizeof(arg), &p);
-#ifdef HAVE_DLOPEN
+#if HAVE_DLOPEN
             load_module(arg);
 #else
             fprintf(stderr, "%s:%d: Module support not compiled into this version: '%s'\n",

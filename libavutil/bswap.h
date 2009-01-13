@@ -30,13 +30,13 @@
 #include "config.h"
 #include "common.h"
 
-#if defined(ARCH_ARM)
+#if   ARCH_ARM
 #   include "arm/bswap.h"
-#elif defined(ARCH_BFIN)
+#elif ARCH_BFIN
 #   include "bfin/bswap.h"
-#elif defined(ARCH_SH4)
+#elif ARCH_SH4
 #   include "sh4/bswap.h"
-#elif defined(ARCH_X86)
+#elif ARCH_X86
 #   include "x86/bswap.h"
 #endif
 

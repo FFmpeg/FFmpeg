@@ -33,7 +33,7 @@
 #include "bitstream.h"
 #include "dsputil.h"
 
-#ifdef CONFIG_MPEGAUDIO_HP
+#if CONFIG_MPEGAUDIO_HP
 #define USE_HIGHPRECISION
 #endif
 #include "mpegaudio.h"

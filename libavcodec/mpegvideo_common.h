@@ -371,7 +371,7 @@ void mpeg_motion(MpegEncContext *s,
                  uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
                  int motion_x, int motion_y, int h)
 {
-#ifndef CONFIG_SMALL
+#if !CONFIG_SMALL
     if(s->out_format == FMT_MPEG1)
         mpeg_motion_internal(s, dest_y, dest_cb, dest_cr, field_based,
                     bottom_field, field_select, ref_picture, pix_op,
@@ -888,7 +888,7 @@ static inline void MPV_motion(MpegEncContext *s,
                               op_pixels_func (*pix_op)[4],
                               qpel_mc_func (*qpix_op)[16])
 {
-#ifndef CONFIG_SMALL
+#if !CONFIG_SMALL
     if(s->out_format == FMT_MPEG1)
         MPV_motion_internal(s, dest_y, dest_cb, dest_cr, dir,
                             ref_picture, pix_op, qpix_op, 1);

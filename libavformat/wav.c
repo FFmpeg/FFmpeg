@@ -30,7 +30,7 @@ typedef struct {
     int last_duration;
 } WAVContext;
 
-#ifdef CONFIG_WAV_MUXER
+#if CONFIG_WAV_MUXER
 static int wav_write_header(AVFormatContext *s)
 {
     WAVContext *wav = s->priv_data;
@@ -256,7 +256,7 @@ static int wav_read_seek(AVFormatContext *s,
     return pcm_read_seek(s, stream_index, timestamp, flags);
 }
 
-#ifdef CONFIG_WAV_DEMUXER
+#if CONFIG_WAV_DEMUXER
 AVInputFormat wav_demuxer = {
     "wav",
     NULL_IF_CONFIG_SMALL("WAV format"),
@@ -270,7 +270,7 @@ AVInputFormat wav_demuxer = {
     .codec_tag= (const AVCodecTag* const []){codec_wav_tags, 0},
 };
 #endif
-#ifdef CONFIG_WAV_MUXER
+#if CONFIG_WAV_MUXER
 AVOutputFormat wav_muxer = {
     "wav",
     NULL_IF_CONFIG_SMALL("WAV format"),

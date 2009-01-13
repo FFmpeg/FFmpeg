@@ -54,7 +54,7 @@ static void transform(uint32_t state[5], const uint8_t buffer[64]){
     c = state[2];
     d = state[3];
     e = state[4];
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
     for(i=0; i<80; i++){
         int t;
         if(i<16) t= be2me_32(((uint32_t*)buffer)[i]);
@@ -110,7 +110,7 @@ void av_sha1_update(AVSHA1* ctx, const uint8_t* data, unsigned int len){
 
     j = ctx->count & 63;
     ctx->count += len;
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
     for( i = 0; i < len; i++ ){
         ctx->buffer[ j++ ] = data[i];
         if( 64 == j ){

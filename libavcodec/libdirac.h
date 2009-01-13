@@ -28,7 +28,7 @@
 
 #include "config.h"
 
-#ifdef CONFIG_LIBDIRAC
+#if CONFIG_LIBDIRAC
 
 #include "avcodec.h"
 #include <libdirac_common/dirac_types.h>

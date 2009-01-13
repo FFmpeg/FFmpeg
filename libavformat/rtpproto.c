@@ -32,7 +32,7 @@
 #include "network.h"
 #include "os_support.h"
 #include <fcntl.h>
-#ifdef HAVE_SYS_SELECT_H
+#if HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
 

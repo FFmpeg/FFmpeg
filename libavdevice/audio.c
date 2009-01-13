@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
-#ifdef HAVE_SOUNDCARD_H
+#if HAVE_SOUNDCARD_H
 #include <soundcard.h>
 #else
 #include <sys/soundcard.h>
@@ -311,7 +311,7 @@ static int audio_read_close(AVFormatContext *s1)
     return 0;
 }
 
-#ifdef CONFIG_OSS_DEMUXER
+#if CONFIG_OSS_DEMUXER
 AVInputFormat oss_demuxer = {
     "oss",
     NULL_IF_CONFIG_SMALL("Open Sound System capture"),
@@ -324,7 +324,7 @@ AVInputFormat oss_demuxer = {
 };
 #endif
 
-#ifdef CONFIG_OSS_MUXER
+#if CONFIG_OSS_MUXER
 AVOutputFormat oss_muxer = {
     "oss",
     NULL_IF_CONFIG_SMALL("Open Sound System playback"),

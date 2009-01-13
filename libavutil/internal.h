@@ -102,7 +102,7 @@
 #endif
 
 // Use rip-relative addressing if compiling PIC code on x86-64.
-#if defined(ARCH_X86_64) && defined(PIC)
+#if ARCH_X86_64 && defined(PIC)
 #    define LOCAL_MANGLE(a) #a "(%%rip)"
 #else
 #    define LOCAL_MANGLE(a) #a
@@ -125,7 +125,7 @@
 
 extern const uint32_t ff_inverse[256];
 
-#if defined(ARCH_X86)
+#if ARCH_X86
 #    define FASTDIV(a,b) \
     ({\
         int ret,dmy;\
@@ -136,7 +136,7 @@ extern const uint32_t ff_inverse[256];
             );\
         ret;\
     })
-#elif defined(HAVE_ARMV6)
+#elif HAVE_ARMV6
 static inline av_const int FASTDIV(int a, int b)
 {
     int r, t;
@@ -147,7 +147,7 @@ static inline av_const int FASTDIV(int a, int b)
                      : "=&r"(r), "=&r"(t) : "r"(a), "r"(b), "r"(ff_inverse));
     return r;
 }
-#elif defined(ARCH_ARM)
+#elif ARCH_ARM
 static inline av_const int FASTDIV(int a, int b)
 {
     int r, t;
@@ -155,7 +155,7 @@ static inline av_const int FASTDIV(int a, int b)
                       : "=&r"(r), "=&r"(t) : "r"(a), "r"(ff_inverse[b]));
     return r;
 }
-#elif defined(CONFIG_FASTDIV)
+#elif CONFIG_FASTDIV
 #    define FASTDIV(a,b)   ((uint32_t)((((uint64_t)a)*ff_inverse[b])>>32))
 #else
 #    define FASTDIV(a,b)   ((a)/(b))
@@ -171,7 +171,7 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
 
     if(a<255) return (ff_sqrt_tab[a+1]-1)>>4;
     else if(a<(1<<12)) b= ff_sqrt_tab[a>>4 ]>>2;
-#ifndef CONFIG_SMALL
+#if !CONFIG_SMALL
     else if(a<(1<<14)) b= ff_sqrt_tab[a>>6 ]>>1;
     else if(a<(1<<16)) b= ff_sqrt_tab[a>>8 ]   ;
 #endif
@@ -185,7 +185,7 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
     return b - (a<b*b);
 }
 
-#if defined(ARCH_X86)
+#if ARCH_X86
 #define MASK_ABS(mask, level)\
             __asm__ volatile(\
                 "cltd                   \n\t"\
@@ -199,7 +199,7 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
             level= (level^mask)-mask;
 #endif
 
-#ifdef HAVE_CMOV
+#if HAVE_CMOV
 #define COPY3_IF_LT(x,y,a,b,c,d)\
 __asm__ volatile (\
     "cmpl %0, %3        \n\t"\
@@ -259,42 +259,42 @@ if((y)<(x)){\
     }\
 }
 
-#ifndef HAVE_LLRINT
+#if !HAVE_LLRINT
 static av_always_inline av_const long long llrint(double x)
 {
     return rint(x);
 }
 #endif /* HAVE_LLRINT */
 
-#ifndef HAVE_LRINT
+#if !HAVE_LRINT
 static av_always_inline av_const long int lrint(double x)
 {
     return rint(x);
 }
 #endif /* HAVE_LRINT */
 
-#ifndef HAVE_LRINTF
+#if !HAVE_LRINTF
 static av_always_inline av_const long int lrintf(float x)
 {
     return (int)(rint(x));
 }
 #endif /* HAVE_LRINTF */
 
-#ifndef HAVE_ROUND
+#if !HAVE_ROUND
 static av_always_inline av_const double round(double x)
 {
     return (x > 0) ? floor(x + 0.5) : ceil(x - 0.5);
 }
 #endif /* HAVE_ROUND */
 
-#ifndef HAVE_ROUNDF
+#if !HAVE_ROUNDF
 static av_always_inline av_const float roundf(float x)
 {
     return (x > 0) ? floor(x + 0.5) : ceil(x - 0.5);
 }
 #endif /* HAVE_ROUNDF */
 
-#ifndef HAVE_TRUNCF
+#if !HAVE_TRUNCF
 static av_always_inline av_const float truncf(float x)
 {
     return (x > 0) ? floor(x) : ceil(x);

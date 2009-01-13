@@ -386,7 +386,7 @@ void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, int width){
     }
 }
 
-#ifdef HAVE_7REGS
+#if HAVE_7REGS
 #define snow_vertical_compose_sse2_load_add(op,r,t0,t1,t2,t3)\
         ""op" ("r",%%"REG_d"), %%"t0"      \n\t"\
         ""op" 16("r",%%"REG_d"), %%"t1"    \n\t"\

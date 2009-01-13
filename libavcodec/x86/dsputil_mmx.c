@@ -880,7 +880,7 @@ static void add_png_paeth_prediction_##cpu(uint8_t *dst, uint8_t *src, uint8_t *
         "pabsw     %%mm5, %%mm5 \n"
 
 PAETH(mmx2, ABS3_MMX2)
-#ifdef HAVE_SSSE3
+#if HAVE_SSSE3
 PAETH(ssse3, ABS3_SSSE3)
 #endif
 
@@ -1765,7 +1765,7 @@ void ff_mmxext_idct(DCTELEM *block);
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
-#ifdef CONFIG_GPL
+#if CONFIG_GPL
 static void ff_libmpeg2mmx_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_mmx_idct (block);
@@ -2147,7 +2147,7 @@ static void vector_fmul_add_add_sse(float *dst, const float *src0, const float *
 
 static void vector_fmul_window_3dnow2(float *dst, const float *src0, const float *src1,
                                       const float *win, float add_bias, int len){
-#ifdef HAVE_6REGS
+#if HAVE_6REGS
     if(add_bias == 0){
         x86_reg i = -len*4;
         x86_reg j = len*4-8;
@@ -2182,7 +2182,7 @@ static void vector_fmul_window_3dnow2(float *dst, const float *src0, const float
 
 static void vector_fmul_window_sse(float *dst, const float *src0, const float *src1,
                                    const float *win, float add_bias, int len){
-#ifdef HAVE_6REGS
+#if HAVE_6REGS
     if(add_bias == 0){
         x86_reg i = -len*4;
         x86_reg j = len*4-16;
@@ -2324,7 +2324,7 @@ static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
     );
 }
 
-#ifdef HAVE_YASM
+#if HAVE_YASM
 void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dnow(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dn2(int16_t *dst, const float **src, int len);
@@ -2332,7 +2332,7 @@ void ff_x264_deblock_v_luma_sse2(uint8_t *pix, int stride, int alpha, int beta, 
 void ff_x264_deblock_h_luma_sse2(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0);
 void ff_x264_deblock_v8_luma_intra_mmxext(uint8_t *pix, int stride, int alpha, int beta);
 void ff_x264_deblock_h_luma_intra_mmxext(uint8_t *pix, int stride, int alpha, int beta);
-#ifdef ARCH_X86_32
+#if ARCH_X86_32
 static void ff_x264_deblock_v_luma_intra_mmxext(uint8_t *pix, int stride, int alpha, int beta)
 {
     ff_x264_deblock_v8_luma_intra_mmxext(pix+0, stride, alpha, beta);
@@ -2555,7 +2555,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->idct_add= ff_simple_idct_add_mmx;
                 c->idct    = ff_simple_idct_mmx;
                 c->idct_permutation_type= FF_SIMPLE_IDCT_PERM;
-#ifdef CONFIG_GPL
+#if CONFIG_GPL
             }else if(idct_algo==FF_IDCT_LIBMPEG2MMX){
                 if(mm_flags & FF_MM_MMXEXT){
                     c->idct_put= ff_libmpeg2mmx2_idct_put;
@@ -2853,7 +2853,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 2, sse2);
             H264_QPEL_FUNCS(3, 3, sse2);
         }
-#ifdef HAVE_SSSE3
+#if HAVE_SSSE3
         if(mm_flags & FF_MM_SSSE3){
             H264_QPEL_FUNCS(1, 0, ssse3);
             H264_QPEL_FUNCS(1, 1, ssse3);
@@ -2876,14 +2876,14 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
 #endif
 
-#if defined(CONFIG_GPL) && defined(HAVE_YASM)
+#if CONFIG_GPL && HAVE_YASM
         if( mm_flags&FF_MM_MMXEXT ){
-#ifdef ARCH_X86_32
+#if ARCH_X86_32
             c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_mmxext;
             c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_mmxext;
 #endif
             if( mm_flags&FF_MM_SSE2 ){
-#if defined(ARCH_X86_64) || !defined(__ICC) || __ICC > 1100
+#if ARCH_X86_64 || !defined(__ICC) || __ICC > 1100
                 c->h264_v_loop_filter_luma = ff_x264_deblock_v_luma_sse2;
                 c->h264_h_loop_filter_luma = ff_x264_deblock_h_luma_sse2;
                 c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_sse2;
@@ -2896,10 +2896,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
 #endif
 
-#ifdef CONFIG_SNOW_DECODER
+#if CONFIG_SNOW_DECODER
         if(mm_flags & FF_MM_SSE2 & 0){
             c->horizontal_compose97i = ff_snow_horizontal_compose97i_sse2;
-#ifdef HAVE_7REGS
+#if HAVE_7REGS
             c->vertical_compose97i = ff_snow_vertical_compose97i_sse2;
 #endif
             c->inner_add_yblock = ff_snow_inner_add_yblock_sse2;
@@ -2907,7 +2907,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         else{
             if(mm_flags & FF_MM_MMXEXT){
             c->horizontal_compose97i = ff_snow_horizontal_compose97i_mmx;
-#ifdef HAVE_7REGS
+#if HAVE_7REGS
             c->vertical_compose97i = ff_snow_vertical_compose97i_mmx;
 #endif
             }

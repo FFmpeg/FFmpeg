@@ -177,7 +177,7 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
 
     dsputil_init(&ctx->m.dsp, avctx);
     ff_dct_common_init(&ctx->m);
-#ifdef HAVE_MMX
+#if HAVE_MMX
     ff_dnxhd_init_mmx(ctx);
 #endif
     if (!ctx->m.dct_quantize)

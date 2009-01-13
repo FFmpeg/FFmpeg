@@ -267,7 +267,7 @@ static const AVOption options[]={
 {"vsad", "sum of absolute vertical differences", 0, FF_OPT_TYPE_CONST, FF_CMP_VSAD, INT_MIN, INT_MAX, V|E, "cmp_func"},
 {"vsse","sum of squared vertical differences", 0, FF_OPT_TYPE_CONST, FF_CMP_VSSE, INT_MIN, INT_MAX, V|E, "cmp_func"},
 {"nsse", "noise preserving sum of squared differences", 0, FF_OPT_TYPE_CONST, FF_CMP_NSSE, INT_MIN, INT_MAX, V|E, "cmp_func"},
-#ifdef CONFIG_SNOW_ENCODER
+#if CONFIG_SNOW_ENCODER
 {"w53", "5/3 wavelet, only used in snow", 0, FF_OPT_TYPE_CONST, FF_CMP_W53, INT_MIN, INT_MAX, V|E, "cmp_func"},
 {"w97", "9/7 wavelet, only used in snow", 0, FF_OPT_TYPE_CONST, FF_CMP_W97, INT_MIN, INT_MAX, V|E, "cmp_func"},
 #endif

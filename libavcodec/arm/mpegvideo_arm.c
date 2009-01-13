@@ -31,10 +31,10 @@ void MPV_common_init_arm(MpegEncContext *s)
      * allow optimized functions for armv5te unless
      * a better iwmmxt function exists
      */
-#ifdef HAVE_ARMV5TE
+#if HAVE_ARMV5TE
     MPV_common_init_armv5te(s);
 #endif
-#ifdef HAVE_IWMMXT
+#if HAVE_IWMMXT
     MPV_common_init_iwmmxt(s);
 #endif
 }

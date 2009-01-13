@@ -31,7 +31,7 @@
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
 
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
 #include <zlib.h>
 #endif
 
@@ -1005,7 +1005,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     /* special codec parameters handling */
     switch (st->codec->codec_id) {
-#ifdef CONFIG_DV_DEMUXER
+#if CONFIG_DV_DEMUXER
     case CODEC_ID_DVAUDIO:
         c->dv_fctx = av_alloc_format_context();
         c->dv_demux = dv_init_demux(c->dv_fctx);
@@ -1380,13 +1380,13 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         sc->pb = c->fc->pb;
 
     switch (st->codec->codec_id) {
-#ifdef CONFIG_H261_DECODER
+#if CONFIG_H261_DECODER
     case CODEC_ID_H261:
 #endif
-#ifdef CONFIG_H263_DECODER
+#if CONFIG_H263_DECODER
     case CODEC_ID_H263:
 #endif
-#ifdef CONFIG_MPEG4_DECODER
+#if CONFIG_MPEG4_DECODER
     case CODEC_ID_MPEG4:
 #endif
         st->codec->width= 0; /* let decoder init width/height */
@@ -1691,7 +1691,7 @@ static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
     ByteIOContext ctx;
     uint8_t *cmov_data;
     uint8_t *moov_data; /* uncompressed data */
@@ -1939,7 +1939,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         return -1;
     }
     av_get_packet(sc->pb, pkt, sample->size);
-#ifdef CONFIG_DV_DEMUXER
+#if CONFIG_DV_DEMUXER
     if (mov->dv_demux && sc->dv_audio_container) {
         dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
         av_free(pkt->data);

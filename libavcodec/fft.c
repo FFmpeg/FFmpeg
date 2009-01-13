@@ -91,7 +91,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
     s->imdct_half = ff_imdct_half_c;
     s->exptab1 = NULL;
 
-#if defined HAVE_MMX && defined HAVE_YASM
+#if HAVE_MMX && HAVE_YASM
     has_vectors = mm_support();
     if (has_vectors & FF_MM_SSE) {
         /* SSE for P3/P4/K8 */
@@ -110,7 +110,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
         s->imdct_half = ff_imdct_half_3dn;
         s->fft_calc = ff_fft_calc_3dn;
     }
-#elif defined HAVE_ALTIVEC && !defined ALTIVEC_USE_REFERENCE_C_CODE
+#elif HAVE_ALTIVEC && !defined ALTIVEC_USE_REFERENCE_C_CODE
     has_vectors = mm_support();
     if (has_vectors & FF_MM_ALTIVEC) {
         s->fft_calc = ff_fft_calc_altivec;
@@ -336,7 +336,7 @@ static void fft8(FFTComplex *z)
     TRANSFORM(z[1],z[3],z[5],z[7],sqrthalf,sqrthalf);
 }
 
-#ifndef CONFIG_SMALL
+#if !CONFIG_SMALL
 static void fft16(FFTComplex *z)
 {
     FFTSample t1, t2, t3, t4, t5, t6;
@@ -358,7 +358,7 @@ DECL_FFT(64,32,16)
 DECL_FFT(128,64,32)
 DECL_FFT(256,128,64)
 DECL_FFT(512,256,128)
-#ifndef CONFIG_SMALL
+#if !CONFIG_SMALL
 #define pass pass_big
 #endif
 DECL_FFT(1024,512,256)

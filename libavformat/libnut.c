@@ -44,7 +44,7 @@ static const AVCodecTag nut_tags[] = {
     { 0, 0 },
 };
 
-#ifdef CONFIG_LIBNUT_MUXER
+#if CONFIG_LIBNUT_MUXER
 static int av_write(void * h, size_t len, const uint8_t * buf) {
     ByteIOContext * bc = h;
     put_buffer(bc, buf, len);

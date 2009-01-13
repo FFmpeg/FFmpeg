@@ -24,12 +24,12 @@
 
         preserve8
 
-#ifndef HAVE_PLD
+#if !HAVE_PLD
 .macro pld reg
 .endm
 #endif
 
-#ifdef HAVE_ARMV5TE
+#if HAVE_ARMV5TE
 function ff_prefetch_arm, export=1
         subs    r2, r2, #1
         pld     [r0]

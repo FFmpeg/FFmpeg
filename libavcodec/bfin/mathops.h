@@ -22,7 +22,7 @@
 #ifndef AVCODEC_BFIN_MATHOPS_H
 #define AVCODEC_BFIN_MATHOPS_H
 
-#ifdef CONFIG_MPEGAUDIO_HP
+#if CONFIG_MPEGAUDIO_HP
 #define MULH(X,Y) ({ int xxo;                           \
     __asm__ (                                               \
         "a1 = %2.L * %1.L (FU);\n\t"                    \

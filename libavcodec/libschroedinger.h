@@ -28,7 +28,7 @@
 
 #include "config.h"
 
-#ifdef CONFIG_LIBSCHROEDINGER
+#if CONFIG_LIBSCHROEDINGER
 
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schroframe.h>

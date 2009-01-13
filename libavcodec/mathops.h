@@ -24,19 +24,19 @@
 
 #include "libavutil/common.h"
 
-#ifdef ARCH_X86_32
+#if   ARCH_X86_32
 
 #include "x86/mathops.h"
 
-#elif defined(ARCH_ARM)
+#elif ARCH_ARM
 
 #include "arm/mathops.h"
 
-#elif defined(ARCH_PPC)
+#elif ARCH_PPC
 
 #include "ppc/mathops.h"
 
-#elif defined(ARCH_BFIN)
+#elif ARCH_BFIN
 
 #include "bfin/mathops.h"
 

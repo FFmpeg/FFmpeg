@@ -40,7 +40,7 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <float.h>
-#if !defined(HAVE_MKSTEMP)
+#if !HAVE_MKSTEMP
 #include <fcntl.h>
 #endif
 
@@ -251,7 +251,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
 //we could change STRIDE_ALIGN to 16 for x86/sse but it would increase the
 //picture size unneccessarily in some cases. The solution here is not
 //pretty and better ideas are welcome!
-#ifdef HAVE_MMX
+#if HAVE_MMX
             if(s->codec_id == CODEC_ID_SVQ1)
                 stride_align[i]= 16;
             else
@@ -900,7 +900,7 @@ int av_get_bits_per_sample_format(enum SampleFormat sample_fmt) {
     }
 }
 
-#if !defined(HAVE_THREADS)
+#if !HAVE_THREADS
 int avcodec_thread_init(AVCodecContext *s, int thread_count){
     return -1;
 }
@@ -927,7 +927,7 @@ unsigned int av_xiphlacing(unsigned char *s, unsigned int v)
  * and opened file name in **filename. */
 int av_tempfile(char *prefix, char **filename) {
     int fd=-1;
-#if !defined(HAVE_MKSTEMP)
+#if !HAVE_MKSTEMP
     *filename = tempnam(".", prefix);
 #else
     size_t len = strlen(prefix) + 12; /* room for "/tmp/" and "XXXXXX\0" */
@@ -938,7 +938,7 @@ int av_tempfile(char *prefix, char **filename) {
         av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot allocate file name\n");
         return -1;
     }
-#if !defined(HAVE_MKSTEMP)
+#if !HAVE_MKSTEMP
     fd = open(*filename, O_RDWR | O_BINARY | O_CREAT, 0444);
 #else
     snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);

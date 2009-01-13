@@ -66,7 +66,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 #define AV_RL8(x)     AV_RB8(x)
 #define AV_WL8(p, d)  AV_WB8(p, d)
 
-#ifdef HAVE_FAST_UNALIGNED
+#if HAVE_FAST_UNALIGNED
 # ifdef WORDS_BIGENDIAN
 #  define AV_RB16(x)    AV_RN16(x)
 #  define AV_WB16(p, d) AV_WN16(p, d)

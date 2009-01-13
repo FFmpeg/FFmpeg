@@ -98,7 +98,7 @@ static void body(uint32_t ABCD[4], uint32_t X[16]){
         X[i]= bswap_32(X[i]);
 #endif
 
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
     for( i = 0; i < 64; i++ ){
         CORE(i,a,b,c,d)
         t=d; d=c; c=b; b=a; a=t;

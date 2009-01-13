@@ -174,7 +174,7 @@ typedef struct ScanTable{
     const uint8_t *scantable;
     uint8_t permutated[64];
     uint8_t raster_end[64];
-#ifdef ARCH_PPC
+#if ARCH_PPC
                 /** Used by dct_quantize_altivec to find last-non-zero */
     DECLARE_ALIGNED(16, uint8_t, inverse[64]);
 #endif
@@ -584,7 +584,7 @@ void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 #define DECLARE_ALIGNED_16(t, v) DECLARE_ALIGNED(16, t, v)
 
-#if defined(HAVE_MMX)
+#if HAVE_MMX
 
 #undef emms_c
 
@@ -608,23 +608,23 @@ static inline void emms(void)
 
 void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 
-#elif defined(ARCH_ARM)
+#elif ARCH_ARM
 
 extern int mm_flags;
 
-#ifdef HAVE_NEON
+#if HAVE_NEON
 #   define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(16, t, v)
 #   define STRIDE_ALIGN 16
 #endif
 
-#elif defined(ARCH_PPC)
+#elif ARCH_PPC
 
 extern int mm_flags;
 
 #define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(16, t, v)
 #define STRIDE_ALIGN 16
 
-#elif defined(HAVE_MMI)
+#elif HAVE_MMI
 
 #define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(16, t, v)
 #define STRIDE_ALIGN 16

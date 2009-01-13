@@ -38,7 +38,7 @@
         .endm
 
         .macro movrel rd, val
-#if defined(HAVE_ARMV6T2) && !defined(CONFIG_SHARED)
+#if HAVE_ARMV6T2 && !CONFIG_SHARED
         movw            \rd, #:lower16:\val
         movt            \rd, #:upper16:\val
 #else

@@ -39,10 +39,10 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
 #include "libavutil/lzo.h"
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
 #include <zlib.h>
 #endif
-#ifdef CONFIG_BZLIB
+#if CONFIG_BZLIB
 #include <bzlib.h>
 #endif
 
@@ -879,7 +879,7 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
             goto failed;
         pkt_size -= olen;
         break;
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
     case MATROSKA_TRACK_ENCODING_COMP_ZLIB: {
         z_stream zstream = {0};
         if (inflateInit(&zstream) != Z_OK)
@@ -900,7 +900,7 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
         break;
     }
 #endif
-#ifdef CONFIG_BZLIB
+#if CONFIG_BZLIB
     case MATROSKA_TRACK_ENCODING_COMP_BZLIB: {
         bz_stream bzstream = {0};
         if (BZ2_bzDecompressInit(&bzstream, 0, 0) != BZ_OK)
@@ -1147,10 +1147,10 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (encodings_list->nb_elem == 1) {
             if (encodings[0].type ||
                 (encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP &&
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
                  encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_ZLIB &&
 #endif
-#ifdef CONFIG_BZLIB
+#if CONFIG_BZLIB
                  encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_BZLIB &&
 #endif
                  encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_LZO)) {

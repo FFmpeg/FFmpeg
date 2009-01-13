@@ -21,7 +21,7 @@
 #ifndef AVFORMAT_NETWORK_H
 #define AVFORMAT_NETWORK_H
 
-#ifdef HAVE_WINSOCK2_H
+#if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
@@ -38,7 +38,7 @@
 #define FF_NETERROR(err) err
 #endif
 
-#ifdef HAVE_ARPA_INET_H
+#if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
 
@@ -46,7 +46,7 @@ int ff_socket_nonblock(int socket, int enable);
 
 static inline int ff_network_init(void)
 {
-#ifdef HAVE_WINSOCK2_H
+#if HAVE_WINSOCK2_H
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(1,1), &wsaData))
         return 0;
@@ -56,12 +56,12 @@ static inline int ff_network_init(void)
 
 static inline void ff_network_close(void)
 {
-#ifdef HAVE_WINSOCK2_H
+#if HAVE_WINSOCK2_H
     WSACleanup();
 #endif
 }
 
-#if !defined(HAVE_INET_ATON)
+#if !HAVE_INET_ATON
 /* in os_support.c */
 int inet_aton (const char * str, struct in_addr * add);
 #endif

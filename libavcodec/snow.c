@@ -4670,7 +4670,7 @@ AVCodec snow_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("Snow"),
 };
 
-#ifdef CONFIG_SNOW_ENCODER
+#if CONFIG_SNOW_ENCODER
 AVCodec snow_encoder = {
     "snow",
     CODEC_TYPE_VIDEO,

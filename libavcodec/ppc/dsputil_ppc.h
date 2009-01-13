@@ -21,7 +21,7 @@
 #ifndef AVCODEC_PPC_DSPUTIL_PPC_H
 #define AVCODEC_PPC_DSPUTIL_PPC_H
 
-#ifdef CONFIG_POWERPC_PERF
+#if CONFIG_POWERPC_PERF
 void powerpc_display_perf_report(void);
 /* the 604* have 2, the G3* have 4, the G4s have 6,
    and the G5 are completely different (they MUST use
@@ -68,7 +68,7 @@ enum powerpc_data_index {
 };
 extern unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][powerpc_data_total];
 
-#ifndef HAVE_PPC64
+#if !HAVE_PPC64
 #define POWERP_PMC_DATATYPE unsigned long
 #define POWERPC_GET_PMC1(a) __asm__ volatile("mfspr %0, 937" : "=r" (a))
 #define POWERPC_GET_PMC2(a) __asm__ volatile("mfspr %0, 938" : "=r" (a))

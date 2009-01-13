@@ -153,7 +153,7 @@ typedef struct ADPCMContext {
 
 /* XXX: implement encoding */
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 static int adpcm_encode_init(AVCodecContext *avctx)
 {
     if (avctx->channels > 2)
@@ -1589,7 +1589,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
 
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 #define ADPCM_ENCODER(id,name,long_name_)       \
 AVCodec name ## _encoder = {                    \
     #name,                                      \
@@ -1607,7 +1607,7 @@ AVCodec name ## _encoder = {                    \
 #define ADPCM_ENCODER(id,name,long_name_)
 #endif
 
-#ifdef CONFIG_DECODERS
+#if CONFIG_DECODERS
 #define ADPCM_DECODER(id,name,long_name_)       \
 AVCodec name ## _decoder = {                    \
     #name,                                      \

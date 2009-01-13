@@ -62,7 +62,7 @@ static uint32_t v2_dc_chroma_table[512][2];
 static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static void init_h263_dc_for_msmpeg4(void);
 static inline void msmpeg4_memsetw(short *tab, int val, int n);
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 static void msmpeg4v2_encode_motion(MpegEncContext * s, int val);
 static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, int level, int intra);
 #endif //CONFIG_ENCODERS
@@ -79,7 +79,7 @@ int frame_count = 0;
 
 #include "msmpeg4data.h"
 
-#ifdef CONFIG_ENCODERS //strangely gcc includes this even if it is not references
+#if CONFIG_ENCODERS //strangely gcc includes this even if it is not referenced
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 #endif //CONFIG_ENCODERS
 
@@ -109,7 +109,7 @@ static void common_init(MpegEncContext * s)
         s->y_dc_scale_table= wmv1_y_dc_scale_table;
         s->c_dc_scale_table= wmv1_c_dc_scale_table;
         break;
-#if defined(CONFIG_WMV3_DECODER)||defined(CONFIG_VC1_DECODER)
+#if CONFIG_WMV3_DECODER || CONFIG_VC1_DECODER
     case 6:
         s->y_dc_scale_table= wmv3_dc_scale_table;
         s->c_dc_scale_table= wmv3_dc_scale_table;
@@ -134,7 +134,7 @@ static void common_init(MpegEncContext * s)
     }
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 
 /* build the table which associate a (x,y) motion vector to a vlc */
 static void init_mv_table(MVTable *tab)
@@ -411,7 +411,7 @@ int ff_msmpeg4_coded_block_pred(MpegEncContext * s, int n, uint8_t **coded_block
     return pred;
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 
 void ff_msmpeg4_encode_motion(MpegEncContext * s,
                                   int mx, int my)
@@ -653,7 +653,7 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
        necessitate to modify mpegvideo.c. The problem comes from the
        fact they decided to store the quantized DC (which would lead
        to problems if Q could vary !) */
-#if (defined(ARCH_X86)) && !defined PIC
+#if ARCH_X86 && !defined PIC
     __asm__ volatile(
         "movl %3, %%eax         \n\t"
         "shrl $1, %%eax         \n\t"
@@ -673,7 +673,7 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
         : "%eax", "%edx"
     );
 #else
-    /* #elif defined (ARCH_ALPHA) */
+    /* #elif ARCH_ALPHA */
     /* Divisions are extremely costly on Alpha; optimize the most
        common case. But they are costly everywhere...
      */
@@ -1362,7 +1362,7 @@ static inline void msmpeg4_memsetw(short *tab, int val, int n)
         tab[i] = val;
 }
 
-#ifdef CONFIG_ENCODERS
+#if CONFIG_ENCODERS
 static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
 {
     int range, bit_size, sign, code, bits;

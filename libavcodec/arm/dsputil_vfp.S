@@ -133,7 +133,7 @@ function ff_vector_fmul_reverse_vfp, export=1
         bx              lr
         .endfunc
 
-#ifdef HAVE_ARMV6
+#if HAVE_ARMV6
 /**
  * ARM VFP optimized float to int16 conversion.
  * Assume that len is a positive number and is multiple of 8, destination

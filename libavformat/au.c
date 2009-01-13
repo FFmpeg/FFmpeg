@@ -47,7 +47,7 @@ static const AVCodecTag codec_au_tags[] = {
     { 0, 0 },
 };
 
-#ifdef CONFIG_AU_MUXER
+#if CONFIG_AU_MUXER
 /* AUDIO_FILE header */
 static int put_au_header(ByteIOContext *pb, AVCodecContext *enc)
 {
@@ -177,7 +177,7 @@ static int au_read_packet(AVFormatContext *s,
     return 0;
 }
 
-#ifdef CONFIG_AU_DEMUXER
+#if CONFIG_AU_DEMUXER
 AVInputFormat au_demuxer = {
     "au",
     NULL_IF_CONFIG_SMALL("SUN AU format"),
@@ -191,7 +191,7 @@ AVInputFormat au_demuxer = {
 };
 #endif
 
-#ifdef CONFIG_AU_MUXER
+#if CONFIG_AU_MUXER
 AVOutputFormat au_muxer = {
     "au",
     NULL_IF_CONFIG_SMALL("SUN AU format"),

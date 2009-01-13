@@ -30,18 +30,18 @@
 #include <sys/time.h>
 #include "os_support.h"
 
-#ifdef CONFIG_NETWORK
-#ifndef HAVE_POLL_H
-#ifdef HAVE_WINSOCK2_H
+#if CONFIG_NETWORK
+#if !HAVE_POLL_H
+#if HAVE_WINSOCK2_H
 #include <winsock2.h>
-#elif defined (HAVE_SYS_SELECT_H)
+#elif HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
 #endif
 
 #include "network.h"
 
-#if !defined(HAVE_INET_ATON)
+#if !HAVE_INET_ATON
 #include <stdlib.h>
 #include <strings.h>
 
@@ -58,7 +58,7 @@ int inet_aton (const char * str, struct in_addr * add)
 
     return 1;
 }
-#endif /* !defined(HAVE_INET_ATON) */
+#endif /* !HAVE_INET_ATON */
 
 /* resolve host with also IP address parsing */
 int resolve_host(struct in_addr *sin_addr, const char *hostname)
@@ -76,7 +76,7 @@ int resolve_host(struct in_addr *sin_addr, const char *hostname)
 
 int ff_socket_nonblock(int socket, int enable)
 {
-#ifdef HAVE_WINSOCK2_H
+#if HAVE_WINSOCK2_H
    return ioctlsocket(socket, FIONBIO, &enable);
 #else
    if (enable)
@@ -87,8 +87,8 @@ int ff_socket_nonblock(int socket, int enable)
 }
 #endif /* CONFIG_NETWORK */
 
-#ifdef CONFIG_FFSERVER
-#ifndef HAVE_POLL_H
+#if CONFIG_FFSERVER
+#if !HAVE_POLL_H
 int poll(struct pollfd *fds, nfds_t numfds, int timeout)
 {
     fd_set read_set;
@@ -98,7 +98,7 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     int n;
     int rc;
 
-#ifdef HAVE_WINSOCK2_H
+#if HAVE_WINSOCK2_H
     if (numfds >= FD_SETSIZE) {
         errno = EINVAL;
         return -1;
@@ -113,7 +113,7 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     for(i = 0; i < numfds; i++) {
         if (fds[i].fd < 0)
             continue;
-#ifndef HAVE_WINSOCK2_H
+#if !HAVE_WINSOCK2_H
         if (fds[i].fd >= FD_SETSIZE) {
             errno = EINVAL;
             return -1;

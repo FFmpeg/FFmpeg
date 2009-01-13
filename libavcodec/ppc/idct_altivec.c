@@ -161,7 +161,7 @@ void idct_put_altivec(uint8_t* dest, int stride, vec_s16* block)
 POWERPC_PERF_DECLARE(altivec_idct_put_num, 1);
     vec_u8 tmp;
 
-#ifdef CONFIG_POWERPC_PERF
+#if CONFIG_POWERPC_PERF
 POWERPC_PERF_START_COUNT(altivec_idct_put_num, 1);
 #endif
     IDCT
@@ -192,7 +192,7 @@ POWERPC_PERF_DECLARE(altivec_idct_add_num, 1);
     vec_u8 perm1;
     vec_u8 p0, p1, p;
 
-#ifdef CONFIG_POWERPC_PERF
+#if CONFIG_POWERPC_PERF
 POWERPC_PERF_START_COUNT(altivec_idct_add_num, 1);
 #endif
 

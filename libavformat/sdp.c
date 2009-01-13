@@ -25,7 +25,7 @@
 #include "avc.h"
 #include "rtp.h"
 
-#ifdef CONFIG_RTP_MUXER
+#if CONFIG_RTP_MUXER
 #define MAX_EXTRADATA_SIZE ((INT_MAX - 10) / 2)
 
 struct sdp_session_level {

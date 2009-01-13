@@ -154,7 +154,7 @@ static inline av_const int av_log2_16bit(unsigned int v)
 /* median of 3 */
 static inline av_const int mid_pred(int a, int b, int c)
 {
-#ifdef HAVE_CMOV
+#if HAVE_CMOV
     int i=b;
     __asm__ volatile(
         "cmp    %2, %1 \n\t"
@@ -323,9 +323,9 @@ static inline av_pure int ff_get_fourcc(const char *s){
         }\
     }
 
-#if defined(ARCH_X86) || defined(ARCH_PPC) || defined(ARCH_BFIN)
+#if ARCH_X86 || ARCH_PPC || ARCH_BFIN
 #define AV_READ_TIME read_time
-#if defined(ARCH_X86)
+#if ARCH_X86
 static inline uint64_t read_time(void)
 {
     uint32_t a, d;
@@ -366,7 +366,7 @@ static inline uint64_t read_time(void)
      return (((uint64_t)tbu)<<32) | (uint64_t)tbl;
 }
 #endif
-#elif defined(HAVE_GETHRTIME)
+#elif HAVE_GETHRTIME
 #define AV_READ_TIME gethrtime
 #endif
 
@@ -397,11 +397,11 @@ tend= AV_READ_TIME();\
 #endif
 
 /**
- * Returns NULL if CONFIG_SMALL is defined otherwise the argument
+ * Returns NULL if CONFIG_SMALL is true otherwise the argument
  * without modifications, used to disable the definition of strings
  * (for example AVCodec long_names).
  */
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
 #   define NULL_IF_CONFIG_SMALL(x) NULL
 #else
 #   define NULL_IF_CONFIG_SMALL(x) x

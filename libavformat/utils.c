@@ -160,7 +160,7 @@ AVOutputFormat *guess_format(const char *short_name, const char *filename,
     int score_max, score;
 
     /* specific test for image sequences */
-#ifdef CONFIG_IMAGE2_MUXER
+#if CONFIG_IMAGE2_MUXER
     if (!short_name && filename &&
         av_filename_number_test(filename) &&
         av_guess_image2_codec(filename) != CODEC_ID_NONE) {
@@ -214,7 +214,7 @@ enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
     if(type == CODEC_TYPE_VIDEO){
         enum CodecID codec_id= CODEC_ID_NONE;
 
-#ifdef CONFIG_IMAGE2_MUXER
+#if CONFIG_IMAGE2_MUXER
         if(!strcmp(fmt->name, "image2") || !strcmp(fmt->name, "image2pipe")){
             codec_id= av_guess_image2_codec(filename);
         }

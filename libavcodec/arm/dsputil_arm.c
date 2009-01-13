@@ -20,7 +20,7 @@
  */
 
 #include "libavcodec/dsputil.h"
-#ifdef HAVE_IPP
+#if HAVE_IPP
 #include <ipp.h>
 #endif
 
@@ -93,7 +93,7 @@ static void simple_idct_ARM_add(uint8_t *dest, int line_size, DCTELEM *block)
     ff_add_pixels_clamped(block, dest, line_size);
 }
 
-#ifdef HAVE_IPP
+#if HAVE_IPP
 static void simple_idct_ipp(DCTELEM *block)
 {
     ippiDCT8x8Inv_Video_16s_C1I(block);
@@ -108,7 +108,7 @@ void add_pixels_clamped_iwmmxt(const DCTELEM *block, uint8_t *pixels, int line_s
 static void simple_idct_ipp_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ippiDCT8x8Inv_Video_16s_C1I(block);
-#ifdef HAVE_IWMMXT
+#if HAVE_IWMMXT
     add_pixels_clamped_iwmmxt(block, dest, line_size);
 #else
     ff_add_pixels_clamped_ARM(block, dest, line_size);
@@ -130,13 +130,13 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 
     if (avctx->lowres == 0) {
         if(idct_algo == FF_IDCT_AUTO){
-#if defined(HAVE_IPP)
+#if   HAVE_IPP
             idct_algo = FF_IDCT_IPP;
-#elif defined(HAVE_NEON)
+#elif HAVE_NEON
             idct_algo = FF_IDCT_SIMPLENEON;
-#elif defined(HAVE_ARMV6)
+#elif HAVE_ARMV6
             idct_algo = FF_IDCT_SIMPLEARMV6;
-#elif defined(HAVE_ARMV5TE)
+#elif HAVE_ARMV5TE
             idct_algo = FF_IDCT_SIMPLEARMV5TE;
 #else
             idct_algo = FF_IDCT_ARM;
@@ -153,28 +153,28 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
             c->idct_add= simple_idct_ARM_add;
             c->idct    = simple_idct_ARM;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
-#ifdef HAVE_ARMV6
+#if HAVE_ARMV6
         } else if (idct_algo==FF_IDCT_SIMPLEARMV6){
             c->idct_put= ff_simple_idct_put_armv6;
             c->idct_add= ff_simple_idct_add_armv6;
             c->idct    = ff_simple_idct_armv6;
             c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
 #endif
-#ifdef HAVE_ARMV5TE
+#if HAVE_ARMV5TE
         } else if (idct_algo==FF_IDCT_SIMPLEARMV5TE){
             c->idct_put= simple_idct_put_armv5te;
             c->idct_add= simple_idct_add_armv5te;
             c->idct    = simple_idct_armv5te;
             c->idct_permutation_type = FF_NO_IDCT_PERM;
 #endif
-#ifdef HAVE_IPP
+#if HAVE_IPP
         } else if (idct_algo==FF_IDCT_IPP){
             c->idct_put= simple_idct_ipp_put;
             c->idct_add= simple_idct_ipp_add;
             c->idct    = simple_idct_ipp;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
 #endif
-#ifdef HAVE_NEON
+#if HAVE_NEON
         } else if (idct_algo==FF_IDCT_SIMPLENEON){
             c->idct_put= ff_simple_idct_put_neon;
             c->idct_add= ff_simple_idct_add_neon;
@@ -201,17 +201,17 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
     c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_arm;
     c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_arm;
 
-#ifdef HAVE_ARMV5TE
+#if HAVE_ARMV5TE
     c->prefetch = ff_prefetch_arm;
 #endif
 
-#ifdef HAVE_IWMMXT
+#if HAVE_IWMMXT
     dsputil_init_iwmmxt(c, avctx);
 #endif
-#ifdef HAVE_ARMVFP
+#if HAVE_ARMVFP
     ff_float_init_arm_vfp(c, avctx);
 #endif
-#ifdef HAVE_NEON
+#if HAVE_NEON
     ff_dsputil_init_neon(c, avctx);
 #endif
 }

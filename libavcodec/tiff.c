@@ -25,7 +25,7 @@
  * @author Konstantin Shishkov
  */
 #include "avcodec.h"
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
 #include <zlib.h>
 #endif
 #include "lzw.h"
@@ -78,7 +78,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
     int c, line, pixels, code;
     const uint8_t *ssrc = src;
     int width = s->width * s->bpp >> 3;
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
     uint8_t *zbuf; unsigned long outlen;
 
     if(s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE){
@@ -298,7 +298,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             break;
         case TIFF_DEFLATE:
         case TIFF_ADOBE_DEFLATE:
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
             break;
 #else
             av_log(s->avctx, AV_LOG_ERROR, "Deflate: ZLib not compiled in\n");

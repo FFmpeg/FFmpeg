@@ -103,7 +103,7 @@ DECLARE_ASM_CONST(16, int32_t, walkenIdctRounders[]) = {
 #define CLEAR_ODD(r) "pxor  "r","r" \n\t"
 #define PUT_ODD(dst) "pshufhw  $0x1B, %%xmm2, "dst"   \n\t"
 
-#ifdef ARCH_X86_64
+#if ARCH_X86_64
 
 # define ROW0 "%%xmm8"
 # define REG0 ROW0
@@ -371,7 +371,7 @@ inline void ff_idct_xvid_sse2(short *block)
     JZ("%%esi", "1f")
     "5:                                                          \n\t"
     iMTX_MULT("7*16(%0)", MANGLE(iTab2), ROUND(walkenIdctRounders+5*16), PUT_ODD(ROW7))
-#ifndef ARCH_X86_64
+#if !ARCH_X86_64
     iLLM_HEAD
 #endif
     iLLM_PASS("%0")

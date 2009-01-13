@@ -40,7 +40,7 @@
  *  http://samples.mplayerhq.hu/V-codecs/SVQ3/Vertical400kbit.sorenson3.mov
  */
 
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
 #include <zlib.h>
 #endif
 
@@ -849,7 +849,7 @@ static int svq3_decode_init(AVCodecContext *avctx)
             h->unknown_svq3_flag = get_bits1(&gb);
             avctx->has_b_frames = !s->low_delay;
             if (h->unknown_svq3_flag) {
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
                 unsigned watermark_width  = svq3_get_ue_golomb(&gb);
                 unsigned watermark_height = svq3_get_ue_golomb(&gb);
                 int u1 = svq3_get_ue_golomb(&gb);

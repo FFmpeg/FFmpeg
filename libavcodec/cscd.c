@@ -23,7 +23,7 @@
 
 #include "avcodec.h"
 
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
 #include <zlib.h>
 #endif
 #include "libavutil/lzo.h"
@@ -163,7 +163,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             break;
         }
         case 1: { // zlib compression
-#ifdef CONFIG_ZLIB
+#if CONFIG_ZLIB
             unsigned long dlen = c->decomp_size;
             if (uncompress(c->decomp_buf, &dlen, &buf[2], buf_size - 2) != Z_OK)
                 av_log(avctx, AV_LOG_ERROR, "error during zlib decompression\n");

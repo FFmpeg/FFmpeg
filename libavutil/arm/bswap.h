@@ -23,7 +23,7 @@
 #include "config.h"
 #include "libavutil/common.h"
 
-#ifdef HAVE_ARMV6
+#if HAVE_ARMV6
 #define bswap_16 bswap_16
 static av_always_inline av_const uint16_t bswap_16(uint16_t x)
 {
@@ -35,7 +35,7 @@ static av_always_inline av_const uint16_t bswap_16(uint16_t x)
 #define bswap_32 bswap_32
 static av_always_inline av_const uint32_t bswap_32(uint32_t x)
 {
-#ifdef HAVE_ARMV6
+#if HAVE_ARMV6
     __asm__("rev %0, %0" : "+r"(x));
 #else
     uint32_t t;

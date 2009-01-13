@@ -78,7 +78,7 @@ AVInputFormat daud_demuxer = {
 };
 #endif
 
-#ifdef CONFIG_DAUD_MUXER
+#if CONFIG_DAUD_MUXER
 AVOutputFormat daud_muxer =
 {
     "daud",

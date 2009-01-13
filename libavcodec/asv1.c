@@ -465,7 +465,7 @@ for(i=0; i<s->avctx->extradata_size; i++){
     return (get_bits_count(&a->gb)+31)/32*4;
 }
 
-#if defined(CONFIG_ASV1_ENCODER) || defined(CONFIG_ASV2_ENCODER)
+#if CONFIG_ASV1_ENCODER || CONFIG_ASV2_ENCODER
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     ASV1Context * const a = avctx->priv_data;
     AVFrame *pict = data;
@@ -519,7 +519,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 
     return size*4;
 }
-#endif /* defined(CONFIG_ASV1_ENCODER) || defined(CONFIG_ASV2_ENCODER) */
+#endif /* CONFIG_ASV1_ENCODER || CONFIG_ASV2_ENCODER */
 
 static av_cold void common_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
@@ -569,7 +569,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-#if defined(CONFIG_ASV1_ENCODER) || defined(CONFIG_ASV2_ENCODER)
+#if CONFIG_ASV1_ENCODER || CONFIG_ASV2_ENCODER
 static av_cold int encode_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
     int i;
@@ -593,7 +593,7 @@ static av_cold int encode_init(AVCodecContext *avctx){
 
     return 0;
 }
-#endif /* defined(CONFIG_ASV1_ENCODER) || defined(CONFIG_ASV2_ENCODER) */
+#endif /* CONFIG_ASV1_ENCODER || CONFIG_ASV2_ENCODER */
 
 static av_cold int decode_end(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
@@ -631,7 +631,7 @@ AVCodec asv2_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("ASUS V2"),
 };
 
-#ifdef CONFIG_ASV1_ENCODER
+#if CONFIG_ASV1_ENCODER
 AVCodec asv1_encoder = {
     "asv1",
     CODEC_TYPE_VIDEO,
@@ -645,7 +645,7 @@ AVCodec asv1_encoder = {
 };
 #endif
 
-#ifdef CONFIG_ASV2_ENCODER
+#if CONFIG_ASV2_ENCODER
 AVCodec asv2_encoder = {
     "asv2",
     CODEC_TYPE_VIDEO,

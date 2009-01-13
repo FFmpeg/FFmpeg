@@ -55,7 +55,7 @@ pix_abs16x16_mvi_asm:
         .frame sp, 0, ra, 0
         .prologue 0
 
-#ifdef CONFIG_GPROF
+#if CONFIG_GPROF
         lda     AT, _mcount
         jsr     AT, (AT), _mcount
 #endif
