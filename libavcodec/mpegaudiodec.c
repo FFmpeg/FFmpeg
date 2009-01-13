@@ -2534,6 +2534,22 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
 }
 #endif /* CONFIG_MP3ON4_DECODER */
 
+#ifdef CONFIG_MP1_DECODER
+AVCodec mp1_decoder =
+{
+    "mp1",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_MP1,
+    sizeof(MPADecodeContext),
+    decode_init,
+    NULL,
+    NULL,
+    decode_frame,
+    CODEC_CAP_PARSE_ONLY,
+    .flush= flush,
+    .long_name= NULL_IF_CONFIG_SMALL("MP1 (MPEG audio layer 1)"),
+};
+#endif
 #ifdef CONFIG_MP2_DECODER
 AVCodec mp2_decoder =
 {
