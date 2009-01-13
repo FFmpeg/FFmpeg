@@ -646,12 +646,6 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 
     if (p) {
         codec_name = p->name;
-        if (!encode && enc->codec_id == CODEC_ID_MP3) {
-            if (enc->sub_id == 2)
-                codec_name = "mp2";
-            else if (enc->sub_id == 1)
-                codec_name = "mp1";
-        }
     } else if (enc->codec_id == CODEC_ID_MPEG2TS) {
         /* fake mpeg2 transport stream codec (currently not
            registered) */
