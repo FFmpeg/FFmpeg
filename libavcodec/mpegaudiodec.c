@@ -316,11 +316,7 @@ static int decode_init(AVCodecContext * avctx)
 
     s->avctx = avctx;
 
-#if CONFIG_MPEGAUDIO_HP && CONFIG_AUDIO_NONSHORT
-    avctx->sample_fmt= SAMPLE_FMT_S32;
-#else
-    avctx->sample_fmt= SAMPLE_FMT_S16;
-#endif
+    avctx->sample_fmt= OUT_FMT;
     s->error_recognition= avctx->error_recognition;
 
     if(avctx->antialias_algo != FF_AA_FLOAT)
