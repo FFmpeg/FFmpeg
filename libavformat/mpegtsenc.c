@@ -36,9 +36,35 @@ typedef struct MpegTSSection {
     void *opaque;
 } MpegTSSection;
 
+typedef struct MpegTSService {
+    MpegTSSection pmt; /* MPEG2 pmt table context */
+    int sid;           /* service ID */
+    char *name;
+    char *provider_name;
+    int pcr_pid;
+    int pcr_packet_count;
+    int pcr_packet_freq;
+} MpegTSService;
+
+typedef struct MpegTSWrite {
+    MpegTSSection pat; /* MPEG2 pat table */
+    MpegTSSection sdt; /* MPEG2 sdt table context */
+    MpegTSService **services;
+    int sdt_packet_count;
+    int sdt_packet_freq;
+    int pat_packet_count;
+    int pat_packet_freq;
+    int nb_services;
+    int onid;
+    int tsid;
+    uint64_t cur_pcr;
+    int mux_rate;
+} MpegTSWrite;
+
 /* NOTE: 4 bytes must be left at the end for the crc32 */
 static void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
 {
+    MpegTSWrite *ts = ((AVFormatContext*)s->opaque)->priv_data;
     unsigned int crc;
     unsigned char packet[TS_PACKET_SIZE];
     const unsigned char *buf_ptr;
@@ -80,6 +106,8 @@ static void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
 
         buf_ptr += len1;
         len -= len1;
+
+        ts->cur_pcr += TS_PACKET_SIZE*8*90000LL/ts->mux_rate;
     }
 }
 
@@ -148,29 +176,6 @@ typedef struct MpegTSWriteStream {
     int64_t payload_dts;
     uint8_t payload[DEFAULT_PES_PAYLOAD_SIZE];
 } MpegTSWriteStream;
-
-typedef struct MpegTSService {
-    MpegTSSection pmt; /* MPEG2 pmt table context */
-    int sid;           /* service ID */
-    char *name;
-    char *provider_name;
-    int pcr_pid;
-    int pcr_packet_count;
-    int pcr_packet_freq;
-} MpegTSService;
-
-typedef struct MpegTSWrite {
-    MpegTSSection pat; /* MPEG2 pat table */
-    MpegTSSection sdt; /* MPEG2 sdt table context */
-    MpegTSService **services;
-    int sdt_packet_count;
-    int sdt_packet_freq;
-    int pat_packet_count;
-    int pat_packet_freq;
-    int nb_services;
-    int onid;
-    int tsid;
-} MpegTSWrite;
 
 static void mpegts_write_pat(AVFormatContext *s)
 {
@@ -439,6 +444,8 @@ static int mpegts_write_header(AVFormatContext *s)
            total_bit_rate, ts->sdt_packet_freq, ts->pat_packet_freq);
 #endif
 
+    ts->mux_rate = total_bit_rate;
+
     /* write info at the start of the file, so that it will be fast to
        find them */
     mpegts_write_sdt(s);
@@ -497,6 +504,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                              int64_t pts, int64_t dts)
 {
     MpegTSWriteStream *ts_st = st->priv_data;
+    MpegTSWrite *ts = s->priv_data;
     uint8_t buf[TS_PACKET_SIZE];
     uint8_t *q;
     int val, is_start, len, header_len, write_pcr, private_code, flags;
@@ -514,9 +522,6 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 ts_st->service->pcr_packet_freq) {
                 ts_st->service->pcr_packet_count = 0;
                 write_pcr = 1;
-                /* XXX: this is incorrect, but at least we have a PCR
-                   value */
-                pcr = pts;
             }
         }
 
@@ -531,6 +536,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         *q++ = 0x10 | ts_st->cc | (write_pcr ? 0x20 : 0);
         ts_st->cc = (ts_st->cc + 1) & 0xf;
         if (write_pcr) {
+            // add 11, pcr references the last byte of program clock reference base
+            pcr = ts->cur_pcr + (4+7)*8*90000LL / ts->mux_rate;
             *q++ = 7; /* AFC length */
             *q++ = 0x10; /* flags: PCR present */
             *q++ = pcr >> 25;
@@ -651,6 +658,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         payload += len;
         payload_size -= len;
         put_buffer(s->pb, buf, TS_PACKET_SIZE);
+        ts->cur_pcr += TS_PACKET_SIZE*8*90000LL/ts->mux_rate;
     }
     put_flush_packet(s->pb);
 }
