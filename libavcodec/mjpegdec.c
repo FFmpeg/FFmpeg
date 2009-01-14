@@ -977,7 +977,7 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
         skip_bits(&s->gb, 8);
 
     if(s->lossless){
-        if(ENABLE_JPEGLS_DECODER && s->ls){
+        if(CONFIG_JPEGLS_DECODER && s->ls){
 //            for(){
 //            reset_ls_coding_parameters(s, 0);
 
@@ -1418,7 +1418,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                         return -1;
                     break;
                 case LSE:
-                    if (!ENABLE_JPEGLS_DECODER || ff_jpegls_decode_lse(s) < 0)
+                    if (!CONFIG_JPEGLS_DECODER || ff_jpegls_decode_lse(s) < 0)
                         return -1;
                     break;
                 case EOI:

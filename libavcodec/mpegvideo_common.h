@@ -103,7 +103,7 @@ static inline void gmc1_motion(MpegEncContext *s,
         }
     }
 
-    if(ENABLE_GRAY && s->flags&CODEC_FLAG_GRAY) return;
+    if(CONFIG_GRAY && s->flags&CODEC_FLAG_GRAY) return;
 
     motion_x= s->sprite_offset[1][0];
     motion_y= s->sprite_offset[1][1];
@@ -172,7 +172,7 @@ static inline void gmc_motion(MpegEncContext *s,
            a+1, (1<<(2*a+1)) - s->no_rounding,
            s->h_edge_pos, s->v_edge_pos);
 
-    if(ENABLE_GRAY && s->flags&CODEC_FLAG_GRAY) return;
+    if(CONFIG_GRAY && s->flags&CODEC_FLAG_GRAY) return;
 
     ox= s->sprite_offset[1][0] + s->sprite_delta[0][0]*s->mb_x*8 + s->sprite_delta[0][1]*s->mb_y*8;
     oy= s->sprite_offset[1][1] + s->sprite_delta[1][0]*s->mb_x*8 + s->sprite_delta[1][1]*s->mb_y*8;
@@ -321,7 +321,7 @@ if(s->quarter_sample)
                                 src_x, src_y<<field_based,
                                 s->h_edge_pos, s->v_edge_pos);
             ptr_y = s->edge_emu_buffer;
-            if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+            if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
                 uint8_t *uvbuf= s->edge_emu_buffer+18*s->linesize;
                 ff_emulated_edge_mc(uvbuf ,
                                     ptr_cb, s->uvlinesize,
@@ -352,13 +352,13 @@ if(s->quarter_sample)
 
     pix_op[0][dxy](dest_y, ptr_y, linesize, h);
 
-    if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+    if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         pix_op[s->chroma_x_shift][uvdxy]
                 (dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift);
         pix_op[s->chroma_x_shift][uvdxy]
                 (dest_cr, ptr_cr, uvlinesize, h >> s->chroma_y_shift);
     }
-    if(!is_mpeg12 && (ENABLE_H261_ENCODER || ENABLE_H261_DECODER) &&
+    if(!is_mpeg12 && (CONFIG_H261_ENCODER || CONFIG_H261_DECODER) &&
          s->out_format == FMT_H261){
         ff_h261_loop_filter(s);
     }
@@ -517,7 +517,7 @@ static inline void qpel_motion(MpegEncContext *s,
                             17, 17+field_based, src_x, src_y<<field_based,
                             s->h_edge_pos, s->v_edge_pos);
         ptr_y= s->edge_emu_buffer;
-        if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+        if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
             uint8_t *uvbuf= s->edge_emu_buffer + 18*s->linesize;
             ff_emulated_edge_mc(uvbuf, ptr_cb, s->uvlinesize,
                                 9, 9 + field_based,
@@ -551,7 +551,7 @@ static inline void qpel_motion(MpegEncContext *s,
         qpix_op[1][dxy](dest_y  , ptr_y  , linesize);
         qpix_op[1][dxy](dest_y+8, ptr_y+8, linesize);
     }
-    if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+    if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         pix_op[1][uvdxy](dest_cr, ptr_cr, uvlinesize, h >> 1);
         pix_op[1][uvdxy](dest_cb, ptr_cb, uvlinesize, h >> 1);
     }
@@ -705,7 +705,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
             mx += mv[0][0];
             my += mv[0][1];
         }
-        if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY))
+        if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY))
             chroma_4mv_motion(s, dest_cb, dest_cr, ref_picture, pix_op[1], mx, my);
 
         return;
@@ -726,7 +726,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
                         0, 0, 0,
                         ref_picture, pix_op, qpix_op,
                         s->mv[dir][0][0], s->mv[dir][0][1], 16);
-        }else if(!is_mpeg12 && ENABLE_WMV2 && s->mspel){
+        }else if(!is_mpeg12 && CONFIG_WMV2 && s->mspel){
             ff_mspel_motion(s, dest_y, dest_cb, dest_cr,
                         ref_picture, pix_op,
                         s->mv[dir][0][0], s->mv[dir][0][1], 16);
@@ -791,7 +791,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
             }
         }
 
-        if(!ENABLE_GRAY || !(s->flags&CODEC_FLAG_GRAY))
+        if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY))
             chroma_4mv_motion(s, dest_cb, dest_cr, ref_picture, pix_op[1], mx, my);
     }
         break;

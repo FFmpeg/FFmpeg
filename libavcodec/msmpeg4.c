@@ -1142,7 +1142,7 @@ int ff_msmpeg4_decode_init(MpegEncContext *s)
         s->decode_mb= msmpeg4v34_decode_mb;
         break;
     case 5:
-        if (ENABLE_WMV2_DECODER)
+        if (CONFIG_WMV2_DECODER)
             s->decode_mb= ff_wmv2_decode_mb;
     case 6:
         //FIXME + TODO VC1 decode mb

@@ -350,7 +350,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_freep(&s->streams[0]->codec->extradata);
                 av_freep(&s->streams[0]);
                 s->nb_streams = 0;
-                if (ENABLE_DV_DEMUXER) {
+                if (CONFIG_DV_DEMUXER) {
                     avi->dv_demux = dv_init_demux(s);
                     if (!avi->dv_demux)
                         goto fail;
@@ -636,7 +636,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t i, sync;
     void* dstr;
 
-    if (ENABLE_DV_DEMUXER && avi->dv_demux) {
+    if (CONFIG_DV_DEMUXER && avi->dv_demux) {
         size = dv_get_packet(avi->dv_demux, pkt);
         if (size >= 0)
             return size;
@@ -721,7 +721,7 @@ resync:
                 memcpy(pkt->data + pkt->size - 4*256, ast->pal, 4*256);
         }
 
-        if (ENABLE_DV_DEMUXER && avi->dv_demux) {
+        if (CONFIG_DV_DEMUXER && avi->dv_demux) {
             dstr = pkt->destruct;
             size = dv_produce_packet(avi->dv_demux, pkt,
                                     pkt->data, pkt->size);
@@ -1012,7 +1012,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
 //    av_log(NULL, AV_LOG_DEBUG, "XX %"PRId64" %d %"PRId64"\n", timestamp, index, st->index_entries[index].timestamp);
 
-    if (ENABLE_DV_DEMUXER && avi->dv_demux) {
+    if (CONFIG_DV_DEMUXER && avi->dv_demux) {
         /* One and only one real stream for DV in AVI, and it has video  */
         /* offsets. Calling with other stream indexes should have failed */
         /* the av_index_search_timestamp call above.                     */

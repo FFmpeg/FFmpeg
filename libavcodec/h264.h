@@ -86,8 +86,8 @@
 #define CHROMA 1
 #endif
 
-#ifndef ENABLE_H264_ENCODER
-#define ENABLE_H264_ENCODER 0
+#ifndef CONFIG_H264_ENCODER
+#define CONFIG_H264_ENCODER 0
 #endif
 
 #define EXTENDED_SAR          255

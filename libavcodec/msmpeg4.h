@@ -49,19 +49,19 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                             int n, int coded, const uint8_t *scan_table);
 int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 
-#define ENABLE_MSMPEG4_DECODER (ENABLE_MSMPEG4V1_DECODER || \
-                                ENABLE_MSMPEG4V2_DECODER || \
-                                ENABLE_MSMPEG4V3_DECODER || \
-                                ENABLE_WMV2_DECODER      || \
-                                ENABLE_VC1_DECODER       || \
-                                ENABLE_WMV3_DECODER)
-#define ENABLE_MSMPEG4_ENCODER (ENABLE_MSMPEG4V1_ENCODER || \
-                                ENABLE_MSMPEG4V2_ENCODER || \
-                                ENABLE_MSMPEG4V3_ENCODER || \
-                                ENABLE_WMV2_ENCODER)
-#define ENABLE_MSMPEG4 (ENABLE_MSMPEG4_DECODER || ENABLE_MSMPEG4_ENCODER)
-#define ENABLE_WMV2 (ENABLE_WMV2_DECODER || ENABLE_WMV2_ENCODER)
-#define ENABLE_WMV_DECODER (ENABLE_WMV1_DECODER || ENABLE_WMV2_DECODER)
-#define ENABLE_WMV_ENCODER (ENABLE_WMV1_ENCODER || ENABLE_WMV2_ENCODER)
+#define CONFIG_MSMPEG4_DECODER (CONFIG_MSMPEG4V1_DECODER || \
+                                CONFIG_MSMPEG4V2_DECODER || \
+                                CONFIG_MSMPEG4V3_DECODER || \
+                                CONFIG_WMV2_DECODER      || \
+                                CONFIG_VC1_DECODER       || \
+                                CONFIG_WMV3_DECODER)
+#define CONFIG_MSMPEG4_ENCODER (CONFIG_MSMPEG4V1_ENCODER || \
+                                CONFIG_MSMPEG4V2_ENCODER || \
+                                CONFIG_MSMPEG4V3_ENCODER || \
+                                CONFIG_WMV2_ENCODER)
+#define CONFIG_MSMPEG4 (CONFIG_MSMPEG4_DECODER || CONFIG_MSMPEG4_ENCODER)
+#define CONFIG_WMV2 (CONFIG_WMV2_DECODER || CONFIG_WMV2_ENCODER)
+#define CONFIG_WMV_DECODER (CONFIG_WMV1_DECODER || CONFIG_WMV2_DECODER)
+#define CONFIG_WMV_ENCODER (CONFIG_WMV1_ENCODER || CONFIG_WMV2_ENCODER)
 
 #endif /* AVCODEC_MSMPEG4_H */

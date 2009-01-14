@@ -620,7 +620,7 @@ static void add_bytes_l2_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
         "paddb %%mm1, %%mm6             \n\t"
 
 static void h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale){
-    if(ENABLE_ANY_H263) {
+    if(CONFIG_ANY_H263) {
     const int strength= ff_h263_loop_filter_strength[qscale];
 
     __asm__ volatile(
@@ -670,7 +670,7 @@ static inline void transpose4x4(uint8_t *dst, uint8_t *src, int dst_stride, int 
 }
 
 static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
-    if(ENABLE_ANY_H263) {
+    if(CONFIG_ANY_H263) {
     const int strength= ff_h263_loop_filter_strength[qscale];
     DECLARE_ALIGNED(8, uint64_t, temp[4]);
     uint8_t *btemp= (uint8_t*)temp;
@@ -2568,7 +2568,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 }
                 c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
 #endif
-            }else if((ENABLE_VP3_DECODER || ENABLE_VP5_DECODER || ENABLE_VP6_DECODER || ENABLE_THEORA_DECODER) &&
+            }else if((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER || CONFIG_THEORA_DECODER) &&
                      idct_algo==FF_IDCT_VP3){
                 if(mm_flags & FF_MM_SSE2){
                     c->idct_put= ff_vp3_idct_put_sse2;
@@ -2631,7 +2631,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
         c->draw_edges = draw_edges_mmx;
 
-        if (ENABLE_ANY_H263) {
+        if (CONFIG_ANY_H263) {
             c->h263_v_loop_filter= h263_v_loop_filter_mmx;
             c->h263_h_loop_filter= h263_h_loop_filter_mmx;
         }
@@ -2684,7 +2684,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmx2;
                 c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
 
-                if (ENABLE_VP3_DECODER || ENABLE_THEORA_DECODER) {
+                if (CONFIG_VP3_DECODER || CONFIG_THEORA_DECODER) {
                     c->vp3_v_loop_filter= ff_vp3_v_loop_filter_mmx2;
                     c->vp3_h_loop_filter= ff_vp3_h_loop_filter_mmx2;
                 }
@@ -2760,10 +2760,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->biweight_h264_pixels_tab[6]= ff_h264_biweight_4x4_mmx2;
             c->biweight_h264_pixels_tab[7]= ff_h264_biweight_4x2_mmx2;
 
-            if (ENABLE_CAVS_DECODER)
+            if (CONFIG_CAVS_DECODER)
                 ff_cavsdsp_init_mmx2(c, avctx);
 
-            if (ENABLE_VC1_DECODER || ENABLE_WMV3_DECODER)
+            if (CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER)
                 ff_vc1dsp_init_mmx(c, avctx);
 
             c->add_png_paeth_prediction= add_png_paeth_prediction_mmx2;
@@ -2818,7 +2818,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->avg_rv40_chroma_pixels_tab[0]= avg_rv40_chroma_mc8_3dnow;
             c->avg_rv40_chroma_pixels_tab[1]= avg_rv40_chroma_mc4_3dnow;
 
-            if (ENABLE_CAVS_DECODER)
+            if (CONFIG_CAVS_DECODER)
                 ff_cavsdsp_init_3dnow(c, avctx);
         }
 
@@ -2953,7 +2953,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
     }
 
-    if (ENABLE_ENCODERS)
+    if (CONFIG_ENCODERS)
         dsputilenc_init_mmx(c, avctx);
 
 #if 0

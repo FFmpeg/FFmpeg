@@ -28,18 +28,18 @@
 
 #define REGISTER_ENCODER(X,x) { \
           extern AVCodec x##_encoder; \
-          if(ENABLE_##X##_ENCODER)  register_avcodec(&x##_encoder); }
+          if(CONFIG_##X##_ENCODER)  register_avcodec(&x##_encoder); }
 #define REGISTER_DECODER(X,x) { \
           extern AVCodec x##_decoder; \
-          if(ENABLE_##X##_DECODER)  register_avcodec(&x##_decoder); }
+          if(CONFIG_##X##_DECODER)  register_avcodec(&x##_decoder); }
 #define REGISTER_ENCDEC(X,x)  REGISTER_ENCODER(X,x); REGISTER_DECODER(X,x)
 
 #define REGISTER_PARSER(X,x) { \
           extern AVCodecParser x##_parser; \
-          if(ENABLE_##X##_PARSER)  av_register_codec_parser(&x##_parser); }
+          if(CONFIG_##X##_PARSER)  av_register_codec_parser(&x##_parser); }
 #define REGISTER_BSF(X,x) { \
           extern AVBitStreamFilter x##_bsf; \
-          if(ENABLE_##X##_BSF)     av_register_bitstream_filter(&x##_bsf); }
+          if(CONFIG_##X##_BSF)     av_register_bitstream_filter(&x##_bsf); }
 
 void avcodec_register_all(void)
 {

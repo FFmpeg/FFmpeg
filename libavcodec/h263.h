@@ -25,22 +25,22 @@
 #include "config.h"
 #include "msmpeg4.h"
 
-#define ENABLE_ANY_H263_DECODER (ENABLE_H263_DECODER    || \
-                                 ENABLE_H263I_DECODER   || \
-                                 ENABLE_FLV_DECODER     || \
-                                 ENABLE_RV10_DECODER    || \
-                                 ENABLE_RV20_DECODER    || \
-                                 ENABLE_MPEG4_DECODER   || \
-                                 ENABLE_MSMPEG4_DECODER || \
-                                 ENABLE_WMV_DECODER)
-#define ENABLE_ANY_H263_ENCODER (ENABLE_H263_ENCODER    || \
-                                 ENABLE_H263P_ENCODER   || \
-                                 ENABLE_FLV_ENCODER     || \
-                                 ENABLE_RV10_ENCODER    || \
-                                 ENABLE_RV20_ENCODER    || \
-                                 ENABLE_MPEG4_ENCODER   || \
-                                 ENABLE_MSMPEG4_ENCODER || \
-                                 ENABLE_WMV_ENCODER)
-#define ENABLE_ANY_H263 (ENABLE_ANY_H263_DECODER || ENABLE_ANY_H263_ENCODER)
+#define CONFIG_ANY_H263_DECODER (CONFIG_H263_DECODER    || \
+                                 CONFIG_H263I_DECODER   || \
+                                 CONFIG_FLV_DECODER     || \
+                                 CONFIG_RV10_DECODER    || \
+                                 CONFIG_RV20_DECODER    || \
+                                 CONFIG_MPEG4_DECODER   || \
+                                 CONFIG_MSMPEG4_DECODER || \
+                                 CONFIG_WMV_DECODER)
+#define CONFIG_ANY_H263_ENCODER (CONFIG_H263_ENCODER    || \
+                                 CONFIG_H263P_ENCODER   || \
+                                 CONFIG_FLV_ENCODER     || \
+                                 CONFIG_RV10_ENCODER    || \
+                                 CONFIG_RV20_ENCODER    || \
+                                 CONFIG_MPEG4_ENCODER   || \
+                                 CONFIG_MSMPEG4_ENCODER || \
+                                 CONFIG_WMV_ENCODER)
+#define CONFIG_ANY_H263 (CONFIG_ANY_H263_DECODER || CONFIG_ANY_H263_ENCODER)
 
 #endif /* AVCODEC_H263_H */

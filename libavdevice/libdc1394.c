@@ -23,9 +23,9 @@
 #include "config.h"
 #include "libavformat/avformat.h"
 
-#if ENABLE_LIBDC1394_2
+#if HAVE_LIBDC1394_2
 #include <dc1394/dc1394.h>
-#elif ENABLE_LIBDC1394_1
+#elif HAVE_LIBDC1394_1
 #include <libraw1394/raw1394.h>
 #include <libdc1394/dc1394_control.h>
 
@@ -45,10 +45,10 @@
 #undef free
 
 typedef struct dc1394_data {
-#if ENABLE_LIBDC1394_1
+#if HAVE_LIBDC1394_1
     raw1394handle_t handle;
     dc1394_cameracapture camera;
-#elif ENABLE_LIBDC1394_2
+#elif HAVE_LIBDC1394_2
     dc1394_t *d;
     dc1394camera_t *camera;
     dc1394video_frame_t *frame;
@@ -142,7 +142,7 @@ out:
     return -1;
 }
 
-#if ENABLE_LIBDC1394_1
+#if HAVE_LIBDC1394_1
 static int dc1394_v1_read_header(AVFormatContext *c, AVFormatParameters * ap)
 {
     dc1394_data* dc1394 = c->priv_data;
@@ -236,7 +236,7 @@ static int dc1394_v1_close(AVFormatContext * context)
     return 0;
 }
 
-#elif ENABLE_LIBDC1394_2
+#elif HAVE_LIBDC1394_2
 static int dc1394_v2_read_header(AVFormatContext *c, AVFormatParameters * ap)
 {
     dc1394_data* dc1394 = c->priv_data;
@@ -359,7 +359,7 @@ AVInputFormat libdc1394_demuxer = {
 };
 
 #endif
-#if ENABLE_LIBDC1394_1
+#if HAVE_LIBDC1394_1
 AVInputFormat libdc1394_demuxer = {
     .name           = "libdc1394",
     .long_name      = NULL_IF_CONFIG_SMALL("dc1394 v.1 A/V grab"),

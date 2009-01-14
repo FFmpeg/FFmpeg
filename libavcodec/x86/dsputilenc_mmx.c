@@ -1413,7 +1413,7 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->sum_abs_dctelem= sum_abs_dctelem_sse2;
             c->hadamard8_diff[0]= hadamard8_diff16_sse2;
             c->hadamard8_diff[1]= hadamard8_diff_sse2;
-            if (ENABLE_FLAC_ENCODER)
+            if (CONFIG_FLAC_ENCODER)
                 c->flac_compute_autocorr = ff_flac_compute_autocorr_sse2;
         }
 

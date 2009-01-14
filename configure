@@ -427,11 +427,9 @@ print_config(){
         ucname="`toupper $cfg`"
         if enabled $cfg; then
             echo "#define ${pfx}${ucname} 1" >> $header
-            echo "#define ENABLE_${ucname} 1" >> $header
             echo "${pfx}${ucname}=yes" >> $makefile
         else
             echo "#define ${pfx}${ucname} 0" >> $header
-            echo "#define ENABLE_${ucname} 0" >> $header
         fi
     done
 }

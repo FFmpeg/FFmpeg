@@ -297,12 +297,12 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     int video_bitrate;
 
     s->packet_number = 0;
-    s->is_vcd =    (ENABLE_MPEG1VCD_MUXER  && ctx->oformat == &mpeg1vcd_muxer);
-    s->is_svcd =   (ENABLE_MPEG2SVCD_MUXER && ctx->oformat == &mpeg2svcd_muxer);
-    s->is_mpeg2 = ((ENABLE_MPEG2VOB_MUXER  && ctx->oformat == &mpeg2vob_muxer) ||
-                   (ENABLE_MPEG2DVD_MUXER  && ctx->oformat == &mpeg2dvd_muxer) ||
-                   (ENABLE_MPEG2SVCD_MUXER && ctx->oformat == &mpeg2svcd_muxer));
-    s->is_dvd =    (ENABLE_MPEG2DVD_MUXER  && ctx->oformat == &mpeg2dvd_muxer);
+    s->is_vcd =    (CONFIG_MPEG1VCD_MUXER  && ctx->oformat == &mpeg1vcd_muxer);
+    s->is_svcd =   (CONFIG_MPEG2SVCD_MUXER && ctx->oformat == &mpeg2svcd_muxer);
+    s->is_mpeg2 = ((CONFIG_MPEG2VOB_MUXER  && ctx->oformat == &mpeg2vob_muxer) ||
+                   (CONFIG_MPEG2DVD_MUXER  && ctx->oformat == &mpeg2dvd_muxer) ||
+                   (CONFIG_MPEG2SVCD_MUXER && ctx->oformat == &mpeg2svcd_muxer));
+    s->is_dvd =    (CONFIG_MPEG2DVD_MUXER  && ctx->oformat == &mpeg2dvd_muxer);
 
     if(ctx->packet_size)
         s->packet_size = ctx->packet_size;

@@ -24,7 +24,7 @@
 
 #define REGISTER_FILTER(X,x,y) { \
           extern AVFilter avfilter_##y##_##x ; \
-          if(ENABLE_##X##_FILTER )  avfilter_register(&avfilter_##y##_##x ); }
+          if(CONFIG_##X##_FILTER )  avfilter_register(&avfilter_##y##_##x ); }
 
 void avfilter_register_all(void)
 {

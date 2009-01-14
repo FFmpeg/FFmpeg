@@ -24,17 +24,17 @@
 
 #define REGISTER_MUXER(X,x) { \
     extern AVOutputFormat x##_muxer; \
-    if(ENABLE_##X##_MUXER) av_register_output_format(&x##_muxer); }
+    if(CONFIG_##X##_MUXER) av_register_output_format(&x##_muxer); }
 
 #define REGISTER_DEMUXER(X,x) { \
     extern AVInputFormat x##_demuxer; \
-    if(ENABLE_##X##_DEMUXER) av_register_input_format(&x##_demuxer); }
+    if(CONFIG_##X##_DEMUXER) av_register_input_format(&x##_demuxer); }
 
 #define REGISTER_MUXDEMUX(X,x)  REGISTER_MUXER(X,x); REGISTER_DEMUXER(X,x)
 
 #define REGISTER_PROTOCOL(X,x) { \
     extern URLProtocol x##_protocol; \
-    if(ENABLE_##X##_PROTOCOL) register_protocol(&x##_protocol); }
+    if(CONFIG_##X##_PROTOCOL) register_protocol(&x##_protocol); }
 
 /* If you do not call this function, then you can select exactly which
    formats you want to support */

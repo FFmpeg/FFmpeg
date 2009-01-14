@@ -29,10 +29,10 @@ unsigned avdevice_version(void)
 
 #define REGISTER_MUXER(X,x) { \
           extern AVOutputFormat x##_muxer; \
-          if(ENABLE_##X##_MUXER)   av_register_output_format(&x##_muxer); }
+          if(CONFIG_##X##_MUXER)   av_register_output_format(&x##_muxer); }
 #define REGISTER_DEMUXER(X,x) { \
           extern AVInputFormat x##_demuxer; \
-          if(ENABLE_##X##_DEMUXER) av_register_input_format(&x##_demuxer); }
+          if(CONFIG_##X##_DEMUXER) av_register_input_format(&x##_demuxer); }
 #define REGISTER_MUXDEMUX(X,x)  REGISTER_MUXER(X,x); REGISTER_DEMUXER(X,x)
 
 void avdevice_register_all(void)

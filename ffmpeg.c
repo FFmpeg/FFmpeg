@@ -768,7 +768,7 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
         picture2 = picture;
     }
 
-    if (ENABLE_VHOOK)
+    if (CONFIG_VHOOK)
         frame_hook_process(picture2, dec->pix_fmt, dec->width, dec->height,
                            1000000 * ist->pts / AV_TIME_BASE);
 
