@@ -720,7 +720,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
                 break;
             }
         }
-    } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+    } else {
         access_unit_index = pkt->data;
     }
 
