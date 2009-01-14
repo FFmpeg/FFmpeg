@@ -31,7 +31,7 @@
 #include "avcodec.h"
 #define ALT_BITSTREAM_READER_LE
 #include "bitstream.h"
-#include <libavutil/lzo.h>
+#include "libavutil/lzo.h"
 
 #define EA_PREAMBLE_SIZE    8
 #define kVGT_TAG MKTAG('k', 'V', 'G', 'T')
