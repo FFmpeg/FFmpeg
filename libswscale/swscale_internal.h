@@ -23,7 +23,7 @@
 
 #include "config.h"
 
-#ifdef HAVE_ALTIVEC_H
+#if HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
 
@@ -42,7 +42,7 @@
 #define ALT32_CORR   1
 #endif
 
-#ifdef ARCH_X86_64
+#if ARCH_X86_64
 #   define APCK_PTR2 8
 #   define APCK_COEF 16
 #   define APCK_SIZE 24
@@ -175,7 +175,7 @@ typedef struct SwsContext{
     uint64_t u_temp       __attribute__((aligned(8)));
     uint64_t v_temp       __attribute__((aligned(8)));
 
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
 
   vector signed short   CY;
   vector signed short   CRV;
@@ -189,7 +189,7 @@ typedef struct SwsContext{
 #endif
 
 
-#ifdef ARCH_BFIN
+#if ARCH_BFIN
     uint32_t oy           __attribute__((aligned(4)));
     uint32_t oc           __attribute__((aligned(4)));
     uint32_t zero         __attribute__((aligned(4)));
@@ -203,7 +203,7 @@ typedef struct SwsContext{
     uint32_t gmask        __attribute__((aligned(4)));
 #endif
 
-#ifdef HAVE_VIS
+#if HAVE_VIS
     uint64_t sparc_coeffs[10] __attribute__((aligned(8)));
 #endif
 

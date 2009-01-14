@@ -30,14 +30,14 @@
 #undef EMMS
 #undef SFENCE
 
-#ifdef HAVE_3DNOW
+#if HAVE_3DNOW
 /* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
 #define EMMS     "femms"
 #else
 #define EMMS     "emms"
 #endif
 
-#ifdef HAVE_MMX2
+#if HAVE_MMX2
 #define MOVNTQ "movntq"
 #define SFENCE "sfence"
 #else
@@ -335,7 +335,7 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
         "1:             \n\t"
 YUV2RGB
         /* mm0=B, %%mm2=G, %%mm1=R */
-#ifdef HAVE_MMX2
+#if HAVE_MMX2
         "movq "MANGLE(ff_M24A)", %%mm4     \n\t"
         "movq "MANGLE(ff_M24C)", %%mm7     \n\t"
         "pshufw $0x50, %%mm0, %%mm5     \n\t" /* B3 B2 B3 B2  B1 B0 B1 B0 */

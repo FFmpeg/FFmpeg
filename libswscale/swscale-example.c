@@ -118,7 +118,7 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
     sws_scale(dstContext, src, srcStride, 0, srcH, dst, dstStride);
     sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
 
-#if defined(ARCH_X86)
+#if ARCH_X86
     __asm__ volatile ("emms\n\t");
 #endif
 
@@ -208,7 +208,7 @@ int main(int argc, char **argv){
     }
     sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
 
-#if defined(ARCH_X86)
+#if ARCH_X86
     __asm__ volatile ("emms\n\t");
 #endif
 

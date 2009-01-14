@@ -45,28 +45,26 @@ extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
 extern const uint8_t dither_8x8_220[8][8];
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
 
 /* hope these constant values are cache line aligned */
 DECLARE_ASM_CONST(8, uint64_t, mmx_00ffw)   = 0x00ff00ff00ff00ffULL;
 DECLARE_ASM_CONST(8, uint64_t, mmx_redmask) = 0xf8f8f8f8f8f8f8f8ULL;
 DECLARE_ASM_CONST(8, uint64_t, mmx_grnmask) = 0xfcfcfcfcfcfcfcfcULL;
 
-#undef HAVE_MMX
-
 //MMX versions
 #undef RENAME
-#define HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
+#define HAVE_MMX2 0
+#define HAVE_3DNOW 0
 #define RENAME(a) a ## _MMX
 #include "yuv2rgb_template.c"
 
 //MMX2 versions
 #undef RENAME
-#define HAVE_MMX
-#define HAVE_MMX2
-#undef HAVE_3DNOW
+#undef HAVE_MMX2
+#define HAVE_MMX2 1
 #define RENAME(a) a ## _MMX2
 #include "yuv2rgb_template.c"
 
@@ -485,7 +483,7 @@ EPILOG(1)
 
 SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
 {
-#if defined(HAVE_MMX2) || defined(HAVE_MMX)
+#if HAVE_MMX2 || HAVE_MMX
     if (c->flags & SWS_CPU_CAPS_MMX2){
         switch(c->dstFormat){
         case PIX_FMT_RGB32:  return yuv420_rgb32_MMX2;
@@ -503,19 +501,19 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
         }
     }
 #endif
-#ifdef HAVE_VIS
+#if HAVE_VIS
     {
         SwsFunc t= yuv2rgb_init_vis(c);
         if (t) return t;
     }
 #endif
-#ifdef CONFIG_MLIB
+#if CONFIG_MLIB
     {
         SwsFunc t= yuv2rgb_init_mlib(c);
         if (t) return t;
     }
 #endif
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
     if (c->flags & SWS_CPU_CAPS_ALTIVEC)
     {
         SwsFunc t = yuv2rgb_init_altivec(c);
@@ -523,7 +521,7 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
     }
 #endif
 
-#ifdef ARCH_BFIN
+#if ARCH_BFIN
     if (c->flags & SWS_CPU_CAPS_BFIN)
     {
         SwsFunc t = ff_bfin_yuv2rgb_get_func_ptr (c);

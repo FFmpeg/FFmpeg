@@ -29,17 +29,17 @@
 #undef EMMS
 #undef SFENCE
 
-#ifdef HAVE_3DNOW
+#if HAVE_3DNOW
 /* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
 #define EMMS     "femms"
 #else
 #define EMMS     "emms"
 #endif
 
-#ifdef HAVE_3DNOW
+#if HAVE_3DNOW
 #define PREFETCH  "prefetch"
 #define PREFETCHW "prefetchw"
-#elif defined (HAVE_MMX2)
+#elif HAVE_MMX2
 #define PREFETCH "prefetchnta"
 #define PREFETCHW "prefetcht0"
 #else
@@ -47,26 +47,26 @@
 #define PREFETCHW " # nop"
 #endif
 
-#ifdef HAVE_MMX2
+#if HAVE_MMX2
 #define SFENCE "sfence"
 #else
 #define SFENCE " # nop"
 #endif
 
-#ifdef HAVE_MMX2
+#if HAVE_MMX2
 #define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
-#elif defined (HAVE_3DNOW)
+#elif HAVE_3DNOW
 #define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
 #endif
 
-#ifdef HAVE_MMX2
+#if HAVE_MMX2
 #define REAL_MOVNTQ(a,b) "movntq " #a ", " #b " \n\t"
 #else
 #define REAL_MOVNTQ(a,b) "movq " #a ", " #b " \n\t"
 #endif
 #define MOVNTQ(a,b)  REAL_MOVNTQ(a,b)
 
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
 #include "swscale_altivec_template.c"
 #endif
 
@@ -865,7 +865,7 @@
     "cmp  "#dstw", "#index"     \n\t"\
     " jb       1b               \n\t"
 
-#ifdef HAVE_MMX2
+#if HAVE_MMX2
 #undef WRITEBGR24
 #define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMX2(dst, dstw, index)
 #else
@@ -895,7 +895,7 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, int16_t *lumFilter, int16_t *
                                     int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, long dstW, long chrDstW)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     if(!(c->flags & SWS_BITEXACT)){
         if (c->flags & SWS_ACCURATE_RND){
             if (uDest){
@@ -915,7 +915,7 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, int16_t *lumFilter, int16_t *
         return;
     }
 #endif
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
 yuv2yuvX_altivec_real(lumFilter, lumSrc, lumFilterSize,
                       chrFilter, chrSrc, chrFilterSize,
                       dest, uDest, vDest, dstW, chrDstW);
@@ -939,7 +939,7 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chr
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, long dstW, long chrDstW)
 {
     int i;
-#ifdef HAVE_MMX
+#if HAVE_MMX
     if(!(c->flags & SWS_BITEXACT)){
         long p= uDest ? 3 : 1;
         uint8_t *src[3]= {lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
@@ -1006,7 +1006,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
                                        int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
                                        uint8_t *dest, long dstW, long dstY)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     long dummy=0;
     if(!(c->flags & SWS_BITEXACT)){
         if (c->flags & SWS_ACCURATE_RND){
@@ -1133,7 +1133,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
         }
     }
 #endif /* HAVE_MMX */
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
     /* The following list of supported dstFormat values should
        match what's found in the body of altivec_yuv2packedX() */
     if (c->dstFormat==PIX_FMT_ABGR  || c->dstFormat==PIX_FMT_BGRA  ||
@@ -1159,7 +1159,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *
     int uvalpha1=4095-uvalpha;
     int i;
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
     if(!(c->flags & SWS_BITEXACT)){
         switch(c->dstFormat)
         {
@@ -1270,7 +1270,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
         return;
     }
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
     if(!(flags & SWS_BITEXACT)){
         if (uvalpha < 2048) // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
         {
@@ -1464,7 +1464,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 
 static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     __asm__ volatile(
     "movq "MANGLE(bm01010101)", %%mm2           \n\t"
     "mov                    %0, %%"REG_a"       \n\t"
@@ -1489,7 +1489,7 @@ static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, long width, uint3
 
 static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     __asm__ volatile(
     "movq "MANGLE(bm01010101)", %%mm4           \n\t"
     "mov                    %0, %%"REG_a"       \n\t"
@@ -1526,7 +1526,7 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
  * yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses. */
 static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     __asm__ volatile(
     "mov                  %0, %%"REG_a"         \n\t"
     "1:                                         \n\t"
@@ -1550,7 +1550,7 @@ static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width, uint3
 
 static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     __asm__ volatile(
     "movq "MANGLE(bm01010101)", %%mm4           \n\t"
     "mov                    %0, %%"REG_a"       \n\t"
@@ -1643,7 +1643,7 @@ BGR2UV(uint16_t, bgr15ToUV, 0, 0, 0, 0x001F, 0x03E0, 0x7C00, RU<<10, GU<<5, BU  
 BGR2UV(uint16_t, rgb16ToUV, 0, 0, 0, 0xF800, 0x07E0, 0x001F, RU    , GU<<5, BU<<11, RV    , GV<<5, BV<<11, RGB2YUV_SHIFT+8)
 BGR2UV(uint16_t, rgb15ToUV, 0, 0, 0, 0x7C00, 0x03E0, 0x001F, RU    , GU<<5, BU<<10, RV    , GV<<5, BV<<10, RGB2YUV_SHIFT+7)
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
 static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, uint8_t *src, long width, int srcFormat)
 {
 
@@ -1758,7 +1758,7 @@ static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, uint8_t *
 
 static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_BGR24);
 #else
     int i;
@@ -1775,7 +1775,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width, uint
 
 static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_BGR24);
 #else
     int i;
@@ -1809,7 +1809,7 @@ static inline void RENAME(bgr24ToUV_half)(uint8_t *dstU, uint8_t *dstV, uint8_t 
 
 static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, long width, uint32_t *unused)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_RGB24);
 #else
     int i;
@@ -1826,7 +1826,7 @@ static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, long width, uint
 
 static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width, uint32_t *unused)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     assert(src1==src2);
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_RGB24);
 #else
@@ -1908,7 +1908,7 @@ static inline void RENAME(monoblack2Y)(uint8_t *dst, uint8_t *src, long width, u
 static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW, int xInc,
                                   int16_t *filter, int16_t *filterPos, long filterSize)
 {
-#ifdef HAVE_MMX
+#if HAVE_MMX
     assert(filterSize % 4 == 0 && filterSize>0);
     if (filterSize==4) // Always true for upscaling, sometimes for down, too.
     {
@@ -2064,7 +2064,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
         );
     }
 #else
-#ifdef HAVE_ALTIVEC
+#if HAVE_ALTIVEC
     hScale_altivec_real(dst, dstW, src, srcW, xInc, filter, filterPos, filterSize);
 #else
     int i;
@@ -2169,7 +2169,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         src= formatConvBuffer;
     }
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
     // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
     if (!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
 #else
@@ -2180,8 +2180,8 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     }
     else // fast bilinear upscale / crap downscale
     {
-#if defined(ARCH_X86)
-#ifdef HAVE_MMX2
+#if ARCH_X86
+#if HAVE_MMX2
         int i;
 #if defined(PIC)
         uint64_t ebxsave __attribute__((aligned(8)));
@@ -2202,7 +2202,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
             PREFETCH"      32(%%"REG_c")            \n\t"
             PREFETCH"      64(%%"REG_c")            \n\t"
 
-#ifdef ARCH_X86_64
+#if ARCH_X86_64
 
 #define FUNNY_Y_CODE \
             "movl            (%%"REG_b"), %%esi     \n\t"\
@@ -2292,7 +2292,7 @@ FUNNY_Y_CODE
         :: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask)
         : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
         );
-#ifdef HAVE_MMX2
+#if HAVE_MMX2
         } //if MMX2 can't be used
 #endif
 #else
@@ -2305,7 +2305,7 @@ FUNNY_Y_CODE
             dst[i]= (src[xx]<<7) + (src[xx+1] - src[xx])*xalpha;
             xpos+=xInc;
         }
-#endif /* defined(ARCH_X86) */
+#endif /* ARCH_X86 */
     }
 
     if(c->srcRange != c->dstRange && !(isRGB(c->dstFormat) || isBGR(c->dstFormat))){
@@ -2441,7 +2441,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         src2= formatConvBuffer+VOFW;
     }
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
     // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
     if (!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
 #else
@@ -2453,8 +2453,8 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     }
     else // fast bilinear upscale / crap downscale
     {
-#if defined(ARCH_X86)
-#ifdef HAVE_MMX2
+#if ARCH_X86
+#if HAVE_MMX2
         int i;
 #if defined(PIC)
         uint64_t ebxsave __attribute__((aligned(8)));
@@ -2475,7 +2475,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
             PREFETCH" 32(%%"REG_c")             \n\t"
             PREFETCH" 64(%%"REG_c")             \n\t"
 
-#ifdef ARCH_X86_64
+#if ARCH_X86_64
 
 #define FUNNY_UV_CODE \
             "movl       (%%"REG_b"), %%esi      \n\t"\
@@ -2573,7 +2573,7 @@ FUNNY_UV_CODE
 
 /* GCC 3.3 makes MPlayer crash on IA-32 machines when using "g" operand here,
    which is needed to support GCC 4.0. */
-#if defined(ARCH_X86_64) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
+#if ARCH_X86_64 && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
             :: "m" (src1), "m" (dst), "g" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 #else
             :: "m" (src1), "m" (dst), "m" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
@@ -2581,7 +2581,7 @@ FUNNY_UV_CODE
             "r" (src2)
             : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
             );
-#ifdef HAVE_MMX2
+#if HAVE_MMX2
         } //if MMX2 can't be used
 #endif
 #else
@@ -2599,7 +2599,7 @@ FUNNY_UV_CODE
             */
             xpos+=xInc;
         }
-#endif /* defined(ARCH_X86) */
+#endif /* ARCH_X86 */
     }
     if(c->srcRange != c->dstRange && !(isRGB(c->dstFormat) || isBGR(c->dstFormat))){
         int i;
@@ -2821,7 +2821,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             break; //we can't output a dstY line so let's try with the next slice
         }
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
         c->blueDither= ff_dither8[dstY&1];
         if (c->dstFormat == PIX_FMT_RGB555 || c->dstFormat == PIX_FMT_BGR555)
             c->greenDither= ff_dither8[dstY&1];
@@ -2833,7 +2833,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
         {
             int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
             int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-#ifdef HAVE_MMX
+#if HAVE_MMX
             int i;
         if (flags & SWS_ACCURATE_RND){
             int s= APCK_SIZE / 8;
@@ -2987,7 +2987,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
         }
     }
 
-#ifdef HAVE_MMX
+#if HAVE_MMX
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
 #endif
