@@ -539,6 +539,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         if (write_pcr) {
             // add 11, pcr references the last byte of program clock reference base
             pcr = ts->cur_pcr + (4+7)*8*90000LL / ts->mux_rate;
+            if (dts != AV_NOPTS_VALUE && dts < pcr)
+                av_log(s, AV_LOG_WARNING, "dts < pcr, TS is invalid\n");
             *q++ = 7; /* AFC length */
             *q++ = 0x10; /* flags: PCR present */
             *q++ = pcr >> 25;
