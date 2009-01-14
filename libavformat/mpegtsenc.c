@@ -672,6 +672,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     MpegTSWriteStream *ts_st = st->priv_data;
     int len, max_payload_size;
     const uint8_t *access_unit_index = NULL;
+    const uint64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
 
     if (st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
         /* for subtitle, a single PES packet must be generated */
@@ -717,8 +718,8 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (access_unit_index && access_unit_index < buf &&
             ts_st->payload_pts == AV_NOPTS_VALUE &&
             ts_st->payload_dts == AV_NOPTS_VALUE) {
-            ts_st->payload_dts = pkt->dts;
-            ts_st->payload_pts = pkt->pts;
+            ts_st->payload_dts = pkt->dts + delay;
+            ts_st->payload_pts = pkt->pts + delay;
         }
         if (ts_st->payload_index >= max_payload_size) {
             mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
