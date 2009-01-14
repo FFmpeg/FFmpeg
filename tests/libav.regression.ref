@@ -9,7 +9,7 @@ c351132527ccb1e8cab06cc0822fde23 *./tests/data/b-libav.rm
 bdb7484c68db722f66ba1630cf79844c *./tests/data/b-libav.mpg
 378880 ./tests/data/b-libav.mpg
 ./tests/data/b-libav.mpg CRC=0x2b71a386
-447b005e527cf495ec13092e788f028d *./tests/data/b-libav.ts
+d1ab4041e32fb802bb164844d91cc5fe *./tests/data/b-libav.ts
 471692 ./tests/data/b-libav.ts
 ./tests/data/b-libav.ts CRC=0xcc4948e1
 1b28a16652bb8ac528b33f7478ca18b6 *./tests/data/b-libav.swf
