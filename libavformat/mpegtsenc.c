@@ -445,7 +445,10 @@ static int mpegts_write_header(AVFormatContext *s)
            total_bit_rate, ts->sdt_packet_freq, ts->pat_packet_freq);
 #endif
 
-    ts->mux_rate = total_bit_rate;
+    if (s->mux_rate)
+        ts->mux_rate = s->mux_rate;
+    else
+        ts->mux_rate = total_bit_rate;
 
     /* write info at the start of the file, so that it will be fast to
        find them */
