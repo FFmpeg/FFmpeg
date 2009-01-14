@@ -38,11 +38,6 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
-
-#if CONFIG_MPEGAUDIO_HP
-#define USE_HIGHPRECISION
-#endif
-
 #include "mpegaudio.h"
 
 #include "qdm2data.h"

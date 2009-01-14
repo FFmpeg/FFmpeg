@@ -34,12 +34,6 @@
  *  - test lsf / mpeg25 extensively.
  */
 
-/* define USE_HIGHPRECISION to have a bit exact (but slower) mpeg
-   audio decoder */
-#if CONFIG_MPEGAUDIO_HP
-#   define USE_HIGHPRECISION
-#endif
-
 #include "mpegaudio.h"
 #include "mpegaudiodecheader.h"
 
@@ -322,7 +316,7 @@ static int decode_init(AVCodecContext * avctx)
 
     s->avctx = avctx;
 
-#if defined(USE_HIGHPRECISION) && defined(CONFIG_AUDIO_NONSHORT)
+#if defined(CONFIG_MPEGAUDIO_HP) && defined(CONFIG_AUDIO_NONSHORT)
     avctx->sample_fmt= SAMPLE_FMT_S32;
 #else
     avctx->sample_fmt= SAMPLE_FMT_S16;
