@@ -214,7 +214,7 @@ static int pcm_encode_frame(AVCodecContext *avctx,
             *dst++ = v - 128;
         }
         break;
-#if WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
     case CODEC_ID_PCM_F64LE:
         ENCODE(int64_t, le64, samples, dst, n, 0, 0)
         break;
@@ -417,7 +417,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         }
         samples= (short*)dstu8;
         break;
-#if WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
     case CODEC_ID_PCM_F64LE:
         DECODE(int64_t, le64, src, samples, n, 0, 0)
         break;
