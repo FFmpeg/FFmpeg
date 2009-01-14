@@ -385,6 +385,7 @@ static int mpegts_write_header(AVFormatContext *s)
     AVStream *st;
     int i, total_bit_rate;
     const char *service_name;
+    uint64_t sdt_size, pat_pmt_size, pos;
 
     ts->tsid = DEFAULT_TSID;
     ts->onid = DEFAULT_ONID;
@@ -440,23 +441,39 @@ static int mpegts_write_header(AVFormatContext *s)
         (TS_PACKET_SIZE * 8 * 1000);
     ts->pat_packet_freq = (total_bit_rate * PAT_RETRANS_TIME) /
         (TS_PACKET_SIZE * 8 * 1000);
-#if 0
-    printf("%d %d %d\n",
+
+    ts->mux_rate = 1; // avoid div by 0
+
+    /* write info at the start of the file, so that it will be fast to
+       find them */
+    pos = url_ftell(s->pb);
+    mpegts_write_sdt(s);
+    sdt_size = url_ftell(s->pb) - pos;
+    pos = url_ftell(s->pb);
+    mpegts_write_pat(s);
+    for(i = 0; i < ts->nb_services; i++) {
+        mpegts_write_pmt(s, ts->services[i]);
+    }
+    pat_pmt_size = url_ftell(s->pb) - pos;
+
+    total_bit_rate +=
+        total_bit_rate * 25 / (8 * DEFAULT_PES_PAYLOAD_SIZE) + /* PES header size */
+        total_bit_rate * 4 / (8 * TS_PACKET_SIZE) +            /* TS  header size */
+        SDT_RETRANS_TIME * sdt_size +                          /* SDT size */
+        PAT_RETRANS_TIME * pat_pmt_size +                      /* PAT+PMT size */
+        PCR_RETRANS_TIME * 8;                                  /* PCR size */
+
+    av_log(s, AV_LOG_DEBUG, "muxrate %d freq sdt %d pat %d\n",
            total_bit_rate, ts->sdt_packet_freq, ts->pat_packet_freq);
-#endif
 
     if (s->mux_rate)
         ts->mux_rate = s->mux_rate;
     else
         ts->mux_rate = total_bit_rate;
 
-    /* write info at the start of the file, so that it will be fast to
-       find them */
-    mpegts_write_sdt(s);
-    mpegts_write_pat(s);
-    for(i = 0; i < ts->nb_services; i++) {
-        mpegts_write_pmt(s, ts->services[i]);
-    }
+    // adjust pcr
+    ts->cur_pcr /= ts->mux_rate;
+
     put_flush_packet(s->pb);
 
     return 0;
