@@ -26,6 +26,9 @@
 
 #include "avcodec.h"
 #include "bitstream.h"
+
+#undef  CONFIG_MPEGAUDIO_HP
+#define CONFIG_MPEGAUDIO_HP 0
 #include "mpegaudio.h"
 
 /* currently, cannot change these constants (need to modify
