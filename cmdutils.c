@@ -30,21 +30,15 @@
 
 #include "config.h"
 #include "libavformat/avformat.h"
-#if CONFIG_AVFILTER
 #include "libavfilter/avfilter.h"
-#endif
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
-#if CONFIG_POSTPROC
 #include "libpostproc/postprocess.h"
-#endif
 #include "libavutil/avstring.h"
 #include "libavcodec/opt.h"
 #include "cmdutils.h"
 #include "version.h"
-#if CONFIG_NETWORK
 #include "libavformat/network.h"
-#endif
 
 #undef exit
 
