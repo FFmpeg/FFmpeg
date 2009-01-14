@@ -51,7 +51,7 @@
 
 #define MP3_MASK 0xFFFE0CCF
 
-#ifdef CONFIG_MPEGAUDIO_HP
+#if CONFIG_MPEGAUDIO_HP
 #define FRAC_BITS   23   /* fractional bits for sb_samples and dct */
 #define WFRAC_BITS  16   /* fractional bits for window */
 #else
@@ -63,7 +63,7 @@
 
 #define FIX(a)   ((int)((a) * FRAC_ONE))
 
-#if defined(CONFIG_MPEGAUDIO_HP) && defined(CONFIG_AUDIO_NONSHORT)
+#if CONFIG_MPEGAUDIO_HP && CONFIG_AUDIO_NONSHORT
 typedef int32_t OUT_INT;
 #define OUT_MAX INT32_MAX
 #define OUT_MIN INT32_MIN

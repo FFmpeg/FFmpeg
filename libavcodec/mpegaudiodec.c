@@ -316,7 +316,7 @@ static int decode_init(AVCodecContext * avctx)
 
     s->avctx = avctx;
 
-#if defined(CONFIG_MPEGAUDIO_HP) && defined(CONFIG_AUDIO_NONSHORT)
+#if CONFIG_MPEGAUDIO_HP && CONFIG_AUDIO_NONSHORT
     avctx->sample_fmt= SAMPLE_FMT_S32;
 #else
     avctx->sample_fmt= SAMPLE_FMT_S16;
