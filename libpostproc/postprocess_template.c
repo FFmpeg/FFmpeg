@@ -1897,7 +1897,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
  */
 static inline void RENAME(deInterlaceMedian)(uint8_t src[], int stride)
 {
-#ifd HAVE_MMX
+#if HAVE_MMX
     src+= 4*stride;
 #if HAVE_MMX2
     __asm__ volatile(
