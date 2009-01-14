@@ -40,6 +40,11 @@
  */
 
 #include "avformat.h"
+
+/* The GIF format uses reversed order for bitstreams... */
+/* at least they don't use PDP_ENDIAN :) */
+#define BITSTREAM_WRITER_LE
+
 #include "libavcodec/bitstream.h"
 
 /* bitstream minipacket size */
@@ -100,72 +105,6 @@ static const rgb_triplet gif_clut[216] = {
     { 0xff, 0xcc, 0x00 }, { 0xff, 0xcc, 0x33 }, { 0xff, 0xcc, 0x66 }, { 0xff, 0xcc, 0x99 }, { 0xff, 0xcc, 0xcc }, { 0xff, 0xcc, 0xff },
     { 0xff, 0xff, 0x00 }, { 0xff, 0xff, 0x33 }, { 0xff, 0xff, 0x66 }, { 0xff, 0xff, 0x99 }, { 0xff, 0xff, 0xcc }, { 0xff, 0xff, 0xff },
 };
-
-/* The GIF format uses reversed order for bitstreams... */
-/* at least they don't use PDP_ENDIAN :) */
-/* so we 'extend' PutBitContext. hmmm, OOP :) */
-/* seems this thing changed slightly since I wrote it... */
-
-#ifdef ALT_BITSTREAM_WRITER
-# error no ALT_BITSTREAM_WRITER support for now
-#endif
-
-static void gif_put_bits_rev(PutBitContext *s, int n, unsigned int value)
-{
-    unsigned int bit_buf;
-    int bit_cnt;
-
-    //    printf("put_bits=%d %x\n", n, value);
-    assert(n == 32 || value < (1U << n));
-
-    bit_buf = s->bit_buf;
-    bit_cnt = 32 - s->bit_left; /* XXX:lazyness... was = s->bit_cnt; */
-
-    //    printf("n=%d value=%x cnt=%d buf=%x\n", n, value, bit_cnt, bit_buf);
-    /* XXX: optimize */
-    if (n < (32-bit_cnt)) {
-        bit_buf |= value << (bit_cnt);
-        bit_cnt+=n;
-    } else {
-        bit_buf |= value << (bit_cnt);
-
-        *s->buf_ptr = bit_buf & 0xff;
-        s->buf_ptr[1] = (bit_buf >> 8) & 0xff;
-        s->buf_ptr[2] = (bit_buf >> 16) & 0xff;
-        s->buf_ptr[3] = (bit_buf >> 24) & 0xff;
-
-        //printf("bitbuf = %08x\n", bit_buf);
-        s->buf_ptr+=4;
-        if (s->buf_ptr >= s->buf_end)
-            abort();
-//            flush_buffer_rev(s);
-        bit_cnt=bit_cnt + n - 32;
-        if (bit_cnt == 0) {
-            bit_buf = 0;
-        } else {
-            bit_buf = value >> (n - bit_cnt);
-        }
-    }
-
-    s->bit_buf = bit_buf;
-    s->bit_left = 32 - bit_cnt;
-}
-
-/* pad the end of the output stream with zeros */
-static void gif_flush_put_bits_rev(PutBitContext *s)
-{
-    while (s->bit_left < 32) {
-        /* XXX: should test end of buffer */
-        *s->buf_ptr++=s->bit_buf & 0xff;
-        s->bit_buf>>=8;
-        s->bit_left+=8;
-    }
-//    flush_buffer_rev(s);
-    s->bit_left=32;
-    s->bit_buf=0;
-}
-
-/* !RevPutBitContext */
 
 /* GIF header */
 static int gif_image_write_header(ByteIOContext *pb,
@@ -272,7 +211,7 @@ static int gif_image_write_image(ByteIOContext *pb,
     w = width;
     while(left>0) {
 
-        gif_put_bits_rev(&p, 9, 0x0100); /* clear code */
+        put_bits(&p, 9, 0x0100); /* clear code */
 
         for(i=(left<GIF_CHUNKS)?left:GIF_CHUNKS;i;i--) {
             if (pix_fmt == PIX_FMT_RGB24) {
@@ -281,7 +220,7 @@ static int gif_image_write_image(ByteIOContext *pb,
             } else {
                 v = *ptr++;
             }
-            gif_put_bits_rev(&p, 9, v);
+            put_bits(&p, 9, v);
             if (--w == 0) {
                 w = width;
                 buf += linesize;
@@ -290,8 +229,8 @@ static int gif_image_write_image(ByteIOContext *pb,
         }
 
         if(left<=GIF_CHUNKS) {
-            gif_put_bits_rev(&p, 9, 0x101); /* end of stream */
-            gif_flush_put_bits_rev(&p);
+            put_bits(&p, 9, 0x101); /* end of stream */
+            flush_put_bits(&p);
         }
         if(pbBufPtr(&p) - p.buf > 0) {
             put_byte(pb, pbBufPtr(&p) - p.buf); /* byte count of the packet */
