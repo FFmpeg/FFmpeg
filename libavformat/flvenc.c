@@ -341,13 +341,6 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (enc->codec_id == CODEC_ID_H264) {
-        /* check if extradata looks like mp4 formated */
-        if (enc->extradata_size > 0 && *(uint8_t*)enc->extradata != 1) {
-            if (ff_avc_parse_nal_units(pkt->data, &pkt->data, &pkt->size) < 0)
-                return -1;
-            assert(pkt->size);
-            size = pkt->size;
-        }
         if (!flv->delay && pkt->dts < 0)
             flv->delay = -pkt->dts;
     }
@@ -368,7 +361,13 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         put_byte(pb,1); // AVC NALU
         put_be24(pb,pkt->pts - pkt->dts);
     }
+    if (enc->codec_id == CODEC_ID_H264 &&
+        /* check if extradata looks like mp4 formated */
+        enc->extradata_size > 0 && *(uint8_t*)enc->extradata != 1) {
+        ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
+    } else {
     put_buffer(pb, pkt->data, size);
+    }
     put_be32(pb,size+flags_size+11); // previous tag size
     flv->duration = FFMAX(flv->duration, pkt->pts + flv->delay + pkt->duration);
 

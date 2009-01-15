@@ -1732,15 +1732,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         memcpy(trk->vosData, enc->extradata, trk->vosLen);
     }
 
-    if (enc->codec_id == CODEC_ID_H264 && trk->vosLen > 0 && *(uint8_t *)trk->vosData != 1) {
-        /* from x264 or from bytestream h264 */
-        /* nal reformating needed */
-        int ret = ff_avc_parse_nal_units(pkt->data, &pkt->data, &pkt->size);
-        if (ret < 0)
-            return ret;
-        assert(pkt->size);
-        size = pkt->size;
-    } else if ((enc->codec_id == CODEC_ID_DNXHD ||
+    if ((enc->codec_id == CODEC_ID_DNXHD ||
                 enc->codec_id == CODEC_ID_AC3) && !trk->vosLen) {
         /* copy frame to create needed atoms */
         trk->vosLen = size;
@@ -1777,7 +1769,13 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->sampleCount += samplesInChunk;
     mov->mdat_size += size;
 
+    if (enc->codec_id == CODEC_ID_H264 && trk->vosLen > 0 && *(uint8_t *)trk->vosData != 1) {
+        /* from x264 or from bytestream h264 */
+        /* nal reformating needed */
+        ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
+    } else {
     put_buffer(pb, pkt->data, size);
+    }
 
     put_flush_packet(pb);
     return 0;

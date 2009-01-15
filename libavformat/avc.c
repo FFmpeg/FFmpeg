@@ -60,15 +60,11 @@ const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end)
     return end + 3;
 }
 
-int ff_avc_parse_nal_units(const uint8_t *buf_in, uint8_t **buf, int *size)
+void ff_avc_parse_nal_units(ByteIOContext *pb, const uint8_t *buf_in, int size)
 {
-    ByteIOContext *pb;
     const uint8_t *p = buf_in;
-    const uint8_t *end = p + *size;
+    const uint8_t *end = p + size;
     const uint8_t *nal_start, *nal_end;
-    int ret = url_open_dyn_buf(&pb);
-    if(ret < 0)
-        return ret;
 
     nal_start = ff_avc_find_startcode(p, end);
     while (nal_start < end) {
@@ -78,6 +74,17 @@ int ff_avc_parse_nal_units(const uint8_t *buf_in, uint8_t **buf, int *size)
         put_buffer(pb, nal_start, nal_end - nal_start);
         nal_start = nal_end;
     }
+}
+
+static int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
+{
+    ByteIOContext *pb;
+    int ret = url_open_dyn_buf(&pb);
+    if(ret < 0)
+        return ret;
+
+    ff_avc_parse_nal_units(pb, buf_in, *size);
+
     av_freep(buf);
     *size = url_close_dyn_buf(pb, buf);
     return 0;
@@ -92,7 +99,7 @@ int ff_isom_write_avcc(ByteIOContext *pb, const uint8_t *data, int len)
             uint32_t sps_size=0, pps_size=0;
             uint8_t *sps=0, *pps=0;
 
-            int ret = ff_avc_parse_nal_units(data, &buf, &len);
+            int ret = ff_avc_parse_nal_units_buf(data, &buf, &len);
             if (ret < 0)
                 return ret;
             start = buf;

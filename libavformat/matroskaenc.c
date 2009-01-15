@@ -785,6 +785,7 @@ static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = s->pb;
+    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
 
     av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
            "pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
@@ -794,7 +795,14 @@ static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *
     put_byte(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
     put_be16(pb, pkt->pts - mkv->cluster_pts);
     put_byte(pb, flags);
+    if (codec->codec_id == CODEC_ID_H264 &&
+        codec->extradata_size > 0 && AV_RB32(codec->extradata) == 0x00000001) {
+        /* from x264 or from bytestream h264 */
+        /* nal reformating needed */
+        ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
+    } else {
     put_buffer(pb, pkt->data, pkt->size);
+    }
 }
 
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
@@ -820,16 +828,6 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         put_ebml_uint(pb, MATROSKA_ID_CLUSTERTIMECODE, pkt->pts);
         mkv->cluster_pts = pkt->pts;
         av_md5_update(mkv->md5_ctx, pkt->data, FFMIN(200, pkt->size));
-    }
-
-    if (codec->codec_id == CODEC_ID_H264 &&
-        codec->extradata_size > 0 && AV_RB32(codec->extradata) == 0x00000001) {
-        /* from x264 or from bytestream h264 */
-        /* nal reformating needed */
-        int ret = ff_avc_parse_nal_units(pkt->data, &pkt->data, &pkt->size);
-        if (ret < 0)
-            return ret;
-        assert(pkt->size);
     }
 
     if (codec->codec_type != CODEC_TYPE_SUBTITLE) {
