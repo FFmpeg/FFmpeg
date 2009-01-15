@@ -696,16 +696,22 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     int len, max_payload_size;
     const uint8_t *access_unit_index = NULL;
     const uint64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
+    int64_t dts = AV_NOPTS_VALUE, pts = AV_NOPTS_VALUE;
+
+    if (pkt->pts != AV_NOPTS_VALUE)
+        pts = pkt->pts + delay;
+    if (pkt->dts != AV_NOPTS_VALUE)
+        dts = pkt->dts + delay;
 
     if (st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
         /* for subtitle, a single PES packet must be generated */
-        mpegts_write_pes(s, st, buf, size, pkt->pts, AV_NOPTS_VALUE);
+        mpegts_write_pes(s, st, buf, size, pts, AV_NOPTS_VALUE);
         return 0;
     }
 
     if (st->codec->codec_id == CODEC_ID_DIRAC) {
         /* for Dirac, a single PES packet must be generated */
-        mpegts_write_pes(s, st, buf, size, pkt->pts, pkt->dts);
+        mpegts_write_pes(s, st, buf, size, pts, dts);
         return 0;
     }
     max_payload_size = DEFAULT_PES_PAYLOAD_SIZE;
@@ -758,8 +764,8 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (access_unit_index && access_unit_index < buf &&
             ts_st->payload_pts == AV_NOPTS_VALUE &&
             ts_st->payload_dts == AV_NOPTS_VALUE) {
-            ts_st->payload_dts = pkt->dts + delay;
-            ts_st->payload_pts = pkt->pts + delay;
+            ts_st->payload_dts = dts;
+            ts_st->payload_pts = pts;
         }
         if (ts_st->payload_index >= max_payload_size) {
             mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
