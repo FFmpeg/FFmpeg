@@ -24,8 +24,8 @@
 #include "libavcodec/mpegaudio.h"
 #include "libavcodec/mpegaudiodecheader.h"
 #include "avformat.h"
+#include "id3v2.h"
 
-#define ID3v2_HEADER_SIZE 10
 #define ID3v1_TAG_SIZE 128
 
 #define ID3v1_GENRE_MAX 125
@@ -158,20 +158,6 @@ static const char * const id3v1_genre_str[ID3v1_GENRE_MAX + 1] = {
     [124] = "Euro-House",
     [125] = "Dance Hall",
 };
-
-/* buf must be ID3v2_HEADER_SIZE byte long */
-static int id3v2_match(const uint8_t *buf)
-{
-    return  buf[0] == 'I' &&
-            buf[1] == 'D' &&
-            buf[2] == '3' &&
-            buf[3] != 0xff &&
-            buf[4] != 0xff &&
-            (buf[6] & 0x80) == 0 &&
-            (buf[7] & 0x80) == 0 &&
-            (buf[8] & 0x80) == 0 &&
-            (buf[9] & 0x80) == 0;
-}
 
 static unsigned int id3v2_get_size(ByteIOContext *s, int len)
 {
@@ -371,7 +357,7 @@ static int mp3_read_probe(AVProbeData *p)
     uint8_t *buf, *buf2, *end;
     AVCodecContext avctx;
 
-    if(id3v2_match(p->buf))
+    if(ff_id3v2_match(p->buf))
         return AVPROBE_SCORE_MAX/2+1; // this must be less than mpeg-ps because some retards put id3v2 tags before mpeg-ps files
 
     max_frames = 0;
@@ -487,7 +473,7 @@ static int mp3_read_header(AVFormatContext *s,
     ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
     if (ret != ID3v2_HEADER_SIZE)
         return -1;
-    if (id3v2_match(buf)) {
+    if (ff_id3v2_match(buf)) {
         /* parse ID3v2 header */
         len = ((buf[6] & 0x7f) << 21) |
             ((buf[7] & 0x7f) << 14) |
