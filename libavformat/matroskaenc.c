@@ -801,7 +801,7 @@ static void mkv_write_block(AVFormatContext *s, unsigned int blockid, AVPacket *
         /* nal reformating needed */
         ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
     } else {
-    put_buffer(pb, pkt->data, pkt->size);
+        put_buffer(pb, pkt->data, pkt->size);
     }
 }
 

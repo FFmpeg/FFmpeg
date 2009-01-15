@@ -1774,7 +1774,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         /* nal reformating needed */
         ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
     } else {
-    put_buffer(pb, pkt->data, size);
+        put_buffer(pb, pkt->data, size);
     }
 
     put_flush_packet(pb);
