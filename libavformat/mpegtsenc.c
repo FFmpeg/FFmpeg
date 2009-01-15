@@ -691,6 +691,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     int size= pkt->size;
     uint8_t *buf= pkt->data;
+    uint8_t *data= NULL;
     MpegTSWriteStream *ts_st = st->priv_data;
     int len, max_payload_size;
     const uint8_t *access_unit_index = NULL;
@@ -720,6 +721,23 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
                 break;
             }
         }
+    } if (st->codec->codec_id == CODEC_ID_H264) {
+        if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
+            av_log(s, AV_LOG_ERROR, "h264 bitstream malformated\n");
+            return -1;
+        }
+        if (pkt->data[4] != 0x09) { // AUD NAL
+            data = av_malloc(pkt->size+6);
+            if (!data)
+                return -1;
+            memcpy(data+6, pkt->data, pkt->size);
+            AV_WB32(data, 0x00000001);
+            data[4] = 0x09;
+            data[5] = 0xe0; // any slice type
+            buf  = data;
+            size = pkt->size+6;
+        }
+        access_unit_index = buf;
     } else {
         access_unit_index = pkt->data;
     }
@@ -752,6 +770,9 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
             access_unit_index = NULL; // unset access unit to avoid setting pts/dts again
         }
     }
+
+    av_free(data);
+
     return 0;
 }
 
