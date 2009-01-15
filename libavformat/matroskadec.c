@@ -1076,6 +1076,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     EbmlList *index_list;
     MatroskaIndex *index;
     int index_scale = 1;
+    uint64_t max_start = 0;
     Ebml ebml = { 0 };
     AVStream *st;
     int i, j;
@@ -1365,10 +1366,13 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     chapters = chapters_list->elem;
     for (i=0; i<chapters_list->nb_elem; i++)
-        if (chapters[i].start != AV_NOPTS_VALUE && chapters[i].uid)
+        if (chapters[i].start != AV_NOPTS_VALUE && chapters[i].uid
+            && (max_start==0 || chapters[i].start > max_start)) {
             ff_new_chapter(s, chapters[i].uid, (AVRational){1, 1000000000},
                            chapters[i].start, chapters[i].end,
                            chapters[i].title);
+            max_start = chapters[i].start;
+        }
 
     index_list = &matroska->index;
     index = index_list->elem;
