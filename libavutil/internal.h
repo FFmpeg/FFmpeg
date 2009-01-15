@@ -34,6 +34,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include "common.h"
+#include "timer.h"
 
 #ifndef attribute_align_arg
 #if (!defined(__ICC) || __ICC > 1100) && AV_GCC_VERSION_AT_LEAST(4,2)
