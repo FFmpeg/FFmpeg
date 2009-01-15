@@ -323,15 +323,4 @@ static inline av_pure int ff_get_fourcc(const char *s){
         }\
     }
 
-/**
- * Returns NULL if CONFIG_SMALL is true otherwise the argument
- * without modifications, used to disable the definition of strings
- * (for example AVCodec long_names).
- */
-#if CONFIG_SMALL
-#   define NULL_IF_CONFIG_SMALL(x) NULL
-#else
-#   define NULL_IF_CONFIG_SMALL(x) x
-#endif
-
 #endif /* AVUTIL_COMMON_H */
