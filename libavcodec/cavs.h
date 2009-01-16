@@ -142,7 +142,7 @@ DECLARE_ALIGNED_8(typedef, struct) {
     int16_t y;
     int16_t dist;
     int16_t ref;
-} vector_t;
+} cavs_vector;
 
 struct dec_2dvlc {
   int8_t rltab[59][3];
@@ -186,9 +186,9 @@ typedef struct {
        D is the macroblock to the top-left (0)
 
        the same is repeated for backward motion vectors */
-    vector_t mv[2*4*3];
-    vector_t *top_mv[2];
-    vector_t *col_mv;
+    cavs_vector mv[2*4*3];
+    cavs_vector *top_mv[2];
+    cavs_vector *col_mv;
 
     /** luma pred mode cache
        0:    --  B2  B3
@@ -236,9 +236,9 @@ extern const int_fast8_t ff_left_modifier_l[8];
 extern const int_fast8_t ff_top_modifier_l[8];
 extern const int_fast8_t ff_left_modifier_c[7];
 extern const int_fast8_t ff_top_modifier_c[7];
-extern const vector_t ff_cavs_intra_mv;
-extern const vector_t ff_cavs_un_mv;
-extern const vector_t ff_cavs_dir_mv;
+extern const cavs_vector ff_cavs_intra_mv;
+extern const cavs_vector ff_cavs_un_mv;
+extern const cavs_vector ff_cavs_dir_mv;
 
 static inline void modify_pred(const int_fast8_t *mod_table, int *mode) {
     *mode = mod_table[*mode];
@@ -253,7 +253,7 @@ static inline void set_intra_mode_default(AVSContext *h) {
     h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = INTRA_L_LP;
 }
 
-static inline void set_mvs(vector_t *mv, enum block_t size) {
+static inline void set_mvs(cavs_vector *mv, enum block_t size) {
     switch(size) {
     case BLK_16X16:
         mv[MV_STRIDE  ] = mv[0];

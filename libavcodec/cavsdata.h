@@ -90,14 +90,14 @@ const uint16_t ff_cavs_dequant_mul[64] = {
 
 /** marks block as unavailable, i.e. out of picture
     or not yet decoded */
-const vector_t ff_cavs_un_mv    = {0,0,1,NOT_AVAIL};
+const cavs_vector ff_cavs_un_mv    = {0,0,1,NOT_AVAIL};
 
 /** marks block as "no prediction from this direction"
     e.g. forward motion vector in BWD partition */
-const vector_t ff_cavs_dir_mv   = {0,0,1,REF_DIR};
+const cavs_vector ff_cavs_dir_mv   = {0,0,1,REF_DIR};
 
 /** marks block as using intra prediction */
-const vector_t ff_cavs_intra_mv = {0,0,1,REF_INTRA};
+const cavs_vector ff_cavs_intra_mv = {0,0,1,REF_INTRA};
 
 #define EOB 0,0,0
 
