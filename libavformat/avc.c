@@ -60,20 +60,23 @@ const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end)
     return end + 3;
 }
 
-void ff_avc_parse_nal_units(ByteIOContext *pb, const uint8_t *buf_in, int size)
+int ff_avc_parse_nal_units(ByteIOContext *pb, const uint8_t *buf_in, int size)
 {
     const uint8_t *p = buf_in;
     const uint8_t *end = p + size;
     const uint8_t *nal_start, *nal_end;
 
+    size = 0;
     nal_start = ff_avc_find_startcode(p, end);
     while (nal_start < end) {
         while(!*(nal_start++));
         nal_end = ff_avc_find_startcode(nal_start, end);
         put_be32(pb, nal_end - nal_start);
         put_buffer(pb, nal_start, nal_end - nal_start);
+        size += 4 + nal_end - nal_start;
         nal_start = nal_end;
     }
+    return size;
 }
 
 static int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
