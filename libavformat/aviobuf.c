@@ -794,7 +794,7 @@ static int url_open_dyn_buf_internal(ByteIOContext **s, int max_packet_size)
 
     if(sizeof(DynBuffer) + io_buffer_size < io_buffer_size)
         return -1;
-    d = av_malloc(sizeof(DynBuffer) + io_buffer_size);
+    d = av_mallocz(sizeof(DynBuffer) + io_buffer_size);
     if (!d)
         return -1;
     *s = av_mallocz(sizeof(ByteIOContext));
@@ -803,10 +803,6 @@ static int url_open_dyn_buf_internal(ByteIOContext **s, int max_packet_size)
         return AVERROR(ENOMEM);
     }
     d->io_buffer_size = io_buffer_size;
-    d->buffer = NULL;
-    d->pos = 0;
-    d->size = 0;
-    d->allocated_size = 0;
     ret = init_put_byte(*s, d->io_buffer, io_buffer_size,
                         1, d, NULL,
                         max_packet_size ? dyn_packet_buf_write : dyn_buf_write,
