@@ -122,6 +122,8 @@ enum PixelFormat {
     PIX_FMT_YUVJ440P,  ///< Planar YUV 4:4:0 full scale (jpeg)
     PIX_FMT_YUVA420P,  ///< Planar YUV 4:2:0, 20bpp, (1 Cr & Cb sample per 2x2 Y & A samples)
     PIX_FMT_VDPAU_H264,///< H264 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
+    PIX_FMT_VDPAU_MPEG1,///< MPEG1 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
+    PIX_FMT_VDPAU_MPEG2,///< MPEG2 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 

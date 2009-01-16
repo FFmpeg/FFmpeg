@@ -34,6 +34,7 @@
 #include "mpeg12data.h"
 #include "mpeg12decdata.h"
 #include "bytestream.h"
+#include "vdpau_internal.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -1218,7 +1219,12 @@ static enum PixelFormat mpeg_get_pixelformat(AVCodecContext *avctx){
 
     if(avctx->xvmc_acceleration)
         return avctx->get_format(avctx,pixfmt_xvmc_mpg2_420);
-    else{
+    else if(avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU){
+        if(avctx->codec_id == CODEC_ID_MPEG1VIDEO)
+            return PIX_FMT_VDPAU_MPEG1;
+        else
+            return PIX_FMT_VDPAU_MPEG2;
+    }else{
         if(s->chroma_format <  2)
             return PIX_FMT_YUV420P;
         else if(s->chroma_format == 2)
@@ -1307,7 +1313,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
 
         avctx->pix_fmt = mpeg_get_pixelformat(avctx);
         //until then pix_fmt may be changed right after codec init
-        if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT )
+        if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT ||
+            s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU )
             if( avctx->idct_algo == FF_IDCT_AUTO )
                 avctx->idct_algo = FF_IDCT_SIMPLE;
 
@@ -2076,7 +2083,8 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
 
     avctx->pix_fmt = mpeg_get_pixelformat(avctx);
 
-    if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT )
+    if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT ||
+        s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU )
         if( avctx->idct_algo == FF_IDCT_AUTO )
             avctx->idct_algo = FF_IDCT_SIMPLE;
 
@@ -2304,6 +2312,10 @@ static int decode_chunks(AVCodecContext *avctx,
                     for(i=0; i<s->slice_count; i++)
                         s2->error_count += s2->thread_context[i]->error_count;
                 }
+
+                if (avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+                    ff_vdpau_mpeg_picture_complete(s2, buf, buf_size, s->slice_count);
+
                 if (slice_end(avctx, picture)) {
                     if(s2->last_picture_ptr || s2->low_delay) //FIXME merge with the stuff in mpeg_decode_slice
                         *data_size = sizeof(AVPicture);
@@ -2387,6 +2399,11 @@ static int decode_chunks(AVCodecContext *avctx,
                 if(!s2->current_picture_ptr){
                     av_log(avctx, AV_LOG_ERROR, "current_picture not initialized\n");
                     return -1;
+                }
+
+                if (avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU) {
+                    s->slice_count++;
+                    break;
                 }
 
                 if(avctx->thread_count > 1){
@@ -2508,3 +2525,20 @@ AVCodec mpeg_xvmc_decoder = {
 };
 
 #endif
+
+#if CONFIG_MPEG_VDPAU_DECODER
+AVCodec mpeg_vdpau_decoder = {
+    "mpegvideo_vdpau",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MPEG2VIDEO,
+    sizeof(Mpeg1Context),
+    mpeg_decode_init,
+    NULL,
+    mpeg_decode_end,
+    mpeg_decode_frame,
+    CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
+    .flush= ff_mpeg_flush,
+    .long_name = NULL_IF_CONFIG_SMALL("MPEG-1/2 video (VDPAU acceleration)"),
+};
+#endif
+
