@@ -376,6 +376,13 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         index++;
     } while(chr == ',' || chr == ';');
 
+    if (*filters) {
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Unable to parse graph description substring: \"%s\"\n",
+               filters - 1);
+        goto fail;
+    }
+
     if(open_inputs && !strcmp(open_inputs->name, "out") && curr_inputs) {
         /* Last output can be omitted if it is "[out]" */
         const char *tmp = "[out]";
