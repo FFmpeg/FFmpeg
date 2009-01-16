@@ -1732,6 +1732,14 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         memcpy(trk->vosData, enc->extradata, trk->vosLen);
     }
 
+    if (enc->codec_id == CODEC_ID_H264 && trk->vosLen > 0 && *(uint8_t *)trk->vosData != 1) {
+        /* from x264 or from bytestream h264 */
+        /* nal reformating needed */
+        size = ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
+    } else {
+        put_buffer(pb, pkt->data, size);
+    }
+
     if ((enc->codec_id == CODEC_ID_DNXHD ||
                 enc->codec_id == CODEC_ID_AC3) && !trk->vosLen) {
         /* copy frame to create needed atoms */
@@ -1748,7 +1756,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             return -1;
     }
 
-    trk->cluster[trk->entry].pos = url_ftell(pb);
+    trk->cluster[trk->entry].pos = url_ftell(pb) - size;
     trk->cluster[trk->entry].samplesInChunk = samplesInChunk;
     trk->cluster[trk->entry].size = size;
     trk->cluster[trk->entry].entries = samplesInChunk;
@@ -1768,14 +1776,6 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->entry++;
     trk->sampleCount += samplesInChunk;
     mov->mdat_size += size;
-
-    if (enc->codec_id == CODEC_ID_H264 && trk->vosLen > 0 && *(uint8_t *)trk->vosData != 1) {
-        /* from x264 or from bytestream h264 */
-        /* nal reformating needed */
-        ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
-    } else {
-        put_buffer(pb, pkt->data, size);
-    }
 
     put_flush_packet(pb);
     return 0;
