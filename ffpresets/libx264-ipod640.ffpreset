@@ -3,3 +3,5 @@ bf=0
 refs=1
 flags2=-wpred-dct8x8
 level=30
+maxrate=10000000
+bufsize=10000000
