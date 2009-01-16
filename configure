@@ -2045,6 +2045,7 @@ check_cflags -Wno-pointer-sign
 check_cflags -Wcast-qual
 check_cflags -Wwrite-strings
 check_cflags -Wtype-limits
+check_cflags -Wundef
 enabled extra_warnings && check_cflags -Winline
 
 # add some linker flags
