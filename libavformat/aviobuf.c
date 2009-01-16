@@ -783,7 +783,8 @@ static int64_t dyn_buf_seek(void *opaque, int64_t offset, int whence)
 static int url_open_dyn_buf_internal(ByteIOContext **s, int max_packet_size)
 {
     DynBuffer *d;
-    int io_buffer_size, ret;
+    int ret;
+    unsigned io_buffer_size;
 
     if (max_packet_size)
         io_buffer_size = max_packet_size;
