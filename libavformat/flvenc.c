@@ -309,6 +309,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     FLVContext *flv = s->priv_data;
     unsigned ts;
     int size= pkt->size;
+    uint8_t *data= NULL;
     int flags, flags_size;
 
 //    av_log(s, AV_LOG_DEBUG, "type:%d pts: %"PRId64" size:%d\n", enc->codec_type, timestamp, size);
@@ -341,6 +342,11 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (enc->codec_id == CODEC_ID_H264) {
+        /* check if extradata looks like mp4 formated */
+        if (enc->extradata_size > 0 && *(uint8_t*)enc->extradata != 1) {
+            if (ff_avc_parse_nal_units_buf(pkt->data, &data, &size) < 0)
+                return -1;
+        }
         if (!flv->delay && pkt->dts < 0)
             flv->delay = -pkt->dts;
     }
@@ -361,17 +367,16 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         put_byte(pb,1); // AVC NALU
         put_be24(pb,pkt->pts - pkt->dts);
     }
-    if (enc->codec_id == CODEC_ID_H264 &&
-        /* check if extradata looks like mp4 formated */
-        enc->extradata_size > 0 && *(uint8_t*)enc->extradata != 1) {
-        ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
-    } else {
-        put_buffer(pb, pkt->data, size);
-    }
+
+    put_buffer(pb, data ? data : pkt->data, size);
+
     put_be32(pb,size+flags_size+11); // previous tag size
     flv->duration = FFMAX(flv->duration, pkt->pts + flv->delay + pkt->duration);
 
     put_flush_packet(pb);
+
+    av_free(data);
+
     return 0;
 }
 
