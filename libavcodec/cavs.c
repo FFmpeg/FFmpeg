@@ -71,7 +71,7 @@ static inline int get_bs(cavs_vector *mvP, cavs_vector *mvQ, int b) {
  * ---------
  *
  */
-void ff_cavs_filter(AVSContext *h, enum mb_t mb_type) {
+void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type) {
     DECLARE_ALIGNED_8(uint8_t, bs[8]);
     int qp_avg, alpha, beta, tc;
     int i;
@@ -410,7 +410,7 @@ static inline void mc_part_std(AVSContext *h,int square,int chroma_height,int de
     }
 }
 
-void ff_cavs_inter(AVSContext *h, enum mb_t mb_type) {
+void ff_cavs_inter(AVSContext *h, enum cavs_mb mb_type) {
     if(ff_cavs_partition_flags[mb_type] == 0){ // 16x16
         mc_part_std(h, 1, 8, 0, h->cy, h->cu, h->cv, 0, 0,
                 h->s.dsp.put_cavs_qpel_pixels_tab[0],
@@ -480,8 +480,8 @@ static inline void mv_pred_median(AVSContext *h, cavs_vector *mvP,
     }
 }
 
-void ff_cavs_mv(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
-                enum mv_pred_t mode, enum block_t size, int ref) {
+void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
+                enum cavs_mv_pred mode, enum cavs_block size, int ref) {
     cavs_vector *mvP = &h->mv[nP];
     cavs_vector *mvA = &h->mv[nP-1];
     cavs_vector *mvB = &h->mv[nP-4];

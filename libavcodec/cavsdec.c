@@ -77,7 +77,7 @@ static inline void mv_pred_direct(AVSContext *h, cavs_vector *pmv_fw,
     pmv_bw->y = m-(((den+(den*col_mv->y*pmv_bw->dist^m)-m-1)>>14)^m);
 }
 
-static inline void mv_pred_sym(AVSContext *h, cavs_vector *src, enum block_t size) {
+static inline void mv_pred_sym(AVSContext *h, cavs_vector *src, enum cavs_block size) {
     cavs_vector *dst = src + MV_BWD_OFFS;
 
     /* backward mv is the scaled and negated forward mv */
@@ -252,7 +252,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
     return 0;
 }
 
-static void decode_mb_p(AVSContext *h, enum mb_t mb_type) {
+static void decode_mb_p(AVSContext *h, enum cavs_mb mb_type) {
     GetBitContext *gb = &h->s.gb;
     int ref[4];
 
@@ -296,9 +296,9 @@ static void decode_mb_p(AVSContext *h, enum mb_t mb_type) {
     *h->col_type = mb_type;
 }
 
-static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
+static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
     int block;
-    enum sub_mb_t sub_type[4];
+    enum cavs_sub_mb sub_type[4];
     int flags;
 
     ff_cavs_init_mb(h);
@@ -447,7 +447,7 @@ static inline void check_for_slice(AVSContext *h) {
 static int decode_pic(AVSContext *h) {
     MpegEncContext *s = &h->s;
     int skip_count;
-    enum mb_t mb_type;
+    enum cavs_mb mb_type;
 
     if (!s->context_initialized) {
         s->avctx->idct_algo = FF_IDCT_CAVS;
