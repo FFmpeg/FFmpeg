@@ -143,6 +143,7 @@ version <next>
 - Electronic Arts TGQ decoder
 - RV30 and RV40 decoder
 - QCELP / PureVoice decoder
+- hybrid WavPack support
 
 version 0.4.9-pre1:
 
