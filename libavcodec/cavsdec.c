@@ -567,8 +567,8 @@ static int decode_pic(AVSContext *h) {
     if(h->pic_type != FF_B_TYPE) {
         if(h->DPB[1].data[0])
             s->avctx->release_buffer(s->avctx, (AVFrame *)&h->DPB[1]);
-        memcpy(&h->DPB[1], &h->DPB[0], sizeof(Picture));
-        memcpy(&h->DPB[0], &h->picture, sizeof(Picture));
+        h->DPB[1] = h->DPB[0];
+        h->DPB[0] = h->picture;
         memset(&h->picture,0,sizeof(Picture));
     }
     return 0;
