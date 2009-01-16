@@ -794,7 +794,7 @@ static int url_open_dyn_buf_internal(ByteIOContext **s, int max_packet_size)
         return -1;
     d = av_mallocz(sizeof(DynBuffer) + io_buffer_size);
     if (!d)
-        return -1;
+        return AVERROR(ENOMEM);
     *s = av_mallocz(sizeof(ByteIOContext));
     if(!*s) {
         av_free(d);
