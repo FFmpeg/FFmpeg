@@ -36,6 +36,7 @@
 #include "opt.h"
 #include "imgconvert.h"
 #include "audioconvert.h"
+#include "internal.h"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <limits.h>
@@ -1089,8 +1090,16 @@ void ff_log_missing_feature(void *avc, const char *feature, int want_sample)
             "occurs, it means that your file has a feature which has not "
             "been implemented.", feature);
     if(want_sample)
-        av_log(avc, AV_LOG_WARNING, " If you want to help, upload a sample "
-                "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
-                "and contact the ffmpeg-devel mailing list.");
-    av_log(avc, AV_LOG_WARNING, "\n");
+        ff_log_ask_for_sample(avc, NULL);
+    else
+        av_log(avc, AV_LOG_WARNING, "\n");
+}
+
+void ff_log_ask_for_sample(void *avc, const char *msg)
+{
+    if (msg)
+        av_log(avc, AV_LOG_WARNING, "%s ", msg);
+    av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
+            "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
+            "and contact the ffmpeg-devel mailing list.\n");
 }

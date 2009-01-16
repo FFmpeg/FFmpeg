@@ -36,4 +36,12 @@
  */
 void ff_log_missing_feature(void *avc, const char *feature, int want_sample);
 
+/**
+ * Logs a generic warning message asking for a sample.
+ * @param[in] avc a pointer to an arbitrary struct of which the first field is
+ * a pointer to an AVClass struct
+ * @param[in] msg string containing an optional message, or NULL if no message
+ */
+void ff_log_ask_for_sample(void *avc, const char *msg);
+
 #endif /* AVCODEC_INTERNAL_H */
