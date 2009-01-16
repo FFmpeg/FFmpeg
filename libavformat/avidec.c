@@ -235,7 +235,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = s->pb;
-    uint32_t tag, tag1, handler;
+    unsigned int tag, tag1, handler;
     int codec_type, stream_index, frame_period, bit_rate;
     unsigned int size, nb_frames;
     int i;
