@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/crc.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio.h"
 #include <stdarg.h>
@@ -756,10 +757,7 @@ static int dyn_packet_buf_write(void *opaque, uint8_t *buf, int buf_size)
     int ret;
 
     /* packetized write: output the header */
-    buf1[0] = (buf_size >> 24);
-    buf1[1] = (buf_size >> 16);
-    buf1[2] = (buf_size >> 8);
-    buf1[3] = (buf_size);
+    AV_WB32(buf1, buf_size);
     ret= dyn_buf_write(opaque, buf1, 4);
     if(ret < 0)
         return ret;
