@@ -97,7 +97,8 @@ int ff_isom_write_avcc(ByteIOContext *pb, const uint8_t *data, int len)
 {
     if (len > 6) {
         /* check for h264 start code */
-        if (AV_RB32(data) == 0x00000001) {
+        if (AV_RB32(data) == 0x00000001 ||
+            AV_RB24(data) == 0x000001) {
             uint8_t *buf=NULL, *end, *start;
             uint32_t sps_size=0, pps_size=0;
             uint8_t *sps=0, *pps=0;
