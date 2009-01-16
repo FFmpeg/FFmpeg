@@ -740,7 +740,7 @@ static int dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
     if (new_allocated_size > d->allocated_size) {
         d->buffer = av_realloc(d->buffer, new_allocated_size);
         if(d->buffer == NULL)
-             return -1234;
+             return AVERROR(ENOMEM);
         d->allocated_size = new_allocated_size;
     }
     memcpy(d->buffer + d->pos, buf, buf_size);
