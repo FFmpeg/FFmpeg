@@ -138,6 +138,7 @@ version <next>
 - Nellymoser ASAO encoder
 - ASS and SSA demuxer and muxer
 - liba52 wrapper removed
+- SVQ3 watermark decoding support
 - Speex decoding via libspeex
 - Electronic Arts TGQ decoder
 - RV30 and RV40 decoder
