@@ -100,10 +100,6 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb)
         av_log(ctx, AV_LOG_ERROR, "Floating point data is not supported\n");
         return -1;
     }
-    if(wc->flags & WV_HYBRID){
-        av_log(ctx, AV_LOG_ERROR, "Hybrid coding mode is not supported\n");
-        return -1;
-    }
 
     bpp = ((wc->flags & 3) + 1) << 3;
     chan = 1 + !(wc->flags & WV_MONO);

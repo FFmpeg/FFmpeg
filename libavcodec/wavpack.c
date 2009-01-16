@@ -28,8 +28,14 @@
  * WavPack lossless audio decoder
  */
 
+#define WV_MONO         0x00000004
 #define WV_JOINT_STEREO 0x00000010
 #define WV_FALSE_STEREO 0x40000000
+
+#define WV_HYBRID_MODE    0x00000008
+#define WV_HYBRID_SHAPE   0x00000008
+#define WV_HYBRID_BITRATE 0x00000200
+#define WV_HYBRID_BALANCE 0x00000400
 
 enum WP_ID_Flags{
     WP_IDF_MASK   = 0x1F,
@@ -66,19 +72,27 @@ typedef struct Decorr {
     int samplesB[8];
 } Decorr;
 
+typedef struct WvChannel {
+    int median[3];
+    int slow_level, error_limit;
+    int bitrate_acc, bitrate_delta;
+} WvChannel;
+
 typedef struct WavpackContext {
     AVCodecContext *avctx;
+    int frame_flags;
     int stereo, stereo_in;
     int joint;
     uint32_t CRC;
     GetBitContext gb;
     int data_size; // in bits
     int samples;
-    int median[6];
     int terms;
     Decorr decorr[MAX_TERMS];
     int zero, one, zeroes;
     int and, or, shift;
+    int hybrid, hybrid_bitrate;
+    WvChannel ch[2];
 } WavpackContext;
 
 // exponent table copied from WavPack source
@@ -101,6 +115,25 @@ static const uint8_t wp_exp2_table [256] = {
     0xea, 0xec, 0xed, 0xee, 0xf0, 0xf1, 0xf2, 0xf4, 0xf5, 0xf6, 0xf8, 0xf9, 0xfa, 0xfc, 0xfd, 0xff
 };
 
+static const uint8_t wp_log2_table [] = {
+    0x00, 0x01, 0x03, 0x04, 0x06, 0x07, 0x09, 0x0a, 0x0b, 0x0d, 0x0e, 0x10, 0x11, 0x12, 0x14, 0x15,
+    0x16, 0x18, 0x19, 0x1a, 0x1c, 0x1d, 0x1e, 0x20, 0x21, 0x22, 0x24, 0x25, 0x26, 0x28, 0x29, 0x2a,
+    0x2c, 0x2d, 0x2e, 0x2f, 0x31, 0x32, 0x33, 0x34, 0x36, 0x37, 0x38, 0x39, 0x3b, 0x3c, 0x3d, 0x3e,
+    0x3f, 0x41, 0x42, 0x43, 0x44, 0x45, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4d, 0x4e, 0x4f, 0x50, 0x51,
+    0x52, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x63,
+    0x64, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x74, 0x75,
+    0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85,
+    0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f, 0x90, 0x91, 0x92, 0x93, 0x94, 0x95,
+    0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f, 0xa0, 0xa1, 0xa2, 0xa3, 0xa4,
+    0xa5, 0xa6, 0xa7, 0xa8, 0xa9, 0xa9, 0xaa, 0xab, 0xac, 0xad, 0xae, 0xaf, 0xb0, 0xb1, 0xb2, 0xb2,
+    0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xb9, 0xb9, 0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf, 0xc0, 0xc0,
+    0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc6, 0xc7, 0xc8, 0xc9, 0xca, 0xcb, 0xcb, 0xcc, 0xcd, 0xce,
+    0xcf, 0xd0, 0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8, 0xd8, 0xd9, 0xda, 0xdb,
+    0xdc, 0xdc, 0xdd, 0xde, 0xdf, 0xe0, 0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe4, 0xe5, 0xe6, 0xe7, 0xe7,
+    0xe8, 0xe9, 0xea, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xee, 0xef, 0xf0, 0xf1, 0xf1, 0xf2, 0xf3, 0xf4,
+    0xf4, 0xf5, 0xf6, 0xf7, 0xf7, 0xf8, 0xf9, 0xf9, 0xfa, 0xfb, 0xfc, 0xfc, 0xfd, 0xfe, 0xff, 0xff
+};
+
 static av_always_inline int wp_exp2(int16_t val)
 {
     int res, neg = 0;
@@ -116,10 +149,28 @@ static av_always_inline int wp_exp2(int16_t val)
     return neg ? -res : res;
 }
 
+static av_always_inline int wp_log2(int32_t val)
+{
+    int bits;
+
+    if(!val)
+        return 0;
+    if(val == 1)
+        return 256;
+    val += val >> 9;
+    bits = av_log2(val) + 1;
+    if(bits < 9)
+        return (bits << 8) + wp_log2_table[(val << (9 - bits)) & 0xFF];
+    else
+        return (bits << 8) + wp_log2_table[(val >> (bits - 9)) & 0xFF];
+}
+
+#define LEVEL_DECAY(a)  ((a + 0x80) >> 8)
+
 // macros for manipulating median values
-#define GET_MED(n) ((median[n] >> 4) + 1)
-#define DEC_MED(n) median[n] -= ((median[n] + (128>>n) - 2) / (128>>n)) * 2
-#define INC_MED(n) median[n] += ((median[n] + (128>>n)) / (128>>n)) * 5
+#define GET_MED(n) ((c->median[n] >> 4) + 1)
+#define DEC_MED(n) c->median[n] -= ((c->median[n] + (128>>n) - 2) / (128>>n)) * 2
+#define INC_MED(n) c->median[n] += ((c->median[n] + (128>>n)) / (128>>n)) * 5
 
 // macros for applying weight
 #define UPDATE_WEIGHT_CLIP(weight, delta, samples, in) \
@@ -148,24 +199,63 @@ static av_always_inline int get_tail(GetBitContext *gb, int k)
     return res;
 }
 
-static int wv_get_value(WavpackContext *ctx, GetBitContext *gb, int *median, int *last)
+static void update_error_limit(WavpackContext *ctx)
+{
+    int i, br[2], sl[2];
+
+    for(i = 0; i <= ctx->stereo_in; i++){
+        ctx->ch[i].bitrate_acc += ctx->ch[i].bitrate_delta;
+        br[i] = ctx->ch[i].bitrate_acc >> 16;
+        sl[i] = LEVEL_DECAY(ctx->ch[i].slow_level);
+    }
+    if(ctx->stereo_in && ctx->hybrid_bitrate){
+        int balance = (sl[1] - sl[0] + br[1] + 1) >> 1;
+        if(balance > br[0]){
+            br[1] = br[0] << 1;
+            br[0] = 0;
+        }else if(-balance > br[0]){
+            br[0] <<= 1;
+            br[1] = 0;
+        }else{
+            br[1] = br[0] + balance;
+            br[0] = br[0] - balance;
+        }
+    }
+    for(i = 0; i <= ctx->stereo_in; i++){
+        if(ctx->hybrid_bitrate){
+            if(sl[i] - br[i] > -0x100)
+                ctx->ch[i].error_limit = wp_exp2(sl[i] - br[i] + 0x100);
+            else
+                ctx->ch[i].error_limit = 0;
+        }else{
+            ctx->ch[i].error_limit = wp_exp2(br[i]);
+        }
+    }
+}
+
+static int wv_get_value(WavpackContext *ctx, GetBitContext *gb, int channel, int *last)
 {
     int t, t2;
     int sign, base, add, ret;
+    WvChannel *c = &ctx->ch[channel];
 
     *last = 0;
 
-    if((ctx->median[0] < 2U) && (ctx->median[3] < 2U) && !ctx->zero && !ctx->one){
+    if((ctx->ch[0].median[0] < 2U) && (ctx->ch[1].median[0] < 2U) && !ctx->zero && !ctx->one){
         if(ctx->zeroes){
             ctx->zeroes--;
-            if(ctx->zeroes)
+            if(ctx->zeroes){
+                c->slow_level -= LEVEL_DECAY(c->slow_level);
                 return 0;
+            }
         }else{
             t = get_unary_0_33(gb);
             if(t >= 2) t = get_bits(gb, t - 1) | (1 << (t-1));
             ctx->zeroes = t;
             if(ctx->zeroes){
-                memset(ctx->median, 0, sizeof(ctx->median));
+                memset(ctx->ch[0].median, 0, sizeof(ctx->ch[0].median));
+                memset(ctx->ch[1].median, 0, sizeof(ctx->ch[1].median));
+                c->slow_level -= LEVEL_DECAY(c->slow_level);
                 return 0;
             }
         }
@@ -201,6 +291,9 @@ static int wv_get_value(WavpackContext *ctx, GetBitContext *gb, int *median, int
         ctx->zero = !ctx->one;
     }
 
+    if(ctx->hybrid && !channel)
+        update_error_limit(ctx);
+
     if(!t){
         base = 0;
         add = GET_MED(0) - 1;
@@ -223,8 +316,23 @@ static int wv_get_value(WavpackContext *ctx, GetBitContext *gb, int *median, int
         INC_MED(1);
         INC_MED(2);
     }
-    ret = base + get_tail(gb, add);
+    if(!c->error_limit){
+        ret = base + get_tail(gb, add);
+    }else{
+        int mid = (base*2 + add + 1) >> 1;
+        while(add > c->error_limit){
+            if(get_bits1(gb)){
+                add -= (mid - base);
+                base = mid;
+            }else
+                add = mid - base - 1;
+            mid = (base*2 + add + 1) >> 1;
+        }
+        ret = mid;
+    }
     sign = get_bits1(gb);
+    if(ctx->hybrid_bitrate)
+        c->slow_level += wp_log2(ret) - LEVEL_DECAY(c->slow_level);
     return sign ? ~ret : ret;
 }
 
@@ -238,9 +346,9 @@ static int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, int16_t *dst)
 
     s->one = s->zero = s->zeroes = 0;
     do{
-        L = wv_get_value(s, gb, s->median, &last);
+        L = wv_get_value(s, gb, 0, &last);
         if(last) break;
-        R = wv_get_value(s, gb, s->median + 3, &last);
+        R = wv_get_value(s, gb, 1, &last);
         if(last) break;
         for(i = 0; i < s->terms; i++){
             t = s->decorr[i].value;
@@ -320,7 +428,7 @@ static int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, int16_t *dst)
 
     s->one = s->zero = s->zeroes = 0;
     do{
-        T = wv_get_value(s, gb, s->median, &last);
+        T = wv_get_value(s, gb, 0, &last);
         S = 0;
         if(last) break;
         for(i = 0; i < s->terms; i++){
@@ -374,6 +482,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     int16_t *samples = data;
     int samplecount;
     int got_terms = 0, got_weights = 0, got_samples = 0, got_entropy = 0, got_bs = 0;
+    int got_hybrid = 0;
     const uint8_t* buf_end = buf + buf_size;
     int i, j, id, size, ssize, weights, t;
 
@@ -383,7 +492,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     }
 
     memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
-    memset(s->median, 0, sizeof(s->median));
+    memset(s->ch, 0, sizeof(s->ch));
     s->and = s->or = s->shift = 0;
 
     s->samples = AV_RL32(buf); buf += 4;
@@ -396,8 +505,11 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
         return -1;
     }
-    s->stereo_in = (AV_RL32(buf) & WV_FALSE_STEREO) ? 0 : s->stereo;
-    s->joint = AV_RL32(buf) & WV_JOINT_STEREO; buf += 4;
+    s->frame_flags = AV_RL32(buf); buf += 4;
+    s->stereo_in = (s->frame_flags & WV_FALSE_STEREO) ? 0 : s->stereo;
+    s->joint = s->frame_flags & WV_JOINT_STEREO;
+    s->hybrid = s->frame_flags & WV_HYBRID_MODE;
+    s->hybrid_bitrate = s->frame_flags & WV_HYBRID_BITRATE;
     s->CRC = AV_RL32(buf); buf += 4;
     // parse metadata blocks
     while(buf < buf_end){
@@ -500,11 +612,37 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
                 buf += ssize;
                 continue;
             }
-            for(i = 0; i < 3 * (s->stereo_in + 1); i++){
-                s->median[i] = wp_exp2(AV_RL16(buf));
-                buf += 2;
+            for(j = 0; j <= s->stereo_in; j++){
+                for(i = 0; i < 3; i++){
+                    s->ch[j].median[i] = wp_exp2(AV_RL16(buf));
+                    buf += 2;
+                }
             }
             got_entropy = 1;
+            break;
+        case WP_ID_HYBRID:
+            if(s->hybrid_bitrate){
+                for(i = 0; i <= s->stereo_in; i++){
+                    s->ch[i].slow_level = wp_exp2(AV_RL16(buf));
+                    buf += 2;
+                    size -= 2;
+                }
+            }
+            for(i = 0; i < (s->stereo_in + 1); i++){
+                s->ch[i].bitrate_acc = AV_RL16(buf) << 16;
+                buf += 2;
+                size -= 2;
+            }
+            if(size > 0){
+                for(i = 0; i < (s->stereo_in + 1); i++){
+                    s->ch[i].bitrate_delta = wp_exp2((int16_t)AV_RL16(buf));
+                    buf += 2;
+                }
+            }else{
+                for(i = 0; i < (s->stereo_in + 1); i++)
+                    s->ch[i].bitrate_delta = 0;
+            }
+            got_hybrid = 1;
             break;
         case WP_ID_INT32INFO:
             if(size != 4 || *buf){
@@ -548,6 +686,10 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     }
     if(!got_entropy){
         av_log(avctx, AV_LOG_ERROR, "No block with entropy info\n");
+        return -1;
+    }
+    if(s->hybrid && !got_hybrid){
+        av_log(avctx, AV_LOG_ERROR, "Hybrid config not found\n");
         return -1;
     }
     if(!got_bs){
