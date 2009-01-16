@@ -2542,3 +2542,19 @@ AVCodec mpeg_vdpau_decoder = {
 };
 #endif
 
+#if CONFIG_MPEG1_VDPAU_DECODER
+AVCodec mpeg1_vdpau_decoder = {
+    "mpeg1video_vdpau",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MPEG1VIDEO,
+    sizeof(Mpeg1Context),
+    mpeg_decode_init,
+    NULL,
+    mpeg_decode_end,
+    mpeg_decode_frame,
+    CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
+    .flush= ff_mpeg_flush,
+    .long_name = NULL_IF_CONFIG_SMALL("MPEG-1 video (VDPAU acceleration)"),
+};
+#endif
+
