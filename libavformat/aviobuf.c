@@ -784,12 +784,7 @@ static int url_open_dyn_buf_internal(ByteIOContext **s, int max_packet_size)
 {
     DynBuffer *d;
     int ret;
-    unsigned io_buffer_size;
-
-    if (max_packet_size)
-        io_buffer_size = max_packet_size;
-    else
-        io_buffer_size = 1024;
+    unsigned io_buffer_size = max_packet_size ? max_packet_size : 1024;
 
     if(sizeof(DynBuffer) + io_buffer_size < io_buffer_size)
         return -1;
