@@ -79,7 +79,7 @@ int ff_avc_parse_nal_units(ByteIOContext *pb, const uint8_t *buf_in, int size)
     return size;
 }
 
-static int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
+int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
 {
     ByteIOContext *pb;
     int ret = url_open_dyn_buf(&pb);
