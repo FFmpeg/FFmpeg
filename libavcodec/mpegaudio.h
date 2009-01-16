@@ -30,6 +30,8 @@
 #include "bitstream.h"
 #include "dsputil.h"
 
+#define CONFIG_AUDIO_NONSHORT 0
+
 /* max frame size, in samples */
 #define MPA_FRAME_SIZE 1152
 
