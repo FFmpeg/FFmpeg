@@ -23,33 +23,14 @@
 #include "libavcodec/mpegvideo.h"
 #include "asm.h"
 
-static void dct_unquantize_h263_intra_axp(MpegEncContext *s, DCTELEM *block,
-                                    int n, int qscale)
+static void dct_unquantize_h263_axp(DCTELEM *block, int n_coeffs,
+                                    uint64_t qscale, uint64_t qadd)
 {
-    int i, n_coeffs;
-    uint64_t qmul, qadd;
-    uint64_t correction;
-    DCTELEM *orig_block = block;
-    DCTELEM block0 = block[0];
+    uint64_t qmul = qscale << 1;
+    uint64_t correction = WORD_VEC(qmul * 255 >> 8);
+    int i;
 
-    qmul = qscale << 1;
-    /* This mask kills spill from negative subwords to the next subword.  */
-    correction = WORD_VEC(qmul * 255 >> 8);
-
-    if (!s->h263_aic) {
-        if (n < 4)
-            block0 *= s->y_dc_scale;
-        else
-            block0 *= s->c_dc_scale;
-        qadd = WORD_VEC((qscale - 1) | 1);
-    } else {
-        qadd = 0;
-    }
-
-    if(s->ac_pred)
-        n_coeffs = 63;
-    else
-        n_coeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
+    qadd = WORD_VEC(qadd);
 
     for(i = 0; i <= n_coeffs; block += 4, i += 4) {
         uint64_t levels, negmask, zeros, add, sub;
@@ -86,60 +67,40 @@ static void dct_unquantize_h263_intra_axp(MpegEncContext *s, DCTELEM *block,
 
         stq(levels, block);
     }
+}
 
-    orig_block[0] = block0;
+static void dct_unquantize_h263_intra_axp(MpegEncContext *s, DCTELEM *block,
+                                    int n, int qscale)
+{
+    int n_coeffs;
+    uint64_t qadd;
+    DCTELEM block0 = block[0];
+
+    if (!s->h263_aic) {
+        if (n < 4)
+            block0 *= s->y_dc_scale;
+        else
+            block0 *= s->c_dc_scale;
+        qadd = (qscale - 1) | 1;
+    } else {
+        qadd = 0;
+    }
+
+    if(s->ac_pred)
+        n_coeffs = 63;
+    else
+        n_coeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
+
+    dct_unquantize_h263_axp(block, n_coeffs, qscale, qadd);
+
+    block[0] = block0;
 }
 
 static void dct_unquantize_h263_inter_axp(MpegEncContext *s, DCTELEM *block,
                                     int n, int qscale)
 {
-    int i, n_coeffs;
-    uint64_t qmul, qadd;
-    uint64_t correction;
-
-    qadd = WORD_VEC((qscale - 1) | 1);
-    qmul = qscale << 1;
-    /* This mask kills spill from negative subwords to the next subword.  */
-    correction = WORD_VEC((qmul - 1) + 1); /* multiplication / addition */
-
-    n_coeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
-
-    for(i = 0; i <= n_coeffs; block += 4, i += 4) {
-        uint64_t levels, negmask, zeros, add;
-
-        levels = ldq(block);
-        if (levels == 0)
-            continue;
-
-#ifdef __alpha_max__
-        /* I don't think the speed difference justifies runtime
-           detection.  */
-        negmask = maxsw4(levels, -1); /* negative -> ffff (-1) */
-        negmask = minsw4(negmask, 0); /* positive -> 0000 (0) */
-#else
-        negmask = cmpbge(WORD_VEC(0x7fff), levels);
-        negmask &= (negmask >> 1) | (1 << 7);
-        negmask = zap(-1, negmask);
-#endif
-
-        zeros = cmpbge(0, levels);
-        zeros &= zeros >> 1;
-        /* zeros |= zeros << 1 is not needed since qadd <= 255, so
-           zapping the lower byte suffices.  */
-
-        levels *= qmul;
-        levels -= correction & (negmask << 16);
-
-        /* Negate qadd for negative levels.  */
-        add = qadd ^ negmask;
-        add += WORD_VEC(0x0001) & negmask;
-        /* Set qadd to 0 for levels == 0.  */
-        add = zap(add, zeros);
-
-        levels += add;
-
-        stq(levels, block);
-    }
+    int n_coeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
+    dct_unquantize_h263_axp(block, n_coeffs, qscale, (qscale - 1) | 1);
 }
 
 void MPV_common_init_axp(MpegEncContext *s)
