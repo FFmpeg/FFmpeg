@@ -708,6 +708,7 @@ static int mkv_write_header(AVFormatContext *s)
     if (mkv->cues == NULL)
         return AVERROR(ENOMEM);
 
+    put_flush_packet(pb);
     return 0;
 }
 
@@ -888,6 +889,7 @@ static int mkv_write_trailer(AVFormatContext *s)
 
     end_ebml_master(pb, mkv->segment);
     av_free(mkv->md5_ctx);
+    put_flush_packet(pb);
     return 0;
 }
 
