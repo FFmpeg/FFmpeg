@@ -30,25 +30,29 @@ static void dct_unquantize_h263_intra_axp(MpegEncContext *s, DCTELEM *block,
     uint64_t qmul, qadd;
     uint64_t correction;
     DCTELEM *orig_block = block;
-    DCTELEM block0;             /* might not be used uninitialized */
+    DCTELEM block0 = block[0];
 
-    qadd = WORD_VEC((qscale - 1) | 1);
     qmul = qscale << 1;
     /* This mask kills spill from negative subwords to the next subword.  */
-    correction = WORD_VEC((qmul - 1) + 1); /* multiplication / addition */
+    correction = WORD_VEC(qmul * 255 >> 8);
 
     if (!s->h263_aic) {
         if (n < 4)
-            block0 = block[0] * s->y_dc_scale;
+            block0 *= s->y_dc_scale;
         else
-            block0 = block[0] * s->c_dc_scale;
+            block0 *= s->c_dc_scale;
+        qadd = WORD_VEC((qscale - 1) | 1);
     } else {
         qadd = 0;
     }
-    n_coeffs = 63; // does not always use zigzag table
+
+    if(s->ac_pred)
+        n_coeffs = 63;
+    else
+        n_coeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
 
     for(i = 0; i <= n_coeffs; block += 4, i += 4) {
-        uint64_t levels, negmask, zeros, add;
+        uint64_t levels, negmask, zeros, add, sub;
 
         levels = ldq(block);
         if (levels == 0)
@@ -73,19 +77,17 @@ static void dct_unquantize_h263_intra_axp(MpegEncContext *s, DCTELEM *block,
         levels *= qmul;
         levels -= correction & (negmask << 16);
 
-        /* Negate qadd for negative levels.  */
-        add = qadd ^ negmask;
-        add += WORD_VEC(0x0001) & negmask;
+        add = qadd & ~negmask;
+        sub = qadd &  negmask;
         /* Set qadd to 0 for levels == 0.  */
         add = zap(add, zeros);
-
         levels += add;
+        levels -= sub;
 
         stq(levels, block);
     }
 
-    if (s->mb_intra && !s->h263_aic)
-        orig_block[0] = block0;
+    orig_block[0] = block0;
 }
 
 static void dct_unquantize_h263_inter_axp(MpegEncContext *s, DCTELEM *block,
@@ -100,7 +102,7 @@ static void dct_unquantize_h263_inter_axp(MpegEncContext *s, DCTELEM *block,
     /* This mask kills spill from negative subwords to the next subword.  */
     correction = WORD_VEC((qmul - 1) + 1); /* multiplication / addition */
 
-    n_coeffs = s->intra_scantable.raster_end[s->block_last_index[n]];
+    n_coeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
 
     for(i = 0; i <= n_coeffs; block += 4, i += 4) {
         uint64_t levels, negmask, zeros, add;
