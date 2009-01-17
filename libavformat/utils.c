@@ -153,6 +153,24 @@ int match_ext(const char *filename, const char *extensions)
     return 0;
 }
 
+static int match_format(const char *name, const char *names)
+{
+    const char *p;
+    int len, namelen;
+
+    if (!name || !names)
+        return 0;
+
+    namelen = strlen(name);
+    while ((p = strchr(names, ','))) {
+        len = FFMAX(p - names, namelen);
+        if (!strncasecmp(name, names, len))
+            return 1;
+        names = p+1;
+    }
+    return !strcasecmp(name, names);
+}
+
 AVOutputFormat *guess_format(const char *short_name, const char *filename,
                              const char *mime_type)
 {
@@ -232,7 +250,7 @@ AVInputFormat *av_find_input_format(const char *short_name)
 {
     AVInputFormat *fmt;
     for(fmt = first_iformat; fmt != NULL; fmt = fmt->next) {
-        if (!strcmp(fmt->name, short_name))
+        if (match_format(short_name, fmt->name))
             return fmt;
     }
     return NULL;
