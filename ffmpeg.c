@@ -1779,6 +1779,8 @@ static int av_encode(AVFormatContext **output_files,
                 codec->has_b_frames = icodec->has_b_frames;
                 break;
             case CODEC_TYPE_SUBTITLE:
+                codec->width = icodec->width;
+                codec->height = icodec->height;
                 break;
             default:
                 abort();
