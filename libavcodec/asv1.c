@@ -584,7 +584,7 @@ static av_cold int encode_init(AVCodecContext *avctx){
     avctx->extradata= av_mallocz(8);
     avctx->extradata_size=8;
     ((uint32_t*)avctx->extradata)[0]= le2me_32(a->inv_qscale);
-    ((uint32_t*)avctx->extradata)[1]= le2me_32(ff_get_fourcc("ASUS"));
+    ((uint32_t*)avctx->extradata)[1]= le2me_32(AV_RL32("ASUS"));
 
     for(i=0; i<64; i++){
         int q= 32*scale*ff_mpeg1_default_intra_matrix[i];

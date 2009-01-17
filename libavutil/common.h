@@ -242,17 +242,6 @@ static inline av_const float av_clipf(float a, float amin, float amax)
     else               return a;
 }
 
-/**
- * converts fourcc string to int
- */
-static inline av_pure int ff_get_fourcc(const char *s){
-#ifdef HAVE_AV_CONFIG_H
-    assert( strlen(s)==4 );
-#endif
-
-    return (s[0]) + (s[1]<<8) + (s[2]<<16) + (s[3]<<24);
-}
-
 #define MKTAG(a,b,c,d) (a | (b << 8) | (c << 16) | (d << 24))
 #define MKBETAG(a,b,c,d) (d | (c << 8) | (b << 16) | (a << 24))
 

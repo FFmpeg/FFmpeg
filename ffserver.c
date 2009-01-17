@@ -36,6 +36,7 @@
 #include "libavformat/rtsp.h"
 #include "libavutil/avstring.h"
 #include "libavutil/random.h"
+#include "libavutil/intreadwrite.h"
 #include "libavcodec/opt.h"
 #include <stdarg.h>
 #include <unistd.h>
@@ -4187,7 +4188,7 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "VideoTag")) {
             get_arg(arg, sizeof(arg), &p);
             if ((strlen(arg) == 4) && stream)
-                video_enc.codec_tag = ff_get_fourcc(arg);
+                video_enc.codec_tag = AV_RL32(arg);
         } else if (!strcasecmp(cmd, "BitExact")) {
             if (stream)
                 video_enc.flags |= CODEC_FLAG_BITEXACT;

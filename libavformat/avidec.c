@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
 #include "libavutil/bswap.h"
 #include "avformat.h"
 #include "avi.h"
@@ -517,7 +518,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         st->need_parsing = AVSTREAM_PARSE_NONE;
                     /* AVI files with Xan DPCM audio (wrongly) declare PCM
                      * audio in the header but have Axan as stream_code_tag. */
-                    if (st->codec->stream_codec_tag == ff_get_fourcc("Axan")){
+                    if (st->codec->stream_codec_tag == AV_RL32("Axan")){
                         st->codec->codec_id  = CODEC_ID_XAN_DPCM;
                         st->codec->codec_tag = 0;
                     }

@@ -305,7 +305,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
     {
         int maxnlpc = 0;
         /* shorten signature */
-        if (get_bits_long(&s->gb, 32) != bswap_32(ff_get_fourcc("ajkg"))) {
+        if (get_bits_long(&s->gb, 32) != bswap_32(AV_RL32("ajkg"))) {
             av_log(s->avctx, AV_LOG_ERROR, "missing shorten magic 'ajkg'\n");
             return -1;
         }

@@ -41,7 +41,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int i, channels, bps, samplerate, datalen, framelen;
     uint64_t framepos;
 
-    if (get_le32(s->pb) != ff_get_fourcc("TTA1"))
+    if (get_le32(s->pb) != AV_RL32("TTA1"))
         return -1; // not tta file
 
     url_fskip(s->pb, 2); // FIXME: flags

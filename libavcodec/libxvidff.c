@@ -335,7 +335,7 @@ av_cold int ff_xvid_encode_init(AVCodecContext *avctx)  {
         /* We are claiming to be Xvid */
         x->quicktime_format = 0;
         if(!avctx->codec_tag)
-            avctx->codec_tag = ff_get_fourcc("xvid");
+            avctx->codec_tag = AV_RL32("xvid");
     }
 
     /* Bframes */

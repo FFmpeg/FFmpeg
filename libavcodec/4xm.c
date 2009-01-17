@@ -689,7 +689,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d\n", buf_size, AV_RL32(buf+4));
     }
 
-    if(frame_4cc == ff_get_fourcc("cfrm")){
+    if(frame_4cc == AV_RL32("cfrm")){
         int free_index=-1;
         const int data_size= buf_size - 20;
         const int id= AV_RL32(buf+12);
@@ -730,7 +730,7 @@ static int decode_frame(AVCodecContext *avctx,
             }
 
             cfrm->size= cfrm->id= 0;
-            frame_4cc= ff_get_fourcc("pfrm");
+            frame_4cc= AV_RL32("pfrm");
         }else
             return buf_size;
     }else{
@@ -756,19 +756,19 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    if(frame_4cc == ff_get_fourcc("ifr2")){
+    if(frame_4cc == AV_RL32("ifr2")){
         p->pict_type= FF_I_TYPE;
         if(decode_i2_frame(f, buf-4, frame_size) < 0)
             return -1;
-    }else if(frame_4cc == ff_get_fourcc("ifrm")){
+    }else if(frame_4cc == AV_RL32("ifrm")){
         p->pict_type= FF_I_TYPE;
         if(decode_i_frame(f, buf, frame_size) < 0)
             return -1;
-    }else if(frame_4cc == ff_get_fourcc("pfrm") || frame_4cc == ff_get_fourcc("pfr2")){
+    }else if(frame_4cc == AV_RL32("pfrm") || frame_4cc == AV_RL32("pfr2")){
         p->pict_type= FF_P_TYPE;
         if(decode_p_frame(f, buf, frame_size) < 0)
             return -1;
-    }else if(frame_4cc == ff_get_fourcc("snd_")){
+    }else if(frame_4cc == AV_RL32("snd_")){
         av_log(avctx, AV_LOG_ERROR, "ignoring snd_ chunk length:%d\n", buf_size);
     }else{
         av_log(avctx, AV_LOG_ERROR, "ignoring unknown chunk length:%d\n", buf_size);

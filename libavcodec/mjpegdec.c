@@ -1040,7 +1040,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     /* buggy AVID, it puts EOI only at every 10th frame */
     /* also this fourcc is used by non-avid files too, it holds some
        informations, but it's always present in AVID creates files */
-    if (id == ff_get_fourcc("AVI1"))
+    if (id == AV_RL32("AVI1"))
     {
         /* structure:
             4bytes      AVI1
@@ -1068,7 +1068,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 
 //    len -= 2;
 
-    if (id == ff_get_fourcc("JFIF"))
+    if (id == AV_RL32("JFIF"))
     {
         int t_w, t_h, v1, v2;
         skip_bits(&s->gb, 8); /* the trailing zero-byte */
@@ -1098,7 +1098,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         goto out;
     }
 
-    if (id == ff_get_fourcc("Adob") && (get_bits(&s->gb, 8) == 'e'))
+    if (id == AV_RL32("Adob") && (get_bits(&s->gb, 8) == 'e'))
     {
         if (s->avctx->debug & FF_DEBUG_PICT_INFO)
             av_log(s->avctx, AV_LOG_INFO, "mjpeg: Adobe header found\n");
@@ -1110,7 +1110,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         goto out;
     }
 
-    if (id == ff_get_fourcc("LJIF")){
+    if (id == AV_RL32("LJIF")){
         if (s->avctx->debug & FF_DEBUG_PICT_INFO)
             av_log(s->avctx, AV_LOG_INFO, "Pegasus lossless jpeg header found\n");
         skip_bits(&s->gb, 16); /* version ? */
@@ -1139,7 +1139,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
         id = be2me_32(id);
         len -= 4;
-        if (id == ff_get_fourcc("mjpg")) /* Apple MJPEG-A */
+        if (id == AV_RL32("mjpg")) /* Apple MJPEG-A */
         {
 #if 0
             skip_bits(&s->gb, 32); /* field size */

@@ -73,7 +73,7 @@ static int mjpega_dump_header(AVBitStreamFilterContext *bsfc, AVCodecContext *av
                 *poutbuf_size = poutbufp - *poutbuf;
                 return 1;
             case APP1:
-                if (i + 8 < buf_size && AV_RL32(buf + i + 8) == ff_get_fourcc("mjpg")) {
+                if (i + 8 < buf_size && AV_RL32(buf + i + 8) == AV_RL32("mjpg")) {
                     av_log(avctx, AV_LOG_ERROR, "bitstream already formatted\n");
                     memcpy(*poutbuf, buf, buf_size);
                     *poutbuf_size = buf_size;
