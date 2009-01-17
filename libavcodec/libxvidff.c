@@ -557,7 +557,7 @@ void xvid_correct_framerate(AVCodecContext *avctx) {
     frate = avctx->time_base.den;
     fbase = avctx->time_base.num;
 
-    gcd = ff_gcd(frate, fbase);
+    gcd = av_gcd(frate, fbase);
     if( gcd > 1 ) {
         frate /= gcd;
         fbase /= gcd;
@@ -579,7 +579,7 @@ void xvid_correct_framerate(AVCodecContext *avctx) {
     } else
         est_fbase = 1;
 
-    gcd = ff_gcd(est_frate, est_fbase);
+    gcd = av_gcd(est_frate, est_fbase);
     if( gcd > 1 ) {
         est_frate /= gcd;
         est_fbase /= gcd;

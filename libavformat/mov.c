@@ -1172,7 +1172,7 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         sc->stts_data[i].count= sample_count;
         sc->stts_data[i].duration= sample_duration;
 
-        sc->time_rate= ff_gcd(sc->time_rate, sample_duration);
+        sc->time_rate= av_gcd(sc->time_rate, sample_duration);
 
         dprintf(c->fc, "sample_count=%d, sample_duration=%d\n",sample_count,sample_duration);
 
@@ -1215,7 +1215,7 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         sc->ctts_data[i].count   = count;
         sc->ctts_data[i].duration= duration;
 
-        sc->time_rate= ff_gcd(sc->time_rate, FFABS(duration));
+        sc->time_rate= av_gcd(sc->time_rate, FFABS(duration));
     }
     return 0;
 }

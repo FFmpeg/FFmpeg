@@ -242,9 +242,6 @@ static inline av_const float av_clipf(float a, float amin, float amax)
     else               return a;
 }
 
-/* math */
-int64_t av_const ff_gcd(int64_t a, int64_t b);
-
 /**
  * converts fourcc string to int
  */

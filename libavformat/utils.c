@@ -2727,7 +2727,7 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
     char buf[256];
     int flags = (is_output ? ic->oformat->flags : ic->iformat->flags);
     AVStream *st = ic->streams[i];
-    int g = ff_gcd(st->time_base.num, st->time_base.den);
+    int g = av_gcd(st->time_base.num, st->time_base.den);
     avcodec_string(buf, sizeof(buf), st->codec, is_output);
     av_log(NULL, AV_LOG_INFO, "    Stream #%d.%d", index, i);
     /* the pid is an important information, so we display it */
@@ -3192,7 +3192,7 @@ char *ff_data_to_hex(char *buff, const uint8_t *src, int s)
 void av_set_pts_info(AVStream *s, int pts_wrap_bits,
                      int pts_num, int pts_den)
 {
-    unsigned int gcd= ff_gcd(pts_num, pts_den);
+    unsigned int gcd= av_gcd(pts_num, pts_den);
     s->pts_wrap_bits = pts_wrap_bits;
     s->time_base.num = pts_num/gcd;
     s->time_base.den = pts_den/gcd;

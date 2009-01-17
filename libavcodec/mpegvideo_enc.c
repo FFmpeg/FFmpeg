@@ -464,7 +464,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         avctx->b_frame_strategy = 0;
     }
 
-    i= ff_gcd(avctx->time_base.den, avctx->time_base.num);
+    i= av_gcd(avctx->time_base.den, avctx->time_base.num);
     if(i > 1){
         av_log(avctx, AV_LOG_INFO, "removing common factors from framerate\n");
         avctx->time_base.den /= i;

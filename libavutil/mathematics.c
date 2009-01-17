@@ -48,8 +48,8 @@ const uint8_t ff_log2_tab[256]={
         7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
 };
 
-int64_t ff_gcd(int64_t a, int64_t b){
-    if(b) return ff_gcd(b, a%b);
+int64_t av_gcd(int64_t a, int64_t b){
+    if(b) return av_gcd(b, a%b);
     else  return a;
 }
 

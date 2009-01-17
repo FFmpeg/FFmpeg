@@ -49,6 +49,8 @@ enum AVRounding {
     AV_ROUND_NEAR_INF = 5, ///< round to nearest and halfway cases away from zero
 };
 
+int64_t av_const av_gcd(int64_t a, int64_t b);
+
 /**
  * rescale a 64bit integer with rounding to nearest.
  * a simple a*b/c isn't possible as it can overflow

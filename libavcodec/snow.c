@@ -4773,7 +4773,7 @@ int main(void){
                 }
                 error= (int)(sqrt(error)+0.5);
                 errors[level][orientation]= error;
-                if(g) g=ff_gcd(g, error);
+                if(g) g=av_gcd(g, error);
                 else g= error;
             }
         }

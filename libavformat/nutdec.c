@@ -206,7 +206,7 @@ static int decode_main_header(NUTContext *nut){
     for(i=0; i<nut->time_base_count; i++){
         GET_V(nut->time_base[i].num, tmp>0 && tmp<(1ULL<<31))
         GET_V(nut->time_base[i].den, tmp>0 && tmp<(1ULL<<31))
-        if(ff_gcd(nut->time_base[i].num, nut->time_base[i].den) != 1){
+        if(av_gcd(nut->time_base[i].num, nut->time_base[i].den) != 1){
             av_log(s, AV_LOG_ERROR, "time base invalid\n");
             return -1;
         }
