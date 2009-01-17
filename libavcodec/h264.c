@@ -2189,7 +2189,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
     if(avctx->codec_id == CODEC_ID_SVQ3)
         avctx->pix_fmt= PIX_FMT_YUVJ420P;
-    else if(avctx->codec_id == CODEC_ID_H264_VDPAU)
+    else if(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
         avctx->pix_fmt= PIX_FMT_VDPAU_H264;
     else
         avctx->pix_fmt= PIX_FMT_YUV420P;
@@ -7293,7 +7293,7 @@ static void execute_decode_slices(H264Context *h, int context_count){
     H264Context *hx;
     int i;
 
-    if(avctx->codec_id == CODEC_ID_H264_VDPAU)
+    if(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
         return;
     if(context_count == 1) {
         decode_slice(avctx, &h);
@@ -7423,7 +7423,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=FF_B_TYPE)
                && (avctx->skip_frame < AVDISCARD_NONKEY || hx->slice_type_nos==FF_I_TYPE)
                && avctx->skip_frame < AVDISCARD_ALL){
-                if(CONFIG_H264_VDPAU_DECODER && avctx->codec_id == CODEC_ID_H264_VDPAU){
+                if(CONFIG_H264_VDPAU_DECODER && s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU){
                     static const uint8_t start_code[] = {0x00, 0x00, 0x01};
                     ff_vdpau_add_data_chunk(s, start_code, sizeof(start_code));
                     ff_vdpau_add_data_chunk(s, &buf[buf_index - consumed], consumed );
@@ -7624,7 +7624,7 @@ static int decode_frame(AVCodecContext *avctx,
         s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_H264;
         s->current_picture_ptr->pict_type= s->pict_type;
 
-        if (CONFIG_H264_VDPAU_DECODER && avctx->codec_id == CODEC_ID_H264_VDPAU)
+        if (CONFIG_H264_VDPAU_DECODER && s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
             ff_vdpau_h264_set_reference_frames(s);
 
         if(!s->dropable) {
@@ -7635,7 +7635,7 @@ static int decode_frame(AVCodecContext *avctx,
         h->prev_frame_num_offset= h->frame_num_offset;
         h->prev_frame_num= h->frame_num;
 
-        if (CONFIG_H264_VDPAU_DECODER && avctx->codec_id == CODEC_ID_H264_VDPAU)
+        if (CONFIG_H264_VDPAU_DECODER && s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
             ff_vdpau_h264_picture_complete(s);
 
         /*
@@ -8027,7 +8027,7 @@ AVCodec h264_decoder = {
 AVCodec h264_vdpau_decoder = {
     "h264_vdpau",
     CODEC_TYPE_VIDEO,
-    CODEC_ID_H264_VDPAU,
+    CODEC_ID_H264,
     sizeof(H264Context),
     decode_init,
     NULL,
