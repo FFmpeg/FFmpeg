@@ -226,6 +226,7 @@ version 0.4.9-pre1:
 - more accurate deblock filter
 - padding support
 - many optimizations and bugfixes
+- FunCom ISS audio file demuxer and according ADPCM decoding
 
 version 0.4.8:
 

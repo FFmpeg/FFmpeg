@@ -78,6 +78,7 @@ OBJS-$(CONFIG_IMAGE2PIPE_MUXER)          += img2.o
 OBJS-$(CONFIG_INGENIENT_DEMUXER)         += raw.o
 OBJS-$(CONFIG_IPMOVIE_DEMUXER)           += ipmovie.o
 OBJS-$(CONFIG_IPOD_MUXER)                += movenc.o riff.o isom.o avc.o
+OBJS-$(CONFIG_ISS_DEMUXER)               += iss.o
 OBJS-$(CONFIG_LMLM4_DEMUXER)             += lmlm4.o
 OBJS-$(CONFIG_M4V_DEMUXER)               += raw.o
 OBJS-$(CONFIG_M4V_MUXER)                 += raw.o

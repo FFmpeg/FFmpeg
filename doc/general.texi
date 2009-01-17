@@ -74,6 +74,8 @@ library:
     @tab .fli/.flc files
 @item FLV                       @tab X @tab X
     @tab Macromedia Flash video files
+@item FunCom ISS                @tab   @tab X
+    @tab Audio format used in various games from FunCom like The Longest Journey.
 @item GXF                       @tab X @tab X
     @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
          playout servers.
@@ -385,6 +387,8 @@ following image formats are supported:
 @item Intel Music Coder      @tab     @tab  X
 @item Interplay MVE DPCM     @tab     @tab  X
     @tab Used in various Interplay computer games.
+@item ISS IMA ADPCM          @tab     @tab  X
+    @tab Used in FunCom games.
 @item MAXIS EA ADPCM         @tab     @tab  X
     @tab Used in Sim City 3000.
 @item Microsoft ADPCM        @tab  X  @tab  X
