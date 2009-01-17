@@ -237,12 +237,12 @@ stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 1058444 ./tests/data/a-pcm_s16le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-5a2c3500cf180e8f5fa47f725d635767 *./tests/data/a-pcm_s16be.mkv
-1066121 ./tests/data/a-pcm_s16be.mkv
+60594366d252826f839d527fb61fd31b *./tests/data/a-pcm_s16be.mkv
+1066118 ./tests/data/a-pcm_s16be.mkv
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-2cc0a1fb4553d29cccfa99d8f4f2d6e8 *./tests/data/a-pcm_s16le.mkv
-1066121 ./tests/data/a-pcm_s16le.mkv
+73172ccaabfc945a6908955951ead16b *./tests/data/a-pcm_s16le.mkv
+1066118 ./tests/data/a-pcm_s16le.mkv
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 4bc4cd19722f6456fd0e9b51ee0c30cf *./tests/data/a-pcm_s24be.mov
