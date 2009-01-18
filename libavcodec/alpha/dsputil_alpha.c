@@ -356,7 +356,11 @@ void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
     put_pixels_clamped_axp_p = c->put_pixels_clamped;
     add_pixels_clamped_axp_p = c->add_pixels_clamped;
 
+    if (!avctx->lowres &&
+        (avctx->idct_algo == FF_IDCT_AUTO ||
+         avctx->idct_algo == FF_IDCT_SIMPLEALPHA)) {
     c->idct_put = simple_idct_put_axp;
     c->idct_add = simple_idct_add_axp;
     c->idct = simple_idct_axp;
+    }
 }
