@@ -1118,6 +1118,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         uint8_t *extradata = NULL;
         int extradata_size = 0;
         int extradata_offset = 0;
+        ByteIOContext b;
 
         /* Apply some sanity checks. */
         if (track->type != MATROSKA_TRACK_TYPE_VIDEO &&
@@ -1201,7 +1202,6 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (!strcmp(track->codec_id, "A_MS/ACM")
                    && track->codec_priv.size >= 18
                    && track->codec_priv.data != NULL) {
-            ByteIOContext b;
             init_put_byte(&b, track->codec_priv.data, track->codec_priv.size,
                           URL_RDONLY, NULL, NULL, NULL, NULL);
             get_wav_header(&b, st->codec, track->codec_priv.size);
@@ -1244,7 +1244,6 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             } else
                 extradata_size = 2;
         } else if (codec_id == CODEC_ID_TTA) {
-            ByteIOContext b;
             extradata_size = 30;
             extradata = av_mallocz(extradata_size);
             if (extradata == NULL)
@@ -1266,8 +1265,6 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             track->audio.channels = 1;
         } else if (codec_id == CODEC_ID_RA_288 || codec_id == CODEC_ID_COOK ||
                    codec_id == CODEC_ID_ATRAC3) {
-            ByteIOContext b;
-
             init_put_byte(&b, track->codec_priv.data,track->codec_priv.size,
                           0, NULL, NULL, NULL, NULL);
             url_fskip(&b, 24);
