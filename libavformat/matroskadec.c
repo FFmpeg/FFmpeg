@@ -1201,8 +1201,13 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (!strcmp(track->codec_id, "A_MS/ACM")
                    && track->codec_priv.size >= 18
                    && track->codec_priv.data != NULL) {
-            uint16_t tag = AV_RL16(track->codec_priv.data);
-            codec_id = codec_get_id(codec_wav_tags, tag);
+            ByteIOContext b;
+            init_put_byte(&b, track->codec_priv.data, track->codec_priv.size,
+                          URL_RDONLY, NULL, NULL, NULL, NULL);
+            get_wav_header(&b, st->codec, track->codec_priv.size);
+            codec_id = st->codec->codec_id;
+            extradata_offset = 18;
+            track->codec_priv.size -= extradata_offset;
         } else if (!strcmp(track->codec_id, "V_QUICKTIME")
                    && (track->codec_priv.size >= 86)
                    && (track->codec_priv.data != NULL)) {
