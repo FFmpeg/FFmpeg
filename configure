@@ -1327,6 +1327,7 @@ EOF
     alpha)
         arch="alpha"
         enable fast_64bit
+        check_cflags -mieee
     ;;
     "Power Macintosh"|ppc|powerpc)
         arch="ppc"
