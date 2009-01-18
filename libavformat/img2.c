@@ -360,6 +360,29 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
         url_fclose(pb[1]);
         url_fclose(pb[2]);
     }else{
+        if(av_str2id(img_tags, s->filename) == CODEC_ID_JPEG2000){
+            AVStream *st = s->streams[0];
+            if(st->codec->extradata_size > 8 &&
+               AV_RL32(st->codec->extradata+4) == MKTAG('j','p','2','h')){
+                if(pkt->size < 8 || AV_RL32(pkt->data+4) != MKTAG('j','p','2','c'))
+                    goto error;
+                put_be32(pb[0], 12);
+                put_tag (pb[0], "jP  ");
+                put_be32(pb[0], 0x0D0A870A); // signature
+                put_be32(pb[0], 20);
+                put_tag (pb[0], "ftyp");
+                put_tag (pb[0], "jp2 ");
+                put_be32(pb[0], 0);
+                put_tag (pb[0], "jp2 ");
+                put_buffer(pb[0], st->codec->extradata, st->codec->extradata_size);
+            }else if(pkt->size < 8 ||
+                     (!st->codec->extradata_size &&
+                      AV_RL32(pkt->data+4) != MKTAG('j','P',' ',' '))){ // signature
+            error:
+                av_log(s, AV_LOG_ERROR, "malformated jpeg2000 codestream\n");
+                return -1;
+            }
+        }
         put_buffer(pb[0], pkt->data, pkt->size);
     }
     put_flush_packet(pb[0]);
@@ -405,7 +428,7 @@ AVOutputFormat image2_muxer = {
     "image2",
     NULL_IF_CONFIG_SMALL("image2 sequence"),
     "",
-    "bmp,jpeg,jpg,ljpg,pam,pbm,pgm,pgmyuv,png,ppm,sgi,tif,tiff",
+    "bmp,jpeg,jpg,ljpg,pam,pbm,pgm,pgmyuv,png,ppm,sgi,tif,tiff,jp2",
     sizeof(VideoData),
     CODEC_ID_NONE,
     CODEC_ID_MJPEG,
