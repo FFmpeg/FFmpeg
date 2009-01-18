@@ -62,12 +62,12 @@ static inline uint64_t WORD_VEC(uint64_t x)
 
 #ifdef __GNUC__
 #define ldq(p)                                                  \
-    (((union {                                                  \
+    (((const union {                                            \
         uint64_t __l;                                           \
         __typeof__(*(p)) __s[sizeof (uint64_t) / sizeof *(p)];  \
     } *) (p))->__l)
 #define ldl(p)                                                  \
-    (((union {                                                  \
+    (((const union {                                            \
         int32_t __l;                                            \
         __typeof__(*(p)) __s[sizeof (int32_t) / sizeof *(p)];   \
     } *) (p))->__l)
