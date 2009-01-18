@@ -334,7 +334,7 @@ static int av_always_inline vc1_filter_line(uint8_t* src, int stride, int pq){
                 d = ((d ^ d_sign) - d_sign) >> 3;
                 d_sign ^= a0_sign;
 
-                if( (d_sign ^ clip_sign) | ~d )
+                if( d_sign ^ clip_sign )
                     d = 0;
                 else{
                     d = FFMIN(d, clip);
