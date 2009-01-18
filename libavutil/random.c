@@ -36,7 +36,7 @@ see http://en.wikipedia.org/wiki/Mersenne_twister for an explanation of this alg
 #define LOWER_MASK 0x7fffffff /* least significant r bits */
 
 /** initializes mt[AV_RANDOM_N] with a seed */
-void av_init_random(unsigned int seed, AVRandomState *state)
+void av_random_init(AVRandomState *state, unsigned int seed)
 {
     int index;
 
@@ -53,6 +53,11 @@ void av_init_random(unsigned int seed, AVRandomState *state)
         state->mt[index] = (1812433253UL * (prev ^ (prev>>30)) + index) & 0xffffffff;
     }
     state->index= index; // will cause it to generate untempered numbers the first iteration
+}
+
+void av_init_random(unsigned int seed, AVRandomState *state)
+{
+    av_random_init(state, seed);
 }
 
 /** generate AV_RANDOM_N words at one time (which will then be tempered later) (av_random calls this; you shouldn't) */

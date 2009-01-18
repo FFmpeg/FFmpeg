@@ -26,13 +26,16 @@
 
 #define AV_RANDOM_N 624
 
+#include "common.h"
+
 typedef struct {
     unsigned int mt[AV_RANDOM_N]; ///< the array for the state vector
     int index; ///< Current untempered value we use as the base.
 } AVRandomState;
 
 
-void av_init_random(unsigned int seed, AVRandomState *state); ///< To be inlined, the struct must be visible. So it does not make sense to try and keep it opaque with malloc/free-like calls.
+attribute_deprecated void av_init_random(unsigned int seed, AVRandomState *state);
+void av_random_init(AVRandomState *state, unsigned int seed); ///< To be inlined, the struct must be visible. So it does not make sense to try and keep it opaque with malloc/free-like calls.
 void av_random_generate_untempered_numbers(AVRandomState *state); ///< Regenerate the untempered numbers (must be done every 624 iterations, or it will loop).
 
 /**
