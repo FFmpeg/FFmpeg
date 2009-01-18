@@ -56,10 +56,11 @@
         .endm
 
 /* chroma_mc8(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) */
-        .macro  h264_chroma_mc8 avg=0
+        .macro  h264_chroma_mc8 type
+function ff_\type\()_h264_chroma_mc8_neon, export=1
         push            {r4-r7, lr}
         ldrd            r4,  [sp, #20]
-.if \avg
+.ifc \type,avg
         mov             lr,  r0
 .endif
         pld             [r1]
@@ -103,7 +104,7 @@
         vld1.64         {d6, d7}, [r5], r4
         pld             [r1]
         vrshrn.u16      d17, q9,  #6
-.if \avg
+.ifc \type,avg
         vld1.64         {d20}, [lr,:64], r2
         vld1.64         {d21}, [lr,:64], r2
         vrhadd.u8       q8,  q8,  q10
@@ -136,7 +137,7 @@
         vld1.64         {d6}, [r5], r4
         vrshrn.u16      d16, q8,  #6
         vrshrn.u16      d17, q9,  #6
-.if \avg
+.ifc \type,avg
         vld1.64         {d20}, [lr,:64], r2
         vld1.64         {d21}, [lr,:64], r2
         vrhadd.u8       q8,  q8,  q10
@@ -165,7 +166,7 @@
         vext.8          d5,  d4,  d5,  #1
         vrshrn.u16      d16, q8,  #6
         vrshrn.u16      d17, q9,  #6
-.if \avg
+.ifc \type,avg
         vld1.64         {d20}, [lr,:64], r2
         vld1.64         {d21}, [lr,:64], r2
         vrhadd.u8       q8,  q8,  q10
@@ -177,13 +178,15 @@
         bgt             5b
 
         pop             {r4-r7, pc}
+        .endfunc
         .endm
 
 /* chroma_mc4(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) */
-        .macro  h264_chroma_mc4 avg=0
+        .macro  h264_chroma_mc4 type
+function ff_\type\()_h264_chroma_mc4_neon, export=1
         push            {r4-r7, lr}
         ldrd            r4,  [sp, #20]
-.if \avg
+.ifc \type,avg
         mov             lr,  r0
 .endif
         pld             [r1]
@@ -230,7 +233,7 @@
         vrshrn.u16      d16, q8,  #6
         subs            r3,  r3,  #2
         pld             [r1]
-.if \avg
+.ifc \type,avg
         vld1.32         {d20[0]}, [lr,:32], r2
         vld1.32         {d20[1]}, [lr,:32], r2
         vrhadd.u8       d16, d16, d20
@@ -265,7 +268,7 @@
         vadd.i16        d16, d16, d17
         vadd.i16        d17, d18, d19
         vrshrn.u16      d16, q8,  #6
-.if \avg
+.ifc \type,avg
         vld1.32         {d20[0]}, [lr,:32], r2
         vld1.32         {d20[1]}, [lr,:32], r2
         vrhadd.u8       d16, d16, d20
@@ -295,7 +298,7 @@
         vadd.i16        d17, d18, d19
         pld             [r1]
         vrshrn.u16      d16, q8,  #6
-.if \avg
+.ifc \type,avg
         vld1.32         {d20[0]}, [lr,:32], r2
         vld1.32         {d20[1]}, [lr,:32], r2
         vrhadd.u8       d16, d16, d20
@@ -309,26 +312,16 @@
         bgt             5b
 
         pop             {r4-r7, pc}
+        .endfunc
         .endm
 
         .text
         .align
 
-function ff_put_h264_chroma_mc8_neon, export=1
-        h264_chroma_mc8
-        .endfunc
-
-function ff_avg_h264_chroma_mc8_neon, export=1
-        h264_chroma_mc8 avg=1
-        .endfunc
-
-function ff_put_h264_chroma_mc4_neon, export=1
-        h264_chroma_mc4
-        .endfunc
-
-function ff_avg_h264_chroma_mc4_neon, export=1
-        h264_chroma_mc4 avg=1
-        .endfunc
+        h264_chroma_mc8 put
+        h264_chroma_mc8 avg
+        h264_chroma_mc4 put
+        h264_chroma_mc4 avg
 
         /* H.264 loop filter */
 
