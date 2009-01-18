@@ -33,8 +33,8 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
 
     for(; i<m->count; i++){
         const char *s= m->elems[i].key;
-        if(flags & AV_METADATA_IGNORE_CASE) for(j=0; toupper(s[j]) == toupper(key[j]) && key[j]; j++);
-        else                                for(j=0;         s[j]  ==         key[j]  && key[j]; j++);
+        if(flags & AV_METADATA_MATCH_CASE) for(j=0;         s[j]  ==         key[j]  && key[j]; j++);
+        else                               for(j=0; toupper(s[j]) == toupper(key[j]) && key[j]; j++);
         if(key[j])
             continue;
         if(s[j] && !(flags & AV_METADATA_IGNORE_SUFFIX))
@@ -47,7 +47,7 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
 int av_metadata_set(AVMetadata **pm, AVMetadataTag elem)
 {
     AVMetadata *m= *pm;
-    AVMetadataTag *tag= av_metadata_get(m, elem.key, NULL, 0);
+    AVMetadataTag *tag= av_metadata_get(m, elem.key, NULL, AV_METADATA_MATCH_CASE);
 
     if(!m)
         m=*pm= av_mallocz(sizeof(*m));

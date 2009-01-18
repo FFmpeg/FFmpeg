@@ -67,7 +67,7 @@ unsigned avformat_version(void);
  *    A demuxer should set a default if it sets any translated tag.
  */
 
-#define AV_METADATA_IGNORE_CASE     1
+#define AV_METADATA_MATCH_CASE      1
 #define AV_METADATA_IGNORE_SUFFIX   2
 
 typedef struct {

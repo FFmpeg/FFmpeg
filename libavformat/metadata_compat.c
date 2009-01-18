@@ -105,8 +105,7 @@ void ff_metadata_demux_compat(AVFormatContext *ctx)
 
 
 #define FILL_METADATA(s, key, value) {                                        \
-    if (value && *value &&                                                    \
-        !av_metadata_get(s->metadata, #key, NULL, AV_METADATA_IGNORE_CASE))   \
+    if (value && *value && !av_metadata_get(s->metadata, #key, NULL, 0))      \
         av_metadata_set(&s->metadata, (const AVMetadataTag){#key, value});    \
     }
 #define FILL_METADATA_STR(s, key)  FILL_METADATA(s, key, s->key)
