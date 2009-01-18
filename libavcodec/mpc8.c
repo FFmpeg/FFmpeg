@@ -100,7 +100,7 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
         return -1;
     }
     memset(c->oldDSCF, 0, sizeof(c->oldDSCF));
-    av_init_random(0xDEADBEEF, &c->rnd);
+    av_random_init(&c->rnd, 0xDEADBEEF);
     dsputil_init(&c->dsp, avctx);
 
     ff_mpc_init();

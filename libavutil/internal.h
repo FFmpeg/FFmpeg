@@ -231,7 +231,7 @@ if((y)<(x)){\
 #undef  rand
 #define rand rand_is_forbidden_due_to_state_trashing_use_av_random
 #undef  srand
-#define srand srand_is_forbidden_due_to_state_trashing_use_av_init_random
+#define srand srand_is_forbidden_due_to_state_trashing_use_av_random_init
 #undef  random
 #define random random_is_forbidden_due_to_state_trashing_use_av_random
 #undef  sprintf

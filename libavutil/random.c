@@ -88,7 +88,7 @@ int main(void)
     int i, j;
     AVRandomState state;
 
-    av_init_random(0xdeadbeef, &state);
+    av_random_init(&state, 0xdeadbeef);
     for (j = 0; j < 10000; j++) {
         START_TIMER
         for (i = 0; i < 624; i++) {

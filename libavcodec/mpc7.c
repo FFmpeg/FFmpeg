@@ -53,7 +53,7 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
         return -1;
     }
     memset(c->oldDSCF, 0, sizeof(c->oldDSCF));
-    av_init_random(0xDEADBEEF, &c->rnd);
+    av_random_init(&c->rnd, 0xDEADBEEF);
     dsputil_init(&c->dsp, avctx);
     c->dsp.bswap_buf((uint32_t*)buf, (const uint32_t*)avctx->extradata, 4);
     ff_mpc_init();

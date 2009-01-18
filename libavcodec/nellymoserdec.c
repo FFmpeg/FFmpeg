@@ -128,7 +128,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     NellyMoserDecodeContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    av_init_random(0, &s->random_state);
+    av_random_init(&s->random_state, 0);
     ff_mdct_init(&s->imdct_ctx, 8, 1);
 
     dsputil_init(&s->dsp, avctx);

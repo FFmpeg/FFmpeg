@@ -4485,7 +4485,7 @@ int main(int argc, char **argv)
 
     unsetenv("http_proxy");             /* Kill the http_proxy */
 
-    av_init_random(av_gettime() + (getpid() << 16), &random_state);
+    av_random_init(&random_state, av_gettime() + (getpid() << 16));
 
     memset(&sigact, 0, sizeof(sigact));
     sigact.sa_handler = handle_child_exit;

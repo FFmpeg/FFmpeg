@@ -35,7 +35,7 @@
  * @param numCB Number of points in the codebook.
  * @param num_steps The maximum number of steps. One step is already a good compromise between time and quality.
  * @param closest_cb Return the closest codebook to each point. Must be allocated.
- * @param rand_state A random number generator state. Should be already initialised by av_init_random.
+ * @param rand_state A random number generator state. Should be already initialised by av_random_init.
  */
 void ff_do_elbg(int *points, int dim, int numpoints, int *codebook,
                 int numCB, int num_steps, int *closest_cb,

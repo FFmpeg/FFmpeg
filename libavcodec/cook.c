@@ -1053,7 +1053,7 @@ static int cook_decode_init(AVCodecContext *avctx)
     q->bit_rate = avctx->bit_rate;
 
     /* Initialize RNG. */
-    av_init_random(1, &q->random_state);
+    av_random_init(&q->random_state, 1);
 
     /* Initialize extradata related variables. */
     q->samples_per_channel = q->samples_per_frame / q->nb_channels;
