@@ -255,7 +255,7 @@ static inline void idct_col2(DCTELEM *col)
     stq(l, col + 14 * 4); stq(r, col + 15 * 4);
 }
 
-void simple_idct_axp(DCTELEM *block)
+void ff_simple_idct_axp(DCTELEM *block)
 {
 
     int i;
@@ -295,14 +295,14 @@ void simple_idct_axp(DCTELEM *block)
     }
 }
 
-void simple_idct_put_axp(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_simple_idct_put_axp(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    simple_idct_axp(block);
+    ff_simple_idct_axp(block);
     put_pixels_clamped_axp_p(block, dest, line_size);
 }
 
-void simple_idct_add_axp(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_simple_idct_add_axp(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    simple_idct_axp(block);
+    ff_simple_idct_axp(block);
     add_pixels_clamped_axp_p(block, dest, line_size);
 }

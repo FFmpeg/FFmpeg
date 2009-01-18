@@ -22,9 +22,9 @@
 #include "libavcodec/dsputil.h"
 #include "asm.h"
 
-void simple_idct_axp(DCTELEM *block);
-void simple_idct_put_axp(uint8_t *dest, int line_size, DCTELEM *block);
-void simple_idct_add_axp(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_simple_idct_axp(DCTELEM *block);
+void ff_simple_idct_put_axp(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_simple_idct_add_axp(uint8_t *dest, int line_size, DCTELEM *block);
 
 void put_pixels_axp_asm(uint8_t *block, const uint8_t *pixels,
                         int line_size, int h);
@@ -359,8 +359,8 @@ void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
     if (!avctx->lowres &&
         (avctx->idct_algo == FF_IDCT_AUTO ||
          avctx->idct_algo == FF_IDCT_SIMPLEALPHA)) {
-        c->idct_put = simple_idct_put_axp;
-        c->idct_add = simple_idct_add_axp;
-        c->idct = simple_idct_axp;
+        c->idct_put = ff_simple_idct_put_axp;
+        c->idct_add = ff_simple_idct_add_axp;
+        c->idct =     ff_simple_idct_axp;
     }
 }
