@@ -48,6 +48,8 @@ AVCodecContext *avctx_opts[CODEC_TYPE_NB];
 AVFormatContext *avformat_opts;
 struct SwsContext *sws_opts;
 
+const int this_year = 2009;
+
 double parse_number_or_die(const char *context, const char *numstr, int type, double min, double max)
 {
     char *tail;
@@ -286,8 +288,8 @@ static void print_all_lib_versions(FILE* outstream, int indent)
 
 void show_banner(void)
 {
-    fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-2009 Fabrice Bellard, et al.\n",
-            program_name, program_birth_year);
+    fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-%d Fabrice Bellard, et al.\n",
+            program_name, program_birth_year, this_year);
     fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
     print_all_lib_versions(stderr, 1);
     fprintf(stderr, "  built on " __DATE__ " " __TIME__);
