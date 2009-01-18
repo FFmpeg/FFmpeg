@@ -740,6 +740,7 @@ CONFIG_LIST="
     avisynth
     beos_netserver
     bzlib
+    fastdiv
     ffmpeg
     ffplay
     ffserver
