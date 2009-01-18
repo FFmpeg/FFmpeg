@@ -32,6 +32,7 @@
 #include "simple_idct.h"
 #include "faandct.h"
 #include "faanidct.h"
+#include "mathops.h"
 #include "h263.h"
 #include "snow.h"
 

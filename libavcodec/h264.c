@@ -32,6 +32,7 @@
 #include "h264data.h"
 #include "h264_parser.h"
 #include "golomb.h"
+#include "mathops.h"
 #include "rectangle.h"
 #include "vdpau_internal.h"
 

@@ -34,6 +34,7 @@
 #include "msmpeg4data.h"
 #include "unary.h"
 #include "simple_idct.h"
+#include "mathops.h"
 
 #undef NDEBUG
 #include <assert.h>

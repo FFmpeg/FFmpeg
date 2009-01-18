@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "golomb.h"
+#include "mathops.h"
 #include "cavs.h"
 #include "cavsdata.h"
 

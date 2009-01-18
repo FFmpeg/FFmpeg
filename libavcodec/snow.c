@@ -23,6 +23,7 @@
 #include "snow.h"
 
 #include "rangecoder.h"
+#include "mathops.h"
 
 #include "mpegvideo.h"
 

@@ -151,47 +151,6 @@ static inline av_const int av_log2_16bit(unsigned int v)
     return n;
 }
 
-/* median of 3 */
-static inline av_const int mid_pred(int a, int b, int c)
-{
-#if HAVE_CMOV
-    int i=b;
-    __asm__ volatile(
-        "cmp    %2, %1 \n\t"
-        "cmovg  %1, %0 \n\t"
-        "cmovg  %2, %1 \n\t"
-        "cmp    %3, %1 \n\t"
-        "cmovl  %3, %1 \n\t"
-        "cmp    %1, %0 \n\t"
-        "cmovg  %1, %0 \n\t"
-        :"+&r"(i), "+&r"(a)
-        :"r"(b), "r"(c)
-    );
-    return i;
-#elif 0
-    int t= (a-b)&((a-b)>>31);
-    a-=t;
-    b+=t;
-    b-= (b-c)&((b-c)>>31);
-    b+= (a-b)&((a-b)>>31);
-
-    return b;
-#else
-    if(a>b){
-        if(c>b){
-            if(c>a) b=a;
-            else    b=c;
-        }
-    }else{
-        if(b>c){
-            if(c>a) b=c;
-            else    b=a;
-        }
-    }
-    return b;
-#endif
-}
-
 /**
  * clip a signed integer value into the amin-amax range
  * @param a value to clip

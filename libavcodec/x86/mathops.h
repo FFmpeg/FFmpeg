@@ -22,6 +22,9 @@
 #ifndef AVCODEC_X86_MATHOPS_H
 #define AVCODEC_X86_MATHOPS_H
 
+#include "config.h"
+#include "libavutil/common.h"
+
 #define MULL(ra, rb, shift) \
         ({ int rt, dummy; __asm__ (\
             "imull %3               \n\t"\
@@ -39,5 +42,26 @@
     ({ int64_t rt;\
      __asm__ ("imull %2\n\t" : "=A"(rt) : "a" ((int)ra), "g" ((int)rb));\
      rt; })
+
+#if HAVE_CMOV
+/* median of 3 */
+#define mid_pred mid_pred
+static inline av_const int mid_pred(int a, int b, int c)
+{
+    int i=b;
+    __asm__ volatile(
+        "cmp    %2, %1 \n\t"
+        "cmovg  %1, %0 \n\t"
+        "cmovg  %2, %1 \n\t"
+        "cmp    %3, %1 \n\t"
+        "cmovl  %3, %1 \n\t"
+        "cmp    %1, %0 \n\t"
+        "cmovg  %1, %0 \n\t"
+        :"+&r"(i), "+&r"(a)
+        :"r"(b), "r"(c)
+    );
+    return i;
+}
+#endif
 
 #endif /* AVCODEC_X86_MATHOPS_H */

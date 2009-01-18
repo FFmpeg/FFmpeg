@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
+#include "mathops.h"
 
 #define VLC_BITS 11
 

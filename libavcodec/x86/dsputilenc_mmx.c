@@ -25,6 +25,7 @@
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
+#include "libavcodec/mathops.h"
 #include "dsputil_mmx.h"
 
 

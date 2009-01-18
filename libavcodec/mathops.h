@@ -83,5 +83,35 @@ static av_always_inline int MULH(int a, int b){
 #   define MLS16(rt, ra, rb) ((rt) -= (ra) * (rb))
 #endif
 
+/* median of 3 */
+#ifndef mid_pred
+#define mid_pred mid_pred
+static inline av_const int mid_pred(int a, int b, int c)
+{
+#if 0
+    int t= (a-b)&((a-b)>>31);
+    a-=t;
+    b+=t;
+    b-= (b-c)&((b-c)>>31);
+    b+= (a-b)&((a-b)>>31);
+
+    return b;
+#else
+    if(a>b){
+        if(c>b){
+            if(c>a) b=a;
+            else    b=c;
+        }
+    }else{
+        if(b>c){
+            if(c>a) b=c;
+            else    b=a;
+        }
+    }
+    return b;
+#endif
+}
+#endif
+
 #endif /* AVCODEC_MATHOPS_H */
 

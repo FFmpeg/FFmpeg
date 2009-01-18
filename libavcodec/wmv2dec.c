@@ -21,6 +21,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "mathops.h"
 #include "msmpeg4.h"
 #include "msmpeg4data.h"
 #include "intrax8.h"

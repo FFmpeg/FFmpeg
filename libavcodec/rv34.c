@@ -28,6 +28,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "golomb.h"
+#include "mathops.h"
 #include "rectangle.h"
 
 #include "rv34vlc.h"

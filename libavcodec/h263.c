@@ -39,6 +39,7 @@
 #include "mpegvideo.h"
 #include "h263data.h"
 #include "mpeg4data.h"
+#include "mathops.h"
 
 //#undef NDEBUG
 //#include <assert.h>

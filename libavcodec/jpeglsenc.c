@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "golomb.h"
+#include "mathops.h"
 #include "dsputil.h"
 #include "mjpeg.h"
 #include "jpegls.h"

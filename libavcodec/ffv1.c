@@ -30,6 +30,7 @@
 #include "dsputil.h"
 #include "rangecoder.h"
 #include "golomb.h"
+#include "mathops.h"
 
 #define MAX_PLANES 4
 #define CONTEXT_SIZE 32

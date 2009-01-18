@@ -60,6 +60,7 @@
 #include "roqvideo.h"
 #include "bytestream.h"
 #include "elbg.h"
+#include "mathops.h"
 
 #define CHROMA_BIAS 1
 

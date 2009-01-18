@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "golomb.h"
+#include "mathops.h"
 
 enum LOCO_MODE {LOCO_UNKN=0, LOCO_CYUY2=-1, LOCO_CRGB=-2, LOCO_CRGBA=-3, LOCO_CYV12=-4,
  LOCO_YUY2=1, LOCO_UYVY=2, LOCO_RGB=3, LOCO_RGBA=4, LOCO_YV12=5};

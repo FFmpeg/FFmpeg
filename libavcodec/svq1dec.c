@@ -37,6 +37,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "mathops.h"
 
 #include "svq1.h"
 
