@@ -70,6 +70,8 @@ void simple_idct_armv5te(DCTELEM *data);
 void ff_simple_idct_armv6(DCTELEM *data);
 void ff_simple_idct_neon(DCTELEM *data);
 
+void ff_simple_idct_axp(DCTELEM *data);
+
 struct algo {
   const char *name;
   enum { FDCT, IDCT } is_idct;
@@ -136,6 +138,10 @@ struct algo algos[] = {
   {"SIMPLE-NEON",     1, ff_simple_idct_neon, idct, PARTTRANS_PERM },
 #endif
 #endif /* ARCH_ARM */
+
+#if ARCH_ALPHA
+  {"SIMPLE-ALPHA",    1, ff_simple_idct_axp,  idct, NO_PERM },
+#endif
 
   { 0 }
 };
