@@ -55,10 +55,12 @@ void av_random_init(AVRandomState *state, unsigned int seed)
     state->index= index; // will cause it to generate untempered numbers the first iteration
 }
 
+#if LIBAVUTIL_VERSION_MAJOR < 50
 void av_init_random(unsigned int seed, AVRandomState *state)
 {
     av_random_init(state, seed);
 }
+#endif
 
 /** generate AV_RANDOM_N words at one time (which will then be tempered later) (av_random calls this; you shouldn't) */
 void av_random_generate_untempered_numbers(AVRandomState *state)
