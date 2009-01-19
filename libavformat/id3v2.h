@@ -32,4 +32,11 @@
  */
 int ff_id3v2_match(const uint8_t *buf);
 
+/**
+ * Gets the length of an ID3v2 tag.
+ * @buf must be ID3v2_HEADER_SIZE bytes long and point to the start of an
+ * already detected ID3v2 tag
+ */
+int ff_id3v2_tag_len(const uint8_t *buf);
+
 #endif /* AVFORMAT_ID3V2_H */

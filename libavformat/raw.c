@@ -26,6 +26,7 @@
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "raw.h"
+#include "id3v2.h"
 
 /* simple formats */
 #if CONFIG_FLAC_MUXER
@@ -582,9 +583,15 @@ static int adts_aac_probe(AVProbeData *p)
 {
     int max_frames = 0, first_frames = 0;
     int fsize, frames;
+    uint8_t *buf0 = p->buf;
     uint8_t *buf2;
-    uint8_t *buf = p->buf;
-    uint8_t *end = buf + p->buf_size - 7;
+    uint8_t *buf;
+    uint8_t *end = buf0 + p->buf_size - 7;
+
+    if (ff_id3v2_match(buf0)) {
+        buf0 += ff_id3v2_tag_len(buf0);
+    }
+    buf = buf0;
 
     for(; buf < end; buf= buf2+1) {
         buf2 = buf;
@@ -599,7 +606,7 @@ static int adts_aac_probe(AVProbeData *p)
             buf2 += fsize;
         }
         max_frames = FFMAX(max_frames, frames);
-        if(buf == p->buf)
+        if(buf == buf0)
             first_frames= frames;
     }
     if   (first_frames>=3) return AVPROBE_SCORE_MAX/2+1;

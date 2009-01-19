@@ -8,7 +8,7 @@ HEADERS = avformat.h avio.h rtsp.h rtspcodes.h
 OBJS = allformats.o cutils.o metadata.o metadata_compat.o options.o os_support.o sdp.o utils.o
 
 # muxers/demuxers
-OBJS-$(CONFIG_AAC_DEMUXER)               += raw.o
+OBJS-$(CONFIG_AAC_DEMUXER)               += raw.o id3v2.o
 OBJS-$(CONFIG_AC3_DEMUXER)               += raw.o
 OBJS-$(CONFIG_AC3_MUXER)                 += raw.o
 OBJS-$(CONFIG_ADTS_MUXER)                += adtsenc.o
@@ -97,7 +97,7 @@ OBJS-$(CONFIG_MP2_MUXER)                 += mp3.o
 OBJS-$(CONFIG_MP3_DEMUXER)               += mp3.o id3v2.o
 OBJS-$(CONFIG_MP3_MUXER)                 += mp3.o
 OBJS-$(CONFIG_MP4_MUXER)                 += movenc.o riff.o isom.o avc.o
-OBJS-$(CONFIG_MPC_DEMUXER)               += mpc.o
+OBJS-$(CONFIG_MPC_DEMUXER)               += mpc.o id3v2.o
 OBJS-$(CONFIG_MPC8_DEMUXER)              += mpc8.o
 OBJS-$(CONFIG_MPEG1SYSTEM_MUXER)         += mpegenc.o
 OBJS-$(CONFIG_MPEG1VCD_MUXER)            += mpegenc.o
