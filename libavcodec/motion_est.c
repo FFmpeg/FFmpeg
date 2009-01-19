@@ -1,6 +1,6 @@
 /*
  * Motion estimation
- * Copyright (c) 2000,2001 Fabrice Bellard.
+ * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2004 Michael Niedermayer
  *
  * new motion estimation (X1/EPZS) by Michael Niedermayer <michaelni@gmx.at>

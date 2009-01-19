@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 The FFmpeg Project.
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *

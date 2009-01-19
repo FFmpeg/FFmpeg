@@ -2,7 +2,7 @@
  * FFT/IFFT transforms
  * AltiVec-enabled
  * Copyright (c) 2003 Romain Dolbeau <romain@dolbeau.org>
- * Based on code Copyright (c) 2002 Fabrice Bellard.
+ * Based on code Copyright (c) 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

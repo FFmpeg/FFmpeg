@@ -1,6 +1,6 @@
 /*
  * AVISynth support for ffmpeg system
- * Copyright (c) 2006 DivX, Inc.
+ * Copyright (c) 2006 DivX, Inc
  *
  * This file is part of FFmpeg.
  *

@@ -1,10 +1,10 @@
 /*
  * DV decoder
- * Copyright (c) 2002 Fabrice Bellard.
- * Copyright (c) 2004 Roman Shaposhnik.
+ * Copyright (c) 2002 Fabrice Bellard
+ * Copyright (c) 2004 Roman Shaposhnik
  *
  * DV encoder
- * Copyright (c) 2003 Roman Shaposhnik.
+ * Copyright (c) 2003 Roman Shaposhnik
  *
  * 50 Mbps (DVCPRO50) support
  * Copyright (c) 2006 Daniel Maas <dmaas@maasdigital.com>

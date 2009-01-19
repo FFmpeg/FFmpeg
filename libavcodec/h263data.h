@@ -1,7 +1,7 @@
 /*
  * copyright (c) 2000,2001 Fabrice Bellard
  * H263+ support
- * copyright (c) 2001 Juan J. Sierralta P.
+ * copyright (c) 2001 Juan J. Sierralta P
  * copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.

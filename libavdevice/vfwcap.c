@@ -1,6 +1,6 @@
 /*
  * VFW capture interface
- * Copyright (c) 2006-2008 Ramiro Polla.
+ * Copyright (c) 2006-2008 Ramiro Polla
  *
  * This file is part of FFmpeg.
  *

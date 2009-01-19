@@ -1,6 +1,6 @@
 /*
  * Misc image conversion routines
- * Copyright (c) 2001, 2002, 2003 Fabrice Bellard.
+ * Copyright (c) 2001, 2002, 2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

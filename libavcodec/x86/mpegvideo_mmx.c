@@ -1,6 +1,6 @@
 /*
  * The simplest mpeg encoder (well, it was the simplest!)
- * Copyright (c) 2000,2001 Fabrice Bellard.
+ * Copyright (c) 2000,2001 Fabrice Bellard
  *
  * Optimized for ia32 CPUs by Nick Kurshev <nickols_k@mail.ru>
  * h263, mpeg1, mpeg2 dequantizer & draw_edges by Michael Niedermayer <michaelni@gmx.at>

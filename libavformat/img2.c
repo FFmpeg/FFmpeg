@@ -1,6 +1,6 @@
 /*
  * Image format
- * Copyright (c) 2000, 2001, 2002 Fabrice Bellard.
+ * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  * Copyright (c) 2004 Michael Niedermayer
  *
  * This file is part of FFmpeg.

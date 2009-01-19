@@ -1,8 +1,8 @@
 /*
  * GIF encoder.
- * Copyright (c) 2000 Fabrice Bellard.
- * Copyright (c) 2002 Francois Revol.
- * Copyright (c) 2006 Baptiste Coudurier.
+ * Copyright (c) 2000 Fabrice Bellard
+ * Copyright (c) 2002 Francois Revol
+ * Copyright (c) 2006 Baptiste Coudurier
  *
  * This file is part of FFmpeg.
  *

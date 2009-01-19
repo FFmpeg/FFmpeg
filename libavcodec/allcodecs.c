@@ -1,6 +1,6 @@
 /*
  * Provides registration of all codecs, parsers and bitstream filters for libavcodec.
- * Copyright (c) 2002 Fabrice Bellard.
+ * Copyright (c) 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

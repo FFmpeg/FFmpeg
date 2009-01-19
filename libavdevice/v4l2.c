@@ -1,7 +1,7 @@
 /*
  * Video4Linux2 grab interface
- * Copyright (c) 2000,2001 Fabrice Bellard.
- * Copyright (c) 2006 Luca Abeni.
+ * Copyright (c) 2000,2001 Fabrice Bellard
+ * Copyright (c) 2006 Luca Abeni
  *
  * Part of this file is based on the V4L2 video capture example
  * (http://v4l2spec.bytesex.org/v4l2spec/capture.c)

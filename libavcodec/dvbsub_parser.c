@@ -1,6 +1,6 @@
 /*
  * DVB subtitle parser for FFmpeg
- * Copyright (c) 2005 Ian Caulfield.
+ * Copyright (c) 2005 Ian Caulfield
  *
  * This file is part of FFmpeg.
  *

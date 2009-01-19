@@ -1,6 +1,6 @@
 /*
  * DSP utils mmx functions are compiled twice for rnd/no_rnd
- * Copyright (c) 2000, 2001 Fabrice Bellard.
+ * Copyright (c) 2000, 2001 Fabrice Bellard
  * Copyright (c) 2003-2004 Michael Niedermayer <michaelni@gmx.at>
  *
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>

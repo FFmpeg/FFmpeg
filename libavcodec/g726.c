@@ -1,6 +1,6 @@
 /*
  * G.726 ADPCM audio codec
- * Copyright (c) 2004 Roman Shaposhnik.
+ * Copyright (c) 2004 Roman Shaposhnik
  *
  * This is a very straightforward rendition of the G.726
  * Section 4 "Computational Details".

@@ -1,6 +1,6 @@
 /*
  * FLV demuxer
- * Copyright (c) 2003 The FFmpeg Project.
+ * Copyright (c) 2003 The FFmpeg Project
  *
  * This demuxer will generate a 1 byte extradata for VP6F content.
  * It is composed of:

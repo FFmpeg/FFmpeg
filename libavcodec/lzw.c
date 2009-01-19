@@ -1,7 +1,7 @@
 /*
  * LZW decoder
- * Copyright (c) 2003 Fabrice Bellard.
- * Copyright (c) 2006 Konstantin Shishkov.
+ * Copyright (c) 2003 Fabrice Bellard
+ * Copyright (c) 2006 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
  *

@@ -1,6 +1,6 @@
 /*
  * THP Demuxer
- * Copyright (c) 2007 Marco Gerards.
+ * Copyright (c) 2007 Marco Gerards
  *
  * This file is part of FFmpeg.
  *

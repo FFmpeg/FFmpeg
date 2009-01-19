@@ -1,6 +1,6 @@
 /*
  * ISO Media common code
- * Copyright (c) 2001 Fabrice Bellard.
+ * Copyright (c) 2001 Fabrice Bellard
  * Copyright (c) 2002 Francois Revol <revol@free.fr>
  * Copyright (c) 2006 Baptiste Coudurier <baptiste.coudurier@free.fr>
  *

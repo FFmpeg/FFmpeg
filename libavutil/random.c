@@ -1,6 +1,6 @@
 /*
  * Mersenne Twister Random Algorithm
- * Copyright (c) 2006 Ryan Martell.
+ * Copyright (c) 2006 Ryan Martell
  * Based on A C-program for MT19937, with initialization improved 2002/1/26. Coded by
  * Takuji Nishimura and Makoto Matsumoto.
  *

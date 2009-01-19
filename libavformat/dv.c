@@ -6,7 +6,7 @@
  * of DV technical info.
  *
  * Raw DV format
- * Copyright (c) 2002 Fabrice Bellard.
+ * Copyright (c) 2002 Fabrice Bellard
  *
  * 50 Mbps (DVCPRO50) and 100 Mbps (DVCPRO HD) support
  * Copyright (c) 2006 Daniel Maas <dmaas@maasdigital.com>

@@ -1,6 +1,6 @@
 /*
  * The simplest mpeg audio layer 2 encoder
- * Copyright (c) 2000, 2001 Fabrice Bellard.
+ * Copyright (c) 2000, 2001 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

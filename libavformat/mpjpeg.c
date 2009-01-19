@@ -1,6 +1,6 @@
 /*
  * Multipart JPEG format
- * Copyright (c) 2000, 2001, 2002, 2003 Fabrice Bellard.
+ * Copyright (c) 2000, 2001, 2002, 2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

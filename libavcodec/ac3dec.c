@@ -3,7 +3,7 @@
  * This code was developed as part of Google Summer of Code 2006.
  * E-AC-3 support was added as part of Google Summer of Code 2007.
  *
- * Copyright (c) 2006 Kartikey Mahendra BHATT (bhattkm at gmail dot com).
+ * Copyright (c) 2006 Kartikey Mahendra BHATT (bhattkm at gmail dot com)
  * Copyright (c) 2007-2008 Bartlomiej Wolowiec <bartek.wolowiec@gmail.com>
  * Copyright (c) 2007 Justin Ruggles <justin.ruggles@gmail.com>
  *

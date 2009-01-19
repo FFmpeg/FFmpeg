@@ -1,6 +1,6 @@
 /*
  * WMA compatible codec
- * Copyright (c) 2002-2007 The FFmpeg Project.
+ * Copyright (c) 2002-2007 The FFmpeg Project
  *
  * This file is part of FFmpeg.
  *

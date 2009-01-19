@@ -1,6 +1,6 @@
 /*
  * RTP packetization for H.264 (RFC3984)
- * Copyright (c) 2008 Luca Abeni.
+ * Copyright (c) 2008 Luca Abeni
  *
  * This file is part of FFmpeg.
  *

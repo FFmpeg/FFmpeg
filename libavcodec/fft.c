@@ -1,7 +1,7 @@
 /*
  * FFT/IFFT transforms
  * Copyright (c) 2008 Loren Merritt
- * Copyright (c) 2002 Fabrice Bellard.
+ * Copyright (c) 2002 Fabrice Bellard
  * Partly based on libdjbfft by D. J. Bernstein
  *
  * This file is part of FFmpeg.

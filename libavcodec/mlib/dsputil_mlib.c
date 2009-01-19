@@ -1,6 +1,6 @@
 /*
  * Sun mediaLib optimized DSP utils
- * Copyright (c) 2001 Fabrice Bellard.
+ * Copyright (c) 2001 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

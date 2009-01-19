@@ -1,6 +1,6 @@
 /*
  * MPEG Audio decoder
- * Copyright (c) 2001, 2002 Fabrice Bellard.
+ * Copyright (c) 2001, 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

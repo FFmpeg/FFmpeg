@@ -1,8 +1,8 @@
 /*
  * H263/MPEG4 backend for ffmpeg encoder and decoder
- * Copyright (c) 2000,2001 Fabrice Bellard.
+ * Copyright (c) 2000,2001 Fabrice Bellard
  * H263+ support.
- * Copyright (c) 2001 Juan J. Sierralta P.
+ * Copyright (c) 2001 Juan J. Sierralta P
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
  * ac prediction encoding, B-frame support, error resilience, optimizations,

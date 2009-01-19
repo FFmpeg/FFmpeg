@@ -1,6 +1,6 @@
 /*
  * DVD subtitle decoding for ffmpeg
- * Copyright (c) 2005 Fabrice Bellard.
+ * Copyright (c) 2005 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

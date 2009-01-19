@@ -1,6 +1,6 @@
 /*
  * imx dump header bitstream filter
- * Copyright (c) 2007 Baptiste Coudurier.
+ * Copyright (c) 2007 Baptiste Coudurier
  *
  * This file is part of FFmpeg.
  *

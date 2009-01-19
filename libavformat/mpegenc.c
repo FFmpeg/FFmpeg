@@ -1,6 +1,6 @@
 /*
  * MPEG1/2 muxer
- * Copyright (c) 2000, 2001, 2002 Fabrice Bellard.
+ * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

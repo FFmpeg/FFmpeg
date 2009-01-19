@@ -1,6 +1,6 @@
 /*
  * RTP H264 Protocol (RFC3984)
- * Copyright (c) 2006 Ryan Martell.
+ * Copyright (c) 2006 Ryan Martell
  *
  * This file is part of FFmpeg.
  *

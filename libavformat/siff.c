@@ -1,6 +1,6 @@
 /*
  * Beam Software SIFF demuxer
- * Copyright (c) 2007 Konstantin Shishkov.
+ * Copyright (c) 2007 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
  *

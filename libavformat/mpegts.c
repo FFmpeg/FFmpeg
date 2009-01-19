@@ -1,6 +1,6 @@
 /*
  * MPEG2 transport stream (aka DVB) demuxer
- * Copyright (c) 2002-2003 Fabrice Bellard.
+ * Copyright (c) 2002-2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

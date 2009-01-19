@@ -1,6 +1,6 @@
 /*
  * "Real" compatible muxer and demuxer.
- * Copyright (c) 2000, 2001 Fabrice Bellard.
+ * Copyright (c) 2000, 2001 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

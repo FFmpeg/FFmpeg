@@ -6,7 +6,7 @@
  * of DV technical info.
  *
  * Raw DV format
- * Copyright (c) 2002 Fabrice Bellard.
+ * Copyright (c) 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

@@ -1,6 +1,6 @@
 /*
  * NuppelVideo demuxer.
- * Copyright (c) 2006 Reimar Doeffinger.
+ * Copyright (c) 2006 Reimar Doeffinger
  *
  * This file is part of FFmpeg.
  *

@@ -1,6 +1,6 @@
 /*
  * MMX optimized motion estimation
- * Copyright (c) 2001 Fabrice Bellard.
+ * Copyright (c) 2001 Fabrice Bellard
  * Copyright (c) 2002-2004 Michael Niedermayer
  *
  * mostly by Michael Niedermayer <michaelni@gmx.at>

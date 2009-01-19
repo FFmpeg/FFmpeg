@@ -2,7 +2,7 @@
  * Video Decode and Presentation API for UNIX (VDPAU) is used for
  * HW decode acceleration for MPEG-1/2, H.264 and VC-1.
  *
- * Copyright (c) 2008 NVIDIA.
+ * Copyright (c) 2008 NVIDIA
  *
  * This file is part of FFmpeg.
  *

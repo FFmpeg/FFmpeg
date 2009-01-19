@@ -1,6 +1,6 @@
 /*
  * DSP utils : average functions are compiled twice for 3dnow/mmx2
- * Copyright (c) 2000, 2001 Fabrice Bellard.
+ * Copyright (c) 2000, 2001 Fabrice Bellard
  * Copyright (c) 2002-2004 Michael Niedermayer
  *
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>

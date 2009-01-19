@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 Roman Shaposhnik.
+ * Copyright (c) 2004 Roman Shaposhnik
  *
  * Many thanks to Steven M. Schultz for providing clever ideas and
  * to Michael Niedermayer <michaelni@gmx.at> for writing initial

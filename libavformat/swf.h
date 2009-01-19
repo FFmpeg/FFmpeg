@@ -1,7 +1,7 @@
 /*
  * Flash Compatible Streaming Format common header.
- * Copyright (c) 2000 Fabrice Bellard.
- * Copyright (c) 2003 Tinic Uro.
+ * Copyright (c) 2000 Fabrice Bellard
+ * Copyright (c) 2003 Tinic Uro
  *
  * This file is part of FFmpeg.
  *

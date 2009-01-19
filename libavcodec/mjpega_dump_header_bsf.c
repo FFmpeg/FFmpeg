@@ -1,6 +1,6 @@
 /*
  * MJPEG A dump header bitstream filter
- * Copyright (c) 2006 Baptiste Coudurier.
+ * Copyright (c) 2006 Baptiste Coudurier
  *
  * This file is part of FFmpeg.
  *

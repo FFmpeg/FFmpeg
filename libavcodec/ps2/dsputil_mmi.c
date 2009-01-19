@@ -1,6 +1,6 @@
 /*
  * MMI optimized DSP utils
- * Copyright (c) 2000, 2001 Fabrice Bellard.
+ * Copyright (c) 2000, 2001 Fabrice Bellard
  *
  * MMI optimization by Leon van Stuivenberg
  * clear_blocks_mmi() by BroadQ

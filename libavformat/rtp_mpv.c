@@ -1,7 +1,7 @@
 /*
  * RTP packetization for MPEG video
- * Copyright (c) 2002 Fabrice Bellard.
- * Copyright (c) 2007 Luca Abeni.
+ * Copyright (c) 2002 Fabrice Bellard
+ * Copyright (c) 2007 Luca Abeni
  *
  * This file is part of FFmpeg.
  *

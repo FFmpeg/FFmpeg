@@ -1,6 +1,6 @@
 /*
  * The simplest AC-3 encoder
- * Copyright (c) 2000 Fabrice Bellard.
+ * Copyright (c) 2000 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *

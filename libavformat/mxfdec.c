@@ -1,6 +1,6 @@
 /*
  * MXF demuxer.
- * Copyright (c) 2006 SmartJog S.A., Baptiste Coudurier <baptiste dot coudurier at smartjog dot com>.
+ * Copyright (c) 2006 SmartJog S.A., Baptiste Coudurier <baptiste dot coudurier at smartjog dot com>
  *
  * This file is part of FFmpeg.
  *

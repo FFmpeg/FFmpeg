@@ -1,6 +1,6 @@
 /*
  * WavPack demuxer
- * Copyright (c) 2006 Konstantin Shishkov.
+ * Copyright (c) 2006 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
  *
