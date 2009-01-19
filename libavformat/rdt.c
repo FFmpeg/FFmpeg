@@ -33,7 +33,7 @@
 #include "libavutil/md5.h"
 #include "rm.h"
 #include "internal.h"
-#include <libavcodec/bitstream.h>
+#include "libavcodec/bitstream.h"
 
 struct RDTDemuxContext {
     AVFormatContext *ic; /**< the containing (RTSP) demux context */

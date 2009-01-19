@@ -25,9 +25,9 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "libavutil/avstring.h"
 #include "avcodec.h"
 #include "audioconvert.h"
-#include <libavutil/avstring.h>
 
 typedef struct SampleFmtInfo {
     const char *name;
