@@ -53,8 +53,9 @@ typedef struct {
     int buffer_ptr;
 } AudioData;
 
-static int audio_open(AudioData *s, int is_output, const char *audio_device)
+static int audio_open(AVFormatContext *s1, int is_output, const char *audio_device)
 {
+    AudioData *s = s1->priv_data;
     int audio_fd;
     int tmp, err;
     char *flip = getenv("AUDIO_FLIP_LEFT");
@@ -162,7 +163,7 @@ static int audio_write_header(AVFormatContext *s1)
     st = s1->streams[0];
     s->sample_rate = st->codec->sample_rate;
     s->channels = st->codec->channels;
-    ret = audio_open(s, 1, s1->filename);
+    ret = audio_open(s1, 1, s1->filename);
     if (ret < 0) {
         return AVERROR(EIO);
     } else {
@@ -225,7 +226,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->sample_rate = ap->sample_rate;
     s->channels = ap->channels;
 
-    ret = audio_open(s, 0, s1->filename);
+    ret = audio_open(s1, 0, s1->filename);
     if (ret < 0) {
         av_free(st);
         return AVERROR(EIO);
