@@ -353,13 +353,22 @@ static int gxf_write_flt_packet(ByteIOContext *pb, GXFContext *ctx)
 
 static int gxf_write_umf_material_description(ByteIOContext *pb, GXFContext *ctx)
 {
+    // XXX drop frame
+    int fps = ctx->sample_rate / 2;
+    int frames = ctx->nb_frames / 2;
+    uint32_t timecode =
+        frames % fps             << 24 | // frames
+        frames / fps % 60        << 16 | // seconds
+        frames / fps * 60 % 60   <<  8 | // minutes
+        frames / fps * 3600 % 24 <<  3;  // hours
+
     put_le32(pb, ctx->flags);
     put_le32(pb, ctx->nb_frames); /* length of the longest track */
     put_le32(pb, ctx->nb_frames); /* length of the shortest track */
     put_le32(pb, 0); /* mark in */
     put_le32(pb, ctx->nb_frames); /* mark out */
     put_le32(pb, 0); /* timecode mark in */
-    put_le32(pb, ctx->nb_frames); /* timecode mark out */
+    put_le32(pb, timecode); /* timecode mark out */
     put_le64(pb, ctx->fc->timestamp); /* modification time */
     put_le64(pb, ctx->fc->timestamp); /* creation time */
     put_le16(pb, 0); /* reserved */

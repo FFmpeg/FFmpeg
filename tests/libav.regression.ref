@@ -27,7 +27,7 @@ af78858062599fcbba049e4a02588a15 *./tests/data/b-libav.mov
 913b6199765b1dcba196706574621c2f *./tests/data/b-libav.dv
 3600000 ./tests/data/b-libav.dv
 ./tests/data/b-libav.dv CRC=0x7787e173
-8a6452b105db3e112fb041a98eda7ea5 *./tests/data/b-libav.gxf
+a8d66ca88df1f6ba7806f11224d03adc *./tests/data/b-libav.gxf
 805992 ./tests/data/b-libav.gxf
 ./tests/data/b-libav.gxf CRC=0x9c06676e
 66a6584f9e83e8ea3af822a3ba71fbbe *./tests/data/b-libav.nut
