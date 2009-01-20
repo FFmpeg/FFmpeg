@@ -693,11 +693,8 @@ static int gxf_write_trailer(AVFormatContext *s)
     int i;
 
     for (i = 0; i < s->nb_streams; ++i) {
-        if (s->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO) {
+        if (s->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO)
             av_fifo_free(&gxf->streams[i].audio_buffer);
-        } else if (s->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO) {
-            gxf->nb_frames = 2 * s->streams[i]->codec->frame_number;
-        }
     }
 
     gxf_write_eos_packet(pb, gxf);
@@ -772,6 +769,10 @@ static int gxf_write_media_packet(ByteIOContext *pb, GXFContext *ctx, AVPacket *
     gxf_write_media_preamble(pb, ctx, pkt, pkt->size + padding);
     put_buffer(pb, pkt->data, pkt->size);
     gxf_write_padding(pb, padding);
+
+    if (sc->codec->codec_type == CODEC_TYPE_VIDEO)
+        ctx->nb_frames += 2; // count fields
+
     return updatePacketSize(pb, pos);
 }
 
