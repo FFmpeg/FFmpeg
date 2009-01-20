@@ -70,8 +70,8 @@ struct vdpau_render_state {
 
     /** picture parameter information for all supported codecs */
     union VdpPictureInfo {
-        VdpPictureInfoMPEG1Or2 mpeg;
         VdpPictureInfoH264     h264;
+        VdpPictureInfoMPEG1Or2 mpeg;
         VdpPictureInfoVC1       vc1;
     } info;
 
