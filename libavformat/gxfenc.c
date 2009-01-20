@@ -169,7 +169,7 @@ static void gxf_write_packet_header(ByteIOContext *pb, GXFPktType type)
 static int gxf_write_mpeg_auxiliary(ByteIOContext *pb, GXFStreamContext *ctx)
 {
     char buffer[1024];
-    int size;
+    int size, starting_line;
 
     if (ctx->iframes) {
         ctx->p_per_gop = ctx->pframes / ctx->iframes;
@@ -182,11 +182,18 @@ static int gxf_write_mpeg_auxiliary(ByteIOContext *pb, GXFStreamContext *ctx)
         if (ctx->b_per_gop > 9)
             ctx->b_per_gop = 9; /* ensure value won't take more than one char */
     }
+    if (ctx->codec->height == 512 || ctx->codec->height == 608)
+        starting_line = 7; // VBI
+    else if (ctx->codec->height == 480)
+        starting_line = 20;
+    else
+        starting_line = 23; // default PAL
+
     size = snprintf(buffer, 1024, "Ver 1\nBr %.6f\nIpg 1\nPpi %d\nBpiop %d\n"
-                    "Pix 0\nCf %d\nCg %d\nSl 7\nnl16 %d\nVi 1\nf1 1\n",
+                    "Pix 0\nCf %d\nCg %d\nSl %d\nnl16 %d\nVi 1\nf1 1\n",
                     (float)ctx->codec->bit_rate, ctx->p_per_gop, ctx->b_per_gop,
                     ctx->codec->pix_fmt == PIX_FMT_YUV422P ? 2 : 1, ctx->first_gop_closed == 1,
-                    ctx->codec->height / 16);
+                    starting_line, ctx->codec->height / 16);
     put_byte(pb, TRACK_MPG_AUX);
     put_byte(pb, size + 1);
     put_buffer(pb, (uint8_t *)buffer, size + 1);
