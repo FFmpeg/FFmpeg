@@ -458,6 +458,10 @@ const char *sws_format_name(enum PixelFormat format)
             return "vdpau_mpeg1";
         case PIX_FMT_VDPAU_MPEG2:
             return "vdpau_mpeg2";
+        case PIX_FMT_VDPAU_WMV3:
+            return "vdpau_wmv3";
+        case PIX_FMT_VDPAU_VC1:
+            return "vdpau_vc1";
         default:
             return "Unknown format";
     }
