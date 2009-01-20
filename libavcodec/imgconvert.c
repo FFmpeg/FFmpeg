@@ -276,6 +276,12 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     [PIX_FMT_VDPAU_H264] = {
         .name = "vdpau_h264",
     },
+    [PIX_FMT_VDPAU_WMV3] = {
+        .name = "vdpau_wmv3",
+    },
+    [PIX_FMT_VDPAU_VC1] = {
+        .name = "vdpau_vc1",
+    },
     [PIX_FMT_UYYVYY411] = {
         .name = "uyyvyy411",
         .nb_channels = 1,

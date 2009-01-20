@@ -35,6 +35,7 @@
 #include "unary.h"
 #include "simple_idct.h"
 #include "mathops.h"
+#include "vdpau_internal.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -4130,6 +4131,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     MpegEncContext *s = &v->s;
     AVFrame *pict = data;
     uint8_t *buf2 = NULL;
+    const uint8_t *buf_vdpau = buf;
 
     /* no supplementary picture */
     if (buf_size == 0) {
@@ -4151,6 +4153,13 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         s->current_picture_ptr= &s->picture[i];
     }
 
+    if (s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU){
+        if (v->profile < PROFILE_ADVANCED)
+            avctx->pix_fmt = PIX_FMT_VDPAU_WMV3;
+        else
+            avctx->pix_fmt = PIX_FMT_VDPAU_VC1;
+    }
+
     //for advanced profile we may need to parse and unescape data
     if (avctx->codec_id == CODEC_ID_VC1) {
         int buf_size2 = 0;
@@ -4167,6 +4176,8 @@ static int vc1_decode_frame(AVCodecContext *avctx,
                 if(size <= 0) continue;
                 switch(AV_RB32(start)){
                 case VC1_CODE_FRAME:
+                    if (s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+                        buf_vdpau = start;
                     buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
                     break;
                 case VC1_CODE_ENTRYPOINT: /* it should be before frame data */
@@ -4255,6 +4266,10 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     s->me.qpel_put= s->dsp.put_qpel_pixels_tab;
     s->me.qpel_avg= s->dsp.avg_qpel_pixels_tab;
 
+    if ((CONFIG_VC1_VDPAU_DECODER || CONFIG_WMV3_VDPAU_DECODER)
+        &&s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+        ff_vdpau_vc1_decode_picture(s, buf_vdpau, (buf + buf_size) - buf_vdpau);
+    else {
     ff_er_frame_start(s);
 
     v->bits = buf_size * 8;
@@ -4263,6 +4278,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
 //  if(get_bits_count(&s->gb) > buf_size * 8)
 //      return -1;
     ff_er_frame_end(s);
+    }
 
     MPV_frame_end(s);
 
@@ -4336,3 +4352,35 @@ AVCodec wmv3_decoder = {
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
 };
+
+#if CONFIG_WMV3_VDPAU_DECODER
+AVCodec wmv3_vdpau_decoder = {
+    "wmv3_vdpau",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_WMV3,
+    sizeof(VC1Context),
+    vc1_decode_init,
+    NULL,
+    vc1_decode_end,
+    vc1_decode_frame,
+    CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
+    NULL,
+    .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9 VDPAU"),
+};
+#endif
+
+#if CONFIG_VC1_VDPAU_DECODER
+AVCodec vc1_vdpau_decoder = {
+    "vc1_vdpau",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_VC1,
+    sizeof(VC1Context),
+    vc1_decode_init,
+    NULL,
+    vc1_decode_end,
+    vc1_decode_frame,
+    CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
+    NULL,
+    .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1 VDPAU"),
+};
+#endif
