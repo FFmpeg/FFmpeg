@@ -65,7 +65,7 @@ static int audio_open(AVFormatContext *s1, int is_output, const char *audio_devi
     else
         audio_fd = open(audio_device, O_RDONLY);
     if (audio_fd < 0) {
-        av_log(NULL, AV_LOG_ERROR, "%s: %s\n", audio_device, strerror(errno));
+        av_log(s1, AV_LOG_ERROR, "%s: %s\n", audio_device, strerror(errno));
         return AVERROR(EIO);
     }
 
@@ -115,27 +115,27 @@ static int audio_open(AVFormatContext *s1, int is_output, const char *audio_devi
         s->codec_id = CODEC_ID_PCM_S16BE;
         break;
     default:
-        av_log(NULL, AV_LOG_ERROR, "Soundcard does not support 16 bit sample format\n");
+        av_log(s1, AV_LOG_ERROR, "Soundcard does not support 16 bit sample format\n");
         close(audio_fd);
         return AVERROR(EIO);
     }
     err=ioctl(audio_fd, SNDCTL_DSP_SETFMT, &tmp);
     if (err < 0) {
-        av_log(NULL, AV_LOG_ERROR, "SNDCTL_DSP_SETFMT: %s\n", strerror(errno));
+        av_log(s1, AV_LOG_ERROR, "SNDCTL_DSP_SETFMT: %s\n", strerror(errno));
         goto fail;
     }
 
     tmp = (s->channels == 2);
     err = ioctl(audio_fd, SNDCTL_DSP_STEREO, &tmp);
     if (err < 0) {
-        av_log(NULL, AV_LOG_ERROR, "SNDCTL_DSP_STEREO: %s\n", strerror(errno));
+        av_log(s1, AV_LOG_ERROR, "SNDCTL_DSP_STEREO: %s\n", strerror(errno));
         goto fail;
     }
 
     tmp = s->sample_rate;
     err = ioctl(audio_fd, SNDCTL_DSP_SPEED, &tmp);
     if (err < 0) {
-        av_log(NULL, AV_LOG_ERROR, "SNDCTL_DSP_SPEED: %s\n", strerror(errno));
+        av_log(s1, AV_LOG_ERROR, "SNDCTL_DSP_SPEED: %s\n", strerror(errno));
         goto fail;
     }
     s->sample_rate = tmp; /* store real sample rate */
