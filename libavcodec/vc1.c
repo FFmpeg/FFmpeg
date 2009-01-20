@@ -4270,14 +4270,14 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         &&s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
         ff_vdpau_vc1_decode_picture(s, buf_vdpau, (buf + buf_size) - buf_vdpau);
     else {
-    ff_er_frame_start(s);
+        ff_er_frame_start(s);
 
-    v->bits = buf_size * 8;
-    vc1_decode_blocks(v);
+        v->bits = buf_size * 8;
+        vc1_decode_blocks(v);
 //av_log(s->avctx, AV_LOG_INFO, "Consumed %i/%i bits\n", get_bits_count(&s->gb), buf_size*8);
 //  if(get_bits_count(&s->gb) > buf_size * 8)
 //      return -1;
-    ff_er_frame_end(s);
+        ff_er_frame_end(s);
     }
 
     MPV_frame_end(s);
