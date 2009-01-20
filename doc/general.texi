@@ -123,6 +123,8 @@ library:
 @item raw MPEG-4 video          @tab X @tab X
 @item raw PCM 8/16/32 bits, 32/64-bit floating point, mu-law/A-law @tab X  @tab  X
 @item raw Shorten audio         @tab    @tab  X
+@item R3D REDCODE               @tab   @tab X
+    @tab File format used by RED Digital cameras, contains JPEG 2000 frames and PCM audio.
 @item RealMedia                 @tab X @tab X
 @item RL2                       @tab   @tab X
     @tab Audio and video format used in some games by Entertainment Software Partners.

@@ -272,6 +272,7 @@ Muxers/Demuxers:
   oggparseogm.c                         Mans Rullgard
   psxstr.c                              Mike Melanson
   pva.c                                 Ivo van Poorten
+  r3d.c                                 Baptiste Coudurier
   raw.c                                 Michael Niedermayer
   rl2.c                                 Sascha Sommer
   rm.c                                  Roberto Togni

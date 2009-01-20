@@ -144,6 +144,7 @@ version <next>
 - RV30 and RV40 decoder
 - QCELP / PureVoice decoder
 - hybrid WavPack support
+- R3D REDCODE demuxer
 
 version 0.4.9-pre1:
 
