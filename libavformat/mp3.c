@@ -364,7 +364,7 @@ static int mp3_read_probe(AVProbeData *p)
 
     max_frames = 0;
     buf = buf0;
-    end = buf + p->buf_size - sizeof(uint32_t);
+    end = p->buf + p->buf_size - sizeof(uint32_t);
 
     for(; buf < end; buf= buf2+1) {
         buf2 = buf;
