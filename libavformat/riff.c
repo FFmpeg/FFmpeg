@@ -71,6 +71,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('D', 'M', 'K', '2') },
     { CODEC_ID_MPEG4,        MKTAG('D', 'I', 'G', 'I') },
     { CODEC_ID_MPEG4,        MKTAG('I', 'N', 'M', 'C') },
+    { CODEC_ID_MPEG4,        MKTAG('E', 'P', 'H', 'V') }, /* Ephv MPEG-4 */
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', 'G', '3') },
