@@ -100,12 +100,11 @@ char *av_base64_encode(char * buf, int buf_len, const uint8_t * src, int len)
     return ret;
 }
 
-// #define TEST_BASE64
+#ifdef TEST
+#include "log.h"
+#include "mem.h"
 
-#ifdef TEST_BASE64
-#include "avutil.h"
-
-int b64test(void)
+int main(void)
 {
     int numerr = 0;
     int len;
