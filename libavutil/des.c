@@ -291,7 +291,10 @@ static uint64_t rand64(void) {
 }
 
 int main(void) {
-    int i, j;
+    int i;
+#ifdef GENTABLES
+    int j;
+#endif
     struct timeval tv;
     uint64_t key;
     uint64_t data;
