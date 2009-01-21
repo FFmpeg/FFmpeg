@@ -105,7 +105,7 @@ char *av_base64_encode(char * buf, int buf_len, const uint8_t * src, int len)
 #ifdef TEST_BASE64
 #include "avutil.h"
 
-int b64test()
+int b64test(void)
 {
     int numerr = 0;
     int len;
