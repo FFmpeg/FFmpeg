@@ -494,7 +494,7 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = st->priv_data;
     int version = get_byte(pb);
-    int lang;
+    unsigned lang;
 
     if (version > 1)
         return -1; /* unsupported */
