@@ -82,8 +82,7 @@ static int vmd_read_header(AVFormatContext *s,
     int64_t current_offset;
     int i, j;
     unsigned int total_frames;
-    int64_t pts_inc = 1;
-    int64_t current_video_pts = 0, current_audio_pts = 0;
+    int64_t current_audio_pts = 0;
     unsigned char chunk[BYTES_PER_FRAME_RECORD];
     int num, den;
     int sound_buffers;
@@ -144,7 +143,6 @@ static int vmd_read_header(AVFormatContext *s,
         av_reduce(&den, &num, den, num, (1UL<<31)-1);
         av_set_pts_info(vst, 33, num, den);
         av_set_pts_info(st, 33, num, den);
-        pts_inc = num;
     }
 
     toc_offset = AV_RL32(&vmd->vmd_header[812]);
@@ -199,20 +197,22 @@ static int vmd_read_header(AVFormatContext *s,
                 memcpy(vmd->frame_table[total_frames].frame_record, chunk, BYTES_PER_FRAME_RECORD);
                 vmd->frame_table[total_frames].pts = current_audio_pts;
                 total_frames++;
-                current_audio_pts += pts_inc;
+                if(!current_audio_pts)
+                    current_audio_pts += sound_buffers;
+                else
+                    current_audio_pts++;
                 break;
             case 2: /* Video Chunk */
                 vmd->frame_table[total_frames].frame_offset = current_offset;
                 vmd->frame_table[total_frames].stream_index = vmd->video_stream_index;
                 vmd->frame_table[total_frames].frame_size = size;
                 memcpy(vmd->frame_table[total_frames].frame_record, chunk, BYTES_PER_FRAME_RECORD);
-                vmd->frame_table[total_frames].pts = current_video_pts;
+                vmd->frame_table[total_frames].pts = i;
                 total_frames++;
                 break;
             }
             current_offset += size;
         }
-        current_video_pts += pts_inc;
     }
 
     av_free(raw_frame_table);
