@@ -187,7 +187,7 @@ static int vmd_read_header(AVFormatContext *s,
             get_buffer(pb, chunk, BYTES_PER_FRAME_RECORD);
             type = chunk[0];
             size = AV_RL32(&chunk[2]);
-            if(!size)
+            if(!size && type != 1)
                 continue;
             switch(type) {
             case 1: /* Audio Chunk */
