@@ -456,13 +456,13 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
 }
 
 static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
-    const uint8_t *buf, int stereo)
+    const uint8_t *buf, int buf_size, int stereo)
 {
     int i;
     int chan = 0;
     int16_t *out = (int16_t*)data;
 
-    for(i = 0; i < s->block_align; i++) {
+    for(i = 0; i < buf_size; i++) {
         if(buf[i] & 0x80)
             s->predictors[chan] -= vmdaudio_table[buf[i] & 0x7F];
         else
@@ -474,7 +474,7 @@ static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
 }
 
 static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
-    const uint8_t *buf, int silence)
+    const uint8_t *buf, int silence, int data_size)
 {
     int bytes_decoded = 0;
     int i;
@@ -485,30 +485,30 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
 
         /* stereo handling */
         if (silence) {
-            memset(data, 0, s->block_align * 2);
+            memset(data, 0, data_size * 2);
         } else {
             if (s->bits == 16)
-                vmdaudio_decode_audio(s, data, buf, 1);
+                vmdaudio_decode_audio(s, data, buf, data_size, 1);
             else {
                 /* copy the data but convert it to signed */
-                for (i = 0; i < s->block_align; i++){
+                for (i = 0; i < data_size; i++){
                     *data++ = buf[i] + 0x80;
                     *data++ = buf[i] + 0x80;
                 }
             }
         }
     } else {
-        bytes_decoded = s->block_align * 2;
+        bytes_decoded = data_size * 2;
 
         /* mono handling */
         if (silence) {
-            memset(data, 0, s->block_align * 2);
+            memset(data, 0, data_size * 2);
         } else {
             if (s->bits == 16) {
-                vmdaudio_decode_audio(s, data, buf, 0);
+                vmdaudio_decode_audio(s, data, buf, data_size, 0);
             } else {
                 /* copy the data but convert it to signed */
-                for (i = 0; i < s->block_align; i++){
+                for (i = 0; i < data_size; i++){
                     *data++ = buf[i] + 0x80;
                     *data++ = buf[i] + 0x80;
                 }
@@ -516,7 +516,7 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
         }
     }
 
-    return s->block_align * 2;
+    return data_size * 2;
 }
 
 static int vmdaudio_decode_frame(AVCodecContext *avctx,
@@ -534,15 +534,26 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
 
     if (buf[6] == 1) {
         /* the chunk contains audio */
-        *data_size = vmdaudio_loadsound(s, output_samples, p, 0);
+        *data_size = vmdaudio_loadsound(s, output_samples, p, 0, buf_size - 16);
     } else if (buf[6] == 2) {
-        /* the chunk may contain audio */
-        p += 4;
-        *data_size = vmdaudio_loadsound(s, output_samples, p, (buf_size == 16));
-        output_samples += (s->block_align * s->bits / 8);
+        /* initial chunk, may contain audio and silence */
+        uint32_t flags = AV_RB32(p);
+        int raw_block_size = s->block_align * s->bits / 8;
+        int silent_chunks;
+        if(flags == 0xFFFFFFFF)
+            silent_chunks = 32;
+        else
+            silent_chunks = av_log2(flags + 1);
+        if(*data_size < (s->block_align*silent_chunks + buf_size - 20) * 2)
+            return -1;
+        *data_size = 0;
+        memset(output_samples, 0, raw_block_size * silent_chunks);
+        output_samples += raw_block_size * silent_chunks;
+        *data_size = raw_block_size * silent_chunks;
+        *data_size += vmdaudio_loadsound(s, output_samples, p + 4, 0, buf_size - 20);
     } else if (buf[6] == 3) {
         /* silent chunk */
-        *data_size = vmdaudio_loadsound(s, output_samples, p, 1);
+        *data_size = vmdaudio_loadsound(s, output_samples, p, 1, 0);
     }
 
     return buf_size;

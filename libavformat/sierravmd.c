@@ -193,7 +193,6 @@ static int vmd_read_header(AVFormatContext *s,
             case 1: /* Audio Chunk */
                 if (!st) break;
                 /* first audio chunk contains several audio buffers */
-                if(current_audio_pts){
                     vmd->frame_table[total_frames].frame_offset = current_offset;
                     vmd->frame_table[total_frames].stream_index = vmd->audio_stream_index;
                     vmd->frame_table[total_frames].frame_size = size;
@@ -201,34 +200,6 @@ static int vmd_read_header(AVFormatContext *s,
                     vmd->frame_table[total_frames].pts = current_audio_pts;
                     total_frames++;
                     current_audio_pts += pts_inc;
-                }else{
-                    uint32_t flags;
-                    int k;
-                    int noff;
-                    int64_t pos;
-
-                    pos = url_ftell(pb);
-                    url_fseek(pb, current_offset, SEEK_SET);
-                    flags = get_le32(pb);
-                    noff = 4;
-                    url_fseek(pb, pos, SEEK_SET);
-                    av_log(s, AV_LOG_DEBUG, "Sound mapping = %08X (%i bufs)\n", flags, sound_buffers);
-                    for(k = 0; k < sound_buffers - 1; k++){
-                        if(flags & 1) { /* silent block */
-                            vmd->frame_table[total_frames].frame_size = 0;
-                        }else{
-                            vmd->frame_table[total_frames].frame_size = st->codec->block_align + (st->codec->block_align & 1);
-                        }
-                        noff += vmd->frame_table[total_frames].frame_size;
-                        vmd->frame_table[total_frames].frame_offset = current_offset + noff;
-                        vmd->frame_table[total_frames].stream_index = vmd->audio_stream_index;
-                        memcpy(vmd->frame_table[total_frames].frame_record, chunk, BYTES_PER_FRAME_RECORD);
-                        vmd->frame_table[total_frames].pts = current_audio_pts;
-                        total_frames++;
-                        current_audio_pts += pts_inc;
-                        flags >>= 1;
-                    }
-                }
                 break;
             case 2: /* Video Chunk */
                 vmd->frame_table[total_frames].frame_offset = current_offset;
