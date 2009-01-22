@@ -487,6 +487,11 @@ typedef struct AVStream {
     AVRational sample_aspect_ratio;
 
     AVMetadata *metadata;
+
+    /* av_read_frame() support */
+    const uint8_t *cur_ptr;
+    int cur_len;
+    AVPacket cur_pkt;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
@@ -573,9 +578,11 @@ typedef struct AVFormatContext {
 
     /* av_read_frame() support */
     AVStream *cur_st;
-    const uint8_t *cur_ptr;
-    int cur_len;
-    AVPacket cur_pkt;
+#if LIBAVFORMAT_VERSION_INT < (53<<16)
+    const uint8_t *cur_ptr_deprecated;
+    int cur_len_deprecated;
+    AVPacket cur_pkt_deprecated;
+#endif
 
     /* av_seek_frame() support */
     int64_t data_offset; /** offset of the first packet */

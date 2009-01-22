@@ -928,24 +928,24 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             if (!st->need_parsing || !st->parser) {
                 /* no parsing needed: we just output the packet as is */
                 /* raw data support */
-                *pkt = s->cur_pkt;
+                *pkt = st->cur_pkt; st->cur_pkt.data= NULL;
                 compute_pkt_fields(s, st, NULL, pkt);
                 s->cur_st = NULL;
                 break;
-            } else if (s->cur_len > 0 && st->discard < AVDISCARD_ALL) {
+            } else if (st->cur_len > 0 && st->discard < AVDISCARD_ALL) {
                 len = av_parser_parse(st->parser, st->codec, &pkt->data, &pkt->size,
-                                      s->cur_ptr, s->cur_len,
-                                      s->cur_pkt.pts, s->cur_pkt.dts);
-                s->cur_pkt.pts = AV_NOPTS_VALUE;
-                s->cur_pkt.dts = AV_NOPTS_VALUE;
+                                      st->cur_ptr, st->cur_len,
+                                      st->cur_pkt.pts, st->cur_pkt.dts);
+                st->cur_pkt.pts = AV_NOPTS_VALUE;
+                st->cur_pkt.dts = AV_NOPTS_VALUE;
                 /* increment read pointer */
-                s->cur_ptr += len;
-                s->cur_len -= len;
+                st->cur_ptr += len;
+                st->cur_len -= len;
 
                 /* return packet if any */
                 if (pkt->size) {
+                    pkt->pos = st->cur_pkt.pos;              // Isn't quite accurate but close.
                 got_packet:
-                    pkt->pos = s->cur_pkt.pos;              // Isn't quite accurate but close.
                     pkt->duration = 0;
                     pkt->stream_index = st->index;
                     pkt->pts = st->parser->pts;
@@ -963,12 +963,13 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 }
             } else {
                 /* free packet */
-                av_free_packet(&s->cur_pkt);
+                av_free_packet(&st->cur_pkt);
                 s->cur_st = NULL;
             }
         } else {
+            AVPacket cur_pkt;
             /* read next packet */
-            ret = av_read_packet(s, &s->cur_pkt);
+            ret = av_read_packet(s, &cur_pkt);
             if (ret < 0) {
                 if (ret == AVERROR(EAGAIN))
                     return ret;
@@ -987,31 +988,32 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 /* no more packets: really terminate parsing */
                 return ret;
             }
+            st = s->streams[cur_pkt.stream_index];
+            st->cur_pkt= cur_pkt;
 
-            if(s->cur_pkt.pts != AV_NOPTS_VALUE &&
-               s->cur_pkt.dts != AV_NOPTS_VALUE &&
-               s->cur_pkt.pts < s->cur_pkt.dts){
+            if(st->cur_pkt.pts != AV_NOPTS_VALUE &&
+               st->cur_pkt.dts != AV_NOPTS_VALUE &&
+               st->cur_pkt.pts < st->cur_pkt.dts){
                 av_log(s, AV_LOG_WARNING, "Invalid timestamps stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d\n",
-                    s->cur_pkt.stream_index,
-                    s->cur_pkt.pts,
-                    s->cur_pkt.dts,
-                    s->cur_pkt.size);
-//                av_free_packet(&s->cur_pkt);
+                    st->cur_pkt.stream_index,
+                    st->cur_pkt.pts,
+                    st->cur_pkt.dts,
+                    st->cur_pkt.size);
+//                av_free_packet(&st->cur_pkt);
 //                return -1;
             }
 
-            st = s->streams[s->cur_pkt.stream_index];
             if(s->debug & FF_FDEBUG_TS)
                 av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d,  flags=%d\n",
-                    s->cur_pkt.stream_index,
-                    s->cur_pkt.pts,
-                    s->cur_pkt.dts,
-                    s->cur_pkt.size,
-                    s->cur_pkt.flags);
+                    st->cur_pkt.stream_index,
+                    st->cur_pkt.pts,
+                    st->cur_pkt.dts,
+                    st->cur_pkt.size,
+                    st->cur_pkt.flags);
 
             s->cur_st = st;
-            s->cur_ptr = s->cur_pkt.data;
-            s->cur_len = s->cur_pkt.size;
+            st->cur_ptr = st->cur_pkt.data;
+            st->cur_len = st->cur_pkt.size;
             if (st->need_parsing && !st->parser) {
                 st->parser = av_parser_init(st->codec->codec_id);
                 if (!st->parser) {
@@ -1022,7 +1024,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 }
                 if(st->parser && (s->iformat->flags & AVFMT_GENERIC_INDEX)){
                     st->parser->next_frame_offset=
-                    st->parser->cur_offset= s->cur_pkt.pos;
+                    st->parser->cur_offset= st->cur_pkt.pos;
                 }
             }
         }
@@ -1139,15 +1141,7 @@ static void av_read_frame_flush(AVFormatContext *s)
 
     flush_packet_queue(s);
 
-    /* free previous packet */
-    if (s->cur_st) {
-        if (s->cur_st->parser)
-            av_free_packet(&s->cur_pkt);
-        s->cur_st = NULL;
-    }
-    /* fail safe */
-    s->cur_ptr = NULL;
-    s->cur_len = 0;
+    s->cur_st = NULL;
 
     /* for each stream, reset read state */
     for(i = 0; i < s->nb_streams; i++) {
@@ -1156,9 +1150,13 @@ static void av_read_frame_flush(AVFormatContext *s)
         if (st->parser) {
             av_parser_close(st->parser);
             st->parser = NULL;
+            av_free_packet(&st->cur_pkt);
         }
         st->last_IP_pts = AV_NOPTS_VALUE;
         st->cur_dts = AV_NOPTS_VALUE; /* we set the current DTS to an unspecified origin */
+        /* fail safe */
+        st->cur_ptr = NULL;
+        st->cur_len = 0;
     }
 }
 
@@ -1689,9 +1687,6 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
     int64_t end_time;
     int64_t filesize, offset, duration;
 
-    /* free previous packet */
-    if (ic->cur_st && ic->cur_st->parser)
-        av_free_packet(&ic->cur_pkt);
     ic->cur_st = NULL;
 
     /* flush packet queue */
@@ -1702,6 +1697,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
         if (st->parser) {
             av_parser_close(st->parser);
             st->parser= NULL;
+            av_free_packet(&st->cur_pkt);
         }
     }
 
@@ -2248,10 +2244,6 @@ void av_close_input_stream(AVFormatContext *s)
     int i;
     AVStream *st;
 
-    /* free previous packet */
-    if (s->cur_st && s->cur_st->parser)
-        av_free_packet(&s->cur_pkt);
-
     if (s->iformat->read_close)
         s->iformat->read_close(s);
     for(i=0;i<s->nb_streams;i++) {
@@ -2259,6 +2251,7 @@ void av_close_input_stream(AVFormatContext *s)
         st = s->streams[i];
         if (st->parser) {
             av_parser_close(st->parser);
+            av_free_packet(&st->cur_pkt);
         }
         av_metadata_free(&st->metadata);
         av_free(st->index_entries);
