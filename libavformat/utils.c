@@ -2766,6 +2766,17 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
         av_log(NULL, AV_LOG_INFO, "(%s)", st->language);
     av_log(NULL, AV_LOG_DEBUG, ", %d/%d", st->time_base.num/g, st->time_base.den/g);
     av_log(NULL, AV_LOG_INFO, ": %s", buf);
+    if (st->sample_aspect_ratio.num && // default
+        av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)) {
+        AVRational display_aspect_ratio;
+        av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
+                  st->codec->width*st->sample_aspect_ratio.num,
+                  st->codec->height*st->sample_aspect_ratio.den,
+                  1024*1024);
+        av_log(NULL, AV_LOG_INFO, ", PAR %d:%d DAR %d:%d",
+                 st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
+                 display_aspect_ratio.num, display_aspect_ratio.den);
+    }
     if(st->codec->codec_type == CODEC_TYPE_VIDEO){
         if(st->r_frame_rate.den && st->r_frame_rate.num)
             av_log(NULL, AV_LOG_INFO, ", %5.2f tb(r)", av_q2d(st->r_frame_rate));
