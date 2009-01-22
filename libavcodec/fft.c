@@ -58,7 +58,7 @@ static int split_radix_permutation(int i, int n, int inverse)
     else                  return split_radix_permutation(i, m, inverse)*4 - 1;
 }
 
-int ff_fft_init(FFTContext *s, int nbits, int inverse)
+av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 {
     int i, j, m, n;
     float alpha, c1, s1, s2;
