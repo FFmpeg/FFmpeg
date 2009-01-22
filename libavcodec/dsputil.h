@@ -674,6 +674,11 @@ typedef struct FFTContext {
     void (*imdct_half)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
 } FFTContext;
 
+/**
+ * Sets up a complex FFT.
+ * @param nbits           log2 of the length of the input array
+ * @param inverse         if 0 perform the forward transform, if 1 perform the inverse
+ */
 int ff_fft_init(FFTContext *s, int nbits, int inverse);
 void ff_fft_permute_c(FFTContext *s, FFTComplex *z);
 void ff_fft_permute_sse(FFTContext *s, FFTComplex *z);
@@ -683,10 +688,17 @@ void ff_fft_calc_3dn(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z);
 
+/**
+ * Do the permutation needed BEFORE calling ff_fft_calc().
+ */
 static inline void ff_fft_permute(FFTContext *s, FFTComplex *z)
 {
     s->fft_permute(s, z);
 }
+/**
+ * Do a complex FFT with the parameters defined in ff_fft_init(). The
+ * input data must be permuted before. No 1.0/sqrt(n) normalization is done.
+ */
 static inline void ff_fft_calc(FFTContext *s, FFTComplex *z)
 {
     s->fft_calc(s, z);
