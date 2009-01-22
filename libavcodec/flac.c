@@ -76,7 +76,8 @@ typedef struct FLACContext {
 #define METADATA_TYPE_STREAMINFO 0
 
 static const int sample_rate_table[] =
-{ 0, 0, 0, 0,
+{ 0,
+  88200, 176400, 192000,
   8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
   0, 0, 0, 0 };
 
@@ -558,7 +559,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
 
     if (sample_rate_code == 0){
         samplerate= s->samplerate;
-    }else if ((sample_rate_code > 3) && (sample_rate_code < 12))
+    }else if (sample_rate_code < 12)
         samplerate = sample_rate_table[sample_rate_code];
     else if (sample_rate_code == 12)
         samplerate = get_bits(&s->gb, 8) * 1000;
