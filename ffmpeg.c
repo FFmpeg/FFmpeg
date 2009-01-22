@@ -2100,7 +2100,10 @@ static int av_encode(AVFormatContext **output_files,
 
         /* read a frame from it and output it in the fifo */
         is = input_files[file_index];
-        if (av_read_frame(is, &pkt) < 0) {
+        ret= av_read_frame(is, &pkt);
+        if(ret == AVERROR(EAGAIN))
+            continue;
+        if (ret < 0) {
             file_table[file_index].eof_reached = 1;
             if (opt_shortest)
                 break;
