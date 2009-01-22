@@ -309,7 +309,6 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t dts, pts = AV_NOPTS_VALUE;
     AVStream *st = NULL;
 
- retry:
  for(;;){
     pos = url_ftell(s->pb);
     url_fskip(s->pb, 4); /* size of previous packet */
@@ -345,7 +344,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
     skip:
         url_fseek(s->pb, next, SEEK_SET);
-        continue;
+        return AVERROR(EAGAIN);
     }
 
     /* skip empty data packets */
@@ -369,7 +368,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
        || st->discard >= AVDISCARD_ALL
        ){
         url_fseek(s->pb, next, SEEK_SET);
-        continue;
+        return AVERROR(EAGAIN);
     }
     if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY)
         av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
@@ -420,7 +419,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (type == 0) {
             if ((ret = flv_get_extradata(s, st, size)) < 0)
                 return ret;
-            goto retry;
+            return AVERROR(EAGAIN);
         }
     }
 
