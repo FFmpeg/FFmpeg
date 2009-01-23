@@ -888,7 +888,7 @@ static void mpegts_push_data(MpegTSFilter *filter,
                 pes->pts = AV_NOPTS_VALUE;
                 pes->dts = AV_NOPTS_VALUE;
                 if ((flags & 0xc0) == 0x80) {
-                    pes->pts = get_pts(r);
+                    pes->dts = pes->pts = get_pts(r);
                     r += 5;
                 } else if ((flags & 0xc0) == 0xc0) {
                     pes->pts = get_pts(r);
