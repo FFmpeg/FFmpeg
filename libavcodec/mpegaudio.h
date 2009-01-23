@@ -90,23 +90,30 @@ typedef int32_t MPA_INT;
 
 struct GranuleDef;
 
+#define MPA_DECODE_HEADER \
+    int frame_size; \
+    int error_protection; \
+    int layer; \
+    int sample_rate; \
+    int sample_rate_index; /* between 0 and 8 */ \
+    int bit_rate; \
+    int nb_channels; \
+    int mode; \
+    int mode_ext; \
+    int lsf;
+
+typedef struct MPADecodeHeader {
+  MPA_DECODE_HEADER
+} MPADecodeHeader;
+
 typedef struct MPADecodeContext {
+    MPA_DECODE_HEADER
     DECLARE_ALIGNED_8(uint8_t, last_buf[2*BACKSTEP_SIZE + EXTRABYTES]);
     int last_buf_size;
-    int frame_size;
     /* next header (used in free format parsing) */
     uint32_t free_format_next_header;
-    int error_protection;
-    int layer;
-    int sample_rate;
-    int sample_rate_index; /* between 0 and 8 */
-    int bit_rate;
     GetBitContext gb;
     GetBitContext in_gb;
-    int nb_channels;
-    int mode;
-    int mode_ext;
-    int lsf;
     DECLARE_ALIGNED_16(MPA_INT, synth_buf[MPA_MAX_CHANNELS][512 * 2]);
     int synth_buf_offset[MPA_MAX_CHANNELS];
     DECLARE_ALIGNED_16(int32_t, sb_samples[MPA_MAX_CHANNELS][36][SBLIMIT]);

@@ -46,8 +46,7 @@ typedef struct MpegAudioParseContext {
    header, otherwise the coded frame size in bytes */
 int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate)
 {
-    MPADecodeContext s1, *s = &s1;
-    s1.avctx = avctx;
+    MPADecodeHeader s1, *s = &s1;
 
     if (ff_mpa_check_header(head) != 0)
         return -1;
@@ -145,7 +144,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
 
 #if 0
                     /* free format: prepare to compute frame size */
-                    if (ff_mpegaudio_decode_header(s, header) == 1) {
+                    if (ff_mpegaudio_decode_header((MPADecodeHeader *)s, header) == 1) {
                         s->frame_size = -1;
                     }
 #endif
@@ -200,7 +199,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                             s->free_format_frame_size -= padding;
                         dprintf(avctx, "free frame size=%d padding=%d\n",
                                 s->free_format_frame_size, padding);
-                        ff_mpegaudio_decode_header(s, header1);
+                        ff_mpegaudio_decode_header((MPADecodeHeader *)s, header1);
                         goto next_data;
                     }
                     p++;
