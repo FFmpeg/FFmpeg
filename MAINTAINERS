@@ -127,7 +127,7 @@ Codecs:
   dxa.c                                 Kostya Shishkov
   dv.c                                  Roman Shaposhnik
   ffv1.c                                Michael Niedermayer
-  flac.c                                Alex Beregszaszi
+  flacdec.c                             Alex Beregszaszi
   flacenc.c                             Justin Ruggles
   flashsv*                              Benjamin Larsson
   flicvideo.c                           Mike Melanson
