@@ -2101,7 +2101,7 @@ static int av_encode(AVFormatContext **output_files,
         /* read a frame from it and output it in the fifo */
         is = input_files[file_index];
         ret= av_read_frame(is, &pkt);
-        if(ret == AVERROR(EAGAIN))
+        if(ret == AVERROR(EAGAIN) && strcmp(is->iformat->name, "ffm"))
             continue;
         if (ret < 0) {
             file_table[file_index].eof_reached = 1;
