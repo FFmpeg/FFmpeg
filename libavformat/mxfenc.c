@@ -120,6 +120,7 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x3C06, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x07,0x02,0x01,0x10,0x02,0x03,0x00,0x00}}, /* Modification Date */
     // Content Storage
     { 0x1901, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x04,0x05,0x01,0x00,0x00}}, /* Package strong reference batch */
+    { 0x1902, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x04,0x05,0x02,0x00,0x00}}, /* Package strong reference batch */
     // Essence Container Data
     { 0x2701, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x06,0x01,0x00,0x00,0x00}}, /* Linked Package UID */
     { 0x3F07, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x04,0x01,0x03,0x04,0x04,0x00,0x00,0x00,0x00}}, /* BodySID */
@@ -376,7 +377,7 @@ static void mxf_write_content_storage(AVFormatContext *s)
 
     mxf_write_metadata_key(pb, 0x011800);
     PRINT_KEY(s, "content storage key", pb->buf_ptr - 16);
-    klv_encode_ber_length(pb, 64);
+    klv_encode_ber_length(pb, 92);
 
     // write uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
@@ -388,6 +389,11 @@ static void mxf_write_content_storage(AVFormatContext *s)
     mxf_write_refs_count(pb, 2);
     mxf_write_uuid(pb, MaterialPackage, 0);
     mxf_write_uuid(pb, SourcePackage, 0);
+
+    // write essence container data
+    mxf_write_local_tag(pb, 8 + 16, 0x1902);
+    mxf_write_refs_count(pb, 1);
+    mxf_write_uuid(pb, EssenceContainerData, 0);
 }
 
 static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
@@ -659,6 +665,25 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
     }
 }
 
+static int mxf_write_essence_container_data(AVFormatContext *s)
+{
+    ByteIOContext *pb = s->pb;
+
+    mxf_write_metadata_key(pb, 0x012300);
+    klv_encode_ber_length(pb, 64);
+
+    mxf_write_local_tag(pb, 16, 0x3C0A); // Instance UID
+    mxf_write_uuid(pb, EssenceContainerData, 0);
+
+    mxf_write_local_tag(pb, 32, 0x2701); // Linked Package UID
+    mxf_write_umid(pb, SourcePackage, 0);
+
+    mxf_write_local_tag(pb, 4, 0x3F07); // BodySID
+    put_be32(pb, 1);
+
+    return 0;
+}
+
 static int mxf_write_header_metadata_sets(AVFormatContext *s)
 {
     mxf_write_preface(s);
@@ -666,6 +691,7 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
     mxf_write_content_storage(s);
     mxf_write_package(s, MaterialPackage);
     mxf_write_package(s, SourcePackage);
+    mxf_write_essence_container_data(s);
     return 0;
 }
 

@@ -42,6 +42,7 @@ enum MXFMetadataSetType {
     ContentStorage,
     SubDescriptor,
     IndexTableSegment,
+    EssenceContainerData,
     TypeBottom,// add metadata type before this
 };
 
