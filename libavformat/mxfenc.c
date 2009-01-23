@@ -557,6 +557,7 @@ static const UID mxf_wav_descriptor_key       = { 0x06,0x0E,0x2B,0x34,0x02,0x53,
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
 {
     ByteIOContext *pb = s->pb;
+    int stored_height = (st->codec->height+15)/16*16;
 
     mxf_write_generic_desc(pb, st, mxf_mpegvideo_descriptor_key);
 
@@ -564,7 +565,7 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     put_be32(pb, st->codec->width);
 
     mxf_write_local_tag(pb, 4, 0x3202);
-    put_be32(pb, st->codec->height);
+    put_be32(pb, stored_height);
 
     mxf_write_local_tag(pb, 8, 0x320E);
     put_be32(pb, st->codec->height * st->sample_aspect_ratio.den);
