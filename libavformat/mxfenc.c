@@ -558,6 +558,7 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
 {
     ByteIOContext *pb = s->pb;
     int stored_height = (st->codec->height+15)/16*16;
+    AVRational dar;
 
     mxf_write_generic_desc(pb, st, mxf_mpegvideo_descriptor_key);
 
@@ -567,9 +568,14 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     mxf_write_local_tag(pb, 4, 0x3202);
     put_be32(pb, stored_height);
 
+    av_reduce(&dar.num, &dar.den,
+              st->codec->width*st->codec->sample_aspect_ratio.num,
+              st->codec->height*st->codec->sample_aspect_ratio.den,
+              1024*1024);
+
     mxf_write_local_tag(pb, 8, 0x320E);
-    put_be32(pb, st->codec->height * st->sample_aspect_ratio.den);
-    put_be32(pb, st->codec->width  * st->sample_aspect_ratio.num);
+    put_be32(pb, dar.num);
+    put_be32(pb, dar.den);
 }
 
 static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
