@@ -51,6 +51,9 @@ static void get_token(ByteIOContext *s, char *buf, int maxlen)
             buf[i++] = c;
     }
 
+    if(!c)
+        get_byte(s);
+
     buf[i] = 0; /* Ensure null terminated, but may be truncated */
 }
 
