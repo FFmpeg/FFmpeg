@@ -28,7 +28,10 @@
 #ifndef AVCODEC_RECTANGLE_H
 #define AVCODEC_RECTANGLE_H
 
+#include <assert.h>
+#include "config.h"
 #include "libavutil/common.h"
+#include "dsputil.h"
 
 /**
  * fill a rectangle.
