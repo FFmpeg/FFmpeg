@@ -123,7 +123,7 @@ show_help(){
   echo "  --target-exec=CMD        command to run executables on target"
   echo "  --target-path=DIR        path to view of build directory on target"
   echo "  --nm=NM                  use nm tool"
-  echo "  --cc=CC                  use C compiler CC [$cc]"
+  echo "  --cc=CC                  use C compiler CC [$cc_default]"
   echo "  --host-cc=HOSTCC         use host C compiler HOSTCC"
   echo "  --host-cflags=HCFLAGS    use HCFLAGS when compiling for host"
   echo "  --host-ldflags=HLDFLAGS  use HLDFLAGS when linking for host"
