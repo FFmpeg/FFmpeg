@@ -426,21 +426,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
         return -1;
     }
     type = get_bits(&s->gb, 6);
-//    wasted = get_bits1(&s->gb);
 
-//    if (wasted)
-//    {
-//        while (!get_bits1(&s->gb))
-//            wasted++;
-//        if (wasted)
-//            wasted++;
-//        s->curr_bps -= wasted;
-//    }
-#if 0
-    wasted= 16 - av_log2(show_bits(&s->gb, 17));
-    skip_bits(&s->gb, wasted+1);
-    s->curr_bps -= wasted;
-#else
     if (get_bits1(&s->gb))
     {
         wasted = 1;
@@ -449,7 +435,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
         s->curr_bps -= wasted;
         av_log(s->avctx, AV_LOG_DEBUG, "%d wasted bits\n", wasted);
     }
-#endif
+
 //FIXME use av_log2 for types
     if (type == 0)
     {
@@ -533,12 +519,6 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         av_log(s->avctx, AV_LOG_ERROR, "utf8 fscked\n");
         return -1;
     }
-#if 0
-    if (/*((blocksize_code == 6) || (blocksize_code == 7)) &&*/
-        (s->min_blocksize != s->max_blocksize)){
-    }else{
-    }
-#endif
 
     if (blocksize_code == 0)
         blocksize = s->min_blocksize;
@@ -666,49 +646,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
             return -1;
         }
 
-
-#if 0
-    /* fix the channel order here */
-    if (s->order == MID_SIDE)
-    {
-        short *left = samples;
-        short *right = samples + s->blocksize;
-        for (i = 0; i < s->blocksize; i += 2)
-        {
-            uint32_t x = s->decoded[0][i];
-            uint32_t y = s->decoded[0][i+1];
-
-            right[i] = x - (y / 2);
-            left[i] = right[i] + y;
-        }
-        *data_size = 2 * s->blocksize;
-    }
-    else
-    {
-    for (i = 0; i < s->channels; i++)
-    {
-        switch(s->order)
-        {
-            case INDEPENDENT:
-                for (j = 0; j < s->blocksize; j++)
-                    samples[(s->blocksize*i)+j] = s->decoded[i][j];
-                break;
-            case LEFT_SIDE:
-            case RIGHT_SIDE:
-                if (i == 0)
-                    for (j = 0; j < s->blocksize; j++)
-                        samples[(s->blocksize*i)+j] = s->decoded[0][j];
-                else
-                    for (j = 0; j < s->blocksize; j++)
-                        samples[(s->blocksize*i)+j] = s->decoded[0][j] - s->decoded[i][j];
-                break;
-//            case MID_SIDE:
-//                av_log(s->avctx, AV_LOG_DEBUG, "mid-side unsupported\n");
-        }
-        *data_size += s->blocksize;
-    }
-    }
-#else
 #define DECORRELATE(left, right)\
             assert(s->channels == 2);\
             for (i = 0; i < s->blocksize; i++)\
@@ -736,12 +673,10 @@ static int flac_decode_frame(AVCodecContext *avctx,
         case MID_SIDE:
             DECORRELATE( (a-=b>>1) + b, a)
     }
-#endif
 
     *data_size = (int8_t *)samples - (int8_t *)data;
 //    av_log(s->avctx, AV_LOG_DEBUG, "data size: %d\n", *data_size);
 
-//    s->last_blocksize = s->blocksize;
 end:
     i= (get_bits_count(&s->gb)+7)/8;
     if(i > buf_size){
