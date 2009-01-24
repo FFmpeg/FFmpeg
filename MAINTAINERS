@@ -162,7 +162,7 @@ Codecs:
   pcx.c                                 Ivo van Poorten
   ptx.c                                 Ivo van Poorten
   qcelp*                                Reynaldo H. Verdejo Pinochet
-  qdm2.c, qdm2data.h                    Roberto Togni
+  qdm2.c, qdm2data.h                    Roberto Togni, Benjamin Larsson
   qdrw.c                                Kostya Shishkov
   qpeg.c                                Kostya Shishkov
   qtrle.c                               Mike Melanson
