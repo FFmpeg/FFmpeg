@@ -545,28 +545,28 @@ static int flac_decode_frame(AVCodecContext *avctx,
     }
 
     if (1 && s->max_framesize) { //FIXME truncated
-            if (s->bitstream_size < 4 || AV_RL32(s->bitstream) != MKTAG('f','L','a','C'))
-                buf_size= FFMIN(buf_size, s->max_framesize - FFMIN(s->bitstream_size, s->max_framesize));
-            input_buf_size= buf_size;
+        if (s->bitstream_size < 4 || AV_RL32(s->bitstream) != MKTAG('f','L','a','C'))
+            buf_size= FFMIN(buf_size, s->max_framesize - FFMIN(s->bitstream_size, s->max_framesize));
+        input_buf_size= buf_size;
 
-            if (s->bitstream_size + buf_size < buf_size || s->bitstream_index + s->bitstream_size + buf_size < s->bitstream_index)
-                return -1;
+        if (s->bitstream_size + buf_size < buf_size || s->bitstream_index + s->bitstream_size + buf_size < s->bitstream_index)
+            return -1;
 
-            if (s->allocated_bitstream_size < s->bitstream_size + buf_size)
-                s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->bitstream_size + buf_size);
+        if (s->allocated_bitstream_size < s->bitstream_size + buf_size)
+            s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->bitstream_size + buf_size);
 
-            if (s->bitstream_index + s->bitstream_size + buf_size > s->allocated_bitstream_size) {
-                memmove(s->bitstream, &s->bitstream[s->bitstream_index], s->bitstream_size);
-                s->bitstream_index=0;
-            }
-            memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size], buf, buf_size);
-            buf= &s->bitstream[s->bitstream_index];
-            buf_size += s->bitstream_size;
-            s->bitstream_size= buf_size;
+        if (s->bitstream_index + s->bitstream_size + buf_size > s->allocated_bitstream_size) {
+            memmove(s->bitstream, &s->bitstream[s->bitstream_index], s->bitstream_size);
+            s->bitstream_index=0;
+        }
+        memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size], buf, buf_size);
+        buf= &s->bitstream[s->bitstream_index];
+        buf_size += s->bitstream_size;
+        s->bitstream_size= buf_size;
 
-            if (buf_size < s->max_framesize && input_buf_size) {
-                return input_buf_size;
-            }
+        if (buf_size < s->max_framesize && input_buf_size) {
+            return input_buf_size;
+        }
     }
 
     init_get_bits(&s->gb, buf, buf_size*8);
