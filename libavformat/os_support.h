@@ -27,6 +27,8 @@
  * miscellaneous OS support macros and functions.
  */
 
+#include "config.h"
+
 #ifdef __MINGW32__
 #  include <fcntl.h>
 #  define lseek(f,p,w) _lseeki64((f), (p), (w))
