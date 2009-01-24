@@ -823,6 +823,7 @@ ARCH_EXT_LIST='
     mmx
     mmx2
     neon
+    ppc4xx
     sse
     ssse3
     vis
@@ -952,6 +953,7 @@ mmi_deps="mips"
 mmx_deps="x86"
 mmx2_deps="x86 mmx"
 neon_deps="arm"
+ppc4xx_deps="ppc"
 sse_deps="mmx"
 ssse3_deps="x86 sse"
 vis_deps="sparc"
@@ -1773,6 +1775,7 @@ fi
 # check for assembler specific support
 
 enabled ppc && check_asm dcbzl '"dcbzl 0, 1"'
+enabled ppc && check_asm ppc4xx '"maclhw r10, r11, r12"'
 
 # check for SIMD availability
 
