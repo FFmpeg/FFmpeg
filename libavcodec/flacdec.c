@@ -244,7 +244,6 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
         tmp = get_bits(&s->gb, method_type == 0 ? 4 : 5);
         if (tmp == (method_type == 0 ? 15 : 31))
         {
-            av_log(s->avctx, AV_LOG_DEBUG, "fixed len partition\n");
             tmp = get_bits(&s->gb, 5);
             for (; i < samples; i++, sample++)
                 s->decoded[channel][sample] = get_sbits(&s->gb, tmp);
