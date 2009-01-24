@@ -3563,14 +3563,14 @@ static void init_scan_tables(H264Context *h){
         }
     }
     if(s->dsp.h264_idct8_add == ff_h264_idct8_add_c){
-        memcpy(h->zigzag_scan8x8,       zigzag_scan8x8,       64*sizeof(uint8_t));
+        memcpy(h->zigzag_scan8x8,       ff_zigzag_direct,     64*sizeof(uint8_t));
         memcpy(h->zigzag_scan8x8_cavlc, zigzag_scan8x8_cavlc, 64*sizeof(uint8_t));
         memcpy(h->field_scan8x8,        field_scan8x8,        64*sizeof(uint8_t));
         memcpy(h->field_scan8x8_cavlc,  field_scan8x8_cavlc,  64*sizeof(uint8_t));
     }else{
         for(i=0; i<64; i++){
 #define T(x) (x>>3) | ((x&7)<<3)
-            h->zigzag_scan8x8[i]       = T(zigzag_scan8x8[i]);
+            h->zigzag_scan8x8[i]       = T(ff_zigzag_direct[i]);
             h->zigzag_scan8x8_cavlc[i] = T(zigzag_scan8x8_cavlc[i]);
             h->field_scan8x8[i]        = T(field_scan8x8[i]);
             h->field_scan8x8_cavlc[i]  = T(field_scan8x8_cavlc[i]);
@@ -3579,7 +3579,7 @@ static void init_scan_tables(H264Context *h){
     }
     if(h->sps.transform_bypass){ //FIXME same ugly
         h->zigzag_scan_q0          = zigzag_scan;
-        h->zigzag_scan8x8_q0       = zigzag_scan8x8;
+        h->zigzag_scan8x8_q0       = ff_zigzag_direct;
         h->zigzag_scan8x8_cavlc_q0 = zigzag_scan8x8_cavlc;
         h->field_scan_q0           = field_scan;
         h->field_scan8x8_q0        = field_scan8x8;
@@ -6981,7 +6981,7 @@ static void decode_scaling_list(H264Context *h, uint8_t *factors, int size,
                                 const uint8_t *jvt_list, const uint8_t *fallback_list){
     MpegEncContext * const s = &h->s;
     int i, last = 8, next = 8;
-    const uint8_t *scan = size == 16 ? zigzag_scan : zigzag_scan8x8;
+    const uint8_t *scan = size == 16 ? zigzag_scan : ff_zigzag_direct;
     if(!get_bits1(&s->gb)) /* matrix not written, we use the predicted one */
         memcpy(factors, fallback_list, size*sizeof(uint8_t));
     else
