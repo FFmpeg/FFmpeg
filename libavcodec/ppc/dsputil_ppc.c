@@ -24,7 +24,6 @@
 
 #include "dsputil_ppc.h"
 
-#if HAVE_ALTIVEC
 #include "dsputil_altivec.h"
 
 void fdct_altivec(int16_t *block);
@@ -40,8 +39,6 @@ void vc1dsp_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void snow_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void float_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void int_init_altivec(DSPContext* c, AVCodecContext *avctx);
-
-#endif
 
 int mm_flags = 0;
 
