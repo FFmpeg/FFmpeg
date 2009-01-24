@@ -325,6 +325,7 @@ typedef struct SDPParseState {
     /* SDP only */
     struct in_addr default_ip;
     int default_ttl;
+    int skip_media; ///< set if an unknown m= line occurs
 } SDPParseState;
 
 static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
@@ -345,6 +346,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
 #endif
 
     p = buf;
+    if (s1->skip_media && letter != 'm')
+        return;
     switch(letter) {
     case 'c':
         get_word(buf1, sizeof(buf1), &p);
@@ -383,12 +386,14 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         break;
     case 'm':
         /* new stream */
+        s1->skip_media = 0;
         get_word(st_type, sizeof(st_type), &p);
         if (!strcmp(st_type, "audio")) {
             codec_type = CODEC_TYPE_AUDIO;
         } else if (!strcmp(st_type, "video")) {
             codec_type = CODEC_TYPE_VIDEO;
         } else {
+            s1->skip_media = 1;
             return;
         }
         rtsp_st = av_mallocz(sizeof(RTSPStream));
