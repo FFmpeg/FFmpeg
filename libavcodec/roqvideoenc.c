@@ -220,7 +220,7 @@ typedef struct
 /**
  * Temporary vars
  */
-typedef struct
+typedef struct RoqTempData
 {
     CelEvaluation *cel_evals;
 
@@ -881,14 +881,14 @@ static void generate_new_codebooks(RoqContext *enc, RoqTempdata *tempData)
 
 static void roq_encode_video(RoqContext *enc)
 {
-    RoqTempdata tempData;
+    RoqTempdata *tempData = enc->tmpData;
     int i;
 
-    memset(&tempData, 0, sizeof(tempData));
+    memset(tempData, 0, sizeof(*tempData));
 
-    create_cel_evals(enc, &tempData);
+    create_cel_evals(enc, tempData);
 
-    generate_new_codebooks(enc, &tempData);
+    generate_new_codebooks(enc, tempData);
 
     if (enc->framesSinceKeyframe >= 1) {
         motion_search(enc, 8);
@@ -897,19 +897,19 @@ static void roq_encode_video(RoqContext *enc)
 
  retry_encode:
     for (i=0; i<enc->width*enc->height/64; i++)
-        gather_data_for_cel(tempData.cel_evals + i, enc, &tempData);
+        gather_data_for_cel(tempData->cel_evals + i, enc, tempData);
 
     /* Quake 3 can't handle chunks bigger than 65536 bytes */
-    if (tempData.mainChunkSize/8 > 65536) {
+    if (tempData->mainChunkSize/8 > 65536) {
         enc->lambda *= .8;
         goto retry_encode;
     }
 
-    remap_codebooks(enc, &tempData);
+    remap_codebooks(enc, tempData);
 
-    write_codebooks(enc, &tempData);
+    write_codebooks(enc, tempData);
 
-    reconstruct_and_encode_image(enc, &tempData, enc->width, enc->height,
+    reconstruct_and_encode_image(enc, tempData, enc->width, enc->height,
                                  enc->width*enc->height/64);
 
     enc->avctx->coded_frame = enc->current_frame;
@@ -919,8 +919,8 @@ static void roq_encode_video(RoqContext *enc)
     FFSWAP(motion_vect *, enc->last_motion4, enc->this_motion4);
     FFSWAP(motion_vect *, enc->last_motion8, enc->this_motion8);
 
-    av_free(tempData.cel_evals);
-    av_free(tempData.closest_cb2);
+    av_free(tempData->cel_evals);
+    av_free(tempData->closest_cb2);
 
     enc->framesSinceKeyframe++;
 }
@@ -954,6 +954,8 @@ static int roq_encode_init(AVCodecContext *avctx)
 
     enc->last_frame    = &enc->frames[0];
     enc->current_frame = &enc->frames[1];
+
+    enc->tmpData      = av_malloc(sizeof(RoqTempdata));
 
     enc->this_motion4 =
         av_mallocz((enc->width*enc->height/16)*sizeof(motion_vect));
@@ -1050,6 +1052,7 @@ static int roq_encode_end(AVCodecContext *avctx)
     avctx->release_buffer(avctx, enc->last_frame);
     avctx->release_buffer(avctx, enc->current_frame);
 
+    av_free(enc->tmpData);
     av_free(enc->this_motion4);
     av_free(enc->last_motion4);
     av_free(enc->this_motion8);

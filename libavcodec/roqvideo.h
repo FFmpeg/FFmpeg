@@ -39,6 +39,8 @@ typedef struct {
     int d[2];
 } motion_vect;
 
+struct RoqTempData;
+
 typedef struct RoqContext {
 
     AVCodecContext *avctx;
@@ -69,6 +71,7 @@ typedef struct RoqContext {
 
     AVFrame *frame_to_enc;
     uint8_t *out_buf;
+    struct RoqTempData *tmpData;
 } RoqContext;
 
 #define RoQ_INFO              0x1001
