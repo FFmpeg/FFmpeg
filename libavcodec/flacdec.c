@@ -225,7 +225,7 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
 
     method_type = get_bits(&s->gb, 2);
     if (method_type > 1){
-        av_log(s->avctx, AV_LOG_DEBUG, "illegal residual coding method %d\n", method_type);
+        av_log(s->avctx, AV_LOG_ERROR, "illegal residual coding method %d\n", method_type);
         return -1;
     }
 
@@ -328,12 +328,12 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
     coeff_prec = get_bits(&s->gb, 4) + 1;
     if (coeff_prec == 16)
     {
-        av_log(s->avctx, AV_LOG_DEBUG, "invalid coeff precision\n");
+        av_log(s->avctx, AV_LOG_ERROR, "invalid coeff precision\n");
         return -1;
     }
     qlevel = get_sbits(&s->gb, 5);
     if(qlevel < 0){
-        av_log(s->avctx, AV_LOG_DEBUG, "qlevel %d not supported, maybe buggy stream\n", qlevel);
+        av_log(s->avctx, AV_LOG_ERROR, "qlevel %d not supported, maybe buggy stream\n", qlevel);
         return -1;
     }
 
