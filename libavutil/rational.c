@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include <assert.h>
 //#include <math.h>
 #include <limits.h>
 

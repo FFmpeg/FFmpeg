@@ -23,6 +23,7 @@
  * Miscellaneous math routines and tables.
  */
 
+#include <assert.h>
 #include "common.h"
 #include "mathematics.h"
 

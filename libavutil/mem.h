@@ -26,6 +26,7 @@
 #ifndef AVUTIL_MEM_H
 #define AVUTIL_MEM_H
 
+#include "config.h"
 #include "common.h"
 
 #if defined(__ICC) || defined(__SUNPRO_C)

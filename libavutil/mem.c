@@ -24,6 +24,7 @@
  * default memory allocator for libavutil.
  */
 
+#include "config.h"
 #include "common.h"
 
 /* here we can use OS dependent allocation functions */
@@ -31,7 +32,9 @@
 #undef free
 #undef realloc
 
+#include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 #if HAVE_MALLOC_H
 #include <malloc.h>
 #endif
