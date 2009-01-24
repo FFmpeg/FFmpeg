@@ -107,7 +107,8 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     if (avctx->extradata_size > 4) {
         /* initialize based on the demuxer-supplied streamdata header */
         if (avctx->extradata_size == FLAC_STREAMINFO_SIZE) {
-            ff_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, avctx->extradata);
+            ff_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s,
+                                     avctx->extradata);
             allocate_buffers(s);
         } else {
             init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size*8);
@@ -121,7 +122,8 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
 
 static void dump_headers(AVCodecContext *avctx, FLACStreaminfo *s)
 {
-    av_log(avctx, AV_LOG_DEBUG, "  Blocksize: %d .. %d\n", s->min_blocksize, s->max_blocksize);
+    av_log(avctx, AV_LOG_DEBUG, "  Blocksize: %d .. %d\n", s->min_blocksize,
+           s->max_blocksize);
     av_log(avctx, AV_LOG_DEBUG, "  Max Framesize: %d\n", s->max_framesize);
     av_log(avctx, AV_LOG_DEBUG, "  Samplerate: %d\n", s->samplerate);
     av_log(avctx, AV_LOG_DEBUG, "  Channels: %d\n", s->channels);
@@ -135,15 +137,19 @@ static void allocate_buffers(FLACContext *s)
     assert(s->max_blocksize);
 
     if (s->max_framesize == 0 && s->max_blocksize) {
-        s->max_framesize= (s->channels * s->bps * s->max_blocksize + 7)/ 8; //FIXME header overhead
+        // FIXME header overhead
+        s->max_framesize= (s->channels * s->bps * s->max_blocksize + 7)/ 8;
     }
 
     for (i = 0; i < s->channels; i++) {
-        s->decoded[i] = av_realloc(s->decoded[i], sizeof(int32_t)*s->max_blocksize);
+        s->decoded[i] = av_realloc(s->decoded[i],
+                                   sizeof(int32_t)*s->max_blocksize);
     }
 
     if (s->allocated_bitstream_size < s->max_framesize)
-        s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
+        s->bitstream= av_fast_realloc(s->bitstream,
+                                      &s->allocated_bitstream_size,
+                                      s->max_framesize);
 }
 
 void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
@@ -202,7 +208,8 @@ static int metadata_parse(FLACContext *s)
             if (metadata_size) {
                 switch (metadata_type) {
                 case METADATA_TYPE_STREAMINFO:
-                    ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, s->gb.buffer+get_bits_count(&s->gb)/8);
+                    ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s,
+                                             s->gb.buffer+get_bits_count(&s->gb)/8);
                     streaminfo_updated = 1;
 
                 default:
@@ -226,7 +233,8 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
 
     method_type = get_bits(&s->gb, 2);
     if (method_type > 1) {
-        av_log(s->avctx, AV_LOG_ERROR, "illegal residual coding method %d\n", method_type);
+        av_log(s->avctx, AV_LOG_ERROR, "illegal residual coding method %d\n",
+               method_type);
         return -1;
     }
 
@@ -234,7 +242,8 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
 
     samples= s->blocksize >> rice_order;
     if (pred_order > samples) {
-        av_log(s->avctx, AV_LOG_ERROR, "invalid predictor order: %i > %i\n", pred_order, samples);
+        av_log(s->avctx, AV_LOG_ERROR, "invalid predictor order: %i > %i\n",
+               pred_order, samples);
         return -1;
     }
 
@@ -326,7 +335,8 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
     }
     qlevel = get_sbits(&s->gb, 5);
     if (qlevel < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "qlevel %d not supported, maybe buggy stream\n", qlevel);
+        av_log(s->avctx, AV_LOG_ERROR, "qlevel %d not supported, maybe buggy stream\n",
+               qlevel);
         return -1;
     }
 
@@ -443,7 +453,8 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     else if (assignment >=8 && assignment < 11 && s->channels == 2)
         decorrelation = LEFT_SIDE + assignment - 8;
     else {
-        av_log(s->avctx, AV_LOG_ERROR, "unsupported channel assignment %d (channels=%d)\n", assignment, s->channels);
+        av_log(s->avctx, AV_LOG_ERROR, "unsupported channel assignment %d (channels=%d)\n",
+               assignment, s->channels);
         return -1;
     }
 
@@ -453,7 +464,8 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     else if ((sample_size_code != 3) && (sample_size_code != 7))
         bps = sample_size_table[sample_size_code];
     else {
-        av_log(s->avctx, AV_LOG_ERROR, "invalid sample size code (%d)\n", sample_size_code);
+        av_log(s->avctx, AV_LOG_ERROR, "invalid sample size code (%d)\n",
+               sample_size_code);
         return -1;
     }
 
@@ -477,7 +489,8 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         blocksize = blocksize_table[blocksize_code];
 
     if (blocksize > s->max_blocksize) {
-        av_log(s->avctx, AV_LOG_ERROR, "blocksize %d > %d\n", blocksize, s->max_blocksize);
+        av_log(s->avctx, AV_LOG_ERROR, "blocksize %d > %d\n", blocksize,
+               s->max_blocksize);
         return -1;
     }
 
@@ -495,7 +508,8 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     else if (sample_rate_code == 14)
         samplerate = get_bits(&s->gb, 16) * 10;
     else {
-        av_log(s->avctx, AV_LOG_ERROR, "illegal sample rate code %d\n", sample_rate_code);
+        av_log(s->avctx, AV_LOG_ERROR, "illegal sample rate code %d\n",
+               sample_rate_code);
         return -1;
     }
 
@@ -556,10 +570,12 @@ static int flac_decode_frame(AVCodecContext *avctx,
             s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->bitstream_size + buf_size);
 
         if (s->bitstream_index + s->bitstream_size + buf_size > s->allocated_bitstream_size) {
-            memmove(s->bitstream, &s->bitstream[s->bitstream_index], s->bitstream_size);
+            memmove(s->bitstream, &s->bitstream[s->bitstream_index],
+                    s->bitstream_size);
             s->bitstream_index=0;
         }
-        memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size], buf, buf_size);
+        memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size],
+               buf, buf_size);
         buf= &s->bitstream[s->bitstream_index];
         buf_size += s->bitstream_size;
         s->bitstream_size= buf_size;
