@@ -188,7 +188,6 @@ static int metadata_parse(FLACContext *s)
     if (show_bits_long(&s->gb, 32) == MKBETAG('f','L','a','C')) {
         skip_bits(&s->gb, 32);
 
-        av_log(s->avctx, AV_LOG_DEBUG, "STREAM HEADER\n");
         do {
             metadata_last = get_bits1(&s->gb);
             metadata_type = get_bits(&s->gb, 7);
@@ -199,9 +198,6 @@ static int metadata_parse(FLACContext *s)
                 break;
             }
 
-            av_log(s->avctx, AV_LOG_DEBUG,
-                   " metadata block: flag = %d, type = %d, size = %d\n",
-                   metadata_last, metadata_type, metadata_size);
             if (metadata_size) {
                 switch (metadata_type) {
                 case METADATA_TYPE_STREAMINFO:
@@ -255,15 +251,12 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
         }
         else
         {
-//            av_log(s->avctx, AV_LOG_DEBUG, "rice coded partition k=%d\n", tmp);
             for (; i < samples; i++, sample++){
                 s->decoded[channel][sample] = get_sr_golomb_flac(&s->gb, tmp, INT_MAX, 0);
             }
         }
         i= 0;
     }
-
-//    av_log(s->avctx, AV_LOG_DEBUG, "partitions: %d, samples: %d\n", 1 << rice_order, sample);
 
     return 0;
 }
@@ -274,15 +267,10 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
     int32_t *decoded = s->decoded[channel];
     int a, b, c, d, i;
 
-//    av_log(s->avctx, AV_LOG_DEBUG, "  SUBFRAME FIXED\n");
-
     /* warm up samples */
-//    av_log(s->avctx, AV_LOG_DEBUG, "   warm up samples: %d\n", pred_order);
-
     for (i = 0; i < pred_order; i++)
     {
         decoded[i] = get_sbits(&s->gb, s->curr_bps);
-//        av_log(s->avctx, AV_LOG_DEBUG, "    %d: %d\n", i, s->decoded[channel][i]);
     }
 
     if (decode_residuals(s, channel, pred_order) < 0)
@@ -332,15 +320,10 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
     int coeffs[pred_order];
     int32_t *decoded = s->decoded[channel];
 
-//    av_log(s->avctx, AV_LOG_DEBUG, "  SUBFRAME LPC\n");
-
     /* warm up samples */
-//    av_log(s->avctx, AV_LOG_DEBUG, "   warm up samples: %d\n", pred_order);
-
     for (i = 0; i < pred_order; i++)
     {
         decoded[i] = get_sbits(&s->gb, s->curr_bps);
-//        av_log(s->avctx, AV_LOG_DEBUG, "    %d: %d\n", i, decoded[i]);
     }
 
     coeff_prec = get_bits(&s->gb, 4) + 1;
@@ -349,9 +332,7 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
         av_log(s->avctx, AV_LOG_DEBUG, "invalid coeff precision\n");
         return -1;
     }
-//    av_log(s->avctx, AV_LOG_DEBUG, "   qlp coeff prec: %d\n", coeff_prec);
     qlevel = get_sbits(&s->gb, 5);
-//    av_log(s->avctx, AV_LOG_DEBUG, "   quant level: %d\n", qlevel);
     if(qlevel < 0){
         av_log(s->avctx, AV_LOG_DEBUG, "qlevel %d not supported, maybe buggy stream\n", qlevel);
         return -1;
@@ -360,7 +341,6 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
     for (i = 0; i < pred_order; i++)
     {
         coeffs[i] = get_sbits(&s->gb, coeff_prec);
-//        av_log(s->avctx, AV_LOG_DEBUG, "    %d: %d\n", i, coeffs[i]);
     }
 
     if (decode_residuals(s, channel, pred_order) < 0)
@@ -433,32 +413,27 @@ static inline int decode_subframe(FLACContext *s, int channel)
         while (!get_bits1(&s->gb))
             wasted++;
         s->curr_bps -= wasted;
-        av_log(s->avctx, AV_LOG_DEBUG, "%d wasted bits\n", wasted);
     }
 
 //FIXME use av_log2 for types
     if (type == 0)
     {
-        av_log(s->avctx, AV_LOG_DEBUG, "coding type: constant\n");
         tmp = get_sbits(&s->gb, s->curr_bps);
         for (i = 0; i < s->blocksize; i++)
             s->decoded[channel][i] = tmp;
     }
     else if (type == 1)
     {
-        av_log(s->avctx, AV_LOG_DEBUG, "coding type: verbatim\n");
         for (i = 0; i < s->blocksize; i++)
             s->decoded[channel][i] = get_sbits(&s->gb, s->curr_bps);
     }
     else if ((type >= 8) && (type <= 12))
     {
-//        av_log(s->avctx, AV_LOG_DEBUG, "coding type: fixed\n");
         if (decode_subframe_fixed(s, channel, type & ~0x8) < 0)
             return -1;
     }
     else if (type >= 32)
     {
-//        av_log(s->avctx, AV_LOG_DEBUG, "coding type: lpc\n");
         if (decode_subframe_lpc(s, channel, (type & ~0x20)+1) < 0)
             return -1;
     }
@@ -570,7 +545,6 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     /* subframes */
     for (i = 0; i < s->channels; i++)
     {
-//        av_log(s->avctx, AV_LOG_DEBUG, "decoded: %x residual: %x\n", s->decoded[i], s->residual[i]);
         if (decode_subframe(s, i) < 0)
             return -1;
     }
@@ -611,7 +585,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
                 s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->bitstream_size + buf_size);
 
             if(s->bitstream_index + s->bitstream_size + buf_size > s->allocated_bitstream_size){
-//                printf("memmove\n");
                 memmove(s->bitstream, &s->bitstream[s->bitstream_index], s->bitstream_size);
                 s->bitstream_index=0;
             }
@@ -621,7 +594,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
             s->bitstream_size= buf_size;
 
             if(buf_size < s->max_framesize && input_buf_size){
-//                printf("wanna more data ...\n");
                 return input_buf_size;
             }
     }
@@ -675,7 +647,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
     }
 
     *data_size = (int8_t *)samples - (int8_t *)data;
-//    av_log(s->avctx, AV_LOG_DEBUG, "data size: %d\n", *data_size);
 
 end:
     i= (get_bits_count(&s->gb)+7)/8;
