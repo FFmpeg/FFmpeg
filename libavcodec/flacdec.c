@@ -602,20 +602,20 @@ static int flac_decode_frame(AVCodecContext *avctx,
     if(metadata_parse(s))
         goto end;
 
-        tmp = show_bits(&s->gb, 16);
-        if((tmp & 0xFFFE) != 0xFFF8){
-            av_log(s->avctx, AV_LOG_ERROR, "FRAME HEADER not here\n");
-            while(get_bits_count(&s->gb)/8+2 < buf_size && (show_bits(&s->gb, 16) & 0xFFFE) != 0xFFF8)
-                skip_bits(&s->gb, 8);
-            goto end; // we may not have enough bits left to decode a frame, so try next time
-        }
-        skip_bits(&s->gb, 16);
-        if (decode_frame(s, alloc_data_size) < 0){
-            av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
-            s->bitstream_size=0;
-            s->bitstream_index=0;
-            return -1;
-        }
+    tmp = show_bits(&s->gb, 16);
+    if((tmp & 0xFFFE) != 0xFFF8){
+        av_log(s->avctx, AV_LOG_ERROR, "FRAME HEADER not here\n");
+        while(get_bits_count(&s->gb)/8+2 < buf_size && (show_bits(&s->gb, 16) & 0xFFFE) != 0xFFF8)
+            skip_bits(&s->gb, 8);
+        goto end; // we may not have enough bits left to decode a frame, so try next time
+    }
+    skip_bits(&s->gb, 16);
+    if (decode_frame(s, alloc_data_size) < 0){
+        av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
+        s->bitstream_size=0;
+        s->bitstream_index=0;
+        return -1;
+    }
 
 #define DECORRELATE(left, right)\
             assert(s->channels == 2);\
