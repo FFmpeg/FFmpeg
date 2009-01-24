@@ -160,6 +160,7 @@ show_help(){
   echo "  --disable-golomb         disable Golomb code"
   echo "  --disable-mdct           disable MDCT code"
   echo "  --enable-gray            enable full grayscale support (slower color)"
+  echo "  --disable-fastdiv        disable table-based division"
   echo "  --disable-ffmpeg         disable ffmpeg build"
   echo "  --disable-ffplay         disable ffplay build"
   echo "  --disable-ffserver       disable ffserver build"
