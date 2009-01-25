@@ -734,7 +734,7 @@ AVCodec h263_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
-    .long_name= NULL_IF_CONFIG_SMALL("H.263"),
+    .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996, H.263+ / H.263-1998"),
 };
 
 AVCodec msmpeg4v1_decoder = {
@@ -799,7 +799,7 @@ AVCodec h263i_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("H.263i"),
+    .long_name = NULL_IF_CONFIG_SMALL("H.263 Intel"),
 };
 
 AVCodec flv_decoder = {

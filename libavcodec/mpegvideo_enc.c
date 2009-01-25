@@ -3724,7 +3724,7 @@ AVCodec h263_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("H.263"),
+    .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996"),
 };
 
 AVCodec h263p_encoder = {
@@ -3736,7 +3736,7 @@ AVCodec h263p_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("H.263+ / H.263 version 2"),
+    .long_name= NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
 };
 
 AVCodec flv_encoder = {
