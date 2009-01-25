@@ -198,10 +198,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     if (n >= bit_left) {
 #if !HAVE_FAST_UNALIGNED
         if (3 & (intptr_t) s->buf_ptr) {
-            s->buf_ptr[0] = bit_buf      ;
-            s->buf_ptr[1] = bit_buf >>  8;
-            s->buf_ptr[2] = bit_buf >> 16;
-            s->buf_ptr[3] = bit_buf >> 24;
+            AV_WL32(s->buf_ptr, bit_buf);
         } else
 #endif
         *(uint32_t *)s->buf_ptr = le2me_32(bit_buf);
@@ -219,10 +216,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
         bit_buf |= value >> (n - bit_left);
 #if !HAVE_FAST_UNALIGNED
         if (3 & (intptr_t) s->buf_ptr) {
-            s->buf_ptr[0] = bit_buf >> 24;
-            s->buf_ptr[1] = bit_buf >> 16;
-            s->buf_ptr[2] = bit_buf >>  8;
-            s->buf_ptr[3] = bit_buf      ;
+            AV_WB32(s->buf_ptr, bit_buf);
         } else
 #endif
         *(uint32_t *)s->buf_ptr = be2me_32(bit_buf);
