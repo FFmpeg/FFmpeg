@@ -73,8 +73,6 @@ typedef struct FLACContext {
     unsigned int allocated_bitstream_size;
 } FLACContext;
 
-#define METADATA_TYPE_STREAMINFO 0
-
 static const int sample_rate_table[] =
 { 0,
   88200, 176400, 192000,
@@ -207,7 +205,7 @@ static int metadata_parse(FLACContext *s)
 
             if (metadata_size) {
                 switch (metadata_type) {
-                case METADATA_TYPE_STREAMINFO:
+                case FLAC_METADATA_TYPE_STREAMINFO:
                     ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s,
                                              s->gb.buffer+get_bits_count(&s->gb)/8);
                     streaminfo_updated = 1;

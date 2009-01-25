@@ -29,6 +29,17 @@
 
 #include "avcodec.h"
 
+enum {
+    FLAC_METADATA_TYPE_STREAMINFO = 0,
+    FLAC_METADATA_TYPE_PADDING,
+    FLAC_METADATA_TYPE_APPLICATION,
+    FLAC_METADATA_TYPE_SEEKTABLE,
+    FLAC_METADATA_TYPE_VORBIS_COMMENT,
+    FLAC_METADATA_TYPE_CUESHEET,
+    FLAC_METADATA_TYPE_PICTURE,
+    FLAC_METADATA_TYPE_INVALID = 127
+};
+
 /**
  * Data needed from the Streaminfo header for use by the raw FLAC demuxer
  * and/or the FLAC decoder.
