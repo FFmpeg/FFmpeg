@@ -43,7 +43,7 @@
 #define MMREG_SIZE 8
 #endif
 
-#if HAVE_3DNOW
+#if HAVE_AMD3DNOW
 #define PREFETCH  "prefetch"
 #define PREFETCHW "prefetchw"
 #define PAVGB     "pavgusb"
@@ -56,7 +56,7 @@
 #define PREFETCHW " # nop"
 #endif
 
-#if HAVE_3DNOW
+#if HAVE_AMD3DNOW
 /* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
 #define EMMS     "femms"
 #else
@@ -1914,7 +1914,7 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
         dst+= dstStride;
 
     for (y=1; y<srcHeight; y++){
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
         const long mmxSize= srcWidth&~15;
         __asm__ volatile(
         "mov           %4, %%"REG_a"            \n\t"
@@ -2229,7 +2229,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
         "1:                                         \n\t"
         PREFETCH"    64(%0, %%"REG_d")              \n\t"
         PREFETCH"    64(%1, %%"REG_d")              \n\t"
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
         "movq          (%0, %%"REG_d"), %%mm0       \n\t"
         "movq          (%1, %%"REG_d"), %%mm1       \n\t"
         "movq         6(%0, %%"REG_d"), %%mm2       \n\t"
@@ -2290,7 +2290,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
         "packssdw                %%mm1, %%mm0       \n\t" // V1 V0 U1 U0
         "psraw                      $7, %%mm0       \n\t"
 
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
         "movq        12(%0, %%"REG_d"), %%mm4       \n\t"
         "movq        12(%1, %%"REG_d"), %%mm1       \n\t"
         "movq        18(%0, %%"REG_d"), %%mm2       \n\t"

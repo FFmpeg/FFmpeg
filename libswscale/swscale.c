@@ -83,7 +83,7 @@ unsigned swscale_version(void)
 #undef PAVGB
 
 //#undef HAVE_MMX2
-//#define HAVE_3DNOW
+//#define HAVE_AMD3DNOW
 //#undef HAVE_MMX
 //#undef ARCH_X86
 //#define WORDS_BIGENDIAN
@@ -968,7 +968,7 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 
 #if ARCH_X86
 
-#if ((HAVE_MMX && !HAVE_3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
+#if ((HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
 #define COMPILE_MMX
 #endif
 
@@ -976,18 +976,18 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 #define COMPILE_MMX2
 #endif
 
-#if ((HAVE_3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
+#if ((HAVE_AMD3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
 #define COMPILE_3DNOW
 #endif
 #endif //ARCH_X86
 
 #undef HAVE_MMX
 #undef HAVE_MMX2
-#undef HAVE_3DNOW
+#undef HAVE_AMD3DNOW
 #undef HAVE_ALTIVEC
 #define HAVE_MMX 0
 #define HAVE_MMX2 0
-#define HAVE_3DNOW 0
+#define HAVE_AMD3DNOW 0
 #define HAVE_ALTIVEC 0
 
 #ifdef COMPILE_C
@@ -1010,7 +1010,7 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 #undef RENAME
 #undef HAVE_MMX
 #undef HAVE_MMX2
-#undef HAVE_3DNOW
+#undef HAVE_AMD3DNOW
 #define ARCH_X86
 #define RENAME(a) a ## _X86
 #include "swscale_template.c"
@@ -1020,10 +1020,10 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 #undef RENAME
 #undef HAVE_MMX
 #undef HAVE_MMX2
-#undef HAVE_3DNOW
+#undef HAVE_AMD3DNOW
 #define HAVE_MMX 1
 #define HAVE_MMX2 0
-#define HAVE_3DNOW 0
+#define HAVE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX
 #include "swscale_template.c"
 #endif
@@ -1033,10 +1033,10 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 #undef RENAME
 #undef HAVE_MMX
 #undef HAVE_MMX2
-#undef HAVE_3DNOW
+#undef HAVE_AMD3DNOW
 #define HAVE_MMX 1
 #define HAVE_MMX2 1
-#define HAVE_3DNOW 0
+#define HAVE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX2
 #include "swscale_template.c"
 #endif
@@ -1046,10 +1046,10 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 #undef RENAME
 #undef HAVE_MMX
 #undef HAVE_MMX2
-#undef HAVE_3DNOW
+#undef HAVE_AMD3DNOW
 #define HAVE_MMX 1
 #define HAVE_MMX2 0
-#define HAVE_3DNOW 1
+#define HAVE_AMD3DNOW 1
 #define RENAME(a) a ## _3DNow
 #include "swscale_template.c"
 #endif
@@ -1661,7 +1661,7 @@ static SwsFunc getSwsFunc(int flags){
 #else //RUNTIME_CPUDETECT
 #if   HAVE_MMX2
     return swScale_MMX2;
-#elif HAVE_3DNOW
+#elif HAVE_AMD3DNOW
     return swScale_3DNow;
 #elif HAVE_MMX
     return swScale_MMX;
@@ -2198,7 +2198,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC|SWS_CPU_CAPS_BFIN);
 #if   HAVE_MMX2
     flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2;
-#elif HAVE_3DNOW
+#elif HAVE_AMD3DNOW
     flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_3DNOW;
 #elif HAVE_MMX
     flags |= SWS_CPU_CAPS_MMX;

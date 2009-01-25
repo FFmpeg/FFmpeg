@@ -29,14 +29,14 @@
 #undef EMMS
 #undef SFENCE
 
-#if HAVE_3DNOW
+#if HAVE_AMD3DNOW
 /* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
 #define EMMS     "femms"
 #else
 #define EMMS     "emms"
 #endif
 
-#if HAVE_3DNOW
+#if HAVE_AMD3DNOW
 #define PREFETCH  "prefetch"
 #define PREFETCHW "prefetchw"
 #elif HAVE_MMX2
@@ -55,7 +55,7 @@
 
 #if HAVE_MMX2
 #define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
-#elif HAVE_3DNOW
+#elif HAVE_AMD3DNOW
 #define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
 #endif
 

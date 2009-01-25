@@ -55,9 +55,9 @@ DECLARE_ASM_CONST(8, uint64_t, mmx_grnmask) = 0xfcfcfcfcfcfcfcfcULL;
 //MMX versions
 #undef RENAME
 #undef HAVE_MMX2
-#undef HAVE_3DNOW
+#undef HAVE_AMD3DNOW
 #define HAVE_MMX2 0
-#define HAVE_3DNOW 0
+#define HAVE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX
 #include "yuv2rgb_template.c"
 

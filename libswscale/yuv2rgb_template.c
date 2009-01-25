@@ -30,7 +30,7 @@
 #undef EMMS
 #undef SFENCE
 
-#if HAVE_3DNOW
+#if HAVE_AMD3DNOW
 /* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
 #define EMMS     "femms"
 #else
