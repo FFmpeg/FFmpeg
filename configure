@@ -192,6 +192,7 @@ show_help(){
   echo "  --enable-powerpc-perf    enable performance report on PPC"
   echo "                           (requires enabling PMC)"
   echo "  --disable-altivec        disable AltiVec optimizations"
+  echo "  --disable-amd3dnow       disable 3DNow! optimizations"
   echo "  --disable-mmx            disable MMX optimizations"
   echo "  --disable-mmx2           disable MMX2 optimizations"
   echo "  --disable-sse            disable SSE optimizations"
@@ -813,6 +814,7 @@ ARCH_LIST='
 
 ARCH_EXT_LIST='
     altivec
+    amd3dnow
     armv5te
     armv6
     armv6t2
@@ -943,6 +945,7 @@ CMDLINE_SET="
 
 # architecture extensions
 altivec_deps="ppc"
+amd3dnow_deps="mmx"
 armv5te_deps="arm"
 armv6_deps="arm"
 armv6t2_deps="arm"
@@ -2155,6 +2158,7 @@ if enabled x86; then
     echo "yasm                      ${yasm-no}"
     echo "MMX enabled               ${mmx-no}"
     echo "MMX2 enabled              ${mmx2-no}"
+    echo "3DNow! enabled            ${amd3dnow-no}"
     echo "SSE enabled               ${sse-no}"
     echo "SSSE3 enabled             ${ssse3-no}"
     echo "CMOV enabled              ${cmov-no}"
