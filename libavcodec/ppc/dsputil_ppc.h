@@ -21,6 +21,8 @@
 #ifndef AVCODEC_PPC_DSPUTIL_PPC_H
 #define AVCODEC_PPC_DSPUTIL_PPC_H
 
+#include "config.h"
+
 #if CONFIG_POWERPC_PERF
 void powerpc_display_perf_report(void);
 /* the 604* have 2, the G3* have 4, the G4s have 6,
