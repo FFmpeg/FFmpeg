@@ -21,6 +21,7 @@
 #ifndef AVFORMAT_MXF_H
 #define AVFORMAT_MXF_H
 
+#include <string.h>
 #include "avformat.h"
 #include "libavcodec/bytestream.h"
 

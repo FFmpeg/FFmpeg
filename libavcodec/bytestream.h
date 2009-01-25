@@ -22,6 +22,7 @@
 #ifndef AVCODEC_BYTESTREAM_H
 #define AVCODEC_BYTESTREAM_H
 
+#include <string.h>
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 

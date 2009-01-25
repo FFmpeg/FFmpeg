@@ -26,7 +26,7 @@
  * external API header
  */
 
-
+#include <errno.h>
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52

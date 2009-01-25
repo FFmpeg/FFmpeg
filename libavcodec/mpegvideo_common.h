@@ -30,6 +30,7 @@
 #ifndef AVCODEC_MPEGVIDEO_COMMON_H
 #define AVCODEC_MPEGVIDEO_COMMON_H
 
+#include <string.h>
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
