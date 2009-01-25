@@ -164,8 +164,6 @@ static inline av_const int FASTDIV(int a, int b)
 
 extern const uint8_t ff_sqrt_tab[256];
 
-static inline int av_log2_16bit(unsigned int v);
-
 static inline av_const unsigned int ff_sqrt(unsigned int a)
 {
     unsigned int b;
