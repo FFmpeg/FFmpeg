@@ -1536,3 +1536,135 @@ function ff_biweight_h264_pixels_\w\()x\h\()_neon, export=1
         biweight_entry  4,  2
         biweight_entry  4,  4,  b=0
         biweight_func   4
+
+@ Weighted prediction
+
+        .macro  weight_16 mac
+        vdup.8          d0,  r3
+        vmov            q2,  q8
+        vmov            q3,  q8
+1:      subs            ip,  ip,  #2
+        vld1.8          {d20-d21},[r0,:128], r1
+        \mac            q2,  d0,  d20
+        pld             [r0]
+        \mac            q3,  d0,  d21
+        vmov            q12, q8
+        vld1.8          {d28-d29},[r0,:128], r1
+        vmov            q13, q8
+        \mac            q12, d0,  d28
+        pld             [r0]
+        \mac            q13, d0,  d29
+        vshl.s16        q2,  q2,  q9
+        vshl.s16        q3,  q3,  q9
+        vqmovun.s16     d4,  q2
+        vqmovun.s16     d5,  q3
+        vshl.s16        q12, q12, q9
+        vshl.s16        q13, q13, q9
+        vqmovun.s16     d24, q12
+        vqmovun.s16     d25, q13
+        vmov            q3,  q8
+        vst1.8          {d4- d5}, [r4,:128], r1
+        vmov            q2,  q8
+        vst1.8          {d24-d25},[r4,:128], r1
+        bne             1b
+        pop             {r4, pc}
+        .endm
+
+        .macro  weight_8 mac
+        vdup.8          d0,  r3
+        vmov            q1,  q8
+        vmov            q10, q8
+1:      subs            ip,  ip,  #2
+        vld1.8          {d4},[r0,:64], r1
+        \mac            q1,  d0,  d4
+        pld             [r0]
+        vld1.8          {d6},[r0,:64], r1
+        \mac            q10, d0,  d6
+        pld             [r0]
+        vshl.s16        q1,  q1,  q9
+        vqmovun.s16     d2,  q1
+        vshl.s16        q10, q10, q9
+        vqmovun.s16     d4,  q10
+        vmov            q10, q8
+        vst1.8          {d2},[r4,:64], r1
+        vmov            q1,  q8
+        vst1.8          {d4},[r4,:64], r1
+        bne             1b
+        pop             {r4, pc}
+        .endm
+
+        .macro  weight_4 mac
+        vdup.8          d0,  r3
+        vmov            q1,  q8
+        vmov            q10, q8
+1:      subs            ip,  ip,  #4
+        vld1.32         {d4[0]},[r0,:32], r1
+        vld1.32         {d4[1]},[r0,:32], r1
+        \mac            q1,  d0,  d4
+        pld             [r0]
+        blt             2f
+        vld1.32         {d6[0]},[r0,:32], r1
+        vld1.32         {d6[1]},[r0,:32], r1
+        \mac            q10, d0,  d6
+        pld             [r0]
+        vshl.s16        q1,  q1,  q9
+        vqmovun.s16     d2,  q1
+        vshl.s16        q10, q10, q9
+        vqmovun.s16     d4,  q10
+        vmov            q10, q8
+        vst1.32         {d2[0]},[r4,:32], r1
+        vst1.32         {d2[1]},[r4,:32], r1
+        vmov            q1,  q8
+        vst1.32         {d4[0]},[r4,:32], r1
+        vst1.32         {d4[1]},[r4,:32], r1
+        bne             1b
+        pop             {r4, pc}
+2:      vshl.s16        q1,  q1,  q9
+        vqmovun.s16     d2,  q1
+        vst1.32         {d2[0]},[r4,:32], r1
+        vst1.32         {d2[1]},[r4,:32], r1
+        pop             {r4, pc}
+        .endm
+
+        .macro  weight_func w
+function weight_h264_pixels_\w\()_neon
+        push            {r4, lr}
+        ldr             r4,  [sp, #8]
+        vdup.16         q9,  r2
+        mov             lr,  #1
+        lsl             r4,  r4,  r2
+        subs            r2,  r2,  #1
+        vneg.s16        q9,  q9
+        addge           r4,  r4,  lr,  lsl r2
+        cmp             r3,  #0
+        vdup.16         q8,  r4
+        mov             r4,  r0
+        blt             10f
+        weight_\w       vmlal.u8
+10:     rsb             r3,  r3,  #0
+        weight_\w       vmlsl.u8
+        .endfunc
+        .endm
+
+        .macro  weight_entry w, h, b=1
+function ff_weight_h264_pixels_\w\()x\h\()_neon, export=1
+        mov             ip,  #\h
+.if \b
+        b               weight_h264_pixels_\w\()_neon
+.endif
+        .endfunc
+        .endm
+
+        weight_entry    16, 8
+        weight_entry    16, 16, b=0
+        weight_func     16
+
+        weight_entry    8,  16
+        weight_entry    8,  4
+        weight_entry    8,  8,  b=0
+        weight_func     8
+
+        weight_entry    4,  8
+        weight_entry    4,  2
+        weight_entry    4,  4,  b=0
+        weight_func     4
