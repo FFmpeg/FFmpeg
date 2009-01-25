@@ -36,12 +36,6 @@
     extern URLProtocol x##_protocol; \
     if(CONFIG_##X##_PROTOCOL) register_protocol(&x##_protocol); }
 
-/* If you do not call this function, then you can select exactly which
-   formats you want to support */
-
-/**
- * Initialize libavformat and register all the (de)muxers and protocols.
- */
 void av_register_all(void)
 {
     static int initialized;

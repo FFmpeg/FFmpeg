@@ -757,6 +757,15 @@ void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
  */
 void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload);
 
+/**
+ * Initialize libavformat and register all the muxers, demuxers and
+ * protocols. If you do not call this function, then you can select
+ * exactly which formats you want to support.
+ *
+ * @see av_register_input_format()
+ * @see av_register_output_format()
+ * @see register_protocol()
+ */
 void av_register_all(void);
 
 /** codec tag <-> codec id */
