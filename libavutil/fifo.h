@@ -72,6 +72,7 @@ int av_fifo_read(AVFifoBuffer *f, uint8_t *buf, int buf_size);
  */
 int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void*, int), void* dest);
 
+#if LIBAVUTIL_VERSION_MAJOR < 50
 /**
  * Writes data into an AVFifoBuffer.
  * @param *f AVFifoBuffer to write to
@@ -79,6 +80,7 @@ int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void
  * @param size data size
  */
 attribute_deprecated void av_fifo_write(AVFifoBuffer *f, const uint8_t *buf, int size);
+#endif
 
 /**
  * Feeds data from a user supplied callback to an AVFifoBuffer.

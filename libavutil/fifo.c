@@ -74,10 +74,12 @@ int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
     return 0;
 }
 
+#if LIBAVUTIL_VERSION_MAJOR < 50
 void av_fifo_write(AVFifoBuffer *f, const uint8_t *buf, int size)
 {
     av_fifo_generic_write(f, (void *)buf, size, NULL);
 }
+#endif
 
 int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void*, void*, int))
 {
