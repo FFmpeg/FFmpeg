@@ -26,20 +26,14 @@
 #ifndef AVUTIL_COMMON_H
 #define AVUTIL_COMMON_H
 
+#include <ctype.h>
+#include <errno.h>
 #include <inttypes.h>
-
-#ifdef HAVE_AV_CONFIG_H
-/* only include the following when compiling package */
-#    include "config.h"
-
-#    include <stdlib.h>
-#    include <stdio.h>
-#    include <string.h>
-#    include <ctype.h>
-#    include <limits.h>
-#    include <errno.h>
-#    include <math.h>
-#endif /* HAVE_AV_CONFIG_H */
+#include <limits.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define AV_GCC_VERSION_AT_LEAST(x,y) (defined(__GNUC__) && (__GNUC__ > x || __GNUC__ == x && __GNUC_MINOR__ >= y))
 
@@ -98,8 +92,6 @@
 #    define av_unused
 #endif
 #endif
-
-#include "mem.h"
 
 //rounded divison & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
@@ -264,7 +256,10 @@ static inline av_const float av_clipf(float a, float amin, float amax)
         }\
     }
 
+#include "mem.h"
+
 #ifdef HAVE_AV_CONFIG_H
+#    include "config.h"
 #    include "internal.h"
 #endif /* HAVE_AV_CONFIG_H */
 
