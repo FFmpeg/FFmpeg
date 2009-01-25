@@ -29,6 +29,8 @@
 
 #include "avcodec.h"
 
+#define FLAC_STREAMINFO_SIZE 34
+
 enum {
     FLAC_METADATA_TYPE_STREAMINFO = 0,
     FLAC_METADATA_TYPE_PADDING,

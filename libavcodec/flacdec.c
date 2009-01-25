@@ -47,7 +47,6 @@
 
 #define MAX_CHANNELS 8
 #define MAX_BLOCKSIZE 65535
-#define FLAC_STREAMINFO_SIZE 34
 
 enum decorrelation_type {
     INDEPENDENT,
