@@ -289,6 +289,18 @@ static int audio_read_header(AVFormatContext *s,
     st->codec->codec_id = s->iformat->value;
     st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
+
+    if(st->codec->codec_id == CODEC_ID_FLAC) {
+        /* skip ID3v2 header if found */
+        uint8_t buf[ID3v2_HEADER_SIZE];
+        int ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
+        if (ret == ID3v2_HEADER_SIZE && ff_id3v2_match(buf)) {
+            int len = ff_id3v2_tag_len(buf);
+            url_fseek(s->pb, len - ID3v2_HEADER_SIZE, SEEK_CUR);
+        } else {
+            url_fseek(s->pb, 0, SEEK_SET);
+        }
+    }
     return 0;
 }
 
@@ -573,7 +585,12 @@ static int eac3_probe(AVProbeData *p)
 #if CONFIG_FLAC_DEMUXER
 static int flac_probe(AVProbeData *p)
 {
-    if(memcmp(p->buf, "fLaC", 4)) return 0;
+    uint8_t *bufptr = p->buf;
+
+    if(ff_id3v2_match(bufptr))
+        bufptr += ff_id3v2_tag_len(bufptr);
+
+    if(memcmp(bufptr, "fLaC", 4)) return 0;
     else                          return AVPROBE_SCORE_MAX / 2;
 }
 #endif
