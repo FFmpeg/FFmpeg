@@ -92,6 +92,31 @@ void ff_h264_v_loop_filter_chroma_neon(uint8_t *pix, int stride, int alpha,
 void ff_h264_h_loop_filter_chroma_neon(uint8_t *pix, int stride, int alpha,
                                        int beta, int8_t *tc0);
 
+void ff_biweight_h264_pixels_16x16_neon(uint8_t *dst, uint8_t *src, int stride,
+                                        int log2_den, int weightd, int weights,
+                                        int offset);
+void ff_biweight_h264_pixels_16x8_neon(uint8_t *dst, uint8_t *src, int stride,
+                                       int log2_den, int weightd, int weights,
+                                       int offset);
+void ff_biweight_h264_pixels_8x16_neon(uint8_t *dst, uint8_t *src, int stride,
+                                       int log2_den, int weightd, int weights,
+                                       int offset);
+void ff_biweight_h264_pixels_8x8_neon(uint8_t *dst, uint8_t *src, int stride,
+                                      int log2_den, int weightd, int weights,
+                                      int offset);
+void ff_biweight_h264_pixels_8x4_neon(uint8_t *dst, uint8_t *src, int stride,
+                                      int log2_den, int weightd, int weights,
+                                      int offset);
+void ff_biweight_h264_pixels_4x8_neon(uint8_t *dst, uint8_t *src, int stride,
+                                      int log2_den, int weightd, int weights,
+                                      int offset);
+void ff_biweight_h264_pixels_4x4_neon(uint8_t *dst, uint8_t *src, int stride,
+                                      int log2_den, int weightd, int weights,
+                                      int offset);
+void ff_biweight_h264_pixels_4x2_neon(uint8_t *dst, uint8_t *src, int stride,
+                                      int log2_den, int weightd, int weights,
+                                      int offset);
+
 void ff_h264_idct_add_neon(uint8_t *dst, DCTELEM *block, int stride);
 void ff_h264_idct_dc_add_neon(uint8_t *dst, DCTELEM *block, int stride);
 void ff_h264_idct_add16_neon(uint8_t *dst, const int *block_offset,
@@ -175,6 +200,15 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->h264_h_loop_filter_luma = ff_h264_h_loop_filter_luma_neon;
     c->h264_v_loop_filter_chroma = ff_h264_v_loop_filter_chroma_neon;
     c->h264_h_loop_filter_chroma = ff_h264_h_loop_filter_chroma_neon;
+
+    c->biweight_h264_pixels_tab[0] = ff_biweight_h264_pixels_16x16_neon;
+    c->biweight_h264_pixels_tab[1] = ff_biweight_h264_pixels_16x8_neon;
+    c->biweight_h264_pixels_tab[2] = ff_biweight_h264_pixels_8x16_neon;
+    c->biweight_h264_pixels_tab[3] = ff_biweight_h264_pixels_8x8_neon;
+    c->biweight_h264_pixels_tab[4] = ff_biweight_h264_pixels_8x4_neon;
+    c->biweight_h264_pixels_tab[5] = ff_biweight_h264_pixels_4x8_neon;
+    c->biweight_h264_pixels_tab[6] = ff_biweight_h264_pixels_4x4_neon;
+    c->biweight_h264_pixels_tab[7] = ff_biweight_h264_pixels_4x2_neon;
 
     c->h264_idct_add = ff_h264_idct_add_neon;
     c->h264_idct_dc_add = ff_h264_idct_dc_add_neon;
