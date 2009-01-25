@@ -953,7 +953,7 @@ mmx_deps="x86"
 mmx2_deps="x86 mmx"
 neon_deps="arm"
 ppc4xx_deps="ppc"
-sse_deps="mmx"
+sse_deps="x86 mmx"
 ssse3_deps="x86 sse"
 vis_deps="sparc"
 
