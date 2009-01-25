@@ -3700,19 +3700,18 @@ static int opt_preset(const char *opt, const char *arg)
     FILE *f=NULL;
     char filename[1000], tmp[1000], tmp2[1000], line[1000];
     int i;
-    const char *base[3]= { getenv("HOME"),
-                           "/usr/local/share",
-                           "/usr/share",
+    const char *base[2]= { getenv("HOME"),
+                           FFMPEG_DATADIR,
                          };
 
-    for(i=!base[0]; i<3 && !f; i++){
-        snprintf(filename, sizeof(filename), "%s/%sffmpeg/%s.ffpreset", base[i], i ? "" : ".", arg);
+    for(i=!base[0]; i<2 && !f; i++){
+        snprintf(filename, sizeof(filename), "%s%s/%s.ffpreset", base[i], i ? "" : "/.ffmpeg", arg);
         f= fopen(filename, "r");
         if(!f){
             char *codec_name= *opt == 'v' ? video_codec_name :
                               *opt == 'a' ? audio_codec_name :
                                             subtitle_codec_name;
-            snprintf(filename, sizeof(filename), "%s/%sffmpeg/%s-%s.ffpreset", base[i],  i ? "" : ".", codec_name, arg);
+            snprintf(filename, sizeof(filename), "%s%s/%s-%s.ffpreset", base[i],  i ? "" : "/.ffmpeg", codec_name, arg);
             f= fopen(filename, "r");
         }
     }
