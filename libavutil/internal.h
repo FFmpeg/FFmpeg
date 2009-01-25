@@ -264,9 +264,6 @@ if((y)<(x)){\
 #elif defined(__GNUC__)
     #define DECLARE_ALIGNED(n,t,v)      t v __attribute__ ((aligned (n)))
     #define DECLARE_ASM_CONST(n,t,v)    static const t v attribute_used __attribute__ ((aligned (n)))
-#elif defined(_MSC_VER)
-    #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
-    #define DECLARE_ASM_CONST(n,t,v)    __declspec(align(n)) static const t v
 #elif HAVE_INLINE_ASM
     #error The asm code needs alignment, but we do not know how to do it for this compiler.
 #else
