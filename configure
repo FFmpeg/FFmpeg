@@ -2154,7 +2154,9 @@ echo "big-endian                ${bigendian-no}"
 if enabled x86; then
     echo "yasm                      ${yasm-no}"
     echo "MMX enabled               ${mmx-no}"
+    echo "MMX2 enabled              ${mmx2-no}"
     echo "SSE enabled               ${sse-no}"
+    echo "SSSE3 enabled             ${ssse3-no}"
     echo "CMOV enabled              ${cmov-no}"
     echo "CMOV is fast              ${fast_cmov-no}"
     echo "EBX available             ${ebx_available-no}"
@@ -2173,7 +2175,12 @@ if enabled mips; then
 fi
 if enabled ppc; then
     echo "AltiVec enabled           ${altivec-no}"
+    echo "PPC 4xx optimizations     ${ppc4xx-no}"
     echo "dcbzl available           ${dcbzl-no}"
+    echo "performance report        ${powerpc_perf-no}"
+fi
+if enabled sparc; then
+    echo "VIS enabled               ${vis-no}"
 fi
 echo "gprof enabled             ${gprof-no}"
 echo "debug symbols             ${debug-no}"
