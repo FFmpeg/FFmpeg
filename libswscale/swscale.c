@@ -257,7 +257,7 @@ DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toUV[2][4]) = {
 
 DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toUVOffset)= 0x0040400000404000ULL;
 
-#endif /* ARCH_X86 */
+#endif /* ARCH_X86 && CONFIG_GPL */
 
 // clipping helper table for C implementations:
 static unsigned char clip_table[768];
@@ -962,7 +962,7 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 #if ARCH_PPC
 #if (HAVE_ALTIVEC || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
 #define COMPILE_ALTIVEC
-#endif //HAVE_ALTIVEC
+#endif
 #endif //ARCH_PPC
 
 #if ARCH_X86
@@ -978,7 +978,7 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 #if ((HAVE_3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
 #define COMPILE_3DNOW
 #endif
-#endif //ARCH_X86 || ARCH_X86_64
+#endif //ARCH_X86
 
 #undef HAVE_MMX
 #undef HAVE_MMX2
@@ -1053,7 +1053,7 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 #include "swscale_template.c"
 #endif
 
-#endif //ARCH_X86 || ARCH_X86_64
+#endif //ARCH_X86
 
 // minor note: the HAVE_xyz is messed up after that line so don't use it
 
@@ -3154,7 +3154,7 @@ void sws_freeContext(SwsContext *c){
 #endif
     c->funnyYCode=NULL;
     c->funnyUVCode=NULL;
-#endif /* ARCH_X86 */
+#endif /* ARCH_X86 && CONFIG_GPL */
 
     av_freep(&c->lumMmx2Filter);
     av_freep(&c->chrMmx2Filter);
