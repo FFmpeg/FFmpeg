@@ -961,6 +961,7 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 
 #if ARCH_PPC
 #if (HAVE_ALTIVEC || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
+#undef COMPILE_C
 #define COMPILE_ALTIVEC
 #endif
 #endif //ARCH_PPC
