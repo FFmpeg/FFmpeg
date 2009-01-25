@@ -80,7 +80,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #include <stdlib.h>
 #include <string.h>
 //#undef HAVE_MMX2
-//#define HAVE_3DNOW
+//#define HAVE_AMD3DNOW
 //#undef HAVE_MMX
 //#undef ARCH_X86
 //#define DEBUG_BRIGHTNESS
@@ -564,7 +564,7 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 
 #if ARCH_X86
 
-#if (HAVE_MMX && !HAVE_3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
+#if (HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_MMX
 #endif
 
@@ -572,7 +572,7 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 #define COMPILE_MMX2
 #endif
 
-#if (HAVE_3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
+#if (HAVE_AMD3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_3DNOW
 #endif
 #endif /* ARCH_X86 */
@@ -581,8 +581,8 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 #define HAVE_MMX 0
 #undef HAVE_MMX2
 #define HAVE_MMX2 0
-#undef HAVE_3DNOW
-#define HAVE_3DNOW 0
+#undef HAVE_AMD3DNOW
+#define HAVE_AMD3DNOW 0
 #undef HAVE_ALTIVEC
 #define HAVE_ALTIVEC 0
 
@@ -625,10 +625,10 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 #undef RENAME
 #undef HAVE_MMX
 #undef HAVE_MMX2
-#undef HAVE_3DNOW
+#undef HAVE_AMD3DNOW
 #define HAVE_MMX 1
 #define HAVE_MMX2 0
-#define HAVE_3DNOW 1
+#define HAVE_AMD3DNOW 1
 #define RENAME(a) a ## _3DNow
 #include "postprocess_template.c"
 #endif
@@ -667,7 +667,7 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
 #else //RUNTIME_CPUDETECT
 #if   HAVE_MMX2
             postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-#elif HAVE_3DNOW
+#elif HAVE_AMD3DNOW
             postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #elif HAVE_MMX
             postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);

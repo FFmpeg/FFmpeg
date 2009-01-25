@@ -33,7 +33,7 @@
 
 #if   HAVE_MMX2
 #define REAL_PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
-#elif HAVE_3DNOW
+#elif HAVE_AMD3DNOW
 #define REAL_PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
 #endif
 #define PAVGB(a,b)  REAL_PAVGB(a,b)
@@ -179,7 +179,7 @@ static inline int RENAME(vertClassify)(uint8_t src[], int stride, PPContext *c){
 #if !HAVE_ALTIVEC
 static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 {
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
     src+= stride*3;
     __asm__ volatile(        //"movv %0 %1 %2\n\t"
         "movq %2, %%mm0                         \n\t"  // QP,..., QP
@@ -306,7 +306,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
         : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb)
         : "%"REG_a, "%"REG_c
     );
-#else //HAVE_MMX2 || HAVE_3DNOW
+#else //HAVE_MMX2 || HAVE_AMD3DNOW
     const int l1= stride;
     const int l2= stride + l1;
     const int l3= stride + l2;
@@ -345,7 +345,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 
         src++;
     }
-#endif //HAVE_MMX2 || HAVE_3DNOW
+#endif //HAVE_MMX2 || HAVE_AMD3DNOW
 }
 #endif //HAVE_ALTIVEC
 
@@ -364,7 +364,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
  */
 static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
 {
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
     src+= stride*3;
 // FIXME rounding
     __asm__ volatile(
@@ -426,7 +426,7 @@ static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
         : "r" (src), "r" ((x86_reg)stride)
         : "%"REG_a, "%"REG_c
     );
-#else //HAVE_MMX2 || HAVE_3DNOW
+#else //HAVE_MMX2 || HAVE_AMD3DNOW
     const int l1= stride;
     const int l2= stride + l1;
     const int l3= stride + l2;
@@ -449,7 +449,7 @@ static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
         }
     }
 
-#endif //HAVE_MMX2 || HAVE_3DNOW
+#endif //HAVE_MMX2 || HAVE_AMD3DNOW
 }
 #endif //0
 
@@ -462,7 +462,7 @@ static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
  */
 static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
 {
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
     src+= stride*3;
 
     __asm__ volatile(
@@ -548,7 +548,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
         : "r" (src), "r" ((x86_reg)stride), "m" (co->pQPb)
         : "%"REG_a, "%"REG_c
     );
-#else //HAVE_MMX2 || HAVE_3DNOW
+#else //HAVE_MMX2 || HAVE_AMD3DNOW
 
     const int l1= stride;
     const int l2= stride + l1;
@@ -582,13 +582,13 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
         }
         src++;
     }
-#endif //HAVE_MMX2 || HAVE_3DNOW
+#endif //HAVE_MMX2 || HAVE_AMD3DNOW
 }
 
 #if !HAVE_ALTIVEC
 static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext *c)
 {
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
 /*
     uint8_t tmp[16];
     const int l1= stride;
@@ -1101,7 +1101,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         : "r" ((x86_reg)stride), "m" (c->pQPb)
         : "%"REG_a, "%"REG_c
     );
-#else //HAVE_MMX2 || HAVE_3DNOW
+#else //HAVE_MMX2 || HAVE_AMD3DNOW
     const int l1= stride;
     const int l2= stride + l1;
     const int l3= stride + l2;
@@ -1139,14 +1139,14 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         }
         src++;
     }
-#endif //HAVE_MMX2 || HAVE_3DNOW
+#endif //HAVE_MMX2 || HAVE_AMD3DNOW
 }
 #endif //HAVE_ALTIVEC
 
 #if !HAVE_ALTIVEC
 static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c)
 {
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
     __asm__ volatile(
         "pxor %%mm6, %%mm6                      \n\t"
         "pcmpeqb %%mm7, %%mm7                   \n\t"
@@ -1370,7 +1370,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
         : : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb), "m"(c->pQPb2)
         : "%"REG_a, "%"REG_d, "%"REG_c
     );
-#else //HAVE_MMX2 || HAVE_3DNOW
+#else //HAVE_MMX2 || HAVE_AMD3DNOW
     int y;
     int min=255;
     int max=0;
@@ -1487,7 +1487,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
 //        src[0] = src[7]=src[stride*7]=src[stride*7 + 7]=255;
     }
 #endif
-#endif //HAVE_MMX2 || HAVE_3DNOW
+#endif //HAVE_MMX2 || HAVE_AMD3DNOW
 }
 #endif //HAVE_ALTIVEC
 
@@ -1499,7 +1499,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
  */
 static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int stride)
 {
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
     src+= 4*stride;
     __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
@@ -1552,7 +1552,7 @@ static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int strid
  */
 static inline void RENAME(deInterlaceInterpolateCubic)(uint8_t src[], int stride)
 {
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
     src+= stride*3;
     __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
@@ -1594,7 +1594,7 @@ DEINT_CUBIC((%%REGd, %1), (%0, %1, 8) , (%%REGd, %1, 4), (%%REGc)    , (%%REGc, 
         : : "r" (src), "r" ((x86_reg)stride)
         : "%"REG_a, "%"REG_d, "%"REG_c
     );
-#else //HAVE_MMX2 || HAVE_3DNOW
+#else //HAVE_MMX2 || HAVE_AMD3DNOW
     int x;
     src+= stride*3;
     for(x=0; x<8; x++){
@@ -1604,7 +1604,7 @@ DEINT_CUBIC((%%REGd, %1), (%0, %1, 8) , (%%REGd, %1, 4), (%%REGc)    , (%%REGc, 
         src[stride*9] = CLIP((-src[stride*6] + 9*src[stride*8] + 9*src[stride*10] - src[stride*12])>>4);
         src++;
     }
-#endif //HAVE_MMX2 || HAVE_3DNOW
+#endif //HAVE_MMX2 || HAVE_AMD3DNOW
 }
 
 /**
@@ -1616,7 +1616,7 @@ DEINT_CUBIC((%%REGd, %1), (%0, %1, 8) , (%%REGd, %1, 4), (%%REGc)    , (%%REGc, 
  */
 static inline void RENAME(deInterlaceFF)(uint8_t src[], int stride, uint8_t *tmp)
 {
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
     src+= stride*4;
     __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
@@ -1665,7 +1665,7 @@ DEINT_FF((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8) , (%%REGd, %1, 4))
         : : "r" (src), "r" ((x86_reg)stride), "r"(tmp)
         : "%"REG_a, "%"REG_d
     );
-#else //HAVE_MMX2 || HAVE_3DNOW
+#else //HAVE_MMX2 || HAVE_AMD3DNOW
     int x;
     src+= stride*4;
     for(x=0; x<8; x++){
@@ -1683,7 +1683,7 @@ DEINT_FF((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8) , (%%REGd, %1, 4))
 
         src++;
     }
-#endif //HAVE_MMX2 || HAVE_3DNOW
+#endif //HAVE_MMX2 || HAVE_AMD3DNOW
 }
 
 /**
@@ -1695,7 +1695,7 @@ DEINT_FF((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8) , (%%REGd, %1, 4))
  */
 static inline void RENAME(deInterlaceL5)(uint8_t src[], int stride, uint8_t *tmp, uint8_t *tmp2)
 {
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
     src+= stride*4;
     __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
@@ -1755,7 +1755,7 @@ DEINT_L5(%%mm1, %%mm0, (%%REGd, %1, 2), (%0, %1, 8)    , (%%REGd, %1, 4))
         : : "r" (src), "r" ((x86_reg)stride), "r"(tmp), "r"(tmp2)
         : "%"REG_a, "%"REG_d
     );
-#else //HAVE_MMX2 || HAVE_3DNOW
+#else //HAVE_MMX2 || HAVE_AMD3DNOW
     int x;
     src+= stride*4;
     for(x=0; x<8; x++){
@@ -1784,7 +1784,7 @@ DEINT_L5(%%mm1, %%mm0, (%%REGd, %1, 2), (%0, %1, 8)    , (%%REGd, %1, 4))
 
         src++;
     }
-#endif //HAVE_MMX2 || HAVE_3DNOW
+#endif //HAVE_MMX2 || HAVE_AMD3DNOW
 }
 
 /**
@@ -1796,7 +1796,7 @@ DEINT_L5(%%mm1, %%mm0, (%%REGd, %1, 2), (%0, %1, 8)    , (%%REGd, %1, 4))
  */
 static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uint8_t *tmp)
 {
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
     src+= 4*stride;
     __asm__ volatile(
         "lea (%0, %1), %%"REG_a"                \n\t"
@@ -1843,7 +1843,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
         : : "r" (src), "r" ((x86_reg)stride), "r" (tmp)
         : "%"REG_a, "%"REG_d
     );
-#else //HAVE_MMX2 || HAVE_3DNOW
+#else //HAVE_MMX2 || HAVE_AMD3DNOW
     int a, b, c, x;
     src+= 4*stride;
 
@@ -1886,7 +1886,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
         src += 4;
         tmp += 4;
     }
-#endif //HAVE_MMX2 || HAVE_3DNOW
+#endif //HAVE_MMX2 || HAVE_AMD3DNOW
 }
 
 /**
@@ -2191,7 +2191,7 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 
 #define FAST_L2_DIFF
 //#define L1_DIFF //u should change the thresholds too if u try that one
-#if HAVE_MMX2 || HAVE_3DNOW
+#if HAVE_MMX2 || HAVE_AMD3DNOW
     __asm__ volatile(
         "lea (%2, %2, 2), %%"REG_a"             \n\t" // 3*stride
         "lea (%2, %2, 4), %%"REG_d"             \n\t" // 5*stride
@@ -2479,7 +2479,7 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
         :: "r" (src), "r" (tempBlurred), "r"((x86_reg)stride), "m" (tempBlurredPast)
         : "%"REG_a, "%"REG_d, "%"REG_c, "memory"
     );
-#else //HAVE_MMX2 || HAVE_3DNOW
+#else //HAVE_MMX2 || HAVE_AMD3DNOW
 {
     int y;
     int d=0;
@@ -2562,7 +2562,7 @@ Switch between
         }
     }
 }
-#endif //HAVE_MMX2 || HAVE_3DNOW
+#endif //HAVE_MMX2 || HAVE_AMD3DNOW
 }
 #endif //HAVE_ALTIVEC
 
@@ -3411,7 +3411,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 : "%"REG_a, "%"REG_d
             );
 
-#elif HAVE_3DNOW
+#elif HAVE_AMD3DNOW
 //FIXME check if this is faster on an 3dnow chip or if it is faster without the prefetch or ...
 /*          prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
             prefetch(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
@@ -3547,7 +3547,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 : "%"REG_a, "%"REG_d
             );
 
-#elif HAVE_3DNOW
+#elif HAVE_AMD3DNOW
 //FIXME check if this is faster on an 3dnow chip or if it is faster without the prefetch or ...
 /*          prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
             prefetch(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
@@ -3699,7 +3699,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 + dstBlock[x +14*dstStride] + dstBlock[x +15*dstStride];
         }*/
     }
-#if   HAVE_3DNOW
+#if   HAVE_AMD3DNOW
     __asm__ volatile("femms");
 #elif HAVE_MMX
     __asm__ volatile("emms");
