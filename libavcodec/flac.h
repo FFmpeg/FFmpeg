@@ -53,6 +53,7 @@ enum {
     int samplerate;         /**< sample rate                             */\
     int channels;           /**< number of channels                      */\
     int bps;                /**< bits-per-sample                         */\
+    int64_t samples;        /**< total number of samples                 */\
 
 typedef struct FLACStreaminfo {
     FLACSTREAMINFO

@@ -169,7 +169,8 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
     avctx->channels = s->channels;
     avctx->sample_rate = s->samplerate;
 
-    skip_bits(&gb, 36); /* total num of samples */
+    s->samples  = get_bits_long(&gb, 32) << 4;
+    s->samples |= get_bits_long(&gb, 4);
 
     skip_bits(&gb, 64); /* md5 sum */
     skip_bits(&gb, 64); /* md5 sum */
