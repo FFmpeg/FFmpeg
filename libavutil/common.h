@@ -83,10 +83,6 @@
 #endif
 #endif
 
-#ifdef HAVE_AV_CONFIG_H
-#    include "internal.h"
-#endif /* HAVE_AV_CONFIG_H */
-
 #ifndef attribute_deprecated
 #if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define attribute_deprecated __attribute__((deprecated))
@@ -267,5 +263,9 @@ static inline av_const float av_clipf(float a, float amin, float amax)
             }\
         }\
     }
+
+#ifdef HAVE_AV_CONFIG_H
+#    include "internal.h"
+#endif /* HAVE_AV_CONFIG_H */
 
 #endif /* AVUTIL_COMMON_H */
