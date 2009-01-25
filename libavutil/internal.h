@@ -30,6 +30,7 @@
 #    define NDEBUG
 #endif
 
+#include <limits.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
