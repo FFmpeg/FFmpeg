@@ -937,9 +937,6 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
             }
         }
 
-        if(strip < strip_tbl)
-            return;
-
         for( ; strip >= strip_tbl; strip--) {
             if(strip->split_flag != 0) {
                 strip->split_flag = 0;
