@@ -836,7 +836,7 @@ INCLUDE_FILE_PATTERNS  =
 # omitted =1 is assumed.
 
 PREDEFINED             = __attribute__(x)="" "RENAME(x)=x ## _TMPL" "DEF(x)=x ## _TMPL" \
-                         HAVE_AV_CONFIG_H HAVE_MMX HAVE_MMX2 HAVE_3DNOW \
+                         HAVE_AV_CONFIG_H HAVE_MMX HAVE_MMX2 HAVE_AMD3DNOW \
                          ATTR_ALIGN(x)=""
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then
