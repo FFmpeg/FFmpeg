@@ -799,7 +799,7 @@ AVCodec h263i_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("H.263 Intel"),
+    .long_name = NULL_IF_CONFIG_SMALL("Intel H.263"),
 };
 
 AVCodec flv_decoder = {
