@@ -46,6 +46,36 @@ int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
     return 0;
 }
 
+int avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
+{
+    AVFilterContext *filt;
+    int i, j;
+
+    for (i=0; i < graph->filter_count; i++) {
+        filt = graph->filters[i];
+
+        for (j = 0; j < filt->input_count; j++) {
+            if (!filt->inputs[j] || !filt->inputs[j]->src) {
+                av_log(log_ctx, AV_LOG_ERROR,
+                       "Input pad \"%s\" for the filter \"%s\" of type \"%s\" not connected to any source\n",
+                       filt->input_pads[j].name, filt->name, filt->filter->name);
+                return -1;
+            }
+        }
+
+        for (j = 0; j < filt->output_count; j++) {
+            if (!filt->outputs[j] || !filt->outputs[j]->dst) {
+                av_log(log_ctx, AV_LOG_ERROR,
+                       "Output pad \"%s\" for the filter \"%s\" of type \"%s\" not connected to any destination\n",
+                       filt->output_pads[j].name, filt->name, filt->filter->name);
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
 {
     int i;
