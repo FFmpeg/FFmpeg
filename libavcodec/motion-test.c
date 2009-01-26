@@ -19,7 +19,7 @@
  */
 
 /**
- * @file motion_test.c
+ * @file motion-test.c
  * motion test.
  */
 

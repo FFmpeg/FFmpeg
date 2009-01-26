@@ -19,7 +19,7 @@
  */
 
 /**
- * @file oggvorbis.c
+ * @file libvorbis.c
  * Ogg Vorbis codec support via libvorbisenc.
  * @author Mark Hills <mark@pogo.org.uk>
  */

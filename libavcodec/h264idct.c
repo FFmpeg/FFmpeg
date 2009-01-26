@@ -20,7 +20,7 @@
  */
 
 /**
- * @file h264-idct.c
+ * @file h264idct.c
  * H.264 IDCT.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

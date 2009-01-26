@@ -19,7 +19,7 @@
  */
 
 /*!
- * \file theoraenc.c
+ * \file libtheoraenc.c
  * \brief Theora encoder using libtheora.
  * \author Paul Richards <paul.richards@gmail.com>
  *

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file mp3lameaudio.c
+ * @file libmp3lame.c
  * Interface to libmp3lame for mp3 encoding.
  */
 

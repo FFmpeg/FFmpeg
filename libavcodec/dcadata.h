@@ -21,7 +21,7 @@
  */
 
 /**
- * @file dcadata.c
+ * @file dcadata.h
  */
 
 #ifndef AVCODEC_DCADATA_H
