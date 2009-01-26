@@ -49,6 +49,7 @@ unsigned avformat_version(void);
 
 /*
  * Public Metadata API.
+ * !!WARNING!! This is a work in progress. Don't use outside FFmpeg for now.
  * The metadata API allows libavformat to export metadata tags to a client
  * application using a sequence of key/value pairs.
  * Important concepts to keep in mind:
