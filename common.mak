@@ -48,7 +48,7 @@ ifeq ($(wildcard $(SVN_ENTRIES)),$(SVN_ENTRIES))
 $(BUILD_ROOT_REL)/version.h: $(SVN_ENTRIES)
 endif
 
-$(BUILD_ROOT_REL)/version.h: $(SRC_PATH)/version.sh
+$(BUILD_ROOT_REL)/version.h: $(SRC_PATH_BARE)/version.sh
 	$< $(SRC_PATH) $@ $(EXTRA_VERSION)
 
 install: install-libs install-headers
