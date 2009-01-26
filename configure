@@ -1563,7 +1563,7 @@ case $target_os in
         ;;
 
     *)
-        target_os="${target_os}-UNKNOWN"
+        die "Unknown OS '$target_os'."
         ;;
 esac
 
