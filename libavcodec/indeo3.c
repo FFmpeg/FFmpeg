@@ -252,6 +252,10 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
         if(cmd == 0) {
             strip++;
+            if(strip >= strip_tbl + FF_ARRAY_ELEMS(strip_tbl)) {
+                av_log(s->avctx, AV_LOG_WARNING, "out of range strip\n");
+                break;
+            }
             memcpy(strip, strip-1, sizeof(*strip));
             strip->split_flag = 1;
             strip->split_direction = 0;
@@ -259,6 +263,10 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
             continue;
         } else if(cmd == 1) {
             strip++;
+            if(strip >= strip_tbl + FF_ARRAY_ELEMS(strip_tbl)) {
+                av_log(s->avctx, AV_LOG_WARNING, "out of range strip\n");
+                break;
+            }
             memcpy(strip, strip-1, sizeof(*strip));
             strip->split_flag = 1;
             strip->split_direction = 1;
