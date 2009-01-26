@@ -838,6 +838,7 @@ ARCH_EXT_LIST='
 HAVE_LIST="
     $ARCH_EXT_LIST
     $THREADS_LIST
+    alsa_asoundlib_h
     altivec_h
     arpa_inet_h
     bswap
@@ -1069,6 +1070,10 @@ vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 # demuxers / muxers
 ac3_demuxer_deps="ac3_parser"
+alsa_demuxer_deps="alsa_asoundlib_h snd_pcm_htimestamp"
+alsa_demuxer_extralibs="-lasound"
+alsa_muxer_deps="alsa_asoundlib_h"
+alsa_muxer_extralibs="-lasound"
 audio_beos_demuxer_deps="audio_beos"
 audio_beos_demuxer_extralibs="-lmedia -lbe"
 audio_beos_muxer_deps="audio_beos"
@@ -2043,6 +2048,9 @@ check_header dev/ic/bt8xx.h
 
 check_header sys/soundcard.h
 check_header soundcard.h
+
+check_header alsa/asoundlib.h &&
+check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
 # deal with the X11 frame grabber
 enabled x11grab                         &&

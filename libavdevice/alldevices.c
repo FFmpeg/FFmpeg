@@ -44,6 +44,7 @@ void avdevice_register_all(void)
     initialized = 1;
 
     /* devices */
+    REGISTER_MUXDEMUX (ALSA, alsa);
     REGISTER_MUXDEMUX (AUDIO_BEOS, audio_beos);
     REGISTER_DEMUXER  (BKTR, bktr);
     REGISTER_DEMUXER  (DV1394, dv1394);
