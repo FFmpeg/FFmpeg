@@ -145,8 +145,6 @@ void av_sha1_final(AVSHA1* ctx, uint8_t digest[20]){
         ((uint32_t*)digest)[i]= be2me_32(ctx->state[i]);
 }
 
-// use the following to test
-// gcc -DTEST -DHAVE_AV_CONFIG_H -I.. sha1.c -O2 -W -Wall -o sha1 && time ./sha1
 #ifdef TEST
 #include <stdio.h>
 #undef printf
