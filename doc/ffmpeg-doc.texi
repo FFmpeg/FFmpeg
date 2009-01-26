@@ -801,10 +801,10 @@ The argument passed to the preset options identifies the preset file
 to use according to the following rules.
 
 First ffmpeg searches for a file named @var{arg}.ffpreset in the
-directories @file{$HOME/.ffmpeg}, @file{/usr/local/share/ffmpeg} and
-@file{/usr/share/ffmpeg} in that order. For example, if the argument
-is @code{libx264-max}, it will search for the file
-@file{libx264-max.ffpreset}.
+directories @file{$HOME/.ffmpeg}, and in the datadir defined at
+configuration time (usually @file{PREFIX/share/ffmpeg}) in that
+order. For example, if the argument is @code{libx264-max}, it will
+search for the file @file{libx264-max.ffpreset}.
 
 If no such file is found, then ffmpeg will search for a file named
 @var{codec_name}-@var{arg}.ffpreset in the above-mentioned
