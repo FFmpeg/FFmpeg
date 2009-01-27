@@ -121,8 +121,10 @@ static int fourxm_read_header(AVFormatContext *s,
     header = av_malloc(header_size);
     if (!header)
         return AVERROR(ENOMEM);
-    if (get_buffer(pb, header, header_size) != header_size)
+    if (get_buffer(pb, header, header_size) != header_size){
+        av_free(header);
         return AVERROR(EIO);
+    }
 
     /* take the lazy approach and search for any and all vtrk and strk chunks */
     for (i = 0; i < header_size - 8; i++) {
@@ -142,8 +144,10 @@ static int fourxm_read_header(AVFormatContext *s,
 
             /* allocate a new AVStream */
             st = av_new_stream(s, 0);
-            if (!st)
+            if (!st){
+                av_free(header);
                 return AVERROR(ENOMEM);
+            }
             av_set_pts_info(st, 60, 1, fourxm->fps);
 
             fourxm->video_stream_index = st->index;
@@ -166,8 +170,10 @@ static int fourxm_read_header(AVFormatContext *s,
             current_track = AV_RL32(&header[i + 8]);
             if (current_track + 1 > fourxm->track_count) {
                 fourxm->track_count = current_track + 1;
-                if((unsigned)fourxm->track_count >= UINT_MAX / sizeof(AudioTrack))
+                if((unsigned)fourxm->track_count >= UINT_MAX / sizeof(AudioTrack)){
+                    av_free(header);
                     return -1;
+                }
                 fourxm->tracks = av_realloc(fourxm->tracks,
                     fourxm->track_count * sizeof(AudioTrack));
                 if (!fourxm->tracks) {
@@ -183,8 +189,10 @@ static int fourxm_read_header(AVFormatContext *s,
 
             /* allocate a new AVStream */
             st = av_new_stream(s, current_track);
-            if (!st)
+            if (!st){
+                av_free(header);
                 return AVERROR(ENOMEM);
+            }
 
             av_set_pts_info(st, 60, 1, fourxm->tracks[current_track].sample_rate);
 
