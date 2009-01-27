@@ -90,7 +90,7 @@ function ff_prefetch_arm, export=1
         add \Rd1, \Rn1, \Rd1, lsr #1
 .endm
 
-.macro  JMP_ALIGN tmp, reg, label1, label2, label3
+.macro  JMP_ALIGN tmp, reg
         ands \tmp, \reg, #3
         bic  \reg, \reg, #3
         beq  1f
@@ -108,7 +108,7 @@ function put_pixels16_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r11, lr} @ R14 is also called LR
-        JMP_ALIGN r5, r1, 2f, 3f, 4f
+        JMP_ALIGN r5, r1
 1:
         ldmia r1, {r4-r7}
         add r1, r1, r2
@@ -160,7 +160,7 @@ function put_pixels8_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r5,lr} @ R14 is also called LR
-        JMP_ALIGN r5, r1, 2f, 3f, 4f
+        JMP_ALIGN r5, r1
 1:
         ldmia r1, {r4-r5}
         add r1, r1, r2
@@ -213,7 +213,7 @@ function put_pixels8_x2_arm, export=1
         pld [r1]
         stmfd sp!, {r4-r10,lr} @ R14 is also called LR
         ldr r12, =0xfefefefe
-        JMP_ALIGN r5, r1, 2f, 3f, 4f
+        JMP_ALIGN r5, r1
 1:
         ldmia r1, {r4-r5, r10}
         add r1, r1, r2
@@ -272,7 +272,7 @@ function put_no_rnd_pixels8_x2_arm, export=1
         pld [r1]
         stmfd sp!, {r4-r10,lr} @ R14 is also called LR
         ldr r12, =0xfefefefe
-        JMP_ALIGN r5, r1, 2f, 3f, 4f
+        JMP_ALIGN r5, r1
 1:
         ldmia r1, {r4-r5, r10}
         add r1, r1, r2
@@ -334,7 +334,7 @@ function put_pixels8_y2_arm, export=1
         stmfd sp!, {r4-r11,lr} @ R14 is also called LR
         mov r3, r3, lsr #1
         ldr r12, =0xfefefefe
-        JMP_ALIGN r5, r1, 2f, 3f, 4f
+        JMP_ALIGN r5, r1
 1:
         ldmia r1, {r4-r5}
         add r1, r1, r2
@@ -432,7 +432,7 @@ function put_no_rnd_pixels8_y2_arm, export=1
         stmfd sp!, {r4-r11,lr} @ R14 is also called LR
         mov r3, r3, lsr #1
         ldr r12, =0xfefefefe
-        JMP_ALIGN r5, r1, 2f, 3f, 4f
+        JMP_ALIGN r5, r1
 1:
         ldmia r1, {r4-r5}
         add r1, r1, r2
@@ -595,7 +595,7 @@ function put_pixels8_xy2_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r11,lr} @ R14 is also called LR
-        JMP_ALIGN r5, r1, 2f, 3f, 4f
+        JMP_ALIGN r5, r1
 1:
         RND_XY2_EXPAND 0, lsl
 
@@ -618,7 +618,7 @@ function put_no_rnd_pixels8_xy2_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r11,lr} @ R14 is also called LR
-        JMP_ALIGN r5, r1, 2f, 3f, 4f
+        JMP_ALIGN r5, r1
 1:
         RND_XY2_EXPAND 0, lsr
 
