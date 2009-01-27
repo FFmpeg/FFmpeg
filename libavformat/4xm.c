@@ -100,7 +100,6 @@ static int fourxm_read_header(AVFormatContext *s,
     FourxmDemuxContext *fourxm = s->priv_data;
     unsigned char *header;
     int i, ret;
-    int current_track = -1;
     AVStream *st;
 
     fourxm->track_count = 0;
@@ -162,6 +161,7 @@ static int fourxm_read_header(AVFormatContext *s,
 
             i += 8 + size;
         } else if (fourcc_tag == strk_TAG) {
+            int current_track;
             /* check that there is enough data */
             if (size != strk_SIZE) {
                 ret= AVERROR_INVALIDDATA;
