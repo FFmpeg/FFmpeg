@@ -557,13 +557,13 @@ function put_no_rnd_pixels8_y2_arm, export=1
         andeq r14, r14, r14, \rnd #1
         add r8, r8, r10
         add r9, r9, r11
+        ldr r12, =0xfcfcfcfc >> 2
         addeq r8, r8, r14
         addeq r9, r9, r14
-        ldr r14, =0xfcfcfcfc >> 2
-        and r4, r14, r4, lsr #2
-        and r5, r14, r5, lsr #2
-        and r6, r14, r6, lsr #2
-        and r7, r14, r7, lsr #2
+        and r4, r12, r4, lsr #2
+        and r5, r12, r5, lsr #2
+        and r6, r12, r6, lsr #2
+        and r7, r12, r7, lsr #2
         add r10, r4, r6
         add r11, r5, r7
         subs r3, r3, #1
@@ -576,9 +576,9 @@ function put_no_rnd_pixels8_y2_arm, export=1
         ldmfd sp!, {r4-r7}
         add r4, r4, r8
         add r5, r5, r9
+        ldr r14, =0x0f0f0f0f
         add r6, r6, r10
         add r7, r7, r11
-        ldr r14, =0x0f0f0f0f
         and r4, r14, r4, lsr #2
         and r5, r14, r5, lsr #2
         add r4, r4, r6
