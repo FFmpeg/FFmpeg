@@ -24,6 +24,7 @@
  */
 
 #include <assert.h>
+#include "avutil.h"
 #include "common.h"
 #include "mathematics.h"
 
@@ -53,6 +54,12 @@ int64_t av_gcd(int64_t a, int64_t b){
     if(b) return av_gcd(b, a%b);
     else  return a;
 }
+
+#if LIBAVUTIL_VERSION_MAJOR < 50
+int64_t ff_gcd(int64_t a, int64_t b){
+    return av_gcd(a, b);
+}
+#endif
 
 int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
     int64_t r=0;
