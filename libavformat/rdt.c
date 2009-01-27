@@ -27,7 +27,7 @@
 
 #include "avformat.h"
 #include "libavutil/avstring.h"
-#include "rtp_internal.h"
+#include "rtp.h"
 #include "rdt.h"
 #include "libavutil/base64.h"
 #include "libavutil/md5.h"

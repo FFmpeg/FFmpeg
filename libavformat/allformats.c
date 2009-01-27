@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
-#include "rtp_internal.h"
+#include "rtp.h"
 #include "rdt.h"
 
 #define REGISTER_MUXER(X,x) { \

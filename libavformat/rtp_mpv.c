@@ -22,7 +22,7 @@
 
 #include "libavcodec/mpegvideo.h"
 #include "avformat.h"
-#include "rtp_internal.h"
+#include "rtp.h"
 
 /* NOTE: a single frame must be passed with sequence header if
    needed. XXX: use slices. */

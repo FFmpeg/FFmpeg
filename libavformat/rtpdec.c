@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include "network.h"
 
-#include "rtp_internal.h"
+#include "rtp.h"
 #include "rtp_h264.h"
 
 //#define DEBUG

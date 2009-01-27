@@ -22,7 +22,7 @@
 #ifndef AVFORMAT_RTP_H264_H
 #define AVFORMAT_RTP_H264_H
 
-#include "rtp_internal.h"
+#include "rtp.h"
 
 extern RTPDynamicProtocolHandler ff_h264_dynamic_handler;
 void ff_rtp_send_h264(AVFormatContext *s1, const uint8_t *buf1, int size);

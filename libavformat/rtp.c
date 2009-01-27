@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include "network.h"
 
-#include "rtp_internal.h"
+#include "rtp.h"
 
 //#define DEBUG
 

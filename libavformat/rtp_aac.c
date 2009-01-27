@@ -20,7 +20,7 @@
 
 #include "avformat.h"
 #include "rtp_aac.h"
-#include "rtp_internal.h"
+#include "rtp.h"
 
 #define MAX_FRAMES_PER_PACKET (s->max_frames_per_packet ? s->max_frames_per_packet : 5)
 #define MAX_AU_HEADERS_SIZE (2 + 2 * MAX_FRAMES_PER_PACKET)
