@@ -90,6 +90,17 @@ function ff_prefetch_arm, export=1
         add \Rd1, \Rn1, \Rd1, lsr #1
 .endm
 
+.macro  JMP_ALIGN tmp, reg, label1, label2, label3
+        ands \tmp, \reg, #3
+        bic  \reg, \reg, #3
+        beq  1f
+        subs \tmp, \tmp, #1
+        beq  2f
+        subs \tmp, \tmp, #1
+        beq  3f
+        b    4f
+.endm
+
 @ ----------------------------------------------------------------
         .align 5
 function put_pixels16_arm, export=1
@@ -97,11 +108,7 @@ function put_pixels16_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r11, lr} @ R14 is also called LR
-        adr r5, 5f
-        ands r4, r1, #3
-        bic r1, r1, #3
-        add r5, r5, r4, lsl #2
-        ldrne pc, [r5]
+        JMP_ALIGN r5, r1, 2f, 3f, 4f
 1:
         ldmia r1, {r4-r7}
         add r1, r1, r2
@@ -144,11 +151,6 @@ function put_pixels16_arm, export=1
         add r0, r0, r2
         bne 4b
         ldmfd sp!, {r4-r11,pc}
-5:
-        .word 1b
-        .word 2b
-        .word 3b
-        .word 4b
         .endfunc
 
 @ ----------------------------------------------------------------
@@ -158,11 +160,7 @@ function put_pixels8_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r5,lr} @ R14 is also called LR
-        adr r5, 5f
-        ands r4, r1, #3
-        bic r1, r1, #3
-        add r5, r5, r4, lsl #2
-        ldrne pc, [r5]
+        JMP_ALIGN r5, r1, 2f, 3f, 4f
 1:
         ldmia r1, {r4-r5}
         add r1, r1, r2
@@ -205,11 +203,6 @@ function put_pixels8_arm, export=1
         add r0, r0, r2
         bne 4b
         ldmfd sp!, {r4-r5,pc}
-5:
-        .word 1b
-        .word 2b
-        .word 3b
-        .word 4b
         .endfunc
 
 @ ----------------------------------------------------------------
@@ -219,12 +212,8 @@ function put_pixels8_x2_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r10,lr} @ R14 is also called LR
-        adr r5, 5f
-        ands r4, r1, #3
         ldr r12, =0xfefefefe
-        add r5, r5, r4, lsl #2
-        bic r1, r1, #3
-        ldrne pc, [r5]
+        JMP_ALIGN r5, r1, 2f, 3f, 4f
 1:
         ldmia r1, {r4-r5, r10}
         add r1, r1, r2
@@ -274,11 +263,6 @@ function put_pixels8_x2_arm, export=1
         add r0, r0, r2
         bne 4b
         ldmfd sp!, {r4-r10,pc} @@ update PC with LR content.
-5:
-        .word 1b
-        .word 2b
-        .word 3b
-        .word 4b
         .endfunc
 
         .align 5
@@ -287,12 +271,8 @@ function put_no_rnd_pixels8_x2_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r10,lr} @ R14 is also called LR
-        adr r5, 5f
-        ands r4, r1, #3
         ldr r12, =0xfefefefe
-        add r5, r5, r4, lsl #2
-        bic r1, r1, #3
-        ldrne pc, [r5]
+        JMP_ALIGN r5, r1, 2f, 3f, 4f
 1:
         ldmia r1, {r4-r5, r10}
         add r1, r1, r2
@@ -342,11 +322,6 @@ function put_no_rnd_pixels8_x2_arm, export=1
         add r0, r0, r2
         bne 4b
         ldmfd sp!, {r4-r10,pc} @@ update PC with LR content.
-5:
-        .word 1b
-        .word 2b
-        .word 3b
-        .word 4b
         .endfunc
 
 
@@ -357,13 +332,9 @@ function put_pixels8_y2_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r11,lr} @ R14 is also called LR
-        adr r5, 5f
-        ands r4, r1, #3
         mov r3, r3, lsr #1
         ldr r12, =0xfefefefe
-        add r5, r5, r4, lsl #2
-        bic r1, r1, #3
-        ldrne pc, [r5]
+        JMP_ALIGN r5, r1, 2f, 3f, 4f
 1:
         ldmia r1, {r4-r5}
         add r1, r1, r2
@@ -451,12 +422,6 @@ function put_pixels8_y2_arm, export=1
         add r0, r0, r2
         bne 6b
         ldmfd sp!, {r4-r11,pc}
-
-5:
-        .word 1b
-        .word 2b
-        .word 3b
-        .word 4b
         .endfunc
 
         .align 5
@@ -465,13 +430,9 @@ function put_no_rnd_pixels8_y2_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r11,lr} @ R14 is also called LR
-        adr r5, 5f
-        ands r4, r1, #3
         mov r3, r3, lsr #1
         ldr r12, =0xfefefefe
-        add r5, r5, r4, lsl #2
-        bic r1, r1, #3
-        ldrne pc, [r5]
+        JMP_ALIGN r5, r1, 2f, 3f, 4f
 1:
         ldmia r1, {r4-r5}
         add r1, r1, r2
@@ -559,11 +520,6 @@ function put_no_rnd_pixels8_y2_arm, export=1
         add r0, r0, r2
         bne 6b
         ldmfd sp!, {r4-r11,pc}
-5:
-        .word 1b
-        .word 2b
-        .word 3b
-        .word 4b
         .endfunc
 
         .ltorg
@@ -639,11 +595,7 @@ function put_pixels8_xy2_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r11,lr} @ R14 is also called LR
-        adrl r12, 5f
-        ands r4, r1, #3
-        add r5, r12, r4, lsl #2
-        bic r1, r1, #3
-        ldrne pc, [r5]
+        JMP_ALIGN r5, r1, 2f, 3f, 4f
 1:
         RND_XY2_EXPAND 0, lsl
 
@@ -658,11 +610,6 @@ function put_pixels8_xy2_arm, export=1
         .align 5
 4:
         RND_XY2_EXPAND 3, lsl
-5:
-        .word 1b
-        .word 2b
-        .word 3b
-        .word 4b
         .endfunc
 
         .align 5
@@ -671,11 +618,7 @@ function put_no_rnd_pixels8_xy2_arm, export=1
         @ block = word aligned, pixles = unaligned
         pld [r1]
         stmfd sp!, {r4-r11,lr} @ R14 is also called LR
-        adrl r12, 5f
-        ands r4, r1, #3
-        add r5, r12, r4, lsl #2
-        bic r1, r1, #3
-        ldrne pc, [r5]
+        JMP_ALIGN r5, r1, 2f, 3f, 4f
 1:
         RND_XY2_EXPAND 0, lsr
 
@@ -690,11 +633,6 @@ function put_no_rnd_pixels8_xy2_arm, export=1
         .align 5
 4:
         RND_XY2_EXPAND 3, lsr
-5:
-        .word 1b
-        .word 2b
-        .word 3b
-        .word 4b
         .endfunc
 
         .align 5
