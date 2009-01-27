@@ -33,7 +33,7 @@ static inline av_const int MULL(int a, int b, unsigned shift)
             "mov   %0, %0,     lsr %4 \n\t"
             "add   %1, %0, %1, lsl %5 \n\t"
             : "=&r"(lo), "=&r"(hi)
-            : "r"(b), "r"(a), "i"(shift), "i"(32-shift));
+            : "r"(b), "r"(a), "ir"(shift), "ir"(32-shift));
     return hi;
 }
 
