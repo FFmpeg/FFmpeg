@@ -64,7 +64,8 @@ static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
             avcodec_set_dimensions(s->avctx, 16*cols, 16*rows);
             return 2;
         }
-    }
+    } else if (!s->macroblocks)
+        return 0;
     return 1;
 }
 
