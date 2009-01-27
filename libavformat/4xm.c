@@ -99,7 +99,7 @@ static int fourxm_read_header(AVFormatContext *s,
     int header_size;
     FourxmDemuxContext *fourxm = s->priv_data;
     unsigned char *header;
-    int i;
+    int i, ret;
     int current_track = -1;
     AVStream *st;
 
@@ -136,8 +136,8 @@ static int fourxm_read_header(AVFormatContext *s,
         } else if (fourcc_tag == vtrk_TAG) {
             /* check that there is enough data */
             if (size != vtrk_SIZE) {
-                av_free(header);
-                return AVERROR_INVALIDDATA;
+                ret= AVERROR_INVALIDDATA;
+                goto fail;
             }
             fourxm->width  = AV_RL32(&header[i + 36]);
             fourxm->height = AV_RL32(&header[i + 40]);
@@ -145,8 +145,8 @@ static int fourxm_read_header(AVFormatContext *s,
             /* allocate a new AVStream */
             st = av_new_stream(s, 0);
             if (!st){
-                av_free(header);
-                return AVERROR(ENOMEM);
+                ret= AVERROR(ENOMEM);
+                goto fail;
             }
             av_set_pts_info(st, 60, 1, fourxm->fps);
 
@@ -164,21 +164,21 @@ static int fourxm_read_header(AVFormatContext *s,
         } else if (fourcc_tag == strk_TAG) {
             /* check that there is enough data */
             if (size != strk_SIZE) {
-                av_free(header);
-                return AVERROR_INVALIDDATA;
+                ret= AVERROR_INVALIDDATA;
+                goto fail;
             }
             current_track = AV_RL32(&header[i + 8]);
             if (current_track + 1 > fourxm->track_count) {
                 fourxm->track_count = current_track + 1;
                 if((unsigned)fourxm->track_count >= UINT_MAX / sizeof(AudioTrack)){
-                    av_free(header);
-                    return -1;
+                    ret= -1;
+                    goto fail;
                 }
                 fourxm->tracks = av_realloc(fourxm->tracks,
                     fourxm->track_count * sizeof(AudioTrack));
                 if (!fourxm->tracks) {
-                    av_free(header);
-                    return AVERROR(ENOMEM);
+                    ret=  AVERROR(ENOMEM);
+                    goto fail;
                 }
             }
             fourxm->tracks[current_track].adpcm       = AV_RL32(&header[i + 12]);
@@ -190,8 +190,8 @@ static int fourxm_read_header(AVFormatContext *s,
             /* allocate a new AVStream */
             st = av_new_stream(s, current_track);
             if (!st){
-                av_free(header);
-                return AVERROR(ENOMEM);
+                ret= AVERROR(ENOMEM);
+                goto fail;
             }
 
             av_set_pts_info(st, 60, 1, fourxm->tracks[current_track].sample_rate);
@@ -215,18 +215,23 @@ static int fourxm_read_header(AVFormatContext *s,
         }
     }
 
-    av_free(header);
-
     /* skip over the LIST-MOVI chunk (which is where the stream should be */
     GET_LIST_HEADER();
-    if (fourcc_tag != MOVI_TAG)
-        return AVERROR_INVALIDDATA;
+    if (fourcc_tag != MOVI_TAG){
+        ret= AVERROR_INVALIDDATA;
+        goto fail;
+    }
 
+    av_free(header);
     /* initialize context members */
     fourxm->video_pts = -1;  /* first frame will push to 0 */
     fourxm->audio_pts = 0;
 
     return 0;
+fail:
+    av_freep(&fourxm->tracks);
+    av_free(header);
+    return ret;
 }
 
 static int fourxm_read_packet(AVFormatContext *s,
