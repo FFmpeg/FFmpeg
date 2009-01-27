@@ -330,7 +330,7 @@ static int fourxm_read_close(AVFormatContext *s)
 {
     FourxmDemuxContext *fourxm = s->priv_data;
 
-    av_free(fourxm->tracks);
+    av_freep(&fourxm->tracks);
 
     return 0;
 }
