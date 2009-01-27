@@ -66,6 +66,7 @@ typedef struct AudioTrack {
     int channels;
     int stream_index;
     int adpcm;
+    int64_t audio_pts;
 } AudioTrack;
 
 typedef struct FourxmDemuxContext {
@@ -74,9 +75,7 @@ typedef struct FourxmDemuxContext {
     int video_stream_index;
     int track_count;
     AudioTrack *tracks;
-    int selected_track;
 
-    int64_t audio_pts;
     int64_t video_pts;
     float fps;
 } FourxmDemuxContext;
@@ -104,7 +103,6 @@ static int fourxm_read_header(AVFormatContext *s,
 
     fourxm->track_count = 0;
     fourxm->tracks = NULL;
-    fourxm->selected_track = 0;
     fourxm->fps = 1.0;
 
     /* skip the first 3 32-bit numbers */
@@ -185,6 +183,7 @@ static int fourxm_read_header(AVFormatContext *s,
             fourxm->tracks[current_track].channels    = AV_RL32(&header[i + 36]);
             fourxm->tracks[current_track].sample_rate = AV_RL32(&header[i + 40]);
             fourxm->tracks[current_track].bits        = AV_RL32(&header[i + 44]);
+            fourxm->tracks[current_track].audio_pts   = 0;
             i += 8 + size;
 
             /* allocate a new AVStream */
@@ -225,7 +224,6 @@ static int fourxm_read_header(AVFormatContext *s,
     av_free(header);
     /* initialize context members */
     fourxm->video_pts = -1;  /* first frame will push to 0 */
-    fourxm->audio_pts = 0;
 
     return 0;
 fail:
@@ -242,7 +240,7 @@ static int fourxm_read_packet(AVFormatContext *s,
     unsigned int fourcc_tag;
     unsigned int size, out_size;
     int ret = 0;
-    int track_number;
+    unsigned int track_number;
     int packet_read = 0;
     unsigned char header[8];
     int audio_frame_count;
@@ -292,28 +290,28 @@ static int fourxm_read_packet(AVFormatContext *s,
             out_size= get_le32(pb);
             size-=8;
 
-            if (track_number == fourxm->selected_track) {
+            if (track_number < fourxm->track_count) {
                 ret= av_get_packet(s->pb, pkt, size);
                 if(ret<0)
                     return AVERROR(EIO);
                 pkt->stream_index =
-                    fourxm->tracks[fourxm->selected_track].stream_index;
-                pkt->pts = fourxm->audio_pts;
+                    fourxm->tracks[track_number].stream_index;
+                pkt->pts = fourxm->tracks[track_number].audio_pts;
                 packet_read = 1;
 
                 /* pts accounting */
                 audio_frame_count = size;
-                if (fourxm->tracks[fourxm->selected_track].adpcm)
+                if (fourxm->tracks[track_number].adpcm)
                     audio_frame_count -=
-                        2 * (fourxm->tracks[fourxm->selected_track].channels);
+                        2 * (fourxm->tracks[track_number].channels);
                 audio_frame_count /=
-                      fourxm->tracks[fourxm->selected_track].channels;
-                if (fourxm->tracks[fourxm->selected_track].adpcm)
+                      fourxm->tracks[track_number].channels;
+                if (fourxm->tracks[track_number].adpcm)
                     audio_frame_count *= 2;
                 else
                     audio_frame_count /=
-                    (fourxm->tracks[fourxm->selected_track].bits / 8);
-                fourxm->audio_pts += audio_frame_count;
+                    (fourxm->tracks[track_number].bits / 8);
+                fourxm->tracks[track_number].audio_pts += audio_frame_count;
 
             } else {
                 url_fseek(pb, size, SEEK_CUR);
