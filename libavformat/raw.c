@@ -592,7 +592,7 @@ static int flac_probe(AVProbeData *p)
         bufptr += ff_id3v2_tag_len(bufptr);
 
     if(bufptr > end-4 || memcmp(bufptr, "fLaC", 4)) return 0;
-    else                          return AVPROBE_SCORE_MAX / 2;
+    else                                            return AVPROBE_SCORE_MAX/2;
 }
 #endif
 
