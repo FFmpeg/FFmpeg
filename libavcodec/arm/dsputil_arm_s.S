@@ -221,7 +221,7 @@ function put_pixels8_x2_arm, export=1
         stmfd sp!, {r4-r10,lr} @ R14 is also called LR
         adr r5, 5f
         ands r4, r1, #3
-        ldr r12, [r5]
+        ldr r12, =0xfefefefe
         add r5, r5, r4, lsl #2
         bic r1, r1, #3
         ldrne pc, [r5]
@@ -275,7 +275,7 @@ function put_pixels8_x2_arm, export=1
         bne 4b
         ldmfd sp!, {r4-r10,pc} @@ update PC with LR content.
 5:
-        .word 0xFEFEFEFE
+        .word 1b
         .word 2b
         .word 3b
         .word 4b
@@ -289,7 +289,7 @@ function put_no_rnd_pixels8_x2_arm, export=1
         stmfd sp!, {r4-r10,lr} @ R14 is also called LR
         adr r5, 5f
         ands r4, r1, #3
-        ldr r12, [r5]
+        ldr r12, =0xfefefefe
         add r5, r5, r4, lsl #2
         bic r1, r1, #3
         ldrne pc, [r5]
@@ -343,7 +343,7 @@ function put_no_rnd_pixels8_x2_arm, export=1
         bne 4b
         ldmfd sp!, {r4-r10,pc} @@ update PC with LR content.
 5:
-        .word 0xFEFEFEFE
+        .word 1b
         .word 2b
         .word 3b
         .word 4b
@@ -360,7 +360,7 @@ function put_pixels8_y2_arm, export=1
         adr r5, 5f
         ands r4, r1, #3
         mov r3, r3, lsr #1
-        ldr r12, [r5]
+        ldr r12, =0xfefefefe
         add r5, r5, r4, lsl #2
         bic r1, r1, #3
         ldrne pc, [r5]
@@ -453,7 +453,7 @@ function put_pixels8_y2_arm, export=1
         ldmfd sp!, {r4-r11,pc}
 
 5:
-        .word 0xFEFEFEFE
+        .word 1b
         .word 2b
         .word 3b
         .word 4b
@@ -468,7 +468,7 @@ function put_no_rnd_pixels8_y2_arm, export=1
         adr r5, 5f
         ands r4, r1, #3
         mov r3, r3, lsr #1
-        ldr r12, [r5]
+        ldr r12, =0xfefefefe
         add r5, r5, r4, lsl #2
         bic r1, r1, #3
         ldrne pc, [r5]
@@ -560,14 +560,16 @@ function put_no_rnd_pixels8_y2_arm, export=1
         bne 6b
         ldmfd sp!, {r4-r11,pc}
 5:
-        .word 0xFEFEFEFE
+        .word 1b
         .word 2b
         .word 3b
         .word 4b
         .endfunc
 
+        .ltorg
+
 @ ----------------------------------------------------------------
-.macro  RND_XY2_IT align
+.macro  RND_XY2_IT align, rnd
         @ l1=  (a & 0x03030303) + (b & 0x03030303) ?(+ 0x02020202)
         @ h1= ((a & 0xFCFCFCFCUL) >> 2) + ((b & 0xFCFCFCFCUL) >> 2)
 .if \align == 0
@@ -590,18 +592,18 @@ function put_no_rnd_pixels8_y2_arm, export=1
 .elseif \align == 3
         ADJ_ALIGN_DOUBLEWORD_D 3, r4, r5, r5, r6, r7
 .endif
-        ldr r14, [r12, #0]      @ 0x03030303
+        ldr r14, =0x03030303
         tst r3, #1
         and r8, r4, r14
         and r9, r5, r14
         and r10, r6, r14
         and r11, r7, r14
-        ldreq r14, [r12, #16]   @ 0x02020202/0x01010101
+        andeq r14, r14, r14, \rnd #1
         add r8, r8, r10
         add r9, r9, r11
         addeq r8, r8, r14
         addeq r9, r9, r14
-        ldr r14, [r12, #20]     @ 0xFCFCFCFC >> 2
+        ldr r14, =0xfcfcfcfc >> 2
         and r4, r14, r4, lsr #2
         and r5, r14, r5, lsr #2
         and r6, r14, r6, lsr #2
@@ -611,16 +613,16 @@ function put_no_rnd_pixels8_y2_arm, export=1
         subs r3, r3, #1
 .endm
 
-.macro RND_XY2_EXPAND align
-        RND_XY2_IT \align
+.macro RND_XY2_EXPAND align, rnd
+        RND_XY2_IT \align, \rnd
 6:      stmfd sp!, {r8-r11}
-        RND_XY2_IT \align
+        RND_XY2_IT \align, \rnd
         ldmfd sp!, {r4-r7}
         add r4, r4, r8
         add r5, r5, r9
         add r6, r6, r10
         add r7, r7, r11
-        ldr r14, [r12, #24]     @ 0x0F0F0F0F
+        ldr r14, =0x0f0f0f0f
         and r4, r14, r4, lsr #2
         and r5, r14, r5, lsr #2
         add r4, r4, r6
@@ -643,28 +645,24 @@ function put_pixels8_xy2_arm, export=1
         bic r1, r1, #3
         ldrne pc, [r5]
 1:
-        RND_XY2_EXPAND 0
+        RND_XY2_EXPAND 0, lsl
 
         .align 5
 2:
-        RND_XY2_EXPAND 1
+        RND_XY2_EXPAND 1, lsl
 
         .align 5
 3:
-        RND_XY2_EXPAND 2
+        RND_XY2_EXPAND 2, lsl
 
         .align 5
 4:
-        RND_XY2_EXPAND 3
-
+        RND_XY2_EXPAND 3, lsl
 5:
-        .word 0x03030303
+        .word 1b
         .word 2b
         .word 3b
         .word 4b
-        .word 0x02020202
-        .word 0xFCFCFCFC >> 2
-        .word 0x0F0F0F0F
         .endfunc
 
         .align 5
@@ -679,28 +677,24 @@ function put_no_rnd_pixels8_xy2_arm, export=1
         bic r1, r1, #3
         ldrne pc, [r5]
 1:
-        RND_XY2_EXPAND 0
+        RND_XY2_EXPAND 0, lsr
 
         .align 5
 2:
-        RND_XY2_EXPAND 1
+        RND_XY2_EXPAND 1, lsr
 
         .align 5
 3:
-        RND_XY2_EXPAND 2
+        RND_XY2_EXPAND 2, lsr
 
         .align 5
 4:
-        RND_XY2_EXPAND 3
-
+        RND_XY2_EXPAND 3, lsr
 5:
-        .word 0x03030303
+        .word 1b
         .word 2b
         .word 3b
         .word 4b
-        .word 0x01010101
-        .word 0xFCFCFCFC >> 2
-        .word 0x0F0F0F0F
         .endfunc
 
         .align 5
