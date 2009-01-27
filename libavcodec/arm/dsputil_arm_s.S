@@ -91,7 +91,7 @@ function ff_prefetch_arm, export=1
 .endm
 
 @ ----------------------------------------------------------------
-        .align 8
+        .align 5
 function put_pixels16_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
@@ -111,7 +111,7 @@ function put_pixels16_arm, export=1
         add r0, r0, r2
         bne 1b
         ldmfd sp!, {r4-r11, pc}
-        .align 8
+        .align 5
 2:
         ldmia r1, {r4-r8}
         add r1, r1, r2
@@ -122,7 +122,7 @@ function put_pixels16_arm, export=1
         add r0, r0, r2
         bne 2b
         ldmfd sp!, {r4-r11, pc}
-        .align 8
+        .align 5
 3:
         ldmia r1, {r4-r8}
         add r1, r1, r2
@@ -133,7 +133,7 @@ function put_pixels16_arm, export=1
         add r0, r0, r2
         bne 3b
         ldmfd sp!, {r4-r11, pc}
-        .align 8
+        .align 5
 4:
         ldmia r1, {r4-r8}
         add r1, r1, r2
@@ -144,7 +144,6 @@ function put_pixels16_arm, export=1
         add r0, r0, r2
         bne 4b
         ldmfd sp!, {r4-r11,pc}
-        .align 8
 5:
         .word 1b
         .word 2b
@@ -153,7 +152,7 @@ function put_pixels16_arm, export=1
         .endfunc
 
 @ ----------------------------------------------------------------
-        .align 8
+        .align 5
 function put_pixels8_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
@@ -173,7 +172,7 @@ function put_pixels8_arm, export=1
         add r0, r0, r2
         bne 1b
         ldmfd sp!, {r4-r5,pc}
-        .align 8
+        .align 5
 2:
         ldmia r1, {r4-r5, r12}
         add r1, r1, r2
@@ -184,7 +183,7 @@ function put_pixels8_arm, export=1
         add r0, r0, r2
         bne 2b
         ldmfd sp!, {r4-r5,pc}
-        .align 8
+        .align 5
 3:
         ldmia r1, {r4-r5, r12}
         add r1, r1, r2
@@ -195,7 +194,7 @@ function put_pixels8_arm, export=1
         add r0, r0, r2
         bne 3b
         ldmfd sp!, {r4-r5,pc}
-        .align 8
+        .align 5
 4:
         ldmia r1, {r4-r5, r12}
         add r1, r1, r2
@@ -206,7 +205,6 @@ function put_pixels8_arm, export=1
         add r0, r0, r2
         bne 4b
         ldmfd sp!, {r4-r5,pc}
-        .align 8
 5:
         .word 1b
         .word 2b
@@ -215,7 +213,7 @@ function put_pixels8_arm, export=1
         .endfunc
 
 @ ----------------------------------------------------------------
-        .align 8
+        .align 5
 function put_pixels8_x2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
@@ -238,7 +236,7 @@ function put_pixels8_x2_arm, export=1
         add r0, r0, r2
         bne 1b
         ldmfd sp!, {r4-r10,pc}
-        .align 8
+        .align 5
 2:
         ldmia r1, {r4-r5, r10}
         add r1, r1, r2
@@ -251,7 +249,7 @@ function put_pixels8_x2_arm, export=1
         add r0, r0, r2
         bne 2b
         ldmfd sp!, {r4-r10,pc}
-        .align 8
+        .align 5
 3:
         ldmia r1, {r4-r5, r10}
         add r1, r1, r2
@@ -264,7 +262,7 @@ function put_pixels8_x2_arm, export=1
         add r0, r0, r2
         bne 3b
         ldmfd sp!, {r4-r10,pc}
-        .align 8
+        .align 5
 4:
         ldmia r1, {r4-r5, r10}
         add r1, r1, r2
@@ -276,7 +274,6 @@ function put_pixels8_x2_arm, export=1
         add r0, r0, r2
         bne 4b
         ldmfd sp!, {r4-r10,pc} @@ update PC with LR content.
-        .align 8
 5:
         .word 0xFEFEFEFE
         .word 2b
@@ -284,7 +281,7 @@ function put_pixels8_x2_arm, export=1
         .word 4b
         .endfunc
 
-        .align 8
+        .align 5
 function put_no_rnd_pixels8_x2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
@@ -307,7 +304,7 @@ function put_no_rnd_pixels8_x2_arm, export=1
         add r0, r0, r2
         bne 1b
         ldmfd sp!, {r4-r10,pc}
-        .align 8
+        .align 5
 2:
         ldmia r1, {r4-r5, r10}
         add r1, r1, r2
@@ -320,7 +317,7 @@ function put_no_rnd_pixels8_x2_arm, export=1
         add r0, r0, r2
         bne 2b
         ldmfd sp!, {r4-r10,pc}
-        .align 8
+        .align 5
 3:
         ldmia r1, {r4-r5, r10}
         add r1, r1, r2
@@ -333,7 +330,7 @@ function put_no_rnd_pixels8_x2_arm, export=1
         add r0, r0, r2
         bne 3b
         ldmfd sp!, {r4-r10,pc}
-        .align 8
+        .align 5
 4:
         ldmia r1, {r4-r5, r10}
         add r1, r1, r2
@@ -345,7 +342,6 @@ function put_no_rnd_pixels8_x2_arm, export=1
         add r0, r0, r2
         bne 4b
         ldmfd sp!, {r4-r10,pc} @@ update PC with LR content.
-        .align 8
 5:
         .word 0xFEFEFEFE
         .word 2b
@@ -355,7 +351,7 @@ function put_no_rnd_pixels8_x2_arm, export=1
 
 
 @ ----------------------------------------------------------------
-        .align 8
+        .align 5
 function put_pixels8_y2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
@@ -386,7 +382,7 @@ function put_pixels8_y2_arm, export=1
         add r0, r0, r2
         bne 6b
         ldmfd sp!, {r4-r11,pc}
-        .align 8
+        .align 5
 2:
         ldmia r1, {r4-r6}
         add r1, r1, r2
@@ -409,7 +405,7 @@ function put_pixels8_y2_arm, export=1
         add r0, r0, r2
         bne 6b
         ldmfd sp!, {r4-r11,pc}
-        .align 8
+        .align 5
 3:
         ldmia r1, {r4-r6}
         add r1, r1, r2
@@ -432,7 +428,7 @@ function put_pixels8_y2_arm, export=1
         add r0, r0, r2
         bne 6b
         ldmfd sp!, {r4-r11,pc}
-        .align 8
+        .align 5
 4:
         ldmia r1, {r4-r6}
         add r1, r1, r2
@@ -456,7 +452,6 @@ function put_pixels8_y2_arm, export=1
         bne 6b
         ldmfd sp!, {r4-r11,pc}
 
-        .align 8
 5:
         .word 0xFEFEFEFE
         .word 2b
@@ -464,7 +459,7 @@ function put_pixels8_y2_arm, export=1
         .word 4b
         .endfunc
 
-        .align 8
+        .align 5
 function put_no_rnd_pixels8_y2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
@@ -495,7 +490,7 @@ function put_no_rnd_pixels8_y2_arm, export=1
         add r0, r0, r2
         bne 6b
         ldmfd sp!, {r4-r11,pc}
-        .align 8
+        .align 5
 2:
         ldmia r1, {r4-r6}
         add r1, r1, r2
@@ -518,7 +513,7 @@ function put_no_rnd_pixels8_y2_arm, export=1
         add r0, r0, r2
         bne 6b
         ldmfd sp!, {r4-r11,pc}
-        .align 8
+        .align 5
 3:
         ldmia r1, {r4-r6}
         add r1, r1, r2
@@ -541,7 +536,7 @@ function put_no_rnd_pixels8_y2_arm, export=1
         add r0, r0, r2
         bne 6b
         ldmfd sp!, {r4-r11,pc}
-        .align 8
+        .align 5
 4:
         ldmia r1, {r4-r6}
         add r1, r1, r2
@@ -564,7 +559,6 @@ function put_no_rnd_pixels8_y2_arm, export=1
         add r0, r0, r2
         bne 6b
         ldmfd sp!, {r4-r11,pc}
-        .align 8
 5:
         .word 0xFEFEFEFE
         .word 2b
@@ -637,7 +631,7 @@ function put_no_rnd_pixels8_y2_arm, export=1
         ldmfd sp!, {r4-r11,pc}
 .endm
 
-        .align 8
+        .align 5
 function put_pixels8_xy2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
@@ -651,15 +645,15 @@ function put_pixels8_xy2_arm, export=1
 1:
         RND_XY2_EXPAND 0
 
-        .align 8
+        .align 5
 2:
         RND_XY2_EXPAND 1
 
-        .align 8
+        .align 5
 3:
         RND_XY2_EXPAND 2
 
-        .align 8
+        .align 5
 4:
         RND_XY2_EXPAND 3
 
@@ -673,7 +667,7 @@ function put_pixels8_xy2_arm, export=1
         .word 0x0F0F0F0F
         .endfunc
 
-        .align 8
+        .align 5
 function put_no_rnd_pixels8_xy2_arm, export=1
         @ void func(uint8_t *block, const uint8_t *pixels, int line_size, int h)
         @ block = word aligned, pixles = unaligned
@@ -687,15 +681,15 @@ function put_no_rnd_pixels8_xy2_arm, export=1
 1:
         RND_XY2_EXPAND 0
 
-        .align 8
+        .align 5
 2:
         RND_XY2_EXPAND 1
 
-        .align 8
+        .align 5
 3:
         RND_XY2_EXPAND 2
 
-        .align 8
+        .align 5
 4:
         RND_XY2_EXPAND 3
 
@@ -709,6 +703,7 @@ function put_no_rnd_pixels8_xy2_arm, export=1
         .word 0x0F0F0F0F
         .endfunc
 
+        .align 5
 @ void ff_add_pixels_clamped_ARM(int16_t *block, uint8_t *dest, int stride)
 function ff_add_pixels_clamped_ARM, export=1
         push            {r4-r10}
