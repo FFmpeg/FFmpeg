@@ -139,7 +139,7 @@ static int fourxm_read_header(AVFormatContext *s,
                 av_free(header);
                 return AVERROR_INVALIDDATA;
             }
-            fourxm->width = AV_RL32(&header[i + 36]);
+            fourxm->width  = AV_RL32(&header[i + 36]);
             fourxm->height = AV_RL32(&header[i + 40]);
 
             /* allocate a new AVStream */
@@ -157,7 +157,7 @@ static int fourxm_read_header(AVFormatContext *s,
             st->codec->extradata_size = 4;
             st->codec->extradata = av_malloc(4);
             AV_WL32(st->codec->extradata, AV_RL32(&header[i + 16]));
-            st->codec->width = fourxm->width;
+            st->codec->width  = fourxm->width;
             st->codec->height = fourxm->height;
 
             i += 8 + size;
@@ -181,10 +181,10 @@ static int fourxm_read_header(AVFormatContext *s,
                     return AVERROR(ENOMEM);
                 }
             }
-            fourxm->tracks[current_track].adpcm = AV_RL32(&header[i + 12]);
-            fourxm->tracks[current_track].channels = AV_RL32(&header[i + 36]);
+            fourxm->tracks[current_track].adpcm       = AV_RL32(&header[i + 12]);
+            fourxm->tracks[current_track].channels    = AV_RL32(&header[i + 36]);
             fourxm->tracks[current_track].sample_rate = AV_RL32(&header[i + 40]);
-            fourxm->tracks[current_track].bits = AV_RL32(&header[i + 44]);
+            fourxm->tracks[current_track].bits        = AV_RL32(&header[i + 44]);
             i += 8 + size;
 
             /* allocate a new AVStream */
@@ -200,10 +200,10 @@ static int fourxm_read_header(AVFormatContext *s,
 
             st->codec->codec_type = CODEC_TYPE_AUDIO;
             st->codec->codec_tag = 0;
-            st->codec->channels = fourxm->tracks[current_track].channels;
-            st->codec->sample_rate = fourxm->tracks[current_track].sample_rate;
+            st->codec->channels              = fourxm->tracks[current_track].channels;
+            st->codec->sample_rate           = fourxm->tracks[current_track].sample_rate;
             st->codec->bits_per_coded_sample = fourxm->tracks[current_track].bits;
-            st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
+            st->codec->bit_rate              = st->codec->channels * st->codec->sample_rate *
                 st->codec->bits_per_coded_sample;
             st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
             if (fourxm->tracks[current_track].adpcm)
