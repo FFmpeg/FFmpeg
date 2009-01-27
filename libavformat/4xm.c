@@ -114,7 +114,7 @@ static int fourxm_read_header(AVFormatContext *s,
     /* check for LIST-HEAD */
     GET_LIST_HEADER();
     header_size = size - 4;
-    if (fourcc_tag != HEAD_TAG || size < 4)
+    if (fourcc_tag != HEAD_TAG || header_size < 0)
         return AVERROR_INVALIDDATA;
 
     /* allocate space for the header and load the whole thing */
