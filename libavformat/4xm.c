@@ -271,8 +271,6 @@ static int fourxm_read_packet(AVFormatContext *s,
         case ifr2_TAG:
         case pfr2_TAG:
         case cfr2_TAG:
-        {
-
             /* allocate 8 more bytes than 'size' to account for fourcc
              * and size */
             if (size + 8 < size || av_new_packet(pkt, size + 8))
@@ -288,7 +286,6 @@ static int fourxm_read_packet(AVFormatContext *s,
             else
                 packet_read = 1;
             break;
-        }
 
         case snd__TAG:
             track_number = get_le32(pb);
