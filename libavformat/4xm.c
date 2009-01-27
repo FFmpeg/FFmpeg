@@ -205,11 +205,11 @@ static int fourxm_read_header(AVFormatContext *s,
             st->codec->bit_rate              = st->codec->channels * st->codec->sample_rate *
                 st->codec->bits_per_coded_sample;
             st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
-            if (fourxm->tracks[current_track].adpcm)
+            if (fourxm->tracks[current_track].adpcm){
                 st->codec->codec_id = CODEC_ID_ADPCM_4XM;
-            else if (st->codec->bits_per_coded_sample == 8)
+            }else if (st->codec->bits_per_coded_sample == 8){
                 st->codec->codec_id = CODEC_ID_PCM_U8;
-            else
+            }else
                 st->codec->codec_id = CODEC_ID_PCM_S16LE;
         }
     }
@@ -279,9 +279,9 @@ static int fourxm_read_packet(AVFormatContext *s,
             memcpy(pkt->data, header, 8);
             ret = get_buffer(s->pb, &pkt->data[8], size);
 
-            if (ret < 0)
+            if (ret < 0){
                 av_free_packet(pkt);
-            else
+            }else
                 packet_read = 1;
             break;
 
@@ -306,9 +306,9 @@ static int fourxm_read_packet(AVFormatContext *s,
                         2 * (fourxm->tracks[track_number].channels);
                 audio_frame_count /=
                       fourxm->tracks[track_number].channels;
-                if (fourxm->tracks[track_number].adpcm)
+                if (fourxm->tracks[track_number].adpcm){
                     audio_frame_count *= 2;
-                else
+                }else
                     audio_frame_count /=
                     (fourxm->tracks[track_number].bits / 8);
                 fourxm->tracks[track_number].audio_pts += audio_frame_count;
