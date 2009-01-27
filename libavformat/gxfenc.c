@@ -362,9 +362,9 @@ static int gxf_write_umf_material_description(ByteIOContext *pb, GXFContext *ctx
 {
     // XXX drop frame
     uint32_t timecode =
-        ctx->nb_frames / ctx->sample_rate * 3600 % 24 << 27 | // hours
-        ctx->nb_frames / ctx->sample_rate * 60 % 60   << 16 | // minutes
-        ctx->nb_frames / ctx->sample_rate % 60        <<  8 | // seconds
+        ctx->nb_frames / (ctx->sample_rate * 3600) % 24 << 24 | // hours
+        ctx->nb_frames / (ctx->sample_rate * 60) % 60   << 16 | // minutes
+        ctx->nb_frames / ctx->sample_rate % 60          <<  8 | // seconds
         ctx->nb_frames % ctx->sample_rate;                    // fields
 
     put_le32(pb, ctx->flags);
