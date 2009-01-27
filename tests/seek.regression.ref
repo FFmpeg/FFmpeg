@@ -1971,13 +1971,15 @@ ret: 0 st:-1 ts:1.894167 flags:1
 ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:75140 size:10776 flags:1
 ret: 0 st: 0 ts:0.800000 flags:0
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:47228 size:9634 flags:1
-ret:-1 st: 0 ts:-0.320000 flags:1
+ret: 0 st: 0 ts:-0.320000 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:8719 flags:1
 ret:-1 st:-1 ts:2.576668 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
 ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:75140 size:10776 flags:1
 ret: 0 st: 0 ts:0.360000 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:23271 size:8524 flags:1
-ret:-1 st: 0 ts:-0.760000 flags:1
+ret: 0 st: 0 ts:-0.760000 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:8719 flags:1
 ret:-1 st:-1 ts:2.153336 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:47228 size:9634 flags:1
@@ -2003,13 +2005,15 @@ ret: 0 st: 0 ts:2.000000 flags:1
 ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:106167 size:11182 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:47228 size:9634 flags:1
-ret:-1 st:-1 ts:-0.222493 flags:1
+ret: 0 st:-1 ts:-0.222493 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:8719 flags:1
 ret:-1 st: 0 ts:2.680000 flags:0
 ret: 0 st: 0 ts:1.560000 flags:1
 ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:75140 size:10776 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:23271 size:8524 flags:1
-ret:-1 st:-1 ts:-0.645825 flags:1
+ret: 0 st:-1 ts:-0.645825 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:8719 flags:1
 ----------------
 tests/data/a-rv10.rm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:239 size:10388 flags:1
@@ -2225,13 +2229,15 @@ ret: 0 st:-1 ts:1.894167 flags:1
 ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:517568 size:25636 flags:1
 ret: 0 st: 0 ts:0.800000 flags:0
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:326556 size:23552 flags:1
-ret:-1 st: 0 ts:-0.320000 flags:1
+ret: 0 st: 0 ts:-0.320000 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:22300 flags:1
 ret:-1 st:-1 ts:2.576668 flags:0
 ret: 0 st:-1 ts:1.470835 flags:1
 ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:517568 size:25636 flags:1
 ret: 0 st: 0 ts:0.360000 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:157040 size:21896 flags:1
-ret:-1 st: 0 ts:-0.760000 flags:1
+ret: 0 st: 0 ts:-0.760000 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:22300 flags:1
 ret:-1 st:-1 ts:2.153336 flags:0
 ret: 0 st:-1 ts:1.047503 flags:1
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:326556 size:23552 flags:1
@@ -2257,13 +2263,15 @@ ret: 0 st: 0 ts:2.000000 flags:1
 ret: 0 st: 0 dts:1.920000 pts:1.920000 pos:722804 size:25888 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:326556 size:23552 flags:1
-ret:-1 st:-1 ts:-0.222493 flags:1
+ret: 0 st:-1 ts:-0.222493 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:22300 flags:1
 ret:-1 st: 0 ts:2.680000 flags:0
 ret: 0 st: 0 ts:1.560000 flags:1
 ret: 0 st: 0 dts:1.440000 pts:1.440000 pos:517568 size:25636 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:157040 size:21896 flags:1
-ret:-1 st:-1 ts:-0.645825 flags:1
+ret: 0 st:-1 ts:-0.645825 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:22300 flags:1
 ----------------
 tests/data/a-wmav1.asf
 ret: 0 st: 0 dts:3.100000 pts:3.100000 pos:404 size:743 flags:1
@@ -3045,13 +3053,15 @@ ret: 0 st:-1 ts:1.894167 flags:1
 ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:512 flags:1
 ret: 0 st: 0 ts:0.800000 flags:0
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335247 size:27897 flags:1
-ret:-1 st: 0 ts:-0.320000 flags:1
+ret: 0 st: 0 ts:-0.320000 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret:-1 st: 1 ts:2.576667 flags:0
 ret: 0 st: 1 ts:1.470839 flags:1
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335247 size:27897 flags:1
 ret: 0 st:-1 ts:0.365002 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:166272 size:27412 flags:1
-ret:-1 st:-1 ts:-0.740831 flags:1
+ret: 0 st:-1 ts:-0.740831 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret:-1 st: 0 ts:2.160000 flags:0
 ret: 0 st: 0 ts:1.040000 flags:1
 ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:512 flags:1
@@ -3075,13 +3085,15 @@ ret: 0 st:-1 ts:1.989173 flags:1
 ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:512 flags:1
 ret: 0 st: 0 ts:0.880000 flags:0
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335247 size:27897 flags:1
-ret:-1 st: 0 ts:-0.240000 flags:1
+ret: 0 st: 0 ts:-0.240000 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret:-1 st: 1 ts:2.671678 flags:0
 ret: 0 st: 1 ts:1.565850 flags:1
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335247 size:27897 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:166272 size:27412 flags:1
-ret:-1 st:-1 ts:-0.645825 flags:1
+ret: 0 st:-1 ts:-0.645825 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ----------------
 tests/data/b-libav.mpg
 ret: 0 st: 1 dts:0.500000 pts:0.500000 pos:-1 size:208 flags:1
