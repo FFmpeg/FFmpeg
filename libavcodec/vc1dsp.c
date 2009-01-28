@@ -45,8 +45,8 @@ static void vc1_v_overlap_c(uint8_t* src, int stride)
         d2 = (a - d + b - c + 4 - rnd) >> 3;
 
         src[-2*stride] = a - d1;
-        src[-stride] = b - d2;
-        src[0] = c + d2;
+        src[-stride] = av_clip_uint8(b - d2);
+        src[0] = av_clip_uint8(c + d2);
         src[stride] = d + d1;
         src++;
         rnd = !rnd;
@@ -70,8 +70,8 @@ static void vc1_h_overlap_c(uint8_t* src, int stride)
         d2 = (a - d + b - c + 4 - rnd) >> 3;
 
         src[-2] = a - d1;
-        src[-1] = b - d2;
-        src[0] = c + d2;
+        src[-1] = av_clip_uint8(b - d2);
+        src[0] = av_clip_uint8(c + d2);
         src[1] = d + d1;
         src += stride;
         rnd = !rnd;
