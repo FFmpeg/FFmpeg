@@ -319,8 +319,8 @@ static av_always_inline av_const float truncf(float x)
 #endif /* HAVE_TRUNCF */
 
 /**
- * Returns NULL if CONFIG_SMALL is true otherwise the argument
- * without modifications, used to disable the definition of strings
+ * Returns NULL if CONFIG_SMALL is true, otherwise the argument
+ * without modification. Used to disable the definition of strings
  * (for example AVCodec long_names).
  */
 #if CONFIG_SMALL

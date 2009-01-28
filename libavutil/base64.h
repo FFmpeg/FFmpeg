@@ -1,5 +1,4 @@
 /*
- * Base64.c
  * Copyright (c) 2006 Ryan Martell. (rdm4@martellventures.com)
  *
  * This file is part of FFmpeg.
@@ -25,13 +24,13 @@
 #include <stdint.h>
 
 /**
- * decodes base64
- * param order as strncpy()
+ * Decodes Base64.
+ * Parameter order is the same as strncpy().
  */
 int av_base64_decode(uint8_t * out, const char *in, int out_length);
 
 /**
- * encodes base64
+ * Encodes Base64.
  * @param src data, not a string
  * @param buf output string
  */

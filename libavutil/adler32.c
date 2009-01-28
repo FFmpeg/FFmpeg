@@ -1,4 +1,5 @@
-/* adler32.c -- compute the Adler-32 checksum of a data stream
+/*
+ * Compute the Adler-32 checksum of a data stream.
  * This is a modified version based on adler32.c from the zlib library.
  *
  * Copyright (C) 1995 Mark Adler

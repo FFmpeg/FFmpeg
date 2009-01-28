@@ -21,8 +21,8 @@
 /**
  * @file tree.h
  * A tree container.
- * Insertion, Removial, Finding equal, largest which is smaller than and
- * smallest which is larger than all have O(log n) worst case time.
+ * Insertion, removal, finding equal, largest which is smaller than and
+ * smallest which is larger than, all have O(log n) worst case complexity.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -35,8 +35,8 @@ extern const int av_tree_node_size;
 /**
  * Finds an element.
  * @param root a pointer to the root node of the tree
- * @param next If next is not NULL then next[0] will contain the previous
- *             element and next[1] the next element if either does not exist
+ * @param next If next is not NULL, then next[0] will contain the previous
+ *             element and next[1] the next element. If either does not exist,
  *             then the corresponding entry in next is unchanged.
  * @return An element with cmp(key, elem)==0 or NULL if no such element exists in
  *         the tree.
@@ -45,10 +45,10 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
 
 /**
  * Inserts or removes an element.
- * If *next is NULL then the element supplied will be removed if it exists.
- * If *next is not NULL then the element supplied will be inserted, unless
+ * If *next is NULL, then the supplied element will be removed if it exists.
+ * If *next is not NULL, then the supplied element will be inserted, unless
  * it already exists in the tree.
- * @param rootp A pointer to a pointer to the root node of the tree. Note that
+ * @param rootp A pointer to a pointer to the root node of the tree; note that
  *              the root node can change during insertions, this is required
  *              to keep the tree balanced.
  * @param next Used to allocate and free AVTreeNodes. For insertion the user
@@ -70,8 +70,8 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
  *                 return av_tree_insert(rootp, key, cmp, next);
  *             }
  *
- * @return If no insertion happened, the found element.
- *         If an insertion or removial happened, then either key or NULL will be returned.
+ * @return If no insertion happened, the found element; if an insertion or
+           removal happened, then either key or NULL will be returned.
  *         Which one it is depends on the tree state and the implementation. You
  *         should make no assumptions that it's one or the other in the code.
  */

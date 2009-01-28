@@ -35,7 +35,7 @@ typedef struct LZOContext {
 } LZOContext;
 
 /**
- * \brief read one byte from input buffer, avoiding overrun
+ * \brief Reads one byte from the input buffer, avoiding an overrun.
  * \return byte read
  */
 static inline int get_byte(LZOContext *c) {

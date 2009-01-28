@@ -1,5 +1,4 @@
 /*
- * Base64.c
  * Copyright (c) 2006 Ryan Martell. (rdm4@martellventures.com)
  *
  * This file is part of FFmpeg.
@@ -20,8 +19,8 @@
  */
 
 /**
-* @file base64.c
- * @brief Base64 Encode/Decode
+ * @file base64.c
+ * @brief Base64 encode/decode
  * @author Ryan Martell <rdm4@martellventures.com> (with lots of Michael)
  */
 
@@ -65,9 +64,9 @@ int av_base64_decode(uint8_t * out, const char *in, int out_length)
 }
 
 /*****************************************************************************
-* b64_encode: stolen from VLC's http.c
-* simplified by michael
-* fixed edge cases and made it work from data (vs. strings) by ryan.
+* b64_encode: Stolen from VLC's http.c.
+* Simplified by Michael.
+* Fixed edge cases and made it work from data (vs. strings) by Ryan.
 *****************************************************************************/
 
 char *av_base64_encode(char * buf, int buf_len, const uint8_t * src, int len)
