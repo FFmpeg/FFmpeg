@@ -248,6 +248,7 @@ static inline void range_dec_normalize(APEContext * ctx)
 
 /**
  * Calculate culmulative frequency for next symbol. Does NO update!
+ * @param ctx decoder context
  * @param tot_f is the total frequency or (code_value)1<<shift
  * @return the culmulative frequency
  */
@@ -260,6 +261,7 @@ static inline int range_decode_culfreq(APEContext * ctx, int tot_f)
 
 /**
  * Decode value with given size in bits
+ * @param ctx decoder context
  * @param shift number of bits to decode
  */
 static inline int range_decode_culshift(APEContext * ctx, int shift)
@@ -272,6 +274,7 @@ static inline int range_decode_culshift(APEContext * ctx, int shift)
 
 /**
  * Update decoding state
+ * @param ctx decoder context
  * @param sy_f the interval length (frequency of the symbol)
  * @param lt_f the lower end (frequency sum of < symbols)
  */
@@ -330,8 +333,9 @@ static const uint16_t counts_diff_3980[21] = {
 
 /**
  * Decode symbol
+ * @param ctx decoder context
  * @param counts probability range start position
- * @param count_diffs probability range widths
+ * @param counts_diff probability range widths
  */
 static inline int range_get_symbol(APEContext * ctx,
                                    const uint16_t counts[],
