@@ -65,6 +65,7 @@ static RV34VLC intra_vlcs[NUM_INTRA_TABLES], inter_vlcs[NUM_INTER_TABLES];
  * Generate VLC from codeword lengths.
  * @param bits   codeword lengths (zeroes are accepted)
  * @param size   length of input data
+ * @param vlc    output VLC
  * @param insyms symbols for input codes (NULL for default ones)
  */
 static void rv34_gen_vlc(const uint8_t *bits, int size, VLC *vlc, const uint8_t *insyms)
@@ -618,6 +619,10 @@ static const int chroma_coeffs[3] = { 0, 3, 5 };
  * @param mv_off offset to the motion vector information
  * @param width width of the current partition in 8x8 blocks
  * @param height height of the current partition in 8x8 blocks
+ * @param dir motion compensation direction (i.e. from the last or the next reference frame)
+ * @param thirdpel motion vectors are specified in 1/3 of pixel
+ * @param qpel_mc a set of functions used to perform luma motion compensation
+ * @param chroma_mc a set of functions used to perform chroma motion compensation
  */
 static inline void rv34_mc(RV34DecContext *r, const int block_type,
                           const int xoff, const int yoff, int mv_off,
