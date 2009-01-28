@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include <math.h>
+#include "common.h"
 #include "rational.h"
 
 #ifndef M_E
