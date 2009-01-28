@@ -40,12 +40,13 @@ static AVCRC av_crc_table[AV_CRC_MAX][257];
 #endif
 
 /**
- * Inits a crc table.
- * @param ctx must be an array of sizeof(AVCRC)*257 or sizeof(AVCRC)*1024
+ * Initializes a CRC table.
+ * @param ctx must be an array of size sizeof(AVCRC)*257 or sizeof(AVCRC)*1024
  * @param cts_size size of ctx in bytes
- * @param le if 1, lowest bit represents coefficient for highest exponent
- *           of corresponding polynomial (both for poly and actual CRC).
- *           If 0, you must swap the crc parameter and the result of av_crc
+ * @param le If 1, the lowest bit represents the coefficient for the highest
+ *           exponent of the corresponding polynomial (both for poly and
+ *           actual CRC).
+ *           If 0, you must swap the CRC parameter and the result of av_crc
  *           if you need the standard representation (can be simplified in
  *           most cases to e.g. bswap16):
  *           bswap_32(crc << (32-bits))

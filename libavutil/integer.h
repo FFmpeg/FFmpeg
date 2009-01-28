@@ -41,8 +41,9 @@ AVInteger av_add_i(AVInteger a, AVInteger b) av_const;
 AVInteger av_sub_i(AVInteger a, AVInteger b) av_const;
 
 /**
- * returns the rounded down value of the logarithm of base 2 of the given AVInteger.
- * this is simply the index of the most significant bit which is 1. Or 0 of all bits are 0
+ * Returns the rounded-down value of the base 2 logarithm of the given
+ * AVInteger. This is simply the index of the most significant bit
+ * which is 1, or 0 if all bits are 0.
  */
 int av_log2_i(AVInteger a) av_const;
 AVInteger av_mul_i(AVInteger a, AVInteger b) av_const;

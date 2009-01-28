@@ -218,7 +218,7 @@ if((y)<(x)){\
 }
 #endif
 
-/* avoid usage of various functions */
+/* avoid usage of dangerous/inappropriate system functions */
 #undef  malloc
 #define malloc please_use_av_malloc
 #undef  free

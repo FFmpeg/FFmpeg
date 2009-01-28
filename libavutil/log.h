@@ -70,21 +70,21 @@ struct AVCLASS {
 #define AV_LOG_PANIC     0
 
 /**
- * something went wrong and recovery is not possible
- * like no header in a format which depends on it or a combination
- * of parameters which are not allowed
+ * Something went wrong and recovery is not possible.
+ * For example, no header was found for a format which depends
+ * on headers or an illegal combination of parameters is used.
  */
 #define AV_LOG_FATAL     8
 
 /**
- * something went wrong and cannot losslessly be recovered
- * but not all future data is affected
+ * Something went wrong and cannot losslessly be recovered.
+ * However, not all future data is affected.
  */
 #define AV_LOG_ERROR    16
 
 /**
- * something somehow does not look correct / something which may or may not
- * lead to some problems like use of -vstrict -2
+ * Something somehow does not look correct. This may or may not
+ * lead to problems. An example would be the use of '-vstrict -2'.
  */
 #define AV_LOG_WARNING  24
 

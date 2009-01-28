@@ -29,7 +29,7 @@
  *
  * @param str input string
  * @param pfx prefix to test
- * @param ptr updated after the prefix in str in there is a match
+ * @param ptr updated if the prefix is matched inside str
  * @return non-zero if the prefix matches, zero otherwise
  */
 int av_strstart(const char *str, const char *pfx, const char **ptr);
@@ -41,7 +41,7 @@ int av_strstart(const char *str, const char *pfx, const char **ptr);
  *
  * @param str input string
  * @param pfx prefix to test
- * @param ptr updated after the prefix in str in there is a match
+ * @param ptr updated if the prefix is matched inside str
  * @return non-zero if the prefix matches, zero otherwise
  */
 int av_stristart(const char *str, const char *pfx, const char **ptr);

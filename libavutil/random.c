@@ -1,5 +1,5 @@
 /*
- * Mersenne Twister Random Algorithm
+ * Mersenne Twister PRNG algorithm
  * Copyright (c) 2006 Ryan Martell
  * Based on a C program for MT19937, with initialization improved 2002/1/26.
  * Coded by Takuji Nishimura and Makoto Matsumoto.

@@ -21,7 +21,7 @@
 
 /**
  * @file log.c
- * log.
+ * logging functions
  */
 
 #include "avutil.h"
