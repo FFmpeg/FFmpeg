@@ -29,19 +29,19 @@ see http://en.wikipedia.org/wiki/Mersenne_twister for an explanation of this alg
 #include "random.h"
 
 
-/* Period parameters */
+/* period parameters */
 #define M 397
 #define A 0x9908b0df /* constant vector a */
 #define UPPER_MASK 0x80000000 /* most significant w-r bits */
 #define LOWER_MASK 0x7fffffff /* least significant r bits */
 
-/** initializes mt[AV_RANDOM_N] with a seed */
+/** Initializes mt[AV_RANDOM_N] with a seed. */
 void av_random_init(AVRandomState *state, unsigned int seed)
 {
     int index;
 
     /*
-     This differs from the wikipedia article.  Source is from the
+     This differs from the Wikipedia article.  Source is from the
      Makoto Matsumoto and Takuji Nishimura code, with the following comment:
      */
      /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */

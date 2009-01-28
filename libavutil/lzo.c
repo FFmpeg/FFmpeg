@@ -19,14 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "common.h"
-//! avoid e.g. MPlayers fast_memcpy, it slows things down here
+//! Avoid e.g. MPlayers fast_memcpy, it slows things down here.
 #undef memcpy
 #include <string.h>
 #include "lzo.h"
 
-//! define if we may write up to 12 bytes beyond the output buffer
+//! Define if we may write up to 12 bytes beyond the output buffer.
 #define OUTBUF_PADDED 1
-//! define if we may read up to 8 bytes beyond the input buffer
+//! Define if we may read up to 8 bytes beyond the input buffer.
 #define INBUF_PADDED 1
 typedef struct LZOContext {
     const uint8_t *in, *in_end;
@@ -52,7 +52,7 @@ static inline int get_byte(LZOContext *c) {
 #endif
 
 /**
- * \brief decode a length value in the coding used by lzo
+ * \brief Decodes a length value in the coding used by lzo.
  * \param x previous byte value
  * \param mask bits used from x
  * \return decoded length value
@@ -80,7 +80,7 @@ static inline int get_len(LZOContext *c, int x, int mask) {
 #endif
 
 /**
- * \brief copy bytes from input to output buffer with checking
+ * \brief Copies bytes from input to output buffer with checking.
  * \param cnt number of bytes to copy, must be >= 0
  */
 static inline void copy(LZOContext *c, int cnt) {
@@ -109,7 +109,7 @@ static inline void copy(LZOContext *c, int cnt) {
 static inline void memcpy_backptr(uint8_t *dst, int back, int cnt);
 
 /**
- * \brief copy previously decoded bytes to current position
+ * \brief Copies previously decoded bytes to current position.
  * \param back how many bytes back we start
  * \param cnt number of bytes to copy, must be >= 0
  *
@@ -179,15 +179,15 @@ void av_memcpy_backptr(uint8_t *dst, int back, int cnt) {
 }
 
 /**
- * \brief decode LZO 1x compressed data
+ * \brief Decodes LZO 1x compressed data.
  * \param out output buffer
  * \param outlen size of output buffer, number of bytes left are returned here
  * \param in input buffer
  * \param inlen size of input buffer, number of bytes left are returned here
  * \return 0 on success, otherwise error flags, see lzo.h
  *
- * make sure all buffers are appropriately padded, in must provide
- * LZO_INPUT_PADDING, out must provide LZO_OUTPUT_PADDING additional bytes
+ * Make sure all buffers are appropriately padded, in must provide
+ * LZO_INPUT_PADDING, out must provide LZO_OUTPUT_PADDING additional bytes.
  */
 int lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
     int state= 0;
@@ -285,7 +285,7 @@ STOP_TIMER("lzod")
     if (memcmp(orig, decomp, s))
         av_log(NULL, AV_LOG_ERROR, "decompression incorrect\n");
     else
-        av_log(NULL, AV_LOG_ERROR, "decompression ok\n");
+        av_log(NULL, AV_LOG_ERROR, "decompression OK\n");
     return 0;
 }
 #endif

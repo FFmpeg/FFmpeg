@@ -1,5 +1,5 @@
 /*
- * Principal component analysis
+ * principal component analysis (PCA)
  * Copyright (c) 2004 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file pca.c
- * Principal component analysis
+ * principal component analysis (PCA)
  */
 
 #include "common.h"
@@ -120,7 +120,7 @@ int ff_pca(PCA *pca, double *eigenvector, double *eigenvalue){
 
                 if(pass < 3 && fabs(covar) < sum / (5*n*n)) //FIXME why pass < 3
                     continue;
-                if(fabs(covar) == 0.0) //FIXME shouldnt be needed
+                if(fabs(covar) == 0.0) //FIXME should not be needed
                     continue;
                 if(pass >=3 && fabs((eigenvalue[j]+z[j])/covar) > (1LL<<32) && fabs((eigenvalue[i]+z[i])/covar) > (1LL<<32)){
                     pca->covariance[j + i*n]=0.0;

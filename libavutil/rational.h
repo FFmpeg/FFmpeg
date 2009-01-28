@@ -1,5 +1,5 @@
 /*
- * Rational numbers
+ * rational numbers
  * Copyright (c) 2003 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file rational.h
- * Rational numbers.
+ * rational numbers
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -32,7 +32,7 @@
 #include "common.h"
 
 /**
- * Rational number num/den.
+ * rational number numerator/denominator
  */
 typedef struct AVRational{
     int num; ///< numerator
@@ -40,10 +40,10 @@ typedef struct AVRational{
 } AVRational;
 
 /**
- * Compare two rationals.
+ * Compares two rationals.
  * @param a first rational
  * @param b second rational
- * @return 0 if a==b, 1 if a>b and -1 if a<b.
+ * @return 0 if a==b, 1 if a>b and -1 if a<b
  */
 static inline int av_cmp_q(AVRational a, AVRational b){
     const int64_t tmp= a.num * (int64_t)b.den - b.num * (int64_t)a.den;
@@ -53,7 +53,7 @@ static inline int av_cmp_q(AVRational a, AVRational b){
 }
 
 /**
- * Rational to double conversion.
+ * Converts rational to double.
  * @param a rational to convert
  * @return (double) a
  */
@@ -62,7 +62,7 @@ static inline double av_q2d(AVRational a){
 }
 
 /**
- * Reduce a fraction.
+ * Reduces a fraction.
  * This is useful for framerate calculations.
  * @param dst_nom destination numerator
  * @param dst_den destination denominator
@@ -75,33 +75,33 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
 
 /**
  * Multiplies two rationals.
- * @param b first rational.
- * @param c second rational.
- * @return b*c.
+ * @param b first rational
+ * @param c second rational
+ * @return b*c
  */
 AVRational av_mul_q(AVRational b, AVRational c) av_const;
 
 /**
  * Divides one rational by another.
- * @param b first rational.
- * @param c second rational.
- * @return b/c.
+ * @param b first rational
+ * @param c second rational
+ * @return b/c
  */
 AVRational av_div_q(AVRational b, AVRational c) av_const;
 
 /**
  * Adds two rationals.
- * @param b first rational.
- * @param c second rational.
- * @return b+c.
+ * @param b first rational
+ * @param c second rational
+ * @return b+c
  */
 AVRational av_add_q(AVRational b, AVRational c) av_const;
 
 /**
  * Subtracts one rational from another.
- * @param b first rational.
- * @param c second rational.
- * @return b-c.
+ * @param b first rational
+ * @param c second rational
+ * @return b-c
  */
 AVRational av_sub_q(AVRational b, AVRational c) av_const;
 
@@ -109,7 +109,7 @@ AVRational av_sub_q(AVRational b, AVRational c) av_const;
  * Converts a double precision floating point number to a rational.
  * @param d double to convert
  * @param max the maximum allowed numerator and denominator
- * @return (AVRational) d.
+ * @return (AVRational) d
  */
 AVRational av_d2q(double d, int max) av_const;
 

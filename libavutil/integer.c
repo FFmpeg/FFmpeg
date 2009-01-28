@@ -21,7 +21,7 @@
 
 /**
  * @file integer.c
- * arbitrary precision integers.
+ * arbitrary precision integers
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 

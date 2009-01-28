@@ -48,29 +48,30 @@ int av_log2_i(AVInteger a) av_const;
 AVInteger av_mul_i(AVInteger a, AVInteger b) av_const;
 
 /**
- * returns 0 if a==b, 1 if a>b and -1 if a<b.
+ * Returns 0 if a==b, 1 if a>b and -1 if a<b.
  */
 int av_cmp_i(AVInteger a, AVInteger b) av_const;
 
 /**
- * bitwise shift.
- * @param s the number of bits by which the value should be shifted right, may be negative for shifting left
+ * bitwise shift
+ * @param s the number of bits by which the value should be shifted right,
+            may be negative for shifting left
  */
 AVInteger av_shr_i(AVInteger a, int s) av_const;
 
 /**
- * returns a % b.
- * @param quot a/b will be stored here
+ * Returns a % b.
+ * @param quot a/b will be stored here.
  */
 AVInteger av_mod_i(AVInteger *quot, AVInteger a, AVInteger b);
 
 /**
- * returns a/b.
+ * Returns a/b.
  */
 AVInteger av_div_i(AVInteger a, AVInteger b) av_const;
 
 /**
- * converts the given int64_t to an AVInteger.
+ * Converts the given int64_t to an AVInteger.
  */
 AVInteger av_int2i(int64_t a) av_const;
 

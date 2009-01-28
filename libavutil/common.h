@@ -93,7 +93,7 @@
 #endif
 #endif
 
-//rounded divison & shift
+//rounded division & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
@@ -140,7 +140,7 @@ static inline av_const int av_log2_16bit(unsigned int v)
 }
 
 /**
- * clip a signed integer value into the amin-amax range
+ * Clips a signed integer value into the amin-amax range.
  * @param a value to clip
  * @param amin minimum value of the clip range
  * @param amax maximum value of the clip range
@@ -154,7 +154,7 @@ static inline av_const int av_clip(int a, int amin, int amax)
 }
 
 /**
- * clip a signed integer value into the 0-255 range
+ * Clips a signed integer value into the 0-255 range.
  * @param a value to clip
  * @return clipped value
  */
@@ -165,7 +165,7 @@ static inline av_const uint8_t av_clip_uint8(int a)
 }
 
 /**
- * clip a signed integer value into the -32768,32767 range
+ * Clips a signed integer value into the -32768,32767 range.
  * @param a value to clip
  * @return clipped value
  */
@@ -176,7 +176,7 @@ static inline av_const int16_t av_clip_int16(int a)
 }
 
 /**
- * clip a float value into the amin-amax range
+ * Clips a float value into the amin-amax range.
  * @param a value to clip
  * @param amin minimum value of the clip range
  * @param amax maximum value of the clip range
@@ -194,7 +194,7 @@ static inline av_const float av_clipf(float a, float amin, float amax)
 
 /*!
  * \def GET_UTF8(val, GET_BYTE, ERROR)
- * converts a UTF-8 character (up to 4 bytes long) to its 32-bit UCS-4 encoded form
+ * Converts a UTF-8 character (up to 4 bytes long) to its 32-bit UCS-4 encoded form
  * \param val is the output and should be of type uint32_t. It holds the converted
  * UCS-4 character and should be a left value.
  * \param GET_BYTE gets UTF-8 encoded bytes from any proper source. It can be
@@ -222,19 +222,19 @@ static inline av_const float av_clipf(float a, float amin, float amax)
 
 /*!
  * \def PUT_UTF8(val, tmp, PUT_BYTE)
- * converts a 32-bit unicode character to its UTF-8 encoded form (up to 4 bytes long).
- * \param val is an input only argument and should be of type uint32_t. It holds
- * a ucs4 encoded unicode character that is to be converted to UTF-8. If
- * val is given as a function it's executed only once.
+ * Converts a 32-bit Unicode character to its UTF-8 encoded form (up to 4 bytes long).
+ * \param val is an input-only argument and should be of type uint32_t. It holds
+ * a UCS-4 encoded Unicode character that is to be converted to UTF-8. If
+ * val is given as a function it is executed only once.
  * \param tmp is a temporary variable and should be of type uint8_t. It
  * represents an intermediate value during conversion that is to be
- * outputted by PUT_BYTE.
+ * output by PUT_BYTE.
  * \param PUT_BYTE writes the converted UTF-8 bytes to any proper destination.
  * It could be a function or a statement, and uses tmp as the input byte.
  * For example, PUT_BYTE could be "*output++ = tmp;" PUT_BYTE will be
  * executed up to 4 times for values in the valid UTF-8 range and up to
  * 7 times in the general case, depending on the length of the converted
- * unicode character.
+ * Unicode character.
  */
 #define PUT_UTF8(val, tmp, PUT_BYTE)\
     {\

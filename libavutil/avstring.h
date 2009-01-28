@@ -48,7 +48,7 @@ int av_stristart(const char *str, const char *pfx, const char **ptr);
 
 /**
  * Copy the string src to dst, but no more than size - 1 bytes, and
- * null terminate dst.
+ * null-terminate dst.
  *
  * This function is the same as BSD strlcpy().
  *
@@ -61,7 +61,7 @@ size_t av_strlcpy(char *dst, const char *src, size_t size);
 
 /**
  * Append the string src to the string dst, but to a total length of
- * no more than size - 1 bytes, and null terminate dst.
+ * no more than size - 1 bytes, and null-terminate dst.
  *
  * This function is similar to BSD strlcat(), but differs when
  * size <= strlen(dst).

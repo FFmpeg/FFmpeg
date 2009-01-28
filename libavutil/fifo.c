@@ -1,5 +1,5 @@
 /*
- * A very simple circular buffer FIFO implementation
+ * a very simple circular buffer FIFO implementation
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  * Copyright (c) 2006 Roman Shaposhnik
  *
@@ -117,7 +117,7 @@ int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void
     return 0;
 }
 
-/** discard data from the fifo */
+/** Discard data from the FIFO. */
 void av_fifo_drain(AVFifoBuffer *f, int size)
 {
     f->rptr += size;

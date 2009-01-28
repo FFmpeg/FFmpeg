@@ -1,5 +1,5 @@
 /*
- * Rational numbers
+ * rational numbers
  * Copyright (c) 2003 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file rational.c
- * Rational numbers
+ * rational numbers
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 

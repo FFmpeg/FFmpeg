@@ -20,7 +20,7 @@
 
 /**
  * @file internal.h
- * common internal api header.
+ * common internal API header
  */
 
 #ifndef AVUTIL_INTERNAL_H

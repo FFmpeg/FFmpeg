@@ -72,10 +72,9 @@ static inline av_const SoftFloat av_normalize1_sf(SoftFloat a){
 }
 
 /**
- *
- * @return will not be more denormalized then a+b, so if either input is
- *         normalized then the output will not be worse then the other input
- *         if both are normalized then the output will be normalized
+ * @return Will not be more denormalized than a+b. So if either input is
+ *         normalized, then the output will not be worse then the other input.
+ *         If both are normalized, then the output will be normalized.
  */
 static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
     a.exp += b.exp;
@@ -84,9 +83,8 @@ static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
 }
 
 /**
- *
- * b has to be normalized and not zero
- * @return will not be more denormalized then a
+ * b has to be normalized and not zero.
+ * @return Will not be more denormalized than a.
  */
 static av_const SoftFloat av_div_sf(SoftFloat a, SoftFloat b){
     a.exp -= b.exp+1;
@@ -117,8 +115,7 @@ static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
 }
 
 /**
- *
- * rounding is to -inf
+ * Rounding is to -inf.
  */
 static inline av_const int av_sf2int(SoftFloat v, int frac_bits){
     v.exp += frac_bits - ONE_BITS;
