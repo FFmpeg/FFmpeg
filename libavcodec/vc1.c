@@ -116,12 +116,12 @@ static int vc1_init_common(VC1Context *v)
 
 /***********************************************************************/
 /**
- * @defgroup bitplane VC9 Bitplane decoding
+ * @defgroup vc1bitplane VC-1 Bitplane decoding
  * @see 8.7, p56
  * @{
  */
 
-/** @addtogroup bitplane
+/**
  * Imode types
  * @{
  */
@@ -177,7 +177,8 @@ static void decode_colskip(uint8_t* plane, int width, int height, int stride, Ge
 }
 
 /** Decode a bitplane's bits
- * @param bp Bitplane where to store the decode bits
+ * @param data bitplane where to store the decode bits
+ * @param[out] raw_flag pointer to the flag indicating that this bitplane is not coded explicitly
  * @param v VC-1 context for bit reading and logging
  * @return Status
  * @todo FIXME: Optimize
@@ -312,6 +313,7 @@ static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
 /**
  * VC-1 in-loop deblocking filter for one line
  * @param src source block type
+ * @param stride block stride
  * @param pq block quantizer
  * @return whether other 3 pairs should be filtered or not
  * @see 8.6
@@ -354,6 +356,8 @@ static int av_always_inline vc1_filter_line(uint8_t* src, int stride, int pq){
 /**
  * VC-1 in-loop deblocking filter
  * @param src source block type
+ * @param step distance between horizontally adjacent elements
+ * @param stride distance between vertically adjacent elements
  * @param len edge length to filter (4 or 8 pixels)
  * @param pq block quantizer
  * @see 8.6
@@ -1586,7 +1590,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
 
 /***********************************************************************/
 /**
- * @defgroup block VC-1 Block-level functions
+ * @defgroup vc1block VC-1 Block-level functions
  * @see 7.1.4, p91 and 8.1.1.7, p(1)04
  * @{
  */
@@ -2172,6 +2176,8 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
 /** Get predicted DC value for I-frames only
  * prediction dir: left=0, top=1
  * @param s MpegEncContext
+ * @param overlap flag indicating that overlap filtering is used
+ * @param pq integer part of picture quantizer
  * @param[in] n block index in the current MB
  * @param dc_val_ptr Pointer to DC predictor
  * @param dir_ptr Prediction direction for use in AC prediction
@@ -2232,7 +2238,11 @@ static inline int vc1_i_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
 /** Get predicted DC value
  * prediction dir: left=0, top=1
  * @param s MpegEncContext
+ * @param overlap flag indicating that overlap filtering is used
+ * @param pq integer part of picture quantizer
  * @param[in] n block index in the current MB
+ * @param a_avail flag indicating top block availability
+ * @param c_avail flag indicating left block availability
  * @param dc_val_ptr Pointer to DC predictor
  * @param dir_ptr Prediction direction for use in AC prediction
  */
@@ -2303,9 +2313,10 @@ static inline int vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     return pred;
 }
 
+/** @} */ // Block group
 
 /**
- * @defgroup std_mb VC1 Macroblock-level functions in Simple/Main Profiles
+ * @defgroup vc1_std_mb VC1 Macroblock-level functions in Simple/Main Profiles
  * @see 7.1.4, p91 and 8.1.1.7, p(1)04
  * @{
  */
@@ -2342,6 +2353,7 @@ static inline int vc1_coded_block_pred(MpegEncContext * s, int n, uint8_t **code
  * @param last Last coefficient
  * @param skip How much zero coefficients to skip
  * @param value Decoded AC coefficient value
+ * @param codingset set of VLC to decode data
  * @see 8.1.3.4
  */
 static void vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip, int *value, int codingset)
@@ -2405,6 +2417,7 @@ static void vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip, int *value,
 /** Decode intra block in intra frames - should be faster than decode_intra_block
  * @param v VC1Context
  * @param block block to decode
+ * @param[in] n subblock index
  * @param coded are AC coeffs present or not
  * @param codingset set of VLC to decode data
  */
@@ -2570,8 +2583,10 @@ not_coded:
 /** Decode intra block in intra frames - should be faster than decode_intra_block
  * @param v VC1Context
  * @param block block to decode
+ * @param[in] n subblock number
  * @param coded are AC coeffs present or not
  * @param codingset set of VLC to decode data
+ * @param mquant quantizer value for this macroblock
  */
 static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int coded, int codingset, int mquant)
 {
@@ -2766,6 +2781,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
 /** Decode intra block in inter frames - more generic version than vc1_decode_i_block
  * @param v VC1Context
  * @param block block to decode
+ * @param[in] n subblock index
  * @param coded are AC coeffs present or not
  * @param mquant block quantizer
  * @param codingset set of VLC to decode data
@@ -3102,6 +3118,8 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
     }
     return pat;
 }
+
+/** @} */ // Macroblock group
 
 static const int size_table  [6] = { 0, 2, 3, 4,  5,  8 };
 static const int offset_table[6] = { 0, 1, 3, 7, 15, 31 };
