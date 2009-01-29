@@ -21,6 +21,7 @@ HEADERS = adler32.h                                                     \
 
 OBJS = adler32.o                                                        \
        aes.o                                                            \
+       avstring.o                                                       \
        base64.o                                                         \
        crc.o                                                            \
        des.o                                                            \
@@ -37,7 +38,6 @@ OBJS = adler32.o                                                        \
        rational.o                                                       \
        rc4.o                                                            \
        sha1.o                                                           \
-       string.o                                                         \
        tree.o                                                           \
        utils.o                                                          \
 
