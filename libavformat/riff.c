@@ -161,6 +161,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_MSVIDEO1,     MKTAG('w', 'h', 'a', 'm') },
     { CODEC_ID_CINEPAK,      MKTAG('c', 'v', 'i', 'd') },
     { CODEC_ID_TRUEMOTION1,  MKTAG('D', 'U', 'C', 'K') },
+    { CODEC_ID_TRUEMOTION1,  MKTAG('P', 'V', 'E', 'Z') },
     { CODEC_ID_MSZH,         MKTAG('M', 'S', 'Z', 'H') },
     { CODEC_ID_ZLIB,         MKTAG('Z', 'L', 'I', 'B') },
     { CODEC_ID_SNOW,         MKTAG('S', 'N', 'O', 'W') },
