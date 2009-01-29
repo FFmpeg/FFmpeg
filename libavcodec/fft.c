@@ -206,7 +206,7 @@ void ff_fft_permute_c(FFTContext *s, FFTComplex *z)
     }
 }
 
-void ff_fft_end(FFTContext *s)
+av_cold void ff_fft_end(FFTContext *s)
 {
     av_freep(&s->revtab);
     av_freep(&s->exptab);
