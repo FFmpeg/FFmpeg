@@ -7150,6 +7150,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
                ((const char*[]){"Gray","420","422","444"})[sps->chroma_format_idc]
                );
     }
+
     av_free(h->sps_buffers[sps_id]);
     h->sps_buffers[sps_id]= sps;
     return 0;
