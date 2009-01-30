@@ -5491,7 +5491,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
 
     if ((s->vol_control_parameters=get_bits1(gb))) { /* vol control parameter */
         int chroma_format= get_bits(gb, 2);
-        if(chroma_format!=1){
+        if(chroma_format!=CHROMA_420){
             av_log(s->avctx, AV_LOG_ERROR, "illegal chroma format\n");
         }
         s->low_delay= get_bits1(gb);
