@@ -1300,9 +1300,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
 
         for (channel=0; channel<avctx->channels; channel++) {
-            srcC = src + (big_endian ? bytestream_get_be32(&src)
-                                     : bytestream_get_le32(&src))
-                       + (avctx->channels-channel-1) * 4;
+            srcC  = src + (avctx->channels-channel) * 4;
+            srcC += (big_endian ? bytestream_get_be32(&src)
+                                : bytestream_get_le32(&src));
             samplesC = samples + channel;
 
             if (avctx->codec->id == CODEC_ID_ADPCM_EA_R1) {
