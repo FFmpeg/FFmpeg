@@ -4441,7 +4441,7 @@ static void handle_child_exit(int sig)
     need_to_start_children = 1;
 }
 
-static void opt_debug()
+static void opt_debug(void)
 {
     ffserver_debug = 1;
     ffserver_daemon = 0;
