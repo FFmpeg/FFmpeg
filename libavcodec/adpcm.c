@@ -107,11 +107,6 @@ static const int ea_adpcm_table[] = {
     3, 4, 7, 8, 10, 11, 0, -1, -3, -4
 };
 
-static const int ct_adpcm_table[8] = {
-    0x00E6, 0x00E6, 0x00E6, 0x00E6,
-    0x0133, 0x0199, 0x0200, 0x0266
-};
-
 // padded to zero where table size is less then 16
 static const int swf_index_tables[4][16] = {
     /*2*/ { -1, 2 },
@@ -759,7 +754,7 @@ static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
     c->predictor = ((c->predictor * 254) >> 8) + (sign ? -diff : diff);
     c->predictor = av_clip_int16(c->predictor);
     /* calculate new step and clamp it to range 511..32767 */
-    new_step = (ct_adpcm_table[nibble & 7] * c->step) >> 8;
+    new_step = (AdaptationTable[nibble & 7] * c->step) >> 8;
     c->step = av_clip(new_step, 511, 32767);
 
     return (short)c->predictor;
