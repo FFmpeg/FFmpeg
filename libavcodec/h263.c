@@ -3296,10 +3296,10 @@ void ff_mpeg4_clean_buffers(MpegEncContext *s)
 
 /**
  * decodes the group of blocks / video packet header.
- * @return <0 if no resync found
+ * @return bit position of the resync_marker, or <0 if none was found
  */
 int ff_h263_resync(MpegEncContext *s){
-    int left, ret;
+    int left, pos, ret;
 
     if(s->codec_id==CODEC_ID_MPEG4){
         skip_bits1(&s->gb);
@@ -3307,12 +3307,13 @@ int ff_h263_resync(MpegEncContext *s){
     }
 
     if(show_bits(&s->gb, 16)==0){
+        pos= get_bits_count(&s->gb);
         if(s->codec_id==CODEC_ID_MPEG4)
             ret= mpeg4_decode_video_packet_header(s);
         else
             ret= h263_decode_gob_header(s);
         if(ret>=0)
-            return 0;
+            return pos;
     }
     //OK, it's not where it is supposed to be ...
     s->gb= s->last_resync_gb;
@@ -3323,12 +3324,13 @@ int ff_h263_resync(MpegEncContext *s){
         if(show_bits(&s->gb, 16)==0){
             GetBitContext bak= s->gb;
 
+            pos= get_bits_count(&s->gb);
             if(s->codec_id==CODEC_ID_MPEG4)
                 ret= mpeg4_decode_video_packet_header(s);
             else
                 ret= h263_decode_gob_header(s);
             if(ret>=0)
-                return 0;
+                return pos;
 
             s->gb= bak;
         }
