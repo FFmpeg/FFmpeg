@@ -81,7 +81,7 @@ typedef struct AVMetadata AVMetadata;
 /**
  * gets a metadata element with matching key.
  * @param prev set to the previous matching element to find the next.
- * @param flags allows case as well as suffix insensitive comparissions.
+ * @param flags allows case as well as suffix insensitive comparisons.
  * @return found tag or NULL, changing key or value leads to undefined behavior.
  */
 AVMetadataTag *
