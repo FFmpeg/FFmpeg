@@ -36,7 +36,7 @@
 
 static DECLARE_ALIGNED_16(MPA_INT, mpa_window[512]);
 
-void ff_mpc_init()
+void ff_mpc_init(void)
 {
     ff_mpa_synth_init(mpa_window);
 }

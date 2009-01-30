@@ -40,7 +40,7 @@ static VLC ptype_vlc[NUM_PTYPE_VLCS], btype_vlc[NUM_BTYPE_VLCS];
 /**
  * Initialize all tables.
  */
-static av_cold void rv40_init_tables()
+static av_cold void rv40_init_tables(void)
 {
     int i;
 

@@ -3988,7 +3988,7 @@ static void MC_avg_no_round_xy_8_vis (uint8_t * dest, const uint8_t * _ref,
 #define ACCEL_SPARC_VIS 1
 #define ACCEL_SPARC_VIS2 2
 
-static int vis_level ()
+static int vis_level(void)
 {
     int accel = 0;
     accel |= ACCEL_SPARC_VIS;

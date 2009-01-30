@@ -48,7 +48,7 @@ void *fast_memcpy(void *a, const void *b, size_t c){return memcpy(a,b,c);};
 /* reference fdct/idct */
 void fdct(DCTELEM *block);
 void idct(DCTELEM *block);
-void init_fdct();
+void init_fdct(void);
 
 void ff_mmx_idct(DCTELEM *data);
 void ff_mmxext_idct(DCTELEM *data);

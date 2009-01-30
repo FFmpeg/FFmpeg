@@ -95,7 +95,7 @@ static const uint8_t ccitt_group3_2d_lens[11] = {
 
 static VLC ccitt_vlc[2], ccitt_group3_2d_vlc;
 
-av_cold void ff_ccitt_unpack_init()
+av_cold void ff_ccitt_unpack_init(void)
 {
     static VLC_TYPE code_table1[528][2];
     static VLC_TYPE code_table2[648][2];

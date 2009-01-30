@@ -141,7 +141,7 @@ static VLC huff_vlc[3];
 
 /** Initialize static data, constant between all invocations of the codec. */
 
-static av_cold void init_static()
+static av_cold void init_static(void)
 {
     INIT_VLC_STATIC(&huff_vlc[0], VLC_BITS, 18,
                 &ff_mlp_huffman_tables[0][0][1], 2, 1,

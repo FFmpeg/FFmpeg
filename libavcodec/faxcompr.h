@@ -33,7 +33,7 @@
 /**
  * initialize upacker code
  */
-void ff_ccitt_unpack_init();
+void ff_ccitt_unpack_init(void);
 
 /**
  * unpack data compressed with CCITT Group 3 1/2-D or Group 4 method

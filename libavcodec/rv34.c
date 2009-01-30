@@ -101,7 +101,7 @@ static void rv34_gen_vlc(const uint8_t *bits, int size, VLC *vlc, const uint8_t 
 /**
  * Initialize all tables.
  */
-static av_cold void rv34_init_tables()
+static av_cold void rv34_init_tables(void)
 {
     int i, j, k;
 
