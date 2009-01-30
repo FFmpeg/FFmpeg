@@ -25,11 +25,11 @@
 #ifdef __APPLE__
 #undef _POSIX_C_SOURCE
 #include <sys/sysctl.h>
-#elif __OpenBSD__
+#elif defined(__OpenBSD__)
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <machine/cpu.h>
-#elif __AMIGAOS4__
+#elif defined(__AMIGAOS4__)
 #include <exec/exec.h>
 #include <interfaces/exec.h>
 #include <proto/exec.h>
