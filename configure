@@ -102,6 +102,7 @@ show_help(){
   echo "  --disable-fft            disable FFT code"
   echo "  --disable-golomb         disable Golomb code"
   echo "  --disable-mdct           disable MDCT code"
+  echo "  --disable-rdft           disable RDFT code"
   echo "  --enable-hardcoded-tables use hardcoded tables instead of runtime generation"
   echo "  --enable-memalign-hack   emulate memalign, interferes with memory debuggers"
   echo "  --enable-beos-netserver  enable BeOS netserver"
@@ -781,6 +782,7 @@ CONFIG_LIST="
     nonfree
     postproc
     powerpc_perf
+    rdft
     shared
     small
     static

@@ -29,6 +29,7 @@ OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
 OBJS-$(CONFIG_FFT)                     += fft.o
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
+OBJS-$(CONFIG_RDFT)                    += rdft.o
 OBJS-$(CONFIG_OLDSCALER)               += imgresample.o
 
 # decoders/encoders

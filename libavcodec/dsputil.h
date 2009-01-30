@@ -674,6 +674,8 @@ typedef struct FFTContext {
     void (*imdct_half)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
 } FFTContext;
 
+extern FFTSample* ff_cos_tabs[13];
+
 /**
  * Sets up a complex FFT.
  * @param nbits           log2 of the length of the input array
@@ -758,6 +760,35 @@ void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output, const FFTSample *input
 void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_mdct_calc(MDCTContext *s, FFTSample *out, const FFTSample *input);
 void ff_mdct_end(MDCTContext *s);
+
+/* Real Discrete Fourier Transform */
+
+enum RDFTransformType {
+    RDFT,
+    IRDFT,
+    RIDFT,
+    IRIDFT,
+};
+
+typedef struct {
+    int nbits;
+    int inverse;
+    int sign_convention;
+
+    /* pre/post rotation tables */
+    FFTSample *tcos;
+    FFTSample *tsin;
+    FFTContext fft;
+} RDFTContext;
+
+/**
+ * Sets up a real FFT.
+ * @param nbits           log2 of the length of the input array
+ * @param trans           the type of transform
+ */
+int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans);
+void ff_rdft_calc(RDFTContext *s, FFTSample *data);
+void ff_rdft_end(RDFTContext *s);
 
 #define WRAPPER8_16(name8, name16)\
 static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int stride, int h){\
