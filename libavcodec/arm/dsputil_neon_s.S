@@ -649,3 +649,53 @@ function ff_vector_fmul_neon, export=1
 3:      vst1.64         {d16-d19},[r3,:128]!
         bx              lr
         .endfunc
+
+function ff_vector_fmul_window_neon, export=1
+        vld1.32         {d16[],d17[]}, [sp,:32]
+        push            {r4,r5,lr}
+        ldr             lr,  [sp, #16]
+        sub             r2,  r2,  #8
+        sub             r5,  lr,  #2
+        add             r2,  r2,  r5, lsl #2
+        add             r4,  r3,  r5, lsl #3
+        add             ip,  r0,  r5, lsl #3
+        mov             r5,  #-16
+        vld1.64         {d0,d1},  [r1,:128]!
+        vld1.64         {d2,d3},  [r2,:128], r5
+        vld1.64         {d4,d5},  [r3,:128]!
+        vld1.64         {d6,d7},  [r4,:128], r5
+1:      subs            lr,  lr,  #4
+        vmov            q11, q8
+        vmla.f32        d22, d0,  d4
+        vmov            q10, q8
+        vmla.f32        d23, d1,  d5
+        vrev64.32       q3,  q3
+        vmla.f32        d20, d0,  d7
+        vrev64.32       q1,  q1
+        vmla.f32        d21, d1,  d6
+        beq             2f
+        vmla.f32        d22, d3,  d7
+        vld1.64         {d0,d1},  [r1,:128]!
+        vmla.f32        d23, d2,  d6
+        vld1.64         {d18,d19},[r2,:128], r5
+        vmls.f32        d20, d3,  d4
+        vld1.64         {d24,d25},[r3,:128]!
+        vmls.f32        d21, d2,  d5
+        vld1.64         {d6,d7},  [r4,:128], r5
+        vmov            q1,  q9
+        vrev64.32       q11, q11
+        vmov            q2,  q12
+        vswp            d22, d23
+        vst1.64         {d20,d21},[r0,:128]!
+        vst1.64         {d22,d23},[ip,:128], r5
+        b               1b
+2:      vmla.f32        d22, d3,  d7
+        vmla.f32        d23, d2,  d6
+        vmls.f32        d20, d3,  d4
+        vmls.f32        d21, d2,  d5
+        vrev64.32       q11, q11
+        vswp            d22, d23
+        vst1.64         {d20,d21},[r0,:128]!
+        vst1.64         {d22,d23},[ip,:128], r5
+        pop             {r4,r5,pc}
+        .endfunc
