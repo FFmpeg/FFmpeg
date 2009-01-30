@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
+#include "config.h"
 #include "common.h"
 #include "timer.h"
 
@@ -96,8 +97,6 @@
 #if ( defined(__PIC__) || defined(__pic__) ) && ! defined(PIC)
 #    define PIC
 #endif
-
-#include "config.h"
 
 #ifndef offsetof
 #    define offsetof(T,F) ((unsigned int)((char *)&((T *)0)->F))
