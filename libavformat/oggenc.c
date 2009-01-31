@@ -202,36 +202,27 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static int ogg_compare_granule(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
+{
+    AVStream *st2 = s->streams[next->stream_index];
+    AVStream *st  = s->streams[pkt ->stream_index];
+
+    int64_t next_granule = av_rescale_q(next->pts + next->duration,
+                                        st2->time_base, AV_TIME_BASE_Q);
+    int64_t cur_granule  = av_rescale_q(pkt ->pts + pkt ->duration,
+                                        st ->time_base, AV_TIME_BASE_Q);
+    return next_granule > cur_granule;
+}
+
 int ogg_interleave_per_granule(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
-    AVPacketList *pktl, **next_point, *this_pktl;
+    AVPacketList *pktl;
     int stream_count = 0;
     int streams[MAX_STREAMS] = {0};
     int interleaved = 0;
 
     if (pkt) {
-        AVStream *st = s->streams[pkt->stream_index];
-        this_pktl = av_mallocz(sizeof(AVPacketList));
-        this_pktl->pkt = *pkt;
-        if (pkt->destruct == av_destruct_packet)
-            pkt->destruct = NULL; // not shared -> must keep original from being freed
-        else
-            av_dup_packet(&this_pktl->pkt); // shared -> must dup
-        next_point = &s->packet_buffer;
-        while (*next_point) {
-            AVStream *st2 = s->streams[(*next_point)->pkt.stream_index];
-            AVPacket *next_pkt = &(*next_point)->pkt;
-            int64_t cur_granule, next_granule;
-            next_granule = av_rescale_q(next_pkt->pts + next_pkt->duration,
-                                        st2->time_base, AV_TIME_BASE_Q);
-            cur_granule = av_rescale_q(pkt->pts + pkt->duration,
-                                       st->time_base, AV_TIME_BASE_Q);
-            if (next_granule > cur_granule)
-                break;
-            next_point= &(*next_point)->next;
-        }
-        this_pktl->next= *next_point;
-        *next_point= this_pktl;
+        ff_interleave_add_packet(s, pkt, ogg_compare_granule);
     }
 
     pktl = s->packet_buffer;
