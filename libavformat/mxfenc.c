@@ -570,9 +570,6 @@ static void mxf_write_generic_desc(ByteIOContext *pb, AVStream *st, const UID ke
 
     mxf_write_local_tag(pb, 16, 0x3004);
     put_buffer(pb, mxf_essence_container_uls[sc->index].container_ul, 16);
-
-    mxf_write_local_tag(pb, 16, 0x3201);
-    put_buffer(pb, *sc->codec_ul, 16);
 }
 
 static const UID mxf_mpegvideo_descriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x51,0x00 };
@@ -601,13 +598,16 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     mxf_write_local_tag(pb, 8, 0x320E);
     put_be32(pb, dar.num);
     put_be32(pb, dar.den);
+
+    mxf_write_local_tag(pb, 16, 0x3201);
+    put_buffer(pb, *sc->codec_ul, 16);
 }
 
 static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
 {
     ByteIOContext *pb = s->pb;
 
-    mxf_write_generic_desc(pb, st, mxf_wav_descriptor_key, 108);
+    mxf_write_generic_desc(pb, st, mxf_wav_descriptor_key, 88);
 
     // write audio sampling rate
     mxf_write_local_tag(pb, 8, 0x3D03);
