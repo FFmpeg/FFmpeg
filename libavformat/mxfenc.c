@@ -1040,7 +1040,7 @@ static int mxf_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
     return size;
 }
 
-static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, int flush)
+static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
     AVPacketList *pktl;
     int stream_count = 0;
@@ -1111,6 +1111,7 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
             aic->dts += pkt->duration;
             ff_interleave_add_packet(s, pkt, mxf_compare_timestamps);
         }
+        pkt = NULL;
     }
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -1122,7 +1123,7 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
         }
     }
 
-    return mxf_interleave_get_packet(s, out, flush);
+    return mxf_interleave_get_packet(s, out, pkt, flush);
 }
 
 AVOutputFormat mxf_muxer = {
