@@ -1048,19 +1048,19 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
             uint8_t *c_ptr = s->picture.data[j] + c_offset;
             linesize = s->picture.linesize[j];
             y_stride = (mb_y == 134) ? 8 : (s->picture.linesize[j] << 3);
-                    if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
-                        uint8_t* d;
-                        uint8_t* b = scratch;
-                        for (i = 0; i < 8; i++) {
-                            d = c_ptr + (linesize << 3);
-                            b[0] = c_ptr[0]; b[1] = c_ptr[1]; b[2] = c_ptr[2]; b[3] = c_ptr[3];
-                            b[4] =    d[0]; b[5] =    d[1]; b[6] =    d[2]; b[7] =    d[3];
-                            c_ptr += linesize;
-                            b += 8;
-                        }
-                        c_ptr = scratch;
-                        linesize = 8;
-                    }
+            if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
+                uint8_t* d;
+                uint8_t* b = scratch;
+                for (i = 0; i < 8; i++) {
+                    d = c_ptr + (linesize << 3);
+                    b[0] = c_ptr[0]; b[1] = c_ptr[1]; b[2] = c_ptr[2]; b[3] = c_ptr[3];
+                    b[4] =     d[0]; b[5] =     d[1]; b[6] =     d[2]; b[7] =     d[3];
+                    c_ptr += linesize;
+                    b += 8;
+                }
+                c_ptr = scratch;
+                linesize = 8;
+            }
 
             vs_bit_size += dv_init_enc_block(    enc_blk++, c_ptr           , linesize, s, 1);
             if (s->sys->bpm == 8) {
