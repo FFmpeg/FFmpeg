@@ -830,10 +830,11 @@ static av_always_inline int dv_guess_dct_mode(DCTELEM *blk) {
     return (score88 - score248 > -10);
 }
 
-static av_always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
-                                                 const uint8_t* zigzag_scan,
-                                                 const int *weight, int bias)
+static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, int linesize, DVVideoContext *s, int bias)
 {
+    const int *weight;
+    const uint8_t* zigzag_scan;
+    DECLARE_ALIGNED_16(DCTELEM, blk[64]);
     int i, area;
     /* We offer two different methods for class number assignment: the
        method suggested in SMPTE 314M Table 22, and an improved
@@ -853,7 +854,27 @@ static av_always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
     int max  = classes[0];
     int prev = 0;
 
+    assert((((int)blk) & 15) == 0);
+
+    bi->area_q[0] = bi->area_q[1] = bi->area_q[2] = bi->area_q[3] = 0;
+    bi->partial_bit_count = 0;
+    bi->partial_bit_buffer = 0;
+    bi->cur_ac = 0;
+    if (data) {
+        s->get_pixels(blk, data, linesize);
+        bi->dct_mode = (s->avctx->flags & CODEC_FLAG_INTERLACED_DCT) &&
+                       dv_guess_dct_mode(blk);
+        s->fdct[bi->dct_mode](blk);
+    } else {
+        /* We rely on the fact that encoding all zeros leads to an immediate EOB,
+           which is precisely what the spec calls for in the "dummy" blocks. */
+        memset(blk, 0, sizeof(blk));
+        bi->dct_mode = 0;
+    }
     bi->mb[0] = blk[0];
+
+    zigzag_scan = bi->dct_mode ? ff_zigzag248_direct : ff_zigzag_direct;
+    weight = bi->dct_mode ? dv_weight_248 : dv_weight_88;
 
     for (area = 0; area < 4; area++) {
        bi->prev[area]     = prev;
@@ -900,6 +921,8 @@ static av_always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
         }
         bi->next[prev]= i;
     }
+
+    return bi->bit_size[0] + bi->bit_size[1] + bi->bit_size[2] + bi->bit_size[3];
 }
 
 static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
@@ -980,16 +1003,13 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
     uint8_t*  data;
     uint8_t*  ptr;
     uint8_t*  dif;
-    int       do_edge_wrap;
-    DECLARE_ALIGNED_16(DCTELEM, block[64]);
+    uint8_t   scratch[64];
     EncBlockInfo  enc_blks[5*DV_MAX_BPM];
     PutBitContext pbs[5*DV_MAX_BPM];
     PutBitContext* pb;
     EncBlockInfo* enc_blk;
     int       vs_bit_size = 0;
     int       qnos[5];
-
-    assert((((int)block) & 15) == 0);
 
     dif = &s->buf[work_chunk->buf_offset*80];
     enc_blk = &enc_blks[0];
@@ -999,11 +1019,9 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
         y_ptr    = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x) << 3);
         c_offset = (((mb_y >>  (s->sys->pix_fmt == PIX_FMT_YUV420P)) * s->picture.linesize[1] +
                      (mb_x >> ((s->sys->pix_fmt == PIX_FMT_YUV411P) ? 2 : 1))) << 3);
-        do_edge_wrap   = 0;
         qnos[mb_index] = 15; /* No quantization */
         ptr = dif + mb_index*80 + 4;
         for (j = 0; j < 6; j++) {
-            int dummy = 0;
             if (s->sys->pix_fmt == PIX_FMT_YUV422P) { /* 4:2:2 */
                 if (j == 0 || j == 2) {
                     /* Y0 Y1 */
@@ -1017,7 +1035,6 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
                     /* j=1 and j=3 are "dummy" blocks, used for AC data only */
                     data     = NULL;
                     linesize = 0;
-                    dummy    = 1;
                 }
             } else { /* 4:1:1 or 4:2:0 */
                 if (j < 4) {  /* Four Y blocks */
@@ -1032,15 +1049,9 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
                     /* don't ask Fabrice why they inverted Cb and Cr ! */
                     data     = s->picture.data    [6 - j] + c_offset;
                     linesize = s->picture.linesize[6 - j];
-                    if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8))
-                        do_edge_wrap = 1;
-                }
-            }
-
-            /* Everything is set up -- now just copy data -> DCT block */
-            if (do_edge_wrap) {  /* Edge wrap copy: 4x16 -> 8x8 */
+           if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
                 uint8_t* d;
-                DCTELEM *b = block;
+                uint8_t* b = scratch;
                 for (i = 0; i < 8; i++) {
                    d = data + 8 * linesize;
                    b[0] = data[0]; b[1] = data[1]; b[2] = data[2]; b[3] = data[3];
@@ -1048,40 +1059,19 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
                    data += linesize;
                    b += 8;
                 }
-            } else {             /* Simple copy: 8x8 -> 8x8 */
-                if (!dummy)
-                    s->get_pixels(block, data, linesize);
+               data = scratch;
+               linesize = 8;
+           }
+                }
             }
 
-            if (s->avctx->flags & CODEC_FLAG_INTERLACED_DCT)
-                enc_blk->dct_mode = dv_guess_dct_mode(block);
-            else
-                enc_blk->dct_mode = 0;
-            enc_blk->area_q[0] = enc_blk->area_q[1] = enc_blk->area_q[2] = enc_blk->area_q[3] = 0;
-            enc_blk->partial_bit_count = 0;
-            enc_blk->partial_bit_buffer = 0;
-            enc_blk->cur_ac = 0;
-
-            if (dummy) {
-                /* We rely on the fact that encoding all zeros leads to an immediate EOB,
-                   which is precisely what the spec calls for in the "dummy" blocks. */
-                memset(block, 0, sizeof(block));
-            } else {
-                s->fdct[enc_blk->dct_mode](block);
-            }
-
-            dv_set_class_number(block, enc_blk,
-                                enc_blk->dct_mode ? ff_zigzag248_direct : ff_zigzag_direct,
-                                enc_blk->dct_mode ? dv_weight_248 : dv_weight_88,
-                                j/4);
+            vs_bit_size += dv_init_enc_block(enc_blk, data, linesize, s, j>>2);
 
             init_put_bits(pb, ptr, s->sys->block_sizes[j]/8);
             put_bits(pb, 9, (uint16_t)(((enc_blk->mb[0] >> 3) - 1024 + 2) >> 2));
             put_bits(pb, 1, enc_blk->dct_mode);
             put_bits(pb, 2, enc_blk->cno);
 
-            vs_bit_size += enc_blk->bit_size[0] + enc_blk->bit_size[1] +
-                           enc_blk->bit_size[2] + enc_blk->bit_size[3];
             ++enc_blk;
             ++pb;
             ptr += s->sys->block_sizes[j]/8;
