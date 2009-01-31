@@ -580,6 +580,7 @@ static const UID mxf_wav_descriptor_key       = { 0x06,0x0E,0x2B,0x34,0x02,0x53,
 
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
 {
+    MXFStreamContext *sc = st->priv_data;
     ByteIOContext *pb = s->pb;
     int stored_height = (st->codec->height+15)/16*16;
     AVRational dar;
@@ -590,7 +591,7 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     put_be32(pb, st->codec->width);
 
     mxf_write_local_tag(pb, 4, 0x3202);
-    put_be32(pb, stored_height);
+    put_be32(pb, stored_height>>sc->interlaced);
 
     av_reduce(&dar.num, &dar.den,
               st->codec->width*st->codec->sample_aspect_ratio.num,
