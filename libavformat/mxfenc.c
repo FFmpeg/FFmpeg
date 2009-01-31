@@ -604,12 +604,13 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     put_buffer(pb, *sc->codec_ul, 16);
 }
 
-static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
+static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
 {
     ByteIOContext *pb = s->pb;
 
-    mxf_write_generic_desc(pb, st, mxf_wav_descriptor_key, 93);
+    mxf_write_generic_desc(pb, st, key, size);
 
+    // audio locked
     mxf_write_local_tag(pb, 1, 0x3D02);
     put_byte(pb, 1);
 
@@ -623,6 +624,11 @@ static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
 
     mxf_write_local_tag(pb, 4, 0x3D01);
     put_be32(pb, st->codec->bits_per_coded_sample);
+}
+
+static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
+{
+    mxf_write_generic_sound_desc(s, st, mxf_wav_descriptor_key, 93);
 }
 
 static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
