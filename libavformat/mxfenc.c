@@ -39,11 +39,11 @@ static const int PAL_samples_per_frame[]  = { 1920, 0 };
 
 typedef struct {
     AVFifoBuffer fifo;
-    unsigned fifo_size; ///< current fifo size allocated
-    uint64_t dts; ///< current dts
-    int sample_size; ///< size of one sample all channels included
+    unsigned fifo_size;           ///< current fifo size allocated
+    uint64_t dts;                 ///< current dts
+    int sample_size;              ///< size of one sample all channels included
     const int *samples_per_frame; ///< must be 0 terminated
-    const int *samples; ///< current samples per frame, pointer to samples_per_frame
+    const int *samples;           ///< current samples per frame, pointer to samples_per_frame
 } AudioInterleaveContext;
 
 typedef struct {
@@ -54,11 +54,11 @@ typedef struct {
 typedef struct {
     AudioInterleaveContext aic;
     UID track_essence_element_key;
-    int index; //<<< index in mxf_essence_container_uls table
+    int index;            //<<< index in mxf_essence_container_uls table
     const UID *codec_ul;
     int64_t duration;
-    int order; ///< interleaving order if dts are equal
-    int interlaced; ///< wether picture is interlaced
+    int order;            ///< interleaving order if dts are equal
+    int interlaced;       ///< wether picture is interlaced
 } MXFStreamContext;
 
 typedef struct {
