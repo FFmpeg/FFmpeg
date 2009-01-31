@@ -804,6 +804,32 @@ static av_always_inline PutBitContext* dv_encode_ac(EncBlockInfo* bi,
     return pb;
 }
 
+//FIXME replace this by dsputil
+#define SC(x, y) ((s[x] - s[y]) ^ ((s[x] - s[y]) >> 7))
+static av_always_inline int dv_guess_dct_mode(DCTELEM *blk) {
+    DCTELEM *s;
+    int score88  = 0;
+    int score248 = 0;
+    int i;
+
+    /* Compute 8-8 score (small values give a better chance for 8-8 DCT) */
+    s = blk;
+    for (i = 0; i < 7; i++) {
+        score88 += SC(0,  8) + SC(1, 9) + SC(2, 10) + SC(3, 11) +
+                   SC(4, 12) + SC(5,13) + SC(6, 14) + SC(7, 15);
+        s += 8;
+    }
+    /* Compute 2-4-8 score (small values give a better chance for 2-4-8 DCT) */
+    s = blk;
+    for (i = 0; i < 6; i++) {
+        score248 += SC(0, 16) + SC(1,17) + SC(2, 18) + SC(3, 19) +
+                    SC(4, 20) + SC(5,21) + SC(6, 22) + SC(7, 23);
+        s += 8;
+    }
+
+    return (score88 - score248 > -10);
+}
+
 static av_always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
                                                  const uint8_t* zigzag_scan,
                                                  const int *weight, int bias)
@@ -874,32 +900,6 @@ static av_always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
         }
         bi->next[prev]= i;
     }
-}
-
-//FIXME replace this by dsputil
-#define SC(x, y) ((s[x] - s[y]) ^ ((s[x] - s[y]) >> 7))
-static av_always_inline int dv_guess_dct_mode(DCTELEM *blk) {
-    DCTELEM *s;
-    int score88  = 0;
-    int score248 = 0;
-    int i;
-
-    /* Compute 8-8 score (small values give a better chance for 8-8 DCT) */
-    s = blk;
-    for (i = 0; i < 7; i++) {
-        score88 += SC(0,  8) + SC(1, 9) + SC(2, 10) + SC(3, 11) +
-                   SC(4, 12) + SC(5,13) + SC(6, 14) + SC(7, 15);
-        s += 8;
-    }
-    /* Compute 2-4-8 score (small values give a better chance for 2-4-8 DCT) */
-    s = blk;
-    for (i = 0; i < 6; i++) {
-        score248 += SC(0, 16) + SC(1,17) + SC(2, 18) + SC(3, 19) +
-                    SC(4, 20) + SC(5,21) + SC(6, 22) + SC(7, 23);
-        s += 8;
-    }
-
-    return (score88 - score248 > -10);
 }
 
 static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
