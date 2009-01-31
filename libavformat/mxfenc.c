@@ -174,6 +174,7 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x3004, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x04,0x01,0x02,0x00,0x00}}, /* Essence Container */
     // Generic Picture Essence Descriptor
     { 0x320C, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x03,0x01,0x04,0x00,0x00,0x00}}, /* Frame Layout */
+    { 0x320D, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x03,0x02,0x05,0x00,0x00,0x00}}, /* Video Line Map */
     { 0x3203, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x02,0x02,0x00,0x00,0x00}}, /* Stored Width */
     { 0x3202, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x02,0x01,0x00,0x00,0x00}}, /* Stored Height */
     { 0x320E, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x01,0x01,0x01,0x00,0x00,0x00}}, /* Aspect Ratio */
@@ -589,8 +590,9 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     ByteIOContext *pb = s->pb;
     int stored_height = (st->codec->height+15)/16*16;
     AVRational dar;
+    int f1, f2;
 
-    mxf_write_generic_desc(pb, st, mxf_mpegvideo_descriptor_key, 113);
+    mxf_write_generic_desc(pb, st, mxf_mpegvideo_descriptor_key, 133);
 
     mxf_write_local_tag(pb, 4, 0x3203);
     put_be32(pb, st->codec->width);
@@ -601,6 +603,28 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     // frame layout
     mxf_write_local_tag(pb, 1, 0x320C);
     put_byte(pb, sc->interlaced);
+
+    // video line map
+    mxf_write_local_tag(pb, 16, 0x320D);
+    put_be32(pb, 2);
+    put_be32(pb, 4);
+    switch (st->codec->height) {
+    case  576: f1 = 23; f2 = 336; break;
+    case  608: f1 =  7; f2 = 320; break;
+    case  480: f1 = 20; f2 = 283; break;
+    case  512: f1 =  7; f2 = 270; break;
+    case  720: f1 = 26; f2 =   0; break; // progressive
+    case 1080: f1 = 21; f2 = 584; break;
+    default:   f1 =  0; f2 =   0; break;
+    }
+
+    if (!sc->interlaced) {
+        f2  = 0;
+        f1 *= 2;
+    }
+
+    put_be32(pb, f1);
+    put_be32(pb, f2);
 
     av_reduce(&dar.num, &dar.den,
               st->codec->width*st->codec->sample_aspect_ratio.num,
