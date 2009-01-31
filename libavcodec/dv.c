@@ -1184,7 +1184,7 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c,
     int stype = (c->sys->pix_fmt == PIX_FMT_YUV422P ? 4 : 0);
 
     uint8_t aspect = 0;
-    if ((int)(av_q2d(c->avctx->sample_aspect_ratio) * c->avctx->width / c->avctx->height * 10) == 17) /* 16:9 */
+    if ((int)(av_q2d(c->avctx->sample_aspect_ratio) * c->avctx->width / c->avctx->height * 10) >= 17) /* 16:9 */
         aspect = 0x02;
 
     buf[0] = (uint8_t)pack_id;
