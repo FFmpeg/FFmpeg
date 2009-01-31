@@ -58,6 +58,7 @@ typedef struct {
     const UID *codec_ul;
     int64_t duration;
     int order; ///< interleaving order if dts are equal
+    int interlaced; ///< wether picture is interlaced
 } MXFStreamContext;
 
 typedef struct {
@@ -810,6 +811,8 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
             if (i + 2 < pkt->size && (pkt->data[i+1] & 0xf0) == 0x10) { // seq ext
                 st->codec->profile = pkt->data[i+1] & 0x07;
                 st->codec->level   = pkt->data[i+2] >> 4;
+            } else if (i + 5 < pkt->size && (pkt->data[i+1] & 0xf0) == 0x80) { // pict coding ext
+                sc->interlaced = !(pkt->data[i+5] & 0x80); // progressive frame
                 break;
             }
         }
