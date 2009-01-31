@@ -214,7 +214,7 @@ static int ogg_compare_granule(AVFormatContext *s, AVPacket *next, AVPacket *pkt
     return next_granule > cur_granule;
 }
 
-int ogg_interleave_per_granule(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
+static int ogg_interleave_per_granule(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
     AVPacketList *pktl;
     int stream_count = 0;
