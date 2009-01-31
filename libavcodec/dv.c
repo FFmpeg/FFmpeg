@@ -1001,7 +1001,6 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
     int mb_x, mb_y, c_offset, linesize;
     uint8_t*  y_ptr;
     uint8_t*  data;
-    uint8_t*  ptr;
     uint8_t*  dif;
     uint8_t   scratch[64];
     EncBlockInfo  enc_blks[5*DV_MAX_BPM];
@@ -1010,17 +1009,16 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
     EncBlockInfo* enc_blk;
     int       vs_bit_size = 0;
     int       qnos[5];
+    int*      qnosp = &qnos[0];
 
     dif = &s->buf[work_chunk->buf_offset*80];
     enc_blk = &enc_blks[0];
-    pb = &pbs[0];
     for (mb_index = 0; mb_index < 5; mb_index++) {
         dv_calculate_mb_xy(s, work_chunk, mb_index, &mb_x, &mb_y);
         y_ptr    = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x) << 3);
         c_offset = (((mb_y >>  (s->sys->pix_fmt == PIX_FMT_YUV420P)) * s->picture.linesize[1] +
                      (mb_x >> ((s->sys->pix_fmt == PIX_FMT_YUV411P) ? 2 : 1))) << 3);
         qnos[mb_index] = 15; /* No quantization */
-        ptr = dif + mb_index*80 + 4;
         for (j = 0; j < 6; j++) {
             if (s->sys->pix_fmt == PIX_FMT_YUV422P) { /* 4:2:2 */
                 if (j == 0 || j == 2) {
@@ -1067,34 +1065,38 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
 
             vs_bit_size += dv_init_enc_block(enc_blk, data, linesize, s, j>>2);
 
-            init_put_bits(pb, ptr, s->sys->block_sizes[j]/8);
-            put_bits(pb, 9, (uint16_t)(((enc_blk->mb[0] >> 3) - 1024 + 2) >> 2));
-            put_bits(pb, 1, enc_blk->dct_mode);
-            put_bits(pb, 2, enc_blk->cno);
-
             ++enc_blk;
-            ++pb;
-            ptr += s->sys->block_sizes[j]/8;
         }
     }
 
     if (vs_total_ac_bits < vs_bit_size)
-        dv_guess_qnos(&enc_blks[0], &qnos[0]);
+        dv_guess_qnos(&enc_blks[0], qnosp);
 
-    for (i = 0; i < 5; i++) {
-       dif[i*80 + 3] = qnos[i];
-    }
+    /* DIF encoding process */
+    for (j=0; j<5*s->sys->bpm;) {
+        int start_mb = j;
 
-    /* First pass over individual cells only */
-    for (j = 0; j < 5 * s->sys->bpm; j++)
-       dv_encode_ac(&enc_blks[j], &pbs[j], &pbs[j+1]);
+        dif[3] = *qnosp++;
+        dif += 4;
 
-    /* Second pass over each MB space */
-    for (j=0; j<5*s->sys->bpm; j+=s->sys->bpm) {
-        pb = &pbs[j];
+        /* First pass over individual cells only */
+        for (i=0; i<s->sys->bpm; i++, j++) {
+            int sz = s->sys->block_sizes[i]>>3;
+
+            init_put_bits(&pbs[j], dif, sz);
+            put_bits(&pbs[j], 9, (uint16_t)(((enc_blks[j].mb[0] >> 3) - 1024 + 2) >> 2));
+            put_bits(&pbs[j], 1, enc_blks[j].dct_mode);
+            put_bits(&pbs[j], 2, enc_blks[j].cno);
+
+            dv_encode_ac(&enc_blks[j], &pbs[j], &pbs[j+1]);
+            dif += sz;
+        }
+
+        /* Second pass over each MB space */
+        pb = &pbs[start_mb];
         for (i=0; i<s->sys->bpm; i++) {
-            if (enc_blks[i+j].partial_bit_count)
-                pb = dv_encode_ac(&enc_blks[i+j], pb, &pbs[j+s->sys->bpm]);
+            if (enc_blks[start_mb+i].partial_bit_count)
+                pb = dv_encode_ac(&enc_blks[start_mb+i], pb, &pbs[start_mb+s->sys->bpm]);
         }
     }
 
