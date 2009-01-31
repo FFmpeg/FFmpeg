@@ -1008,7 +1008,7 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
     PutBitContext* pb;
     EncBlockInfo* enc_blk;
     int       vs_bit_size = 0;
-    int       qnos[5];
+    int       qnos[5] = {15, 15, 15, 15, 15}; /* No quantization */
     int*      qnosp = &qnos[0];
 
     dif = &s->buf[work_chunk->buf_offset*80];
@@ -1018,7 +1018,6 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
         y_ptr    = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x) << 3);
         c_offset = (((mb_y >>  (s->sys->pix_fmt == PIX_FMT_YUV420P)) * s->picture.linesize[1] +
                      (mb_x >> ((s->sys->pix_fmt == PIX_FMT_YUV411P) ? 2 : 1))) << 3);
-        qnos[mb_index] = 15; /* No quantization */
         for (j = 0; j < 6; j++) {
             if (s->sys->pix_fmt == PIX_FMT_YUV422P) { /* 4:2:2 */
                 if (j == 0 || j == 2) {
