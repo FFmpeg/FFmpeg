@@ -901,6 +901,18 @@ static int ff_audio_interleave_init(AVFormatContext *s, const int *samples_per_f
     return 0;
 }
 
+static void ff_audio_interleave_close(AVFormatContext *s)
+{
+    int i;
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        AudioInterleaveContext *aic = st->priv_data;
+
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO)
+            av_fifo_free(&aic->fifo);
+    }
+}
+
 static int mxf_write_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
@@ -1009,6 +1021,9 @@ static int mxf_write_footer(AVFormatContext *s)
         url_fseek(pb, 0, SEEK_SET);
         mxf_write_partition(s, 1, header_closed_partition_key, 1);
     }
+
+    ff_audio_interleave_close(s);
+
     mxf_free(s);
     return 0;
 }
