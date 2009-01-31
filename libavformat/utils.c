@@ -2585,34 +2585,45 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
+                              int (*compare)(AVFormatContext *, AVPacket *, AVPacket *))
+{
+    AVPacketList **next_point, *this_pktl;
+
+    this_pktl = av_mallocz(sizeof(AVPacketList));
+    this_pktl->pkt= *pkt;
+    if(pkt->destruct == av_destruct_packet)
+        pkt->destruct= NULL; // not shared -> must keep original from being freed
+    else
+        av_dup_packet(&this_pktl->pkt);  //shared -> must dup
+
+    next_point = &s->packet_buffer;
+    while(*next_point){
+        if(compare(s, &(*next_point)->pkt, pkt))
+            break;
+        next_point= &(*next_point)->next;
+    }
+    this_pktl->next= *next_point;
+    *next_point= this_pktl;
+}
+
+int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
+{
+    AVStream *st = s->streams[ pkt ->stream_index];
+    AVStream *st2= s->streams[ next->stream_index];
+    int64_t left = st2->time_base.num * (int64_t)st ->time_base.den;
+    int64_t right= st ->time_base.num * (int64_t)st2->time_base.den;
+
+    return next->dts * left > pkt->dts * right; //FIXME this can overflow
+}
+
 int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
-    AVPacketList *pktl, **next_point, *this_pktl;
+    AVPacketList *pktl;
     int stream_count=0;
     int streams[MAX_STREAMS];
 
     if(pkt){
-        AVStream *st= s->streams[ pkt->stream_index];
-
-//        assert(pkt->destruct != av_destruct_packet); //FIXME
-
-        this_pktl = av_mallocz(sizeof(AVPacketList));
-        this_pktl->pkt= *pkt;
-        if(pkt->destruct == av_destruct_packet)
-            pkt->destruct= NULL; // not shared -> must keep original from being freed
-        else
-            av_dup_packet(&this_pktl->pkt);  //shared -> must dup
-
-        next_point = &s->packet_buffer;
-        while(*next_point){
-            AVStream *st2= s->streams[ (*next_point)->pkt.stream_index];
-            int64_t left=  st2->time_base.num * (int64_t)st ->time_base.den;
-            int64_t right= st ->time_base.num * (int64_t)st2->time_base.den;
-            if((*next_point)->pkt.dts * left > pkt->dts * right) //FIXME this can overflow
-                break;
-            next_point= &(*next_point)->next;
-        }
-        this_pktl->next= *next_point;
-        *next_point= this_pktl;
+        ff_interleave_add_packet(s, pkt, ff_interleave_compare_dts);
     }
 
     memset(streams, 0, sizeof(streams));
