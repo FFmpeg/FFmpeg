@@ -63,6 +63,8 @@ typedef struct FLACContext {
 
     int blocksize/*, last_blocksize*/;
     int curr_bps;
+    int sample_shift;   /* shift required to make output samples 16-bit or 32-bit */
+    int is32;           /* flag to indicate if output should be 32-bit instead of 16-bit */
     enum decorrelation_type decorrelation;
 
     int32_t *decoded[MAX_CHANNELS];
@@ -168,6 +170,11 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
 
     avctx->channels = s->channels;
     avctx->sample_rate = s->samplerate;
+    avctx->bits_per_raw_sample = s->bps;
+    if (s->bps > 16)
+        avctx->sample_fmt = SAMPLE_FMT_S32;
+    else
+        avctx->sample_fmt = SAMPLE_FMT_S16;
 
     s->samples  = get_bits_long(&gb, 32) << 4;
     s->samples |= get_bits_long(&gb, 4);
@@ -466,6 +473,16 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
                sample_size_code);
         return -1;
     }
+    if (bps > 16) {
+        s->avctx->sample_fmt = SAMPLE_FMT_S32;
+        s->sample_shift = 32 - bps;
+        s->is32 = 1;
+    } else {
+        s->avctx->sample_fmt = SAMPLE_FMT_S16;
+        s->sample_shift = 16 - bps;
+        s->is32 = 0;
+    }
+    s->bps = s->avctx->bits_per_raw_sample = bps;
 
     if (get_bits1(&s->gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "broken stream, invalid padding\n");
@@ -546,7 +563,8 @@ static int flac_decode_frame(AVCodecContext *avctx,
 {
     FLACContext *s = avctx->priv_data;
     int tmp = 0, i, j = 0, input_buf_size = 0;
-    int16_t *samples = data;
+    int16_t *samples_16 = data;
+    int32_t *samples_32 = data;
     int alloc_data_size= *data_size;
 
     *data_size=0;
@@ -608,16 +626,25 @@ static int flac_decode_frame(AVCodecContext *avctx,
             for (i = 0; i < s->blocksize; i++) {\
                 int a= s->decoded[0][i];\
                 int b= s->decoded[1][i];\
-                *samples++ = ((left)  << (24 - s->bps)) >> 8;\
-                *samples++ = ((right) << (24 - s->bps)) >> 8;\
+                if (s->is32) {\
+                    *samples_32++ = (left)  << s->sample_shift;\
+                    *samples_32++ = (right) << s->sample_shift;\
+                } else {\
+                    *samples_16++ = (left)  << s->sample_shift;\
+                    *samples_16++ = (right) << s->sample_shift;\
+                }\
             }\
             break;
 
     switch (s->decorrelation) {
     case INDEPENDENT:
         for (j = 0; j < s->blocksize; j++) {
-            for (i = 0; i < s->channels; i++)
-                *samples++ = (s->decoded[i][j] << (24 - s->bps)) >> 8;
+            for (i = 0; i < s->channels; i++) {
+                if (s->is32)
+                    *samples_32++ = s->decoded[i][j] << s->sample_shift;
+                else
+                    *samples_16++ = s->decoded[i][j] << s->sample_shift;
+            }
         }
         break;
     case LEFT_SIDE:
@@ -628,7 +655,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
         DECORRELATE( (a-=b>>1) + b, a)
     }
 
-    *data_size = (int8_t *)samples - (int8_t *)data;
+    *data_size = s->blocksize * s->channels * (s->is32 ? 4 : 2);
 
 end:
     i= (get_bits_count(&s->gb)+7)/8;
