@@ -225,6 +225,7 @@ const AVCodecTag codec_wav_tags[] = {
     { CODEC_ID_AMR_WB,          0x0058 },
     { CODEC_ID_ADPCM_IMA_DK4,   0x0061 },  /* rogue format number */
     { CODEC_ID_ADPCM_IMA_DK3,   0x0062 },  /* rogue format number */
+    { CODEC_ID_ADPCM_IMA_WAV,   0x0069 },
     { CODEC_ID_VOXWARE,         0x0075 },
     { CODEC_ID_AAC,             0x00ff },
     { CODEC_ID_SIPR,            0x0130 },
