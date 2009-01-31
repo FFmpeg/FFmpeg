@@ -1015,7 +1015,7 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
                     linesize = s->picture.linesize[6 - j];
                 } else {
                     /* j=1 and j=3 are "dummy" blocks, used for AC data only */
-                    data     = 0;
+                    data     = NULL;
                     linesize = 0;
                     dummy    = 1;
                 }
