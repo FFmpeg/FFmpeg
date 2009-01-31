@@ -551,12 +551,12 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
         mxf_write_uuid(pb, SubDescriptor, i);
 }
 
-static void mxf_write_generic_desc(ByteIOContext *pb, AVStream *st, const UID key)
+static void mxf_write_generic_desc(ByteIOContext *pb, AVStream *st, const UID key, unsigned size)
 {
     MXFStreamContext *sc = st->priv_data;
 
     put_buffer(pb, key, 16);
-    klv_encode_ber_length(pb, 108);
+    klv_encode_ber_length(pb, size);
 
     mxf_write_local_tag(pb, 16, 0x3C0A);
     mxf_write_uuid(pb, SubDescriptor, st->index);
@@ -584,7 +584,7 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     int stored_height = (st->codec->height+15)/16*16;
     AVRational dar;
 
-    mxf_write_generic_desc(pb, st, mxf_mpegvideo_descriptor_key);
+    mxf_write_generic_desc(pb, st, mxf_mpegvideo_descriptor_key, 108);
 
     mxf_write_local_tag(pb, 4, 0x3203);
     put_be32(pb, st->codec->width);
@@ -606,7 +606,7 @@ static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
 {
     ByteIOContext *pb = s->pb;
 
-    mxf_write_generic_desc(pb, st, mxf_wav_descriptor_key);
+    mxf_write_generic_desc(pb, st, mxf_wav_descriptor_key, 108);
 
     // write audio sampling rate
     mxf_write_local_tag(pb, 8, 0x3D03);
