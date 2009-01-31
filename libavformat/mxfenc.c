@@ -1137,5 +1137,3 @@ AVOutputFormat mxf_muxer = {
     NULL,
     mxf_interleave,
 };
-
-
