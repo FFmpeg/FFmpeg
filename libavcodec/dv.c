@@ -982,8 +982,8 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
     uint8_t*  dif;
     int       do_edge_wrap;
     DECLARE_ALIGNED_16(DCTELEM, block[64]);
-    EncBlockInfo  enc_blks[5*6];
-    PutBitContext pbs[5*6];
+    EncBlockInfo  enc_blks[5*DV_MAX_BPM];
+    PutBitContext pbs[5*DV_MAX_BPM];
     PutBitContext* pb;
     EncBlockInfo* enc_blk;
     int       vs_bit_size = 0;
@@ -1096,28 +1096,28 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
     }
 
     /* First pass over individual cells only */
-    for (j = 0; j < 5 * 6; j++)
+    for (j = 0; j < 5 * s->sys->bpm; j++)
        dv_encode_ac(&enc_blks[j], &pbs[j], &pbs[j+1]);
 
     /* Second pass over each MB space */
-    for (j = 0; j < 5 * 6; j += 6) {
+    for (j=0; j<5*s->sys->bpm; j+=s->sys->bpm) {
         pb = &pbs[j];
-        for (i = 0; i < 6; i++) {
+        for (i=0; i<s->sys->bpm; i++) {
             if (enc_blks[i+j].partial_bit_count)
-                pb = dv_encode_ac(&enc_blks[i+j], pb, &pbs[j+6]);
+                pb = dv_encode_ac(&enc_blks[i+j], pb, &pbs[j+s->sys->bpm]);
         }
     }
 
     /* Third and final pass over the whole video segment space */
     pb = &pbs[0];
-    for (j = 0; j < 5 * 6; j++) {
+    for (j=0; j<5*s->sys->bpm; j++) {
        if (enc_blks[j].partial_bit_count)
-           pb = dv_encode_ac(&enc_blks[j], pb, &pbs[6*5]);
+           pb = dv_encode_ac(&enc_blks[j], pb, &pbs[s->sys->bpm*5]);
        if (enc_blks[j].partial_bit_count)
             av_log(NULL, AV_LOG_ERROR, "ac bitstream overflow\n");
     }
 
-    for (j = 0; j < 5 * 6; j++)
+    for (j=0; j<5*s->sys->bpm; j++)
        flush_put_bits(&pbs[j]);
 
     return 0;
