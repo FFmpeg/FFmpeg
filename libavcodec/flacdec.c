@@ -63,8 +63,8 @@ typedef struct FLACContext {
 
     int blocksize;                          ///< number of samples in the current frame
     int curr_bps;                           ///< bps for current subframe, adjusted for channel correlation and wasted bits
-    int sample_shift;   /* shift required to make output samples 16-bit or 32-bit */
-    int is32;           /* flag to indicate if output should be 32-bit instead of 16-bit */
+    int sample_shift;                       ///< shift required to make output samples 16-bit or 32-bit
+    int is32;                               ///< flag to indicate if output should be 32-bit instead of 16-bit
     enum decorrelation_type decorrelation;  ///< channel decorrelation type in the current frame
 
     int32_t *decoded[MAX_CHANNELS];         ///< decoded samples
