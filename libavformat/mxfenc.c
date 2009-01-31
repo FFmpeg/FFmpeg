@@ -54,7 +54,7 @@ typedef struct {
 typedef struct {
     AudioInterleaveContext aic;
     UID track_essence_element_key;
-    int index;            //<<< index in mxf_essence_container_uls table
+    int index;            ///< index in mxf_essence_container_uls table
     const UID *codec_ul;
     int64_t duration;
     int order;            ///< interleaving order if dts are equal
