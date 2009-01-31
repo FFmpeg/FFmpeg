@@ -1049,19 +1049,19 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
                     /* don't ask Fabrice why they inverted Cb and Cr ! */
                     data     = s->picture.data    [6 - j] + c_offset;
                     linesize = s->picture.linesize[6 - j];
-           if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
-                uint8_t* d;
-                uint8_t* b = scratch;
-                for (i = 0; i < 8; i++) {
-                   d = data + 8 * linesize;
-                   b[0] = data[0]; b[1] = data[1]; b[2] = data[2]; b[3] = data[3];
-                   b[4] =    d[0]; b[5] =    d[1]; b[6] =    d[2]; b[7] =    d[3];
-                   data += linesize;
-                   b += 8;
-                }
-               data = scratch;
-               linesize = 8;
-           }
+                    if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
+                        uint8_t* d;
+                        uint8_t* b = scratch;
+                        for (i = 0; i < 8; i++) {
+                            d = data + 8 * linesize;
+                            b[0] = data[0]; b[1] = data[1]; b[2] = data[2]; b[3] = data[3];
+                            b[4] =    d[0]; b[5] =    d[1]; b[6] =    d[2]; b[7] =    d[3];
+                            data += linesize;
+                            b += 8;
+                        }
+                        data = scratch;
+                        linesize = 8;
+                    }
                 }
             }
 
