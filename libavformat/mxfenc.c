@@ -31,7 +31,20 @@
 
 //#define DEBUG
 
+#include "libavutil/fifo.h"
 #include "mxf.h"
+
+static const int NTSC_samples_per_frame[] = { 1602, 1601, 1602, 1601, 1602, 0 };
+static const int PAL_samples_per_frame[]  = { 1920, 0 };
+
+typedef struct {
+    AVFifoBuffer fifo;
+    unsigned fifo_size; ///< current fifo size allocated
+    uint64_t dts; ///< current dts
+    int sample_size; ///< size of one sample all channels included
+    const int *samples_per_frame; ///< must be 0 terminated
+    const int *samples; ///< current samples per frame, pointer to samples_per_frame
+} AudioInterleaveContext;
 
 typedef struct {
     int local_tag;
@@ -39,10 +52,12 @@ typedef struct {
 } MXFLocalTagPair;
 
 typedef struct {
+    AudioInterleaveContext aic;
     UID track_essence_element_key;
     int index; //<<< index in mxf_essence_container_uls table
     const UID *codec_ul;
     int64_t duration;
+    int order; ///< interleaving order if dts are equal
 } MXFStreamContext;
 
 typedef struct {
@@ -75,6 +90,7 @@ typedef struct MXFContext {
     int64_t footer_partition_offset;
     int essence_container_count;
     uint8_t essence_containers_indices[FF_ARRAY_ELEMS(mxf_essence_container_uls)];
+    AVRational time_base;
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -781,11 +797,40 @@ static const UID *mxf_get_mpeg2_codec_ul(AVCodecContext *avctx)
     return NULL;
 }
 
+static int ff_audio_interleave_init(AVFormatContext *s, const int *samples_per_frame)
+{
+    int i;
+
+    if (!samples_per_frame)
+        samples_per_frame = PAL_samples_per_frame;
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        AudioInterleaveContext *aic = st->priv_data;
+
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            aic->sample_size = (st->codec->channels *
+                                av_get_bits_per_sample(st->codec->codec_id)) / 8;
+            if (!aic->sample_size) {
+                av_log(s, AV_LOG_ERROR, "could not compute sample size\n");
+                return -1;
+            }
+            aic->samples_per_frame = samples_per_frame;
+            aic->samples = aic->samples_per_frame;
+
+            av_fifo_init(&aic->fifo, 100 * *aic->samples);
+        }
+    }
+
+    return 0;
+}
+
 static int mxf_write_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     int i;
     uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
+    const int *samples_per_frame = NULL;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -793,11 +838,24 @@ static int mxf_write_header(AVFormatContext *s)
         if (!sc)
             return AVERROR(ENOMEM);
         st->priv_data = sc;
-        // set pts information
-        if (st->codec->codec_type == CODEC_TYPE_VIDEO)
-            av_set_pts_info(st, 64, 1, st->codec->time_base.den);
-        else if (st->codec->codec_type == CODEC_TYPE_AUDIO)
-            av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+
+        if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+            if (!av_cmp_q(st->codec->time_base, (AVRational){ 1, 25 })) {
+                samples_per_frame = PAL_samples_per_frame;
+                mxf->time_base = (AVRational){ 1, 25 };
+            } else if (!av_cmp_q(st->codec->time_base, (AVRational){ 1001, 30000 })) {
+                samples_per_frame = NTSC_samples_per_frame;
+                mxf->time_base = (AVRational){ 1001, 30000 };
+            } else {
+                av_log(s, AV_LOG_ERROR, "unsupported video frame rate\n");
+                return -1;
+            }
+        } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            if (st->codec->sample_rate != 48000) {
+                av_log(s, AV_LOG_ERROR, "only 48khz is implemented\n");
+                return -1;
+            }
+        }
         sc->duration = -1;
 
         sc->index = mxf_get_essence_container_ul_index(st->codec->codec_id);
@@ -831,6 +889,17 @@ static int mxf_write_header(AVFormatContext *s)
         sc->track_essence_element_key[15] = present[sc->index];
         PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
     }
+
+    for (i = 0; i < s->nb_streams; i++) {
+        MXFStreamContext *sc = s->streams[i]->priv_data;
+        av_set_pts_info(s->streams[i], 64, mxf->time_base.num, mxf->time_base.den);
+        // update element count
+        sc->track_essence_element_key[13] = present[sc->index];
+        sc->order = AV_RB32(sc->track_essence_element_key+12);
+    }
+
+    if (ff_audio_interleave_init(s, samples_per_frame) < 0)
+        return -1;
 
     mxf_write_partition(s, 1, header_open_partition_key, 1);
 
@@ -868,6 +937,118 @@ static int mxf_write_footer(AVFormatContext *s)
     return 0;
 }
 
+static int mxf_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
+                                           int stream_index, int flush)
+{
+    AVStream *st = s->streams[stream_index];
+    AudioInterleaveContext *aic = st->priv_data;
+
+    int size = FFMIN(av_fifo_size(&aic->fifo), *aic->samples * aic->sample_size);
+    if (!size || (!flush && size == av_fifo_size(&aic->fifo)))
+        return 0;
+
+    av_new_packet(pkt, size);
+    av_fifo_read(&aic->fifo, pkt->data, size);
+
+    pkt->dts = pkt->pts = aic->dts;
+    pkt->duration = av_rescale_q(*aic->samples,
+                                 (AVRational){ 1, st->codec->sample_rate },
+                                 st->time_base);
+    pkt->stream_index = stream_index;
+    aic->dts += pkt->duration;
+
+    aic->samples++;
+    if (!*aic->samples)
+        aic->samples = aic->samples_per_frame;
+
+    return size;
+}
+
+static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, int flush)
+{
+    AVPacketList *pktl;
+    int stream_count = 0;
+    int streams[MAX_STREAMS];
+
+    memset(streams, 0, sizeof(streams));
+    pktl = s->packet_buffer;
+    while (pktl) {
+        //av_log(s, AV_LOG_DEBUG, "show st:%d dts:%lld\n", pktl->pkt.stream_index, pktl->pkt.dts);
+        if (!streams[pktl->pkt.stream_index])
+            stream_count++;
+        streams[pktl->pkt.stream_index]++;
+        pktl = pktl->next;
+    }
+
+    if (stream_count && (s->nb_streams == stream_count || flush)) {
+        pktl = s->packet_buffer;
+        *out = pktl->pkt;
+        //av_log(s, AV_LOG_DEBUG, "out st:%d dts:%lld\n", (*out).stream_index, (*out).dts);
+        s->packet_buffer = pktl->next;
+        av_freep(&pktl);
+
+        if (flush && stream_count < s->nb_streams) {
+            // purge packet queue
+            pktl = s->packet_buffer;
+            while (pktl) {
+                AVPacketList *next = pktl->next;
+                av_free_packet(&pktl->pkt);
+                av_freep(&pktl);
+                pktl = next;
+            }
+            s->packet_buffer = NULL;
+        }
+
+        return 1;
+    } else {
+        av_init_packet(out);
+        return 0;
+    }
+}
+
+static int mxf_compare_timestamps(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
+{
+    AVStream *st  = s->streams[pkt ->stream_index];
+    AVStream *st2 = s->streams[next->stream_index];
+    MXFStreamContext *sc  = st ->priv_data;
+    MXFStreamContext *sc2 = st2->priv_data;
+
+    int64_t left  = st2->time_base.num * (int64_t)st ->time_base.den;
+    int64_t right = st ->time_base.num * (int64_t)st2->time_base.den;
+
+    return next->dts * left > pkt->dts * right || // FIXME this can overflow
+        (next->dts * left == pkt->dts * right && sc->order < sc2->order);
+}
+
+static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
+{
+    int i;
+
+    if (pkt) {
+        AVStream *st = s->streams[pkt->stream_index];
+        AudioInterleaveContext *aic = st->priv_data;
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            av_fifo_generic_write(&aic->fifo, pkt->data, pkt->size, NULL);
+        } else {
+            // rewrite pts and dts to be decoded time line position
+            pkt->pts = pkt->dts = aic->dts;
+            aic->dts += pkt->duration;
+            ff_interleave_add_packet(s, pkt, mxf_compare_timestamps);
+        }
+    }
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            AVPacket new_pkt;
+            while (mxf_interleave_new_audio_packet(s, &new_pkt, i, flush))
+                ff_interleave_add_packet(s, &new_pkt, mxf_compare_timestamps);
+        }
+    }
+
+    return mxf_interleave_get_packet(s, out, flush);
+}
+
 AVOutputFormat mxf_muxer = {
     "mxf",
     NULL_IF_CONFIG_SMALL("Material eXchange Format"),
@@ -879,6 +1060,9 @@ AVOutputFormat mxf_muxer = {
     mxf_write_header,
     mxf_write_packet,
     mxf_write_footer,
+    0,
+    NULL,
+    mxf_interleave,
 };
 
 
