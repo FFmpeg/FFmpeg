@@ -66,7 +66,6 @@ typedef struct GXFContext {
     int sample_rate;
     int flags;
     AVFormatContext *fc;
-    GXFStreamContext streams[48];
 } GXFContext;
 
 typedef struct GXF_Lines {
@@ -320,7 +319,7 @@ static int gxf_write_track_description_section(ByteIOContext *pb, GXFContext *ct
     pos = url_ftell(pb);
     put_be16(pb, 0); /* size */
     for (i = 0; i < ctx->fc->nb_streams; ++i)
-        gxf_write_track_description(pb, &ctx->streams[i]);
+        gxf_write_track_description(pb, ctx->fc->streams[i]->priv_data);
     return updateSize(pb, pos);
 }
 
@@ -411,7 +410,7 @@ static int gxf_write_umf_track_description(ByteIOContext *pb, GXFContext *ctx)
     ctx->umf_track_offset = pos - ctx->umf_start_offset;
     for (i = 0; i < ctx->fc->nb_streams; ++i) {
         AVStream *st = ctx->fc->streams[i];
-        GXFStreamContext *sc = &ctx->streams[i];
+        GXFStreamContext *sc = st->priv_data;
         int id = 0;
 
         switch (st->codec->codec_id) {
@@ -506,7 +505,7 @@ static int gxf_write_umf_media_description(ByteIOContext *pb, GXFContext *ctx)
     pos = url_ftell(pb);
     ctx->umf_media_offset = pos - ctx->umf_start_offset;
     for (i = 0; i < ctx->fc->nb_streams; ++i) {
-        GXFStreamContext *sc = &ctx->streams[i];
+        GXFStreamContext *sc = ctx->fc->streams[i]->priv_data;
         char buffer[88];
         int64_t startpos, curpos;
         int path_size = strlen(ES_NAME_PATTERN);
@@ -598,7 +597,10 @@ static int gxf_write_header(AVFormatContext *s)
     gxf->flags |= 0x00080000; /* material is simple clip */
     for (i = 0; i < s->nb_streams; ++i) {
         AVStream *st = s->streams[i];
-        GXFStreamContext *sc = &gxf->streams[i];
+        GXFStreamContext *sc = av_mallocz(sizeof(*sc));
+        if (!sc)
+            return AVERROR(ENOMEM);
+        st->priv_data = sc;
 
         sc->codec = st->codec;
         sc->index = i;
@@ -691,8 +693,9 @@ static int gxf_write_trailer(AVFormatContext *s)
     int i;
 
     for (i = 0; i < s->nb_streams; ++i) {
-        if (s->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO)
-            av_fifo_free(&gxf->streams[i].audio_buffer);
+        AVStream *st = s->streams[i];
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO)
+            av_fifo_free(&((GXFStreamContext*)st->priv_data)->audio_buffer);
     }
 
     gxf_write_eos_packet(pb, gxf);
@@ -720,7 +723,7 @@ static int gxf_parse_mpeg_frame(GXFStreamContext *sc, const uint8_t *buf, int si
 
 static int gxf_write_media_preamble(ByteIOContext *pb, GXFContext *ctx, AVPacket *pkt, int size)
 {
-    GXFStreamContext *sc = &ctx->streams[pkt->stream_index];
+    GXFStreamContext *sc = ctx->fc->streams[pkt->stream_index]->priv_data;
     int64_t dts = av_rescale_rnd(pkt->dts, ctx->sample_rate, sc->codec->time_base.den, AV_ROUND_UP);
 
     put_byte(pb, sc->media_type);
@@ -755,7 +758,7 @@ static int gxf_write_media_preamble(ByteIOContext *pb, GXFContext *ctx, AVPacket
 
 static int gxf_write_media_packet(ByteIOContext *pb, GXFContext *ctx, AVPacket *pkt)
 {
-    GXFStreamContext *sc = &ctx->streams[pkt->stream_index];
+    GXFStreamContext *sc = ctx->fc->streams[pkt->stream_index]->priv_data;
     int64_t pos = url_ftell(pb);
     int padding = 0;
 
@@ -805,7 +808,7 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        GXFStreamContext *sc = &gxf->streams[i];
+        GXFStreamContext *sc = st->priv_data;
         if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             if (pkt && pkt->stream_index == i) {
                 av_fifo_generic_write(&sc->audio_buffer, pkt->data, pkt->size, NULL);
