@@ -878,7 +878,7 @@ static int ff_audio_interleave_init(AVFormatContext *s, const int *samples_per_f
     int i;
 
     if (!samples_per_frame)
-        samples_per_frame = PAL_samples_per_frame;
+        return -1;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -960,6 +960,9 @@ static int mxf_write_header(AVFormatContext *s)
         sc->track_essence_element_key[13] = present[sc->index];
         sc->order = AV_RB32(sc->track_essence_element_key+12);
     }
+
+    if (!samples_per_frame)
+        samples_per_frame = PAL_samples_per_frame;
 
     if (ff_audio_interleave_init(s, samples_per_frame) < 0)
         return -1;
