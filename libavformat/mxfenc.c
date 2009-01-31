@@ -91,6 +91,7 @@ typedef struct MXFContext {
     int essence_container_count;
     uint8_t essence_containers_indices[FF_ARRAY_ELEMS(mxf_essence_container_uls)];
     AVRational time_base;
+    int header_written;
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -797,6 +798,26 @@ static const UID *mxf_get_mpeg2_codec_ul(AVCodecContext *avctx)
     return NULL;
 }
 
+static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
+{
+    MXFStreamContext *sc = st->priv_data;
+    uint32_t c = -1;
+    int i;
+
+    for(i = 0; i < pkt->size - 4; i++) {
+        c = (c<<8) + pkt->data[i];
+        if (c == 0x1B5) {
+            if (i + 2 < pkt->size && (pkt->data[i+1] & 0xf0) == 0x10) { // seq ext
+                st->codec->profile = pkt->data[i+1] & 0x07;
+                st->codec->level   = pkt->data[i+2] >> 4;
+                break;
+            }
+        }
+    }
+    sc->codec_ul = mxf_get_mpeg2_codec_ul(st->codec);
+    return !!sc->codec_ul;
+}
+
 static int ff_audio_interleave_init(AVFormatContext *s, const int *samples_per_frame)
 {
     int i;
@@ -865,20 +886,7 @@ static int mxf_write_header(AVFormatContext *s)
             return -1;
         }
 
-        if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO) {
-            if (st->codec->profile == FF_PROFILE_UNKNOWN ||
-                st->codec->level == FF_LEVEL_UNKNOWN) {
-                av_log(s, AV_LOG_ERROR, "track %d: profile and level must be set for mpeg-2\n", i);
-                return -1;
-            }
-            sc->codec_ul = mxf_get_mpeg2_codec_ul(st->codec);
-            if (!sc->codec_ul) {
-                av_log(s, AV_LOG_ERROR, "track %d: could not find codec ul for mpeg-2, "
-                       "unsupported profile/level\n", i);
-                return -1;
-            }
-        } else
-            sc->codec_ul = &mxf_essence_container_uls[sc->index].codec_ul;
+        sc->codec_ul = &mxf_essence_container_uls[sc->index].codec_ul;
 
         if (!present[sc->index]) {
             mxf->essence_containers_indices[mxf->essence_container_count++] = sc->index;
@@ -901,16 +909,26 @@ static int mxf_write_header(AVFormatContext *s)
     if (ff_audio_interleave_init(s, samples_per_frame) < 0)
         return -1;
 
-    mxf_write_partition(s, 1, header_open_partition_key, 1);
-
     return 0;
 }
 
 static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     AVStream *st = s->streams[pkt->stream_index];
     MXFStreamContext *sc = st->priv_data;
+
+    if (!mxf->header_written) {
+        if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO) {
+            if (!mxf_parse_mpeg2_frame(s, st, pkt)) {
+                av_log(s, AV_LOG_ERROR, "could not get mpeg2 profile and level\n");
+                return -1;
+            }
+        }
+        mxf_write_partition(s, 1, header_open_partition_key, 1);
+        mxf->header_written = 1;
+    }
 
     put_buffer(pb, sc->track_essence_element_key, 16); // write key
     klv_encode_ber_length(pb, pkt->size); // write length
