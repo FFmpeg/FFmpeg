@@ -998,9 +998,8 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
 {
     DVVideoContext *s = avctx->priv_data;
     int mb_index, i, j;
-    int mb_x, mb_y, c_offset, linesize;
+    int mb_x, mb_y, c_offset, linesize, y_stride;
     uint8_t*  y_ptr;
-    uint8_t*  data;
     uint8_t*  dif;
     uint8_t   scratch[64];
     EncBlockInfo  enc_blks[5*DV_MAX_BPM];
@@ -1015,56 +1014,58 @@ static int dv_encode_video_segment(AVCodecContext *avctx, DVwork_chunk *work_chu
     enc_blk = &enc_blks[0];
     for (mb_index = 0; mb_index < 5; mb_index++) {
         dv_calculate_mb_xy(s, work_chunk, mb_index, &mb_x, &mb_y);
+
+        /* initializing luminance blocks */
+        if ((s->sys->pix_fmt == PIX_FMT_YUV420P) ||
+            (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
+            (s->sys->height >= 720 && mb_y != 134)) {
+            y_stride = s->picture.linesize[0] << 3;
+        } else {
+            y_stride = 16;
+        }
         y_ptr    = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x) << 3);
+        linesize = s->picture.linesize[0];
+
+        if (s->sys->video_stype == 4) { /* SD 422 */
+            vs_bit_size +=
+            dv_init_enc_block(enc_blk+0, y_ptr               , linesize, s, 0) +
+            dv_init_enc_block(enc_blk+1, NULL                , linesize, s, 0) +
+            dv_init_enc_block(enc_blk+2, y_ptr + 8           , linesize, s, 0) +
+            dv_init_enc_block(enc_blk+3, NULL                , linesize, s, 0);
+        } else {
+            vs_bit_size +=
+            dv_init_enc_block(enc_blk+0, y_ptr               , linesize, s, 0) +
+            dv_init_enc_block(enc_blk+1, y_ptr + 8           , linesize, s, 0) +
+            dv_init_enc_block(enc_blk+2, y_ptr     + y_stride, linesize, s, 0) +
+            dv_init_enc_block(enc_blk+3, y_ptr + 8 + y_stride, linesize, s, 0);
+        }
+        enc_blk += 4;
+
+        /* initializing chrominance blocks */
         c_offset = (((mb_y >>  (s->sys->pix_fmt == PIX_FMT_YUV420P)) * s->picture.linesize[1] +
                      (mb_x >> ((s->sys->pix_fmt == PIX_FMT_YUV411P) ? 2 : 1))) << 3);
-        for (j = 0; j < 6; j++) {
-            if (s->sys->pix_fmt == PIX_FMT_YUV422P) { /* 4:2:2 */
-                if (j == 0 || j == 2) {
-                    /* Y0 Y1 */
-                    data     = y_ptr + ((j >> 1) * 8);
-                    linesize = s->picture.linesize[0];
-                } else if (j > 3) {
-                    /* Cr Cb */
-                    data     = s->picture.data[6 - j] + c_offset;
-                    linesize = s->picture.linesize[6 - j];
-                } else {
-                    /* j=1 and j=3 are "dummy" blocks, used for AC data only */
-                    data     = NULL;
-                    linesize = 0;
-                }
-            } else { /* 4:1:1 or 4:2:0 */
-                if (j < 4) {  /* Four Y blocks */
-                    /* NOTE: at end of line, the macroblock is handled as 420 */
-                    if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x < (704 / 8)) {
-                        data = y_ptr + (j * 8);
-                    } else {
-                        data = y_ptr + ((j & 1) * 8) + ((j >> 1) * 8 * s->picture.linesize[0]);
-                    }
-                    linesize = s->picture.linesize[0];
-                } else {      /* Cr and Cb blocks */
-                    /* don't ask Fabrice why they inverted Cb and Cr ! */
-                    data     = s->picture.data    [6 - j] + c_offset;
-                    linesize = s->picture.linesize[6 - j];
+        for (j = 2; j; j--) {
+            uint8_t *c_ptr = s->picture.data[j] + c_offset;
+            linesize = s->picture.linesize[j];
+            y_stride = (mb_y == 134) ? 8 : (s->picture.linesize[j] << 3);
                     if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
                         uint8_t* d;
                         uint8_t* b = scratch;
                         for (i = 0; i < 8; i++) {
-                            d = data + 8 * linesize;
-                            b[0] = data[0]; b[1] = data[1]; b[2] = data[2]; b[3] = data[3];
+                            d = c_ptr + (linesize << 3);
+                            b[0] = c_ptr[0]; b[1] = c_ptr[1]; b[2] = c_ptr[2]; b[3] = c_ptr[3];
                             b[4] =    d[0]; b[5] =    d[1]; b[6] =    d[2]; b[7] =    d[3];
-                            data += linesize;
+                            c_ptr += linesize;
                             b += 8;
                         }
-                        data = scratch;
+                        c_ptr = scratch;
                         linesize = 8;
                     }
-                }
+
+            vs_bit_size += dv_init_enc_block(    enc_blk++, c_ptr           , linesize, s, 1);
+            if (s->sys->bpm == 8) {
+                vs_bit_size += dv_init_enc_block(enc_blk++, c_ptr + y_stride, linesize, s, 1);
             }
-
-            vs_bit_size += dv_init_enc_block(enc_blk, data, linesize, s, j>>2);
-
-            ++enc_blk;
         }
     }
 
