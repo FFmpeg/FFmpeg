@@ -1,6 +1,7 @@
 /*
  * MXF muxer
  * Copyright (c) 2008 GUCAS, Zhentan Feng <spyfeng at gmail dot com>
+ * Copyright (c) 2008 Baptiste Coudurier <baptiste dot coudurier at gmail dot com>
  *
  * This file is part of FFmpeg.
  *
