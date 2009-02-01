@@ -64,14 +64,14 @@ static inline double av_q2d(AVRational a){
 /**
  * Reduces a fraction.
  * This is useful for framerate calculations.
- * @param dst_nom destination numerator
+ * @param dst_num destination numerator
  * @param dst_den destination denominator
- * @param nom source numerator
+ * @param num source numerator
  * @param den source denominator
- * @param max the maximum allowed for dst_nom & dst_den
+ * @param max the maximum allowed for dst_num & dst_den
  * @return 1 if exact, 0 otherwise
  */
-int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max);
+int av_reduce(int *dst_num, int *dst_den, int64_t num, int64_t den, int64_t max);
 
 /**
  * Multiplies two rationals.
