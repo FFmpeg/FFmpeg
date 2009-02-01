@@ -886,7 +886,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
                     int lower_transport, const char *real_challenge)
 {
     RTSPState *rt = s->priv_data;
-    int j, i, err;
+    int j, i, err, interleave = 0;
     RTSPStream *rtsp_st;
     RTSPHeader reply1, *reply = &reply1;
     char cmd[2048];
@@ -943,14 +943,21 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
         /* RTP/TCP */
         else if (lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
             snprintf(transport, sizeof(transport) - 1,
-                     "%s/TCP", trans_pref);
+                     "%s/TCP;", trans_pref);
+            if (rt->server_type == RTSP_SERVER_WMS)
+                av_strlcat(transport, "unicast;", sizeof(transport));
+            av_strlcatf(transport, sizeof(transport),
+                        "interleaved=%d-%d",
+                        interleave, interleave + 1);
+            interleave += 2;
         }
 
         else if (lower_transport == RTSP_LOWER_TRANSPORT_UDP_MULTICAST) {
             snprintf(transport, sizeof(transport) - 1,
                      "%s/UDP;multicast", trans_pref);
         }
-        if (rt->server_type == RTSP_SERVER_REAL)
+        if (rt->server_type == RTSP_SERVER_REAL ||
+            rt->server_type == RTSP_SERVER_WMS)
             av_strlcat(transport, ";mode=play", sizeof(transport));
         snprintf(cmd, sizeof(cmd),
                  "SETUP %s RTSP/1.0\r\n"
