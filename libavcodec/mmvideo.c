@@ -20,7 +20,7 @@
  */
 
 /**
- * @file mm.c
+ * @file mmvideo.c
  * American Laser Games MM Video Decoder
  * by Peter Ross (suxen_drol at hotmail dot com)
  *
