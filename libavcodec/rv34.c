@@ -223,7 +223,7 @@ static int rv34_decode_cbp(GetBitContext *gb, RV34VLC *vlc, int table)
     int ones;
     static const int cbp_masks[3] = {0x100000, 0x010000, 0x110000};
     static const int shifts[4] = { 0, 2, 8, 10 };
-    int *curshift = shifts;
+    const int *curshift = shifts;
     int i, t, mask;
 
     code = get_vlc2(gb, vlc->cbppattern[table].table, 9, 2);
@@ -883,7 +883,7 @@ static void rv34_pred_4x4_block(RV34DecContext *r, uint8_t *dst, int stride, int
     }
     if(!right && up){
         topleft = dst[-stride + 3] * 0x01010101;
-        prev = &topleft;
+        prev = (uint8_t*)&topleft;
     }
     r->h.pred4x4[itype](dst, prev, stride);
 }
