@@ -359,6 +359,9 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
     FFMContext *ffm = s->priv_data;
     int duration;
 
+    if (url_fsize(s->pb) == FFM_PACKET_SIZE)
+        return -1;
+
     switch(ffm->read_state) {
     case READ_HEADER:
         if (!ffm_is_avail_data(s, FRAME_HEADER_SIZE+4)) {
