@@ -58,13 +58,20 @@ static inline int wnv1_get_code(WNV1Context *w, int base_value)
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
-                        uint8_t *buf, int buf_size)
+                        const uint8_t *buf, int buf_size)
 {
     WNV1Context * const l = avctx->priv_data;
     AVFrame * const p= (AVFrame*)&l->pic;
     unsigned char *Y,*U,*V;
     int i, j;
     int prev_y = 0, prev_u = 0, prev_v = 0;
+    uint8_t *rbuf;
+
+    rbuf = av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if(!rbuf){
+        av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer\n");
+        return -1;
+    }
 
     if(p->data[0])
         avctx->release_buffer(avctx, p);
@@ -72,13 +79,14 @@ static int decode_frame(AVCodecContext *avctx,
     p->reference = 0;
     if(avctx->get_buffer(avctx, p) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        av_free(rbuf);
         return -1;
     }
     p->key_frame = 1;
 
     for(i=8; i<buf_size; i++)
-        buf[i]= ff_reverse[ buf[i] ]; //FIXME ensure that the buffer is modifyable or use a temp one
-    init_get_bits(&l->gb, buf+8, (buf_size-8)*8);
+        rbuf[i]= ff_reverse[ buf[i] ];
+    init_get_bits(&l->gb, rbuf+8, (buf_size-8)*8);
 
     if (buf[2] >> 4 == 6)
         l->shift = 2;
@@ -112,6 +120,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = l->pic;
+    av_free(rbuf);
 
     return buf_size;
 }
