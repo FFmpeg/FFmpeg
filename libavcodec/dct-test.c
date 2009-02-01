@@ -21,7 +21,7 @@
 
 /**
  * @file libavcodec/dct-test.c
- * DCT test. (c) 2001 Fabrice Bellard.
+ * DCT test (c) 2001 Fabrice Bellard
  * Started from sample code by Juan J. Sierralta P.
  */
 
