@@ -768,23 +768,33 @@ static int decode_frame(AVCodecContext *avctx,
     TM2Context * const l = avctx->priv_data;
     AVFrame * const p= (AVFrame*)&l->pic;
     int i, skip, t;
+    uint8_t *swbuf;
 
+    swbuf = av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if(!swbuf){
+        av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer\n");
+        return -1;
+    }
     p->reference = 1;
     p->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     if(avctx->reget_buffer(avctx, p) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        av_free(swbuf);
         return -1;
     }
 
-    l->dsp.bswap_buf((uint32_t*)buf, (const uint32_t*)buf, buf_size >> 2); //FIXME SERIOUS BUG
-    skip = tm2_read_header(l, buf);
+    l->dsp.bswap_buf((uint32_t*)swbuf, (const uint32_t*)buf, buf_size >> 2);
+    skip = tm2_read_header(l, swbuf);
 
-    if(skip == -1)
+    if(skip == -1){
+        av_free(swbuf);
         return -1;
+    }
 
     for(i = 0; i < TM2_NUM_STREAMS; i++){
-        t = tm2_read_stream(l, buf + skip, tm2_stream_order[i]);
+        t = tm2_read_stream(l, swbuf + skip, tm2_stream_order[i]);
         if(t == -1){
+            av_free(swbuf);
             return -1;
         }
         skip += t;
@@ -798,6 +808,7 @@ static int decode_frame(AVCodecContext *avctx,
     l->cur = !l->cur;
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = l->pic;
+    av_free(swbuf);
 
     return buf_size;
 }
