@@ -723,6 +723,9 @@ libxvidcore-devel
 The recommendation for libnut and x264 is to build them from source by
 yourself, as they evolve too quickly for Cygwin Ports to be up to date.
 
+Cygwin 1.7.x has IPv6 support. You can add IPv6 to Cygwin 1.5.x by means
+of the @code{libgetaddrinfo-devel} package, available at Cygwin Ports.
+
 @subsection Crosscompilation for Windows under Cygwin
 
 With Cygwin you can create Windows binaries that do not need the cygwin1.dll.
