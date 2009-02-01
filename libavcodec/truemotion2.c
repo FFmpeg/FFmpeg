@@ -757,13 +757,17 @@ static int tm2_decode_blocks(TM2Context *ctx, AVFrame *p)
     return keyframe;
 }
 
+static const int tm2_stream_order[TM2_NUM_STREAMS] = {
+    TM2_C_HI, TM2_C_LO, TM2_L_HI, TM2_L_LO, TM2_UPD, TM2_MOT, TM2_TYPE
+};
+
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         const uint8_t *buf, int buf_size)
 {
     TM2Context * const l = avctx->priv_data;
     AVFrame * const p= (AVFrame*)&l->pic;
-    int skip, t;
+    int i, skip, t;
 
     p->reference = 1;
     p->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
@@ -778,33 +782,13 @@ static int decode_frame(AVCodecContext *avctx,
     if(skip == -1)
         return -1;
 
-    t = tm2_read_stream(l, buf + skip, TM2_C_HI);
-    if(t == -1)
-        return -1;
-    skip += t;
-    t = tm2_read_stream(l, buf + skip, TM2_C_LO);
-    if(t == -1)
-        return -1;
-    skip += t;
-    t = tm2_read_stream(l, buf + skip, TM2_L_HI);
-    if(t == -1)
-        return -1;
-    skip += t;
-    t = tm2_read_stream(l, buf + skip, TM2_L_LO);
-    if(t == -1)
-        return -1;
-    skip += t;
-    t = tm2_read_stream(l, buf + skip, TM2_UPD);
-    if(t == -1)
-        return -1;
-    skip += t;
-    t = tm2_read_stream(l, buf + skip, TM2_MOT);
-    if(t == -1)
-        return -1;
-    skip += t;
-    t = tm2_read_stream(l, buf + skip, TM2_TYPE);
-    if(t == -1)
-        return -1;
+    for(i = 0; i < TM2_NUM_STREAMS; i++){
+        t = tm2_read_stream(l, buf + skip, tm2_stream_order[i]);
+        if(t == -1){
+            return -1;
+        }
+        skip += t;
+    }
     p->key_frame = tm2_decode_blocks(l, p);
     if(p->key_frame)
         p->pict_type = FF_I_TYPE;
