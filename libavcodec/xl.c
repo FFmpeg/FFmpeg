@@ -48,7 +48,7 @@ static int decode_frame(AVCodecContext *avctx,
     int i, j;
     int stride;
     uint32_t val;
-    int y0, y1, y2, y3, c0, c1;
+    int y0, y1, y2, y3 = 0, c0 = 0, c1 = 0;
 
     if(p->data[0])
         avctx->release_buffer(avctx, p);
