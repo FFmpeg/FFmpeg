@@ -22,7 +22,7 @@
 #include "dsputil.h"
 
 /**
- * @file rdft.c
+ * @file libavcodec/rdft.c
  * (Inverse) Real Discrete Fourier Transforms.
  */
 

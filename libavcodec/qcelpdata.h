@@ -23,7 +23,7 @@
 #define AVCODEC_QCELPDATA_H
 
 /**
- * @file qcelpdata.h
+ * @file libavcodec/qcelpdata.h
  * Data tables for the QCELP decoder
  * @author Reynaldo H. Verdejo Pinochet
  * @remark FFmpeg merging spearheaded by Kenan Gillet

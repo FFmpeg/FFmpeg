@@ -21,7 +21,7 @@
 
 /**
  * TIFF image encoder
- * @file tiffenc.c
+ * @file libavcodec/tiffenc.c
  * @author Bartlomiej Wolowiec
  */
 #include "avcodec.h"

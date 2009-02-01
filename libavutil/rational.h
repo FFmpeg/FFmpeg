@@ -20,7 +20,7 @@
  */
 
 /**
- * @file rational.h
+ * @file libavutil/rational.h
  * rational numbers
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

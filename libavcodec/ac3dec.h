@@ -20,7 +20,7 @@
  */
 
 /**
- * @file ac3.h
+ * @file libavcodec/ac3.h
  * Common code between the AC-3 and E-AC-3 decoders.
  */
 

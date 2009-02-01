@@ -26,7 +26,7 @@
  */
 
 /**
- * @file svq1.h
+ * @file libavcodec/svq1.h
  * Sorenson Vector Quantizer #1 (SVQ1) video codec.
  * For more information of the SVQ1 algorithm, visit:
  *   http://www.pcisys.net/~melanson/codecs/

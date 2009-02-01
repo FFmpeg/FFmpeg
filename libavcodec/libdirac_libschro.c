@@ -19,7 +19,7 @@
  */
 
 /**
-* @file libdirac_libschro.c
+* @file libavcodec/libdirac_libschro.c
 * functions common to libdirac and libschroedinger
 */
 

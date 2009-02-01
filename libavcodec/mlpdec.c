@@ -20,7 +20,7 @@
  */
 
 /**
- * @file mlpdec.c
+ * @file libavcodec/mlpdec.c
  * MLP decoder
  */
 

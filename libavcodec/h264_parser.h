@@ -20,7 +20,7 @@
  */
 
 /**
- * @file h264_parser.h
+ * @file libavcodec/h264_parser.h
  * H.264 / AVC / MPEG4 part10 parser.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

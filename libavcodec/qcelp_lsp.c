@@ -20,7 +20,7 @@
  */
 
 /**
- * @file qcelp_lsp.c
+ * @file libavcodec/qcelp_lsp.c
  * QCELP decoder
  * @author Reynaldo H. Verdejo Pinochet
  * @remark FFmpeg merging spearheaded by Kenan Gillet

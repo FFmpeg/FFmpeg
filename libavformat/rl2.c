@@ -21,7 +21,7 @@
 
 /**
  * RL2 file demuxer
- * @file rl2.c
+ * @file libavformat/rl2.c
  * @author Sascha Sommer (saschasommer@freenet.de)
  * For more information regarding the RL2 file format, visit:
  *   http://wiki.multimedia.cx/index.php?title=RL2

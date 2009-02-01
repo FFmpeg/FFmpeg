@@ -20,7 +20,7 @@
  */
 
 /**
- * @file rv34.h
+ * @file libavcodec/rv34.h
  * RV30 and RV40 decoder common data declarations
  */
 

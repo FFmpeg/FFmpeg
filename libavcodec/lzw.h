@@ -21,7 +21,7 @@
  */
 
 /**
- * @file lzw.h
+ * @file libavcodec/lzw.h
  * @brief LZW decoding routines
  * @author Fabrice Bellard
  * Modified for use in TIFF by Konstantin Shishkov

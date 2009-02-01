@@ -21,7 +21,7 @@
  */
 
 /**
- * @file cookdata.h
+ * @file libavcodec/cookdata.h
  * Cook AKA RealAudio G2 compatible decoderdata
  */
 

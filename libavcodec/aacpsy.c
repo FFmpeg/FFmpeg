@@ -20,7 +20,7 @@
  */
 
 /**
- * @file aacpsy.c
+ * @file libavcodec/aacpsy.c
  * AAC encoder psychoacoustic model
  */
 

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file kmvc.c
+ * @file libavcodec/kmvc.c
  * Karl Morton's Video Codec decoder
  */
 

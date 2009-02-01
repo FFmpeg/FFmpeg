@@ -20,7 +20,7 @@
  */
 
 /**
- * @file rangecoder.c
+ * @file libavcodec/rangecoder.c
  * Range coder.
  * based upon
  *    "Range encoding: an algorithm for removing redundancy from a digitised

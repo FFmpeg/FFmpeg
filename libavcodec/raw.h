@@ -20,7 +20,7 @@
  */
 
 /**
- * @file raw.h
+ * @file libavcodec/raw.h
  * Raw Video Codec
  */
 

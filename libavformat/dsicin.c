@@ -20,7 +20,7 @@
  */
 
 /**
- * @file dsicin.c
+ * @file libavformat/dsicin.c
  * Delphine Software International CIN file demuxer
  */
 

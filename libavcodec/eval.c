@@ -22,7 +22,7 @@
  */
 
 /**
- * @file eval.c
+ * @file libavcodec/eval.c
  * simple arithmetic expression evaluator.
  *
  * see http://joe.hotchkiss.com/programming/eval/eval.html

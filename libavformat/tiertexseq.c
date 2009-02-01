@@ -20,7 +20,7 @@
  */
 
 /**
- * @file tiertexseq.c
+ * @file libavformat/tiertexseq.c
  * Tiertex Limited SEQ file demuxer
  */
 

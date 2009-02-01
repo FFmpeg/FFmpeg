@@ -20,7 +20,7 @@
  */
 
 /**
- * @file rv30dsp.c
+ * @file libavcodec/rv30dsp.c
  * RV30 decoder motion compensation functions
  */
 

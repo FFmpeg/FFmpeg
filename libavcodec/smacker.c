@@ -20,7 +20,7 @@
  */
 
 /**
- * @file smacker.c
+ * @file libavcodec/smacker.c
  * Smacker decoder
  */
 

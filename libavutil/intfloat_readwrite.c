@@ -21,7 +21,7 @@
  */
 
 /**
- * @file intfloat_readwrite.c
+ * @file libavutil/intfloat_readwrite.c
  * portable IEEE float/double read/write functions
  */
 

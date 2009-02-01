@@ -20,7 +20,7 @@
  */
 
 /**
- * @file allcodecs.c
+ * @file libavcodec/allcodecs.c
  * Provides registration of all codecs, parsers and bitstream filters for libavcodec.
  */
 

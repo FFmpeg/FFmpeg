@@ -20,7 +20,7 @@
  */
 
 /**
- * @file msrle.c
+ * @file libavcodec/msrle.c
  * MS RLE Video Decoder by Mike Melanson (melanson@pcisys.net)
  * For more information about the MS RLE format, visit:
  *   http://www.pcisys.net/~melanson/codecs/

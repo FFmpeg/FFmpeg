@@ -20,7 +20,7 @@
  */
 
 /**
- * @file zmbv.c
+ * @file libavcodec/zmbv.c
  * Zip Motion Blocks Video decoder
  */
 

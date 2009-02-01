@@ -19,7 +19,7 @@
  */
 
 /**
- * @file postprocess_internal.h
+ * @file libpostproc/postprocess_internal.h
  * internal api header.
  */
 

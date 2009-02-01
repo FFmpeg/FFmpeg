@@ -20,7 +20,7 @@
  */
 
 /**
- * @file riff.h
+ * @file libavformat/riff.h
  * internal header for RIFF based (de)muxers
  * do NOT include this in end user applications
  */

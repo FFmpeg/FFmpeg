@@ -20,7 +20,7 @@
  */
 
 /**
- * @file vc1test.c
+ * @file libavformat/vc1test.c
  * VC1 test bitstream file demuxer
  * by Konstantin Shishkov
  * Format specified in SMPTE standard 421 Annex L

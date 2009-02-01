@@ -23,7 +23,7 @@
  */
 
 /**
- * @file dca.c
+ * @file libavcodec/dca.c
  */
 
 #include <math.h>

@@ -19,7 +19,7 @@
  */
 
 /**
- * @file vp3dsp_sse2.c
+ * @file libavcodec/x86/vp3dsp_sse2.c
  * SSE2-optimized functions cribbed from the original VP3 source code.
  */
 

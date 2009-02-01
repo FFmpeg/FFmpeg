@@ -21,7 +21,7 @@
  */
 
 /**
- * @file jpeglsenc.c
+ * @file libavcodec/jpeglsenc.c
  * JPEG-LS encoder.
  */
 

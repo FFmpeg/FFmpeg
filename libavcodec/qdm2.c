@@ -23,7 +23,7 @@
  */
 
 /**
- * @file qdm2.c
+ * @file libavcodec/qdm2.c
  * QDM2 decoder
  * @author Ewald Snel, Benjamin Larsson, Alex Beregszaszi, Roberto Togni
  * The decoder is not perfect yet, there are still some distortions

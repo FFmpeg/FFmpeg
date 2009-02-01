@@ -22,7 +22,7 @@
 #define AVFORMAT_METADATA_H
 
 /**
- * @file metadata.h
+ * @file libavformat/metadata.h
  * internal metadata API header
  * see avformat.h or the public API!
  */

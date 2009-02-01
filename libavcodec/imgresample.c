@@ -20,7 +20,7 @@
  */
 
 /**
- * @file imgresample.c
+ * @file libavcodec/imgresample.c
  * High quality image resampling with polyphase filters .
  */
 

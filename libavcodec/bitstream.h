@@ -19,7 +19,7 @@
  */
 
 /**
- * @file bitstream.h
+ * @file libavcodec/bitstream.h
  * bitstream api header.
  */
 

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file rectangle.h
+ * @file libavcodec/rectangle.h
  * useful rectangle filling function
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

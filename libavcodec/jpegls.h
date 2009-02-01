@@ -21,7 +21,7 @@
  */
 
 /**
- * @file jpegls.h
+ * @file libavcodec/jpegls.h
  * JPEG-LS common code.
  */
 

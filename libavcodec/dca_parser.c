@@ -23,7 +23,7 @@
  */
 
 /**
- * @file dca_parser.c
+ * @file libavcodec/dca_parser.c
  */
 
 #include "parser.h"

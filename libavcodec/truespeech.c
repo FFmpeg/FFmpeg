@@ -24,7 +24,7 @@
 
 #include "truespeech_data.h"
 /**
- * @file truespeech.c
+ * @file libavcodec/truespeech.c
  * TrueSpeech decoder.
  */
 

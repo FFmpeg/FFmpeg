@@ -1,5 +1,5 @@
 /**
- * @file fdctref.c
+ * @file libavcodec/fdctref.c
  * forward discrete cosine transform, double precision.
  */
 

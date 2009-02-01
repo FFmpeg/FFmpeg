@@ -20,7 +20,7 @@
  */
 
 /**
- * @file electronicarts.c
+ * @file libavformat/electronicarts.c
  * Electronic Arts Multimedia file demuxer (WVE/UV2/etc.)
  * by Robin Kay (komadori at gekkou.co.uk)
  */

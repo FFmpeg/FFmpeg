@@ -26,7 +26,7 @@
  */
 
 /**
- * @file mjpeg.c
+ * @file libavcodec/mjpeg.c
  * MJPEG encoder and decoder.
  */
 

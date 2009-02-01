@@ -24,7 +24,7 @@
 #define AVCODEC_RATECONTROL_H
 
 /**
- * @file ratecontrol.h
+ * @file libavcodec/ratecontrol.h
  * ratecontrol header.
  */
 

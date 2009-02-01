@@ -21,7 +21,7 @@
  */
 
 /**
- * @file aac.h
+ * @file libavcodec/aac.h
  * AAC definitions and structures
  * @author Oded Shimon  ( ods15 ods15 dyndns org )
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )

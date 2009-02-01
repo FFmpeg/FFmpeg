@@ -22,7 +22,7 @@
 #define AVUTIL_AVUTIL_H
 
 /**
- * @file avutil.h
+ * @file libavutil/avutil.h
  * external API header
  */
 

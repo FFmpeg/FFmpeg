@@ -20,7 +20,7 @@
  */
 
 /**
- * @file rawdec.c
+ * @file libavcodec/rawdec.c
  * Raw Video Decoder
  */
 

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file qpeg.c
+ * @file libavcodec/qpeg.c
  * QPEG codec.
  */
 

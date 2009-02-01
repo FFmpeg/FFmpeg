@@ -21,7 +21,7 @@
 #include "dsputil.h"
 
 /**
- * @file mdct.c
+ * @file libavcodec/mdct.c
  * MDCT/IMDCT transforms.
  */
 

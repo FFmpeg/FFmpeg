@@ -22,7 +22,7 @@
  */
 
 /**
- * @file h263data.h
+ * @file libavcodec/h263data.h
  * H.263 tables.
  */
 

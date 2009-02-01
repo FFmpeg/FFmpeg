@@ -20,7 +20,7 @@
  */
 
 /**
- * @file msvideo1.c
+ * @file libavcodec/msvideo1.c
  * Microsoft Video-1 Decoder by Mike Melanson (melanson@pcisys.net)
  * For more information about the MS Video-1 format, visit:
  *   http://www.pcisys.net/~melanson/codecs/

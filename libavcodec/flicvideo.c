@@ -20,7 +20,7 @@
  */
 
 /**
- * @file flicvideo.c
+ * @file libavcodec/flicvideo.c
  * Autodesk Animator FLI/FLC Video Decoder
  * by Mike Melanson (melanson@pcisys.net)
  * for more information on the .fli/.flc file format and all of its many

@@ -21,7 +21,7 @@
  */
 
 /**
- * @file h264dspenc.c
+ * @file libavcodec/h264dspenc.c
  * H.264 encoder related DSP utils
  *
  */

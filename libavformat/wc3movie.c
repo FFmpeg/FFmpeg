@@ -20,7 +20,7 @@
  */
 
 /**
- * @file wc3movie.c
+ * @file libavformat/wc3movie.c
  * Wing Commander III Movie file demuxer
  * by Mike Melanson (melanson@pcisys.net)
  * for more information on the WC3 .mve file format, visit:

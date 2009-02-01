@@ -21,7 +21,7 @@
  */
 
 /**
- * @file vc1data.h
+ * @file libavcodec/vc1data.h
  * VC-1 tables.
  */
 

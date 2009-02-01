@@ -20,7 +20,7 @@
  */
 
 /**
- * @file loco.c
+ * @file libavcodec/loco.c
  * LOCO codec.
  */
 

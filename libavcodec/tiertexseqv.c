@@ -20,7 +20,7 @@
  */
 
 /**
- * @file tiertexseqv.c
+ * @file libavcodec/tiertexseqv.c
  * Tiertex Limited SEQ video decoder
  */
 

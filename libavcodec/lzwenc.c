@@ -21,7 +21,7 @@
 
 /**
  * LZW encoder
- * @file lzwenc.c
+ * @file libavcodec/lzwenc.c
  * @author Bartlomiej Wolowiec
  */
 

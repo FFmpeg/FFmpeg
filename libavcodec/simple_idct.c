@@ -21,7 +21,7 @@
  */
 
 /**
- * @file simple_idct.c
+ * @file libavcodec/simple_idct.c
  * simpleidct in C.
  */
 

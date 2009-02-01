@@ -20,7 +20,7 @@
  */
 
 /**
- * @file rtpproto.c
+ * @file libavformat/rtpproto.c
  * RTP protocol
  */
 

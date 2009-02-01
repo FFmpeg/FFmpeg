@@ -23,7 +23,7 @@
 /* Encoding development sponsored by http://fh-campuswien.ac.at */
 
 /**
- * @file flashsvenc.c
+ * @file libavcodec/flashsvenc.c
  * Flash Screen Video encoder
  * @author Alex Beregszaszi
  * @author Benjamin Larsson

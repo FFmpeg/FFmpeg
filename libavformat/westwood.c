@@ -20,7 +20,7 @@
  */
 
 /**
- * @file westwood.c
+ * @file libavformat/westwood.c
  * Westwood Studios VQA & AUD file demuxers
  * by Mike Melanson (melanson@pcisys.net)
  * for more information on the Westwood file formats, visit:

@@ -19,7 +19,7 @@
  */
 
 /**
- * @file bswap.h
+ * @file libavutil/bswap.h
  * byte swapping routines
  */
 

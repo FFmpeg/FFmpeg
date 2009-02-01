@@ -20,7 +20,7 @@
  */
 
 /**
- * @file rv40.c
+ * @file libavcodec/rv40.c
  * RV40 decoder
  */
 

@@ -22,7 +22,7 @@
  */
 
 /**
- * @file mpegaudiotab.h
+ * @file libavcodec/mpegaudiotab.h
  * mpeg audio layer 2 tables.
  * Most of them come from the mpeg audio specification.
  */

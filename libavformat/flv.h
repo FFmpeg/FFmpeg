@@ -1,5 +1,5 @@
 /**
- * @file flv.h
+ * @file libavformat/flv.h
  * FLV common header
  *
  * Copyright (c) 2006 The FFmpeg Project

@@ -1,5 +1,5 @@
 /**
- * @file vp6.c
+ * @file libavcodec/vp6.c
  * VP6 compatible video decoder
  *
  * Copyright (C) 2006  Aurelien Jacobs <aurel@gnuage.org>

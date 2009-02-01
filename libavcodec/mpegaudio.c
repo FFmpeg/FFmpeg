@@ -20,7 +20,7 @@
  */
 
 /**
- * @file mpegaudio.c
+ * @file libavcodec/mpegaudio.c
  * MPEG Audio common code.
  */
 

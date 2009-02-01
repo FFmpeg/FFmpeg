@@ -20,7 +20,7 @@
  */
 
 /**
- * @file cabac.h
+ * @file libavcodec/cabac.h
  * Context Adaptive Binary Arithmetic Coder.
  */
 

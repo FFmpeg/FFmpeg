@@ -21,7 +21,7 @@
  */
 
 /**
- * @file aactab.h
+ * @file libavcodec/aactab.h
  * AAC data declarations
  * @author Oded Shimon  ( ods15 ods15 dyndns org )
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )

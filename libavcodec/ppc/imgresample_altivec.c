@@ -20,7 +20,7 @@
  */
 
 /**
- * @file imgresample_altivec.c
+ * @file libavcodec/ppc/imgresample_altivec.c
  * High quality image resampling with polyphase filters - AltiVec bits
  */
 

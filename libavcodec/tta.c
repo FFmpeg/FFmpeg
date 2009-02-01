@@ -20,7 +20,7 @@
  */
 
 /**
- * @file tta.c
+ * @file libavcodec/tta.c
  * TTA (The Lossless True Audio) decoder
  * (www.true-audio.com or tta.corecodec.org)
  * @author Alex Beregszaszi

@@ -23,7 +23,7 @@
  */
 
 /**
- * @file msmpeg4.c
+ * @file libavcodec/msmpeg4.c
  * MSMPEG4 backend for ffmpeg encoder and decoder.
  */
 

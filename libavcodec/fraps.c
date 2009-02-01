@@ -21,7 +21,7 @@
  */
 
 /**
- * @file fraps.c
+ * @file libavcodec/fraps.c
  * Lossless Fraps 'FPS1' decoder
  * @author Roine Gustafsson <roine at users sf net>
  * @author Konstantin Shishkov

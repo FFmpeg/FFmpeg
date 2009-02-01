@@ -20,7 +20,7 @@
  */
 
 /**
- * @file qdrw.c
+ * @file libavcodec/qdrw.c
  * Apple QuickDraw codec.
  */
 

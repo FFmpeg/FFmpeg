@@ -20,7 +20,7 @@
  */
 
 /**
- * @file iirfilter.h
+ * @file libavcodec/iirfilter.h
  * IIR filter interface
  */
 

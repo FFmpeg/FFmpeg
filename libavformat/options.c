@@ -21,7 +21,7 @@
 #include "libavcodec/opt.h"
 
 /**
- * @file options.c
+ * @file libavformat/options.c
  * Options definition for AVFormatContext.
  */
 

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file aandcttab.h
+ * @file libavcodec/aandcttab.h
  * AAN (Arai Agui Nakajima) (I)DCT tables
  */
 

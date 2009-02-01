@@ -20,7 +20,7 @@
  */
 
 /**
- * @file qtrle.c
+ * @file libavcodec/qtrle.c
  * QT RLE Video Decoder by Mike Melanson (melanson@pcisys.net)
  * For more information about the QT RLE format, visit:
  *   http://www.pcisys.net/~melanson/codecs/

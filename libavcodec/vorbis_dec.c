@@ -1,5 +1,5 @@
 /**
- * @file vorbis_dec.c
+ * @file libavcodec/vorbis_dec.c
  * Vorbis I decoder
  * @author Denes Balatoni  ( dbalatoni programozo hu )
 

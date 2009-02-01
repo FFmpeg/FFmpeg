@@ -20,7 +20,7 @@
  */
 
 /**
- * @file h264data.h
+ * @file libavcodec/h264data.h
  * @brief
  *     H264 / AVC / MPEG4 part10 codec data table
  * @author Michael Niedermayer <michaelni@gmx.at>

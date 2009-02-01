@@ -20,7 +20,7 @@
  */
 
 /**
- * @file idroq.c
+ * @file libavformat/idroq.c
  * id RoQ format file demuxer
  * by Mike Melanson (melanson@pcisys.net)
  * for more information on the .roq file format, visit:

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file mtv.c
+ * @file libavformat/mtv.c
  * MTV demuxer.
  */
 

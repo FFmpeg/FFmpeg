@@ -20,7 +20,7 @@
  */
 
 /**
- * @file imx_dump_header_bsf.c
+ * @file libavcodec/imx_dump_header_bsf.c
  * imx dump header bitstream filter
  * modifies bitstream to fit in mov and be decoded by final cut pro decoder
  */

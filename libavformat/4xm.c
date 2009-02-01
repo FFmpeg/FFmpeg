@@ -20,7 +20,7 @@
  */
 
 /**
- * @file 4xm.c
+ * @file libavformat/4xm.c
  * 4X Technologies file demuxer
  * by Mike Melanson (melanson@pcisys.net)
  * for more information on the .4xm file format, visit:

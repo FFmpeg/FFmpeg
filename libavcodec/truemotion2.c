@@ -20,7 +20,7 @@
  */
 
 /**
- * @file truemotion2.c
+ * @file libavcodec/truemotion2.c
  * Duck TrueMotion2 decoder.
  */
 

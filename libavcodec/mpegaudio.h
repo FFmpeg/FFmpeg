@@ -19,7 +19,7 @@
  */
 
 /**
- * @file mpegaudio.h
+ * @file libavcodec/mpegaudio.h
  * mpeg audio declarations for both encoder and decoder.
  */
 

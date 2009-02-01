@@ -20,7 +20,7 @@
  */
 
 /**
- * @file lcldec.c
+ * @file libavcodec/lcldec.c
  * LCL (LossLess Codec Library) Video Codec
  * Decoder for MSZH and ZLIB codecs
  * Experimental encoder for ZLIB RGB24

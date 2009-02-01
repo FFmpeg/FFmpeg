@@ -20,7 +20,7 @@
  */
 
 /**
- * @file wnv1.c
+ * @file libavcodec/wnv1.c
  * Winnov WNV1 codec.
  */
 

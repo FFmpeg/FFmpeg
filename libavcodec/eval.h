@@ -21,7 +21,7 @@
  */
 
 /**
- * @file eval.h
+ * @file libavcodec/eval.h
  * eval header.
  */
 

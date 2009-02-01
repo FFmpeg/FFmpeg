@@ -17,7 +17,7 @@
  */
 
 /**
- * @file fifo.h
+ * @file libavutil/fifo.h
  * a very simple circular buffer FIFO implementation
  */
 

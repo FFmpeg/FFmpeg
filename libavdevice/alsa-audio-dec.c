@@ -21,7 +21,7 @@
  */
 
 /**
- * @file alsa-audio-dec.c
+ * @file libavdevice/alsa-audio-dec.c
  * ALSA input and output: input
  * @author Luca Abeni ( lucabe72 email it )
  * @author Benoit Fouet ( benoit fouet free fr )

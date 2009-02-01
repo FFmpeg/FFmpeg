@@ -20,7 +20,7 @@
  */
 
 /**
-* @file libschroedingerenc.c
+* @file libavcodec/libschroedingerenc.c
 * Dirac encoder support via libschroedinger-1.0 libraries. More details about
 * the Schroedinger project can be found at http://www.diracvideo.org/.
 * The library implements Dirac Specification Version 2.2

@@ -30,7 +30,7 @@
  */
 
 /**
- * @file x11grab.c
+ * @file libavdevice/x11grab.c
  * X11 frame device demuxer by Clemens Fruhwirth <clemens@endorphin.org>
  * and Edouard Gomez <ed.gomez@free.fr>.
  */

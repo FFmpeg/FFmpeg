@@ -20,7 +20,7 @@
  */
 
 /**
- * @file alac.c
+ * @file libavcodec/alac.c
  * ALAC (Apple Lossless Audio Codec) decoder
  * @author 2005 David Hammerton
  *

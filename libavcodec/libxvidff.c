@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libxvidff.c
+ * @file libavcodec/libxvidff.c
  * Interface to xvidcore for MPEG-4 compliant encoding.
  * @author Adam Thayer (krevnik@comcast.net)
  */

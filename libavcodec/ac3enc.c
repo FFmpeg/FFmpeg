@@ -20,7 +20,7 @@
  */
 
 /**
- * @file ac3enc.c
+ * @file libavcodec/ac3enc.c
  * The simplest AC-3 encoder.
  */
 //#define DEBUG

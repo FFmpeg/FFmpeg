@@ -21,7 +21,7 @@
  */
 
 /**
-* @file libdiracdec.c
+* @file libavcodec/libdiracdec.c
 * Dirac decoder support via libdirac library; more details about the Dirac
 * project can be found at http://dirac.sourceforge.net/.
 * The libdirac_decoder library implements Dirac specification version 2.2

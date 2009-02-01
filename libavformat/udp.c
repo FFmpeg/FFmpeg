@@ -20,7 +20,7 @@
  */
 
 /**
- * @file udp.c
+ * @file libavformat/udp.c
  * UDP protocol
  */
 

@@ -23,7 +23,7 @@
 #define AVCODEC_OPT_H
 
 /**
- * @file opt.h
+ * @file libavcodec/opt.h
  * AVOptions
  */
 

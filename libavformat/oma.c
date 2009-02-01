@@ -22,7 +22,7 @@
  */
 
 /**
- * @file oma.c
+ * @file libavformat/oma.c
  * This is a demuxer for Sony OpenMG Music files
  *
  * Known file extensions: ".oma", "aa3"

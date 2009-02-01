@@ -20,7 +20,7 @@
  */
 
 /**
- * @file faandct.h
+ * @file libavcodec/faandct.h
  * @brief
  *     Floating point AAN DCT
  * @author Michael Niedermayer <michaelni@gmx.at>

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file bfi.c
+ * @file libavcodec/bfi.c
  * @brief Brute Force & Ignorance (.bfi) video decoder
  * @author Sisir Koppaka ( sisir.koppaka at gmail dot com )
  * @sa http://wiki.multimedia.cx/index.php?title=BFI

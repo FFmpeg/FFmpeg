@@ -17,7 +17,7 @@
  */
 
 /**
- * @file internal.h
+ * @file libavcodec/internal.h
  * common internal api header.
  */
 

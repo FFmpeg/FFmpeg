@@ -21,7 +21,7 @@
  */
 
 /**
- * @file golomb.h
+ * @file libavcodec/golomb.h
  * @brief
  *     exp golomb vlc stuff
  * @author Michael Niedermayer <michaelni@gmx.at> and Alex Beregszaszi

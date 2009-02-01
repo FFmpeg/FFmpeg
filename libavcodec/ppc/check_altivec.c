@@ -18,7 +18,7 @@
 
 
 /**
- * @file check_altivec.c
+ * @file libavcodec/ppc/check_altivec.c
  * Checks for AltiVec presence.
  */
 

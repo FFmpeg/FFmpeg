@@ -19,7 +19,7 @@
  */
 
 /**
- * @file apiexample.c
+ * @file libavcodec/apiexample.c
  * avcodec API use example.
  *
  * Note that this library only handles codecs (mpeg, mpeg4, etc...),

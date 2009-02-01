@@ -1,5 +1,5 @@
 /**
- * @file vp56data.c
+ * @file libavcodec/vp56data.c
  * VP5 and VP6 compatible video decoder (common data)
  *
  * Copyright (C) 2006  Aurelien Jacobs <aurel@gnuage.org>

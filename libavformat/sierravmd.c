@@ -20,7 +20,7 @@
  */
 
 /**
- * @file sierravmd.c
+ * @file libavformat/sierravmd.c
  * Sierra VMD file demuxer
  * by Vladimir "VAG" Gneushev (vagsoft at mail.ru)
  * for more information on the Sierra VMD file format, visit:

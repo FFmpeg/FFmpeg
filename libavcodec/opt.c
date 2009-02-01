@@ -20,7 +20,7 @@
  */
 
 /**
- * @file opt.c
+ * @file libavcodec/opt.c
  * AVOptions
  * @author Michael Niedermayer <michaelni@gmx.at>
  */

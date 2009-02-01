@@ -20,7 +20,7 @@
  */
 
 /**
- * @file vcr1.c
+ * @file libavcodec/vcr1.c
  * ati vcr1 codec.
  */
 

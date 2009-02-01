@@ -21,7 +21,7 @@
  */
 
 /**
- * @file atrac3.c
+ * @file libavcodec/atrac3.c
  * Atrac 3 compatible decoder.
  * This decoder handles Sony's ATRAC3 data.
  *

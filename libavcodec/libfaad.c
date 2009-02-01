@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libfaad.c
+ * @file libavcodec/libfaad.c
  * AAC decoder.
  *
  * still a bit unfinished - but it plays something

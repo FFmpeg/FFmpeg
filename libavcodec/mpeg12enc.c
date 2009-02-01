@@ -21,7 +21,7 @@
  */
 
 /**
- * @file mpeg12enc.c
+ * @file libavcodec/mpeg12enc.c
  * MPEG1/2 encoder
  */
 

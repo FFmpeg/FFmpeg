@@ -21,7 +21,7 @@
  */
 
 /**
- * @file mpegvideo.h
+ * @file libavcodec/mpegvideo.h
  * mpegvideo header.
  */
 

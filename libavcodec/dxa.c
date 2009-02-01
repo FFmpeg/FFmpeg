@@ -20,7 +20,7 @@
  */
 
 /**
- * @file dxa.c
+ * @file libavcodec/dxa.c
  * DXA Video decoder
  */
 

@@ -21,7 +21,7 @@
  */
 
 /**
- * @file aac.c
+ * @file libavcodec/aac.c
  * AAC decoder
  * @author Oded Shimon  ( ods15 ods15 dyndns org )
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )

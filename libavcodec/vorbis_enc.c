@@ -19,7 +19,7 @@
  */
 
 /**
- * @file vorbis_enc.c
+ * @file libavcodec/vorbis_enc.c
  * Native Vorbis encoder.
  * @author Oded Shimon <ods15@ods15.dyndns.org>
  */

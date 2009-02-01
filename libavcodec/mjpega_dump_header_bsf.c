@@ -20,7 +20,7 @@
  */
 
 /**
- * @file mjpega_dump_header_bsf.c
+ * @file libavcodec/mjpega_dump_header_bsf.c
  * MJPEG A dump header bitstream filter
  * modifies bitstream to be decoded by quicktime
  */

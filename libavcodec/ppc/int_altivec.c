@@ -19,7 +19,7 @@
  */
 
 /**
- ** @file int_altivec.c
+ ** @file libavcodec/ppc/int_altivec.c
  ** integer misc ops.
  **/
 

@@ -21,7 +21,7 @@
 
 /**
  * CCITT Fax Group 3 and 4 decompression
- * @file faxcompr.h
+ * @file libavcodec/faxcompr.h
  * @author Konstantin Shishkov
  */
 #ifndef AVCODEC_FAXCOMPR_H

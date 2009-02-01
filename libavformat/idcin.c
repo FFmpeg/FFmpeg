@@ -20,7 +20,7 @@
  */
 
 /**
- * @file idcin.c
+ * @file libavformat/idcin.c
  * id Quake II CIN file demuxer by Mike Melanson (melanson@pcisys.net)
  * For more information about the id CIN format, visit:
  *   http://www.csse.monash.edu.au/~timf/

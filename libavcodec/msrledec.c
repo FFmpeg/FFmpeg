@@ -20,7 +20,7 @@
  */
 
 /**
- * @file msrledec.c
+ * @file libavcodec/msrledec.c
  * MS RLE Decoder based on decoder by Mike Melanson and my own for TSCC
  * For more information about the MS RLE format, visit:
  *   http://www.multimedia.cx/msrle.txt

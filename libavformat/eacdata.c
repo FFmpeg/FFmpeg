@@ -20,7 +20,7 @@
  */
 
 /**
- * @file eacdata.c
+ * @file libavformat/eacdata.c
  * Electronic Arts cdata Format Demuxer
  * by Peter Ross (suxen_drol at hotmail dot com)
  *

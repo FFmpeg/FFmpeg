@@ -19,7 +19,7 @@
  */
 
 /**
- * @file vp3dsp.c
+ * @file libavcodec/vp3dsp.c
  * Standard C DSP-oriented functions cribbed from the original VP3
  * source code.
  */

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file xa.c
+ * @file libavformat/xa.c
  * Maxis XA File Demuxer
  * by Robert Marston (rmarston@gmail.com)
  * for more information on the XA audio format see

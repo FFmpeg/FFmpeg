@@ -24,7 +24,7 @@
  */
 
 /**
- * @file huffyuv.c
+ * @file libavcodec/huffyuv.c
  * huffyuv codec for libavcodec.
  */
 

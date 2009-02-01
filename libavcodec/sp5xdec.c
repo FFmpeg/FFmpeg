@@ -20,7 +20,7 @@
  */
 
 /**
- * @file sp5xdec.c
+ * @file libavcodec/sp5xdec.c
  * Sunplus JPEG decoder (SP5X).
  */
 

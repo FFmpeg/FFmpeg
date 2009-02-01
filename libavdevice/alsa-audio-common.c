@@ -21,7 +21,7 @@
  */
 
 /**
- * @file alsa-audio-common.c
+ * @file libavdevice/alsa-audio-common.c
  * ALSA input and output: common code
  * @author Luca Abeni ( lucabe72 email it )
  * @author Benoit Fouet ( benoit fouet free fr )

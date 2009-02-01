@@ -64,7 +64,7 @@
  */
 
 /**
- * @file jfdctfst.c
+ * @file libavcodec/jfdctfst.c
  * Independent JPEG Group's fast AAN dct.
  */
 

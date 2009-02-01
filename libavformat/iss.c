@@ -20,7 +20,7 @@
  */
 
 /**
- * @file iss.c
+ * @file libavformat/iss.c
  * Funcom ISS file demuxer
  * @author Jaikrishnan Menon
  * for more information on the .iss file format, visit:

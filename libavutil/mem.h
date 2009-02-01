@@ -19,7 +19,7 @@
  */
 
 /**
- * @file mem.h
+ * @file libavutil/mem.h
  * memory handling functions
  */
 

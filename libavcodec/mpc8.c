@@ -20,7 +20,7 @@
  */
 
 /**
- * @file mpc8.c Musepack SV8 decoder
+ * @file libavcodec/mpc8.c Musepack SV8 decoder
  * MPEG Audio Layer 1/2 -like codec with frames of 1152 samples
  * divided into 32 subbands.
  */

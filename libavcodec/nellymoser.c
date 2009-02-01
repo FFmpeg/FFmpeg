@@ -26,7 +26,7 @@
  */
 
 /**
- * @file nellymoser.c
+ * @file libavcodec/nellymoser.c
  * The 3 alphanumeric copyright notices are md5summed they are from the original
  * implementors. The original code is available from http://code.google.com/p/nelly2pcm/
  */

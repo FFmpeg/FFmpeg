@@ -26,7 +26,7 @@
  */
 
 /**
- * @file ljpegenc.c
+ * @file libavcodec/ljpegenc.c
  * lossless JPEG encoder.
  */
 

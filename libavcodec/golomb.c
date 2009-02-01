@@ -20,7 +20,7 @@
  */
 
 /**
- * @file golomb.c
+ * @file libavcodec/golomb.c
  * @brief
  *     exp golomb vlc stuff
  * @author Michael Niedermayer <michaelni@gmx.at>

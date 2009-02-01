@@ -20,7 +20,7 @@
  */
 
 /**
- * @file resample.c
+ * @file libavcodec/resample.c
  * samplerate conversion for both audio and video
  */
 
