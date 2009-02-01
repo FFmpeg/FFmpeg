@@ -652,11 +652,7 @@ AVOutputFormat mp2_muxer = {
     "mp2",
     NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
     "audio/x-mpeg",
-#if CONFIG_LIBMP3LAME
     "mp2,m2a",
-#else
-    "mp2,mp3,m2a",
-#endif
     0,
     CODEC_ID_MP2,
     CODEC_ID_NONE,
