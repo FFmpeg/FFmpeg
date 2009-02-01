@@ -83,7 +83,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         }
         break;
     case 1:
-        ff_msrle_decode(avctx, &s->frame, 8, buf - 4, buf_size + 4);
+        ff_msrle_decode(avctx, (AVPicture*)&s->frame, 8, buf - 4, buf_size + 4);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown compression type %d\n", compr);

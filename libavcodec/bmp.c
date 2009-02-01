@@ -240,7 +240,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         buf = buf0 + hsize;
     }
     if(comp == BMP_RLE4 || comp == BMP_RLE8){
-        ff_msrle_decode(avctx, p, depth, buf, dsize);
+        ff_msrle_decode(avctx, (AVPicture*)p, depth, buf, dsize);
     }else{
         switch(depth){
         case 1:

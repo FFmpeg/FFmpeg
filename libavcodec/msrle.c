@@ -84,7 +84,7 @@ static int msrle_decode_frame(AVCodecContext *avctx,
         s->avctx->palctrl->palette_changed = 0;
     }
 
-    ff_msrle_decode(avctx, &s->frame, avctx->bits_per_coded_sample, buf, buf_size);
+    ff_msrle_decode(avctx, (AVPicture*)&s->frame, avctx->bits_per_coded_sample, buf, buf_size);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
