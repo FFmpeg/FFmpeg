@@ -81,13 +81,7 @@ static int get_tag(ByteIOContext *pb, uint32_t * tag)
 /* Metadata string read */
 static void get_meta(ByteIOContext *pb, char * str, int strsize, int size)
 {
-    int res;
-
-    if (size > strsize-1)
-        res = get_buffer(pb, (uint8_t*)str, strsize-1);
-    else
-        res = get_buffer(pb, (uint8_t*)str, size);
-
+    int res = get_buffer(pb, (uint8_t*)str, FFMIN(strsize-1, size));
     if (res < 0)
         return;
 
