@@ -620,9 +620,6 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     put_byte(pb, sc->interlaced);
 
     // video line map
-    mxf_write_local_tag(pb, 16, 0x320D);
-    put_be32(pb, 2);
-    put_be32(pb, 4);
     switch (st->codec->height) {
     case  576: f1 = 23; f2 = 336; break;
     case  608: f1 =  7; f2 = 320; break;
@@ -638,8 +635,12 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
         f1 *= 2;
     }
 
+    mxf_write_local_tag(pb, 16, 0x320D);
+    put_be32(pb, sc->interlaced ? 2 : 1);
+    put_be32(pb, 4);
     put_be32(pb, f1);
-    put_be32(pb, f2);
+    if (sc->interlaced)
+        put_be32(pb, f2);
 
     av_reduce(&dar.num, &dar.den,
               st->codec->width*st->codec->sample_aspect_ratio.num,
