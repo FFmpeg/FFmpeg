@@ -30,6 +30,10 @@
 #ifndef AVDEVICE_ALSA_AUDIO_H
 #define AVDEVICE_ALSA_AUDIO_H
 
+#include <alsa/asoundlib.h>
+#include "config.h"
+#include "libavformat/avformat.h"
+
 /* XXX: we make the assumption that the soundcard accepts this format */
 /* XXX: find better solution with "preinit" method, needed also in
         other formats */
