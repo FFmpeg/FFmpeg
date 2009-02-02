@@ -24,10 +24,17 @@
 
 #include <stdint.h>
 
+/** \defgroup errflags Error flags returned by av_lzo1x_decode
+  * \{ */
+//! end of the input buffer reached before decoding finished
 #define AV_LZO_INPUT_DEPLETED 1
+//! decoded data did not fit into output buffer
 #define AV_LZO_OUTPUT_FULL 2
+//! a reference to previously decoded data was wrong
 #define AV_LZO_INVALID_BACKPTR 4
+//! a non-specific error in the compressed bitstream
 #define AV_LZO_ERROR 8
+/** \} */
 
 #define AV_LZO_INPUT_PADDING 8
 #define AV_LZO_OUTPUT_PADDING 12
@@ -38,7 +45,7 @@
  * \param outlen size of output buffer, number of bytes left are returned here
  * \param in input buffer
  * \param inlen size of input buffer, number of bytes left are returned here
- * \return 0 on success, otherwise error flags, see lzo.h
+ * \return 0 on success, otherwise a combination of the error flags above
  *
  * Make sure all buffers are appropriately padded, in must provide
  * AV_LZO_INPUT_PADDING, out must provide AV_LZO_OUTPUT_PADDING additional bytes.
