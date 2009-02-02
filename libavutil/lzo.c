@@ -41,7 +41,7 @@ typedef struct LZOContext {
 static inline int get_byte(LZOContext *c) {
     if (c->in < c->in_end)
         return *c->in++;
-    c->error |= LZO_INPUT_DEPLETED;
+    c->error |= AV_LZO_INPUT_DEPLETED;
     return 1;
 }
 
@@ -88,11 +88,11 @@ static inline void copy(LZOContext *c, int cnt) {
     register uint8_t *dst = c->out;
     if (cnt > c->in_end - src) {
         cnt = FFMAX(c->in_end - src, 0);
-        c->error |= LZO_INPUT_DEPLETED;
+        c->error |= AV_LZO_INPUT_DEPLETED;
     }
     if (cnt > c->out_end - dst) {
         cnt = FFMAX(c->out_end - dst, 0);
-        c->error |= LZO_OUTPUT_FULL;
+        c->error |= AV_LZO_OUTPUT_FULL;
     }
 #if defined(INBUF_PADDED) && defined(OUTBUF_PADDED)
     COPY4(dst, src);
@@ -120,12 +120,12 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt) {
     register const uint8_t *src = &c->out[-back];
     register uint8_t *dst = c->out;
     if (src < c->out_start || src > dst) {
-        c->error |= LZO_INVALID_BACKPTR;
+        c->error |= AV_LZO_INVALID_BACKPTR;
         return;
     }
     if (cnt > c->out_end - dst) {
         cnt = FFMAX(c->out_end - dst, 0);
-        c->error |= LZO_OUTPUT_FULL;
+        c->error |= AV_LZO_OUTPUT_FULL;
     }
     memcpy_backptr(dst, back, cnt);
     c->out = dst + cnt;
@@ -187,9 +187,9 @@ void av_memcpy_backptr(uint8_t *dst, int back, int cnt) {
  * \return 0 on success, otherwise error flags, see lzo.h
  *
  * Make sure all buffers are appropriately padded, in must provide
- * LZO_INPUT_PADDING, out must provide LZO_OUTPUT_PADDING additional bytes.
+ * AV_LZO_INPUT_PADDING, out must provide AV_LZO_OUTPUT_PADDING additional bytes.
  */
-int lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
+int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
     int state= 0;
     int x;
     LZOContext c;
@@ -202,10 +202,10 @@ int lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
     if (x > 17) {
         copy(&c, x - 17);
         x = GETB(c);
-        if (x < 16) c.error |= LZO_ERROR;
+        if (x < 16) c.error |= AV_LZO_ERROR;
     }
     if (c.in > c.in_end)
-        c.error |= LZO_INPUT_DEPLETED;
+        c.error |= AV_LZO_INPUT_DEPLETED;
     while (!c.error) {
         int cnt, back;
         if (x > 15) {
@@ -223,7 +223,7 @@ int lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
                 back += (GETB(c) << 6) + (x >> 2);
                 if (back == (1 << 14)) {
                     if (cnt != 1)
-                        c.error |= LZO_ERROR;
+                        c.error |= AV_LZO_ERROR;
                     break;
                 }
             }
@@ -252,6 +252,12 @@ int lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
     return c.error;
 }
 
+#if LIBAVUTIL_VERSION_MAJOR < 50
+int lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
+    return av_lzo1x_decode(out, outlen, in, inlen);
+}
+#endif
+
 #ifdef TEST
 #include <stdio.h>
 #include <lzo/lzo1x.h>
@@ -277,7 +283,7 @@ START_TIMER
 #elif defined(LIBLZO_UNSAFE)
         if (lzo1x_decompress(comp, inlen, decomp, &outlen, NULL))
 #else
-        if (lzo1x_decode(decomp, &outlen, comp, &inlen))
+        if (av_lzo1x_decode(decomp, &outlen, comp, &inlen))
 #endif
             av_log(NULL, AV_LOG_ERROR, "decompression error\n");
 STOP_TIMER("lzod")

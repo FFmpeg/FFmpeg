@@ -158,7 +158,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     switch ((buf[0] >> 1) & 7) {
         case 0: { // lzo compression
             int outlen = c->decomp_size, inlen = buf_size - 2;
-            if (lzo1x_decode(c->decomp_buf, &outlen, &buf[2], &inlen))
+            if (av_lzo1x_decode(c->decomp_buf, &outlen, &buf[2], &inlen))
                 av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
             break;
         }
@@ -232,7 +232,7 @@ static av_cold int decode_init(AVCodecContext *avctx) {
     c->linelen = avctx->width * avctx->bits_per_coded_sample / 8;
     c->height = avctx->height;
     c->decomp_size = c->height * c->linelen;
-    c->decomp_buf = av_malloc(c->decomp_size + LZO_OUTPUT_PADDING);
+    c->decomp_buf = av_malloc(c->decomp_size + AV_LZO_OUTPUT_PADDING);
     if (!c->decomp_buf) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
         return 1;
