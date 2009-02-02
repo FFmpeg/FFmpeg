@@ -64,7 +64,7 @@ static void sdp_write_header(char *buff, int size, struct sdp_session_level *s)
                             s->sdp_version,
                             s->id, s->version, s->src_addr,
                             s->start_time, s->end_time,
-                            s->name[0] ? s->name : "No Name");
+                            s->name);
     sdp_write_address(buff, size, s->dst_addr, s->ttl);
 }
 
@@ -256,6 +256,7 @@ static void sdp_write_media(char *buff, int size, AVCodecContext *c, const char 
 
 int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
 {
+    AVMetadataTag *title = av_metadata_get(ac[0]->metadata, "title", NULL, 0);
     struct sdp_session_level s;
     int i, j, port, ttl;
     char dst[32];
@@ -264,7 +265,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     memset(&s, 0, sizeof(struct sdp_session_level));
     s.user = "-";
     s.src_addr = "127.0.0.1";    /* FIXME: Properly set this */
-    s.name = ac[0]->title;
+    s.name = title ? title->value : "No Name";
 
     port = 0;
     ttl = 0;
