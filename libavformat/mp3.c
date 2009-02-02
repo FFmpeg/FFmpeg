@@ -173,7 +173,7 @@ static void id3v2_read_ttag(AVFormatContext *s, int taglen, const char *key)
     int len, dstlen = sizeof(dst) - 1;
     unsigned genre;
 
-        dst[0]= 0;
+    dst[0]= 0;
     if(taglen < 1)
         return;
 
