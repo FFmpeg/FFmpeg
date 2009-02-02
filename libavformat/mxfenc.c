@@ -1400,7 +1400,8 @@ AVOutputFormat mxf_muxer = {
     mxf_write_header,
     mxf_write_packet,
     mxf_write_footer,
-    0,
+    AVFMT_NOTIMESTAMPS,
     NULL,
     mxf_interleave,
+
 };
