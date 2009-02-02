@@ -597,7 +597,7 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     AVRational dar;
     int f1, f2;
 
-    mxf_write_generic_desc(pb, st, mxf_mpegvideo_descriptor_key, 157);
+    mxf_write_generic_desc(pb, st, mxf_mpegvideo_descriptor_key, 153+sc->interlaced*4);
 
     mxf_write_local_tag(pb, 4, 0x3203);
     put_be32(pb, st->codec->width);
