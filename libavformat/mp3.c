@@ -167,10 +167,11 @@ static unsigned int id3v2_get_size(ByteIOContext *s, int len)
     return v;
 }
 
-static void id3v2_read_ttag(AVFormatContext *s, int taglen, char *dst, int dstlen)
+static void id3v2_read_ttag(AVFormatContext *s, int taglen, const char *key)
 {
-    char *q;
-    int len;
+    char *q, dst[512];
+    int len, dstlen = sizeof(dst);
+    unsigned genre;
 
     if(dstlen > 0)
         dst[0]= 0;
@@ -197,6 +198,13 @@ static void id3v2_read_ttag(AVFormatContext *s, int taglen, char *dst, int dstle
         dst[len] = 0;
         break;
     }
+
+    if (!strcmp(key, "genre")
+        && sscanf(dst, "(%d)", &genre) == 1 && genre <= ID3v1_GENRE_MAX)
+        av_strlcpy(dst, id3v1_genre_str[genre], sizeof(dst));
+
+    if (*dst)
+        av_metadata_set(&s->metadata, key, dst);
 }
 
 /**
@@ -211,7 +219,6 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t fl
     int isv34, tlen;
     uint32_t tag;
     int64_t next;
-    char tmp[16];
     int taghdrlen;
     const char *reason;
 
@@ -263,28 +270,27 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t fl
         switch(tag) {
         case MKBETAG('T', 'I', 'T', '2'):
         case MKBETAG(0,   'T', 'T', '2'):
-            id3v2_read_ttag(s, tlen, s->title, sizeof(s->title));
+            id3v2_read_ttag(s, tlen, "title");
             break;
         case MKBETAG('T', 'P', 'E', '1'):
         case MKBETAG(0,   'T', 'P', '1'):
-            id3v2_read_ttag(s, tlen, s->author, sizeof(s->author));
+            id3v2_read_ttag(s, tlen, "author");
             break;
         case MKBETAG('T', 'A', 'L', 'B'):
         case MKBETAG(0,   'T', 'A', 'L'):
-            id3v2_read_ttag(s, tlen, s->album, sizeof(s->album));
+            id3v2_read_ttag(s, tlen, "album");
             break;
         case MKBETAG('T', 'C', 'O', 'N'):
         case MKBETAG(0,   'T', 'C', 'O'):
-            id3v2_read_ttag(s, tlen, s->genre, sizeof(s->genre));
+            id3v2_read_ttag(s, tlen, "genre");
             break;
         case MKBETAG('T', 'C', 'O', 'P'):
         case MKBETAG(0,   'T', 'C', 'R'):
-            id3v2_read_ttag(s, tlen, s->copyright, sizeof(s->copyright));
+            id3v2_read_ttag(s, tlen, "copyright");
             break;
         case MKBETAG('T', 'R', 'C', 'K'):
         case MKBETAG(0,   'T', 'R', 'K'):
-            id3v2_read_ttag(s, tlen, tmp, sizeof(tmp));
-            s->track = atoi(tmp);
+            id3v2_read_ttag(s, tlen, "track");
             break;
         case 0:
             /* padding, skip to end */
@@ -305,22 +311,25 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t fl
     url_fskip(s->pb, len);
 }
 
-static void id3v1_get_string(char *str, int str_size,
+static void id3v1_get_string(AVFormatContext *s, const char *key,
                              const uint8_t *buf, int buf_size)
 {
     int i, c;
-    char *q;
+    char *q, str[512];
 
     q = str;
     for(i = 0; i < buf_size; i++) {
         c = buf[i];
         if (c == '\0')
             break;
-        if ((q - str) >= str_size - 1)
+        if ((q - str) >= sizeof(str) - 1)
             break;
         *q++ = c;
     }
     *q = '\0';
+
+    if (*str)
+        av_metadata_set(&s->metadata, key, str);
 }
 
 /* 'buf' must be ID3v1_TAG_SIZE byte long */
@@ -333,17 +342,18 @@ static int id3v1_parse_tag(AVFormatContext *s, const uint8_t *buf)
           buf[1] == 'A' &&
           buf[2] == 'G'))
         return -1;
-    id3v1_get_string(s->title, sizeof(s->title), buf + 3, 30);
-    id3v1_get_string(s->author, sizeof(s->author), buf + 33, 30);
-    id3v1_get_string(s->album, sizeof(s->album), buf + 63, 30);
-    id3v1_get_string(str, sizeof(str), buf + 93, 4);
-    s->year = atoi(str);
-    id3v1_get_string(s->comment, sizeof(s->comment), buf + 97, 30);
-    if (buf[125] == 0 && buf[126] != 0)
-        s->track = buf[126];
+    id3v1_get_string(s, "title",   buf +  3, 30);
+    id3v1_get_string(s, "author",  buf + 33, 30);
+    id3v1_get_string(s, "album",   buf + 63, 30);
+    id3v1_get_string(s, "year",    buf + 93,  4);
+    id3v1_get_string(s, "comment", buf + 97, 30);
+    if (buf[125] == 0 && buf[126] != 0) {
+        snprintf(str, sizeof(str), "%d", buf[126]);
+        av_metadata_set(&s->metadata, "track", str);
+    }
     genre = buf[127];
     if (genre <= ID3v1_GENRE_MAX)
-        av_strlcpy(s->genre, id3v1_genre_str[genre], sizeof(s->genre));
+        av_metadata_set(&s->metadata, "genre", id3v1_genre_str[genre]);
     return 0;
 }
 
