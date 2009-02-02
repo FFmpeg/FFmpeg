@@ -44,6 +44,7 @@
 
 #define POW_TABLE_SIZE (1<<11)
 #define POW_TABLE_OFFSET 3
+#define OPT_SIZE ((1<<15) + 3000)
 
 typedef struct NellyMoserEncodeContext {
     AVCodecContext  *avctx;
@@ -54,6 +55,8 @@ typedef struct NellyMoserEncodeContext {
     MDCTContext     mdct_ctx;
     DECLARE_ALIGNED_16(float, mdct_out[NELLY_SAMPLES]);
     DECLARE_ALIGNED_16(float, buf[2][3 * NELLY_BUF_LEN]);     ///< sample buffer
+    float           (*opt )[NELLY_BANDS];
+    uint8_t         (*path)[NELLY_BANDS];
 } NellyMoserEncodeContext;
 
 static float pow_table[POW_TABLE_SIZE];     ///< -pow(2, -i / 2048.0 - 3.0);
@@ -149,6 +152,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     for (i = 0; i < POW_TABLE_SIZE; i++)
         pow_table[i] = -pow(2, -i / 2048.0 - 3.0 + POW_TABLE_OFFSET);
 
+    if (s->avctx->trellis) {
+        s->opt  = av_malloc(NELLY_BANDS * OPT_SIZE * sizeof(float  ));
+        s->path = av_malloc(NELLY_BANDS * OPT_SIZE * sizeof(uint8_t));
+    }
+
     return 0;
 }
 
@@ -157,6 +165,12 @@ static av_cold int encode_end(AVCodecContext *avctx)
     NellyMoserEncodeContext *s = avctx->priv_data;
 
     ff_mdct_end(&s->mdct_ctx);
+
+    if (s->avctx->trellis) {
+        av_free(s->opt);
+        av_free(s->path);
+    }
+
     return 0;
 }
 
@@ -184,8 +198,6 @@ static void get_exponent_greedy(NellyMoserEncodeContext *s, float *cand, int *id
     }
 }
 
-#define OPT_SIZE ((1<<15) + 3000)
-
 static inline float distance(float x, float y, int band)
 {
     //return pow(fabs(x-y), 2.0);
@@ -198,8 +210,8 @@ static void get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *i
     int i, j, band, best_idx;
     float power_candidate, best_val;
 
-    float opt[NELLY_BANDS][OPT_SIZE];
-    int path[NELLY_BANDS][OPT_SIZE];
+    float  (*opt )[NELLY_BANDS] = s->opt ;
+    uint8_t(*path)[NELLY_BANDS] = s->path;
 
     for (i = 0; i < NELLY_BANDS * OPT_SIZE; i++) {
         opt[0][i] = INFINITY;
