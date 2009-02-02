@@ -79,9 +79,10 @@ static int get_tag(ByteIOContext *pb, uint32_t * tag)
 }
 
 /* Metadata string read */
-static void get_meta(ByteIOContext *pb, char * str, int strsize, int size)
+static void get_meta(AVFormatContext *s, const char *key, int size)
 {
-    int res = get_buffer(pb, (uint8_t*)str, FFMIN(strsize-1, size));
+    uint8_t str[1024];
+    int res = get_buffer(s->pb, str, FFMIN(sizeof(str)-1, size));
     if (res < 0)
         return;
 
@@ -90,7 +91,9 @@ static void get_meta(ByteIOContext *pb, char * str, int strsize, int size)
         size++;
     size -= res;
     if (size)
-        url_fskip(pb, size);
+        url_fskip(s->pb, size);
+
+    av_metadata_set(&s->metadata, key, str);
 }
 
 /* Returns the number of sound data frames or negative on error */
@@ -351,16 +354,16 @@ static int aiff_read_header(AVFormatContext *s,
             version = get_be32(pb);
             break;
         case MKTAG('N', 'A', 'M', 'E'):     /* Sample name chunk */
-            get_meta(pb, s->title, sizeof(s->title), size);
+            get_meta(s, "title"    , size);
             break;
         case MKTAG('A', 'U', 'T', 'H'):     /* Author chunk */
-            get_meta(pb, s->author, sizeof(s->author), size);
+            get_meta(s, "author"   , size);
             break;
         case MKTAG('(', 'c', ')', ' '):     /* Copyright chunk */
-            get_meta(pb, s->copyright, sizeof(s->copyright), size);
+            get_meta(s, "copyright", size);
             break;
         case MKTAG('A', 'N', 'N', 'O'):     /* Annotation chunk */
-            get_meta(pb, s->comment, sizeof(s->comment), size);
+            get_meta(s, "comment"  , size);
             break;
         case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
             offset = get_be32(pb);      /* Offset of sound data */
