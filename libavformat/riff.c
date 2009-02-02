@@ -199,6 +199,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_RPZA,         MKTAG('a', 'z', 'p', 'r') },
     { CODEC_ID_RPZA,         MKTAG('R', 'P', 'Z', 'A') },
     { CODEC_ID_RPZA,         MKTAG('r', 'p', 'z', 'a') },
+    { CODEC_ID_SP5X,         MKTAG('S', 'P', '5', '4') },
     { CODEC_ID_NONE,         0 }
 };
 
