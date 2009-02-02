@@ -165,30 +165,10 @@ static inline void memcpy_backptr(uint8_t *dst, int back, int cnt) {
     }
 }
 
-/**
- * \brief deliberately overlapping memcpy implementation
- * \param dst destination buffer; must be padded with 12 additional bytes
- * \param back how many bytes back we start (the initial size of the overlapping window)
- * \param cnt number of bytes to copy, must be >= 0
- *
- * cnt > back is valid, this will copy the bytes we just copied,
- * thus creating a repeating pattern with a period length of back.
- */
 void av_memcpy_backptr(uint8_t *dst, int back, int cnt) {
     memcpy_backptr(dst, back, cnt);
 }
 
-/**
- * \brief Decodes LZO 1x compressed data.
- * \param out output buffer
- * \param outlen size of output buffer, number of bytes left are returned here
- * \param in input buffer
- * \param inlen size of input buffer, number of bytes left are returned here
- * \return 0 on success, otherwise error flags, see lzo.h
- *
- * Make sure all buffers are appropriately padded, in must provide
- * AV_LZO_INPUT_PADDING, out must provide AV_LZO_OUTPUT_PADDING additional bytes.
- */
 int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
     int state= 0;
     int x;
