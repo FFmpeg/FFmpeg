@@ -187,6 +187,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
             if(!strcmp(key, "duration")) s->duration = num_val * AV_TIME_BASE;
 //            else if(!strcmp(key, "width")  && vcodec && num_val > 0) vcodec->width  = num_val;
 //            else if(!strcmp(key, "height") && vcodec && num_val > 0) vcodec->height = num_val;
+            else if(!strcmp(key, "videodatarate") && vcodec && 0 <= (int)(num_val * 1024.0))
+                vcodec->bit_rate = num_val * 1024.0;
             else if(!strcmp(key, "audiocodecid") && acodec && 0 <= (int)num_val)
                 flv_set_audio_codec(s, astream, (int)num_val << FLV_AUDIO_CODECID_OFFSET);
             else if(!strcmp(key, "videocodecid") && vcodec && 0 <= (int)num_val)
