@@ -252,7 +252,7 @@ typedef struct {
     DynamicRangeControl che_drc;
 
     /**
-     * @defgroup elements
+     * @defgroup elements Channel element related data.
      * @{
      */
     enum ChannelPosition che_pos[4][MAX_ELEM_ID]; /**< channel element channel mapping with the
