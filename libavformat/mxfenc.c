@@ -1296,25 +1296,37 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
 
     if (stream_count && (s->nb_streams == stream_count || flush)) {
         pktl = s->packet_buffer;
-        *out = pktl->pkt;
-        //av_log(s, AV_LOG_DEBUG, "out st:%d dts:%lld\n", (*out).stream_index, (*out).dts);
-        s->packet_buffer = pktl->next;
-        av_freep(&pktl);
-
-        if (flush && stream_count < s->nb_streams) {
+        if (s->nb_streams != stream_count) {
+            MXFContext *mxf = s->priv_data;
+            AVPacketList *first = NULL;
+            // find first packet in edit unit
+            while (pktl) {
+                AVStream *st = s->streams[pktl->pkt.stream_index];
+                if (st->index == mxf->edit_unit_start)
+                    break;
+                else if (!first)
+                    first = pktl;
+                pktl = pktl->next;
+            }
             // purge packet queue
-            pktl = s->packet_buffer;
             while (pktl) {
                 AVPacketList *next = pktl->next;
                 av_free_packet(&pktl->pkt);
                 av_freep(&pktl);
                 pktl = next;
             }
-            s->packet_buffer = NULL;
+            if (!first)
+                goto out;
+            pktl = first;
         }
 
+        *out = pktl->pkt;
+        //av_log(s, AV_LOG_DEBUG, "out st:%d dts:%lld\n", (*out).stream_index, (*out).dts);
+        s->packet_buffer = pktl->next;
+        av_freep(&pktl);
         return 1;
     } else {
+    out:
         av_init_packet(out);
         return 0;
     }
