@@ -32,6 +32,8 @@
 
 //#define DEBUG
 
+#include <math.h>
+
 #include "libavutil/fifo.h"
 #include "mxf.h"
 
@@ -1117,10 +1119,10 @@ static int mxf_write_header(AVFormatContext *s)
         st->priv_data = sc;
 
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
-            if (!av_cmp_q(st->codec->time_base, (AVRational){ 1, 25 })) {
+            if (fabs(av_q2d(st->codec->time_base) - 1/25.0) < 0.0001) {
                 samples_per_frame = PAL_samples_per_frame;
                 mxf->time_base = (AVRational){ 1, 25 };
-            } else if (!av_cmp_q(st->codec->time_base, (AVRational){ 1001, 30000 })) {
+            } else if (fabs(av_q2d(st->codec->time_base) - 1001/30000.0) < 0.0001) {
                 samples_per_frame = NTSC_samples_per_frame;
                 mxf->time_base = (AVRational){ 1001, 30000 };
             } else {
