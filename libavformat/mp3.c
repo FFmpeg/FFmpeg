@@ -170,16 +170,14 @@ static unsigned int id3v2_get_size(ByteIOContext *s, int len)
 static void id3v2_read_ttag(AVFormatContext *s, int taglen, const char *key)
 {
     char *q, dst[512];
-    int len, dstlen = sizeof(dst);
+    int len, dstlen = sizeof(dst) - 1;
     unsigned genre;
 
-    if(dstlen > 0)
         dst[0]= 0;
     if(taglen < 1)
         return;
 
     taglen--; /* account for encoding type byte */
-    dstlen--; /* Leave space for zero terminator */
 
     switch(get_byte(s->pb)) { /* encoding type */
 
