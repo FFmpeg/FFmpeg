@@ -555,13 +555,13 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
         count++;
     }
     if ((tag = av_metadata_get(s->metadata, "genre", NULL, 0))) {
-    for(i = 0; i <= ID3v1_GENRE_MAX; i++) {
-        if (!strcasecmp(tag->value, id3v1_genre_str[i])) {
-            buf[127] = i;
-            count++;
-            break;
+        for(i = 0; i <= ID3v1_GENRE_MAX; i++) {
+            if (!strcasecmp(tag->value, id3v1_genre_str[i])) {
+                buf[127] = i;
+                count++;
+                break;
+            }
         }
-    }
     }
     return count;
 }
