@@ -83,6 +83,7 @@ static const struct {
     int index;
 } mxf_essence_mappings[] = {
     { CODEC_ID_MPEG2VIDEO, 0 },
+    { CODEC_ID_PCM_S24LE,  1 },
     { CODEC_ID_PCM_S16LE,  1 },
     { 0 }
 };
@@ -708,7 +709,7 @@ static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st, const
     put_be32(pb, st->codec->channels);
 
     mxf_write_local_tag(pb, 4, 0x3D01);
-    put_be32(pb, st->codec->bits_per_coded_sample);
+    put_be32(pb, av_get_bits_per_sample(st->codec->codec_id));
 }
 
 static void mxf_write_wav_common_desc(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
