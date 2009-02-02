@@ -214,7 +214,7 @@ static int flv_write_header(AVFormatContext *s)
         put_amf_double(pb, video_enc->height);
 
         put_amf_string(pb, "videodatarate");
-        put_amf_double(pb, s->bit_rate / 1024.0);
+        put_amf_double(pb, video_enc->bit_rate / 1024.0);
 
         put_amf_string(pb, "framerate");
         put_amf_double(pb, framerate);
@@ -224,6 +224,9 @@ static int flv_write_header(AVFormatContext *s)
     }
 
     if(audio_enc){
+        put_amf_string(pb, "audiodatarate");
+        put_amf_double(pb, audio_enc->bit_rate / 1024.0);
+
         put_amf_string(pb, "audiosamplerate");
         put_amf_double(pb, audio_enc->sample_rate);
 

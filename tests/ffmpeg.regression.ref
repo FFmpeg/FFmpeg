@@ -134,7 +134,7 @@ stddev:   20.00 PSNR: 22.10 bytes:  7603200/  7603200
 1454536 ./tests/data/a-asv2.avi
 0b310840a6d3970595983491687669df *./tests/data/asv2.vsynth.out.yuv
 stddev:   18.82 PSNR: 22.63 bytes:  7603200/  7603200
-cbdb25fe5bb6a895baf9799b8ccb3038 *./tests/data/a-flv.flv
+9f5091670b3352fbbb4c5dc2107af3f3 *./tests/data/a-flv.flv
 649040 ./tests/data/a-flv.flv
 40281942d6ee254f7d3027b8593b19be *./tests/data/flv.vsynth.out.yuv
 stddev:    8.06 PSNR: 29.99 bytes:  7603200/  7603200
@@ -166,7 +166,7 @@ stddev:    1.72 PSNR: 43.36 bytes:  7603200/  7603200
 1359751 ./tests/data/a-svq1.mov
 5bbd40268e94bdfb430abf57caa0c291 *./tests/data/svq1.vsynth.out.yuv
 stddev:    9.53 PSNR: 28.53 bytes:  7603200/  7603200
-d6f92d41d739f95cc63ef8e6453c5011 *./tests/data/a-flashsv.flv
+96bf684ca8dd9b9e07c0333a50aa1303 *./tests/data/a-flashsv.flv
 14684984 ./tests/data/a-flashsv.flv
 012717e7c928641410eaa6abaf126fdc *./tests/data/flashsv.vsynth.out.yuv
 stddev:    2.84 PSNR: 39.05 bytes:  7603200/  7603200
@@ -197,8 +197,8 @@ ab11d9151644cbff27827b7e89f37aa9 *./tests/data/a-adpcm_yam.wav
 264248 ./tests/data/a-adpcm_yam.wav
 e92cec8c07913ffb91ad2b11f79cdc00 *./tests/data/adpcm_yam.vsynth.out.wav
 stddev:18312.78 PSNR: 11.06 bytes:  1056812/  1058444
-de1122d20d56c44cf49f028e25a67788 *./tests/data/a-adpcm_swf.flv
-267073 ./tests/data/a-adpcm_swf.flv
+7187eb46a4987b7ca9beafecffbda55d *./tests/data/a-adpcm_swf.flv
+267097 ./tests/data/a-adpcm_swf.flv
 e48b800e2d9be6afcd430d4f08a34eb6 *./tests/data/adpcm_swf.vsynth.out.wav
 stddev:  934.28 PSNR: 36.91 bytes:  1056812/  1058444
 7781a016edfc242a39e4d65af02d861a *./tests/data/a-flac.flac
