@@ -661,7 +661,7 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
         f1 *= 2;
     }
 
-    mxf_write_local_tag(pb, 16, 0x320D);
+    mxf_write_local_tag(pb, 12+sc->interlaced*4, 0x320D);
     put_be32(pb, sc->interlaced ? 2 : 1);
     put_be32(pb, 4);
     put_be32(pb, f1);
