@@ -229,7 +229,7 @@ static int avi_read_tag(AVFormatContext *s, const char *key, unsigned int size)
     get_strz(pb, value, sizeof(value));
     url_fseek(pb, i+size, SEEK_SET);
 
-    return av_metadata_set(&s->metadata, (const AVMetadataTag){key, value});
+    return av_metadata_set(&s->metadata, key, value);
 }
 
 static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)

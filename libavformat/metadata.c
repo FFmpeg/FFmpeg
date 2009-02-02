@@ -44,10 +44,10 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
     return NULL;
 }
 
-int av_metadata_set(AVMetadata **pm, AVMetadataTag elem)
+int av_metadata_set(AVMetadata **pm, const char *key, const char *value)
 {
     AVMetadata *m= *pm;
-    AVMetadataTag *tag= av_metadata_get(m, elem.key, NULL, AV_METADATA_MATCH_CASE);
+    AVMetadataTag *tag= av_metadata_get(m, key, NULL, AV_METADATA_MATCH_CASE);
 
     if(!m)
         m=*pm= av_mallocz(sizeof(*m));
@@ -63,10 +63,10 @@ int av_metadata_set(AVMetadata **pm, AVMetadataTag elem)
         }else
             return AVERROR(ENOMEM);
     }
-    if(elem.value){
-        elem.key  = av_strdup(elem.key  );
-        elem.value= av_strdup(elem.value);
-        m->elems[m->count++]= elem;
+    if(value){
+        m->elems[m->count].key  = av_strdup(key  );
+        m->elems[m->count].value= av_strdup(value);
+        m->count++;
     }
     if(!m->count)
         av_freep(pm);

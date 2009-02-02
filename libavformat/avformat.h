@@ -89,10 +89,11 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
 
 /**
  * sets the given tag in m, overwriting an existing tag.
- * @param tag tag to add to m, key and value will be av_strduped.
+ * @param key tag key to add to m (will be av_strduped).
+ * @param value tag value to add to m (will be av_strduped).
  * @return >= 0 if success otherwise error code that is <0.
  */
-int av_metadata_set(AVMetadata **m, AVMetadataTag tag);
+int av_metadata_set(AVMetadata **pm, const char *key, const char *value);
 
 /**
  * Free all the memory allocated for an AVMetadata struct.
