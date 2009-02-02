@@ -894,9 +894,13 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
             for (j = i+1; j < mxf->edit_units_count; j++) {
                 temporal_offset++;
                 if (mxf->index_entries[j].flags & 0x10) { // backward prediction
-                     // next is not b, so is reordered
-                    if (!(mxf->index_entries[i+1].flags & 0x10))
-                        temporal_offset = -temporal_offset;
+                    // next is not b, so is reordered
+                    if (!(mxf->index_entries[i+1].flags & 0x10)) {
+                        if ((mxf->index_entries[i].flags & 0x11) == 0) // i frame
+                            temporal_offset = 0;
+                        else
+                            temporal_offset = -temporal_offset;
+                    }
                     break;
                 }
             }
