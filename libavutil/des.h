@@ -32,7 +32,7 @@ struct AVDES {
 /**
  * \brief Initializes an AVDES context.
  *
- * \param key_bits must be 64
+ * \param key_bits must be 64 or 192
  * \param decrypt 0 for encryption, 1 for decryption
  */
 int av_des_init(struct AVDES *d, const uint8_t *key, int key_bits, int decrypt);

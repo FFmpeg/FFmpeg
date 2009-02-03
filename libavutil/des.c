@@ -293,10 +293,14 @@ uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt) {
 #endif
 
 int av_des_init(AVDES *d, const uint8_t *key, int key_bits, int decrypt) {
-    if (key_bits != 64)
+    if (key_bits != 64 && key_bits != 192)
         return -1;
-    d->triple_des = 0;
+    d->triple_des = key_bits > 64;
     gen_roundkeys(d->round_keys[0], AV_RB64(key));
+    if (d->triple_des) {
+        gen_roundkeys(d->round_keys[1], AV_RB64(key +  8));
+        gen_roundkeys(d->round_keys[2], AV_RB64(key + 16));
+    }
     return 0;
 }
 
@@ -306,10 +310,18 @@ void av_des_crypt(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t
         uint64_t dst_val;
         uint64_t src_val = src ? be2me_64(*(const uint64_t *)src) : 0;
         if (decrypt) {
+            if (d->triple_des) {
+                src_val = des_encdec(src_val, d->round_keys[2], 1);
+                src_val = des_encdec(src_val, d->round_keys[1], 0);
+            }
             dst_val = des_encdec(src_val, d->round_keys[0], 1) ^ iv_val;
             iv_val = iv ? src_val : 0;
         } else {
             dst_val = des_encdec(src_val ^ iv_val, d->round_keys[0], 0);
+            if (d->triple_des) {
+                dst_val = des_encdec(dst_val, d->round_keys[1], 1);
+                dst_val = des_encdec(dst_val, d->round_keys[2], 0);
+            }
             iv_val = iv ? dst_val : 0;
         }
         *(uint64_t *)dst = be2me_64(dst_val);
