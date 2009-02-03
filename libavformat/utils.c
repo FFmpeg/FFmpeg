@@ -2614,6 +2614,9 @@ int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
     int64_t left = st2->time_base.num * (int64_t)st ->time_base.den;
     int64_t right= st ->time_base.num * (int64_t)st2->time_base.den;
 
+    if (pkt->dts == AV_NOPTS_VALUE)
+        return 0;
+
     return next->dts * left > pkt->dts * right; //FIXME this can overflow
 }
 
@@ -2676,7 +2679,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
     if(compute_pkt_fields2(st, pkt) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return -1;
 
-    if(pkt->dts == AV_NOPTS_VALUE)
+    if(pkt->dts == AV_NOPTS_VALUE && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return -1;
 
     for(;;){
