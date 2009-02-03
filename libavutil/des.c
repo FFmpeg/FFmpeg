@@ -345,28 +345,45 @@ static uint64_t rand64(void) {
     return r;
 }
 
+static const uint8_t test_key[] = {0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0};
+static const DECLARE_ALIGNED(8, uint8_t, plain[]) = {0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10};
+static const DECLARE_ALIGNED(8, uint8_t, crypt[]) = {0x4a, 0xb6, 0x5b, 0x3d, 0x4b, 0x06, 0x15, 0x18};
+static DECLARE_ALIGNED(8, uint8_t, tmp[8]);
+
 int main(void) {
+    AVDES d;
     int i;
 #ifdef GENTABLES
     int j;
 #endif
     struct timeval tv;
-    uint64_t key;
+    uint64_t key[3];
     uint64_t data;
     uint64_t ct;
     gettimeofday(&tv, NULL);
     srand(tv.tv_sec * 1000 * 1000 + tv.tv_usec);
-    key = 0x123456789abcdef0ULL;
-    data = 0xfedcba9876543210ULL;
-    if (ff_des_encdec(data, key, 0) != 0x4ab65b3d4b061518ULL) {
+#if LIBAVUTIL_VERSION_MAJOR < 50
+    key[0] = AV_RB64(test_key);
+    data = AV_RB64(plain);
+    if (ff_des_encdec(data, key[0], 0) != AV_RB64(crypt)) {
         printf("Test 1 failed\n");
         return 1;
     }
+#endif
+    av_des_init(&d, test_key, 64, 0);
+    av_des_crypt(&d, tmp, plain, 1, NULL, 0);
+    if (memcmp(tmp, crypt, sizeof(crypt))) {
+        printf("Public API decryption failed\n");
+        return 1;
+    }
     for (i = 0; i < 1000000; i++) {
-        key = rand64();
+        key[0] = rand64(); key[1] = rand64(); key[2] = rand64();
         data = rand64();
-        ct = ff_des_encdec(data, key, 0);
-        if (ff_des_encdec(ct, key, 1) != data) {
+        av_des_init(&d, key, 192, 0);
+        av_des_crypt(&d, &ct, &data, 1, NULL, 0);
+        av_des_init(&d, key, 192, 1);
+        av_des_crypt(&d, &ct, &ct, 1, NULL, 1);
+        if (ct != data) {
             printf("Test 2 failed\n");
             return 1;
         }
