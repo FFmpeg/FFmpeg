@@ -1443,10 +1443,12 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
             get_be32(pb); // type
             get_be32(pb); // unknown
             str_size = data_size - 16;
+            atom.size -= 16;
         } else return 0;
     } else {
         str_size = get_be16(pb); // string length
         get_be16(pb); // language
+        atom.size -= 4;
     }
     switch (atom.type) {
     case MKTAG(0xa9,'n','a','m'):
@@ -1464,8 +1466,11 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     }
     if (!str)
         return 0;
-    get_buffer(pb, str, FFMIN(size, str_size));
-    dprintf(c->fc, "%.4s %s\n", (char*)&atom.type, str);
+    if (atom.size < 0)
+        return -1;
+
+    get_buffer(pb, str, FFMIN3(size, str_size, atom.size));
+    dprintf(c->fc, "%.4s %s %d %lld\n", (char*)&atom.type, str, str_size, atom.size);
     return 0;
 }
 
