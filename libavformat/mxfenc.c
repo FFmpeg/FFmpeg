@@ -929,7 +929,8 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
     return ret;
 }
 
-static void mxf_write_partition(AVFormatContext *s, int bodysid, int indexsid,
+static void mxf_write_partition(AVFormatContext *s, int bodysid,
+                                int indexsid, unsigned index_byte_count,
                                 const uint8_t *key, int write_metadata)
 {
     MXFContext *mxf = s->priv_data;
@@ -956,8 +957,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid, int indexsid,
     put_be64(pb, 0); // headerByteCount, update later
 
     // indexTable
-    put_be64(pb, indexsid ? 19 + 109 + s->nb_streams*6 +
-             mxf->edit_units_count*(11+(s->nb_streams-1)*4) : 0); // indexByteCount
+    put_be64(pb, index_byte_count); // indexByteCount
     put_be32(pb, indexsid); // indexSID
     put_be64(pb, 0); // bodyOffset
 
@@ -1199,7 +1199,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (!mxf->header_written) {
-        mxf_write_partition(s, 1, 0, header_open_partition_key, 1);
+        mxf_write_partition(s, 1, 0, 0, header_open_partition_key, 1);
         mxf->header_written = 1;
     }
 
@@ -1244,9 +1244,16 @@ static int mxf_write_footer(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
+    unsigned index_byte_count =
+        109 + s->nb_streams*6 +
+        mxf->edit_units_count*(11+(s->nb_streams-1)*4);
+
+    // add encoded ber length
+    index_byte_count += 16 +
+        (index_byte_count < 128 ? 1 : (av_log2(index_byte_count) >> 3) + 2);
 
     mxf->footer_partition_offset = url_ftell(pb);
-    mxf_write_partition(s, 0, 2, footer_partition_key, 0);
+    mxf_write_partition(s, 0, 2, index_byte_count, footer_partition_key, 0);
 
     mxf_write_index_table_segment(s);
 
@@ -1254,7 +1261,7 @@ static int mxf_write_footer(AVFormatContext *s)
 
     if (!url_is_streamed(s->pb)) {
         url_fseek(pb, 0, SEEK_SET);
-        mxf_write_partition(s, 1, 0, header_closed_partition_key, 1);
+        mxf_write_partition(s, 1, 0, 0, header_closed_partition_key, 1);
     }
 
     ff_audio_interleave_close(s);
