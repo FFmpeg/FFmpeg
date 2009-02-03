@@ -141,6 +141,23 @@ static int get_value(ByteIOContext *pb, int type){
     }
 }
 
+static void get_tag(AVFormatContext *s, const char *key, int type, int len)
+{
+    char value[1024];
+    if (type <= 1) {         // unicode or byte
+        get_str16_nolen(s->pb, len, value, sizeof(value));
+    } else if (type <= 5) {  // boolean or DWORD or QWORD or WORD
+        uint64_t num = get_value(s->pb, type);
+        snprintf(value, sizeof(value), "%"PRIu64, num);
+    } else {
+        url_fskip(s->pb, len);
+        return;
+    }
+    if (strncmp(key, "WM/", 3))
+        key += 3;
+    av_metadata_set(&s->metadata, key, value);
+}
+
 static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     ASFContext *asf = s->priv_data;
@@ -357,10 +374,10 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             len3 = get_le16(pb);
             len4 = get_le16(pb);
             len5 = get_le16(pb);
-            get_str16_nolen(pb, len1, s->title    , sizeof(s->title));
-            get_str16_nolen(pb, len2, s->author   , sizeof(s->author));
-            get_str16_nolen(pb, len3, s->copyright, sizeof(s->copyright));
-            get_str16_nolen(pb, len4, s->comment  , sizeof(s->comment));
+            get_tag(s, "title"    , 0, len1);
+            get_tag(s, "author"   , 0, len2);
+            get_tag(s, "copyright", 0, len3);
+            get_tag(s, "comment"  , 0, len4);
             url_fskip(pb, len5);
         } else if (!memcmp(&g, &stream_bitrate_guid, sizeof(GUID))) {
             int stream_count = get_le16(pb);
@@ -384,41 +401,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 for(i=0;i<desc_count;i++)
                 {
                         int name_len,value_type,value_len;
-                        uint64_t value_num = 0;
                         char name[1024];
 
                         name_len = get_le16(pb);
                         get_str16_nolen(pb, name_len, name, sizeof(name));
                         value_type = get_le16(pb);
                         value_len = get_le16(pb);
-                        if (value_type <= 1) // unicode or byte
-                        {
-                                if     (!strcmp(name,"WM/AlbumTitle")) get_str16_nolen(pb, value_len, s->album, sizeof(s->album));
-                                else if(!strcmp(name,"WM/Genre"     )) get_str16_nolen(pb, value_len, s->genre, sizeof(s->genre));
-                                else if(!strcmp(name,"WM/Year"      )) {
-                                    char year[8];
-                                    get_str16_nolen(pb, value_len, year, sizeof(year));
-                                    s->year = atoi(year);
-                                }
-                                else if(!strcmp(name,"WM/Track") && s->track == 0) {
-                                    char track[8];
-                                    get_str16_nolen(pb, value_len, track, sizeof(track));
-                                    s->track = strtol(track, NULL, 10) + 1;
-                                }
-                                else if(!strcmp(name,"WM/TrackNumber")) {
-                                    char track[8];
-                                    get_str16_nolen(pb, value_len, track, sizeof(track));
-                                    s->track = strtol(track, NULL, 10);
-                                }
-                                else url_fskip(pb, value_len);
-                        }
-                        else if (value_type <= 5) // boolean or DWORD or QWORD or WORD
-                        {
-                                value_num= get_value(pb, value_type);
-                                if (!strcmp(name,"WM/Track"      ) && s->track == 0) s->track = value_num + 1;
-                                if (!strcmp(name,"WM/TrackNumber")) s->track = value_num;
-                        }else
-                            url_fskip(pb, value_len);
+                        get_tag(s, name, value_type, value_len);
                 }
         } else if (!memcmp(&g, &metadata_header, sizeof(GUID))) {
             int n, stream_num, name_len, value_len, value_type, value_num;
