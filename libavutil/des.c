@@ -19,8 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include <inttypes.h>
+#include "avutil.h"
 #include "common.h"
+#include "intreadwrite.h"
 #include "des.h"
+
+typedef struct AVDES AVDES;
 
 #define T(a, b, c, d, e, f, g, h) 64-a,64-b,64-c,64-d,64-e,64-f,64-g,64-h
 static const uint8_t IP_shuffle[] = {
@@ -249,9 +253,8 @@ static uint64_t key_shift_left(uint64_t CDn) {
     return CDn;
 }
 
-uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt) {
+static void gen_roundkeys(uint64_t K[16], uint64_t key) {
     int i;
-    uint64_t K[16];
     // discard parity bits from key and shuffle it into C and D parts
     uint64_t CDn = shuffle(key, PC1_shuffle, sizeof(PC1_shuffle));
     // generate round keys
@@ -261,6 +264,10 @@ uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt) {
             CDn = key_shift_left(CDn);
         K[i] = shuffle(CDn, PC2_shuffle, sizeof(PC2_shuffle));
     }
+}
+
+static uint64_t des_encdec(uint64_t in, uint64_t K[16], int decrypt) {
+    int i;
     // used to apply round keys in reverse order for decryption
     decrypt = decrypt ? 15 : 0;
     // shuffle irrelevant to security but to ease hardware implementations
@@ -275,6 +282,42 @@ uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt) {
     // reverse shuffle used to ease hardware implementations
     in = shuffle_inv(in, IP_shuffle, sizeof(IP_shuffle));
     return in;
+}
+
+#if LIBAVUTIL_VERSION_MAJOR < 50
+uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt) {
+    uint64_t K[16];
+    gen_roundkeys(K, key);
+    return des_encdec(in, K, decrypt);
+}
+#endif
+
+int av_des_init(AVDES *d, const uint8_t *key, int key_bits, int decrypt) {
+    if (key_bits != 64)
+        return -1;
+    d->triple_des = 0;
+    gen_roundkeys(d->round_keys[0], AV_RB64(key));
+    return 0;
+}
+
+void av_des_crypt(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t *iv, int decrypt) {
+    uint64_t iv_val = iv ? be2me_64(*(uint64_t *)iv) : 0;
+    while (count-- > 0) {
+        uint64_t dst_val;
+        uint64_t src_val = src ? be2me_64(*(const uint64_t *)src) : 0;
+        if (decrypt) {
+            dst_val = des_encdec(src_val, d->round_keys[0], 1) ^ iv_val;
+            iv_val = iv ? src_val : 0;
+        } else {
+            dst_val = des_encdec(src_val ^ iv_val, d->round_keys[0], 0);
+            iv_val = iv ? dst_val : 0;
+        }
+        *(uint64_t *)dst = be2me_64(dst_val);
+        src += 8;
+        dst += 8;
+    }
+    if (iv)
+        *(uint64_t *)iv = be2me_64(iv_val);
 }
 
 #ifdef TEST

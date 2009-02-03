@@ -23,18 +23,30 @@
 #define AVUTIL_DES_H
 
 #include <stdint.h>
-#include "common.h"
+
+struct AVDES {
+    uint64_t round_keys[3][16];
+    int triple_des;
+};
 
 /**
- * \brief Encrypt/decrypt a 64-bit block of data with DES.
- * \param in data to process
- * \param key key to use for encryption/decryption
- * \param decrypt if 0 encrypt, else decrypt
- * \return processed data
+ * \brief Initializes an AVDES context.
  *
- * If your input data is in 8-bit blocks, treat it as big-endian
- * (use e.g. AV_RB64 and AV_WB64).
+ * \param key_bits must be 64
+ * \param decrypt 0 for encryption, 1 for decryption
  */
-uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt) av_const;
+int av_des_init(struct AVDES *d, const uint8_t *key, int key_bits, int decrypt);
+
+/**
+ * \brief Encrypts / decrypts using the DES algorithm.
+ *
+ * \param count number of 8 byte blocks
+ * \param dst destination array, can be equal to src, must be 8-byte aligned
+ * \param src source array, can be equal to dst, must be 8-byte aligned, may be NULL
+ * \param iv initialization vector for CBC mode, if NULL then ECB will be used,
+ *           must be 8-byte aligned
+ * \param decrypt 0 for encryption, 1 for decryption
+ */
+void av_des_crypt(struct AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t *iv, int decrypt);
 
 #endif /* AVUTIL_DES_H */
