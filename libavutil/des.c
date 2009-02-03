@@ -310,12 +310,13 @@ void av_des_crypt(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t
         uint64_t dst_val;
         uint64_t src_val = src ? be2me_64(*(const uint64_t *)src) : 0;
         if (decrypt) {
+            uint64_t tmp = src_val;
             if (d->triple_des) {
                 src_val = des_encdec(src_val, d->round_keys[2], 1);
                 src_val = des_encdec(src_val, d->round_keys[1], 0);
             }
             dst_val = des_encdec(src_val, d->round_keys[0], 1) ^ iv_val;
-            iv_val = iv ? src_val : 0;
+            iv_val = iv ? tmp : 0;
         } else {
             dst_val = des_encdec(src_val ^ iv_val, d->round_keys[0], 0);
             if (d->triple_des) {
@@ -349,6 +350,35 @@ static const uint8_t test_key[] = {0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf
 static const DECLARE_ALIGNED(8, uint8_t, plain[]) = {0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10};
 static const DECLARE_ALIGNED(8, uint8_t, crypt[]) = {0x4a, 0xb6, 0x5b, 0x3d, 0x4b, 0x06, 0x15, 0x18};
 static DECLARE_ALIGNED(8, uint8_t, tmp[8]);
+static DECLARE_ALIGNED(8, uint8_t, large_buffer[10002][8]);
+static const uint8_t cbc_key[] = {
+    0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
+    0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01,
+    0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23
+};
+
+int run_test(int cbc, int decrypt) {
+    AVDES d;
+    int delay = cbc && !decrypt ? 2 : 1;
+    uint64_t res;
+    AV_WB64(large_buffer[0], 0x4e6f772069732074ULL);
+    AV_WB64(large_buffer[1], 0x1234567890abcdefULL);
+    AV_WB64(tmp,             0x1234567890abcdefULL);
+    av_des_init(&d, cbc_key, 192, decrypt);
+    av_des_crypt(&d, large_buffer[delay], large_buffer[0], 10000, cbc ? tmp : NULL, decrypt);
+    res = AV_RB64(large_buffer[9999 + delay]);
+    if (cbc) {
+        if (decrypt)
+            return res == 0xc5cecf63ecec514cULL;
+        else
+            return res == 0xcb191f85d1ed8439ULL;
+    } else {
+        if (decrypt)
+            return res == 0x8325397644091a0aULL;
+        else
+            return res == 0xdd17e8b8b437d232ULL;
+    }
+}
 
 int main(void) {
     AVDES d;
@@ -374,6 +404,11 @@ int main(void) {
     av_des_crypt(&d, tmp, plain, 1, NULL, 0);
     if (memcmp(tmp, crypt, sizeof(crypt))) {
         printf("Public API decryption failed\n");
+        return 1;
+    }
+    run_test(0, 0); run_test(0, 1); run_test(1, 0); run_test(1, 1);
+    if (!run_test(0, 0) || !run_test(0, 1) || !run_test(1, 0) || !run_test(1, 1)) {
+        printf("Partial Monte-Carlo test failed\n");
         return 1;
     }
     for (i = 0; i < 1000000; i++) {
