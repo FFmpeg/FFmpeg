@@ -406,7 +406,6 @@ int main(void) {
         printf("Public API decryption failed\n");
         return 1;
     }
-    run_test(0, 0); run_test(0, 1); run_test(1, 0); run_test(1, 1);
     if (!run_test(0, 0) || !run_test(0, 1) || !run_test(1, 0) || !run_test(1, 1)) {
         printf("Partial Monte-Carlo test failed\n");
         return 1;
