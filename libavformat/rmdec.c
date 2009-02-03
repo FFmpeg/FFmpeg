@@ -842,5 +842,8 @@ AVInputFormat rdt_demuxer = {
     "rdt",
     NULL_IF_CONFIG_SMALL("RDT demuxer"),
     sizeof(RMDemuxContext),
-    NULL, NULL, NULL, rm_read_close, NULL, NULL
+    NULL,
+    NULL,
+    NULL,
+    rm_read_close,
 };
