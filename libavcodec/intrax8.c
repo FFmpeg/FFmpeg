@@ -42,7 +42,7 @@ static VLC j_ac_vlc[2][2][8];  //[quant<13],[intra/inter],[select]
 static VLC j_dc_vlc[2][8];     //[quant], [select]
 static VLC j_orient_vlc[2][4]; //[quant], [select]
 
-static void x8_vlc_init(void){
+static av_cold void x8_vlc_init(void){
     int i;
 
 #define  init_ac_vlc(dst,src) \
@@ -664,7 +664,7 @@ static void x8_init_block_index(MpegEncContext *s){ //FIXME maybe merge with ff_
  * @param w pointer to IntraX8Context
  * @param s pointer to MpegEncContext of the parent codec
  */
-void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s){
+av_cold void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s){
 
     w->s=s;
     x8_vlc_init();
@@ -680,7 +680,7 @@ void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s){
  * Destroy IntraX8 frame structure.
  * @param w pointer to IntraX8Context
  */
-void ff_intrax8_common_end(IntraX8Context * w)
+av_cold void ff_intrax8_common_end(IntraX8Context * w)
 {
     av_freep(&w->prediction_table);
 }

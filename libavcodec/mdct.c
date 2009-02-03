@@ -27,7 +27,7 @@
 
 // Generate a Kaiser-Bessel Derived Window.
 #define BESSEL_I0_ITER 50 // default: 50 iterations of Bessel I0 approximation
-void ff_kbd_window_init(float *window, float alpha, int n)
+av_cold void ff_kbd_window_init(float *window, float alpha, int n)
 {
    int i, j;
    double sum = 0.0, bessel, tmp;
@@ -59,7 +59,7 @@ float *ff_sine_windows[6] = {
 };
 
 // Generate a sine window.
-void ff_sine_window_init(float *window, int n) {
+av_cold void ff_sine_window_init(float *window, int n) {
     int i;
     for(i = 0; i < n; i++)
         window[i] = sinf((i + 0.5) * (M_PI / (2.0 * n)));
@@ -68,7 +68,7 @@ void ff_sine_window_init(float *window, int n) {
 /**
  * init MDCT or IMDCT computation.
  */
-int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
+av_cold int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
 {
     int n, n4, i;
     double alpha;
@@ -223,7 +223,7 @@ void ff_mdct_calc(MDCTContext *s, FFTSample *out, const FFTSample *input)
     }
 }
 
-void ff_mdct_end(MDCTContext *s)
+av_cold void ff_mdct_end(MDCTContext *s)
 {
     av_freep(&s->tcos);
     av_freep(&s->tsin);
