@@ -176,6 +176,9 @@ typedef struct SPS{
     int time_offset_length;
     int cpb_removal_delay_length;      ///< cpb_removal_delay_length_minus1 + 1
     int dpb_output_delay_length;       ///< dpb_output_delay_length_minus1 + 1
+    int bit_depth_luma;                ///< bit_depth_luma_minus8 + 8
+    int bit_depth_chroma;              ///< bit_depth_chroma_minus8 + 8
+    int residual_color_transform_flag; ///< residual_colour_transform_flag
 }SPS;
 
 /**
@@ -493,6 +496,9 @@ typedef struct H264Context{
     SEI_PicStructType sei_pic_struct;
 
     int is_complex;
+
+    int luma_weight_flag[2];   ///< 7.4.3.2 luma_weight_lX_flag
+    int chroma_weight_flag[2]; ///< 7.4.3.2 chroma_weight_lX_flag
 }H264Context;
 
 #endif /* AVCODEC_H264_H */
