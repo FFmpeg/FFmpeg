@@ -55,7 +55,6 @@
 #define H263_MBTYPE_B_VLC_BITS 6
 #define CBPC_B_VLC_BITS 3
 
-#if CONFIG_ENCODERS
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
                               int n);
 static void h263p_encode_umotion(MpegEncContext * s, int val);
@@ -64,7 +63,6 @@ static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block,
                                PutBitContext *dc_pb, PutBitContext *ac_pb);
 static int mpeg4_get_block_length(MpegEncContext * s, DCTELEM * block, int n, int intra_dc,
                                   uint8_t *scan_table);
-#endif
 
 static int h263_decode_motion(MpegEncContext * s, int pred, int fcode);
 static int h263p_decode_umotion(MpegEncContext * s, int pred);
@@ -73,11 +71,11 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
 static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded, int intra, int rvlc);
-#if CONFIG_ENCODERS
+
 static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr);
 static void mpeg4_encode_visual_object_header(MpegEncContext * s);
 static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_number);
-#endif //CONFIG_ENCODERS
+
 static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb);
 static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *dir_ptr, int encoding);
 
