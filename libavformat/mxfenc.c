@@ -49,6 +49,7 @@ typedef struct {
     int sample_size;              ///< size of one sample all channels included
     const int *samples_per_frame; ///< must be 0 terminated
     const int *samples;           ///< current samples per frame, pointer to samples_per_frame
+    AVRational time_base;         ///< time base of output audio packets
 } AudioInterleaveContext;
 
 typedef struct {
@@ -463,6 +464,7 @@ static void mxf_write_content_storage(AVFormatContext *s)
 
 static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
 {
+    MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     MXFStreamContext *sc = st->priv_data;
 
@@ -487,8 +489,8 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
         put_buffer(pb, sc->track_essence_element_key + 12, 4);
 
     mxf_write_local_tag(pb, 8, 0x4B01);
-    put_be32(pb, st->time_base.den);
-    put_be32(pb, st->time_base.num);
+    put_be32(pb, mxf->time_base.den);
+    put_be32(pb, mxf->time_base.num);
 
     // write origin
     mxf_write_local_tag(pb, 8, 0x4B02);
@@ -1059,7 +1061,9 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
     return !!sc->codec_ul;
 }
 
-static int ff_audio_interleave_init(AVFormatContext *s, const int *samples_per_frame)
+static int ff_audio_interleave_init(AVFormatContext *s,
+                                    const int *samples_per_frame,
+                                    AVRational time_base)
 {
     int i;
 
@@ -1079,6 +1083,7 @@ static int ff_audio_interleave_init(AVFormatContext *s, const int *samples_per_f
             }
             aic->samples_per_frame = samples_per_frame;
             aic->samples = aic->samples_per_frame;
+            aic->time_base = time_base;
 
             av_fifo_init(&aic->fifo, 100 * *aic->samples);
         }
@@ -1130,11 +1135,13 @@ static int mxf_write_header(AVFormatContext *s)
                 return -1;
             }
             mxf->edit_unit_start = st->index;
+            av_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
         } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             if (st->codec->sample_rate != 48000) {
                 av_log(s, AV_LOG_ERROR, "only 48khz is implemented\n");
                 return -1;
             }
+            av_set_pts_info(st, 64, 1, st->codec->sample_rate);
         }
         sc->duration = -1;
 
@@ -1159,7 +1166,6 @@ static int mxf_write_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         MXFStreamContext *sc = s->streams[i]->priv_data;
-        av_set_pts_info(s->streams[i], 64, mxf->time_base.num, mxf->time_base.den);
         // update element count
         sc->track_essence_element_key[13] = present[sc->index];
         sc->order = AV_RB32(sc->track_essence_element_key+12);
@@ -1168,7 +1174,7 @@ static int mxf_write_header(AVFormatContext *s)
     if (!samples_per_frame)
         samples_per_frame = PAL_samples_per_frame;
 
-    if (ff_audio_interleave_init(s, samples_per_frame) < 0)
+    if (ff_audio_interleave_init(s, samples_per_frame, mxf->time_base) < 0)
         return -1;
 
     return 0;
@@ -1284,9 +1290,7 @@ static int mxf_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
     av_fifo_read(&aic->fifo, pkt->data, size);
 
     pkt->dts = pkt->pts = aic->dts;
-    pkt->duration = av_rescale_q(*aic->samples,
-                                 (AVRational){ 1, st->codec->sample_rate },
-                                 st->time_base);
+    pkt->duration = av_rescale_q(*aic->samples, st->time_base, aic->time_base);
     pkt->stream_index = stream_index;
     aic->dts += pkt->duration;
 
@@ -1353,16 +1357,11 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
 
 static int mxf_compare_timestamps(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
 {
-    AVStream *st  = s->streams[pkt ->stream_index];
-    AVStream *st2 = s->streams[next->stream_index];
-    MXFStreamContext *sc  = st ->priv_data;
-    MXFStreamContext *sc2 = st2->priv_data;
+    MXFStreamContext *sc  = s->streams[pkt ->stream_index]->priv_data;
+    MXFStreamContext *sc2 = s->streams[next->stream_index]->priv_data;
 
-    int64_t left  = st2->time_base.num * (int64_t)st ->time_base.den;
-    int64_t right = st ->time_base.num * (int64_t)st2->time_base.den;
-
-    return next->dts * left > pkt->dts * right || // FIXME this can overflow
-        (next->dts * left == pkt->dts * right && sc->order < sc2->order);
+    return next->dts > pkt->dts ||
+        (next->dts == pkt->dts && sc->order < sc2->order);
 }
 
 static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
