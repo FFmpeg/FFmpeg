@@ -37,6 +37,12 @@ enum RTSPLowerTransport {
     RTSP_LOWER_TRANSPORT_LAST
 };
 
+enum RTSPTransport {
+    RTSP_TRANSPORT_RTP,
+    RTSP_TRANSPORT_RDT,
+    RTSP_TRANSPORT_LAST
+};
+
 #define RTSP_DEFAULT_PORT   554
 #define RTSP_MAX_TRANSPORTS 8
 #define RTSP_TCP_MAX_PACKET_SIZE 1472
@@ -52,7 +58,7 @@ typedef struct RTSPTransportField {
     int server_port_min, server_port_max; /**< RTP ports */
     int ttl; /**< ttl value */
     uint32_t destination; /**< destination IP address */
-    int transport;
+    enum RTSPTransport transport;
     enum RTSPLowerTransport lower_transport;
 } RTSPTransportField;
 
@@ -80,12 +86,6 @@ enum RTSPServerType {
     RTSP_SERVER_REAL, /**< Realmedia-style server */
     RTSP_SERVER_WMS,  /**< Windows Media server */
     RTSP_SERVER_LAST
-};
-
-enum RTSPTransport {
-    RTSP_TRANSPORT_RTP,
-    RTSP_TRANSPORT_RDT,
-    RTSP_TRANSPORT_LAST
 };
 
 typedef struct RTSPState {
