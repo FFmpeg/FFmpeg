@@ -23,8 +23,8 @@
  * internal api header.
  */
 
-#ifndef POSTPROCESS_POSTPROCESS_INTERNAL_H
-#define POSTPROCESS_POSTPROCESS_INTERNAL_H
+#ifndef POSTPROC_POSTPROCESS_INTERNAL_H
+#define POSTPROC_POSTPROCESS_INTERNAL_H
 
 #include <string.h>
 #include "libavutil/avutil.h"
@@ -175,4 +175,4 @@ static inline void linecpy(void *dest, const void *src, int lines, int stride) {
     }
 }
 
-#endif /* POSTPROCESS_POSTPROCESS_INTERNAL_H */
+#endif /* POSTPROC_POSTPROCESS_INTERNAL_H */
