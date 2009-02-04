@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "metadata.h"
 #include "riff.h"
 #include "asf.h"
 
@@ -274,6 +275,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     AVMetadataTag *title, *author, *copyright, *comment;
     int header_size, n, extra_size, extra_size2, wav_extra_size, file_time;
     int has_title;
+    int metadata_count;
     AVCodecContext *enc;
     int64_t header_offset, cur_pos, hpos;
     int bit_rate;
@@ -286,6 +288,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
     duration = asf->duration + PREROLL_TIME * 10000;
     has_title = title || author || copyright || comment;
+    metadata_count = s->metadata ? s->metadata->count : 0;
 
     bit_rate = 0;
     for(n=0;n<s->nb_streams;n++) {
@@ -302,7 +305,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
     put_guid(pb, &asf_header);
     put_le64(pb, -1); /* header length, will be patched after */
-    put_le32(pb, 3 + has_title + s->nb_streams); /* number of chunks in header */
+    put_le32(pb, 3 + has_title + !!metadata_count + s->nb_streams); /* number of chunks in header */
     put_byte(pb, 1); /* ??? */
     put_byte(pb, 2); /* ??? */
 
@@ -342,6 +345,22 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         if (author   ) put_str16_nolen(pb, author->value   );
         if (copyright) put_str16_nolen(pb, copyright->value);
         if (comment  ) put_str16_nolen(pb, comment->value  );
+        end_header(pb, hpos);
+    }
+    if (metadata_count) {
+        AVMetadataTag *tag = NULL;
+        hpos = put_header(pb, &extended_content_header);
+        put_le16(pb, metadata_count);
+        while ((tag = av_metadata_get(s->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
+            put_le16(pb, 2*(strlen(tag->key) + 3) + 1);
+            put_le16(pb, 'W');
+            put_le16(pb, 'M');
+            put_le16(pb, '/');
+            put_str16_nolen(pb, tag->key);
+            put_le16(pb, 0);
+            put_le16(pb, 2*strlen(tag->value) + 1);
+            put_str16_nolen(pb, tag->value);
+        }
         end_header(pb, hpos);
     }
 
