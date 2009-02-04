@@ -86,10 +86,6 @@
 #define CHROMA 1
 #endif
 
-#ifndef CONFIG_H264_ENCODER
-#define CONFIG_H264_ENCODER 0
-#endif
-
 #define EXTENDED_SAR          255
 
 #define MB_TYPE_REF0       MB_TYPE_ACPRED //dirty but it fits in 16 bit
