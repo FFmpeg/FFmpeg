@@ -1324,6 +1324,33 @@ TMPO="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
 TMPS="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPSH="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.sh"
 
+# make sure we can execute files in $TMPDIR
+cat > $TMPSH 2>> $logfile <<EOF
+#! /bin/sh
+EOF
+chmod +x $TMPSH >> $logfile 2>&1
+if ! $TMPSH >> $logfile 2>&1; then
+    cat <<EOF
+Unable to create and execute files in $TMPDIR.  Set the TMPDIR environment
+variable to another directory and make sure that it is not mounted noexec.
+EOF
+    die "Sanity test failed."
+fi
+rm $TMPSH
+
+# compiler sanity check
+check_exec <<EOF
+int main(void){ return 0; }
+EOF
+if test "$?" != 0; then
+    echo "$cc is unable to create an executable file."
+    if test -z "$cross_prefix" && ! enabled cross_compile ; then
+        echo "If $cc is a cross-compiler, use the --enable-cross-compile option."
+        echo "Only do this if you know what cross compiling means."
+    fi
+    die "C compiler test failed."
+fi
+
 check_cflags -std=c99
 
 case "$arch" in
@@ -1720,33 +1747,6 @@ if test $cpu != "generic"; then
             echo "WARNING: Unknown CPU \"$cpu\", ignored."
         ;;
     esac
-fi
-
-# make sure we can execute files in $TMPDIR
-cat > $TMPSH 2>> $logfile <<EOF
-#! /bin/sh
-EOF
-chmod +x $TMPSH >> $logfile 2>&1
-if ! $TMPSH >> $logfile 2>&1; then
-    cat <<EOF
-Unable to create and execute files in $TMPDIR.  Set the TMPDIR environment
-variable to another directory and make sure that it is not mounted noexec.
-EOF
-    die "Sanity test failed."
-fi
-rm $TMPSH
-
-# compiler sanity check
-check_exec <<EOF
-int main(void){ return 0; }
-EOF
-if test "$?" != 0; then
-    echo "$cc is unable to create an executable file."
-    if test -z "$cross_prefix" && ! enabled cross_compile ; then
-        echo "If $cc is a cross-compiler, use the --enable-cross-compile option."
-        echo "Only do this if you know what cross compiling means."
-    fi
-    die "C compiler test failed."
 fi
 
 check_cc <<EOF || die "Symbol mangling check failed."
