@@ -573,6 +573,7 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enu
 
 static void mxf_write_multi_descriptor(AVFormatContext *s)
 {
+    MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     int i;
 
@@ -586,8 +587,8 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
 
     // write sample rate
     mxf_write_local_tag(pb, 8, 0x3001);
-    put_be32(pb, s->streams[0]->time_base.den);
-    put_be32(pb, s->streams[0]->time_base.num);
+    put_be32(pb, mxf->time_base.den);
+    put_be32(pb, mxf->time_base.num);
 
     // write essence container ul
     mxf_write_local_tag(pb, 16, 0x3004);
@@ -600,9 +601,11 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
         mxf_write_uuid(pb, SubDescriptor, i);
 }
 
-static void mxf_write_generic_desc(ByteIOContext *pb, AVStream *st, const UID key, unsigned size)
+static void mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
 {
+    MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
+    ByteIOContext *pb = s->pb;
 
     put_buffer(pb, key, 16);
     klv_encode_ber_length(pb, size);
@@ -614,8 +617,8 @@ static void mxf_write_generic_desc(ByteIOContext *pb, AVStream *st, const UID ke
     put_be32(pb, st->index);
 
     mxf_write_local_tag(pb, 8, 0x3001);
-    put_be32(pb, st->time_base.den);
-    put_be32(pb, st->time_base.num);
+    put_be32(pb, mxf->time_base.den);
+    put_be32(pb, mxf->time_base.num);
 
     mxf_write_local_tag(pb, 16, 0x3004);
     put_buffer(pb, mxf_essence_container_uls[sc->index].container_ul, 16);
@@ -633,7 +636,7 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     AVRational dar;
     int f1, f2;
 
-    mxf_write_generic_desc(pb, st, mxf_mpegvideo_descriptor_key, 153+sc->interlaced*4);
+    mxf_write_generic_desc(s, st, mxf_mpegvideo_descriptor_key, 153+sc->interlaced*4);
 
     mxf_write_local_tag(pb, 4, 0x3203);
     put_be32(pb, st->codec->width);
@@ -695,7 +698,7 @@ static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st, const
 {
     ByteIOContext *pb = s->pb;
 
-    mxf_write_generic_desc(pb, st, key, size);
+    mxf_write_generic_desc(s, st, key, size);
 
     // audio locked
     mxf_write_local_tag(pb, 1, 0x3D02);
