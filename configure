@@ -96,7 +96,7 @@ show_help(){
   echo "  --disable-ipv6           disable IPv6 support [no]"
   echo "  --disable-mpegaudio-hp   faster (but less accurate) MPEG audio decoding [no]"
   echo "  --enable-gray            enable full grayscale support (slower color)"
-  echo "  --disable-fastdiv        disable table-based division"
+  echo "  --enable-fastdiv         enable table-based division"
   echo "  --enable-small           optimize for size instead of speed"
   echo "  --disable-aandct         disable AAN DCT code"
   echo "  --disable-fft            disable FFT code"
