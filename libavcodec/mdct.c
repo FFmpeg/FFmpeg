@@ -158,7 +158,6 @@ void ff_imdct_half_c(MDCTContext *s, FFTSample *output, const FFTSample *input)
  * Compute inverse MDCT of size N = 2^nbits
  * @param output N samples
  * @param input N/2 samples
- * @param tmp N/2 samples
  */
 void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input)
 {
@@ -179,7 +178,6 @@ void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input)
  * Compute MDCT of size N = 2^nbits
  * @param input N samples
  * @param out N/2 samples
- * @param tmp temporary storage of N/2 samples
  */
 void ff_mdct_calc(MDCTContext *s, FFTSample *out, const FFTSample *input)
 {
