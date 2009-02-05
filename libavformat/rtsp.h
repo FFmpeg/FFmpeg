@@ -104,7 +104,7 @@ typedef struct RTSPState {
     enum RTSPLowerTransport lower_transport;
     enum RTSPServerType server_type;
     char last_reply[2048]; /* XXX: allocate ? */
-    void *cur_tx;
+    void *cur_transport_priv;
     int need_subscription;
     enum AVDiscard real_setup_cache[MAX_STREAMS];
     char last_subscription[1024];
@@ -112,7 +112,7 @@ typedef struct RTSPState {
 
 typedef struct RTSPStream {
     URLContext *rtp_handle; /* RTP stream handle */
-    void *tx_ctx; /* RTP/RDT parse context */
+    void *transport_priv; /* RTP/RDT parse context */
 
     int stream_index; /* corresponding stream index, if any. -1 if none (MPEG2TS case) */
     int interleaved_min, interleaved_max;  /* interleave ids, if TCP transport */
