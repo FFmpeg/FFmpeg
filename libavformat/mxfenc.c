@@ -432,9 +432,9 @@ static void mxf_write_identification(AVFormatContext *s)
     mxf_write_local_tag(pb, 16, 0x3C05);
     mxf_write_uuid(pb, Identification, 2);
 
-    // write modified date
+    // modification date
     mxf_write_local_tag(pb, 8, 0x3C06);
-    put_be64(pb, 0);
+    put_be64(pb, s->timestamp);
 }
 
 static void mxf_write_content_storage(AVFormatContext *s)
