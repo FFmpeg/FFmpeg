@@ -103,6 +103,11 @@ static const char *http_state[] = {
 
 #define SYNC_TIMEOUT (10 * 1000)
 
+typedef struct RTSPActionServerSetup {
+    uint32_t ipaddr;
+    char transport_option[512];
+} RTSPActionServerSetup;
+
 typedef struct {
     int64_t count1, count2;
     int64_t time1, time2;
