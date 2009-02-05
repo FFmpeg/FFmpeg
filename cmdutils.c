@@ -38,7 +38,9 @@
 #include "libavcodec/opt.h"
 #include "cmdutils.h"
 #include "version.h"
+#if CONFIG_NETWORK
 #include "libavformat/network.h"
+#endif
 
 #undef exit
 
