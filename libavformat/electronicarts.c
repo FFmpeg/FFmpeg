@@ -50,6 +50,7 @@
 #define MPCh_TAG MKTAG('M', 'P', 'C', 'h')    /* MPEG2 */
 #define TGQs_TAG MKTAG('T', 'G', 'Q', 's')    /* TGQ i-frame (appears in .TGQ files) */
 #define pQGT_TAG MKTAG('p', 'Q', 'G', 'T')    /* TGQ i-frame (appears in .UV files) */
+#define pIQT_TAG MKTAG('p', 'I', 'Q', 'T')    /* TQI/UV2 i-frame (.UV2/.WVE) */
 #define MVhd_TAG MKTAG('M', 'V', 'h', 'd')
 #define MV0K_TAG MKTAG('M', 'V', '0', 'K')
 #define MV0F_TAG MKTAG('M', 'V', '0', 'F')
@@ -349,6 +350,10 @@ static int process_ea_header(AVFormatContext *s) {
                 ea->video_codec = CODEC_ID_TGQ;
                 break;
 
+            case pIQT_TAG:
+                ea->video_codec = CODEC_ID_TQI;
+                break;
+
             case MVhd_TAG :
                 err = process_video_header_vp6(s);
                 break;
@@ -521,6 +526,7 @@ static int ea_read_packet(AVFormatContext *s,
 
         case MV0K_TAG:
         case MPCh_TAG:
+        case pIQT_TAG:
             key = PKT_FLAG_KEY;
         case MV0F_TAG:
 get_video_packet:
