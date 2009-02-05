@@ -207,6 +207,7 @@ show_help(){
   echo "  --disable-mmi            disable MMI optimizations"
   echo "  --disable-neon           disable neon optimizations"
   echo "  --disable-vis            disable VIS optimizations"
+  echo "  --disable-yasm           disable use of yasm assembler"
   echo
   echo "Developer options (useful when working on FFmpeg itself):"
   echo "  --disable-debug          disable debugging symbols"
@@ -918,6 +919,7 @@ CMDLINE_SELECT="
     logging
     optimizations
     stripping
+    yasm
 "
 
 PATHS_LIST='
@@ -1787,7 +1789,7 @@ EOF
         macho64)              append YASMFLAGS "-DPIC -DPREFIX" ;;
         *)                    append YASMFLAGS "-DPREFIX"  ;;
     esac
-    check_yasm "pabsw xmm0, xmm0" && enable yasm
+    disabled yasm || { check_yasm "pabsw xmm0, xmm0" && enable yasm; }
 fi
 
 # check for assembler specific support
