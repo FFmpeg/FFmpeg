@@ -33,6 +33,7 @@
 //#define DEBUG
 
 #include <math.h>
+#include <time.h>
 
 #include "libavutil/fifo.h"
 #include "mxf.h"
@@ -123,6 +124,7 @@ typedef struct MXFContext {
     MXFIndexEntry *index_entries;
     unsigned edit_units_count;
     int edit_unit_start;  ///< index of the stream starting edit unit
+    uint64_t timestamp;   ///< timestamp, as year(16),month(8),day(8),hour(8),minutes(8),msec/4(8)
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -359,9 +361,9 @@ static void mxf_write_preface(AVFormatContext *s)
     mxf_write_uuid(pb, Preface, 0);
     PRINT_KEY(s, "preface uid", pb->buf_ptr - 16);
 
-    // write creation date
+    // last modified date
     mxf_write_local_tag(pb, 8, 0x3B02);
-    put_be64(pb, s->timestamp);
+    put_be64(pb, mxf->timestamp);
 
     // write version
     mxf_write_local_tag(pb, 2, 0x3B05);
@@ -401,6 +403,7 @@ static void mxf_write_local_tag_utf16(ByteIOContext *pb, int tag, const char *va
 
 static void mxf_write_identification(AVFormatContext *s)
 {
+    MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     const char *company = "FFmpeg";
     const char *product = "OP1a Muxer";
@@ -434,7 +437,7 @@ static void mxf_write_identification(AVFormatContext *s)
 
     // modification date
     mxf_write_local_tag(pb, 8, 0x3C06);
-    put_be64(pb, s->timestamp);
+    put_be64(pb, mxf->timestamp);
 }
 
 static void mxf_write_content_storage(AVFormatContext *s)
@@ -742,6 +745,7 @@ static void mxf_write_aes3_desc(AVFormatContext *s, AVStream *st)
 
 static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
 {
+    MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     int i;
 
@@ -766,13 +770,13 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
     mxf_write_umid(pb, type, 0);
     PRINT_KEY(s, "package umid second part", pb->buf_ptr - 16);
 
-    // write create date
+    // package creation date
     mxf_write_local_tag(pb, 8, 0x4405);
-    put_be64(pb, 0);
+    put_be64(pb, mxf->timestamp);
 
-    // write modified date
+    // package modified date
     mxf_write_local_tag(pb, 8, 0x4404);
-    put_be64(pb, 0);
+    put_be64(pb, mxf->timestamp);
 
     // write track refs
     mxf_write_local_tag(pb, s->nb_streams * 16 + 8, 0x4403);
@@ -1116,6 +1120,17 @@ static void ff_audio_interleave_close(AVFormatContext *s)
     }
 }
 
+static uint64_t mxf_parse_timestamp(time_t timestamp)
+{
+    struct tm *time = localtime(&timestamp);
+    return (uint64_t)(time->tm_year+1900) << 48 |
+           (uint64_t)(time->tm_mon+1)     << 40 |
+           (uint64_t) time->tm_mday       << 32 |
+                      time->tm_hour       << 24 |
+                      time->tm_min        << 16 |
+                      time->tm_sec        << 8;
+}
+
 static int mxf_write_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
@@ -1182,6 +1197,8 @@ static int mxf_write_header(AVFormatContext *s)
         sc->track_essence_element_key[13] = present[sc->index];
         sc->order = AV_RB32(sc->track_essence_element_key+12);
     }
+
+    mxf->timestamp = mxf_parse_timestamp(s->timestamp);
 
     if (!samples_per_frame)
         samples_per_frame = PAL_samples_per_frame;
