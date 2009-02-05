@@ -840,8 +840,9 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    int i, j, k, ret, key_offset = 0;
+    int i, j, k, ret;
     int temporal_reordering = 0;
+    int last_key_index = 0, key_index = 0;
 
     av_log(s, AV_LOG_DEBUG, "edit units count %d\n", mxf->edit_units_count);
 
@@ -900,8 +901,6 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
     put_be32(pb, mxf->edit_units_count);  // num of entries
     put_be32(pb, 11+(s->nb_streams-1)*4); // size of one entry
     for (i = 0; i < mxf->edit_units_count; i++) {
-        if (mxf->index_entries[i].flags & 0x40)
-            key_offset = 0;
         if (temporal_reordering) {
             int temporal_offset = 0;
             for (j = i+1; j < mxf->edit_units_count; j++) {
@@ -920,7 +919,18 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
             put_byte(pb, temporal_offset);
         } else
             put_byte(pb, 0);
-        put_byte(pb, key_offset);
+        if (!(mxf->index_entries[i].flags & 0x33)) { // I frame
+            last_key_index = key_index;
+            key_index = i;
+        }
+        if (mxf->index_entries[i].flags & 0x10 && // backward prediction
+            !(mxf->index_entries[key_index].flags & 0x80)) { // open gop
+            put_byte(pb, last_key_index - i);
+        } else {
+            put_byte(pb, key_index - i); // key frame offset
+            if ((mxf->index_entries[i].flags & 0x20) == 0x20) // only forward
+                last_key_index = key_index;
+        }
         put_byte(pb, mxf->index_entries[i].flags);
         // stream offset
         put_be64(pb, mxf->index_entries[i].offset - mxf->index_entries[0].offset);
@@ -928,7 +938,6 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
             if (mxf->index_entries[i].slice_offset[k])
                 put_be32(pb, mxf->index_entries[i].slice_offset[k]);
         }
-        key_offset--;
     }
 
     return ret;
