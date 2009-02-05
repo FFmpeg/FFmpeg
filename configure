@@ -1312,6 +1312,10 @@ set_default cc nm
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
+case $target_os in
+    mingw32*|cygwin*|*-dos|freedos|opendos|os/2*) EXESUF=.exe ;;
+esac
+
 # set temporary file name
 : ${TMPDIR:=$TEMPDIR}
 : ${TMPDIR:=$TMP}
@@ -1513,7 +1517,6 @@ case $target_os in
         disable ffserver
         SLIBPREF=""
         SLIBSUF=".dll"
-        EXESUF=".exe"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
         SLIB_EXTRA_CMD='-lib /machine:$(LIBTARGET) /def:$$(@:$(SLIBSUF)=.def) /out:$(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)'
@@ -1540,7 +1543,6 @@ case $target_os in
             VHOOKSHFLAGS="$VHOOKSHFLAGS -L\$(BUILD_ROOT)/libswscale"
             VHOOKLIBS="$VHOOKLIBS -lswscale\$(BUILDSUF)"
         fi
-        EXESUF=".exe"
         SLIBPREF="cyg"
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
@@ -1553,7 +1555,6 @@ case $target_os in
         disable ffplay ffserver vhook
         disable $INDEV_LIST $OUTDEV_LIST
         network_extralibs="-lsocket"
-        EXESUF=".exe"
         objformat="coff"
         enable dos_paths
         ;;
@@ -1567,7 +1568,6 @@ case $target_os in
     os/2*)
         strip="lxlite"
         ln_s="cp -f"
-        EXESUF=".exe"
         FFLDFLAGS="-Zomf -Zbin-files -Zargs-wild -Zmap"
         SHFLAGS='$(SUBDIR)$(NAME).def -Zdll -Zomf'
         FFSERVERLDFLAGS=""
