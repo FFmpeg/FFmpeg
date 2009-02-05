@@ -359,9 +359,9 @@ static void mxf_write_preface(AVFormatContext *s)
     mxf_write_uuid(pb, Preface, 0);
     PRINT_KEY(s, "preface uid", pb->buf_ptr - 16);
 
-    // write create date as unknown
+    // write creation date
     mxf_write_local_tag(pb, 8, 0x3B02);
-    put_be64(pb, 0);
+    put_be64(pb, s->timestamp);
 
     // write version
     mxf_write_local_tag(pb, 2, 0x3B05);
