@@ -146,6 +146,7 @@ version <next>
 - hybrid WavPack support
 - R3D REDCODE demuxer
 - ALSA support for playback and record
+- Electronic Arts TQI decoder
 
 version 0.4.9-pre1:
 

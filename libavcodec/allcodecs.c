@@ -71,6 +71,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (EACMV, eacmv);
     REGISTER_DECODER (EATGQ, eatgq);
     REGISTER_DECODER (EATGV, eatgv);
+    REGISTER_DECODER (EATQI, eatqi);
     REGISTER_DECODER (EIGHTBPS, eightbps);
     REGISTER_DECODER (EIGHTSVX_EXP, eightsvx_exp);
     REGISTER_DECODER (EIGHTSVX_FIB, eightsvx_fib);
