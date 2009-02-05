@@ -630,7 +630,7 @@ inline int ff_mpeg1_decode_block_intra(MpegEncContext *s,
     dc = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
-    block[0] = dc<<3;
+    block[0] = dc*quant_matrix[0];
     dprintf(s->avctx, "dc=%d diff=%d\n", dc, diff);
     i = 0;
     {
