@@ -49,9 +49,6 @@
 static inline int mpeg1_decode_block_inter(MpegEncContext *s,
                               DCTELEM *block,
                               int n);
-static inline int mpeg1_decode_block_intra(MpegEncContext *s,
-                              DCTELEM *block,
-                              int n);
 static inline int mpeg1_fast_decode_block_inter(MpegEncContext *s, DCTELEM *block, int n);
 static inline int mpeg2_decode_block_non_intra(MpegEncContext *s,
                                         DCTELEM *block,
@@ -327,7 +324,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
             }
         } else {
             for(i=0;i<6;i++) {
-                if (mpeg1_decode_block_intra(s, s->pblocks[i], i) < 0)
+                if (ff_mpeg1_decode_block_intra(s, s->pblocks[i], i) < 0)
                     return -1;
             }
         }
@@ -614,7 +611,7 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
     return val;
 }
 
-static inline int mpeg1_decode_block_intra(MpegEncContext *s,
+inline int ff_mpeg1_decode_block_intra(MpegEncContext *s,
                                DCTELEM *block,
                                int n)
 {
