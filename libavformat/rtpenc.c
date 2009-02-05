@@ -102,7 +102,7 @@ static int rtp_write_header(AVFormatContext *s1)
         s->buf_ptr = s->buf;
         break;
     case CODEC_ID_AAC:
-        s->read_buf_index = 0;
+        s->num_frames = 0;
     default:
         if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             av_set_pts_info(st, 32, 1, st->codec->sample_rate);

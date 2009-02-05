@@ -40,8 +40,8 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
 
     /* test if the packet must be sent */
     len = (s->buf_ptr - s->buf);
-    if ((s->read_buf_index == MAX_FRAMES_PER_PACKET) || (len && (len + size) > max_packet_size)) {
-        int au_size = s->read_buf_index * 2;
+    if ((s->num_frames == MAX_FRAMES_PER_PACKET) || (len && (len + size) > max_packet_size)) {
+        int au_size = s->num_frames * 2;
 
         p = s->buf + MAX_AU_HEADERS_SIZE - au_size - 2;
         if (p != s->buf) {
@@ -53,15 +53,15 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
 
         ff_rtp_send_data(s1, p, s->buf_ptr - p, 1);
 
-        s->read_buf_index = 0;
+        s->num_frames = 0;
     }
-    if (s->read_buf_index == 0) {
+    if (s->num_frames == 0) {
         s->buf_ptr = s->buf + MAX_AU_HEADERS_SIZE;
         s->timestamp = s->cur_timestamp;
     }
 
     if (size < max_packet_size) {
-        p = s->buf + s->read_buf_index++ * 2 + 2;
+        p = s->buf + s->num_frames++ * 2 + 2;
         *p++ = size >> 5;
         *p = (size & 0x1F) << 3;
         memcpy(s->buf_ptr, buff, size);
