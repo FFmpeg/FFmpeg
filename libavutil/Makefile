@@ -41,7 +41,7 @@ OBJS = adler32.o                                                        \
        tree.o                                                           \
        utils.o                                                          \
 
-TESTS = $(addsuffix -test$(EXESUF), adler32 aes crc des lls md5 pca random sha1 softfloat tree)
+TESTS = $(addsuffix -test$(EXESUF), adler32 aes base64 crc des lls md5 pca random sha1 softfloat tree)
 
 DIRS = arm bfin sh4 x86
 
