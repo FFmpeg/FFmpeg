@@ -23,8 +23,6 @@
 
 #include "libavcodec/avcodec.h"
 
-#define RTP_MAX_PACKET_LENGTH 1500 /* XXX: suppress this define */
-
 /** return < 0 if unknown payload type */
 int rtp_get_payload_type(AVCodecContext *codec);
 

@@ -57,6 +57,7 @@ typedef struct PayloadContext PayloadContext;
 typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
 
 #define RTP_MIN_PACKET_LENGTH 12
+#define RTP_MAX_PACKET_LENGTH 1500 /* XXX: suppress this define */
 
 int rtp_get_codec_info(AVCodecContext *codec, int payload_type);
 
