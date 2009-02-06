@@ -295,7 +295,7 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
 
 /**< return 0 on packet, no more left, 1 on packet, 1 on partial packet... */
 static int
-rdt_parse_packet (PayloadContext *rdt, AVStream *st,
+rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
                   AVPacket *pkt, uint32_t *timestamp,
                   const uint8_t *buf, int len, int flags)
 {
@@ -347,7 +347,7 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
     if (!buf && s->prev_stream_id != -1) {
         /* return the next packets, if any */
         timestamp= 0; ///< Should not be used if buf is NULL, but should be set to the timestamp of the packet returned....
-        rv= s->parse_packet(s->dynamic_protocol_context,
+        rv= s->parse_packet(s->ic, s->dynamic_protocol_context,
                             s->streams[s->prev_stream_id],
                             pkt, &timestamp, NULL, 0, flags);
         return rv;
@@ -374,7 +374,7 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
          return -1;
      }
 
-    rv = s->parse_packet(s->dynamic_protocol_context,
+    rv = s->parse_packet(s->ic, s->dynamic_protocol_context,
                          s->streams[s->prev_stream_id],
                          pkt, &timestamp, buf, len, flags);
 

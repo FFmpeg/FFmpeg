@@ -159,7 +159,8 @@ static void sdp_parse_fmtp_config_h264(AVStream * stream,
 }
 
 // return 0 on packet, no more left, 1 on packet, 1 on partial packet...
-static int h264_handle_packet(PayloadContext *data,
+static int h264_handle_packet(AVFormatContext *ctx,
+                              PayloadContext *data,
                               AVStream *st,
                               AVPacket * pkt,
                               uint32_t * timestamp,

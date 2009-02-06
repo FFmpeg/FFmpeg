@@ -107,6 +107,7 @@ typedef struct {
 /**
  * Packet parsing for "private" payloads in the RTP specs.
  *
+ * @param ctx RTSP demuxer context
  * @param s stream context
  * @param st stream that this packet belongs to
  * @param pkt packet in which to write the parsed data
@@ -115,7 +116,8 @@ typedef struct {
  * @param len length of buf
  * @param flags flags from the RTP packet header (PKT_FLAG_*)
  */
-typedef int (*DynamicPayloadPacketHandlerProc) (PayloadContext *s,
+typedef int (*DynamicPayloadPacketHandlerProc) (AVFormatContext *ctx,
+                                                PayloadContext *s,
                                                 AVStream *st,
                                                 AVPacket * pkt,
                                                 uint32_t *timestamp,
