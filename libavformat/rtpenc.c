@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include "network.h"
 
-#include "rtp.h"
+#include "rtpenc.h"
 #include "rtp_mpv.h"
 #include "rtp_aac.h"
 #include "rtp_h264.h"
@@ -44,7 +44,7 @@ static uint64_t ntp_time(void)
 
 static int rtp_write_header(AVFormatContext *s1)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
     int payload_type, max_packet_size, n;
     AVStream *st;
 
@@ -117,7 +117,7 @@ static int rtp_write_header(AVFormatContext *s1)
 /* send an rtcp sender report packet */
 static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
     uint32_t rtp_ts;
 
     dprintf(s1, "RTCP: %02x %"PRIx64" %x\n", s->payload_type, ntp_time, s->timestamp);
@@ -142,7 +142,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
    must update the timestamp itself */
 void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
 
     dprintf(s1, "rtp_send_data size=%d\n", len);
 
@@ -166,7 +166,7 @@ void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
 static void rtp_send_samples(AVFormatContext *s1,
                              const uint8_t *buf1, int size, int sample_size)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
     int len, max_packet_size, n;
 
     max_packet_size = (s->max_payload_size / sample_size) * sample_size;
@@ -194,7 +194,7 @@ static void rtp_send_samples(AVFormatContext *s1,
 static void rtp_send_mpegaudio(AVFormatContext *s1,
                                const uint8_t *buf1, int size)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
     int len, count, max_packet_size;
 
     max_packet_size = s->max_payload_size;
@@ -246,7 +246,7 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
 static void rtp_send_raw(AVFormatContext *s1,
                          const uint8_t *buf1, int size)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
     int len, max_packet_size;
 
     max_packet_size = s->max_payload_size;
@@ -268,7 +268,7 @@ static void rtp_send_raw(AVFormatContext *s1,
 static void rtp_send_mpegts_raw(AVFormatContext *s1,
                                 const uint8_t *buf1, int size)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
     int len, out_len;
 
     while (size >= TS_PACKET_SIZE) {
@@ -291,7 +291,7 @@ static void rtp_send_mpegts_raw(AVFormatContext *s1,
 /* write an RTP packet. 'buf1' must contain a single specific frame. */
 static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
     AVStream *st = s1->streams[0];
     int rtcp_bytes;
     int size= pkt->size;
@@ -352,7 +352,7 @@ AVOutputFormat rtp_muxer = {
     NULL_IF_CONFIG_SMALL("RTP output format"),
     NULL,
     NULL,
-    sizeof(RTPDemuxContext),
+    sizeof(RTPMuxContext),
     CODEC_ID_PCM_MULAW,
     CODEC_ID_NONE,
     rtp_write_header,

@@ -34,7 +34,7 @@
 #include "network.h"
 #include "rtsp.h"
 
-#include "rtp.h"
+#include "rtpdec.h"
 #include "rdt.h"
 
 //#define DEBUG

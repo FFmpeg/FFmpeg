@@ -20,14 +20,14 @@
 
 #include "avformat.h"
 #include "rtp_aac.h"
-#include "rtp.h"
+#include "rtpenc.h"
 
 #define MAX_FRAMES_PER_PACKET (s->max_frames_per_packet ? s->max_frames_per_packet : 5)
 #define MAX_AU_HEADERS_SIZE (2 + 2 * MAX_FRAMES_PER_PACKET)
 
 void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
     int len, max_packet_size;
     uint8_t *p;
 

@@ -27,11 +27,11 @@
 
 #include "avformat.h"
 #include "avc.h"
-#include "rtp_h264.h"
+#include "rtpenc.h"
 
 static void nal_send(AVFormatContext *s1, const uint8_t *buf, int size, int last)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
 
     av_log(s1, AV_LOG_DEBUG, "Sending NAL %x of len %d M=%d\n", buf[0] & 0x1F, size, last);
     if (size <= s->max_payload_size) {
@@ -63,7 +63,7 @@ static void nal_send(AVFormatContext *s1, const uint8_t *buf, int size, int last
 void ff_rtp_send_h264(AVFormatContext *s1, const uint8_t *buf1, int size)
 {
     const uint8_t *r;
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
 
     s->timestamp = s->cur_timestamp;
     r = ff_avc_find_startcode(buf1, buf1 + size);

@@ -32,7 +32,7 @@
 #include "libavformat/avformat.h"
 #include "libavformat/network.h"
 #include "libavformat/os_support.h"
-#include "libavformat/rtp.h"
+#include "libavformat/rtpdec.h"
 #include "libavformat/rtsp.h"
 #include "libavutil/avstring.h"
 #include "libavutil/random.h"

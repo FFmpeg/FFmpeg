@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include "avformat.h"
 #include "rtspcodes.h"
-#include "rtp.h"
+#include "rtpdec.h"
 #include "network.h"
 
 enum RTSPLowerTransport {

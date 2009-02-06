@@ -22,13 +22,13 @@
 
 #include "libavcodec/mpegvideo.h"
 #include "avformat.h"
-#include "rtp.h"
+#include "rtpenc.h"
 
 /* NOTE: a single frame must be passed with sequence header if
    needed. XXX: use slices. */
 void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
 {
-    RTPDemuxContext *s = s1->priv_data;
+    RTPMuxContext *s = s1->priv_data;
     int len, h, max_packet_size;
     uint8_t *q;
     int begin_of_slice, end_of_slice, frame_type, temporal_reference;

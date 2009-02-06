@@ -46,7 +46,7 @@
 #include "network.h"
 #include <assert.h>
 
-#include "rtp.h"
+#include "rtpdec.h"
 #include "rtp_h264.h"
 
 /**

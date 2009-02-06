@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 #include "avformat.h"
-#include "rtp.h"
+#include "rtpdec.h"
 
 typedef struct RDTDemuxContext RDTDemuxContext;
 
