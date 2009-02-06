@@ -46,7 +46,7 @@ struct RTPMuxContext {
     unsigned int last_octet_count; // TODO: move into statistics (outgoing)
     int first_packet;
     /* buffer for output */
-    uint8_t buf[RTP_MAX_PACKET_LENGTH];
+    uint8_t *buf;
     uint8_t *buf_ptr;
 
     int max_frames_per_packet;

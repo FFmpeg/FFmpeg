@@ -65,6 +65,10 @@ static int rtp_write_header(AVFormatContext *s1)
     max_packet_size = url_fget_max_packet_size(s1->pb);
     if (max_packet_size <= 12)
         return AVERROR(EIO);
+    s->buf = av_malloc(max_packet_size);
+    if (s->buf == NULL) {
+        return AVERROR(ENOMEM);
+    }
     s->max_payload_size = max_packet_size - 12;
 
     s->max_frames_per_packet = 0;
@@ -344,6 +348,15 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     return 0;
 }
 
+static int rtp_write_trailer(AVFormatContext *s1)
+{
+    RTPMuxContext *s = s1->priv_data;
+
+    av_freep(&s->buf);
+
+    return 0;
+}
+
 AVOutputFormat rtp_muxer = {
     "rtp",
     NULL_IF_CONFIG_SMALL("RTP output format"),
@@ -354,4 +367,5 @@ AVOutputFormat rtp_muxer = {
     CODEC_ID_NONE,
     rtp_write_header,
     rtp_write_packet,
+    rtp_write_trailer,
 };
