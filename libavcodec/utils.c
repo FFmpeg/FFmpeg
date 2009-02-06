@@ -154,6 +154,8 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
             h_align=4;
         }
     case PIX_FMT_PAL8:
+    case PIX_FMT_BGR8:
+    case PIX_FMT_RGB8:
         if(s->codec_id == CODEC_ID_SMC){
             w_align=4;
             h_align=4;
@@ -281,12 +283,14 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             if(buf->base[i]==NULL) return -1;
             memset(buf->base[i], 128, size[i]);
 
-            // no edge if EDEG EMU or not planar YUV, we check for PAL8 redundantly to protect against a exploitable bug regression ...
-            if((s->flags&CODEC_FLAG_EMU_EDGE) || (s->pix_fmt == PIX_FMT_PAL8) || !size[2])
+            // no edge if EDEG EMU or not planar YUV
+            if((s->flags&CODEC_FLAG_EMU_EDGE) || !size[2])
                 buf->data[i] = buf->base[i];
             else
                 buf->data[i] = buf->base[i] + ALIGN((buf->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift), stride_align[i]);
         }
+        if(size[1] && !size[2])
+            ff_set_systematic_pal((uint32_t*)buf->data[1], s->pix_fmt);
         buf->width  = s->width;
         buf->height = s->height;
         buf->pix_fmt= s->pix_fmt;
