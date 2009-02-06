@@ -57,5 +57,7 @@ typedef struct RTPMuxContext RTPMuxContext;
 void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m);
 
 void ff_rtp_send_h264(AVFormatContext *s1, const uint8_t *buf1, int size);
+void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size);
+void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size);
 
 #endif /* AVFORMAT_RTPENC_H */

@@ -19,7 +19,6 @@
  */
 
 #include "avformat.h"
-#include "rtp_aac.h"
 #include "rtpenc.h"
 
 #define MAX_FRAMES_PER_PACKET (s->max_frames_per_packet ? s->max_frames_per_packet : 5)
