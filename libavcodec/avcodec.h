@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 13
+#define LIBAVCODEC_VERSION_MINOR 14
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -2605,11 +2605,16 @@ unsigned avcodec_version(void);
 void avcodec_init(void);
 
 /**
+ * @deprecated Deprecated in favor of avcodec_register().
+ */
+attribute_deprecated void register_avcodec(AVCodec *codec);
+
+/**
  * Register the codec \p codec and initialize libavcodec.
  *
  * @see avcodec_init()
  */
-void register_avcodec(AVCodec *codec);
+void avcodec_register(AVCodec *codec);
 
 /**
  * Finds a registered encoder with a matching codec ID.

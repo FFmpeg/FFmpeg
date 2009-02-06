@@ -88,7 +88,7 @@ AVCodec *av_codec_next(AVCodec *c){
     else  return first_avcodec;
 }
 
-void register_avcodec(AVCodec *codec)
+void avcodec_register(AVCodec *codec)
 {
     AVCodec **p;
     avcodec_init();
@@ -96,6 +96,11 @@ void register_avcodec(AVCodec *codec)
     while (*p != NULL) p = &(*p)->next;
     *p = codec;
     codec->next = NULL;
+}
+
+void register_avcodec(AVCodec *codec)
+{
+    avcodec_register(codec);
 }
 
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height){
