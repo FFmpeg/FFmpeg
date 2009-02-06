@@ -159,6 +159,7 @@ show_help(){
   echo "  --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]"
   echo "  --enable-libnut          enable NUT (de)muxing via libnut,"
   echo "                           native (de)muxer exists [no]"
+  echo "  --enable-libopenjpeg     enable JPEG 2000 decoding via OpenJPEG [no]"
   echo "  --enable-libschroedinger enable Dirac support via libschroedinger [no]"
   echo "  --enable-libspeex        enable Speex decoding via libspeex [no]"
   echo "  --enable-libtheora       enable Theora encoding via libtheora [no]"
@@ -769,6 +770,7 @@ CONFIG_LIST="
     libgsm
     libmp3lame
     libnut
+    libopenjpeg
     libschroedinger
     libspeex
     libtheora
@@ -1062,6 +1064,7 @@ libgsm_encoder_deps="libgsm"
 libgsm_ms_decoder_deps="libgsm"
 libgsm_ms_encoder_deps="libgsm"
 libmp3lame_encoder_deps="libmp3lame"
+libopenjpeg_decoder_deps="libopenjpeg"
 libschroedinger_decoder_deps="libschroedinger"
 libschroedinger_encoder_deps="libschroedinger"
 libspeex_decoder_deps="libspeex"
@@ -1928,6 +1931,7 @@ enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
 enabled libgsm     && require  libgsm gsm.h gsm_create -lgsm
 enabled libmp3lame && require  libmp3lame lame/lame.h lame_init -lmp3lame -lm
 enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut
+enabled libopenjpeg && require libopenjpeg libopenjpeg/openjpeg.h opj_version -lopenjpeg
 enabled libschroedinger && add_cflags $(pkg-config --cflags schroedinger-1.0) &&
                            require libschroedinger schroedinger/schro.h schro_init $(pkg-config --libs schroedinger-1.0)
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
@@ -2243,6 +2247,7 @@ echo "libfaad dlopened          ${libfaadbin-no}"
 echo "libgsm enabled            ${libgsm-no}"
 echo "libmp3lame enabled        ${libmp3lame-no}"
 echo "libnut enabled            ${libnut-no}"
+echo "libopenjpeg enabled       ${libopenjpeg-no}"
 echo "libschroedinger enabled   ${libschroedinger-no}"
 echo "libspeex enabled          ${libspeex-no}"
 echo "libtheora enabled         ${libtheora-no}"

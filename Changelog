@@ -147,6 +147,7 @@ version <next>
 - R3D REDCODE demuxer
 - ALSA support for playback and record
 - Electronic Arts TQI decoder
+- OpenJPEG based JPEG 2000 decoder
 
 version 0.4.9-pre1:
 

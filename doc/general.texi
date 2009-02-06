@@ -162,6 +162,7 @@ following image formats are supported:
 @item .Y.U.V       @tab X @tab X @tab one raw file per component
 @item animated GIF @tab X @tab X @tab Only uncompressed GIFs are generated.
 @item JPEG         @tab X @tab X @tab Progressive JPEG is not supported.
+@item JPEG 2000    @tab   @tab E @tab decoding supported through external library libopenjpeg
 @item PAM          @tab X @tab X @tab PAM is a PNM extension with alpha support.
 @item PCX          @tab   @tab X @tab PC Paintbrush
 @item PGM, PPM     @tab X @tab X
@@ -175,6 +176,8 @@ following image formats are supported:
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
+
+@code{E} means that support is provided through an external library.
 
 @section Video Codecs
 
