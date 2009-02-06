@@ -98,10 +98,12 @@ void avcodec_register(AVCodec *codec)
     codec->next = NULL;
 }
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 void register_avcodec(AVCodec *codec)
 {
     avcodec_register(codec);
 }
+#endif
 
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height){
     s->coded_width = width;

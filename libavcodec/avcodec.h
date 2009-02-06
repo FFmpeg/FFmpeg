@@ -2604,10 +2604,12 @@ unsigned avcodec_version(void);
  */
 void avcodec_init(void);
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
  * @deprecated Deprecated in favor of avcodec_register().
  */
 attribute_deprecated void register_avcodec(AVCodec *codec);
+#endif
 
 /**
  * Register the codec \p codec and initialize libavcodec.
