@@ -283,6 +283,6 @@ AVCodec gif_encoder = {
     gif_encode_init,
     gif_encode_frame,
     NULL, //encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_PAL8, PIX_FMT_NONE},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB8, PIX_FMT_BGR8, PIX_FMT_RGB4_BYTE, PIX_FMT_BGR4_BYTE, PIX_FMT_GRAY8, PIX_FMT_PAL8, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("GIF (Graphics Interchange Format)"),
 };
