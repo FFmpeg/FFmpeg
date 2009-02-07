@@ -1396,6 +1396,19 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     }else
         slice_count = avctx->slice_count;
 
+    //parse first slice header to check whether this frame can be decoded
+    if(get_slice_offset(avctx, slices_hdr, 0) > buf_size){
+        av_log(avctx, AV_LOG_ERROR, "Slice offset is greater than frame size\n");
+        return -1;
+    }
+    init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, 0), buf_size-get_slice_offset(avctx, slices_hdr, 0));
+    if(r->parse_slice_header(r, &r->s.gb, &si) < 0){
+        av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
+        return -1;
+    }
+    if((!s->last_picture_ptr || !s->last_picture_ptr->data[0]) && si.type == FF_B_TYPE)
+        return -1;
+
     for(i=0; i<slice_count; i++){
         int offset= get_slice_offset(avctx, slices_hdr, i);
         int size;
@@ -1420,8 +1433,6 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             }else
                 r->si.end = si.start;
         }
-        if(!i && si.type == FF_B_TYPE && (!s->last_picture_ptr || !s->last_picture_ptr->data[0]))
-            return -1;
         last = rv34_decode_slice(r, r->si.end, buf + offset, size);
         s->mb_num_left = r->s.mb_x + r->s.mb_y*r->s.mb_width - r->si.start;
         if(last)
