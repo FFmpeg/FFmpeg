@@ -42,6 +42,7 @@ static const int NTSC_samples_per_frame[] = { 1602, 1601, 1602, 1601, 1602, 0 };
 static const int PAL_samples_per_frame[]  = { 1920, 0 };
 
 #define MXF_INDEX_CLUSTER_SIZE 4096
+#define KAG_SIZE 512
 
 typedef struct {
     AVFifoBuffer fifo;
@@ -140,6 +141,7 @@ static const uint8_t index_table_segment_key[]     = { 0x06,0x0E,0x2B,0x34,0x02,
 static const uint8_t random_index_pack_key[]       = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x02,0x01,0x01,0x11,0x01,0x00 };
 static const uint8_t header_open_partition_key[]   = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x02,0x01,0x01,0x02,0x01,0x00 }; // OpenIncomplete
 static const uint8_t header_closed_partition_key[] = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x02,0x01,0x01,0x02,0x04,0x00 }; // ClosedComplete
+static const uint8_t klv_fill_key[]                = { 0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x03,0x01,0x02,0x10,0x01,0x00,0x00,0x00 };
 
 /**
  * partial key for header metadata
@@ -246,6 +248,14 @@ static void mxf_write_refs_count(ByteIOContext *pb, int ref_count)
 {
     put_be32(pb, ref_count);
     put_be32(pb, 16);
+}
+
+static int klv_ber_length(uint64_t len)
+{
+    if (len < 128)
+        return 1;
+    else
+        return (av_log2(len) >> 3) + 2;
 }
 
 static int klv_encode_ber_length(ByteIOContext *pb, uint64_t len)
@@ -840,6 +850,15 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
     return 0;
 }
 
+static unsigned klv_fill_size(AVFormatContext *s)
+{
+    unsigned pad = KAG_SIZE - (url_ftell(s->pb) & (KAG_SIZE-1));
+    if (pad < 17) // smallest fill item possible
+        return pad + KAG_SIZE;
+    else
+        return pad & (KAG_SIZE-1);
+}
+
 static int mxf_write_index_table_segment(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
@@ -963,7 +982,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
     // write partition value
     put_be16(pb, 1); // majorVersion
     put_be16(pb, 2); // minorVersion
-    put_be32(pb, 1); // kagSize
+    put_be32(pb, KAG_SIZE); // KAGSize
 
     put_be64(pb, url_ftell(pb) - 25); // thisPartition
     put_be64(pb, 0); // previousPartition
@@ -988,12 +1007,16 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
     if (write_metadata) {
         // mark the start of the headermetadata and calculate metadata size
         int64_t pos, start = url_ftell(s->pb);
+        unsigned header_byte_count;
+
         mxf_write_primer_pack(s);
         mxf_write_header_metadata_sets(s);
         pos = url_ftell(s->pb);
+        header_byte_count = pos - start + klv_fill_size(s);
+
         // update header_byte_count
         url_fseek(pb, header_byte_count_offset, SEEK_SET);
-        put_be64(pb, pos - start);
+        put_be64(pb, header_byte_count);
         url_fseek(pb, pos, SEEK_SET);
     }
 
@@ -1209,6 +1232,22 @@ static int mxf_write_header(AVFormatContext *s)
     return 0;
 }
 
+static void mxf_write_klv_fill(AVFormatContext *s)
+{
+    unsigned pad = klv_fill_size(s);
+    if (pad) {
+        put_buffer(s->pb, klv_fill_key, 16);
+        pad -= 16;
+        pad -= klv_ber_length(pad);
+        klv_encode_ber_length(s->pb, pad);
+        for (; pad > 7; pad -= 8)
+            put_be64(s->pb, 0);
+        for (; pad; pad--)
+            put_byte(s->pb, 0);
+        assert(!(url_ftell(s->pb) & (KAG_SIZE-1)));
+    }
+}
+
 static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
@@ -1237,6 +1276,8 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         mxf_write_partition(s, 1, 0, 0, header_open_partition_key, 1);
         mxf->header_written = 1;
     }
+
+    mxf_write_klv_fill(s);
 
     if (st->index == mxf->edit_unit_start) {
         mxf->index_entries[mxf->edit_units_count].offset = url_ftell(pb);
@@ -1284,8 +1325,9 @@ static int mxf_write_footer(AVFormatContext *s)
         mxf->edit_units_count*(11+(s->nb_streams-1)*4);
 
     // add encoded ber length
-    index_byte_count += 16 +
-        (index_byte_count < 128 ? 1 : (av_log2(index_byte_count) >> 3) + 2);
+    index_byte_count += 16 + klv_ber_length(index_byte_count);
+
+    mxf_write_klv_fill(s);
 
     mxf->footer_partition_offset = url_ftell(pb);
     mxf_write_partition(s, 0, 2, index_byte_count, footer_partition_key, 0);
