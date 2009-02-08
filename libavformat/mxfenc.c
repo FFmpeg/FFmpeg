@@ -36,6 +36,7 @@
 #include <time.h>
 
 #include "libavutil/fifo.h"
+#include "audiointerleave.h"
 #include "mxf.h"
 
 static const int NTSC_samples_per_frame[] = { 1602, 1601, 1602, 1601, 1602, 0 };
@@ -43,16 +44,6 @@ static const int PAL_samples_per_frame[]  = { 1920, 0 };
 
 #define MXF_INDEX_CLUSTER_SIZE 4096
 #define KAG_SIZE 512
-
-typedef struct {
-    AVFifoBuffer fifo;
-    unsigned fifo_size;           ///< current fifo size allocated
-    uint64_t dts;                 ///< current dts
-    int sample_size;              ///< size of one sample all channels included
-    const int *samples_per_frame; ///< must be 0 terminated
-    const int *samples;           ///< current samples per frame, pointer to samples_per_frame
-    AVRational time_base;         ///< time base of output audio packets
-} AudioInterleaveContext;
 
 typedef struct {
     int local_tag;
@@ -1110,49 +1101,6 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
     return !!sc->codec_ul;
 }
 
-static int ff_audio_interleave_init(AVFormatContext *s,
-                                    const int *samples_per_frame,
-                                    AVRational time_base)
-{
-    int i;
-
-    if (!samples_per_frame)
-        return -1;
-
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        AudioInterleaveContext *aic = st->priv_data;
-
-        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
-            aic->sample_size = (st->codec->channels *
-                                av_get_bits_per_sample(st->codec->codec_id)) / 8;
-            if (!aic->sample_size) {
-                av_log(s, AV_LOG_ERROR, "could not compute sample size\n");
-                return -1;
-            }
-            aic->samples_per_frame = samples_per_frame;
-            aic->samples = aic->samples_per_frame;
-            aic->time_base = time_base;
-
-            av_fifo_init(&aic->fifo, 100 * *aic->samples);
-        }
-    }
-
-    return 0;
-}
-
-static void ff_audio_interleave_close(AVFormatContext *s)
-{
-    int i;
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        AudioInterleaveContext *aic = st->priv_data;
-
-        if (st->codec->codec_type == CODEC_TYPE_AUDIO)
-            av_fifo_free(&aic->fifo);
-    }
-}
-
 static uint64_t mxf_parse_timestamp(time_t timestamp)
 {
     struct tm *time = localtime(&timestamp);
@@ -1428,31 +1376,6 @@ static int mxf_write_footer(AVFormatContext *s)
     return 0;
 }
 
-static int mxf_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
-                                           int stream_index, int flush)
-{
-    AVStream *st = s->streams[stream_index];
-    AudioInterleaveContext *aic = st->priv_data;
-
-    int size = FFMIN(av_fifo_size(&aic->fifo), *aic->samples * aic->sample_size);
-    if (!size || (!flush && size == av_fifo_size(&aic->fifo)))
-        return 0;
-
-    av_new_packet(pkt, size);
-    av_fifo_read(&aic->fifo, pkt->data, size);
-
-    pkt->dts = pkt->pts = aic->dts;
-    pkt->duration = av_rescale_q(*aic->samples, st->time_base, aic->time_base);
-    pkt->stream_index = stream_index;
-    aic->dts += pkt->duration;
-
-    aic->samples++;
-    if (!*aic->samples)
-        aic->samples = aic->samples_per_frame;
-
-    return size;
-}
-
 static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
     AVPacketList *pktl;
@@ -1517,32 +1440,8 @@ static int mxf_compare_timestamps(AVFormatContext *s, AVPacket *next, AVPacket *
 
 static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
-    int i;
-
-    if (pkt) {
-        AVStream *st = s->streams[pkt->stream_index];
-        AudioInterleaveContext *aic = st->priv_data;
-        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
-            av_fifo_generic_write(&aic->fifo, pkt->data, pkt->size, NULL);
-        } else {
-            // rewrite pts and dts to be decoded time line position
-            pkt->pts = pkt->dts = aic->dts;
-            aic->dts += pkt->duration;
-            ff_interleave_add_packet(s, pkt, mxf_compare_timestamps);
-        }
-        pkt = NULL;
-    }
-
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
-            AVPacket new_pkt;
-            while (mxf_interleave_new_audio_packet(s, &new_pkt, i, flush))
-                ff_interleave_add_packet(s, &new_pkt, mxf_compare_timestamps);
-        }
-    }
-
-    return mxf_interleave_get_packet(s, out, pkt, flush);
+    return ff_audio_interleave(s, out, pkt, flush,
+                               mxf_interleave_get_packet, mxf_compare_timestamps);
 }
 
 AVOutputFormat mxf_muxer = {
