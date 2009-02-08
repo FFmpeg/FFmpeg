@@ -325,11 +325,11 @@ static void mxf_free(AVFormatContext *s)
     }
 }
 
-static const MXFDataDefinitionUL *mxf_get_data_definition_ul(enum CodecType type)
+static const MXFCodecUL *mxf_get_data_definition_ul(int type)
 {
-    const MXFDataDefinitionUL *uls = ff_mxf_data_definition_uls;
-    while (uls->type != CODEC_TYPE_DATA) {
-        if (type == uls->type)
+    const MXFCodecUL *uls = ff_mxf_data_definition_uls;
+    while (uls->uid[0]) {
+        if (type == uls->id)
             break;
         uls++;
     }
@@ -509,7 +509,7 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
 
 static void mxf_write_common_fields(ByteIOContext *pb, AVStream *st)
 {
-    const MXFDataDefinitionUL *data_def_ul = mxf_get_data_definition_ul(st->codec->codec_type);
+    const MXFCodecUL *data_def_ul = mxf_get_data_definition_ul(st->codec->codec_type);
     MXFStreamContext *sc = st->priv_data;
 
     // find data define uls

@@ -618,22 +618,12 @@ static int mxf_match_uid(const UID key, const UID uid, int len)
 
 static const MXFCodecUL *mxf_get_codec_ul(const MXFCodecUL *uls, UID *uid)
 {
-    while (uls->id != CODEC_ID_NONE) {
+    while (uls->uid[0]) {
         if(mxf_match_uid(uls->uid, *uid, uls->matching_len))
             break;
         uls++;
     }
     return uls;
-}
-
-static enum CodecType mxf_get_codec_type(const MXFDataDefinitionUL *uls, UID *uid)
-{
-    while (uls->type != CODEC_TYPE_DATA) {
-        if(mxf_match_uid(uls->uid, *uid, 16))
-            break;
-        uls++;
-    }
-    return uls->type;
 }
 
 static void *mxf_resolve_strong_ref(MXFContext *mxf, UID *strong_ref, enum MXFMetadataSetType type)
@@ -757,7 +747,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         }
 
         PRINT_KEY(mxf->fc, "data definition   ul", source_track->sequence->data_definition_ul);
-        st->codec->codec_type = mxf_get_codec_type(ff_mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
+        codec_ul = mxf_get_codec_ul(ff_mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
+        st->codec->codec_type = codec_ul->id;
 
         source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref, AnyType);
         if (source_package->descriptor) {

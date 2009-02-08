@@ -55,15 +55,10 @@ typedef struct {
 typedef struct {
     UID uid;
     unsigned matching_len;
-    enum CodecID id;
+    int id;
 } MXFCodecUL;
 
-typedef struct {
-    UID uid;
-    enum CodecType type;
-} MXFDataDefinitionUL;
-
-extern const MXFDataDefinitionUL ff_mxf_data_definition_uls[];
+extern const MXFCodecUL ff_mxf_data_definition_uls[];
 extern const MXFCodecUL ff_mxf_codec_uls[];
 
 #ifdef DEBUG
