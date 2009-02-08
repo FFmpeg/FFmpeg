@@ -61,7 +61,7 @@ static av_cold int tqi_decode_init(AVCodecContext *avctx)
 static void tqi_decode_mb(MpegEncContext *s, DCTELEM (*block)[64])
 {
     int n;
-    s->dsp.clear_blocks(block);
+    s->dsp.clear_blocks(block[0]);
     for (n=0; n<6; n++)
         ff_mpeg1_decode_block_intra(s, block[n], n);
 }
