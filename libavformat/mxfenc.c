@@ -852,19 +852,19 @@ static unsigned klv_fill_size(uint64_t size)
         return pad & (KAG_SIZE-1);
 }
 
-static int mxf_write_index_table_segment(AVFormatContext *s)
+static void mxf_write_index_table_segment(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    int i, j, ret;
+    int i, j;
     int temporal_reordering = 0;
     int last_key_index = 0, key_index = 0;
 
     av_log(s, AV_LOG_DEBUG, "edit units count %d\n", mxf->edit_units_count);
 
     put_buffer(pb, index_table_segment_key, 16);
-    ret = klv_encode_ber_length(pb, 109 + (s->nb_streams+1)*6 +
-                                mxf->edit_units_count*(11+mxf->slice_count*4));
+    klv_encode_ber_length(pb, 109 + (s->nb_streams+1)*6 +
+                          mxf->edit_units_count*(11+mxf->slice_count*4));
 
     // instance id
     mxf_write_local_tag(pb, 16, 0x3C0A);
@@ -965,8 +965,6 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
         if (s->nb_streams > 1)
             put_be32(pb, mxf->index_entries[i].slice_offset);
     }
-
-    return ret;
 }
 
 static void mxf_write_partition(AVFormatContext *s, int bodysid,
