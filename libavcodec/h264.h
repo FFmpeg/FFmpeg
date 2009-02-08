@@ -112,6 +112,15 @@ enum {
 };
 
 /**
+ * SEI message types
+ */
+typedef enum {
+    SEI_TYPE_PIC_TIMING              =  1, ///< picture timing
+    SEI_TYPE_USER_DATA_UNREGISTERED  =  5, ///< unregistered user data
+    SEI_TYPE_RECOVERY_POINT          =  6  ///< recovery point (frame # to decoder sync)
+} SEI_Type;
+
+/**
  * pic_struct in picture timing SEI message
  */
 typedef enum {
