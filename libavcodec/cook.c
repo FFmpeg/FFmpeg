@@ -1022,7 +1022,7 @@ static void dump_cook_context(COOKContext *q)
  * @param avctx     pointer to the AVCodecContext
  */
 
-static int cook_decode_init(AVCodecContext *avctx)
+static av_cold int cook_decode_init(AVCodecContext *avctx)
 {
     COOKContext *q = avctx->priv_data;
     const uint8_t *edata_ptr = avctx->extradata;
