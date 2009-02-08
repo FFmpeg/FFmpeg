@@ -30,10 +30,10 @@
 
 struct sdp_session_level {
     int sdp_version;      /**< protocol version (currently 0) */
-    int id;               /**< session id */
+    int id;               /**< session ID */
     int version;          /**< session version */
     int start_time;       /**< session start time (NTP time, in seconds),
-                             or 0 in case of permanent session */
+                               or 0 in case of permanent session */
     int end_time;         /**< session end time (NTP time, in seconds),
                                or 0 if the session is not bounded */
     int ttl;              /**< TTL, in case of multicast stream */
@@ -101,14 +101,14 @@ static char *extradata2psets(AVCodecContext *c)
     const char *pset_string = "; sprop-parameter-sets=";
 
     if (c->extradata_size > MAX_EXTRADATA_SIZE) {
-        av_log(c, AV_LOG_ERROR, "Too many extra data!\n");
+        av_log(c, AV_LOG_ERROR, "Too much extradata!\n");
 
         return NULL;
     }
 
     psets = av_mallocz(MAX_PSET_SIZE);
     if (psets == NULL) {
-        av_log(c, AV_LOG_ERROR, "Cannot allocate memory for the parameter sets\n");
+        av_log(c, AV_LOG_ERROR, "Cannot allocate memory for the parameter sets.\n");
         return NULL;
     }
     memcpy(psets, pset_string, strlen(pset_string));
@@ -124,7 +124,7 @@ static char *extradata2psets(AVCodecContext *c)
             p++;
         }
         if (av_base64_encode(p, MAX_PSET_SIZE - (p - psets), r, r1 - r) == NULL) {
-            av_log(c, AV_LOG_ERROR, "Cannot BASE64 encode %td %td!\n", MAX_PSET_SIZE - (p - psets), r1 - r);
+            av_log(c, AV_LOG_ERROR, "Cannot Base64-encode %td %td!\n", MAX_PSET_SIZE - (p - psets), r1 - r);
             av_free(psets);
 
             return NULL;
@@ -141,13 +141,13 @@ static char *extradata2config(AVCodecContext *c)
     char *config;
 
     if (c->extradata_size > MAX_EXTRADATA_SIZE) {
-        av_log(c, AV_LOG_ERROR, "Too many extra data!\n");
+        av_log(c, AV_LOG_ERROR, "Too much extradata!\n");
 
         return NULL;
     }
     config = av_malloc(10 + c->extradata_size * 2);
     if (config == NULL) {
-        av_log(c, AV_LOG_ERROR, "Cannot allocate memory for the config info\n");
+        av_log(c, AV_LOG_ERROR, "Cannot allocate memory for the config info.\n");
         return NULL;
     }
     memcpy(config, "; config=", 9);
@@ -187,7 +187,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                 /* FIXME: maybe we can forge config information based on the
                  *        codec parameters...
                  */
-                av_log(c, AV_LOG_ERROR, "AAC with no global headers is currently not supported\n");
+                av_log(c, AV_LOG_ERROR, "AAC with no global headers is currently not supported.\n");
                 return NULL;
             }
             if (config == NULL) {
@@ -219,7 +219,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                          c->sample_rate, c->channels);
             break;
         default:
-            /* Nothing special to do, here... */
+            /* Nothing special to do here... */
             break;
     }
 
