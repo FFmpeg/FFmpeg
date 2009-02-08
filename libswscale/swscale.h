@@ -118,8 +118,10 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
                                   SwsFilter *srcFilter, SwsFilter *dstFilter, double *param);
 int sws_scale(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
               int srcSliceH, uint8_t* dst[], int dstStride[]);
+#if LIBSWSCALE_VERSION_MAJOR < 1
 int sws_scale_ordered(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
                       int srcSliceH, uint8_t* dst[], int dstStride[]) attribute_deprecated;
+#endif
 
 
 int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation);
