@@ -36,7 +36,7 @@ hiegrep '[[:space:]]$'    'trailing whitespace' $*
 hiegrep "`echo x | tr 'x' '\t'`"         'tabs' $*
 #hiegrep ':\+$'          'Empty lines' $*
 hiegrep ';;'              'double ;' $*
-hiegrep '\b_[a-zA-Z0-9_]' 'reserved identifer' $*
+hiegrep2 '\b_[a-zA-Z0-9_]{1,}' '__(asm|attribute)([^a-zA-Z0-9]|$)' 'reserved identifer' $*
 hiegrep '//[-/<\* ]*$'    'empty comment' $*
 hiegrep '/\*[-<\* ]*\*/'  'empty comment' $*
 hiegrep 'for *\( *'"$ERE_PRITYP"' '  'not gcc 2.95 compatible' $*
