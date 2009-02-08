@@ -69,17 +69,17 @@ int av_base64_decode(uint8_t * out, const char *in, int out_size)
 * Fixed edge cases and made it work from data (vs. strings) by Ryan.
 *****************************************************************************/
 
-char *av_base64_encode(char *out, int out_size, const uint8_t *in, int size)
+char *av_base64_encode(char *out, int out_size, const uint8_t *in, int in_size)
 {
     static const char b64[] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     char *ret, *dst;
     unsigned i_bits = 0;
     int i_shift = 0;
-    int bytes_remaining = size;
+    int bytes_remaining = in_size;
 
-    if (size >= UINT_MAX / 4 ||
-        out_size < (size+2) / 3 * 4 + 1)
+    if (in_size >= UINT_MAX / 4 ||
+        out_size < (in_size+2) / 3 * 4 + 1)
         return NULL;
     ret = dst = out;
     while (bytes_remaining) {
