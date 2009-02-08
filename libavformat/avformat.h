@@ -911,6 +911,10 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp,
  * @param max_ts largest acceptable timestamp
  * @param flags flags
  * @returns >=0 on success, error code otherwise
+ *
+ * @NOTE this is part of the new seek API which is still under construction
+ *       thus do not use this yet it may change any time, dont expect ABI
+ *       compatibility yet!
  */
 int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
 
