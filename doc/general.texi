@@ -457,11 +457,11 @@ performance on systems without hardware floating point support).
 @section Subtitle Formats
 
 @multitable @columnfractions .4 .1 .1 .1 .1 .1
-@item Name @tab Muxing @tab Demuxing @tab Encoding @tab Decoding @tab Rendering
+@item Name @tab Muxing @tab Demuxing @tab Encoding @tab Decoding
 @item ASS/SSA      @tab X @tab X
-@item DVB          @tab X @tab X @tab X @tab X @tab X
-@item DVD          @tab X @tab X @tab X @tab X @tab X
-@item XSUB         @tab   @tab   @tab   @tab X @tab
+@item DVB          @tab X @tab X @tab X @tab X
+@item DVD          @tab X @tab X @tab X @tab X
+@item XSUB         @tab   @tab   @tab   @tab X
 @end multitable
 
 @code{X} means that the feature is supported.
