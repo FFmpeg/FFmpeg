@@ -2908,6 +2908,9 @@ int64_t parse_date(const char *datestr, int duration)
     p = datestr;
     q = NULL;
     if (!duration) {
+        if (!strncasecmp(datestr, "now", len))
+            return (int64_t) now * 1000000;
+
         /* parse the year-month-day part */
         for (i = 0; i < FF_ARRAY_ELEMS(date_fmt); i++) {
             q = small_strptime(p, date_fmt[i], &dt);

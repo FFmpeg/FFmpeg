@@ -3769,7 +3769,7 @@ static const OptionDef options[] = {
     { "itsoffset", OPT_FUNC2 | HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
     { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "stream:scale" },
     { "title", HAS_ARG | OPT_STRING, {(void*)&str_title}, "set the title", "string" },
-    { "timestamp", OPT_FUNC2 | HAS_ARG, {(void*)&opt_rec_timestamp}, "set the timestamp", "time" },
+    { "timestamp", OPT_FUNC2 | HAS_ARG, {(void*)&opt_rec_timestamp}, "set the timestamp ('now' to set the current time)", "time" },
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
     { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
     { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },
