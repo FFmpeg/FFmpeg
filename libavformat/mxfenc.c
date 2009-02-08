@@ -870,7 +870,7 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
     av_log(s, AV_LOG_DEBUG, "edit units count %d\n", mxf->edit_units_count);
 
     put_buffer(pb, index_table_segment_key, 16);
-    ret = klv_encode_ber_length(pb, 109 + s->nb_streams*6 +
+    ret = klv_encode_ber_length(pb, 109 + (s->nb_streams+1)*6 +
                                 mxf->edit_units_count*(11+(s->nb_streams-1)*4));
 
     // instance id
@@ -907,9 +907,13 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
     put_byte(pb, s->nb_streams-1);
 
     // delta entry array
-    mxf_write_local_tag(pb, 8 + s->nb_streams*6, 0x3F09);
-    put_be32(pb, s->nb_streams); // num of entries
+    mxf_write_local_tag(pb, 8 + (s->nb_streams+1)*6, 0x3F09);
+    put_be32(pb, s->nb_streams+1); // num of entries
     put_be32(pb, 6);             // size of one entry
+    // write system item delta entry
+    put_byte(pb, 0);
+    put_byte(pb, 0); // slice entry
+    put_be32(pb, 0); // element delta
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MXFStreamContext *sc = st->priv_data;
@@ -917,7 +921,10 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
         if (sc->temporal_reordering)
             temporal_reordering = 1;
         put_byte(pb, i);
-        put_be32(pb, 0); // element delta
+        if (mxf->edit_unit_start)
+            put_be32(pb, KAG_SIZE); // system item size including klv fill
+        else
+            put_be32(pb, 0); // element delta
     }
 
     mxf_write_local_tag(pb, 8 + mxf->edit_units_count*(11+(s->nb_streams-1)*4), 0x3F0A);
@@ -1248,6 +1255,70 @@ static void mxf_write_klv_fill(AVFormatContext *s)
     }
 }
 
+static const uint8_t system_metadata_pack_key[]        = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x03,0x01,0x04,0x01,0x01,0x00 };
+static const uint8_t system_metadata_package_set_key[] = { 0x06,0x0E,0x2B,0x34,0x02,0x43,0x01,0x01,0x0D,0x01,0x03,0x01,0x04,0x01,0x02,0x01 };
+
+static uint32_t ff_framenum_to_12m_time_code(unsigned frame, int drop, int fps)
+{
+    return (0                                    << 31) | // color frame flag
+           (0                                    << 30) | // drop  frame flag
+           ( ((frame % fps) / 10)                << 28) | // tens  of frames
+           ( ((frame % fps) % 10)                << 24) | // units of frames
+           (0                                    << 23) | // field phase (NTSC), b0 (PAL)
+           ((((frame / fps) % 60) / 10)          << 20) | // tens  of seconds
+           ((((frame / fps) % 60) % 10)          << 16) | // units of seconds
+           (0                                    << 15) | // b0 (NTSC), b2 (PAL)
+           ((((frame / (fps * 60)) % 60) / 10)   << 12) | // tens  of minutes
+           ((((frame / (fps * 60)) % 60) % 10)   <<  8) | // units of minutes
+           (0                                    <<  7) | // b1
+           (0                                    <<  6) | // b2 (NSC), field phase (PAL)
+           ((((frame / (fps * 3600) % 24)) / 10) <<  4) | // tens  of hours
+           (  (frame / (fps * 3600) % 24)) % 10;          // units of hours
+}
+
+static void mxf_write_system_item(AVFormatContext *s)
+{
+    MXFContext *mxf = s->priv_data;
+    ByteIOContext *pb = s->pb;
+    unsigned fps, frame;
+    uint32_t time_code;
+
+    frame = mxf->edit_units_count;
+
+    // write system metadata pack
+    put_buffer(pb, system_metadata_pack_key, 16);
+    klv_encode_ber_length(pb, 57);
+    put_byte(pb, 0x5c); // UL, user date/time stamp, picture and sound item present
+    put_byte(pb, 0x04); // content package rate
+    put_byte(pb, 0x00); // content package type
+    put_be16(pb, 0x00); // channel handle
+    put_be16(pb, frame); // continuity count
+    if (mxf->essence_container_count > 1)
+        put_buffer(pb, multiple_desc_ul, 16);
+    else
+        put_buffer(pb, mxf_essence_container_uls[mxf->essence_containers_indices[0]].container_ul, 16);
+    put_byte(pb, 0);
+    put_be64(pb, 0);
+    put_be64(pb, 0); // creation date/time stamp
+
+    // XXX drop frame
+    if (mxf->time_base.den == 30000) fps = 30;
+    else                             fps = 25;
+
+    put_byte(pb, 0x81); // SMPTE 12M time code
+    time_code = ff_framenum_to_12m_time_code(frame, 0, fps);
+    put_be32(pb, time_code);
+    put_be32(pb, 0); // binary group data
+    put_be64(pb, 0);
+
+    // write system metadata package set
+    put_buffer(pb, system_metadata_package_set_key, 16);
+    klv_encode_ber_length(pb, 35);
+    put_byte(pb, 0x83); // UMID
+    put_be16(pb, 0x20);
+    mxf_write_umid(pb, SourcePackage, 0);
+}
+
 static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
@@ -1282,6 +1353,10 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->index == mxf->edit_unit_start) {
         mxf->index_entries[mxf->edit_units_count].offset = url_ftell(pb);
         mxf->index_entries[mxf->edit_units_count].slice_offset[st->index] = 0;
+
+        mxf_write_system_item(s);
+        mxf_write_klv_fill(s);
+
         mxf->edit_units_count++;
     } else {
         mxf->index_entries[mxf->edit_units_count-1].slice_offset[st->index] =
@@ -1321,7 +1396,7 @@ static int mxf_write_footer(AVFormatContext *s)
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     unsigned index_byte_count =
-        109 + s->nb_streams*6 +
+        109 + (s->nb_streams+1)*6 +
         mxf->edit_units_count*(11+(s->nb_streams-1)*4);
 
     // add encoded ber length
