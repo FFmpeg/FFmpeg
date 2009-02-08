@@ -67,7 +67,7 @@ int ff_audio_interleave_init(AVFormatContext *s,
     return 0;
 }
 
-int ff_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
+static int ff_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
                                    int stream_index, int flush)
 {
     AVStream *st = s->streams[stream_index];

@@ -40,8 +40,6 @@ int ff_audio_interleave_init(AVFormatContext *s, const int *samples_per_frame, A
 void ff_audio_interleave_close(AVFormatContext *s);
 
 int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt);
-int ff_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
-                                   int stream_index, int flush);
 /**
  * Rechunk audio pcm packets per AudioInterleaveContext->samples_per_frame
  * and interleave them correctly.
