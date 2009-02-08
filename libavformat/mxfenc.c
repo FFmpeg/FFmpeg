@@ -55,7 +55,7 @@ typedef struct {
 typedef struct {
     uint8_t flags;
     uint64_t offset;
-    unsigned slice_offset; // offset of audio slice
+    unsigned slice_offset; ///< offset of audio slice
 } MXFIndexEntry;
 
 typedef struct {
@@ -118,7 +118,7 @@ typedef struct MXFContext {
     MXFIndexEntry *index_entries;
     unsigned edit_units_count;
     uint64_t timestamp;   ///< timestamp, as year(16),month(8),day(8),hour(8),minutes(8),msec/4(8)
-    uint8_t slice_count;  /// index slice count minus 1 (1 if no audio, 0 otherwise)
+    uint8_t slice_count;  ///< index slice count minus 1 (1 if no audio, 0 otherwise)
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
