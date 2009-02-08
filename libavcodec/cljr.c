@@ -151,7 +151,7 @@ AVCodec cljr_decoder = {
 AVCodec cljr_encoder = {
     "cljr",
     CODEC_TYPE_VIDEO,
-    CODEC_ID_cljr,
+    CODEC_ID_CLJR,
     sizeof(CLJRContext),
     encode_init,
     encode_frame,
