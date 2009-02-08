@@ -23,6 +23,15 @@ hiegrep(){
     cat $TMP
 }
 
+hiegrep2(){
+    arg="$1"
+    varg="$2"
+    msg="$3"
+    shift 3
+    grep $OPT '^+' $* | grep -v ':+++' | egrep -v -- "$varg" | egrep --color=always -- "$arg" > $TMP && echo -e "\n$msg"
+    cat $TMP
+}
+
 hiegrep '[[:space:]]$'    'trailing whitespace' $*
 hiegrep "`echo x | tr 'x' '\t'`"         'tabs' $*
 #hiegrep ':\+$'          'Empty lines' $*
@@ -32,8 +41,7 @@ hiegrep '//[-/<\* ]*$'    'empty comment' $*
 hiegrep '/\*[-<\* ]*\*/'  'empty comment' $*
 hiegrep 'for *\( *'"$ERE_PRITYP"' '  'not gcc 2.95 compatible' $*
 
-egrep $OPT '^\+(int|unsigned|static|void)[a-zA-Z0-9 _]*(init|end)[a-zA-Z0-9 _]*\(.*[^;]$' $* | grep -v 'av_cold'> $TMP && echo -e '\nThese functions may need av_cold, please review the whole patch for similar functions needing av_cold'
-cat $TMP
+hiegrep2 '(int|unsigned|static|void)[a-zA-Z0-9 _]*(init|end)[a-zA-Z0-9 _]*\(.*[^;]$' '(av_cold|:\+[^a-zA-Z_])' 'These functions may need av_cold, please review the whole patch for similar functions needing av_cold' $*
 
 hiegrep '\+= *1 *;'     'can be simplified to ++' $*
 hiegrep '-= *1 *;'      'can be simplified to --' $*
@@ -58,15 +66,12 @@ hiegrep 'if *\( *(0|1) *\)' 'useless if()' $*
 hiegrep '& *[a-zA-Z0-9_]* *\[ *0 *\]' 'useless & [0]' $*
 hiegrep '(\( *[0-9] *(&&|\|\|)|(&&|\|\|) *[0-9] *\))' 'overriding condition' $*
 
-
-egrep $OPT '^\+.*\.long_name *=' $*| grep -v 'NULL_IF_CONFIG_SMAL'> $TMP && echo -e '\nmissing NULL_IF_CONFIG_SMAL'
-cat $TMP
+hiegrep2 '\.long_name *=' 'NULL_IF_CONFIG_SMAL' 'missing NULL_IF_CONFIG_SMAL' $*
 
 #egrep $OPT '^\+.*const ' $*| grep -v 'static'> $TMP && echo -e '\nnon static const'
 #cat $TMP
 
-egrep $OPT '^\+'"$ERE_TYPES" $*| grep ':+[a-zA-Z]' | egrep -v '(static|av_|ff_|typedef)'> $TMP && echo -e '\nNon static with no ff_/av_ prefix'
-cat $TMP
+hiegrep2 "$ERE_TYPES" '(static|av_|ff_|typedef|:\+[^a-zA-Z_])' 'Non static with no ff_/av_ prefix' $*
 
 hiegrep ':\+[^}]*else' 'missing } prior to else' $*
 
