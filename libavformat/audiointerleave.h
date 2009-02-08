@@ -1,5 +1,5 @@
 /*
- * Audio Interleaving prototypes and declarations
+ * audio interleaving prototypes and declarations
  *
  * Copyright (c) 2009 Baptiste Coudurier <baptiste dot coudurier at gmail dot com>
  *
@@ -28,10 +28,10 @@
 
 typedef struct {
     AVFifoBuffer fifo;
-    unsigned fifo_size;           ///< current fifo size allocated
+    unsigned fifo_size;           ///< size of currently allocated FIFO
     uint64_t dts;                 ///< current dts
     int sample_size;              ///< size of one sample all channels included
-    const int *samples_per_frame; ///< must be 0 terminated
+    const int *samples_per_frame; ///< must be 0-terminated
     const int *samples;           ///< current samples per frame, pointer to samples_per_frame
     AVRational time_base;         ///< time base of output audio packets
 } AudioInterleaveContext;
@@ -41,9 +41,9 @@ void ff_audio_interleave_close(AVFormatContext *s);
 
 int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt);
 /**
- * Rechunk audio pcm packets per AudioInterleaveContext->samples_per_frame
+ * Rechunk audio PCM packets per AudioInterleaveContext->samples_per_frame
  * and interleave them correctly.
- * AVStream->priv_data first element must be AudioInterleaveContext
+ * The first element of AVStream->priv_data must be AudioInterleaveContext
  * when using this function.
  *
  * @param get_packet function will output a packet when streams are correctly interleaved.
@@ -53,4 +53,4 @@ int ff_audio_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int fl
                         int (*get_packet)(AVFormatContext *, AVPacket *, AVPacket *, int),
                         int (*compare_ts)(AVFormatContext *, AVPacket *, AVPacket *));
 
-#endif // AVFORMAT_AUDIOINTERLEAVE_H
+#endif /* AVFORMAT_AUDIOINTERLEAVE_H */
