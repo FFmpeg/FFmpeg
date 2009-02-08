@@ -113,7 +113,6 @@ typedef struct MOVStreamContext {
     MOVStts *stts_data;
     unsigned int ctts_count;
     MOVStts *ctts_data;
-    unsigned int edit_count; /* number of 'edit' (elst atom) */
     unsigned int sample_to_chunk_sz;
     MOVStsc *sample_to_chunk;
     int sample_to_ctime_index;
@@ -1762,7 +1761,7 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
-    edit_count= sc->edit_count = get_be32(pb);     /* entries */
+    edit_count = get_be32(pb); /* entries */
 
     for(i=0; i<edit_count; i++){
         int time;
