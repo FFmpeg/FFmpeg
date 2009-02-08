@@ -72,7 +72,7 @@ static void avformat_get_context_defaults(AVFormatContext *s)
     av_opt_set_defaults(s);
 }
 
-AVFormatContext *av_alloc_format_context(void)
+AVFormatContext *avformat_alloc_context(void)
 {
     AVFormatContext *ic;
     ic = av_malloc(sizeof(AVFormatContext));
@@ -81,3 +81,10 @@ AVFormatContext *av_alloc_format_context(void)
     ic->av_class = &av_format_context_class;
     return ic;
 }
+
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+AVFormatContext *av_alloc_format_context(void)
+{
+    return avformat_alloc_context();
+}
+#endif

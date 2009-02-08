@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 25
+#define LIBAVFORMAT_VERSION_MINOR 26
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -813,12 +813,20 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVInputFormat *fmt,
                        int buf_size,
                        AVFormatParameters *ap);
+
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+/**
+ * @deprecated Use avformat_alloc_context() instead.
+ */
+attribute_deprecated AVFormatContext *av_alloc_format_context(void);
+#endif
+
 /**
  * Allocate an AVFormatContext.
  * Can be freed with av_free() but do not forget to free everything you
  * explicitly allocated as well!
  */
-AVFormatContext *av_alloc_format_context(void);
+AVFormatContext *avformat_alloc_context(void);
 
 /**
  * Read packets of a media file to get stream information. This
