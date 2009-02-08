@@ -49,10 +49,10 @@ int ff_h264_find_frame_end(H264Context *h, const uint8_t *buf, int buf_size)
          * and there should be FF_INPUT_BUFFER_PADDING_SIZE bytes at the end
          */
 #    if HAVE_FAST_64BIT
-            while(i<buf_size && !((~*(uint64_t*)(buf+i) & (*(uint64_t*)(buf+i) - 0x0101010101010101ULL)) & 0x8080808080808080ULL))
+            while(i<buf_size && !((~*(const uint64_t*)(buf+i) & (*(const uint64_t*)(buf+i) - 0x0101010101010101ULL)) & 0x8080808080808080ULL))
                 i+=8;
 #    else
-            while(i<buf_size && !((~*(uint32_t*)(buf+i) & (*(uint32_t*)(buf+i) - 0x01010101U)) & 0x80808080U))
+            while(i<buf_size && !((~*(const uint32_t*)(buf+i) & (*(const uint32_t*)(buf+i) - 0x01010101U)) & 0x80808080U))
                 i+=4;
 #    endif
 #endif
