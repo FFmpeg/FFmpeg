@@ -107,6 +107,9 @@ Cycle audio channel.
 @item v
 Cycle video channel.
 
+@item t
+Cycle subtitle channel.
+
 @item w
 Show audio waves.
 
