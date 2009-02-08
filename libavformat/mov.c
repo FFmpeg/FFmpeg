@@ -113,8 +113,8 @@ typedef struct MOVStreamContext {
     MOVStts *stts_data;
     unsigned int ctts_count;
     MOVStts *ctts_data;
-    unsigned int sample_to_chunk_sz;
-    MOVStsc *sample_to_chunk;
+    unsigned int stsc_count;
+    MOVStsc *stsc_data;
     int ctts_index;
     int ctts_sample;
     unsigned int sample_size;
@@ -1067,19 +1067,19 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     entries = get_be32(pb);
 
-    if(entries >= UINT_MAX / sizeof(*sc->sample_to_chunk))
+    if(entries >= UINT_MAX / sizeof(*sc->stsc_data))
         return -1;
 
     dprintf(c->fc, "track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
 
-    sc->sample_to_chunk_sz = entries;
-    sc->sample_to_chunk = av_malloc(entries * sizeof(*sc->sample_to_chunk));
-    if (!sc->sample_to_chunk)
+    sc->stsc_count = entries;
+    sc->stsc_data = av_malloc(entries * sizeof(*sc->stsc_data));
+    if (!sc->stsc_data)
         return -1;
     for(i=0; i<entries; i++) {
-        sc->sample_to_chunk[i].first = get_be32(pb);
-        sc->sample_to_chunk[i].count = get_be32(pb);
-        sc->sample_to_chunk[i].id = get_be32(pb);
+        sc->stsc_data[i].first = get_be32(pb);
+        sc->stsc_data[i].count = get_be32(pb);
+        sc->stsc_data[i].id = get_be32(pb);
     }
     return 0;
 }
@@ -1249,10 +1249,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         st->nb_frames = sc->sample_count;
         for (i = 0; i < sc->chunk_count; i++) {
             current_offset = sc->chunk_offsets[i];
-            if (stsc_index + 1 < sc->sample_to_chunk_sz &&
-                i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
+            if (stsc_index + 1 < sc->stsc_count &&
+                i + 1 == sc->stsc_data[stsc_index + 1].first)
                 stsc_index++;
-            for (j = 0; j < sc->sample_to_chunk[stsc_index].count; j++) {
+            for (j = 0; j < sc->stsc_data[stsc_index].count; j++) {
                 if (current_sample >= sc->sample_count) {
                     av_log(mov->fc, AV_LOG_ERROR, "wrong sample count\n");
                     goto out;
@@ -1265,7 +1265,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 }
                 sample_size = sc->sample_size > 0 ? sc->sample_size : sc->sample_sizes[current_sample];
                 if(sc->pseudo_stream_id == -1 ||
-                   sc->sample_to_chunk[stsc_index].id - 1 == sc->pseudo_stream_id) {
+                   sc->stsc_data[stsc_index].id - 1 == sc->pseudo_stream_id) {
                     av_add_index_entry(st, current_offset, current_dts, sample_size, distance,
                                     keyframe ? AVINDEX_KEYFRAME : 0);
                     dprintf(mov->fc, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
@@ -1289,10 +1289,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         unsigned int frames = 1;
         for (i = 0; i < sc->chunk_count; i++) {
             current_offset = sc->chunk_offsets[i];
-            if (stsc_index + 1 < sc->sample_to_chunk_sz &&
-                i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
+            if (stsc_index + 1 < sc->stsc_count &&
+                i + 1 == sc->stsc_data[stsc_index + 1].first)
                 stsc_index++;
-            chunk_samples = sc->sample_to_chunk[stsc_index].count;
+            chunk_samples = sc->stsc_data[stsc_index].count;
             /* get chunk size, beware of alaw/ulaw/mace */
             if (sc->samples_per_frame > 0 &&
                 (chunk_samples * sc->bytes_per_frame % sc->samples_per_frame == 0)) {
@@ -1355,7 +1355,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         return ret;
 
     /* sanity checks */
-    if(sc->chunk_count && (!sc->stts_count || !sc->sample_to_chunk_sz ||
+    if(sc->chunk_count && (!sc->stts_count || !sc->stsc_count ||
                            (!sc->sample_size && !sc->sample_count))){
         av_log(c->fc, AV_LOG_ERROR, "stream %d, missing mandatory atoms, broken header\n",
                st->index);
@@ -1403,7 +1403,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     /* Do not need those anymore. */
     av_freep(&sc->chunk_offsets);
-    av_freep(&sc->sample_to_chunk);
+    av_freep(&sc->stsc_data);
     av_freep(&sc->sample_sizes);
     av_freep(&sc->keyframes);
     av_freep(&sc->stts_data);
