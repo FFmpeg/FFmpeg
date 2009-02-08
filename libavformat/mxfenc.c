@@ -124,7 +124,6 @@ typedef struct MXFContext {
     int header_written;
     MXFIndexEntry *index_entries;
     unsigned edit_units_count;
-    int edit_unit_start;  ///< index of the stream starting edit unit
     uint64_t timestamp;   ///< timestamp, as year(16),month(8),day(8),hour(8),minutes(8),msec/4(8)
 } MXFContext;
 
@@ -921,7 +920,7 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
         if (sc->temporal_reordering)
             temporal_reordering = 1;
         put_byte(pb, i);
-        if (mxf->edit_unit_start)
+        if (i == 0)
             put_be32(pb, KAG_SIZE); // system item size including klv fill
         else
             put_be32(pb, 0); // element delta
@@ -1181,6 +1180,10 @@ static int mxf_write_header(AVFormatContext *s)
         st->priv_data = sc;
 
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+            if (i != 0) {
+                av_log(s, AV_LOG_ERROR, "video stream must be first track\n");
+                return -1;
+            }
             if (fabs(av_q2d(st->codec->time_base) - 1/25.0) < 0.0001) {
                 samples_per_frame = PAL_samples_per_frame;
                 mxf->time_base = (AVRational){ 1, 25 };
@@ -1191,7 +1194,6 @@ static int mxf_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "unsupported video frame rate\n");
                 return -1;
             }
-            mxf->edit_unit_start = st->index;
             av_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
         } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             if (st->codec->sample_rate != 48000) {
@@ -1350,7 +1352,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     mxf_write_klv_fill(s);
 
-    if (st->index == mxf->edit_unit_start) {
+    if (st->index == 0) {
         mxf->index_entries[mxf->edit_units_count].offset = url_ftell(pb);
         mxf->index_entries[mxf->edit_units_count].slice_offset[st->index] = 0;
 
@@ -1466,12 +1468,11 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
     if (stream_count && (s->nb_streams == stream_count || flush)) {
         pktl = s->packet_buffer;
         if (s->nb_streams != stream_count) {
-            MXFContext *mxf = s->priv_data;
             AVPacketList *first = NULL;
             // find first packet in edit unit
             while (pktl) {
                 AVStream *st = s->streams[pktl->pkt.stream_index];
-                if (st->index == mxf->edit_unit_start)
+                if (st->index == 0)
                     break;
                 else if (!first)
                     first = pktl;
