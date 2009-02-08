@@ -25,6 +25,7 @@
 #include "config.h"
 #include "libavutil/common.h"
 
+#if ARCH_X86_32
 #define MULL(ra, rb, shift) \
         ({ int rt, dummy; __asm__ (\
             "imull %3               \n\t"\
@@ -42,6 +43,7 @@
     ({ int64_t rt;\
      __asm__ ("imull %2\n\t" : "=A"(rt) : "a" ((int)ra), "g" ((int)rb));\
      rt; })
+#endif
 
 #if HAVE_CMOV
 /* median of 3 */
