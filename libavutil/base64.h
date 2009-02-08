@@ -27,13 +27,13 @@
  * Decodes Base64.
  * Parameter order is the same as strncpy().
  */
-int av_base64_decode(uint8_t * out, const char *in, int out_length);
+int av_base64_decode(uint8_t * out, const char *in, int out_size);
 
 /**
  * Encodes Base64.
  * @param src data, not a string
  * @param buf output string
  */
-char *av_base64_encode(char * buf, int buf_len, const uint8_t * src, int len);
+char *av_base64_encode(char * buf, int buf_size, const uint8_t * src, int size);
 
 #endif /* AVUTIL_BASE64_H */

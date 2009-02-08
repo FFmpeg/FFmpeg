@@ -42,7 +42,7 @@ static const uint8_t map2[] =
     0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33
 };
 
-int av_base64_decode(uint8_t * out, const char *in, int out_length)
+int av_base64_decode(uint8_t * out, const char *in, int out_size)
 {
     int i, v;
     uint8_t *dst = out;
@@ -54,7 +54,7 @@ int av_base64_decode(uint8_t * out, const char *in, int out_length)
             return -1;
         v = (v << 6) + map2[index];
         if (i & 3) {
-            if (dst - out < out_length) {
+            if (dst - out < out_size) {
                 *dst++ = v >> (6 - 2 * (i & 3));
             }
         }
@@ -69,17 +69,17 @@ int av_base64_decode(uint8_t * out, const char *in, int out_length)
 * Fixed edge cases and made it work from data (vs. strings) by Ryan.
 *****************************************************************************/
 
-char *av_base64_encode(char * buf, int buf_len, const uint8_t * src, int len)
+char *av_base64_encode(char * buf, int buf_size, const uint8_t * src, int size)
 {
     static const char b64[] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     char *ret, *dst;
     unsigned i_bits = 0;
     int i_shift = 0;
-    int bytes_remaining = len;
+    int bytes_remaining = size;
 
-    if (len >= UINT_MAX / 4 ||
-        buf_len < (len+2) / 3 * 4 + 1)
+    if (size >= UINT_MAX / 4 ||
+        buf_size < (size+2) / 3 * 4 + 1)
         return NULL;
     ret = dst = buf;
     while (bytes_remaining) {
