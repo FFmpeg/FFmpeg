@@ -27,7 +27,7 @@
  * Decodes Base64.
  * Parameter order is the same as strncpy().
  */
-int av_base64_decode(uint8_t * out, const char *in, int out_size);
+int av_base64_decode(uint8_t *out, const char *in, int out_size);
 
 /**
  * Encodes Base64.
