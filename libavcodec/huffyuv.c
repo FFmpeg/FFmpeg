@@ -31,7 +31,6 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
-#include "mathops.h"
 
 #define VLC_BITS 11
 
@@ -146,23 +145,6 @@ static inline int add_left_prediction(uint8_t *dst, uint8_t *src, int w, int acc
     }
 
     return acc;
-}
-
-static inline void add_median_prediction(uint8_t *dst, uint8_t *src1, uint8_t *diff, int w, int *left, int *left_top){
-    int i;
-    uint8_t l, lt;
-
-    l= *left;
-    lt= *left_top;
-
-    for(i=0; i<w; i++){
-        l= mid_pred(l, src1[i], (l + src1[i] - lt)&0xFF) + diff[i];
-        lt= src1[i];
-        dst[i]= l;
-    }
-
-    *left= l;
-    *left_top= lt;
 }
 
 static inline void add_left_prediction_bgr32(uint8_t *dst, uint8_t *src, int w, int *red, int *green, int *blue){
@@ -1106,12 +1088,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
                 /* next line except the first 4 pixels is median predicted */
                 lefttopy= p->data[0][3];
                 decode_422_bitstream(s, width-4);
-                add_median_prediction(p->data[0] + fake_ystride+4, p->data[0]+4, s->temp[0], width-4, &lefty, &lefttopy);
+                s->dsp.add_hfyu_median_prediction(p->data[0] + fake_ystride+4, p->data[0]+4, s->temp[0], width-4, &lefty, &lefttopy);
                 if(!(s->flags&CODEC_FLAG_GRAY)){
                     lefttopu= p->data[1][1];
                     lefttopv= p->data[2][1];
-                    add_median_prediction(p->data[1] + fake_ustride+2, p->data[1]+2, s->temp[1], width2-2, &leftu, &lefttopu);
-                    add_median_prediction(p->data[2] + fake_vstride+2, p->data[2]+2, s->temp[2], width2-2, &leftv, &lefttopv);
+                    s->dsp.add_hfyu_median_prediction(p->data[1] + fake_ustride+2, p->data[1]+2, s->temp[1], width2-2, &leftu, &lefttopu);
+                    s->dsp.add_hfyu_median_prediction(p->data[2] + fake_vstride+2, p->data[2]+2, s->temp[2], width2-2, &leftv, &lefttopv);
                 }
                 y++; cy++;
 
@@ -1122,7 +1104,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
                         while(2*cy > y){
                             decode_gray_bitstream(s, width);
                             ydst= p->data[0] + p->linesize[0]*y;
-                            add_median_prediction(ydst, ydst - fake_ystride, s->temp[0], width, &lefty, &lefttopy);
+                            s->dsp.add_hfyu_median_prediction(ydst, ydst - fake_ystride, s->temp[0], width, &lefty, &lefttopy);
                             y++;
                         }
                         if(y>=height) break;
@@ -1135,10 +1117,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
                     udst= p->data[1] + p->linesize[1]*cy;
                     vdst= p->data[2] + p->linesize[2]*cy;
 
-                    add_median_prediction(ydst, ydst - fake_ystride, s->temp[0], width, &lefty, &lefttopy);
+                    s->dsp.add_hfyu_median_prediction(ydst, ydst - fake_ystride, s->temp[0], width, &lefty, &lefttopy);
                     if(!(s->flags&CODEC_FLAG_GRAY)){
-                        add_median_prediction(udst, udst - fake_ustride, s->temp[1], width2, &leftu, &lefttopu);
-                        add_median_prediction(vdst, vdst - fake_vstride, s->temp[2], width2, &leftv, &lefttopv);
+                        s->dsp.add_hfyu_median_prediction(udst, udst - fake_ustride, s->temp[1], width2, &leftu, &lefttopu);
+                        s->dsp.add_hfyu_median_prediction(vdst, vdst - fake_vstride, s->temp[2], width2, &leftv, &lefttopv);
                     }
                 }
 

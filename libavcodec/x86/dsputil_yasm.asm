@@ -90,3 +90,63 @@ FLOAT_TO_INT16_INTERLEAVE6 3dnow
 FLOAT_TO_INT16_INTERLEAVE6 3dn2
 %undef cvtps2pi
 
+
+
+; void ff_add_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *top, uint8_t *diff, int w, int *left, int *left_top)
+cglobal add_hfyu_median_prediction_mmx2, 6,6,0, dst, top, diff, w, left, left_top
+    movq    mm0, [topq]
+    movq    mm2, mm0
+    movd    mm4, [left_topq]
+    psllq   mm2, 8
+    movq    mm1, mm0
+    por     mm4, mm2
+    movd    mm3, [leftq]
+    psubb   mm0, mm4 ; t-tl
+    add    dstq, wq
+    add    topq, wq
+    add   diffq, wq
+    neg      wq
+    jmp .skip
+.loop:
+    movq    mm4, [topq+wq]
+    movq    mm0, mm4
+    psllq   mm4, 8
+    por     mm4, mm1
+    movq    mm1, mm0 ; t
+    psubb   mm0, mm4 ; t-tl
+.skip:
+    movq    mm2, [diffq+wq]
+%assign i 0
+%rep 8
+    movq    mm4, mm0
+    paddb   mm4, mm3 ; t-tl+l
+    movq    mm5, mm3
+    pmaxub  mm3, mm1
+    pminub  mm5, mm1
+    pminub  mm3, mm4
+    pmaxub  mm3, mm5 ; median
+    paddb   mm3, mm2 ; +residual
+%if i==0
+    movq    mm7, mm3
+    psllq   mm7, 56
+%else
+    movq    mm6, mm3
+    psrlq   mm7, 8
+    psllq   mm6, 56
+    por     mm7, mm6
+%endif
+%if i<7
+    psrlq   mm0, 8
+    psrlq   mm1, 8
+    psrlq   mm2, 8
+%endif
+%assign i i+1
+%endrep
+    movq [dstq+wq], mm7
+    add      wq, 8
+    jl .loop
+    movzx   r2d, byte [dstq-1]
+    mov [leftq], r2d
+    movzx   r2d, byte [topq-1]
+    mov [left_topq], r2d
+    RET

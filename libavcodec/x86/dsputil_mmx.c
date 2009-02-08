@@ -548,6 +548,41 @@ static void add_bytes_l2_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
         dst[i] = src1[i] + src2[i];
 }
 
+#if HAVE_7REGS
+static void add_hfyu_median_prediction_cmov(uint8_t *dst, uint8_t *top, uint8_t *diff, int w, int *left, int *left_top) {
+    x86_reg w2 = -w;
+    x86_reg x;
+    int l = *left & 0xff;
+    int tl = *left_top & 0xff;
+    int t;
+    __asm__ volatile(
+        "mov    %7, %3 \n"
+        "1: \n"
+        "movzx (%3,%4), %2 \n"
+        "mov    %2, %k3 \n"
+        "sub   %b1, %b3 \n"
+        "add   %b0, %b3 \n"
+        "mov    %2, %1 \n"
+        "cmp    %0, %2 \n"
+        "cmovg  %0, %2 \n"
+        "cmovg  %1, %0 \n"
+        "cmp   %k3, %0 \n"
+        "cmovg %k3, %0 \n"
+        "mov    %7, %3 \n"
+        "cmp    %2, %0 \n"
+        "cmovl  %2, %0 \n"
+        "add (%6,%4), %b0 \n"
+        "mov   %b0, (%5,%4) \n"
+        "inc    %4 \n"
+        "jl 1b \n"
+        :"+&q"(l), "+&q"(tl), "=&r"(t), "=&q"(x), "+&r"(w2)
+        :"r"(dst+w), "r"(diff+w), "rm"(top+w)
+    );
+    *left = l;
+    *left_top = tl;
+}
+#endif
+
 #define H263_LOOP_FILTER \
         "pxor %%mm7, %%mm7              \n\t"\
         "movq  %0, %%mm0                \n\t"\
@@ -2328,6 +2363,7 @@ static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
 void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dnow(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dn2(int16_t *dst, const float **src, int len);
+void ff_add_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *top, uint8_t *diff, int w, int *left, int *left_top);
 void ff_x264_deblock_v_luma_sse2(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0);
 void ff_x264_deblock_h_luma_sse2(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0);
 void ff_x264_deblock_v8_luma_intra_mmxext(uint8_t *pix, int stride, int alpha, int beta);
@@ -2759,6 +2795,14 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->biweight_h264_pixels_tab[5]= ff_h264_biweight_4x8_mmx2;
             c->biweight_h264_pixels_tab[6]= ff_h264_biweight_4x4_mmx2;
             c->biweight_h264_pixels_tab[7]= ff_h264_biweight_4x2_mmx2;
+
+#if HAVE_YASM
+            c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmx2;
+#endif
+#if HAVE_7REGS
+            if( mm_flags&FF_MM_3DNOW )
+                c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
+#endif
 
             if (CONFIG_CAVS_DECODER)
                 ff_cavsdsp_init_mmx2(c, avctx);
