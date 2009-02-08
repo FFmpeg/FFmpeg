@@ -139,7 +139,7 @@ void sws_printVec(SwsVector *a);
 void sws_freeVec(SwsVector *a);
 
 SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
-                                float lumaSarpen, float chromaSharpen,
+                                float lumaSharpen, float chromaSharpen,
                                 float chromaHShift, float chromaVShift,
                                 int verbose);
 void sws_freeFilter(SwsFilter *filter);
