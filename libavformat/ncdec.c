@@ -62,6 +62,7 @@ static int nc_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int nc_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int size;
+    int ret;
 
     uint32_t state=-1;
     while (state != NC_VIDEO_FLAG) {
@@ -79,7 +80,7 @@ static int nc_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EAGAIN);
     }
 
-    int ret = av_get_packet(s->pb, pkt, size);
+    ret = av_get_packet(s->pb, pkt, size);
     if (ret != size) {
         if (ret > 0) av_free_packet(pkt);
         return AVERROR(EIO);
