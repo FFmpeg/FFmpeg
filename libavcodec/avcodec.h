@@ -1212,7 +1212,8 @@ typedef struct AVCodecContext {
     void (*release_buffer)(struct AVCodecContext *c, AVFrame *pic);
 
     /**
-     * If 1 the stream has a 1 frame delay during decoding.
+     * Size of the frame reordering buffer in the decoder.
+     * for mpeg2 its 1 IPB or 0 low delay IP
      * - encoding: Set by libavcodec.
      * - decoding: Set by libavcodec.
      */
