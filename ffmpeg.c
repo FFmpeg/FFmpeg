@@ -2778,7 +2778,7 @@ static void opt_input_file(const char *filename)
                     !strcmp(filename, "/dev/stdin");
 
     /* get default parameters from command line */
-    ic = av_alloc_format_context();
+    ic = avformat_alloc_context();
 
     memset(ap, 0, sizeof(*ap));
     ap->prealloced_context = 1;
@@ -3267,7 +3267,7 @@ static void opt_output_file(const char *filename)
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
-    oc = av_alloc_format_context();
+    oc = avformat_alloc_context();
 
     if (!file_oformat) {
         file_oformat = guess_format(NULL, filename, NULL);
@@ -3900,7 +3900,7 @@ int main(int argc, char **argv)
     for(i=0; i<CODEC_TYPE_NB; i++){
         avctx_opts[i]= avcodec_alloc_context2(i);
     }
-    avformat_opts = av_alloc_format_context();
+    avformat_opts = avformat_alloc_context();
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
 
     show_banner();

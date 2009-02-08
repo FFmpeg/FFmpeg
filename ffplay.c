@@ -2554,7 +2554,7 @@ int main(int argc, char **argv)
     for(i=0; i<CODEC_TYPE_NB; i++){
         avctx_opts[i]= avcodec_alloc_context2(i);
     }
-    avformat_opts = av_alloc_format_context();
+    avformat_opts = avformat_alloc_context();
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
 
     show_banner();

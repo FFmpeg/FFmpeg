@@ -413,7 +413,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     }
 
     if(!ap->prealloced_context)
-        ic = av_alloc_format_context();
+        ic = avformat_alloc_context();
     else
         ic = *ic_ptr;
     if (!ic) {

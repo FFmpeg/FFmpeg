@@ -1009,7 +1009,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     switch (st->codec->codec_id) {
 #if CONFIG_DV_DEMUXER
     case CODEC_ID_DVAUDIO:
-        c->dv_fctx = av_alloc_format_context();
+        c->dv_fctx = avformat_alloc_context();
         c->dv_demux = dv_init_demux(c->dv_fctx);
         if (!c->dv_demux) {
             av_log(c->fc, AV_LOG_ERROR, "dv demux context init error\n");

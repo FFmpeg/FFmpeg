@@ -50,7 +50,7 @@ int main(int argc, char **argv)
     filename = argv[1];
 
     /* allocate the media context */
-    ic = av_alloc_format_context();
+    ic = avformat_alloc_context();
     if (!ic) {
         fprintf(stderr, "Memory error\n");
         exit(1);

@@ -453,7 +453,7 @@ int main(int argc, char **argv)
     }
 
     /* allocate the output media context */
-    oc = av_alloc_format_context();
+    oc = avformat_alloc_context();
     if (!oc) {
         fprintf(stderr, "Memory error\n");
         exit(1);

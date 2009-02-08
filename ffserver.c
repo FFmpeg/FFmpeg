@@ -2711,7 +2711,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     AVStream avs[MAX_STREAMS];
     int i;
 
-    avc =  av_alloc_format_context();
+    avc =  avformat_alloc_context();
     if (avc == NULL) {
         return -1;
     }
@@ -3154,7 +3154,7 @@ static int rtp_new_av_stream(HTTPContext *c,
     int max_packet_size;
 
     /* now we can open the relevant output stream */
-    ctx = av_alloc_format_context();
+    ctx = avformat_alloc_context();
     if (!ctx)
         return -1;
     ctx->oformat = guess_format("rtp", NULL, NULL);
