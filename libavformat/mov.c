@@ -125,6 +125,7 @@ typedef struct MOVStreamContext {
     int *keyframes;
     int time_scale;
     int time_rate;
+    int time_offset; /// time offset of the first edit list entry
     int current_sample;
     unsigned int bytes_per_frame;
     unsigned int samples_per_frame;
@@ -1231,6 +1232,12 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     unsigned int stss_index = 0;
     unsigned int i, j;
 
+    /* adjust first dts according to edit list */
+    if (sc->time_offset) {
+        assert(sc->time_offset % sc->time_rate == 0);
+        current_dts = - (sc->time_offset / sc->time_rate);
+    }
+
     /* only use old uncompressed audio chunk demuxing when stts specifies it */
     if (!(st->codec->codec_type == CODEC_TYPE_AUDIO &&
           sc->stts_count == 1 && sc->stts_data[0].duration == 1)) {
@@ -1762,10 +1769,14 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         get_be32(pb); /* Track duration */
         time = get_be32(pb); /* Media time */
         get_be32(pb); /* Media rate */
-        if (time != 0)
-            av_log(c->fc, AV_LOG_WARNING, "edit list not starting at 0, "
-                   "a/v desync might occur, patch welcome\n");
+        if (i == 0 && time != -1)
+            sc->time_offset = time;
     }
+
+    if(edit_count > 1)
+        av_log(c->fc, AV_LOG_WARNING, "multiple edit list entries, "
+               "a/v desync might occur, patch welcome\n");
+
     dprintf(c->fc, "track[%i].edit_count = %i\n", c->fc->nb_streams-1, sc->edit_count);
     return 0;
 }
