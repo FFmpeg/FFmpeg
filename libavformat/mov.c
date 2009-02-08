@@ -115,8 +115,8 @@ typedef struct MOVStreamContext {
     MOVStts *ctts_data;
     unsigned int sample_to_chunk_sz;
     MOVStsc *sample_to_chunk;
-    int sample_to_ctime_index;
-    int sample_to_ctime_sample;
+    int ctts_index;
+    int ctts_sample;
     unsigned int sample_size;
     unsigned int sample_count;
     int *sample_sizes;
@@ -1967,14 +1967,14 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = sc->ffindex;
     pkt->dts = sample->timestamp;
     if (sc->ctts_data) {
-        assert(sc->ctts_data[sc->sample_to_ctime_index].duration % sc->time_rate == 0);
-        pkt->pts = pkt->dts + sc->ctts_data[sc->sample_to_ctime_index].duration / sc->time_rate;
+        assert(sc->ctts_data[sc->ctts_index].duration % sc->time_rate == 0);
+        pkt->pts = pkt->dts + sc->ctts_data[sc->ctts_index].duration / sc->time_rate;
         /* update ctts context */
-        sc->sample_to_ctime_sample++;
-        if (sc->sample_to_ctime_index < sc->ctts_count &&
-            sc->ctts_data[sc->sample_to_ctime_index].count == sc->sample_to_ctime_sample) {
-            sc->sample_to_ctime_index++;
-            sc->sample_to_ctime_sample = 0;
+        sc->ctts_sample++;
+        if (sc->ctts_index < sc->ctts_count &&
+            sc->ctts_data[sc->ctts_index].count == sc->ctts_sample) {
+            sc->ctts_index++;
+            sc->ctts_sample = 0;
         }
         if (sc->wrong_dts)
             pkt->dts = AV_NOPTS_VALUE;
@@ -2010,8 +2010,8 @@ static int mov_seek_stream(AVStream *st, int64_t timestamp, int flags)
         for (i = 0; i < sc->ctts_count; i++) {
             int next = time_sample + sc->ctts_data[i].count;
             if (next > sc->current_sample) {
-                sc->sample_to_ctime_index = i;
-                sc->sample_to_ctime_sample = sc->current_sample - time_sample;
+                sc->ctts_index = i;
+                sc->ctts_sample = sc->current_sample - time_sample;
                 break;
             }
             time_sample = next;
