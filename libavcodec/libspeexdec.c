@@ -60,17 +60,17 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
             return -1;
         }
     } else
-        av_log(avctx, AV_LOG_INFO, "Missing speex header, assuming defaults\n");
+        av_log(avctx, AV_LOG_INFO, "Missing Speex header, assuming defaults.\n");
 
     if (avctx->channels > 2) {
-        av_log(avctx, AV_LOG_ERROR, "Only stereo and mono supported\n");
+        av_log(avctx, AV_LOG_ERROR, "Only stereo and mono are supported.\n");
         return -1;
     }
 
     speex_bits_init(&s->bits);
     s->dec_state = speex_decoder_init(mode);
     if (!s->dec_state) {
-        av_log(avctx, AV_LOG_ERROR, "Error initializing libspeex decoder\n");
+        av_log(avctx, AV_LOG_ERROR, "Error initializing libspeex decoder.\n");
         return -1;
     }
 
@@ -104,7 +104,7 @@ static int libspeex_decode_frame(AVCodecContext *avctx,
     for (i = 0; speex_bits_remaining(&s->bits) && output + num_samples < end; i++) {
         int ret = speex_decode_int(s->dec_state, &s->bits, output);
         if (ret <= -2) {
-            av_log(avctx, AV_LOG_ERROR, "Error decoding speex frame\n");
+            av_log(avctx, AV_LOG_ERROR, "Error decoding Speex frame.\n");
             return -1;
         } else if (ret == -1)
             // end of stream
@@ -140,5 +140,5 @@ AVCodec libspeex_decoder = {
     NULL,
     libspeex_decode_close,
     libspeex_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("libspeex"),
+    .long_name = NULL_IF_CONFIG_SMALL("libspeex Speex"),
 };
