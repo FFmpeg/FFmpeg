@@ -42,6 +42,15 @@ void ff_audio_interleave_close(AVFormatContext *s);
 int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt);
 int ff_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
                                    int stream_index, int flush);
+/**
+ * Rechunk audio pcm packets per AudioInterleaveContext->samples_per_frame
+ * and interleave them correctly.
+ * AVStream->priv_data first element must be AudioInterleaveContext
+ * when using this function.
+ *
+ * @param get_packet function will output a packet when streams are correctly interleaved.
+ * @param compare_ts function will compare AVPackets and decide interleaving order.
+ */
 int ff_audio_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush,
                         int (*get_packet)(AVFormatContext *, AVPacket *, AVPacket *, int),
                         int (*compare_ts)(AVFormatContext *, AVPacket *, AVPacket *));
