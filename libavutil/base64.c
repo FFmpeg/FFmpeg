@@ -79,7 +79,7 @@ char *av_base64_encode(char * buf, int buf_len, const uint8_t * src, int len)
     int bytes_remaining = len;
 
     if (len >= UINT_MAX / 4 ||
-        buf_len < len * 4 / 3 + 12)
+        buf_len < (len+2) / 3 * 4 + 1)
         return NULL;
     ret = dst = buf;
     while (bytes_remaining) {
