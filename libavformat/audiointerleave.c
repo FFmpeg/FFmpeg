@@ -23,6 +23,7 @@
 #include "libavutil/fifo.h"
 #include "avformat.h"
 #include "audiointerleave.h"
+#include "internal.h"
 
 void ff_audio_interleave_close(AVFormatContext *s)
 {

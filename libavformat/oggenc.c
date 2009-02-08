@@ -23,6 +23,7 @@
 #include "libavcodec/xiph.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct {
     int64_t duration;

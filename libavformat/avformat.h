@@ -1116,16 +1116,6 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
                                  AVPacket *pkt, int flush);
 
 /**
- * Add packet to AVFormatContext->packet_buffer list, determining its
- * interleaved position using compare() function argument.
- *
- * This function is not part of the public API and should only be called
- * by muxers using their own interleave function.
- */
-void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
-                              int (*compare)(AVFormatContext *, AVPacket *, AVPacket *));
-
-/**
  * @brief Write the stream trailer to an output media file and
  *        free the file private data.
  *
