@@ -62,7 +62,7 @@ typedef struct {
 typedef struct {
     uint8_t flags;
     uint64_t offset;
-    unsigned slice_offset[17]; // one video, 16 audio
+    unsigned slice_offset; // offset of audio slice
 } MXFIndexEntry;
 
 typedef struct {
@@ -125,6 +125,7 @@ typedef struct MXFContext {
     MXFIndexEntry *index_entries;
     unsigned edit_units_count;
     uint64_t timestamp;   ///< timestamp, as year(16),month(8),day(8),hour(8),minutes(8),msec/4(8)
+    uint8_t slice_count;  /// index slice count minus 1 (1 if no audio, 0 otherwise)
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -849,9 +850,9 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
     return 0;
 }
 
-static unsigned klv_fill_size(AVFormatContext *s)
+static unsigned klv_fill_size(uint64_t size)
 {
-    unsigned pad = KAG_SIZE - (url_ftell(s->pb) & (KAG_SIZE-1));
+    unsigned pad = KAG_SIZE - (size & (KAG_SIZE-1));
     if (pad < 17) // smallest fill item possible
         return pad + KAG_SIZE;
     else
@@ -862,7 +863,7 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    int i, j, k, ret;
+    int i, j, ret;
     int temporal_reordering = 0;
     int last_key_index = 0, key_index = 0;
 
@@ -870,7 +871,7 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
 
     put_buffer(pb, index_table_segment_key, 16);
     ret = klv_encode_ber_length(pb, 109 + (s->nb_streams+1)*6 +
-                                mxf->edit_units_count*(11+(s->nb_streams-1)*4));
+                                mxf->edit_units_count*(11+mxf->slice_count*4));
 
     // instance id
     mxf_write_local_tag(pb, 16, 0x3C0A);
@@ -901,9 +902,9 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
     mxf_write_local_tag(pb, 4, 0x3F07);
     put_be32(pb, 1);
 
-    // slice count - 1
+    // real slice count - 1
     mxf_write_local_tag(pb, 1, 0x3F08);
-    put_byte(pb, s->nb_streams-1);
+    put_byte(pb, mxf->slice_count);
 
     // delta entry array
     mxf_write_local_tag(pb, 8 + (s->nb_streams+1)*6, 0x3F09);
@@ -919,16 +920,21 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
         put_byte(pb, sc->temporal_reordering);
         if (sc->temporal_reordering)
             temporal_reordering = 1;
-        put_byte(pb, i);
-        if (i == 0)
+        // slice number
+        if (i == 0) { // video track
+            put_byte(pb, 0); // slice number
             put_be32(pb, KAG_SIZE); // system item size including klv fill
-        else
-            put_be32(pb, 0); // element delta
+        } else { // audio track
+            unsigned audio_frame_size = sc->aic.samples[0]*sc->aic.sample_size;
+            audio_frame_size += klv_fill_size(audio_frame_size);
+            put_byte(pb, 1);
+            put_be32(pb, (i-1)*audio_frame_size); // element delta
+        }
     }
 
-    mxf_write_local_tag(pb, 8 + mxf->edit_units_count*(11+(s->nb_streams-1)*4), 0x3F0A);
+    mxf_write_local_tag(pb, 8 + mxf->edit_units_count*(11+mxf->slice_count*4), 0x3F0A);
     put_be32(pb, mxf->edit_units_count);  // num of entries
-    put_be32(pb, 11+(s->nb_streams-1)*4); // size of one entry
+    put_be32(pb, 11+mxf->slice_count*4);  // size of one entry
     for (i = 0; i < mxf->edit_units_count; i++) {
         if (temporal_reordering) {
             int temporal_offset = 0;
@@ -963,10 +969,8 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
         put_byte(pb, mxf->index_entries[i].flags);
         // stream offset
         put_be64(pb, mxf->index_entries[i].offset - mxf->index_entries[0].offset);
-        for (k = 0; k < s->nb_streams; k++) {
-            if (mxf->index_entries[i].slice_offset[k])
-                put_be32(pb, mxf->index_entries[i].slice_offset[k]);
-        }
+        if (s->nb_streams > 1)
+            put_be32(pb, mxf->index_entries[i].slice_offset);
     }
 
     return ret;
@@ -1018,7 +1022,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
         mxf_write_primer_pack(s);
         mxf_write_header_metadata_sets(s);
         pos = url_ftell(s->pb);
-        header_byte_count = pos - start + klv_fill_size(s);
+        header_byte_count = pos - start + klv_fill_size(pos);
 
         // update header_byte_count
         url_fseek(pb, header_byte_count_offset, SEEK_SET);
@@ -1201,6 +1205,7 @@ static int mxf_write_header(AVFormatContext *s)
                 return -1;
             }
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+            mxf->slice_count = 1;
         }
         sc->duration = -1;
 
@@ -1243,7 +1248,7 @@ static int mxf_write_header(AVFormatContext *s)
 
 static void mxf_write_klv_fill(AVFormatContext *s)
 {
-    unsigned pad = klv_fill_size(s);
+    unsigned pad = klv_fill_size(url_ftell(s->pb));
     if (pad) {
         put_buffer(s->pb, klv_fill_key, 16);
         pad -= 16;
@@ -1354,14 +1359,13 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (st->index == 0) {
         mxf->index_entries[mxf->edit_units_count].offset = url_ftell(pb);
-        mxf->index_entries[mxf->edit_units_count].slice_offset[st->index] = 0;
 
         mxf_write_system_item(s);
         mxf_write_klv_fill(s);
 
         mxf->edit_units_count++;
-    } else {
-        mxf->index_entries[mxf->edit_units_count-1].slice_offset[st->index] =
+    } else if (st->index == 1) {
+        mxf->index_entries[mxf->edit_units_count-1].slice_offset =
             url_ftell(pb) - mxf->index_entries[mxf->edit_units_count-1].offset;
     }
 
@@ -1399,7 +1403,7 @@ static int mxf_write_footer(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     unsigned index_byte_count =
         109 + (s->nb_streams+1)*6 +
-        mxf->edit_units_count*(11+(s->nb_streams-1)*4);
+        mxf->edit_units_count*(11+mxf->slice_count*4);
 
     // add encoded ber length
     index_byte_count += 16 + klv_ber_length(index_byte_count);
