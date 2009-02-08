@@ -891,6 +891,30 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp,
                   int flags);
 
 /**
+ * Seek to timestamp ts.
+ * Seeking will be done so that the point from which all active streams
+ * can be presented successfully will be closest to ts and within min/max_ts.
+ * Active streams are all streams that have AVStream.discard < AVDISCARD_ALL.
+ *
+ * if flags contain AVSEEK_FLAG_BYTE then all timestamps are in byte and
+ * are the file position (this may not be supported by all demuxers).
+ * if flags contain AVSEEK_FLAG_FRAME then all timestamps are in frames
+ * in the stream with stream_index (this may not be supported by all demuxers).
+ * else all timestamps are in units of the stream selected by stream_index or
+ * if its -1 AV_TIME_BASE units.
+ * if flags contain AVSEEK_FLAG_ANY then non keyframes are treated as
+ * keyframes (this may not be supported by all demuxers).
+ *
+ * @param stream_index index of the stream which is used as timebase reference.
+ * @param min_ts smallest acceptable timestamp
+ * @param ts target timestamp
+ * @param max_ts largest acceptable timestamp
+ * @param flags flags
+ * @returns >=0 on success, error code otherwise
+ */
+int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
+
+/**
  * Start playing a network based stream (e.g. RTSP stream) at the
  * current position.
  */
