@@ -108,6 +108,8 @@ library:
     @tab Used by MSN Messenger webcam streams.
 @item MXF                       @tab X @tab X
     @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
+@item NC                        @tab   @tab X
+    @tab NC (AVIP NC4600) cameras streams.
 @item Nullsoft Video            @tab   @tab X
 @item NUT                       @tab X @tab X
     @tab NUT Open Container Format
