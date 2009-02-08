@@ -1032,7 +1032,7 @@ int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str)
 {
     int i;
     int n = FF_ARRAY_ELEMS(video_frame_size_abbrs);
-    const char *p;
+    char *p;
     int frame_width = 0, frame_height = 0;
 
     for(i=0;i<n;i++) {
@@ -1044,10 +1044,10 @@ int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str)
     }
     if (i == n) {
         p = str;
-        frame_width = strtol(p, (char **)&p, 10);
+        frame_width = strtol(p, &p, 10);
         if (*p)
             p++;
-        frame_height = strtol(p, (char **)&p, 10);
+        frame_height = strtol(p, &p, 10);
     }
     if (frame_width <= 0 || frame_height <= 0)
         return -1;
