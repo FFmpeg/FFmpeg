@@ -105,7 +105,7 @@ int ff_audio_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int fl
             av_fifo_generic_write(&aic->fifo, pkt->data, pkt->size, NULL);
         } else {
             // rewrite pts and dts to be decoded time line position
-            pkt->dts = aic->dts;
+            pkt->pts = pkt->dts = aic->dts;
             aic->dts += pkt->duration;
             ff_interleave_add_packet(s, pkt, compare_ts);
         }
