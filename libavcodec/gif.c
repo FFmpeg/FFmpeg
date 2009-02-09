@@ -139,8 +139,6 @@ static int gif_image_write_image(uint8_t **bytestream,
 }
 
 typedef struct {
-    int64_t time, file_time;
-    uint8_t buffer[100]; /* data chunks */
     AVFrame picture;
 } GIFContext;
 
