@@ -531,39 +531,6 @@ static void vp6_filter_diag2(VP56Context *s, uint8_t *dst, uint8_t *src,
     s->dsp.put_h264_chroma_pixels_tab[0](dst, tmp, stride, 8, 0, v_weight);
 }
 
-static void vp6_filter_diag4(uint8_t *dst, uint8_t *src, int stride,
-                             const int16_t *h_weights,const int16_t *v_weights)
-{
-    int x, y;
-    int tmp[8*11];
-    int *t = tmp;
-
-    src -= stride;
-
-    for (y=0; y<11; y++) {
-        for (x=0; x<8; x++) {
-            t[x] = av_clip_uint8((  src[x-1] * h_weights[0]
-                               + src[x  ] * h_weights[1]
-                               + src[x+1] * h_weights[2]
-                               + src[x+2] * h_weights[3] + 64) >> 7);
-        }
-        src += stride;
-        t += 8;
-    }
-
-    t = tmp + 8;
-    for (y=0; y<8; y++) {
-        for (x=0; x<8; x++) {
-            dst[x] = av_clip_uint8((  t[x-8 ] * v_weights[0]
-                                 + t[x   ] * v_weights[1]
-                                 + t[x+8 ] * v_weights[2]
-                                 + t[x+16] * v_weights[3] + 64) >> 7);
-        }
-        dst += stride;
-        t += 8;
-    }
-}
-
 static void vp6_filter(VP56Context *s, uint8_t *dst, uint8_t *src,
                        int offset1, int offset2, int stride,
                        VP56mv mv, int mask, int select, int luma)
@@ -601,7 +568,7 @@ static void vp6_filter(VP56Context *s, uint8_t *dst, uint8_t *src,
             vp6_filter_hv4(dst, src+offset1, stride, stride,
                            vp6_block_copy_filter[select][y8]);
         } else {
-            vp6_filter_diag4(dst, src+offset1 + ((mv.x^mv.y)>>31), stride,
+            s->dsp.vp6_filter_diag4(dst, src+offset1+((mv.x^mv.y)>>31), stride,
                              vp6_block_copy_filter[select][x8],
                              vp6_block_copy_filter[select][y8]);
         }

@@ -4597,6 +4597,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         c->vp3_h_loop_filter= ff_vp3_h_loop_filter_c;
         c->vp3_v_loop_filter= ff_vp3_v_loop_filter_c;
     }
+    if (CONFIG_VP6_DECODER) {
+        c->vp6_filter_diag4= ff_vp6_filter_diag4_c;
+    }
 
     c->h261_loop_filter= h261_loop_filter_c;
 
