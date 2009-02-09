@@ -505,6 +505,8 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         av_log(avctx, AV_LOG_ERROR, "start_display_time must be 0.\n");
         return -1;
     }
+    if(sub->num_rects == 0 || !sub->rects)
+        return -1;
     ret = avctx->codec->encode(avctx, buf, buf_size, sub);
     avctx->frame_number++;
     return ret;
