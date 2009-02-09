@@ -53,10 +53,6 @@
 /* bitstream minipacket size */
 #define GIF_CHUNKS 100
 
-/* slows down the decoding (and some browsers don't like it) */
-/* update on the 'some browsers don't like it issue from above: this was probably due to missing 'Data Sub-block Terminator' (byte 19) in the app_header */
-#define GIF_ADD_APP_HEADER // required to enable looping of animated gif
-
 typedef struct {
     unsigned char r;
     unsigned char g;
@@ -111,7 +107,7 @@ static const rgb_triplet gif_clut[216] = {
 
 /* GIF header */
 static int gif_image_write_header(uint8_t **bytestream,
-                                  int width, int height, int loop_count,
+                                  int width, int height,
                                   uint32_t *palette)
 {
     int i;
@@ -138,38 +134,6 @@ static int gif_image_write_header(uint8_t **bytestream,
         }
     }
 
-        /*        update: this is the 'NETSCAPE EXTENSION' that allows for looped animated gif
-                see http://members.aol.com/royalef/gifabout.htm#net-extension
-
-                byte   1       : 33 (hex 0x21) GIF Extension code
-                byte   2       : 255 (hex 0xFF) Application Extension Label
-                byte   3       : 11 (hex (0x0B) Length of Application Block
-                                         (eleven bytes of data to follow)
-                bytes  4 to 11 : "NETSCAPE"
-                bytes 12 to 14 : "2.0"
-                byte  15       : 3 (hex 0x03) Length of Data Sub-Block
-                                         (three bytes of data to follow)
-                byte  16       : 1 (hex 0x01)
-                bytes 17 to 18 : 0 to 65535, an unsigned integer in
-                                         lo-hi byte format. This indicate the
-                                         number of iterations the loop should
-                                         be executed.
-                bytes 19       : 0 (hex 0x00) a Data Sub-block Terminator
-        */
-
-    /* application extension header */
-#ifdef GIF_ADD_APP_HEADER
-    if (loop_count >= 0 && loop_count <= 65535) {
-        bytestream_put_byte(bytestream, 0x21);
-        bytestream_put_byte(bytestream, 0xff);
-        bytestream_put_byte(bytestream, 0x0b);
-        bytestream_put_buffer(bytestream, "NETSCAPE2.0", 11);  // bytes 4 to 14
-        bytestream_put_byte(bytestream, 0x03); // byte 15
-        bytestream_put_byte(bytestream, 0x01); // byte 16
-        bytestream_put_le16(bytestream, (uint16_t)loop_count);
-        bytestream_put_byte(bytestream, 0x00); // byte 19
-    }
-#endif
     return 0;
 }
 
@@ -270,7 +234,7 @@ static int gif_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     *p = *pict;
     p->pict_type = FF_I_TYPE;
     p->key_frame = 1;
-    gif_image_write_header(&outbuf_ptr, avctx->width, avctx->height, -1, (uint32_t *)pict->data[1]);
+    gif_image_write_header(&outbuf_ptr, avctx->width, avctx->height, (uint32_t *)pict->data[1]);
     gif_image_write_image(&outbuf_ptr, 0, 0, avctx->width, avctx->height, pict->data[0], pict->linesize[0], PIX_FMT_PAL8);
     return outbuf_ptr - outbuf;
 }
