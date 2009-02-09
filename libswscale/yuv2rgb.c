@@ -70,7 +70,7 @@ DECLARE_ASM_CONST(8, uint64_t, mmx_grnmask) = 0xfcfcfcfcfcfcfcfcULL;
 
 #endif /* HAVE_MMX */
 
-const int32_t Inverse_Table_6_9[8][4] = {
+const int32_t ff_yuv2rgb_coeffs[8][4] = {
     {117504, 138453, 13954, 34903}, /* no sequence_display_extension */
     {117504, 138453, 13954, 34903}, /* ITU-R Rec. 709 (1990) */
     {104597, 132201, 25675, 53279}, /* unspecified */

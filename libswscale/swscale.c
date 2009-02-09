@@ -174,7 +174,7 @@ unsigned swscale_version(void)
 #define RV ( (int)(0.500*224/255*(1<<RGB2YUV_SHIFT)+0.5))
 #define RU (-(int)(0.169*224/255*(1<<RGB2YUV_SHIFT)+0.5))
 
-extern const int32_t Inverse_Table_6_9[8][4];
+extern const int32_t ff_yuv2rgb_coeffs[8][4];
 
 static const double rgb2yuv_table[8][9]={
     {0.7152, 0.0722, 0.2126, -0.386, 0.5, -0.115, -0.454, -0.046, 0.5},
@@ -2076,7 +2076,7 @@ static uint16_t roundToInt16(int64_t f){
 }
 
 /**
- * @param inv_table the yuv2rgb coefficients, normally Inverse_Table_6_9[x]
+ * @param inv_table the yuv2rgb coefficients, normally ff_yuv2rgb_coeffs[x]
  * @param fullRange if 1 then the luma range is 0..255 if 0 it is 16..235
  * @return -1 if not supported
  */
@@ -2321,7 +2321,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     c->chrDstW= -((-dstW) >> c->chrDstHSubSample);
     c->chrDstH= -((-dstH) >> c->chrDstVSubSample);
 
-    sws_setColorspaceDetails(c, Inverse_Table_6_9[SWS_CS_DEFAULT], srcRange, Inverse_Table_6_9[SWS_CS_DEFAULT] /* FIXME*/, dstRange, 0, 1<<16, 1<<16);
+    sws_setColorspaceDetails(c, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT], srcRange, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT] /* FIXME*/, dstRange, 0, 1<<16, 1<<16);
 
     /* unscaled special cases */
     if (unscaled && !usesHFilter && !usesVFilter && (srcRange == dstRange || isBGR(dstFormat) || isRGB(dstFormat)))
