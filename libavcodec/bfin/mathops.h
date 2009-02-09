@@ -1,5 +1,5 @@
 /*
- * mathops.h
+ * simple math operations
  *
  * Copyright (C) 2007 Marc Hoffman <mmhoffm@gmail.com>
  *

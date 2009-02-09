@@ -1,6 +1,4 @@
 /*
- * config_bfin.h
- *
  * Copyright (C) 2007 Marc Hoffman <marc.hoffman@analog.com>
  *
  * This file is part of FFmpeg.

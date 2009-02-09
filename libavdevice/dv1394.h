@@ -1,5 +1,5 @@
 /*
- * dv1394.h - DV input/output over IEEE 1394 on OHCI chips
+ * DV input/output over IEEE 1394 on OHCI chips
  *   Copyright (C)2001 Daniel Maas <dmaas@dcine.com>
  *     receive, proc_fs by Dan Dennedy <dan@dennedy.org>
  *

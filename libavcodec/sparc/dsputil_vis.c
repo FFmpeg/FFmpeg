@@ -1,5 +1,4 @@
 /*
- * dsputil_vis.c
  * Copyright (C) 2003 David S. Miller <davem@redhat.com>
  *
  * This file is part of FFmpeg.
