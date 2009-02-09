@@ -500,7 +500,7 @@ int vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     VP56Context *s = avctx->priv_data;
     AVFrame *const p = s->framep[VP56_FRAME_CURRENT];
     int remaining_buf_size = buf_size;
-    int is_alpha, alpha_offset;
+    int is_alpha, av_uninit(alpha_offset);
 
     if (s->has_alpha) {
         alpha_offset = bytestream_get_be24(&buf);
