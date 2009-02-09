@@ -24,6 +24,7 @@
 #include <inttypes.h>
 #include <stdarg.h>
 
+#include "config.h"
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/avutil.h"
 #include "swscale.h"
