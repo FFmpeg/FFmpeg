@@ -57,7 +57,7 @@ static int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
         /* variable bitrate */
         if(vorbis_encode_setup_vbr(vi, avccontext->channels,
                 avccontext->sample_rate,
-                avccontext->global_quality / (float)FF_QP2LAMBDA))
+                avccontext->global_quality / (float)FF_QP2LAMBDA / 10.0))
             return -1;
     } else {
         /* constant bitrate */
