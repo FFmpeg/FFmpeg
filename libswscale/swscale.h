@@ -98,8 +98,8 @@ unsigned swscale_version(void);
 // when used for filters they must have an odd number of elements
 // coeffs cannot be shared between vectors
 typedef struct {
-    double *coeff;
-    int length;
+    double *coeff;              ///< pointer to the list of coefficients
+    int length;                 ///< number of coefficients in the vector
 } SwsVector;
 
 // vectors can be shared
