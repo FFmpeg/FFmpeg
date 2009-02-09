@@ -2208,6 +2208,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     h->thread_context[0] = h;
     h->outputed_poc = INT_MIN;
     h->prev_poc_msb= 1<<16;
+    h->sei_recovery_frame_cnt = -1;
     return 0;
 }
 
@@ -3141,6 +3142,7 @@ static void flush_dpb(AVCodecContext *avctx){
     if(h->s.current_picture_ptr)
         h->s.current_picture_ptr->reference= 0;
     h->s.first_field= 0;
+    h->sei_recovery_frame_cnt = -1;
     ff_mpeg_flush(avctx);
 }
 
@@ -6848,6 +6850,15 @@ static int decode_unregistered_user_data(H264Context *h, int size){
     return 0;
 }
 
+static int decode_recovery_point(H264Context *h){
+    MpegEncContext * const s = &h->s;
+
+    h->sei_recovery_frame_cnt = get_ue_golomb(&s->gb);
+    skip_bits(&s->gb, 4);       /* 1b exact_match_flag, 1b broken_link_flag, 2b changing_slice_group_idc */
+
+    return 0;
+}
+
 static int decode_sei(H264Context *h){
     MpegEncContext * const s = &h->s;
 
@@ -6871,6 +6882,10 @@ static int decode_sei(H264Context *h){
             break;
         case SEI_TYPE_USER_DATA_UNREGISTERED:
             if(decode_unregistered_user_data(h, size) < 0)
+                return -1;
+            break;
+        case SEI_TYPE_RECOVERY_POINT:
+            if(decode_recovery_point(h) < 0)
                 return -1;
             break;
         default:
@@ -7431,7 +7446,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             if((err = decode_slice_header(hx, h)))
                break;
 
-            s->current_picture_ptr->key_frame|= (hx->nal_unit_type == NAL_IDR_SLICE);
+            s->current_picture_ptr->key_frame |=
+                    (hx->nal_unit_type == NAL_IDR_SLICE) ||
+                    (h->sei_recovery_frame_cnt >= 0);
             if(hx->redundant_pic_count==0 && hx->s.hurry_up < 5
                && (avctx->skip_frame < AVDISCARD_NONREF || hx->nal_ref_idc)
                && (avctx->skip_frame < AVDISCARD_BIDIR  || hx->slice_type_nos!=FF_B_TYPE)
@@ -7668,6 +7685,7 @@ static int decode_frame(AVCodecContext *avctx,
             ff_er_frame_end(s);
 
         MPV_frame_end(s);
+        h->sei_recovery_frame_cnt = -1;
 
         if (cur->field_poc[0]==INT_MAX || cur->field_poc[1]==INT_MAX) {
             /* Wait for second field. */

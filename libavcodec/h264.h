@@ -500,6 +500,15 @@ typedef struct H264Context{
      */
     SEI_PicStructType sei_pic_struct;
 
+    /**
+     * recovery_frame_cnt from SEI message
+     *
+     * Set to -1 if no recovery point SEI message found or to number of frames
+     * before playback synchronizes. Frames having recovery point are key
+     * frames.
+     */
+    int sei_recovery_frame_cnt;
+
     int is_complex;
 
     int luma_weight_flag[2];   ///< 7.4.3.2 luma_weight_lX_flag
