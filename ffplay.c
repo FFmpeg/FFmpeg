@@ -449,7 +449,7 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
     cb = dst->data[1] + (dsty >> 1) * dst->linesize[1];
     cr = dst->data[2] + (dsty >> 1) * dst->linesize[2];
 
-    width2 = (dstw + 1) >> 1;
+    width2 = ((dstw + 1) >> 1) + (dstx & ~dstw & 1);
     skip2 = dstx >> 1;
     wrap = dst->linesize[0];
     wrap3 = rect->pict.linesize[0];
