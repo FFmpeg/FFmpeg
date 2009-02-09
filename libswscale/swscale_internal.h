@@ -309,8 +309,8 @@ static inline int fmt_depth(int fmt)
     }
 }
 
-extern const DECLARE_ALIGNED(8, uint64_t, ff_dither4[2]);
-extern const DECLARE_ALIGNED(8, uint64_t, ff_dither8[2]);
+extern const uint64_t ff_dither4[2];
+extern const uint64_t ff_dither8[2];
 
 extern const AVClass sws_context_class;
 
