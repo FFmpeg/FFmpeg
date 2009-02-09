@@ -191,6 +191,7 @@ static int audio_disable;
 static int video_disable;
 static int wanted_audio_stream= 0;
 static int wanted_video_stream= 0;
+static int wanted_subtitle_stream= -1;
 static int seek_by_bytes;
 static int display_disable;
 static int show_status;
@@ -1917,12 +1918,13 @@ static int decode_thread(void *arg)
 {
     VideoState *is = arg;
     AVFormatContext *ic;
-    int err, i, ret, video_index, audio_index;
+    int err, i, ret, video_index, audio_index, subtitle_index;
     AVPacket pkt1, *pkt = &pkt1;
     AVFormatParameters params, *ap = &params;
 
     video_index = -1;
     audio_index = -1;
+    subtitle_index = -1;
     is->video_stream = -1;
     is->audio_stream = -1;
     is->subtitle_stream = -1;
@@ -1984,6 +1986,11 @@ static int decode_thread(void *arg)
             if ((video_index < 0 || wanted_video_stream-- > 0) && !video_disable)
                 video_index = i;
             break;
+        case CODEC_TYPE_SUBTITLE:
+            if (wanted_subtitle_stream >= 0 && !video_disable &&
+                    (subtitle_index < 0 || wanted_subtitle_stream-- > 0))
+                subtitle_index = i;
+            break;
         default:
             break;
         }
@@ -2003,6 +2010,10 @@ static int decode_thread(void *arg)
     } else {
         if (!display_disable)
             is->show_audio = 1;
+    }
+
+    if (subtitle_index >= 0) {
+        stream_component_open(is, subtitle_index);
     }
 
     if (is->video_stream < 0 && is->audio_stream < 0) {
@@ -2486,6 +2497,7 @@ static const OptionDef options[] = {
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
     { "ast", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_audio_stream}, "", "" },
     { "vst", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_video_stream}, "", "" },
+    { "sst", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_subtitle_stream}, "", "" },
     { "ss", HAS_ARG | OPT_FUNC2, {(void*)&opt_seek}, "seek to a given position in seconds", "pos" },
     { "bytes", OPT_BOOL, {(void*)&seek_by_bytes}, "seek by bytes" },
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
