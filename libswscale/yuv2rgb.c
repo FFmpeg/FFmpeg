@@ -1,5 +1,5 @@
 /*
- * yuv2rgb.c, Software YUV to RGB converter
+ *  software YUV to RGB converter
  *
  *  Copyright (C) 1999, Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
