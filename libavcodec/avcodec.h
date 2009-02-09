@@ -2452,6 +2452,11 @@ void audio_resample_close(ReSampleContext *s);
 /**
  * Initializes an audio resampler.
  * Note, if either rate is not an integer then simply scale both rates up so they are.
+ * @param filter_length length of each FIR filter in the filterbank relative to the cutoff freq
+ * @param log2_phase_count log2 of the number of entries in the polyphase filterbank
+ * @param linear If 1 then the used FIR filter will be linearly interpolated
+                 between the 2 closest, if 0 the closest will be used
+ * @param cutoff cutoff frequency, 1.0 corresponds to half the output sampling rate
  */
 struct AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_length, int log2_phase_count, int linear, double cutoff);
 
