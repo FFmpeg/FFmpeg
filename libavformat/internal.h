@@ -32,9 +32,6 @@ void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
 /**
  * Add packet to AVFormatContext->packet_buffer list, determining its
  * interleaved position using compare() function argument.
- *
- * This function is not part of the public API and should only be called
- * by muxers using their own interleave function.
  */
 void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
                               int (*compare)(AVFormatContext *, AVPacket *, AVPacket *));
