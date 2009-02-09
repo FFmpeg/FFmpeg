@@ -789,7 +789,7 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
-    return ff_audio_interleave(s, out, pkt, flush,
+    return ff_audio_rechunk_interleave(s, out, pkt, flush,
                                av_interleave_packet_per_dts, ff_interleave_compare_dts);
 }
 

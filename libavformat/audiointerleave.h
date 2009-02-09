@@ -49,7 +49,7 @@ int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
  * @param get_packet function will output a packet when streams are correctly interleaved.
  * @param compare_ts function will compare AVPackets and decide interleaving order.
  */
-int ff_audio_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush,
+int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush,
                         int (*get_packet)(AVFormatContext *, AVPacket *, AVPacket *, int),
                         int (*compare_ts)(AVFormatContext *, AVPacket *, AVPacket *));
 
