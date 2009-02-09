@@ -93,6 +93,14 @@
 #endif
 #endif
 
+#ifndef av_uninit
+#if defined(__GNUC__)
+#    define av_uninit(x) x=x
+#else
+#    define av_uninit(x) x
+#endif
+#endif
+
 //rounded division & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
