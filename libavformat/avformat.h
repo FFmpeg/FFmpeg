@@ -901,7 +901,7 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp,
  * if flags contain AVSEEK_FLAG_FRAME then all timestamps are in frames
  * in the stream with stream_index (this may not be supported by all demuxers).
  * else all timestamps are in units of the stream selected by stream_index or
- * if its -1 AV_TIME_BASE units.
+ * if stream_index is -1, AV_TIME_BASE units.
  * if flags contain AVSEEK_FLAG_ANY then non keyframes are treated as
  * keyframes (this may not be supported by all demuxers).
  *
