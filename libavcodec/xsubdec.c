@@ -28,7 +28,7 @@ static av_cold int decode_init(AVCodecContext *avctx) {
 }
 
 static const uint8_t tc_offsets[9] = { 0, 1, 3, 4, 6, 7, 9, 10, 11 };
-static const uint8_t tc_muls[9] = { 10, 6, 10, 6, 10, 6, 10, 10, 1 };
+static const uint8_t tc_muls[9] = { 10, 6, 10, 6, 10, 10, 10, 10, 1 };
 
 static uint64_t parse_timecode(const uint8_t *buf) {
     int i;
