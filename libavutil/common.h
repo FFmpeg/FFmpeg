@@ -77,6 +77,14 @@
 #endif
 #endif
 
+#ifndef av_flatten
+#if defined(__GNUC__) && (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ > 0)
+#    define av_flatten __attribute__((flatten))
+#else
+#    define av_flatten
+#endif
+#endif
+
 #ifndef attribute_deprecated
 #if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define attribute_deprecated __attribute__((deprecated))
