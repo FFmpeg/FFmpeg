@@ -690,7 +690,7 @@ static int altivec_uyvy_rgb32 (SwsContext *c,
 
    So we just fall back to the C codes for this.
 */
-SwsFunc yuv2rgb_init_altivec (SwsContext *c)
+SwsFunc sws_yuv2rgb_init_altivec (SwsContext *c)
 {
     if (!(c->flags & SWS_CPU_CAPS_ALTIVEC))
         return NULL;
@@ -750,7 +750,7 @@ SwsFunc yuv2rgb_init_altivec (SwsContext *c)
     return NULL;
 }
 
-void yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4],int brightness,int contrast, int saturation)
+void sws_yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4],int brightness,int contrast, int saturation)
 {
     union {
         signed short tmp[8] __attribute__ ((aligned(16)));

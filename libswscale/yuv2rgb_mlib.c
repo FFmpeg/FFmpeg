@@ -73,7 +73,7 @@ static int mlib_YUV2RGB420_24(SwsContext *c, uint8_t* src[], int srcStride[], in
 }
 
 
-SwsFunc yuv2rgb_init_mlib(SwsContext *c)
+SwsFunc sws_yuv2rgb_init_mlib(SwsContext *c)
 {
     switch(c->dstFormat){
     case PIX_FMT_RGB24: return mlib_YUV2RGB420_24;
