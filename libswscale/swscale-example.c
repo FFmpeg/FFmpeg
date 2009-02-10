@@ -24,7 +24,6 @@
 #include <inttypes.h>
 #include <stdarg.h>
 
-#include "config.h"
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/avutil.h"
 #include "swscale.h"
@@ -119,10 +118,6 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
     sws_scale(dstContext, src, srcStride, 0, srcH, dst, dstStride);
     sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
 
-#if ARCH_X86
-    __asm__ volatile ("emms\n\t");
-#endif
-
     ssdY= getSSD(ref[0], out[0], refStride[0], refStride[0], w, h);
     ssdU= getSSD(ref[1], out[1], refStride[1], refStride[1], (w+1)>>1, (h+1)>>1);
     ssdV= getSSD(ref[2], out[2], refStride[2], refStride[2], (w+1)>>1, (h+1)>>1);
@@ -208,10 +203,6 @@ int main(int argc, char **argv){
         }
     }
     sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
-
-#if ARCH_X86
-    __asm__ volatile ("emms\n\t");
-#endif
 
     selfTest(src, stride, W, H);
 
