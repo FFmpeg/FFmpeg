@@ -44,7 +44,7 @@
 static const int NTSC_samples_per_frame[] = { 1602, 1601, 1602, 1601, 1602, 0 };
 static const int PAL_samples_per_frame[]  = { 1920, 0 };
 
-#define MXF_INDEX_CLUSTER_SIZE 4096
+#define EDIT_UNITS_PER_BODY 250
 #define KAG_SIZE 512
 
 typedef struct {
@@ -119,6 +119,12 @@ typedef struct MXFContext {
     unsigned edit_units_count;
     uint64_t timestamp;   ///< timestamp, as year(16),month(8),day(8),hour(8),minutes(8),msec/4(8)
     uint8_t slice_count;  ///< index slice count minus 1 (1 if no audio, 0 otherwise)
+    int last_indexed_edit_unit;
+    uint64_t first_edit_unit_offset;
+    uint64_t *body_partition_offset;
+    unsigned body_partitions_count;
+    int last_key_index;  ///< index of last key frame
+    uint64_t body_offset;
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -135,6 +141,7 @@ static const uint8_t random_index_pack_key[]       = { 0x06,0x0E,0x2B,0x34,0x02,
 static const uint8_t header_open_partition_key[]   = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x02,0x01,0x01,0x02,0x01,0x00 }; // OpenIncomplete
 static const uint8_t header_closed_partition_key[] = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x02,0x01,0x01,0x02,0x04,0x00 }; // ClosedComplete
 static const uint8_t klv_fill_key[]                = { 0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x03,0x01,0x02,0x10,0x01,0x00,0x00,0x00 };
+static const uint8_t body_partition_key[]          = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x02,0x01,0x01,0x03,0x04,0x00 }; // ClosedComplete
 
 /**
  * partial key for header metadata
@@ -875,9 +882,12 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     int i, j;
     int temporal_reordering = 0;
-    int last_key_index = 0, key_index = 0;
+    int key_index = 0;
 
     av_log(s, AV_LOG_DEBUG, "edit units count %d\n", mxf->edit_units_count);
+
+    if (!mxf->edit_units_count)
+        return;
 
     put_buffer(pb, index_table_segment_key, 16);
     klv_encode_ber_length(pb, 109 + (s->nb_streams+1)*6 +
@@ -894,7 +904,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
 
     // index start position
     mxf_write_local_tag(pb, 8, 0x3F0C);
-    put_be64(pb, 0);
+    put_be64(pb, mxf->last_indexed_edit_unit);
 
     // index duration
     mxf_write_local_tag(pb, 8, 0x3F0D);
@@ -965,23 +975,26 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
         } else
             put_byte(pb, 0);
         if (!(mxf->index_entries[i].flags & 0x33)) { // I frame
-            last_key_index = key_index;
+            mxf->last_key_index = key_index;
             key_index = i;
         }
         if (mxf->index_entries[i].flags & 0x10 && // backward prediction
             !(mxf->index_entries[key_index].flags & 0x80)) { // open gop
-            put_byte(pb, last_key_index - i);
+            put_byte(pb, mxf->last_key_index - i);
         } else {
             put_byte(pb, key_index - i); // key frame offset
             if ((mxf->index_entries[i].flags & 0x20) == 0x20) // only forward
-                last_key_index = key_index;
+                mxf->last_key_index = key_index;
         }
         put_byte(pb, mxf->index_entries[i].flags);
         // stream offset
-        put_be64(pb, mxf->index_entries[i].offset - mxf->index_entries[0].offset);
+        put_be64(pb, mxf->index_entries[i].offset - mxf->first_edit_unit_offset);
         if (s->nb_streams > 1)
             put_be32(pb, mxf->index_entries[i].slice_offset);
     }
+
+    mxf->last_indexed_edit_unit += mxf->edit_units_count;
+    mxf->edit_units_count = 0;
 }
 
 static void mxf_write_klv_fill(AVFormatContext *s)
@@ -1015,6 +1028,16 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
         // add encoded ber length
         index_byte_count += 16 + klv_ber_length(index_byte_count);
         index_byte_count += klv_fill_size(index_byte_count);
+
+        mxf->body_offset += url_ftell(pb) - mxf->index_entries[0].offset;
+    }
+
+    if (!memcmp(key, body_partition_key, 16)) {
+        mxf->body_partition_offset =
+            av_realloc(mxf->body_partition_offset,
+                       (mxf->body_partitions_count+1)*
+                       sizeof(*mxf->body_partition_offset));
+        mxf->body_partition_offset[mxf->body_partitions_count++] = url_ftell(pb);
     }
 
     // write klv
@@ -1028,7 +1051,13 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
     put_be32(pb, KAG_SIZE); // KAGSize
 
     put_be64(pb, url_ftell(pb) - 25); // thisPartition
-    put_be64(pb, 0); // previousPartition
+
+    if (!memcmp(key, body_partition_key, 16) && mxf->body_partitions_count > 1)
+        put_be64(pb, mxf->body_partition_offset[mxf->body_partitions_count-2]); // PreviousPartition
+    else if (!memcmp(key, footer_partition_key, 16))
+        put_be64(pb, mxf->body_partition_offset[mxf->body_partitions_count-1]); // PreviousPartition
+    else
+        put_be64(pb, 0);
 
     put_be64(pb, mxf->footer_partition_offset); // footerPartition
 
@@ -1039,7 +1068,10 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
     // indexTable
     put_be64(pb, index_byte_count); // indexByteCount
     put_be32(pb, index_byte_count ? indexsid : 0); // indexSID
-    put_be64(pb, 0); // bodyOffset
+
+    // BodyOffset
+    if (bodysid) put_be64(pb, mxf->body_offset);
+    else         put_be64(pb, 0);
 
     put_be32(pb, bodysid); // bodySID
 
@@ -1311,10 +1343,9 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     MXFStreamContext *sc = st->priv_data;
     int flags = 0;
 
-    if (!(mxf->edit_units_count % MXF_INDEX_CLUSTER_SIZE)) {
+    if (!(mxf->edit_units_count % EDIT_UNITS_PER_BODY)) {
         mxf->index_entries = av_realloc(mxf->index_entries,
-            (mxf->edit_units_count + MXF_INDEX_CLUSTER_SIZE)*
-             sizeof(*mxf->index_entries));
+            (mxf->edit_units_count + EDIT_UNITS_PER_BODY)*sizeof(*mxf->index_entries));
         if (!mxf->index_entries) {
             av_log(s, AV_LOG_ERROR, "could not allocate index entries\n");
             return -1;
@@ -1329,14 +1360,25 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (!mxf->header_written) {
-        mxf_write_partition(s, 1, 0, header_open_partition_key, 1);
+        mxf_write_partition(s, 0, 0, header_open_partition_key, 1);
         mxf->header_written = 1;
     }
 
     if (st->index == 0) {
+        if ((!mxf->edit_units_count || mxf->edit_units_count > EDIT_UNITS_PER_BODY) &&
+            !(flags & 0x33)) { // I frame, Gop start
+            mxf_write_klv_fill(s);
+            mxf_write_partition(s, 1, 2, body_partition_key, 0);
+
+            mxf_write_klv_fill(s);
+            mxf_write_index_table_segment(s);
+        }
+
         mxf_write_klv_fill(s);
         mxf->index_entries[mxf->edit_units_count].offset = url_ftell(pb);
         mxf->index_entries[mxf->edit_units_count].flags = flags;
+        if (!mxf->first_edit_unit_offset)
+            mxf->first_edit_unit_offset = mxf->index_entries[0].offset;
         mxf_write_system_item(s);
 
         mxf->edit_units_count++;
@@ -1361,12 +1403,18 @@ static void mxf_write_random_index_pack(AVFormatContext *s)
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     uint64_t pos = url_ftell(pb);
+    int i;
 
     put_buffer(pb, random_index_pack_key, 16);
-    klv_encode_ber_length(pb, 28);
+    klv_encode_ber_length(pb, 28 + 12*mxf->body_partitions_count);
 
-    put_be32(pb, 1); // BodySID of header partition
+    put_be32(pb, 0); // BodySID of header partition
     put_be64(pb, 0); // offset of header partition
+
+    for (i = 0; i < mxf->body_partitions_count; i++) {
+        put_be32(pb, 1); // BodySID
+        put_be64(pb, mxf->body_partition_offset[i]);
+    }
 
     put_be32(pb, 0); // BodySID of footer partition
     put_be64(pb, mxf->footer_partition_offset);
@@ -1391,12 +1439,13 @@ static int mxf_write_footer(AVFormatContext *s)
 
     if (!url_is_streamed(s->pb)) {
         url_fseek(pb, 0, SEEK_SET);
-        mxf_write_partition(s, 1, 0, header_closed_partition_key, 1);
+        mxf_write_partition(s, 0, 0, header_closed_partition_key, 1);
     }
 
     ff_audio_interleave_close(s);
 
     av_freep(&mxf->index_entries);
+    av_freep(&mxf->body_partition_offset);
 
     mxf_free(s);
     return 0;
