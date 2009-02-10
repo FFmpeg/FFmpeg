@@ -659,7 +659,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
         if (st) {
             if (language[0] != 0) {
-                memcpy(st->language, language, 4);
+                av_metadata_set(&st->metadata, "language", language);
             }
 
             if (stream_type == STREAM_TYPE_SUBTITLE_DVB) {
@@ -785,8 +785,10 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 name = getstr8(&p, p_end);
                 if (name) {
                     AVProgram *program = av_new_program(ts->stream, sid);
-                    if(program)
-                        av_set_program_name(program, provider_name, name);
+                    if(program) {
+                        av_metadata_set(&program->metadata, "name", name);
+                        av_metadata_set(&program->metadata, "provider_name", provider_name);
+                    }
                 }
                 av_free(name);
                 av_free(provider_name);
