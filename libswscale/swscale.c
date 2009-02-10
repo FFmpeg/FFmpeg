@@ -2821,9 +2821,6 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
 }
 
 #if LIBSWSCALE_VERSION_MAJOR < 1
-/**
- * swscale wrapper, so we don't need to export the SwsContext.
- */
 int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                       int srcSliceH, uint8_t* dst[], int dstStride[]){
     return sws_scale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
