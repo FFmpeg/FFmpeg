@@ -206,11 +206,6 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
     schro_video_format_set_std_signal_range(p_schro_params->format,
                                             SCHRO_SIGNAL_RANGE_8BIT_VIDEO);
 
-
-    /* Hardcode motion vector precision to quarter pixel. */
-    schro_encoder_setting_set_double (p_schro_params->encoder,
-                                      "mv_precision", 2);
-
     /* Set the encoder format. */
     schro_encoder_set_video_format(p_schro_params->encoder,
                                    p_schro_params->format);
