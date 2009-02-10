@@ -473,6 +473,8 @@ int ff_set_systematic_pal(uint32_t pal[256], enum PixelFormat pix_fmt){
         case PIX_FMT_GRAY8:
             r=b=g= i;
             break;
+        default:
+            return -1;
         }
         pal[i] =  b + (g<<8) + (r<<16);
     }
