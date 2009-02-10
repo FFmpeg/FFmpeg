@@ -1001,12 +1001,21 @@ static void mxf_write_klv_fill(AVFormatContext *s)
 }
 
 static void mxf_write_partition(AVFormatContext *s, int bodysid,
-                                int indexsid, unsigned index_byte_count,
+                                int indexsid,
                                 const uint8_t *key, int write_metadata)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     int64_t header_byte_count_offset;
+    unsigned index_byte_count = 0;
+
+    if (mxf->edit_units_count) {
+        index_byte_count = 109 + (s->nb_streams+1)*6 +
+            mxf->edit_units_count*(11+mxf->slice_count*4);
+        // add encoded ber length
+        index_byte_count += 16 + klv_ber_length(index_byte_count);
+        index_byte_count += klv_fill_size(index_byte_count);
+    }
 
     // write klv
     put_buffer(pb, key, 16);
@@ -1029,7 +1038,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
 
     // indexTable
     put_be64(pb, index_byte_count); // indexByteCount
-    put_be32(pb, indexsid); // indexSID
+    put_be32(pb, index_byte_count ? indexsid : 0); // indexSID
     put_be64(pb, 0); // bodyOffset
 
     put_be32(pb, bodysid); // bodySID
@@ -1320,7 +1329,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (!mxf->header_written) {
-        mxf_write_partition(s, 1, 0, 0, header_open_partition_key, 1);
+        mxf_write_partition(s, 1, 0, header_open_partition_key, 1);
         mxf->header_written = 1;
     }
 
@@ -1369,17 +1378,10 @@ static int mxf_write_footer(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    unsigned index_byte_count =
-        109 + (s->nb_streams+1)*6 +
-        mxf->edit_units_count*(11+mxf->slice_count*4);
-
-    // add encoded ber length
-    index_byte_count += 16 + klv_ber_length(index_byte_count);
-    index_byte_count += klv_fill_size(index_byte_count);
 
     mxf_write_klv_fill(s);
     mxf->footer_partition_offset = url_ftell(pb);
-    mxf_write_partition(s, 0, 2, index_byte_count, footer_partition_key, 0);
+    mxf_write_partition(s, 0, 2, footer_partition_key, 0);
 
     mxf_write_klv_fill(s);
     mxf_write_index_table_segment(s);
@@ -1389,7 +1391,7 @@ static int mxf_write_footer(AVFormatContext *s)
 
     if (!url_is_streamed(s->pb)) {
         url_fseek(pb, 0, SEEK_SET);
-        mxf_write_partition(s, 1, 0, 0, header_closed_partition_key, 1);
+        mxf_write_partition(s, 1, 0, header_closed_partition_key, 1);
     }
 
     ff_audio_interleave_close(s);
