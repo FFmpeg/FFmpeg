@@ -27,7 +27,7 @@
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
 #define  OPJ_STATIC
-#include <libopenjpeg/openjpeg.h>
+#include <openjpeg.h>
 
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A

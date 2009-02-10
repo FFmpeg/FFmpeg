@@ -1931,7 +1931,7 @@ enabled libfaad    && require2 libfaad faad.h faacDecOpen -lfaad
 enabled libgsm     && require  libgsm gsm.h gsm_create -lgsm
 enabled libmp3lame && require  libmp3lame lame/lame.h lame_init -lmp3lame -lm
 enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut
-enabled libopenjpeg && require libopenjpeg libopenjpeg/openjpeg.h opj_version -lopenjpeg
+enabled libopenjpeg && require libopenjpeg openjpeg.h opj_version -lopenjpeg
 enabled libschroedinger && add_cflags $(pkg-config --cflags schroedinger-1.0) &&
                            require libschroedinger schroedinger/schro.h schro_init $(pkg-config --libs schroedinger-1.0)
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
