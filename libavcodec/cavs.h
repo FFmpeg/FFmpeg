@@ -25,7 +25,6 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 
-#define SLICE_MIN_START_CODE    0x00000101
 #define SLICE_MAX_START_CODE    0x000001af
 #define EXT_START_CODE          0x000001b5
 #define USER_START_CODE         0x000001b2

@@ -678,8 +678,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
             //mpeg_decode_user_data(avctx,buf_ptr, input_size);
             break;
         default:
-            if (stc >= SLICE_MIN_START_CODE &&
-                stc <= SLICE_MAX_START_CODE) {
+            if (stc <= SLICE_MAX_START_CODE) {
                 init_get_bits(&s->gb, buf_ptr, input_size);
                 decode_slice_header(h, &s->gb);
             }
