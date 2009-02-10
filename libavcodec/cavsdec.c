@@ -499,9 +499,10 @@ static int decode_pic(AVSContext *h) {
     if(s->low_delay)
         get_ue_golomb(&s->gb); //bbv_check_times
     h->progressive             = get_bits1(&s->gb);
-    if(h->progressive)
-        h->pic_structure = 1;
-    else if(!(h->pic_structure = get_bits1(&s->gb) && (h->stc == PIC_PB_START_CODE)) )
+    h->pic_structure = 1;
+    if(!h->progressive)
+        h->pic_structure = get_bits1(&s->gb);
+    if(!h->pic_structure && h->stc == PIC_PB_START_CODE)
         skip_bits1(&s->gb);     //advanced_pred_mode_disable
     skip_bits1(&s->gb);        //top_field_first
     skip_bits1(&s->gb);        //repeat_first_field
