@@ -129,6 +129,11 @@ int sws_scale_ordered(struct SwsContext *context, uint8_t* src[], int srcStride[
 
 int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation);
 int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table, int *srcRange, int **table, int *dstRange, int *brightness, int *contrast, int *saturation);
+
+/**
+ * Returns a normalized Gaussian curve used to filter stuff
+ * quality=3 is high quality, lower is lower quality.
+ */
 SwsVector *sws_getGaussianVec(double variance, double quality);
 
 /**

@@ -2885,10 +2885,6 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
     return filter;
 }
 
-/**
- * Returns a normalized Gaussian curve used to filter stuff
- * quality=3 is high quality, lower is lower quality.
- */
 SwsVector *sws_getGaussianVec(double variance, double quality){
     const int length= (int)(variance*quality + 0.5) | 1;
     int i;
