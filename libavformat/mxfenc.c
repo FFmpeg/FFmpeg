@@ -1101,14 +1101,13 @@ static const UID *mxf_get_mpeg2_codec_ul(AVCodecContext *avctx)
     return NULL;
 }
 
-static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
+static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt, int *flags)
 {
-    MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
     uint32_t c = -1;
     int i;
 
-    mxf->index_entries[mxf->edit_units_count].flags = 0;
+    *flags = 0;
 
     for(i = 0; i < pkt->size - 4; i++) {
         c = (c<<8) + pkt->data[i];
@@ -1122,16 +1121,16 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
             }
         } else if (c == 0x1b8) { // gop
             if (i + 4 < pkt->size && pkt->data[i+4]>>6 & 0x01) // closed
-                mxf->index_entries[mxf->edit_units_count].flags |= 0x80; // random access
+                *flags |= 0x80; // random access
         } else if (c == 0x1b3) { // seq
-            mxf->index_entries[mxf->edit_units_count].flags |= 0x40;
+            *flags |= 0x40;
         } else if (c == 0x100) { // pic
             int pict_type = (pkt->data[i+2]>>3) & 0x07;
             if (pict_type == 2) { // P frame
-                mxf->index_entries[mxf->edit_units_count].flags |= 0x22;
+                *flags |= 0x22;
                 st->codec->gop_size = 1;
             } else if (pict_type == 3) { // B frame
-                mxf->index_entries[mxf->edit_units_count].flags |= 0x33;
+                *flags |= 0x33;
                 sc->temporal_reordering = -1;
             } else if (!pict_type) {
                 av_log(s, AV_LOG_ERROR, "error parsing mpeg2 frame\n");
@@ -1306,6 +1305,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     ByteIOContext *pb = s->pb;
     AVStream *st = s->streams[pkt->stream_index];
     MXFStreamContext *sc = st->priv_data;
+    int flags = 0;
 
     if (!(mxf->edit_units_count % MXF_INDEX_CLUSTER_SIZE)) {
         mxf->index_entries = av_realloc(mxf->index_entries,
@@ -1318,7 +1318,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO) {
-        if (!mxf_parse_mpeg2_frame(s, st, pkt)) {
+        if (!mxf_parse_mpeg2_frame(s, st, pkt, &flags)) {
             av_log(s, AV_LOG_ERROR, "could not get mpeg2 profile and level\n");
             return -1;
         }
@@ -1332,6 +1332,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->index == 0) {
         mxf_write_klv_fill(s);
         mxf->index_entries[mxf->edit_units_count].offset = url_ftell(pb);
+        mxf->index_entries[mxf->edit_units_count].flags = flags;
         mxf_write_system_item(s);
 
         mxf->edit_units_count++;
