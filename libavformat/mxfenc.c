@@ -1021,6 +1021,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
     ByteIOContext *pb = s->pb;
     int64_t header_byte_count_offset;
     unsigned index_byte_count = 0;
+    uint64_t partition_offset = url_ftell(pb);
 
     if (mxf->edit_units_count) {
         index_byte_count = 109 + (s->nb_streams+1)*6 +
@@ -1037,7 +1038,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
             av_realloc(mxf->body_partition_offset,
                        (mxf->body_partitions_count+1)*
                        sizeof(*mxf->body_partition_offset));
-        mxf->body_partition_offset[mxf->body_partitions_count++] = url_ftell(pb);
+        mxf->body_partition_offset[mxf->body_partitions_count++] = partition_offset;
     }
 
     // write klv
@@ -1050,7 +1051,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
     put_be16(pb, 2); // minorVersion
     put_be32(pb, KAG_SIZE); // KAGSize
 
-    put_be64(pb, url_ftell(pb) - 25); // thisPartition
+    put_be64(pb, partition_offset); // ThisPartition
 
     if (!memcmp(key, body_partition_key, 16) && mxf->body_partitions_count > 1)
         put_be64(pb, mxf->body_partition_offset[mxf->body_partitions_count-2]); // PreviousPartition
