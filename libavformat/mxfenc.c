@@ -1036,11 +1036,12 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
 
     if (write_metadata) {
         // mark the start of the headermetadata and calculate metadata size
-        int64_t pos, start = url_ftell(s->pb);
+        int64_t pos, start;
         unsigned header_byte_count;
 
         mxf_write_klv_fill(s);
 
+        start = url_ftell(s->pb);
         mxf_write_primer_pack(s);
         mxf_write_header_metadata_sets(s);
         pos = url_ftell(s->pb);
