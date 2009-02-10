@@ -1160,11 +1160,6 @@ static int mxf_write_header(AVFormatContext *s)
     uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
     const int *samples_per_frame = NULL;
 
-    if (s->nb_streams > 17) {
-        av_log(s, AV_LOG_ERROR, "error, mxf muxer supports 17 tracks maximum\n");
-        return -1;
-    }
-
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MXFStreamContext *sc = av_mallocz(sizeof(*sc));
