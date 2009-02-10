@@ -415,6 +415,9 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb) {
     if(h->stc > 0xAF)
         av_log(h->s.avctx, AV_LOG_ERROR, "unexpected start code 0x%02x\n", h->stc);
     h->mby = h->stc;
+
+    /* mark top macroblocks as unavailable */
+    h->flags &= ~(B_AVAIL|C_AVAIL);
     if((h->mby == 0) && (!h->qp_fixed)){
         h->qp_fixed = get_bits1(gb);
         h->qp = get_bits(gb,6);
@@ -431,6 +434,9 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb) {
 static inline void check_for_slice(AVSContext *h) {
     GetBitContext *gb = &h->s.gb;
     int align;
+
+    if(h->mbx)
+        return;
     align = (-get_bits_count(gb)) & 7;
     if((show_bits_long(gb,24+align) & 0xFFFFFF) == 0x000001) {
         skip_bits_long(gb,24+align);
@@ -525,13 +531,14 @@ static int decode_pic(AVSContext *h) {
     } else {
         h->alpha_offset = h->beta_offset  = 0;
     }
-    check_for_slice(h);
     if(h->pic_type == FF_I_TYPE) {
         do {
+            check_for_slice(h);
             decode_mb_i(h, 0);
         } while(ff_cavs_next_mb(h));
     } else if(h->pic_type == FF_P_TYPE) {
         do {
+            check_for_slice(h);
             if(h->skip_mode_flag) {
                 skip_count = get_ue_golomb(&s->gb);
                 while(skip_count--) {
@@ -539,6 +546,7 @@ static int decode_pic(AVSContext *h) {
                     if(!ff_cavs_next_mb(h))
                         goto done;
                 }
+                check_for_slice(h);
                 mb_type = get_ue_golomb(&s->gb) + P_16X16;
             } else
                 mb_type = get_ue_golomb(&s->gb) + P_SKIP;
@@ -549,6 +557,7 @@ static int decode_pic(AVSContext *h) {
         } while(ff_cavs_next_mb(h));
     } else { /* FF_B_TYPE */
         do {
+            check_for_slice(h);
             if(h->skip_mode_flag) {
                 skip_count = get_ue_golomb(&s->gb);
                 while(skip_count--) {
@@ -556,6 +565,7 @@ static int decode_pic(AVSContext *h) {
                     if(!ff_cavs_next_mb(h))
                         goto done;
                 }
+                check_for_slice(h);
                 mb_type = get_ue_golomb(&s->gb) + B_DIRECT;
             } else
                 mb_type = get_ue_golomb(&s->gb) + B_SKIP;

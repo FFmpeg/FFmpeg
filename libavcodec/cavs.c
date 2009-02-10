@@ -608,8 +608,6 @@ int ff_cavs_next_mb(AVSContext *h) {
         h->cv = h->picture.data[2] + h->mby*8*h->c_stride;
         if(h->mby == h->mb_height) { //frame end
             return 0;
-        } else {
-            //check_for_slice(h);
         }
     }
     return 1;
