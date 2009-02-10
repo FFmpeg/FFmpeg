@@ -248,7 +248,6 @@ static void cavs_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride) {
         dst[i + 6*stride] = cm[ dst[i + 6*stride] + ((b1 - b5) >> 7)];
         dst[i + 7*stride] = cm[ dst[i + 7*stride] + ((b0 - b4) >> 7)];
     }
-    memset(block,0,64*sizeof(DCTELEM));
 }
 
 /*****************************************************************************

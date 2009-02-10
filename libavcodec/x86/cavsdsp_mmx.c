@@ -173,28 +173,6 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
     }
 
     add_pixels_clamped_mmx(b2, dst, stride);
-
-    /* clear block */
-    __asm__ volatile(
-            "pxor %%mm7, %%mm7   \n\t"
-            "movq %%mm7, (%0)    \n\t"
-            "movq %%mm7, 8(%0)   \n\t"
-            "movq %%mm7, 16(%0)  \n\t"
-            "movq %%mm7, 24(%0)  \n\t"
-            "movq %%mm7, 32(%0)  \n\t"
-            "movq %%mm7, 40(%0)  \n\t"
-            "movq %%mm7, 48(%0)  \n\t"
-            "movq %%mm7, 56(%0)  \n\t"
-            "movq %%mm7, 64(%0)  \n\t"
-            "movq %%mm7, 72(%0)  \n\t"
-            "movq %%mm7, 80(%0)  \n\t"
-            "movq %%mm7, 88(%0)  \n\t"
-            "movq %%mm7, 96(%0)  \n\t"
-            "movq %%mm7, 104(%0) \n\t"
-            "movq %%mm7, 112(%0) \n\t"
-            "movq %%mm7, 120(%0) \n\t"
-            :: "r" (block)
-    );
 }
 
 /*****************************************************************************
