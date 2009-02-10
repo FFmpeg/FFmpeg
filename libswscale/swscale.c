@@ -3165,16 +3165,6 @@ void sws_freeContext(SwsContext *c){
     av_free(c);
 }
 
-/**
- * Checks if context is valid or reallocs a new one instead.
- * If context is NULL, just calls sws_getContext() to get a new one.
- * Otherwise, checks if the parameters are the ones already saved in context.
- * If that is the case, returns the current context.
- * Otherwise, frees context and gets a new one.
- *
- * Be warned that srcFilter, dstFilter are not checked, they are
- * asumed to remain valid.
- */
 struct SwsContext *sws_getCachedContext(struct SwsContext *context,
                                         int srcW, int srcH, enum PixelFormat srcFormat,
                                         int dstW, int dstH, enum PixelFormat dstFormat, int flags,
