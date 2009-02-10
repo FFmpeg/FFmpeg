@@ -147,6 +147,11 @@ void sws_convVec(SwsVector *a, SwsVector *b);
 void sws_addVec(SwsVector *a, SwsVector *b);
 void sws_subVec(SwsVector *a, SwsVector *b);
 void sws_shiftVec(SwsVector *a, int shift);
+
+/**
+ * Allocates and returns a clone of the vector \p a, that is a vector
+ * with the same coefficients as \p a.
+ */
 SwsVector *sws_cloneVec(SwsVector *a);
 
 void sws_printVec(SwsVector *a);
