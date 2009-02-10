@@ -137,6 +137,10 @@ SwsVector *sws_getGaussianVec(double variance, double quality);
  */
 SwsVector *sws_getConstVec(double c, int length);
 SwsVector *sws_getIdentityVec(void);
+
+/**
+ * Scales all the coefficients of \p a by the \p scalar value.
+ */
 void sws_scaleVec(SwsVector *a, double scalar);
 void sws_normalizeVec(SwsVector *a, double height);
 void sws_convVec(SwsVector *a, SwsVector *b);
