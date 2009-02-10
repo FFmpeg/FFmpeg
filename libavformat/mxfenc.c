@@ -381,8 +381,14 @@ static void mxf_write_preface(AVFormatContext *s)
     mxf_write_local_tag(pb, 16, 0x3B03);
     mxf_write_uuid(pb, ContentStorage, 0);
 
+    // operational pattern
     mxf_write_local_tag(pb, 16, 0x3B09);
-    put_buffer(pb, op1a_ul, 16);
+    if (s->nb_streams > 1) {
+        put_buffer(pb, op1a_ul, 14);
+        put_be16(pb, 0x0900); // multi track
+    } else {
+        put_buffer(pb, op1a_ul, 16);
+    }
 
     // write essence_container_refs
     mxf_write_local_tag(pb, 8 + 16 * mxf->essence_container_count, 0x3B0A);
@@ -1000,7 +1006,14 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
     put_be64(pb, 0); // bodyOffset
 
     put_be32(pb, bodysid); // bodySID
-    put_buffer(pb, op1a_ul, 16); // operational pattern
+
+    // operational pattern
+    if (s->nb_streams > 1) {
+        put_buffer(pb, op1a_ul, 14);
+        put_be16(pb, 0x0900); // multi track
+    } else {
+        put_buffer(pb, op1a_ul, 16);
+    }
 
     // essence container
     mxf_write_essence_container_refs(s);
