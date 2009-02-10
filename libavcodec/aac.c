@@ -1555,6 +1555,10 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
             av_log(avccontext, AV_LOG_ERROR, "Error decoding AAC frame header.\n");
             return -1;
         }
+        if (ac->m4ac.sampling_index > 11) {
+            av_log(ac->avccontext, AV_LOG_ERROR, "invalid sampling rate index %d\n", ac->m4ac.sampling_index);
+            return -1;
+        }
     }
 
     // parse
