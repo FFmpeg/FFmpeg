@@ -1330,9 +1330,8 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (st->index == 0) {
-        mxf->index_entries[mxf->edit_units_count].offset = url_ftell(pb);
-
         mxf_write_klv_fill(s);
+        mxf->index_entries[mxf->edit_units_count].offset = url_ftell(pb);
         mxf_write_system_item(s);
 
         mxf->edit_units_count++;
