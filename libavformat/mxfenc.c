@@ -1299,7 +1299,7 @@ static void mxf_write_system_item(AVFormatContext *s)
     unsigned fps, frame;
     uint32_t time_code;
 
-    frame = mxf->edit_units_count;
+    frame = mxf->last_indexed_edit_unit + mxf->edit_units_count;
 
     // write system metadata pack
     put_buffer(pb, system_metadata_pack_key, 16);
