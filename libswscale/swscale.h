@@ -132,7 +132,7 @@ int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table, int *srcRang
 SwsVector *sws_getGaussianVec(double variance, double quality);
 
 /**
- * Allocates and returns a vector with \p lenght coefficients, all
+ * Allocates and returns a vector with \p length coefficients, all
  * with the same value \p c.
  */
 SwsVector *sws_getConstVec(double c, int length);
