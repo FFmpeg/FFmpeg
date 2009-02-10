@@ -1051,7 +1051,6 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
         unsigned header_byte_count;
 
         mxf_write_klv_fill(s);
-
         start = url_ftell(s->pb);
         mxf_write_primer_pack(s);
         mxf_write_header_metadata_sets(s);
@@ -1330,13 +1329,11 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         mxf->header_written = 1;
     }
 
-    mxf_write_klv_fill(s);
-
     if (st->index == 0) {
         mxf->index_entries[mxf->edit_units_count].offset = url_ftell(pb);
 
-        mxf_write_system_item(s);
         mxf_write_klv_fill(s);
+        mxf_write_system_item(s);
 
         mxf->edit_units_count++;
     } else if (st->index == 1) {
@@ -1344,6 +1341,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
             url_ftell(pb) - mxf->index_entries[mxf->edit_units_count-1].offset;
     }
 
+    mxf_write_klv_fill(s);
     put_buffer(pb, sc->track_essence_element_key, 16); // write key
     klv_encode_ber_length(pb, pkt->size); // write length
     put_buffer(pb, pkt->data, pkt->size); // write value
@@ -1385,16 +1383,13 @@ static int mxf_write_footer(AVFormatContext *s)
     index_byte_count += klv_fill_size(index_byte_count);
 
     mxf_write_klv_fill(s);
-
     mxf->footer_partition_offset = url_ftell(pb);
     mxf_write_partition(s, 0, 2, index_byte_count, footer_partition_key, 0);
 
     mxf_write_klv_fill(s);
-
     mxf_write_index_table_segment(s);
 
     mxf_write_klv_fill(s);
-
     mxf_write_random_index_pack(s);
 
     if (!url_is_streamed(s->pb)) {
