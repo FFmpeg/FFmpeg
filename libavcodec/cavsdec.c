@@ -53,10 +53,10 @@ static const uint8_t cbp_tab[64][2] = {
  ****************************************************************************/
 
 static inline void store_mvs(AVSContext *h) {
-    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 0] = h->mv[MV_FWD_X0];
-    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 1] = h->mv[MV_FWD_X1];
-    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 2] = h->mv[MV_FWD_X2];
-    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 3] = h->mv[MV_FWD_X3];
+    h->col_mv[h->mbidx*4 + 0] = h->mv[MV_FWD_X0];
+    h->col_mv[h->mbidx*4 + 1] = h->mv[MV_FWD_X1];
+    h->col_mv[h->mbidx*4 + 2] = h->mv[MV_FWD_X2];
+    h->col_mv[h->mbidx*4 + 3] = h->mv[MV_FWD_X3];
 }
 
 static inline void mv_pred_direct(AVSContext *h, cavs_vector *pmv_fw,
@@ -294,7 +294,7 @@ static void decode_mb_p(AVSContext *h, enum cavs_mb mb_type) {
     if(mb_type != P_SKIP)
         decode_residual_inter(h);
     ff_cavs_filter(h,mb_type);
-    *h->col_type = mb_type;
+    h->col_type_base[h->mbidx] = mb_type;
 }
 
 static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
@@ -312,7 +312,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
     switch(mb_type) {
     case B_SKIP:
     case B_DIRECT:
-        if(!(*h->col_type)) {
+        if(!h->col_type_base[h->mbidx]) {
             /* intra MB at co-location, do in-plane prediction */
             ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_BSKIP, BLK_16X16, 1);
             ff_cavs_mv(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_BSKIP, BLK_16X16, 0);
@@ -320,7 +320,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
             /* direct prediction from co-located P MB, block-wise */
             for(block=0;block<4;block++)
                 mv_pred_direct(h,&h->mv[mv_scan[block]],
-                            &h->col_mv[(h->mby*h->mb_width+h->mbx)*4 + block]);
+                                 &h->col_mv[h->mbidx*4 + block]);
         break;
     case B_FWD_16X16:
         ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
@@ -338,7 +338,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
         for(block=0;block<4;block++) {
             switch(sub_type[block]) {
             case B_SUB_DIRECT:
-                if(!(*h->col_type)) {
+                if(!h->col_type_base[h->mbidx]) {
                     /* intra MB at co-location, do in-plane prediction */
                     ff_cavs_mv(h, mv_scan[block], mv_scan[block]-3,
                             MV_PRED_BSKIP, BLK_8X8, 1);
@@ -347,7 +347,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
                             MV_PRED_BSKIP, BLK_8X8, 0);
                 } else
                     mv_pred_direct(h,&h->mv[mv_scan[block]],
-                                   &h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + block]);
+                                   &h->col_mv[h->mbidx*4 + block]);
                 break;
             case B_SUB_FWD:
                 ff_cavs_mv(h, mv_scan[block], mv_scan[block]-3,
@@ -415,6 +415,7 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb) {
     if(h->stc > 0xAF)
         av_log(h->s.avctx, AV_LOG_ERROR, "unexpected start code 0x%02x\n", h->stc);
     h->mby = h->stc;
+    h->mbidx = h->mby*h->mb_width;
 
     /* mark top macroblocks as unavailable */
     h->flags &= ~(B_AVAIL|C_AVAIL);

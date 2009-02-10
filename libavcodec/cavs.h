@@ -166,7 +166,7 @@ typedef struct {
     int loop_filter_disable;
     int alpha_offset, beta_offset;
     int ref_flag;
-    int mbx, mby;      ///< macroblock coordinates
+    int mbx, mby, mbidx; ///< macroblock coordinates
     int flags;         ///< availability flags of neighbouring macroblocks
     int stc;           ///< last start code
     uint8_t *cy, *cu, *cv; ///< current MB sample pointers
@@ -212,7 +212,6 @@ typedef struct {
     void (*intra_pred_l[8])(uint8_t *d,uint8_t *top,uint8_t *left,int stride);
     void (*intra_pred_c[7])(uint8_t *d,uint8_t *top,uint8_t *left,int stride);
     uint8_t *col_type_base;
-    uint8_t *col_type;
 
     /* scaling factors for MV prediction */
     int sym_factor;    ///< for scaling in symmetrical B block
@@ -272,7 +271,7 @@ static inline void set_mv_intra(AVSContext *h) {
     h->mv[MV_BWD_X0] = ff_cavs_intra_mv;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
     if(h->pic_type != FF_B_TYPE)
-        *h->col_type = I_8X8;
+        h->col_type_base[h->mbidx] = I_8X8;
 }
 
 static inline int dequant(AVSContext *h, DCTELEM *level_buf, uint8_t *run_buf,
