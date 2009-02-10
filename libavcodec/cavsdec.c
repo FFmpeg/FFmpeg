@@ -469,7 +469,7 @@ static int decode_pic(AVSContext *h) {
     } else {
         h->pic_type = FF_I_TYPE;
         if(get_bits1(&s->gb))
-            skip_bits(&s->gb,16);//time_code
+            skip_bits(&s->gb,24);//time_code
     }
     /* release last B frame */
     if(h->picture.data[0])
