@@ -2354,17 +2354,6 @@ AVProgram *av_new_program(AVFormatContext *ac, int id)
     return program;
 }
 
-void av_set_program_name(AVProgram *program, char *provider_name, char *name)
-{
-    assert(!provider_name == !name);
-    if(name){
-        av_free(program->provider_name);
-        av_free(program->         name);
-        program->provider_name = av_strdup(provider_name);
-        program->         name = av_strdup(         name);
-    }
-}
-
 AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int64_t start, int64_t end, const char *title)
 {
     AVChapter *chapter = NULL;
