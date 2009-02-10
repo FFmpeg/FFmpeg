@@ -94,7 +94,7 @@ static int bfi_decode_frame(AVCodecContext * avctx, void *data,
 
     while (dst != frame_end) {
         static const uint8_t lentab[4]={0,2,0,1};
-        unsigned int byte = *buf++, offset;
+        unsigned int byte = *buf++, av_uninit(offset);
         unsigned int code = byte >> 6;
         unsigned int length = byte & ~0xC0;
 
