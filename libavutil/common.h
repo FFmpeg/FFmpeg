@@ -102,7 +102,7 @@
 #endif
 
 #ifndef av_uninit
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__ICC)
 #    define av_uninit(x) x=x
 #else
 #    define av_uninit(x) x
