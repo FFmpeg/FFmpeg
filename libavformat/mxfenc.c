@@ -124,7 +124,6 @@ typedef struct MXFContext {
     uint64_t *body_partition_offset;
     unsigned body_partitions_count;
     int last_key_index;  ///< index of last key frame
-    uint64_t body_offset;
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -1029,8 +1028,6 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
         // add encoded ber length
         index_byte_count += 16 + klv_ber_length(index_byte_count);
         index_byte_count += klv_fill_size(index_byte_count);
-
-        mxf->body_offset += url_ftell(pb) - mxf->index_entries[0].offset;
     }
 
     if (!memcmp(key, body_partition_key, 16)) {
@@ -1071,8 +1068,13 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
     put_be32(pb, index_byte_count ? indexsid : 0); // indexSID
 
     // BodyOffset
-    if (bodysid) put_be64(pb, mxf->body_offset);
-    else         put_be64(pb, 0);
+    if (bodysid && mxf->edit_units_count) {
+        uint64_t partition_end = url_ftell(pb) + 8 + 4 + 16 + 8 +
+            16*mxf->essence_container_count;
+        put_be64(pb, partition_end + klv_fill_size(partition_end) +
+                 index_byte_count - mxf->first_edit_unit_offset);
+    } else
+        put_be64(pb, 0);
 
     put_be32(pb, bodysid); // bodySID
 
