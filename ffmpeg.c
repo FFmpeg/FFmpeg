@@ -555,12 +555,12 @@ static void do_audio_out(AVFormatContext *s,
         ost->audio_resample = 1;
 
     if (ost->audio_resample && !ost->resample) {
-        if (dec->sample_fmt != SAMPLE_FMT_S16) {
-            fprintf(stderr, "Audio resampler only works with 16 bits per sample, patch welcome.\n");
-            av_exit(1);
-        }
-        ost->resample = audio_resample_init(enc->channels,    dec->channels,
-                                            enc->sample_rate, dec->sample_rate);
+        if (dec->sample_fmt != SAMPLE_FMT_S16)
+            fprintf(stderr, "Warning, using s16 intermediate sample format for resampling\n");
+        ost->resample = av_audio_resample_init(enc->channels,    dec->channels,
+                                               enc->sample_rate, dec->sample_rate,
+                                               enc->sample_fmt,  dec->sample_fmt,
+                                               16, 10, 0, 0.8);
         if (!ost->resample) {
             fprintf(stderr, "Can not resample %d channels @ %d Hz to %d channels @ %d Hz\n",
                     dec->channels, dec->sample_rate,
@@ -570,7 +570,7 @@ static void do_audio_out(AVFormatContext *s,
     }
 
 #define MAKE_SFMT_PAIR(a,b) ((a)+SAMPLE_FMT_NB*(b))
-    if (dec->sample_fmt!=enc->sample_fmt &&
+    if (!ost->audio_resample && dec->sample_fmt!=enc->sample_fmt &&
         MAKE_SFMT_PAIR(enc->sample_fmt,dec->sample_fmt)!=ost->reformat_pair) {
         if (!audio_out2)
             audio_out2 = av_malloc(audio_out_size);
@@ -647,7 +647,7 @@ static void do_audio_out(AVFormatContext *s,
         size_out = size;
     }
 
-    if (dec->sample_fmt!=enc->sample_fmt) {
+    if (!ost->audio_resample && dec->sample_fmt!=enc->sample_fmt) {
         const void *ibuf[6]= {buftmp};
         void *obuf[6]= {audio_out2};
         int istride[6]= {isize};

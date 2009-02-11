@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 14
+#define LIBAVCODEC_VERSION_MINOR 15
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -2443,8 +2443,36 @@ struct AVResampleContext;
 
 typedef struct ReSampleContext ReSampleContext;
 
-ReSampleContext *audio_resample_init(int output_channels, int input_channels,
-                                     int output_rate, int input_rate);
+#if LIBAVCODEC_VERSION_MAJOR < 53
+/**
+ * @deprecated Use av_audio_resample_init() instead.
+ */
+attribute_deprecated ReSampleContext *audio_resample_init(int output_channels, int input_channels,
+                                                          int output_rate, int input_rate);
+#endif
+/**
+ *  Initializes audio resampling context
+ *
+ * @param output_channels  number of output channels
+ * @param input_channels   number of input channels
+ * @param output_rate      output sample rate
+ * @param input_rate       input sample rate
+ * @param sample_fmt_out   requested output sample format
+ * @param sample_fmt_in    input sample format
+ * @param filter_length    length of each FIR filter in the filterbank relative to the cutoff freq
+ * @param log2_phase_count log2 of the number of entries in the polyphase filterbank
+ * @param linear           If 1 then the used FIR filter will be linearly interpolated
+                           between the 2 closest, if 0 the closest will be used
+ * @param cutoff           cutoff frequency, 1.0 corresponds to half the output sampling rate
+ * @return allocated ReSampleContext, NULL if error occured
+ */
+ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
+                                        int output_rate, int input_rate,
+                                        enum SampleFormat sample_fmt_out,
+                                        enum SampleFormat sample_fmt_in,
+                                        int filter_length, int log2_phase_count,
+                                        int linear, double cutoff);
+
 int audio_resample(ReSampleContext *s, short *output, short *input, int nb_samples);
 void audio_resample_close(ReSampleContext *s);
 
