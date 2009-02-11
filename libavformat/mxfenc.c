@@ -126,7 +126,7 @@ typedef struct MXFContext {
     uint64_t duration;
     AVStream *timecode_track;
     int timecode_base;       ///< rounded time code base (25 or 30)
-    int timecode_start;      ///< value from mpeg-2 essence gop header
+    int timecode_start;      ///< frame number computed from mpeg-2 gop header timecode
     int timecode_drop_frame; ///< time code use drop frame method frop mpeg-2 essence gop header
 } MXFContext;
 
@@ -1208,6 +1208,7 @@ static const UID *mxf_get_mpeg2_codec_ul(AVCodecContext *avctx)
 static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt, int *flags)
 {
     MXFStreamContext *sc = st->priv_data;
+    MXFContext *mxf = s->priv_data;
     uint32_t c = -1;
     int i;
 
@@ -1224,8 +1225,25 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
                 break;
             }
         } else if (c == 0x1b8) { // gop
-            if (i + 4 < pkt->size && pkt->data[i+4]>>6 & 0x01) // closed
-                *flags |= 0x80; // random access
+            if (i + 4 < pkt->size) {
+                if (pkt->data[i+4]>>6 & 0x01) // closed
+                    *flags |= 0x80; // random access
+                if (!mxf->header_written) {
+                    unsigned hours   =  (pkt->data[i+1]>>2) & 0x1f;
+                    unsigned minutes = ((pkt->data[i+1] & 0x03) << 4) | (pkt->data[i+2]>>4);
+                    unsigned seconds = ((pkt->data[i+2] & 0x07) << 3) | (pkt->data[i+3]>>5);
+                    unsigned frames  = ((pkt->data[i+3] & 0x1f) << 1) | (pkt->data[i+4]>>7);
+                    mxf->timecode_drop_frame = !!(pkt->data[i+1] & 0x80);
+                    mxf->timecode_start = (hours*3600 + minutes*60 + seconds) *
+                        mxf->timecode_base + frames;
+                    if (mxf->timecode_drop_frame) {
+                        unsigned tminutes = 60 * hours + minutes;
+                        mxf->timecode_start -= 2 * (tminutes - tminutes / 10);
+                    }
+                    av_log(s, AV_LOG_DEBUG, "frame %d %d:%d:%d%c%d\n", mxf->timecode_start,
+                           hours, minutes, seconds, mxf->timecode_drop_frame ? ';':':', frames);
+                }
+            }
         } else if (c == 0x1b3) { // seq
             *flags |= 0x40;
         } else if (c == 0x100) { // pic
@@ -1372,7 +1390,7 @@ static void mxf_write_system_item(AVFormatContext *s)
     unsigned frame;
     uint32_t time_code;
 
-    frame = mxf->last_indexed_edit_unit + mxf->edit_units_count;
+    frame = mxf->timecode_start + mxf->last_indexed_edit_unit + mxf->edit_units_count;
 
     // write system metadata pack
     put_buffer(pb, system_metadata_pack_key, 16);
