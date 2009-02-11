@@ -444,7 +444,7 @@ static int ea_read_packet(AVFormatContext *s,
     int packet_read = 0;
     unsigned int chunk_type, chunk_size;
     int key = 0;
-    int num_samples;
+    int av_uninit(num_samples);
 
     while (!packet_read) {
         chunk_type = get_le32(pb);
