@@ -1162,8 +1162,6 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         return -1;
     dprintf(c->fc, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
 
-    sc->time_rate=0;
-
     for(i=0; i<entries; i++) {
         int sample_duration;
         int sample_count;
@@ -1768,8 +1766,10 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         get_be32(pb); /* Track duration */
         time = get_be32(pb); /* Media time */
         get_be32(pb); /* Media rate */
-        if (i == 0 && time != -1)
+        if (i == 0 && time != -1) {
             sc->time_offset = time;
+            sc->time_rate = av_gcd(sc->time_rate, time);
+        }
     }
 
     if(edit_count > 1)
