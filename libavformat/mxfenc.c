@@ -63,7 +63,6 @@ typedef struct {
     UID track_essence_element_key;
     int index;            ///< index in mxf_essence_container_uls table
     const UID *codec_ul;
-    int64_t duration;
     int order;            ///< interleaving order if dts are equal
     int interlaced;       ///< wether picture is interlaced
     int temporal_reordering;
@@ -124,6 +123,11 @@ typedef struct MXFContext {
     uint64_t *body_partition_offset;
     unsigned body_partitions_count;
     int last_key_index;  ///< index of last key frame
+    uint64_t duration;
+    AVStream *timecode_track;
+    int timecode_base;       ///< rounded time code base (25 or 30)
+    int timecode_start;      ///< value from mpeg-2 essence gop header
+    int timecode_drop_frame; ///< time code use drop frame method frop mpeg-2 essence gop header
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -194,6 +198,10 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x1201, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x07,0x02,0x01,0x03,0x01,0x04,0x00,0x00}}, /* Start position */
     { 0x1101, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x03,0x01,0x00,0x00,0x00}}, /* SourcePackageID */
     { 0x1102, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x03,0x02,0x00,0x00,0x00}}, /* SourceTrackID */
+    // Timecode Component
+    { 0x1501, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x07,0x02,0x01,0x03,0x01,0x05,0x00,0x00}}, /* Start Time Code */
+    { 0x1502, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x04,0x01,0x01,0x02,0x06,0x00,0x00}}, /* Rounded Time Code Base */
+    { 0x1503, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x04,0x01,0x01,0x05,0x00,0x00,0x00}}, /* Drop Frame */
     // File Descriptor
     { 0x3F01, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x04,0x06,0x01,0x01,0x04,0x06,0x0B,0x00,0x00}}, /* Sub Descriptors reference array */
     { 0x3006, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x06,0x01,0x01,0x03,0x05,0x00,0x00,0x00}}, /* Linked Track ID */
@@ -522,23 +530,32 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
     mxf_write_uuid(pb, type == MaterialPackage ? Sequence: Sequence + TypeBottom, st->index);
 }
 
-static void mxf_write_common_fields(ByteIOContext *pb, AVStream *st)
+static const uint8_t smpte_12m_timecode_track_data_ul[] = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x01,0x01,0x00,0x00,0x00 };
+
+static void mxf_write_common_fields(AVFormatContext *s, AVStream *st)
 {
-    const MXFCodecUL *data_def_ul = mxf_get_data_definition_ul(st->codec->codec_type);
-    MXFStreamContext *sc = st->priv_data;
+    MXFContext *mxf = s->priv_data;
+    ByteIOContext *pb = s->pb;
 
     // find data define uls
     mxf_write_local_tag(pb, 16, 0x0201);
-    put_buffer(pb, data_def_ul->uid, 16);
+    if (st == mxf->timecode_track)
+        put_buffer(pb, smpte_12m_timecode_track_data_ul, 16);
+    else {
+        const MXFCodecUL *data_def_ul = mxf_get_data_definition_ul(st->codec->codec_type);
+        put_buffer(pb, data_def_ul->uid, 16);
+    }
 
     // write duration
     mxf_write_local_tag(pb, 8, 0x0202);
-    put_be64(pb, sc->duration);
+    put_be64(pb, mxf->duration);
 }
 
 static void mxf_write_sequence(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
 {
+    MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
+    enum MXFMetadataSetType component;
 
     mxf_write_metadata_key(pb, 0x010f00);
     PRINT_KEY(s, "sequence key", pb->buf_ptr - 16);
@@ -548,12 +565,45 @@ static void mxf_write_sequence(AVFormatContext *s, AVStream *st, enum MXFMetadat
     mxf_write_uuid(pb, type == MaterialPackage ? Sequence: Sequence + TypeBottom, st->index);
 
     PRINT_KEY(s, "sequence uid", pb->buf_ptr - 16);
-    mxf_write_common_fields(pb, st);
+    mxf_write_common_fields(s, st);
 
     // write structural component
     mxf_write_local_tag(pb, 16 + 8, 0x1001);
     mxf_write_refs_count(pb, 1);
-    mxf_write_uuid(pb, type == MaterialPackage ? SourceClip: SourceClip + TypeBottom, st->index);
+    if (st == mxf->timecode_track)
+        component = TimecodeComponent;
+    else if (type == MaterialPackage)
+        component = SourceClip;
+    else
+        component = SourceClip+TypeBottom;
+    mxf_write_uuid(pb, component, st->index);
+}
+
+static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st)
+{
+    MXFContext *mxf = s->priv_data;
+    ByteIOContext *pb = s->pb;
+
+    mxf_write_metadata_key(pb, 0x011400);
+    klv_encode_ber_length(pb, 75);
+
+    // UID
+    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_uuid(pb, TimecodeComponent, st->index);
+
+    mxf_write_common_fields(s, st);
+
+    // Start Time Code
+    mxf_write_local_tag(pb, 8, 0x1501);
+    put_be64(pb, mxf->timecode_start);
+
+    // Rounded Time Code Base
+    mxf_write_local_tag(pb, 2, 0x1502);
+    put_be16(pb, mxf->timecode_base);
+
+    // Drop Frame
+    mxf_write_local_tag(pb, 1, 0x1503);
+    put_byte(pb, mxf->timecode_drop_frame);
 }
 
 static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
@@ -570,7 +620,7 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enu
     mxf_write_uuid(pb, type == MaterialPackage ? SourceClip: SourceClip + TypeBottom, st->index);
 
     PRINT_KEY(s, "structural component uid", pb->buf_ptr - 16);
-    mxf_write_common_fields(pb, st);
+    mxf_write_common_fields(s, st);
 
     // write start_position
     mxf_write_local_tag(pb, 8, 0x1201);
@@ -773,16 +823,18 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    int i;
+    int i, track_count;
 
     if (type == MaterialPackage) {
+        track_count = s->nb_streams + 1; // add timecode track
         mxf_write_metadata_key(pb, 0x013600);
         PRINT_KEY(s, "Material Package key", pb->buf_ptr - 16);
-        klv_encode_ber_length(pb, 92 + 16 * s->nb_streams);
+        klv_encode_ber_length(pb, 92 + 16*track_count);
     } else {
+        track_count = s->nb_streams;
         mxf_write_metadata_key(pb, 0x013700);
         PRINT_KEY(s, "Source Package key", pb->buf_ptr - 16);
-        klv_encode_ber_length(pb, 112 + 16 * s->nb_streams); // 20 bytes length for descriptor reference
+        klv_encode_ber_length(pb, 112 + 16*track_count); // 20 bytes length for descriptor reference
     }
 
     // write uid
@@ -805,10 +857,12 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
     put_be64(pb, mxf->timestamp);
 
     // write track refs
-    mxf_write_local_tag(pb, s->nb_streams * 16 + 8, 0x4403);
-    mxf_write_refs_count(pb, s->nb_streams);
+    mxf_write_local_tag(pb, track_count*16 + 8, 0x4403);
+    mxf_write_refs_count(pb, track_count);
     for (i = 0; i < s->nb_streams; i++)
         mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, i);
+    if (type == MaterialPackage)
+        mxf_write_uuid(pb, Track, s->nb_streams); // timecode track
 
     // write multiple descriptor reference
     if (type == SourcePackage) {
@@ -818,6 +872,11 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
             mxf_write_multi_descriptor(s);
         } else
             mxf_write_uuid(pb, SubDescriptor, 0);
+    } else {
+        // write timecode track
+        mxf_write_track(s, mxf->timecode_track, type);
+        mxf_write_sequence(s, mxf->timecode_track, type);
+        mxf_write_timecode_component(s, mxf->timecode_track);
     }
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -1220,9 +1279,11 @@ static int mxf_write_header(AVFormatContext *s)
             if (fabs(av_q2d(st->codec->time_base) - 1/25.0) < 0.0001) {
                 samples_per_frame = PAL_samples_per_frame;
                 mxf->time_base = (AVRational){ 1, 25 };
+                mxf->timecode_base = 25;
             } else if (fabs(av_q2d(st->codec->time_base) - 1001/30000.0) < 0.0001) {
                 samples_per_frame = NTSC_samples_per_frame;
                 mxf->time_base = (AVRational){ 1001, 30000 };
+                mxf->timecode_base = 30;
             } else {
                 av_log(s, AV_LOG_ERROR, "unsupported video frame rate\n");
                 return -1;
@@ -1236,7 +1297,6 @@ static int mxf_write_header(AVFormatContext *s)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             mxf->slice_count = 1;
         }
-        sc->duration = -1;
 
         sc->index = mxf_get_essence_container_ul_index(st->codec->codec_id);
         if (sc->index == -1) {
@@ -1265,6 +1325,15 @@ static int mxf_write_header(AVFormatContext *s)
     }
 
     mxf->timestamp = mxf_parse_timestamp(s->timestamp);
+    mxf->duration = -1;
+
+    mxf->timecode_track = av_mallocz(sizeof(*mxf->timecode_track));
+    if (!mxf->timecode_track)
+        return AVERROR(ENOMEM);
+    mxf->timecode_track->priv_data = av_mallocz(sizeof(MXFStreamContext));
+    if (!mxf->timecode_track->priv_data)
+        return AVERROR(ENOMEM);
+    mxf->timecode_track->index = s->nb_streams;
 
     if (!samples_per_frame)
         samples_per_frame = PAL_samples_per_frame;
@@ -1300,7 +1369,7 @@ static void mxf_write_system_item(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    unsigned fps, frame;
+    unsigned frame;
     uint32_t time_code;
 
     frame = mxf->last_indexed_edit_unit + mxf->edit_units_count;
@@ -1321,12 +1390,8 @@ static void mxf_write_system_item(AVFormatContext *s)
     put_be64(pb, 0);
     put_be64(pb, 0); // creation date/time stamp
 
-    // XXX drop frame
-    if (mxf->time_base.den == 30000) fps = 30;
-    else                             fps = 25;
-
     put_byte(pb, 0x81); // SMPTE 12M time code
-    time_code = ff_framenum_to_12m_time_code(frame, 0, fps);
+    time_code = ff_framenum_to_12m_time_code(frame, mxf->timecode_drop_frame, mxf->timecode_base);
     put_be32(pb, time_code);
     put_be32(pb, 0); // binary group data
     put_be64(pb, 0);
@@ -1396,8 +1461,6 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     klv_encode_ber_length(pb, pkt->size); // write length
     put_buffer(pb, pkt->data, pkt->size); // write value
 
-    sc->duration = FFMAX(pkt->pts + pkt->duration, sc->duration);
-
     put_flush_packet(pb);
     return 0;
 }
@@ -1431,6 +1494,8 @@ static int mxf_write_footer(AVFormatContext *s)
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
 
+    mxf->duration = mxf->last_indexed_edit_unit + mxf->edit_units_count;
+
     mxf_write_klv_fill(s);
     mxf->footer_partition_offset = url_ftell(pb);
     mxf_write_partition(s, 0, 2, footer_partition_key, 0);
@@ -1450,6 +1515,8 @@ static int mxf_write_footer(AVFormatContext *s)
 
     av_freep(&mxf->index_entries);
     av_freep(&mxf->body_partition_offset);
+    av_freep(&mxf->timecode_track->priv_data);
+    av_freep(&mxf->timecode_track);
 
     mxf_free(s);
     return 0;
