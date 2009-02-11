@@ -573,7 +573,7 @@ retry:
         goto retry;
     }
 
-    if((s->codec_id==CODEC_ID_H263 || s->codec_id==CODEC_ID_H263P))
+    if((s->codec_id==CODEC_ID_H263 || s->codec_id==CODEC_ID_H263P || s->codec_id == CODEC_ID_H263I))
         s->gob_index = ff_h263_get_gob_height(s);
 
     // for hurry_up==5
