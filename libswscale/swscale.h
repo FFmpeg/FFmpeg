@@ -141,6 +141,11 @@ SwsVector *sws_getGaussianVec(double variance, double quality);
  * with the same value \p c.
  */
 SwsVector *sws_getConstVec(double c, int length);
+
+/**
+ * Allocates and returns a vector with just one coefficient, with
+ * value 1.0.
+ */
 SwsVector *sws_getIdentityVec(void);
 
 /**
