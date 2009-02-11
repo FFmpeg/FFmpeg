@@ -1346,7 +1346,6 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     st->priv_data = sc;
     st->codec->codec_type = CODEC_TYPE_DATA;
-    st->start_time = 0; /* XXX: check */
     sc->ffindex = st->index;
 
     if ((ret = mov_read_default(c, pb, atom)) < 0)
@@ -1506,7 +1505,7 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     }
     st->id = (int)get_be32(pb); /* track id (NOT 0 !)*/
     get_be32(pb); /* reserved */
-    st->start_time = 0; /* check */
+
     /* highlevel (considering edits) duration in movie timebase */
     (version == 1) ? get_be64(pb) : get_be32(pb);
     get_be32(pb); /* reserved */
