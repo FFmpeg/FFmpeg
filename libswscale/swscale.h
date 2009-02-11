@@ -114,6 +114,19 @@ struct SwsContext;
 
 void sws_freeContext(struct SwsContext *swsContext);
 
+/**
+ * Allocates and returns a SwsContext. You need it to perform
+ * scaling/conversion operations using sws_scale().
+ *
+ * @param srcW the width of the source image
+ * @param srcH the height of the source image
+ * @param srcFormat the source image format
+ * @param dstW the width of the destination image
+ * @param dstH the height of the destination image
+ * @param dstFormat the destination image format
+ * @param flags specify which algorithm and options to use for rescaling
+ * @return a pointer to an allocated context, or NULL in case of error
+ */
 struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int dstW, int dstH, enum PixelFormat dstFormat, int flags,
                                   SwsFilter *srcFilter, SwsFilter *dstFilter, double *param);
 int sws_scale(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
