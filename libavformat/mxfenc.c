@@ -881,7 +881,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     int i, j;
     int temporal_reordering = 0;
-    int key_index = 0;
+    int key_index = mxf->last_key_index;
 
     av_log(s, AV_LOG_DEBUG, "edit units count %d\n", mxf->edit_units_count);
 
@@ -992,6 +992,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
             put_be32(pb, mxf->index_entries[i].slice_offset);
     }
 
+    mxf->last_key_index = key_index - mxf->edit_units_count;
     mxf->last_indexed_edit_unit += mxf->edit_units_count;
     mxf->edit_units_count = 0;
 }
