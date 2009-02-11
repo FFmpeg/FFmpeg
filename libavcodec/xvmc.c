@@ -117,7 +117,7 @@ void XVMC_field_end(MpegEncContext *s){
     assert(render != NULL);
 
     if(render->filled_mv_blocks_num > 0){
-//        printf("xvmcvideo.c: rendering %d left blocks after last slice!!!\n",render->filled_mv_blocks_num );
+//        printf("xvmc: rendering %d left blocks after last slice!!!\n",render->filled_mv_blocks_num );
         ff_draw_horiz_band(s,0,0);
     }
 }

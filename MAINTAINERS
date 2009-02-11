@@ -205,7 +205,7 @@ Codecs:
   wnv1.c                                Kostya Shishkov
   xan.c                                 Mike Melanson
   xl.c                                  Kostya Shishkov
-  xvmcvideo.c                           Ivan Kalvachev
+  xvmc.c                                Ivan Kalvachev
   zmbv*                                 Kostya Shishkov
 
 
