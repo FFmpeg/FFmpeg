@@ -96,7 +96,7 @@ static const uint8_t div6[52]={
 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8,
 };
 
-static const int left_block_options[4][8]={
+static const uint8_t left_block_options[4][8]={
     {0,1,2,3,7,10,8,11},
     {2,2,3,3,8,11,8,11},
     {0,0,1,1,7,10,7,10},
@@ -111,7 +111,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     const int mb_xy= h->mb_xy;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
     int topleft_type, top_type, topright_type, left_type[2];
-    const int * left_block;
+    const uint8_t * left_block;
     int topleft_partition= -1;
     int i;
 
