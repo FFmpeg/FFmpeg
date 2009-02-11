@@ -22,6 +22,9 @@
 /**
  * @file libavcodec/imgresample.c
  * High quality image resampling with polyphase filters .
+ *
+ * WARNING: This file is deprecated and will be removed after FFmpeg 0.5
+ * release, do not lose your time improving it!
  */
 
 #include "avcodec.h"
