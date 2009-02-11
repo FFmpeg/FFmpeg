@@ -43,7 +43,7 @@ typedef struct GXFStreamContext {
     int pframes;
     int bframes;
     int p_per_gop;
-    int b_per_gop;
+    int b_per_i_or_p; ///< number of B frames per I frame or P frame
     int first_gop_closed;
     int64_t current_dts;
     int dts_delay;
@@ -176,11 +176,11 @@ static int gxf_write_mpeg_auxiliary(ByteIOContext *pb, GXFStreamContext *ctx)
         if (ctx->pframes % ctx->iframes)
             ctx->p_per_gop++;
         if (ctx->pframes)
-            ctx->b_per_gop = ctx->bframes / ctx->pframes;
+            ctx->b_per_i_or_p = ctx->bframes / ctx->pframes;
         if (ctx->p_per_gop > 9)
             ctx->p_per_gop = 9; /* ensure value won't take more than one char */
-        if (ctx->b_per_gop > 9)
-            ctx->b_per_gop = 9; /* ensure value won't take more than one char */
+        if (ctx->b_per_i_or_p > 9)
+            ctx->b_per_i_or_p = 9; /* ensure value won't take more than one char */
     }
     if (ctx->codec->height == 512 || ctx->codec->height == 608)
         starting_line = 7; // VBI
@@ -191,7 +191,7 @@ static int gxf_write_mpeg_auxiliary(ByteIOContext *pb, GXFStreamContext *ctx)
 
     size = snprintf(buffer, 1024, "Ver 1\nBr %.6f\nIpg 1\nPpi %d\nBpiop %d\n"
                     "Pix 0\nCf %d\nCg %d\nSl %d\nnl16 %d\nVi 1\nf1 1\n",
-                    (float)ctx->codec->bit_rate, ctx->p_per_gop, ctx->b_per_gop,
+                    (float)ctx->codec->bit_rate, ctx->p_per_gop, ctx->b_per_i_or_p,
                     ctx->codec->pix_fmt == PIX_FMT_YUV422P ? 2 : 1, ctx->first_gop_closed == 1,
                     starting_line, ctx->codec->height / 16);
     put_byte(pb, TRACK_MPG_AUX);
@@ -441,7 +441,7 @@ static int gxf_write_umf_media_mpeg(ByteIOContext *pb, GXFStreamContext *stream)
     put_le32(pb, 3); /* top = 1, bottom = 2, frame = 3, unknown = 0 */
     put_le32(pb, 1); /* I picture per GOP */
     put_le32(pb, stream->p_per_gop);
-    put_le32(pb, stream->b_per_gop);
+    put_le32(pb, stream->b_per_i_or_p);
     if (stream->codec->codec_id == CODEC_ID_MPEG2VIDEO)
         put_le32(pb, 2);
     else if (stream->codec->codec_id == CODEC_ID_MPEG1VIDEO)
