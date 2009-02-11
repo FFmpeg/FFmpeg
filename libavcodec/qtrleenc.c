@@ -116,7 +116,7 @@ static void qtrle_encode_line(QtrleEncContext *s, AVFrame *p, int line, uint8_t 
     unsigned int skipcount;
     /* This will be the number of consecutive equal pixels in the current
      * frame, starting from the ith one also */
-    unsigned int repeatcount;
+    unsigned int av_uninit(repeatcount);
 
     /* The cost of the three different possibilities */
     int total_bulk_cost;
