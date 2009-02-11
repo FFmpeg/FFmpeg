@@ -3717,7 +3717,7 @@ static int opt_preset(const char *opt, const char *arg)
     }
     if(!f && ((arg[0]=='.' && arg[1]=='/') || arg[0]=='/' ||
               is_dos_path(arg))){
-        snprintf(filename, sizeof(filename), arg);
+        av_strlcpy(filename, arg, sizeof(filename));
         f= fopen(filename, "r");
     }
 
