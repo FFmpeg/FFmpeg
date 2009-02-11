@@ -413,11 +413,18 @@ static int mpegps_read_packet(AVFormatContext *s,
     enum CodecID codec_id = CODEC_ID_NONE;
     enum CodecType type;
     int64_t pts, dts, dummy_pos; //dummy_pos is needed for the index building to work
+    uint8_t dvdaudio_substream_type;
 
  redo:
     len = mpegps_read_pes_header(s, &dummy_pos, &startcode, &pts, &dts);
     if (len < 0)
         return len;
+
+    if(startcode == 0x1bd) {
+        dvdaudio_substream_type = get_byte(s->pb);
+        url_fskip(s->pb, 3);
+        len -= 4;
+    }
 
     /* now find stream */
     for(i=0;i<s->nb_streams;i++) {
@@ -427,7 +434,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     }
 
     es_type = m->psm_es_type[startcode & 0xff];
-    if(es_type > 0){
+    if(es_type > 0 && es_type != STREAM_TYPE_PRIVATE_DATA){
         if(es_type == STREAM_TYPE_VIDEO_MPEG1){
             codec_id = CODEC_ID_MPEG2VIDEO;
             type = CODEC_TYPE_VIDEO;
@@ -491,6 +498,19 @@ static int mpegps_read_packet(AVFormatContext *s,
     } else if (startcode >= 0xfd55 && startcode <= 0xfd5f) {
         type = CODEC_TYPE_VIDEO;
         codec_id = CODEC_ID_VC1;
+    } else if (startcode == 0x1bd) {
+        // check dvd audio substream type
+        type = CODEC_TYPE_AUDIO;
+        switch(dvdaudio_substream_type & 0xe0) {
+        case 0xa0:  codec_id = CODEC_ID_PCM_DVD;
+                    break;
+        case 0x80:  if((dvdaudio_substream_type & 0xf8) == 0x88)
+                         codec_id = CODEC_ID_DTS;
+                    else codec_id = CODEC_ID_AC3;
+                    break;
+        default:    av_log(s, AV_LOG_ERROR, "Unknown 0x1bd sub-stream\n");
+                    goto skip;
+        }
     } else {
     skip:
         /* skip packet */
@@ -508,7 +528,8 @@ static int mpegps_read_packet(AVFormatContext *s,
  found:
     if(st->discard >= AVDISCARD_ALL)
         goto skip;
-    if (startcode >= 0xa0 && startcode <= 0xaf) {
+    if ((startcode >= 0xa0 && startcode <= 0xaf) ||
+        (startcode == 0x1bd && ((dvdaudio_substream_type & 0xe0) == 0xa0))) {
         int b1, freq;
 
         /* for LPCM, we just skip the header and consider it is raw
