@@ -149,6 +149,7 @@ version <next>
 - Electronic Arts TQI decoder
 - OpenJPEG based JPEG 2000 decoder
 - NC (NC4600) cameras file demuxer
+- Gopher client support
 
 version 0.4.9-pre1:
 

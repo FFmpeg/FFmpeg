@@ -208,6 +208,7 @@ OBJS-$(CONFIG_VHOOK)                     += framehook.o
 OBJS+= avio.o aviobuf.o
 
 OBJS-$(CONFIG_FILE_PROTOCOL)             += file.o
+OBJS-$(CONFIG_GOPHER_PROTOCOL)           += gopher.o
 OBJS-$(CONFIG_HTTP_PROTOCOL)             += http.o
 OBJS-$(CONFIG_PIPE_PROTOCOL)             += file.o
 OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o

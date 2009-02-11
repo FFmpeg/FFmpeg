@@ -199,6 +199,7 @@ void av_register_all(void)
 
     /* protocols */
     REGISTER_PROTOCOL (FILE, file);
+    REGISTER_PROTOCOL (GOPHER, gopher);
     REGISTER_PROTOCOL (HTTP, http);
     REGISTER_PROTOCOL (PIPE, pipe);
     REGISTER_PROTOCOL (RTP, rtp);
