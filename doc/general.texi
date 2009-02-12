@@ -156,7 +156,7 @@ library:
 @item raw MPEG-2                @tab   @tab X
 @item raw MPEG-4                @tab X @tab X
 @item raw NULL                  @tab X @tab
-@item raw vido                  @tab X @tab X
+@item raw video                 @tab X @tab X
 @item raw id RoQ                @tab X @tab
 @item raw Shorten               @tab   @tab X
 @item raw VC-1                  @tab   @tab X
