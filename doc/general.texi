@@ -48,29 +48,31 @@ library:
     @tab Multimedia format used in games like Mad Dog McCree.
 @item ASF                       @tab X @tab X
 @item AVI                       @tab X @tab X
-@item AVM2 (Flash 9)            @tab X @tab X
-    @tab Only embedded audio is decoded.
 @item AVS                       @tab   @tab X
     @tab Multimedia format used by the Creature Shock game.
-@item Bethsoft VID              @tab   @tab X
+@item Beam Software SIFF        @tab   @tab X
+    @tab Audio and video format used in some games by Beam Software.
+@item Bethesda Softworks VID    @tab   @tab X
     @tab Used in some games from Bethesda Softworks.
-@item BFI                       @tab   @tab X
-    @tab Brute Force & Ignorance, used in Flash Traffic: City of Angels.
-@item C93                       @tab   @tab X
+@item Brute Force & Ignorance   @tab   @tab X
+    @tab Used in the game Flash Traffic: City of Angels.
+@item Interplay C93             @tab   @tab X
     @tab Used in the game Cyberia from Interplay.
-@item CIN                       @tab   @tab X
+@item Delphine Software International CIN @tab   @tab X
     @tab Multimedia format used by Delphine Software games.
-@item Creative VOC              @tab X @tab X
+@item Creative Voice            @tab X @tab X
     @tab Created for the Sound Blaster Pro.
 @item CRYO APC                  @tab   @tab X
     @tab Audio format used in some games by CRYO Interactive Entertainment.
-@item DV                        @tab X @tab X
+@item DV video                  @tab X @tab X
 @item DXA                       @tab   @tab X
     @tab This format is used in the non-Windows version of the Feeble Files
          game and different game cutscenes repacked for use with ScummVM.
 @item Electronic Arts Multimedia  @tab    @tab X
     @tab Used in various EA games; files have extensions like WVE and UV2.
-@item FLIC                      @tab   @tab X
+@item Flash 9 (AVM2)            @tab X @tab X
+    @tab Only embedded audio is decoded.
+@item FLI/FLC/FLX animation     @tab   @tab X
     @tab .fli/.flc files
 @item FLV                       @tab X @tab X
     @tab Macromedia Flash video files
@@ -90,33 +92,31 @@ library:
 @item LMLM4                     @tab   @tab X
     @tab Used by Linux Media Labs MPEG-4 PCI boards
 @item Matroska                  @tab X @tab X
-@item MAXIS EA XA               @tab   @tab X
+@item MAXIS XA                  @tab   @tab X
     @tab Used in Sim City 3000; file extension .xa.
 @item Monkey's Audio            @tab   @tab X
 @item Motion Pixels MVI         @tab   @tab X
-@item MOV/QuickTime             @tab X @tab X
+@item MOV/QuickTime/MP4         @tab X @tab X
+    @tab 3GP, 3GP2, PSP, iPod variants supported
 @item MPEG audio                @tab X @tab X
-@item MPEG-1 systems            @tab X @tab X
-    @tab muxed audio and video
-@item MPEG-2 PS                 @tab X @tab X
-    @tab also known as @code{VOB} file
-@item MPEG-2 TS                 @tab   @tab X
+@item MPEG-1 System             @tab X @tab X
+    @tab muxed audio and video, VCD format supported
+@item MPEG-PS (program stream)  @tab X @tab X
+    @tab also known as @code{VOB} file, SVCD and DVD format supported
+@item MPEG-TS (transport stream) @tab X @tab X
     @tab also known as DVB Transport Stream
 @item MPEG-4                    @tab X @tab X
     @tab MPEG-4 is a variant of QuickTime.
 @item MSN TCP webcam            @tab   @tab X
     @tab Used by MSN Messenger webcam streams.
-@item MXF                       @tab X @tab X
-    @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
-@item NC                        @tab   @tab X
-    @tab NC (AVIP NC4600) cameras streams.
-@item Nullsoft Video            @tab   @tab X
+@item Material eXchange Format (MXF) @tab X @tab X
+    @tab SMPTE 377M, used by D-Cinema, broadcast industry.
+@item NC camera feed            @tab   @tab X
+    @tab NC (AVIP NC4600) camera streams
+@item Nullsoft Streaming Video  @tab   @tab X
 @item NUT                       @tab X @tab X
     @tab NUT Open Container Format
-@item OMA                       @tab   @tab X
-    @tab Audio format used in Sony Sonic Stage and Sony Vegas.
-@item PlayStation STR           @tab   @tab X
-@item PVA                       @tab   @tab X
+@item TechnoTrend PVA           @tab   @tab X
     @tab Used by TechnoTrend DVB PCI boards.
 @item raw AC-3                  @tab X @tab X
 @item raw CRI ADX audio         @tab X @tab X
@@ -125,31 +125,35 @@ library:
 @item raw MPEG-4 video          @tab X @tab X
 @item raw PCM 8/16/32 bits, 32/64-bit floating point, mu-law/A-law @tab X  @tab  X
 @item raw Shorten audio         @tab    @tab  X
-@item R3D REDCODE               @tab   @tab X
+@item REDCODE R3D               @tab   @tab X
     @tab File format used by RED Digital cameras, contains JPEG 2000 frames and PCM audio.
 @item RealMedia                 @tab X @tab X
+@item Renderware TeXture Dictionary @tab   @tab X
 @item RL2                       @tab   @tab X
     @tab Audio and video format used in some games by Entertainment Software Partners.
 @item Sega FILM/CPK             @tab   @tab X
     @tab Used in many Sega Saturn console games.
-@item SEQ                       @tab   @tab X
-    @tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
-@item Sierra Online             @tab   @tab X
+@item Sierra SOL                @tab   @tab X
     @tab .sol files used in Sierra Online games.
 @item Sierra VMD                @tab   @tab X
     @tab Used in Sierra CD-ROM games.
-@item SIFF                      @tab   @tab X
-    @tab Audio and video format used in some games by Beam Software.
 @item Smacker                   @tab   @tab X
     @tab Multimedia format used by many games.
+@item Sony OpenMG (OMA)         @tab   @tab X
+    @tab Audio format used in Sony Sonic Stage and Sony Vegas.
+@item Sony PlayStation STR      @tab   @tab X
 @item SUN AU format             @tab X @tab X
 @item THP                       @tab   @tab X
     @tab Used on the Nintendo GameCube.
+@item Tiertex Limited SEQ       @tab   @tab X
+    @tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
 @item WAV                       @tab X @tab X
-@item WC3 Movie                 @tab   @tab X
+@item Wing Commander III movie  @tab   @tab X
     @tab Multimedia format used in Origin's Wing Commander III computer game.
-@item Westwood Studios VQA/AUD  @tab   @tab X
-    @tab Multimedia formats used in Westwood Studios games.
+@item Westwood Studios audio    @tab   @tab X
+    @tab Multimedia format used in Westwood Studios games.
+@item Westwood Studios VQA      @tab   @tab X
+    @tab Multimedia format used in Westwood Studios games.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -187,7 +191,7 @@ following image formats are supported:
 @item Name @tab Encoding @tab Decoding @tab Comments
 @item 4X Video               @tab     @tab  X
     @tab Used in certain computer games.
-@item American Laser Games Video  @tab    @tab X
+@item American Laser Games MM  @tab    @tab X
     @tab Used in games like Mad Dog McCree.
 @item AMV                    @tab     @tab  X
     @tab Used in Chinese MP3 players.
@@ -458,7 +462,7 @@ performance on systems without hardware floating point support).
 
 @multitable @columnfractions .4 .1 .1 .1 .1 .1
 @item Name @tab Muxing @tab Demuxing @tab Encoding @tab Decoding
-@item ASS/SSA      @tab X @tab X
+@item SSA/ASS      @tab X @tab X
 @item DVB          @tab X @tab X @tab X @tab X
 @item DVD          @tab X @tab X @tab X @tab X
 @item XSUB         @tab   @tab   @tab   @tab X
