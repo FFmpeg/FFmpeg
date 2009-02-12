@@ -2446,6 +2446,10 @@ int av_write_header(AVFormatContext *s)
             }else
                 st->codec->codec_tag= av_codec_get_tag(s->oformat->codec_tag, st->codec->codec_id);
         }
+
+        if(s->oformat->flags & AVFMT_GLOBALHEADER &&
+            !(st->codec->flags & CODEC_FLAG_GLOBAL_HEADER))
+          av_log(s, AV_LOG_WARNING, "Codec for stream %d does not use global headers but container format requires global headers\n", i);
     }
 
     if (!s->priv_data && s->oformat->priv_data_size > 0) {
