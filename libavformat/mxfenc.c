@@ -1560,6 +1560,7 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
         pktl = s->packet_buffer;
         if (s->nb_streams != stream_count) {
             AVPacketList *first = NULL;
+            AVPacketList *last = NULL;
             // find first packet in edit unit
             while (pktl) {
                 AVStream *st = s->streams[pktl->pkt.stream_index];
@@ -1567,8 +1568,11 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
                     break;
                 else if (!first)
                     first = pktl;
+                last = pktl;
                 pktl = pktl->next;
             }
+            if (last)
+                last->next = NULL;
             // purge packet queue
             while (pktl) {
                 AVPacketList *next = pktl->next;
