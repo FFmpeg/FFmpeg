@@ -44,10 +44,13 @@ library:
 @item 4xm                       @tab   @tab X
     @tab 4X Technologies format, used in some games.
 @item ADTS AAC audio            @tab X @tab X
+@item Audio IFF (AIFF)          @tab X @tab X
 @item American Laser Games MM   @tab   @tab X
     @tab Multimedia format used in games like Mad Dog McCree.
+@item 3GPP AMR                  @tab X @tab X
 @item ASF                       @tab X @tab X
 @item AVI                       @tab X @tab X
+@item AVISynth                  @tab   @tab X
 @item AVS                       @tab   @tab X
     @tab Multimedia format used by the Creature Shock game.
 @item Beam Software SIFF        @tab   @tab X
@@ -60,24 +63,31 @@ library:
     @tab Used in the game Cyberia from Interplay.
 @item Delphine Software International CIN @tab   @tab X
     @tab Multimedia format used by Delphine Software games.
+@item CRC testing format        @tab X @tab
 @item Creative Voice            @tab X @tab X
     @tab Created for the Sound Blaster Pro.
 @item CRYO APC                  @tab   @tab X
     @tab Audio format used in some games by CRYO Interactive Entertainment.
+@item D-Cinema audio            @tab X @tab X
 @item DV video                  @tab X @tab X
 @item DXA                       @tab   @tab X
     @tab This format is used in the non-Windows version of the Feeble Files
          game and different game cutscenes repacked for use with ScummVM.
+@item Electronic Arts cdata  @tab    @tab X
 @item Electronic Arts Multimedia  @tab    @tab X
     @tab Used in various EA games; files have extensions like WVE and UV2.
+@item FFM (FFserver live feed)  @tab X @tab X
+@item Flash (SWF)               @tab X @tab X
 @item Flash 9 (AVM2)            @tab X @tab X
     @tab Only embedded audio is decoded.
 @item FLI/FLC/FLX animation     @tab   @tab X
     @tab .fli/.flc files
 @item FLV                       @tab X @tab X
     @tab Macromedia Flash video files
+@item framecrc testing format   @tab X @tab
 @item FunCom ISS                @tab   @tab X
     @tab Audio format used in various games from FunCom like The Longest Journey.
+@item GIF Animation             @tab X @tab
 @item GXF                       @tab X @tab X
     @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
          playout servers.
@@ -92,12 +102,15 @@ library:
 @item LMLM4                     @tab   @tab X
     @tab Used by Linux Media Labs MPEG-4 PCI boards
 @item Matroska                  @tab X @tab X
+@item Matroska audio            @tab X @tab
 @item MAXIS XA                  @tab   @tab X
     @tab Used in Sim City 3000; file extension .xa.
 @item Monkey's Audio            @tab   @tab X
 @item Motion Pixels MVI         @tab   @tab X
 @item MOV/QuickTime/MP4         @tab X @tab X
     @tab 3GP, 3GP2, PSP, iPod variants supported
+@item MP2                       @tab X @tab
+@item MP3                       @tab X @tab
 @item MPEG audio                @tab X @tab X
 @item MPEG-1 System             @tab X @tab X
     @tab muxed audio and video, VCD format supported
@@ -107,15 +120,21 @@ library:
     @tab also known as DVB Transport Stream
 @item MPEG-4                    @tab X @tab X
     @tab MPEG-4 is a variant of QuickTime.
+@item MIME multipart JPEG       @tab X @tab
 @item MSN TCP webcam            @tab   @tab X
     @tab Used by MSN Messenger webcam streams.
+@item MTV                       @tab   @tab X
+@item Musepack                  @tab   @tab X
+@item Musepack SV8              @tab   @tab X
 @item Material eXchange Format (MXF) @tab X @tab X
     @tab SMPTE 377M, used by D-Cinema, broadcast industry.
 @item NC camera feed            @tab   @tab X
     @tab NC (AVIP NC4600) camera streams
 @item Nullsoft Streaming Video  @tab   @tab X
+@item NuppelVideo               @tab   @tab X
 @item NUT                       @tab X @tab X
     @tab NUT Open Container Format
+@item Ogg                       @tab X @tab X
 @item TechnoTrend PVA           @tab   @tab X
     @tab Used by TechnoTrend DVB PCI boards.
 @item raw AC-3                  @tab X @tab X
@@ -125,12 +144,18 @@ library:
 @item raw MPEG-4 video          @tab X @tab X
 @item raw PCM 8/16/32 bits, 32/64-bit floating point, mu-law/A-law @tab X  @tab  X
 @item raw Shorten audio         @tab    @tab  X
+@item RDT                       @tab   @tab X
 @item REDCODE R3D               @tab   @tab X
     @tab File format used by RED Digital cameras, contains JPEG 2000 frames and PCM audio.
 @item RealMedia                 @tab X @tab X
+@item Redirector                @tab   @tab X
 @item Renderware TeXture Dictionary @tab   @tab X
 @item RL2                       @tab   @tab X
     @tab Audio and video format used in some games by Entertainment Software Partners.
+@item RPL/ARMovie               @tab   @tab X
+@item RTP                       @tab   @tab X
+@item RTSP                      @tab   @tab X
+@item SDP                       @tab   @tab X
 @item Sega FILM/CPK             @tab   @tab X
     @tab Used in many Sega Saturn console games.
 @item Sierra SOL                @tab   @tab X
@@ -147,13 +172,17 @@ library:
     @tab Used on the Nintendo GameCube.
 @item Tiertex Limited SEQ       @tab   @tab X
     @tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
+@item True Audio                @tab   @tab X
+@item VC-1 test bitstream       @tab X @tab X
 @item WAV                       @tab X @tab X
+@item WavPack                   @tab   @tab X
 @item Wing Commander III movie  @tab   @tab X
     @tab Multimedia format used in Origin's Wing Commander III computer game.
 @item Westwood Studios audio    @tab   @tab X
     @tab Multimedia format used in Westwood Studios games.
 @item Westwood Studios VQA      @tab   @tab X
     @tab Multimedia format used in Westwood Studios games.
+@item YUV4MPEG pipe             @tab X @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -341,6 +370,7 @@ following image formats are supported:
     @tab not completely working
 @item Xan/WC3                @tab     @tab  X
     @tab Used in Wing Commander III .MVE files.
+@item YAMAHA SMAF            @tab  X  @tab  X
 @item ZLIB                   @tab  X  @tab  X
     @tab part of LCL, encoder experimental
 @item ZMBV                   @tab   X @tab  X
