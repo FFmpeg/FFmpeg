@@ -69,6 +69,7 @@ typedef struct MOVIndex {
     uint8_t     *vosData;
     MOVIentry   *cluster;
     int         audio_vbr;
+    int         height; ///< active picture (w/o VBI) height for D-10/IMX
 } MOVTrack;
 
 typedef struct MOVContext {
@@ -691,7 +692,7 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack *track)
         put_be32(pb, 0); /* Reserved */
     }
     put_be16(pb, track->enc->width); /* Video width */
-    put_be16(pb, track->enc->height); /* Video height */
+    put_be16(pb, track->height); /* Video height */
     put_be32(pb, 0x00480000); /* Horizontal resolution 72dpi */
     put_be32(pb, 0x00480000); /* Vertical resolution 72dpi */
     put_be32(pb, 0); /* Data size (= 0) */
@@ -1046,9 +1047,10 @@ static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
     if(track->enc->codec_type == CODEC_TYPE_VIDEO ||
        track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
         double sample_aspect_ratio = av_q2d(st->sample_aspect_ratio);
-        if(!sample_aspect_ratio) sample_aspect_ratio = 1;
+        if(!sample_aspect_ratio || track->height != track->enc->height)
+            sample_aspect_ratio = 1;
         put_be32(pb, sample_aspect_ratio * track->enc->width*0x10000);
-        put_be32(pb, track->enc->height*0x10000);
+        put_be32(pb, track->height*0x10000);
     }
     else {
         put_be32(pb, 0);
@@ -1654,6 +1656,16 @@ static int mov_write_header(AVFormatContext *s)
             return -1;
         }
         if(st->codec->codec_type == CODEC_TYPE_VIDEO){
+            if (track->tag == MKTAG('m','x','3','p') || track->tag == MKTAG('m','x','3','n') ||
+                track->tag == MKTAG('m','x','4','p') || track->tag == MKTAG('m','x','4','n') ||
+                track->tag == MKTAG('m','x','5','p') || track->tag == MKTAG('m','x','5','n')) {
+                if (st->codec->width != 720 || (st->codec->height != 608 && st->codec->height != 512)) {
+                    av_log(s, AV_LOG_ERROR, "D-10/IMX must use 720x608 or 720x512 video resolution\n");
+                    return -1;
+                }
+                track->height = track->tag>>24 == 'n' ? 486 : 576;
+            } else
+                track->height = st->codec->height;
             track->timescale = st->codec->time_base.den;
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
             if (track->mode == MODE_MOV && track->timescale > 100000)
