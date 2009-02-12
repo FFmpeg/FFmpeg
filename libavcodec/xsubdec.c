@@ -51,6 +51,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int w, h, x, y, rlelen, i;
     GetBitContext gb;
 
+    sub->format = 0;
+
     // check that at least header fits
     if (buf_size < 27 + 7 * 2 + 4 * 3) {
         av_log(avctx, AV_LOG_ERROR, "coded frame too small\n");

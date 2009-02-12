@@ -175,6 +175,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
         return -1;
     sub_header->rects = NULL;
     sub_header->num_rects = 0;
+    sub_header->format = 0;
     sub_header->start_display_time = 0;
     sub_header->end_display_time = 0;
 
