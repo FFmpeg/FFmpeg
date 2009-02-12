@@ -175,8 +175,11 @@ static int gxf_write_mpeg_auxiliary(ByteIOContext *pb, GXFStreamContext *ctx)
         ctx->p_per_gop = ctx->pframes / ctx->iframes;
         if (ctx->pframes % ctx->iframes)
             ctx->p_per_gop++;
-        if (ctx->pframes)
+        if (ctx->pframes) {
             ctx->b_per_i_or_p = ctx->bframes / ctx->pframes;
+            if (ctx->bframes % ctx->pframes)
+                ctx->b_per_i_or_p++;
+        }
         if (ctx->p_per_gop > 9)
             ctx->p_per_gop = 9; /* ensure value won't take more than one char */
         if (ctx->b_per_i_or_p > 9)
