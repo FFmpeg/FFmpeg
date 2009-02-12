@@ -91,7 +91,7 @@ next_chunk:
 AVInputFormat txd_demuxer =
 {
     "txd",
-    NULL_IF_CONFIG_SMALL("txd format"),
+    NULL_IF_CONFIG_SMALL("Renderware TeXture Dictionary"),
     0,
     txd_probe,
     txd_read_header,

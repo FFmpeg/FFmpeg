@@ -753,7 +753,7 @@ static int nsv_probe(AVProbeData *p)
 
 AVInputFormat nsv_demuxer = {
     "nsv",
-    NULL_IF_CONFIG_SMALL("NullSoft Video format"),
+    NULL_IF_CONFIG_SMALL("Nullsoft Streaming Video"),
     sizeof(NSVContext),
     nsv_probe,
     nsv_read_header,

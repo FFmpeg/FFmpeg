@@ -828,7 +828,7 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
 
 AVInputFormat rm_demuxer = {
     "rm",
-    NULL_IF_CONFIG_SMALL("RM format"),
+    NULL_IF_CONFIG_SMALL("RealMedia format"),
     sizeof(RMDemuxContext),
     rm_probe,
     rm_read_header,

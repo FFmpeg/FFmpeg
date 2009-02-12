@@ -283,7 +283,7 @@ static int idcin_read_packet(AVFormatContext *s,
 
 AVInputFormat idcin_demuxer = {
     "idcin",
-    NULL_IF_CONFIG_SMALL("id CIN format"),
+    NULL_IF_CONFIG_SMALL("id Cinematic format"),
     sizeof(IdcinDemuxContext),
     idcin_probe,
     idcin_read_header,
