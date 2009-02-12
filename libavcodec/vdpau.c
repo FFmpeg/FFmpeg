@@ -29,7 +29,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-#include "vdpau.h"
+#include "vdpau_pixfmt.h"
 #include "vdpau_internal.h"
 
 /**
