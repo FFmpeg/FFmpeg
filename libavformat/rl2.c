@@ -289,7 +289,7 @@ static int rl2_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
 AVInputFormat rl2_demuxer = {
     "rl2",
-    NULL_IF_CONFIG_SMALL("rl2 format"),
+    NULL_IF_CONFIG_SMALL("RL2 format"),
     sizeof(Rl2DemuxContext),
     rl2_probe,
     rl2_read_header,
