@@ -2413,7 +2413,10 @@ static int http_start_receive_data(HTTPContext *c)
     }
     c->feed_fd = fd;
 
-    c->stream->feed_write_index = ffm_read_write_index(fd);
+    if ((c->stream->feed_write_index = ffm_read_write_index(fd)) < 0) {
+        http_log("Error reading write index from feed file: %s\n", strerror(errno));
+        return -1;
+    }
     c->stream->feed_size = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
 
@@ -2479,7 +2482,10 @@ static int http_receive_data(HTTPContext *c)
                 feed->feed_write_index = FFM_PACKET_SIZE;
 
             /* write index */
-            ffm_write_write_index(c->feed_fd, feed->feed_write_index);
+            if (ffm_write_write_index(c->feed_fd, feed->feed_write_index) < 0) {
+                http_log("Error writing index to feed file: %s\n", strerror(errno));
+                goto fail;
+            }
 
             /* wake up any waiting connections */
             for(c1 = first_http_ctx; c1 != NULL; c1 = c1->next) {
