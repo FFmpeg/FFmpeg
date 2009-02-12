@@ -31,6 +31,7 @@
 #include "mmx.h"
 #include "vp3dsp_mmx.h"
 #include "vp3dsp_sse2.h"
+#include "vp6dsp_mmx.h"
 #include "idct_xvid.h"
 
 //#undef NDEBUG
@@ -2687,6 +2688,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->h264_idct8_add4     = ff_h264_idct8_add4_mmx;
         c->h264_idct_add8      = ff_h264_idct_add8_mmx;
         c->h264_idct_add16intra= ff_h264_idct_add16intra_mmx;
+
+        if (CONFIG_VP6_DECODER) {
+            c->vp6_filter_diag4 = ff_vp6_filter_diag4_mmx;
+        }
 
         if (mm_flags & FF_MM_MMXEXT) {
             c->prefetch = prefetch_mmx2;
