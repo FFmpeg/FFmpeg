@@ -43,7 +43,6 @@ library:
 @item Name @tab Encoding @tab Decoding @tab Comments
 @item 4xm                       @tab   @tab X
     @tab 4X Technologies format, used in some games.
-@item ADTS AAC audio            @tab X @tab X
 @item Audio IFF (AIFF)          @tab X @tab X
 @item American Laser Games MM   @tab   @tab X
     @tab Multimedia format used in games like Mad Dog McCree.
@@ -137,13 +136,50 @@ library:
 @item Ogg                       @tab X @tab X
 @item TechnoTrend PVA           @tab   @tab X
     @tab Used by TechnoTrend DVB PCI boards.
+@item raw ADTS (AAC)            @tab X @tab X
 @item raw AC-3                  @tab X @tab X
-@item raw CRI ADX audio         @tab X @tab X
+@item raw CRI ADX               @tab X @tab X
+@item raw Dirac                 @tab X @tab X
+@item raw DNxHD                 @tab X @tab X
+@item raw DTS                   @tab X @tab X
+@item raw E-AC-3                @tab X @tab X
+@item raw FLAC                  @tab X @tab X
+@item raw GSM                   @tab   @tab X
+@item raw H.261                 @tab X @tab X
+@item raw H.263                 @tab X @tab X
+@item raw H.264                 @tab X @tab X
+@item raw Ingenient MJPEG       @tab   @tab X
 @item raw MJPEG                 @tab X @tab X
-@item raw MPEG video            @tab X @tab X
-@item raw MPEG-4 video          @tab X @tab X
-@item raw PCM 8/16/32 bits, 32/64-bit floating point, mu-law/A-law @tab X  @tab  X
-@item raw Shorten audio         @tab    @tab  X
+@item raw MLP                   @tab   @tab X
+@item raw MPEG                  @tab   @tab X
+@item raw MPEG-1                @tab   @tab X
+@item raw MPEG-2                @tab   @tab X
+@item raw MPEG-4                @tab X @tab X
+@item raw NULL                  @tab X @tab
+@item raw vido                  @tab X @tab X
+@item raw id RoQ                @tab X @tab
+@item raw Shorten               @tab   @tab X
+@item raw VC-1                  @tab   @tab X
+@item raw PCM A-law             @tab X @tab X
+@item raw PCM mu-law            @tab X @tab X
+@item raw PCM signed 8 bit      @tab X @tab X
+@item raw PCM signed 16 bit big-endian  @tab X @tab X
+@item raw PCM signed 16 bit little-endian  @tab X @tab X
+@item raw PCM signed 24 bit big-endian  @tab X @tab X
+@item raw PCM signed 24 bit little-endian  @tab X @tab X
+@item raw PCM signed 32 bit big-endian  @tab X @tab X
+@item raw PCM signed 32 bit little-endian  @tab X @tab X
+@item raw PCM unsigned 8 bit    @tab X @tab X
+@item raw PCM unsigned 16 bit big-endian  @tab X @tab X
+@item raw PCM unsigned 16 bit little-endian  @tab X @tab X
+@item raw PCM unsigned 24 bit big-endian  @tab X @tab X
+@item raw PCM unsigned 24 bit little-endian  @tab X @tab X
+@item raw PCM unsigned 32 bit big-endian  @tab X @tab X
+@item raw PCM unsigned 32 bit little-endian  @tab X @tab X
+@item raw PCM floating-point 32 bit big-endian  @tab X @tab X
+@item raw PCM floating-point 32 bit little-endian  @tab X @tab X
+@item raw PCM floating-point 64 bit big-endian  @tab X @tab X
+@item raw PCM floating-point 64 bit little-endian  @tab X @tab X
 @item RDT                       @tab   @tab X
 @item REDCODE R3D               @tab   @tab X
     @tab File format used by RED Digital cameras, contains JPEG 2000 frames and PCM audio.
