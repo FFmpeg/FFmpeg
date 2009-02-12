@@ -71,8 +71,16 @@ vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
         v++;
 
         if (tl && vl) {
-            char tt[tl + 1];
-            char ct[vl + 1];
+            char *tt, *ct;
+
+            tt = av_malloc(tl + 1);
+            ct = av_malloc(vl + 1);
+            if (!tt || !ct) {
+                av_freep(&tt);
+                av_freep(&ct);
+                av_log(as, AV_LOG_WARNING, "out-of-memory error. skipping VorbisComment tag.\n");
+                continue;
+            }
 
             for (j = 0; j < tl; j++)
                 tt[j] = toupper(t[j]);
@@ -82,6 +90,9 @@ vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
             ct[vl] = 0;
 
             av_metadata_set(&as->metadata, tt, ct);
+
+            av_freep(&tt);
+            av_freep(&ct);
         }
     }
 
