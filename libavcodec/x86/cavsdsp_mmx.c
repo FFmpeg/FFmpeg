@@ -148,7 +148,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
     }
 
     for(i=0; i<2; i++){
-        cavs_idct8_1d(b2+4*i, ff_pw_64);
+        cavs_idct8_1d(b2+4*i, ff_pw_64.a);
 
         __asm__ volatile(
             "psraw     $7, %%mm7  \n\t"
