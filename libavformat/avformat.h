@@ -1180,7 +1180,7 @@ int64_t av_gettime(void);
 /* ffm-specific for ffserver */
 #define FFM_PACKET_SIZE 4096
 int64_t ffm_read_write_index(int fd);
-void ffm_write_write_index(int fd, int64_t pos);
+int ffm_write_write_index(int fd, int64_t pos);
 void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size);
 
 /**

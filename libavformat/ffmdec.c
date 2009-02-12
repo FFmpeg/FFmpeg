@@ -34,7 +34,7 @@ int64_t ffm_read_write_index(int fd)
     return AV_RB64(buf);
 }
 
-void ffm_write_write_index(int fd, int64_t pos)
+int ffm_write_write_index(int fd, int64_t pos)
 {
     uint8_t buf[8];
     int i;
@@ -42,7 +42,9 @@ void ffm_write_write_index(int fd, int64_t pos)
     for(i=0;i<8;i++)
         buf[i] = (pos >> (56 - i * 8)) & 0xff;
     lseek(fd, 8, SEEK_SET);
-    write(fd, buf, 8);
+    if (write(fd, buf, 8) != 8)
+        return AVERROR(EIO);
+    return 8;
 }
 
 void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size)
