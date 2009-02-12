@@ -36,15 +36,15 @@ DECLARE_ALIGNED(16, float,  ff_aac_kbd_long_1024[1024]);
 DECLARE_ALIGNED(16, float,  ff_aac_kbd_short_128[128]);
 
 const uint8_t ff_aac_num_swb_1024[] = {
-    41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40
+    41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40, 40
 };
 
 const uint8_t ff_aac_num_swb_128[] = {
-    12, 12, 12, 14, 14, 14, 15, 15, 15, 15, 15, 15
+    12, 12, 12, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15
 };
 
 const uint8_t ff_aac_pred_sfb_max[] = {
-    33, 33, 38, 40, 40, 40, 41, 41, 37, 37, 37, 34
+    33, 33, 38, 40, 40, 40, 41, 41, 37, 37, 37, 34, 34
 };
 
 const uint32_t ff_aac_scalefactor_code[121] = {

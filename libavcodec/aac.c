@@ -173,7 +173,7 @@ static int decode_pce(AACContext * ac, enum ChannelPosition new_che_pos[4][MAX_E
     skip_bits(gb, 2);  // object_type
 
     sampling_index = get_bits(gb, 4);
-    if(sampling_index > 11) {
+    if(sampling_index > 12) {
         av_log(ac->avccontext, AV_LOG_ERROR, "invalid sampling rate index %d\n", ac->m4ac.sampling_index);
         return -1;
     }
@@ -326,7 +326,7 @@ static int decode_audio_specific_config(AACContext * ac, void *data, int data_si
 
     if((i = ff_mpeg4audio_get_config(&ac->m4ac, data, data_size)) < 0)
         return -1;
-    if(ac->m4ac.sampling_index > 11) {
+    if(ac->m4ac.sampling_index > 12) {
         av_log(ac->avccontext, AV_LOG_ERROR, "invalid sampling rate index %d\n", ac->m4ac.sampling_index);
         return -1;
     }
@@ -1555,7 +1555,7 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
             av_log(avccontext, AV_LOG_ERROR, "Error decoding AAC frame header.\n");
             return -1;
         }
-        if (ac->m4ac.sampling_index > 11) {
+        if (ac->m4ac.sampling_index > 12) {
             av_log(ac->avccontext, AV_LOG_ERROR, "invalid sampling rate index %d\n", ac->m4ac.sampling_index);
             return -1;
         }

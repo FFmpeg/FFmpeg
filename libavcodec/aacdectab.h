@@ -142,7 +142,8 @@ static const uint16_t *swb_offset_1024[] = {
     swb_offset_1024_96, swb_offset_1024_96, swb_offset_1024_64,
     swb_offset_1024_48, swb_offset_1024_48, swb_offset_1024_32,
     swb_offset_1024_24, swb_offset_1024_24, swb_offset_1024_16,
-    swb_offset_1024_16, swb_offset_1024_16, swb_offset_1024_8
+    swb_offset_1024_16, swb_offset_1024_16, swb_offset_1024_8,
+    swb_offset_1024_8
 };
 
 static const uint16_t *swb_offset_128[] = {
@@ -151,7 +152,8 @@ static const uint16_t *swb_offset_128[] = {
     swb_offset_128_96, swb_offset_128_96, swb_offset_128_96,
     swb_offset_128_48, swb_offset_128_48, swb_offset_128_48,
     swb_offset_128_24, swb_offset_128_24, swb_offset_128_16,
-    swb_offset_128_16, swb_offset_128_16, swb_offset_128_8
+    swb_offset_128_16, swb_offset_128_16, swb_offset_128_8,
+    swb_offset_128_8
 };
 
 // @}
@@ -163,11 +165,11 @@ static const uint16_t *swb_offset_128[] = {
  * @{
  */
 static const uint8_t tns_max_bands_1024[] = {
-    31, 31, 34, 40, 42, 51, 46, 46, 42, 42, 42, 39
+    31, 31, 34, 40, 42, 51, 46, 46, 42, 42, 42, 39, 39
 };
 
 static const uint8_t tns_max_bands_128[] = {
-    9, 9, 10, 14, 14, 14, 14, 14, 14, 14, 14, 14
+    9, 9, 10, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14
 };
 // @}
 
