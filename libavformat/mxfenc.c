@@ -1112,7 +1112,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
 
     if (!memcmp(key, body_partition_key, 16) && mxf->body_partitions_count > 1)
         put_be64(pb, mxf->body_partition_offset[mxf->body_partitions_count-2]); // PreviousPartition
-    else if (!memcmp(key, footer_partition_key, 16))
+    else if (!memcmp(key, footer_partition_key, 16) && mxf->body_partitions_count)
         put_be64(pb, mxf->body_partition_offset[mxf->body_partitions_count-1]); // PreviousPartition
     else
         put_be64(pb, 0);
