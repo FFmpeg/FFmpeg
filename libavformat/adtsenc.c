@@ -42,7 +42,7 @@ static int decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf,
     adts->channel_conf = get_bits(&gb, 4);
 
     if (adts->objecttype > 3) {
-        av_log(s, AV_LOG_ERROR, "MPEG-4 AOT %d is not allowed in ADTS\n", adts->objecttype);
+        av_log(s, AV_LOG_ERROR, "MPEG-4 AOT %d is not allowed in ADTS\n", adts->objecttype+1);
         return -1;
     }
     if (adts->sample_rate_index == 15) {
