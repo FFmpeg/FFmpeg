@@ -289,6 +289,12 @@ static int klv_encode_ber_length(ByteIOContext *pb, uint64_t len)
     return 0;
 }
 
+static void klv_encode_ber4_length(ByteIOContext *pb, int len)
+{
+    put_byte(pb, 0x80 + 3);
+    put_be24(pb, len);
+}
+
 /*
  * Get essence container ul index
  */
@@ -928,7 +934,7 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
 static unsigned klv_fill_size(uint64_t size)
 {
     unsigned pad = KAG_SIZE - (size & (KAG_SIZE-1));
-    if (pad < 17) // smallest fill item possible
+    if (pad < 20) // smallest fill item possible
         return pad + KAG_SIZE;
     else
         return pad & (KAG_SIZE-1);
@@ -1061,11 +1067,8 @@ static void mxf_write_klv_fill(AVFormatContext *s)
     unsigned pad = klv_fill_size(url_ftell(s->pb));
     if (pad) {
         put_buffer(s->pb, klv_fill_key, 16);
-        pad -= 16;
-        pad -= klv_ber_length(pad);
-        klv_encode_ber_length(s->pb, pad);
-        for (; pad > 7; pad -= 8)
-            put_be64(s->pb, 0);
+        pad -= 16 + 4;
+        klv_encode_ber4_length(s->pb, pad);
         for (; pad; pad--)
             put_byte(s->pb, 0);
         assert(!(url_ftell(s->pb) & (KAG_SIZE-1)));
