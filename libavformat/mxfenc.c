@@ -710,6 +710,7 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     MXFStreamContext *sc = st->priv_data;
     ByteIOContext *pb = s->pb;
     int stored_height = (st->codec->height+15)/16*16;
+    int display_height;
     AVRational dar;
     int f1, f2;
 
@@ -724,8 +725,15 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     mxf_write_local_tag(pb, 4, 0x3209);
     put_be32(pb, st->codec->width);
 
+    if (st->codec->height == 608) // PAL + VBI
+        display_height = 576;
+    else if (st->codec->height == 512)  // NTSC + VBI
+        display_height = 486;
+    else
+        display_height = st->codec->height;
+
     mxf_write_local_tag(pb, 4, 0x3208);
-    put_be32(pb, st->codec->height>>sc->interlaced);
+    put_be32(pb, display_height>>sc->interlaced);
 
     // component depth
     mxf_write_local_tag(pb, 4, 0x3301);
