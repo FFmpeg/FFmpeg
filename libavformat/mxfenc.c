@@ -169,7 +169,6 @@ static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
 typedef struct MXFContext {
     int64_t footer_partition_offset;
     int essence_container_count;
-    uint8_t essence_containers_indices[FF_ARRAY_ELEMS(mxf_essence_container_uls)];
     AVRational time_base;
     int header_written;
     MXFIndexEntry *index_entries;
@@ -427,8 +426,8 @@ static void mxf_write_essence_container_refs(AVFormatContext *s)
     mxf_write_refs_count(pb, c->essence_container_count);
     av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", c->essence_container_count);
     for (i = 0; i < c->essence_container_count; i++) {
-        put_buffer(pb, mxf_essence_container_uls[c->essence_containers_indices[i]].container_ul, 16);
-        PRINT_KEY(s, "essence container ul:\n", mxf_essence_container_uls[c->essence_containers_indices[i]].container_ul);
+        MXFStreamContext *sc = s->streams[i]->priv_data;
+        put_buffer(pb, mxf_essence_container_uls[sc->index].container_ul, 16);
     }
 }
 
@@ -731,8 +730,10 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
     mxf_write_local_tag(pb, 16, 0x3004);
     if (mxf->essence_container_count > 1)
         ul = multiple_desc_ul;
-    else
-        ul = mxf_essence_container_uls[mxf->essence_containers_indices[0]].container_ul;
+    else {
+        MXFStreamContext *sc = s->streams[0]->priv_data;
+        ul = mxf_essence_container_uls[sc->index].container_ul;
+    }
     put_buffer(pb, ul, 16);
 
     // write sub descriptor refs
@@ -1467,8 +1468,8 @@ static int mxf_write_header(AVFormatContext *s)
         sc->codec_ul = &mxf_essence_container_uls[sc->index].codec_ul;
 
         if (!present[sc->index]) {
-            mxf->essence_containers_indices[mxf->essence_container_count++] = sc->index;
             present[sc->index] = 1;
+            mxf->essence_container_count++;
         } else
             present[sc->index]++;
 
@@ -1548,8 +1549,10 @@ static void mxf_write_system_item(AVFormatContext *s)
     put_be16(pb, frame); // continuity count
     if (mxf->essence_container_count > 1)
         put_buffer(pb, multiple_desc_ul, 16);
-    else
-        put_buffer(pb, mxf_essence_container_uls[mxf->essence_containers_indices[0]].container_ul, 16);
+    else {
+        MXFStreamContext *sc = s->streams[0]->priv_data;
+        put_buffer(pb, mxf_essence_container_uls[sc->index].container_ul, 16);
+    }
     put_byte(pb, 0);
     put_be64(pb, 0);
     put_be64(pb, 0); // creation date/time stamp
