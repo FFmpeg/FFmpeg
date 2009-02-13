@@ -94,6 +94,8 @@ Generic Parts:
     faandct.c, faandct.h                Michael Niedermayer
   Golomb coding:
     golomb.c, golomb.h                  Michael Niedermayer
+  LPC:
+    lpc.c, lpc.h                        Justin Ruggles
   motion estimation:
     motion*                             Michael Niedermayer
   rate control:
