@@ -705,7 +705,7 @@ static const UID mxf_mpegvideo_descriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,
 static const UID mxf_wav_descriptor_key       = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x48,0x00 };
 static const UID mxf_aes3_descriptor_key      = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x47,0x00 };
 
-static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
+static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
 {
     MXFStreamContext *sc = st->priv_data;
     ByteIOContext *pb = s->pb;
@@ -713,7 +713,7 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     AVRational dar;
     int f1, f2;
 
-    mxf_write_generic_desc(s, st, mxf_mpegvideo_descriptor_key, 169+sc->interlaced*4);
+    mxf_write_generic_desc(s, st, key, size);
 
     mxf_write_local_tag(pb, 4, 0x3203);
     put_be32(pb, st->codec->width);
@@ -734,10 +734,6 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     // horizontal subsampling
     mxf_write_local_tag(pb, 4, 0x3302);
     put_be32(pb, 2);
-
-    // bit rate
-    mxf_write_local_tag(pb, 4, 0x8000);
-    put_be32(pb, st->codec->bit_rate);
 
     // frame layout
     mxf_write_local_tag(pb, 1, 0x320C);
@@ -779,7 +775,19 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     put_buffer(pb, *sc->codec_ul, 16);
 }
 
-static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
+static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
+{
+    MXFStreamContext *sc = st->priv_data;
+    ByteIOContext *pb = s->pb;
+
+    mxf_write_cdci_common(s, st, mxf_mpegvideo_descriptor_key, 169+sc->interlaced*4);
+
+    // bit rate
+    mxf_write_local_tag(pb, 4, 0x8000);
+    put_be32(pb, st->codec->bit_rate);
+}
+
+static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
 {
     ByteIOContext *pb = s->pb;
 
@@ -801,11 +809,11 @@ static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st, const
     put_be32(pb, av_get_bits_per_sample(st->codec->codec_id));
 }
 
-static void mxf_write_wav_common_desc(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
+static void mxf_write_wav_common(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
 {
     ByteIOContext *pb = s->pb;
 
-    mxf_write_generic_sound_desc(s, st, key, size);
+    mxf_write_generic_sound_common(s, st, key, size);
 
     mxf_write_local_tag(pb, 2, 0x3D0A);
     put_be16(pb, st->codec->block_align);
@@ -817,12 +825,12 @@ static void mxf_write_wav_common_desc(AVFormatContext *s, AVStream *st, const UI
 
 static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
 {
-    mxf_write_wav_common_desc(s, st, mxf_wav_descriptor_key, 107);
+    mxf_write_wav_common(s, st, mxf_wav_descriptor_key, 107);
 }
 
 static void mxf_write_aes3_desc(AVFormatContext *s, AVStream *st)
 {
-    mxf_write_wav_common_desc(s, st, mxf_aes3_descriptor_key, 107);
+    mxf_write_wav_common(s, st, mxf_aes3_descriptor_key, 107);
 }
 
 static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
