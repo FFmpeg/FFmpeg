@@ -94,6 +94,11 @@ static int estimate_best_order(double *ref, int min_order, int max_order)
 
 /**
  * Calculate LPC coefficients for multiple orders
+ *
+ * @param use_lpc LPC method for determining coefficients
+ * 0  = LPC with fixed pre-defined coeffs
+ * 1  = LPC with coeffs determined by Levinson-Durbin recursion
+ * 2+ = LPC with coeffs determined by Cholesky factorization using (use_lpc-1) passes.
  */
 int ff_lpc_calc_coefs(DSPContext *s,
                       const int32_t *samples, int blocksize, int min_order,
