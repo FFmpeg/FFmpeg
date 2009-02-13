@@ -176,7 +176,6 @@ typedef struct MXFContext {
     uint64_t timestamp;   ///< timestamp, as year(16),month(8),day(8),hour(8),minutes(8),msec/4(8)
     uint8_t slice_count;  ///< index slice count minus 1 (1 if no audio, 0 otherwise)
     int last_indexed_edit_unit;
-    uint64_t first_edit_unit_offset;
     uint64_t *body_partition_offset;
     unsigned body_partitions_count;
     int last_key_index;  ///< index of last key frame
@@ -186,6 +185,7 @@ typedef struct MXFContext {
     int timecode_start;      ///< frame number computed from mpeg-2 gop header timecode
     int timecode_drop_frame; ///< time code use drop frame method frop mpeg-2 essence gop header
     int edit_unit_byte_count; ///< fixed edit unit byte count
+    uint64_t body_offset;
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -1151,7 +1151,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
             }
             put_byte(pb, mxf->index_entries[i].flags);
             // stream offset
-            put_be64(pb, mxf->index_entries[i].offset - mxf->first_edit_unit_offset);
+            put_be64(pb, mxf->index_entries[i].offset);
             if (s->nb_streams > 1)
                 put_be32(pb, mxf->index_entries[i].slice_offset);
         }
@@ -1235,10 +1235,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
 
     // BodyOffset
     if (bodysid && mxf->edit_units_count && mxf->body_partitions_count) {
-        uint64_t partition_end = url_ftell(pb) + 8 + 4 + 16 + 8 +
-            16*mxf->essence_container_count;
-        put_be64(pb, partition_end + klv_fill_size(partition_end) +
-                 index_byte_count - mxf->first_edit_unit_offset);
+        put_be64(pb, mxf->body_offset);
     } else
         put_be64(pb, 0);
 
@@ -1715,17 +1712,16 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         mxf_write_klv_fill(s);
-        mxf->index_entries[mxf->edit_units_count].offset = url_ftell(pb);
+        mxf->index_entries[mxf->edit_units_count].offset = mxf->body_offset;
         mxf->index_entries[mxf->edit_units_count].flags = flags;
-        if (!mxf->first_edit_unit_offset)
-            mxf->first_edit_unit_offset = mxf->index_entries[0].offset;
         mxf_write_system_item(s);
+
+        mxf->body_offset += KAG_SIZE; // size of system element
 
         mxf->edit_units_count++;
     } else if (st->index == 1) {
-        uint64_t pos = url_ftell(pb);
-        mxf->index_entries[mxf->edit_units_count-1].slice_offset = pos +
-            klv_fill_size(pos) - mxf->index_entries[mxf->edit_units_count-1].offset;
+        mxf->index_entries[mxf->edit_units_count-1].slice_offset =
+            mxf->body_offset - mxf->index_entries[mxf->edit_units_count-1].offset;
     }
 
     mxf_write_klv_fill(s);
@@ -1734,6 +1730,9 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_buffer(pb, pkt->data, pkt->size); // write value
 
     put_flush_packet(pb);
+
+    mxf->body_offset += 16+4+pkt->size + klv_fill_size(16+4+pkt->size);
+
     return 0;
 }
 
