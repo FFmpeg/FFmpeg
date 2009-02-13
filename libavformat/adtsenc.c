@@ -21,6 +21,7 @@
  */
 
 #include "libavcodec/bitstream.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 
 #define ADTS_HEADER_SIZE 7
