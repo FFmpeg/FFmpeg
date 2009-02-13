@@ -1887,7 +1887,7 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
 AVOutputFormat mxf_muxer = {
     "mxf",
     NULL_IF_CONFIG_SMALL("Material eXchange Format"),
-    NULL,
+    "application/mxf",
     "mxf",
     sizeof(MXFContext),
     CODEC_ID_PCM_S16LE,
