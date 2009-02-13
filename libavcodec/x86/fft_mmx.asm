@@ -446,8 +446,14 @@ fft %+ n %+ %3%2:
 %endrep
 %undef n
 
+%ifidn __OUTPUT_FORMAT__,macho64
+section .rodata
+%endif
+
 align 8
 dispatch_tab%3%2: pointer list_of_fft
+
+section .text
 
 ; On x86_32, this function does the register saving and restoring for all of fft.
 ; The others pass args in registers and don't spill anything.
