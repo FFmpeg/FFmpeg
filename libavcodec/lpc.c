@@ -112,7 +112,7 @@ int ff_lpc_calc_coefs(DSPContext *s,
     int i, j, pass;
     int opt_order;
 
-    assert(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER);
+    assert(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER && use_lpc > 0);
 
     if(use_lpc == 1){
         s->flac_compute_autocorr(samples, blocksize, max_order, autoc);
