@@ -1168,25 +1168,25 @@ static int decode_cce(AACContext * ac, GetBitContext * gb, ChannelElement * che)
         if (coup->coupling_point == AFTER_IMDCT) {
             coup->gain[c][0] = gain_cache;
         } else {
-        for (g = 0; g < sce->ics.num_window_groups; g++) {
-            for (sfb = 0; sfb < sce->ics.max_sfb; sfb++, idx++) {
-                if (sce->band_type[idx] != ZERO_BT) {
-                    if (!cge) {
-                        int t = get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
-                        if (t) {
-                            int s = 1;
-                            t = gain += t;
-                            if (sign) {
-                                s  -= 2 * (t & 0x1);
-                                t >>= 1;
+            for (g = 0; g < sce->ics.num_window_groups; g++) {
+                for (sfb = 0; sfb < sce->ics.max_sfb; sfb++, idx++) {
+                    if (sce->band_type[idx] != ZERO_BT) {
+                        if (!cge) {
+                            int t = get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
+                                if (t) {
+                                int s = 1;
+                                t = gain += t;
+                                if (sign) {
+                                    s  -= 2 * (t & 0x1);
+                                    t >>= 1;
+                                }
+                                gain_cache = pow(scale, -t) * s;
                             }
-                            gain_cache = pow(scale, -t) * s;
                         }
+                        coup->gain[c][idx] = gain_cache;
                     }
-                    coup->gain[c][idx] = gain_cache;
                 }
             }
-        }
         }
     }
     return 0;
