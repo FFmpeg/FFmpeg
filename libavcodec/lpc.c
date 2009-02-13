@@ -123,7 +123,7 @@ int ff_lpc_calc_coefs(DSPContext *s,
             ref[i] = fabs(lpc[i][i]);
     }else{
         LLSModel m[2];
-        double var[MAX_LPC_ORDER+1], weight;
+        double var[MAX_LPC_ORDER+1], av_uninit(weight);
 
         for(pass=0; pass<use_lpc-1; pass++){
             av_init_lls(&m[pass&1], max_order);
