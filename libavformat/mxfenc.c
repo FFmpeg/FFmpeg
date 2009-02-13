@@ -1397,7 +1397,7 @@ static void mxf_write_system_item(AVFormatContext *s)
 
     // write system metadata pack
     put_buffer(pb, system_metadata_pack_key, 16);
-    klv_encode_ber_length(pb, 57);
+    klv_encode_ber4_length(pb, 57);
     put_byte(pb, 0x5c); // UL, user date/time stamp, picture and sound item present
     put_byte(pb, 0x04); // content package rate
     put_byte(pb, 0x00); // content package type
@@ -1419,7 +1419,7 @@ static void mxf_write_system_item(AVFormatContext *s)
 
     // write system metadata package set
     put_buffer(pb, system_metadata_package_set_key, 16);
-    klv_encode_ber_length(pb, 35);
+    klv_encode_ber4_length(pb, 35);
     put_byte(pb, 0x83); // UMID
     put_be16(pb, 0x20);
     mxf_write_umid(pb, SourcePackage, 0);
@@ -1479,7 +1479,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     mxf_write_klv_fill(s);
     put_buffer(pb, sc->track_essence_element_key, 16); // write key
-    klv_encode_ber_length(pb, pkt->size); // write length
+    klv_encode_ber4_length(pb, pkt->size); // write length
     put_buffer(pb, pkt->data, pkt->size); // write value
 
     put_flush_packet(pb);
