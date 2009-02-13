@@ -50,7 +50,7 @@ typedef struct GXFStreamContext {
 } GXFStreamContext;
 
 typedef struct GXFContext {
-    uint32_t nb_frames;
+    uint32_t nb_fields;
     uint32_t material_flags;
     uint16_t audio_tracks;
     uint16_t mpeg_tracks;
@@ -296,7 +296,7 @@ static int gxf_write_material_data_section(ByteIOContext *pb, GXFContext *ctx)
     /* last field */
     put_byte(pb, MAT_LAST_FIELD);
     put_byte(pb, 4);
-    put_be32(pb, ctx->nb_frames);
+    put_be32(pb, ctx->nb_fields);
 
     /* reserved */
     put_byte(pb, MAT_MARK_IN);
@@ -305,7 +305,7 @@ static int gxf_write_material_data_section(ByteIOContext *pb, GXFContext *ctx)
 
     put_byte(pb, MAT_MARK_OUT);
     put_byte(pb, 4);
-    put_be32(pb, ctx->nb_frames);
+    put_be32(pb, ctx->nb_fields);
 
     /* estimated size */
     put_byte(pb, MAT_SIZE);
@@ -365,16 +365,16 @@ static int gxf_write_umf_material_description(ByteIOContext *pb, GXFContext *ctx
 {
     // XXX drop frame
     uint32_t timecode =
-        ctx->nb_frames / (ctx->sample_rate * 3600) % 24 << 24 | // hours
-        ctx->nb_frames / (ctx->sample_rate * 60) % 60   << 16 | // minutes
-        ctx->nb_frames / ctx->sample_rate % 60          <<  8 | // seconds
-        ctx->nb_frames % ctx->sample_rate;                    // fields
+        ctx->nb_fields / (ctx->sample_rate * 3600) % 24 << 24 | // hours
+        ctx->nb_fields / (ctx->sample_rate * 60) % 60   << 16 | // minutes
+        ctx->nb_fields / ctx->sample_rate % 60          <<  8 | // seconds
+        ctx->nb_fields % ctx->sample_rate;                    // fields
 
     put_le32(pb, ctx->flags);
-    put_le32(pb, ctx->nb_frames); /* length of the longest track */
-    put_le32(pb, ctx->nb_frames); /* length of the shortest track */
+    put_le32(pb, ctx->nb_fields); /* length of the longest track */
+    put_le32(pb, ctx->nb_fields); /* length of the shortest track */
     put_le32(pb, 0); /* mark in */
-    put_le32(pb, ctx->nb_frames); /* mark out */
+    put_le32(pb, ctx->nb_fields); /* mark out */
     put_le32(pb, 0); /* timecode mark in */
     put_le32(pb, timecode); /* timecode mark out */
     put_le64(pb, ctx->fc->timestamp); /* modification time */
@@ -520,10 +520,10 @@ static int gxf_write_umf_media_description(ByteIOContext *pb, GXFContext *ctx)
         put_le16(pb, sc->media_info);
         put_le16(pb, 0); /* reserved */
         put_le16(pb, 0); /* reserved */
-        put_le32(pb, ctx->nb_frames);
+        put_le32(pb, ctx->nb_fields);
         put_le32(pb, 0); /* attributes rw, ro */
         put_le32(pb, 0); /* mark in */
-        put_le32(pb, ctx->nb_frames); /* mark out */
+        put_le32(pb, ctx->nb_fields); /* mark out */
         strncpy(buffer, ES_NAME_PATTERN, path_size);
         put_buffer(pb, (uint8_t *)buffer, path_size);
         put_be16(pb, sc->media_info);
@@ -776,7 +776,7 @@ static int gxf_write_media_packet(ByteIOContext *pb, GXFContext *ctx, AVPacket *
     gxf_write_padding(pb, padding);
 
     if (sc->codec->codec_type == CODEC_TYPE_VIDEO)
-        ctx->nb_frames += 2; // count fields
+        ctx->nb_fields += 2; // count fields
 
     return updatePacketSize(pb, pos);
 }
