@@ -536,6 +536,22 @@ performance on systems without hardware floating point support).
 
 @code{X} means that the feature is supported.
 
+@section Network Protocols
+
+@multitable @columnfractions .4 .1 .1 .1 .1 .1
+@item Name         @tab Support
+@item file         @tab X
+@item Gopher       @tab X
+@item HTTP         @tab X
+@item pipe         @tab X
+@item RTP          @tab X
+@item TCP          @tab X
+@item UDP          @tab X
+@end multitable
+
+@code{X} means that the protocol is supported.
+
+
 @chapter Platform Specific information
 
 @section BSD
