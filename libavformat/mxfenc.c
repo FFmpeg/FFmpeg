@@ -1723,8 +1723,9 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         mxf->edit_units_count++;
     } else if (st->index == 1) {
-        mxf->index_entries[mxf->edit_units_count-1].slice_offset =
-            url_ftell(pb) - mxf->index_entries[mxf->edit_units_count-1].offset;
+        uint64_t pos = url_ftell(pb);
+        mxf->index_entries[mxf->edit_units_count-1].slice_offset = pos +
+            klv_fill_size(pos) - mxf->index_entries[mxf->edit_units_count-1].offset;
     }
 
     mxf_write_klv_fill(s);
