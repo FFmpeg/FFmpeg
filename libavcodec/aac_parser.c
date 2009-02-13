@@ -62,7 +62,7 @@ int ff_aac_parse_header(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     skip_bits(gbc, 11);          /* adts_buffer_fullness */
     rdb = get_bits(gbc, 2);      /* number_of_raw_data_blocks_in_frame */
 
-    hdr->object_type    = aot;
+    hdr->object_type    = aot + 1;
     hdr->chan_config    = ch;
     hdr->crc_absent     = crc_abs;
     hdr->num_aac_frames = rdb + 1;
