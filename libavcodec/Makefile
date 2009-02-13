@@ -415,11 +415,11 @@ MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 MMX-OBJS-$(CONFIG_VP3_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP5_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP6_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o \
-                                          x86/vp6dsp_mmx.o
+                                          x86/vp6dsp_mmx.o x86/vp6dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP6A_DECODER)        += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o \
-                                          x86/vp6dsp_mmx.o
+                                          x86/vp6dsp_mmx.o x86/vp6dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP6F_DECODER)        += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o \
-                                          x86/vp6dsp_mmx.o
+                                          x86/vp6dsp_mmx.o x86/vp6dsp_sse2.o
 MMX-OBJS-$(CONFIG_WMV3_DECODER)        += x86/vc1dsp_mmx.o
 MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
                                           $(YASM-OBJS-yes)

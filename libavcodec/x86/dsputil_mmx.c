@@ -32,6 +32,7 @@
 #include "vp3dsp_mmx.h"
 #include "vp3dsp_sse2.h"
 #include "vp6dsp_mmx.h"
+#include "vp6dsp_sse2.h"
 #include "idct_xvid.h"
 
 //#undef NDEBUG
@@ -2901,6 +2902,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 1, sse2);
             H264_QPEL_FUNCS(3, 2, sse2);
             H264_QPEL_FUNCS(3, 3, sse2);
+
+            if (CONFIG_VP6_DECODER) {
+                c->vp6_filter_diag4 = ff_vp6_filter_diag4_sse2;
+            }
         }
 #if HAVE_SSSE3
         if(mm_flags & FF_MM_SSSE3){
