@@ -728,11 +728,19 @@ static int gxf_parse_mpeg_frame(GXFStreamContext *sc, const uint8_t *buf, int si
 static int gxf_write_media_preamble(ByteIOContext *pb, GXFContext *ctx, AVPacket *pkt, int size)
 {
     GXFStreamContext *sc = ctx->fc->streams[pkt->stream_index]->priv_data;
-    int64_t dts = av_rescale_rnd(pkt->dts, ctx->sample_rate, sc->codec->time_base.den, AV_ROUND_UP);
+    unsigned field_nb;
+    /* If the video is frame-encoded, the frame numbers shall be represented by
+     * even field numbers.
+     * see SMPTE360M-2004  6.4.2.1.3 Media field number */
+    if (sc->codec->codec_type == CODEC_TYPE_VIDEO) {
+        field_nb = ctx->nb_fields;
+    } else {
+        field_nb = av_rescale_rnd(pkt->dts, ctx->sample_rate, sc->codec->time_base.den, AV_ROUND_UP);
+    }
 
     put_byte(pb, sc->media_type);
     put_byte(pb, sc->index);
-    put_be32(pb, dts);
+    put_be32(pb, field_nb);
     if (sc->codec->codec_type == CODEC_TYPE_AUDIO) {
         put_be16(pb, 0);
         put_be16(pb, size / 2);
@@ -754,7 +762,7 @@ static int gxf_write_media_preamble(ByteIOContext *pb, GXFContext *ctx, AVPacket
         put_be24(pb, 0);
     } else
         put_be32(pb, size);
-    put_be32(pb, dts);
+    put_be32(pb, field_nb);
     put_byte(pb, 1); /* flags */
     put_byte(pb, 0); /* reserved */
     return 16;
