@@ -27,7 +27,6 @@
  *  - fill all fields if non streamed (nb_frames for example)
  */
 
-#if CONFIG_AVI_MUXER
 typedef struct AVIIentry {
     unsigned int flags, pos, len;
 } AVIIentry;
@@ -608,4 +607,3 @@ AVOutputFormat avi_muxer = {
     avi_write_trailer,
     .codec_tag= (const AVCodecTag* const []){codec_bmp_tags, codec_wav_tags, 0},
 };
-#endif //CONFIG_AVI_MUXER
