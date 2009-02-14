@@ -376,7 +376,7 @@ int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
         index++;
     } while(chr == ',' || chr == ';');
 
-    if (*filters) {
+    if (chr) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Unable to parse graph description substring: \"%s\"\n",
                filters - 1);
