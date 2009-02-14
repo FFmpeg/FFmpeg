@@ -112,7 +112,7 @@ void ff_xvmc_field_end(MpegEncContext *s)
     assert(render);
 
     if (render->filled_mv_blocks_num > 0)
-        ff_draw_horiz_band(s,0,0);
+        ff_draw_horiz_band(s, 0, 0);
 }
 
 void ff_xvmc_decode_mb(MpegEncContext *s)
@@ -178,7 +178,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
             mv_block->PMV[1][1][1] = s->mv[1][1][1];
         }
 
-        switch(s->mv_type){
+        switch(s->mv_type) {
             case  MV_TYPE_16X16:
                 mv_block->motion_type = XVMC_PREDICTION_FRAME;
                 break;
@@ -276,7 +276,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
             // copy blocks only if the codec doesn't support pblocks reordering
             if (s->avctx->xvmc_acceleration == 1) {
                 memcpy(&render->data_blocks[render->next_free_data_block_num*64],
-                       s->pblocks[i],sizeof(short)*8*8);
+                       s->pblocks[i], sizeof(short)*8*8);
             }
             render->next_free_data_block_num++;
         }
