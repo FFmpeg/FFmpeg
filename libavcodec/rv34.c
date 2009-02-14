@@ -1408,6 +1408,15 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     }
     if((!s->last_picture_ptr || !s->last_picture_ptr->data[0]) && si.type == FF_B_TYPE)
         return -1;
+    /* skip b frames if we are in a hurry */
+    if(avctx->hurry_up && si.type==FF_B_TYPE) return buf_size;
+    if(   (avctx->skip_frame >= AVDISCARD_NONREF && si.type==FF_B_TYPE)
+       || (avctx->skip_frame >= AVDISCARD_NONKEY && si.type!=FF_I_TYPE)
+       ||  avctx->skip_frame >= AVDISCARD_ALL)
+        return buf_size;
+    /* skip everything if we are in a hurry>=5 */
+    if(avctx->hurry_up>=5)
+        return buf_size;
 
     for(i=0; i<slice_count; i++){
         int offset= get_slice_offset(avctx, slices_hdr, i);
