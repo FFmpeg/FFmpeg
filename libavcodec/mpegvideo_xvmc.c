@@ -95,7 +95,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
             // no return here, going to set forward prediction
         case  FF_P_TYPE:
             last = (struct xvmc_render_state*)s->last_picture.data[2];
-            if (!last) // && !s->first_field)
+            if (!last)
                 last = render; // predict second field from the first
             if (last->magic != AV_XVMC_RENDER_MAGIC)
                 return -1;
