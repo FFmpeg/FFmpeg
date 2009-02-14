@@ -220,7 +220,7 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW, uint8_t *src, int
             for (j=0; j<filterSize; j++) {
                 val += ((int)src[srcPos + j])*filter[filterSize*i + j];
             }
-            dst[i] = av_clip(val>>7, 0, (1<<15)-1);
+            dst[i] = FFMIN(val>>7, (1<<15)-1);
         }
     }
     else
@@ -259,7 +259,7 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW, uint8_t *src, int
         val_vEven = vec_mule(src_v, filter_v);
         val_s = vec_sums(val_vEven, vzero);
         vec_st(val_s, 0, tempo);
-        dst[i] = av_clip(tempo[3]>>7, 0, (1<<15)-1);
+        dst[i] = FFMIN(tempo[3]>>7, (1<<15)-1);
     }
     }
     break;
@@ -286,7 +286,7 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW, uint8_t *src, int
         val_v = vec_msums(src_v, filter_v, (vector signed int)vzero);
         val_s = vec_sums(val_v, vzero);
         vec_st(val_s, 0, tempo);
-        dst[i] = av_clip(tempo[3]>>7, 0, (1<<15)-1);
+        dst[i] = FFMIN(tempo[3]>>7, (1<<15)-1);
     }
     }
     break;
@@ -315,7 +315,7 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW, uint8_t *src, int
             vector signed int val_s = vec_sums(val_v, vzero);
 
             vec_st(val_s, 0, tempo);
-            dst[i] = av_clip(tempo[3]>>7, 0, (1<<15)-1);
+            dst[i] = FFMIN(tempo[3]>>7, (1<<15)-1);
         }
     }
     break;
@@ -377,7 +377,7 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW, uint8_t *src, int
         val_s = vec_sums(val_v, vzero);
 
         vec_st(val_s, 0, tempo);
-        dst[i] = av_clip(tempo[3]>>7, 0, (1<<15)-1);
+        dst[i] = FFMIN(tempo[3]>>7, (1<<15)-1);
     }
 
     }
