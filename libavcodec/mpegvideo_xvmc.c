@@ -35,8 +35,6 @@
 
 #include "xvmc.h"
 
-//#include "xvmc_debug.h"
-
 //set s->block
 void XVMC_init_block(MpegEncContext *s){
     struct xvmc_render_state * render;
@@ -62,7 +60,6 @@ const int mb_block_count = 4+(1<<s->chroma_format);
            s->pblocks[i] = NULL;
         }
         cbp+=cbp;
-//        printf("s->pblocks[%d]=%p ,s->block=%p cbp=%d\n",i,s->pblocks[i],s->block,cbp);
     }
 }
 
@@ -117,7 +114,6 @@ void XVMC_field_end(MpegEncContext *s){
     assert(render != NULL);
 
     if(render->filled_mv_blocks_num > 0){
-//        printf("xvmc: rendering %d left blocks after last slice!!!\n",render->filled_mv_blocks_num );
         ff_draw_horiz_band(s,0,0);
     }
 }
@@ -161,12 +157,9 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
     mv_block = &render->mv_blocks[render->start_mv_blocks_num +
                                    render->filled_mv_blocks_num ];
 
-// memset(mv_block,0,sizeof(XvMCMacroBlock));
-
     mv_block->x = s->mb_x;
     mv_block->y = s->mb_y;
     mv_block->dct_type = s->interlaced_dct;//XVMC_DCT_TYPE_FRAME/FIELD;
-//    mv_block->motion_type = 0;  //zero to silence warnings
     if(s->mb_intra){
         mv_block->macroblock_type = XVMC_MB_TYPE_INTRA;//no MC, all done
     }else{
@@ -284,13 +277,6 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
             if(s->avctx->xvmc_acceleration == 1){
                 memcpy(&render->data_blocks[(render->next_free_data_block_num)*64],
                         s->pblocks[i],sizeof(short)*8*8);
-            }else{
-/*              if(s->pblocks[i] != &render->data_blocks[
-                        (render->next_free_data_block_num)*64]){
-                   printf("ERROR mb(%d,%d) s->pblocks[i]=%p data_block[]=%p\n",
-                   s->mb_x,s->mb_y, s->pblocks[i],
-                   &render->data_blocks[(render->next_free_data_block_num)*64]);
-                }*/
             }
             render->next_free_data_block_num++;
         }
@@ -303,8 +289,4 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
     if(render->filled_mv_blocks_num >= render->total_number_of_mv_blocks)
         ff_draw_horiz_band(s,0,0);
-
-// DumpRenderInfo(render);
-// DumpMBlockInfo(mv_block);
-
 }
