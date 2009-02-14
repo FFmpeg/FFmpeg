@@ -38,9 +38,13 @@ struct xvmc_render_state {
     XvMCMacroBlock* mv_blocks;
     int             total_number_of_mv_blocks;
     int             total_number_of_data_blocks;
+#if LIBAVCODEC_VERSION_MAJOR < 53
     int             mc_type;                      ///< XVMC_MPEG1/2/4,XVMC_H263 without XVMC_IDCT
+#endif
     int             idct;                         ///< indicate that IDCT acceleration level is used
+#if LIBAVCODEC_VERSION_MAJOR < 53
     int             chroma_format;                ///< XVMC_CHROMA_FORMAT_420/422/444
+#endif
     int             unsigned_intra;               ///< +-128 for intra pictures after clipping
     XvMCSurface*    p_surface;                    ///< pointer to rendered surface, never changed
 //}@
@@ -64,11 +68,12 @@ struct xvmc_render_state {
 
     int             next_free_data_block_num;     ///< used in add_mv_block, pointer to next free block
 //}@
-/** extensions */
+/** extensions may be placed here*/
+#if LIBAVCODEC_VERSION_MAJOR < 53
 //@{
     void*           p_osd_target_surface_render;  ///< pointer to the surface where subpicture is rendered
 //}@
-
+#endif
 };
 
 #endif /* AVCODEC_XVMC_H */
