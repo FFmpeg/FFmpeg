@@ -79,13 +79,13 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
         return -1;//make sure that this is render packet
 
     render->picture_structure = s->picture_structure;
-    render->flags = (s->first_field) ? 0 : XVMC_SECOND_FIELD;
+    render->flags             = (s->first_field) ? 0 : XVMC_SECOND_FIELD;
 
 //make sure that all data is drawn by XVMC_end_frame
     assert(render->filled_mv_blocks_num == 0);
 
     render->p_future_surface = NULL;
-    render->p_past_surface = NULL;
+    render->p_past_surface   = NULL;
 
     switch(s->pict_type){
         case  FF_I_TYPE:
@@ -164,8 +164,8 @@ void XVMC_decode_mb(MpegEncContext *s)
     mv_block = &render->mv_blocks[render->start_mv_blocks_num +
                                   render->filled_mv_blocks_num ];
 
-    mv_block->x = s->mb_x;
-    mv_block->y = s->mb_y;
+    mv_block->x        = s->mb_x;
+    mv_block->y        = s->mb_y;
     mv_block->dct_type = s->interlaced_dct;//XVMC_DCT_TYPE_FRAME/FIELD;
     if (s->mb_intra){
         mv_block->macroblock_type = XVMC_MB_TYPE_INTRA;//no MC, all done
@@ -294,7 +294,7 @@ void XVMC_decode_mb(MpegEncContext *s)
     }
     render->filled_mv_blocks_num++;
 
-    assert(render->filled_mv_blocks_num <= render->total_number_of_mv_blocks);
+    assert(render->filled_mv_blocks_num     <= render->total_number_of_mv_blocks);
     assert(render->next_free_data_block_num <= render->total_number_of_data_blocks);
 
 
