@@ -254,7 +254,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     if (s->flags & CODEC_FLAG_GRAY) {
         if (s->mb_intra) {                                   // intra frames are always full chroma blocks
             for (i = 4; i < blocks_per_mb; i++) {
-                memset(s->pblocks[i], 0, sizeof(short)*8*8); // so we need to clear them
+                memset(s->pblocks[i], 0, sizeof(short)*64);  // so we need to clear them
                 if (!render->unsigned_intra)
                     s->pblocks[i][0] = 1 << 10;
             }
