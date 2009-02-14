@@ -76,7 +76,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
     render->picture_structure = s->picture_structure;
     render->flags             = s->first_field ? 0 : XVMC_SECOND_FIELD;
 
-//make sure that all data is drawn by XVMC_end_frame
+    //make sure that all data is drawn by XVMC_end_frame
     assert(render->filled_mv_blocks_num == 0);
 
     render->p_future_surface = NULL;
@@ -131,7 +131,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
         return;
     }
 
-   //from MPV_decode_mb(),
+    //from MPV_decode_mb(),
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
         s->last_dc[0] =
@@ -139,15 +139,15 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
         s->last_dc[2] =  128 << s->intra_dc_precision;
     }
 
-   //MC doesn't skip blocks
+    //MC doesn't skip blocks
     s->mb_skipped = 0;
 
 
-   // Do I need to export quant when I could not perform postprocessing?
-   // Anyway, it doesn't hurt.
+    // Do I need to export quant when I could not perform postprocessing?
+    // Anyway, it doesn't hurt.
     s->current_picture.qscale_table[mb_xy] = s->qscale;
 
-//START OF XVMC specific code
+    //START OF XVMC specific code
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
     assert(render->magic==AV_XVMC_RENDER_MAGIC);
@@ -224,7 +224,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
 
         mv_block->motion_vertical_field_select = 0;
 
-//set correct field references
+        //set correct field references
         if (s->mv_type == MV_TYPE_FIELD || s->mv_type == MV_TYPE_16X8) {
             mv_block->motion_vertical_field_select |= s->field_select[0][0];
             mv_block->motion_vertical_field_select |= s->field_select[1][0]<<1;
@@ -232,7 +232,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
             mv_block->motion_vertical_field_select |= s->field_select[1][1]<<3;
         }
     }//!intra
-//time to handle data blocks;
+    //time to handle data blocks;
     mv_block->index = render->next_free_data_block_num;
 
     blocks_per_mb = 6;
@@ -240,7 +240,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
         blocks_per_mb = 4 + (1 << s->chroma_format);
     }
 
-//  calculate cbp
+    //  calculate cbp
     cbp = 0;
     for (i = 0; i < blocks_per_mb; i++) {
         cbp += cbp;
@@ -275,7 +275,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
                 range [-255;255]. TODO cliping if such hardware is ever found.
                 As of now it would only be unnecessery slowdown. */
             }
-//copy blocks only if the codec doesn't support pblocks reordering
+            //copy blocks only if the codec doesn't support pblocks reordering
             if (s->avctx->xvmc_acceleration == 1) {
                 memcpy(&render->data_blocks[render->next_free_data_block_num*64],
                        s->pblocks[i],sizeof(short)*8*8);
