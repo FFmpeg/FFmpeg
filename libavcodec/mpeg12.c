@@ -297,15 +297,13 @@ static int mpeg_decode_mb(MpegEncContext *s,
         }else
             memset(s->last_mv, 0, sizeof(s->last_mv)); /* reset mv prediction */
         s->mb_intra = 1;
-#if CONFIG_MPEG_XVMC_DECODER
         //if 1, we memcpy blocks in xvmcvideo
-        if(s->avctx->xvmc_acceleration > 1){
+        if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration > 1){
             ff_xvmc_pack_pblocks(s,-1);//inter are always full blocks
             if(s->swap_uv){
                 exchange_uv(s);
             }
         }
-#endif
 
         if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
             if(s->flags2 & CODEC_FLAG2_FAST){
@@ -510,15 +508,13 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 return -1;
             }
 
-#if CONFIG_MPEG_XVMC_DECODER
             //if 1, we memcpy blocks in xvmcvideo
-            if(s->avctx->xvmc_acceleration > 1){
+            if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration > 1){
                 ff_xvmc_pack_pblocks(s,cbp);
                 if(s->swap_uv){
                     exchange_uv(s);
                 }
             }
-#endif
 
             if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
                 if(s->flags2 & CODEC_FLAG2_FAST){
@@ -1644,13 +1640,11 @@ static int mpeg_field_start(MpegEncContext *s){
                 }
             }
     }
-#if CONFIG_MPEG_XVMC_DECODER
 // MPV_frame_start will call this function too,
 // but we need to call it on every field
-    if(s->avctx->xvmc_acceleration)
+    if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
         if( ff_xvmc_field_start(s,avctx) < 0)
             return -1;
-#endif
 
     return 0;
 }
@@ -1736,11 +1730,9 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
     }
 
     for(;;) {
-#if CONFIG_MPEG_XVMC_DECODER
         //If 1, we memcpy blocks in xvmcvideo.
-        if(s->avctx->xvmc_acceleration > 1)
+        if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration > 1)
             ff_xvmc_init_block(s);//set s->block
-#endif
 
         if(mpeg_decode_mb(s, s->block) < 0)
             return -1;
@@ -1918,10 +1910,9 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
     if (!s1->mpeg_enc_ctx_allocated || !s->current_picture_ptr)
         return 0;
 
-#if CONFIG_MPEG_XVMC_DECODER
-    if(s->avctx->xvmc_acceleration)
+    if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
         ff_xvmc_field_end(s);
-#endif
+
     /* end of slice reached */
     if (/*s->mb_y<<field_pic == s->mb_height &&*/ !s->first_field) {
         /* end of image */
