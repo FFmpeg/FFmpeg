@@ -28,6 +28,7 @@
 #include <X11/extensions/Xvlib.h>
 #include <X11/extensions/XvMClib.h>
 
+#include "avcodec.h"
 
 //the surface should be shown, the video driver manipulates this
 #define AV_XVMC_STATE_DISPLAY_PENDING 1
