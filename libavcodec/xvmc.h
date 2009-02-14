@@ -21,12 +21,7 @@
 #ifndef AVCODEC_XVMC_H
 #define AVCODEC_XVMC_H
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
-#include <X11/extensions/Xv.h>
-#include <X11/extensions/Xvlib.h>
-#include <X11/extensions/XvMClib.h>
+#include <X11/extensions/XvMC.h>
 
 #include "avcodec.h"
 
