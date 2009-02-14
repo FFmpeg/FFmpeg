@@ -2880,8 +2880,8 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
     sws_normalizeVec(filter->lumH, 1.0);
     sws_normalizeVec(filter->lumV, 1.0);
 
-    if (verbose) sws_printVec(filter->chrH);
-    if (verbose) sws_printVec(filter->lumH);
+    if (verbose) sws_printVec2(filter->chrH, NULL, AV_LOG_DEBUG);
+    if (verbose) sws_printVec2(filter->lumH, NULL, AV_LOG_DEBUG);
 
     return filter;
 }
