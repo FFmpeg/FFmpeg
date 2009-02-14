@@ -53,27 +53,27 @@ struct xvmc_render_state {
     XvMCMacroBlock * mv_blocks;
     int total_number_of_mv_blocks;
     int total_number_of_data_blocks;
-    int mc_type; //XVMC_MPEG1/2/4,XVMC_H263 without XVMC_IDCT
-    int idct;    //< indicate that IDCT acceleration level is used
-    int chroma_format;  ///< XVMC_CHROMA_FORMAT_420/422/444
-    int unsigned_intra; //+-128 for intra pictures after clipping
+    int mc_type;            //XVMC_MPEG1/2/4,XVMC_H263 without XVMC_IDCT
+    int idct;               //< indicate that IDCT acceleration level is used
+    int chroma_format;      ///< XVMC_CHROMA_FORMAT_420/422/444
+    int unsigned_intra;     //+-128 for intra pictures after clipping
     XvMCSurface* p_surface; //pointer to rendered surface, never changed
 
     //these are changed by the decoder
     //used by the XvMCRenderSurface function
-    XvMCSurface* p_past_surface; //pointer to the past surface
-    XvMCSurface* p_future_surface; //pointer to the future prediction surface
+    XvMCSurface* p_past_surface;    //pointer to the past surface
+    XvMCSurface* p_future_surface;  //pointer to the future prediction surface
 
     unsigned int picture_structure; //top/bottom fields or frame!
-    unsigned int flags; //XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
-    unsigned int display_flags; //1,2 or 1+2 fields for XvMCPutSurface
+    unsigned int flags;             //XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
+    unsigned int display_flags;     //1,2 or 1+2 fields for XvMCPutSurface
 
     //these are for internal communication
-    int state; //0 - free, 1 - waiting to display, 2 - waiting for prediction
-    int start_mv_blocks_num; //offset in the array for the current slice, updated by vo
-    int filled_mv_blocks_num; //processed mv block in this slice, changed by decoder
+    int state;                      //0 - free, 1 - waiting to display, 2 - waiting for prediction
+    int start_mv_blocks_num;        //offset in the array for the current slice, updated by vo
+    int filled_mv_blocks_num;       //processed mv block in this slice, changed by decoder
 
-    int next_free_data_block_num; //used in add_mv_block, pointer to next free block
+    int next_free_data_block_num;   //used in add_mv_block, pointer to next free block
     //extensions
     void * p_osd_target_surface_render; //pointer to the surface where subpicture is rendered
 
