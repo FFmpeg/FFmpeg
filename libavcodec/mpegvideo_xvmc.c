@@ -48,16 +48,16 @@ void XVMC_init_block(MpegEncContext *s){
 }
 
 void XVMC_pack_pblocks(MpegEncContext *s, int cbp){
-int i,j;
-const int mb_block_count = 4+(1<<s->chroma_format);
+    int i,j;
+    const int mb_block_count = 4+(1<<s->chroma_format);
 
     j=0;
     cbp<<= 12-mb_block_count;
     for(i=0; i<mb_block_count; i++){
         if(cbp & (1<<11)) {
-           s->pblocks[i] = (short *)(&s->block[(j++)]);
+            s->pblocks[i] = (short *)(&s->block[(j++)]);
         }else{
-           s->pblocks[i] = NULL;
+            s->pblocks[i] = NULL;
         }
         cbp+=cbp;
     }
@@ -119,11 +119,11 @@ void XVMC_field_end(MpegEncContext *s){
 }
 
 void XVMC_decode_mb(MpegEncContext *s){
-XvMCMacroBlock * mv_block;
-struct xvmc_render_state * render;
-int i,cbp,blocks_per_mb;
+    XvMCMacroBlock * mv_block;
+    struct xvmc_render_state * render;
+    int i,cbp,blocks_per_mb;
 
-const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
+    const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
 
     if(s->encoding){
@@ -155,7 +155,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
     //take the next free macroblock
     mv_block = &render->mv_blocks[render->start_mv_blocks_num +
-                                   render->filled_mv_blocks_num ];
+                                  render->filled_mv_blocks_num ];
 
     mv_block->x = s->mb_x;
     mv_block->y = s->mb_y;
@@ -276,7 +276,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 //copy blocks only if the codec doesn't support pblocks reordering
             if(s->avctx->xvmc_acceleration == 1){
                 memcpy(&render->data_blocks[(render->next_free_data_block_num)*64],
-                        s->pblocks[i],sizeof(short)*8*8);
+                       s->pblocks[i],sizeof(short)*8*8);
             }
             render->next_free_data_block_num++;
         }
