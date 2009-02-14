@@ -54,8 +54,8 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
 static void dct_unquantize_h263_inter_c(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale);
 
-int  XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx);
-void XVMC_field_end(MpegEncContext *s);
+int  ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx);
+void ff_xvmc_field_end(MpegEncContext *s);
 void ff_xvmc_decode_mb(MpegEncContext *s);
 
 
