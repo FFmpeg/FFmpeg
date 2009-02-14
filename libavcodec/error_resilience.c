@@ -563,7 +563,7 @@ static int is_intra_more_likely(MpegEncContext *s){
 
     if(undamaged_count < 5) return 0; //almost all MBs damaged -> use temporal prediction
 
-#if CONFIG_XVMC
+#if CONFIG_MPEG_XVMC_DECODER
     //prevent dsp.sad() check, that requires access to the image
     if(s->avctx->xvmc_acceleration && s->pict_type==FF_I_TYPE) return 1;
 #endif
@@ -935,7 +935,7 @@ void ff_er_frame_end(MpegEncContext *s){
     }else
         guess_mv(s);
 
-#if CONFIG_XVMC
+#if CONFIG_MPEG_XVMC_DECODER
     /* the filters below are not XvMC compatible, skip them */
     if(s->avctx->xvmc_acceleration) goto ec_clean;
 #endif
@@ -1024,7 +1024,7 @@ void ff_er_frame_end(MpegEncContext *s){
         v_block_filter(s, s->current_picture.data[2], s->mb_width  , s->mb_height  , s->uvlinesize, 0);
     }
 
-#if CONFIG_XVMC
+#if CONFIG_MPEG_XVMC_DECODER
 ec_clean:
 #endif
     /* clean a few tables */

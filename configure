@@ -91,7 +91,6 @@ show_help(){
   echo "  --enable-w32threads      use Win32 threads [no]"
   echo "  --enable-x11grab         enable X11 grabbing [no]"
   echo "  --enable-vdpau           enable VDPAU support [no]"
-  echo "  --enable-xvmc            enable XvMC support [no]"
   echo "  --disable-network        disable network support [no]"
   echo "  --disable-ipv6           disable IPv6 support [no]"
   echo "  --disable-mpegaudio-hp   faster (but less accurate) MPEG audio decoding [no]"
@@ -793,7 +792,6 @@ CONFIG_LIST="
     vdpau
     vhook
     x11grab
-    xvmc
     zlib
 "
 
@@ -1015,7 +1013,7 @@ mpeg2video_encoder_select="aandct"
 mpeg4_encoder_select="aandct"
 mpeg_vdpau_decoder_deps="vdpau"
 mpeg1_vdpau_decoder_deps="vdpau"
-mpeg_xvmc_decoder_deps="xvmc X11_extensions_XvMClib_h"
+mpeg_xvmc_decoder_deps="X11_extensions_XvMClibx_h"
 msmpeg4v1_encoder_select="aandct"
 msmpeg4v2_encoder_select="aandct"
 msmpeg4v3_encoder_select="aandct"

@@ -301,7 +301,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
         }else
             memset(s->last_mv, 0, sizeof(s->last_mv)); /* reset mv prediction */
         s->mb_intra = 1;
-#if CONFIG_XVMC
+#if CONFIG_MPEG_XVMC_DECODER
         //if 1, we memcpy blocks in xvmcvideo
         if(s->avctx->xvmc_acceleration > 1){
             XVMC_pack_pblocks(s,-1);//inter are always full blocks
@@ -514,7 +514,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 return -1;
             }
 
-#if CONFIG_XVMC
+#if CONFIG_MPEG_XVMC_DECODER
             //if 1, we memcpy blocks in xvmcvideo
             if(s->avctx->xvmc_acceleration > 1){
                 XVMC_pack_pblocks(s,cbp);
@@ -1648,7 +1648,7 @@ static int mpeg_field_start(MpegEncContext *s){
                 }
             }
     }
-#if CONFIG_XVMC
+#if CONFIG_MPEG_XVMC_DECODER
 // MPV_frame_start will call this function too,
 // but we need to call it on every field
     if(s->avctx->xvmc_acceleration)
@@ -1739,7 +1739,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
     }
 
     for(;;) {
-#if CONFIG_XVMC
+#if CONFIG_MPEG_XVMC_DECODER
         //If 1, we memcpy blocks in xvmcvideo.
         if(s->avctx->xvmc_acceleration > 1)
             XVMC_init_block(s);//set s->block
@@ -1921,7 +1921,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
     if (!s1->mpeg_enc_ctx_allocated || !s->current_picture_ptr)
         return 0;
 
-#if CONFIG_XVMC
+#if CONFIG_MPEG_XVMC_DECODER
     if(s->avctx->xvmc_acceleration)
         XVMC_field_end(s);
 #endif
@@ -2487,7 +2487,7 @@ AVCodec mpegvideo_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
 };
 
-#if CONFIG_XVMC
+#if CONFIG_MPEG_XVMC_DECODER
 static av_cold int mpeg_mc_decode_init(AVCodecContext *avctx){
     Mpeg1Context *s;
 
