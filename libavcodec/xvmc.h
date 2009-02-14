@@ -32,7 +32,7 @@
 struct xvmc_render_state {
 /** set by calling application */
 //@{
-    int             magic;                        ///< used as check for memory corruption by regular pixel routines
+    int             magic;                        ///< used as a check against memory corruption by regular pixel routines
 
     short*          data_blocks;
     XvMCMacroBlock* mv_blocks;
@@ -51,9 +51,9 @@ struct xvmc_render_state {
     XvMCSurface*    p_past_surface;               ///< pointer to the past surface
     XvMCSurface*    p_future_surface;             ///< pointer to the future prediction surface
 
-    unsigned int    picture_structure;            ///< top/bottom fields or frame!
+    unsigned int    picture_structure;            ///< top/bottom fields or frame
     unsigned int    flags;                        ///< XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
-    unsigned int    display_flags;                ///< 1,2 or 1+2 fields for XvMCPutSurface
+    unsigned int    display_flags;                ///< 1, 2 or 1+2 fields for XvMCPutSurface
 //}@
 
 /** modified by calling application and the decoder */

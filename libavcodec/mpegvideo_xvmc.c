@@ -70,7 +70,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
     if (!render || render->magic != AV_XVMC_RENDER_MAGIC)
-        return -1; // make sure that this is render packet
+        return -1; // make sure that this is a render packet
 
     render->picture_structure = s->picture_structure;
     render->flags             = s->first_field ? 0 : XVMC_SECOND_FIELD;
@@ -145,7 +145,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     // Anyway, it doesn't hurt.
     s->current_picture.qscale_table[mb_xy] = s->qscale;
 
-    // START OF XVMC specific code
+    // start of XVMC-specific code
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
     assert(render->magic==AV_XVMC_RENDER_MAGIC);
@@ -230,7 +230,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
             mv_block->motion_vertical_field_select |= s->field_select[1][1]<<3;
         }
     } // !intra
-    // time to handle data blocks;
+    // time to handle data blocks
     mv_block->index = render->next_free_data_block_num;
 
     blocks_per_mb = 6;
@@ -247,7 +247,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     }
 
     if (s->flags & CODEC_FLAG_GRAY) {
-        if (s->mb_intra) { // intra frames are always full chroma block
+        if (s->mb_intra) { // intra frames are always full chroma blocks
             for (i = 4; i < blocks_per_mb; i++) {
                 memset(s->pblocks[i],0,sizeof(short)*8*8); // so we need to clear them
                 if (!render->unsigned_intra)
@@ -269,9 +269,10 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
                 s->pblocks[i][0] -= 1 << 10;
             if (!render->idct) {
                 s->dsp.idct(s->pblocks[i]);
-                /* It is unclear if MC hardware requires pixel diff values to be in
-                 * range [-255;255]. TODO cliping if such hardware is ever found.
-                 * As of now it would only be unnecessery slowdown. */
+                /* It is unclear if MC hardware requires pixel diff values to be
+                 * in the range [-255;255]. TODO: Clipping if such hardware is
+                 * ever found. As of now it would only be an unnecessary
+                 * slowdown. */
             }
             // copy blocks only if the codec doesn't support pblocks reordering
             if (s->avctx->xvmc_acceleration == 1) {
