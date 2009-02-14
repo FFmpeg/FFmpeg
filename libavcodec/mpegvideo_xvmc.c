@@ -109,6 +109,10 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 return -1;
 }
 
+/**
+ * This function should be called for every new field and/or frame.
+ * It should be safe to call the function a few times for the same field.
+ */
 void ff_xvmc_field_end(MpegEncContext *s)
 {
     struct xvmc_render_state *render = (struct xvmc_render_state*)s->current_picture.data[2];
