@@ -165,7 +165,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
 
         if (s->mv_dir & MV_DIR_FORWARD) {
             mv_block->macroblock_type |= XVMC_MB_TYPE_MOTION_FORWARD;
-            //pmv[n][dir][xy]=mv[dir][n][xy]
+            // PMV[n][dir][xy] = mv[dir][n][xy]
             mv_block->PMV[0][0][0] = s->mv[0][0][0];
             mv_block->PMV[0][0][1] = s->mv[0][0][1];
             mv_block->PMV[1][0][0] = s->mv[0][1][0];
