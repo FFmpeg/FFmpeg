@@ -32,11 +32,18 @@
 //the surface should be shown, the video driver manipulates this
 #define AV_XVMC_STATE_DISPLAY_PENDING 1
 //the surface is needed for prediction, the codec manipulates this
-#define AV_XVMC_STATE_PREDICTION 2
+#define AV_XVMC_STATE_PREDICTION      2
 //this surface is needed for subpicture rendering
-#define AV_XVMC_STATE_OSD_SOURCE 4
-//                     1337    IDCT MCo
-#define AV_XVMC_RENDER_MAGIC 0x1DC711C0
+#define AV_XVMC_STATE_OSD_SOURCE      4
+//                              1337    IDCT MCo
+#define AV_XVMC_RENDER_MAGIC          0x1DC711C0
+
+#if LIBAVCODEC_VERSION_MAJOR < 53
+#define MP_XVMC_STATE_DISPLAY_PENDING AV_XVMC_STATE_DISPLAY_PENDING
+#define MP_XVMC_STATE_PREDICTION      AV_XVMC_STATE_PREDICTION
+#define MP_XVMC_STATE_OSD_SOURCE      AV_XVMC_STATE_OSD_SOURCE
+#define MP_XVMC_RENDER_MAGIC          AV_XVMC_RENDER_MAGIC
+#endif
 
 struct xvmc_render_state {
     //these are not changed by the decoder!
