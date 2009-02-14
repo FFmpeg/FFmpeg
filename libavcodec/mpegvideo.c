@@ -941,7 +941,7 @@ alloc:
 
 #if CONFIG_MPEG_XVMC_DECODER
     if(s->avctx->xvmc_acceleration)
-        return XVMC_field_start(s, avctx);
+        return ff_xvmc_field_start(s, avctx);
 #endif
     return 0;
 }
@@ -954,7 +954,7 @@ void MPV_frame_end(MpegEncContext *s)
 #if CONFIG_MPEG_XVMC_DECODER
 //just to make sure that all data is rendered.
     if(s->avctx->xvmc_acceleration){
-        XVMC_field_end(s);
+        ff_xvmc_field_end(s);
     }else
 #endif
     if(!(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
