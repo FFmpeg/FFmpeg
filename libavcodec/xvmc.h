@@ -29,12 +29,6 @@
 #include <X11/extensions/XvMClib.h>
 
 
-//the surface should be shown, the video driver manipulates this
-#define MP_XVMC_STATE_DISPLAY_PENDING 1
-//the surface is needed for prediction, the codec manipulates this
-#define MP_XVMC_STATE_PREDICTION 2
-//this surface is needed for subpicture rendering
-#define MP_XVMC_STATE_OSD_SOURCE 4
 //                     1337    IDCT MCo
 #define MP_XVMC_RENDER_MAGIC 0x1DC711C0
 
@@ -47,7 +41,7 @@ struct xvmc_render_state {
     int total_number_of_mv_blocks;
     int total_number_of_data_blocks;
     int mc_type; //XVMC_MPEG1/2/4,XVMC_H263 without XVMC_IDCT
-    int idct; //Do we use IDCT acceleration?
+    int idct;    //< indicate that IDCT acceleration level is used
     int chroma_format; //420, 422, 444
     int unsigned_intra; //+-128 for intra pictures after clipping
     XvMCSurface* p_surface; //pointer to rendered surface, never changed
