@@ -43,7 +43,7 @@
 #endif
 
 struct xvmc_render_state {
-/**  these are not changed by the decoder! */
+/** set by calling application */
 //@{
     int             magic;              ///< used as check for memory corruption by regular pixel routines
 
@@ -58,8 +58,8 @@ struct xvmc_render_state {
     XvMCSurface*    p_surface;          ///<pointer to rendered surface, never changed
 //}@
 
-/** these are changed by the decoder
-    //used by the XvMCRenderSurface function */
+/** set by the decoder
+    used by the XvMCRenderSurface function */
 //@{
     XvMCSurface* p_past_surface;    ///<pointer to the past surface
     XvMCSurface* p_future_surface;  ///<pointer to the future prediction surface
@@ -69,7 +69,7 @@ struct xvmc_render_state {
     unsigned int display_flags;     ///<1,2 or 1+2 fields for XvMCPutSurface
 //}@
 
-/** these are for internal communication */
+/** modified by calling application and the decoder */
 //@{
     int state;                      ///<0 - free, 1 - waiting to display, 2 - waiting for prediction
     int start_mv_blocks_num;        ///<offset in the array for the current slice, updated by vo
@@ -77,7 +77,7 @@ struct xvmc_render_state {
 
     int next_free_data_block_num;   ///<used in add_mv_block, pointer to next free block
 //}@
-/**extensions*/
+/** extensions */
 //@{
     void * p_osd_target_surface_render; ///<pointer to the surface where subpicture is rendered
 //}@
