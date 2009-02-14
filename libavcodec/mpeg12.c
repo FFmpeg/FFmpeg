@@ -1643,7 +1643,7 @@ static int mpeg_field_start(MpegEncContext *s){
 // MPV_frame_start will call this function too,
 // but we need to call it on every field
     if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
-        if( ff_xvmc_field_start(s,avctx) < 0)
+        if(ff_xvmc_field_start(s,avctx) < 0)
             return -1;
 
     return 0;
@@ -2378,9 +2378,9 @@ static int decode_chunks(AVCodecContext *avctx,
 
                 if(s2->first_slice){
                     s2->first_slice=0;
-                            if(mpeg_field_start(s2) < 0)
+                    if(mpeg_field_start(s2) < 0)
                         return -1;
-                    }
+                }
                 if(!s2->current_picture_ptr){
                     av_log(avctx, AV_LOG_ERROR, "current_picture not initialized\n");
                     return -1;
