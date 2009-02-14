@@ -57,7 +57,7 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
     cbp <<= 12-mb_block_count;
     for (i = 0; i < mb_block_count; i++) {
         if (cbp & (1<<11)) {
-            s->pblocks[i] = (short *)(&s->block[(j++)]);
+            s->pblocks[i] = (short *)(&s->block[j++]);
         }else{
             s->pblocks[i] = NULL;
         }
@@ -246,7 +246,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
 
     blocks_per_mb = 6;
     if (s->chroma_format >= 2) {
-        blocks_per_mb = 4 + (1 << (s->chroma_format));
+        blocks_per_mb = 4 + (1 << s->chroma_format);
     }
 
 //  calculate cbp
@@ -284,7 +284,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
             }
 //copy blocks only if the codec doesn't support pblocks reordering
             if (s->avctx->xvmc_acceleration == 1) {
-                memcpy(&render->data_blocks[(render->next_free_data_block_num)*64],
+                memcpy(&render->data_blocks[render->next_free_data_block_num*64],
                        s->pblocks[i],sizeof(short)*8*8);
             }
             render->next_free_data_block_num++;
