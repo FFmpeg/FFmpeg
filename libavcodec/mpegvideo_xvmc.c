@@ -41,7 +41,7 @@ void XVMC_init_block(MpegEncContext *s)
     struct xvmc_render_state * render;
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
-    if (!render || (render->magic != MP_XVMC_RENDER_MAGIC)) {
+    if (!render || (render->magic != AV_XVMC_RENDER_MAGIC)) {
         assert(0);
         return;//make sure that this is a render packet
     }
@@ -75,7 +75,7 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
 
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
-    if (!render || (render->magic != MP_XVMC_RENDER_MAGIC))
+    if (!render || (render->magic != AV_XVMC_RENDER_MAGIC))
         return -1;//make sure that this is render packet
 
     render->picture_structure = s->picture_structure;
@@ -95,7 +95,7 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
             assert(next);
             if (!next)
                 return -1;
-            if (next->magic != MP_XVMC_RENDER_MAGIC)
+            if (next->magic != AV_XVMC_RENDER_MAGIC)
                 return -1;
             render->p_future_surface = next->p_surface;
             //no return here, going to set forward prediction
@@ -103,7 +103,7 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
             last = (struct xvmc_render_state*)s->last_picture.data[2];
             if (!last)// && !s->first_field)
                 last = render;//predict second field from the first
-            if (last->magic != MP_XVMC_RENDER_MAGIC)
+            if (last->magic != AV_XVMC_RENDER_MAGIC)
                 return -1;
             render->p_past_surface = last->p_surface;
             return 0;
@@ -155,7 +155,7 @@ void XVMC_decode_mb(MpegEncContext *s)
 //START OF XVMC specific code
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
-    assert(render->magic==MP_XVMC_RENDER_MAGIC);
+    assert(render->magic==AV_XVMC_RENDER_MAGIC);
     assert(render->mv_blocks);
 
     //take the next free macroblock
