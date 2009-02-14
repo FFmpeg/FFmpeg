@@ -226,14 +226,10 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
 
 //set correct field references
         if (s->mv_type == MV_TYPE_FIELD || s->mv_type == MV_TYPE_16X8) {
-            if (s->field_select[0][0])
-                mv_block->motion_vertical_field_select |= 1;
-            if (s->field_select[1][0])
-                mv_block->motion_vertical_field_select |= 2;
-            if (s->field_select[0][1])
-                mv_block->motion_vertical_field_select |= 4;
-            if (s->field_select[1][1])
-                mv_block->motion_vertical_field_select |= 8;
+            mv_block->motion_vertical_field_select |= s->field_select[0][0];
+            mv_block->motion_vertical_field_select |= s->field_select[1][0]<<1;
+            mv_block->motion_vertical_field_select |= s->field_select[0][1]<<2;
+            mv_block->motion_vertical_field_select |= s->field_select[1][1]<<3;
         }
     }//!intra
 //time to handle data blocks;
