@@ -198,21 +198,21 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
                 mv_block->motion_type = XVMC_PREDICTION_DUAL_PRIME;
                 if (s->picture_structure == PICT_FRAME) {
 
-                    mv_block->PMV[0][0][0] = s->mv[0][0][0]; // top from top
+                    mv_block->PMV[0][0][0] = s->mv[0][0][0];      // top from top
                     mv_block->PMV[0][0][1] = s->mv[0][0][1] << 1;
 
-                    mv_block->PMV[0][1][0] = s->mv[0][0][0]; // bottom from bottom
+                    mv_block->PMV[0][1][0] = s->mv[0][0][0];      // bottom from bottom
                     mv_block->PMV[0][1][1] = s->mv[0][0][1] << 1;
 
-                    mv_block->PMV[1][0][0] = s->mv[0][2][0]; // dmv00, top from bottom
+                    mv_block->PMV[1][0][0] = s->mv[0][2][0];      // dmv00, top from bottom
                     mv_block->PMV[1][0][1] = s->mv[0][2][1] << 1; // dmv01
 
-                    mv_block->PMV[1][1][0] = s->mv[0][3][0]; // dmv10, bottom from top
+                    mv_block->PMV[1][1][0] = s->mv[0][3][0];      // dmv10, bottom from top
                     mv_block->PMV[1][1][1] = s->mv[0][3][1] << 1; // dmv11
 
                 } else {
-                    mv_block->PMV[0][1][0] = s->mv[0][2][0]; // dmv00
-                    mv_block->PMV[0][1][1] = s->mv[0][2][1]; // dmv01
+                    mv_block->PMV[0][1][0] = s->mv[0][2][0];      // dmv00
+                    mv_block->PMV[0][1][1] = s->mv[0][2][1];      // dmv01
                 }
                 break;
             default:
@@ -246,7 +246,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     }
 
     if (s->flags & CODEC_FLAG_GRAY) {
-        if (s->mb_intra) { // intra frames are always full chroma blocks
+        if (s->mb_intra) {                                   // intra frames are always full chroma blocks
             for (i = 4; i < blocks_per_mb; i++) {
                 memset(s->pblocks[i], 0, sizeof(short)*8*8); // so we need to clear them
                 if (!render->unsigned_intra)
@@ -254,7 +254,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
             }
         } else {
             cbp &= 0xf << (blocks_per_mb - 4);
-            blocks_per_mb = 4; // luminance blocks only
+            blocks_per_mb = 4;                               // luminance blocks only
         }
     }
     mv_block->coded_block_pattern = cbp;
