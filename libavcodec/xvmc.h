@@ -70,7 +70,7 @@ struct xvmc_render_state {
 
     int             next_free_data_block_num;     ///< used in add_mv_block, pointer to next free block
 //}@
-/** extensions may be placed here*/
+/** extensions may be placed here */
 #if LIBAVCODEC_VERSION_MAJOR < 53
 //@{
     void*           p_osd_target_surface_render;  ///< pointer to the surface where subpicture is rendered
