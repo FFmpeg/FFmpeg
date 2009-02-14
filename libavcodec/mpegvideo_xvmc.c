@@ -93,7 +93,6 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
         case  FF_B_TYPE:
             next = (struct xvmc_render_state*)s->next_picture.data[2];
             assert(next!=NULL);
-            assert(next->state & MP_XVMC_STATE_PREDICTION);
             if (next == NULL)
                 return -1;
             if (next->magic != MP_XVMC_RENDER_MAGIC)
@@ -106,7 +105,6 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
                 last = render;//predict second field from the first
             if (last->magic != MP_XVMC_RENDER_MAGIC)
                 return -1;
-            assert(last->state & MP_XVMC_STATE_PREDICTION);
             render->p_past_surface = last->p_surface;
             return 0;
     }
