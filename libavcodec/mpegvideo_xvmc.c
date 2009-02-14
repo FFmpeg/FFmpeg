@@ -34,8 +34,7 @@
 //set s->block
 void ff_xvmc_init_block(MpegEncContext *s)
 {
-    struct xvmc_render_state *render;
-    render = (struct xvmc_render_state*)s->current_picture.data[2];
+    struct xvmc_render_state *render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
     if (!render || render->magic != AV_XVMC_RENDER_MAGIC) {
         assert(0);
@@ -46,10 +45,9 @@ void ff_xvmc_init_block(MpegEncContext *s)
 
 void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
 {
-    int i, j;
+    int i, j = 0;
     const int mb_block_count = 4 + (1 << s->chroma_format);
 
-    j = 0;
     cbp <<= 12-mb_block_count;
     for (i = 0; i < mb_block_count; i++) {
         if (cbp & (1 << 11))
@@ -64,11 +62,9 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
 // They should be safe if they are called a few times for the same field!
 int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 {
-    struct xvmc_render_state *render, *last, *next;
+    struct xvmc_render_state *last, *next, *render = (struct xvmc_render_state*)s->current_picture.data[2];
 
     assert(avctx);
-
-    render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
     if (!render || render->magic != AV_XVMC_RENDER_MAGIC)
         return -1; // make sure that this is a render packet
@@ -113,8 +109,7 @@ return -1;
 
 void ff_xvmc_field_end(MpegEncContext *s)
 {
-    struct xvmc_render_state *render;
-    render = (struct xvmc_render_state*)s->current_picture.data[2];
+    struct xvmc_render_state *render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
 
     if (render->filled_mv_blocks_num > 0)
