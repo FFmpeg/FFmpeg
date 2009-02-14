@@ -165,6 +165,11 @@ SwsVector *sws_getIdentityVec(void);
  * Scales all the coefficients of \p a by the \p scalar value.
  */
 void sws_scaleVec(SwsVector *a, double scalar);
+
+/**
+ * Scales all the coefficients of \p a so that their sum equals \p
+ * height."
+ */
 void sws_normalizeVec(SwsVector *a, double height);
 void sws_convVec(SwsVector *a, SwsVector *b);
 void sws_addVec(SwsVector *a, SwsVector *b);
