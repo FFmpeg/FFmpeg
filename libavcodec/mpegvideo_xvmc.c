@@ -33,7 +33,7 @@
 //set s->block
 void ff_xvmc_init_block(MpegEncContext *s)
 {
-    struct xvmc_render_state * render;
+    struct xvmc_render_state *render;
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
     if (!render || render->magic != AV_XVMC_RENDER_MAGIC) {
@@ -45,7 +45,7 @@ void ff_xvmc_init_block(MpegEncContext *s)
 
 void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
 {
-    int i,j;
+    int i, j;
     const int mb_block_count = 4 + (1 << s->chroma_format);
 
     j = 0;
@@ -63,7 +63,7 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
 // They should be safe if they are called a few times for the same field!
 int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 {
-    struct xvmc_render_state * render, * last, * next;
+    struct xvmc_render_state *render, *last, *next;
 
     assert(avctx);
 
@@ -81,7 +81,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
     render->p_future_surface = NULL;
     render->p_past_surface   = NULL;
 
-    switch(s->pict_type){
+    switch(s->pict_type) {
         case  FF_I_TYPE:
             return 0; // no prediction from other frames
         case  FF_B_TYPE:
@@ -108,7 +108,7 @@ return -1;
 
 void ff_xvmc_field_end(MpegEncContext *s)
 {
-    struct xvmc_render_state * render;
+    struct xvmc_render_state *render;
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
 
@@ -118,9 +118,9 @@ void ff_xvmc_field_end(MpegEncContext *s)
 
 void ff_xvmc_decode_mb(MpegEncContext *s)
 {
-    XvMCMacroBlock * mv_block;
-    struct xvmc_render_state * render;
-    int i,cbp,blocks_per_mb;
+    XvMCMacroBlock *mv_block;
+    struct xvmc_render_state *render;
+    int i, cbp, blocks_per_mb;
 
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
@@ -148,7 +148,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     // start of XVMC-specific code
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
-    assert(render->magic==AV_XVMC_RENDER_MAGIC);
+    assert(render->magic == AV_XVMC_RENDER_MAGIC);
     assert(render->mv_blocks);
 
     // take the next free macroblock
@@ -225,9 +225,9 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
         // set correct field references
         if (s->mv_type == MV_TYPE_FIELD || s->mv_type == MV_TYPE_16X8) {
             mv_block->motion_vertical_field_select |= s->field_select[0][0];
-            mv_block->motion_vertical_field_select |= s->field_select[1][0]<<1;
-            mv_block->motion_vertical_field_select |= s->field_select[0][1]<<2;
-            mv_block->motion_vertical_field_select |= s->field_select[1][1]<<3;
+            mv_block->motion_vertical_field_select |= s->field_select[1][0] << 1;
+            mv_block->motion_vertical_field_select |= s->field_select[0][1] << 2;
+            mv_block->motion_vertical_field_select |= s->field_select[1][1] << 3;
         }
     } // !intra
     // time to handle data blocks
@@ -249,7 +249,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     if (s->flags & CODEC_FLAG_GRAY) {
         if (s->mb_intra) { // intra frames are always full chroma blocks
             for (i = 4; i < blocks_per_mb; i++) {
-                memset(s->pblocks[i],0,sizeof(short)*8*8); // so we need to clear them
+                memset(s->pblocks[i], 0, sizeof(short)*8*8); // so we need to clear them
                 if (!render->unsigned_intra)
                     s->pblocks[i][0] = 1 << 10;
             }
@@ -289,5 +289,5 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
 
 
     if (render->filled_mv_blocks_num >= render->total_number_of_mv_blocks)
-        ff_draw_horiz_band(s,0,0);
+        ff_draw_horiz_band(s, 0, 0);
 }
