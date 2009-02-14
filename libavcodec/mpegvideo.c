@@ -34,6 +34,7 @@
 #include "mjpegenc.h"
 #include "msmpeg4.h"
 #include "faandct.h"
+#include "xvmc_internal.h"
 #include <limits.h>
 
 //#undef NDEBUG
@@ -53,10 +54,6 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale);
 static void dct_unquantize_h263_inter_c(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale);
-
-int  ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx);
-void ff_xvmc_field_end(MpegEncContext *s);
-void ff_xvmc_decode_mb(MpegEncContext *s);
 
 
 /* enable all paranoid tests for rounding, overflows, etc... */

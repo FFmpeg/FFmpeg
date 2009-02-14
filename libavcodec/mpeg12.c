@@ -35,6 +35,7 @@
 #include "mpeg12decdata.h"
 #include "bytestream.h"
 #include "vdpau_internal.h"
+#include "xvmc_internal.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -60,11 +61,6 @@ static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s, DCTELEM *
 static inline int mpeg2_fast_decode_block_intra(MpegEncContext *s, DCTELEM *block, int n);
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred);
 static void exchange_uv(MpegEncContext *s);
-
-int  ff_xvmc_field_start(MpegEncContext *s, AVCodecContext *avctx);
-int  ff_xvmc_field_end(MpegEncContext *s);
-void ff_xvmc_pack_pblocks(MpegEncContext *s,int cbp);
-void ff_xvmc_init_block(MpegEncContext *s);//set s->block
 
 static const enum PixelFormat pixfmt_xvmc_mpg2_420[] = {
                                            PIX_FMT_XVMC_MPEG2_IDCT,

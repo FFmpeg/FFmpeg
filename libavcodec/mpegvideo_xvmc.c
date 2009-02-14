@@ -29,6 +29,7 @@
 #include <assert.h>
 
 #include "xvmc.h"
+#include "xvmc_internal.h"
 
 //set s->block
 void ff_xvmc_init_block(MpegEncContext *s)
