@@ -29,10 +29,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-//X11 includes are in libavcodec/xvmc.h
-//by replacing it with non-X one
-//XvMC emulation could be performed
-
 #include "xvmc.h"
 
 //set s->block
