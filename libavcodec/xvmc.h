@@ -55,7 +55,7 @@ struct xvmc_render_state {
     int total_number_of_mv_blocks;
     int total_number_of_data_blocks;
     int mc_type;            //XVMC_MPEG1/2/4,XVMC_H263 without XVMC_IDCT
-    int idct;               //< indicate that IDCT acceleration level is used
+    int idct;               ///< indicate that IDCT acceleration level is used
     int chroma_format;      ///< XVMC_CHROMA_FORMAT_420/422/444
     int unsigned_intra;     //+-128 for intra pictures after clipping
     XvMCSurface* p_surface; //pointer to rendered surface, never changed
