@@ -963,6 +963,10 @@ typedef struct AVCodecContext {
      * It is also used by hardware acceleration APIs as a callback
      * to pass specific (partially decoded) data to the calling
      * application so it could be passed to the rendering hardware.
+     * In that mode all relevant function paramerers are inside special
+     * structure passed by AVFrame in place of the pixel data.
+     * The exact structure depends on the acceleration API.
+     * The application is allowed to make changes in the strucure.
      * - encoding: unused
      * - decoding: Set by user.
      * @param height the height of the slice
