@@ -276,7 +276,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
             // copy blocks only if the codec doesn't support pblocks reordering
             if (s->avctx->xvmc_acceleration == 1) {
                 memcpy(&render->data_blocks[render->next_free_data_block_num*64],
-                       s->pblocks[i], sizeof(short)*8*8);
+                       s->pblocks[i], sizeof(short)*64);
             }
             render->next_free_data_block_num++;
         }
