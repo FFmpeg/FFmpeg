@@ -23,6 +23,8 @@
 
 #include <X11/extensions/XvMC.h>
 
+#include "avcodec.h"
+
 #define AV_XVMC_STATE_DISPLAY_PENDING          1  /**  the surface should be shown, the video driver manipulates this */
 #define AV_XVMC_STATE_PREDICTION               2  /**  the surface is needed for prediction, the codec manipulates this */
 #define AV_XVMC_STATE_OSD_SOURCE               4  /**  this surface is needed for subpicture rendering */
