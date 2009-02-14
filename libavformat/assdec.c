@@ -143,7 +143,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         p++;
     }
 
-    qsort(ass->event, ass->event_count, sizeof(*ass->event), event_cmp);
+    qsort(ass->event, ass->event_count, sizeof(*ass->event), (void*)event_cmp);
 
     return 0;
 
