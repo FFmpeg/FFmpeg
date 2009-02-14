@@ -52,11 +52,10 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
     j = 0;
     cbp <<= 12-mb_block_count;
     for (i = 0; i < mb_block_count; i++) {
-        if (cbp & (1<<11)) {
+        if (cbp & (1 << 11))
             s->pblocks[i] = (short *)(&s->block[j++]);
-        }else{
+        else
             s->pblocks[i] = NULL;
-        }
         cbp+=cbp;
     }
 }
@@ -161,9 +160,9 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     mv_block->x        = s->mb_x;
     mv_block->y        = s->mb_y;
     mv_block->dct_type = s->interlaced_dct;//XVMC_DCT_TYPE_FRAME/FIELD;
-    if (s->mb_intra){
+    if (s->mb_intra) {
         mv_block->macroblock_type = XVMC_MB_TYPE_INTRA;//no MC, all done
-    }else{
+    } else {
         mv_block->macroblock_type = XVMC_MB_TYPE_PATTERN;
 
         if (s->mv_dir & MV_DIR_FORWARD) {
@@ -214,7 +213,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
                     mv_block->PMV[1][1][0] = s->mv[0][3][0];//dmv10, bottom from top
                     mv_block->PMV[1][1][1] = s->mv[0][3][1]<<1;//dmv11
 
-                }else{
+                } else {
                     mv_block->PMV[0][1][0] = s->mv[0][2][0];//dmv00
                     mv_block->PMV[0][1][1] = s->mv[0][2][1];//dmv01
                 }
@@ -254,13 +253,13 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     }
 
     if (s->flags & CODEC_FLAG_GRAY) {
-        if (s->mb_intra){//intra frames are always full chroma block
+        if (s->mb_intra) {//intra frames are always full chroma block
             for (i = 4; i < blocks_per_mb; i++) {
                 memset(s->pblocks[i],0,sizeof(short)*8*8);//so we need to clear them
                 if (!render->unsigned_intra)
                     s->pblocks[i][0] = 1 << 10;
             }
-        }else{
+        } else {
             cbp &= 0xf << (blocks_per_mb - 4);
             blocks_per_mb = 4;//luminance blocks only
         }
