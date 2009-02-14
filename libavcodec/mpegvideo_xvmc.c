@@ -271,7 +271,9 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
                 s->pblocks[i][0] -= 1 << 10;
             if (!render->idct) {
                 s->dsp.idct(s->pblocks[i]);
-                //!!TODO!clip!!!
+                /*It is unclear if MC hardware requires pixel diff values to be in
+                range [-255;255]. TODO cliping if such hardware is ever found.
+                As of now it would only be unnecessery slowdown. */
             }
 //copy blocks only if the codec doesn't support pblocks reordering
             if (s->avctx->xvmc_acceleration == 1) {
