@@ -960,6 +960,9 @@ typedef struct AVCodecContext {
      * decoder to draw a horizontal band. It improves cache usage. Not
      * all codecs can do that. You must check the codec capabilities
      * beforehand.
+     * It is also used by hardware acceleration APIs as a callback
+     * to pass specific (partially decoded) data to the calling
+     * application so it could be passed to the rendering hardware.
      * - encoding: unused
      * - decoding: Set by user.
      * @param height the height of the slice
