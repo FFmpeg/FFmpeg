@@ -960,13 +960,13 @@ typedef struct AVCodecContext {
      * decoder to draw a horizontal band. It improves cache usage. Not
      * all codecs can do that. You must check the codec capabilities
      * beforehand.
-     * The functino is also used by hardware acceleration APIs as a callback
-     * to pass specific (partially decoded) data to the calling application
-     * so that the data can be passed to the rendering hardware.
-     * In that mode all relevant function parameters are inside a special
-     * structure passed by AVFrame in place of the pixel data.
-     * The exact structure depends on the acceleration API.
-     * The application is allowed to make changes in the structure.
+     * The function is also used by hardware acceleration APIs.
+     * It is called at least once during frame decoding to pass
+     * the data needed for hardware render.
+     * In that mode instead of pixel data, AVFrame points to
+     * a structure specific to the acceleration API. The application
+     * reads the structure and can change some fields to indicate progress
+     * or mark state.
      * - encoding: unused
      * - decoding: Set by user.
      * @param height the height of the slice
