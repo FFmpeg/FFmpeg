@@ -291,8 +291,9 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
 
     assert(render->filled_mv_blocks_num     <= render->total_number_of_mv_blocks);
     assert(render->next_free_data_block_num <= render->total_number_of_data_blocks);
-    /*The above conditions should not be able to fail as long as this function is used
-    and following 'if ()' automatically call callback to free blocks. */
+    /* The above conditions should not be able to fail as long as this function
+     * is used and the following 'if ()' automatically calls a callback to free
+     * blocks. */
 
 
     if (render->filled_mv_blocks_num >= render->total_number_of_mv_blocks)
