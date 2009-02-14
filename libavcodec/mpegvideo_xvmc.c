@@ -37,11 +37,11 @@ void ff_xvmc_init_block(MpegEncContext *s)
     struct xvmc_render_state * render;
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
-    if (!render || (render->magic != AV_XVMC_RENDER_MAGIC)) {
+    if (!render || render->magic != AV_XVMC_RENDER_MAGIC) {
         assert(0);
         return;//make sure that this is a render packet
     }
-    s->block = (DCTELEM *)(render->data_blocks+(render->next_free_data_block_num)*64);
+    s->block = (DCTELEM *)(render->data_blocks + render->next_free_data_block_num * 64);
 }
 
 void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
@@ -71,11 +71,11 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
-    if (!render || (render->magic != AV_XVMC_RENDER_MAGIC))
+    if (!render || render->magic != AV_XVMC_RENDER_MAGIC)
         return -1;//make sure that this is render packet
 
     render->picture_structure = s->picture_structure;
-    render->flags             = (s->first_field) ? 0 : XVMC_SECOND_FIELD;
+    render->flags             = s->first_field ? 0 : XVMC_SECOND_FIELD;
 
 //make sure that all data is drawn by XVMC_end_frame
     assert(render->filled_mv_blocks_num == 0);
