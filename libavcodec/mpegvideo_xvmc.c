@@ -40,8 +40,8 @@ void XVMC_init_block(MpegEncContext *s)
 {
     struct xvmc_render_state * render;
     render = (struct xvmc_render_state*)s->current_picture.data[2];
-    assert(render != NULL);
-    if ((render == NULL) || (render->magic != MP_XVMC_RENDER_MAGIC)) {
+    assert(render);
+    if (!render || (render->magic != MP_XVMC_RENDER_MAGIC)) {
         assert(0);
         return;//make sure that this is a render packet
     }
@@ -71,11 +71,11 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
 {
     struct xvmc_render_state * render, * last, * next;
 
-    assert(avctx != NULL);
+    assert(avctx);
 
     render = (struct xvmc_render_state*)s->current_picture.data[2];
-    assert(render != NULL);
-    if ((render == NULL) || (render->magic != MP_XVMC_RENDER_MAGIC))
+    assert(render);
+    if (!render || (render->magic != MP_XVMC_RENDER_MAGIC))
         return -1;//make sure that this is render packet
 
     render->picture_structure = s->picture_structure;
@@ -92,8 +92,8 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
             return 0;// no prediction from other frames
         case  FF_B_TYPE:
             next = (struct xvmc_render_state*)s->next_picture.data[2];
-            assert(next!=NULL);
-            if (next == NULL)
+            assert(next);
+            if (!next)
                 return -1;
             if (next->magic != MP_XVMC_RENDER_MAGIC)
                 return -1;
@@ -101,7 +101,7 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
             //no return here, going to set forward prediction
         case  FF_P_TYPE:
             last = (struct xvmc_render_state*)s->last_picture.data[2];
-            if (last == NULL)// && !s->first_field)
+            if (!last)// && !s->first_field)
                 last = render;//predict second field from the first
             if (last->magic != MP_XVMC_RENDER_MAGIC)
                 return -1;
@@ -116,7 +116,7 @@ void XVMC_field_end(MpegEncContext *s)
 {
     struct xvmc_render_state * render;
     render = (struct xvmc_render_state*)s->current_picture.data[2];
-    assert(render != NULL);
+    assert(render);
 
     if (render->filled_mv_blocks_num > 0)
         ff_draw_horiz_band(s,0,0);
@@ -154,7 +154,7 @@ void XVMC_decode_mb(MpegEncContext *s)
 
 //START OF XVMC specific code
     render = (struct xvmc_render_state*)s->current_picture.data[2];
-    assert(render!=NULL);
+    assert(render);
     assert(render->magic==MP_XVMC_RENDER_MAGIC);
     assert(render->mv_blocks);
 
