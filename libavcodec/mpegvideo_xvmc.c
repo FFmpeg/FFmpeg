@@ -80,7 +80,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR,
                "Rendering surface contains %i unprocessed blocks\n",
                render->filled_mv_blocks_num);
-        assert(0);
+        return -1;
     }
 
     render->p_future_surface = NULL;
