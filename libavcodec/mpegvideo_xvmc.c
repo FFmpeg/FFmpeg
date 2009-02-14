@@ -39,7 +39,7 @@ void ff_xvmc_init_block(MpegEncContext *s)
     assert(render);
     if (!render || render->magic != AV_XVMC_RENDER_MAGIC) {
         assert(0);
-        return;//make sure that this is a render packet
+        return; // make sure that this is a render packet
     }
     s->block = (DCTELEM *)(render->data_blocks + render->next_free_data_block_num * 64);
 }
@@ -60,8 +60,8 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
     }
 }
 
-//These functions should be called on every new field and/or frame.
-//They should be safe if they are called a few times for the same field!
+// These functions should be called on every new field and/or frame.
+// They should be safe if they are called a few times for the same field!
 int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 {
     struct xvmc_render_state * render, * last, * next;
@@ -71,12 +71,12 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
     if (!render || render->magic != AV_XVMC_RENDER_MAGIC)
-        return -1;//make sure that this is render packet
+        return -1; // make sure that this is render packet
 
     render->picture_structure = s->picture_structure;
     render->flags             = s->first_field ? 0 : XVMC_SECOND_FIELD;
 
-    //make sure that all data is drawn by XVMC_end_frame
+    // make sure that all data is drawn by XVMC_end_frame
     assert(render->filled_mv_blocks_num == 0);
 
     render->p_future_surface = NULL;
@@ -84,7 +84,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 
     switch(s->pict_type){
         case  FF_I_TYPE:
-            return 0;// no prediction from other frames
+            return 0; // no prediction from other frames
         case  FF_B_TYPE:
             next = (struct xvmc_render_state*)s->next_picture.data[2];
             assert(next);
@@ -93,11 +93,11 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
             if (next->magic != AV_XVMC_RENDER_MAGIC)
                 return -1;
             render->p_future_surface = next->p_surface;
-            //no return here, going to set forward prediction
+            // no return here, going to set forward prediction
         case  FF_P_TYPE:
             last = (struct xvmc_render_state*)s->last_picture.data[2];
-            if (!last)// && !s->first_field)
-                last = render;//predict second field from the first
+            if (!last) // && !s->first_field)
+                last = render; // predict second field from the first
             if (last->magic != AV_XVMC_RENDER_MAGIC)
                 return -1;
             render->p_past_surface = last->p_surface;
@@ -131,15 +131,14 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
         return;
     }
 
-    //from MPV_decode_mb(),
-    /* update DC predictors for P macroblocks */
+    // from MPV_decode_mb(), update DC predictors for P macroblocks
     if (!s->mb_intra) {
         s->last_dc[0] =
         s->last_dc[1] =
         s->last_dc[2] =  128 << s->intra_dc_precision;
     }
 
-    //MC doesn't skip blocks
+    // MC doesn't skip blocks
     s->mb_skipped = 0;
 
 
@@ -147,21 +146,21 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     // Anyway, it doesn't hurt.
     s->current_picture.qscale_table[mb_xy] = s->qscale;
 
-    //START OF XVMC specific code
+    // START OF XVMC specific code
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
     assert(render->magic==AV_XVMC_RENDER_MAGIC);
     assert(render->mv_blocks);
 
-    //take the next free macroblock
+    // take the next free macroblock
     mv_block = &render->mv_blocks[render->start_mv_blocks_num +
                                   render->filled_mv_blocks_num ];
 
     mv_block->x        = s->mb_x;
     mv_block->y        = s->mb_y;
-    mv_block->dct_type = s->interlaced_dct;//XVMC_DCT_TYPE_FRAME/FIELD;
+    mv_block->dct_type = s->interlaced_dct; // XVMC_DCT_TYPE_FRAME/FIELD;
     if (s->mb_intra) {
-        mv_block->macroblock_type = XVMC_MB_TYPE_INTRA;//no MC, all done
+        mv_block->macroblock_type = XVMC_MB_TYPE_INTRA; // no MC, all done
     } else {
         mv_block->macroblock_type = XVMC_MB_TYPE_PATTERN;
 
@@ -201,21 +200,21 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
                 mv_block->motion_type = XVMC_PREDICTION_DUAL_PRIME;
                 if (s->picture_structure == PICT_FRAME) {
 
-                    mv_block->PMV[0][0][0] = s->mv[0][0][0];//top from top
+                    mv_block->PMV[0][0][0] = s->mv[0][0][0]; // top from top
                     mv_block->PMV[0][0][1] = s->mv[0][0][1]<<1;
 
-                    mv_block->PMV[0][1][0] = s->mv[0][0][0];//bottom from bottom
+                    mv_block->PMV[0][1][0] = s->mv[0][0][0]; // bottom from bottom
                     mv_block->PMV[0][1][1] = s->mv[0][0][1]<<1;
 
-                    mv_block->PMV[1][0][0] = s->mv[0][2][0];//dmv00, top from bottom
-                    mv_block->PMV[1][0][1] = s->mv[0][2][1]<<1;//dmv01
+                    mv_block->PMV[1][0][0] = s->mv[0][2][0]; // dmv00, top from bottom
+                    mv_block->PMV[1][0][1] = s->mv[0][2][1]<<1; // dmv01
 
-                    mv_block->PMV[1][1][0] = s->mv[0][3][0];//dmv10, bottom from top
-                    mv_block->PMV[1][1][1] = s->mv[0][3][1]<<1;//dmv11
+                    mv_block->PMV[1][1][0] = s->mv[0][3][0]; // dmv10, bottom from top
+                    mv_block->PMV[1][1][1] = s->mv[0][3][1]<<1; // dmv11
 
                 } else {
-                    mv_block->PMV[0][1][0] = s->mv[0][2][0];//dmv00
-                    mv_block->PMV[0][1][1] = s->mv[0][2][1];//dmv01
+                    mv_block->PMV[0][1][0] = s->mv[0][2][0]; // dmv00
+                    mv_block->PMV[0][1][1] = s->mv[0][2][1]; // dmv01
                 }
                 break;
             default:
@@ -224,15 +223,15 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
 
         mv_block->motion_vertical_field_select = 0;
 
-        //set correct field references
+        // set correct field references
         if (s->mv_type == MV_TYPE_FIELD || s->mv_type == MV_TYPE_16X8) {
             mv_block->motion_vertical_field_select |= s->field_select[0][0];
             mv_block->motion_vertical_field_select |= s->field_select[1][0]<<1;
             mv_block->motion_vertical_field_select |= s->field_select[0][1]<<2;
             mv_block->motion_vertical_field_select |= s->field_select[1][1]<<3;
         }
-    }//!intra
-    //time to handle data blocks;
+    } // !intra
+    // time to handle data blocks;
     mv_block->index = render->next_free_data_block_num;
 
     blocks_per_mb = 6;
@@ -240,7 +239,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
         blocks_per_mb = 4 + (1 << s->chroma_format);
     }
 
-    //  calculate cbp
+    // calculate cbp
     cbp = 0;
     for (i = 0; i < blocks_per_mb; i++) {
         cbp += cbp;
@@ -249,15 +248,15 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     }
 
     if (s->flags & CODEC_FLAG_GRAY) {
-        if (s->mb_intra) {//intra frames are always full chroma block
+        if (s->mb_intra) { // intra frames are always full chroma block
             for (i = 4; i < blocks_per_mb; i++) {
-                memset(s->pblocks[i],0,sizeof(short)*8*8);//so we need to clear them
+                memset(s->pblocks[i],0,sizeof(short)*8*8); // so we need to clear them
                 if (!render->unsigned_intra)
                     s->pblocks[i][0] = 1 << 10;
             }
         } else {
             cbp &= 0xf << (blocks_per_mb - 4);
-            blocks_per_mb = 4;//luminance blocks only
+            blocks_per_mb = 4; // luminance blocks only
         }
     }
     mv_block->coded_block_pattern = cbp;
@@ -271,11 +270,11 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
                 s->pblocks[i][0] -= 1 << 10;
             if (!render->idct) {
                 s->dsp.idct(s->pblocks[i]);
-                /*It is unclear if MC hardware requires pixel diff values to be in
-                range [-255;255]. TODO cliping if such hardware is ever found.
-                As of now it would only be unnecessery slowdown. */
+                /* It is unclear if MC hardware requires pixel diff values to be in
+                 * range [-255;255]. TODO cliping if such hardware is ever found.
+                 * As of now it would only be unnecessery slowdown. */
             }
-            //copy blocks only if the codec doesn't support pblocks reordering
+            // copy blocks only if the codec doesn't support pblocks reordering
             if (s->avctx->xvmc_acceleration == 1) {
                 memcpy(&render->data_blocks[render->next_free_data_block_num*64],
                        s->pblocks[i],sizeof(short)*8*8);
