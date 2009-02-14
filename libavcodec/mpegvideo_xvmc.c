@@ -75,7 +75,6 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
     render->picture_structure = s->picture_structure;
     render->flags             = s->first_field ? 0 : XVMC_SECOND_FIELD;
 
-    // make sure that all data is drawn by XVMC_end_frame
     assert(render->filled_mv_blocks_num == 0);
 
     render->p_future_surface = NULL;
