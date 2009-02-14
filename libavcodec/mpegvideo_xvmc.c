@@ -45,7 +45,7 @@ void XVMC_init_block(MpegEncContext *s)
         assert(0);
         return;//make sure that this is a render packet
     }
-    s->block =(DCTELEM *)(render->data_blocks+(render->next_free_data_block_num)*64);
+    s->block = (DCTELEM *)(render->data_blocks+(render->next_free_data_block_num)*64);
 }
 
 void XVMC_pack_pblocks(MpegEncContext *s, int cbp)
@@ -79,10 +79,10 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
         return -1;//make sure that this is render packet
 
     render->picture_structure = s->picture_structure;
-    render->flags = (s->first_field)? 0: XVMC_SECOND_FIELD;
+    render->flags = (s->first_field) ? 0 : XVMC_SECOND_FIELD;
 
 //make sure that all data is drawn by XVMC_end_frame
-    assert(render->filled_mv_blocks_num==0);
+    assert(render->filled_mv_blocks_num == 0);
 
     render->p_future_surface = NULL;
     render->p_past_surface = NULL;
@@ -173,7 +173,7 @@ void XVMC_decode_mb(MpegEncContext *s)
         mv_block->macroblock_type = XVMC_MB_TYPE_PATTERN;
 
         if (s->mv_dir & MV_DIR_FORWARD) {
-            mv_block->macroblock_type|= XVMC_MB_TYPE_MOTION_FORWARD;
+            mv_block->macroblock_type |= XVMC_MB_TYPE_MOTION_FORWARD;
             //pmv[n][dir][xy]=mv[dir][n][xy]
             mv_block->PMV[0][0][0] = s->mv[0][0][0];
             mv_block->PMV[0][0][1] = s->mv[0][0][1];
@@ -181,7 +181,7 @@ void XVMC_decode_mb(MpegEncContext *s)
             mv_block->PMV[1][0][1] = s->mv[0][1][1];
         }
         if (s->mv_dir & MV_DIR_BACKWARD) {
-            mv_block->macroblock_type|=XVMC_MB_TYPE_MOTION_BACKWARD;
+            mv_block->macroblock_type |= XVMC_MB_TYPE_MOTION_BACKWARD;
             mv_block->PMV[0][1][0] = s->mv[1][0][0];
             mv_block->PMV[0][1][1] = s->mv[1][0][1];
             mv_block->PMV[1][1][0] = s->mv[1][1][0];
@@ -254,7 +254,7 @@ void XVMC_decode_mb(MpegEncContext *s)
 //  calculate cbp
     cbp = 0;
     for (i = 0; i < blocks_per_mb; i++) {
-        cbp+= cbp;
+        cbp += cbp;
         if (s->block_last_index[i] >= 0)
             cbp++;
     }
