@@ -76,7 +76,12 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
     render->picture_structure = s->picture_structure;
     render->flags             = s->first_field ? 0 : XVMC_SECOND_FIELD;
 
-    assert(render->filled_mv_blocks_num == 0);
+    if(render->filled_mv_blocks_num){
+        av_log(avctx, AV_LOG_ERROR,
+                "Rendering surface contains %i unprocessed blocks\n",
+                render->filled_mv_blocks_num);
+        assert(0);
+    }
 
     render->p_future_surface = NULL;
     render->p_past_surface   = NULL;
