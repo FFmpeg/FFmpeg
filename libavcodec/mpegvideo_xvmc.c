@@ -36,7 +36,7 @@
 #include "xvmc.h"
 
 //set s->block
-void XVMC_init_block(MpegEncContext *s)
+void ff_xvmc_init_block(MpegEncContext *s)
 {
     struct xvmc_render_state * render;
     render = (struct xvmc_render_state*)s->current_picture.data[2];
@@ -48,7 +48,7 @@ void XVMC_init_block(MpegEncContext *s)
     s->block = (DCTELEM *)(render->data_blocks+(render->next_free_data_block_num)*64);
 }
 
-void XVMC_pack_pblocks(MpegEncContext *s, int cbp)
+void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
 {
     int i,j;
     const int mb_block_count = 4 + (1 << s->chroma_format);
@@ -67,7 +67,7 @@ void XVMC_pack_pblocks(MpegEncContext *s, int cbp)
 
 //These functions should be called on every new field and/or frame.
 //They should be safe if they are called a few times for the same field!
-int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
+int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 {
     struct xvmc_render_state * render, * last, * next;
 
@@ -112,7 +112,7 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx)
 return -1;
 }
 
-void XVMC_field_end(MpegEncContext *s)
+void ff_xvmc_field_end(MpegEncContext *s)
 {
     struct xvmc_render_state * render;
     render = (struct xvmc_render_state*)s->current_picture.data[2];
@@ -122,7 +122,7 @@ void XVMC_field_end(MpegEncContext *s)
         ff_draw_horiz_band(s,0,0);
 }
 
-void XVMC_decode_mb(MpegEncContext *s)
+void ff_xvmc_decode_mb(MpegEncContext *s)
 {
     XvMCMacroBlock * mv_block;
     struct xvmc_render_state * render;

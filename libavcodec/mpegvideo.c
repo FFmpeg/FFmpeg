@@ -56,7 +56,7 @@ static void dct_unquantize_h263_inter_c(MpegEncContext *s,
 
 int  XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx);
 void XVMC_field_end(MpegEncContext *s);
-void XVMC_decode_mb(MpegEncContext *s);
+void ff_xvmc_decode_mb(MpegEncContext *s);
 
 
 /* enable all paranoid tests for rounding, overflows, etc... */
@@ -1738,7 +1738,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 #if CONFIG_MPEG_XVMC_DECODER
     if(s->avctx->xvmc_acceleration){
-        XVMC_decode_mb(s);//xvmc uses pblocks
+        ff_xvmc_decode_mb(s);//xvmc uses pblocks
         return;
     }
 #endif
