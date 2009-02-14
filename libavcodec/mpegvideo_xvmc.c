@@ -76,10 +76,10 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
     render->picture_structure = s->picture_structure;
     render->flags             = s->first_field ? 0 : XVMC_SECOND_FIELD;
 
-    if(render->filled_mv_blocks_num){
+    if (render->filled_mv_blocks_num) {
         av_log(avctx, AV_LOG_ERROR,
-                "Rendering surface contains %i unprocessed blocks\n",
-                render->filled_mv_blocks_num);
+               "Rendering surface contains %i unprocessed blocks\n",
+               render->filled_mv_blocks_num);
         assert(0);
     }
 
@@ -292,7 +292,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     assert(render->filled_mv_blocks_num     <= render->total_number_of_mv_blocks);
     assert(render->next_free_data_block_num <= render->total_number_of_data_blocks);
     /*The above conditions should not be able to fail as long as this function is used
-    and following if() automatically call callback to free blocks. */
+    and following 'if ()' automatically call callback to free blocks. */
 
 
     if (render->filled_mv_blocks_num >= render->total_number_of_mv_blocks)
