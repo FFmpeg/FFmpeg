@@ -960,13 +960,13 @@ typedef struct AVCodecContext {
      * decoder to draw a horizontal band. It improves cache usage. Not
      * all codecs can do that. You must check the codec capabilities
      * beforehand.
-     * It is also used by hardware acceleration APIs as a callback
-     * to pass specific (partially decoded) data to the calling
-     * application so it could be passed to the rendering hardware.
-     * In that mode all relevant function paramerers are inside special
+     * The functino is also used by hardware acceleration APIs as a callback
+     * to pass specific (partially decoded) data to the calling application
+     * so that the data can be passed to the rendering hardware.
+     * In that mode all relevant function parameters are inside a special
      * structure passed by AVFrame in place of the pixel data.
      * The exact structure depends on the acceleration API.
-     * The application is allowed to make changes in the strucure.
+     * The application is allowed to make changes in the structure.
      * - encoding: unused
      * - decoding: Set by user.
      * @param height the height of the slice
@@ -1220,7 +1220,7 @@ typedef struct AVCodecContext {
 
     /**
      * Size of the frame reordering buffer in the decoder.
-     * for mpeg2 its 1 IPB or 0 low delay IP
+     * For MPEG-2 it is 1 IPB or 0 low delay IP.
      * - encoding: Set by libavcodec.
      * - decoding: Set by libavcodec.
      */
@@ -3128,7 +3128,7 @@ int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str);
  *
  * @return 0 in case of a successful parsing, a negative value otherwise
  * @param[in] str the string to parse: it has to be a string in the format
- * <frame_rate_nom>/<frame_rate_den>, a float number or a valid video rate abbreviation
+ * <frame_rate_num>/<frame_rate_den>, a float number or a valid video rate abbreviation
  * @param[in,out] frame_rate pointer to the AVRational which will contain the detected
  * frame rate
  */
