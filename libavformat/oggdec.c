@@ -271,11 +271,11 @@ ogg_read_page (AVFormatContext * s, int *str)
                 int seg = os->segments[os->segp++];
                 os->pstart += seg;
                 if (seg < 255)
-                  break;
+                    break;
             }
         }
     }else{
-      os->psize = 0;
+        os->psize = 0;
     }
 
     if (os->bufsize - os->bufpos < size){
@@ -368,13 +368,13 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize)
     if (os->header < 0){
         int hdr = os->codec->header (s, idx);
         if (!hdr){
-          os->header = os->seq;
-          os->segp = segp;
-          os->psize = psize;
-          ogg->headers = 1;
+            os->header = os->seq;
+            os->segp = segp;
+            os->psize = psize;
+            ogg->headers = 1;
         }else{
-          os->pstart += os->psize;
-          os->psize = 0;
+            os->pstart += os->psize;
+            os->psize = 0;
         }
     }
 
@@ -480,7 +480,7 @@ ogg_read_header (AVFormatContext * s, AVFormatParameters * ap)
     ogg->curidx = -1;
     //linear headers seek from start
     if (ogg_get_headers (s) < 0){
-      return -1;
+        return -1;
     }
 
     //linear granulepos seek from end
