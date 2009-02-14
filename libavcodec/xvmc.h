@@ -40,7 +40,7 @@
 
 struct xvmc_render_state {
     //these are not changed by the decoder!
-    int  magic;
+    int  magic; ///< used as check for memory corruption by regular pixel routines
 
     short * data_blocks;
     XvMCMacroBlock * mv_blocks;
