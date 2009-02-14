@@ -155,7 +155,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
 
     // take the next free macroblock
     mv_block = &render->mv_blocks[render->start_mv_blocks_num +
-                                  render->filled_mv_blocks_num ];
+                                  render->filled_mv_blocks_num];
 
     mv_block->x        = s->mb_x;
     mv_block->y        = s->mb_y;
