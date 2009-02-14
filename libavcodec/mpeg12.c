@@ -1648,7 +1648,8 @@ static int mpeg_field_start(MpegEncContext *s){
 // MPV_frame_start will call this function too,
 // but we need to call it on every field
     if(s->avctx->xvmc_acceleration)
-         ff_xvmc_field_start(s,avctx);
+        if( ff_xvmc_field_start(s,avctx) < 0)
+            return -1;
 #endif
 
     return 0;
