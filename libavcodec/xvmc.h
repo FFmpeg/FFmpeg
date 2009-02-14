@@ -23,20 +23,11 @@
 
 #include <X11/extensions/XvMC.h>
 
-#include "avcodec.h"
-
 #define AV_XVMC_STATE_DISPLAY_PENDING          1  /**  the surface should be shown, the video driver manipulates this */
 #define AV_XVMC_STATE_PREDICTION               2  /**  the surface is needed for prediction, the codec manipulates this */
 #define AV_XVMC_STATE_OSD_SOURCE               4  /**  this surface is needed for subpicture rendering */
 #define AV_XVMC_RENDER_MAGIC          0x1DC711C0  /**< magic value to ensure that regular pixel routines haven't corrupted the struct */
                                                   //   1337 IDCT MCo
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-#define MP_XVMC_STATE_DISPLAY_PENDING AV_XVMC_STATE_DISPLAY_PENDING
-#define MP_XVMC_STATE_PREDICTION      AV_XVMC_STATE_PREDICTION
-#define MP_XVMC_STATE_OSD_SOURCE      AV_XVMC_STATE_OSD_SOURCE
-#define MP_XVMC_RENDER_MAGIC          AV_XVMC_RENDER_MAGIC
-#endif
 
 struct xvmc_render_state {
 /** set by calling application */
