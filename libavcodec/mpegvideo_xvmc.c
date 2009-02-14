@@ -58,8 +58,8 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
     }
 }
 
-// These functions should be called on every new field and/or frame.
-// They should be safe if they are called a few times for the same field!
+// This function should be called for every new field and/or frame.
+// It should be safe to call the function a few times for the same field.
 int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 {
     struct xvmc_render_state *last, *next, *render = (struct xvmc_render_state*)s->current_picture.data[2];
