@@ -3068,7 +3068,7 @@ SwsVector *sws_cloneVec(SwsVector *a){
     return vec;
 }
 
-void sws_printVec(SwsVector *a){
+void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level){
     int i;
     double max=0;
     double min=0;
@@ -3085,11 +3085,17 @@ void sws_printVec(SwsVector *a){
     for (i=0; i<a->length; i++)
     {
         int x= (int)((a->coeff[i]-min)*60.0/range +0.5);
-        av_log(NULL, AV_LOG_DEBUG, "%1.3f ", a->coeff[i]);
-        for (;x>0; x--) av_log(NULL, AV_LOG_DEBUG, " ");
-        av_log(NULL, AV_LOG_DEBUG, "|\n");
+        av_log(log_ctx, log_level, "%1.3f ", a->coeff[i]);
+        for (;x>0; x--) av_log(log_ctx, log_level, " ");
+        av_log(log_ctx, log_level, "|\n");
     }
 }
+
+#if LIBSWSCALE_VERSION_MAJOR < 1
+void sws_printVec(SwsVector *a){
+    sws_printVec2(a, NULL, AV_LOG_DEBUG);
+}
+#endif
 
 void sws_freeVec(SwsVector *a){
     if (!a) return;

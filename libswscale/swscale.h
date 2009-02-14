@@ -30,8 +30,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBSWSCALE_VERSION_MAJOR 0
-#define LIBSWSCALE_VERSION_MINOR 6
-#define LIBSWSCALE_VERSION_MICRO 2
+#define LIBSWSCALE_VERSION_MINOR 7
+#define LIBSWSCALE_VERSION_MICRO 0
 
 #define LIBSWSCALE_VERSION_INT  AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
                                                LIBSWSCALE_VERSION_MINOR, \
@@ -182,7 +182,19 @@ void sws_shiftVec(SwsVector *a, int shift);
  */
 SwsVector *sws_cloneVec(SwsVector *a);
 
-void sws_printVec(SwsVector *a);
+#if LIBSWSCALE_VERSION_MAJOR < 1
+/**
+ * @deprecated Use sws_printVec2() instead.
+ */
+attribute_deprecated void sws_printVec(SwsVector *a);
+#endif
+
+/**
+ * Prints with av_log() a textual representation of the vector \p a
+ * if \p log_level <= av_log_level.
+ */
+void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level);
+
 void sws_freeVec(SwsVector *a);
 
 SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
