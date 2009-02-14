@@ -3,7 +3,7 @@ include $(SUBDIR)../config.mak
 NAME = avcodec
 FFLIBS = avutil
 
-HEADERS = avcodec.h opt.h vdpau_pixfmt.h
+HEADERS = avcodec.h opt.h vdpau.h
 
 OBJS = allcodecs.o                                                      \
        audioconvert.o                                                   \

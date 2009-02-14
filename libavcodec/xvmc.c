@@ -29,11 +29,11 @@
 #undef NDEBUG
 #include <assert.h>
 
-//X11 includes are in xvmc_pixfmt.h
+//X11 includes are in libavcodec/xvmc.h
 //by replacing it with non-X one
 //XvMC emulation could be performed
 
-#include "xvmc_pixfmt.h"
+#include "xvmc.h"
 
 //#include "xvmc_debug.h"
 
