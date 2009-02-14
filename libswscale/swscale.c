@@ -2396,6 +2396,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 
 #ifdef COMPILE_ALTIVEC
         if ((c->flags & SWS_CPU_CAPS_ALTIVEC) &&
+            !(c->flags & SWS_BITEXACT) &&
             srcFormat == PIX_FMT_YUV420P) {
           // unscaled YV12 -> packed YUV, we want speed
           if (dstFormat == PIX_FMT_YUYV422)
