@@ -50,7 +50,7 @@ URLProtocol *av_protocol_next(URLProtocol *p)
     else  return first_protocol;
 }
 
-int register_protocol(URLProtocol *protocol)
+int av_register_protocol(URLProtocol *protocol)
 {
     URLProtocol **p;
     p = &first_protocol;
@@ -59,6 +59,13 @@ int register_protocol(URLProtocol *protocol)
     protocol->next = NULL;
     return 0;
 }
+
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+int register_protocol(URLProtocol *protocol)
+{
+    return av_register_protocol(protocol);
+}
+#endif
 
 int url_open_protocol (URLContext **puc, struct URLProtocol *up,
                        const char *filename, int flags)

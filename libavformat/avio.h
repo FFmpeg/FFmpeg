@@ -142,7 +142,14 @@ extern URLInterruptCB *url_interrupt_cb;
 
 URLProtocol *av_protocol_next(URLProtocol *p);
 
-int register_protocol(URLProtocol *protocol);
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+/**
+ * @deprecated Use av_register_protocol() instead.
+ */
+attribute_deprecated int register_protocol(URLProtocol *protocol);
+#endif
+
+int av_register_protocol(URLProtocol *protocol);
 
 /**
  * Bytestream IO Context.
