@@ -687,7 +687,18 @@ extern AVInputFormat *first_iformat;
 extern AVOutputFormat *first_oformat;
 #endif
 
+/**
+ * If f is NULL, returns the first registered input format,
+ * if f is non-NULL, returns the registered input format next after f,
+ * or NULL if f is the last one.
+ */
 AVInputFormat  *av_iformat_next(AVInputFormat  *f);
+
+/**
+ * If f is NULL, returns the first registered output format,
+ * if f is non-NULL, returns the registered output format next after f,
+ * or NULL if f is the last one.
+ */
 AVOutputFormat *av_oformat_next(AVOutputFormat *f);
 
 enum CodecID av_guess_image2_codec(const char *filename);
