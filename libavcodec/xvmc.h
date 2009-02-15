@@ -53,12 +53,16 @@ struct xvmc_render_state {
 
     unsigned int    picture_structure;            ///< top/bottom fields or frame
     unsigned int    flags;                        ///< XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
+#if LIBAVCODEC_VERSION_MAJOR < 53
     unsigned int    display_flags;                ///< 1, 2 or 1+2 fields for XvMCPutSurface
+#endif
 //}@
 
 /** modified by calling application and the decoder */
 //@{
+#if LIBAVCODEC_VERSION_MAJOR < 53
     int             state;                        ///< 0 - free, 1 - waiting to display, 2 - waiting for prediction
+#endif
     int             start_mv_blocks_num;          ///< offset in the array for the current slice, updated by vo
     int             filled_mv_blocks_num;         ///< processed mv block in this slice, changed by decoder
 
