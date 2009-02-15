@@ -30,7 +30,7 @@
 #define AV_XVMC_STATE_PREDICTION               2  /**  the surface is needed for prediction, the codec manipulates this */
 #define AV_XVMC_STATE_OSD_SOURCE               4  /**  the surface is needed for subpicture rendering */
 #endif
-#define AV_XVMC_RENDER_MAGIC          0x1DC711C0  /**< magic value to ensure that regular pixel routines haven't corrupted the struct
+#define AV_XVMC_ID                    0x1DC711C0  /**< special value to ensure that regular pixel routines haven't corrupted the struct
                                                        the number is 1337 speak for the letters IDCT MCo (motion compensation) */
 
 struct xvmc_pix_fmt {
