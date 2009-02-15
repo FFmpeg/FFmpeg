@@ -69,7 +69,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 
     assert(avctx);
     if (!render || render->magic_id != AV_XVMC_RENDER_MAGIC ||
-        !render->data_blocks || !render->mv_blocks){
+        !render->data_blocks || !render->mv_blocks) {
         av_log(avctx, AV_LOG_ERROR,
                "Render token doesn't look as expected.\n");
         return -1; // make sure that this is a render packet
