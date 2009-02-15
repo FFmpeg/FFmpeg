@@ -145,7 +145,7 @@ extern URLInterruptCB *url_interrupt_cb;
 
 /**
  * If protocol is NULL, returns the first registered protocol,
- * if protocol is non-NULL, returns the registered protocol next after protocol,
+ * if protocol is non-NULL, returns the next registered protocol after protocol,
  * or NULL if protocol is the last one.
  */
 URLProtocol *av_protocol_next(URLProtocol *p);

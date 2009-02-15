@@ -2661,7 +2661,7 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
 
 /**
  * If c is NULL, returns the first registered codec,
- * if c is non-NULL, returns the registered codec next after c,
+ * if c is non-NULL, returns the next registered codec after c,
  * or NULL if c is the last one.
  */
 AVCodec *av_codec_next(AVCodec *c);
