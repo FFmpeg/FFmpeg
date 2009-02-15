@@ -70,7 +70,6 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
     struct xvmc_render_state *last, *next, *render = (struct xvmc_render_state*)s->current_picture.data[2];
 
     assert(avctx);
-    assert(render);
     if (!render || render->magic != AV_XVMC_RENDER_MAGIC)
         return -1; // make sure that this is a render packet
 
@@ -92,7 +91,6 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
             return 0; // no prediction from other frames
         case  FF_B_TYPE:
             next = (struct xvmc_render_state*)s->next_picture.data[2];
-            assert(next);
             if (!next)
                 return -1;
             if (next->magic != AV_XVMC_RENDER_MAGIC)
