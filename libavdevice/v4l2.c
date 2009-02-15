@@ -495,7 +495,7 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
         }
 
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s, id: %"PRIu64"\n",
-               ap->standard, standard.id);
+               ap->standard, (uint64_t)standard.id);
         if (ioctl(s->fd, VIDIOC_S_STD, &standard.id) < 0) {
             av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set standard(%s) failed\n",
                    ap->standard);
