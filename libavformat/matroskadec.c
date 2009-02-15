@@ -129,6 +129,7 @@ typedef struct {
 typedef struct {
     uint64_t num;
     uint64_t type;
+    char    *name;
     char    *codec_id;
     EbmlBin  codec_priv;
     char    *language;
@@ -303,6 +304,7 @@ static EbmlSyntax matroska_track_encodings[] = {
 
 static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKNUMBER,          EBML_UINT, 0, offsetof(MatroskaTrack,num) },
+    { MATROSKA_ID_TRACKNAME,            EBML_UTF8, 0, offsetof(MatroskaTrack,name) },
     { MATROSKA_ID_TRACKTYPE,            EBML_UINT, 0, offsetof(MatroskaTrack,type) },
     { MATROSKA_ID_CODECID,              EBML_STR,  0, offsetof(MatroskaTrack,codec_id) },
     { MATROSKA_ID_CODECPRIVATE,         EBML_BIN,  0, offsetof(MatroskaTrack,codec_priv) },
@@ -314,7 +316,6 @@ static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKAUDIO,           EBML_NEST, 0, offsetof(MatroskaTrack,audio), {.n=matroska_track_audio} },
     { MATROSKA_ID_TRACKCONTENTENCODINGS,EBML_NEST, 0, 0, {.n=matroska_track_encodings} },
     { MATROSKA_ID_TRACKUID,             EBML_NONE },
-    { MATROSKA_ID_TRACKNAME,            EBML_NONE },
     { MATROSKA_ID_TRACKFLAGENABLED,     EBML_NONE },
     { MATROSKA_ID_TRACKFLAGFORCED,      EBML_NONE },
     { MATROSKA_ID_TRACKFLAGLACING,      EBML_NONE },
@@ -1295,6 +1296,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st->start_time = 0;
         if (strcmp(track->language, "und"))
             av_metadata_set(&st->metadata, "language", track->language);
+        av_metadata_set(&st->metadata, "description", track->name);
 
         if (track->flag_default)
             st->disposition |= AV_DISPOSITION_DEFAULT;
