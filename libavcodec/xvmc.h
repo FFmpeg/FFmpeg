@@ -33,7 +33,7 @@
 #define AV_XVMC_RENDER_MAGIC          0x1DC711C0  /**< magic value to ensure that regular pixel routines haven't corrupted the struct */
 //                                 1337 IDCT MCo
 
-struct xvmc_pixfmt_render {
+struct xvmc_pix_fmt {
 /** Set by calling application
     Once set these values are not supposed to be modified.
 */
