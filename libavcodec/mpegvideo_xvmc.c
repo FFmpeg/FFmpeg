@@ -38,7 +38,7 @@
 void ff_xvmc_init_block(MpegEncContext *s)
 {
     struct xvmc_pixfmt_render *render = (struct xvmc_pixfmt_render*)s->current_picture.data[2];
-    assert(render && render->magic_id == AV_XVMC_RENDER_MAGIC);
+    assert(render && render->unique_id == AV_XVMC_RENDER_MAGIC);
 
     s->block = (DCTELEM *)(render->data_blocks + render->next_free_data_block_num * 64);
 }
@@ -68,7 +68,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
     const int mb_block_count = 4 + (1 << s->chroma_format);
 
     assert(avctx);
-    if (!render || render->magic_id != AV_XVMC_RENDER_MAGIC ||
+    if (!render || render->unique_id != AV_XVMC_RENDER_MAGIC ||
         !render->data_blocks || !render->mv_blocks) {
         av_log(avctx, AV_LOG_ERROR,
                "Render token doesn't look as expected.\n");
@@ -100,7 +100,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
             next = (struct xvmc_pixfmt_render*)s->next_picture.data[2];
             if (!next)
                 return -1;
-            if (next->magic_id != AV_XVMC_RENDER_MAGIC)
+            if (next->unique_id != AV_XVMC_RENDER_MAGIC)
                 return -1;
             render->p_future_surface = next->p_surface;
             // no return here, going to set forward prediction
@@ -108,7 +108,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
             last = (struct xvmc_pixfmt_render*)s->last_picture.data[2];
             if (!last)
                 last = render; // predict second field from the first
-            if (last->magic_id != AV_XVMC_RENDER_MAGIC)
+            if (last->unique_id != AV_XVMC_RENDER_MAGIC)
                 return -1;
             render->p_past_surface = last->p_surface;
             return 0;
@@ -162,7 +162,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     // start of XVMC-specific code
     render = (struct xvmc_pixfmt_render*)s->current_picture.data[2];
     assert(render);
-    assert(render->magic_id == AV_XVMC_RENDER_MAGIC);
+    assert(render->unique_id == AV_XVMC_RENDER_MAGIC);
     assert(render->mv_blocks);
 
     // take the next free macroblock

@@ -38,7 +38,7 @@ struct xvmc_pixfmt_render {
     Once set these values are not supposed to be modified.
 */
 //@{
-    int             magic_id;                     ///< used as a check against memory corruption by regular pixel routines or other API structure
+    int             unique_id;                     ///< used as a check against memory corruption by regular pixel routines or other API structure
 
     short*          data_blocks;
     XvMCMacroBlock* mv_blocks;
