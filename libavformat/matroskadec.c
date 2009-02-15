@@ -128,6 +128,7 @@ typedef struct {
 
 typedef struct {
     uint64_t num;
+    uint64_t uid;
     uint64_t type;
     char    *name;
     char    *codec_id;
@@ -145,6 +146,7 @@ typedef struct {
 } MatroskaTrack;
 
 typedef struct {
+    uint64_t uid;
     char *filename;
     char *mime;
     EbmlBin bin;
@@ -305,6 +307,7 @@ static EbmlSyntax matroska_track_encodings[] = {
 static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKNUMBER,          EBML_UINT, 0, offsetof(MatroskaTrack,num) },
     { MATROSKA_ID_TRACKNAME,            EBML_UTF8, 0, offsetof(MatroskaTrack,name) },
+    { MATROSKA_ID_TRACKUID,             EBML_UINT, 0, offsetof(MatroskaTrack,uid) },
     { MATROSKA_ID_TRACKTYPE,            EBML_UINT, 0, offsetof(MatroskaTrack,type) },
     { MATROSKA_ID_CODECID,              EBML_STR,  0, offsetof(MatroskaTrack,codec_id) },
     { MATROSKA_ID_CODECPRIVATE,         EBML_BIN,  0, offsetof(MatroskaTrack,codec_priv) },
@@ -315,7 +318,6 @@ static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKVIDEO,           EBML_NEST, 0, offsetof(MatroskaTrack,video), {.n=matroska_track_video} },
     { MATROSKA_ID_TRACKAUDIO,           EBML_NEST, 0, offsetof(MatroskaTrack,audio), {.n=matroska_track_audio} },
     { MATROSKA_ID_TRACKCONTENTENCODINGS,EBML_NEST, 0, 0, {.n=matroska_track_encodings} },
-    { MATROSKA_ID_TRACKUID,             EBML_NONE },
     { MATROSKA_ID_TRACKFLAGENABLED,     EBML_NONE },
     { MATROSKA_ID_TRACKFLAGFORCED,      EBML_NONE },
     { MATROSKA_ID_TRACKFLAGLACING,      EBML_NONE },
@@ -335,11 +337,11 @@ static EbmlSyntax matroska_tracks[] = {
 };
 
 static EbmlSyntax matroska_attachment[] = {
+    { MATROSKA_ID_FILEUID,            EBML_UINT, 0, offsetof(MatroskaAttachement,uid) },
     { MATROSKA_ID_FILENAME,           EBML_UTF8, 0, offsetof(MatroskaAttachement,filename) },
     { MATROSKA_ID_FILEMIMETYPE,       EBML_STR,  0, offsetof(MatroskaAttachement,mime) },
     { MATROSKA_ID_FILEDATA,           EBML_BIN,  0, offsetof(MatroskaAttachement,bin) },
     { MATROSKA_ID_FILEDESC,           EBML_NONE },
-    { MATROSKA_ID_FILEUID,            EBML_NONE },
     { 0 }
 };
 
