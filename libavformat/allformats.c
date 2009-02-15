@@ -34,7 +34,7 @@
 
 #define REGISTER_PROTOCOL(X,x) { \
     extern URLProtocol x##_protocol; \
-    if(CONFIG_##X##_PROTOCOL) register_protocol(&x##_protocol); }
+    if(CONFIG_##X##_PROTOCOL) av_register_protocol(&x##_protocol); }
 
 void av_register_all(void)
 {

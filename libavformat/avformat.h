@@ -776,7 +776,7 @@ void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload);
  *
  * @see av_register_input_format()
  * @see av_register_output_format()
- * @see register_protocol()
+ * @see av_register_protocol()
  */
 void av_register_all(void);
 
