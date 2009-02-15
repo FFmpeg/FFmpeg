@@ -251,7 +251,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
         int ostride[1] = { 2 };
         const void *ibuf[1] = { input };
         void       *obuf[1];
-        unsigned input_size = nb_samples*s->input_channels*s->sample_size[0];
+        unsigned input_size = nb_samples*s->input_channels*2;
 
         if (!s->buffer_size[0] || s->buffer_size[0] < input_size) {
             av_free(s->buffer[0]);
