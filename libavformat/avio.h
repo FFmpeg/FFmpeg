@@ -137,7 +137,10 @@ typedef struct URLProtocol {
                              int64_t timestamp, int flags);
 } URLProtocol;
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 extern URLProtocol *first_protocol;
+#endif
+
 extern URLInterruptCB *url_interrupt_cb;
 
 /**
