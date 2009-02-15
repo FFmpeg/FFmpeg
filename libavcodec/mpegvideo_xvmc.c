@@ -37,7 +37,7 @@
  */
 void ff_xvmc_init_block(MpegEncContext *s)
 {
-    struct xvmc_render_state *render = (struct xvmc_render_state*)s->current_picture.data[2];
+    struct xvmc_pixfmt_render *render = (struct xvmc_pixfmt_render*)s->current_picture.data[2];
     if (!render || render->magic_id != AV_XVMC_RENDER_MAGIC) {
         assert(0);
         return; // make sure that this is a render packet
@@ -66,7 +66,7 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
  */
 int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 {
-    struct xvmc_render_state *last, *next, *render = (struct xvmc_render_state*)s->current_picture.data[2];
+    struct xvmc_pixfmt_render *last, *next, *render = (struct xvmc_pixfmt_render*)s->current_picture.data[2];
 
     assert(avctx);
     if (!render || render->magic_id != AV_XVMC_RENDER_MAGIC)
@@ -89,7 +89,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
         case  FF_I_TYPE:
             return 0; // no prediction from other frames
         case  FF_B_TYPE:
-            next = (struct xvmc_render_state*)s->next_picture.data[2];
+            next = (struct xvmc_pixfmt_render*)s->next_picture.data[2];
             if (!next)
                 return -1;
             if (next->magic_id != AV_XVMC_RENDER_MAGIC)
@@ -97,7 +97,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
             render->p_future_surface = next->p_surface;
             // no return here, going to set forward prediction
         case  FF_P_TYPE:
-            last = (struct xvmc_render_state*)s->last_picture.data[2];
+            last = (struct xvmc_pixfmt_render*)s->last_picture.data[2];
             if (!last)
                 last = render; // predict second field from the first
             if (last->magic_id != AV_XVMC_RENDER_MAGIC)
@@ -115,7 +115,7 @@ return -1;
  */
 void ff_xvmc_field_end(MpegEncContext *s)
 {
-    struct xvmc_render_state *render = (struct xvmc_render_state*)s->current_picture.data[2];
+    struct xvmc_pixfmt_render *render = (struct xvmc_pixfmt_render*)s->current_picture.data[2];
     assert(render);
 
     if (render->filled_mv_blocks_num > 0)
@@ -125,7 +125,7 @@ void ff_xvmc_field_end(MpegEncContext *s)
 void ff_xvmc_decode_mb(MpegEncContext *s)
 {
     XvMCMacroBlock *mv_block;
-    struct xvmc_render_state *render;
+    struct xvmc_pixfmt_render *render;
     int i, cbp, blocks_per_mb;
 
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
@@ -152,7 +152,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     s->current_picture.qscale_table[mb_xy] = s->qscale;
 
     // start of XVMC-specific code
-    render = (struct xvmc_render_state*)s->current_picture.data[2];
+    render = (struct xvmc_pixfmt_render*)s->current_picture.data[2];
     assert(render);
     assert(render->magic_id == AV_XVMC_RENDER_MAGIC);
     assert(render->mv_blocks);
