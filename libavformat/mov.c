@@ -1461,12 +1461,17 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     }
     switch (atom.type) {
     case MKTAG(0xa9,'n','a','m'): key = "title";     break;
+    case MKTAG(0xa9,'a','u','t'):
     case MKTAG(0xa9,'A','R','T'):
     case MKTAG(0xa9,'w','r','t'): key = "author";    break;
     case MKTAG(0xa9,'c','p','y'): key = "copyright"; break;
     case MKTAG(0xa9,'c','m','t'):
     case MKTAG(0xa9,'i','n','f'): key = "comment";   break;
     case MKTAG(0xa9,'a','l','b'): key = "album";     break;
+    case MKTAG(0xa9,'d','a','y'): key = "year";      break;
+    case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
+    case MKTAG(0xa9,'t','o','o'):
+    case MKTAG(0xa9,'e','n','c'): key = "muxer";     break;
     }
     if (!key)
         return 0;
@@ -1842,6 +1847,11 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG(0xa9,'A','R','T'), mov_read_udta_string },
 { MKTAG(0xa9,'a','l','b'), mov_read_udta_string },
 { MKTAG(0xa9,'c','m','t'), mov_read_udta_string },
+{ MKTAG(0xa9,'a','u','t'), mov_read_udta_string },
+{ MKTAG(0xa9,'d','a','y'), mov_read_udta_string },
+{ MKTAG(0xa9,'g','e','n'), mov_read_udta_string },
+{ MKTAG(0xa9,'e','n','c'), mov_read_udta_string },
+{ MKTAG(0xa9,'t','o','o'), mov_read_udta_string },
 { 0, NULL }
 };
 
