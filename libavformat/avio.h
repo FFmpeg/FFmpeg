@@ -140,6 +140,11 @@ typedef struct URLProtocol {
 extern URLProtocol *first_protocol;
 extern URLInterruptCB *url_interrupt_cb;
 
+/**
+ * If protocol is NULL, returns the first registered protocol,
+ * if protocol is non-NULL, returns the registered protocol next after protocol,
+ * or NULL if protocol is the last one.
+ */
 URLProtocol *av_protocol_next(URLProtocol *p);
 
 #if LIBAVFORMAT_VERSION_MAJOR < 53
