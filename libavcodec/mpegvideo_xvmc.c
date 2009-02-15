@@ -142,7 +142,7 @@ void ff_xvmc_field_end(MpegEncContext *s)
 
 /**
  * Synthesize the data needed by XvMC to render one macroblock of data.
- * Fill all relevant fields, if necessery do IDCT.
+ * Fill all relevant fields, if necessary do IDCT.
  */
 void ff_xvmc_decode_mb(MpegEncContext *s)
 {
