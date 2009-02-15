@@ -39,7 +39,7 @@ struct xvmc_pix_fmt {
 */
 //@{
     /** The field contains the special constant value AV_XVMC_ID.
-        It is used as test whenever the application knows the calling API,
+        It is used as a test that the application correctly uses the API,
         and that there is no corruption caused by pixel routines.
         - application - set during initialization
         - libavcodec  - unchanged
@@ -124,7 +124,7 @@ struct xvmc_pix_fmt {
 
     /** Offset in the mv array for the current slice.
         Macroblocks described before that offset are assumed to be already passed to the hardware.
-        - application - zeros it on get_buffer().
+        - application - zeroes it on get_buffer().
                         A successful ff_draw_horiz_band() may increment it
                         with filled_mb_block_num or zero both.
         - libavcodec  - unchanged
@@ -132,7 +132,7 @@ struct xvmc_pix_fmt {
     int             start_mv_blocks_num;
 
     /** Number of mv blocks that are filled by libavcodec and have to be passed to the hardware.
-        - application - zeros it on get_buffer() or after successful ff_draw_horiz_band()
+        - application - zeroes it on get_buffer() or after successful ff_draw_horiz_band()
         - libavcodec  - increment with one of each stored MB
     */
     int             filled_mv_blocks_num;
