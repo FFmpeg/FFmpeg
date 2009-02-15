@@ -176,6 +176,8 @@ typedef struct {
 typedef struct {
     char *name;
     char *string;
+    char *lang;
+    uint64_t def;
     EbmlList sub;
 } MatroskaTag;
 
@@ -418,9 +420,9 @@ static EbmlSyntax matroska_index[] = {
 static EbmlSyntax matroska_simpletag[] = {
     { MATROSKA_ID_TAGNAME,            EBML_UTF8, 0, offsetof(MatroskaTag,name) },
     { MATROSKA_ID_TAGSTRING,          EBML_UTF8, 0, offsetof(MatroskaTag,string) },
+    { MATROSKA_ID_TAGLANG,            EBML_STR,  0, offsetof(MatroskaTag,lang), {.s="und"} },
+    { MATROSKA_ID_TAGDEFAULT,         EBML_UINT, 0, offsetof(MatroskaTag,def) },
     { MATROSKA_ID_SIMPLETAG,          EBML_NEST, sizeof(MatroskaTag), offsetof(MatroskaTag,sub), {.n=matroska_simpletag} },
-    { MATROSKA_ID_TAGLANG,            EBML_NONE },
-    { MATROSKA_ID_TAGDEFAULT,         EBML_NONE },
     { 0 }
 };
 
@@ -990,11 +992,21 @@ static void matroska_convert_tag(AVFormatContext *s, EbmlList *list,
     int i;
 
     for (i=0; i < list->nb_elem; i++) {
+        const char *lang = strcmp(tags[i].lang, "und") ? tags[i].lang : NULL;
         if (prefix)  snprintf(key, sizeof(key), "%s/%s", prefix, tags[i].name);
         else         av_strlcpy(key, tags[i].name, sizeof(key));
+        if (tags[i].def || !lang) {
         av_metadata_set(metadata, key, tags[i].string);
         if (tags[i].sub.nb_elem)
             matroska_convert_tag(s, &tags[i].sub, metadata, key);
+        }
+        if (lang) {
+            av_strlcat(key, "-", sizeof(key));
+            av_strlcat(key, lang, sizeof(key));
+            av_metadata_set(metadata, key, tags[i].string);
+            if (tags[i].sub.nb_elem)
+                matroska_convert_tag(s, &tags[i].sub, metadata, key);
+        }
     }
 }
 
