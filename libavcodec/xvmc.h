@@ -60,9 +60,6 @@ struct xvmc_render_state {
 
 /** modified by calling application and the decoder */
 //@{
-#if LIBAVCODEC_VERSION_MAJOR < 53
-    int             state;                        ///< 0 - free, 1 - waiting to display, 2 - waiting for prediction
-#endif
     int             start_mv_blocks_num;          ///< offset in the array for the current slice, updated by vo
     int             filled_mv_blocks_num;         ///< processed mv block in this slice, changed by decoder
 
@@ -71,6 +68,7 @@ struct xvmc_render_state {
 /** extensions may be placed here */
 #if LIBAVCODEC_VERSION_MAJOR < 53
 //@{
+    int             state;                        ///< 0 - free, 1 - waiting to display, 2 - waiting for prediction
     void*           p_osd_target_surface_render;  ///< pointer to the surface where subpicture is rendered
 //}@
 #endif
