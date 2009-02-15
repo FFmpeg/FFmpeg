@@ -34,8 +34,8 @@
 /**
  * Initializes the block field of the MpegEncContext pointer passed as
  * parameter after making sure that the data is not corrupted.
- * In order to implement something like direct rendering instead of decodeing
- * coefficients in s->blocks and then copy them, do that directly
+ * In order to implement something like direct rendering instead of decoding
+ * coefficients in s->blocks and then copying them, copy them directly
  * into the data_blocks array provided by xvmc.
  */
 void ff_xvmc_init_block(MpegEncContext *s)
@@ -127,8 +127,8 @@ return -1;
 
 /**
  * Complete frame/field rendering by passing any remaining blocks.
- * Normally ff_draw_horiz_band() is called on each slice, however
- * there may be some remaining blocks, for example put by error_resilience.
+ * Normally ff_draw_horiz_band() is called for each slice, however,
+ * some leftover blocks, for example from error_resilience(), may remain.
  * It should be safe to call the function a few times for the same field.
  */
 void ff_xvmc_field_end(MpegEncContext *s)
@@ -142,7 +142,7 @@ void ff_xvmc_field_end(MpegEncContext *s)
 
 /**
  * Synthesize the data needed by XvMC to render one macroblock of data.
- * Fill all relevent fields, if necessery do IDCT.
+ * Fill all relevant fields, if necessery do IDCT.
  */
 void ff_xvmc_decode_mb(MpegEncContext *s)
 {
