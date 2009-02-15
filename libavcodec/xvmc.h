@@ -47,7 +47,7 @@ struct xvmc_pix_fmt {
     int             xvmc_id;
 
     /** Pointer to the block array allocated by XvMCCreateBlocks()
-        it contins differential pixel data (in MoCo mode)
+        it contains differential pixel data (in MoCo mode)
         or coefficients for IDCT.
         - application - set during initialization
         - libavcodec  - unchanged
@@ -60,13 +60,14 @@ struct xvmc_pix_fmt {
     */
     XvMCMacroBlock* mv_blocks;
 
-    /** Number of all MB descriptions that could be stored in the mv_blocks array.
+    /** Number of macroblock descriptions that can be stored in the mv_blocks
+        array.
         - application - set during initialization
         - libavcodec  - unchanged
     */
     int             total_number_of_mv_blocks;
 
-    /** Number of all blocks that could be stored at once in the data_blocks array.
+    /** Number of blocks that can be stored at once in the data_blocks array.
         - application - set during initialization
         - libavcodec  - unchanged
     */
@@ -79,15 +80,15 @@ struct xvmc_pix_fmt {
     */
     int             idct;
 
-    /** In MoCo mode it indicates that Intra MB are assumed to be in unsigned format
-        Same as XVMC_INTRA_UNSIGNED flag.
+    /** In MoCo mode it indicates that intra macroblocks are assumed to be in
+        unsigned format; same as the XVMC_INTRA_UNSIGNED flag.
         - application - set during initialization
         - libavcodec  - unchanged
     */
     int             unsigned_intra;
 
     /** Pointer to the surface allocated by XvMCCreateSurface().
-        It identifies the frame on the video hardware and its state.
+        It identifies the frame and its state on the video hardware.
         - application - set during initialization
         - libavcodec  - unchanged
     */
@@ -123,7 +124,8 @@ struct xvmc_pix_fmt {
 //}@
 
     /** Offset in the mv array for the current slice.
-        Macroblocks described before that offset are assumed to be already passed to the hardware.
+        Macroblocks described before that offset are assumed to have already
+        been passed to the hardware.
         - application - zeroes it on get_buffer().
                         A successful ff_draw_horiz_band() may increment it
                         with filled_mb_block_num or zero both.
