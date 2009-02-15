@@ -31,7 +31,10 @@
 #include "xvmc.h"
 #include "xvmc_internal.h"
 
-//set s->block
+/**
+ * Initializes the block field of the MpegEncContext pointer passed as
+ * parameter after making sure that the data is not corrupted.
+ */
 void ff_xvmc_init_block(MpegEncContext *s)
 {
     struct xvmc_render_state *render = (struct xvmc_render_state*)s->current_picture.data[2];
