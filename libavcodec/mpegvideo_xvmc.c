@@ -87,12 +87,6 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
                "Rendering surface doesn't provide enough block structures to work with.\n");
         return -1;
     }
-    if (render->total_number_of_mv_blocks   < 1 ||
-        render->total_number_of_data_blocks < mb_block_count) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Rendering surface doesn't provide enough block structures to work with.\n");
-        return -1;
-    }
 
     render->picture_structure = s->picture_structure;
     render->flags             = s->first_field ? 0 : XVMC_SECOND_FIELD;
