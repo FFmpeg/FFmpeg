@@ -36,7 +36,7 @@
 struct xvmc_render_state {
 /** set by calling application */
 //@{
-    int             magic;                        ///< used as a check against memory corruption by regular pixel routines
+    int             magic_id;                     ///< used as a check against memory corruption by regular pixel routines or other API structure
 
     short*          data_blocks;
     XvMCMacroBlock* mv_blocks;

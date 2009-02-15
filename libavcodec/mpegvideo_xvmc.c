@@ -38,7 +38,7 @@
 void ff_xvmc_init_block(MpegEncContext *s)
 {
     struct xvmc_render_state *render = (struct xvmc_render_state*)s->current_picture.data[2];
-    if (!render || render->magic != AV_XVMC_RENDER_MAGIC) {
+    if (!render || render->magic_id != AV_XVMC_RENDER_MAGIC) {
         assert(0);
         return; // make sure that this is a render packet
     }
@@ -69,7 +69,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
     struct xvmc_render_state *last, *next, *render = (struct xvmc_render_state*)s->current_picture.data[2];
 
     assert(avctx);
-    if (!render || render->magic != AV_XVMC_RENDER_MAGIC)
+    if (!render || render->magic_id != AV_XVMC_RENDER_MAGIC)
         return -1; // make sure that this is a render packet
 
     render->picture_structure = s->picture_structure;
@@ -92,7 +92,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
             next = (struct xvmc_render_state*)s->next_picture.data[2];
             if (!next)
                 return -1;
-            if (next->magic != AV_XVMC_RENDER_MAGIC)
+            if (next->magic_id != AV_XVMC_RENDER_MAGIC)
                 return -1;
             render->p_future_surface = next->p_surface;
             // no return here, going to set forward prediction
@@ -100,7 +100,7 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
             last = (struct xvmc_render_state*)s->last_picture.data[2];
             if (!last)
                 last = render; // predict second field from the first
-            if (last->magic != AV_XVMC_RENDER_MAGIC)
+            if (last->magic_id != AV_XVMC_RENDER_MAGIC)
                 return -1;
             render->p_past_surface = last->p_surface;
             return 0;
@@ -154,7 +154,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     // start of XVMC-specific code
     render = (struct xvmc_render_state*)s->current_picture.data[2];
     assert(render);
-    assert(render->magic == AV_XVMC_RENDER_MAGIC);
+    assert(render->magic_id == AV_XVMC_RENDER_MAGIC);
     assert(render->mv_blocks);
 
     // take the next free macroblock
