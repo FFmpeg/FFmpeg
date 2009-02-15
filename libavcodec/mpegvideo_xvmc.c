@@ -297,6 +297,6 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
      * blocks. */
 
 
-    if (render->filled_mv_blocks_num >= render->total_number_of_mv_blocks)
+    if (render->filled_mv_blocks_num == render->total_number_of_mv_blocks)
         ff_draw_horiz_band(s, 0, 0);
 }
