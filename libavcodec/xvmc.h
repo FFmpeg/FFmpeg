@@ -28,17 +28,17 @@
 #if LIBAVCODEC_VERSION_MAJOR < 53
 #define AV_XVMC_STATE_DISPLAY_PENDING          1  /**  the surface should be shown, the video driver manipulates this */
 #define AV_XVMC_STATE_PREDICTION               2  /**  the surface is needed for prediction, the codec manipulates this */
-#define AV_XVMC_STATE_OSD_SOURCE               4  /**  this surface is needed for subpicture rendering */
+#define AV_XVMC_STATE_OSD_SOURCE               4  /**  the surface is needed for subpicture rendering */
 #endif
 #define AV_XVMC_RENDER_MAGIC          0x1DC711C0  /**< magic value to ensure that regular pixel routines haven't corrupted the struct
                                                        the number is 1337 speak for the letters IDCT MCo (motion compensation) */
 
 struct xvmc_pix_fmt {
-/** Set by calling application
+/** Set by the calling application.
     Once set these values are not supposed to be modified.
 */
 //@{
-    int             xvmc_id;                      ///< used as a check against memory corruption by regular pixel routines or other API structure
+    int             xvmc_id;                      ///< used as a check against memory corruption by regular pixel routines or other API structures
 
     short*          data_blocks;
     XvMCMacroBlock* mv_blocks;
@@ -49,8 +49,8 @@ struct xvmc_pix_fmt {
     XvMCSurface*    p_surface;                    ///< pointer to rendered surface, never changed
 //}@
 
-/** Set by the decoder before calling draw_horiz_band()
-    need by the XvMCRenderSurface function */
+/** Set by the decoder before calling draw_horiz_band(),
+    needed by the XvMCRenderSurface function. */
 //@{
     XvMCSurface*    p_past_surface;               ///< pointer to the past surface
     XvMCSurface*    p_future_surface;             ///< pointer to the future prediction surface
@@ -61,7 +61,7 @@ struct xvmc_pix_fmt {
 
     /** Offset in the mv array for the current slice:
         - application - zeros it on get_buffer().
-                        successful draw_horiz_band() may increment it
+                        A successful draw_horiz_band() may increment it
                         with filled_mb_block_num or zero both.
         - libavcodec  - unchanged
     */
@@ -82,13 +82,13 @@ struct xvmc_pix_fmt {
 /** extensions may be placed here */
 #if LIBAVCODEC_VERSION_MAJOR < 53
 //@{
-    /** State - used to workaround limitations in MPlayer video system.
-        0   - Surface not used
-        1   - Surface is still hold in application to be displayed or is still visible.
-        2   - Surface is still hold in libavcodec buffer for prediction
+    /** State - used to work around limitations in the MPlayer video system.
+        0   - Surface is not used.
+        1   - Surface is still held in application to be displayed or is still visible.
+        2   - Surface is still held in libavcodec buffer for prediction.
     */
     int             state;
-    void*           p_osd_target_surface_render;  ///< pointer to the surface where subpicture is rendered
+    void*           p_osd_target_surface_render;  ///< pointer to the surface where the subpicture is rendered
 //}@
 #endif
 };
