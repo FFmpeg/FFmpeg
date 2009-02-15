@@ -31,10 +31,12 @@
 #define AV_XVMC_STATE_OSD_SOURCE               4  /**  this surface is needed for subpicture rendering */
 #endif
 #define AV_XVMC_RENDER_MAGIC          0x1DC711C0  /**< magic value to ensure that regular pixel routines haven't corrupted the struct */
-                                                  //   1337 IDCT MCo
+//                                 1337 IDCT MCo
 
 struct xvmc_render_state {
-/** set by calling application */
+/** Set by calling application
+    Once set these values are not supposed to be modified.
+*/
 //@{
     int             magic_id;                     ///< used as a check against memory corruption by regular pixel routines or other API structure
 
@@ -47,18 +49,18 @@ struct xvmc_render_state {
     XvMCSurface*    p_surface;                    ///< pointer to rendered surface, never changed
 //}@
 
-/** set by the decoder
-    used by the XvMCRenderSurface function */
+/** Set by the decoder before calling draw_horiz_band()
+    need by the XvMCRenderSurface function */
 //@{
     XvMCSurface*    p_past_surface;               ///< pointer to the past surface
     XvMCSurface*    p_future_surface;             ///< pointer to the future prediction surface
 
-    unsigned int    picture_structure;            ///< top/bottom fields or frame
+    unsigned int    picture_structure;            ///< top/bottom field or frame
     unsigned int    flags;                        ///< XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
 //}@
 
     /** Offset in the mv array for the current slice:
-        - application - zeros it on  get_buffer().
+        - application - zeros it on get_buffer().
                         successful draw_horiz_band() may increment it
                         with filled_mb_block_num or zero both.
         - libavcodec  - unchanged
@@ -71,7 +73,7 @@ struct xvmc_render_state {
     */
     int             filled_mv_blocks_num;
 
-    /** Used in add_mv_block, pointer to next free block
+    /** Offset to the next free data block. The mv_blocks hold number pointing to the data blocks.
         - application - zeroes it on get_buffer() and after successful draw_horiz_band()
         - libvcodec   - each macroblock increases it with the number of coded blocks in it.
     */
@@ -80,10 +82,10 @@ struct xvmc_render_state {
 /** extensions may be placed here */
 #if LIBAVCODEC_VERSION_MAJOR < 53
 //@{
-    /** State - used to workaround limitations in MPlayer vo system.
-        0   -Surface not used
-        1   -Surface is still hold in application to be displayed or is still visible.
-        2   -Surface is still hold in lavcodec buffer for prediction
+    /** State - used to workaround limitations in MPlayer video system.
+        0   - Surface not used
+        1   - Surface is still hold in application to be displayed or is still visible.
+        2   - Surface is still hold in libavcodec buffer for prediction
     */
     int             state;
     void*           p_osd_target_surface_render;  ///< pointer to the surface where subpicture is rendered
