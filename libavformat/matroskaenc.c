@@ -543,6 +543,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         int bit_depth = av_get_bits_per_sample(codec->codec_id);
         int sample_rate = codec->sample_rate;
         int output_sample_rate = 0;
+        AVMetadataTag *tag;
 
         if (!bit_depth)
             bit_depth = av_get_bits_per_sample_format(codec->sample_fmt);
@@ -555,10 +556,10 @@ static int mkv_write_tracks(AVFormatContext *s)
         put_ebml_uint (pb, MATROSKA_ID_TRACKUID        , i + 1);
         put_ebml_uint (pb, MATROSKA_ID_TRACKFLAGLACING , 0);    // no lacing (yet)
 
-        if (st->language[0])
-            put_ebml_string(pb, MATROSKA_ID_TRACKLANGUAGE, st->language);
-        else
-            put_ebml_string(pb, MATROSKA_ID_TRACKLANGUAGE, "und");
+        if ((tag = av_metadata_get(st->metadata, "description", NULL, 0)))
+            put_ebml_string(pb, MATROSKA_ID_TRACKNAME, tag->value);
+        tag = av_metadata_get(st->metadata, "language", NULL, 0);
+        put_ebml_string(pb, MATROSKA_ID_TRACKLANGUAGE, tag ? tag->value:"und");
 
         if (st->disposition)
             put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGDEFAULT, !!(st->disposition & AV_DISPOSITION_DEFAULT));
@@ -644,6 +645,7 @@ static int mkv_write_header(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     ByteIOContext *pb = s->pb;
     ebml_master ebml_header, segment_info;
+    AVMetadataTag *tag;
     int ret;
 
     mkv->md5_ctx = av_mallocz(av_md5_size);
@@ -677,8 +679,8 @@ static int mkv_write_header(AVFormatContext *s)
 
     segment_info = start_ebml_master(pb, MATROSKA_ID_INFO, 0);
     put_ebml_uint(pb, MATROSKA_ID_TIMECODESCALE, 1000000);
-    if (strlen(s->title))
-        put_ebml_string(pb, MATROSKA_ID_TITLE, s->title);
+    if ((tag = av_metadata_get(s->metadata, "title", NULL, 0)))
+        put_ebml_string(pb, MATROSKA_ID_TITLE, tag->value);
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP , LIBAVFORMAT_IDENT);
         put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
