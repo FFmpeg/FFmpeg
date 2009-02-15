@@ -96,8 +96,8 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 
     render->picture_structure = s->picture_structure;
     render->flags             = s->first_field ? 0 : XVMC_SECOND_FIELD;
-    render->p_future_surface = NULL;
-    render->p_past_surface   = NULL;
+    render->p_future_surface  = NULL;
+    render->p_past_surface    = NULL;
 
     switch(s->pict_type) {
         case  FF_I_TYPE:
