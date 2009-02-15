@@ -38,10 +38,8 @@
 void ff_xvmc_init_block(MpegEncContext *s)
 {
     struct xvmc_pixfmt_render *render = (struct xvmc_pixfmt_render*)s->current_picture.data[2];
-    if (!render || render->magic_id != AV_XVMC_RENDER_MAGIC) {
-        assert(0);
-        return; // make sure that this is a render packet
-    }
+    assert(render && render->magic_id == AV_XVMC_RENDER_MAGIC);
+
     s->block = (DCTELEM *)(render->data_blocks + render->next_free_data_block_num * 64);
 }
 
@@ -67,18 +65,35 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
 int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
 {
     struct xvmc_pixfmt_render *last, *next, *render = (struct xvmc_pixfmt_render*)s->current_picture.data[2];
+    const int mb_block_count = 4 + (1 << s->chroma_format);
 
     assert(avctx);
-    if (!render || render->magic_id != AV_XVMC_RENDER_MAGIC)
+    if (!render || render->magic_id != AV_XVMC_RENDER_MAGIC ||
+        !render->data_blocks || !render->mv_blocks){
+        av_log(avctx, AV_LOG_ERROR,
+               "Render token doesn't look as expected.\n");
         return -1; // make sure that this is a render packet
+    }
 
     render->picture_structure = s->picture_structure;
     render->flags             = s->first_field ? 0 : XVMC_SECOND_FIELD;
 
     if (render->filled_mv_blocks_num) {
         av_log(avctx, AV_LOG_ERROR,
-               "Rendering surface contains %i unprocessed blocks\n",
+               "Rendering surface contains %i unprocessed blocks.\n",
                render->filled_mv_blocks_num);
+        return -1;
+    }
+    if (render->total_number_of_mv_blocks   < 1 ||
+        render->total_number_of_data_blocks < mb_block_count) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Rendering surface doesn't provide enough block structures to work with.\n");
+        return -1;
+    }
+    if (render->total_number_of_mv_blocks   < 1 ||
+        render->total_number_of_data_blocks < mb_block_count) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Rendering surface doesn't provide enough block structures to work with.\n");
         return -1;
     }
 
