@@ -38,7 +38,7 @@ struct xvmc_pix_fmt {
     Once set these values are not supposed to be modified.
 */
 //@{
-    /** The field contains special constant value.
+    /** The field contains the special constant value AV_XVMC_ID.
         It is used as test whenever the application knows the calling API,
         and that there is no corruption caused by pixel routines.
         - application - set during initialization
@@ -72,7 +72,7 @@ struct xvmc_pix_fmt {
     */
     int             total_number_of_data_blocks;
 
-    /** Indicates that the hardware would interpret data_blocks as IDCT cefficients
+    /** Indicates that the hardware would interpret data_blocks as IDCT coefficients
         and perform IDCT on them.
         - application - set during initialization
         - libavcodec  - unchanged
@@ -86,7 +86,7 @@ struct xvmc_pix_fmt {
     */
     int             unsigned_intra;
 
-    /** Pointer to the Surface allocated by XvMCCreateSurface().
+    /** Pointer to the surface allocated by XvMCCreateSurface().
         It identifies the frame on the video hardware and its state.
         - application - set during initialization
         - libavcodec  - unchanged
@@ -103,7 +103,7 @@ struct xvmc_pix_fmt {
     */
     XvMCSurface*    p_past_surface;
 
-    /**Pointer to the surface used as future reference
+    /** Pointer to the surface used as future reference
         - application - unchanged
         - libavcodec  - set
     */
@@ -115,7 +115,7 @@ struct xvmc_pix_fmt {
     */
     unsigned int    picture_structure;
 
-    /**XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
+    /** XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
         - application - unchanged
         - libavcodec  - set
     */
@@ -137,8 +137,8 @@ struct xvmc_pix_fmt {
     */
     int             filled_mv_blocks_num;
 
-    /** Offset to the next free data block. The mv_blocks hold number pointing to the data blocks.
-        - application - zeroes it on get_buffer() and after successful draw_horiz_band()
+    /** Offset to the next free data block. The mv_blocks hold a number pointing to the data blocks.
+        - application - zeroes it on get_buffer() and after successful draw_horizx_band()
         - libvcodec   - each macroblock increases it with the number of coded blocks in it.
     */
     int             next_free_data_block_num;
