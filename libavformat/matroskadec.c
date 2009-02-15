@@ -154,6 +154,8 @@ typedef struct {
     uint64_t end;
     uint64_t uid;
     char    *title;
+
+    AVChapter *chapter;
 } MatroskaChapter;
 
 typedef struct {
@@ -1103,9 +1105,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (matroska->duration)
         matroska->ctx->duration = matroska->duration * matroska->time_scale
                                   * 1000 / AV_TIME_BASE;
-    if (matroska->title)
-        strncpy(matroska->ctx->title, matroska->title,
-                sizeof(matroska->ctx->title)-1);
+    av_metadata_set(&s->metadata, "title", matroska->title);
     matroska_convert_tags(s, &matroska->tags);
 
     tracks = matroska->tracks.elem;
@@ -1294,7 +1294,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st->codec->codec_id = codec_id;
         st->start_time = 0;
         if (strcmp(track->language, "und"))
-            av_strlcpy(st->language, track->language, 4);
+            av_metadata_set(&st->metadata, "language", track->language);
 
         if (track->flag_default)
             st->disposition |= AV_DISPOSITION_DEFAULT;
@@ -1346,7 +1346,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             AVStream *st = av_new_stream(s, 0);
             if (st == NULL)
                 break;
-            st->filename          = av_strdup(attachements[j].filename);
+            av_metadata_set(&st->metadata, "filename",attachements[j].filename);
             st->codec->codec_id = CODEC_ID_NONE;
             st->codec->codec_type = CODEC_TYPE_ATTACHMENT;
             st->codec->extradata  = av_malloc(attachements[j].bin.size);
@@ -1369,9 +1369,12 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for (i=0; i<chapters_list->nb_elem; i++)
         if (chapters[i].start != AV_NOPTS_VALUE && chapters[i].uid
             && (max_start==0 || chapters[i].start > max_start)) {
+            chapters[i].chapter =
             ff_new_chapter(s, chapters[i].uid, (AVRational){1, 1000000000},
                            chapters[i].start, chapters[i].end,
                            chapters[i].title);
+            av_metadata_set(&chapters[i].chapter->metadata,
+                            "title", chapters[i].title);
             max_start = chapters[i].start;
         }
 
