@@ -94,7 +94,7 @@ struct xvmc_pix_fmt {
     XvMCSurface*    p_surface;
 //}@
 
-/** Set by the decoder before calling draw_horiz_band(),
+/** Set by the decoder before calling ff_draw_horiz_band(),
     needed by the XvMCRenderSurface function. */
 //@{
     /** Pointer to the surface used as past reference
@@ -125,20 +125,20 @@ struct xvmc_pix_fmt {
     /** Offset in the mv array for the current slice.
         Macroblocks described before that offset are assumed to be already passed to the hardware.
         - application - zeros it on get_buffer().
-                        A successful draw_horiz_band() may increment it
+                        A successful ff_draw_horiz_band() may increment it
                         with filled_mb_block_num or zero both.
         - libavcodec  - unchanged
     */
     int             start_mv_blocks_num;
 
     /** Number of mv blocks that are filled by libavcodec and have to be passed to the hardware.
-        - application - zeros it on get_buffer() or after successful draw_horiz_band()
+        - application - zeros it on get_buffer() or after successful ff_draw_horiz_band()
         - libavcodec  - increment with one of each stored MB
     */
     int             filled_mv_blocks_num;
 
     /** Offset to the next free data block. The mv_blocks hold a number pointing to the data blocks.
-        - application - zeroes it on get_buffer() and after successful draw_horizx_band()
+        - application - zeroes it on get_buffer() and after successful ff_draw_horiz_band()
         - libvcodec   - each macroblock increases it with the number of coded blocks in it.
     */
     int             next_free_data_block_num;
