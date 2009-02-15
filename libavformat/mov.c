@@ -24,6 +24,7 @@
 //#define DEBUG
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/avstring.h"
 #include "avformat.h"
 #include "riff.h"
 #include "isom.h"
@@ -494,6 +495,7 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = st->priv_data;
     int version = get_byte(pb);
+    char language[4] = {0};
     unsigned lang;
 
     if (version > 1)
@@ -512,7 +514,8 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     st->duration = (version == 1) ? get_be64(pb) : get_be32(pb); /* duration */
 
     lang = get_be16(pb); /* language */
-    ff_mov_lang_to_iso639(lang, st->language);
+    if (ff_mov_lang_to_iso639(lang, language))
+        av_metadata_set(&st->metadata, "language", language);
     get_be16(pb); /* quality */
 
     return 0;
@@ -1438,8 +1441,8 @@ static int mov_read_trkn(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    char *str = NULL;
-    int size;
+    char str[1024], key2[16], language[4] = {0};
+    const char *key = NULL;
     uint16_t str_size;
 
     if (c->itunes_metadata) {
@@ -1453,29 +1456,31 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         } else return 0;
     } else {
         str_size = get_be16(pb); // string length
-        get_be16(pb); // language
+        ff_mov_lang_to_iso639(get_be16(pb), language);
         atom.size -= 4;
     }
     switch (atom.type) {
-    case MKTAG(0xa9,'n','a','m'):
-        str = c->fc->title; size = sizeof(c->fc->title); break;
+    case MKTAG(0xa9,'n','a','m'): key = "title";     break;
     case MKTAG(0xa9,'A','R','T'):
-    case MKTAG(0xa9,'w','r','t'):
-        str = c->fc->author; size = sizeof(c->fc->author); break;
-    case MKTAG(0xa9,'c','p','y'):
-        str = c->fc->copyright; size = sizeof(c->fc->copyright); break;
+    case MKTAG(0xa9,'w','r','t'): key = "author";    break;
+    case MKTAG(0xa9,'c','p','y'): key = "copyright"; break;
     case MKTAG(0xa9,'c','m','t'):
-    case MKTAG(0xa9,'i','n','f'):
-        str = c->fc->comment; size = sizeof(c->fc->comment); break;
-    case MKTAG(0xa9,'a','l','b'):
-        str = c->fc->album; size = sizeof(c->fc->album); break;
+    case MKTAG(0xa9,'i','n','f'): key = "comment";   break;
+    case MKTAG(0xa9,'a','l','b'): key = "album";     break;
     }
-    if (!str)
+    if (!key)
         return 0;
     if (atom.size < 0)
         return -1;
 
-    get_buffer(pb, str, FFMIN3(size, str_size, atom.size));
+    str_size = FFMIN3(sizeof(str)-1, str_size, atom.size);
+    get_buffer(pb, str, str_size);
+    str[str_size] = 0;
+    av_metadata_set(&c->fc->metadata, key, str);
+    if (*language && strcmp(language, "und")) {
+        snprintf(key2, sizeof(key2), "%s-%s", key, language);
+        av_metadata_set(&c->fc->metadata, key2, str);
+    }
     dprintf(c->fc, "%.4s %s %d %lld\n", (char*)&atom.type, str, str_size, atom.size);
     return 0;
 }
