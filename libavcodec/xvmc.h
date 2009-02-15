@@ -58,17 +58,35 @@ struct xvmc_render_state {
 #endif
 //}@
 
-/** modified by calling application and the decoder */
-//@{
-    int             start_mv_blocks_num;          ///< offset in the array for the current slice, updated by vo
-    int             filled_mv_blocks_num;         ///< processed mv block in this slice, changed by decoder
+    /** Offset in the mv array for the current slice:
+        - application - zeros it on  get_buffer().
+                        successful draw_horiz_band() may increment it
+                        with filled_mb_block_num or zero both.
+        - libavcodec  - unchanged
+    */
+    int             start_mv_blocks_num;
 
-    int             next_free_data_block_num;     ///< used in add_mv_block, pointer to next free block
-//}@
+    /** Processed mv blocks in this slice:
+        - application - zeros it on get_buffer() or after successful draw_horiz_band()
+        - libavcodec  - increment with one of each stored MB
+    */
+    int             filled_mv_blocks_num;
+
+    /** Used in add_mv_block, pointer to next free block
+        - application - zeroes it on get_buffer() and after successful draw_horiz_band()
+        - libvcodec   - each macroblock increases it with the number of coded blocks in it.
+    */
+    int             next_free_data_block_num;
+
 /** extensions may be placed here */
 #if LIBAVCODEC_VERSION_MAJOR < 53
 //@{
-    int             state;                        ///< 0 - free, 1 - waiting to display, 2 - waiting for prediction
+    /** State - used to workaround limitations in MPlayer vo system.
+        0   -Surface not used
+        1   -Surface is still hold in application to be displayed or is still visible.
+        2   -Surface is still hold in lavcodec buffer for prediction
+    */
+    int             state;
     void*           p_osd_target_surface_render;  ///< pointer to the surface where subpicture is rendered
 //}@
 #endif
