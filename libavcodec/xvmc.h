@@ -38,28 +38,92 @@ struct xvmc_pix_fmt {
     Once set these values are not supposed to be modified.
 */
 //@{
-    int             xvmc_id;                      ///< used as a check against memory corruption by regular pixel routines or other API structures
+    /** The field contains special constant value.
+        It is used as test whenever the application knows the calling API,
+        and that there is no corruption caused by pixel routines.
+        - application - set during initialization
+        - libavcodec  - unchanged
+    */
+    int             xvmc_id;
 
+    /** Pointer to the block array allocated by XvMCCreateBlocks()
+        it contins differential pixel data (in MoCo mode)
+        or coefficients for IDCT.
+        - application - set during initialization
+        - libavcodec  - unchanged
+    */
     short*          data_blocks;
+
+    /** Pointer to the macroblock description array allocated by XvMCCreateMacroBlocks().
+        - application - set during initialization
+        - libavcodec  - unchanged
+    */
     XvMCMacroBlock* mv_blocks;
+
+    /** Number of all MB descriptions that could be stored in the mv_blocks array.
+        - application - set during initialization
+        - libavcodec  - unchanged
+    */
     int             total_number_of_mv_blocks;
+
+    /** Number of all blocks that could be stored at once in the data_blocks array.
+        - application - set during initialization
+        - libavcodec  - unchanged
+    */
     int             total_number_of_data_blocks;
-    int             idct;                         ///< indicate that IDCT acceleration level is used
-    int             unsigned_intra;               ///< +-128 for intra pictures after clipping
-    XvMCSurface*    p_surface;                    ///< pointer to rendered surface, never changed
+
+    /** Indicates that the hardware would interpret data_blocks as IDCT cefficients
+        and perform IDCT on them.
+        - application - set during initialization
+        - libavcodec  - unchanged
+    */
+    int             idct;
+
+    /** In MoCo mode it indicates that Intra MB are assumed to be in unsigned format
+        Same as XVMC_INTRA_UNSIGNED flag.
+        - application - set during initialization
+        - libavcodec  - unchanged
+    */
+    int             unsigned_intra;
+
+    /** Pointer to the Surface allocated by XvMCCreateSurface().
+        It identifies the frame on the video hardware and its state.
+        - application - set during initialization
+        - libavcodec  - unchanged
+    */
+    XvMCSurface*    p_surface;
 //}@
 
 /** Set by the decoder before calling draw_horiz_band(),
     needed by the XvMCRenderSurface function. */
 //@{
-    XvMCSurface*    p_past_surface;               ///< pointer to the past surface
-    XvMCSurface*    p_future_surface;             ///< pointer to the future prediction surface
+    /** Pointer to the surface used as past reference
+        - application - unchanged
+        - libavcodec  - set
+    */
+    XvMCSurface*    p_past_surface;
 
-    unsigned int    picture_structure;            ///< top/bottom field or frame
-    unsigned int    flags;                        ///< XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
+    /**Pointer to the surface used as future reference
+        - application - unchanged
+        - libavcodec  - set
+    */
+    XvMCSurface*    p_future_surface;
+
+    /** top/bottom field or frame
+        - application - unchanged
+        - libavcodec  - set
+    */
+    unsigned int    picture_structure;
+
+    /**XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
+        - application - unchanged
+        - libavcodec  - set
+    */
+    unsigned int    flags;
 //}@
 
-    /** Offset in the mv array for the current slice:
+    /** Offset in the mv array for the current slice.
+        Macroblocks described before that offset are assumed to be already passed to the hardware.
         - application - zeros it on get_buffer().
                         A successful draw_horiz_band() may increment it
                         with filled_mb_block_num or zero both.
@@ -67,7 +131,7 @@ struct xvmc_pix_fmt {
     */
     int             start_mv_blocks_num;
 
-    /** Processed mv blocks in this slice:
+    /** Number of mv blocks that are filled by libavcodec and have to be passed to the hardware.
         - application - zeros it on get_buffer() or after successful draw_horiz_band()
         - libavcodec  - increment with one of each stored MB
     */
