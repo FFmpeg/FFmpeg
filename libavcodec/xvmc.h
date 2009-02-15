@@ -25,9 +25,11 @@
 
 #include "avcodec.h"
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 #define AV_XVMC_STATE_DISPLAY_PENDING          1  /**  the surface should be shown, the video driver manipulates this */
 #define AV_XVMC_STATE_PREDICTION               2  /**  the surface is needed for prediction, the codec manipulates this */
 #define AV_XVMC_STATE_OSD_SOURCE               4  /**  this surface is needed for subpicture rendering */
+#endif
 #define AV_XVMC_RENDER_MAGIC          0x1DC711C0  /**< magic value to ensure that regular pixel routines haven't corrupted the struct */
                                                   //   1337 IDCT MCo
 
@@ -53,9 +55,6 @@ struct xvmc_render_state {
 
     unsigned int    picture_structure;            ///< top/bottom fields or frame
     unsigned int    flags;                        ///< XVMC_SECOND_FIELD - 1st or 2nd field in the sequence
-#if LIBAVCODEC_VERSION_MAJOR < 53
-    unsigned int    display_flags;                ///< 1, 2 or 1+2 fields for XvMCPutSurface
-#endif
 //}@
 
     /** Offset in the mv array for the current slice:
