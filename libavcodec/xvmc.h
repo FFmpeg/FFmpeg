@@ -130,7 +130,7 @@ struct xvmc_pix_fmt {
     */
     int             start_mv_blocks_num;
 
-    /** Number of new macro blocks descriptions in mv_blocks array
+    /** Number of new macro blocks descriptions in mv_blocks array (after start_mv_blocks_num)
         that are filled by libavcodec and have to be passed to the hardware.
         - application - zeroes it on get_buffer() or after successful
                         ff_draw_horiz_band().
