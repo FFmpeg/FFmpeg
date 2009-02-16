@@ -640,7 +640,7 @@ static int adts_aac_probe(AVProbeData *p)
 #if CONFIG_AAC_DEMUXER
 AVInputFormat aac_demuxer = {
     "aac",
-    NULL_IF_CONFIG_SMALL("ADTS AAC"),
+    NULL_IF_CONFIG_SMALL("raw ADTS AAC"),
     0,
     adts_aac_probe,
     audio_read_header,
@@ -827,7 +827,7 @@ AVOutputFormat flac_muxer = {
 #if CONFIG_GSM_DEMUXER
 AVInputFormat gsm_demuxer = {
     "gsm",
-    NULL_IF_CONFIG_SMALL("GSM"),
+    NULL_IF_CONFIG_SMALL("raw GSM"),
     0,
     NULL,
     audio_read_header,
@@ -928,7 +928,7 @@ AVOutputFormat h264_muxer = {
 #if CONFIG_INGENIENT_DEMUXER
 AVInputFormat ingenient_demuxer = {
     "ingenient",
-    NULL_IF_CONFIG_SMALL("Ingenient MJPEG"),
+    NULL_IF_CONFIG_SMALL("raw Ingenient MJPEG"),
     0,
     NULL,
     video_read_header,
@@ -971,7 +971,7 @@ AVOutputFormat m4v_muxer = {
 #if CONFIG_MJPEG_DEMUXER
 AVInputFormat mjpeg_demuxer = {
     "mjpeg",
-    NULL_IF_CONFIG_SMALL("MJPEG video"),
+    NULL_IF_CONFIG_SMALL("raw MJPEG video"),
     0,
     NULL,
     video_read_header,
@@ -985,7 +985,7 @@ AVInputFormat mjpeg_demuxer = {
 #if CONFIG_MJPEG_MUXER
 AVOutputFormat mjpeg_muxer = {
     "mjpeg",
-    NULL_IF_CONFIG_SMALL("MJPEG video"),
+    NULL_IF_CONFIG_SMALL("raw MJPEG video"),
     "video/x-mjpeg",
     "mjpg,mjpeg",
     0,
@@ -1014,7 +1014,7 @@ AVInputFormat mlp_demuxer = {
 #if CONFIG_MPEG1VIDEO_MUXER
 AVOutputFormat mpeg1video_muxer = {
     "mpeg1video",
-    NULL_IF_CONFIG_SMALL("MPEG video"),
+    NULL_IF_CONFIG_SMALL("raw MPEG-1 video"),
     "video/x-mpeg",
     "mpg,mpeg,m1v",
     0,
@@ -1029,7 +1029,7 @@ AVOutputFormat mpeg1video_muxer = {
 #if CONFIG_MPEG2VIDEO_MUXER
 AVOutputFormat mpeg2video_muxer = {
     "mpeg2video",
-    NULL_IF_CONFIG_SMALL("MPEG-2 video"),
+    NULL_IF_CONFIG_SMALL("raw MPEG-2 video"),
     NULL,
     "m2v",
     0,
@@ -1044,7 +1044,7 @@ AVOutputFormat mpeg2video_muxer = {
 #if CONFIG_MPEGVIDEO_DEMUXER
 AVInputFormat mpegvideo_demuxer = {
     "mpegvideo",
-    NULL_IF_CONFIG_SMALL("MPEG video"),
+    NULL_IF_CONFIG_SMALL("raw MPEG video"),
     0,
     mpegvideo_probe,
     video_read_header,
@@ -1057,7 +1057,7 @@ AVInputFormat mpegvideo_demuxer = {
 #if CONFIG_NULL_MUXER
 AVOutputFormat null_muxer = {
     "null",
-    NULL_IF_CONFIG_SMALL("null video format"),
+    NULL_IF_CONFIG_SMALL("raw null video format"),
     NULL,
     NULL,
     0,
@@ -1106,7 +1106,7 @@ AVOutputFormat rawvideo_muxer = {
 AVOutputFormat roq_muxer =
 {
     "RoQ",
-    NULL_IF_CONFIG_SMALL("id RoQ format"),
+    NULL_IF_CONFIG_SMALL("raw id RoQ format"),
     NULL,
     "roq",
     0,
