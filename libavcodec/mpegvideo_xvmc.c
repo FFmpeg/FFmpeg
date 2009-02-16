@@ -61,7 +61,7 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
             s->pblocks[i] = (short *)(&s->block[j++]);
         else
             s->pblocks[i] = NULL;
-        cbp+=cbp;
+        cbp += cbp;
     }
 }
 
