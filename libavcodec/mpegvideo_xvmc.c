@@ -312,11 +312,14 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     }
     render->filled_mv_blocks_num++;
 
-    assert(render->filled_mv_blocks_num     <= render->allocated_mv_blocks);
-    assert(render->next_free_data_block_num <= render->allocated_data_blocks);
-    /* The above conditions should not be able to fail as long as this function
-     * is used and the following 'if ()' automatically calls a callback to free
-     * blocks. */
+
+    if (render->filled_mv_blocks_num > render->allocated_mv_blocks)
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Not enough space to store mv blocks allocated.\n");
+
+    if (render->next_free_data_block_num > render->allocated_data_blocks)
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Offset to next data block exceeds number of allocated data blocks.\n");
 
 
     if (render->filled_mv_blocks_num == render->allocated_mv_blocks)
