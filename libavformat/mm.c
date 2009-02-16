@@ -168,7 +168,7 @@ static int mm_read_packet(AVFormatContext *s,
             return 0;
 
         default :
-            av_log(NULL, AV_LOG_INFO, "mm: unknown chunk type 0x%x\n", type);
+            av_log(s, AV_LOG_INFO, "unknown chunk type 0x%x\n", type);
             url_fseek(pb, length, SEEK_CUR);
         }
     }
