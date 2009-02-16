@@ -336,7 +336,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st->codec->bits_per_coded_sample = get_le16(pb); /* depth */
                 tag1 = get_le32(pb);
                 url_fskip(pb, 20);
-//                av_log(NULL, AV_LOG_DEBUG, "size:%d tsize:%d sizeX:%d\n", size, total_size, sizeX);
+//                av_log(s, AV_LOG_DEBUG, "size:%d tsize:%d sizeX:%d\n", size, total_size, sizeX);
                 size= sizeX;
                 if (size > 40) {
                     st->codec->extradata_size = size - 40;
@@ -383,15 +383,15 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             int stream_count = get_le16(pb);
             int j;
 
-//            av_log(NULL, AV_LOG_ERROR, "stream bitrate properties\n");
-//            av_log(NULL, AV_LOG_ERROR, "streams %d\n", streams);
+//            av_log(s, AV_LOG_ERROR, "stream bitrate properties\n");
+//            av_log(s, AV_LOG_ERROR, "streams %d\n", streams);
             for(j = 0; j < stream_count; j++) {
                 int flags, bitrate, stream_id;
 
                 flags= get_le16(pb);
                 bitrate= get_le32(pb);
                 stream_id= (flags & 0x7f);
-//                av_log(NULL, AV_LOG_ERROR, "flags: 0x%x stream id %d, bitrate %d\n", flags, stream_id, bitrate);
+//                av_log(s, AV_LOG_ERROR, "flags: 0x%x stream id %d, bitrate %d\n", flags, stream_id, bitrate);
                 asf->stream_bitrates[stream_id]= bitrate;
             }
        } else if (!memcmp(&g, &extended_content_header, sizeof(GUID))) {
@@ -423,7 +423,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 value_len=  get_le32(pb);
 
                 get_str16_nolen(pb, name_len, name, sizeof(name));
-//av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d <%s>\n", i, stream_num, name_len, value_type, value_len, name);
+//av_log(s, AV_LOG_ERROR, "%d %d %d %d %d <%s>\n", i, stream_num, name_len, value_type, value_len, name);
                 value_num= get_le16(pb);//we should use get_value() here but it does not work 2 is le16 here but le32 elsewhere
                 url_fskip(pb, value_len - 2);
 
@@ -528,7 +528,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_reduce(&st->sample_aspect_ratio.num,
                           &st->sample_aspect_ratio.den,
                           dar[i].num, dar[i].den, INT_MAX);
-//av_log(NULL, AV_LOG_ERROR, "dar %d:%d sar=%d:%d\n", dar[i].num, dar[i].den, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
+//av_log(s, AV_LOG_ERROR, "dar %d:%d sar=%d:%d\n", dar[i].num, dar[i].den, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
         }
     }
 
@@ -993,12 +993,12 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
         itime=get_le64(s->pb);
         pct=get_le32(s->pb);
         ict=get_le32(s->pb);
-        av_log(NULL, AV_LOG_DEBUG, "itime:0x%"PRIx64", pct:%d, ict:%d\n",itime,pct,ict);
+        av_log(s, AV_LOG_DEBUG, "itime:0x%"PRIx64", pct:%d, ict:%d\n",itime,pct,ict);
 
         for (i=0;i<ict;i++){
             int pktnum=get_le32(s->pb);
             int pktct =get_le16(s->pb);
-            av_log(NULL, AV_LOG_DEBUG, "pktnum:%d, pktct:%d\n", pktnum, pktct);
+            av_log(s, AV_LOG_DEBUG, "pktnum:%d, pktct:%d\n", pktnum, pktct);
 
             pos=s->data_offset + asf->packet_size*(int64_t)pktnum;
             index_pts=av_rescale(itime, i, 10000);
@@ -1066,7 +1066,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
     //     }
 
         /* do the seek */
-        av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos);
+        av_log(s, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos);
         url_fseek(s->pb, pos, SEEK_SET);
     }
     asf_reset_header(s);
