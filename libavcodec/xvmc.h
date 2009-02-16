@@ -142,7 +142,7 @@ struct xvmc_pix_fmt {
     */
     int             filled_mv_blocks_num;
 
-    /** Offset to the next free data block. The mv_blocks hold a number
+    /** Offset to the next free data block. The mv_blocks field holds a number
         pointing to the data blocks.
         - application - zeroes it on get_buffer() and after successful
                         ff_draw_horiz_band().
