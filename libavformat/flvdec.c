@@ -360,11 +360,11 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             break;
     }
     if(i == s->nb_streams){
-        av_log(NULL, AV_LOG_ERROR, "invalid stream\n");
+        av_log(s, AV_LOG_ERROR, "invalid stream\n");
         st= create_stream(s, is_audio);
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
     }
-//    av_log(NULL, AV_LOG_DEBUG, "%d %X %d \n", is_audio, flags, st->discard);
+//    av_log(s, AV_LOG_DEBUG, "%d %X %d \n", is_audio, flags, st->discard);
     if(  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||         is_audio))
        ||(st->discard >= AVDISCARD_BIDIR  &&  ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_DISP_INTER && !is_audio))
        || st->discard >= AVDISCARD_ALL
