@@ -31,13 +31,13 @@ enum RTSPLowerTransport {
     RTSP_LOWER_TRANSPORT_UDP = 0,
     RTSP_LOWER_TRANSPORT_TCP = 1,
     RTSP_LOWER_TRANSPORT_UDP_MULTICAST = 2,
-    RTSP_LOWER_TRANSPORT_LAST
+    RTSP_LOWER_TRANSPORT_NB
 };
 
 enum RTSPTransport {
     RTSP_TRANSPORT_RTP,
     RTSP_TRANSPORT_RDT,
-    RTSP_TRANSPORT_LAST
+    RTSP_TRANSPORT_NB
 };
 
 #define RTSP_DEFAULT_PORT   554
@@ -82,7 +82,7 @@ enum RTSPServerType {
     RTSP_SERVER_RTP,  /**< Standards-compliant RTP-server */
     RTSP_SERVER_REAL, /**< Realmedia-style server */
     RTSP_SERVER_WMS,  /**< Windows Media server */
-    RTSP_SERVER_LAST
+    RTSP_SERVER_NB
 };
 
 typedef struct RTSPState {

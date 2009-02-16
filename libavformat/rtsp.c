@@ -1097,7 +1097,7 @@ static int rtsp_read_header(AVFormatContext *s,
     }
 
     if (!lower_transport_mask)
-        lower_transport_mask = (1 << RTSP_LOWER_TRANSPORT_LAST) - 1;
+        lower_transport_mask = (1 << RTSP_LOWER_TRANSPORT_NB) - 1;
 
     /* open the tcp connexion */
     snprintf(tcpname, sizeof(tcpname), "tcp://%s:%d", host, port);
