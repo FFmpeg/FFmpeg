@@ -888,7 +888,7 @@ static void do_video_out(AVFormatContext *s,
 
     if (ost->video_crop) {
         if (av_picture_crop((AVPicture *)&picture_crop_temp, (AVPicture *)in_picture, dec->pix_fmt, ost->topBand, ost->leftBand) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "error cropping picture\n");
+            fprintf(stderr, "error cropping picture\n");
             if (exit_on_error)
                 av_exit(1);
             return;
@@ -905,7 +905,7 @@ static void do_video_out(AVFormatContext *s,
         final_picture = &ost->pict_tmp;
         if (ost->video_resample) {
             if (av_picture_crop((AVPicture *)&picture_pad_temp, (AVPicture *)final_picture, enc->pix_fmt, ost->padtop, ost->padleft) < 0) {
-                av_log(NULL, AV_LOG_ERROR, "error padding picture\n");
+                fprintf(stderr, "error padding picture\n");
                 if (exit_on_error)
                     av_exit(1);
                 return;
@@ -2754,11 +2754,11 @@ static enum CodecID find_codec_or_die(const char *name, int type, int encoder)
         avcodec_find_encoder_by_name(name) :
         avcodec_find_decoder_by_name(name);
     if(!codec) {
-        av_log(NULL, AV_LOG_ERROR, "Unknown %s '%s'\n", codec_string, name);
+        fprintf(stderr, "Unknown %s '%s'\n", codec_string, name);
         av_exit(1);
     }
     if(codec->type != type) {
-        av_log(NULL, AV_LOG_ERROR, "Invalid %s type '%s'\n", codec_string, name);
+        fprintf(stderr, "Invalid %s type '%s'\n", codec_string, name);
         av_exit(1);
     }
     return codec->id;
