@@ -248,7 +248,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     avi->stream_index= -1;
 
-    if (get_riff(s, avi, pb) < 0)
+    if (get_riff(s, pb) < 0)
         return -1;
 
     avi->fsize = url_fsize(pb);
