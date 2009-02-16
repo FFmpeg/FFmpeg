@@ -70,7 +70,7 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
  * This function should be called for every new field and/or frame.
  * It should be safe to call the function a few times for the same field.
  */
-int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
+int ff_xvmc_field_start(MpegEncContext *s, AVCodecContext *avctx)
 {
     struct xvmc_pix_fmt *last, *next, *render = (struct xvmc_pix_fmt*)s->current_picture.data[2];
     const int mb_block_count = 4 + (1 << s->chroma_format);
