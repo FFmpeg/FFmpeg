@@ -24,7 +24,7 @@
 #include "libavcodec/avcodec.h"
 
 /** return < 0 if unknown payload type */
-int rtp_get_payload_type(AVCodecContext *codec);
+int ff_rtp_get_payload_type(AVCodecContext *codec);
 
 #define RTP_PT_PRIVATE 96
 #define RTP_VERSION 2

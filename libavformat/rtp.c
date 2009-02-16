@@ -93,7 +93,7 @@ int rtp_get_codec_info(AVCodecContext *codec, int payload_type)
     return -1;
 }
 
-int rtp_get_payload_type(AVCodecContext *codec)
+int ff_rtp_get_payload_type(AVCodecContext *codec)
 {
     int i, payload_type;
 

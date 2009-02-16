@@ -49,7 +49,7 @@ static int rtp_write_header(AVFormatContext *s1)
         return -1;
     st = s1->streams[0];
 
-    payload_type = rtp_get_payload_type(st->codec);
+    payload_type = ff_rtp_get_payload_type(st->codec);
     if (payload_type < 0)
         payload_type = RTP_PT_PRIVATE; /* private payload type */
     s->payload_type = payload_type;
