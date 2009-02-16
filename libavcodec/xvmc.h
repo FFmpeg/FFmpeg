@@ -54,7 +54,8 @@ struct xvmc_pix_fmt {
     */
     short*          data_blocks;
 
-    /** Pointer to the macroblock description array allocated by XvMCCreateMacroBlocks().
+    /** Pointer to the macroblock description array allocated by
+        XvMCCreateMacroBlocks().
         - application - set during initialization
         - libavcodec  - unchanged
     */
@@ -73,8 +74,8 @@ struct xvmc_pix_fmt {
     */
     int             total_number_of_data_blocks;
 
-    /** Indicates that the hardware would interpret data_blocks as IDCT coefficients
-        and perform IDCT on them.
+    /** Indicates that the hardware would interpret data_blocks as IDCT
+        coefficients and perform IDCT on them.
         - application - set during initialization
         - libavcodec  - unchanged
     */
@@ -133,15 +134,20 @@ struct xvmc_pix_fmt {
     */
     int             start_mv_blocks_num;
 
-    /** Number of mv blocks that are filled by libavcodec and have to be passed to the hardware.
-        - application - zeroes it on get_buffer() or after successful ff_draw_horiz_band()
+    /** Number of mv blocks that are filled by libavcodec and have to be
+        passed to the hardware.
+        - application - zeroes it on get_buffer() or after successful
+                        ff_draw_horiz_band().
         - libavcodec  - increment with one of each stored MB
     */
     int             filled_mv_blocks_num;
 
-    /** Offset to the next free data block. The mv_blocks hold a number pointing to the data blocks.
-        - application - zeroes it on get_buffer() and after successful ff_draw_horiz_band()
-        - libvcodec   - each macroblock increases it with the number of coded blocks in it.
+    /** Offset to the next free data block. The mv_blocks hold a number
+        pointing to the data blocks.
+        - application - zeroes it on get_buffer() and after successful
+                        ff_draw_horiz_band().
+        - libavcodec  - each macroblock increases it with the number
+                        of coded blocks in it.
     */
     int             next_free_data_block_num;
 
@@ -150,11 +156,14 @@ struct xvmc_pix_fmt {
 //@{
     /** State - used to work around limitations in the MPlayer video system.
         0   - Surface is not used.
-        1   - Surface is still held in application to be displayed or is still visible.
+        1   - Surface is still held in application to be displayed or is
+              still visible.
         2   - Surface is still held in libavcodec buffer for prediction.
     */
     int             state;
-    void*           p_osd_target_surface_render;  ///< pointer to the surface where the subpicture is rendered
+
+    /** pointer to the surface where the subpicture is rendered */
+    void*           p_osd_target_surface_render;
 //}@
 #endif
 };
