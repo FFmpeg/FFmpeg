@@ -23,7 +23,14 @@
 
 #include "libavcodec/avcodec.h"
 
-/** return < 0 if unknown payload type */
+/**
+ * Return the payload type for a given codec.
+ *
+ * @param codec The context of the codec
+ * @return In case of unknown payload type or dynamic payload type, a
+ * negative value is returned; otherwise, the payload type (the 'PT' field
+ * in the RTP header) is returned.
+ */
 int ff_rtp_get_payload_type(AVCodecContext *codec);
 
 #define RTP_PT_PRIVATE 96
