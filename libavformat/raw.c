@@ -229,7 +229,7 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     unk2 = get_le16(s->pb);
     url_fskip(s->pb, 22); // ASCII timestamp
 
-    av_log(NULL, AV_LOG_DEBUG, "Ingenient packet: size=%d, width=%d, height=%d, unk1=%d unk2=%d\n",
+    av_log(s, AV_LOG_DEBUG, "Ingenient packet: size=%d, width=%d, height=%d, unk1=%d unk2=%d\n",
         size, w, h, unk1, unk2);
 
     if (av_new_packet(pkt, size) < 0)
