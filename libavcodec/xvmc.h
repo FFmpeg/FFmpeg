@@ -66,13 +66,13 @@ struct xvmc_pix_fmt {
         - application - set during initialization
         - libavcodec  - unchanged
     */
-    int             total_number_of_mv_blocks;
+    int             allocated_mv_blocks;
 
     /** Number of blocks that can be stored at once in the data_blocks array.
         - application - set during initialization
         - libavcodec  - unchanged
     */
-    int             total_number_of_data_blocks;
+    int             allocated_data_blocks;
 
     /** Indicates that the hardware would interpret data_blocks as IDCT
         coefficients and perform IDCT on them.

@@ -89,8 +89,8 @@ int ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx)
                render->filled_mv_blocks_num);
         return -1;
     }
-    if (render->total_number_of_mv_blocks   < 1 ||
-        render->total_number_of_data_blocks < mb_block_count) {
+    if (render->allocated_mv_blocks   < 1 ||
+        render->allocated_data_blocks < mb_block_count) {
         av_log(avctx, AV_LOG_ERROR,
                "Rendering surface doesn't provide enough block structures to work with.\n");
         return -1;
@@ -312,13 +312,13 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     }
     render->filled_mv_blocks_num++;
 
-    assert(render->filled_mv_blocks_num     <= render->total_number_of_mv_blocks);
-    assert(render->next_free_data_block_num <= render->total_number_of_data_blocks);
+    assert(render->filled_mv_blocks_num     <= render->allocated_mv_blocks);
+    assert(render->next_free_data_block_num <= render->allocated_data_blocks);
     /* The above conditions should not be able to fail as long as this function
      * is used and the following 'if ()' automatically calls a callback to free
      * blocks. */
 
 
-    if (render->filled_mv_blocks_num == render->total_number_of_mv_blocks)
+    if (render->filled_mv_blocks_num == render->allocated_mv_blocks)
         ff_draw_horiz_band(s, 0, 0);
 }
