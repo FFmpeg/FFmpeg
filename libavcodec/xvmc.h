@@ -34,10 +34,6 @@
                                                        the number is 1337 speak for the letters IDCT MCo (motion compensation) */
 
 struct xvmc_pix_fmt {
-/** Set by the calling application.
-    Once set these values are not supposed to be modified.
-*/
-//@{
     /** The field contains the special constant value AV_XVMC_ID.
         It is used as a test that the application correctly uses the API,
         and that there is no corruption caused by pixel routines.
@@ -46,18 +42,19 @@ struct xvmc_pix_fmt {
     */
     int             xvmc_id;
 
-    /** Pointer to the block array allocated by XvMCCreateBlocks()
-        it contains differential pixel data (in MoCo mode)
-        or coefficients for IDCT.
-        - application - set during initialization
-        - libavcodec  - unchanged
+    /** Pointer to the block array allocated by XvMCCreateBlocks().
+        The array is have to be freed by XvMCDestroyBlocks().
+        Each 64 values represent one data block of
+        differential pixel data (in MoCo mode) or coefficients for IDCT.
+        - application - set the pointer during initialization
+        - libavcodec  - fills coefficients/pixel data into the array
     */
     short*          data_blocks;
 
     /** Pointer to the macroblock description array allocated by
-        XvMCCreateMacroBlocks().
-        - application - set during initialization
-        - libavcodec  - unchanged
+        XvMCCreateMacroBlocks() and freed by XvMCDestroyMacroBlocks().
+        - application - set the pointer during initialization
+        - libavcodec  - fills description data into the array
     */
     XvMCMacroBlock* mv_blocks;
 
@@ -89,12 +86,12 @@ struct xvmc_pix_fmt {
     int             unsigned_intra;
 
     /** Pointer to the surface allocated by XvMCCreateSurface().
+        It have to be freed by XvMCDestroySurface() on application exit.
         It identifies the frame and its state on the video hardware.
         - application - set during initialization
         - libavcodec  - unchanged
     */
     XvMCSurface*    p_surface;
-//}@
 
 /** Set by the decoder before calling ff_draw_horiz_band(),
     needed by the XvMCRenderSurface function. */
@@ -124,9 +121,8 @@ struct xvmc_pix_fmt {
     unsigned int    flags;
 //}@
 
-    /** Offset in the mv array for the current slice.
-        Macroblocks described before that offset are assumed to have already
-        been passed to the hardware.
+    /** Number of macro block descriptions in the mv_blocks array
+        that have already been passed to the hardware.
         - application - zeroes it on get_buffer().
                         A successful ff_draw_horiz_band() may increment it
                         with filled_mb_block_num or zero both.
@@ -134,19 +130,23 @@ struct xvmc_pix_fmt {
     */
     int             start_mv_blocks_num;
 
-    /** Number of mv blocks that are filled by libavcodec and have to be
-        passed to the hardware.
+    /** Number of new macro blocks descriptions in mv_blocks array
+        that are filled by libavcodec and have to be passed to the hardware.
         - application - zeroes it on get_buffer() or after successful
                         ff_draw_horiz_band().
         - libavcodec  - increment with one of each stored MB
     */
     int             filled_mv_blocks_num;
 
-    /** Offset to the next free data block. The mv_blocks field holds a number
-        pointing to the data blocks.
-        - application - zeroes it on get_buffer() and after successful
-                        ff_draw_horiz_band().
-        - libavcodec  - each macroblock increases it with the number
+    /** Number of the the next free data block.
+        One data block is 64 short values in data_blocks array.
+        All blocks before this one are already claimed by filling their number
+        in the corresponding blocks description structure field,
+        that are hold in mv_blocks array.
+        - application - zeroes it on get_buffer().
+                        A successful ff_draw_horiz_band() may zero it together
+                        with start_mb_blocks_num.
+        - libavcodec  - each decoded macroblock increases it with the number
                         of coded blocks it contains.
     */
     int             next_free_data_block_num;
@@ -154,7 +154,7 @@ struct xvmc_pix_fmt {
 /** extensions may be placed here */
 #if LIBAVCODEC_VERSION_MAJOR < 53
 //@{
-    /** State - used to work around limitations in the MPlayer video system.
+    /** State flags used to work around limitations in the MPlayer video system.
         0   - Surface is not used.
         1   - Surface is still held in application to be displayed or is
               still visible.
