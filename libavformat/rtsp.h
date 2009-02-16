@@ -31,9 +31,6 @@ enum RTSPLowerTransport {
     RTSP_LOWER_TRANSPORT_UDP = 0,
     RTSP_LOWER_TRANSPORT_TCP = 1,
     RTSP_LOWER_TRANSPORT_UDP_MULTICAST = 2,
-    /**
-     * This is not part of public API and shouldn't be used outside of ffmpeg.
-     */
     RTSP_LOWER_TRANSPORT_LAST
 };
 
