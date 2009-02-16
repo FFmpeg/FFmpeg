@@ -68,6 +68,7 @@ typedef struct {
     int order;            ///< interleaving order if dts are equal
     int interlaced;       ///< wether picture is interlaced
     int temporal_reordering;
+    AVRational aspect_ratio; ///< display aspect ratio
 } MXFStreamContext;
 
 typedef struct {
@@ -778,7 +779,6 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     ByteIOContext *pb = s->pb;
     int stored_height = (st->codec->height+15)/16*16;
     int display_height;
-    AVRational dar;
     int f1, f2;
 
     mxf_write_generic_desc(s, st, key, size);
@@ -837,14 +837,9 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     if (sc->interlaced)
         put_be32(pb, f2);
 
-    av_reduce(&dar.num, &dar.den,
-              st->codec->width*st->codec->sample_aspect_ratio.num,
-              st->codec->height*st->codec->sample_aspect_ratio.den,
-              1024*1024);
-
     mxf_write_local_tag(pb, 8, 0x320E);
-    put_be32(pb, dar.num);
-    put_be32(pb, dar.den);
+    put_be32(pb, sc->aspect_ratio.num);
+    put_be32(pb, sc->aspect_ratio.den);
 
     mxf_write_local_tag(pb, 16, 0x3201);
     put_buffer(pb, *sc->codec_ul, 16);
@@ -1349,6 +1344,16 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
             }
         } else if (c == 0x1b3) { // seq
             *flags |= 0x40;
+            if (i + 4 < pkt->size) {
+                switch ((pkt->data[i+4]>>4) & 0xf) {
+                case 2:  sc->aspect_ratio = (AVRational){  4,  3}; break;
+                case 3:  sc->aspect_ratio = (AVRational){ 16,  9}; break;
+                case 4:  sc->aspect_ratio = (AVRational){221,100}; break;
+                default:
+                    av_reduce(&sc->aspect_ratio.num, &sc->aspect_ratio.den,
+                              st->codec->width, st->codec->height, 1024*1024);
+                }
+            }
         } else if (c == 0x100) { // pic
             int pict_type = (pkt->data[i+2]>>3) & 0x07;
             if (pict_type == 2) { // P frame
