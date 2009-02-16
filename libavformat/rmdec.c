@@ -246,7 +246,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
             goto skip;
         }
         st->codec->codec_tag = get_le32(pb);
-//        av_log(NULL, AV_LOG_DEBUG, "%X %X\n", st->codec->codec_tag, MKTAG('R', 'V', '2', '0'));
+//        av_log(s, AV_LOG_DEBUG, "%X %X\n", st->codec->codec_tag, MKTAG('R', 'V', '2', '0'));
         if (   st->codec->codec_tag != MKTAG('R', 'V', '1', '0')
             && st->codec->codec_tag != MKTAG('R', 'V', '2', '0')
             && st->codec->codec_tag != MKTAG('R', 'V', '3', '0')
@@ -274,7 +274,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
             return AVERROR(ENOMEM);
         get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
 
-//        av_log(NULL, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
+//        av_log(s, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
         st->codec->time_base.den = fps * st->codec->time_base.num;
         switch(((uint8_t*)st->codec->extradata)[4]>>4){
         case 1: st->codec->codec_id = CODEC_ID_RV10; break;
@@ -659,7 +659,7 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
         if(st->codec->codec_id == CODEC_ID_RV20){
             int seq= 128*(pkt->data[2]&0x7F) + (pkt->data[3]>>1);
-            av_log(NULL, AV_LOG_DEBUG, "%d %"PRId64" %d\n", *timestamp, *timestamp*512LL/25, seq);
+            av_log(s, AV_LOG_DEBUG, "%d %"PRId64" %d\n", *timestamp, *timestamp*512LL/25, seq);
 
             seq |= (*timestamp&~0x3FFF);
             if(seq - *timestamp >  0x2000) seq -= 0x4000;
