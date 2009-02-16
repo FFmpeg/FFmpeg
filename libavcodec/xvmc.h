@@ -147,7 +147,7 @@ struct xvmc_pix_fmt {
         - application - zeroes it on get_buffer() and after successful
                         ff_draw_horiz_band().
         - libavcodec  - each macroblock increases it with the number
-                        of coded blocks in it.
+                        of coded blocks it contains.
     */
     int             next_free_data_block_num;
 
