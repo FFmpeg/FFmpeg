@@ -90,7 +90,11 @@ int ff_xvmc_field_start(MpegEncContext *s, AVCodecContext *avctx)
         return -1;
     }
     if (render->allocated_mv_blocks   < 1 ||
-        render->allocated_data_blocks < mb_block_count) {
+        render->allocated_data_blocks <  render->allocated_mv_blocks*mb_block_count ||
+        render->start_mv_blocks_num   >= render->allocated_mv_blocks                ||
+        render->next_free_data_block_num >
+                        render->allocated_data_blocks -
+                        mb_block_count*(render->allocated_mv_blocks-render->start_mv_blocks_num)) {
         av_log(avctx, AV_LOG_ERROR,
                "Rendering surface doesn't provide enough block structures to work with.\n");
         return -1;
