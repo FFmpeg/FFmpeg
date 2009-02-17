@@ -62,11 +62,6 @@ static inline void get_strl(ByteIOContext *pb, char *buf, int buf_size, int len)
     if (buf_size > 0) *q = '\0';
 }
 
-static void get_str16(ByteIOContext *pb, char *buf, int buf_size)
-{
-    get_strl(pb, buf, buf_size, get_be16(pb));
-}
-
 static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
 {
     get_strl(pb, buf, buf_size, get_byte(pb));
