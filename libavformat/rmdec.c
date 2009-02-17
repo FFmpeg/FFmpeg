@@ -72,6 +72,17 @@ static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
     get_strl(pb, buf, buf_size, get_byte(pb));
 }
 
+static void rm_read_metadata(AVFormatContext *s, int wide)
+{
+    char buf[1024];
+    int i;
+    for (i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
+        int len = wide ? get_be16(s->pb) : get_byte(s->pb);
+        get_strl(s->pb, buf, sizeof(buf), len);
+        av_metadata_set(&s->metadata, ff_rm_metadata[i], buf);
+    }
+}
+
 RMStream *ff_rm_alloc_rmstream (void)
 {
     RMStream *rms = av_mallocz(sizeof(RMStream));
@@ -95,10 +106,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
     if (((version >> 16) & 0xff) == 3) {
         int64_t startpos = url_ftell(pb);
         url_fskip(pb, 14);
-        get_str8(pb, s->title, sizeof(s->title));
-        get_str8(pb, s->author, sizeof(s->author));
-        get_str8(pb, s->copyright, sizeof(s->copyright));
-        get_str8(pb, s->comment, sizeof(s->comment));
+        rm_read_metadata(s, 0);
         if ((startpos + (version & 0xffff)) >= url_ftell(pb) + 2) {
             // fourcc (should always be "lpcJ")
             get_byte(pb);
@@ -213,11 +221,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
             get_byte(pb);
             get_byte(pb);
             get_byte(pb);
-
-            get_str8(pb, s->title, sizeof(s->title));
-            get_str8(pb, s->author, sizeof(s->author));
-            get_str8(pb, s->copyright, sizeof(s->copyright));
-            get_str8(pb, s->comment, sizeof(s->comment));
+            rm_read_metadata(s, 0);
         }
     }
     return 0;
@@ -364,10 +368,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             flags = get_be16(pb); /* flags */
             break;
         case MKTAG('C', 'O', 'N', 'T'):
-            get_str16(pb, s->title, sizeof(s->title));
-            get_str16(pb, s->author, sizeof(s->author));
-            get_str16(pb, s->copyright, sizeof(s->copyright));
-            get_str16(pb, s->comment, sizeof(s->comment));
+            rm_read_metadata(s, 1);
             break;
         case MKTAG('M', 'D', 'P', 'R'):
             st = av_new_stream(s, 0);

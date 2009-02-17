@@ -24,6 +24,8 @@
 
 #include "avformat.h"
 
+extern const char *ff_rm_metadata[4];
+
 typedef struct RMStream RMStream;
 
 RMStream *ff_rm_alloc_rmstream (void);

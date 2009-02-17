@@ -70,6 +70,7 @@ static void rv10_write_header(AVFormatContext *ctx,
     const char *desc, *mimetype;
     int nb_packets, packet_total_size, packet_max_size, size, packet_avg_size, i;
     int bit_rate, v, duration, flags, data_pos;
+    AVMetadataTag *tag;
 
     start_ptr = s->buf_ptr;
 
@@ -123,14 +124,17 @@ static void rv10_write_header(AVFormatContext *ctx,
     /* comments */
 
     put_tag(s,"CONT");
-    size = strlen(ctx->title) + strlen(ctx->author) + strlen(ctx->copyright) +
-        strlen(ctx->comment) + 4 * 2 + 10;
+    size =  4 * 2 + 10;
+    for(i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
+        tag = av_metadata_get(ctx->metadata, ff_rm_metadata[i], NULL, 0);
+        if(tag) size += strlen(tag->value);
+    }
     put_be32(s,size);
     put_be16(s,0);
-    put_str(s, ctx->title);
-    put_str(s, ctx->author);
-    put_str(s, ctx->copyright);
-    put_str(s, ctx->comment);
+    for(i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
+        tag = av_metadata_get(ctx->metadata, ff_rm_metadata[i], NULL, 0);
+        put_str(s, tag ? tag->value : "");
+    }
 
     for(i=0;i<ctx->nb_streams;i++) {
         int codec_data_size;
