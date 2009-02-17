@@ -6266,7 +6266,7 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
 }
 
 
-static void av_always_inline filter_mb_dir(H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize, int mb_xy, int mb_type, int mvy_limit, int first_vertical_edge_done, int dir) {
+static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize, int mb_xy, int mb_type, int mvy_limit, int first_vertical_edge_done, int dir) {
     MpegEncContext * const s = &h->s;
     int edge;
     const int mbm_xy = dir == 0 ? mb_xy -1 : h->top_mb_xy;

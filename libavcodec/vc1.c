@@ -318,7 +318,7 @@ static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
  * @return whether other 3 pairs should be filtered or not
  * @see 8.6
  */
-static int av_always_inline vc1_filter_line(uint8_t* src, int stride, int pq){
+static av_always_inline int vc1_filter_line(uint8_t* src, int stride, int pq){
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     int a0 = (2*(src[-2*stride] - src[ 1*stride]) - 5*(src[-1*stride] - src[ 0*stride]) + 4) >> 3;
