@@ -1108,6 +1108,7 @@ x11_grab_device_demuxer_deps="x11grab XShmCreateImage"
 x11_grab_device_demuxer_extralibs="-lX11 -lXext"
 
 # protocols
+gopher_protocol_deps="network"
 http_protocol_deps="network"
 rtp_protocol_deps="udp_protocol"
 tcp_protocol_deps="network"
