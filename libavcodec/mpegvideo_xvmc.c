@@ -48,7 +48,7 @@ void ff_xvmc_init_block(MpegEncContext *s)
 
 /**
  * Fill individual block pointers, so there are no gaps in the data_block array
- * in case not all blocks in MB are coded.
+ * in case not all blocks in the macroblock are coded.
  */
 void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
 {
