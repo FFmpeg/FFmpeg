@@ -91,24 +91,24 @@ static inline int dv_work_pool_size(const DVprofile *d)
 static inline void dv_calc_mb_coordinates(const DVprofile *d, int chan, int seq, int slot,
                                           uint16_t *tbl)
 {
-    const static uint8_t off[] = { 2, 6, 8, 0, 4 };
-    const static uint8_t shuf1[] = { 36, 18, 54, 0, 72 };
-    const static uint8_t shuf2[] = { 24, 12, 36, 0, 48 };
-    const static uint8_t shuf3[] = { 18, 9, 27, 0, 36 };
+    static const uint8_t off[] = { 2, 6, 8, 0, 4 };
+    static const uint8_t shuf1[] = { 36, 18, 54, 0, 72 };
+    static const uint8_t shuf2[] = { 24, 12, 36, 0, 48 };
+    static const uint8_t shuf3[] = { 18, 9, 27, 0, 36 };
 
-    const static uint8_t l_start[] = {0, 4, 9, 13, 18, 22, 27, 31, 36, 40};
-    const static uint8_t l_start_shuffled[] = { 9, 4, 13, 0, 18 };
+    static const uint8_t l_start[] = {0, 4, 9, 13, 18, 22, 27, 31, 36, 40};
+    static const uint8_t l_start_shuffled[] = { 9, 4, 13, 0, 18 };
 
-    const static uint8_t serpent1[] = {0, 1, 2, 2, 1, 0,
+    static const uint8_t serpent1[] = {0, 1, 2, 2, 1, 0,
                                        0, 1, 2, 2, 1, 0,
                                        0, 1, 2, 2, 1, 0,
                                        0, 1, 2, 2, 1, 0,
                                        0, 1, 2};
-    const static uint8_t serpent2[] = {0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0,
+    static const uint8_t serpent2[] = {0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0,
                                        0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0,
                                        0, 1, 2, 3, 4, 5};
 
-    const static uint8_t remap[][2] = {{ 0, 0}, { 0, 0}, { 0, 0}, { 0, 0}, /* dummy */
+    static const uint8_t remap[][2] = {{ 0, 0}, { 0, 0}, { 0, 0}, { 0, 0}, /* dummy */
                                        { 0, 0}, { 0, 1}, { 0, 2}, { 0, 3}, {10, 0},
                                        {10, 1}, {10, 2}, {10, 3}, {20, 0}, {20, 1},
                                        {20, 2}, {20, 3}, {30, 0}, {30, 1}, {30, 2},

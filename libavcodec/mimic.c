@@ -121,7 +121,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-const static int8_t vlcdec_lookup[9][64] = {
+static const int8_t vlcdec_lookup[9][64] = {
     {    0, },
     {   -1,   1, },
     {   -3,   3,   -2,   2, },

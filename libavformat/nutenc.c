@@ -109,7 +109,7 @@ static void build_elision_headers(AVFormatContext *s){
     int i;
     //FIXME this is lame
     //FIXME write a 2pass mode to find the maximal headers
-    const static uint8_t headers[][5]={
+    static const uint8_t headers[][5]={
         {3, 0x00, 0x00, 0x01},
         {4, 0x00, 0x00, 0x01, 0xB6},
         {2, 0xFF, 0xFA}, //mp3+crc
