@@ -3046,6 +3046,11 @@ static void implicit_weight_table(H264Context *h){
     int ref0, ref1, i;
     int cur_poc = s->current_picture_ptr->poc;
 
+    for (i = 0; i < 2; i++) {
+        h->luma_weight_flag[i]   = 0;
+        h->chroma_weight_flag[i] = 0;
+    }
+
     if(   h->ref_count[0] == 1 && h->ref_count[1] == 1
        && h->ref_list[0][0].poc + h->ref_list[1][0].poc == 2*cur_poc){
         h->use_weight= 0;
@@ -3057,10 +3062,6 @@ static void implicit_weight_table(H264Context *h){
     h->use_weight_chroma= 2;
     h->luma_log2_weight_denom= 5;
     h->chroma_log2_weight_denom= 5;
-    for (i = 0; i < 2; i++) {
-        h->luma_weight_flag[i]   = 0;
-        h->chroma_weight_flag[i] = 0;
-    }
 
     for(ref0=0; ref0 < h->ref_count[0]; ref0++){
         int poc0 = h->ref_list[0][ref0].poc;
