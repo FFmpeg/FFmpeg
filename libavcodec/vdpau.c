@@ -151,7 +151,7 @@ void ff_vdpau_h264_picture_complete(MpegEncContext *s)
     render->info.h264.field_pic_flag                         = s->picture_structure != PICT_FRAME;
     render->info.h264.bottom_field_flag                      = s->picture_structure == PICT_BOTTOM_FIELD;
     render->info.h264.num_ref_frames                         = h->sps.ref_frame_count;
-    render->info.h264.mb_adaptive_frame_field_flag           = h->sps.mb_aff;
+    render->info.h264.mb_adaptive_frame_field_flag           = h->sps.mb_aff && !render->info.h264.field_pic_flag;
     render->info.h264.constrained_intra_pred_flag            = h->pps.constrained_intra_pred;
     render->info.h264.weighted_pred_flag                     = h->pps.weighted_pred;
     render->info.h264.weighted_bipred_idc                    = h->pps.weighted_bipred_idc;
