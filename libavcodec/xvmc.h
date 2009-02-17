@@ -43,9 +43,9 @@ struct xvmc_pix_fmt {
     int             xvmc_id;
 
     /** Pointer to the block array allocated by XvMCCreateBlocks().
-        The array is have to be freed by XvMCDestroyBlocks().
-        Each 64 values represent one data block of
-        differential pixel data (in MoCo mode) or coefficients for IDCT.
+        The array has to be freed by XvMCDestroyBlocks().
+        Each group of 64 values represents one data block of differential
+        pixel information (in MoCo mode) or coefficients for IDCT.
         - application - set the pointer during initialization
         - libavcodec  - fills coefficients/pixel data into the array
     */
@@ -86,7 +86,7 @@ struct xvmc_pix_fmt {
     int             unsigned_intra;
 
     /** Pointer to the surface allocated by XvMCCreateSurface().
-        It have to be freed by XvMCDestroySurface() on application exit.
+        It has to be freed by XvMCDestroySurface() on application exit.
         It identifies the frame and its state on the video hardware.
         - application - set during initialization
         - libavcodec  - unchanged
@@ -121,7 +121,7 @@ struct xvmc_pix_fmt {
     unsigned int    flags;
 //}@
 
-    /** Number of macro block descriptions in the mv_blocks array
+    /** Number of macroblock descriptions in the mv_blocks array
         that have already been passed to the hardware.
         - application - zeroes it on get_buffer().
                         A successful ff_draw_horiz_band() may increment it
@@ -130,23 +130,24 @@ struct xvmc_pix_fmt {
     */
     int             start_mv_blocks_num;
 
-    /** Number of new macro blocks descriptions in mv_blocks array (after start_mv_blocks_num)
-        that are filled by libavcodec and have to be passed to the hardware.
+    /** Number of new macroblock descriptions in the mv_blocks array (after
+        start_mv_blocks_num) that are filled by libavcodec and have to be
+        passed to the hardware.
         - application - zeroes it on get_buffer() or after successful
                         ff_draw_horiz_band().
         - libavcodec  - increment with one of each stored MB
     */
     int             filled_mv_blocks_num;
 
-    /** Number of the the next free data block.
-        One data block is 64 short values in data_blocks array.
+    /** Number of the the next free data block; one data block consists of
+        64 short values in the data_blocks array.
         All blocks before this one are already claimed by filling their number
-        in the corresponding blocks description structure field,
+        into the corresponding blocks description structure field,
         that are hold in mv_blocks array.
         - application - zeroes it on get_buffer().
                         A successful ff_draw_horiz_band() may zero it together
                         with start_mb_blocks_num.
-        - libavcodec  - each decoded macroblock increases it with the number
+        - libavcodec  - each decoded macroblock increases it by the number
                         of coded blocks it contains.
     */
     int             next_free_data_block_num;
