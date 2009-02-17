@@ -81,7 +81,7 @@ hiegrep ':\+  *{ *$' '{ should be on the same line as the related previous state
 
 
 rm $TMP
-for i in `grep -H '^+.*@param' $*| sed 's/^\([^:]*\):.*@param *\([a-zA-Z0-9_]*\) .*$/\1:\2/'` ; do
+for i in `grep -H '^+.*@param' $*| sed 's/^\([^:]*\):.*@param\(\[.*\]\|\) *\([a-zA-Z0-9_]*\) .*$/\1:\3/'` ; do
     doxpar=`echo $i | sed 's/^.*:\(.*\)$/\1/'`
     file=`echo $i | sed 's/^\([^:]*\):.*$/\1/'`
     grep " *$doxpar *[),]" $file | grep -v '@param' >/dev/null || grep --color=always "@param *$doxpar" $file >>$TMP
