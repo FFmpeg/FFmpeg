@@ -425,7 +425,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             st->codec->codec_type = codec_type;
             if (rtsp_st->sdp_payload_type < RTP_PT_PRIVATE) {
                 /* if standard payload type, we can find the codec right now */
-                rtp_get_codec_info(st->codec, rtsp_st->sdp_payload_type);
+                ff_rtp_get_codec_info(st->codec, rtsp_st->sdp_payload_type);
             }
         }
         /* put a default control url */

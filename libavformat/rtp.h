@@ -33,7 +33,7 @@
  */
 int ff_rtp_get_payload_type(AVCodecContext *codec);
 
-int rtp_get_codec_info(AVCodecContext *codec, int payload_type);
+int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type);
 const char *ff_rtp_enc_name(int payload_type);
 enum CodecID ff_rtp_codec_id(const char *buf, enum CodecType codec_type);
 
