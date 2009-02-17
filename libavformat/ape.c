@@ -48,24 +48,6 @@
 #define APE_TAG_FLAG_CONTAINS_HEADER  (1 << 31)
 #define APE_TAG_FLAG_IS_HEADER        (1 << 29)
 
-#define TAG(name, field)  {name, offsetof(AVFormatContext, field), sizeof(((AVFormatContext *)0)->field)}
-
-static const struct {
-    const char *name;
-    int offset;
-    int size;
-} tags[] = {
-    TAG("Title"    , title    ),
-    TAG("Artist"   , author   ),
-    TAG("Copyright", copyright),
-    TAG("Comment"  , comment  ),
-    TAG("Album"    , album    ),
-    TAG("Year"     , year     ),
-    TAG("Track"    , track    ),
-    TAG("Genre"    , genre    ),
-    { NULL }
-};
-
 typedef struct {
     int64_t pos;
     int nblocks;
@@ -112,34 +94,24 @@ typedef struct {
 static void ape_tag_read_field(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
-    uint8_t buf[1024];
+    uint8_t key[1024], value[1024];
     uint32_t size;
-    int i;
+    int i, l;
 
-    memset(buf, 0, 1024);
     size = get_le32(pb);  /* field size */
     url_fskip(pb, 4);     /* skip field flags */
 
     for (i=0; pb->buf_ptr[i]!='0' && pb->buf_ptr[i]>=0x20 && pb->buf_ptr[i]<=0x7E; i++);
 
-    get_buffer(pb, buf, FFMIN(i, 1024));
-    url_fskip(pb, 1);
-
-    for (i=0; tags[i].name; i++)
-        if (!strcmp (buf, tags[i].name)) {
-            if (tags[i].size == sizeof(int)) {
-                char tmp[16];
-                get_buffer(pb, tmp, FFMIN(sizeof(tmp), size));
-                *(int *)(((char *)s)+tags[i].offset) = atoi(tmp);
-            } else {
-                get_buffer(pb, ((char *)s) + tags[i].offset,
-                           FFMIN(tags[i].size, size));
-            }
-            break;
-        }
-
-    if (!tags[i].name)
-        url_fskip(pb, size);
+    l = FFMIN(i,    sizeof(key) -1);
+    get_buffer(pb, key,  l);
+    key[l]  = 0;
+    url_fskip(pb, 1 + i-l);
+    l = FFMIN(size, sizeof(value)-1);
+    get_buffer(pb, value, l);
+    value[l] = 0;
+    url_fskip(pb, size-l);
+    av_metadata_set(&s->metadata, key, value);
 }
 
 static void ape_parse_tag(AVFormatContext *s)
