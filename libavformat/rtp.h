@@ -33,6 +33,10 @@
  */
 int ff_rtp_get_payload_type(AVCodecContext *codec);
 
+int rtp_get_codec_info(AVCodecContext *codec, int payload_type);
+const char *ff_rtp_enc_name(int payload_type);
+enum CodecID ff_rtp_codec_id(const char *buf, enum CodecType codec_type);
+
 #define RTP_PT_PRIVATE 96
 #define RTP_VERSION 2
 #define RTP_MAX_SDES 256   /**< maximum text length for SDES */

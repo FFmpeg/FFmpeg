@@ -59,8 +59,6 @@ typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
 #define RTP_MIN_PACKET_LENGTH 12
 #define RTP_MAX_PACKET_LENGTH 1500 /* XXX: suppress this define */
 
-int rtp_get_codec_info(AVCodecContext *codec, int payload_type);
-
 typedef struct RTPDemuxContext RTPDemuxContext;
 RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, RTPPayloadData *rtp_payload_data);
 void rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
@@ -179,9 +177,6 @@ extern RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler;
 void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler);
 
 int rtsp_next_attr_and_value(const char **p, char *attr, int attr_size, char *value, int value_size); ///< from rtsp.c, but used by rtp dynamic protocol handlers.
-
-const char *ff_rtp_enc_name(int payload_type);
-enum CodecID ff_rtp_codec_id(const char *buf, enum CodecType codec_type);
 
 void av_register_rtp_dynamic_payload_handlers(void);
 
