@@ -111,6 +111,8 @@ static void ape_tag_read_field(AVFormatContext *s)
     get_buffer(pb, value, l);
     value[l] = 0;
     url_fskip(pb, size-l);
+    if (l < size)
+        av_log(s, AV_LOG_WARNING, "Too long '%s' tag was truncated.\n", key);
     av_metadata_set(&s->metadata, key, value);
 }
 
