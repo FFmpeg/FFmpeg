@@ -30,6 +30,7 @@
 #ifndef AVCODEC_AAC_H
 #define AVCODEC_AAC_H
 
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpeg4audio.h"

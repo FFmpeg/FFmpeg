@@ -27,6 +27,7 @@
 #ifndef AVCODEC_AC3DEC_H
 #define AVCODEC_AC3DEC_H
 
+#include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "ac3.h"
 #include "bitstream.h"

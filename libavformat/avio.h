@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/common.h"
+
 /* unbuffered I/O */
 
 /**
