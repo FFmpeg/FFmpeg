@@ -163,7 +163,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
     pkt.data= audio_outbuf;
 
     /* write the compressed frame in the media file */
-    if (av_write_frame(oc, &pkt) != 0) {
+    if (av_interleaved_write_frame(oc, &pkt) != 0) {
         fprintf(stderr, "Error while writing audio frame\n");
         exit(1);
     }
@@ -372,7 +372,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
         pkt.data= (uint8_t *)picture;
         pkt.size= sizeof(AVPicture);
 
-        ret = av_write_frame(oc, &pkt);
+        ret = av_interleaved_write_frame(oc, &pkt);
     } else {
         /* encode the image */
         out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture);
@@ -390,7 +390,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
             pkt.size= out_size;
 
             /* write the compressed frame in the media file */
-            ret = av_write_frame(oc, &pkt);
+            ret = av_interleaved_write_frame(oc, &pkt);
         } else {
             ret = 0;
         }
