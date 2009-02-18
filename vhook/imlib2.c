@@ -395,7 +395,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         int wid, hig, h_a, v_a;
         char buff[1000];
         char tbuff[1000];
-        char *tbp = ci->text;
+        const char *tbp = ci->text;
         time_t now = time(0);
         char *p, *q;
         int y;
