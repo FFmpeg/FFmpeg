@@ -61,6 +61,7 @@ int ff_audio_interleave_init(AVFormatContext *s,
             aic->samples = aic->samples_per_frame;
             aic->time_base = time_base;
 
+            aic->fifo_size = 100* *aic->samples;
             av_fifo_init(&aic->fifo, 100 * *aic->samples);
         }
     }
@@ -103,6 +104,12 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
         AVStream *st = s->streams[pkt->stream_index];
         AudioInterleaveContext *aic = st->priv_data;
         if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            unsigned new_size = av_fifo_size(&aic->fifo) + pkt->size;
+            if (new_size > aic->fifo_size) {
+                if (av_fifo_realloc2(&aic->fifo, new_size) < 0)
+                    return -1;
+                aic->fifo_size = new_size;
+            }
             av_fifo_generic_write(&aic->fifo, pkt->data, pkt->size, NULL);
         } else {
             // rewrite pts and dts to be decoded time line position
