@@ -1005,12 +1005,56 @@ static void stream_pause(VideoState *is)
     }
 }
 
+static double compute_frame_delay(double frame_current_pts, VideoState *is)
+{
+    double actual_delay, delay, sync_threshold, ref_clock, diff;
+
+    /* compute nominal delay */
+    delay = frame_current_pts - is->frame_last_pts;
+    if (delay <= 0 || delay >= 10.0) {
+        /* if incorrect delay, use previous one */
+        delay = is->frame_last_delay;
+    }
+    is->frame_last_delay = delay;
+    is->frame_last_pts = frame_current_pts;
+
+    /* update delay to follow master synchronisation source */
+    if (((is->av_sync_type == AV_SYNC_AUDIO_MASTER && is->audio_st) ||
+         is->av_sync_type == AV_SYNC_EXTERNAL_CLOCK)) {
+        /* if video is slave, we try to correct big delays by
+           duplicating or deleting a frame */
+        ref_clock = get_master_clock(is);
+        diff = frame_current_pts - ref_clock;
+
+        /* skip or repeat frame. We take into account the
+           delay to compute the threshold. I still don't know
+           if it is the best guess */
+        sync_threshold = FFMAX(AV_SYNC_THRESHOLD, delay);
+        if (fabs(diff) < AV_NOSYNC_THRESHOLD) {
+            if (diff <= -sync_threshold)
+                delay = 0;
+            else if (diff >= sync_threshold)
+                delay = 2 * delay;
+        }
+    }
+
+    is->frame_timer += delay;
+    /* compute the REAL delay (we need to do that to avoid
+       long term errors */
+    actual_delay = is->frame_timer - (av_gettime() / 1000000.0);
+    if (actual_delay < 0.010) {
+        /* XXX: should skip picture */
+        actual_delay = 0.010;
+    }
+
+    return actual_delay;
+}
+
 /* called to display each frame */
 static void video_refresh_timer(void *opaque)
 {
     VideoState *is = opaque;
     VideoPicture *vp;
-    double actual_delay, delay, sync_threshold, ref_clock, diff;
 
     SubPicture *sp, *sp2;
 
@@ -1026,45 +1070,8 @@ static void video_refresh_timer(void *opaque)
             is->video_current_pts = vp->pts;
             is->video_current_pts_time = av_gettime();
 
-            /* compute nominal delay */
-            delay = vp->pts - is->frame_last_pts;
-            if (delay <= 0 || delay >= 10.0) {
-                /* if incorrect delay, use previous one */
-                delay = is->frame_last_delay;
-            }
-            is->frame_last_delay = delay;
-            is->frame_last_pts = vp->pts;
-
-            /* update delay to follow master synchronisation source */
-            if (((is->av_sync_type == AV_SYNC_AUDIO_MASTER && is->audio_st) ||
-                 is->av_sync_type == AV_SYNC_EXTERNAL_CLOCK)) {
-                /* if video is slave, we try to correct big delays by
-                   duplicating or deleting a frame */
-                ref_clock = get_master_clock(is);
-                diff = vp->pts - ref_clock;
-
-                /* skip or repeat frame. We take into account the
-                   delay to compute the threshold. I still don't know
-                   if it is the best guess */
-                sync_threshold = FFMAX(AV_SYNC_THRESHOLD, delay);
-                if (fabs(diff) < AV_NOSYNC_THRESHOLD) {
-                    if (diff <= -sync_threshold)
-                        delay = 0;
-                    else if (diff >= sync_threshold)
-                        delay = 2 * delay;
-                }
-            }
-
-            is->frame_timer += delay;
-            /* compute the REAL delay (we need to do that to avoid
-               long term errors */
-            actual_delay = is->frame_timer - (av_gettime() / 1000000.0);
-            if (actual_delay < 0.010) {
-                /* XXX: should skip picture */
-                actual_delay = 0.010;
-            }
             /* launch timer for next picture */
-            schedule_refresh(is, (int)(actual_delay * 1000 + 0.5));
+            schedule_refresh(is, (int)(compute_frame_delay(vp->pts, is) * 1000 + 0.5));
 
 #if defined(DEBUG_SYNC)
             printf("video: delay=%0.3f actual_delay=%0.3f pts=%0.3f A-V=%f\n",
