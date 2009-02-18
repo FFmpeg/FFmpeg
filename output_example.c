@@ -523,14 +523,17 @@ int main(int argc, char **argv)
         }
     }
 
+    /* write the trailer, if any.  the trailer must be written
+     * before you close the CodecContexts open when you wrote the
+     * header; otherwise write_trailer may try to use memory that
+     * was freed on av_codec_close() */
+    av_write_trailer(oc);
+
     /* close each codec */
     if (video_st)
         close_video(oc, video_st);
     if (audio_st)
         close_audio(oc, audio_st);
-
-    /* write the trailer, if any */
-    av_write_trailer(oc);
 
     /* free the streams */
     for(i = 0; i < oc->nb_streams; i++) {
