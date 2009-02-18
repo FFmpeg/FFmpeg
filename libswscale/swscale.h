@@ -129,6 +129,29 @@ void sws_freeContext(struct SwsContext *swsContext);
  */
 struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int dstW, int dstH, enum PixelFormat dstFormat, int flags,
                                   SwsFilter *srcFilter, SwsFilter *dstFilter, double *param);
+
+/**
+ * Scales the image slice in \p src and puts the resulting scaled
+ * slice in the image in \p dst. A slice is a sequence of consecutive
+ * rows in an image.
+ *
+ * @param context   the scaling context previously created with
+ *                  sws_getContext()
+ * @param src       the array containing the pointers to the planes of
+ *                  the source slice
+ * @param srcStride the array containing the strides for each plane of
+ *                  the source image
+ * @param srcSliceY the position in the source image of the slice to
+ *                  process, that is the number (counted starting from
+ *                  zero) in the image of the first row of the slice
+ * @param srcSliceH the height of the source slice, that is the number
+ *                  of rows in the slice
+ * @param dst       the array containing the pointers to the planes of
+ *                  the destination image
+ * @param dstStride the array containing the strides for each plane of
+ *                  the destination image
+ * @return          the height of the output slice
+ */
 int sws_scale(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
               int srcSliceH, uint8_t* dst[], int dstStride[]);
 #if LIBSWSCALE_VERSION_MAJOR < 1
