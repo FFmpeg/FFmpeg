@@ -1176,7 +1176,7 @@ static void mxf_write_partition(AVFormatContext *s, int bodysid,
         index_byte_count = 85 + 12+(s->nb_streams+1)*6 +
             12+mxf->edit_units_count*(11+mxf->slice_count*4);
     else if (mxf->edit_unit_byte_count && indexsid)
-        index_byte_count = 85;
+        index_byte_count = 80;
 
     if (index_byte_count) {
         // add encoded ber length
