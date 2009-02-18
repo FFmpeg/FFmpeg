@@ -195,6 +195,7 @@ show_help(){
   echo "                           (requires enabling PMC)"
   echo "  --disable-altivec        disable AltiVec optimizations"
   echo "  --disable-amd3dnow       disable 3DNow! optimizations"
+  echo "  --disable-amd3dnowext    disable 3DNow! extended optimizations"
   echo "  --disable-mmx            disable MMX optimizations"
   echo "  --disable-mmx2           disable MMX2 optimizations"
   echo "  --disable-sse            disable SSE optimizations"
@@ -823,6 +824,7 @@ ARCH_LIST='
 ARCH_EXT_LIST='
     altivec
     amd3dnow
+    amd3dnowext
     armv5te
     armv6
     armv6t2
@@ -958,6 +960,7 @@ CMDLINE_SET="
 # architecture extensions
 altivec_deps="ppc"
 amd3dnow_deps="mmx"
+amd3dnowext_deps="amd3dnow"
 armv5te_deps="arm"
 armv6_deps="arm"
 armv6t2_deps="arm"
@@ -2196,6 +2199,7 @@ if enabled x86; then
     echo "MMX enabled               ${mmx-no}"
     echo "MMX2 enabled              ${mmx2-no}"
     echo "3DNow! enabled            ${amd3dnow-no}"
+    echo "3DNow! extended enabled   ${amd3dnowext-no}"
     echo "SSE enabled               ${sse-no}"
     echo "SSSE3 enabled             ${ssse3-no}"
     echo "CMOV enabled              ${cmov-no}"
