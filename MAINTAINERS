@@ -105,6 +105,8 @@ Generic Parts:
     simple_idct.c, simple_idct.h        Michael Niedermayer
   postprocessing:
     libpostproc/*                       Michael Niedermayer
+  vdpau:
+    vdpau*                              Carl Eugen Hoyos
 
 Codecs:
   4xm.c                                 Michael Niedermayer
