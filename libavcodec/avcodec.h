@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 15
+#define LIBAVCODEC_VERSION_MINOR 16
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -3025,6 +3025,14 @@ typedef struct AVCodecParserContext {
 
     int64_t offset;      ///< byte offset from starting packet start
     int64_t cur_frame_end[AV_PARSER_PTS_NB];
+
+    /*!
+     * Set by parser to 1 for key frames and 0 for non-key frames.
+     * It is initialized to -1, so if the parser doesn't set this flag,
+     * old-style fallback using FF_I_TYPE picture type as key frames
+     * will be used.
+     */
+    int key_frame;
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {

@@ -73,6 +73,7 @@ AVCodecParserContext *av_parser_init(int codec_id)
     }
     s->fetch_timestamp=1;
     s->pict_type = FF_I_TYPE;
+    s->key_frame = -1;
     return s;
 }
 
