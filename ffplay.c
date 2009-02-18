@@ -1048,6 +1048,11 @@ static double compute_frame_delay(double frame_current_pts, VideoState *is)
         actual_delay = 0.010;
     }
 
+#if defined(DEBUG_SYNC)
+    printf("video: delay=%0.3f actual_delay=%0.3f pts=%0.3f A-V=%f\n",
+            delay, actual_delay, frame_current_pts, -diff);
+#endif
+
     return actual_delay;
 }
 
@@ -1073,11 +1078,6 @@ static void video_refresh_timer(void *opaque)
 
             /* launch timer for next picture */
             schedule_refresh(is, (int)(compute_frame_delay(vp->pts, is) * 1000 + 0.5));
-
-#if defined(DEBUG_SYNC)
-            printf("video: delay=%0.3f actual_delay=%0.3f pts=%0.3f A-V=%f\n",
-                   delay, actual_delay, vp->pts, -diff);
-#endif
 
             if(is->subtitle_st) {
                 if (is->subtitle_stream_changed) {
