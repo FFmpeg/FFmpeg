@@ -502,6 +502,11 @@ typedef struct H264Context{
     SEI_PicStructType sei_pic_struct;
 
     /**
+     * dpb_output_delay in picture timing SEI message, see H.264 C.2.2
+     */
+    int sei_dpb_output_delay;
+
+    /**
      * recovery_frame_cnt from SEI message
      *
      * Set to -1 if no recovery point SEI message found or to number of frames
