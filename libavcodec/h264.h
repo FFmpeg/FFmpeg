@@ -115,6 +115,7 @@ enum {
  * SEI message types
  */
 typedef enum {
+    SEI_BUFFERING_PERIOD             =  0, ///< buffering period (H.264, D.1.1)
     SEI_TYPE_PIC_TIMING              =  1, ///< picture timing
     SEI_TYPE_USER_DATA_UNREGISTERED  =  5, ///< unregistered user data
     SEI_TYPE_RECOVERY_POINT          =  6  ///< recovery point (frame # to decoder sync)
@@ -525,6 +526,10 @@ typedef struct H264Context{
 
     int luma_weight_flag[2];   ///< 7.4.3.2 luma_weight_lX_flag
     int chroma_weight_flag[2]; ///< 7.4.3.2 chroma_weight_lX_flag
+
+    // Timestamp stuff
+    int sei_buffering_period_present;  ///< Buffering period SEI flag
+    int initial_cpb_removal_delay[32]; ///< Initial timestamps for CPBs
 }H264Context;
 
 #endif /* AVCODEC_H264_H */

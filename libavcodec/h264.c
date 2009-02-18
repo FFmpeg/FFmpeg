@@ -2211,6 +2211,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     h->sei_recovery_frame_cnt = -1;
     h->sei_dpb_output_delay = 0;
     h->sei_cpb_removal_delay = -1;
+    h->sei_buffering_period_present = 0;
     return 0;
 }
 
@@ -3148,6 +3149,7 @@ static void flush_dpb(AVCodecContext *avctx){
     h->sei_recovery_frame_cnt = -1;
     h->sei_dpb_output_delay = 0;
     h->sei_cpb_removal_delay = -1;
+    h->sei_buffering_period_present = 0;
     ff_mpeg_flush(avctx);
 }
 
@@ -6864,6 +6866,37 @@ static int decode_recovery_point(H264Context *h){
     return 0;
 }
 
+static int decode_buffering_period(H264Context *h){
+    MpegEncContext * const s = &h->s;
+    unsigned int sps_id;
+    int sched_sel_idx;
+    SPS *sps;
+
+    sps_id = get_ue_golomb_31(&s->gb);
+    if(sps_id > 31 || !h->sps_buffers[sps_id]) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "non-existing SPS %d referenced in buffering period\n", sps_id);
+        return -1;
+    }
+    sps = h->sps_buffers[sps_id];
+
+    // NOTE: This is really so duplicated in the standard... See H.264, D.1.1
+    if (sps->nal_hrd_parameters_present_flag) {
+        for (sched_sel_idx = 0; sched_sel_idx < sps->cpb_cnt; sched_sel_idx++) {
+            h->initial_cpb_removal_delay[sched_sel_idx] = get_bits(&s->gb, sps->initial_cpb_removal_delay_length);
+            skip_bits(&s->gb, sps->initial_cpb_removal_delay_length); // initial_cpb_removal_delay_offset
+        }
+    }
+    if (sps->vcl_hrd_parameters_present_flag) {
+        for (sched_sel_idx = 0; sched_sel_idx < sps->cpb_cnt; sched_sel_idx++) {
+            h->initial_cpb_removal_delay[sched_sel_idx] = get_bits(&s->gb, sps->initial_cpb_removal_delay_length);
+            skip_bits(&s->gb, sps->initial_cpb_removal_delay_length); // initial_cpb_removal_delay_offset
+        }
+    }
+
+    h->sei_buffering_period_present = 1;
+    return 0;
+}
+
 static int decode_sei(H264Context *h){
     MpegEncContext * const s = &h->s;
 
@@ -6891,6 +6924,10 @@ static int decode_sei(H264Context *h){
             break;
         case SEI_TYPE_RECOVERY_POINT:
             if(decode_recovery_point(h) < 0)
+                return -1;
+            break;
+        case SEI_BUFFERING_PERIOD:
+            if(decode_buffering_period(h) < 0)
                 return -1;
             break;
         default:
@@ -7698,6 +7735,7 @@ static int decode_frame(AVCodecContext *avctx,
         h->sei_recovery_frame_cnt = -1;
         h->sei_dpb_output_delay = 0;
         h->sei_cpb_removal_delay = -1;
+        h->sei_buffering_period_present = 0;
 
         if (cur->field_poc[0]==INT_MAX || cur->field_poc[1]==INT_MAX) {
             /* Wait for second field. */
