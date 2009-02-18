@@ -224,7 +224,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
         c->mb_decision=2;
     }
     // some formats want stream headers to be separate
-    if(!strcmp(oc->oformat->name, "mp4") || !strcmp(oc->oformat->name, "mov") || !strcmp(oc->oformat->name, "3gp"))
+    if(oc->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
     return st;
