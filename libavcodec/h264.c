@@ -6925,6 +6925,7 @@ static inline int decode_hrd_parameters(H264Context *h, SPS *sps){
     sps->cpb_removal_delay_length = get_bits(&s->gb, 5) + 1;
     sps->dpb_output_delay_length = get_bits(&s->gb, 5) + 1;
     sps->time_offset_length = get_bits(&s->gb, 5);
+    sps->cpb_cnt = cpb_count;
     return 0;
 }
 
