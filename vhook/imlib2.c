@@ -146,7 +146,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     int c;
     ContextInfo *ci;
     char *rgbtxt = 0;
-    char *font = "LucidaSansDemiBold/16";
+    const char *font = "LucidaSansDemiBold/16";
     char *fp = getenv("FONTPATH");
     char *color = 0;
     FILE *f;
