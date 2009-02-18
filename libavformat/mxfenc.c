@@ -452,7 +452,7 @@ static void mxf_write_preface(AVFormatContext *s)
 
     // write version
     mxf_write_local_tag(pb, 2, 0x3B05);
-    put_be16(pb, 1);
+    put_be16(pb, 258); // v1.2
 
     // write identification_refs
     mxf_write_local_tag(pb, 16 + 8, 0x3B06);
