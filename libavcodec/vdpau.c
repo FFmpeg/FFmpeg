@@ -184,6 +184,8 @@ void ff_vdpau_mpeg_picture_complete(MpegEncContext *s, const uint8_t *buf,
     struct vdpau_render_state *render, *last, *next;
     int i;
 
+    if (!s->current_picture_ptr) return;
+
     render = (struct vdpau_render_state *)s->current_picture_ptr->data[0];
     assert(render);
 
