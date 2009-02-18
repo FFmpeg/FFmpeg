@@ -179,6 +179,7 @@ typedef struct SPS{
     int vcl_hrd_parameters_present_flag;
     int pic_struct_present_flag;
     int time_offset_length;
+    int initial_cpb_removal_delay_length; ///< initial_cpb_removal_delay_length_minus1 +1
     int cpb_removal_delay_length;      ///< cpb_removal_delay_length_minus1 + 1
     int dpb_output_delay_length;       ///< dpb_output_delay_length_minus1 + 1
     int bit_depth_luma;                ///< bit_depth_luma_minus8 + 8
