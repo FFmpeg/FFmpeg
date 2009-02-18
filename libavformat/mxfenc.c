@@ -1042,7 +1042,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
     put_buffer(pb, index_table_segment_key, 16);
 
     if (mxf->edit_unit_byte_count) {
-        klv_encode_ber_length(pb, 85);
+        klv_encode_ber_length(pb, 80);
     } else {
         klv_encode_ber_length(pb, 85 + 12+(s->nb_streams+1)*6 +
                               12+mxf->edit_units_count*(11+mxf->slice_count*4));
@@ -1077,11 +1077,11 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
     mxf_write_local_tag(pb, 4, 0x3F07);
     put_be32(pb, 1);
 
-    // real slice count - 1
-    mxf_write_local_tag(pb, 1, 0x3F08);
-    put_byte(pb, mxf->slice_count);
-
     if (!mxf->edit_unit_byte_count) {
+        // real slice count - 1
+        mxf_write_local_tag(pb, 1, 0x3F08);
+        put_byte(pb, mxf->slice_count);
+
         // delta entry array
         mxf_write_local_tag(pb, 8 + (s->nb_streams+1)*6, 0x3F09);
         put_be32(pb, s->nb_streams+1); // num of entries
