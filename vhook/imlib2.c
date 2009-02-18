@@ -165,7 +165,7 @@ int Configure(void **ctxp, int argc, char *argv[])
 
     /* Use ':' to split FONTPATH */
     if (fp)
-        while (p = strchr(fp, ':')) {
+        while ((p = strchr(fp, ':'))) {
             *p = 0;
             imlib_add_path_to_font_path(fp);
             fp = p + 1;
