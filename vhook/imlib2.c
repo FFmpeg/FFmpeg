@@ -151,7 +151,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     char *color = 0;
     FILE *f;
     char *p;
-    char *error;
+    const char *error;
 
     *ctxp = av_mallocz(sizeof(ContextInfo));
     ci = (ContextInfo *) *ctxp;
