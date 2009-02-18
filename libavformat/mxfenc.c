@@ -573,7 +573,7 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
 
     // write track id
     mxf_write_local_tag(pb, 4, 0x4801);
-    put_be32(pb, st->index);
+    put_be32(pb, st->index+1);
 
     // write track number
     mxf_write_local_tag(pb, 4, 0x4804);
@@ -637,14 +637,14 @@ static void mxf_write_sequence(AVFormatContext *s, AVStream *st, enum MXFMetadat
     mxf_write_refs_count(pb, 1);
     if (st == mxf->timecode_track)
         component = TimecodeComponent;
-    else if (type == MaterialPackage)
-        component = SourceClip;
     else
-        component = SourceClip+TypeBottom;
+        component = SourceClip;
+    if (type == SourcePackage)
+        component += TypeBottom;
     mxf_write_uuid(pb, component, st->index);
 }
 
-static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st)
+static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
@@ -654,7 +654,8 @@ static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st)
 
     // UID
     mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, TimecodeComponent, st->index);
+    mxf_write_uuid(pb, type == MaterialPackage ? TimecodeComponent :
+                   TimecodeComponent + TypeBottom, st->index);
 
     mxf_write_common_fields(s, st);
 
@@ -704,7 +705,7 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enu
     if (type == SourcePackage)
         put_be32(pb, 0);
     else
-        put_be32(pb, st->index);
+        put_be32(pb, st->index+1);
 }
 
 static void mxf_write_multi_descriptor(AVFormatContext *s)
@@ -757,7 +758,7 @@ static void mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UID k
     mxf_write_uuid(pb, SubDescriptor, st->index);
 
     mxf_write_local_tag(pb, 4, 0x3006);
-    put_be32(pb, st->index);
+    put_be32(pb, st->index+1);
 
     mxf_write_local_tag(pb, 8, 0x3001);
     put_be32(pb, mxf->time_base.den);
@@ -916,15 +917,13 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    int i, track_count;
+    int i, track_count = s->nb_streams+1;
 
     if (type == MaterialPackage) {
-        track_count = s->nb_streams + 1; // add timecode track
         mxf_write_metadata_key(pb, 0x013600);
         PRINT_KEY(s, "Material Package key", pb->buf_ptr - 16);
         klv_encode_ber_length(pb, 92 + 16*track_count);
     } else {
-        track_count = s->nb_streams;
         mxf_write_metadata_key(pb, 0x013700);
         PRINT_KEY(s, "Source Package key", pb->buf_ptr - 16);
         klv_encode_ber_length(pb, 112 + 16*track_count); // 20 bytes length for descriptor reference
@@ -952,10 +951,10 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
     // write track refs
     mxf_write_local_tag(pb, track_count*16 + 8, 0x4403);
     mxf_write_refs_count(pb, track_count);
+    mxf_write_uuid(pb, type == MaterialPackage ? Track :
+                   Track + TypeBottom, -1); // timecode track
     for (i = 0; i < s->nb_streams; i++)
         mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, i);
-    if (type == MaterialPackage)
-        mxf_write_uuid(pb, Track, s->nb_streams); // timecode track
 
     // write multiple descriptor reference
     if (type == SourcePackage) {
@@ -965,12 +964,12 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
             mxf_write_multi_descriptor(s);
         } else
             mxf_write_uuid(pb, SubDescriptor, 0);
-    } else {
-        // write timecode track
-        mxf_write_track(s, mxf->timecode_track, type);
-        mxf_write_sequence(s, mxf->timecode_track, type);
-        mxf_write_timecode_component(s, mxf->timecode_track);
     }
+
+    // write timecode track
+    mxf_write_track(s, mxf->timecode_track, type);
+    mxf_write_sequence(s, mxf->timecode_track, type);
+    mxf_write_timecode_component(s, mxf->timecode_track, type);
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -1498,7 +1497,7 @@ static int mxf_write_header(AVFormatContext *s)
     mxf->timecode_track->priv_data = av_mallocz(sizeof(MXFStreamContext));
     if (!mxf->timecode_track->priv_data)
         return AVERROR(ENOMEM);
-    mxf->timecode_track->index = s->nb_streams;
+    mxf->timecode_track->index = -1;
 
     if (!samples_per_frame)
         samples_per_frame = PAL_samples_per_frame;
