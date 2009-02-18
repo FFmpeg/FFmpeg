@@ -1015,7 +1015,7 @@ static double compute_frame_delay(double frame_current_pts, VideoState *is)
         /* if incorrect delay, use previous one */
         delay = is->frame_last_delay;
     } else {
-    is->frame_last_delay = delay;
+        is->frame_last_delay = delay;
     }
     is->frame_last_pts = frame_current_pts;
 
