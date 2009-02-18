@@ -1724,7 +1724,7 @@ static void mxf_write_random_index_pack(AVFormatContext *s)
     if (mxf->edit_unit_byte_count)
         put_be32(pb, 1); // BodySID of header partition
     else
-        put_be32(pb, 0); // BodySID of header partition
+        put_be32(pb, 0);
     put_be64(pb, 0); // offset of header partition
 
     for (i = 0; i < mxf->body_partitions_count; i++) {
