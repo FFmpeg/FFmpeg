@@ -908,7 +908,6 @@ HAVE_LIST="
 
 # options emitted with CONFIG_ prefix but not available on command line
 CONFIG_EXTRA="
-    fft_mmx
     oldscaler
 "
 
@@ -976,8 +975,6 @@ ssse3_deps="sse"
 vis_deps="sparc"
 
 # common features
-fft_suggest="fft_mmx"
-fft_mmx_deps="mmx yasm"
 oldscaler_deps="!swscale"
 
 # decoders / encoders

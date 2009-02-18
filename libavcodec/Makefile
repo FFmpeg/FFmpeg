@@ -402,6 +402,12 @@ OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o
 
 # processor-specific code
+FFT-OBJS-$(HAVE_AMD3DNOW)              += x86/fft_3dn.o
+FFT-OBJS-$(HAVE_AMD3DNOWEXT)           += x86/fft_3dn2.o
+FFT-OBJS-$(HAVE_SSE)                   += x86/fft_sse.o
+OBJS-$(CONFIG_FFT)                     += $(FFT-OBJS-yes)
+
+YASM-OBJS-$(CONFIG_FFT)                += x86/fft_mmx.o
 YASM-OBJS-$(CONFIG_GPL)                += x86/h264_deblock_sse2.o       \
                                           x86/h264_idct_sse2.o          \
 
@@ -434,11 +440,6 @@ OBJS-$(HAVE_MMX)                       += x86/cpuid.o                   \
                                           x86/mpegvideo_mmx.o           \
                                           x86/simple_idct_mmx.o         \
                                           $(MMX-OBJS-yes)
-
-OBJS-$(CONFIG_FFT_MMX)                 += x86/fft_3dn.o                 \
-                                          x86/fft_3dn2.o                \
-                                          x86/fft_mmx.o                 \
-                                          x86/fft_sse.o                 \
 
 OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
                                           alpha/dsputil_alpha_asm.o     \
