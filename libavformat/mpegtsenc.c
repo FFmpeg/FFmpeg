@@ -216,6 +216,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     for(i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MpegTSWriteStream *ts_st = st->priv_data;
+        AVMetadataTag *lang = av_metadata_get(st->metadata, "language", NULL,0);
         switch(st->codec->codec_id) {
         case CODEC_ID_MPEG1VIDEO:
         case CODEC_ID_MPEG2VIDEO:
@@ -252,21 +253,19 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         /* write optional descriptors here */
         switch(st->codec->codec_type) {
         case CODEC_TYPE_AUDIO:
-            if (strlen(st->language) == 3) {
+            if (lang && strlen(lang->value) == 3) {
                 *q++ = 0x0a; /* ISO 639 language descriptor */
                 *q++ = 4;
-                *q++ = st->language[0];
-                *q++ = st->language[1];
-                *q++ = st->language[2];
+                *q++ = lang->value[0];
+                *q++ = lang->value[1];
+                *q++ = lang->value[2];
                 *q++ = 0; /* undefined type */
             }
             break;
         case CODEC_TYPE_SUBTITLE:
             {
                 const char *language;
-                language = st->language;
-                if (strlen(language) != 3)
-                    language = "eng";
+                language = lang && strlen(lang->value)==3 ? lang->value : "eng";
                 *q++ = 0x59;
                 *q++ = 8;
                 *q++ = language[0];
@@ -383,6 +382,7 @@ static int mpegts_write_header(AVFormatContext *s)
     MpegTSWriteStream *ts_st;
     MpegTSService *service;
     AVStream *st;
+    AVMetadataTag *title;
     int i, total_bit_rate;
     const char *service_name;
     uint64_t sdt_size, pat_pmt_size, pos;
@@ -390,9 +390,8 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->tsid = DEFAULT_TSID;
     ts->onid = DEFAULT_ONID;
     /* allocate a single DVB service */
-    service_name = s->title;
-    if (service_name[0] == '\0')
-        service_name = DEFAULT_SERVICE_NAME;
+    title = av_metadata_get(s->metadata, "title", NULL, 0);
+    service_name = title ? title->value : DEFAULT_SERVICE_NAME;
     service = mpegts_add_service(ts, DEFAULT_SID,
                                  DEFAULT_PROVIDER_NAME, service_name);
     service->pmt.write_packet = section_write_packet;
