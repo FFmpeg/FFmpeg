@@ -1466,15 +1466,13 @@ static int mxf_write_header(AVFormatContext *s)
 
         sc->codec_ul = &mxf_essence_container_uls[sc->index].codec_ul;
 
-        if (!present[sc->index]) {
-            present[sc->index] = 1;
-            mxf->essence_container_count++;
-        } else
-            present[sc->index]++;
-
         memcpy(sc->track_essence_element_key, mxf_essence_container_uls[sc->index].element_ul, 15);
         sc->track_essence_element_key[15] = present[sc->index];
         PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
+
+        if (!present[sc->index])
+            mxf->essence_container_count++;
+        present[sc->index]++;
     }
 
     if (s->oformat == &mxf_d10_muxer) {
