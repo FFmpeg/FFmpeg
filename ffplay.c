@@ -1014,8 +1014,9 @@ static double compute_frame_delay(double frame_current_pts, VideoState *is)
     if (delay <= 0 || delay >= 10.0) {
         /* if incorrect delay, use previous one */
         delay = is->frame_last_delay;
-    }
+    } else {
     is->frame_last_delay = delay;
+    }
     is->frame_last_pts = frame_current_pts;
 
     /* update delay to follow master synchronisation source */
