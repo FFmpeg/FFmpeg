@@ -121,8 +121,8 @@ static void rgb24_to_yuv420p(UINT8 *lum, UINT8 *cb, UINT8 *cr,
 #define DEFAULT_HEIGHT  288
 #define DEFAULT_NB_PICT 50
 
-void pgmyuv_save(const char *filename, int w, int h,
-                 unsigned char *rgb_tab)
+static void pgmyuv_save(const char *filename, int w, int h,
+                        unsigned char *rgb_tab)
 {
     FILE *f;
     int i, h2, w2;
@@ -158,7 +158,7 @@ void pgmyuv_save(const char *filename, int w, int h,
 unsigned char *rgb_tab;
 int width, height, wrap;
 
-void put_pixel(int x, int y, int r, int g, int b)
+static void put_pixel(int x, int y, int r, int g, int b)
 {
     unsigned char *p;
 
@@ -195,7 +195,7 @@ static int ipol(uint8_t *src, int x, int y){
     return (((1<<16) - frac_y)*s0 + frac_y*s1)>>24;
 }
 
-void gen_image(int num, int w, int h)
+static void gen_image(int num, int w, int h)
 {
   const int c = h_cos [teta];
   const int s = h_sin [teta];
@@ -240,7 +240,7 @@ void gen_image(int num, int w, int h)
 #define W 256
 #define H 256
 
-void init_demo(const char *filename) {
+static void init_demo(const char *filename) {
   int i,j;
   int h;
   int radian;

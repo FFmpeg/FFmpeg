@@ -97,8 +97,8 @@ static void rgb24_to_yuv420p(uint8_t *lum, uint8_t *cb, uint8_t *cr,
 #define DEFAULT_HEIGHT  288
 #define DEFAULT_NB_PICT 50 /* 2 seconds */
 
-void pgmyuv_save(const char *filename, int w, int h,
-                 unsigned char *rgb_tab)
+static void pgmyuv_save(const char *filename, int w, int h,
+                        unsigned char *rgb_tab)
 {
     FILE *f;
     int i, h2, w2;
@@ -134,7 +134,7 @@ void pgmyuv_save(const char *filename, int w, int h,
 unsigned char *rgb_tab;
 int width, height, wrap;
 
-void put_pixel(int x, int y, int r, int g, int b)
+static void put_pixel(int x, int y, int r, int g, int b)
 {
     unsigned char *p;
 
@@ -171,7 +171,7 @@ static unsigned int myrnd(unsigned int *seed_ptr, int n)
 #define FRAC_ONE (1 << FRAC_BITS)
 
 /* cosine approximate with 1-x^2 */
-int int_cos(int a)
+static int int_cos(int a)
 {
     int v, neg;
     a = a & (FRAC_ONE - 1);
@@ -198,7 +198,7 @@ VObj objs[NB_OBJS];
 
 unsigned int seed = 1;
 
-void gen_image(int num, int w, int h)
+static void gen_image(int num, int w, int h)
 {
     int r, g, b, x, y, i, dx, dy, x1, y1;
     unsigned int seed1;

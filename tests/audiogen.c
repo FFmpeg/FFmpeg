@@ -94,7 +94,7 @@ static int int_cos(int a)
 
 FILE *outfile;
 
-void put_sample(int v)
+static void put_sample(int v)
 {
     fputc(v & 0xff, outfile);
     fputc((v >> 8) & 0xff, outfile);
