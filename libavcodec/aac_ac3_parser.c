@@ -72,6 +72,9 @@ get_next:
 
     /* update codec info */
     avctx->sample_rate = s->sample_rate;
+    if(s->codec_id)
+        avctx->codec_id = s->codec_id;
+
     /* allow downmixing to stereo (or mono for AC-3) */
     if(avctx->request_channels > 0 &&
             avctx->request_channels < s->channels &&
