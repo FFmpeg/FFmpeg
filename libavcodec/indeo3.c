@@ -976,7 +976,7 @@ static av_cold int indeo3_decode_init(AVCodecContext *avctx)
 }
 
 static int iv_decode_frame(Indeo3DecodeContext *s,
-                                     const uint8_t *buf, int buf_size)
+                           const uint8_t *buf, int buf_size)
 {
     unsigned int image_width, image_height,
                  chroma_width, chroma_height;
