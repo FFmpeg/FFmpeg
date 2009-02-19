@@ -870,7 +870,7 @@ resync:
         }
     }
 
-    return -1;
+    return AVERROR_EOF;
 }
 
 /* XXX: We make the implicit supposition that the positions are sorted
