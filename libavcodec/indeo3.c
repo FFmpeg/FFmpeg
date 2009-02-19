@@ -975,7 +975,7 @@ static av_cold int indeo3_decode_init(AVCodecContext *avctx)
     return ret;
 }
 
-static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
+static int iv_decode_frame(Indeo3DecodeContext *s,
                                      const uint8_t *buf, int buf_size)
 {
     unsigned int image_width, image_height,
@@ -1006,6 +1006,11 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
     hdr_pos = buf_pos;
     if(data_size == 0x80) return 4;
 
+    if(FFMAX3(y_offset, v_offset, u_offset) >= buf_size-16) {
+        av_log(s->avctx, AV_LOG_ERROR, "y/u/v offset outside buffer\n");
+        return -1;
+    }
+
     if(flags & 0x200) {
         s->cur_frame = s->iv_frame + 1;
         s->ref_frame = s->iv_frame;
@@ -1016,6 +1021,10 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
 
     buf_pos = buf + 16 + y_offset;
     mc_vector_count = bytestream_get_le32(&buf_pos);
+    if(2LL*mc_vector_count >= buf_size-16-y_offset) {
+        av_log(s->avctx, AV_LOG_ERROR, "mc_vector_count too large\n");
+        return -1;
+    }
 
     iv_Decode_Chunk(s, s->cur_frame->Ybuf, s->ref_frame->Ybuf, image_width,
                     image_height, buf_pos + mc_vector_count * 2, cb_offset, hdr_pos, buf_pos,
@@ -1026,6 +1035,10 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
 
         buf_pos = buf + 16 + v_offset;
         mc_vector_count = bytestream_get_le32(&buf_pos);
+        if(2LL*mc_vector_count >= buf_size-16-v_offset) {
+            av_log(s->avctx, AV_LOG_ERROR, "mc_vector_count too large\n");
+            return -1;
+        }
 
         iv_Decode_Chunk(s, s->cur_frame->Vbuf, s->ref_frame->Vbuf, chroma_width,
                 chroma_height, buf_pos + mc_vector_count * 2, cb_offset, hdr_pos, buf_pos,
@@ -1033,6 +1046,10 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
 
         buf_pos = buf + 16 + u_offset;
         mc_vector_count = bytestream_get_le32(&buf_pos);
+        if(2LL*mc_vector_count >= buf_size-16-u_offset) {
+            av_log(s->avctx, AV_LOG_ERROR, "mc_vector_count too large\n");
+            return -1;
+        }
 
         iv_Decode_Chunk(s, s->cur_frame->Ubuf, s->ref_frame->Ubuf, chroma_width,
                 chroma_height, buf_pos + mc_vector_count * 2, cb_offset, hdr_pos, buf_pos,
@@ -1051,7 +1068,8 @@ static int indeo3_decode_frame(AVCodecContext *avctx,
     uint8_t *src, *dest;
     int y;
 
-    iv_decode_frame(s, buf, buf_size);
+    if (iv_decode_frame(s, buf, buf_size) < 0)
+        return -1;
 
     if(s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
