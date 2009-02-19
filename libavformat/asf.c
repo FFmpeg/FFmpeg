@@ -288,7 +288,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 if (st->codec->codec_id == CODEC_ID_AAC) {
                     st->need_parsing = AVSTREAM_PARSE_NONE;
                 } else {
-                st->need_parsing = AVSTREAM_PARSE_FULL;
+                    st->need_parsing = AVSTREAM_PARSE_FULL;
                 }
                 /* We have to init the frame size at some point .... */
                 pos2 = url_ftell(pb);
