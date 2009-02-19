@@ -218,27 +218,27 @@ typedef struct DSPContext {
     int (*pix_norm1)(uint8_t * pix, int line_size);
 // 16x16 8x8 4x4 2x2 16x8 8x4 4x2 8x16 4x8 2x4
 
-    me_cmp_func sad[5]; /* identical to pix_absAxA except additional void * */
-    me_cmp_func sse[5];
-    me_cmp_func hadamard8_diff[5];
-    me_cmp_func dct_sad[5];
-    me_cmp_func quant_psnr[5];
-    me_cmp_func bit[5];
-    me_cmp_func rd[5];
-    me_cmp_func vsad[5];
-    me_cmp_func vsse[5];
-    me_cmp_func nsse[5];
-    me_cmp_func w53[5];
-    me_cmp_func w97[5];
-    me_cmp_func dct_max[5];
-    me_cmp_func dct264_sad[5];
+    me_cmp_func sad[6]; /* identical to pix_absAxA except additional void * */
+    me_cmp_func sse[6];
+    me_cmp_func hadamard8_diff[6];
+    me_cmp_func dct_sad[6];
+    me_cmp_func quant_psnr[6];
+    me_cmp_func bit[6];
+    me_cmp_func rd[6];
+    me_cmp_func vsad[6];
+    me_cmp_func vsse[6];
+    me_cmp_func nsse[6];
+    me_cmp_func w53[6];
+    me_cmp_func w97[6];
+    me_cmp_func dct_max[6];
+    me_cmp_func dct264_sad[6];
 
-    me_cmp_func me_pre_cmp[5];
-    me_cmp_func me_cmp[5];
-    me_cmp_func me_sub_cmp[5];
-    me_cmp_func mb_cmp[5];
-    me_cmp_func ildct_cmp[5]; //only width 16 used
-    me_cmp_func frame_skip_cmp[5]; //only width 8 used
+    me_cmp_func me_pre_cmp[6];
+    me_cmp_func me_cmp[6];
+    me_cmp_func me_sub_cmp[6];
+    me_cmp_func mb_cmp[6];
+    me_cmp_func ildct_cmp[6]; //only width 16 used
+    me_cmp_func frame_skip_cmp[6]; //only width 8 used
 
     int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
                              int size);

@@ -3425,9 +3425,9 @@ static int zero_cmp(void *s, uint8_t *a, uint8_t *b, int stride, int h){
 void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
     int i;
 
-    memset(cmp, 0, sizeof(void*)*5);
+    memset(cmp, 0, sizeof(void*)*6);
 
-    for(i=0; i<5; i++){
+    for(i=0; i<6; i++){
         switch(type&0xFF){
         case FF_CMP_SAD:
             cmp[i]= c->sad[i];
