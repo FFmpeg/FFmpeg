@@ -909,6 +909,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         else if (pc->key_frame == -1 && pc->pict_type == FF_I_TYPE)
             pkt->flags |= PKT_FLAG_KEY;
     }
+    if (pc)
+        pkt->convergence_duration = pc->convergence_duration;
 }
 
 void av_destruct_packet_nofree(AVPacket *pkt)
