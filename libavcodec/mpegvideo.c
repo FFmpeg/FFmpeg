@@ -402,6 +402,11 @@ int MPV_common_init(MpegEncContext *s)
 
     s->mb_height = (s->height + 15) / 16;
 
+    if(s->avctx->pix_fmt == PIX_FMT_NONE){
+        av_log(s->avctx, AV_LOG_ERROR, "decoding to PIX_FMT_NONE is not supported.\n");
+        return -1;
+    }
+
     if(s->avctx->thread_count > MAX_THREADS || (s->avctx->thread_count > s->mb_height && s->mb_height)){
         av_log(s->avctx, AV_LOG_ERROR, "too many threads\n");
         return -1;
