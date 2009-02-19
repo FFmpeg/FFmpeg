@@ -20,6 +20,7 @@
  */
 
 #include <limits.h>
+#include <X11/extensions/XvMC.h>
 
 #include "avcodec.h"
 #include "dsputil.h"
