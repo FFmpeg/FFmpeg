@@ -320,7 +320,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     dts |= get_byte(s->pb) << 24;
 //    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, dts:%d\n", type, size, dts);
     if (url_feof(s->pb))
-        return AVERROR(EIO);
+        return AVERROR_EOF;
     url_fskip(s->pb, 3); /* stream id, always 0 */
     flags = 0;
 
