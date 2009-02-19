@@ -45,7 +45,7 @@ extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
 
 /**
- * Fallback for options that are not explixitly handled, these will be
+ * Fallback for options that are not explicitly handled, these will be
  * parsed through AVOptions.
  */
 int opt_default(const char *opt, const char *arg);
