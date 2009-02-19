@@ -1761,7 +1761,7 @@ static int matroska_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     while (matroska_deliver_packet(matroska, pkt)) {
         if (matroska->done)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         matroska_parse_cluster(matroska);
     }
 
