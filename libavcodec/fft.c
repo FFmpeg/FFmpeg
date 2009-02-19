@@ -89,18 +89,18 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 
 #if HAVE_MMX && HAVE_YASM
     has_vectors = mm_support();
-    if (has_vectors & FF_MM_SSE) {
+    if (has_vectors & FF_MM_SSE && HAVE_SSE) {
         /* SSE for P3/P4/K8 */
         s->imdct_calc  = ff_imdct_calc_sse;
         s->imdct_half  = ff_imdct_half_sse;
         s->fft_permute = ff_fft_permute_sse;
         s->fft_calc    = ff_fft_calc_sse;
-    } else if (has_vectors & FF_MM_3DNOWEXT) {
+    } else if (has_vectors & FF_MM_3DNOWEXT && HAVE_AMD3DNOWEXT) {
         /* 3DNowEx for K7 */
         s->imdct_calc = ff_imdct_calc_3dn2;
         s->imdct_half = ff_imdct_half_3dn2;
         s->fft_calc   = ff_fft_calc_3dn2;
-    } else if (has_vectors & FF_MM_3DNOW) {
+    } else if (has_vectors & FF_MM_3DNOW && HAVE_AMD3DNOW) {
         /* 3DNow! for K6-2/3 */
         s->imdct_calc = ff_imdct_calc_3dn;
         s->imdct_half = ff_imdct_half_3dn;
