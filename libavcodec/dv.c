@@ -816,8 +816,9 @@ static av_always_inline int dv_guess_dct_mode(DVVideoContext *s, uint8_t *data, 
                      s->ildct_cmp(NULL, data + linesize, NULL, linesize<<1, 4);
             return (ps > is);
         }
-    } else
-        return 0;
+    }
+
+    return 0;
 }
 
 static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, int linesize, DVVideoContext *s, int bias)
