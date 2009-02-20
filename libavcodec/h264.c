@@ -7223,6 +7223,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
 
     av_free(h->sps_buffers[sps_id]);
     h->sps_buffers[sps_id]= sps;
+    h->sps = *sps;
     return 0;
 fail:
     av_free(sps);
