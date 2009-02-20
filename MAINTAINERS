@@ -130,6 +130,7 @@ Codecs:
   dpcm.c                                Mike Melanson
   dxa.c                                 Kostya Shishkov
   dv.c                                  Roman Shaposhnik
+  eacmv*, eaidct*, eat*                 Peter Ross
   ffv1.c                                Michael Niedermayer
   flacdec.c                             Alex Beregszaszi, Justin Ruggles
   flacenc.c                             Justin Ruggles
@@ -156,6 +157,7 @@ Codecs:
   mdec.c                                Michael Niedermayer
   mimic.c                               Ramiro Polla
   mjpeg.c                               Michael Niedermayer
+  mmvideo.c                             Peter Ross
   mpc*                                  Kostya Shishkov
   mpeg12.c, mpeg12data.h                Michael Niedermayer
   mpegvideo.c, mpegvideo.h              Michael Niedermayer
@@ -259,6 +261,7 @@ Muxers/Demuxers:
   lmlm4.c                               Ivo van Poorten
   matroska.c                            Aurelien Jacobs
   matroskaenc.c                         David Conrad
+  mm.c                                  Peter Ross
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
   movenc.c                              Michael Niedermayer, Baptiste Coudurier
   mpc.c                                 Kostya Shishkov
@@ -323,6 +326,7 @@ Benoit Fouet                  B22A 4F4F 43EF 636B BB66 FCDC 0023 AE1E 2985 49C8
 Diego Biurrun                 8227 1E31 B6D9 4994 7427 E220 9CAE D6CC 4757 FCC5
 Loren Merritt                 ABD9 08F4 C920 3F65 D8BE 35D7 1540 DAA7 060F 56DE
 Michael Niedermayer           9FF2 128B 147E F673 0BAD F133 611E C787 040B 0FAB
+Peter Ross                    A907 E02F A6E5 0CD2 34CD 20D2 6760 79C5 AC40 DD6B
 Reimar Döffinger              C61D 16E5 9E2C D10C 8958 38A4 0899 A2B9 06D4 D9C7
 Reynaldo H. Verdejo Pinochet  6E27 CD34 170C C78E 4D4F 5F40 C18E 077F 3114 452A
 Sascha Sommer                 38A0 F88B 868E 9D3A 97D4 D6A0 E823 706F 1E07 0D3C
