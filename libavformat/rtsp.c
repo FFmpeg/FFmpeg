@@ -748,7 +748,7 @@ static void rtsp_send_cmd(AVFormatContext *s,
     int content_length, line_count;
     unsigned char *content = NULL;
 
-    memset(reply, 0, sizeof(RTSPHeader));
+    memset(reply, 0, sizeof(*reply));
 
     rt->seq++;
     av_strlcpy(buf, cmd, sizeof(buf));

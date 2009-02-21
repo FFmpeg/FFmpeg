@@ -2654,7 +2654,7 @@ static int rtsp_parse_request(HTTPContext *c)
     }
 
     /* parse each header line */
-    memset(header, 0, sizeof(RTSPHeader));
+    memset(header, 0, sizeof(*header));
     /* skip to next line */
     while (*p != '\n' && *p != '\0')
         p++;
