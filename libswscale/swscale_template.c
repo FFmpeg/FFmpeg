@@ -394,7 +394,6 @@
     "packuswb        %%mm0, %%mm2       \n\t"\
     "packuswb        %%mm6, %%mm5       \n\t"\
     "packuswb        %%mm3, %%mm4       \n\t"\
-    "pxor            %%mm7, %%mm7       \n\t"
 
 #define REAL_YSCALEYUV2PACKED(index, c) \
     "movq "CHR_MMX_FILTER_OFFSET"+8("#c"), %%mm0              \n\t"\
@@ -501,7 +500,7 @@
     "packuswb          %%mm0, %%mm2     \n\t"\
     "packuswb          %%mm6, %%mm5     \n\t"\
     "packuswb          %%mm3, %%mm4     \n\t"\
-    "pxor              %%mm7, %%mm7     \n\t"
+
 #define YSCALEYUV2RGB_YA(index, c) REAL_YSCALEYUV2RGB_YA(index, c)
 
 #define YSCALEYUV2RGB(index, c) \
@@ -570,7 +569,7 @@
     "packuswb          %%mm0, %%mm2     \n\t"\
     "packuswb          %%mm6, %%mm5     \n\t"\
     "packuswb          %%mm3, %%mm4     \n\t"\
-    "pxor              %%mm7, %%mm7     \n\t"
+
 #define YSCALEYUV2RGB1(index, c)  REAL_YSCALEYUV2RGB1(index, c)
 
 #define REAL_YSCALEYUV2PACKED1b(index, c) \
@@ -642,7 +641,7 @@
     "packuswb          %%mm0, %%mm2     \n\t"\
     "packuswb          %%mm6, %%mm5     \n\t"\
     "packuswb          %%mm3, %%mm4     \n\t"\
-    "pxor              %%mm7, %%mm7     \n\t"
+
 #define YSCALEYUV2RGB1b(index, c)  REAL_YSCALEYUV2RGB1b(index, c)
 
 #define REAL_WRITEBGR32(dst, dstw, index, b, g, r, a, q0, q2, q3, t) \
@@ -1032,6 +1031,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             case PIX_FMT_RGB32:
                 YSCALEYUV2PACKEDX_ACCURATE
                 YSCALEYUV2RGBX
+                "pxor %%mm7, %%mm7 \n\t"
                 WRITEBGR32(%4, %5, %%REGa, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
 
                 YSCALEYUV2PACKEDX_END
@@ -1039,6 +1039,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             case PIX_FMT_BGR24:
                 YSCALEYUV2PACKEDX_ACCURATE
                 YSCALEYUV2RGBX
+                "pxor %%mm7, %%mm7 \n\t"
                 "lea (%%"REG_a", %%"REG_a", 2), %%"REG_c"\n\t" //FIXME optimize
                 "add %4, %%"REG_c"                        \n\t"
                 WRITEBGR24(%%REGc, %5, %%REGa)
@@ -1053,6 +1054,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             case PIX_FMT_RGB555:
                 YSCALEYUV2PACKEDX_ACCURATE
                 YSCALEYUV2RGBX
+                "pxor %%mm7, %%mm7 \n\t"
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "BLUE_DITHER"(%0), %%mm2\n\t"
@@ -1066,6 +1068,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             case PIX_FMT_RGB565:
                 YSCALEYUV2PACKEDX_ACCURATE
                 YSCALEYUV2RGBX
+                "pxor %%mm7, %%mm7 \n\t"
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "BLUE_DITHER"(%0), %%mm2\n\t"
@@ -1094,12 +1097,14 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             case PIX_FMT_RGB32:
                 YSCALEYUV2PACKEDX
                 YSCALEYUV2RGBX
+                "pxor %%mm7, %%mm7 \n\t"
                 WRITEBGR32(%4, %5, %%REGa, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 YSCALEYUV2PACKEDX_END
                 return;
             case PIX_FMT_BGR24:
                 YSCALEYUV2PACKEDX
                 YSCALEYUV2RGBX
+                "pxor                    %%mm7, %%mm7       \n\t"
                 "lea (%%"REG_a", %%"REG_a", 2), %%"REG_c"   \n\t" //FIXME optimize
                 "add                        %4, %%"REG_c"   \n\t"
                 WRITEBGR24(%%REGc, %5, %%REGa)
@@ -1113,6 +1118,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             case PIX_FMT_RGB555:
                 YSCALEYUV2PACKEDX
                 YSCALEYUV2RGBX
+                "pxor %%mm7, %%mm7 \n\t"
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "BLUE_DITHER"(%0), %%mm2  \n\t"
@@ -1126,6 +1132,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             case PIX_FMT_RGB565:
                 YSCALEYUV2PACKEDX
                 YSCALEYUV2RGBX
+                "pxor %%mm7, %%mm7 \n\t"
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "BLUE_DITHER"(%0), %%mm2  \n\t"
@@ -1189,6 +1196,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
@@ -1203,6 +1211,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
@@ -1216,6 +1225,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
@@ -1237,6 +1247,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
@@ -1301,6 +1312,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB1(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
@@ -1315,6 +1327,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB1(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
@@ -1329,6 +1342,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB1(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
@@ -1349,6 +1363,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB1(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
@@ -1390,6 +1405,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB1b(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
@@ -1404,6 +1420,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB1b(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
@@ -1418,6 +1435,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB1b(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
@@ -1438,6 +1456,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB1b(%%REGBP, %5)
+                "pxor    %%mm7, %%mm7                   \n\t"
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
                 "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
