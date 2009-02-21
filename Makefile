@@ -281,8 +281,8 @@ ROTOZOOM_REG = tests/data/rotozoom.regression
 VSYNTH_REG   = tests/data/vsynth.regression
 
 ifneq ($(CONFIG_SWSCALE),yes)
-servertest codectest $(CODEC_TESTS) libavtest: swscale_error
-swscale_error:
+servertest codectest $(CODEC_TESTS) libavtest: swscale-error
+swscale-error:
 	@echo
 	@echo "This regression test requires --enable-swscale."
 	@echo
