@@ -23,6 +23,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
 #include "flv.h"
 
@@ -421,6 +423,18 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (type == 0) {
             if ((ret = flv_get_extradata(s, st, size)) < 0)
                 return ret;
+            if (st->codec->codec_id == CODEC_ID_AAC) {
+                MPEG4AudioConfig cfg;
+                ff_mpeg4audio_get_config(&cfg, st->codec->extradata,
+                                         st->codec->extradata_size);
+                if (cfg.chan_config > 7)
+                    return -1;
+                st->codec->channels = ff_mpeg4audio_channels[cfg.chan_config];
+                st->codec->sample_rate = cfg.sample_rate;
+                dprintf(s, "mp4a config channels %d sample rate %d\n",
+                        st->codec->channels, st->codec->sample_rate);
+            }
+
             return AVERROR(EAGAIN);
         }
     }
