@@ -2149,18 +2149,18 @@ check_cflags -fno-signed-zeros
 
 # add some flags for Intel C Compiler
 if enabled icc; then
-  # Just warnings, no remarks
-  check_cflags -w1
-  # -wd: Disable following warnings
-  # 144, 167, 556: -Wno-pointer-sign
-  # 10006: ignoring unknown option -fno-signed-zeros
-  # 10156: ignoring option '-W'; no argument required
-  check_cflags -wd144,167,556,10006,10156
-  # 11030: Warning unknown option --as-needed
-  # 10156: ignoring option '-export'; no argument required
-  check_ldflags -wd10156,11030
-  # Allow to compile with optimizations
-  check_ldflags -march=$cpu
+    # Just warnings, no remarks
+    check_cflags -w1
+    # -wd: Disable following warnings
+    # 144, 167, 556: -Wno-pointer-sign
+    # 10006: ignoring unknown option -fno-signed-zeros
+    # 10156: ignoring option '-W'; no argument required
+    check_cflags -wd144,167,556,10006,10156
+    # 11030: Warning unknown option --as-needed
+    # 10156: ignoring option '-export'; no argument required
+    check_ldflags -wd10156,11030
+    # Allow to compile with optimizations
+    check_ldflags -march=$cpu
 fi
 
 # PIC flags for shared library objects where they are needed
