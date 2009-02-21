@@ -1374,6 +1374,8 @@ case "$arch" in
     arm|armv[4567]*l)
         arch="arm"
     ;;
+    avr32)
+    ;;
     bfin)
         arch="bfin"
     ;;
