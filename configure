@@ -1350,6 +1350,16 @@ EOF
 fi
 rm $TMPSH
 
+if   $cc --version 2>/dev/null | grep -q '(GCC)'; then
+    cc_type=gcc
+elif $cc --version 2>/dev/null | grep -q Intel; then
+    cc_type=icc
+elif $cc -v 2>&1 | grep -q xlc; then
+    cc_type=xlc
+fi
+
+test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
+
 # compiler sanity check
 check_exec <<EOF
 int main(void){ return 0; }
@@ -1668,7 +1678,7 @@ test -z "$need_memalign" && need_memalign="$mmx"
 
 #Darwin CC versions
 if test $target_os = darwin; then
-    if $cc -v 2>&1 | grep -q xlc; then
+    if enabled xlc; then
         add_cflags -qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto
     else
         add_cflags -pipe
@@ -2112,7 +2122,7 @@ if enabled small; then
     check_cflags -Os            # not all compilers support -Os
     optimizations="small"
 elif enabled optimizations; then
-    if $cc -v 2>&1 | grep -q xlc; then
+    if enabled xlc; then
         add_cflags  -O5
         add_ldflags -O5
     else
@@ -2123,7 +2133,7 @@ check_cflags -fno-math-errno
 check_cflags -fno-signed-zeros
 
 # add some flags for Intel C Compiler
-if $cc --version 2> /dev/null | grep -q Intel; then
+if enabled icc; then
   # Just warnings, no remarks
   check_cflags -w1
   # -wd: Disable following warnings
