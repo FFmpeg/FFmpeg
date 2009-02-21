@@ -289,6 +289,15 @@ swscale-error:
 	@exit 1
 endif
 
+ifneq ($(CONFIG_ZLIB),yes)
+regtest-flashsv codectest: zlib-error
+endif
+zlib-error:
+	@echo
+	@echo "This regression test requires zlib."
+	@echo
+	@exit 1
+
 codectest: $(VSYNTH_REG) $(ROTOZOOM_REG)
 	diff -u -w $(FFMPEG_REFFILE)   $(VSYNTH_REG)
 	diff -u -w $(ROTOZOOM_REFFILE) $(ROTOZOOM_REG)
@@ -346,6 +355,6 @@ tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
-.PHONY: lib videohook documentation *test regtest-* swscale-error alltools check
+.PHONY: lib videohook documentation *test regtest-* swscale-error zlib-error alltools check
 
 -include $(VHOOK_DEPS)
