@@ -174,6 +174,8 @@ show_help(){
   echo "  --source-path=PATH       path to source code [$source_path]"
   echo "  --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]"
   echo "  --enable-cross-compile   assume a cross-compiler is used"
+  echo "  --sysroot=PATH           root of cross-build tree"
+  echo "  --sysinclude=PATH        location of cross-build system headers"
   echo "  --target-os=OS           compiler targets OS [$target_os]"
   echo "  --target-exec=CMD        command to run executables on target"
   echo "  --target-path=DIR        path to view of build directory on target"
@@ -949,6 +951,8 @@ CMDLINE_SET="
     logfile
     nm
     source_path
+    sysinclude
+    sysroot
     target_exec
     target_os
     target_path
@@ -1316,7 +1320,9 @@ nm_default="${cross_prefix}${nm_default}"
 ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
-set_default cc nm
+sysinclude_default="${sysroot}/usr/include"
+
+set_default cc nm sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
