@@ -718,7 +718,7 @@ resync:
     if(avi->stream_index >= 0){
         AVStream *st= s->streams[ avi->stream_index ];
         AVIStream *ast= st->priv_data;
-        int size;
+        int size, err;
 
         if(ast->sample_size <= 1) // minorityreport.AVI block_align=1024 sample_size=1 IMA-ADPCM
             size= INT_MAX;
@@ -730,14 +730,19 @@ resync:
         if(size > ast->remaining)
             size= ast->remaining;
         avi->last_pkt_pos= url_ftell(pb);
-        av_get_packet(pb, pkt, size);
+        err= av_get_packet(pb, pkt, size);
+        if(err<0)
+            return err;
 
         if(ast->has_pal && pkt->data && pkt->size<(unsigned)INT_MAX/2){
+            void *ptr= av_realloc(pkt->data, pkt->size + 4*256 + FF_INPUT_BUFFER_PADDING_SIZE);
+            if(ptr){
             ast->has_pal=0;
             pkt->size += 4*256;
-            pkt->data = av_realloc(pkt->data, pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if(pkt->data)
+            pkt->data= ptr;
                 memcpy(pkt->data + pkt->size - 4*256, ast->pal, 4*256);
+            }else
+                av_log(s, AV_LOG_ERROR, "Failed to append palette\n");
         }
 
         if (CONFIG_DV_DEMUXER && avi->dv_demux) {
