@@ -1366,6 +1366,61 @@ fi
 check_cflags -std=c99
 
 case "$arch" in
+    alpha)
+        arch="alpha"
+        enable fast_64bit
+        check_cflags -mieee
+    ;;
+    arm|armv[4567]*l)
+        arch="arm"
+    ;;
+    bfin)
+        arch="bfin"
+    ;;
+    ia64)
+        arch="ia64"
+        enable fast_64bit
+    ;;
+    m68k)
+        arch="m68k"
+    ;;
+    mips|mipsel|IP*)
+        arch="mips"
+    ;;
+    mips64)
+        arch="mips"
+        enable fast_64bit
+    ;;
+    parisc|hppa)
+        arch="parisc"
+    ;;
+    parisc64|hppa64)
+        arch="parisc"
+        enable fast_64bit
+    ;;
+    "Power Macintosh"|ppc|powerpc)
+        arch="ppc"
+        enable fast_unaligned
+    ;;
+    ppc64)
+        arch="ppc"
+        enable fast_64bit
+        enable fast_unaligned
+    ;;
+    s390|s390x)
+        arch="s390"
+    ;;
+    sh4|sh)
+        arch="sh4"
+    ;;
+    sparc)
+        arch="sparc"
+    ;;
+    sun4u|sparc64)
+        arch="sparc"
+        subarch="sparc64"
+        enable fast_64bit
+    ;;
     i386|i486|i586|i686|i86pc|BePC)
         arch="x86"
         subarch="x86_32"
@@ -1380,61 +1435,6 @@ case "$arch" in
         check_cc <<EOF && enable fast_64bit && subarch="x86_64"
         int test[sizeof(char*) - 7];
 EOF
-    ;;
-    arm|armv[4567]*l)
-        arch="arm"
-    ;;
-    alpha)
-        arch="alpha"
-        enable fast_64bit
-        check_cflags -mieee
-    ;;
-    "Power Macintosh"|ppc|powerpc)
-        arch="ppc"
-        enable fast_unaligned
-    ;;
-    ppc64)
-        arch="ppc"
-        enable fast_64bit
-        enable fast_unaligned
-    ;;
-    mips|mipsel|IP*)
-        arch="mips"
-    ;;
-    mips64)
-        arch="mips"
-        enable fast_64bit
-    ;;
-    sun4u|sparc64)
-        arch="sparc"
-        subarch="sparc64"
-        enable fast_64bit
-    ;;
-    sparc)
-        arch="sparc"
-    ;;
-    sh4|sh)
-        arch="sh4"
-    ;;
-    parisc|hppa)
-        arch="parisc"
-    ;;
-    parisc64|hppa64)
-        arch="parisc"
-        enable fast_64bit
-    ;;
-    s390|s390x)
-        arch="s390"
-    ;;
-    m68k)
-        arch="m68k"
-    ;;
-    ia64)
-        arch="ia64"
-        enable fast_64bit
-    ;;
-    bfin)
-        arch="bfin"
     ;;
     *)
         arch="unknown"
