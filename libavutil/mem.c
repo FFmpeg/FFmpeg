@@ -63,7 +63,8 @@ void *av_malloc(unsigned int size)
     ptr = (char*)ptr + diff;
     ((char*)ptr)[-1]= diff;
 #elif HAVE_POSIX_MEMALIGN
-    posix_memalign(&ptr,16,size);
+    if (posix_memalign(&ptr,16,size))
+        ptr = NULL;
 #elif HAVE_MEMALIGN
     ptr = memalign(16,size);
     /* Why 64?
