@@ -2786,9 +2786,9 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
     if(st->codec->codec_type == CODEC_TYPE_VIDEO){
         if(st->r_frame_rate.den && st->r_frame_rate.num)
             av_log(NULL, AV_LOG_INFO, ", %5.2f tb(r)", av_q2d(st->r_frame_rate));
-/*      else if(st->time_base.den && st->time_base.num)
-            av_log(NULL, AV_LOG_INFO, ", %5.2f tb(m)", 1/av_q2d(st->time_base));*/
-        else
+        if(st->time_base.den && st->time_base.num)
+            av_log(NULL, AV_LOG_INFO, ", %5.2f tb(m)", 1/av_q2d(st->time_base));
+        if(st->codec->time_base.den && st->codec->time_base.num)
             av_log(NULL, AV_LOG_INFO, ", %5.2f tb(c)", 1/av_q2d(st->codec->time_base));
     }
     av_log(NULL, AV_LOG_INFO, "\n");
