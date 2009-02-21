@@ -1366,6 +1366,15 @@ fi
 
 test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
 
+if test -n "$sysroot"; then
+    case "$cc_type" in
+        gcc)
+            add_cflags  --sysroot="$sysroot"
+            add_ldflags --sysroot="$sysroot"
+        ;;
+    esac
+fi
+
 # compiler sanity check
 check_exec <<EOF
 int main(void){ return 0; }
