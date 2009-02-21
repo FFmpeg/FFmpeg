@@ -282,7 +282,7 @@ static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
         q->last_pkt->next = pkt1;
     q->last_pkt = pkt1;
     q->nb_packets++;
-    q->size += pkt1->pkt.size;
+    q->size += pkt1->pkt.size + sizeof(*pkt1);
     /* XXX: should duplicate packet data in DV case */
     SDL_CondSignal(q->cond);
 
@@ -321,7 +321,7 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
             if (!q->first_pkt)
                 q->last_pkt = NULL;
             q->nb_packets--;
-            q->size -= pkt1->pkt.size;
+            q->size -= pkt1->pkt.size + sizeof(*pkt1);
             *pkt = pkt1->pkt;
             av_free(pkt1);
             ret = 1;
