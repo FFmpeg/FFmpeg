@@ -206,7 +206,7 @@
        "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
     : "%eax", "%ebx", "%ecx", "%edx", "%esi"
 */
-#define YSCALEYUV2PACKEDX \
+#define YSCALEYUV2PACKEDX_UV \
     __asm__ volatile(\
     "xor                   %%"REG_a", %%"REG_a"     \n\t"\
     ASMALIGN(4)\
@@ -229,8 +229,9 @@
     "paddw                     %%mm5, %%mm4         \n\t"\
     "test                  %%"REG_S", %%"REG_S"     \n\t"\
     " jnz                         2b                \n\t"\
-\
-    "lea "LUM_MMX_FILTER_OFFSET"(%0), %%"REG_d"     \n\t"\
+
+#define YSCALEYUV2PACKEDX_YA(offset) \
+    "lea                "offset"(%0), %%"REG_d"     \n\t"\
     "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
     "movq      "VROUNDER_OFFSET"(%0), %%mm1         \n\t"\
     "movq                      %%mm1, %%mm7         \n\t"\
@@ -248,6 +249,10 @@
     "test                  %%"REG_S", %%"REG_S"     \n\t"\
     " jnz                         2b                \n\t"\
 
+#define YSCALEYUV2PACKEDX \
+    YSCALEYUV2PACKEDX_UV \
+    YSCALEYUV2PACKEDX_YA(LUM_MMX_FILTER_OFFSET) \
+
 #define YSCALEYUV2PACKEDX_END                 \
     :: "r" (&c->redDither),                   \
         "m" (dummy), "m" (dummy), "m" (dummy),\
@@ -255,7 +260,7 @@
     : "%"REG_a, "%"REG_d, "%"REG_S            \
     );
 
-#define YSCALEYUV2PACKEDX_ACCURATE \
+#define YSCALEYUV2PACKEDX_ACCURATE_UV \
     __asm__ volatile(\
     "xor %%"REG_a", %%"REG_a"                       \n\t"\
     ASMALIGN(4)\
@@ -304,8 +309,9 @@
     "paddw                     %%mm0, %%mm6         \n\t"\
     "movq                      %%mm4, "U_TEMP"(%0)  \n\t"\
     "movq                      %%mm6, "V_TEMP"(%0)  \n\t"\
-\
-    "lea "LUM_MMX_FILTER_OFFSET"(%0), %%"REG_d"     \n\t"\
+
+#define YSCALEYUV2PACKEDX_ACCURATE_YA(offset) \
+    "lea                "offset"(%0), %%"REG_d"     \n\t"\
     "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
     "pxor                      %%mm1, %%mm1         \n\t"\
     "pxor                      %%mm5, %%mm5         \n\t"\
@@ -348,6 +354,10 @@
     "paddw                     %%mm0, %%mm7         \n\t"\
     "movq               "U_TEMP"(%0), %%mm3         \n\t"\
     "movq               "V_TEMP"(%0), %%mm4         \n\t"\
+
+#define YSCALEYUV2PACKEDX_ACCURATE \
+    YSCALEYUV2PACKEDX_ACCURATE_UV \
+    YSCALEYUV2PACKEDX_ACCURATE_YA(LUM_MMX_FILTER_OFFSET)
 
 #define YSCALEYUV2RGBX \
     "psubw  "U_OFFSET"(%0), %%mm3       \n\t" /* (U-128)8*/\
@@ -424,7 +434,7 @@
 
 #define YSCALEYUV2PACKED(index, c)  REAL_YSCALEYUV2PACKED(index, c)
 
-#define REAL_YSCALEYUV2RGB(index, c) \
+#define REAL_YSCALEYUV2RGB_UV(index, c) \
     "xor            "#index", "#index"  \n\t"\
     ASMALIGN(4)\
     "1:                                 \n\t"\
@@ -448,6 +458,8 @@
     "pmulhw "UG_COEFF"("#c"), %%mm3     \n\t"\
     "pmulhw "VG_COEFF"("#c"), %%mm4     \n\t"\
     /* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
+
+#define REAL_YSCALEYUV2RGB_YA(index, c) \
     "movq  (%0, "#index", 2), %%mm0     \n\t" /*buf0[eax]*/\
     "movq  (%1, "#index", 2), %%mm1     \n\t" /*buf1[eax]*/\
     "movq 8(%0, "#index", 2), %%mm6     \n\t" /*buf0[eax]*/\
@@ -460,6 +472,8 @@
     "psraw                $4, %%mm7     \n\t" /* buf0[eax] - buf1[eax] >>4*/\
     "paddw             %%mm0, %%mm1     \n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
     "paddw             %%mm6, %%mm7     \n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
+
+#define REAL_YSCALEYUV2RGB_COEFF(c) \
     "pmulhw "UB_COEFF"("#c"), %%mm2     \n\t"\
     "pmulhw "VR_COEFF"("#c"), %%mm5     \n\t"\
     "psubw  "Y_OFFSET"("#c"), %%mm1     \n\t" /* 8(Y-16)*/\
@@ -488,7 +502,12 @@
     "packuswb          %%mm6, %%mm5     \n\t"\
     "packuswb          %%mm3, %%mm4     \n\t"\
     "pxor              %%mm7, %%mm7     \n\t"
-#define YSCALEYUV2RGB(index, c)  REAL_YSCALEYUV2RGB(index, c)
+#define YSCALEYUV2RGB_YA(index, c) REAL_YSCALEYUV2RGB_YA(index, c)
+
+#define YSCALEYUV2RGB(index, c) \
+    REAL_YSCALEYUV2RGB_UV(index, c) \
+    REAL_YSCALEYUV2RGB_YA(index, c) \
+    REAL_YSCALEYUV2RGB_COEFF(c)
 
 #define REAL_YSCALEYUV2PACKED1(index, c) \
     "xor            "#index", "#index"  \n\t"\
