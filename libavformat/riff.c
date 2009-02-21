@@ -368,7 +368,8 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *ta
 {
     put_le32(pb, 40 + enc->extradata_size); /* size */
     put_le32(pb, enc->width);
-    put_le32(pb, enc->height);
+    //We always store RGB TopDown
+    put_le32(pb, enc->codec_tag ? enc->height : -enc->height);
     put_le16(pb, 1); /* planes */
 
     put_le16(pb, enc->bits_per_coded_sample ? enc->bits_per_coded_sample : 24); /* depth */

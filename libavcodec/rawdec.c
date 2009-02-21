@@ -30,6 +30,7 @@
 typedef struct RawVideoContext {
     unsigned char * buffer;  /* block of memory for holding one frame */
     int             length;  /* number of bytes in buffer */
+    int flip;
     AVFrame pic;             ///< AVCodecContext.coded_frame
 } RawVideoContext;
 
@@ -85,14 +86,15 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     if (!context->buffer)
         return -1;
 
+    if(avctx->extradata_size >= 9 && !memcmp(avctx->extradata + avctx->extradata_size - 9, "BottomUp", 9))
+        context->flip=1;
+
     return 0;
 }
 
 static void flip(AVCodecContext *avctx, AVPicture * picture){
-    if(!avctx->codec_tag && avctx->bits_per_coded_sample && picture->linesize[2]==0){
         picture->data[0] += picture->linesize[0] * (avctx->height-1);
         picture->linesize[0] *= -1;
-    }
 }
 
 static int raw_decode(AVCodecContext *avctx,
@@ -131,6 +133,7 @@ static int raw_decode(AVCodecContext *avctx,
         avctx->palctrl->palette_changed = 0;
     }
 
+    if(context->flip)
     flip(avctx, picture);
 
     if (avctx->codec_tag == MKTAG('Y', 'V', '1', '2'))

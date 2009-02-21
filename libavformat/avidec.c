@@ -451,7 +451,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     }
                     get_le32(pb); /* size */
                     st->codec->width = get_le32(pb);
-                    st->codec->height = get_le32(pb);
+                    st->codec->height = (int32_t)get_le32(pb);
                     get_le16(pb); /* panes */
                     st->codec->bits_per_coded_sample= get_le16(pb); /* depth */
                     tag1 = get_le32(pb);
@@ -499,6 +499,15 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec->codec_tag = tag1;
                     st->codec->codec_id = codec_get_id(codec_bmp_tags, tag1);
                     st->need_parsing = AVSTREAM_PARSE_HEADERS; // This is needed to get the pict type which is necessary for generating correct pts.
+
+                    if(st->codec->codec_tag==0 && st->codec->height > 0 && st->codec->extradata_size < 1U<<30){
+                        st->codec->extradata_size+= 9;
+                        st->codec->extradata= av_realloc(st->codec->extradata, st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                        if(st->codec->extradata)
+                            memcpy(st->codec->extradata + st->codec->extradata_size - 9, "BottomUp", 9);
+                    }
+                    st->codec->height= FFABS(st->codec->height);
+
 //                    url_fskip(pb, size - 5 * 4);
                     break;
                 case CODEC_TYPE_AUDIO:
