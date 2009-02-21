@@ -65,6 +65,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (BETHSOFTVID, bethsoftvid);
     REGISTER_DEMUXER  (BFI, bfi);
     REGISTER_DEMUXER  (C93, c93);
+    REGISTER_DEMUXER  (CAVSVIDEO, cavsvideo);
     REGISTER_MUXER    (CRC, crc);
     REGISTER_MUXDEMUX (DAUD, daud);
     REGISTER_MUXDEMUX (DIRAC, dirac);

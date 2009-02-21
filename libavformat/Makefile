@@ -33,6 +33,7 @@ OBJS-$(CONFIG_AVS_DEMUXER)               += avs.o vocdec.o voc.o
 OBJS-$(CONFIG_BETHSOFTVID_DEMUXER)       += bethsoftvid.o
 OBJS-$(CONFIG_BFI_DEMUXER)               += bfi.o
 OBJS-$(CONFIG_C93_DEMUXER)               += c93.o vocdec.o voc.o
+OBJS-$(CONFIG_CAVSVIDEO_DEMUXER)         += raw.o
 OBJS-$(CONFIG_CRC_MUXER)                 += crcenc.o
 OBJS-$(CONFIG_DAUD_DEMUXER)              += daud.o
 OBJS-$(CONFIG_DAUD_MUXER)                += daud.o

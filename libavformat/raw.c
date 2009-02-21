@@ -365,6 +365,49 @@ static int mpegvideo_probe(AVProbeData *p)
         return AVPROBE_SCORE_MAX/2+1; // +1 for .mpg
     return 0;
 }
+
+#define CAVS_SEQ_START_CODE       0x000001b0
+#define CAVS_PIC_I_START_CODE     0x000001b3
+#define CAVS_UNDEF_START_CODE     0x000001b4
+#define CAVS_PIC_PB_START_CODE    0x000001b6
+#define CAVS_VIDEO_EDIT_CODE      0x000001b7
+#define CAVS_PROFILE_JIZHUN       0x20
+
+static int cavsvideo_probe(AVProbeData *p)
+{
+    uint32_t code= -1;
+    int pic=0, seq=0, slice_pos = 0;
+    int i;
+
+    for(i=0; i<p->buf_size; i++){
+        code = (code<<8) + p->buf[i];
+        if ((code & 0xffffff00) == 0x100) {
+            if(code < CAVS_SEQ_START_CODE) {
+                /* slices have to be consecutive */
+                if(code < slice_pos)
+                    return 0;
+                slice_pos = code;
+            } else {
+                slice_pos = 0;
+            }
+            if (code == CAVS_SEQ_START_CODE) {
+                seq++;
+                /* check for the only currently supported profile */
+                if(p->buf[i+1] != CAVS_PROFILE_JIZHUN)
+                    return 0;
+            } else if ((code == CAVS_PIC_I_START_CODE) ||
+                       (code == CAVS_PIC_PB_START_CODE)) {
+                pic++;
+            } else if ((code == CAVS_UNDEF_START_CODE) ||
+                       (code >  CAVS_VIDEO_EDIT_CODE)) {
+                return 0;
+            }
+        }
+    }
+    if(seq && seq*9<=pic*10)
+        return AVPROBE_SCORE_MAX/2;
+    return 0;
+}
 #endif
 
 #if CONFIG_M4V_DEMUXER
@@ -1051,6 +1094,19 @@ AVInputFormat mpegvideo_demuxer = {
     raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .value = CODEC_ID_MPEG1VIDEO,
+};
+#endif
+
+#if CONFIG_CAVSVIDEO_DEMUXER
+AVInputFormat cavsvideo_demuxer = {
+    "cavsvideo",
+    NULL_IF_CONFIG_SMALL("Chinese AVS video"),
+    0,
+    cavsvideo_probe,
+    video_read_header,
+    raw_read_partial_packet,
+    .flags= AVFMT_GENERIC_INDEX,
+    .value = CODEC_ID_CAVS,
 };
 #endif
 
