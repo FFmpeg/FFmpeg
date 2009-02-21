@@ -532,4 +532,34 @@ typedef struct H264Context{
     int initial_cpb_removal_delay[32]; ///< Initial timestamps for CPBs
 }H264Context;
 
+/**
+ * Decode SEI
+ */
+int ff_h264_decode_sei(H264Context *h);
+
+/**
+ * Decode SPS
+ */
+int ff_h264_decode_seq_parameter_set(H264Context *h);
+
+/**
+ * Decode PPS
+ */
+int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length);
+
+/**
+ * Decodes a network abstraction layer unit.
+ * @param consumed is the number of bytes used as input
+ * @param length is the length of the array
+ * @param dst_length is the number of decoded bytes FIXME here or a decode rbsp tailing?
+ * @returns decoded bytes, might be src+1 if no escapes
+ */
+const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src, int *dst_length, int *consumed, int length);
+
+/**
+ * identifies the exact end of the bitstream
+ * @return the length of the trailing, or 0 if damaged
+ */
+int ff_h264_decode_rbsp_trailing(H264Context *h, const uint8_t *src);
+
 #endif /* AVCODEC_H264_H */
