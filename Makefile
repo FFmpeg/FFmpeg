@@ -77,6 +77,8 @@ tools/%$(EXESUF): tools/%.c
 
 ffplay.o ffplay.d: CFLAGS += $(SDL_CFLAGS)
 
+cmdutils.o cmdutils.d: version.h
+
 alltools: $(addsuffix $(EXESUF),$(addprefix tools/, cws2fws pktdumper qt-faststart trasher))
 
 VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
