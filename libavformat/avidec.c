@@ -165,6 +165,9 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
 #ifdef DEBUG_SEEK
             av_log(s, AV_LOG_ERROR, "pos:%"PRId64", len:%X\n", pos, len);
 #endif
+            if(url_feof(pb))
+                return -1;
+
             if(last_pos == pos || pos == base - 8)
                 avi->non_interleaved= 1;
             if(last_pos != pos)
@@ -181,6 +184,10 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
             offset = get_le64(pb);
             get_le32(pb);       /* size */
             duration = get_le32(pb);
+
+            if(url_feof(pb))
+                return -1;
+
             pos = url_ftell(pb);
 
             url_fseek(pb, offset+8, SEEK_SET);
@@ -923,6 +930,9 @@ static int avi_read_idx1(AVFormatContext *s, int size)
 #if defined(DEBUG_SEEK)
         av_log(s, AV_LOG_DEBUG, "%d cum_len=%"PRId64"\n", len, ast->cum_len);
 #endif
+        if(url_feof(pb))
+            return -1;
+
         if(last_pos == pos)
             avi->non_interleaved= 1;
         else
