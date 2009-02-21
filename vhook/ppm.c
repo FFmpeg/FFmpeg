@@ -232,8 +232,8 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     AVPicture picture1;
     AVPicture picture2;
     AVPicture *pict = picture;
-    int av_uninit(out_width);
-    int av_uninit(out_height);
+    int out_width;
+    int out_height;
     int i;
     uint8_t *ptr = NULL;
     FILE *in = rwpipe_reader( ci->rw );
