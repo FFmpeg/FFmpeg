@@ -680,6 +680,8 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
             *pnum = st->codec->time_base.num;
             *pden = st->codec->time_base.den;
             if (pc && pc->repeat_pict) {
+                // NOTE: repeat_pict can be also -1 for half-frame durations,
+                // e.g., in H.264 interlaced field picture stream
                 *pden *= 2;
                 *pnum = (*pnum) * (2 + pc->repeat_pict);
             }
