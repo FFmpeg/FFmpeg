@@ -93,8 +93,8 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
 }
 
 static void flip(AVCodecContext *avctx, AVPicture * picture){
-        picture->data[0] += picture->linesize[0] * (avctx->height-1);
-        picture->linesize[0] *= -1;
+    picture->data[0] += picture->linesize[0] * (avctx->height-1);
+    picture->linesize[0] *= -1;
 }
 
 static int raw_decode(AVCodecContext *avctx,
@@ -134,7 +134,7 @@ static int raw_decode(AVCodecContext *avctx,
     }
 
     if(context->flip)
-    flip(avctx, picture);
+        flip(avctx, picture);
 
     if (avctx->codec_tag == MKTAG('Y', 'V', '1', '2'))
     {
