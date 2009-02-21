@@ -127,7 +127,7 @@ int Configure(void **ctxp, int argc, char *argv[])
 
     optind = 1;
 
-    ci->dir = "/tmp";
+    ci->dir = av_strdup("/tmp");
     ci->threshold = 100;
     ci->file_limit = 100;
     ci->min_interval = 1000000;
@@ -368,7 +368,8 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
                     f = fopen(fname, "w");
                     if (f) {
                         fprintf(f, "P6 %d %d 255\n", width, height);
-                        fwrite(buf, width * height * 3, 1, f);
+                        if (!fwrite(buf, width * height * 3, 1, f))
+                            av_log(ctx, AV_LOG_ERROR, "Couldn't write to PPM file %s\n", fname);
                         fclose(f);
                     }
 
