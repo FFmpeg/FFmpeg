@@ -626,30 +626,29 @@
     "pxor              %%mm7, %%mm7     \n\t"
 #define YSCALEYUV2RGB1b(index, c)  REAL_YSCALEYUV2RGB1b(index, c)
 
-#define REAL_WRITEBGR32(dst, dstw, index) \
-    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
-    "movq      %%mm2, %%mm1     \n\t" /* B */\
-    "movq      %%mm5, %%mm6     \n\t" /* R */\
-    "punpcklbw %%mm4, %%mm2     \n\t" /* GBGBGBGB 0 */\
-    "punpcklbw %%mm7, %%mm5     \n\t" /* 0R0R0R0R 0 */\
-    "punpckhbw %%mm4, %%mm1     \n\t" /* GBGBGBGB 2 */\
-    "punpckhbw %%mm7, %%mm6     \n\t" /* 0R0R0R0R 2 */\
-    "movq      %%mm2, %%mm0     \n\t" /* GBGBGBGB 0 */\
-    "movq      %%mm1, %%mm3     \n\t" /* GBGBGBGB 2 */\
-    "punpcklwd %%mm5, %%mm0     \n\t" /* 0RGB0RGB 0 */\
-    "punpckhwd %%mm5, %%mm2     \n\t" /* 0RGB0RGB 1 */\
-    "punpcklwd %%mm6, %%mm1     \n\t" /* 0RGB0RGB 2 */\
-    "punpckhwd %%mm6, %%mm3     \n\t" /* 0RGB0RGB 3 */\
+#define REAL_WRITEBGR32(dst, dstw, index, b, g, r, a, q0, q2, q3, t) \
+    "movq       "#b", "#q2"     \n\t" /* B */\
+    "movq       "#r", "#t"      \n\t" /* R */\
+    "punpcklbw  "#g", "#b"      \n\t" /* GBGBGBGB 0 */\
+    "punpcklbw  "#a", "#r"      \n\t" /* ARARARAR 0 */\
+    "punpckhbw  "#g", "#q2"     \n\t" /* GBGBGBGB 2 */\
+    "punpckhbw  "#a", "#t"      \n\t" /* ARARARAR 2 */\
+    "movq       "#b", "#q0"     \n\t" /* GBGBGBGB 0 */\
+    "movq      "#q2", "#q3"     \n\t" /* GBGBGBGB 2 */\
+    "punpcklwd  "#r", "#q0"     \n\t" /* ARGBARGB 0 */\
+    "punpckhwd  "#r", "#b"      \n\t" /* ARGBARGB 1 */\
+    "punpcklwd  "#t", "#q2"     \n\t" /* ARGBARGB 2 */\
+    "punpckhwd  "#t", "#q3"     \n\t" /* ARGBARGB 3 */\
 \
-    MOVNTQ(%%mm0,   (dst, index, 4))\
-    MOVNTQ(%%mm2,  8(dst, index, 4))\
-    MOVNTQ(%%mm1, 16(dst, index, 4))\
-    MOVNTQ(%%mm3, 24(dst, index, 4))\
+    MOVNTQ(   q0,   (dst, index, 4))\
+    MOVNTQ(    b,  8(dst, index, 4))\
+    MOVNTQ(   q2, 16(dst, index, 4))\
+    MOVNTQ(   q3, 24(dst, index, 4))\
 \
     "add      $8, "#index"      \n\t"\
     "cmp "#dstw", "#index"      \n\t"\
     " jb      1b                \n\t"
-#define WRITEBGR32(dst, dstw, index)  REAL_WRITEBGR32(dst, dstw, index)
+#define WRITEBGR32(dst, dstw, index, b, g, r, a, q0, q2, q3, t)  REAL_WRITEBGR32(dst, dstw, index, b, g, r, a, q0, q2, q3, t)
 
 #define REAL_WRITERGB16(dst, dstw, index) \
     "pand "MANGLE(bF8)", %%mm2  \n\t" /* B */\
@@ -1014,7 +1013,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             case PIX_FMT_RGB32:
                 YSCALEYUV2PACKEDX_ACCURATE
                 YSCALEYUV2RGBX
-                WRITEBGR32(%4, %5, %%REGa)
+                WRITEBGR32(%4, %5, %%REGa, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
 
                 YSCALEYUV2PACKEDX_END
                 return;
@@ -1076,7 +1075,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
             case PIX_FMT_RGB32:
                 YSCALEYUV2PACKEDX
                 YSCALEYUV2RGBX
-                WRITEBGR32(%4, %5, %%REGa)
+                WRITEBGR32(%4, %5, %%REGa, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 YSCALEYUV2PACKEDX_END
                 return;
             case PIX_FMT_BGR24:
@@ -1171,7 +1170,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB(%%REGBP, %5)
-                WRITEBGR32(%%REGb, 8280(%5), %%REGBP)
+                WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
@@ -1283,7 +1282,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB1(%%REGBP, %5)
-                WRITEBGR32(%%REGb, 8280(%5), %%REGBP)
+                WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
@@ -1372,7 +1371,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
                 YSCALEYUV2RGB1b(%%REGBP, %5)
-                WRITEBGR32(%%REGb, 8280(%5), %%REGBP)
+                WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
