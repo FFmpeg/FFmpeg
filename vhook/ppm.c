@@ -56,8 +56,11 @@ static rwpipe *rwpipe_open( int argc, char *argv[] )
         int input[ 2 ];
         int output[ 2 ];
 
-        pipe( input );
-        pipe( output );
+        if (!pipe( input ))
+            return NULL;
+
+        if (!pipe( output ))
+            return NULL;
 
         this->pid = fork();
 
@@ -160,7 +163,9 @@ static int rwpipe_read_ppm_header( rwpipe *rw, int *width, int *height )
     FILE *in = rwpipe_reader( rw );
     int max;
 
-    fgets( line, 3, in );
+    if (!fgets( line, 3, in ))
+        return -1;
+
     if ( !strncmp( line, "P6", 2 ) )
     {
         *width = rwpipe_read_number( rw );
