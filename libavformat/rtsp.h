@@ -59,7 +59,7 @@ typedef struct RTSPTransportField {
     enum RTSPLowerTransport lower_transport;
 } RTSPTransportField;
 
-typedef struct RTSPHeader {
+typedef struct RTSPMessageHeader {
     int content_length;
     enum RTSPStatusCode status_code; /**< response code from server */
     int nb_transports;
@@ -70,7 +70,7 @@ typedef struct RTSPHeader {
     char session_id[512];
     char real_challenge[64]; /**< the RealChallenge1 field from the server */
     char server[64];
-} RTSPHeader;
+} RTSPMessageHeader;
 
 enum RTSPClientState {
     RTSP_STATE_IDLE,
@@ -126,7 +126,7 @@ typedef struct RTSPStream {
 } RTSPStream;
 
 int rtsp_init(void);
-void rtsp_parse_line(RTSPHeader *reply, const char *buf);
+void rtsp_parse_line(RTSPMessageHeader *reply, const char *buf);
 
 #if LIBAVFORMAT_VERSION_INT < (53 << 16)
 extern int rtsp_default_protocols;

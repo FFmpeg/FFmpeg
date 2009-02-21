@@ -273,10 +273,10 @@ static int http_receive_data(HTTPContext *c);
 static int rtsp_parse_request(HTTPContext *c);
 static void rtsp_cmd_describe(HTTPContext *c, const char *url);
 static void rtsp_cmd_options(HTTPContext *c, const char *url);
-static void rtsp_cmd_setup(HTTPContext *c, const char *url, RTSPHeader *h);
-static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPHeader *h);
-static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPHeader *h);
-static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPHeader *h);
+static void rtsp_cmd_setup(HTTPContext *c, const char *url, RTSPMessageHeader *h);
+static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPMessageHeader *h);
+static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPMessageHeader *h);
+static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPMessageHeader *h);
 
 /* SDP handling */
 static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
@@ -2628,7 +2628,7 @@ static int rtsp_parse_request(HTTPContext *c)
     char protocol[32];
     char line[1024];
     int len;
-    RTSPHeader header1, *header = &header1;
+    RTSPMessageHeader header1, *header = &header1;
 
     c->buffer_ptr[0] = '\0';
     p = c->buffer;
@@ -2811,7 +2811,7 @@ static HTTPContext *find_rtp_session(const char *session_id)
     return NULL;
 }
 
-static RTSPTransportField *find_transport(RTSPHeader *h, enum RTSPLowerTransport lower_transport)
+static RTSPTransportField *find_transport(RTSPMessageHeader *h, enum RTSPLowerTransport lower_transport)
 {
     RTSPTransportField *th;
     int i;
@@ -2825,7 +2825,7 @@ static RTSPTransportField *find_transport(RTSPHeader *h, enum RTSPLowerTransport
 }
 
 static void rtsp_cmd_setup(HTTPContext *c, const char *url,
-                           RTSPHeader *h)
+                           RTSPMessageHeader *h)
 {
     FFStream *stream;
     int stream_index, port;
@@ -2996,7 +2996,7 @@ static HTTPContext *find_rtp_session_with_url(const char *url,
     return NULL;
 }
 
-static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPHeader *h)
+static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPMessageHeader *h)
 {
     HTTPContext *rtp_c;
 
@@ -3030,7 +3030,7 @@ static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPHeader *h)
     url_fprintf(c->pb, "\r\n");
 }
 
-static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPHeader *h)
+static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPMessageHeader *h)
 {
     HTTPContext *rtp_c;
 
@@ -3055,7 +3055,7 @@ static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPHeader *h)
     url_fprintf(c->pb, "\r\n");
 }
 
-static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPHeader *h)
+static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPMessageHeader *h)
 {
     HTTPContext *rtp_c;
     char session_id[32];
