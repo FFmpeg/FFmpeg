@@ -112,6 +112,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
 {
     H264Context *h = s->priv_data;
     const uint8_t *buf_end = buf + buf_size;
+    unsigned int pps_id;
     unsigned int slice_type;
     int state;
     const uint8_t *ptr;
@@ -164,6 +165,33 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 /* key frame, since recovery_frame_cnt is set */
                 s->key_frame = 1;
             }
+            pps_id= get_ue_golomb(&h->s.gb);
+            if(pps_id>=MAX_PPS_COUNT) {
+                av_log(h->s.avctx, AV_LOG_ERROR, "pps_id out of range\n");
+                return -1;
+            }
+            if(!h->pps_buffers[pps_id]) {
+                av_log(h->s.avctx, AV_LOG_ERROR, "non-existing PPS referenced\n");
+                return -1;
+            }
+            h->pps= *h->pps_buffers[pps_id];
+            if(!h->sps_buffers[h->pps.sps_id]) {
+                av_log(h->s.avctx, AV_LOG_ERROR, "non-existing SPS referenced\n");
+                return -1;
+            }
+            h->sps = *h->sps_buffers[h->pps.sps_id];
+            h->frame_num = get_bits(&h->s.gb, h->sps.log2_max_frame_num);
+
+            if(h->sps.frame_mbs_only_flag){
+                h->s.picture_structure= PICT_FRAME;
+            }else{
+                if(get_bits1(&h->s.gb)) { //field_pic_flag
+                    h->s.picture_structure= PICT_TOP_FIELD + get_bits1(&h->s.gb); //bottom_field_flag
+                } else {
+                    h->s.picture_structure= PICT_FRAME;
+                }
+            }
+
             return 0; /* no need to evaluate the rest */
         }
         buf += consumed;
