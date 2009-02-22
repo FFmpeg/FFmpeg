@@ -63,6 +63,9 @@ static int pnm_decode_frame(AVCodecContext *avctx,
     switch(avctx->pix_fmt) {
     default:
         return -1;
+    case PIX_FMT_RGB48BE:
+        n = avctx->width * 6;
+        goto do_read;
     case PIX_FMT_RGB24:
         n = avctx->width * 3;
         goto do_read;
@@ -195,6 +198,10 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
         c = '6';
         n = avctx->width * 3;
         break;
+    case PIX_FMT_RGB48BE:
+        c = '6';
+        n = avctx->width * 6;
+        break;
     case PIX_FMT_YUV420P:
         c = '5';
         n = avctx->width;
@@ -209,7 +216,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     s->bytestream += strlen(s->bytestream);
     if (avctx->pix_fmt != PIX_FMT_MONOWHITE) {
         snprintf(s->bytestream, s->bytestream_end - s->bytestream,
-                 "%d\n", (avctx->pix_fmt != PIX_FMT_GRAY16BE) ? 255 : 65535);
+                 "%d\n", (avctx->pix_fmt != PIX_FMT_GRAY16BE && avctx->pix_fmt != PIX_FMT_RGB48BE) ? 255 : 65535);
         s->bytestream += strlen(s->bytestream);
     }
 
@@ -394,7 +401,7 @@ AVCodec ppm_encoder = {
     pnm_encode_frame,
     NULL, //encode_end,
     pnm_decode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_NONE},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB48BE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
 };
 #endif // CONFIG_PPM_ENCODER

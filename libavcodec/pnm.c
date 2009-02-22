@@ -138,8 +138,11 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
                 avctx->pix_fmt = PIX_FMT_GRAY16BE;
                 if (s->maxval != 65535)
                     avctx->pix_fmt = PIX_FMT_GRAY16;
+            } if (avctx->pix_fmt == PIX_FMT_RGB24) {
+                if (s->maxval > 255)
+                    avctx->pix_fmt = PIX_FMT_RGB48BE;
             } else {
-                av_log(avctx, AV_LOG_ERROR, "16-bit components are only supported for grayscale\n");
+                av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format\n");
                 avctx->pix_fmt = PIX_FMT_NONE;
                 return -1;
             }
