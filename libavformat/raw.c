@@ -1100,7 +1100,7 @@ AVInputFormat mpegvideo_demuxer = {
 #if CONFIG_CAVSVIDEO_DEMUXER
 AVInputFormat cavsvideo_demuxer = {
     "cavsvideo",
-    NULL_IF_CONFIG_SMALL("Chinese AVS video"),
+    NULL_IF_CONFIG_SMALL("raw Chinese AVS video"),
     0,
     cavsvideo_probe,
     video_read_header,
