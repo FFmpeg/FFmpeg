@@ -32,17 +32,30 @@ int av_log_level = AV_LOG_INFO;
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix=1;
+    static int count;
+    static char line[1024], prev[1024];
     AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
     if(level>av_log_level)
         return;
 #undef fprintf
     if(print_prefix && avc) {
-        fprintf(stderr, "[%s @ %p]", avc->item_name(ptr), ptr);
+        snprintf(line, sizeof(line), "[%s @ %p]", avc->item_name(ptr), ptr);
+    }else
+        line[0]=0;
+
+    vsnprintf(line + strlen(line), sizeof(line) - strlen(line), fmt, vl);
+
+    print_prefix= line[strlen(line)-1] == '\n';
+    if(print_prefix && !strcmp(line, prev)){
+        count++;
+        return;
     }
-
-    print_prefix= strstr(fmt, "\n") != NULL;
-
-    vfprintf(stderr, fmt, vl);
+    if(count>0){
+        fprintf(stderr, "    Last message repeated %d times\n", count);
+        count=0;
+    }
+    fputs(line, stderr);
+    strcpy(prev, line);
 }
 
 static void (*av_log_callback)(void*, int, const char*, va_list) = av_log_default_callback;
