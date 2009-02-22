@@ -775,7 +775,7 @@ static int svq3_decode_slice_header(H264Context *h)
     return 0;
 }
 
-static int svq3_decode_init(AVCodecContext *avctx)
+static av_cold int svq3_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *const s = avctx->priv_data;
     H264Context *const h = avctx->priv_data;

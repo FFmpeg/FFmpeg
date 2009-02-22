@@ -107,7 +107,7 @@ const uint8_t *ff_find_start_code(const uint8_t * restrict p, const uint8_t *end
 }
 
 /* init common dct for both encoder and decoder */
-int ff_dct_common_init(MpegEncContext *s)
+av_cold int ff_dct_common_init(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_c;
@@ -396,7 +396,7 @@ void MPV_decode_defaults(MpegEncContext *s){
  * init common structure for both encoder and decoder.
  * this assumes that some variables like width/height are already set
  */
-int MPV_common_init(MpegEncContext *s)
+av_cold int MPV_common_init(MpegEncContext *s)
 {
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y, threads;
 

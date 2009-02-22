@@ -135,7 +135,7 @@ static enum PixelFormat GetFfmpegChromaFormat(SchroChromaFormat schro_pix_fmt)
     return PIX_FMT_NONE;
 }
 
-static int libschroedinger_decode_init(AVCodecContext *avccontext)
+static av_cold int libschroedinger_decode_init(AVCodecContext *avccontext)
 {
 
     FfmpegSchroDecoderParams *p_schro_params = avccontext->priv_data ;
@@ -325,7 +325,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
 }
 
 
-static int libschroedinger_decode_close(AVCodecContext *avccontext)
+static av_cold int libschroedinger_decode_close(AVCodecContext *avccontext)
 {
     FfmpegSchroDecoderParams *p_schro_params = avccontext->priv_data;
     /* Free the decoder. */

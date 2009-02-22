@@ -244,7 +244,7 @@ static int decode_bytes(const uint8_t* inbuffer, uint8_t* out, int bytes){
 }
 
 
-static void init_atrac3_transforms(ATRAC3Context *q) {
+static av_cold void init_atrac3_transforms(ATRAC3Context *q) {
     float enc_window[256];
     float s;
     int i;
@@ -275,7 +275,7 @@ static void init_atrac3_transforms(ATRAC3Context *q) {
  * Atrac3 uninit, free all allocated memory
  */
 
-static int atrac3_decode_close(AVCodecContext *avctx)
+static av_cold int atrac3_decode_close(AVCodecContext *avctx)
 {
     ATRAC3Context *q = avctx->priv_data;
 
@@ -926,7 +926,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
  * @param avctx     pointer to the AVCodecContext
  */
 
-static int atrac3_decode_init(AVCodecContext *avctx)
+static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 {
     int i;
     const uint8_t *edata_ptr = avctx->extradata;

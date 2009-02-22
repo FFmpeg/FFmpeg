@@ -117,7 +117,7 @@ static void channel_setup(AVCodecContext *avctx)
 #endif
 }
 
-static int faac_init_mp4(AVCodecContext *avctx)
+static av_cold int faac_init_mp4(AVCodecContext *avctx)
 {
     FAACContext *s = avctx->priv_data;
     unsigned long samplerate;

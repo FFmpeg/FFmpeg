@@ -149,7 +149,7 @@ typedef struct ADPCMContext {
 /* XXX: implement encoding */
 
 #if CONFIG_ENCODERS
-static int adpcm_encode_init(AVCodecContext *avctx)
+static av_cold int adpcm_encode_init(AVCodecContext *avctx)
 {
     if (avctx->channels > 2)
         return -1; /* only stereo or mono =) */
@@ -199,7 +199,7 @@ static int adpcm_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int adpcm_encode_close(AVCodecContext *avctx)
+static av_cold int adpcm_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
 

@@ -2170,7 +2170,7 @@ static uint8_t c_ccir_to_jpeg[256];
 static uint8_t c_jpeg_to_ccir[256];
 
 /* init various conversion tables */
-static void img_convert_init(void)
+static av_cold void img_convert_init(void)
 {
     int i;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;

@@ -88,7 +88,7 @@ typedef struct IComplex {
     short re,im;
 } IComplex;
 
-static void fft_init(int ln)
+static av_cold void fft_init(int ln)
 {
     int i, n;
     float alpha;

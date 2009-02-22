@@ -222,7 +222,7 @@ static float noise_samples[128];
 static DECLARE_ALIGNED_16(MPA_INT, mpa_window[512]);
 
 
-static void softclip_table_init(void) {
+static av_cold void softclip_table_init(void) {
     int i;
     double dfl = SOFTCLIP_THRESHOLD - 32767;
     float delta = 1.0 / -dfl;
@@ -232,7 +232,7 @@ static void softclip_table_init(void) {
 
 
 // random generated table
-static void rnd_table_init(void) {
+static av_cold void rnd_table_init(void) {
     int i,j;
     uint32_t ldw,hdw;
     uint64_t tmp64_1;
@@ -268,7 +268,7 @@ static void rnd_table_init(void) {
 }
 
 
-static void init_noise_samples(void) {
+static av_cold void init_noise_samples(void) {
     int i;
     int random_seed = 0;
     float delta = 1.0 / 16384.0;
@@ -279,7 +279,7 @@ static void init_noise_samples(void) {
 }
 
 
-static void qdm2_init_vlc(void)
+static av_cold void qdm2_init_vlc(void)
 {
     init_vlc (&vlc_tab_level, 8, 24,
         vlc_tab_level_huffbits, 1, 1,
@@ -1660,7 +1660,7 @@ static void qdm2_synthesis_filter (QDM2Context *q, int index)
  *
  * @param q    context
  */
-static void qdm2_init(QDM2Context *q) {
+static av_cold void qdm2_init(QDM2Context *q) {
     static int initialized = 0;
 
     if (initialized != 0)
@@ -1726,7 +1726,7 @@ static void dump_context(QDM2Context *q)
 /**
  * Init parameters from codec extradata
  */
-static int qdm2_decode_init(AVCodecContext *avctx)
+static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 {
     QDM2Context *s = avctx->priv_data;
     uint8_t *extradata;
@@ -1896,7 +1896,7 @@ static int qdm2_decode_init(AVCodecContext *avctx)
 }
 
 
-static int qdm2_decode_close(AVCodecContext *avctx)
+static av_cold int qdm2_decode_close(AVCodecContext *avctx)
 {
     QDM2Context *s = avctx->priv_data;
 

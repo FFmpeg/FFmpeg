@@ -50,7 +50,7 @@ typedef struct OggVorbisContext {
 } OggVorbisContext ;
 
 
-static int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
+static av_cold int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
     double cfreq;
 
     if(avccontext->flags & CODEC_FLAG_QSCALE) {

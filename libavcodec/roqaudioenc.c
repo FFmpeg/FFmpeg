@@ -49,7 +49,7 @@ static av_cold void roq_dpcm_table_init(void)
     }
 }
 
-static int roq_dpcm_encode_init(AVCodecContext *avctx)
+static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
 {
     ROQDPCMContext *context = avctx->priv_data;
 

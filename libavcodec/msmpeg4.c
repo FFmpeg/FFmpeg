@@ -85,7 +85,7 @@ static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 
 static uint8_t static_rl_table_store[NB_RL_TABLES][2][2*MAX_RUN + MAX_LEVEL + 3];
 
-static void common_init(MpegEncContext * s)
+static av_cold void common_init(MpegEncContext * s)
 {
     static int initialized=0;
 
@@ -163,7 +163,7 @@ void ff_msmpeg4_code012(PutBitContext *pb, int n)
     }
 }
 
-void ff_msmpeg4_encode_init(MpegEncContext *s)
+av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
 {
     static int init_done=0;
     int i;
@@ -995,7 +995,7 @@ VLC ff_inter_intra_vlc;
 
 /* This table is practically identical to the one from h263
  * except that it is inverted. */
-static void init_h263_dc_for_msmpeg4(void)
+static av_cold void init_h263_dc_for_msmpeg4(void)
 {
         int level, uni_code, uni_len;
 
@@ -1050,7 +1050,7 @@ static void init_h263_dc_for_msmpeg4(void)
 }
 
 /* init all vlc decoding tables */
-int ff_msmpeg4_decode_init(MpegEncContext *s)
+av_cold int ff_msmpeg4_decode_init(MpegEncContext *s)
 {
     static int done = 0;
     int i;

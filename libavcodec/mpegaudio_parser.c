@@ -81,7 +81,7 @@ int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate,
     return s->frame_size;
 }
 
-static int mpegaudio_parse_init(AVCodecParserContext *s1)
+static av_cold int mpegaudio_parse_init(AVCodecParserContext *s1)
 {
     MpegAudioParseContext *s = s1->priv_data;
     s->inbuf_ptr = s->inbuf;

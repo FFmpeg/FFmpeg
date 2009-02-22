@@ -29,7 +29,7 @@ typedef struct DVDSubParseContext {
     int packet_index;
 } DVDSubParseContext;
 
-static int dvdsub_parse_init(AVCodecParserContext *s)
+static av_cold int dvdsub_parse_init(AVCodecParserContext *s)
 {
     return 0;
 }
@@ -70,7 +70,7 @@ static int dvdsub_parse(AVCodecParserContext *s,
     return buf_size;
 }
 
-static void dvdsub_parse_close(AVCodecParserContext *s)
+static av_cold void dvdsub_parse_close(AVCodecParserContext *s)
 {
     DVDSubParseContext *pc = s->priv_data;
     av_freep(&pc->packet);

@@ -431,7 +431,7 @@ static int read_old_huffman_tables(HYuvContext *s){
 #endif
 }
 
-static void alloc_temp(HYuvContext *s){
+static av_cold void alloc_temp(HYuvContext *s){
     int i;
 
     if(s->bitstream_bpp<24){
@@ -445,7 +445,7 @@ static void alloc_temp(HYuvContext *s){
     }
 }
 
-static int common_init(AVCodecContext *avctx){
+static av_cold int common_init(AVCodecContext *avctx){
     HYuvContext *s = avctx->priv_data;
 
     s->avctx= avctx;

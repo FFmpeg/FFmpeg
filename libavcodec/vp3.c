@@ -2207,7 +2207,7 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
     return 0;
 }
 
-static int theora_decode_init(AVCodecContext *avctx)
+static av_cold int theora_decode_init(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;
     GetBitContext gb;

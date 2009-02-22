@@ -183,7 +183,7 @@ static void dump_short_table(short* table, int size, int delimiter) {
 /*************** init functions ***************/
 
 /* table generator */
-static void init_pow2table(void){
+static av_cold void init_pow2table(void){
     int i;
     for (i=-63 ; i<64 ; i++){
             pow2tab[63+i]=     pow(2, i);
@@ -192,7 +192,7 @@ static void init_pow2table(void){
 }
 
 /* table generator */
-static void init_gain_table(COOKContext *q) {
+static av_cold void init_gain_table(COOKContext *q) {
     int i;
     q->gain_size_factor = q->samples_per_channel/8;
     for (i=0 ; i<23 ; i++) {
@@ -202,7 +202,7 @@ static void init_gain_table(COOKContext *q) {
 }
 
 
-static int init_cook_vlc_tables(COOKContext *q) {
+static av_cold int init_cook_vlc_tables(COOKContext *q) {
     int i, result;
 
     result = 0;
@@ -229,7 +229,7 @@ static int init_cook_vlc_tables(COOKContext *q) {
     return result;
 }
 
-static int init_cook_mlt(COOKContext *q) {
+static av_cold int init_cook_mlt(COOKContext *q) {
     int j;
     int mlt_size = q->samples_per_channel;
 
@@ -258,7 +258,7 @@ static const float *maybe_reformat_buffer32 (COOKContext *q, const float *ptr, i
         return ptr;
 }
 
-static void init_cplscales_table (COOKContext *q) {
+static av_cold void init_cplscales_table (COOKContext *q) {
     int i;
     for (i=0;i<5;i++)
         q->cplscales[i] = maybe_reformat_buffer32 (q, cplscales[i], (1<<(i+2))-1);
@@ -314,7 +314,7 @@ static inline int decode_bytes(const uint8_t* inbuffer, uint8_t* out, int bytes)
  * Cook uninit
  */
 
-static int cook_decode_close(AVCodecContext *avctx)
+static av_cold int cook_decode_close(AVCodecContext *avctx)
 {
     int i;
     COOKContext *q = avctx->priv_data;

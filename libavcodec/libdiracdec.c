@@ -63,7 +63,7 @@ static enum PixelFormat GetFfmpegChromaFormat(dirac_chroma_t dirac_pix_fmt)
     return PIX_FMT_NONE;
 }
 
-static int libdirac_decode_init(AVCodecContext *avccontext)
+static av_cold int libdirac_decode_init(AVCodecContext *avccontext)
 {
 
     FfmpegDiracDecoderParams *p_dirac_params = avccontext->priv_data ;
@@ -174,7 +174,7 @@ static int libdirac_decode_frame(AVCodecContext *avccontext,
 }
 
 
-static int libdirac_decode_close(AVCodecContext *avccontext)
+static av_cold int libdirac_decode_close(AVCodecContext *avccontext)
 {
     FfmpegDiracDecoderParams *p_dirac_params = avccontext->priv_data;
     dirac_decoder_close (p_dirac_params->p_decoder);
