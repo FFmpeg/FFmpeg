@@ -35,7 +35,7 @@
 #define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
 
 #define LIBAVUTIL_VERSION_MAJOR 49
-#define LIBAVUTIL_VERSION_MINOR 14
+#define LIBAVUTIL_VERSION_MINOR 15
 #define LIBAVUTIL_VERSION_MICRO  0
 
 #define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
@@ -130,6 +130,8 @@ enum PixelFormat {
     PIX_FMT_VDPAU_MPEG2,///< MPEG-2 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
     PIX_FMT_VDPAU_WMV3,///< WMV3 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
     PIX_FMT_VDPAU_VC1, ///< VC-1 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
+    PIX_FMT_RGB48BE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, big-endian
+    PIX_FMT_RGB48LE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, little-endian
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -139,12 +141,14 @@ enum PixelFormat {
 #define PIX_FMT_ARGB PIX_FMT_RGB32
 #define PIX_FMT_ABGR PIX_FMT_BGR32
 #define PIX_FMT_GRAY16 PIX_FMT_GRAY16BE
+#define PIX_FMT_RGB48 PIX_FMT_RGB48BE
 #else
 #define PIX_FMT_RGBA PIX_FMT_BGR32
 #define PIX_FMT_BGRA PIX_FMT_RGB32
 #define PIX_FMT_ARGB PIX_FMT_BGR32_1
 #define PIX_FMT_ABGR PIX_FMT_RGB32_1
 #define PIX_FMT_GRAY16 PIX_FMT_GRAY16LE
+#define PIX_FMT_RGB48 PIX_FMT_RGB48LE
 #endif
 
 #if LIBAVUTIL_VERSION_INT < (50<<16)

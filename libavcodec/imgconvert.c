@@ -199,6 +199,22 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .depth = 8,
         .x_chroma_shift = 0, .y_chroma_shift = 0,
     },
+    [PIX_FMT_RGB48BE] = {
+        .name = "rgb48be",
+        .nb_channels = 3,
+        .color_type = FF_COLOR_RGB,
+        .pixel_type = FF_PIXEL_PACKED,
+        .depth = 16,
+        .x_chroma_shift = 0, .y_chroma_shift = 0,
+    },
+    [PIX_FMT_RGB48LE] = {
+        .name = "rgb48le",
+        .nb_channels = 3,
+        .color_type = FF_COLOR_RGB,
+        .pixel_type = FF_PIXEL_PACKED,
+        .depth = 16,
+        .x_chroma_shift = 0, .y_chroma_shift = 0,
+    },
     [PIX_FMT_RGB565] = {
         .name = "rgb565",
         .nb_channels = 3,
@@ -529,6 +545,10 @@ int ff_fill_linesize(AVPicture *picture, int pix_fmt, int width)
     case PIX_FMT_BGR32_1:
         picture->linesize[0] = width * 4;
         break;
+    case PIX_FMT_RGB48BE:
+    case PIX_FMT_RGB48LE:
+        picture->linesize[0] = width * 6;
+        break;
     case PIX_FMT_GRAY16BE:
     case PIX_FMT_GRAY16LE:
     case PIX_FMT_BGR555:
@@ -616,6 +636,8 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, int pix_fmt,
     case PIX_FMT_BGR32:
     case PIX_FMT_RGB32_1:
     case PIX_FMT_BGR32_1:
+    case PIX_FMT_RGB48BE:
+    case PIX_FMT_RGB48LE:
     case PIX_FMT_GRAY16BE:
     case PIX_FMT_GRAY16LE:
     case PIX_FMT_BGR555:
