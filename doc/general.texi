@@ -127,6 +127,8 @@ library:
 @item Musepack SV8              @tab   @tab X
 @item Material eXchange Format (MXF) @tab X @tab X
     @tab SMPTE 377M, used by D-Cinema, broadcast industry.
+@item Material eXchange Format (MXF), D-10 Mapping @tab X @tab X
+    @tab SMPTE 386M, D-10/IMX Mapping.
 @item NC camera feed            @tab   @tab X
     @tab NC (AVIP NC4600) camera streams
 @item Nullsoft Streaming Video  @tab   @tab X
