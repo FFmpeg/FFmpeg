@@ -80,6 +80,10 @@ unsigned avutil_version(void);
  * For all the 8bit per pixel formats, an RGB32 palette is in data[1] like
  * for pal8. This palette is filled in automatically by the function
  * allocating the picture.
+ *
+ * Note, make sure that all newly added big endian formats have pix_fmt&1==1
+ *       and that all newly added little endian formats have pix_fmt&1==0
+ *       this allows simpler detection of big vs little endian.
  */
 enum PixelFormat {
     PIX_FMT_NONE= -1,
