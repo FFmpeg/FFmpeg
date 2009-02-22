@@ -2331,14 +2331,12 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         {
             c->swScale= PlanarToNV12Wrapper;
         }
-#if CONFIG_GPL
         /* yuv2bgr */
         if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P) && (isBGR(dstFormat) || isRGB(dstFormat))
             && !(flags & SWS_ACCURATE_RND) && !(dstH&1))
         {
             c->swScale= sws_yuv2rgb_get_func_ptr(c);
         }
-#endif
 
         if (srcFormat==PIX_FMT_YUV410P && dstFormat==PIX_FMT_YUV420P && !(flags & SWS_BITEXACT))
         {
