@@ -1897,7 +1897,7 @@ static int av_encode(AVFormatContext **output_files,
         }
         if(codec->codec_type == CODEC_TYPE_VIDEO){
             int size= codec->width * codec->height;
-            bit_buffer_size= FFMAX(bit_buffer_size, 4*size);
+            bit_buffer_size= FFMAX(bit_buffer_size, 4*size + 200);
         }
     }
 
