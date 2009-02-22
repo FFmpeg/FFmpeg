@@ -246,8 +246,10 @@ static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     entries = get_be32(pb);
     if (entries >= UINT_MAX / sizeof(*sc->drefs))
         return -1;
-    sc->drefs_count = entries;
     sc->drefs = av_mallocz(entries * sizeof(*sc->drefs));
+    if (!sc->drefs)
+        return AVERROR(ENOMEM);
+    sc->drefs_count = entries;
 
     for (i = 0; i < sc->drefs_count; i++) {
         MOVDref *dref = &sc->drefs[i];
@@ -686,10 +688,11 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     if(entries >= UINT_MAX/sizeof(int64_t))
         return -1;
 
-    sc->chunk_count = entries;
     sc->chunk_offsets = av_malloc(entries * sizeof(int64_t));
     if (!sc->chunk_offsets)
-        return -1;
+        return AVERROR(ENOMEM);
+    sc->chunk_count = entries;
+
     if      (atom.type == MKTAG('s','t','c','o'))
         for(i=0; i<entries; i++)
             sc->chunk_offsets[i] = get_be32(pb);
@@ -1070,15 +1073,15 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     entries = get_be32(pb);
 
-    if(entries >= UINT_MAX / sizeof(*sc->stsc_data))
-        return -1;
-
     dprintf(c->fc, "track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
 
-    sc->stsc_count = entries;
+    if(entries >= UINT_MAX / sizeof(*sc->stsc_data))
+        return -1;
     sc->stsc_data = av_malloc(entries * sizeof(*sc->stsc_data));
     if (!sc->stsc_data)
-        return -1;
+        return AVERROR(ENOMEM);
+    sc->stsc_count = entries;
+
     for(i=0; i<entries; i++) {
         sc->stsc_data[i].first = get_be32(pb);
         sc->stsc_data[i].count = get_be32(pb);
@@ -1098,16 +1101,15 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     entries = get_be32(pb);
 
+    dprintf(c->fc, "keyframe_count = %d\n", entries);
+
     if(entries >= UINT_MAX / sizeof(int))
         return -1;
-
-    sc->keyframe_count = entries;
-
-    dprintf(c->fc, "keyframe_count = %d\n", sc->keyframe_count);
-
     sc->keyframes = av_malloc(entries * sizeof(int));
     if (!sc->keyframes)
-        return -1;
+        return AVERROR(ENOMEM);
+    sc->keyframe_count = entries;
+
     for(i=0; i<entries; i++) {
         sc->keyframes[i] = get_be32(pb);
         //dprintf(c->fc, "keyframes[]=%d\n", sc->keyframes[i]);
@@ -1128,18 +1130,19 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     if (!sc->sample_size) /* do not overwrite value computed in stsd */
         sc->sample_size = sample_size;
     entries = get_be32(pb);
-    if(entries >= UINT_MAX / sizeof(int))
-        return -1;
+
+    dprintf(c->fc, "sample_size = %d sample_count = %d\n", sc->sample_size, entries);
 
     sc->sample_count = entries;
     if (sample_size)
         return 0;
 
-    dprintf(c->fc, "sample_size = %d sample_count = %d\n", sc->sample_size, sc->sample_count);
-
+    if(entries >= UINT_MAX / sizeof(int))
+        return -1;
     sc->sample_sizes = av_malloc(entries * sizeof(int));
     if (!sc->sample_sizes)
-        return -1;
+        return AVERROR(ENOMEM);
+
     for(i=0; i<entries; i++)
         sc->sample_sizes[i] = get_be32(pb);
     return 0;
@@ -1156,14 +1159,15 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
     entries = get_be32(pb);
+
+    dprintf(c->fc, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
+
     if(entries >= UINT_MAX / sizeof(*sc->stts_data))
         return -1;
-
-    sc->stts_count = entries;
     sc->stts_data = av_malloc(entries * sizeof(*sc->stts_data));
     if (!sc->stts_data)
-        return -1;
-    dprintf(c->fc, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
+        return AVERROR(ENOMEM);
+    sc->stts_count = entries;
 
     for(i=0; i<entries; i++) {
         int sample_duration;
@@ -1197,14 +1201,15 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
     entries = get_be32(pb);
+
+    dprintf(c->fc, "track[%i].ctts.entries = %i\n", c->fc->nb_streams-1, entries);
+
     if(entries >= UINT_MAX / sizeof(*sc->ctts_data))
         return -1;
-
-    sc->ctts_count = entries;
     sc->ctts_data = av_malloc(entries * sizeof(*sc->ctts_data));
     if (!sc->ctts_data)
-        return -1;
-    dprintf(c->fc, "track[%i].ctts.entries = %i\n", c->fc->nb_streams-1, entries);
+        return AVERROR(ENOMEM);
+    sc->ctts_count = entries;
 
     for(i=0; i<entries; i++) {
         int count    =get_be32(pb);
@@ -1605,9 +1610,10 @@ static int mov_read_trex(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     if ((uint64_t)c->trex_count+1 >= UINT_MAX / sizeof(*c->trex_data))
         return -1;
-    c->trex_data = av_realloc(c->trex_data, (c->trex_count+1)*sizeof(*c->trex_data));
-    if (!c->trex_data)
+    trex = av_realloc(c->trex_data, (c->trex_count+1)*sizeof(*c->trex_data));
+    if (!trex)
         return AVERROR(ENOMEM);
+    c->trex_data = trex;
     trex = &c->trex_data[c->trex_count++];
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
@@ -1643,12 +1649,14 @@ static int mov_read_trun(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     if (flags & 0x001) data_offset        = get_be32(pb);
     if (flags & 0x004) first_sample_flags = get_be32(pb);
     if (flags & 0x800) {
+        MOVStts *ctts_data;
         if ((uint64_t)entries+sc->ctts_count >= UINT_MAX/sizeof(*sc->ctts_data))
             return -1;
-        sc->ctts_data = av_realloc(sc->ctts_data,
-                                   (entries+sc->ctts_count)*sizeof(*sc->ctts_data));
-        if (!sc->ctts_data)
+        ctts_data = av_realloc(sc->ctts_data,
+                               (entries+sc->ctts_count)*sizeof(*sc->ctts_data));
+        if (!ctts_data)
             return AVERROR(ENOMEM);
+        sc->ctts_data = ctts_data;
     }
     dts = st->duration;
     offset = frag->base_data_offset + data_offset;
@@ -1735,11 +1743,11 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     cmov_data = av_malloc(cmov_len);
     if (!cmov_data)
-        return -1;
+        return AVERROR(ENOMEM);
     moov_data = av_malloc(moov_len);
     if (!moov_data) {
         av_free(cmov_data);
-        return -1;
+        return AVERROR(ENOMEM);
     }
     get_buffer(pb, cmov_data, cmov_len);
     if(uncompress (moov_data, (uLongf *) &moov_len, (const Bytef *)cmov_data, cmov_len) != Z_OK)
