@@ -1942,7 +1942,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     MOVStreamContext *sc = 0;
     AVIndexEntry *sample = 0;
     int64_t best_dts = INT64_MAX;
-    int i;
+    int i, ret;
  retry:
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -1979,7 +1979,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                sc->ffindex, sample->pos);
         return -1;
     }
-    av_get_packet(sc->pb, pkt, sample->size);
+    ret = av_get_packet(sc->pb, pkt, sample->size);
+    if (ret < 0)
+        return ret;
 #if CONFIG_DV_DEMUXER
     if (mov->dv_demux && sc->dv_audio_container) {
         dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
