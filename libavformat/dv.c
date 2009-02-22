@@ -31,6 +31,7 @@
 #include <time.h>
 #include "avformat.h"
 #include "libavcodec/dvdata.h"
+#include "libavutil/intreadwrite.h"
 #include "dv.h"
 
 struct DVDemuxContext {
@@ -399,13 +400,24 @@ typedef struct RawDVContext {
 static int dv_read_header(AVFormatContext *s,
                           AVFormatParameters *ap)
 {
+    unsigned state;
     RawDVContext *c = s->priv_data;
 
     c->dv_demux = dv_init_demux(s);
     if (!c->dv_demux)
         return -1;
 
-    if (get_buffer(s->pb, c->buf, DV_PROFILE_BYTES) <= 0 ||
+    state = get_be32(s->pb);
+    while ((state & 0xffffff7f) != 0x1f07003f) {
+        if (url_feof(s->pb)) {
+            av_log(s, AV_LOG_ERROR, "Cannot find DV header.\n");
+            return -1;
+        }
+        state = (state << 8) | get_byte(s->pb);
+    }
+    AV_WB32(c->buf, state);
+
+    if (get_buffer(s->pb, c->buf + 4, DV_PROFILE_BYTES - 4) <= 0 ||
         url_fseek(s->pb, -DV_PROFILE_BYTES, SEEK_CUR) < 0)
         return AVERROR(EIO);
 
