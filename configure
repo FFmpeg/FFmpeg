@@ -1356,7 +1356,7 @@ EOF
 fi
 rm $TMPSH
 
-if   $cc --version 2>/dev/null | grep -q '(GCC)'; then
+if   $cc --version 2>/dev/null | grep -qi gcc; then
     cc_type=gcc
 elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
