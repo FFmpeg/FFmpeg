@@ -15,6 +15,7 @@ HEADERS = adler32.h                                                     \
           mathematics.h                                                 \
           md5.h                                                         \
           mem.h                                                         \
+          pixfmt.h                                                      \
           random.h                                                      \
           rational.h                                                    \
           sha1.h
