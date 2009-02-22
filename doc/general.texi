@@ -140,6 +140,7 @@ library:
     @tab Used by TechnoTrend DVB PCI boards.
 @item raw ADTS (AAC)            @tab X @tab X
 @item raw AC-3                  @tab X @tab X
+@item raw Chinese AVS video     @tab   @tab X
 @item raw CRI ADX               @tab X @tab X
 @item raw Dirac                 @tab X @tab X
 @item raw DNxHD                 @tab X @tab X
