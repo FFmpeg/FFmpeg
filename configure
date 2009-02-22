@@ -1362,6 +1362,10 @@ elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
 elif $cc -v 2>&1 | grep -q xlc; then
     cc_type=xlc
+elif $cc -V 2>/dev/null | grep -q Compaq; then
+    cc_type=ccc
+    DEPEND_CMD='$(CC) $(CFLAGS) -M $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
+    add_ldflags -Wl,-z,now # calls to libots crash without this
 fi
 
 test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
@@ -1776,7 +1780,7 @@ if test $cpu != "generic"; then
             add_cflags -mcpu=$cpu
         ;;
         ev4|ev45|ev5|ev56|pca56|ev6|ev67)
-            add_cflags -mcpu=$cpu
+            enabled ccc && add_cflags -arch $cpu || add_cflags -mcpu=$cpu
         ;;
         *)
             echo "WARNING: Unknown CPU \"$cpu\", ignored."
@@ -2140,6 +2144,8 @@ elif enabled optimizations; then
     if enabled xlc; then
         add_cflags  -O5
         add_ldflags -O5
+    elif enabled ccc; then
+        add_cflags -fast
     else
         add_cflags -O3
     fi
@@ -2161,6 +2167,14 @@ if enabled icc; then
     check_ldflags -wd10156,11030
     # Allow to compile with optimizations
     check_ldflags -march=$cpu
+elif enabled ccc; then
+    # disable some annoying warnings
+    add_cflags -msg_disable cvtu32to64
+    add_cflags -msg_disable embedcomment
+    add_cflags -msg_disable needconstext
+    add_cflags -msg_disable nomainieee
+    add_cflags -msg_disable ptrmismatch1
+    add_cflags -msg_disable unreachcode
 fi
 
 # PIC flags for shared library objects where they are needed
