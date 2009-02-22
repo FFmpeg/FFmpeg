@@ -4416,7 +4416,6 @@ static int parse_ffconfig(const char *filename)
         } else {
             fprintf(stderr, "%s:%d: Incorrect keyword: '%s'\n",
                     filename, line_num, cmd);
-            errors++;
         }
     }
 
