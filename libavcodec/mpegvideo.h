@@ -635,7 +635,7 @@ typedef struct MpegEncContext {
 
     uint8_t *ptr_lastgob;
     int swap_uv;//vcr2 codec is mpeg2 varint with UV swaped
-    short * pblocks[12];
+    DCTELEM (*pblocks[12])[64];
 
     DCTELEM (*block)[64]; ///< points to one of the following blocks
     DCTELEM (*blocks)[8][64]; // for HQ mode we need to keep the best block

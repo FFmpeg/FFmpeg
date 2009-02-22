@@ -301,7 +301,7 @@ static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base){
     s->block= s->blocks[0];
 
     for(i=0;i<12;i++){
-        s->pblocks[i] = (short *)(&s->block[i]);
+        s->pblocks[i] = &s->block[i];
     }
     return 0;
 fail:
@@ -357,7 +357,7 @@ void ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src){
     memcpy(dst, src, sizeof(MpegEncContext));
     backup_duplicate_context(dst, &bak);
     for(i=0;i<12;i++){
-        dst->pblocks[i] = (short *)(&dst->block[i]);
+        dst->pblocks[i] = &dst->block[i];
     }
 //STOP_TIMER("update_duplicate_context") //about 10k cycles / 0.01 sec for 1000frames on 1ghz with 2 threads
 }

@@ -44,7 +44,7 @@ void ff_xvmc_init_block(MpegEncContext *s)
     struct xvmc_pix_fmt *render = (struct xvmc_pix_fmt*)s->current_picture.data[2];
     assert(render && render->xvmc_id == AV_XVMC_ID);
 
-    s->block = (DCTELEM *)(render->data_blocks + render->next_free_data_block_num * 64);
+    s->block = (DCTELEM (*)[64])(render->data_blocks + render->next_free_data_block_num * 64);
 }
 
 /**
@@ -59,7 +59,7 @@ void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp)
     cbp <<= 12-mb_block_count;
     for (i = 0; i < mb_block_count; i++) {
         if (cbp & (1 << 11))
-            s->pblocks[i] = (short *)(&s->block[j++]);
+            s->pblocks[i] = &s->block[j++];
         else
             s->pblocks[i] = NULL;
         cbp += cbp;
@@ -285,9 +285,9 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
     if (s->flags & CODEC_FLAG_GRAY) {
         if (s->mb_intra) {                                   // intra frames are always full chroma blocks
             for (i = 4; i < blocks_per_mb; i++) {
-                memset(s->pblocks[i], 0, sizeof(*s->pblocks[i])*64);  // so we need to clear them
+                memset(s->pblocks[i], 0, sizeof(*s->pblocks[i]));  // so we need to clear them
                 if (!render->unsigned_intra)
-                    s->pblocks[i][0] = 1 << 10;
+                    *s->pblocks[i][0] = 1 << 10;
             }
         } else {
             cbp &= 0xf << (blocks_per_mb - 4);
@@ -302,9 +302,9 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
         if (s->block_last_index[i] >= 0) {
             // I do not have unsigned_intra MOCO to test, hope it is OK.
             if (s->mb_intra && (render->idct || (!render->idct && !render->unsigned_intra)))
-                s->pblocks[i][0] -= 1 << 10;
+                *s->pblocks[i][0] -= 1 << 10;
             if (!render->idct) {
-                s->dsp.idct(s->pblocks[i]);
+                s->dsp.idct(*s->pblocks[i]);
                 /* It is unclear if MC hardware requires pixel diff values to be
                  * in the range [-255;255]. TODO: Clipping if such hardware is
                  * ever found. As of now it would only be an unnecessary
@@ -313,7 +313,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
             // copy blocks only if the codec doesn't support pblocks reordering
             if (s->avctx->xvmc_acceleration == 1) {
                 memcpy(&render->data_blocks[render->next_free_data_block_num*64],
-                       s->pblocks[i], sizeof(*s->pblocks[i])*64);
+                       s->pblocks[i], sizeof(*s->pblocks[i]));
             }
             render->next_free_data_block_num++;
         }
