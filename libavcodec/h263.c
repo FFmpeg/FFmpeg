@@ -6183,16 +6183,44 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
         return -1;      /* SAC: off */
     }
     s->obmc= get_bits1(&s->gb);
-    if (get_bits1(&s->gb) != 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "PB frame mode no supported\n");
-        return -1;      /* PB frame mode */
-    }
+    s->pb_frame = get_bits1(&s->gb);
 
-    /* skip unknown header garbage */
-    skip_bits(&s->gb, 41);
+    if(format == 7){
+        format = get_bits(&s->gb, 3);
+        if(format == 0 || format == 7){
+            av_log(s->avctx, AV_LOG_ERROR, "Wrong Intel H263 format\n");
+            return -1;
+        }
+        if(get_bits(&s->gb, 2))
+            av_log(s->avctx, AV_LOG_ERROR, "Bad value for reserved field\n");
+        s->loop_filter = get_bits1(&s->gb);
+        if(get_bits1(&s->gb))
+            av_log(s->avctx, AV_LOG_ERROR, "Bad value for reserved field\n");
+        if(get_bits1(&s->gb))
+            s->pb_frame = 2;
+        if(get_bits(&s->gb, 5))
+            av_log(s->avctx, AV_LOG_ERROR, "Bad value for reserved field\n");
+        if(get_bits(&s->gb, 5) != 1)
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid marker\n");
+    }
+    if(format == 6){
+        int ar = get_bits(&s->gb, 4);
+        skip_bits(&s->gb, 9); // display width
+        skip_bits1(&s->gb);
+        skip_bits(&s->gb, 9); // display height
+        if(ar == 15){
+            skip_bits(&s->gb, 8); // aspect ratio - width
+            skip_bits(&s->gb, 8); // aspect ratio - height
+        }
+    }
 
     s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
     skip_bits1(&s->gb); /* Continuous Presence Multipoint mode: off */
+
+    if(s->pb_frame){
+        skip_bits(&s->gb, 3); //temporal reference for B-frame
+        skip_bits(&s->gb, 2); //dbquant
+    }
 
     /* PEI */
     while (get_bits1(&s->gb) != 0) {
@@ -6206,6 +6234,10 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
     if(s->avctx->debug&FF_DEBUG_PICT_INFO)
         show_pict_info(s);
 
+    if(s->pb_frame){
+        av_log(s->avctx, AV_LOG_ERROR, "PB frame mode no supported\n");
+        return -1;      /* PB frame mode */
+    }
     return 0;
 }
 
