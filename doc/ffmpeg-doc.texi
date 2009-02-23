@@ -229,7 +229,23 @@ Show help.
 Show version.
 
 @item -formats
-Show available formats, codecs, protocols, ...
+Show available formats, codecs, bitstream filters, protocols, and frame size and frame rate abbreviations.
+
+The fields preceding the format and codec names have the following meanings:
+@table @samp
+@item D
+Decoding available
+@item E
+Encoding available
+@item V/A/S
+Video/audio/subtitle codec
+@item S
+Codec supports slices
+@item D
+Codec supports direct rendering
+@item T
+Codec can handle input truncated at random locations instead of only at frame boundaries
+@end table
 
 @item -f @var{fmt}
 Force format.
