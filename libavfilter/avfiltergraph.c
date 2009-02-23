@@ -30,6 +30,7 @@ void avfilter_destroy_graph(AVFilterGraph *graph)
 {
     for(; graph->filter_count > 0; graph->filter_count --)
         avfilter_destroy(graph->filters[graph->filter_count - 1]);
+    av_freep(&graph->scale_sws_opts);
     av_freep(&graph->filters);
 }
 
@@ -111,13 +112,15 @@ static int query_formats(AVFilterGraph *graph)
                 if(!avfilter_merge_formats(link->in_formats,
                                            link->out_formats)) {
                     AVFilterContext *scale;
+                    char scale_args[256];
                     /* couldn't merge format lists. auto-insert scale filter */
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
                              scaler_count);
                     scale =
                         avfilter_open(avfilter_get_by_name("scale"),inst_name);
 
-                    if(!scale || scale->filter->init(scale, NULL, NULL) ||
+                    snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
+                    if(!scale || scale->filter->init(scale, scale_args, NULL) ||
                                  avfilter_insert_filter(link, scale, 0, 0)) {
                         avfilter_destroy(scale);
                         return -1;
