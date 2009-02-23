@@ -2020,6 +2020,11 @@ int av_find_stream_info(AVFormatContext *ic)
     count = 0;
     read_size = 0;
     for(;;) {
+        if(url_interrupt_cb()){
+            ret= AVERROR(EINTR);
+            break;
+        }
+
         /* check if one codec still needs to be handled */
         for(i=0;i<ic->nb_streams;i++) {
             st = ic->streams[i];
