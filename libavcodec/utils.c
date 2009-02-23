@@ -271,6 +271,8 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         }
 
         tmpsize = ff_fill_pointer(&picture, NULL, s->pix_fmt, h);
+        if (tmpsize < 0)
+            return -1;
 
         for (i=0; i<3 && picture.data[i+1]; i++)
             size[i] = picture.data[i+1] - picture.data[i];
