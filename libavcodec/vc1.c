@@ -25,6 +25,7 @@
  * VC-1 and WMV3 decoder
  *
  */
+#include "internal.h"
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"

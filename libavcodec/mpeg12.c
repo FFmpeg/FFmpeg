@@ -26,6 +26,7 @@
  */
 
 //#define DEBUG
+#include "internal.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -1303,6 +1304,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
         avctx->pix_fmt = mpeg_get_pixelformat(avctx);
         //until then pix_fmt may be changed right after codec init
         if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT ||
+            avctx->hwaccel ||
             s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU )
             if( avctx->idct_algo == FF_IDCT_AUTO )
                 avctx->idct_algo = FF_IDCT_SIMPLE;
