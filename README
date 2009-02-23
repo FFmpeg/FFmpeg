@@ -17,8 +17,9 @@ FFmpeg README
   License, see the file COPYING.GPL for details. Their compilation and use
   in FFmpeg is optional.
 
-* The file libavcodec/x86/idct_mmx.c is distributed under the GNU General
-  Public License. It is strictly an optimization and its use is optional.
+* The files libavcodec/x86/idct_mmx.c, libavcodec/x86/h264_deblock_sse2.asm
+  and libavcodec/x86/h264_idct_sse2.asm are distributed under the GNU General
+  Public License. They are strictly optimizations and their use is optional.
 
 * The file libavcodec/ac3dec.c is distributed under the GNU General Public
   License.  In order for (E-)AC-3 decoding to work you need to enable GPL
@@ -33,3 +34,6 @@ FFmpeg README
 * The file libavcodec/fdctref.c is copyrighted by the MPEG Software Simulation
   Group with all rights reserved. It is only used to create a DCT test program
   and not compiled into libavcodec.
+
+* Some external libraries are under GPL. If you wish to use them with FFmpeg,
+  you have to configure FFmpeg as GPL as well.
