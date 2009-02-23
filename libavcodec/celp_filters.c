@@ -102,6 +102,6 @@ void ff_celp_lp_synthesis_filterf(
     {
         out[n] = in[n];
         for(i=1; i<filter_length; i++)
-            out[n] += filter_coeffs[i] * out[n-i];
+            out[n] -= filter_coeffs[i] * out[n-i];
     }
 }

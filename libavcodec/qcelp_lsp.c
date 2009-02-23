@@ -81,7 +81,7 @@ void ff_qcelp_lspf2lpc(const float *lspf, float *lpc)
 {
     double pa[6], qa[6];
     int   i;
-    double bandwith_expansion_coeff = -QCELP_BANDWITH_EXPANSION_COEFF * 0.5;
+    double bandwith_expansion_coeff = QCELP_BANDWITH_EXPANSION_COEFF * 0.5;
 
     lsp2polyf(lspf,     pa, 5);
     lsp2polyf(lspf + 1, qa, 5);
