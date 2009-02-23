@@ -1900,6 +1900,9 @@ elif check_func dlopen -ldl; then
     ldl=-ldl
 fi
 
+# Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
+check_func nanosleep || { check_func nanosleep -lrt && add_extralibs -lrt; }
+
 check_func  fork
 check_func  gethrtime
 check_func  getrusage
