@@ -2315,6 +2315,13 @@ typedef struct AVCodecContext {
      * - decoding: unused.
      */
     float rc_min_vbv_overflow_use;
+
+    /**
+     * Hardware accelerator in use
+     * - encoding: unused.
+     * - decoding: Set by libavcodec
+     */
+    struct AVHWAccel *hwaccel;
 } AVCodecContext;
 
 /**
@@ -2358,6 +2365,87 @@ typedef struct AVCodec {
     const enum SampleFormat *sample_fmts;   ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
     const int64_t *channel_layouts;         ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
 } AVCodec;
+
+/**
+ * AVHWAccel.
+ */
+typedef struct AVHWAccel {
+    /**
+     * Name of the hardware accelerated codec.
+     * The name is globally unique among encoders and among decoders (but an
+     * encoder and a decoder can share the same name).
+     */
+    const char *name;
+
+    /**
+     * Type of codec implemented by the hardware accelerator.
+     *
+     * See CODEC_TYPE_xxx
+     */
+    enum CodecType type;
+
+    /**
+     * Codec implemented by the hardware accelerator.
+     *
+     * See CODEC_ID_xxx
+     */
+    enum CodecID id;
+
+    /**
+     * Supported pixel format.
+     *
+     * Only hardware accelerated formats are supported here.
+     */
+    enum PixelFormat pix_fmt;
+
+    /**
+     * Hardware accelerated codec capabilities.
+     * see FF_HWACCEL_CODEC_CAP_*
+     */
+    int capabilities;
+
+    struct AVHWAccel *next;
+
+    /**
+     * Called at the beginning of each frame or field picture.
+     *
+     * Meaningful frame information (codec specific) is guaranteed to
+     * be parsed at this point. This function is mandatory.
+     *
+     * Note that \p buf can be NULL along with \p buf_size set to 0.
+     * Otherwise, this means the whole frame is available at this point.
+     *
+     * @param avctx the codec context
+     * @param buf the frame data buffer base
+     * @param buf_size the size of the frame in bytes
+     * @return zero if successful, a negative value otherwise
+     */
+    int (*start_frame)(AVCodecContext *avctx, const uint8_t *buf, uint32_t buf_size);
+
+    /**
+     * Callback for each slice.
+     *
+     * Meaningful slice information (codec specific) is guaranteed to
+     * be parsed at this point. This function is mandatory.
+     *
+     * @param avctx the codec context
+     * @param buf the slice data buffer base
+     * @param buf_size the size of the slice in bytes
+     * @return zero if successful, a negative value otherwise
+     */
+    int (*decode_slice)(AVCodecContext *avctx, const uint8_t *buf, uint32_t buf_size);
+
+    /**
+     * Called at the end of each frame or field picture.
+     *
+     * The whole picture is parsed at this point and can now be sent
+     * to the hardware accelerator. This function is mandatory.
+     *
+     * @param avctx the codec context
+     * @return zero if successful, a negative value otherwise
+     */
+    int (*end_frame)(AVCodecContext *avctx);
+} AVHWAccel;
 
 /**
  * four components are given, that's all.
@@ -3195,5 +3283,17 @@ int av_parse_video_frame_rate(AVRational *frame_rate, const char *str);
 #define AVERROR_NOENT       AVERROR(ENOENT)  /**< No such file or directory. */
 #define AVERROR_EOF         AVERROR(EPIPE)   /**< End of file. */
 #define AVERROR_PATCHWELCOME    -MKTAG('P','A','W','E') /**< Not yet implemented in FFmpeg. Patches welcome. */
+
+/**
+ * Registers the hardware accelerator \p hwaccel.
+ */
+void av_register_hwaccel(AVHWAccel *hwaccel);
+
+/**
+ * If hwaccel is NULL, returns the first registered hardware accelerator,
+ * if hwaccel is non-NULL, returns the next registered hardware accelerator
+ * after hwaccel, or NULL if hwaccel is the last one.
+ */
+AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel);
 
 #endif /* AVCODEC_AVCODEC_H */

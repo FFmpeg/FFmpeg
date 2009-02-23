@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "internal.h"
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
@@ -7356,6 +7357,8 @@ static void execute_decode_slices(H264Context *h, int context_count){
     H264Context *hx;
     int i;
 
+    if (s->avctx->hwaccel)
+        return;
     if(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
         return;
     if(context_count == 1) {

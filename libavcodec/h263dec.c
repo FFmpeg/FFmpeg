@@ -25,6 +25,7 @@
  * H.263 decoder.
  */
 
+#include "internal.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -158,6 +159,9 @@ static int decode_slice(MpegEncContext *s){
     s->resync_mb_y= s->mb_y;
 
     ff_set_qscale(s, s->qscale);
+
+    if (s->avctx->hwaccel)
+        return 0;
 
     if(s->partitioned_frame){
         const int qscale= s->qscale;
