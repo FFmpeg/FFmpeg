@@ -42,19 +42,13 @@ int mm_support(void)
     int rval = 0;
     int eax, ebx, ecx, edx;
     int max_std_level, max_ext_level, std_caps=0, ext_caps=0;
-    x86_reg a, c;
 
-#if ARCH_X86_64
-#define PUSHF "pushfq\n\t"
-#define POPF "popfq\n\t"
-#else
-#define PUSHF "pushfl\n\t"
-#define POPF "popfl\n\t"
-#endif
+#if ARCH_X86_32
+    x86_reg a, c;
     __asm__ volatile (
         /* See if CPUID instruction is supported ... */
         /* ... Get copies of EFLAGS into eax and ecx */
-        PUSHF
+        "pushfl\n\t"
         "pop %0\n\t"
         "mov %0, %1\n\t"
 
@@ -62,10 +56,10 @@ int mm_support(void)
         /*     to the EFLAGS reg */
         "xor $0x200000, %0\n\t"
         "push %0\n\t"
-        POPF
+        "popfl\n\t"
 
         /* ... Get the (hopefully modified) EFLAGS */
-        PUSHF
+        "pushfl\n\t"
         "pop %0\n\t"
         : "=a" (a), "=c" (c)
         :
@@ -74,6 +68,7 @@ int mm_support(void)
 
     if (a == c)
         return 0; /* CPUID not supported */
+#endif
 
     cpuid(0, max_std_level, ebx, ecx, edx);
 
