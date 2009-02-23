@@ -131,6 +131,7 @@ void ff_vdpau_h264_picture_complete(MpegEncContext *s)
 {
     H264Context *h = s->avctx->priv_data;
     struct vdpau_render_state *render;
+    int i;
 
     render = (struct vdpau_render_state *)s->current_picture_ptr->data[0];
     assert(render);
@@ -139,7 +140,7 @@ void ff_vdpau_h264_picture_complete(MpegEncContext *s)
     if (render->info.h264.slice_count < 1)
         return;
 
-    for (int i = 0; i < 2; ++i) {
+    for (i = 0; i < 2; ++i) {
         int foc = s->current_picture_ptr->field_poc[i];
         if (foc == INT_MAX)
             foc = 0;
