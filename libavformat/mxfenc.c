@@ -568,7 +568,7 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
 
     // write track id
     mxf_write_local_tag(pb, 4, 0x4801);
-    put_be32(pb, st->index+1);
+    put_be32(pb, st->index+2);
 
     // write track number
     mxf_write_local_tag(pb, 4, 0x4804);
@@ -700,7 +700,7 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enu
     if (type == SourcePackage)
         put_be32(pb, 0);
     else
-        put_be32(pb, st->index+1);
+        put_be32(pb, st->index+2);
 }
 
 static void mxf_write_multi_descriptor(AVFormatContext *s)
@@ -753,7 +753,7 @@ static void mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UID k
     mxf_write_uuid(pb, SubDescriptor, st->index);
 
     mxf_write_local_tag(pb, 4, 0x3006);
-    put_be32(pb, st->index+1);
+    put_be32(pb, st->index+2);
 
     mxf_write_local_tag(pb, 8, 0x3001);
     put_be32(pb, mxf->time_base.den);
