@@ -1140,3 +1140,15 @@ AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel)
 {
     return hwaccel ? hwaccel->next : first_hwaccel;
 }
+
+AVHWAccel *ff_find_hwaccel(enum CodecID codec_id, enum PixelFormat pix_fmt)
+{
+    AVHWAccel *hwaccel=NULL;
+
+    while((hwaccel= av_hwaccel_next(hwaccel))){
+        if (   hwaccel->id      == codec_id
+            && hwaccel->pix_fmt == pix_fmt)
+            return hwaccel;
+    }
+    return NULL;
+}
