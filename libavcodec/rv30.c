@@ -278,4 +278,5 @@ AVCodec rv30_decoder = {
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush = ff_mpeg_flush,
     .long_name = NULL_IF_CONFIG_SMALL("RealVideo 3.0"),
+    .pix_fmts= ff_pixfmt_list_420,
 };

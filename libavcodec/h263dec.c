@@ -52,7 +52,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->quant_precision=5;
     s->decode_mb= ff_h263_decode_mb;
     s->low_delay= 1;
-    avctx->pix_fmt= PIX_FMT_YUV420P;
+    avctx->pix_fmt= avctx->get_format(avctx, avctx->codec->pix_fmts);
     s->unrestricted_mv= 1;
 
     /* select sub codec */
@@ -725,6 +725,7 @@ AVCodec mpeg4_decoder = {
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
+    .pix_fmts= ff_pixfmt_list_420,
 };
 
 AVCodec h263_decoder = {
@@ -739,6 +740,7 @@ AVCodec h263_decoder = {
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
     .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996, H.263+ / H.263-1998"),
+    .pix_fmts= ff_pixfmt_list_420,
 };
 
 AVCodec msmpeg4v1_decoder = {
@@ -752,6 +754,7 @@ AVCodec msmpeg4v1_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 1"),
+    .pix_fmts= ff_pixfmt_list_420,
 };
 
 AVCodec msmpeg4v2_decoder = {
@@ -765,6 +768,7 @@ AVCodec msmpeg4v2_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
+    .pix_fmts= ff_pixfmt_list_420,
 };
 
 AVCodec msmpeg4v3_decoder = {
@@ -778,6 +782,7 @@ AVCodec msmpeg4v3_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
+    .pix_fmts= ff_pixfmt_list_420,
 };
 
 AVCodec wmv1_decoder = {
@@ -791,6 +796,7 @@ AVCodec wmv1_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .long_name= NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
+    .pix_fmts= ff_pixfmt_list_420,
 };
 
 AVCodec h263i_decoder = {
@@ -804,6 +810,7 @@ AVCodec h263i_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Intel H.263"),
+    .pix_fmts= ff_pixfmt_list_420,
 };
 
 AVCodec flv_decoder = {
@@ -817,4 +824,5 @@ AVCodec flv_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .long_name= NULL_IF_CONFIG_SMALL("Flash Video"),
+    .pix_fmts= ff_pixfmt_list_420,
 };

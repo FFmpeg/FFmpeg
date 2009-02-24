@@ -794,6 +794,7 @@ AVCodec rv10_decoder = {
     rv10_decode_frame,
     CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
+    .pix_fmts= ff_pixfmt_list_420,
 };
 
 AVCodec rv20_decoder = {
@@ -808,5 +809,6 @@ AVCodec rv20_decoder = {
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
     .long_name = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
+    .pix_fmts= ff_pixfmt_list_420,
 };
 

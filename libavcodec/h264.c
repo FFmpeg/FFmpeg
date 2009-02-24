@@ -2178,12 +2178,10 @@ static av_cold int decode_init(AVCodecContext *avctx){
     s->quarter_sample = 1;
     s->low_delay= 1;
 
-    if(avctx->codec_id == CODEC_ID_SVQ3)
-        avctx->pix_fmt= PIX_FMT_YUVJ420P;
-    else if(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+    if(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
         avctx->pix_fmt= PIX_FMT_VDPAU_H264;
     else
-        avctx->pix_fmt= PIX_FMT_YUV420P;
+        avctx->pix_fmt= avctx->get_format(avctx, avctx->codec->pix_fmts);
 
     decode_init_vlc();
 
@@ -8097,6 +8095,7 @@ AVCodec h264_decoder = {
     /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
+    .pix_fmts= ff_pixfmt_list_420,
 };
 
 #if CONFIG_H264_VDPAU_DECODER
