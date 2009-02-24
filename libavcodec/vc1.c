@@ -4142,7 +4142,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     MpegEncContext *s = &v->s;
     AVFrame *pict = data;
     uint8_t *buf2 = NULL;
-    const uint8_t *buf_vdpau = buf;
+    const uint8_t *buf_start = buf;
 
     /* no supplementary picture */
     if (buf_size == 0) {
@@ -4188,7 +4188,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
                 switch(AV_RB32(start)){
                 case VC1_CODE_FRAME:
                     if (s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
-                        buf_vdpau = start;
+                        buf_start = start;
                     buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
                     break;
                 case VC1_CODE_ENTRYPOINT: /* it should be before frame data */
@@ -4279,7 +4279,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
 
     if ((CONFIG_VC1_VDPAU_DECODER || CONFIG_WMV3_VDPAU_DECODER)
         &&s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
-        ff_vdpau_vc1_decode_picture(s, buf_vdpau, (buf + buf_size) - buf_vdpau);
+        ff_vdpau_vc1_decode_picture(s, buf_start, (buf + buf_size) - buf_start);
     else {
         ff_er_frame_start(s);
 
