@@ -687,6 +687,11 @@ retry:
 intrax8_decoded:
     ff_er_frame_end(s);
 
+    if (avctx->hwaccel) {
+        if (avctx->hwaccel->end_frame(avctx) < 0)
+            return -1;
+    }
+
     MPV_frame_end(s);
 
 assert(s->current_picture.pict_type == s->current_picture_ptr->pict_type);
