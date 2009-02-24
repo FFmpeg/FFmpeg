@@ -31,6 +31,14 @@ typedef struct AVComponentDescriptor{
     uint16_t depth_minus1 :4;            ///< number of bits in the component minus 1
 }AVComponentDescriptor;
 
+/**
+ * Descriptor that unambigously describes how the bits of a pixel are
+ * stored in the up to 4 data planes of an image. It also stores the
+ * subsampling factors and number of components.
+ *
+ * @note This is seperate of the colorspace (RGB, YCbCr, YPbPr, jpeg style YUV and all the YUV variants)
+ *       AVPixFmtDescripto just stores how values are stored not what these values represent.
+ */
 typedef struct AVPixFmtDescriptor{
     uint8_t nb_channels;        ///< The number of components each pixel has, (1-4)
 
