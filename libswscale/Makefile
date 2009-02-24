@@ -5,7 +5,7 @@ FFLIBS = avutil
 
 HEADERS = swscale.h
 
-OBJS = rgb2rgb.o swscale.o swscale_avoption.o yuv2rgb2.o
+OBJS = rgb2rgb.o swscale.o swscale_avoption.o yuv2rgb.o
 
 OBJS-$(ARCH_BFIN)          +=  internal_bfin.o swscale_bfin.o yuv2rgb_bfin.o
 OBJS-$(CONFIG_MLIB)        +=  yuv2rgb_mlib.o
