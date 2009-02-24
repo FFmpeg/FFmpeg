@@ -134,7 +134,7 @@ av_cold int ff_h263_decode_end(AVCodecContext *avctx)
 static int get_consumed_bytes(MpegEncContext *s, int buf_size){
     int pos= (get_bits_count(&s->gb)+7)>>3;
 
-    if(s->divx_packed){
+    if(s->divx_packed || s->avctx->hwaccel){
         //we would have to scan through the whole buf to handle the weird reordering ...
         return buf_size;
     }else if(s->flags&CODEC_FLAG_TRUNCATED){
