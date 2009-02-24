@@ -2182,6 +2182,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
         avctx->pix_fmt= PIX_FMT_VDPAU_H264;
     else
         avctx->pix_fmt= avctx->get_format(avctx, avctx->codec->pix_fmts);
+    avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
 
     decode_init_vlc();
 

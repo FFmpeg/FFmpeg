@@ -1302,6 +1302,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
         }//MPEG-2
 
         avctx->pix_fmt = mpeg_get_pixelformat(avctx);
+        avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
         //until then pix_fmt may be changed right after codec init
         if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT ||
             avctx->hwaccel ||
@@ -2071,6 +2072,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     s->low_delay= 1;
 
     avctx->pix_fmt = mpeg_get_pixelformat(avctx);
+    avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
 
     if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT ||
         s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU )

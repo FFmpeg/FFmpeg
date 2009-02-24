@@ -106,6 +106,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         return -1;
     }
     s->codec_id= avctx->codec->id;
+    avctx->hwaccel= ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
 
     /* for h263, we allocate the images after having read the header */
     if (avctx->codec->id != CODEC_ID_H263 && avctx->codec->id != CODEC_ID_MPEG4)

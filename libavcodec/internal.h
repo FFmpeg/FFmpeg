@@ -24,6 +24,9 @@
 #ifndef AVCODEC_INTERNAL_H
 #define AVCODEC_INTERNAL_H
 
+#include <stdint.h>
+#include "avcodec.h"
+
 /**
  * Logs a generic warning message about a missing feature.
  * @param[in] avc a pointer to an arbitrary struct of which the first field is
@@ -43,5 +46,15 @@ void ff_log_missing_feature(void *avc, const char *feature, int want_sample);
  * @param[in] msg string containing an optional message, or NULL if no message
  */
 void ff_log_ask_for_sample(void *avc, const char *msg);
+
+/**
+ * Returns the hardware accelerated codec for codec \p codec_id and
+ * pixel format \p pix_fmt.
+ *
+ * @param codec_id the codec to match
+ * @param pix_fmt the pixel format to match
+ * @return the hardware accelerated codec, or NULL if none was found.
+ */
+AVHWAccel *ff_find_hwaccel(enum CodecID codec_id, enum PixelFormat pix_fmt);
 
 #endif /* AVCODEC_INTERNAL_H */
