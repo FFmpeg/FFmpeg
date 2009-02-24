@@ -432,18 +432,20 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb) {
     return 0;
 }
 
-static inline void check_for_slice(AVSContext *h) {
+static inline int check_for_slice(AVSContext *h) {
     GetBitContext *gb = &h->s.gb;
     int align;
 
     if(h->mbx)
-        return;
+        return 0;
     align = (-get_bits_count(gb)) & 7;
     if((show_bits_long(gb,24+align) & 0xFFFFFF) == 0x000001) {
         skip_bits_long(gb,24+align);
         h->stc = get_bits(gb,8);
         decode_slice_header(h,gb);
+        return 1;
     }
+    return 0;
 }
 
 /*****************************************************************************
@@ -454,7 +456,7 @@ static inline void check_for_slice(AVSContext *h) {
 
 static int decode_pic(AVSContext *h) {
     MpegEncContext *s = &h->s;
-    int skip_count;
+    int skip_count = -1;
     enum cavs_mb mb_type;
 
     if (!s->context_initialized) {
@@ -539,44 +541,37 @@ static int decode_pic(AVSContext *h) {
         } while(ff_cavs_next_mb(h));
     } else if(h->pic_type == FF_P_TYPE) {
         do {
-            check_for_slice(h);
-            if(h->skip_mode_flag) {
+            if(check_for_slice(h))
+                skip_count = -1;
+            if(h->skip_mode_flag && (skip_count < 0))
                 skip_count = get_ue_golomb(&s->gb);
-                while(skip_count--) {
-                    decode_mb_p(h,P_SKIP);
-                    if(!ff_cavs_next_mb(h))
-                        goto done;
-                }
-                check_for_slice(h);
-                mb_type = get_ue_golomb(&s->gb) + P_16X16;
-            } else
-                mb_type = get_ue_golomb(&s->gb) + P_SKIP;
-            if(mb_type > P_8X8) {
-                decode_mb_i(h, mb_type - P_8X8 - 1);
-            } else
-                decode_mb_p(h,mb_type);
+            if(h->skip_mode_flag && skip_count--) {
+                decode_mb_p(h,P_SKIP);
+            } else {
+                mb_type = get_ue_golomb(&s->gb) + P_SKIP + h->skip_mode_flag;
+                if(mb_type > P_8X8)
+                    decode_mb_i(h, mb_type - P_8X8 - 1);
+                else
+                    decode_mb_p(h,mb_type);
+            }
         } while(ff_cavs_next_mb(h));
     } else { /* FF_B_TYPE */
         do {
-            check_for_slice(h);
-            if(h->skip_mode_flag) {
+            if(check_for_slice(h))
+                skip_count = -1;
+            if(h->skip_mode_flag && (skip_count < 0))
                 skip_count = get_ue_golomb(&s->gb);
-                while(skip_count--) {
-                    decode_mb_b(h,B_SKIP);
-                    if(!ff_cavs_next_mb(h))
-                        goto done;
-                }
-                check_for_slice(h);
-                mb_type = get_ue_golomb(&s->gb) + B_DIRECT;
-            } else
-                mb_type = get_ue_golomb(&s->gb) + B_SKIP;
-            if(mb_type > B_8X8) {
-                decode_mb_i(h, mb_type - B_8X8 - 1);
-            } else
-                decode_mb_b(h,mb_type);
+            if(h->skip_mode_flag && skip_count--) {
+                decode_mb_b(h,B_SKIP);
+            } else {
+                mb_type = get_ue_golomb(&s->gb) + B_SKIP + h->skip_mode_flag;
+                if(mb_type > B_8X8)
+                    decode_mb_i(h, mb_type - B_8X8 - 1);
+                else
+                    decode_mb_b(h,mb_type);
+            }
         } while(ff_cavs_next_mb(h));
     }
- done:
     if(h->pic_type != FF_B_TYPE) {
         if(h->DPB[1].data[0])
             s->avctx->release_buffer(s->avctx, (AVFrame *)&h->DPB[1]);
