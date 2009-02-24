@@ -909,7 +909,7 @@ AVOutputFormat matroska_muxer = {
     mkv_write_header,
     mkv_write_packet,
     mkv_write_trailer,
-    .flags = AVFMT_GLOBALHEADER,
+    .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag* const []){codec_bmp_tags, codec_wav_tags, 0},
     .subtitle_codec = CODEC_ID_TEXT,
 };

@@ -265,6 +265,7 @@ typedef struct AVFormatParameters {
 #define AVFMT_NOTIMESTAMPS  0x0080 /**< Format does not need / have any timestamps. */
 #define AVFMT_GENERIC_INDEX 0x0100 /**< Use generic index building code. */
 #define AVFMT_TS_DISCONT    0x0200 /**< Format allows timestamp discontinuities. */
+#define AVFMT_VARIABLE_FPS  0x0400 /**< Format allows variable fps. */
 
 typedef struct AVOutputFormat {
     const char *name;

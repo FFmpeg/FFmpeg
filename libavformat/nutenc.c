@@ -820,6 +820,6 @@ AVOutputFormat nut_muxer = {
     write_header,
     write_packet,
     write_trailer,
-    .flags = AVFMT_GLOBALHEADER,
+    .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag= (const AVCodecTag* const []){codec_bmp_tags, codec_wav_tags, ff_nut_subtitle_tags, 0},
 };

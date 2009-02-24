@@ -1841,7 +1841,7 @@ AVOutputFormat mov_muxer = {
     mov_write_header,
     mov_write_packet,
     mov_write_trailer,
-    .flags = AVFMT_GLOBALHEADER,
+    .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag* const []){codec_movvideo_tags, codec_movaudio_tags, 0},
 };
 #endif
@@ -1873,7 +1873,7 @@ AVOutputFormat mp4_muxer = {
     mov_write_header,
     mov_write_packet,
     mov_write_trailer,
-    .flags = AVFMT_GLOBALHEADER,
+    .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
 };
 #endif
