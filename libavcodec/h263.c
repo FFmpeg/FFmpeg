@@ -3293,6 +3293,27 @@ void ff_mpeg4_clean_buffers(MpegEncContext *s)
 }
 
 /**
+ * finds the next resync_marker
+ * @param p pointer to buffer to scan
+ * @param end pointer to the end of the buffer
+ * @return pointer to the next resync_marker, or \p end if none was found
+ */
+const uint8_t *ff_h263_find_resync_marker(const uint8_t *restrict p, const uint8_t * restrict end)
+{
+    assert(p < end);
+
+    end-=2;
+    p++;
+    for(;p<end; p+=2){
+        if(!*p){
+            if     (!p[-1] && p[1]) return p - 1;
+            else if(!p[ 1] && p[2]) return p;
+        }
+    }
+    return end+2;
+}
+
+/**
  * decodes the group of blocks / video packet header.
  * @return bit position of the resync_marker, or <0 if none was found
  */
