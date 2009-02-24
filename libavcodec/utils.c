@@ -1124,3 +1124,14 @@ void ff_log_ask_for_sample(void *avc, const char *msg)
             "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
             "and contact the ffmpeg-devel mailing list.\n");
 }
+
+static AVHWAccel *first_hwaccel = NULL;
+
+void av_register_hwaccel(AVHWAccel *hwaccel)
+{
+    AVHWAccel **p = &first_hwaccel;
+    while (*p)
+        p = &(*p)->next;
+    *p = hwaccel;
+    hwaccel->next = NULL;
+}
