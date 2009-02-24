@@ -1275,7 +1275,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
             av_reduce(
                 &s->avctx->time_base.den,
                 &s->avctx->time_base.num,
-                ff_frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num,
+                ff_frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num*2,
                 ff_frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
                 1<<30);
         //MPEG-2 aspect
