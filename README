@@ -10,12 +10,13 @@ FFmpeg README
 ------------
 
 * Read the file COPYING.LGPL. FFmpeg and the associated libraries EXCEPT
-  for libpostproc and libswscale are licensed under the GNU Lesser General
-  Public License.
+  for libpostproc are licensed under the GNU Lesser General Public License.
 
-* libpostproc and libswscale are distributed under the GNU General Public
-  License, see the file COPYING.GPL for details. Their compilation and use
-  in FFmpeg is optional.
+* libpostproc is distributed under the GNU General Public License, see the
+  file COPYING.GPL for details. Its compilation and use in FFmpeg is optional.
+
+* libswscale contains some optional processor-specific optimizations that are
+  distributed under the GNU General Public License.
 
 * The files libavcodec/x86/idct_mmx.c, libavcodec/x86/h264_deblock_sse2.asm
   and libavcodec/x86/h264_idct_sse2.asm are distributed under the GNU General
