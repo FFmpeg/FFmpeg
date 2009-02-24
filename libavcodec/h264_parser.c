@@ -123,6 +123,9 @@ static inline int parse_nal_units(AVCodecParserContext *s,
 
     h->s.avctx= avctx;
     h->sei_recovery_frame_cnt = -1;
+    h->sei_dpb_output_delay         =  0;
+    h->sei_cpb_removal_delay        = -1;
+    h->sei_buffering_period_present =  0;
 
     for(;;) {
         int src_length, dst_length, consumed;
@@ -256,6 +259,10 @@ static int h264_parse(AVCodecParserContext *s,
         }
 
         parse_nal_units(s, avctx, buf, buf_size);
+
+        s->dts_sync_point    = h->sei_buffering_period_present;
+        s->dts_ref_dts_delta = h->sei_cpb_removal_delay;
+        s->pts_dts_delta     = h->sei_dpb_output_delay;
     }
 
     *poutbuf = buf;
