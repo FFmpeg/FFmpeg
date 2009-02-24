@@ -75,6 +75,9 @@ AVCodecParserContext *av_parser_init(int codec_id)
     s->pict_type = FF_I_TYPE;
     s->key_frame = -1;
     s->convergence_duration = AV_NOPTS_VALUE;
+    s->dts_sync_point       = INT_MIN;
+    s->dts_ref_dts_delta    = INT_MIN;
+    s->pts_dts_delta        = INT_MIN;
     return s;
 }
 

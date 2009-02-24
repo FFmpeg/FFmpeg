@@ -22,8 +22,8 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 29
-#define LIBAVFORMAT_VERSION_MICRO  2
+#define LIBAVFORMAT_VERSION_MINOR 30
+#define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -494,6 +494,16 @@ typedef struct AVStream {
     const uint8_t *cur_ptr;
     int cur_len;
     AVPacket cur_pkt;
+
+    // Timestamp generation support:
+    /**
+     * Timestamp corresponding to the last dts sync point.
+     *
+     * Initialized when AVCodecParserContext.dts_sync_point >= 0 and
+     * a DTS is received from the underlying container. Otherwise set to
+     * AV_NOPTS_VALUE by default.
+     */
+    int64_t reference_dts;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
