@@ -3763,7 +3763,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             s->avctx->sample_aspect_ratio.den = 1;
 
         if(h->sps.timing_info_present_flag){
-            s->avctx->time_base= (AVRational){h->sps.num_units_in_tick * 2, h->sps.time_scale};
+            s->avctx->time_base= (AVRational){h->sps.num_units_in_tick, h->sps.time_scale};
             if(h->x264_build > 0 && h->x264_build < 44)
                 s->avctx->time_base.den *= 2;
             av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,

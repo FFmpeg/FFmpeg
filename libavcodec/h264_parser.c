@@ -196,29 +196,29 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 switch (h->sei_pic_struct) {
                     case SEI_PIC_STRUCT_TOP_FIELD:
                     case SEI_PIC_STRUCT_BOTTOM_FIELD:
-                        s->repeat_pict = -1;
+                        s->repeat_pict = 0;
                         break;
                     case SEI_PIC_STRUCT_FRAME:
                     case SEI_PIC_STRUCT_TOP_BOTTOM:
                     case SEI_PIC_STRUCT_BOTTOM_TOP:
-                        s->repeat_pict = 0;
+                        s->repeat_pict = 1;
                         break;
                     case SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
                     case SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
-                        s->repeat_pict = 1;
-                        break;
-                    case SEI_PIC_STRUCT_FRAME_DOUBLING:
                         s->repeat_pict = 2;
                         break;
+                    case SEI_PIC_STRUCT_FRAME_DOUBLING:
+                        s->repeat_pict = 3;
+                        break;
                     case SEI_PIC_STRUCT_FRAME_TRIPLING:
-                        s->repeat_pict = 4;
+                        s->repeat_pict = 5;
                         break;
                     default:
-                        s->repeat_pict = h->s.picture_structure == PICT_FRAME ? 0 : -1;
+                        s->repeat_pict = h->s.picture_structure == PICT_FRAME ? 1 : 0;
                         break;
                 }
             } else {
-                s->repeat_pict = h->s.picture_structure == PICT_FRAME ? 0 : -1;
+                s->repeat_pict = h->s.picture_structure == PICT_FRAME ? 1 : 0;
             }
 
             return 0; /* no need to evaluate the rest */
