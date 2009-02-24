@@ -3098,12 +3098,9 @@ typedef struct AVCodecParserContext {
      * It signals, how much longer the frame duration of the current frame
      * is compared to normal frame duration.
      *
-     * frame_duration = (2 + repeat_pict) / (2*fps)
+     * frame_duration = (1 + repeat_pict) * time_base
      *
      * It is used by codecs like H.264 to display telecined material.
-     *
-     * @note This field can also be set to -1 for half-frame duration in case
-     *       of field pictures.
      */
     int repeat_pict; /* XXX: Put it back in AVCodecContext. */
     int64_t pts;     /* pts of the current frame */
