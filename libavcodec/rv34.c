@@ -790,11 +790,11 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         if(IS_INTRA(next_bt))
             fill_rectangle(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], 2, 2, s->b8_stride, 0, 4);
         else
-        for(j = 0; j < 2; j++)
-            for(i = 0; i < 2; i++)
-                for(k = 0; k < 2; k++)
-                    for(l = 0; l < 2; l++)
-                        s->current_picture_ptr->motion_val[l][mv_pos + i + j*s->b8_stride][k] = calc_add_mv(r, l, s->next_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k]);
+            for(j = 0; j < 2; j++)
+                for(i = 0; i < 2; i++)
+                    for(k = 0; k < 2; k++)
+                        for(l = 0; l < 2; l++)
+                            s->current_picture_ptr->motion_val[l][mv_pos + i + j*s->b8_stride][k] = calc_add_mv(r, l, s->next_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k]);
         if(IS_16X16(next_bt)) //we can use whole macroblock MC
             rv34_mc_2mv(r, block_type);
         else
