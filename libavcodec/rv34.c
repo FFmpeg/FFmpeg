@@ -787,6 +787,9 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
     case RV34_MB_B_DIRECT:
         //surprisingly, it uses motion scheme from next reference frame
         next_bt = s->next_picture_ptr->mb_type[s->mb_x + s->mb_y * s->mb_stride];
+        if(IS_INTRA(next_bt))
+            fill_rectangle(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], 2, 2, s->b8_stride, 0, 4);
+        else
         for(j = 0; j < 2; j++)
             for(i = 0; i < 2; i++)
                 for(k = 0; k < 2; k++)
