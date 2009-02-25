@@ -1,5 +1,5 @@
 /*
- * Pixel Format descriptor
+ * pixel format descriptor
  * Copyright (c) 2009 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -32,38 +32,39 @@ typedef struct AVComponentDescriptor{
 }AVComponentDescriptor;
 
 /**
- * Descriptor that unambigously describes how the bits of a pixel are
+ * Descriptor that unambiguously describes how the bits of a pixel are
  * stored in the up to 4 data planes of an image. It also stores the
  * subsampling factors and number of components.
  *
- * @note This is seperate of the colorspace (RGB, YCbCr, YPbPr, jpeg style YUV and all the YUV variants)
- *       AVPixFmtDescripto just stores how values are stored not what these values represent.
+ * @note This is separate of the colorspace (RGB, YCbCr, YPbPr, JPEG-style YUV
+ *       and all the YUV variants) AVPixFmtDescriptor just stores how values
+ *       are stored not what these values represent.
  */
 typedef struct AVPixFmtDescriptor{
     uint8_t nb_channels;        ///< The number of components each pixel has, (1-4)
 
     /**
-     * Amount to shift the luma width right to find the chroma width, this is for
-     * example 1 for YV12
-     * chroma_width = -((-luma_width )>>log2_chroma_w)
-     * note above is needed to ensure rounding up
+     * Amount to shift the luma width right to find the chroma width.
+     * For YV12 this is 1 for example.
+     * chroma_width = -((-luma_width) >> log2_chroma_w)
+     * The note above is needed to ensure rounding up.
      */
     uint8_t log2_chroma_w;      ///< chroma_width = -((-luma_width )>>log2_chroma_w)
 
     /**
-     * Amount to shift the luma height right to find the chroma height, this is for
-     * example 1 for YV12
-     * chroma_height= -((-luma_height)>>log2_chroma_h)
-     * note above is needed to ensure rounding up
+     * Amount to shift the luma height right to find the chroma height.
+     * For YV12 this is 1 for example.
+     * chroma_height= -((-luma_height) >> log2_chroma_h)
+     * The note above is needed to ensure rounding up.
      */
     uint8_t log2_chroma_h;
     uint8_t flags;
-    AVComponentDescriptor comp[4]; ///< parameters that describes how pixels are packed
+    AVComponentDescriptor comp[4]; ///< parameters that describe how pixels are packed
 }AVPixFmtDescriptor;
 
-#define PIX_FMT_BE        1 ///< Big endian
-#define PIX_FMT_PAL       2 ///< Pixel format has a palette i data[1], values are indexes in this palette
-#define PIX_FMT_BITSTREAM 4 ///< All values of a component are bitwise packed end to end
+#define PIX_FMT_BE        1 ///< big-endian
+#define PIX_FMT_PAL       2 ///< Pixel format has a palette i data[1], values are indexes in this palette.
+#define PIX_FMT_BITSTREAM 4 ///< All values of a component are bit-wise packed end to end.
 
 
 static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4], AVPixFmtDescriptor *desc, int x, int y, int c, int w)

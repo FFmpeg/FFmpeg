@@ -1,5 +1,5 @@
 /*
- * Pixel Format descriptor
+ * pixel format descriptor
  * Copyright (c) 2009 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -142,7 +142,7 @@ static const AVPixFmtDescriptor pix_fmt_desc[PIX_FMT_NB] = {
         },
         .flags = PIX_FMT_BE,
     },
-//FIXME chaneg pix fmt defines so that we have a LE & BE instead of a Native endian
+//FIXME change pix fmt defines so that we have a LE & BE instead of a native-endian
 #if 0
     [PIX_FMT_RGB565_LE] = {
         .nb_channels  = 3,
