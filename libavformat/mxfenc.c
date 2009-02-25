@@ -1592,8 +1592,7 @@ static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacke
 {
     MXFContext *mxf = s->priv_data;
     ByteIOContext *pb = s->pb;
-    int frame_size = (pkt->size<<3) /
-        (st->codec->channels*av_get_bits_per_sample(st->codec->codec_id));
+    int frame_size = pkt->size / st->codec->block_align;
     uint8_t *samples = pkt->data;
     uint8_t *end = pkt->data + pkt->size;
     int i;
