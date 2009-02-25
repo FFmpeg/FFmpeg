@@ -4379,6 +4379,7 @@ AVCodec wmv3_vdpau_decoder = {
     CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9 VDPAU"),
+    .pix_fmts = (enum PixelFormat[]){PIX_FMT_VDPAU_WMV3, PIX_FMT_NONE}
 };
 #endif
 
@@ -4395,5 +4396,6 @@ AVCodec vc1_vdpau_decoder = {
     CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1 VDPAU"),
+    .pix_fmts = (enum PixelFormat[]){PIX_FMT_VDPAU_VC1, PIX_FMT_NONE}
 };
 #endif
