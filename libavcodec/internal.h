@@ -48,6 +48,11 @@ void ff_log_missing_feature(void *avc, const char *feature, int want_sample);
 void ff_log_ask_for_sample(void *avc, const char *msg);
 
 /**
+ * Determines whether \p pix_fmt is a hardware accelerated format.
+ */
+int ff_is_hwaccel_pix_fmt(enum PixelFormat pix_fmt);
+
+/**
  * Returns the hardware accelerated codec for codec \p codec_id and
  * pixel format \p pix_fmt.
  *
