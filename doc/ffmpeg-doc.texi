@@ -35,7 +35,7 @@ ffmpeg -f oss -i /dev/dsp -f video4linux2 -i /dev/video0 /tmp/out.mpg
 
 Note that you must activate the right video source and channel before
 launching FFmpeg with any TV viewer such as xawtv
-(@url{http://bytesex.org/xawtv/}) by Gerd Knorr. You also
+(@url{http://linux.bytesex.org/xawtv/}) by Gerd Knorr. You also
 have to set the audio recording levels correctly with a
 standard mixer.
 
