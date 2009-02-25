@@ -1049,8 +1049,8 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
 
     // index edit rate
     mxf_write_local_tag(pb, 8, 0x3F0B);
-    put_be32(pb, mxf->time_base.num);
     put_be32(pb, mxf->time_base.den);
+    put_be32(pb, mxf->time_base.num);
 
     // index start position
     mxf_write_local_tag(pb, 8, 0x3F0C);
