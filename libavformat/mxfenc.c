@@ -1617,7 +1617,7 @@ static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacke
             put_le32(pb, sample | i);
         }
         for (; i < 8; i++)
-            put_le32(pb, 0);
+            put_le32(pb, i);
     }
 }
 
