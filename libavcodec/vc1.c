@@ -4348,6 +4348,7 @@ AVCodec vc1_decoder = {
     CODEC_CAP_DELAY,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
+    .pix_fmts = ff_pixfmt_list_420
 };
 
 AVCodec wmv3_decoder = {
@@ -4362,6 +4363,7 @@ AVCodec wmv3_decoder = {
     CODEC_CAP_DELAY,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
+    .pix_fmts = ff_pixfmt_list_420
 };
 
 #if CONFIG_WMV3_VDPAU_DECODER
