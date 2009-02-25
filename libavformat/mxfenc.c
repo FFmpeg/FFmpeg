@@ -1608,13 +1608,13 @@ static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacke
         for (i = 0; i < st->codec->channels; i++) {
             uint32_t sample;
             if (st->codec->codec_id == CODEC_ID_PCM_S24LE) {
-                sample = (AV_RL24(samples)<< 4)|((samples==pkt->data)<<3) | i;
+                sample = AV_RL24(samples)<< 4;
                 samples += 3;
             } else {
-                sample = (AV_RL16(samples)<<12)|((samples==pkt->data)<<3) | i;
+                sample = AV_RL16(samples)<<12;
                 samples += 2;
             }
-            put_le32(pb, sample);
+            put_le32(pb, sample | i);
         }
         for (; i < 8; i++)
             put_le32(pb, 0);
