@@ -333,6 +333,8 @@ typedef struct AVInputFormat {
     /** Close the stream. The AVFormatContext and AVStreams are not
        freed by this function */
     int (*read_close)(struct AVFormatContext *);
+
+#if LIBAVFORMAT_VERSION_MAJOR < 53
     /**
      * Seek to a given timestamp relative to the frames in
      * stream component stream_index.
@@ -343,6 +345,7 @@ typedef struct AVInputFormat {
      */
     int (*read_seek)(struct AVFormatContext *,
                      int stream_index, int64_t timestamp, int flags);
+#endif
     /**
      * Gets the next timestamp in stream[stream_index].time_base units.
      * @return the timestamp or AV_NOPTS_VALUE if an error occurred
@@ -367,6 +370,14 @@ typedef struct AVInputFormat {
     int (*read_pause)(struct AVFormatContext *);
 
     const struct AVCodecTag * const *codec_tag;
+
+    /**
+     * Seek to timestamp ts.
+     * Seeking will be done so that the point from which all active streams
+     * can be presented successfully will be closest to ts and within min/max_ts.
+     * Active streams are all streams that have AVStream.discard < AVDISCARD_ALL.
+     */
+    int (*reed_seek2)(struct AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
 
     /* private fields */
     struct AVInputFormat *next;
