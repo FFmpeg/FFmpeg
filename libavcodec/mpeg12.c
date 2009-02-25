@@ -1216,7 +1216,7 @@ static enum PixelFormat mpeg_get_pixelformat(AVCodecContext *avctx){
             return PIX_FMT_VDPAU_MPEG2;
     }else{
         if(s->chroma_format <  2)
-            return PIX_FMT_YUV420P;
+            return avctx->get_format(avctx,ff_pixfmt_list_420);
         else if(s->chroma_format == 2)
             return PIX_FMT_YUV422P;
         else
@@ -1605,7 +1605,7 @@ static void exchange_uv(MpegEncContext *s){
     s->pblocks[5] = tmp;
 }
 
-static int mpeg_field_start(MpegEncContext *s){
+static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size){
     AVCodecContext *avctx= s->avctx;
     Mpeg1Context *s1 = (Mpeg1Context*)s;
 
@@ -1645,6 +1645,12 @@ static int mpeg_field_start(MpegEncContext *s){
                 }
             }
     }
+
+    if (avctx->hwaccel) {
+        if (avctx->hwaccel->start_frame(avctx, buf, buf_size) < 0)
+            return -1;
+    }
+
 // MPV_frame_start will call this function too,
 // but we need to call it on every field
     if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
@@ -2074,7 +2080,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     avctx->pix_fmt = mpeg_get_pixelformat(avctx);
     avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
 
-    if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT ||
+    if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT || avctx->hwaccel ||
         s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU )
         if( avctx->idct_algo == FF_IDCT_AUTO )
             avctx->idct_algo = FF_IDCT_SIMPLE;
@@ -2384,7 +2390,7 @@ static int decode_chunks(AVCodecContext *avctx,
 
                 if(s2->first_slice){
                     s2->first_slice=0;
-                    if(mpeg_field_start(s2) < 0)
+                    if(mpeg_field_start(s2, buf, buf_size) < 0)
                         return -1;
                 }
                 if(!s2->current_picture_ptr){
