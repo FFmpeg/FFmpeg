@@ -1456,8 +1456,13 @@ static void apply_dependent_coupling(AACContext * ac, SingleChannelElement * tar
  */
 static void apply_independent_coupling(AACContext * ac, SingleChannelElement * target, ChannelElement * cce, int index) {
     int i;
+    const float gain = cce->coup.gain[index][0];
+    const float bias = ac->add_bias;
+    const float* src = cce->ch[0].ret;
+    float* dest = target->ret;
+
     for (i = 0; i < 1024; i++)
-        target->ret[i] += cce->coup.gain[index][0] * (cce->ch[0].ret[i] - ac->add_bias);
+        dest[i] += gain * (src[i] - bias);
 }
 
 /**
