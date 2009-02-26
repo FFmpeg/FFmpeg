@@ -118,6 +118,9 @@ void ff_metadata_mux_compat(AVFormatContext *ctx)
 {
     int i;
 
+    if (ctx->metadata && ctx->metadata->count > 0)
+        return;
+
     FILL_METADATA_STR(ctx, title);
     FILL_METADATA_STR(ctx, author);
     FILL_METADATA_STR(ctx, copyright);
