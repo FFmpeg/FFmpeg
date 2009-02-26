@@ -68,8 +68,10 @@ int av_metadata_set(AVMetadata **pm, const char *key, const char *value)
         m->elems[m->count].value= av_strdup(value);
         m->count++;
     }
-    if(!m->count)
+    if(!m->count) {
+        av_free(m->elems);
         av_freep(pm);
+    }
 
     return 0;
 }
