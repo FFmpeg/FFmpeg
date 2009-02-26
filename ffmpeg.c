@@ -1261,8 +1261,9 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         goto discard_packet;
                     }
                     if (ist->st->codec->time_base.num != 0) {
+                        int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : 1;
                         ist->next_pts += ((int64_t)AV_TIME_BASE *
-                                          ist->st->codec->time_base.num) /
+                                          ist->st->codec->time_base.num * ticks) /
                             ist->st->codec->time_base.den;
                     }
                     len = 0;
@@ -1289,8 +1290,9 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 break;
             case CODEC_TYPE_VIDEO:
                 if (ist->st->codec->time_base.num != 0) {
+                    int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : 1;
                     ist->next_pts += ((int64_t)AV_TIME_BASE *
-                                      ist->st->codec->time_base.num) /
+                                      ist->st->codec->time_base.num * ticks) /
                         ist->st->codec->time_base.den;
                 }
                 break;
