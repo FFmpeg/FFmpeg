@@ -28,6 +28,7 @@
 #include "libavutil/md5.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
+#include "libavcodec/flac.h"
 
 typedef struct ebml_master {
     int64_t         pos;                ///< absolute offset in the file where the master's elements start
@@ -420,23 +421,20 @@ static int put_xiph_codecpriv(AVFormatContext *s, ByteIOContext *pb, AVCodecCont
     return 0;
 }
 
-#define FLAC_STREAMINFO_SIZE 34
-
 static int put_flac_codecpriv(AVFormatContext *s, ByteIOContext *pb, AVCodecContext *codec)
 {
-    // if the extradata_size is greater than FLAC_STREAMINFO_SIZE,
-    // assume that it's in Matroska format already
-    if (codec->extradata_size < FLAC_STREAMINFO_SIZE) {
+    uint8_t *streaminfo;
+    enum FLACExtradataFormat format;
+
+    if (!ff_flac_is_extradata_valid(codec, &format, &streaminfo)) {
         av_log(s, AV_LOG_ERROR, "Invalid FLAC extradata\n");
         return -1;
-    } else if (codec->extradata_size == FLAC_STREAMINFO_SIZE) {
+    }
+    if (format == FLAC_EXTRADATA_FORMAT_STREAMINFO) {
         // only the streaminfo packet
         put_buffer(pb, "fLaC", 4);
         put_byte(pb, 0x80);
         put_be24(pb, FLAC_STREAMINFO_SIZE);
-    } else if(memcmp("fLaC", codec->extradata, 4)) {
-        av_log(s, AV_LOG_ERROR, "Invalid FLAC extradata\n");
-        return -1;
     }
     put_buffer(pb, codec->extradata, codec->extradata_size);
     return 0;

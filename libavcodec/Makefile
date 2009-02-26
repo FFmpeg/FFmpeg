@@ -345,15 +345,16 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcm.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_EAC3_DEMUXER)            += ac3_parser.o ac3tab.o aac_ac3_parser.o
+OBJS-$(CONFIG_FLAC_MUXER)              += flacdec.o
 OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
-OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o
+OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o flacdec.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o
-OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o
+OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o flacdec.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGTS_MUXER)            += mpegvideo.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_OGG_DEMUXER)             += flacdec.o
-OBJS-$(CONFIG_OGG_MUXER)               += xiph.o
+OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o
 
 # external codec libraries

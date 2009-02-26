@@ -42,6 +42,11 @@ enum {
     FLAC_METADATA_TYPE_INVALID = 127
 };
 
+enum FLACExtradataFormat {
+    FLAC_EXTRADATA_FORMAT_STREAMINFO  = 0,
+    FLAC_EXTRADATA_FORMAT_FULL_HEADER = 1
+};
+
 /**
  * Data needed from the Streaminfo header for use by the raw FLAC demuxer
  * and/or the FLAC decoder.
@@ -67,5 +72,16 @@ typedef struct FLACStreaminfo {
  */
 void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                               const uint8_t *buffer);
+
+/**
+ * Validate the FLAC extradata.
+ * @param[in]  avctx codec context containing the extradata.
+ * @param[out] format extradata format.
+ * @param[out] streaminfo_start pointer to start of 34-byte STREAMINFO data.
+ * @return 1 if valid, 0 if not valid.
+ */
+int ff_flac_is_extradata_valid(AVCodecContext *avctx,
+                               enum FLACExtradataFormat *format,
+                               uint8_t **streaminfo_start);
 
 #endif /* AVCODEC_FLAC_H */

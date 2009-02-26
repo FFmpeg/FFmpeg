@@ -22,6 +22,7 @@
 #include "libavutil/crc.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/bytestream.h"
+#include "libavcodec/flac.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -82,12 +83,14 @@ static int ogg_write_page(AVFormatContext *s, const uint8_t *data, int size,
     return size;
 }
 
-static int ogg_build_flac_headers(const uint8_t *extradata, int extradata_size,
+static int ogg_build_flac_headers(AVCodecContext *avctx,
                                   OGGStreamContext *oggstream, int bitexact)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
+    enum FLACExtradataFormat format;
+    uint8_t *streaminfo;
     uint8_t *p;
-    if (extradata_size != 34)
+    if (!ff_flac_is_extradata_valid(avctx, &format, &streaminfo))
         return -1;
     oggstream->header_len[0] = 51;
     oggstream->header[0] = av_mallocz(51); // per ogg flac specs
@@ -100,7 +103,7 @@ static int ogg_build_flac_headers(const uint8_t *extradata, int extradata_size,
     bytestream_put_buffer(&p, "fLaC", 4);
     bytestream_put_byte(&p, 0x00); // streaminfo
     bytestream_put_be24(&p, 34);
-    bytestream_put_buffer(&p, extradata, 34);
+    bytestream_put_buffer(&p, streaminfo, FLAC_STREAMINFO_SIZE);
     oggstream->header_len[1] = 1+3+4+strlen(vendor)+4;
     oggstream->header[1] = av_mallocz(oggstream->header_len[1]);
     p = oggstream->header[1];
@@ -136,7 +139,7 @@ static int ogg_write_header(AVFormatContext *s)
         oggstream = av_mallocz(sizeof(*oggstream));
         st->priv_data = oggstream;
         if (st->codec->codec_id == CODEC_ID_FLAC) {
-            if (ogg_build_flac_headers(st->codec->extradata, st->codec->extradata_size,
+            if (ogg_build_flac_headers(st->codec,
                                        oggstream, st->codec->flags & CODEC_FLAG_BITEXACT) < 0) {
                 av_log(s, AV_LOG_ERROR, "Extradata corrupted\n");
                 av_freep(&st->priv_data);

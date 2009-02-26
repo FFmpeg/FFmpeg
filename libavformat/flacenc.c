@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/flac.h"
 #include "avformat.h"
 
 static int flac_write_header(struct AVFormatContext *s)
@@ -26,9 +27,15 @@ static int flac_write_header(struct AVFormatContext *s)
     static const uint8_t header[8] = {
         0x66, 0x4C, 0x61, 0x43, 0x80, 0x00, 0x00, 0x22
     };
-    uint8_t *streaminfo = s->streams[0]->codec->extradata;
+    AVCodecContext *codec = s->streams[0]->codec;
+    uint8_t *streaminfo;
     int len = s->streams[0]->codec->extradata_size;
-    if(streaminfo != NULL && len > 0) {
+    enum FLACExtradataFormat format;
+
+    if (!ff_flac_is_extradata_valid(codec, &format, &streaminfo))
+        return -1;
+
+    if (format == FLAC_EXTRADATA_FORMAT_STREAMINFO) {
         put_buffer(s->pb, header, 8);
         put_buffer(s->pb, streaminfo, len);
     }
@@ -38,16 +45,22 @@ static int flac_write_header(struct AVFormatContext *s)
 static int flac_write_trailer(struct AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
-    uint8_t *streaminfo = s->streams[0]->codec->extradata;
-    int len = s->streams[0]->codec->extradata_size;
+    uint8_t *streaminfo;
+    enum FLACExtradataFormat format;
     int64_t file_size;
 
-    if (streaminfo && len > 0 && !url_is_streamed(s->pb)) {
+    if (!ff_flac_is_extradata_valid(s->streams[0]->codec, &format, &streaminfo))
+        return -1;
+
+    if (!url_is_streamed(pb)) {
+        /* rewrite the STREAMINFO header block data */
         file_size = url_ftell(pb);
         url_fseek(pb, 8, SEEK_SET);
-        put_buffer(pb, streaminfo, len);
+        put_buffer(pb, streaminfo, FLAC_STREAMINFO_SIZE);
         url_fseek(pb, file_size, SEEK_SET);
         put_flush_packet(pb);
+    } else {
+        av_log(s, AV_LOG_WARNING, "unable to rewrite FLAC header.\n");
     }
     return 0;
 }
