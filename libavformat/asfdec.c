@@ -54,27 +54,27 @@ if (!memcmp(g, &cmp, sizeof(GUID))) \
 static void print_guid(const GUID *g)
 {
     int i;
-    PRINT_IF_GUID(g, asf_header);
-    else PRINT_IF_GUID(g, file_header);
-    else PRINT_IF_GUID(g, stream_header);
-    else PRINT_IF_GUID(g, audio_stream);
-    else PRINT_IF_GUID(g, audio_conceal_none);
-    else PRINT_IF_GUID(g, video_stream);
-    else PRINT_IF_GUID(g, video_conceal_none);
-    else PRINT_IF_GUID(g, command_stream);
-    else PRINT_IF_GUID(g, comment_header);
-    else PRINT_IF_GUID(g, codec_comment_header);
-    else PRINT_IF_GUID(g, codec_comment1_header);
-    else PRINT_IF_GUID(g, data_header);
+    PRINT_IF_GUID(g, ff_asf_header);
+    else PRINT_IF_GUID(g, ff_asf_file_header);
+    else PRINT_IF_GUID(g, ff_asf_stream_header);
+    else PRINT_IF_GUID(g, ff_asf_audio_stream);
+    else PRINT_IF_GUID(g, ff_asf_audio_conceal_none);
+    else PRINT_IF_GUID(g, ff_asf_video_stream);
+    else PRINT_IF_GUID(g, ff_asf_video_conceal_none);
+    else PRINT_IF_GUID(g, ff_asf_command_stream);
+    else PRINT_IF_GUID(g, ff_asf_comment_header);
+    else PRINT_IF_GUID(g, ff_asf_codec_comment_header);
+    else PRINT_IF_GUID(g, ff_asf_codec_comment1_header);
+    else PRINT_IF_GUID(g, ff_asf_data_header);
     else PRINT_IF_GUID(g, index_guid);
-    else PRINT_IF_GUID(g, head1_guid);
-    else PRINT_IF_GUID(g, head2_guid);
-    else PRINT_IF_GUID(g, my_guid);
-    else PRINT_IF_GUID(g, ext_stream_header);
-    else PRINT_IF_GUID(g, extended_content_header);
-    else PRINT_IF_GUID(g, ext_stream_embed_stream_header);
-    else PRINT_IF_GUID(g, ext_stream_audio_stream);
-    else PRINT_IF_GUID(g, metadata_header);
+    else PRINT_IF_GUID(g, ff_asf_head1_guid);
+    else PRINT_IF_GUID(g, ff_asf_head2_guid);
+    else PRINT_IF_GUID(g, ff_asf_my_guid);
+    else PRINT_IF_GUID(g, ff_asf_ext_stream_header);
+    else PRINT_IF_GUID(g, ff_asf_extended_content_header);
+    else PRINT_IF_GUID(g, ff_asf_ext_stream_embed_stream_header);
+    else PRINT_IF_GUID(g, ff_asf_ext_stream_audio_stream);
+    else PRINT_IF_GUID(g, ff_asf_metadata_header);
     else PRINT_IF_GUID(g, stream_bitrate_guid);
     else
         dprintf(NULL, "(GUID: unknown) ");
@@ -125,7 +125,7 @@ static void get_str16_nolen(ByteIOContext *pb, int len, char *buf, int buf_size)
 static int asf_probe(AVProbeData *pd)
 {
     /* check file header */
-    if (!memcmp(pd->buf, &asf_header, sizeof(GUID)))
+    if (!memcmp(pd->buf, &ff_asf_header, sizeof(GUID)))
         return AVPROBE_SCORE_MAX;
     else
         return 0;
@@ -174,7 +174,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     memset(bitrate, 0, sizeof(bitrate));
 
     get_guid(pb, &g);
-    if (memcmp(&g, &asf_header, sizeof(GUID)))
+    if (memcmp(&g, &ff_asf_header, sizeof(GUID)))
         return -1;
     get_le64(pb);
     get_le32(pb);
@@ -187,7 +187,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         dprintf(s, "%08"PRIx64": ", url_ftell(pb) - 24);
         print_guid(&g);
         dprintf(s, "  size=0x%"PRIx64"\n", gsize);
-        if (!memcmp(&g, &data_header, sizeof(GUID))) {
+        if (!memcmp(&g, &ff_asf_data_header, sizeof(GUID))) {
             asf->data_object_offset = url_ftell(pb);
             // if not streaming, gsize is not unlimited (how?), and there is enough space in the file..
             if (!(asf->hdr.flags & 0x01) && gsize >= 100) {
@@ -199,7 +199,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
         if (gsize < 24)
             return -1;
-        if (!memcmp(&g, &file_header, sizeof(GUID))) {
+        if (!memcmp(&g, &ff_asf_file_header, sizeof(GUID))) {
             get_guid(pb, &asf->hdr.guid);
             asf->hdr.file_size          = get_le64(pb);
             asf->hdr.create_time        = get_le64(pb);
@@ -213,7 +213,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             asf->hdr.max_pktsize        = get_le32(pb);
             asf->hdr.max_bitrate        = get_le32(pb);
             asf->packet_size = asf->hdr.max_pktsize;
-        } else if (!memcmp(&g, &stream_header, sizeof(GUID))) {
+        } else if (!memcmp(&g, &ff_asf_stream_header, sizeof(GUID))) {
             enum CodecType type;
             int type_specific_size, sizeX;
             uint64_t total_size;
@@ -240,13 +240,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_guid(pb, &g);
 
             test_for_ext_stream_audio = 0;
-            if (!memcmp(&g, &audio_stream, sizeof(GUID))) {
+            if (!memcmp(&g, &ff_asf_audio_stream, sizeof(GUID))) {
                 type = CODEC_TYPE_AUDIO;
-            } else if (!memcmp(&g, &video_stream, sizeof(GUID))) {
+            } else if (!memcmp(&g, &ff_asf_video_stream, sizeof(GUID))) {
                 type = CODEC_TYPE_VIDEO;
-            } else if (!memcmp(&g, &command_stream, sizeof(GUID))) {
+            } else if (!memcmp(&g, &ff_asf_command_stream, sizeof(GUID))) {
                 type = CODEC_TYPE_DATA;
-            } else if (!memcmp(&g, &ext_stream_embed_stream_header, sizeof(GUID))) {
+            } else if (!memcmp(&g, &ff_asf_ext_stream_embed_stream_header, sizeof(GUID))) {
                 test_for_ext_stream_audio = 1;
                 type = CODEC_TYPE_UNKNOWN;
             } else {
@@ -264,7 +264,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             if (test_for_ext_stream_audio) {
                 get_guid(pb, &g);
-                if (!memcmp(&g, &ext_stream_audio_stream, sizeof(GUID))) {
+                if (!memcmp(&g, &ff_asf_ext_stream_audio_stream, sizeof(GUID))) {
                     type = CODEC_TYPE_AUDIO;
                     is_dvr_ms_audio=1;
                     get_guid(pb, &g);
@@ -370,7 +370,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
             pos2 = url_ftell(pb);
             url_fskip(pb, gsize - (pos2 - pos1 + 24));
-        } else if (!memcmp(&g, &comment_header, sizeof(GUID))) {
+        } else if (!memcmp(&g, &ff_asf_comment_header, sizeof(GUID))) {
             int len1, len2, len3, len4, len5;
 
             len1 = get_le16(pb);
@@ -398,7 +398,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 //                av_log(s, AV_LOG_ERROR, "flags: 0x%x stream id %d, bitrate %d\n", flags, stream_id, bitrate);
                 asf->stream_bitrates[stream_id]= bitrate;
             }
-       } else if (!memcmp(&g, &extended_content_header, sizeof(GUID))) {
+       } else if (!memcmp(&g, &ff_asf_extended_content_header, sizeof(GUID))) {
                 int desc_count, i;
 
                 desc_count = get_le16(pb);
@@ -413,7 +413,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         value_len = get_le16(pb);
                         get_tag(s, name, value_type, value_len);
                 }
-        } else if (!memcmp(&g, &metadata_header, sizeof(GUID))) {
+        } else if (!memcmp(&g, &ff_asf_metadata_header, sizeof(GUID))) {
             int n, stream_num, name_len, value_len, value_type, value_num;
             n = get_le16(pb);
 
@@ -436,7 +436,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     else if(!strcmp(name, "AspectRatioY")) dar[stream_num].den= value_num;
                 }
             }
-        } else if (!memcmp(&g, &ext_stream_header, sizeof(GUID))) {
+        } else if (!memcmp(&g, &ff_asf_ext_stream_header, sizeof(GUID))) {
             int ext_len, payload_ext_ct, stream_ct;
             uint32_t ext_d, leak_rate, stream_num;
             int64_t pos_ex_st;
@@ -476,13 +476,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             // there could be a optional stream properties object to follow
             // if so the next iteration will pick it up
-        } else if (!memcmp(&g, &head1_guid, sizeof(GUID))) {
+        } else if (!memcmp(&g, &ff_asf_head1_guid, sizeof(GUID))) {
             int v1, v2;
             get_guid(pb, &g);
             v1 = get_le32(pb);
             v2 = get_le16(pb);
 #if 0
-        } else if (!memcmp(&g, &codec_comment_header, sizeof(GUID))) {
+        } else if (!memcmp(&g, &ff_asf_codec_comment_header, sizeof(GUID))) {
             int len, v1, n, num;
             char str[256], *q;
             char tag[16];
