@@ -1200,7 +1200,7 @@ static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVContext *mov,
 }
 
 /* helper function to write a data tag with the specified string as data */
-static int mov_write_string_data_tag(ByteIOContext *pb, const char *data, int long_style)
+static int mov_write_string_data_tag(ByteIOContext *pb, const char *data, int lang, int long_style)
 {
     if(long_style){
         int64_t pos = url_ftell(pb);
@@ -1212,19 +1212,19 @@ static int mov_write_string_data_tag(ByteIOContext *pb, const char *data, int lo
         return updateSize(pb, pos);
     }else{
         put_be16(pb, strlen(data)); /* string length */
-        put_be16(pb, 0);
+        put_be16(pb, lang);
         put_buffer(pb, data, strlen(data));
         return strlen(data) + 4;
     }
 }
 
-static int mov_write_string_tag(ByteIOContext *pb, const char *name, const char *value, int long_style){
+static int mov_write_string_tag(ByteIOContext *pb, const char *name, const char *value, int lang, int long_style){
     int size = 0;
     if (value && value[0]) {
         int64_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, name);
-        mov_write_string_data_tag(pb, value, long_style);
+        mov_write_string_data_tag(pb, value, lang, long_style);
         size= updateSize(pb, pos);
     }
     return size;
@@ -1234,12 +1234,24 @@ static int mov_write_string_metadata(AVFormatContext *s, ByteIOContext *pb,
                                      const char *name, const char *tag,
                                      int long_style)
 {
-    AVMetadataTag *t;
+    int l, lang = 0, len, len2;
+    AVMetadataTag *t, *t2 = NULL;
+    char tag2[16];
 
     if (!(t = av_metadata_get(s->metadata, tag, NULL, 0)))
         return 0;
 
-    return mov_write_string_tag(pb, name, t->value, long_style);
+    len = strlen(t->key);
+    snprintf(tag2, sizeof(tag2), "%s-", tag);
+    while ((t2 = av_metadata_get(s->metadata, tag2, t2, AV_METADATA_IGNORE_SUFFIX))) {
+        len2 = strlen(t2->key);
+        if (len2 == len+4 && !strcmp(t->value, t2->value)
+            && (l=ff_mov_iso639_to_lang(&t2->key[len2-3], 0)) >= 0) {
+            lang = l;
+            break;
+        }
+    }
+    return mov_write_string_tag(pb, name, t->value, lang, long_style);
 }
 
 /* iTunes track number */
@@ -1281,7 +1293,7 @@ static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext *mov,
     mov_write_string_metadata(s, pb, "\251wrt", "author"   , 1);
     mov_write_string_metadata(s, pb, "\251alb", "album"    , 1);
     mov_write_string_metadata(s, pb, "\251day", "year"     , 1);
-    mov_write_string_tag(pb, "\251too", LIBAVFORMAT_IDENT, 1);
+    mov_write_string_tag(pb, "\251too", LIBAVFORMAT_IDENT, 0, 1);
     mov_write_string_metadata(s, pb, "\251cmt", "comment"  , 1);
     mov_write_string_metadata(s, pb, "\251gen", "genre"    , 1);
     mov_write_string_metadata(s, pb, "\251cpy", "copyright", 1);
@@ -1382,7 +1394,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
             mov_write_string_metadata(s, pb_buf, "\251aut", "author"     , 0);
             mov_write_string_metadata(s, pb_buf, "\251alb", "album"      , 0);
             mov_write_string_metadata(s, pb_buf, "\251day", "year"       , 0);
-            mov_write_string_tag(pb_buf, "\251enc", LIBAVFORMAT_IDENT, 0);
+            mov_write_string_tag(pb_buf, "\251enc", LIBAVFORMAT_IDENT, 0, 0);
             mov_write_string_metadata(s, pb_buf, "\251des", "comment"    , 0);
             mov_write_string_metadata(s, pb_buf, "\251gen", "genre"      , 0);
             mov_write_string_metadata(s, pb_buf, "\251cpy", "copyright"  , 0);
