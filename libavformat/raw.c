@@ -29,38 +29,6 @@
 #include "id3v2.h"
 
 /* simple formats */
-#if CONFIG_FLAC_MUXER
-static int flac_write_header(struct AVFormatContext *s)
-{
-    static const uint8_t header[8] = {
-        0x66, 0x4C, 0x61, 0x43, 0x80, 0x00, 0x00, 0x22
-    };
-    uint8_t *streaminfo = s->streams[0]->codec->extradata;
-    int len = s->streams[0]->codec->extradata_size;
-    if(streaminfo != NULL && len > 0) {
-        put_buffer(s->pb, header, 8);
-        put_buffer(s->pb, streaminfo, len);
-    }
-    return 0;
-}
-
-static int flac_write_trailer(struct AVFormatContext *s)
-{
-    ByteIOContext *pb = s->pb;
-    uint8_t *streaminfo = s->streams[0]->codec->extradata;
-    int len = s->streams[0]->codec->extradata_size;
-    int64_t file_size;
-
-    if (streaminfo && len > 0 && !url_is_streamed(s->pb)) {
-        file_size = url_ftell(pb);
-        url_fseek(pb, 8, SEEK_SET);
-        put_buffer(pb, streaminfo, len);
-        url_fseek(pb, file_size, SEEK_SET);
-        put_flush_packet(pb);
-    }
-    return 0;
-}
-#endif
 
 #if CONFIG_ROQ_MUXER
 static int roq_write_header(struct AVFormatContext *s)
@@ -848,22 +816,6 @@ AVInputFormat flac_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "flac",
     .value = CODEC_ID_FLAC,
-};
-#endif
-
-#if CONFIG_FLAC_MUXER
-AVOutputFormat flac_muxer = {
-    "flac",
-    NULL_IF_CONFIG_SMALL("raw FLAC"),
-    "audio/x-flac",
-    "flac",
-    0,
-    CODEC_ID_FLAC,
-    CODEC_ID_NONE,
-    flac_write_header,
-    raw_write_packet,
-    flac_write_trailer,
-    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif
 
