@@ -805,14 +805,6 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
                                 if (vq_ptr[2]) coef[coef_tmp_idx + 2] = sign_lookup[get_bits1(gb)];
                                 if (vq_ptr[3]) coef[coef_tmp_idx + 3] = sign_lookup[get_bits1(gb)];
                             }
-                        }else {
-                            coef[coef_tmp_idx    ] = 1.0f;
-                            coef[coef_tmp_idx + 1] = 1.0f;
-                            if (dim == 4) {
-                                coef[coef_tmp_idx + 2] = 1.0f;
-                                coef[coef_tmp_idx + 3] = 1.0f;
-                            }
-                        }
                         if (cur_band_type == ESC_BT) {
                             for (j = 0; j < 2; j++) {
                                 if (vq_ptr[j] == 64.0f) {
@@ -836,6 +828,14 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
                             if (dim == 4) {
                                 coef[coef_tmp_idx + 2] *= vq_ptr[2];
                                 coef[coef_tmp_idx + 3] *= vq_ptr[3];
+                            }
+                        }
+                        }else {
+                            coef[coef_tmp_idx    ] = vq_ptr[0];
+                            coef[coef_tmp_idx + 1] = vq_ptr[1];
+                            if (dim == 4) {
+                                coef[coef_tmp_idx + 2] = vq_ptr[2];
+                                coef[coef_tmp_idx + 3] = vq_ptr[3];
                             }
                         }
                         coef[coef_tmp_idx    ] *= sf[idx];
