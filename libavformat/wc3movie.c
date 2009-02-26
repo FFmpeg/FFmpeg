@@ -132,6 +132,7 @@ static int wc3_read_header(AVFormatContext *s,
     unsigned int size;
     AVStream *st;
     unsigned char preamble[WC3_PREAMBLE_SIZE];
+    char buffer[513];
     int ret = 0;
     int current_palette = 0;
     int bytes_to_read;
@@ -185,8 +186,10 @@ static int wc3_read_header(AVFormatContext *s,
                 bytes_to_read = size;
             else
                 bytes_to_read = 512;
-            if ((ret = get_buffer(pb, s->title, bytes_to_read)) != bytes_to_read)
+            if ((ret = get_buffer(pb, buffer, bytes_to_read)) != bytes_to_read)
                 return AVERROR(EIO);
+            buffer[bytes_to_read] = 0;
+            av_metadata_set(&s->metadata, "title", buffer);
             break;
 
         case SIZE_TAG:
