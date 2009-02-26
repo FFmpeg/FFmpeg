@@ -141,10 +141,9 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
     if (!ff_flac_is_extradata_valid(avctx, &format, &streaminfo))
         return -1;
 
-        /* initialize based on the demuxer-supplied streamdata header */
-            ff_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s,
-                                     streaminfo);
-            allocate_buffers(s);
+    /* initialize based on the demuxer-supplied streamdata header */
+    ff_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
+    allocate_buffers(s);
 
     return 0;
 }
