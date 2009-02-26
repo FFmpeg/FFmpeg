@@ -147,7 +147,7 @@ void ff_vdpau_h264_picture_complete(MpegEncContext *s)
         render->info.h264.field_order_cnt[i] = foc;
     }
 
-    render->info.h264.is_reference                           = s->current_picture_ptr->reference ? VDP_TRUE : VDP_FALSE;
+    render->info.h264.is_reference                           = (s->current_picture_ptr->reference & 3) ? VDP_TRUE : VDP_FALSE;
     render->info.h264.frame_num                              = h->frame_num;
     render->info.h264.field_pic_flag                         = s->picture_structure != PICT_FRAME;
     render->info.h264.bottom_field_flag                      = s->picture_structure == PICT_BOTTOM_FIELD;
