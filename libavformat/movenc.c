@@ -1294,14 +1294,13 @@ static int mov_write_meta_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
     int size = 0;
-
-        int64_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
-        put_tag(pb, "meta");
-        put_be32(pb, 0);
-        mov_write_itunes_hdlr_tag(pb, mov, s);
-        mov_write_ilst_tag(pb, mov, s);
-        size = updateSize(pb, pos);
+    int64_t pos = url_ftell(pb);
+    put_be32(pb, 0); /* size */
+    put_tag(pb, "meta");
+    put_be32(pb, 0);
+    mov_write_itunes_hdlr_tag(pb, mov, s);
+    mov_write_ilst_tag(pb, mov, s);
+    size = updateSize(pb, pos);
     return size;
 }
 
