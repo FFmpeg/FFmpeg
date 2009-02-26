@@ -34,6 +34,7 @@ static int flac_write_header(struct AVFormatContext *s)
     if (!ff_flac_is_extradata_valid(codec, &format, &streaminfo))
         return -1;
 
+    /* write "fLaC" stream marker and first metadata block header if needed */
     if (format == FLAC_EXTRADATA_FORMAT_STREAMINFO) {
         put_buffer(s->pb, header, 8);
     }
