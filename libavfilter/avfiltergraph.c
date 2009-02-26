@@ -26,7 +26,7 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
-void avfilter_destroy_graph(AVFilterGraph *graph)
+void avfilter_graph_destroy(AVFilterGraph *graph)
 {
     for(; graph->filter_count > 0; graph->filter_count --)
         avfilter_destroy(graph->filters[graph->filter_count - 1]);
