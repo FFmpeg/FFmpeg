@@ -29,7 +29,6 @@ static int flac_write_header(struct AVFormatContext *s)
     };
     AVCodecContext *codec = s->streams[0]->codec;
     uint8_t *streaminfo;
-    int len = s->streams[0]->codec->extradata_size;
     enum FLACExtradataFormat format;
 
     if (!ff_flac_is_extradata_valid(codec, &format, &streaminfo))
@@ -37,8 +36,11 @@ static int flac_write_header(struct AVFormatContext *s)
 
     if (format == FLAC_EXTRADATA_FORMAT_STREAMINFO) {
         put_buffer(s->pb, header, 8);
-        put_buffer(s->pb, streaminfo, len);
     }
+
+    /* write STREAMINFO or full header */
+    put_buffer(s->pb, codec->extradata, codec->extradata_size);
+
     return 0;
 }
 
