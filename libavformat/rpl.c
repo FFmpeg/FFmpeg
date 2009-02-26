@@ -129,7 +129,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
     // number usually isn't important.
     // (The spec says that there exists some significance
     // for the text in a few cases; samples needed.)
-    error |= read_line(pb, line        , sizeof(line        ));  // ARMovie
+    error |= read_line(pb, line, sizeof(line));      // ARMovie
     error |= read_line(pb, line, sizeof(line));      // movie name
     av_metadata_set(&s->metadata, "title"    , line);
     error |= read_line(pb, line, sizeof(line));      // date/copyright
