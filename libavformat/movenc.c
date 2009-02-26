@@ -1651,6 +1651,8 @@ static int mov_write_header(AVFormatContext *s)
 
         track->enc = st->codec;
         track->language = ff_mov_iso639_to_lang(lang?lang->value:"und", mov->mode!=MODE_MOV);
+        if (track->language < 0)
+            track->language = 0;
         track->mode = mov->mode;
         track->tag = mov_find_codec_tag(s, track);
         if (!track->tag) {
