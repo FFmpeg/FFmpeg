@@ -1,5 +1,4 @@
 /*
- * unbuffered io for ffmpeg system
  * copyright (c) 2001 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -20,6 +19,11 @@
  */
 #ifndef AVFORMAT_AVIO_H
 #define AVFORMAT_AVIO_H
+
+/**
+ * @file libavformat/avio.h
+ * unbuffered I/O operations
+ */
 
 #include <stdint.h>
 
