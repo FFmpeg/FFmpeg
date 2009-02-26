@@ -260,9 +260,15 @@ static int h264_parse(AVCodecParserContext *s,
 
         parse_nal_units(s, avctx, buf, buf_size);
 
+        if (h->sei_cpb_removal_delay >= 0) {
         s->dts_sync_point    = h->sei_buffering_period_present;
         s->dts_ref_dts_delta = h->sei_cpb_removal_delay;
         s->pts_dts_delta     = h->sei_dpb_output_delay;
+        } else {
+            s->dts_sync_point    = INT_MIN;
+            s->dts_ref_dts_delta = INT_MIN;
+            s->pts_dts_delta     = INT_MIN;
+        }
     }
 
     *poutbuf = buf;
