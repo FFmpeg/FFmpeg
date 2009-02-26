@@ -130,9 +130,12 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
     // (The spec says that there exists some significance
     // for the text in a few cases; samples needed.)
     error |= read_line(pb, line        , sizeof(line        ));  // ARMovie
-    error |= read_line(pb, s->title    , sizeof(s->title    ));  // movie name
-    error |= read_line(pb, s->copyright, sizeof(s->copyright));  // date/copyright
-    error |= read_line(pb, s->author   , sizeof(s->author   ));  // author and other
+    error |= read_line(pb, line, sizeof(line));      // movie name
+    av_metadata_set(&s->metadata, "title"    , line);
+    error |= read_line(pb, line, sizeof(line));      // date/copyright
+    av_metadata_set(&s->metadata, "copyright", line);
+    error |= read_line(pb, line, sizeof(line));      // author and other
+    av_metadata_set(&s->metadata, "author"   , line);
 
     // video headers
     vst = av_new_stream(s, 0);
