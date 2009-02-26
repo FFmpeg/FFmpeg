@@ -23,6 +23,9 @@
 /**
  * @file libavformat/avio.h
  * unbuffered I/O operations
+ *
+ * @warning This file has to be considered an internal but installed
+ * header, so it should not be directly included in your projects.
  */
 
 #include <stdint.h>
