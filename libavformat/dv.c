@@ -474,12 +474,30 @@ static int dv_read_close(AVFormatContext *s)
     return 0;
 }
 
+static int dv_probe(AVProbeData *p)
+{
+    unsigned state;
+    int i;
+
+    if (p->buf_size < 5)
+        return 0;
+
+    state = AV_RB32(p->buf);
+    for (i = 4; i < p->buf_size; i++) {
+        if ((state & 0xffffff7f) == 0x1f07003f)
+            return AVPROBE_SCORE_MAX*3/4; // not max to avoid dv in mov to match
+        state = (state << 8) | p->buf[i];
+    }
+
+    return 0;
+}
+
 #if CONFIG_DV_DEMUXER
 AVInputFormat dv_demuxer = {
     "dv",
     NULL_IF_CONFIG_SMALL("DV video format"),
     sizeof(RawDVContext),
-    NULL,
+    dv_probe,
     dv_read_header,
     dv_read_packet,
     dv_read_close,
