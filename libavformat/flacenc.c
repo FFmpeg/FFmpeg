@@ -21,13 +21,13 @@
 
 #include "libavcodec/flac.h"
 #include "avformat.h"
+#include "flacenc.h"
 
-static int flac_write_header(struct AVFormatContext *s)
+int ff_flac_write_header(ByteIOContext *pb, AVCodecContext *codec)
 {
     static const uint8_t header[8] = {
         0x66, 0x4C, 0x61, 0x43, 0x80, 0x00, 0x00, 0x22
     };
-    AVCodecContext *codec = s->streams[0]->codec;
     uint8_t *streaminfo;
     enum FLACExtradataFormat format;
 
@@ -36,13 +36,18 @@ static int flac_write_header(struct AVFormatContext *s)
 
     /* write "fLaC" stream marker and first metadata block header if needed */
     if (format == FLAC_EXTRADATA_FORMAT_STREAMINFO) {
-        put_buffer(s->pb, header, 8);
+        put_buffer(pb, header, 8);
     }
 
     /* write STREAMINFO or full header */
-    put_buffer(s->pb, codec->extradata, codec->extradata_size);
+    put_buffer(pb, codec->extradata, codec->extradata_size);
 
     return 0;
+}
+
+static int flac_write_header(struct AVFormatContext *s)
+{
+    return ff_flac_write_header(s->pb, s->streams[0]->codec);
 }
 
 static int flac_write_trailer(struct AVFormatContext *s)
