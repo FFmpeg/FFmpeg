@@ -270,7 +270,7 @@ void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
     /* Specific to simple/main profile only */
     render->info.vc1.multires           = v->multires;
     render->info.vc1.syncmarker         = v->s.resync_marker;
-    render->info.vc1.rangered           = v->rangered;
+    render->info.vc1.rangered           = v->rangered | (v->rangeredfrm << 1);
     render->info.vc1.maxbframes         = v->s.max_b_frames;
 
     render->info.vc1.deblockEnable      = v->postprocflag & 1;
