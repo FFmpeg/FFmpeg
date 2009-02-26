@@ -45,7 +45,7 @@ typedef struct AVFilterInOut {
  * @param outputs linked list to the outputs of the graph
  * @return        zero on success, -1 on error
  */
-int avfilter_parse_graph(AVFilterGraph *graph, const char *filters,
+int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut *inputs, AVFilterInOut *outputs,
                          AVClass *log_ctx);
 
