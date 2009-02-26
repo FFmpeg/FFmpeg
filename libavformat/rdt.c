@@ -306,7 +306,7 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
         int pos;
 
         init_put_byte(&pb, buf, len, 0, NULL, NULL, NULL, NULL);
-        flags = (flags & PKT_FLAG_KEY) ? 2 : 0;
+        flags = (flags & RTP_FLAG_KEY) ? 2 : 0;
         res = ff_rm_parse_packet (rdt->rmctx, &pb, st, rdt->rmst[st->index], len, pkt,
                                   &seq, &flags, timestamp);
         pos = url_ftell(&pb);
@@ -361,7 +361,7 @@ ff_rdt_parse_packet(RDTDemuxContext *s, AVPacket *pkt,
     if (is_keyframe &&
         (set_id != s->prev_set_id || timestamp != s->prev_timestamp ||
          stream_id != s->prev_stream_id)) {
-        flags |= PKT_FLAG_KEY;
+        flags |= RTP_FLAG_KEY;
         s->prev_set_id    = set_id;
         s->prev_timestamp = timestamp;
     }

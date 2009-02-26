@@ -92,6 +92,7 @@ typedef struct {
     uint32_t jitter;            ///< estimated jitter.
 } RTPStatistics;
 
+#define RTP_FLAG_KEY    0x1 ///< RTP packet contains a keyframe
 /**
  * Packet parsing for "private" payloads in the RTP specs.
  *
@@ -102,7 +103,7 @@ typedef struct {
  * @param timestamp pointer in which to write the timestamp of this RTP packet
  * @param buf pointer to raw RTP packet data
  * @param len length of buf
- * @param flags flags from the RTP packet header (PKT_FLAG_*)
+ * @param flags flags from the RTP packet header (RTP_FLAG_*)
  */
 typedef int (*DynamicPayloadPacketHandlerProc) (AVFormatContext *ctx,
                                                 PayloadContext *s,
