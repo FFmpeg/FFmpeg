@@ -437,6 +437,8 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         return -1;
     }
     payload_type = buf[1] & 0x7f;
+    if (buf[1] & 0x80)
+        flags |= RTP_FLAG_MARKER;
     seq  = AV_RB16(buf + 2);
     timestamp = AV_RB32(buf + 4);
     ssrc = AV_RB32(buf + 8);
