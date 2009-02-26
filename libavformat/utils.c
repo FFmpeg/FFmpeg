@@ -2201,9 +2201,9 @@ int av_find_stream_info(AVFormatContext *ic)
 
             if (!st->r_frame_rate.num){
                 if(    st->codec->time_base.den * (int64_t)st->time_base.num
-                    <= st->codec->time_base.num * (int64_t)st->time_base.den){
+                    <= st->codec->time_base.num * st->codec->ticks_per_frame * (int64_t)st->time_base.den){
                     st->r_frame_rate.num = st->codec->time_base.den;
-                    st->r_frame_rate.den = st->codec->time_base.num;
+                    st->r_frame_rate.den = st->codec->time_base.num * st->codec->ticks_per_frame;
                 }else{
                     st->r_frame_rate.num = st->time_base.den;
                     st->r_frame_rate.den = st->time_base.num;
@@ -2537,7 +2537,7 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
     if (pkt->duration == 0) {
         compute_frame_duration(&num, &den, st, NULL, pkt);
         if (den && num) {
-            pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num);
+            pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den * st->codec->ticks_per_frame, den * (int64_t)st->time_base.num);
         }
     }
 

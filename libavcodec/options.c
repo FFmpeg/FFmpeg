@@ -393,6 +393,7 @@ static const AVOption options[]={
 {"request_channel_layout", NULL, OFFSET(request_channel_layout), FF_OPT_TYPE_INT64, DEFAULT, 0, INT64_MAX, A|D, "request_channel_layout"},
 {"rc_max_vbv_use", NULL, OFFSET(rc_max_available_vbv_use), FF_OPT_TYPE_FLOAT, 1.0/3, 0.0, FLT_MAX, V|E},
 {"rc_min_vbv_use", NULL, OFFSET(rc_min_vbv_overflow_use),  FF_OPT_TYPE_FLOAT, 3,     0.0, FLT_MAX, V|E},
+{"ticks_per_frame", NULL, OFFSET(ticks_per_frame), FF_OPT_TYPE_INT, 1, 1, INT_MAX, A|V|E|D},
 {NULL},
 };
 

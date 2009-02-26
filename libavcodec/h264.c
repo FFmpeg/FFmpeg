@@ -2201,6 +2201,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     h->sei_dpb_output_delay = 0;
     h->sei_cpb_removal_delay = -1;
     h->sei_buffering_period_present = 0;
+    avctx->ticks_per_frame = 2;
     return 0;
 }
 

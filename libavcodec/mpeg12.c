@@ -1269,7 +1269,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
             //MPEG-1 aspect
             avctx->sample_aspect_ratio= av_d2q(
                     1.0/ff_mpeg1_aspect[s->aspect_ratio_info], 255);
-
+            avctx->ticks_per_frame=1;
         }else{//MPEG-2
         //MPEG-2 fps
             av_reduce(
@@ -1278,6 +1278,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
                 ff_frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num*2,
                 ff_frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
                 1<<30);
+            avctx->ticks_per_frame=2;
         //MPEG-2 aspect
             if(s->aspect_ratio_info > 1){
                 //we ignore the spec here as reality does not match the spec, see for example

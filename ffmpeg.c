@@ -1261,7 +1261,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         goto discard_packet;
                     }
                     if (ist->st->codec->time_base.num != 0) {
-                        int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : 1;
+                        int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
                         ist->next_pts += ((int64_t)AV_TIME_BASE *
                                           ist->st->codec->time_base.num * ticks) /
                             ist->st->codec->time_base.den;
@@ -1290,7 +1290,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 break;
             case CODEC_TYPE_VIDEO:
                 if (ist->st->codec->time_base.num != 0) {
-                    int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : 1;
+                    int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
                     ist->next_pts += ((int64_t)AV_TIME_BASE *
                                       ist->st->codec->time_base.num * ticks) /
                         ist->st->codec->time_base.den;
@@ -1750,9 +1750,10 @@ static int av_encode(AVFormatContext **output_files,
             codec->bit_rate = icodec->bit_rate;
             codec->extradata= icodec->extradata;
             codec->extradata_size= icodec->extradata_size;
-            if(av_q2d(icodec->time_base) > av_q2d(ist->st->time_base) && av_q2d(ist->st->time_base) < 1.0/1000)
+            if(av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base) && av_q2d(ist->st->time_base) < 1.0/1000){
                 codec->time_base = icodec->time_base;
-            else
+                codec->time_base.num *= icodec->ticks_per_frame;
+            }else
                 codec->time_base = ist->st->time_base;
             switch(codec->codec_type) {
             case CODEC_TYPE_AUDIO:

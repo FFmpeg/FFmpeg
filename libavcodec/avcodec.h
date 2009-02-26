@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 19
+#define LIBAVCODEC_VERSION_MINOR 20
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -2323,6 +2323,15 @@ typedef struct AVCodecContext {
      * - decoding: Set by libavcodec
      */
     struct AVHWAccel *hwaccel;
+
+    /**
+     * For some codecs, the time base is closer to the field rate than the frame rate.
+     * Most notably, H.264 and MPEG-2 specify time_base as half of frame duration
+     * if no telecine is used ...
+     *
+     * Set to time_base ticks per frame. Default 1, e.g., H.264/MPEG-2 set it to 2.
+     */
+    int ticks_per_frame;
 } AVCodecContext;
 
 /**
