@@ -1230,23 +1230,25 @@ static int mov_write_string_tag(ByteIOContext *pb, const char *name, const char 
     return size;
 }
 
-/* iTunes year */
-static int mov_write_day_tag(ByteIOContext *pb, int year, int long_style)
+static int mov_write_string_metadata(AVFormatContext *s, ByteIOContext *pb,
+                                     const char *name, const char *tag,
+                                     int long_style)
 {
-    if(year){
-        char year_str[5];
-        snprintf(year_str, sizeof(year_str), "%04d", year);
-        return mov_write_string_tag(pb, "\251day", year_str, long_style);
-    }else
+    AVMetadataTag *t;
+
+    if (!(t = av_metadata_get(s->metadata, tag, NULL, 0)))
         return 0;
+
+    return mov_write_string_tag(pb, name, t->value, long_style);
 }
 
 /* iTunes track number */
 static int mov_write_trkn_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
-    int size = 0;
-    if (s->track) {
+    AVMetadataTag *t = av_metadata_get(s->metadata, "track", NULL, 0);
+    int size = 0, track = t ? atoi(t->value) : 0;
+    if (track) {
         int64_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "trkn");
@@ -1257,7 +1259,7 @@ static int mov_write_trkn_tag(ByteIOContext *pb, MOVContext *mov,
             put_be32(pb, 0);        // 8 bytes empty
             put_be32(pb, 0);
             put_be16(pb, 0);        // empty
-            put_be16(pb, s->track); // track number
+            put_be16(pb, track);    // track number
             put_be16(pb, 0);        // total track number
             put_be16(pb, 0);        // empty
             updateSize(pb, pos);
@@ -1274,15 +1276,15 @@ static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext *mov,
     int64_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "ilst");
-    mov_write_string_tag(pb, "\251nam", s->title         , 1);
-    mov_write_string_tag(pb, "\251ART", s->author        , 1);
-    mov_write_string_tag(pb, "\251wrt", s->author        , 1);
-    mov_write_string_tag(pb, "\251alb", s->album         , 1);
-    mov_write_day_tag(pb, s->year ,1);
+    mov_write_string_metadata(s, pb, "\251nam", "title"    , 1);
+    mov_write_string_metadata(s, pb, "\251ART", "author"   , 1);
+    mov_write_string_metadata(s, pb, "\251wrt", "author"   , 1);
+    mov_write_string_metadata(s, pb, "\251alb", "album"    , 1);
+    mov_write_string_metadata(s, pb, "\251day", "year"     , 1);
     mov_write_string_tag(pb, "\251too", LIBAVFORMAT_IDENT, 1);
-    mov_write_string_tag(pb, "\251cmt", s->comment       , 1);
-    mov_write_string_tag(pb, "\251gen", s->genre         , 1);
-    mov_write_string_tag(pb, "\251cpy", s->copyright     , 1);
+    mov_write_string_metadata(s, pb, "\251cmt", "comment"  , 1);
+    mov_write_string_metadata(s, pb, "\251gen", "genre"    , 1);
+    mov_write_string_metadata(s, pb, "\251cpy", "copyright", 1);
     mov_write_trkn_tag(pb, mov, s);
     return updateSize(pb, pos);
 }
@@ -1293,9 +1295,6 @@ static int mov_write_meta_tag(ByteIOContext *pb, MOVContext *mov,
 {
     int size = 0;
 
-    // only save meta tag if required
-    if (s->title[0] || s->author[0] || s->album[0] || s->year ||
-        s->comment[0] || s->genre[0] || s->track) {
         int64_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "meta");
@@ -1303,7 +1302,6 @@ static int mov_write_meta_tag(ByteIOContext *pb, MOVContext *mov,
         mov_write_itunes_hdlr_tag(pb, mov, s);
         mov_write_ilst_tag(pb, mov, s);
         size = updateSize(pb, pos);
-    }
     return size;
 }
 
@@ -1338,18 +1336,20 @@ static int mov_write_3gp_udta_tag(ByteIOContext *pb, AVFormatContext *s,
                                   const char *tag, const char *str)
 {
     int64_t pos = url_ftell(pb);
-    if (!utf8len(str))
+    AVMetadataTag *t = av_metadata_get(s->metadata, str, NULL, 0);
+    if (!t || !utf8len(t->value))
         return 0;
     put_be32(pb, 0);   /* size */
     put_tag (pb, tag); /* type */
     put_be32(pb, 0);   /* version + flags */
     if (!strcmp(tag, "yrrc"))
-        put_be16(pb, s->year);
+        put_be16(pb, atoi(t->value));
     else {
         put_be16(pb, language_code("eng")); /* language */
-        ascii_to_wc(pb, str);
-        if (!strcmp(tag, "albm") && s->year)
-            put_byte(pb, s->year);
+        ascii_to_wc(pb, t->value);
+        if (!strcmp(tag, "albm") &&
+            (t = av_metadata_get(s->metadata, "year", NULL, 0)))
+            put_byte(pb, atoi(t->value));
     }
     return updateSize(pb, pos);
 }
@@ -1357,44 +1357,46 @@ static int mov_write_3gp_udta_tag(ByteIOContext *pb, AVFormatContext *s,
 static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
-    int i;
-    int bitexact = 0;
+    ByteIOContext *pb_buf;
+    int i, ret, size;
+    uint8_t *buf;
 
     for (i = 0; i < s->nb_streams; i++)
         if (mov->tracks[i].enc->flags & CODEC_FLAG_BITEXACT) {
-            bitexact = 1;
-            break;
+            return 0;
         }
 
-    if (!bitexact && (s->title[0] || s->author[0] || s->album[0] || s->year ||
-                      s->comment[0] || s->genre[0]  || s->track)) {
-        int64_t pos = url_ftell(pb);
-
-        put_be32(pb, 0); /* size */
-        put_tag(pb, "udta");
+    ret = url_open_dyn_buf(&pb_buf);
+    if(ret < 0)
+        return ret;
 
         if (mov->mode & MODE_3GP) {
-            mov_write_3gp_udta_tag(pb, s, "titl", s->title);
-            mov_write_3gp_udta_tag(pb, s, "auth", s->author);
-            mov_write_3gp_udta_tag(pb, s, "gnre", s->genre);
-            mov_write_3gp_udta_tag(pb, s, "dscp", s->comment);
-            mov_write_3gp_udta_tag(pb, s, "albm", s->album);
-            mov_write_3gp_udta_tag(pb, s, "cprt", s->copyright);
-            mov_write_3gp_udta_tag(pb, s, "yrrc", "nil");
+            mov_write_3gp_udta_tag(pb_buf, s, "titl", "title");
+            mov_write_3gp_udta_tag(pb_buf, s, "auth", "author");
+            mov_write_3gp_udta_tag(pb_buf, s, "gnre", "genre");
+            mov_write_3gp_udta_tag(pb_buf, s, "dscp", "comment");
+            mov_write_3gp_udta_tag(pb_buf, s, "albm", "album");
+            mov_write_3gp_udta_tag(pb_buf, s, "cprt", "copyright");
+            mov_write_3gp_udta_tag(pb_buf, s, "yrrc", "year");
         } else if (mov->mode == MODE_MOV) { // the title field breaks gtkpod with mp4 and my suspicion is that stuff is not valid in mp4
-            mov_write_string_tag(pb, "\251nam", s->title         , 0);
-            mov_write_string_tag(pb, "\251aut", s->author        , 0);
-            mov_write_string_tag(pb, "\251alb", s->album         , 0);
-            mov_write_day_tag(pb, s->year, 0);
-            mov_write_string_tag(pb, "\251enc", LIBAVFORMAT_IDENT, 0);
-            mov_write_string_tag(pb, "\251des", s->comment       , 0);
-            mov_write_string_tag(pb, "\251gen", s->genre         , 0);
-            mov_write_string_tag(pb, "\251cpy", s->copyright     , 0);
+            mov_write_string_metadata(s, pb_buf, "\251nam", "title"      , 0);
+            mov_write_string_metadata(s, pb_buf, "\251aut", "author"     , 0);
+            mov_write_string_metadata(s, pb_buf, "\251alb", "album"      , 0);
+            mov_write_string_metadata(s, pb_buf, "\251day", "year"       , 0);
+            mov_write_string_tag(pb_buf, "\251enc", LIBAVFORMAT_IDENT, 0);
+            mov_write_string_metadata(s, pb_buf, "\251des", "comment"    , 0);
+            mov_write_string_metadata(s, pb_buf, "\251gen", "genre"      , 0);
+            mov_write_string_metadata(s, pb_buf, "\251cpy", "copyright"  , 0);
         } else {
             /* iTunes meta data */
-            mov_write_meta_tag(pb, mov, s);
+            mov_write_meta_tag(pb_buf, mov, s);
         }
-        return updateSize(pb, pos);
+
+    if ((size = url_close_dyn_buf(pb_buf, &buf)) > 0) {
+        put_be32(pb, size+8);
+        put_tag(pb, "udta");
+        put_buffer(pb, buf, size);
+        av_free(buf);
     }
 
     return 0;
@@ -1415,9 +1417,10 @@ static void mov_write_psp_udta_tag(ByteIOContext *pb,
 
 static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
 {
+    AVMetadataTag *title = av_metadata_get(s->metadata, "title", NULL, 0);
     int64_t pos, pos2;
 
-    if (s->title[0]) {
+    if (title) {
         pos = url_ftell(pb);
         put_be32(pb, 0); /* size placeholder*/
         put_tag(pb, "uuid");
@@ -1439,7 +1442,7 @@ static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
         put_be16(pb, 0x021C);               /* data */
 
         mov_write_psp_udta_tag(pb, LIBAVCODEC_IDENT,      "eng", 0x04);
-        mov_write_psp_udta_tag(pb, s->title,              "eng", 0x01);
+        mov_write_psp_udta_tag(pb, title->value,          "eng", 0x01);
 //        snprintf(dt,32,"%04d/%02d/%02d %02d:%02d:%02d",t_st->tm_year+1900,t_st->tm_mon+1,t_st->tm_mday,t_st->tm_hour,t_st->tm_min,t_st->tm_sec);
         mov_write_psp_udta_tag(pb, "2006/04/01 11:11:11", "und", 0x03);
 
@@ -1645,9 +1648,10 @@ static int mov_write_header(AVFormatContext *s)
     for(i=0; i<s->nb_streams; i++){
         AVStream *st= s->streams[i];
         MOVTrack *track= &mov->tracks[i];
+        AVMetadataTag *lang = av_metadata_get(st->metadata, "language", NULL,0);
 
         track->enc = st->codec;
-        track->language = ff_mov_iso639_to_lang(st->language, mov->mode != MODE_MOV);
+        track->language = ff_mov_iso639_to_lang(lang?lang->value:"und", mov->mode!=MODE_MOV);
         track->mode = mov->mode;
         track->tag = mov_find_codec_tag(s, track);
         if (!track->tag) {
