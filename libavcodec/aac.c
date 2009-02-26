@@ -805,31 +805,31 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
                                 if (vq_ptr[2]) coef[coef_tmp_idx + 2] = sign_lookup[get_bits1(gb)];
                                 if (vq_ptr[3]) coef[coef_tmp_idx + 3] = sign_lookup[get_bits1(gb)];
                             }
-                        if (cur_band_type == ESC_BT) {
-                            for (j = 0; j < 2; j++) {
-                                if (vq_ptr[j] == 64.0f) {
-                                    int n = 4;
-                                    /* The total length of escape_sequence must be < 22 bits according
-                                       to the specification (i.e. max is 11111111110xxxxxxxxxx). */
-                                    while (get_bits1(gb) && n < 15) n++;
-                                    if(n == 15) {
-                                        av_log(ac->avccontext, AV_LOG_ERROR, "error in spectral data, ESC overflow\n");
-                                        return -1;
-                                    }
-                                    n = (1<<n) + get_bits(gb, n);
-                                    coef[coef_tmp_idx + j] *= cbrtf(n) * n;
-                                }else
-                                    coef[coef_tmp_idx + j] *= vq_ptr[j];
+                            if (cur_band_type == ESC_BT) {
+                                for (j = 0; j < 2; j++) {
+                                    if (vq_ptr[j] == 64.0f) {
+                                        int n = 4;
+                                        /* The total length of escape_sequence must be < 22 bits according
+                                           to the specification (i.e. max is 11111111110xxxxxxxxxx). */
+                                        while (get_bits1(gb) && n < 15) n++;
+                                        if(n == 15) {
+                                            av_log(ac->avccontext, AV_LOG_ERROR, "error in spectral data, ESC overflow\n");
+                                            return -1;
+                                        }
+                                        n = (1<<n) + get_bits(gb, n);
+                                        coef[coef_tmp_idx + j] *= cbrtf(n) * n;
+                                    }else
+                                        coef[coef_tmp_idx + j] *= vq_ptr[j];
+                                }
+                            }else
+                            {
+                                coef[coef_tmp_idx    ] *= vq_ptr[0];
+                                coef[coef_tmp_idx + 1] *= vq_ptr[1];
+                                if (dim == 4) {
+                                    coef[coef_tmp_idx + 2] *= vq_ptr[2];
+                                    coef[coef_tmp_idx + 3] *= vq_ptr[3];
+                                }
                             }
-                        }else
-                        {
-                            coef[coef_tmp_idx    ] *= vq_ptr[0];
-                            coef[coef_tmp_idx + 1] *= vq_ptr[1];
-                            if (dim == 4) {
-                                coef[coef_tmp_idx + 2] *= vq_ptr[2];
-                                coef[coef_tmp_idx + 3] *= vq_ptr[3];
-                            }
-                        }
                         }else {
                             coef[coef_tmp_idx    ] = vq_ptr[0];
                             coef[coef_tmp_idx + 1] = vq_ptr[1];
