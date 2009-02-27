@@ -7491,6 +7491,11 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             if((err = decode_slice_header(hx, h)))
                break;
 
+            if (s->avctx->hwaccel && h->current_slice == 1) {
+                if (s->avctx->hwaccel->start_frame(s->avctx, NULL, 0) < 0)
+                    return -1;
+            }
+
             s->current_picture_ptr->key_frame |=
                     (hx->nal_unit_type == NAL_IDR_SLICE) ||
                     (h->sei_recovery_frame_cnt >= 0);
@@ -7714,6 +7719,11 @@ static int decode_frame(AVCodecContext *avctx,
         }
         h->prev_frame_num_offset= h->frame_num_offset;
         h->prev_frame_num= h->frame_num;
+
+        if (avctx->hwaccel) {
+            if (avctx->hwaccel->end_frame(avctx) < 0)
+                av_log(avctx, AV_LOG_ERROR, "hardware accelerator failed to decode picture\n");
+        }
 
         if (CONFIG_H264_VDPAU_DECODER && s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
             ff_vdpau_h264_picture_complete(s);
@@ -8105,7 +8115,7 @@ AVCodec h264_decoder = {
     /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
-    .pix_fmts= ff_pixfmt_list_420,
+    .pix_fmts= ff_hwaccel_pixfmt_list_420,
 };
 
 #if CONFIG_H264_VDPAU_DECODER
