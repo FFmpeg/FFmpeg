@@ -68,6 +68,7 @@ hiegrep '& *[a-zA-Z0-9_]* *\[ *0 *\]' 'useless & [0]' $*
 hiegrep '(\( *[0-9] *(&&|\|\|)|(&&|\|\|) *[0-9] *\))' 'overriding condition' $*
 hiegrep '(:\+|,|;)( *|static|\*)*'"$ERE_PRITYP"' *\*( |\*)*(src|source|input|in[^a-z])' 'missing const?' $*
 hiegrep '(:\+|,|;)( *|static|\*)*'"$ERE_PRITYP"' *(src|source|input|in)([0-9A-Z_][0-9A-Za-z_]*){1,} *\[' 'missing const (test2)?' $*
+hiegrep ' *static *'"$ERE_FUNCS"'[^)]*\);' 'static prototype, maybe you should reorder your functions' $*
 
 hiegrep2 '\.long_name *=' 'NULL_IF_CONFIG_SMAL' 'missing NULL_IF_CONFIG_SMAL' $*
 
