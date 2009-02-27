@@ -1216,7 +1216,7 @@ static enum PixelFormat mpeg_get_pixelformat(AVCodecContext *avctx){
             return PIX_FMT_VDPAU_MPEG2;
     }else{
         if(s->chroma_format <  2)
-            return avctx->get_format(avctx,ff_pixfmt_list_420);
+            return avctx->get_format(avctx,ff_hwaccel_pixfmt_list_420);
         else if(s->chroma_format == 2)
             return PIX_FMT_YUV422P;
         else
@@ -1704,6 +1704,19 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
 
     s->mb_x=0;
 
+    if (avctx->hwaccel) {
+        const uint8_t *buf_end, *buf_start = *buf - 4; /* include start_code */
+        int start_code = -1;
+        buf_end = ff_find_start_code(buf_start + 2, *buf + buf_size, &start_code);
+        if (buf_end < *buf + buf_size)
+            buf_end -= 4;
+        s->mb_y = mb_y;
+        if (avctx->hwaccel->decode_slice(avctx, buf_start, buf_end - buf_start) < 0)
+            return DECODE_SLICE_ERROR;
+        *buf = buf_end;
+        return DECODE_SLICE_OK;
+    }
+
     for(;;) {
         int code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
         if (code < 0){
@@ -1921,6 +1934,11 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
 
     if (!s1->mpeg_enc_ctx_allocated || !s->current_picture_ptr)
         return 0;
+
+    if (s->avctx->hwaccel) {
+        if (s->avctx->hwaccel->end_frame(s->avctx) < 0)
+            av_log(avctx, AV_LOG_ERROR, "hardware accelerator failed to decode picture\n");
+    }
 
     if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration)
         ff_xvmc_field_end(s);
