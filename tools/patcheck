@@ -93,7 +93,7 @@ if test -e $TMP ; then
     cat $TMP
 fi
 
-egrep -B2 $OPT '^(\+|) *'"$ERE_TYPES" $* | egrep -A2 --color=always '(:|-)\+.*[^/]/(\*([^*]|$)|/([^/]|$))' > $TMP && echo -e "\n Non doxy comments"
+egrep -B2 $OPT '^(\+|) *('"$ERE_TYPES"'|# *define)' $* | egrep -A2 --color=always '(:|-)\+[^/]*/(\*([^*]|$)|/([^/]|$))' > $TMP && echo -e "\n Non doxy comments"
 cat $TMP
 
 rm $TMP
