@@ -2194,6 +2194,7 @@ int av_find_stream_info(AVFormatContext *ic)
                && tb_unreliable(st->codec) /*&&
                //FIXME we should not special-case MPEG-2, but this needs testing with non-MPEG-2 ...
                st->time_base.num*duration_sum[i]/duration_count[i]*101LL > st->time_base.den*/){
+                int num = 0;
                 double best_error= 2*av_q2d(st->time_base);
                 best_error= best_error*best_error*duration_count[i]*1000*12*30;
 
@@ -2203,9 +2204,12 @@ int av_find_stream_info(AVFormatContext *ic)
 //                        av_log(NULL, AV_LOG_ERROR, "%f %f\n", get_std_framerate(j) / 12.0/1001, error);
                     if(error < best_error){
                         best_error= error;
-                        av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, get_std_framerate(j), 12*1001, INT_MAX);
+                        num = get_std_framerate(j);
                     }
                 }
+                // do not increase frame rate by more than 1 % in order to match a standard rate.
+                if (num && (!st->r_frame_rate.num || (double)num/(12*1001) < 1.01 * av_q2d(st->r_frame_rate)))
+                    av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, num, 12*1001, INT_MAX);
             }
 
             if (!st->r_frame_rate.num){
