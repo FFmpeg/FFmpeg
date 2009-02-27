@@ -2006,6 +2006,7 @@ int av_find_stream_info(AVFormatContext *ic)
     AVStream *st;
     AVPacket pkt1, *pkt;
     int64_t last_dts[MAX_STREAMS];
+    int64_t duration_gcd[MAX_STREAMS]={0};
     int duration_count[MAX_STREAMS]={0};
     double (*duration_error)[MAX_STD_TIMEBASES];
     int64_t old_offset = url_ftell(ic->pb);
@@ -2128,6 +2129,9 @@ int av_find_stream_info(AVFormatContext *ic)
                     duration_error[index][i] += error*error;
                 }
                 duration_count[index]++;
+                // ignore the first 4 values, they might have some random jitter
+                if (duration_count[index] > 3)
+                    duration_gcd[index] = av_gcd(duration_gcd[index], duration);
             }
             if(last == AV_NOPTS_VALUE || duration_count[index]<=1)
                 last_dts[pkt->stream_index]= pkt->dts;
@@ -2181,6 +2185,11 @@ int av_find_stream_info(AVFormatContext *ic)
             if(st->codec->codec_id == CODEC_ID_RAWVIDEO && !st->codec->codec_tag && !st->codec->bits_per_coded_sample)
                 st->codec->codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
 
+            // the check for tb_unreliable() is not completely correct, since this is not about handling
+            // a unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
+            // ipmovie.c produces.
+            if (tb_unreliable(st->codec) && duration_count[i] > 15 && duration_gcd[i] > 1)
+                av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, st->time_base.den, st->time_base.num * duration_gcd[i], INT_MAX);
             if(duration_count[i]
                && tb_unreliable(st->codec) /*&&
                //FIXME we should not special-case MPEG-2, but this needs testing with non-MPEG-2 ...
