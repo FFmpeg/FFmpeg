@@ -76,7 +76,7 @@ hiegrep2 '\.long_name *=' 'NULL_IF_CONFIG_SMAL' 'missing NULL_IF_CONFIG_SMAL' $*
 
 hiegrep2 "$ERE_TYPES" '(static|av_|ff_|typedef|:\+[^a-zA-Z_])' 'Non static with no ff_/av_ prefix' $*
 
-hiegrep ':\+[^}]*else' 'missing } prior to else' $*
+hiegrep ':\+[^}#]*else' 'missing } prior to else' $*
 
 #FIXME this should print the previous statement maybe
 hiegrep ':\+  *{ *$' '{ should be on the same line as the related previous statement' $*
