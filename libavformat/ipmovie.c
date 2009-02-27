@@ -40,6 +40,7 @@
 #define DEBUG_IPMOVIE 0
 
 #if DEBUG_IPMOVIE
+#undef printf
 #define debug_ipmovie printf
 #else
 static inline void debug_ipmovie(const char *format, ...) { }
