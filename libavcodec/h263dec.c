@@ -161,8 +161,12 @@ static int decode_slice(MpegEncContext *s){
 
     ff_set_qscale(s, s->qscale);
 
-    if (s->avctx->hwaccel)
-        return 0;
+    if (s->avctx->hwaccel) {
+        const uint8_t *start= s->gb.buffer + get_bits_count(&s->gb)/8;
+        const uint8_t *end  = ff_h263_find_resync_marker(start + 1, s->gb.buffer_end);
+        skip_bits_long(&s->gb, 8*(end - start));
+        return s->avctx->hwaccel->decode_slice(s->avctx, start, end - start);
+    }
 
     if(s->partitioned_frame){
         const int qscale= s->qscale;
@@ -616,6 +620,11 @@ retry:
 
     if(MPV_frame_start(s, avctx) < 0)
         return -1;
+
+    if (avctx->hwaccel) {
+        if (avctx->hwaccel->start_frame(avctx, buf, buf_size) < 0)
+            return -1;
+    }
 
 #ifdef DEBUG
     av_log(avctx, AV_LOG_DEBUG, "qscale=%d\n", s->qscale);
