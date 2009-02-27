@@ -869,7 +869,7 @@ static void do_video_out(AVFormatContext *s,
             ost->sync_opts= lrintf(get_sync_ipts(ost) / av_q2d(enc->time_base));
         else if (vdelta > 1.1)
             nb_frames = lrintf(vdelta);
-//fprintf(stderr, "vdelta:%f, ost->sync_opts:%"PRId64", ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, ost->sync_ipts, nb_frames);
+//fprintf(stderr, "vdelta:%f, ost->sync_opts:%"PRId64", ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, get_sync_ipts(ost), nb_frames);
         if (nb_frames == 0){
             ++nb_frames_drop;
             if (verbose>2)
