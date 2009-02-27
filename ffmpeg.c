@@ -865,9 +865,12 @@ static void do_video_out(AVFormatContext *s,
         //FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (vdelta < -1.1)
             nb_frames = 0;
-        else if (video_sync_method == 2 || (video_sync_method<0 && (s->oformat->flags & AVFMT_VARIABLE_FPS)))
+        else if (video_sync_method == 2 || (video_sync_method<0 && (s->oformat->flags & AVFMT_VARIABLE_FPS))){
+            if(vdelta<=-0.6){
+                nb_frames=0;
+            }else if(vdelta>0.6)
             ost->sync_opts= lrintf(get_sync_ipts(ost) / av_q2d(enc->time_base));
-        else if (vdelta > 1.1)
+        }else if (vdelta > 1.1)
             nb_frames = lrintf(vdelta);
 //fprintf(stderr, "vdelta:%f, ost->sync_opts:%"PRId64", ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, get_sync_ipts(ost), nb_frames);
         if (nb_frames == 0){
