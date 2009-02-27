@@ -273,6 +273,13 @@ const char *sws_format_name(int format);
         || (x)==PIX_FMT_MONOBLACK   \
         || (x)==PIX_FMT_MONOWHITE   \
     )
+#define isALPHA(x)      (           \
+           (x)==PIX_FMT_BGR32       \
+        || (x)==PIX_FMT_BGR32_1     \
+        || (x)==PIX_FMT_RGB32       \
+        || (x)==PIX_FMT_RGB32_1     \
+        || (x)==PIX_FMT_YUVA420P    \
+    )
 
 static inline int fmt_depth(int fmt)
 {
