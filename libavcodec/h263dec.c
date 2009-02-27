@@ -740,7 +740,7 @@ AVCodec mpeg4_decoder = {
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
-    .pix_fmts= ff_pixfmt_list_420,
+    .pix_fmts= ff_hwaccel_pixfmt_list_420,
 };
 
 AVCodec h263_decoder = {
@@ -755,7 +755,7 @@ AVCodec h263_decoder = {
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
     .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996, H.263+ / H.263-1998"),
-    .pix_fmts= ff_pixfmt_list_420,
+    .pix_fmts= ff_hwaccel_pixfmt_list_420,
 };
 
 AVCodec msmpeg4v1_decoder = {
