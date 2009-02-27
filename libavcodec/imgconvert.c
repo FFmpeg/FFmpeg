@@ -419,6 +419,20 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .depth = 8,
         .x_chroma_shift = 0, .y_chroma_shift = 0,
     },
+
+    /* VA API formats */
+    [PIX_FMT_VAAPI_MOCO] = {
+        .name = "vaapi_moco",
+        .is_hwaccel = 1,
+    },
+    [PIX_FMT_VAAPI_IDCT] = {
+        .name = "vaapi_idct",
+        .is_hwaccel = 1,
+    },
+    [PIX_FMT_VAAPI_VLD] = {
+        .name = "vaapi_vld",
+        .is_hwaccel = 1,
+    },
 };
 
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift)
