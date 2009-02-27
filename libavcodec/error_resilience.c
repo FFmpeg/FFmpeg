@@ -621,6 +621,9 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int en
     const int end_xy  = s->mb_index2xy[end_i];
     int mask= -1;
 
+    if(s->avctx->hwaccel)
+        return;
+
     if(start_i > end_i || start_xy > end_xy){
         av_log(s->avctx, AV_LOG_ERROR, "internal error, slice end before start\n");
         return;
