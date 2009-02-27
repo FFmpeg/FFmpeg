@@ -93,8 +93,7 @@ typedef struct IPMVEContext {
     unsigned char *buf;
     int buf_size;
 
-    float fps;
-    int frame_pts_inc;
+    uint64_t frame_pts_inc;
 
     unsigned int video_width;
     unsigned int video_height;
@@ -126,7 +125,6 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
     AVPacket *pkt) {
 
     int chunk_type;
-    int64_t audio_pts = 0;
 
     if (s->audio_chunk_offset) {
 
@@ -139,16 +137,11 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
         url_fseek(pb, s->audio_chunk_offset, SEEK_SET);
         s->audio_chunk_offset = 0;
 
-        /* figure out the audio pts */
-        audio_pts = 90000;
-        audio_pts *= s->audio_frame_count;
-        audio_pts /= s->audio_sample_rate;
-
         if (s->audio_chunk_size != av_get_packet(pb, pkt, s->audio_chunk_size))
             return CHUNK_EOF;
 
         pkt->stream_index = s->audio_stream_index;
-        pkt->pts = audio_pts;
+        pkt->pts = s->audio_frame_count;
 
         /* audio frame maintenance */
         if (s->audio_type != CODEC_ID_INTERPLAY_DPCM)
@@ -159,7 +152,7 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
                 (s->audio_chunk_size - 6) / s->audio_channels;
 
         debug_ipmovie("sending audio frame with pts %"PRId64" (%d audio frames)\n",
-            audio_pts, s->audio_frame_count);
+            pkt->pts, s->audio_frame_count);
 
         chunk_type = CHUNK_VIDEO;
 
@@ -327,10 +320,9 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
                 chunk_type = CHUNK_BAD;
                 break;
             }
-            s->fps = 1000000.0 / (AV_RL32(&scratch[0]) * AV_RL16(&scratch[4]));
-            s->frame_pts_inc = 90000 / s->fps;
+            s->frame_pts_inc = ((uint64_t)AV_RL32(&scratch[0])) * AV_RL16(&scratch[4]);
             debug_ipmovie("  %.2f frames/second (timer div = %d, subdiv = %d)\n",
-                s->fps, AV_RL32(&scratch[0]), AV_RL16(&scratch[4]));
+                1000000.0/s->frame_pts_inc, AV_RL32(&scratch[0]), AV_RL16(&scratch[4]));
             break;
 
         case OPCODE_INIT_AUDIO_BUFFERS:
@@ -554,7 +546,7 @@ static int ipmovie_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 33, 1, 90000);
+    av_set_pts_info(st, 63, 1, 1000000);
     ipmovie->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_INTERPLAY_VIDEO;
@@ -569,7 +561,7 @@ static int ipmovie_read_header(AVFormatContext *s,
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR(ENOMEM);
-        av_set_pts_info(st, 33, 1, 90000);
+        av_set_pts_info(st, 32, 1, ipmovie->audio_sample_rate);
         ipmovie->audio_stream_index = st->index;
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = ipmovie->audio_type;
