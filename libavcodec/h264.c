@@ -2161,6 +2161,18 @@ static av_cold void common_init(H264Context *h){
     memset(h->pps.scaling_matrix8, 16, 2*64*sizeof(uint8_t));
 }
 
+/**
+ * Reset SEI values at the beginning of the frame.
+ *
+ * @param h H.264 context.
+ */
+static void reset_sei(H264Context *h) {
+    h->sei_recovery_frame_cnt       = -1;
+    h->sei_dpb_output_delay         =  0;
+    h->sei_cpb_removal_delay        = -1;
+    h->sei_buffering_period_present =  0;
+}
+
 static av_cold int decode_init(AVCodecContext *avctx){
     H264Context *h= avctx->priv_data;
     MpegEncContext * const s = &h->s;
@@ -2197,10 +2209,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     h->thread_context[0] = h;
     h->outputed_poc = INT_MIN;
     h->prev_poc_msb= 1<<16;
-    h->sei_recovery_frame_cnt = -1;
-    h->sei_dpb_output_delay = 0;
-    h->sei_cpb_removal_delay = -1;
-    h->sei_buffering_period_present = 0;
+    reset_sei(h);
     if(avctx->codec_id == CODEC_ID_H264)
         avctx->ticks_per_frame = 2;
     return 0;
@@ -3137,10 +3146,7 @@ static void flush_dpb(AVCodecContext *avctx){
     if(h->s.current_picture_ptr)
         h->s.current_picture_ptr->reference= 0;
     h->s.first_field= 0;
-    h->sei_recovery_frame_cnt = -1;
-    h->sei_dpb_output_delay = 0;
-    h->sei_cpb_removal_delay = -1;
-    h->sei_buffering_period_present = 0;
+    reset_sei(h);
     ff_mpeg_flush(avctx);
 }
 
@@ -7407,6 +7413,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
         h->current_slice = 0;
         if (!s->first_field)
             s->current_picture_ptr= NULL;
+        reset_sei(h);
     }
 
     for(;;){
@@ -7744,10 +7751,6 @@ static int decode_frame(AVCodecContext *avctx,
             ff_er_frame_end(s);
 
         MPV_frame_end(s);
-        h->sei_recovery_frame_cnt = -1;
-        h->sei_dpb_output_delay = 0;
-        h->sei_cpb_removal_delay = -1;
-        h->sei_buffering_period_present = 0;
 
         if (cur->field_poc[0]==INT_MAX || cur->field_poc[1]==INT_MAX) {
             /* Wait for second field. */
