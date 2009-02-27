@@ -1732,7 +1732,7 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     if (get_le32(pb) != MKTAG('d','c','o','m'))
         return -1;
     if (get_le32(pb) != MKTAG('z','l','i','b')) {
-        av_log(NULL, AV_LOG_ERROR, "unknown compression for cmov atom !");
+        av_log(c->fc, AV_LOG_ERROR, "unknown compression for cmov atom !");
         return -1;
     }
     get_be32(pb); /* cmvd atom */
