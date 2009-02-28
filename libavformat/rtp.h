@@ -46,6 +46,16 @@ int ff_rtp_get_payload_type(AVCodecContext *codec);
  * negative value is returned; otherwise, 0 is returned
  */
 int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type);
+
+/**
+ * Return the encoding name (as defined in
+ * http://www.iana.org/assignments/rtp-parameters) for a given payload type.
+ *
+ * @param payload_type The payload type (the 'PT' field in the RTP header)
+ * @return In case of unknown payload type or dynamic payload type, a pointer
+ * to an empty string is returned; otherwise, a pointer to a string containing
+ * the encoding name is returned
+ */
 const char *ff_rtp_enc_name(int payload_type);
 enum CodecID ff_rtp_codec_id(const char *buf, enum CodecType codec_type);
 
