@@ -46,6 +46,8 @@ unsigned avformat_version(void);
 
 #include "avio.h"
 
+struct AVFormatContext;
+
 
 /*
  * Public Metadata API.
@@ -77,6 +79,7 @@ typedef struct {
 }AVMetadataTag;
 
 typedef struct AVMetadata AVMetadata;
+typedef struct AVMetadataConv AVMetadataConv;
 
 /**
  * Gets a metadata element with matching key.
@@ -94,6 +97,15 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
  * @return >= 0 on success otherwise an error code <0
  */
 int av_metadata_set(AVMetadata **pm, const char *key, const char *value);
+
+/**
+ * Convert all the metadata sets from ctx according to the source and
+ * destination conversion tables.
+ * @param d_conv destination tags format conversion table
+ * @param s_conv source tags format conversion table
+ */
+void av_metadata_conv(struct AVFormatContext *ctx,const AVMetadataConv *d_conv,
+                                                  const AVMetadataConv *s_conv);
 
 /**
  * Frees all the memory allocated for an AVMetadata struct.
@@ -220,8 +232,6 @@ typedef struct AVFrac {
 
 struct AVCodecTag;
 
-struct AVFormatContext;
-
 /** This structure contains the data a format has to probe a file. */
 typedef struct AVProbeData {
     const char *filename;
@@ -298,6 +308,8 @@ typedef struct AVOutputFormat {
     const struct AVCodecTag * const *codec_tag;
 
     enum CodecID subtitle_codec; /**< default subtitle codec */
+
+    AVMetadataConv *metadata_conv;
 
     /* private fields */
     struct AVOutputFormat *next;
@@ -377,6 +389,8 @@ typedef struct AVInputFormat {
      * Active streams are all streams that have AVStream.discard < AVDISCARD_ALL.
      */
     int (*read_seek2)(struct AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
+
+    AVMetadataConv *metadata_conv;
 
     /* private fields */
     struct AVInputFormat *next;

@@ -35,6 +35,11 @@ struct AVMetadata{
     AVMetadataTag *elems;
 };
 
+struct AVMetadataConv{
+    const char *native;
+    const char *generic;
+};
+
 #if LIBAVFORMAT_VERSION_MAJOR < 53
 void ff_metadata_demux_compat(AVFormatContext *s);
 void ff_metadata_mux_compat(AVFormatContext *s);

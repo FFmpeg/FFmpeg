@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <strings.h>
+#include "avformat.h"
 #include "metadata.h"
 
 AVMetadataTag *
@@ -88,4 +90,51 @@ void av_metadata_free(AVMetadata **pm)
         av_free(m->elems);
     }
     av_freep(pm);
+}
+
+static void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
+                                           const AVMetadataConv *s_conv)
+{
+    /* TODO: use binary search to look up the two conversion tables
+       if the tables are getting big enough that it would matter speed wise */
+    const AVMetadataConv *s_conv1 = s_conv, *d_conv1 = d_conv, *sc, *dc;
+    AVMetadataTag *mtag = NULL;
+    AVMetadata *dst = NULL;
+    const char *key, *key2;
+
+    while((mtag=av_metadata_get(*pm, "", mtag, AV_METADATA_IGNORE_SUFFIX))) {
+        key = key2 = mtag->key;
+        if (s_conv != d_conv) {
+            if (!s_conv)
+                s_conv1 = (const AVMetadataConv[2]){{key,key}};
+            for (sc=s_conv1; sc->native; sc++)
+                if (!strcasecmp(key, sc->native)) {
+                    key2 = sc->generic;
+                    break;
+                }
+            if (!d_conv)
+                d_conv1 = (const AVMetadataConv[2]){{key2,key2}};
+            for (dc=d_conv1; dc->native; dc++)
+                if (!strcasecmp(key2, dc->generic)) {
+                    key = dc->native;
+                    break;
+                }
+        }
+        av_metadata_set(&dst, key, mtag->value);
+    }
+    av_metadata_free(pm);
+    *pm = dst;
+}
+
+void av_metadata_conv(AVFormatContext *ctx, const AVMetadataConv *d_conv,
+                                            const AVMetadataConv *s_conv)
+{
+    int i;
+    metadata_conv(&ctx->metadata, d_conv, s_conv);
+    for (i=0; i<ctx->nb_streams ; i++)
+        metadata_conv(&ctx->streams [i]->metadata, d_conv, s_conv);
+    for (i=0; i<ctx->nb_chapters; i++)
+        metadata_conv(&ctx->chapters[i]->metadata, d_conv, s_conv);
+    for (i=0; i<ctx->nb_programs; i++)
+        metadata_conv(&ctx->programs[i]->metadata, d_conv, s_conv);
 }
