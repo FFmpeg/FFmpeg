@@ -602,7 +602,7 @@ check_func_headers(){
         incs="$incs
 #include <$hdr>"
     done
-    check_ld "$@" <<EOF && enable $func
+    check_ld "$@" <<EOF && enable $func && enable_safe $headers
 $incs
 int main(int argc, char **argv){
     (void) $func;
