@@ -721,7 +721,7 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
                      unsigned char *dest, int dest_size)
 {
     const PixFmtInfo* pf = &pix_fmt_info[pix_fmt];
-    int i, j, w, h, data_planes;
+    int i, j, w, ow, h, oh, data_planes;
     const unsigned char* s;
     int size = avpicture_get_size(pix_fmt, width, height);
 
@@ -751,10 +751,16 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
         h = height;
     }
 
+    ow = w;
+    oh = h;
+
     for (i=0; i<data_planes; i++) {
          if (i == 1) {
              w = width >> pf->x_chroma_shift;
              h = height >> pf->y_chroma_shift;
+         } else if (i == 3) {
+             w = ow;
+             h = oh;
          }
          s = src->data[i];
          for(j=0; j<h; j++) {
