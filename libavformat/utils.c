@@ -2115,6 +2115,11 @@ int av_find_stream_info(AVFormatContext *ic)
             int64_t last= last_dts[index];
             int64_t duration= pkt->dts - last;
 
+            if (st->codec->ticks_per_frame == 2 &&
+                st->parser &&
+                st->parser->repeat_pict == 0)
+                    duration *= 2;  // two fields are needed per frame
+
             if(pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && duration>0){
                 double dur= duration * av_q2d(st->time_base);
 
