@@ -325,6 +325,14 @@ disable_weak(){
     set_weak no $*
 }
 
+enable_safe(){
+    enable $(echo "$*" | sed 's/[^A-Za-z0-9_ ]/_/g')
+}
+
+disable_safe(){
+    disable $(echo "$*" | sed 's/[^A-Za-z0-9_ ]/_/g')
+}
+
 do_enable_deep(){
     for var; do
         enabled $var && continue
@@ -566,9 +574,7 @@ check_header(){
     log check_header "$@"
     header=$1
     shift
-    var=`echo $header | sed 's/[^A-Za-z0-9_]/_/g'`
-    disable $var
-    check_cpp "$@" <<EOF && enable $var
+    check_cpp "$@" <<EOF && enable_safe $header || disable_safe $header
 #include <$header>
 int x;
 EOF
