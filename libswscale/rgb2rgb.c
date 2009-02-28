@@ -94,6 +94,7 @@ DECLARE_ASM_CONST(8, uint64_t, mmx_one)      = 0xFFFFFFFFFFFFFFFFULL;
 DECLARE_ASM_CONST(8, uint64_t, mask32b)      = 0x000000FF000000FFULL;
 DECLARE_ASM_CONST(8, uint64_t, mask32g)      = 0x0000FF000000FF00ULL;
 DECLARE_ASM_CONST(8, uint64_t, mask32r)      = 0x00FF000000FF0000ULL;
+DECLARE_ASM_CONST(8, uint64_t, mask32a)      = 0xFF000000FF000000ULL;
 DECLARE_ASM_CONST(8, uint64_t, mask32)       = 0x00FFFFFF00FFFFFFULL;
 DECLARE_ASM_CONST(8, uint64_t, mask3216br)   = 0x00F800F800F800F8ULL;
 DECLARE_ASM_CONST(8, uint64_t, mask3216g)    = 0x0000FC000000FC00ULL;
@@ -281,7 +282,7 @@ void rgb24to32(const uint8_t *src, uint8_t *dst, long src_size)
     {
         #ifdef WORDS_BIGENDIAN
             /* RGB24 (= R,G,B) -> BGR32 (= A,R,G,B) */
-            dst[4*i + 0] = 0;
+            dst[4*i + 0] = 255;
             dst[4*i + 1] = src[3*i + 0];
             dst[4*i + 2] = src[3*i + 1];
             dst[4*i + 3] = src[3*i + 2];
@@ -289,7 +290,7 @@ void rgb24to32(const uint8_t *src, uint8_t *dst, long src_size)
             dst[4*i + 0] = src[3*i + 2];
             dst[4*i + 1] = src[3*i + 1];
             dst[4*i + 2] = src[3*i + 0];
-            dst[4*i + 3] = 0;
+            dst[4*i + 3] = 255;
         #endif
     }
 }
@@ -305,7 +306,7 @@ void rgb16tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
         register uint16_t bgr;
         bgr = *s++;
         #ifdef WORDS_BIGENDIAN
-            *d++ = 0;
+            *d++ = 255;
             *d++ = (bgr&0x1F)<<3;
             *d++ = (bgr&0x7E0)>>3;
             *d++ = (bgr&0xF800)>>8;
@@ -313,7 +314,7 @@ void rgb16tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
             *d++ = (bgr&0xF800)>>8;
             *d++ = (bgr&0x7E0)>>3;
             *d++ = (bgr&0x1F)<<3;
-            *d++ = 0;
+            *d++ = 255;
         #endif
     }
 }
@@ -369,7 +370,7 @@ void rgb15tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
         register uint16_t bgr;
         bgr = *s++;
         #ifdef WORDS_BIGENDIAN
-            *d++ = 0;
+            *d++ = 255;
             *d++ = (bgr&0x1F)<<3;
             *d++ = (bgr&0x3E0)>>2;
             *d++ = (bgr&0x7C00)>>7;
@@ -377,7 +378,7 @@ void rgb15tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
             *d++ = (bgr&0x7C00)>>7;
             *d++ = (bgr&0x3E0)>>2;
             *d++ = (bgr&0x1F)<<3;
-            *d++ = 0;
+            *d++ = 255;
         #endif
     }
 }

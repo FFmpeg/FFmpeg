@@ -446,7 +446,7 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
 
         YUV2RGB_INIT
         YUV2RGB
-        "pxor      %%mm3, %%mm3;"   /* zero mm3 */
+        "pcmpeqd   %%mm3, %%mm3;"   /* fill mm3 */
         RGB_PLANAR2PACKED32
 
     YUV2RGB_ENDLOOP(4)

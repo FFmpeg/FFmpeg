@@ -83,7 +83,7 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long s
     #if HAVE_MMX
         __asm__ volatile(PREFETCH"    %0"::"m"(*s):"memory");
         mm_end = end - 23;
-        __asm__ volatile("movq        %0, %%mm7"::"m"(mask32):"memory");
+        __asm__ volatile("movq        %0, %%mm7"::"m"(mask32a):"memory");
         while (s < mm_end)
         {
             __asm__ volatile(
@@ -96,10 +96,10 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long s
             "punpckldq   15%1, %%mm2    \n\t"
             "movd        18%1, %%mm3    \n\t"
             "punpckldq   21%1, %%mm3    \n\t"
-            "pand       %%mm7, %%mm0    \n\t"
-            "pand       %%mm7, %%mm1    \n\t"
-            "pand       %%mm7, %%mm2    \n\t"
-            "pand       %%mm7, %%mm3    \n\t"
+            "por        %%mm7, %%mm0    \n\t"
+            "por        %%mm7, %%mm1    \n\t"
+            "por        %%mm7, %%mm2    \n\t"
+            "por        %%mm7, %%mm3    \n\t"
             MOVNTQ"     %%mm0,   %0     \n\t"
             MOVNTQ"     %%mm1,  8%0     \n\t"
             MOVNTQ"     %%mm2, 16%0     \n\t"
@@ -117,7 +117,7 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long s
     {
     #ifdef WORDS_BIGENDIAN
         /* RGB24 (= R,G,B) -> RGB32 (= A,B,G,R) */
-        *dest++ = 0;
+        *dest++ = 255;
         *dest++ = s[2];
         *dest++ = s[1];
         *dest++ = s[0];
@@ -126,7 +126,7 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long s
         *dest++ = *s++;
         *dest++ = *s++;
         *dest++ = *s++;
-        *dest++ = 0;
+        *dest++ = 255;
     #endif
     }
 }
@@ -1265,7 +1265,7 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
         register uint16_t bgr;
         bgr = *s++;
 #ifdef WORDS_BIGENDIAN
-        *d++ = 0;
+        *d++ = 255;
         *d++ = (bgr&0x7C00)>>7;
         *d++ = (bgr&0x3E0)>>2;
         *d++ = (bgr&0x1F)<<3;
@@ -1273,7 +1273,7 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
         *d++ = (bgr&0x1F)<<3;
         *d++ = (bgr&0x3E0)>>2;
         *d++ = (bgr&0x7C00)>>7;
-        *d++ = 0;
+        *d++ = 255;
 #endif
 
 #endif
@@ -1339,7 +1339,7 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
         register uint16_t bgr;
         bgr = *s++;
 #ifdef WORDS_BIGENDIAN
-        *d++ = 0;
+        *d++ = 255;
         *d++ = (bgr&0xF800)>>8;
         *d++ = (bgr&0x7E0)>>3;
         *d++ = (bgr&0x1F)<<3;
@@ -1347,7 +1347,7 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
         *d++ = (bgr&0x1F)<<3;
         *d++ = (bgr&0x7E0)>>3;
         *d++ = (bgr&0xF800)>>8;
-        *d++ = 0;
+        *d++ = 255;
 #endif
     }
 }

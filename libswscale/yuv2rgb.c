@@ -533,7 +533,7 @@ av_cold int sws_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int
     uint8_t *y_table;
     uint16_t *y_table16;
     uint32_t *y_table32;
-    int i, base, rbase, gbase, bbase;
+    int i, base, rbase, gbase, bbase, abase;
     const int yoffs = fullRange ? 384 : 326;
 
     int64_t crv =  inv_table[0];
@@ -659,12 +659,13 @@ av_cold int sws_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int
         rbase = base + (isRgb ? 16 : 0);
         gbase = base + 8;
         bbase = base + (isRgb ? 0 : 16);
+        abase = (c->dstFormat == PIX_FMT_RGBA || c->dstFormat == PIX_FMT_BGRA) ? 24 : 0;
         c->yuvTable = av_malloc(1024*3*4);
         y_table32 = c->yuvTable;
         yb = -(384<<16) - oy;
         for (i = 0; i < 1024; i++) {
             uint8_t yval = av_clip_uint8((yb + 0x8000) >> 16);
-            y_table32[i     ] = yval << rbase;
+            y_table32[i     ] = (yval << rbase) + (255 << abase);
             y_table32[i+1024] = yval << gbase;
             y_table32[i+2048] = yval << bbase;
             yb += cy;
