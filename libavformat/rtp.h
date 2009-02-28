@@ -57,6 +57,15 @@ int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type);
  * the encoding name is returned
  */
 const char *ff_rtp_enc_name(int payload_type);
+
+/**
+ * Return the codec id for the given encoding name and codec type.
+ *
+ * @param buf A pointer to the string containing the encoding name
+ * @param codec_type The codec type
+ * @return In case of unknown encoding name, CODEC_ID_NONE is returned;
+ * otherwise, the codec id is returned
+ */
 enum CodecID ff_rtp_codec_id(const char *buf, enum CodecType codec_type);
 
 #define RTP_PT_PRIVATE 96
