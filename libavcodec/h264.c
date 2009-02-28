@@ -2210,8 +2210,12 @@ static av_cold int decode_init(AVCodecContext *avctx){
     h->outputed_poc = INT_MIN;
     h->prev_poc_msb= 1<<16;
     reset_sei(h);
-    if(avctx->codec_id == CODEC_ID_H264)
+    if(avctx->codec_id == CODEC_ID_H264){
+        if(avctx->ticks_per_frame == 1){
+            s->avctx->time_base.den *=2;
+        }
         avctx->ticks_per_frame = 2;
+    }
     return 0;
 }
 
@@ -3776,9 +3780,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 s->avctx->time_base.den *= 2;
             av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,
                       s->avctx->time_base.num, s->avctx->time_base.den, 1<<30);
-        }else if(!h->sps.time_scale && !s->avctx->frame_number){
-            s->avctx->time_base.den *=2;
-            h->sps.time_scale= s->avctx->time_base.den;
         }
     }
 
