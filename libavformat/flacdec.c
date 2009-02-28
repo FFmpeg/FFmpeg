@@ -36,14 +36,14 @@ static int flac_read_header(AVFormatContext *s,
     st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
 
-        /* skip ID3v2 header if found */
-        ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
-        if (ret == ID3v2_HEADER_SIZE && ff_id3v2_match(buf)) {
-            int len = ff_id3v2_tag_len(buf);
-            url_fseek(s->pb, len - ID3v2_HEADER_SIZE, SEEK_CUR);
-        } else {
-            url_fseek(s->pb, 0, SEEK_SET);
-        }
+    /* skip ID3v2 header if found */
+    ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
+    if (ret == ID3v2_HEADER_SIZE && ff_id3v2_match(buf)) {
+        int len = ff_id3v2_tag_len(buf);
+        url_fseek(s->pb, len - ID3v2_HEADER_SIZE, SEEK_CUR);
+    } else {
+        url_fseek(s->pb, 0, SEEK_SET);
+    }
     return 0;
 }
 
