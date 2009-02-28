@@ -41,7 +41,7 @@ int ff_rtp_get_payload_type(AVCodecContext *codec);
  * channels and sample_rate fields are also filled.
  *
  * @param codec The context of the codec
- * @param payload_type The the payload type (the 'PT' field in the RTP header)
+ * @param payload_type The payload type (the 'PT' field in the RTP header)
  * @return In case of unknown payload type or dynamic payload type, a
  * negative value is returned; otherwise, 0 is returned
  */
