@@ -33,6 +33,18 @@
  */
 int ff_rtp_get_payload_type(AVCodecContext *codec);
 
+/**
+ * Initialize a codec context based on the payload type.
+ *
+ * Fill the codec_type and codec_id fields of a codec context with
+ * information depending on the payload type; for audio codecs, the
+ * channels and sample_rate fields are also filled.
+ *
+ * @param codec The context of the codec
+ * @param payload_type The the payload type (the 'PT' field in the RTP header)
+ * @return In case of unknown payload type or dynamic payload type, a
+ * negative value is returned; otherwise, 0 is returned
+ */
 int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type);
 const char *ff_rtp_enc_name(int payload_type);
 enum CodecID ff_rtp_codec_id(const char *buf, enum CodecType codec_type);
