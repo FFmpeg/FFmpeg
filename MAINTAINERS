@@ -247,6 +247,7 @@ Muxers/Demuxers:
   dv.c                                  Roman Shaposhnik
   dxa.c                                 Kostya Shishkov
   ffm*                                  Baptiste Coudurier
+  flac*                                 Justin Ruggles
   flic.c                                Mike Melanson
   flvdec.c, flvenc.c                    Michael Niedermayer
   gxf.c                                 Reimar Doeffinger
