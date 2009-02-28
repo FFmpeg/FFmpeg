@@ -72,7 +72,7 @@ typedef struct MOVIndex {
     int         height; ///< active picture (w/o VBI) height for D-10/IMX
 } MOVTrack;
 
-typedef struct MOVContext {
+typedef struct MOVMuxContext {
     int     mode;
     int64_t time;
     int     nb_streams;
@@ -80,7 +80,7 @@ typedef struct MOVContext {
     uint64_t mdat_size;
     long    timescale;
     MOVTrack tracks[MAX_STREAMS];
-} MOVContext;
+} MOVMuxContext;
 
 //FIXME support 64 bit variant with wide placeholders
 static int64_t updateSize(ByteIOContext *pb, int64_t pos)
@@ -1111,7 +1111,7 @@ static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
 
 #if 0
 /* TODO: Not sorted out, but not necessary either */
-static int mov_write_iods_tag(ByteIOContext *pb, MOVContext *mov)
+static int mov_write_iods_tag(ByteIOContext *pb, MOVMuxContext *mov)
 {
     put_be32(pb, 0x15); /* size */
     put_tag(pb, "iods");
@@ -1125,7 +1125,7 @@ static int mov_write_iods_tag(ByteIOContext *pb, MOVContext *mov)
 }
 #endif
 
-static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
+static int mov_write_mvhd_tag(ByteIOContext *pb, MOVMuxContext *mov)
 {
     int maxTrackID = 1, i;
     int64_t maxTrackLenTemp, maxTrackLen = 0;
@@ -1183,7 +1183,7 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
     return 0x6c;
 }
 
-static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVContext *mov,
+static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVMuxContext *mov,
                                      AVFormatContext *s)
 {
     int64_t pos = url_ftell(pb);
@@ -1255,7 +1255,7 @@ static int mov_write_string_metadata(AVFormatContext *s, ByteIOContext *pb,
 }
 
 /* iTunes track number */
-static int mov_write_trkn_tag(ByteIOContext *pb, MOVContext *mov,
+static int mov_write_trkn_tag(ByteIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
     AVMetadataTag *t = av_metadata_get(s->metadata, "track", NULL, 0);
@@ -1282,7 +1282,7 @@ static int mov_write_trkn_tag(ByteIOContext *pb, MOVContext *mov,
 }
 
 /* iTunes meta data list */
-static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext *mov,
+static int mov_write_ilst_tag(ByteIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
     int64_t pos = url_ftell(pb);
@@ -1302,7 +1302,7 @@ static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext *mov,
 }
 
 /* iTunes meta data tag */
-static int mov_write_meta_tag(ByteIOContext *pb, MOVContext *mov,
+static int mov_write_meta_tag(ByteIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
     int size = 0;
@@ -1365,7 +1365,7 @@ static int mov_write_3gp_udta_tag(ByteIOContext *pb, AVFormatContext *s,
     return updateSize(pb, pos);
 }
 
-static int mov_write_udta_tag(ByteIOContext *pb, MOVContext *mov,
+static int mov_write_udta_tag(ByteIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
     ByteIOContext *pb_buf;
@@ -1464,7 +1464,7 @@ static int mov_write_uuidusmt_tag(ByteIOContext *pb, AVFormatContext *s)
     return 0;
 }
 
-static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
+static int mov_write_moov_tag(ByteIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
     int i;
@@ -1496,7 +1496,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
     return updateSize(pb, pos);
 }
 
-static int mov_write_mdat_tag(ByteIOContext *pb, MOVContext *mov)
+static int mov_write_mdat_tag(ByteIOContext *pb, MOVMuxContext *mov)
 {
     put_be32(pb, 8);    // placeholder for extended size field (64 bit)
     put_tag(pb, mov->mode == MODE_MOV ? "wide" : "free");
@@ -1510,7 +1510,7 @@ static int mov_write_mdat_tag(ByteIOContext *pb, MOVContext *mov)
 /* TODO: This needs to be more general */
 static int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 {
-    MOVContext *mov = s->priv_data;
+    MOVMuxContext *mov = s->priv_data;
     int64_t pos = url_ftell(pb);
     int has_h264 = 0, has_video = 0;
     int minor = 0x200;
@@ -1628,7 +1628,7 @@ static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
 static int mov_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
-    MOVContext *mov = s->priv_data;
+    MOVMuxContext *mov = s->priv_data;
     int i;
 
     if (url_is_streamed(s->pb)) {
@@ -1725,7 +1725,7 @@ static int mov_write_header(AVFormatContext *s)
 
 static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    MOVContext *mov = s->priv_data;
+    MOVMuxContext *mov = s->priv_data;
     ByteIOContext *pb = s->pb;
     MOVTrack *trk = &mov->tracks[pkt->stream_index];
     AVCodecContext *enc = trk->enc;
@@ -1812,7 +1812,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int mov_write_trailer(AVFormatContext *s)
 {
-    MOVContext *mov = s->priv_data;
+    MOVMuxContext *mov = s->priv_data;
     ByteIOContext *pb = s->pb;
     int res = 0;
     int i;
@@ -1852,7 +1852,7 @@ AVOutputFormat mov_muxer = {
     NULL_IF_CONFIG_SMALL("MOV format"),
     NULL,
     "mov",
-    sizeof(MOVContext),
+    sizeof(MOVMuxContext),
     CODEC_ID_AAC,
     CODEC_ID_MPEG4,
     mov_write_header,
@@ -1868,7 +1868,7 @@ AVOutputFormat tgp_muxer = {
     NULL_IF_CONFIG_SMALL("3GP format"),
     NULL,
     "3gp",
-    sizeof(MOVContext),
+    sizeof(MOVMuxContext),
     CODEC_ID_AMR_NB,
     CODEC_ID_H263,
     mov_write_header,
@@ -1884,7 +1884,7 @@ AVOutputFormat mp4_muxer = {
     NULL_IF_CONFIG_SMALL("MP4 format"),
     "application/mp4",
     "mp4",
-    sizeof(MOVContext),
+    sizeof(MOVMuxContext),
     CODEC_ID_AAC,
     CODEC_ID_MPEG4,
     mov_write_header,
@@ -1900,7 +1900,7 @@ AVOutputFormat psp_muxer = {
     NULL_IF_CONFIG_SMALL("PSP MP4 format"),
     NULL,
     "mp4,psp",
-    sizeof(MOVContext),
+    sizeof(MOVMuxContext),
     CODEC_ID_AAC,
     CODEC_ID_MPEG4,
     mov_write_header,
@@ -1916,7 +1916,7 @@ AVOutputFormat tg2_muxer = {
     NULL_IF_CONFIG_SMALL("3GP2 format"),
     NULL,
     "3g2",
-    sizeof(MOVContext),
+    sizeof(MOVMuxContext),
     CODEC_ID_AMR_NB,
     CODEC_ID_H263,
     mov_write_header,
@@ -1932,7 +1932,7 @@ AVOutputFormat ipod_muxer = {
     NULL_IF_CONFIG_SMALL("iPod H.264 MP4 format"),
     "application/mp4",
     "m4v,m4a",
-    sizeof(MOVContext),
+    sizeof(MOVMuxContext),
     CODEC_ID_AAC,
     CODEC_ID_H264,
     mov_write_header,
