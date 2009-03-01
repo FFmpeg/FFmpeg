@@ -659,7 +659,7 @@ av_cold int sws_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int
         rbase = base + (isRgb ? 16 : 0);
         gbase = base + 8;
         bbase = base + (isRgb ? 0 : 16);
-        abase = (c->dstFormat == PIX_FMT_RGBA || c->dstFormat == PIX_FMT_BGRA) ? 24 : 0;
+        abase = (base + 24) & 31;
         c->yuvTable = av_malloc(1024*3*4);
         y_table32 = c->yuvTable;
         yb = -(384<<16) - oy;
