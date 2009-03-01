@@ -2415,7 +2415,7 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int6
         dynarray_add(&s->chapters, &s->nb_chapters, chapter);
     }
     av_free(chapter->title);
-    chapter->title = av_strdup(title);
+    av_metadata_set(&chapter->metadata, "title", title);
     chapter->id    = id;
     chapter->time_base= time_base;
     chapter->start = start;
@@ -2808,14 +2808,15 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
     int flags = (is_output ? ic->oformat->flags : ic->iformat->flags);
     AVStream *st = ic->streams[i];
     int g = av_gcd(st->time_base.num, st->time_base.den);
+    AVMetadataTag *lang = av_metadata_get(st->metadata, "language", NULL, 0);
     avcodec_string(buf, sizeof(buf), st->codec, is_output);
     av_log(NULL, AV_LOG_INFO, "    Stream #%d.%d", index, i);
     /* the pid is an important information, so we display it */
     /* XXX: add a generic system */
     if (flags & AVFMT_SHOW_IDS)
         av_log(NULL, AV_LOG_INFO, "[0x%x]", st->id);
-    if (strlen(st->language) > 0)
-        av_log(NULL, AV_LOG_INFO, "(%s)", st->language);
+    if (lang)
+        av_log(NULL, AV_LOG_INFO, "(%s)", lang->value);
     av_log(NULL, AV_LOG_DEBUG, ", %d/%d", st->time_base.num/g, st->time_base.den/g);
     av_log(NULL, AV_LOG_INFO, ": %s", buf);
     if (st->sample_aspect_ratio.num && // default
@@ -2886,8 +2887,10 @@ void dump_format(AVFormatContext *ic,
     if(ic->nb_programs) {
         int j, k;
         for(j=0; j<ic->nb_programs; j++) {
+            AVMetadataTag *name = av_metadata_get(ic->programs[j]->metadata,
+                                                  "name", NULL, 0);
             av_log(NULL, AV_LOG_INFO, "  Program %d %s\n", ic->programs[j]->id,
-                   ic->programs[j]->name ? ic->programs[j]->name : "");
+                   name ? name->value : "");
             for(k=0; k<ic->programs[j]->nb_stream_indexes; k++)
                 dump_stream_format(ic, ic->programs[j]->stream_index[k], index, is_output);
          }
