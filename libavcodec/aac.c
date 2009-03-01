@@ -1075,11 +1075,9 @@ static void apply_intensity_stereo(ChannelElement * cpe, int ms_present) {
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_cpe(AACContext * ac, GetBitContext * gb, int elem_id) {
+static int decode_cpe(AACContext * ac, GetBitContext * gb, ChannelElement * cpe) {
     int i, ret, common_window, ms_present = 0;
-    ChannelElement * cpe;
 
-    cpe = ac->che[TYPE_CPE][elem_id];
     common_window = get_bits1(gb);
     if (common_window) {
         if (decode_ics_info(ac, &cpe->ch[0].ics, gb, 1))
@@ -1595,7 +1593,7 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
             break;
 
         case TYPE_CPE:
-            err = decode_cpe(ac, &gb, elem_id);
+            err = decode_cpe(ac, &gb, ac->che[TYPE_CPE][elem_id]);
             break;
 
         case TYPE_CCE:
