@@ -1437,10 +1437,12 @@ static int mov_read_meta(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_trkn(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
+    char track[16];
     get_be32(pb); // type
     get_be32(pb); // unknown
-    c->fc->track = get_be32(pb);
-    dprintf(c->fc, "%.4s %d\n", (char*)&atom.type, c->fc->track);
+    snprintf(track, sizeof(track), "%d", get_be32(pb));
+    av_metadata_set(&c->fc->metadata, "track", track);
+    dprintf(c->fc, "%.4s %s\n", (char*)&atom.type, track);
     return 0;
 }
 
