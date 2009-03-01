@@ -97,25 +97,23 @@ static void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
 {
     /* TODO: use binary search to look up the two conversion tables
        if the tables are getting big enough that it would matter speed wise */
-    const AVMetadataConv *s_conv1 = s_conv, *d_conv1 = d_conv, *sc, *dc;
+    const AVMetadataConv *sc, *dc;
     AVMetadataTag *mtag = NULL;
     AVMetadata *dst = NULL;
-    const char *key, *key2;
+    const char *key;
 
     while((mtag=av_metadata_get(*pm, "", mtag, AV_METADATA_IGNORE_SUFFIX))) {
-        key = key2 = mtag->key;
+        key = mtag->key;
         if (s_conv != d_conv) {
-            if (!s_conv)
-                s_conv1 = (const AVMetadataConv[2]){{key,key}};
-            for (sc=s_conv1; sc->native; sc++)
+            if (s_conv)
+                for (sc=s_conv; sc->native; sc++)
                 if (!strcasecmp(key, sc->native)) {
-                    key2 = sc->generic;
+                    key = sc->generic;
                     break;
                 }
-            if (!d_conv)
-                d_conv1 = (const AVMetadataConv[2]){{key2,key2}};
-            for (dc=d_conv1; dc->native; dc++)
-                if (!strcasecmp(key2, dc->generic)) {
+            if (d_conv)
+                for (dc=d_conv; dc->native; dc++)
+                    if (!strcasecmp(key, dc->generic)) {
                     key = dc->native;
                     break;
                 }
