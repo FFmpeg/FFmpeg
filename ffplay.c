@@ -1894,22 +1894,9 @@ static void stream_component_close(VideoState *is, int stream_index)
 
 static void dump_stream_info(const AVFormatContext *s)
 {
-    if (s->track != 0)
-        fprintf(stderr, "Track: %d\n", s->track);
-    if (s->title[0] != '\0')
-        fprintf(stderr, "Title: %s\n", s->title);
-    if (s->author[0] != '\0')
-        fprintf(stderr, "Author: %s\n", s->author);
-    if (s->copyright[0] != '\0')
-        fprintf(stderr, "Copyright: %s\n", s->copyright);
-    if (s->comment[0] != '\0')
-        fprintf(stderr, "Comment: %s\n", s->comment);
-    if (s->album[0] != '\0')
-        fprintf(stderr, "Album: %s\n", s->album);
-    if (s->year != 0)
-        fprintf(stderr, "Year: %d\n", s->year);
-    if (s->genre[0] != '\0')
-        fprintf(stderr, "Genre: %s\n", s->genre);
+    AVMetadataTag *tag = NULL;
+    while ((tag=av_metadata_get(s->metadata,"",tag,AV_METADATA_IGNORE_SUFFIX)))
+        fprintf(stderr, "%s: %s\n", tag->key, tag->value);
 }
 
 /* since we have only one decoding thread, we can use a global
