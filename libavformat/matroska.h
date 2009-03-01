@@ -23,6 +23,7 @@
 #define AVFORMAT_MATROSKA_H
 
 #include "libavcodec/avcodec.h"
+#include "metadata.h"
 
 /* EBML version supported */
 #define EBML_VERSION 1
@@ -235,5 +236,6 @@ typedef struct CodecMime{
 
 extern const CodecTags ff_mkv_codec_tags[];
 extern const CodecMime ff_mkv_mime_tags[];
+extern const AVMetadataConv ff_mkv_metadata_conv[];
 
 #endif /* AVFORMAT_MATROSKA_H */

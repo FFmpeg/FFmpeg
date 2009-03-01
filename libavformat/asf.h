@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include "avformat.h"
+#include "metadata.h"
 
 #define PACKET_SIZE 3200
 
@@ -156,6 +157,8 @@ extern const GUID ff_asf_ext_stream_embed_stream_header;
 extern const GUID ff_asf_ext_stream_audio_stream;
 extern const GUID ff_asf_metadata_header;
 extern const GUID ff_asf_my_guid;
+
+extern const AVMetadataConv ff_asf_metadata_conv[];
 
 #define ASF_PACKET_FLAG_ERROR_CORRECTION_PRESENT 0x80 //1000 0000
 

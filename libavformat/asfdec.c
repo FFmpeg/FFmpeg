@@ -1087,4 +1087,5 @@ AVInputFormat asf_demuxer = {
     asf_read_close,
     asf_read_seek,
     asf_read_pts,
+    .metadata_conv = ff_asf_metadata_conv,
 };

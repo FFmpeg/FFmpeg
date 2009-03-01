@@ -1839,4 +1839,5 @@ AVInputFormat matroska_demuxer = {
     matroska_read_packet,
     matroska_read_close,
     matroska_read_seek,
+    .metadata_conv = ff_mkv_metadata_conv,
 };

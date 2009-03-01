@@ -111,3 +111,15 @@ const GUID ff_asf_metadata_header = {
 const GUID ff_asf_my_guid = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
+
+
+const AVMetadataConv ff_asf_metadata_conv[] = {
+    { "AlbumArtist", "artist"    },
+    { "AlbumTitle" , "album"     },
+    { "Author"     , "author"    },
+    { "Genre"      , "genre"     },
+    { "Copyright"  , "copyright" },
+    { "TrackNumber", "track"     },
+    { "Year"       , "year"      },
+    { 0 }
+};

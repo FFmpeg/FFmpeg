@@ -309,7 +309,7 @@ typedef struct AVOutputFormat {
 
     enum CodecID subtitle_codec; /**< default subtitle codec */
 
-    AVMetadataConv *metadata_conv;
+    const AVMetadataConv *metadata_conv;
 
     /* private fields */
     struct AVOutputFormat *next;
@@ -390,7 +390,7 @@ typedef struct AVInputFormat {
      */
     int (*read_seek2)(struct AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
 
-    AVMetadataConv *metadata_conv;
+    const AVMetadataConv *metadata_conv;
 
     /* private fields */
     struct AVInputFormat *next;
