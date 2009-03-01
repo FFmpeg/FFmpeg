@@ -1721,6 +1721,7 @@ static int av_encode(AVFormatContext **output_files,
 
     /* for each output stream, we compute the right encoding parameters */
     for(i=0;i<nb_ostreams;i++) {
+        AVMetadataTag *lang;
         ost = ost_table[i];
         os = output_files[ost->file_index];
         ist = ist_table[ost->source_index];
@@ -1728,9 +1729,9 @@ static int av_encode(AVFormatContext **output_files,
         codec = ost->st->codec;
         icodec = ist->st->codec;
 
-        if (!ost->st->language[0])
-            av_strlcpy(ost->st->language, ist->st->language,
-                       sizeof(ost->st->language));
+        if ((lang=av_metadata_get(ist->st->metadata, "language", NULL, 0))
+            &&   !av_metadata_get(ost->st->metadata, "language", NULL, 0))
+            av_metadata_set(&ost->st->metadata, "language", lang->value);
 
         ost->st->disposition = ist->st->disposition;
 
@@ -3195,7 +3196,7 @@ static void new_audio_stream(AVFormatContext *oc)
     audio_enc->sample_rate = audio_sample_rate;
     audio_enc->time_base= (AVRational){1, audio_sample_rate};
     if (audio_language) {
-        av_strlcpy(st->language, audio_language, sizeof(st->language));
+        av_metadata_set(&st->metadata, "language", audio_language);
         av_free(audio_language);
         audio_language = NULL;
     }
@@ -3233,7 +3234,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
     nb_ocodecs++;
 
     if (subtitle_language) {
-        av_strlcpy(st->language, subtitle_language, sizeof(st->language));
+        av_metadata_set(&st->metadata, "language", subtitle_language);
         av_free(subtitle_language);
         subtitle_language = NULL;
     }
