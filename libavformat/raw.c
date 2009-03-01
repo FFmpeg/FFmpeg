@@ -278,13 +278,14 @@ static int video_read_header(AVFormatContext *s,
     /* for MJPEG, specify frame rate */
     /* for MPEG-4 specify it, too (most MPEG-4 streams do not have the fixed_vop_rate set ...)*/
     if (ap->time_base.num) {
-        av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
+        st->codec->time_base= ap->time_base;
     } else if ( st->codec->codec_id == CODEC_ID_MJPEG ||
                 st->codec->codec_id == CODEC_ID_MPEG4 ||
                 st->codec->codec_id == CODEC_ID_DIRAC ||
                 st->codec->codec_id == CODEC_ID_H264) {
-        av_set_pts_info(st, 64, 1, 25);
+        st->codec->time_base= (AVRational){1,25};
     }
+    av_set_pts_info(st, 64, 1, 1200000);
 
     return 0;
 }
