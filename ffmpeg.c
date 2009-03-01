@@ -172,12 +172,8 @@ static int64_t start_time = 0;
 static int64_t rec_timestamp = 0;
 static int64_t input_ts_offset = 0;
 static int file_overwrite = 0;
-static char *str_title = NULL;
-static char *str_author = NULL;
-static char *str_copyright = NULL;
-static char *str_comment = NULL;
-static char *str_genre = NULL;
-static char *str_album = NULL;
+static int metadata_count;
+static AVMetadataTag *metadata;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
 static int do_pkt_dump = 0;
@@ -1992,6 +1988,7 @@ static int av_encode(AVFormatContext **output_files,
     for (i=0;i<nb_meta_data_maps;i++) {
         AVFormatContext *out_file;
         AVFormatContext *in_file;
+        AVMetadataTag *mtag;
 
         int out_file_index = meta_data_maps[i].out_file;
         int in_file_index = meta_data_maps[i].in_file;
@@ -2009,14 +2006,12 @@ static int av_encode(AVFormatContext **output_files,
         out_file = output_files[out_file_index];
         in_file = input_files[in_file_index];
 
-        strcpy(out_file->title, in_file->title);
-        strcpy(out_file->author, in_file->author);
-        strcpy(out_file->copyright, in_file->copyright);
-        strcpy(out_file->comment, in_file->comment);
-        strcpy(out_file->album, in_file->album);
-        out_file->year = in_file->year;
-        out_file->track = in_file->track;
-        strcpy(out_file->genre, in_file->genre);
+
+        mtag=NULL;
+        while((mtag=av_metadata_get(in_file->metadata, "", mtag, AV_METADATA_IGNORE_SUFFIX)))
+            av_metadata_set(&out_file->metadata, mtag->key, mtag->value);
+        av_metadata_conv(out_file, out_file->oformat->metadata_conv,
+                                    in_file->iformat->metadata_conv);
     }
 
     /* open files and write file headers */
@@ -2544,6 +2539,24 @@ static void opt_frame_aspect_ratio(const char *arg)
         av_exit(1);
     }
     frame_aspect_ratio = ar;
+}
+
+static int opt_metadata(const char *opt, const char *arg)
+{
+    char *mid= strchr(arg, '=');
+
+    if(!mid){
+        fprintf(stderr, "Missing =\n");
+        av_exit(1);
+    }
+    *mid++= 0;
+
+    metadata_count++;
+    metadata= av_realloc(metadata, sizeof(*metadata)*metadata_count);
+    metadata[metadata_count-1].key  = av_strdup(arg);
+    metadata[metadata_count-1].value= av_strdup(mid);
+
+    return 0;
 }
 
 static void opt_qscale(const char *arg)
@@ -3339,18 +3352,11 @@ static void opt_output_file(const char *filename)
 
         oc->timestamp = rec_timestamp;
 
-        if (str_title)
-            av_strlcpy(oc->title, str_title, sizeof(oc->title));
-        if (str_author)
-            av_strlcpy(oc->author, str_author, sizeof(oc->author));
-        if (str_copyright)
-            av_strlcpy(oc->copyright, str_copyright, sizeof(oc->copyright));
-        if (str_comment)
-            av_strlcpy(oc->comment, str_comment, sizeof(oc->comment));
-        if (str_album)
-            av_strlcpy(oc->album, str_album, sizeof(oc->album));
-        if (str_genre)
-            av_strlcpy(oc->genre, str_genre, sizeof(oc->genre));
+        for(; metadata_count>0; metadata_count--){
+            av_metadata_set(&oc->metadata, metadata[metadata_count-1].key,
+                                           metadata[metadata_count-1].value);
+        }
+        av_metadata_conv(oc, oc->oformat->metadata_conv, NULL);
     }
 
     output_files[nb_output_files++] = oc;
@@ -3774,13 +3780,8 @@ static const OptionDef options[] = {
     { "ss", OPT_FUNC2 | HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
     { "itsoffset", OPT_FUNC2 | HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
     { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "stream:scale" },
-    { "title", HAS_ARG | OPT_STRING, {(void*)&str_title}, "set the title", "string" },
     { "timestamp", OPT_FUNC2 | HAS_ARG, {(void*)&opt_rec_timestamp}, "set the timestamp ('now' to set the current time)", "time" },
-    { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
-    { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
-    { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },
-    { "genre", HAS_ARG | OPT_STRING, {(void*)&str_genre}, "set the genre", "string" },
-    { "album", HAS_ARG | OPT_STRING, {(void*)&str_album}, "set the album", "string" },
+    { "metadata", OPT_FUNC2 | HAS_ARG, {(void*)&opt_metadata}, "add metadata", "string=string" },
     { "dframes", OPT_INT | HAS_ARG, {(void*)&max_frames[CODEC_TYPE_DATA]}, "set the number of data frames to record", "number" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark},
       "add timings for benchmarking" },
