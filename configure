@@ -574,7 +574,8 @@ check_header(){
     log check_header "$@"
     header=$1
     shift
-    check_cpp "$@" <<EOF && enable_safe $header || disable_safe $header
+    disable_safe $header
+    check_cpp "$@" <<EOF && enable_safe $header
 #include <$header>
 int x;
 EOF
