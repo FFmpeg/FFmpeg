@@ -200,7 +200,7 @@ static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
 
     block = ractx->adapt_cb + BUFFERSIZE - BLOCKSIZE;
 
-    add_wav(block, gain, cba_idx, m, buffer_a,
+    add_wav(block, gain, cba_idx, m, cba_idx? buffer_a: NULL,
             cb1_vects[cb1_idx], cb2_vects[cb2_idx]);
 
     memcpy(ractx->curr_sblock, ractx->curr_sblock + 40,
