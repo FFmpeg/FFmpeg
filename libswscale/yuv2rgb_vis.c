@@ -80,7 +80,7 @@
 
 
 
-// FIXME: must be changed to ste alpha to 255 instead of 0
+// FIXME: must be changed to set alpha to 255 instead of 0
 static int vis_420P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
   int y, out1, out2, out3, out4, out5, out6;
@@ -132,7 +132,7 @@ static int vis_420P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int s
   return srcSliceH;
 }
 
-// FIXME: must be changed to ste alpha to 255 instead of 0
+// FIXME: must be changed to set alpha to 255 instead of 0
 static int vis_422P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
   int y, out1, out2, out3, out4, out5, out6;
