@@ -1983,7 +1983,7 @@ static int decode_thread(void *arg)
             break;
         case CODEC_TYPE_SUBTITLE:
             if (wanted_subtitle_stream >= 0 && !video_disable &&
-                    (subtitle_index < 0 || wanted_subtitle_stream-- > 0))
+                    (subtitle_index < 0 || wanted_subtitle_stream-- >= 0))
                 subtitle_index = i;
             break;
         default:
