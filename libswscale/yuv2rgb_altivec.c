@@ -237,7 +237,7 @@ do {                                                                          \
         ((vector unsigned short)vec_max (x,((vector signed short) {0})), \
          (vector unsigned short)vec_max (y,((vector signed short) {0})))
 
-//#define out_pixels(a,b,c,ptr) vec_mstrgb32(__typeof__(a),((__typeof__ (a)){0}),a,a,a,ptr)
+//#define out_pixels(a,b,c,ptr) vec_mstrgb32(__typeof__(a),((__typeof__ (a)){255}),a,a,a,ptr)
 
 
 static inline void cvtyuvtoRGB (SwsContext *c,
@@ -438,10 +438,10 @@ static int altivec_##name (SwsContext *c,                               \
 }
 
 
-#define out_abgr(a,b,c,ptr)  vec_mstrgb32(__typeof__(a),((__typeof__ (a)){0}),c,b,a,ptr)
-#define out_bgra(a,b,c,ptr)  vec_mstrgb32(__typeof__(a),c,b,a,((__typeof__ (a)){0}),ptr)
-#define out_rgba(a,b,c,ptr)  vec_mstrgb32(__typeof__(a),a,b,c,((__typeof__ (a)){0}),ptr)
-#define out_argb(a,b,c,ptr)  vec_mstrgb32(__typeof__(a),((__typeof__ (a)){0}),a,b,c,ptr)
+#define out_abgr(a,b,c,ptr)  vec_mstrgb32(__typeof__(a),((__typeof__ (a)){255}),c,b,a,ptr)
+#define out_bgra(a,b,c,ptr)  vec_mstrgb32(__typeof__(a),c,b,a,((__typeof__ (a)){255}),ptr)
+#define out_rgba(a,b,c,ptr)  vec_mstrgb32(__typeof__(a),a,b,c,((__typeof__ (a)){255}),ptr)
+#define out_argb(a,b,c,ptr)  vec_mstrgb32(__typeof__(a),((__typeof__ (a)){255}),a,b,c,ptr)
 #define out_rgb24(a,b,c,ptr) vec_mstrgb24(a,b,c,ptr)
 #define out_bgr24(a,b,c,ptr) vec_mstbgr24(a,b,c,ptr)
 
