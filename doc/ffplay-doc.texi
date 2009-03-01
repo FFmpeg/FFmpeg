@@ -87,6 +87,21 @@ quality broadcast) it is necessary to change that. This option is mainly
 used for debugging purposes.
 @item -threads @var{count}
 Set the thread count.
+@item -ast @var{audio_stream_number}
+Select the desired audio stream number, counting from 0. The number
+refers to the list of all the input audio streams. If it is greater
+than the number of audio streams minus one, then the last one is
+selected, if it is negative the audio playback is disabled.
+@item -vst @var{video_stream_number}
+Select the desired video stream number, counting from 0. The number
+refers to the list of all the input video streams. If it is greater
+than the number of video streams minus one, then the last one is
+selected, if it is negative the video playback is disabled.
+@item -sst @var{subtitle_stream_number}
+Select the desired subtitle stream number, counting from 0. The number
+refers to the list of all the input subtitle streams. If it is greater
+than the number of subtitle streams minus one, then the last one is
+selected, if it is negative the subtitle rendering is disabled.
 @end table
 
 @section While playing
