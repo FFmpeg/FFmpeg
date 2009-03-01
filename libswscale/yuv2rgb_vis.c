@@ -80,6 +80,7 @@
 
 
 
+// FIXME: must be changed to ste alpha to 255 instead of 0
 static int vis_420P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
   int y, out1, out2, out3, out4, out5, out6;
@@ -131,6 +132,7 @@ static int vis_420P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int s
   return srcSliceH;
 }
 
+// FIXME: must be changed to ste alpha to 255 instead of 0
 static int vis_422P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
   int y, out1, out2, out3, out4, out5, out6;
@@ -196,11 +198,11 @@ SwsFunc sws_yuv2rgb_init_vis(SwsContext *c) {
     c->sparc_coeffs[4]=(((int16_t)c->vOffset*(int16_t)c->vrCoeff>>11) & 0xffff) * 0x0001000100010001ULL;
 
     if (c->dstFormat == PIX_FMT_RGB32 && c->srcFormat == PIX_FMT_YUV422P && (c->dstW & 7)==0) {
-        av_log(c, AV_LOG_INFO, "SPARC VIS accelerated YUV422P -> RGB32\n");
+        av_log(c, AV_LOG_INFO, "SPARC VIS accelerated YUV422P -> RGB32 (WARNING: alpha value is wrong)\n");
         return vis_422P_ARGB32;
     }
     else if (c->dstFormat == PIX_FMT_RGB32 && c->srcFormat == PIX_FMT_YUV420P && (c->dstW & 7)==0) {
-        av_log(c, AV_LOG_INFO, "SPARC VIS accelerated YUV420P -> RGB32\n");
+        av_log(c, AV_LOG_INFO, "SPARC VIS accelerated YUV420P -> RGB32 (WARNING: alpha value is wrong)\n");
         return vis_420P_ARGB32;
     }
     return NULL;
