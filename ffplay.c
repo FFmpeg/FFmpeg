@@ -1974,11 +1974,11 @@ static int decode_thread(void *arg)
         ic->streams[i]->discard = AVDISCARD_ALL;
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
-            if ((audio_index < 0 || wanted_audio_stream-- > 0) && !audio_disable)
+            if (wanted_audio_stream-- >= 0 && !audio_disable)
                 audio_index = i;
             break;
         case CODEC_TYPE_VIDEO:
-            if ((video_index < 0 || wanted_video_stream-- > 0) && !video_disable)
+            if (wanted_video_stream-- >= 0 && !video_disable)
                 video_index = i;
             break;
         case CODEC_TYPE_SUBTITLE:
