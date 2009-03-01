@@ -51,6 +51,7 @@ static int read_atom(AVFormatContext *s, Atom *atom)
 static int r3d_read_red1(AVFormatContext *s)
 {
     AVStream *st = av_new_stream(s, 0);
+    char filename[258];
     int tmp, tmp2;
 
     if (!st)
@@ -92,12 +93,11 @@ static int r3d_read_red1(AVFormatContext *s)
         av_set_pts_info(ast, 32, 1, st->time_base.den);
     }
 
-    st->filename = av_mallocz(258);
-    if (!st->filename)
-        return AVERROR(ENOMEM);
-    get_buffer(s->pb, st->filename, 257);
+    get_buffer(s->pb, filename, 257);
+    filename[sizeof(filename)-1] = 0;
+    av_metadata_set(&st->metadata, "filename", filename);
 
-    dprintf(s, "filename %s\n", st->filename);
+    dprintf(s, "filename %s\n", filename);
     dprintf(s, "resolution %dx%d\n", st->codec->width, st->codec->height);
     dprintf(s, "timescale %d\n", st->time_base.den);
     dprintf(s, "frame rate %d/%d\n",
