@@ -22,8 +22,8 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 30
-#define LIBAVFORMAT_VERSION_MICRO  1
+#define LIBAVFORMAT_VERSION_MINOR 31
+#define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -51,7 +51,6 @@ struct AVFormatContext;
 
 /*
  * Public Metadata API.
- * !!WARNING!! This is a work in progress. Don't use outside FFmpeg for now.
  * The metadata API allows libavformat to export metadata tags to a client
  * application using a sequence of key/value pairs.
  * Important concepts to keep in mind:

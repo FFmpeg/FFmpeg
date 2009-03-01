@@ -151,6 +151,7 @@ version <next>
 - NC (NC4600) cameras file demuxer
 - Gopher client support
 - MXF D-10 muxer
+- Generic metadata API
 
 version 0.4.9-pre1:
 
