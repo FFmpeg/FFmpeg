@@ -2188,6 +2188,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     // set defaults
 //    s->decode_mb= ff_h263_decode_mb;
     s->quarter_sample = 1;
+    if(!avctx->has_b_frames)
     s->low_delay= 1;
 
     if(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
