@@ -1515,10 +1515,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
                 return ret;
         }
         for(i=0;; i++) {
-            int ret;
-            do{
-                ret = av_read_frame(s, &pkt);
-            }while(ret == AVERROR(EAGAIN));
+            int ret = av_read_frame(s, &pkt);
             if(ret<0)
                 break;
             av_free_packet(&pkt);
@@ -1741,9 +1738,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
         if (i == ic->nb_streams)
             break;
 
-        do{
-            ret = av_read_packet(ic, pkt);
-        }while(ret == AVERROR(EAGAIN));
+        ret = av_read_packet(ic, pkt);
         if (ret != 0)
             break;
         read_size += pkt->size;
@@ -1768,9 +1763,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
         if (read_size >= DURATION_MAX_READ_SIZE)
             break;
 
-        do{
-            ret = av_read_packet(ic, pkt);
-        }while(ret == AVERROR(EAGAIN));
+        ret = av_read_packet(ic, pkt);
         if (ret != 0)
             break;
         read_size += pkt->size;
@@ -2079,8 +2072,6 @@ int av_find_stream_info(AVFormatContext *ic)
         /* NOTE: a new stream can be added there if no header in file
            (AVFMTCTX_NOHEADER) */
         ret = av_read_frame_internal(ic, &pkt1);
-        if(ret == AVERROR(EAGAIN))
-            continue;
         if (ret < 0) {
             /* EOF or error */
             ret = -1; /* we could not have all the codec parameters before EOF */
