@@ -443,5 +443,5 @@ AVCodec tta_decoder = {
     NULL,
     tta_decode_close,
     tta_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("True Audio"),
+    .long_name = NULL_IF_CONFIG_SMALL("True Audio (TTA)"),
 };

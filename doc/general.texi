@@ -309,6 +309,7 @@ following image formats are supported:
     @tab fourcc: AASC
 @item AVS (Audio Video Standard) video  @tab     @tab  X
     @tab Video encoding used by the Creature Shock game.
+@item Beam Software VB       @tab     @tab  X
 @item Bethesda VID video     @tab     @tab  X
     @tab Used in some games from Bethesda Softworks.
 @item Brute Force & Ignorance   @tab   @tab X
@@ -329,9 +330,9 @@ following image formats are supported:
     @tab supported through external libdirac/libschroedinger libraries
 @item DNxHD                  @tab   X @tab  X
     @tab aka SMPTE VC3
-@item Duck TrueMotion v1     @tab     @tab  X
+@item Duck TrueMotion 1.0   @tab     @tab  X
     @tab fourcc: DUCK
-@item Duck TrueMotion v2     @tab     @tab  X
+@item Duck TrueMotion 2.0    @tab     @tab  X
     @tab fourcc: TM20
 @item DV (Digital Video)     @tab  X  @tab  X
 @item Feeble Files/ScummVM DXA  @tab     @tab  X
@@ -405,12 +406,15 @@ following image formats are supported:
 @item RealVideo 3.0          @tab     @tab  X
     @tab still far from ideal
 @item RealVideo 4.0          @tab     @tab  X
-@item Renderware TXD         @tab     @tab  X
+@item Renderware TXD (TeXture Dictionary)  @tab     @tab  X
     @tab Texture dictionaries used by the Renderware Engine.
 @item RTjpeg                 @tab     @tab  X
     @tab Video encoding used in NuppelVideo files.
+@item Sierra VMD video       @tab     @tab  X
+    @tab Used in Sierra VMD files.
 @item Smacker video          @tab     @tab  X
     @tab Video encoding used in Smacker.
+@item SMPTE VC-1             @tab     @tab  X
 @item Snow                   @tab  X  @tab  X
     @tab experimental wavelet codec (fourcc: SNOW)
 @item Sony PlayStation MDEC (Motion DECoder)  @tab     @tab  X
@@ -420,25 +424,22 @@ following image formats are supported:
     @tab fourcc: SVQ3
 @item Sunplus MJPEG          @tab     @tab  X
     @tab fourcc: SP5X
-@item TechSmith Camtasia     @tab     @tab  X
+@item TechSmith Screen Capture Codec  @tab     @tab  X
     @tab fourcc: TSCC
 @item Theora                 @tab  E  @tab  X
     @tab encoding supported through external library libtheora
 @item Tiertex Seq video      @tab     @tab  X
     @tab Codec used in DOS CD-ROM FlashBack game.
-@item VC-1                   @tab     @tab  X
-@item VMD Video              @tab     @tab  X
-    @tab Used in Sierra VMD files.
 @item VMware Screen Codec / VMware Video  @tab     @tab  X
     @tab Codec used in videos captured by VMware.
 @item Westwood Studios VQA (Vector Quantized Animation) video  @tab     @tab  X
 @item Windows Media Video 8  @tab  X  @tab  X
+@item Windows Media Video 9  @tab     @tab  X
+    @tab not completely working
 @item Wing Commander III / Xan  @tab     @tab  X
     @tab Used in Wing Commander III .MVE files.
 @item Winnov WNV1            @tab     @tab  X
 @item WMV7                   @tab  X  @tab  X
-@item WMV9                   @tab     @tab  X
-    @tab not completely working
 @item YAMAHA SMAF            @tab  X  @tab  X
 @item ZLIB                   @tab  X  @tab  X
     @tab part of LCL, encoder experimental
@@ -542,6 +543,8 @@ following image formats are supported:
 @item Shorten                @tab     @tab  X
 @item Sierra Online DPCM     @tab     @tab  X
     @tab Used in Sierra Online game audio files.
+@item Sierra VMD audio       @tab     @tab  X
+    @tab Used in Sierra VMD files.
 @item Smacker audio          @tab     @tab  X
 @item SMJPEG IMA ADPCM       @tab     @tab  X
     @tab Used in certain Loki game ports.
