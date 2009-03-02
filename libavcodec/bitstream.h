@@ -713,9 +713,7 @@ static inline unsigned int show_bits_long(GetBitContext *s, int n){
     if(n<=17) return show_bits(s, n);
     else{
         GetBitContext gb= *s;
-        int ret= get_bits_long(s, n);
-        *s= gb;
-        return ret;
+        return get_bits_long(&gb, n);
     }
 }
 
