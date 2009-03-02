@@ -106,7 +106,7 @@ version 0.5:
 - Beam Software SIFF demuxer and decoder
 - libvorbis Vorbis decoding removed in favor of native decoder
 - IntraX8 (J-Frame) subdecoder for WMV2 and VC-1
-- Ogg (Vorbis only) muxer
+- Ogg (Vorbis and FLAC only) muxer
 - PC Paintbrush PCX decoder
 - Sun Rasterfile decoder
 - TechnoTrend PVA demuxer
