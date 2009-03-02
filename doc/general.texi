@@ -233,20 +233,33 @@ following image formats are supported:
 
 @multitable @columnfractions .4 .1 .1 .4
 @item Name @tab Encoding @tab Decoding @tab Comments
-@item .Y.U.V       @tab X @tab X @tab one raw file per component
-@item animated GIF @tab X @tab X @tab Only uncompressed GIFs are generated.
-@item JPEG         @tab X @tab X @tab Progressive JPEG is not supported.
-@item JPEG 2000    @tab   @tab E @tab decoding supported through external library libopenjpeg
-@item PAM          @tab X @tab X @tab PAM is a PNM extension with alpha support.
-@item PCX          @tab   @tab X @tab PC Paintbrush
+@item .Y.U.V       @tab X @tab X
+    @tab one raw file per component
+@item animated GIF @tab X @tab X
+    @tab Only uncompressed GIFs are generated.
+@item JPEG         @tab X @tab X
+    @tab Progressive JPEG is not supported.
+@item JPEG 2000    @tab   @tab E
+    @tab decoding supported through external library libopenjpeg
+@item PAM          @tab X @tab X
+    @tab PAM is a PNM extension with alpha support.
+@item PCX          @tab   @tab X
+    @tab PC Paintbrush
 @item PGM, PPM     @tab X @tab X
-@item PGMYUV       @tab X @tab X @tab PGM with U and V components in YUV 4:2:0
-@item PNG          @tab X @tab X @tab 2/4 bpp not supported yet
-@item PTX          @tab   @tab X @tab V.Flash PTX format
-@item RAS          @tab   @tab X @tab Sun Rasterfile
-@item SGI          @tab X @tab X @tab SGI RGB image format
-@item Targa        @tab   @tab X @tab Targa (.TGA) image format
-@item TIFF         @tab X @tab X @tab YUV, JPEG and some extension is not supported yet.
+@item PGMYUV       @tab X @tab X
+    @tab PGM with U and V components in YUV 4:2:0
+@item PNG          @tab X @tab X
+    @tab 2/4 bpp not supported yet
+@item PTX          @tab   @tab X
+    @tab V.Flash PTX format
+@item RAS          @tab   @tab X
+    @tab Sun Rasterfile
+@item SGI          @tab X @tab X
+    @tab SGI RGB image format
+@item Targa        @tab   @tab X
+    @tab Targa (.TGA) image format
+@item TIFF         @tab X @tab X
+    @tab YUV, JPEG and some extension is not supported yet.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
