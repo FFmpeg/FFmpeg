@@ -120,6 +120,7 @@ version 0.5:
 - RL2 demuxer / decoder
 - IFF demuxer
 - 8SVX audio decoder
+- non-recursive Makefiles
 - BFI demuxer
 - MAXIS EA XA (.xa) demuxer / decoder
 - BFI video decoder
