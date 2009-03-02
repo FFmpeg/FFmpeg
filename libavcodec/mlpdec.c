@@ -1047,6 +1047,6 @@ AVCodec mlp_decoder = {
     NULL,
     NULL,
     read_access_unit,
-    .long_name = NULL_IF_CONFIG_SMALL("Meridian Lossless Packing"),
+    .long_name = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)/TrueHD"),
 };
 

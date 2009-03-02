@@ -173,6 +173,6 @@ AVCodec adpcm_adx_decoder = {
     NULL,
     NULL,
     adx_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("SEGA CRI ADX"),
+    .long_name = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
 };
 

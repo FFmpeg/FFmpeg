@@ -657,7 +657,7 @@ static int mp3_write_trailer(struct AVFormatContext *s)
 #if CONFIG_MP3_DEMUXER
 AVInputFormat mp3_demuxer = {
     "mp3",
-    NULL_IF_CONFIG_SMALL("MPEG audio"),
+    NULL_IF_CONFIG_SMALL("MPEG audio layer 2/3"),
     0,
     mp3_read_probe,
     mp3_read_header,

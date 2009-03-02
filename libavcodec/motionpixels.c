@@ -359,5 +359,5 @@ AVCodec motionpixels_decoder = {
     mp_decode_end,
     mp_decode_frame,
     CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Motion Pixels Video"),
+    .long_name = NULL_IF_CONFIG_SMALL("Motion Pixels video"),
 };

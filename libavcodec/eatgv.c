@@ -336,5 +336,5 @@ AVCodec eatgv_decoder = {
     NULL,
     tgv_decode_end,
     tgv_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts TGV Video"),
+    .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts TGV video"),
 };

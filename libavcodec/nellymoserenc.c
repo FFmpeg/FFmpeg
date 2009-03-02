@@ -390,5 +390,5 @@ AVCodec nellymoser_encoder = {
     .encode = encode_frame,
     .close = encode_end,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
-    .long_name = NULL_IF_CONFIG_SMALL("Nellymoser Asao Codec"),
+    .long_name = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
 };
