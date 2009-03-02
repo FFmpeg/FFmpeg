@@ -237,12 +237,19 @@ following image formats are supported:
     @tab one raw file per component
 @item animated GIF @tab X @tab X
     @tab Only uncompressed GIFs are generated.
+@item BMP          @tab X @tab X
+    @tab Microsoft BMP image
 @item JPEG         @tab X @tab X
     @tab Progressive JPEG is not supported.
 @item JPEG 2000    @tab   @tab E
     @tab decoding supported through external library libopenjpeg
+@item JPEG-LS      @tab X @tab X
+@item LJPEG        @tab X @tab
+    @tab Lossless JPEG
 @item PAM          @tab X @tab X
     @tab PAM is a PNM extension with alpha support.
+@item PBM          @tab X @tab X
+    @tab Portable BitMap image
 @item PCX          @tab   @tab X
     @tab PC Paintbrush
 @item PGM          @tab X @tab X
