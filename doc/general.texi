@@ -463,11 +463,53 @@ following image formats are supported:
 
 @multitable @columnfractions .4 .1 .1 .4
 @item Name @tab Encoding @tab Decoding @tab Comments
-@item 4X Movie ADPCM         @tab     @tab  X
 @item 8SVX audio             @tab     @tab  X
 @item AAC                    @tab  E  @tab  X
     @tab encoding supported through external library libfaac
 @item AC-3                   @tab  X  @tab  X
+@item ADPCM 4X Movie         @tab     @tab  X
+@item ADPCM CDROM XA         @tab     @tab  X
+@item ADPCM Creative Technology @tab     @tab  X
+    @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
+@item ADPCM Electronic Arts  @tab     @tab  X
+    @tab Used in various EA titles.
+@item ADPCM Electronic Arts Maxis CDROM XS  @tab     @tab  X
+    @tab Used in Sim City 3000.
+@item ADPCM Electronic Arts R1  @tab     @tab  X
+@item ADPCM Electronic Arts R2  @tab     @tab  X
+@item ADPCM Electronic Arts R3  @tab     @tab  X
+@item ADPCM Electronic Arts XAS @tab     @tab  X
+@item ADPCM G.726            @tab  X  @tab  X
+@item ADPCM IMA AMV          @tab     @tab  X
+    @tab Used in AMV files
+@item ADPCM IMA Electronic Arts EACS  @tab     @tab  X
+@item ADPCM IMA Electronic Arts SEAD  @tab     @tab  X
+@item ADPCM IMA Funcom       @tab     @tab  X
+@item ADPCM IMA QuickTime    @tab  X  @tab  X
+@item ADPCM IMA Loki SDL MJPEG  @tab     @tab  X
+@item ADPCM IMA WAV          @tab  X  @tab  X
+@item ADPCM IMA Westwood     @tab     @tab  X
+@item ADPCM ISS IMA          @tab     @tab  X
+    @tab Used in FunCom games.
+@item ADPCM IMA Duck DK3     @tab     @tab  X
+    @tab Used in some Sega Saturn console games.
+@item ADPCM IMA Duck DK4     @tab     @tab  X
+    @tab Used in some Sega Saturn console games.
+@item ADPCM Microsoft        @tab  X  @tab  X
+@item ADPCM MS IMA           @tab  X  @tab  X
+@item ADPCM Nintendo Gamecube THP  @tab     @tab  X
+@item ADPCM QT IMA           @tab  X  @tab  X
+@item ADPCM SEGA CRI ADX     @tab  X  @tab  X
+    @tab Used in Sega Dreamcast games.
+@item ADPCM Shockwave Flash  @tab  X  @tab  X
+@item ADPCM SMJPEG IMA       @tab     @tab  X
+    @tab Used in certain Loki game ports.
+@item ADPCM Sound Blaster Pro 2-bit  @tab     @tab  X
+@item ADPCM Sound Blaster Pro 2.6-bit  @tab     @tab  X
+@item ADPCM Sound Blaster Pro 4-bit  @tab     @tab  X
+@item ADPCM Westwood Studios IMA @tab     @tab  X
+    @tab Used in Westwood Studios games like Command and Conquer.
+@item ADPCM Yamaha           @tab  X  @tab  X
 @item AMR-NB                 @tab  E  @tab  E
     @tab supported through external library libamrnb
 @item AMR-WB                 @tab  E  @tab  E
@@ -475,27 +517,15 @@ following image formats are supported:
 @item Apple lossless audio   @tab  X  @tab  X
     @tab QuickTime fourcc 'alac'
 @item Atrac 3                @tab     @tab  X
-@item CDROM XA ADPCM         @tab     @tab  X
 @item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
 @item COOK                   @tab     @tab  X
     @tab All versions except 5.1 are supported.
-@item Creative Technology ADPCM @tab     @tab  X
-    @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
 @item DCA (DTS Coherent Acoustics)  @tab     @tab  X
 @item DSP Group TrueSpeech   @tab     @tab  X
 @item DV audio               @tab     @tab  X
-@item Electronic Arts ADPCM  @tab     @tab  X
-    @tab Used in various EA titles.
-@item Electronic Arts Maxis CDROM XS ADPCM  @tab     @tab  X
-    @tab Used in Sim City 3000.
-@item Electronic Arts R1 ADPCM  @tab     @tab  X
-@item Electronic Arts R2 ADPCM  @tab     @tab  X
-@item Electronic Arts R3 ADPCM  @tab     @tab  X
-@item Electronic Arts XAS ADPCM @tab     @tab  X
 @item Enhanced AC-3          @tab     @tab  X
 @item FLAC (Free Lossless Audio Codec)  @tab  X  @tab  IX
-@item G.726 ADPCM            @tab  X  @tab  X
 @item G.729                  @tab     @tab  X
 @item GSM                    @tab  E  @tab  E
     @tab supported through external library libgsm
@@ -503,27 +533,11 @@ following image formats are supported:
     @tab supported through external library libgsm
 @item id RoQ DPCM            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
-@item IMA AMV ADPCM          @tab     @tab  X
-    @tab Used in AMV files
-@item IMA Electronic Arts EACS ADPCM  @tab     @tab  X
-@item IMA Electronic Arts SEAD ADPCM  @tab     @tab  X
-@item IMA Funcom ADPCM       @tab     @tab  X
-@item IMA QuickTime ADPCM    @tab  X  @tab  X
-@item IMA Loki SDL MJPEG ADPCM  @tab     @tab  X
-@item IMA WAV ADPCM          @tab  X  @tab  X
-@item IMA Westwood ADPCM     @tab     @tab  X
 @item IMC (Intel Music Coder)  @tab     @tab  X
 @item Interplay DPCM         @tab     @tab  X
     @tab Used in various Interplay computer games.
-@item ISS IMA ADPCM          @tab     @tab  X
-    @tab Used in FunCom games.
-@item IMA Duck DK3 ADPCM     @tab     @tab  X
-    @tab Used in some Sega Saturn console games.
-@item IMA Duck DK4 ADPCM     @tab     @tab  X
-    @tab Used in some Sega Saturn console games.
 @item MACE (Macintosh Audio Compression/Expansion) 3:1  @tab     @tab  X
 @item MACE (Macintosh Audio Compression/Expansion) 6:1  @tab     @tab  X
-@item Microsoft ADPCM        @tab  X  @tab  X
 @item MLP(Meridian Lossless Packing)/TrueHD  @tab     @tab  X
     @tab Used in DVD-Audio and Blu-Ray discs.
 @item Monkey's Audio         @tab     @tab  X
@@ -532,11 +546,9 @@ following image formats are supported:
 @item MP2 (MPEG audio layer 2)  @tab IX  @tab IX
 @item MP3 (MPEG audio layer 3)  @tab  E  @tab IX
     @tab encoding supported through external library LAME, ADU MP3 and MP3onMP4 also supported
-@item MS IMA ADPCM           @tab  X  @tab  X
 @item Musepack SV7           @tab     @tab  X
 @item Musepack SV8           @tab     @tab  X
 @item Nellymoser Asao        @tab  X  @tab  X
-@item Nintendo Gamecube THP ADPCM  @tab     @tab  X
 @item PCM A-law              @tab  X  @tab  X
 @item PCM mu-law             @tab  X  @tab  X
 @item PCM 16-bit little-endian planar  @tab     @tab  X
@@ -563,46 +575,34 @@ following image formats are supported:
 @item QCELP / PureVoice      @tab     @tab  X
 @item QDesign Music Codec 2  @tab     @tab  X
     @tab There are still some distortions.
-@item QT IMA ADPCM           @tab  X  @tab  X
 @item RealAudio 1.0 (14.4K)  @tab     @tab  X
     @tab Real 14400 bit/s codec
 @item RealAudio 2.0 (28.8K)  @tab     @tab  X
     @tab Real 28800 bit/s codec
 @item RealAudio 3.0 (dnet)   @tab IX  @tab  X
     @tab Real low bitrate AC-3 codec
-@item SEGA CRI ADX ADPCM     @tab  X  @tab  X
-    @tab Used in Sega Dreamcast games.
-@item Shockwave Flash ADPCM  @tab  X  @tab  X
 @item Shorten                @tab     @tab  X
 @item Sierra Online DPCM     @tab     @tab  X
     @tab Used in Sierra Online game audio files.
 @item Sierra VMD audio       @tab     @tab  X
     @tab Used in Sierra VMD files.
 @item Smacker audio          @tab     @tab  X
-@item SMJPEG IMA ADPCM       @tab     @tab  X
-    @tab Used in certain Loki game ports.
 @item Sol DPCM               @tab     @tab  X
 @item Sonic                  @tab  X  @tab  X
     @tab experimental codec
 @item Sonic lossless         @tab  X  @tab  X
     @tab experimental codec
-@item Sound Blaster Pro 2-bit ADPCM  @tab     @tab  X
-@item Sound Blaster Pro 2.6-bit ADPCM  @tab     @tab  X
-@item Sound Blaster Pro 4-bit ADPCM  @tab     @tab  X
 @item Speex                  @tab     @tab  E
     @tab supported through external library libspeex
 @item True Audio (TTA)       @tab     @tab  X
 @item Vorbis                 @tab  E  @tab  X
     @ A native but very primitive encoder exists.
 @item WavPack                @tab     @tab  X
-@item Westwood Studios IMA ADPCM @tab     @tab  X
-    @tab Used in Westwood Studios games like Command and Conquer.
 @item Westwood Audio (SND1)  @tab     @tab  X
 @item Windows Media Audio 1  @tab  X  @tab  X
 @item Windows Media Audio 2  @tab  X  @tab  X
 @item Xan DPCM               @tab     @tab  X
     @tab Used in Origin's Wing Commander IV AVI files.
-@item Yamaha ADPCM           @tab  X  @tab  X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
