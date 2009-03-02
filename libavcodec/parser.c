@@ -96,6 +96,8 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
             s->offset = s->next_frame_offset - s->cur_frame_offset[i];
             if(remove)
                 s->cur_frame_offset[i]= INT64_MAX;
+            if(s->cur_offset + off < s->cur_frame_end[i])
+                break;
         }
     }
 }
