@@ -260,14 +260,14 @@ following image formats are supported:
     @tab Portable PixelMap image
 @item PTX          @tab   @tab X
     @tab V.Flash PTX format
-@item RAS          @tab   @tab X
-    @tab Sun Rasterfile
 @item SGI          @tab X @tab X
     @tab SGI RGB image format
-@item Targa        @tab X @tab X
-    @tab Targa (.TGA) image format
+@item Sun Rasterfile  @tab   @tab X
+    @tab Sun RAS image format
 @item TIFF         @tab X @tab X
     @tab YUV, JPEG and some extension is not supported yet.
+@item Truevision Targa  @tab X @tab X
+    @tab Targa (.TGA) image format
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -284,17 +284,11 @@ following image formats are supported:
 @item 8SVX fibonacci         @tab     @tab  X
 @item American Laser Games MM  @tab    @tab X
     @tab Used in games like Mad Dog McCree.
-@item AMV                    @tab     @tab  X
+@item AMV Video              @tab     @tab  X
     @tab Used in Chinese MP3 players.
-@item Apple Animation        @tab  X  @tab  X
-    @tab fourcc: 'rle '
-@item Apple Graphics         @tab     @tab  X
-    @tab fourcc: 'smc '
 @item Apple MJPEG-B          @tab     @tab  X
 @item Apple QuickDraw        @tab     @tab  X
     @tab fourcc: qdrw
-@item Apple Video            @tab     @tab  X
-    @tab fourcc: rpza
 @item Asus v1                @tab  X  @tab  X
     @tab fourcc: ASV1
 @item Asus v2                @tab  X  @tab  X
@@ -361,7 +355,7 @@ following image formats are supported:
     @tab fourcc: ULTI
 @item id Cinematic video     @tab     @tab  X
     @tab Used in Quake II.
-@item id RoQ                 @tab  X  @tab  X
+@item id RoQ video           @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Intel H.263            @tab     @tab  X
 @item Intel Indeo 2          @tab     @tab  X
@@ -402,9 +396,16 @@ following image formats are supported:
     @tab fourcc: VP60,VP61,VP62
 @item planar RGB             @tab     @tab  X
     @tab fourcc: 8BPS
-@item QPEG                   @tab     @tab  X
+@item Q-team QPEG            @tab     @tab  X
     @tab fourccs: QPEG, Q1.0, Q1.1
 @item QuickTime 8BPS video   @tab     @tab  X
+@item QuickTime Animation (RLE) video  @tab  X  @tab  X
+    @tab fourcc: 'rle '
+@item QuickTime Graphics (SMC)  @tab     @tab  X
+    @tab fourcc: 'smc '
+@item QuickTime video (RPZA) @tab     @tab  X
+    @tab fourcc: rpza
+@item Raw Video              @tab  X  @tab  X
 @item RealVideo 1.0          @tab  X  @tab  X
 @item RealVideo 2.0          @tab  X  @tab  X
 @item RealVideo 3.0          @tab     @tab  X
@@ -412,6 +413,8 @@ following image formats are supported:
 @item RealVideo 4.0          @tab     @tab  X
 @item Renderware TXD (TeXture Dictionary)  @tab     @tab  X
     @tab Texture dictionaries used by the Renderware Engine.
+@item RL2 video              @tab     @tab  X
+    @tab used in some games by Entertainment Software Partners
 @item RTjpeg                 @tab     @tab  X
     @tab Video encoding used in NuppelVideo files.
 @item Sierra VMD video       @tab     @tab  X
@@ -422,17 +425,17 @@ following image formats are supported:
 @item Snow                   @tab  X  @tab  X
     @tab experimental wavelet codec (fourcc: SNOW)
 @item Sony PlayStation MDEC (Motion DECoder)  @tab     @tab  X
-@item Sorenson Video 1       @tab  X  @tab  X
+@item Sorenson Vector Quantizer 1  @tab  X  @tab  X
     @tab fourcc: SVQ1
-@item Sorenson Video 3       @tab     @tab  X
+@item Sorenson Vector Quantizer 3  @tab     @tab  X
     @tab fourcc: SVQ3
-@item Sunplus MJPEG          @tab     @tab  X
+@item Sunplus JPEG (SP5X)    @tab     @tab  X
     @tab fourcc: SP5X
 @item TechSmith Screen Capture Codec  @tab     @tab  X
     @tab fourcc: TSCC
 @item Theora                 @tab  E  @tab  X
     @tab encoding supported through external library libtheora
-@item Tiertex Seq video      @tab     @tab  X
+@item Tiertex Limited SEQ video  @tab     @tab  X
     @tab Codec used in DOS CD-ROM FlashBack game.
 @item VMware Screen Codec / VMware Video  @tab     @tab  X
     @tab Codec used in videos captured by VMware.
@@ -535,14 +538,14 @@ following image formats are supported:
 @item Nellymoser ASAO        @tab  X  @tab  X
 @item Nintendo Gamecube THP ADPCM  @tab     @tab  X
 @item QCELP / PureVoice      @tab     @tab  X
-@item Qdesign QDM2           @tab     @tab  X
+@item QDesign Music Codec 2  @tab     @tab  X
     @tab There are still some distortions.
 @item QT IMA ADPCM           @tab  X  @tab  X
-@item RA144                  @tab     @tab  X
+@item RealAudio 1.0 (14.4K)  @tab     @tab  X
     @tab Real 14400 bit/s codec
-@item RA288                  @tab     @tab  X
+@item RealAudio 2.0 (28.8K)  @tab     @tab  X
     @tab Real 28800 bit/s codec
-@item RADnet                 @tab IX  @tab IX
+@item RealAudio 3.0 (dnet)   @tab IX  @tab  X
     @tab Real low bitrate AC-3 codec
 @item SEGA CRI ADX ADPCM     @tab  X  @tab  X
     @tab Used in Sega Dreamcast games.
