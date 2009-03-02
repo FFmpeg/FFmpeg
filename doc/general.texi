@@ -371,7 +371,7 @@ following image formats are supported:
     @tab Used in MSN Messenger Webcam streams.
 @item Miro VideoXL           @tab     @tab  X
     @tab fourcc: VIXL
-@item MJPEG                  @tab  X  @tab  X
+@item MJPEG (Motion JPEG)    @tab  X  @tab  X
 @item Motion Pixels Video    @tab     @tab  X
 @item MPEG-1                 @tab  X  @tab  X
 @item MPEG-2                 @tab  X  @tab  X
@@ -381,6 +381,7 @@ following image formats are supported:
 @item MSMPEG4 V3             @tab  X  @tab  X
 @item MSZH                   @tab     @tab  X
     @tab Part of LCL
+@item Nintendo Gamecube THP video  @tab     @tab  X
 @item On2 VP3                @tab     @tab  X
     @tab still experimental
 @item On2 VP5                @tab     @tab  X
@@ -404,7 +405,7 @@ following image formats are supported:
     @tab Video encoding used in Smacker.
 @item Snow                   @tab  X  @tab  X
     @tab experimental wavelet codec (fourcc: SNOW)
-@item Sony PlayStation MDEC  @tab     @tab  X
+@item Sony PlayStation MDEC (Motion DECoder)  @tab     @tab  X
 @item Sorenson Video 1       @tab  X  @tab  X
     @tab fourcc: SVQ1
 @item Sorenson Video 3       @tab     @tab  X
@@ -415,27 +416,25 @@ following image formats are supported:
     @tab fourcc: TSCC
 @item Theora                 @tab  E  @tab  X
     @tab encoding supported through external library libtheora
-@item THP                    @tab     @tab  X
-    @tab Used on the Nintendo GameCube.
 @item Tiertex Seq video      @tab     @tab  X
     @tab Codec used in DOS CD-ROM FlashBack game.
 @item VC-1                   @tab     @tab  X
 @item VMD Video              @tab     @tab  X
     @tab Used in Sierra VMD files.
-@item VMware Video           @tab     @tab  X
+@item VMware Screen Codec / VMware Video  @tab     @tab  X
     @tab Codec used in videos captured by VMware.
-@item Westwood VQA           @tab     @tab  X
+@item Westwood Studios VQA (Vector Quantized Animation) video  @tab     @tab  X
+@item Windows Media Video 8  @tab  X  @tab  X
+@item Wing Commander III / Xan  @tab     @tab  X
+    @tab Used in Wing Commander III .MVE files.
 @item Winnov WNV1            @tab     @tab  X
 @item WMV7                   @tab  X  @tab  X
-@item WMV8                   @tab  X  @tab  X
 @item WMV9                   @tab     @tab  X
     @tab not completely working
-@item Xan/WC3                @tab     @tab  X
-    @tab Used in Wing Commander III .MVE files.
 @item YAMAHA SMAF            @tab  X  @tab  X
 @item ZLIB                   @tab  X  @tab  X
     @tab part of LCL, encoder experimental
-@item ZMBV                   @tab   X @tab  X
+@item Zip Motion Blocks Video  @tab   X @tab  X
     @tab Encoder works only in PAL8.
 @end multitable
 
@@ -538,7 +537,9 @@ following image formats are supported:
 @item WavPack                @tab     @tab  X
 @item Westwood Studios IMA ADPCM @tab     @tab  X
     @tab Used in Westwood Studios games like Command and Conquer.
-@item WMA v1/v2              @tab  X  @tab  X
+@item Westwood Audio (SND1)  @tab     @tab  X
+@item Windows Media Audio 1  @tab  X  @tab  X
+@item Windows Media Audio 2  @tab  X  @tab  X
 @item Xan DPCM               @tab     @tab  X
     @tab Used in Origin's Wing Commander IV AVI files.
 @end multitable
