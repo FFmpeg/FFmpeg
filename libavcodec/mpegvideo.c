@@ -1096,8 +1096,7 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int 
  */
 void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
 
-    if(s->avctx->hwaccel) return;
-    if(!pict || !pict->mb_type) return;
+    if(s->avctx->hwaccel || !pict || !pict->mb_type) return;
 
     if(s->avctx->debug&(FF_DEBUG_SKIP | FF_DEBUG_QP | FF_DEBUG_MB_TYPE)){
         int x,y;
