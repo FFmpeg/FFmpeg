@@ -78,7 +78,7 @@ static void sdp_parse_fmtp_config_h264(AVStream * stream,
     assert(h264_data != NULL);
 
     if (!strcmp(attr, "packetization-mode")) {
-        av_log(NULL, AV_LOG_DEBUG, "H.264/RTP Packetization Mode: %d\n", atoi(value));
+        av_log(codec, AV_LOG_DEBUG, "RTP Packetization Mode: %d\n", atoi(value));
         h264_data->packetization_mode = atoi(value);
         /*
            Packetization Mode:
@@ -87,8 +87,8 @@ static void sdp_parse_fmtp_config_h264(AVStream * stream,
            2: Interleaved Mode: 25 (STAP-B), 26 (MTAP16), 27 (MTAP24), 28 (FU-A), and 29 (FU-B) are allowed.
          */
         if (h264_data->packetization_mode > 1)
-            av_log(stream, AV_LOG_ERROR,
-                   "H.264/RTP Interleaved RTP mode is not supported yet.");
+            av_log(codec, AV_LOG_ERROR,
+                   "Interleaved RTP mode is not supported yet.");
     } else if (!strcmp(attr, "profile-level-id")) {
         if (strlen(value) == 6) {
             char buffer[3];
@@ -105,8 +105,8 @@ static void sdp_parse_fmtp_config_h264(AVStream * stream,
             level_idc = strtol(buffer, NULL, 16);
 
             // set the parameters...
-            av_log(NULL, AV_LOG_DEBUG,
-                   "H.264/RTP Profile IDC: %x Profile IOP: %x Level: %x\n",
+            av_log(codec, AV_LOG_DEBUG,
+                   "RTP Profile IDC: %x Profile IOP: %x Level: %x\n",
                    profile_idc, profile_iop, level_idc);
             h264_data->profile_idc = profile_idc;
             h264_data->profile_iop = profile_iop;
@@ -150,11 +150,11 @@ static void sdp_parse_fmtp_config_h264(AVStream * stream,
                     codec->extradata= dest;
                     codec->extradata_size+= sizeof(start_sequence)+packet_size;
                 } else {
-                    av_log(NULL, AV_LOG_ERROR, "H.264/RTP Unable to allocate memory for extradata!");
+                    av_log(codec, AV_LOG_ERROR, "Unable to allocate memory for extradata!");
                 }
             }
         }
-        av_log(NULL, AV_LOG_DEBUG, "H.264/RTP Extradata set to %p (size: %d)!", codec->extradata, codec->extradata_size);
+        av_log(codec, AV_LOG_DEBUG, "Extradata set to %p (size: %d)!", codec->extradata, codec->extradata_size);
     }
 }
 
@@ -231,7 +231,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
                             dst+= nal_size;
                         }
                     } else {
-                        av_log(NULL, AV_LOG_ERROR,
+                        av_log(ctx, AV_LOG_ERROR,
                                "nal size exceeds length: %d %d\n", nal_size, src_len);
                     }
 
@@ -240,7 +240,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
                     src_len -= nal_size;
 
                     if (src_len < 0)
-                        av_log(NULL, AV_LOG_ERROR,
+                        av_log(ctx, AV_LOG_ERROR,
                                "Consumed more bytes than we got! (%d)\n", src_len);
                 } while (src_len > 2);      // because there could be rtp padding..
 
@@ -259,7 +259,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
     case 26:                   // MTAP-16
     case 27:                   // MTAP-24
     case 29:                   // FU-B
-        av_log(NULL, AV_LOG_ERROR,
+        av_log(ctx, AV_LOG_ERROR,
                "Unhandled type (%d) (See RFC for implementation details\n",
                type);
         result= -1;
@@ -305,7 +305,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
     case 30:                   // undefined
     case 31:                   // undefined
     default:
-        av_log(NULL, AV_LOG_ERROR, "Undefined type (%d)", type);
+        av_log(ctx, AV_LOG_ERROR, "Undefined type (%d)", type);
         result= -1;
         break;
     }
