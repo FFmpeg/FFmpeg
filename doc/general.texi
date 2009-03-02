@@ -81,7 +81,7 @@ library:
     @tab Only embedded audio is decoded.
 @item FLI/FLC/FLX animation     @tab   @tab X
     @tab .fli/.flc files
-@item FLV                       @tab X @tab X
+@item Flash Video (FLV)         @tab   @tab X
     @tab Macromedia Flash video files
 @item framecrc testing format   @tab X @tab
 @item FunCom ISS                @tab   @tab X
@@ -90,8 +90,7 @@ library:
 @item GXF                       @tab X @tab X
     @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
          playout servers.
-@item id Cinematic              @tab   @tab X
-    @tab Used in Quake II.
+@item id Quake II CIN video     @tab   @tab X
 @item id RoQ                    @tab X @tab X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item IFF                       @tab   @tab X
@@ -304,6 +303,7 @@ following image formats are supported:
     @tab fourcc: VCR1
 @item ATI VCR2               @tab     @tab  X
     @tab fourcc: VCR2
+@item Autodesk Animator Flic video  @tab     @tab  X
 @item Autodesk RLE           @tab     @tab  X
     @tab fourcc: AASC
 @item AVS (Audio Video Standard) video  @tab     @tab  X
@@ -338,56 +338,61 @@ following image formats are supported:
     @tab Codec originally used in Feeble Files game.
 @item Electronic Arts CMV video  @tab     @tab  X
     @tab Used in NHL 95 game.
-@item Electronic Arts TGV    @tab     @tab  X
-@item Electronic Arts TGQ    @tab     @tab  X
-@item Electronic Arts TQI    @tab     @tab  X
-@item FFmpeg Video 1         @tab  X  @tab  X
+@item Electronic Arts TGV video  @tab     @tab  X
+@item Electronic Arts TGQ video  @tab     @tab  X
+@item Electronic Arts TQI video  @tab     @tab  X
+@item Escape 124             @tab     @tab  X
+@item FFmpeg codec #1        @tab  X  @tab  X
     @tab experimental lossless codec (fourcc: FFV1)
-@item Flash Screen Video     @tab  X  @tab  X
+@item Flash Screen Video v1  @tab  X  @tab  X
     @tab fourcc: FSV1
-@item FLIC video             @tab     @tab  X
-@item FLV                    @tab  X  @tab  X
+@item Flash Video (FLV)      @tab  X  @tab  X
     @tab Sorenson H.263 used in Flash
-@item Fraps FPS1             @tab     @tab  X
+@item Fraps                  @tab     @tab  X
 @item H.261                  @tab  X  @tab  X
-@item H.263(+)               @tab  X  @tab  X
-    @tab also known as RealVideo 1.0
-@item H.264                  @tab  E  @tab  X
+@item H.263 / H.263-1996     @tab  X  @tab  X
+@item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
+@item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10  @tab  E  @tab  X
     @tab encoding supported through external library libx264
+@item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)  @tab  E  @tab  X
 @item HuffYUV                @tab  X  @tab  X
+@item HuffYUV FFmpeg variant @tab  X  @tab  X
 @item IBM Ultimotion         @tab     @tab  X
     @tab fourcc: ULTI
 @item id Cinematic video     @tab     @tab  X
     @tab Used in Quake II.
 @item id RoQ                 @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
+@item Intel H.263            @tab     @tab  X
+@item Intel Indeo 2          @tab     @tab  X
 @item Intel Indeo 3          @tab     @tab  X
-@item Interplay C93             @tab   @tab X
+@item Interplay C93          @tab     @tab  X
     @tab Used in the game Cyberia from Interplay.
-@item Interplay Video        @tab     @tab  X
+@item Interplay MVE video    @tab     @tab  X
     @tab Used in Interplay .MVE files.
-@item JPEG-LS                @tab  X  @tab  X
-    @tab fourcc: MJLS, lossless and near-lossless is supported.
-@item KMVC                   @tab     @tab  X
+@item Karl Morton's video codec  @tab     @tab  X
     @tab Codec used in Worms games.
+@item LCL (LossLess Codec Library) MSZH  @tab     @tab  X
+@item LCL (LossLess Codec Library) ZLIB  @tab  E  @tab  E
 @item LOCO                   @tab     @tab  X
 @item lossless MJPEG         @tab  X  @tab  X
 @item Microsoft RLE          @tab     @tab  X
-@item Microsoft Video-1      @tab     @tab  X
+@item Microsoft Video 1      @tab     @tab  X
 @item Mimic                  @tab     @tab  X
     @tab Used in MSN Messenger Webcam streams.
 @item Miro VideoXL           @tab     @tab  X
     @tab fourcc: VIXL
 @item MJPEG (Motion JPEG)    @tab  X  @tab  X
-@item Motion Pixels Video    @tab     @tab  X
-@item MPEG-1                 @tab  X  @tab  X
-@item MPEG-2                 @tab  X  @tab  X
-@item MPEG-4                 @tab  X  @tab  X
-@item MSMPEG4 V1             @tab  X  @tab  X
-@item MSMPEG4 V2             @tab  X  @tab  X
-@item MSMPEG4 V3             @tab  X  @tab  X
-@item MSZH                   @tab     @tab  X
-    @tab Part of LCL
+@item Motion Pixels video    @tab     @tab  X
+@item MPEG-1 video           @tab  X  @tab  X
+@item MPEG-1/2 video XvMC (X-Video Motion Compensation)  @tab     @tab  X
+@item MPEG-1/2 video (VDPAU acceleration)  @tab     @tab  X
+@item MPEG-2 video           @tab  X  @tab  X
+@item MPEG-4 part 2          @tab  X  @tab  X
+    @ libxvidcore can be used alternatively for encoding.
+@item MPEG-4 part 2 Microsoft variant version 1  @tab  X  @tab  X
+@item MPEG-4 part 2 Microsoft variant version 2  @tab  X  @tab  X
+@item MPEG-4 part 2 Microsoft variant version 3  @tab  X  @tab  X
 @item Nintendo Gamecube THP video  @tab     @tab  X
 @item On2 VP3                @tab     @tab  X
     @tab still experimental
@@ -432,6 +437,7 @@ following image formats are supported:
 @item VMware Screen Codec / VMware Video  @tab     @tab  X
     @tab Codec used in videos captured by VMware.
 @item Westwood Studios VQA (Vector Quantized Animation) video  @tab     @tab  X
+@item Windows Media Video 7  @tab  X  @tab  X
 @item Windows Media Video 8  @tab  X  @tab  X
 @item Windows Media Video 9  @tab     @tab  X
     @tab not completely working
@@ -465,8 +471,6 @@ following image formats are supported:
     @tab supported through external library libamrwb
 @item Apple lossless audio   @tab  X  @tab  X
     @tab QuickTime fourcc 'alac'
-@item Apple MACE 3           @tab     @tab  X
-@item Apple MACE 6           @tab     @tab  X
 @item Atrac 3                @tab     @tab  X
 @item CDROM XA ADPCM         @tab     @tab  X
 @item Delphine Software International CIN audio  @tab     @tab  X
@@ -487,11 +491,12 @@ following image formats are supported:
 @item Electronic Arts R3 ADPCM  @tab     @tab  X
 @item Electronic Arts XAS ADPCM @tab     @tab  X
 @item Enhanced AC-3          @tab     @tab  X
-@item FLAC lossless audio    @tab IX  @tab  X
-@item G.726  ADPCM           @tab  X  @tab  X
+@item FLAC (Free Lossless Audio Codec)  @tab  X  @tab  IX
+@item G.726 ADPCM            @tab  X  @tab  X
+@item G.729                  @tab     @tab  X
 @item GSM                    @tab  E  @tab  E
     @tab supported through external library libgsm
-@item GSM_MS                 @tab  E  @tab  E
+@item GSM Microsoft variant  @tab  E  @tab  E
     @tab supported through external library libgsm
 @item id RoQ DPCM            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
@@ -504,7 +509,7 @@ following image formats are supported:
 @item IMA Loki SDL MJPEG ADPCM  @tab     @tab  X
 @item IMA WAV ADPCM          @tab  X  @tab  X
 @item IMA Westwood ADPCM     @tab     @tab  X
-@item Intel Music Coder      @tab     @tab  X
+@item IMC (Intel Music Coder)  @tab     @tab  X
 @item Interplay DPCM         @tab     @tab  X
     @tab Used in various Interplay computer games.
 @item ISS IMA ADPCM          @tab     @tab  X
@@ -513,17 +518,20 @@ following image formats are supported:
     @tab Used in some Sega Saturn console games.
 @item IMA Duck DK4 ADPCM     @tab     @tab  X
     @tab Used in some Sega Saturn console games.
+@item MACE (Macintosh Audio Compression/Expansion) 3:1  @tab     @tab  X
+@item MACE (Macintosh Audio Compression/Expansion) 6:1  @tab     @tab  X
 @item Microsoft ADPCM        @tab  X  @tab  X
-@item MLP/TrueHD             @tab     @tab  X
+@item MLP(Meridian Lossless Packing)/TrueHD  @tab     @tab  X
     @tab Used in DVD-Audio and Blu-Ray discs.
 @item Monkey's Audio         @tab     @tab  X
     @tab Only versions 3.97-3.99 are supported.
-@item MPEG audio layer 3     @tab  E  @tab IX
-    @tab encoding supported through external library LAME
-@item MPEG audio layer 2     @tab IX  @tab IX
+@item MP1 (MPEG audio layer 1)  @tab     @tab IX
+@item MP2 (MPEG audio layer 2)  @tab IX  @tab IX
+@item MP3 (MPEG audio layer 3)  @tab  E  @tab IX
+    @tab encoding supported through external library LAME, ADU MP3 and MP3onMP4 also supported
 @item MS IMA ADPCM           @tab  X  @tab  X
-@item Musepack               @tab     @tab  X
-    @tab SV7 and SV8 are supported.
+@item Musepack SV7           @tab     @tab  X
+@item Musepack SV8           @tab     @tab  X
 @item Nellymoser ASAO        @tab  X  @tab  X
 @item Nintendo Gamecube THP ADPCM  @tab     @tab  X
 @item QCELP / PureVoice      @tab     @tab  X
@@ -558,7 +566,8 @@ following image formats are supported:
 @item Speex                  @tab     @tab  E
     @tab supported through external library libspeex
 @item True Audio (TTA)       @tab     @tab  X
-@item Vorbis                 @tab  X  @tab  X
+@item Vorbis                 @tab  E  @tab  X
+    @ A native but very primitive encoder exists.
 @item WavPack                @tab     @tab  X
 @item Westwood Studios IMA ADPCM @tab     @tab  X
     @tab Used in Westwood Studios games like Command and Conquer.
