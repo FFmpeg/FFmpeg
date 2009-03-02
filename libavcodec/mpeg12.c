@@ -2534,7 +2534,7 @@ AVCodec mpeg_xvmc_decoder = {
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED| CODEC_CAP_HWACCEL | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
-    .long_name = NULL_IF_CONFIG_SMALL("MPEG-1 video XvMC (X-Video Motion Compensation)"),
+    .long_name = NULL_IF_CONFIG_SMALL("MPEG-1/2 video XvMC (X-Video Motion Compensation)"),
 };
 
 #endif
