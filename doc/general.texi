@@ -244,19 +244,19 @@ following image formats are supported:
 @item JPEG-LS      @tab X @tab X
 @item LJPEG        @tab X @tab
     @tab Lossless JPEG
-@item PAM          @tab X @tab
+@item PAM          @tab X @tab X
     @tab PAM is a PNM extension with alpha support.
-@item PBM          @tab X @tab
+@item PBM          @tab X @tab X
     @tab Portable BitMap image
 @item PCX          @tab   @tab X
     @tab PC Paintbrush
-@item PGM          @tab X @tab
+@item PGM          @tab X @tab X
     @tab Portable GrayMap image
-@item PGMYUV       @tab X @tab
+@item PGMYUV       @tab X @tab X
     @tab PGM with U and V components in YUV 4:2:0
 @item PNG          @tab X @tab X
     @tab 2/4 bpp not supported yet
-@item PPM          @tab X @tab
+@item PPM          @tab X @tab X
     @tab Portable PixelMap image
 @item PTX          @tab   @tab X
     @tab V.Flash PTX format
