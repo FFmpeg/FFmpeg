@@ -206,10 +206,10 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
         avctx->sample_fmt = SAMPLE_FMT_S16;
 
     s->samples  = get_bits_long(&gb, 32) << 4;
-    s->samples |= get_bits_long(&gb, 4);
+    s->samples |= get_bits(&gb, 4);
 
-    skip_bits(&gb, 64); /* md5 sum */
-    skip_bits(&gb, 64); /* md5 sum */
+    skip_bits_long(&gb, 64); /* md5 sum */
+    skip_bits_long(&gb, 64); /* md5 sum */
 
     dump_headers(avctx, s);
 }
@@ -227,7 +227,7 @@ static int metadata_parse(FLACContext *s)
     int initial_pos= get_bits_count(&s->gb);
 
     if (show_bits_long(&s->gb, 32) == MKBETAG('f','L','a','C')) {
-        skip_bits(&s->gb, 32);
+        skip_bits_long(&s->gb, 32);
 
         do {
             metadata_last = get_bits1(&s->gb);
