@@ -2196,7 +2196,7 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
  * Finds the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
  */
-int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
+int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, AVCodecParserContext *s)
 {
     int i;
     uint32_t state= pc->state;
@@ -2244,6 +2244,9 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
                     return i-3;
                 }
             }
+            if(s && state == PICTURE_START_CODE){
+                ff_fetch_timestamp(s, i-4, 1);
+            }
         }
     }
     pc->state= state;
@@ -2276,7 +2279,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     }
 
     if(s2->flags&CODEC_FLAG_TRUNCATED){
-        int next= ff_mpeg1_find_frame_end(&s2->parse_context, buf, buf_size);
+        int next= ff_mpeg1_find_frame_end(&s2->parse_context, buf, buf_size, NULL);
 
         if( ff_combine_frame(&s2->parse_context, next, (const uint8_t **)&buf, &buf_size) < 0 )
             return buf_size;
