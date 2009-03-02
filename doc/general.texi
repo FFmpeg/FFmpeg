@@ -280,8 +280,10 @@ following image formats are supported:
 
 @multitable @columnfractions .4 .1 .1 .4
 @item Name @tab Encoding @tab Decoding @tab Comments
-@item 4X Video               @tab     @tab  X
+@item 4X Movie               @tab     @tab  X
     @tab Used in certain computer games.
+@item 8SVX exponential       @tab     @tab  X
+@item 8SVX fibonacci         @tab     @tab  X
 @item American Laser Games MM  @tab    @tab X
     @tab Used in games like Mad Dog McCree.
 @item AMV                    @tab     @tab  X
@@ -305,33 +307,36 @@ following image formats are supported:
     @tab fourcc: VCR2
 @item Autodesk RLE           @tab     @tab  X
     @tab fourcc: AASC
-@item AVID DNxHD             @tab   X @tab  X
-    @tab aka SMPTE VC3
-@item AVS video              @tab     @tab  X
+@item AVS (Audio Video Standard) video  @tab     @tab  X
     @tab Video encoding used by the Creature Shock game.
-@item Bethsoft VID           @tab     @tab  X
+@item Bethesda VID video     @tab     @tab  X
     @tab Used in some games from Bethesda Softworks.
+@item Brute Force & Ignorance   @tab   @tab X
+    @tab Used in the game Flash Traffic: City of Angels.
 @item C93 video              @tab     @tab  X
     @tab Codec used in Cyberia game.
 @item CamStudio              @tab     @tab  X
     @tab fourcc: CSCD
-@item Cin video              @tab     @tab  X
-    @tab Codec used in Delphine Software games.
+@item Chinese AVS video      @tab     @tab  X
+    @tab AVS1-P2, JiZhun profile
+@item Delphine Software International CIN video  @tab     @tab  X
+    @tab Codec used in Delphine Software International games.
 @item Cinepak                @tab     @tab  X
 @item Cirrus Logic AccuPak   @tab     @tab  X
     @tab fourcc: CLJR
-@item Creative YUV           @tab     @tab  X
-    @tab fourcc: CYUV
+@item Creative YUV (CYUV)    @tab     @tab  X
 @item Dirac                  @tab  E  @tab  E
     @tab supported through external libdirac/libschroedinger libraries
+@item DNxHD                  @tab   X @tab  X
+    @tab aka SMPTE VC3
 @item Duck TrueMotion v1     @tab     @tab  X
     @tab fourcc: DUCK
 @item Duck TrueMotion v2     @tab     @tab  X
     @tab fourcc: TM20
-@item DV                     @tab  X  @tab  X
-@item DXA Video              @tab     @tab  X
+@item DV (Digital Video)     @tab  X  @tab  X
+@item Feeble Files/ScummVM DXA  @tab     @tab  X
     @tab Codec originally used in Feeble Files game.
-@item Electronic Arts CMV    @tab     @tab  X
+@item Electronic Arts CMV video  @tab     @tab  X
     @tab Used in NHL 95 game.
 @item Electronic Arts TGV    @tab     @tab  X
 @item Electronic Arts TGQ    @tab     @tab  X
@@ -357,6 +362,8 @@ following image formats are supported:
 @item id RoQ                 @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Intel Indeo 3          @tab     @tab  X
+@item Interplay C93             @tab   @tab X
+    @tab Used in the game Cyberia from Interplay.
 @item Interplay Video        @tab     @tab  X
     @tab Used in Interplay .MVE files.
 @item JPEG-LS                @tab  X  @tab  X
@@ -392,6 +399,7 @@ following image formats are supported:
     @tab fourcc: 8BPS
 @item QPEG                   @tab     @tab  X
     @tab fourccs: QPEG, Q1.0, Q1.1
+@item QuickTime 8BPS video   @tab     @tab  X
 @item RealVideo 1.0          @tab  X  @tab  X
 @item RealVideo 2.0          @tab  X  @tab  X
 @item RealVideo 3.0          @tab     @tab  X
@@ -446,7 +454,7 @@ following image formats are supported:
 
 @multitable @columnfractions .4 .1 .1 .4
 @item Name @tab Encoding @tab Decoding @tab Comments
-@item 4X IMA ADPCM           @tab     @tab  X
+@item 4X Movie ADPCM         @tab     @tab  X
 @item 8SVX audio             @tab     @tab  X
 @item AAC                    @tab  E  @tab  X
     @tab encoding supported through external library libfaac
@@ -455,29 +463,29 @@ following image formats are supported:
     @tab supported through external library libamrnb
 @item AMR-WB                 @tab  E  @tab  E
     @tab supported through external library libamrwb
-@item AMV IMA ADPCM          @tab     @tab  X
-    @tab Used in AMV files
 @item Apple lossless audio   @tab  X  @tab  X
     @tab QuickTime fourcc 'alac'
 @item Apple MACE 3           @tab     @tab  X
 @item Apple MACE 6           @tab     @tab  X
-@item ATRAC 3                @tab     @tab  X
-@item CD-ROM XA ADPCM        @tab     @tab  X
-@item Cin audio              @tab     @tab  X
+@item Atrac 3                @tab     @tab  X
+@item CDROM XA ADPCM         @tab     @tab  X
+@item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
-@item Creative ADPCM         @tab     @tab  X
+@item COOK                   @tab     @tab  X
+    @tab All versions except 5.1 are supported.
+@item Creative Technology ADPCM @tab     @tab  X
     @tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
-@item CRI ADX ADPCM          @tab  X  @tab  X
-    @tab Used in Sega Dreamcast games.
+@item DCA (DTS Coherent Acoustics)  @tab     @tab  X
 @item DSP Group TrueSpeech   @tab     @tab  X
-@item DTS Coherent Audio     @tab     @tab  X
-@item Duck DK3 IMA ADPCM     @tab     @tab  X
-    @tab Used in some Sega Saturn console games.
-@item Duck DK4 IMA ADPCM     @tab     @tab  X
-    @tab Used in some Sega Saturn console games.
 @item DV audio               @tab     @tab  X
 @item Electronic Arts ADPCM  @tab     @tab  X
     @tab Used in various EA titles.
+@item Electronic Arts Maxis CDROM XS ADPCM  @tab     @tab  X
+    @tab Used in Sim City 3000.
+@item Electronic Arts R1 ADPCM  @tab     @tab  X
+@item Electronic Arts R2 ADPCM  @tab     @tab  X
+@item Electronic Arts R3 ADPCM  @tab     @tab  X
+@item Electronic Arts XAS ADPCM @tab     @tab  X
 @item Enhanced AC-3          @tab     @tab  X
 @item FLAC lossless audio    @tab IX  @tab  X
 @item G.726  ADPCM           @tab  X  @tab  X
@@ -487,13 +495,24 @@ following image formats are supported:
     @tab supported through external library libgsm
 @item id RoQ DPCM            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
+@item IMA AMV ADPCM          @tab     @tab  X
+    @tab Used in AMV files
+@item IMA Electronic Arts EACS ADPCM  @tab     @tab  X
+@item IMA Electronic Arts SEAD ADPCM  @tab     @tab  X
+@item IMA Funcom ADPCM       @tab     @tab  X
+@item IMA QuickTime ADPCM    @tab  X  @tab  X
+@item IMA Loki SDL MJPEG ADPCM  @tab     @tab  X
+@item IMA WAV ADPCM          @tab  X  @tab  X
+@item IMA Westwood ADPCM     @tab     @tab  X
 @item Intel Music Coder      @tab     @tab  X
-@item Interplay MVE DPCM     @tab     @tab  X
+@item Interplay DPCM         @tab     @tab  X
     @tab Used in various Interplay computer games.
 @item ISS IMA ADPCM          @tab     @tab  X
     @tab Used in FunCom games.
-@item MAXIS EA ADPCM         @tab     @tab  X
-    @tab Used in Sim City 3000.
+@item IMA Duck DK3 ADPCM     @tab     @tab  X
+    @tab Used in some Sega Saturn console games.
+@item IMA Duck DK4 ADPCM     @tab     @tab  X
+    @tab Used in some Sega Saturn console games.
 @item Microsoft ADPCM        @tab  X  @tab  X
 @item MLP/TrueHD             @tab     @tab  X
     @tab Used in DVD-Audio and Blu-Ray discs.
@@ -506,6 +525,7 @@ following image formats are supported:
 @item Musepack               @tab     @tab  X
     @tab SV7 and SV8 are supported.
 @item Nellymoser ASAO        @tab  X  @tab  X
+@item Nintendo Gamecube THP ADPCM  @tab     @tab  X
 @item QCELP / PureVoice      @tab     @tab  X
 @item Qdesign QDM2           @tab     @tab  X
     @tab There are still some distortions.
@@ -516,22 +536,25 @@ following image formats are supported:
     @tab Real 28800 bit/s codec
 @item RADnet                 @tab IX  @tab IX
     @tab Real low bitrate AC-3 codec
-@item Real COOK              @tab     @tab  X
-    @tab All versions except 5.1 are supported.
+@item SEGA CRI ADX ADPCM     @tab  X  @tab  X
+    @tab Used in Sega Dreamcast games.
+@item Shockwave Flash ADPCM  @tab  X  @tab  X
 @item Shorten                @tab     @tab  X
 @item Sierra Online DPCM     @tab     @tab  X
     @tab Used in Sierra Online game audio files.
 @item Smacker audio          @tab     @tab  X
 @item SMJPEG IMA ADPCM       @tab     @tab  X
     @tab Used in certain Loki game ports.
+@item Sol DPCM               @tab     @tab  X
 @item Sonic                  @tab  X  @tab  X
     @tab experimental codec
 @item Sonic lossless         @tab  X  @tab  X
     @tab experimental codec
+@item Sound Blaster Pro 2-bit ADPCM  @tab     @tab  X
+@item Sound Blaster Pro 2.6-bit ADPCM  @tab     @tab  X
+@item Sound Blaster Pro 4-bit ADPCM  @tab     @tab  X
 @item Speex                  @tab     @tab  E
     @tab supported through external library libspeex
-@item THP ADPCM              @tab     @tab  X
-    @tab Used on the Nintendo GameCube.
 @item True Audio (TTA)       @tab     @tab  X
 @item Vorbis                 @tab  X  @tab  X
 @item WavPack                @tab     @tab  X
@@ -542,6 +565,7 @@ following image formats are supported:
 @item Windows Media Audio 2  @tab  X  @tab  X
 @item Xan DPCM               @tab     @tab  X
     @tab Used in Origin's Wing Commander IV AVI files.
+@item Yamaha ADPCM           @tab  X  @tab  X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
