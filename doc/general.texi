@@ -451,7 +451,7 @@ following image formats are supported:
 @item 8SVX audio             @tab     @tab  X
 @item AAC                    @tab  E  @tab  X
     @tab encoding supported through external library libfaac
-@item AC-3                   @tab IX  @tab IX
+@item AC-3                   @tab  X  @tab  X
 @item AMR-NB                 @tab  E  @tab  E
     @tab supported through external library libamrnb
 @item AMR-WB                 @tab  E  @tab  E
