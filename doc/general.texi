@@ -388,6 +388,8 @@ following image formats are supported:
 @item MPEG-4 part 2 Microsoft variant version 2  @tab  X  @tab  X
 @item MPEG-4 part 2 Microsoft variant version 3  @tab  X  @tab  X
 @item Nintendo Gamecube THP video  @tab     @tab  X
+@item NuppelVideo/RTjpeg     @tab     @tab  X
+    @tab Video encoding used in NuppelVideo files.
 @item On2 VP3                @tab     @tab  X
     @tab still experimental
 @item On2 VP5                @tab     @tab  X
@@ -415,8 +417,6 @@ following image formats are supported:
     @tab Texture dictionaries used by the Renderware Engine.
 @item RL2 video              @tab     @tab  X
     @tab used in some games by Entertainment Software Partners
-@item RTjpeg                 @tab     @tab  X
-    @tab Video encoding used in NuppelVideo files.
 @item Sierra VMD video       @tab     @tab  X
     @tab Used in Sierra VMD files.
 @item Smacker video          @tab     @tab  X
@@ -535,8 +535,31 @@ following image formats are supported:
 @item MS IMA ADPCM           @tab  X  @tab  X
 @item Musepack SV7           @tab     @tab  X
 @item Musepack SV8           @tab     @tab  X
-@item Nellymoser ASAO        @tab  X  @tab  X
+@item Nellymoser Asao        @tab  X  @tab  X
 @item Nintendo Gamecube THP ADPCM  @tab     @tab  X
+@item PCM A-law              @tab  X  @tab  X
+@item PCM mu-law             @tab  X  @tab  X
+@item PCM 16-bit little-endian planar  @tab     @tab  X
+@item PCM 32-bit floating point big-endian  @tab  X  @tab  X
+@item PCM 32-bit floating point little-endian  @tab  X  @tab  X
+@item PCM 64-bit floating point big-endian  @tab  X  @tab  X
+@item PCM 64-bit floating point little-endian  @tab  X  @tab  X
+@item PCM D-Cinema audio signed 24-bit   @tab  X  @tab  X
+@item PCM signed 8-bit       @tab  X  @tab  X
+@item PCM signed 16-bit big-endian  @tab  X  @tab  X
+@item PCM signed 16-bit little-endian  @tab  X  @tab  X
+@item PCM signed 24-bit big-endian  @tab  X  @tab  X
+@item PCM signed 24-bit little-endian  @tab  X  @tab  X
+@item PCM signed 32-bit big-endian  @tab  X  @tab  X
+@item PCM signed 32-bit little-endian  @tab  X  @tab  X
+@item PCM unsigned 8-bit     @tab  X  @tab  X
+@item PCM unsigned 16-bit big-endian  @tab  X  @tab  X
+@item PCM unsigned 16-bit little-endian  @tab  X  @tab  X
+@item PCM unsigned 24-bit big-endian  @tab  X  @tab  X
+@item PCM unsigned 24-bit little-endian  @tab  X  @tab  X
+@item PCM unsigned 32-bit big-endian  @tab  X  @tab  X
+@item PCM unsigned 32-bit little-endian  @tab  X  @tab  X
+@item PCM Zork               @tab  X  @tab  X
 @item QCELP / PureVoice      @tab     @tab  X
 @item QDesign Music Codec 2  @tab     @tab  X
     @tab There are still some distortions.
