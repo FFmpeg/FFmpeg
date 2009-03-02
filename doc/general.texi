@@ -108,9 +108,8 @@ library:
 @item Motion Pixels MVI         @tab   @tab X
 @item MOV/QuickTime/MP4         @tab X @tab X
     @tab 3GP, 3GP2, PSP, iPod variants supported
-@item MP2                       @tab X @tab
-@item MP3                       @tab X @tab
-@item MPEG audio                @tab X @tab X
+@item MP2                       @tab X @tab X
+@item MP3                       @tab X @tab X
 @item MPEG-1 System             @tab X @tab X
     @tab muxed audio and video, VCD format supported
 @item MPEG-PS (program stream)  @tab X @tab X
