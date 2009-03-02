@@ -266,7 +266,7 @@ following image formats are supported:
     @tab Sun Rasterfile
 @item SGI          @tab X @tab X
     @tab SGI RGB image format
-@item Targa        @tab   @tab X
+@item Targa        @tab X @tab X
     @tab Targa (.TGA) image format
 @item TIFF         @tab X @tab X
     @tab YUV, JPEG and some extension is not supported yet.
