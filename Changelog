@@ -156,6 +156,7 @@ version 0.5:
 - generic metadata API
 
 
+
 version 0.4.9-pre1:
 
 - DV encoder, DV muxer
@@ -239,6 +240,8 @@ version 0.4.9-pre1:
 - many optimizations and bugfixes
 - FunCom ISS audio file demuxer and according ADPCM decoding
 
+
+
 version 0.4.8:
 
 - MPEG-2 video encoding (Michael)
@@ -248,6 +251,8 @@ version 0.4.8:
 - Xan DPCM audio decoder (Mario Brito)
 - Interplay MVE playback subsystem (Mike Melanson)
 - Duck DK3 and DK4 ADPCM audio decoders (Mike Melanson)
+
+
 
 version 0.4.7:
 
@@ -289,6 +294,8 @@ version 0.4.7:
 
 .. And lots more new enhancements and fixes.
 
+
+
 version 0.4.6:
 
 - completely new integer only MPEG audio layer 1/2/3 decoder rewritten
@@ -325,6 +332,8 @@ version 0.4.6:
 - simple stats output (Juanjo)
 - 16-bit and 15-bit RGB/BGR/GBR support (Bisqwit)
 
+
+
 version 0.4.5:
 
 - some header fixes (Zdenek Kabelac <kabi at informatics.muni.cz>)
@@ -355,6 +364,8 @@ version 0.4.5:
 - added MJPEG raw format (input/ouput)
 - added JPEG image format support (input/output)
 
+
+
 version 0.4.4:
 
 - fixed some std header definitions (Bjorn Lindgren
@@ -379,6 +390,8 @@ version 0.4.4:
 - codecs are no longer searched by read_header() (should fix ffserver
   segfault)
 
+
+
 version 0.4.3:
 
 - BGR24 patch (initial patch by Jeroen Vreeken <pe1rxq at amsat.org>)
@@ -399,6 +412,8 @@ version 0.4.3:
   <lists at reserv.at>, but changed completely since we use a format
   instead of a protocol)
 
+
+
 version 0.4.2:
 
 - added H.263/MPEG-4/MSMPEG4 decoding support. MPEG-4 decoding support
@@ -415,6 +430,7 @@ version 0.4.2:
 - added file overwrite confirmation (can be disabled with -y)
 - added custom size picture to H.263 using H.263+ (Juanjo)
 
+
 version 0.4.1:
 
 - added MSMPEG4 (aka DivX) compatible encoder. Changed default codec
@@ -426,6 +442,8 @@ version 0.4.1:
 - fixed -an option
 - improved dct_quantize speed
 - factorized some motion estimation code
+
+
 
 version 0.4.0:
 
@@ -454,9 +472,13 @@ version 0.4.0:
 - changed directories: libav for format handling, libavcodec for
   codecs
 
+
+
 version 0.3.4:
 
 - added stereo in MPEG audio encoder
+
+
 
 version 0.3.3:
 
@@ -465,15 +487,21 @@ version 0.3.3:
 - fixed rounding problems which caused quality problems at high
   bitrates and large GOP size
 
+
+
 version 0.3.2: small fixes
 
 - ASF fixes
 - put_seek bug fix
+
+
 
 version 0.3.1: added avi/divx support
 
 - added AVI support
 - added MPEG-4 codec compatible with OpenDivX. It is based on the H.263 codec
 - added sound for flash format (not tested)
+
+
 
 version 0.3: initial public release
