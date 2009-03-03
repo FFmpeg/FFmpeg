@@ -64,7 +64,7 @@ next_chunk:
     if (url_feof(s->pb))
         return AVERROR(EIO);
     if (marker != TXD_MARKER && marker != TXD_MARKER2) {
-        av_log(NULL, AV_LOG_ERROR, "marker does not match\n");
+        av_log(s, AV_LOG_ERROR, "marker does not match\n");
         return AVERROR(EIO);
     }
 
@@ -78,7 +78,7 @@ next_chunk:
         case TXD_TEXTURE:
             goto next_chunk;
         default:
-            av_log(NULL, AV_LOG_ERROR, "unknown chunk id %i\n", id);
+            av_log(s, AV_LOG_ERROR, "unknown chunk id %i\n", id);
             return AVERROR(EIO);
     }
 
