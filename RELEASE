@@ -1,0 +1,38 @@
+Release Notes
+=============
+
+* 0.5 "Bike Shed" March 3, 2009
+
+General notes
+-------------
+
+It has been so long since the last release that this should be considered the
+first FFmpeg release of recent times. Because of the way things have unfolded to
+date, the notes for this version cannot be entirely conventional.
+
+See the Changelog file for a list of significant changes.
+
+Please note that our policy on bug reports has not changed. We still only accept
+bug reports against the HEAD of FFmpeg trunk repository. If you are experiencing
+any issues with any formally released version of FFmpeg, please try a current
+version of the development code to check if the issue still exists. If it does,
+make your report against the development code following the usual bug reporting
+guidelines.
+
+API notes
+---------
+
+In the next release, it is intended to remove a number of deprecated APIs. We
+decided to put out a release that includes said APIs for the benefit of third
+party software.
+
+As such, this release:
+- provides a sync point for said APIs
+- increases awareness of API changes
+- allows the next release to detail how to transition from the old to the new
+
+The deprecated APIs to be removed are:
+- imgconvert (to be replaced by libswscale)
+- vhook (to be replaced by libavfilter)
+
+If at all possible, do not use the deprecated APIs.
