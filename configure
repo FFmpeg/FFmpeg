@@ -1418,6 +1418,12 @@ if test "$?" != 0; then
 fi
 
 check_cflags -std=c99
+check_cc -D_FILE_OFFSET_BITS=64 <<EOF && add_cflags -D_FILE_OFFSET_BITS=64
+#include <stdlib.h>
+EOF
+check_cc -D_LARGEFILE_SOURCE <<EOF && add_cflags -D_LARGEFILE_SOURCE
+#include <stdlib.h>
+EOF
 
 case "$arch" in
     alpha)
