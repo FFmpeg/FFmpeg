@@ -185,7 +185,6 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
     GetBitContext gb;
     init_get_bits(&gb, buffer, FLAC_STREAMINFO_SIZE*8);
 
-    /* mandatory streaminfo */
     skip_bits(&gb, 16); /* skip min blocksize */
     s->max_blocksize = get_bits(&gb, 16);
 
