@@ -1317,8 +1317,8 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
             pos_min= e->pos;
             ts_min= e->timestamp;
 #ifdef DEBUG_SEEK
-        av_log(s, AV_LOG_DEBUG, "using cached pos_min=0x%"PRIx64" dts_min=%"PRId64"\n",
-               pos_min,ts_min);
+            av_log(s, AV_LOG_DEBUG, "using cached pos_min=0x%"PRIx64" dts_min=%"PRId64"\n",
+                   pos_min,ts_min);
 #endif
         }else{
             assert(index==0);
@@ -1333,8 +1333,8 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
             ts_max= e->timestamp;
             pos_limit= pos_max - e->min_distance;
 #ifdef DEBUG_SEEK
-        av_log(s, AV_LOG_DEBUG, "using cached pos_max=0x%"PRIx64" pos_limit=0x%"PRIx64" dts_max=%"PRId64"\n",
-               pos_max,pos_limit, ts_max);
+            av_log(s, AV_LOG_DEBUG, "using cached pos_max=0x%"PRIx64" pos_limit=0x%"PRIx64" dts_max=%"PRId64"\n",
+                   pos_max,pos_limit, ts_max);
 #endif
         }
     }
@@ -1432,7 +1432,9 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
         else
             no_change=0;
 #ifdef DEBUG_SEEK
-av_log(s, AV_LOG_DEBUG, "%"PRId64" %"PRId64" %"PRId64" / %"PRId64" %"PRId64" %"PRId64" target:%"PRId64" limit:%"PRId64" start:%"PRId64" noc:%d\n", pos_min, pos, pos_max, ts_min, ts, ts_max, target_ts, pos_limit, start_pos, no_change);
+        av_log(s, AV_LOG_DEBUG, "%"PRId64" %"PRId64" %"PRId64" / %"PRId64" %"PRId64" %"PRId64" target:%"PRId64" limit:%"PRId64" start:%"PRId64" noc:%d\n",
+               pos_min, pos, pos_max, ts_min, ts, ts_max, target_ts, pos_limit,
+               start_pos, no_change);
 #endif
         if(ts == AV_NOPTS_VALUE){
             av_log(s, AV_LOG_ERROR, "read_timestamp() failed in the middle\n");
