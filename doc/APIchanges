@@ -1,7 +1,7 @@
 20090301 - r17682 - lavf 52.31.0 - Generic metadata API
   This version introduces a new metadata API (see av_metadata_get() and friends).
   The old API is now deprecated and shouldn't be used anymore. This especially
-  include the following structure fields:
+  includes the following structure fields:
     - AVFormatContext.title
     - AVFormatContext.author
     - AVFormatContext.copyright
