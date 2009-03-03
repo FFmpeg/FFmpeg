@@ -33,6 +33,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
+#include "mathops.h"
 
 #if defined(ALT_BITSTREAM_READER_LE) && !defined(ALT_BITSTREAM_READER)
 #   define ALT_BITSTREAM_READER
@@ -704,6 +705,13 @@ static inline unsigned int get_bits_long(GetBitContext *s, int n){
         return ret | get_bits(s, n-16);
 #endif
     }
+}
+
+/**
+ * reads 0-32 bits as a signed integer.
+ */
+static inline int get_sbits_long(GetBitContext *s, int n) {
+    return sign_extend(get_bits_long(s, n), n);
 }
 
 /**
