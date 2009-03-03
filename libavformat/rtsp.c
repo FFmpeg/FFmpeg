@@ -888,7 +888,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
                     int lower_transport, const char *real_challenge)
 {
     RTSPState *rt = s->priv_data;
-    int j, i, err, interleave = 0;
+    int rtx, j, i, err, interleave = 0;
     RTSPStream *rtsp_st;
     RTSPMessageHeader reply1, *reply = &reply1;
     char cmd[2048];
@@ -906,11 +906,37 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
     for(j = RTSP_RTP_PORT_MIN, i = 0; i < rt->nb_rtsp_streams; ++i) {
         char transport[2048];
 
+        /**
+         * WMS serves all UDP data over a single connection, the RTX, which
+         * isn't necessarily the first in the SDP but has to be the first
+         * to be set up, else the second/third SETUP will fail with a 461.
+         */
+        if (lower_transport == RTSP_LOWER_TRANSPORT_UDP &&
+             rt->server_type == RTSP_SERVER_WMS) {
+            if (i == 0) {
+                /* rtx first */
+                for (rtx = 0; rtx < rt->nb_rtsp_streams; rtx++) {
+                    int len = strlen(rt->rtsp_streams[rtx]->control_url);
+                    if (len >= 4 &&
+                        !strcmp(rt->rtsp_streams[rtx]->control_url + len - 4, "/rtx"))
+                        break;
+                }
+                if (rtx == rt->nb_rtsp_streams)
+                    return -1; /* no RTX found */
+                rtsp_st = rt->rtsp_streams[rtx];
+            } else
+                rtsp_st = rt->rtsp_streams[i > rtx ? i : i - 1];
+        } else
         rtsp_st = rt->rtsp_streams[i];
 
         /* RTP/UDP */
         if (lower_transport == RTSP_LOWER_TRANSPORT_UDP) {
             char buf[256];
+
+            if (rt->server_type == RTSP_SERVER_WMS && i > 1) {
+                port = reply->transports[0].client_port_min;
+                goto have_port;
+            }
 
             /* first try in specified port range */
             if (RTSP_RTP_PORT_MIN != 0) {
@@ -932,13 +958,15 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
 
         rtp_opened:
             port = rtp_get_local_port(rtsp_st->rtp_handle);
+        have_port:
             snprintf(transport, sizeof(transport) - 1,
                      "%s/UDP;", trans_pref);
             if (rt->server_type != RTSP_SERVER_REAL)
                 av_strlcat(transport, "unicast;", sizeof(transport));
             av_strlcatf(transport, sizeof(transport),
                      "client_port=%d", port);
-            if (rt->transport == RTSP_TRANSPORT_RTP)
+            if (rt->transport == RTSP_TRANSPORT_RTP &&
+                !(rt->server_type == RTSP_SERVER_WMS && i > 0))
                 av_strlcatf(transport, sizeof(transport), "-%d", port + 1);
         }
 
@@ -1022,7 +1050,8 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
                 /* XXX: also use address if specified */
                 snprintf(url, sizeof(url), "rtp://%s:%d",
                          host, reply->transports[0].server_port_min);
-                if (rtp_set_remote_url(rtsp_st->rtp_handle, url) < 0) {
+                if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) &&
+                    rtp_set_remote_url(rtsp_st->rtp_handle, url) < 0) {
                     err = AVERROR_INVALIDDATA;
                     goto fail;
                 }
@@ -1286,11 +1315,13 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         fd_max = -1;
         for(i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
+            if (rtsp_st->rtp_handle) {
             /* currently, we cannot probe RTCP handle because of blocking restrictions */
             rtp_get_file_handles(rtsp_st->rtp_handle, &fd1, &fd2);
             if (fd1 > fd_max)
                 fd_max = fd1;
             FD_SET(fd1, &rfds);
+            }
         }
         tv.tv_sec = 0;
         tv.tv_usec = 100 * 1000;
@@ -1298,6 +1329,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         if (n > 0) {
             for(i = 0; i < rt->nb_rtsp_streams; i++) {
                 rtsp_st = rt->rtsp_streams[i];
+                if (rtsp_st->rtp_handle) {
                 rtp_get_file_handles(rtsp_st->rtp_handle, &fd1, &fd2);
                 if (FD_ISSET(fd1, &rfds)) {
                     ret = url_read(rtsp_st->rtp_handle, buf, buf_size);
@@ -1305,6 +1337,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                         *prtsp_st = rtsp_st;
                         return ret;
                     }
+                }
                 }
             }
         }
