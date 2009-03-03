@@ -40,6 +40,7 @@
 #include "h263data.h"
 #include "mpeg4data.h"
 #include "mathops.h"
+#include "unary.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -3905,12 +3906,50 @@ static void h263_decode_dquant(MpegEncContext *s){
     ff_set_qscale(s, s->qscale);
 }
 
+static int h263_skip_b_part(MpegEncContext *s, int cbp)
+{
+    DECLARE_ALIGNED(16, DCTELEM, dblock[64]);
+    int i, mbi;
+
+    /* we have to set s->mb_intra to zero to decode B-part of PB-frame correctly
+     * but real value should be restored in order to be used later (in OBMC condition)
+     */
+    mbi = s->mb_intra;
+    s->mb_intra = 0;
+    for (i = 0; i < 6; i++) {
+        if (h263_decode_block(s, dblock, i, cbp&32) < 0)
+            return -1;
+        cbp+=cbp;
+    }
+    s->mb_intra = mbi;
+    return 0;
+}
+
+static int h263_get_modb(GetBitContext *gb, int pb_frame, int *cbpb)
+{
+    int c, mv = 1;
+
+    if (pb_frame < 3) { // h.263 Annex G and i263 PB-frame
+        c = get_bits1(gb);
+        if (pb_frame == 2 && c)
+            mv = !get_bits1(gb);
+    } else { // h.263 Annex M improved PB-frame
+        mv = get_unary(gb, 0, 4) + 1;
+        c = mv & 1;
+        mv = !!(mv & 2);
+    }
+    if(c)
+        *cbpb = get_bits(gb, 6);
+    return mv;
+}
+
 int ff_h263_decode_mb(MpegEncContext *s,
                       DCTELEM block[6][64])
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     int16_t *mot_val;
     const int xy= s->mb_x + s->mb_y * s->mb_stride;
+    int cbpb = 0, pb_mv_count = 0;
 
     assert(!s->h263_pred);
 
@@ -3943,6 +3982,8 @@ int ff_h263_decode_mb(MpegEncContext *s,
         s->mb_intra = ((cbpc & 4) != 0);
         if (s->mb_intra) goto intra;
 
+        if(s->pb_frame && get_bits1(&s->gb))
+            pb_mv_count = h263_get_modb(&s->gb, s->pb_frame, &cbpb);
         cbpy = get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
 
         if(s->alt_inter_vlc==0 || (cbpc & 3)!=3)
@@ -4118,6 +4159,8 @@ intra:
         }else
             s->ac_pred = 0;
 
+        if(s->pb_frame && get_bits1(&s->gb))
+            pb_mv_count = h263_get_modb(&s->gb, s->pb_frame, &cbpb);
         cbpy = get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
         if(cbpy<0){
             av_log(s->avctx, AV_LOG_ERROR, "I cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
@@ -4127,6 +4170,13 @@ intra:
         if (dquant) {
             h263_decode_dquant(s);
         }
+
+        pb_mv_count += !!s->pb_frame;
+    }
+
+    while(pb_mv_count--){
+        h263_decode_motion(s, 0, 1);
+        h263_decode_motion(s, 0, 1);
     }
 
     /* decode each block */
@@ -4136,6 +4186,8 @@ intra:
         cbp+=cbp;
     }
 
+    if(s->pb_frame && h263_skip_b_part(s, cbpb) < 0)
+        return -1;
     if(s->obmc && !s->mb_intra){
         if(s->pict_type == FF_P_TYPE && s->mb_x+1<s->mb_width && s->mb_num_left != 1)
             preview_obmc(s);
@@ -6241,10 +6293,6 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
     if(s->avctx->debug&FF_DEBUG_PICT_INFO)
         show_pict_info(s);
 
-    if(s->pb_frame){
-        av_log(s->avctx, AV_LOG_ERROR, "PB frame mode no supported\n");
-        return -1;      /* PB frame mode */
-    }
     return 0;
 }
 
