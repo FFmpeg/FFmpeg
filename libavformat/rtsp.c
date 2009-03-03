@@ -927,7 +927,7 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
             } else
                 rtsp_st = rt->rtsp_streams[i > rtx ? i : i - 1];
         } else
-        rtsp_st = rt->rtsp_streams[i];
+            rtsp_st = rt->rtsp_streams[i];
 
         /* RTP/UDP */
         if (lower_transport == RTSP_LOWER_TRANSPORT_UDP) {
@@ -1316,11 +1316,12 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         for(i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
             if (rtsp_st->rtp_handle) {
-            /* currently, we cannot probe RTCP handle because of blocking restrictions */
-            rtp_get_file_handles(rtsp_st->rtp_handle, &fd1, &fd2);
-            if (fd1 > fd_max)
-                fd_max = fd1;
-            FD_SET(fd1, &rfds);
+                /* currently, we cannot probe RTCP handle because of
+                 * blocking restrictions */
+                rtp_get_file_handles(rtsp_st->rtp_handle, &fd1, &fd2);
+                if (fd1 > fd_max)
+                    fd_max = fd1;
+                FD_SET(fd1, &rfds);
             }
         }
         tv.tv_sec = 0;
@@ -1330,14 +1331,14 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             for(i = 0; i < rt->nb_rtsp_streams; i++) {
                 rtsp_st = rt->rtsp_streams[i];
                 if (rtsp_st->rtp_handle) {
-                rtp_get_file_handles(rtsp_st->rtp_handle, &fd1, &fd2);
-                if (FD_ISSET(fd1, &rfds)) {
-                    ret = url_read(rtsp_st->rtp_handle, buf, buf_size);
-                    if (ret > 0) {
-                        *prtsp_st = rtsp_st;
-                        return ret;
+                    rtp_get_file_handles(rtsp_st->rtp_handle, &fd1, &fd2);
+                    if (FD_ISSET(fd1, &rfds)) {
+                        ret = url_read(rtsp_st->rtp_handle, buf, buf_size);
+                        if (ret > 0) {
+                            *prtsp_st = rtsp_st;
+                            return ret;
+                        }
                     }
-                }
                 }
             }
         }
