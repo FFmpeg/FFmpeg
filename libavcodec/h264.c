@@ -4187,17 +4187,16 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
             //first coefficient has suffix_length equal to 0 or 1
             if(prefix<14){ //FIXME try to build a large unified VLC table for all this
                 if(suffix_length)
-                    level_code= (prefix<<suffix_length) + get_bits(gb, suffix_length); //part
+                    level_code= (prefix<<1) + get_bits1(gb); //part
                 else
-                    level_code= (prefix<<suffix_length); //part
+                    level_code= prefix; //part
             }else if(prefix==14){
                 if(suffix_length)
-                    level_code= (prefix<<suffix_length) + get_bits(gb, suffix_length); //part
+                    level_code= (prefix<<1) + get_bits1(gb); //part
                 else
                     level_code= prefix + get_bits(gb, 4); //part
             }else{
-                level_code= (15<<suffix_length) + get_bits(gb, prefix-3); //part
-                if(suffix_length==0) level_code+=15; //FIXME doesn't make (much)sense
+                level_code= 30 + get_bits(gb, prefix-3); //part
                 if(prefix>=16)
                     level_code += (1<<(prefix-3))-4096;
             }
