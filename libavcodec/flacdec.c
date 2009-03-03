@@ -187,6 +187,11 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
 
     skip_bits(&gb, 16); /* skip min blocksize */
     s->max_blocksize = get_bits(&gb, 16);
+    if (s->max_blocksize < 16) {
+        av_log(avctx, AV_LOG_WARNING, "invalid max blocksize: %d\n",
+               s->max_blocksize);
+        s->max_blocksize = 16;
+    }
 
     skip_bits(&gb, 24); /* skip min frame size */
     s->max_framesize = get_bits_long(&gb, 24);
