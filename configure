@@ -1377,6 +1377,7 @@ elif $cc -v 2>&1 | grep -q xlc; then
 elif $cc -V 2>/dev/null | grep -q Compaq; then
     cc_type=ccc
     DEPEND_CMD='$(CC) $(CFLAGS) -M $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
+    debuglevel=3
     add_ldflags -Wl,-z,now # calls to libots crash without this
 fi
 
