@@ -23,6 +23,7 @@
 #include "bitstream.h"
 #include "dsputil.h"
 #include "lpc.h"
+#include "mathops.h"
 
 #define DEFAULT_FRAME_SIZE        4096
 #define DEFAULT_SAMPLE_SIZE       16
@@ -253,8 +254,8 @@ static void alac_linear_predictor(AlacEncodeContext *s, int ch)
 
             sum >>= lpc.lpc_quant;
             sum += samples[0];
-            residual[i] = (samples[lpc.lpc_order+1] - sum) << (32 - s->write_sample_size) >>
-                          (32 - s->write_sample_size);
+            residual[i] = sign_extend(samples[lpc.lpc_order+1] - sum,
+                                      s->write_sample_size);
             res_val = residual[i];
 
             if(res_val) {
