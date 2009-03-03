@@ -660,9 +660,6 @@ Calculate PSNR of compressed frames.
 Dump video coding statistics to @file{vstats_HHMMSS.log}.
 @item -vstats_file @var{file}
 Dump video coding statistics to @var{file}.
-@item -vhook @var{module}
-Insert video processing @var{module}. @var{module} contains the module
-name and its parameters separated by spaces.
 @item -top @var{n}
 top=1/bottom=0/auto=-1 field first
 @item -dc @var{precision}

@@ -18,15 +18,6 @@ Applications
 ffmpeg:
   ffmpeg.c                              Michael Niedermayer
 
-  Video Hooks:
-    vhook
-    vhook/watermark.c                   Marcus Engene
-    vhook/ppm.c
-    vhook/drawtext.c
-    vhook/fish.c
-    vhook/null.c
-    vhook/imlib2.c
-
 ffplay:
   ffplay.c                              Michael Niedermayer
 

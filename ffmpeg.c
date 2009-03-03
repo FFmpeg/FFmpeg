@@ -34,7 +34,6 @@
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
-#include "libavformat/framehook.h"
 #include "libavcodec/opt.h"
 #include "libavcodec/audioconvert.h"
 #include "libavutil/fifo.h"
@@ -203,7 +202,6 @@ static int audio_volume = 256;
 
 static int exit_on_error = 0;
 static int using_stdin = 0;
-static int using_vhook = 0;
 static int verbose = 1;
 static int thread_count= 1;
 static int q_pressed = 0;
@@ -736,7 +734,7 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
     dec = ist->st->codec;
 
     /* deinterlace : must be done before any resize */
-    if (do_deinterlace || using_vhook) {
+    if (do_deinterlace) {
         int size;
 
         /* create temporary picture */
@@ -763,10 +761,6 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
     } else {
         picture2 = picture;
     }
-
-    if (CONFIG_VHOOK)
-        frame_hook_process(picture2, dec->pix_fmt, dec->width, dec->height,
-                           1000000 * ist->pts / AV_TIME_BASE);
 
     if (picture != picture2)
         *picture = *picture2;
@@ -1772,10 +1766,6 @@ static int av_encode(AVFormatContext **output_files,
                     codec->block_align= 0;
                 break;
             case CODEC_TYPE_VIDEO:
-                if(using_vhook) {
-                    fprintf(stderr,"-vcodec copy and -vhook are incompatible (frames are not decoded)\n");
-                    av_exit(1);
-                }
                 codec->pix_fmt = icodec->pix_fmt;
                 codec->width = icodec->width;
                 codec->height = icodec->height;
@@ -2650,29 +2640,6 @@ static void opt_video_tag(const char *arg)
     if(!tail || *tail)
         video_codec_tag= arg[0] + (arg[1]<<8) + (arg[2]<<16) + (arg[3]<<24);
 }
-
-#if CONFIG_VHOOK
-static void add_frame_hooker(const char *arg)
-{
-    int argc = 0;
-    char *argv[64];
-    int i;
-    char *args = av_strdup(arg);
-
-    using_vhook = 1;
-
-    argv[0] = strtok(args, " ");
-    while (argc < 62 && (argv[++argc] = strtok(NULL, " "))) {
-    }
-
-    i = frame_hook_add(argc, argv);
-
-    if (i != 0) {
-        fprintf(stderr, "Failed to add video hook function: %s\n", arg);
-        av_exit(1);
-    }
-}
-#endif
 
 static void opt_video_codec(const char *arg)
 {
@@ -3840,9 +3807,6 @@ static const OptionDef options[] = {
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_EXPERT | OPT_VIDEO, {(void*)&opt_vstats}, "dump video coding statistics to file" },
     { "vstats_file", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_vstats_file}, "dump video coding statistics to file", "file" },
-#if CONFIG_VHOOK
-    { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
-#endif
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },

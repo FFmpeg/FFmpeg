@@ -82,9 +82,8 @@ show_help(){
   echo "  --disable-ffserver       disable ffserver build"
   echo "  --enable-postproc        enable GPLed postprocessing support [no]"
   echo "  --enable-swscale         enable GPLed software scaler support [no]"
-  echo "  --enable-avfilter        video filter support (replaces vhook) [no]"
+  echo "  --enable-avfilter        video filter support [no]"
   echo "  --enable-avfilter-lavf   video filters dependent on avformat [no]"
-  echo "  --disable-vhook          disable video hooking support"
   echo "  --enable-beosthreads     use BeOS threads [no]"
   echo "  --enable-os2threads      use OS/2 threads [no]"
   echo "  --enable-pthreads        use pthreads [no]"
@@ -799,7 +798,6 @@ CONFIG_LIST="
     static
     swscale
     vdpau
-    vhook
     x11grab
     zlib
 "
@@ -873,11 +871,9 @@ HAVE_LIST="
     fast_cmov
     fast_unaligned
     fork
-    freetype2
     gethrtime
     GetProcessTimes
     getrusage
-    imlib2
     inet_aton
     inline_asm
     libdc1394_1
@@ -1133,7 +1129,6 @@ movie_filter_deps="avfilter_lavf"
 ffplay_deps="sdl"
 ffserver_deps="ffm_muxer rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
-vhook_extralibs='$ldl'
 
 
 # default parameters
@@ -1180,12 +1175,10 @@ enable optimizations
 enable protocols
 enable static
 enable stripping
-vhook="default"
 
 # build settings
 add_cflags -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
-VHOOKSHFLAGS='$(SHFLAGS)'
 FFSERVERLDFLAGS=-Wl,-E
 LIBPREF="lib"
 LIBSUF=".a"
@@ -1560,7 +1553,6 @@ case $target_os in
     darwin)
         disable need_memalign
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR) -Wl,-read_only_relocs,suppress'
-        VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(SHLIBDIR)/vhook/$$(@F)'
         strip="strip -x"
         FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
         SLIBSUF=".dylib"
@@ -1578,12 +1570,6 @@ case $target_os in
             LIBTARGET=x64
         fi
         shlibdir_default="$bindir_default"
-        VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
-        VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
-        if enabled swscale; then
-            VHOOKSHFLAGS="$VHOOKSHFLAGS -L\$(BUILD_ROOT)/libswscale"
-            VHOOKLIBS="$VHOOKLIBS -lswscale\$(BUILDSUF)"
-        fi
         disable ffserver
         SLIBPREF=""
         SLIBSUF=".dll"
@@ -1607,12 +1593,6 @@ case $target_os in
     cygwin*)
         target_os=cygwin
         shlibdir_default="$bindir_default"
-        VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
-        VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
-        if enabled swscale; then
-            VHOOKSHFLAGS="$VHOOKSHFLAGS -L\$(BUILD_ROOT)/libswscale"
-            VHOOKLIBS="$VHOOKLIBS -lswscale\$(BUILDSUF)"
-        fi
         SLIBPREF="cyg"
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
@@ -1622,7 +1602,7 @@ case $target_os in
         enable dos_paths
         ;;
     *-dos|freedos|opendos)
-        disable ffplay ffserver vhook
+        disable ffplay ffserver
         disable $INDEV_LIST $OUTDEV_LIST
         network_extralibs="-lsocket"
         objformat="coff"
@@ -1656,11 +1636,7 @@ case $target_os in
           emximp -o $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib $(SUBDIR)$(NAME).def;'
         SLIB_INSTALL_EXTRA_CMD='install -m 644 $(SUBDIR)$(LIBPREF)$(NAME)_dll.a $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib "$(LIBDIR)"'
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.a "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.lib'
-        disable vhook
         enable dos_paths
-        ;;
-    interix)
-        disable vhook
         ;;
 
     *)
@@ -2040,24 +2016,6 @@ void foo(char * $restrict_keyword p);
 EOF
 done
 
-test "$vhook" = "default" && vhook="$dlopen"
-
-if test "$target_os" = cygwin -o "$target_os" = mingw32 && enabled_all static vhook ; then
-    disable vhook
-    echo
-    echo "At the moment vhooks don't work on Cygwin or MinGW static builds."
-    echo "Patches welcome."
-    echo
-fi
-
-if enabled vhook; then
-    check_ldflags -rdynamic
-    check_ldflags -export-dynamic
-fi
-
-check_foo_config imlib2 imlib2 Imlib2.h imlib_load_font
-check_foo_config freetype2 freetype ft2build.h FT_Init_FreeType
-
 ##########################################
 # SDL check
 
@@ -2225,8 +2183,6 @@ if enabled gprof; then
     add_ldflags -p
 fi
 
-VHOOKCFLAGS="-fPIC"
-
 # Find out if the .align argument is a power of two or not.
 check_asm asmalign_pot '".align 3"'
 
@@ -2312,11 +2268,6 @@ echo "postprocessing support    ${postproc-no}"
 echo "software scaler enabled   ${swscale-no}"
 echo "new filter support        ${avfilter-no}"
 echo "filters using lavformat   ${avfilter_lavf-no}"
-echo "video hooking             ${vhook-no}"
-if enabled vhook; then
-    echo "Imlib2 support            ${imlib2-no}"
-    echo "FreeType support          ${freetype2-no}"
-fi
 echo "network support           ${network-no}"
 if enabled network; then
     echo "IPv6 support              ${ipv6-no}"
@@ -2395,13 +2346,10 @@ enabled stripping &&
     echo "STRIP=echo ignoring strip" >> config.mak
 
 echo "OPTFLAGS=$CFLAGS" >> config.mak
-echo "VHOOKCFLAGS=$VHOOKCFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
 echo "YASMFLAGS=$YASMFLAGS" >> config.mak
-echo "VHOOKSHFLAGS=$VHOOKSHFLAGS" >> config.mak
-echo "VHOOKLIBS=$VHOOKLIBS" >> config.mak
 echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
 echo "BUILD_STATIC=$static" >> config.mak
 echo "BUILDSUF=$build_suffix" >> config.mak
@@ -2529,7 +2477,6 @@ if enabled source_path_used; then
         libswscale        \
         tests             \
         tools             \
-        vhook             \
         "
     FILES="\
         Makefile             \

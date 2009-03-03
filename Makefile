@@ -32,10 +32,8 @@ FF_LDFLAGS   := $(FFLDFLAGS)
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
 
-ALL_TARGETS-$(CONFIG_VHOOK) += videohook
 ALL_TARGETS-$(BUILD_DOC)    += documentation
 
-INSTALL_TARGETS-$(CONFIG_VHOOK) += install-vhook
 ifneq ($(PROGS),)
 INSTALL_TARGETS-yes             += install-progs install-data
 INSTALL_TARGETS-$(BUILD_DOC)    += install-man
@@ -81,41 +79,8 @@ cmdutils.o cmdutils.d: version.h
 
 alltools: $(addsuffix $(EXESUF),$(addprefix tools/, cws2fws pktdumper qt-faststart trasher))
 
-VHOOKCFLAGS += $(filter-out -mdynamic-no-pic,$(CFLAGS))
-
-BASEHOOKS = fish null watermark
-ALLHOOKS = $(BASEHOOKS) drawtext imlib2 ppm
-ALLHOOKS_SRCS = $(addprefix vhook/, $(addsuffix .c, $(ALLHOOKS)))
-
-HOOKS-$(HAVE_FORK)      += ppm
-HOOKS-$(HAVE_IMLIB2)    += imlib2
-HOOKS-$(HAVE_FREETYPE2) += drawtext
-
-HOOKS = $(addprefix vhook/, $(addsuffix $(SLIBSUF), $(BASEHOOKS) $(HOOKS-yes)))
-
-VHOOKCFLAGS-$(HAVE_IMLIB2) += `imlib2-config --cflags`
-LIBS_imlib2$(SLIBSUF)       = `imlib2-config --libs`
-
-VHOOKCFLAGS-$(HAVE_FREETYPE2) += `freetype-config --cflags`
-LIBS_drawtext$(SLIBSUF)        = `freetype-config --libs`
-
-VHOOKCFLAGS += $(VHOOKCFLAGS-yes)
-
-vhook/%.o vhook/%.d: CFLAGS:=$(VHOOKCFLAGS)
-
-# vhooks compile fine without libav*, but need them nonetheless.
-videohook: $(FF_DEP_LIBS) $(HOOKS)
-
-$(eval VHOOKSHFLAGS=$(VHOOKSHFLAGS))
-vhook/%$(SLIBSUF): vhook/%.o
-	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(VHOOKLIBS) $(LIBS_$(@F))
-
-VHOOK_DEPS = $(HOOKS:$(SLIBSUF)=.d)
-depend dep: $(VHOOK_DEPS)
-
 documentation: $(addprefix doc/, ffmpeg-doc.html faq.html ffserver-doc.html \
-                                 ffplay-doc.html general.html hooks.html \
-                                 $(ALLMANPAGES))
+                                 ffplay-doc.html general.html $(ALLMANPAGES))
 
 doc/%.html: doc/%.texi
 	texi2html -monolithic -number $<
@@ -141,11 +106,7 @@ install-man: $(MANPAGES)
 	install -d "$(MANDIR)/man1"
 	install -m 644 $(MANPAGES) "$(MANDIR)/man1"
 
-install-vhook: videohook
-	install -d "$(SHLIBDIR)/vhook"
-	install -m 755 $(HOOKS) "$(SHLIBDIR)/vhook"
-
-uninstall: uninstall-progs uninstall-data uninstall-man uninstall-vhook
+uninstall: uninstall-progs uninstall-data uninstall-man
 
 uninstall-progs:
 	rm -f $(addprefix "$(BINDIR)/", $(ALLPROGS))
@@ -156,10 +117,6 @@ uninstall-data:
 uninstall-man:
 	rm -f $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
 
-uninstall-vhook:
-	rm -f $(addprefix "$(SHLIBDIR)/",$(ALLHOOKS_SRCS:.c=$(SLIBSUF)))
-	-rmdir "$(SHLIBDIR)/vhook/"
-
 testclean:
 	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
 
@@ -168,10 +125,9 @@ clean:: testclean
 	rm -f doc/*.html doc/*.pod doc/*.1
 	rm -f $(addprefix tests/,$(addsuffix $(EXESUF),audiogen videogen rotozoom seek_test tiny_psnr))
 	rm -f $(addprefix tools/,$(addsuffix $(EXESUF),cws2fws pktdumper qt-faststart trasher))
-	rm -f vhook/*.o vhook/*~ vhook/*.so vhook/*.dylib vhook/*.dll
 
 distclean::
-	rm -f version.h config.* vhook/*.d
+	rm -f version.h config.*
 
 # regression tests
 
@@ -355,6 +311,4 @@ tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
-.PHONY: lib videohook documentation *test regtest-* swscale-error zlib-error alltools check
-
--include $(VHOOK_DEPS)
+.PHONY: lib documentation *test regtest-* swscale-error zlib-error alltools check

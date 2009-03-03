@@ -691,10 +691,6 @@ Notes:
 
 @itemize
 
-@item In order to compile vhooks, you must have a POSIX-compliant libdl in
-your MinGW system. Get dlfcn-win32 from
-@url{http://code.google.com/p/dlfcn-win32}.
-
 @item In order to compile FFplay, you must have the MinGW development library
 of SDL. Get it from @url{http://www.libsdl.org}.
 Edit the @file{bin/sdl-config} script so that it points to the correct prefix
