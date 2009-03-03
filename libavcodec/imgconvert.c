@@ -289,22 +289,27 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     [PIX_FMT_VDPAU_MPEG1] = {
         .name = "vdpau_mpeg1",
         .is_hwaccel = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
     [PIX_FMT_VDPAU_MPEG2] = {
         .name = "vdpau_mpeg2",
         .is_hwaccel = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
     [PIX_FMT_VDPAU_H264] = {
         .name = "vdpau_h264",
         .is_hwaccel = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
     [PIX_FMT_VDPAU_WMV3] = {
         .name = "vdpau_wmv3",
         .is_hwaccel = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
     [PIX_FMT_VDPAU_VC1] = {
         .name = "vdpau_vc1",
         .is_hwaccel = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
     [PIX_FMT_UYYVYY411] = {
         .name = "uyyvyy411",
@@ -424,14 +429,17 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     [PIX_FMT_VAAPI_MOCO] = {
         .name = "vaapi_moco",
         .is_hwaccel = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
     [PIX_FMT_VAAPI_IDCT] = {
         .name = "vaapi_idct",
         .is_hwaccel = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
     [PIX_FMT_VAAPI_VLD] = {
         .name = "vaapi_vld",
         .is_hwaccel = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
 };
 
