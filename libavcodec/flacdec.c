@@ -37,6 +37,7 @@
 
 #include "libavutil/crc.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "bitstream.h"
 #include "golomb.h"
 #include "flac.h"
@@ -428,6 +429,10 @@ static inline int decode_subframe(FLACContext *s, int channel)
     } else {
         if (s->decorrelation == LEFT_SIDE || s->decorrelation == MID_SIDE)
             s->curr_bps++;
+    }
+    if (s->curr_bps > 32) {
+        ff_log_missing_feature(s->avctx, "decorrelated bit depth > 32", 0);
+        return -1;
     }
 
     if (get_bits1(&s->gb)) {
