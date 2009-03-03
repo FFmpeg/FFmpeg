@@ -1553,6 +1553,8 @@ static int av_encode(AVFormatContext **output_files,
     AVInputFile *file_table;
     int key;
     int want_sdp = 1;
+    uint8_t no_packet[MAX_FILES]={0};
+    int no_packet_count=0;
 
     file_table= av_mallocz(nb_input_files * sizeof(AVInputFile));
     if (!file_table)
@@ -2057,6 +2059,8 @@ static int av_encode(AVFormatContext **output_files,
             ost = ost_table[i];
             os = output_files[ost->file_index];
             ist = ist_table[ost->source_index];
+            if(no_packet[ist->file_index])
+                continue;
             if(ost->st->codec->codec_type == CODEC_TYPE_VIDEO)
                 opts = ost->sync_opts * av_q2d(ost->st->codec->time_base);
             else
@@ -2079,6 +2083,11 @@ static int av_encode(AVFormatContext **output_files,
         }
         /* if none, if is finished */
         if (file_index < 0) {
+            if(no_packet_count){
+                no_packet_count=0;
+                memset(no_packet, 0, sizeof(no_packet));
+                continue;
+            }
             break;
         }
 
@@ -2093,8 +2102,11 @@ static int av_encode(AVFormatContext **output_files,
         /* read a frame from it and output it in the fifo */
         is = input_files[file_index];
         ret= av_read_frame(is, &pkt);
-        if(ret == AVERROR(EAGAIN) && strcmp(is->iformat->name, "ffm"))
+        if(ret == AVERROR(EAGAIN) && strcmp(is->iformat->name, "ffm")){
+            no_packet[file_index]=1;
+            no_packet_count++;
             continue;
+        }
         if (ret < 0) {
             file_table[file_index].eof_reached = 1;
             if (opt_shortest)
@@ -2102,6 +2114,9 @@ static int av_encode(AVFormatContext **output_files,
             else
                 continue;
         }
+
+        no_packet_count=0;
+        memset(no_packet, 0, sizeof(no_packet));
 
         if (do_pkt_dump) {
             av_pkt_dump_log(NULL, AV_LOG_DEBUG, &pkt, do_hex_dump);
