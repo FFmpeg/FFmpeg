@@ -248,8 +248,8 @@ static int metadata_parse(FLACContext *s)
                 switch (metadata_type) {
                 case FLAC_METADATA_TYPE_STREAMINFO:
                     if (!s->got_streaminfo) {
-                    ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s,
-                                             s->gb.buffer+get_bits_count(&s->gb)/8);
+                        ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s,
+                                                 s->gb.buffer+get_bits_count(&s->gb)/8);
                         s->got_streaminfo = 1;
                     }
                 default:
