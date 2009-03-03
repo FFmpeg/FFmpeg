@@ -288,7 +288,7 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
         if (tmp == (method_type == 0 ? 15 : 31)) {
             tmp = get_bits(&s->gb, 5);
             for (; i < samples; i++, sample++)
-                s->decoded[channel][sample] = get_sbits(&s->gb, tmp);
+                s->decoded[channel][sample] = get_sbits_long(&s->gb, tmp);
         } else {
             for (; i < samples; i++, sample++) {
                 s->decoded[channel][sample] = get_sr_golomb_flac(&s->gb, tmp, INT_MAX, 0);
@@ -308,7 +308,7 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
 
     /* warm up samples */
     for (i = 0; i < pred_order; i++) {
-        decoded[i] = get_sbits(&s->gb, s->curr_bps);
+        decoded[i] = get_sbits_long(&s->gb, s->curr_bps);
     }
 
     if (decode_residuals(s, channel, pred_order) < 0)
@@ -359,7 +359,7 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
 
     /* warm up samples */
     for (i = 0; i < pred_order; i++) {
-        decoded[i] = get_sbits(&s->gb, s->curr_bps);
+        decoded[i] = get_sbits_long(&s->gb, s->curr_bps);
     }
 
     coeff_prec = get_bits(&s->gb, 4) + 1;
@@ -446,12 +446,12 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
 //FIXME use av_log2 for types
     if (type == 0) {
-        tmp = get_sbits(&s->gb, s->curr_bps);
+        tmp = get_sbits_long(&s->gb, s->curr_bps);
         for (i = 0; i < s->blocksize; i++)
             s->decoded[channel][i] = tmp;
     } else if (type == 1) {
         for (i = 0; i < s->blocksize; i++)
-            s->decoded[channel][i] = get_sbits(&s->gb, s->curr_bps);
+            s->decoded[channel][i] = get_sbits_long(&s->gb, s->curr_bps);
     } else if ((type >= 8) && (type <= 12)) {
         if (decode_subframe_fixed(s, channel, type & ~0x8) < 0)
             return -1;
