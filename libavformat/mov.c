@@ -308,9 +308,14 @@ static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    AVStream *st;
     uint32_t type;
     uint32_t ctype;
+
+    if (c->fc->nb_streams < 1) // meta before first trak
+        return 0;
+
+    st = c->fc->streams[c->fc->nb_streams-1];
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
