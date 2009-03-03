@@ -212,7 +212,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     int post, err, ch;
     char line[1024], *q;
     char *auth_b64;
-    int auth_b64_len = strlen(auth)* 4 / 3 + 12;
+    int auth_b64_len = (strlen(auth) + 2) / 3 * 4 + 1;
     int64_t off = s->off;
 
 
