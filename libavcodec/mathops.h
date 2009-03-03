@@ -113,5 +113,12 @@ static inline av_const int mid_pred(int a, int b, int c)
 }
 #endif
 
+#ifndef sign_extend
+static inline av_const int sign_extend(int val, unsigned bits)
+{
+    return (val << (INT_BIT - bits)) >> (INT_BIT - bits);
+}
+#endif
+
 #endif /* AVCODEC_MATHOPS_H */
 
