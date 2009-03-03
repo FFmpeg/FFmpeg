@@ -35,7 +35,6 @@
 
 #include <limits.h>
 
-#define ALT_BITSTREAM_READER
 #include "libavutil/crc.h"
 #include "avcodec.h"
 #include "bitstream.h"
