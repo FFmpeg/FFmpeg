@@ -1084,7 +1084,6 @@ libtheora_encoder_deps="libtheora"
 libvorbis_encoder_deps="libvorbis"
 libx264_encoder_deps="libx264"
 libxvid_encoder_deps="libxvid"
-mpeg4aac_decoder_deps="libfaad"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 # demuxers / muxers
