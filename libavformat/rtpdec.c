@@ -538,8 +538,8 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         }
     }
 
-        // now perform timestamp things....
-        finalize_packet(s, pkt, timestamp);
+    // now perform timestamp things....
+    finalize_packet(s, pkt, timestamp);
 
     return rv;
 }
