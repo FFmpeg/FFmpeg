@@ -326,6 +326,9 @@ int udp_get_local_port(URLContext *h)
  * streams at the same time.
  * @param h media file context
  */
+#if (LIBAVFORMAT_VERSION_MAJOR >= 53)
+static
+#endif
 int udp_get_file_handle(URLContext *h)
 {
     UDPContext *s = h->priv_data;
@@ -528,4 +531,5 @@ URLProtocol udp_protocol = {
     udp_write,
     NULL, /* seek */
     udp_close,
+    .url_get_file_handle = udp_get_file_handle,
 };

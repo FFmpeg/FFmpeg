@@ -78,6 +78,15 @@ int url_exist(const char *filename);
 int64_t url_filesize(URLContext *h);
 
 /**
+ * Return the file descriptor associated with this URL. For RTP, this
+ * will return only the RTP file descriptor, not the RTCP file descriptor.
+ * To get both, use rtp_get_file_handles().
+ *
+ * @return the file descriptor associated with this URL, or <0 on error.
+ */
+int url_get_file_handle(URLContext *h);
+
+/**
  * Return the maximum packet size associated to packetized file
  * handle. If the file is not packetized (stream like HTTP or file on
  * disk), then 0 is returned.
@@ -144,6 +153,7 @@ typedef struct URLProtocol {
     int (*url_read_pause)(URLContext *h, int pause);
     int64_t (*url_read_seek)(URLContext *h, int stream_index,
                              int64_t timestamp, int flags);
+    int (*url_get_file_handle)(URLContext *h);
 } URLProtocol;
 
 #if LIBAVFORMAT_VERSION_MAJOR < 53
@@ -389,6 +399,8 @@ void init_checksum(ByteIOContext *s,
 /* udp.c */
 int udp_set_remote_url(URLContext *h, const char *uri);
 int udp_get_local_port(URLContext *h);
+#if (LIBAVFORMAT_VERSION_MAJOR <= 52)
 int udp_get_file_handle(URLContext *h);
+#endif
 
 #endif /* AVFORMAT_AVIO_H */

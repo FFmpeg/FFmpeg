@@ -181,6 +181,12 @@ static int tcp_close(URLContext *h)
     return 0;
 }
 
+static int tcp_get_file_handle(URLContext *h)
+{
+    TCPContext *s = h->priv_data;
+    return s->fd;
+}
+
 URLProtocol tcp_protocol = {
     "tcp",
     tcp_open,
@@ -188,4 +194,5 @@ URLProtocol tcp_protocol = {
     tcp_write,
     NULL, /* seek */
     tcp_close,
+    .url_get_file_handle = tcp_get_file_handle,
 };

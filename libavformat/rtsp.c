@@ -1305,7 +1305,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
     fd_set rfds;
-    int fd1, fd2, fd_max, n, i, ret;
+    int fd1, fd_max, n, i, ret;
     struct timeval tv;
 
     for(;;) {
@@ -1318,7 +1318,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             if (rtsp_st->rtp_handle) {
                 /* currently, we cannot probe RTCP handle because of
                  * blocking restrictions */
-                rtp_get_file_handles(rtsp_st->rtp_handle, &fd1, &fd2);
+                fd1 = url_get_file_handle(rtsp_st->rtp_handle);
                 if (fd1 > fd_max)
                     fd_max = fd1;
                 FD_SET(fd1, &rfds);
@@ -1331,7 +1331,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             for(i = 0; i < rt->nb_rtsp_streams; i++) {
                 rtsp_st = rt->rtsp_streams[i];
                 if (rtsp_st->rtp_handle) {
-                    rtp_get_file_handles(rtsp_st->rtp_handle, &fd1, &fd2);
+                    fd1 = url_get_file_handle(rtsp_st->rtp_handle);
                     if (FD_ISSET(fd1, &rfds)) {
                         ret = url_read(rtsp_st->rtp_handle, buf, buf_size);
                         if (ret > 0) {

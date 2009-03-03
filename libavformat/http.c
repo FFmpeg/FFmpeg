@@ -345,6 +345,13 @@ static int64_t http_seek(URLContext *h, int64_t off, int whence)
     return off;
 }
 
+static int
+http_get_file_handle(URLContext *h)
+{
+    HTTPContext *s = h->priv_data;
+    return url_get_file_handle(s->hd);
+}
+
 URLProtocol http_protocol = {
     "http",
     http_open,
@@ -352,4 +359,5 @@ URLProtocol http_protocol = {
     http_write,
     http_seek,
     http_close,
+    .url_get_file_handle = http_get_file_handle,
 };

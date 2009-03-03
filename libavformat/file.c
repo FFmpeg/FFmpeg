@@ -82,6 +82,11 @@ static int file_close(URLContext *h)
     return close(fd);
 }
 
+static int file_get_handle(URLContext *h)
+{
+    return (int) h->priv_data;
+}
+
 URLProtocol file_protocol = {
     "file",
     file_open,
@@ -89,6 +94,7 @@ URLProtocol file_protocol = {
     file_write,
     file_seek,
     file_close,
+    .url_get_file_handle = file_get_handle,
 };
 
 /* pipe protocol */
@@ -120,4 +126,5 @@ URLProtocol pipe_protocol = {
     pipe_open,
     file_read,
     file_write,
+    .url_get_file_handle = file_get_handle,
 };

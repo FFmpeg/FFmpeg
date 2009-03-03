@@ -169,8 +169,8 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 
     /* just to ease handle access. XXX: need to suppress direct handle
        access */
-    s->rtp_fd = udp_get_file_handle(s->rtp_hd);
-    s->rtcp_fd = udp_get_file_handle(s->rtcp_hd);
+    s->rtp_fd = url_get_file_handle(s->rtp_hd);
+    s->rtcp_fd = url_get_file_handle(s->rtcp_hd);
 
     h->max_packet_size = url_get_max_packet_size(s->rtp_hd);
     h->is_streamed = 1;
@@ -296,6 +296,7 @@ int rtp_get_local_port(URLContext *h)
     return udp_get_local_port(s->rtp_hd);
 }
 
+#if (LIBAVFORMAT_VERSION_MAJOR <= 52)
 /**
  * Return the rtp and rtcp file handles for select() usage to wait for
  * several RTP streams at the same time.
@@ -309,6 +310,13 @@ void rtp_get_file_handles(URLContext *h, int *prtp_fd, int *prtcp_fd)
     *prtp_fd = s->rtp_fd;
     *prtcp_fd = s->rtcp_fd;
 }
+#endif
+
+static int rtp_get_file_handle(URLContext *h)
+{
+    RTPContext *s = h->priv_data;
+    return s->rtp_fd;
+}
 
 URLProtocol rtp_protocol = {
     "rtp",
@@ -317,4 +325,5 @@ URLProtocol rtp_protocol = {
     rtp_write,
     NULL, /* seek */
     rtp_close,
+    .url_get_file_handle = rtp_get_file_handle,
 };
