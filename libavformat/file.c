@@ -53,32 +53,32 @@ static int file_open(URLContext *h, const char *filename, int flags)
     fd = open(filename, access, 0666);
     if (fd < 0)
         return AVERROR(ENOENT);
-    h->priv_data = (void *)(size_t)fd;
+    h->priv_data = (void *) fd;
     return 0;
 }
 
 static int file_read(URLContext *h, unsigned char *buf, int size)
 {
-    int fd = (size_t)h->priv_data;
+    int fd = (int) h->priv_data;
     return read(fd, buf, size);
 }
 
 static int file_write(URLContext *h, unsigned char *buf, int size)
 {
-    int fd = (size_t)h->priv_data;
+    int fd = (int) h->priv_data;
     return write(fd, buf, size);
 }
 
 /* XXX: use llseek */
 static int64_t file_seek(URLContext *h, int64_t pos, int whence)
 {
-    int fd = (size_t)h->priv_data;
+    int fd = (int) h->priv_data;
     return lseek(fd, pos, whence);
 }
 
 static int file_close(URLContext *h)
 {
-    int fd = (size_t)h->priv_data;
+    int fd = (int) h->priv_data;
     return close(fd);
 }
 
@@ -110,7 +110,7 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
 #if HAVE_SETMODE
     setmode(fd, O_BINARY);
 #endif
-    h->priv_data = (void *)(size_t)fd;
+    h->priv_data = (void *) fd;
     h->is_streamed = 1;
     return 0;
 }
