@@ -318,20 +318,14 @@ static av_cold int faac_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#define AAC_CODEC(id, name, long_name_) \
-AVCodec name ## _decoder = {    \
-    #name,                      \
-    CODEC_TYPE_AUDIO,           \
-    id,                         \
-    sizeof(FAACContext),        \
-    faac_decode_init,           \
-    NULL,                       \
-    faac_decode_end,            \
-    faac_decode_frame,          \
-    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
+AVCodec libfaad_decoder = {
+    libfaad,
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_AAC,
+    sizeof(FAACContext),
+    faac_decode_init,
+    NULL,
+    faac_decode_end,
+    faac_decode_frame,
+    .long_name = NULL_IF_CONFIG_SMALL("libfaad AAC (Advanced Audio Codec)"),
 }
-
-// FIXME - raw AAC files - maybe just one entry will be enough
-AAC_CODEC(CODEC_ID_AAC, libfaad, "libfaad AAC (Advanced Audio Codec)");
-
-#undef AAC_CODEC
