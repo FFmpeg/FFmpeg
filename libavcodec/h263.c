@@ -5104,10 +5104,7 @@ int h263_decode_picture_header(MpegEncContext *s)
         s->obmc= get_bits1(&s->gb); /* Advanced prediction mode */
         s->unrestricted_mv = s->h263_long_vectors || s->obmc;
 
-        if (get_bits1(&s->gb) != 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "H263 PB frame not supported\n");
-            return -1; /* not PB frame */
-        }
+        s->pb_frame = get_bits1(&s->gb);
         s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
         skip_bits1(&s->gb); /* Continuous Presence Multipoint mode: off */
 
@@ -5162,6 +5159,7 @@ int h263_decode_picture_header(MpegEncContext *s)
         switch(s->pict_type){
         case 0: s->pict_type= FF_I_TYPE;break;
         case 1: s->pict_type= FF_P_TYPE;break;
+        case 2: s->pict_type= FF_P_TYPE;s->pb_frame = 3;break;
         case 3: s->pict_type= FF_B_TYPE;break;
         case 7: s->pict_type= FF_I_TYPE;break; //ZYGO
         default:
@@ -5250,6 +5248,13 @@ int h263_decode_picture_header(MpegEncContext *s)
     s->mb_width = (s->width  + 15) / 16;
     s->mb_height = (s->height  + 15) / 16;
     s->mb_num = s->mb_width * s->mb_height;
+
+    if (s->pb_frame) {
+        skip_bits(&s->gb, 3); /* Temporal reference for B-pictures */
+        if (s->custom_pcf)
+            skip_bits(&s->gb, 2); //extended Temporal reference
+        skip_bits(&s->gb, 2); /* Quantization information for B-pictures */
+    }
 
     /* PEI */
     while (get_bits1(&s->gb) != 0) {
