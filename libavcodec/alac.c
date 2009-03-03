@@ -540,8 +540,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
             for (chan = 0; chan < channels; chan++) {
                 int32_t audiobits;
 
-                audiobits = get_bits_long(&alac->gb, alac->setinfo_sample_size);
-                audiobits = sign_extend(audiobits, alac->setinfo_sample_size);
+                audiobits = get_sbits_long(&alac->gb, alac->setinfo_sample_size);
 
                 alac->outputsamples_buffer[chan][i] = audiobits;
             }
