@@ -2086,6 +2086,7 @@ static int av_encode(AVFormatContext **output_files,
             if(no_packet_count){
                 no_packet_count=0;
                 memset(no_packet, 0, sizeof(no_packet));
+                usleep(10000);
                 continue;
             }
             break;
