@@ -52,7 +52,6 @@ enum FLACExtradataFormat {
  * and/or the FLAC decoder.
  */
 #define FLACSTREAMINFO \
-    int min_blocksize;      /**< minimum block size, in samples          */\
     int max_blocksize;      /**< maximum block size, in samples          */\
     int max_framesize;      /**< maximum frame size, in bytes            */\
     int samplerate;         /**< sample rate                             */\

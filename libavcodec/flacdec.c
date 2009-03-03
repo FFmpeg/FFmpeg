@@ -150,8 +150,7 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
 
 static void dump_headers(AVCodecContext *avctx, FLACStreaminfo *s)
 {
-    av_log(avctx, AV_LOG_DEBUG, "  Blocksize: %d .. %d\n", s->min_blocksize,
-           s->max_blocksize);
+    av_log(avctx, AV_LOG_DEBUG, "  Max Blocksize: %d\n", s->max_blocksize);
     av_log(avctx, AV_LOG_DEBUG, "  Max Framesize: %d\n", s->max_framesize);
     av_log(avctx, AV_LOG_DEBUG, "  Samplerate: %d\n", s->samplerate);
     av_log(avctx, AV_LOG_DEBUG, "  Channels: %d\n", s->channels);
@@ -187,7 +186,7 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
     init_get_bits(&gb, buffer, FLAC_STREAMINFO_SIZE*8);
 
     /* mandatory streaminfo */
-    s->min_blocksize = get_bits(&gb, 16);
+    skip_bits(&gb, 16); /* skip min blocksize */
     s->max_blocksize = get_bits(&gb, 16);
 
     skip_bits(&gb, 24); /* skip min frame size */
