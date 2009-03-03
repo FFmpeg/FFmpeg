@@ -257,7 +257,6 @@ Include the log file "$logfile" produced by configure as this will help
 solving the problem.
 EOF
     fi
-    rm -f $TMPC $TMPE $TMPH $TMPO $TMPS $TMPSH
     exit 1
 }
 
@@ -1342,12 +1341,33 @@ esac
 : ${TMPDIR:=$TMP}
 : ${TMPDIR:=/tmp}
 
-TMPC="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
-TMPE="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}${EXESUF}"
-TMPH="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
-TMPO="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
-TMPS="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
-TMPSH="${TMPDIR}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.sh"
+if ! check_cmd type mktemp; then
+    # simple replacement for missing mktemp
+    # NOT SAFE FOR GENERAL USE
+    mktemp(){
+        echo "${2%XXX*}.${HOSTNAME}.${UID}.$$"
+    }
+fi
+
+tmpfile(){
+    tmp=$(mktemp -u "${TMPDIR}/ffconf.XXXXXXXX")$2 &&
+        (set -C; exec > $tmp) 2>/dev/null ||
+        die "Unable to create temoporary file in $TMPDIR."
+    append TMPFILES $tmp
+    eval $1=$tmp
+}
+
+trap 'rm -f -- $TMPFILES' EXIT
+trap exit HUP INT TERM
+
+tmpfile TMPC  .c
+tmpfile TMPE  $EXESUF
+tmpfile TMPH  .h
+tmpfile TMPO  .o
+tmpfile TMPS  .S
+tmpfile TMPSH .sh
+
+unset -f mktemp
 
 # make sure we can execute files in $TMPDIR
 cat > $TMPSH 2>> $logfile <<EOF
@@ -1361,7 +1381,6 @@ variable to another directory and make sure that it is not mounted noexec.
 EOF
     die "Sanity test failed."
 fi
-rm $TMPSH
 
 if   $cc --version 2>/dev/null | grep -qi gcc; then
     cc_type=gcc
@@ -2483,8 +2502,6 @@ echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
 cmp -s $TMPH config.h &&
     echo "config.h is unchanged" ||
     mv -f $TMPH config.h
-
-rm -f $TMPC $TMPE $TMPH $TMPO $TMPS $TMPSH
 
 # build tree in object directory if source path is different from current one
 if enabled source_path_used; then
