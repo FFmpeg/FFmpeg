@@ -922,6 +922,7 @@ CMDLINE_SELECT="
     logging
     optimizations
     stripping
+    swscale
     yasm
 "
 
