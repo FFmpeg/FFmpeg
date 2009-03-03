@@ -3708,13 +3708,13 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         return -1;
     }
     if(!h0->pps_buffers[pps_id]) {
-        av_log(h->s.avctx, AV_LOG_ERROR, "non-existing PPS referenced\n");
+        av_log(h->s.avctx, AV_LOG_ERROR, "non-existing PPS %u referenced\n", pps_id);
         return -1;
     }
     h->pps= *h0->pps_buffers[pps_id];
 
     if(!h0->sps_buffers[h->pps.sps_id]) {
-        av_log(h->s.avctx, AV_LOG_ERROR, "non-existing SPS referenced\n");
+        av_log(h->s.avctx, AV_LOG_ERROR, "non-existing SPS %u referenced\n", h->pps.sps_id);
         return -1;
     }
     h->sps = *h0->sps_buffers[h->pps.sps_id];
