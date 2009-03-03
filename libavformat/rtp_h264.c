@@ -310,6 +310,8 @@ static int h264_handle_packet(AVFormatContext *ctx,
         break;
     }
 
+    pkt->stream_index = st->index;
+
     return result;
 }
 

@@ -382,7 +382,6 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
         addend = av_rescale(s->last_rtcp_ntp_time - s->first_rtcp_ntp_time, s->st->time_base.den, (uint64_t)s->st->time_base.num << 32);
         pkt->pts = addend + delta_timestamp;
     }
-    pkt->stream_index = s->st->index;
 }
 
 /**
@@ -536,6 +535,8 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             memcpy(pkt->data, buf, len);
             break;
         }
+
+        pkt->stream_index = st->index;
     }
 
     // now perform timestamp things....
