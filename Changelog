@@ -1,3 +1,9 @@
+version <next>:
+
+- PB-frame decoding for H.263
+
+
+
 version 0.5:
 
 - The "device" muxers and demuxers are now in a new libavdevice library
