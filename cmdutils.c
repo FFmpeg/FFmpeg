@@ -280,9 +280,7 @@ static void print_all_lib_versions(FILE* outstream, int indent)
 #if CONFIG_AVFILTER
     PRINT_LIB_VERSION(outstream, avfilter, AVFILTER, indent);
 #endif
-#if CONFIG_SWSCALE
     PRINT_LIB_VERSION(outstream, swscale,  SWSCALE,  indent);
-#endif
 #if CONFIG_POSTPROC
     PRINT_LIB_VERSION(outstream, postproc, POSTPROC, indent);
 #endif

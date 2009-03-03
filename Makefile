@@ -20,9 +20,8 @@ ALLMANPAGES = $(addsuffix .1, $(BASENAMES))
 
 FFLIBS-$(CONFIG_AVFILTER) += avfilter
 FFLIBS-$(CONFIG_POSTPROC) += postproc
-FFLIBS-$(CONFIG_SWSCALE)  += swscale
 
-FFLIBS := avdevice avformat avcodec avutil
+FFLIBS := avdevice avformat avcodec avutil swscale
 
 DATA_FILES := $(wildcard $(SRC_DIR)/ffpresets/*.ffpreset)
 
@@ -235,15 +234,6 @@ LAVF_REGFILES = $(call REGFILES,lavf.regression,$(LAVF_TESTS))
 LAVF_REG     = tests/data/lavf.regression
 ROTOZOOM_REG = tests/data/rotozoom.regression
 VSYNTH_REG   = tests/data/vsynth.regression
-
-ifneq ($(CONFIG_SWSCALE),yes)
-servertest codectest $(CODEC_TESTS) libavtest: swscale-error
-swscale-error:
-	@echo
-	@echo "This regression test requires --enable-swscale."
-	@echo
-	@exit 1
-endif
 
 ifneq ($(CONFIG_ZLIB),yes)
 regtest-flashsv codectest: zlib-error

@@ -29,7 +29,6 @@ OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
 OBJS-$(CONFIG_FFT)                     += fft.o
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
-OBJS-$(CONFIG_OLDSCALER)               += imgresample.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o
 
 # decoders/encoders
@@ -494,7 +493,6 @@ OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
 OBJS-$(ARCH_PPC)                       += ppc/dsputil_ppc.o             \
 
 ALTIVEC-OBJS-$(CONFIG_H264_DECODER)    += ppc/h264_altivec.o
-ALTIVEC-OBJS-$(CONFIG_OLDSCALER)       += ppc/imgresample_altivec.o
 ALTIVEC-OBJS-$(CONFIG_SNOW_DECODER)    += ppc/snow_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_WMV3_DECODER)    += ppc/vc1dsp_altivec.o
@@ -525,7 +523,6 @@ OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
 
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 rangecoder snow)
-TESTS-$(CONFIG_OLDSCALER) += imgresample-test$(EXESUF)
 TESTS-$(ARCH_X86) += x86/cpuid-test$(EXESUF) motion-test$(EXESUF)
 
 CLEANFILES = apiexample$(EXESUF)

@@ -81,7 +81,6 @@ show_help(){
   echo "  --disable-ffplay         disable ffplay build"
   echo "  --disable-ffserver       disable ffserver build"
   echo "  --enable-postproc        enable GPLed postprocessing support [no]"
-  echo "  --enable-swscale         enable GPLed software scaler support [no]"
   echo "  --enable-avfilter        video filter support [no]"
   echo "  --enable-avfilter-lavf   video filters dependent on avformat [no]"
   echo "  --enable-beosthreads     use BeOS threads [no]"
@@ -796,7 +795,6 @@ CONFIG_LIST="
     shared
     small
     static
-    swscale
     vdpau
     x11grab
     zlib
@@ -912,7 +910,6 @@ HAVE_LIST="
 
 # options emitted with CONFIG_ prefix but not available on command line
 CONFIG_EXTRA="
-    oldscaler
 "
 
 CMDLINE_SELECT="
@@ -979,9 +976,6 @@ ppc4xx_deps="ppc"
 sse_deps="mmx"
 ssse3_deps="sse"
 vis_deps="sparc"
-
-# common features
-oldscaler_deps="!swscale"
 
 # decoders / encoders
 aac_decoder_select="fft mdct"
@@ -1170,7 +1164,6 @@ enable ffserver
 enable ipv6
 enable mpegaudio_hp
 enable network
-enable oldscaler
 enable optimizations
 enable protocols
 enable static
@@ -1691,7 +1684,6 @@ if ! enabled gpl; then
     die_gpl_disabled "libxvidcore"             libxvid
     die_gpl_disabled "FAAD2"                   libfaad2
     die_gpl_disabled "The X11 grabber"         x11grab
-    die_gpl_disabled "The software scaler"     swscale
 fi
 
 if ! enabled nonfree && enabled_any libamr_nb libamr_wb; then
@@ -2265,7 +2257,6 @@ echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
 echo "postprocessing support    ${postproc-no}"
-echo "software scaler enabled   ${swscale-no}"
 echo "new filter support        ${avfilter-no}"
 echo "filters using lavformat   ${avfilter_lavf-no}"
 echo "network support           ${network-no}"
@@ -2549,9 +2540,4 @@ enabled avfilter &&
     pkgconfig_generate libavfilter "FFmpeg video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
 enabled postproc &&
     pkgconfig_generate libpostproc "FFmpeg post processing library" "$LIBPOSTPROC_VERSION"
-if enabled swscale; then
     pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "libavutil = $LIBAVUTIL_VERSION"
-else
-    pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "" "libavcodec = $LIBAVCODEC_VERSION"
-    apply libswscale/libswscale.pc sed s/^Libs:.*$/Libs:/
-fi
