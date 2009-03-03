@@ -946,7 +946,7 @@ static void do_video_out(AVFormatContext *s,
             /* better than nothing: use input picture interlaced
                settings */
             big_picture.interlaced_frame = in_picture->interlaced_frame;
-            if(avctx_opts[CODEC_TYPE_VIDEO]->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME)){
+            if(avcodec_opts[CODEC_TYPE_VIDEO]->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME)){
                 if(top_field_first == -1)
                     big_picture.top_field_first = in_picture->top_field_first;
                 else
@@ -2328,7 +2328,7 @@ static int opt_bitrate(const char *opt, const char *arg)
 
     opt_default(opt, arg);
 
-    if (av_get_int(avctx_opts[codec_type], "b", NULL) < 1000)
+    if (av_get_int(avcodec_opts[codec_type], "b", NULL) < 1000)
         fprintf(stderr, "WARNING: The bitrate parameter is set too low. It takes bits/s as argument, not kbits/s\n");
 
     return 0;
@@ -2854,7 +2854,7 @@ static void opt_input_file(const char *filename)
         enc->thread_count= thread_count;
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
-            set_context_opts(enc, avctx_opts[CODEC_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
+            set_context_opts(enc, avcodec_opts[CODEC_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
             //fprintf(stderr, "\nInput Audio channels: %d", enc->channels);
             channel_layout = enc->channel_layout;
             audio_channels = enc->channels;
@@ -2865,7 +2865,7 @@ static void opt_input_file(const char *filename)
                 ic->streams[i]->discard= AVDISCARD_ALL;
             break;
         case CODEC_TYPE_VIDEO:
-            set_context_opts(enc, avctx_opts[CODEC_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
+            set_context_opts(enc, avcodec_opts[CODEC_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
             frame_height = enc->height;
             frame_width = enc->width;
             if(ic->streams[i]->sample_aspect_ratio.num)
@@ -2994,11 +2994,11 @@ static void new_video_stream(AVFormatContext *oc)
     if(   (video_global_header&1)
        || (video_global_header==0 && (oc->oformat->flags & AVFMT_GLOBALHEADER))){
         video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-        avctx_opts[CODEC_TYPE_VIDEO]->flags|= CODEC_FLAG_GLOBAL_HEADER;
+        avcodec_opts[CODEC_TYPE_VIDEO]->flags|= CODEC_FLAG_GLOBAL_HEADER;
     }
     if(video_global_header&2){
         video_enc->flags2 |= CODEC_FLAG2_LOCAL_HEADER;
-        avctx_opts[CODEC_TYPE_VIDEO]->flags2|= CODEC_FLAG2_LOCAL_HEADER;
+        avcodec_opts[CODEC_TYPE_VIDEO]->flags2|= CODEC_FLAG2_LOCAL_HEADER;
     }
 
     if (video_stream_copy) {
@@ -3023,7 +3023,7 @@ static void new_video_stream(AVFormatContext *oc)
 
         video_enc->codec_id = codec_id;
 
-        set_context_opts(video_enc, avctx_opts[CODEC_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
+        set_context_opts(video_enc, avcodec_opts[CODEC_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
 
         if (codec && codec->supported_framerates && !force_fps)
             fps = codec->supported_framerates[av_find_nearest_q_idx(fps, codec->supported_framerates)];
@@ -3137,7 +3137,7 @@ static void new_audio_stream(AVFormatContext *oc)
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
         audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-        avctx_opts[CODEC_TYPE_AUDIO]->flags|= CODEC_FLAG_GLOBAL_HEADER;
+        avcodec_opts[CODEC_TYPE_AUDIO]->flags|= CODEC_FLAG_GLOBAL_HEADER;
     }
     if (audio_stream_copy) {
         st->stream_copy = 1;
@@ -3145,7 +3145,7 @@ static void new_audio_stream(AVFormatContext *oc)
     } else {
         AVCodec *codec;
 
-        set_context_opts(audio_enc, avctx_opts[CODEC_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
+        set_context_opts(audio_enc, avcodec_opts[CODEC_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
 
         if (audio_codec_name) {
             codec_id = find_codec_or_die(audio_codec_name, CODEC_TYPE_AUDIO, 1);
@@ -3211,7 +3211,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
     if (subtitle_stream_copy) {
         st->stream_copy = 1;
     } else {
-        set_context_opts(avctx_opts[CODEC_TYPE_SUBTITLE], subtitle_enc, AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
+        set_context_opts(avcodec_opts[CODEC_TYPE_SUBTITLE], subtitle_enc, AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
         subtitle_enc->codec_id = find_codec_or_die(subtitle_codec_name, CODEC_TYPE_SUBTITLE, 1);
         output_codecs[nb_ocodecs] = avcodec_find_encoder_by_name(subtitle_codec_name);
     }
@@ -3503,7 +3503,7 @@ static void show_help(void)
                       OPT_GRAB,
                       OPT_GRAB);
     printf("\n");
-    av_opt_show(avctx_opts[0], NULL);
+    av_opt_show(avcodec_opts[0], NULL);
     printf("\n");
     av_opt_show(avformat_opts, NULL);
     printf("\n");
@@ -3888,7 +3888,7 @@ int main(int argc, char **argv)
         url_set_interrupt_cb(decode_interrupt_cb);
 
     for(i=0; i<CODEC_TYPE_NB; i++){
-        avctx_opts[i]= avcodec_alloc_context2(i);
+        avcodec_opts[i]= avcodec_alloc_context2(i);
     }
     avformat_opts = avformat_alloc_context();
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);

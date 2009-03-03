@@ -1752,7 +1752,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     enc->error_recognition= error_recognition;
     enc->error_concealment= error_concealment;
 
-    set_context_opts(enc, avctx_opts[enc->codec_type], 0);
+    set_context_opts(enc, avcodec_opts[enc->codec_type], 0);
 
     if (!codec ||
         avcodec_open(enc, codec) < 0)
@@ -2558,7 +2558,7 @@ int main(int argc, char **argv)
     av_register_all();
 
     for(i=0; i<CODEC_TYPE_NB; i++){
-        avctx_opts[i]= avcodec_alloc_context2(i);
+        avcodec_opts[i]= avcodec_alloc_context2(i);
     }
     avformat_opts = avformat_alloc_context();
     sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);

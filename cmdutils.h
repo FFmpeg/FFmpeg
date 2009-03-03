@@ -40,7 +40,7 @@ extern const int program_birth_year;
 extern const int this_year;
 
 extern const char **opt_names;
-extern AVCodecContext *avctx_opts[CODEC_TYPE_NB];
+extern AVCodecContext *avcodec_opts[CODEC_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
 
