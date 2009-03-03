@@ -527,9 +527,10 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         return -1;
     }
 
-    if (blocksize_code == 0)
-        blocksize = s->min_blocksize;
-    else if (blocksize_code == 6)
+    if (blocksize_code == 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "reserved blocksize code: 0\n");
+        return -1;
+    } else if (blocksize_code == 6)
         blocksize = get_bits(&s->gb, 8)+1;
     else if (blocksize_code == 7)
         blocksize = get_bits(&s->gb, 16)+1;
