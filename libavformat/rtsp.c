@@ -392,6 +392,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             codec_type = CODEC_TYPE_AUDIO;
         } else if (!strcmp(st_type, "video")) {
             codec_type = CODEC_TYPE_VIDEO;
+        } else if (!strcmp(st_type, "application")) {
+            codec_type = CODEC_TYPE_DATA;
         } else {
             s1->skip_media = 1;
             return;
@@ -942,6 +944,12 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
 
         /* RTP/TCP */
         else if (lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
+            /** For WMS streams, the application streams are only used for
+             * UDP. When trying to set it up for TCP streams, the server
+             * will return an error. Therefore, we skip those streams. */
+            if (rt->server_type == RTSP_SERVER_WMS &&
+                s->streams[rtsp_st->stream_index]->codec->codec_type == CODEC_TYPE_DATA)
+                continue;
             snprintf(transport, sizeof(transport) - 1,
                      "%s/TCP;", trans_pref);
             if (rt->server_type == RTSP_SERVER_WMS)
