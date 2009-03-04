@@ -639,6 +639,11 @@ static int flac_decode_frame(AVCodecContext *avctx,
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
+    /* check that there is at least the smallest decodable amount of data.
+       this amount corresponds to the smallest valid FLAC frame possible. */
+    if (buf_size < 24)
+        goto end;
+
     /* check for inline header */
     if (show_bits_long(&s->gb, 32) == MKBETAG('f','L','a','C')) {
         if (metadata_parse(s)) {
