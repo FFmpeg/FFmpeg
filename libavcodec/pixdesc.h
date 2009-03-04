@@ -63,7 +63,7 @@ typedef struct AVPixFmtDescriptor{
 }AVPixFmtDescriptor;
 
 #define PIX_FMT_BE        1 ///< big-endian
-#define PIX_FMT_PAL       2 ///< Pixel format has a palette i data[1], values are indexes in this palette.
+#define PIX_FMT_PAL       2 ///< Pixel format has a palette in data[1], values are indexes in this palette.
 #define PIX_FMT_BITSTREAM 4 ///< All values of a component are bit-wise packed end to end.
 
 
