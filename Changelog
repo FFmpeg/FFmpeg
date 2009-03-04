@@ -2,6 +2,7 @@ version <next>:
 
 - PB-frame decoding for H.263
 - deprecated vhook subsystem removed
+- deprecated old scaler removed
 
 
 
