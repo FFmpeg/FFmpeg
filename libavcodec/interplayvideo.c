@@ -94,7 +94,7 @@ typedef struct IpvideoContext {
             motion_offset, s->upper_motion_limit_offset); \
         return -1; \
     } \
-    s->dsp.put_pixels_tab[0][0](s->pixel_ptr, \
+    s->dsp.put_pixels_tab[1][0](s->pixel_ptr, \
         s->current_frame.data[0] + motion_offset, s->stride, 8);
 
 #define COPY_FROM_PREVIOUS() \
@@ -109,7 +109,7 @@ typedef struct IpvideoContext {
             motion_offset, s->upper_motion_limit_offset); \
         return -1; \
     } \
-    s->dsp.put_pixels_tab[0][0](s->pixel_ptr, \
+    s->dsp.put_pixels_tab[1][0](s->pixel_ptr, \
         s->last_frame.data[0] + motion_offset, s->stride, 8);
 
 #define COPY_FROM_SECOND_LAST() \
@@ -124,7 +124,7 @@ typedef struct IpvideoContext {
             motion_offset, s->upper_motion_limit_offset); \
         return -1; \
     } \
-    s->dsp.put_pixels_tab[0][0](s->pixel_ptr, \
+    s->dsp.put_pixels_tab[1][0](s->pixel_ptr, \
         s->second_last_frame.data[0] + motion_offset, s->stride, 8);
 
 static int ipvideo_decode_block_opcode_0x0(IpvideoContext *s)
