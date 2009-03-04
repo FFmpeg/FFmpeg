@@ -229,7 +229,6 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
 static int metadata_parse(FLACContext *s)
 {
     int i, metadata_last, metadata_type, metadata_size;
-    int initial_pos= get_bits_count(&s->gb);
 
     skip_bits_long(&s->gb, 32);
 
@@ -239,7 +238,8 @@ static int metadata_parse(FLACContext *s)
         metadata_size = get_bits_long(&s->gb, 24);
 
         if (get_bits_count(&s->gb) + 8*metadata_size > s->gb.size_in_bits) {
-            skip_bits_long(&s->gb, initial_pos - get_bits_count(&s->gb));
+            /* need more data. reset the bitstream reader and return. */
+            init_get_bits(&s->gb, s->gb.buffer, s->gb.size_in_bits);
             break;
         }
 
