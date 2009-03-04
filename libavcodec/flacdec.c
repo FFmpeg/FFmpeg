@@ -224,14 +224,13 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
  * the fLaC marker.
  * @param s the flac decoding context containing the gb bit reader used to
  *          parse metadata
- * @return 1 if some metadata was read, 0 if no fLaC marker was found
+ * @return non-zero if metadata is invalid
  */
 static int metadata_parse(FLACContext *s)
 {
     int i, metadata_last, metadata_type, metadata_size;
     int initial_pos= get_bits_count(&s->gb);
 
-    if (show_bits_long(&s->gb, 32) == MKBETAG('f','L','a','C')) {
         skip_bits_long(&s->gb, 32);
 
         do {
@@ -260,8 +259,6 @@ static int metadata_parse(FLACContext *s)
             }
         } while (!metadata_last);
 
-        return 1;
-    }
     return 0;
 }
 
@@ -642,8 +639,14 @@ static int flac_decode_frame(AVCodecContext *avctx,
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
-    if (metadata_parse(s))
+    /* check for inline header */
+    if (show_bits_long(&s->gb, 32) == MKBETAG('f','L','a','C')) {
+        if (metadata_parse(s)) {
+            av_log(s->avctx, AV_LOG_ERROR, "invalid header\n");
+            return -1;
+        }
         goto end;
+    }
 
     tmp = show_bits(&s->gb, 16);
     if ((tmp & 0xFFFE) != 0xFFF8) {
