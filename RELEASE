@@ -13,7 +13,7 @@ date, the notes for this version cannot be entirely conventional.
 See the Changelog file for a list of significant changes.
 
 Please note that our policy on bug reports has not changed. We still only accept
-bug reports against the HEAD of FFmpeg trunk repository. If you are experiencing
+bug reports against HEAD of the FFmpeg trunk repository. If you are experiencing
 any issues with any formally released version of FFmpeg, please try a current
 version of the development code to check if the issue still exists. If it does,
 make your report against the development code following the usual bug reporting
@@ -35,4 +35,5 @@ The deprecated APIs to be removed are:
 - imgconvert (to be replaced by libswscale)
 - vhook (to be replaced by libavfilter)
 
-If at all possible, do not use the deprecated APIs.
+If at all possible, do not use the deprecated APIs. All notes on API changes
+should appear in doc/APIchanges.
