@@ -504,6 +504,13 @@ typedef struct H264Context{
     SEI_PicStructType sei_pic_struct;
 
     /**
+     * Bit set of clock types for fields/frames in picture timing SEI message.
+     * For each found ct_type, appropriate bit is set (e.g., bit 1 for
+     * interlaced).
+     */
+    int sei_ct_type;
+
+    /**
      * dpb_output_delay in picture timing SEI message, see H.264 C.2.2
      */
     int sei_dpb_output_delay;
