@@ -598,7 +598,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
                             const uint8_t *buf, int buf_size)
 {
     FLACContext *s = avctx->priv_data;
-    int tmp = 0, i, j = 0, input_buf_size = 0;
+    int tmp = 0, i, j = 0, input_buf_size = 0, bytes_read = 0;
     int16_t *samples_16 = data;
     int32_t *samples_32 = data;
     int alloc_data_size= *data_size;
@@ -700,20 +700,20 @@ static int flac_decode_frame(AVCodecContext *avctx,
     *data_size = s->blocksize * s->channels * (s->is32 ? 4 : 2);
 
 end:
-    i= (get_bits_count(&s->gb)+7)/8;
-    if (i > buf_size) {
-        av_log(s->avctx, AV_LOG_ERROR, "overread: %d\n", i - buf_size);
+    bytes_read = (get_bits_count(&s->gb)+7)/8;
+    if (bytes_read > buf_size) {
+        av_log(s->avctx, AV_LOG_ERROR, "overread: %d\n", bytes_read - buf_size);
         s->bitstream_size=0;
         s->bitstream_index=0;
         return -1;
     }
 
     if (s->bitstream_size) {
-        s->bitstream_index += i;
-        s->bitstream_size  -= i;
+        s->bitstream_index += bytes_read;
+        s->bitstream_size  -= bytes_read;
         return input_buf_size;
     } else
-        return i;
+        return bytes_read;
 }
 
 static av_cold int flac_decode_close(AVCodecContext *avctx)
