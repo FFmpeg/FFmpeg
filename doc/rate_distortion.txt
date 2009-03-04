@@ -1,50 +1,59 @@
-A quick description of Rate distortion theory.
+A Quick Description Of Rate Distortion Theory.
 
-We want to encode a video, picture or music optimally.
-What does optimally mean?
-It means that we want to get the best quality at a given
-filesize OR (which is almost the same actually) We want to get the
-smallest filesize at a given quality.
+We want to encode a video, picture or piece of music optimally. What does
+"optimally" really mean? It means that we want to get the best quality at a
+given filesize OR we want to get the smallest filesize at a given quality
+(in practice, these 2 goals are usually the same).
 
-Solving this directly isnt practical, try all byte sequences
-1MB long and pick the best looking, yeah 256^1000000 cases to try ;)
+Solving this directly is not practical; trying all byte sequences 1
+megabyte in length and selecting the "best looking" sequence will yield
+256^1000000 cases to try.
 
-But first a word about Quality also called distortion, this can
-really be almost any quality meassurement one wants. Commonly the
-sum of squared differenes is used but more complex things that
-consider psychivisual effects can be used as well, it makes no differnce
-to us here.
-
-
-First step, that RD factor called lambda ...
-Lets consider the problem of minimizing
-
-distortion + lambda*rate
-
-for a fixed lambda, rate here would be the filesize, distortion the quality
-Is this equivalent to finding the best quality for a given max filesize?
-The awnser is yes, for each filesize limit there is some lambda factor for
-which minimizing above will get you the best quality (in your provided quality
-meassurement) at that (or a lower) filesize
+But first, a word about quality, which is also called distortion.
+Distortion can be quantified by almost any quality measurement one chooses.
+Commonly, the sum of squared differences is used but more complex methods
+that consider psychovisual effects can be used as well. It makes no
+difference in this discussion.
 
 
-Second step, spliting the problem.
-Directly spliting the problem of finding the best quality at a given filesize
-is hard because we dont know how much filesize to assign to each of the
-subproblems optimally.
-But distortion + lambda*rate can trivially be split
-just consider
-(distortion0 + distortion1) + lambda*(rate0 +rate1)
-a problem made of 2 independant subproblems, the subproblems might be 2
-16x16 macroblocks in a frame of 32x16 size.
-to minimize
-(distortion0 + distortion1) + lambda*(rate0 +rate1)
-one just have to minimize
-distortion0 + lambda*rate0
+First step: that rate distortion factor called lambda...
+Let's consider the problem of minimizing:
+
+  distortion + lambda*rate
+
+For a fixed lambda, rate would represent the filesize, while distortion is
+the quality. Is this equivalent to finding the best quality for a given max
+filesize? The answer is yes. For each filesize limit there is some lambda
+factor for which minimizing above will get you the best quality (using your
+chosen quality measurement) at the desired (or lower) filesize.
+
+
+Second step: splitting the problem.
+Directly splitting the problem of finding the best quality at a given
+filesize is hard because we do not know how many bits from the total
+filesize should be allocated to each of the subproblems. But the formula
+from above:
+
+  distortion + lambda*rate
+
+can be trivially split. Consider:
+
+  (distortion0 + distortion1) + lambda*(rate0 + rate1)
+
+This creates a problem made of 2 independent subproblems. The subproblems
+might be 2 16x16 macroblocks in a frame of 32x16 size. To minimize:
+
+  (distortion0 + distortion1) + lambda*(rate0 + rate1)
+
+we just have to minimize:
+
+  distortion0 + lambda*rate0
+
 and
-distortion1 + lambda*rate1
 
-aka the 2 problems can be solved independantly
+  distortion1 + lambda*rate1
+
+I.e, the 2 problems can be solved independently.
 
 Author: Michael Niedermayer
 Copyright: LGPL
