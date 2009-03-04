@@ -545,7 +545,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         return -1;
     }
 
-    if (blocksize * s->channels * sizeof(int16_t) > alloc_data_size)
+    if (blocksize * s->channels * (s->is32 ? 4 : 2) > alloc_data_size)
         return -1;
 
     if (sample_rate_code == 0)
