@@ -250,6 +250,7 @@ static int metadata_parse(FLACContext *s)
                     if (!s->got_streaminfo) {
                         ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s,
                                                  s->gb.buffer+get_bits_count(&s->gb)/8);
+                        allocate_buffers(s);
                         s->got_streaminfo = 1;
                     }
                 default:
@@ -259,8 +260,6 @@ static int metadata_parse(FLACContext *s)
             }
         } while (!metadata_last);
 
-        if (s->got_streaminfo)
-            allocate_buffers(s);
         return 1;
     }
     return 0;
