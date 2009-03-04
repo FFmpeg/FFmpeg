@@ -1202,6 +1202,25 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, long s
     }
 }
 
+/*
+ * mm0 = 00 B3 00 B2 00 B1 00 B0
+ * mm1 = 00 G3 00 G2 00 G1 00 G0
+ * mm2 = 00 R3 00 R2 00 R1 00 R0
+ * mm6 = FF FF FF FF FF FF FF FF
+ * mm7 = 00 00 00 00 00 00 00 00
+ */
+#define PACK_RGB32 \
+    "packuswb   %%mm7, %%mm0    \n\t" /* 00 00 00 00 B3 B2 B1 B0 */ \
+    "packuswb   %%mm7, %%mm1    \n\t" /* 00 00 00 00 G3 G2 G1 G0 */ \
+    "packuswb   %%mm7, %%mm2    \n\t" /* 00 00 00 00 R3 R2 R1 R0 */ \
+    "punpcklbw  %%mm1, %%mm0    \n\t" /* G3 B3 G2 B2 G1 B1 G0 B0 */ \
+    "punpcklbw  %%mm6, %%mm2    \n\t" /* FF R3 FF R2 FF R1 FF R0 */ \
+    "movq       %%mm0, %%mm3    \n\t"                               \
+    "punpcklwd  %%mm2, %%mm0    \n\t" /* FF R1 G1 B1 FF R0 G0 B0 */ \
+    "punpckhwd  %%mm2, %%mm3    \n\t" /* FF R3 G3 B3 FF R2 G2 B2 */ \
+    MOVNTQ"     %%mm0,  %0      \n\t"                               \
+    MOVNTQ"     %%mm3, 8%0      \n\t"                               \
+
 static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint16_t *end;
@@ -1214,6 +1233,7 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
 #if HAVE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s):"memory");
     __asm__ volatile("pxor    %%mm7,%%mm7    \n\t":::"memory");
+    __asm__ volatile("pcmpeqd %%mm6,%%mm6    \n\t":::"memory");
     mm_end = end - 3;
     while (s < mm_end)
     {
@@ -1228,25 +1248,7 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
         "psllq         $3, %%mm0    \n\t"
         "psrlq         $2, %%mm1    \n\t"
         "psrlq         $7, %%mm2    \n\t"
-        "movq       %%mm0, %%mm3    \n\t"
-        "movq       %%mm1, %%mm4    \n\t"
-        "movq       %%mm2, %%mm5    \n\t"
-        "punpcklwd  %%mm7, %%mm0    \n\t"
-        "punpcklwd  %%mm7, %%mm1    \n\t"
-        "punpcklwd  %%mm7, %%mm2    \n\t"
-        "punpckhwd  %%mm7, %%mm3    \n\t"
-        "punpckhwd  %%mm7, %%mm4    \n\t"
-        "punpckhwd  %%mm7, %%mm5    \n\t"
-        "psllq         $8, %%mm1    \n\t"
-        "psllq        $16, %%mm2    \n\t"
-        "por        %%mm1, %%mm0    \n\t"
-        "por        %%mm2, %%mm0    \n\t"
-        "psllq         $8, %%mm4    \n\t"
-        "psllq        $16, %%mm5    \n\t"
-        "por        %%mm4, %%mm3    \n\t"
-        "por        %%mm5, %%mm3    \n\t"
-        MOVNTQ"     %%mm0,  %0      \n\t"
-        MOVNTQ"     %%mm3, 8%0      \n\t"
+        PACK_RGB32
         :"=m"(*d)
         :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r)
         :"memory");
@@ -1292,6 +1294,7 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
 #if HAVE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s):"memory");
     __asm__ volatile("pxor    %%mm7,%%mm7    \n\t":::"memory");
+    __asm__ volatile("pcmpeqd %%mm6,%%mm6    \n\t":::"memory");
     mm_end = end - 3;
     while (s < mm_end)
     {
@@ -1306,25 +1309,7 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
         "psllq         $3, %%mm0    \n\t"
         "psrlq         $3, %%mm1    \n\t"
         "psrlq         $8, %%mm2    \n\t"
-        "movq       %%mm0, %%mm3    \n\t"
-        "movq       %%mm1, %%mm4    \n\t"
-        "movq       %%mm2, %%mm5    \n\t"
-        "punpcklwd  %%mm7, %%mm0    \n\t"
-        "punpcklwd  %%mm7, %%mm1    \n\t"
-        "punpcklwd  %%mm7, %%mm2    \n\t"
-        "punpckhwd  %%mm7, %%mm3    \n\t"
-        "punpckhwd  %%mm7, %%mm4    \n\t"
-        "punpckhwd  %%mm7, %%mm5    \n\t"
-        "psllq         $8, %%mm1    \n\t"
-        "psllq        $16, %%mm2    \n\t"
-        "por        %%mm1, %%mm0    \n\t"
-        "por        %%mm2, %%mm0    \n\t"
-        "psllq         $8, %%mm4    \n\t"
-        "psllq        $16, %%mm5    \n\t"
-        "por        %%mm4, %%mm3    \n\t"
-        "por        %%mm5, %%mm3    \n\t"
-        MOVNTQ"     %%mm0, %0       \n\t"
-        MOVNTQ"     %%mm3, 8%0      \n\t"
+        PACK_RGB32
         :"=m"(*d)
         :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r)
         :"memory");
