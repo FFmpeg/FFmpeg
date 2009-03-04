@@ -293,7 +293,7 @@ static int wc3_read_packet(AVFormatContext *s,
         /* get the next chunk preamble */
         if ((ret = get_buffer(pb, preamble, WC3_PREAMBLE_SIZE)) !=
             WC3_PREAMBLE_SIZE)
-            ret = AVERROR(EIO);
+            return AVERROR(EIO);
 
         fourcc_tag = AV_RL32(&preamble[0]);
         /* chunk sizes are 16-bit aligned */
