@@ -1586,7 +1586,7 @@ static int mov_read_tfhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     flags = get_be24(pb);
 
     track_id = get_be32(pb);
-    if (!track_id || track_id > c->fc->nb_streams)
+    if (!track_id)
         return -1;
     frag->track_id = track_id;
     for (i = 0; i < c->trex_count; i++)
@@ -1635,7 +1635,7 @@ static int mov_read_trex(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 static int mov_read_trun(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
     MOVFragment *frag = &c->fragment;
-    AVStream *st;
+    AVStream *st = NULL;
     MOVStreamContext *sc;
     uint64_t offset;
     int64_t dts;
@@ -1643,9 +1643,16 @@ static int mov_read_trun(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     unsigned entries, first_sample_flags = frag->flags;
     int flags, distance, i;
 
-    if (!frag->track_id || frag->track_id > c->fc->nb_streams)
+    for (i = 0; i < c->fc->nb_streams; i++) {
+        if (c->fc->streams[i]->id == frag->track_id) {
+            st = c->fc->streams[i];
+            break;
+        }
+    }
+    if (!st) {
+        av_log(c->fc, AV_LOG_ERROR, "could not find corresponding track id %d\n", frag->track_id);
         return -1;
-    st = c->fc->streams[frag->track_id-1];
+    }
     sc = st->priv_data;
     if (sc->pseudo_stream_id+1 != frag->stsd_id)
         return 0;
