@@ -432,10 +432,6 @@ static inline int decode_subframe(FLACContext *s, int channel)
         if (s->decorrelation == LEFT_SIDE || s->decorrelation == MID_SIDE)
             s->curr_bps++;
     }
-    if (s->curr_bps > 32) {
-        ff_log_missing_feature(s->avctx, "decorrelated bit depth > 32", 0);
-        return -1;
-    }
 
     if (get_bits1(&s->gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "invalid subframe padding\n");
@@ -448,6 +444,10 @@ static inline int decode_subframe(FLACContext *s, int channel)
         while (!get_bits1(&s->gb))
             wasted++;
         s->curr_bps -= wasted;
+    }
+    if (s->curr_bps > 32) {
+        ff_log_missing_feature(s->avctx, "decorrelated bit depth > 32", 0);
+        return -1;
     }
 
 //FIXME use av_log2 for types
