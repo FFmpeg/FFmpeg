@@ -48,20 +48,44 @@
  *
  * TIA/EIA/IS-733 2.4.3.3.5-1/2
  */
-static void lsp2polyf(const float *lspf, double *f, int lp_half_order)
+static void lsp2polyf(const double *lspf, double *f, int lp_half_order)
 {
     int i, j;
 
     f[0] = 1.0;
-    f[1] = -2 * cos(M_PI * lspf[0]);
+    f[1] = -2 * lspf[0];
     lspf -= 2;
     for(i=2; i<=lp_half_order; i++)
     {
-        double val = -2 * cos(M_PI * lspf[2*i]);
+        double val = -2 * lspf[2*i];
         f[i] = val * f[i-1] + 2*f[i-2];
         for(j=i-1; j>1; j--)
             f[j] += f[j-1] * val + f[j-2];
         f[1] += val;
+    }
+}
+
+/**
+ * Reconstructs LPC coefficients from the line spectral pair frequencies.
+ *
+ * @param lspf line spectral pair frequencies
+ * @param lpc linear predictive coding coefficients
+ */
+void ff_celp_lspf2lpc(const double *lspf, float *lpc)
+{
+    double pa[6], qa[6];
+    int   i;
+
+    lsp2polyf(lspf,     pa, 5);
+    lsp2polyf(lspf + 1, qa, 5);
+
+    for (i=4; i>=0; i--)
+    {
+        double paf = pa[i+1] + pa[i];
+        double qaf = qa[i+1] - qa[i];
+
+        lpc[i  ] = 0.5 * (paf+qaf);
+        lpc[9-i] = 0.5 * (paf-qaf);
     }
 }
 
@@ -79,21 +103,15 @@ static void lsp2polyf(const float *lspf, double *f, int lp_half_order)
  */
 void ff_qcelp_lspf2lpc(const float *lspf, float *lpc)
 {
-    double pa[6], qa[6];
+    double lsf[10];
+    double bandwith_expansion_coeff = QCELP_BANDWITH_EXPANSION_COEFF;
     int   i;
-    double bandwith_expansion_coeff = QCELP_BANDWITH_EXPANSION_COEFF * 0.5;
 
-    lsp2polyf(lspf,     pa, 5);
-    lsp2polyf(lspf + 1, qa, 5);
+    for (i=0; i<10; i++)
+        lsf[i] = cos(M_PI * lspf[i]);
 
-    for (i=4; i>=0; i--)
-    {
-        double paf = pa[i+1] + pa[i];
-        double qaf = qa[i+1] - qa[i];
+    ff_celp_lspf2lpc(lsf, lpc);
 
-        lpc[i  ] = paf + qaf;
-        lpc[9-i] = paf - qaf;
-    }
     for (i=0; i<10; i++)
     {
         lpc[i] *= bandwith_expansion_coeff;
