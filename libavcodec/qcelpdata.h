@@ -550,4 +550,13 @@ static const double qcelp_rnd_fir_coefs[11] = {
  */
 #define QCELP_LSP_OCTAVE_PREDICTOR 29.0/32
 
+/**
+ * initial coefficient to perform bandwidth expansion on LPC
+ *
+ * @note: 0.9883 looks like an approximation of 253/256.
+ *
+ * TIA/EIA/IS-733 2.4.3.3.6 6
+ */
+#define QCELP_BANDWITH_EXPANSION_COEFF 0.9883
+
 #endif /* AVCODEC_QCELPDATA_H */

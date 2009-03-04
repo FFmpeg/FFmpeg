@@ -79,7 +79,7 @@ typedef struct
  *
  * TIA/EIA/IS-733 2.4.3.3.5
  */
-void ff_qcelp_lspf2lpc(const float *lspf, float *lpc);
+void ff_celp_lspf2lpc(const double *lspf, float *lpc);
 
 static void weighted_vector_sumf(float *out, const float *in_a,
                                  const float *in_b, float weight_coeff_a,
@@ -585,6 +585,36 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
 }
 
 /**
+ * Reconstructs LPC coefficients from the line spectral pair frequencies
+ * and performs bandwidth expansion.
+ *
+ * @param lspf line spectral pair frequencies
+ * @param lpc linear predictive coding coefficients
+ *
+ * @note: bandwith_expansion_coeff could be precalculated into a table
+ *        but it seems to be slower on x86
+ *
+ * TIA/EIA/IS-733 2.4.3.3.5
+ */
+void lspf2lpc(const float *lspf, float *lpc)
+{
+    double lsf[10];
+    double bandwith_expansion_coeff = QCELP_BANDWITH_EXPANSION_COEFF;
+    int   i;
+
+    for (i=0; i<10; i++)
+        lsf[i] = cos(M_PI * lspf[i]);
+
+    ff_celp_lspf2lpc(lsf, lpc);
+
+    for (i=0; i<10; i++)
+    {
+        lpc[i] *= bandwith_expansion_coeff;
+        bandwith_expansion_coeff *= QCELP_BANDWITH_EXPANSION_COEFF;
+    }
+}
+
+/**
  * Interpolates LSP frequencies and computes LPC coefficients
  * for a given bitrate & pitch subframe.
  *
@@ -612,12 +642,12 @@ void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
     {
         weighted_vector_sumf(interpolated_lspf, curr_lspf, q->prev_lspf,
                              weight, 1.0 - weight, 10);
-        ff_qcelp_lspf2lpc(interpolated_lspf, lpc);
+        lspf2lpc(interpolated_lspf, lpc);
     }else if(q->bitrate >= RATE_QUARTER ||
              (q->bitrate == I_F_Q && !subframe_num))
-        ff_qcelp_lspf2lpc(curr_lspf, lpc);
+        lspf2lpc(curr_lspf, lpc);
     else if(q->bitrate == SILENCE && !subframe_num)
-        ff_qcelp_lspf2lpc(q->prev_lspf, lpc);
+        lspf2lpc(q->prev_lspf, lpc);
 }
 
 static qcelp_packet_rate buf_size2bitrate(const int buf_size)
