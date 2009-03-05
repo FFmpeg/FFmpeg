@@ -956,9 +956,10 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 s->cur_st = NULL;
                 break;
             } else if (st->cur_len > 0 && st->discard < AVDISCARD_ALL) {
-                len = av_parser_parse(st->parser, st->codec, &pkt->data, &pkt->size,
-                                      st->cur_ptr, st->cur_len,
-                                      st->cur_pkt.pts, st->cur_pkt.dts);
+                len = av_parser_parse2(st->parser, st->codec, &pkt->data, &pkt->size,
+                                       st->cur_ptr, st->cur_len,
+                                       st->cur_pkt.pts, st->cur_pkt.dts,
+                                       st->cur_pkt.pos);
                 st->cur_pkt.pts = AV_NOPTS_VALUE;
                 st->cur_pkt.dts = AV_NOPTS_VALUE;
                 /* increment read pointer */
@@ -967,12 +968,12 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
                 /* return packet if any */
                 if (pkt->size) {
-                    pkt->pos = st->cur_pkt.pos;              // Isn't quite accurate but close.
                 got_packet:
                     pkt->duration = 0;
                     pkt->stream_index = st->index;
                     pkt->pts = st->parser->pts;
                     pkt->dts = st->parser->dts;
+                    pkt->pos = st->parser->pos;
                     pkt->destruct = av_destruct_packet_nofree;
                     compute_pkt_fields(s, st, st->parser, pkt);
 
@@ -1000,10 +1001,11 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 for(i = 0; i < s->nb_streams; i++) {
                     st = s->streams[i];
                     if (st->parser && st->need_parsing) {
-                        av_parser_parse(st->parser, st->codec,
+                        av_parser_parse2(st->parser, st->codec,
                                         &pkt->data, &pkt->size,
                                         NULL, 0,
-                                        AV_NOPTS_VALUE, AV_NOPTS_VALUE);
+                                        AV_NOPTS_VALUE, AV_NOPTS_VALUE,
+                                        AV_NOPTS_VALUE);
                         if (pkt->size)
                             goto got_packet;
                     }
