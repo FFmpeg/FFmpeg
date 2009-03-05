@@ -23,6 +23,25 @@
 #include "config.h"
 #include "libavutil/common.h"
 
+#ifdef __ARMCC_VERSION
+
+#if HAVE_ARMV6
+#define bswap_16 bswap_16
+static av_always_inline av_const uint16_t bswap_16(uint16_t x)
+{
+    __asm { rev16 x, x }
+    return x;
+}
+
+#define bswap_32 bswap_32
+static av_always_inline av_const uint32_t bswap_32(uint32_t x)
+{
+    return __rev(x);
+}
+#endif /* HAVE_ARMV6 */
+
+#else /* __ARMCC_VERSION */
+
 #if HAVE_ARMV6
 #define bswap_16 bswap_16
 static av_always_inline av_const uint16_t bswap_16(uint16_t x)
@@ -47,5 +66,7 @@ static av_always_inline av_const uint32_t bswap_32(uint32_t x)
 #endif /* HAVE_ARMV6 */
     return x;
 }
+
+#endif /* __ARMCC_VERSION */
 
 #endif /* AVUTIL_ARM_BSWAP_H */
