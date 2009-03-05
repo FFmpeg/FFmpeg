@@ -1434,10 +1434,11 @@ static void apply_dependent_coupling(AACContext * ac, SingleChannelElement * tar
     for (g = 0; g < ics->num_window_groups; g++) {
         for (i = 0; i < ics->max_sfb; i++, idx++) {
             if (cce->ch[0].band_type[idx] != ZERO_BT) {
+                const float gain = cce->coup.gain[index][idx];
                 for (group = 0; group < ics->group_len[g]; group++) {
                     for (k = offsets[i]; k < offsets[i+1]; k++) {
                         // XXX dsputil-ize
-                        dest[group*128+k] += cce->coup.gain[index][idx] * src[group*128+k];
+                        dest[group*128+k] += gain * src[group*128+k];
                     }
                 }
             }
