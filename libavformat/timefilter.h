@@ -1,0 +1,104 @@
+/*
+ * Delay Locked Loop based time filter prototypes and declarations
+ * Copyright (c) 2009 Samalyse
+ * Author: Olivier Guilyardi <olivier samalyse com>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#ifndef AVFORMAT_TIMEFILTER_H
+#define AVFORMAT_TIMEFILTER_H
+
+/**
+ * Opaque type representing a time filter state
+ *
+ * The purpose of this filter is to provide a way to compute accurate time
+ * stamps that can be compared to wall clock time, especially when dealing
+ * with two clocks: the system clock and a hardware device clock, such as
+ * a soundcard.
+ */
+typedef struct TimeFilter TimeFilter;
+
+
+/**
+ * Create a new Delay Locked Loop time filter
+ *
+ * period is the device cycle duration in seconds. For example, at
+ * 44.1Hz and a buffer size of 512 frames, period = 512 / 44100. The filter
+ * only works if the cycle duration is fixed.
+ *
+ * feedback2_factor and feedback3_factor are the factors used for the
+ * multiplications that are respectively performed in the second and third
+ * feedback paths of the loop.
+ *
+ * Unless you know what you are doing, you should set these as follow:
+ *
+ * o = 2 * M_PI * bandwidth * period
+ * feedback2_factor = sqrt(2 * o)
+ * feedback3_factor = o * o
+ *
+ * Where bandwidth is up to you to choose. Smaller values will filter out more
+ * of the jitter, but also take a longer time for the loop to settle. A good
+ * starting point is something between 0.3 and 3 Hz.
+ *
+ * For more details about these parameters and background concepts please see:
+ * http://www.kokkinizita.net/papers/usingdll.pdf
+ */
+TimeFilter * ff_timefilter_new(double period, double feedback2_factor, double feedback3_factor);
+
+/**
+ * Update the filter
+ *
+ * This function must be called in real time, at each process cycle.
+ *
+ * system_time, in seconds, should be the value of the system clock time,
+ * at (or as close as possible to) the moment the device hardware interrupt
+ * occured (or any other event the device clock raises at the beginning of a
+ * cycle).
+ */
+void ff_timefilter_update(TimeFilter *self, double system_time);
+
+/**
+ * Retrieve the filtered time
+ *
+ * The returned value represents the filtered time, in seconds, of the
+ * beginning of the current cycle as updated by the last call to
+ * ff_timefilter_update()
+ *
+ * This is the value that should be used for timestamping.
+ *
+ * Warning: you must call ff_timefilter_update() before this, otherwise the
+ * result is undetermined.
+ */
+double ff_timefilter_read(TimeFilter *);
+
+/**
+ * Reset the filter
+ *
+ * This function should mainly be called in case of XRUN.
+ *
+ * Warning: after calling this, the filter is in an undetermined state until
+ * the next call to ff_timefilter_update()
+ */
+void ff_timefilter_reset(TimeFilter *);
+
+/**
+ * Free all resources associated with the filter
+ */
+void ff_timefilter_destroy(TimeFilter *);
+
+#endif /* AVFORMAT_TIMEFILTER_H */
