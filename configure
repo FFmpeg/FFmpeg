@@ -1389,6 +1389,16 @@ elif $cc -V 2>/dev/null | grep -q Compaq; then
     DEPEND_CMD='$(CC) $(CFLAGS) -M $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
     debuglevel=3
     add_ldflags -Wl,-z,now # calls to libots crash without this
+elif $cc --vsn 2>/dev/null | grep -q RVCT; then
+    test -d "$sysroot" || die "No valid sysroot specified."
+    cc_type=armcc
+    armcc_conf="$PWD/armcc.conf"
+    $cc --arm_linux_configure                 \
+        --arm_linux_config_file="$armcc_conf" \
+        --configure_sysroot="$sysroot"        \
+        --configure_cpp_headers="$sysinclude" >>$logfile 2>&1 ||
+        die "Error creating armcc configuration file."
+    cc="$cc --arm_linux_config_file=$armcc_conf --translate_gcc"
 fi
 
 test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
