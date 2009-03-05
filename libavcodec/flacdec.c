@@ -610,7 +610,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
                             const uint8_t *buf, int buf_size)
 {
     FLACContext *s = avctx->priv_data;
-    int tmp = 0, i, j = 0, input_buf_size = 0, bytes_read = 0;
+    int i, j = 0, input_buf_size = 0, bytes_read = 0;
     int16_t *samples_16 = data;
     int32_t *samples_32 = data;
     int alloc_data_size= *data_size;
@@ -664,15 +664,18 @@ static int flac_decode_frame(AVCodecContext *avctx,
         goto end;
     }
 
-    init_get_bits(&s->gb, buf, buf_size*8);
-
-    tmp = show_bits(&s->gb, 16);
-    if ((tmp & 0xFFFE) != 0xFFF8) {
+    /* check for frame sync code and resync stream if necessary */
+    if ((AV_RB16(buf) & 0xFFFE) != 0xFFF8) {
+        const uint8_t *buf_end = buf + buf_size;
         av_log(s->avctx, AV_LOG_ERROR, "FRAME HEADER not here\n");
-        while (get_bits_count(&s->gb)/8+2 < buf_size && (show_bits(&s->gb, 16) & 0xFFFE) != 0xFFF8)
-            skip_bits(&s->gb, 8);
-        goto hdr_end; // we may not have enough bits left to decode a frame, so try next time
+        while (buf+2 < buf_end && (AV_RB16(buf) & 0xFFFE) != 0xFFF8)
+            buf++;
+        bytes_read = buf_size - (buf_end - buf);
+        goto end; // we may not have enough bits left to decode a frame, so try next time
     }
+
+    /* decode frame */
+    init_get_bits(&s->gb, buf, buf_size*8);
     skip_bits(&s->gb, 16);
     if (decode_frame(s, alloc_data_size) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
@@ -717,7 +720,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
 
     *data_size = s->blocksize * s->channels * (s->is32 ? 4 : 2);
 
-hdr_end:
     bytes_read = (get_bits_count(&s->gb)+7)/8;
 end:
     if (bytes_read > buf_size) {
