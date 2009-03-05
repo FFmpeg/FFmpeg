@@ -1291,7 +1291,7 @@ int av_index_search_timestamp(AVStream *st, int64_t wanted_timestamp,
 
 int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts, int flags){
     AVInputFormat *avif= s->iformat;
-    int64_t pos_min, pos_max, pos, pos_limit;
+    int64_t av_uninit(pos_min), av_uninit(pos_max), pos, pos_limit;
     int64_t ts_min, ts_max, ts;
     int index;
     AVStream *st;
