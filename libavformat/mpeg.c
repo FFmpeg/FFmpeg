@@ -413,7 +413,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     enum CodecID codec_id = CODEC_ID_NONE;
     enum CodecType type;
     int64_t pts, dts, dummy_pos; //dummy_pos is needed for the index building to work
-    uint8_t dvdaudio_substream_type;
+    uint8_t av_uninit(dvdaudio_substream_type);
 
  redo:
     len = mpegps_read_pes_header(s, &dummy_pos, &startcode, &pts, &dts);
