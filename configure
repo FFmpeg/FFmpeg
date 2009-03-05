@@ -525,12 +525,19 @@ check_cpp(){
     check_cmd $cc $CFLAGS "$@" -E -o $TMPO $TMPC
 }
 
+check_as(){
+    log check_as "$@"
+    cat > $TMPC
+    log_file $TMPC
+    check_cmd $as $CFLAGS "$@" -c -o $TMPO $TMPC
+}
+
 check_asm(){
     log check_asm "$@"
     name="$1"
     asm="$2"
     shift 2
-    check_cc "$@" <<EOF && enable $name || disable $name
+    check_as "$@" <<EOF && enable $name || disable $name
 void foo(void){ __asm__ volatile($asm); }
 EOF
 }
@@ -1798,7 +1805,9 @@ EOF
 sym=$($nm -P -g $TMPO | grep ff_extern)
 extern_prefix=${sym%%ff_extern*}
 
-check_asm inline_asm '""'
+check_cc <<EOF && enable inline_asm
+void foo(void) { __asm__ volatile ("" ::); }
+EOF
 
 if enabled x86; then
     # check whether EBP is available on x86
