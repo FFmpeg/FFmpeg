@@ -85,6 +85,7 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
     int i;
 
     s->dts= s->pts= AV_NOPTS_VALUE;
+    s->pos= -1;
     s->offset= 0;
     for(i = 0; i < AV_PARSER_PTS_NB; i++) {
         if (   s->cur_offset + off >= s->cur_frame_offset[i]
@@ -93,6 +94,7 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
             && /*s->next_frame_offset + off <*/  s->cur_frame_end[i]){
             s->dts= s->cur_frame_dts[i];
             s->pts= s->cur_frame_pts[i];
+            s->pos= s->cur_frame_pos[i];
             s->offset = s->next_frame_offset - s->cur_frame_offset[i];
             if(remove)
                 s->cur_frame_offset[i]= INT64_MAX;
@@ -125,12 +127,24 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
  *          decode_frame(data, size);
  *   }
  * @endcode
+ *
+ * @deprecated Use av_parser_parse2() instead.
  */
 int av_parser_parse(AVCodecParserContext *s,
                     AVCodecContext *avctx,
                     uint8_t **poutbuf, int *poutbuf_size,
                     const uint8_t *buf, int buf_size,
                     int64_t pts, int64_t dts)
+{
+    return av_parser_parse2(s, avctx, poutbuf, poutbuf_size, buf, buf_size, pts, dts, AV_NOPTS_VALUE);
+}
+
+int av_parser_parse2(AVCodecParserContext *s,
+                     AVCodecContext *avctx,
+                     uint8_t **poutbuf, int *poutbuf_size,
+                     const uint8_t *buf, int buf_size,
+                     int64_t pts, int64_t dts,
+                     int64_t pos)
 {
     int index, i;
     uint8_t dummy_buf[FF_INPUT_BUFFER_PADDING_SIZE];
@@ -147,12 +161,14 @@ int av_parser_parse(AVCodecParserContext *s,
             s->cur_frame_end[i] = s->cur_offset + buf_size;
             s->cur_frame_pts[i] = pts;
             s->cur_frame_dts[i] = dts;
+            s->cur_frame_pos[i] = pos;
     }
 
     if (s->fetch_timestamp){
         s->fetch_timestamp=0;
         s->last_pts = s->pts;
         s->last_dts = s->dts;
+        s->last_pos = s->pos;
         ff_fetch_timestamp(s, 0, 0);
     }
 
