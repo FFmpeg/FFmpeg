@@ -29,7 +29,6 @@ struct TimeFilter {
     /// Delay Locked Loop data. These variables refer to mathematical
     /// concepts described in: http://www.kokkinizita.net/papers/usingdll.pdf
     double cycle_time;
-    double next_cycle_time;
     double feedback2_factor;
     double feedback3_factor;
     double integrator2_state;
@@ -59,14 +58,14 @@ void ff_timefilter_update(TimeFilter *self, double system_time)
     if (!self->cycle_time) {
         /// init loop
         self->cycle_time        = system_time;
-        self->next_cycle_time   = self->cycle_time + self->integrator2_state;
     } else {
+        double loop_error;
+        self->cycle_time+= self->integrator2_state;
         /// calculate loop error
-        double loop_error = system_time - self->next_cycle_time;
+        loop_error = system_time - self->cycle_time;
 
         /// update loop
-        self->cycle_time         = self->next_cycle_time;
-        self->next_cycle_time   += self->feedback2_factor * loop_error + self->integrator2_state;
+        self->cycle_time        += self->feedback2_factor * loop_error;
         self->integrator2_state += self->feedback3_factor * loop_error;
     }
 }
