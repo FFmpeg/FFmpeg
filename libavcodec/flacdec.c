@@ -683,6 +683,8 @@ static int flac_decode_frame(AVCodecContext *avctx,
         s->bitstream_index=0;
         return -1;
     }
+    *data_size = s->blocksize * s->channels * (s->is32 ? 4 : 2);
+    bytes_read = (get_bits_count(&s->gb)+7)/8;
 
 #define DECORRELATE(left, right)\
             assert(s->channels == 2);\
@@ -718,9 +720,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
         DECORRELATE( (a-=b>>1) + b, a)
     }
 
-    *data_size = s->blocksize * s->channels * (s->is32 ? 4 : 2);
-
-    bytes_read = (get_bits_count(&s->gb)+7)/8;
 end:
     if (bytes_read > buf_size) {
         av_log(s->avctx, AV_LOG_ERROR, "overread: %d\n", bytes_read - buf_size);
