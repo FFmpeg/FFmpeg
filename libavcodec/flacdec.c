@@ -651,7 +651,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
 
     /* check that there is at least the smallest decodable amount of data.
        this amount corresponds to the smallest valid FLAC frame possible. */
-    if (buf_size < 24)
+    if (buf_size < 16)
         goto end;
 
     /* check for inline header */
