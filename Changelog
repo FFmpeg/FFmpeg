@@ -8,9 +8,7 @@ version <next>:
 
 version 0.5:
 
-- The "device" muxers and demuxers are now in a new libavdevice library
 - DV50 AKA DVCPRO50 encoder, decoder, muxer and demuxer
-- DV100 AKA DVCPRO HD decoder and demuxer
 - TechSmith Camtasia (TSCC) video decoder
 - IBM Ultimotion (ULTI) video decoder
 - Sierra Online audio file demuxer and decoder
@@ -30,7 +28,7 @@ version 0.5:
 - Fraps FPS1 video decoder
 - Snow video encoder/decoder
 - Sonic audio encoder/decoder
-- Vorbis audio encoder/decoder
+- Vorbis audio decoder
 - Macromedia ADPCM decoder
 - Duck TrueMotion 2 video decoder
 - support for decoding FLX and DTA extensions in FLIC files
@@ -41,18 +39,19 @@ version 0.5:
 - TrueSpeech audio decoder
 - WMA2 audio decoder fixed, now all files should play correctly
 - RealAudio 14.4 and 28.8 decoders fixed
-- JPEG-LS encoder and decoder
-- CamStudio video decoder
+- JPEG-LS decoder
 - build system improvements
 - tabs and trailing whitespace removed from the codebase
+- CamStudio video decoder
 - AIFF/AIFF-C audio format, encoding and decoding
 - ADTS AAC file reading and writing
 - Creative VOC file reading and writing
 - American Laser Games multimedia (*.mm) playback system
-- Zip Blocks Motion Video decoder and encoder
+- Zip Blocks Motion Video decoder
 - improved Theora/VP3 decoder
 - True Audio (TTA) decoder
 - AVS demuxer and video decoder
+- JPEG-LS encoder
 - Smacker demuxer and decoder
 - NuppelVideo/MythTV demuxer and RTjpeg decoder
 - KMVC decoder
@@ -71,12 +70,14 @@ version 0.5:
 - VP6 video decoder
 - WavPack lossless audio decoder
 - Targa (.TGA) picture decoder
+- Vorbis audio encoder
 - Delphine Software .cin demuxer/audio and video decoder
 - Tiertex .seq demuxer/video decoder
 - MTV demuxer
 - TIFF picture encoder and decoder
 - GIF picture decoder
 - Intel Music Coder decoder
+- Zip Blocks Motion Video encoder
 - Musepack decoder
 - Flash Screen Video encoder
 - Theora encoding via libtheora
@@ -103,10 +104,10 @@ version 0.5:
 - OS/2 support removed and restored again
 - AC-3 decoder
 - NUT muxer
+- additional SPARC (VIS) optimizations
 - Matroska muxer
 - slice-based parallel H.264 decoding
 - Monkey's Audio demuxer and decoder
-- additional SPARC (VIS) optimizations
 - AMV audio and video decoder
 - DNxHD encoder
 - H.264 PAFF decoding
@@ -115,6 +116,7 @@ version 0.5:
 - libvorbis Vorbis decoding removed in favor of native decoder
 - IntraX8 (J-Frame) subdecoder for WMV2 and VC-1
 - Ogg (Theora, Vorbis and FLAC) muxer
+- The "device" muxers and demuxers are now in a new libavdevice library
 - PC Paintbrush PCX decoder
 - Sun Rasterfile decoder
 - TechnoTrend PVA demuxer
@@ -144,6 +146,7 @@ version 0.5:
 - AAC decoder
 - floating point PCM encoder/decoder
 - MXF muxer
+- DV100 AKA DVCPRO HD decoder and demuxer
 - E-AC-3 support added to AC-3 decoder
 - Nellymoser ASAO encoder
 - ASS and SSA demuxer and muxer
@@ -151,8 +154,9 @@ version 0.5:
 - SVQ3 watermark decoding support
 - Speex decoding via libspeex
 - Electronic Arts TGQ decoder
-- RV30 and RV40 decoder
+- RV40 decoder
 - QCELP / PureVoice decoder
+- RV30 decoder
 - hybrid WavPack support
 - R3D REDCODE demuxer
 - ALSA support for playback and record
