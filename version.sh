@@ -13,12 +13,16 @@ if ! test $revision; then
     test $revision && revision=git-$revision
 fi
 
-# no version number found
+# no revision number found
 test $revision || revision=UNKNOWN
 
-test -n "$3" && revision=$revision-$3
+# releases extract the version number from the VERSION file
+version=$(cat VERSION 2> /dev/null)
+test $version || version=$revision
 
-NEW_REVISION="#define FFMPEG_VERSION \"$revision\""
+test -n "$3" && version=$version-$3
+
+NEW_REVISION="#define FFMPEG_VERSION \"$version\""
 OLD_REVISION=$(cat version.h 2> /dev/null)
 
 # Update version.h only on revision changes to avoid spurious rebuilds
