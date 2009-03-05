@@ -922,7 +922,7 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
     switch(c->dstFormat){
     case PIX_FMT_ARGB:
         dest++;
-        aidx= -1;
+        aidx= 0;
     case PIX_FMT_RGB24:
         aidx--;
     case PIX_FMT_RGBA:
@@ -936,7 +936,7 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
         break;
     case PIX_FMT_ABGR:
         dest++;
-        aidx= -1;
+        aidx= 0;
     case PIX_FMT_BGR24:
         aidx--;
     case PIX_FMT_BGRA:
