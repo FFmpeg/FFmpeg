@@ -24,7 +24,7 @@ CFLAGS := -DHAVE_AV_CONFIG_H -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(OPTFLAGS)
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
 %.o: %.S
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
+	$(AS) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
 %.ho: %.h
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -Wno-unused -c -o $@ -x c $<
