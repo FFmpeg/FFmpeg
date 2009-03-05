@@ -47,7 +47,7 @@ version 0.5:
 - ADTS AAC file reading and writing
 - Creative VOC file reading and writing
 - American Laser Games multimedia (*.mm) playback system
-- Zip Blocks Motion Video decoder
+- Zip Motion Blocks Video decoder
 - improved Theora/VP3 decoder
 - True Audio (TTA) decoder
 - AVS demuxer and video decoder
@@ -77,7 +77,7 @@ version 0.5:
 - TIFF picture encoder and decoder
 - GIF picture decoder
 - Intel Music Coder decoder
-- Zip Blocks Motion Video encoder
+- Zip Motion Blocks Video encoder
 - Musepack decoder
 - Flash Screen Video encoder
 - Theora encoding via libtheora
