@@ -116,8 +116,6 @@ static av_cold void fft_init(int ln)
   qim = (by - ay) >> 1;\
 }
 
-#define MUL16(a,b) ((a) * (b))
-
 #define CMUL(pre, pim, are, aim, bre, bim) \
 {\
    pre = (MUL16(are, bre) - MUL16(aim, bim)) >> 15;\
