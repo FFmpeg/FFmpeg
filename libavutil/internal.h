@@ -134,7 +134,7 @@ extern const uint32_t ff_inverse[256];
             );\
         ret;\
     })
-#elif HAVE_ARMV6
+#elif HAVE_ARMV6 && HAVE_INLINE_ASM
 static inline av_const int FASTDIV(int a, int b)
 {
     int r, t;
@@ -145,7 +145,7 @@ static inline av_const int FASTDIV(int a, int b)
                      : "=&r"(r), "=&r"(t) : "r"(a), "r"(b), "r"(ff_inverse));
     return r;
 }
-#elif ARCH_ARM
+#elif ARCH_ARM && HAVE_INLINE_ASM
 static inline av_const int FASTDIV(int a, int b)
 {
     int r, t;
