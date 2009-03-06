@@ -19,15 +19,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/flac.h"
 #include "avformat.h"
 #include "raw.h"
 #include "id3v2.h"
+#include "oggdec.h"
 
 static int flac_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
     uint8_t buf[ID3v2_HEADER_SIZE];
-    int ret;
+    int ret, metadata_last=0, metadata_type, metadata_size, found_streaminfo=0;
+    uint8_t header[4];
+    uint8_t *buffer=NULL;
     AVStream *st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
@@ -44,6 +48,77 @@ static int flac_read_header(AVFormatContext *s,
     } else {
         url_fseek(s->pb, 0, SEEK_SET);
     }
+
+    /* if fLaC marker is not found, assume there is no header */
+    if (get_le32(s->pb) != MKTAG('f','L','a','C'))
+        return 0;
+
+    /* process metadata blocks */
+    while (!url_feof(s->pb) && !metadata_last) {
+        get_buffer(s->pb, header, 4);
+        ff_flac_parse_block_header(header, &metadata_last, &metadata_type,
+                                   &metadata_size);
+        switch (metadata_type) {
+        /* allocate and read metadata block for supported types */
+        case FLAC_METADATA_TYPE_STREAMINFO:
+        case FLAC_METADATA_TYPE_VORBIS_COMMENT:
+            buffer = av_mallocz(metadata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!buffer) {
+                return AVERROR_NOMEM;
+            }
+            if (get_buffer(s->pb, buffer, metadata_size) != metadata_size) {
+                av_freep(&buffer);
+                return AVERROR_IO;
+            }
+            break;
+        /* skip metadata block for unsupported types */
+        default:
+            ret = url_fseek(s->pb, metadata_size, SEEK_CUR);
+            if (ret < 0)
+                return ret;
+        }
+
+        if (metadata_type == FLAC_METADATA_TYPE_STREAMINFO) {
+            FLACStreaminfo si;
+            /* STREAMINFO can only occur once */
+            if (found_streaminfo) {
+                av_freep(&buffer);
+                return AVERROR_INVALIDDATA;
+            }
+            if (metadata_size != FLAC_STREAMINFO_SIZE) {
+                av_freep(&buffer);
+                return AVERROR_INVALIDDATA;
+            }
+            found_streaminfo = 1;
+            st->codec->extradata      = buffer;
+            st->codec->extradata_size = metadata_size;
+            buffer = NULL;
+
+            /* get codec params from STREAMINFO header */
+            ff_flac_parse_streaminfo(st->codec, &si, st->codec->extradata);
+
+            /* set time base and duration */
+            if (si.samplerate > 0) {
+                av_set_pts_info(st, 64, 1, si.samplerate);
+                if (si.samples > 0)
+                    st->duration = si.samples;
+            }
+        } else {
+            /* STREAMINFO must be the first block */
+            if (!found_streaminfo) {
+                av_freep(&buffer);
+                return AVERROR_INVALIDDATA;
+            }
+            /* process supported blocks other than STREAMINFO */
+            if (metadata_type == FLAC_METADATA_TYPE_VORBIS_COMMENT) {
+                if (vorbis_comment(s, buffer, metadata_size)) {
+                    av_log(s, AV_LOG_WARNING, "error parsing VorbisComment metadata\n");
+                }
+            }
+            av_freep(&buffer);
+        }
+    }
+
     return 0;
 }
 
