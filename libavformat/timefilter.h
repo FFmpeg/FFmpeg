@@ -68,22 +68,10 @@ TimeFilter * ff_timefilter_new(double feedback2_factor, double feedback3_factor)
  * at (or as close as possible to) the moment the device hardware interrupt
  * occured (or any other event the device clock raises at the beginning of a
  * cycle).
+ *
+ * @return the filtered time, in seconds
  */
-void ff_timefilter_update(TimeFilter *self, double system_time, double period);
-
-/**
- * Retrieve the filtered time
- *
- * The returned value represents the filtered time, in seconds, of the
- * beginning of the current cycle as updated by the last call to
- * ff_timefilter_update()
- *
- * This is the value that should be used for timestamping.
- *
- * Warning: you must call ff_timefilter_update() before this, otherwise the
- * result is undetermined.
- */
-double ff_timefilter_read(TimeFilter *);
+double ff_timefilter_update(TimeFilter *self, double system_time, double period);
 
 /**
  * Reset the filter

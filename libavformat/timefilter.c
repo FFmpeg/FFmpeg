@@ -53,7 +53,7 @@ void ff_timefilter_reset(TimeFilter *self)
     self->cycle_time = 0;
 }
 
-void ff_timefilter_update(TimeFilter *self, double system_time, double period)
+double ff_timefilter_update(TimeFilter *self, double system_time, double period)
 {
     if (!self->cycle_time) {
         /// init loop
@@ -68,9 +68,5 @@ void ff_timefilter_update(TimeFilter *self, double system_time, double period)
         self->cycle_time        += self->feedback2_factor * loop_error;
         self->integrator2_state += self->feedback3_factor * loop_error / period;
     }
-}
-
-double ff_timefilter_read(TimeFilter *self)
-{
     return self->cycle_time;
 }
