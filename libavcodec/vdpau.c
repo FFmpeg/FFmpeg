@@ -165,7 +165,7 @@ void ff_vdpau_h264_picture_complete(MpegEncContext *s)
     render->info.h264.num_ref_idx_l1_active_minus1           = h->pps.ref_count[1] - 1;
     render->info.h264.log2_max_frame_num_minus4              = h->sps.log2_max_frame_num - 4;
     render->info.h264.pic_order_cnt_type                     = h->sps.poc_type;
-    render->info.h264.log2_max_pic_order_cnt_lsb_minus4      = h->sps.log2_max_poc_lsb - 4;
+    render->info.h264.log2_max_pic_order_cnt_lsb_minus4      = h->sps.poc_type ? 0 : h->sps.log2_max_poc_lsb - 4;
     render->info.h264.delta_pic_order_always_zero_flag       = h->sps.delta_pic_order_always_zero_flag;
     render->info.h264.direct_8x8_inference_flag              = h->sps.direct_8x8_inference_flag;
     render->info.h264.entropy_coding_mode_flag               = h->pps.cabac;
