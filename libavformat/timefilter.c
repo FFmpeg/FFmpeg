@@ -32,6 +32,7 @@ struct TimeFilter {
     double feedback2_factor;
     double feedback3_factor;
     double integrator2_state;
+    int count;
 };
 
 TimeFilter * ff_timefilter_new(double feedback2_factor, double feedback3_factor)
@@ -51,10 +52,12 @@ void ff_timefilter_destroy(TimeFilter *self)
 void ff_timefilter_reset(TimeFilter *self)
 {
     self->cycle_time = 0;
+    self->count      = 0;
 }
 
 double ff_timefilter_update(TimeFilter *self, double system_time, double period)
 {
+    self->count++;
     if (!self->cycle_time) {
         /// init loop
         self->cycle_time        = system_time;
@@ -65,7 +68,7 @@ double ff_timefilter_update(TimeFilter *self, double system_time, double period)
         loop_error = system_time - self->cycle_time;
 
         /// update loop
-        self->cycle_time        += self->feedback2_factor * loop_error;
+        self->cycle_time        += FFMAX(self->feedback2_factor, 1.0/(self->count)) * loop_error;
         self->integrator2_state += self->feedback3_factor * loop_error / period;
     }
     return self->cycle_time;
