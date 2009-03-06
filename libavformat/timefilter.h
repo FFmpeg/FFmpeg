@@ -37,10 +37,6 @@ typedef struct TimeFilter TimeFilter;
 /**
  * Create a new Delay Locked Loop time filter
  *
- * period is the device cycle duration in seconds. For example, at
- * 44.1Hz and a buffer size of 512 frames, period = 512 / 44100. The filter
- * only works if the cycle duration is fixed.
- *
  * feedback2_factor and feedback3_factor are the factors used for the
  * multiplications that are respectively performed in the second and third
  * feedback paths of the loop.
@@ -58,19 +54,22 @@ typedef struct TimeFilter TimeFilter;
  * For more details about these parameters and background concepts please see:
  * http://www.kokkinizita.net/papers/usingdll.pdf
  */
-TimeFilter * ff_timefilter_new(double period, double feedback2_factor, double feedback3_factor);
+TimeFilter * ff_timefilter_new(double feedback2_factor, double feedback3_factor);
 
 /**
  * Update the filter
  *
  * This function must be called in real time, at each process cycle.
  *
+ * period is the device cycle duration in seconds. For example, at
+ * 44.1Hz and a buffer size of 512 frames, period = 512 / 44100.
+ *
  * system_time, in seconds, should be the value of the system clock time,
  * at (or as close as possible to) the moment the device hardware interrupt
  * occured (or any other event the device clock raises at the beginning of a
  * cycle).
  */
-void ff_timefilter_update(TimeFilter *self, double system_time);
+void ff_timefilter_update(TimeFilter *self, double system_time, double period);
 
 /**
  * Retrieve the filtered time
