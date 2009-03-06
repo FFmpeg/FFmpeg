@@ -97,6 +97,56 @@ static VLC vlc_scalefactors;
 static VLC vlc_spectral[11];
 
 
+static ChannelElement* get_che(AACContext *ac, int type, int elem_id) {
+    static const int8_t tags_per_config[16] = { 0, 1, 1, 2, 3, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0 };
+    if (ac->tag_che_map[type][elem_id]) {
+        return ac->tag_che_map[type][elem_id];
+    }
+    if (ac->tags_mapped >= tags_per_config[ac->m4ac.chan_config]) {
+        return NULL;
+    }
+    switch (ac->m4ac.chan_config) {
+        case 7:
+            if (ac->tags_mapped == 3 && type == TYPE_CPE) {
+                ac->tags_mapped++;
+                return ac->tag_che_map[TYPE_CPE][elem_id] = ac->che[TYPE_CPE][2];
+            }
+        case 6:
+            /* Some streams incorrectly code 5.1 audio as SCE[0] CPE[0] CPE[1] SCE[1]
+               instead of SCE[0] CPE[0] CPE[0] LFE[0]. If we seem to have
+               encountered such a stream, transfer the LFE[0] element to SCE[1] */
+            if (ac->tags_mapped == tags_per_config[ac->m4ac.chan_config] - 1 && (type == TYPE_LFE || type == TYPE_SCE)) {
+                ac->tags_mapped++;
+                return ac->tag_che_map[type][elem_id] = ac->che[TYPE_LFE][0];
+            }
+        case 5:
+            if (ac->tags_mapped == 2 && type == TYPE_CPE) {
+                ac->tags_mapped++;
+                return ac->tag_che_map[TYPE_CPE][elem_id] = ac->che[TYPE_CPE][1];
+            }
+        case 4:
+            if (ac->tags_mapped == 2 && ac->m4ac.chan_config == 4 && type == TYPE_SCE) {
+                ac->tags_mapped++;
+                return ac->tag_che_map[TYPE_SCE][elem_id] = ac->che[TYPE_SCE][1];
+            }
+        case 3:
+        case 2:
+            if (ac->tags_mapped == (ac->m4ac.chan_config != 2) && type == TYPE_CPE) {
+                ac->tags_mapped++;
+                return ac->tag_che_map[TYPE_CPE][elem_id] = ac->che[TYPE_CPE][0];
+            } else if (ac->m4ac.chan_config == 2) {
+                return NULL;
+            }
+        case 1:
+            if (!ac->tags_mapped && type == TYPE_SCE) {
+                ac->tags_mapped++;
+                return ac->tag_che_map[TYPE_SCE][elem_id] = ac->che[TYPE_SCE][0];
+            }
+        default:
+            return NULL;
+    }
+}
+
 /**
  * Configure output channel order based on the current program configuration element.
  *
@@ -106,7 +156,7 @@ static VLC vlc_spectral[11];
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static int output_configure(AACContext *ac, enum ChannelPosition che_pos[4][MAX_ELEM_ID],
-        enum ChannelPosition new_che_pos[4][MAX_ELEM_ID]) {
+        enum ChannelPosition new_che_pos[4][MAX_ELEM_ID], int channel_config) {
     AVCodecContext *avctx = ac->avccontext;
     int i, type, channels = 0;
 
@@ -140,7 +190,16 @@ static int output_configure(AACContext *ac, enum ChannelPosition che_pos[4][MAX_
         }
     }
 
+    if (channel_config) {
+        memset(ac->tag_che_map, 0,       4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
+        ac->tags_mapped = 0;
+    } else {
+        memcpy(ac->tag_che_map, ac->che, 4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
+        ac->tags_mapped = 4*MAX_ELEM_ID;
+    }
+
     avctx->channels = channels;
+
     return 0;
 }
 
@@ -286,7 +345,7 @@ static int decode_ga_specific_config(AACContext * ac, GetBitContext * gb, int ch
         if((ret = set_default_channel_config(ac, new_che_pos, channel_config)))
             return ret;
     }
-    if((ret = output_configure(ac, ac->che_pos, new_che_pos)))
+    if((ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config)))
         return ret;
 
     if (extension_flag) {
@@ -394,7 +453,7 @@ static av_cold int aac_decode_init(AVCodecContext * avccontext) {
         memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
         if(set_default_channel_config(ac, new_che_pos, avccontext->channels - (avccontext->channels == 8)))
             return -1;
-        if(output_configure(ac, ac->che_pos, new_che_pos))
+        if(output_configure(ac, ac->che_pos, new_che_pos, 1))
             return -1;
         ac->m4ac.sample_rate = avccontext->sample_rate;
     } else {
@@ -1552,6 +1611,7 @@ static int parse_adts_frame_header(AACContext * ac, GetBitContext * gb) {
 
 static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data_size, const uint8_t * buf, int buf_size) {
     AACContext * ac = avccontext->priv_data;
+    ChannelElement * che = NULL;
     GetBitContext gb;
     enum RawDataBlockType elem_type;
     int err, elem_id, data_size_tmp;
@@ -1574,15 +1634,7 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
         elem_id = get_bits(&gb, 4);
         err = -1;
 
-        if(elem_type == TYPE_SCE && elem_id == 1 &&
-                !ac->che[TYPE_SCE][elem_id] && ac->che[TYPE_LFE][0]) {
-            /* Some streams incorrectly code 5.1 audio as SCE[0] CPE[0] CPE[1] SCE[1]
-               instead of SCE[0] CPE[0] CPE[0] LFE[0]. If we seem to have
-               encountered such a stream, transfer the LFE[0] element to SCE[1] */
-            ac->che[TYPE_SCE][elem_id] = ac->che[TYPE_LFE][0];
-            ac->che[TYPE_LFE][0] = NULL;
-        }
-        if(elem_type < TYPE_DSE && !ac->che[elem_type][elem_id]) {
+        if(elem_type < TYPE_DSE && !(che=get_che(ac, elem_type, elem_id))) {
             av_log(ac->avccontext, AV_LOG_ERROR, "channel element %d.%d is not allocated\n", elem_type, elem_id);
             return -1;
         }
@@ -1590,19 +1642,19 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
         switch (elem_type) {
 
         case TYPE_SCE:
-            err = decode_ics(ac, &ac->che[TYPE_SCE][elem_id]->ch[0], &gb, 0, 0);
+            err = decode_ics(ac, &che->ch[0], &gb, 0, 0);
             break;
 
         case TYPE_CPE:
-            err = decode_cpe(ac, &gb, ac->che[TYPE_CPE][elem_id]);
+            err = decode_cpe(ac, &gb, che);
             break;
 
         case TYPE_CCE:
-            err = decode_cce(ac, &gb, ac->che[TYPE_CCE][elem_id]);
+            err = decode_cce(ac, &gb, che);
             break;
 
         case TYPE_LFE:
-            err = decode_ics(ac, &ac->che[TYPE_LFE][elem_id]->ch[0], &gb, 0, 0);
+            err = decode_ics(ac, &che->ch[0], &gb, 0, 0);
             break;
 
         case TYPE_DSE:
@@ -1616,7 +1668,7 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
             memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
             if((err = decode_pce(ac, new_che_pos, &gb)))
                 break;
-            err = output_configure(ac, ac->che_pos, new_che_pos);
+            err = output_configure(ac, ac->che_pos, new_che_pos, 0);
             break;
         }
 
