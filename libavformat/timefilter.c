@@ -74,7 +74,8 @@ double ff_timefilter_update(TimeFilter *self, double system_time, double period)
 }
 
 #ifdef TEST
-main(){
+int main(void)
+{
     double n0,n1;
 #define SAMPLES 1000
     double ideal[SAMPLES];
@@ -118,5 +119,6 @@ main(){
         }
         printf("\n");
     }
+    return 0;
 }
 #endif
