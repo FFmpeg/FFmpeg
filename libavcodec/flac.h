@@ -83,4 +83,14 @@ int ff_flac_is_extradata_valid(AVCodecContext *avctx,
                                enum FLACExtradataFormat *format,
                                uint8_t **streaminfo_start);
 
+/**
+ * Parse the metadata block parameters from the header.
+ * @param[in]  block_header header data, at least 4 bytes
+ * @param[out] last indicator for last metadata block
+ * @param[out] type metadata block type
+ * @param[out] size metadata block size
+ */
+void ff_flac_parse_block_header(const uint8_t *block_header,
+                                int *last, int *type, int *size);
+
 #endif /* AVCODEC_FLAC_H */

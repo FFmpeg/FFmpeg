@@ -220,6 +220,18 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
     dump_headers(avctx, s);
 }
 
+void ff_flac_parse_block_header(const uint8_t *block_header,
+                                int *last, int *type, int *size)
+{
+    int tmp = bytestream_get_byte(&block_header);
+    if (last)
+        *last = tmp & 0x80;
+    if (type)
+        *type = tmp & 0x7F;
+    if (size)
+        *size = bytestream_get_be24(&block_header);
+}
+
 /**
  * Parse the STREAMINFO from an inline header.
  * @param s the flac decoding context
@@ -235,14 +247,12 @@ static int parse_streaminfo(FLACContext *s, const uint8_t *buf, int buf_size)
         /* need more data */
         return 0;
     }
-    buf += 4;
-    metadata_type = bytestream_get_byte(&buf) & 0x7F;
-    metadata_size = bytestream_get_be24(&buf);
+    ff_flac_parse_block_header(&buf[4], NULL, &metadata_type, &metadata_size);
     if (metadata_type != FLAC_METADATA_TYPE_STREAMINFO ||
         metadata_size != FLAC_STREAMINFO_SIZE) {
         return AVERROR_INVALIDDATA;
     }
-    ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, buf);
+    ff_flac_parse_streaminfo(s->avctx, (FLACStreaminfo *)s, &buf[8]);
     allocate_buffers(s);
     s->got_streaminfo = 1;
 
@@ -262,8 +272,8 @@ static int get_metadata_size(const uint8_t *buf, int buf_size)
 
     buf += 4;
     do {
-        metadata_last = bytestream_get_byte(&buf) & 0x80;
-        metadata_size = bytestream_get_be24(&buf);
+        ff_flac_parse_block_header(buf, &metadata_last, NULL, &metadata_size);
+        buf += 4;
         if (buf + metadata_size > buf_end) {
             /* need more data in order to read the complete header */
             return 0;
