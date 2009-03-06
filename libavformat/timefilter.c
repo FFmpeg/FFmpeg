@@ -31,14 +31,14 @@ struct TimeFilter {
     double cycle_time;
     double feedback2_factor;
     double feedback3_factor;
-    double integrator2_state;
+    double clock_period;
     int count;
 };
 
 TimeFilter * ff_timefilter_new(double clock_period, double feedback2_factor, double feedback3_factor)
 {
     TimeFilter *self        = av_mallocz(sizeof(TimeFilter));
-    self->integrator2_state = clock_period;
+    self->clock_period      = clock_period;
     self->feedback2_factor  = feedback2_factor;
     self->feedback3_factor  = feedback3_factor;
     return self;
@@ -62,13 +62,13 @@ double ff_timefilter_update(TimeFilter *self, double system_time, double period)
         self->cycle_time        = system_time;
     } else {
         double loop_error;
-        self->cycle_time+= self->integrator2_state * period;
+        self->cycle_time   += self->clock_period * period;
         /// calculate loop error
         loop_error = system_time - self->cycle_time;
 
         /// update loop
         self->cycle_time        += FFMAX(self->feedback2_factor, 1.0/(self->count)) * loop_error;
-        self->integrator2_state += self->feedback3_factor * loop_error / period;
+        self->clock_period += self->feedback3_factor * loop_error / period;
     }
     return self->cycle_time;
 }
