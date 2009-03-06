@@ -51,18 +51,22 @@ typedef struct TimeFilter TimeFilter;
  * of the jitter, but also take a longer time for the loop to settle. A good
  * starting point is something between 0.3 and 3 Hz.
  *
+ * @param clock_period period of the hardware clock in seconds
+ *        (for example 1.0/44100)
+ *
  * For more details about these parameters and background concepts please see:
  * http://www.kokkinizita.net/papers/usingdll.pdf
  */
-TimeFilter * ff_timefilter_new(double feedback2_factor, double feedback3_factor);
+TimeFilter * ff_timefilter_new(double clock_period, double feedback2_factor, double feedback3_factor);
 
 /**
  * Update the filter
  *
  * This function must be called in real time, at each process cycle.
  *
- * period is the device cycle duration in seconds. For example, at
- * 44.1Hz and a buffer size of 512 frames, period = 512 / 44100.
+ * @param period the device cycle duration in clock_periods. For example, at
+ * 44.1kHz and a buffer size of 512 frames, period = 512 when clock_period
+ * was 1.0/44100, or 512/44100 if clock_period was 1.
  *
  * system_time, in seconds, should be the value of the system clock time,
  * at (or as close as possible to) the moment the device hardware interrupt

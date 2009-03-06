@@ -35,10 +35,10 @@ struct TimeFilter {
     int count;
 };
 
-TimeFilter * ff_timefilter_new(double feedback2_factor, double feedback3_factor)
+TimeFilter * ff_timefilter_new(double clock_period, double feedback2_factor, double feedback3_factor)
 {
     TimeFilter *self        = av_mallocz(sizeof(TimeFilter));
-    self->integrator2_state = 1.0;
+    self->integrator2_state = clock_period;
     self->feedback2_factor  = feedback2_factor;
     self->feedback3_factor  = feedback3_factor;
     return self;
@@ -98,7 +98,7 @@ main(){
                 for(par0= bestpar0*0.8; par0<=bestpar0*1.21; par0+=bestpar0*0.05){
                     for(par1= bestpar1*0.8; par1<=bestpar1*1.21; par1+=bestpar1*0.05){
                         double error=0;
-                        TimeFilter *tf= ff_timefilter_new(par0, par1);
+                        TimeFilter *tf= ff_timefilter_new(1, par0, par1);
                         for(i=0; i<SAMPLES; i++){
                             double filtered;
                             filtered=  ff_timefilter_update(tf, samples[i], 1);
