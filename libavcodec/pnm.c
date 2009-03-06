@@ -138,7 +138,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
                 avctx->pix_fmt = PIX_FMT_GRAY16BE;
                 if (s->maxval != 65535)
                     avctx->pix_fmt = PIX_FMT_GRAY16;
-            } if (avctx->pix_fmt == PIX_FMT_RGB24) {
+            } else if (avctx->pix_fmt == PIX_FMT_RGB24) {
                 if (s->maxval > 255)
                     avctx->pix_fmt = PIX_FMT_RGB48BE;
             } else {
