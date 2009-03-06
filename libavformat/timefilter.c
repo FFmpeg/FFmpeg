@@ -74,6 +74,7 @@ double ff_timefilter_update(TimeFilter *self, double system_time, double period)
 }
 
 #ifdef TEST
+#undef rand
 int main(void)
 {
     double n0,n1;
