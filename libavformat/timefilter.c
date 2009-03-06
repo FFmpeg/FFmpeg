@@ -72,3 +72,51 @@ double ff_timefilter_update(TimeFilter *self, double system_time, double period)
     }
     return self->cycle_time;
 }
+
+#ifdef TEST
+main(){
+    double n0,n1;
+#define SAMPLES 1000
+    double ideal[SAMPLES];
+    double samples[SAMPLES];
+    for(n0= 0; n0<40; n0=2*n0+1){
+        for(n1= 0; n1<10; n1=2*n1+1){
+            double best_error= 1000000000;
+            double bestpar0=1;
+            double bestpar1=0.001;
+            int better, i;
+
+            srandom(123);
+            for(i=0; i<SAMPLES; i++){
+                ideal[i]  = 10 + i + n1*i/(1000);
+                samples[i]= ideal[i] + n0*(rand()-RAND_MAX/2)/(RAND_MAX*10LL);
+            }
+
+            do{
+                double par0, par1;
+                better=0;
+                for(par0= bestpar0*0.8; par0<=bestpar0*1.21; par0+=bestpar0*0.05){
+                    for(par1= bestpar1*0.8; par1<=bestpar1*1.21; par1+=bestpar1*0.05){
+                        double error=0;
+                        TimeFilter *tf= ff_timefilter_new(par0, par1);
+                        for(i=0; i<SAMPLES; i++){
+                            double filtered;
+                            filtered=  ff_timefilter_update(tf, samples[i], 1);
+                            error += (filtered - ideal[i]) * (filtered - ideal[i]);
+                        }
+                        ff_timefilter_destroy(tf);
+                        if(error < best_error){
+                            best_error= error;
+                            bestpar0= par0;
+                            bestpar1= par1;
+                            better=1;
+                        }
+                    }
+                }
+            }while(better);
+            printf(" [%f %f %f]", bestpar0, bestpar1, best_error);
+        }
+        printf("\n");
+    }
+}
+#endif
