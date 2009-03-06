@@ -827,7 +827,7 @@ static void rtsp_send_cmd(AVFormatContext *s,
 #endif
     url_write(rt->rtsp_hd, buf, strlen(buf));
 
-    rtsp_read_reply(rt, reply, content_ptr);
+    rtsp_read_reply(s, reply, content_ptr);
 }
 
 
