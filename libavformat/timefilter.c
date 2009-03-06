@@ -51,14 +51,13 @@ void ff_timefilter_destroy(TimeFilter *self)
 
 void ff_timefilter_reset(TimeFilter *self)
 {
-    self->cycle_time = 0;
     self->count      = 0;
 }
 
 double ff_timefilter_update(TimeFilter *self, double system_time, double period)
 {
     self->count++;
-    if (!self->cycle_time) {
+    if (self->count==1) {
         /// init loop
         self->cycle_time        = system_time;
     } else {
