@@ -42,7 +42,7 @@ static int decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf,
     adts->sample_rate_index = get_bits(&gb, 4);
     adts->channel_conf = get_bits(&gb, 4);
 
-    if (adts->objecttype > 3) {
+    if (adts->objecttype > 3U) {
         av_log(s, AV_LOG_ERROR, "MPEG-4 AOT %d is not allowed in ADTS\n", adts->objecttype+1);
         return -1;
     }
@@ -52,6 +52,18 @@ static int decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf,
     }
     if (adts->channel_conf == 0) {
         ff_log_missing_feature(s, "PCE based channel configuration", 0);
+        return -1;
+    }
+    if (get_bits(&gb, 1)) {
+        av_log(s, AV_LOG_ERROR, "960/120 MDCT window is not allowed in ADTS\n");
+        return -1;
+    }
+    if (get_bits(&gb, 1)) {
+        av_log(s, AV_LOG_ERROR, "Scalable configurations are not allowed in ADTS\n");
+        return -1;
+    }
+    if (get_bits(&gb, 1)) {
+        ff_log_missing_feature(s, "Signaled SBR or PS", 0);
         return -1;
     }
 
