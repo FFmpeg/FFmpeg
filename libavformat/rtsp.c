@@ -124,7 +124,7 @@ static int sdp_parse_rtpmap(AVCodecContext *codec, RTSPStream *rtsp_st, int payl
     if (payload_type >= RTP_PT_PRIVATE) {
         RTPDynamicProtocolHandler *handler= RTPFirstDynamicPayloadHandler;
         while(handler) {
-            if (!strcmp(buf, handler->enc_name) && (codec->codec_type == handler->codec_type)) {
+            if (!strcasecmp(buf, handler->enc_name) && (codec->codec_type == handler->codec_type)) {
                 codec->codec_id = handler->codec_id;
                 rtsp_st->dynamic_handler= handler;
                 if(handler->open) {
