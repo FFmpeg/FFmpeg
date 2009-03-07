@@ -68,7 +68,7 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, int mode,
     s->frame_size = av_get_bits_per_sample(*codec_id) / 8 * channels;
 
     if (ctx->flags & AVFMT_FLAG_NONBLOCK) {
-        flags = O_NONBLOCK;
+        flags = SND_PCM_NONBLOCK;
     }
     res = snd_pcm_open(&h, audio_device, mode, flags);
     if (res < 0) {
