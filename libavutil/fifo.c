@@ -24,10 +24,10 @@
 
 int av_fifo_init(AVFifoBuffer *f, unsigned int size)
 {
-    size= FFMAX(size, size+1);
     f->wptr = f->rptr =
     f->buffer = av_malloc(size);
     f->end = f->buffer + size;
+    f->rndx = f->wndx = 0;
     if (!f->buffer)
         return -1;
     return 0;
@@ -40,10 +40,7 @@ void av_fifo_free(AVFifoBuffer *f)
 
 int av_fifo_size(AVFifoBuffer *f)
 {
-    int size = f->wptr - f->rptr;
-    if (size < 0)
-        size += f->end - f->buffer;
-    return size;
+    return (uint32_t)(f->wndx - f->rndx);
 }
 
 int av_fifo_read(AVFifoBuffer *f, uint8_t *buf, int buf_size)
@@ -60,7 +57,7 @@ void av_fifo_realloc(AVFifoBuffer *f, unsigned int new_size) {
 int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
     unsigned int old_size= f->end - f->buffer;
 
-    if(old_size <= new_size){
+    if(old_size < new_size){
         int len= av_fifo_size(f);
         AVFifoBuffer f2;
 
@@ -68,6 +65,7 @@ int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
             return -1;
         av_fifo_read(f, f2.buffer, len);
         f2.wptr += len;
+        f2.wndx += len;
         av_free(f->buffer);
         *f= f2;
     }
@@ -96,6 +94,7 @@ int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void
         f->wptr += len;
         if (f->wptr >= f->end)
             f->wptr = f->buffer;
+        f->wndx += len;
         size -= len;
     } while (size > 0);
     return total - size;
@@ -123,4 +122,5 @@ void av_fifo_drain(AVFifoBuffer *f, int size)
     f->rptr += size;
     if (f->rptr >= f->end)
         f->rptr -= f->end - f->buffer;
+    f->rndx += size;
 }

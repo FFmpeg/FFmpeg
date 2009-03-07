@@ -31,6 +31,7 @@
 typedef struct AVFifoBuffer {
     uint8_t *buffer;
     uint8_t *rptr, *wptr, *end;
+    uint32_t rndx, wndx;
 } AVFifoBuffer;
 
 /**
