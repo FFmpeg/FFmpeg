@@ -228,6 +228,7 @@ const char *sws_format_name(int format);
 #define isPlanarYUV(x)  (           \
            (x)==PIX_FMT_YUV410P     \
         || (x)==PIX_FMT_YUV420P     \
+        || (x)==PIX_FMT_YUVA420P    \
         || (x)==PIX_FMT_YUV411P     \
         || (x)==PIX_FMT_YUV422P     \
         || (x)==PIX_FMT_YUV444P     \
