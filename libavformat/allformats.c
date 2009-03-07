@@ -188,6 +188,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (VC1T, vc1t);
     REGISTER_DEMUXER  (VMD, vmd);
     REGISTER_MUXDEMUX (VOC, voc);
+    REGISTER_DEMUXER  (VQF, vqf);
     REGISTER_MUXDEMUX (WAV, wav);
     REGISTER_DEMUXER  (WC3, wc3);
     REGISTER_DEMUXER  (WSAUD, wsaud);
