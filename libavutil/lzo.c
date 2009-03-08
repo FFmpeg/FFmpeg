@@ -234,12 +234,6 @@ int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
     return c.error;
 }
 
-#if LIBAVUTIL_VERSION_MAJOR < 50
-int lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
-    return av_lzo1x_decode(out, outlen, in, inlen);
-}
-#endif
-
 #ifdef TEST
 #include <stdio.h>
 #include <lzo/lzo1x.h>

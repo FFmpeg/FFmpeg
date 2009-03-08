@@ -59,11 +59,3 @@ void av_rc4_crypt(AVRC4 *r, uint8_t *dst, const uint8_t *src, int count, uint8_t
     }
     r->x = x; r->y = y;
 }
-
-#if LIBAVUTIL_VERSION_MAJOR < 50
-void ff_rc4_enc(const uint8_t *key, int keylen, uint8_t *data, int datalen) {
-    AVRC4 r;
-    av_rc4_init(&r, key, keylen * 8, 0);
-    av_rc4_crypt(&r, data, data, datalen, NULL, 0);
-}
-#endif
