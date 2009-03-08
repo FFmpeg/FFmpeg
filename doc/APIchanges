@@ -1,3 +1,17 @@
+Never assume the API of libav* to be stable unless at least 1 week has passed since
+the last major version increase.
+The last version increases were:
+libavcodec:  ?
+libavdevice: ?
+libavfilter: ?
+libavformat: ?
+libpostproc: ?
+libswscale:  ?
+libavutil:   2009-03-08
+
+
+API changes, most recent first:
+
 20090308 - r17869 - lavu 50.0.0  - AVFifoBuffer
   av_fifo_init, av_fifo_read, av_fifo_write and av_fifo_realloc were dropped and replaced
   by av_fifo_alloc, av_fifo_generic_read, av_fifo_generic_write and av_fifo_realloc2.
