@@ -27,7 +27,7 @@
 #include "avformat.h"
 
 typedef struct {
-    AVFifoBuffer fifo;
+    AVFifoBuffer *fifo;
     unsigned fifo_size;           ///< size of currently allocated FIFO
     uint64_t dts;                 ///< current dts
     int sample_size;              ///< size of one sample all channels included

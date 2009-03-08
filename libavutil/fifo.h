@@ -36,11 +36,10 @@ typedef struct AVFifoBuffer {
 
 /**
  * Initializes an AVFifoBuffer.
- * @param *f AVFifoBuffer to initialize
  * @param size of FIFO
- * @return <0 for failure >=0 otherwise
+ * @return AVFifoBuffer or NULL if mem allocation failure
  */
-int av_fifo_init(AVFifoBuffer *f, unsigned int size);
+AVFifoBuffer *av_fifo_alloc(unsigned int size);
 
 /**
  * Frees an AVFifoBuffer.

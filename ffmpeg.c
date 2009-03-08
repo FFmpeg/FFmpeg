@@ -263,7 +263,7 @@ typedef struct AVOutputStream {
     ReSampleContext *resample; /* for audio resampling */
     int reformat_pair;
     AVAudioConvert *reformat_ctx;
-    AVFifoBuffer fifo;     /* for compression: one audio fifo per codec */
+    AVFifoBuffer *fifo;     /* for compression: one audio fifo per codec */
     FILE *logfile;
 } AVOutputStream;
 
@@ -585,7 +585,7 @@ static void do_audio_out(AVFormatContext *s,
 
     if(audio_sync_method){
         double delta = get_sync_ipts(ost) * enc->sample_rate - ost->sync_opts
-                - av_fifo_size(&ost->fifo)/(ost->st->codec->channels * 2);
+                - av_fifo_size(ost->fifo)/(ost->st->codec->channels * 2);
         double idelta= delta*ist->st->codec->sample_rate / enc->sample_rate;
         int byte_delta= ((int)idelta)*2*ist->st->codec->channels;
 
@@ -622,13 +622,13 @@ static void do_audio_out(AVFormatContext *s,
                 assert(ost->audio_resample);
                 if(verbose > 2)
                     fprintf(stderr, "compensating audio timestamp drift:%f compensation:%d in:%d\n", delta, comp, enc->sample_rate);
-//                fprintf(stderr, "drift:%f len:%d opts:%"PRId64" ipts:%"PRId64" fifo:%d\n", delta, -1, ost->sync_opts, (int64_t)(get_sync_ipts(ost) * enc->sample_rate), av_fifo_size(&ost->fifo)/(ost->st->codec->channels * 2));
+//                fprintf(stderr, "drift:%f len:%d opts:%"PRId64" ipts:%"PRId64" fifo:%d\n", delta, -1, ost->sync_opts, (int64_t)(get_sync_ipts(ost) * enc->sample_rate), av_fifo_size(ost->fifo)/(ost->st->codec->channels * 2));
                 av_resample_compensate(*(struct AVResampleContext**)ost->resample, comp, enc->sample_rate);
             }
         }
     }else
         ost->sync_opts= lrintf(get_sync_ipts(ost) * enc->sample_rate)
-                        - av_fifo_size(&ost->fifo)/(ost->st->codec->channels * 2); //FIXME wrong
+                        - av_fifo_size(ost->fifo)/(ost->st->codec->channels * 2); //FIXME wrong
 
     if (ost->audio_resample) {
         buftmp = audio_buf;
@@ -660,19 +660,19 @@ static void do_audio_out(AVFormatContext *s,
     /* now encode as many frames as possible */
     if (enc->frame_size > 1) {
         /* output resampled raw samples */
-        if (av_fifo_realloc2(&ost->fifo, av_fifo_size(&ost->fifo) + size_out) < 0) {
+        if (av_fifo_realloc2(ost->fifo, av_fifo_size(ost->fifo) + size_out) < 0) {
             fprintf(stderr, "av_fifo_realloc2() failed\n");
             av_exit(1);
         }
-        av_fifo_generic_write(&ost->fifo, buftmp, size_out, NULL);
+        av_fifo_generic_write(ost->fifo, buftmp, size_out, NULL);
 
         frame_bytes = enc->frame_size * osize * enc->channels;
 
-        while (av_fifo_size(&ost->fifo) >= frame_bytes) {
+        while (av_fifo_size(ost->fifo) >= frame_bytes) {
             AVPacket pkt;
             av_init_packet(&pkt);
 
-            av_fifo_read(&ost->fifo, audio_buf, frame_bytes);
+            av_fifo_read(ost->fifo, audio_buf, frame_bytes);
 
             //FIXME pass ost->sync_opts as AVFrame.pts in avcodec_encode_audio()
 
@@ -1446,13 +1446,13 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
                         switch(ost->st->codec->codec_type) {
                         case CODEC_TYPE_AUDIO:
-                            fifo_bytes = av_fifo_size(&ost->fifo);
+                            fifo_bytes = av_fifo_size(ost->fifo);
                             ret = 0;
                             /* encode any samples remaining in fifo */
                             if(fifo_bytes > 0 && enc->codec->capabilities & CODEC_CAP_SMALL_LAST_FRAME) {
                                 int fs_tmp = enc->frame_size;
                                 enc->frame_size = fifo_bytes / (2 * enc->channels);
-                                av_fifo_read(&ost->fifo, (uint8_t *)samples, fifo_bytes);
+                                av_fifo_read(ost->fifo, (uint8_t *)samples, fifo_bytes);
                                     ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, samples);
                                 enc->frame_size = fs_tmp;
                             }
@@ -1783,7 +1783,8 @@ static int av_encode(AVFormatContext **output_files,
         } else {
             switch(codec->codec_type) {
             case CODEC_TYPE_AUDIO:
-                if (av_fifo_init(&ost->fifo, 1024))
+                ost->fifo= av_fifo_alloc(1024);
+                if(!ost->fifo)
                     goto fail;
                 ost->reformat_pair = MAKE_SFMT_PAIR(SAMPLE_FMT_NONE,SAMPLE_FMT_NONE);
                 ost->audio_resample = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
@@ -2235,7 +2236,7 @@ static int av_encode(AVFormatContext **output_files,
                     fclose(ost->logfile);
                     ost->logfile = NULL;
                 }
-                av_fifo_free(&ost->fifo); /* works even if fifo is not
+                av_fifo_free(ost->fifo); /* works even if fifo is not
                                              initialized but set to zero */
                 av_free(ost->pict_tmp.data[0]);
                 if (ost->video_resample)

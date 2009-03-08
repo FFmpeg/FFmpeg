@@ -22,20 +22,25 @@
 #include "common.h"
 #include "fifo.h"
 
-int av_fifo_init(AVFifoBuffer *f, unsigned int size)
+AVFifoBuffer *av_fifo_alloc(unsigned int size)
 {
+    AVFifoBuffer *f= av_mallocz(sizeof(AVFifoBuffer));
+    if(!f)
+        return NULL;
     f->wptr = f->rptr =
     f->buffer = av_malloc(size);
     f->end = f->buffer + size;
-    f->rndx = f->wndx = 0;
     if (!f->buffer)
-        return -1;
-    return 0;
+        av_freep(&f);
+    return f;
 }
 
 void av_fifo_free(AVFifoBuffer *f)
 {
+    if(f){
     av_free(f->buffer);
+    av_free(f);
+    }
 }
 
 int av_fifo_size(AVFifoBuffer *f)
@@ -59,15 +64,16 @@ int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
 
     if(old_size < new_size){
         int len= av_fifo_size(f);
-        AVFifoBuffer f2;
+        AVFifoBuffer *f2= av_fifo_alloc(new_size);
 
-        if (av_fifo_init(&f2, new_size) < 0)
+        if (!f2)
             return -1;
-        av_fifo_read(f, f2.buffer, len);
-        f2.wptr += len;
-        f2.wndx += len;
+        av_fifo_read(f, f2->buffer, len);
+        f2->wptr += len;
+        f2->wndx += len;
         av_free(f->buffer);
-        *f= f2;
+        *f= *f2;
+        av_free(f2);
     }
     return 0;
 }

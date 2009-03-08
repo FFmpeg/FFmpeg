@@ -75,7 +75,7 @@ typedef struct {
     int video_frame_number;
     int frame_rate;
     int tag;
-    AVFifoBuffer audio_fifo;
+    AVFifoBuffer *audio_fifo;
     AVCodecContext *audio_enc, *video_enc;
 } SWFContext;
 
