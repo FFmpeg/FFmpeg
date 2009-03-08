@@ -38,8 +38,8 @@ typedef struct {
 #if LIBAVUTIL_VERSION_MAJOR < 50
 attribute_deprecated void av_init_random(unsigned int seed, AVRandomState *state);
 #endif
-void av_random_init(AVRandomState *state, unsigned int seed); ///< To be inlined, the struct must be visible. So it does not make sense to try and keep it opaque with malloc/free-like calls.
-void av_random_generate_untempered_numbers(AVRandomState *state); ///< Regenerate the untempered numbers (must be done every 624 iterations, or it will loop).
+attribute_deprecated void av_random_init(AVRandomState *state, unsigned int seed); ///< To be inlined, the struct must be visible. So it does not make sense to try and keep it opaque with malloc/free-like calls.
+attribute_deprecated void av_random_generate_untempered_numbers(AVRandomState *state); ///< Regenerate the untempered numbers (must be done every 624 iterations, or it will loop).
 
 /**
  * Generates a random number from the interval [0,0xffffffff].
@@ -49,7 +49,7 @@ void av_random_generate_untempered_numbers(AVRandomState *state); ///< Regenerat
  * If you still choose to use MT, expect that you will have to provide
  * some evidence that it makes a difference for the case where you use it.
  */
-static inline unsigned int av_random(AVRandomState *state)
+attribute_deprecated static inline unsigned int av_random(AVRandomState *state)
 {
     unsigned int y;
 
@@ -70,7 +70,7 @@ static inline unsigned int av_random(AVRandomState *state)
 }
 
 /** Returns a random number in the range [0-1] as double. */
-static inline double av_random_real1(AVRandomState *state)
+attribute_deprecated static inline double av_random_real1(AVRandomState *state)
 {
     /* divided by 2^32-1 */
     return av_random(state) * (1.0 / 4294967296.0);
