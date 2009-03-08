@@ -1,3 +1,9 @@
+20090308 - r17869 - lavu 50.0.0  - AVFifoBuffer
+  av_fifo_init, av_fifo_read, av_fifo_write and av_fifo_realloc were dropped and replaced
+  by av_fifo_alloc, av_fifo_generic_read, av_fifo_generic_write and av_fifo_realloc2.
+  The AVFifoBuffer/struct AVFifoBuffer may only be used in an opaque way by applications,
+  they may not use sizeof() or directly access members.
+
 20090301 - r17682 - lavf 52.31.0 - Generic metadata API
   This version introduces a new metadata API (see av_metadata_get() and friends).
   The old API is now deprecated and shouldn't be used anymore. This especially
