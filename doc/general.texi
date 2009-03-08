@@ -129,6 +129,8 @@ library:
     @tab SMPTE 386M, D-10/IMX Mapping.
 @item NC camera feed            @tab   @tab X
     @tab NC (AVIP NC4600) camera streams
+@item NTT TwinVQ (VQF)          @tab   @tab X
+    @tab Nippon Telegraph and Telephone Corporation TwinVQ.
 @item Nullsoft Streaming Video  @tab   @tab X
 @item NuppelVideo               @tab   @tab X
 @item NUT                       @tab X @tab X
@@ -211,8 +213,6 @@ library:
     @tab Tiertex .seq files used in the DOS CD-ROM version of the game Flashback.
 @item True Audio                @tab   @tab X
 @item VC-1 test bitstream       @tab X @tab X
-@item NTT TwinVQ (VQF)          @tab   @tab X
-    @tab Nippon Telegraph and Telephone Corporation TwinVQ.
 @item WAV                       @tab X @tab X
 @item WavPack                   @tab   @tab X
 @item Wing Commander III movie  @tab   @tab X
