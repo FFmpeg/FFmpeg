@@ -762,7 +762,7 @@ static int gxf_write_media_preamble(AVFormatContext *s, AVPacket *pkt, int size)
     return 16;
 }
 
-static int gxf_write_media_packet(AVFormatContext *s, AVPacket *pkt)
+static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     GXFContext *gxf = s->priv_data;
     ByteIOContext *pb = s->pb;
@@ -782,14 +782,9 @@ static int gxf_write_media_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->codec->codec_type == CODEC_TYPE_VIDEO)
         gxf->nb_fields += 2; // count fields
 
-    return updatePacketSize(pb, pos);
-}
+    put_flush_packet(pb);
 
-static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    gxf_write_media_packet(s, pkt);
-    put_flush_packet(s->pb);
-    return 0;
+    return updatePacketSize(pb, pos);
 }
 
 static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
