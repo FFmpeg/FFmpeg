@@ -416,26 +416,11 @@ static int gxf_write_umf_track_description(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     GXFContext *gxf = s->priv_data;
     int64_t pos = url_ftell(pb);
-    int tracks[255]={0};
     int i;
 
     gxf->umf_track_offset = pos - gxf->umf_start_offset;
     for (i = 0; i < s->nb_streams; ++i) {
-        AVStream *st = s->streams[i];
-        GXFStreamContext *sc = st->priv_data;
-        int id = 0;
-
-        switch (st->codec->codec_id) {
-        case CODEC_ID_MPEG1VIDEO: id= 'L'; break;
-        case CODEC_ID_MPEG2VIDEO: id= 'M'; break;
-        case CODEC_ID_PCM_S16LE:  id= 'A'; break;
-        case CODEC_ID_DVVIDEO:    id= sc->track_type == 6 ? 'E' : 'D'; break;
-        case CODEC_ID_MJPEG:      id= 'V'; break;
-        default:                  break;
-        }
-        sc->media_info= id << 8;
-        /* FIXME first 10 audio tracks are 0 to 9 next 22 are A to V */
-        sc->media_info |= '0' + (tracks[id]++);
+        GXFStreamContext *sc = s->streams[i]->priv_data;
         put_le16(pb, sc->media_info);
         put_le16(pb, 1);
     }
@@ -593,7 +578,8 @@ static int gxf_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
     GXFContext *gxf = s->priv_data;
-    int i;
+    uint8_t tracks[255] = {0};
+    int i, media_info = 0;
 
     gxf->flags |= 0x00080000; /* material is simple clip */
     for (i = 0; i < s->nb_streams; ++i) {
@@ -626,6 +612,7 @@ static int gxf_write_header(AVFormatContext *s)
             sc->fields = -2;
             gxf->audio_tracks++;
             gxf->flags |= 0x04000000; /* audio is 16 bit pcm */
+            media_info = 'A';
         } else if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
             /* FIXME check from time_base ? */
             if (st->codec->height == 480 || st->codec->height == 512) { /* NTSC or NTSC+VBI */
@@ -645,20 +632,33 @@ static int gxf_write_header(AVFormatContext *s)
             sc->sample_size = st->codec->bit_rate;
             sc->fields = 2; /* interlaced */
             switch (st->codec->codec_id) {
+            case CODEC_ID_MJPEG:
+                sc->track_type = 1;
+                gxf->flags |= 0x00004000;
+                media_info = 'J';
+                break;
+            case CODEC_ID_MPEG1VIDEO:
+                sc->track_type = 9;
+                gxf->mpeg_tracks++;
+                media_info = 'L';
+                break;
             case CODEC_ID_MPEG2VIDEO:
                 sc->first_gop_closed = -1;
                 sc->track_type = 4;
                 gxf->mpeg_tracks++;
                 gxf->flags |= 0x00008000;
+                media_info = 'M';
                 break;
             case CODEC_ID_DVVIDEO:
                 if (st->codec->pix_fmt == PIX_FMT_YUV422P) {
                     sc->media_type += 2;
                     sc->track_type = 6;
                     gxf->flags |= 0x00002000;
+                    media_info = 'E';
                 } else {
                     sc->track_type = 5;
                     gxf->flags |= 0x00001000;
+                    media_info = 'D';
                 }
                 break;
             default:
@@ -666,6 +666,8 @@ static int gxf_write_header(AVFormatContext *s)
                 return -1;
             }
         }
+        /* FIXME first 10 audio tracks are 0 to 9 next 22 are A to V */
+        sc->media_info = media_info<<8 | ('0'+tracks[media_info]++);
     }
 
     if (ff_audio_interleave_init(s, GXF_samples_per_frame, (AVRational){ 1, 48000 }) < 0)
