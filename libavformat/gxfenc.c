@@ -45,13 +45,10 @@ typedef struct GXFStreamContext {
     int p_per_gop;
     int b_per_i_or_p; ///< number of B frames per I frame or P frame
     int first_gop_closed;
-    int64_t current_dts;
-    int dts_delay;
 } GXFStreamContext;
 
 typedef struct GXFContext {
     uint32_t nb_fields;
-    uint32_t material_flags;
     uint16_t audio_tracks;
     uint16_t mpeg_tracks;
     int64_t creation_time;
@@ -63,7 +60,6 @@ typedef struct GXFContext {
     uint32_t umf_length;
     uint16_t umf_track_size;
     uint16_t umf_media_size;
-    int audio_written;
     int sample_rate;
     int flags;
     AVFormatContext *fc;
@@ -589,8 +585,6 @@ static int gxf_write_umf_packet(ByteIOContext *pb, GXFContext *ctx)
     return updatePacketSize(pb, pos);
 }
 
-#define GXF_NODELAY -5000
-
 static const int GXF_samples_per_frame[] = { 32768, 0 };
 
 static int gxf_write_header(AVFormatContext *s)
@@ -647,7 +641,6 @@ static int gxf_write_header(AVFormatContext *s)
             }
             gxf->sample_rate = sc->sample_rate;
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
-            sc->dts_delay = GXF_NODELAY;
             if (gxf_find_lines_index(sc) < 0)
                 sc->lines_index = -1;
             sc->sample_size = st->codec->bit_rate;
