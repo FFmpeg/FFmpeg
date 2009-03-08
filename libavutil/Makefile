@@ -36,6 +36,7 @@ OBJS = adler32.o                                                        \
        md5.o                                                            \
        mem.o                                                            \
        random.o                                                         \
+       random_seed.o                                                    \
        rational.o                                                       \
        rc4.o                                                            \
        sha1.o                                                           \
