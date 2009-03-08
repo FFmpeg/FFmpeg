@@ -284,14 +284,6 @@ static uint64_t des_encdec(uint64_t in, uint64_t K[16], int decrypt) {
     return in;
 }
 
-#if LIBAVUTIL_VERSION_MAJOR < 50
-uint64_t ff_des_encdec(uint64_t in, uint64_t key, int decrypt) {
-    uint64_t K[16];
-    gen_roundkeys(K, key);
-    return des_encdec(in, K, decrypt);
-}
-#endif
-
 int av_des_init(AVDES *d, const uint8_t *key, int key_bits, int decrypt) {
     if (key_bits != 64 && key_bits != 192)
         return -1;
@@ -390,16 +382,16 @@ int main(void) {
     uint64_t key[3];
     uint64_t data;
     uint64_t ct;
+    uint64_t roundkeys[16];
     gettimeofday(&tv, NULL);
     srand(tv.tv_sec * 1000 * 1000 + tv.tv_usec);
-#if LIBAVUTIL_VERSION_MAJOR < 50
     key[0] = AV_RB64(test_key);
     data = AV_RB64(plain);
-    if (ff_des_encdec(data, key[0], 0) != AV_RB64(crypt)) {
+    gen_roundkeys(roundkeys, key[0]);
+    if (des_encdec(data, roundkeys, 0) != AV_RB64(crypt)) {
         printf("Test 1 failed\n");
         return 1;
     }
-#endif
     av_des_init(&d, test_key, 64, 0);
     av_des_crypt(&d, tmp, plain, 1, NULL, 0);
     if (memcmp(tmp, crypt, sizeof(crypt))) {
