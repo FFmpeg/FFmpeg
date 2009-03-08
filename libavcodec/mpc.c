@@ -25,7 +25,6 @@
  * divided into 32 subbands.
  */
 
-#include "libavutil/random.h"
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"

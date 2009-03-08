@@ -25,7 +25,7 @@
  * divided into 32 subbands.
  */
 
-#include "libavutil/random.h"
+#include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
@@ -53,7 +53,7 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
         return -1;
     }
     memset(c->oldDSCF, 0, sizeof(c->oldDSCF));
-    av_random_init(&c->rnd, 0xDEADBEEF);
+    av_lfg_init(&c->rnd, 0xDEADBEEF);
     dsputil_init(&c->dsp, avctx);
     c->dsp.bswap_buf((uint32_t*)buf, (const uint32_t*)avctx->extradata, 4);
     ff_mpc_init();
@@ -118,7 +118,7 @@ static inline void idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
     switch(idx){
     case -1:
         for(i = 0; i < SAMPLES_PER_BAND; i++){
-            *dst++ = (av_random(&c->rnd) & 0x3FC) - 510;
+            *dst++ = (av_lfg_get(&c->rnd) & 0x3FC) - 510;
         }
         break;
     case 1:
