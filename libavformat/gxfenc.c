@@ -53,8 +53,6 @@ typedef struct GXFContext {
     uint32_t umf_start_offset;
     uint32_t umf_track_offset;
     uint32_t umf_media_offset;
-    uint32_t umf_user_data_offset;
-    uint32_t umf_user_data_size;
     uint32_t umf_length;
     uint16_t umf_track_size;
     uint16_t umf_media_size;
@@ -406,8 +404,8 @@ static int gxf_write_umf_payload(AVFormatContext *s)
     put_le32(pb, s->nb_streams);
     put_le32(pb, gxf->umf_media_offset);
     put_le32(pb, gxf->umf_media_size);
-    put_le32(pb, gxf->umf_user_data_offset); /* user data offset */
-    put_le32(pb, gxf->umf_user_data_size); /* user data size */
+    put_le32(pb, gxf->umf_length); /* user data offset */
+    put_le32(pb, 0); /* user data size */
     put_le32(pb, 0); /* reserved */
     put_le32(pb, 0); /* reserved */
     return 48;
@@ -568,24 +566,6 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
     return url_ftell(pb) - pos;
 }
 
-static int gxf_write_umf_user_data(AVFormatContext *s)
-{
-    GXFContext *gxf = s->priv_data;
-    ByteIOContext *pb = s->pb;
-    int64_t pos = url_ftell(pb);
-    gxf->umf_user_data_offset = pos - gxf->umf_start_offset;
-    put_le32(pb, 20);
-    put_le32(pb,  0);
-    put_le16(pb,  0);
-    put_le16(pb,  0);
-    put_le32(pb,  0);
-    put_byte(pb,  0);
-    put_byte(pb,  0);
-    put_byte(pb,  0);
-    put_byte(pb,  0);
-    return 20;
-}
-
 static int gxf_write_umf_packet(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
@@ -603,7 +583,6 @@ static int gxf_write_umf_packet(AVFormatContext *s)
     gxf_write_umf_material_description(s);
     gxf->umf_track_size = gxf_write_umf_track_description(s);
     gxf->umf_media_size = gxf_write_umf_media_description(s);
-    gxf->umf_user_data_size = gxf_write_umf_user_data(s);
     gxf->umf_length = url_ftell(pb) - gxf->umf_start_offset;
     return updatePacketSize(pb, pos);
 }
