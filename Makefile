@@ -122,7 +122,8 @@ testclean:
 clean:: testclean
 	rm -f $(ALLPROGS) $(ALLPROGS_G) output_example$(EXESUF)
 	rm -f doc/*.html doc/*.pod doc/*.1
-	rm -f $(addprefix tests/,$(addsuffix $(EXESUF),audiogen videogen rotozoom seek_test tiny_psnr))
+	rm -f tests/seek_test$(EXESUF)
+	rm -f $(addprefix tests/,$(addsuffix $(HOSTEXESUF),audiogen videogen rotozoom tiny_psnr))
 	rm -f $(addprefix tools/,$(addsuffix $(EXESUF),cws2fws pktdumper qt-faststart trasher))
 
 distclean::
@@ -266,7 +267,7 @@ $(CODEC_TESTS) $(LAVF_TESTS): regtest-ref
 
 regtest-ref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/asynth1.sw
 
-$(CODEC_TESTS) regtest-ref: tests/tiny_psnr$(EXESUF)
+$(CODEC_TESTS) regtest-ref: tests/tiny_psnr$(HOSTEXESUF)
 	$(SRC_PATH)/tests/regression.sh $@ vsynth   tests/vsynth1 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
 	$(SRC_PATH)/tests/regression.sh $@ rotozoom tests/vsynth2 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
@@ -283,18 +284,18 @@ servertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	@echo
 	$(SRC_PATH)/tests/server-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/test.conf
 
-tests/vsynth1/00.pgm: tests/videogen$(EXESUF)
+tests/vsynth1/00.pgm: tests/videogen$(HOSTEXESUF)
 	mkdir -p tests/vsynth1
 	$(BUILD_ROOT)/$< 'tests/vsynth1/'
 
-tests/vsynth2/00.pgm: tests/rotozoom$(EXESUF)
+tests/vsynth2/00.pgm: tests/rotozoom$(HOSTEXESUF)
 	mkdir -p tests/vsynth2
 	$(BUILD_ROOT)/$< 'tests/vsynth2/' $(SRC_PATH)/tests/lena.pnm
 
-tests/asynth1.sw: tests/audiogen$(EXESUF)
+tests/asynth1.sw: tests/audiogen$(HOSTEXESUF)
 	$(BUILD_ROOT)/$< $@
 
-tests/%$(EXESUF): tests/%.c
+tests/%$(HOSTEXESUF): tests/%.c
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
 
 tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)

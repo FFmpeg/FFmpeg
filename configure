@@ -954,6 +954,7 @@ CMDLINE_SET="
     host_cflags
     host_ldflags
     host_libs
+    host_os
     logfile
     nm
     source_path
@@ -1162,6 +1163,7 @@ cpu="generic"
 
 # OS
 target_os=$(tolower $(uname -s))
+host_os=$target_os
 
 # configurable options
 enable debug
@@ -1325,9 +1327,14 @@ set_default as cc nm sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
-case $target_os in
-    mingw32*|cygwin*|*-dos|freedos|opendos|os/2*) EXESUF=.exe ;;
-esac
+exesuf() {
+    case $1 in
+        mingw32*|cygwin*|*-dos|freedos|opendos|os/2*) echo .exe ;;
+    esac
+}
+
+EXESUF=$(exesuf $target_os)
+HOSTEXESUF=$(exesuf $host_os)
 
 # set temporary file name
 : ${TMPDIR:=$TEMPDIR}
@@ -2376,6 +2383,7 @@ echo "EXTRA_VERSION=$extra_version" >> config.mak
 echo "DEPEND_CMD=$DEPEND_CMD" >> config.mak
 echo "HOSTCC=$host_cc" >> config.mak
 echo "HOSTCFLAGS=$host_cflags" >> config.mak
+echo "HOSTEXESUF=$HOSTEXESUF" >> config.mak
 echo "HOSTLDFLAGS=$host_ldflags" >> config.mak
 echo "HOSTLIBS=$host_libs" >> config.mak
 echo "TARGET_EXEC=$target_exec" >> config.mak
