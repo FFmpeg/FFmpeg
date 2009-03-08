@@ -56,14 +56,6 @@ void av_fifo_free(AVFifoBuffer *f);
 int av_fifo_size(AVFifoBuffer *f);
 
 /**
- * Reads data from an AVFifoBuffer.
- * @param *f AVFifoBuffer to read from
- * @param *buf data destination
- * @param buf_size number of bytes to read
- */
-int av_fifo_read(AVFifoBuffer *f, uint8_t *buf, int buf_size);
-
-/**
  * Feeds data from an AVFifoBuffer to a user-supplied callback.
  * @param *f AVFifoBuffer to read from
  * @param buf_size number of bytes to read

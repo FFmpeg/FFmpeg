@@ -48,11 +48,6 @@ int av_fifo_size(AVFifoBuffer *f)
     return (uint32_t)(f->wndx - f->rndx);
 }
 
-int av_fifo_read(AVFifoBuffer *f, uint8_t *buf, int buf_size)
-{
-    return av_fifo_generic_read(f, buf_size, NULL, buf);
-}
-
 #if LIBAVUTIL_VERSION_MAJOR < 50
 void av_fifo_realloc(AVFifoBuffer *f, unsigned int new_size) {
     av_fifo_realloc2(f, new_size);
