@@ -39,7 +39,7 @@
  */
 void ff_do_elbg(int *points, int dim, int numpoints, int *codebook,
                 int numCB, int num_steps, int *closest_cb,
-                AVRandomState *rand_state);
+                AVLFG *rand_state);
 
 /**
  * Initialize the **codebook vector for the elbg algorithm. If you have already
@@ -50,6 +50,6 @@ void ff_do_elbg(int *points, int dim, int numpoints, int *codebook,
  */
 void ff_init_elbg(int *points, int dim, int numpoints, int *codebook,
                   int numCB, int num_steps, int *closest_cb,
-                  AVRandomState *rand_state);
+                  AVLFG *rand_state);
 
 #endif /* AVCODEC_ELBG_H */

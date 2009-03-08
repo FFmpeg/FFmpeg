@@ -929,7 +929,7 @@ static int roq_encode_init(AVCodecContext *avctx)
 {
     RoqContext *enc = avctx->priv_data;
 
-    av_random_init(&enc->randctx, 1);
+    av_lfg_init(&enc->randctx, 1);
 
     enc->framesSinceKeyframe = 0;
     if ((avctx->width & 0xf) || (avctx->height & 0xf)) {

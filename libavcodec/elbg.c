@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-#include "libavutil/random.h"
+#include "libavutil/lfg.h"
 #include "elbg.h"
 #include "avcodec.h"
 
@@ -52,7 +52,7 @@ typedef struct{
     int *utility_inc;
     int *nearest_cb;
     int *points;
-    AVRandomState *rand_state;
+    AVLFG *rand_state;
 } elbg_data;
 
 static inline int distance_limited(int *a, int *b, int dim, int limit)
@@ -105,7 +105,7 @@ static int get_high_utility_cell(elbg_data *elbg)
 {
     int i=0;
     /* Using linear search, do binary if it ever turns to be speed critical */
-    int r = av_random(elbg->rand_state)%(elbg->utility_inc[elbg->numCB-1]-1) + 1;
+    int r = av_lfg_get(elbg->rand_state)%(elbg->utility_inc[elbg->numCB-1]-1) + 1;
     while (elbg->utility_inc[i] < r)
         i++;
 
@@ -318,7 +318,7 @@ static void do_shiftings(elbg_data *elbg)
 
 void ff_init_elbg(int *points, int dim, int numpoints, int *codebook,
                   int numCB, int max_steps, int *closest_cb,
-                  AVRandomState *rand_state)
+                  AVLFG *rand_state)
 {
     int i, k;
 
@@ -345,7 +345,7 @@ void ff_init_elbg(int *points, int dim, int numpoints, int *codebook,
 
 void ff_do_elbg(int *points, int dim, int numpoints, int *codebook,
                 int numCB, int max_steps, int *closest_cb,
-                AVRandomState *rand_state)
+                AVLFG *rand_state)
 {
     int dist;
     elbg_data elbg_d;
