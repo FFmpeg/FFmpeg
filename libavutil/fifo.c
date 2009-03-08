@@ -63,7 +63,7 @@ int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
 
         if (!f2)
             return -1;
-        av_fifo_read(f, f2->buffer, len);
+        av_fifo_generic_read(f, len, NULL, f2->buffer);
         f2->wptr += len;
         f2->wndx += len;
         av_free(f->buffer);
