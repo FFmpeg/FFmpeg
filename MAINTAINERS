@@ -275,7 +275,8 @@ Muxers/Demuxers:
   r3d.c                                 Baptiste Coudurier
   raw.c                                 Michael Niedermayer
   rl2.c                                 Sascha Sommer
-  rm.c                                  Roberto Togni
+  rdt.c                                 Ronald S. Bultje
+  rmdec.c, rmenc.c                      Ronald S. Bultje, Kostya Shishkov
   rtp.c, rtpenc.c                       Luca Abeni
   rtp_mpv.*, rtp_aac.*                  Luca Abeni
   rtsp.c                                Luca Barbato
