@@ -564,17 +564,17 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
             gxf_write_umf_media_timecode(pb, sc); /* 8 0bytes */
         else {
             AVStream *st = s->streams[i];
-        switch (st->codec->codec_id) {
-        case CODEC_ID_MPEG2VIDEO:
-            gxf_write_umf_media_mpeg(pb, st);
-            break;
-        case CODEC_ID_PCM_S16LE:
-            gxf_write_umf_media_audio(pb, sc);
-            break;
-        case CODEC_ID_DVVIDEO:
-            gxf_write_umf_media_dv(pb, sc);
-            break;
-        }
+            switch (st->codec->codec_id) {
+            case CODEC_ID_MPEG2VIDEO:
+                gxf_write_umf_media_mpeg(pb, st);
+                break;
+            case CODEC_ID_PCM_S16LE:
+                gxf_write_umf_media_audio(pb, sc);
+                break;
+            case CODEC_ID_DVVIDEO:
+                gxf_write_umf_media_dv(pb, sc);
+                break;
+            }
         }
 
         curpos = url_ftell(pb);
