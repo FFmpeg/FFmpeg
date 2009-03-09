@@ -197,6 +197,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
     int ret, size;
     while (!url_feof(pb)) {
         int copyhdrsize = ctx->rtjpg_video ? HDRSIZE : 0;
+        uint64_t pos = url_ftell(pb);
         ret = get_buffer(pb, hdr, HDRSIZE);
         if (ret <= 0)
             return ret ? ret : -1;
@@ -217,7 +218,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 ret = av_new_packet(pkt, copyhdrsize + size);
                 if (ret < 0)
                     return ret;
-                pkt->pos = url_ftell(pb) - copyhdrsize;
+                pkt->pos = pos;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->v_id;
                 memcpy(pkt->data, hdr, copyhdrsize);
@@ -230,6 +231,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                     break;
                 }
                 ret = av_get_packet(pb, pkt, size);
+                pkt->pos = pos;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->a_id;
                 return ret;
