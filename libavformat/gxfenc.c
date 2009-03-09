@@ -43,6 +43,7 @@ typedef struct GXFStreamContext {
     int p_per_gop;
     int b_per_i_or_p; ///< number of B frames per I frame or P frame
     int first_gop_closed;
+    unsigned order;   ///< interleaving order
 } GXFStreamContext;
 
 typedef struct GXFContext {
@@ -56,7 +57,7 @@ typedef struct GXFContext {
     uint32_t umf_length;
     uint16_t umf_track_size;
     uint16_t umf_media_size;
-    int sample_rate;
+    AVRational time_base;
     int flags;
     GXFStreamContext timecode_track;
 } GXFContext;
@@ -370,13 +371,14 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
     ByteIOContext *pb = s->pb;
+    int timecode_base = gxf->time_base.den == 60000 ? 60 : 50;
 
     // XXX drop frame
     uint32_t timecode =
-        gxf->nb_fields / (gxf->sample_rate * 3600) % 24 << 24 | // hours
-        gxf->nb_fields / (gxf->sample_rate * 60) % 60   << 16 | // minutes
-        gxf->nb_fields / gxf->sample_rate % 60          <<  8 | // seconds
-        gxf->nb_fields % gxf->sample_rate;                    // fields
+        gxf->nb_fields / (timecode_base * 3600) % 24 << 24 | // hours
+        gxf->nb_fields / (timecode_base * 60) % 60   << 16 | // minutes
+        gxf->nb_fields /  timecode_base % 60         <<  8 | // seconds
+        gxf->nb_fields %  timecode_base;                     // fields
 
     put_le32(pb, gxf->flags);
     put_le32(pb, gxf->nb_fields); /* length of the longest track */
@@ -647,19 +649,24 @@ static int gxf_write_header(AVFormatContext *s)
             gxf->flags |= 0x04000000; /* audio is 16 bit pcm */
             media_info = 'A';
         } else if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+            if (i != 0) {
+                av_log(s, AV_LOG_ERROR, "video stream must be the first track\n");
+                return -1;
+            }
             /* FIXME check from time_base ? */
             if (st->codec->height == 480 || st->codec->height == 512) { /* NTSC or NTSC+VBI */
                 sc->frame_rate_index = 5;
                 sc->sample_rate = 60;
                 gxf->flags |= 0x00000080;
+                gxf->time_base = (AVRational){ 1001, 60000 };
             } else { /* assume PAL */
                 sc->frame_rate_index = 6;
                 sc->media_type++;
                 sc->sample_rate = 50;
                 gxf->flags |= 0x00000040;
+                gxf->time_base = (AVRational){ 1, 50 };
             }
-            gxf->sample_rate = sc->sample_rate;
-            av_set_pts_info(st, 64, 1, st->codec->time_base.den);
+            av_set_pts_info(st, 64, gxf->time_base.num, gxf->time_base.den);
             if (gxf_find_lines_index(st) < 0)
                 sc->lines_index = -1;
             sc->sample_size = st->codec->bit_rate;
@@ -704,6 +711,7 @@ static int gxf_write_header(AVFormatContext *s)
         }
         /* FIXME first 10 audio tracks are 0 to 9 next 22 are A to V */
         sc->media_info = media_info<<8 | ('0'+tracks[media_info]++);
+        sc->order = s->nb_streams - st->index;
     }
 
     if (ff_audio_interleave_init(s, GXF_samples_per_frame, (AVRational){ 1, 48000 }) < 0)
@@ -770,7 +778,8 @@ static int gxf_write_media_preamble(AVFormatContext *s, AVPacket *pkt, int size)
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
         field_nb = gxf->nb_fields;
     } else {
-        field_nb = av_rescale_rnd(pkt->dts, gxf->sample_rate, st->codec->time_base.den, AV_ROUND_UP);
+        field_nb = av_rescale_rnd(pkt->dts, gxf->time_base.den,
+                                  (int64_t)48000*gxf->time_base.num, AV_ROUND_UP);
     }
 
     put_byte(pb, sc->media_type);
@@ -828,10 +837,34 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     return updatePacketSize(pb, pos);
 }
 
+static int gxf_compare_field_nb(AVFormatContext *s, AVPacket *next, AVPacket *cur)
+{
+    GXFContext *gxf = s->priv_data;
+    AVPacket *pkt[2] = { cur, next };
+    int i, field_nb[2];
+    GXFStreamContext *sc[2];
+
+    for (i = 0; i < 2; i++) {
+        AVStream *st = s->streams[pkt[i]->stream_index];
+        sc[i] = st->priv_data;
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            field_nb[i] = av_rescale_rnd(pkt[i]->dts, gxf->time_base.den,
+                                         (int64_t)48000*gxf->time_base.num, AV_ROUND_UP);
+            field_nb[i] &= ~1; // compare against even field number because audio must be before video
+        } else
+            field_nb[i] = pkt[i]->dts; // dts are field based
+    }
+
+    return field_nb[1] > field_nb[0] ||
+        (field_nb[1] == field_nb[0] && sc[1]->order > sc[0]->order);
+}
+
 static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush)
 {
+    if (pkt && s->streams[pkt->stream_index]->codec->codec_type == CODEC_TYPE_VIDEO)
+        pkt->duration = 2; // enforce 2 fields
     return ff_audio_rechunk_interleave(s, out, pkt, flush,
-                               av_interleave_packet_per_dts, ff_interleave_compare_dts);
+                               av_interleave_packet_per_dts, gxf_compare_field_nb);
 }
 
 AVOutputFormat gxf_muxer = {
