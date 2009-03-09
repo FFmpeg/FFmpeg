@@ -274,8 +274,8 @@ Muxers/Demuxers:
   pva.c                                 Ivo van Poorten
   r3d.c                                 Baptiste Coudurier
   raw.c                                 Michael Niedermayer
-  rl2.c                                 Sascha Sommer
   rdt.c                                 Ronald S. Bultje
+  rl2.c                                 Sascha Sommer
   rmdec.c, rmenc.c                      Ronald S. Bultje, Kostya Shishkov
   rtp.c, rtpenc.c                       Luca Abeni
   rtp_mpv.*, rtp_aac.*                  Luca Abeni
