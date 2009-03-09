@@ -62,6 +62,9 @@ typedef struct GXFContext {
     GXFStreamContext timecode_track;
     unsigned *flt_entries;    ///< offsets of packets /1024, starts after 2nd video field
     unsigned flt_entries_nb;
+    uint64_t *map_offsets;    ///< offset of map packets
+    unsigned map_offsets_nb;
+    unsigned packet_count;
 } GXFContext;
 
 typedef struct GXF_Lines {
@@ -332,10 +335,23 @@ static int gxf_write_track_description_section(AVFormatContext *s)
     return updateSize(pb, pos);
 }
 
-static int gxf_write_map_packet(AVFormatContext *s)
+static int gxf_write_map_packet(AVFormatContext *s, int rewrite)
 {
+    GXFContext *gxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     int64_t pos = url_ftell(pb);
+
+    if (!rewrite) {
+        if (!(gxf->map_offsets_nb % 30)) {
+            gxf->map_offsets = av_realloc(gxf->map_offsets,
+                                          (gxf->map_offsets_nb+30)*sizeof(*gxf->map_offsets));
+            if (!gxf->map_offsets) {
+                av_log(s, AV_LOG_ERROR, "could not realloc map offsets\n");
+                return -1;
+            }
+        }
+        gxf->map_offsets[gxf->map_offsets_nb++] = pos; // do not increment here
+    }
 
     gxf_write_packet_header(pb, PKT_MAP);
 
@@ -623,6 +639,11 @@ static int gxf_write_header(AVFormatContext *s)
     uint8_t tracks[255] = {0};
     int i, media_info = 0;
 
+    if (url_is_streamed(pb)) {
+        av_log(s, AV_LOG_ERROR, "gxf muxer does not support streamed output, patch welcome");
+        return -1;
+    }
+
     gxf->flags |= 0x00080000; /* material is simple clip */
     for (i = 0; i < s->nb_streams; ++i) {
         AVStream *st = s->streams[i];
@@ -727,9 +748,12 @@ static int gxf_write_header(AVFormatContext *s)
     gxf_init_timecode_track(&gxf->timecode_track, vsc);
     gxf->flags |= 0x200000; // time code track is non-drop frame
 
-    gxf_write_map_packet(s);
+    gxf_write_map_packet(s, 0);
     gxf_write_flt_packet(s);
     gxf_write_umf_packet(s);
+
+    gxf->packet_count = 3;
+
     put_flush_packet(pb);
     return 0;
 }
@@ -747,6 +771,7 @@ static int gxf_write_trailer(AVFormatContext *s)
     GXFContext *gxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     int64_t end;
+    int i;
 
     ff_audio_interleave_close(s);
 
@@ -754,12 +779,21 @@ static int gxf_write_trailer(AVFormatContext *s)
     end = url_ftell(pb);
     url_fseek(pb, 0, SEEK_SET);
     /* overwrite map, flt and umf packets with new values */
-    gxf_write_map_packet(s);
+    gxf_write_map_packet(s, 1);
     gxf_write_flt_packet(s);
     gxf_write_umf_packet(s);
+    put_flush_packet(pb);
+    /* update duration in all map packets */
+    for (i = 1; i < gxf->map_offsets_nb; i++) {
+        url_fseek(pb, gxf->map_offsets[i], SEEK_SET);
+        gxf_write_map_packet(s, 1);
+        put_flush_packet(pb);
+    }
+
     url_fseek(pb, end, SEEK_SET);
 
     av_freep(&gxf->flt_entries);
+    av_freep(&gxf->map_offsets);
 
     return 0;
 }
@@ -853,9 +887,17 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         gxf->nb_fields += 2; // count fields
     }
 
+    updatePacketSize(pb, pos);
+
+    gxf->packet_count++;
+    if (gxf->packet_count == 100) {
+        gxf_write_map_packet(s, 0);
+        gxf->packet_count = 0;
+    }
+
     put_flush_packet(pb);
 
-    return updatePacketSize(pb, pos);
+    return 0;
 }
 
 static int gxf_compare_field_nb(AVFormatContext *s, AVPacket *next, AVPacket *cur)
