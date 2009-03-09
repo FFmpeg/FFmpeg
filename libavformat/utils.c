@@ -1515,7 +1515,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
                 return ret;
             av_update_cur_dts(s, st, ie->timestamp);
         }else{
-            if ((ret = url_fseek(s->pb, 0, SEEK_SET)) < 0)
+            if ((ret = url_fseek(s->pb, s->data_offset, SEEK_SET)) < 0)
                 return ret;
         }
         for(i=0;; i++) {
