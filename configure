@@ -1856,7 +1856,7 @@ EOF
 
     # check whether binutils is new enough to compile SSSE3/MMX2
     enabled ssse3 && check_asm ssse3 '"pabsw %xmm0, %xmm0"'
-    enabled mmx2  && check_asm mmx2  '"movss %xmm0, %xmm0"'
+    enabled mmx2  && check_asm mmx2  '"pmaxub %mm0, %mm1"'
 
     check_asm bswap '"bswap %%eax" ::: "%eax"'
 
