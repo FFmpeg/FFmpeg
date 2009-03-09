@@ -97,8 +97,8 @@ static const AVCodecTag gxf_media_types[] = {
     { 0, 0 },
 };
 
-#define SERVER_PATH "/space/"
-#define ES_NAME_PATTERN "ES."
+#define SERVER_PATH "EXT:/PDR/default/"
+#define ES_NAME_PATTERN "EXT:/PDR/default/ES."
 
 static int gxf_find_lines_index(AVStream *st)
 {
@@ -529,22 +529,19 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
     GXFContext *gxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     int64_t pos;
-    int i;
+    int i, j;
 
     pos = url_ftell(pb);
     gxf->umf_media_offset = pos - gxf->umf_start_offset;
     for (i = 0; i <= s->nb_streams; ++i) {
         GXFStreamContext *sc;
-        char buffer[88];
         int64_t startpos, curpos;
-        int path_size = strlen(ES_NAME_PATTERN);
 
         if (i == s->nb_streams)
             sc = &gxf->timecode_track;
         else
             sc = s->streams[i]->priv_data;
 
-        memset(buffer, 0, 88);
         startpos = url_ftell(pb);
         put_le16(pb, 0); /* length */
         put_le16(pb, sc->media_info);
@@ -554,10 +551,10 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
         put_le32(pb, 0); /* attributes rw, ro */
         put_le32(pb, 0); /* mark in */
         put_le32(pb, gxf->nb_fields); /* mark out */
-        strncpy(buffer, ES_NAME_PATTERN, path_size);
-        put_buffer(pb, (uint8_t *)buffer, path_size);
+        put_buffer(pb, ES_NAME_PATTERN, sizeof(ES_NAME_PATTERN));
         put_be16(pb, sc->media_info);
-        put_buffer(pb, (uint8_t *)buffer + path_size + 2, 88 - path_size - 2);
+        for (j = sizeof(ES_NAME_PATTERN)+2; j < 88; j++)
+            put_byte(pb, 0);
         put_le32(pb, sc->track_type);
         put_le32(pb, sc->sample_rate);
         put_le32(pb, sc->sample_size);
