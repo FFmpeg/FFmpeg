@@ -48,6 +48,12 @@ AVFifoBuffer *av_fifo_alloc(unsigned int size);
 void av_fifo_free(AVFifoBuffer *f);
 
 /**
+ * Resets the AVFifoBuffer to the state right after av_fifo_alloc, in particular it is emptied.
+ * @param *f AVFifoBuffer to reset
+ */
+void av_fifo_reset(AVFifoBuffer *f);
+
+/**
  * Returns the amount of data in bytes in the AVFifoBuffer, that is the
  * amount of data you can read from it.
  * @param *f AVFifoBuffer to read from

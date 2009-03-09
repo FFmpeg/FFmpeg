@@ -27,9 +27,9 @@ AVFifoBuffer *av_fifo_alloc(unsigned int size)
     AVFifoBuffer *f= av_mallocz(sizeof(AVFifoBuffer));
     if(!f)
         return NULL;
-    f->wptr = f->rptr =
     f->buffer = av_malloc(size);
     f->end = f->buffer + size;
+    av_fifo_reset(f);
     if (!f->buffer)
         av_freep(&f);
     return f;
@@ -41,6 +41,12 @@ void av_fifo_free(AVFifoBuffer *f)
         av_free(f->buffer);
         av_free(f);
     }
+}
+
+void av_fifo_reset(AVFifoBuffer *f)
+{
+    f->wptr = f->rptr = f->buffer;
+    f->wndx = f->rndx = 0;
 }
 
 int av_fifo_size(AVFifoBuffer *f)
