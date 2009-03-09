@@ -631,7 +631,7 @@ void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
     if(weight != 1.0)
     {
         ff_weighted_vector_sumf(interpolated_lspf, curr_lspf, q->prev_lspf,
-                             weight, 1.0 - weight, 10);
+                                weight, 1.0 - weight, 10);
         lspf2lpc(interpolated_lspf, lpc);
     }else if(q->bitrate >= RATE_QUARTER ||
              (q->bitrate == I_F_Q && !subframe_num))
