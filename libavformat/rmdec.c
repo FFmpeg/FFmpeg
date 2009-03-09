@@ -468,7 +468,7 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
 skip:
             /* skip packet if unknown number */
             url_fskip(pb, len);
-            rm->remaining_len -= len;
+            rm->remaining_len = 0;
             continue;
         }
         *stream_index= i;
