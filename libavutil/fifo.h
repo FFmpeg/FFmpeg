@@ -68,7 +68,7 @@ int av_fifo_size(AVFifoBuffer *f);
  * @param *func generic read function
  * @param *dest data destination
  */
-int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void*, int), void* dest);
+int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size, void (*func)(void*, void*, int));
 
 /**
  * Feeds data from a user-supplied callback to an AVFifoBuffer.

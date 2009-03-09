@@ -672,7 +672,7 @@ static void do_audio_out(AVFormatContext *s,
             AVPacket pkt;
             av_init_packet(&pkt);
 
-            av_fifo_generic_read(ost->fifo, frame_bytes, NULL, audio_buf);
+            av_fifo_generic_read(ost->fifo, audio_buf, frame_bytes, NULL);
 
             //FIXME pass ost->sync_opts as AVFrame.pts in avcodec_encode_audio()
 
@@ -1452,7 +1452,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             if(fifo_bytes > 0 && enc->codec->capabilities & CODEC_CAP_SMALL_LAST_FRAME) {
                                 int fs_tmp = enc->frame_size;
                                 enc->frame_size = fifo_bytes / (2 * enc->channels);
-                                av_fifo_generic_read(ost->fifo, fifo_bytes, NULL, samples);
+                                av_fifo_generic_read(ost->fifo, samples, fifo_bytes, NULL);
                                     ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, samples);
                                 enc->frame_size = fs_tmp;
                             }

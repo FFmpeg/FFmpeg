@@ -63,7 +63,7 @@ int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
 
         if (!f2)
             return -1;
-        av_fifo_generic_read(f, len, NULL, f2->buffer);
+        av_fifo_generic_read(f, f2->buffer, len, NULL);
         f2->wptr += len;
         f2->wndx += len;
         av_free(f->buffer);
@@ -96,7 +96,7 @@ int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void
 }
 
 
-int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void*, int), void* dest)
+int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size, void (*func)(void*, void*, int))
 {
 // Read memory barrier needed for SMP here in theory
     do {

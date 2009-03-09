@@ -80,7 +80,7 @@ static int ff_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
         return 0;
 
     av_new_packet(pkt, size);
-    av_fifo_generic_read(aic->fifo, size, NULL, pkt->data);
+    av_fifo_generic_read(aic->fifo, pkt->data, size, NULL);
 
     pkt->dts = pkt->pts = aic->dts;
     pkt->duration = av_rescale_q(*aic->samples, st->time_base, aic->time_base);

@@ -419,7 +419,7 @@ static int swf_write_video(AVFormatContext *s,
         put_swf_tag(s, TAG_STREAMBLOCK | TAG_LONG);
         put_le16(pb, swf->sound_samples);
         put_le16(pb, 0); // seek samples
-        av_fifo_generic_read(swf->audio_fifo, frame_size, &put_buffer, pb);
+        av_fifo_generic_read(swf->audio_fifo, pb, frame_size, &put_buffer);
         put_swf_end_tag(s);
 
         /* update FIFO */
