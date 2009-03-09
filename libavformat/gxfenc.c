@@ -60,6 +60,8 @@ typedef struct GXFContext {
     AVRational time_base;
     int flags;
     GXFStreamContext timecode_track;
+    unsigned *flt_entries;    ///< offsets of packets /1024, starts after 2nd video field
+    unsigned flt_entries_nb;
 } GXFContext;
 
 typedef struct GXF_Lines {
@@ -347,25 +349,30 @@ static int gxf_write_map_packet(AVFormatContext *s)
     return updatePacketSize(pb, pos);
 }
 
-#if 0
 static int gxf_write_flt_packet(AVFormatContext *s)
 {
     GXFContext *gxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     int64_t pos = url_ftell(pb);
-    int i;
+    int fields_per_flt = (gxf->nb_fields+1) / 1000 + 1;
+    int flt_entries = gxf->nb_fields / fields_per_flt - 1;
+    int i = 0;
 
     gxf_write_packet_header(pb, PKT_FLT);
 
-    put_le32(pb, 1000); /* number of fields */
-    put_le32(pb, 0); /* number of active flt entries */
+    put_le32(pb, fields_per_flt); /* number of fields */
+    put_le32(pb, flt_entries); /* number of active flt entries */
 
-    for (i = 0; i < 1000; ++i) {
-        put_le32(pb, 0);
+    if (gxf->flt_entries) {
+        for (i = 0; i < flt_entries; i++)
+            put_le32(pb, gxf->flt_entries[(i*fields_per_flt)>>1]);
     }
+
+    for (; i < 1000; i++)
+        put_le32(pb, 0);
+
     return updatePacketSize(pb, pos);
 }
-#endif
 
 static int gxf_write_umf_material_description(AVFormatContext *s)
 {
@@ -721,7 +728,7 @@ static int gxf_write_header(AVFormatContext *s)
     gxf->flags |= 0x200000; // time code track is non-drop frame
 
     gxf_write_map_packet(s);
-    //gxf_write_flt_packet(s);
+    gxf_write_flt_packet(s);
     gxf_write_umf_packet(s);
     put_flush_packet(pb);
     return 0;
@@ -737,6 +744,7 @@ static int gxf_write_eos_packet(ByteIOContext *pb)
 
 static int gxf_write_trailer(AVFormatContext *s)
 {
+    GXFContext *gxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     int64_t end;
 
@@ -745,11 +753,14 @@ static int gxf_write_trailer(AVFormatContext *s)
     gxf_write_eos_packet(pb);
     end = url_ftell(pb);
     url_fseek(pb, 0, SEEK_SET);
-    /* overwrite map and umf packets with new values */
+    /* overwrite map, flt and umf packets with new values */
     gxf_write_map_packet(s);
-    //gxf_write_flt_packet(s);
+    gxf_write_flt_packet(s);
     gxf_write_umf_packet(s);
     url_fseek(pb, end, SEEK_SET);
+
+    av_freep(&gxf->flt_entries);
+
     return 0;
 }
 
@@ -829,8 +840,18 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_buffer(pb, pkt->data, pkt->size);
     gxf_write_padding(pb, padding);
 
-    if (st->codec->codec_type == CODEC_TYPE_VIDEO)
+    if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+        if (!(gxf->flt_entries_nb % 500)) {
+            gxf->flt_entries = av_realloc(gxf->flt_entries,
+                                          (gxf->flt_entries_nb+500)*sizeof(*gxf->flt_entries));
+            if (!gxf->flt_entries) {
+                av_log(s, AV_LOG_ERROR, "could not reallocate flt entries\n");
+                return -1;
+            }
+        }
+        gxf->flt_entries[gxf->flt_entries_nb++] = url_ftell(pb) / 1024;
         gxf->nb_fields += 2; // count fields
+    }
 
     put_flush_packet(pb);
 
