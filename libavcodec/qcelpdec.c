@@ -37,6 +37,7 @@
 
 #include "celp_math.h"
 #include "celp_filters.h"
+#include "acelp_vectors.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -80,17 +81,6 @@ typedef struct
  * TIA/EIA/IS-733 2.4.3.3.5
  */
 void ff_celp_lspf2lpc(const double *lspf, float *lpc);
-
-static void weighted_vector_sumf(float *out, const float *in_a,
-                                 const float *in_b, float weight_coeff_a,
-                                 float weight_coeff_b, int length)
-{
-    int i;
-
-    for(i=0; i<length; i++)
-        out[i] = weight_coeff_a * in_a[i]
-               + weight_coeff_b * in_b[i];
-}
 
 /**
  * Initialize the speech codec according to the specification.
@@ -174,7 +164,7 @@ static int decode_lspf(QCELPContext *q, float *lspf)
             lspf[i-1] = FFMIN(lspf[i-1], (lspf[i] - QCELP_LSP_SPREAD_FACTOR));
 
         // Low-pass filter the LSP frequencies.
-        weighted_vector_sumf(lspf, lspf, q->prev_lspf, smooth, 1.0-smooth, 10);
+        ff_weighted_vector_sumf(lspf, lspf, q->prev_lspf, smooth, 1.0-smooth, 10);
     }else
     {
         q->octave_count = 0;
@@ -640,7 +630,7 @@ void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
 
     if(weight != 1.0)
     {
-        weighted_vector_sumf(interpolated_lspf, curr_lspf, q->prev_lspf,
+        ff_weighted_vector_sumf(interpolated_lspf, curr_lspf, q->prev_lspf,
                              weight, 1.0 - weight, 10);
         lspf2lpc(interpolated_lspf, lpc);
     }else if(q->bitrate >= RATE_QUARTER ||
