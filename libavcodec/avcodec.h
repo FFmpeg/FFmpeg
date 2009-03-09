@@ -807,6 +807,13 @@ typedef struct AVPanScan{
      * - decoding: Read by user.\
      */\
     int64_t reordered_opaque;\
+\
+    /**\
+     * hardware accelerator private data (FFmpeg allocated)\
+     * - encoding: unused\
+     * - decoding: Set by libavcodec\
+     */\
+    void *hwaccel_data_private;\
 
 
 #define FF_QSCALE_TYPE_MPEG1 0
@@ -2456,6 +2463,15 @@ typedef struct AVHWAccel {
      * @return zero if successful, a negative value otherwise
      */
     int (*end_frame)(AVCodecContext *avctx);
+
+    /**
+     * Size of HW accelerator private data.
+     *
+     * Private data is allocated with av_malloc() before
+     * AVCodecContext::get_buffer() and deallocated after
+     * AVCodecContext::release_buffer().
+     */
+    int priv_data_size;
 } AVHWAccel;
 
 /**
