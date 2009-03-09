@@ -1663,7 +1663,7 @@ static inline void RENAME(name ## _half)(uint8_t *dstU, uint8_t *dstV, uint8_t *
     {\
         int pix0= ((type*)src)[2*i+0];\
         int pix1= ((type*)src)[2*i+1];\
-        int g= (pix0&(maskg|maska))+(pix1&(maskg|maska));\
+        int g= (pix0&~(maskr|maskb))+(pix1&~(maskr|maskb));\
         int b= ((pix0+pix1-g)&(maskb|(2*maskb)))>>shb;\
         int r= ((pix0+pix1-g)&(maskr|(2*maskr)))>>shr;\
         g&= maskg|(2*maskg);\
