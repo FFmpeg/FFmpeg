@@ -3408,28 +3408,28 @@ ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
 ret:-1 st: 0 ts:0.800000 flags:0
 ret:-1 st: 0 ts:-0.320000 flags:1
-ret:-1 st:-1 ts:2.576668 flags:0
-ret:-1 st:-1 ts:1.470835 flags:1
-ret:-1 st: 0 ts:0.360000 flags:0
-ret:-1 st: 0 ts:-0.760000 flags:1
-ret:-1 st:-1 ts:2.153336 flags:0
-ret:-1 st:-1 ts:1.047503 flags:1
-ret:-1 st: 0 ts:-0.040000 flags:0
-ret:-1 st: 0 ts:2.840000 flags:1
-ret:-1 st:-1 ts:1.730004 flags:0
-ret:-1 st:-1 ts:0.624171 flags:1
-ret:-1 st: 0 ts:-0.480000 flags:0
-ret:-1 st: 0 ts:2.400000 flags:1
-ret:-1 st:-1 ts:1.306672 flags:0
-ret:-1 st:-1 ts:0.200839 flags:1
-ret:-1 st: 0 ts:-0.920000 flags:0
-ret:-1 st: 0 ts:2.000000 flags:1
-ret:-1 st:-1 ts:0.883340 flags:0
-ret:-1 st:-1 ts:-0.222493 flags:1
-ret:-1 st: 0 ts:2.680000 flags:0
-ret:-1 st: 0 ts:1.560000 flags:1
-ret:-1 st:-1 ts:0.460008 flags:0
-ret:-1 st:-1 ts:-0.645825 flags:1
+ret:-1 st: 1 ts:2.560000 flags:0
+ret:-1 st: 1 ts:1.480000 flags:1
+ret:-1 st: 2 ts:0.360000 flags:0
+ret:-1 st: 2 ts:-0.760000 flags:1
+ret:-1 st: 3 ts:2.160000 flags:0
+ret:-1 st: 3 ts:1.040000 flags:1
+ret:-1 st: 4 ts:-0.040000 flags:0
+ret:-1 st: 4 ts:2.840000 flags:1
+ret:-1 st: 5 ts:1.720000 flags:0
+ret:-1 st: 5 ts:0.640000 flags:1
+ret:-1 st: 6 ts:-0.480000 flags:0
+ret:-1 st: 6 ts:2.400000 flags:1
+ret:-1 st: 7 ts:1.320000 flags:0
+ret:-1 st: 7 ts:0.200000 flags:1
+ret:-1 st: 8 ts:-0.920000 flags:0
+ret:-1 st: 8 ts:2.000000 flags:1
+ret:-1 st: 9 ts:0.880000 flags:0
+ret:-1 st: 9 ts:-0.240000 flags:1
+ret:-1 st:10 ts:2.680000 flags:0
+ret:-1 st:10 ts:1.560000 flags:1
+ret:-1 st:11 ts:0.480000 flags:0
+ret:-1 st:11 ts:-0.640000 flags:1
 ----------------
 tests/data/b-libav.ts
 ret: 0 st: 0 dts:0.660000 pts:0.700000 pos:564 size:24921 flags:1
