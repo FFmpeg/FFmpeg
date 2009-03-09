@@ -67,14 +67,9 @@ typedef struct GXFContext {
     unsigned packet_count;
 } GXFContext;
 
-typedef struct GXF_Lines {
-    int height;
-    int index;
-} GXF_Lines;
-
-
-/* FIXME check if it is relevant */
-static const GXF_Lines gxf_lines_tab[] = {
+static const struct {
+    int height, index;
+} gxf_lines_tab[] = {
     { 480,  1 }, /* NTSC */
     { 512,  1 }, /* NTSC + VBI */
     { 576,  2 }, /* PAL */
