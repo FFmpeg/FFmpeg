@@ -1147,7 +1147,6 @@ shlibdir_default="$libdir_default"
 
 # toolchain
 ar="ar"
-as_default="gcc"
 cc_default="gcc"
 host_cc_default="gcc"
 ln_s="ln -sf"
@@ -1316,7 +1315,6 @@ set >> $logfile
 test -n "$cross_prefix" && enable cross_compile
 
 ar="${cross_prefix}${ar}"
-as_default="${cross_prefix}${as_default}"
 cc_default="${cross_prefix}${cc_default}"
 nm_default="${cross_prefix}${nm_default}"
 ranlib="${cross_prefix}${ranlib}"
@@ -1324,7 +1322,8 @@ strip="${cross_prefix}${strip}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default as cc nm sysinclude
+set_default cc nm sysinclude
+as_default=$cc
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -1404,9 +1403,12 @@ elif $cc --vsn 2>/dev/null | grep -q RVCT; then
         --configure_cpp_headers="$sysinclude" >>$logfile 2>&1 ||
         die "Error creating armcc configuration file."
     cc="$cc --arm_linux_config_file=$armcc_conf --translate_gcc"
+    as_default="${cross_prefix}gcc"
 fi
 
 test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
+
+set_default as
 
 if test -n "$sysroot"; then
     case "$cc_type" in
