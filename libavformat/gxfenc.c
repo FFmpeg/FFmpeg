@@ -58,6 +58,7 @@ typedef struct GXFContext {
     uint16_t umf_media_size;
     int sample_rate;
     int flags;
+    GXFStreamContext timecode_track;
 } GXFContext;
 
 typedef struct GXF_Lines {
@@ -198,7 +199,6 @@ static int gxf_write_mpeg_auxiliary(ByteIOContext *pb, AVStream *st)
 
 static int gxf_write_timecode_auxiliary(ByteIOContext *pb, GXFStreamContext *sc)
 {
-    /* FIXME implement that */
     put_byte(pb, 0); /* fields */
     put_byte(pb, 0);  /* seconds */
     put_byte(pb, 0); /* minutes */
@@ -208,14 +208,15 @@ static int gxf_write_timecode_auxiliary(ByteIOContext *pb, GXFStreamContext *sc)
     return 8;
 }
 
-static int gxf_write_track_description(ByteIOContext *pb, AVStream *st)
+static int gxf_write_track_description(AVFormatContext *s, GXFStreamContext *sc, int index)
 {
-    GXFStreamContext *sc = st->priv_data;
+    ByteIOContext *pb = s->pb;
     int64_t pos;
+    int mpeg = sc->track_type == 4 || sc->track_type == 9;
 
     /* track description section */
     put_byte(pb, sc->media_type + 0x80);
-    put_byte(pb, st->index + 0xC0);
+    put_byte(pb, index + 0xC0);
 
     pos = url_ftell(pb);
     put_be16(pb, 0); /* size */
@@ -227,11 +228,11 @@ static int gxf_write_track_description(ByteIOContext *pb, AVStream *st)
     put_be16(pb, sc->media_info);
     put_byte(pb, 0);
 
-    if (st->codec->codec_id != CODEC_ID_MPEG2VIDEO) {
+    if (!mpeg) {
         /* auxiliary information */
         put_byte(pb, TRACK_AUX);
         put_byte(pb, 8);
-        if (st->codec->codec_id == CODEC_ID_NONE)
+        if (sc->track_type == 3)
             gxf_write_timecode_auxiliary(pb, sc);
         else
             put_le64(pb, 0);
@@ -242,8 +243,8 @@ static int gxf_write_track_description(ByteIOContext *pb, AVStream *st)
     put_byte(pb, 4);
     put_be32(pb, 0);
 
-    if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO)
-        gxf_write_mpeg_auxiliary(pb, st);
+    if (mpeg)
+        gxf_write_mpeg_auxiliary(pb, s->streams[index]);
 
     /* frame rate */
     put_byte(pb, TRACK_FPS);
@@ -313,6 +314,7 @@ static int gxf_write_material_data_section(AVFormatContext *s)
 
 static int gxf_write_track_description_section(AVFormatContext *s)
 {
+    GXFContext *gxf = s->priv_data;
     ByteIOContext *pb = s->pb;
     int64_t pos;
     int i;
@@ -320,7 +322,10 @@ static int gxf_write_track_description_section(AVFormatContext *s)
     pos = url_ftell(pb);
     put_be16(pb, 0); /* size */
     for (i = 0; i < s->nb_streams; ++i)
-        gxf_write_track_description(pb, s->streams[i]);
+        gxf_write_track_description(s, s->streams[i]->priv_data, i);
+
+    gxf_write_track_description(s, &gxf->timecode_track, s->nb_streams);
+
     return updateSize(pb, pos);
 }
 
@@ -385,7 +390,7 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
     put_le16(pb, 0); /* reserved */
     put_le16(pb, 0); /* reserved */
     put_le16(pb, gxf->audio_tracks);
-    put_le16(pb, 0); /* timecode track count */
+    put_le16(pb, 1); /* timecode track count */
     put_le16(pb, 0); /* reserved */
     put_le16(pb, gxf->mpeg_tracks);
     return 48;
@@ -398,10 +403,10 @@ static int gxf_write_umf_payload(AVFormatContext *s)
 
     put_le32(pb, gxf->umf_length); /* total length of the umf data */
     put_le32(pb, 3); /* version */
-    put_le32(pb, s->nb_streams);
+    put_le32(pb, s->nb_streams+1);
     put_le32(pb, gxf->umf_track_offset); /* umf track section offset */
     put_le32(pb, gxf->umf_track_size);
-    put_le32(pb, s->nb_streams);
+    put_le32(pb, s->nb_streams+1);
     put_le32(pb, gxf->umf_media_offset);
     put_le32(pb, gxf->umf_media_size);
     put_le32(pb, gxf->umf_length); /* user data offset */
@@ -424,6 +429,10 @@ static int gxf_write_umf_track_description(AVFormatContext *s)
         put_le16(pb, sc->media_info);
         put_le16(pb, 1);
     }
+
+    put_le16(pb, gxf->timecode_track.media_info);
+    put_le16(pb, 1);
+
     return url_ftell(pb) - pos;
 }
 
@@ -452,15 +461,14 @@ static int gxf_write_umf_media_mpeg(ByteIOContext *pb, AVStream *st)
 
 static int gxf_write_umf_media_timecode(ByteIOContext *pb, GXFStreamContext *sc)
 {
-    /* FIXME implement */
-    put_be32(pb, 0); /* drop frame flag */
-    put_be32(pb, 0); /* reserved */
-    put_be32(pb, 0); /* reserved */
-    put_be32(pb, 0); /* reserved */
-    put_be32(pb, 0); /* reserved */
-    put_be32(pb, 0); /* reserved */
-    put_be32(pb, 0); /* reserved */
-    put_be32(pb, 0); /* reserved */
+    put_le32(pb, 1); /* non drop frame */
+    put_le32(pb, 0); /* reserved */
+    put_le32(pb, 0); /* reserved */
+    put_le32(pb, 0); /* reserved */
+    put_le32(pb, 0); /* reserved */
+    put_le32(pb, 0); /* reserved */
+    put_le32(pb, 0); /* reserved */
+    put_le32(pb, 0); /* reserved */
     return 32;
 }
 
@@ -505,12 +513,16 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
 
     pos = url_ftell(pb);
     gxf->umf_media_offset = pos - gxf->umf_start_offset;
-    for (i = 0; i < s->nb_streams; ++i) {
-        AVStream *st = s->streams[i];
-        GXFStreamContext *sc = st->priv_data;
+    for (i = 0; i <= s->nb_streams; ++i) {
+        GXFStreamContext *sc;
         char buffer[88];
         int64_t startpos, curpos;
         int path_size = strlen(ES_NAME_PATTERN);
+
+        if (i == s->nb_streams)
+            sc = &gxf->timecode_track;
+        else
+            sc = s->streams[i]->priv_data;
 
         memset(buffer, 0, 88);
         startpos = url_ftell(pb);
@@ -530,6 +542,11 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
         put_le32(pb, sc->sample_rate);
         put_le32(pb, sc->sample_size);
         put_le32(pb, 0); /* reserved */
+
+        if (sc == &gxf->timecode_track)
+            gxf_write_umf_media_timecode(pb, sc); /* 8 0bytes */
+        else {
+            AVStream *st = s->streams[i];
         switch (st->codec->codec_id) {
         case CODEC_ID_MPEG2VIDEO:
             gxf_write_umf_media_mpeg(pb, st);
@@ -540,9 +557,9 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
         case CODEC_ID_DVVIDEO:
             gxf_write_umf_media_dv(pb, sc);
             break;
-        default:
-            gxf_write_umf_media_timecode(pb, sc); /* 8 0bytes */
         }
+        }
+
         curpos = url_ftell(pb);
         url_fseek(pb, startpos, SEEK_SET);
         put_le16(pb, curpos - startpos);
@@ -574,10 +591,26 @@ static int gxf_write_umf_packet(AVFormatContext *s)
 
 static const int GXF_samples_per_frame[] = { 32768, 0 };
 
+static void gxf_init_timecode_track(GXFStreamContext *sc, GXFStreamContext *vsc)
+{
+    if (!vsc)
+        return;
+
+    sc->media_type = vsc->sample_rate == 60 ? 7 : 8;
+    sc->sample_rate = vsc->sample_rate;
+    sc->media_info = ('T'<<8) | '0';
+    sc->track_type = 3;
+    sc->frame_rate_index = vsc->frame_rate_index;
+    sc->lines_index = vsc->lines_index;
+    sc->sample_size = 16;
+    sc->fields = vsc->fields;
+}
+
 static int gxf_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
     GXFContext *gxf = s->priv_data;
+    GXFStreamContext *vsc = NULL;
     uint8_t tracks[255] = {0};
     int i, media_info = 0;
 
@@ -631,6 +664,9 @@ static int gxf_write_header(AVFormatContext *s)
                 sc->lines_index = -1;
             sc->sample_size = st->codec->bit_rate;
             sc->fields = 2; /* interlaced */
+
+            vsc = sc;
+
             switch (st->codec->codec_id) {
             case CODEC_ID_MJPEG:
                 sc->track_type = 1;
@@ -672,6 +708,9 @@ static int gxf_write_header(AVFormatContext *s)
 
     if (ff_audio_interleave_init(s, GXF_samples_per_frame, (AVRational){ 1, 48000 }) < 0)
         return -1;
+
+    gxf_init_timecode_track(&gxf->timecode_track, vsc);
+    gxf->flags |= 0x200000; // time code track is non-drop frame
 
     gxf_write_map_packet(s);
     //gxf_write_flt_packet(s);
