@@ -643,12 +643,6 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
     } else
         av_get_packet(pb, pkt, len);
 
-    if(  (st->discard >= AVDISCARD_NONKEY && !(*flags&2))
-       || st->discard >= AVDISCARD_ALL){
-        av_free_packet(pkt);
-        return -1;
-    }
-
     pkt->stream_index = st->index;
 
 #if 0
@@ -748,6 +742,16 @@ resync:
         if (ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
                                 &seq, &flags, &timestamp) < 0)
             goto resync;
+
+        if(  (st->discard >= AVDISCARD_NONKEY && !(flags&2))
+           || st->discard >= AVDISCARD_ALL){
+            av_free_packet(pkt);
+            while (rm->audio_pkt_cnt > 0) {
+                ff_rm_retrieve_cache(s, s->pb, st, st->priv_data, pkt);
+                av_free_packet(pkt);
+            }
+            goto resync;
+        }
 
         if((flags&2) && (seq&0x7F) == 1)
             av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
