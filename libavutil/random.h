@@ -35,9 +35,6 @@ typedef struct {
 } AVRandomState;
 
 
-#if LIBAVUTIL_VERSION_MAJOR < 50
-attribute_deprecated void av_init_random(unsigned int seed, AVRandomState *state);
-#endif
 attribute_deprecated void av_random_init(AVRandomState *state, unsigned int seed); ///< To be inlined, the struct must be visible. So it does not make sense to try and keep it opaque with malloc/free-like calls.
 attribute_deprecated void av_random_generate_untempered_numbers(AVRandomState *state); ///< Regenerate the untempered numbers (must be done every 624 iterations, or it will loop).
 

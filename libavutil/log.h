@@ -53,15 +53,6 @@ struct AVCLASS {
 
 /* av_log API */
 
-#if LIBAVUTIL_VERSION_INT < (50<<16)
-#define AV_LOG_QUIET -1
-#define AV_LOG_FATAL 0
-#define AV_LOG_ERROR 0
-#define AV_LOG_WARNING 1
-#define AV_LOG_INFO 1
-#define AV_LOG_VERBOSE 1
-#define AV_LOG_DEBUG 2
-#else
 #define AV_LOG_QUIET    -8
 
 /**
@@ -95,11 +86,6 @@ struct AVCLASS {
  * Stuff which is only useful for libav* developers.
  */
 #define AV_LOG_DEBUG    48
-#endif
-
-#if LIBAVUTIL_VERSION_INT < (50<<16)
-extern int av_log_level;
-#endif
 
 /**
  * Sends the specified message to the log if the level is less than or equal
