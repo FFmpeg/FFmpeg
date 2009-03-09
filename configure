@@ -440,7 +440,7 @@ print_config(){
     makefile=$3
     shift 3
     for cfg; do
-        ucname="`toupper $cfg`"
+        ucname="$(toupper $cfg)"
         if enabled $cfg; then
             echo "#define ${pfx}${ucname} 1" >> $header
             echo "${pfx}${ucname}=yes" >> $makefile
@@ -657,7 +657,7 @@ check_exec(){
 }
 
 check_exec_crash(){
-    code=`cat`
+    code=$(cat)
 
     # exit() is not async signal safe.  _Exit (C99) and _exit (POSIX)
     # are safe but may not be available everywhere.  Thus we use
@@ -725,8 +725,8 @@ check_foo_config(){
     check_cmd ${pkg}-config --version
     err=$?
     if test "$err" = 0; then
-        temp_cflags `${pkg}-config --cflags`
-        temp_extralibs `${pkg}-config --libs`
+        temp_cflags $(${pkg}-config --cflags)
+        temp_extralibs $(${pkg}-config --libs)
         check_lib "$@" $header $func && enable $cfg
     fi
     return $err
@@ -1157,7 +1157,7 @@ strip="strip"
 yasmexe="yasm"
 
 # machine
-arch=`uname -m`
+arch=$(uname -m)
 cpu="generic"
 
 # OS
@@ -1203,13 +1203,13 @@ target_path='.'
 DEPEND_CMD='$(CC) $(CFLAGS) -MM $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
 
 # find source path
-source_path="`dirname \"$0\"`"
+source_path="$(dirname "$0")"
 enable source_path_used
 if test -z "$source_path" -o "$source_path" = "." ; then
-    source_path="`pwd`"
+    source_path="$(pwd)"
     disable source_path_used
 else
-    source_path="`cd \"$source_path\"; pwd`"
+    source_path="$(cd "$source_path"; pwd)"
     echo "$source_path" | grep -q '[[:blank:]]' &&
         die "Out of tree builds are impossible with whitespace in source path."
 fi
@@ -1273,14 +1273,14 @@ for opt do
     --enable-debug=*) debuglevel="$optval"
     ;;
     --enable-*=*|--disable-*=*)
-    eval `echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/'`
+    eval $(echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/')
     case "$thing" in
         encoder|decoder|muxer|demuxer|parser|bsf|protocol|filter) $action ${optval}_${thing} ;;
         *) die_unknown "$opt" ;;
     esac
     ;;
     --enable-?*|--disable-?*)
-    eval `echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g'`
+    eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
     if is_in $option $COMPONENT_LIST; then
         eval $action \$$(toupper ${option%s})_LIST
     elif is_in $option $CMDLINE_SELECT; then
@@ -1527,7 +1527,7 @@ case $target_os in
         # helps building libavcodec
         add_cflags -DPIC -fomit-frame-pointer
         # 3 gcc releases known for BeOS, each with ugly bugs
-        gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
+        gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f3-)"
         case "$gcc_version" in
           2.9-beos-991026*|2.9-beos-000224*) echo "R5/GG gcc"
             disable mmx
@@ -2046,11 +2046,11 @@ disable sdl_too_old
 disable sdl
 SDL_CONFIG="${cross_prefix}sdl-config"
 if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
-    sdl_cflags=`"${SDL_CONFIG}" --cflags`
+    sdl_cflags=$("${SDL_CONFIG}" --cflags)
     temp_cflags $sdl_cflags
-    temp_extralibs `"${SDL_CONFIG}" --libs`
+    temp_extralibs $("${SDL_CONFIG}" --libs)
     if check_lib2 SDL.h SDL_Init; then
-        _sdlversion=`"${SDL_CONFIG}" --version | sed 's/[^0-9]//g'`
+        _sdlversion=$("${SDL_CONFIG}" --version | sed 's/[^0-9]//g')
         if test "$_sdlversion" -lt 121 ; then
             enable sdl_too_old
         else
@@ -2398,8 +2398,8 @@ if enabled bigendian; then
 fi
 
 if enabled sdl; then
-    echo "SDL_LIBS=`"${SDL_CONFIG}" --libs`" >> config.mak
-    echo "SDL_CFLAGS=`"${SDL_CONFIG}" --cflags`" >> config.mak
+    echo "SDL_LIBS=$("${SDL_CONFIG}" --libs)" >> config.mak
+    echo "SDL_CFLAGS=$("${SDL_CONFIG}" --cflags)" >> config.mak
 fi
 if enabled texi2html; then
     echo "BUILD_DOC=yes" >> config.mak
