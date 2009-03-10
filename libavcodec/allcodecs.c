@@ -26,6 +26,10 @@
 
 #include "avcodec.h"
 
+#define REGISTER_HWACCEL(X,x) { \
+          extern AVHWAccel x##_hwaccel; \
+          if(CONFIG_##X##_HWACCEL) av_register_hwaccel(&x##_hwaccel); }
+
 #define REGISTER_ENCODER(X,x) { \
           extern AVCodec x##_encoder; \
           if(CONFIG_##X##_ENCODER)  avcodec_register(&x##_encoder); }
@@ -48,6 +52,8 @@ void avcodec_register_all(void)
     if (initialized)
         return;
     initialized = 1;
+
+    /* hardware accelerators */
 
     /* video codecs */
     REGISTER_DECODER (AASC, aasc);
