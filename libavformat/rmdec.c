@@ -440,7 +440,19 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
             state= (state<<8) + get_byte(pb);
 
             if(state == MKBETAG('I', 'N', 'D', 'X')){
-                len = get_be16(pb) - 6;
+                int n_pkts, expected_len;
+                len = get_be32(pb);
+                url_fskip(pb, 2);
+                n_pkts = get_be32(pb);
+                expected_len = 20 + n_pkts * 14;
+                if (len == 20)
+                    /* some files don't add index entries to chunk size... */
+                    len = expected_len;
+                else if (len != expected_len)
+                    av_log(s, AV_LOG_WARNING,
+                           "Index size %d (%d pkts) is wrong, should be %d.\n",
+                           len, n_pkts, expected_len);
+                len -= 14; // we already read part of the index header
                 if(len<0)
                     continue;
                 goto skip;
