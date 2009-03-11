@@ -183,7 +183,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
     if (s->avctx->hwaccel) {
         assert(!pic->hwaccel_data_private);
         if (s->avctx->hwaccel->priv_data_size) {
-            pic->hwaccel_data_private = av_malloc(s->avctx->hwaccel->priv_data_size);
+            pic->hwaccel_data_private = av_mallocz(s->avctx->hwaccel->priv_data_size);
             if (!pic->hwaccel_data_private) {
                 av_log(s->avctx, AV_LOG_ERROR, "alloc_frame_buffer() failed (hwaccel private data allocation)\n");
                 return -1;

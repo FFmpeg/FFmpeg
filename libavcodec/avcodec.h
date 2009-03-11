@@ -2467,9 +2467,9 @@ typedef struct AVHWAccel {
     /**
      * Size of HW accelerator private data.
      *
-     * Private data is allocated with av_malloc() before
-     * AVCodecContext::get_buffer() and deallocated after
-     * AVCodecContext::release_buffer().
+     * Private data is allocated with av_mallocz() before
+     * AVCodecContext.get_buffer() and deallocated after
+     * AVCodecContext.release_buffer().
      */
     int priv_data_size;
 } AVHWAccel;
