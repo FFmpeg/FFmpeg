@@ -1622,7 +1622,7 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
         }
         xpos+=xInc;
     }
-    filterPos[i/2]= xpos>>16; // needed to jump to the next part
+    filterPos[((i/2)+1)&(~1)]= xpos>>16; // needed to jump to the next part
 }
 #endif /* COMPILE_MMX2 */
 
