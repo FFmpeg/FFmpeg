@@ -162,6 +162,7 @@ static char *audio_language = NULL;
 static int subtitle_disable = 0;
 static char *subtitle_codec_name = NULL;
 static char *subtitle_language = NULL;
+static int subtitle_codec_tag = 0;
 
 static float mux_preload= 0.5;
 static float mux_max_delay= 0.7;
@@ -2681,6 +2682,15 @@ static void opt_subtitle_codec(const char *arg)
     opt_codec(&subtitle_stream_copy, &subtitle_codec_name, CODEC_TYPE_SUBTITLE, arg);
 }
 
+static void opt_subtitle_tag(const char *arg)
+{
+    char *tail;
+    subtitle_codec_tag= strtol(arg, &tail, 0);
+
+    if(!tail || *tail)
+        subtitle_codec_tag= arg[0] + (arg[1]<<8) + (arg[2]<<16) + (arg[3]<<24);
+}
+
 static void opt_map(const char *arg)
 {
     AVStreamMap *m;
@@ -3222,6 +3232,10 @@ static void new_subtitle_stream(AVFormatContext *oc)
 
     subtitle_enc = st->codec;
     subtitle_enc->codec_type = CODEC_TYPE_SUBTITLE;
+
+    if(subtitle_codec_tag)
+        subtitle_enc->codec_tag= subtitle_codec_tag;
+
     if (subtitle_stream_copy) {
         st->stream_copy = 1;
     } else {
@@ -3867,6 +3881,7 @@ static const OptionDef options[] = {
     { "scodec", HAS_ARG | OPT_SUBTITLE, {(void*)opt_subtitle_codec}, "force subtitle codec ('copy' to copy stream)", "codec" },
     { "newsubtitle", OPT_SUBTITLE, {(void*)opt_new_subtitle_stream}, "add a new subtitle stream to the current output stream" },
     { "slang", HAS_ARG | OPT_STRING | OPT_SUBTITLE, {(void *)&subtitle_language}, "set the ISO 639 language code (3 letters) of the current subtitle stream" , "code" },
+    { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE, {(void*)opt_subtitle_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
 
     /* grab options */
     { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_channel}, "set video grab channel (DV1394 only)", "channel" },
