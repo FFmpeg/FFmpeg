@@ -570,6 +570,7 @@ static const AVCodecTag codec_ipod_tags[] = {
     { CODEC_ID_ALAC,   MKTAG('a','l','a','c') },
     { CODEC_ID_AC3,    MKTAG('a','c','-','3') },
     { CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
+    { CODEC_ID_MOV_TEXT, MKTAG('t','e','x','t') },
     { CODEC_ID_NONE, 0 },
 };
 
