@@ -230,28 +230,28 @@
     "test                  %%"REG_S", %%"REG_S"     \n\t"\
     " jnz                         2b                \n\t"\
 
-#define YSCALEYUV2PACKEDX_YA(offset) \
+#define YSCALEYUV2PACKEDX_YA(offset,coeff,src1,src2,dst1,dst2) \
     "lea                "offset"(%0), %%"REG_d"     \n\t"\
     "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
-    "movq      "VROUNDER_OFFSET"(%0), %%mm1         \n\t"\
-    "movq                      %%mm1, %%mm7         \n\t"\
+    "movq      "VROUNDER_OFFSET"(%0), "#dst1"       \n\t"\
+    "movq                    "#dst1", "#dst2"       \n\t"\
     ASMALIGN(4)\
     "2:                                             \n\t"\
-    "movq               8(%%"REG_d"), %%mm0         \n\t" /* filterCoeff */\
-    "movq  (%%"REG_S", %%"REG_a", 2), %%mm2         \n\t" /* Y1srcData */\
-    "movq 8(%%"REG_S", %%"REG_a", 2), %%mm5         \n\t" /* Y2srcData */\
+    "movq               8(%%"REG_d"), "#coeff"      \n\t" /* filterCoeff */\
+    "movq  (%%"REG_S", %%"REG_a", 2), "#src1"       \n\t" /* Y1srcData */\
+    "movq 8(%%"REG_S", %%"REG_a", 2), "#src2"       \n\t" /* Y2srcData */\
     "add                         $16, %%"REG_d"            \n\t"\
     "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
-    "pmulhw                    %%mm0, %%mm2         \n\t"\
-    "pmulhw                    %%mm0, %%mm5         \n\t"\
-    "paddw                     %%mm2, %%mm1         \n\t"\
-    "paddw                     %%mm5, %%mm7         \n\t"\
+    "pmulhw                 "#coeff", "#src1"       \n\t"\
+    "pmulhw                 "#coeff", "#src2"       \n\t"\
+    "paddw                   "#src1", "#dst1"       \n\t"\
+    "paddw                   "#src2", "#dst2"       \n\t"\
     "test                  %%"REG_S", %%"REG_S"     \n\t"\
     " jnz                         2b                \n\t"\
 
 #define YSCALEYUV2PACKEDX \
     YSCALEYUV2PACKEDX_UV \
-    YSCALEYUV2PACKEDX_YA(LUM_MMX_FILTER_OFFSET) \
+    YSCALEYUV2PACKEDX_YA(LUM_MMX_FILTER_OFFSET,%%mm0,%%mm2,%%mm5,%%mm1,%%mm7) \
 
 #define YSCALEYUV2PACKEDX_END                 \
     :: "r" (&c->redDither),                   \
