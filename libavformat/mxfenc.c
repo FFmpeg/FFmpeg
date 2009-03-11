@@ -36,6 +36,7 @@
 #include <time.h>
 
 #include "libavutil/fifo.h"
+#include "libavutil/random_seed.h"
 #include "libavcodec/bytestream.h"
 #include "audiointerleave.h"
 #include "avformat.h"
@@ -187,10 +188,12 @@ typedef struct MXFContext {
     int timecode_drop_frame; ///< time code use drop frame method frop mpeg-2 essence gop header
     int edit_unit_byte_count; ///< fixed edit unit byte count
     uint64_t body_offset;
+    uint32_t instance_number;
+    uint8_t umid[16];        ///< unique material identifier
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
-static const uint8_t umid_base[]            = { 0x06,0x0A,0x2B,0x34,0x01,0x01,0x01,0x05,0x01,0x01,0x0D,0x00,0x13,0x00,0x00,0x00 };
+static const uint8_t umid_ul[]              = { 0x06,0x0A,0x2B,0x34,0x01,0x01,0x01,0x05,0x01,0x01,0x0D,0x00,0x13 };
 
 /**
  * complete key for operation pattern, partitions, and primer pack
@@ -307,10 +310,13 @@ static void mxf_write_uuid(ByteIOContext *pb, enum MXFMetadataSetType type, int 
     put_be16(pb, value);
 }
 
-static void mxf_write_umid(ByteIOContext *pb, enum MXFMetadataSetType type, int value)
+static void mxf_write_umid(AVFormatContext *s, int type)
 {
-    put_buffer(pb, umid_base, 16);
-    mxf_write_uuid(pb, type, value);
+    MXFContext *mxf = s->priv_data;
+    put_buffer(s->pb, umid_ul, 13);
+    put_be24(s->pb, mxf->instance_number);
+    put_buffer(s->pb, mxf->umid, 15);
+    put_buffer(s->pb, mxf->umid, type);
 }
 
 static void mxf_write_refs_count(ByteIOContext *pb, int ref_count)
@@ -693,7 +699,7 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enu
         for (i = 0; i < 4; i++)
             put_be64(pb, 0);
     } else
-        mxf_write_umid(pb, SourcePackage, 0);
+        mxf_write_umid(s, 1);
 
     // write source track id
     mxf_write_local_tag(pb, 4, 0x1102);
@@ -932,7 +938,7 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type)
 
     // write package umid
     mxf_write_local_tag(pb, 32, 0x4401);
-    mxf_write_umid(pb, type, 0);
+    mxf_write_umid(s, type == SourcePackage);
     PRINT_KEY(s, "package umid second part", pb->buf_ptr - 16);
 
     // package creation date
@@ -990,7 +996,7 @@ static int mxf_write_essence_container_data(AVFormatContext *s)
     mxf_write_uuid(pb, EssenceContainerData, 0);
 
     mxf_write_local_tag(pb, 32, 0x2701); // Linked Package UID
-    mxf_write_umid(pb, SourcePackage, 0);
+    mxf_write_umid(s, 1);
 
     mxf_write_local_tag(pb, 4, 0x3F07); // BodySID
     put_be32(pb, 1);
@@ -1371,12 +1377,27 @@ static uint64_t mxf_parse_timestamp(time_t timestamp)
                       time->tm_sec        << 8;
 }
 
+static void mxf_gen_umid(AVFormatContext *s)
+{
+    MXFContext *mxf = s->priv_data;
+    uint32_t seed = ff_random_get_seed();
+    uint64_t umid = seed + 0x5294713400000000LL;
+
+    AV_WB64(mxf->umid  , umid);
+    AV_WB64(mxf->umid+8, umid>>8);
+
+    mxf->instance_number = seed;
+}
+
 static int mxf_write_header(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     int i;
     uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
     const int *samples_per_frame = NULL;
+
+    if (!s->nb_streams)
+        return -1;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -1469,6 +1490,9 @@ static int mxf_write_header(AVFormatContext *s)
         mxf->essence_container_count = 1;
     }
 
+    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
+        mxf_gen_umid(s);
+
     for (i = 0; i < s->nb_streams; i++) {
         MXFStreamContext *sc = s->streams[i]->priv_data;
         // update element count
@@ -1555,7 +1579,7 @@ static void mxf_write_system_item(AVFormatContext *s)
     klv_encode_ber4_length(pb, 35);
     put_byte(pb, 0x83); // UMID
     put_be16(pb, 0x20);
-    mxf_write_umid(pb, SourcePackage, 0);
+    mxf_write_umid(s, 1);
 }
 
 static void mxf_write_d10_video_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt)
