@@ -1940,6 +1940,6 @@ AVOutputFormat ipod_muxer = {
     mov_write_packet,
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
+    .codec_tag = (const AVCodecTag* const []){codec_ipod_tags, 0},
 };
 #endif
