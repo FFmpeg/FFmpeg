@@ -1681,8 +1681,7 @@ static int mov_write_header(AVFormatContext *s)
                     return -1;
                 }
                 track->height = track->tag>>24 == 'n' ? 486 : 576;
-            } else
-                track->height = st->codec->height;
+            }
             track->timescale = st->codec->time_base.den;
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
             if (track->mode == MODE_MOV && track->timescale > 100000)
@@ -1712,6 +1711,8 @@ static int mov_write_header(AVFormatContext *s)
             track->timescale = st->codec->time_base.den;
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
         }
+        if (!track->height)
+            track->height = st->codec->height;
     }
 
     mov_write_mdat_tag(pb, mov);
