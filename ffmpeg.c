@@ -1545,12 +1545,13 @@ static int av_encode(AVFormatContext **output_files,
                      int nb_input_files,
                      AVStreamMap *stream_maps, int nb_stream_maps)
 {
-    int ret, i, j, k, n, nb_istreams = 0, nb_ostreams = 0;
+    int ret = 0, i, j, k, n, nb_istreams = 0, nb_ostreams = 0;
     AVFormatContext *is, *os;
     AVCodecContext *codec, *icodec;
     AVOutputStream *ost, **ost_table = NULL;
     AVInputStream *ist, **ist_table = NULL;
     AVInputFile *file_table;
+    char error[1024];
     int key;
     int want_sdp = 1;
     uint8_t no_packet[MAX_FILES]={0};
@@ -1899,31 +1900,9 @@ static int av_encode(AVFormatContext **output_files,
 
     if (!bit_buffer)
         bit_buffer = av_malloc(bit_buffer_size);
-    if (!bit_buffer)
+    if (!bit_buffer) {
+        ret = AVERROR(ENOMEM);
         goto fail;
-
-    /* dump the file output parameters - cannot be done before in case
-       of stream copy */
-    for(i=0;i<nb_output_files;i++) {
-        dump_format(output_files[i], i, output_files[i]->filename, 1);
-    }
-
-    /* dump the stream mapping */
-    if (verbose >= 0) {
-        fprintf(stderr, "Stream mapping:\n");
-        for(i=0;i<nb_ostreams;i++) {
-            ost = ost_table[i];
-            fprintf(stderr, "  Stream #%d.%d -> #%d.%d",
-                    ist_table[ost->source_index]->file_index,
-                    ist_table[ost->source_index]->index,
-                    ost->file_index,
-                    ost->index);
-            if (ost->sync_ist != ist_table[ost->source_index])
-                fprintf(stderr, " [sync #%d.%d]",
-                        ost->sync_ist->file_index,
-                        ost->sync_ist->index);
-            fprintf(stderr, "\n");
-        }
     }
 
     /* open each encoder */
@@ -1934,14 +1913,16 @@ static int av_encode(AVFormatContext **output_files,
             if (!codec)
                 codec = avcodec_find_encoder(ost->st->codec->codec_id);
             if (!codec) {
-                fprintf(stderr, "Unsupported codec for output stream #%d.%d\n",
+                snprintf(error, sizeof(error), "Unsupported codec for output stream #%d.%d",
                         ost->file_index, ost->index);
-                av_exit(1);
+                ret = AVERROR(EINVAL);
+                goto dump_format;
             }
             if (avcodec_open(ost->st->codec, codec) < 0) {
-                fprintf(stderr, "Error while opening codec for output stream #%d.%d - maybe incorrect parameters such as bit_rate, rate, width or height\n",
+                snprintf(error, sizeof(error), "Error while opening codec for output stream #%d.%d - maybe incorrect parameters such as bit_rate, rate, width or height",
                         ost->file_index, ost->index);
-                av_exit(1);
+                ret = AVERROR(EINVAL);
+                goto dump_format;
             }
             extra_size += ost->st->codec->extradata_size;
         }
@@ -1955,14 +1936,16 @@ static int av_encode(AVFormatContext **output_files,
             if (!codec)
                 codec = avcodec_find_decoder(ist->st->codec->codec_id);
             if (!codec) {
-                fprintf(stderr, "Unsupported codec (id=%d) for input stream #%d.%d\n",
+                snprintf(error, sizeof(error), "Unsupported codec (id=%d) for input stream #%d.%d",
                         ist->st->codec->codec_id, ist->file_index, ist->index);
-                av_exit(1);
+                ret = AVERROR(EINVAL);
+                goto dump_format;
             }
             if (avcodec_open(ist->st->codec, codec) < 0) {
-                fprintf(stderr, "Error while opening codec for input stream #%d.%d\n",
+                snprintf(error, sizeof(error), "Error while opening codec for input stream #%d.%d",
                         ist->file_index, ist->index);
-                av_exit(1);
+                ret = AVERROR(EINVAL);
+                goto dump_format;
             }
             //if (ist->st->codec->codec_type == CODEC_TYPE_VIDEO)
             //    ist->st->codec->flags |= CODEC_FLAG_REPEAT_FIELD;
@@ -1987,14 +1970,16 @@ static int av_encode(AVFormatContext **output_files,
         int out_file_index = meta_data_maps[i].out_file;
         int in_file_index = meta_data_maps[i].in_file;
         if (out_file_index < 0 || out_file_index >= nb_output_files) {
-            fprintf(stderr, "Invalid output file index %d map_meta_data(%d,%d)\n", out_file_index, out_file_index, in_file_index);
+            snprintf(error, sizeof(error), "Invalid output file index %d map_meta_data(%d,%d)",
+                     out_file_index, out_file_index, in_file_index);
             ret = AVERROR(EINVAL);
-            goto fail;
+            goto dump_format;
         }
         if (in_file_index < 0 || in_file_index >= nb_input_files) {
-            fprintf(stderr, "Invalid input file index %d map_meta_data(%d,%d)\n", in_file_index, out_file_index, in_file_index);
+            snprintf(error, sizeof(error), "Invalid input file index %d map_meta_data(%d,%d)",
+                     in_file_index, out_file_index, in_file_index);
             ret = AVERROR(EINVAL);
-            goto fail;
+            goto dump_format;
         }
 
         out_file = output_files[out_file_index];
@@ -2012,14 +1997,45 @@ static int av_encode(AVFormatContext **output_files,
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
         if (av_write_header(os) < 0) {
-            fprintf(stderr, "Could not write header for output file #%d (incorrect codec parameters ?)\n", i);
+            snprintf(error, sizeof(error), "Could not write header for output file #%d (incorrect codec parameters ?)", i);
             ret = AVERROR(EINVAL);
-            goto fail;
+            goto dump_format;
         }
         if (strcmp(output_files[i]->oformat->name, "rtp")) {
             want_sdp = 0;
         }
     }
+
+ dump_format:
+    /* dump the file output parameters - cannot be done before in case
+       of stream copy */
+    for(i=0;i<nb_output_files;i++) {
+        dump_format(output_files[i], i, output_files[i]->filename, 1);
+    }
+
+    /* dump the stream mapping */
+    if (verbose >= 0) {
+        fprintf(stderr, "Stream mapping:\n");
+        for(i=0;i<nb_ostreams;i++) {
+            ost = ost_table[i];
+            fprintf(stderr, "  Stream #%d.%d -> #%d.%d",
+                    ist_table[ost->source_index]->file_index,
+                    ist_table[ost->source_index]->index,
+                    ost->file_index,
+                    ost->index);
+            if (ost->sync_ist != ist_table[ost->source_index])
+                fprintf(stderr, " [sync #%d.%d]",
+                        ost->sync_ist->file_index,
+                        ost->sync_ist->index);
+            fprintf(stderr, "\n");
+        }
+    }
+
+    if (ret) {
+        fprintf(stderr, "%s\n", error);
+        goto fail;
+    }
+
     if (want_sdp) {
         print_sdp(output_files, nb_output_files);
     }
@@ -2216,8 +2232,7 @@ static int av_encode(AVFormatContext **output_files,
 
     /* finished ! */
 
-    ret = 0;
- fail1:
+ fail:
     av_freep(&bit_buffer);
     av_free(file_table);
 
@@ -2251,9 +2266,6 @@ static int av_encode(AVFormatContext **output_files,
         av_free(ost_table);
     }
     return ret;
- fail:
-    ret = AVERROR(ENOMEM);
-    goto fail1;
 }
 
 #if 0
