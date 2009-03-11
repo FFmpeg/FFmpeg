@@ -2231,6 +2231,7 @@ static int av_encode(AVFormatContext **output_files,
     }
 
     /* finished ! */
+    ret = 0;
 
  fail:
     av_freep(&bit_buffer);
