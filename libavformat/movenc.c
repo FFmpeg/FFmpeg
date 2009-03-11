@@ -587,6 +587,11 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
         else if (track->enc->codec_type == CODEC_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
         else if (track->enc->codec_type == CODEC_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
     } else if (track->mode == MODE_IPOD) {
+        if (track->enc->codec_type == CODEC_TYPE_SUBTITLE &&
+            (tag == MKTAG('t','x','3','g') ||
+             tag == MKTAG('t','e','x','t')))
+            track->tag = tag; // keep original tag
+        else
         tag = codec_get_tag(codec_ipod_tags, track->enc->codec_id);
         if (!match_ext(s->filename, "m4a") && !match_ext(s->filename, "m4v"))
             av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
