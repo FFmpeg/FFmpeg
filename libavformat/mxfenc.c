@@ -316,7 +316,7 @@ static void mxf_write_umid(AVFormatContext *s, int type)
     put_buffer(s->pb, umid_ul, 13);
     put_be24(s->pb, mxf->instance_number);
     put_buffer(s->pb, mxf->umid, 15);
-    put_buffer(s->pb, mxf->umid, type);
+    put_byte(s->pb, type);
 }
 
 static void mxf_write_refs_count(ByteIOContext *pb, int ref_count)
