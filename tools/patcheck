@@ -19,7 +19,7 @@ hiegrep(){
     arg="$1"
     msg="$2"
     shift 2
-    grep $OPT '^+' $* | grep -v ':+++'| egrep --color=always -- "$arg"> $TMP && echo -e "\n$msg"
+    grep $OPT '^+' $* | grep -v ':+++'| egrep --color=always -- "$arg"> $TMP && printf "\n$msg\n"
     cat $TMP
 }
 
@@ -28,7 +28,7 @@ hiegrep2(){
     varg="$2"
     msg="$3"
     shift 3
-    grep $OPT '^+' $* | grep -v ':+++' | egrep -v -- "$varg" | egrep --color=always -- "$arg" > $TMP && echo -e "\n$msg"
+    grep $OPT '^+' $* | grep -v ':+++' | egrep -v -- "$varg" | egrep --color=always -- "$arg" > $TMP && printf "\n$msg\n"
     cat $TMP
 }
 
@@ -48,7 +48,7 @@ hiegrep '\+= *1 *;'     'can be simplified to ++' $*
 hiegrep '-= *1 *;'      'can be simplified to --' $*
 hiegrep '((!|=)= *(0|NULL)[^0-9a-z]|[^0-9a-z](0|NULL) *(!|=)=)' 'x==0 / x!=0 can be simplified to !x / x' $*
 
-egrep $OPT '^\+ *(const *|)static' $*| egrep --color=always '[^=]= *(0|NULL)[^0-9a-zA-Z]'> $TMP && echo -e '\nuseless 0 init'
+egrep $OPT '^\+ *(const *|)static' $*| egrep --color=always '[^=]= *(0|NULL)[^0-9a-zA-Z]'> $TMP && printf '\nuseless 0 init\n'
 cat $TMP
 hiegrep '# *ifdef * (HAVE|CONFIG)_' 'ifdefs that should be #if' $*
 
@@ -72,7 +72,7 @@ hiegrep ' *static *'"$ERE_FUNCS"'[^)]*\);' 'static prototype, maybe you should r
 
 hiegrep2 '\.long_name *=' 'NULL_IF_CONFIG_SMAL' 'missing NULL_IF_CONFIG_SMAL' $*
 
-#egrep $OPT '^\+.*const ' $*| grep -v 'static'> $TMP && echo -e '\nnon static const'
+#egrep $OPT '^\+.*const ' $*| grep -v 'static'> $TMP && printf '\nnon static const\n'
 #cat $TMP
 
 hiegrep2 "$ERE_TYPES" '(static|av_|ff_|typedef|:\+[^a-zA-Z_])' 'Non static with no ff_/av_ prefix' $*
@@ -90,11 +90,11 @@ for i in `grep -H '^+.*@param' $*| sed 's/^\([^:]*\):.*@param\(\[.*\]\|\) *\([a-
     grep " *$doxpar *[),]" $file | grep -v '@param' >/dev/null || grep --color=always "@param *$doxpar" $file >>$TMP
 done
 if test -e $TMP ; then
-    echo -e '\nmismatching doxy params'
+    printf '\nmismatching doxy params\n'
     cat $TMP
 fi
 
-egrep -B2 $OPT '^(\+|) *('"$ERE_TYPES"'|# *define)' $* | egrep -A2 --color=always '(:|-)\+[^/]*/(\*([^*]|$)|/([^/]|$))' > $TMP && echo -e "\n Non doxy comments"
+egrep -B2 $OPT '^(\+|) *('"$ERE_TYPES"'|# *define)' $* | egrep -A2 --color=always '(:|-)\+[^/]*/(\*([^*]|$)|/([^/]|$))' > $TMP && printf "\n Non doxy comments\n"
 cat $TMP
 
 rm $TMP
@@ -112,30 +112,30 @@ for i in \
            egrep -v $i' *= *(0x|)[0-9]{1,};'>/dev/null || echo "possibly constant     :"$i >> $TMP
 done
 if test -e $TMP ; then
-    echo -e '\npossibly unused variables'
+    printf '\npossibly unused variables\n'
     cat $TMP
 fi
 
-grep '^Index:.*Changelog' $* >/dev/null || echo -e "\nMissing changelog entry (ignore if minor change)"
+grep '^Index:.*Changelog' $* >/dev/null || printf "\nMissing changelog entry (ignore if minor change)\n"
 
-cat $* | tr '\n' '@' | egrep --color=always -o '(fprintf|av_log|printf)\([^)]*\)[+ ;@]*\1'  >$TMP && echo -e "\nMergeable calls"
+cat $* | tr '\n' '@' | egrep --color=always -o '(fprintf|av_log|printf)\([^)]*\)[+ ;@]*\1'  >$TMP && printf "\nMergeable calls\n"
 cat $TMP | tr '@' '\n'
 
-cat $* | tr '\n' '@' | egrep --color=always -o '\+ *if *\( *([A-Za-z0-9_]*) *[<>]=? *[0-9]* *\) * \1 *= *[0-9]* *;[ @\\+]*else *if *\( *\1 *[<>]=? *[0-9]* *\) *\1 *= *[0-9]* *;'  >$TMP && echo -e "\nav_clip / av_clip_uint8 / av_clip_int16 / ..."
+cat $* | tr '\n' '@' | egrep --color=always -o '\+ *if *\( *([A-Za-z0-9_]*) *[<>]=? *[0-9]* *\) * \1 *= *[0-9]* *;[ @\\+]*else *if *\( *\1 *[<>]=? *[0-9]* *\) *\1 *= *[0-9]* *;'  >$TMP && printf "\nav_clip / av_clip_uint8 / av_clip_int16 / ...\n"
 cat $TMP | tr '@' '\n'
 
-cat $* | tr '\n' '@' | egrep --color=always -o '\+ *if *\( *([A-Za-z0-9_]*) *[<>]=? *([A-Za-z0-9_]*) *\)[ @\\+]*(\1|\2) *= *(\1|\2) *;'  >$TMP && echo -e "\nFFMIN/FFMAX"
+cat $* | tr '\n' '@' | egrep --color=always -o '\+ *if *\( *([A-Za-z0-9_]*) *[<>]=? *([A-Za-z0-9_]*) *\)[ @\\+]*(\1|\2) *= *(\1|\2) *;'  >$TMP && printf "\nFFMIN/FFMAX\n"
 cat $TMP | tr '@' '\n'
 
-cat $* | tr '\n' '@' | egrep --color=always -o '\+ *if *\( *([A-Za-z0-9_]*) *\)[ @\\+]*av_free(p|) *\( *(&|) *\1[^-.]'  >$TMP && echo -e "\nav_free(NULL) is safe"
+cat $* | tr '\n' '@' | egrep --color=always -o '\+ *if *\( *([A-Za-z0-9_]*) *\)[ @\\+]*av_free(p|) *\( *(&|) *\1[^-.]'  >$TMP && printf "\nav_free(NULL) is safe\n"
 cat $TMP | tr '@' '\n'
 
-cat $* | tr '\n' '@' | egrep --color=always -o '[^a-zA-Z0-9_]([a-zA-Z0-9_]*) *= *av_malloc *\([^)]*\)[ @;\\+]*memset *\( *\1'  >$TMP && echo -e "\nav_mallocz()"
+cat $* | tr '\n' '@' | egrep --color=always -o '[^a-zA-Z0-9_]([a-zA-Z0-9_]*) *= *av_malloc *\([^)]*\)[ @;\\+]*memset *\( *\1'  >$TMP && printf "\nav_mallocz()\n"
 cat $TMP | tr '@' '\n'
 
 
 # doesnt work
-#cat $* | tr '\n' '@' | egrep -o '[^a-zA-Z_0-9]([a-zA-Z][a-zA-Z_0-9]*) *=[^=].*\1' | egrep -o '[^a-zA-Z_0-9]([a-zA-Z][a-zA-Z_0-9]*) *=[^=].*\1 *=[^=]'  >$TMP && echo -e "\nPossibly written 2x before read"
+#cat $* | tr '\n' '@' | egrep -o '[^a-zA-Z_0-9]([a-zA-Z][a-zA-Z_0-9]*) *=[^=].*\1' | egrep -o '[^a-zA-Z_0-9]([a-zA-Z][a-zA-Z_0-9]*) *=[^=].*\1 *=[^=]'  >$TMP && printf "\nPossibly written 2x before read\n"
 #cat $TMP | tr '@' '\n'
 
 exit
