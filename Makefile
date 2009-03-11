@@ -193,6 +193,7 @@ LAVF_TESTS = $(addprefix regtest-,              \
         asf                                     \
         rm                                      \
         mpg                                     \
+        mxf                                     \
         ts                                      \
         swf                                     \
         ffm                                     \
