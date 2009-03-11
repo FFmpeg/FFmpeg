@@ -923,7 +923,7 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack *track)
             descr = "SoundHandler";
         } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
             if (track->tag == MKTAG('t','x','3','g')) hdlr_type = "sbtl";
-            else                          hdlr_type = "text";
+            else                                      hdlr_type = "text";
             descr = "SubtitleHandler";
         }
     }
@@ -952,7 +952,7 @@ static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack *track)
         mov_write_smhd_tag(pb);
     else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
         if (track->tag == MKTAG('t','e','x','t')) mov_write_gmhd_tag(pb);
-        else                         mov_write_nmhd_tag(pb);
+        else                                      mov_write_nmhd_tag(pb);
     }
     if (track->mode == MODE_MOV) /* FIXME: Why do it for MODE_MOV only ? */
         mov_write_hdlr_tag(pb, NULL);
