@@ -87,6 +87,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
     int tag, len, i, frame, v;
 
     for(;;) {
+        uint64_t pos = url_ftell(pb);
         tag = get_swf_tag(pb, &len);
         if (tag < 0)
             return AVERROR(EIO);
@@ -148,6 +149,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 if (st->codec->codec_type == CODEC_TYPE_VIDEO && st->id == ch_id) {
                     frame = get_le16(pb);
                     av_get_packet(pb, pkt, len-2);
+                    pkt->pos = pos;
                     pkt->pts = frame;
                     pkt->stream_index = st->index;
                     return pkt->size;
@@ -163,6 +165,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             } else { // ADPCM, PCM
                 av_get_packet(pb, pkt, len);
             }
+            pkt->pos = pos;
             pkt->stream_index = st->index;
             return pkt->size;
                 }
@@ -195,6 +198,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             } else {
                 get_buffer(pb, pkt->data + 4, pkt->size - 4);
             }
+            pkt->pos = pos;
             pkt->stream_index = st->index;
             return pkt->size;
         }
