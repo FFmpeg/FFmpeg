@@ -90,8 +90,16 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
         tag = get_swf_tag(pb, &len);
         if (tag < 0)
             return AVERROR(EIO);
-        if (tag == TAG_VIDEOSTREAM && !vst) {
+        if (tag == TAG_VIDEOSTREAM) {
             int ch_id = get_le16(pb);
+            len -= 2;
+
+            for (i=0; i<s->nb_streams; i++) {
+                st = s->streams[i];
+                if (st->codec->codec_type == CODEC_TYPE_VIDEO && st->id == ch_id)
+                    goto skip;
+            }
+
             get_le16(pb);
             get_le16(pb);
             get_le16(pb);
@@ -104,10 +112,17 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             vst->codec->codec_id = codec_get_id(swf_codec_tags, get_byte(pb));
             av_set_pts_info(vst, 64, 256, swf->frame_rate);
             vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
-            len -= 10;
-        } else if ((tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2) && !ast) {
+            len -= 8;
+        } else if (tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2) {
             /* streaming found */
             int sample_rate_code;
+
+            for (i=0; i<s->nb_streams; i++) {
+                st = s->streams[i];
+                if (st->codec->codec_type == CODEC_TYPE_AUDIO && st->id == -1)
+                    goto skip;
+            }
+
             get_byte(pb);
             v = get_byte(pb);
             swf->samples_per_frame = get_le16(pb);
@@ -139,7 +154,9 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 }
             }
         } else if (tag == TAG_STREAMBLOCK) {
-            st = s->streams[swf->audio_stream_index];
+            for (i = 0; i < s->nb_streams; i++) {
+                st = s->streams[i];
+                if (st->codec->codec_type == CODEC_TYPE_AUDIO && st->id == -1) {
             if (st->codec->codec_id == CODEC_ID_MP3) {
                 url_fskip(pb, 4);
                 av_get_packet(pb, pkt, len-4);
@@ -148,10 +165,12 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             pkt->stream_index = st->index;
             return pkt->size;
+                }
+            }
         } else if (tag == TAG_JPEG2) {
             for (i=0; i<s->nb_streams; i++) {
                 st = s->streams[i];
-                if (st->id == -2)
+                if (st->codec->codec_id == CODEC_ID_MJPEG && st->id == -2)
                     break;
             }
             if (i == s->nb_streams) {
@@ -179,6 +198,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->stream_index = st->index;
             return pkt->size;
         }
+    skip:
         url_fskip(pb, len);
     }
     return 0;
