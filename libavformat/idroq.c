@@ -46,8 +46,6 @@ typedef struct RoqDemuxContext {
     int width;
     int height;
     int audio_channels;
-    int framerate;
-    int frame_pts_inc;
 
     int video_stream_index;
     int audio_stream_index;
@@ -71,6 +69,7 @@ static int roq_read_header(AVFormatContext *s,
 {
     RoqDemuxContext *roq = s->priv_data;
     ByteIOContext *pb = s->pb;
+    int framerate;
     AVStream *st;
     unsigned char preamble[RoQ_CHUNK_PREAMBLE_SIZE];
 
@@ -78,8 +77,7 @@ static int roq_read_header(AVFormatContext *s,
     if (get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) !=
         RoQ_CHUNK_PREAMBLE_SIZE)
         return AVERROR(EIO);
-    roq->framerate = AV_RL16(&preamble[6]);
-    roq->frame_pts_inc = 90000 / roq->framerate;
+    framerate = AV_RL16(&preamble[6]);
 
     /* init private context parameters */
     roq->width = roq->height = roq->audio_channels = roq->video_pts =
@@ -89,8 +87,7 @@ static int roq_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    /* set the pts reference (1 pts = 1/90000) */
-    av_set_pts_info(st, 33, 1, 90000);
+    av_set_pts_info(st, 63, 1, framerate);
     roq->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_ROQ;
@@ -161,9 +158,8 @@ static int roq_read_packet(AVFormatContext *s,
             if (ret != chunk_size)
                 return AVERROR(EIO);
             pkt->stream_index = roq->video_stream_index;
-            pkt->pts = roq->video_pts;
+            pkt->pts = roq->video_pts++;
 
-            roq->video_pts += roq->frame_pts_inc;
             packet_read = 1;
             break;
 
@@ -173,7 +169,7 @@ static int roq_read_packet(AVFormatContext *s,
                 AVStream *st = av_new_stream(s, 1);
                 if (!st)
                     return AVERROR(ENOMEM);
-                av_set_pts_info(st, 33, 1, 90000);
+                av_set_pts_info(st, 32, 1, RoQ_AUDIO_SAMPLE_RATE);
                 roq->audio_stream_index = st->index;
                 st->codec->codec_type = CODEC_TYPE_AUDIO;
                 st->codec->codec_id = CODEC_ID_ROQ_DPCM;
@@ -194,13 +190,10 @@ static int roq_read_packet(AVFormatContext *s,
 
             if (chunk_type == RoQ_QUAD_VQ) {
                 pkt->stream_index = roq->video_stream_index;
-                pkt->pts = roq->video_pts;
-                roq->video_pts += roq->frame_pts_inc;
+                pkt->pts = roq->video_pts++;
             } else {
                 pkt->stream_index = roq->audio_stream_index;
                 pkt->pts = roq->audio_frame_count;
-                pkt->pts *= 90000;
-                pkt->pts /= RoQ_AUDIO_SAMPLE_RATE;
                 roq->audio_frame_count += (chunk_size / roq->audio_channels);
             }
 
