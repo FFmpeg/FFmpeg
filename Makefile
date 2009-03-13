@@ -303,4 +303,4 @@ tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
-.PHONY: lib documentation *test regtest-* swscale-error zlib-error alltools check
+.PHONY: documentation *test regtest-* zlib-error alltools check
