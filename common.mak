@@ -54,7 +54,7 @@ install: install-libs install-headers
 
 uninstall: uninstall-libs uninstall-headers
 
-.PHONY: all depend dep clean distclean install* uninstall* tests
+.PHONY: all depend dep *clean install* uninstall* tests
 endif
 
 CFLAGS   += $(CFLAGS-yes)
