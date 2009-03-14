@@ -130,7 +130,6 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             ast = av_new_stream(s, -1); /* -1 to avoid clash with video stream ch_id */
             if (!ast)
                 return -1;
-            swf->audio_stream_index = ast->index;
             ast->codec->channels = 1 + (v&1);
             ast->codec->codec_type = CODEC_TYPE_AUDIO;
             ast->codec->codec_id = codec_get_id(swf_audio_codec_tags, (v>>4) & 15);
