@@ -259,4 +259,5 @@ AVInputFormat nuv_demuxer = {
     nuv_packet,
     NULL,
     NULL,
+    .flags = AVFMT_GENERIC_INDEX,
 };
