@@ -92,7 +92,7 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src,
     register int loadSecond = (((unsigned long)src) % 16) <= 7 ? 0 : 1;
     register int reallyBadAlign = (((unsigned long)src) % 16) == 15 ? 1 : 0;
 
-    vec_u8 vsrcAuc, vsrcBuc, vsrcperm0, vsrcperm1;
+    vec_u8 vsrcAuc, av_uninit(vsrcBuc), vsrcperm0, vsrcperm1;
     vec_u8 vsrc0uc, vsrc1uc;
     vec_s16 vsrc0ssH, vsrc1ssH;
     vec_u8 vsrcCuc, vsrc2uc, vsrc3uc;
