@@ -225,8 +225,8 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
     DECLARE_ALIGNED(16, short, qp[8]) = {c->QP};
     vector signed short vqp = vec_ld(0, qp);
     vector signed short vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9;
-    vector unsigned char vbA0, vbA1, vbA2, vbA3, vbA4, vbA5, vbA6, vbA7, vbA8, vbA9;
-    vector unsigned char vbB0, vbB1, vbB2, vbB3, vbB4, vbB5, vbB6, vbB7, vbB8, vbB9;
+    vector unsigned char vbA0, av_uninit(vbA1), av_uninit(vbA2), av_uninit(vbA3), av_uninit(vbA4), av_uninit(vbA5), av_uninit(vbA6), av_uninit(vbA7), av_uninit(vbA8), vbA9;
+    vector unsigned char vbB0, av_uninit(vbB1), av_uninit(vbB2), av_uninit(vbB3), av_uninit(vbB4), av_uninit(vbB5), av_uninit(vbB6), av_uninit(vbB7), av_uninit(vbB8), vbB9;
     vector unsigned char vbT0, vbT1, vbT2, vbT3, vbT4, vbT5, vbT6, vbT7, vbT8, vbT9;
     vector unsigned char perml0, perml1, perml2, perml3, perml4,
                          perml5, perml6, perml7, perml8, perml9;
