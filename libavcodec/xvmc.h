@@ -141,9 +141,9 @@ struct xvmc_pix_fmt {
 
     /** Number of the the next free data block; one data block consists of
         64 short values in the data_blocks array.
-        All blocks before this one are already claimed by filling their number
-        into the corresponding blocks description structure field,
-        that are hold in mv_blocks array.
+        All blocks before this one have already been claimed by placing their
+        position into the corresponding block description structure field,
+        that are part of the mv_blocks array.
         - application - zeroes it on get_buffer().
                         A successful ff_draw_horiz_band() may zero it together
                         with start_mb_blocks_num.
