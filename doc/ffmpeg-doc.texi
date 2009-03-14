@@ -141,8 +141,9 @@ to get the desired audio language.
 
 NOTE: To see the supported input formats, use @code{ffmpeg -formats}.
 
-* You can extract images from a video:
+* You can extract images from a video, or create a video from many images:
 
+For extracting images from a video:
 @example
 ffmpeg -i foo.avi -r 1 -s WxH -f image2 foo-%03d.jpeg
 @end example
@@ -151,14 +152,19 @@ This will extract one video frame per second from the video and will
 output them in files named @file{foo-001.jpeg}, @file{foo-002.jpeg},
 etc. Images will be rescaled to fit the new WxH values.
 
+If you want to extract just a limited number of frames, you can use the
+above command in combination with the -vframes or -t option, or in
+combination with -ss to start extracting from a certain point in time.
+
+For creating a video from many images:
+@example
+ffmpeg -f image2 -i foo-%03d.jpeg -r 12 -s WxH foo.avi
+@end example
+
 The syntax @code{foo-%03d.jpeg} specifies to use a decimal number
 composed of three digits padded with zeroes to express the sequence
 number. It is the same syntax supported by the C printf function, but
 only formats accepting a normal integer are suitable.
-
-If you want to extract just a limited number of frames, you can use the
-above command in combination with the -vframes or -t option, or in
-combination with -ss to start extracting from a certain point in time.
 
 * You can put many streams of the same type in the output:
 
