@@ -110,6 +110,7 @@ typedef struct VideoState {
     int seek_req;
     int seek_flags;
     int64_t seek_pos;
+    int64_t seek_rel;
     AVFormatContext *ic;
     int dtg_active_format;
 
@@ -984,11 +985,11 @@ static double get_master_clock(VideoState *is)
 }
 
 /* seek in the stream */
-static void stream_seek(VideoState *is, int64_t pos, int rel)
+static void stream_seek(VideoState *is, int64_t pos, int64_t rel)
 {
     if (!is->seek_req) {
         is->seek_pos = pos;
-        is->seek_flags = rel < 0 ? AVSEEK_FLAG_BACKWARD : 0;
+        is->seek_rel = rel;
         if (seek_by_bytes)
             is->seek_flags |= AVSEEK_FLAG_BYTE;
         is->seek_req = 1;
@@ -1962,7 +1963,7 @@ static int decode_thread(void *arg)
         /* add the stream start time */
         if (ic->start_time != AV_NOPTS_VALUE)
             timestamp += ic->start_time;
-        ret = av_seek_frame(ic, -1, timestamp, AVSEEK_FLAG_BACKWARD);
+        ret = avformat_seek_file(ic, -1, INT64_MIN, timestamp, INT64_MAX, 0);
         if (ret < 0) {
             fprintf(stderr, "%s: could not seek to position %0.3f\n",
                     is->filename, (double)timestamp / AV_TIME_BASE);
@@ -2035,18 +2036,13 @@ static int decode_thread(void *arg)
         }
 #endif
         if (is->seek_req) {
-            int stream_index= -1;
             int64_t seek_target= is->seek_pos;
+            int64_t seek_min= is->seek_rel > 0 ? seek_target - is->seek_rel + 2: INT64_MIN;
+            int64_t seek_max= is->seek_rel < 0 ? seek_target - is->seek_rel - 2: INT64_MAX;
+//FIXME the +-2 is due to rounding being not done in the correct direction in generation
+//      of the seek_pos/seek_rel variables
 
-            if     (is->   video_stream >= 0) stream_index= is->   video_stream;
-            else if(is->   audio_stream >= 0) stream_index= is->   audio_stream;
-            else if(is->subtitle_stream >= 0) stream_index= is->subtitle_stream;
-
-            if(stream_index>=0){
-                seek_target= av_rescale_q(seek_target, AV_TIME_BASE_Q, ic->streams[stream_index]->time_base);
-            }
-
-            ret = av_seek_frame(is->ic, stream_index, seek_target, is->seek_flags);
+            ret = avformat_seek_file(is->ic, -1, seek_min, seek_target, seek_max, is->seek_flags);
             if (ret < 0) {
                 fprintf(stderr, "%s: error while seeking\n", is->ic->filename);
             }else{
@@ -2346,7 +2342,7 @@ static void event_loop(void)
                     } else {
                         pos = get_master_clock(cur_stream);
                         pos += incr;
-                        stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), incr);
+                        stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE));
                     }
                 }
                 break;
