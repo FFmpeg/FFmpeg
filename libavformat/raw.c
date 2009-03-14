@@ -232,6 +232,7 @@ int pcm_read_seek(AVFormatContext *s,
 
     if (block_align <= 0 || byte_rate <= 0)
         return -1;
+    if (timestamp < 0) timestamp = 0;
 
     /* compute the position by aligning it to block_align */
     pos = av_rescale_rnd(timestamp * byte_rate,
