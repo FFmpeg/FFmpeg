@@ -458,11 +458,11 @@
     "pmulhw "VG_COEFF"("#c"), %%mm4     \n\t"\
     /* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
 
-#define REAL_YSCALEYUV2RGB_YA(index, c) \
-    "movq  (%0, "#index", 2), %%mm0     \n\t" /*buf0[eax]*/\
-    "movq  (%1, "#index", 2), %%mm1     \n\t" /*buf1[eax]*/\
-    "movq 8(%0, "#index", 2), %%mm6     \n\t" /*buf0[eax]*/\
-    "movq 8(%1, "#index", 2), %%mm7     \n\t" /*buf1[eax]*/\
+#define REAL_YSCALEYUV2RGB_YA(index, c, b1, b2) \
+    "movq  ("#b1", "#index", 2), %%mm0     \n\t" /*buf0[eax]*/\
+    "movq  ("#b2", "#index", 2), %%mm1     \n\t" /*buf1[eax]*/\
+    "movq 8("#b1", "#index", 2), %%mm6     \n\t" /*buf0[eax]*/\
+    "movq 8("#b2", "#index", 2), %%mm7     \n\t" /*buf1[eax]*/\
     "psubw             %%mm1, %%mm0     \n\t" /* buf0[eax] - buf1[eax]*/\
     "psubw             %%mm7, %%mm6     \n\t" /* buf0[eax] - buf1[eax]*/\
     "pmulhw "LUM_MMX_FILTER_OFFSET"+8("#c"), %%mm0  \n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
@@ -501,11 +501,11 @@
     "packuswb          %%mm6, %%mm5     \n\t"\
     "packuswb          %%mm3, %%mm4     \n\t"\
 
-#define YSCALEYUV2RGB_YA(index, c) REAL_YSCALEYUV2RGB_YA(index, c)
+#define YSCALEYUV2RGB_YA(index, c, b1, b2) REAL_YSCALEYUV2RGB_YA(index, c, b1, b2)
 
 #define YSCALEYUV2RGB(index, c) \
     REAL_YSCALEYUV2RGB_UV(index, c) \
-    REAL_YSCALEYUV2RGB_YA(index, c) \
+    REAL_YSCALEYUV2RGB_YA(index, c, %0, %1) \
     REAL_YSCALEYUV2RGB_COEFF(c)
 
 #define REAL_YSCALEYUV2PACKED1(index, c) \
