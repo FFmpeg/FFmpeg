@@ -26,6 +26,6 @@
 /**
  * Gets a seed to use in conjuction with random functions.
  */
-uint32_t ff_random_get_seed();
+uint32_t ff_random_get_seed(void);
 
 #endif /* AVUTIL_RANDOM_SEED_H */
