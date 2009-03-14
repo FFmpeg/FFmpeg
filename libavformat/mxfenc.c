@@ -1490,8 +1490,10 @@ static int mxf_write_header(AVFormatContext *s)
         mxf->essence_container_count = 1;
     }
 
-    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
+    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
         mxf_gen_umid(s);
+        mxf->timestamp = mxf_parse_timestamp(s->timestamp);
+    }
 
     for (i = 0; i < s->nb_streams; i++) {
         MXFStreamContext *sc = s->streams[i]->priv_data;
@@ -1500,7 +1502,6 @@ static int mxf_write_header(AVFormatContext *s)
         sc->order = AV_RB32(sc->track_essence_element_key+12);
     }
 
-    mxf->timestamp = mxf_parse_timestamp(s->timestamp);
     mxf->duration = -1;
 
     mxf->timecode_track = av_mallocz(sizeof(*mxf->timecode_track));
