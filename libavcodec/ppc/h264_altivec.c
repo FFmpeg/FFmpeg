@@ -185,9 +185,9 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## CODETYPE(uint8_t *dst, uint
 void put_no_rnd_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, int h, int x, int y) {
    DECLARE_ALIGNED_16(signed int, ABCD[4]) =
                         {((8 - x) * (8 - y)),
-                             ((x) * (8 - y)),
-                         ((8 - x) * (y)),
-                             ((x) * (y))};
+                         ((    x) * (8 - y)),
+                         ((8 - x) * (    y)),
+                         ((    x) * (    y))};
     register int i;
     vec_u8 fperm;
     const vec_s32 vABCD = vec_ld(0, ABCD);
@@ -210,14 +210,14 @@ void put_no_rnd_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride
 
     if (((unsigned long)dst) % 16 == 0) {
         fperm = (vec_u8){0x10, 0x11, 0x12, 0x13,
-                           0x14, 0x15, 0x16, 0x17,
-                           0x08, 0x09, 0x0A, 0x0B,
-                           0x0C, 0x0D, 0x0E, 0x0F};
+                         0x14, 0x15, 0x16, 0x17,
+                         0x08, 0x09, 0x0A, 0x0B,
+                         0x0C, 0x0D, 0x0E, 0x0F};
     } else {
         fperm = (vec_u8){0x00, 0x01, 0x02, 0x03,
-                           0x04, 0x05, 0x06, 0x07,
-                           0x18, 0x19, 0x1A, 0x1B,
-                           0x1C, 0x1D, 0x1E, 0x1F};
+                         0x04, 0x05, 0x06, 0x07,
+                         0x18, 0x19, 0x1A, 0x1B,
+                         0x1C, 0x1D, 0x1E, 0x1F};
     }
 
     vsrcAuc = vec_ld(0, src);
