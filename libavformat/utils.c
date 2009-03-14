@@ -954,6 +954,11 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 *pkt = st->cur_pkt; st->cur_pkt.data= NULL;
                 compute_pkt_fields(s, st, NULL, pkt);
                 s->cur_st = NULL;
+                if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&
+                    (pkt->flags & PKT_FLAG_KEY) && pkt->dts != AV_NOPTS_VALUE) {
+                    ff_reduce_index(s, st->index);
+                    av_add_index_entry(st, pkt->pos, pkt->dts, 0, 0, AVINDEX_KEYFRAME);
+                }
                 break;
             } else if (st->cur_len > 0 && st->discard < AVDISCARD_ALL) {
                 len = av_parser_parse2(st->parser, st->codec, &pkt->data, &pkt->size,
