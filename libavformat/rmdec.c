@@ -492,7 +492,7 @@ skip:
 
 static int rm_assemble_video_frame(AVFormatContext *s, ByteIOContext *pb,
                                    RMDemuxContext *rm, RMStream *vst,
-                                   AVPacket *pkt, int len)
+                                   AVPacket *pkt, int len, int *pseq)
 {
     int hdr, seq, pic_num, len2, pos;
     int type;
@@ -527,6 +527,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, ByteIOContext *pb,
     }
     //now we have to deal with single slice
 
+    *pseq = seq;
     if((seq & 0x7F) == 1 || vst->curpic_num != pic_num){
         vst->slices = ((hdr & 0x3F) << 1) + 1;
         vst->videobufsize = len2 + 8*vst->slices + 1;
@@ -593,7 +594,7 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
 
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
         rm->current_stream= st->id;
-        if(rm_assemble_video_frame(s, pb, rm, ast, pkt, len))
+        if(rm_assemble_video_frame(s, pb, rm, ast, pkt, len, seq))
             return -1; //got partial frame
     } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
         if ((st->codec->codec_id == CODEC_ID_RA_288) ||
@@ -705,9 +706,9 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     RMDemuxContext *rm = s->priv_data;
     ByteIOContext *pb = s->pb;
     AVStream *st;
-    int i, len;
+    int i, len, res;
     int64_t timestamp, pos;
-    int flags;
+    int old_flags, flags;
 
     if (rm->audio_pkt_cnt) {
         // If there are queued audio packet return them first
@@ -751,8 +752,12 @@ resync:
             return AVERROR(EIO);
         st = s->streams[i];
 
-        if (ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
-                                &seq, &flags, &timestamp) < 0)
+        old_flags = flags;
+        res = ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
+                                  &seq, &flags, &timestamp);
+        if((old_flags&2) && (seq&0x7F) == 1)
+            av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
+        if (res < 0)
             goto resync;
 
         if(  (st->discard >= AVDISCARD_NONKEY && !(flags&2))
@@ -764,9 +769,6 @@ resync:
             }
             goto resync;
         }
-
-        if((flags&2) && (seq&0x7F) == 1)
-            av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
     }
 
     return 0;
