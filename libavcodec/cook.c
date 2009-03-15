@@ -61,6 +61,7 @@
 #define MC_COOK         0x2000000   //multichannel Cook, not supported
 
 #define SUBBAND_SIZE    20
+#define MAX_SUBPACKETS   5
 //#define COOKDEBUG
 
 typedef struct {
