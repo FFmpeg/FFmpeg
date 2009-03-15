@@ -1,5 +1,4 @@
-/* ffmpeg/libavcodec/ppc/fdct_altivec.c, this file is part of the
- * AltiVec optimized library for the FFMPEG Multimedia System
+/*
  * Copyright (C) 2003  James Klicman <james@klicman.org>
  *
  * This file is part of FFmpeg.
