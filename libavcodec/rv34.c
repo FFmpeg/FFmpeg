@@ -533,7 +533,7 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
         B[1] = cur_pic->motion_val[dir][mv_pos - s->b8_stride][1];
         has_B = 1;
     }
-    if((r->avail_cache[5-2] & type) & mask){
+    if(r->avail_cache[5-4] && (r->avail_cache[5-2] & type) & mask){
         C[0] = cur_pic->motion_val[dir][mv_pos - s->b8_stride + 2][0];
         C[1] = cur_pic->motion_val[dir][mv_pos - s->b8_stride + 2][1];
         has_C = 1;
