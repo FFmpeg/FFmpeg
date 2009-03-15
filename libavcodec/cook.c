@@ -1018,6 +1018,16 @@ static void dump_cook_context(COOKContext *q)
 }
 #endif
 
+static av_cold int cook_count_channels(unsigned int mask){
+    int i;
+    int channels = 0;
+    for(i = 0;i<32;i++){
+        if(mask & (1<<i))
+            ++channels;
+    }
+    return channels;
+}
+
 /**
  * Cook initialization
  *
