@@ -1212,6 +1212,8 @@ else
     source_path="$(cd "$source_path"; pwd)"
     echo "$source_path" | grep -q '[[:blank:]]' &&
         die "Out of tree builds are impossible with whitespace in source path."
+    test -e "$source_path/config.h" &&
+        die "Out of tree builds are impossible with config.h in source dir."
 fi
 
 FFMPEG_CONFIGURATION="$@"
