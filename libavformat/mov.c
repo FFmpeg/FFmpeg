@@ -1170,7 +1170,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             for (j = 0; j < sc->stsc_data[stsc_index].count; j++) {
                 if (current_sample >= sc->sample_count) {
                     av_log(mov->fc, AV_LOG_ERROR, "wrong sample count\n");
-                    goto out;
+                    return;
                 }
                 keyframe = !sc->keyframe_count || current_sample+key_off == sc->keyframes[stss_index];
                 if (keyframe) {
@@ -1245,9 +1245,6 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             }
         }
     }
- out:
-    /* adjust sample count to avindex entries */
-    sc->sample_count = st->nb_index_entries;
 }
 
 static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
@@ -1273,7 +1270,6 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                            (!sc->sample_size && !sc->sample_count))){
         av_log(c->fc, AV_LOG_ERROR, "stream %d, missing mandatory atoms, broken header\n",
                st->index);
-        sc->sample_count = 0; //ignore track
         return 0;
     }
     if(!sc->time_rate)
@@ -1608,7 +1604,6 @@ static int mov_read_trun(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         offset += sample_size;
     }
     frag->moof_offset = offset;
-    sc->sample_count = st->nb_index_entries;
     st->duration = dts;
     return 0;
 }
@@ -1865,7 +1860,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MOVStreamContext *msc = st->priv_data;
-        if (st->discard != AVDISCARD_ALL && msc->pb && msc->current_sample < msc->sample_count) {
+        if (st->discard != AVDISCARD_ALL && msc->pb && msc->current_sample < st->nb_index_entries) {
             AVIndexEntry *current_sample = &st->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate,
                                      AV_TIME_BASE, msc->time_scale);
@@ -1925,7 +1920,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->dts = AV_NOPTS_VALUE;
     } else {
         AVStream *st = s->streams[sc->ffindex];
-        int64_t next_dts = (sc->current_sample < sc->sample_count) ?
+        int64_t next_dts = (sc->current_sample < st->nb_index_entries) ?
             st->index_entries[sc->current_sample].timestamp : st->duration;
         pkt->duration = next_dts - pkt->dts;
         pkt->pts = pkt->dts;
