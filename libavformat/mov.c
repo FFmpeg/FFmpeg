@@ -754,6 +754,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                 unsigned int color_start, color_count, color_end;
                 unsigned char r, g, b;
 
+                st->codec->palctrl = av_malloc(sizeof(*st->codec->palctrl));
                 if (color_greyscale) {
                     int color_index, color_dec;
                     /* compute the greyscale palette */
@@ -763,7 +764,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                     color_dec = 256 / (color_count - 1);
                     for (j = 0; j < color_count; j++) {
                         r = g = b = color_index;
-                        c->palette_control.palette[j] =
+                        st->codec->palctrl->palette[j] =
                             (r << 16) | (g << 8) | (b);
                         color_index -= color_dec;
                         if (color_index < 0)
@@ -784,7 +785,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                         r = color_table[j * 4 + 0];
                         g = color_table[j * 4 + 1];
                         b = color_table[j * 4 + 2];
-                        c->palette_control.palette[j] =
+                        st->codec->palctrl->palette[j] =
                             (r << 16) | (g << 8) | (b);
                     }
                 } else {
@@ -806,15 +807,13 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                             get_byte(pb);
                             b = get_byte(pb);
                             get_byte(pb);
-                            c->palette_control.palette[j] =
+                            st->codec->palctrl->palette[j] =
                                 (r << 16) | (g << 8) | (b);
                         }
                     }
                 }
-                st->codec->palctrl = &c->palette_control;
                 st->codec->palctrl->palette_changed = 1;
-            } else
-                st->codec->palctrl = NULL;
+            }
         } else if(st->codec->codec_type==CODEC_TYPE_AUDIO) {
             int bits_per_sample, flags;
             uint16_t version = get_be16(pb);
@@ -2000,7 +1999,8 @@ static int mov_read_close(AVFormatContext *s)
     int i, j;
 
     for (i = 0; i < s->nb_streams; i++) {
-        MOVStreamContext *sc = s->streams[i]->priv_data;
+        AVStream *st = s->streams[i];
+        MOVStreamContext *sc = st->priv_data;
 
         av_freep(&sc->ctts_data);
         for (j = 0; j < sc->drefs_count; j++)
@@ -2008,6 +2008,8 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->drefs);
         if (sc->pb && sc->pb != s->pb)
             url_fclose(sc->pb);
+
+        av_freep(&st->codec->palctrl);
     }
 
     if (mov->dv_demux) {

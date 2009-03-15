@@ -126,7 +126,6 @@ typedef struct MOVContext {
     int64_t duration; /* duration of the longest track */
     int found_moov; /* when both 'moov' and 'mdat' sections has been found */
     int found_mdat; /* we suppose we have enough data to read the file */
-    AVPaletteControl palette_control;
     DVDemuxContext *dv_demux;
     AVFormatContext *dv_fctx;
     int isom; /* 1 if file is ISO Media (mp4/3gp) */
