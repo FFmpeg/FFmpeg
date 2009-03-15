@@ -2,7 +2,7 @@
  * MOV, 3GP, MP4 muxer
  * Copyright (c) 2003 Thomas Raivio
  * Copyright (c) 2004 Gildas Bazin <gbazin at videolan dot org>
- * Copyright (c) 2009 Baptiste Coudurier <baptiste dot coudurier at gmail dot org>
+ * Copyright (c) 2009 Baptiste Coudurier <baptiste dot coudurier at gmail dot com>
  *
  * This file is part of FFmpeg.
  *

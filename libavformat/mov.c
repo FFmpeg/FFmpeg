@@ -1,7 +1,7 @@
 /*
  * MOV demuxer
  * Copyright (c) 2001 Fabrice Bellard
- * Copyright (c) 2009 Baptiste Coudurier <baptiste dot coudurier at gmail dot org>
+ * Copyright (c) 2009 Baptiste Coudurier <baptiste dot coudurier at gmail dot com>
  *
  * This file is part of FFmpeg.
  *
