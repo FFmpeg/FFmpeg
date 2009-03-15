@@ -1338,9 +1338,16 @@ static int mov_read_ilst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_meta(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    url_fskip(pb, 4); // version + flags
-    atom.size -= 4;
-    return mov_read_default(c, pb, atom);
+    while (atom.size > 8) {
+        uint32_t tag = get_le32(pb);
+        atom.size -= 4;
+        if (tag == MKTAG('h','d','l','r')) {
+            url_fseek(pb, -8, SEEK_CUR);
+            atom.size += 8;
+            return mov_read_default(c, pb, atom);
+        }
+    }
+    return 0;
 }
 
 static int mov_read_trkn(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
