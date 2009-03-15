@@ -1187,6 +1187,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                             "size %d, distance %d, keyframe %d\n", st->index, current_sample,
                             current_offset, current_dts, sample_size, distance, keyframe);
                 }
+
                 current_offset += sample_size;
                 assert(sc->stts_data[stts_index].duration % sc->time_rate == 0);
                 current_dts += sc->stts_data[stts_index].duration / sc->time_rate;
@@ -1266,16 +1267,18 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         return ret;
 
     /* sanity checks */
-    if(sc->chunk_count && (!sc->stts_count || !sc->stsc_count ||
-                           (!sc->sample_size && !sc->sample_count))){
+    if (sc->chunk_count && (!sc->stts_count || !sc->stsc_count ||
+                            (!sc->sample_size && !sc->sample_count))) {
         av_log(c->fc, AV_LOG_ERROR, "stream %d, missing mandatory atoms, broken header\n",
                st->index);
         return 0;
     }
-    if(!sc->time_rate)
-        sc->time_rate=1;
-    if(!sc->time_scale)
-        sc->time_scale= c->time_scale;
+
+    if (!sc->time_rate)
+        sc->time_rate = 1;
+    if (!sc->time_scale)
+        sc->time_scale = c->time_scale;
+
     av_set_pts_info(st, 64, sc->time_rate, sc->time_scale);
 
     if (st->codec->codec_type == CODEC_TYPE_AUDIO &&
@@ -1285,7 +1288,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         dprintf(c->fc, "frame size %d\n", st->codec->frame_size);
     }
 
-    if(st->duration != AV_NOPTS_VALUE){
+    if (st->duration != AV_NOPTS_VALUE) {
         assert(st->duration % sc->time_rate == 0);
         st->duration /= sc->time_rate;
     }
@@ -1309,7 +1312,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 #if CONFIG_MPEG4_DECODER
     case CODEC_ID_MPEG4:
 #endif
-        st->codec->width= 0; /* let decoder init width/height */
+        st->codec->width = 0; /* let decoder init width/height */
         st->codec->height= 0;
         break;
     }
@@ -1993,26 +1996,31 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 
 static int mov_read_close(AVFormatContext *s)
 {
-    int i, j;
     MOVContext *mov = s->priv_data;
-    for(i=0; i<s->nb_streams; i++) {
+    int i, j;
+
+    for (i = 0; i < s->nb_streams; i++) {
         MOVStreamContext *sc = s->streams[i]->priv_data;
+
         av_freep(&sc->ctts_data);
-        for (j=0; j<sc->drefs_count; j++)
+        for (j = 0; j < sc->drefs_count; j++)
             av_freep(&sc->drefs[j].path);
         av_freep(&sc->drefs);
         if (sc->pb && sc->pb != s->pb)
             url_fclose(sc->pb);
     }
-    if(mov->dv_demux){
-        for(i=0; i<mov->dv_fctx->nb_streams; i++){
+
+    if (mov->dv_demux) {
+        for(i = 0; i < mov->dv_fctx->nb_streams; i++) {
             av_freep(&mov->dv_fctx->streams[i]->codec);
             av_freep(&mov->dv_fctx->streams[i]);
         }
         av_freep(&mov->dv_fctx);
         av_freep(&mov->dv_demux);
     }
+
     av_freep(&mov->trex_data);
+
     return 0;
 }
 
