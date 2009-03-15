@@ -617,7 +617,7 @@ static void decode_vectors(COOKContext* q, int* category,
                 for(j=0 ; j<q->total_subbands ; j++) category[band+j]=7;
             }
         }
-        if(index==7) {
+        if(index>=7) {
             memset(subband_coef_index, 0, sizeof(subband_coef_index));
             memset(subband_coef_sign, 0, sizeof(subband_coef_sign));
         }
