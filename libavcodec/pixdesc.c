@@ -144,7 +144,7 @@ static const AVPixFmtDescriptor pix_fmt_desc[PIX_FMT_NB] = {
     },
 //FIXME change pix fmt defines so that we have a LE & BE instead of a native-endian
 #if 0
-    [PIX_FMT_RGB565_LE] = {
+    [PIX_FMT_RGB565LE] = {
         .nb_channels  = 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
@@ -154,7 +154,7 @@ static const AVPixFmtDescriptor pix_fmt_desc[PIX_FMT_NB] = {
             {0,1,2,3,4},
         },
     },
-    [PIX_FMT_RGB565_BE] = {
+    [PIX_FMT_RGB565BE] = {
         .nb_channels  = 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
