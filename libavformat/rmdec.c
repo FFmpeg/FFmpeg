@@ -679,9 +679,9 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
 
             if (++(ast->sub_packet_cnt) < h)
                 return -1;
-                ast->sub_packet_cnt = 0;
-                rm->audio_stream_num = st->index;
-                rm->audio_pkt_cnt = h * w / st->codec->block_align;
+             ast->sub_packet_cnt = 0;
+             rm->audio_stream_num = st->index;
+             rm->audio_pkt_cnt = h * w / st->codec->block_align;
         } else if (st->codec->codec_id == CODEC_ID_AAC) {
             int x;
             rm->audio_stream_num = st->index;
