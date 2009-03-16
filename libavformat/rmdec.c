@@ -710,33 +710,33 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     int old_flags, flags;
 
     for (;;) {
-    if (rm->audio_pkt_cnt) {
-        // If there are queued audio packet return them first
-        st = s->streams[rm->audio_stream_num];
-        ff_rm_retrieve_cache(s, s->pb, st, st->priv_data, pkt);
+        if (rm->audio_pkt_cnt) {
+            // If there are queued audio packet return them first
+            st = s->streams[rm->audio_stream_num];
+            ff_rm_retrieve_cache(s, s->pb, st, st->priv_data, pkt);
         } else {
             if (rm->old_format) {
-        RMStream *ast;
+                RMStream *ast;
 
-        st = s->streams[0];
-        ast = st->priv_data;
+                st = s->streams[0];
+                ast = st->priv_data;
                 timestamp = AV_NOPTS_VALUE;
                 len = !ast->audio_framesize ? RAW_PACKET_SIZE :
                     ast->coded_framesize * ast->sub_packet_h / 2;
                 flags = (seq++ == 1) ? 2 : 0;
-    } else {
-        len=sync(s, &timestamp, &flags, &i, &pos);
-        st = s->streams[i];
+            } else {
+                len=sync(s, &timestamp, &flags, &i, &pos);
+                st = s->streams[i];
             }
 
             if(len<0 || url_feof(s->pb))
                 return AVERROR(EIO);
 
-        old_flags = flags;
-        res = ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
-                                  &seq, &flags, &timestamp);
-        if((old_flags&2) && (seq&0x7F) == 1)
-            av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
+            old_flags = flags;
+            res = ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
+                                      &seq, &flags, &timestamp);
+            if((old_flags&2) && (seq&0x7F) == 1)
+                av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
             if (res)
                 continue;
         }
