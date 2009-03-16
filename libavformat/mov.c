@@ -23,6 +23,8 @@
 #include <limits.h>
 
 //#define DEBUG
+//#define DEBUG_METADATA
+//#define MOV_EXPORT_ALL_METADATA
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
@@ -77,6 +79,8 @@ typedef struct MOVParseTableEntry {
 
 static const MOVParseTableEntry mov_default_parse_table[];
 
+static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom);
+
 static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
     int64_t total_size = 0;
@@ -89,6 +93,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     if (atom.size < 0)
         atom.size = INT64_MAX;
     while(((total_size + 8) < atom.size) && !url_feof(pb) && !err) {
+        int (*parse)(MOVContext*, ByteIOContext*, MOVAtom) = NULL;
         a.size = atom.size;
         a.type=0;
         if(atom.size >= 8) {
@@ -114,16 +119,23 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
             break;
         a.size = FFMIN(a.size, atom.size - total_size);
 
-        for (i = 0; mov_default_parse_table[i].type != 0
-             && mov_default_parse_table[i].type != a.type; i++)
-            /* empty */;
+        for (i = 0; mov_default_parse_table[i].type; i++)
+            if (mov_default_parse_table[i].type == a.type) {
+                parse = mov_default_parse_table[i].parse;
+                break;
+            }
 
-        if (mov_default_parse_table[i].type == 0) { /* skip leaf atoms data */
+        // container is user data
+        if (!parse && (atom.type == MKTAG('u','d','t','a') ||
+                       atom.type == MKTAG('i','l','s','t')))
+            parse = mov_read_udta_string;
+
+        if (!parse) { /* skip leaf atoms data */
             url_fskip(pb, a.size);
         } else {
             int64_t start_pos = url_ftell(pb);
             int64_t left;
-            err = mov_default_parse_table[i].parse(c, pb, a);
+            err = parse(c, pb, a);
             if (url_is_streamed(pb) && c->found_moov && c->found_mdat)
                 break;
             left = a.size - url_ftell(pb) + start_pos;
@@ -1362,24 +1374,13 @@ static int mov_read_trkn(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
+#ifdef MOV_EXPORT_ALL_METADATA
+    char tmp_key[5];
+#endif
     char str[1024], key2[16], language[4] = {0};
     const char *key = NULL;
     uint16_t str_size;
 
-    if (c->itunes_metadata) {
-        int data_size = get_be32(pb);
-        int tag = get_le32(pb);
-        if (tag == MKTAG('d','a','t','a')) {
-            get_be32(pb); // type
-            get_be32(pb); // unknown
-            str_size = data_size - 16;
-            atom.size -= 16;
-        } else return 0;
-    } else {
-        str_size = get_be16(pb); // string length
-        ff_mov_lang_to_iso639(get_be16(pb), language);
-        atom.size -= 4;
-    }
     switch (atom.type) {
     case MKTAG(0xa9,'n','a','m'): key = "title";     break;
     case MKTAG(0xa9,'a','u','t'):
@@ -1394,6 +1395,30 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'t','o','o'):
     case MKTAG(0xa9,'e','n','c'): key = "muxer";     break;
     }
+
+    if (c->itunes_metadata && atom.size > 8) {
+        int data_size = get_be32(pb);
+        int tag = get_le32(pb);
+        if (tag == MKTAG('d','a','t','a')) {
+            get_be32(pb); // type
+            get_be32(pb); // unknown
+            str_size = data_size - 16;
+            atom.size -= 16;
+        } else return 0;
+    } else if (atom.size > 4 && key && !c->itunes_metadata) {
+        str_size = get_be16(pb); // string length
+        ff_mov_lang_to_iso639(get_be16(pb), language);
+        atom.size -= 4;
+    } else
+        str_size = atom.size;
+
+#ifdef MOV_EXPORT_ALL_METADATA
+    if (!key) {
+        snprintf(tmp_key, 5, "%.4s", (char*)&atom.type);
+        key = tmp_key;
+    }
+#endif
+
     if (!key)
         return 0;
     if (atom.size < 0)
@@ -1407,7 +1432,12 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         snprintf(key2, sizeof(key2), "%s-%s", key, language);
         av_metadata_set(&c->fc->metadata, key2, str);
     }
-    dprintf(c->fc, "%.4s %s %d %lld\n", (char*)&atom.type, str, str_size, atom.size);
+#ifdef DEBUG_METADATA
+    av_log(c->fc, AV_LOG_DEBUG, "lang \"%3s\" ", language);
+    av_log(c->fc, AV_LOG_DEBUG, "tag \"%s\" value \"%s\" atom \"%.4s\" %d %lld\n",
+           key, str, (char*)&atom.type, str_size, atom.size);
+#endif
+
     return 0;
 }
 
@@ -1769,19 +1799,6 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('e','s','d','s'), mov_read_esds },
 { MKTAG('w','i','d','e'), mov_read_wide }, /* place holder */
 { MKTAG('c','m','o','v'), mov_read_cmov },
-{ MKTAG(0xa9,'n','a','m'), mov_read_udta_string },
-{ MKTAG(0xa9,'w','r','t'), mov_read_udta_string },
-{ MKTAG(0xa9,'c','p','y'), mov_read_udta_string },
-{ MKTAG(0xa9,'i','n','f'), mov_read_udta_string },
-{ MKTAG(0xa9,'i','n','f'), mov_read_udta_string },
-{ MKTAG(0xa9,'A','R','T'), mov_read_udta_string },
-{ MKTAG(0xa9,'a','l','b'), mov_read_udta_string },
-{ MKTAG(0xa9,'c','m','t'), mov_read_udta_string },
-{ MKTAG(0xa9,'a','u','t'), mov_read_udta_string },
-{ MKTAG(0xa9,'d','a','y'), mov_read_udta_string },
-{ MKTAG(0xa9,'g','e','n'), mov_read_udta_string },
-{ MKTAG(0xa9,'e','n','c'), mov_read_udta_string },
-{ MKTAG(0xa9,'t','o','o'), mov_read_udta_string },
 { 0, NULL }
 };
 
