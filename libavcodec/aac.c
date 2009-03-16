@@ -93,6 +93,8 @@
 #include <math.h>
 #include <string.h>
 
+union float754 { float f; uint32_t i; };
+
 static VLC vlc_scalefactors;
 static VLC vlc_spectral[11];
 
@@ -930,24 +932,24 @@ static int decode_spectrum_and_dequant(AACContext * ac, float coef[1024], GetBit
 }
 
 static av_always_inline float flt16_round(float pf) {
-    int exp;
-    pf = frexpf(pf, &exp);
-    pf = ldexpf(roundf(ldexpf(pf, 8)), exp-8);
-    return pf;
+    union float754 tmp;
+    tmp.f = pf;
+    tmp.i = (tmp.i + 0x00008000U) & 0xFFFF0000U;
+    return tmp.f;
 }
 
 static av_always_inline float flt16_even(float pf) {
-    int exp;
-    pf = frexpf(pf, &exp);
-    pf = ldexpf(rintf(ldexpf(pf, 8)), exp-8);
-    return pf;
+    union float754 tmp;
+    tmp.f = pf;
+    tmp.i = (tmp.i + 0x00007FFFU + (tmp.i & 0x00010000U>>16)) & 0xFFFF0000U;
+    return tmp.f;
 }
 
 static av_always_inline float flt16_trunc(float pf) {
-    int exp;
-    pf = frexpf(pf, &exp);
-    pf = ldexpf(truncf(ldexpf(pf, 8)), exp-8);
-    return pf;
+    union float754 pun;
+    pun.f = pf;
+    pun.i &= 0xFFFF0000U;
+    return pun.f;
 }
 
 static void predict(AACContext * ac, PredictorState * ps, float* coef, int output_enable) {
