@@ -1136,10 +1136,10 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     get_be24(pb); /* flags */
 
     if (atom.type == MKTAG('s','t','s','z')) {
-    sample_size = get_be32(pb);
-    if (!sc->sample_size) /* do not overwrite value computed in stsd */
-        sc->sample_size = sample_size;
-    field_size = 32;
+        sample_size = get_be32(pb);
+        if (!sc->sample_size) /* do not overwrite value computed in stsd */
+            sc->sample_size = sample_size;
+        field_size = 32;
     } else {
         sample_size = 0;
         get_be24(pb); /* reserved */
