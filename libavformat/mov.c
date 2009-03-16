@@ -79,6 +79,19 @@ typedef struct MOVParseTableEntry {
 
 static const MOVParseTableEntry mov_default_parse_table[];
 
+static int mov_metadata_trkn(MOVContext *c, ByteIOContext *pb, unsigned len)
+{
+    char buf[16];
+
+    get_be16(pb); // unknown
+    snprintf(buf, sizeof(buf), "%d", get_be16(pb));
+    av_metadata_set(&c->fc->metadata, "track", buf);
+
+    get_be16(pb); // total tracks
+
+    return 0;
+}
+
 static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
 #ifdef MOV_EXPORT_ALL_METADATA
@@ -87,6 +100,7 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     char str[1024], key2[16], language[4] = {0};
     const char *key = NULL;
     uint16_t str_size;
+    int (*parse)(MOVContext*, ByteIOContext*, unsigned) = NULL;
 
     switch (atom.type) {
     case MKTAG(0xa9,'n','a','m'): key = "title";     break;
@@ -101,6 +115,8 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
     case MKTAG(0xa9,'t','o','o'):
     case MKTAG(0xa9,'e','n','c'): key = "muxer";     break;
+    case MKTAG( 't','r','k','n'): key = "track";
+        parse = mov_metadata_trkn; break;
     }
 
     if (c->itunes_metadata && atom.size > 8) {
@@ -132,12 +148,17 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         return -1;
 
     str_size = FFMIN3(sizeof(str)-1, str_size, atom.size);
+
+    if (parse)
+        parse(c, pb, str_size);
+    else {
     get_buffer(pb, str, str_size);
     str[str_size] = 0;
     av_metadata_set(&c->fc->metadata, key, str);
     if (*language && strcmp(language, "und")) {
         snprintf(key2, sizeof(key2), "%s-%s", key, language);
         av_metadata_set(&c->fc->metadata, key2, str);
+    }
     }
 #ifdef DEBUG_METADATA
     av_log(c->fc, AV_LOG_DEBUG, "lang \"%3s\" ", language);
@@ -1428,17 +1449,6 @@ static int mov_read_meta(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_trkn(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
-{
-    char track[16];
-    get_be32(pb); // type
-    get_be32(pb); // unknown
-    snprintf(track, sizeof(track), "%d", get_be32(pb));
-    av_metadata_set(&c->fc->metadata, "track", track);
-    dprintf(c->fc, "%.4s %s\n", (char*)&atom.type, track);
-    return 0;
-}
-
 static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
     int i;
@@ -1790,7 +1800,6 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('t','r','a','k'), mov_read_trak },
 { MKTAG('t','r','a','f'), mov_read_default },
 { MKTAG('t','r','e','x'), mov_read_trex },
-{ MKTAG('t','r','k','n'), mov_read_trkn },
 { MKTAG('t','r','u','n'), mov_read_trun },
 { MKTAG('u','d','t','a'), mov_read_default },
 { MKTAG('w','a','v','e'), mov_read_wave },
