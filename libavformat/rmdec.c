@@ -704,71 +704,48 @@ ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
 static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RMDemuxContext *rm = s->priv_data;
-    ByteIOContext *pb = s->pb;
     AVStream *st;
-    int i, len, res;
+    int i, len, res, seq = 1;
     int64_t timestamp, pos;
     int old_flags, flags;
 
+    for (;;) {
     if (rm->audio_pkt_cnt) {
         // If there are queued audio packet return them first
         st = s->streams[rm->audio_stream_num];
         ff_rm_retrieve_cache(s, s->pb, st, st->priv_data, pkt);
-    } else if (rm->old_format) {
+        } else {
+            if (rm->old_format) {
         RMStream *ast;
 
         st = s->streams[0];
         ast = st->priv_data;
-        if (st->codec->codec_id == CODEC_ID_RA_288) {
-            int x, y;
-
-            for (y = 0; y < ast->sub_packet_h; y++)
-                for (x = 0; x < ast->sub_packet_h/2; x++)
-                    if (get_buffer(pb, ast->pkt.data+x*2*ast->audio_framesize+y*ast->coded_framesize, ast->coded_framesize) <= 0)
-                        return AVERROR(EIO);
-            rm->audio_stream_num = 0;
-            rm->audio_pkt_cnt = ast->sub_packet_h * ast->audio_framesize / st->codec->block_align - 1;
-            // Release first audio packet
-            av_new_packet(pkt, st->codec->block_align);
-            memcpy(pkt->data, ast->pkt.data, st->codec->block_align); //FIXME avoid this
-            pkt->flags |= PKT_FLAG_KEY; // Mark first packet as keyframe
-            pkt->stream_index = 0;
-        } else {
-            /* just read raw bytes */
-            len = RAW_PACKET_SIZE;
-            len= av_get_packet(pb, pkt, len);
-            pkt->stream_index = 0;
-            if (len <= 0) {
-                return AVERROR(EIO);
-            }
-            pkt->size = len;
-        }
-        rm_ac3_swap_bytes(st, pkt);
+                timestamp = AV_NOPTS_VALUE;
+                len = !ast->audio_framesize ? RAW_PACKET_SIZE :
+                    ast->coded_framesize * ast->sub_packet_h / 2;
+                flags = (seq++ == 1) ? 2 : 0;
     } else {
-        int seq=1;
-resync:
         len=sync(s, &timestamp, &flags, &i, &pos);
-        if(len<0)
-            return AVERROR(EIO);
         st = s->streams[i];
+            }
+
+            if(len<0 || url_feof(s->pb))
+                return AVERROR(EIO);
 
         old_flags = flags;
         res = ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
                                   &seq, &flags, &timestamp);
         if((old_flags&2) && (seq&0x7F) == 1)
             av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
-        if (res < 0)
-            goto resync;
+            if (res)
+                continue;
+        }
 
         if(  (st->discard >= AVDISCARD_NONKEY && !(flags&2))
            || st->discard >= AVDISCARD_ALL){
             av_free_packet(pkt);
-            while (rm->audio_pkt_cnt > 0) {
-                ff_rm_retrieve_cache(s, s->pb, st, st->priv_data, pkt);
-                av_free_packet(pkt);
-            }
-            goto resync;
-        }
+        } else
+            break;
     }
 
     return 0;
