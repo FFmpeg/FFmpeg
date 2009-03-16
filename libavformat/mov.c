@@ -152,13 +152,13 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     if (parse)
         parse(c, pb, str_size);
     else {
-    get_buffer(pb, str, str_size);
-    str[str_size] = 0;
-    av_metadata_set(&c->fc->metadata, key, str);
-    if (*language && strcmp(language, "und")) {
-        snprintf(key2, sizeof(key2), "%s-%s", key, language);
-        av_metadata_set(&c->fc->metadata, key2, str);
-    }
+        get_buffer(pb, str, str_size);
+        str[str_size] = 0;
+        av_metadata_set(&c->fc->metadata, key, str);
+        if (*language && strcmp(language, "und")) {
+            snprintf(key2, sizeof(key2), "%s-%s", key, language);
+            av_metadata_set(&c->fc->metadata, key2, str);
+        }
     }
 #ifdef DEBUG_METADATA
     av_log(c->fc, AV_LOG_DEBUG, "lang \"%3s\" ", language);
