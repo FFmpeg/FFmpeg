@@ -1278,8 +1278,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
     /* adjust first dts according to edit list */
     if (sc->time_offset) {
+        int rescaled = sc->time_offset < 0 ? av_rescale(sc->time_offset, sc->time_scale, mov->time_scale) : sc->time_offset;
         assert(sc->time_offset % sc->time_rate == 0);
-        current_dts = - (sc->time_offset / sc->time_rate);
+        current_dts = - (rescaled / sc->time_rate);
     }
 
     /* only use old uncompressed audio chunk demuxing when stts specifies it */
@@ -1774,12 +1775,12 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     for(i=0; i<edit_count; i++){
         int time;
-        get_be32(pb); /* Track duration */
+        int duration = get_be32(pb); /* Track duration */
         time = get_be32(pb); /* Media time */
         get_be32(pb); /* Media rate */
-        if (i == 0 && time != -1) {
-            sc->time_offset = time;
-            sc->time_rate = av_gcd(sc->time_rate, time);
+        if (i == 0 && time >= -1) {
+            sc->time_offset = time != -1 ? time : -duration;
+            sc->time_rate = av_gcd(sc->time_rate, FFABS(sc->time_offset));
         }
     }
 
