@@ -33,6 +33,7 @@
 #include "isom.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
+#include "libavcodec/bitstream.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -1127,14 +1128,23 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = st->priv_data;
-    unsigned int i, entries, sample_size;
+    unsigned int i, entries, sample_size, field_size, num_bytes;
+    GetBitContext gb;
+    unsigned char* buf;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
 
+    if (atom.type == MKTAG('s','t','s','z')) {
     sample_size = get_be32(pb);
     if (!sc->sample_size) /* do not overwrite value computed in stsd */
         sc->sample_size = sample_size;
+    field_size = 32;
+    } else {
+        sample_size = 0;
+        get_be24(pb); /* reserved */
+        field_size = get_byte(pb);
+    }
     entries = get_be32(pb);
 
     dprintf(c->fc, "sample_size = %d sample_count = %d\n", sc->sample_size, entries);
@@ -1143,14 +1153,37 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     if (sample_size)
         return 0;
 
+    if (field_size != 4 && field_size != 8 && field_size != 16 && field_size != 32) {
+        av_log(c->fc, AV_LOG_ERROR, "Invalid sample field size %d\n", field_size);
+        return -1;
+    }
+
     if(entries >= UINT_MAX / sizeof(int))
         return -1;
     sc->sample_sizes = av_malloc(entries * sizeof(int));
     if (!sc->sample_sizes)
         return AVERROR(ENOMEM);
 
+    num_bytes = (entries*field_size+4)>>3;
+
+    buf = av_malloc(num_bytes);
+    if (!buf) {
+        av_freep(&sc->sample_sizes);
+        return AVERROR(ENOMEM);
+    }
+
+    if (get_buffer(pb, buf, num_bytes) < num_bytes) {
+        av_freep(&sc->sample_sizes);
+        av_free(buf);
+        return -1;
+    }
+
+    init_get_bits(&gb, buf, 8*num_bytes);
+
     for(i=0; i<entries; i++)
-        sc->sample_sizes[i] = get_be32(pb);
+        sc->sample_sizes[i] = get_bits_long(&gb, field_size);
+
+    av_free(buf);
     return 0;
 }
 
@@ -1793,6 +1826,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('s','t','s','s'), mov_read_stss }, /* sync sample */
 { MKTAG('s','t','s','z'), mov_read_stsz }, /* sample size */
 { MKTAG('s','t','t','s'), mov_read_stts },
+{ MKTAG('s','t','z','2'), mov_read_stsz }, /* compact sample size */
 { MKTAG('t','k','h','d'), mov_read_tkhd }, /* track header */
 { MKTAG('t','f','h','d'), mov_read_tfhd }, /* track fragment header */
 { MKTAG('t','r','a','k'), mov_read_trak },
