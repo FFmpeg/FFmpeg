@@ -79,7 +79,74 @@ typedef struct MOVParseTableEntry {
 
 static const MOVParseTableEntry mov_default_parse_table[];
 
-static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom);
+static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+{
+#ifdef MOV_EXPORT_ALL_METADATA
+    char tmp_key[5];
+#endif
+    char str[1024], key2[16], language[4] = {0};
+    const char *key = NULL;
+    uint16_t str_size;
+
+    switch (atom.type) {
+    case MKTAG(0xa9,'n','a','m'): key = "title";     break;
+    case MKTAG(0xa9,'a','u','t'):
+    case MKTAG(0xa9,'A','R','T'):
+    case MKTAG(0xa9,'w','r','t'): key = "author";    break;
+    case MKTAG(0xa9,'c','p','y'): key = "copyright"; break;
+    case MKTAG(0xa9,'c','m','t'):
+    case MKTAG(0xa9,'i','n','f'): key = "comment";   break;
+    case MKTAG(0xa9,'a','l','b'): key = "album";     break;
+    case MKTAG(0xa9,'d','a','y'): key = "year";      break;
+    case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
+    case MKTAG(0xa9,'t','o','o'):
+    case MKTAG(0xa9,'e','n','c'): key = "muxer";     break;
+    }
+
+    if (c->itunes_metadata && atom.size > 8) {
+        int data_size = get_be32(pb);
+        int tag = get_le32(pb);
+        if (tag == MKTAG('d','a','t','a')) {
+            get_be32(pb); // type
+            get_be32(pb); // unknown
+            str_size = data_size - 16;
+            atom.size -= 16;
+        } else return 0;
+    } else if (atom.size > 4 && key && !c->itunes_metadata) {
+        str_size = get_be16(pb); // string length
+        ff_mov_lang_to_iso639(get_be16(pb), language);
+        atom.size -= 4;
+    } else
+        str_size = atom.size;
+
+#ifdef MOV_EXPORT_ALL_METADATA
+    if (!key) {
+        snprintf(tmp_key, 5, "%.4s", (char*)&atom.type);
+        key = tmp_key;
+    }
+#endif
+
+    if (!key)
+        return 0;
+    if (atom.size < 0)
+        return -1;
+
+    str_size = FFMIN3(sizeof(str)-1, str_size, atom.size);
+    get_buffer(pb, str, str_size);
+    str[str_size] = 0;
+    av_metadata_set(&c->fc->metadata, key, str);
+    if (*language && strcmp(language, "und")) {
+        snprintf(key2, sizeof(key2), "%s-%s", key, language);
+        av_metadata_set(&c->fc->metadata, key2, str);
+    }
+#ifdef DEBUG_METADATA
+    av_log(c->fc, AV_LOG_DEBUG, "lang \"%3s\" ", language);
+    av_log(c->fc, AV_LOG_DEBUG, "tag \"%s\" value \"%s\" atom \"%.4s\" %d %lld\n",
+           key, str, (char*)&atom.type, str_size, atom.size);
+#endif
+
+    return 0;
+}
 
 static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
@@ -1369,75 +1436,6 @@ static int mov_read_trkn(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     snprintf(track, sizeof(track), "%d", get_be32(pb));
     av_metadata_set(&c->fc->metadata, "track", track);
     dprintf(c->fc, "%.4s %s\n", (char*)&atom.type, track);
-    return 0;
-}
-
-static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
-{
-#ifdef MOV_EXPORT_ALL_METADATA
-    char tmp_key[5];
-#endif
-    char str[1024], key2[16], language[4] = {0};
-    const char *key = NULL;
-    uint16_t str_size;
-
-    switch (atom.type) {
-    case MKTAG(0xa9,'n','a','m'): key = "title";     break;
-    case MKTAG(0xa9,'a','u','t'):
-    case MKTAG(0xa9,'A','R','T'):
-    case MKTAG(0xa9,'w','r','t'): key = "author";    break;
-    case MKTAG(0xa9,'c','p','y'): key = "copyright"; break;
-    case MKTAG(0xa9,'c','m','t'):
-    case MKTAG(0xa9,'i','n','f'): key = "comment";   break;
-    case MKTAG(0xa9,'a','l','b'): key = "album";     break;
-    case MKTAG(0xa9,'d','a','y'): key = "year";      break;
-    case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
-    case MKTAG(0xa9,'t','o','o'):
-    case MKTAG(0xa9,'e','n','c'): key = "muxer";     break;
-    }
-
-    if (c->itunes_metadata && atom.size > 8) {
-        int data_size = get_be32(pb);
-        int tag = get_le32(pb);
-        if (tag == MKTAG('d','a','t','a')) {
-            get_be32(pb); // type
-            get_be32(pb); // unknown
-            str_size = data_size - 16;
-            atom.size -= 16;
-        } else return 0;
-    } else if (atom.size > 4 && key && !c->itunes_metadata) {
-        str_size = get_be16(pb); // string length
-        ff_mov_lang_to_iso639(get_be16(pb), language);
-        atom.size -= 4;
-    } else
-        str_size = atom.size;
-
-#ifdef MOV_EXPORT_ALL_METADATA
-    if (!key) {
-        snprintf(tmp_key, 5, "%.4s", (char*)&atom.type);
-        key = tmp_key;
-    }
-#endif
-
-    if (!key)
-        return 0;
-    if (atom.size < 0)
-        return -1;
-
-    str_size = FFMIN3(sizeof(str)-1, str_size, atom.size);
-    get_buffer(pb, str, str_size);
-    str[str_size] = 0;
-    av_metadata_set(&c->fc->metadata, key, str);
-    if (*language && strcmp(language, "und")) {
-        snprintf(key2, sizeof(key2), "%s-%s", key, language);
-        av_metadata_set(&c->fc->metadata, key2, str);
-    }
-#ifdef DEBUG_METADATA
-    av_log(c->fc, AV_LOG_DEBUG, "lang \"%3s\" ", language);
-    av_log(c->fc, AV_LOG_DEBUG, "tag \"%s\" value \"%s\" atom \"%.4s\" %d %lld\n",
-           key, str, (char*)&atom.type, str_size, atom.size);
-#endif
-
     return 0;
 }
 
