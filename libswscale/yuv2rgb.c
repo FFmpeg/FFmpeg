@@ -101,7 +101,7 @@ const int32_t ff_yuv2rgb_coeffs[8][4] = {
     Y = src[2*i+1];                                          \
     dst[6*i+3] = b[Y]; dst[6*i+4] = g[Y]; dst[6*i+5] = r[Y];
 
-#define YUV2RGBFUNC(func_name, dst_type) \
+#define YUV2RGBFUNC(func_name, dst_type, alpha) \
 static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, \
                      int srcSliceH, uint8_t* dst[], int dstStride[]){\
     int y;\
@@ -145,7 +145,7 @@ static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSlic
     ENDYUV2RGBLINE(dst_delta)\
     ENDYUV2RGBFUNC()
 
-YUV2RGBFUNC(yuv2rgb_c_32, uint32_t)
+YUV2RGBFUNC(yuv2rgb_c_32, uint32_t, 0)
     LOADCHROMA(0);
     PUTRGB(dst_1,py_1,0,0);
     PUTRGB(dst_2,py_2,0,1);
@@ -174,7 +174,7 @@ ENDYUV2RGBLINE(8)
     PUTRGB(dst_1,py_1,1,0);
 ENDYUV2RGBFUNC()
 
-YUV2RGBFUNC(yuv2rgb_c_24_rgb, uint8_t)
+YUV2RGBFUNC(yuv2rgb_c_24_rgb, uint8_t, 0)
     LOADCHROMA(0);
     PUTRGB24(dst_1,py_1,0);
     PUTRGB24(dst_2,py_2,0);
@@ -201,7 +201,7 @@ ENDYUV2RGBLINE(24)
 ENDYUV2RGBFUNC()
 
 // only trivial mods from yuv2rgb_c_24_rgb
-YUV2RGBFUNC(yuv2rgb_c_24_bgr, uint8_t)
+YUV2RGBFUNC(yuv2rgb_c_24_bgr, uint8_t, 0)
     LOADCHROMA(0);
     PUTBGR24(dst_1,py_1,0);
     PUTBGR24(dst_2,py_2,0);
@@ -229,7 +229,7 @@ ENDYUV2RGBFUNC()
 
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
-YUV2RGBFUNC(yuv2rgb_c_16, uint16_t)
+YUV2RGBFUNC(yuv2rgb_c_16, uint16_t, 0)
     LOADCHROMA(0);
     PUTRGB(dst_1,py_1,0,0);
     PUTRGB(dst_2,py_2,0,1);
@@ -249,7 +249,7 @@ CLOSEYUV2RGBFUNC(8)
 
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
-YUV2RGBFUNC(yuv2rgb_c_8, uint8_t)
+YUV2RGBFUNC(yuv2rgb_c_8, uint8_t, 0)
     LOADCHROMA(0);
     PUTRGB(dst_1,py_1,0,0);
     PUTRGB(dst_2,py_2,0,1);
@@ -268,7 +268,7 @@ YUV2RGBFUNC(yuv2rgb_c_8, uint8_t)
 CLOSEYUV2RGBFUNC(8)
 
 // r, g, b, dst_1, dst_2
-YUV2RGBFUNC(yuv2rgb_c_8_ordered_dither, uint8_t)
+YUV2RGBFUNC(yuv2rgb_c_8_ordered_dither, uint8_t, 0)
     const uint8_t *d32 = dither_8x8_32[y&7];
     const uint8_t *d64 = dither_8x8_73[y&7];
 #define PUTRGB8(dst,src,i,o)                                    \
@@ -297,7 +297,7 @@ CLOSEYUV2RGBFUNC(8)
 
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
-YUV2RGBFUNC(yuv2rgb_c_4, uint8_t)
+YUV2RGBFUNC(yuv2rgb_c_4, uint8_t, 0)
     int acc;
 #define PUTRGB4(dst,src,i)          \
     Y = src[2*i];                   \
@@ -323,7 +323,7 @@ YUV2RGBFUNC(yuv2rgb_c_4, uint8_t)
     PUTRGB4(dst_1,py_1,3);
 CLOSEYUV2RGBFUNC(4)
 
-YUV2RGBFUNC(yuv2rgb_c_4_ordered_dither, uint8_t)
+YUV2RGBFUNC(yuv2rgb_c_4_ordered_dither, uint8_t, 0)
     const uint8_t *d64 =  dither_8x8_73[y&7];
     const uint8_t *d128 = dither_8x8_220[y&7];
     int acc;
@@ -354,7 +354,7 @@ CLOSEYUV2RGBFUNC(4)
 
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
-YUV2RGBFUNC(yuv2rgb_c_4b, uint8_t)
+YUV2RGBFUNC(yuv2rgb_c_4b, uint8_t, 0)
     LOADCHROMA(0);
     PUTRGB(dst_1,py_1,0,0);
     PUTRGB(dst_2,py_2,0,1);
@@ -372,7 +372,7 @@ YUV2RGBFUNC(yuv2rgb_c_4b, uint8_t)
     PUTRGB(dst_1,py_1,3,0);
 CLOSEYUV2RGBFUNC(8)
 
-YUV2RGBFUNC(yuv2rgb_c_4b_ordered_dither, uint8_t)
+YUV2RGBFUNC(yuv2rgb_c_4b_ordered_dither, uint8_t, 0)
     const uint8_t *d64 =  dither_8x8_73[y&7];
     const uint8_t *d128 = dither_8x8_220[y&7];
 
@@ -399,7 +399,7 @@ YUV2RGBFUNC(yuv2rgb_c_4b_ordered_dither, uint8_t)
     PUTRGB4DB(dst_1,py_1,3,6);
 CLOSEYUV2RGBFUNC(8)
 
-YUV2RGBFUNC(yuv2rgb_c_1_ordered_dither, uint8_t)
+YUV2RGBFUNC(yuv2rgb_c_1_ordered_dither, uint8_t, 0)
         const uint8_t *d128 = dither_8x8_220[y&7];
         char out_1 = 0, out_2 = 0;
         g= c->table_gU[128] + c->table_gV[128];
