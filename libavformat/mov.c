@@ -233,8 +233,7 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
             ((char *)&ctype)[2], ((char *)&ctype)[3], (int) ctype);
     dprintf(c->fc, "stype= %c%c%c%c\n",
             *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
-    if(!ctype)
-        c->isom = 1;
+
     if     (type == MKTAG('v','i','d','e'))
         st->codec->codec_type = CODEC_TYPE_VIDEO;
     else if(type == MKTAG('s','o','u','n'))
