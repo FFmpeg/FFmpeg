@@ -687,6 +687,10 @@ ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
                st->codec->block_align);
     }
     rm->audio_pkt_cnt--;
+    if ((pkt->pts = ast->audiotimestamp) != AV_NOPTS_VALUE) {
+        ast->audiotimestamp = AV_NOPTS_VALUE;
+        pkt->flags = PKT_FLAG_KEY;
+    } else
     pkt->flags = 0;
     pkt->stream_index = st->index;
 
