@@ -162,7 +162,8 @@
         "add $"AV_STRINGIFY(depth*8)", %1    \n\t" \
         "add                       $4, %0    \n\t" \
         " js                       1b        \n\t" \
-\
+
+#define YUV2RGB_OPERANDS \
         : "+r" (index), "+r" (image) \
         : "r" (pu - index), "r" (pv - index), "r"(&c->redDither), "r" (py - 2*index) \
         ); \
@@ -223,6 +224,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
         MOVNTQ "   %%mm5, 8 (%1);" /* store pixel 4-7 */
 
     YUV2RGB_ENDLOOP(2)
+    YUV2RGB_OPERANDS
 }
 
 static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
@@ -280,6 +282,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
         MOVNTQ " %%mm5, 8 (%1);" /* store pixel 4-7 */
 
     YUV2RGB_ENDLOOP(2)
+    YUV2RGB_OPERANDS
 }
 
 static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
@@ -394,6 +397,7 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
 #endif
 
     YUV2RGB_ENDLOOP(3)
+    YUV2RGB_OPERANDS
 }
 
 #define RGB_PLANAR2PACKED32                                             \
@@ -450,4 +454,5 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
         RGB_PLANAR2PACKED32
 
     YUV2RGB_ENDLOOP(4)
+    YUV2RGB_OPERANDS
 }
