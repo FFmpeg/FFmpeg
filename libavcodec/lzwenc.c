@@ -203,7 +203,7 @@ void ff_lzw_encode_init(LZWEncodeState * s, uint8_t * outbuf, int outsize, int m
     s->maxbits = maxbits;
     init_put_bits(&s->pb, outbuf, outsize);
     s->bufsize = outsize;
-    assert(9 <= s->maxbits && s->maxbits <= s->maxbits);
+    assert(s->maxbits >= 9 && s->maxbits <= LZW_MAXBITS);
     s->maxcode = 1 << s->maxbits;
     s->output_bytes = 0;
     s->last_code = LZW_PREFIX_EMPTY;
