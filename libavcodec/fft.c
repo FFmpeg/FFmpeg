@@ -106,7 +106,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
         s->imdct_half = ff_imdct_half_3dn;
         s->fft_calc   = ff_fft_calc_3dn;
     }
-#elif HAVE_ALTIVEC && !defined ALTIVEC_USE_REFERENCE_C_CODE
+#elif HAVE_ALTIVEC
     has_vectors = mm_support();
     if (has_vectors & FF_MM_ALTIVEC) {
         s->fft_calc = ff_fft_calc_altivec;
