@@ -691,7 +691,7 @@ ff_rm_retrieve_cache (AVFormatContext *s, ByteIOContext *pb,
         ast->audiotimestamp = AV_NOPTS_VALUE;
         pkt->flags = PKT_FLAG_KEY;
     } else
-    pkt->flags = 0;
+        pkt->flags = 0;
     pkt->stream_index = st->index;
 
     return rm->audio_pkt_cnt;

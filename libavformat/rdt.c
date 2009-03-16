@@ -314,9 +314,9 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
             return res;
         if (res > 0) {
             if (st->codec->codec_id == CODEC_ID_AAC) {
-            memcpy (rdt->buffer, buf + pos, len - pos);
-            rdt->rmctx->pb = av_alloc_put_byte (rdt->buffer, len - pos, 0,
-                                                NULL, NULL, NULL, NULL);
+                memcpy (rdt->buffer, buf + pos, len - pos);
+                rdt->rmctx->pb = av_alloc_put_byte (rdt->buffer, len - pos, 0,
+                                                    NULL, NULL, NULL, NULL);
             }
             goto get_cache;
         }
