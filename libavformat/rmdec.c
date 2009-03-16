@@ -292,6 +292,49 @@ skip:
     return 0;
 }
 
+/** this function assumes that the demuxer has already seeked to the start
+ * of the INDX chunk, and will bail out if not. */
+static int rm_read_index(AVFormatContext *s)
+{
+    ByteIOContext *pb = s->pb;
+    unsigned int size, n_pkts, str_id, next_off, n, pos, pts;
+    AVStream *st;
+
+    do {
+        if (get_le32(pb) != MKTAG('I','N','D','X'))
+            return -1;
+        size     = get_be32(pb);
+        if (size < 20)
+            return -1;
+        url_fskip(pb, 2);
+        n_pkts   = get_be32(pb);
+        str_id   = get_be16(pb);
+        next_off = get_be32(pb);
+        for (n = 0; n < s->nb_streams; n++)
+            if (s->streams[n]->id == str_id) {
+                st = s->streams[n];
+                break;
+            }
+        if (n == s->nb_streams)
+            goto skip;
+
+        for (n = 0; n < n_pkts; n++) {
+            url_fskip(pb, 2);
+            pts = get_be32(pb);
+            pos = get_be32(pb);
+            url_fskip(pb, 4); /* packet no. */
+
+            av_add_index_entry(st, pos, pts, 0, 0, AVINDEX_KEYFRAME);
+        }
+
+skip:
+        if (next_off && url_ftell(pb) != next_off &&
+            url_fseek(pb, next_off, SEEK_SET) < 0)
+            return -1;
+    } while (next_off);
+
+    return 0;
+}
 
 static int rm_read_header_old(AVFormatContext *s, AVFormatParameters *ap)
 {
@@ -314,6 +357,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     unsigned int tag;
     int tag_size;
     unsigned int start_time, duration;
+    unsigned int data_off = 0, indx_off = 0;
     char buf[128];
     int flags = 0;
 
@@ -357,8 +401,8 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_be32(pb); /* nb packets */
             get_be32(pb); /* duration */
             get_be32(pb); /* preroll */
-            get_be32(pb); /* index offset */
-            get_be32(pb); /* data offset */
+            indx_off = get_be32(pb); /* index offset */
+            data_off = get_be32(pb); /* data offset */
             get_be16(pb); /* nb streams */
             flags = get_be16(pb); /* flags */
             break;
@@ -400,6 +444,14 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!rm->nb_packets && (flags & 4))
         rm->nb_packets = 3600 * 25;
     get_be32(pb); /* next data header */
+
+    if (!data_off)
+        data_off = url_ftell(pb) - 18;
+    if (indx_off && url_fseek(pb, indx_off, SEEK_SET) >= 0) {
+        rm_read_index(s);
+        url_fseek(pb, data_off + 18, SEEK_SET);
+    }
+
     return 0;
 }
 
