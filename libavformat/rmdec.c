@@ -774,7 +774,8 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
                 flags = (seq++ == 1) ? 2 : 0;
             } else {
                 len=sync(s, &timestamp, &flags, &i, &pos);
-                st = s->streams[i];
+                if (len > 0)
+                    st = s->streams[i];
             }
 
             if(len<0 || url_feof(s->pb))
