@@ -312,14 +312,16 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
         pos = url_ftell(&pb);
         if (res < 0)
             return res;
-        rdt->audio_pkt_cnt = res;
-        if (rdt->audio_pkt_cnt > 0 &&
-            st->codec->codec_id == CODEC_ID_AAC) {
+        if (res > 0) {
+            if (st->codec->codec_id == CODEC_ID_AAC) {
             memcpy (rdt->buffer, buf + pos, len - pos);
             rdt->rmctx->pb = av_alloc_put_byte (rdt->buffer, len - pos, 0,
                                                 NULL, NULL, NULL, NULL);
+            }
+            goto get_cache;
         }
     } else {
+get_cache:
         rdt->audio_pkt_cnt =
             ff_rm_retrieve_cache (rdt->rmctx, rdt->rmctx->pb,
                                   st, rdt->rmst[st->index], pkt);

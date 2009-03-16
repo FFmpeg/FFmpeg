@@ -627,16 +627,9 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
 
             if (++(ast->sub_packet_cnt) < h)
                 return -1;
-            else {
                 ast->sub_packet_cnt = 0;
                 rm->audio_stream_num = st->index;
-                rm->audio_pkt_cnt = h * w / st->codec->block_align - 1;
-                // Release first audio packet
-                av_new_packet(pkt, st->codec->block_align);
-                memcpy(pkt->data, ast->pkt.data, st->codec->block_align); //FIXME avoid this
-                *timestamp = ast->audiotimestamp;
-                *flags = 2; // Mark first packet as keyframe
-            }
+                rm->audio_pkt_cnt = h * w / st->codec->block_align;
         } else if (st->codec->codec_id == CODEC_ID_AAC) {
             int x;
             rm->audio_stream_num = st->index;
@@ -644,11 +637,10 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
             if (ast->sub_packet_cnt) {
                 for (x = 0; x < ast->sub_packet_cnt; x++)
                     ast->sub_packet_lengths[x] = get_be16(pb);
-                // Release first audio packet
-                rm->audio_pkt_cnt = ast->sub_packet_cnt - 1;
-                av_get_packet(pb, pkt, ast->sub_packet_lengths[0]);
-                *flags = 2; // Mark first packet as keyframe
-            }
+                rm->audio_pkt_cnt = ast->sub_packet_cnt;
+                ast->audiotimestamp = *timestamp;
+            } else
+                return -1;
         } else {
             av_get_packet(pb, pkt, len);
             rm_ac3_swap_bytes(st, pkt);
