@@ -329,10 +329,8 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     ctype = get_le32(pb);
     type = get_le32(pb); /* component subtype */
 
-    dprintf(c->fc, "ctype= %c%c%c%c (0x%08x)\n", *((char *)&ctype), ((char *)&ctype)[1],
-            ((char *)&ctype)[2], ((char *)&ctype)[3], (int) ctype);
-    dprintf(c->fc, "stype= %c%c%c%c\n",
-            *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
+    dprintf(c->fc, "ctype= %.4s (0x%08x)\n", (char*)&ctype, ctype);
+    dprintf(c->fc, "stype= %.4s\n", (char*)&type);
 
     if     (type == MKTAG('v','i','d','e'))
         st->codec->codec_type = CODEC_TYPE_VIDEO;
