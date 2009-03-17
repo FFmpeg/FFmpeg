@@ -348,20 +348,20 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
                 }
 
-        /* Extract palette from extradata if bpp <= 8 */
-        /* This code assumes that extradata contains only palette */
-        /* This is true for all paletted codecs implemented in ffmpeg */
-        if (st->codec->extradata_size && (st->codec->bits_per_coded_sample <= 8)) {
-            st->codec->palctrl = av_mallocz(sizeof(AVPaletteControl));
+                /* Extract palette from extradata if bpp <= 8 */
+                /* This code assumes that extradata contains only palette */
+                /* This is true for all paletted codecs implemented in ffmpeg */
+                if (st->codec->extradata_size && (st->codec->bits_per_coded_sample <= 8)) {
+                    st->codec->palctrl = av_mallocz(sizeof(AVPaletteControl));
 #ifdef WORDS_BIGENDIAN
-            for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)
-                st->codec->palctrl->palette[i] = bswap_32(((uint32_t*)st->codec->extradata)[i]);
+                    for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)
+                        st->codec->palctrl->palette[i] = bswap_32(((uint32_t*)st->codec->extradata)[i]);
 #else
-            memcpy(st->codec->palctrl->palette, st->codec->extradata,
-                   FFMIN(st->codec->extradata_size, AVPALETTE_SIZE));
+                    memcpy(st->codec->palctrl->palette, st->codec->extradata,
+                           FFMIN(st->codec->extradata_size, AVPALETTE_SIZE));
 #endif
-            st->codec->palctrl->palette_changed = 1;
-        }
+                    st->codec->palctrl->palette_changed = 1;
+                }
 
                 st->codec->codec_tag = tag1;
                 st->codec->codec_id = codec_get_id(codec_bmp_tags, tag1);
@@ -398,21 +398,20 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 //                av_log(s, AV_LOG_ERROR, "flags: 0x%x stream id %d, bitrate %d\n", flags, stream_id, bitrate);
                 asf->stream_bitrates[stream_id]= bitrate;
             }
-       } else if (!memcmp(&g, &ff_asf_extended_content_header, sizeof(GUID))) {
-                int desc_count, i;
+        } else if (!memcmp(&g, &ff_asf_extended_content_header, sizeof(GUID))) {
+            int desc_count, i;
 
-                desc_count = get_le16(pb);
-                for(i=0;i<desc_count;i++)
-                {
-                        int name_len,value_type,value_len;
-                        char name[1024];
+            desc_count = get_le16(pb);
+            for(i=0;i<desc_count;i++) {
+                    int name_len,value_type,value_len;
+                    char name[1024];
 
-                        name_len = get_le16(pb);
-                        get_str16_nolen(pb, name_len, name, sizeof(name));
-                        value_type = get_le16(pb);
-                        value_len = get_le16(pb);
-                        get_tag(s, name, value_type, value_len);
-                }
+                    name_len = get_le16(pb);
+                    get_str16_nolen(pb, name_len, name, sizeof(name));
+                    value_type = get_le16(pb);
+                    value_len  = get_le16(pb);
+                    get_tag(s, name, value_type, value_len);
+            }
         } else if (!memcmp(&g, &ff_asf_metadata_header, sizeof(GUID))) {
             int n, stream_num, name_len, value_len, value_type, value_num;
             n = get_le16(pb);
