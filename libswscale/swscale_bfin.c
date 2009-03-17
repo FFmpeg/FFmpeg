@@ -37,16 +37,16 @@
 #define L1CODE
 #endif
 
-int ff_bfin_uyvytoyv12 (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-                        long width, long height,
-                        long lumStride, long chromStride, long srcStride) L1CODE;
+int ff_bfin_uyvytoyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+                       long width, long height,
+                       long lumStride, long chromStride, long srcStride) L1CODE;
 
-int ff_bfin_yuyvtoyv12 (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-                        long width, long height,
-                        long lumStride, long chromStride, long srcStride) L1CODE;
+int ff_bfin_yuyvtoyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+                       long width, long height,
+                       long lumStride, long chromStride, long srcStride) L1CODE;
 
-static int uyvytoyv12_unscaled (SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-                                int srcSliceH, uint8_t* dst[], int dstStride[])
+static int uyvytoyv12_unscaled(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                               int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     uint8_t *dsty = dst[0] + dstStride[0]*srcSliceY;
     uint8_t *dstu = dst[1] + dstStride[1]*srcSliceY/2;
@@ -54,13 +54,14 @@ static int uyvytoyv12_unscaled (SwsContext *c, uint8_t* src[], int srcStride[], 
     uint8_t *ip   = src[0] + srcStride[0]*srcSliceY;
     int w         = dstStride[0];
 
-    ff_bfin_uyvytoyv12 (ip, dsty, dstu, dstv, w, srcSliceH, dstStride[0], dstStride[1], srcStride[0]);
+    ff_bfin_uyvytoyv12(ip, dsty, dstu, dstv, w, srcSliceH,
+                       dstStride[0], dstStride[1], srcStride[0]);
 
     return srcSliceH;
 }
 
-static int yuyvtoyv12_unscaled (SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-                                int srcSliceH, uint8_t* dst[], int dstStride[])
+static int yuyvtoyv12_unscaled(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                               int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     uint8_t *dsty = dst[0] + dstStride[0]*srcSliceY;
     uint8_t *dstu = dst[1] + dstStride[1]*srcSliceY/2;
@@ -68,13 +69,14 @@ static int yuyvtoyv12_unscaled (SwsContext *c, uint8_t* src[], int srcStride[], 
     uint8_t *ip   = src[0] + srcStride[0]*srcSliceY;
     int w         = dstStride[0];
 
-    ff_bfin_yuyvtoyv12 (ip, dsty, dstu, dstv, w, srcSliceH, dstStride[0], dstStride[1], srcStride[0]);
+    ff_bfin_yuyvtoyv12(ip, dsty, dstu, dstv, w, srcSliceH,
+                       dstStride[0], dstStride[1], srcStride[0]);
 
     return srcSliceH;
 }
 
 
-void ff_bfin_get_unscaled_swscale (SwsContext *c)
+void ff_bfin_get_unscaled_swscale(SwsContext *c)
 {
     SwsFunc swScale = c->swScale;
     if (c->flags & SWS_CPU_CAPS_BFIN)
