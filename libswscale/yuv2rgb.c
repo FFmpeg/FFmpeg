@@ -460,7 +460,7 @@ SwsFunc sws_yuv2rgb_get_func_ptr(SwsContext *c)
 
 #if ARCH_BFIN
     if (c->flags & SWS_CPU_CAPS_BFIN)
-        t = sws_ff_bfin_yuv2rgb_get_func_ptr(c);
+        t = sws_yuv2rgb_get_func_ptr_bfin(c);
 #endif
 
     if (t)

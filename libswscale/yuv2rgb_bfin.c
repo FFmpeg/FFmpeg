@@ -181,7 +181,7 @@ static int bfin_yuv420_bgr565(SwsContext *c,
 }
 
 
-SwsFunc ff_bfin_yuv2rgb_get_func_ptr(SwsContext *c)
+SwsFunc sws_yuv2rgb_get_func_ptr_bfin(SwsContext *c)
 {
     SwsFunc f;
 
