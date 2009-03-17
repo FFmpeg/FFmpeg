@@ -953,6 +953,15 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
     }
 }
 
+static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, uint8_t val){
+    int i;
+    uint8_t *ptr = plane + stride*y;
+    for (i=0; i<height; i++){
+        memset(ptr, val, width);
+        ptr += stride;
+    }
+}
+
 //Note: we have C, X86, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
 //Plain C versions
 #if !HAVE_MMX || defined (RUNTIME_CPUDETECT) || !CONFIG_GPL
@@ -1934,14 +1943,8 @@ static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 
         if ((isGray(c->srcFormat) || isGray(c->dstFormat)) && plane>0)
         {
-            if (!isGray(c->dstFormat)){
-                int i;
-                uint8_t *ptr = dst[plane] + dstStride[plane]*y;
-                for (i=0; i<height; i++){
-                    memset(ptr, 128, length);
-                    ptr += dstStride[plane];
-                }
-            }
+            if (!isGray(c->dstFormat))
+                fillPlane(dst[plane], dstStride[plane], length, height, y, 128);
         }
         else
         {
