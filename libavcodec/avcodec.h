@@ -2340,6 +2340,18 @@ typedef struct AVCodecContext {
      * Set to time_base ticks per frame. Default 1, e.g., H.264/MPEG-2 set it to 2.
      */
     int ticks_per_frame;
+
+    /**
+     * Hardware accelerator context.
+     * For some hardware accelerators, a global context needs to be
+     * provided by the user. In that case, this holds display-dependent
+     * data FFmpeg cannot instantiate itself. Please refer to the
+     * FFmpeg HW accelerator documentation to know how to fill this
+     * is. e.g. for VA API, this is a struct vaapi_context.
+     * - encoding: unused
+     * - decoding: Set by user
+     */
+    void *hwaccel_context;
 } AVCodecContext;
 
 /**
