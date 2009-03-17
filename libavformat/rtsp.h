@@ -223,6 +223,12 @@ typedef struct RTSPState {
      * before sending a new "Subscribe:" command. */
     char last_subscription[1024];
     //@}
+
+    /** The following are used for RTP/ASF streams */
+    //@{
+    /** ASF demuxer context for the embedded ASF stream from WMS servers */
+    AVFormatContext *asf_ctx;
+    //@}
 } RTSPState;
 
 /**

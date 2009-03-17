@@ -36,6 +36,7 @@
 
 #include "rtpdec.h"
 #include "rdt.h"
+#include "rtp_asf.h"
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP
@@ -496,7 +497,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         } else if (av_strstart(p, "IsRealDataType:integer;",&p)) {
             if (atoi(p) == 1)
                 rt->transport = RTSP_TRANSPORT_RDT;
-        } else if (s->nb_streams > 0) {
+        } else {
+            if (rt->server_type == RTSP_SERVER_WMS)
+                ff_wms_parse_sdp_a_line(s, p);
+            if (s->nb_streams > 0) {
             if (rt->server_type == RTSP_SERVER_REAL)
                 ff_real_parse_sdp_a_line(s, s->nb_streams - 1, p);
 
@@ -505,6 +509,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 rtsp_st->dynamic_handler->parse_sdp_a_line)
                 rtsp_st->dynamic_handler->parse_sdp_a_line(s, s->nb_streams - 1,
                     rtsp_st->dynamic_protocol_context, buf);
+            }
         }
         break;
     }
@@ -853,6 +858,10 @@ static void rtsp_close_streams(RTSPState *rt)
         }
     }
     av_free(rt->rtsp_streams);
+    if (rt->asf_ctx) {
+        av_close_input_stream (rt->asf_ctx);
+        rt->asf_ctx = NULL;
+    }
 }
 
 static int
