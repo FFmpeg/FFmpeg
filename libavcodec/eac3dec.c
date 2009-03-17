@@ -20,6 +20,34 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/*
+ * There are several features of E-AC-3 that this decoder does not yet support.
+ *
+ * Spectral Extension
+ *     There is a patch to get this working for the two samples we have that
+ *     use it, but it needs some minor changes in order to be accepted.
+ *
+ * Enhanced Coupling
+ *     No known samples exist.  If any ever surface, this feature should not be
+ *     too difficult to implement.
+ *
+ * Reduced Sample Rates
+ *     No known samples exist.  The spec also does not give clear information
+ *     on how this is to be implemented.
+ *
+ * Dependent Streams
+ *     Only the independent stream is currently decoded. Any dependent
+ *     streams are skipped.  We have only come across two examples of this, and
+ *     they are both just test streams, one for HD-DVD and the other for
+ *     Blu-ray.
+ *
+ * Transient Pre-noise Processing
+ *     This is side information which a decoder should use to reduce artifacts
+ *     caused by transients.  There are samples which are known to have this
+ *     information, but this decoder currently ignores it.
+ */
+
+
 #include "avcodec.h"
 #include "internal.h"
 #include "aac_ac3_parser.h"
