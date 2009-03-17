@@ -1934,8 +1934,14 @@ static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 
         if ((isGray(c->srcFormat) || isGray(c->dstFormat)) && plane>0)
         {
-            if (!isGray(c->dstFormat))
-                memset(dst[plane], 128, dstStride[plane]*height);
+            if (!isGray(c->dstFormat)){
+                int i;
+                uint8_t *ptr = dst[plane] + dstStride[plane]*y;
+                for (i=0; i<height; i++){
+                    memset(ptr, 128, length);
+                    ptr += dstStride[plane];
+                }
+            }
         }
         else
         {
