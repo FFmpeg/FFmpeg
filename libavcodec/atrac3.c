@@ -230,7 +230,7 @@ static int decode_bytes(const uint8_t* inbuffer, uint8_t* out, int bytes){
     const uint32_t* buf;
     uint32_t* obuf = (uint32_t*) out;
 
-    off = (int)((long)inbuffer & 3);
+    off = (intptr_t)inbuffer & 3;
     buf = (const uint32_t*) (inbuffer - off);
     c = be2me_32((0x537F6103 >> (off*8)) | (0x537F6103 << (32-(off*8))));
     bytes += 3 + off;
