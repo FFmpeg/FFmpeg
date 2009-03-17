@@ -501,14 +501,14 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             if (rt->server_type == RTSP_SERVER_WMS)
                 ff_wms_parse_sdp_a_line(s, p);
             if (s->nb_streams > 0) {
-            if (rt->server_type == RTSP_SERVER_REAL)
-                ff_real_parse_sdp_a_line(s, s->nb_streams - 1, p);
+                if (rt->server_type == RTSP_SERVER_REAL)
+                    ff_real_parse_sdp_a_line(s, s->nb_streams - 1, p);
 
-            rtsp_st = s->streams[s->nb_streams - 1]->priv_data;
-            if (rtsp_st->dynamic_handler &&
-                rtsp_st->dynamic_handler->parse_sdp_a_line)
-                rtsp_st->dynamic_handler->parse_sdp_a_line(s, s->nb_streams - 1,
-                    rtsp_st->dynamic_protocol_context, buf);
+                rtsp_st = s->streams[s->nb_streams - 1]->priv_data;
+                if (rtsp_st->dynamic_handler &&
+                    rtsp_st->dynamic_handler->parse_sdp_a_line)
+                    rtsp_st->dynamic_handler->parse_sdp_a_line(s, s->nb_streams - 1,
+                        rtsp_st->dynamic_protocol_context, buf);
             }
         }
         break;
