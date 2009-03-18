@@ -426,7 +426,7 @@ YUV2RGBFUNC(yuv2rgb_c_1_ordered_dither, uint8_t, 0)
     dst_2[0]= out_2;
 CLOSEYUV2RGBFUNC(1)
 
-SwsFunc sws_yuv2rgb_get_func_ptr(SwsContext *c)
+SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
 {
     SwsFunc t = NULL;
 #if (HAVE_MMX2 || HAVE_MMX) && CONFIG_GPL
@@ -448,19 +448,19 @@ SwsFunc sws_yuv2rgb_get_func_ptr(SwsContext *c)
     }
 #endif
 #if HAVE_VIS
-    t = sws_yuv2rgb_init_vis(c);
+    t = ff_yuv2rgb_init_vis(c);
 #endif
 #if CONFIG_MLIB
-    t = sws_yuv2rgb_init_mlib(c);
+    t = ff_yuv2rgb_init_mlib(c);
 #endif
 #if HAVE_ALTIVEC && CONFIG_GPL
     if (c->flags & SWS_CPU_CAPS_ALTIVEC)
-        t = sws_yuv2rgb_init_altivec(c);
+        t = ff_yuv2rgb_init_altivec(c);
 #endif
 
 #if ARCH_BFIN
     if (c->flags & SWS_CPU_CAPS_BFIN)
-        t = sws_yuv2rgb_get_func_ptr_bfin(c);
+        t = ff_yuv2rgb_get_func_ptr_bfin(c);
 #endif
 
     if (t)
@@ -517,8 +517,8 @@ static void fill_gv_table(int table[256], const int elemsize, const int inc)
     }
 }
 
-av_cold int sws_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int fullRange,
-                                      int brightness, int contrast, int saturation)
+av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int fullRange,
+                                     int brightness, int contrast, int saturation)
 {
     const int isRgb =      c->dstFormat==PIX_FMT_RGB32
                         || c->dstFormat==PIX_FMT_RGB32_1

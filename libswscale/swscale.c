@@ -2142,12 +2142,12 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     c->yuv2rgb_u2g_coeff= (int16_t)roundToInt16(cgu<<13);
     c->yuv2rgb_u2b_coeff= (int16_t)roundToInt16(cbu<<13);
 
-    sws_yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness, contrast, saturation);
+    ff_yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness, contrast, saturation);
     //FIXME factorize
 
 #ifdef COMPILE_ALTIVEC
     if (c->flags & SWS_CPU_CAPS_ALTIVEC)
-        sws_yuv2rgb_altivec_init_tables (c, inv_table, brightness, contrast, saturation);
+        ff_yuv2rgb_init_tables_altivec(c, inv_table, brightness, contrast, saturation);
 #endif
     return 0;
 }
@@ -2344,7 +2344,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P || srcFormat==PIX_FMT_YUVA420P) && (isBGR(dstFormat) || isRGB(dstFormat))
             && !(flags & SWS_ACCURATE_RND) && !(dstH&1))
         {
-            c->swScale= sws_yuv2rgb_get_func_ptr(c);
+            c->swScale= ff_yuv2rgb_get_func_ptr(c);
         }
 
         if (srcFormat==PIX_FMT_YUV410P && dstFormat==PIX_FMT_YUV420P && !(flags & SWS_BITEXACT))

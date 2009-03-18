@@ -184,7 +184,7 @@ static int vis_422P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int s
   return srcSliceH;
 }
 
-SwsFunc sws_yuv2rgb_init_vis(SwsContext *c) {
+SwsFunc ff_yuv2rgb_init_vis(SwsContext *c){
     c->sparc_coeffs[5]=c->yCoeff;
     c->sparc_coeffs[6]=c->vgCoeff;
     c->sparc_coeffs[7]=c->vrCoeff;

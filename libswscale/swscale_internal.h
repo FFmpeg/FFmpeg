@@ -212,12 +212,12 @@ typedef struct SwsContext{
 } SwsContext;
 //FIXME check init (where 0)
 
-SwsFunc sws_yuv2rgb_get_func_ptr (SwsContext *c);
-int sws_yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange, int brightness, int contrast, int saturation);
+SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c);
+int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int fullRange, int brightness, int contrast, int saturation);
 
-void sws_yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4],int brightness,int contrast, int saturation);
-SwsFunc sws_yuv2rgb_init_altivec (SwsContext *c);
-void altivec_yuv2packedX (SwsContext *c,
+void ff_yuv2rgb_init_tables_altivec(SwsContext *c, const int inv_table[4], int brightness, int contrast, int saturation);
+SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c);
+void ff_yuv2packedX_altivec(SwsContext *c,
                           int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
                           int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
                           uint8_t *dest, int dstW, int dstY);
