@@ -642,6 +642,25 @@ performance on systems without hardware floating point support).
 @code{X} means that the protocol is supported.
 
 
+@section Input/Output Devices
+
+@multitable @columnfractions .4 .1 .1
+@item Name              @tab Input  @tab Output
+@item ALSA              @tab X      @tab X
+@item BEOS audio        @tab X      @tab X
+@item BKTR              @tab X      @tab
+@item DV1394            @tab X      @tab
+@item LIBDC1394         @tab X      @tab
+@item OSS               @tab X      @tab X
+@item Video4Linux       @tab X      @tab
+@item Video4Linux2      @tab X      @tab
+@item VfW capture       @tab X      @tab
+@item X11 grabbing      @tab X      @tab
+@end multitable
+
+@code{X} means that the protocol is supported.
+
+
 @chapter Platform Specific information
 
 @section BSD
