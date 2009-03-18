@@ -3394,18 +3394,13 @@ static void opt_output_file(const char *filename)
              filename[1] == ':' ||
              av_strstart(filename, "file:", NULL))) {
             if (url_exist(filename)) {
-                int c;
-
                 if (!using_stdin) {
                     fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
                     fflush(stderr);
-                    c = getchar();
-                    if (toupper(c) != 'Y') {
+                    if (!read_yesno()) {
                         fprintf(stderr, "Not overwriting - exiting\n");
                         av_exit(1);
                     }
-                    while (c != '\n' && c != EOF)
-                        c = getchar();
                 }
                 else {
                     fprintf(stderr,"File '%s' already exists. Exiting.\n", filename);
