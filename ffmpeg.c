@@ -3404,6 +3404,8 @@ static void opt_output_file(const char *filename)
                         fprintf(stderr, "Not overwriting - exiting\n");
                         av_exit(1);
                     }
+                    while (c != '\n' && c != EOF)
+                        c = getchar();
                 }
                 else {
                     fprintf(stderr,"File '%s' already exists. Exiting.\n", filename);
