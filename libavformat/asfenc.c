@@ -197,7 +197,7 @@ static const AVCodecTag codec_asf_bmp_tags[] = {
 
 #define PREROLL_TIME 3100
 
-static void put_guid(ByteIOContext *s, const GUID *g)
+static void put_guid(ByteIOContext *s, const ff_asf_guid *g)
 {
     assert(sizeof(*g) == 16);
     put_buffer(s, *g, sizeof(*g));
@@ -220,7 +220,7 @@ static void put_str16_nolen(ByteIOContext *s, const char *tag)
     }while(c);
 }
 
-static int64_t put_header(ByteIOContext *pb, const GUID *g)
+static int64_t put_header(ByteIOContext *pb, const ff_asf_guid *g)
 {
     int64_t pos;
 

@@ -34,11 +34,11 @@ void ff_mms_set_stream_selection(URLContext *h, AVFormatContext *format);
 #define FRAME_HEADER_SIZE 17
 // Fix Me! FRAME_HEADER_SIZE may be different.
 
-static const GUID index_guid = {
+static const ff_asf_guid index_guid = {
     0x90, 0x08, 0x00, 0x33, 0xb1, 0xe5, 0xcf, 0x11, 0x89, 0xf4, 0x00, 0xa0, 0xc9, 0x03, 0x49, 0xcb
 };
 
-static const GUID stream_bitrate_guid = { /* (http://get.to/sdp) */
+static const ff_asf_guid stream_bitrate_guid = { /* (http://get.to/sdp) */
     0xce, 0x75, 0xf8, 0x7b, 0x8d, 0x46, 0xd1, 0x11, 0x8d, 0x82, 0x00, 0x60, 0x97, 0xc9, 0xa2, 0xb2
 };
 /**********************************/
@@ -51,7 +51,7 @@ static const GUID stream_bitrate_guid = { /* (http://get.to/sdp) */
 if (!guidcmp(g, &cmp)) \
     dprintf(NULL, "(GUID: %s) ", #cmp)
 
-static void print_guid(const GUID *g)
+static void print_guid(const ff_asf_guid *g)
 {
     int i;
     PRINT_IF_GUID(g, ff_asf_header);
@@ -89,10 +89,10 @@ static void print_guid(const GUID *g)
 
 static int guidcmp(const void *g1, const void *g2)
 {
-    return memcmp(g1, g2, sizeof(GUID));
+    return memcmp(g1, g2, sizeof(ff_asf_guid));
 }
 
-static void get_guid(ByteIOContext *s, GUID *g)
+static void get_guid(ByteIOContext *s, ff_asf_guid *g)
 {
     assert(sizeof(*g) == 16);
     get_buffer(s, *g, sizeof(*g));
@@ -166,7 +166,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
 static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     ASFContext *asf = s->priv_data;
-    GUID g;
+    ff_asf_guid g;
     ByteIOContext *pb = s->pb;
     AVStream *st;
     ASFStream *asf_st;
@@ -984,7 +984,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
 
 static void asf_build_simple_index(AVFormatContext *s, int stream_index)
 {
-    GUID g;
+    ff_asf_guid g;
     ASFContext *asf = s->priv_data;
     int64_t gsize, itime;
     int64_t pos, current_pos, index_pts;
