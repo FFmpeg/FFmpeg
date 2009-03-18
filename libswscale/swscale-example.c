@@ -26,6 +26,7 @@
 
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/avutil.h"
+#include "libavutil/lfg.h"
 #include "swscale.h"
 #include "swscale_internal.h"
 
@@ -194,12 +195,15 @@ int main(int argc, char **argv){
     int stride[3]={W, W, W};
     int x, y;
     struct SwsContext *sws;
+    AVLFG rand;
 
     sws= sws_getContext(W/12, H/12, PIX_FMT_RGB32, W, H, PIX_FMT_YUV420P, 2, NULL, NULL, NULL);
 
+    av_lfg_init(&rand, 1);
+
     for (y=0; y<H; y++){
         for (x=0; x<W*4; x++){
-            rgb_data[ x + y*4*W]= random();
+            rgb_data[ x + y*4*W]= av_lfg_get(&rand);
         }
     }
     sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
