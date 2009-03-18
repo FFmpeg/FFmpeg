@@ -472,3 +472,14 @@ void show_formats(void)
 "decoder corresponds to the h263 and h263p encoders, for file formats it is even\n"
 "worse.\n");
 }
+
+int read_yesno(void)
+{
+    int c = getchar();
+    int yesno = (toupper(c) == 'Y');
+
+    while (c != '\n' && c != EOF)
+        c = getchar();
+
+    return yesno;
+}

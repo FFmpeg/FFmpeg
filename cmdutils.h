@@ -152,4 +152,10 @@ void show_license(void);
  */
 void show_formats(void);
 
+/**
+ * Returns a positive value if reads from standard input a line
+ * starting with [yY], otherwise returns 0.
+ */
+int read_yesno(void);
+
 #endif /* FFMPEG_CMDUTILS_H */
