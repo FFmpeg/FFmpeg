@@ -41,6 +41,7 @@ typedef struct AVComponentDescriptor{
  *       are stored not what these values represent.
  */
 typedef struct AVPixFmtDescriptor{
+    const char *name;
     uint8_t nb_channels;        ///< The number of components each pixel has, (1-4)
 
     /**
