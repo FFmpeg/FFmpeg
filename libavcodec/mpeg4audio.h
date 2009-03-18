@@ -84,7 +84,7 @@ enum AudioObjectType {
     AOT_ALS,                   ///< N                       Audio LosslesS
     AOT_SLS,                   ///< N                       Scalable LosslesS
     AOT_SLS_NON_CORE,          ///< N                       Scalable LosslesS (non core)
-    AOT_ER_AAC_LD,             ///< N                       Error Resilient Enhanced Low Delay
+    AOT_ER_AAC_ELD,            ///< N                       Error Resilient Enhanced Low Delay
     AOT_SMR_SIMPLE,            ///< N                       Symbolic Music Representation Simple
     AOT_SMR_MAIN,              ///< N                       Symbolic Music Representation Main
 };
