@@ -616,7 +616,7 @@ performance on systems without hardware floating point support).
 
 @section Subtitle Formats
 
-@multitable @columnfractions .4 .1 .1 .1 .1 .1
+@multitable @columnfractions .4 .1 .1 .1 .1
 @item Name @tab Muxing @tab Demuxing @tab Encoding @tab Decoding
 @item SSA/ASS      @tab X @tab X
 @item DVB          @tab X @tab X @tab X @tab X
@@ -628,7 +628,7 @@ performance on systems without hardware floating point support).
 
 @section Network Protocols
 
-@multitable @columnfractions .4 .1 .1 .1 .1 .1
+@multitable @columnfractions .4 .1
 @item Name         @tab Support
 @item file         @tab X
 @item Gopher       @tab X
