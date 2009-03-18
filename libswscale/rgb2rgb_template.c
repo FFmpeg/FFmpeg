@@ -1339,7 +1339,7 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
 
 static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long src_size)
 {
-    long idx = 15 - src_size;
+    x86_reg idx = 15 - src_size;
     const uint8_t *s = src-idx;
     uint8_t *d = dst-idx;
 #if HAVE_MMX
@@ -1405,7 +1405,7 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long s
 {
     unsigned i;
 #if HAVE_MMX
-    long mmx_size= 23 - src_size;
+    x86_reg mmx_size= 23 - src_size;
     __asm__ volatile (
     "test             %%"REG_a", %%"REG_a"          \n\t"
     "jns                     2f                     \n\t"
@@ -1476,7 +1476,7 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
                                            long lumStride, long chromStride, long dstStride, long vertLumPerChroma)
 {
     long y;
-    const long chromWidth= width>>1;
+    const x86_reg chromWidth= width>>1;
     for (y=0; y<height; y++)
     {
 #if HAVE_MMX
@@ -1628,7 +1628,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
                                            long lumStride, long chromStride, long dstStride, long vertLumPerChroma)
 {
     long y;
-    const long chromWidth= width>>1;
+    const x86_reg chromWidth= width>>1;
     for (y=0; y<height; y++)
     {
 #if HAVE_MMX
@@ -1758,7 +1758,7 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
                                       long lumStride, long chromStride, long srcStride)
 {
     long y;
-    const long chromWidth= width>>1;
+    const x86_reg chromWidth= width>>1;
     for (y=0; y<height; y+=2)
     {
 #if HAVE_MMX
@@ -1900,7 +1900,7 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
 
     for (y=1; y<srcHeight; y++){
 #if HAVE_MMX2 || HAVE_AMD3DNOW
-        const long mmxSize= srcWidth&~15;
+        const x86_reg mmxSize= srcWidth&~15;
         __asm__ volatile(
         "mov           %4, %%"REG_a"            \n\t"
         "1:                                     \n\t"
@@ -1944,7 +1944,7 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
 
         );
 #else
-        const long mmxSize=1;
+        const x86_reg mmxSize=1;
 #endif
         dst[0        ]= (3*src[0] +   src[srcStride])>>2;
         dst[dstStride]= (  src[0] + 3*src[srcStride])>>2;
@@ -1996,7 +1996,7 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
                                       long lumStride, long chromStride, long srcStride)
 {
     long y;
-    const long chromWidth= width>>1;
+    const x86_reg chromWidth= width>>1;
     for (y=0; y<height; y+=2)
     {
 #if HAVE_MMX
@@ -2123,7 +2123,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                                        long lumStride, long chromStride, long srcStride)
 {
     long y;
-    const long chromWidth= width>>1;
+    const x86_reg chromWidth= width>>1;
 #if HAVE_MMX
     for (y=0; y<height-2; y+=2)
     {
@@ -2196,7 +2196,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             MOVNTQ"                  %%mm0, (%1, %%"REG_a") \n\t"
             "add                        $8,      %%"REG_a"  \n\t"
             " js                        1b                  \n\t"
-            : : "r" (src+width*3), "r" (ydst+width), "g" (-width)
+            : : "r" (src+width*3), "r" (ydst+width), "g" ((x86_reg)-width)
             : "%"REG_a, "%"REG_d
             );
             ydst += lumStride;
@@ -2440,7 +2440,7 @@ static void RENAME(interleaveBytes)(uint8_t *src1, uint8_t *src2, uint8_t *dest,
         "add                    $16, %%"REG_a"  \n\t"
         "cmp                     %3, %%"REG_a"  \n\t"
         " jb                     1b             \n\t"
-        ::"r"(dest), "r"(src1), "r"(src2), "r" (width-15)
+        ::"r"(dest), "r"(src1), "r"(src2), "r" ((x86_reg)width-15)
         : "memory", "%"REG_a""
         );
 #else
@@ -2466,7 +2466,7 @@ static void RENAME(interleaveBytes)(uint8_t *src1, uint8_t *src2, uint8_t *dest,
         "add                    $16, %%"REG_a"  \n\t"
         "cmp                     %3, %%"REG_a"  \n\t"
         " jb                     1b             \n\t"
-        ::"r"(dest), "r"(src1), "r"(src2), "r" (width-15)
+        ::"r"(dest), "r"(src1), "r"(src2), "r" ((x86_reg)width-15)
         : "memory", "%"REG_a
         );
 #endif
@@ -2501,7 +2501,8 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
                                        long srcStride1, long srcStride2,
                                        long dstStride1, long dstStride2)
 {
-    long y,x,w,h;
+    x86_reg y;
+    long x,w,h;
     w=width/2; h=height/2;
 #if HAVE_MMX
     __asm__ volatile(
@@ -2604,7 +2605,8 @@ static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2
                                         long srcStride1, long srcStride2,
                                         long srcStride3, long dstStride)
 {
-    long y,x,w,h;
+    x86_reg x;
+    long y,w,h;
     w=width/2; h=height;
     for (y=0;y<h;y++){
     const uint8_t* yp=src1+srcStride1*y;

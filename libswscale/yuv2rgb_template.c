@@ -137,7 +137,7 @@
         uint8_t *py = src[0] + y*srcStride[0];                \
         uint8_t *pu = src[1] + (y>>1)*srcStride[1];           \
         uint8_t *pv = src[2] + (y>>1)*srcStride[2];           \
-        long index= -h_size/2;                                \
+        x86_reg index= -h_size/2;                                \
 
 #define YUV2RGB_INIT                                                       \
         /* This MMX assembly code deals with a SINGLE scan line at a time, \

@@ -961,7 +961,7 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, int16_t *lumSrc, int16_t *chr
         long p= uDest ? 3 : 1;
         uint8_t *src[3]= {lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
         uint8_t *dst[3]= {dest, uDest, vDest};
-        long counter[3] = {dstW, chrDstW, chrDstW};
+        x86_reg counter[3] = {dstW, chrDstW, chrDstW};
 
         if (c->flags & SWS_ACCURATE_RND){
             while(p--){
@@ -1024,7 +1024,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
                                        uint8_t *dest, long dstW, long dstY)
 {
 #if HAVE_MMX
-    long dummy=0;
+    x86_reg dummy=0;
     if(!(c->flags & SWS_BITEXACT)){
         if (c->flags & SWS_ACCURATE_RND){
             switch(c->dstFormat){
@@ -1515,7 +1515,7 @@ static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, long width, uint3
     "movq                %%mm0, (%2, %%"REG_a") \n\t"
     "add                    $8, %%"REG_a"       \n\t"
     " js                    1b                  \n\t"
-    : : "g" (-width), "r" (src+width*2), "r" (dst+width)
+    : : "g" ((x86_reg)-width), "r" (src+width*2), "r" (dst+width)
     : "%"REG_a
     );
 #else
@@ -1546,7 +1546,7 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
     "movd                %%mm1, (%2, %%"REG_a") \n\t"
     "add                    $4, %%"REG_a"       \n\t"
     " js                    1b                  \n\t"
-    : : "g" (-width), "r" (src1+width*4), "r" (dstU+width), "r" (dstV+width)
+    : : "g" ((x86_reg)-width), "r" (src1+width*4), "r" (dstU+width), "r" (dstV+width)
     : "%"REG_a
     );
 #else
@@ -1576,7 +1576,7 @@ static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width, uint3
     "movq              %%mm0, (%2, %%"REG_a")   \n\t"
     "add                  $8, %%"REG_a"         \n\t"
     " js                  1b                    \n\t"
-    : : "g" (-width), "r" (src+width*2), "r" (dst+width)
+    : : "g" ((x86_reg)-width), "r" (src+width*2), "r" (dst+width)
     : "%"REG_a
     );
 #else
@@ -1607,7 +1607,7 @@ static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
     "movd                %%mm1, (%2, %%"REG_a") \n\t"
     "add                    $4, %%"REG_a"       \n\t"
     " js                    1b                  \n\t"
-    : : "g" (-width), "r" (src1+width*4), "r" (dstU+width), "r" (dstV+width)
+    : : "g" ((x86_reg)-width), "r" (src1+width*4), "r" (dstU+width), "r" (dstV+width)
     : "%"REG_a
     );
 #else
@@ -1731,7 +1731,7 @@ static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, uint8_t *src, long width, 
         "add                        $4, %%"REG_a"   \n\t"
         " js                        1b              \n\t"
     : "+r" (src)
-    : "r" (dst+width), "g" (-width)
+    : "r" (dst+width), "g" ((x86_reg)-width)
     : "%"REG_a
     );
 }
@@ -1789,7 +1789,7 @@ static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, uint8_t *
         "add                        $4, %%"REG_a"   \n\t"
         " js                        1b              \n\t"
     : "+r" (src)
-    : "r" (dstU+width), "r" (dstV+width), "g" (-width), "m"(ff_bgr24toUV[srcFormat == PIX_FMT_RGB24][0])
+    : "r" (dstU+width), "r" (dstV+width), "g" ((x86_reg)-width), "m"(ff_bgr24toUV[srcFormat == PIX_FMT_RGB24][0])
     : "%"REG_a
     );
 }
@@ -1951,7 +1951,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
     assert(filterSize % 4 == 0 && filterSize>0);
     if (filterSize==4) // Always true for upscaling, sometimes for down, too.
     {
-        long counter= -2*dstW;
+        x86_reg counter= -2*dstW;
         filter-= counter*2;
         filterPos-= counter/2;
         dst-= counter/2;
@@ -1997,7 +1997,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
     }
     else if (filterSize==8)
     {
-        long counter= -2*dstW;
+        x86_reg counter= -2*dstW;
         filter-= counter*4;
         filterPos-= counter/2;
         dst-= counter/2;
@@ -2055,7 +2055,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
     else
     {
         uint8_t *offset = src+filterSize;
-        long counter= -2*dstW;
+        x86_reg counter= -2*dstW;
         //filter-= counter*filterSize/2;
         filterPos-= counter/2;
         dst-= counter/2;
@@ -2098,7 +2098,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 
         : "+r" (counter), "+r" (filter)
         : "m" (filterPos), "m" (dst), "m"(offset),
-          "m" (src), "r" (filterSize*2)
+          "m" (src), "r" ((x86_reg)filterSize*2)
         : "%"REG_a, "%"REG_c, "%"REG_d
         );
     }
@@ -2289,7 +2289,7 @@ FUNNY_Y_CODE
         else
         {
 #endif /* HAVE_MMX2 */
-        long xInc_shr16 = xInc >> 16;
+        x86_reg xInc_shr16 = xInc >> 16;
         uint16_t xInc_mask = xInc & 0xffff;
         //NO MMX just normal asm ...
         __asm__ volatile(
@@ -2575,7 +2575,7 @@ FUNNY_UV_CODE
         else
         {
 #endif /* HAVE_MMX2 */
-            long xInc_shr16 = (long) (xInc >> 16);
+            x86_reg xInc_shr16 = (x86_reg) (xInc >> 16);
             uint16_t xInc_mask = xInc & 0xffff;
             __asm__ volatile(
             "xor %%"REG_a", %%"REG_a"               \n\t" // i
@@ -2613,7 +2613,7 @@ FUNNY_UV_CODE
 /* GCC 3.3 makes MPlayer crash on IA-32 machines when using "g" operand here,
    which is needed to support GCC 4.0. */
 #if ARCH_X86_64 && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
-            :: "m" (src1), "m" (dst), "g" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+            :: "m" (src1), "m" (dst), "g" ((x86_reg)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 #else
             :: "m" (src1), "m" (dst), "m" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 #endif

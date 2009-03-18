@@ -33,6 +33,7 @@
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
+#include "libavutil/x86_cpu.h"
 
 #define DITHER1XBPP // only for MMX
 

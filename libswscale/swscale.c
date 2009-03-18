@@ -1466,13 +1466,13 @@ error:
 static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *filter, int32_t *filterPos, int numSplits)
 {
     uint8_t *fragmentA;
-    long imm8OfPShufW1A;
-    long imm8OfPShufW2A;
-    long fragmentLengthA;
+    x86_reg imm8OfPShufW1A;
+    x86_reg imm8OfPShufW2A;
+    x86_reg fragmentLengthA;
     uint8_t *fragmentB;
-    long imm8OfPShufW1B;
-    long imm8OfPShufW2B;
-    long fragmentLengthB;
+    x86_reg imm8OfPShufW1B;
+    x86_reg imm8OfPShufW2B;
+    x86_reg fragmentLengthB;
     int fragmentPos;
 
     int xpos, i;
