@@ -74,6 +74,19 @@ enum AudioObjectType {
     AOT_ER_HILN,               ///< N                       Error Resilient Harmonic and Individual Lines plus Noise
     AOT_ER_PARAM,              ///< N                       Error Resilient Parametric
     AOT_SSC,                   ///< N                       SinuSoidal Coding
+    AOT_PS,                    ///< N                       Parametric Stereo
+    AOT_SURROUND,              ///< N                       MPEG Surround
+    AOT_ESCAPE,                ///< N                       Escape Value
+    AOT_L1,                    ///< Y                       Layer 1
+    AOT_L2,                    ///< Y                       Layer 2
+    AOT_L3,                    ///< Y                       Layer 3
+    AOT_DST,                   ///< N                       Direct Stream Transfer
+    AOT_ALS,                   ///< N                       Audio LosslesS
+    AOT_SLS,                   ///< N                       Scalable LosslesS
+    AOT_SLS_NON_CORE,          ///< N                       Scalable LosslesS (non core)
+    AOT_ER_AAC_LD,             ///< N                       Error Resilient Enhanced Low Delay
+    AOT_SMR_SIMPLE,            ///< N                       Symbolic Music Representation Simple
+    AOT_SMR_MAIN,              ///< N                       Symbolic Music Representation Main
 };
 
 #endif /* AVCODEC_MPEG4AUDIO_H */
