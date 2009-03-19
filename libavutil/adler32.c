@@ -58,7 +58,7 @@ volatile int checksum;
 int main(void){
     int i;
     char data[LEN];
-    av_log_level = AV_LOG_DEBUG;
+    av_log_set_level(AV_LOG_DEBUG);
     for(i=0; i<LEN; i++)
         data[i]= ((i*i)>>3) + 123*i;
     for(i=0; i<1000; i++){
