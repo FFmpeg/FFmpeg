@@ -260,7 +260,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     avi->fsize = url_fsize(pb);
     if(avi->fsize<=0)
-        avi->fsize= avi->riff_end;
+        avi->fsize= avi->riff_end == 8 ? INT64_MAX : avi->riff_end;
 
     /* first list tag */
     stream_index = -1;
