@@ -87,6 +87,19 @@ void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint8_t *sr
                      long width, long height,
                      long srcStride1, long srcStride2,
                      long srcStride3, long dstStride);
+void (*uyvytoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
+                                      long width, long height,
+                                      long lumStride, long chromStride, long srcStride);
+void (*uyvytoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
+                                      long width, long height,
+                                      long lumStride, long chromStride, long srcStride);
+void (*yuyvtoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
+                                      long width, long height,
+                                      long lumStride, long chromStride, long srcStride);
+void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
+                                      long width, long height,
+                                      long lumStride, long chromStride, long srcStride);
+
 
 #if ARCH_X86 && CONFIG_GPL
 DECLARE_ASM_CONST(8, uint64_t, mmx_null)     = 0x0000000000000000ULL;

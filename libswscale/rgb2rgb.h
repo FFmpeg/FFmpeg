@@ -142,6 +142,20 @@ extern void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint
                             long srcStride1, long srcStride2,
                             long srcStride3, long dstStride);
 
+
+extern void (*uyvytoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
+                                      long width, long height,
+                                      long lumStride, long chromStride, long srcStride);
+extern void (*uyvytoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
+                                      long width, long height,
+                                      long lumStride, long chromStride, long srcStride);
+extern void (*yuyvtoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
+                                      long width, long height,
+                                      long lumStride, long chromStride, long srcStride);
+extern void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
+                                      long width, long height,
+                                      long lumStride, long chromStride, long srcStride);
+
 void sws_rgb2rgb_init(int flags);
 
 #endif /* SWSCALE_RGB2RGB_H */

@@ -1745,6 +1745,50 @@ static int YUV422PToUyvyWrapper(SwsContext *c, uint8_t* src[], int srcStride[], 
     return srcSliceH;
 }
 
+static int YUYV2YUV420Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                               int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+    uint8_t *ydst=dstParam[0] + dstStride[0]*srcSliceY;
+    uint8_t *udst=dstParam[1] + dstStride[1]*srcSliceY/2;
+    uint8_t *vdst=dstParam[2] + dstStride[2]*srcSliceY/2;
+
+    yuyvtoyuv420(ydst, udst, vdst, src[0], c->srcW, srcSliceH, dstStride[0], dstStride[1], srcStride[0]);
+
+    return srcSliceH;
+}
+
+static int YUYV2YUV422Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                               int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+    uint8_t *ydst=dstParam[0] + dstStride[0]*srcSliceY;
+    uint8_t *udst=dstParam[1] + dstStride[1]*srcSliceY/2;
+    uint8_t *vdst=dstParam[2] + dstStride[2]*srcSliceY/2;
+
+    yuyvtoyuv422(ydst, udst, vdst, src[0], c->srcW, srcSliceH, dstStride[0], dstStride[1], srcStride[0]);
+
+    return srcSliceH;
+}
+
+static int UYVY2YUV420Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                               int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+    uint8_t *ydst=dstParam[0] + dstStride[0]*srcSliceY;
+    uint8_t *udst=dstParam[1] + dstStride[1]*srcSliceY/2;
+    uint8_t *vdst=dstParam[2] + dstStride[2]*srcSliceY/2;
+
+    uyvytoyuv420(ydst, udst, vdst, src[0], c->srcW, srcSliceH, dstStride[0], dstStride[1], srcStride[0]);
+
+    return srcSliceH;
+}
+
+static int UYVY2YUV422Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                               int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+    uint8_t *ydst=dstParam[0] + dstStride[0]*srcSliceY;
+    uint8_t *udst=dstParam[1] + dstStride[1]*srcSliceY/2;
+    uint8_t *vdst=dstParam[2] + dstStride[2]*srcSliceY/2;
+
+    uyvytoyuv422(ydst, udst, vdst, src[0], c->srcW, srcSliceH, dstStride[0], dstStride[1], srcStride[0]);
+
+    return srcSliceH;
+}
+
 static int pal2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                           int srcSliceH, uint8_t* dst[], int dstStride[]){
     const enum PixelFormat srcFormat= c->srcFormat;
@@ -2399,7 +2443,16 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
                 else if (dstFormat == PIX_FMT_UYVY422)
                     c->swScale= PlanarToUyvyWrapper;
             }
+
+            if(srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV420P)
+                c->swScale= YUYV2YUV420Wrapper;
+            if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV420P)
+                c->swScale= UYVY2YUV420Wrapper;
         }
+        if(srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV422P)
+            c->swScale= YUYV2YUV422Wrapper;
+        if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV422P)
+            c->swScale= UYVY2YUV422Wrapper;
 
 #ifdef COMPILE_ALTIVEC
         if ((c->flags & SWS_CPU_CAPS_ALTIVEC) &&
