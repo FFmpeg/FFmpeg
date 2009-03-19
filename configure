@@ -910,6 +910,7 @@ HAVE_LIST="
     termios_h
     threads
     truncf
+    VirtualAlloc
     winsock2_h
     yasm
 "
@@ -1944,6 +1945,7 @@ check_func  mkstemp
 check_func  posix_memalign
 check_func_headers io.h setmode
 check_func_headers windows.h GetProcessTimes
+check_func_headers windows.h VirtualAlloc
 
 check_header conio.h
 check_header dlfcn.h
