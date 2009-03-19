@@ -68,6 +68,10 @@ untested special converters
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 #endif
+#if HAVE_VIRTUALALLOC
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "rgb2rgb.h"
@@ -2566,6 +2570,9 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 #ifdef MAP_ANONYMOUS
             c->funnyYCode  = mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
             c->funnyUVCode = mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+#elif HAVE_VIRTUALALLOC
+            c->funnyYCode  = VirtualAlloc(NULL, MAX_FUNNY_CODE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+            c->funnyUVCode = VirtualAlloc(NULL, MAX_FUNNY_CODE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 #else
             c->funnyYCode  = av_malloc(MAX_FUNNY_CODE_SIZE);
             c->funnyUVCode = av_malloc(MAX_FUNNY_CODE_SIZE);
@@ -3214,6 +3221,9 @@ void sws_freeContext(SwsContext *c){
 #ifdef MAP_ANONYMOUS
     if (c->funnyYCode ) munmap(c->funnyYCode , MAX_FUNNY_CODE_SIZE);
     if (c->funnyUVCode) munmap(c->funnyUVCode, MAX_FUNNY_CODE_SIZE);
+#elif HAVE_VIRTUALALLOC
+    if (c->funnyYCode ) VirtualFree(c->funnyYCode , MAX_FUNNY_CODE_SIZE, MEM_RELEASE);
+    if (c->funnyUVCode) VirtualFree(c->funnyUVCode, MAX_FUNNY_CODE_SIZE, MEM_RELEASE);
 #else
     av_free(c->funnyYCode );
     av_free(c->funnyUVCode);
