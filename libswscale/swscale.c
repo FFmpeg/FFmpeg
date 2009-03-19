@@ -1759,8 +1759,8 @@ static int YUYV2YUV420Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], in
 static int YUYV2YUV422Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dstParam[], int dstStride[]){
     uint8_t *ydst=dstParam[0] + dstStride[0]*srcSliceY;
-    uint8_t *udst=dstParam[1] + dstStride[1]*srcSliceY/2;
-    uint8_t *vdst=dstParam[2] + dstStride[2]*srcSliceY/2;
+    uint8_t *udst=dstParam[1] + dstStride[1]*srcSliceY;
+    uint8_t *vdst=dstParam[2] + dstStride[2]*srcSliceY;
 
     yuyvtoyuv422(ydst, udst, vdst, src[0], c->srcW, srcSliceH, dstStride[0], dstStride[1], srcStride[0]);
 
@@ -1781,8 +1781,8 @@ static int UYVY2YUV420Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], in
 static int UYVY2YUV422Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dstParam[], int dstStride[]){
     uint8_t *ydst=dstParam[0] + dstStride[0]*srcSliceY;
-    uint8_t *udst=dstParam[1] + dstStride[1]*srcSliceY/2;
-    uint8_t *vdst=dstParam[2] + dstStride[2]*srcSliceY/2;
+    uint8_t *udst=dstParam[1] + dstStride[1]*srcSliceY;
+    uint8_t *vdst=dstParam[2] + dstStride[2]*srcSliceY;
 
     uyvytoyuv422(ydst, udst, vdst, src[0], c->srcW, srcSliceH, dstStride[0], dstStride[1], srcStride[0]);
 
