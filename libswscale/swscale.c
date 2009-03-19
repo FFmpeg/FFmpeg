@@ -2564,10 +2564,10 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         if (c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR))
         {
 #ifdef MAP_ANONYMOUS
-            c->funnyYCode = (uint8_t*)mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-            c->funnyUVCode = (uint8_t*)mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+            c->funnyYCode  = mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+            c->funnyUVCode = mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 #else
-            c->funnyYCode = av_malloc(MAX_FUNNY_CODE_SIZE);
+            c->funnyYCode  = av_malloc(MAX_FUNNY_CODE_SIZE);
             c->funnyUVCode = av_malloc(MAX_FUNNY_CODE_SIZE);
 #endif
 
@@ -3212,10 +3212,10 @@ void sws_freeContext(SwsContext *c){
 
 #if ARCH_X86 && CONFIG_GPL
 #ifdef MAP_ANONYMOUS
-    if (c->funnyYCode) munmap(c->funnyYCode, MAX_FUNNY_CODE_SIZE);
+    if (c->funnyYCode ) munmap(c->funnyYCode , MAX_FUNNY_CODE_SIZE);
     if (c->funnyUVCode) munmap(c->funnyUVCode, MAX_FUNNY_CODE_SIZE);
 #else
-    av_free(c->funnyYCode);
+    av_free(c->funnyYCode );
     av_free(c->funnyUVCode);
 #endif
     c->funnyYCode=NULL;
