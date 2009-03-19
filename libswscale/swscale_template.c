@@ -2613,9 +2613,9 @@ FUNNY_UV_CODE
 /* GCC 3.3 makes MPlayer crash on IA-32 machines when using "g" operand here,
    which is needed to support GCC 4.0. */
 #if ARCH_X86_64 && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
-            :: "m" (src1), "m" (dst), "g" ((x86_reg)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+            :: "m" (src1), "m" (dst), "g" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 #else
-            :: "m" (src1), "m" (dst), "m" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+            :: "m" (src1), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 #endif
             "r" (src2)
             : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
