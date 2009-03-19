@@ -2137,8 +2137,11 @@ int av_find_stream_info(AVFormatContext *ic)
         read_size += pkt->size;
 
         st = ic->streams[pkt->stream_index];
-        if(codec_info_nb_frames[st->index]>1)
+        if(codec_info_nb_frames[st->index]>1) {
+            if (st->time_base.den > 0 && av_rescale_q(codec_info_duration[st->index], st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration)
+                break;
             codec_info_duration[st->index] += pkt->duration;
+        }
         if (pkt->duration != 0)
             codec_info_nb_frames[st->index]++;
 
@@ -2199,9 +2202,6 @@ int av_find_stream_info(AVFormatContext *ic)
              (st->codec->codec_id == CODEC_ID_MPEG4 && !st->need_parsing))*/)
             try_decode_frame(st, pkt->data, pkt->size);
 
-        if (st->time_base.den > 0 && av_rescale_q(codec_info_duration[st->index], st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration) {
-            break;
-        }
         count++;
     }
 
