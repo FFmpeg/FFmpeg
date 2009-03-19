@@ -258,24 +258,24 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         do {
             // NOTE: do not align linesizes individually, this breaks e.g. assumptions
             // that linesize[0] == 2*linesize[1] in the MPEG-encoder for 4:2:2
-        ff_fill_linesize(&picture, s->pix_fmt, w);
+            ff_fill_linesize(&picture, s->pix_fmt, w);
             // increase alignment of w for next try (rhs gives the lowest bit set in w)
             w += w & ~(w-1);
 
             unaligned = 0;
-        for (i=0; i<4; i++){
+            for (i=0; i<4; i++){
 //STRIDE_ALIGN is 8 for SSE* but this does not work for SVQ1 chroma planes
 //we could change STRIDE_ALIGN to 16 for x86/sse but it would increase the
 //picture size unneccessarily in some cases. The solution here is not
 //pretty and better ideas are welcome!
 #if HAVE_MMX
-            if(s->codec_id == CODEC_ID_SVQ1)
-                stride_align[i]= 16;
-            else
+                if(s->codec_id == CODEC_ID_SVQ1)
+                    stride_align[i]= 16;
+                else
 #endif
-            stride_align[i] = STRIDE_ALIGN;
+                stride_align[i] = STRIDE_ALIGN;
                 unaligned |= picture.linesize[i] % stride_align[i];
-        }
+            }
         } while (unaligned);
 
         tmpsize = ff_fill_pointer(&picture, NULL, s->pix_fmt, h);
