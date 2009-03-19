@@ -1038,6 +1038,7 @@ error:
     return -1;
 }
 
+#if CONFIG_MLP_DECODER
 AVCodec mlp_decoder = {
     "mlp",
     CODEC_TYPE_AUDIO,
@@ -1047,6 +1048,20 @@ AVCodec mlp_decoder = {
     NULL,
     NULL,
     read_access_unit,
-    .long_name = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)/TrueHD"),
+    .long_name = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
 };
+#endif /* CONFIG_MLP_DECODER */
 
+#if CONFIG_TRUEHD_DECODER
+AVCodec truehd_decoder = {
+    "truehd",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_TRUEHD,
+    sizeof(MLPDecodeContext),
+    mlp_decode_init,
+    NULL,
+    NULL,
+    read_access_unit,
+    .long_name = NULL_IF_CONFIG_SMALL("TrueHD"),
+};
+#endif /* CONFIG_TRUEHD_DECODER */

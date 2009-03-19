@@ -487,7 +487,7 @@ static int mpegps_read_packet(AVFormatContext *s,
         codec_id = CODEC_ID_PCM_DVD;
     } else if (startcode >= 0xb0 && startcode <= 0xbf) {
         type = CODEC_TYPE_AUDIO;
-        codec_id = CODEC_ID_MLP;
+        codec_id = CODEC_ID_TRUEHD;
     } else if (startcode >= 0xc0 && startcode <= 0xcf) {
         /* Used for both AC-3 and E-AC-3 in EVOB files */
         type = CODEC_TYPE_AUDIO;
