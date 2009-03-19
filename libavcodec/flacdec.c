@@ -46,9 +46,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-#define MAX_CHANNELS 8
-#define MAX_BLOCKSIZE 65535
-
 enum decorrelation_type {
     INDEPENDENT,
     LEFT_SIDE,
@@ -69,7 +66,7 @@ typedef struct FLACContext {
     enum decorrelation_type decorrelation;  ///< channel decorrelation type in the current frame
     int got_streaminfo;                     ///< indicates if the STREAMINFO has been read
 
-    int32_t *decoded[MAX_CHANNELS];         ///< decoded samples
+    int32_t *decoded[FLAC_MAX_CHANNELS];    ///< decoded samples
     uint8_t *bitstream;
     unsigned int bitstream_size;
     unsigned int bitstream_index;
@@ -190,7 +187,7 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
 
     skip_bits(&gb, 16); /* skip min blocksize */
     s->max_blocksize = get_bits(&gb, 16);
-    if (s->max_blocksize < 16) {
+    if (s->max_blocksize < FLAC_MIN_BLOCKSIZE) {
         av_log(avctx, AV_LOG_WARNING, "invalid max blocksize: %d\n",
                s->max_blocksize);
         s->max_blocksize = 16;
@@ -510,9 +507,9 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     sample_rate_code = get_bits(&s->gb, 4);
 
     assignment = get_bits(&s->gb, 4); /* channel assignment */
-    if (assignment < 8 && s->channels == assignment+1)
+    if (assignment < FLAC_MAX_CHANNELS && s->channels == assignment+1)
         decorrelation = INDEPENDENT;
-    else if (assignment >=8 && assignment < 11 && s->channels == 2)
+    else if (assignment >= FLAC_MAX_CHANNELS && assignment < 11 && s->channels == 2)
         decorrelation = LEFT_SIDE + assignment - 8;
     else {
         av_log(s->avctx, AV_LOG_ERROR, "unsupported channel assignment %d (channels=%d)\n",

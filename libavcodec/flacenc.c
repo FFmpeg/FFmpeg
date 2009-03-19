@@ -27,10 +27,7 @@
 #include "dsputil.h"
 #include "golomb.h"
 #include "lpc.h"
-
-#define FLAC_MAX_CH  8
-#define FLAC_MIN_BLOCKSIZE  16
-#define FLAC_MAX_BLOCKSIZE  65535
+#include "flac.h"
 
 #define FLAC_SUBFRAME_CONSTANT  0
 #define FLAC_SUBFRAME_VERBATIM  1
@@ -42,8 +39,6 @@
 #define FLAC_CHMODE_LEFT_SIDE       8
 #define FLAC_CHMODE_RIGHT_SIDE      9
 #define FLAC_CHMODE_MID_SIDE       10
-
-#define FLAC_STREAMINFO_SIZE  34
 
 #define MAX_FIXED_ORDER     4
 #define MAX_PARTITION_ORDER 8
@@ -82,7 +77,7 @@ typedef struct FlacSubframe {
 } FlacSubframe;
 
 typedef struct FlacFrame {
-    FlacSubframe subframes[FLAC_MAX_CH];
+    FlacSubframe subframes[FLAC_MAX_CHANNELS];
     int blocksize;
     int bs_code[2];
     uint8_t crc8;
@@ -185,7 +180,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if(channels < 1 || channels > FLAC_MAX_CH) {
+    if(channels < 1 || channels > FLAC_MAX_CHANNELS) {
         return -1;
     }
     s->channels = channels;
