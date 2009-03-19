@@ -319,7 +319,7 @@ void dct_error(const char *name, int is_idct,
 #if 1 // dump systematic errors
     for(i=0; i<64; i++){
         if(i%8==0) printf("\n");
-        printf("%5d ", (int)sysErr[i]);
+        printf("%7d ", (int)sysErr[i]);
     }
     printf("\n");
 #endif
