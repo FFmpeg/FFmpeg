@@ -2536,9 +2536,13 @@ static void list_fmts(void (*get_fmt_string)(char *buf, int buf_size, int fmt), 
 
 static void opt_frame_pix_fmt(const char *arg)
 {
-    if (strcmp(arg, "list"))
+    if (strcmp(arg, "list")) {
         frame_pix_fmt = avcodec_get_pix_fmt(arg);
-    else {
+        if (frame_pix_fmt == PIX_FMT_NONE) {
+            fprintf(stderr, "Unknown pixel format requested: %s\n", arg);
+            av_exit(1);
+        }
+    } else {
         list_fmts(avcodec_pix_fmt_string, PIX_FMT_NB);
         av_exit(0);
     }
