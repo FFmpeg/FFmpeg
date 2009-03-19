@@ -969,6 +969,35 @@ AVInputFormat mlp_demuxer = {
 };
 #endif
 
+#if CONFIG_TRUEHD_DEMUXER
+AVInputFormat truehd_demuxer = {
+    "truehd",
+    NULL_IF_CONFIG_SMALL("raw TrueHD"),
+    0,
+    NULL,
+    audio_read_header,
+    ff_raw_read_partial_packet,
+    .flags= AVFMT_GENERIC_INDEX,
+    .extensions = "thd",
+    .value = CODEC_ID_TRUEHD,
+};
+#endif
+
+#if CONFIG_TRUEHD_MUXER
+AVOutputFormat truehd_muxer = {
+    "truehd",
+    NULL_IF_CONFIG_SMALL("raw TrueHD"),
+    NULL,
+    "thd",
+    0,
+    CODEC_ID_TRUEHD,
+    CODEC_ID_NONE,
+    NULL,
+    raw_write_packet,
+    .flags= AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_MPEG1VIDEO_MUXER
 AVOutputFormat mpeg1video_muxer = {
     "mpeg1video",

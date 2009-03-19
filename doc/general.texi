@@ -162,6 +162,7 @@ library:
 @item raw video                 @tab X @tab X
 @item raw id RoQ                @tab X @tab
 @item raw Shorten               @tab   @tab X
+@item raw TrueHD                @tab X @tab X
 @item raw VC-1                  @tab   @tab X
 @item raw PCM A-law             @tab X @tab X
 @item raw PCM mu-law            @tab X @tab X
