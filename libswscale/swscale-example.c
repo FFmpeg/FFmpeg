@@ -57,7 +57,8 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
     int srcStride[3], dstStride[3];
     int i;
     uint64_t ssdY, ssdU, ssdV;
-    struct SwsContext *srcContext, *dstContext, *outContext;
+    struct SwsContext *srcContext = NULL, *dstContext = NULL,
+                      *outContext = NULL;
     int res;
 
     res = 0;
@@ -84,7 +85,6 @@ static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat
         }
     }
 
-    dstContext = outContext = NULL;
     srcContext= sws_getContext(w, h, PIX_FMT_YUV420P, srcW, srcH, srcFormat, flags, NULL, NULL, NULL);
     if (!srcContext) {
         fprintf(stderr, "Failed to get %s ---> %s\n",
