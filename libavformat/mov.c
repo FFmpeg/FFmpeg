@@ -380,11 +380,11 @@ static int mp4_read_descr(MOVContext *c, ByteIOContext *pb, int *tag)
 #define MP4DecSpecificDescrTag          0x05
 
 static const AVCodecTag mp4_audio_types[] = {
-    { CODEC_ID_MP3ON4, 29 }, /* old mp3on4 draft */
-    { CODEC_ID_MP3ON4, 32 }, /* layer 1 */
-    { CODEC_ID_MP3ON4, 33 }, /* layer 2 */
-    { CODEC_ID_MP3ON4, 34 }, /* layer 3 */
-    { CODEC_ID_NONE,    0 },
+    { CODEC_ID_MP3ON4, AOT_PS   }, /* old mp3on4 draft */
+    { CODEC_ID_MP3ON4, AOT_L1   }, /* layer 1 */
+    { CODEC_ID_MP3ON4, AOT_L2   }, /* layer 2 */
+    { CODEC_ID_MP3ON4, AOT_L3   }, /* layer 3 */
+    { CODEC_ID_NONE,   AOT_NULL },
 };
 
 static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
