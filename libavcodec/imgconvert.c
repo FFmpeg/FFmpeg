@@ -614,7 +614,6 @@ int ff_fill_linesize(AVPicture *picture, int pix_fmt, int width)
     case PIX_FMT_BGR4_BYTE:
     case PIX_FMT_GRAY8:
         picture->linesize[0] = width;
-        picture->linesize[1] = 4;
         break;
     default:
         return -1;
