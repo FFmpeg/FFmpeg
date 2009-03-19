@@ -658,7 +658,7 @@ performance on systems without hardware floating point support).
 @item X11 grabbing      @tab X      @tab
 @end multitable
 
-@code{X} means that the protocol is supported.
+@code{X} means that input/output is supported.
 
 
 @chapter Platform Specific information
