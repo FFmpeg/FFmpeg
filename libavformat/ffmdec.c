@@ -87,13 +87,26 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
         return AVERROR(EAGAIN);
 }
 
+static int ffm_resync(AVFormatContext *s, int state)
+{
+    av_log(s, AV_LOG_ERROR, "resyncing\n");
+    while (state != PACKET_ID) {
+        if (url_feof(s->pb)) {
+            av_log(s, AV_LOG_ERROR, "cannot find FFM syncword\n");
+            return -1;
+        }
+        state = (state << 8) | get_byte(s->pb);
+    }
+    return 0;
+}
+
 /* first is true if we read the frame header */
 static int ffm_read_data(AVFormatContext *s,
                          uint8_t *buf, int size, int header)
 {
     FFMContext *ffm = s->priv_data;
     ByteIOContext *pb = s->pb;
-    int len, fill_size, size1, frame_offset;
+    int len, fill_size, size1, frame_offset, id;
 
     size1 = size;
     while (size > 0) {
@@ -107,7 +120,10 @@ static int ffm_read_data(AVFormatContext *s,
             if (url_ftell(pb) == ffm->file_size)
                 url_fseek(pb, ffm->packet_size, SEEK_SET);
     retry_read:
-            get_be16(pb); /* PACKET_ID */
+            id = get_be16(pb); /* PACKET_ID */
+            if (id != PACKET_ID)
+                if (ffm_resync(s, id) < 0)
+                    return -1;
             fill_size = get_be16(pb);
             ffm->dts = get_be64(pb);
             frame_offset = get_be16(pb);
