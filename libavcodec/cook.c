@@ -46,7 +46,8 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "libavutil/random.h"
+#include "libavutil/lfg.h"
+#include "libavutil/random_seed.h"
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
@@ -110,7 +111,7 @@ typedef struct cook {
     int                 bits_per_subpacket;
     int                 cookversion;
     /* states */
-    AVRandomState       random_state;
+    AVLFG               random_state;
 
     /* transform data */
     MDCTContext         mdct_ctx;
@@ -541,7 +542,7 @@ static void scalar_dequant_float(COOKContext *q, int index, int quant_index,
         } else {
             /* noise coding if subband_coef_index[i] == 0 */
             f1 = dither_tab[index];
-            if (av_random(&q->random_state) < 0x80000000) f1 = -f1;
+            if (av_lfg_get(&q->random_state) < 0x80000000) f1 = -f1;
         }
         mlt_p[i] = f1 * rootpow2tab[quant_index+63];
     }
@@ -1066,7 +1067,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     q->bit_rate = avctx->bit_rate;
 
     /* Initialize RNG. */
-    av_random_init(&q->random_state, 1);
+    av_lfg_init(&q->random_state, ff_random_get_seed());
 
     /* Initialize extradata related variables. */
     q->samples_per_channel = q->samples_per_frame / q->nb_channels;
