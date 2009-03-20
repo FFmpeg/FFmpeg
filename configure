@@ -92,6 +92,7 @@ show_help(){
   echo "  --disable-ipv6           disable IPv6 support [no]"
   echo "  --disable-mpegaudio-hp   faster (but less accurate) MPEG audio decoding [no]"
   echo "  --enable-gray            enable full grayscale support (slower color)"
+  echo "  --disable-swscale-alpha  disable alpha channel support in swscale"
   echo "  --disable-fastdiv        disable table-based division"
   echo "  --enable-small           optimize for size instead of speed"
   echo "  --disable-aandct         disable AAN DCT code"
@@ -802,6 +803,7 @@ CONFIG_LIST="
     shared
     small
     static
+    swscale_alpha
     x11grab
     zlib
 "
@@ -1178,6 +1180,7 @@ enable optimizations
 enable protocols
 enable static
 enable stripping
+enable swscale_alpha
 
 # build settings
 add_cflags -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112
