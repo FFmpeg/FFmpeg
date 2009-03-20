@@ -1245,18 +1245,17 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *
                 if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf){
 #if ARCH_X86_64
                     __asm__ volatile(
-                    "mov        %4, %%"REG_b"               \n\t"
                     YSCALEYUV2RGB(%%REGBP, %5)
                     YSCALEYUV2RGB_YA(%%REGBP, %5, %6, %7)
                     "psraw                  $3, %%mm1       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
                     "psraw                  $3, %%mm7       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
                     "packuswb            %%mm7, %%mm1       \n\t"
-                    WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
+                    WRITEBGR32(%4, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
 
-                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "r" (dest),
                     "a" (&c->redDither)
                     ,"r" (abuf0), "r" (abuf1)
-                    : "%"REG_b, "%"REG_BP
+                    : "%"REG_BP
                     );
 #else
                     *(uint16_t **)(&c->u_temp)=abuf0;
