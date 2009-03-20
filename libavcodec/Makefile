@@ -525,7 +525,8 @@ OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
 
 
 TESTS = $(addsuffix -test$(EXESUF), cabac dct eval fft h264 rangecoder snow)
-TESTS-$(ARCH_X86) += x86/cpuid-test$(EXESUF) motion-test$(EXESUF)
+TESTS-$(ARCH_X86) += x86/cpuid-test$(EXESUF)
+TESTS-$(HAVE_MMX) += motion-test$(EXESUF)
 
 CLEANFILES = apiexample$(EXESUF)
 DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
