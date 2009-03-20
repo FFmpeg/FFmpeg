@@ -48,6 +48,21 @@ typedef struct {
     int audio_pkt_cnt; ///< Output packet counter
 } RMDemuxContext;
 
+static const unsigned char sipr_swaps[38][2] = {
+    {  0, 63 }, {  1, 22 }, {  2, 44 }, {  3, 90 },
+    {  5, 81 }, {  7, 31 }, {  8, 86 }, {  9, 58 },
+    { 10, 36 }, { 12, 68 }, { 13, 39 }, { 14, 73 },
+    { 15, 53 }, { 16, 69 }, { 17, 57 }, { 19, 88 },
+    { 20, 34 }, { 21, 71 }, { 24, 46 }, { 25, 94 },
+    { 26, 54 }, { 28, 75 }, { 29, 50 }, { 32, 70 },
+    { 33, 92 }, { 35, 74 }, { 38, 85 }, { 40, 56 },
+    { 42, 87 }, { 43, 65 }, { 45, 59 }, { 48, 79 },
+    { 49, 93 }, { 51, 89 }, { 55, 95 }, { 61, 76 },
+    { 67, 83 }, { 77, 80 }
+};
+
+static const unsigned char sipr_subpk_size[4] = { 29, 19, 37, 20 };
+
 static inline void get_strl(ByteIOContext *pb, char *buf, int buf_size, int len)
 {
     int i;
@@ -171,19 +186,28 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
                 return -1;
             }
 
-            if(sub_packet_size <= 0){
-                av_log(s, AV_LOG_ERROR, "sub_packet_size is invalid\n");
-                return -1;
-            }
-
             if (!strcmp(buf, "cook")) st->codec->codec_id = CODEC_ID_COOK;
             else if (!strcmp(buf, "sipr")) st->codec->codec_id = CODEC_ID_SIPR;
             else st->codec->codec_id = CODEC_ID_ATRAC3;
+
+            ast->audio_framesize = st->codec->block_align;
+            if (st->codec->codec_id == CODEC_ID_SIPR) {
+                if (flavor > 3) {
+                    av_log(s, AV_LOG_ERROR, "bad SIPR file flavor %d\n",
+                           flavor);
+                    return -1;
+                }
+                st->codec->block_align = sipr_subpk_size[flavor];
+            } else {
+                if(sub_packet_size <= 0){
+                    av_log(s, AV_LOG_ERROR, "sub_packet_size is invalid\n");
+                    return -1;
+                }
+                st->codec->block_align = ast->sub_packet_size;
+            }
             st->codec->extradata_size= codecdata_length;
             st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
-            ast->audio_framesize = st->codec->block_align;
-            st->codec->block_align = ast->sub_packet_size;
 
             if(ast->audio_framesize >= UINT_MAX / sub_packet_h){
                 av_log(s, AV_LOG_ERROR, "rm->audio_framesize * sub_packet_h too large\n");
@@ -637,6 +661,31 @@ rm_ac3_swap_bytes (AVStream *st, AVPacket *pkt)
     }
 }
 
+/** perform 4-bit block reordering for SIPR data */
+static void
+rm_reorder_sipr_data (RMStream *ast)
+{
+    int n, bs = ast->sub_packet_h * ast->audio_framesize * 2 / 96; // nibbles per subpacket
+
+    for (n = 0; n < 38; n++) {
+        int j;
+        int i = bs * sipr_swaps[n][0];
+        int o = bs * sipr_swaps[n][1];
+        uint8_t *buf = ast->pkt.data;
+
+        /* swap 4bit-nibbles of block 'i' with 'o' */
+        for (j = 0; j < bs; j++, i++, o++) {
+            int x = (buf[i >> 1] >> (4 * (i & 1))) & 0xF,
+                y = (buf[o >> 1] >> (4 * (o & 1))) & 0xF;
+
+            buf[o >> 1] = (x << (4 * (o & 1))) |
+                (buf[o >> 1] & (0xF << (4 * !(o & 1))));
+            buf[i >> 1] = (y << (4 * (i & 1))) |
+                (buf[i >> 1] & (0xF << (4 * !(i & 1))));
+        }
+    }
+}
+
 int
 ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
                     AVStream *st, RMStream *ast, int len, AVPacket *pkt,
@@ -675,10 +724,16 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
                     for (x = 0; x < w/sps; x++)
                         get_buffer(pb, ast->pkt.data+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), sps);
                     break;
+                case CODEC_ID_SIPR:
+                    get_buffer(pb, ast->pkt.data + y * w, w);
+                    break;
             }
 
             if (++(ast->sub_packet_cnt) < h)
                 return -1;
+            if (st->codec->codec_id == CODEC_ID_SIPR)
+                rm_reorder_sipr_data(ast);
+
              ast->sub_packet_cnt = 0;
              rm->audio_stream_num = st->index;
              rm->audio_pkt_cnt = h * w / st->codec->block_align;
