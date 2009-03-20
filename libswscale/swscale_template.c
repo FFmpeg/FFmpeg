@@ -1212,7 +1212,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 #if HAVE_ALTIVEC
     /* The following list of supported dstFormat values should
        match what's found in the body of ff_yuv2packedX_altivec() */
-    if (!(c->flags & SWS_BITEXACT) && !c->alpPixBuf
+    if (!(c->flags & SWS_BITEXACT) && !c->alpPixBuf &&
        (c->dstFormat==PIX_FMT_ABGR  || c->dstFormat==PIX_FMT_BGRA  ||
         c->dstFormat==PIX_FMT_BGR24 || c->dstFormat==PIX_FMT_RGB24 ||
         c->dstFormat==PIX_FMT_RGBA  || c->dstFormat==PIX_FMT_ARGB))
