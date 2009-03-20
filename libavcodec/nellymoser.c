@@ -32,7 +32,6 @@
  */
 
 #include "nellymoser.h"
-#include "libavutil/random.h"
 #include "avcodec.h"
 #include "dsputil.h"
 
