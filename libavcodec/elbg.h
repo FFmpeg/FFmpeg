@@ -21,7 +21,7 @@
 #ifndef AVCODEC_ELBG_H
 #define AVCODEC_ELBG_H
 
-#include "libavutil/random.h"
+#include "libavutil/lfg.h"
 
 /**
  * Implementation of the Enhanced LBG Algorithm
