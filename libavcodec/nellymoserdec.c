@@ -32,7 +32,8 @@
  */
 
 #include "nellymoser.h"
-#include "libavutil/random.h"
+#include "libavutil/lfg.h"
+#include "libavutil/random_seed.h"
 #include "avcodec.h"
 #include "dsputil.h"
 
@@ -44,7 +45,7 @@ typedef struct NellyMoserDecodeContext {
     AVCodecContext* avctx;
     DECLARE_ALIGNED_16(float,float_buf[NELLY_SAMPLES]);
     float           state[128];
-    AVRandomState   random_state;
+    AVLFG           random_state;
     GetBitContext   gb;
     int             add_bias;
     float           scale_bias;
@@ -107,7 +108,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
         for (j = 0; j < NELLY_FILL_LEN; j++) {
             if (bits[j] <= 0) {
                 aptr[j] = M_SQRT1_2*pows[j];
-                if (av_random(&s->random_state) & 1)
+                if (av_lfg_get(&s->random_state) & 1)
                     aptr[j] *= -1.0;
             } else {
                 v = get_bits(&s->gb, bits[j]);
@@ -128,7 +129,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     NellyMoserDecodeContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    av_random_init(&s->random_state, 0);
+    av_lfg_init(&s->random_state, ff_random_get_seed());
     ff_mdct_init(&s->imdct_ctx, 8, 1);
 
     dsputil_init(&s->dsp, avctx);
