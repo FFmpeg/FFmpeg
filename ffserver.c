@@ -35,7 +35,8 @@
 #include "libavformat/rtpdec.h"
 #include "libavformat/rtsp.h"
 #include "libavutil/avstring.h"
-#include "libavutil/random.h"
+#include "libavutil/lfg.h"
+#include "libavutil/random_seed.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/opt.h"
 #include <stdarg.h>
@@ -309,7 +310,7 @@ static uint64_t current_bandwidth;
 
 static int64_t cur_time;           // Making this global saves on passing it around everywhere
 
-static AVRandomState random_state;
+static AVLFG random_state;
 
 static FILE *logfile = NULL;
 
@@ -503,7 +504,7 @@ static void start_multicast(void)
         if (stream->is_multicast) {
             /* open the RTP connection */
             snprintf(session_id, sizeof(session_id), "%08x%08x",
-                     av_random(&random_state), av_random(&random_state));
+                     av_lfg_get(&random_state), av_lfg_get(&random_state));
 
             /* choose a port if none given */
             if (stream->multicast_port == 0) {
@@ -1599,7 +1600,7 @@ static int http_parse_request(HTTPContext *c)
     if (!strcmp(c->stream->fmt->name,"asf_stream")) {
         /* Need to allocate a client id */
 
-        c->wmp_client_id = av_random(&random_state) & 0x7fffffff;
+        c->wmp_client_id = av_lfg_get(&random_state);
 
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "Server: Cougar 4.1.0.3923\r\nCache-Control: no-cache\r\nPragma: client-id=%d\r\nPragma: features=\"broadcast\"\r\n", c->wmp_client_id);
     }
@@ -2867,7 +2868,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
     /* generate session id if needed */
     if (h->session_id[0] == '\0')
         snprintf(h->session_id, sizeof(h->session_id), "%08x%08x",
-                 av_random(&random_state), av_random(&random_state));
+                 av_lfg_get(&random_state), av_lfg_get(&random_state));
 
     /* find rtp session, and create it if none found */
     rtp_c = find_rtp_session(h->session_id);
@@ -4507,7 +4508,7 @@ int main(int argc, char **argv)
 
     unsetenv("http_proxy");             /* Kill the http_proxy */
 
-    av_random_init(&random_state, av_gettime() + (getpid() << 16));
+    av_lfg_init(&random_state, ff_random_get_seed());
 
     memset(&sigact, 0, sizeof(sigact));
     sigact.sa_handler = handle_child_exit;
