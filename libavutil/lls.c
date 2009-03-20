@@ -136,7 +136,7 @@ int main(void){
         av_solve_lls(&m, 0.001, 0);
         for(order=0; order<3; order++){
             eval= av_evaluate_lls(&m, var+1, order);
-            printf("real:%f order:%d pred:%f var:%f coeffs:%f %f %f\n",
+            printf("real:%9f order:%d pred:%9f var:%f coeffs:%f %9f %9f\n",
                 var[0], order, eval, sqrt(m.variance[order] / (i+1)),
                 m.coeff[order][0], m.coeff[order][1], m.coeff[order][2]);
         }
