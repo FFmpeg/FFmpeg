@@ -3757,7 +3757,7 @@ static int parse_ffconfig(const char *filename)
     const char *p;
     int val, errors, line_num;
     FFStream **last_stream, *stream, *redirect;
-    FFStream **last_feed, *feed;
+    FFStream **last_feed, *feed, *s;
     AVCodecContext audio_enc, video_enc;
     enum CodecID audio_id, video_id;
 
@@ -3865,17 +3865,19 @@ static int parse_ffconfig(const char *filename)
                         filename, line_num);
             } else {
                 feed = av_mallocz(sizeof(FFStream));
-                /* add in stream list */
-                *last_stream = feed;
-                last_stream = &feed->next;
-                /* add in feed list */
-                *last_feed = feed;
-                last_feed = &feed->next_feed;
-
                 get_arg(feed->filename, sizeof(feed->filename), &p);
                 q = strrchr(feed->filename, '>');
                 if (*q)
                     *q = '\0';
+
+                for (s = first_feed; s; s = s->next) {
+                    if (!strcmp(feed->filename, s->filename)) {
+                        fprintf(stderr, "%s:%d: Feed '%s' already registered\n",
+                                filename, line_num, s->filename);
+                        errors++;
+                    }
+                }
+
                 feed->fmt = guess_format("ffm", NULL, NULL);
                 /* defaut feed file */
                 snprintf(feed->feed_filename, sizeof(feed->feed_filename),
@@ -3883,6 +3885,13 @@ static int parse_ffconfig(const char *filename)
                 feed->feed_max_size = 5 * 1024 * 1024;
                 feed->is_feed = 1;
                 feed->feed = feed; /* self feeding :-) */
+
+                /* add in stream list */
+                *last_stream = feed;
+                last_stream = &feed->next;
+                /* add in feed list */
+                *last_feed = feed;
+                last_feed = &feed->next_feed;
             }
         } else if (!strcasecmp(cmd, "Launch")) {
             if (feed) {
@@ -3954,15 +3963,22 @@ static int parse_ffconfig(const char *filename)
                 fprintf(stderr, "%s:%d: Already in a tag\n",
                         filename, line_num);
             } else {
+                FFStream *s;
                 const AVClass *class;
                 stream = av_mallocz(sizeof(FFStream));
-                *last_stream = stream;
-                last_stream = &stream->next;
-
                 get_arg(stream->filename, sizeof(stream->filename), &p);
                 q = strrchr(stream->filename, '>');
                 if (*q)
                     *q = '\0';
+
+                for (s = first_stream; s; s = s->next) {
+                    if (!strcmp(stream->filename, s->filename)) {
+                        fprintf(stderr, "%s:%d: Stream '%s' already registered\n",
+                                filename, line_num, s->filename);
+                        errors++;
+                    }
+                }
+
                 stream->fmt = guess_stream_format(NULL, stream->filename, NULL);
                 /* fetch avclass so AVOption works
                  * FIXME try to use avcodec_get_context_defaults2
@@ -3979,6 +3995,9 @@ static int parse_ffconfig(const char *filename)
                     audio_id = stream->fmt->audio_codec;
                     video_id = stream->fmt->video_codec;
                 }
+
+                *last_stream = stream;
+                last_stream = &stream->next;
             }
         } else if (!strcasecmp(cmd, "Feed")) {
             get_arg(arg, sizeof(arg), &p);
