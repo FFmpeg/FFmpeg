@@ -76,6 +76,7 @@ typedef struct SubStream {
 #define PARAM_FIR           (1 << 3)
 #define PARAM_IIR           (1 << 2)
 #define PARAM_HUFFOFFSET    (1 << 1)
+#define PARAM_PRESENCE      (1 << 0)
     //@}
 
     //@{
@@ -501,6 +502,7 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
     SubStream *s = &m->substream[substr];
     unsigned int mat, ch;
 
+    if (s->param_presence_flags & PARAM_PRESENCE)
     if (get_bits1(gbp))
         s->param_presence_flags = get_bits(gbp, 8);
 
