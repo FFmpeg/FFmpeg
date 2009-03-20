@@ -1986,7 +1986,11 @@ static int open_input_stream(HTTPContext *c, const char *info)
     }
     s->flags |= AVFMT_FLAG_GENPTS;
     c->fmt_in = s;
-    av_find_stream_info(c->fmt_in);
+    if (av_find_stream_info(c->fmt_in) < 0) {
+        http_log("Could not find stream info '%s'\n", input_filename);
+        av_close_input_file(s);
+        return -1;
+    }
 
     /* open each parser */
     for(i=0;i<s->nb_streams;i++)
