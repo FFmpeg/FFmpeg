@@ -212,7 +212,7 @@ int main(void){
 
     av_aes_init(&ae, "PI=3.141592654..", 128, 0);
     av_aes_init(&ad, "PI=3.141592654..", 128, 1);
-    av_log_level= AV_LOG_DEBUG;
+    av_log_set_level(AV_LOG_DEBUG);
 
     for(i=0; i<2; i++){
         av_aes_init(&b, rkey[i], 128, 1);
