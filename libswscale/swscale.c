@@ -1989,11 +1989,8 @@ static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
         int y=      plane==0 ? srcSliceY: -((-srcSliceY)>>c->chrDstVSubSample);
         int height= plane==0 ? srcSliceH: -((-srcSliceH)>>c->chrDstVSubSample);
 
-        if ((isGray(c->srcFormat) || isGray(c->dstFormat)) && plane>0)
-        {
-            if (!isGray(c->dstFormat))
+        if (dst[plane] && !src[plane])
                 fillPlane(dst[plane], dstStride[plane], length, height, y, 128);
-        }
         else
         {
             if (dstStride[plane]==srcStride[plane] && srcStride[plane] > 0)
