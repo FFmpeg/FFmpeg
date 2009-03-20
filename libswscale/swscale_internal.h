@@ -87,6 +87,7 @@ typedef struct SwsContext{
 
     int16_t **lumPixBuf;
     int16_t **chrPixBuf;
+    int16_t **alpPixBuf;
     int16_t *hLumFilter;
     int16_t *hLumFilterPos;
     int16_t *hChrFilter;
@@ -156,6 +157,8 @@ typedef struct SwsContext{
 #define VROUNDER_OFFSET       "11*8+4*4*256*2+16"
 #define U_TEMP                "11*8+4*4*256*2+24"
 #define V_TEMP                "11*8+4*4*256*2+32"
+#define Y_TEMP                "11*8+4*4*256*2+40"
+#define ALP_MMX_FILTER_OFFSET "11*8+4*4*256*2+48"
 
     uint64_t redDither   __attribute__((aligned(8)));
     uint64_t greenDither __attribute__((aligned(8)));
@@ -176,6 +179,8 @@ typedef struct SwsContext{
     uint64_t vRounder     __attribute__((aligned(8)));
     uint64_t u_temp       __attribute__((aligned(8)));
     uint64_t v_temp       __attribute__((aligned(8)));
+    uint64_t y_temp       __attribute__((aligned(8)));
+    int32_t  alpMmxFilter[4*MAX_FILTER_SIZE];
 
 #if HAVE_ALTIVEC
 
