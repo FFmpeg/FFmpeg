@@ -23,7 +23,7 @@ c0cc2ae4df6a8b3df84986929a393116 *./tests/data/b-libav.ts
 ./tests/data/b-libav.swf CRC=0xe14e8847
 49d04c063b7741d3ee8f85c92baa69bf *./tests/data/b-libav.ffm
 380928 ./tests/data/b-libav.ffm
-./tests/data/b-libav.ffm CRC=0x00000001
+./tests/data/b-libav.ffm CRC=0x2b71a386
 8617c30b4e862199555fd75890473e66 *./tests/data/b-libav.flv
 335833 ./tests/data/b-libav.flv
 ./tests/data/b-libav.flv CRC=0xe14e8847

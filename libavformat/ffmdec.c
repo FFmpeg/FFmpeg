@@ -67,7 +67,7 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
         return 1;
     pos = url_ftell(s->pb);
     if (!ffm->write_index) {
-        if (pos == ffm->file_size);
+        if (pos == ffm->file_size)
             return AVERROR_EOF;
         avail_size = ffm->file_size - pos;
     } else {
