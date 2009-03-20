@@ -1264,7 +1264,7 @@ static int http_parse_request(HTTPContext *c)
     av_strlcpy(c->protocol, protocol, sizeof(c->protocol));
 
     if (ffserver_debug)
-        http_log("New connection: %s %s\n", cmd, url);
+        http_log("%s - - New connection: %s %s\n", inet_ntoa(c->from_addr.sin_addr), cmd, url);
 
     /* find the filename and the optional info string in the request */
     p = strchr(url, '?');
@@ -1321,6 +1321,7 @@ static int http_parse_request(HTTPContext *c)
     }
     if (stream == NULL) {
         snprintf(msg, sizeof(msg), "File '%s' not found", url);
+        http_log("File '%s' not found\n", url);
         goto send_error;
     }
 
@@ -1362,7 +1363,7 @@ static int http_parse_request(HTTPContext *c)
     /* If already streaming this feed, do not let start another feeder. */
     if (stream->feed_opened) {
         snprintf(msg, sizeof(msg), "This feed is already being received.");
-        http_log("feed %s already being received\n", stream->feed_filename);
+        http_log("Feed '%s' already being received\n", stream->feed_filename);
         goto send_error;
     }
 
@@ -2514,6 +2515,8 @@ static int http_receive_data(HTTPContext *c)
             if (s->nb_streams != feed->nb_streams) {
                 av_close_input_stream(s);
                 av_free(pb);
+                http_log("Feed '%s' stream number does not match registered feed\n",
+                         c->stream->feed_filename);
                 goto fail;
             }
 
@@ -3381,9 +3384,10 @@ static void build_file_streams(void)
                 stream->ap_in->mpeg2ts_compute_pcr = 1;
             }
 
+            http_log("Opening file '%s'\n", stream->feed_filename);
             if ((ret = av_open_input_file(&infile, stream->feed_filename,
                                           stream->ifmt, 0, stream->ap_in)) < 0) {
-                http_log("could not open %s: %d\n", stream->feed_filename, ret);
+                http_log("Could not open '%s': %d\n", stream->feed_filename, ret);
                 /* remove stream (no need to spend more time on it) */
             fail:
                 remove_stream(stream);
