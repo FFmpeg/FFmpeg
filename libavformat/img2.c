@@ -428,7 +428,7 @@ AVOutputFormat image2_muxer = {
     "image2",
     NULL_IF_CONFIG_SMALL("image2 sequence"),
     "",
-    "bmp,jpeg,jpg,ljpg,pam,pbm,pgm,pgmyuv,png,ppm,sgi,tif,tiff,jp2",
+    "bmp,jpeg,jpg,ljpg,pam,pbm,pcx,pgm,pgmyuv,png,ppm,sgi,tif,tiff,jp2",
     sizeof(VideoData),
     CODEC_ID_NONE,
     CODEC_ID_MJPEG,

@@ -138,3 +138,6 @@ ac2c17f1a27d928e8b82f21dbafdd715 *./tests/data/b-libav-yuv440p.yuv
 304128 ./tests/data/b-libav-yuv440p.yuv
 10c8507ad38d0ce5e8cd0f1dd49b0d26 *./tests/data/b-libav-yuvj440p.yuv
 304128 ./tests/data/b-libav-yuvj440p.yuv
+574fb8fe0b2fe8cc0b3ded8549c052d4 *./tests/data/b-libav02.pcx
+./tests/data/b-libav%02d.pcx CRC=0x6f775c0d
+363436 ./tests/data/b-libav02.pcx

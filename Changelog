@@ -5,6 +5,7 @@ version <next>:
 - deprecated old scaler removed
 - VQF demuxer
 - Alpha channel scaler
+- PCX encoder
 
 
 

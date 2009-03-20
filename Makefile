@@ -224,6 +224,7 @@ LAVF_TESTS = $(addprefix regtest-,              \
         voc                                     \
         ogg                                     \
         pixfmt                                  \
+        pcx                                     \
     )
 
 REGFILES = $(addprefix tests/data/,$(addsuffix .$(1),$(2:regtest-%=%)))

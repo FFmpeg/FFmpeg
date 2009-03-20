@@ -601,6 +601,10 @@ if [ -n "$do_jpg" ] ; then
 do_image_formats jpg "-flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p" "-f image2"
 fi
 
+if [ -n "$do_pcx" ] ; then
+do_image_formats pcx
+fi
+
 # audio only
 
 if [ -n "$do_wav" ] ; then
