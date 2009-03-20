@@ -3206,6 +3206,9 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
         }
     }
 
+    if ((dstFormat == PIX_FMT_YUVA420P) && !alpPixBuf)
+        fillPlane(dst[3], dstStride[3], dstW, dstY-lastDstY, lastDstY, 255);
+
 #if HAVE_MMX
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");

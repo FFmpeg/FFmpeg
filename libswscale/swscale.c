@@ -137,6 +137,7 @@ unsigned swscale_version(void)
     )
 #define isSupportedOut(x)   (       \
            (x)==PIX_FMT_YUV420P     \
+        || (x)==PIX_FMT_YUVA420P    \
         || (x)==PIX_FMT_YUYV422     \
         || (x)==PIX_FMT_UYVY422     \
         || (x)==PIX_FMT_YUV444P     \
@@ -2068,7 +2069,7 @@ static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
         }
     }
 
-    if (c->dstFormat==PIX_FMT_YUV420P){
+    if (c->dstFormat==PIX_FMT_YUV420P || c->dstFormat==PIX_FMT_YUVA420P){
         planar2x(src[1], dst[1], c->chrSrcW, c->chrSrcH, srcStride[1], dstStride[1]);
         planar2x(src[2], dst[2], c->chrSrcW, c->chrSrcH, srcStride[2], dstStride[2]);
     }else{
@@ -2110,14 +2111,14 @@ static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
                       int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int plane;
-    for (plane=0; plane<3; plane++)
+    for (plane=0; plane<4; plane++)
     {
-        int length= plane==0 ? c->srcW  : -((-c->srcW  )>>c->chrDstHSubSample);
-        int y=      plane==0 ? srcSliceY: -((-srcSliceY)>>c->chrDstVSubSample);
-        int height= plane==0 ? srcSliceH: -((-srcSliceH)>>c->chrDstVSubSample);
+        int length= (plane==0 || plane==3) ? c->srcW  : -((-c->srcW  )>>c->chrDstHSubSample);
+        int y=      (plane==0 || plane==3) ? srcSliceY: -((-srcSliceY)>>c->chrDstVSubSample);
+        int height= (plane==0 || plane==3) ? srcSliceH: -((-srcSliceH)>>c->chrDstVSubSample);
 
         if (dst[plane] && !src[plane])
-                fillPlane(dst[plane], dstStride[plane], length, height, y, 128);
+            fillPlane(dst[plane], dstStride[plane], length, height, y, (plane==3) ? 255 : 128);
         else
         {
             if (dstStride[plane]==srcStride[plane] && srcStride[plane] > 0)
@@ -2519,13 +2520,13 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             c->swScale= ff_yuv2rgb_get_func_ptr(c);
         }
 
-        if (srcFormat==PIX_FMT_YUV410P && dstFormat==PIX_FMT_YUV420P && !(flags & SWS_BITEXACT))
+        if (srcFormat==PIX_FMT_YUV410P && (dstFormat==PIX_FMT_YUV420P || dstFormat==PIX_FMT_YUVA420P) && !(flags & SWS_BITEXACT))
         {
             c->swScale= yvu9toyv12Wrapper;
         }
 
         /* bgr24toYV12 */
-        if (srcFormat==PIX_FMT_BGR24 && dstFormat==PIX_FMT_YUV420P && !(flags & SWS_ACCURATE_RND))
+        if (srcFormat==PIX_FMT_BGR24 && (dstFormat==PIX_FMT_YUV420P || dstFormat==PIX_FMT_YUVA420P) && !(flags & SWS_ACCURATE_RND))
             c->swScale= bgr24toyv12Wrapper;
 
         /* RGB/BGR -> RGB/BGR (no dither needed forms) */
@@ -2597,6 +2598,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         /* simple copy */
         if (  srcFormat == dstFormat
             || (srcFormat == PIX_FMT_YUVA420P && dstFormat == PIX_FMT_YUV420P)
+            || (srcFormat == PIX_FMT_YUV420P && dstFormat == PIX_FMT_YUVA420P)
             || (isPlanarYUV(srcFormat) && isGray(dstFormat))
             || (isPlanarYUV(dstFormat) && isGray(srcFormat)))
         {
