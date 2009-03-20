@@ -34,10 +34,10 @@
  */
 #define MAX_MATRICES        15
 
-/** Maximum number of substreams that can be decoded. This could also be set
- *  higher, but I haven't seen any examples with more than two.
+/** Maximum number of substreams that can be decoded.
+ *  MLP's limit is 2. TrueHD supports at least up to 3.
  */
-#define MAX_SUBSTREAMS      2
+#define MAX_SUBSTREAMS      3
 
 /** maximum sample frequency seen in files */
 #define MAX_SAMPLERATE      192000

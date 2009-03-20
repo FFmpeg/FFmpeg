@@ -280,6 +280,10 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
 
     if (mh.num_substreams == 0)
         return -1;
+    if (m->avctx->codec_id == CODEC_ID_MLP && mh.num_substreams > 2) {
+        av_log(m->avctx, AV_LOG_ERROR, "MLP only supports up to 2 substreams.\n");
+        return -1;
+    }
     if (mh.num_substreams > MAX_SUBSTREAMS) {
         av_log(m->avctx, AV_LOG_ERROR,
                "Number of substreams %d is larger than the maximum supported "
