@@ -171,6 +171,14 @@
     __asm__ volatile (EMMS); \
     return srcSliceH; \
 
+#define YUV2RGB_OPERANDS_ALPHA \
+        : "+r" (index), "+r" (image) \
+        : "r" (pu - index), "r" (pv - index), "r"(&c->redDither), "r" (py - 2*index), "r" (pa - 2*index) \
+        ); \
+    } \
+    __asm__ volatile (EMMS); \
+    return srcSliceH; \
+
 static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t* dst[], int dstStride[]){
     int y, h_size;
@@ -455,4 +463,20 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
 
     YUV2RGB_ENDLOOP(4)
     YUV2RGB_OPERANDS
+}
+
+static inline int RENAME(yuva420_rgb32)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                                        int srcSliceH, uint8_t* dst[], int dstStride[]){
+    int y, h_size;
+
+    YUV2RGB_LOOP(4)
+
+        uint8_t *pa = src[3] + y*srcStride[3];
+        YUV2RGB_INIT
+        YUV2RGB
+        "movq     (%6, %0, 2), %%mm3;"            /* Load 8 A A7 A6 A5 A4 A3 A2 A1 A0 */
+        RGB_PLANAR2PACKED32
+
+    YUV2RGB_ENDLOOP(4)
+    YUV2RGB_OPERANDS_ALPHA
 }
