@@ -4689,7 +4689,8 @@ AVCodec snow_encoder = {
 #undef malloc
 #undef free
 #undef printf
-#undef random
+
+#include "libavutil/lfg.h"
 
 int main(void){
     int width=256;
@@ -4699,10 +4700,13 @@ int main(void){
     int i;
     s.spatial_decomposition_count=6;
     s.spatial_decomposition_type=1;
+    AVLFG prn;
+
+    av_lfg_init(&prn, 1);
 
     printf("testing 5/3 DWT\n");
     for(i=0; i<width*height; i++)
-        buffer[0][i]= buffer[1][i]= random()%54321 - 12345;
+        buffer[0][i] = buffer[1][i] = av_lfg_get(&prn) % 54321 - 12345;
 
     ff_spatial_dwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
     ff_spatial_idwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
@@ -4713,7 +4717,7 @@ int main(void){
     printf("testing 9/7 DWT\n");
     s.spatial_decomposition_type=0;
     for(i=0; i<width*height; i++)
-        buffer[0][i]= buffer[1][i]= random()%54321 - 12345;
+        buffer[0][i] = buffer[1][i] = av_lfg_get(&prn) % 54321 - 12345;
 
     ff_spatial_dwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
     ff_spatial_idwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);

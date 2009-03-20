@@ -164,9 +164,9 @@ int ff_pca(PCA *pca, double *eigenvector, double *eigenvalue){
 #ifdef TEST
 
 #undef printf
-#undef random
 #include <stdio.h>
 #include <stdlib.h>
+#include "lfg.h"
 
 int main(void){
     PCA *pca;
@@ -174,15 +174,18 @@ int main(void){
 #define LEN 8
     double eigenvector[LEN*LEN];
     double eigenvalue[LEN];
+    AVLFG prn;
+
+    av_lfg_init(&prn, 1);
 
     pca= ff_pca_init(LEN);
 
     for(i=0; i<9000000; i++){
         double v[2*LEN+100];
         double sum=0;
-        int pos= random()%LEN;
-        int v2= (random()%101) - 50;
-        v[0]= (random()%101) - 50;
+        int pos = av_lfg_get(&prn) % LEN;
+        int v2  = av_lfg_get(&prn) % 101 - 50;
+        v[0]    = av_lfg_get(&prn) % 101 - 50;
         for(j=1; j<8; j++){
             if(j<=pos) v[j]= v[0];
             else       v[j]= v2;
@@ -191,7 +194,7 @@ int main(void){
 /*        for(j=0; j<LEN; j++){
             v[j] -= v[pos];
         }*/
-//        sum += random()%10;
+//        sum += av_lfg_get(&prn) % 10;
 /*        for(j=0; j<LEN; j++){
             v[j] -= sum/LEN;
         }*/

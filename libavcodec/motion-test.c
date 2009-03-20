@@ -30,10 +30,10 @@
 #include <unistd.h>
 
 #include "dsputil.h"
+#include "libavutil/lfg.h"
 
 #undef exit
 #undef printf
-#undef random
 
 #define WIDTH 64
 #define HEIGHT 64
@@ -44,9 +44,12 @@ uint8_t img2[WIDTH * HEIGHT];
 void fill_random(uint8_t *tab, int size)
 {
     int i;
+    AVLFG prn;
+
+    av_lfg_init(&prn, 1);
     for(i=0;i<size;i++) {
 #if 1
-        tab[i] = random() % 256;
+        tab[i] = av_lfg_get(&prn) % 256;
 #else
         tab[i] = i;
 #endif
@@ -142,7 +145,7 @@ int main(int argc, char **argv)
     ctx = avcodec_alloc_context();
     ctx->dsp_mask = FF_MM_FORCE;
     dsputil_init(&cctx, ctx);
-    for (c = 0; c < 2; c++) {
+    for (c = 0; c < 1; c++) {
         int x;
         ctx->dsp_mask = FF_MM_FORCE | flags[c];
         dsputil_init(&mmxctx, ctx);

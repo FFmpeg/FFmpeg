@@ -192,9 +192,8 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt) {
 }
 
 #ifdef TEST
+#include "lfg.h"
 #include "log.h"
-
-#undef random
 
 int main(void){
     int i,j;
@@ -209,10 +208,12 @@ int main(void){
         {0x73, 0x22, 0x81, 0xc0, 0xa0, 0xaa, 0xb8, 0xf7, 0xa5, 0x4a, 0x0c, 0x67, 0xa0, 0xc4, 0x5e, 0xcf},
         {0x6d, 0x25, 0x1e, 0x69, 0x44, 0xb0, 0x51, 0xe0, 0x4e, 0xaa, 0x6f, 0xb4, 0xdb, 0xf7, 0x84, 0x65}};
     uint8_t temp[16];
+    AVLFG prn;
 
     av_aes_init(&ae, "PI=3.141592654..", 128, 0);
     av_aes_init(&ad, "PI=3.141592654..", 128, 1);
     av_log_set_level(AV_LOG_DEBUG);
+    av_lfg_init(&prn, 1);
 
     for(i=0; i<2; i++){
         av_aes_init(&b, rkey[i], 128, 1);
@@ -224,7 +225,7 @@ int main(void){
 
     for(i=0; i<10000; i++){
         for(j=0; j<16; j++){
-            pt[j]= random();
+            pt[j] = av_lfg_get(&prn);
         }
 {START_TIMER
         av_aes_crypt(&ae, temp, pt, 1, NULL, 0);

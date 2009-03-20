@@ -33,6 +33,7 @@
 #include <math.h>
 
 #include "libavutil/common.h"
+#include "libavutil/lfg.h"
 
 #include "simple_idct.h"
 #include "aandcttab.h"
@@ -41,7 +42,6 @@
 #include "x86/idct_xvid.h"
 
 #undef printf
-#undef random
 
 void *fast_memcpy(void *a, const void *b, size_t c){return memcpy(a,b,c);};
 
@@ -208,8 +208,9 @@ void dct_error(const char *name, int is_idct,
     int64_t sysErr[64], sysErrMax=0;
     int maxout=0;
     int blockSumErrMax=0, blockSumErr;
+    AVLFG prn;
 
-    srandom(0);
+    av_lfg_init(&prn, 1);
 
     err_inf = 0;
     err2 = 0;
@@ -220,7 +221,7 @@ void dct_error(const char *name, int is_idct,
         switch(test){
         case 0:
             for(i=0;i<64;i++)
-                block1[i] = (random() % 512) -256;
+                block1[i] = (av_lfg_get(&prn) % 512) -256;
             if (is_idct){
                 fdct(block1);
 
@@ -229,12 +230,12 @@ void dct_error(const char *name, int is_idct,
             }
         break;
         case 1:{
-            int num= (random()%10)+1;
+            int num = av_lfg_get(&prn) % 10 + 1;
             for(i=0;i<num;i++)
-                block1[random()%64] = (random() % 512) -256;
+                block1[av_lfg_get(&prn) % 64] = av_lfg_get(&prn) % 512 -256;
         }break;
         case 2:
-            block1[0]= (random()%4096)-2048;
+            block1[0] = av_lfg_get(&prn) % 4096 - 2048;
             block1[63]= (block1[0]&1)^1;
         break;
         }
@@ -334,7 +335,7 @@ void dct_error(const char *name, int is_idct,
     switch(test){
     case 0:
         for(i=0;i<64;i++)
-            block1[i] = (random() % 512) -256;
+            block1[i] = av_lfg_get(&prn) % 512 -256;
         if (is_idct){
             fdct(block1);
 
@@ -344,10 +345,10 @@ void dct_error(const char *name, int is_idct,
     break;
     case 1:{
     case 2:
-        block1[0] = (random() % 512) -256;
-        block1[1] = (random() % 512) -256;
-        block1[2] = (random() % 512) -256;
-        block1[3] = (random() % 512) -256;
+        block1[0] = av_lfg_get(&prn) % 512 -256;
+        block1[1] = av_lfg_get(&prn) % 512 -256;
+        block1[2] = av_lfg_get(&prn) % 512 -256;
+        block1[3] = av_lfg_get(&prn) % 512 -256;
     }break;
     }
 
@@ -471,7 +472,9 @@ void idct248_error(const char *name,
 {
     int it, i, it1, ti, ti1, err_max, v;
 
-    srandom(0);
+    AVLFG prn;
+
+    av_lfg_init(&prn, 1);
 
     /* just one test to see if code is correct (precision is less
        important here) */
@@ -480,7 +483,7 @@ void idct248_error(const char *name,
 
         /* XXX: use forward transform to generate values */
         for(i=0;i<64;i++)
-            block1[i] = (random() % 256) - 128;
+            block1[i] = av_lfg_get(&prn) % 256 - 128;
         block1[0] += 1024;
 
         for(i=0; i<64; i++)

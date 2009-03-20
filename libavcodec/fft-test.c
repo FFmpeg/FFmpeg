@@ -23,6 +23,7 @@
  * FFT and MDCT tests.
  */
 
+#include "libavutil/lfg.h"
 #include "dsputil.h"
 #include <math.h>
 #include <unistd.h>
@@ -31,7 +32,6 @@
 #include <string.h>
 
 #undef exit
-#undef random
 
 /* reference fft */
 
@@ -131,7 +131,9 @@ void mdct_ref(float *output, float *input, int nbits)
 
 float frandom(void)
 {
-    return (float)((random() & 0xffff) - 32768) / 32768.0;
+    AVLFG prn;
+    av_lfg_init(&prn, 1);
+    return (float)((av_lfg_get(&prn) & 0xffff) - 32768) / 32768.0;
 }
 
 int64_t gettime(void)
