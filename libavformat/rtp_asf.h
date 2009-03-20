@@ -23,6 +23,7 @@
 #define AVFORMAT_RTP_ASF_H
 
 #include "avformat.h"
+#include "rtpdec.h"
 
 /**
  * Parse a Windows Media Server-specific SDP line
@@ -31,5 +32,12 @@
  * @param line the SDP line to be parsed
  */
 void ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p);
+
+/**
+ * Handlers for the x-asf-pf payloads (the payload ID for RTP/ASF).
+ * Defined and implemented in rtp_asf.c, registered in rtpdec.c.
+ */
+extern RTPDynamicProtocolHandler ff_ms_rtp_asf_pfv_handler,
+                                 ff_ms_rtp_asf_pfa_handler;
 
 #endif /* AVFORMAT_RTP_ASF_H */
