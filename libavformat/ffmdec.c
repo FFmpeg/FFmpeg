@@ -66,19 +66,25 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
     if (size <= len)
         return 1;
     pos = url_ftell(s->pb);
+    if (!ffm->write_index) {
+        if (pos == ffm->file_size);
+            return AVERROR_EOF;
+        avail_size = ffm->file_size - pos;
+    } else {
     if (pos == ffm->write_index) {
         /* exactly at the end of stream */
-        return 0;
+        return AVERROR(EAGAIN);
     } else if (pos < ffm->write_index) {
         avail_size = ffm->write_index - pos;
     } else {
         avail_size = (ffm->file_size - pos) + (ffm->write_index - FFM_PACKET_SIZE);
     }
+    }
     avail_size = (avail_size / ffm->packet_size) * (ffm->packet_size - FFM_HEADER_SIZE) + len;
     if (size <= avail_size)
         return 1;
     else
-        return 0;
+        return AVERROR(EAGAIN);
 }
 
 /* first is true if we read the frame header */
@@ -251,7 +257,8 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* get also filesize */
     if (!url_is_streamed(pb)) {
         ffm->file_size = url_fsize(pb);
-        adjust_write_index(s);
+        if (ffm->write_index)
+            adjust_write_index(s);
     } else {
         ffm->file_size = (UINT64_C(1) << 63) - 1;
     }
@@ -360,24 +367,21 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int size;
     FFMContext *ffm = s->priv_data;
-    int duration;
-
-    if (url_fsize(s->pb) == FFM_PACKET_SIZE)
-        return -1;
+    int duration, ret;
 
     switch(ffm->read_state) {
     case READ_HEADER:
-        if (!ffm_is_avail_data(s, FRAME_HEADER_SIZE+4)) {
-            return AVERROR(EAGAIN);
-        }
+        if ((ret = ffm_is_avail_data(s, FRAME_HEADER_SIZE+4)) < 0)
+            return ret;
+
         dprintf(s, "pos=%08"PRIx64" spos=%"PRIx64", write_index=%"PRIx64" size=%"PRIx64"\n",
                url_ftell(s->pb), s->pb->pos, ffm->write_index, ffm->file_size);
         if (ffm_read_data(s, ffm->header, FRAME_HEADER_SIZE, 1) !=
             FRAME_HEADER_SIZE)
-            return AVERROR(EAGAIN);
+            return -1;
         if (ffm->header[1] & FLAG_DTS)
             if (ffm_read_data(s, ffm->header+16, 4, 1) != 4)
-                return AVERROR(EAGAIN);
+                return -1;
 #if 0
         av_hexdump_log(s, AV_LOG_DEBUG, ffm->header, FRAME_HEADER_SIZE);
 #endif
@@ -385,9 +389,8 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* fall thru */
     case READ_DATA:
         size = AV_RB24(ffm->header + 2);
-        if (!ffm_is_avail_data(s, size)) {
-            return AVERROR(EAGAIN);
-        }
+        if ((ret = ffm_is_avail_data(s, size)) < 0)
+            return ret;
 
         duration = AV_RB24(ffm->header + 5);
 
@@ -397,7 +400,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR, "invalid stream index %d\n", pkt->stream_index);
             av_free_packet(pkt);
             ffm->read_state = READ_HEADER;
-            return AVERROR(EAGAIN);
+            return -1;
         }
         pkt->pos = url_ftell(s->pb);
         if (ffm->header[1] & FLAG_KEY_FRAME)
@@ -407,7 +410,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ffm_read_data(s, pkt->data, size, 0) != size) {
             /* bad case: desynchronized packet. we cancel all the packet loading */
             av_free_packet(pkt);
-            return AVERROR(EAGAIN);
+            return -1;
         }
         pkt->pts = AV_RB64(ffm->header+8);
         if (ffm->header[1] & FLAG_DTS)

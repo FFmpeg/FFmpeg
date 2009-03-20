@@ -93,8 +93,7 @@ static int ffm_write_header(AVFormatContext *s)
     /* header */
     put_le32(pb, MKTAG('F', 'F', 'M', '1'));
     put_be32(pb, ffm->packet_size);
-    /* XXX: store write position in other file ? */
-    put_be64(pb, ffm->packet_size); /* current write position */
+    put_be64(pb, 0); /* current write position */
 
     put_be32(pb, s->nb_streams);
     bit_rate = 0;
@@ -223,15 +222,6 @@ static int ffm_write_trailer(AVFormatContext *s)
         flush_packet(s);
 
     put_flush_packet(pb);
-
-    if (!url_is_streamed(pb)) {
-        int64_t size;
-        /* update the write offset */
-        size = url_ftell(pb);
-        url_fseek(pb, 8, SEEK_SET);
-        put_be64(pb, size);
-        put_flush_packet(pb);
-    }
 
     return 0;
 }
