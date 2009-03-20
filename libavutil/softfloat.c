@@ -32,7 +32,7 @@ int main(void){
     SoftFloat sf1, sf2;
     double d1, d2;
     int i, j;
-av_log_level = AV_LOG_DEBUG;
+    av_log_set_level(AV_LOG_DEBUG);
 
     d1= 1;
     for(i= 0; i<10; i++){
