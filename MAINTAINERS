@@ -266,10 +266,9 @@ Muxers/Demuxers:
   nsvdec.c                              Francois Revol
   nut.c                                 Michael Niedermayer
   nuv.c                                 Reimar Doeffinger
-  oggdec.c, oggdec.h                    Mans Rullgard
+  oggdec.c, oggdec.h                    David Conrad
   oggenc.c                              Baptiste Coudurier
-  oggparsevorbis.c                      Mans Rullgard
-  oggparseogm.c                         Mans Rullgard
+  oggparse*.c                           David Conrad
   psxstr.c                              Mike Melanson
   pva.c                                 Ivo van Poorten
   r3d.c                                 Baptiste Coudurier
