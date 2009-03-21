@@ -536,16 +536,13 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
 
             if(state > (unsigned)0xFFFF || state < 12)
                 continue;
-            len=state;
+            len=state - 12;
             state= 0xFFFFFFFF;
 
             num = get_be16(pb);
             *timestamp = get_be32(pb);
             res= get_byte(pb); /* reserved */
             *flags = get_byte(pb); /* flags */
-
-
-            len -= 12;
         }
         for(i=0;i<s->nb_streams;i++) {
             st = s->streams[i];
