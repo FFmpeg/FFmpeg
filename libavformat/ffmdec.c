@@ -165,17 +165,16 @@ static int ffm_read_data(AVFormatContext *s,
 
 //#define DEBUG_SEEK
 
-/* pos is between 0 and file_size - FFM_PACKET_SIZE. It is translated
-   by the write position inside this function */
+/* ensure that acutal seeking happens between FFM_PACKET_SIZE
+   and file_size - FFM_PACKET_SIZE */
 static void ffm_seek1(AVFormatContext *s, int64_t pos1)
 {
     FFMContext *ffm = s->priv_data;
     ByteIOContext *pb = s->pb;
     int64_t pos;
 
-    pos = pos1 + ffm->write_index;
-    if (pos >= ffm->file_size)
-        pos -= (ffm->file_size - FFM_PACKET_SIZE);
+    pos = FFMIN(pos1, ffm->file_size - FFM_PACKET_SIZE);
+    pos = FFMAX(pos, FFM_PACKET_SIZE);
 #ifdef DEBUG_SEEK
     av_log(s, AV_LOG_DEBUG, "seek to %"PRIx64" -> %"PRIx64"\n", pos1, pos);
 #endif
@@ -454,8 +453,8 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
 #endif
     /* find the position using linear interpolation (better than
        dichotomy in typical cases) */
-    pos_min = 0;
-    pos_max = ffm->file_size - 2 * FFM_PACKET_SIZE;
+    pos_min = FFM_PACKET_SIZE;
+    pos_max = ffm->file_size - FFM_PACKET_SIZE;
     while (pos_min <= pos_max) {
         pts_min = get_dts(s, pos_min);
         pts_max = get_dts(s, pos_max);
@@ -478,8 +477,7 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
         }
     }
     pos = (flags & AVSEEK_FLAG_BACKWARD) ? pos_min : pos_max;
-    if (pos > 0)
-        pos -= FFM_PACKET_SIZE;
+
  found:
     ffm_seek1(s, pos);
 
