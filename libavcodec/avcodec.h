@@ -31,7 +31,7 @@
 
 #define LIBAVCODEC_VERSION_MAJOR 52
 #define LIBAVCODEC_VERSION_MINOR 22
-#define LIBAVCODEC_VERSION_MICRO  0
+#define LIBAVCODEC_VERSION_MICRO  1
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -2661,7 +2661,7 @@ void av_resample_close(struct AVResampleContext *c);
  * @param height the height of the picture
  * @return zero if successful, a negative value if not
  */
-int avpicture_alloc(AVPicture *picture, int pix_fmt, int width, int height);
+int avpicture_alloc(AVPicture *picture, enum PixelFormat pix_fmt, int width, int height);
 
 /**
  * Free a picture previously allocated by avpicture_alloc().
@@ -2689,7 +2689,7 @@ void avpicture_free(AVPicture *picture);
  */
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    int pix_fmt, int width, int height);
-int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
+int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, int height,
                      unsigned char *dest, int dest_size);
 
 /**
@@ -2704,9 +2704,9 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
  * @param height the height of the image
  * @return Image data size in bytes or -1 on error (e.g. too large dimensions).
  */
-int avpicture_get_size(int pix_fmt, int width, int height);
-void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);
-const char *avcodec_get_pix_fmt_name(int pix_fmt);
+int avpicture_get_size(enum PixelFormat pix_fmt, int width, int height);
+void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *v_shift);
+const char *avcodec_get_pix_fmt_name(enum PixelFormat pix_fmt);
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
 enum PixelFormat avcodec_get_pix_fmt(const char* name);
 unsigned int avcodec_pix_fmt_to_codec_tag(enum PixelFormat p);
@@ -2735,7 +2735,7 @@ unsigned int avcodec_pix_fmt_to_codec_tag(enum PixelFormat p);
  * @param[in] has_alpha Whether the source pixel format alpha channel is used.
  * @return Combination of flags informing you what kind of losses will occur.
  */
-int avcodec_get_pix_fmt_loss(int dst_pix_fmt, int src_pix_fmt,
+int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_pix_fmt,
                              int has_alpha);
 
 /**
@@ -2760,7 +2760,7 @@ int avcodec_get_pix_fmt_loss(int dst_pix_fmt, int src_pix_fmt,
  * @param[out] loss_ptr Combination of flags informing you what kind of losses will occur.
  * @return The best pixel format to convert to or -1 if none was found.
  */
-int avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, int src_pix_fmt,
+enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelFormat src_pix_fmt,
                               int has_alpha, int *loss_ptr);
 
 
@@ -2774,7 +2774,7 @@ int avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, int src_pix_fmt,
  * a negative value to print the corresponding header.
  * Meaningful values for obtaining a pixel format info vary from 0 to PIX_FMT_NB -1.
  */
-void avcodec_pix_fmt_string (char *buf, int buf_size, int pix_fmt);
+void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt);
 
 #define FF_ALPHA_TRANSP       0x0001 /* image has some totally transparent pixels */
 #define FF_ALPHA_SEMI_TRANSP  0x0002 /* image has some transparent pixels */
@@ -2784,12 +2784,12 @@ void avcodec_pix_fmt_string (char *buf, int buf_size, int pix_fmt);
  * @return ored mask of FF_ALPHA_xxx constants
  */
 int img_get_alpha_info(const AVPicture *src,
-                       int pix_fmt, int width, int height);
+                       enum PixelFormat pix_fmt, int width, int height);
 
 /* deinterlace a picture */
 /* deinterlace - if not supported return -1 */
 int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
-                          int pix_fmt, int width, int height);
+                          enum PixelFormat pix_fmt, int width, int height);
 
 /* external high level API */
 
@@ -3365,18 +3365,18 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
  * Copy image 'src' to 'dst'.
  */
 void av_picture_copy(AVPicture *dst, const AVPicture *src,
-              int pix_fmt, int width, int height);
+                     enum PixelFormat pix_fmt, int width, int height);
 
 /**
  * Crop image top and left side.
  */
 int av_picture_crop(AVPicture *dst, const AVPicture *src,
-             int pix_fmt, int top_band, int left_band);
+                    enum PixelFormat pix_fmt, int top_band, int left_band);
 
 /**
  * Pad image.
  */
-int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, int pix_fmt,
+int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, enum PixelFormat pix_fmt,
             int padtop, int padbottom, int padleft, int padright, int *color);
 
 unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
