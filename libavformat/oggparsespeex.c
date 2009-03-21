@@ -36,9 +36,10 @@ static int speex_header(AVFormatContext *s, int idx) {
     AVStream *st = s->streams[idx];
     uint8_t *p = os->buf + os->pstart;
 
-    if (os->psize < 80)
-        return 1;
+    if (os->seq > 1)
+        return 0;
 
+    if (os->seq == 0) {
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_SPEEX;
 
@@ -50,8 +51,10 @@ static int speex_header(AVFormatContext *s, int idx) {
 
     st->time_base.num = 1;
     st->time_base.den = st->codec->sample_rate;
+    } else
+        vorbis_comment(s, p, os->psize);
 
-    return 0;
+    return 1;
 }
 
 const struct ogg_codec ff_speex_codec = {
