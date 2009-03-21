@@ -118,12 +118,12 @@ stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
 8334630 ./tests/data/a-jpegls.avi
 592b3321994e26a990deb3a0a1415de9 *./tests/data/jpegls.rotozoom.out.yuv
 stddev:    0.65 PSNR: 51.83 bytes:  7603200/  7603200
-989a42671603dc1a7e6b156dccf0e820 *./tests/data/a-rv10.rm
-154330 ./tests/data/a-rv10.rm
+b1467b0e8d8cad730e36d1e8ab49d573 *./tests/data/a-rv10.rm
+154310 ./tests/data/a-rv10.rm
 61213b91b359697ebcefb9e0a53ac54a *./tests/data/rv10.rotozoom.out.yuv
 stddev:    5.43 PSNR: 33.41 bytes:  7603200/  7603200
-1b1cbff8e78602de498b4314cb991e72 *./tests/data/a-rv20.rm
-132754 ./tests/data/a-rv20.rm
+d864475aa16d84dd99de13e65003672a *./tests/data/a-rv20.rm
+132734 ./tests/data/a-rv20.rm
 c66afdcc0daac2f1b4167b9811968877 *./tests/data/rv20.rotozoom.out.yuv
 stddev:    5.42 PSNR: 33.44 bytes:  7603200/  7603200
 4eb34d2de25f67a2706456e999338fe9 *./tests/data/a-asv1.avi
@@ -175,8 +175,8 @@ stddev:    0.65 PSNR: 51.83 bytes:  7603200/  7603200
 83f8df5d5f84480566af548bb037fceb *./tests/data/mp2.rotozoom.out.wav
 stddev: 9328.41 PSNR: 16.92 bytes:  1055276/  1058444
 stddev: 4394.71 PSNR: 23.46 bytes:  1053352/  1058444
-aefe11ab5067621a1c674859d6413891 *./tests/data/a-ac3.rm
-98203 ./tests/data/a-ac3.rm
+3bfe347421de458dbfe572b8d4047b46 *./tests/data/a-ac3.rm
+98183 ./tests/data/a-ac3.rm
 39878597b1d65cce473639a7d8c93b02 *./tests/data/a-g726.wav
 24279 ./tests/data/a-g726.wav
 888f2f016e608d044a1bacbca5497ed2 *./tests/data/g726.rotozoom.out.wav

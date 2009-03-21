@@ -425,16 +425,8 @@ static int rm_write_trailer(AVFormatContext *s)
         index_pos = url_fseek(pb, 0, SEEK_CUR);
         data_size = index_pos - rm->data_pos;
 
-        /* index */
-        put_tag(pb, "INDX");
-        put_be32(pb, 10 + 10 * s->nb_streams);
-        put_be16(pb, 0);
+        /* FIXME: write index */
 
-        for(i=0;i<s->nb_streams;i++) {
-            put_be32(pb, 0); /* zero indexes */
-            put_be16(pb, i); /* stream number */
-            put_be32(pb, 0); /* next index */
-        }
         /* undocumented end header */
         put_be32(pb, 0);
         put_be32(pb, 0);
@@ -442,7 +434,7 @@ static int rm_write_trailer(AVFormatContext *s)
         url_fseek(pb, 0, SEEK_SET);
         for(i=0;i<s->nb_streams;i++)
             rm->streams[i].total_frames = rm->streams[i].nb_frames;
-        rv10_write_header(s, data_size, index_pos);
+        rv10_write_header(s, data_size, 0);
     } else {
         /* undocumented end header */
         put_be32(pb, 0);

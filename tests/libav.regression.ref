@@ -4,8 +4,8 @@
 bd9e0012aa39e956605387dd499365fb *./tests/data/b-libav.asf
 339775 ./tests/data/b-libav.asf
 ./tests/data/b-libav.asf CRC=0x74113749
-c351132527ccb1e8cab06cc0822fde23 *./tests/data/b-libav.rm
-355417 ./tests/data/b-libav.rm
+db5797d4c00c8b15e2e44216389be591 *./tests/data/b-libav.rm
+355387 ./tests/data/b-libav.rm
 bdb7484c68db722f66ba1630cf79844c *./tests/data/b-libav.mpg
 378880 ./tests/data/b-libav.mpg
 ./tests/data/b-libav.mpg CRC=0x2b71a386

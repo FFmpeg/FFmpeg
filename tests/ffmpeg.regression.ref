@@ -118,12 +118,12 @@ stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
 9086168 ./tests/data/a-jpegls.avi
 012717e7c928641410eaa6abaf126fdc *./tests/data/jpegls.vsynth.out.yuv
 stddev:    2.84 PSNR: 39.05 bytes:  7603200/  7603200
-99ef24bf57718fd29a7a91b22af2b3fe *./tests/data/a-rv10.rm
-667935 ./tests/data/a-rv10.rm
+1cc26cf6711df770e81bcfce36f28011 *./tests/data/a-rv10.rm
+667915 ./tests/data/a-rv10.rm
 d507be4253a9c8211a3738c58ba28118 *./tests/data/rv10.vsynth.out.yuv
 stddev:    8.06 PSNR: 29.99 bytes:  7603200/  7603200
-d1caf150a7b53db8fd5eb8c1d0701daf *./tests/data/a-rv20.rm
-640876 ./tests/data/a-rv20.rm
+02f1ec304a066c3bfb355adbdf4c5977 *./tests/data/a-rv20.rm
+640856 ./tests/data/a-rv20.rm
 297dc46da1a256c0a97158c036c30c7f *./tests/data/rv20.vsynth.out.yuv
 stddev:    8.26 PSNR: 29.77 bytes:  7603200/  7603200
 d13292f4583618d1b7b525a9ee010dff *./tests/data/a-asv1.avi
@@ -175,8 +175,8 @@ stddev:    2.84 PSNR: 39.05 bytes:  7603200/  7603200
 83f8df5d5f84480566af548bb037fceb *./tests/data/mp2.vsynth.out.wav
 stddev: 9328.41 PSNR: 16.92 bytes:  1055276/  1058444
 stddev: 4394.71 PSNR: 23.46 bytes:  1053352/  1058444
-aefe11ab5067621a1c674859d6413891 *./tests/data/a-ac3.rm
-98203 ./tests/data/a-ac3.rm
+3bfe347421de458dbfe572b8d4047b46 *./tests/data/a-ac3.rm
+98183 ./tests/data/a-ac3.rm
 39878597b1d65cce473639a7d8c93b02 *./tests/data/a-g726.wav
 24279 ./tests/data/a-g726.wav
 888f2f016e608d044a1bacbca5497ed2 *./tests/data/g726.vsynth.out.wav
