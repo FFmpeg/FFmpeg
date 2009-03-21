@@ -492,21 +492,19 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
 static int decode_frame(FLACContext *s, int alloc_data_size)
 {
-    int blocksize_code, sample_rate_code, sample_size_code, assignment, i, crc8;
+    int blocksize_code, sample_rate_code, sample_size_code, i, crc8;
     int ch_mode, bps, blocksize, samplerate;
 
     blocksize_code = get_bits(&s->gb, 4);
 
     sample_rate_code = get_bits(&s->gb, 4);
 
-    assignment = get_bits(&s->gb, 4); /* channel assignment */
-    if (assignment < FLAC_MAX_CHANNELS && s->channels == assignment+1)
+    ch_mode = get_bits(&s->gb, 4); /* channel assignment */
+    if (ch_mode < FLAC_MAX_CHANNELS && s->channels == ch_mode+1) {
         ch_mode = FLAC_CHMODE_INDEPENDENT;
-    else if (assignment >= FLAC_MAX_CHANNELS && assignment < 11 && s->channels == 2)
-        ch_mode = assignment;
-    else {
+    } else if (ch_mode > FLAC_CHMODE_MID_SIDE || s->channels != 2) {
         av_log(s->avctx, AV_LOG_ERROR, "unsupported channel assignment %d (channels=%d)\n",
-               assignment, s->channels);
+               ch_mode, s->channels);
         return -1;
     }
 
