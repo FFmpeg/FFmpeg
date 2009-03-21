@@ -2419,6 +2419,8 @@ static int http_start_receive_data(HTTPContext *c)
         http_log("Error reading write index from feed file: %s\n", strerror(errno));
         return -1;
     }
+    c->stream->feed_write_index = FFMAX(ffm_read_write_index(fd), FFM_PACKET_SIZE);
+
     c->stream->feed_size = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
 
@@ -3560,7 +3562,7 @@ static void build_feed_streams(void)
             exit(1);
         }
 
-        feed->feed_write_index = ffm_read_write_index(fd);
+        feed->feed_write_index = FFMAX(ffm_read_write_index(fd), FFM_PACKET_SIZE);
         feed->feed_size = lseek(fd, 0, SEEK_END);
         /* ensure that we do not wrap before the end of file */
         if (feed->feed_max_size && feed->feed_max_size < feed->feed_size)
