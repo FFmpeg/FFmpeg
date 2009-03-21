@@ -158,6 +158,8 @@ enum RTSPServerType {
 
 /**
  * Private data for the RTSP demuxer.
+ *
+ * @todo Use ByteIOContext instead of URLContext
  */
 typedef struct RTSPState {
     URLContext *rtsp_hd; /* RTSP TCP connexion handle */
