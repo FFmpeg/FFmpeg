@@ -786,6 +786,17 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
 int avpicture_get_size(int pix_fmt, int width, int height)
 {
     AVPicture dummy_pict;
+    if(avcodec_check_dimensions(NULL, width, height))
+        return -1;
+    switch (pix_fmt) {
+    case PIX_FMT_RGB8:
+    case PIX_FMT_BGR8:
+    case PIX_FMT_RGB4_BYTE:
+    case PIX_FMT_BGR4_BYTE:
+    case PIX_FMT_GRAY8:
+        // do not include palette for these pseudo-paletted formats
+        return width * height;
+    }
     return avpicture_fill(&dummy_pict, NULL, pix_fmt, width, height);
 }
 
@@ -1125,7 +1136,7 @@ int avpicture_alloc(AVPicture *picture,
     int size;
     void *ptr;
 
-    size = avpicture_get_size(pix_fmt, width, height);
+    size = avpicture_fill(picture, NULL, pix_fmt, width, height);
     if(size<0)
         goto fail;
     ptr = av_malloc(size);

@@ -2676,6 +2676,7 @@ void avpicture_free(AVPicture *picture);
  * If a planar format is specified, several pointers will be set pointing to
  * the different picture planes and the line sizes of the different planes
  * will be stored in the lines_sizes array.
+ * Call with ptr == NULL to get the required size for the ptr buffer.
  *
  * @param picture AVPicture whose fields are to be filled in
  * @param ptr Buffer which will contain or contains the actual image data
@@ -2692,11 +2693,14 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
 /**
  * Calculate the size in bytes that a picture of the given width and height
  * would occupy if stored in the given picture format.
+ * Note that this returns the size of a compact representation as generated
+ * by avpicture_layout, which can be smaller than the size required for e.g.
+ * avpicture_fill.
  *
  * @param pix_fmt the given picture format
  * @param width the width of the image
  * @param height the height of the image
- * @return Image data size in bytes
+ * @return Image data size in bytes or -1 on error (e.g. too large dimensions).
  */
 int avpicture_get_size(int pix_fmt, int width, int height);
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);

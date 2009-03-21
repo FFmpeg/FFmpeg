@@ -47,7 +47,7 @@ af78858062599fcbba049e4a02588a15 *./tests/data/b-libav.mov
 ./tests/data/b-pbmpipe.pbm CRC=0x806e17d8
 aff140ce80a1c86c1bf54118ad23da7b *./tests/data/b-pgmpipe.pgm
 2534775 ./tests/data/b-pgmpipe.pgm
-./tests/data/b-pgmpipe.pgm CRC=0x0e82c482
+./tests/data/b-pgmpipe.pgm CRC=0xf485870f
 9169b1f1ca56f01a6e1f5041572aa1d4 *./tests/data/b-ppmpipe.ppm
 7603575 ./tests/data/b-ppmpipe.ppm
 ./tests/data/b-ppmpipe.ppm CRC=0x79bd6ce6
@@ -56,7 +56,7 @@ aff140ce80a1c86c1bf54118ad23da7b *./tests/data/b-pgmpipe.pgm
 b977a4fedff90a79baf70c8e02986820 *./tests/data/b-libav.y4m
 3801810 ./tests/data/b-libav.y4m
 0a6d74b54396884f117669965b57d3b5 *./tests/data/b-libav02.pgm
-./tests/data/b-libav%02d.pgm CRC=0xc8032eb1
+./tests/data/b-libav%02d.pgm CRC=0x7e552eb1
 101391 ./tests/data/b-libav02.pgm
 dbe42bd8d9ca0acbd2673bd739705f0f *./tests/data/b-libav02.ppm
 ./tests/data/b-libav%02d.ppm CRC=0x6f775c0d
