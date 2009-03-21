@@ -56,7 +56,7 @@ int main(void)
 //            av_log(NULL,AV_LOG_ERROR, "%X\n", av_lfg_get(&state));
             x+=av_lfg_get(&state);
         }
-        STOP_TIMER("624 calls of av_random");
+        STOP_TIMER("624 calls of av_lfg_get");
     }
     av_log(NULL, AV_LOG_ERROR, "final value:%X\n", x);
     return 0;
