@@ -174,7 +174,7 @@ static int hex_to_data(uint8_t *data, const char *p)
     v = 1;
     for(;;) {
         skip_spaces(&p);
-        if (p == '\0')
+        if (*p == '\0')
             break;
         c = toupper((unsigned char)*p++);
         if (c >= '0' && c <= '9')
