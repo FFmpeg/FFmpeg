@@ -237,6 +237,7 @@ typedef struct FFStream {
     int feed_opened;     /* true if someone is writing to the feed */
     int is_feed;         /* true if it is a feed */
     int readonly;        /* True if writing is prohibited to the file */
+    int truncate;        /* True if feeder connection truncate the feed file */
     int conns_served;
     int64_t bytes_served;
     int64_t feed_max_size;      /* maximum storage size, zero means unlimited */
@@ -2431,10 +2432,18 @@ static int http_start_receive_data(HTTPContext *c)
     }
     c->feed_fd = fd;
 
+    if (c->stream->truncate) {
+        /* truncate feed file */
+        ffm_write_write_index(c->feed_fd, FFM_PACKET_SIZE);
+        ftruncate(c->feed_fd, FFM_PACKET_SIZE);
+        http_log("Truncating feed file '%s'\n", c->stream->feed_filename);
+    } else {
     if ((c->stream->feed_write_index = ffm_read_write_index(fd)) < 0) {
         http_log("Error reading write index from feed file: %s\n", strerror(errno));
         return -1;
     }
+    }
+
     c->stream->feed_write_index = FFMAX(ffm_read_write_index(fd), FFM_PACKET_SIZE);
 
     c->stream->feed_size = lseek(fd, 0, SEEK_END);
@@ -3954,6 +3963,11 @@ static int parse_ffconfig(const char *filename)
                 get_arg(feed->feed_filename, sizeof(feed->feed_filename), &p);
             } else if (stream)
                 get_arg(stream->feed_filename, sizeof(stream->feed_filename), &p);
+        } else if (!strcasecmp(cmd, "Truncate")) {
+            if (feed) {
+                get_arg(arg, sizeof(arg), &p);
+                feed->truncate = strtod(arg, NULL);
+            }
         } else if (!strcasecmp(cmd, "FileMaxSize")) {
             if (feed) {
                 char *p1;
