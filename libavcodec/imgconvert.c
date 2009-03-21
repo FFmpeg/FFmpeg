@@ -216,16 +216,32 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .depth = 16,
         .x_chroma_shift = 0, .y_chroma_shift = 0,
     },
-    [PIX_FMT_RGB565] = {
-        .name = "rgb565",
+    [PIX_FMT_RGB565BE] = {
+        .name = "rgb565be",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
         .x_chroma_shift = 0, .y_chroma_shift = 0,
     },
-    [PIX_FMT_RGB555] = {
-        .name = "rgb555",
+    [PIX_FMT_RGB565LE] = {
+        .name = "rgb565le",
+        .nb_channels = 3,
+        .color_type = FF_COLOR_RGB,
+        .pixel_type = FF_PIXEL_PACKED,
+        .depth = 5,
+        .x_chroma_shift = 0, .y_chroma_shift = 0,
+    },
+    [PIX_FMT_RGB555BE] = {
+        .name = "rgb555be",
+        .nb_channels = 3,
+        .color_type = FF_COLOR_RGB,
+        .pixel_type = FF_PIXEL_PACKED,
+        .depth = 5,
+        .x_chroma_shift = 0, .y_chroma_shift = 0,
+    },
+    [PIX_FMT_RGB555LE] = {
+        .name = "rgb555le",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
@@ -327,16 +343,32 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .depth = 8,
         .x_chroma_shift = 0, .y_chroma_shift = 0,
     },
-    [PIX_FMT_BGR565] = {
-        .name = "bgr565",
+    [PIX_FMT_BGR565BE] = {
+        .name = "bgr565be",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
         .x_chroma_shift = 0, .y_chroma_shift = 0,
     },
-    [PIX_FMT_BGR555] = {
-        .name = "bgr555",
+    [PIX_FMT_BGR565LE] = {
+        .name = "bgr565le",
+        .nb_channels = 3,
+        .color_type = FF_COLOR_RGB,
+        .pixel_type = FF_PIXEL_PACKED,
+        .depth = 5,
+        .x_chroma_shift = 0, .y_chroma_shift = 0,
+    },
+    [PIX_FMT_BGR555BE] = {
+        .name = "bgr555be",
+        .nb_channels = 3,
+        .color_type = FF_COLOR_RGB,
+        .pixel_type = FF_PIXEL_PACKED,
+        .depth = 5,
+        .x_chroma_shift = 0, .y_chroma_shift = 0,
+    },
+    [PIX_FMT_BGR555LE] = {
+        .name = "bgr555le",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,

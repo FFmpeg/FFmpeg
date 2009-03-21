@@ -154,8 +154,6 @@ static const AVPixFmtDescriptor pix_fmt_desc[PIX_FMT_NB] = {
         },
         .flags = PIX_FMT_BE,
     },
-//FIXME change pix fmt defines so that we have a LE & BE instead of a native-endian
-#if 0
     [PIX_FMT_RGB565LE] = {
         .name = "rgb565le",
         .nb_channels  = 3,
@@ -179,7 +177,6 @@ static const AVPixFmtDescriptor pix_fmt_desc[PIX_FMT_NB] = {
         },
         .flags = PIX_FMT_BE,
     },
-#endif
     [PIX_FMT_MONOBLACK] = {
         .name = "monoblack",
         .nb_channels  = 1,
