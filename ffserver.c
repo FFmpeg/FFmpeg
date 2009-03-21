@@ -700,6 +700,22 @@ static void start_wait_request(HTTPContext *c, int is_rtsp)
     }
 }
 
+static void http_send_too_busy_reply(int fd)
+{
+    char buffer[300];
+    int len = snprintf(buffer, sizeof(buffer),
+                       "HTTP/1.0 200 Server too busy\r\n"
+                       "Content-type: text/html\r\n"
+                       "\r\n"
+                       "<html><head><title>Too busy</title></head><body>\r\n"
+                       "<p>The server is too busy to serve your request at this time.</p>\r\n"
+                       "<p>The number of current connections is %d, and this exceeds the limit of %d.</p>\r\n"
+                       "</body></html>\r\n",
+                       nb_connections, nb_max_connections);
+    send(fd, buffer, len, 0);
+}
+
+
 static void new_connection(int server_fd, int is_rtsp)
 {
     struct sockaddr_in from_addr;
@@ -715,10 +731,10 @@ static void new_connection(int server_fd, int is_rtsp)
     }
     ff_socket_nonblock(fd, 1);
 
-    /* XXX: should output a warning page when coming
-       close to the connection limit */
-    if (nb_connections >= nb_max_connections)
+    if (nb_connections >= nb_max_connections) {
+        http_send_too_busy_reply(fd);
         goto fail;
+    }
 
     /* add a new connection */
     c = av_mallocz(sizeof(HTTPContext));
