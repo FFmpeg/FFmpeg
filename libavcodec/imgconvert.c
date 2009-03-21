@@ -457,7 +457,7 @@ const char *avcodec_get_pix_fmt_name(enum PixelFormat pix_fmt)
         return pix_fmt_info[pix_fmt].name;
 }
 
-enum PixelFormat avcodec_get_pix_fmt(const char* name)
+static enum PixelFormat avcodec_get_pix_fmt_internal(const char *name)
 {
     int i;
 
@@ -465,6 +465,24 @@ enum PixelFormat avcodec_get_pix_fmt(const char* name)
          if (!strcmp(pix_fmt_info[i].name, name))
              return i;
     return PIX_FMT_NONE;
+}
+
+enum PixelFormat avcodec_get_pix_fmt(const char *name)
+{
+#ifdef WORDS_BIGENDIAN
+#   define NE "be"
+#else
+#   define NE "le"
+#endif
+    enum PixelFormat pix_fmt = avcodec_get_pix_fmt_internal(name);
+
+    if (pix_fmt == PIX_FMT_NONE) {
+        char name2[32];
+        snprintf(name2, sizeof(name2), "%s%s", name, NE);
+        pix_fmt = avcodec_get_pix_fmt_internal(name2);
+    }
+    return pix_fmt;
+#undef NE
 }
 
 void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
