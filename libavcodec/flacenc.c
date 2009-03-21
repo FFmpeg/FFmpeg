@@ -34,12 +34,6 @@
 #define FLAC_SUBFRAME_FIXED     8
 #define FLAC_SUBFRAME_LPC      32
 
-#define FLAC_CHMODE_NOT_STEREO      0
-#define FLAC_CHMODE_LEFT_RIGHT      1
-#define FLAC_CHMODE_LEFT_SIDE       8
-#define FLAC_CHMODE_RIGHT_SIDE      9
-#define FLAC_CHMODE_MID_SIDE       10
-
 #define MAX_FIXED_ORDER     4
 #define MAX_PARTITION_ORDER 8
 #define MAX_PARTITIONS     (1 << MAX_PARTITION_ORDER)
@@ -1006,7 +1000,7 @@ static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
         }
     }
     if(best == 0) {
-        return FLAC_CHMODE_LEFT_RIGHT;
+        return FLAC_CHMODE_INDEPENDENT;
     } else if(best == 1) {
         return FLAC_CHMODE_LEFT_SIDE;
     } else if(best == 2) {
@@ -1031,14 +1025,14 @@ static void channel_decorrelation(FlacEncodeContext *ctx)
     right = frame->subframes[1].samples;
 
     if(ctx->channels != 2) {
-        frame->ch_mode = FLAC_CHMODE_NOT_STEREO;
+        frame->ch_mode = FLAC_CHMODE_INDEPENDENT;
         return;
     }
 
     frame->ch_mode = estimate_stereo_mode(left, right, n);
 
     /* perform decorrelation and adjust bits-per-sample */
-    if(frame->ch_mode == FLAC_CHMODE_LEFT_RIGHT) {
+    if(frame->ch_mode == FLAC_CHMODE_INDEPENDENT) {
         return;
     }
     if(frame->ch_mode == FLAC_CHMODE_MID_SIDE) {
@@ -1078,7 +1072,7 @@ static void output_frame_header(FlacEncodeContext *s)
     put_bits(&s->pb, 16, 0xFFF8);
     put_bits(&s->pb, 4, frame->bs_code[0]);
     put_bits(&s->pb, 4, s->sr_code[0]);
-    if(frame->ch_mode == FLAC_CHMODE_NOT_STEREO) {
+    if(frame->ch_mode == FLAC_CHMODE_INDEPENDENT) {
         put_bits(&s->pb, 4, s->ch_code);
     } else {
         put_bits(&s->pb, 4, frame->ch_mode);

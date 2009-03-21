@@ -46,13 +46,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-enum decorrelation_type {
-    INDEPENDENT,
-    LEFT_SIDE,
-    RIGHT_SIDE,
-    MID_SIDE,
-};
-
 typedef struct FLACContext {
     FLACSTREAMINFO
 
@@ -63,7 +56,7 @@ typedef struct FLACContext {
     int curr_bps;                           ///< bps for current subframe, adjusted for channel correlation and wasted bits
     int sample_shift;                       ///< shift required to make output samples 16-bit or 32-bit
     int is32;                               ///< flag to indicate if output should be 32-bit instead of 16-bit
-    enum decorrelation_type decorrelation;  ///< channel decorrelation type in the current frame
+    int decorrelation;                      ///< channel decorrelation type in the current frame
     int got_streaminfo;                     ///< indicates if the STREAMINFO has been read
 
     int32_t *decoded[FLAC_MAX_CHANNELS];    ///< decoded samples
@@ -445,10 +438,10 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
     s->curr_bps = s->bps;
     if (channel == 0) {
-        if (s->decorrelation == RIGHT_SIDE)
+        if (s->decorrelation == FLAC_CHMODE_RIGHT_SIDE)
             s->curr_bps++;
     } else {
-        if (s->decorrelation == LEFT_SIDE || s->decorrelation == MID_SIDE)
+        if (s->decorrelation == FLAC_CHMODE_LEFT_SIDE || s->decorrelation == FLAC_CHMODE_MID_SIDE)
             s->curr_bps++;
     }
 
@@ -508,9 +501,9 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
 
     assignment = get_bits(&s->gb, 4); /* channel assignment */
     if (assignment < FLAC_MAX_CHANNELS && s->channels == assignment+1)
-        decorrelation = INDEPENDENT;
+        decorrelation = FLAC_CHMODE_INDEPENDENT;
     else if (assignment >= FLAC_MAX_CHANNELS && assignment < 11 && s->channels == 2)
-        decorrelation = LEFT_SIDE + assignment - 8;
+        decorrelation = assignment;
     else {
         av_log(s->avctx, AV_LOG_ERROR, "unsupported channel assignment %d (channels=%d)\n",
                assignment, s->channels);
@@ -710,7 +703,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
             break;
 
     switch (s->decorrelation) {
-    case INDEPENDENT:
+    case FLAC_CHMODE_INDEPENDENT:
         for (j = 0; j < s->blocksize; j++) {
             for (i = 0; i < s->channels; i++) {
                 if (s->is32)
@@ -720,11 +713,11 @@ static int flac_decode_frame(AVCodecContext *avctx,
             }
         }
         break;
-    case LEFT_SIDE:
+    case FLAC_CHMODE_LEFT_SIDE:
         DECORRELATE(a,a-b)
-    case RIGHT_SIDE:
+    case FLAC_CHMODE_RIGHT_SIDE:
         DECORRELATE(a+b,b)
-    case MID_SIDE:
+    case FLAC_CHMODE_MID_SIDE:
         DECORRELATE( (a-=b>>1) + b, a)
     }
 
