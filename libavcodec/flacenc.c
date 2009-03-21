@@ -81,7 +81,6 @@ typedef struct FlacFrame {
 typedef struct FlacEncodeContext {
     PutBitContext pb;
     int channels;
-    int ch_code;
     int samplerate;
     int sr_code[2];
     int min_framesize;
@@ -178,7 +177,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
         return -1;
     }
     s->channels = channels;
-    s->ch_code = s->channels-1;
 
     /* find samplerate in table */
     if(freq < 1)
@@ -1073,7 +1071,7 @@ static void output_frame_header(FlacEncodeContext *s)
     put_bits(&s->pb, 4, frame->bs_code[0]);
     put_bits(&s->pb, 4, s->sr_code[0]);
     if(frame->ch_mode == FLAC_CHMODE_INDEPENDENT) {
-        put_bits(&s->pb, 4, s->ch_code);
+        put_bits(&s->pb, 4, s->channels-1);
     } else {
         put_bits(&s->pb, 4, frame->ch_mode);
     }
