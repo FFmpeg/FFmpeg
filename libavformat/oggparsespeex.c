@@ -40,17 +40,17 @@ static int speex_header(AVFormatContext *s, int idx) {
         return 0;
 
     if (os->seq == 0) {
-    st->codec->codec_type = CODEC_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_SPEEX;
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_id = CODEC_ID_SPEEX;
 
-    st->codec->sample_rate = AV_RL32(p + 36);
-    st->codec->channels = AV_RL32(p + 48);
-    st->codec->extradata_size = os->psize;
-    st->codec->extradata = av_malloc(st->codec->extradata_size);
-    memcpy(st->codec->extradata, p, st->codec->extradata_size);
+        st->codec->sample_rate = AV_RL32(p + 36);
+        st->codec->channels = AV_RL32(p + 48);
+        st->codec->extradata_size = os->psize;
+        st->codec->extradata = av_malloc(st->codec->extradata_size);
+        memcpy(st->codec->extradata, p, st->codec->extradata_size);
 
-    st->time_base.num = 1;
-    st->time_base.den = st->codec->sample_rate;
+        st->time_base.num = 1;
+        st->time_base.den = st->codec->sample_rate;
     } else
         vorbis_comment(s, p, os->psize);
 
