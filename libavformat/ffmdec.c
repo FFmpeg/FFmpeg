@@ -190,7 +190,7 @@ static int64_t get_dts(AVFormatContext *s, int64_t pos)
     url_fskip(pb, 4);
     dts = get_be64(pb);
 #ifdef DEBUG_SEEK
-    av_log(s, AV_LOG_DEBUG, "pts=%0.6f\n", pts / 1000000.0);
+    av_log(s, AV_LOG_DEBUG, "dts=%0.6f\n", dts / 1000000.0);
 #endif
     return dts;
 }
