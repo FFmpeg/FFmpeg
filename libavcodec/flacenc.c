@@ -80,10 +80,12 @@ typedef struct FlacFrame {
 } FlacFrame;
 
 typedef struct FlacEncodeContext {
-    FLACSTREAMINFO
     PutBitContext pb;
+    int channels;
+    int samplerate;
     int sr_code[2];
     int min_framesize;
+    int max_framesize;
     int max_encoded_framesize;
     uint32_t frame_count;
     uint64_t sample_count;
