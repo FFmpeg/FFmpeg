@@ -3987,6 +3987,11 @@ static int parse_ffconfig(const char *filename)
                     break;
                 }
                 feed->feed_max_size = (int64_t)fsize;
+                if (feed->feed_max_size < FFM_PACKET_SIZE*4) {
+                    fprintf(stderr, "%s:%d: Feed max file size is too small, "
+                            "must be at least %d\n", filename, line_num, FFM_PACKET_SIZE*4);
+                    errors++;
+                }
             }
         } else if (!strcasecmp(cmd, "</Feed>")) {
             if (!feed) {
