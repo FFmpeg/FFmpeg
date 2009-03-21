@@ -37,6 +37,7 @@ const uint8_t ff_log2_run[32]={
  8, 9,10,11,12,13,14,15
 };
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
  * Same as av_mallocz_static(), but does a realloc.
  *
@@ -53,6 +54,7 @@ static void *ff_realloc_static(void *ptr, unsigned int size)
 {
     return av_realloc(ptr, size);
 }
+#endif
 
 void align_put_bits(PutBitContext *s)
 {

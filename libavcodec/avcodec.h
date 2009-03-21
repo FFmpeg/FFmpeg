@@ -2496,6 +2496,7 @@ typedef struct AVPicture {
     int linesize[4];       ///< number of bytes per line
 } AVPicture;
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
  * AVPaletteControl
  * This structure defines a method for communicating palette changes
@@ -2519,6 +2520,7 @@ typedef struct AVPaletteControl {
     unsigned int palette[AVPALETTE_COUNT];
 
 } AVPaletteControl attribute_deprecated;
+#endif
 
 enum AVSubtitleType {
     SUBTITLE_NONE,
@@ -3269,12 +3271,14 @@ AVCodecParser *av_parser_next(AVCodecParser *c);
 void av_register_codec_parser(AVCodecParser *parser);
 AVCodecParserContext *av_parser_init(int codec_id);
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 attribute_deprecated
 int av_parser_parse(AVCodecParserContext *s,
                     AVCodecContext *avctx,
                     uint8_t **poutbuf, int *poutbuf_size,
                     const uint8_t *buf, int buf_size,
                     int64_t pts, int64_t dts);
+#endif
 
 /**
  * Parse a packet.
