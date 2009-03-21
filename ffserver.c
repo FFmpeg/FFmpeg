@@ -2438,14 +2438,13 @@ static int http_start_receive_data(HTTPContext *c)
         ftruncate(c->feed_fd, FFM_PACKET_SIZE);
         http_log("Truncating feed file '%s'\n", c->stream->feed_filename);
     } else {
-    if ((c->stream->feed_write_index = ffm_read_write_index(fd)) < 0) {
-        http_log("Error reading write index from feed file: %s\n", strerror(errno));
-        return -1;
-    }
+        if ((c->stream->feed_write_index = ffm_read_write_index(fd)) < 0) {
+            http_log("Error reading write index from feed file: %s\n", strerror(errno));
+            return -1;
+        }
     }
 
     c->stream->feed_write_index = FFMAX(ffm_read_write_index(fd), FFM_PACKET_SIZE);
-
     c->stream->feed_size = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
 
