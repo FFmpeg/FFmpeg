@@ -243,8 +243,7 @@ static const AttrNameMap attr_names[]=
 int rtsp_next_attr_and_value(const char **p, char *attr, int attr_size, char *value, int value_size)
 {
     skip_spaces(p);
-    if(**p)
-    {
+    if(**p) {
         get_word_sep(attr, attr_size, "=", p);
         if (**p == '=')
             (*p)++;
