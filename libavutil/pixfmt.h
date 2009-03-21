@@ -113,6 +113,12 @@ enum PixelFormat {
 };
 
 #ifdef WORDS_BIGENDIAN
+#   define PIX_FMT_NE(name) PIX_FMT_##name##BE
+#else
+#   define PIX_FMT_NE(name) PIX_FMT_##name##LE
+#endif
+
+#ifdef WORDS_BIGENDIAN
 #define PIX_FMT_RGBA PIX_FMT_RGB32_1
 #define PIX_FMT_BGRA PIX_FMT_BGR32_1
 #define PIX_FMT_ARGB PIX_FMT_RGB32
