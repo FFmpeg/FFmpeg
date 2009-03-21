@@ -744,15 +744,36 @@ static void rtsp_skip_packet(AVFormatContext *s)
     }
 }
 
-static void
+/**
+ * Read a RTSP message from the server, or prepare to read data
+ * packets if we're reading data interleaved over the TCP/RTSP
+ * connection as well.
+ *
+ * @param s RTSP demuxer context
+ * @param reply pointer where the RTSP message header will be stored
+ * @param content_ptr pointer where the RTSP message body, if any, will
+ *                    be stored (length is in \p reply)
+ * @param return_on_interleaved_data whether the function may return if we
+ *                   encounter a data marker ('$'), which precedes data
+ *                   packets over interleaved TCP/RTSP connections. If this
+ *                   is set, this function will return 1 after encountering
+ *                   a '$'. If it is not set, the function will skip any
+ *                   data packets (if they are encountered), until a reply
+ *                   has been fully parsed. If no more data is available
+ *                   without parsing a reply, it will return an error.
+ *
+ * @returns 1 if a data packets is ready to be received, -1 on error,
+ *          and 0 on success.
+ */
+static int
 rtsp_read_reply (AVFormatContext *s, RTSPMessageHeader *reply,
-                 unsigned char **content_ptr)
+                 unsigned char **content_ptr, int return_on_interleaved_data)
 {
     RTSPState *rt = s->priv_data;
     char buf[4096], buf1[1024], *q;
     unsigned char ch;
     const char *p;
-    int content_length, line_count = 0;
+    int ret, content_length, line_count = 0;
     unsigned char *content = NULL;
 
     memset(reply, 0, sizeof(*reply));
@@ -762,12 +783,19 @@ rtsp_read_reply (AVFormatContext *s, RTSPMessageHeader *reply,
     for(;;) {
         q = buf;
         for(;;) {
-            if (url_readbuf(rt->rtsp_hd, &ch, 1) != 1)
-                break;
+            ret = url_readbuf(rt->rtsp_hd, &ch, 1);
+#ifdef DEBUG_RTP_TCP
+            printf("ret=%d c=%02x [%c]\n", ret, ch, ch);
+#endif
+            if (ret != 1)
+                return -1;
             if (ch == '\n')
                 break;
             if (ch == '$') {
                 /* XXX: only parse it if first char on line ? */
+                if (return_on_interleaved_data) {
+                    return 1;
+                } else
                 rtsp_skip_packet(s);
             } else if (ch != '\r') {
                 if ((q - buf) < sizeof(buf) - 1)
@@ -809,6 +837,8 @@ rtsp_read_reply (AVFormatContext *s, RTSPMessageHeader *reply,
         *content_ptr = content;
     else
         av_free(content);
+
+    return 0;
 }
 
 static void rtsp_send_cmd(AVFormatContext *s,
@@ -832,7 +862,7 @@ static void rtsp_send_cmd(AVFormatContext *s,
 #endif
     url_write(rt->rtsp_hd, buf, strlen(buf));
 
-    rtsp_read_reply(s, reply, content_ptr);
+    rtsp_read_reply(s, reply, content_ptr, 0);
 }
 
 
@@ -1277,14 +1307,14 @@ static int tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
 #endif
  redo:
     for(;;) {
-        ret = url_readbuf(rt->rtsp_hd, buf, 1);
-#ifdef DEBUG_RTP_TCP
-        printf("ret=%d c=%02x [%c]\n", ret, buf[0], buf[0]);
-#endif
-        if (ret != 1)
+        RTSPMessageHeader reply;
+
+        ret = rtsp_read_reply(s, &reply, NULL, 1);
+        if (ret == -1)
             return -1;
-        if (buf[0] == '$')
+        if (ret == 1) /* received '$' */
             break;
+        /* XXX: parse message */
     }
     ret = url_readbuf(rt->rtsp_hd, buf, 3);
     if (ret != 3)
@@ -1323,14 +1353,15 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
     fd_set rfds;
-    int fd, fd_max, n, i, ret;
+    int fd, fd_max, n, i, ret, tcp_fd;
     struct timeval tv;
 
     for(;;) {
         if (url_interrupt_cb())
             return AVERROR(EINTR);
         FD_ZERO(&rfds);
-        fd_max = -1;
+        tcp_fd = fd_max = url_get_file_handle(rt->rtsp_hd);
+        FD_SET(tcp_fd, &rfds);
         for(i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
             if (rtsp_st->rtp_handle) {
@@ -1358,6 +1389,12 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                         }
                     }
                 }
+            }
+            if (FD_ISSET(tcp_fd, &rfds)) {
+                RTSPMessageHeader reply;
+
+                rtsp_read_reply(s, &reply, NULL, 0);
+                /* XXX: parse message */
             }
         }
     }
