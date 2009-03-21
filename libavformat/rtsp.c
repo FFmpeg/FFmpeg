@@ -584,14 +584,11 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
 
         get_word_sep(transport_protocol, sizeof(transport_protocol),
                      "/", &p);
-        if (*p == '/')
-            p++;
         if (!strcasecmp (transport_protocol, "rtp")) {
             get_word_sep(profile, sizeof(profile), "/;,", &p);
             lower_transport[0] = '\0';
             /* rtp/avp/<protocol> */
             if (*p == '/') {
-                p++;
                 get_word_sep(lower_transport, sizeof(lower_transport),
                              ";,", &p);
             }
