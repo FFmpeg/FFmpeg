@@ -2575,12 +2575,11 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
                 else if (dstFormat == PIX_FMT_UYVY422)
                     c->swScale= PlanarToUyvyWrapper;
             }
-
-            if(srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV420P)
-                c->swScale= YUYV2YUV420Wrapper;
-            if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV420P)
-                c->swScale= UYVY2YUV420Wrapper;
         }
+        if(srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV420P)
+            c->swScale= YUYV2YUV420Wrapper;
+        if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV420P)
+            c->swScale= UYVY2YUV420Wrapper;
         if(srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV422P)
             c->swScale= YUYV2YUV422Wrapper;
         if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV422P)
