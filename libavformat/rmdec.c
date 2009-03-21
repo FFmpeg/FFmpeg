@@ -534,7 +534,7 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
                 goto skip;
             }
 
-            if(state > (unsigned)0xFFFF || state < 12)
+            if(state > (unsigned)0xFFFF || state <= 12)
                 continue;
             len=state - 12;
             state= 0xFFFFFFFF;
