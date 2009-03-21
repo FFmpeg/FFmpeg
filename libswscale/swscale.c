@@ -2118,7 +2118,9 @@ static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
         int height= (plane==0 || plane==3) ? srcSliceH: -((-srcSliceH)>>c->chrDstVSubSample);
 
         if (!dst[plane]) continue;
-        if (!src[plane])
+        // ignore palette for GRAY8
+        if (plane == 1 && !dst[2]) continue;
+        if (!src[plane] || (plane == 1 && !src[2]))
             fillPlane(dst[plane], dstStride[plane], length, height, y, (plane==3) ? 255 : 128);
         else
         {
