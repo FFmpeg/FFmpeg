@@ -83,8 +83,8 @@ OBJS-$(CONFIG_FFV1_DECODER)            += ffv1.o rangecoder.o
 OBJS-$(CONFIG_FFV1_ENCODER)            += ffv1.o rangecoder.o
 OBJS-$(CONFIG_FFVHUFF_DECODER)         += huffyuv.o
 OBJS-$(CONFIG_FFVHUFF_ENCODER)         += huffyuv.o
-OBJS-$(CONFIG_FLAC_DECODER)            += flacdec.o flacdata.o
-OBJS-$(CONFIG_FLAC_ENCODER)            += flacenc.o flacdata.o lpc.o
+OBJS-$(CONFIG_FLAC_DECODER)            += flacdec.o flacdata.o flac.o
+OBJS-$(CONFIG_FLAC_ENCODER)            += flacenc.o flacdata.o flac.o lpc.o
 OBJS-$(CONFIG_FLASHSV_DECODER)         += flashsv.o
 OBJS-$(CONFIG_FLASHSV_ENCODER)         += flashsvenc.o
 OBJS-$(CONFIG_FLIC_DECODER)            += flicvideo.o
@@ -346,17 +346,17 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcm.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_EAC3_DEMUXER)            += ac3_parser.o ac3tab.o aac_ac3_parser.o
-OBJS-$(CONFIG_FLAC_DEMUXER)            += flacdec.o flacdata.o
-OBJS-$(CONFIG_FLAC_MUXER)              += flacdec.o flacdata.o
+OBJS-$(CONFIG_FLAC_DEMUXER)            += flacdec.o flacdata.o flac.o
+OBJS-$(CONFIG_FLAC_MUXER)              += flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
-OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o flacdec.o flacdata.o
+OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o
-OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o flacdec.o flacdata.o
+OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGTS_MUXER)            += mpegvideo.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
-OBJS-$(CONFIG_OGG_DEMUXER)             += flacdec.o flacdata.o
-OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o
+OBJS-$(CONFIG_OGG_DEMUXER)             += flacdec.o flacdata.o flac.o
+OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o
 
 # external codec libraries

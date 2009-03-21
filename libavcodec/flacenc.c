@@ -345,11 +345,8 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
            s->options.lpc_coeff_precision);
 
     /* set maximum encoded frame size in verbatim mode */
-    if(s->channels == 2) {
-        s->max_framesize = 14 + ((s->avctx->frame_size * 33 + 7) >> 3);
-    } else {
-        s->max_framesize = 14 + (s->avctx->frame_size * s->channels * 2);
-    }
+    s->max_framesize = ff_flac_get_max_frame_size(s->avctx->frame_size,
+                                                  s->channels, 16);
 
     /* initialize MD5 context */
     s->md5ctx = av_malloc(av_md5_size);

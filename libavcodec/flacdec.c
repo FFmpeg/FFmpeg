@@ -147,7 +147,8 @@ static void allocate_buffers(FLACContext *s)
     assert(s->max_blocksize);
 
     if (s->max_framesize == 0 && s->max_blocksize) {
-        s->max_framesize = 23 + (s->channels * s->bps * s->max_blocksize + 7) / 8;
+        s->max_framesize = ff_flac_get_max_frame_size(s->max_blocksize,
+                                                      s->channels, s->bps);
     }
 
     for (i = 0; i < s->channels; i++) {
