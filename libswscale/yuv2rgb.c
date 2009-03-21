@@ -508,7 +508,11 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
         switch (c->dstFormat) {
         case PIX_FMT_RGB32:
             if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P){
-                if (HAVE_7REGS) return yuva420_rgb32_MMX2;
+#if HAVE_7REGS
+                return yuva420_rgb32_MMX2;
+#else
+                break;
+#endif
             }else return yuv420_rgb32_MMX2;
         case PIX_FMT_BGR24:  return yuv420_rgb24_MMX2;
         case PIX_FMT_RGB565: return yuv420_rgb16_MMX2;
@@ -519,7 +523,11 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
         switch (c->dstFormat) {
         case PIX_FMT_RGB32:
             if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P){
-                if (HAVE_7REGS) return yuva420_rgb32_MMX;
+#if HAVE_7REGS
+                return yuva420_rgb32_MMX;
+#else
+                break;
+#endif
             }else return yuv420_rgb32_MMX;
         case PIX_FMT_BGR24:  return yuv420_rgb24_MMX;
         case PIX_FMT_RGB565: return yuv420_rgb16_MMX;
