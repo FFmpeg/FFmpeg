@@ -57,11 +57,8 @@ static int rtsp_probe(AVProbeData *p)
     return 0;
 }
 
-static int redir_isspace(int c)
-{
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
-}
-
+#define SPACE_CHARS " \t\r\n"
+#define redir_isspace(c) strchr(SPACE_CHARS, c)
 static void skip_spaces(const char **pp)
 {
     const char *p;
@@ -71,15 +68,13 @@ static void skip_spaces(const char **pp)
     *pp = p;
 }
 
-static void get_word_sep(char *buf, int buf_size, const char *sep,
-                         const char **pp)
+static void get_word_until_chars(char *buf, int buf_size,
+                                 const char *sep, const char **pp)
 {
     const char *p;
     char *q;
 
     p = *pp;
-    if (*p == '/')
-        p++;
     skip_spaces(&p);
     q = buf;
     while (!strchr(sep, *p) && *p != '\0') {
@@ -92,22 +87,16 @@ static void get_word_sep(char *buf, int buf_size, const char *sep,
     *pp = p;
 }
 
+static void get_word_sep(char *buf, int buf_size, const char *sep,
+                         const char **pp)
+{
+    if (**pp == '/') (*pp)++;
+    get_word_until_chars(buf, buf_size, sep, pp);
+}
+
 static void get_word(char *buf, int buf_size, const char **pp)
 {
-    const char *p;
-    char *q;
-
-    p = *pp;
-    skip_spaces(&p);
-    q = buf;
-    while (!redir_isspace(*p) && *p != '\0') {
-        if ((q - buf) < buf_size - 1)
-            *q++ = *p;
-        p++;
-    }
-    if (buf_size > 0)
-        *q = '\0';
-    *pp = p;
+    get_word_until_chars(buf, buf_size, SPACE_CHARS, pp);
 }
 
 /* parse the rtpmap description: <codec_name>/<clock_rate>[/<other
