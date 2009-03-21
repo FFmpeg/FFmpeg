@@ -28,6 +28,7 @@
 #include "golomb.h"
 #include "lpc.h"
 #include "flac.h"
+#include "flacdata.h"
 
 #define FLAC_SUBFRAME_CONSTANT  0
 #define FLAC_SUBFRAME_VERBATIM  1
@@ -79,12 +80,10 @@ typedef struct FlacFrame {
 } FlacFrame;
 
 typedef struct FlacEncodeContext {
+    FLACSTREAMINFO
     PutBitContext pb;
-    int channels;
-    int samplerate;
     int sr_code[2];
     int min_framesize;
-    int max_framesize;
     int max_encoded_framesize;
     uint32_t frame_count;
     uint64_t sample_count;
@@ -95,20 +94,6 @@ typedef struct FlacEncodeContext {
     DSPContext dsp;
     struct AVMD5 *md5ctx;
 } FlacEncodeContext;
-
-static const int flac_samplerates[16] = {
-    0, 0, 0, 0,
-    8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
-    0, 0, 0, 0
-};
-
-static const int flac_blocksizes[16] = {
-    0,
-    192,
-    576, 1152, 2304, 4608,
-    0, 0,
-    256, 512, 1024, 2048, 4096, 8192, 16384, 32768
-};
 
 /**
  * Writes streaminfo metadata block to byte array
@@ -146,11 +131,11 @@ static int select_blocksize(int samplerate, int block_time_ms)
     int blocksize;
 
     assert(samplerate > 0);
-    blocksize = flac_blocksizes[1];
+    blocksize = ff_flac_blocksize_table[1];
     target = (samplerate * block_time_ms) / 1000;
     for(i=0; i<16; i++) {
-        if(target >= flac_blocksizes[i] && flac_blocksizes[i] > blocksize) {
-            blocksize = flac_blocksizes[i];
+        if(target >= ff_flac_blocksize_table[i] && ff_flac_blocksize_table[i] > blocksize) {
+            blocksize = ff_flac_blocksize_table[i];
         }
     }
     return blocksize;
@@ -181,8 +166,8 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     if(freq < 1)
         return -1;
     for(i=4; i<12; i++) {
-        if(freq == flac_samplerates[i]) {
-            s->samplerate = flac_samplerates[i];
+        if(freq == ff_flac_sample_rate_table[i]) {
+            s->samplerate = ff_flac_sample_rate_table[i];
             s->sr_code[0] = i;
             s->sr_code[1] = 0;
             break;
@@ -392,8 +377,8 @@ static void init_frame(FlacEncodeContext *s)
     frame = &s->frame;
 
     for(i=0; i<16; i++) {
-        if(s->avctx->frame_size == flac_blocksizes[i]) {
-            frame->blocksize = flac_blocksizes[i];
+        if(s->avctx->frame_size == ff_flac_blocksize_table[i]) {
+            frame->blocksize = ff_flac_blocksize_table[i];
             frame->bs_code[0] = i;
             frame->bs_code[1] = 0;
             break;

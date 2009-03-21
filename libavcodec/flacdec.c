@@ -42,6 +42,7 @@
 #include "bytestream.h"
 #include "golomb.h"
 #include "flac.h"
+#include "flacdata.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -66,19 +67,8 @@ typedef struct FLACContext {
     unsigned int allocated_bitstream_size;
 } FLACContext;
 
-static const int sample_rate_table[] =
-{ 0,
-  88200, 176400, 192000,
-  8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
-  0, 0, 0, 0 };
-
 static const int sample_size_table[] =
 { 0, 8, 12, 0, 16, 20, 24, 0 };
-
-static const int blocksize_table[] = {
-     0,    192, 576<<0, 576<<1, 576<<2, 576<<3,      0,      0,
-256<<0, 256<<1, 256<<2, 256<<3, 256<<4, 256<<5, 256<<6, 256<<7
-};
 
 static int64_t get_utf8(GetBitContext *gb)
 {
@@ -547,7 +537,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     else if (blocksize_code == 7)
         blocksize = get_bits(&s->gb, 16)+1;
     else
-        blocksize = blocksize_table[blocksize_code];
+        blocksize = ff_flac_blocksize_table[blocksize_code];
 
     if (blocksize > s->max_blocksize) {
         av_log(s->avctx, AV_LOG_ERROR, "blocksize %d > %d\n", blocksize,
@@ -561,7 +551,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     if (sample_rate_code == 0)
         samplerate= s->samplerate;
     else if (sample_rate_code < 12)
-        samplerate = sample_rate_table[sample_rate_code];
+        samplerate = ff_flac_sample_rate_table[sample_rate_code];
     else if (sample_rate_code == 12)
         samplerate = get_bits(&s->gb, 8) * 1000;
     else if (sample_rate_code == 13)
