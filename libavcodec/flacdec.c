@@ -147,8 +147,7 @@ static void allocate_buffers(FLACContext *s)
     assert(s->max_blocksize);
 
     if (s->max_framesize == 0 && s->max_blocksize) {
-        // FIXME header overhead
-        s->max_framesize= (s->channels * s->bps * s->max_blocksize + 7)/ 8;
+        s->max_framesize = 23 + (s->channels * s->bps * s->max_blocksize + 7) / 8;
     }
 
     for (i = 0; i < s->channels; i++) {
