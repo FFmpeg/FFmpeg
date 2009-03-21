@@ -1711,8 +1711,7 @@ static int redir_probe(AVProbeData *pd)
 {
     const char *p;
     p = pd->buf;
-    while (redir_isspace(*p))
-        p++;
+    skip_spaces(&p);
     if (av_strstart(p, "http://", NULL) ||
         av_strstart(p, "rtsp://", NULL))
         return AVPROBE_SCORE_MAX;
