@@ -31,6 +31,12 @@ struct ogg_codec {
     const int8_t *magic;
     uint8_t magicsize;
     const int8_t *name;
+    /**
+     * Attempt to process a packet as a header
+     * @return 1 if the packet was a valid header,
+     *         0 if the packet was not a header (was a data packet)
+     *         -1 if an error occurred or for unsupported stream
+     */
     int (*header)(AVFormatContext *, int);
     int (*packet)(AVFormatContext *, int);
     uint64_t (*gptopts)(AVFormatContext *, int, uint64_t);
