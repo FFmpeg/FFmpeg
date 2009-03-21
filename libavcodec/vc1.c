@@ -4010,9 +4010,10 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
 
     if (!avctx->extradata_size || !avctx->extradata) return -1;
     if (!(avctx->flags & CODEC_FLAG_GRAY))
-        avctx->pix_fmt = PIX_FMT_YUV420P;
+        avctx->pix_fmt = avctx->get_format(avctx, avctx->codec->pix_fmts);
     else
         avctx->pix_fmt = PIX_FMT_GRAY8;
+    avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
     v->s.avctx = avctx;
     avctx->flags |= CODEC_FLAG_EMU_EDGE;
     v->s.flags |= CODEC_FLAG_EMU_EDGE;
@@ -4187,7 +4188,8 @@ static int vc1_decode_frame(AVCodecContext *avctx,
                 if(size <= 0) continue;
                 switch(AV_RB32(start)){
                 case VC1_CODE_FRAME:
-                    if (s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+                    if (avctx->hwaccel ||
+                        s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
                         buf_start = start;
                     buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
                     break;
@@ -4280,7 +4282,14 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     if ((CONFIG_VC1_VDPAU_DECODER || CONFIG_WMV3_VDPAU_DECODER)
         &&s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
         ff_vdpau_vc1_decode_picture(s, buf_start, (buf + buf_size) - buf_start);
-    else {
+    else if (avctx->hwaccel) {
+        if (avctx->hwaccel->start_frame(avctx, buf, buf_size) < 0)
+            return -1;
+        if (avctx->hwaccel->decode_slice(avctx, buf_start, (buf + buf_size) - buf_start) < 0)
+            return -1;
+        if (avctx->hwaccel->end_frame(avctx) < 0)
+            return -1;
+    } else {
         ff_er_frame_start(s);
 
         v->bits = buf_size * 8;
@@ -4348,7 +4357,7 @@ AVCodec vc1_decoder = {
     CODEC_CAP_DELAY,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
-    .pix_fmts = ff_pixfmt_list_420
+    .pix_fmts = ff_hwaccel_pixfmt_list_420
 };
 
 AVCodec wmv3_decoder = {
@@ -4363,7 +4372,7 @@ AVCodec wmv3_decoder = {
     CODEC_CAP_DELAY,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
-    .pix_fmts = ff_pixfmt_list_420
+    .pix_fmts = ff_hwaccel_pixfmt_list_420
 };
 
 #if CONFIG_WMV3_VDPAU_DECODER
