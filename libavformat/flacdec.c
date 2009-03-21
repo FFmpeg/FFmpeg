@@ -50,8 +50,10 @@ static int flac_read_header(AVFormatContext *s,
     }
 
     /* if fLaC marker is not found, assume there is no header */
-    if (get_le32(s->pb) != MKTAG('f','L','a','C'))
+    if (get_le32(s->pb) != MKTAG('f','L','a','C')) {
+        url_fseek(s->pb, -4, SEEK_CUR);
         return 0;
+    }
 
     /* process metadata blocks */
     while (!url_feof(s->pb) && !metadata_last) {
