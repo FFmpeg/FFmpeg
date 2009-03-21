@@ -224,11 +224,11 @@ if((y)<(x)){\
 #undef  time
 #define time time_is_forbidden_due_to_security_issues
 #undef  rand
-#define rand rand_is_forbidden_due_to_state_trashing_use_av_random
+#define rand rand_is_forbidden_due_to_state_trashing_use_av_lfg_get
 #undef  srand
-#define srand srand_is_forbidden_due_to_state_trashing_use_av_random_init
+#define srand srand_is_forbidden_due_to_state_trashing_use_av_lfg_init
 #undef  random
-#define random random_is_forbidden_due_to_state_trashing_use_av_random
+#define random random_is_forbidden_due_to_state_trashing_use_av_lfg_get
 #undef  sprintf
 #define sprintf sprintf_is_forbidden_due_to_security_issues_use_snprintf
 #undef  strcat
