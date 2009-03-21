@@ -56,7 +56,7 @@ typedef struct FLACContext {
     int curr_bps;                           ///< bps for current subframe, adjusted for channel correlation and wasted bits
     int sample_shift;                       ///< shift required to make output samples 16-bit or 32-bit
     int is32;                               ///< flag to indicate if output should be 32-bit instead of 16-bit
-    int decorrelation;                      ///< channel decorrelation type in the current frame
+    int ch_mode;                            ///< channel decorrelation type in the current frame
     int got_streaminfo;                     ///< indicates if the STREAMINFO has been read
 
     int32_t *decoded[FLAC_MAX_CHANNELS];    ///< decoded samples
@@ -438,10 +438,10 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
     s->curr_bps = s->bps;
     if (channel == 0) {
-        if (s->decorrelation == FLAC_CHMODE_RIGHT_SIDE)
+        if (s->ch_mode == FLAC_CHMODE_RIGHT_SIDE)
             s->curr_bps++;
     } else {
-        if (s->decorrelation == FLAC_CHMODE_LEFT_SIDE || s->decorrelation == FLAC_CHMODE_MID_SIDE)
+        if (s->ch_mode == FLAC_CHMODE_LEFT_SIDE || s->ch_mode == FLAC_CHMODE_MID_SIDE)
             s->curr_bps++;
     }
 
@@ -493,7 +493,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
 static int decode_frame(FLACContext *s, int alloc_data_size)
 {
     int blocksize_code, sample_rate_code, sample_size_code, assignment, i, crc8;
-    int decorrelation, bps, blocksize, samplerate;
+    int ch_mode, bps, blocksize, samplerate;
 
     blocksize_code = get_bits(&s->gb, 4);
 
@@ -501,9 +501,9 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
 
     assignment = get_bits(&s->gb, 4); /* channel assignment */
     if (assignment < FLAC_MAX_CHANNELS && s->channels == assignment+1)
-        decorrelation = FLAC_CHMODE_INDEPENDENT;
+        ch_mode = FLAC_CHMODE_INDEPENDENT;
     else if (assignment >= FLAC_MAX_CHANNELS && assignment < 11 && s->channels == 2)
-        decorrelation = assignment;
+        ch_mode = assignment;
     else {
         av_log(s->avctx, AV_LOG_ERROR, "unsupported channel assignment %d (channels=%d)\n",
                assignment, s->channels);
@@ -587,7 +587,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     s->blocksize    = blocksize;
     s->samplerate   = samplerate;
     s->bps          = bps;
-    s->decorrelation= decorrelation;
+    s->ch_mode      = ch_mode;
 
 //    dump_headers(s->avctx, (FLACStreaminfo *)s);
 
@@ -702,7 +702,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
             }\
             break;
 
-    switch (s->decorrelation) {
+    switch (s->ch_mode) {
     case FLAC_CHMODE_INDEPENDENT:
         for (j = 0; j < s->blocksize; j++) {
             for (i = 0; i < s->channels; i++) {
