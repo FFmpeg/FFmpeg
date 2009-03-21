@@ -43,9 +43,6 @@
 
 static int rtsp_read_play(AVFormatContext *s);
 
-/* XXX: currently, the only way to change the protocols consists in
-   changing this variable */
-
 #if LIBAVFORMAT_VERSION_INT < (53 << 16)
 int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
 #endif
