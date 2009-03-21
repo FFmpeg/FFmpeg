@@ -84,7 +84,6 @@ typedef struct FlacEncodeContext {
     int samplerate;
     int sr_code[2];
     int min_framesize;
-    int min_encoded_framesize;
     int max_framesize;
     int max_encoded_framesize;
     uint32_t frame_count;
@@ -364,7 +363,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     } else {
         s->max_framesize = 14 + (s->avctx->frame_size * s->channels * 2);
     }
-    s->min_encoded_framesize = 0xFFFFFF;
 
     /* initialize MD5 context */
     s->md5ctx = av_malloc(av_md5_size);
@@ -378,6 +376,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     avctx->extradata_size = FLAC_STREAMINFO_SIZE;
 
     s->frame_count = 0;
+    s->min_framesize = s->max_framesize;
 
     avctx->coded_frame = avcodec_alloc_frame();
     avctx->coded_frame->key_frame = 1;
@@ -1269,7 +1268,6 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 
     /* when the last block is reached, update the header in extradata */
     if (!data) {
-        s->min_framesize = s->min_encoded_framesize;
         s->max_framesize = s->max_encoded_framesize;
         av_md5_final(s->md5ctx, s->md5sum);
         write_streaminfo(s, avctx->extradata);
@@ -1313,8 +1311,8 @@ write_frame:
     update_md5_sum(s, samples);
     if (out_bytes > s->max_encoded_framesize)
         s->max_encoded_framesize = out_bytes;
-    if (out_bytes < s->min_encoded_framesize)
-        s->min_encoded_framesize = out_bytes;
+    if (out_bytes < s->min_framesize)
+        s->min_framesize = out_bytes;
 
     return out_bytes;
 }
