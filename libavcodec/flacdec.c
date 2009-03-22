@@ -693,7 +693,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
     if (output_size > alloc_data_size) {
         av_log(s->avctx, AV_LOG_ERROR, "output data size is larger than "
                                        "allocated data size\n");
-        return -1;
+        goto end;
     }
     *data_size = output_size;
 
