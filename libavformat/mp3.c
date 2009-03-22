@@ -198,7 +198,8 @@ static void id3v2_read_ttag(AVFormatContext *s, int taglen, const char *key)
     }
 
     if (!strcmp(key, "genre")
-        && sscanf(dst, "(%d)", &genre) == 1 && genre <= ID3v1_GENRE_MAX)
+        && (sscanf(dst, "(%d)", &genre) == 1 || sscanf(dst, "%d", &genre) == 1)
+        && genre <= ID3v1_GENRE_MAX)
         av_strlcpy(dst, id3v1_genre_str[genre], sizeof(dst));
 
     if (*dst)
