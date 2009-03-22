@@ -566,7 +566,7 @@ static int decode_frame(FLACContext *s)
                                        "is not supported\n");
         return -1;
     }
-    s->ch_mode      = ch_mode;
+    s->ch_mode = ch_mode;
 
     if (bps && bps != s->bps) {
         av_log(s->avctx, AV_LOG_ERROR, "switching bps mid-stream is not "
@@ -588,7 +588,7 @@ static int decode_frame(FLACContext *s)
                s->max_blocksize);
         return -1;
     }
-    s->blocksize    = blocksize;
+    s->blocksize = blocksize;
 
     if (samplerate == 0) {
         samplerate = s->samplerate;
@@ -596,7 +596,7 @@ static int decode_frame(FLACContext *s)
         av_log(s->avctx, AV_LOG_WARNING, "sample rate changed from %d to %d\n",
                s->samplerate, samplerate);
     }
-    s->samplerate   = s->avctx->sample_rate = samplerate;
+    s->samplerate = s->avctx->sample_rate = samplerate;
 
 //    dump_headers(s->avctx, (FLACStreaminfo *)s);
 
