@@ -517,7 +517,7 @@ static int decode_frame(FLACContext *s)
                bps_code);
         return -1;
     }
-        bps = sample_size_table[bps_code];
+    bps = sample_size_table[bps_code];
     if (bps && bps != s->bps) {
         av_log(s->avctx, AV_LOG_ERROR, "switching bps mid-stream is not "
                                        "supported\n");
