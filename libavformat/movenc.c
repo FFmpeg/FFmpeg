@@ -81,7 +81,7 @@ typedef struct MOVMuxContext {
     int64_t mdat_pos;
     uint64_t mdat_size;
     long    timescale;
-    MOVTrack tracks[MAX_STREAMS];
+    MOVTrack *tracks;
 } MOVMuxContext;
 
 //FIXME support 64 bit variant with wide placeholders
@@ -1664,6 +1664,10 @@ static int mov_write_header(AVFormatContext *s)
         }
     }
 
+    mov->tracks = av_mallocz(s->nb_streams*sizeof(*mov->tracks));
+    if (!mov->tracks)
+        return AVERROR(ENOMEM);
+
     for(i=0; i<s->nb_streams; i++){
         AVStream *st= s->streams[i];
         MOVTrack *track= &mov->tracks[i];
@@ -1678,7 +1682,7 @@ static int mov_write_header(AVFormatContext *s)
         if (!track->tag) {
             av_log(s, AV_LOG_ERROR, "track %d: could not find tag, "
                    "codec not currently supported in container\n", i);
-            return -1;
+            goto error;
         }
         if(st->codec->codec_type == CODEC_TYPE_VIDEO){
             if (track->tag == MKTAG('m','x','3','p') || track->tag == MKTAG('m','x','3','n') ||
@@ -1686,7 +1690,7 @@ static int mov_write_header(AVFormatContext *s)
                 track->tag == MKTAG('m','x','5','p') || track->tag == MKTAG('m','x','5','n')) {
                 if (st->codec->width != 720 || (st->codec->height != 608 && st->codec->height != 512)) {
                     av_log(s, AV_LOG_ERROR, "D-10/IMX must use 720x608 or 720x512 video resolution\n");
-                    return -1;
+                    goto error;
                 }
                 track->height = track->tag>>24 == 'n' ? 486 : 576;
             }
@@ -1702,7 +1706,7 @@ static int mov_write_header(AVFormatContext *s)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             if(!st->codec->frame_size && !av_get_bits_per_sample(st->codec->codec_id)) {
                 av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
-                return -1;
+                goto error;
             }else if(st->codec->frame_size > 1){ /* assume compressed audio */
                 track->audio_vbr = 1;
             }else{
@@ -1713,7 +1717,7 @@ static int mov_write_header(AVFormatContext *s)
                track->enc->codec_id == CODEC_ID_MP3 && track->enc->sample_rate < 16000){
                 av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not supported\n",
                        i, track->enc->sample_rate);
-                return -1;
+                goto error;
             }
         }else if(st->codec->codec_type == CODEC_TYPE_SUBTITLE){
             track->timescale = st->codec->time_base.den;
@@ -1730,6 +1734,9 @@ static int mov_write_header(AVFormatContext *s)
     put_flush_packet(pb);
 
     return 0;
+ error:
+    av_freep(&mov->tracks);
+    return -1;
 }
 
 static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
@@ -1851,6 +1858,8 @@ static int mov_write_trailer(AVFormatContext *s)
     }
 
     put_flush_packet(pb);
+
+    av_freep(&mov->tracks);
 
     return res;
 }
