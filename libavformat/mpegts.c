@@ -857,14 +857,11 @@ static void mpegts_push_data(MpegTSFilter *filter,
                     pes->header[2] == 0x01) {
                     /* it must be an mpeg2 PES stream */
                     code = pes->header[3] | 0x100;
-                    if (!((code >= 0x1c0 && code <= 0x1df) ||
+                    if (!pes->st ||
+                        !((code >= 0x1c0 && code <= 0x1df) ||
                           (code >= 0x1e0 && code <= 0x1ef) ||
                           (code == 0x1bd) || (code == 0x1fd)))
                         goto skip;
-                    if (!pes->st) {
-                        /* allocate stream */
-                        new_pes_av_stream(pes, code);
-                    }
                     pes->state = MPEGTS_PESHEADER_FILL;
                     pes->total_size = AV_RB16(pes->header + 4);
                     /* NOTE: a zero total size means the PES size is
