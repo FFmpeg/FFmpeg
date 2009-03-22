@@ -482,7 +482,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
 static int decode_frame(FLACContext *s, int alloc_data_size)
 {
-    int bs_code, sr_code, bps_code, i, crc8;
+    int bs_code, sr_code, bps_code, i;
     int ch_mode, bps, blocksize, samplerate;
     GetBitContext *gb = &s->gb;
 
@@ -566,10 +566,9 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     }
 
     skip_bits(gb, 8);
-    crc8 = av_crc(av_crc_get_table(AV_CRC_8_ATM), 0,
-                  gb->buffer, get_bits_count(gb)/8);
-    if (crc8) {
-        av_log(s->avctx, AV_LOG_ERROR, "header crc mismatch crc=%2X\n", crc8);
+    if (av_crc(av_crc_get_table(AV_CRC_8_ATM), 0, gb->buffer,
+               get_bits_count(gb)/8)) {
+        av_log(s->avctx, AV_LOG_ERROR, "header crc mismatch\n");
         return -1;
     }
 
