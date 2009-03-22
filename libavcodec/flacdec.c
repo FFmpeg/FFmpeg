@@ -480,7 +480,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
     return 0;
 }
 
-static int decode_frame(FLACContext *s, int alloc_data_size)
+static int decode_frame(FLACContext *s)
 {
     int bs_code, sr_code, bps_code, i;
     int ch_mode, bps, blocksize, samplerate;
@@ -554,9 +554,6 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         return -1;
     }
 
-    if (blocksize * s->channels * (s->is32 ? 4 : 2) > alloc_data_size)
-        return -1;
-
     /* sample rate */
     if (sr_code == 0)
         samplerate= s->samplerate;
@@ -612,6 +609,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
     int16_t *samples_16 = data;
     int32_t *samples_32 = data;
     int alloc_data_size= *data_size;
+    int output_size;
 
     *data_size=0;
 
@@ -675,14 +673,22 @@ static int flac_decode_frame(AVCodecContext *avctx,
 
     /* decode frame */
     init_get_bits(&s->gb, buf, buf_size*8);
-    if (decode_frame(s, alloc_data_size) < 0) {
+    if (decode_frame(s) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
         s->bitstream_size=0;
         s->bitstream_index=0;
         return -1;
     }
-    *data_size = s->blocksize * s->channels * (s->is32 ? 4 : 2);
     bytes_read = (get_bits_count(&s->gb)+7)/8;
+
+    /* check if allocated data size is large enough for output */
+    output_size = s->blocksize * s->channels * (s->is32 ? 4 : 2);
+    if (output_size > alloc_data_size) {
+        av_log(s->avctx, AV_LOG_ERROR, "output data size is larger than "
+                                       "allocated data size\n");
+        return -1;
+    }
+    *data_size = output_size;
 
 #define DECORRELATE(left, right)\
             assert(s->channels == 2);\
