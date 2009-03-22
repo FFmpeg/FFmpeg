@@ -483,7 +483,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
 static int decode_frame(FLACContext *s)
 {
     int bs_code, sr_code, bps_code, i;
-    int ch_mode, bps, blocksize, samplerate;
+    int ch_mode, bps, blocksize, samplerate, channels;
     GetBitContext *gb = &s->gb;
 
     /* frame sync code */
@@ -496,10 +496,17 @@ static int decode_frame(FLACContext *s)
     /* channels and decorrelation */
     ch_mode = get_bits(gb, 4);
     if (ch_mode < FLAC_MAX_CHANNELS && s->channels == ch_mode+1) {
+        channels = ch_mode + 1;
         ch_mode = FLAC_CHMODE_INDEPENDENT;
-    } else if (ch_mode > FLAC_CHMODE_MID_SIDE || s->channels != 2) {
-        av_log(s->avctx, AV_LOG_ERROR, "unsupported channel assignment %d (channels=%d)\n",
-               ch_mode, s->channels);
+    } else if (ch_mode <= FLAC_CHMODE_MID_SIDE) {
+        channels = 2;
+    } else {
+        av_log(s->avctx, AV_LOG_ERROR, "invalid channel mode: %d\n", ch_mode);
+        return -1;
+    }
+    if (channels != s->channels) {
+        av_log(s->avctx, AV_LOG_ERROR, "switching channel layout mid-stream "
+                                       "is not supported\n");
         return -1;
     }
 
