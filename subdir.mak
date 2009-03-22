@@ -39,7 +39,7 @@ endif
 
 install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 	install -d "$(SHLIBDIR)"
-	install -m 755 $(SUBDIR)$(SLIBNAME) "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
+	install -m 755 $$< "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
 	$(STRIP) "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
 	cd "$(SHLIBDIR)" && \
 		$(LN_S) $(SLIBNAME_WITH_VERSION) $(SLIBNAME_WITH_MAJOR)
@@ -49,7 +49,7 @@ install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 
 install-lib$(NAME)-static: $(SUBDIR)$(LIBNAME)
 	install -d "$(LIBDIR)"
-	install -m 644 $(SUBDIR)$(LIBNAME) "$(LIBDIR)"
+	install -m 644 $$< "$(LIBDIR)"
 	$(LIB_INSTALL_EXTRA_CMD)
 
 install-headers::
