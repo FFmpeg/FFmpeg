@@ -658,7 +658,10 @@ rm_ac3_swap_bytes (AVStream *st, AVPacket *pkt)
     }
 }
 
-/** perform 4-bit block reordering for SIPR data */
+/**
+ * Perform 4-bit block reordering for SIPR data.
+ * @todo This can be optimized, e.g. use memcpy() if data blocks are aligned
+ */
 static void
 rm_reorder_sipr_data (RMStream *ast)
 {
