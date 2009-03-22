@@ -22,7 +22,7 @@
 #include "libavutil/pixfmt.h"
 #include "pixdesc.h"
 
-static const AVPixFmtDescriptor pix_fmt_desc[PIX_FMT_NB] = {
+const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     [PIX_FMT_YUV422P] = {
         .name = "yuv422p",
         .nb_channels  = 3,

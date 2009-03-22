@@ -67,6 +67,10 @@ typedef struct AVPixFmtDescriptor{
 #define PIX_FMT_PAL       2 ///< Pixel format has a palette in data[1], values are indexes in this palette.
 #define PIX_FMT_BITSTREAM 4 ///< All values of a component are bit-wise packed end to end.
 
+/**
+ * The array of all the pixel format descriptors.
+ */
+extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
 
 static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4], AVPixFmtDescriptor *desc, int x, int y, int c, int w)
 {
