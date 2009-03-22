@@ -512,11 +512,11 @@ static int decode_frame(FLACContext *s)
 
     /* bits per sample */
     bps_code = get_bits(gb, 3);
-    if (bps_code == 0)
+    if (bps_code == 0) {
         bps= s->bps;
-    else if ((bps_code != 3) && (bps_code != 7))
+    } else if ((bps_code != 3) && (bps_code != 7)) {
         bps = sample_size_table[bps_code];
-    else {
+    } else {
         av_log(s->avctx, AV_LOG_ERROR, "invalid sample size code (%d)\n",
                bps_code);
         return -1;
@@ -548,13 +548,13 @@ static int decode_frame(FLACContext *s)
     if (bs_code == 0) {
         av_log(s->avctx, AV_LOG_ERROR, "reserved blocksize code: 0\n");
         return -1;
-    } else if (bs_code == 6)
-        blocksize = get_bits(gb, 8)+1;
-    else if (bs_code == 7)
-        blocksize = get_bits(gb, 16)+1;
-    else
+    } else if (bs_code == 6) {
+        blocksize = get_bits(gb, 8) + 1;
+    } else if (bs_code == 7) {
+        blocksize = get_bits(gb, 16) + 1;
+    } else {
         blocksize = ff_flac_blocksize_table[bs_code];
-
+    }
     if (blocksize > s->max_blocksize) {
         av_log(s->avctx, AV_LOG_ERROR, "blocksize %d > %d\n", blocksize,
                s->max_blocksize);
@@ -562,17 +562,17 @@ static int decode_frame(FLACContext *s)
     }
 
     /* sample rate */
-    if (sr_code == 0)
+    if (sr_code == 0) {
         samplerate= s->samplerate;
-    else if (sr_code < 12)
+    } else if (sr_code < 12) {
         samplerate = ff_flac_sample_rate_table[sr_code];
-    else if (sr_code == 12)
+    } else if (sr_code == 12) {
         samplerate = get_bits(gb, 8) * 1000;
-    else if (sr_code == 13)
+    } else if (sr_code == 13) {
         samplerate = get_bits(gb, 16);
-    else if (sr_code == 14)
+    } else if (sr_code == 14) {
         samplerate = get_bits(gb, 16) * 10;
-    else {
+    } else {
         av_log(s->avctx, AV_LOG_ERROR, "illegal sample rate code %d\n",
                sr_code);
         return -1;
