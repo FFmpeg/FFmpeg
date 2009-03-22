@@ -482,13 +482,13 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
 static int decode_frame(FLACContext *s, int alloc_data_size)
 {
-    int blocksize_code, sample_rate_code, sample_size_code, i, crc8;
+    int bs_code, sr_code, bps_code, i, crc8;
     int ch_mode, bps, blocksize, samplerate;
     GetBitContext *gb = &s->gb;
 
-    blocksize_code = get_bits(gb, 4);
+    bs_code = get_bits(gb, 4);
 
-    sample_rate_code = get_bits(gb, 4);
+    sr_code = get_bits(gb, 4);
 
     ch_mode = get_bits(gb, 4); /* channel assignment */
     if (ch_mode < FLAC_MAX_CHANNELS && s->channels == ch_mode+1) {
@@ -499,14 +499,14 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         return -1;
     }
 
-    sample_size_code = get_bits(gb, 3);
-    if (sample_size_code == 0)
+    bps_code = get_bits(gb, 3);
+    if (bps_code == 0)
         bps= s->bps;
-    else if ((sample_size_code != 3) && (sample_size_code != 7))
-        bps = sample_size_table[sample_size_code];
+    else if ((bps_code != 3) && (bps_code != 7))
+        bps = sample_size_table[bps_code];
     else {
         av_log(s->avctx, AV_LOG_ERROR, "invalid sample size code (%d)\n",
-               sample_size_code);
+               bps_code);
         return -1;
     }
     if (bps > 16) {
@@ -530,15 +530,15 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         return -1;
     }
 
-    if (blocksize_code == 0) {
+    if (bs_code == 0) {
         av_log(s->avctx, AV_LOG_ERROR, "reserved blocksize code: 0\n");
         return -1;
-    } else if (blocksize_code == 6)
+    } else if (bs_code == 6)
         blocksize = get_bits(gb, 8)+1;
-    else if (blocksize_code == 7)
+    else if (bs_code == 7)
         blocksize = get_bits(gb, 16)+1;
     else
-        blocksize = ff_flac_blocksize_table[blocksize_code];
+        blocksize = ff_flac_blocksize_table[bs_code];
 
     if (blocksize > s->max_blocksize) {
         av_log(s->avctx, AV_LOG_ERROR, "blocksize %d > %d\n", blocksize,
@@ -549,19 +549,19 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     if (blocksize * s->channels * (s->is32 ? 4 : 2) > alloc_data_size)
         return -1;
 
-    if (sample_rate_code == 0)
+    if (sr_code == 0)
         samplerate= s->samplerate;
-    else if (sample_rate_code < 12)
-        samplerate = ff_flac_sample_rate_table[sample_rate_code];
-    else if (sample_rate_code == 12)
+    else if (sr_code < 12)
+        samplerate = ff_flac_sample_rate_table[sr_code];
+    else if (sr_code == 12)
         samplerate = get_bits(gb, 8) * 1000;
-    else if (sample_rate_code == 13)
+    else if (sr_code == 13)
         samplerate = get_bits(gb, 16);
-    else if (sample_rate_code == 14)
+    else if (sr_code == 14)
         samplerate = get_bits(gb, 16) * 10;
     else {
         av_log(s->avctx, AV_LOG_ERROR, "illegal sample rate code %d\n",
-               sample_rate_code);
+               sr_code);
         return -1;
     }
 
