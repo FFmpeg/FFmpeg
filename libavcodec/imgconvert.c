@@ -192,8 +192,8 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .depth = 8,
         .x_chroma_shift = 0, .y_chroma_shift = 0,
     },
-    [PIX_FMT_RGB32] = {
-        .name = "rgb32",
+    [PIX_FMT_ARGB] = {
+        .name = "argb",
         .nb_channels = 4, .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
@@ -335,8 +335,8 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .depth = 8,
         .x_chroma_shift = 2, .y_chroma_shift = 0,
     },
-    [PIX_FMT_BGR32] = {
-        .name = "bgr32",
+    [PIX_FMT_ABGR] = {
+        .name = "abgr",
         .nb_channels = 4, .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
@@ -440,16 +440,16 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
 
-    [PIX_FMT_BGR32_1] = {
-        .name = "bgr32_1",
+    [PIX_FMT_BGRA] = {
+        .name = "bgra",
         .nb_channels = 4, .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
         .x_chroma_shift = 0, .y_chroma_shift = 0,
     },
-    [PIX_FMT_RGB32_1] = {
-        .name = "rgb32_1",
+    [PIX_FMT_RGBA] = {
+        .name = "rgba",
         .nb_channels = 4, .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
@@ -507,8 +507,14 @@ static enum PixelFormat avcodec_get_pix_fmt_internal(const char *name)
 
 enum PixelFormat avcodec_get_pix_fmt(const char *name)
 {
-    enum PixelFormat pix_fmt = avcodec_get_pix_fmt_internal(name);
+    enum PixelFormat pix_fmt;
 
+    if (!strcmp(name, "rgb32"))
+        name = X_NE("argb", "bgra");
+    else if (!strcmp(name, "bgr32"))
+        name = X_NE("abgr", "rgba");
+
+    pix_fmt = avcodec_get_pix_fmt_internal(name);
     if (pix_fmt == PIX_FMT_NONE) {
         char name2[32];
         snprintf(name2, sizeof(name2), "%s%s", name, X_NE("be", "le"));
@@ -624,10 +630,10 @@ int ff_fill_linesize(AVPicture *picture, enum PixelFormat pix_fmt, int width)
     case PIX_FMT_BGR24:
         picture->linesize[0] = width * 3;
         break;
-    case PIX_FMT_RGB32:
-    case PIX_FMT_BGR32:
-    case PIX_FMT_RGB32_1:
-    case PIX_FMT_BGR32_1:
+    case PIX_FMT_ARGB:
+    case PIX_FMT_ABGR:
+    case PIX_FMT_RGBA:
+    case PIX_FMT_BGRA:
         picture->linesize[0] = width * 4;
         break;
     case PIX_FMT_RGB48BE:
@@ -716,10 +722,10 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
         return size + 2 * size2;
     case PIX_FMT_RGB24:
     case PIX_FMT_BGR24:
-    case PIX_FMT_RGB32:
-    case PIX_FMT_BGR32:
-    case PIX_FMT_RGB32_1:
-    case PIX_FMT_BGR32_1:
+    case PIX_FMT_ARGB:
+    case PIX_FMT_ABGR:
+    case PIX_FMT_RGBA:
+    case PIX_FMT_BGRA:
     case PIX_FMT_RGB48BE:
     case PIX_FMT_RGB48LE:
     case PIX_FMT_GRAY16BE:

@@ -63,7 +63,6 @@ enum PixelFormat {
     PIX_FMT_BGR24,     ///< packed RGB 8:8:8, 24bpp, BGRBGR...
     PIX_FMT_YUV422P,   ///< planar YUV 4:2:2, 16bpp, (1 Cr & Cb sample per 2x1 Y samples)
     PIX_FMT_YUV444P,   ///< planar YUV 4:4:4, 24bpp, (1 Cr & Cb sample per 1x1 Y samples)
-    PIX_FMT_RGB32,     ///< packed RGB 8:8:8, 32bpp, (msb)8A 8R 8G 8B(lsb), in CPU endianness
     PIX_FMT_YUV410P,   ///< planar YUV 4:1:0,  9bpp, (1 Cr & Cb sample per 4x4 Y samples)
     PIX_FMT_YUV411P,   ///< planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples)
     PIX_FMT_GRAY8,     ///<        Y        ,  8bpp
@@ -77,7 +76,6 @@ enum PixelFormat {
     PIX_FMT_XVMC_MPEG2_IDCT,
     PIX_FMT_UYVY422,   ///< packed YUV 4:2:2, 16bpp, Cb Y0 Cr Y1
     PIX_FMT_UYYVYY411, ///< packed YUV 4:1:1, 12bpp, Cb Y0 Y1 Cr Y2 Y3
-    PIX_FMT_BGR32,     ///< packed RGB 8:8:8, 32bpp, (msb)8A 8B 8G 8R(lsb), in CPU endianness
     PIX_FMT_BGR8,      ///< packed RGB 3:3:2,  8bpp, (msb)2B 3G 3R(lsb)
     PIX_FMT_BGR4,      ///< packed RGB 1:2:1,  4bpp, (msb)1B 2G 1R(lsb)
     PIX_FMT_BGR4_BYTE, ///< packed RGB 1:2:1,  8bpp, (msb)1B 2G 1R(lsb)
@@ -87,8 +85,10 @@ enum PixelFormat {
     PIX_FMT_NV12,      ///< planar YUV 4:2:0, 12bpp, 1 plane for Y and 1 for UV
     PIX_FMT_NV21,      ///< as above, but U and V bytes are swapped
 
-    PIX_FMT_RGB32_1,   ///< packed RGB 8:8:8, 32bpp, (msb)8R 8G 8B 8A(lsb), in CPU endianness
-    PIX_FMT_BGR32_1,   ///< packed RGB 8:8:8, 32bpp, (msb)8B 8G 8R 8A(lsb), in CPU endianness
+    PIX_FMT_ARGB,      ///< packed ARGB 8:8:8:8, 32bpp, ARGBARGB...
+    PIX_FMT_RGBA,      ///< packed RGBA 8:8:8:8, 32bpp, RGBARGBA...
+    PIX_FMT_ABGR,      ///< packed ABGR 8:8:8:8, 32bpp, ABGRABGR...
+    PIX_FMT_BGRA,      ///< packed BGRA 8:8:8:8, 32bpp, BGRABGRA...
 
     PIX_FMT_GRAY16BE,  ///<        Y        , 16bpp, big-endian
     PIX_FMT_GRAY16LE,  ///<        Y        , 16bpp, little-endian
@@ -126,15 +126,15 @@ enum PixelFormat {
 #endif
 
 #ifdef WORDS_BIGENDIAN
-#define PIX_FMT_RGBA PIX_FMT_RGB32_1
-#define PIX_FMT_BGRA PIX_FMT_BGR32_1
-#define PIX_FMT_ARGB PIX_FMT_RGB32
-#define PIX_FMT_ABGR PIX_FMT_BGR32
+#define PIX_FMT_RGB32   PIX_FMT_ARGB
+#define PIX_FMT_RGB32_1 PIX_FMT_RGBA
+#define PIX_FMT_BGR32   PIX_FMT_ABGR
+#define PIX_FMT_BGR32_1 PIX_FMT_BGRA
 #else
-#define PIX_FMT_RGBA PIX_FMT_BGR32
-#define PIX_FMT_BGRA PIX_FMT_RGB32
-#define PIX_FMT_ARGB PIX_FMT_BGR32_1
-#define PIX_FMT_ABGR PIX_FMT_RGB32_1
+#define PIX_FMT_RGB32   PIX_FMT_BGRA
+#define PIX_FMT_RGB32_1 PIX_FMT_ABGR
+#define PIX_FMT_BGR32   PIX_FMT_RGBA
+#define PIX_FMT_BGR32_1 PIX_FMT_ARGB
 #endif
 
 #define PIX_FMT_GRAY16 PIX_FMT_NE(GRAY16)
