@@ -499,6 +499,12 @@ static enum PixelFormat avcodec_get_pix_fmt_internal(const char *name)
     return PIX_FMT_NONE;
 }
 
+#ifdef WORDS_BIGENDIAN
+#   define X_NE(be, le) be
+#else
+#   define X_NE(be, le) le
+#endif
+
 enum PixelFormat avcodec_get_pix_fmt(const char *name)
 {
 #ifdef WORDS_BIGENDIAN
