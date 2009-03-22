@@ -54,20 +54,20 @@ install: install-libs install-headers
 
 uninstall: uninstall-libs uninstall-headers
 
-.PHONY: all depend dep *clean install* uninstall* examples tests
+.PHONY: all depend dep *clean install* uninstall* examples testprogs
 endif
 
 CFLAGS   += $(CFLAGS-yes)
 OBJS     += $(OBJS-yes)
 FFLIBS   := $(FFLIBS-yes) $(FFLIBS)
-TESTS    += $(TESTS-yes)
+TESTPROGS    += $(TESTPROGS-yes)
 
 FFEXTRALIBS := $(addprefix -l,$(addsuffix $(BUILDSUF),$(FFLIBS))) $(EXTRALIBS)
 FFLDFLAGS   := $(addprefix -L$(BUILD_ROOT)/lib,$(FFLIBS)) $(LDFLAGS)
 
 EXAMPLES := $(addprefix $(SUBDIR),$(EXAMPLES))
 OBJS  := $(addprefix $(SUBDIR),$(OBJS))
-TESTS := $(addprefix $(SUBDIR),$(TESTS))
+TESTPROGS := $(addprefix $(SUBDIR),$(TESTPROGS))
 
 DEP_LIBS:=$(foreach NAME,$(FFLIBS),lib$(NAME)/$($(BUILD_SHARED:yes=S)LIBNAME))
 
@@ -98,7 +98,7 @@ $(SUBDIR)x86/%.d: $(SUBDIR)x86/%.asm
 	$(YASM) $(YASMFLAGS) -I $$(<D)/ -M -o $$(@:%.d=%.o) $$< > $$@
 
 clean::
-	rm -f $(EXAMPLES) $(TESTS) $(addprefix $(SUBDIR),$(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
+	rm -f $(EXAMPLES) $(TESTPROGS) $(addprefix $(SUBDIR),$(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
 	    $(addprefix $(SUBDIR), $(foreach suffix,$(CLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 
 distclean:: clean
@@ -109,6 +109,6 @@ endef
 $(eval $(RULES))
 
 examples: $(EXAMPLES)
-tests: $(TESTS)
+testprogs: $(TESTPROGS)
 
 -include $(DEPS)
