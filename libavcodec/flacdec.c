@@ -495,7 +495,7 @@ static int decode_frame(FLACContext *s)
 
     /* channels and decorrelation */
     ch_mode = get_bits(gb, 4);
-    if (ch_mode < FLAC_MAX_CHANNELS && s->channels == ch_mode+1) {
+    if (ch_mode < FLAC_MAX_CHANNELS) {
         channels = ch_mode + 1;
         ch_mode = FLAC_CHMODE_INDEPENDENT;
     } else if (ch_mode <= FLAC_CHMODE_MID_SIDE) {
