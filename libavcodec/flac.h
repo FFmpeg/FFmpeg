@@ -29,7 +29,7 @@
 
 #include "avcodec.h"
 
-#define FLAC_STREAMINFO_SIZE 34
+#define FLAC_STREAMINFO_SIZE   34
 #define FLAC_MAX_CHANNELS       8
 #define FLAC_MIN_BLOCKSIZE     16
 #define FLAC_MAX_BLOCKSIZE  65535
