@@ -125,13 +125,13 @@ void avcodec_register_all(void)
     REGISTER_DECODER (MSVIDEO1, msvideo1);
     REGISTER_DECODER (MSZH, mszh);
     REGISTER_DECODER (NUV, nuv);
-    REGISTER_ENCODER (PAM, pam);
-    REGISTER_ENCODER (PBM, pbm);
+    REGISTER_ENCDEC  (PAM, pam);
+    REGISTER_ENCDEC  (PBM, pbm);
     REGISTER_ENCDEC  (PCX, pcx);
-    REGISTER_ENCODER (PGM, pgm);
-    REGISTER_ENCODER (PGMYUV, pgmyuv);
+    REGISTER_ENCDEC  (PGM, pgm);
+    REGISTER_ENCDEC  (PGMYUV, pgmyuv);
     REGISTER_ENCDEC  (PNG, png);
-    REGISTER_ENCODER (PPM, ppm);
+    REGISTER_ENCDEC  (PPM, ppm);
     REGISTER_DECODER (PTX, ptx);
     REGISTER_DECODER (QDRAW, qdraw);
     REGISTER_DECODER (QPEG, qpeg);
