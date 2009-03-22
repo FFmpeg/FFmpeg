@@ -486,11 +486,15 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     int ch_mode, bps, blocksize, samplerate;
     GetBitContext *gb = &s->gb;
 
-    bs_code = get_bits(gb, 4);
+    /* frame sync code */
+    skip_bits(&s->gb, 16);
 
+    /* block size and sample rate codes */
+    bs_code = get_bits(gb, 4);
     sr_code = get_bits(gb, 4);
 
-    ch_mode = get_bits(gb, 4); /* channel assignment */
+    /* channels and decorrelation */
+    ch_mode = get_bits(gb, 4);
     if (ch_mode < FLAC_MAX_CHANNELS && s->channels == ch_mode+1) {
         ch_mode = FLAC_CHMODE_INDEPENDENT;
     } else if (ch_mode > FLAC_CHMODE_MID_SIDE || s->channels != 2) {
@@ -499,6 +503,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         return -1;
     }
 
+    /* bits per sample */
     bps_code = get_bits(gb, 3);
     if (bps_code == 0)
         bps= s->bps;
@@ -520,16 +525,19 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     }
     s->bps = s->avctx->bits_per_raw_sample = bps;
 
+    /* reserved bit */
     if (get_bits1(gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "broken stream, invalid padding\n");
         return -1;
     }
 
+    /* sample or frame count */
     if (get_utf8(gb) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "utf8 fscked\n");
         return -1;
     }
 
+    /* blocksize */
     if (bs_code == 0) {
         av_log(s->avctx, AV_LOG_ERROR, "reserved blocksize code: 0\n");
         return -1;
@@ -549,6 +557,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     if (blocksize * s->channels * (s->is32 ? 4 : 2) > alloc_data_size)
         return -1;
 
+    /* sample rate */
     if (sr_code == 0)
         samplerate= s->samplerate;
     else if (sr_code < 12)
@@ -565,6 +574,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         return -1;
     }
 
+    /* header CRC-8 check */
     skip_bits(gb, 8);
     if (av_crc(av_crc_get_table(AV_CRC_8_ATM), 0, gb->buffer,
                get_bits_count(gb)/8)) {
@@ -665,7 +675,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
 
     /* decode frame */
     init_get_bits(&s->gb, buf, buf_size*8);
-    skip_bits(&s->gb, 16);
     if (decode_frame(s, alloc_data_size) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
         s->bitstream_size=0;
