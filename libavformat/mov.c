@@ -881,9 +881,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                         color_table = ff_qt_default_palette_256;
 
                     for (j = 0; j < color_count; j++) {
-                        r = color_table[j * 4 + 0];
-                        g = color_table[j * 4 + 1];
-                        b = color_table[j * 4 + 2];
+                        r = color_table[j * 3 + 0];
+                        g = color_table[j * 3 + 1];
+                        b = color_table[j * 3 + 2];
                         st->codec->palctrl->palette[j] =
                             (r << 16) | (g << 8) | (b);
                     }
