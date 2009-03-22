@@ -25,6 +25,8 @@ FFLIBS := avdevice avformat avcodec avutil swscale
 
 DATA_FILES := $(wildcard $(SRC_DIR)/ffpresets/*.ffpreset)
 
+EXAMPLES = output_example$(EXESUF)
+
 include common.mak
 
 FF_LDFLAGS   := $(FFLDFLAGS)
@@ -45,7 +47,7 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	cp -p $< $@
 	$(STRIP) $@
 
-SUBDIR_VARS := OBJS FFLIBS CLEANFILES DIRS TESTS
+SUBDIR_VARS := OBJS FFLIBS CLEANFILES DIRS TESTS EXAMPLES
 
 define RESET
 $(1) :=
