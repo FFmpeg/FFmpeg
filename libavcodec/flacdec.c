@@ -484,12 +484,13 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
 {
     int blocksize_code, sample_rate_code, sample_size_code, i, crc8;
     int ch_mode, bps, blocksize, samplerate;
+    GetBitContext *gb = &s->gb;
 
-    blocksize_code = get_bits(&s->gb, 4);
+    blocksize_code = get_bits(gb, 4);
 
-    sample_rate_code = get_bits(&s->gb, 4);
+    sample_rate_code = get_bits(gb, 4);
 
-    ch_mode = get_bits(&s->gb, 4); /* channel assignment */
+    ch_mode = get_bits(gb, 4); /* channel assignment */
     if (ch_mode < FLAC_MAX_CHANNELS && s->channels == ch_mode+1) {
         ch_mode = FLAC_CHMODE_INDEPENDENT;
     } else if (ch_mode > FLAC_CHMODE_MID_SIDE || s->channels != 2) {
@@ -498,7 +499,7 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         return -1;
     }
 
-    sample_size_code = get_bits(&s->gb, 3);
+    sample_size_code = get_bits(gb, 3);
     if (sample_size_code == 0)
         bps= s->bps;
     else if ((sample_size_code != 3) && (sample_size_code != 7))
@@ -519,12 +520,12 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     }
     s->bps = s->avctx->bits_per_raw_sample = bps;
 
-    if (get_bits1(&s->gb)) {
+    if (get_bits1(gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "broken stream, invalid padding\n");
         return -1;
     }
 
-    if (get_utf8(&s->gb) < 0) {
+    if (get_utf8(gb) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "utf8 fscked\n");
         return -1;
     }
@@ -533,9 +534,9 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
         av_log(s->avctx, AV_LOG_ERROR, "reserved blocksize code: 0\n");
         return -1;
     } else if (blocksize_code == 6)
-        blocksize = get_bits(&s->gb, 8)+1;
+        blocksize = get_bits(gb, 8)+1;
     else if (blocksize_code == 7)
-        blocksize = get_bits(&s->gb, 16)+1;
+        blocksize = get_bits(gb, 16)+1;
     else
         blocksize = ff_flac_blocksize_table[blocksize_code];
 
@@ -553,20 +554,20 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
     else if (sample_rate_code < 12)
         samplerate = ff_flac_sample_rate_table[sample_rate_code];
     else if (sample_rate_code == 12)
-        samplerate = get_bits(&s->gb, 8) * 1000;
+        samplerate = get_bits(gb, 8) * 1000;
     else if (sample_rate_code == 13)
-        samplerate = get_bits(&s->gb, 16);
+        samplerate = get_bits(gb, 16);
     else if (sample_rate_code == 14)
-        samplerate = get_bits(&s->gb, 16) * 10;
+        samplerate = get_bits(gb, 16) * 10;
     else {
         av_log(s->avctx, AV_LOG_ERROR, "illegal sample rate code %d\n",
                sample_rate_code);
         return -1;
     }
 
-    skip_bits(&s->gb, 8);
+    skip_bits(gb, 8);
     crc8 = av_crc(av_crc_get_table(AV_CRC_8_ATM), 0,
-                  s->gb.buffer, get_bits_count(&s->gb)/8);
+                  gb->buffer, get_bits_count(gb)/8);
     if (crc8) {
         av_log(s->avctx, AV_LOG_ERROR, "header crc mismatch crc=%2X\n", crc8);
         return -1;
@@ -585,10 +586,10 @@ static int decode_frame(FLACContext *s, int alloc_data_size)
             return -1;
     }
 
-    align_get_bits(&s->gb);
+    align_get_bits(gb);
 
     /* frame footer */
-    skip_bits(&s->gb, 16); /* data crc */
+    skip_bits(gb, 16); /* data crc */
 
     return 0;
 }
