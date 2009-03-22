@@ -12,7 +12,7 @@ OBJS-$(CONFIG_MLIB)        +=  yuv2rgb_mlib.o
 OBJS-$(HAVE_ALTIVEC)       +=  yuv2rgb_altivec.o
 OBJS-$(HAVE_VIS)           +=  yuv2rgb_vis.o
 
-TESTS = cs_test swscale-example
+TESTPROGS = cs_test swscale-example
 
 include $(SUBDIR)../subdir.mak
 
