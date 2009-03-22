@@ -563,9 +563,7 @@ static int decode_frame(FLACContext *s)
     }
 
     /* sample rate */
-    if (sr_code == 0) {
-        samplerate= s->samplerate;
-    } else if (sr_code < 12) {
+    if (sr_code < 12) {
         samplerate = ff_flac_sample_rate_table[sr_code];
     } else if (sr_code == 12) {
         samplerate = get_bits(gb, 8) * 1000;
@@ -578,6 +576,12 @@ static int decode_frame(FLACContext *s)
                sr_code);
         return -1;
     }
+    if (samplerate == 0) {
+        samplerate = s->samplerate;
+    } else if (samplerate != s->samplerate) {
+        av_log(s->avctx, AV_LOG_WARNING, "sample rate changed from %d to %d\n",
+               s->samplerate, samplerate);
+    }
 
     /* header CRC-8 check */
     skip_bits(gb, 8);
@@ -588,7 +592,7 @@ static int decode_frame(FLACContext *s)
     }
 
     s->blocksize    = blocksize;
-    s->samplerate   = samplerate;
+    s->samplerate   = s->avctx->sample_rate = samplerate;
     s->bps          = bps;
     s->ch_mode      = ch_mode;
 
