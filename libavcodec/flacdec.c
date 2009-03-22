@@ -504,11 +504,6 @@ static int decode_frame(FLACContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "invalid channel mode: %d\n", ch_mode);
         return -1;
     }
-    if (channels != s->channels) {
-        av_log(s->avctx, AV_LOG_ERROR, "switching channel layout mid-stream "
-                                       "is not supported\n");
-        return -1;
-    }
 
     /* bits per sample */
     bps_code = get_bits(gb, 3);
@@ -518,20 +513,6 @@ static int decode_frame(FLACContext *s)
         return -1;
     }
     bps = sample_size_table[bps_code];
-    if (bps && bps != s->bps) {
-        av_log(s->avctx, AV_LOG_ERROR, "switching bps mid-stream is not "
-                                       "supported\n");
-        return -1;
-    }
-    if (s->bps > 16) {
-        s->avctx->sample_fmt = SAMPLE_FMT_S32;
-        s->sample_shift = 32 - s->bps;
-        s->is32 = 1;
-    } else {
-        s->avctx->sample_fmt = SAMPLE_FMT_S16;
-        s->sample_shift = 16 - s->bps;
-        s->is32 = 0;
-    }
 
     /* reserved bit */
     if (get_bits1(gb)) {
@@ -556,11 +537,6 @@ static int decode_frame(FLACContext *s)
     } else {
         blocksize = ff_flac_blocksize_table[bs_code];
     }
-    if (blocksize > s->max_blocksize) {
-        av_log(s->avctx, AV_LOG_ERROR, "blocksize %d > %d\n", blocksize,
-               s->max_blocksize);
-        return -1;
-    }
 
     /* sample rate */
     if (sr_code < 12) {
@@ -576,12 +552,6 @@ static int decode_frame(FLACContext *s)
                sr_code);
         return -1;
     }
-    if (samplerate == 0) {
-        samplerate = s->samplerate;
-    } else if (samplerate != s->samplerate) {
-        av_log(s->avctx, AV_LOG_WARNING, "sample rate changed from %d to %d\n",
-               s->samplerate, samplerate);
-    }
 
     /* header CRC-8 check */
     skip_bits(gb, 8);
@@ -591,10 +561,42 @@ static int decode_frame(FLACContext *s)
         return -1;
     }
 
-    s->blocksize    = blocksize;
-    s->samplerate   = s->avctx->sample_rate = samplerate;
-    s->bps          = bps;
+    if (channels != s->channels) {
+        av_log(s->avctx, AV_LOG_ERROR, "switching channel layout mid-stream "
+                                       "is not supported\n");
+        return -1;
+    }
     s->ch_mode      = ch_mode;
+
+    if (bps && bps != s->bps) {
+        av_log(s->avctx, AV_LOG_ERROR, "switching bps mid-stream is not "
+                                       "supported\n");
+        return -1;
+    }
+    if (s->bps > 16) {
+        s->avctx->sample_fmt = SAMPLE_FMT_S32;
+        s->sample_shift = 32 - s->bps;
+        s->is32 = 1;
+    } else {
+        s->avctx->sample_fmt = SAMPLE_FMT_S16;
+        s->sample_shift = 16 - s->bps;
+        s->is32 = 0;
+    }
+
+    if (blocksize > s->max_blocksize) {
+        av_log(s->avctx, AV_LOG_ERROR, "blocksize %d > %d\n", blocksize,
+               s->max_blocksize);
+        return -1;
+    }
+    s->blocksize    = blocksize;
+
+    if (samplerate == 0) {
+        samplerate = s->samplerate;
+    } else if (samplerate != s->samplerate) {
+        av_log(s->avctx, AV_LOG_WARNING, "sample rate changed from %d to %d\n",
+               s->samplerate, samplerate);
+    }
+    s->samplerate   = s->avctx->sample_rate = samplerate;
 
 //    dump_headers(s->avctx, (FLACStreaminfo *)s);
 
