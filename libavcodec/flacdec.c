@@ -512,25 +512,26 @@ static int decode_frame(FLACContext *s)
 
     /* bits per sample */
     bps_code = get_bits(gb, 3);
-    if (bps_code == 0) {
-        bps= s->bps;
-    } else if ((bps_code != 3) && (bps_code != 7)) {
-        bps = sample_size_table[bps_code];
-    } else {
+    if (bps_code == 3 || bps_code == 7) {
         av_log(s->avctx, AV_LOG_ERROR, "invalid sample size code (%d)\n",
                bps_code);
         return -1;
     }
-    if (bps > 16) {
+        bps = sample_size_table[bps_code];
+    if (bps && bps != s->bps) {
+        av_log(s->avctx, AV_LOG_ERROR, "switching bps mid-stream is not "
+                                       "supported\n");
+        return -1;
+    }
+    if (s->bps > 16) {
         s->avctx->sample_fmt = SAMPLE_FMT_S32;
-        s->sample_shift = 32 - bps;
+        s->sample_shift = 32 - s->bps;
         s->is32 = 1;
     } else {
         s->avctx->sample_fmt = SAMPLE_FMT_S16;
-        s->sample_shift = 16 - bps;
+        s->sample_shift = 16 - s->bps;
         s->is32 = 0;
     }
-    s->bps = s->avctx->bits_per_raw_sample = bps;
 
     /* reserved bit */
     if (get_bits1(gb)) {
