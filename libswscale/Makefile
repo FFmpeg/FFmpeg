@@ -14,8 +14,6 @@ OBJS-$(HAVE_VIS)           +=  yuv2rgb_vis.o
 
 TESTS = cs_test swscale-example
 
-CLEANFILES = cs_test swscale-example
-
 include $(SUBDIR)../subdir.mak
 
 $(SUBDIR)cs_test: $(SUBDIR)cs_test.o $(SUBDIR)$(LIBNAME)
