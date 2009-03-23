@@ -1227,7 +1227,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
 {
     VideoPicture *vp;
     int dst_pix_fmt;
-    AVPicture pict;
     static struct SwsContext *img_convert_ctx;
 
     /* wait until we have space to put a new picture */
@@ -1270,10 +1269,13 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
 
     /* if the frame is not skipped, then display it */
     if (vp->bmp) {
+        AVPicture pict;
+
         /* get a pointer on the bitmap */
         SDL_LockYUVOverlay (vp->bmp);
 
         dst_pix_fmt = PIX_FMT_YUV420P;
+        memset(&pict,0,sizeof(AVPicture));
         pict.data[0] = vp->bmp->pixels[0];
         pict.data[1] = vp->bmp->pixels[2];
         pict.data[2] = vp->bmp->pixels[1];
