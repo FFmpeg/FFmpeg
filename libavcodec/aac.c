@@ -1199,14 +1199,7 @@ static int decode_cce(AACContext * ac, GetBitContext * gb, ChannelElement * che)
         } else
             coup->ch_select[c] = 2;
     }
-    coup->coupling_point += get_bits1(gb);
-
-    if (coup->coupling_point == 2) {
-        av_log(ac->avccontext, AV_LOG_ERROR,
-            "Independently switched CCE with 'invalid' domain signalled.\n");
-        memset(coup, 0, sizeof(ChannelCoupling));
-        return -1;
-    }
+    coup->coupling_point += get_bits1(gb) || (coup->coupling_point>>1);
 
     sign = get_bits(gb, 1);
     scale = pow(2., pow(2., (int)get_bits(gb, 2) - 3));
