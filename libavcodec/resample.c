@@ -39,7 +39,6 @@ static const AVOption options[] = {{NULL}};
 static const AVClass audioresample_context_class = { "ReSampleContext", context_to_name, options };
 
 struct ReSampleContext {
-    const AVClass *av_class;
     struct AVResampleContext *resample_context;
     short *temp[2];
     int temp_len;
@@ -213,7 +212,7 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
     s->resample_context= av_resample_init(output_rate, input_rate,
                          filter_length, log2_phase_count, linear, cutoff);
 
-    s->av_class= &audioresample_context_class;
+    *(AVClass**)s->resample_context = &audioresample_context_class;
 
     return s;
 }
