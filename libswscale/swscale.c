@@ -1885,6 +1885,9 @@ static int YUYV2YUV420Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], in
 
     yuyvtoyuv420(ydst, udst, vdst, src[0], c->srcW, srcSliceH, dstStride[0], dstStride[1], srcStride[0]);
 
+    if (dstParam[3])
+        fillPlane(dstParam[3], dstStride[3], c->srcW, srcSliceH, srcSliceY, 255);
+
     return srcSliceH;
 }
 
@@ -1906,6 +1909,9 @@ static int UYVY2YUV420Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], in
     uint8_t *vdst=dstParam[2] + dstStride[2]*srcSliceY/2;
 
     uyvytoyuv420(ydst, udst, vdst, src[0], c->srcW, srcSliceH, dstStride[0], dstStride[1], srcStride[0]);
+
+    if (dstParam[3])
+        fillPlane(dstParam[3], dstStride[3], c->srcW, srcSliceH, srcSliceY, 255);
 
     return srcSliceH;
 }
@@ -2582,9 +2588,9 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
                     c->swScale= PlanarToUyvyWrapper;
             }
         }
-        if(srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV420P)
+        if(srcFormat == PIX_FMT_YUYV422 && (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P))
             c->swScale= YUYV2YUV420Wrapper;
-        if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV420P)
+        if(srcFormat == PIX_FMT_UYVY422 && (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P))
             c->swScale= UYVY2YUV420Wrapper;
         if(srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV422P)
             c->swScale= YUYV2YUV422Wrapper;
