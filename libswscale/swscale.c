@@ -2047,6 +2047,8 @@ static int bgr24toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], in
         dst[2]+(srcSliceY>>1)*dstStride[2],
         c->srcW, srcSliceH,
         dstStride[0], dstStride[1], srcStride[0]);
+    if (dst[3])
+        fillPlane(dst[3], dstStride[3], c->srcW, srcSliceH, srcSliceY, 255);
     return srcSliceH;
 }
 
@@ -2076,6 +2078,8 @@ static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
         planar2x(src[1], dst[2], c->chrSrcW, c->chrSrcH, srcStride[1], dstStride[2]);
         planar2x(src[2], dst[1], c->chrSrcW, c->chrSrcH, srcStride[2], dstStride[1]);
     }
+    if (dst[3])
+        fillPlane(dst[3], dstStride[3], c->srcW, srcSliceH, srcSliceY, 255);
     return srcSliceH;
 }
 
@@ -2165,6 +2169,8 @@ static int gray16togray(SwsContext *c, uint8_t* src[], int srcStride[], int srcS
         srcPtr+= srcStride[0];
         dstPtr+= dstStride[0];
     }
+    if (dst[3])
+        fillPlane(dst[3], dstStride[3], length, height, y, 255);
     return srcSliceH;
 }
 
