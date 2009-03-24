@@ -159,7 +159,8 @@ void audio_decode_example(const char *outfilename, const char *filename)
 
         inbuf_ptr = inbuf;
         while (size > 0) {
-            len = avcodec_decode_audio(c, (short *)outbuf, &out_size,
+            out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+            len = avcodec_decode_audio2(c, (short *)outbuf, &out_size,
                                        inbuf_ptr, size);
             if (len < 0) {
                 fprintf(stderr, "Error while decoding\n");
