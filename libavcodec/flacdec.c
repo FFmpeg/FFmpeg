@@ -480,75 +480,80 @@ static inline int decode_subframe(FLACContext *s, int channel)
     return 0;
 }
 
-static int decode_frame(FLACContext *s)
+/**
+ * Validate and decode a frame header.
+ * @param      avctx AVCodecContext to use as av_log() context
+ * @param      gb    GetBitContext from which to read frame header
+ * @param[out] fi    frame information
+ */
+static int decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
+                               FLACFrameInfo *fi)
 {
-    int bs_code, sr_code, bps_code, i;
-    int ch_mode, bps, blocksize, samplerate, channels;
-    GetBitContext *gb = &s->gb;
+    int bs_code, sr_code, bps_code;
 
     /* frame sync code */
-    skip_bits(&s->gb, 16);
+    skip_bits(gb, 16);
 
     /* block size and sample rate codes */
     bs_code = get_bits(gb, 4);
     sr_code = get_bits(gb, 4);
 
     /* channels and decorrelation */
-    ch_mode = get_bits(gb, 4);
-    if (ch_mode < FLAC_MAX_CHANNELS) {
-        channels = ch_mode + 1;
-        ch_mode = FLAC_CHMODE_INDEPENDENT;
-    } else if (ch_mode <= FLAC_CHMODE_MID_SIDE) {
-        channels = 2;
+    fi->ch_mode = get_bits(gb, 4);
+    if (fi->ch_mode < FLAC_MAX_CHANNELS) {
+        fi->channels = fi->ch_mode + 1;
+        fi->ch_mode = FLAC_CHMODE_INDEPENDENT;
+    } else if (fi->ch_mode <= FLAC_CHMODE_MID_SIDE) {
+        fi->channels = 2;
     } else {
-        av_log(s->avctx, AV_LOG_ERROR, "invalid channel mode: %d\n", ch_mode);
+        av_log(avctx, AV_LOG_ERROR, "invalid channel mode: %d\n", fi->ch_mode);
         return -1;
     }
 
     /* bits per sample */
     bps_code = get_bits(gb, 3);
     if (bps_code == 3 || bps_code == 7) {
-        av_log(s->avctx, AV_LOG_ERROR, "invalid sample size code (%d)\n",
+        av_log(avctx, AV_LOG_ERROR, "invalid sample size code (%d)\n",
                bps_code);
         return -1;
     }
-    bps = sample_size_table[bps_code];
+    fi->bps = sample_size_table[bps_code];
 
     /* reserved bit */
     if (get_bits1(gb)) {
-        av_log(s->avctx, AV_LOG_ERROR, "broken stream, invalid padding\n");
+        av_log(avctx, AV_LOG_ERROR, "broken stream, invalid padding\n");
         return -1;
     }
 
     /* sample or frame count */
     if (get_utf8(gb) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "utf8 fscked\n");
+        av_log(avctx, AV_LOG_ERROR, "utf8 fscked\n");
         return -1;
     }
 
     /* blocksize */
     if (bs_code == 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "reserved blocksize code: 0\n");
+        av_log(avctx, AV_LOG_ERROR, "reserved blocksize code: 0\n");
         return -1;
     } else if (bs_code == 6) {
-        blocksize = get_bits(gb, 8) + 1;
+        fi->blocksize = get_bits(gb, 8) + 1;
     } else if (bs_code == 7) {
-        blocksize = get_bits(gb, 16) + 1;
+        fi->blocksize = get_bits(gb, 16) + 1;
     } else {
-        blocksize = ff_flac_blocksize_table[bs_code];
+        fi->blocksize = ff_flac_blocksize_table[bs_code];
     }
 
     /* sample rate */
     if (sr_code < 12) {
-        samplerate = ff_flac_sample_rate_table[sr_code];
+        fi->samplerate = ff_flac_sample_rate_table[sr_code];
     } else if (sr_code == 12) {
-        samplerate = get_bits(gb, 8) * 1000;
+        fi->samplerate = get_bits(gb, 8) * 1000;
     } else if (sr_code == 13) {
-        samplerate = get_bits(gb, 16);
+        fi->samplerate = get_bits(gb, 16);
     } else if (sr_code == 14) {
-        samplerate = get_bits(gb, 16) * 10;
+        fi->samplerate = get_bits(gb, 16) * 10;
     } else {
-        av_log(s->avctx, AV_LOG_ERROR, "illegal sample rate code %d\n",
+        av_log(avctx, AV_LOG_ERROR, "illegal sample rate code %d\n",
                sr_code);
         return -1;
     }
@@ -557,18 +562,32 @@ static int decode_frame(FLACContext *s)
     skip_bits(gb, 8);
     if (av_crc(av_crc_get_table(AV_CRC_8_ATM), 0, gb->buffer,
                get_bits_count(gb)/8)) {
-        av_log(s->avctx, AV_LOG_ERROR, "header crc mismatch\n");
+        av_log(avctx, AV_LOG_ERROR, "header crc mismatch\n");
         return -1;
     }
 
-    if (channels != s->channels) {
+    return 0;
+}
+
+static int decode_frame(FLACContext *s)
+{
+    int i;
+    GetBitContext *gb = &s->gb;
+    FLACFrameInfo fi;
+
+    if (decode_frame_header(s->avctx, gb, &fi)) {
+        av_log(s->avctx, AV_LOG_ERROR, "invalid frame header\n");
+        return -1;
+    }
+
+    if (fi.channels != s->channels) {
         av_log(s->avctx, AV_LOG_ERROR, "switching channel layout mid-stream "
                                        "is not supported\n");
         return -1;
     }
-    s->ch_mode = ch_mode;
+    s->ch_mode = fi.ch_mode;
 
-    if (bps && bps != s->bps) {
+    if (fi.bps && fi.bps != s->bps) {
         av_log(s->avctx, AV_LOG_ERROR, "switching bps mid-stream is not "
                                        "supported\n");
         return -1;
@@ -583,20 +602,20 @@ static int decode_frame(FLACContext *s)
         s->is32 = 0;
     }
 
-    if (blocksize > s->max_blocksize) {
-        av_log(s->avctx, AV_LOG_ERROR, "blocksize %d > %d\n", blocksize,
+    if (fi.blocksize > s->max_blocksize) {
+        av_log(s->avctx, AV_LOG_ERROR, "blocksize %d > %d\n", fi.blocksize,
                s->max_blocksize);
         return -1;
     }
-    s->blocksize = blocksize;
+    s->blocksize = fi.blocksize;
 
-    if (samplerate == 0) {
-        samplerate = s->samplerate;
-    } else if (samplerate != s->samplerate) {
+    if (fi.samplerate == 0) {
+        fi.samplerate = s->samplerate;
+    } else if (fi.samplerate != s->samplerate) {
         av_log(s->avctx, AV_LOG_WARNING, "sample rate changed from %d to %d\n",
-               s->samplerate, samplerate);
+               s->samplerate, fi.samplerate);
     }
-    s->samplerate = s->avctx->sample_rate = samplerate;
+    s->samplerate = s->avctx->sample_rate = fi.samplerate;
 
 //    dump_headers(s->avctx, (FLACStreaminfo *)s);
 
