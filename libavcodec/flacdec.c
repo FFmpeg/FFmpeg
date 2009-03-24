@@ -485,6 +485,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
  * @param      avctx AVCodecContext to use as av_log() context
  * @param      gb    GetBitContext from which to read frame header
  * @param[out] fi    frame information
+ * @return non-zero on error, 0 if ok
  */
 static int decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
                                FLACFrameInfo *fi)
