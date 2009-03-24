@@ -55,7 +55,9 @@ static int rtsp_probe(AVProbeData *p)
 }
 
 #define SPACE_CHARS " \t\r\n"
-#define redir_isspace(c) strchr(SPACE_CHARS, c)
+/* we use memchr() instead of strchr() here because strchr() will return
+ * the terminating '\0' of SPACE_CHARS instead of NULL if c is '\0'. */
+#define redir_isspace(c) memchr(SPACE_CHARS, c, 4)
 static void skip_spaces(const char **pp)
 {
     const char *p;
