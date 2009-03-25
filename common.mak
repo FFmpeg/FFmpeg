@@ -67,7 +67,7 @@ FFLDFLAGS   := $(addprefix -L$(BUILD_ROOT)/lib,$(FFLIBS)) $(LDFLAGS)
 
 EXAMPLES  := $(addprefix $(SUBDIR),$(EXAMPLES))
 OBJS      := $(addprefix $(SUBDIR),$(OBJS))
-TESTPROGS := $(addprefix $(SUBDIR),$(TESTPROGS))
+TESTPROGS := $(addprefix $(SUBDIR),$(addsuffix -test$(EXESUF),$(TESTPROGS)))
 
 DEP_LIBS := $(foreach NAME,$(FFLIBS),lib$(NAME)/$($(BUILD_SHARED:yes=S)LIBNAME))
 
