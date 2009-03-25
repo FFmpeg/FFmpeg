@@ -10,24 +10,27 @@ FFmpeg README
 ------------
 
 * Read the file COPYING.LGPL. FFmpeg and the associated libraries EXCEPT
-  for libpostproc are licensed under the GNU Lesser General Public License.
+  for libpostproc are licensed under the GNU Lesser General Public License
+  version 2.1 or later.
 
-* libpostproc is distributed under the GNU General Public License, see the
-  file COPYING.GPL for details. Its compilation and use in FFmpeg is optional.
+* libpostproc is distributed under the GNU General Public License version 2
+  or later, see the file COPYING.GPL for details. Its compilation and use in
+  FFmpeg is optional.
 
 * libswscale contains some optional processor-specific optimizations that are
-  distributed under the GNU General Public License.
+  distributed under the GNU General Public License version 2 or later.
 
 * The files libavcodec/x86/idct_mmx.c, libavcodec/x86/h264_deblock_sse2.asm
   and libavcodec/x86/h264_idct_sse2.asm are distributed under the GNU General
-  Public License. They are strictly optimizations and their use is optional.
+  Public License version 2 or later. They are strictly optimizations and
+  their use is optional.
 
 * The file libavcodec/ac3dec.c is distributed under the GNU General Public
-  License.  In order for (E-)AC-3 decoding to work you need to enable GPL
-  components.
+  License version 2 or later. In order for (E-)AC-3 decoding to work you
+  need to enable GPL components.
 
 * The file libavdevice/x11grab.c is distributed under the GNU General
-  Public License. X11 grabbing is optional.
+  Public License version 2 or later. X11 grabbing is optional.
 
 * The files libavcodec/jfdctfst.c, libavcodec/jfdctint.c, libavcodec/jrevdct.c
   are taken from libjpeg, see the top of the files for licensing details.
