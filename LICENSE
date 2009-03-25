@@ -25,7 +25,7 @@ as well.
 
 The nonfree external libraries libamrnb and libamrwb can be hooked up in FFmpeg.
 You need to pass --enable-nonfree to configure to enable them. Employ this
-option with care as FFmpeg then beomes nonfree and unredistributable.
+option with care as FFmpeg then becomes nonfree and unredistributable.
 
 There are a handful of files under other licensing terms, namely:
 
