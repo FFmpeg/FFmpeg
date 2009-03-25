@@ -5,9 +5,9 @@
 all: # make "all" default target
 
 ifndef SUBDIR
-vpath %.c $(SRC_DIR)
-vpath %.h $(SRC_DIR)
-vpath %.S $(SRC_DIR)
+vpath %.c   $(SRC_DIR)
+vpath %.h   $(SRC_DIR)
+vpath %.S   $(SRC_DIR)
 vpath %.asm $(SRC_DIR)
 
 ifeq ($(SRC_DIR),$(SRC_PATH_BARE))
@@ -57,19 +57,19 @@ uninstall: uninstall-libs uninstall-headers
 .PHONY: all depend dep *clean install* uninstall* examples testprogs
 endif
 
-CFLAGS   += $(CFLAGS-yes)
-OBJS     += $(OBJS-yes)
-FFLIBS   := $(FFLIBS-yes) $(FFLIBS)
-TESTPROGS    += $(TESTPROGS-yes)
+CFLAGS    += $(CFLAGS-yes)
+OBJS      += $(OBJS-yes)
+FFLIBS    := $(FFLIBS-yes) $(FFLIBS)
+TESTPROGS += $(TESTPROGS-yes)
 
 FFEXTRALIBS := $(addprefix -l,$(addsuffix $(BUILDSUF),$(FFLIBS))) $(EXTRALIBS)
 FFLDFLAGS   := $(addprefix -L$(BUILD_ROOT)/lib,$(FFLIBS)) $(LDFLAGS)
 
-EXAMPLES := $(addprefix $(SUBDIR),$(EXAMPLES))
-OBJS  := $(addprefix $(SUBDIR),$(OBJS))
+EXAMPLES  := $(addprefix $(SUBDIR),$(EXAMPLES))
+OBJS      := $(addprefix $(SUBDIR),$(OBJS))
 TESTPROGS := $(addprefix $(SUBDIR),$(TESTPROGS))
 
-DEP_LIBS:=$(foreach NAME,$(FFLIBS),lib$(NAME)/$($(BUILD_SHARED:yes=S)LIBNAME))
+DEP_LIBS := $(foreach NAME,$(FFLIBS),lib$(NAME)/$($(BUILD_SHARED:yes=S)LIBNAME))
 
 ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h $(SRC_DIR)/$(ARCH)/*.h))
 checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
@@ -77,9 +77,9 @@ checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 DEPS := $(OBJS:.o=.d)
 depend dep: $(DEPS)
 
-CLEANSUFFIXES = *.o *~ *.ho
-LIBSUFFIXES   = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
+CLEANSUFFIXES     = *.o *~ *.ho
 DISTCLEANSUFFIXES = *.d *.pc
+LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
 
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
