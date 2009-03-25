@@ -1281,6 +1281,12 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         int rescaled = sc->time_offset < 0 ? av_rescale(sc->time_offset, sc->time_scale, mov->time_scale) : sc->time_offset;
         assert(sc->time_offset % sc->time_rate == 0);
         current_dts = - (rescaled / sc->time_rate);
+        if (sc->ctts_data && sc->ctts_data[0].duration / sc->stts_data[0].duration > 16) {
+            /* more than 16 frames delay, dts are likely wrong
+               this happens with files created by iMovie */
+            sc->wrong_dts = 1;
+            st->codec->has_b_frames = 1;
+        }
     }
 
     /* only use old uncompressed audio chunk demuxing when stts specifies it */
