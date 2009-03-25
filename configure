@@ -2366,6 +2366,9 @@ echo "INCDIR=\$(DESTDIR)$incdir" >> config.mak
 echo "BINDIR=\$(DESTDIR)$bindir" >> config.mak
 echo "DATADIR=\$(DESTDIR)$datadir" >> config.mak
 echo "MANDIR=\$(DESTDIR)$mandir" >> config.mak
+echo "SRC_PATH=\"$source_path\"" >> config.mak
+echo "SRC_PATH_BARE=$source_path" >> config.mak
+echo "BUILD_ROOT=\"$PWD\"" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AS=$as" >> config.mak
 echo "YASM=$yasmexe" >> config.mak
@@ -2470,9 +2473,6 @@ if enabled small; then
     echo "#define av_always_inline"  >> $TMPH
 fi
 
-echo "SRC_PATH=\"$source_path\"" >> config.mak
-echo "SRC_PATH_BARE=$source_path" >> config.mak
-echo "BUILD_ROOT=\"$PWD\"" >> config.mak
 
 # Apparently it's not possible to portably echo a backslash.
 enabled asmalign_pot &&
