@@ -542,4 +542,3 @@ DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
 include $(SUBDIR)../subdir.mak
 
 $(SUBDIR)dct-test$(EXESUF): $(SUBDIR)fdctref.o $(SUBDIR)aandcttab.o
-$(SUBDIR)fft-test$(EXESUF): $(SUBDIR)fdctref.o
