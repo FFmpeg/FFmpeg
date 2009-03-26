@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "libavutil/common.h"
 #include "libavformat/avformat.h"
 
 #undef exit
@@ -70,7 +71,7 @@ int main(int argc, char **argv)
 
     for(i=0; ; i++){
         AVPacket pkt;
-        AVStream *st;
+        AVStream *av_uninit(st);
 
         memset(&pkt, 0, sizeof(pkt));
         if(ret>=0){
