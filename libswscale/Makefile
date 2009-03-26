@@ -17,13 +17,13 @@ MMX-OBJS-$(CONFIG_GPL)     +=  x86/yuv2rgb_mmx.o        \
 OBJS-$(HAVE_MMX)           +=  $(MMX-OBJS-yes)
 
 EXAMPLES  = swscale-example
-TESTPROGS = cs_test
+TESTPROGS = colorspace
 
 DIRS = bfin mlib ppc sparc x86
 
 include $(SUBDIR)../subdir.mak
 
-$(SUBDIR)cs_test: $(SUBDIR)cs_test.o $(SUBDIR)$(LIBNAME)
+$(SUBDIR)colorspace-test: $(SUBDIR)colorspace-test.o $(SUBDIR)$(LIBNAME)
 
 $(SUBDIR)swscale-example: $(SUBDIR)swscale-example.o $(SUBDIR)$(LIBNAME)
 $(SUBDIR)swscale-example: EXTRALIBS += -lm
