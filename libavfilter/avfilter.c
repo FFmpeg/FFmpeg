@@ -27,7 +27,7 @@ unsigned avfilter_version(void) {
 }
 
 /** list of registered filters */
-struct FilterList
+static struct FilterList
 {
     AVFilter *filter;
     struct FilterList *next;
