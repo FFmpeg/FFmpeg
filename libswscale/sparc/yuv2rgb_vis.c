@@ -22,8 +22,8 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
-#include "swscale.h"
-#include "swscale_internal.h"
+#include "libswscale/swscale.h"
+#include "libswscale/swscale_internal.h"
 
 #define YUV2RGB_INIT \
     "wr %%g0, 0x10, %%gsr \n\t" \

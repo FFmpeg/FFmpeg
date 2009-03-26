@@ -3,7 +3,6 @@
  *
  * Copyright (C) 2009 Konstantin Shishkov
  *
- * MMX/MMX2 template stuff (needed for fast movntq support),
  * 1,4,8bpp support and context / deglobalize stuff
  * by Michael Niedermayer (michaelni@gmx.at)
  *
@@ -35,36 +34,9 @@
 #include "swscale_internal.h"
 #include "libavutil/x86_cpu.h"
 
-#define DITHER1XBPP // only for MMX
-
 extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
 extern const uint8_t dither_8x8_220[8][8];
-
-#if HAVE_MMX && CONFIG_GPL
-
-/* hope these constant values are cache line aligned */
-DECLARE_ASM_CONST(8, uint64_t, mmx_00ffw)   = 0x00ff00ff00ff00ffULL;
-DECLARE_ASM_CONST(8, uint64_t, mmx_redmask) = 0xf8f8f8f8f8f8f8f8ULL;
-DECLARE_ASM_CONST(8, uint64_t, mmx_grnmask) = 0xfcfcfcfcfcfcfcfcULL;
-
-//MMX versions
-#undef RENAME
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#define HAVE_MMX2 0
-#define HAVE_AMD3DNOW 0
-#define RENAME(a) a ## _MMX
-#include "yuv2rgb_template.c"
-
-//MMX2 versions
-#undef RENAME
-#undef HAVE_MMX2
-#define HAVE_MMX2 1
-#define RENAME(a) a ## _MMX2
-#include "yuv2rgb_template.c"
-
-#endif /* HAVE_MMX && CONFIG_GPL */
 
 const int32_t ff_yuv2rgb_coeffs[8][4] = {
     {117504, 138453, 13954, 34903}, /* no sequence_display_extension */
@@ -504,30 +476,7 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
 {
     SwsFunc t = NULL;
 #if (HAVE_MMX2 || HAVE_MMX) && CONFIG_GPL
-    if (c->flags & SWS_CPU_CAPS_MMX2) {
-        switch (c->dstFormat) {
-        case PIX_FMT_RGB32:
-            if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P){
-                if (HAVE_7REGS) return yuva420_rgb32_MMX2;
-                break;
-            }else return yuv420_rgb32_MMX2;
-        case PIX_FMT_BGR24:  return yuv420_rgb24_MMX2;
-        case PIX_FMT_RGB565: return yuv420_rgb16_MMX2;
-        case PIX_FMT_RGB555: return yuv420_rgb15_MMX2;
-        }
-    }
-    if (c->flags & SWS_CPU_CAPS_MMX) {
-        switch (c->dstFormat) {
-        case PIX_FMT_RGB32:
-            if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P){
-                if (HAVE_7REGS) return yuva420_rgb32_MMX;
-                break;
-            }else return yuv420_rgb32_MMX;
-        case PIX_FMT_BGR24:  return yuv420_rgb24_MMX;
-        case PIX_FMT_RGB565: return yuv420_rgb16_MMX;
-        case PIX_FMT_RGB555: return yuv420_rgb15_MMX;
-        }
-    }
+     t = ff_yuv2rgb_init_mmx(c);
 #endif
 #if HAVE_VIS
     t = ff_yuv2rgb_init_vis(c);

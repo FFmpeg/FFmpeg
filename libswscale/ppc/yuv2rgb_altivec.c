@@ -91,9 +91,9 @@ adjustment.
 #include <inttypes.h>
 #include <assert.h>
 #include "config.h"
-#include "rgb2rgb.h"
-#include "swscale.h"
-#include "swscale_internal.h"
+#include "libswscale/rgb2rgb.h"
+#include "libswscale/swscale.h"
+#include "libswscale/swscale_internal.h"
 
 #undef PROFILE_THE_BEAST
 #undef INC_SCALING
