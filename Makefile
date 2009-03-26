@@ -70,7 +70,7 @@ ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 	$(CC) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
 
 output_example$(EXESUF): output_example.o $(FF_DEP_LIBS)
-	$(CC) $(CFLAGS) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
+	$(CC) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 tools/%$(EXESUF): tools/%.c
 	$(CC) $(CFLAGS) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
