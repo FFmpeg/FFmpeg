@@ -25,7 +25,7 @@
 
 const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end)
 {
-    const uint8_t *a = p + 4 - ((long)p & 3);
+    const uint8_t *a = p + 4 - ((intptr_t)p & 3);
 
     for( end -= 3; p < a && p < end; p++ ) {
         if( p[0] == 0 && p[1] == 0 && p[2] == 1 )
