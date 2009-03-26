@@ -123,7 +123,7 @@ testclean:
 	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
 
 clean:: testclean
-	rm -f $(ALLPROGS) $(ALLPROGS_G) output_example$(EXESUF)
+	rm -f $(ALLPROGS) $(ALLPROGS_G)
 	rm -f doc/*.html doc/*.pod doc/*.1
 	rm -f tests/seek_test$(EXESUF)
 	rm -f $(addprefix tests/,$(addsuffix $(HOSTEXESUF),audiogen videogen rotozoom tiny_psnr))
