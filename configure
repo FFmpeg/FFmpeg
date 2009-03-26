@@ -2507,6 +2507,11 @@ if enabled source_path_used; then
         libavutil         \
         libpostproc       \
         libswscale        \
+        libswscale/bfin   \
+        libswscale/mlib   \
+        libswscale/ppc    \
+        libswscale/sparc  \
+        libswscale/x86    \
         tests             \
         tools             \
         "
