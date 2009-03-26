@@ -48,5 +48,3 @@ DIRS = arm bfin sh4 x86
 include $(SUBDIR)../subdir.mak
 
 $(SUBDIR)lzo-test$(EXESUF): EXTRALIBS += -llzo2
-
-CLEANFILES = lzo-test$(EXESUF)

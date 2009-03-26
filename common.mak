@@ -98,7 +98,7 @@ $(SUBDIR)x86/%.d: $(SUBDIR)x86/%.asm
 	$(YASM) $(YASMFLAGS) -I $$(<D)/ -M -o $$(@:%.d=%.o) $$< > $$@
 
 clean::
-	rm -f $(EXAMPLES) $(TESTPROGS) $(addprefix $(SUBDIR),$(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
+	rm -f $(EXAMPLES) $(addprefix $(SUBDIR),*-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
 	    $(addprefix $(SUBDIR), $(foreach suffix,$(CLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 
 distclean:: clean
