@@ -636,7 +636,6 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
                 ChannelParams *cp = &m->channel_params[ch];
 
                 s->quant_step_size[ch] = get_bits(gbp, 4);
-                /* TODO: validate */
 
                 cp->sign_huff_offset = calculate_sign_huff(m, substr, ch);
             }
