@@ -625,7 +625,7 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
     if (s->param_presence_flags & PARAM_OUTSHIFT)
         if (get_bits1(gbp))
             for (ch = 0; ch <= s->max_matrix_channel; ch++) {
-                s->output_shift[ch] = get_bits(gbp, 4);
+                s->output_shift[ch] = get_sbits(gbp, 4);
                 dprintf(m->avctx, "output shift[%d] = %d\n",
                         ch, s->output_shift[ch]);
                 /* TODO: validate */
