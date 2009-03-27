@@ -147,6 +147,7 @@ Codecs:
   mdec.c                                Michael Niedermayer
   mimic.c                               Ramiro Polla
   mjpeg.c                               Michael Niedermayer
+  mlp*                                  Ramiro Polla
   mmvideo.c                             Peter Ross
   mpc*                                  Kostya Shishkov
   mpeg12.c, mpeg12data.h                Michael Niedermayer
