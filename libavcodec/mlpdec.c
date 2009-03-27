@@ -628,7 +628,6 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
                 s->output_shift[ch] = get_sbits(gbp, 4);
                 dprintf(m->avctx, "output shift[%d] = %d\n",
                         ch, s->output_shift[ch]);
-                /* TODO: validate */
             }
 
     if (s->param_presence_flags & PARAM_QUANTSTEP)
