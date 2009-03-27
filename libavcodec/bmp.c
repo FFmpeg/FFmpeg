@@ -244,6 +244,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }else{
         switch(depth){
         case 1:
+        case 8:
+        case 24:
             for(i = 0; i < avctx->height; i++){
                 memcpy(ptr, buf, n);
                 buf += n;
@@ -257,20 +259,6 @@ static int bmp_decode_frame(AVCodecContext *avctx,
                     ptr[j*2+0] = (buf[j] >> 4) & 0xF;
                     ptr[j*2+1] = buf[j] & 0xF;
                 }
-                buf += n;
-                ptr += linesize;
-            }
-            break;
-        case 8:
-            for(i = 0; i < avctx->height; i++){
-                memcpy(ptr, buf, avctx->width);
-                buf += n;
-                ptr += linesize;
-            }
-            break;
-        case 24:
-            for(i = 0; i < avctx->height; i++){
-                memcpy(ptr, buf, avctx->width*(depth>>3));
                 buf += n;
                 ptr += linesize;
             }
