@@ -27,6 +27,8 @@
 #include "libavformat/avformat.h"
 
 #undef exit
+#undef printf
+#undef fprintf
 
 int main(int argc, char **argv)
 {
