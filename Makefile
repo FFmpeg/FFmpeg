@@ -25,8 +25,6 @@ FFLIBS := avdevice avformat avcodec avutil swscale
 
 DATA_FILES := $(wildcard $(SRC_DIR)/ffpresets/*.ffpreset)
 
-EXAMPLES = output_example$(EXESUF)
-
 include common.mak
 
 FF_LDFLAGS   := $(FFLDFLAGS)
@@ -68,9 +66,6 @@ ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 
 %_g$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
-
-output_example$(EXESUF): output_example.o $(FF_DEP_LIBS)
-	$(CC) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 tools/%$(EXESUF): tools/%.c
 	$(CC) $(CFLAGS) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)

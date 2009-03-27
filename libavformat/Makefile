@@ -243,6 +243,9 @@ OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
+EXAMPLES  = output-example
 TESTPROGS = timefilter
+
+$(SUBDIR)output-example$(EXESUF): $(FF_DEP_LIBS)
 
 include $(SUBDIR)../subdir.mak

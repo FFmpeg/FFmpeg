@@ -753,7 +753,7 @@ Application Wizard, uncheck the "Precompiled headers" option.
 @item Write the source code for your application, or, for testing, just
 copy the code from an existing sample application into the source file
 that MSVC++ has already created for you. For example, you can copy
-@file{output_example.c} from the FFmpeg distribution.
+@file{libavformat/output-example.c} from the FFmpeg distribution.
 
 @item Open the "Project / Properties" dialog box. In the "Configuration"
 combo box, select "All Configurations" so that the changes you make will
@@ -967,8 +967,8 @@ decoding). Look at @file{libavcodec/apiexample.c} to see how to use it.
 
 @item libavformat is the library containing the file format handling (mux and
 demux code for several formats). Look at @file{ffplay.c} to use it in a
-player. See @file{output_example.c} to use it to generate audio or video
-streams.
+player. See @file{libavformat/output-example.c} to use it to generate
+audio or video streams.
 
 @end itemize
 
