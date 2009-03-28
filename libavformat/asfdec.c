@@ -158,7 +158,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
         url_fskip(s->pb, len);
         return;
     }
-    if (strncmp(key, "WM/", 3))
+    if (!strncmp(key, "WM/", 3))
         key += 3;
     av_metadata_set(&s->metadata, key, value);
 }
