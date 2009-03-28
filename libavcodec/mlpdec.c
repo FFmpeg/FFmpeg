@@ -375,9 +375,6 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
             av_log(m->avctx, AV_LOG_WARNING,
                    "Lossless check failed - expected %02x, calculated %02x.\n",
                    lossless_check, tmp);
-        else
-            dprintf(m->avctx, "Lossless check passed for substream %d (%x).\n",
-                    substr, tmp);
     }
 
     skip_bits(gbp, 16);
@@ -386,8 +383,6 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
 
     for (ch = 0; ch <= s->max_matrix_channel; ch++) {
         int ch_assign = get_bits(gbp, 6);
-        dprintf(m->avctx, "ch_assign[%d][%d] = %d\n", substr, ch,
-                ch_assign);
         if (ch_assign > s->max_matrix_channel) {
             av_log(m->avctx, AV_LOG_ERROR,
                    "Assignment of matrix channel %d to invalid output channel %d. %s\n",
@@ -626,8 +621,6 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
         if (get_bits1(gbp))
             for (ch = 0; ch <= s->max_matrix_channel; ch++) {
                 s->output_shift[ch] = get_sbits(gbp, 4);
-                dprintf(m->avctx, "output shift[%d] = %d\n",
-                        ch, s->output_shift[ch]);
             }
 
     if (s->param_presence_flags & PARAM_QUANTSTEP)
@@ -919,7 +912,6 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
     init_get_bits(&gb, (buf + 4), (length - 4) * 8);
 
     if (show_bits_long(&gb, 31) == (0xf8726fba >> 1)) {
-        dprintf(m->avctx, "Found major sync.\n");
         if (read_major_sync(m, &gb) < 0)
             goto error;
         header_size += 28;
