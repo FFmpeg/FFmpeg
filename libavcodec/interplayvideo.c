@@ -778,7 +778,16 @@ static int ipvideo_decode_block_opcode_0xF(IpvideoContext *s)
     return 0;
 }
 
-static int (*ipvideo_decode_block[16])(IpvideoContext *s);
+static int (* const ipvideo_decode_block[])(IpvideoContext *s) = {
+    ipvideo_decode_block_opcode_0x0, ipvideo_decode_block_opcode_0x1,
+    ipvideo_decode_block_opcode_0x2, ipvideo_decode_block_opcode_0x3,
+    ipvideo_decode_block_opcode_0x4, ipvideo_decode_block_opcode_0x5,
+    ipvideo_decode_block_opcode_0x6, ipvideo_decode_block_opcode_0x7,
+    ipvideo_decode_block_opcode_0x8, ipvideo_decode_block_opcode_0x9,
+    ipvideo_decode_block_opcode_0xA, ipvideo_decode_block_opcode_0xB,
+    ipvideo_decode_block_opcode_0xC, ipvideo_decode_block_opcode_0xD,
+    ipvideo_decode_block_opcode_0xE, ipvideo_decode_block_opcode_0xF,
+};
 
 static void ipvideo_decode_opcodes(IpvideoContext *s)
 {
@@ -851,24 +860,6 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
 
     /* decoding map contains 4 bits of information per 8x8 block */
     s->decoding_map_size = avctx->width * avctx->height / (8 * 8 * 2);
-
-    /* assign block decode functions */
-    ipvideo_decode_block[0x0] = ipvideo_decode_block_opcode_0x0;
-    ipvideo_decode_block[0x1] = ipvideo_decode_block_opcode_0x1;
-    ipvideo_decode_block[0x2] = ipvideo_decode_block_opcode_0x2;
-    ipvideo_decode_block[0x3] = ipvideo_decode_block_opcode_0x3;
-    ipvideo_decode_block[0x4] = ipvideo_decode_block_opcode_0x4;
-    ipvideo_decode_block[0x5] = ipvideo_decode_block_opcode_0x5;
-    ipvideo_decode_block[0x6] = ipvideo_decode_block_opcode_0x6;
-    ipvideo_decode_block[0x7] = ipvideo_decode_block_opcode_0x7;
-    ipvideo_decode_block[0x8] = ipvideo_decode_block_opcode_0x8;
-    ipvideo_decode_block[0x9] = ipvideo_decode_block_opcode_0x9;
-    ipvideo_decode_block[0xA] = ipvideo_decode_block_opcode_0xA;
-    ipvideo_decode_block[0xB] = ipvideo_decode_block_opcode_0xB;
-    ipvideo_decode_block[0xC] = ipvideo_decode_block_opcode_0xC;
-    ipvideo_decode_block[0xD] = ipvideo_decode_block_opcode_0xD;
-    ipvideo_decode_block[0xE] = ipvideo_decode_block_opcode_0xE;
-    ipvideo_decode_block[0xF] = ipvideo_decode_block_opcode_0xF;
 
     s->current_frame.data[0] = s->last_frame.data[0] =
     s->second_last_frame.data[0] = NULL;
