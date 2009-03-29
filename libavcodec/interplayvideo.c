@@ -76,7 +76,7 @@ typedef struct IpvideoContext {
 } IpvideoContext;
 
 #define CHECK_STREAM_PTR(n) \
-  if ((s->stream_ptr + n) > s->stream_end) { \
+  if (s->stream_end - s->stream_ptr < n) { \
     av_log(s->avctx, AV_LOG_ERROR, "Interplay video warning: stream_ptr out of bounds (%p >= %p)\n", \
       s->stream_ptr + n, s->stream_end); \
     return -1; \
