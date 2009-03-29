@@ -67,7 +67,7 @@
 #define MOVNTQ(a,b)  REAL_MOVNTQ(a,b)
 
 #if HAVE_ALTIVEC
-#include "swscale_altivec_template.c"
+#include "ppc/swscale_altivec_template.c"
 #endif
 
 #define YSCALEYUV2YV12X(x, offset, dest, width) \
