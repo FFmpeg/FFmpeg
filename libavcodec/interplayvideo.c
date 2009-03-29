@@ -82,85 +82,36 @@ typedef struct IpvideoContext {
     return -1; \
   }
 
-#define COPY_FROM_CURRENT() \
-    motion_offset = current_offset; \
-    motion_offset += y * s->stride; \
-    motion_offset += x; \
-    if (motion_offset < 0) { \
-        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset < 0 (%d)\n", motion_offset); \
-        return -1; \
-    } else if (motion_offset > s->upper_motion_limit_offset) { \
-        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset above limit (%d >= %d)\n", \
-            motion_offset, s->upper_motion_limit_offset); \
-        return -1; \
-    } \
-    s->dsp.put_pixels_tab[1][0](s->pixel_ptr, \
-        s->current_frame.data[0] + motion_offset, s->stride, 8);
-
-#define COPY_FROM_PREVIOUS() \
-    motion_offset = current_offset; \
-    motion_offset += y * s->stride; \
-    motion_offset += x; \
-    if (motion_offset < 0) { \
-        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset < 0 (%d)\n", motion_offset); \
-        return -1; \
-    } else if (motion_offset > s->upper_motion_limit_offset) { \
-        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset above limit (%d >= %d)\n", \
-            motion_offset, s->upper_motion_limit_offset); \
-        return -1; \
-    } \
-    s->dsp.put_pixels_tab[1][0](s->pixel_ptr, \
-        s->last_frame.data[0] + motion_offset, s->stride, 8);
-
-#define COPY_FROM_SECOND_LAST() \
-    motion_offset = current_offset; \
-    motion_offset += y * s->stride; \
-    motion_offset += x; \
-    if (motion_offset < 0) { \
-        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset < 0 (%d)\n", motion_offset); \
-        return -1; \
-    } else if (motion_offset > s->upper_motion_limit_offset) { \
-        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset above limit (%d >= %d)\n", \
-            motion_offset, s->upper_motion_limit_offset); \
-        return -1; \
-    } \
-    s->dsp.put_pixels_tab[1][0](s->pixel_ptr, \
-        s->second_last_frame.data[0] + motion_offset, s->stride, 8);
+static int copy_from(IpvideoContext *s, AVFrame *src, int delta_x, int delta_y)
+{
+    int current_offset = s->pixel_ptr - s->current_frame.data[0];
+    int motion_offset = current_offset + delta_y * s->stride + delta_x;
+    if (motion_offset < 0) {
+        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset < 0 (%d)\n", motion_offset);
+        return -1;
+    } else if (motion_offset > s->upper_motion_limit_offset) {
+        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset above limit (%d >= %d)\n",
+            motion_offset, s->upper_motion_limit_offset);
+        return -1;
+    }
+    s->dsp.put_pixels_tab[1][0](s->pixel_ptr, src->data[0] + motion_offset, s->stride, 8);
+    return 0;
+}
 
 static int ipvideo_decode_block_opcode_0x0(IpvideoContext *s)
 {
-    int x, y;
-    int motion_offset;
-    int current_offset = s->pixel_ptr - s->current_frame.data[0];
-
-    /* copy a block from the previous frame */
-    x = y = 0;
-    COPY_FROM_PREVIOUS();
-
-    /* report success */
-    return 0;
+    return copy_from(s, &s->last_frame, 0, 0);
 }
 
 static int ipvideo_decode_block_opcode_0x1(IpvideoContext *s)
 {
-    int x, y;
-    int motion_offset;
-    int current_offset = s->pixel_ptr - s->current_frame.data[0];
-
-    /* copy block from 2 frames ago */
-    x = y = 0;
-    COPY_FROM_SECOND_LAST();
-
-    /* report success */
-    return 0;
+    return copy_from(s, &s->second_last_frame, 0, 0);
 }
 
 static int ipvideo_decode_block_opcode_0x2(IpvideoContext *s)
 {
     unsigned char B;
     int x, y;
-    int motion_offset;
-    int current_offset = s->pixel_ptr - s->current_frame.data[0];
 
     /* copy block from 2 frames ago using a motion vector; need 1 more byte */
     CHECK_STREAM_PTR(1);
@@ -175,18 +126,13 @@ static int ipvideo_decode_block_opcode_0x2(IpvideoContext *s)
     }
 
     debug_interplay ("    motion byte = %d, (x, y) = (%d, %d)\n", B, x, y);
-    COPY_FROM_SECOND_LAST();
-
-    /* report success */
-    return 0;
+    return copy_from(s, &s->second_last_frame, x, y);
 }
 
 static int ipvideo_decode_block_opcode_0x3(IpvideoContext *s)
 {
     unsigned char B;
     int x, y;
-    int motion_offset;
-    int current_offset = s->pixel_ptr - s->current_frame.data[0];
 
     /* copy 8x8 block from current frame from an up/left block */
 
@@ -203,18 +149,13 @@ static int ipvideo_decode_block_opcode_0x3(IpvideoContext *s)
     }
 
     debug_interplay ("    motion byte = %d, (x, y) = (%d, %d)\n", B, x, y);
-    COPY_FROM_CURRENT();
-
-    /* report success */
-    return 0;
+    return copy_from(s, &s->current_frame, x, y);
 }
 
 static int ipvideo_decode_block_opcode_0x4(IpvideoContext *s)
 {
     int x, y;
     unsigned char B, BL, BH;
-    int motion_offset;
-    int current_offset = s->pixel_ptr - s->current_frame.data[0];
 
     /* copy a block from the previous frame; need 1 more byte */
     CHECK_STREAM_PTR(1);
@@ -226,17 +167,12 @@ static int ipvideo_decode_block_opcode_0x4(IpvideoContext *s)
     y = -8 + BH;
 
     debug_interplay ("    motion byte = %d, (x, y) = (%d, %d)\n", B, x, y);
-    COPY_FROM_PREVIOUS();
-
-    /* report success */
-    return 0;
+    return copy_from(s, &s->last_frame, x, y);
 }
 
 static int ipvideo_decode_block_opcode_0x5(IpvideoContext *s)
 {
     signed char x, y;
-    int motion_offset;
-    int current_offset = s->pixel_ptr - s->current_frame.data[0];
 
     /* copy a block from the previous frame using an expanded range;
      * need 2 more bytes */
@@ -246,10 +182,7 @@ static int ipvideo_decode_block_opcode_0x5(IpvideoContext *s)
     y = *s->stream_ptr++;
 
     debug_interplay ("    motion bytes = %d, %d\n", x, y);
-    COPY_FROM_PREVIOUS();
-
-    /* report success */
-    return 0;
+    return copy_from(s, &s->last_frame, x, y);
 }
 
 static int ipvideo_decode_block_opcode_0x6(IpvideoContext *s)
