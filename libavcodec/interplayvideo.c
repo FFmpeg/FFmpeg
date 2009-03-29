@@ -265,7 +265,6 @@ static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
 {
     int x, y;
     unsigned char P0, P1;
-    unsigned char B[8];
     unsigned int flags;
     int bitmask;
 
@@ -279,11 +278,9 @@ static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
 
         /* need 8 more bytes from the stream */
         CHECK_STREAM_PTR(8);
-        for (y = 0; y < 8; y++)
-            B[y] = *s->stream_ptr++;
 
         for (y = 0; y < 8; y++) {
-            flags = B[y];
+            flags = *s->stream_ptr++;
             for (x = 0x01; x <= 0x80; x <<= 1) {
                 if (flags & x)
                     *s->pixel_ptr++ = P1;
