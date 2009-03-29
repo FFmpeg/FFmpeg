@@ -483,8 +483,8 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
     /* 4-color encoding */
     CHECK_STREAM_PTR(4);
 
-    for (y = 0; y < 4; y++)
-        P[y] = *s->stream_ptr++;
+    memcpy(P, s->stream_ptr, 4);
+    s->stream_ptr += 4;
 
     if ((P[0] <= P[1]) && (P[2] <= P[3])) {
 
@@ -577,21 +577,21 @@ static int ipvideo_decode_block_opcode_0xA(IpvideoContext *s)
      * either top and bottom or left and right halves */
     CHECK_STREAM_PTR(4);
 
-    for (y = 0; y < 4; y++)
-        P[y] = *s->stream_ptr++;
+    memcpy(P, s->stream_ptr, 4);
+    s->stream_ptr += 4;
 
     if (P[0] <= P[1]) {
 
         /* 4-color encoding for each quadrant; need 28 more bytes */
         CHECK_STREAM_PTR(28);
 
-        for (y = 0; y < 4; y++)
-            B[y] = *s->stream_ptr++;
+        memcpy(B, s->stream_ptr, 4);
+        s->stream_ptr += 4;
         for (y = 4; y < 16; y += 4) {
-            for (x = y; x < y + 4; x++)
-                P[x] = *s->stream_ptr++;
-            for (x = y; x < y + 4; x++)
-                B[x] = *s->stream_ptr++;
+            memcpy(P + y, s->stream_ptr, 4);
+            s->stream_ptr += 4;
+            memcpy(B + y, s->stream_ptr, 4);
+            s->stream_ptr += 4;
         }
 
         for (y = 0; y < 8; y++) {
@@ -614,12 +614,12 @@ static int ipvideo_decode_block_opcode_0xA(IpvideoContext *s)
          * halves; need 20 more bytes */
         CHECK_STREAM_PTR(20);
 
-        for (y = 0; y < 8; y++)
-            B[y] = *s->stream_ptr++;
-        for (y = 4; y < 8; y++)
-            P[y] = *s->stream_ptr++;
-        for (y = 8; y < 16; y++)
-            B[y] = *s->stream_ptr++;
+        memcpy(B, s->stream_ptr, 8);
+        s->stream_ptr += 8;
+        memcpy(P + 4, s->stream_ptr, 4);
+        s->stream_ptr += 4;
+        memcpy(B + 8, s->stream_ptr, 8);
+        s->stream_ptr += 8;
 
         if (P[4] <= P[5]) {
 
@@ -662,16 +662,15 @@ static int ipvideo_decode_block_opcode_0xA(IpvideoContext *s)
 
 static int ipvideo_decode_block_opcode_0xB(IpvideoContext *s)
 {
-    int x, y;
+    int y;
 
     /* 64-color encoding (each pixel in block is a different color) */
     CHECK_STREAM_PTR(64);
 
     for (y = 0; y < 8; y++) {
-        for (x = 0; x < 8; x++) {
-            *s->pixel_ptr++ = *s->stream_ptr++;
-        }
-        s->pixel_ptr += s->line_inc;
+        memcpy(s->pixel_ptr, s->stream_ptr, 8);
+        s->stream_ptr += 8;
+        s->pixel_ptr  += s->stride;
     }
 
     /* report success */
@@ -703,15 +702,15 @@ static int ipvideo_decode_block_opcode_0xC(IpvideoContext *s)
 
 static int ipvideo_decode_block_opcode_0xD(IpvideoContext *s)
 {
-    int x, y;
+    int y;
     unsigned char P[4];
     unsigned char index = 0;
 
     /* 4-color block encoding: each 4x4 block is a different color */
     CHECK_STREAM_PTR(4);
 
-    for (y = 0; y < 4; y++)
-        P[y] = *s->stream_ptr++;
+    memcpy(P, s->stream_ptr, 4);
+    s->stream_ptr += 4;
 
     for (y = 0; y < 8; y++) {
         if (y < 4)
@@ -719,12 +718,9 @@ static int ipvideo_decode_block_opcode_0xD(IpvideoContext *s)
         else
             index = 2;
 
-        for (x = 0; x < 8; x++) {
-            if (x == 4)
-                index++;
-            *s->pixel_ptr++ = P[index];
-        }
-        s->pixel_ptr += s->line_inc;
+        memset(s->pixel_ptr    , P[index    ], 4);
+        memset(s->pixel_ptr + 4, P[index + 1], 4);
+        s->pixel_ptr += s->stride;
     }
 
     /* report success */
@@ -733,7 +729,7 @@ static int ipvideo_decode_block_opcode_0xD(IpvideoContext *s)
 
 static int ipvideo_decode_block_opcode_0xE(IpvideoContext *s)
 {
-    int x, y;
+    int y;
     unsigned char pix;
 
     /* 1-color encoding: the whole block is 1 solid color */
@@ -741,10 +737,8 @@ static int ipvideo_decode_block_opcode_0xE(IpvideoContext *s)
     pix = *s->stream_ptr++;
 
     for (y = 0; y < 8; y++) {
-        for (x = 0; x < 8; x++) {
-            *s->pixel_ptr++ = pix;
-        }
-        s->pixel_ptr += s->line_inc;
+        memset(s->pixel_ptr, pix, 8);
+        s->pixel_ptr += s->stride;
     }
 
     /* report success */
@@ -795,14 +789,11 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
     int index = 0;
     unsigned char opcode;
     int ret;
-    int code_counts[16];
+    int code_counts[16] = {0};
     static int frame = 0;
 
     debug_interplay("------------------ frame %d\n", frame);
     frame++;
-
-    for (x = 0; x < 16; x++)
-        code_counts[x] = 0;
 
     /* this is PAL8, so make the palette available */
     memcpy(s->current_frame.data[1], s->avctx->palctrl->palette, PALETTE_COUNT * 4);
