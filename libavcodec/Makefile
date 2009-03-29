@@ -531,7 +531,7 @@ OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
                                           sparc/simple_idct_vis.o       \
 
 
-EXAMPLES = api-example$(EXESUF)
+EXAMPLES = api
 
 TESTPROGS = cabac dct eval fft h264 rangecoder snow
 TESTPROGS-$(ARCH_X86) += x86/cpuid
