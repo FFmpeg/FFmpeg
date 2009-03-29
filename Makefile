@@ -275,7 +275,7 @@ $(LAVF_TESTS):
 	$(SRC_PATH)/tests/regression.sh $@ lavf tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 seektest: codectest libavtest tests/seek_test$(EXESUF)
-	$(SRC_PATH)/tests/seek_test.sh $(SEEK_REFFILE) "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	$(SRC_PATH)/tests/seek-regression.sh $(SEEK_REFFILE) "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 servertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	@echo
