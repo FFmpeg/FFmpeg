@@ -135,7 +135,7 @@ fulltest test: codectest lavftest seektest
 
 FFMPEG_REFFILE   = $(SRC_PATH)/tests/ffmpeg.regression.ref
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
-LAVF_REFFILE     = $(SRC_PATH)/tests/libav.regression.ref
+LAVF_REFFILE     = $(SRC_PATH)/tests/lavf.regression.ref
 ROTOZOOM_REFFILE = $(SRC_PATH)/tests/rotozoom.regression.ref
 SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
 
