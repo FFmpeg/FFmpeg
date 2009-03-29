@@ -131,11 +131,11 @@ distclean::
 
 check: test checkheaders
 
-fulltest test: codectest libavtest seektest
+fulltest test: codectest lavftest seektest
 
 FFMPEG_REFFILE   = $(SRC_PATH)/tests/ffmpeg.regression.ref
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
-LIBAV_REFFILE    = $(SRC_PATH)/tests/libav.regression.ref
+LAVF_REFFILE     = $(SRC_PATH)/tests/libav.regression.ref
 ROTOZOOM_REFFILE = $(SRC_PATH)/tests/rotozoom.regression.ref
 SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
 
@@ -249,8 +249,8 @@ codectest: $(VSYNTH_REG) $(ROTOZOOM_REG)
 	diff -u -w $(FFMPEG_REFFILE)   $(VSYNTH_REG)
 	diff -u -w $(ROTOZOOM_REFFILE) $(ROTOZOOM_REG)
 
-libavtest: $(LAVF_REG)
-	diff -u -w $(LIBAV_REFFILE) $(LAVF_REG)
+lavftest: $(LAVF_REG)
+	diff -u -w $(LAVF_REFFILE) $(LAVF_REG)
 
 $(VSYNTH_REG) $(ROTOZOOM_REG) $(LAVF_REG):
 	cat $^ > $@
@@ -274,7 +274,7 @@ $(CODEC_TESTS) regtest-ref: tests/tiny_psnr$(HOSTEXESUF)
 $(LAVF_TESTS):
 	$(SRC_PATH)/tests/regression.sh $@ lavf tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
-seektest: codectest libavtest tests/seek_test$(EXESUF)
+seektest: codectest lavftest tests/seek_test$(EXESUF)
 	$(SRC_PATH)/tests/seek-regression.sh $(SEEK_REFFILE) "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 servertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
