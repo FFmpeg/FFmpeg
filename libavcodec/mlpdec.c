@@ -1021,19 +1021,20 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
                  && get_bits1(&gb) == 0);
 
         skip_bits(&gb, (-get_bits_count(&gb)) & 15);
-        if (substream_data_len[substr] * 8 - get_bits_count(&gb) >= 32 &&
-            (show_bits_long(&gb, 32) == END_OF_STREAM ||
-             show_bits_long(&gb, 20) == 0xd234e)) {
-            skip_bits(&gb, 18);
+        if (substream_data_len[substr] * 8 - get_bits_count(&gb) >= 32) {
+            int shorten_by;
+
+            if (get_bits(&gb, 16) != 0xD234)
+                return -1;
+
+            shorten_by = get_bits(&gb, 16);
+            if      (m->avctx->codec_id == CODEC_ID_TRUEHD && shorten_by  & 0x2000)
+                s->blockpos -= FFMIN(shorten_by & 0x1FFF, s->blockpos);
+            else if (m->avctx->codec_id == CODEC_ID_MLP    && shorten_by != 0xD234)
+                return -1;
+
             if (substr == m->max_decoded_substream)
                 av_log(m->avctx, AV_LOG_INFO, "End of stream indicated.\n");
-
-            if (get_bits1(&gb)) {
-                int shorten_by = get_bits(&gb, 13);
-                shorten_by = FFMIN(shorten_by, s->blockpos);
-                s->blockpos -= shorten_by;
-            } else
-                skip_bits(&gb, 13);
         }
         if (substream_data_len[substr] * 8 - get_bits_count(&gb) >= 16 &&
             substream_parity_present[substr]) {
