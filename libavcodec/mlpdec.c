@@ -1040,15 +1040,13 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
             substream_parity_present[substr]) {
             uint8_t parity, checksum;
 
-            parity = ff_mlp_calculate_parity(buf, substream_data_len[substr] - 2);
-            if ((parity ^ get_bits(&gb, 8)) != 0xa9)
-                av_log(m->avctx, AV_LOG_ERROR,
-                       "Substream %d parity check failed.\n", substr);
+            parity   = ff_mlp_calculate_parity(buf, substream_data_len[substr] - 2);
+            checksum = ff_mlp_checksum8       (buf, substream_data_len[substr] - 2);
 
-            checksum = ff_mlp_checksum8(buf, substream_data_len[substr] - 2);
-            if (checksum != get_bits(&gb, 8))
-                av_log(m->avctx, AV_LOG_ERROR, "Substream %d checksum failed.\n",
-                       substr);
+            if ((get_bits(&gb, 8) ^ parity) != 0xa9    )
+                av_log(m->avctx, AV_LOG_ERROR, "Substream %d parity check failed.\n", substr);
+            if ( get_bits(&gb, 8)           != checksum)
+                av_log(m->avctx, AV_LOG_ERROR, "Substream %d checksum failed.\n"    , substr);
         }
         if (substream_data_len[substr] * 8 != get_bits_count(&gb)) {
             av_log(m->avctx, AV_LOG_ERROR, "substream %d length mismatch\n",
