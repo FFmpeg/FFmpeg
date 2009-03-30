@@ -661,9 +661,9 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
     int index = MAX_BLOCKSIZE;
     int i;
 
-    memcpy(&firbuf[MAX_BLOCKSIZE], &fir->state[0],
+    memcpy(&firbuf[index], fir->state,
             MAX_FIR_ORDER * sizeof(int32_t));
-    memcpy(&iirbuf[MAX_BLOCKSIZE], &iir->state[0],
+    memcpy(&iirbuf[index], iir->state,
             MAX_IIR_ORDER * sizeof(int32_t));
 
     for (i = 0; i < s->blocksize; i++) {
@@ -692,9 +692,9 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
         m->sample_buffer[i + s->blockpos][channel] = result;
     }
 
-    memcpy(&fir->state[0], &firbuf[index],
+    memcpy(fir->state, &firbuf[index],
             MAX_FIR_ORDER * sizeof(int32_t));
-    memcpy(&iir->state[0], &iirbuf[index],
+    memcpy(iir->state, &iirbuf[index],
             MAX_IIR_ORDER * sizeof(int32_t));
 }
 
