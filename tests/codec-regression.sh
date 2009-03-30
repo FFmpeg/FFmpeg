@@ -45,9 +45,6 @@ else
     do_md5sum() { echo No md5sum program found; }
 fi
 
-# create the data directory if it does not exist
-mkdir -p $datadir
-
 FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
 
 do_ffmpeg()
