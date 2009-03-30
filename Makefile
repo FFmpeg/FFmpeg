@@ -282,7 +282,7 @@ ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
 	@echo "Unfortunately ffserver is broken and therefore its regression"
 	@echo "test fails randomly. Treat the results accordingly."
 	@echo
-	$(SRC_PATH)/tests/server-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/ffserver.conf
+	$(SRC_PATH)/tests/ffserver-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/ffserver.conf
 
 tests/vsynth1/00.pgm: tests/videogen$(HOSTEXESUF)
 	mkdir -p tests/vsynth1
