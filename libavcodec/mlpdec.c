@@ -561,6 +561,11 @@ static int read_channel_params(MLPDecodeContext *m, unsigned int substr,
             if (read_filter_params(m, gbp, ch, IIR) < 0)
                 return -1;
 
+    if (fir->order + iir->order > 8) {
+        av_log(m->avctx, AV_LOG_ERROR, "Total filter orders too high.\n");
+        return -1;
+    }
+
     if (fir->order && iir->order &&
         fir->shift != iir->shift) {
         av_log(m->avctx, AV_LOG_ERROR,
@@ -582,9 +587,12 @@ static int read_channel_params(MLPDecodeContext *m, unsigned int substr,
     cp->codebook  = get_bits(gbp, 2);
     cp->huff_lsbs = get_bits(gbp, 5);
 
-    cp->sign_huff_offset = calculate_sign_huff(m, substr, ch);
+    if (cp->huff_lsbs > 24) {
+        av_log(m->avctx, AV_LOG_ERROR, "Invalid huff_lsbs.\n");
+        return -1;
+    }
 
-    /* TODO: validate */
+    cp->sign_huff_offset = calculate_sign_huff(m, substr, ch);
 
     return 0;
 }
