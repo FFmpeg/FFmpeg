@@ -25,6 +25,7 @@
 #define AVCODEC_VAAPI_H
 
 #include <stdint.h>
+#include <va/va.h>
 
 /**
  * \defgroup VAAPI_Decoding VA API Decoding
