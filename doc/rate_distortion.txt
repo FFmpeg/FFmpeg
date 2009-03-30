@@ -21,8 +21,10 @@ Let's consider the problem of minimizing:
 
   distortion + lambda*rate
 
-For a fixed lambda, rate would represent the filesize, while distortion is
-the quality. Is this equivalent to finding the best quality for a given max
+rate is the filesize
+distortion is the quality
+lambda is a fixed value choosen as a tradeoff between quality and filesize
+Is this equivalent to finding the best quality for a given max
 filesize? The answer is yes. For each filesize limit there is some lambda
 factor for which minimizing above will get you the best quality (using your
 chosen quality measurement) at the desired (or lower) filesize.
