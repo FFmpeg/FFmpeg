@@ -132,7 +132,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
     ssdV/= w*h/4;
     ssdA/= w*h;
 
-    printf(" %s %dx%d -> %s %4dx%4d flags=%2d SSD=%5lld,%5lld,%5lld,%5lld\n",
+    printf(" %s %dx%d -> %s %4dx%4d flags=%2d SSD=%5"PRId64",%5"PRId64",%5"PRId64",%5"PRId64"\n",
            sws_format_name(srcFormat), srcW, srcH,
            sws_format_name(dstFormat), dstW, dstH,
            flags, ssdY, ssdU, ssdV, ssdA);
