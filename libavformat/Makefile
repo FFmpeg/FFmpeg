@@ -248,4 +248,4 @@ TESTPROGS = timefilter
 
 include $(SUBDIR)../subdir.mak
 
-$(SUBDIR)output-example$(EXESUF): $(FF_DEP_LIBS)
+$(SUBDIR)output-example$(EXESUF) $(SUBDIR)timefilter-test$(EXESUF): $(FF_DEP_LIBS)
