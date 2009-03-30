@@ -658,12 +658,12 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
     unsigned int filter_shift = fp[FIR]->shift;
     int32_t mask = MSB_MASK(s->quant_step_size[channel]);
     int index = MAX_BLOCKSIZE;
-    int j, i;
+    int i;
 
-    for (j = 0; j < NUM_FILTERS; j++) {
-        memcpy(&filter_state_buffer[j][MAX_BLOCKSIZE], &fp[j]->state[0],
-               MAX_FIR_ORDER * sizeof(int32_t));
-    }
+    memcpy(&filter_state_buffer[FIR][MAX_BLOCKSIZE], &fp[FIR]->state[0],
+            MAX_FIR_ORDER * sizeof(int32_t));
+    memcpy(&filter_state_buffer[IIR][MAX_BLOCKSIZE], &fp[IIR]->state[0],
+            MAX_IIR_ORDER * sizeof(int32_t));
 
     for (i = 0; i < s->blocksize; i++) {
         int32_t residual = m->sample_buffer[i + s->blockpos][channel];
@@ -673,10 +673,12 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
 
         /* TODO: Move this code to DSPContext? */
 
-        for (j = 0; j < NUM_FILTERS; j++)
-            for (order = 0; order < fp[j]->order; order++)
-                accum += (int64_t)filter_state_buffer[j][index + order] *
-                                  fp[j]->coeff[order];
+        for (order = 0; order < fp[FIR]->order; order++)
+            accum += (int64_t)filter_state_buffer[FIR][index + order] *
+                                fp[FIR]->coeff[order];
+        for (order = 0; order < fp[IIR]->order; order++)
+            accum += (int64_t)filter_state_buffer[IIR][index + order] *
+                                fp[IIR]->coeff[order];
 
         accum  = accum >> filter_shift;
         result = (accum + residual) & mask;
@@ -689,10 +691,10 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
         m->sample_buffer[i + s->blockpos][channel] = result;
     }
 
-    for (j = 0; j < NUM_FILTERS; j++) {
-        memcpy(&fp[j]->state[0], &filter_state_buffer[j][index],
-               MAX_FIR_ORDER * sizeof(int32_t));
-    }
+    memcpy(&fp[FIR]->state[0], &filter_state_buffer[FIR][index],
+            MAX_FIR_ORDER * sizeof(int32_t));
+    memcpy(&fp[IIR]->state[0], &filter_state_buffer[IIR][index],
+            MAX_IIR_ORDER * sizeof(int32_t));
 }
 
 /** Read a block of PCM residual data (or actual if no filtering active). */
