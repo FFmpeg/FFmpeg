@@ -50,11 +50,9 @@
 /** number of allowed filters */
 #define NUM_FILTERS         2
 
-/** The maximum number of taps in either the IIR or FIR filter;
- *  I believe MLP actually specifies the maximum order for IIR filters as four,
- *  and that the sum of the orders of both filters must be <= 8.
-*/
-#define MAX_FILTER_ORDER    8
+/** The maximum number of taps in IIR and FIR filters. */
+#define MAX_FIR_ORDER       8
+#define MAX_IIR_ORDER       4
 
 /** Code that signals end of a stream. */
 #define END_OF_STREAM       0xd234d234
@@ -67,8 +65,8 @@ typedef struct {
     uint8_t     order; ///< number of taps in filter
     uint8_t     shift; ///< Right shift to apply to output of filter.
 
-    int32_t     coeff[MAX_FILTER_ORDER];
-    int32_t     state[MAX_FILTER_ORDER];
+    int32_t     coeff[MAX_FIR_ORDER];
+    int32_t     state[MAX_FIR_ORDER];
 } FilterParams;
 
 /** sample data coding information */

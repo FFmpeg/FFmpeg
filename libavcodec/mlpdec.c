@@ -433,6 +433,7 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
                               unsigned int channel, unsigned int filter)
 {
     FilterParams *fp = &m->channel_params[channel].filter_params[filter];
+    const int max_order = filter ? MAX_IIR_ORDER : MAX_FIR_ORDER;
     const char fchar = filter ? 'I' : 'F';
     int i, order;
 
@@ -440,10 +441,10 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
     assert(filter < 2);
 
     order = get_bits(gbp, 4);
-    if (order > MAX_FILTER_ORDER) {
+    if (order > max_order) {
         av_log(m->avctx, AV_LOG_ERROR,
                "%cIR filter order %d is greater than maximum %d.\n",
-               fchar, order, MAX_FILTER_ORDER);
+               fchar, order, max_order);
         return -1;
     }
     fp->order = order;
@@ -651,7 +652,7 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
                            unsigned int channel)
 {
     SubStream *s = &m->substream[substr];
-    int32_t filter_state_buffer[NUM_FILTERS][MAX_BLOCKSIZE + MAX_FILTER_ORDER];
+    int32_t filter_state_buffer[NUM_FILTERS][MAX_BLOCKSIZE + MAX_FIR_ORDER];
     FilterParams *fp[NUM_FILTERS] = { &m->channel_params[channel].filter_params[FIR],
                                       &m->channel_params[channel].filter_params[IIR], };
     unsigned int filter_shift = fp[FIR]->shift;
@@ -661,7 +662,7 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
 
     for (j = 0; j < NUM_FILTERS; j++) {
         memcpy(&filter_state_buffer[j][MAX_BLOCKSIZE], &fp[j]->state[0],
-               MAX_FILTER_ORDER * sizeof(int32_t));
+               MAX_FIR_ORDER * sizeof(int32_t));
     }
 
     for (i = 0; i < s->blocksize; i++) {
@@ -690,7 +691,7 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
 
     for (j = 0; j < NUM_FILTERS; j++) {
         memcpy(&fp[j]->state[0], &filter_state_buffer[j][index],
-               MAX_FILTER_ORDER * sizeof(int32_t));
+               MAX_FIR_ORDER * sizeof(int32_t));
     }
 }
 
