@@ -1032,9 +1032,11 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
             if (substr == m->max_decoded_substream)
                 av_log(m->avctx, AV_LOG_INFO, "End of stream indicated.\n");
         }
-        if (substream_data_len[substr] * 8 - get_bits_count(&gb) >= 16 &&
-            substream_parity_present[substr]) {
+        if (substream_parity_present[substr]) {
             uint8_t parity, checksum;
+
+            if (substream_data_len[substr] * 8 - get_bits_count(&gb) != 16)
+                goto substream_length_mismatch;
 
             parity   = ff_mlp_calculate_parity(buf, substream_data_len[substr] - 2);
             checksum = ff_mlp_checksum8       (buf, substream_data_len[substr] - 2);
