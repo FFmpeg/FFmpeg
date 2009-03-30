@@ -997,9 +997,6 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
                 }
 
                 if (!s->restart_seen) {
-                    av_log(m->avctx, AV_LOG_ERROR,
-                           "No restart header present in substream %d.\n",
-                           substr);
                     goto next_substr;
                 }
 
@@ -1008,9 +1005,6 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
             }
 
             if (!s->restart_seen) {
-                av_log(m->avctx, AV_LOG_ERROR,
-                       "No restart header present in substream %d.\n",
-                       substr);
                 goto next_substr;
             }
 
@@ -1055,6 +1049,11 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
         }
 
 next_substr:
+        if (!s->restart_seen) {
+            av_log(m->avctx, AV_LOG_ERROR,
+                   "No restart header present in substream %d.\n", substr);
+        }
+
         buf += substream_data_len[substr];
     }
 
