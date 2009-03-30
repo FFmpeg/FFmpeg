@@ -519,6 +519,7 @@ typedef struct MpegEncContext {
     int sprite_brightness_change;
     int num_sprite_warping_points;
     int real_sprite_warping_points;
+    uint16_t sprite_traj[4][2];      ///< sprite trajectory points
     int sprite_offset[2][2];         ///< sprite offset[isChroma][isMVY]
     int sprite_delta[2][2];          ///< sprite_delta [isY][isMVY]
     int sprite_shift[2];             ///< sprite shift [isChroma]

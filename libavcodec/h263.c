@@ -5339,9 +5339,11 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb
         }
         skip_bits1(gb); /* marker bit */
 //printf("%d %d %d %d\n", x, y, i, s->sprite_warping_accuracy);
-        d[i][0]= x;
-        d[i][1]= y;
+        s->sprite_traj[i][0]= d[i][0]= x;
+        s->sprite_traj[i][1]= d[i][1]= y;
     }
+    for(; i<4; i++)
+        s->sprite_traj[i][0]= s->sprite_traj[i][1]= 0;
 
     while((1<<alpha)<w) alpha++;
     while((1<<beta )<h) beta++; // there seems to be a typo in the mpeg4 std for the definition of w' and h'
