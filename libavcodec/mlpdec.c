@@ -1017,8 +1017,10 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
             if (read_block_data(m, &gb, substr) < 0)
                 return -1;
 
-        } while ((get_bits_count(&gb) < substream_data_len[substr] * 8)
-                 && get_bits1(&gb) == 0);
+            if (get_bits_count(&gb) >= substream_data_len[substr] * 8)
+                goto substream_length_mismatch;
+
+        } while (!get_bits1(&gb));
 
         skip_bits(&gb, (-get_bits_count(&gb)) & 15);
         if (substream_data_len[substr] * 8 - get_bits_count(&gb) >= 32) {
@@ -1049,9 +1051,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
                 av_log(m->avctx, AV_LOG_ERROR, "Substream %d checksum failed.\n"    , substr);
         }
         if (substream_data_len[substr] * 8 != get_bits_count(&gb)) {
-            av_log(m->avctx, AV_LOG_ERROR, "substream %d length mismatch\n",
-                   substr);
-            return -1;
+            goto substream_length_mismatch;
         }
 
 next_substr:
@@ -1064,6 +1064,10 @@ next_substr:
         return -1;
 
     return length;
+
+substream_length_mismatch:
+    av_log(m->avctx, AV_LOG_ERROR, "substream %d length mismatch\n", substr);
+    return -1;
 
 error:
     m->params_valid = 0;
