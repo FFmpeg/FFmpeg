@@ -1220,7 +1220,12 @@ else
         die "Out of tree builds are impossible with config.h in source dir."
 fi
 
-FFMPEG_CONFIGURATION="$@"
+for v in "$@"; do
+    r="${v#*=}"
+    l="${v%$r}"
+    test "$r" = "${r#* }" || r="'$r'"
+    FFMPEG_CONFIGURATION="${FFMPEG_CONFIGURATION# } ${l}${r}"
+done
 
 find_things(){
     thing=$1
@@ -1315,7 +1320,7 @@ done
 
 disabled logging && logfile=/dev/null
 
-echo "# $0 $@" > $logfile
+echo "# $0 $FFMPEG_CONFIGURATION" > $logfile
 set >> $logfile
 
 test -n "$cross_prefix" && enable cross_compile
