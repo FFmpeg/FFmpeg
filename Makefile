@@ -115,7 +115,7 @@ uninstall-man:
 	rm -f $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
 
 testclean:
-	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/asynth1.sw tests/*~
+	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/*~
 
 clean:: testclean
 	rm -f $(ALLPROGS) $(ALLPROGS_G)
@@ -265,7 +265,7 @@ $(LAVF_REGFILES): $(LAVF_TESTS)
 
 $(CODEC_TESTS) $(LAVF_TESTS): regtest-ref
 
-regtest-ref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/asynth1.sw
+regtest-ref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/data/asynth1.sw
 
 $(CODEC_TESTS) regtest-ref: tests/tiny_psnr$(HOSTEXESUF)
 	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth   tests/vsynth1 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
@@ -277,7 +277,7 @@ $(LAVF_TESTS):
 seektest: codectest lavftest tests/seek_test$(EXESUF)
 	$(SRC_PATH)/tests/seek-regression.sh $(SEEK_REFFILE) "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
-ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/asynth1.sw
+ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	@echo
 	@echo "Unfortunately ffserver is broken and therefore its regression"
 	@echo "test fails randomly. Treat the results accordingly."
@@ -292,7 +292,8 @@ tests/vsynth2/00.pgm: tests/rotozoom$(HOSTEXESUF)
 	mkdir -p tests/vsynth2
 	$(BUILD_ROOT)/$< 'tests/vsynth2/' $(SRC_PATH)/tests/lena.pnm
 
-tests/asynth1.sw: tests/audiogen$(HOSTEXESUF)
+tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF)
+	mkdir -p tests/data
 	$(BUILD_ROOT)/$< $@
 
 tests/%$(HOSTEXESUF): tests/%.c
