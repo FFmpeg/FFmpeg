@@ -380,7 +380,6 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
     int x, y;
     unsigned char P[4];
     unsigned int flags = 0;
-    unsigned char pix;
 
     /* 4-color encoding */
     CHECK_STREAM_PTR(4);
@@ -411,11 +410,10 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
 
         for (y = 0; y < 8; y += 2) {
             for (x = 0; x < 8; x += 2, flags >>= 2) {
-                pix = P[flags & 0x03];
                 s->pixel_ptr[x                ] =
                 s->pixel_ptr[x + 1            ] =
                 s->pixel_ptr[x +     s->stride] =
-                s->pixel_ptr[x + 1 + s->stride] = pix;
+                s->pixel_ptr[x + 1 + s->stride] = P[flags & 0x03];
             }
             s->pixel_ptr += s->stride * 2;
         }
@@ -431,9 +429,8 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
                 flags = bytestream_get_le32(&s->stream_ptr);
             }
             for (x = 0; x < 8; x += 2, flags >>= 2) {
-                pix = P[flags & 0x03];
                 s->pixel_ptr[x    ] =
-                s->pixel_ptr[x + 1] = pix;
+                s->pixel_ptr[x + 1] = P[flags & 0x03];
             }
             s->pixel_ptr += s->stride;
         }
@@ -449,9 +446,8 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
                 flags = bytestream_get_le32(&s->stream_ptr);
             }
             for (x = 0; x < 8; x++, flags >>= 2) {
-                pix = P[flags & 0x03];
                 s->pixel_ptr[x            ] =
-                s->pixel_ptr[x + s->stride] = pix;
+                s->pixel_ptr[x + s->stride] = P[flags & 0x03];
             }
             s->pixel_ptr += s->stride * 2;
         }
@@ -578,18 +574,16 @@ static int ipvideo_decode_block_opcode_0xB(IpvideoContext *s)
 static int ipvideo_decode_block_opcode_0xC(IpvideoContext *s)
 {
     int x, y;
-    unsigned char pix;
 
     /* 16-color block encoding: each 2x2 block is a different color */
     CHECK_STREAM_PTR(16);
 
     for (y = 0; y < 8; y += 2) {
         for (x = 0; x < 8; x += 2) {
-            pix = *s->stream_ptr++;
             s->pixel_ptr[x                ] =
             s->pixel_ptr[x + 1            ] =
             s->pixel_ptr[x +     s->stride] =
-            s->pixel_ptr[x + 1 + s->stride] = pix;
+            s->pixel_ptr[x + 1 + s->stride] = *s->stream_ptr++;
         }
         s->pixel_ptr += s->stride * 2;
     }
