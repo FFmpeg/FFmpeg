@@ -22,6 +22,7 @@
 #include <inttypes.h>
 
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/bitstream.h"
 
 typedef struct AVComponentDescriptor{
     uint16_t plane        :2;            ///< which of the 4 planes contains the component
@@ -103,9 +104,21 @@ static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int li
     int shift= comp.shift;
     int step = comp.step_minus1+1;
     int flags= desc->flags;
-    const uint8_t *p= data[plane]+y*linesize[plane] + x * step + comp.offset_plus1 - 1;
 
-    //FIXME initial x in case of PIX_FMT_BITSTREAM is wrong
+    if (flags & PIX_FMT_BITSTREAM){
+        GetBitContext gb;
+        init_get_bits(&gb, data[plane] + y*linesize[plane], linesize[plane]*8);
+        skip_bits_long(&gb, x*step + comp.offset_plus1-1);
+
+        while(w--){
+            int val = show_bits(&gb, depth);
+            if(flags & PIX_FMT_PAL)
+                val= data[1][4*val + c];
+            skip_bits(&gb, step);
+            *dst++= val;
+        }
+    } else {
+    const uint8_t *p = data[plane]+ y*linesize[plane] + x*step + comp.offset_plus1-1;
 
     while(w--){
         int val;
@@ -114,14 +127,8 @@ static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int li
         val = (val>>shift) & mask;
         if(flags & PIX_FMT_PAL)
             val= data[1][4*val + c];
-        if(flags & PIX_FMT_BITSTREAM){
-            shift-=depth;
-            while(shift<0){
-                shift+=8;
-                p++;
-            }
-        }else
             p+= step;
         *dst++= val;
+    }
     }
 }
