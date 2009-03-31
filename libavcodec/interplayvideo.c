@@ -500,24 +500,18 @@ static int ipvideo_decode_block_opcode_0xC(IpvideoContext *s)
 static int ipvideo_decode_block_opcode_0xD(IpvideoContext *s)
 {
     int y;
-    unsigned char P[4];
-    unsigned char index = 0;
+    unsigned char P;
 
     /* 4-color block encoding: each 4x4 block is a different color */
     CHECK_STREAM_PTR(4);
 
-    memcpy(P, s->stream_ptr, 4);
-    s->stream_ptr += 4;
-
-    for (y = 0; y < 8; y++) {
-        if (y < 4)
-            index = 0;
-        else
-            index = 2;
-
-        memset(s->pixel_ptr    , P[index    ], 4);
-        memset(s->pixel_ptr + 4, P[index + 1], 4);
+    for (y = 0; y < 16; y++) {
+        if (!(y & 3)) // start of block
+            P = *s->stream_ptr++;
+        memset(s->pixel_ptr, P, 4);
         s->pixel_ptr += s->stride;
+        // switch to right half
+        if (y == 7) s->pixel_ptr -= 8 * s->stride - 4;
     }
 
     /* report success */
