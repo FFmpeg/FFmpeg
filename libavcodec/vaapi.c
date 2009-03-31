@@ -45,31 +45,16 @@ static int render_picture(struct vaapi_context *vactx, VASurfaceID surface)
     VABufferID va_buffers[3];
     unsigned int n_va_buffers = 0;
 
-    if (vaCreateBuffer(vactx->display, vactx->context_id,
-                       VAPictureParameterBufferType,
-                       vactx->pic_param_size,
-                       1, &vactx->pic_param,
-                       &vactx->pic_param_buf_id) != VA_STATUS_SUCCESS)
-        return -1;
+    vaUnmapBuffer(vactx->display, vactx->pic_param_buf_id);
     va_buffers[n_va_buffers++] = vactx->pic_param_buf_id;
 
-    if (vactx->iq_matrix_present) {
-        if (vaCreateBuffer(vactx->display, vactx->context_id,
-                           VAIQMatrixBufferType,
-                           vactx->iq_matrix_size,
-                           1, &vactx->iq_matrix,
-                           &vactx->iq_matrix_buf_id) != VA_STATUS_SUCCESS)
-            return -1;
+    if (vactx->iq_matrix_buf_id) {
+        vaUnmapBuffer(vactx->display, vactx->iq_matrix_buf_id);
         va_buffers[n_va_buffers++] = vactx->iq_matrix_buf_id;
     }
 
-    if (vactx->bitplane_buffer) {
-        if (vaCreateBuffer(vactx->display, vactx->context_id,
-                           VABitPlaneBufferType,
-                           vactx->bitplane_buffer_size,
-                           1, vactx->bitplane_buffer,
-                           &vactx->bitplane_buf_id) != VA_STATUS_SUCCESS)
-            return -1;
+    if (vactx->bitplane_buf_id) {
+        vaUnmapBuffer(vactx->display, vactx->bitplane_buf_id);
         va_buffers[n_va_buffers++] = vactx->bitplane_buf_id;
     }
 
@@ -132,6 +117,33 @@ static int commit_slices(struct vaapi_context *vactx)
     return 0;
 }
 
+static void *alloc_buffer(struct vaapi_context *vactx, int type, unsigned int size, uint32_t *buf_id)
+{
+    void *data = NULL;
+
+    *buf_id = 0;
+    if (vaCreateBuffer(vactx->display, vactx->context_id,
+                       type, size, 1, NULL, buf_id) == VA_STATUS_SUCCESS)
+        vaMapBuffer(vactx->display, *buf_id, &data);
+
+    return data;
+}
+
+void *ff_vaapi_alloc_picture(struct vaapi_context *vactx, unsigned int size)
+{
+    return alloc_buffer(vactx, VAPictureParameterBufferType, size, &vactx->pic_param_buf_id);
+}
+
+void *ff_vaapi_alloc_iq_matrix(struct vaapi_context *vactx, unsigned int size)
+{
+    return alloc_buffer(vactx, VAIQMatrixBufferType, size, &vactx->iq_matrix_buf_id);
+}
+
+uint8_t *ff_vaapi_alloc_bitplane(struct vaapi_context *vactx, uint32_t size)
+{
+    return alloc_buffer(vactx, VABitPlaneBufferType, size, &vactx->bitplane_buf_id);
+}
+
 VASliceParameterBufferBase *ff_vaapi_alloc_slice(struct vaapi_context *vactx, const uint8_t *buffer, uint32_t size)
 {
     uint8_t *slice_params;
@@ -184,7 +196,6 @@ done:
     destroy_buffers(vactx->display, &vactx->iq_matrix_buf_id, 1);
     destroy_buffers(vactx->display, &vactx->bitplane_buf_id, 1);
     destroy_buffers(vactx->display, vactx->slice_buf_ids, vactx->n_slice_buf_ids);
-    av_freep(&vactx->bitplane_buffer);
     av_freep(&vactx->slice_buf_ids);
     av_freep(&vactx->slice_params);
     vactx->n_slice_buf_ids     = 0;

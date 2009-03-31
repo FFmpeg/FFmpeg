@@ -46,12 +46,12 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
 
     dprintf(avctx, "vaapi_mpeg2_start_frame()\n");
 
-    vactx->pic_param_size   = sizeof(VAPictureParameterBufferMPEG2);
-    vactx->iq_matrix_size   = sizeof(VAIQMatrixBufferMPEG2);
     vactx->slice_param_size = sizeof(VASliceParameterBufferMPEG2);
 
     /* Fill in VAPictureParameterBufferMPEG2 */
-    pic_param = &vactx->pic_param.mpeg2;
+    pic_param = ff_vaapi_alloc_picture(vactx, sizeof(VAPictureParameterBufferMPEG2));
+    if (!pic_param)
+        return -1;
     pic_param->horizontal_size                                  = s->width;
     pic_param->vertical_size                                    = s->height;
     pic_param->forward_reference_picture                        = 0xffffffff;
@@ -81,12 +81,13 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
     }
 
     /* Fill in VAIQMatrixBufferMPEG2 */
-    iq_matrix = &vactx->iq_matrix.mpeg2;
+    iq_matrix = ff_vaapi_alloc_iq_matrix(vactx, sizeof(VAIQMatrixBufferMPEG2));
+    if (!iq_matrix)
+        return -1;
     iq_matrix->load_intra_quantiser_matrix              = 1;
     iq_matrix->load_non_intra_quantiser_matrix          = 1;
     iq_matrix->load_chroma_intra_quantiser_matrix       = 1;
     iq_matrix->load_chroma_non_intra_quantiser_matrix   = 1;
-    vactx->iq_matrix_present                            = 1;
 
     for (i = 0; i < 64; i++) {
         int n = s->dsp.idct_permutation[ff_zigzag_direct[i]];

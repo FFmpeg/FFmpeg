@@ -44,6 +44,15 @@ static inline VASurfaceID ff_vaapi_get_surface(Picture *pic)
 /** Common AVHWAccel.end_frame() implementation */
 int ff_vaapi_common_end_frame(MpegEncContext *s);
 
+/** Allocate a new picture parameter buffer */
+void *ff_vaapi_alloc_picture(struct vaapi_context *vactx, unsigned int size);
+
+/** Allocate a new IQ matrix buffer */
+void *ff_vaapi_alloc_iq_matrix(struct vaapi_context *vactx, unsigned int size);
+
+/** Allocate a new bit-plane buffer */
+uint8_t *ff_vaapi_alloc_bitplane(struct vaapi_context *vactx, uint32_t size);
+
 /**
  * Allocate a new slice descriptor for the input slice.
  *
