@@ -212,9 +212,9 @@ static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
         CHECK_STREAM_PTR(8);
 
         for (y = 0; y < 8; y++) {
-            flags = *s->stream_ptr++;
-            for (x = 0x01; x <= 0x80; x <<= 1) {
-                *s->pixel_ptr++ = P[!!(flags & x)];
+            flags = *s->stream_ptr++ | 0x100;
+            for (; flags != 1; flags >>= 1) {
+                *s->pixel_ptr++ = P[flags & 1];
             }
             s->pixel_ptr += s->line_inc;
         }
@@ -354,17 +354,15 @@ static int ipvideo_decode_block_opcode_0x8(IpvideoContext *s)
             /* horizontal split; top & bottom halves are 2-color encoded */
 
             for (y = 0; y < 8; y++) {
-                int bitmask;
-
                 if (y == 4) {
                     P[0] = *s->stream_ptr++;
                     P[1] = *s->stream_ptr++;
                 }
-                flags = *s->stream_ptr++;
+                flags = *s->stream_ptr++ | 0x100;
 
-                for (bitmask = 0x01; bitmask <= 0x80; bitmask <<= 1) {
+                for (; flags != 1; flags >>= 1) {
 
-                    *s->pixel_ptr++ = P[!!(flags & bitmask)];
+                    *s->pixel_ptr++ = P[flags & 1];
                 }
                 s->pixel_ptr += s->line_inc;
             }
