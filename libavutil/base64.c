@@ -106,7 +106,8 @@ char *av_base64_encode(char *out, int out_size, const uint8_t *in, int in_size)
 #define MAX_DATA_SIZE    1024
 #define MAX_ENCODED_SIZE 2048
 
-int test_encode_decode(const uint8_t *data, unsigned int data_size, const char *encoded_ref)
+static int test_encode_decode(const uint8_t *data, unsigned int data_size,
+                              const char *encoded_ref)
 {
     char  encoded[MAX_ENCODED_SIZE];
     uint8_t data2[MAX_DATA_SIZE];

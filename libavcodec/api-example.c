@@ -43,7 +43,7 @@
 /*
  * Audio encoding example
  */
-void audio_encode_example(const char *filename)
+static void audio_encode_example(const char *filename)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
@@ -111,7 +111,7 @@ void audio_encode_example(const char *filename)
 /*
  * Audio decoding.
  */
-void audio_decode_example(const char *outfilename, const char *filename)
+static void audio_decode_example(const char *outfilename, const char *filename)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
@@ -186,7 +186,7 @@ void audio_decode_example(const char *outfilename, const char *filename)
 /*
  * Video encoding example
  */
-void video_encode_example(const char *filename)
+static void video_encode_example(const char *filename)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
@@ -297,7 +297,8 @@ void video_encode_example(const char *filename)
  * Video decoding example
  */
 
-void pgm_save(unsigned char *buf,int wrap, int xsize,int ysize,char *filename)
+static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
+                     char *filename)
 {
     FILE *f;
     int i;
@@ -309,7 +310,7 @@ void pgm_save(unsigned char *buf,int wrap, int xsize,int ysize,char *filename)
     fclose(f);
 }
 
-void video_decode_example(const char *outfilename, const char *filename)
+static void video_decode_example(const char *outfilename, const char *filename)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;

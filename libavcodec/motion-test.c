@@ -41,7 +41,7 @@
 uint8_t img1[WIDTH * HEIGHT];
 uint8_t img2[WIDTH * HEIGHT];
 
-void fill_random(uint8_t *tab, int size)
+static void fill_random(uint8_t *tab, int size)
 {
     int i;
     AVLFG prn;
@@ -56,14 +56,14 @@ void fill_random(uint8_t *tab, int size)
     }
 }
 
-void help(void)
+static void help(void)
 {
     printf("motion-test [-h]\n"
            "test motion implementations\n");
     exit(1);
 }
 
-int64_t gettime(void)
+static int64_t gettime(void)
 {
     struct timeval tv;
     gettimeofday(&tv,NULL);
@@ -74,7 +74,7 @@ int64_t gettime(void)
 
 int dummy;
 
-void test_motion(const char *name,
+static void test_motion(const char *name,
                  me_cmp_func test_func, me_cmp_func ref_func)
 {
     int x, y, d1, d2, it;

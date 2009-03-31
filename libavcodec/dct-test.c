@@ -150,7 +150,7 @@ struct algo algos[] = {
 
 uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
 
-int64_t gettime(void)
+static int64_t gettime(void)
 {
     struct timeval tv;
     gettimeofday(&tv,NULL);
@@ -175,7 +175,7 @@ static short idct_simple_mmx_perm[64]={
 
 static const uint8_t idct_sse2_row_perm[8] = {0, 4, 1, 5, 2, 6, 3, 7};
 
-void idct_mmx_init(void)
+static void idct_mmx_init(void)
 {
     int i;
 
@@ -198,7 +198,7 @@ static inline void mmx_emms(void)
 #endif
 }
 
-void dct_error(const char *name, int is_idct,
+static void dct_error(const char *name, int is_idct,
                void (*fdct_func)(DCTELEM *block),
                void (*fdct_ref)(DCTELEM *block), int form, int test)
 {
@@ -387,7 +387,7 @@ void dct_error(const char *name, int is_idct,
 static uint8_t img_dest[64] __attribute__ ((aligned (8)));
 static uint8_t img_dest1[64] __attribute__ ((aligned (8)));
 
-void idct248_ref(uint8_t *dest, int linesize, int16_t *block)
+static void idct248_ref(uint8_t *dest, int linesize, int16_t *block)
 {
     static int init;
     static double c8[8][8];
@@ -467,7 +467,7 @@ void idct248_ref(uint8_t *dest, int linesize, int16_t *block)
     }
 }
 
-void idct248_error(const char *name,
+static void idct248_error(const char *name,
                     void (*idct248_put)(uint8_t *dest, int line_size, int16_t *block))
 {
     int it, i, it1, ti, ti1, err_max, v;
@@ -545,7 +545,7 @@ void idct248_error(const char *name,
            name, (double)it1 * 1000.0 / (double)ti1);
 }
 
-void help(void)
+static void help(void)
 {
     printf("dct-test [-i] [<test-number>]\n"
            "test-number 0 -> test with random matrixes\n"

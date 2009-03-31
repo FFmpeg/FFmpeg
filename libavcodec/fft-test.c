@@ -45,7 +45,7 @@
 
 FFTComplex *exptab;
 
-void fft_ref_init(int nbits, int inverse)
+static void fft_ref_init(int nbits, int inverse)
 {
     int n, i;
     double c1, s1, alpha;
@@ -64,7 +64,7 @@ void fft_ref_init(int nbits, int inverse)
     }
 }
 
-void fft_ref(FFTComplex *tabr, FFTComplex *tab, int nbits)
+static void fft_ref(FFTComplex *tabr, FFTComplex *tab, int nbits)
 {
     int n, i, j, k, n2;
     double tmp_re, tmp_im, s, c;
@@ -93,7 +93,7 @@ void fft_ref(FFTComplex *tabr, FFTComplex *tab, int nbits)
     }
 }
 
-void imdct_ref(float *out, float *in, int nbits)
+static void imdct_ref(float *out, float *in, int nbits)
 {
     int n = 1<<nbits;
     int k, i, a;
@@ -111,7 +111,7 @@ void imdct_ref(float *out, float *in, int nbits)
 }
 
 /* NOTE: no normalisation by 1 / N is done */
-void mdct_ref(float *output, float *input, int nbits)
+static void mdct_ref(float *output, float *input, int nbits)
 {
     int n = 1<<nbits;
     int k, i;
@@ -129,21 +129,21 @@ void mdct_ref(float *output, float *input, int nbits)
 }
 
 
-float frandom(void)
+static float frandom(void)
 {
     AVLFG prn;
     av_lfg_init(&prn, 1);
     return (float)((av_lfg_get(&prn) & 0xffff) - 32768) / 32768.0;
 }
 
-int64_t gettime(void)
+static int64_t gettime(void)
 {
     struct timeval tv;
     gettimeofday(&tv,NULL);
     return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-void check_diff(float *tab1, float *tab2, int n)
+static void check_diff(float *tab1, float *tab2, int n)
 {
     int i;
     double max= 0;
@@ -162,7 +162,7 @@ void check_diff(float *tab1, float *tab2, int n)
 }
 
 
-void help(void)
+static void help(void)
 {
     av_log(NULL, AV_LOG_INFO,"usage: fft-test [-h] [-s] [-i] [-n b]\n"
            "-h     print this help\n"

@@ -174,7 +174,7 @@ static void print(AVTreeNode *t, int depth){
         av_log(NULL, AV_LOG_ERROR, "NULL\n");
 }
 
-int cmp(const void *a, const void *b){
+static int cmp(const void *a, const void *b){
     return a-b;
 }
 

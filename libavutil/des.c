@@ -349,7 +349,7 @@ static const uint8_t cbc_key[] = {
     0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23
 };
 
-int run_test(int cbc, int decrypt) {
+static int run_test(int cbc, int decrypt) {
     AVDES d;
     int delay = cbc && !decrypt ? 2 : 1;
     uint64_t res;
