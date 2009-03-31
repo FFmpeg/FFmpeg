@@ -307,7 +307,7 @@ static int ipvideo_decode_block_opcode_0x8(IpvideoContext *s)
         /* need 10 more bytes */
         CHECK_STREAM_PTR(10);
 
-        if (P[2] <= P[3]) {
+        if (s->stream_ptr[4] <= s->stream_ptr[5]) {
 
             B[0] = *s->stream_ptr++;  B[1] = *s->stream_ptr++;
             B[2] = *s->stream_ptr++;  B[3] = *s->stream_ptr++;
