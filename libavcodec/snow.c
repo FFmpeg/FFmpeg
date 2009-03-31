@@ -4698,9 +4698,9 @@ int main(void){
     int buffer[2][width*height];
     SnowContext s;
     int i;
+    AVLFG prn;
     s.spatial_decomposition_count=6;
     s.spatial_decomposition_type=1;
-    AVLFG prn;
 
     av_lfg_init(&prn, 1);
 
