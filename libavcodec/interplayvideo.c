@@ -306,13 +306,14 @@ static int ipvideo_decode_block_opcode_0x8(IpvideoContext *s)
 
         /* need 10 more bytes */
         CHECK_STREAM_PTR(10);
-        B[0] = *s->stream_ptr++;  B[1] = *s->stream_ptr++;
-        B[2] = *s->stream_ptr++;  B[3] = *s->stream_ptr++;
-        P[2] = *s->stream_ptr++;  P[3] = *s->stream_ptr++;
-        B[4] = *s->stream_ptr++;  B[5] = *s->stream_ptr++;
-        B[6] = *s->stream_ptr++;  B[7] = *s->stream_ptr++;
 
         if (P[2] <= P[3]) {
+
+            B[0] = *s->stream_ptr++;  B[1] = *s->stream_ptr++;
+            B[2] = *s->stream_ptr++;  B[3] = *s->stream_ptr++;
+            P[2] = *s->stream_ptr++;  P[3] = *s->stream_ptr++;
+            B[4] = *s->stream_ptr++;  B[5] = *s->stream_ptr++;
+            B[6] = *s->stream_ptr++;  B[7] = *s->stream_ptr++;
 
             /* vertical split; left & right halves are 2-color encoded */
 
@@ -355,18 +356,15 @@ static int ipvideo_decode_block_opcode_0x8(IpvideoContext *s)
             for (y = 0; y < 8; y++) {
                 int bitmask;
 
-                flags = B[y];
-                if (y == 0) {
-                    P0 = P[0];
-                    P1 = P[1];
-                } else if (y == 4) {
-                    P0 = P[2];
-                    P1 = P[3];
+                if (y == 4) {
+                    P[0] = *s->stream_ptr++;
+                    P[1] = *s->stream_ptr++;
                 }
+                flags = *s->stream_ptr++;
 
                 for (bitmask = 0x01; bitmask <= 0x80; bitmask <<= 1) {
 
-                    *s->pixel_ptr++ = flags & bitmask ? P1 : P0;
+                    *s->pixel_ptr++ = P[!!(flags & bitmask)];
                 }
                 s->pixel_ptr += s->line_inc;
             }
