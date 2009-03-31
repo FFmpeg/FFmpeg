@@ -160,9 +160,9 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
-            {0,1,1,0,4},        /* B */
-            {0,1,1,5,5},        /* G */
             {0,1,2,3,4},        /* R */
+            {0,1,1,5,5},        /* G */
+            {0,1,1,0,4},        /* B */
         },
     },
     [PIX_FMT_RGB565BE] = {
@@ -171,9 +171,9 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
-            {0,1,1,0,4},        /* B */
-            {0,1,1,5,5},        /* G */
             {0,1,0,3,4},        /* R */
+            {0,1,1,5,5},        /* G */
+            {0,1,1,0,4},        /* B */
         },
         .flags = PIX_FMT_BE,
     },
