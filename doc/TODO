@@ -81,7 +81,6 @@ unassigned TODO: (unordered)
 - add support for using mplayers video filters to ffmpeg
 - H264 encoder
 - per MB ratecontrol (so VCD and such do work better)
-- replace/rewrite libavcodec/fdctref.c
 - write a script which iteratively changes all functions between always_inline and noinline and benchmarks the result to find the best set of inlined functions
 - convert all the non SIMD asm into small asm vs. C testcases and submit them to the gcc devels so they can improve gcc
 - generic audio mixing API
