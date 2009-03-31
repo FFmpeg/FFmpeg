@@ -399,12 +399,10 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
 static int ipvideo_decode_block_opcode_0xA(IpvideoContext *s)
 {
     int x, y;
-    unsigned char P[16];
+    unsigned char P[8];
     unsigned char B[16];
     int flags = 0;
-    int index;
     int split;
-    int lower_half;
 
     /* 4-color encoding for each 4x4 quadrant, or 4-color encoding on
      * either top and bottom or left and right halves */
@@ -417,28 +415,23 @@ static int ipvideo_decode_block_opcode_0xA(IpvideoContext *s)
 
         /* 4-color encoding for each quadrant; need 28 more bytes */
         CHECK_STREAM_PTR(28);
+        s->stream_ptr -= 4;
 
-        memcpy(B, s->stream_ptr, 4);
-        s->stream_ptr += 4;
-        for (y = 4; y < 16; y += 4) {
-            memcpy(P + y, s->stream_ptr, 4);
-            s->stream_ptr += 4;
-            memcpy(B + y, s->stream_ptr, 4);
-            s->stream_ptr += 4;
-        }
-
-        for (y = 0; y < 8; y++) {
-
-            lower_half = (y >= 4) ? 4 : 0;
-            flags = (B[y + 8] << 8) | B[y];
-
-            for (x = 0; x < 8; x++, flags >>= 2) {
-                split = (x >= 4) ? 8 : 0;
-                index = split + lower_half + (flags & 0x03);
-                *s->pixel_ptr++ = P[index];
+        for (y = 0; y < 16; y++) {
+            // new values for each 4x4 block
+            if (!(y & 3)) {
+                memcpy(P, s->stream_ptr, 4);
+                s->stream_ptr += 4;
+                flags = bytestream_get_le32(&s->stream_ptr);
             }
 
-            s->pixel_ptr += s->line_inc;
+            for (x = 0; x < 4; x++, flags >>= 2) {
+                *s->pixel_ptr++ = P[flags & 0x03];
+            }
+
+            s->pixel_ptr += s->stride - 4;
+            // switch to right half
+            if (y == 7) s->pixel_ptr -= 8 * s->stride - 4;
         }
 
     } else {
