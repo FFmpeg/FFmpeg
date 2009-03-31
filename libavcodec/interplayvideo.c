@@ -379,7 +379,6 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
 {
     int x, y;
     unsigned char P[4];
-    unsigned int flags = 0;
 
     /* 4-color encoding */
     CHECK_STREAM_PTR(4);
@@ -394,7 +393,7 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
 
         for (y = 0; y < 8; y++) {
             /* get the next set of 8 2-bit flags */
-            flags = bytestream_get_le16(&s->stream_ptr);
+            int flags = bytestream_get_le16(&s->stream_ptr);
             for (x = 0; x < 8; x++, flags >>= 2) {
                 *s->pixel_ptr++ = P[flags & 0x03];
             }
@@ -402,6 +401,7 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
         }
 
     } else if ((P[0] <= P[1]) && (P[2] > P[3])) {
+        uint32_t flags;
 
         /* 1 of 4 colors for each 2x2 block, need 4 more bytes */
         CHECK_STREAM_PTR(4);
@@ -419,15 +419,13 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
         }
 
     } else if ((P[0] > P[1]) && (P[2] <= P[3])) {
+        uint64_t flags;
 
         /* 1 of 4 colors for each 2x1 block, need 8 more bytes */
         CHECK_STREAM_PTR(8);
 
+        flags = bytestream_get_le64(&s->stream_ptr);
         for (y = 0; y < 8; y++) {
-            /* time to reload flags? */
-            if ((y == 0) || (y == 4)) {
-                flags = bytestream_get_le32(&s->stream_ptr);
-            }
             for (x = 0; x < 8; x += 2, flags >>= 2) {
                 s->pixel_ptr[x    ] =
                 s->pixel_ptr[x + 1] = P[flags & 0x03];
@@ -436,15 +434,13 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
         }
 
     } else {
+        uint64_t flags;
 
         /* 1 of 4 colors for each 1x2 block, need 8 more bytes */
         CHECK_STREAM_PTR(8);
 
+        flags = bytestream_get_le64(&s->stream_ptr);
         for (y = 0; y < 8; y += 2) {
-            /* time to reload flags? */
-            if ((y == 0) || (y == 4)) {
-                flags = bytestream_get_le32(&s->stream_ptr);
-            }
             for (x = 0; x < 8; x++, flags >>= 2) {
                 s->pixel_ptr[x            ] =
                 s->pixel_ptr[x + s->stride] = P[flags & 0x03];
