@@ -197,16 +197,16 @@ static int ipvideo_decode_block_opcode_0x6(IpvideoContext *s)
 static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
 {
     int x, y;
-    unsigned char P0, P1;
+    unsigned char P[2];
     unsigned int flags;
 
     /* 2-color encoding */
     CHECK_STREAM_PTR(2);
 
-    P0 = *s->stream_ptr++;
-    P1 = *s->stream_ptr++;
+    P[0] = *s->stream_ptr++;
+    P[1] = *s->stream_ptr++;
 
-    if (P0 <= P1) {
+    if (P[0] <= P[1]) {
 
         /* need 8 more bytes from the stream */
         CHECK_STREAM_PTR(8);
@@ -214,10 +214,7 @@ static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
         for (y = 0; y < 8; y++) {
             flags = *s->stream_ptr++;
             for (x = 0x01; x <= 0x80; x <<= 1) {
-                if (flags & x)
-                    *s->pixel_ptr++ = P1;
-                else
-                    *s->pixel_ptr++ = P0;
+                *s->pixel_ptr++ = P[!!(flags & x)];
             }
             s->pixel_ptr += s->line_inc;
         }
@@ -230,17 +227,10 @@ static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
         flags = bytestream_get_le16(&s->stream_ptr);
         for (y = 0; y < 8; y += 2) {
             for (x = 0; x < 8; x += 2, flags >>= 1) {
-                if (flags & 1) {
                     s->pixel_ptr[x                ] =
                     s->pixel_ptr[x + 1            ] =
                     s->pixel_ptr[x +     s->stride] =
-                    s->pixel_ptr[x + 1 + s->stride] = P1;
-                } else {
-                    s->pixel_ptr[x                ] =
-                    s->pixel_ptr[x + 1            ] =
-                    s->pixel_ptr[x +     s->stride] =
-                    s->pixel_ptr[x + 1 + s->stride] = P0;
-                }
+                    s->pixel_ptr[x + 1 + s->stride] = P[flags & 1];
             }
             s->pixel_ptr += s->stride * 2;
         }
@@ -307,10 +297,7 @@ static int ipvideo_decode_block_opcode_0x8(IpvideoContext *s)
                     P1 = P[lower_half + 5];
                 }
 
-                if (flags & 1)
-                    *s->pixel_ptr++ = P1;
-                else
-                    *s->pixel_ptr++ = P0;
+                *s->pixel_ptr++ = flags & 1 ? P1 : P0;
             }
             s->pixel_ptr += s->line_inc;
         }
@@ -356,10 +343,7 @@ static int ipvideo_decode_block_opcode_0x8(IpvideoContext *s)
                         P1 = P[3];
                     }
 
-                    if (flags & 1)
-                        *s->pixel_ptr++ = P1;
-                    else
-                        *s->pixel_ptr++ = P0;
+                    *s->pixel_ptr++ = flags & 1 ? P1 : P0;
                 }
                 s->pixel_ptr += s->line_inc;
             }
@@ -382,10 +366,7 @@ static int ipvideo_decode_block_opcode_0x8(IpvideoContext *s)
 
                 for (bitmask = 0x01; bitmask <= 0x80; bitmask <<= 1) {
 
-                    if (flags & bitmask)
-                        *s->pixel_ptr++ = P1;
-                    else
-                        *s->pixel_ptr++ = P0;
+                    *s->pixel_ptr++ = flags & bitmask ? P1 : P0;
                 }
                 s->pixel_ptr += s->line_inc;
             }
@@ -667,22 +648,17 @@ static int ipvideo_decode_block_opcode_0xE(IpvideoContext *s)
 static int ipvideo_decode_block_opcode_0xF(IpvideoContext *s)
 {
     int x, y;
-    unsigned char sample0, sample1;
+    unsigned char sample[2];
 
     /* dithered encoding */
     CHECK_STREAM_PTR(2);
-    sample0 = *s->stream_ptr++;
-    sample1 = *s->stream_ptr++;
+    sample[0] = *s->stream_ptr++;
+    sample[1] = *s->stream_ptr++;
 
     for (y = 0; y < 8; y++) {
         for (x = 0; x < 8; x += 2) {
-            if (y & 1) {
-                *s->pixel_ptr++ = sample1;
-                *s->pixel_ptr++ = sample0;
-            } else {
-                *s->pixel_ptr++ = sample0;
-                *s->pixel_ptr++ = sample1;
-            }
+            *s->pixel_ptr++ = sample[  y & 1 ];
+            *s->pixel_ptr++ = sample[!(y & 1)];
         }
         s->pixel_ptr += s->line_inc;
     }
