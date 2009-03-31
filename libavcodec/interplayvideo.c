@@ -386,7 +386,8 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
     memcpy(P, s->stream_ptr, 4);
     s->stream_ptr += 4;
 
-    if ((P[0] <= P[1]) && (P[2] <= P[3])) {
+    if (P[0] <= P[1]) {
+        if (P[2] <= P[3]) {
 
         /* 1 of 4 colors for each pixel, need 16 more bytes */
         CHECK_STREAM_PTR(16);
@@ -400,7 +401,7 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
             s->pixel_ptr += s->line_inc;
         }
 
-    } else if ((P[0] <= P[1]) && (P[2] > P[3])) {
+        } else {
         uint32_t flags;
 
         /* 1 of 4 colors for each 2x2 block, need 4 more bytes */
@@ -418,7 +419,9 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
             s->pixel_ptr += s->stride * 2;
         }
 
-    } else if ((P[0] > P[1]) && (P[2] <= P[3])) {
+        }
+    } else {
+        if (P[2] <= P[3]) {
         uint64_t flags;
 
         /* 1 of 4 colors for each 2x1 block, need 8 more bytes */
@@ -432,8 +435,7 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
             }
             s->pixel_ptr += s->stride;
         }
-
-    } else {
+        } else {
         uint64_t flags;
 
         /* 1 of 4 colors for each 1x2 block, need 8 more bytes */
@@ -446,6 +448,7 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
                 s->pixel_ptr[x + s->stride] = P[flags & 0x03];
             }
             s->pixel_ptr += s->stride * 2;
+        }
         }
     }
 
