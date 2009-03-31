@@ -227,10 +227,10 @@ static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
         flags = bytestream_get_le16(&s->stream_ptr);
         for (y = 0; y < 8; y += 2) {
             for (x = 0; x < 8; x += 2, flags >>= 1) {
-                    s->pixel_ptr[x                ] =
-                    s->pixel_ptr[x + 1            ] =
-                    s->pixel_ptr[x +     s->stride] =
-                    s->pixel_ptr[x + 1 + s->stride] = P[flags & 1];
+                s->pixel_ptr[x                ] =
+                s->pixel_ptr[x + 1            ] =
+                s->pixel_ptr[x +     s->stride] =
+                s->pixel_ptr[x + 1 + s->stride] = P[flags & 1];
             }
             s->pixel_ptr += s->stride * 2;
         }
