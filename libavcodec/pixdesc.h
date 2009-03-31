@@ -72,7 +72,7 @@ typedef struct AVPixFmtDescriptor{
  */
 extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
 
-static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4], AVPixFmtDescriptor *desc, int x, int y, int c, int w)
+static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4], const AVPixFmtDescriptor *desc, int x, int y, int c, int w)
 {
     AVComponentDescriptor comp= desc->comp[c];
     int plane= comp.plane;
