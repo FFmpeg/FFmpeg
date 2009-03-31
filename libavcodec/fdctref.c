@@ -40,13 +40,13 @@
 #endif
 
 /* global declarations */
-void init_fdct (void);
-void fdct (short *block);
+void ff_ref_dct_init (void);
+void ff_ref_fdct (short *block);
 
 /* private data */
 static double c[8][8]; /* transform coefficients */
 
-void init_fdct(void)
+void ff_ref_dct_init(void)
 {
   int i, j;
   double s;
@@ -60,7 +60,7 @@ void init_fdct(void)
   }
 }
 
-void fdct(block)
+void ff_ref_fdct(block)
 short *block;
 {
         register int i, j;
@@ -122,7 +122,7 @@ short *block;
 
 /* perform IDCT matrix multiply for 8x8 coefficient block */
 
-void idct(block)
+void ff_ref_idct(block)
 short *block;
 {
   int i, j, k, v;
