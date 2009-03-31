@@ -72,6 +72,18 @@ typedef struct AVPixFmtDescriptor{
  */
 extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
 
+/**
+ * Reads a line from an image, and writes to \p dst the values of the
+ * pixel format component \p c.
+ *
+ * @param data the array containing the pointers to the planes of the image
+ * @param linesizes the array containing the linesizes of the image
+ * @param desc the pixel format descriptor for the image
+ * @param x the horizontal coordinate of the first pixel to read
+ * @param y the vertical coordinate of the first pixel to read
+ * @param w the width of the line to read, that is the number of
+ * values to write to \p dst
+ */
 static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4], const AVPixFmtDescriptor *desc, int x, int y, int c, int w)
 {
     AVComponentDescriptor comp= desc->comp[c];
