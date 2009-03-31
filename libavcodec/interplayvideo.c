@@ -399,23 +399,17 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
 static int ipvideo_decode_block_opcode_0xA(IpvideoContext *s)
 {
     int x, y;
-    unsigned char P[8];
-    unsigned char B[16];
+    unsigned char P[4];
     int flags = 0;
-    int split;
 
     /* 4-color encoding for each 4x4 quadrant, or 4-color encoding on
      * either top and bottom or left and right halves */
-    CHECK_STREAM_PTR(4);
+    CHECK_STREAM_PTR(24);
 
-    memcpy(P, s->stream_ptr, 4);
-    s->stream_ptr += 4;
+    if (s->stream_ptr[0] <= s->stream_ptr[1]) {
 
-    if (P[0] <= P[1]) {
-
-        /* 4-color encoding for each quadrant; need 28 more bytes */
-        CHECK_STREAM_PTR(28);
-        s->stream_ptr -= 4;
+        /* 4-color encoding for each quadrant; need 32 bytes */
+        CHECK_STREAM_PTR(32);
 
         for (y = 0; y < 16; y++) {
             // new values for each 4x4 block
@@ -435,50 +429,29 @@ static int ipvideo_decode_block_opcode_0xA(IpvideoContext *s)
         }
 
     } else {
+        // vertical split?
+        int vert = s->stream_ptr[12] <= s->stream_ptr[13];
+        uint64_t flags = 0;
 
         /* 4-color encoding for either left and right or top and bottom
-         * halves; need 20 more bytes */
-        CHECK_STREAM_PTR(20);
+         * halves */
 
-        memcpy(B, s->stream_ptr, 8);
-        s->stream_ptr += 8;
-        memcpy(P + 4, s->stream_ptr, 4);
-        s->stream_ptr += 4;
-        memcpy(B + 8, s->stream_ptr, 8);
-        s->stream_ptr += 8;
-
-        if (P[4] <= P[5]) {
-
-            /* block is divided into left and right halves */
-            for (y = 0; y < 8; y++) {
-
-                flags = (B[y + 8] << 8) | B[y];
-                split = 0;
-
-                for (x = 0; x < 8; x++, flags >>= 2) {
-                    if (x == 4)
-                        split = 4;
-                    *s->pixel_ptr++ = P[split + (flags & 0x03)];
-                }
-
-                s->pixel_ptr += s->line_inc;
+        for (y = 0; y < 16; y++) {
+            // load values for each half
+            if (!(y & 7)) {
+                memcpy(P, s->stream_ptr, 4);
+                s->stream_ptr += 4;
+                flags = bytestream_get_le64(&s->stream_ptr);
             }
 
-        } else {
+            for (x = 0; x < 4; x++, flags >>= 2)
+                *s->pixel_ptr++ = P[flags & 0x03];
 
-            /* block is divided into top and bottom halves */
-            split = 0;
-            for (y = 0; y < 8; y++) {
-
-                flags = (B[y * 2 + 1] << 8) | B[y * 2];
-                if (y == 4)
-                    split = 4;
-
-                for (x = 0; x < 8; x++, flags >>= 2)
-                    *s->pixel_ptr++ = P[split + (flags & 0x03)];
-
-                s->pixel_ptr += s->line_inc;
-            }
+            if (vert) {
+                s->pixel_ptr += s->stride - 4;
+                // switch to right half
+                if (y == 7) s->pixel_ptr -= 8 * s->stride - 4;
+            } else if (y & 1) s->pixel_ptr += s->line_inc;
         }
     }
 
