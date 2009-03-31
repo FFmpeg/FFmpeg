@@ -421,13 +421,13 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
 
         }
     } else {
-        if (P[2] <= P[3]) {
         uint64_t flags;
 
-        /* 1 of 4 colors for each 2x1 block, need 8 more bytes */
+        /* 1 of 4 colors for each 2x1 or 1x2 block, need 8 more bytes */
         CHECK_STREAM_PTR(8);
 
         flags = bytestream_get_le64(&s->stream_ptr);
+        if (P[2] <= P[3]) {
         for (y = 0; y < 8; y++) {
             for (x = 0; x < 8; x += 2, flags >>= 2) {
                 s->pixel_ptr[x    ] =
@@ -436,12 +436,6 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
             s->pixel_ptr += s->stride;
         }
         } else {
-        uint64_t flags;
-
-        /* 1 of 4 colors for each 1x2 block, need 8 more bytes */
-        CHECK_STREAM_PTR(8);
-
-        flags = bytestream_get_le64(&s->stream_ptr);
         for (y = 0; y < 8; y += 2) {
             for (x = 0; x < 8; x++, flags >>= 2) {
                 s->pixel_ptr[x            ] =
