@@ -25,7 +25,7 @@ DIRS = bfin mlib ppc sparc x86
 
 include $(SUBDIR)../subdir.mak
 
-$(SUBDIR)colorspace-test: $(SUBDIR)colorspace-test.o $(SUBDIR)$(LIBNAME)
+$(SUBDIR)colorspace-test$(EXESUF): $(SUBDIR)colorspace-test.o $(SUBDIR)$(LIBNAME)
 
-$(SUBDIR)swscale-example: $(SUBDIR)swscale-example.o $(SUBDIR)$(LIBNAME)
-$(SUBDIR)swscale-example: EXTRALIBS += -lm
+$(SUBDIR)swscale-example$(EXESUF): $(SUBDIR)swscale-example.o $(SUBDIR)$(LIBNAME)
+$(SUBDIR)swscale-example$(EXESUF): EXTRALIBS += -lm
