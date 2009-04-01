@@ -81,34 +81,4 @@ CLEANSUFFIXES     = *.o *~ *.ho
 DISTCLEANSUFFIXES = *.d *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
 
-define RULES
-$(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
-	$(CC) $(FFLDFLAGS) -o $$@ $$^ $(SUBDIR)$(LIBNAME) $(FFEXTRALIBS)
-
-$(SUBDIR)%-test.o: $(SUBDIR)%.c
-	$(CC) $(CFLAGS) -DTEST -c -o $$@ $$^
-
-$(SUBDIR)%-test.o: $(SUBDIR)%-test.c
-	$(CC) $(CFLAGS) -DTEST -c -o $$@ $$^
-
-$(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
-	$(YASM) $(YASMFLAGS) -I $$(<D)/ -o $$@ $$<
-
-$(SUBDIR)x86/%.d: $(SUBDIR)x86/%.asm
-	$(YASM) $(YASMFLAGS) -I $$(<D)/ -M -o $$(@:%.d=%.o) $$< > $$@
-
-clean::
-	rm -f $(EXAMPLES) $(addprefix $(SUBDIR),*-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
-	    $(addprefix $(SUBDIR), $(foreach suffix,$(CLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
-
-distclean:: clean
-	rm -f  $(addprefix $(SUBDIR),$(DISTCLEANSUFFIXES)) \
-            $(addprefix $(SUBDIR), $(foreach suffix,$(DISTCLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
-endef
-
-$(eval $(RULES))
-
-examples: $(EXAMPLES)
-testprogs: $(TESTPROGS)
-
 -include $(DEPS)
