@@ -360,6 +360,8 @@ The following abbreviations are recognized:
 352x288
 @item 4cif
 704x576
+@item 16cif
+1408x1152
 @item qqvga
 160x120
 @item qvga

@@ -1009,6 +1009,7 @@ static const VideoFrameSizeAbbr video_frame_size_abbrs[] = {
     { "qcif",      176, 144 },
     { "cif",       352, 288 },
     { "4cif",      704, 576 },
+    { "16cif",    1408,1152 },
     { "qqvga",     160, 120 },
     { "qvga",      320, 240 },
     { "vga",       640, 480 },
