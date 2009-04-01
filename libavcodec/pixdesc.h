@@ -94,8 +94,13 @@ extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
  * @param y the vertical coordinate of the first pixel to read
  * @param w the width of the line to read, that is the number of
  * values to write to \p dst
+ * @param read_pal_component if not zero and the format is a paletted
+ * format writes to \p dst the values corresponding to the palette
+ * component \p c in data[1], rather than the palette indexes in
+ * data[0]. The behavior is undefined if the format is not paletted.
  */
-static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4], const AVPixFmtDescriptor *desc, int x, int y, int c, int w)
+static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4],
+                             const AVPixFmtDescriptor *desc, int x, int y, int c, int w, int read_pal_component)
 {
     AVComponentDescriptor comp= desc->comp[c];
     int plane= comp.plane;
@@ -112,7 +117,7 @@ static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int li
 
         while(w--){
             int val = show_bits(&gb, depth);
-            if(flags & PIX_FMT_PAL)
+            if(read_pal_component)
                 val= data[1][4*val + c];
             skip_bits(&gb, step);
             *dst++= val;
@@ -125,7 +130,7 @@ static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int li
             if(flags & PIX_FMT_BE) val= AV_RB16(p);
             else                   val= AV_RL16(p);
             val = (val>>shift) & mask;
-            if(flags & PIX_FMT_PAL)
+            if(read_pal_component)
                 val= data[1][4*val + c];
             p+= step;
             *dst++= val;
