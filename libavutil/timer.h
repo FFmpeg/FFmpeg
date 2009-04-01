@@ -28,7 +28,9 @@
 #include <stdint.h>
 #include "config.h"
 
-#if   ARCH_BFIN
+#if   ARCH_ARM
+#   include "arm/timer.h"
+#elif ARCH_BFIN
 #   include "bfin/timer.h"
 #elif ARCH_PPC
 #   include "ppc/timer.h"
