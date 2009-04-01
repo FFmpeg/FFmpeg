@@ -24,8 +24,3 @@ TESTPROGS = colorspace
 DIRS = bfin mlib ppc sparc x86
 
 include $(SUBDIR)../subdir.mak
-
-$(SUBDIR)colorspace-test$(EXESUF): $(SUBDIR)colorspace-test.o $(SUBDIR)$(LIBNAME)
-
-$(SUBDIR)swscale-example$(EXESUF): $(SUBDIR)swscale-example.o $(SUBDIR)$(LIBNAME)
-$(SUBDIR)swscale-example$(EXESUF): EXTRALIBS += -lm
