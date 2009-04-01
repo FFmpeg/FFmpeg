@@ -20,7 +20,7 @@ INCINSTDIR := $(INCDIR)/lib$(NAME)
 
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
-	$(CC) $(FFLDFLAGS) -o $$@ $$^ $(SUBDIR)$(LIBNAME) $(FFEXTRALIBS)
+	$(CC) $(FFLDFLAGS) -o $$@ $$^ -l$(FULLNAME) $(FFEXTRALIBS)
 
 $(SUBDIR)%-test.o: $(SUBDIR)%.c
 	$(CC) $(CFLAGS) -DTEST -c -o $$@ $$^
