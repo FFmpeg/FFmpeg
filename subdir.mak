@@ -18,6 +18,8 @@ endif
 
 INCINSTDIR := $(INCDIR)/lib$(NAME)
 
+THIS_LIB := $(SUBDIR)$($(BUILD_SHARED:yes=S)LIBNAME)
+
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
 	$(CC) $(FFLDFLAGS) -o $$@ $$^ -l$(FULLNAME) $(FFEXTRALIBS)
@@ -95,6 +97,8 @@ uninstall-headers::
 endef
 
 $(eval $(RULES))
+
+$(EXAMPLES) $(TESTPROGS): $(THIS_LIB) $(DEP_LIBS)
 
 examples: $(EXAMPLES)
 testprogs: $(TESTPROGS)
