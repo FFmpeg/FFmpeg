@@ -310,7 +310,6 @@ static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
 
 /** @} */ //Bitplane group
 
-#define FILTSIGN(a) ((a) >= 0 ? 1 : -1)
 /**
  * VC-1 in-loop deblocking filter for one line
  * @param src source block type
