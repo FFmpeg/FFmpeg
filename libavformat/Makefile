@@ -247,3 +247,5 @@ EXAMPLES  = output
 TESTPROGS = timefilter
 
 include $(SUBDIR)../subdir.mak
+
+$(SUBDIR)output-example$(EXESUF): ELIBS = -lswscale

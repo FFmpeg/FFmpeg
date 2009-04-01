@@ -22,7 +22,7 @@ THIS_LIB := $(SUBDIR)$($(BUILD_SHARED:yes=S)LIBNAME)
 
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
-	$(CC) $(FFLDFLAGS) -o $$@ $$^ -l$(FULLNAME) $(FFEXTRALIBS)
+	$(CC) $(FFLDFLAGS) -o $$@ $$^ -l$(FULLNAME) $(FFEXTRALIBS) $$(ELIBS)
 
 $(SUBDIR)%-test.o: $(SUBDIR)%.c
 	$(CC) $(CFLAGS) -DTEST -c -o $$@ $$^
