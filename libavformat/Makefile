@@ -243,6 +243,9 @@ OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
+# libavdevice dependencies
+OBJS-$(CONFIG_JACK_DEMUXER)              += timefilter.o
+
 EXAMPLES  = output
 TESTPROGS = timefilter
 

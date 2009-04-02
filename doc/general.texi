@@ -653,6 +653,7 @@ performance on systems without hardware floating point support).
 @item BEOS audio        @tab X      @tab X
 @item BKTR              @tab X      @tab
 @item DV1394            @tab X      @tab
+@item JACK              @tab X      @tab
 @item LIBDC1394         @tab X      @tab
 @item OSS               @tab X      @tab X
 @item Video4Linux       @tab X      @tab

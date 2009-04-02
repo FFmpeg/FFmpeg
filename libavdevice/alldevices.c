@@ -48,6 +48,7 @@ void avdevice_register_all(void)
     REGISTER_MUXDEMUX (AUDIO_BEOS, audio_beos);
     REGISTER_DEMUXER  (BKTR, bktr);
     REGISTER_DEMUXER  (DV1394, dv1394);
+    REGISTER_DEMUXER  (JACK, jack);
     REGISTER_MUXDEMUX (OSS, oss);
     REGISTER_DEMUXER  (V4L2, v4l2);
     REGISTER_DEMUXER  (V4L, v4l);

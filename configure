@@ -1112,6 +1112,8 @@ avisynth_demuxer_deps="avisynth"
 bktr_demuxer_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 dirac_demuxer_deps="dirac_parser"
 dv1394_demuxer_deps="dv1394 dv_demuxer"
+jack_demuxer_deps="jack_jack_h"
+jack_demuxer_extralibs="-ljack"
 libdc1394_demuxer_deps="libdc1394"
 libnut_demuxer_deps="libnut"
 libnut_muxer_deps="libnut"
@@ -2148,6 +2150,8 @@ check_header sys/soundcard.h
 check_header soundcard.h
 
 check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
+
+check_lib2 jack/jack.h jack_client_open -ljack
 
 # deal with the X11 frame grabber
 enabled x11grab                         &&
