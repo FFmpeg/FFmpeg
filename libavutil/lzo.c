@@ -249,7 +249,7 @@ int main(int argc, char *argv[]) {
     long tmp[LZO1X_MEM_COMPRESS];
     int inlen, outlen;
     int i;
-    av_log_level = AV_LOG_DEBUG;
+    av_log_set_level(AV_LOG_DEBUG);
     lzo1x_999_compress(orig, s, comp, &clen, tmp);
     for (i = 0; i < 300; i++) {
 START_TIMER
