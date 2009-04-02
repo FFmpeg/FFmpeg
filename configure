@@ -109,6 +109,9 @@ show_help(){
   echo "  --disable-decoder=NAME   disable decoder NAME"
   echo "  --enable-decoder=NAME    enable decoder NAME"
   echo "  --disable-decoders       disable all decoders"
+  echo "  --disable-hwaccel=NAME   disable hwaccel NAME"
+  echo "  --enable-hwaccel=NAME    enable hwaccel NAME"
+  echo "  --disable-hwaccels       disable all hwaccels"
   echo "  --disable-muxer=NAME     disable muxer NAME"
   echo "  --enable-muxer=NAME      enable muxer NAME"
   echo "  --disable-muxers         disable all muxers"
@@ -132,6 +135,7 @@ show_help(){
   echo "  --disable-filters        disable all filters"
   echo "  --list-decoders          show all available decoders"
   echo "  --list-encoders          show all available encoders"
+  echo "  --list-hwaccels          show all available hardware accelerators"
   echo "  --list-muxers            show all available muxers"
   echo "  --list-demuxers          show all available demuxers"
   echo "  --list-parsers           show all available parsers"
@@ -749,6 +753,7 @@ COMPONENT_LIST="
     demuxers
     encoders
     filters
+    hwaccels
     indevs
     muxers
     outdevs
@@ -989,7 +994,7 @@ sse_deps="mmx"
 ssse3_deps="sse"
 vis_deps="sparc"
 
-# decoders / encoders
+# decoders / encoders / hardware accelerators
 aac_decoder_select="fft mdct"
 ac3_decoder_deps="gpl"
 ac3_decoder_select="fft mdct"
@@ -1237,6 +1242,7 @@ find_things(){
 
 ENCODER_LIST=$(find_things  encoder  ENC      libavcodec/allcodecs.c)
 DECODER_LIST=$(find_things  decoder  DEC      libavcodec/allcodecs.c)
+HWACCEL_LIST=$(find_things  hwaccel  HWACCEL  libavcodec/allcodecs.c)
 PARSER_LIST=$(find_things   parser   PARSER   libavcodec/allcodecs.c)
 BSF_LIST=$(find_things      bsf      BSF      libavcodec/allcodecs.c)
 MUXER_LIST=$(find_things    muxer    _MUX     libavformat/allformats.c)
@@ -1249,6 +1255,7 @@ FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
 enable $ARCH_EXT_LIST \
        $DECODER_LIST \
        $ENCODER_LIST \
+       $HWACCEL_LIST \
        $PARSER_LIST \
        $BSF_LIST \
        $DEMUXER_LIST \
@@ -1287,7 +1294,7 @@ for opt do
     --enable-*=*|--disable-*=*)
     eval $(echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/')
     case "$thing" in
-        encoder|decoder|muxer|demuxer|parser|bsf|protocol|filter) $action ${optval}_${thing} ;;
+        encoder|decoder|hwaccel|muxer|demuxer|parser|bsf|protocol|filter) $action ${optval}_${thing} ;;
         *) die_unknown "$opt" ;;
     esac
     ;;
@@ -2226,6 +2233,7 @@ check_asm asmalign_pot '".align 3"'
 
 enabled_any $DECODER_LIST      && enable decoders
 enabled_any $ENCODER_LIST      && enable encoders
+enabled_any $HWACCEL_LIST      && enable hwaccels
 enabled_any $BSF_LIST          && enable bsfs
 enabled_any $DEMUXER_LIST      && enable demuxers
 enabled_any $MUXER_LIST        && enable muxers
@@ -2241,6 +2249,7 @@ check_deps $CONFIG_LIST       \
            $HAVE_LIST         \
            $DECODER_LIST      \
            $ENCODER_LIST      \
+           $HWACCEL_LIST      \
            $PARSER_LIST       \
            $BSF_LIST          \
            $DEMUXER_LIST      \
@@ -2337,7 +2346,7 @@ echo "zlib enabled              ${zlib-no}"
 echo "bzlib enabled             ${bzlib-no}"
 echo
 
-for type in decoder encoder parser demuxer muxer protocol filter bsf indev outdev; do
+for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf indev outdev; do
     echo "Enabled ${type}s:"
     eval list=\$$(toupper $type)_LIST
     for part in $list; do
@@ -2464,6 +2473,7 @@ print_config CONFIG_ $TMPH config.mak $CONFIG_LIST       \
                                       $CONFIG_EXTRA      \
                                       $DECODER_LIST      \
                                       $ENCODER_LIST      \
+                                      $HWACCEL_LIST      \
                                       $PARSER_LIST       \
                                       $BSF_LIST          \
                                       $DEMUXER_LIST      \
