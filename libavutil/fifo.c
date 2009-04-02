@@ -54,6 +54,11 @@ int av_fifo_size(AVFifoBuffer *f)
     return (uint32_t)(f->wndx - f->rndx);
 }
 
+int av_fifo_space(AVFifoBuffer *f)
+{
+    return f->end - f->buffer - av_fifo_size(f);
+}
+
 int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
     unsigned int old_size= f->end - f->buffer;
 

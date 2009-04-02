@@ -62,6 +62,14 @@ void av_fifo_reset(AVFifoBuffer *f);
 int av_fifo_size(AVFifoBuffer *f);
 
 /**
+ * Returns the amount of space in bytes in the AVFifoBuffer, that is the
+ * amount of data you can write into it.
+ * @param *f AVFifoBuffer to write into
+ * @return size
+ */
+int av_fifo_space(AVFifoBuffer *f);
+
+/**
  * Feeds data from an AVFifoBuffer to a user-supplied callback.
  * @param *f AVFifoBuffer to read from
  * @param buf_size number of bytes to read
