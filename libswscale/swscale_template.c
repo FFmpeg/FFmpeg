@@ -26,15 +26,6 @@
 #undef PAVGB
 #undef PREFETCH
 #undef PREFETCHW
-#undef EMMS
-#undef SFENCE
-
-#if HAVE_AMD3DNOW
-/* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
-#define EMMS     "femms"
-#else
-#define EMMS     "emms"
-#endif
 
 #if HAVE_AMD3DNOW
 #define PREFETCH  "prefetch"
@@ -45,12 +36,6 @@
 #else
 #define PREFETCH  " # nop"
 #define PREFETCHW " # nop"
-#endif
-
-#if HAVE_MMX2
-#define SFENCE "sfence"
-#else
-#define SFENCE " # nop"
 #endif
 
 #if HAVE_MMX2
@@ -3209,8 +3194,10 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
         fillPlane(dst[3], dstStride[3], dstW, dstY-lastDstY, lastDstY, 255);
 
 #if HAVE_MMX
-    __asm__ volatile(SFENCE:::"memory");
-    __asm__ volatile(EMMS:::"memory");
+    if (flags & SWS_CPU_CAPS_MMX2 )  __asm__ volatile("sfence":::"memory");
+    /* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
+    if (flags & SWS_CPU_CAPS_3DNOW)  __asm__ volatile("femms" :::"memory");
+    else                             __asm__ volatile("emms"  :::"memory");
 #endif
     /* store changed local vars back in the context */
     c->dstY= dstY;
