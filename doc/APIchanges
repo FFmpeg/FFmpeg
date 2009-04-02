@@ -12,6 +12,15 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-04-02 - r18317 - lavc 52.23.0 - AVPacket
+  Move AVPacket declaration from libavformat/avformat.h to
+  libavcodec/avcodec.h.
+
+2009-03-22 - r18133 - lavu 50.1.0 - PIX_FMT_RGB5X5 endian variants
+  Add the enum PixelFormat values:
+  PIX_FMT_RGB565BE, PIX_FMT_RGB565LE, PIX_FMT_RGB555BE, PIX_FMT_RGB555LE,
+  PIX_FMT_BGR565BE, PIX_FMT_BGR565LE, PIX_FMT_BGR555BE, PIX_FMT_BGR555LE.
+
 2009-03-21 - r18116 - lavu 50.2.0  - av_random*
   The Mersenne Twister PRNG implemented through the av_random* functions
   was removed. Use the lagged Fibonacci PRNG through the av_lfg* functions
