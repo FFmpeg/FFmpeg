@@ -439,6 +439,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
+    /* skip empty data packets */
+    if (!size)
+        return AVERROR(EAGAIN);
+
     ret= av_get_packet(s->pb, pkt, size);
     if (ret <= 0) {
         return AVERROR(EIO);
