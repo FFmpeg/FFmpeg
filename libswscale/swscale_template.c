@@ -2243,6 +2243,22 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 #endif /* HAVE_ALTIVEC */
 #endif /* HAVE_MMX */
 }
+
+static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
+                                        int dstWidth, uint8_t *src, int srcW,
+                                        int xInc)
+{
+    int i;
+    unsigned int xpos=0;
+    for (i=0;i<dstWidth;i++)
+    {
+        register unsigned int xx=xpos>>16;
+        register unsigned int xalpha=(xpos&0xFFFF)>>9;
+        dst[i]= (src[xx]<<7) + (src[xx+1] - src[xx])*xalpha;
+        xpos+=xInc;
+    }
+}
+
       // *** horizontal scale Y line to temp buffer
 static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, uint8_t *src, int srcW, int xInc,
                                    int flags, int canMMX2BeUsed, int16_t *hLumFilter,
@@ -2465,15 +2481,7 @@ FUNNY_Y_CODE
         } //if MMX2 can't be used
 #endif
 #else
-        int i;
-        unsigned int xpos=0;
-        for (i=0;i<dstWidth;i++)
-        {
-            register unsigned int xx=xpos>>16;
-            register unsigned int xalpha=(xpos&0xFFFF)>>9;
-            dst[i]= (src[xx]<<7) + (src[xx+1] - src[xx])*xalpha;
-            xpos+=xInc;
-        }
+        RENAME(hyscale_fast)(c, dst, dstWidth, src, srcW, xInc);
 #endif /* ARCH_X86 */
     }
 
@@ -2488,6 +2496,26 @@ FUNNY_Y_CODE
             for (i=0; i<dstWidth; i++)
                 dst[i]= (FFMIN(dst[i],30189)*19077 - 39057361)>>14;
         }
+    }
+}
+
+static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
+                                        int dstWidth, uint8_t *src1,
+                                        uint8_t *src2, int srcW, int xInc)
+{
+    int i;
+    unsigned int xpos=0;
+    for (i=0;i<dstWidth;i++)
+    {
+        register unsigned int xx=xpos>>16;
+        register unsigned int xalpha=(xpos&0xFFFF)>>9;
+        dst[i]=(src1[xx]*(xalpha^127)+src1[xx+1]*xalpha);
+        dst[i+VOFW]=(src2[xx]*(xalpha^127)+src2[xx+1]*xalpha);
+        /* slower
+        dst[i]= (src1[xx]<<7) + (src1[xx+1] - src1[xx])*xalpha;
+        dst[i+VOFW]=(src2[xx]<<7) + (src2[xx+1] - src2[xx])*xalpha;
+        */
+        xpos+=xInc;
     }
 }
 
@@ -2754,20 +2782,7 @@ FUNNY_UV_CODE
         } //if MMX2 can't be used
 #endif
 #else
-        int i;
-        unsigned int xpos=0;
-        for (i=0;i<dstWidth;i++)
-        {
-            register unsigned int xx=xpos>>16;
-            register unsigned int xalpha=(xpos&0xFFFF)>>9;
-            dst[i]=(src1[xx]*(xalpha^127)+src1[xx+1]*xalpha);
-            dst[i+VOFW]=(src2[xx]*(xalpha^127)+src2[xx+1]*xalpha);
-            /* slower
-            dst[i]= (src1[xx]<<7) + (src1[xx+1] - src1[xx])*xalpha;
-            dst[i+VOFW]=(src2[xx]<<7) + (src2[xx+1] - src2[xx])*xalpha;
-            */
-            xpos+=xInc;
-        }
+        RENAME(hcscale_fast)(c, dst, dstWidth, src1, src2, srcW, xInc);
 #endif /* ARCH_X86 */
     }
     if(c->srcRange != c->dstRange && !(isRGB(c->dstFormat) || isBGR(c->dstFormat))){
