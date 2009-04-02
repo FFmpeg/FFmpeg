@@ -1017,8 +1017,10 @@ flashsv_encoder_select="zlib"
 flv_encoder_select="aandct"
 h261_encoder_select="aandct"
 h263_encoder_select="aandct"
+h263_vaapi_hwaccel_deps="va_va_h"
 h263p_encoder_select="aandct"
 h264_decoder_select="golomb"
+h264_vaapi_hwaccel_deps="va_va_h"
 h264_vdpau_decoder_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 imc_decoder_select="fft mdct"
 jpegls_decoder_select="golomb"
@@ -1031,6 +1033,8 @@ mpeg2video_encoder_select="aandct"
 mpeg4_encoder_select="aandct"
 mpeg_vdpau_decoder_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 mpeg1_vdpau_decoder_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
+mpeg2_vaapi_hwaccel_deps="va_va_h"
+mpeg4_vaapi_hwaccel_deps="va_va_h"
 mpeg_xvmc_decoder_deps="X11_extensions_XvMClib_h"
 msmpeg4v1_encoder_select="aandct"
 msmpeg4v2_encoder_select="aandct"
@@ -1053,6 +1057,7 @@ svq3_decoder_suggest="zlib"
 tiff_decoder_suggest="zlib"
 tiff_encoder_suggest="zlib"
 tscc_decoder_select="zlib"
+vc1_vaapi_hwaccel_deps="va_va_h"
 vc1_vdpau_decoder_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 vorbis_decoder_select="fft mdct"
 vorbis_encoder_select="fft mdct"
@@ -1062,6 +1067,7 @@ wmav2_decoder_select="fft mdct"
 wmav2_encoder_select="fft mdct"
 wmv1_encoder_select="aandct"
 wmv2_encoder_select="aandct"
+wmv3_vaapi_hwaccel_deps="va_va_h"
 wmv3_vdpau_decoder_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 zlib_decoder_select="zlib"
 zlib_encoder_select="zlib"
@@ -2009,6 +2015,7 @@ for thread in $THREADS_LIST; do
 done
 
 check_lib math.h sin -lm
+check_lib va/va.h vaInitialize -lva
 
 # test for C99 functions in math.h
 for func in llrint lrint lrintf round roundf truncf; do
