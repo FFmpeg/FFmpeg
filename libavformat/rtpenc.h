@@ -30,6 +30,7 @@ struct RTPMuxContext {
     AVStream *st;
     int payload_type;
     uint32_t ssrc;
+    const char *cname;
     uint16_t seq;
     uint32_t timestamp;
     uint32_t base_timestamp;
