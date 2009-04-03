@@ -444,7 +444,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EAGAIN);
 
     ret= av_get_packet(s->pb, pkt, size);
-    if (ret <= 0) {
+    if (ret < 0) {
         return AVERROR(EIO);
     }
     /* note: we need to modify the packet size here to handle the last
