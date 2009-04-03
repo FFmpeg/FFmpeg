@@ -304,7 +304,7 @@ void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int li
             put_signed_pixels_clamped_mmx_half(0)
             "lea (%0, %3, 4), %0                \n\t"
             put_signed_pixels_clamped_mmx_half(64)
-            :"+r" (pixels), "+r" (line_skip3)
+            :"+&r" (pixels), "+&r" (line_skip3)
             :"r" (block), "r"(line_skip)
             :"memory");
 }
