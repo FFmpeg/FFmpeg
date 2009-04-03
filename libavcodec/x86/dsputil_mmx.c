@@ -272,7 +272,7 @@ void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
             :"memory");
 }
 
-DECLARE_ALIGNED_8(const unsigned char, ff_vector128[8]) =
+DECLARE_ASM_CONST(8, uint8_t, ff_vector128[8]) =
   { 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 };
 
 #define put_signed_pixels_clamped_mmx_half(off) \
