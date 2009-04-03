@@ -296,7 +296,7 @@ DECLARE_ASM_CONST(8, uint8_t, ff_vector128[8]) =
 void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
 {
     x86_reg line_skip = line_size;
-    x86_reg av_uninit(line_skip3);
+    x86_reg line_skip3;
 
     __asm__ volatile (
             "movq "MANGLE(ff_vector128)", %%mm0 \n\t"
@@ -304,7 +304,7 @@ void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int li
             put_signed_pixels_clamped_mmx_half(0)
             "lea (%0, %3, 4), %0                \n\t"
             put_signed_pixels_clamped_mmx_half(64)
-            :"+&r" (pixels), "+&r" (line_skip3)
+            :"+&r" (pixels), "=&r" (line_skip3)
             :"r" (block), "r"(line_skip)
             :"memory");
 }
