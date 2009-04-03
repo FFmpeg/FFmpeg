@@ -12,6 +12,12 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-04-03 - r18322 - lavd 52.2.0 - JACK input device
+  Add a JACK input device.
+
+2009-04-03 - r18321 - lavu 50.3.0 - av_fifo_space
+  Introduce the av_fifo_space() function.
+
 2009-04-02 - r18317 - lavc 52.23.0 - AVPacket
   Move AVPacket declaration from libavformat/avformat.h to
   libavcodec/avcodec.h.
