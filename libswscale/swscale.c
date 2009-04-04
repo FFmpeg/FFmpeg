@@ -1776,42 +1776,55 @@ static void globalInit(void){
     }
 }
 
-static SwsFunc getSwsFunc(int flags)
+static SwsFunc getSwsFunc(SwsContext *c)
 {
+    int flags = c->flags;
 
 #if defined(RUNTIME_CPUDETECT) && CONFIG_GPL
 #if ARCH_X86
     // ordered per speed fastest first
     if (flags & SWS_CPU_CAPS_MMX2) {
+        sws_init_swScale_MMX2(c);
         return swScale_MMX2;
     } else if (flags & SWS_CPU_CAPS_3DNOW) {
+        sws_init_swScale_3DNow(c);
         return swScale_3DNow;
     } else if (flags & SWS_CPU_CAPS_MMX) {
+        sws_init_swScale_MMX(c);
         return swScale_MMX;
     } else {
+        sws_init_swScale_C(c);
         return swScale_C;
     }
 
 #else
 #if ARCH_PPC
     if (flags & SWS_CPU_CAPS_ALTIVEC) {
+        sws_init_swScale_altivec(c);
         return swScale_altivec;
     } else {
+        sws_init_swScale_C(c);
         return swScale_C;
     }
 #endif
+    sws_init_swScale_C(c);
     return swScale_C;
 #endif /* ARCH_X86 */
 #else //RUNTIME_CPUDETECT
 #if   HAVE_MMX2
+    sws_init_swScale_MMX2(c);
     return swScale_MMX2;
 #elif HAVE_AMD3DNOW
+    sws_init_swScale_3DNow(c);
     return swScale_3DNow;
 #elif HAVE_MMX
+    sws_init_swScale_MMX(c);
     return swScale_MMX;
 #elif HAVE_ALTIVEC
+    sws_init_swScale_altivec(c);
     return swScale_altivec;
 #else
+    sws_init_swScale_C(c);
     return swScale_C;
 #endif
 #endif //!RUNTIME_CPUDETECT
@@ -2932,7 +2945,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
                c->chrSrcW, c->chrSrcH, c->chrDstW, c->chrDstH, c->chrXInc, c->chrYInc);
     }
 
-    c->swScale= getSwsFunc(flags);
+    c->swScale= getSwsFunc(c);
     return c;
 }
 

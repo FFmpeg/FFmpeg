@@ -1375,7 +1375,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
 
     if (flags&SWS_FULL_CHR_H_INT)
     {
-        RENAME(yuv2packed2)(c, buf0, buf0, uvbuf0, uvbuf1, abuf0, abuf0, dest, dstW, 0, uvalpha, y);
+        c->yuv2packed2(c, buf0, buf0, uvbuf0, uvbuf1, abuf0, abuf0, dest, dstW, 0, uvalpha, y);
         return;
     }
 
@@ -2273,91 +2273,16 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     int canMMX2BeUsed = c->canMMX2BeUsed;
     void *funnyYCode = c->funnyYCode;
 
-    if (srcFormat==PIX_FMT_YUYV422 || srcFormat==PIX_FMT_GRAY16BE)
-    {
-        RENAME(yuy2ToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
+    if (isAlpha) {
+        if (srcFormat == PIX_FMT_RGB32   || srcFormat == PIX_FMT_BGR32  )
+            src += 3;
+    } else {
+        if (srcFormat == PIX_FMT_RGB32_1 || srcFormat == PIX_FMT_BGR32_1)
+            src += ALT32_CORR;
     }
-    else if (srcFormat==PIX_FMT_UYVY422 || srcFormat==PIX_FMT_GRAY16LE)
-    {
-        RENAME(uyvyToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_RGB32)
-    {
-        if (isAlpha)
-            RENAME(abgrToA)(formatConvBuffer, src+3, srcW, pal);
-        else
-            RENAME(bgr32ToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_RGB32_1)
-    {
-        if (isAlpha)
-            RENAME(abgrToA)(formatConvBuffer, src, srcW, pal);
-        else
-            RENAME(bgr32ToY)(formatConvBuffer, src+ALT32_CORR, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_BGR24)
-    {
-        RENAME(bgr24ToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_BGR565)
-    {
-        RENAME(bgr16ToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_BGR555)
-    {
-        RENAME(bgr15ToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_BGR32)
-    {
-        if (isAlpha)
-            RENAME(abgrToA)(formatConvBuffer, src+3, srcW, pal);
-        else
-            RENAME(rgb32ToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_BGR32_1)
-    {
-        if (isAlpha)
-            RENAME(abgrToA)(formatConvBuffer, src, srcW, pal);
-        else
-            RENAME(rgb32ToY)(formatConvBuffer, src+ALT32_CORR, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_RGB24)
-    {
-        RENAME(rgb24ToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_RGB565)
-    {
-        RENAME(rgb16ToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_RGB555)
-    {
-        RENAME(rgb15ToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_RGB8 || srcFormat==PIX_FMT_BGR8 || srcFormat==PIX_FMT_PAL8 || srcFormat==PIX_FMT_BGR4_BYTE  || srcFormat==PIX_FMT_RGB4_BYTE)
-    {
-        RENAME(palToY)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_MONOBLACK)
-    {
-        RENAME(monoblack2Y)(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-    else if (srcFormat==PIX_FMT_MONOWHITE)
-    {
-        RENAME(monowhite2Y)(formatConvBuffer, src, srcW, pal);
+
+    if (c->hyscale_internal) {
+        c->hyscale_internal(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
 
@@ -2368,7 +2293,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     if (!(flags&SWS_FAST_BILINEAR))
 #endif
     {
-        RENAME(hScale)(dst, dstWidth, src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize);
+        c->hScale(dst, dstWidth, src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize);
     }
     else // fast bilinear upscale / crap downscale
     {
@@ -2488,7 +2413,7 @@ FUNNY_Y_CODE
         } //if MMX2 can't be used
 #endif
 #else
-        RENAME(hyscale_fast)(c, dst, dstWidth, src, srcW, xInc);
+        c->hyscale_fast(c, dst, dstWidth, src, srcW, xInc);
 #endif /* ARCH_X86 */
     }
 
@@ -2537,115 +2462,16 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     int canMMX2BeUsed = c->canMMX2BeUsed;
     void *funnyUVCode = c->funnyUVCode;
 
-    if (srcFormat==PIX_FMT_YUYV422)
-    {
-        RENAME(yuy2ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_UYVY422)
-    {
-        RENAME(uyvyToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_RGB32)
-    {
-        if(c->chrSrcHSubSample)
-            RENAME(bgr32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        else
-            RENAME(bgr32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_RGB32_1)
-    {
-        if(c->chrSrcHSubSample)
-            RENAME(bgr32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW, pal);
-        else
-            RENAME(bgr32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_BGR24)
-    {
-        if(c->chrSrcHSubSample)
-            RENAME(bgr24ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        else
-            RENAME(bgr24ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_BGR565)
-    {
-        if(c->chrSrcHSubSample)
-            RENAME(bgr16ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        else
-            RENAME(bgr16ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_BGR555)
-    {
-        if(c->chrSrcHSubSample)
-            RENAME(bgr15ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        else
-            RENAME(bgr15ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_BGR32)
-    {
-        if(c->chrSrcHSubSample)
-            RENAME(rgb32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        else
-            RENAME(rgb32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_BGR32_1)
-    {
-        if(c->chrSrcHSubSample)
-            RENAME(rgb32ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW, pal);
-        else
-            RENAME(rgb32ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1+ALT32_CORR, src2+ALT32_CORR, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_RGB24)
-    {
-        if(c->chrSrcHSubSample)
-            RENAME(rgb24ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        else
-            RENAME(rgb24ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_RGB565)
-    {
-        if(c->chrSrcHSubSample)
-            RENAME(rgb16ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        else
-            RENAME(rgb16ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (srcFormat==PIX_FMT_RGB555)
-    {
-        if(c->chrSrcHSubSample)
-            RENAME(rgb15ToUV_half)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        else
-            RENAME(rgb15ToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-    else if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || srcFormat==PIX_FMT_MONOWHITE)
-    {
+    if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || srcFormat==PIX_FMT_MONOWHITE)
         return;
+
+    if (srcFormat==PIX_FMT_RGB32_1) {
+        src1 += ALT32_CORR;
+        src2 += ALT32_CORR;
     }
-    else if (srcFormat==PIX_FMT_RGB8 || srcFormat==PIX_FMT_BGR8 || srcFormat==PIX_FMT_PAL8 || srcFormat==PIX_FMT_BGR4_BYTE  || srcFormat==PIX_FMT_RGB4_BYTE)
-    {
-        RENAME(palToUV)(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
+
+    if (c->hcscale_internal) {
+        c->hcscale_internal(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= formatConvBuffer+VOFW;
     }
@@ -2657,8 +2483,8 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     if (!(flags&SWS_FAST_BILINEAR))
 #endif
     {
-        RENAME(hScale)(dst     , dstWidth, src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
-        RENAME(hScale)(dst+VOFW, dstWidth, src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
+        c->hScale(dst     , dstWidth, src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
+        c->hScale(dst+VOFW, dstWidth, src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
     }
     else // fast bilinear upscale / crap downscale
     {
@@ -2794,7 +2620,7 @@ FUNNY_UV_CODE
         } //if MMX2 can't be used
 #endif
 #else
-        RENAME(hcscale_fast)(c, dst, dstWidth, src1, src2, srcW, xInc);
+        c->hcscale_fast(c, dst, dstWidth, src1, src2, srcW, xInc);
 #endif /* ARCH_X86 */
     }
     if(c->srcRange != c->dstRange && !(isRGB(c->dstFormat) || isBGR(c->dstFormat))){
@@ -3096,7 +2922,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21){
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if (dstY&chrSkipMask) uDest= NULL; //FIXME split functions in lumi / chromi
-                RENAME(yuv2nv12X)(c,
+                c->yuv2nv12X(c,
                     vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                     vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
                     dest, uDest, dstW, chrDstW, dstFormat);
@@ -3110,11 +2936,11 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                     int16_t *lumBuf = lumPixBuf[0];
                     int16_t *chrBuf= chrPixBuf[0];
                     int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpPixBuf[0] : NULL;
-                    RENAME(yuv2yuv1)(c, lumBuf, chrBuf, alpBuf, dest, uDest, vDest, aDest, dstW, chrDstW);
+                    c->yuv2yuv1(c, lumBuf, chrBuf, alpBuf, dest, uDest, vDest, aDest, dstW, chrDstW);
                 }
                 else //General YV12
                 {
-                    RENAME(yuv2yuvX)(c,
+                    c->yuv2yuvX(c,
                         vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                         vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
                         alpSrcPtr, dest, uDest, vDest, aDest, dstW, chrDstW);
@@ -3133,7 +2959,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                             vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
                             alpSrcPtr, dest, dstW, dstY);
                     }else{
-                        RENAME(yuv2packed1)(c, *lumSrcPtr, *chrSrcPtr, *(chrSrcPtr+1),
+                        c->yuv2packed1(c, *lumSrcPtr, *chrSrcPtr, *(chrSrcPtr+1),
                             alpPixBuf ? *alpSrcPtr : NULL,
                             dest, dstW, chrAlpha, dstFormat, flags, dstY);
                     }
@@ -3152,7 +2978,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                             vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
                             alpSrcPtr, dest, dstW, dstY);
                     }else{
-                        RENAME(yuv2packed2)(c, *lumSrcPtr, *(lumSrcPtr+1), *chrSrcPtr, *(chrSrcPtr+1),
+                        c->yuv2packed2(c, *lumSrcPtr, *(lumSrcPtr+1), *chrSrcPtr, *(chrSrcPtr+1),
                             alpPixBuf ? *alpSrcPtr : NULL, alpPixBuf ? *(alpSrcPtr+1) : NULL,
                             dest, dstW, lumAlpha, chrAlpha, dstY);
                     }
@@ -3165,7 +2991,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                             vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
                             alpSrcPtr, dest, dstW, dstY);
                     }else{
-                        RENAME(yuv2packedX)(c,
+                        c->yuv2packedX(c,
                             vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
                             vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
                             alpSrcPtr, dest, dstW, dstY);
@@ -3231,4 +3057,95 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
     c->lastInChrBuf= lastInChrBuf;
 
     return dstY - lastDstY;
+}
+
+static void RENAME(sws_init_swScale)(SwsContext *c)
+{
+    enum PixelFormat srcFormat = c->srcFormat;
+
+    c->yuv2nv12X    = RENAME(yuv2nv12X   );
+    c->yuv2yuv1     = RENAME(yuv2yuv1    );
+    c->yuv2yuvX     = RENAME(yuv2yuvX    );
+    c->yuv2packed1  = RENAME(yuv2packed1 );
+    c->yuv2packed2  = RENAME(yuv2packed2 );
+    c->yuv2packedX  = RENAME(yuv2packedX );
+
+    c->hScale       = RENAME(hScale      );
+
+    c->hyscale_fast = RENAME(hyscale_fast);
+    c->hcscale_fast = RENAME(hcscale_fast);
+
+    c->hcscale_internal = NULL;
+    switch(srcFormat) {
+        case PIX_FMT_YUYV422  : c->hcscale_internal = RENAME(yuy2ToUV); break;
+        case PIX_FMT_UYVY422  : c->hcscale_internal = RENAME(uyvyToUV); break;
+        case PIX_FMT_RGB8     :
+        case PIX_FMT_BGR8     :
+        case PIX_FMT_PAL8     :
+        case PIX_FMT_BGR4_BYTE:
+        case PIX_FMT_RGB4_BYTE: c->hcscale_internal = RENAME(palToUV); break;
+    }
+    if (c->chrSrcHSubSample) {
+        switch(srcFormat) {
+        case PIX_FMT_RGB32  :
+        case PIX_FMT_RGB32_1: c->hcscale_internal = RENAME(bgr32ToUV_half); break;
+        case PIX_FMT_BGR24  : c->hcscale_internal = RENAME(bgr24ToUV_half); break;
+        case PIX_FMT_BGR565 : c->hcscale_internal = RENAME(bgr16ToUV_half); break;
+        case PIX_FMT_BGR555 : c->hcscale_internal = RENAME(bgr15ToUV_half); break;
+        case PIX_FMT_BGR32  :
+        case PIX_FMT_BGR32_1: c->hcscale_internal = RENAME(rgb32ToUV_half); break;
+        case PIX_FMT_RGB24  : c->hcscale_internal = RENAME(rgb24ToUV_half); break;
+        case PIX_FMT_RGB565 : c->hcscale_internal = RENAME(rgb16ToUV_half); break;
+        case PIX_FMT_RGB555 : c->hcscale_internal = RENAME(rgb15ToUV_half); break;
+        }
+    } else {
+        switch(srcFormat) {
+        case PIX_FMT_RGB32  :
+        case PIX_FMT_RGB32_1: c->hcscale_internal = RENAME(bgr32ToUV); break;
+        case PIX_FMT_BGR24  : c->hcscale_internal = RENAME(bgr24ToUV); break;
+        case PIX_FMT_BGR565 : c->hcscale_internal = RENAME(bgr16ToUV); break;
+        case PIX_FMT_BGR555 : c->hcscale_internal = RENAME(bgr15ToUV); break;
+        case PIX_FMT_BGR32  :
+        case PIX_FMT_BGR32_1: c->hcscale_internal = RENAME(rgb32ToUV); break;
+        case PIX_FMT_RGB24  : c->hcscale_internal = RENAME(rgb24ToUV); break;
+        case PIX_FMT_RGB565 : c->hcscale_internal = RENAME(rgb16ToUV); break;
+        case PIX_FMT_RGB555 : c->hcscale_internal = RENAME(rgb15ToUV); break;
+        }
+    }
+
+    c->hyscale_internal = NULL;
+    switch (srcFormat) {
+    case PIX_FMT_YUYV422  :
+    case PIX_FMT_GRAY16BE : c->hyscale_internal = RENAME(yuy2ToY); break;
+    case PIX_FMT_UYVY422  :
+    case PIX_FMT_GRAY16LE : c->hyscale_internal = RENAME(uyvyToY); break;
+    case PIX_FMT_BGR24    : c->hyscale_internal = RENAME(bgr24ToY); break;
+    case PIX_FMT_BGR565   : c->hyscale_internal = RENAME(bgr16ToY); break;
+    case PIX_FMT_BGR555   : c->hyscale_internal = RENAME(bgr15ToY); break;
+    case PIX_FMT_RGB24    : c->hyscale_internal = RENAME(rgb24ToY); break;
+    case PIX_FMT_RGB565   : c->hyscale_internal = RENAME(rgb16ToY); break;
+    case PIX_FMT_RGB555   : c->hyscale_internal = RENAME(rgb15ToY); break;
+    case PIX_FMT_RGB8     :
+    case PIX_FMT_BGR8     :
+    case PIX_FMT_PAL8     :
+    case PIX_FMT_BGR4_BYTE:
+    case PIX_FMT_RGB4_BYTE: c->hyscale_internal = RENAME(palToY); break;
+    case PIX_FMT_MONOBLACK: c->hyscale_internal = RENAME(monoblack2Y); break;
+    case PIX_FMT_MONOWHITE: c->hyscale_internal = RENAME(monowhite2Y); break;
+    }
+    if (c->alpPixBuf) {
+        switch (srcFormat) {
+        case PIX_FMT_RGB32  :
+        case PIX_FMT_RGB32_1:
+        case PIX_FMT_BGR32  :
+        case PIX_FMT_BGR32_1: c->hyscale_internal = RENAME(abgrToA); break;
+        }
+    } else {
+        switch (srcFormat) {
+        case PIX_FMT_RGB32  :
+        case PIX_FMT_RGB32_1: c->hyscale_internal = RENAME(bgr32ToY); break;
+        case PIX_FMT_BGR32  :
+        case PIX_FMT_BGR32_1: c->hyscale_internal = RENAME(rgb32ToY); break;
+        }
+    }
 }

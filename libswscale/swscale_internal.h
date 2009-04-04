@@ -214,6 +214,57 @@ typedef struct SwsContext{
     uint64_t sparc_coeffs[10] __attribute__((aligned(8)));
 #endif
 
+    /* function pointers for swScale() */
+    void (*yuv2nv12X  )(struct SwsContext *c,
+                        const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                        const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                        uint8_t *dest, uint8_t *uDest,
+                        int dstW, int chrDstW, int dstFormat);
+    void (*yuv2yuv1   )(struct SwsContext *c,
+                        const int16_t *lumSrc, const int16_t *chrSrc, const int16_t *alpSrc,
+                        uint8_t *dest,
+                        uint8_t *uDest, uint8_t *vDest, uint8_t *aDest,
+                        long dstW, long chrDstW);
+    void (*yuv2yuvX   )(struct SwsContext *c,
+                        const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                        const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                        const int16_t **alpSrc,
+                        uint8_t *dest,
+                        uint8_t *uDest, uint8_t *vDest, uint8_t *aDest,
+                        long dstW, long chrDstW);
+    void (*yuv2packed1)(struct SwsContext *c,
+                        const uint16_t *buf0,
+                        const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                        const uint16_t *abuf0,
+                        uint8_t *dest,
+                        int dstW, int uvalpha, int dstFormat, int flags, int y);
+    void (*yuv2packed2)(struct SwsContext *c,
+                        const uint16_t *buf0, const uint16_t *buf1,
+                        const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                        const uint16_t *abuf0, const uint16_t *abuf1,
+                        uint8_t *dest,
+                        int dstW, int yalpha, int uvalpha, int y);
+    void (*yuv2packedX)(struct SwsContext *c,
+                        const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                        const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                        const int16_t **alpSrc, uint8_t *dest,
+                        long dstW, long dstY);
+
+    void (*hyscale_internal)(uint8_t *dst, const uint8_t *src,
+                             long width, uint32_t *pal);
+    void (*hcscale_internal)(uint8_t *dstU, uint8_t *dstV,
+                             const uint8_t *src1, const uint8_t *src2,
+                             long width, uint32_t *pal);
+    void (*hyscale_fast)(struct SwsContext *c,
+                         int16_t *dst, int dstWidth,
+                         const uint8_t *src, int srcW, int xInc);
+    void (*hcscale_fast)(struct SwsContext *c,
+                         int16_t *dst, int dstWidth,
+                         const uint8_t *src1, const uint8_t *src2, int srcW, int xInc);
+
+    void (*hScale)(int16_t *dst, int dstW, const uint8_t *src, int srcW,
+                   int xInc, const int16_t *filter, const int16_t *filterPos, long filterSize);
+
 } SwsContext;
 //FIXME check init (where 0)
 
