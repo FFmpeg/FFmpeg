@@ -42,6 +42,7 @@ void ff_put_pixels8_xy2_no_rnd_neon(uint8_t *, const uint8_t *, int, int);
 void ff_avg_pixels16_neon(uint8_t *, const uint8_t *, int, int);
 
 void ff_add_pixels_clamped_neon(const DCTELEM *, uint8_t *, int);
+void ff_put_signed_pixels_clamped_neon(const DCTELEM *, uint8_t *, int);
 
 void ff_put_h264_qpel16_mc00_neon(uint8_t *, uint8_t *, int);
 void ff_put_h264_qpel16_mc10_neon(uint8_t *, uint8_t *, int);
@@ -179,6 +180,7 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->avg_pixels_tab[0][0] = ff_avg_pixels16_neon;
 
     c->add_pixels_clamped = ff_add_pixels_clamped_neon;
+    c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_neon;
 
     c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_neon;
     c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_neon;

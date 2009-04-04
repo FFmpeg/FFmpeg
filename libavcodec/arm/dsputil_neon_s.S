@@ -273,6 +273,43 @@ function ff_put_h264_qpel8_mc00_neon, export=1
         pixfunc2 put_ pixels8_y2,   _no_rnd, vhadd.u8
         pixfunc2 put_ pixels8_xy2,  _no_rnd, vshrn.u16, 1
 
+function ff_put_signed_pixels_clamped_neon, export=1
+        vmov.u8         d31, #128
+        vld1.64         {d16-d17}, [r0,:128]!
+        vqmovn.s16      d0, q8
+        vld1.64         {d18-d19}, [r0,:128]!
+        vqmovn.s16      d1, q9
+        vld1.64         {d16-d17}, [r0,:128]!
+        vqmovn.s16      d2, q8
+        vld1.64         {d18-d19}, [r0,:128]!
+        vadd.u8         d0, d0, d31
+        vld1.64         {d20-d21}, [r0,:128]!
+        vadd.u8         d1, d1, d31
+        vld1.64         {d22-d23}, [r0,:128]!
+        vadd.u8         d2, d2, d31
+        vst1.64         {d0},      [r1,:64], r2
+        vqmovn.s16      d3, q9
+        vst1.64         {d1},      [r1,:64], r2
+        vqmovn.s16      d4, q10
+        vst1.64         {d2},      [r1,:64], r2
+        vqmovn.s16      d5, q11
+        vld1.64         {d24-d25}, [r0,:128]!
+        vadd.u8         d3, d3, d31
+        vld1.64         {d26-d27}, [r0,:128]!
+        vadd.u8         d4, d4, d31
+        vadd.u8         d5, d5, d31
+        vst1.64         {d3},      [r1,:64], r2
+        vqmovn.s16      d6, q12
+        vst1.64         {d4},      [r1,:64], r2
+        vqmovn.s16      d7, q13
+        vst1.64         {d5},      [r1,:64], r2
+        vadd.u8         d6, d6, d31
+        vadd.u8         d7, d7, d31
+        vst1.64         {d6},      [r1,:64], r2
+        vst1.64         {d7},      [r1,:64], r2
+        bx              lr
+        .endfunc
+
 function ff_add_pixels_clamped_neon, export=1
         mov             r3, r1
         vld1.64         {d16},   [r1,:64], r2
