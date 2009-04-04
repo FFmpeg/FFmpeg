@@ -273,6 +273,51 @@ function ff_put_h264_qpel8_mc00_neon, export=1
         pixfunc2 put_ pixels8_y2,   _no_rnd, vhadd.u8
         pixfunc2 put_ pixels8_xy2,  _no_rnd, vshrn.u16, 1
 
+function ff_add_pixels_clamped_neon, export=1
+        mov             r3, r1
+        vld1.64         {d16},   [r1,:64], r2
+        vld1.64         {d0-d1}, [r0,:128]!
+        vaddw.u8        q0, q0, d16
+        vld1.64         {d17},   [r1,:64], r2
+        vld1.64         {d2-d3}, [r0,:128]!
+        vqmovun.s16     d0, q0
+        vld1.64         {d18},   [r1,:64], r2
+        vaddw.u8        q1, q1, d17
+        vld1.64         {d4-d5}, [r0,:128]!
+        vaddw.u8        q2, q2, d18
+        vst1.64         {d0},    [r3,:64], r2
+        vqmovun.s16     d2, q1
+        vld1.64         {d19},   [r1,:64], r2
+        vld1.64         {d6-d7}, [r0,:128]!
+        vaddw.u8        q3, q3, d19
+        vqmovun.s16     d4, q2
+        vst1.64         {d2},    [r3,:64], r2
+        vld1.64         {d16},   [r1,:64], r2
+        vqmovun.s16     d6, q3
+        vld1.64         {d0-d1}, [r0,:128]!
+        vaddw.u8        q0, q0, d16
+        vst1.64         {d4},    [r3,:64], r2
+        vld1.64         {d17},   [r1,:64], r2
+        vld1.64         {d2-d3}, [r0,:128]!
+        vaddw.u8        q1, q1, d17
+        vst1.64         {d6},    [r3,:64], r2
+        vqmovun.s16     d0, q0
+        vld1.64         {d18},   [r1,:64], r2
+        vld1.64         {d4-d5}, [r0,:128]!
+        vaddw.u8        q2, q2, d18
+        vst1.64         {d0},    [r3,:64], r2
+        vqmovun.s16     d2, q1
+        vld1.64         {d19},   [r1,:64], r2
+        vqmovun.s16     d4, q2
+        vld1.64         {d6-d7}, [r0,:128]!
+        vaddw.u8        q3, q3, d19
+        vst1.64         {d2},    [r3,:64], r2
+        vqmovun.s16     d6, q3
+        vst1.64         {d4},    [r3,:64], r2
+        vst1.64         {d6},    [r3,:64], r2
+        bx              lr
+        .endfunc
+
 function ff_float_to_int16_neon, export=1
         subs            r2,  r2,  #8
         vld1.64         {d0-d1},  [r1,:128]!
