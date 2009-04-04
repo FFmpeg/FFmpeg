@@ -2591,8 +2591,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
     av_log(avctx, AV_LOG_INFO, "libavcodec: CPU flags:");
     if (mm_flags & FF_MM_MMX)
         av_log(avctx, AV_LOG_INFO, " mmx");
-    if (mm_flags & FF_MM_MMXEXT)
-        av_log(avctx, AV_LOG_INFO, " mmxext");
+    if (mm_flags & FF_MM_MMX2)
+        av_log(avctx, AV_LOG_INFO, " mmx2");
     if (mm_flags & FF_MM_3DNOW)
         av_log(avctx, AV_LOG_INFO, " 3dnow");
     if (mm_flags & FF_MM_SSE)
@@ -2613,7 +2613,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->idct_permutation_type= FF_SIMPLE_IDCT_PERM;
 #if CONFIG_GPL
             }else if(idct_algo==FF_IDCT_LIBMPEG2MMX){
-                if(mm_flags & FF_MM_MMXEXT){
+                if(mm_flags & FF_MM_MMX2){
                     c->idct_put= ff_libmpeg2mmx2_idct_put;
                     c->idct_add= ff_libmpeg2mmx2_idct_add;
                     c->idct    = ff_mmxext_idct;
@@ -2645,7 +2645,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->idct_add= ff_idct_xvid_sse2_add;
                     c->idct    = ff_idct_xvid_sse2;
                     c->idct_permutation_type= FF_SSE2_IDCT_PERM;
-                }else if(mm_flags & FF_MM_MMXEXT){
+                }else if(mm_flags & FF_MM_MMX2){
                     c->idct_put= ff_idct_xvid_mmx2_put;
                     c->idct_add= ff_idct_xvid_mmx2_add;
                     c->idct    = ff_idct_xvid_mmx2;
@@ -2712,7 +2712,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vp6_filter_diag4 = ff_vp6_filter_diag4_mmx;
         }
 
-        if (mm_flags & FF_MM_MMXEXT) {
+        if (mm_flags & FF_MM_MMX2) {
             c->prefetch = prefetch_mmx2;
 
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
@@ -2949,7 +2949,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif
 
 #if CONFIG_GPL && HAVE_YASM
-        if( mm_flags&FF_MM_MMXEXT ){
+        if (mm_flags & FF_MM_MMX2){
 #if ARCH_X86_32
             c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_mmxext;
             c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_mmxext;
@@ -2977,7 +2977,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->inner_add_yblock = ff_snow_inner_add_yblock_sse2;
         }
         else{
-            if(mm_flags & FF_MM_MMXEXT){
+            if(mm_flags & FF_MM_MMX2){
             c->horizontal_compose97i = ff_snow_horizontal_compose97i_mmx;
 #if HAVE_7REGS
             c->vertical_compose97i = ff_snow_vertical_compose97i_mmx;

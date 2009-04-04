@@ -77,7 +77,7 @@ int mm_support(void)
         if (std_caps & (1<<23))
             rval |= FF_MM_MMX;
         if (std_caps & (1<<25))
-            rval |= FF_MM_MMXEXT
+            rval |= FF_MM_MMX2
 #if HAVE_SSE
                   | FF_MM_SSE;
         if (std_caps & (1<<26))
@@ -105,13 +105,13 @@ int mm_support(void)
         if (ext_caps & (1<<23))
             rval |= FF_MM_MMX;
         if (ext_caps & (1<<22))
-            rval |= FF_MM_MMXEXT;
+            rval |= FF_MM_MMX2;
     }
 
 #if 0
     av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s%s%s%s%s\n",
         (rval&FF_MM_MMX) ? "MMX ":"",
-        (rval&FF_MM_MMXEXT) ? "MMX2 ":"",
+        (rval&FF_MM_MMX2) ? "MMX2 ":"",
         (rval&FF_MM_SSE) ? "SSE ":"",
         (rval&FF_MM_SSE2) ? "SSE2 ":"",
         (rval&FF_MM_SSE3) ? "SSE3 ":"",

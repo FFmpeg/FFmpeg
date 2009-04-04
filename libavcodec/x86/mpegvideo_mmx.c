@@ -650,7 +650,7 @@ void MPV_common_init_mmx(MpegEncContext *s)
 #endif
             if(mm_flags & FF_MM_SSE2){
                 s->dct_quantize= dct_quantize_SSE2;
-            } else if(mm_flags & FF_MM_MMXEXT){
+            } else if(mm_flags & FF_MM_MMX2){
                 s->dct_quantize= dct_quantize_MMX2;
             } else {
                 s->dct_quantize= dct_quantize_MMX;

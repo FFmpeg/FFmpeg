@@ -127,7 +127,7 @@ int main(int argc, char **argv)
     AVCodecContext *ctx;
     int c;
     DSPContext cctx, mmxctx;
-    int flags[2] = { FF_MM_MMX, FF_MM_MMXEXT };
+    int flags[2] = { FF_MM_MMX, FF_MM_MMX2 };
 
     for(;;) {
         c = getopt(argc, argv, "h");
