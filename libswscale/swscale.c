@@ -1776,26 +1776,29 @@ static void globalInit(void){
     }
 }
 
-static SwsFunc getSwsFunc(int flags){
+static SwsFunc getSwsFunc(int flags)
+{
 
 #if defined(RUNTIME_CPUDETECT) && CONFIG_GPL
 #if ARCH_X86
     // ordered per speed fastest first
-    if (flags & SWS_CPU_CAPS_MMX2)
+    if (flags & SWS_CPU_CAPS_MMX2) {
         return swScale_MMX2;
-    else if (flags & SWS_CPU_CAPS_3DNOW)
+    } else if (flags & SWS_CPU_CAPS_3DNOW) {
         return swScale_3DNow;
-    else if (flags & SWS_CPU_CAPS_MMX)
+    } else if (flags & SWS_CPU_CAPS_MMX) {
         return swScale_MMX;
-    else
+    } else {
         return swScale_C;
+    }
 
 #else
 #if ARCH_PPC
-    if (flags & SWS_CPU_CAPS_ALTIVEC)
+    if (flags & SWS_CPU_CAPS_ALTIVEC) {
         return swScale_altivec;
-    else
+    } else {
         return swScale_C;
+    }
 #endif
     return swScale_C;
 #endif /* ARCH_X86 */
