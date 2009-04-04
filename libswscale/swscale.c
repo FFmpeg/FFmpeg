@@ -472,9 +472,9 @@ const char *sws_format_name(enum PixelFormat format)
     }
 }
 
-static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
-                               int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-                               int16_t **alpSrc, uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, int dstW, int chrDstW)
+static inline void yuv2yuvXinC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                               const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                               const int16_t **alpSrc, uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, int dstW, int chrDstW)
 {
     //FIXME Optimize (just quickly written not optimized..)
     int i;
@@ -516,8 +516,8 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 
 }
 
-static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
-                                int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                                 uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, int dstFormat)
 {
     //FIXME Optimize (just quickly written not optimized..)
@@ -993,17 +993,17 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
     }\
 
 
-static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
-                                  int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-                                  int16_t **alpSrc, uint8_t *dest, int dstW, int y)
+static inline void yuv2packedXinC(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                  const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                  const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
 {
     int i;
     YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGBX_C, YSCALE_YUV_2_PACKEDX_C(void,0), YSCALE_YUV_2_GRAY16_C, YSCALE_YUV_2_MONOX_C)
 }
 
-static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
-                                    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-                                    int16_t **alpSrc, uint8_t *dest, int dstW, int y)
+static inline void yuv2rgbXinC_full(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                    const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                    const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
 {
     int i;
     int step= fmt_depth(c->dstFormat)/8;
@@ -1823,7 +1823,7 @@ static int PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
     else
     {
         int i;
-        uint8_t *srcPtr= src[0];
+        const uint8_t *srcPtr= src[0];
         uint8_t *dstPtr= dst;
         for (i=0; i<srcSliceH; i++)
         {
