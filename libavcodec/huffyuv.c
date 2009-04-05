@@ -1376,6 +1376,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     emms_c();
 
     size+= (put_bits_count(&s->pb)+31)/8;
+    put_bits(&s->pb, 16, 0);
+    put_bits(&s->pb, 15, 0);
     size/= 4;
 
     if((s->flags&CODEC_FLAG_PASS1) && (s->picture_number&31)==0){

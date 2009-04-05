@@ -66,7 +66,7 @@ stddev:    1.91 PSNR: 42.49 bytes:  7603200/  7603200
 119797 ./tests/data/a-odivx.mp4
 90a3577850239083a9042bef33c50e85 *./tests/data/mpeg4.rotozoom.out.yuv
 stddev:    5.34 PSNR: 33.56 bytes:  7603200/  7603200
-a1323da0c8b437cd6961f8c90451880b *./tests/data/a-huffyuv.avi
+56cd44907a48990e06bd065e189ff461 *./tests/data/a-huffyuv.avi
 6455232 ./tests/data/a-huffyuv.avi
 dde5895817ad9d219f79a52d0bdfb001 *./tests/data/huffyuv.rotozoom.out.yuv
 stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
