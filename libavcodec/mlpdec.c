@@ -117,6 +117,9 @@ typedef struct SubStream {
 typedef struct MLPDecodeContext {
     AVCodecContext *avctx;
 
+    //! Current access unit being read has a major sync.
+    int         is_major_sync_unit;
+
     //! Set if a valid major sync block has been read. Otherwise no decoding is possible.
     uint8_t     params_valid;
 
@@ -917,9 +920,11 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
 
     init_get_bits(&gb, (buf + 4), (length - 4) * 8);
 
+    m->is_major_sync_unit = 0;
     if (show_bits_long(&gb, 31) == (0xf8726fba >> 1)) {
         if (read_major_sync(m, &gb) < 0)
             goto error;
+        m->is_major_sync_unit = 1;
         header_size += 28;
     }
 
@@ -933,10 +938,10 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
     substream_start = 0;
 
     for (substr = 0; substr < m->num_substreams; substr++) {
-        int extraword_present, checkdata_present, end;
+        int extraword_present, checkdata_present, end, nonrestart_substr;
 
         extraword_present = get_bits1(&gb);
-        skip_bits1(&gb);
+        nonrestart_substr = get_bits1(&gb);
         checkdata_present = get_bits1(&gb);
         skip_bits1(&gb);
 
@@ -947,6 +952,11 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
         if (extraword_present) {
             skip_bits(&gb, 16);
             substr_header_size += 2;
+        }
+
+        if (!(nonrestart_substr ^ m->is_major_sync_unit)) {
+            av_log(m->avctx, AV_LOG_ERROR, "Invalid nonrestart_substr.\n");
+            goto error;
         }
 
         if (end + header_size + substr_header_size > length) {
