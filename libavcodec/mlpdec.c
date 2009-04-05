@@ -508,7 +508,7 @@ static int read_matrix_params(MLPDecodeContext *m, SubStream *s, GetBitContext *
         frac_bits             = get_bits(gbp, 4);
         s->lsb_bypass   [mat] = get_bits1(gbp);
 
-        if (s->matrix_out_ch[mat] > s->max_channel) {
+        if (s->matrix_out_ch[mat] > s->max_matrix_channel) {
             av_log(m->avctx, AV_LOG_ERROR,
                     "Invalid channel %d specified as output from matrix.\n",
                     s->matrix_out_ch[mat]);
