@@ -950,6 +950,10 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
         substr_header_size += 2;
 
         if (extraword_present) {
+            if (m->avctx->codec_id == CODEC_ID_MLP) {
+                av_log(m->avctx, AV_LOG_ERROR, "There must be no extraword for MLP.\n");
+                goto error;
+            }
             skip_bits(&gb, 16);
             substr_header_size += 2;
         }
