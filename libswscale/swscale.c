@@ -1094,7 +1094,7 @@ static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, 
     }
 }
 
-//Note: we have C, X86, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
+//Note: we have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
 //Plain C versions
 #if !HAVE_MMX || defined (RUNTIME_CPUDETECT) || !CONFIG_GPL
 #define COMPILE_C
@@ -1146,16 +1146,6 @@ static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, 
 
 #if ARCH_X86
 
-//x86 versions
-/*
-#undef RENAME
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#define ARCH_X86
-#define RENAME(a) a ## _X86
-#include "swscale_template.c"
-*/
 //MMX versions
 #ifdef COMPILE_MMX
 #undef RENAME
