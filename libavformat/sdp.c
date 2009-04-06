@@ -116,9 +116,15 @@ static char *extradata2psets(AVCodecContext *c)
     r = ff_avc_find_startcode(c->extradata, c->extradata + c->extradata_size);
     while (r < c->extradata + c->extradata_size) {
         const uint8_t *r1;
+        uint8_t nal_type;
 
         while (!*(r++));
+        nal_type = *r & 0x1f;
         r1 = ff_avc_find_startcode(r, c->extradata + c->extradata_size);
+        if (nal_type != 7 && nal_type != 8) { /* Only output SPS and PPS */
+            r = r1;
+            continue;
+        }
         if (p != (psets + strlen(pset_string))) {
             *p = ',';
             p++;
