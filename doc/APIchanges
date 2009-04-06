@@ -19,6 +19,16 @@ API changes, most recent first:
   Move AVPacket declaration from libavformat/avformat.h to
   libavcodec/avcodec.h.
 
+2009-03-22 - r18163 - lavu 50.2.0 - RGB32 pixel formats
+  Make the pixel formats: PIX_FMT_ARGB, PIX_FMT_RGBA, PIX_FMT_ABGR,
+  PIX_FMT_BGRA, which were defined as macros, defined as enum
+  PixelFormat values, and viceversa make PIX_FMT_RGB32,
+  PIX_FMT_RGB32_1, PIX_FMT_BGR32, PIX_FMT_BGR32_1 defined as macros.
+  Also make avcodec_get_pix_fmt() recognize the "rgb32" and "bgr32"
+  aliases.
+  Resort accordingly the enum PixelFormat list.
+  This change breaks API/ABI backward compatibility.
+
 2009-03-22 - r18133 - lavu 50.1.0 - PIX_FMT_RGB5X5 endian variants
   Add the enum PixelFormat values:
   PIX_FMT_RGB565BE, PIX_FMT_RGB565LE, PIX_FMT_RGB555BE, PIX_FMT_RGB555LE,
