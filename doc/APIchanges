@@ -24,7 +24,7 @@ API changes, most recent first:
   PIX_FMT_RGB565BE, PIX_FMT_RGB565LE, PIX_FMT_RGB555BE, PIX_FMT_RGB555LE,
   PIX_FMT_BGR565BE, PIX_FMT_BGR565LE, PIX_FMT_BGR555BE, PIX_FMT_BGR555LE.
 
-2009-03-21 - r18116 - lavu 50.2.0  - av_random*
+2009-03-21 - r18116 - lavu 50.0.0  - av_random*
   The Mersenne Twister PRNG implemented through the av_random* functions
   was removed. Use the lagged Fibonacci PRNG through the av_lfg* functions
   instead.
