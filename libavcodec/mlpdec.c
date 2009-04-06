@@ -138,6 +138,9 @@ typedef struct MLPDecodeContext {
 
     ChannelParams channel_params[MAX_CHANNELS];
 
+    int         matrix_changed;
+    int         filter_changed[MAX_CHANNELS][NUM_FILTERS];
+
     int8_t      noise_buffer[MAX_BLOCKSIZE_POW2];
     int8_t      bypassed_lsbs[MAX_BLOCKSIZE][MAX_CHANNELS];
     int32_t     sample_buffer[MAX_BLOCKSIZE][MAX_CHANNELS+2];
@@ -443,6 +446,8 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
     // Filter is 0 for FIR, 1 for IIR.
     assert(filter < 2);
 
+    m->filter_changed[channel][filter]++;
+
     order = get_bits(gbp, 4);
     if (order > max_order) {
         av_log(m->avctx, AV_LOG_ERROR,
@@ -504,6 +509,7 @@ static int read_matrix_params(MLPDecodeContext *m, SubStream *s, GetBitContext *
     unsigned int mat, ch;
 
     s->num_primitive_matrices = get_bits(gbp, 4);
+    m->matrix_changed++;
 
     for (mat = 0; mat < s->num_primitive_matrices; mat++) {
         int frac_bits, max_chan;
@@ -1000,8 +1006,13 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
         SubStream *s = &m->substream[substr];
         init_get_bits(&gb, buf, substream_data_len[substr] * 8);
 
+        m->matrix_changed = 0;
+        memset(m->filter_changed, 0, sizeof(m->filter_changed));
+
         s->blockpos = 0;
         do {
+            unsigned int ch;
+
             if (get_bits1(&gb)) {
                 if (get_bits1(&gb)) {
                     /* A restart header should be present. */
@@ -1017,6 +1028,17 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
                 if (read_decoding_params(m, &gb, substr) < 0)
                     goto next_substr;
             }
+
+            if (m->matrix_changed > 1) {
+                av_log(m->avctx, AV_LOG_ERROR, "Matrices may change only once per access unit.\n");
+                goto next_substr;
+            }
+            for (ch = 0; ch < s->max_channel; ch++)
+                if (m->filter_changed[ch][FIR] > 1 ||
+                    m->filter_changed[ch][IIR] > 1) {
+                    av_log(m->avctx, AV_LOG_ERROR, "Filters may change only once per access unit.\n");
+                    goto next_substr;
+                }
 
             if (!s->restart_seen) {
                 goto next_substr;
