@@ -199,8 +199,8 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
         int copyhdrsize = ctx->rtjpg_video ? HDRSIZE : 0;
         uint64_t pos = url_ftell(pb);
         ret = get_buffer(pb, hdr, HDRSIZE);
-        if (ret <= 0)
-            return ret ? ret : -1;
+        if (ret < HDRSIZE)
+            return ret < 0 ? ret : AVERROR(EIO);
         frametype = hdr[0];
         size = PKTSIZE(AV_RL32(&hdr[8]));
         switch (frametype) {
