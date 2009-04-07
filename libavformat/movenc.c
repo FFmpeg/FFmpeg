@@ -606,6 +606,7 @@ static int ipod_get_codec_tag(AVFormatContext *s, MOVTrack *track)
         (tag == MKTAG('t','x','3','g') ||
          tag == MKTAG('t','e','x','t'))))
         tag = codec_get_tag(codec_ipod_tags, track->enc->codec_id);
+
     if (!match_ext(s->filename, "m4a") && !match_ext(s->filename, "m4v"))
         av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
                "Quicktime/Ipod might not play the file\n");
@@ -651,12 +652,11 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
                  (tag == MKTAG('d','v','c','p') ||
                   track->enc->codec_id == CODEC_ID_RAWVIDEO ||
                   av_get_bits_per_sample(track->enc->codec_id)))) { // pcm audio
-        if (track->enc->codec_id == CODEC_ID_DVVIDEO) {
+        if (track->enc->codec_id == CODEC_ID_DVVIDEO)
             tag = mov_get_dv_codec_tag(s, track);
-        } else if (track->enc->codec_id == CODEC_ID_RAWVIDEO) {
+        else if (track->enc->codec_id == CODEC_ID_RAWVIDEO)
             tag = mov_get_rawvideo_codec_tag(s, track);
-        } else {
-            if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
+        else if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
                 tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
                 if (!tag) { // if no mac fcc found, try with Microsoft tags
                     tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
@@ -674,10 +674,8 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
                                "the file may be unplayable!\n");
                     }
                 }
-            } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE) {
+            } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE)
                 tag = codec_get_tag(ff_codec_movsubtitle_tags, track->enc->codec_id);
-            }
-        }
     }
 
     return tag;
