@@ -1,7 +1,7 @@
 /*
  * RTP packetization for H.263 video
  * Copyright (c) 2009 Luca Abeni
- * Copyright (c) 2007 Martin Storsjo
+ * Copyright (c) 2009 Martin Storsjo
  *
  * This file is part of FFmpeg.
  *
