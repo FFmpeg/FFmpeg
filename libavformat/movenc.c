@@ -583,14 +583,16 @@ static const AVCodecTag codec_ipod_tags[] = {
 static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
-        if (!codec_get_tag(ff_mp4_obj_type, track->enc->codec_id))
-            return 0;
-        if      (track->enc->codec_id == CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
-        else if (track->enc->codec_id == CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
-        else if (track->enc->codec_id == CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
-        else if (track->enc->codec_id == CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
-        else if (track->enc->codec_type == CODEC_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
-        else if (track->enc->codec_type == CODEC_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
+
+    if (!codec_get_tag(ff_mp4_obj_type, track->enc->codec_id))
+        return 0;
+
+    if      (track->enc->codec_id == CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
+    else if (track->enc->codec_id == CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
+    else if (track->enc->codec_id == CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
+    else if (track->enc->codec_id == CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
+    else if (track->enc->codec_type == CODEC_TYPE_VIDEO) tag = MKTAG('m','p','4','v');
+    else if (track->enc->codec_type == CODEC_TYPE_AUDIO) tag = MKTAG('m','p','4','a');
 
     return tag;
 }
@@ -599,15 +601,15 @@ static int ipod_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
 
-        if (track->enc->codec_type == CODEC_TYPE_SUBTITLE &&
-            (tag == MKTAG('t','x','3','g') ||
-             tag == MKTAG('t','e','x','t')))
-            track->tag = tag; // keep original tag
-        else
-            tag = codec_get_tag(codec_ipod_tags, track->enc->codec_id);
-        if (!match_ext(s->filename, "m4a") && !match_ext(s->filename, "m4v"))
-            av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
-                   "Quicktime/Ipod might not play the file\n");
+    if (track->enc->codec_type == CODEC_TYPE_SUBTITLE &&
+        (tag == MKTAG('t','x','3','g') ||
+         tag == MKTAG('t','e','x','t')))
+        track->tag = tag; // keep original tag
+    else
+        tag = codec_get_tag(codec_ipod_tags, track->enc->codec_id);
+    if (!match_ext(s->filename, "m4a") && !match_ext(s->filename, "m4v"))
+        av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
+               "Quicktime/Ipod might not play the file\n");
 
     return tag;
 }
@@ -616,12 +618,12 @@ static int mov_get_dv_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag;
 
-            if (track->enc->height == 480) /* NTSC */
-                if  (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','n');
-                else                                         tag = MKTAG('d','v','c',' ');
-            else if (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','p');
-            else if (track->enc->pix_fmt == PIX_FMT_YUV420P) tag = MKTAG('d','v','c','p');
-            else                                             tag = MKTAG('d','v','p','p');
+    if (track->enc->height == 480) /* NTSC */
+        if  (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','n');
+        else                                         tag = MKTAG('d','v','c',' ');
+    else if (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','p');
+    else if (track->enc->pix_fmt == PIX_FMT_YUV420P) tag = MKTAG('d','v','c','p');
+    else                                             tag = MKTAG('d','v','p','p');
 
     return tag;
 }
@@ -629,16 +631,17 @@ static int mov_get_dv_codec_tag(AVFormatContext *s, MOVTrack *track)
 static int mov_get_rawvideo_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
-            int i;
-            for (i = 0; i < FF_ARRAY_ELEMS(mov_pix_fmt_tags); i++) {
-                if (track->enc->pix_fmt == mov_pix_fmt_tags[i].pix_fmt) {
-                    tag = mov_pix_fmt_tags[i].tag;
-                    track->enc->bits_per_coded_sample = mov_pix_fmt_tags[i].bps;
-                    break;
-                }
-            }
-            if (!tag) // restore tag
-                tag = track->enc->codec_tag;
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(mov_pix_fmt_tags); i++) {
+        if (track->enc->pix_fmt == mov_pix_fmt_tags[i].pix_fmt) {
+            tag = mov_pix_fmt_tags[i].tag;
+            track->enc->bits_per_coded_sample = mov_pix_fmt_tags[i].bps;
+            break;
+        }
+    }
+    if (!tag) // restore tag
+        tag = track->enc->codec_tag;
 
     return tag;
 }
@@ -679,6 +682,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
             }
         }
     }
+
     return tag;
 }
 
