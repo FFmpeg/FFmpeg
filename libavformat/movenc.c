@@ -601,11 +601,9 @@ static int ipod_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
 
-    if (track->enc->codec_type == CODEC_TYPE_SUBTITLE &&
+    if (!(track->enc->codec_type == CODEC_TYPE_SUBTITLE &&
         (tag == MKTAG('t','x','3','g') ||
          tag == MKTAG('t','e','x','t')))
-        track->tag = tag; // keep original tag
-    else
         tag = codec_get_tag(codec_ipod_tags, track->enc->codec_id);
     if (!match_ext(s->filename, "m4a") && !match_ext(s->filename, "m4v"))
         av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
