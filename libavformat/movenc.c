@@ -657,25 +657,25 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
         else if (track->enc->codec_id == CODEC_ID_RAWVIDEO)
             tag = mov_get_rawvideo_codec_tag(s, track);
         else if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
-                tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
-                if (!tag) { // if no mac fcc found, try with Microsoft tags
-                    tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
-                    if (tag)
-                        av_log(s, AV_LOG_INFO, "Warning, using MS style video codec tag, "
-                               "the file may be unplayable!\n");
+            tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
+            if (!tag) { // if no mac fcc found, try with Microsoft tags
+                tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
+                if (tag)
+                    av_log(s, AV_LOG_INFO, "Warning, using MS style video codec tag, "
+                           "the file may be unplayable!\n");
+            }
+        } else if (track->enc->codec_type == CODEC_TYPE_AUDIO) {
+            tag = codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
+            if (!tag) { // if no mac fcc found, try with Microsoft tags
+                int ms_tag = codec_get_tag(codec_wav_tags, track->enc->codec_id);
+                if (ms_tag) {
+                    tag = MKTAG('m', 's', ((ms_tag >> 8) & 0xff), (ms_tag & 0xff));
+                    av_log(s, AV_LOG_INFO, "Warning, using MS style audio codec tag, "
+                           "the file may be unplayable!\n");
                 }
-            } else if (track->enc->codec_type == CODEC_TYPE_AUDIO) {
-                tag = codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
-                if (!tag) { // if no mac fcc found, try with Microsoft tags
-                    int ms_tag = codec_get_tag(codec_wav_tags, track->enc->codec_id);
-                    if (ms_tag) {
-                        tag = MKTAG('m', 's', ((ms_tag >> 8) & 0xff), (ms_tag & 0xff));
-                        av_log(s, AV_LOG_INFO, "Warning, using MS style audio codec tag, "
-                               "the file may be unplayable!\n");
-                    }
-                }
-            } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE)
-                tag = codec_get_tag(ff_codec_movsubtitle_tags, track->enc->codec_id);
+            }
+        } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE)
+            tag = codec_get_tag(ff_codec_movsubtitle_tags, track->enc->codec_id);
     }
 
     return tag;
