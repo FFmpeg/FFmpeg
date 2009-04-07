@@ -557,12 +557,16 @@ static const AVCodecTag codec_3gp_tags[] = {
     { CODEC_ID_NONE, 0 },
 };
 
-static const AVCodecTag mov_pix_fmt_tags[] = {
-    { PIX_FMT_YUYV422, MKTAG('y','u','v','s') },
-    { PIX_FMT_UYVY422, MKTAG('2','v','u','y') },
-    { PIX_FMT_BGR555,  MKTAG('r','a','w',' ') },
-    { PIX_FMT_RGB24,   MKTAG('r','a','w',' ') },
-    { PIX_FMT_BGR32_1, MKTAG('r','a','w',' ') },
+static const struct {
+    enum PixelFormat pix_fmt;
+    uint32_t tag;
+    unsigned bps;
+} mov_pix_fmt_tags[] = {
+    { PIX_FMT_YUYV422, MKTAG('y','u','v','s'),  0 },
+    { PIX_FMT_UYVY422, MKTAG('2','v','u','y'),  0 },
+    { PIX_FMT_BGR555,  MKTAG('r','a','w',' '), 16 },
+    { PIX_FMT_RGB24,   MKTAG('r','a','w',' '), 24 },
+    { PIX_FMT_BGR32_1, MKTAG('r','a','w',' '), 32 },
 };
 
 static const AVCodecTag codec_ipod_tags[] = {
@@ -612,7 +616,14 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
             else if (track->enc->pix_fmt == PIX_FMT_YUV420P) tag = MKTAG('d','v','c','p');
             else                                             tag = MKTAG('d','v','p','p');
         } else if (track->enc->codec_id == CODEC_ID_RAWVIDEO) {
-            tag = codec_get_tag(mov_pix_fmt_tags, track->enc->pix_fmt);
+            int i;
+            for (i = 0; i < FF_ARRAY_ELEMS(mov_pix_fmt_tags); i++) {
+                if (track->enc->pix_fmt == mov_pix_fmt_tags[i].pix_fmt) {
+                    tag = mov_pix_fmt_tags[i].tag;
+                    track->enc->bits_per_coded_sample = mov_pix_fmt_tags[i].bps;
+                    break;
+                }
+            }
             if (!tag) // restore tag
                 tag = track->enc->codec_tag;
         } else {
