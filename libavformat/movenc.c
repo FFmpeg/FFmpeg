@@ -546,40 +546,6 @@ static int mov_write_avid_tag(ByteIOContext *pb, MOVTrack *track)
     return 0;
 }
 
-static const AVCodecTag codec_3gp_tags[] = {
-    { CODEC_ID_H263,   MKTAG('s','2','6','3') },
-    { CODEC_ID_H264,   MKTAG('a','v','c','1') },
-    { CODEC_ID_MPEG4,  MKTAG('m','p','4','v') },
-    { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
-    { CODEC_ID_AMR_NB, MKTAG('s','a','m','r') },
-    { CODEC_ID_AMR_WB, MKTAG('s','a','w','b') },
-    { CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
-    { CODEC_ID_NONE, 0 },
-};
-
-static const struct {
-    enum PixelFormat pix_fmt;
-    uint32_t tag;
-    unsigned bps;
-} mov_pix_fmt_tags[] = {
-    { PIX_FMT_YUYV422, MKTAG('y','u','v','s'),  0 },
-    { PIX_FMT_UYVY422, MKTAG('2','v','u','y'),  0 },
-    { PIX_FMT_BGR555,  MKTAG('r','a','w',' '), 16 },
-    { PIX_FMT_RGB24,   MKTAG('r','a','w',' '), 24 },
-    { PIX_FMT_BGR32_1, MKTAG('r','a','w',' '), 32 },
-};
-
-static const AVCodecTag codec_ipod_tags[] = {
-    { CODEC_ID_H264,   MKTAG('a','v','c','1') },
-    { CODEC_ID_MPEG4,  MKTAG('m','p','4','v') },
-    { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
-    { CODEC_ID_ALAC,   MKTAG('a','l','a','c') },
-    { CODEC_ID_AC3,    MKTAG('a','c','-','3') },
-    { CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
-    { CODEC_ID_MOV_TEXT, MKTAG('t','e','x','t') },
-    { CODEC_ID_NONE, 0 },
-};
-
 static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
@@ -596,6 +562,17 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 
     return tag;
 }
+
+static const AVCodecTag codec_ipod_tags[] = {
+    { CODEC_ID_H264,   MKTAG('a','v','c','1') },
+    { CODEC_ID_MPEG4,  MKTAG('m','p','4','v') },
+    { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
+    { CODEC_ID_ALAC,   MKTAG('a','l','a','c') },
+    { CODEC_ID_AC3,    MKTAG('a','c','-','3') },
+    { CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
+    { CODEC_ID_MOV_TEXT, MKTAG('t','e','x','t') },
+    { CODEC_ID_NONE, 0 },
+};
 
 static int ipod_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
@@ -627,6 +604,18 @@ static int mov_get_dv_codec_tag(AVFormatContext *s, MOVTrack *track)
 
     return tag;
 }
+
+static const struct {
+    enum PixelFormat pix_fmt;
+    uint32_t tag;
+    unsigned bps;
+} mov_pix_fmt_tags[] = {
+    { PIX_FMT_YUYV422, MKTAG('y','u','v','s'),  0 },
+    { PIX_FMT_UYVY422, MKTAG('2','v','u','y'),  0 },
+    { PIX_FMT_BGR555,  MKTAG('r','a','w',' '), 16 },
+    { PIX_FMT_RGB24,   MKTAG('r','a','w',' '), 24 },
+    { PIX_FMT_BGR32_1, MKTAG('r','a','w',' '), 32 },
+};
 
 static int mov_get_rawvideo_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
@@ -680,6 +669,17 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 
     return tag;
 }
+
+static const AVCodecTag codec_3gp_tags[] = {
+    { CODEC_ID_H263,   MKTAG('s','2','6','3') },
+    { CODEC_ID_H264,   MKTAG('a','v','c','1') },
+    { CODEC_ID_MPEG4,  MKTAG('m','p','4','v') },
+    { CODEC_ID_AAC,    MKTAG('m','p','4','a') },
+    { CODEC_ID_AMR_NB, MKTAG('s','a','m','r') },
+    { CODEC_ID_AMR_WB, MKTAG('s','a','w','b') },
+    { CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
+    { CODEC_ID_NONE, 0 },
+};
 
 static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
