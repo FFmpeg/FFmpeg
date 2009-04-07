@@ -602,7 +602,8 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
         tag = codec_get_tag(codec_3gp_tags, track->enc->codec_id);
     } else if (!tag || (track->enc->strict_std_compliance >= FF_COMPLIANCE_NORMAL &&
                         (tag == MKTAG('d','v','c','p') ||
-                         track->enc->codec_id == CODEC_ID_RAWVIDEO))) {
+                         track->enc->codec_id == CODEC_ID_RAWVIDEO ||
+                         av_get_bits_per_sample(track->enc->codec_id)))) { // pcm audio
         if (track->enc->codec_id == CODEC_ID_DVVIDEO) {
             if (track->enc->height == 480) /* NTSC */
                 if  (track->enc->pix_fmt == PIX_FMT_YUV422P) tag = MKTAG('d','v','5','n');
