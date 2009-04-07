@@ -640,8 +640,6 @@ static int mov_get_rawvideo_codec_tag(AVFormatContext *s, MOVTrack *track)
             break;
         }
     }
-    if (!tag) // restore tag
-        tag = track->enc->codec_tag;
 
     return tag;
 }
