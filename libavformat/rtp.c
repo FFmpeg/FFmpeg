@@ -100,6 +100,8 @@ int ff_rtp_get_payload_type(AVCodecContext *codec)
     /* compute the payload type */
     for (payload_type = -1, i = 0; AVRtpPayloadTypes[i].pt >= 0; ++i)
         if (AVRtpPayloadTypes[i].codec_id == codec->codec_id) {
+            if (codec->codec_id == CODEC_ID_H263)
+                continue;
             if (codec->codec_id == CODEC_ID_PCM_S16BE)
                 if (codec->channels != AVRtpPayloadTypes[i].audio_channels)
                     continue;
