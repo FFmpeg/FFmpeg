@@ -123,14 +123,14 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
 static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
     NUVContext *ctx = s->priv_data;
     ByteIOContext *pb = s->pb;
-    char id_string[12], version_string[5];
+    char id_string[12];
     double aspect, fps;
     int is_mythtv, width, height, v_packs, a_packs;
     int stream_nr = 0;
     AVStream *vst = NULL, *ast = NULL;
     get_buffer(pb, id_string, 12);
     is_mythtv = !memcmp(id_string, "MythTVVideo", 12);
-    get_buffer(pb, version_string, 5);
+    url_fskip(pb, 5); // version string
     url_fskip(pb, 3); // padding
     width = get_le32(pb);
     height = get_le32(pb);
