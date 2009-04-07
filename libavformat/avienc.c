@@ -586,8 +586,7 @@ static int avi_write_trailer(AVFormatContext *s)
     for (i=0; i<MAX_STREAMS; i++) {
          for (j=0; j<avi->indexes[i].ents_allocated/AVI_INDEX_CLUSTER_SIZE; j++)
               av_free(avi->indexes[i].cluster[j]);
-         av_free(avi->indexes[i].cluster);
-         avi->indexes[i].cluster = NULL;
+         av_freep(&avi->indexes[i].cluster);
          avi->indexes[i].ents_allocated = avi->indexes[i].entry = 0;
     }
 
