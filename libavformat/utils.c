@@ -258,40 +258,6 @@ AVInputFormat *av_find_input_format(const char *short_name)
 
 /* memory handling */
 
-void av_destruct_packet(AVPacket *pkt)
-{
-    av_free(pkt->data);
-    pkt->data = NULL; pkt->size = 0;
-}
-
-void av_init_packet(AVPacket *pkt)
-{
-    pkt->pts   = AV_NOPTS_VALUE;
-    pkt->dts   = AV_NOPTS_VALUE;
-    pkt->pos   = -1;
-    pkt->duration = 0;
-    pkt->convergence_duration = 0;
-    pkt->flags = 0;
-    pkt->stream_index = 0;
-    pkt->destruct= av_destruct_packet_nofree;
-}
-
-int av_new_packet(AVPacket *pkt, int size)
-{
-    uint8_t *data;
-    if((unsigned)size > (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE)
-        return AVERROR(ENOMEM);
-    data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!data)
-        return AVERROR(ENOMEM);
-    memset(data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-
-    av_init_packet(pkt);
-    pkt->data = data;
-    pkt->size = size;
-    pkt->destruct = av_destruct_packet;
-    return 0;
-}
 
 int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size)
 {
@@ -311,24 +277,6 @@ int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size)
     return ret;
 }
 
-int av_dup_packet(AVPacket *pkt)
-{
-    if (((pkt->destruct == av_destruct_packet_nofree) || (pkt->destruct == NULL)) && pkt->data) {
-        uint8_t *data;
-        /* We duplicate the packet and don't forget to add the padding again. */
-        if((unsigned)pkt->size > (unsigned)pkt->size + FF_INPUT_BUFFER_PADDING_SIZE)
-            return AVERROR(ENOMEM);
-        data = av_malloc(pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!data) {
-            return AVERROR(ENOMEM);
-        }
-        memcpy(data, pkt->data, pkt->size);
-        memset(data + pkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-        pkt->data = data;
-        pkt->destruct = av_destruct_packet;
-    }
-    return 0;
-}
 
 int av_filename_number_test(const char *filename)
 {
@@ -932,10 +880,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pkt->convergence_duration = pc->convergence_duration;
 }
 
-void av_destruct_packet_nofree(AVPacket *pkt)
-{
-    pkt->data = NULL; pkt->size = 0;
-}
 
 static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {

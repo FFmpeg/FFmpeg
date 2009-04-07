@@ -114,29 +114,6 @@ void av_metadata_free(AVMetadata **m);
 
 /* packet functions */
 
-void av_destruct_packet_nofree(AVPacket *pkt);
-
-/**
- * Default packet destructor.
- */
-void av_destruct_packet(AVPacket *pkt);
-
-/**
- * Initialize optional fields of a packet with default values.
- *
- * @param pkt packet
- */
-void av_init_packet(AVPacket *pkt);
-
-/**
- * Allocate the payload of a packet and initialize its fields with
- * default values.
- *
- * @param pkt packet
- * @param size wanted payload size
- * @return 0 if OK, AVERROR_xxx otherwise
- */
-int av_new_packet(AVPacket *pkt, int size);
 
 /**
  * Allocate and read the payload of a packet and initialize its fields with
@@ -148,23 +125,6 @@ int av_new_packet(AVPacket *pkt, int size);
  */
 int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size);
 
-/**
- * @warning This is a hack - the packet memory allocation stuff is broken. The
- * packet is allocated if it was not really allocated.
- */
-int av_dup_packet(AVPacket *pkt);
-
-/**
- * Free a packet.
- *
- * @param pkt packet to free
- */
-static inline void av_free_packet(AVPacket *pkt)
-{
-    if (pkt && pkt->destruct) {
-        pkt->destruct(pkt);
-    }
-}
 
 /*************************************************/
 /* fractional numbers for exact pts handling */

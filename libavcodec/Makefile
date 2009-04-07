@@ -7,6 +7,7 @@ HEADERS = avcodec.h opt.h vdpau.h xvmc.h
 
 OBJS = allcodecs.o                                                      \
        audioconvert.o                                                   \
+       avpacket.o                                                       \
        bitstream.o                                                      \
        bitstream_filter.o                                               \
        dsputil.o                                                        \
