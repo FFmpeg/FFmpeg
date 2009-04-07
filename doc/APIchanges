@@ -26,7 +26,7 @@ API changes, most recent first:
   PIX_FMT_RGB32_1, PIX_FMT_BGR32, PIX_FMT_BGR32_1 defined as macros.
   Also make avcodec_get_pix_fmt() recognize the "rgb32" and "bgr32"
   aliases.
-  Resort accordingly the enum PixelFormat list.
+  Re-sort the enum PixelFormat list accordingly.
   This change breaks API/ABI backward compatibility.
 
 2009-03-22 - r18133 - lavu 50.1.0 - PIX_FMT_RGB5X5 endian variants
