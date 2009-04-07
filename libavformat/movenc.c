@@ -601,6 +601,7 @@ static int ipod_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
 
+    // keep original tag for subs, ipod supports both formats
     if (!(track->enc->codec_type == CODEC_TYPE_SUBTITLE &&
         (tag == MKTAG('t','x','3','g') ||
          tag == MKTAG('t','e','x','t')))
