@@ -226,7 +226,8 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 pkt->stream_index = ctx->v_id;
                 memcpy(pkt->data, hdr, copyhdrsize);
                 ret = get_buffer(pb, pkt->data + copyhdrsize, size);
-                return ret;
+                if (ret < 0) return ret;
+                return 0;
             case NUV_AUDIO:
                 if (ctx->a_id < 0) {
                     av_log(s, AV_LOG_ERROR, "Audio packet in file without audio stream!\n");
@@ -238,7 +239,8 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 pkt->pos = pos;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->a_id;
-                return ret;
+                if (ret < 0) return ret;
+                return 0;
             case NUV_SEEKP:
                 // contains no data, size value is invalid
                 break;
