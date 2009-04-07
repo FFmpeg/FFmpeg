@@ -177,6 +177,10 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                      payload_type,
                                      payload_type, config ? config : "");
             break;
+        case CODEC_ID_H263:
+        case CODEC_ID_H263P:
+            av_strlcatf(buff, size, "a=rtpmap:%d H263-2000/90000\r\n", payload_type);
+            break;
         case CODEC_ID_MPEG4:
             if (c->extradata_size) {
                 config = extradata2config(c);

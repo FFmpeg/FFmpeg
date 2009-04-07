@@ -6,6 +6,7 @@ version <next>:
 - VQF demuxer
 - Alpha channel scaler
 - PCX encoder
+- RTP packetization of H.263
 
 
 

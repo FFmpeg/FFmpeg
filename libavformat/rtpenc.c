@@ -42,6 +42,8 @@ static uint64_t ntp_time(void)
 static int is_supported(enum CodecID id)
 {
     switch(id) {
+    case CODEC_ID_H263:
+    case CODEC_ID_H263P:
     case CODEC_ID_H264:
     case CODEC_ID_MPEG1VIDEO:
     case CODEC_ID_MPEG2VIDEO:
@@ -369,6 +371,10 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         break;
     case CODEC_ID_H264:
         ff_rtp_send_h264(s1, buf1, size);
+        break;
+    case CODEC_ID_H263:
+    case CODEC_ID_H263P:
+        ff_rtp_send_h263(s1, buf1, size);
         break;
     default:
         /* better than nothing : send the codec raw data */
