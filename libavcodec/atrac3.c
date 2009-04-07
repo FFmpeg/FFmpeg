@@ -878,7 +878,9 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf)
 
 static int atrac3_decode_frame(AVCodecContext *avctx,
             void *data, int *data_size,
-            const uint8_t *buf, int buf_size) {
+            AVPacket *avpkt) {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     ATRAC3Context *q = avctx->priv_data;
     int result = 0, i;
     const uint8_t* databuf;

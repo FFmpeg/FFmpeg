@@ -1604,7 +1604,9 @@ static int parse_adts_frame_header(AACContext * ac, GetBitContext * gb) {
     return size;
 }
 
-static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data_size, const uint8_t * buf, int buf_size) {
+static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data_size, AVPacket *avpkt) {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     AACContext * ac = avccontext->priv_data;
     ChannelElement * che = NULL;
     GetBitContext gb;

@@ -32,8 +32,11 @@
 
 static int sp5x_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
-                              const uint8_t *buf, int buf_size)
+                              AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
+    AVPacket avpkt_recoded;
 #if 0
     MJpegDecodeContext *s = avctx->priv_data;
 #endif
@@ -89,7 +92,10 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     recoded[j++] = 0xD9;
 
     avctx->flags &= ~CODEC_FLAG_EMU_EDGE;
-    i = ff_mjpeg_decode_frame(avctx, data, data_size, recoded, j);
+    av_init_packet(&avpkt_recoded);
+    avpkt_recoded.data = recoded;
+    avpkt_recoded.size = j;
+    i = ff_mjpeg_decode_frame(avctx, data, data_size, &avpkt_recoded);
 
     av_free(recoded);
 

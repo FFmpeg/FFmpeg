@@ -102,8 +102,10 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
 
 static int flashsv_decode_frame(AVCodecContext *avctx,
                                     void *data, int *data_size,
-                                    const uint8_t *buf, int buf_size)
+                                    AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     FlashSVContext *s = avctx->priv_data;
     int h_blocks, v_blocks, h_part, v_part, i, j;
     GetBitContext gb;

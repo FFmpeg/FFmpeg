@@ -90,8 +90,10 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
 
 static int libspeex_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 const uint8_t *buf, int buf_size)
+                                 AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     LibSpeexContext *s = avctx->priv_data;
     int16_t *output = data, *end;
     int i, num_samples;

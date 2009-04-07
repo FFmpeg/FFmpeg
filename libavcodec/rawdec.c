@@ -100,8 +100,10 @@ static void flip(AVCodecContext *avctx, AVPicture * picture){
 
 static int raw_decode(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            const uint8_t *buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     RawVideoContext *context = avctx->priv_data;
 
     AVFrame * frame = (AVFrame *) data;

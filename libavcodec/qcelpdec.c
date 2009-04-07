@@ -729,8 +729,10 @@ static void warn_insufficient_frame_quality(AVCodecContext *avctx,
 }
 
 static int qcelp_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                              const uint8_t *buf, int buf_size)
+                              AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     QCELPContext *q = avctx->priv_data;
     float *outbuffer = data;
     int   i;

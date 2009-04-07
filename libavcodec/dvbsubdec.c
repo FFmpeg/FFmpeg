@@ -1345,8 +1345,10 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
 
 static int dvbsub_decode(AVCodecContext *avctx,
                          void *data, int *data_size,
-                         const uint8_t *buf, int buf_size)
+                         AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     DVBSubContext *ctx = (DVBSubContext*) avctx->priv_data;
     AVSubtitle *sub = (AVSubtitle*) data;
     const uint8_t *p, *p_end;

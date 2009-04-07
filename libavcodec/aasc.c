@@ -59,8 +59,10 @@ static av_cold int aasc_decode_init(AVCodecContext *avctx)
 
 static int aasc_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
-                              const uint8_t *buf, int buf_size)
+                              AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     AascContext *s = avctx->priv_data;
     int compr, i, stride;
 

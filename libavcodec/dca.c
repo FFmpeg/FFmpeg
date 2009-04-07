@@ -1209,8 +1209,10 @@ static int dca_convert_bitstream(const uint8_t * src, int src_size, uint8_t * ds
  */
 static int dca_decode_frame(AVCodecContext * avctx,
                             void *data, int *data_size,
-                            const uint8_t * buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
 
     int i;
     int16_t *samples = data;

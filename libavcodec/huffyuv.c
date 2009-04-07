@@ -942,7 +942,9 @@ static void draw_slice(HYuvContext *s, int y){
     s->last_slice_end= y + h;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size){
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt){
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     HYuvContext *s = avctx->priv_data;
     const int width= s->width;
     const int width2= s->width>>1;

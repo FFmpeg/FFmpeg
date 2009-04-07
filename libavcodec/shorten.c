@@ -269,8 +269,10 @@ static void decode_subframe_lpc(ShortenContext *s, int channel, int residual_siz
 
 static int shorten_decode_frame(AVCodecContext *avctx,
         void *data, int *data_size,
-        const uint8_t *buf, int buf_size)
+        AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     ShortenContext *s = avctx->priv_data;
     int i, input_buf_size = 0;
     int16_t *samples = data;

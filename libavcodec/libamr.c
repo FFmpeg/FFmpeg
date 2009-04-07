@@ -245,8 +245,10 @@ static av_cold int amr_nb_decode_close(AVCodecContext * avctx)
 
 static int amr_nb_decode_frame(AVCodecContext * avctx,
             void *data, int *data_size,
-            const uint8_t * buf, int buf_size)
+            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     AMRContext *s = avctx->priv_data;
     const uint8_t*amrData=buf;
     int offset=0;
@@ -654,8 +656,10 @@ static int amr_wb_decode_init(AVCodecContext * avctx)
 
 static int amr_wb_decode_frame(AVCodecContext * avctx,
             void *data, int *data_size,
-            const uint8_t * buf, int buf_size)
+            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     AMRWBContext *s = avctx->priv_data;
     const uint8_t*amrData=buf;
     int mode;

@@ -7618,8 +7618,10 @@ static int get_consumed_bytes(MpegEncContext *s, int pos, int buf_size){
 
 static int decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             const uint8_t *buf, int buf_size)
+                             AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     H264Context *h = avctx->priv_data;
     MpegEncContext *s = &h->s;
     AVFrame *pict = data;

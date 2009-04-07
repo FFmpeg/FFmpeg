@@ -160,9 +160,10 @@ static void backward_filter(float *hist, float *rec, const float *window,
 }
 
 static int ra288_decode_frame(AVCodecContext * avctx, void *data,
-                              int *data_size, const uint8_t * buf,
-                              int buf_size)
+                              int *data_size, AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     float *out = data;
     int i, j;
     RA288Context *ractx = avctx->priv_data;

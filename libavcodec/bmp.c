@@ -35,8 +35,10 @@ static av_cold int bmp_decode_init(AVCodecContext *avctx){
 
 static int bmp_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            const uint8_t *buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     BMPContext *s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame *p = &s->picture;

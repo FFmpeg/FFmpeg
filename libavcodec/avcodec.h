@@ -2429,8 +2429,7 @@ typedef struct AVCodec {
     int (*init)(AVCodecContext *);
     int (*encode)(AVCodecContext *, uint8_t *buf, int buf_size, void *data);
     int (*close)(AVCodecContext *);
-    int (*decode)(AVCodecContext *, void *outdata, int *outdata_size,
-                  const uint8_t *buf, int buf_size);
+    int (*decode)(AVCodecContext *, void *outdata, int *outdata_size, AVPacket *avpkt);
     /**
      * Codec capabilities.
      * see CODEC_CAP_*
@@ -3020,26 +3019,45 @@ int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, v
  */
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
  * Decodes an audio frame from \p buf into \p samples.
- * The avcodec_decode_audio2() function decodes an audio frame from the input
- * buffer \p buf of size \p buf_size. To decode it, it makes use of the
+ * Wrapper function which calls avcodec_decode_audio3.
+ *
+ * @deprecated Use avcodec_decode_audio3 instead.
+ * @param avctx the codec context
+ * @param[out] samples the output buffer
+ * @param[in,out] frame_size_ptr the output buffer size in bytes
+ * @param[in] buf the input buffer
+ * @param[in] buf_size the input buffer size in bytes
+ * @return On error a negative value is returned, otherwise the number of bytes
+ * used or zero if no frame could be decompressed.
+ */
+attribute_deprecated int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
+                         int *frame_size_ptr,
+                         const uint8_t *buf, int buf_size);
+#endif
+
+/**
+ * Decodes an audio frame from \p avpkt->data into \p samples.
+ * The avcodec_decode_audio3() function decodes an audio frame from the input
+ * buffer \p avpkt->data of size \p avpkt->size. To decode it, it makes use of the
  * audio codec which was coupled with \p avctx using avcodec_open(). The
  * resulting decoded frame is stored in output buffer \p samples.  If no frame
  * could be decompressed, \p frame_size_ptr is zero. Otherwise, it is the
  * decompressed frame size in \e bytes.
  *
  * @warning You \e must set \p frame_size_ptr to the allocated size of the
- * output buffer before calling avcodec_decode_audio2().
+ * output buffer before calling avcodec_decode_audio3().
  *
  * @warning The input buffer must be \c FF_INPUT_BUFFER_PADDING_SIZE larger than
  * the actual read bytes because some optimized bitstream readers read 32 or 64
  * bits at once and could read over the end.
  *
- * @warning The end of the input buffer \p buf should be set to 0 to ensure that
+ * @warning The end of the input buffer \p avpkt->data should be set to 0 to ensure that
  * no overreading happens for damaged MPEG streams.
  *
- * @note You might have to align the input buffer \p buf and output buffer \p
+ * @note You might have to align the input buffer \p avpkt->data and output buffer \p
  * samples. The alignment requirements depend on the CPU: On some CPUs it isn't
  * necessary at all, on others it won't work at all if not aligned and on others
  * it will work but it will have an impact on performance. In practice, the
@@ -3051,19 +3069,37 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
  * @param avctx the codec context
  * @param[out] samples the output buffer
  * @param[in,out] frame_size_ptr the output buffer size in bytes
- * @param[in] buf the input buffer
- * @param[in] buf_size the input buffer size in bytes
+ * @param[in] avpkt The input AVPacket containing the input buffer.
  * @return On error a negative value is returned, otherwise the number of bytes
  * used or zero if no frame could be decompressed.
  */
-int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
+int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
-                         const uint8_t *buf, int buf_size);
+                         AVPacket *avpkt);
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
  * Decodes a video frame from \p buf into \p picture.
- * The avcodec_decode_video() function decodes a video frame from the input
- * buffer \p buf of size \p buf_size. To decode it, it makes use of the
+ * Wrapper function which calls avcodec_decode_video2.
+ *
+ * @deprecated Use avcodec_decode_video2 instead.
+ * @param avctx the codec context
+ * @param[out] picture The AVFrame in which the decoded video frame will be stored.
+ * @param[in] buf the input buffer
+ * @param[in] buf_size the size of the input buffer in bytes
+ * @param[in,out] got_picture_ptr Zero if no frame could be decompressed, otherwise, it is nonzero.
+ * @return On error a negative value is returned, otherwise the number of bytes
+ * used or zero if no frame could be decompressed.
+ */
+attribute_deprecated int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
+                         int *got_picture_ptr,
+                         const uint8_t *buf, int buf_size);
+#endif
+
+/**
+ * Decodes a video frame from \p avpkt->data into \p picture.
+ * The avcodec_decode_video2() function decodes a video frame from the input
+ * buffer \p avpkt->data of size \p avpkt->size. To decode it, it makes use of the
  * video codec which was coupled with \p avctx using avcodec_open(). The
  * resulting decoded frame is stored in \p picture.
  *
@@ -3074,7 +3110,7 @@ int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
  * @warning The end of the input buffer \p buf should be set to 0 to ensure that
  * no overreading happens for damaged MPEG streams.
  *
- * @note You might have to align the input buffer \p buf and output buffer \p
+ * @note You might have to align the input buffer \p avpkt->data and output buffer \p
  * samples. The alignment requirements depend on the CPU: on some CPUs it isn't
  * necessary at all, on others it won't work at all if not aligned and on others
  * it will work but it will have an impact on performance. In practice, the
@@ -3084,26 +3120,42 @@ int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
  * start of the buffer to 16.
  *
  * @note Some codecs have a delay between input and output, these need to be
- * feeded with buf=NULL, buf_size=0 at the end to return the remaining frames.
+ * feeded with avpkt->data=NULL, avpkt->size=0 at the end to return the remaining frames.
  *
  * @param avctx the codec context
  * @param[out] picture The AVFrame in which the decoded video frame will be stored.
- * @param[in] buf the input buffer
- * @param[in] buf_size the size of the input buffer in bytes
+ * @param[in] avpkt The input AVpacket containing the input buffer.
  * @param[in,out] got_picture_ptr Zero if no frame could be decompressed, otherwise, it is nonzero.
  * @return On error a negative value is returned, otherwise the number of bytes
  * used or zero if no frame could be decompressed.
  */
-int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
+int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
-                         const uint8_t *buf, int buf_size);
+                         AVPacket *avpkt);
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /* Decode a subtitle message. Return -1 if error, otherwise return the
  * number of bytes used. If no subtitle could be decompressed,
  * got_sub_ptr is zero. Otherwise, the subtitle is stored in *sub. */
-int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
+attribute_deprecated int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
                             int *got_sub_ptr,
                             const uint8_t *buf, int buf_size);
+#endif
+
+/**
+ * Decodes a subtitle message.
+ * Returns -1 if error, otherwise returns the number of bytes used.
+ * If no subtitle could be decompressed, \p got_sub_ptr is zero.
+ * Otherwise, the subtitle is stored in \p *sub.
+ *
+ * @param avctx the codec context
+ * @param[out] sub The AVSubtitle in which the decoded subtitle will be stored.
+ * @param[in,out] got_sub_ptr Zero if no subtitle could be decompressed, otherwise, it is nonzero.
+ * @param[in] avpkt The input AVPacket containing the input buffer.
+ */
+int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
+                            int *got_sub_ptr,
+                            AVPacket *avpkt);
 int avcodec_parse_frame(AVCodecContext *avctx, uint8_t **pdata,
                         int *data_size_ptr,
                         uint8_t *buf, int buf_size);

@@ -889,8 +889,10 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 
 static int svq3_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             const uint8_t *buf, int buf_size)
+                             AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     MpegEncContext *const s = avctx->priv_data;
     H264Context *const h = avctx->priv_data;
     int m, mb_type;

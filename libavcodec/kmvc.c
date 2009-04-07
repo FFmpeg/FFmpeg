@@ -224,9 +224,10 @@ static void kmvc_decode_inter_8x8(KmvcContext * ctx, const uint8_t * src, int w,
         }
 }
 
-static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, const uint8_t * buf,
-                        int buf_size)
+static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     KmvcContext *const ctx = avctx->priv_data;
     uint8_t *out, *src;
     int i;

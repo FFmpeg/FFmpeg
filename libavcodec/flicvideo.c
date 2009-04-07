@@ -701,8 +701,10 @@ static int flic_decode_frame_24BPP(AVCodecContext *avctx,
 
 static int flic_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             const uint8_t *buf, int buf_size)
+                             AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     if (avctx->pix_fmt == PIX_FMT_PAL8) {
       return flic_decode_frame_8BPP(avctx, data, data_size,
                                     buf, buf_size);

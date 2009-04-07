@@ -400,8 +400,10 @@ static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
 
 static int alac_decode_frame(AVCodecContext *avctx,
                              void *outbuffer, int *outputsize,
-                             const uint8_t *inbuffer, int input_buffer_size)
+                             AVPacket *avpkt)
 {
+    const uint8_t *inbuffer = avpkt->data;
+    int input_buffer_size = avpkt->size;
     ALACContext *alac = avctx->priv_data;
 
     int channels;

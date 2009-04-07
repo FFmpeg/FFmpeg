@@ -904,8 +904,10 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
  *  otherwise returns the number of bytes consumed. */
 
 static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
-                            const uint8_t *buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     MLPDecodeContext *m = avctx->priv_data;
     GetBitContext gb;
     unsigned int length, substr;

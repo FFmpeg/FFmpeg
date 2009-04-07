@@ -207,8 +207,10 @@ static void libschroedinger_handle_first_access_unit(AVCodecContext *avccontext)
 
 static int libschroedinger_decode_frame(AVCodecContext *avccontext,
                                         void *data, int *data_size,
-                                        const uint8_t *buf, int buf_size)
+                                        AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
 
     FfmpegSchroDecoderParams *p_schro_params = avccontext->priv_data;
     SchroDecoder *decoder = p_schro_params->decoder;

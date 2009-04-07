@@ -149,8 +149,10 @@ static av_cold int faac_init_mp4(AVCodecContext *avctx)
 
 static int faac_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             uint8_t *buf, int buf_size)
+                             AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     FAACContext *s = avctx->priv_data;
 #ifndef FAAD2_VERSION
     unsigned long bytesconsumed;

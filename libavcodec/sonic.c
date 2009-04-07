@@ -851,8 +851,10 @@ static av_cold int sonic_decode_close(AVCodecContext *avctx)
 
 static int sonic_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            const uint8_t *buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     SonicContext *s = avctx->priv_data;
     GetBitContext gb;
     int i, quant, ch, j;

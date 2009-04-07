@@ -1370,8 +1370,10 @@ static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n)
 
 int ff_rv34_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            const uint8_t *buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     RV34DecContext *r = avctx->priv_data;
     MpegEncContext *s = &r->s;
     AVFrame *pict = data;

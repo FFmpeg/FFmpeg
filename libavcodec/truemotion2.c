@@ -763,8 +763,10 @@ static const int tm2_stream_order[TM2_NUM_STREAMS] = {
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
-                        const uint8_t *buf, int buf_size)
+                        AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     TM2Context * const l = avctx->priv_data;
     AVFrame * const p= (AVFrame*)&l->pic;
     int i, skip, t;

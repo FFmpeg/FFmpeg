@@ -77,8 +77,10 @@ static av_cold int libdirac_decode_init(AVCodecContext *avccontext)
 
 static int libdirac_decode_frame(AVCodecContext *avccontext,
                                  void *data, int *data_size,
-                                 const uint8_t *buf, int buf_size)
+                                 AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
 
     FfmpegDiracDecoderParams *p_dirac_params = avccontext->priv_data;
     AVPicture *picture = data;

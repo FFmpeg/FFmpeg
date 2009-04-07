@@ -113,8 +113,10 @@ static inline void draw_n_color(uint8_t *out, int stride, int width,
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, const uint8_t * buf, int buf_size)
+                            int *data_size, AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     C93DecoderContext * const c93 = avctx->priv_data;
     AVFrame * const newpic = &c93->pictures[c93->currentpic];
     AVFrame * const oldpic = &c93->pictures[c93->currentpic^1];

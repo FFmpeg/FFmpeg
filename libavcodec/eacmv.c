@@ -144,8 +144,10 @@ static void cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t 
 
 static int cmv_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            const uint8_t *buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     CmvContext *s = avctx->priv_data;
     const uint8_t *buf_end = buf + buf_size;
 

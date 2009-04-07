@@ -979,7 +979,9 @@ static int decode_subpacket(COOKContext *q, const uint8_t *inbuffer,
 
 static int cook_decode_frame(AVCodecContext *avctx,
             void *data, int *data_size,
-            const uint8_t *buf, int buf_size) {
+            AVPacket *avpkt) {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     COOKContext *q = avctx->priv_data;
 
     if (buf_size < avctx->block_align)

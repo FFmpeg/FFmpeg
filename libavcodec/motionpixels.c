@@ -281,8 +281,10 @@ static void mp_decode_frame_helper(MotionPixelsContext *mp, GetBitContext *gb)
 
 static int mp_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 const uint8_t *buf, int buf_size)
+                                 AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     MotionPixelsContext *mp = avctx->priv_data;
     GetBitContext gb;
     int i, count1, count2, sz;
