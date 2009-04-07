@@ -443,8 +443,10 @@ static av_cold int amr_nb_encode_close(AVCodecContext * avctx)
 
 static int amr_nb_decode_frame(AVCodecContext * avctx,
             void *data, int *data_size,
-            const uint8_t * buf, int buf_size)
+            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     AMRContext *s = avctx->priv_data;
     const uint8_t*amrData=buf;
     static const uint8_t block_size[16]={ 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
