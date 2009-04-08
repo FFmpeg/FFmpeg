@@ -554,7 +554,7 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 
 //Note: we have C, MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one
 //Plain C versions
-#if !(HAVE_MMX || HAVE_ALTIVEC) || defined (RUNTIME_CPUDETECT)
+#if !(HAVE_MMX || HAVE_ALTIVEC) || CONFIG_RUNTIME_CPUDETECT
 #define COMPILE_C
 #endif
 
@@ -564,15 +564,15 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, 
 
 #if ARCH_X86
 
-#if (HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
+#if (HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT
 #define COMPILE_MMX
 #endif
 
-#if HAVE_MMX2 || defined (RUNTIME_CPUDETECT)
+#if HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT
 #define COMPILE_MMX2
 #endif
 
-#if (HAVE_AMD3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
+#if (HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT
 #define COMPILE_3DNOW
 #endif
 #endif /* ARCH_X86 */
@@ -645,7 +645,7 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
     // Using ifs here as they are faster than function pointers although the
     // difference would not be measurable here but it is much better because
     // someone might exchange the CPU whithout restarting MPlayer ;)
-#ifdef RUNTIME_CPUDETECT
+#if CONFIG_RUNTIME_CPUDETECT
 #if ARCH_X86
     // ordered per speed fastest first
     if(c->cpuCaps & PP_CPU_CAPS_MMX2)
@@ -664,7 +664,7 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
 #endif
             postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #endif
-#else //RUNTIME_CPUDETECT
+#else //CONFIG_RUNTIME_CPUDETECT
 #if   HAVE_MMX2
             postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #elif HAVE_AMD3DNOW
@@ -676,7 +676,7 @@ static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[]
 #else
             postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #endif
-#endif //!RUNTIME_CPUDETECT
+#endif //!CONFIG_RUNTIME_CPUDETECT
 }
 
 //static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
