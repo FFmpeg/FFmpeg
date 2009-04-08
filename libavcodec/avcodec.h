@@ -845,8 +845,8 @@ typedef struct AVPanScan{
 
 typedef struct AVPacket {
     /**
-     * Presentation timestamp in time_base units; the time at which the
-     * decompressed packet will be presented to the user.
+     * Presentation timestamp in AVStream->time_base units; the time at which
+     * the decompressed packet will be presented to the user.
      * Can be AV_NOPTS_VALUE if it is not stored in the file.
      * pts MUST be larger or equal to dts as presentation cannot happen before
      * decompression, unless one wants to view hex dumps. Some formats misuse
@@ -855,8 +855,8 @@ typedef struct AVPacket {
      */
     int64_t pts;
     /**
-     * Decompression timestamp in time_base units; the time at which the
-     * packet is decompressed.
+     * Decompression timestamp in AVStream->time_base units; the time at which
+     * the packet is decompressed.
      * Can be AV_NOPTS_VALUE if it is not stored in the file.
      */
     int64_t dts;
@@ -865,7 +865,7 @@ typedef struct AVPacket {
     int   stream_index;
     int   flags;
     /**
-     * Duration of this packet in time_base units, 0 if unknown.
+     * Duration of this packet in AVStream->time_base units, 0 if unknown.
      * Equals next_pts - this_pts in presentation order.
      */
     int   duration;
@@ -874,7 +874,7 @@ typedef struct AVPacket {
     int64_t pos;                            ///< byte position in stream, -1 if unknown
 
     /**
-     * Time difference in stream time base units from the pts of this
+     * Time difference in AVStream->time_base units from the pts of this
      * packet to the point at which the output from the decoder has converged
      * independent from the availability of previous frames. That is, the
      * frames are virtually identical no matter if decoding started from
