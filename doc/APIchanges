@@ -12,6 +12,12 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-04-07 - r18351 - lavc 52.23.0 - avcodec_decode_video/audio/subtitle
+  The old decoding functions are deprecated, all new code should use the
+  new functions avcodec_decode_video2(), avcodec_decode_audio3() and
+  avcodec_decode_subtitle2(). These new functions take an AVPacket *pkt
+  argument instead of a const uint8_t *buf / int buf_size pair.
+
 2009-04-03 - r18321 - lavu 50.3.0 - av_fifo_space
   Introduce the av_fifo_space() function.
 
