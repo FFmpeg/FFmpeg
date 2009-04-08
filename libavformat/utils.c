@@ -272,7 +272,7 @@ int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size)
     if(ret<=0)
         av_free_packet(pkt);
     else
-        pkt->size= ret;
+        av_shrink_packet(pkt, ret);
 
     return ret;
 }

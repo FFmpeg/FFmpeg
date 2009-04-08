@@ -62,6 +62,13 @@ int av_new_packet(AVPacket *pkt, int size)
     return 0;
 }
 
+void av_shrink_packet(AVPacket *pkt, int size)
+{
+    if (pkt->size <= size) return;
+    pkt->size = size;
+    memset(pkt->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+}
+
 int av_dup_packet(AVPacket *pkt)
 {
     if (((pkt->destruct == av_destruct_packet_nofree) || (pkt->destruct == NULL)) && pkt->data) {

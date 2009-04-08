@@ -2655,6 +2655,14 @@ void av_init_packet(AVPacket *pkt);
 int av_new_packet(AVPacket *pkt, int size);
 
 /**
+ * Reduce packet size, correctly zeroing padding
+ *
+ * @param pkt packet
+ * @param size new size
+ */
+void av_shrink_packet(AVPacket *pkt, int size);
+
+/**
  * @warning This is a hack - the packet memory allocation stuff is broken. The
  * packet is allocated if it was not really allocated.
  */
