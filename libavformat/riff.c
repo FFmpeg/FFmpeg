@@ -22,6 +22,7 @@
 #include "libavcodec/avcodec.h"
 #include "avformat.h"
 #include "riff.h"
+#include "libavcodec/bytestream.h"
 
 /* Note: when encoding, the first matching tag is used, so order is
    important if multiple tags possible for a given codec. */
@@ -284,11 +285,20 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 {
     int bps, blkalign, bytespersec;
     int hdrsize = 18;
+    int waveformatextensible;
+    uint8_t temp[256];
+    uint8_t *riff_extradata= temp;
+    uint8_t *riff_extradata_start= temp;
 
     if(!enc->codec_tag || enc->codec_tag > 0xffff)
         return -1;
+    waveformatextensible = enc->channels > 2 && enc->channel_layout;
 
+    if (waveformatextensible) {
+        put_le16(pb, 0xfffe);
+    } else {
     put_le16(pb, enc->codec_tag);
+    }
     put_le16(pb, enc->channels);
     put_le32(pb, enc->sample_rate);
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
@@ -326,43 +336,52 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     put_le16(pb, blkalign); /* block align */
     put_le16(pb, bps); /* bits per sample */
     if (enc->codec_id == CODEC_ID_MP3) {
-        put_le16(pb, 12); /* wav_extra_size */
         hdrsize += 12;
-        put_le16(pb, 1); /* wID */
-        put_le32(pb, 2); /* fdwFlags */
-        put_le16(pb, 1152); /* nBlockSize */
-        put_le16(pb, 1); /* nFramesPerBlock */
-        put_le16(pb, 1393); /* nCodecDelay */
+        bytestream_put_le16(&riff_extradata, 1);    /* wID */
+        bytestream_put_le32(&riff_extradata, 2);    /* fdwFlags */
+        bytestream_put_le16(&riff_extradata, 1152); /* nBlockSize */
+        bytestream_put_le16(&riff_extradata, 1);    /* nFramesPerBlock */
+        bytestream_put_le16(&riff_extradata, 1393); /* nCodecDelay */
     } else if (enc->codec_id == CODEC_ID_MP2) {
-        put_le16(pb, 22); /* wav_extra_size */
         hdrsize += 22;
-        put_le16(pb, 2);  /* fwHeadLayer */
-        put_le32(pb, enc->bit_rate); /* dwHeadBitrate */
-        put_le16(pb, enc->channels == 2 ? 1 : 8); /* fwHeadMode */
-        put_le16(pb, 0);  /* fwHeadModeExt */
-        put_le16(pb, 1);  /* wHeadEmphasis */
-        put_le16(pb, 16); /* fwHeadFlags */
-        put_le32(pb, 0);  /* dwPTSLow */
-        put_le32(pb, 0);  /* dwPTSHigh */
+        bytestream_put_le16(&riff_extradata, 2);                          /* fwHeadLayer */
+        bytestream_put_le32(&riff_extradata, enc->bit_rate);              /* dwHeadBitrate */
+        bytestream_put_le16(&riff_extradata, enc->channels == 2 ? 1 : 8); /* fwHeadMode */
+        bytestream_put_le16(&riff_extradata, 0);                          /* fwHeadModeExt */
+        bytestream_put_le16(&riff_extradata, 1);                          /* wHeadEmphasis */
+        bytestream_put_le16(&riff_extradata, 16);                         /* fwHeadFlags */
+        bytestream_put_le32(&riff_extradata, 0);                          /* dwPTSLow */
+        bytestream_put_le32(&riff_extradata, 0);                          /* dwPTSHigh */
     } else if (enc->codec_id == CODEC_ID_GSM_MS) {
-        put_le16(pb, 2); /* wav_extra_size */
         hdrsize += 2;
-        put_le16(pb, enc->frame_size); /* wSamplesPerBlock */
+        bytestream_put_le16(&riff_extradata, enc->frame_size); /* wSamplesPerBlock */
     } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
-        put_le16(pb, 2); /* wav_extra_size */
         hdrsize += 2;
-        put_le16(pb, enc->frame_size); /* wSamplesPerBlock */
+        bytestream_put_le16(&riff_extradata, enc->frame_size); /* wSamplesPerBlock */
     } else if(enc->extradata_size){
-        put_le16(pb, enc->extradata_size);
-        put_buffer(pb, enc->extradata, enc->extradata_size);
+        riff_extradata_start= enc->extradata;
+        riff_extradata= enc->extradata + enc->extradata_size;
         hdrsize += enc->extradata_size;
+    } else if (!waveformatextensible){
+        hdrsize -= 2;
+    }
+    if(waveformatextensible) {                                    /* write WAVEFORMATEXTENSIBLE extensions */
+        hdrsize += 22;
+        put_le16(pb, riff_extradata - riff_extradata_start + 22); /* 22 is WAVEFORMATEXTENSIBLE size */
+        put_le16(pb, enc->bits_per_coded_sample);                 /* ValidBitsPerSample || SamplesPerBlock || Reserved */
+        put_le32(pb, enc->channel_layout);                        /* dwChannelMask */
+        put_le32(pb, enc->codec_tag);                             /* GUID + next 3 */
+        put_le32(pb, 0x00100000);
+        put_le32(pb, 0xAA000080);
+        put_le32(pb, 0x719B3800);
+    } else if(riff_extradata - riff_extradata_start) {
+        put_le16(pb, riff_extradata - riff_extradata_start);
+    }
+    put_buffer(pb, riff_extradata_start, riff_extradata - riff_extradata_start);
         if(hdrsize&1){
             hdrsize++;
             put_byte(pb, 0);
         }
-    } else {
-        hdrsize -= 2;
-    }
 
     return hdrsize;
 }
