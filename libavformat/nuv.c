@@ -227,6 +227,8 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 memcpy(pkt->data, hdr, copyhdrsize);
                 ret = get_buffer(pb, pkt->data + copyhdrsize, size);
                 if (ret < 0) return ret;
+                if (ret < size)
+                    av_shrink_packet(pkt, copyhdrsize + ret);
                 return 0;
             case NUV_AUDIO:
                 if (ctx->a_id < 0) {
