@@ -228,6 +228,18 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                          payload_type,
                                          c->sample_rate, c->channels);
             break;
+        case CODEC_ID_AMR_NB:
+            av_strlcatf(buff, size, "a=rtpmap:%d AMR/%d/%d\r\n"
+                                    "a=fmtp:%d octet-align=1\r\n",
+                                     payload_type, c->sample_rate, c->channels,
+                                     payload_type);
+            break;
+        case CODEC_ID_AMR_WB:
+            av_strlcatf(buff, size, "a=rtpmap:%d AMR-WB/%d/%d\r\n"
+                                    "a=fmtp:%d octet-align=1\r\n",
+                                     payload_type, c->sample_rate, c->channels,
+                                     payload_type);
+            break;
         default:
             /* Nothing special to do here... */
             break;

@@ -60,6 +60,8 @@ static int is_supported(enum CodecID id)
     case CODEC_ID_PCM_U16LE:
     case CODEC_ID_PCM_U8:
     case CODEC_ID_MPEG2TS:
+    case CODEC_ID_AMR_NB:
+    case CODEC_ID_AMR_WB:
         return 1;
     default:
         return 0;
@@ -134,6 +136,23 @@ static int rtp_write_header(AVFormatContext *s1)
         s->max_payload_size = n * TS_PACKET_SIZE;
         s->buf_ptr = s->buf;
         break;
+    case CODEC_ID_AMR_NB:
+    case CODEC_ID_AMR_WB:
+        if (!s->max_frames_per_packet)
+            s->max_frames_per_packet = 12;
+        if (st->codec->codec_id == CODEC_ID_AMR_NB)
+            n = 31;
+        else
+            n = 61;
+        /* max_header_toc_size + the largest AMR payload must fit */
+        if (1 + s->max_frames_per_packet + n > s->max_payload_size) {
+            av_log(s1, AV_LOG_ERROR, "RTP max payload size too small for AMR\n");
+            return -1;
+        }
+        if (st->codec->channels != 1) {
+            av_log(s1, AV_LOG_ERROR, "Only mono is supported\n");
+            return -1;
+        }
     case CODEC_ID_AAC:
         s->num_frames = 0;
     default:
@@ -365,6 +384,10 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         break;
     case CODEC_ID_AAC:
         ff_rtp_send_aac(s1, buf1, size);
+        break;
+    case CODEC_ID_AMR_NB:
+    case CODEC_ID_AMR_WB:
+        ff_rtp_send_amr(s1, buf1, size);
         break;
     case CODEC_ID_MPEG2TS:
         rtp_send_mpegts_raw(s1, buf1, size);
