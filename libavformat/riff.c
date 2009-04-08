@@ -297,7 +297,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     if (waveformatextensible) {
         put_le16(pb, 0xfffe);
     } else {
-    put_le16(pb, enc->codec_tag);
+        put_le16(pb, enc->codec_tag);
     }
     put_le16(pb, enc->channels);
     put_le32(pb, enc->sample_rate);
@@ -378,10 +378,10 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         put_le16(pb, riff_extradata - riff_extradata_start);
     }
     put_buffer(pb, riff_extradata_start, riff_extradata - riff_extradata_start);
-        if(hdrsize&1){
-            hdrsize++;
-            put_byte(pb, 0);
-        }
+    if(hdrsize&1){
+        hdrsize++;
+        put_byte(pb, 0);
+    }
 
     return hdrsize;
 }
