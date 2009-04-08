@@ -352,10 +352,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         bytestream_put_le16(&riff_extradata, 16);                         /* fwHeadFlags */
         bytestream_put_le32(&riff_extradata, 0);                          /* dwPTSLow */
         bytestream_put_le32(&riff_extradata, 0);                          /* dwPTSHigh */
-    } else if (enc->codec_id == CODEC_ID_GSM_MS) {
-        hdrsize += 2;
-        bytestream_put_le16(&riff_extradata, enc->frame_size); /* wSamplesPerBlock */
-    } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
+    } else if (enc->codec_id == CODEC_ID_GSM_MS || enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
         hdrsize += 2;
         bytestream_put_le16(&riff_extradata, enc->frame_size); /* wSamplesPerBlock */
     } else if(enc->extradata_size){
