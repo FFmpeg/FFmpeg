@@ -1034,6 +1034,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 #endif
     /* no ifdef since parameters are always those */
     case CODEC_ID_QCELP:
+        // force sample rate for qcelp when not stored in mov
+        if (st->codec->codec_tag != MKTAG('Q','c','l','p'))
+            st->codec->sample_rate = 8000;
         st->codec->frame_size= 160;
         st->codec->channels= 1; /* really needed */
         break;
