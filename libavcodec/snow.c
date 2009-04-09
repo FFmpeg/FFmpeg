@@ -4123,6 +4123,18 @@ static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *fr
     }
 }
 
+static void release_buffer(AVCodecContext *avctx){
+    SnowContext *s = avctx->priv_data;
+    int i;
+
+    if(s->last_picture[s->max_ref_frames-1].data[0]){
+        avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
+        for(i=0; i<9; i++)
+            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
+                av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
+    }
+}
+
 static int frame_start(SnowContext *s){
    AVFrame tmp;
    int w= s->avctx->width; //FIXME round up to x16 ?
@@ -4165,18 +4177,6 @@ static int frame_start(SnowContext *s){
     s->current_picture.key_frame= s->keyframe;
 
     return 0;
-}
-
-static void release_buffer(AVCodecContext *avctx){
-    SnowContext *s = avctx->priv_data;
-    int i;
-
-    if(s->last_picture[s->max_ref_frames-1].data[0]){
-        avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
-        for(i=0; i<9; i++)
-            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
-                av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
-    }
 }
 
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
