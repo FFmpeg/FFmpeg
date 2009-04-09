@@ -3625,6 +3625,11 @@ static int decode_header(SnowContext *s){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_type %d not supported", s->spatial_decomposition_type);
         return -1;
     }
+    if(FFMIN(s->avctx-> width>>s->chroma_h_shift,
+             s->avctx->height>>s->chroma_v_shift) >> (s->spatial_decomposition_count-1) <= 0){
+        av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_count %d too large for size", s->spatial_decomposition_count);
+        return -1;
+    }
 
     s->qlog           += get_symbol(&s->c, s->header_state, 1);
     s->mv_scale       += get_symbol(&s->c, s->header_state, 1);
