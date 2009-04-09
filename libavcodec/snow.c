@@ -4145,6 +4145,10 @@ static int frame_start(SnowContext *s){
             if(i && s->last_picture[i-1].key_frame)
                 break;
         s->ref_frames= i;
+        if(s->ref_frames==0){
+            av_log(s->avctx,AV_LOG_ERROR, "No reference frames\n");
+            return -1;
+        }
     }
 
     s->current_picture.reference= 1;
@@ -4520,7 +4524,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     alloc_blocks(s);
 
-    frame_start(s);
+    if(frame_start(s) < 0)
+        return -1;
     //keyframe flag duplication mess FIXME
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR, "keyframe:%d qlog:%d\n", s->keyframe, s->qlog);
