@@ -772,7 +772,7 @@ When dumping packets, also dump the payload.
 @item -bitexact
 Only use bit exact algorithms (for codec testing).
 @item -ps @var{size}
-Set packet size in bits.
+Set RTP payload size in bytes.
 @item -re
 Read input at native frame rate. Mainly used to simulate a grab device.
 @item -loop_input
