@@ -3581,7 +3581,7 @@ static int decode_header(SnowContext *s){
         s->always_reset= get_rac(&s->c, s->header_state);
         s->temporal_decomposition_type= get_symbol(&s->c, s->header_state, 0);
         s->temporal_decomposition_count= get_symbol(&s->c, s->header_state, 0);
-        s->spatial_decomposition_count= get_symbol(&s->c, s->header_state, 0);
+        GET_S(s->spatial_decomposition_count, tmp <= (unsigned)MAX_DECOMPOSITIONS)
         s->colorspace_type= get_symbol(&s->c, s->header_state, 0);
         s->chroma_h_shift= get_symbol(&s->c, s->header_state, 0);
         s->chroma_v_shift= get_symbol(&s->c, s->header_state, 0);
@@ -3614,7 +3614,7 @@ static int decode_header(SnowContext *s){
             memcpy(s->plane[2].hcoeff, s->plane[1].hcoeff, sizeof(s->plane[1].hcoeff));
         }
         if(get_rac(&s->c, s->header_state)){
-            s->spatial_decomposition_count= get_symbol(&s->c, s->header_state, 0);
+            GET_S(s->spatial_decomposition_count, tmp <= (unsigned)MAX_DECOMPOSITIONS)
             decode_qlogs(s);
         }
     }
