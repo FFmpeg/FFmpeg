@@ -3577,7 +3577,6 @@ static int decode_header(SnowContext *s){
         s->block_max_depth= 0;
     }
     if(s->keyframe){
-        s->version= get_symbol(&s->c, s->header_state, 0);
         GET_S(s->version, tmp <= 0U)
         s->always_reset= get_rac(&s->c, s->header_state);
         s->temporal_decomposition_type= get_symbol(&s->c, s->header_state, 0);
