@@ -3553,6 +3553,14 @@ static void decode_qlogs(SnowContext *s){
     }
 }
 
+#define GET_S(dst, check) \
+    tmp= get_symbol(&s->c, s->header_state, 0);\
+    if(!(check)){\
+        av_log(s->avctx, AV_LOG_ERROR, "Error " #dst " is %d\n", tmp);\
+        return -1;\
+    }\
+    dst= tmp;
+
 static int decode_header(SnowContext *s){
     int plane_index, tmp;
     uint8_t kstate[32];
@@ -3570,10 +3578,7 @@ static int decode_header(SnowContext *s){
     }
     if(s->keyframe){
         s->version= get_symbol(&s->c, s->header_state, 0);
-        if(s->version>0){
-            av_log(s->avctx, AV_LOG_ERROR, "version %d not supported", s->version);
-            return -1;
-        }
+        GET_S(s->version, tmp <= 0U)
         s->always_reset= get_rac(&s->c, s->header_state);
         s->temporal_decomposition_type= get_symbol(&s->c, s->header_state, 0);
         s->temporal_decomposition_count= get_symbol(&s->c, s->header_state, 0);
@@ -3583,12 +3588,8 @@ static int decode_header(SnowContext *s){
         s->chroma_v_shift= get_symbol(&s->c, s->header_state, 0);
         s->spatial_scalability= get_rac(&s->c, s->header_state);
 //        s->rate_scalability= get_rac(&s->c, s->header_state);
-        tmp= get_symbol(&s->c, s->header_state, 0)+1;
-        if(tmp < 1 || tmp > MAX_REF_FRAMES){
-            av_log(s->avctx, AV_LOG_ERROR, "reference frame count is %d\n", tmp);
-            return -1;
-        }
-        s->max_ref_frames= tmp;
+        GET_S(s->max_ref_frames, tmp < (unsigned)MAX_REF_FRAMES)
+        s->max_ref_frames++;
 
         decode_qlogs(s);
     }
