@@ -3620,7 +3620,7 @@ static int decode_header(SnowContext *s){
     }
 
     s->spatial_decomposition_type+= get_symbol(&s->c, s->header_state, 1);
-    if(s->spatial_decomposition_type > 1){
+    if(s->spatial_decomposition_type > 1U){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_type %d not supported", s->spatial_decomposition_type);
         return -1;
     }
