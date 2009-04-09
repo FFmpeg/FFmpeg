@@ -21,28 +21,28 @@
 #include "avformat.h"
 #include "rtpenc.h"
 
-#define MAX_FRAMES_PER_PACKET (s->max_frames_per_packet ? s->max_frames_per_packet : 5)
-#define MAX_AU_HEADERS_SIZE (2 + 2 * MAX_FRAMES_PER_PACKET)
 
 void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
 {
     RTPMuxContext *s = s1->priv_data;
     int len, max_packet_size;
     uint8_t *p;
+    const int max_frames_per_packet = s->max_frames_per_packet ? s->max_frames_per_packet : 5;
+    const int max_au_headers_size = 2 + 2 * max_frames_per_packet;
 
     /* skip ADTS header, if present */
     if ((s1->streams[0]->codec->extradata_size) == 0) {
         size -= 7;
         buff += 7;
     }
-    max_packet_size = s->max_payload_size - MAX_AU_HEADERS_SIZE;
+    max_packet_size = s->max_payload_size - max_au_headers_size;
 
     /* test if the packet must be sent */
     len = (s->buf_ptr - s->buf);
-    if ((s->num_frames == MAX_FRAMES_PER_PACKET) || (len && (len + size) > s->max_payload_size)) {
+    if ((s->num_frames == max_frames_per_packet) || (len && (len + size) > s->max_payload_size)) {
         int au_size = s->num_frames * 2;
 
-        p = s->buf + MAX_AU_HEADERS_SIZE - au_size - 2;
+        p = s->buf + max_au_headers_size - au_size - 2;
         if (p != s->buf) {
             memmove(p + 2, s->buf + 2, au_size);
         }
@@ -55,7 +55,7 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
         s->num_frames = 0;
     }
     if (s->num_frames == 0) {
-        s->buf_ptr = s->buf + MAX_AU_HEADERS_SIZE;
+        s->buf_ptr = s->buf + max_au_headers_size;
         s->timestamp = s->cur_timestamp;
     }
 
