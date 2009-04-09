@@ -3554,7 +3554,7 @@ static void decode_qlogs(SnowContext *s){
 }
 
 static int decode_header(SnowContext *s){
-    int plane_index;
+    int plane_index, tmp;
     uint8_t kstate[32];
 
     memset(kstate, MID_STATE, sizeof(kstate));
@@ -3583,7 +3583,12 @@ static int decode_header(SnowContext *s){
         s->chroma_v_shift= get_symbol(&s->c, s->header_state, 0);
         s->spatial_scalability= get_rac(&s->c, s->header_state);
 //        s->rate_scalability= get_rac(&s->c, s->header_state);
-        s->max_ref_frames= get_symbol(&s->c, s->header_state, 0)+1;
+        tmp= get_symbol(&s->c, s->header_state, 0)+1;
+        if(tmp < 1 || tmp > MAX_REF_FRAMES){
+            av_log(s->avctx, AV_LOG_ERROR, "reference frame count is %d\n", tmp);
+            return -1;
+        }
+        s->max_ref_frames= tmp;
 
         decode_qlogs(s);
     }
@@ -3649,6 +3654,7 @@ static av_cold int common_init(AVCodecContext *avctx){
     int i, j;
 
     s->avctx= avctx;
+    s->max_ref_frames=1; //just make sure its not an invalid value in case of no initial keyframe
 
     dsputil_init(&s->dsp, avctx);
 
