@@ -42,6 +42,7 @@ OBJS = adler32.o                                                        \
        utils.o                                                          \
 
 TESTPROGS = adler32 aes base64 crc des lls md5 pca sha1 softfloat tree
+TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
 
 DIRS = arm bfin sh4 x86
 
