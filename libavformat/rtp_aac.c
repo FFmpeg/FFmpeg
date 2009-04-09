@@ -66,10 +66,6 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
         memcpy(s->buf_ptr, buff, size);
         s->buf_ptr += size;
     } else {
-        if (s->buf_ptr != s->buf + MAX_AU_HEADERS_SIZE) {
-            av_log(s1, AV_LOG_ERROR, "Strange...\n");
-            av_abort();
-        }
         max_packet_size = s->max_payload_size - 4;
         p = s->buf;
         p[0] = 0;
