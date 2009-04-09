@@ -455,7 +455,7 @@ void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
             c->pix_abs[1][3] = sad8_xy2_mmx2;
         }
     }
-    if ((mm_flags & FF_MM_SSE2) && !(mm_flags & FF_MM_3DNOW)) {
+    if ((mm_flags & FF_MM_SSE2) && !(mm_flags & FF_MM_3DNOW) && avctx->codec_id != CODEC_ID_SNOW) {
         c->sad[0]= sad16_sse2;
     }
 }
