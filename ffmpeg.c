@@ -1364,6 +1364,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     } else {
                         AVFrame avframe; //FIXME/XXX remove this
                         AVPacket opkt;
+                        int64_t ost_tb_start_time= av_rescale_q(start_time, AV_TIME_BASE_Q, ost->st->time_base);
+
                         av_init_packet(&opkt);
 
                         if ((!ost->frame_number && !(pkt->flags & PKT_FLAG_KEY)) && !copy_initial_nonkeyframes)
@@ -1385,7 +1387,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
                         opkt.stream_index= ost->index;
                         if(pkt->pts != AV_NOPTS_VALUE)
-                            opkt.pts= av_rescale_q(pkt->pts, ist->st->time_base, ost->st->time_base);
+                            opkt.pts= av_rescale_q(pkt->pts, ist->st->time_base, ost->st->time_base) - ost_tb_start_time;
                         else
                             opkt.pts= AV_NOPTS_VALUE;
 
@@ -1393,6 +1395,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             opkt.dts = av_rescale_q(ist->pts, AV_TIME_BASE_Q, ost->st->time_base);
                         else
                             opkt.dts = av_rescale_q(pkt->dts, ist->st->time_base, ost->st->time_base);
+                        opkt.dts -= ost_tb_start_time;
 
                         opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
                         opkt.flags= pkt->flags;
