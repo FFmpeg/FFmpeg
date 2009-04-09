@@ -23,9 +23,12 @@
  ** integer misc ops.
  **/
 
-#include "libavcodec/dsputil.h"
+#include "config.h"
+#if HAVE_ALTIVEC_H
+#include <altivec.h>
+#endif
 
-#include "gcc_fixes.h"
+#include "libavcodec/dsputil.h"
 
 #include "dsputil_altivec.h"
 

@@ -21,9 +21,6 @@
  */
 
 #include "libavcodec/dsputil.h"
-
-#include "gcc_fixes.h"
-
 #include "dsputil_ppc.h"
 #include "util_altivec.h"
 
