@@ -239,6 +239,12 @@ int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
 #include <lzo/lzo1x.h>
 #include "log.h"
 #define MAXSZ (10*1024*1024)
+
+/* Define one of these to 1 if you wish to benchmark liblzo
+ * instead of our native implementation. */
+#define BENCHMARK_LIBLZO_SAFE   0
+#define BENCHMARK_LIBLZO_UNSAFE 0
+
 int main(int argc, char *argv[]) {
     FILE *in = fopen(argv[1], "rb");
     uint8_t *orig = av_malloc(MAXSZ + 16);
@@ -254,9 +260,9 @@ int main(int argc, char *argv[]) {
     for (i = 0; i < 300; i++) {
 START_TIMER
         inlen = clen; outlen = MAXSZ;
-#ifdef LIBLZO
+#if BENCHMARK_LIBLZO_SAFE
         if (lzo1x_decompress_safe(comp, inlen, decomp, &outlen, NULL))
-#elif defined(LIBLZO_UNSAFE)
+#elif BENCHMARK_LIBLZO_UNSAFE
         if (lzo1x_decompress(comp, inlen, decomp, &outlen, NULL))
 #else
         if (av_lzo1x_decode(decomp, &outlen, comp, &inlen))
