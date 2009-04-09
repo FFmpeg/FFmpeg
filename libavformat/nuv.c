@@ -226,7 +226,10 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 pkt->stream_index = ctx->v_id;
                 memcpy(pkt->data, hdr, copyhdrsize);
                 ret = get_buffer(pb, pkt->data + copyhdrsize, size);
-                if (ret < 0) return ret;
+                if (ret < 0) {
+                    av_free_packet(pkt);
+                    return ret;
+                }
                 if (ret < size)
                     av_shrink_packet(pkt, copyhdrsize + ret);
                 return 0;
