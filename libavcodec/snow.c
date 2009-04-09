@@ -4167,6 +4167,18 @@ static int frame_start(SnowContext *s){
     return 0;
 }
 
+static void release_buffer(AVCodecContext *avctx){
+    SnowContext *s = avctx->priv_data;
+    int i;
+
+    if(s->last_picture[s->max_ref_frames-1].data[0]){
+        avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
+        for(i=0; i<9; i++)
+            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
+                av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
+    }
+}
+
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     SnowContext *s = avctx->priv_data;
     RangeCoder * const c= &s->c;
@@ -4415,12 +4427,7 @@ redo_frame:
 
     update_last_header_values(s);
 
-    if(s->last_picture[s->max_ref_frames-1].data[0]){
-        avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
-        for(i=0; i<9; i++)
-            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
-                av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
-    }
+    release_buffer(avctx);
 
     s->current_picture.coded_picture_number = avctx->frame_number;
     s->current_picture.pict_type = pict->pict_type;
@@ -4506,7 +4513,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     RangeCoder * const c= &s->c;
     int bytes_read;
     AVFrame *picture = data;
-    int level, orientation, plane_index, i;
+    int level, orientation, plane_index;
 
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
@@ -4645,12 +4652,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     emms_c();
 
-    if(s->last_picture[s->max_ref_frames-1].data[0]){
-        avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
-        for(i=0; i<9; i++)
-            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
-                av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
-    }
+    release_buffer(avctx);
 
     if(!(s->avctx->debug&2048))
         *picture= s->current_picture;
