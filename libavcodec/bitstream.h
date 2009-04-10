@@ -89,6 +89,12 @@ typedef struct PutBitContext {
     int size_in_bits;
 } PutBitContext;
 
+/**
+ * Initializes the PutBitContext \p s.
+ *
+ * @param buffer the buffer where to put bits
+ * @param buffer_size the size in bytes of \p buffer
+ */
 static inline void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size)
 {
     if(buffer_size < 0) {
