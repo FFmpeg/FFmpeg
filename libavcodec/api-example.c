@@ -115,10 +115,13 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
-    int out_size, size, len;
+    int out_size, len;
     FILE *f, *outfile;
     uint8_t *outbuf;
-    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
+    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
+    AVPacket avpkt;
+
+    av_init_packet(&avpkt);
 
     printf("Audio decoding\n");
 
@@ -151,17 +154,16 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     }
 
     /* decode until eof */
-    inbuf_ptr = inbuf;
+    avpkt.data = inbuf;
     for(;;) {
-        size = fread(inbuf, 1, INBUF_SIZE, f);
-        if (size == 0)
+        avpkt.size = fread(inbuf, 1, INBUF_SIZE, f);
+        if (avpkt.size == 0)
             break;
 
-        inbuf_ptr = inbuf;
-        while (size > 0) {
+        avpkt.data = inbuf;
+        while (avpkt.size > 0) {
             out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-            len = avcodec_decode_audio2(c, (short *)outbuf, &out_size,
-                                       inbuf_ptr, size);
+            len = avcodec_decode_audio3(c, (short *)outbuf, &out_size, &avpkt);
             if (len < 0) {
                 fprintf(stderr, "Error while decoding\n");
                 exit(1);
@@ -170,8 +172,8 @@ static void audio_decode_example(const char *outfilename, const char *filename)
                 /* if a frame has been decoded, output it */
                 fwrite(outbuf, 1, out_size, outfile);
             }
-            size -= len;
-            inbuf_ptr += len;
+            avpkt.size -= len;
+            avpkt.data += len;
         }
     }
 
@@ -314,11 +316,14 @@ static void video_decode_example(const char *outfilename, const char *filename)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
-    int frame, size, got_picture, len;
+    int frame, got_picture, len;
     FILE *f;
     AVFrame *picture;
-    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
+    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
     char buf[1024];
+    AVPacket avpkt;
+
+    av_init_packet(&avpkt);
 
     /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
     memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
@@ -358,8 +363,8 @@ static void video_decode_example(const char *outfilename, const char *filename)
 
     frame = 0;
     for(;;) {
-        size = fread(inbuf, 1, INBUF_SIZE, f);
-        if (size == 0)
+        avpkt.size = fread(inbuf, 1, INBUF_SIZE, f);
+        if (avpkt.size == 0)
             break;
 
         /* NOTE1: some codecs are stream based (mpegvideo, mpegaudio)
@@ -377,10 +382,9 @@ static void video_decode_example(const char *outfilename, const char *filename)
 
         /* here, we use a stream based decoder (mpeg1video), so we
            feed decoder and see if it could decode a frame */
-        inbuf_ptr = inbuf;
-        while (size > 0) {
-            len = avcodec_decode_video(c, picture, &got_picture,
-                                       inbuf_ptr, size);
+        avpkt.data = inbuf;
+        while (avpkt.size > 0) {
+            len = avcodec_decode_video2(c, picture, &got_picture, &avpkt);
             if (len < 0) {
                 fprintf(stderr, "Error while decoding frame %d\n", frame);
                 exit(1);
@@ -396,16 +400,17 @@ static void video_decode_example(const char *outfilename, const char *filename)
                          c->width, c->height, buf);
                 frame++;
             }
-            size -= len;
-            inbuf_ptr += len;
+            avpkt.size -= len;
+            avpkt.data += len;
         }
     }
 
     /* some codecs, such as MPEG, transmit the I and P frame with a
        latency of one frame. You must do the following to have a
        chance to get the last frame of the video */
-    len = avcodec_decode_video(c, picture, &got_picture,
-                               NULL, 0);
+    avpkt.data = NULL;
+    avpkt.size = 0;
+    len = avcodec_decode_video2(c, picture, &got_picture, &avpkt);
     if (got_picture) {
         printf("saving last frame %3d\n", frame);
         fflush(stdout);
