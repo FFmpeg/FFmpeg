@@ -182,12 +182,12 @@ int main(void){
     int i;
     void *k;
     AVTreeNode *root= NULL, *node=NULL;
-    AVLFG prn;
+    AVLFG prng;
 
-    av_lfg_init(&prn, 1);
+    av_lfg_init(&prng, 1);
 
     for(i=0; i<10000; i++){
-        int j = av_lfg_get(&prn) % 86294;
+        int j = av_lfg_get(&prng) % 86294;
         if(check(root) > 999){
             av_log(NULL, AV_LOG_ERROR, "FATAL error %d\n", i);
         print(root, 0);
@@ -198,7 +198,7 @@ int main(void){
             node= av_mallocz(av_tree_node_size);
         av_tree_insert(&root, (void*)(j+1), cmp, &node);
 
-        j = av_lfg_get(&prn) % 86294;
+        j = av_lfg_get(&prng) % 86294;
         {
             AVTreeNode *node2=NULL;
             av_log(NULL, AV_LOG_ERROR, "removing %4d\n", j);

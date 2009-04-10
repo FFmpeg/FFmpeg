@@ -191,14 +191,14 @@ int main(void){
     uint8_t r[9*SIZE];
     int i;
     uint8_t state[10]= {0};
-    AVLFG prn;
+    AVLFG prng;
 
-    av_lfg_init(&prn, 1);
+    av_lfg_init(&prng, 1);
     ff_init_cabac_encoder(&c, b, SIZE);
     ff_init_cabac_states(&c);
 
     for(i=0; i<SIZE; i++){
-        r[i] = av_lfg_get(&prn) % 7;
+        r[i] = av_lfg_get(&prng) % 7;
     }
 
     for(i=0; i<SIZE; i++){

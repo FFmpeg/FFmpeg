@@ -4721,15 +4721,15 @@ int main(void){
     int buffer[2][width*height];
     SnowContext s;
     int i;
-    AVLFG prn;
+    AVLFG prng;
     s.spatial_decomposition_count=6;
     s.spatial_decomposition_type=1;
 
-    av_lfg_init(&prn, 1);
+    av_lfg_init(&prng, 1);
 
     printf("testing 5/3 DWT\n");
     for(i=0; i<width*height; i++)
-        buffer[0][i] = buffer[1][i] = av_lfg_get(&prn) % 54321 - 12345;
+        buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 54321 - 12345;
 
     ff_spatial_dwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
     ff_spatial_idwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
@@ -4740,7 +4740,7 @@ int main(void){
     printf("testing 9/7 DWT\n");
     s.spatial_decomposition_type=0;
     for(i=0; i<width*height; i++)
-        buffer[0][i] = buffer[1][i] = av_lfg_get(&prn) % 54321 - 12345;
+        buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 54321 - 12345;
 
     ff_spatial_dwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
     ff_spatial_idwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);

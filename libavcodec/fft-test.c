@@ -131,9 +131,9 @@ static void mdct_ref(float *output, float *input, int nbits)
 
 static float frandom(void)
 {
-    AVLFG prn;
-    av_lfg_init(&prn, 1);
-    return (float)((av_lfg_get(&prn) & 0xffff) - 32768) / 32768.0;
+    AVLFG prng;
+    av_lfg_init(&prng, 1);
+    return (float)((av_lfg_get(&prng) & 0xffff) - 32768) / 32768.0;
 }
 
 static int64_t gettime(void)

@@ -45,12 +45,12 @@ uint8_t img2[WIDTH * HEIGHT];
 static void fill_random(uint8_t *tab, int size)
 {
     int i;
-    AVLFG prn;
+    AVLFG prng;
 
-    av_lfg_init(&prn, 1);
+    av_lfg_init(&prng, 1);
     for(i=0;i<size;i++) {
 #if 1
-        tab[i] = av_lfg_get(&prn) % 256;
+        tab[i] = av_lfg_get(&prng) % 256;
 #else
         tab[i] = i;
 #endif

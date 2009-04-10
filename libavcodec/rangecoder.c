@@ -120,9 +120,9 @@ int main(void){
     uint8_t r[9*SIZE];
     int i;
     uint8_t state[10]= {0};
-    AVLFG prn;
+    AVLFG prng;
 
-    av_lfg_init(&prn, 1);
+    av_lfg_init(&prng, 1);
 
     ff_init_range_encoder(&c, b, SIZE);
     ff_build_rac_states(&c, 0.05*(1LL<<32), 128+64+32+16);
@@ -130,7 +130,7 @@ int main(void){
     memset(state, 128, sizeof(state));
 
     for(i=0; i<SIZE; i++){
-        r[i] = av_lfg_get(&prn) % 7;
+        r[i] = av_lfg_get(&prng) % 7;
     }
 
     for(i=0; i<SIZE; i++){
