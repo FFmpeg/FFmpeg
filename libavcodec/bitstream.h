@@ -155,6 +155,9 @@ static inline void flush_put_bits(PutBitContext *s)
 #endif
 }
 
+/**
+ * Pads the bitstream with zeros up to the next byte boundary.
+ */
 void align_put_bits(PutBitContext *s);
 void ff_put_string(PutBitContext * pbc, const char *s, int put_zero);
 void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
