@@ -344,7 +344,7 @@ static void guess_mv(MpegEncContext *s){
                 if(IS_INTRA(s->current_picture.mb_type[mb_xy]))  continue;
                 if(!(s->error_status_table[mb_xy]&MV_ERROR)) continue;
 
-                s->mv_dir = MV_DIR_FORWARD;
+                s->mv_dir = s->last_picture.data[0] ? MV_DIR_FORWARD : MV_DIR_BACKWARD;
                 s->mb_intra=0;
                 s->mv_type = MV_TYPE_16X16;
                 s->mb_skipped=0;
@@ -860,18 +860,27 @@ void ff_er_frame_end(MpegEncContext *s){
             s->current_picture.mb_type[mb_xy]= MB_TYPE_16x16 | MB_TYPE_L0;
     }
 
+    // change inter to intra blocks if no reference frames are available
+    if (!s->last_picture.data[0] && !s->next_picture.data[0])
+        for(i=0; i<s->mb_num; i++){
+            const int mb_xy= s->mb_index2xy[i];
+            if(!IS_INTRA(s->current_picture.mb_type[mb_xy]))
+                s->current_picture.mb_type[mb_xy]= MB_TYPE_INTRA4x4;
+        }
+
     /* handle inter blocks with damaged AC */
     for(mb_y=0; mb_y<s->mb_height; mb_y++){
         for(mb_x=0; mb_x<s->mb_width; mb_x++){
             const int mb_xy= mb_x + mb_y * s->mb_stride;
             const int mb_type= s->current_picture.mb_type[mb_xy];
+            int dir = !s->last_picture.data[0];
             error= s->error_status_table[mb_xy];
 
             if(IS_INTRA(mb_type)) continue; //intra
             if(error&MV_ERROR) continue;              //inter with damaged MV
             if(!(error&AC_ERROR)) continue;           //undamaged inter
 
-            s->mv_dir = MV_DIR_FORWARD;
+            s->mv_dir = dir ? MV_DIR_BACKWARD : MV_DIR_FORWARD;
             s->mb_intra=0;
             s->mb_skipped=0;
             if(IS_8X8(mb_type)){
@@ -879,13 +888,13 @@ void ff_er_frame_end(MpegEncContext *s){
                 int j;
                 s->mv_type = MV_TYPE_8X8;
                 for(j=0; j<4; j++){
-                    s->mv[0][j][0] = s->current_picture.motion_val[0][ mb_index + (j&1) + (j>>1)*s->b8_stride ][0];
-                    s->mv[0][j][1] = s->current_picture.motion_val[0][ mb_index + (j&1) + (j>>1)*s->b8_stride ][1];
+                    s->mv[0][j][0] = s->current_picture.motion_val[dir][ mb_index + (j&1) + (j>>1)*s->b8_stride ][0];
+                    s->mv[0][j][1] = s->current_picture.motion_val[dir][ mb_index + (j&1) + (j>>1)*s->b8_stride ][1];
                 }
             }else{
                 s->mv_type = MV_TYPE_16X16;
-                s->mv[0][0][0] = s->current_picture.motion_val[0][ mb_x*2 + mb_y*2*s->b8_stride ][0];
-                s->mv[0][0][1] = s->current_picture.motion_val[0][ mb_x*2 + mb_y*2*s->b8_stride ][1];
+                s->mv[0][0][0] = s->current_picture.motion_val[dir][ mb_x*2 + mb_y*2*s->b8_stride ][0];
+                s->mv[0][0][1] = s->current_picture.motion_val[dir][ mb_x*2 + mb_y*2*s->b8_stride ][1];
             }
 
             s->dsp.clear_blocks(s->block[0]);
@@ -910,6 +919,8 @@ void ff_er_frame_end(MpegEncContext *s){
                 if(!(error&AC_ERROR)) continue;           //undamaged inter
 
                 s->mv_dir = MV_DIR_FORWARD|MV_DIR_BACKWARD;
+                if(!s->last_picture.data[0]) s->mv_dir &= ~MV_DIR_FORWARD;
+                if(!s->next_picture.data[0]) s->mv_dir &= ~MV_DIR_BACKWARD;
                 s->mb_intra=0;
                 s->mv_type = MV_TYPE_16X16;
                 s->mb_skipped=0;
