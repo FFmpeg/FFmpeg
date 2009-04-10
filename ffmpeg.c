@@ -1174,8 +1174,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 {
     AVFormatContext *os;
     AVOutputStream *ost;
-    uint8_t *ptr;
-    int len, ret, i;
+    int ret, i;
     uint8_t *data_buf;
     int data_size, got_picture;
     AVFrame picture;
@@ -1184,29 +1183,32 @@ static int output_packet(AVInputStream *ist, int ist_index,
     static short *samples= NULL;
     AVSubtitle subtitle, *subtitle_to_free;
     int got_subtitle;
+    AVPacket avpkt;
+
+    av_init_packet(&avpkt);
 
     if(ist->next_pts == AV_NOPTS_VALUE)
         ist->next_pts= ist->pts;
 
     if (pkt == NULL) {
         /* EOF handling */
-        ptr = NULL;
-        len = 0;
+        avpkt.data = NULL;
+        avpkt.size = 0;
         goto handle_eof;
     }
 
     if(pkt->dts != AV_NOPTS_VALUE)
         ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
 
-    len = pkt->size;
-    ptr = pkt->data;
+    avpkt.size = pkt->size;
+    avpkt.data = pkt->data;
 
     //while we have more to decode or while the decoder did output something on EOF
-    while (len > 0 || (!pkt && ist->next_pts != ist->pts)) {
+    while (avpkt.size > 0 || (!pkt && ist->next_pts != ist->pts)) {
     handle_eof:
         ist->pts= ist->next_pts;
 
-        if(len && len != pkt->size && verbose>0)
+        if(avpkt.size && avpkt.size != pkt->size && verbose>0)
             fprintf(stderr, "Multiple frames in a packet from stream %d\n", pkt->stream_index);
 
         /* decode the packet if needed */
@@ -1224,12 +1226,12 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 data_size= samples_size;
                     /* XXX: could avoid copy if PCM 16 bits with same
                        endianness as CPU */
-                ret = avcodec_decode_audio2(ist->st->codec, samples, &data_size,
-                                           ptr, len);
+                ret = avcodec_decode_audio3(ist->st->codec, samples, &data_size,
+                                            &avpkt);
                 if (ret < 0)
                     goto fail_decode;
-                ptr += ret;
-                len -= ret;
+                avpkt.data += ret;
+                avpkt.size -= ret;
                 /* Some bug in mpeg audio decoder gives */
                 /* data_size < 0, it seems they are overflows */
                 if (data_size <= 0) {
@@ -1245,8 +1247,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     /* XXX: allocate picture correctly */
                     avcodec_get_frame_defaults(&picture);
 
-                    ret = avcodec_decode_video(ist->st->codec,
-                                               &picture, &got_picture, ptr, len);
+                    ret = avcodec_decode_video2(ist->st->codec,
+                                                &picture, &got_picture, &avpkt);
                     ist->st->quality= picture.quality;
                     if (ret < 0)
                         goto fail_decode;
@@ -1260,18 +1262,18 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                           ist->st->codec->time_base.num * ticks) /
                             ist->st->codec->time_base.den;
                     }
-                    len = 0;
+                    avpkt.size = 0;
                     break;
             case CODEC_TYPE_SUBTITLE:
-                ret = avcodec_decode_subtitle(ist->st->codec,
-                                              &subtitle, &got_subtitle, ptr, len);
+                ret = avcodec_decode_subtitle2(ist->st->codec,
+                                               &subtitle, &got_subtitle, &avpkt);
                 if (ret < 0)
                     goto fail_decode;
                 if (!got_subtitle) {
                     goto discard_packet;
                 }
                 subtitle_to_free = &subtitle;
-                len = 0;
+                avpkt.size = 0;
                 break;
             default:
                 goto fail_decode;
@@ -1291,10 +1293,10 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 }
                 break;
             }
-            data_buf = ptr;
-            data_size = len;
-            ret = len;
-            len = 0;
+            data_buf = avpkt.data;
+            data_size = avpkt.size;
+            ret = avpkt.size;
+            avpkt.size = 0;
         }
 
         buffer_to_free = NULL;
