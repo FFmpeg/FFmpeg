@@ -128,7 +128,9 @@ static inline int put_bits_count(PutBitContext *s)
 #endif
 }
 
-/* pad the end of the output stream with zeros */
+/**
+ * Pads the end of the output stream with zeros.
+ */
 static inline void flush_put_bits(PutBitContext *s)
 {
 #ifdef ALT_BITSTREAM_WRITER
