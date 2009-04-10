@@ -306,6 +306,7 @@ static void close(AVCodecParserContext *s)
     ParseContext *pc = &h->s.parse_context;
 
     av_free(pc->buffer);
+    ff_h264_free_context(h);
 }
 
 

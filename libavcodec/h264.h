@@ -569,4 +569,9 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src, int *dst_l
  */
 int ff_h264_decode_rbsp_trailing(H264Context *h, const uint8_t *src);
 
+/**
+ * frees any data that may have been allocated in the H264 context like SPS, PPS etc.
+ */
+av_cold ff_h264_free_context(H264Context *h);
+
 #endif /* AVCODEC_H264_H */
