@@ -8083,7 +8083,7 @@ int main(void){
 #endif /* TEST */
 
 
-av_cold ff_h264_free_context(H264Context *h)
+av_cold void ff_h264_free_context(H264Context *h)
 {
     int i;
 
