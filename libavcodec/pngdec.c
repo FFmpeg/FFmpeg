@@ -37,7 +37,8 @@ typedef struct PNGDecContext {
     const uint8_t *bytestream;
     const uint8_t *bytestream_start;
     const uint8_t *bytestream_end;
-    AVFrame picture;
+    AVFrame picture1, picture2;
+    AVFrame *current_picture, *last_picture;
 
     int state;
     int width, height;
@@ -385,9 +386,13 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     PNGDecContext * const s = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame * const p= &s->picture;
+    AVFrame *p;
     uint32_t tag, length;
     int ret, crc;
+
+    FFSWAP(AVFrame *, s->current_picture, s->last_picture);
+    avctx->coded_frame= s->current_picture;
+    p = s->current_picture;
 
     s->bytestream_start=
     s->bytestream= buf;
@@ -584,7 +589,24 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
  exit_loop:
-    *picture= s->picture;
+     /* handle p-frames only if a predecessor frame is available */
+     if(s->last_picture->data[0] != NULL) {
+         if(!(avpkt->flags & PKT_FLAG_KEY)) {
+            int i, j;
+            uint8_t *pd = s->current_picture->data[0];
+            uint8_t *pd_last = s->last_picture->data[0];
+
+            for(j=0; j < s->height; j++) {
+                for(i=0; i < s->width * s->bpp; i++) {
+                    pd[i] += pd_last[i];
+                }
+                pd += s->image_linesize;
+                pd_last += s->image_linesize;
+            }
+        }
+    }
+
+    *picture= *s->current_picture;
     *data_size = sizeof(AVFrame);
 
     ret = s->bytestream - s->bytestream_start;
@@ -602,8 +624,10 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int png_dec_init(AVCodecContext *avctx){
     PNGDecContext *s = avctx->priv_data;
 
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame= &s->picture;
+    s->current_picture = &s->picture1;
+    s->last_picture = &s->picture2;
+    avcodec_get_frame_defaults(&s->picture1);
+    avcodec_get_frame_defaults(&s->picture2);
     dsputil_init(&s->dsp, avctx);
 
     return 0;
