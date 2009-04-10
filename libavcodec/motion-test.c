@@ -29,6 +29,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "dsputil.h"
 #include "libavutil/lfg.h"
 
@@ -128,6 +129,7 @@ int main(int argc, char **argv)
     int c;
     DSPContext cctx, mmxctx;
     int flags[2] = { FF_MM_MMX, FF_MM_MMX2 };
+    int flags_size = HAVE_MMX2 ? 2 : 1;
 
     for(;;) {
         c = getopt(argc, argv, "h");
@@ -145,7 +147,7 @@ int main(int argc, char **argv)
     ctx = avcodec_alloc_context();
     ctx->dsp_mask = FF_MM_FORCE;
     dsputil_init(&cctx, ctx);
-    for (c = 0; c < 1; c++) {
+    for (c = 0; c < flags_size; c++) {
         int x;
         ctx->dsp_mask = FF_MM_FORCE | flags[c];
         dsputil_init(&mmxctx, ctx);
