@@ -287,7 +287,6 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st = av_new_stream(s, 0);
         if (!st)
             goto fail;
-        s->streams[i] = st;
 
         av_set_pts_info(st, 64, 1, 1000000);
 
