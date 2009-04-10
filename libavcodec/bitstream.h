@@ -116,7 +116,9 @@ static inline void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_s
 #endif
 }
 
-/* return the number of bits output */
+/**
+ * Returns the number of bits output.
+ */
 static inline int put_bits_count(PutBitContext *s)
 {
 #ifdef ALT_BITSTREAM_WRITER
