@@ -1989,7 +1989,7 @@ static void free_tables(H264Context *h){
     av_freep(&h->mb2b_xy);
     av_freep(&h->mb2b8_xy);
 
-    for(i = 0; i < h->s.avctx->thread_count; i++) {
+    for(i = 0; i < MAX_THREADS; i++) {
         hx = h->thread_context[i];
         if(!hx) continue;
         av_freep(&hx->top_borders[1]);
