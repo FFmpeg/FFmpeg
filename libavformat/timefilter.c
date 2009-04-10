@@ -135,7 +135,7 @@ int main(void)
             }
             ff_timefilter_destroy(tf);
 #else
-            printf(" [%f %f %f]", bestpar0, bestpar1, best_error);
+            printf(" [%f %f %9f]", bestpar0, bestpar1, best_error);
 #endif
         }
         printf("\n");
