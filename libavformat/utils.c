@@ -1841,7 +1841,7 @@ static int has_codec_parameters(AVCodecContext *enc)
     return enc->codec_id != CODEC_ID_NONE && val != 0;
 }
 
-static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
+static int try_decode_frame(AVStream *st, AVPacket *avpkt)
 {
     int16_t *samples;
     AVCodec *codec;
@@ -1860,16 +1860,16 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
   if(!has_codec_parameters(st->codec)){
     switch(st->codec->codec_type) {
     case CODEC_TYPE_VIDEO:
-        ret = avcodec_decode_video(st->codec, &picture,
-                                   &got_picture, data, size);
+        ret = avcodec_decode_video2(st->codec, &picture,
+                                    &got_picture, avpkt);
         break;
     case CODEC_TYPE_AUDIO:
-        data_size = FFMAX(size, AVCODEC_MAX_AUDIO_FRAME_SIZE);
+        data_size = FFMAX(avpkt->size, AVCODEC_MAX_AUDIO_FRAME_SIZE);
         samples = av_malloc(data_size);
         if (!samples)
             goto fail;
-        ret = avcodec_decode_audio2(st->codec, samples,
-                                    &data_size, data, size);
+        ret = avcodec_decode_audio3(st->codec, samples,
+                                    &data_size, avpkt);
         av_free(samples);
         break;
     default:
@@ -2144,7 +2144,7 @@ int av_find_stream_info(AVFormatContext *ic)
              st->codec->codec_id == CODEC_ID_PPM ||
              st->codec->codec_id == CODEC_ID_SHORTEN ||
              (st->codec->codec_id == CODEC_ID_MPEG4 && !st->need_parsing))*/)
-            try_decode_frame(st, pkt->data, pkt->size);
+            try_decode_frame(st, pkt);
 
         count++;
     }
