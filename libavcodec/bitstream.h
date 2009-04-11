@@ -160,6 +160,12 @@ static inline void flush_put_bits(PutBitContext *s)
  */
 void align_put_bits(PutBitContext *s);
 void ff_put_string(PutBitContext * pbc, const char *s, int put_zero);
+
+/**
+ * Copies the content of \p src to the bitstream.
+ *
+ * @param length the number of bits of \p src to copy
+ */
 void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
 
 /* bit input */
