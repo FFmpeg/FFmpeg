@@ -470,9 +470,8 @@ static int ea_read_packet(AVFormatContext *s,
                 chunk_size -= 12;
             }
             ret = av_get_packet(pb, pkt, chunk_size);
-            if (ret != chunk_size)
-                ret = AVERROR(EIO);
-            else {
+            if (ret < 0)
+                return ret;
                     pkt->stream_index = ea->audio_stream_index;
                     pkt->pts = 90000;
                     pkt->pts *= ea->audio_frame_counter;
@@ -493,7 +492,6 @@ static int ea_read_packet(AVFormatContext *s,
                         ea->audio_frame_counter += chunk_size /
                             (ea->bytes * ea->num_channels);
                     }
-            }
 
             packet_read = 1;
             break;
@@ -531,12 +529,10 @@ static int ea_read_packet(AVFormatContext *s,
         case MV0F_TAG:
 get_video_packet:
             ret = av_get_packet(pb, pkt, chunk_size);
-            if (ret != chunk_size)
-                ret = AVERROR_IO;
-            else {
+            if (ret < 0)
+                return ret;
                 pkt->stream_index = ea->video_stream_index;
                 pkt->flags |= key;
-            }
             packet_read = 1;
             break;
 
