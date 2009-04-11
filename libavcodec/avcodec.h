@@ -2630,7 +2630,10 @@ typedef struct AVSubtitle {
 
 /* packet functions */
 
-void av_destruct_packet_nofree(AVPacket *pkt);
+/**
+ * @deprecated use NULL instead
+ */
+attribute_deprecated void av_destruct_packet_nofree(AVPacket *pkt);
 
 /**
  * Default packet destructor.
@@ -2675,8 +2678,9 @@ int av_dup_packet(AVPacket *pkt);
  */
 static inline void av_free_packet(AVPacket *pkt)
 {
-    if (pkt && pkt->destruct) {
-        pkt->destruct(pkt);
+    if (pkt) {
+        if (pkt->destruct) pkt->destruct(pkt);
+        pkt->data = NULL; pkt->size = 0;
     }
 }
 

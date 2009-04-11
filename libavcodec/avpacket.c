@@ -42,7 +42,7 @@ void av_init_packet(AVPacket *pkt)
     pkt->convergence_duration = 0;
     pkt->flags = 0;
     pkt->stream_index = 0;
-    pkt->destruct= av_destruct_packet_nofree;
+    pkt->destruct= NULL;
 }
 
 int av_new_packet(AVPacket *pkt, int size)
