@@ -1070,66 +1070,76 @@ av_cold int ff_msmpeg4_decode_init(MpegEncContext *s)
         INIT_VLC_RL(rl_table[3], 940);
         INIT_VLC_RL(rl_table[4], 962);
         INIT_VLC_RL(rl_table[5], 554);
-        for(i=0;i<2;i++) {
-            mv = &mv_tables[i];
-            init_vlc(&mv->vlc, MV_VLC_BITS, mv->n + 1,
-                     mv->table_mv_bits, 1, 1,
-                     mv->table_mv_code, 2, 2, INIT_VLC_USE_STATIC);
-        }
 
-        init_vlc(&ff_msmp4_dc_luma_vlc[0], DC_VLC_BITS, 120,
+        mv = &mv_tables[0];
+        INIT_VLC_STATIC(&mv->vlc, MV_VLC_BITS, mv->n + 1,
+                    mv->table_mv_bits, 1, 1,
+                    mv->table_mv_code, 2, 2, 3714);
+        mv = &mv_tables[1];
+        INIT_VLC_STATIC(&mv->vlc, MV_VLC_BITS, mv->n + 1,
+                    mv->table_mv_bits, 1, 1,
+                    mv->table_mv_code, 2, 2, 2694);
+
+        INIT_VLC_STATIC(&ff_msmp4_dc_luma_vlc[0], DC_VLC_BITS, 120,
                  &ff_table0_dc_lum[0][1], 8, 4,
-                 &ff_table0_dc_lum[0][0], 8, 4, INIT_VLC_USE_STATIC);
-        init_vlc(&ff_msmp4_dc_chroma_vlc[0], DC_VLC_BITS, 120,
+                 &ff_table0_dc_lum[0][0], 8, 4, 1158);
+        INIT_VLC_STATIC(&ff_msmp4_dc_chroma_vlc[0], DC_VLC_BITS, 120,
                  &ff_table0_dc_chroma[0][1], 8, 4,
-                 &ff_table0_dc_chroma[0][0], 8, 4, INIT_VLC_USE_STATIC);
-        init_vlc(&ff_msmp4_dc_luma_vlc[1], DC_VLC_BITS, 120,
+                 &ff_table0_dc_chroma[0][0], 8, 4, 1118);
+        INIT_VLC_STATIC(&ff_msmp4_dc_luma_vlc[1], DC_VLC_BITS, 120,
                  &ff_table1_dc_lum[0][1], 8, 4,
-                 &ff_table1_dc_lum[0][0], 8, 4, INIT_VLC_USE_STATIC);
-        init_vlc(&ff_msmp4_dc_chroma_vlc[1], DC_VLC_BITS, 120,
+                 &ff_table1_dc_lum[0][0], 8, 4, 1476);
+        INIT_VLC_STATIC(&ff_msmp4_dc_chroma_vlc[1], DC_VLC_BITS, 120,
                  &ff_table1_dc_chroma[0][1], 8, 4,
-                 &ff_table1_dc_chroma[0][0], 8, 4, INIT_VLC_USE_STATIC);
+                 &ff_table1_dc_chroma[0][0], 8, 4, 1216);
 
-        init_vlc(&v2_dc_lum_vlc, DC_VLC_BITS, 512,
+        INIT_VLC_STATIC(&v2_dc_lum_vlc, DC_VLC_BITS, 512,
                  &v2_dc_lum_table[0][1], 8, 4,
-                 &v2_dc_lum_table[0][0], 8, 4, INIT_VLC_USE_STATIC);
-        init_vlc(&v2_dc_chroma_vlc, DC_VLC_BITS, 512,
+                 &v2_dc_lum_table[0][0], 8, 4, 1472);
+        INIT_VLC_STATIC(&v2_dc_chroma_vlc, DC_VLC_BITS, 512,
                  &v2_dc_chroma_table[0][1], 8, 4,
-                 &v2_dc_chroma_table[0][0], 8, 4, INIT_VLC_USE_STATIC);
+                 &v2_dc_chroma_table[0][0], 8, 4, 1506);
 
-        init_vlc(&cbpy_vlc, CBPY_VLC_BITS, 16,
+        INIT_VLC_STATIC(&cbpy_vlc, CBPY_VLC_BITS, 16,
                  &cbpy_tab[0][1], 2, 1,
-                 &cbpy_tab[0][0], 2, 1, INIT_VLC_USE_STATIC);
-        init_vlc(&v2_intra_cbpc_vlc, V2_INTRA_CBPC_VLC_BITS, 4,
+                 &cbpy_tab[0][0], 2, 1, 64);
+        INIT_VLC_STATIC(&v2_intra_cbpc_vlc, V2_INTRA_CBPC_VLC_BITS, 4,
                  &v2_intra_cbpc[0][1], 2, 1,
-                 &v2_intra_cbpc[0][0], 2, 1, INIT_VLC_USE_STATIC);
-        init_vlc(&v2_mb_type_vlc, V2_MB_TYPE_VLC_BITS, 8,
+                 &v2_intra_cbpc[0][0], 2, 1, 8);
+        INIT_VLC_STATIC(&v2_mb_type_vlc, V2_MB_TYPE_VLC_BITS, 8,
                  &v2_mb_type[0][1], 2, 1,
-                 &v2_mb_type[0][0], 2, 1, INIT_VLC_USE_STATIC);
-        init_vlc(&v2_mv_vlc, V2_MV_VLC_BITS, 33,
+                 &v2_mb_type[0][0], 2, 1, 128);
+        INIT_VLC_STATIC(&v2_mv_vlc, V2_MV_VLC_BITS, 33,
                  &mvtab[0][1], 2, 1,
-                 &mvtab[0][0], 2, 1, INIT_VLC_USE_STATIC);
+                 &mvtab[0][0], 2, 1, 538);
 
-        for(i=0; i<4; i++){
-            init_vlc(&ff_mb_non_intra_vlc[i], MB_NON_INTRA_VLC_BITS, 128,
-                     &wmv2_inter_table[i][0][1], 8, 4,
-                     &wmv2_inter_table[i][0][0], 8, 4, INIT_VLC_USE_STATIC); //FIXME name?
-        }
+        INIT_VLC_STATIC(&ff_mb_non_intra_vlc[0], MB_NON_INTRA_VLC_BITS, 128,
+                     &wmv2_inter_table[0][0][1], 8, 4,
+                     &wmv2_inter_table[0][0][0], 8, 4, 1636);
+        INIT_VLC_STATIC(&ff_mb_non_intra_vlc[1], MB_NON_INTRA_VLC_BITS, 128,
+                     &wmv2_inter_table[1][0][1], 8, 4,
+                     &wmv2_inter_table[1][0][0], 8, 4, 2648);
+        INIT_VLC_STATIC(&ff_mb_non_intra_vlc[2], MB_NON_INTRA_VLC_BITS, 128,
+                     &wmv2_inter_table[2][0][1], 8, 4,
+                     &wmv2_inter_table[2][0][0], 8, 4, 1532);
+        INIT_VLC_STATIC(&ff_mb_non_intra_vlc[3], MB_NON_INTRA_VLC_BITS, 128,
+                     &wmv2_inter_table[3][0][1], 8, 4,
+                     &wmv2_inter_table[3][0][0], 8, 4, 2488);
 
-        init_vlc(&ff_msmp4_mb_i_vlc, MB_INTRA_VLC_BITS, 64,
+        INIT_VLC_STATIC(&ff_msmp4_mb_i_vlc, MB_INTRA_VLC_BITS, 64,
                  &ff_msmp4_mb_i_table[0][1], 4, 2,
-                 &ff_msmp4_mb_i_table[0][0], 4, 2, INIT_VLC_USE_STATIC);
+                 &ff_msmp4_mb_i_table[0][0], 4, 2, 536);
 
-        init_vlc(&v1_intra_cbpc_vlc, V1_INTRA_CBPC_VLC_BITS, 8,
+        INIT_VLC_STATIC(&v1_intra_cbpc_vlc, V1_INTRA_CBPC_VLC_BITS, 8,
                  intra_MCBPC_bits, 1, 1,
-                 intra_MCBPC_code, 1, 1, INIT_VLC_USE_STATIC);
-        init_vlc(&v1_inter_cbpc_vlc, V1_INTER_CBPC_VLC_BITS, 25,
+                 intra_MCBPC_code, 1, 1, 64);
+        INIT_VLC_STATIC(&v1_inter_cbpc_vlc, V1_INTER_CBPC_VLC_BITS, 25,
                  inter_MCBPC_bits, 1, 1,
-                 inter_MCBPC_code, 1, 1, INIT_VLC_USE_STATIC);
+                 inter_MCBPC_code, 1, 1, 104);
 
-        init_vlc(&ff_inter_intra_vlc, INTER_INTRA_VLC_BITS, 4,
+        INIT_VLC_STATIC(&ff_inter_intra_vlc, INTER_INTRA_VLC_BITS, 4,
                  &table_inter_intra[0][1], 2, 1,
-                 &table_inter_intra[0][0], 2, 1, INIT_VLC_USE_STATIC);
+                 &table_inter_intra[0][0], 2, 1, 8);
     }
 
     switch(s->msmpeg4_version){
