@@ -335,7 +335,7 @@ static inline uint8_t* pbBufPtr(PutBitContext *s)
 }
 
 /**
- *
+ * Skips the given number of bytes.
  * PutBitContext must be flushed & aligned to a byte boundary before calling this.
  */
 static inline void skip_put_bytes(PutBitContext *s, int n){
