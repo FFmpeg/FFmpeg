@@ -159,6 +159,12 @@ static inline void flush_put_bits(PutBitContext *s)
  * Pads the bitstream with zeros up to the next byte boundary.
  */
 void align_put_bits(PutBitContext *s);
+
+/**
+ * Puts the string \p s in the bitstream.
+ *
+ * @param terminate_string 0-terminates the written string if value is 1
+ */
 void ff_put_string(PutBitContext * pbc, const char *s, int terminate_string);
 
 /**
