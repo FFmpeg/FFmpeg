@@ -117,7 +117,7 @@ static inline void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_s
 }
 
 /**
- * Returns the number of bits output.
+ * Returns the total number of bits written to the bitstream.
  */
 static inline int put_bits_count(PutBitContext *s)
 {
