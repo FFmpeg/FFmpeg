@@ -195,8 +195,8 @@ typedef struct RL_VLC_ELEM {
     uint8_t run;
 } RL_VLC_ELEM;
 
-#ifndef ALT_BITSTREAM_WRITER
 static inline void put_bits(PutBitContext *s, int n, unsigned int value)
+#ifndef ALT_BITSTREAM_WRITER
 {
     unsigned int bit_buf;
     int bit_left;
@@ -246,11 +246,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     s->bit_buf = bit_buf;
     s->bit_left = bit_left;
 }
-#endif
-
-
-#ifdef ALT_BITSTREAM_WRITER
-static inline void put_bits(PutBitContext *s, int n, unsigned int value)
+#else  /* ALT_BITSTREAM_WRITER defined */
 {
 #    ifdef ALIGNED_BITSTREAM_WRITER
 #        if ARCH_X86
