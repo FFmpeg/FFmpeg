@@ -372,6 +372,8 @@ static inline void skip_put_bits(PutBitContext *s, int n){
 
 /**
  * Changes the end of the buffer.
+ *
+ * @param size the new size in bytes of the buffer where to put bits
  */
 static inline void set_put_bits_buffer_size(PutBitContext *s, int size){
     s->buf_end= s->buf + size;
