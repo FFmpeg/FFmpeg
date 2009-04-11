@@ -102,17 +102,17 @@ struct algo algos[] = {
 #if HAVE_MMX
   {"MMX",             0, ff_fdct_mmx,        ff_ref_fdct, NO_PERM, FF_MM_MMX},
 #if HAVE_MMX2
-  {"MMX2",            0, ff_fdct_mmx2,       ff_ref_fdct, NO_PERM, FF_MM_MMXEXT},
+  {"MMX2",            0, ff_fdct_mmx2,       ff_ref_fdct, NO_PERM, FF_MM_MMX2},
   {"SSE2",            0, ff_fdct_sse2,       ff_ref_fdct, NO_PERM, FF_MM_SSE2},
 #endif
 
 #if CONFIG_GPL
   {"LIBMPEG2-MMX",    1, ff_mmx_idct,        ff_ref_idct, MMX_PERM, FF_MM_MMX},
-  {"LIBMPEG2-MMXEXT", 1, ff_mmxext_idct,     ff_ref_idct, MMX_PERM, FF_MM_MMXEXT},
+  {"LIBMPEG2-MMX2",   1, ff_mmxext_idct,     ff_ref_idct, MMX_PERM, FF_MM_MMX2},
 #endif
   {"SIMPLE-MMX",      1, ff_simple_idct_mmx, ff_ref_idct, MMX_SIMPLE_PERM, FF_MM_MMX},
   {"XVID-MMX",        1, ff_idct_xvid_mmx,   ff_ref_idct, NO_PERM, FF_MM_MMX},
-  {"XVID-MMX2",       1, ff_idct_xvid_mmx2,  ff_ref_idct, NO_PERM, FF_MM_MMXEXT},
+  {"XVID-MMX2",       1, ff_idct_xvid_mmx2,  ff_ref_idct, NO_PERM, FF_MM_MMX2},
   {"XVID-SSE2",       1, ff_idct_xvid_sse2,  ff_ref_idct, SSE2_PERM, FF_MM_SSE2},
 #endif
 
