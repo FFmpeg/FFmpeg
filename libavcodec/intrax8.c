@@ -50,7 +50,7 @@ static av_cold void x8_vlc_init(void){
               AC_VLC_BITS,77, \
               &src[1],4,2, \
               &src[0],4,2, \
-              1)
+              INIT_VLC_USE_STATIC)
 //set ac tables
     for(i=0;i<8;i++){
         init_ac_vlc( j_ac_vlc[0][0][i], x8_ac0_highquant_table[i][0] );
@@ -79,7 +79,7 @@ static av_cold void x8_vlc_init(void){
     OR_VLC_BITS,12, \
     &src[1],4,2, \
     &src[0],4,2, \
-    1);
+    INIT_VLC_USE_STATIC);
     for(i=0;i<2;i++){
         init_or_vlc( j_orient_vlc[0][i], x8_orient_highquant_table[i][0]);
     }

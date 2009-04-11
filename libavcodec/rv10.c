@@ -586,10 +586,10 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     if (!done) {
         init_vlc(&rv_dc_lum, DC_VLC_BITS, 256,
                  rv_lum_bits, 1, 1,
-                 rv_lum_code, 2, 2, 1);
+                 rv_lum_code, 2, 2, INIT_VLC_USE_STATIC);
         init_vlc(&rv_dc_chrom, DC_VLC_BITS, 256,
                  rv_chrom_bits, 1, 1,
-                 rv_chrom_code, 2, 2, 1);
+                 rv_chrom_code, 2, 2, INIT_VLC_USE_STATIC);
         done = 1;
     }
 

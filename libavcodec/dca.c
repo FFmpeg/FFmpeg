@@ -264,19 +264,19 @@ static av_cold void dca_init_vlcs(void)
     for (i = 0; i < 5; i++)
         init_vlc(&dca_bitalloc_index.vlc[i], bitalloc_12_vlc_bits[i], 12,
                  bitalloc_12_bits[i], 1, 1,
-                 bitalloc_12_codes[i], 2, 2, 1);
+                 bitalloc_12_codes[i], 2, 2, INIT_VLC_USE_STATIC);
     dca_scalefactor.offset = -64;
     dca_scalefactor.wrap = 2;
     for (i = 0; i < 5; i++)
         init_vlc(&dca_scalefactor.vlc[i], SCALES_VLC_BITS, 129,
                  scales_bits[i], 1, 1,
-                 scales_codes[i], 2, 2, 1);
+                 scales_codes[i], 2, 2, INIT_VLC_USE_STATIC);
     dca_tmode.offset = 0;
     dca_tmode.wrap = 1;
     for (i = 0; i < 4; i++)
         init_vlc(&dca_tmode.vlc[i], tmode_vlc_bits[i], 4,
                  tmode_bits[i], 1, 1,
-                 tmode_codes[i], 2, 2, 1);
+                 tmode_codes[i], 2, 2, INIT_VLC_USE_STATIC);
 
     for(i = 0; i < 10; i++)
         for(j = 0; j < 7; j++){
@@ -286,7 +286,7 @@ static av_cold void dca_init_vlcs(void)
             init_vlc(&dca_smpl_bitalloc[i+1].vlc[j], bitalloc_maxbits[i][j],
                      bitalloc_sizes[i],
                      bitalloc_bits[i][j], 1, 1,
-                     bitalloc_codes[i][j], 2, 2, 1);
+                     bitalloc_codes[i][j], 2, 2, INIT_VLC_USE_STATIC);
         }
     vlcs_initialized = 1;
 }
