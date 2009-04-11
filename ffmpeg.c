@@ -1185,23 +1185,21 @@ static int output_packet(AVInputStream *ist, int ist_index,
     int got_subtitle;
     AVPacket avpkt;
 
-    av_init_packet(&avpkt);
-
     if(ist->next_pts == AV_NOPTS_VALUE)
         ist->next_pts= ist->pts;
 
     if (pkt == NULL) {
         /* EOF handling */
+        av_init_packet(&avpkt);
         avpkt.data = NULL;
         avpkt.size = 0;
         goto handle_eof;
+    } else {
+        avpkt = *pkt;
     }
 
     if(pkt->dts != AV_NOPTS_VALUE)
         ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
-
-    avpkt.size = pkt->size;
-    avpkt.data = pkt->data;
 
     //while we have more to decode or while the decoder did output something on EOF
     while (avpkt.size > 0 || (!pkt && ist->next_pts != ist->pts)) {
