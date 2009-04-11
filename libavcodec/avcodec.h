@@ -3223,6 +3223,9 @@ int avcodec_parse_frame(AVCodecContext *avctx, uint8_t **pdata,
  * stored in output buffer \p buf.
  *
  * @note The output buffer should be at least \c FF_MIN_BUFFER_SIZE bytes large.
+ * However, for PCM audio the user will know how much space is needed
+ * because it depends on the value passed in \p buf_size as described
+ * below. In that case a lower value can be used.
  *
  * @param avctx the codec context
  * @param[out] buf the output buffer
