@@ -786,7 +786,7 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
 
     init_vlc(&svq1_motion_component, 7, 33,
         &mvtab[0][1], 2, 1,
-        &mvtab[0][0], 2, 1, 1);
+        &mvtab[0][0], 2, 1, INIT_VLC_USE_STATIC);
 
     for (i = 0; i < 6; i++) {
         init_vlc(&svq1_intra_multistage[i], 3, 8,

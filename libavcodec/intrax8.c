@@ -66,7 +66,7 @@ static av_cold void x8_vlc_init(void){
         DC_VLC_BITS,34, \
         &src[1],4,2, \
         &src[0],4,2, \
-        1);
+        INIT_VLC_USE_STATIC);
     for(i=0;i<8;i++){
         init_dc_vlc( j_dc_vlc[0][i], x8_dc_highquant_table[i][0]);
         init_dc_vlc( j_dc_vlc[1][i], x8_dc_lowquant_table [i][0]);
