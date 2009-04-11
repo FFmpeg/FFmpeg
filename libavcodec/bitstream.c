@@ -65,13 +65,13 @@ void align_put_bits(PutBitContext *s)
 #endif
 }
 
-void ff_put_string(PutBitContext * pbc, const char *s, int put_zero)
+void ff_put_string(PutBitContext * pbc, const char *s, int terminate_string)
 {
     while(*s){
         put_bits(pbc, 8, *s);
         s++;
     }
-    if(put_zero)
+    if(terminate_string)
         put_bits(pbc, 8, 0);
 }
 
