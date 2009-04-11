@@ -320,8 +320,6 @@ static int wc3_read_packet(AVFormatContext *s,
             ret= av_get_packet(pb, pkt, size);
             pkt->stream_index = wc3->video_stream_index;
             pkt->pts = wc3->pts;
-            if (ret != size)
-                ret = AVERROR(EIO);
             packet_read = 1;
             break;
 
@@ -349,8 +347,6 @@ static int wc3_read_packet(AVFormatContext *s,
             ret= av_get_packet(pb, pkt, size);
             pkt->stream_index = wc3->audio_stream_index;
             pkt->pts = wc3->pts;
-            if (ret != size)
-                ret = AVERROR(EIO);
 
             /* time to advance pts */
             wc3->pts++;
