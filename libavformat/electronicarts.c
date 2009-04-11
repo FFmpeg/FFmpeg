@@ -472,26 +472,26 @@ static int ea_read_packet(AVFormatContext *s,
             ret = av_get_packet(pb, pkt, chunk_size);
             if (ret < 0)
                 return ret;
-                    pkt->stream_index = ea->audio_stream_index;
-                    pkt->pts = 90000;
-                    pkt->pts *= ea->audio_frame_counter;
-                    pkt->pts /= ea->sample_rate;
+            pkt->stream_index = ea->audio_stream_index;
+            pkt->pts = 90000;
+            pkt->pts *= ea->audio_frame_counter;
+            pkt->pts /= ea->sample_rate;
 
-                    switch (ea->audio_codec) {
-                    case CODEC_ID_ADPCM_EA:
-                    /* 2 samples/byte, 1 or 2 samples per frame depending
-                     * on stereo; chunk also has 12-byte header */
-                    ea->audio_frame_counter += ((chunk_size - 12) * 2) /
-                        ea->num_channels;
-                        break;
-                    case CODEC_ID_PCM_S16LE_PLANAR:
-                    case CODEC_ID_MP3:
-                        ea->audio_frame_counter += num_samples;
-                        break;
-                    default:
-                        ea->audio_frame_counter += chunk_size /
-                            (ea->bytes * ea->num_channels);
-                    }
+            switch (ea->audio_codec) {
+            case CODEC_ID_ADPCM_EA:
+                /* 2 samples/byte, 1 or 2 samples per frame depending
+                 * on stereo; chunk also has 12-byte header */
+                ea->audio_frame_counter += ((chunk_size - 12) * 2) /
+                    ea->num_channels;
+                break;
+            case CODEC_ID_PCM_S16LE_PLANAR:
+            case CODEC_ID_MP3:
+                ea->audio_frame_counter += num_samples;
+                break;
+            default:
+                ea->audio_frame_counter += chunk_size /
+                    (ea->bytes * ea->num_channels);
+            }
 
             packet_read = 1;
             break;
@@ -531,8 +531,8 @@ get_video_packet:
             ret = av_get_packet(pb, pkt, chunk_size);
             if (ret < 0)
                 return ret;
-                pkt->stream_index = ea->video_stream_index;
-                pkt->flags |= key;
+            pkt->stream_index = ea->video_stream_index;
+            pkt->flags |= key;
             packet_read = 1;
             break;
 
