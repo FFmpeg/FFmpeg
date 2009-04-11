@@ -2613,10 +2613,8 @@ void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
 
     this_pktl = av_mallocz(sizeof(AVPacketList));
     this_pktl->pkt= *pkt;
-    if(pkt->destruct == av_destruct_packet)
-        pkt->destruct= NULL; // not shared -> must keep original from being freed
-    else
-        av_dup_packet(&this_pktl->pkt);  //shared -> must dup
+    pkt->destruct= NULL;             // do not free original but only the copy
+    av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-alloced memory
 
     next_point = &s->packet_buffer;
     while(*next_point){
