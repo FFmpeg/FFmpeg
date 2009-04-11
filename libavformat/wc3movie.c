@@ -224,8 +224,8 @@ static int wc3_read_header(AVFormatContext *s,
 
         default:
             av_log(s, AV_LOG_ERROR, "  unrecognized WC3 chunk: %c%c%c%c (0x%02X%02X%02X%02X)\n",
-                (char)fourcc_tag, (char)(fourcc_tag >> 8), (char)(fourcc_tag >> 16), (char)(fourcc_tag >> 24),
-                (char)fourcc_tag, (char)(fourcc_tag >> 8), (char)(fourcc_tag >> 16), (char)(fourcc_tag >> 24));
+                (uint8_t)fourcc_tag, (uint8_t)(fourcc_tag >> 8), (uint8_t)(fourcc_tag >> 16), (uint8_t)(fourcc_tag >> 24),
+                (uint8_t)fourcc_tag, (uint8_t)(fourcc_tag >> 8), (uint8_t)(fourcc_tag >> 16), (uint8_t)(fourcc_tag >> 24));
             return AVERROR_INVALIDDATA;
             break;
         }
@@ -356,8 +356,8 @@ static int wc3_read_packet(AVFormatContext *s,
 
         default:
             av_log (s, AV_LOG_ERROR, "  unrecognized WC3 chunk: %c%c%c%c (0x%02X%02X%02X%02X)\n",
-                (char)fourcc_tag, (char)(fourcc_tag >> 8), (char)(fourcc_tag >> 16), (char)(fourcc_tag >> 24),
-                (char)fourcc_tag, (char)(fourcc_tag >> 8), (char)(fourcc_tag >> 16), (char)(fourcc_tag >> 24));
+                (uint8_t)fourcc_tag, (uint8_t)(fourcc_tag >> 8), (uint8_t)(fourcc_tag >> 16), (uint8_t)(fourcc_tag >> 24),
+                (uint8_t)fourcc_tag, (uint8_t)(fourcc_tag >> 8), (uint8_t)(fourcc_tag >> 16), (uint8_t)(fourcc_tag >> 24));
             ret = AVERROR_INVALIDDATA;
             packet_read = 1;
             break;
