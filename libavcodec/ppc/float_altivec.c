@@ -20,8 +20,6 @@
 
 #include "libavcodec/dsputil.h"
 
-#include "gcc_fixes.h"
-
 #include "dsputil_altivec.h"
 #include "util_altivec.h"
 

@@ -37,9 +37,11 @@
 
 #include <stdlib.h>                                      /* malloc(), free() */
 #include <string.h>
+#include "config.h"
+#if HAVE_ALTIVEC_H
+#include <altivec.h>
+#endif
 #include "libavcodec/dsputil.h"
-
-#include "gcc_fixes.h"
 #include "types_altivec.h"
 #include "dsputil_ppc.h"
 

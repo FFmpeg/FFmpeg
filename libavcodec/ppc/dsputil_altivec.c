@@ -20,10 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+#if HAVE_ALTIVEC_H
+#include <altivec.h>
+#endif
 #include "libavcodec/dsputil.h"
-
-#include "gcc_fixes.h"
-
 #include "dsputil_ppc.h"
 #include "util_altivec.h"
 #include "types_altivec.h"
@@ -1124,70 +1125,70 @@ xlc goes to around 660 on the regular C code...
 static int hadamard8_diff16x8_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, uint8_t *src, int stride, int h) {
     int sum;
     register vector signed short
-        temp0 REG_v(v0),
-        temp1 REG_v(v1),
-        temp2 REG_v(v2),
-        temp3 REG_v(v3),
-        temp4 REG_v(v4),
-        temp5 REG_v(v5),
-        temp6 REG_v(v6),
-        temp7 REG_v(v7);
+        temp0 __asm__ ("v0"),
+        temp1 __asm__ ("v1"),
+        temp2 __asm__ ("v2"),
+        temp3 __asm__ ("v3"),
+        temp4 __asm__ ("v4"),
+        temp5 __asm__ ("v5"),
+        temp6 __asm__ ("v6"),
+        temp7 __asm__ ("v7");
     register vector signed short
-        temp0S REG_v(v8),
-        temp1S REG_v(v9),
-        temp2S REG_v(v10),
-        temp3S REG_v(v11),
-        temp4S REG_v(v12),
-        temp5S REG_v(v13),
-        temp6S REG_v(v14),
-        temp7S REG_v(v15);
-    register const vector unsigned char vzero REG_v(v31)=
+        temp0S __asm__ ("v8"),
+        temp1S __asm__ ("v9"),
+        temp2S __asm__ ("v10"),
+        temp3S __asm__ ("v11"),
+        temp4S __asm__ ("v12"),
+        temp5S __asm__ ("v13"),
+        temp6S __asm__ ("v14"),
+        temp7S __asm__ ("v15");
+    register const vector unsigned char vzero __asm__ ("v31") =
         (const vector unsigned char)vec_splat_u8(0);
     {
-    register const vector signed short vprod1 REG_v(v16)=
+    register const vector signed short vprod1 __asm__ ("v16") =
         (const vector signed short){ 1,-1, 1,-1, 1,-1, 1,-1 };
-    register const vector signed short vprod2 REG_v(v17)=
+    register const vector signed short vprod2 __asm__ ("v17") =
         (const vector signed short){ 1, 1,-1,-1, 1, 1,-1,-1 };
-    register const vector signed short vprod3 REG_v(v18)=
+    register const vector signed short vprod3 __asm__ ("v18") =
         (const vector signed short){ 1, 1, 1, 1,-1,-1,-1,-1 };
-    register const vector unsigned char perm1 REG_v(v19)=
+    register const vector unsigned char perm1 __asm__ ("v19") =
         (const vector unsigned char)
         {0x02, 0x03, 0x00, 0x01, 0x06, 0x07, 0x04, 0x05,
          0x0A, 0x0B, 0x08, 0x09, 0x0E, 0x0F, 0x0C, 0x0D};
-    register const vector unsigned char perm2 REG_v(v20)=
+    register const vector unsigned char perm2 __asm__ ("v20") =
         (const vector unsigned char)
         {0x04, 0x05, 0x06, 0x07, 0x00, 0x01, 0x02, 0x03,
          0x0C, 0x0D, 0x0E, 0x0F, 0x08, 0x09, 0x0A, 0x0B};
-    register const vector unsigned char perm3 REG_v(v21)=
+    register const vector unsigned char perm3 __asm__ ("v21") =
         (const vector unsigned char)
         {0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
          0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
 
-#define ONEITERBUTTERFLY(i, res1, res2)                                   \
-    {                                                                     \
-    register vector unsigned char src1 REG_v(v22),                    \
-                                  src2 REG_v(v23),                    \
-                                  dst1 REG_v(v24),                    \
-                                  dst2 REG_v(v25),                    \
-                                  srcO REG_v(v22),                    \
-                                  dstO REG_v(v23);                    \
+#define ONEITERBUTTERFLY(i, res1, res2)                               \
+    {                                                                 \
+    register vector unsigned char src1 __asm__ ("v22"),               \
+                                  src2 __asm__ ("v23"),               \
+                                  dst1 __asm__ ("v24"),               \
+                                  dst2 __asm__ ("v25"),               \
+                                  srcO __asm__ ("v22"),               \
+                                  dstO __asm__ ("v23");               \
                                                                       \
-    register vector signed short  srcV REG_v(v24),                    \
-                                  dstV REG_v(v25),                    \
-                                  srcW REG_v(v26),                    \
-                                  dstW REG_v(v27),                    \
-                                  but0 REG_v(v28),                    \
-                                  but0S REG_v(v29),                   \
-                                  op1 REG_v(v30),                     \
-                                  but1 REG_v(v22),                    \
-                                  op1S REG_v(v23),                    \
-                                  but1S REG_v(v24),                   \
-                                  op2 REG_v(v25),                     \
-                                  but2 REG_v(v26),                    \
-                                  op2S REG_v(v27),                    \
-                                  but2S REG_v(v28),                   \
-                                  op3 REG_v(v29),                     \
-                                  op3S REG_v(v30);                    \
+    register vector signed short  srcV  __asm__ ("v24"),              \
+                                  dstV  __asm__ ("v25"),              \
+                                  srcW  __asm__ ("v26"),              \
+                                  dstW  __asm__ ("v27"),              \
+                                  but0  __asm__ ("v28"),              \
+                                  but0S __asm__ ("v29"),              \
+                                  op1   __asm__ ("v30"),              \
+                                  but1  __asm__ ("v22"),              \
+                                  op1S  __asm__ ("v23"),              \
+                                  but1S __asm__ ("v24"),              \
+                                  op2   __asm__ ("v25"),              \
+                                  but2  __asm__ ("v26"),              \
+                                  op2S  __asm__ ("v27"),              \
+                                  but2S __asm__ ("v28"),              \
+                                  op3   __asm__ ("v29"),              \
+                                  op3S  __asm__ ("v30");              \
                                                                       \
     src1 = vec_ld(stride * i, src);                                   \
     src2 = vec_ld((stride * i) + 16, src);                            \

@@ -26,8 +26,6 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 
-#include "gcc_fixes.h"
-
 #include "dsputil_ppc.h"
 #include "util_altivec.h"
 // Swaps two variables (used for altivec registers)

@@ -21,8 +21,6 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/h264data.h"
 
-#include "gcc_fixes.h"
-
 #include "dsputil_ppc.h"
 #include "dsputil_altivec.h"
 #include "util_altivec.h"

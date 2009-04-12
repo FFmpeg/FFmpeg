@@ -18,11 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
+#include "config.h"
+#if HAVE_ALTIVEC_H
+#include <altivec.h>
+#endif
 #include "libavutil/common.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_ppc.h"
-#include "gcc_fixes.h"
 
 
 #define vs16(v) ((vector signed short)(v))
