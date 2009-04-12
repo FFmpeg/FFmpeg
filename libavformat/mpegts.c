@@ -711,12 +711,6 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     mpegts_close_filter(ts, filter);
 }
 
-static void mpegts_set_service(MpegTSContext *ts)
-{
-    mpegts_open_section_filter(ts, PAT_PID,
-                                                pat_cb, ts, 1);
-}
-
 static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
@@ -1272,7 +1266,7 @@ static int mpegts_read_header(AVFormatContext *s,
         url_fseek(pb, pos, SEEK_SET);
         mpegts_scan_sdt(ts);
 
-        mpegts_set_service(ts);
+        mpegts_open_section_filter(ts, PAT_PID, pat_cb, ts, 1);
 
         handle_packets(ts, s->probesize);
         /* if could not find service, enable auto_guess */
