@@ -3660,6 +3660,8 @@ static void field_end(H264Context *h){
         ff_er_frame_end(s);
 
     MPV_frame_end(s);
+
+    h->current_slice=0;
 }
 
 /**
@@ -3720,7 +3722,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     first_mb_in_slice= get_ue_golomb(&s->gb);
 
-    if((s->flags2 & CODEC_FLAG2_CHUNKS) && first_mb_in_slice == 0){
+    if(first_mb_in_slice == 0){ //FIXME better field boundary detection
+        if(h0->current_slice && FIELD_PICTURE){
+            field_end(h);
+        }
+
         h0->current_slice = 0;
         if (!s0->first_field)
             s->current_picture_ptr= NULL;
