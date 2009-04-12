@@ -116,7 +116,7 @@ static int process_audio_header_elements(AVFormatContext *s)
 
         switch (byte) {
         case 0xFD:
-            av_log (s, AV_LOG_INFO, "entered audio subheader\n");
+            av_log (s, AV_LOG_DEBUG, "entered audio subheader\n");
             inSubheader = 1;
             while (inSubheader) {
                 uint8_t subbyte;
@@ -125,50 +125,50 @@ static int process_audio_header_elements(AVFormatContext *s)
                 switch (subbyte) {
                 case 0x80:
                     revision = read_arbitary(pb);
-                    av_log (s, AV_LOG_INFO, "revision (element 0x80) set to 0x%08x\n", revision);
+                    av_log (s, AV_LOG_DEBUG, "revision (element 0x80) set to 0x%08x\n", revision);
                     break;
                 case 0x82:
                     ea->num_channels = read_arbitary(pb);
-                    av_log (s, AV_LOG_INFO, "num_channels (element 0x82) set to 0x%08x\n", ea->num_channels);
+                    av_log (s, AV_LOG_DEBUG, "num_channels (element 0x82) set to 0x%08x\n", ea->num_channels);
                     break;
                 case 0x83:
                     compression_type = read_arbitary(pb);
-                    av_log (s, AV_LOG_INFO, "compression_type (element 0x83) set to 0x%08x\n", compression_type);
+                    av_log (s, AV_LOG_DEBUG, "compression_type (element 0x83) set to 0x%08x\n", compression_type);
                     break;
                 case 0x84:
                     ea->sample_rate = read_arbitary(pb);
-                    av_log (s, AV_LOG_INFO, "sample_rate (element 0x84) set to %i\n", ea->sample_rate);
+                    av_log (s, AV_LOG_DEBUG, "sample_rate (element 0x84) set to %i\n", ea->sample_rate);
                     break;
                 case 0x85:
                     ea->num_samples = read_arbitary(pb);
-                    av_log (s, AV_LOG_INFO, "num_samples (element 0x85) set to 0x%08x\n", ea->num_samples);
+                    av_log (s, AV_LOG_DEBUG, "num_samples (element 0x85) set to 0x%08x\n", ea->num_samples);
                     break;
                 case 0x8A:
-                    av_log (s, AV_LOG_INFO, "element 0x%02x set to 0x%08x\n", subbyte, read_arbitary(pb));
-                    av_log (s, AV_LOG_INFO, "exited audio subheader\n");
+                    av_log (s, AV_LOG_DEBUG, "element 0x%02x set to 0x%08x\n", subbyte, read_arbitary(pb));
+                    av_log (s, AV_LOG_DEBUG, "exited audio subheader\n");
                     inSubheader = 0;
                     break;
                 case 0xA0:
                     revision2 = read_arbitary(pb);
-                    av_log (s, AV_LOG_INFO, "revision2 (element 0xA0) set to 0x%08x\n", revision2);
+                    av_log (s, AV_LOG_DEBUG, "revision2 (element 0xA0) set to 0x%08x\n", revision2);
                     break;
                 case 0xFF:
-                    av_log (s, AV_LOG_INFO, "end of header block reached (within audio subheader)\n");
+                    av_log (s, AV_LOG_DEBUG, "end of header block reached (within audio subheader)\n");
                     inSubheader = 0;
                     inHeader = 0;
                     break;
                 default:
-                    av_log (s, AV_LOG_INFO, "element 0x%02x set to 0x%08x\n", subbyte, read_arbitary(pb));
+                    av_log (s, AV_LOG_DEBUG, "element 0x%02x set to 0x%08x\n", subbyte, read_arbitary(pb));
                     break;
                 }
             }
             break;
         case 0xFF:
-            av_log (s, AV_LOG_INFO, "end of header block reached\n");
+            av_log (s, AV_LOG_DEBUG, "end of header block reached\n");
             inHeader = 0;
             break;
         default:
-            av_log (s, AV_LOG_INFO, "header element 0x%02x set to 0x%08x\n", byte, read_arbitary(pb));
+            av_log (s, AV_LOG_DEBUG, "header element 0x%02x set to 0x%08x\n", byte, read_arbitary(pb));
             break;
         }
     }
