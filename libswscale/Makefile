@@ -16,8 +16,6 @@ OBJS-$(HAVE_VIS)           +=  sparc/yuv2rgb_vis.o
 
 MMX-OBJS-$(CONFIG_GPL)     +=  x86/yuv2rgb_mmx.o        \
 
-OBJS-$(HAVE_MMX)           +=  $(MMX-OBJS-yes)
-
 EXAMPLES  = swscale
 TESTPROGS = colorspace
 
