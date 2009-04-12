@@ -21,6 +21,7 @@
 
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"
@@ -491,6 +492,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     char language[4] = {0}; /* initialize to kill warnings */
     int has_hdmv_descr = 0;
     int has_dirac_descr = 0;
+    uint32_t reg_desc = 0; /* registration descriptor */
 
 #ifdef DEBUG_SI
     av_log(ts->stream, AV_LOG_DEBUG, "PMT: len %i\n", section_len);
@@ -527,14 +529,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             break;
         program_info_length -= len + 2;
         if(tag == REGISTRATION_DESCRIPTOR && len >= 4) {
-            uint8_t bytes[4];
-            bytes[0] = get8(&p, p_end);
-            bytes[1] = get8(&p, p_end);
-            bytes[2] = get8(&p, p_end);
-            bytes[3] = get8(&p, p_end);
+            reg_desc = bytestream_get_le32(&p);
             len -= 4;
-            if(bytes[0] == 'H' && bytes[1] == 'D' &&
-               bytes[2] == 'M' && bytes[3] == 'V')
+            if(reg_desc == AV_RL32("HDMV"))
                 has_hdmv_descr = 1;
         }
         p += len;
@@ -601,17 +598,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 language[3] = 0;
                 break;
             case REGISTRATION_DESCRIPTOR: /*MPEG-2 Registration descriptor */
-                {
-                    uint8_t bytes[4];
-                    bytes[0] = get8(&p, desc_end);
-                    bytes[1] = get8(&p, desc_end);
-                    bytes[2] = get8(&p, desc_end);
-                    bytes[3] = get8(&p, desc_end);
-                    if(bytes[0] == 'd' && bytes[1] == 'r' &&
-                       bytes[2] == 'a' && bytes[3] == 'c')
-                        has_dirac_descr = 1;
-                    break;
-                }
+                reg_desc = bytestream_get_le32(&p);
+                if(reg_desc == AV_RL32("drac"))
+                    has_dirac_descr = 1;
+                break;
             default:
                 break;
             }
