@@ -36,7 +36,6 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void vc1dsp_init_altivec(DSPContext* c, AVCodecContext *avctx);
-void snow_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void float_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void int_init_altivec(DSPContext* c, AVCodecContext *avctx);
 
@@ -265,7 +264,6 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         mm_flags |= FF_MM_ALTIVEC;
 
         dsputil_init_altivec(c, avctx);
-        if(CONFIG_SNOW_DECODER) snow_init_altivec(c, avctx);
         if(CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER)
             vc1dsp_init_altivec(c, avctx);
         float_init_altivec(c, avctx);
