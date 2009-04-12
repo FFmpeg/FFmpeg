@@ -789,13 +789,6 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     }
 }
 
-/* scan services in a transport stream by looking at the SDT */
-static void mpegts_scan_sdt(MpegTSContext *ts)
-{
-    mpegts_open_section_filter(ts, SDT_PID,
-                                                sdt_cb, ts, 1);
-}
-
 static int64_t get_pts(const uint8_t *p)
 {
     int64_t pts = (int64_t)((p[0] >> 1) & 0x07) << 30;
@@ -1264,7 +1257,8 @@ static int mpegts_read_header(AVFormatContext *s,
 
         /* first do a scaning to get all the services */
         url_fseek(pb, pos, SEEK_SET);
-        mpegts_scan_sdt(ts);
+
+        mpegts_open_section_filter(ts, SDT_PID, sdt_cb, ts, 1);
 
         mpegts_open_section_filter(ts, PAT_PID, pat_cb, ts, 1);
 
