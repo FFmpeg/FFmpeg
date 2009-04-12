@@ -2950,7 +2950,10 @@ static int decode_ref_pic_list_reordering(H264Context *h){
         for(index= 0; index < h->ref_count[list]; index++){
             if(!h->ref_list[list][index].data[0]){
                 av_log(h->s.avctx, AV_LOG_ERROR, "Missing reference picture\n");
-                h->ref_list[list][index]= s->current_picture; //FIXME this is not a sensible solution
+                if(h->default_ref_list[list][0].data[0])
+                    h->ref_list[list][index]= h->default_ref_list[list][0];
+                else
+                    return -1;
             }
         }
     }
