@@ -993,6 +993,8 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
     unsigned int sub_mb_type;
     int i8, i4;
 
+    assert(h->ref_list[1][0].reference&3);
+
 #define MB_TYPE_16x16_OR_INTRA (MB_TYPE_16x16|MB_TYPE_INTRA4x4|MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM)
 
     if(IS_INTERLACED(h->ref_list[1][0].mb_type[mb_xy])){ // AFL/AFR/FR/FL -> AFL/FL
