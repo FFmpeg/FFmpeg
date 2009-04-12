@@ -337,7 +337,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     ctx->swap_buf = av_fast_realloc(ctx->swap_buf, &ctx->swap_buf_size,
                                  swap_buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if(!ctx->swap_buf)
-        return AVERROR_NOMEM;
+        return AVERROR(ENOMEM);
 
     ctx->dsp.bswap_buf((uint32_t*)ctx->swap_buf,
                         (const uint32_t*) buf,
