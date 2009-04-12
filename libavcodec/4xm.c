@@ -138,7 +138,7 @@ typedef struct FourXContext{
     VLC pre_vlc;
     int last_dc;
     DECLARE_ALIGNED_8(DCTELEM, block[6][64]);
-    uint8_t *bitstream_buffer;
+    void *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     int version;
     CFrameBuffer cfrm[CFRAME_BUFFER_COUNT];
@@ -379,7 +379,7 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length){
     }
 
     f->bitstream_buffer= av_fast_realloc(f->bitstream_buffer, &f->bitstream_buffer_size, bitstream_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    f->dsp.bswap_buf((uint32_t*)f->bitstream_buffer, (const uint32_t*)(buf + extra), bitstream_size/4);
+    f->dsp.bswap_buf(f->bitstream_buffer, (const uint32_t*)(buf + extra), bitstream_size/4);
     init_get_bits(&f->gb, f->bitstream_buffer, 8*bitstream_size);
 
     f->wordstream= (const uint16_t*)(buf + extra + bitstream_size);
@@ -657,7 +657,7 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length){
     prestream_size= length + buf - prestream;
 
     f->bitstream_buffer= av_fast_realloc(f->bitstream_buffer, &f->bitstream_buffer_size, prestream_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    f->dsp.bswap_buf((uint32_t*)f->bitstream_buffer, (const uint32_t*)prestream, prestream_size/4);
+    f->dsp.bswap_buf(f->bitstream_buffer, (const uint32_t*)prestream, prestream_size/4);
     init_get_bits(&f->pre_gb, f->bitstream_buffer, 8*prestream_size);
 
     f->last_dc= 0*128*8*8;

@@ -38,7 +38,7 @@
 typedef struct TqiContext {
     MpegEncContext s;
     AVFrame frame;
-    uint8_t *bitstream_buf;
+    void *bitstream_buf;
     unsigned int bitstream_buf_size;
 } TqiContext;
 
@@ -129,7 +129,7 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     t->bitstream_buf = av_fast_realloc(t->bitstream_buf, &t->bitstream_buf_size, (buf_end-buf) + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!t->bitstream_buf)
         return AVERROR(ENOMEM);
-    s->dsp.bswap_buf((uint32_t*)t->bitstream_buf, (const uint32_t*)buf, (buf_end-buf)/4);
+    s->dsp.bswap_buf(t->bitstream_buf, (const uint32_t*)buf, (buf_end-buf)/4);
     init_get_bits(&s->gb, t->bitstream_buf, 8*(buf_end-buf));
 
     s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 0;

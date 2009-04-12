@@ -36,7 +36,7 @@ typedef struct {
     int             num_vblocks[3];
     int             num_hblocks[3];
 
-    uint8_t        *swap_buf;
+    void           *swap_buf;
     int             swap_buf_size;
 
     int             cur_index;
@@ -339,7 +339,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     if(!ctx->swap_buf)
         return AVERROR(ENOMEM);
 
-    ctx->dsp.bswap_buf((uint32_t*)ctx->swap_buf,
+    ctx->dsp.bswap_buf(ctx->swap_buf,
                         (const uint32_t*) buf,
                         swap_buf_size>>2);
     init_get_bits(&ctx->gb, ctx->swap_buf, swap_buf_size << 3);
