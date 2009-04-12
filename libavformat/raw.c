@@ -84,6 +84,9 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->sample_rate = ap->sample_rate;
             if(ap->channels) st->codec->channels = ap->channels;
             else             st->codec->channels = 1;
+            st->codec->bits_per_coded_sample = av_get_bits_per_sample(st->codec->codec_id);
+            assert(st->codec->bits_per_coded_sample > 0);
+            st->codec->block_align = st->codec->bits_per_coded_sample*st->codec->channels/8;
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             break;
         case CODEC_TYPE_VIDEO:
@@ -104,13 +107,14 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 }
 
 #define RAW_PACKET_SIZE 1024
+#define RAW_SAMPLES     1024
 
 static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size, bps;
     //    AVStream *st = s->streams[0];
 
-    size= RAW_PACKET_SIZE;
+    size= RAW_SAMPLES*s->streams[0]->codec->block_align;
 
     ret= av_get_packet(s->pb, pkt, size);
 

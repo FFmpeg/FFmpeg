@@ -2612,7 +2612,7 @@ ret: 0 st: 0 dts:0.200816 pts:0.200816 pos:4428 size:1024 flags:1
 ret: 0 st: 0 ts:-0.904989 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st: 0 ts:1.989161 flags:1
-ret: 0 st: 0 dts:1.989161 pts:1.989161 pos:43861 size:683 flags:1
+ret: 0 st: 0 dts:1.989161 pts:1.989161 pos:43861 size:1024 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
 ret: 0 st: 0 dts:0.883356 pts:0.883356 pos:19478 size:1024 flags:1
 ret: 0 st:-1 ts:-0.222493 flags:1
@@ -3111,46 +3111,46 @@ ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:512 flags:1
+ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:1024 flags:1
 ret: 0 st: 0 ts:0.800000 flags:0
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335247 size:27897 flags:1
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335759 size:27897 flags:1
 ret: 0 st: 0 ts:-0.320000 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret:-1 st: 1 ts:2.576667 flags:0
 ret: 0 st: 1 ts:1.470839 flags:1
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335247 size:27897 flags:1
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335759 size:27897 flags:1
 ret: 0 st:-1 ts:0.365002 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:166272 size:27412 flags:1
 ret: 0 st:-1 ts:-0.740831 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret:-1 st: 0 ts:2.160000 flags:0
 ret: 0 st: 0 ts:1.040000 flags:1
-ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:512 flags:1
+ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:1024 flags:1
 ret: 0 st: 1 ts:-0.058322 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret: 0 st: 1 ts:2.835828 flags:1
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335247 size:27897 flags:1
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335759 size:27897 flags:1
 ret:-1 st:-1 ts:1.730004 flags:0
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 1 dts:0.476009 pts:0.476009 pos:165760 size:512 flags:1
+ret: 0 st: 1 dts:0.464399 pts:0.464399 pos:165248 size:1024 flags:1
 ret: 0 st: 0 ts:-0.480000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret: 0 st: 0 ts:2.400000 flags:1
-ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:512 flags:1
+ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:1024 flags:1
 ret:-1 st: 1 ts:1.306667 flags:0
 ret: 0 st: 1 ts:0.200839 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret: 0 st:-1 ts:-0.904994 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret: 0 st:-1 ts:1.989173 flags:1
-ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:512 flags:1
+ret: 0 st: 1 dts:0.952018 pts:0.952018 pos:334735 size:1024 flags:1
 ret: 0 st: 0 ts:0.880000 flags:0
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335247 size:27897 flags:1
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335759 size:27897 flags:1
 ret: 0 st: 0 ts:-0.240000 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:36 size:28088 flags:1
 ret:-1 st: 1 ts:2.671678 flags:0
 ret: 0 st: 1 ts:1.565850 flags:1
-ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335247 size:27897 flags:1
+ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:335759 size:27897 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:166272 size:27412 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
@@ -3698,7 +3698,7 @@ ret: 0 st: 0 dts:0.200816 pts:0.200816 pos:4428 size:1024 flags:1
 ret: 0 st: 0 ts:-0.904989 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st: 0 ts:1.989161 flags:1
-ret: 0 st: 0 dts:1.989161 pts:1.989161 pos:43861 size:683 flags:1
+ret: 0 st: 0 dts:1.989161 pts:1.989161 pos:43861 size:1024 flags:1
 ret: 0 st:-1 ts:0.883340 flags:0
 ret: 0 st: 0 dts:0.883356 pts:0.883356 pos:19478 size:1024 flags:1
 ret: 0 st:-1 ts:-0.222493 flags:1
@@ -3713,7 +3713,7 @@ ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ----------------
 tests/data/b-lavf.voc
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:32 size:512 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:32 size:1024 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
 ret:-1 st: 0 ts:0.788333 flags:0

@@ -177,10 +177,10 @@ stddev: 9328.41 PSNR: 16.92 bytes:  1055276/  1058444
 stddev: 4394.71 PSNR: 23.46 bytes:  1053352/  1058444
 3bfe347421de458dbfe572b8d4047b46 *./tests/data/a-ac3.rm
 98183 ./tests/data/a-ac3.rm
-39878597b1d65cce473639a7d8c93b02 *./tests/data/a-g726.wav
-24279 ./tests/data/a-g726.wav
-888f2f016e608d044a1bacbca5497ed2 *./tests/data/g726.vsynth.out.wav
-stddev: 8364.40 PSNR: 17.87 bytes:    96936/  1058444
+5d8cce28f83dd33c3c7eaf43a5db5294 *./tests/data/a-g726.wav
+24082 ./tests/data/a-g726.wav
+4f1ba1af75dee64625a1c852e6cd01d3 *./tests/data/g726.vsynth.out.wav
+stddev: 8506.46 PSNR: 17.72 bytes:    96148/  1058444
 3b969c43e45582f713e3c35faee9e0cc *./tests/data/a-adpcm_ima.wav
 266300 ./tests/data/a-adpcm_ima.wav
 947196b1739a9d6fe0c29424cf61cd8c *./tests/data/adpcm_ima_wav.vsynth.out.wav
@@ -221,40 +221,40 @@ f443a8eeb1647ec1eeb8370c939e52d4 *./tests/data/a-pcm_mulaw.wav
 529256 ./tests/data/a-pcm_mulaw.wav
 1c3eeaa8814ebd4916780dff80ed6dc5 *./tests/data/pcm.vsynth.out.wav
 stddev:  103.38 PSNR: 56.03 bytes:  1058444/  1058444
-9b883ee7a5256b26e16c419b76f373d7 *./tests/data/a-pcm_s8.mov
-533937 ./tests/data/a-pcm_s8.mov
+b7936d7170e0efefb379349d81aed360 *./tests/data/a-pcm_s8.mov
+530837 ./tests/data/a-pcm_s8.mov
 652edf30f35ad89bf27bcc9d2f9c7b53 *./tests/data/pcm.vsynth.out.wav
 stddev:  147.89 PSNR: 52.92 bytes:  1058444/  1058444
 98cadb3502dbdc99e6e077c28b1a036c *./tests/data/a-pcm_u8.wav
 529244 ./tests/data/a-pcm_u8.wav
 652edf30f35ad89bf27bcc9d2f9c7b53 *./tests/data/pcm.vsynth.out.wav
 stddev:  147.89 PSNR: 52.92 bytes:  1058444/  1058444
-5c8718508599b5c87af8e9a7158a9e66 *./tests/data/a-pcm_s16be.mov
-1063137 ./tests/data/a-pcm_s16be.mov
+c42b9c04305455250366c84e17c1023f *./tests/data/a-pcm_s16be.mov
+1060037 ./tests/data/a-pcm_s16be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/a-pcm_s16le.wav
 1058444 ./tests/data/a-pcm_s16le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-60594366d252826f839d527fb61fd31b *./tests/data/a-pcm_s16be.mkv
-1066118 ./tests/data/a-pcm_s16be.mkv
+83e2d1c6ff07f4dfba71c01f595811fc *./tests/data/a-pcm_s16be.mkv
+1060693 ./tests/data/a-pcm_s16be.mkv
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-73172ccaabfc945a6908955951ead16b *./tests/data/a-pcm_s16le.mkv
-1066118 ./tests/data/a-pcm_s16le.mkv
+d31310a3263403fffbe28453dabeae74 *./tests/data/a-pcm_s16le.mkv
+1060693 ./tests/data/a-pcm_s16le.mkv
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-4bc4cd19722f6456fd0e9b51ee0c30cf *./tests/data/a-pcm_s24be.mov
-1592337 ./tests/data/a-pcm_s24be.mov
+07ffe7ffb78f3648b6524debdde5aec1 *./tests/data/a-pcm_s24be.mov
+1589237 ./tests/data/a-pcm_s24be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 aaba3cf534ddddf5bcf663bc8c5b5331 *./tests/data/a-pcm_s24le.wav
 1587644 ./tests/data/a-pcm_s24le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-e60d8004d926d5f27beeb92a9bdd4b3d *./tests/data/a-pcm_s32be.mov
-2121537 ./tests/data/a-pcm_s32be.mov
+d7792f0343cd66fda8b50b569e2bcc48 *./tests/data/a-pcm_s32be.mov
+2118437 ./tests/data/a-pcm_s32be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 7661c9b6f221d9f57985a9e4d92c4e63 *./tests/data/a-pcm_s32le.wav
@@ -281,7 +281,7 @@ stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 529256 ./tests/data/a-pcm_zork.wav
 864c8c866ac25642c29a13b122c70709 *./tests/data/pcm.vsynth.out.wav
 stddev:  633.10 PSNR: 40.29 bytes:  1058444/  1058444
-f0c1c9bae445267d4ab8fb91d4f56071 *./tests/data/a-pcm_s24daud.302
-10371830 ./tests/data/a-pcm_s24daud.302
+8168a5c1343553ef027541830f2cb879 *./tests/data/a-pcm_s24daud.302
+10368730 ./tests/data/a-pcm_s24daud.302
 fff1dc03aa2750031203a7d72b832fad *./tests/data/pcm.vsynth.out.wav
 stddev: 9416.45 PSNR: 16.84 bytes:  6911840/  1058444
