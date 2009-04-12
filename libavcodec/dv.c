@@ -41,6 +41,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "bitstream.h"
+#include "put_bits.h"
 #include "simple_idct.h"
 #include "dvdata.h"
 

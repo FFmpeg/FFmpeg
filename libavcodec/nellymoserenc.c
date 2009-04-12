@@ -40,7 +40,7 @@
 #include "dsputil.h"
 
 #define BITSTREAM_WRITER_LE
-#include "bitstream.h"
+#include "put_bits.h"
 
 #define POW_TABLE_SIZE (1<<11)
 #define POW_TABLE_OFFSET 3

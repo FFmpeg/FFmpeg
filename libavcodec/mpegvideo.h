@@ -30,6 +30,7 @@
 
 #include "dsputil.h"
 #include "bitstream.h"
+#include "put_bits.h"
 #include "ratecontrol.h"
 #include "parser.h"
 #include "mpeg12data.h"

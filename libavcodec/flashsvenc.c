@@ -59,7 +59,7 @@
 #include <zlib.h>
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "put_bits.h"
 #include "bytestream.h"
 
 

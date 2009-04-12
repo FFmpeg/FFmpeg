@@ -25,7 +25,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "put_bits.h"
 
 #undef  CONFIG_MPEGAUDIO_HP
 #define CONFIG_MPEGAUDIO_HP 0

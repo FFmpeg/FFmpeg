@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/fifo.h"
-#include "libavcodec/bitstream.h"
+#include "libavcodec/put_bits.h"
 #include "avformat.h"
 #include "mpeg.h"
 

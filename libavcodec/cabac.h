@@ -27,7 +27,7 @@
 #ifndef AVCODEC_CABAC_H
 #define AVCODEC_CABAC_H
 
-#include "bitstream.h"
+#include "put_bits.h"
 
 //#undef NDEBUG
 #include <assert.h>

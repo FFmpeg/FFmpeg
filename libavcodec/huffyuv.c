@@ -30,6 +30,7 @@
 
 #include "avcodec.h"
 #include "bitstream.h"
+#include "put_bits.h"
 #include "dsputil.h"
 
 #define VLC_BITS 11

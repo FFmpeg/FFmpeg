@@ -31,7 +31,7 @@
 #include "vorbis_enc_data.h"
 
 #define BITSTREAM_WRITER_LE
-#include "bitstream.h"
+#include "put_bits.h"
 
 #undef NDEBUG
 #include <assert.h>

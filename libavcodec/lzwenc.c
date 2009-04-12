@@ -26,7 +26,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "put_bits.h"
 #include "lzw.h"
 
 #define LZW_MAXBITS 12

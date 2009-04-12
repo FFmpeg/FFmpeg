@@ -48,7 +48,7 @@
 /* at least they don't use PDP_ENDIAN :) */
 #define BITSTREAM_WRITER_LE
 
-#include "bitstream.h"
+#include "put_bits.h"
 
 /* bitstream minipacket size */
 #define GIF_CHUNKS 100

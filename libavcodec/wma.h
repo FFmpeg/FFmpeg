@@ -23,6 +23,7 @@
 #define AVCODEC_WMA_H
 
 #include "bitstream.h"
+#include "put_bits.h"
 #include "dsputil.h"
 
 /* size of blocks */

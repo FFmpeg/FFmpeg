@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "bitstream.h"
+#include "put_bits.h"
 #include "dsputil.h"
 #include "lpc.h"
 #include "mathops.h"

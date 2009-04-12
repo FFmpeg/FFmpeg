@@ -21,6 +21,7 @@
  */
 
 #include "libavcodec/bitstream.h"
+#include "libavcodec/put_bits.h"
 #include "libavcodec/internal.h"
 #include "avformat.h"
 

@@ -24,6 +24,7 @@
 #include <limits.h>
 #include "avcodec.h"
 #include "bitstream.h"
+#include "put_bits.h"
 
 /**
  * G.726 11bit float.

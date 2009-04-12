@@ -26,6 +26,7 @@
  */
 #include "avcodec.h"
 #include "bitstream.h"
+#include "put_bits.h"
 #include "faxcompr.h"
 
 #define CCITT_SYMS 104

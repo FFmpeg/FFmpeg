@@ -33,6 +33,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "bitstream.h"
+#include "put_bits.h"
 #include "dcadata.h"
 #include "dcahuff.h"
 #include "dca.h"
