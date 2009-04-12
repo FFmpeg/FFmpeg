@@ -342,7 +342,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if ((flags & 0xf0) == 0x50) /* video info / command frame */
             goto skip;
     } else {
-        if (type == FLV_TAG_TYPE_META && size > 13+1+4)
+        if (type == FLV_TAG_TYPE_META && size > 13+1+4 && 0)
             flv_read_metabody(s, next);
         else /* skip packet */
             av_log(s, AV_LOG_ERROR, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
