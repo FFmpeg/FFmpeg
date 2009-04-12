@@ -408,7 +408,9 @@ static int decode_frame(AVCodecContext *avctx,
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
 
-    a->bitstream_buffer= av_fast_realloc(a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_malloc(&a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!a->bitstream_buffer)
+        return AVERROR(ENOMEM);
 
     if(avctx->codec_id == CODEC_ID_ASV1)
         a->dsp.bswap_buf((uint32_t*)a->bitstream_buffer, (const uint32_t*)buf, buf_size/4);

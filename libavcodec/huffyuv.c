@@ -956,7 +956,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     AVFrame *picture = data;
 
-    s->bitstream_buffer= av_fast_realloc(s->bitstream_buffer, &s->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_malloc(&s->bitstream_buffer, &s->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!s->bitstream_buffer)
+        return AVERROR(ENOMEM);
 
     s->dsp.bswap_buf((uint32_t*)s->bitstream_buffer, (const uint32_t*)buf, buf_size/4);
 

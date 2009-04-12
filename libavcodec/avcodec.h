@@ -3541,6 +3541,20 @@ AVBitStreamFilter *av_bitstream_filter_next(AVBitStreamFilter *f);
 void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 
 /**
+ * Allocates a buffer, reusing the given one if large enough.
+ *
+ * Contrary to av_fast_realloc the current buffer contents might not be
+ * preserved and on error the old buffer is freed, thus no special
+ * handling to avoid memleaks is necessary.
+ *
+ * @param ptr pointer to pointer to already allocated buffer, overwritten with pointer to new buffer
+ * @param size size of the buffer *ptr points to
+ * @param min_size minimum size of *ptr buffer after returning, *ptr will be NULL and
+ *                 *size 0 if an error occurred.
+ */
+void av_fast_malloc(void *ptr, unsigned int *size, unsigned int min_size);
+
+/**
  * Copy image 'src' to 'dst'.
  */
 void av_picture_copy(AVPicture *dst, const AVPicture *src,

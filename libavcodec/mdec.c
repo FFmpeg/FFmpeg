@@ -174,7 +174,9 @@ static int decode_frame(AVCodecContext *avctx,
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
 
-    a->bitstream_buffer= av_fast_realloc(a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_malloc(&a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!a->bitstream_buffer)
+        return AVERROR(ENOMEM);
     for(i=0; i<buf_size; i+=2){
         a->bitstream_buffer[i]  = buf[i+1];
         a->bitstream_buffer[i+1]= buf[i  ];

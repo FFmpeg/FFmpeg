@@ -378,7 +378,9 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length){
         return -1;
     }
 
-    f->bitstream_buffer= av_fast_realloc(f->bitstream_buffer, &f->bitstream_buffer_size, bitstream_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_malloc(&f->bitstream_buffer, &f->bitstream_buffer_size, bitstream_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!f->bitstream_buffer)
+        return AVERROR(ENOMEM);
     f->dsp.bswap_buf(f->bitstream_buffer, (const uint32_t*)(buf + extra), bitstream_size/4);
     init_get_bits(&f->gb, f->bitstream_buffer, 8*bitstream_size);
 
@@ -656,7 +658,9 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length){
 
     prestream_size= length + buf - prestream;
 
-    f->bitstream_buffer= av_fast_realloc(f->bitstream_buffer, &f->bitstream_buffer_size, prestream_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_malloc(&f->bitstream_buffer, &f->bitstream_buffer_size, prestream_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!f->bitstream_buffer)
+        return AVERROR(ENOMEM);
     f->dsp.bswap_buf(f->bitstream_buffer, (const uint32_t*)prestream, prestream_size/4);
     init_get_bits(&f->pre_gb, f->bitstream_buffer, 8*prestream_size);
 
