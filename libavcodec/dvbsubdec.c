@@ -439,9 +439,9 @@ static int dvbsub_read_2bit_string(uint8_t *destbuf, int dbuf_len,
     int run_length;
     int pixels_read = 0;
 
-    init_get_bits(&gb, *srcbuf, buf_size << 8);
+    init_get_bits(&gb, *srcbuf, buf_size << 3);
 
-    while (get_bits_count(&gb) < (buf_size << 8) && pixels_read < dbuf_len) {
+    while (get_bits_count(&gb) < buf_size << 3 && pixels_read < dbuf_len) {
         bits = get_bits(&gb, 2);
 
         if (bits) {
@@ -544,9 +544,9 @@ static int dvbsub_read_4bit_string(uint8_t *destbuf, int dbuf_len,
     int run_length;
     int pixels_read = 0;
 
-    init_get_bits(&gb, *srcbuf, buf_size << 8);
+    init_get_bits(&gb, *srcbuf, buf_size << 3);
 
-    while (get_bits_count(&gb) < (buf_size << 8) && pixels_read < dbuf_len) {
+    while (get_bits_count(&gb) < buf_size << 3 && pixels_read < dbuf_len) {
         bits = get_bits(&gb, 4);
 
         if (bits) {
