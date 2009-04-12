@@ -76,9 +76,9 @@ typedef struct Wc3DemuxContext {
  * palette lookup table that does gamma correction
  *
  * can be calculated by this formula:
- * for i between 0 and 252 inclusive:
- * wc3_pal_lookup[i] = pow(i / 256.0, 0.8) * 256;
- * values 253, 254 and 255 are all 0xFD
+ * for i between 0 and 251 inclusive:
+ * wc3_pal_lookup[i] = round(pow(i / 256.0, 0.8) * 256);
+ * values 252, 253, 254 and 255 are all 0xFD
  * calculating this at runtime should not cause any
  * rounding issues, the maximum difference between
  * the table values and the calculated doubles is
