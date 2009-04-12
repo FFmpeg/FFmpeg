@@ -463,7 +463,6 @@ OBJS-$(HAVE_MMX)                       += x86/cpuid.o                   \
                                           x86/motion_est_mmx.o          \
                                           x86/mpegvideo_mmx.o           \
                                           x86/simple_idct_mmx.o         \
-                                          $(MMX-OBJS-yes)
 
 OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
                                           alpha/dsputil_alpha_asm.o     \

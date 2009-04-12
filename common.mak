@@ -57,6 +57,8 @@ uninstall: uninstall-libs uninstall-headers
 .PHONY: all depend dep *clean install* uninstall* examples testprogs
 endif
 
+OBJS-$(HAVE_MMX) +=  $(MMX-OBJS-yes)
+
 CFLAGS    += $(CFLAGS-yes)
 OBJS      += $(OBJS-yes)
 FFLIBS    := $(FFLIBS-yes) $(FFLIBS)
