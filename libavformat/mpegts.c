@@ -555,7 +555,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (desc_list_len < 0)
             break;
         desc_list_end = p + desc_list_len;
-        if (desc_list_end >= p_end)
+        if (desc_list_end > p_end)
             break;
         for(;;) {
             desc_tag = get8(&p, desc_list_end);
@@ -571,6 +571,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 }
             }
             desc_len = get8(&p, desc_list_end);
+            if (desc_len < 0)
+                break;
             desc_end = p + desc_len;
             if (desc_end > desc_list_end)
                 break;
