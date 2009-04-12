@@ -601,6 +601,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 reg_desc = bytestream_get_le32(&p);
                 if(reg_desc == AV_RL32("drac"))
                     has_dirac_descr = 1;
+                else if(reg_desc == AV_RL32("AC-3"))
+                    stream_type = STREAM_TYPE_AUDIO_AC3;
                 break;
             default:
                 break;
