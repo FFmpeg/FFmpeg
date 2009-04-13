@@ -38,7 +38,7 @@
 
 #include "libavutil/base64.h"
 #include "libavutil/avstring.h"
-#include "libavcodec/bitstream.h"
+#include "libavcodec/get_bits.h"
 #include "avformat.h"
 #include "mpegts.h"
 

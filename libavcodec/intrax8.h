@@ -19,7 +19,7 @@
 #ifndef AVCODEC_INTRAX8_H
 #define AVCODEC_INTRAX8_H
 
-#include "bitstream.h"
+#include "get_bits.h"
 #include "mpegvideo.h"
 
 typedef struct{

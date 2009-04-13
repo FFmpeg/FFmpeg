@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "bitstream.h"
+#include "get_bits.h"
 
 #include "vp56.h"
 #include "vp56data.h"

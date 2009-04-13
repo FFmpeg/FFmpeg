@@ -28,7 +28,7 @@
 
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "libavutil/crc.h"
 #include "parser.h"
 #include "mlp_parser.h"

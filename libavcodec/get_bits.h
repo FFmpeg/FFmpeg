@@ -19,12 +19,12 @@
  */
 
 /**
- * @file libavcodec/bitstream.h
- * bitstream api header.
+ * @file libavcodec/get_bits.h
+ * bitstream reader API header.
  */
 
-#ifndef AVCODEC_BITSTREAM_H
-#define AVCODEC_BITSTREAM_H
+#ifndef AVCODEC_GET_BITS_H
+#define AVCODEC_GET_BITS_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -702,4 +702,4 @@ static inline int decode210(GetBitContext *gb){
         return 2 - get_bits1(gb);
 }
 
-#endif /* AVCODEC_BITSTREAM_H */
+#endif /* AVCODEC_GET_BITS_H */

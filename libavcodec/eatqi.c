@@ -29,7 +29,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 #include "aandcttab.h"
 #include "mpeg12.h"

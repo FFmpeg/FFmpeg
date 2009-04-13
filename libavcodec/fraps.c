@@ -32,7 +32,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "huffman.h"
 #include "bytestream.h"
 #include "dsputil.h"

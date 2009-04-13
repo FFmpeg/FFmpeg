@@ -29,7 +29,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "huffman.h"
 
 #include "vp56.h"

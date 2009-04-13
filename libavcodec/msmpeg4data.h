@@ -31,7 +31,7 @@
 #define AVCODEC_MSMPEG4DATA_H
 
 #include "libavutil/common.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "rl.h"
 
 /* motion vector table */

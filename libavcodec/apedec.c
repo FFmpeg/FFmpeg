@@ -23,7 +23,7 @@
 #define ALT_BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "dsputil.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "bytestream.h"
 
 /**

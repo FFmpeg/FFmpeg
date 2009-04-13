@@ -20,7 +20,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 
 
 typedef struct {

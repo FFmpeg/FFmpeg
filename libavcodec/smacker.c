@@ -34,7 +34,7 @@
 #include "avcodec.h"
 
 #define ALT_BITSTREAM_READER_LE
-#include "bitstream.h"
+#include "get_bits.h"
 #include "bytestream.h"
 
 #define SMKTREE_BITS 9

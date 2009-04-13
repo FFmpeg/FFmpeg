@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "bitstream.h"
+#include "get_bits.h"
 
 /* Disable the encoder. */
 #undef CONFIG_CLJR_ENCODER

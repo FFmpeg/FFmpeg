@@ -28,7 +28,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "put_bits.h"
 
 const uint8_t ff_log2_run[32]={

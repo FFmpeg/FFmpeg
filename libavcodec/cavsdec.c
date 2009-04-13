@@ -26,7 +26,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "golomb.h"
 #include "cavs.h"
 

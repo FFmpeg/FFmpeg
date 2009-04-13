@@ -33,7 +33,7 @@
 #include "isom.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
-#include "libavcodec/bitstream.h"
+#include "libavcodec/get_bits.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>

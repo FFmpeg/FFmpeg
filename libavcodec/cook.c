@@ -49,7 +49,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 #include "bytestream.h"
 

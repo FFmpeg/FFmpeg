@@ -42,7 +42,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "lcl.h"
 
 #if CONFIG_ZLIB

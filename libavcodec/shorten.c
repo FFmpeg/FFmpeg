@@ -29,7 +29,7 @@
 #define DEBUG
 #include <limits.h>
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "golomb.h"
 
 #define MAX_CHANNELS 8

@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "bitstream.h"
+#include "get_bits.h"
 #include "mpeg4audio.h"
 
 const int ff_mpeg4audio_sample_rates[16] = {

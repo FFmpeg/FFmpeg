@@ -23,7 +23,7 @@
 #include "libavutil/lls.h"
 #include "libavutil/md5.h"
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 #include "golomb.h"
 #include "lpc.h"

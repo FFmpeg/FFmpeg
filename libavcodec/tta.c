@@ -31,7 +31,7 @@
 //#define DEBUG
 #include <limits.h>
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 
 #define FORMAT_INT 1
 #define FORMAT_FLOAT 3

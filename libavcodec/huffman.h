@@ -24,7 +24,7 @@
 #define AVCODEC_HUFFMAN_H
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 
 typedef struct {
     int16_t  sym;

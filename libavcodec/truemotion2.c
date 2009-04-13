@@ -25,7 +25,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 
 #define TM2_ESCAPE 0x80000000

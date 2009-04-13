@@ -28,7 +28,7 @@
 
 #include "avcodec.h"
 #include "libavutil/avutil.h"
-#include "bitstream.h"
+#include "get_bits.h"
 
 #include "g729.h"
 #include "lsp.h"

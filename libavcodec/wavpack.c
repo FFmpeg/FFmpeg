@@ -20,7 +20,7 @@
  */
 #define ALT_BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "unary.h"
 
 /**

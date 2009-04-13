@@ -51,7 +51,7 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 
 #include <zlib.h>
 

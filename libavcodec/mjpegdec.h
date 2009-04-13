@@ -30,7 +30,7 @@
 #define AVCODEC_MJPEGDEC_H
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 
 #define MAX_COMPONENTS 4

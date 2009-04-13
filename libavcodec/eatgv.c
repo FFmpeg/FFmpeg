@@ -30,7 +30,7 @@
 
 #include "avcodec.h"
 #define ALT_BITSTREAM_READER_LE
-#include "bitstream.h"
+#include "get_bits.h"
 #include "libavutil/lzo.h"
 
 #define EA_PREAMBLE_SIZE    8

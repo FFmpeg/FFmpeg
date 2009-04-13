@@ -27,7 +27,7 @@
 #define AVCODEC_MPEGAUDIO_H
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 
 #define CONFIG_AUDIO_NONSHORT 0

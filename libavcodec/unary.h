@@ -21,7 +21,7 @@
 #ifndef AVCODEC_UNARY_H
 #define AVCODEC_UNARY_H
 
-#include "bitstream.h"
+#include "get_bits.h"
 
 /**
  * Get unary code of limited length

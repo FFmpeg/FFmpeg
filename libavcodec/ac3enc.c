@@ -27,7 +27,7 @@
 //#define DEBUG_BITALLOC
 #include "libavutil/crc.h"
 #include "avcodec.h"
-#include "bitstream.h" // for ff_reverse
+#include "get_bits.h" // for ff_reverse
 #include "put_bits.h"
 #include "ac3.h"
 

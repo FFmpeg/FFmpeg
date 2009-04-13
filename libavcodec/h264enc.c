@@ -20,7 +20,7 @@
 
 
 #include "libavutil/common.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "mpegvideo.h"
 #include "h264data.h"
 

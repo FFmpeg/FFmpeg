@@ -22,7 +22,7 @@
 #include "avcodec.h"
 
 #define ALT_BITSTREAM_READER_LE
-#include "bitstream.h"
+#include "get_bits.h"
 
 typedef union MacroBlock {
     uint16_t pixels[4];

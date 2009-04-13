@@ -38,7 +38,7 @@
 #include "libavutil/crc.h"
 #include "avcodec.h"
 #include "internal.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "bytestream.h"
 #include "golomb.h"
 #include "flac.h"

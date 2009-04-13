@@ -22,7 +22,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "mpegvideo.h"
 #include "msmpeg4data.h"
 #include "intrax8huf.h"

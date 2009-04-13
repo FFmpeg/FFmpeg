@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include "libavutil/avstring.h"
 #include "libavutil/bswap.h"
-#include "libavcodec/bitstream.h"
+#include "libavcodec/get_bits.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "oggdec.h"

@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 #include "aac_ac3_parser.h"
-#include "bitstream.h"
+#include "get_bits.h"
 
 typedef struct {
     uint32_t sample_rate;

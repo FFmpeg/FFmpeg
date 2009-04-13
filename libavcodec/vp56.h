@@ -26,7 +26,7 @@
 
 #include "vp56data.h"
 #include "dsputil.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "bytestream.h"
 
 

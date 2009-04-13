@@ -20,7 +20,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 
 #define MAX_HUFF_CODES 16

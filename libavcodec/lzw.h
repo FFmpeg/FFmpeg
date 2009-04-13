@@ -30,7 +30,7 @@
 #ifndef AVCODEC_LZW_H
 #define AVCODEC_LZW_H
 
-#include "bitstream.h"
+#include "get_bits.h"
 
 enum FF_LZW_MODES{
     FF_LZW_GIF,

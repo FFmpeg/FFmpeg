@@ -22,7 +22,7 @@
 #ifndef AVCODEC_WMA_H
 #define AVCODEC_WMA_H
 
-#include "bitstream.h"
+#include "get_bits.h"
 #include "put_bits.h"
 #include "dsputil.h"
 

@@ -24,7 +24,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
-#include "bitstream.h"
+#include "get_bits.h"
 
 typedef struct PCXContext {
     AVFrame picture;

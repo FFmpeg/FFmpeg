@@ -25,7 +25,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h" // for ff_reverse
+#include "get_bits.h" // for ff_reverse
 #include "bytestream.h"
 
 #define MAX_CHANNELS 64

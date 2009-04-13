@@ -30,7 +30,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "ac3.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 
 /* override ac3.h to include coupling channel */

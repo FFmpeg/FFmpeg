@@ -26,7 +26,7 @@
 #include "avio.h"
 #include "isom.h"
 #include "avc.h"
-#include "libavcodec/bitstream.h"
+#include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
 
 #undef NDEBUG

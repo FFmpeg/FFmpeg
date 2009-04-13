@@ -23,7 +23,7 @@
  */
 #include <limits.h>
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "put_bits.h"
 
 /**

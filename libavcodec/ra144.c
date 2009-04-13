@@ -23,7 +23,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "ra144.h"
 #include "celp_filters.h"
 
