@@ -594,7 +594,7 @@ void ff_flac_compute_autocorr(const int32_t *data, int len, int lag,
 
     for(j=0; j<lag; j+=2){
         double sum0 = 1.0, sum1 = 1.0;
-        for(i=0; i<len; i++){
+        for(i=j; i<len; i++){
             sum0 += data1[i] * data1[i-j];
             sum1 += data1[i] * data1[i-j-1];
         }
@@ -604,7 +604,7 @@ void ff_flac_compute_autocorr(const int32_t *data, int len, int lag,
 
     if(j==lag){
         double sum = 1.0;
-        for(i=0; i<len; i+=2){
+        for(i=j-1; i<len; i+=2){
             sum += data1[i  ] * data1[i-j  ]
                  + data1[i+1] * data1[i-j+1];
         }
