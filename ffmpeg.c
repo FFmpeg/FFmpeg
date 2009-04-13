@@ -222,6 +222,12 @@ static unsigned int sws_flags = SWS_BICUBIC;
 
 static int64_t timer_start;
 
+static uint8_t *audio_buf;
+static uint8_t *audio_out;
+static uint8_t *audio_out2;
+
+static short *samples;
+
 static AVBitStreamFilterContext *video_bitstream_filters=NULL;
 static AVBitStreamFilterContext *audio_bitstream_filters=NULL;
 static AVBitStreamFilterContext *subtitle_bitstream_filters=NULL;
@@ -431,6 +437,10 @@ static int av_exit(int ret)
         av_free(avcodec_opts[i]);
     av_free(avformat_opts);
     av_free(sws_opts);
+    av_free(audio_buf);
+    av_free(audio_out);
+    av_free(audio_out2);
+    av_free(samples);
 
     if (received_sigterm) {
         fprintf(stderr,
@@ -532,9 +542,6 @@ static void do_audio_out(AVFormatContext *s,
                          unsigned char *buf, int size)
 {
     uint8_t *buftmp;
-    static uint8_t *audio_buf = NULL;
-    static uint8_t *audio_out = NULL;
-    static uint8_t *audio_out2 = NULL;
     const int audio_out_size= 4*MAX_AUDIO_PACKET_SIZE;
 
     int size_out, frame_bytes, ret;
@@ -1185,7 +1192,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
     AVFrame picture;
     void *buffer_to_free;
     static unsigned int samples_size= 0;
-    static short *samples= NULL;
     AVSubtitle subtitle, *subtitle_to_free;
     int got_subtitle;
     AVPacket avpkt;
