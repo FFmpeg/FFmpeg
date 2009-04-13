@@ -263,7 +263,7 @@ static inline void put_sbits(PutBitContext *pb, int bits, int32_t val)
  * Returns the pointer to the byte where the bitstream writer will put
  * the next bit.
  */
-static inline uint8_t* pbBufPtr(PutBitContext *s)
+static inline uint8_t* put_bits_ptr(PutBitContext *s)
 {
 #ifdef ALT_BITSTREAM_WRITER
         return s->buf + (s->index>>3);

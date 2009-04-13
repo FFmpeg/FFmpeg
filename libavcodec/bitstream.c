@@ -91,7 +91,7 @@ void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
         for(i=0; put_bits_count(pb)&31; i++)
             put_bits(pb, 8, src[i]);
         flush_put_bits(pb);
-        memcpy(pbBufPtr(pb), src+i, 2*words-i);
+        memcpy(put_bits_ptr(pb), src+i, 2*words-i);
         skip_put_bytes(pb, 2*words-i);
     }
 

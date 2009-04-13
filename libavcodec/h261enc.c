@@ -55,7 +55,7 @@ void ff_h261_encode_picture_header(MpegEncContext * s, int picture_number){
     align_put_bits(&s->pb);
 
     /* Update the pointer to last GOB */
-    s->ptr_lastgob = pbBufPtr(&s->pb);
+    s->ptr_lastgob = put_bits_ptr(&s->pb);
 
     put_bits(&s->pb, 20, 0x10); /* PSC */
 

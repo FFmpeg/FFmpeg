@@ -1321,7 +1321,7 @@ vbv_retry:
         s->total_bits += s->frame_bits;
         avctx->frame_bits  = s->frame_bits;
     }else{
-        assert((pbBufPtr(&s->pb) == s->pb.buf));
+        assert((put_bits_ptr(&s->pb) == s->pb.buf));
         s->frame_bits=0;
     }
     assert((s->frame_bits&7)==0);
@@ -2111,7 +2111,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     }
 
                     assert((put_bits_count(&s->pb)&7) == 0);
-                    current_packet_size= pbBufPtr(&s->pb) - s->ptr_lastgob;
+                    current_packet_size= put_bits_ptr(&s->pb) - s->ptr_lastgob;
 
                     if(s->avctx->error_rate && s->resync_mb_x + s->resync_mb_y > 0){
                         int r= put_bits_count(&s->pb)/8 + s->picture_number + 16 + s->mb_x + s->mb_y;
@@ -2121,7 +2121,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
 #ifndef ALT_BITSTREAM_WRITER
                             s->pb.buf_ptr= s->ptr_lastgob;
 #endif
-                            assert(pbBufPtr(&s->pb) == s->ptr_lastgob);
+                            assert(put_bits_ptr(&s->pb) == s->ptr_lastgob);
                         }
                     }
 
@@ -2603,7 +2603,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
     /* Send the last GOB if RTP */
     if (s->avctx->rtp_callback) {
         int number_mb = (mb_y - s->resync_mb_y)*s->mb_width - s->resync_mb_x;
-        pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
+        pdif = put_bits_ptr(&s->pb) - s->ptr_lastgob;
         /* Call the RTP callback to send the last GOB */
         emms_c();
         s->avctx->rtp_callback(s->avctx, s->ptr_lastgob, pdif, number_mb);

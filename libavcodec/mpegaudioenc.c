@@ -781,7 +781,7 @@ static int MPA_encode_frame(AVCodecContext *avctx,
     encode_frame(s, bit_alloc, padding);
 
     s->nb_samples += MPA_FRAME_SIZE;
-    return pbBufPtr(&s->pb) - s->pb.buf;
+    return put_bits_ptr(&s->pb) - s->pb.buf;
 }
 
 static av_cold int MPA_encode_close(AVCodecContext *avctx)

@@ -135,7 +135,7 @@ static void jpeg_table_header(MpegEncContext *s)
     /* huffman table */
     put_marker(p, DHT);
     flush_put_bits(p);
-    ptr = pbBufPtr(p);
+    ptr = put_bits_ptr(p);
     put_bits(p, 16, 0); /* patched later */
     size = 2;
     size += put_huffman_table(s, 0, 0, ff_mjpeg_bits_dc_luminance,
@@ -174,7 +174,7 @@ static void jpeg_put_comments(MpegEncContext *s)
     if(!(s->flags & CODEC_FLAG_BITEXACT)){
         put_marker(p, COM);
         flush_put_bits(p);
-        ptr = pbBufPtr(p);
+        ptr = put_bits_ptr(p);
         put_bits(p, 16, 0); /* patched later */
         ff_put_string(p, LIBAVCODEC_IDENT, 1);
         size = strlen(LIBAVCODEC_IDENT)+3;
@@ -186,7 +186,7 @@ static void jpeg_put_comments(MpegEncContext *s)
        ||s->avctx->pix_fmt == PIX_FMT_YUV444P){
         put_marker(p, COM);
         flush_put_bits(p);
-        ptr = pbBufPtr(p);
+        ptr = put_bits_ptr(p);
         put_bits(p, 16, 0); /* patched later */
         ff_put_string(p, "CS=ITU601", 1);
         size = strlen("CS=ITU601")+3;

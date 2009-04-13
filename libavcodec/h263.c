@@ -245,7 +245,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     align_put_bits(&s->pb);
 
     /* Update the pointer to last GOB */
-    s->ptr_lastgob = pbBufPtr(&s->pb);
+    s->ptr_lastgob = put_bits_ptr(&s->pb);
     put_bits(&s->pb, 22, 0x20); /* PSC */
     temp_ref= s->picture_number * (int64_t)coded_frame_rate * s->avctx->time_base.num / //FIXME use timestamp
                          (coded_frame_rate_base * (int64_t)s->avctx->time_base.den);
@@ -3053,7 +3053,7 @@ static inline void memsetw(short *tab, int val, int n)
 
 void ff_mpeg4_init_partitions(MpegEncContext *s)
 {
-    uint8_t *start= pbBufPtr(&s->pb);
+    uint8_t *start= put_bits_ptr(&s->pb);
     uint8_t *end= s->pb.buf_end;
     int size= end - start;
     int pb_size = (((intptr_t)start + size/3)&(~3)) - (intptr_t)start;

@@ -181,7 +181,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
     s->picture_number++;
 
     flush_put_bits(&s->pb);
-    return pbBufPtr(&s->pb) - s->pb.buf;
+    return put_bits_ptr(&s->pb) - s->pb.buf;
 //    return (put_bits_count(&f->pb)+7)/8;
 }
 

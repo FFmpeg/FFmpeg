@@ -102,7 +102,7 @@ static void put_swf_rect(ByteIOContext *pb,
     put_bits(&p, nbits, ymax & mask);
 
     flush_put_bits(&p);
-    put_buffer(pb, buf, pbBufPtr(&p) - p.buf);
+    put_buffer(pb, buf, put_bits_ptr(&p) - p.buf);
 }
 
 static void put_swf_line_edge(PutBitContext *pb, int dx, int dy)
@@ -167,7 +167,7 @@ static void put_swf_matrix(ByteIOContext *pb,
     put_bits(&p, nbits, ty);
 
     flush_put_bits(&p);
-    put_buffer(pb, buf, pbBufPtr(&p) - p.buf);
+    put_buffer(pb, buf, put_bits_ptr(&p) - p.buf);
 }
 
 static int swf_write_header(AVFormatContext *s)
@@ -293,7 +293,7 @@ static int swf_write_header(AVFormatContext *s)
         put_bits(&p, 5, 0);
 
         flush_put_bits(&p);
-        put_buffer(pb, buf1, pbBufPtr(&p) - p.buf);
+        put_buffer(pb, buf1, put_bits_ptr(&p) - p.buf);
 
         put_swf_end_tag(s);
     }
