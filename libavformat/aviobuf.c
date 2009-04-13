@@ -148,7 +148,7 @@ int64_t url_fseek(ByteIOContext *s, int64_t offset, int whence)
     }
     offset1 = offset - pos;
     if (!s->must_flush &&
-        offset1 >= 0 && offset1 < (s->buf_end - s->buffer)) {
+        offset1 >= 0 && offset1 <= (s->buf_end - s->buffer)) {
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
     } else if(s->is_streamed && !s->write_flag &&
