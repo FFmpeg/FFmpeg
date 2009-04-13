@@ -1860,6 +1860,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt)
     if(!has_codec_parameters(st->codec)){
         switch(st->codec->codec_type) {
         case CODEC_TYPE_VIDEO:
+            avcodec_get_frame_defaults(&picture);
             ret = avcodec_decode_video2(st->codec, &picture,
                                         &got_picture, avpkt);
             break;
