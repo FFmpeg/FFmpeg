@@ -2219,7 +2219,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     }
     else // fast bilinear upscale / crap downscale
     {
-#if ARCH_X86
+#if ARCH_X86 && CONFIG_GPL
 #if HAVE_MMX2
         int i;
 #if defined(PIC)
@@ -2492,7 +2492,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     }
     else // fast bilinear upscale / crap downscale
     {
-#if ARCH_X86
+#if ARCH_X86 && CONFIG_GPL
 #if HAVE_MMX2
         int i;
 #if defined(PIC)
