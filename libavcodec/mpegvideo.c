@@ -447,7 +447,7 @@ av_cold int MPV_common_init(MpegEncContext *s)
     if(s->codec_id == CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
         s->mb_height = (s->height + 31) / 32 * 2;
     else
-    s->mb_height = (s->height + 15) / 16;
+        s->mb_height = (s->height + 15) / 16;
 
     if(s->avctx->pix_fmt == PIX_FMT_NONE){
         av_log(s->avctx, AV_LOG_ERROR, "decoding to PIX_FMT_NONE is not supported.\n");
