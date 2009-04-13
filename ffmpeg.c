@@ -427,17 +427,17 @@ static int av_exit(int ret)
     powerpc_display_perf_report();
 #endif /* CONFIG_POWERPC_PERF */
 
+    for (i=0;i<CODEC_TYPE_NB;i++)
+        av_free(avcodec_opts[i]);
+    av_free(avformat_opts);
+    av_free(sws_opts);
+
     if (received_sigterm) {
         fprintf(stderr,
             "Received signal %d: terminating.\n",
             (int) received_sigterm);
         exit (255);
     }
-
-    for (i=0;i<CODEC_TYPE_NB;i++)
-        av_free(avcodec_opts[i]);
-    av_free(avformat_opts);
-    av_free(sws_opts);
 
     exit(ret); /* not all OS-es handle main() return value */
     return ret;
