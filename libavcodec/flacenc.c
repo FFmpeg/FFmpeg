@@ -20,7 +20,6 @@
  */
 
 #include "libavutil/crc.h"
-#include "libavutil/lls.h"
 #include "libavutil/md5.h"
 #include "avcodec.h"
 #include "get_bits.h"
