@@ -114,7 +114,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     const uint8_t *buf_end = buf + buf_size;
     unsigned int pps_id;
     unsigned int slice_type;
-    int state;
+    int state = -1;
     const uint8_t *ptr;
 
     /* set some sane default values */
