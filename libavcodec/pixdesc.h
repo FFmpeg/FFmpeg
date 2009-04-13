@@ -22,7 +22,7 @@
 #include <inttypes.h>
 
 #include "libavutil/intreadwrite.h"
-#include "libavcodec/get_bits.h"
+#include "get_bits.h"
 
 typedef struct AVComponentDescriptor{
     uint16_t plane        :2;            ///< which of the 4 planes contains the component
