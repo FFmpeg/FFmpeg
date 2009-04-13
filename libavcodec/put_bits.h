@@ -297,7 +297,7 @@ static inline void skip_put_bits(PutBitContext *s, int n){
     s->index += n;
 #else
     s->bit_left -= n;
-    s->buf_ptr-= s->bit_left>>5;
+    s->buf_ptr-= 4*(s->bit_left>>5);
     s->bit_left &= 31;
 #endif
 }
