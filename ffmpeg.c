@@ -434,6 +434,11 @@ static int av_exit(int ret)
         exit (255);
     }
 
+    for (i=0;i<CODEC_TYPE_NB;i++)
+        av_free(avcodec_opts[i]);
+    av_free(avformat_opts);
+    av_free(sws_opts);
+
     exit(ret); /* not all OS-es handle main() return value */
     return ret;
 }
