@@ -1,0 +1,37 @@
+Most files in FFmpeg are under the GNU Lesser General Public License version 2.1
+or later (LGPL v2.1+). Read the file COPYING.LGPL for details. Some other files
+have a MIT/X11/BSD-style license. In combination the LGPL v2.1+ applies to
+FFmpeg.
+
+Some optional parts of FFmpeg are licensed under the GNU General Public License
+version 2 or later (GPL v2+). See the file COPYING.GPL for details. None of
+these parts are used by default, you have to explicitly pass --enable-gpl to
+configure to activate them. In this case, FFmpeg's license changes to GPL v2+.
+
+Specifically, the GPL parts of FFmpeg are
+
+- libpostproc
+- some x86 and AltiVec optimizations in libswscale
+- optional x86 optimizations in the files
+  libavcodec/x86/h264_deblock_sse2.asm
+  libavcodec/x86/h264_idct_sse2.asm
+  libavcodec/x86/idct_mmx.c
+- the AC-3 decoder in libavcodec/ac3dec.c
+- the X11 grabber in libavdevice/x11grab.c
+
+Some external libraries, e.g. libx264, are under GPL and can be used in
+conjunction with FFmpeg. They require --enable-gpl to be passed to configure
+as well.
+
+The nonfree external libraries libamrnb and libamrwb can be hooked up in FFmpeg.
+You need to pass --enable-nonfree to configure to enable them. Employ this
+option with care as FFmpeg then becomes nonfree and unredistributable.
+
+There are a handful of files under other licensing terms, namely:
+
+* The files libavcodec/jfdctfst.c, libavcodec/jfdctint.c, libavcodec/jrevdct.c
+  are taken from libjpeg, see the top of the files for licensing details.
+
+* The file libavcodec/fdctref.c is copyrighted by the MPEG Software Simulation
+  Group with all rights reserved. It is only used to create a DCT test program
+  and not compiled into libavcodec.
