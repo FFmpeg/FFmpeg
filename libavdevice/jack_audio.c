@@ -144,7 +144,7 @@ static int start_jack(AVFormatContext *context, AVFormatParameters *params)
     double o, period;
 
     /* Register as a JACK client, using the context filename as client name. */
-    self->client = jack_client_open(context->filename, 0, &status);
+    self->client = jack_client_open(context->filename, JackNullOption, &status);
     if (!self->client) {
         av_log(context, AV_LOG_ERROR, "Unable to register as a JACK client\n");
         return AVERROR(EIO);
