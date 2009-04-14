@@ -819,7 +819,7 @@ static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int st
 }
 
 
-static inline void copy_block2(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+static inline void copy_block2(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
     int i;
     for(i=0; i<h; i++)
@@ -830,7 +830,7 @@ static inline void copy_block2(uint8_t *dst, uint8_t *src, int dstStride, int sr
     }
 }
 
-static inline void copy_block4(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+static inline void copy_block4(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
     int i;
     for(i=0; i<h; i++)
@@ -841,7 +841,7 @@ static inline void copy_block4(uint8_t *dst, uint8_t *src, int dstStride, int sr
     }
 }
 
-static inline void copy_block8(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+static inline void copy_block8(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
     int i;
     for(i=0; i<h; i++)
@@ -853,7 +853,7 @@ static inline void copy_block8(uint8_t *dst, uint8_t *src, int dstStride, int sr
     }
 }
 
-static inline void copy_block9(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+static inline void copy_block9(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
     int i;
     for(i=0; i<h; i++)
@@ -866,7 +866,7 @@ static inline void copy_block9(uint8_t *dst, uint8_t *src, int dstStride, int sr
     }
 }
 
-static inline void copy_block16(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+static inline void copy_block16(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
     int i;
     for(i=0; i<h; i++)
@@ -880,7 +880,7 @@ static inline void copy_block16(uint8_t *dst, uint8_t *src, int dstStride, int s
     }
 }
 
-static inline void copy_block17(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+static inline void copy_block17(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
     int i;
     for(i=0; i<h; i++)
