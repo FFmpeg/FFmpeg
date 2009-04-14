@@ -1469,6 +1469,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                 enc->frame_size = fifo_bytes / (2 * enc->channels);
                                 av_fifo_generic_read(ost->fifo, samples, fifo_bytes, NULL);
                                 ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, samples);
+                                pkt.duration = av_rescale((int64_t)enc->frame_size*ost->st->time_base.den,
+                                                          ost->st->time_base.num, enc->sample_rate);
                                 enc->frame_size = fs_tmp;
                             }
                             if(ret <= 0) {
