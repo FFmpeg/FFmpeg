@@ -2737,6 +2737,9 @@ void ff_vc1dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_put_vc1_mspel_mc00_c(uint8_t *dst, uint8_t *src, int stride, int rnd) {
     put_pixels8_c(dst, src, stride, 8);
 }
+void ff_avg_vc1_mspel_mc00_c(uint8_t *dst, uint8_t *src, int stride, int rnd) {
+    avg_pixels8_c(dst, src, stride, 8);
+}
 #endif /* CONFIG_VC1_DECODER||CONFIG_WMV3_DECODER */
 
 void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);

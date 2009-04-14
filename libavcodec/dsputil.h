@@ -485,6 +485,7 @@ typedef struct DSPContext {
      * last argument is actually round value instead of height
      */
     op_pixels_func put_vc1_mspel_pixels_tab[16];
+    op_pixels_func avg_vc1_mspel_pixels_tab[16];
 
     /* intrax8 functions */
     void (*x8_spatial_compensation[12])(uint8_t *src , uint8_t *dst, int linesize);
