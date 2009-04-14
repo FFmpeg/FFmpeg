@@ -43,9 +43,9 @@ static av_cold snd_pcm_format_t codec_id_to_pcm_format(int codec_id)
     }
 }
 
-av_cold int ff_alsa_open(AVFormatContext *ctx, int mode,
+av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
                          unsigned int *sample_rate,
-                         int channels, int *codec_id)
+                         int channels, enum CodecID *codec_id)
 {
     AlsaData *s = ctx->priv_data;
     const char *audio_device;

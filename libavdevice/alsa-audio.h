@@ -63,8 +63,8 @@ typedef struct {
  *
  * @return 0 if OK, AVERROR_xxx on error
  */
-int ff_alsa_open(AVFormatContext *s, int mode, unsigned int *sample_rate,
-                 int channels, int *codec_id);
+int ff_alsa_open(AVFormatContext *s, snd_pcm_stream_t mode, unsigned int *sample_rate,
+                 int channels, enum CodecID *codec_id);
 
 /**
  * Closes the ALSA PCM.
