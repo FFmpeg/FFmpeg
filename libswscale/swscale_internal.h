@@ -250,6 +250,8 @@ typedef struct SwsContext{
 
     void (*hyscale_internal)(uint8_t *dst, const uint8_t *src,
                              long width, uint32_t *pal);
+    void (*hascale_internal)(uint8_t *dst, const uint8_t *src,
+                             long width, uint32_t *pal);
     void (*hcscale_internal)(uint8_t *dstU, uint8_t *dstV,
                              const uint8_t *src1, const uint8_t *src2,
                              long width, uint32_t *pal);

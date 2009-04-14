@@ -2272,6 +2272,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     int16_t *mmx2Filter = c->lumMmx2Filter;
     int canMMX2BeUsed = c->canMMX2BeUsed;
     void *funnyYCode = c->funnyYCode;
+    void (*internal_func)(uint8_t *, const uint8_t *, long, uint32_t *) = isAlpha ? c->hascale_internal : c->hyscale_internal;
 
     if (isAlpha) {
         if (srcFormat == PIX_FMT_RGB32   || srcFormat == PIX_FMT_BGR32  )
@@ -2281,8 +2282,8 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
             src += ALT32_CORR;
     }
 
-    if (c->hyscale_internal) {
-        c->hyscale_internal(formatConvBuffer, src, srcW, pal);
+    if (internal_func) {
+        internal_func(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
     }
 
@@ -3114,6 +3115,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     }
 
     c->hyscale_internal = NULL;
+    c->hascale_internal = NULL;
     switch (srcFormat) {
     case PIX_FMT_YUYV422  :
     case PIX_FMT_GRAY16BE : c->hyscale_internal = RENAME(yuy2ToY); break;
@@ -3132,20 +3134,17 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     case PIX_FMT_RGB4_BYTE: c->hyscale_internal = RENAME(palToY); break;
     case PIX_FMT_MONOBLACK: c->hyscale_internal = RENAME(monoblack2Y); break;
     case PIX_FMT_MONOWHITE: c->hyscale_internal = RENAME(monowhite2Y); break;
+    case PIX_FMT_RGB32  :
+    case PIX_FMT_RGB32_1: c->hyscale_internal = RENAME(bgr32ToY); break;
+    case PIX_FMT_BGR32  :
+    case PIX_FMT_BGR32_1: c->hyscale_internal = RENAME(rgb32ToY); break;
     }
     if (c->alpPixBuf) {
         switch (srcFormat) {
         case PIX_FMT_RGB32  :
         case PIX_FMT_RGB32_1:
         case PIX_FMT_BGR32  :
-        case PIX_FMT_BGR32_1: c->hyscale_internal = RENAME(abgrToA); break;
-        }
-    } else {
-        switch (srcFormat) {
-        case PIX_FMT_RGB32  :
-        case PIX_FMT_RGB32_1: c->hyscale_internal = RENAME(bgr32ToY); break;
-        case PIX_FMT_BGR32  :
-        case PIX_FMT_BGR32_1: c->hyscale_internal = RENAME(rgb32ToY); break;
+        case PIX_FMT_BGR32_1: c->hascale_internal = RENAME(abgrToA); break;
         }
     }
 }
