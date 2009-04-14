@@ -127,8 +127,10 @@ void sws_freeContext(struct SwsContext *swsContext);
  * @param flags specify which algorithm and options to use for rescaling
  * @return a pointer to an allocated context, or NULL in case of error
  */
-struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int dstW, int dstH, enum PixelFormat dstFormat, int flags,
-                                  SwsFilter *srcFilter, SwsFilter *dstFilter, double *param);
+struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
+                                  int dstW, int dstH, enum PixelFormat dstFormat,
+                                  int flags, SwsFilter *srcFilter,
+                                  SwsFilter *dstFilter, double *param);
 
 /**
  * Scales the image slice in \p srcSlice and puts the resulting scaled
@@ -152,19 +154,24 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
  *                  the destination image
  * @return          the height of the output slice
  */
-int sws_scale(struct SwsContext *context, uint8_t* srcSlice[], int srcStride[], int srcSliceY,
-              int srcSliceH, uint8_t* dst[], int dstStride[]);
+int sws_scale(struct SwsContext *context, uint8_t* srcSlice[], int srcStride[],
+              int srcSliceY, int srcSliceH, uint8_t* dst[], int dstStride[]);
 #if LIBSWSCALE_VERSION_MAJOR < 1
 /**
  * @deprecated Use sws_scale() instead.
  */
-int sws_scale_ordered(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
-                      int srcSliceH, uint8_t* dst[], int dstStride[]) attribute_deprecated;
+int sws_scale_ordered(struct SwsContext *context, uint8_t* src[],
+                      int srcStride[], int srcSliceY, int srcSliceH,
+                      uint8_t* dst[], int dstStride[]) attribute_deprecated;
 #endif
 
 
-int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation);
-int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table, int *srcRange, int **table, int *dstRange, int *brightness, int *contrast, int *saturation);
+int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
+                             int srcRange, const int table[4], int dstRange,
+                             int brightness, int contrast, int saturation);
+int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table,
+                             int *srcRange, int **table, int *dstRange,
+                             int *brightness, int *contrast, int *saturation);
 
 /**
  * Returns a normalized Gaussian curve used to filter stuff
@@ -241,7 +248,8 @@ void sws_freeFilter(SwsFilter *filter);
  */
 struct SwsContext *sws_getCachedContext(struct SwsContext *context,
                                         int srcW, int srcH, enum PixelFormat srcFormat,
-                                        int dstW, int dstH, enum PixelFormat dstFormat, int flags,
-                                        SwsFilter *srcFilter, SwsFilter *dstFilter, double *param);
+                                        int dstW, int dstH, enum PixelFormat dstFormat,
+                                        int flags, SwsFilter *srcFilter,
+                                        SwsFilter *dstFilter, double *param);
 
 #endif /* SWSCALE_SWSCALE_H */
