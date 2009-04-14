@@ -8,6 +8,7 @@ version <next>:
 - PCX encoder
 - RTP packetization of H.263
 - RTP packetization of AMR
+- RTP depacketization of Vorbis
 
 
 

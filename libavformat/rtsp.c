@@ -37,6 +37,7 @@
 #include "rtpdec.h"
 #include "rdt.h"
 #include "rtp_asf.h"
+#include "rtp_vorbis.h"
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP
@@ -196,7 +197,8 @@ static int hex_to_data(uint8_t *data, const char *p)
     return len;
 }
 
-static void sdp_parse_fmtp_config(AVCodecContext *codec, char *attr, char *value)
+static void sdp_parse_fmtp_config(AVCodecContext * codec, void *ctx,
+                                  char *attr, char *value)
 {
     switch (codec->codec_id) {
         case CODEC_ID_MPEG4:
@@ -212,6 +214,9 @@ static void sdp_parse_fmtp_config(AVCodecContext *codec, char *attr, char *value
                 codec->extradata_size = len;
                 hex_to_data(codec->extradata, value);
             }
+            break;
+        case CODEC_ID_VORBIS:
+            ff_vorbis_parse_fmtp_config(codec, ctx, attr, value);
             break;
         default:
             break;
@@ -274,7 +279,8 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
     while(rtsp_next_attr_and_value(&p, attr, sizeof(attr), value, sizeof(value)))
     {
         /* grab the codec extra_data from the config parameter of the fmtp line */
-        sdp_parse_fmtp_config(codec, attr, value);
+        sdp_parse_fmtp_config(codec, rtsp_st->dynamic_protocol_context,
+                              attr, value);
         /* Looking for a known attribute */
         for (i = 0; attr_names[i].str; ++i) {
             if (!strcasecmp(attr, attr_names[i].str)) {
