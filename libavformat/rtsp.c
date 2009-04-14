@@ -261,7 +261,9 @@ int rtsp_next_attr_and_value(const char **p, char *attr, int attr_size, char *va
 static void sdp_parse_fmtp(AVStream *st, const char *p)
 {
     char attr[256];
-    char value[4096];
+    /* Vorbis setup headers can be up to 12KB and are sent base64
+     * encoded, giving a 12KB * (4/3) = 16KB FMTP line. */
+    char value[16384];
     int i;
 
     RTSPStream *rtsp_st = st->priv_data;
@@ -512,8 +514,10 @@ static int sdp_parse(AVFormatContext *s, const char *content)
      * contain long SDP lines containing complete ASF Headers (several
      * kB) or arrays of MDPR (RM stream descriptor) headers plus
      * "rulebooks" describing their properties. Therefore, the SDP line
-     * buffer is large. */
-    char buf[8192], *q;
+     * buffer is large.
+     *
+     * The Vorbis FMTP line can be up to 16KB - see sdp_parse_fmtp. */
+    char buf[16384], *q;
     SDPParseState sdp_parse_state, *s1 = &sdp_parse_state;
 
     memset(s1, 0, sizeof(SDPParseState));
