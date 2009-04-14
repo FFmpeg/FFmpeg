@@ -2693,7 +2693,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
         c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx_rnd;
         c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_mmx;
-        c->put_no_rnd_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx_nornd;
+        c->put_no_rnd_vc1_chroma_pixels_tab[0]= put_vc1_chroma_mc8_mmx_nornd;
 
         c->put_rv40_chroma_pixels_tab[0]= put_rv40_chroma_mc8_mmx;
         c->put_rv40_chroma_pixels_tab[1]= put_rv40_chroma_mc4_mmx;
@@ -2939,7 +2939,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 1, ssse3);
             H264_QPEL_FUNCS(3, 2, ssse3);
             H264_QPEL_FUNCS(3, 3, ssse3);
-            c->put_no_rnd_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_ssse3_nornd;
+            c->put_no_rnd_vc1_chroma_pixels_tab[0]= put_vc1_chroma_mc8_ssse3_nornd;
             c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_ssse3_rnd;
             c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_ssse3_rnd;
             c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_ssse3;

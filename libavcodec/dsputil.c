@@ -1679,7 +1679,7 @@ H264_CHROMA_MC(avg_       , op_avg)
 #undef op_avg
 #undef op_put
 
-static void put_no_rnd_h264_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y){
+static void put_no_rnd_vc1_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y){
     const int A=(8-x)*(8-y);
     const int B=(  x)*(8-y);
     const int C=(8-x)*(  y);
@@ -4489,7 +4489,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_c;
     c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_c;
     c->avg_h264_chroma_pixels_tab[2]= avg_h264_chroma_mc2_c;
-    c->put_no_rnd_h264_chroma_pixels_tab[0]= put_no_rnd_h264_chroma_mc8_c;
+    c->put_no_rnd_vc1_chroma_pixels_tab[0]= put_no_rnd_vc1_chroma_mc8_c;
 
     c->weight_h264_pixels_tab[0]= weight_h264_pixels16x16_c;
     c->weight_h264_pixels_tab[1]= weight_h264_pixels16x8_c;

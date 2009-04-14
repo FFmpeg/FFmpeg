@@ -316,9 +316,9 @@ typedef struct DSPContext {
      * h264 Chroma MC
      */
     h264_chroma_mc_func put_h264_chroma_pixels_tab[3];
-    /* This is really one func used in VC-1 decoding */
-    h264_chroma_mc_func put_no_rnd_h264_chroma_pixels_tab[3];
     h264_chroma_mc_func avg_h264_chroma_pixels_tab[3];
+    /* This is really one func used in VC-1 decoding */
+    h264_chroma_mc_func put_no_rnd_vc1_chroma_pixels_tab[3];
 
     qpel_mc_func put_h264_qpel_pixels_tab[4][16];
     qpel_mc_func avg_h264_qpel_pixels_tab[4][16];

@@ -2101,7 +2101,7 @@ static void put_h264_chroma_mc8_mmx_rnd(uint8_t *dst/*align 8*/, uint8_t *src/*a
 {
     put_h264_chroma_generic_mc8_mmx(dst, src, stride, h, x, y, h264_rnd_reg);
 }
-static void put_h264_chroma_mc8_mmx_nornd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+static void put_vc1_chroma_mc8_mmx_nornd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
     put_h264_chroma_generic_mc8_mmx(dst, src, stride, h, x, y, h264_rnd_reg+2);
 }
@@ -2173,7 +2173,7 @@ static void put_h264_chroma_mc8_ssse3_rnd(uint8_t *dst/*align 8*/, uint8_t *src/
 {
     put_h264_chroma_mc8_ssse3(dst, src, stride, h, x, y, 1);
 }
-static void put_h264_chroma_mc8_ssse3_nornd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
+static void put_vc1_chroma_mc8_ssse3_nornd(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
     put_h264_chroma_mc8_ssse3(dst, src, stride, h, x, y, 0);
 }
