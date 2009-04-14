@@ -57,7 +57,7 @@ av_cold static int audio_read_header(AVFormatContext *s1,
     AVStream *st;
     int ret;
     unsigned int sample_rate;
-    int codec_id;
+    enum CodecID codec_id;
     snd_pcm_sw_params_t *sw_params;
 
     if (ap->sample_rate <= 0) {
