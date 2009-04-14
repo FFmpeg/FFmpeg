@@ -495,7 +495,7 @@ static enum PixelFormat avcodec_get_pix_fmt_internal(const char *name)
 
     for (i=0; i < PIX_FMT_NB; i++)
         if (pix_fmt_info[i].name && !strcmp(pix_fmt_info[i].name, name))
-             return i;
+            return i;
     return PIX_FMT_NONE;
 }
 
