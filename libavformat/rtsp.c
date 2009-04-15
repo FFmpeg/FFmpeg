@@ -682,7 +682,12 @@ void rtsp_parse_line(RTSPMessageHeader *reply, const char *buf)
     /* NOTE: we do case independent match for broken servers */
     p = buf;
     if (av_stristart(p, "Session:", &p)) {
+        int t;
         get_word_sep(reply->session_id, sizeof(reply->session_id), ";", &p);
+        if (av_stristart(p, ";timeout=", &p) &&
+            (t = strtol(p, NULL, 10)) > 0) {
+            reply->timeout = t;
+        }
     } else if (av_stristart(p, "Content-Length:", &p)) {
         reply->content_length = strtol(p, NULL, 10);
     } else if (av_stristart(p, "Transport:", &p)) {
@@ -837,7 +842,7 @@ rtsp_read_reply (AVFormatContext *s, RTSPMessageHeader *reply,
     return 0;
 }
 
-static void rtsp_send_cmd(AVFormatContext *s,
+static void rtsp_send_cmd_async (AVFormatContext *s,
                           const char *cmd, RTSPMessageHeader *reply,
                           unsigned char **content_ptr)
 {
@@ -857,6 +862,14 @@ static void rtsp_send_cmd(AVFormatContext *s,
     printf("Sending:\n%s--\n", buf);
 #endif
     url_write(rt->rtsp_hd, buf, strlen(buf));
+    rt->last_cmd_time = av_gettime();
+}
+
+static void rtsp_send_cmd (AVFormatContext *s,
+                           const char *cmd, RTSPMessageHeader *reply,
+                           unsigned char **content_ptr)
+{
+    rtsp_send_cmd_async(s, cmd, reply, content_ptr);
 
     rtsp_read_reply(s, reply, content_ptr, 0);
 }
@@ -942,6 +955,9 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
         trans_pref = "x-pn-tng";
     else
         trans_pref = "RTP/AVP";
+
+    /* default timeout: 1 minute */
+    rt->timeout = 60;
 
     /* for each stream, make the setup request */
     /* XXX: we assume the same server is used for the control of each
@@ -1122,6 +1138,9 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
         if ((err = rtsp_open_transport_ctx(s, rtsp_st)))
             goto fail;
     }
+
+    if (reply->timeout > 0)
+        rt->timeout = reply->timeout;
 
     if (rt->server_type == RTSP_SERVER_REAL)
         rt->need_subscription = 1;
@@ -1403,12 +1422,12 @@ static int rtsp_read_packet(AVFormatContext *s,
     RTSPStream *rtsp_st;
     int ret, len;
     uint8_t buf[10 * RTP_MAX_PACKET_LENGTH];
+    RTSPMessageHeader reply1, *reply = &reply1;
+    char cmd[1024];
 
     if (rt->server_type == RTSP_SERVER_REAL) {
         int i;
-        RTSPMessageHeader reply1, *reply = &reply1;
         enum AVDiscard cache[MAX_STREAMS];
-        char cmd[1024];
 
         for (i = 0; i < s->nb_streams; i++)
             cache[i] = s->streams[i]->discard;
@@ -1508,6 +1527,22 @@ static int rtsp_read_packet(AVFormatContext *s,
         /* more packets may follow, so we save the RTP context */
         rt->cur_transport_priv = rtsp_st->transport_priv;
     }
+
+    /* send dummy request to keep TCP connection alive */
+    if ((rt->server_type == RTSP_SERVER_WMS ||
+         rt->server_type == RTSP_SERVER_REAL) &&
+        (av_gettime() - rt->last_cmd_time) / 1000000 >= rt->timeout / 2) {
+        if (rt->server_type == RTSP_SERVER_WMS) {
+            snprintf(cmd, sizeof(cmd) - 1,
+                     "GET_PARAMETER %s RTSP/1.0\r\n",
+                     s->filename);
+            rtsp_send_cmd_async(s, cmd, reply, NULL);
+        } else {
+            rtsp_send_cmd_async(s, "OPTIONS * RTSP/1.0\r\n",
+                                reply, NULL);
+        }
+    }
+
     return 0;
 }
 

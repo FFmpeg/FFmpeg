@@ -132,6 +132,14 @@ typedef struct RTSPMessageHeader {
      * (RealServer compatible)" or "RealServer Version v.e.r.sion (platform)",
      * where platform is the output of $uname -msr | sed 's/ /-/g'. */
     char server[64];
+
+    /** The "timeout" comes as part of the server response to the "SETUP"
+     * command, in the "Session: <xyz>[;timeout=<value>]" line. It is the
+     * time, in seconds, that the server will go without traffic over the
+     * RTSP/TCP connection before it closes the connection. To prevent
+     * this, sent dummy requests (e.g. OPTIONS) with intervals smaller
+     * than this value. */
+    int timeout;
 } RTSPMessageHeader;
 
 /**
@@ -191,6 +199,16 @@ typedef struct RTSPState {
     /** copy of RTSPMessageHeader->session_id, i.e. the server-provided session
      * identifier that the client should re-transmit in each RTSP command */
     char session_id[512];
+
+    /** copy of RTSPMessageHeader->timeout, i.e. the time (in seconds) that
+     * the server will go without traffic on the RTSP/TCP line before it
+     * closes the connection. */
+    int timeout;
+
+    /** timestamp of the last RTSP command that we sent to the RTSP server.
+     * This is used to calculate when to send dummy commands to keep the
+     * connection alive, in conjunction with \p timeout. */
+    int64_t last_cmd_time;
 
     /** the negotiated data/packet transport protocol; e.g. RTP or RDT */
     enum RTSPTransport transport;
