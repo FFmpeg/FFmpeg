@@ -61,7 +61,7 @@ int ff_celp_lp_synthesis_filter(
 {
     int i,n;
 
-    // This line is to avoid a +1 subtraction in the main loop.
+    // Avoids a +1 in the inner loop.
     filter_length++;
 
     for(n=0; n<buffer_length; n++)
@@ -93,7 +93,7 @@ void ff_celp_lp_synthesis_filterf(
 {
     int i,n;
 
-    // This line is to avoid a +1 subtraction in the main loop
+    // Avoids a +1 in the inner loop.
     filter_length++;
 
     for(n=0; n<buffer_length; n++)
