@@ -63,7 +63,7 @@ struct AVFormatContext;
  *    want to store, e.g., the email address of the child of producer Alice
  *    and actor Bob, that could have key=alice_and_bobs_childs_email_address.
  * 3. A tag whose value is localized for a particular language is appended
- *    with a dash character ('-') and the ISO 639 3-letter language code.
+ *    with a dash character ('-') and the ISO 639-2/B 3-letter language code.
  *    For example: Author-ger=Michael, Author-eng=Mike
  *    The original/default language is in the unqualified "Author" tag.
  *    A demuxer should set a default if it sets any translated tag.
@@ -390,7 +390,7 @@ typedef struct AVStream {
     int64_t duration;
 
 #if LIBAVFORMAT_VERSION_INT < (53<<16)
-    char language[4]; /** ISO 639 3-letter language code (empty string if undefined) */
+    char language[4]; /** ISO 639-2/B 3-letter language code (empty string if undefined) */
 #endif
 
     /* av_read_frame() support */
