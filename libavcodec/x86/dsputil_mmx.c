@@ -1813,6 +1813,9 @@ void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx);
 void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     put_pixels8_mmx(dst, src, stride, 8);
 }
+void ff_avg_vc1_mspel_mc00_mmx2(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+    avg_pixels8_mmx2(dst, src, stride, 8);
+}
 
 /* external functions, from idct_mmx.c */
 void ff_mmx_idct(DCTELEM *block);
