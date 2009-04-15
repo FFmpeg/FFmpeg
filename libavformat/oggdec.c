@@ -450,7 +450,7 @@ ogg_get_length (AVFormatContext * s)
     size = url_fsize(s->pb);
     if(size < 0)
         return 0;
-    end = size > MAX_PAGE_SIZE? size - MAX_PAGE_SIZE: size;
+    end = size > MAX_PAGE_SIZE? size - MAX_PAGE_SIZE: 0;
 
     ogg_save (s);
     url_fseek (s->pb, end, SEEK_SET);
