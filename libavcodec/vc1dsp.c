@@ -130,7 +130,7 @@ static av_always_inline int vc1_filter_line(uint8_t* src, int stride, int pq){
  * @param pq block quantizer
  * @see 8.6
  */
-static void vc1_loop_filter(uint8_t* src, int step, int stride, int len, int pq)
+static inline void vc1_loop_filter(uint8_t* src, int step, int stride, int len, int pq)
 {
     int i;
     int filt3;
@@ -144,6 +144,36 @@ static void vc1_loop_filter(uint8_t* src, int step, int stride, int len, int pq)
         }
         src += step * 4;
     }
+}
+
+static void vc1_v_loop_filter4_c(uint8_t *src, int stride, int pq)
+{
+    vc1_loop_filter(src, 1, stride, 4, pq);
+}
+
+static void vc1_h_loop_filter4_c(uint8_t *src, int stride, int pq)
+{
+    vc1_loop_filter(src, stride, 1, 4, pq);
+}
+
+static void vc1_v_loop_filter8_c(uint8_t *src, int stride, int pq)
+{
+    vc1_loop_filter(src, 1, stride, 8, pq);
+}
+
+static void vc1_h_loop_filter8_c(uint8_t *src, int stride, int pq)
+{
+    vc1_loop_filter(src, stride, 1, 8, pq);
+}
+
+static void vc1_v_loop_filter16_c(uint8_t *src, int stride, int pq)
+{
+    vc1_loop_filter(src, 1, stride, 16, pq);
+}
+
+static void vc1_h_loop_filter16_c(uint8_t *src, int stride, int pq)
+{
+    vc1_loop_filter(src, stride, 1, 16, pq);
 }
 
 /** Do inverse transform on 8x8 block
@@ -517,7 +547,12 @@ void ff_vc1dsp_init(DSPContext* dsp, AVCodecContext *avctx) {
     dsp->vc1_inv_trans_4x4 = vc1_inv_trans_4x4_c;
     dsp->vc1_h_overlap = vc1_h_overlap_c;
     dsp->vc1_v_overlap = vc1_v_overlap_c;
-    dsp->vc1_loop_filter = vc1_loop_filter;
+    dsp->vc1_v_loop_filter4 = vc1_v_loop_filter4_c;
+    dsp->vc1_h_loop_filter4 = vc1_h_loop_filter4_c;
+    dsp->vc1_v_loop_filter8 = vc1_v_loop_filter8_c;
+    dsp->vc1_h_loop_filter8 = vc1_h_loop_filter8_c;
+    dsp->vc1_v_loop_filter16 = vc1_v_loop_filter16_c;
+    dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_c;
 
     dsp->put_vc1_mspel_pixels_tab[ 0] = ff_put_vc1_mspel_mc00_c;
     dsp->put_vc1_mspel_pixels_tab[ 1] = put_vc1_mspel_mc10_c;
