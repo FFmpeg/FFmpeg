@@ -83,6 +83,7 @@ typedef struct FlacEncodeContext {
     int channels;
     int samplerate;
     int sr_code[2];
+    int max_blocksize;
     int min_framesize;
     int max_framesize;
     int max_encoded_framesize;
@@ -107,8 +108,8 @@ static void write_streaminfo(FlacEncodeContext *s, uint8_t *header)
     init_put_bits(&pb, header, FLAC_STREAMINFO_SIZE);
 
     /* streaminfo metadata block */
-    put_bits(&pb, 16, s->avctx->frame_size);
-    put_bits(&pb, 16, s->avctx->frame_size);
+    put_bits(&pb, 16, s->max_blocksize);
+    put_bits(&pb, 16, s->max_blocksize);
     put_bits(&pb, 24, s->min_framesize);
     put_bits(&pb, 24, s->max_framesize);
     put_bits(&pb, 20, s->samplerate);
@@ -326,6 +327,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     } else {
         s->avctx->frame_size = select_blocksize(s->samplerate, s->options.block_time_ms);
     }
+    s->max_blocksize = s->avctx->frame_size;
     av_log(avctx, AV_LOG_DEBUG, " block size: %d\n", s->avctx->frame_size);
 
     /* set LPC precision */
