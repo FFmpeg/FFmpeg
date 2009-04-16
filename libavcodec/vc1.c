@@ -2982,9 +2982,9 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
             s->dsp.vc1_inv_trans_8x8(block);
             s->dsp.add_pixels_clamped(block, dst, linesize);
             if(apply_filter && cbp_top  & 0xC)
-                s->dsp.vc1_v_loop_filter8(dst, linesize, mquant);
+                s->dsp.vc1_v_loop_filter8(dst, linesize, v->pq);
             if(apply_filter && cbp_left & 0xA)
-                s->dsp.vc1_h_loop_filter8(dst, linesize, mquant);
+                s->dsp.vc1_h_loop_filter8(dst, linesize, v->pq);
         }
         break;
     case TT_4X4:
@@ -3006,9 +3006,9 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
             if(!(subblkpat & (1 << (3 - j))) && !skip_block){
                 s->dsp.vc1_inv_trans_4x4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, block + off);
                 if(apply_filter && (j&2 ? pat & (1<<(j-2)) : (cbp_top & (1 << (j + 2)))))
-                    s->dsp.vc1_v_loop_filter4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, mquant);
+                    s->dsp.vc1_v_loop_filter4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, v->pq);
                 if(apply_filter && (j&1 ? pat & (1<<(j-1)) : (cbp_left & (1 << (j + 1)))))
-                    s->dsp.vc1_h_loop_filter4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, mquant);
+                    s->dsp.vc1_h_loop_filter4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, v->pq);
             }
         }
         break;
@@ -3031,9 +3031,9 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
             if(!(subblkpat & (1 << (1 - j))) && !skip_block){
                 s->dsp.vc1_inv_trans_8x4(dst + j*4*linesize, linesize, block + off);
                 if(apply_filter && j ? pat & 0x3 : (cbp_top & 0xC))
-                    s->dsp.vc1_v_loop_filter8(dst + j*4*linesize, linesize, mquant);
+                    s->dsp.vc1_v_loop_filter8(dst + j*4*linesize, linesize, v->pq);
                 if(apply_filter && cbp_left & (2 << j))
-                    s->dsp.vc1_h_loop_filter4(dst + j*4*linesize, linesize, mquant);
+                    s->dsp.vc1_h_loop_filter4(dst + j*4*linesize, linesize, v->pq);
             }
         }
         break;
@@ -3056,9 +3056,9 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
             if(!(subblkpat & (1 << (1 - j))) && !skip_block){
                 s->dsp.vc1_inv_trans_4x8(dst + j*4, linesize, block + off);
                 if(apply_filter && cbp_top & (2 << j))
-                    s->dsp.vc1_v_loop_filter4(dst + j*4, linesize, mquant);
+                    s->dsp.vc1_v_loop_filter4(dst + j*4, linesize, v->pq);
                 if(apply_filter && j ? pat & 0x5 : (cbp_left & 0xA))
-                    s->dsp.vc1_h_loop_filter8(dst + j*4, linesize, mquant);
+                    s->dsp.vc1_h_loop_filter8(dst + j*4, linesize, v->pq);
             }
         }
         break;
@@ -3181,9 +3181,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                             top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
                         if(left_cbp & 0xC)
-                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, mquant);
+                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                         if(top_cbp  & 0xA)
-                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, mquant);
+                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                     }
                     block_cbp |= 0xF << (i << 2);
                 } else if(val) {
@@ -3198,9 +3198,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                             top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
                         if(left_cbp & 0xC)
-                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, mquant);
+                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                         if(top_cbp  & 0xA)
-                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, mquant);
+                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                     }
                     pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block, s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize, (i&4) && (s->flags & CODEC_FLAG_GRAY), filter, left_cbp, top_cbp);
                     block_cbp |= pat << (i << 2);
@@ -3312,9 +3312,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                             top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
                         if(left_cbp & 0xC)
-                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, mquant);
+                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                         if(top_cbp  & 0xA)
-                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, mquant);
+                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                     }
                     block_cbp |= 0xF << (i << 2);
                 } else if(is_coded[i]) {
@@ -3329,9 +3329,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                             top_cbp  = (i & 2) ? (cbp >> ((i-2)*4)) : (v->cbp[s->mb_x - s->mb_stride] >> ((i+2)*4));
                         }
                         if(left_cbp & 0xC)
-                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, mquant);
+                            s->dsp.vc1_v_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                         if(top_cbp  & 0xA)
-                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, mquant);
+                            s->dsp.vc1_h_loop_filter8(s->dest[dst_idx] + off, i & 4 ? s->uvlinesize : s->linesize, v->pq);
                     }
                     pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block, s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize, (i&4) && (s->flags & CODEC_FLAG_GRAY), filter, left_cbp, top_cbp);
                     block_cbp |= pat << (i << 2);
@@ -3610,7 +3610,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
                 s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
                 s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
             }
-            if(v->s.loop_filter) vc1_loop_filter_iblk(s, s->current_picture.qscale_table[mb_pos]);
+            if(v->s.loop_filter) vc1_loop_filter_iblk(s, v->pq);
 
             if(get_bits_count(&s->gb) > v->bits) {
                 ff_er_add_slice(s, 0, 0, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END));
@@ -3741,7 +3741,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
                 s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
                 s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
             }
-            if(v->s.loop_filter) vc1_loop_filter_iblk(s, s->current_picture.qscale_table[mb_pos]);
+            if(v->s.loop_filter) vc1_loop_filter_iblk(s, v->pq);
 
             if(get_bits_count(&s->gb) > v->bits) {
                 ff_er_add_slice(s, 0, 0, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END));
@@ -3848,7 +3848,7 @@ static void vc1_decode_b_blocks(VC1Context *v)
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i at %ix%i\n", get_bits_count(&s->gb), v->bits,s->mb_x,s->mb_y);
                 return;
             }
-            if(v->s.loop_filter) vc1_loop_filter_iblk(s, s->current_picture.qscale_table[s->mb_x + s->mb_y *s->mb_stride]);
+            if(v->s.loop_filter) vc1_loop_filter_iblk(s, v->pq);
         }
         ff_draw_horiz_band(s, s->mb_y * 16, 16);
         s->first_slice_line = 0;
