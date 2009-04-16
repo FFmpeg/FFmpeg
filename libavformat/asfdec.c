@@ -702,7 +702,7 @@ int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
     ASFStream *asf_st = 0;
     for (;;) {
         if(url_feof(pb))
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         if (asf->packet_size_left < FRAME_HEADER_SIZE
             || asf->packet_segments < 1) {
             //asf->packet_size_left <= asf->packet_padsize) {
