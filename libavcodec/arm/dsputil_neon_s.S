@@ -38,13 +38,13 @@
         pld             [r1, r2]
         pld             [r1, r2, lsl #1]
 .if \avg
-        vld1.64         {d16,d17}, [ip], r2
+        vld1.64         {d16,d17}, [ip,:128], r2
         vrhadd.u8       q0,  q0,  q8
-        vld1.64         {d18,d19}, [ip], r2
+        vld1.64         {d18,d19}, [ip,:128], r2
         vrhadd.u8       q1,  q1,  q9
-        vld1.64         {d20,d21}, [ip], r2
+        vld1.64         {d20,d21}, [ip,:128], r2
         vrhadd.u8       q2,  q2,  q10
-        vld1.64         {d22,d23}, [ip], r2
+        vld1.64         {d22,d23}, [ip,:128], r2
         vrhadd.u8       q3,  q3,  q11
 .endif
         subs            r3,  r3,  #4
