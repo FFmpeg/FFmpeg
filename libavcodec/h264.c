@@ -7461,6 +7461,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
     int buf_index=0;
     H264Context *hx; ///< thread context
     int context_count = 0;
+    int next_avc= h->is_avc ? 0 : buf_size;
 
     h->max_contexts = avctx->thread_count;
 #if 0
@@ -7484,7 +7485,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
         int i, nalsize = 0;
         int err;
 
-        if(h->is_avc) {
+        if(buf_index >= next_avc) {
             if(buf_index >= buf_size) break;
             nalsize = 0;
             for(i = 0; i < h->nal_length_size; i++)
@@ -7498,6 +7499,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                     break;
                 }
             }
+            next_avc= buf_index + nalsize;
         } else {
             // start code prefix search
             for(; buf_index + 3 < buf_size; buf_index++){
@@ -7513,7 +7515,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 
         hx = h->thread_context[context_count];
 
-        ptr= ff_h264_decode_nal(hx, buf + buf_index, &dst_length, &consumed, h->is_avc ? nalsize : buf_size - buf_index);
+        ptr= ff_h264_decode_nal(hx, buf + buf_index, &dst_length, &consumed, next_avc - buf_index);
         if (ptr==NULL || dst_length < 0){
             return -1;
         }
@@ -7525,13 +7527,12 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             av_log(h->s.avctx, AV_LOG_DEBUG, "NAL %d at %d/%d length %d\n", hx->nal_unit_type, buf_index, buf_size, dst_length);
         }
 
-        if (h->is_avc && (nalsize != consumed)){
+        if (h->is_avc && (nalsize != consumed) && nalsize){
             int i, debug_level = AV_LOG_DEBUG;
             for (i = consumed; i < nalsize; i++)
                 if (buf[buf_index+i])
                     debug_level = AV_LOG_ERROR;
             av_log(h->s.avctx, debug_level, "AVC: Consumed only %d bytes instead of %d\n", consumed, nalsize);
-            consumed= nalsize;
         }
 
         buf_index += consumed;
