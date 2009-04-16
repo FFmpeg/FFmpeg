@@ -69,8 +69,6 @@ typedef struct EaDemuxContext {
     int audio_stream_index;
     int audio_frame_counter;
 
-    int64_t audio_pts;
-
     int bytes;
     int sample_rate;
     int num_channels;
