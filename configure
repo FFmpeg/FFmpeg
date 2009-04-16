@@ -1661,7 +1661,6 @@ case $target_os in
         network_extralibs="-lsocket"
         objformat="coff"
         enable dos_paths
-        check_cflags -fno-common
         ;;
     linux)
         enable dv1394
