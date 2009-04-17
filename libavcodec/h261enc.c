@@ -256,7 +256,7 @@ void ff_h261_encode_init(MpegEncContext *s){
  */
 static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
     MpegEncContext * const s = &h->s;
-    int level, run, last, i, j, last_index, last_non_zero, sign, slevel, code;
+    int level, run, i, j, last_index, last_non_zero, sign, slevel, code;
     RLTable *rl;
 
     rl = &h261_rl_tcoeff;
@@ -294,7 +294,6 @@ static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
         level = block[j];
         if (level) {
             run = i - last_non_zero - 1;
-            last = (i == last_index);
             sign = 0;
             slevel = level;
             if (level < 0) {
