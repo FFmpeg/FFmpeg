@@ -333,15 +333,9 @@ static void xan_wc3_decode_frame(XanContext *s) {
             }
         } else {
             /* run-based motion compensation from last frame */
-            motion_x = *vector_segment >> 4;
-            motion_y = *vector_segment & 0xF;
+            motion_x = sign_extend(*vector_segment >> 4,  4);
+            motion_y = sign_extend(*vector_segment & 0xF, 4);
             vector_segment++;
-
-            /* sign extension */
-            if (motion_x & 0x8)
-                motion_x |= 0xFFFFFFF0;
-            if (motion_y & 0x8)
-                motion_y |= 0xFFFFFFF0;
 
             /* copy a run of pixels from the previous frame */
             xan_wc3_copy_pixel_run(s, x, y, size, motion_x, motion_y);
