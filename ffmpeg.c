@@ -1972,7 +1972,6 @@ static int av_encode(AVFormatContext **output_files,
     /* init pts */
     for(i=0;i<nb_istreams;i++) {
         ist = ist_table[i];
-        is = input_files[ist->file_index];
         ist->pts = 0;
         ist->next_pts = AV_NOPTS_VALUE;
         ist->is_start = 1;
