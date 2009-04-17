@@ -995,7 +995,7 @@ static void pred4x4_vertical_add_c(uint8_t *pix, const DCTELEM *block, int strid
         pix[1*stride]= v += block[0];
         pix[2*stride]= v += block[4];
         pix[3*stride]= v += block[8];
-        pix[4*stride]= v += block[12];
+        pix[4*stride]= v +  block[12];
         pix++;
         block++;
     }
@@ -1008,7 +1008,7 @@ static void pred4x4_horizontal_add_c(uint8_t *pix, const DCTELEM *block, int str
         pix[0]= v += block[0];
         pix[1]= v += block[1];
         pix[2]= v += block[2];
-        pix[3]= v += block[3];
+        pix[3]= v +  block[3];
         pix+= stride;
         block+= 4;
     }
@@ -1026,7 +1026,7 @@ static void pred8x8l_vertical_add_c(uint8_t *pix, const DCTELEM *block, int stri
         pix[5*stride]= v += block[32];
         pix[6*stride]= v += block[40];
         pix[7*stride]= v += block[48];
-        pix[8*stride]= v += block[56];
+        pix[8*stride]= v +  block[56];
         pix++;
         block++;
     }
@@ -1043,7 +1043,7 @@ static void pred8x8l_horizontal_add_c(uint8_t *pix, const DCTELEM *block, int st
         pix[4]= v += block[4];
         pix[5]= v += block[5];
         pix[6]= v += block[6];
-        pix[7]= v += block[7];
+        pix[7]= v +  block[7];
         pix+= stride;
         block+= 8;
     }
