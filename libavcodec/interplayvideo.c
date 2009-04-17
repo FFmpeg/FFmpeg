@@ -42,6 +42,8 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "dsputil.h"
+#define ALT_BITSTREAM_READER_LE
+#include "get_bits.h"
 
 #define PALETTE_COUNT 256
 
@@ -566,10 +568,10 @@ static int (* const ipvideo_decode_block[])(IpvideoContext *s) = {
 static void ipvideo_decode_opcodes(IpvideoContext *s)
 {
     int x, y;
-    int index = 0;
     unsigned char opcode;
     int ret;
     static int frame = 0;
+    GetBitContext gb;
 
     debug_interplay("------------------ frame %d\n", frame);
     frame++;
@@ -584,15 +586,10 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
     s->upper_motion_limit_offset = (s->avctx->height - 8) * s->stride
         + s->avctx->width - 8;
 
+    init_get_bits(&gb, s->decoding_map, s->decoding_map_size * 8);
     for (y = 0; y < (s->stride * s->avctx->height); y += s->stride * 8) {
         for (x = y; x < y + s->avctx->width; x += 8) {
-            /* bottom nibble first, then top nibble (which makes it
-             * hard to use a GetBitcontext) */
-            if (index & 1)
-                opcode = s->decoding_map[index >> 1] >> 4;
-            else
-                opcode = s->decoding_map[index >> 1] & 0xF;
-            index++;
+            opcode = get_bits(&gb, 4);
 
             debug_interplay("  block @ (%3d, %3d): encoding 0x%X, data ptr @ %p\n",
                 x - y, y / s->stride, opcode, s->stream_ptr);
