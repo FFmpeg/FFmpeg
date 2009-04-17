@@ -140,13 +140,13 @@ static void tgq_idct_put_mb_dconly(TgqContext *s, int mb_x, int mb_y, const int8
     }
 }
 
-static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x, const int8_t **bs, const int8_t *buf_end){
+static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x, const uint8_t **bs, const uint8_t *buf_end){
     int mode;
     int i;
     int8_t dc[6];
     DCTELEM block[6][64];
 
-    mode = bytestream_get_byte((const uint8_t**)bs);
+    mode = bytestream_get_byte(bs);
     if (mode>buf_end-*bs) {
         av_log(s->avctx, AV_LOG_ERROR, "truncated macroblock\n");
         return;
@@ -228,7 +228,7 @@ static int tgq_decode_frame(AVCodecContext *avctx,
 
     for (y=0; y<(avctx->height+15)/16; y++)
     for (x=0; x<(avctx->width+15)/16; x++)
-        tgq_decode_mb(s, y, x, (const int8_t**)&buf, (const int8_t*)buf_end);
+        tgq_decode_mb(s, y, x, &buf, buf_end);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
