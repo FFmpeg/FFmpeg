@@ -1230,8 +1230,8 @@ static void spatial_compose97i_dy_buffered(DSPContext *dsp, DWTCompose *cs, slic
         if(y+0<(unsigned)height) vertical_compose97iH0(b0, b1, b2, width);
     }
 
-        if(y-1<(unsigned)height) dsp->horizontal_compose97i(b0, width);
-        if(y+0<(unsigned)height) dsp->horizontal_compose97i(b1, width);
+    if(y-1<(unsigned)height) dsp->horizontal_compose97i(b0, width);
+    if(y+0<(unsigned)height) dsp->horizontal_compose97i(b1, width);
 
     cs->b0=b2;
     cs->b1=b3;
@@ -1249,13 +1249,13 @@ static void spatial_compose97i_dy(DWTCompose *cs, IDWTELEM *buffer, int width, i
     IDWTELEM *b4= buffer + mirror(y+3, height-1)*stride;
     IDWTELEM *b5= buffer + mirror(y+4, height-1)*stride;
 
-        if(y+3<(unsigned)height) vertical_compose97iL1(b3, b4, b5, width);
-        if(y+2<(unsigned)height) vertical_compose97iH1(b2, b3, b4, width);
-        if(y+1<(unsigned)height) vertical_compose97iL0(b1, b2, b3, width);
-        if(y+0<(unsigned)height) vertical_compose97iH0(b0, b1, b2, width);
+    if(y+3<(unsigned)height) vertical_compose97iL1(b3, b4, b5, width);
+    if(y+2<(unsigned)height) vertical_compose97iH1(b2, b3, b4, width);
+    if(y+1<(unsigned)height) vertical_compose97iL0(b1, b2, b3, width);
+    if(y+0<(unsigned)height) vertical_compose97iH0(b0, b1, b2, width);
 
-        if(y-1<(unsigned)height) ff_snow_horizontal_compose97i(b0, width);
-        if(y+0<(unsigned)height) ff_snow_horizontal_compose97i(b1, width);
+    if(y-1<(unsigned)height) ff_snow_horizontal_compose97i(b0, width);
+    if(y+0<(unsigned)height) ff_snow_horizontal_compose97i(b1, width);
 
     cs->b0=b2;
     cs->b1=b3;
