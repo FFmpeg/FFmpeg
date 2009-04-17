@@ -35,6 +35,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "bytestream.h"
 // for av_memcpy_backptr
 #include "libavutil/lzo.h"
 
@@ -128,8 +129,6 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
 {
     unsigned char opcode;
     int size;
-    int offset;
-    int byte1, byte2, byte3;
     unsigned char *dest_end = dest + dest_len;
 
     while (dest < dest_end) {
@@ -139,33 +138,24 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             int size2, back;
             if ( (opcode & 0x80) == 0 ) {
 
-                offset = *src++;
-
                 size = opcode & 3;
 
                 size2 = ((opcode & 0x1c) >> 2) + 3;
-                back = ((opcode & 0x60) << 3) + offset + 1;
+                back = ((opcode & 0x60) << 3) + *src++ + 1;
 
             } else if ( (opcode & 0x40) == 0 ) {
 
-                byte1 = *src++;
-                byte2 = *src++;
-
-                size = byte1 >> 6;
+                size = *src >> 6;
 
                 size2 = (opcode & 0x3f) + 4;
-                back = ((byte1 & 0x3f) << 8) + byte2 + 1;
+                back = (bytestream_get_be16(&src) & 0x3fff) + 1;
 
             } else {
 
-                byte1 = *src++;
-                byte2 = *src++;
-                byte3 = *src++;
-
                 size = opcode & 3;
 
-                size2 = byte3 + 5 + ((opcode & 0xc) << 6);
-                back = ((opcode & 0x10) << 12) + 1 + (byte1 << 8) + byte2;
+                back = ((opcode & 0x10) << 12) + 1 + bytestream_get_be16(&src);
+                size2 = *src++ + 5 + ((opcode & 0xc) << 6);
                 if (dest >= dest_end || size > dest_end - dest)
                     return;
             }
