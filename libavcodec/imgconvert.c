@@ -863,7 +863,6 @@ int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_
     int loss;
 
     ps = &pix_fmt_info[src_pix_fmt];
-    pf = &pix_fmt_info[dst_pix_fmt];
 
     /* compute loss */
     loss = 0;
