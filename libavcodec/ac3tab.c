@@ -79,6 +79,21 @@ const uint8_t ff_ac3_channels_tab[8] = {
     2, 1, 2, 3, 3, 4, 4, 5
 };
 
+/**
+ * Table to remap channels from SMPTE order to AC-3 order.
+ * [channel_mode][lfe][ch]
+ */
+const uint8_t ff_ac3_enc_channel_map[8][2][6] = {
+    { { 0, 1,          }, { 0, 1, 2,         } },
+    { { 0,             }, { 0, 1,            } },
+    { { 0, 1,          }, { 0, 1, 2,         } },
+    { { 0, 2, 1,       }, { 0, 2, 1, 3,      } },
+    { { 0, 1, 2,       }, { 0, 1, 3, 2,      } },
+    { { 0, 2, 1, 3,    }, { 0, 2, 1, 4, 3,   } },
+    { { 0, 1, 2, 3, 4, }, { 0, 1, 3, 4, 2,   } },
+    { { 0, 2, 1, 3, 4, }, { 0, 2, 1, 4, 5, 3 } },
+};
+
 /* possible frequencies */
 const uint16_t ff_ac3_sample_rate_tab[3] = { 48000, 44100, 32000 };
 

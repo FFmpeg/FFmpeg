@@ -36,6 +36,7 @@ typedef struct AC3EncodeContext {
     int nb_channels;
     int nb_all_channels;
     int lfe_channel;
+    const uint8_t *channel_map;
     int bit_rate;
     unsigned int sample_rate;
     unsigned int bitstream_id;
@@ -638,6 +639,7 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
     s->nb_all_channels = channels;
     s->nb_channels = channels > 5 ? 5 : channels;
     s->lfe_channel = s->lfe ? 5 : -1;
+    s->channel_map = ff_ac3_enc_channel_map[s->channel_mode][s->lfe];
 
     /* frequency */
     for(i=0;i<3;i++) {
@@ -1158,19 +1160,20 @@ static int AC3_encode_frame(AVCodecContext *avctx,
 
     frame_bits = 0;
     for(ch=0;ch<s->nb_all_channels;ch++) {
+        int ich = s->channel_map[ch];
         /* fixed mdct to the six sub blocks & exponent computation */
         for(i=0;i<NB_BLOCKS;i++) {
             int16_t *sptr;
             int sinc;
 
             /* compute input samples */
-            memcpy(input_samples, s->last_samples[ch], N/2 * sizeof(int16_t));
+            memcpy(input_samples, s->last_samples[ich], N/2 * sizeof(int16_t));
             sinc = s->nb_all_channels;
-            sptr = samples + (sinc * (N/2) * i) + ch;
+            sptr = samples + (sinc * (N/2) * i) + ich;
             for(j=0;j<N/2;j++) {
                 v = *sptr;
                 input_samples[j + N/2] = v;
-                s->last_samples[ch][j] = v;
+                s->last_samples[ich][j] = v;
                 sptr += sinc;
             }
 
