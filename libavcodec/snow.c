@@ -542,13 +542,11 @@ static IDWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
 
 static void slice_buffer_release(slice_buffer * buf, int line)
 {
-    int offset;
     IDWTELEM * buffer;
 
     assert(line >= 0 && line < buf->line_count);
     assert(buf->line[line]);
 
-    offset = buf->line_width * line;
     buffer = buf->line[line];
     buf->data_stack_top++;
     buf->data_stack[buf->data_stack_top] = buffer;
