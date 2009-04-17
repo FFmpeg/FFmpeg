@@ -435,7 +435,6 @@ static void get_qminmax(int *qmin_ret, int *qmax_ret, MpegEncContext *s, int pic
 static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, int frame_num){
     RateControlContext *rcc= &s->rc_context;
     int qmin, qmax;
-    double bits;
     const int pict_type= rce->new_pict_type;
     const double buffer_size= s->avctx->rc_buffer_size;
     const double fps= 1/av_q2d(s->avctx->time_base);
@@ -448,7 +447,6 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
     if(s->avctx->rc_qmod_freq && frame_num%s->avctx->rc_qmod_freq==0 && pict_type==FF_P_TYPE)
         q*= s->avctx->rc_qmod_amp;
 
-    bits= qp2bits(rce, q);
 //printf("q:%f\n", q);
     /* buffer overflow/underflow protection */
     if(buffer_size){
