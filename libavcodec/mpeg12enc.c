@@ -670,7 +670,6 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
 
     if (val == 0) {
         /* zero vector */
-        code = 0;
         put_bits(&s->pb,
                  ff_mpeg12_mbMotionVectorTable[0][1],
                  ff_mpeg12_mbMotionVectorTable[0][0]);
