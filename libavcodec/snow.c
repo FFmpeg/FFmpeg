@@ -526,7 +526,6 @@ static void slice_buffer_init(slice_buffer * buf, int line_count, int max_alloca
 
 static IDWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
 {
-    int offset;
     IDWTELEM * buffer;
 
     assert(buf->data_stack_top >= 0);
@@ -534,7 +533,6 @@ static IDWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
     if (buf->line[line])
         return buf->line[line];
 
-    offset = buf->line_width * line;
     buffer = buf->data_stack[buf->data_stack_top];
     buf->data_stack_top--;
     buf->line[line] = buffer;
