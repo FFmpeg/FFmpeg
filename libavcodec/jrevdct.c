@@ -692,7 +692,6 @@ void j_rev_dct(DCTBLOCK data)
                     tmp3 += z1 + z4;
                 } else {
                     /* d1 == 0, d3 != 0, d5 != 0, d7 != 0 */
-                    z1 = d7;
                     z2 = d5 + d3;
                     z3 = d7 + d3;
                     z5 = MULTIPLY(z3 + d5, FIX_1_175875602);
