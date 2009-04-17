@@ -181,7 +181,7 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             if (dest + size > dest_end)
                 return;
             av_memcpy_backptr(dest,
-                (((opcode & 0x10) >> 4) << 0x10) + 1 + (byte1 << 8) + byte2,
+                ((opcode & 0x10) << 12) + 1 + (byte1 << 8) + byte2,
                 size);
             dest += size;
         } else {
