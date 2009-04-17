@@ -384,6 +384,7 @@ static const AVCodecTag mp4_audio_types[] = {
     { CODEC_ID_MP3ON4, AOT_L1   }, /* layer 1 */
     { CODEC_ID_MP3ON4, AOT_L2   }, /* layer 2 */
     { CODEC_ID_MP3ON4, AOT_L3   }, /* layer 3 */
+    { CODEC_ID_MP4ALS, AOT_ALS  }, /* MPEG-4 ALS */
     { CODEC_ID_NONE,   AOT_NULL },
 };
 
