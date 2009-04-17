@@ -313,7 +313,7 @@ static int aiff_read_header(AVFormatContext *s,
     uint32_t tag;
     unsigned version = AIFF_C_VERSION1;
     ByteIOContext *pb = s->pb;
-    AVStream * st = s->streams[0];
+    AVStream * st;
 
     /* check FORM header */
     filesize = get_tag(pb, &tag);
