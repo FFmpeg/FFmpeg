@@ -36,6 +36,8 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#define ALT_BITSTREAM_READER_LE
+#include "get_bits.h"
 // for av_memcpy_backptr
 #include "libavutil/lzo.h"
 
@@ -93,27 +95,19 @@ static int xan_huffman_decode(unsigned char *dest, const unsigned char *src,
     unsigned char ival = byte + 0x16;
     const unsigned char * ptr = src + byte*2;
     unsigned char val = ival;
-    int counter = 0;
     unsigned char *dest_end = dest + dest_len;
+    GetBitContext gb;
 
-    unsigned char bits = *ptr++;
+    init_get_bits(&gb, ptr, 0); // FIXME: no src size available
 
     while ( val != 0x16 ) {
-        if ( (1 << counter) & bits )
-            val = src[byte + val - 0x17];
-        else
-            val = src[val - 0x17];
+        val = src[val - 0x17 + get_bits1(&gb) * byte];
 
         if ( val < 0x16 ) {
             if (dest + 1 > dest_end)
                 return 0;
             *dest++ = val;
             val = ival;
-        }
-
-        if (counter++ == 7) {
-            counter = 0;
-            bits = *ptr++;
         }
     }
 
