@@ -358,7 +358,6 @@ static av_cold int decode_init(AVCodecContext * avctx)
         for(i=1;i<16;i++) {
             const HuffTable *h = &mpa_huff_tables[i];
             int xsize, x, y;
-            unsigned int n;
             uint8_t  tmp_bits [512];
             uint16_t tmp_codes[512];
 
@@ -366,7 +365,6 @@ static av_cold int decode_init(AVCodecContext * avctx)
             memset(tmp_codes, 0, sizeof(tmp_codes));
 
             xsize = h->xsize;
-            n = xsize * xsize;
 
             j = 0;
             for(x=0;x<xsize;x++) {
