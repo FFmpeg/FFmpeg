@@ -351,16 +351,8 @@ static void xan_wc3_decode_frame(XanContext *s) {
 
         /* coordinate accounting */
         total_pixels -= size;
-        while (size) {
-            if (x + size >= width) {
-                y++;
-                size -= (width - x);
-                x = 0;
-            } else {
-                x += size;
-                size = 0;
-            }
-        }
+        y += (x + size) / width;
+        x  = (x + size) % width;
     }
 }
 
