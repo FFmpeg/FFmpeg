@@ -223,12 +223,11 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     AMFDataType type;
     AVStream *stream, *astream, *vstream;
     ByteIOContext *ioc;
-    int i, keylen;
+    int i;
     char buffer[11]; //only needs to hold the string "onMetaData". Anything longer is something we don't want.
 
     astream = NULL;
     vstream = NULL;
-    keylen = 0;
     ioc = s->pb;
 
     //first object needs to be "onMetaData" string
