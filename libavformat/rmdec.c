@@ -501,11 +501,11 @@ static int get_num(ByteIOContext *pb, int *len)
 static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_index, int64_t *pos){
     RMDemuxContext *rm = s->priv_data;
     ByteIOContext *pb = s->pb;
-    int len, num, res, i;
     AVStream *st;
     uint32_t state=0xFFFFFFFF;
 
     while(!url_feof(pb)){
+        int len, num, res, i;
         *pos= url_ftell(pb) - 3;
         if(rm->remaining_len > 0){
             num= rm->current_stream;
