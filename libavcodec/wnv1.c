@@ -129,15 +129,16 @@ static int decode_frame(AVCodecContext *avctx,
 
 static av_cold int decode_init(AVCodecContext *avctx){
     WNV1Context * const l = avctx->priv_data;
+    static VLC_TYPE code_table[1 << CODE_VLC_BITS][2];
 
     l->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_YUV422P;
 
-    if(!code_vlc.table){
+    code_vlc.table = code_table;
+    code_vlc.table_allocated = 1 << CODE_VLC_BITS;
         init_vlc(&code_vlc, CODE_VLC_BITS, 16,
                     &code_tab[0][1], 4, 2,
-                    &code_tab[0][0], 4, 2, INIT_VLC_USE_STATIC);
-    }
+                    &code_tab[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC);
 
     return 0;
 }

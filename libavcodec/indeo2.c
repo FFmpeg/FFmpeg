@@ -192,20 +192,22 @@ static int ir2_decode_frame(AVCodecContext *avctx,
 
 static av_cold int ir2_decode_init(AVCodecContext *avctx){
     Ir2Context * const ic = avctx->priv_data;
+    static VLC_TYPE vlc_tables[1 << CODE_VLC_BITS][2];
 
     ic->avctx = avctx;
 
     avctx->pix_fmt= PIX_FMT_YUV410P;
 
-    if (!ir2_vlc.table)
+    ir2_vlc.table = vlc_tables;
+    ir2_vlc.table_allocated = 1 << CODE_VLC_BITS;
 #ifdef ALT_BITSTREAM_READER_LE
         init_vlc(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
                  &ir2_codes[0][1], 4, 2,
-                 &ir2_codes[0][0], 4, 2, INIT_VLC_USE_STATIC | INIT_VLC_LE);
+                 &ir2_codes[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC | INIT_VLC_LE);
 #else
         init_vlc(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
                  &ir2_codes[0][1], 4, 2,
-                 &ir2_codes[0][0], 4, 2, INIT_VLC_USE_STATIC);
+                 &ir2_codes[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC);
 #endif
 
     return 0;
