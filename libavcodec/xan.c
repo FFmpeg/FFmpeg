@@ -140,22 +140,22 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
 
                 size = opcode & 3;
 
+                back  = ((opcode & 0x60) << 3) + *src++ + 1;
                 size2 = ((opcode & 0x1c) >> 2) + 3;
-                back = ((opcode & 0x60) << 3) + *src++ + 1;
 
             } else if ( (opcode & 0x40) == 0 ) {
 
                 size = *src >> 6;
 
+                back  = (bytestream_get_be16(&src) & 0x3fff) + 1;
                 size2 = (opcode & 0x3f) + 4;
-                back = (bytestream_get_be16(&src) & 0x3fff) + 1;
 
             } else {
 
                 size = opcode & 3;
 
-                back = ((opcode & 0x10) << 12) + 1 + bytestream_get_be16(&src);
-                size2 = *src++ + 5 + ((opcode & 0xc) << 6);
+                back  = ((opcode & 0x10) << 12) + bytestream_get_be16(&src) + 1;
+                size2 = ((opcode & 0x0c) <<  6) + *src++ + 5;
                 if (size + size2 > dest_end - dest)
                     return;
             }
