@@ -569,7 +569,6 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
     int index = 0;
     unsigned char opcode;
     int ret;
-    int code_counts[16] = {0};
     static int frame = 0;
 
     debug_interplay("------------------ frame %d\n", frame);
@@ -597,7 +596,6 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
 
             debug_interplay("  block @ (%3d, %3d): encoding 0x%X, data ptr @ %p\n",
                 x - y, y / s->stride, opcode, s->stream_ptr);
-            code_counts[opcode]++;
 
             s->pixel_ptr = s->current_frame.data[0] + x;
             ret = ipvideo_decode_block[opcode](s);
