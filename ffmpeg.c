@@ -2064,7 +2064,6 @@ static int av_encode(AVFormatContext **output_files,
     }
     term_init();
 
-    key = -1;
     timer_start = av_gettime();
 
     for(; received_sigterm == 0;) {
