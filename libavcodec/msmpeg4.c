@@ -1180,14 +1180,14 @@ return -1;
 #endif
 
     if(s->msmpeg4_version==1){
-        int start_code, num;
+        int start_code;
         start_code = (get_bits(&s->gb, 16)<<16) | get_bits(&s->gb, 16);
         if(start_code!=0x00000100){
             av_log(s->avctx, AV_LOG_ERROR, "invalid startcode\n");
             return -1;
         }
 
-        num= get_bits(&s->gb, 5); // frame number */
+        skip_bits(&s->gb, 5); // frame number */
     }
 
     s->pict_type = get_bits(&s->gb, 2) + 1;
