@@ -35,6 +35,8 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+// for av_memcpy_backptr
+#include "libavutil/lzo.h"
 
 typedef struct XanContext {
 
@@ -76,24 +78,11 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
     s->buffer1_size = avctx->width * avctx->height;
     s->buffer1 = av_malloc(s->buffer1_size);
     s->buffer2_size = avctx->width * avctx->height;
-    s->buffer2 = av_malloc(s->buffer2_size);
+    s->buffer2 = av_malloc(s->buffer2_size + 12);
     if (!s->buffer1 || !s->buffer2)
         return -1;
 
     return 0;
-}
-
-/* This function is used in lieu of memcpy(). This decoder cannot use
- * memcpy because the memory locations often overlap and
- * memcpy doesn't like that; it's not uncommon, for example, for
- * dest = src+1, to turn byte A into  pattern AAAAAAAA.
- * This was originally repz movsb in Intel x86 ASM. */
-static inline void bytecopy(unsigned char *dest, const unsigned char *src, int count)
-{
-    int i;
-
-    for (i = 0; i < count; i++)
-        dest[i] = src[i];
 }
 
 static int xan_huffman_decode(unsigned char *dest, const unsigned char *src,
@@ -130,6 +119,11 @@ static int xan_huffman_decode(unsigned char *dest, const unsigned char *src,
     return 0;
 }
 
+/**
+ * unpack simple compression
+ *
+ * @param dest destination buffer of dest_len, must be sufficiently padded for av_memcpy_backptr
+ */
 static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_len)
 {
     unsigned char opcode;
@@ -153,7 +147,7 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             size = ((opcode & 0x1c) >> 2) + 3;
             if (dest + size > dest_end)
                 return;
-            bytecopy (dest, dest - (((opcode & 0x60) << 3) + offset + 1), size);
+            av_memcpy_backptr(dest, ((opcode & 0x60) << 3) + offset + 1, size);
             dest += size;
 
         } else if ( (opcode & 0x40) == 0 ) {
@@ -169,7 +163,7 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             size = (opcode & 0x3f) + 4;
             if (dest + size > dest_end)
                 return;
-            bytecopy (dest, dest - (((byte1 & 0x3f) << 8) + byte2 + 1), size);
+            av_memcpy_backptr(dest, ((byte1 & 0x3f) << 8) + byte2 + 1, size);
             dest += size;
 
         } else if ( (opcode & 0x20) == 0 ) {
@@ -186,8 +180,8 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             size = byte3 + 5 + ((opcode & 0xc) << 6);
             if (dest + size > dest_end)
                 return;
-            bytecopy (dest,
-                dest - ((((opcode & 0x10) >> 4) << 0x10) + 1 + (byte1 << 8) + byte2),
+            av_memcpy_backptr(dest,
+                (((opcode & 0x10) >> 4) << 0x10) + 1 + (byte1 << 8) + byte2,
                 size);
             dest += size;
         } else {
