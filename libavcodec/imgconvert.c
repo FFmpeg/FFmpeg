@@ -1335,7 +1335,6 @@ int img_get_alpha_info(const AVPicture *src,
     const PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
     int ret;
 
-    pf = &pix_fmt_info[pix_fmt];
     /* no alpha can be represented in format */
     if (!pf->is_alpha)
         return 0;
