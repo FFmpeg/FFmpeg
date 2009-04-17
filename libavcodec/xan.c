@@ -148,7 +148,7 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             size = opcode & 3;
             if (dest + size > dest_end)
                 return;
-            bytecopy(dest, src, size);  dest += size;  src += size;
+            memcpy(dest, src, size);  dest += size;  src += size;
 
             size = ((opcode & 0x1c) >> 2) + 3;
             if (dest + size > dest_end)
@@ -164,7 +164,7 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             size = byte1 >> 6;
             if (dest + size > dest_end)
                 return;
-            bytecopy (dest, src, size);  dest += size;  src += size;
+            memcpy(dest, src, size);  dest += size;  src += size;
 
             size = (opcode & 0x3f) + 4;
             if (dest + size > dest_end)
@@ -181,7 +181,7 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             size = opcode & 3;
             if (dest + size > dest_end)
                 return;
-            bytecopy (dest, src, size);  dest += size;  src += size;
+            memcpy(dest, src, size);  dest += size;  src += size;
 
             size = byte3 + 5 + ((opcode & 0xc) << 6);
             if (dest + size > dest_end)
@@ -198,12 +198,12 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
 
             if (dest + size > dest_end)
                 return;
-            bytecopy (dest, src, size);  dest += size;  src += size;
+            memcpy(dest, src, size);  dest += size;  src += size;
         }
     }
 
     size = opcode & 3;
-    bytecopy(dest, src, size);  dest += size;  src += size;
+    memcpy(dest, src, size);  dest += size;  src += size;
 }
 
 static inline void xan_wc3_output_pixel_run(XanContext *s,
