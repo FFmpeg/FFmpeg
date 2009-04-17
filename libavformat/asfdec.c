@@ -1045,7 +1045,6 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
 
         /* find the position */
         pos = st->index_entries[index].pos;
-        pts = st->index_entries[index].timestamp;
 
     // various attempts to find key frame have failed so far
     //    asf_reset_header(s);
