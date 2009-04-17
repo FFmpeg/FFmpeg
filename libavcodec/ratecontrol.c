@@ -210,7 +210,6 @@ int ff_rate_control_init(MpegEncContext *s)
             for(i=0; i<60*30; i++){
                 double bits= s->avctx->rc_initial_cplx * (i/10000.0 + 1.0)*s->mb_num;
                 RateControlEntry rce;
-                double q;
 
                 if     (i%((s->gop_size+3)/4)==0) rce.pict_type= FF_I_TYPE;
                 else if(i%(s->max_b_frames+1))    rce.pict_type= FF_B_TYPE;
@@ -240,9 +239,7 @@ int ff_rate_control_init(MpegEncContext *s)
                 rcc->mv_bits_sum[rce.pict_type] += rce.mv_bits;
                 rcc->frame_count[rce.pict_type] ++;
 
-                bits= rce.i_tex_bits + rce.p_tex_bits;
-
-                q= get_qscale(s, &rce, rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum, i);
+                get_qscale(s, &rce, rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum, i);
                 rcc->pass1_wanted_bits+= s->bit_rate/(1/av_q2d(s->avctx->time_base)); //FIXME misbehaves a little for variable fps
             }
         }
