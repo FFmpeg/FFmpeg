@@ -715,7 +715,7 @@ int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
             asf->packet_pos= url_ftell(pb);
             if (asf->data_object_size != (uint64_t)-1 &&
                 (asf->packet_pos - asf->data_object_offset >= asf->data_object_size))
-                return AVERROR(EIO); /* Do not exceed the size of the data object */
+                return AVERROR_EOF; /* Do not exceed the size of the data object */
             return 1;
         }
         if (asf->packet_time_start == 0) {
