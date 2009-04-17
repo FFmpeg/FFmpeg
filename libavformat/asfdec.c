@@ -443,8 +443,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (!guidcmp(&g, &ff_asf_ext_stream_header)) {
             int ext_len, payload_ext_ct, stream_ct;
             uint32_t ext_d, leak_rate, stream_num;
-            int64_t pos_ex_st;
-            pos_ex_st = url_ftell(pb);
 
             get_le64(pb); // starttime
             get_le64(pb); // endtime
