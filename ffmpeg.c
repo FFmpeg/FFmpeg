@@ -1061,7 +1061,7 @@ static void print_report(AVFormatContext **output_files,
 {
     char buf[1024];
     AVOutputStream *ost;
-    AVFormatContext *oc, *os;
+    AVFormatContext *oc;
     int64_t total_size;
     AVCodecContext *enc;
     int frame_number, vid, i;
@@ -1094,7 +1094,6 @@ static void print_report(AVFormatContext **output_files,
     vid = 0;
     for(i=0;i<nb_ostreams;i++) {
         ost = ost_table[i];
-        os = output_files[ost->file_index];
         enc = ost->st->codec;
         if (vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "q=%2.1f ",
