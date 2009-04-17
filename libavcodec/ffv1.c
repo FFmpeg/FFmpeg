@@ -530,17 +530,16 @@ static void write_header(FFV1Context *f){
 
 static av_cold int common_init(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
-    int width, height;
 
     s->avctx= avctx;
     s->flags= avctx->flags;
 
     dsputil_init(&s->dsp, avctx);
 
-    width= s->width= avctx->width;
-    height= s->height= avctx->height;
+    s->width = avctx->width;
+    s->height= avctx->height;
 
-    assert(width && height);
+    assert(s->width && s->height);
 
     return 0;
 }
