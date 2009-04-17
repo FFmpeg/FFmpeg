@@ -1072,7 +1072,6 @@ void av_picture_copy(AVPicture *dst, const AVPicture *src,
     int i;
     const PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
 
-    pf = &pix_fmt_info[pix_fmt];
     switch(pf->pixel_type) {
     case FF_PIXEL_PACKED:
     case FF_PIXEL_PLANAR:
