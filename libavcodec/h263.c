@@ -1580,7 +1580,6 @@ static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
         if(n!=2) c= 1024;
         if(n!=1 && s->mb_x == s->resync_mb_x) a= 1024;
     }
-    pred_dc = 1024;
     /* just DC prediction */
     if (a != 1024 && c != 1024)
         pred_dc = (a + c) >> 1;
