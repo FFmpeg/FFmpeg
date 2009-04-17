@@ -156,7 +156,7 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
 
                 back = ((opcode & 0x10) << 12) + 1 + bytestream_get_be16(&src);
                 size2 = *src++ + 5 + ((opcode & 0xc) << 6);
-                if (dest >= dest_end || size > dest_end - dest)
+                if (size + size2 > dest_end - dest)
                     return;
             }
             memcpy(dest, src, size);  dest += size;  src += size;
