@@ -78,7 +78,7 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
     s->buffer1_size = avctx->width * avctx->height;
     s->buffer1 = av_malloc(s->buffer1_size);
     s->buffer2_size = avctx->width * avctx->height;
-    s->buffer2 = av_malloc(s->buffer2_size + 12);
+    s->buffer2 = av_malloc(s->buffer2_size + 130);
     if (!s->buffer1 || !s->buffer2)
         return -1;
 
@@ -122,7 +122,7 @@ static int xan_huffman_decode(unsigned char *dest, const unsigned char *src,
 /**
  * unpack simple compression
  *
- * @param dest destination buffer of dest_len, must be sufficiently padded for av_memcpy_backptr
+ * @param dest destination buffer of dest_len, must be padded with at least 130 bytes
  */
 static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_len)
 {
@@ -132,7 +132,7 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
     int byte1, byte2, byte3;
     unsigned char *dest_end = dest + dest_len;
 
-    for (;;) {
+    while (dest < dest_end) {
         opcode = *src++;
 
         if ( (opcode & 0x80) == 0 ) {
@@ -140,13 +140,9 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             offset = *src++;
 
             size = opcode & 3;
-            if (size > dest_end - dest)
-                return;
             memcpy(dest, src, size);  dest += size;  src += size;
 
             size = ((opcode & 0x1c) >> 2) + 3;
-            if (size > dest_end - dest)
-                return;
             av_memcpy_backptr(dest, ((opcode & 0x60) << 3) + offset + 1, size);
             dest += size;
 
@@ -156,13 +152,9 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             byte2 = *src++;
 
             size = byte1 >> 6;
-            if (size > dest_end - dest)
-                return;
             memcpy(dest, src, size);  dest += size;  src += size;
 
             size = (opcode & 0x3f) + 4;
-            if (size > dest_end - dest)
-                return;
             av_memcpy_backptr(dest, ((byte1 & 0x3f) << 8) + byte2 + 1, size);
             dest += size;
 
@@ -173,12 +165,10 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             byte3 = *src++;
 
             size = opcode & 3;
-            if (size > dest_end - dest)
-                return;
             memcpy(dest, src, size);  dest += size;  src += size;
 
             size = byte3 + 5 + ((opcode & 0xc) << 6);
-            if (size > dest_end - dest)
+            if (dest >= dest_end || size > dest_end - dest)
                 return;
             av_memcpy_backptr(dest,
                 ((opcode & 0x10) << 12) + 1 + (byte1 << 8) + byte2,
@@ -190,8 +180,6 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             if (size > 0x70)
                 break;
 
-            if (size > dest_end - dest)
-                return;
             memcpy(dest, src, size);  dest += size;  src += size;
         }
     }
