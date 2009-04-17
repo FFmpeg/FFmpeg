@@ -1820,10 +1820,9 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
 
             if(mv==0) len= mvtab[0][1];
             else{
-                int val, bit_size, range, code;
+                int val, bit_size, code;
 
                 bit_size = f_code - 1;
-                range = 1 << bit_size;
 
                 val=mv;
                 if (val < 0)
