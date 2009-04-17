@@ -104,7 +104,7 @@ static int xan_huffman_decode(unsigned char *dest, const unsigned char *src,
         val = src[val - 0x17 + get_bits1(&gb) * byte];
 
         if ( val < 0x16 ) {
-            if (dest + 1 > dest_end)
+            if (dest >= dest_end)
                 return 0;
             *dest++ = val;
             val = ival;
