@@ -140,12 +140,12 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             offset = *src++;
 
             size = opcode & 3;
-            if (dest + size > dest_end)
+            if (size > dest_end - dest)
                 return;
             memcpy(dest, src, size);  dest += size;  src += size;
 
             size = ((opcode & 0x1c) >> 2) + 3;
-            if (dest + size > dest_end)
+            if (size > dest_end - dest)
                 return;
             av_memcpy_backptr(dest, ((opcode & 0x60) << 3) + offset + 1, size);
             dest += size;
@@ -156,12 +156,12 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             byte2 = *src++;
 
             size = byte1 >> 6;
-            if (dest + size > dest_end)
+            if (size > dest_end - dest)
                 return;
             memcpy(dest, src, size);  dest += size;  src += size;
 
             size = (opcode & 0x3f) + 4;
-            if (dest + size > dest_end)
+            if (size > dest_end - dest)
                 return;
             av_memcpy_backptr(dest, ((byte1 & 0x3f) << 8) + byte2 + 1, size);
             dest += size;
@@ -173,12 +173,12 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             byte3 = *src++;
 
             size = opcode & 3;
-            if (dest + size > dest_end)
+            if (size > dest_end - dest)
                 return;
             memcpy(dest, src, size);  dest += size;  src += size;
 
             size = byte3 + 5 + ((opcode & 0xc) << 6);
-            if (dest + size > dest_end)
+            if (size > dest_end - dest)
                 return;
             av_memcpy_backptr(dest,
                 ((opcode & 0x10) << 12) + 1 + (byte1 << 8) + byte2,
@@ -190,7 +190,7 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             if (size > 0x70)
                 break;
 
-            if (dest + size > dest_end)
+            if (size > dest_end - dest)
                 return;
             memcpy(dest, src, size);  dest += size;  src += size;
         }
