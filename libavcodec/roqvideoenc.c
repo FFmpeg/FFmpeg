@@ -796,7 +796,7 @@ static void generate_codebook(RoqContext *enc, RoqTempdata *tempdata,
 {
     int i, j, k;
     int c_size = size*size/4;
-    int *buf = points;
+    int *buf;
     int *codebook = av_malloc(6*c_size*cbsize*sizeof(int));
     int *closest_cb;
 
