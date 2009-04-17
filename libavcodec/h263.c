@@ -635,8 +635,8 @@ static inline void ff_mpeg4_set_one_direct_mv(MpegEncContext *s, int mx, int my,
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
     const int mb_index= s->mb_x + s->mb_y*s->mb_stride;
     const int colocated_mb_type= s->next_picture.mb_type[mb_index];
-    uint16_t time_pp= s->pp_time;
-    uint16_t time_pb= s->pb_time;
+    uint16_t time_pp;
+    uint16_t time_pb;
     int i;
 
     //FIXME avoid divides
