@@ -135,16 +135,16 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
     while (dest < dest_end) {
         opcode = *src++;
 
+        if (opcode < 0xe0) {
+           int size2, back;
         if ( (opcode & 0x80) == 0 ) {
 
             offset = *src++;
 
             size = opcode & 3;
-            memcpy(dest, src, size);  dest += size;  src += size;
 
-            size = ((opcode & 0x1c) >> 2) + 3;
-            av_memcpy_backptr(dest, ((opcode & 0x60) << 3) + offset + 1, size);
-            dest += size;
+            size2 = ((opcode & 0x1c) >> 2) + 3;
+            back = ((opcode & 0x60) << 3) + offset + 1;
 
         } else if ( (opcode & 0x40) == 0 ) {
 
@@ -152,28 +152,26 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             byte2 = *src++;
 
             size = byte1 >> 6;
-            memcpy(dest, src, size);  dest += size;  src += size;
 
-            size = (opcode & 0x3f) + 4;
-            av_memcpy_backptr(dest, ((byte1 & 0x3f) << 8) + byte2 + 1, size);
-            dest += size;
+            size2 = (opcode & 0x3f) + 4;
+            back = ((byte1 & 0x3f) << 8) + byte2 + 1;
 
-        } else if ( (opcode & 0x20) == 0 ) {
+        } else {
 
             byte1 = *src++;
             byte2 = *src++;
             byte3 = *src++;
 
             size = opcode & 3;
-            memcpy(dest, src, size);  dest += size;  src += size;
 
-            size = byte3 + 5 + ((opcode & 0xc) << 6);
+            size2 = byte3 + 5 + ((opcode & 0xc) << 6);
+            back = ((opcode & 0x10) << 12) + 1 + (byte1 << 8) + byte2;
             if (dest >= dest_end || size > dest_end - dest)
                 return;
-            av_memcpy_backptr(dest,
-                ((opcode & 0x10) << 12) + 1 + (byte1 << 8) + byte2,
-                size);
-            dest += size;
+            }
+            memcpy(dest, src, size);  dest += size;  src += size;
+            av_memcpy_backptr(dest, back, size2);
+            dest += size2;
         } else {
             size = ((opcode & 0x1f) << 2) + 4;
 
