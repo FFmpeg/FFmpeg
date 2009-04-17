@@ -333,7 +333,7 @@ static void xan_wc3_decode_frame(XanContext *s) {
             }
         } else {
             /* run-based motion compensation from last frame */
-            motion_x = (*vector_segment >> 4) & 0xF;
+            motion_x = *vector_segment >> 4;
             motion_y = *vector_segment & 0xF;
             vector_segment++;
 
