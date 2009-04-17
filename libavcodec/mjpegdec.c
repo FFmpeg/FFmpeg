@@ -885,7 +885,7 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss, int s
 int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
 {
     int len, nb_components, i, h, v, predictor, point_transform;
-    int vmax, hmax, index, id;
+    int index, id;
     const int block_size= s->lossless ? 1 : 8;
     int ilv, prev_shift;
 
@@ -897,8 +897,6 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "decode_sos: invalid len (%d)\n", len);
         return -1;
     }
-    vmax = 0;
-    hmax = 0;
     for(i=0;i<nb_components;i++) {
         id = get_bits(&s->gb, 8) - 1;
         av_log(s->avctx, AV_LOG_DEBUG, "component: %d\n", id);
