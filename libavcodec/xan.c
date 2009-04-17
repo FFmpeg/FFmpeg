@@ -136,38 +136,38 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
         opcode = *src++;
 
         if (opcode < 0xe0) {
-           int size2, back;
-        if ( (opcode & 0x80) == 0 ) {
+            int size2, back;
+            if ( (opcode & 0x80) == 0 ) {
 
-            offset = *src++;
+                offset = *src++;
 
-            size = opcode & 3;
+                size = opcode & 3;
 
-            size2 = ((opcode & 0x1c) >> 2) + 3;
-            back = ((opcode & 0x60) << 3) + offset + 1;
+                size2 = ((opcode & 0x1c) >> 2) + 3;
+                back = ((opcode & 0x60) << 3) + offset + 1;
 
-        } else if ( (opcode & 0x40) == 0 ) {
+            } else if ( (opcode & 0x40) == 0 ) {
 
-            byte1 = *src++;
-            byte2 = *src++;
+                byte1 = *src++;
+                byte2 = *src++;
 
-            size = byte1 >> 6;
+                size = byte1 >> 6;
 
-            size2 = (opcode & 0x3f) + 4;
-            back = ((byte1 & 0x3f) << 8) + byte2 + 1;
+                size2 = (opcode & 0x3f) + 4;
+                back = ((byte1 & 0x3f) << 8) + byte2 + 1;
 
-        } else {
+            } else {
 
-            byte1 = *src++;
-            byte2 = *src++;
-            byte3 = *src++;
+                byte1 = *src++;
+                byte2 = *src++;
+                byte3 = *src++;
 
-            size = opcode & 3;
+                size = opcode & 3;
 
-            size2 = byte3 + 5 + ((opcode & 0xc) << 6);
-            back = ((opcode & 0x10) << 12) + 1 + (byte1 << 8) + byte2;
-            if (dest >= dest_end || size > dest_end - dest)
-                return;
+                size2 = byte3 + 5 + ((opcode & 0xc) << 6);
+                back = ((opcode & 0x10) << 12) + 1 + (byte1 << 8) + byte2;
+                if (dest >= dest_end || size > dest_end - dest)
+                    return;
             }
             memcpy(dest, src, size);  dest += size;  src += size;
             av_memcpy_backptr(dest, back, size2);
