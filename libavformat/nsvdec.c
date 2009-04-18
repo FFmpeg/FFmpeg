@@ -204,10 +204,10 @@ static const AVCodecTag nsv_codec_video_tags[] = {
 };
 
 static const AVCodecTag nsv_codec_audio_tags[] = {
-    { CODEC_ID_MP3, MKTAG('M', 'P', '3', ' ') },
-    { CODEC_ID_AAC, MKTAG('A', 'A', 'C', ' ') },
-    { CODEC_ID_AAC, MKTAG('A', 'A', 'C', 'P') }, /* _CUTTED__MUXED_2 Heads - Out Of The City.nsv */
-    { CODEC_ID_SPEEX, MKTAG('S', 'P', 'X', ' ') },
+    { CODEC_ID_MP3,       MKTAG('M', 'P', '3', ' ') },
+    { CODEC_ID_AAC,       MKTAG('A', 'A', 'C', ' ') },
+    { CODEC_ID_AAC,       MKTAG('A', 'A', 'C', 'P') },
+    { CODEC_ID_SPEEX,     MKTAG('S', 'P', 'X', ' ') },
     { CODEC_ID_PCM_U16LE, MKTAG('P', 'C', 'M', ' ') },
     { 0, 0 },
 };
