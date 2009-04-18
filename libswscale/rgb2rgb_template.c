@@ -323,8 +323,6 @@ static inline void RENAME(rgb16to15)(const uint8_t *src, uint8_t *dst, long src_
     {
         register uint16_t x= *((const uint16_t*)s);
         *((uint16_t *)d) = ((x>>1)&0x7FE0) | (x&0x001F);
-        s+=2;
-        d+=2;
     }
 }
 
