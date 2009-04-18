@@ -24,6 +24,8 @@
 #include <stdint.h>
 #include "config.h"
 
+#if HAVE_XFORM_ASM
+
 #define AV_RL16 AV_RL16
 static inline uint16_t AV_RL16(const void *p)
 {
@@ -92,6 +94,8 @@ static inline void AV_WL64(void *p, uint64_t v)
 }
 
 #endif /* HAVE_LDBRX */
+
+#endif /* HAVE_XFORM_ASM */
 
 /*
  * GCC fails miserably on the packed struct version which is used by
