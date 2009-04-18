@@ -849,6 +849,7 @@ static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
         /* TODO: DSPContext? */
 
         for (i = 0; i < s->blockpos; i++) {
+            int32_t bypassed_lsb = m->bypassed_lsbs[i][mat];
             int32_t *samples = m->sample_buffer[i];
             int64_t accum = 0;
 
@@ -861,8 +862,7 @@ static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
                 index += index2;
             }
 
-            samples[dest_ch] = ((accum >> 14) & mask)
-                             + m->bypassed_lsbs[i][mat];
+            samples[dest_ch] = ((accum >> 14) & mask) + bypassed_lsb;
         }
     }
 }
