@@ -507,8 +507,9 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
 
 /** Read parameters for primitive matrices. */
 
-static int read_matrix_params(MLPDecodeContext *m, SubStream *s, GetBitContext *gbp)
+static int read_matrix_params(MLPDecodeContext *m, unsigned int substr, GetBitContext *gbp)
 {
+    SubStream *s = &m->substream[substr];
     unsigned int mat, ch;
 
     if (m->matrix_changed++ > 1) {
@@ -638,7 +639,7 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
 
     if (s->param_presence_flags & PARAM_MATRIX)
         if (get_bits1(gbp)) {
-            if (read_matrix_params(m, s, gbp) < 0)
+            if (read_matrix_params(m, substr, gbp) < 0)
                 return -1;
         }
 
