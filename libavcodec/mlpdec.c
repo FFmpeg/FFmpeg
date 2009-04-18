@@ -426,9 +426,8 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         cp->huff_lsbs        = 24;
     }
 
-    if (substr == m->max_decoded_substream) {
+    if (substr == m->max_decoded_substream)
         m->avctx->channels = s->max_matrix_channel + 1;
-    }
 
     return 0;
 }
@@ -624,8 +623,8 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
     unsigned int ch;
 
     if (s->param_presence_flags & PARAM_PRESENCE)
-    if (get_bits1(gbp))
-        s->param_presence_flags = get_bits(gbp, 8);
+        if (get_bits1(gbp))
+            s->param_presence_flags = get_bits(gbp, 8);
 
     if (s->param_presence_flags & PARAM_BLOCKSIZE)
         if (get_bits1(gbp)) {
@@ -638,16 +637,14 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
         }
 
     if (s->param_presence_flags & PARAM_MATRIX)
-        if (get_bits1(gbp)) {
+        if (get_bits1(gbp))
             if (read_matrix_params(m, substr, gbp) < 0)
                 return -1;
-        }
 
     if (s->param_presence_flags & PARAM_OUTSHIFT)
         if (get_bits1(gbp))
-            for (ch = 0; ch <= s->max_matrix_channel; ch++) {
+            for (ch = 0; ch <= s->max_matrix_channel; ch++)
                 s->output_shift[ch] = get_sbits(gbp, 4);
-            }
 
     if (s->param_presence_flags & PARAM_QUANTSTEP)
         if (get_bits1(gbp))
@@ -660,10 +657,9 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
             }
 
     for (ch = s->min_channel; ch <= s->max_channel; ch++)
-        if (get_bits1(gbp)) {
+        if (get_bits1(gbp))
             if (read_channel_params(m, substr, gbp, ch) < 0)
                 return -1;
-        }
 
     return 0;
 }
@@ -740,14 +736,12 @@ static int read_block_data(MLPDecodeContext *m, GetBitContext *gbp,
     memset(&m->bypassed_lsbs[s->blockpos][0], 0,
            s->blocksize * sizeof(m->bypassed_lsbs[0]));
 
-    for (i = 0; i < s->blocksize; i++) {
+    for (i = 0; i < s->blocksize; i++)
         if (read_huff_channels(m, gbp, substr, i) < 0)
             return -1;
-    }
 
-    for (ch = s->min_channel; ch <= s->max_channel; ch++) {
+    for (ch = s->min_channel; ch <= s->max_channel; ch++)
         filter_channel(m, substr, ch);
-    }
 
     s->blockpos += s->blocksize;
 
@@ -857,17 +851,18 @@ static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
         for (i = 0; i < s->blockpos; i++) {
             int32_t *samples = m->sample_buffer[i];
             int64_t accum = 0;
-            for (src_ch = 0; src_ch <= maxchan; src_ch++) {
-                accum += (int64_t)samples[src_ch]
-                                  * coeffs[src_ch];
-            }
+
+            for (src_ch = 0; src_ch <= maxchan; src_ch++)
+                accum += (int64_t) samples[src_ch] * coeffs[src_ch];
+
             if (matrix_noise_shift) {
                 index &= m->access_unit_size_pow2 - 1;
                 accum += m->noise_buffer[index] << (matrix_noise_shift + 7);
                 index += index2;
             }
+
             samples[dest_ch] = ((accum >> 14) & mask)
-                                             + m->bypassed_lsbs[i][mat];
+                             + m->bypassed_lsbs[i][mat];
         }
     }
 }
@@ -1033,17 +1028,14 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
                     s->restart_seen = 1;
                 }
 
-                if (!s->restart_seen) {
+                if (!s->restart_seen)
                     goto next_substr;
-                }
-
                 if (read_decoding_params(m, &gb, substr) < 0)
                     goto next_substr;
             }
 
-            if (!s->restart_seen) {
+            if (!s->restart_seen)
                 goto next_substr;
-            }
 
             if (read_block_data(m, &gb, substr) < 0)
                 return -1;
@@ -1054,6 +1046,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
         } while (!get_bits1(&gb));
 
         skip_bits(&gb, (-get_bits_count(&gb)) & 15);
+
         if (substream_data_len[substr] * 8 - get_bits_count(&gb) >= 32) {
             int shorten_by;
 
@@ -1069,6 +1062,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
             if (substr == m->max_decoded_substream)
                 av_log(m->avctx, AV_LOG_INFO, "End of stream indicated.\n");
         }
+
         if (substream_parity_present[substr]) {
             uint8_t parity, checksum;
 
@@ -1083,15 +1077,14 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
             if ( get_bits(&gb, 8)           != checksum)
                 av_log(m->avctx, AV_LOG_ERROR, "Substream %d checksum failed.\n"    , substr);
         }
-        if (substream_data_len[substr] * 8 != get_bits_count(&gb)) {
+
+        if (substream_data_len[substr] * 8 != get_bits_count(&gb))
             goto substream_length_mismatch;
-        }
 
 next_substr:
-        if (!s->restart_seen) {
+        if (!s->restart_seen)
             av_log(m->avctx, AV_LOG_ERROR,
                    "No restart header present in substream %d.\n", substr);
-        }
 
         buf += substream_data_len[substr];
     }
