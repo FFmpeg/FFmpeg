@@ -171,7 +171,7 @@ typedef struct NSVStream {
 typedef struct {
     int  base_offset;
     int  NSVf_end;
-    uint32_t *nsvf_index_data;
+    uint32_t *nsvs_file_offset;
     int index_entries;
     enum NSVStatus state;
     AVPacket ahead[2]; /* [v, a] if .data is !NULL there is something */
@@ -350,9 +350,9 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
         nsv->index_entries = table_entries_used;
         if((unsigned)table_entries >= UINT_MAX / sizeof(uint32_t))
             return -1;
-        nsv->nsvf_index_data = av_malloc(table_entries * sizeof(uint32_t));
+        nsv->nsvs_file_offset = av_malloc(table_entries * sizeof(uint32_t));
 #warning "FIXME: Byteswap buffer as needed"
-        get_buffer(pb, (unsigned char *)nsv->nsvf_index_data, table_entries * sizeof(uint32_t));
+        get_buffer(pb, (unsigned char *)nsv->nsvs_file_offset, table_entries * sizeof(uint32_t));
     }
 
     PRINT(("NSV got index; filepos %"PRId64"\n", url_ftell(pb)));
@@ -364,11 +364,11 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     PRINT(("NSV [dataoffset][fileoffset]\n", table_entries));
     for (i = 0; i < table_entries; i++) {
         unsigned char b[8];
-        url_fseek(pb, size + nsv->nsvf_index_data[i], SEEK_SET);
+        url_fseek(pb, size + nsv->nsvs_file_offset[i], SEEK_SET);
         get_buffer(pb, b, 8);
         PRINT(("NSV [0x%08lx][0x%08lx]: %02x %02x %02x %02x %02x %02x %02x %02x"
            "%c%c%c%c%c%c%c%c\n",
-           nsv->nsvf_index_data[i], size + nsv->nsvf_index_data[i],
+           nsv->nsvs_file_offset[i], size + nsv->nsvs_file_offset[i],
            b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
            V(b[0]), V(b[1]), V(b[2]), V(b[3]), V(b[4]), V(b[5]), V(b[6]), V(b[7]) ));
     }
@@ -700,7 +700,7 @@ static int nsv_read_close(AVFormatContext *s)
     NSVContext *nsv = s->priv_data;
 
     if (nsv->index_entries)
-        av_free(nsv->nsvf_index_data);
+        av_free(nsv->nsvs_file_offset);
 
 #if 0
 
