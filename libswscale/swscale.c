@@ -2278,11 +2278,6 @@ static uint16_t roundToInt16(int64_t f){
     else                return r;
 }
 
-/**
- * @param inv_table the yuv2rgb coefficients, normally ff_yuv2rgb_coeffs[x]
- * @param fullRange if 1 then the luma range is 0..255 if 0 it is 16..235
- * @return -1 if not supported
- */
 int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation){
     int64_t crv =  inv_table[0];
     int64_t cbu =  inv_table[1];
@@ -2346,9 +2341,6 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     return 0;
 }
 
-/**
- * @return -1 if not supported
- */
 int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int **table, int *dstRange, int *brightness, int *contrast, int *saturation){
     if (isYUV(c->dstFormat) || isGray(c->dstFormat)) return -1;
 
