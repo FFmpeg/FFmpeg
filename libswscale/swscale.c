@@ -2294,7 +2294,7 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     c->saturation= saturation;
     c->srcRange  = srcRange;
     c->dstRange  = dstRange;
-    if (isYUV(c->dstFormat) || isGray(c->dstFormat)) return 0;
+    if (isYUV(c->dstFormat) || isGray(c->dstFormat)) return -1;
 
     c->uOffset=   0x0400040004000400LL;
     c->vOffset=   0x0400040004000400LL;
