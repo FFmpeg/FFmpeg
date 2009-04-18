@@ -29,6 +29,9 @@
  * defined, even if these are implemented as inline functions.
  */
 
+#if   ARCH_ARM
+#   include "arm/intreadwrite.h"
+#endif
 
 /*
  * Define AV_[RW]N helper macros to simplify definitions not provided
