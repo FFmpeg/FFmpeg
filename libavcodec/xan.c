@@ -157,17 +157,18 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             av_memcpy_backptr(dest, back, size2);
             dest += size2;
         } else {
+            int finish;
             size = ((opcode & 0x1f) << 2) + 4;
 
-            if (size > 0x70)
-                break;
+            finish = size > 0x70;
+            if (finish)
+                size = opcode & 3;
 
             memcpy(dest, src, size);  dest += size;  src += size;
+            if (finish)
+                return;
         }
     }
-
-    size = opcode & 3;
-    memcpy(dest, src, size);  dest += size;  src += size;
 }
 
 static inline void xan_wc3_output_pixel_run(XanContext *s,
