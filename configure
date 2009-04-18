@@ -890,6 +890,7 @@ HAVE_LIST="
     getrusage
     inet_aton
     inline_asm
+    ldbrx
     libdc1394_1
     libdc1394_2
     llrint
@@ -1807,7 +1808,7 @@ if test $cpu != "generic"; then
         Cell|CELL|cell)
             add_cflags -mcpu=cell
             warn_altivec disabled Cell
-            enable ppc64
+            enable ppc64 ldbrx
         ;;
         # targets that do NOT support conditional mov (cmov)
         i[345]86|pentium|pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
