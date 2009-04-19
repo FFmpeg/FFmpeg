@@ -361,8 +361,11 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     n = avctx->channels * sample_size;
 
     if(n && buf_size % n){
+        if (buf_size < n) {
         av_log(avctx, AV_LOG_ERROR, "invalid PCM packet\n");
         return -1;
+        }else
+            buf_size -= buf_size % n;
     }
 
     buf_size= FFMIN(buf_size, *data_size/2);
