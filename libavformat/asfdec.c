@@ -992,6 +992,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
     if (!guidcmp(&g, &index_guid)) {
         int64_t itime;
         int pct, ict;
+        int64_t gsize= get_le64(s->pb);
         get_guid(s->pb, &g);
         itime=get_le64(s->pb);
         pct=get_le32(s->pb);
