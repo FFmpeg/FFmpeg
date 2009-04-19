@@ -1919,6 +1919,7 @@ static int decode_thread(void *arg)
     int err, i, ret, video_index, audio_index, subtitle_index;
     AVPacket pkt1, *pkt = &pkt1;
     AVFormatParameters params, *ap = &params;
+    int eof=0;
 
     video_index = -1;
     audio_index = -1;
@@ -2072,7 +2073,7 @@ static int decode_thread(void *arg)
             SDL_Delay(10);
             continue;
         }
-        if(url_feof(ic->pb)) {
+        if(url_feof(ic->pb) || eof) {
             av_init_packet(pkt);
             pkt->data=NULL;
             pkt->size=0;
@@ -2082,11 +2083,12 @@ static int decode_thread(void *arg)
         }
         ret = av_read_frame(ic, pkt);
         if (ret < 0) {
-            if (ret != AVERROR_EOF && url_ferror(ic->pb) == 0) {
-                SDL_Delay(100); /* wait for user event */
-                continue;
-            } else
+            if (ret == AVERROR_EOF)
+                eof=1;
+            if (url_ferror(ic->pb))
                 break;
+            SDL_Delay(100); /* wait for user event */
+            continue;
         }
         if (pkt->stream_index == is->audio_stream) {
             packet_queue_put(&is->audioq, pkt);
