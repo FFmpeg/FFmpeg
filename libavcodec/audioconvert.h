@@ -73,6 +73,10 @@ void avcodec_get_channel_layout_string(char *buf, int buf_size, int nb_channels,
  */
 int64_t avcodec_guess_channel_layout(int nb_channels, enum CodecID codec_id, const char *fmt_name);
 
+/**
+ * @return the number of channels in the channel layout.
+ */
+int avcodec_channel_layout_num_channels(int64_t channel_layout);
 
 struct AVAudioConvert;
 typedef struct AVAudioConvert AVAudioConvert;

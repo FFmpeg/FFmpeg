@@ -3212,6 +3212,8 @@ static void new_audio_stream(AVFormatContext *oc)
         audio_enc->channels = audio_channels;
         audio_enc->sample_fmt = audio_sample_fmt;
         audio_enc->channel_layout = channel_layout;
+        if (avcodec_channel_layout_num_channels(channel_layout) != audio_channels)
+            audio_enc->channel_layout = 0;
 
         if(codec && codec->sample_fmts){
             const enum SampleFormat *p= codec->sample_fmts;

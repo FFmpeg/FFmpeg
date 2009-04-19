@@ -153,6 +153,15 @@ void avcodec_get_channel_layout_string(char *buf, int buf_size, int nb_channels,
     }
 }
 
+int avcodec_channel_layout_num_channels(int64_t channel_layout)
+{
+    int count;
+    uint64_t x = channel_layout;
+    for (count = 0; x; count++)
+        x &= x-1; // unset lowest set bit
+    return count;
+}
+
 struct AVAudioConvert {
     int in_channels, out_channels;
     int fmt_pair;
