@@ -1572,6 +1572,7 @@ case $target_os in
         SHFLAGS='-shared -Wl,--output-def,$$(@:$(SLIBSUF)=.def) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
         objformat="win32"
         enable dos_paths
+        check_cflags -fno-common
         if ! enabled x86_64; then
             check_cpp_condition _mingw.h "(__MINGW32_MAJOR_VERSION > 3) || (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
                 die "ERROR: MinGW runtime version must be >= 3.15."
@@ -1596,6 +1597,7 @@ case $target_os in
         SHFLAGS='-shared -Wl,--enable-auto-image-base'
         objformat="win32"
         enable dos_paths
+        check_cflags -fno-common
         ;;
     *-dos|freedos|opendos)
         disable ffplay ffserver vhook
