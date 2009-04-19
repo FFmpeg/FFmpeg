@@ -2079,6 +2079,7 @@ static int decode_thread(void *arg)
             pkt->size=0;
             pkt->stream_index= is->video_stream;
             packet_queue_put(&is->videoq, pkt);
+            SDL_Delay(10);
             continue;
         }
         ret = av_read_frame(ic, pkt);
