@@ -285,6 +285,7 @@ static int parse_frame_header(AC3DecodeContext *s)
     /* get decoding parameters from header info */
     s->bit_alloc_params.sr_code     = hdr.sr_code;
     s->channel_mode                 = hdr.channel_mode;
+    s->channel_layout               = hdr.channel_layout;
     s->lfe_on                       = hdr.lfe_on;
     s->bit_alloc_params.sr_shift    = hdr.sr_shift;
     s->sample_rate                  = hdr.sample_rate;
@@ -1307,8 +1308,10 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
                 avctx->request_channels < s->channels) {
             s->out_channels = avctx->request_channels;
             s->output_mode  = avctx->request_channels == 1 ? AC3_CHMODE_MONO : AC3_CHMODE_STEREO;
+            s->channel_layout = ff_ac3_channel_layout_tab[s->output_mode];
         }
         avctx->channels = s->out_channels;
+        avctx->channel_layout = s->channel_layout;
 
         /* set downmixing coefficients if needed */
         if(s->channels != s->out_channels && !((s->output_mode & AC3_OUTPUT_LFEON) &&

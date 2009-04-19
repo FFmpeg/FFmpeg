@@ -85,6 +85,7 @@ get_next:
         avctx->channels = avctx->request_channels;
     } else {
         avctx->channels = s->channels;
+        avctx->channel_layout = s->channel_layout;
     }
     avctx->bit_rate = s->bit_rate;
     avctx->frame_size = s->samples;

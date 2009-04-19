@@ -48,6 +48,7 @@ typedef struct AACAC3ParseContext {
     int sample_rate;
     int bit_rate;
     int samples;
+    int64_t channel_layout;
 
     int remaining_size;
     uint64_t state;
