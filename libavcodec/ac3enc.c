@@ -30,6 +30,7 @@
 #include "get_bits.h" // for ff_reverse
 #include "put_bits.h"
 #include "ac3.h"
+#include "audioconvert.h"
 
 typedef struct AC3EncodeContext {
     PutBitContext pb;
@@ -609,37 +610,67 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     return 0;
 }
 
+static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
+                                    int64_t *channel_layout)
+{
+    int ch_layout;
+
+    if (channels < 1 || channels > AC3_MAX_CHANNELS)
+        return -1;
+    if ((uint64_t)*channel_layout > 0x7FF)
+        return -1;
+    ch_layout = *channel_layout;
+    if (!ch_layout)
+        ch_layout = avcodec_guess_channel_layout(channels, CODEC_ID_AC3, NULL);
+    if (avcodec_channel_layout_num_channels(ch_layout) != channels)
+        return -1;
+
+    s->lfe = !!(ch_layout & CH_LOW_FREQUENCY);
+    s->nb_all_channels = channels;
+    s->nb_channels = channels - s->lfe;
+    s->lfe_channel = s->lfe ? s->nb_channels : -1;
+    if (s->lfe)
+        ch_layout -= CH_LOW_FREQUENCY;
+
+    switch (ch_layout) {
+    case CH_LAYOUT_MONO:           s->channel_mode = AC3_CHMODE_MONO;   break;
+    case CH_LAYOUT_STEREO:         s->channel_mode = AC3_CHMODE_STEREO; break;
+    case CH_LAYOUT_SURROUND:       s->channel_mode = AC3_CHMODE_3F;     break;
+    case CH_LAYOUT_2_1:            s->channel_mode = AC3_CHMODE_2F1R;   break;
+    case CH_LAYOUT_4POINT0:        s->channel_mode = AC3_CHMODE_3F1R;   break;
+    case CH_LAYOUT_QUAD:
+    case CH_LAYOUT_2_2:            s->channel_mode = AC3_CHMODE_2F2R;   break;
+    case CH_LAYOUT_5POINT0:
+    case CH_LAYOUT_5POINT0_BACK:   s->channel_mode = AC3_CHMODE_3F2R;   break;
+    default:
+        return -1;
+    }
+
+    s->channel_map = ff_ac3_enc_channel_map[s->channel_mode][s->lfe];
+    *channel_layout = ch_layout;
+    if (s->lfe)
+        *channel_layout |= CH_LOW_FREQUENCY;
+
+    return 0;
+}
+
 static av_cold int AC3_encode_init(AVCodecContext *avctx)
 {
     int freq = avctx->sample_rate;
     int bitrate = avctx->bit_rate;
-    int channels = avctx->channels;
     AC3EncodeContext *s = avctx->priv_data;
     int i, j, ch;
     float alpha;
     int bw_code;
-    static const uint8_t channel_mode_defs[6] = {
-        0x01, /* C */
-        0x02, /* L R */
-        0x03, /* L C R */
-        0x06, /* L R SL SR */
-        0x07, /* L C R SL SR */
-        0x07, /* L C R SL SR (+LFE) */
-    };
 
     avctx->frame_size = AC3_FRAME_SIZE;
 
     ac3_common_init();
 
-    /* number of channels */
-    if (channels < 1 || channels > 6)
+    if (set_channel_info(s, avctx->channels, &avctx->channel_layout)) {
+        av_log(avctx, AV_LOG_ERROR, "invalid channel layout\n");
         return -1;
-    s->channel_mode = channel_mode_defs[channels - 1];
-    s->lfe = (channels == 6) ? 1 : 0;
-    s->nb_all_channels = channels;
-    s->nb_channels = channels > 5 ? 5 : channels;
-    s->lfe_channel = s->lfe ? 5 : -1;
-    s->channel_map = ff_ac3_enc_channel_map[s->channel_mode][s->lfe];
+    }
 
     /* frequency */
     for(i=0;i<3;i++) {
@@ -1368,4 +1399,24 @@ AVCodec ac3_encoder = {
     NULL,
     .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
+    .channel_layouts = (int64_t[]){
+        CH_LAYOUT_MONO,
+        CH_LAYOUT_STEREO,
+        CH_LAYOUT_2_1,
+        CH_LAYOUT_SURROUND,
+        CH_LAYOUT_2_2,
+        CH_LAYOUT_QUAD,
+        CH_LAYOUT_4POINT0,
+        CH_LAYOUT_5POINT0,
+        CH_LAYOUT_5POINT0_BACK,
+       (CH_LAYOUT_MONO     | CH_LOW_FREQUENCY),
+       (CH_LAYOUT_STEREO   | CH_LOW_FREQUENCY),
+       (CH_LAYOUT_2_1      | CH_LOW_FREQUENCY),
+       (CH_LAYOUT_SURROUND | CH_LOW_FREQUENCY),
+       (CH_LAYOUT_2_2      | CH_LOW_FREQUENCY),
+       (CH_LAYOUT_QUAD     | CH_LOW_FREQUENCY),
+       (CH_LAYOUT_4POINT0  | CH_LOW_FREQUENCY),
+        CH_LAYOUT_5POINT1,
+        CH_LAYOUT_5POINT1_BACK,
+        0 },
 };
