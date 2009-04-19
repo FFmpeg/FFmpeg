@@ -2075,11 +2075,11 @@ static int decode_thread(void *arg)
         }
         if(url_feof(ic->pb) || eof) {
             if(is->video_stream >= 0){
-            av_init_packet(pkt);
-            pkt->data=NULL;
-            pkt->size=0;
-            pkt->stream_index= is->video_stream;
-            packet_queue_put(&is->videoq, pkt);
+                av_init_packet(pkt);
+                pkt->data=NULL;
+                pkt->size=0;
+                pkt->stream_index= is->video_stream;
+                packet_queue_put(&is->videoq, pkt);
             }
             SDL_Delay(10);
             continue;
