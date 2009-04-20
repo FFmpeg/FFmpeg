@@ -1375,8 +1375,13 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         if (url_interrupt_cb())
             return AVERROR(EINTR);
         FD_ZERO(&rfds);
-        tcp_fd = fd_max = url_get_file_handle(rt->rtsp_hd);
-        FD_SET(tcp_fd, &rfds);
+        if (rt->rtsp_hd) {
+            tcp_fd = fd_max = url_get_file_handle(rt->rtsp_hd);
+            FD_SET(tcp_fd, &rfds);
+        } else {
+            fd_max = 0;
+            tcp_fd = -1;
+        }
         for(i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
             if (rtsp_st->rtp_handle) {
