@@ -2174,7 +2174,7 @@ static int gray16togray(SwsContext *c, uint8_t* src[], int srcStride[], int srcS
         memset(dst[1], 128, dstStride[1]*height);
         memset(dst[2], 128, dstStride[2]*height);
     }
-    if (c->srcFormat == PIX_FMT_GRAY16LE) srcPtr++;
+    if (!isBE(c->srcFormat)) srcPtr++;
     for (i=0; i<height; i++)
     {
         for (j=0; j<length; j++) dstPtr[j] = srcPtr[j<<1];
