@@ -37,38 +37,60 @@ static VLC aic_top_vlc;
 static VLC aic_mode1_vlc[AIC_MODE1_NUM], aic_mode2_vlc[AIC_MODE2_NUM];
 static VLC ptype_vlc[NUM_PTYPE_VLCS], btype_vlc[NUM_BTYPE_VLCS];
 
+static const int16_t mode2_offs[] = {
+       0,  614, 1222, 1794, 2410,  3014,  3586,  4202,  4792, 5382, 5966, 6542,
+    7138, 7716, 8292, 8864, 9444, 10030, 10642, 11212, 11814
+};
+
 /**
  * Initialize all tables.
  */
 static av_cold void rv40_init_tables(void)
 {
     int i;
+    static VLC_TYPE aic_table[1 << AIC_TOP_BITS][2];
+    static VLC_TYPE aic_mode1_table[AIC_MODE1_NUM << AIC_MODE1_BITS][2];
+    static VLC_TYPE aic_mode2_table[11814][2];
+    static VLC_TYPE ptype_table[NUM_PTYPE_VLCS << PTYPE_VLC_BITS][2];
+    static VLC_TYPE btype_table[NUM_BTYPE_VLCS << BTYPE_VLC_BITS][2];
 
+    aic_top_vlc.table = aic_table;
+    aic_top_vlc.table_allocated = 1 << AIC_TOP_BITS;
     init_vlc(&aic_top_vlc, AIC_TOP_BITS, AIC_TOP_SIZE,
              rv40_aic_top_vlc_bits,  1, 1,
-             rv40_aic_top_vlc_codes, 1, 1, INIT_VLC_USE_STATIC);
+             rv40_aic_top_vlc_codes, 1, 1, INIT_VLC_USE_NEW_STATIC);
     for(i = 0; i < AIC_MODE1_NUM; i++){
         // Every tenth VLC table is empty
         if((i % 10) == 9) continue;
+        aic_mode1_vlc[i].table = &aic_mode1_table[i << AIC_MODE1_BITS];
+        aic_mode1_vlc[i].table_allocated = 1 << AIC_MODE1_BITS;
         init_vlc(&aic_mode1_vlc[i], AIC_MODE1_BITS, AIC_MODE1_SIZE,
                  aic_mode1_vlc_bits[i],  1, 1,
-                 aic_mode1_vlc_codes[i], 1, 1, INIT_VLC_USE_STATIC);
+                 aic_mode1_vlc_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
     }
     for(i = 0; i < AIC_MODE2_NUM; i++){
+        aic_mode2_vlc[i].table = &aic_mode2_table[mode2_offs[i]];
+        aic_mode2_vlc[i].table_allocated = mode2_offs[i + 1] - mode2_offs[i];
         init_vlc(&aic_mode2_vlc[i], AIC_MODE2_BITS, AIC_MODE2_SIZE,
                  aic_mode2_vlc_bits[i],  1, 1,
-                 aic_mode2_vlc_codes[i], 2, 2, INIT_VLC_USE_STATIC);
+                 aic_mode2_vlc_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
     }
-    for(i = 0; i < NUM_PTYPE_VLCS; i++)
+    for(i = 0; i < NUM_PTYPE_VLCS; i++){
+         ptype_vlc[i].table = &ptype_table[i << PTYPE_VLC_BITS];
+         ptype_vlc[i].table_allocated = 1 << PTYPE_VLC_BITS;
          init_vlc_sparse(&ptype_vlc[i], PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
                          ptype_vlc_bits[i],  1, 1,
                          ptype_vlc_codes[i], 1, 1,
-                         ptype_vlc_syms,     1, 1, INIT_VLC_USE_STATIC);
-    for(i = 0; i < NUM_BTYPE_VLCS; i++)
+                         ptype_vlc_syms,     1, 1, INIT_VLC_USE_NEW_STATIC);
+    }
+    for(i = 0; i < NUM_BTYPE_VLCS; i++){
+         btype_vlc[i].table = &btype_table[i << BTYPE_VLC_BITS];
+         btype_vlc[i].table_allocated = 1 << BTYPE_VLC_BITS;
          init_vlc_sparse(&btype_vlc[i], BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
                          btype_vlc_bits[i],  1, 1,
                          btype_vlc_codes[i], 1, 1,
-                         btype_vlc_syms,     1, 1, INIT_VLC_USE_STATIC);
+                         btype_vlc_syms,     1, 1, INIT_VLC_USE_NEW_STATIC);
+    }
 }
 
 /**
