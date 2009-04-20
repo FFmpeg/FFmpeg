@@ -40,7 +40,7 @@
 
 static VLC scfi_vlc, dscf_vlc, hdr_vlc, quant_vlc[MPC7_QUANT_VLC_TABLES][2];
 
-static uint16_t quant_offsets[MPC7_QUANT_VLC_TABLES*2 + 1] =
+static const uint16_t quant_offsets[MPC7_QUANT_VLC_TABLES*2 + 1] =
 {
        0, 512, 1024, 1536, 2052, 2564, 3076, 3588, 4100, 4612, 5124,
        5636, 6164, 6676, 7224

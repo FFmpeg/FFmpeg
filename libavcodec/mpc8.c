@@ -88,7 +88,7 @@ static int mpc8_get_mask(GetBitContext *gb, int size, int t)
     return mask;
 }
 
-static int vlc_offsets[13] = {
+static const uint16_t vlc_offsets[13] = {
     0, 640, 1184, 1748, 2298, 2426, 2554, 3066, 3578, 4106, 4618, 5196, 5708
 };
 
