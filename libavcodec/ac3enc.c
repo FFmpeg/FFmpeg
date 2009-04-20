@@ -667,6 +667,11 @@ static av_cold int AC3_encode_init(AVCodecContext *avctx)
 
     ac3_common_init();
 
+    if (!avctx->channel_layout) {
+        av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
+                                      "encoder will guess the layout, but it "
+                                      "might be incorrect.\n");
+    }
     if (set_channel_info(s, avctx->channels, &avctx->channel_layout)) {
         av_log(avctx, AV_LOG_ERROR, "invalid channel layout\n");
         return -1;
