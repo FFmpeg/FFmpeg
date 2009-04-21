@@ -62,7 +62,6 @@ static int vc1_init_common(VC1Context *v)
     /* VLC tables */
     if(!done)
     {
-        done = 1;
         init_vlc(&ff_vc1_bfraction_vlc, VC1_BFRACTION_VLC_BITS, 23,
                  ff_vc1_bfraction_bits, 1, 1,
                  ff_vc1_bfraction_codes, 1, 1, INIT_VLC_USE_STATIC);
@@ -106,6 +105,7 @@ static int vc1_init_common(VC1Context *v)
         init_vlc(&ff_msmp4_mb_i_vlc, MB_INTRA_VLC_BITS, 64,
                  &ff_msmp4_mb_i_table[0][1], 4, 2,
                  &ff_msmp4_mb_i_table[0][0], 4, 2, INIT_VLC_USE_STATIC);
+        done = 1;
     }
 
     /* Other defaults */
