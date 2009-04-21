@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_PIXDESC_H
+#define AVCODEC_PIXDESC_H
+
 #include <inttypes.h>
 
 #include "libavutil/intreadwrite.h"
@@ -188,3 +191,5 @@ static inline void write_line(const uint16_t *src, uint8_t *data[4], const int l
         }
     }
 }
+
+#endif /* AVCODEC_PIXDESC_H */
