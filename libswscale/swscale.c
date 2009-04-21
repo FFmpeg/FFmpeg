@@ -2931,6 +2931,21 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     return c;
 }
 
+static int reset_ptr(uint8_t* src[], int format){
+    if(!isALPHA(format))
+        src[3]=NULL;
+    if(!isPlanarYUV(format)){
+        src[3]=src[2]=NULL;
+        if(   format != PIX_FMT_PAL8
+           && format != PIX_FMT_RGB8
+           && format != PIX_FMT_BGR8
+           && format != PIX_FMT_RGB4_BYTE
+           && format != PIX_FMT_BGR4_BYTE
+          )
+            src[1]= NULL;
+    }
+}
+
 /**
  * swscale wrapper, so we don't need to export the SwsContext.
  * Assumes planar YUV to be in YUV order instead of YVU.
@@ -2939,6 +2954,7 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
               int srcSliceH, uint8_t* dst[], int dstStride[]){
     int i;
     uint8_t* src2[4]= {src[0], src[1], src[2], src[3]};
+    uint8_t* dst2[4]= {dst[0], dst[1], dst[2], dst[3]};
 
     if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
         av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
@@ -3014,13 +3030,13 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
         // slices go from top to bottom
         int srcStride2[4]= {srcStride[0], srcStride[1], srcStride[2], srcStride[3]};
         int dstStride2[4]= {dstStride[0], dstStride[1], dstStride[2], dstStride[3]};
-        return c->swScale(c, src2, srcStride2, srcSliceY, srcSliceH, dst, dstStride2);
+
+        reset_ptr(src2, c->srcFormat);
+        reset_ptr(dst2, c->dstFormat);
+
+        return c->swScale(c, src2, srcStride2, srcSliceY, srcSliceH, dst2, dstStride2);
     } else {
         // slices go from bottom to top => we flip the image internally
-        uint8_t* dst2[4]= {dst[0] + (c->dstH-1)*dstStride[0],
-                           dst[1] + ((c->dstH>>c->chrDstVSubSample)-1)*dstStride[1],
-                           dst[2] + ((c->dstH>>c->chrDstVSubSample)-1)*dstStride[2],
-                           dst[3] + (c->dstH-1)*dstStride[3]};
         int srcStride2[4]= {-srcStride[0], -srcStride[1], -srcStride[2], -srcStride[3]};
         int dstStride2[4]= {-dstStride[0], -dstStride[1], -dstStride[2], -dstStride[3]};
 
@@ -3029,6 +3045,13 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
             src2[1] += ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[1];
         src2[2] += ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[2];
         src2[3] += (srcSliceH-1)*srcStride[3];
+        dst2[0] += ( c->dstH                      -1)*dstStride[0];
+        dst2[1] += ((c->dstH>>c->chrDstVSubSample)-1)*dstStride[1];
+        dst2[2] += ((c->dstH>>c->chrDstVSubSample)-1)*dstStride[2];
+        dst2[3] += ( c->dstH                      -1)*dstStride[3];
+
+        reset_ptr(src2, c->srcFormat);
+        reset_ptr(dst2, c->dstFormat);
 
         return c->swScale(c, src2, srcStride2, c->srcH-srcSliceY-srcSliceH, srcSliceH, dst2, dstStride2);
     }
