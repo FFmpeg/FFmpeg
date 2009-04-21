@@ -2126,27 +2126,55 @@ static int packedCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                       int srcSliceH, uint8_t* dst[], int dstStride[])
 {
-    int plane;
+    int plane, i, j;
     for (plane=0; plane<4; plane++)
     {
         int length= (plane==0 || plane==3) ? c->srcW  : -((-c->srcW  )>>c->chrDstHSubSample);
         int y=      (plane==0 || plane==3) ? srcSliceY: -((-srcSliceY)>>c->chrDstVSubSample);
         int height= (plane==0 || plane==3) ? srcSliceH: -((-srcSliceH)>>c->chrDstVSubSample);
+        uint8_t *srcPtr= src[plane];
+        uint8_t *dstPtr= dst[plane] + dstStride[plane]*y;
 
         if (!dst[plane]) continue;
         // ignore palette for GRAY8
         if (plane == 1 && !dst[2]) continue;
-        if (!src[plane] || (plane == 1 && !src[2]))
+        if (!src[plane] || (plane == 1 && !src[2])){
+            if(is16BPS(c->dstFormat))
+                length*=2;
             fillPlane(dst[plane], dstStride[plane], length, height, y, (plane==3) ? 255 : 128);
-        else
+        }else
         {
-            if (dstStride[plane]==srcStride[plane] && srcStride[plane] > 0)
+            if(is16BPS(c->srcFormat) && !is16BPS(c->dstFormat)){
+                if (!isBE(c->srcFormat)) srcPtr++;
+                for (i=0; i<height; i++){
+                    for (j=0; j<length; j++) dstPtr[j] = srcPtr[j<<1];
+                    srcPtr+= srcStride[plane];
+                    dstPtr+= dstStride[plane];
+                }
+            }else if(!is16BPS(c->srcFormat) && is16BPS(c->dstFormat)){
+                for (i=0; i<height; i++){
+                    for (j=0; j<length; j++){
+                        dstPtr[ j<<1   ] = srcPtr[j];
+                        dstPtr[(j<<1)+1] = srcPtr[j];
+                    }
+                    srcPtr+= srcStride[plane];
+                    dstPtr+= dstStride[plane];
+                }
+            }else if(is16BPS(c->srcFormat) && is16BPS(c->dstFormat)
+                  && isBE(c->srcFormat) != isBE(c->dstFormat)){
+
+                for (i=0; i<height; i++){
+                    for (j=0; j<length; j++)
+                        ((uint16_t*)dstPtr)[j] = bswap_16(((uint16_t*)srcPtr)[j]);
+                    srcPtr+= srcStride[plane];
+                    dstPtr+= dstStride[plane];
+                }
+            } else if (dstStride[plane]==srcStride[plane] && srcStride[plane] > 0)
                 memcpy(dst[plane] + dstStride[plane]*y, src[plane], height*dstStride[plane]);
             else
             {
-                int i;
-                uint8_t *srcPtr= src[plane];
-                uint8_t *dstPtr= dst[plane] + dstStride[plane]*y;
+                if(is16BPS(c->srcFormat) && is16BPS(c->dstFormat))
+                    length*=2;
                 for (i=0; i<height; i++)
                 {
                     memcpy(dstPtr, srcPtr, length);
@@ -2155,73 +2183,6 @@ static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
                 }
             }
         }
-    }
-    return srcSliceH;
-}
-
-static int gray16togray(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-                        int srcSliceH, uint8_t* dst[], int dstStride[]){
-
-    int length= c->srcW;
-    int y=      srcSliceY;
-    int height= srcSliceH;
-    int i, j;
-    uint8_t *srcPtr= src[0];
-    uint8_t *dstPtr= dst[0] + dstStride[0]*y;
-
-    if (!isGray(c->dstFormat)){
-        int height= -((-srcSliceH)>>c->chrDstVSubSample);
-        memset(dst[1], 128, dstStride[1]*height);
-        memset(dst[2], 128, dstStride[2]*height);
-    }
-    if (!isBE(c->srcFormat)) srcPtr++;
-    for (i=0; i<height; i++)
-    {
-        for (j=0; j<length; j++) dstPtr[j] = srcPtr[j<<1];
-        srcPtr+= srcStride[0];
-        dstPtr+= dstStride[0];
-    }
-    if (dst[3])
-        fillPlane(dst[3], dstStride[3], length, height, y, 255);
-    return srcSliceH;
-}
-
-static int graytogray16(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-                        int srcSliceH, uint8_t* dst[], int dstStride[]){
-
-    int length= c->srcW;
-    int y=      srcSliceY;
-    int height= srcSliceH;
-    int i, j;
-    uint8_t *srcPtr= src[0];
-    uint8_t *dstPtr= dst[0] + dstStride[0]*y;
-    for (i=0; i<height; i++)
-    {
-        for (j=0; j<length; j++)
-        {
-            dstPtr[j<<1] = srcPtr[j];
-            dstPtr[(j<<1)+1] = srcPtr[j];
-        }
-        srcPtr+= srcStride[0];
-        dstPtr+= dstStride[0];
-    }
-    return srcSliceH;
-}
-
-static int gray16swap(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-                      int srcSliceH, uint8_t* dst[], int dstStride[]){
-
-    int length= c->srcW;
-    int y=      srcSliceY;
-    int height= srcSliceH;
-    int i, j;
-    uint16_t *srcPtr= (uint16_t*)src[0];
-    uint16_t *dstPtr= (uint16_t*)(dst[0] + dstStride[0]*y/2);
-    for (i=0; i<height; i++)
-    {
-        for (j=0; j<length; j++) dstPtr[j] = bswap_16(srcPtr[j]);
-        srcPtr+= srcStride[0]/2;
-        dstPtr+= dstStride[0]/2;
     }
     return srcSliceH;
 }
@@ -2612,28 +2573,14 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             || (srcFormat == PIX_FMT_YUVA420P && dstFormat == PIX_FMT_YUV420P)
             || (srcFormat == PIX_FMT_YUV420P && dstFormat == PIX_FMT_YUVA420P)
             || (isPlanarYUV(srcFormat) && isGray(dstFormat))
-            || (isPlanarYUV(dstFormat) && isGray(srcFormat)))
+            || (isPlanarYUV(dstFormat) && isGray(srcFormat))
+            || (isGray(dstFormat) && isGray(srcFormat)))
         {
             if (isPacked(c->srcFormat))
                 c->swScale= packedCopy;
             else /* Planar YUV or gray */
                 c->swScale= planarCopy;
         }
-
-        /* gray16{le,be} conversions */
-        if (isGray16(srcFormat) && (isPlanarYUV(dstFormat) || (dstFormat == PIX_FMT_GRAY8)))
-        {
-            c->swScale= gray16togray;
-        }
-        if ((isPlanarYUV(srcFormat) || (srcFormat == PIX_FMT_GRAY8)) && isGray16(dstFormat))
-        {
-            c->swScale= graytogray16;
-        }
-        if (srcFormat != dstFormat && isGray16(srcFormat) && isGray16(dstFormat))
-        {
-            c->swScale= gray16swap;
-        }
-
 #if ARCH_BFIN
         if (flags & SWS_CPU_CAPS_BFIN)
             ff_bfin_get_unscaled_swscale (c);
