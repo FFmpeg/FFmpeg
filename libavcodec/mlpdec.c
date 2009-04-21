@@ -337,13 +337,14 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     int start_count = get_bits_count(gbp);
 
     sync_word = get_bits(gbp, 13);
+    s->noise_type = get_bits1(gbp);
 
-    if (sync_word != 0x31ea >> 1) {
+    if ((m->avctx->codec_id == CODEC_ID_MLP && s->noise_type) ||
+        sync_word != 0x31ea >> 1) {
         av_log(m->avctx, AV_LOG_ERROR,
                "restart header sync incorrect (got 0x%04x)\n", sync_word);
         return -1;
     }
-    s->noise_type = get_bits1(gbp);
 
     skip_bits(gbp, 16); /* Output timestamp */
 
