@@ -412,7 +412,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     MpegEncContext *s = &v->s;
     DSPContext *dsp = &v->s.dsp;
     uint8_t *srcY, *srcU, *srcV;
-    int dxy, uvdxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
+    int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
 
     if(!v->s.last_picture.data[0])return;
 
@@ -543,7 +543,6 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
 
     if(s->flags & CODEC_FLAG_GRAY) return;
     /* Chroma MC always uses qpel bilinear */
-    uvdxy = ((uvmy & 3) << 2) | (uvmx & 3);
     uvmx = (uvmx&3)<<1;
     uvmy = (uvmy&3)<<1;
     if(!v->rnd){
@@ -648,7 +647,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     MpegEncContext *s = &v->s;
     DSPContext *dsp = &v->s.dsp;
     uint8_t *srcU, *srcV;
-    int uvdxy, uvmx, uvmy, uvsrc_x, uvsrc_y;
+    int uvmx, uvmy, uvsrc_x, uvsrc_y;
     int i, idx, tx = 0, ty = 0;
     int mvx[4], mvy[4], intra[4];
     static const int count[16] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
@@ -763,7 +762,6 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     }
 
     /* Chroma MC always uses qpel bilinear */
-    uvdxy = ((uvmy & 3) << 2) | (uvmx & 3);
     uvmx = (uvmx&3)<<1;
     uvmy = (uvmy&3)<<1;
     if(!v->rnd){
@@ -1209,7 +1207,6 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         else if(v->pq < 13) v->tt_index = 1;
         else v->tt_index = 2;
 
-        lowquant = (v->pq > 12) ? 0 : 1;
         v->mv_mode = get_bits1(gb) ? MV_PMODE_1MV : MV_PMODE_1MV_HPEL_BILIN;
         v->s.quarter_sample = (v->mv_mode == MV_PMODE_1MV);
         v->s.mspel = v->s.quarter_sample;
@@ -1461,7 +1458,6 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         else if(v->pq < 13) v->tt_index = 1;
         else v->tt_index = 2;
 
-        lowquant = (v->pq > 12) ? 0 : 1;
         v->mv_mode = get_bits1(gb) ? MV_PMODE_1MV : MV_PMODE_1MV_HPEL_BILIN;
         v->s.quarter_sample = (v->mv_mode == MV_PMODE_1MV);
         v->s.mspel = v->s.quarter_sample;
@@ -1755,7 +1751,7 @@ static void vc1_interp_mc(VC1Context *v)
     MpegEncContext *s = &v->s;
     DSPContext *dsp = &v->s.dsp;
     uint8_t *srcY, *srcU, *srcV;
-    int dxy, uvdxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
+    int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
 
     if(!v->s.next_picture.data[0])return;
 
@@ -1854,7 +1850,6 @@ static void vc1_interp_mc(VC1Context *v)
 
     if(s->flags & CODEC_FLAG_GRAY) return;
     /* Chroma MC always uses qpel blilinear */
-    uvdxy = ((uvmy & 3) << 2) | (uvmx & 3);
     uvmx = (uvmx&3)<<1;
     uvmy = (uvmy&3)<<1;
     if(!v->rnd){
@@ -2197,14 +2192,10 @@ static inline int vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
                               int a_avail, int c_avail,
                               int16_t **dc_val_ptr, int *dir_ptr)
 {
-    int a, b, c, wrap, pred, scale;
+    int a, b, c, wrap, pred;
     int16_t *dc_val;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int q1, q2 = 0;
-
-    /* find prediction - wmv3_dc_scale always used here in fact */
-    if (n < 4)     scale = s->y_dc_scale;
-    else           scale = s->c_dc_scale;
 
     wrap = s->block_wrap[n];
     dc_val= s->dc_val[0] + s->block_index[n];
@@ -2420,7 +2411,6 @@ static int vc1_decode_i_block(VC1Context *v, DCTELEM block[64], int n, int coded
     }
     /* Skip ? */
     run_diff = 0;
-    i = 0;
     if (!coded) {
         goto not_coded;
     }
@@ -2492,6 +2482,7 @@ not_coded:
         ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
         ac_val2 = ac_val;
 
+        i = 0;
         scale = v->pq * 2 + v->halfpq;
         memset(ac_val2, 0, 16 * 2);
         if(dc_pred_dir) {//left
@@ -2592,7 +2583,6 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
     }
     /* Skip ? */
     run_diff = 0;
-    i = 0;
 
     //AC Decoding
     i = 1;
@@ -2798,7 +2788,6 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     }
     /* Skip ? */
     run_diff = 0;
-    i = 0;
 
     //AC Decoding
     i = 1;
@@ -3439,7 +3428,6 @@ static void vc1_decode_b_mb(VC1Context *v)
         cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC1_CBPCY_P_VLC_BITS, 2);
         GET_MQUANT();
         s->mb_intra = 0;
-        mb_has_coeffs = 0;
         s->current_picture.qscale_table[mb_pos] = mquant;
         if(!v->ttmbf)
             ttmb = get_vlc2(gb, ff_vc1_ttmb_vlc[v->tt_index].table, VC1_TTMB_VLC_BITS, 2);
