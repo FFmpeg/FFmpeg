@@ -291,6 +291,10 @@ void ff_yuv2packedX_altivec(SwsContext *c,
 const char *sws_format_name(int format);
 
 //FIXME replace this with something faster
+#define is16BPS(x)      (           \
+           (x)==PIX_FMT_GRAY16BE    \
+        || (x)==PIX_FMT_GRAY16LE    \
+    )
 #define isBE(x) ((x)&1)
 #define isPlanarYUV(x)  (           \
            (x)==PIX_FMT_YUV410P     \
