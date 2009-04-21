@@ -27,6 +27,8 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 
+#define WHITESPACES " \n\t"
+
 static int link_filter(AVFilterContext *src, int srcpad,
                        AVFilterContext *dst, int dstpad,
                        AVClass *log_ctx)
@@ -41,11 +43,6 @@ static int link_filter(AVFilterContext *src, int srcpad,
     return 0;
 }
 
-static int consume_whitespace(const char *buf)
-{
-    return strspn(buf, " \n\t");
-}
-
 /**
  * Consumes a string from *buf.
  * @return a copy of the consumed string, which should be free'd after use
@@ -55,7 +52,7 @@ static char *consume_string(const char **buf)
     char *out = av_malloc(strlen(*buf) + 1);
     char *ret = out;
 
-    *buf += consume_whitespace(*buf);
+    *buf += strspn(*buf, WHITESPACES);
 
     do{
         char c = *(*buf)++;
@@ -84,7 +81,7 @@ static char *consume_string(const char **buf)
     } while(out[-1]);
 
     (*buf)--;
-    *buf += consume_whitespace(*buf);
+    *buf += strspn(*buf, WHITESPACES);
 
     return ret;
 }
@@ -283,7 +280,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
 
         insert_inout(curr_inputs, match);
 
-        *buf += consume_whitespace(*buf);
+        *buf += strspn(*buf, WHITESPACES);
         pad++;
     }
 
@@ -322,7 +319,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
             input->name = name;
             insert_inout(open_outputs, input);
         }
-        *buf += consume_whitespace(*buf);
+        *buf += strspn(*buf, WHITESPACES);
         pad++;
     }
 
@@ -340,7 +337,7 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
 
     do {
         AVFilterContext *filter;
-        filters += consume_whitespace(filters);
+        filters += strspn(filters, WHITESPACES);
 
         if(parse_inputs(&filters, &curr_inputs, &open_outputs, log_ctx) < 0)
             goto fail;
@@ -364,7 +361,7 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          log_ctx) < 0)
             goto fail;
 
-        filters += consume_whitespace(filters);
+        filters += strspn(filters, WHITESPACES);
         chr = *filters++;
 
         if(chr == ';' && curr_inputs) {
