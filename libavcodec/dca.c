@@ -252,42 +252,64 @@ typedef struct {
     MDCTContext imdct;
 } DCAContext;
 
+static const uint16_t dca_vlc_offs[] = {
+        0,   512,   640,   768,  1282,  1794,  2436,  3080,  3770,  4454,  5364,
+     5372,  5380,  5388,  5392,  5396,  5412,  5420,  5428,  5460,  5492,  5508,
+     5572,  5604,  5668,  5796,  5860,  5892,  6412,  6668,  6796,  7308,  7564,
+     7820,  8076,  8620,  9132,  9388,  9910, 10166, 10680, 11196, 11726, 12240,
+    12752, 13298, 13810, 14326, 14840, 15500, 16022, 16540, 17158, 17678, 18264,
+    18796, 19352, 19926, 20468, 21472, 22398, 23014, 23622,
+};
+
 static av_cold void dca_init_vlcs(void)
 {
     static int vlcs_initialized = 0;
-    int i, j;
+    int i, j, c = 14;
+    static VLC_TYPE dca_table[23622][2];
 
     if (vlcs_initialized)
         return;
 
     dca_bitalloc_index.offset = 1;
     dca_bitalloc_index.wrap = 2;
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < 5; i++) {
+        dca_bitalloc_index.vlc[i].table = &dca_table[dca_vlc_offs[i]];
+        dca_bitalloc_index.vlc[i].table_allocated = dca_vlc_offs[i + 1] - dca_vlc_offs[i];
         init_vlc(&dca_bitalloc_index.vlc[i], bitalloc_12_vlc_bits[i], 12,
                  bitalloc_12_bits[i], 1, 1,
-                 bitalloc_12_codes[i], 2, 2, INIT_VLC_USE_STATIC);
+                 bitalloc_12_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+    }
     dca_scalefactor.offset = -64;
     dca_scalefactor.wrap = 2;
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < 5; i++) {
+        dca_scalefactor.vlc[i].table = &dca_table[dca_vlc_offs[i + 5]];
+        dca_scalefactor.vlc[i].table_allocated = dca_vlc_offs[i + 6] - dca_vlc_offs[i + 5];
         init_vlc(&dca_scalefactor.vlc[i], SCALES_VLC_BITS, 129,
                  scales_bits[i], 1, 1,
-                 scales_codes[i], 2, 2, INIT_VLC_USE_STATIC);
+                 scales_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+    }
     dca_tmode.offset = 0;
     dca_tmode.wrap = 1;
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++) {
+        dca_tmode.vlc[i].table = &dca_table[dca_vlc_offs[i + 10]];
+        dca_tmode.vlc[i].table_allocated = dca_vlc_offs[i + 11] - dca_vlc_offs[i + 10];
         init_vlc(&dca_tmode.vlc[i], tmode_vlc_bits[i], 4,
                  tmode_bits[i], 1, 1,
-                 tmode_codes[i], 2, 2, INIT_VLC_USE_STATIC);
+                 tmode_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+    }
 
     for(i = 0; i < 10; i++)
         for(j = 0; j < 7; j++){
             if(!bitalloc_codes[i][j]) break;
             dca_smpl_bitalloc[i+1].offset = bitalloc_offsets[i];
             dca_smpl_bitalloc[i+1].wrap = 1 + (j > 4);
+            dca_smpl_bitalloc[i+1].vlc[j].table = &dca_table[dca_vlc_offs[c]];
+            dca_smpl_bitalloc[i+1].vlc[j].table_allocated = dca_vlc_offs[c + 1] - dca_vlc_offs[c];
             init_vlc(&dca_smpl_bitalloc[i+1].vlc[j], bitalloc_maxbits[i][j],
                      bitalloc_sizes[i],
                      bitalloc_bits[i][j], 1, 1,
-                     bitalloc_codes[i][j], 2, 2, INIT_VLC_USE_STATIC);
+                     bitalloc_codes[i][j], 2, 2, INIT_VLC_USE_NEW_STATIC);
+            c++;
         }
     vlcs_initialized = 1;
 }
