@@ -35,6 +35,8 @@
 /** Maximum number of matrices used in decoding; most streams have one matrix
  *  per output channel, but some rematrix a channel (usually 0) more than once.
  */
+#define MAX_MATRICES_MLP            6
+#define MAX_MATRICES_TRUEHD         8
 #define MAX_MATRICES        15
 
 /** Maximum number of substreams that can be decoded.
