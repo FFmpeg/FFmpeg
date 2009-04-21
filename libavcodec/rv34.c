@@ -82,7 +82,7 @@ static const int table_offs[] = {
  111430, 111462, 111494, 112878, 114320, 114988, 115660, 116310, 116950, 117592
 };
 
-static const VLC_TYPE table_data[117592][2];
+static VLC_TYPE table_data[117592][2];
 
 /**
  * Generate VLC from codeword lengths.
