@@ -1671,6 +1671,39 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t 
     assert(src1 == src2);
 }
 
+static inline void RENAME(LEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
+{
+#if HAVE_MMX
+    __asm__ volatile(
+    "mov                    %0, %%"REG_a"       \n\t"
+    "1:                                         \n\t"
+    "movq    (%1, %%"REG_a",2), %%mm0           \n\t"
+    "movq   8(%1, %%"REG_a",2), %%mm1           \n\t"
+    "movq    (%2, %%"REG_a",2), %%mm2           \n\t"
+    "movq   8(%2, %%"REG_a",2), %%mm3           \n\t"
+    "psrlw                  $8, %%mm0           \n\t"
+    "psrlw                  $8, %%mm1           \n\t"
+    "psrlw                  $8, %%mm2           \n\t"
+    "psrlw                  $8, %%mm3           \n\t"
+    "packuswb            %%mm1, %%mm0           \n\t"
+    "packuswb            %%mm3, %%mm2           \n\t"
+    "movq                %%mm0, (%3, %%"REG_a") \n\t"
+    "movq                %%mm2, (%4, %%"REG_a") \n\t"
+    "add                    $8, %%"REG_a"       \n\t"
+    " js                    1b                  \n\t"
+    : : "g" ((x86_reg)-width), "r" (src1+width*2), "r" (src2+width*2), "r" (dstU+width), "r" (dstV+width)
+    : "%"REG_a
+    );
+#else
+    int i;
+    for (i=0; i<width; i++)
+    {
+        dstU[i]= src1[2*i + 1];
+        dstV[i]= src2[2*i + 1];
+    }
+#endif
+}
+
 /* This is almost identical to the previous, end exists only because
  * yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses. */
 static inline void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
@@ -1730,6 +1763,40 @@ static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t 
     }
 #endif
     assert(src1 == src2);
+}
+
+static inline void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
+{
+#if HAVE_MMX
+    __asm__ volatile(
+    "movq "MANGLE(bm01010101)", %%mm4           \n\t"
+    "mov                    %0, %%"REG_a"       \n\t"
+    "1:                                         \n\t"
+    "movq    (%1, %%"REG_a",2), %%mm0           \n\t"
+    "movq   8(%1, %%"REG_a",2), %%mm1           \n\t"
+    "movq    (%2, %%"REG_a",2), %%mm2           \n\t"
+    "movq   8(%2, %%"REG_a",2), %%mm3           \n\t"
+    "pand                %%mm4, %%mm0           \n\t"
+    "pand                %%mm4, %%mm1           \n\t"
+    "pand                %%mm4, %%mm2           \n\t"
+    "pand                %%mm4, %%mm3           \n\t"
+    "packuswb            %%mm1, %%mm0           \n\t"
+    "packuswb            %%mm3, %%mm2           \n\t"
+    "movq                %%mm0, (%3, %%"REG_a") \n\t"
+    "movq                %%mm2, (%4, %%"REG_a") \n\t"
+    "add                    $8, %%"REG_a"       \n\t"
+    " js                    1b                  \n\t"
+    : : "g" ((x86_reg)-width), "r" (src1+width*2), "r" (src2+width*2), "r" (dstU+width), "r" (dstV+width)
+    : "%"REG_a
+    );
+#else
+    int i;
+    for (i=0; i<width; i++)
+    {
+        dstU[i]= src1[2*i];
+        dstV[i]= src2[2*i];
+    }
+#endif
 }
 
 #define BGR2Y(type, name, shr, shg, shb, maskr, maskg, maskb, RY, GY, BY, S)\
@@ -3085,6 +3152,12 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_PAL8     :
         case PIX_FMT_BGR4_BYTE:
         case PIX_FMT_RGB4_BYTE: c->hcscale_internal = RENAME(palToUV); break;
+        case PIX_FMT_YUV420PBE:
+        case PIX_FMT_YUV422PBE:
+        case PIX_FMT_YUV444PBE: c->hcscale_internal = RENAME(BEToUV); break;
+        case PIX_FMT_YUV420PLE:
+        case PIX_FMT_YUV422PLE:
+        case PIX_FMT_YUV444PLE: c->hcscale_internal = RENAME(LEToUV); break;
     }
     if (c->chrSrcHSubSample) {
         switch(srcFormat) {
@@ -3118,8 +3191,14 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     c->hascale_internal = NULL;
     switch (srcFormat) {
     case PIX_FMT_YUYV422  :
+    case PIX_FMT_YUV420PBE:
+    case PIX_FMT_YUV422PBE:
+    case PIX_FMT_YUV444PBE:
     case PIX_FMT_GRAY16BE : c->hyscale_internal = RENAME(yuy2ToY); break;
     case PIX_FMT_UYVY422  :
+    case PIX_FMT_YUV420PLE:
+    case PIX_FMT_YUV422PLE:
+    case PIX_FMT_YUV444PLE:
     case PIX_FMT_GRAY16LE : c->hyscale_internal = RENAME(uyvyToY); break;
     case PIX_FMT_BGR24    : c->hyscale_internal = RENAME(bgr24ToY); break;
     case PIX_FMT_BGR565   : c->hyscale_internal = RENAME(bgr16ToY); break;

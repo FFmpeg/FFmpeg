@@ -134,6 +134,12 @@ unsigned swscale_version(void)
         || (x)==PIX_FMT_YUV440P     \
         || (x)==PIX_FMT_MONOWHITE   \
         || (x)==PIX_FMT_MONOBLACK   \
+        || (x)==PIX_FMT_YUV420PLE   \
+        || (x)==PIX_FMT_YUV422PLE   \
+        || (x)==PIX_FMT_YUV444PLE   \
+        || (x)==PIX_FMT_YUV420PBE   \
+        || (x)==PIX_FMT_YUV422PBE   \
+        || (x)==PIX_FMT_YUV444PBE   \
     )
 #define isSupportedOut(x)   (       \
            (x)==PIX_FMT_YUV420P     \
@@ -152,6 +158,12 @@ unsigned swscale_version(void)
         || (x)==PIX_FMT_GRAY8       \
         || (x)==PIX_FMT_YUV410P     \
         || (x)==PIX_FMT_YUV440P     \
+        || (x)==PIX_FMT_YUV420PLE   \
+        || (x)==PIX_FMT_YUV422PLE   \
+        || (x)==PIX_FMT_YUV444PLE   \
+        || (x)==PIX_FMT_YUV420PBE   \
+        || (x)==PIX_FMT_YUV422PBE   \
+        || (x)==PIX_FMT_YUV444PBE   \
     )
 #define isPacked(x)         (       \
            (x)==PIX_FMT_PAL8        \
@@ -467,6 +479,18 @@ const char *sws_format_name(enum PixelFormat format)
             return "vdpau_wmv3";
         case PIX_FMT_VDPAU_VC1:
             return "vdpau_vc1";
+        case PIX_FMT_YUV420PLE:
+            return "yuv420ple";
+        case PIX_FMT_YUV422PLE:
+            return "yuv422ple";
+        case PIX_FMT_YUV444PLE:
+            return "yuv444ple";
+        case PIX_FMT_YUV420PBE:
+            return "yuv420pbe";
+        case PIX_FMT_YUV422PBE:
+            return "yuv422pbe";
+        case PIX_FMT_YUV444PBE:
+            return "yuv444pbe";
         default:
             return "Unknown format";
     }
@@ -2196,6 +2220,8 @@ static void getSubSampleFactors(int *h, int *v, int format){
         *v=0;
         break;
     case PIX_FMT_YUV420P:
+    case PIX_FMT_YUV420PLE:
+    case PIX_FMT_YUV420PBE:
     case PIX_FMT_YUVA420P:
     case PIX_FMT_GRAY16BE:
     case PIX_FMT_GRAY16LE:
@@ -2214,10 +2240,14 @@ static void getSubSampleFactors(int *h, int *v, int format){
         *v=2;
         break;
     case PIX_FMT_YUV444P:
+    case PIX_FMT_YUV444PLE:
+    case PIX_FMT_YUV444PBE:
         *h=0;
         *v=0;
         break;
     case PIX_FMT_YUV422P:
+    case PIX_FMT_YUV422PLE:
+    case PIX_FMT_YUV422PBE:
         *h=1;
         *v=0;
         break;
@@ -2574,7 +2604,10 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             || (srcFormat == PIX_FMT_YUV420P && dstFormat == PIX_FMT_YUVA420P)
             || (isPlanarYUV(srcFormat) && isGray(dstFormat))
             || (isPlanarYUV(dstFormat) && isGray(srcFormat))
-            || (isGray(dstFormat) && isGray(srcFormat)))
+            || (isGray(dstFormat) && isGray(srcFormat))
+            || (isPlanarYUV(srcFormat) && isPlanarYUV(dstFormat)
+                && c->chrDstHSubSample == c->chrSrcHSubSample
+                && c->chrDstVSubSample == c->chrSrcVSubSample))
         {
             if (isPacked(c->srcFormat))
                 c->swScale= packedCopy;
