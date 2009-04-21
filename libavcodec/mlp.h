@@ -26,6 +26,9 @@
 
 #include "avcodec.h"
 
+/** Last possible matrix channel for each codec */
+#define MAX_MATRIX_CHANNEL_MLP      5
+#define MAX_MATRIX_CHANNEL_TRUEHD   7
 /** Maximum number of channels that can be decoded. */
 #define MAX_CHANNELS        16
 
