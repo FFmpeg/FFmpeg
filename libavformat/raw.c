@@ -973,6 +973,21 @@ AVInputFormat mlp_demuxer = {
 };
 #endif
 
+#ifdef CONFIG_MLP_MUXER
+AVOutputFormat mlp_muxer = {
+    "mlp",
+    NULL_IF_CONFIG_SMALL("raw MLP"),
+    NULL,
+    "mlp",
+    0,
+    CODEC_ID_MLP,
+    CODEC_ID_NONE,
+    NULL,
+    raw_write_packet,
+    .flags= AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_TRUEHD_DEMUXER
 AVInputFormat truehd_demuxer = {
     "truehd",
