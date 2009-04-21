@@ -61,6 +61,8 @@ int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_si
         c->sbr = 1;
         c->ext_sample_rate = get_sample_rate(&gb, &c->ext_sampling_index);
         c->object_type = get_object_type(&gb);
+        if (c->object_type == AOT_ER_BSAC)
+            c->ext_chan_config = get_bits(&gb, 4);
     } else {
         c->ext_object_type = 0;
         c->ext_sample_rate = 0;
