@@ -29,15 +29,18 @@
 /** Last possible matrix channel for each codec */
 #define MAX_MATRIX_CHANNEL_MLP      5
 #define MAX_MATRIX_CHANNEL_TRUEHD   7
-/** Maximum number of channels that can be decoded. */
-#define MAX_CHANNELS        16
+/** Maximum number of channels in a valid stream.
+ *  MLP   : 5.1 + 2 noise channels -> 8 channels
+ *  TrueHD: 7.1                    -> 8 channels
+ */
+#define MAX_CHANNELS                8
 
 /** Maximum number of matrices used in decoding; most streams have one matrix
  *  per output channel, but some rematrix a channel (usually 0) more than once.
  */
 #define MAX_MATRICES_MLP            6
 #define MAX_MATRICES_TRUEHD         8
-#define MAX_MATRICES        15
+#define MAX_MATRICES                8
 
 /** Maximum number of substreams that can be decoded.
  *  MLP's limit is 2. TrueHD supports at least up to 3.

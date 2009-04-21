@@ -93,7 +93,7 @@ typedef struct SubStream {
     //! Whether the LSBs of the matrix output are encoded in the bitstream.
     uint8_t     lsb_bypass[MAX_MATRICES];
     //! Matrix coefficients, stored as 2.14 fixed point.
-    int32_t     matrix_coeff[MAX_MATRICES][MAX_CHANNELS+2];
+    int32_t     matrix_coeff[MAX_MATRICES][MAX_CHANNELS];
     //! Left shift to apply to noise values in 0x31eb substreams.
     uint8_t     matrix_noise_shift[MAX_MATRICES];
     //@}
@@ -143,7 +143,7 @@ typedef struct MLPDecodeContext {
 
     int8_t      noise_buffer[MAX_BLOCKSIZE_POW2];
     int8_t      bypassed_lsbs[MAX_BLOCKSIZE][MAX_CHANNELS];
-    int32_t     sample_buffer[MAX_BLOCKSIZE][MAX_CHANNELS+2];
+    int32_t     sample_buffer[MAX_BLOCKSIZE][MAX_CHANNELS];
 } MLPDecodeContext;
 
 static VLC huff_vlc[3];
