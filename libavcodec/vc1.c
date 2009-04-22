@@ -47,6 +47,12 @@
 static const uint16_t table_mb_intra[64][2];
 
 
+static const uint16_t vlc_offs[] = {
+       0,   520,   552,   616,  1128,  1160, 1224, 1740, 1772, 1836, 1900, 2436,
+    2986,  3050,  3610,  4154,  4218,  4746, 5326, 5390, 5902, 6554, 7658, 8620,
+    9262, 10202, 10756, 11310, 12228, 15078
+};
+
 /**
  * Init VC-1 specific tables and VC1Context members
  * @param v The VC1Context to initialize
@@ -56,52 +62,69 @@ static int vc1_init_common(VC1Context *v)
 {
     static int done = 0;
     int i = 0;
+    static VLC_TYPE vlc_table[15078][2];
 
     v->hrd_rate = v->hrd_buffer = NULL;
 
     /* VLC tables */
     if(!done)
     {
-        init_vlc(&ff_vc1_bfraction_vlc, VC1_BFRACTION_VLC_BITS, 23,
+        INIT_VLC_STATIC(&ff_vc1_bfraction_vlc, VC1_BFRACTION_VLC_BITS, 23,
                  ff_vc1_bfraction_bits, 1, 1,
-                 ff_vc1_bfraction_codes, 1, 1, INIT_VLC_USE_STATIC);
-        init_vlc(&ff_vc1_norm2_vlc, VC1_NORM2_VLC_BITS, 4,
+                 ff_vc1_bfraction_codes, 1, 1, 1 << VC1_BFRACTION_VLC_BITS);
+        INIT_VLC_STATIC(&ff_vc1_norm2_vlc, VC1_NORM2_VLC_BITS, 4,
                  ff_vc1_norm2_bits, 1, 1,
-                 ff_vc1_norm2_codes, 1, 1, INIT_VLC_USE_STATIC);
-        init_vlc(&ff_vc1_norm6_vlc, VC1_NORM6_VLC_BITS, 64,
+                 ff_vc1_norm2_codes, 1, 1, 1 << VC1_NORM2_VLC_BITS);
+        INIT_VLC_STATIC(&ff_vc1_norm6_vlc, VC1_NORM6_VLC_BITS, 64,
                  ff_vc1_norm6_bits, 1, 1,
-                 ff_vc1_norm6_codes, 2, 2, INIT_VLC_USE_STATIC);
-        init_vlc(&ff_vc1_imode_vlc, VC1_IMODE_VLC_BITS, 7,
+                 ff_vc1_norm6_codes, 2, 2, 556);
+        INIT_VLC_STATIC(&ff_vc1_imode_vlc, VC1_IMODE_VLC_BITS, 7,
                  ff_vc1_imode_bits, 1, 1,
-                 ff_vc1_imode_codes, 1, 1, INIT_VLC_USE_STATIC);
+                 ff_vc1_imode_codes, 1, 1, 1 << VC1_IMODE_VLC_BITS);
         for (i=0; i<3; i++)
         {
+            ff_vc1_ttmb_vlc[i].table = &vlc_table[vlc_offs[i*3+0]];
+            ff_vc1_ttmb_vlc[i].table_allocated = vlc_offs[i*3+1] - vlc_offs[i*3+0];
             init_vlc(&ff_vc1_ttmb_vlc[i], VC1_TTMB_VLC_BITS, 16,
                      ff_vc1_ttmb_bits[i], 1, 1,
-                     ff_vc1_ttmb_codes[i], 2, 2, INIT_VLC_USE_STATIC);
+                     ff_vc1_ttmb_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+            ff_vc1_ttblk_vlc[i].table = &vlc_table[vlc_offs[i*3+1]];
+            ff_vc1_ttblk_vlc[i].table_allocated = vlc_offs[i*3+2] - vlc_offs[i*3+1];
             init_vlc(&ff_vc1_ttblk_vlc[i], VC1_TTBLK_VLC_BITS, 8,
                      ff_vc1_ttblk_bits[i], 1, 1,
-                     ff_vc1_ttblk_codes[i], 1, 1, INIT_VLC_USE_STATIC);
+                     ff_vc1_ttblk_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+            ff_vc1_subblkpat_vlc[i].table = &vlc_table[vlc_offs[i*3+2]];
+            ff_vc1_subblkpat_vlc[i].table_allocated = vlc_offs[i*3+3] - vlc_offs[i*3+2];
             init_vlc(&ff_vc1_subblkpat_vlc[i], VC1_SUBBLKPAT_VLC_BITS, 15,
                      ff_vc1_subblkpat_bits[i], 1, 1,
-                     ff_vc1_subblkpat_codes[i], 1, 1, INIT_VLC_USE_STATIC);
+                     ff_vc1_subblkpat_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
         }
         for(i=0; i<4; i++)
         {
+            ff_vc1_4mv_block_pattern_vlc[i].table = &vlc_table[vlc_offs[i*3+9]];
+            ff_vc1_4mv_block_pattern_vlc[i].table_allocated = vlc_offs[i*3+10] - vlc_offs[i*3+9];
             init_vlc(&ff_vc1_4mv_block_pattern_vlc[i], VC1_4MV_BLOCK_PATTERN_VLC_BITS, 16,
                      ff_vc1_4mv_block_pattern_bits[i], 1, 1,
-                     ff_vc1_4mv_block_pattern_codes[i], 1, 1, INIT_VLC_USE_STATIC);
+                     ff_vc1_4mv_block_pattern_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+            ff_vc1_cbpcy_p_vlc[i].table = &vlc_table[vlc_offs[i*3+10]];
+            ff_vc1_cbpcy_p_vlc[i].table_allocated = vlc_offs[i*3+11] - vlc_offs[i*3+10];
             init_vlc(&ff_vc1_cbpcy_p_vlc[i], VC1_CBPCY_P_VLC_BITS, 64,
                      ff_vc1_cbpcy_p_bits[i], 1, 1,
-                     ff_vc1_cbpcy_p_codes[i], 2, 2, INIT_VLC_USE_STATIC);
+                     ff_vc1_cbpcy_p_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
+            ff_vc1_mv_diff_vlc[i].table = &vlc_table[vlc_offs[i*3+11]];
+            ff_vc1_mv_diff_vlc[i].table_allocated = vlc_offs[i*3+12] - vlc_offs[i*3+11];
             init_vlc(&ff_vc1_mv_diff_vlc[i], VC1_MV_DIFF_VLC_BITS, 73,
                      ff_vc1_mv_diff_bits[i], 1, 1,
-                     ff_vc1_mv_diff_codes[i], 2, 2, INIT_VLC_USE_STATIC);
+                     ff_vc1_mv_diff_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
         }
-        for(i=0; i<8; i++)
+        for(i=0; i<8; i++){
+            ff_vc1_ac_coeff_table[i].table = &vlc_table[vlc_offs[i+21]];
+            ff_vc1_ac_coeff_table[i].table_allocated = vlc_offs[i+22] - vlc_offs[i+21];
             init_vlc(&ff_vc1_ac_coeff_table[i], AC_VLC_BITS, vc1_ac_sizes[i],
                      &vc1_ac_tables[i][0][1], 8, 4,
-                     &vc1_ac_tables[i][0][0], 8, 4, INIT_VLC_USE_STATIC);
+                     &vc1_ac_tables[i][0][0], 8, 4, INIT_VLC_USE_NEW_STATIC);
+        }
+        //FIXME: switching to INIT_VLC_STATIC() results in incorrect decoding
         init_vlc(&ff_msmp4_mb_i_vlc, MB_INTRA_VLC_BITS, 64,
                  &ff_msmp4_mb_i_table[0][1], 4, 2,
                  &ff_msmp4_mb_i_table[0][0], 4, 2, INIT_VLC_USE_STATIC);
