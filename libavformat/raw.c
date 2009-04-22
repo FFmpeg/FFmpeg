@@ -973,7 +973,7 @@ AVInputFormat mlp_demuxer = {
 };
 #endif
 
-#ifdef CONFIG_MLP_MUXER
+#if CONFIG_MLP_MUXER
 AVOutputFormat mlp_muxer = {
     "mlp",
     NULL_IF_CONFIG_SMALL("raw MLP"),
