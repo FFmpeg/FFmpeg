@@ -3992,9 +3992,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
 
-    s->chroma_h_shift= 1; //FIXME XXX
-    s->chroma_v_shift= 1;
-
     s->mv_scale       = (avctx->flags & CODEC_FLAG_QPEL) ? 2 : 4;
     s->block_max_depth= (avctx->flags & CODEC_FLAG_4MV ) ? 1 : 0;
 
