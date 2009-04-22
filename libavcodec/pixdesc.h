@@ -25,7 +25,6 @@
 #include <inttypes.h>
 
 #include "libavutil/intreadwrite.h"
-#include "get_bits.h"
 
 typedef struct AVComponentDescriptor{
     uint16_t plane        :2;            ///< which of the 4 planes contains the component
@@ -114,15 +113,17 @@ static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int li
     int flags= desc->flags;
 
     if (flags & PIX_FMT_BITSTREAM){
-        GetBitContext gb;
-        init_get_bits(&gb, data[plane] + y*linesize[plane], linesize[plane]*8);
-        skip_bits_long(&gb, x*step + comp.offset_plus1-1);
+        int skip = x*step + comp.offset_plus1-1;
+        const uint8_t *p = data[plane] + y*linesize[plane] + (skip>>3);
+        int shift = 8 - depth - (skip&7);
 
         while(w--){
-            int val = show_bits(&gb, depth);
+            int val = (*p >> shift) & mask;
             if(read_pal_component)
                 val= data[1][4*val + c];
-            skip_bits(&gb, step);
+            shift -= step;
+            p -= shift>>3;
+            shift &= 7;
             *dst++= val;
         }
     } else {
