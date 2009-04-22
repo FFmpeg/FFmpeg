@@ -635,14 +635,14 @@ static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signe
             for(i=0; i<e; i++){
                 put_rac(c, state+1+FFMIN(i,9), 1);  //1..10
             }
-            put_rac(c, state+1+FFMIN(i,9), 0);
+            put_rac(c, state+1+9, 0);
 
             for(i=e-1; i>=0; i--){
                 put_rac(c, state+22+FFMIN(i,9), (a>>i)&1); //22..31
             }
 
             if(is_signed)
-                put_rac(c, state+11 + FFMIN(e,10), v < 0); //11..21
+                put_rac(c, state+11 + 10, v < 0); //11..21
         }
 #endif /* 1 */
     }else{
