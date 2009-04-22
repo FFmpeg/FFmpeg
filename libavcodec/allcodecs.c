@@ -167,6 +167,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (TSCC, tscc);
     REGISTER_DECODER (TXD, txd);
     REGISTER_DECODER (ULTI, ulti);
+    REGISTER_DECODER (V210X, v210x);
     REGISTER_DECODER (VB, vb);
     REGISTER_DECODER (VC1, vc1);
     REGISTER_DECODER (VC1_VDPAU, vc1_vdpau);
