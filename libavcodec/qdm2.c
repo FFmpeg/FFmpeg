@@ -707,8 +707,7 @@ static void fill_coding_method_array (sb_int8_array tone_level_idx, sb_int8_arra
                 for (sb = 0; sb < 30; sb++)
                     for (j = 0; j < 64; j++)
                         acc += tone_level_idx_temp[ch][sb][j];
-            if (acc)
-                tmp = c * 256 / (acc & 0xffff);
+
             multres = 0x66666667 * (acc * 10);
             esp_40 = (multres >> 32) / 8 + ((multres & 0xffffffff) >> 31);
             for (ch = 0;  ch < nb_channels; ch++)
@@ -1835,7 +1834,6 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     extradata += 4;
 
     s->checksum_size = AV_RB32(extradata);
-    extradata += 4;
 
     s->fft_order = av_log2(s->fft_size) + 1;
     s->fft_frame_size = 2 * s->fft_size; // complex has two floats
