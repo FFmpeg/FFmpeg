@@ -1844,6 +1844,9 @@ if test $cpu != "generic"; then
         ev4|ev45|ev5|ev56|pca56|ev6|ev67)
             enabled ccc && add_cflags -arch $cpu || add_cflags -mcpu=$cpu
         ;;
+        bf*)
+            add_cflags -mcpu=$cpu
+        ;;
         *)
             echo "WARNING: Unknown CPU \"$cpu\", ignored."
         ;;
