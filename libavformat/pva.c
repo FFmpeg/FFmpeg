@@ -176,7 +176,7 @@ static int64_t pva_read_timestamp(struct AVFormatContext *s, int stream_index,
     ByteIOContext *pb = s->pb;
     PVAContext *pvactx = s->priv_data;
     int length, streamid;
-    int64_t res;
+    int64_t res = AV_NOPTS_VALUE;
 
     pos_limit = FFMIN(*pos+PVA_MAX_PAYLOAD_LENGTH*8, (uint64_t)*pos+pos_limit);
 
