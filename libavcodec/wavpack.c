@@ -780,12 +780,14 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             got_hybrid = 1;
             break;
         case WP_ID_INT32INFO:
-            if(size != 4 || *buf){
+            if(size != 4){
                 av_log(avctx, AV_LOG_ERROR, "Invalid INT32INFO, size = %i, sent_bits = %i\n", size, *buf);
                 buf += ssize;
                 continue;
             }
-            if(buf[1])
+            if(buf[0])
+                s->post_shift = buf[0];
+            else if(buf[1])
                 s->shift = buf[1];
             else if(buf[2]){
                 s->and = s->or = 1;
