@@ -1748,6 +1748,7 @@ static int av_encode(AVFormatContext **output_files,
             av_metadata_set(&ost->st->metadata, "language", lang->value);
 
         ost->st->disposition = ist->st->disposition;
+        codec->bits_per_raw_sample= icodec->bits_per_raw_sample;
 
         if (ost->st->stream_copy) {
             /* if stream_copy is selected, no need to decode or encode */
@@ -1857,6 +1858,7 @@ static int av_encode(AVFormatContext **output_files,
                         av_exit(1);
                     }
                     ost->resample_height = icodec->height - (frame_topBand + frame_bottomBand);
+                    codec->bits_per_raw_sample= 0;
                 }
                 ost->encoding_needed = 1;
                 ist->decoding_needed = 1;
