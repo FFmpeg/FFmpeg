@@ -2911,7 +2911,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     return c;
 }
 
-static int reset_ptr(uint8_t* src[], int format){
+static void reset_ptr(uint8_t* src[], int format){
     if(!isALPHA(format))
         src[3]=NULL;
     if(!isPlanarYUV(format)){
