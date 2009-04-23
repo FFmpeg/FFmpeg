@@ -91,6 +91,7 @@ typedef struct WavpackContext {
     Decorr decorr[MAX_TERMS];
     int zero, one, zeroes;
     int and, or, shift;
+    int post_shift;
     int hybrid, hybrid_bitrate;
     WvChannel ch[2];
 } WavpackContext;
@@ -405,9 +406,9 @@ static int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, int16_t *dst)
             L += (R -= (L >> 1));
         crc = (crc * 3 + L) * 3 + R;
         bit = (L & s->and) | s->or;
-        *dst++ = ((L + bit) << s->shift) - bit;
+        *dst++ = (((L + bit) << s->shift) - bit) << s->post_shift;
         bit = (R & s->and) | s->or;
-        *dst++ = ((R + bit) << s->shift) - bit;
+        *dst++ = (((R + bit) << s->shift) - bit) << s->post_shift;
         count++;
     }while(!last && count < s->samples);
 
@@ -451,7 +452,7 @@ static int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, int16_t *dst)
         pos = (pos + 1) & 7;
         crc = crc * 3 + S;
         bit = (S & s->and) | s->or;
-        *dst++ = ((S + bit) << s->shift) - bit;
+        *dst++ = (((S + bit) << s->shift) - bit) << s->post_shift;
         count++;
     }while(!last && count < s->samples);
 
@@ -512,6 +513,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     s->joint = s->frame_flags & WV_JOINT_STEREO;
     s->hybrid = s->frame_flags & WV_HYBRID_MODE;
     s->hybrid_bitrate = s->frame_flags & WV_HYBRID_BITRATE;
+    s->post_shift = (s->frame_flags >> 13) & 0x1f;
     s->CRC = AV_RL32(buf); buf += 4;
     // parse metadata blocks
     while(buf < buf_end){
