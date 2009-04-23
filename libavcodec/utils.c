@@ -985,6 +985,7 @@ int av_get_bits_per_sample_format(enum SampleFormat sample_fmt) {
 
 #if !HAVE_THREADS
 int avcodec_thread_init(AVCodecContext *s, int thread_count){
+    s->thread_count = thread_count;
     return -1;
 }
 #endif
