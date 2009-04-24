@@ -665,10 +665,8 @@ static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
             a += a + get_rac(c, state+22 + FFMIN(i,9)); //22..31
         }
 
-        if(is_signed && get_rac(c, state+11 + FFMIN(e,10))) //11..21
-            return -a;
-        else
-            return a;
+        e= -(is_signed && get_rac(c, state+11 + FFMIN(e,10))); //11..21
+        return (a^e)-e;
     }
 }
 
