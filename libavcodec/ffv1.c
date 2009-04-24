@@ -264,17 +264,17 @@ static inline void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int i
         const int e= av_log2(a);
         put_rac(c, state+0, 0);
         if(e<=9){
-        for(i=0; i<e; i++){
-            put_rac(c, state+1+i, 1);  //1..10
-        }
-        put_rac(c, state+1+i, 0);
+            for(i=0; i<e; i++){
+                put_rac(c, state+1+i, 1);  //1..10
+            }
+            put_rac(c, state+1+i, 0);
 
-        for(i=e-1; i>=0; i--){
-            put_rac(c, state+22+i, (a>>i)&1); //22..31
-        }
+            for(i=e-1; i>=0; i--){
+                put_rac(c, state+22+i, (a>>i)&1); //22..31
+            }
 
-        if(is_signed)
-            put_rac(c, state+11 + e, v < 0); //11..21
+            if(is_signed)
+                put_rac(c, state+11 + e, v < 0); //11..21
         }else{
             for(i=0; i<e; i++){
                 put_rac(c, state+1+FFMIN(i,9), 1);  //1..10
@@ -502,10 +502,10 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
         sample[1][ w]= sample[1][w-1];
 //{START_TIMER
         if(s->avctx->bits_per_raw_sample<=8){
-        for(x=0; x<w; x++){
-            sample[0][x]= src[x + stride*y];
-        }
-        encode_line(s, w, sample, plane_index, 8);
+            for(x=0; x<w; x++){
+                sample[0][x]= src[x + stride*y];
+            }
+            encode_line(s, w, sample, plane_index, 8);
         }else{
             for(x=0; x<w; x++){
                 sample[0][x]= ((uint16_t*)(src + stride*y))[x] >> (16 - s->avctx->bits_per_raw_sample);
@@ -622,17 +622,17 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->plane_count=2;
     for(i=0; i<256; i++){
         if(avctx->bits_per_raw_sample <=8){
-        s->quant_table[0][i]=           quant11[i];
-        s->quant_table[1][i]=        11*quant11[i];
-        if(avctx->context_model==0){
-            s->quant_table[2][i]=     11*11*quant11[i];
-            s->quant_table[3][i]=
-            s->quant_table[4][i]=0;
-        }else{
-            s->quant_table[2][i]=     11*11*quant5 [i];
-            s->quant_table[3][i]=   5*11*11*quant5 [i];
-            s->quant_table[4][i]= 5*5*11*11*quant5 [i];
-        }
+            s->quant_table[0][i]=           quant11[i];
+            s->quant_table[1][i]=        11*quant11[i];
+            if(avctx->context_model==0){
+                s->quant_table[2][i]=     11*11*quant11[i];
+                s->quant_table[3][i]=
+                s->quant_table[4][i]=0;
+            }else{
+                s->quant_table[2][i]=     11*11*quant5 [i];
+                s->quant_table[3][i]=   5*11*11*quant5 [i];
+                s->quant_table[4][i]= 5*5*11*11*quant5 [i];
+            }
         }else{
             s->quant_table[0][i]=           quant9_10bit[i];
             s->quant_table[1][i]=        11*quant9_10bit[i];
@@ -875,10 +875,10 @@ static void decode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
 
 //{START_TIMER
         if(s->avctx->bits_per_raw_sample <= 8){
-        decode_line(s, w, sample, plane_index, 8);
-        for(x=0; x<w; x++){
-            src[x + stride*y]= sample[1][x];
-        }
+            decode_line(s, w, sample, plane_index, 8);
+            for(x=0; x<w; x++){
+                src[x + stride*y]= sample[1][x];
+            }
         }else{
             decode_line(s, w, sample, plane_index, s->avctx->bits_per_raw_sample);
             for(x=0; x<w; x++){
@@ -980,16 +980,16 @@ static int read_header(FFV1Context *f){
 
     if(f->colorspace==0){
         if(f->avctx->bits_per_raw_sample<=8){
-        switch(16*f->chroma_h_shift + f->chroma_v_shift){
-        case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P; break;
-        case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P; break;
-        case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P; break;
-        case 0x20: f->avctx->pix_fmt= PIX_FMT_YUV411P; break;
-        case 0x22: f->avctx->pix_fmt= PIX_FMT_YUV410P; break;
-        default:
-            av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
-            return -1;
-        }
+            switch(16*f->chroma_h_shift + f->chroma_v_shift){
+            case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P; break;
+            case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P; break;
+            case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P; break;
+            case 0x20: f->avctx->pix_fmt= PIX_FMT_YUV411P; break;
+            case 0x22: f->avctx->pix_fmt= PIX_FMT_YUV410P; break;
+            default:
+                av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
+                return -1;
+            }
         }else{
             switch(16*f->chroma_h_shift + f->chroma_v_shift){
             case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P16; break;
