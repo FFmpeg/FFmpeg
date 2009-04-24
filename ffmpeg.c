@@ -2337,10 +2337,11 @@ static int opt_me_threshold(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_loglevel(const char *opt, const char *arg)
+static int opt_loglevel(const char *opt, const char *arg)
 {
     int level = parse_number_or_die(opt, arg, OPT_INT, INT_MIN, INT_MAX);
     av_log_set_level(level);
+    return 0;
 }
 
 static int opt_verbose(const char *opt, const char *arg)
