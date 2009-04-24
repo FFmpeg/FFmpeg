@@ -217,7 +217,7 @@ static inline int get_context(FFV1Context *f, int_fast16_t *src, int_fast16_t *l
         return f->quant_table[0][(L-LT) & 0xFF] + f->quant_table[1][(LT-T) & 0xFF] + f->quant_table[2][(T-RT) & 0xFF];
 }
 
-static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed){
+static inline void put_symbol_inline(RangeCoder *c, uint8_t *state, int v, int is_signed){
     int i;
 
     if(v){
@@ -243,7 +243,11 @@ static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signe
     }
 }
 
-static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
+static void av_noinline put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed){
+    put_symbol_inline(c, state, v, is_signed);
+}
+
+static inline int get_symbol_inline(RangeCoder *c, uint8_t *state, int is_signed){
     if(get_rac(c, state+0))
         return 0;
     else{
@@ -261,6 +265,10 @@ static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
         e= -(is_signed && get_rac(c, state+11 + e)); //11..21
         return (a^e)-e;
     }
+}
+
+static int av_noinline get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
+    return get_symbol_inline(c, state, is_signed);
 }
 
 static inline void update_vlc_state(VlcState * const state, const int v){
@@ -384,7 +392,7 @@ static inline int encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], in
         diff= fold(diff, bits);
 
         if(s->ac){
-            put_symbol(c, p->state[context], diff, 1);
+            put_symbol_inline(c, p->state[context], diff, 1);
         }else{
             if(context == 0) run_mode=1;
 
@@ -702,7 +710,7 @@ static av_cold int common_end(AVCodecContext *avctx){
     return 0;
 }
 
-static inline void decode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
+static av_always_inline void decode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
     PlaneContext * const p= &s->plane[plane_index];
     RangeCoder * const c= &s->c;
     int x;
@@ -722,7 +730,7 @@ static inline void decode_line(FFV1Context *s, int w, int_fast16_t *sample[2], i
 
 
         if(s->ac){
-            diff= get_symbol(c, p->state[context], 1);
+            diff= get_symbol_inline(c, p->state[context], 1);
         }else{
             if(context == 0 && run_mode==0) run_mode=1;
 
