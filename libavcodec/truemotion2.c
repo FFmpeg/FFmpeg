@@ -365,10 +365,10 @@ static inline int GET_TOK(TM2Context *ctx,int type) {
 
 /* recalculate last and delta values for next blocks */
 #define TM2_RECALC_BLOCK(CHR, stride, last, CD) {\
-    CD[0] = (CHR[1] - 128) - last[1];\
+    CD[0] = CHR[1] - last[1];\
     CD[1] = (int)CHR[stride + 1] - (int)CHR[1];\
-    last[0] = (int)CHR[stride + 0] - 128;\
-    last[1] = (int)CHR[stride + 1] - 128;}
+    last[0] = (int)CHR[stride + 0];\
+    last[1] = (int)CHR[stride + 1];}
 
 /* common operations - add deltas to 4x4 block of luma or 2x2 blocks of chroma */
 static inline void tm2_apply_deltas(TM2Context *ctx, int* Y, int stride, int *deltas, int *last)
@@ -396,7 +396,7 @@ static inline void tm2_high_chroma(int *data, int stride, int *last, int *CD, in
         for(i = 0; i < 2; i++){
             CD[j] += deltas[i + j * 2];
             last[i] += CD[j];
-            data[i] = last[i] + 128;
+            data[i] = last[i];
         }
         data += stride;
     }
@@ -675,8 +675,8 @@ static int tm2_decode_blocks(TM2Context *ctx, AVFrame *p)
     int bw, bh;
     int type;
     int keyframe = 1;
-    uint8_t *Y, *U, *V;
-    int *src;
+    int *Y, *U, *V;
+    uint8_t *dst;
 
     bw = ctx->avctx->width >> 2;
     bh = ctx->avctx->height >> 2;
@@ -729,29 +729,23 @@ static int tm2_decode_blocks(TM2Context *ctx, AVFrame *p)
     }
 
     /* copy data from our buffer to AVFrame */
-    Y = p->data[0];
-    src = (ctx->cur?ctx->Y2:ctx->Y1);
+    Y = (ctx->cur?ctx->Y2:ctx->Y1);
+    U = (ctx->cur?ctx->U2:ctx->U1);
+    V = (ctx->cur?ctx->V2:ctx->V1);
+    dst = p->data[0];
     for(j = 0; j < ctx->avctx->height; j++){
         for(i = 0; i < ctx->avctx->width; i++){
-            Y[i] = av_clip_uint8(*src++);
+            int y = Y[i], u = U[i >> 1], v = V[i >> 1];
+            dst[3*i+0] = av_clip_uint8(y + v);
+            dst[3*i+1] = av_clip_uint8(y);
+            dst[3*i+2] = av_clip_uint8(y + u);
         }
-        Y += p->linesize[0];
-    }
-    U = p->data[2];
-    src = (ctx->cur?ctx->U2:ctx->U1);
-    for(j = 0; j < (ctx->avctx->height + 1) >> 1; j++){
-        for(i = 0; i < (ctx->avctx->width + 1) >> 1; i++){
-            U[i] = av_clip_uint8(*src++);
+        Y += ctx->avctx->width;
+        if (j & 1) {
+            U += ctx->avctx->width >> 1;
+            V += ctx->avctx->width >> 1;
         }
-        U += p->linesize[2];
-    }
-    V = p->data[1];
-    src = (ctx->cur?ctx->V2:ctx->V1);
-    for(j = 0; j < (ctx->avctx->height + 1) >> 1; j++){
-        for(i = 0; i < (ctx->avctx->width + 1) >> 1; i++){
-            V[i] = av_clip_uint8(*src++);
-        }
-        V += p->linesize[1];
+        dst += p->linesize[0];
     }
 
     return keyframe;
@@ -829,7 +823,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
     l->avctx = avctx;
     l->pic.data[0]=NULL;
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = PIX_FMT_BGR24;
 
     dsputil_init(&l->dsp, avctx);
 
