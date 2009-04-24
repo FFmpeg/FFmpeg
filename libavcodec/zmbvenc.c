@@ -251,7 +251,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     c->avctx = avctx;
 
-    c->pic.data[0] = NULL;
     c->curfrm = 0;
     c->keyint = avctx->keyint_min;
     c->range = 8;

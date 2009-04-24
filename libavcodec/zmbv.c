@@ -599,7 +599,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->avctx = avctx;
 
-    c->pic.data[0] = NULL;
     c->width = avctx->width;
     c->height = avctx->height;
 

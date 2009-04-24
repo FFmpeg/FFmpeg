@@ -346,8 +346,6 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
     c->avctx = avctx;
 
-    c->pic.data[0] = NULL;
-
     if (avctx->width > 320 || avctx->height > 200) {
         av_log(avctx, AV_LOG_ERROR, "KMVC supports frames <= 320x200\n");
         return -1;

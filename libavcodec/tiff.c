@@ -512,7 +512,6 @@ static av_cold int tiff_init(AVCodecContext *avctx){
     s->avctx = avctx;
     avcodec_get_frame_defaults((AVFrame*)&s->picture);
     avctx->coded_frame= (AVFrame*)&s->picture;
-    s->picture.data[0] = NULL;
     ff_lzw_decode_open(&s->lzw);
     ff_ccitt_unpack_init();
 

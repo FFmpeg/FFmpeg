@@ -229,7 +229,6 @@ static av_cold int targa_init(AVCodecContext *avctx){
 
     avcodec_get_frame_defaults((AVFrame*)&s->picture);
     avctx->coded_frame= (AVFrame*)&s->picture;
-    s->picture.data[0] = NULL;
 
     return 0;
 }

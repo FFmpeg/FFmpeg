@@ -359,8 +359,6 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
         palette32[i] = (r << 16) | (g << 8) | (b);
     }
 
-    s->frame.data[0] = s->prev_frame.data[0] = NULL;
-
     return 0;
 }
 

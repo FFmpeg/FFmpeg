@@ -514,8 +514,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->avctx = avctx;
 
-    c->pic.data[0] = NULL;
-
     if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
         return 1;
     }

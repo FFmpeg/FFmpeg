@@ -63,7 +63,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt= PIX_FMT_NONE; /* set in decode_frame */
 
     s->avctx = avctx;
-    s->frame.data[0] = NULL;
     s->tmpbuf = NULL;
 
     dsputil_init(&s->dsp, avctx);
