@@ -1008,10 +1008,10 @@ static int cook_decode_frame(AVCodecContext *avctx,
     /* estimate subpacket sizes */
     q->subpacket[0].size = avctx->block_align;
 
-        for(i=1;i<q->num_subpackets;i++){
-            q->subpacket[i].size = 2 * buf[avctx->block_align - q->num_subpackets + i];
-            q->subpacket[0].size -= (q->subpacket[i].size + 1);
-        }
+    for(i=1;i<q->num_subpackets;i++){
+        q->subpacket[i].size = 2 * buf[avctx->block_align - q->num_subpackets + i];
+        q->subpacket[0].size -= (q->subpacket[i].size + 1);
+    }
 
     /* decode supbackets */
     *data_size = 0;
