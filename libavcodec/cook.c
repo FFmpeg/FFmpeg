@@ -72,7 +72,7 @@ typedef struct {
 
 typedef struct {
     int                 ch_idx;
-    int                 size;
+    unsigned int        size;
     int                 num_channels;
     int                 cookversion;
     int                 samples_per_frame;
