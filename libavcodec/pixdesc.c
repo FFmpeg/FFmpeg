@@ -511,4 +511,73 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,1,1,0,4},        /* R */
         },
     },
+    [PIX_FMT_YUV420PLE] = {
+        .name = "yuv420ple",
+        .nb_channels  = 3,
+        .log2_chroma_w= 1,
+        .log2_chroma_h= 1,
+        .comp = {
+            {0,1,1,0,15},        /* Y */
+            {1,1,1,0,15},        /* U */
+            {2,1,1,0,15},        /* V */
+        },
+    },
+    [PIX_FMT_YUV420PBE] = {
+        .name = "yuv420pbe",
+        .nb_channels  = 3,
+        .log2_chroma_w= 1,
+        .log2_chroma_h= 1,
+        .comp = {
+            {0,1,1,0,15},        /* Y */
+            {1,1,1,0,15},        /* U */
+            {2,1,1,0,15},        /* V */
+        },
+        .flags = PIX_FMT_BE,
+    },
+    [PIX_FMT_YUV422PLE] = {
+        .name = "yuv422ple",
+        .nb_channels  = 3,
+        .log2_chroma_w= 1,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,15},        /* Y */
+            {1,1,1,0,15},        /* U */
+            {2,1,1,0,15},        /* V */
+        },
+    },
+    [PIX_FMT_YUV422PBE] = {
+        .name = "yuv422pbe",
+        .nb_channels  = 3,
+        .log2_chroma_w= 1,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,15},        /* Y */
+            {1,1,1,0,15},        /* U */
+            {2,1,1,0,15},        /* V */
+        },
+        .flags = PIX_FMT_BE,
+    },
+    [PIX_FMT_YUV444PLE] = {
+        .name = "yuv444ple",
+        .nb_channels  = 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,15},        /* Y */
+            {1,1,1,0,15},        /* U */
+            {2,1,1,0,15},        /* V */
+        },
+    },
+    [PIX_FMT_YUV444PBE] = {
+        .name = "yuv444pbe",
+        .nb_channels  = 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,15},        /* Y */
+            {1,1,1,0,15},        /* U */
+            {2,1,1,0,15},        /* V */
+        },
+        .flags = PIX_FMT_BE,
+    },
 };
