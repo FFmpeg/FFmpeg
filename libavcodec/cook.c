@@ -1033,23 +1033,23 @@ static void dump_cook_context(COOKContext *q)
     //int i=0;
 #define PRINT(a,b) av_log(q->avctx,AV_LOG_ERROR," %s = %d\n", a, b);
     av_log(q->avctx,AV_LOG_ERROR,"COOKextradata\n");
-    av_log(q->avctx,AV_LOG_ERROR,"cookversion=%x\n",q->cookversion);
-    if (q->cookversion > STEREO) {
-        PRINT("js_subband_start",q->js_subband_start);
-        PRINT("js_vlc_bits",q->js_vlc_bits);
+    av_log(q->avctx,AV_LOG_ERROR,"cookversion=%x\n",q->subpacket[0].cookversion);
+    if (q->subpacket[0].cookversion > STEREO) {
+        PRINT("js_subband_start",q->subpacket[0].js_subband_start);
+        PRINT("js_vlc_bits",q->subpacket[0].js_vlc_bits);
     }
     av_log(q->avctx,AV_LOG_ERROR,"COOKContext\n");
     PRINT("nb_channels",q->nb_channels);
     PRINT("bit_rate",q->bit_rate);
     PRINT("sample_rate",q->sample_rate);
-    PRINT("samples_per_channel",q->samples_per_channel);
-    PRINT("samples_per_frame",q->samples_per_frame);
-    PRINT("subbands",q->subbands);
+    PRINT("samples_per_channel",q->subpacket[0].samples_per_channel);
+    PRINT("samples_per_frame",q->subpacket[0].samples_per_frame);
+    PRINT("subbands",q->subpacket[0].subbands);
     PRINT("random_state",q->random_state);
-    PRINT("js_subband_start",q->js_subband_start);
-    PRINT("log2_numvector_size",q->log2_numvector_size);
-    PRINT("numvector_size",q->numvector_size);
-    PRINT("total_subbands",q->total_subbands);
+    PRINT("js_subband_start",q->subpacket[0].js_subband_start);
+    PRINT("log2_numvector_size",q->subpacket[0].log2_numvector_size);
+    PRINT("numvector_size",q->subpacket[0].numvector_size);
+    PRINT("total_subbands",q->subpacket[0].total_subbands);
 }
 #endif
 
