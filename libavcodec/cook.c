@@ -1008,6 +1008,13 @@ static int cook_decode_frame(AVCodecContext *avctx,
     /* estimate subpacket sizes */
     q->subpacket[0].size = avctx->block_align;
 
+    if(q->num_subpackets > 1){
+        for(i=1;i<q->num_subpackets;i++){
+            q->subpacket[i].size = 2 * buf[avctx->block_align - q->num_subpackets + i];
+            q->subpacket[0].size -= (q->subpacket[i].size + 1);
+        }
+    }
+
     /* decode supbackets */
     *data_size = 0;
     for(i=0;i<q->num_subpackets;i++){
@@ -1076,6 +1083,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     const uint8_t *edata_ptr_end = edata_ptr + avctx->extradata_size;
     int extradata_size = avctx->extradata_size;
     int s = 0;
+    unsigned int channel_mask = 0;
     q->avctx = avctx;
 
     /* Take care of the codec specific extradata. */
@@ -1155,8 +1163,25 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
                 }
                 break;
             case MC_COOK:
-                av_log(avctx,AV_LOG_ERROR,"MC_COOK not supported!\n");
-                return -1;
+                av_log(avctx,AV_LOG_DEBUG,"MULTI_CHANNEL\n");
+                if(extradata_size >= 4)
+                    channel_mask |= q->subpacket[s].channel_mask = bytestream_get_be32(&edata_ptr);
+
+                if(cook_count_channels(q->subpacket[s].channel_mask) > 1){
+                    q->subpacket[s].total_subbands = q->subpacket[s].subbands + q->subpacket[s].js_subband_start;
+                    q->subpacket[s].joint_stereo = 1;
+                    q->subpacket[s].num_channels = 2;
+                    q->subpacket[s].samples_per_channel = q->subpacket[s].samples_per_frame >> 1;
+
+                    if (q->subpacket[s].samples_per_channel > 256) {
+                        q->subpacket[s].log2_numvector_size  = 6;
+                    }
+                    if (q->subpacket[s].samples_per_channel > 512) {
+                        q->subpacket[s].log2_numvector_size  = 7;
+                    }
+                }else
+                    q->subpacket[s].samples_per_channel = q->subpacket[s].samples_per_frame;
+
                 break;
             default:
                 av_log(avctx,AV_LOG_ERROR,"Unknown Cook version, report sample!\n");
@@ -1240,7 +1265,10 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     }
 
     avctx->sample_fmt = SAMPLE_FMT_S16;
-    avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
+    if (channel_mask)
+        avctx->channel_layout = channel_mask;
+    else
+        avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
 
 #ifdef COOKDEBUG
     dump_cook_context(q);
