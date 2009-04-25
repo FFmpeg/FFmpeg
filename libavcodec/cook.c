@@ -72,7 +72,7 @@ typedef struct {
 
 typedef struct {
     int                 ch_idx;
-    unsigned int        size;
+    int                 size;
     int                 num_channels;
     int                 cookversion;
     int                 samples_per_frame;
@@ -1011,6 +1011,10 @@ static int cook_decode_frame(AVCodecContext *avctx,
     for(i=1;i<q->num_subpackets;i++){
         q->subpacket[i].size = 2 * buf[avctx->block_align - q->num_subpackets + i];
         q->subpacket[0].size -= q->subpacket[i].size + 1;
+        if (q->subpacket[0].size < 0) {
+            av_log(avctx,AV_LOG_DEBUG,"frame subpacket size total > avctx->block_align!\n");
+            return -1;
+        }
     }
 
     /* decode supbackets */
