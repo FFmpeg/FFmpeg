@@ -13,7 +13,7 @@ version <next>:
 - RTP packetization of H.263
 - RTP packetization of AMR
 - RTP depacketization of Vorbis
-
+- Cook multichannel decoding support
 
 
 version 0.5:
