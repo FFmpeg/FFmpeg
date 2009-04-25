@@ -1219,6 +1219,10 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
         q->num_subpackets++;
         s++;
+        if (s > MAX_SUBPACKETS) {
+            av_log(avctx,AV_LOG_ERROR,"Too many subpackets > 5, report file!\n");
+            return -1;
+        }
     }
     /* Generate tables */
     init_pow2table();
