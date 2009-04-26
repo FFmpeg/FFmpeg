@@ -524,7 +524,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     int got_hybrid = 0;
     const uint8_t* buf_end = buf + buf_size;
     int i, j, id, size, ssize, weights, t;
-    int bpp = avctx->bits_per_coded_sample <= 16 ? 2 : 4;
+    int bpp;
 
     if (buf_size == 0){
         *data_size = 0;
@@ -540,18 +540,27 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         *data_size = 0;
         return buf_size;
     }
-    /* should not happen but who knows */
-    if(s->samples * bpp * avctx->channels > *data_size){
-        av_log(avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
-        return -1;
-    }
     s->frame_flags = AV_RL32(buf); buf += 4;
+    if((s->frame_flags&0x03) <= 1){
+        bpp = 2;
+        avctx->sample_fmt = SAMPLE_FMT_S16;
+    } else {
+        bpp = 4;
+        avctx->sample_fmt = SAMPLE_FMT_S32;
+    }
     s->stereo_in = (s->frame_flags & WV_FALSE_STEREO) ? 0 : s->stereo;
     s->joint = s->frame_flags & WV_JOINT_STEREO;
     s->hybrid = s->frame_flags & WV_HYBRID_MODE;
     s->hybrid_bitrate = s->frame_flags & WV_HYBRID_BITRATE;
     s->post_shift = 8 * (bpp-1-(s->frame_flags&0x03)) + ((s->frame_flags >> 13) & 0x1f);
     s->CRC = AV_RL32(buf); buf += 4;
+
+    /* should not happen but who knows */
+    if(s->samples * bpp * avctx->channels > *data_size){
+        av_log(avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
+        return -1;
+    }
+
     // parse metadata blocks
     while(buf < buf_end){
         id = *buf++;
