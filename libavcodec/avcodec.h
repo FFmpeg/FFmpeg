@@ -3170,7 +3170,7 @@ attribute_deprecated int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtit
 
 /**
  * Decodes a subtitle message.
- * Returns -1 if error, otherwise returns the number of bytes used.
+ * Returns a negative value on error, otherwise returns the number of bytes used.
  * If no subtitle could be decompressed, \p got_sub_ptr is zero.
  * Otherwise, the subtitle is stored in \p *sub.
  *
