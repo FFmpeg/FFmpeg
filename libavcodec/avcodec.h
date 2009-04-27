@@ -3078,11 +3078,10 @@ attribute_deprecated int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *s
 #endif
 
 /**
- * Decodes an audio frame from \p avpkt->data into \p samples.
- * The avcodec_decode_audio3() function decodes an audio frame from the input
- * buffer \p avpkt->data of size \p avpkt->size. To decode it, it makes use of the
- * audio codec which was coupled with \p avctx using avcodec_open(). The
- * resulting decoded frame is stored in output buffer \p samples.  If no frame
+ * Decodes the audio frame of size avpkt->size from avpkt->data into samples.
+ * Some decoders may support multiple frames in a single AVPacket, such
+ * decoders would then just decode the first frame.
+ * If no frame
  * could be decompressed, \p frame_size_ptr is zero. Otherwise, it is the
  * decompressed frame size in \e bytes.
  *
