@@ -1251,6 +1251,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 *samples++ = (unsigned short)current_right_sample;
             }
         }
+
+        if (src - buf == buf_size - 2)
+            src += 2; // Skip terminating 0x0000
+
         break;
     case CODEC_ID_ADPCM_EA_MAXIS_XA:
         for(channel = 0; channel < avctx->channels; channel++) {
