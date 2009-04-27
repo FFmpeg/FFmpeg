@@ -137,9 +137,6 @@ YUV2RGBFUNC(yuv2rgb_c_32, uint32_t, 0)
     LOADCHROMA(1);
     PUTRGB(dst_2,py_2,1,1);
     PUTRGB(dst_1,py_1,1,0);
-    LOADCHROMA(1);
-    PUTRGB(dst_2,py_2,1,1);
-    PUTRGB(dst_1,py_1,1,0);
 
     LOADCHROMA(2);
     PUTRGB(dst_1,py_1,2,0);
@@ -163,9 +160,6 @@ YUV2RGBFUNC(yuva2rgba_c, uint32_t, 1)
     PUTRGBA(dst_1,py_1,pa_1,0,0,24);
     PUTRGBA(dst_2,py_2,pa_2,0,1,24);
 
-    LOADCHROMA(1);
-    PUTRGBA(dst_2,py_2,pa_1,1,1,24);
-    PUTRGBA(dst_1,py_1,pa_2,1,0,24);
     LOADCHROMA(1);
     PUTRGBA(dst_2,py_2,pa_1,1,1,24);
     PUTRGBA(dst_1,py_1,pa_2,1,0,24);
@@ -194,9 +188,6 @@ YUV2RGBFUNC(yuva2argb_c, uint32_t, 1)
     PUTRGBA(dst_1,py_1,pa_1,0,0,0);
     PUTRGBA(dst_2,py_2,pa_2,0,1,0);
 
-    LOADCHROMA(1);
-    PUTRGBA(dst_2,py_2,pa_2,1,1,0);
-    PUTRGBA(dst_1,py_1,pa_1,1,0,0);
     LOADCHROMA(1);
     PUTRGBA(dst_2,py_2,pa_2,1,1,0);
     PUTRGBA(dst_1,py_1,pa_1,1,0,0);
