@@ -581,3 +581,16 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .flags = PIX_FMT_BE,
     },
 };
+
+int av_get_bits_per_pixel(const AVPixFmtDescriptor *pixdesc)
+{
+    int c, bits = 0;
+    int log2_pixels = pixdesc->log2_chroma_w + pixdesc->log2_chroma_h;
+
+    for (c = 0; c < pixdesc->nb_channels; c++) {
+        int s = c==1 || c==2 ? 0 : log2_pixels;
+        bits += (pixdesc->comp[c].depth_minus1+1) << s;
+    }
+
+    return bits >> log2_pixels;
+}

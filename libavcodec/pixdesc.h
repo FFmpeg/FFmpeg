@@ -193,4 +193,14 @@ static inline void write_line(const uint16_t *src, uint8_t *data[4], const int l
     }
 }
 
+/**
+ * Returns the number of bits per pixel used by the pixel format
+ * described by pixdesc.
+ *
+ * The returned number of bits refers to the number of bits actually
+ * used for storing the pixel information, that is padding bits are
+ * not counted.
+ */
+int av_get_bits_per_pixel(const AVPixFmtDescriptor *pixdesc);
+
 #endif /* AVCODEC_PIXDESC_H */
