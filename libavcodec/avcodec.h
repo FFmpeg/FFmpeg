@@ -1121,9 +1121,6 @@ typedef struct AVCodecContext {
     int b_frame_strategy;
 
     /**
-     * hurry up amount
-     * - encoding: unused
-     * - decoding: Set by user. 1-> Skip B-frames, 2-> Skip IDCT/dequant too, 5-> Skip everything except header
      * @deprecated Deprecated in favor of skip_idct and skip_frame.
      */
     int hurry_up;
@@ -2328,9 +2325,6 @@ typedef struct AVCodecContext {
 
 #if LIBAVCODEC_VERSION_MAJOR < 53
     /**
-     * Decoder should decode to this many channels if it can (0 for default)
-     * - encoding: unused
-     * - decoding: Set by user.
      * @deprecated Deprecated in favor of request_channel_layout.
      */
     int request_channels;
@@ -2559,12 +2553,7 @@ typedef struct AVPicture {
 
 #if LIBAVCODEC_VERSION_MAJOR < 53
 /**
- * AVPaletteControl
- * This structure defines a method for communicating palette changes
- * between and demuxer and a decoder.
- *
  * @deprecated Use AVPacket to send palette changes instead.
- * This is totally broken.
  */
 #define AVPALETTE_SIZE 1024
 #define AVPALETTE_COUNT 256
@@ -3081,17 +3070,7 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
 
 #if LIBAVCODEC_VERSION_MAJOR < 53
 /**
- * Decodes an audio frame from \p buf into \p samples.
- * Wrapper function which calls avcodec_decode_audio3.
- *
  * @deprecated Use avcodec_decode_audio3 instead.
- * @param avctx the codec context
- * @param[out] samples the output buffer
- * @param[in,out] frame_size_ptr the output buffer size in bytes
- * @param[in] buf the input buffer
- * @param[in] buf_size the input buffer size in bytes
- * @return On error a negative value is returned, otherwise the number of bytes
- * used or zero if no frame could be decompressed.
  */
 attribute_deprecated int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
@@ -3139,17 +3118,7 @@ int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *samples,
 
 #if LIBAVCODEC_VERSION_MAJOR < 53
 /**
- * Decodes a video frame from \p buf into \p picture.
- * Wrapper function which calls avcodec_decode_video2.
- *
  * @deprecated Use avcodec_decode_video2 instead.
- * @param avctx the codec context
- * @param[out] picture The AVFrame in which the decoded video frame will be stored.
- * @param[in] buf the input buffer
- * @param[in] buf_size the size of the input buffer in bytes
- * @param[in,out] got_picture_ptr Zero if no frame could be decompressed, otherwise, it is nonzero.
- * @return On error a negative value is returned, otherwise the number of bytes
- * used or zero if no frame could be decompressed.
  */
 attribute_deprecated int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
