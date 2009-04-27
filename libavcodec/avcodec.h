@@ -3157,11 +3157,7 @@ attribute_deprecated int avcodec_decode_video(AVCodecContext *avctx, AVFrame *pi
 #endif
 
 /**
- * Decodes a video frame from \p avpkt->data into \p picture.
- * The avcodec_decode_video2() function decodes a video frame from the input
- * buffer \p avpkt->data of size \p avpkt->size. To decode it, it makes use of the
- * video codec which was coupled with \p avctx using avcodec_open(). The
- * resulting decoded frame is stored in \p picture.
+ * Decodes the video frame of size avpkt->size from avpkt->data into picture.
  *
  * @warning The input buffer must be \c FF_INPUT_BUFFER_PADDING_SIZE larger than
  * the actual read bytes because some optimized bitstream readers read 32 or 64
