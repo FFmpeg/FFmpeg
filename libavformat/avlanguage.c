@@ -26,13 +26,13 @@
 
 typedef struct LangEntry {
     const char str[4];
-    uint16_t nextEquivalent;
+    uint16_t next_equivalent;
 } LangEntry;
 
-const uint16_t langTableCounts[] = { 484, 20, 184 };
-const uint16_t langTableOffsets[] = { 0, 484, 504 };
+const uint16_t lang_table_counts[] = { 484, 20, 184 };
+const uint16_t lang_table_offsets[] = { 0, 484, 504 };
 
-static LangEntry langTable[] = {
+static LangEntry lang_table[] = {
     /*----- AV_LANG_ISO639_2_BIBL entries (484) -----*/
     /*0000*/ { "aar",  504 },
     /*0001*/ { "abk",  505 },
@@ -727,38 +727,38 @@ static LangEntry langTable[] = {
     { "", 0 }
 };
 
-static int langTable_compare(const void *lhs, const void *rhs)
+static int lang_table_compare(const void *lhs, const void *rhs)
 {
     return strcmp(lhs, ((const LangEntry *)rhs)->str);
 }
 
-const char *av_convertLangTo(const char *lang, enum AV_LangCodespace targetCodespace)
+const char *av_convert_lang_to(const char *lang, enum AVLangCodespace target_codespace)
 {
     int i;
     const LangEntry *entry = NULL;
-    const int NB_CODESPACES = sizeof(langTableCounts)/sizeof(*langTableCounts);
+    const int NB_CODESPACES = sizeof(lang_table_counts)/sizeof(*lang_table_counts);
 
-    if (targetCodespace < 0 || targetCodespace >= NB_CODESPACES)
+    if (target_codespace < 0 || target_codespace >= NB_CODESPACES)
         return NULL;
 
     for (i=0; !entry && i<NB_CODESPACES; i++)
         entry = bsearch(lang,
-                        langTable + langTableOffsets[i],
-                        langTableCounts[i],
+                        lang_table + lang_table_offsets[i],
+                        lang_table_counts[i],
                         sizeof(LangEntry),
-                        langTable_compare);
+                        lang_table_compare);
     if (!entry)
         return NULL;
 
     for (i=0; i<NB_CODESPACES; i++)
-        if (entry >= langTable + langTableOffsets[targetCodespace] &&
-            entry < langTable + langTableOffsets[targetCodespace] + langTableCounts[targetCodespace])
+        if (entry >= lang_table + lang_table_offsets[target_codespace] &&
+            entry < lang_table + lang_table_offsets[target_codespace] + lang_table_counts[target_codespace])
             return entry->str;
         else
-            entry = langTable + entry->nextEquivalent;
+            entry = lang_table + entry->next_equivalent;
 
-    if (targetCodespace == AV_LANG_ISO639_2_TERM)
-        return av_convertLangTo(lang, AV_LANG_ISO639_2_BIBL);
+    if (target_codespace == AV_LANG_ISO639_2_TERM)
+        return av_convert_lang_to(lang, AV_LANG_ISO639_2_BIBL);
 
     return NULL;
 }

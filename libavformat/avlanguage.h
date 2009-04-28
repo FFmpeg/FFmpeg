@@ -24,7 +24,7 @@
 /**
  * Known language codespaces
  */
-enum AV_LangCodespace {
+enum AVLangCodespace {
     AV_LANG_ISO639_2_BIBL, /** 3-char bibliographic language codes as per ISO-IEC 639-2 */
     AV_LANG_ISO639_2_TERM, /** 3-char terminologic language codes as per ISO-IEC 639-2 */
     AV_LANG_ISO639_1       /** 2-char code of language as per ISO/IEC 639-1 */
@@ -34,6 +34,6 @@ enum AV_LangCodespace {
  * Converts a language code to a target codespace. The source codespace is guessed.
  * Returns NULL if the provided lang is null or invalid.
  */
-const char *av_convertLangTo(const char *lang, enum AV_LangCodespace targetCodespace);
+const char *av_convert_lang_to(const char *lang, enum AVLangCodespace target_codespace);
 
 #endif /* AVFORMAT_AVLANGUAGE_H */
