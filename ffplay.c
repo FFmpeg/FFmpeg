@@ -2063,6 +2063,7 @@ static int decode_thread(void *arg)
                 }
             }
             is->seek_req = 0;
+            eof= 0;
         }
 
         /* if the queue are full, no need to read more */
