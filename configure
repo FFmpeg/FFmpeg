@@ -1736,22 +1736,19 @@ EOF
 fi
 
 
-if ! enabled gpl; then
-    die_gpl_disabled(){
-        name=$1
-        shift
-        enabled_any $@ && die "$name is under GPL and --enable-gpl is not specified."
-    }
-    die_gpl_disabled "The Postprocessing code" postproc
-    die_gpl_disabled "libx264"                 libx264
-    die_gpl_disabled "libxvidcore"             libxvid
-    die_gpl_disabled "FAAD2"                   libfaad2
-    die_gpl_disabled "The X11 grabber"         x11grab
-fi
+die_license_disabled() {
+    enabled $1 || enabled $2 && die "$2 is $1 and --enable-$1 is not specified."
+}
 
-if ! enabled nonfree && enabled_any libamr_nb libamr_wb; then
-    die "libamr is nonfree and --enable-nonfree is not specified."
-fi
+die_license_disabled gpl libfaad2
+die_license_disabled gpl libx264
+die_license_disabled gpl libxvid
+die_license_disabled gpl postproc
+die_license_disabled gpl x11grab
+
+die_license_disabled nonfree libamr_nb
+die_license_disabled nonfree libamr_wb
+
 
 check_deps $ARCH_EXT_LIST
 
