@@ -73,35 +73,29 @@
         .endm
 
         .macro pixels16_y2 vhadd=vrhadd.u8
-        push            {lr}
-        add             ip,  r1,  r2
-        lsl             lr,  r2,  #1
-        vld1.64         {d0, d1},  [r1], lr
-        vld1.64         {d2, d3},  [ip], lr
+        vld1.64         {d0, d1},  [r1], r2
+        vld1.64         {d2, d3},  [r1], r2
 1:      subs            r3,  r3,  #2
         \vhadd          q2,  q0,  q1
-        vld1.64         {d0, d1},  [r1],      lr
+        vld1.64         {d0, d1},  [r1], r2
         \vhadd          q3,  q0,  q1
-        vld1.64         {d2, d3},  [ip],      lr
+        vld1.64         {d2, d3},  [r1], r2
         pld             [r1]
-        pld             [ip]
+        pld             [r1, r2]
         vst1.64         {d4, d5},  [r0,:128], r2
         vst1.64         {d6, d7},  [r0,:128], r2
         bne             1b
-        pop             {pc}
+        bx              lr
         .endm
 
         .macro pixels16_xy2 vshrn=vrshrn.u16 no_rnd=0
-        push            {lr}
-        lsl             lr,  r2,  #1
-        add             ip,  r1,  r2
-        vld1.64         {d0-d2},   [r1], lr
-        vld1.64         {d4-d6},   [ip], lr
+        vld1.64         {d0-d2},   [r1], r2
+        vld1.64         {d4-d6},   [r1], r2
 .if \no_rnd
         vmov.i16        q13, #1
 .endif
         pld             [r1]
-        pld             [ip]
+        pld             [r1, r2]
         vext.8          q1,  q0,  q1,  #1
         vext.8          q3,  q2,  q3,  #1
         vaddl.u8        q8,  d0,  d2
@@ -109,7 +103,7 @@
         vaddl.u8        q9,  d4,  d6
         vaddl.u8        q11, d5,  d7
 1:      subs            r3,  r3,  #2
-        vld1.64         {d0-d2},   [r1], lr
+        vld1.64         {d0-d2},   [r1], r2
         vadd.u16        q12, q8,  q9
         pld             [r1]
 .if \no_rnd
@@ -123,11 +117,11 @@
 .endif
         \vshrn          d29, q1,  #2
         vaddl.u8        q8,  d0,  d30
-        vld1.64         {d2-d4},   [ip], lr
+        vld1.64         {d2-d4},   [r1], r2
         vaddl.u8        q10, d1,  d31
         vst1.64         {d28,d29}, [r0,:128], r2
         vadd.u16        q12, q8,  q9
-        pld             [ip]
+        pld             [r1, r2]
 .if \no_rnd
         vadd.u16        q12, q12, q13
 .endif
@@ -142,7 +136,7 @@
         vaddl.u8        q11, d3,  d5
         vst1.64         {d30,d31}, [r0,:128], r2
         bgt             1b
-        pop             {pc}
+        bx              lr
         .endm
 
         .macro pixels8
@@ -180,41 +174,35 @@
         .endm
 
         .macro pixels8_y2 vhadd=vrhadd.u8
-        push            {lr}
-        add             ip,  r1,  r2
-        lsl             lr,  r2,  #1
-        vld1.64         {d0},      [r1], lr
-        vld1.64         {d1},      [ip], lr
+        vld1.64         {d0},      [r1], r2
+        vld1.64         {d1},      [r1], r2
 1:      subs            r3,  r3,  #2
         \vhadd          d4,  d0,  d1
-        vld1.64         {d0},      [r1],     lr
+        vld1.64         {d0},      [r1], r2
         \vhadd          d5,  d0,  d1
-        vld1.64         {d1},      [ip],     lr
+        vld1.64         {d1},      [r1], r2
         pld             [r1]
-        pld             [ip]
+        pld             [r1, r2]
         vst1.64         {d4},      [r0,:64], r2
         vst1.64         {d5},      [r0,:64], r2
         bne             1b
-        pop             {pc}
+        bx              lr
         .endm
 
         .macro pixels8_xy2 vshrn=vrshrn.u16 no_rnd=0
-        push            {lr}
-        lsl             lr,  r2,  #1
-        add             ip,  r1,  r2
-        vld1.64         {d0, d1},  [r1], lr
-        vld1.64         {d2, d3},  [ip], lr
+        vld1.64         {d0, d1},  [r1], r2
+        vld1.64         {d2, d3},  [r1], r2
 .if \no_rnd
         vmov.i16        q11, #1
 .endif
         pld             [r1]
-        pld             [ip]
+        pld             [r1, r2]
         vext.8          d4,  d0,  d1,  #1
         vext.8          d6,  d2,  d3,  #1
         vaddl.u8        q8,  d0,  d4
         vaddl.u8        q9,  d2,  d6
 1:      subs            r3,  r3,  #2
-        vld1.64         {d0, d1},  [r1], lr
+        vld1.64         {d0, d1},  [r1], r2
         pld             [r1]
         vadd.u16        q10, q8,  q9
         vext.8          d4,  d0,  d1,  #1
@@ -223,9 +211,9 @@
 .endif
         vaddl.u8        q8,  d0,  d4
         \vshrn          d5,  q10, #2
-        vld1.64         {d2, d3},  [ip], lr
+        vld1.64         {d2, d3},  [r1], r2
         vadd.u16        q10, q8,  q9
-        pld             [ip]
+        pld             [r1, r2]
 .if \no_rnd
         vadd.u16        q10, q10, q11
 .endif
@@ -235,7 +223,7 @@
         vaddl.u8        q9,  d2,  d6
         vst1.64         {d7},      [r0,:64], r2
         bgt             1b
-        pop             {pc}
+        bx              lr
         .endm
 
         .macro pixfunc pfx name suf rnd_op args:vararg
