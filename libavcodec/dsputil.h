@@ -475,6 +475,12 @@ typedef struct DSPContext {
 
     void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 
+    /* mlp/truehd functions */
+    void (*mlp_filter_channel)(int32_t *firbuf, const int32_t *fircoeff, int firorder,
+                               int32_t *iirbuf, const int32_t *iircoeff, int iirorder,
+                               unsigned int filter_shift, int32_t mask, int blocksize,
+                               int32_t *sample_buffer);
+
     /* vc1 functions */
     void (*vc1_inv_trans_8x8)(DCTELEM *b);
     void (*vc1_inv_trans_8x4)(uint8_t *dest, int line_size, DCTELEM *block);

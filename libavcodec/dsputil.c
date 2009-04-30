@@ -2754,6 +2754,10 @@ void ff_avg_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
 }
 #endif /* CONFIG_CAVS_DECODER */
 
+#if CONFIG_MLP_DECODER || CONFIG_TRUEHD_DECODER
+    void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);
+#endif
+
 #if CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER
 /* VC-1 specific */
 void ff_vc1dsp_init(DSPContext* c, AVCodecContext *avctx);
@@ -4541,6 +4545,10 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
 #if CONFIG_CAVS_DECODER
     ff_cavsdsp_init(c,avctx);
+#endif
+
+#if CONFIG_MLP_DECODER || CONFIG_TRUEHD_DECODER
+    ff_mlp_init(c, avctx);
 #endif
 #if CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER
     ff_vc1dsp_init(c,avctx);

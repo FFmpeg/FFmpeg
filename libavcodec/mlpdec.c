@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
+#include "dsputil.h"
 #include "libavutil/intreadwrite.h"
 #include "get_bits.h"
 #include "libavutil/crc.h"
@@ -144,6 +145,8 @@ typedef struct MLPDecodeContext {
     int8_t      noise_buffer[MAX_BLOCKSIZE_POW2];
     int8_t      bypassed_lsbs[MAX_BLOCKSIZE][MAX_CHANNELS];
     int32_t     sample_buffer[MAX_BLOCKSIZE][MAX_CHANNELS];
+
+    DSPContext  dsp;
 } MLPDecodeContext;
 
 static VLC huff_vlc[3];
@@ -231,6 +234,7 @@ static av_cold int mlp_decode_init(AVCodecContext *avctx)
     m->avctx = avctx;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
         m->substream[substr].lossless_check_data = 0xffffffff;
+    dsputil_init(&m->dsp, avctx);
 
     return 0;
 }
@@ -708,35 +712,17 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
     FilterParams *iir = &m->channel_params[channel].filter_params[IIR];
     unsigned int filter_shift = fir->shift;
     int32_t mask = MSB_MASK(s->quant_step_size[channel]);
-    int i;
 
     memcpy(firbuf, fir->state, MAX_FIR_ORDER * sizeof(int32_t));
     memcpy(iirbuf, iir->state, MAX_IIR_ORDER * sizeof(int32_t));
 
-    for (i = 0; i < s->blocksize; i++) {
-        int32_t residual = m->sample_buffer[i + s->blockpos][channel];
-        unsigned int order;
-        int64_t accum = 0;
-        int32_t result;
+    m->dsp.mlp_filter_channel(firbuf, fir->coeff, fir->order,
+                              iirbuf, iir->coeff, iir->order,
+                              filter_shift, mask, s->blocksize,
+                              &m->sample_buffer[s->blockpos][channel]);
 
-        /* TODO: Move this code to DSPContext? */
-
-        for (order = 0; order < fir->order; order++)
-            accum += (int64_t) firbuf[order] * fir->coeff[order];
-        for (order = 0; order < iir->order; order++)
-            accum += (int64_t) iirbuf[order] * iir->coeff[order];
-
-        accum  = accum >> filter_shift;
-        result = (accum + residual) & mask;
-
-        *--firbuf = result;
-        *--iirbuf = result - accum;
-
-        m->sample_buffer[i + s->blockpos][channel] = result;
-    }
-
-    memcpy(fir->state, firbuf, MAX_FIR_ORDER * sizeof(int32_t));
-    memcpy(iir->state, iirbuf, MAX_IIR_ORDER * sizeof(int32_t));
+    memcpy(fir->state, firbuf - s->blocksize, MAX_FIR_ORDER * sizeof(int32_t));
+    memcpy(iir->state, iirbuf - s->blocksize, MAX_IIR_ORDER * sizeof(int32_t));
 }
 
 /** Read a block of PCM residual data (or actual if no filtering active). */
