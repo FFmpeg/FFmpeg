@@ -87,3 +87,11 @@ int av_dup_packet(AVPacket *pkt)
     }
     return 0;
 }
+
+void av_free_packet(AVPacket *pkt)
+{
+    if (pkt) {
+        if (pkt->destruct) pkt->destruct(pkt);
+        pkt->data = NULL; pkt->size = 0;
+    }
+}

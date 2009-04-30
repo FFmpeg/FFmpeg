@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 27
+#define LIBAVCODEC_VERSION_MINOR 28
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -2681,13 +2681,7 @@ int av_dup_packet(AVPacket *pkt);
  *
  * @param pkt packet to free
  */
-static inline void av_free_packet(AVPacket *pkt)
-{
-    if (pkt) {
-        if (pkt->destruct) pkt->destruct(pkt);
-        pkt->data = NULL; pkt->size = 0;
-    }
-}
+void av_free_packet(AVPacket *pkt);
 
 /* resample.c */
 
