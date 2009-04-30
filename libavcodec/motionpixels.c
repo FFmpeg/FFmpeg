@@ -299,7 +299,7 @@ static int mp_decode_frame(AVCodecContext *avctx,
     /* le32 bitstream msb first */
     av_fast_malloc(&mp->bswapbuf, &mp->bswapbuf_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!mp->bswapbuf)
-        AVERROR(ENOMEM);
+        return AVERROR(ENOMEM);
     mp->dsp.bswap_buf((uint32_t *)mp->bswapbuf, (const uint32_t *)buf, buf_size / 4);
     if (buf_size & 3)
         memcpy(mp->bswapbuf + (buf_size & ~3), buf + (buf_size & ~3), buf_size & 3);
