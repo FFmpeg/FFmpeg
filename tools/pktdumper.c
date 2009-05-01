@@ -107,10 +107,13 @@ int main(int argc, char **argv)
             write(fd, pkt.data, pkt.size);
             close(fd);
         }
+        av_free_packet(&pkt);
         pktnum++;
         if (maxpkts && (pktnum >= maxpkts))
             break;
     }
+
+    av_close_input_file(fctx);
 
     while (donotquit)
         sleep(60);
