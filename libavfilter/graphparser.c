@@ -26,6 +26,7 @@
 #include "graphparser.h"
 #include "avfilter.h"
 #include "avfiltergraph.h"
+#include "parseutils.h"
 
 #define WHITESPACES " \n\t"
 
@@ -44,49 +45,6 @@ static int link_filter(AVFilterContext *src, int srcpad,
 }
 
 /**
- * Consumes a string from *buf.
- * @return a copy of the consumed string, which should be free'd after use
- */
-static char *consume_string(const char **buf)
-{
-    char *out = av_malloc(strlen(*buf) + 1);
-    char *ret = out;
-
-    *buf += strspn(*buf, WHITESPACES);
-
-    do{
-        char c = *(*buf)++;
-        switch (c) {
-        case '\\':
-            *out++ = *(*buf)++;
-            break;
-        case '\'':
-            while(**buf && **buf != '\'')
-                *out++ = *(*buf)++;
-            if(**buf) (*buf)++;
-            break;
-        case 0:
-        case ']':
-        case '[':
-        case '=':
-        case ',':
-        case ';':
-        case ' ':
-        case '\n':
-            *out++ = 0;
-            break;
-        default:
-            *out++ = c;
-        }
-    } while(out[-1]);
-
-    (*buf)--;
-    *buf += strspn(*buf, WHITESPACES);
-
-    return ret;
-}
-
-/**
  * Parse "[linkname]"
  * @param name a pointer (that need to be free'd after use) to the name between
  *        parenthesis
@@ -97,7 +55,7 @@ static char *parse_link_name(const char **buf, AVClass *log_ctx)
     char *name;
     (*buf)++;
 
-    name = consume_string(buf);
+    name = av_get_token(buf, "]");
 
     if(!name[0]) {
         av_log(log_ctx, AV_LOG_ERROR,
@@ -162,12 +120,12 @@ static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph,
                                      int index, AVClass *log_ctx)
 {
     char *opts = NULL;
-    char *name = consume_string(buf);
+    char *name = av_get_token(buf, "=,");
     AVFilterContext *ret;
 
     if(**buf == '=') {
         (*buf)++;
-        opts = consume_string(buf);
+        opts = av_get_token(buf, "[],\n");
     }
 
     ret = create_filter(graph, index, name, opts, log_ctx);
