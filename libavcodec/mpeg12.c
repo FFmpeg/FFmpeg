@@ -1480,6 +1480,10 @@ static int load_matrix(MpegEncContext *s, uint16_t matrix0[64], uint16_t matrix1
             av_log(s->avctx, AV_LOG_ERROR, "matrix damaged\n");
             return -1;
         }
+        if(intra && i==0 && v!=8){
+            av_log(s->avctx, AV_LOG_ERROR, "intra matrix invalid, ignoring\n");
+            v= 8; // needed by pink.mpg / issue1046
+        }
         matrix0[j] = v;
         if(matrix1)
             matrix1[j] = v;
