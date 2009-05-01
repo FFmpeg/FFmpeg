@@ -65,7 +65,7 @@ char *av_get_token(const char **buf, const char *term)
 
 #undef printf
 
-int main()
+int main(void)
 {
     int i;
 
