@@ -360,7 +360,6 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
         if(last) break;
         for(i = 0; i < s->terms; i++){
             t = s->decorr[i].value;
-            j = 0;
             if(t > 0){
                 if(t > 8){
                     if(t & 1){
