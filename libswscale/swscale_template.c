@@ -2533,7 +2533,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || srcFormat==PIX_FMT_MONOWHITE)
         return;
 
-    if (srcFormat==PIX_FMT_RGB32_1) {
+    if (srcFormat==PIX_FMT_RGB32_1 || srcFormat==PIX_FMT_BGR32_1) {
         src1 += ALT32_CORR;
         src2 += ALT32_CORR;
     }
