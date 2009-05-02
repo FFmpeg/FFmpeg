@@ -57,7 +57,7 @@ enum WP_ID{
     WP_ID_INT32INFO,
     WP_ID_DATA,
     WP_ID_CORR,
-    WP_ID_FLT,
+    WP_ID_EXTRABITS,
     WP_ID_CHANINFO
 };
 
@@ -85,11 +85,15 @@ typedef struct WavpackContext {
     int joint;
     uint32_t CRC;
     GetBitContext gb;
+    int got_extra_bits;
+    uint32_t crc_extra_bits;
+    GetBitContext gb_extra_bits;
     int data_size; // in bits
     int samples;
     int terms;
     Decorr decorr[MAX_TERMS];
     int zero, one, zeroes;
+    int extra_bits;
     int and, or, shift;
     int post_shift;
     int hybrid, hybrid_bitrate;
@@ -344,6 +348,7 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
     int A, B, L, L2, R, R2, bit;
     int pos = 0;
     uint32_t crc = 0xFFFFFFFF;
+    uint32_t crc_extra_bits = 0xFFFFFFFF;
     int16_t *dst16 = dst;
     int32_t *dst32 = dst;
 
@@ -424,6 +429,18 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
         if(s->joint)
             L += (R -= (L >> 1));
         crc = (crc * 3 + L) * 3 + R;
+        if(s->extra_bits){
+            L <<= s->extra_bits;
+            R <<= s->extra_bits;
+
+            if(s->got_extra_bits){
+                L |= get_bits(&s->gb_extra_bits, s->extra_bits);
+                crc_extra_bits = crc_extra_bits * 9 + (L&0xffff) * 3 + ((unsigned)L>>16);
+
+                R |= get_bits(&s->gb_extra_bits, s->extra_bits);
+                crc_extra_bits = crc_extra_bits * 9 + (R&0xffff) * 3 + ((unsigned)R>>16);
+            }
+        }
         bit = (L & s->and) | s->or;
         if(hires)
             *dst32++ = (((L + bit) << s->shift) - bit) << s->post_shift;
@@ -441,6 +458,10 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
         av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
         return -1;
     }
+    if(s->got_extra_bits && crc_extra_bits != s->crc_extra_bits){
+        av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
+        return -1;
+    }
     return count * 2;
 }
 
@@ -451,6 +472,7 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
     int A, S, T, bit;
     int pos = 0;
     uint32_t crc = 0xFFFFFFFF;
+    uint32_t crc_extra_bits = 0xFFFFFFFF;
     int16_t *dst16 = dst;
     int32_t *dst32 = dst;
 
@@ -481,6 +503,15 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
         }
         pos = (pos + 1) & 7;
         crc = crc * 3 + S;
+        if(s->extra_bits){
+            S <<= s->extra_bits;
+
+            if(s->got_extra_bits){
+                S |= get_bits(&s->gb_extra_bits, s->extra_bits);
+                crc_extra_bits = crc_extra_bits * 9 + (S&0xffff) * 3 + ((unsigned)S>>16);
+            }
+        }
+
         bit = (S & s->and) | s->or;
         if(hires)
             *dst32++ = (((S + bit) << s->shift) - bit) << s->post_shift;
@@ -491,6 +522,10 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
 
     if(crc != s->CRC){
         av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
+        return -1;
+    }
+    if(s->got_extra_bits && crc_extra_bits != s->crc_extra_bits){
+        av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
         return -1;
     }
     return count;
@@ -533,7 +568,9 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
 
     memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
     memset(s->ch, 0, sizeof(s->ch));
+    s->extra_bits = 0;
     s->and = s->or = s->shift = 0;
+    s->got_extra_bits = 0;
 
     s->samples = AV_RL32(buf); buf += 4;
     if(!s->samples){
@@ -701,7 +738,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
                 continue;
             }
             if(buf[0])
-                s->post_shift = buf[0];
+                s->extra_bits = buf[0];
             else if(buf[1])
                 s->shift = buf[1];
             else if(buf[2]){
@@ -718,6 +755,17 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             s->data_size = size * 8;
             buf += size;
             got_bs = 1;
+            break;
+        case WP_ID_EXTRABITS:
+            if(size <= 4){
+                av_log(avctx, AV_LOG_ERROR, "Invalid EXTRABITS, size = %i\n", size);
+                buf += size;
+                continue;
+            }
+            init_get_bits(&s->gb_extra_bits, buf, size * 8);
+            s->crc_extra_bits = get_bits_long(&s->gb_extra_bits, 32);
+            buf += size;
+            s->got_extra_bits = 1;
             break;
         default:
             buf += size;
