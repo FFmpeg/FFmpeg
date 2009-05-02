@@ -3264,7 +3264,6 @@ static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
                         int n, int qscale){
     int16_t rem[64];
     DECLARE_ALIGNED_16(DCTELEM, d1[64]);
-    const int *qmat;
     const uint8_t *scantable= s->intra_scantable.scantable;
     const uint8_t *perm_scantable= s->intra_scantable.permutated;
 //    unsigned int threshold1, threshold2;
@@ -3308,7 +3307,6 @@ static int messed_sign=0;
         dc= block[0]*q;
 //        block[0] = (block[0] + (q >> 1)) / q;
         start_i = 1;
-        qmat = s->q_intra_matrix[qscale];
 //        if(s->mpeg_quant || s->out_format == FMT_MPEG1)
 //            bias= 1<<(QMAT_SHIFT-1);
         length     = s->intra_ac_vlc_length;
@@ -3316,7 +3314,6 @@ static int messed_sign=0;
     } else {
         dc= 0;
         start_i = 0;
-        qmat = s->q_inter_matrix[qscale];
         length     = s->inter_ac_vlc_length;
         last_length= s->inter_ac_vlc_last_length;
     }

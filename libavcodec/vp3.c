@@ -254,7 +254,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
     int right_edge = 0;
     int bottom_edge = 0;
     int superblock_row_inc = 0;
-    int *hilbert = NULL;
     int mapping_index = 0;
 
     int current_macroblock;
@@ -366,7 +365,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
     current_height = 0;
     superblock_row_inc = s->macroblock_width -
         (s->y_superblock_width * 2 - s->macroblock_width);
-    hilbert = hilbert_walk_mb;
     mapping_index = 0;
     current_macroblock = -1;
     for (i = 0; i < s->u_superblock_start; i++) {
