@@ -200,7 +200,6 @@ static void qtrle_encode_line(QtrleEncContext *s, AVFrame *p, int line, uint8_t 
 
     i=0;
     this_line = p->               data[0] + line*p->linesize[0];
-    prev_line = s->previous_frame.data[0] + line*p->linesize[0];
 
     if (s->rlecode_table[0] == 0) {
         bytestream_put_byte(buf, s->skip_table[0] + 1);

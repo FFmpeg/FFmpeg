@@ -133,8 +133,6 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int i;
 #endif
 
-    ret = 0;
-
     if((url_ftell(pb) - s->data_offset + mtv->img_segment_size) % mtv->full_segment_size)
     {
         url_fskip(pb, MTV_AUDIO_PADDING_SIZE);
