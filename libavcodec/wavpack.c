@@ -795,6 +795,14 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Packed samples not found\n");
         return -1;
     }
+    if(s->got_extra_bits){
+        const int size = s->gb_extra_bits.size_in_bits - get_bits_count(&s->gb_extra_bits);
+        const int wanted = s->samples * s->extra_bits << s->stereo_in;
+        if(size < wanted){
+            av_log(avctx, AV_LOG_ERROR, "Too small EXTRABITS\n");
+            s->got_extra_bits = 0;
+        }
+    }
 
     if(s->stereo_in){
         if(bpp == 2)
