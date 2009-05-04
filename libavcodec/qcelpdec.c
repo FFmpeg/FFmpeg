@@ -249,7 +249,7 @@ static void decode_gain_and_index(QCELPContext  *q,
             gain[2] =     gain[1];
             gain[1] = 0.6*gain[0] + 0.4*gain[1];
         }
-    }else
+    }else if (q->bitrate != SILENCE)
     {
         if(q->bitrate == RATE_OCTAVE)
         {
