@@ -37,4 +37,11 @@
     __rt; })
 #endif
 
+#define MULH MULH
+static inline av_const int MULH(int a, int b){
+    int r;
+    __asm__ ("mulhw %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
+    return r;
+}
+
 #endif /* AVCODEC_PPC_MATHOPS_H */
