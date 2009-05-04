@@ -2263,6 +2263,7 @@ static int decode_frame(AVCodecContext * avctx,
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
     int out_size;
+    int skipped = 0;
     OUT_INT *out_samples = data;
 
 retry:
@@ -2272,7 +2273,8 @@ retry:
     header = AV_RB32(buf);
     if(ff_mpa_check_header(header) < 0){
         buf++;
-//        buf_size--;
+        buf_size--;
+        skipped++;
         av_log(avctx, AV_LOG_ERROR, "Header missing skipping one byte.\n");
         goto retry;
     }
@@ -2303,7 +2305,7 @@ retry:
     }else
         av_log(avctx, AV_LOG_DEBUG, "Error while decoding MPEG audio frame.\n"); //FIXME return -1 / but also return the number of bytes consumed
     s->frame_size = 0;
-    return buf_size;
+    return buf_size + skipped;
 }
 
 static void flush(AVCodecContext *avctx){
