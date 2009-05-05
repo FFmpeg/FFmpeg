@@ -40,4 +40,14 @@
  */
 char *av_get_token(const char **buf, const char *term);
 
+/**
+ * Puts the RGBA values that correspond to color_string in rgba_color.
+ *
+ * @param color_string a string specifying a color. It can be the name of
+ * a color or a 0xRRGGBB[AA] sequence.
+ * @return >= 0 in case of success, a negative value in case of
+ * failure (for example if color_string cannot be parsed).
+ */
+int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx);
+
 #endif  /* AVFILTER_PARSEUTILS_H */
