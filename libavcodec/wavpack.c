@@ -341,11 +341,27 @@ static int wv_get_value(WavpackContext *ctx, GetBitContext *gb, int channel, int
     return sign ? ~ret : ret;
 }
 
+static inline int wv_get_value_integer(WavpackContext *s, uint32_t *crc, int S)
+{
+    int bit;
+
+    if(s->extra_bits){
+        S <<= s->extra_bits;
+
+        if(s->got_extra_bits){
+            S |= get_bits(&s->gb_extra_bits, s->extra_bits);
+            *crc = *crc * 9 + (S&0xffff) * 3 + ((unsigned)S>>16);
+        }
+    }
+    bit = (S & s->and) | s->or;
+    return (((S + bit) << s->shift) - bit) << s->post_shift;
+}
+
 static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *dst, const int hires)
 {
     int i, j, count = 0;
     int last, t;
-    int A, B, L, L2, R, R2, bit;
+    int A, B, L, L2, R, R2;
     int pos = 0;
     uint32_t crc = 0xFFFFFFFF;
     uint32_t crc_extra_bits = 0xFFFFFFFF;
@@ -428,28 +444,14 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
         if(s->joint)
             L += (R -= (L >> 1));
         crc = (crc * 3 + L) * 3 + R;
-        if(s->extra_bits){
-            L <<= s->extra_bits;
-            R <<= s->extra_bits;
 
-            if(s->got_extra_bits){
-                L |= get_bits(&s->gb_extra_bits, s->extra_bits);
-                crc_extra_bits = crc_extra_bits * 9 + (L&0xffff) * 3 + ((unsigned)L>>16);
-
-                R |= get_bits(&s->gb_extra_bits, s->extra_bits);
-                crc_extra_bits = crc_extra_bits * 9 + (R&0xffff) * 3 + ((unsigned)R>>16);
-            }
+        if(hires){
+            *dst32++ = wv_get_value_integer(s, &crc_extra_bits, L);
+            *dst32++ = wv_get_value_integer(s, &crc_extra_bits, R);
+        } else {
+            *dst16++ = wv_get_value_integer(s, &crc_extra_bits, L);
+            *dst16++ = wv_get_value_integer(s, &crc_extra_bits, R);
         }
-        bit = (L & s->and) | s->or;
-        if(hires)
-            *dst32++ = (((L + bit) << s->shift) - bit) << s->post_shift;
-        else
-            *dst16++ = (((L + bit) << s->shift) - bit) << s->post_shift;
-        bit = (R & s->and) | s->or;
-        if(hires)
-            *dst32++ = (((R + bit) << s->shift) - bit) << s->post_shift;
-        else
-            *dst16++ = (((R + bit) << s->shift) - bit) << s->post_shift;
         count++;
     }while(!last && count < s->samples);
 
@@ -468,7 +470,7 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
 {
     int i, j, count = 0;
     int last, t;
-    int A, S, T, bit;
+    int A, S, T;
     int pos = 0;
     uint32_t crc = 0xFFFFFFFF;
     uint32_t crc_extra_bits = 0xFFFFFFFF;
@@ -502,20 +504,11 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
         }
         pos = (pos + 1) & 7;
         crc = crc * 3 + S;
-        if(s->extra_bits){
-            S <<= s->extra_bits;
 
-            if(s->got_extra_bits){
-                S |= get_bits(&s->gb_extra_bits, s->extra_bits);
-                crc_extra_bits = crc_extra_bits * 9 + (S&0xffff) * 3 + ((unsigned)S>>16);
-            }
-        }
-
-        bit = (S & s->and) | s->or;
         if(hires)
-            *dst32++ = (((S + bit) << s->shift) - bit) << s->post_shift;
+            *dst32++ = wv_get_value_integer(s, &crc_extra_bits, S);
         else
-            *dst16++ = (((S + bit) << s->shift) - bit) << s->post_shift;
+            *dst16++ = wv_get_value_integer(s, &crc_extra_bits, S);
         count++;
     }while(!last && count < s->samples);
 
