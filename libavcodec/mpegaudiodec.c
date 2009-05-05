@@ -752,11 +752,7 @@ static inline int round_sample(int *sum)
     int sum1;
     sum1 = (*sum) >> OUT_SHIFT;
     *sum &= (1<<OUT_SHIFT)-1;
-    if (sum1 < OUT_MIN)
-        sum1 = OUT_MIN;
-    else if (sum1 > OUT_MAX)
-        sum1 = OUT_MAX;
-    return sum1;
+    return av_clip(sum1, OUT_MIN, OUT_MAX);
 }
 
 /* signed 16x16 -> 32 multiply add accumulate */
@@ -774,11 +770,7 @@ static inline int round_sample(int64_t *sum)
     int sum1;
     sum1 = (int)((*sum) >> OUT_SHIFT);
     *sum &= (1<<OUT_SHIFT)-1;
-    if (sum1 < OUT_MIN)
-        sum1 = OUT_MIN;
-    else if (sum1 > OUT_MAX)
-        sum1 = OUT_MAX;
-    return sum1;
+    return av_clip(sum1, OUT_MIN, OUT_MAX);
 }
 
 #   define MULS(ra, rb) MUL64(ra, rb)
