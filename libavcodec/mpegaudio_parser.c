@@ -223,8 +223,8 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
 
         if(s->frame_size > 0 && buf_ptr - buf == s->inbuf_ptr - s->inbuf
            && buf_size + buf_ptr - buf >= s->frame_size){
-                *poutbuf = buf;
-                *poutbuf_size = s->frame_size;
+            *poutbuf = buf;
+            *poutbuf_size = s->frame_size;
             buf_ptr = buf + s->frame_size;
             s->inbuf_ptr = s->inbuf;
             s->frame_size = 0;
@@ -234,8 +234,8 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
         //    next_data:
         if (s->frame_size > 0 &&
             (s->inbuf_ptr - s->inbuf) >= s->frame_size) {
-                *poutbuf = s->inbuf;
-                *poutbuf_size = s->inbuf_ptr - s->inbuf;
+            *poutbuf = s->inbuf;
+            *poutbuf_size = s->inbuf_ptr - s->inbuf;
             s->inbuf_ptr = s->inbuf;
             s->frame_size = 0;
             break;
