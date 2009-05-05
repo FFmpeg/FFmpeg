@@ -780,14 +780,14 @@ static inline int round_sample(int64_t *sum)
 
 #define SUM8(op, sum, w, p)               \
 {                                         \
-    op(sum, (w)[0 * 64], p[0 * 64]);      \
-    op(sum, (w)[1 * 64], p[1 * 64]);      \
-    op(sum, (w)[2 * 64], p[2 * 64]);      \
-    op(sum, (w)[3 * 64], p[3 * 64]);      \
-    op(sum, (w)[4 * 64], p[4 * 64]);      \
-    op(sum, (w)[5 * 64], p[5 * 64]);      \
-    op(sum, (w)[6 * 64], p[6 * 64]);      \
-    op(sum, (w)[7 * 64], p[7 * 64]);      \
+    op(sum, (w)[0 * 64], (p)[0 * 64]);    \
+    op(sum, (w)[1 * 64], (p)[1 * 64]);    \
+    op(sum, (w)[2 * 64], (p)[2 * 64]);    \
+    op(sum, (w)[3 * 64], (p)[3 * 64]);    \
+    op(sum, (w)[4 * 64], (p)[4 * 64]);    \
+    op(sum, (w)[5 * 64], (p)[5 * 64]);    \
+    op(sum, (w)[6 * 64], (p)[6 * 64]);    \
+    op(sum, (w)[7 * 64], (p)[7 * 64]);    \
 }
 
 #define SUM8P2(sum1, op1, sum2, op2, w1, w2, p) \
