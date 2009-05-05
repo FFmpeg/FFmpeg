@@ -94,6 +94,9 @@ const AVCodecTag codec_movvideo_tags[] = {
     { CODEC_ID_DVVIDEO, MKTAG('A', 'V', 'd', '1') }, /* AVID DV100 */
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', 'q') }, /* DVCPRO HD 720p50 */
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', 'p') }, /* DVCPRO HD 720p60 */
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', '1') },
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', '2') },
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', '4') },
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', '5') }, /* DVCPRO HD 50i produced by FCP */
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', '6') }, /* DVCPRO HD 60i produced by FCP */
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', '3') }, /* DVCPRO HD 30p produced by FCP */
