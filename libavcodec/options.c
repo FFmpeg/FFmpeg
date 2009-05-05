@@ -394,6 +394,10 @@ static const AVOption options[]={
 {"rc_max_vbv_use", NULL, OFFSET(rc_max_available_vbv_use), FF_OPT_TYPE_FLOAT, 1.0/3, 0.0, FLT_MAX, V|E},
 {"rc_min_vbv_use", NULL, OFFSET(rc_min_vbv_overflow_use),  FF_OPT_TYPE_FLOAT, 3,     0.0, FLT_MAX, V|E},
 {"ticks_per_frame", NULL, OFFSET(ticks_per_frame), FF_OPT_TYPE_INT, 1, 1, INT_MAX, A|V|E|D},
+{"color_primaries", NULL, OFFSET(color_primaries), FF_OPT_TYPE_INT, AVCOL_PRI_UNSPECIFIED, 1, AVCOL_PRI_NB-1, V|E|D},
+{"color_trc", NULL, OFFSET(color_trc), FF_OPT_TYPE_INT, AVCOL_TRC_UNSPECIFIED, 1, AVCOL_TRC_NB-1, V|E|D},
+{"colorspace", NULL, OFFSET(colorspace), FF_OPT_TYPE_INT, AVCOL_SPC_UNSPECIFIED, 1, AVCOL_SPC_NB-1, V|E|D},
+{"color_range", NULL, OFFSET(color_range), FF_OPT_TYPE_INT, AVCOL_RANGE_UNSPECIFIED, 0, AVCOL_RANGE_NB-1, V|E|D},
 {NULL},
 };
 
