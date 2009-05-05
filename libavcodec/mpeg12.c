@@ -1188,6 +1188,7 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     s->mpeg_enc_ctx.picture_number = 0;
     s->repeat_field = 0;
     s->mpeg_enc_ctx.codec_id= avctx->codec->id;
+    avctx->color_range= AVCOL_RANGE_MPEG;
     return 0;
 }
 
@@ -1420,9 +1421,9 @@ static void mpeg_decode_sequence_display_extension(Mpeg1Context *s1)
     skip_bits(&s->gb, 3); /* video format */
     color_description= get_bits1(&s->gb);
     if(color_description){
-        skip_bits(&s->gb, 8); /* color primaries */
-        skip_bits(&s->gb, 8); /* transfer_characteristics */
-        skip_bits(&s->gb, 8); /* matrix_coefficients */
+        s->avctx->color_primaries= get_bits(&s->gb, 8);
+        s->avctx->color_trc      = get_bits(&s->gb, 8);
+        s->avctx->colorspace     = get_bits(&s->gb, 8);
     }
     w= get_bits(&s->gb, 14);
     skip_bits(&s->gb, 1); //marker
