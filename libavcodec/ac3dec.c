@@ -1327,8 +1327,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
 
     /* decode the audio blocks */
     channel_map = ff_ac3_dec_channel_map[s->output_mode & ~AC3_OUTPUT_LFEON][s->lfe_on];
-        for (ch = 0; ch < s->out_channels; ch++)
-            output[ch] = s->output[channel_map[ch]];
+    for (ch = 0; ch < s->out_channels; ch++)
+        output[ch] = s->output[channel_map[ch]];
     for (blk = 0; blk < s->num_blocks; blk++) {
         if (!err && decode_audio_block(s, blk)) {
             av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
