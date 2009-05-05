@@ -33,7 +33,12 @@
 
 #define MAX_FILTER_SIZE 256
 
-#define VOFW 2048
+#if ARCH_X86
+#define VOFW 5120
+#else
+#define VOFW 2048 // faster on PPC and not tested on others
+#endif
+
 #define VOF  (VOFW*2)
 
 #ifdef WORDS_BIGENDIAN
