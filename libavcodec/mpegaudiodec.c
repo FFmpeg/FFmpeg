@@ -846,31 +846,31 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
                          OUT_INT *samples, int incr,
                          int32_t sb_samples[SBLIMIT])
 {
-    int32_t tmp[32];
     register MPA_INT *synth_buf;
     register const MPA_INT *w, *w2, *p;
-    int j, offset, v;
+    int j, offset;
     OUT_INT *samples2;
 #if FRAC_BITS <= 15
+    int32_t tmp[32];
     int sum, sum2;
 #else
     int64_t sum, sum2;
 #endif
 
-    dct32(tmp, sb_samples);
-
     offset = *synth_buf_offset;
     synth_buf = synth_buf_ptr + offset;
 
-    for(j=0;j<32;j++) {
-        v = tmp[j];
 #if FRAC_BITS <= 15
+    dct32(tmp, sb_samples);
+    for(j=0;j<32;j++) {
         /* NOTE: can cause a loss in precision if very high amplitude
            sound */
-        v = av_clip_int16(v);
-#endif
-        synth_buf[j] = v;
+        synth_buf[j] = av_clip_int16(tmp[j]);
     }
+#else
+    dct32(synth_buf, sb_samples);
+#endif
+
     /* copy to avoid wrap */
     memcpy(synth_buf + 512, synth_buf, 32 * sizeof(MPA_INT));
 
