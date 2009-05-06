@@ -261,8 +261,16 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
                 return -1;
             }
             break;
+        case 32:
+            if(count == 4){
+                s->avctx->pix_fmt = PIX_FMT_RGBA;
+            }else{
+                av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%d, %d components)\n", s->bpp, count);
+                return -1;
+            }
+            break;
         default:
-            av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%i)\n", s->bpp);
+            av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%d, %d components)\n", s->bpp, count);
             return -1;
         }
         if(s->width != s->avctx->width || s->height != s->avctx->height){
