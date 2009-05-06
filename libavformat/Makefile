@@ -210,6 +210,7 @@ OBJS-$(CONFIG_TG2_MUXER)                 += movenc.o riff.o isom.o avc.o
 OBJS-$(CONFIG_TGP_MUXER)                 += movenc.o riff.o isom.o avc.o
 OBJS-$(CONFIG_THP_DEMUXER)               += thp.o
 OBJS-$(CONFIG_TIERTEXSEQ_DEMUXER)        += tiertexseq.o
+OBJS-$(CONFIG_TMV_DEMUXER)               += tmv.o
 OBJS-$(CONFIG_TRUEHD_DEMUXER)            += raw.o id3v2.o
 OBJS-$(CONFIG_TRUEHD_MUXER)              += raw.o
 OBJS-$(CONFIG_TTA_DEMUXER)               += tta.o
