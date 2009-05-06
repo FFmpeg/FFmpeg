@@ -24,6 +24,7 @@
 
 #include <string.h>
 #include "libavutil/avutil.h"
+#include "libavutil/random_seed.h"
 #include "parseutils.h"
 
 #define WHITESPACES " \n\t"
@@ -216,6 +217,13 @@ static int color_table_compare(const void *lhs, const void *rhs)
 
 int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
 {
+    if (!strcmp(color_string, "bikeshed")) {
+        int rgba = ff_random_get_seed();
+        rgba_color[0] = rgba >> 24;
+        rgba_color[1] = rgba >> 16;
+        rgba_color[2] = rgba >> 8;
+        rgba_color[3] = rgba;
+    } else
     if (!strncmp(color_string, "0x", 2)) {
         char *tail;
         int len = strlen(color_string);
@@ -295,6 +303,7 @@ int main(void)
     {
         uint8_t rgba[4];
         const char *color_names[] = {
+            "bikeshed",
             "foo",
             "red",
             "Red ",
