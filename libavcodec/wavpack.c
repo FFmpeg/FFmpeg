@@ -357,7 +357,7 @@ static inline int wv_get_value_integer(WavpackContext *s, uint32_t *crc, int S)
     return (((S + bit) << s->shift) - bit) << s->post_shift;
 }
 
-static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *dst, const int hires)
+static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *dst, const int type)
 {
     int i, j, count = 0;
     int last, t;
@@ -393,7 +393,7 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
                     B = s->decorr[i].samplesB[pos];
                     j = (pos + t) & 7;
                 }
-                if(hires){
+                if(type != SAMPLE_FMT_S16){
                     L2 = L + ((s->decorr[i].weightA * (int64_t)A + 512) >> 10);
                     R2 = R + ((s->decorr[i].weightB * (int64_t)B + 512) >> 10);
                 }else{
@@ -405,13 +405,13 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
                 s->decorr[i].samplesA[j] = L = L2;
                 s->decorr[i].samplesB[j] = R = R2;
             }else if(t == -1){
-                if(hires)
+                if(type != SAMPLE_FMT_S16)
                     L2 = L + ((s->decorr[i].weightA * (int64_t)s->decorr[i].samplesA[0] + 512) >> 10);
                 else
                     L2 = L + ((s->decorr[i].weightA * s->decorr[i].samplesA[0] + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightA, s->decorr[i].delta, s->decorr[i].samplesA[0], L);
                 L = L2;
-                if(hires)
+                if(type != SAMPLE_FMT_S16)
                     R2 = R + ((s->decorr[i].weightB * (int64_t)L2 + 512) >> 10);
                 else
                     R2 = R + ((s->decorr[i].weightB * L2 + 512) >> 10);
@@ -419,7 +419,7 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
                 R = R2;
                 s->decorr[i].samplesA[0] = R;
             }else{
-                if(hires)
+                if(type != SAMPLE_FMT_S16)
                     R2 = R + ((s->decorr[i].weightB * (int64_t)s->decorr[i].samplesB[0] + 512) >> 10);
                 else
                     R2 = R + ((s->decorr[i].weightB * s->decorr[i].samplesB[0] + 512) >> 10);
@@ -431,7 +431,7 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
                     s->decorr[i].samplesA[0] = R;
                 }
 
-                if(hires)
+                if(type != SAMPLE_FMT_S16)
                     L2 = L + ((s->decorr[i].weightA * (int64_t)R2 + 512) >> 10);
                 else
                     L2 = L + ((s->decorr[i].weightA * R2 + 512) >> 10);
@@ -445,7 +445,7 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
             L += (R -= (L >> 1));
         crc = (crc * 3 + L) * 3 + R;
 
-        if(hires){
+        if(type == SAMPLE_FMT_S32){
             *dst32++ = wv_get_value_integer(s, &crc_extra_bits, L);
             *dst32++ = wv_get_value_integer(s, &crc_extra_bits, R);
         } else {
@@ -466,7 +466,7 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
     return count * 2;
 }
 
-static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst, const int hires)
+static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst, const int type)
 {
     int i, j, count = 0;
     int last, t;
@@ -495,7 +495,7 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
                 A = s->decorr[i].samplesA[pos];
                 j = (pos + t) & 7;
             }
-            if(hires)
+            if(type != SAMPLE_FMT_S16)
                 S = T + ((s->decorr[i].weightA * (int64_t)A + 512) >> 10);
             else
                 S = T + ((s->decorr[i].weightA * A + 512) >> 10);
@@ -505,7 +505,7 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
         pos = (pos + 1) & 7;
         crc = crc * 3 + S;
 
-        if(hires)
+        if(type == SAMPLE_FMT_S32)
             *dst32++ = wv_get_value_integer(s, &crc_extra_bits, S);
         else
             *dst16++ = wv_get_value_integer(s, &crc_extra_bits, S);
@@ -798,16 +798,16 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     }
 
     if(s->stereo_in){
-        if(bpp == 2)
-            samplecount = wv_unpack_stereo(s, &s->gb, samples, 0);
+        if(avctx->sample_fmt == SAMPLE_FMT_S16)
+            samplecount = wv_unpack_stereo(s, &s->gb, samples, SAMPLE_FMT_S16);
         else
-            samplecount = wv_unpack_stereo(s, &s->gb, samples, 1);
+            samplecount = wv_unpack_stereo(s, &s->gb, samples, SAMPLE_FMT_S32);
     }else{
-        if(bpp == 2)
-            samplecount = wv_unpack_mono(s, &s->gb, samples, 0);
+        if(avctx->sample_fmt == SAMPLE_FMT_S16)
+            samplecount = wv_unpack_mono(s, &s->gb, samples, SAMPLE_FMT_S16);
         else
-            samplecount = wv_unpack_mono(s, &s->gb, samples, 1);
-        if(s->stereo && bpp == 2){
+            samplecount = wv_unpack_mono(s, &s->gb, samples, SAMPLE_FMT_S32);
+        if(s->stereo && avctx->sample_fmt == SAMPLE_FMT_S16){
             int16_t *dst = (int16_t*)samples + samplecount * 2;
             int16_t *src = (int16_t*)samples + samplecount;
             int cnt = samplecount;
