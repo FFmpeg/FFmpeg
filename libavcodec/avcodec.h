@@ -194,6 +194,7 @@ enum CodecID {
     CODEC_ID_AURA,
     CODEC_ID_AURA2,
     CODEC_ID_V210X,
+    CODEC_ID_TMV,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,

@@ -162,6 +162,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (THP, thp);
     REGISTER_DECODER (TIERTEXSEQVIDEO, tiertexseqvideo);
     REGISTER_ENCDEC  (TIFF, tiff);
+    REGISTER_DECODER (TMV, tmv);
     REGISTER_DECODER (TRUEMOTION1, truemotion1);
     REGISTER_DECODER (TRUEMOTION2, truemotion2);
     REGISTER_DECODER (TSCC, tscc);
