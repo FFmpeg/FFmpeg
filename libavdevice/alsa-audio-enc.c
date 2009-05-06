@@ -47,7 +47,7 @@ av_cold static int audio_write_header(AVFormatContext *s1)
     AlsaData *s = s1->priv_data;
     AVStream *st;
     unsigned int sample_rate;
-    int codec_id;
+    enum CodecID codec_id;
     int res;
 
     st = s1->streams[0];
