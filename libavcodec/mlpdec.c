@@ -344,12 +344,17 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
                                  : MAX_MATRIX_CHANNEL_TRUEHD;
 
     sync_word = get_bits(gbp, 13);
-    s->noise_type = get_bits1(gbp);
 
-    if ((m->avctx->codec_id == CODEC_ID_MLP && s->noise_type) ||
-        sync_word != 0x31ea >> 1) {
+    if (sync_word != 0x31ea >> 1) {
         av_log(m->avctx, AV_LOG_ERROR,
                "restart header sync incorrect (got 0x%04x)\n", sync_word);
+        return -1;
+    }
+
+    s->noise_type = get_bits1(gbp);
+
+    if (m->avctx->codec_id == CODEC_ID_MLP && s->noise_type) {
+        av_log(m->avctx, AV_LOG_ERROR, "MLP must have 0x31ea sync word.\n");
         return -1;
     }
 
