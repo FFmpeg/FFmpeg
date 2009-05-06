@@ -620,10 +620,10 @@ static int read_channel_params(MLPDecodeContext *m, unsigned int substr,
         return -1;
     }
     /* The FIR and IIR filters must have the same precision.
-        * To simplify the filtering code, only the precision of the
-        * FIR filter is considered. If only the IIR filter is employed,
-        * the FIR filter precision is set to that of the IIR filter, so
-        * that the filtering code can use it. */
+     * To simplify the filtering code, only the precision of the
+     * FIR filter is considered. If only the IIR filter is employed,
+     * the FIR filter precision is set to that of the IIR filter, so
+     * that the filtering code can use it. */
     if (!fir->order && iir->order)
         fir->shift = iir->shift;
 
