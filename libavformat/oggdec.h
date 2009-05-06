@@ -53,7 +53,7 @@ struct ogg_stream {
     uint32_t seq;
     uint64_t granule, lastgp;
     int flags;
-    struct ogg_codec *codec;
+    const struct ogg_codec *codec;
     int header;
     int nsegs, segp;
     uint8_t segments[255];
