@@ -37,6 +37,12 @@
 #define WV_HYBRID_BITRATE 0x00000200
 #define WV_HYBRID_BALANCE 0x00000400
 
+#define WV_FLT_SHIFT_ONES 0x01
+#define WV_FLT_SHIFT_SAME 0x02
+#define WV_FLT_SHIFT_SENT 0x04
+#define WV_FLT_ZERO_SENT  0x08
+#define WV_FLT_ZERO_SIGN  0x10
+
 enum WP_ID_Flags{
     WP_IDF_MASK   = 0x1F,
     WP_IDF_IGNORE = 0x20,
@@ -97,6 +103,9 @@ typedef struct WavpackContext {
     int and, or, shift;
     int post_shift;
     int hybrid, hybrid_bitrate;
+    int float_flag;
+    int float_shift;
+    int float_max_exp;
     WvChannel ch[2];
 } WavpackContext;
 
@@ -357,6 +366,79 @@ static inline int wv_get_value_integer(WavpackContext *s, uint32_t *crc, int S)
     return (((S + bit) << s->shift) - bit) << s->post_shift;
 }
 
+static float wv_get_value_float(WavpackContext *s, uint32_t *crc, int S)
+{
+    union {
+        float    f;
+        uint32_t u;
+    } value;
+
+    int sign;
+    int exp = s->float_max_exp;
+
+    if(s->got_extra_bits){
+        const int max_bits = 1 + 23 + 8 + 1;
+        const int left_bits = s->gb_extra_bits.size_in_bits - get_bits_count(&s->gb_extra_bits);
+
+        if(left_bits + 8 * FF_INPUT_BUFFER_PADDING_SIZE < max_bits)
+            return 0.0;
+    }
+
+    if(S){
+        S <<= s->float_shift;
+        sign = S < 0;
+        if(sign)
+            S = -S;
+        if(S >= 0x1000000){
+            if(s->got_extra_bits && get_bits1(&s->gb_extra_bits)){
+                S = get_bits(&s->gb_extra_bits, 23);
+            }else{
+                S = 0;
+            }
+            exp = 255;
+        }else if(exp){
+            int shift = 23 - av_log2(S);
+            exp = s->float_max_exp;
+            if(exp <= shift){
+                shift = --exp;
+            }
+            exp -= shift;
+
+            if(shift){
+                S <<= shift;
+                if((s->float_flag & WV_FLT_SHIFT_ONES) ||
+                   (s->got_extra_bits && (s->float_flag & WV_FLT_SHIFT_SAME) && get_bits1(&s->gb_extra_bits)) ){
+                    S |= (1 << shift) - 1;
+                } else if(s->got_extra_bits && (s->float_flag & WV_FLT_SHIFT_SENT)){
+                    S |= get_bits(&s->gb_extra_bits, shift);
+                }
+            }
+        }else{
+            exp = s->float_max_exp;
+        }
+        S &= 0x7fffff;
+    }else{
+        sign = 0;
+        exp = 0;
+        if(s->got_extra_bits && (s->float_flag & WV_FLT_ZERO_SENT)){
+            if(get_bits1(&s->gb_extra_bits)){
+                S = get_bits(&s->gb_extra_bits, 23);
+                if(s->float_max_exp >= 25)
+                    exp = get_bits(&s->gb_extra_bits, 8);
+                sign = get_bits1(&s->gb_extra_bits);
+            }else{
+                if(s->float_flag & WV_FLT_ZERO_SIGN)
+                    sign = get_bits1(&s->gb_extra_bits);
+            }
+        }
+    }
+
+    *crc = *crc * 27 + S * 9 + exp * 3 + sign;
+
+    value.u = (sign << 31) | (exp << 23) | S;
+    return value.f;
+}
+
 static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *dst, const int type)
 {
     int i, j, count = 0;
@@ -367,6 +449,7 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
     uint32_t crc_extra_bits = 0xFFFFFFFF;
     int16_t *dst16 = dst;
     int32_t *dst32 = dst;
+    float   *dstfl = dst;
 
     s->one = s->zero = s->zeroes = 0;
     do{
@@ -445,7 +528,10 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
             L += (R -= (L >> 1));
         crc = (crc * 3 + L) * 3 + R;
 
-        if(type == SAMPLE_FMT_S32){
+        if(type == SAMPLE_FMT_FLT){
+            *dstfl++ = wv_get_value_float(s, &crc_extra_bits, L);
+            *dstfl++ = wv_get_value_float(s, &crc_extra_bits, R);
+        } else if(type == SAMPLE_FMT_S32){
             *dst32++ = wv_get_value_integer(s, &crc_extra_bits, L);
             *dst32++ = wv_get_value_integer(s, &crc_extra_bits, R);
         } else {
@@ -476,6 +562,7 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
     uint32_t crc_extra_bits = 0xFFFFFFFF;
     int16_t *dst16 = dst;
     int32_t *dst32 = dst;
+    float   *dstfl = dst;
 
     s->one = s->zero = s->zeroes = 0;
     do{
@@ -505,7 +592,9 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
         pos = (pos + 1) & 7;
         crc = crc * 3 + S;
 
-        if(type == SAMPLE_FMT_S32)
+        if(type == SAMPLE_FMT_FLT)
+            *dstfl++ = wv_get_value_float(s, &crc_extra_bits, S);
+        else if(type == SAMPLE_FMT_S32)
             *dst32++ = wv_get_value_integer(s, &crc_extra_bits, S);
         else
             *dst16++ = wv_get_value_integer(s, &crc_extra_bits, S);
@@ -547,7 +636,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     WavpackContext *s = avctx->priv_data;
     void *samples = data;
     int samplecount;
-    int got_terms = 0, got_weights = 0, got_samples = 0, got_entropy = 0, got_bs = 0;
+    int got_terms = 0, got_weights = 0, got_samples = 0, got_entropy = 0, got_bs = 0, got_float = 0;
     int got_hybrid = 0;
     const uint8_t* buf_end = buf + buf_size;
     int i, j, id, size, ssize, weights, t;
@@ -570,7 +659,10 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         return buf_size;
     }
     s->frame_flags = AV_RL32(buf); buf += 4;
-    if((s->frame_flags&0x03) <= 1){
+    if(s->frame_flags&0x80){
+        bpp = sizeof(float);
+        avctx->sample_fmt = SAMPLE_FMT_FLT;
+    } else if((s->frame_flags&0x03) <= 1){
         bpp = 2;
         avctx->sample_fmt = SAMPLE_FMT_S16;
     } else {
@@ -742,6 +834,18 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             }
             buf += 4;
             break;
+        case WP_ID_FLOATINFO:
+            if(size != 4){
+                av_log(avctx, AV_LOG_ERROR, "Invalid FLOATINFO, size = %i\n", size);
+                buf += ssize;
+                continue;
+            }
+            s->float_flag = buf[0];
+            s->float_shift = buf[1];
+            s->float_max_exp = buf[2];
+            buf += 4;
+            got_float = 1;
+            break;
         case WP_ID_DATA:
             init_get_bits(&s->gb, buf, size * 8);
             s->data_size = size * 8;
@@ -788,7 +892,11 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Packed samples not found\n");
         return -1;
     }
-    if(s->got_extra_bits){
+    if(!got_float && avctx->sample_fmt == SAMPLE_FMT_FLT){
+        av_log(avctx, AV_LOG_ERROR, "Float information not found\n");
+        return -1;
+    }
+    if(s->got_extra_bits && avctx->sample_fmt != SAMPLE_FMT_FLT){
         const int size = s->gb_extra_bits.size_in_bits - get_bits_count(&s->gb_extra_bits);
         const int wanted = s->samples * s->extra_bits << s->stereo_in;
         if(size < wanted){
@@ -800,13 +908,19 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     if(s->stereo_in){
         if(avctx->sample_fmt == SAMPLE_FMT_S16)
             samplecount = wv_unpack_stereo(s, &s->gb, samples, SAMPLE_FMT_S16);
-        else
+        else if(avctx->sample_fmt == SAMPLE_FMT_S32)
             samplecount = wv_unpack_stereo(s, &s->gb, samples, SAMPLE_FMT_S32);
+        else
+            samplecount = wv_unpack_stereo(s, &s->gb, samples, SAMPLE_FMT_FLT);
+
     }else{
         if(avctx->sample_fmt == SAMPLE_FMT_S16)
             samplecount = wv_unpack_mono(s, &s->gb, samples, SAMPLE_FMT_S16);
-        else
+        else if(avctx->sample_fmt == SAMPLE_FMT_S32)
             samplecount = wv_unpack_mono(s, &s->gb, samples, SAMPLE_FMT_S32);
+        else
+            samplecount = wv_unpack_mono(s, &s->gb, samples, SAMPLE_FMT_FLT);
+
         if(s->stereo && avctx->sample_fmt == SAMPLE_FMT_S16){
             int16_t *dst = (int16_t*)samples + samplecount * 2;
             int16_t *src = (int16_t*)samples + samplecount;
@@ -816,9 +930,18 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
                 *--dst = *src;
             }
             samplecount *= 2;
-        }else if(s->stereo){ //32-bit output
+        }else if(s->stereo && avctx->sample_fmt == SAMPLE_FMT_S32){
             int32_t *dst = (int32_t*)samples + samplecount * 2;
             int32_t *src = (int32_t*)samples + samplecount;
+            int cnt = samplecount;
+            while(cnt--){
+                *--dst = *--src;
+                *--dst = *src;
+            }
+            samplecount *= 2;
+        }else if(s->stereo){
+            float *dst = (float*)samples + samplecount * 2;
+            float *src = (float*)samples + samplecount;
             int cnt = samplecount;
             while(cnt--){
                 *--dst = *--src;
