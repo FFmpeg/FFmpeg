@@ -15,6 +15,7 @@ version <next>:
 - RTP depacketization of Vorbis
 - Cook multichannel decoding support
 - introduced avlanguage helpers in libavformat
+- 8088flex TMV demuxer and decoder
 
 
 version 0.5:
