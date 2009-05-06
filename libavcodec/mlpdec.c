@@ -377,6 +377,15 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         return -1;
     }
 
+    /* This should happen for TrueHD streams with >6 channels and MLP's noise
+     * type. It is not yet known if this is allowed. */
+    if (s->max_channel > MAX_MATRIX_CHANNEL_MLP && !s->noise_type) {
+        av_log(m->avctx, AV_LOG_ERROR,
+               "Number of channels %d is larger than the maximum supported "
+               "by the decoder. %s\n", s->max_channel+2, sample_message);
+        return -1;
+    }
+
     if (s->min_channel > s->max_channel) {
         av_log(m->avctx, AV_LOG_ERROR,
                "Substream min channel cannot be greater than max channel.\n");
