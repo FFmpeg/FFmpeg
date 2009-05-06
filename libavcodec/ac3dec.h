@@ -82,7 +82,6 @@ typedef struct {
     int channel_in_cpl[AC3_MAX_CHANNELS];   ///< channel in coupling                    (chincpl)
     int phase_flags_in_use;                 ///< phase flags in use                     (phsflginu)
     int phase_flags[18];                    ///< phase flags                            (phsflg)
-    int num_cpl_subbands;                   ///< number of coupling sub bands           (ncplsubnd)
     int num_cpl_bands;                      ///< number of coupling bands               (ncplbnd)
     uint8_t cpl_band_struct[18];            ///< coupling band structure                (cplbndstrc)
     int firstchincpl;                       ///< first channel in coupling
