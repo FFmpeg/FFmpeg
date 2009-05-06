@@ -1695,6 +1695,7 @@ die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libamr_nb
 die_license_disabled nonfree libamr_wb
+die_license_disabled nonfree libfaac
 
 
 check_deps $ARCH_EXT_LIST
