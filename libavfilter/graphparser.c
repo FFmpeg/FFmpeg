@@ -120,7 +120,7 @@ static AVFilterContext *parse_filter(const char **buf, AVFilterGraph *graph,
                                      int index, AVClass *log_ctx)
 {
     char *opts = NULL;
-    char *name = av_get_token(buf, "=,");
+    char *name = av_get_token(buf, "=,[");
     AVFilterContext *ret;
 
     if(**buf == '=') {
