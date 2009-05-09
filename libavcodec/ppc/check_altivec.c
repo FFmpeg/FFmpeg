@@ -22,6 +22,8 @@
  * Checks for AltiVec presence.
  */
 
+#include "config.h"
+
 #ifdef __APPLE__
 #undef _POSIX_C_SOURCE
 #include <sys/sysctl.h>
