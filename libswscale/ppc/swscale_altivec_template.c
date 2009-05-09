@@ -85,8 +85,8 @@ altivec_packIntArrayToCharArray(int *val, uint8_t* dest, int dstW) {
 }
 
 static inline void
-yuv2yuvX_altivec_real(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
-                      int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+yuv2yuvX_altivec_real(const int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+                      const int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
                       uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW)
 {
     const vector signed int vini = {(1 << 18), (1 << 18), (1 << 18), (1 << 18)};
@@ -208,7 +208,11 @@ yuv2yuvX_altivec_real(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
     }
 }
 
-static inline void hScale_altivec_real(int16_t *dst, int dstW, uint8_t *src, int srcW, int xInc, int16_t *filter, int16_t *filterPos, int filterSize) {
+static inline void hScale_altivec_real(int16_t *dst, int dstW,
+                                       const uint8_t *src, int srcW,
+                                       int xInc, const int16_t *filter,
+                                       const int16_t *filterPos, int filterSize)
+{
     register int i;
     int __attribute__ ((aligned (16))) tempo[4];
 

@@ -289,8 +289,8 @@ SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c);
 SwsFunc ff_yuv2rgb_get_func_ptr_bfin(SwsContext *c);
 void ff_bfin_get_unscaled_swscale(SwsContext *c);
 void ff_yuv2packedX_altivec(SwsContext *c,
-                            int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
-                            int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+                            const int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+                            const int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
                             uint8_t *dest, int dstW, int dstY);
 
 const char *sws_format_name(int format);
