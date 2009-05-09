@@ -71,7 +71,7 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
  *             }
  *
  * @return If no insertion happened, the found element; if an insertion or
-           removal happened, then either key or NULL will be returned.
+ *         removal happened, then either key or NULL will be returned.
  *         Which one it is depends on the tree state and the implementation. You
  *         should make no assumptions that it's one or the other in the code.
  */
