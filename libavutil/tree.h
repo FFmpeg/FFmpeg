@@ -61,6 +61,7 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
  *             This allows the use of flat arrays, which have
  *             lower overhead compared to many malloced elements.
  *             You might want to define a function like:
+ *             @code
  *             void *tree_insert(struct AVTreeNode **rootp, void *key, int (*cmp)(void *key, const void *b), AVTreeNode **next){
  *                 if(!*next) *next= av_mallocz(av_tree_node_size);
  *                 return av_tree_insert(rootp, key, cmp, next);
@@ -69,7 +70,7 @@ void *av_tree_find(const struct AVTreeNode *root, void *key, int (*cmp)(void *ke
  *                 if(*next) av_freep(next);
  *                 return av_tree_insert(rootp, key, cmp, next);
  *             }
- *
+ *             @endcode
  * @return If no insertion happened, the found element; if an insertion or
  *         removal happened, then either key or NULL will be returned.
  *         Which one it is depends on the tree state and the implementation. You
