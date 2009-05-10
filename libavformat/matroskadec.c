@@ -1679,7 +1679,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 if (av_new_packet(pkt, pkt_size+offset) < 0) {
                     av_free(pkt);
                     res = AVERROR(ENOMEM);
-                    n = laces-1;
                     break;
                 }
                 if (offset)
