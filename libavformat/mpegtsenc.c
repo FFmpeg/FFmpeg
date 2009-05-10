@@ -173,6 +173,7 @@ typedef struct MpegTSWriteStream {
     int pid; /* stream associated pid */
     int cc;
     int payload_index;
+    int first_pts_check; ///< first pts check needed
     int64_t payload_pts;
     int64_t payload_dts;
     uint8_t payload[DEFAULT_PES_PAYLOAD_SIZE];
@@ -419,6 +420,7 @@ static int mpegts_write_header(AVFormatContext *s)
         ts_st->pid = DEFAULT_START_PID + i;
         ts_st->payload_pts = AV_NOPTS_VALUE;
         ts_st->payload_dts = AV_NOPTS_VALUE;
+        ts_st->first_pts_check = 1;
         /* update PCR pid by using the first video stream */
         if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
             service->pcr_pid == 0x1fff)
@@ -700,6 +702,12 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         pts = pkt->pts + delay;
     if (pkt->dts != AV_NOPTS_VALUE)
         dts = pkt->dts + delay;
+
+    if (ts_st->first_pts_check && pts == AV_NOPTS_VALUE) {
+        av_log(s, AV_LOG_ERROR, "first pts value must set\n");
+        return -1;
+    }
+    ts_st->first_pts_check = 0;
 
     if (st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
         /* for subtitle, a single PES packet must be generated */
