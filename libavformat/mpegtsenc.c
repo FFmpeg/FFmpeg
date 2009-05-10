@@ -688,11 +688,10 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
 static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
-    int size= pkt->size;
+    int len, size = pkt->size;
     uint8_t *buf= pkt->data;
     uint8_t *data= NULL;
     MpegTSWriteStream *ts_st = st->priv_data;
-    int len, max_payload_size;
     const uint8_t *access_unit_index = NULL;
     const uint64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
     int64_t dts = AV_NOPTS_VALUE, pts = AV_NOPTS_VALUE;
@@ -713,7 +712,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         mpegts_write_pes(s, st, buf, size, pts, dts);
         return 0;
     }
-    max_payload_size = DEFAULT_PES_PAYLOAD_SIZE;
+
     if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO ||
         st->codec->codec_id == CODEC_ID_MPEG1VIDEO) {
         const uint8_t *p = pkt->data;
@@ -753,7 +752,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     while (size > 0) {
-        len = max_payload_size - ts_st->payload_index;
+        len = DEFAULT_PES_PAYLOAD_SIZE - ts_st->payload_index;
         if (len > size)
             len = size;
         memcpy(ts_st->payload + ts_st->payload_index, buf, len);
@@ -766,7 +765,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
             ts_st->payload_dts = dts;
             ts_st->payload_pts = pts;
         }
-        if (ts_st->payload_index >= max_payload_size) {
+        if (ts_st->payload_index >= DEFAULT_PES_PAYLOAD_SIZE) {
             mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
                              ts_st->payload_pts, ts_st->payload_dts);
             ts_st->payload_pts = AV_NOPTS_VALUE;
