@@ -130,7 +130,7 @@ void sws_freeContext(struct SwsContext *swsContext);
 struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
                                   int dstW, int dstH, enum PixelFormat dstFormat,
                                   int flags, SwsFilter *srcFilter,
-                                  SwsFilter *dstFilter, double *param);
+                                  SwsFilter *dstFilter, const double *param);
 
 /**
  * Scales the image slice in \p srcSlice and puts the resulting scaled
@@ -258,6 +258,6 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
                                         int srcW, int srcH, enum PixelFormat srcFormat,
                                         int dstW, int dstH, enum PixelFormat dstFormat,
                                         int flags, SwsFilter *srcFilter,
-                                        SwsFilter *dstFilter, double *param);
+                                        SwsFilter *dstFilter, const double *param);
 
 #endif /* SWSCALE_SWSCALE_H */
