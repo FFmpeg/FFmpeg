@@ -615,7 +615,7 @@ static const struct {
     { PIX_FMT_UYVY422, MKTAG('2','v','u','y'),  0 },
     { PIX_FMT_BGR555,  MKTAG('r','a','w',' '), 16 },
     { PIX_FMT_RGB24,   MKTAG('r','a','w',' '), 24 },
-    { PIX_FMT_BGR32_1, MKTAG('r','a','w',' '), 32 },
+    { PIX_FMT_ARGB,    MKTAG('r','a','w',' '), 32 },
     { PIX_FMT_RGBA,    MKTAG('R','G','B','A'), 32 },
 };
 
