@@ -117,7 +117,6 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
     AVFrame * const p = &c->pic;
     uint8_t *src, *prev;
     uint32_t *palptr;
-    int zret = Z_OK;
     int len = 0;
     int keyframe, chpal;
     int fl;
@@ -226,7 +225,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
     c->zstream.next_out = c->comp_buf;
     c->zstream.avail_out = c->comp_size;
     c->zstream.total_out = 0;
-    if((zret = deflate(&c->zstream, Z_SYNC_FLUSH)) != Z_OK){
+    if(deflate(&c->zstream, Z_SYNC_FLUSH) != Z_OK){
         av_log(avctx, AV_LOG_ERROR, "Error compressing data\n");
         return -1;
     }
