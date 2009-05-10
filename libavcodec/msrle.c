@@ -79,11 +79,13 @@ static int msrle_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
+    if (s->avctx->palctrl) {
     /* make the palette available */
     memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
     if (s->avctx->palctrl->palette_changed) {
         s->frame.palette_has_changed = 1;
         s->avctx->palctrl->palette_changed = 0;
+    }
     }
 
     ff_msrle_decode(avctx, (AVPicture*)&s->frame, avctx->bits_per_coded_sample, buf, buf_size);
