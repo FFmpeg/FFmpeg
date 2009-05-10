@@ -1792,9 +1792,9 @@ static void globalInit(void){
 
 static SwsFunc getSwsFunc(SwsContext *c)
 {
+#if CONFIG_RUNTIME_CPUDETECT && CONFIG_GPL
     int flags = c->flags;
 
-#if CONFIG_RUNTIME_CPUDETECT && CONFIG_GPL
 #if ARCH_X86
     // ordered per speed fastest first
     if (flags & SWS_CPU_CAPS_MMX2) {
