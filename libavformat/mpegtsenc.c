@@ -456,11 +456,11 @@ static int mpegts_write_header(AVFormatContext *s)
     pat_pmt_size = url_ftell(s->pb) - pos;
 
     total_bit_rate +=
-        total_bit_rate * 25 / (8 * DEFAULT_PES_PAYLOAD_SIZE) + /* PES header size */
-        total_bit_rate * 4 / (8 * TS_PACKET_SIZE) +            /* TS  header size */
-        SDT_RETRANS_TIME * sdt_size +                          /* SDT size */
-        PAT_RETRANS_TIME * pat_pmt_size +                      /* PAT+PMT size */
-        PCR_RETRANS_TIME * 8;                                  /* PCR size */
+        total_bit_rate * 25 / DEFAULT_PES_PAYLOAD_SIZE + /* PES header size */
+        total_bit_rate *  4 / TS_PACKET_SIZE           + /* TS  header size */
+        SDT_RETRANS_TIME * 8 * sdt_size     / 1000     + /* SDT size */
+        PAT_RETRANS_TIME * 8 * pat_pmt_size / 1000     + /* PAT+PMT size */
+        PCR_RETRANS_TIME * 8 * 8            / 1000;      /* PCR size */
 
     av_log(s, AV_LOG_DEBUG, "muxrate %d freq sdt %d pat %d\n",
            total_bit_rate, ts->sdt_packet_freq, ts->pat_packet_freq);
