@@ -597,7 +597,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 header_len += 5;
                 flags |= 0x80;
             }
-            if (dts != AV_NOPTS_VALUE && dts != pts) {
+            if (dts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE && dts != pts) {
                 header_len += 5;
                 flags |= 0x40;
             }
@@ -630,7 +630,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 write_pts(q, flags >> 6, pts);
                 q += 5;
             }
-            if (dts != AV_NOPTS_VALUE && dts != pts) {
+            if (dts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE && dts != pts) {
                 write_pts(q, 1, dts);
                 q += 5;
             }
