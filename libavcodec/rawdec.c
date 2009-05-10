@@ -46,10 +46,10 @@ static const PixelFormatTag pixelFormatBpsAVI[] = {
 };
 
 static const PixelFormatTag pixelFormatBpsMOV[] = {
-    /* FIXME fix swscaler to support those */
-    /* http://developer.apple.com/documentation/QuickTime/QTFF/QTFFChap3/chapter_4_section_2.html */
     { PIX_FMT_PAL8,      4 },
     { PIX_FMT_PAL8,      8 },
+    // FIXME swscale does not support 16 bit in .mov, sample 16bit.mov
+    // http://developer.apple.com/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html
     { PIX_FMT_BGR555,   16 },
     { PIX_FMT_RGB24,    24 },
     { PIX_FMT_BGR32_1,  32 },
