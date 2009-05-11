@@ -741,6 +741,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         st->codec->codec_type == CODEC_TYPE_VIDEO) {
         // for video and subtitle, write a single pes packet
         mpegts_write_pes(s, st, buf, size, pts, dts);
+        av_free(data);
         return 0;
     }
 
@@ -768,8 +769,6 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
             access_unit_index = NULL; // unset access unit to avoid setting pts/dts again
         }
     }
-
-    av_free(data);
 
     return 0;
 }
