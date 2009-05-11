@@ -619,6 +619,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             len = payload_size + header_len + 3;
             if (private_code != 0)
                 len++;
+            if (len > 0xffff)
+                len = 0;
             *q++ = len >> 8;
             *q++ = len;
             val = 0x80;
@@ -709,31 +711,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     ts_st->first_pts_check = 0;
 
-    if (st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
-        /* for subtitle, a single PES packet must be generated */
-        mpegts_write_pes(s, st, buf, size, pts, AV_NOPTS_VALUE);
-        return 0;
-    }
-
-    if (st->codec->codec_id == CODEC_ID_DIRAC) {
-        /* for Dirac, a single PES packet must be generated */
-        mpegts_write_pes(s, st, buf, size, pts, dts);
-        return 0;
-    }
-
-    if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO ||
-        st->codec->codec_id == CODEC_ID_MPEG1VIDEO) {
-        const uint8_t *p = pkt->data;
-        const uint8_t *end = pkt->data+pkt->size;
-        uint32_t state = -1;
-        while (p < end) {
-            p = ff_find_start_code(p, end, &state);
-            if (state == PICTURE_START_CODE) {
-                access_unit_index = p - 4;
-                break;
-            }
-        }
-    } if (st->codec->codec_id == CODEC_ID_H264) {
+    if (st->codec->codec_id == CODEC_ID_H264) {
         if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
             av_log(s, AV_LOG_ERROR, "h264 bitstream malformated\n");
             return -1;
@@ -759,6 +737,14 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         return -1;
     }
 
+    if (st->codec->codec_type == CODEC_TYPE_SUBTITLE ||
+        st->codec->codec_type == CODEC_TYPE_VIDEO) {
+        // for video and subtitle, write a single pes packet
+        mpegts_write_pes(s, st, buf, size, pts, dts);
+        return 0;
+    }
+
+    // audio
     while (size > 0) {
         len = DEFAULT_PES_PAYLOAD_SIZE - ts_st->payload_index;
         if (len > size)
