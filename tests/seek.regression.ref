@@ -3797,7 +3797,7 @@ ret: 0 st:-1 ts:-0.645825 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:4096 flags:1
 ----------------
 tests/data/b-lavf.y4m
-ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:66 size:152064 flags:1
+ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:64 size:152064 flags:1
 ret:-1 st:-1 ts:-1.000000 flags:0
 ret:-1 st:-1 ts:1.894167 flags:1
 ret:-1 st: 0 ts:0.800000 flags:0

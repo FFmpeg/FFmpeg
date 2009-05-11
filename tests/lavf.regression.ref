@@ -53,8 +53,8 @@ aff140ce80a1c86c1bf54118ad23da7b *./tests/data/b-pgmpipe.pgm
 ./tests/data/b-ppmpipe.ppm CRC=0x79bd6ce6
 6ac80e7d403b715fd4da75c01d464d5e *./tests/data/b-lavf.gif
 2906382 ./tests/data/b-lavf.gif
-b977a4fedff90a79baf70c8e02986820 *./tests/data/b-lavf.y4m
-3801810 ./tests/data/b-lavf.y4m
+efb713b69ad03e848c71f174fa7d73d0 *./tests/data/b-lavf.y4m
+3801808 ./tests/data/b-lavf.y4m
 0a6d74b54396884f117669965b57d3b5 *./tests/data/b-lavf02.pgm
 ./tests/data/b-lavf%02d.pgm CRC=0x7e552eb1
 101391 ./tests/data/b-lavf02.pgm
