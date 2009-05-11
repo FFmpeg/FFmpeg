@@ -170,6 +170,8 @@ static int decode_tag(AVCodecContext * avctx,
             blocks = 1; break;
         case 128:   // 11025Hz
             blocks = 2; break;
+        case 192:   // 16000Hz
+            blocks = 3; break;
         case 256:   // 22050Hz
             blocks = 4; break;
         case 512:   // 44100Hz

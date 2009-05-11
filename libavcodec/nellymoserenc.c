@@ -135,10 +135,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if (avctx->sample_rate != 8000 && avctx->sample_rate != 11025 &&
+    if (avctx->sample_rate != 8000 && avctx->sample_rate != 16000 &&
+        avctx->sample_rate != 11025 &&
         avctx->sample_rate != 22050 && avctx->sample_rate != 44100 &&
         avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
-        av_log(avctx, AV_LOG_ERROR, "Nellymoser works only with 8000, 11025, 22050 and 44100 sample rate\n");
+        av_log(avctx, AV_LOG_ERROR, "Nellymoser works only with 8000, 16000, 11025, 22050 and 44100 sample rate\n");
         return -1;
     }
 
