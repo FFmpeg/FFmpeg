@@ -398,6 +398,7 @@ static const AVOption options[]={
 {"color_trc", NULL, OFFSET(color_trc), FF_OPT_TYPE_INT, AVCOL_TRC_UNSPECIFIED, 1, AVCOL_TRC_NB-1, V|E|D},
 {"colorspace", NULL, OFFSET(colorspace), FF_OPT_TYPE_INT, AVCOL_SPC_UNSPECIFIED, 1, AVCOL_SPC_NB-1, V|E|D},
 {"color_range", NULL, OFFSET(color_range), FF_OPT_TYPE_INT, AVCOL_RANGE_UNSPECIFIED, 0, AVCOL_RANGE_NB-1, V|E|D},
+{"chroma_sample_location", NULL, OFFSET(chroma_sample_location), FF_OPT_TYPE_INT, AVCHROMA_LOC_UNSPECIFIED, 0, AVCHROMA_LOC_NB-1, V|E|D},
 {NULL},
 };
 

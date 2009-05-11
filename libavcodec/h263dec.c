@@ -59,12 +59,14 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     switch(avctx->codec->id) {
     case CODEC_ID_H263:
         s->unrestricted_mv= 0;
+        avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
         break;
     case CODEC_ID_MPEG4:
         s->decode_mb= ff_mpeg4_decode_mb;
         s->time_increment_bits = 4; /* default value for broken headers */
         s->h263_pred = 1;
         s->low_delay = 0; //default, might be overriden in the vol header during header parsing
+        avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
         break;
     case CODEC_ID_MSMPEG4V1:
         s->h263_msmpeg4 = 1;
@@ -96,6 +98,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         s->h263_msmpeg4 = 1;
         s->h263_pred = 1;
         s->msmpeg4_version=6;
+        avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
         break;
     case CODEC_ID_H263I:
         break;

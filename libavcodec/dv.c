@@ -393,6 +393,7 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
 
     avctx->coded_frame = &s->picture;
     s->avctx = avctx;
+    avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
 
     return 0;
 }

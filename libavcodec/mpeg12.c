@@ -1189,6 +1189,10 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     s->repeat_field = 0;
     s->mpeg_enc_ctx.codec_id= avctx->codec->id;
     avctx->color_range= AVCOL_RANGE_MPEG;
+    if (avctx->codec->id == CODEC_ID_MPEG1VIDEO)
+        avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
+    else
+        avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
     return 0;
 }
 

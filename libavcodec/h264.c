@@ -2198,6 +2198,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     else
         avctx->pix_fmt= avctx->get_format(avctx, avctx->codec->pix_fmts);
     avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
+    avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
 
     decode_init_vlc();
 
@@ -7064,7 +7065,7 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
     }
 
     if(get_bits1(&s->gb)){      /* chroma_location_info_present_flag */
-        get_ue_golomb(&s->gb);  /* chroma_sample_location_type_top_field */
+        s->avctx->chroma_sample_location = get_ue_golomb(&s->gb)+1;  /* chroma_sample_location_type_top_field */
         get_ue_golomb(&s->gb);  /* chroma_sample_location_type_bottom_field */
     }
 
