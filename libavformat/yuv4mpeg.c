@@ -62,7 +62,9 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
         colorspace = " C411 XYSCSS=411";
         break;
     case PIX_FMT_YUV420P:
-        colorspace = (st->codec->codec_id == CODEC_ID_DVVIDEO)?" C420paldv XYSCSS=420PALDV":" C420mpeg2 XYSCSS=420MPEG2";
+        colorspace = (st->codec->chroma_sample_location == AVCHROMA_LOC_TOPLEFT)?" C420paldv XYSCSS=420PALDV":
+                     (st->codec->chroma_sample_location == AVCHROMA_LOC_LEFT)   ?" C420mpeg2 XYSCSS=420MPEG2":
+                     " C420jpeg XYSCSS=420JPEG";
         break;
     case PIX_FMT_YUV422P:
         colorspace = " C422 XYSCSS=422";
@@ -193,6 +195,7 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ByteIOContext *pb = s->pb;
     int width=-1, height=-1, raten=0, rated=0, aspectn=0, aspectd=0;
     enum PixelFormat pix_fmt=PIX_FMT_NONE,alt_pix_fmt=PIX_FMT_NONE;
+    enum AVChromaLocation chroma_sample_location = AVCHROMA_LOC_UNSPECIFIED;
     AVStream *st;
     struct frame_attributes *s1 = s->priv_data;
 
@@ -222,13 +225,16 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
             tokstart=tokend;
             break;
         case 'C': // Color space
-            if (strncmp("420jpeg",tokstart,7)==0)
+            if (strncmp("420jpeg",tokstart,7)==0) {
                 pix_fmt = PIX_FMT_YUV420P;
-            else if (strncmp("420mpeg2",tokstart,8)==0)
+                chroma_sample_location = AVCHROMA_LOC_CENTER;
+            } else if (strncmp("420mpeg2",tokstart,8)==0) {
                 pix_fmt = PIX_FMT_YUV420P;
-            else if (strncmp("420paldv", tokstart, 8)==0)
+                chroma_sample_location = AVCHROMA_LOC_LEFT;
+            } else if (strncmp("420paldv", tokstart, 8)==0) {
                 pix_fmt = PIX_FMT_YUV420P;
-            else if (strncmp("411", tokstart, 3)==0)
+                chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
+            } else if (strncmp("411", tokstart, 3)==0)
                 pix_fmt = PIX_FMT_YUV411P;
             else if (strncmp("422", tokstart, 3)==0)
                 pix_fmt = PIX_FMT_YUV422P;
@@ -332,6 +338,7 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
     st->sample_aspect_ratio= (AVRational){aspectn, aspectd};
+    st->codec->chroma_sample_location = chroma_sample_location;
 
     return 0;
 }
