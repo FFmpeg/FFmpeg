@@ -17,6 +17,7 @@ version <next>:
 - introduced avlanguage helpers in libavformat
 - 8088flex TMV demuxer and decoder
 - per-stream language-tags extraction in asfdec
+- V210 decoder and encoder
 
 
 version 0.5:
