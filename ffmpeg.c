@@ -1749,6 +1749,7 @@ static int av_encode(AVFormatContext **output_files,
 
         ost->st->disposition = ist->st->disposition;
         codec->bits_per_raw_sample= icodec->bits_per_raw_sample;
+        codec->chroma_sample_location = icodec->chroma_sample_location;
 
         if (ost->st->stream_copy) {
             /* if stream_copy is selected, no need to decode or encode */
