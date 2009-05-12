@@ -68,7 +68,7 @@ typedef struct {
                                  *   invalid if broadcasting */
     uint32_t max_pktsize;       /**< shall be the same as for min_pktsize
                                  *   invalid if broadcasting */
-    uint32_t max_bitrate;       /**< bandwith of stream in bps
+    uint32_t max_bitrate;       /**< bandwidth of stream in bps
                                  *   should be the sum of bitrates of the
                                  *   individual media streams */
 } ASFMainHeader;

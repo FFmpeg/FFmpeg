@@ -597,7 +597,7 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
  * @param lspf line spectral pair frequencies
  * @param lpc linear predictive coding coefficients
  *
- * @note: bandwith_expansion_coeff could be precalculated into a table
+ * @note: bandwidth_expansion_coeff could be precalculated into a table
  *        but it seems to be slower on x86
  *
  * TIA/EIA/IS-733 2.4.3.3.5
@@ -605,7 +605,7 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
 static void lspf2lpc(const float *lspf, float *lpc)
 {
     double lsf[10];
-    double bandwith_expansion_coeff = QCELP_BANDWITH_EXPANSION_COEFF;
+    double bandwidth_expansion_coeff = QCELP_BANDWIDTH_EXPANSION_COEFF;
     int   i;
 
     for (i=0; i<10; i++)
@@ -615,8 +615,8 @@ static void lspf2lpc(const float *lspf, float *lpc)
 
     for (i=0; i<10; i++)
     {
-        lpc[i] *= bandwith_expansion_coeff;
-        bandwith_expansion_coeff *= QCELP_BANDWITH_EXPANSION_COEFF;
+        lpc[i] *= bandwidth_expansion_coeff;
+        bandwidth_expansion_coeff *= QCELP_BANDWIDTH_EXPANSION_COEFF;
     }
 }
 

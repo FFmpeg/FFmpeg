@@ -557,6 +557,6 @@ static const double qcelp_rnd_fir_coefs[11] = {
  *
  * TIA/EIA/IS-733 2.4.3.3.6 6
  */
-#define QCELP_BANDWITH_EXPANSION_COEFF 0.9883
+#define QCELP_BANDWIDTH_EXPANSION_COEFF 0.9883
 
 #endif /* AVCODEC_QCELPDATA_H */
