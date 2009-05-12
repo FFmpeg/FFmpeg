@@ -42,6 +42,8 @@ typedef struct {
 
     int64_t packet_pos;
 
+    uint16_t stream_language_index;
+
 } ASFStream;
 
 typedef uint8_t ff_asf_guid[16];
@@ -85,6 +87,7 @@ typedef struct {
     int asfid2avid[128];                 ///< conversion table from asf ID 2 AVStream ID
     ASFStream streams[128];              ///< it's max number and it's not that big
     uint32_t stream_bitrates[128];       ///< max number of streams, bitrate for each (for streaming)
+    char stream_languages[128][6];       ///< max number of streams, language for each (RFC1766, e.g. en-US)
     /* non streamed additonnal info */
     uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
     int64_t duration;                    ///< in 100ns units
@@ -157,6 +160,7 @@ extern const ff_asf_guid ff_asf_ext_stream_embed_stream_header;
 extern const ff_asf_guid ff_asf_ext_stream_audio_stream;
 extern const ff_asf_guid ff_asf_metadata_header;
 extern const ff_asf_guid ff_asf_my_guid;
+extern const ff_asf_guid ff_asf_language_guid;
 
 extern const AVMetadataConv ff_asf_metadata_conv[];
 

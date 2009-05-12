@@ -112,6 +112,9 @@ const ff_asf_guid ff_asf_my_guid = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
+const ff_asf_guid ff_asf_language_guid = {
+    0xa9, 0x46, 0x43, 0x7c, 0xe0, 0xef, 0xfc, 0x4b, 0xb2, 0x29, 0x39, 0x3e, 0xde, 0x41, 0x5c, 0x85
+};
 
 const AVMetadataConv ff_asf_metadata_conv[] = {
     { "AlbumArtist", "artist"    },

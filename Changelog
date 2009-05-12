@@ -16,6 +16,7 @@ version <next>:
 - Cook multichannel decoding support
 - introduced avlanguage helpers in libavformat
 - 8088flex TMV demuxer and decoder
+- per-stream language-tags extraction in asfdec
 
 
 version 0.5:
