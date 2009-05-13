@@ -27,6 +27,8 @@
 #include "aac_ac3_parser.h"
 #include "get_bits.h"
 
+#define AAC_ADTS_HEADER_SIZE 7
+
 typedef struct {
     uint32_t sample_rate;
     uint32_t samples;
