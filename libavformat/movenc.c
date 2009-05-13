@@ -1849,7 +1849,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if ((enc->codec_id == CODEC_ID_DNXHD ||
-                enc->codec_id == CODEC_ID_AC3) && !trk->vosLen) {
+         enc->codec_id == CODEC_ID_AC3) && !trk->vosLen) {
         /* copy frame to create needed atoms */
         trk->vosLen = size;
         trk->vosData = av_malloc(size);
