@@ -86,7 +86,7 @@ typedef struct {
 
 typedef struct MOVStreamContext {
     ByteIOContext *pb;
-    int ffindex; /* the ffmpeg stream id */
+    int ffindex;          ///< AVStream index
     int next_chunk;
     unsigned int chunk_count;
     int64_t *chunk_offsets;
@@ -105,35 +105,35 @@ typedef struct MOVStreamContext {
     int *keyframes;
     int time_scale;
     int time_rate;
-    int time_offset; ///< time offset of the first edit list entry
+    int time_offset;      ///< time offset of the first edit list entry
     int current_sample;
     unsigned int bytes_per_frame;
     unsigned int samples_per_frame;
     int dv_audio_container;
     int pseudo_stream_id; ///< -1 means demux all ids
-    int16_t audio_cid; ///< stsd audio compression id
+    int16_t audio_cid;    ///< stsd audio compression id
     unsigned drefs_count;
     MOVDref *drefs;
     int dref_id;
-    int wrong_dts; ///< dts are wrong due to huge ctts offset (iMovie files)
-    int width;  ///< tkhd width
-    int height; ///< tkhd height
-    int dts_shift; ///< dts shift when ctts is negative
+    int wrong_dts;        ///< dts are wrong due to huge ctts offset (iMovie files)
+    int width;            ///< tkhd width
+    int height;           ///< tkhd height
+    int dts_shift;        ///< dts shift when ctts is negative
 } MOVStreamContext;
 
 typedef struct MOVContext {
     AVFormatContext *fc;
     int time_scale;
-    int64_t duration; /* duration of the longest track */
-    int found_moov; /* when both 'moov' and 'mdat' sections has been found */
-    int found_mdat; /* we suppose we have enough data to read the file */
+    int64_t duration;     ///< duration of the longest track
+    int found_moov;       ///< 'moov' atom has been found
+    int found_mdat;       ///< 'mdat' atom has been found
     DVDemuxContext *dv_demux;
     AVFormatContext *dv_fctx;
-    int isom; /* 1 if file is ISO Media (mp4/3gp) */
+    int isom;             ///< 1 if file is ISO Media (mp4/3gp)
     MOVFragment fragment; ///< current fragment in moof atom
     MOVTrackExt *trex_data;
     unsigned trex_count;
-    int itunes_metadata; ///< metadata are itunes style
+    int itunes_metadata;  ///< metadata are itunes style
 } MOVContext;
 
 #endif /* AVFORMAT_ISOM_H */
