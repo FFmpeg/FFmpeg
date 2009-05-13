@@ -1758,7 +1758,6 @@ static int mov_write_header(AVFormatContext *s)
                 track->height = track->tag>>24 == 'n' ? 486 : 576;
             }
             track->timescale = st->codec->time_base.den;
-            av_set_pts_info(st, 64, 1, st->codec->time_base.den);
             if (track->mode == MODE_MOV && track->timescale > 100000)
                 av_log(s, AV_LOG_WARNING,
                        "WARNING codec timebase is very high. If duration is too long,\n"
@@ -1766,7 +1765,6 @@ static int mov_write_header(AVFormatContext *s)
                        "or choose different container.\n");
         }else if(st->codec->codec_type == CODEC_TYPE_AUDIO){
             track->timescale = st->codec->sample_rate;
-            av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             if(!st->codec->frame_size && !av_get_bits_per_sample(st->codec->codec_id)) {
                 av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
                 goto error;
@@ -1784,10 +1782,11 @@ static int mov_write_header(AVFormatContext *s)
             }
         }else if(st->codec->codec_type == CODEC_TYPE_SUBTITLE){
             track->timescale = st->codec->time_base.den;
-            av_set_pts_info(st, 64, 1, st->codec->time_base.den);
         }
         if (!track->height)
             track->height = st->codec->height;
+
+        av_set_pts_info(st, 64, 1, track->timescale);
     }
 
     mov_write_mdat_tag(pb, mov);
