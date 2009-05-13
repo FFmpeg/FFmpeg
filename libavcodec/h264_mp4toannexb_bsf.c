@@ -1,4 +1,5 @@
 /*
+ * H.264 MP4 to Annex B byte stream format filter
  * Copyright (c) 2007 Benoit Fouet <benoit.fouet@free.fr>
  *
  * This file is part of FFmpeg.
