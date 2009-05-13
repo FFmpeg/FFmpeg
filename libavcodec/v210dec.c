@@ -61,9 +61,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if (avctx->get_buffer(avctx, pic) < 0)
         return -1;
 
-    y = pic->data[0];
-    u = pic->data[1];
-    v = pic->data[2];
+    y = (uint16_t*)pic->data[0];
+    u = (uint16_t*)pic->data[1];
+    v = (uint16_t*)pic->data[2];
     pic->pict_type = FF_I_TYPE;
     pic->key_frame = 1;
 
@@ -76,7 +76,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     } while (0);
 
     for (h = 0; h < avctx->height; h++) {
-        const uint32_t *src = psrc;
+        const uint32_t *src = (const uint32_t*)psrc;
         uint32_t val;
         for (w = 0; w < avctx->width - 5; w += 6) {
             READ_PIXELS(u, y, v);
