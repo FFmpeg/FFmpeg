@@ -1236,6 +1236,31 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_cslg(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    MOVStreamContext *sc;
+
+    if (c->fc->nb_streams < 1) // will happen with jp2 files
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
+
+    get_be32(pb); // version + flags
+
+    sc->dts_shift = get_be32(pb);
+    dprintf(c->fc, "dts shift %d\n", sc->dts_shift);
+
+    sc->time_rate= av_gcd(sc->time_rate, FFABS(sc->dts_shift));
+
+    get_be32(pb); // least dts to pts delta
+    get_be32(pb); // greatest dts to pts delta
+    get_be32(pb); // pts start
+    get_be32(pb); // pts end
+
+    return 0;
+}
+
 static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
@@ -1259,10 +1284,6 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         int count    =get_be32(pb);
         int duration =get_be32(pb);
 
-        if (duration < 0) {
-            sc->wrong_dts = 1;
-            st->codec->has_b_frames = 1;
-        }
         sc->ctts_data[i].count   = count;
         sc->ctts_data[i].duration= duration;
 
@@ -1302,6 +1323,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         unsigned int keyframe, sample_size;
         unsigned int distance = 0;
         int key_off = sc->keyframes && sc->keyframes[0] == 1;
+
+        sc->dts_shift /= sc->time_rate;
+        current_dts -= sc->dts_shift;
 
         st->nb_frames = sc->sample_count;
         for (i = 0; i < sc->chunk_count; i++) {
@@ -1809,6 +1833,7 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('a','v','s','s'), mov_read_extradata },
 { MKTAG('c','o','6','4'), mov_read_stco },
+{ MKTAG('c','s','l','g'), mov_read_cslg },
 { MKTAG('c','t','t','s'), mov_read_ctts }, /* composition time to sample */
 { MKTAG('d','i','n','f'), mov_read_default },
 { MKTAG('d','r','e','f'), mov_read_dref },
@@ -1988,7 +2013,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->dts = sample->timestamp;
     if (sc->ctts_data) {
         assert(sc->ctts_data[sc->ctts_index].duration % sc->time_rate == 0);
-        pkt->pts = pkt->dts + sc->ctts_data[sc->ctts_index].duration / sc->time_rate;
+        pkt->pts = pkt->dts + sc->dts_shift + sc->ctts_data[sc->ctts_index].duration / sc->time_rate;
         /* update ctts context */
         sc->ctts_sample++;
         if (sc->ctts_index < sc->ctts_count &&
