@@ -1241,7 +1241,7 @@ static int mov_read_cslg(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     AVStream *st;
     MOVStreamContext *sc;
 
-    if (c->fc->nb_streams < 1) // will happen with jp2 files
+    if (c->fc->nb_streams < 1)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
