@@ -96,6 +96,8 @@ typedef struct MOVStreamContext {
     MOVStts *ctts_data;
     unsigned int stsc_count;
     MOVStsc *stsc_data;
+    unsigned int stps_count;
+    unsigned *stps_data;  ///< partial sync sample for mpeg-2 open gop
     int ctts_index;
     int ctts_sample;
     unsigned int sample_size;
