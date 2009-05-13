@@ -162,9 +162,6 @@ static int output_configure(AACContext *ac, enum ChannelPosition che_pos[4][MAX_
     AVCodecContext *avctx = ac->avccontext;
     int i, type, channels = 0;
 
-    if(!memcmp(che_pos, new_che_pos, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0])))
-        return 0; /* no change */
-
     memcpy(che_pos, new_che_pos, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
 
     /* Allocate or free elements depending on if they are in the
@@ -458,9 +455,6 @@ static av_cold int aac_decode_init(AVCodecContext * avccontext) {
         if(output_configure(ac, ac->che_pos, new_che_pos, 1))
             return -1;
         ac->m4ac.sample_rate = avccontext->sample_rate;
-    } else {
-        ff_log_missing_feature(ac->avccontext, "Implicit channel configuration is", 0);
-        return -1;
     }
 
     avccontext->sample_fmt  = SAMPLE_FMT_S16;

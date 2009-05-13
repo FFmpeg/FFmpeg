@@ -44,9 +44,6 @@ int ff_aac_parse_header(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     skip_bits1(gbc);             /* private_bit */
     ch      = get_bits(gbc, 3);  /* channel_configuration */
 
-    if(!ff_mpeg4audio_channels[ch])
-        return AAC_AC3_PARSE_ERROR_CHANNEL_CFG;
-
     skip_bits1(gbc);             /* original/copy */
     skip_bits1(gbc);             /* home */
 

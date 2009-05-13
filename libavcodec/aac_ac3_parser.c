@@ -84,8 +84,10 @@ get_next:
              avctx->codec_id == CODEC_ID_EAC3)))) {
         avctx->channels = avctx->request_channels;
     } else {
+        if (avctx->codec_id != CODEC_ID_AAC || s->channels) {
         avctx->channels = s->channels;
         avctx->channel_layout = s->channel_layout;
+        }
     }
     avctx->bit_rate = s->bit_rate;
     avctx->frame_size = s->samples;
