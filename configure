@@ -1694,6 +1694,8 @@ case $target_os in
         SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.a "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.lib'
         enable dos_paths
         ;;
+    gnu/kfreebsd)
+        ;;
 
     *)
         die "Unknown OS '$target_os'."
