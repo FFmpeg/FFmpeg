@@ -22,7 +22,7 @@
  * parsing utils
  */
 
-#include <string.h>
+#include <strings.h>
 #include "libavutil/avutil.h"
 #include "libavutil/random_seed.h"
 #include "parseutils.h"
@@ -212,12 +212,12 @@ static ColorEntry color_table[] = {
 
 static int color_table_compare(const void *lhs, const void *rhs)
 {
-    return strcmp(lhs, ((const ColorEntry *)rhs)->name);
+    return strcasecmp(lhs, ((const ColorEntry *)rhs)->name);
 }
 
 int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
 {
-    if (!strcmp(color_string, "bikeshed")) {
+    if (!strcasecmp(color_string, "bikeshed")) {
         int rgba = ff_random_get_seed();
         rgba_color[0] = rgba >> 24;
         rgba_color[1] = rgba >> 16;
