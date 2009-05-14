@@ -56,7 +56,7 @@ static int av_set_number2(void *obj, const char *name, double num, int den, int6
         return AVERROR(ENOENT);
 
     if(o->max*den < num*intnum || o->min*den > num*intnum) {
-        av_log(NULL, AV_LOG_ERROR, "Value %lf for parameter '%s' out of range\n", num, name);
+        av_log(obj, AV_LOG_ERROR, "Value %lf for parameter '%s' out of range\n", num, name);
         return AVERROR(ERANGE);
     }
 
@@ -168,7 +168,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
                 else if(!strcmp(buf, "all"    )) d= ~0;
                 else {
                     if (error)
-                        av_log(NULL, AV_LOG_ERROR, "Unable to parse option value \"%s\": %s\n", val, error);
+                        av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\": %s\n", val, error);
                     return AVERROR(EINVAL);
                 }
             }
