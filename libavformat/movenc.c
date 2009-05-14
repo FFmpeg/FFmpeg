@@ -49,7 +49,7 @@ typedef struct MOVIentry {
     unsigned int samplesInChunk;
     char         key_frame;
     unsigned int entries;
-    int64_t      cts;
+    int          cts;
     int64_t      dts;
 } MOVIentry;
 
