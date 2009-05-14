@@ -217,7 +217,7 @@ static int color_table_compare(const void *lhs, const void *rhs)
 
 int av_parse_color(uint8_t *rgba_color, const char *color_string, void *log_ctx)
 {
-    if (!strcasecmp(color_string, "bikeshed")) {
+    if (!strcasecmp(color_string, "random") || !strcasecmp(color_string, "bikeshed")) {
         int rgba = ff_random_get_seed();
         rgba_color[0] = rgba >> 24;
         rgba_color[1] = rgba >> 16;
@@ -304,6 +304,7 @@ int main(void)
         uint8_t rgba[4];
         const char *color_names[] = {
             "bikeshed",
+            "RaNdOm",
             "foo",
             "red",
             "Red ",

@@ -45,6 +45,7 @@ char *av_get_token(const char **buf, const char *term);
  *
  * @param color_string a string specifying a color. It can be the name of
  * a color (case insensitive match) or a 0xRRGGBB[AA] sequence.
+ * The string "random" will result in a random color.
  * @return >= 0 in case of success, a negative value in case of
  * failure (for example if color_string cannot be parsed).
  */
