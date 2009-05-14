@@ -44,13 +44,14 @@
 #define MODE_IPOD 0x20
 
 typedef struct MOVIentry {
-    unsigned int flags, size;
+    unsigned int size;
     uint64_t     pos;
     unsigned int samplesInChunk;
-    char         key_frame;
     unsigned int entries;
     int          cts;
     int64_t      dts;
+#define MOV_SYNC_SAMPLE         0x0001
+    uint32_t     flags;
 } MOVIentry;
 
 typedef struct MOVIndex {
@@ -198,7 +199,7 @@ static int mov_write_stss_tag(ByteIOContext *pb, MOVTrack *track)
     entryPos = url_ftell(pb);
     put_be32(pb, track->entry); // entry count
     for (i=0; i<track->entry; i++) {
-        if(track->cluster[i].key_frame == 1) {
+        if (track->cluster[i].flags & MOV_SYNC_SAMPLE) {
             put_be32(pb, i+1);
             index++;
         }
@@ -1877,9 +1878,10 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->dts != pkt->pts)
         trk->hasBframes = 1;
     trk->cluster[trk->entry].cts = pkt->pts - pkt->dts;
-    trk->cluster[trk->entry].key_frame = !!(pkt->flags & PKT_FLAG_KEY);
-    if(trk->cluster[trk->entry].key_frame)
+    if (pkt->flags & PKT_FLAG_KEY) {
+        trk->cluster[trk->entry].flags = MOV_SYNC_SAMPLE;
         trk->hasKeyframes++;
+    }
     trk->entry++;
     trk->sampleCount += samplesInChunk;
     mov->mdat_size += size;
