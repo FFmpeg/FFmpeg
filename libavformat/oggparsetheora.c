@@ -58,7 +58,7 @@ theora_header (AVFormatContext * s, int idx)
 
         init_get_bits(&gb, os->buf + os->pstart, os->psize*8);
 
-        skip_bits(&gb, 7*8); /* 0x80"theora" */
+        skip_bits_long(&gb, 7*8); /* 0x80"theora" */
 
         thp->version = get_bits_long(&gb, 24);
         if (thp->version < 0x030100)
@@ -92,7 +92,7 @@ theora_header (AVFormatContext * s, int idx)
         st->sample_aspect_ratio.den = get_bits_long(&gb, 24);
 
         if (thp->version >= 0x030200)
-            skip_bits(&gb, 38);
+            skip_bits_long(&gb, 38);
         if (thp->version >= 0x304000)
             skip_bits(&gb, 2);
 

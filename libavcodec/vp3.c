@@ -2243,7 +2243,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
      }
 
     // FIXME: Check for this as well.
-    skip_bits(&gb, 6*8); /* "theora" */
+    skip_bits_long(&gb, 6*8); /* "theora" */
 
     switch(ptype)
     {

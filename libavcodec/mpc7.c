@@ -78,7 +78,7 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_ERROR, "Too many bands: %i\n", c->maxbands);
         return -1;
     }
-    skip_bits(&gb, 88);
+    skip_bits_long(&gb, 88);
     c->gapless = get_bits1(&gb);
     c->lastframelen = get_bits(&gb, 11);
     av_log(avctx, AV_LOG_DEBUG, "IS: %d, MSS: %d, TG: %d, LFL: %d, bands: %d\n",

@@ -103,7 +103,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
         aptr = audio + i * NELLY_BUF_LEN;
 
         init_get_bits(&s->gb, block, NELLY_BLOCK_LEN * 8);
-        skip_bits(&s->gb, NELLY_HEADER_BITS + i*NELLY_DETAIL_BITS);
+        skip_bits_long(&s->gb, NELLY_HEADER_BITS + i*NELLY_DETAIL_BITS);
 
         for (j = 0; j < NELLY_FILL_LEN; j++) {
             if (bits[j] <= 0) {
