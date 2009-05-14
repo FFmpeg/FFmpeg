@@ -1054,7 +1054,7 @@ static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
                 float two_cos_w=2.0f*cos(wstep*iter_cond); // needed all times
 
                 /* similar part for the q and p products */
-                for(j=0;j<order;j+=2) {
+                for(j=0;j+1<order;j+=2) {
                     q *= lsp[j]  -two_cos_w;
                     p *= lsp[j+1]-two_cos_w;
                 }
