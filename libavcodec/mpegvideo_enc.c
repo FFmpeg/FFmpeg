@@ -1305,11 +1305,21 @@ vbv_retry:
         /* update mpeg1/2 vbv_delay for CBR */
         if(s->avctx->rc_max_rate && s->avctx->rc_min_rate == s->avctx->rc_max_rate && s->out_format == FMT_MPEG1
            && 90000LL * (avctx->rc_buffer_size-1) <= s->avctx->rc_max_rate*0xFFFFLL){
-            int vbv_delay;
+            int vbv_delay, min_delay;
+            double inbits = s->avctx->rc_max_rate*av_q2d(s->avctx->time_base);
+            int    minbits= s->frame_bits - 8*(s->vbv_delay_ptr - s->pb.buf - 1);
+            double bits   = s->rc_context.buffer_index + minbits - inbits;
+
+            if(bits<0)
+                av_log(s->avctx, AV_LOG_ERROR, "Internal error, negative bits\n");
 
             assert(s->repeat_first_field==0);
 
-            vbv_delay= lrintf(90000 * s->rc_context.buffer_index / s->avctx->rc_max_rate);
+            vbv_delay=     bits * 90000                               / s->avctx->rc_max_rate;
+            min_delay= (minbits * 90000LL + s->avctx->rc_max_rate - 1)/ s->avctx->rc_max_rate;
+
+            vbv_delay= FFMAX(vbv_delay, min_delay);
+
             assert(vbv_delay < 0xFFFF);
 
             s->vbv_delay_ptr[0] &= 0xF8;
