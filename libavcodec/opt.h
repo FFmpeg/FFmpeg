@@ -136,8 +136,11 @@ attribute_deprecated const AVOption *av_set_string2(void *obj, const char *name,
  * @param alloc when 1 then the old value will be av_freed() and the
  *                     new av_strduped()
  *              when 0 then no av_free() nor av_strdup() will be used
- * @return 0 if the value has been set, an AVERROR* error code if no
- * matching option exists, or if the value \p val is not valid
+ * @return 0 if the value has been set, or an AVERROR code in case of
+ * error:
+ * AVERROR(ENOENT) if no matching option exists
+ * AVERROR(ERANGE) if the value is out of range
+ * AVERROR(EINVAL) if the value is not valid
  */
 int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out);
 
