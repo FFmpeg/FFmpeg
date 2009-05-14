@@ -112,8 +112,10 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
     const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
     if (o_out)
         *o_out = o;
-    if(!o)
+    if(!o) {
+        av_log(obj, AV_LOG_ERROR, "Unknown option '%s'\n", name);
         return AVERROR(ENOENT);
+    }
     if(!val || o->offset<=0)
         return AVERROR(EINVAL);
 
