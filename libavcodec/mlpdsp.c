@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/mlp.h"
 #include "dsputil.h"
 
 static void ff_mlp_filter_channel(int32_t *firbuf, const int32_t *fircoeff, int firorder,
@@ -46,7 +47,7 @@ static void ff_mlp_filter_channel(int32_t *firbuf, const int32_t *fircoeff, int 
         *--iirbuf = result - accum;
 
         *sample_buffer = result;
-        sample_buffer += 8;
+        sample_buffer += MAX_CHANNELS;
     }
 }
 
