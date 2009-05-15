@@ -1141,9 +1141,10 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
                 av_log(avctx,AV_LOG_DEBUG,"MONO\n");
                 break;
             case STEREO:
-                if (q->nb_channels != 1)
+                if (q->nb_channels != 1) {
                     q->subpacket[s].bits_per_subpdiv = 1;
-                q->subpacket[s].num_channels = 2;
+                    q->subpacket[s].num_channels = 2;
+                }
                 av_log(avctx,AV_LOG_DEBUG,"STEREO\n");
                 break;
             case JOINT_STEREO:
