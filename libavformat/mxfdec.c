@@ -943,6 +943,10 @@ static int mxf_read_close(AVFormatContext *s)
     int i;
 
     av_freep(&mxf->packages_refs);
+
+    for (i = 0; i < s->nb_streams; i++)
+        s->streams[i]->priv_data = NULL;
+
     for (i = 0; i < mxf->metadata_sets_count; i++) {
         switch (mxf->metadata_sets[i]->type) {
         case MultipleDescriptor:
@@ -954,9 +958,6 @@ static int mxf_read_close(AVFormatContext *s)
         case SourcePackage:
         case MaterialPackage:
             av_freep(&((MXFPackage *)mxf->metadata_sets[i])->tracks_refs);
-            break;
-        case Track:
-            mxf->metadata_sets[i] = NULL; /* will be freed later */
             break;
         default:
             break;
