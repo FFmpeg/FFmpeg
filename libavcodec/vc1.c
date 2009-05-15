@@ -1818,8 +1818,8 @@ static void vc1_interp_mc(VC1Context *v)
     }
 
     if(v->rangeredfrm
-       || (unsigned)src_x > s->h_edge_pos - (mx&3) - 16
-       || (unsigned)src_y > s->v_edge_pos - (my&3) - 16){
+       || (unsigned)src_x > s->h_edge_pos - (mx&3) - 16 - s->mspel*3
+       || (unsigned)src_y > s->v_edge_pos - (my&3) - 16 - s->mspel*3){
         uint8_t *uvbuf= s->edge_emu_buffer + 19 * s->linesize;
 
         srcY -= s->mspel * (1 + s->linesize);
