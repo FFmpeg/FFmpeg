@@ -341,7 +341,7 @@ typedef struct AMRWBContext {
     Word16 allow_dtx;
 } AMRWBContext;
 
-static int amr_wb_encode_init(AVCodecContext * avctx)
+static av_cold int amr_wb_encode_init(AVCodecContext * avctx)
 {
     AMRWBContext *s = avctx->priv_data;
 
@@ -399,7 +399,7 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
     return size;
 }
 
-static int amr_wb_decode_init(AVCodecContext * avctx)
+static av_cold int amr_wb_decode_init(AVCodecContext * avctx)
 {
     AMRWBContext *s = avctx->priv_data;
 
