@@ -309,6 +309,8 @@ typedef struct AMRWBContext {
     Word16 allow_dtx;
 } AMRWBContext;
 
+#if CONFIG_LIBAMR_WB_ENCODER
+
 #include <amrwb/enc_if.h>
 
 static int getWBBitrateMode(int bitrate)
@@ -408,6 +410,8 @@ AVCodec libamr_wb_encoder =
     .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("libamr-wb Adaptive Multi-Rate (AMR) Wide-Band"),
 };
+
+#endif
 
 static av_cold int amr_wb_decode_init(AVCodecContext * avctx)
 {
