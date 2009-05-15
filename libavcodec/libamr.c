@@ -255,10 +255,6 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
     return written;
 }
 
-#endif
-
-#if CONFIG_LIBAMR_NB
-
 AVCodec libamr_nb_decoder =
 {
     "libamr_nb",
