@@ -22,11 +22,15 @@
 #include "libavcodec/mlp.h"
 #include "dsputil.h"
 
-static void ff_mlp_filter_channel(int32_t *firbuf, const int32_t *fircoeff, int firorder,
-                                  int32_t *iirbuf, const int32_t *iircoeff, int iirorder,
+static void ff_mlp_filter_channel(int32_t *state, const int32_t *coeff,
+                                  int firorder, int iirorder,
                                   unsigned int filter_shift, int32_t mask, int blocksize,
                                   int32_t *sample_buffer)
 {
+    int32_t *firbuf = state;
+    int32_t *iirbuf = state + MAX_BLOCKSIZE + MAX_FIR_ORDER;
+    const int32_t *fircoeff = coeff;
+    const int32_t *iircoeff = coeff + MAX_FIR_ORDER;
     int i;
 
     for (i = 0; i < blocksize; i++) {

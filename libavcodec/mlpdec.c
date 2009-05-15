@@ -495,6 +495,7 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
     fp->order = order;
 
     if (order > 0) {
+        int32_t *fcoeff = m->channel_params[channel].coeff[filter];
         int coeff_bits, coeff_shift;
 
         fp->shift = get_bits(gbp, 4);
@@ -515,7 +516,7 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
         }
 
         for (i = 0; i < order; i++)
-            fp->coeff[i] = get_sbits(gbp, coeff_bits) << coeff_shift;
+            fcoeff[i] = get_sbits(gbp, coeff_bits) << coeff_shift;
 
         if (get_bits1(gbp)) {
             int state_bits, state_shift;
@@ -718,10 +719,10 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
                            unsigned int channel)
 {
     SubStream *s = &m->substream[substr];
-    int32_t fir_state_buffer[MAX_BLOCKSIZE + MAX_FIR_ORDER];
-    int32_t iir_state_buffer[MAX_BLOCKSIZE + MAX_IIR_ORDER];
-    int32_t *firbuf = fir_state_buffer + MAX_BLOCKSIZE;
-    int32_t *iirbuf = iir_state_buffer + MAX_BLOCKSIZE;
+    const int32_t *fircoeff = m->channel_params[channel].coeff[FIR];
+    int32_t state_buffer[NUM_FILTERS][MAX_BLOCKSIZE + MAX_FIR_ORDER];
+    int32_t *firbuf = state_buffer[FIR] + MAX_BLOCKSIZE;
+    int32_t *iirbuf = state_buffer[IIR] + MAX_BLOCKSIZE;
     FilterParams *fir = &m->channel_params[channel].filter_params[FIR];
     FilterParams *iir = &m->channel_params[channel].filter_params[IIR];
     unsigned int filter_shift = fir->shift;
@@ -730,8 +731,8 @@ static void filter_channel(MLPDecodeContext *m, unsigned int substr,
     memcpy(firbuf, fir->state, MAX_FIR_ORDER * sizeof(int32_t));
     memcpy(iirbuf, iir->state, MAX_IIR_ORDER * sizeof(int32_t));
 
-    m->dsp.mlp_filter_channel(firbuf, fir->coeff, fir->order,
-                              iirbuf, iir->coeff, iir->order,
+    m->dsp.mlp_filter_channel(firbuf, fircoeff,
+                              fir->order, iir->order,
                               filter_shift, mask, s->blocksize,
                               &m->sample_buffer[s->blockpos][channel]);
 

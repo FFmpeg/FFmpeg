@@ -73,13 +73,13 @@ typedef struct {
     uint8_t     order; ///< number of taps in filter
     uint8_t     shift; ///< Right shift to apply to output of filter.
 
-    int32_t     coeff[MAX_FIR_ORDER];
     int32_t     state[MAX_FIR_ORDER];
 } FilterParams;
 
 /** sample data coding information */
 typedef struct {
     FilterParams filter_params[NUM_FILTERS];
+    int32_t     coeff[NUM_FILTERS][MAX_FIR_ORDER];
 
     int16_t     huff_offset;      ///< Offset to apply to residual values.
     int32_t     sign_huff_offset; ///< sign/rounding-corrected version of huff_offset
