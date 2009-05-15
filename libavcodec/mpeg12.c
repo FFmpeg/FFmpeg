@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "mpegvideo_common.h"
 
 #include "mpeg12.h"
 #include "mpeg12data.h"
@@ -2139,7 +2140,7 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     int drop_frame_flag;
     int time_code_hours, time_code_minutes;
     int time_code_seconds, time_code_pictures;
-    int closed_gop, broken_link;
+    int broken_link;
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
@@ -2151,7 +2152,7 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     time_code_seconds = get_bits(&s->gb,6);
     time_code_pictures = get_bits(&s->gb,6);
 
-    closed_gop  = get_bits1(&s->gb);
+    s->closed_gop = get_bits1(&s->gb);
     /*broken_link indicate that after editing the
       reference frames of the first B-Frames after GOP I-Frame
       are missing (open gop)*/
@@ -2160,7 +2161,7 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     if(s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG, "GOP (%2d:%02d:%02d.[%02d]) closed_gop=%d broken_link=%d\n",
             time_code_hours, time_code_minutes, time_code_seconds,
-            time_code_pictures, closed_gop, broken_link);
+            time_code_pictures, s->closed_gop, broken_link);
 }
 /**
  * Finds the end of the current frame in the bitstream.
@@ -2354,8 +2355,17 @@ static int decode_chunks(AVCodecContext *avctx,
                 int mb_y= start_code - SLICE_MIN_START_CODE;
 
                 if(s2->last_picture_ptr==NULL){
-                /* Skip B-frames if we do not have reference frames. */
-                    if(s2->pict_type==FF_B_TYPE) break;
+                /* Skip B-frames if we do not have reference frames and gop is not closed */
+                    if(s2->pict_type==FF_B_TYPE){
+                        int i;
+                        if(!s2->closed_gop)
+                            break;
+                        /* Allocate a dummy frame */
+                        i= ff_find_unused_picture(s2, 0);
+                        s2->last_picture_ptr= &s2->picture[i];
+                        if(alloc_picture(s2, s2->last_picture_ptr, 0) < 0)
+                            return -1;
+                    }
                 }
                 if(s2->next_picture_ptr==NULL){
                 /* Skip P-frames if we do not have a reference frame or we have an invalid header. */
