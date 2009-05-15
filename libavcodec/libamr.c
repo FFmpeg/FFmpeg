@@ -98,10 +98,10 @@ static void amr_decode_fix_avctx(AVCodecContext * avctx)
 {
     const int is_amr_wb = 1 + (avctx->codec_id == CODEC_ID_AMR_WB);
 
-    if(avctx->sample_rate == 0)
+    if(!avctx->sample_rate)
         avctx->sample_rate = 8000 * is_amr_wb;
 
-    if(avctx->channels == 0)
+    if(!avctx->channels)
         avctx->channels = 1;
 
     avctx->frame_size = 160 * is_amr_wb;
@@ -431,7 +431,7 @@ static int amr_wb_decode_frame(AVCodecContext * avctx,
     int packet_size;
     static const uint8_t block_size[16] = {18, 23, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1};
 
-    if(buf_size==0)
+    if(!buf_size)
         /* nothing to do */
         return 0;
 
