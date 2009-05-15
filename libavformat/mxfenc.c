@@ -1316,33 +1316,33 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
                 break;
             }
         } else if (c == 0x1b8) { // gop
-                if (pkt->data[i+4]>>6 & 0x01) // closed
-                    *flags |= 0x80; // random access
-                if (!mxf->header_written) {
-                    unsigned hours   =  (pkt->data[i+1]>>2) & 0x1f;
-                    unsigned minutes = ((pkt->data[i+1] & 0x03) << 4) | (pkt->data[i+2]>>4);
-                    unsigned seconds = ((pkt->data[i+2] & 0x07) << 3) | (pkt->data[i+3]>>5);
-                    unsigned frames  = ((pkt->data[i+3] & 0x1f) << 1) | (pkt->data[i+4]>>7);
-                    mxf->timecode_drop_frame = !!(pkt->data[i+1] & 0x80);
-                    mxf->timecode_start = (hours*3600 + minutes*60 + seconds) *
-                        mxf->timecode_base + frames;
-                    if (mxf->timecode_drop_frame) {
-                        unsigned tminutes = 60 * hours + minutes;
-                        mxf->timecode_start -= 2 * (tminutes - tminutes / 10);
-                    }
-                    av_log(s, AV_LOG_DEBUG, "frame %d %d:%d:%d%c%d\n", mxf->timecode_start,
-                           hours, minutes, seconds, mxf->timecode_drop_frame ? ';':':', frames);
+            if (pkt->data[i+4]>>6 & 0x01) // closed
+                *flags |= 0x80; // random access
+            if (!mxf->header_written) {
+                unsigned hours   =  (pkt->data[i+1]>>2) & 0x1f;
+                unsigned minutes = ((pkt->data[i+1] & 0x03) << 4) | (pkt->data[i+2]>>4);
+                unsigned seconds = ((pkt->data[i+2] & 0x07) << 3) | (pkt->data[i+3]>>5);
+                unsigned frames  = ((pkt->data[i+3] & 0x1f) << 1) | (pkt->data[i+4]>>7);
+                mxf->timecode_drop_frame = !!(pkt->data[i+1] & 0x80);
+                mxf->timecode_start = (hours*3600 + minutes*60 + seconds) *
+                    mxf->timecode_base + frames;
+                if (mxf->timecode_drop_frame) {
+                    unsigned tminutes = 60 * hours + minutes;
+                    mxf->timecode_start -= 2 * (tminutes - tminutes / 10);
                 }
+                av_log(s, AV_LOG_DEBUG, "frame %d %d:%d:%d%c%d\n", mxf->timecode_start,
+                       hours, minutes, seconds, mxf->timecode_drop_frame ? ';':':', frames);
+            }
         } else if (c == 0x1b3) { // seq
             *flags |= 0x40;
-                switch ((pkt->data[i+4]>>4) & 0xf) {
-                case 2:  sc->aspect_ratio = (AVRational){  4,  3}; break;
-                case 3:  sc->aspect_ratio = (AVRational){ 16,  9}; break;
-                case 4:  sc->aspect_ratio = (AVRational){221,100}; break;
-                default:
-                    av_reduce(&sc->aspect_ratio.num, &sc->aspect_ratio.den,
-                              st->codec->width, st->codec->height, 1024*1024);
-                }
+            switch ((pkt->data[i+4]>>4) & 0xf) {
+            case 2:  sc->aspect_ratio = (AVRational){  4,  3}; break;
+            case 3:  sc->aspect_ratio = (AVRational){ 16,  9}; break;
+            case 4:  sc->aspect_ratio = (AVRational){221,100}; break;
+            default:
+                av_reduce(&sc->aspect_ratio.num, &sc->aspect_ratio.den,
+                          st->codec->width, st->codec->height, 1024*1024);
+            }
         } else if (c == 0x100) { // pic
             int pict_type = (pkt->data[i+2]>>3) & 0x07;
             if (pict_type == 2) { // P frame
