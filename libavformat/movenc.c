@@ -51,6 +51,7 @@ typedef struct MOVIentry {
     int          cts;
     int64_t      dts;
 #define MOV_SYNC_SAMPLE         0x0001
+#define MOV_PARTIAL_SYNC_SAMPLE 0x0002
     uint32_t     flags;
 } MOVIentry;
 
@@ -63,7 +64,9 @@ typedef struct MOVIndex {
     long        sampleCount;
     long        sampleSize;
     int         hasKeyframes;
-    int         hasBframes;
+#define MOV_TRACK_CTTS         0x0001
+#define MOV_TRACK_STPS         0x0002
+    uint32_t    flags;
     int         language;
     int         trackID;
     int         tag; ///< stsd fourcc
@@ -188,18 +191,18 @@ static int mov_write_stsc_tag(ByteIOContext *pb, MOVTrack *track)
 }
 
 /* Sync sample atom */
-static int mov_write_stss_tag(ByteIOContext *pb, MOVTrack *track)
+static int mov_write_stss_tag(ByteIOContext *pb, MOVTrack *track, uint32_t flag)
 {
     int64_t curpos, entryPos;
     int i, index = 0;
     int64_t pos = url_ftell(pb);
     put_be32(pb, 0); // size
-    put_tag(pb, "stss");
+    put_tag(pb, flag == MOV_SYNC_SAMPLE ? "stss" : "stps");
     put_be32(pb, 0); // version & flags
     entryPos = url_ftell(pb);
     put_be32(pb, track->entry); // entry count
     for (i=0; i<track->entry; i++) {
-        if (track->cluster[i].flags & MOV_SYNC_SAMPLE) {
+        if (track->cluster[i].flags & flag) {
             put_be32(pb, i+1);
             index++;
         }
@@ -914,9 +917,11 @@ static int mov_write_stbl_tag(ByteIOContext *pb, MOVTrack *track)
     mov_write_stts_tag(pb, track);
     if (track->enc->codec_type == CODEC_TYPE_VIDEO &&
         track->hasKeyframes && track->hasKeyframes < track->entry)
-        mov_write_stss_tag(pb, track);
+        mov_write_stss_tag(pb, track, MOV_SYNC_SAMPLE);
+    if (track->mode == MODE_MOV && track->flags & MOV_TRACK_STPS)
+        mov_write_stss_tag(pb, track, MOV_PARTIAL_SYNC_SAMPLE);
     if (track->enc->codec_type == CODEC_TYPE_VIDEO &&
-        track->hasBframes)
+        track->flags & MOV_TRACK_CTTS)
         mov_write_ctts_tag(pb, track);
     mov_write_stsc_tag(pb, track);
     mov_write_stsz_tag(pb, track);
@@ -1173,7 +1178,7 @@ static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
     put_be32(pb, 0); /* size */
     put_tag(pb, "trak");
     mov_write_tkhd_tag(pb, track, st);
-    if (track->mode == MODE_PSP || track->hasBframes)
+    if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS)
         mov_write_edts_tag(pb, track);  // PSP Movies require edts box
     mov_write_mdia_tag(pb, track);
     if (track->mode == MODE_PSP)
@@ -1802,6 +1807,27 @@ static int mov_write_header(AVFormatContext *s)
     return -1;
 }
 
+static int mov_parse_mpeg2_frame(AVPacket *pkt, uint32_t *flags)
+{
+    uint32_t c = -1;
+    int i, closed_gop = 0;
+
+    for (i = 0; i < pkt->size - 4; i++) {
+        c = (c<<8) + pkt->data[i];
+        if (c == 0x1b8) { // gop
+            closed_gop = pkt->data[i+4]>>6 & 0x01;
+        } else if (c == 0x100) { // pic
+            int temp_ref = (pkt->data[i+1]<<2) | (pkt->data[i+2]>>6);
+            if (!temp_ref || closed_gop) // I picture is not reordered
+                *flags = MOV_SYNC_SAMPLE;
+            else
+                *flags = MOV_PARTIAL_SYNC_SAMPLE;
+            break;
+        }
+    }
+    return 0;
+}
+
 static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -1876,11 +1902,19 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->pts = pkt->dts;
     }
     if (pkt->dts != pkt->pts)
-        trk->hasBframes = 1;
+        trk->flags |= MOV_TRACK_CTTS;
     trk->cluster[trk->entry].cts = pkt->pts - pkt->dts;
+    trk->cluster[trk->entry].flags = 0;
     if (pkt->flags & PKT_FLAG_KEY) {
-        trk->cluster[trk->entry].flags = MOV_SYNC_SAMPLE;
-        trk->hasKeyframes++;
+        if (mov->mode == MODE_MOV && enc->codec_id == CODEC_ID_MPEG2VIDEO) {
+            mov_parse_mpeg2_frame(pkt, &trk->cluster[trk->entry].flags);
+            if (trk->cluster[trk->entry].flags & MOV_PARTIAL_SYNC_SAMPLE)
+                trk->flags |= MOV_TRACK_STPS;
+        } else {
+            trk->cluster[trk->entry].flags = MOV_SYNC_SAMPLE;
+        }
+        if (trk->cluster[trk->entry].flags & MOV_SYNC_SAMPLE)
+            trk->hasKeyframes++;
     }
     trk->entry++;
     trk->sampleCount += samplesInChunk;
