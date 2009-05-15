@@ -292,7 +292,6 @@ AVCodec libamr_nb_encoder =
 #define typedef_h
 #endif
 
-#include <amrwb/enc_if.h>
 #include <amrwb/dec_if.h>
 #include <amrwb/if_rom.h>
 
@@ -302,6 +301,15 @@ typedef struct AMRWB_bitrates
     int rate;
     int mode;
 } AMRWB_bitrates;
+
+typedef struct AMRWBContext {
+    int frameCount;
+    void *state;
+    int mode;
+    Word16 allow_dtx;
+} AMRWBContext;
+
+#include <amrwb/enc_if.h>
 
 static int getWBBitrateMode(int bitrate)
 {
@@ -328,14 +336,6 @@ static int getWBBitrateMode(int bitrate)
     /* no bitrate matching, return an error */
     return -1;
 }
-
-
-typedef struct AMRWBContext {
-    int frameCount;
-    void *state;
-    int mode;
-    Word16 allow_dtx;
-} AMRWBContext;
 
 static av_cold int amr_wb_encode_init(AVCodecContext * avctx)
 {
