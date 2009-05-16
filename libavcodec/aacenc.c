@@ -214,8 +214,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     s->samplerate_index = i;
 
     dsputil_init(&s->dsp, avctx);
-    ff_mdct_init(&s->mdct1024, 11, 0);
-    ff_mdct_init(&s->mdct128,   8, 0);
+    ff_mdct_init(&s->mdct1024, 11, 0, 1.0);
+    ff_mdct_init(&s->mdct128,   8, 0, 1.0);
     // window init
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);

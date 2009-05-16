@@ -1318,7 +1318,7 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
     dca_init_vlcs();
 
     dsputil_init(&s->dsp, avctx);
-    ff_mdct_init(&s->imdct, 6, 1);
+    ff_mdct_init(&s->imdct, 6, 1, 1.0);
 
     for(i = 0; i < 6; i++)
         s->samples_chanptr[i] = s->samples + i * 256;

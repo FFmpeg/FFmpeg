@@ -259,7 +259,7 @@ static av_cold int init_cook_mlt(COOKContext *q) {
         q->mlt_window[j] *= sqrt(2.0 / q->samples_per_channel);
 
     /* Initialize the MDCT. */
-    if (ff_mdct_init(&q->mdct_ctx, av_log2(mlt_size)+1, 1)) {
+    if (ff_mdct_init(&q->mdct_ctx, av_log2(mlt_size)+1, 1, 1.0)) {
       av_free(q->mlt_window);
       return -1;
     }

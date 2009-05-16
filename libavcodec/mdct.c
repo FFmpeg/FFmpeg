@@ -68,10 +68,10 @@ av_cold void ff_sine_window_init(float *window, int n) {
 /**
  * init MDCT or IMDCT computation.
  */
-av_cold int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
+av_cold int ff_mdct_init(MDCTContext *s, int nbits, int inverse, double scale)
 {
     int n, n4, i;
-    double alpha;
+    double alpha, theta;
 
     memset(s, 0, sizeof(*s));
     n = 1 << nbits;
@@ -85,10 +85,12 @@ av_cold int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
     if (!s->tsin)
         goto fail;
 
+    theta = 1.0 / 8.0 + (scale < 0 ? n4 : 0);
+    scale = sqrt(fabs(scale));
     for(i=0;i<n4;i++) {
-        alpha = 2 * M_PI * (i + 1.0 / 8.0) / n;
-        s->tcos[i] = -cos(alpha);
-        s->tsin[i] = -sin(alpha);
+        alpha = 2 * M_PI * (i + theta) / n;
+        s->tcos[i] = -cos(alpha) * scale;
+        s->tsin[i] = -sin(alpha) * scale;
     }
     if (ff_fft_init(&s->fft, s->nbits - 2, inverse) < 0)
         goto fail;

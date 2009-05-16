@@ -268,7 +268,7 @@ static av_cold void init_atrac3_transforms(ATRAC3Context *q) {
     }
 
     /* Initialize the MDCT transform. */
-    ff_mdct_init(&mdct_ctx, 9, 1);
+    ff_mdct_init(&mdct_ctx, 9, 1, 1.0);
 }
 
 /**

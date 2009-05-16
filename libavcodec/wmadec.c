@@ -110,7 +110,7 @@ static int wma_decode_init(AVCodecContext * avctx)
 
     /* init MDCT */
     for(i = 0; i < s->nb_block_sizes; i++)
-        ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 1);
+        ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 1, 1.0);
 
     if (s->use_noise_coding) {
         init_vlc(&s->hgain_vlc, HGAINVLCBITS, sizeof(ff_wma_hgain_huffbits),

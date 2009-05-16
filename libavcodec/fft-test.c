@@ -223,7 +223,7 @@ int main(int argc, char **argv)
             av_log(NULL, AV_LOG_INFO,"IMDCT");
         else
             av_log(NULL, AV_LOG_INFO,"MDCT");
-        ff_mdct_init(m, fft_nbits, do_inverse);
+        ff_mdct_init(m, fft_nbits, do_inverse, 1.0);
     } else {
         if (do_inverse)
             av_log(NULL, AV_LOG_INFO,"IFFT");

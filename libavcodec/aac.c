@@ -500,8 +500,8 @@ static av_cold int aac_decode_init(AVCodecContext * avccontext) {
         ff_aac_scalefactor_code, sizeof(ff_aac_scalefactor_code[0]), sizeof(ff_aac_scalefactor_code[0]),
         352);
 
-    ff_mdct_init(&ac->mdct, 11, 1);
-    ff_mdct_init(&ac->mdct_small, 8, 1);
+    ff_mdct_init(&ac->mdct, 11, 1, 1.0);
+    ff_mdct_init(&ac->mdct_small, 8, 1, 1.0);
     // window initialization
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);

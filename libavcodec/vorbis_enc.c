@@ -359,8 +359,8 @@ static void create_vorbis_context(vorbis_enc_context * venc, AVCodecContext * av
     venc->win[0] = ff_vorbis_vwin[venc->log2_blocksize[0] - 6];
     venc->win[1] = ff_vorbis_vwin[venc->log2_blocksize[1] - 6];
 
-    ff_mdct_init(&venc->mdct[0], venc->log2_blocksize[0], 0);
-    ff_mdct_init(&venc->mdct[1], venc->log2_blocksize[1], 0);
+    ff_mdct_init(&venc->mdct[0], venc->log2_blocksize[0], 0, 1.0);
+    ff_mdct_init(&venc->mdct[1], venc->log2_blocksize[1], 0, 1.0);
 }
 
 static void put_float(PutBitContext * pb, float f) {

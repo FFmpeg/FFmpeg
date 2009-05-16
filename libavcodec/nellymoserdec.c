@@ -130,7 +130,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
 
     s->avctx = avctx;
     av_lfg_init(&s->random_state, ff_random_get_seed());
-    ff_mdct_init(&s->imdct_ctx, 8, 1);
+    ff_mdct_init(&s->imdct_ctx, 8, 1, 1.0);
 
     dsputil_init(&s->dsp, avctx);
 
