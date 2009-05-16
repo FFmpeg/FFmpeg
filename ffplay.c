@@ -168,6 +168,7 @@ typedef struct VideoState {
     int pictq_size, pictq_rindex, pictq_windex;
     SDL_mutex *pictq_mutex;
     SDL_cond *pictq_cond;
+    struct SwsContext *img_convert_ctx;
 
     //    QETimer *video_timer;
     char filename[1024];
@@ -1226,7 +1227,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
 {
     VideoPicture *vp;
     int dst_pix_fmt;
-    static struct SwsContext *img_convert_ctx;
 
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
@@ -1283,16 +1283,16 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
         pict.linesize[1] = vp->bmp->pitches[2];
         pict.linesize[2] = vp->bmp->pitches[1];
         sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
-        img_convert_ctx = sws_getCachedContext(img_convert_ctx,
+        is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
             is->video_st->codec->width, is->video_st->codec->height,
             is->video_st->codec->pix_fmt,
             is->video_st->codec->width, is->video_st->codec->height,
             dst_pix_fmt, sws_flags, NULL, NULL, NULL);
-        if (img_convert_ctx == NULL) {
+        if (is->img_convert_ctx == NULL) {
             fprintf(stderr, "Cannot initialize the conversion context\n");
             exit(1);
         }
-        sws_scale(img_convert_ctx, src_frame->data, src_frame->linesize,
+        sws_scale(is->img_convert_ctx, src_frame->data, src_frame->linesize,
                   0, is->video_st->codec->height, pict.data, pict.linesize);
         /* update the bitmap content */
         SDL_UnlockYUVOverlay(vp->bmp);
@@ -2188,6 +2188,8 @@ static void stream_close(VideoState *is)
     SDL_DestroyCond(is->pictq_cond);
     SDL_DestroyMutex(is->subpq_mutex);
     SDL_DestroyCond(is->subpq_cond);
+    if (is->img_convert_ctx)
+        sws_freeContext(is->img_convert_ctx);
     av_free(is);
 }
 
