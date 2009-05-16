@@ -56,7 +56,7 @@ static void nal_send(AVFormatContext *s1, const uint8_t *buf, int size, int last
         }
         s->buf[1] |= 1 << 6;
         memcpy(&s->buf[2], buf, size);
-        ff_rtp_send_data(s1, s->buf, size + 2, 1);
+        ff_rtp_send_data(s1, s->buf, size + 2, last);
     }
 }
 
