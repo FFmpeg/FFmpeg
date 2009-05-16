@@ -2188,6 +2188,7 @@ static void stream_close(VideoState *is)
     SDL_DestroyCond(is->pictq_cond);
     SDL_DestroyMutex(is->subpq_mutex);
     SDL_DestroyCond(is->subpq_cond);
+    av_free(is);
 }
 
 static void stream_cycle_channel(VideoState *is, int codec_type)
@@ -2269,10 +2270,15 @@ static void step_to_next_frame(void)
 
 static void do_exit(void)
 {
+    int i;
     if (cur_stream) {
         stream_close(cur_stream);
         cur_stream = NULL;
     }
+    for (i = 0; i < CODEC_TYPE_NB; i++)
+        av_free(avcodec_opts[i]);
+    av_free(avformat_opts);
+    av_free(sws_opts);
     if (show_status)
         printf("\n");
     SDL_Quit();
