@@ -1440,10 +1440,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                             stts_index++;
                     }
                 }
-                current_offset += sc->bytes_per_frame;
                 dprintf(mov->fc, "AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", "
                         "size %d, duration %d\n", st->index, i, current_offset, current_dts,
                         chunk_size, chunk_duration);
+                current_offset += sc->bytes_per_frame;
                 assert(chunk_duration % sc->time_rate == 0);
                 current_dts += chunk_duration / sc->time_rate;
             }
