@@ -134,7 +134,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
 {
     uint8_t *output, *output_end;
     const uint8_t* src = data;
-    int p1, p2, line=avctx->height, pos=0, i;
+    int p1, p2, line=avctx->height - 1, pos=0, i;
     uint16_t av_uninit(pix16);
     uint32_t av_uninit(pix32);
 
