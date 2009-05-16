@@ -872,8 +872,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             /* TODO: modify coupling end freq if spectral extension is used */
             cpl_start_subband = get_bits(gbc, 4);
             cpl_end_subband   = get_bits(gbc, 4) + 3;
-            if (cpl_start_subband > cpl_end_subband) {
-                av_log(s->avctx, AV_LOG_ERROR, "invalid coupling range (%d > %d)\n",
+            if (cpl_start_subband >= cpl_end_subband) {
+                av_log(s->avctx, AV_LOG_ERROR, "invalid coupling range (%d >= %d)\n",
                        cpl_start_subband, cpl_end_subband);
                 return -1;
             }
