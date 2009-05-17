@@ -49,6 +49,9 @@
 #define MB_PTYPE_VLC_BITS 6
 #define MB_BTYPE_VLC_BITS 6
 
+static inline int mpeg1_decode_block_intra(MpegEncContext *s,
+                              DCTELEM *block,
+                              int n);
 static inline int mpeg1_decode_block_inter(MpegEncContext *s,
                               DCTELEM *block,
                               int n);
