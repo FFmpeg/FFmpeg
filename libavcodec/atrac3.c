@@ -1026,13 +1026,13 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     /* Initialize the VLC tables. */
     if (!vlcs_initialized) {
-    for (i=0 ; i<7 ; i++) {
-        spectral_coeff_tab[i].table = &atrac3_vlc_table[atrac3_vlc_offs[i]];
-        spectral_coeff_tab[i].table_allocated = atrac3_vlc_offs[i + 1] - atrac3_vlc_offs[i];
-        init_vlc (&spectral_coeff_tab[i], 9, huff_tab_sizes[i],
-            huff_bits[i], 1, 1,
-            huff_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
-    }
+        for (i=0 ; i<7 ; i++) {
+            spectral_coeff_tab[i].table = &atrac3_vlc_table[atrac3_vlc_offs[i]];
+            spectral_coeff_tab[i].table_allocated = atrac3_vlc_offs[i + 1] - atrac3_vlc_offs[i];
+            init_vlc (&spectral_coeff_tab[i], 9, huff_tab_sizes[i],
+                huff_bits[i], 1, 1,
+                huff_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
+        }
         vlcs_initialized = 1;
     }
 
