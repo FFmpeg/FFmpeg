@@ -105,6 +105,10 @@ static const uint8_t* const huff_bits[7] = {
   huffbits1,huffbits2,huffbits3,huffbits4,huffbits5,huffbits6,huffbits7,
 };
 
+static const uint16_t atrac3_vlc_offs[] = {
+    0,512,1024,1536,2048,2560,3072,3584,4096
+};
+
 /* selector tables */
 
 static const uint8_t CLCLengthTab[8] = {0, 4, 3, 3, 4, 4, 5, 6};
