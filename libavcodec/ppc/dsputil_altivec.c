@@ -629,23 +629,23 @@ POWERPC_PERF_START_COUNT(altivec_put_pixels16_num, 1);
 // all this is on a 7450, tuning for the 7450
 #if 0
     for (i = 0; i < h; i++) {
-        pixelsv1 = vec_ld(0, (unsigned char*)pixels);
-        pixelsv2 = vec_ld(16, (unsigned char*)pixels);
+        pixelsv1 = vec_ld(0, pixels);
+        pixelsv2 = vec_ld(16, pixels);
         vec_st(vec_perm(pixelsv1, pixelsv2, perm),
-               0, (unsigned char*)block);
+               0, block);
         pixels+=line_size;
         block +=line_size;
     }
 #else
     for (i = 0; i < h; i += 4) {
-        pixelsv1 = vec_ld(0, (unsigned char*)pixels);
-        pixelsv2 = vec_ld(15, (unsigned char*)pixels);
-        pixelsv1B = vec_ld(line_size, (unsigned char*)pixels);
-        pixelsv2B = vec_ld(15 + line_size, (unsigned char*)pixels);
-        pixelsv1C = vec_ld(line_size_2, (unsigned char*)pixels);
-        pixelsv2C = vec_ld(15 + line_size_2, (unsigned char*)pixels);
-        pixelsv1D = vec_ld(line_size_3, (unsigned char*)pixels);
-        pixelsv2D = vec_ld(15 + line_size_3, (unsigned char*)pixels);
+        pixelsv1  = vec_ld( 0, pixels);
+        pixelsv2  = vec_ld(15, pixels);
+        pixelsv1B = vec_ld(line_size, pixels);
+        pixelsv2B = vec_ld(15 + line_size, pixels);
+        pixelsv1C = vec_ld(line_size_2, pixels);
+        pixelsv2C = vec_ld(15 + line_size_2, pixels);
+        pixelsv1D = vec_ld(line_size_3, pixels);
+        pixelsv2D = vec_ld(15 + line_size_3, pixels);
         vec_st(vec_perm(pixelsv1, pixelsv2, perm),
                0, (unsigned char*)block);
         vec_st(vec_perm(pixelsv1B, pixelsv2B, perm),
@@ -673,8 +673,8 @@ POWERPC_PERF_DECLARE(altivec_avg_pixels16_num, 1);
 POWERPC_PERF_START_COUNT(altivec_avg_pixels16_num, 1);
 
     for (i = 0; i < h; i++) {
-        pixelsv1 = vec_ld(0, (unsigned char*)pixels);
-        pixelsv2 = vec_ld(16, (unsigned char*)pixels);
+        pixelsv1 = vec_ld( 0, pixels);
+        pixelsv2 = vec_ld(16,pixels);
         blockv = vec_ld(0, block);
         pixelsv = vec_perm(pixelsv1, pixelsv2, perm);
         blockv = vec_avg(blockv,pixelsv);
@@ -701,8 +701,8 @@ POWERPC_PERF_START_COUNT(altivec_avg_pixels8_num, 1);
        int rightside = ((unsigned long)block & 0x0000000F);
 
        blockv = vec_ld(0, block);
-       pixelsv1 = vec_ld(0, (unsigned char*)pixels);
-       pixelsv2 = vec_ld(16, (unsigned char*)pixels);
+       pixelsv1 = vec_ld( 0, pixels);
+       pixelsv2 = vec_ld(16, pixels);
        pixelsv = vec_perm(pixelsv1, pixelsv2, vec_lvsl(0, pixels));
 
        if (rightside) {
