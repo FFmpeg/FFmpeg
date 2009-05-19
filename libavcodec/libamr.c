@@ -62,8 +62,6 @@
 
 static const char nb_bitrate_unsupported[] =
     "bitrate not supported: use one of 4.75k, 5.15k, 5.9k, 6.7k, 7.4k, 7.95k, 10.2k or 12.2k\n";
-static const char wb_bitrate_unsupported[] =
-    "bitrate not supported: use one of 6.6k, 8.85k, 12.65k, 14.25k, 15.85k, 18.25k, 19.85k, 23.05k, or 23.85k\n";
 
 /* Common code for fixed and float version*/
 typedef struct AMR_bitrates {
@@ -276,6 +274,9 @@ AVCodec libamr_nb_encoder = {
 
 #include <amrwb/dec_if.h>
 #include <amrwb/if_rom.h>
+
+static const char wb_bitrate_unsupported[] =
+    "bitrate not supported: use one of 6.6k, 8.85k, 12.65k, 14.25k, 15.85k, 18.25k, 19.85k, 23.05k, or 23.85k\n";
 
 /* Common code for fixed and float version*/
 typedef struct AMRWB_bitrates {
