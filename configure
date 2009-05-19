@@ -830,6 +830,7 @@ ARCH_LIST='
     ia64
     m68k
     mips
+    mips64
     parisc
     ppc
     s390
@@ -1499,6 +1500,7 @@ case "$arch" in
     ;;
     mips64)
         arch="mips"
+        subarch="mips64"
         enable fast_64bit
     ;;
     parisc|hppa)
