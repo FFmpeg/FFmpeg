@@ -376,6 +376,9 @@ const char *sws_format_name(int format);
 static inline int fmt_depth(int fmt)
 {
     switch(fmt) {
+        case PIX_FMT_RGB48BE:
+        case PIX_FMT_RGB48LE:
+            return 48;
         case PIX_FMT_BGRA:
         case PIX_FMT_ABGR:
         case PIX_FMT_RGBA:

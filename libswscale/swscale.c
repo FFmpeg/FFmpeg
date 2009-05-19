@@ -463,6 +463,10 @@ const char *sws_format_name(enum PixelFormat format)
             return "rgb4";
         case PIX_FMT_RGB4_BYTE:
             return "rgb4 byte";
+        case PIX_FMT_RGB48BE:
+            return "rgb48be";
+        case PIX_FMT_RGB48LE:
+            return "rgb48le";
         case PIX_FMT_NV12:
             return "nv12";
         case PIX_FMT_NV21:
