@@ -57,6 +57,22 @@
 
 #include "avcodec.h"
 
+static void amr_decode_fix_avctx(AVCodecContext *avctx)
+{
+    const int is_amr_wb = 1 + (avctx->codec_id == CODEC_ID_AMR_WB);
+
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 8000 * is_amr_wb;
+
+    if (!avctx->channels)
+        avctx->channels = 1;
+
+    avctx->frame_size = 160 * is_amr_wb;
+    avctx->sample_fmt = SAMPLE_FMT_S16;
+}
+
+#if CONFIG_LIBAMR_NB
+
 #include <amrnb/interf_dec.h>
 #include <amrnb/interf_enc.h>
 
@@ -89,22 +105,6 @@ static int getBitrateMode(int bitrate)
     /* no bitrate matching, return an error */
     return -1;
 }
-
-static void amr_decode_fix_avctx(AVCodecContext *avctx)
-{
-    const int is_amr_wb = 1 + (avctx->codec_id == CODEC_ID_AMR_WB);
-
-    if (!avctx->sample_rate)
-        avctx->sample_rate = 8000 * is_amr_wb;
-
-    if (!avctx->channels)
-        avctx->channels = 1;
-
-    avctx->frame_size = 160 * is_amr_wb;
-    avctx->sample_fmt = SAMPLE_FMT_S16;
-}
-
-#if CONFIG_LIBAMR_NB
 
 typedef struct AMRContext {
     int   frameCount;
