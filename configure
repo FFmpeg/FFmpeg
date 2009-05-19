@@ -1847,6 +1847,9 @@ if test $cpu != "generic"; then
         bf*)
             add_cflags -mcpu=$cpu
         ;;
+        mips*|[45]k*|[237]4k*|m4k|r*000|loongson2[ef])
+            add_cflags -march=$cpu
+        ;;
         *)
             echo "WARNING: Unknown CPU \"$cpu\", ignored."
         ;;
