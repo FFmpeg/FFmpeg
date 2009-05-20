@@ -177,6 +177,7 @@ OBJS-$(CONFIG_PCM_U8_DEMUXER)            += raw.o
 OBJS-$(CONFIG_PCM_U8_MUXER)              += raw.o
 OBJS-$(CONFIG_PSP_MUXER)                 += movenc.o riff.o isom.o avc.o
 OBJS-$(CONFIG_PVA_DEMUXER)               += pva.o
+OBJS-$(CONFIG_QCP_DEMUXER)               += qcp.o
 OBJS-$(CONFIG_R3D_DEMUXER)               += r3d.o
 OBJS-$(CONFIG_RAWVIDEO_DEMUXER)          += raw.o
 OBJS-$(CONFIG_RAWVIDEO_MUXER)            += raw.o

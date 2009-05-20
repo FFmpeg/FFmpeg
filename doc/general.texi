@@ -139,6 +139,7 @@ library:
 @item Ogg                       @tab X @tab X
 @item TechnoTrend PVA           @tab   @tab X
     @tab Used by TechnoTrend DVB PCI boards.
+@item QCP                       @tab   @tab X
 @item raw ADTS (AAC)            @tab X @tab X
 @item raw AC-3                  @tab X @tab X
 @item raw Chinese AVS video     @tab   @tab X
