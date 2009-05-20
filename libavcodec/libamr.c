@@ -412,7 +412,7 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *amrData = buf;
     int mode;
     int packet_size;
-    static const uint8_t block_size[16] = {18, 23, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1};
+    static const uint8_t block_size[16] = {18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1};
 
     if (!buf_size)
         /* nothing to do */
