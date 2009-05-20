@@ -896,8 +896,8 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
     vc->saved           = av_mallocz((vc->blocksize[1]/4)*vc->audio_channels * sizeof(float));
     vc->previous_window=0;
 
-    ff_mdct_init(&vc->mdct[0], bl0, 1, 1.0);
-    ff_mdct_init(&vc->mdct[1], bl1, 1, 1.0);
+    ff_mdct_init(&vc->mdct[0], bl0, 1, -1.0);
+    ff_mdct_init(&vc->mdct[1], bl1, 1, -1.0);
 
     AV_DEBUG(" vorbis version %d \n audio_channels %d \n audio_samplerate %d \n bitrate_max %d \n bitrate_nom %d \n bitrate_min %d \n blk_0 %d blk_1 %d \n ",
             vc->version, vc->audio_channels, vc->audio_samplerate, vc->bitrate_maximum, vc->bitrate_nominal, vc->bitrate_minimum, vc->blocksize[0], vc->blocksize[1]);
