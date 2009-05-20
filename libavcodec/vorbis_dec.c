@@ -210,11 +210,6 @@ static void vorbis_free(vorbis_context *vc) {
         av_free(vc->mappings[i].mux);
     }
     av_freep(&vc->mappings);
-
-    if(vc->exp_bias){
-        av_freep(&vc->win[0]);
-        av_freep(&vc->win[1]);
-    }
 }
 
 // Parse setup header -------------------------------------------------
@@ -876,16 +871,6 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
     vc->win[0]=ff_vorbis_vwin[bl0-6];
     vc->win[1]=ff_vorbis_vwin[bl1-6];
 
-    if(vc->exp_bias){
-        int i, j;
-        for(j=0; j<2; j++){
-            float *win = av_malloc(vc->blocksize[j]/2 * sizeof(float));
-            for(i=0; i<vc->blocksize[j]/2; i++)
-                win[i] = vc->win[j][i] * (1<<15);
-            vc->win[j] = win;
-        }
-    }
-
     if ((get_bits1(gb)) == 0) {
         av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis id header packet corrupt (framing flag not set). \n");
         return 2;
@@ -896,8 +881,8 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
     vc->saved           = av_mallocz((vc->blocksize[1]/4)*vc->audio_channels * sizeof(float));
     vc->previous_window=0;
 
-    ff_mdct_init(&vc->mdct[0], bl0, 1, -1.0);
-    ff_mdct_init(&vc->mdct[1], bl1, 1, -1.0);
+    ff_mdct_init(&vc->mdct[0], bl0, 1, vc->exp_bias ? -(1<<15) : -1.0);
+    ff_mdct_init(&vc->mdct[1], bl1, 1, vc->exp_bias ? -(1<<15) : -1.0);
 
     AV_DEBUG(" vorbis version %d \n audio_channels %d \n audio_samplerate %d \n bitrate_max %d \n bitrate_nom %d \n bitrate_min %d \n blk_0 %d blk_1 %d \n ",
             vc->version, vc->audio_channels, vc->audio_samplerate, vc->bitrate_maximum, vc->bitrate_nominal, vc->bitrate_minimum, vc->blocksize[0], vc->blocksize[1]);
@@ -1410,8 +1395,7 @@ static void copy_normalize(float *dst, float *src, int len, int exp_bias, float 
 {
     int i;
     if(exp_bias) {
-        for(i=0; i<len; i++)
-            ((uint32_t*)dst)[i] = ((uint32_t*)src)[i] + exp_bias; // dst[k]=src[i]*(1<<bias)
+        memcpy(dst, src, len * sizeof(float));
     } else {
         for(i=0; i<len; i++)
             dst[i] = src[i] + add_bias;
