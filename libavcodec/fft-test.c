@@ -143,14 +143,14 @@ static int64_t gettime(void)
     return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-static void check_diff(float *tab1, float *tab2, int n)
+static void check_diff(float *tab1, float *tab2, int n, double scale)
 {
     int i;
     double max= 0;
     double error= 0;
 
     for(i=0;i<n;i++) {
-        double e= fabsf(tab1[i] - tab2[i]);
+        double e= fabsf(tab1[i] - (tab2[i] / scale));
         if (e >= 1e-3) {
             av_log(NULL, AV_LOG_ERROR, "ERROR %d: %f %f\n",
                    i, tab1[i], tab2[i]);
@@ -170,6 +170,7 @@ static void help(void)
            "-m     (I)MDCT test\n"
            "-i     inverse transform test\n"
            "-n b   set the transform size to 2^b\n"
+           "-f x   set scale factor for output data of (I)MDCT to x\n"
            );
     exit(1);
 }
@@ -187,10 +188,11 @@ int main(int argc, char **argv)
     FFTContext s1, *s = &s1;
     MDCTContext m1, *m = &m1;
     int fft_nbits, fft_size;
+    double scale = 1.0;
 
     fft_nbits = 9;
     for(;;) {
-        c = getopt(argc, argv, "hsimn:");
+        c = getopt(argc, argv, "hsimn:f:");
         if (c == -1)
             break;
         switch(c) {
@@ -209,6 +211,9 @@ int main(int argc, char **argv)
         case 'n':
             fft_nbits = atoi(optarg);
             break;
+        case 'f':
+            scale = atof(optarg);
+            break;
         }
     }
 
@@ -219,11 +224,12 @@ int main(int argc, char **argv)
     tab2 = av_malloc(fft_size * sizeof(FFTSample));
 
     if (do_mdct) {
+        av_log(NULL, AV_LOG_INFO,"Scale factor is set to %f\n", scale);
         if (do_inverse)
             av_log(NULL, AV_LOG_INFO,"IMDCT");
         else
             av_log(NULL, AV_LOG_INFO,"MDCT");
-        ff_mdct_init(m, fft_nbits, do_inverse, 1.0);
+        ff_mdct_init(m, fft_nbits, do_inverse, scale);
     } else {
         if (do_inverse)
             av_log(NULL, AV_LOG_INFO,"IFFT");
@@ -248,13 +254,13 @@ int main(int argc, char **argv)
         if (do_inverse) {
             imdct_ref((float *)tab_ref, (float *)tab1, fft_nbits);
             ff_imdct_calc(m, tab2, (float *)tab1);
-            check_diff((float *)tab_ref, tab2, fft_size);
+            check_diff((float *)tab_ref, tab2, fft_size, scale);
         } else {
             mdct_ref((float *)tab_ref, (float *)tab1, fft_nbits);
 
             ff_mdct_calc(m, tab2, (float *)tab1);
 
-            check_diff((float *)tab_ref, tab2, fft_size / 2);
+            check_diff((float *)tab_ref, tab2, fft_size / 2, scale);
         }
     } else {
         memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
@@ -262,7 +268,7 @@ int main(int argc, char **argv)
         ff_fft_calc(s, tab);
 
         fft_ref(tab_ref, tab1, fft_nbits);
-        check_diff((float *)tab_ref, (float *)tab, fft_size * 2);
+        check_diff((float *)tab_ref, (float *)tab, fft_size * 2, 1.0);
     }
 
     /* do a speed test */
