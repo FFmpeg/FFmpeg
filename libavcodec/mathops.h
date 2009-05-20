@@ -24,14 +24,14 @@
 
 #include "libavutil/common.h"
 
-#if   ARCH_X86
-#   include "x86/mathops.h"
-#elif ARCH_ARM
+#if   ARCH_ARM
 #   include "arm/mathops.h"
-#elif ARCH_PPC
-#   include "ppc/mathops.h"
 #elif ARCH_BFIN
 #   include "bfin/mathops.h"
+#elif ARCH_PPC
+#   include "ppc/mathops.h"
+#elif ARCH_X86
+#   include "x86/mathops.h"
 #endif
 
 /* generic implementation */
