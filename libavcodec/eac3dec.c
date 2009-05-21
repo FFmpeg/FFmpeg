@@ -183,7 +183,7 @@ void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch)
                     mant <<= (23 - (mbits - 1));
                     /* remap mantissa value to correct for asymmetric quantization */
                     if (mant >= 0)
-                        b = 1 << (23 - (mbits - 1));
+                        b = 1 << (23 - log_gain);
                     else
                         b = ff_eac3_gaq_remap_2_4_b[hebap-8][log_gain-1] << 8;
                     mant += (((ff_eac3_gaq_remap_2_4_a[hebap-8][log_gain-1] << 8) * (int64_t)mant) >> 23) + b;
