@@ -193,6 +193,8 @@ static int swf_write_header(AVFormatContext *s)
                 }
                 swf->audio_enc = enc;
                 swf->audio_fifo= av_fifo_alloc(AUDIO_FIFO_SIZE);
+                if (!swf->audio_fifo)
+                    return AVERROR(ENOMEM);
             } else {
                 av_log(s, AV_LOG_ERROR, "SWF muxer only supports MP3\n");
                 return -1;
