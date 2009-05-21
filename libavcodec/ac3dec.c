@@ -562,7 +562,7 @@ static void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
         if (!blk)
             ff_eac3_decode_transform_coeffs_aht_ch(s, ch);
         for (bin = s->start_freq[ch]; bin < s->end_freq[ch]; bin++) {
-            s->fixed_coeffs[ch][bin] = (s->pre_mantissa[ch][bin][blk] << 8) >> s->dexps[ch][bin];
+            s->fixed_coeffs[ch][bin] = s->pre_mantissa[ch][bin][blk] >> s->dexps[ch][bin];
         }
     }
 }

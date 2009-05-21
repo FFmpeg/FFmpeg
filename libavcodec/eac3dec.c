@@ -66,18 +66,18 @@ typedef enum {
 
 #define EAC3_SR_CODE_REDUCED  3
 
-/** lrint(M_SQRT2*cos(2*M_PI/12)*(1<<15)) */
-#define COEFF_0 40132
+/** lrint(M_SQRT2*cos(2*M_PI/12)*(1<<23)) */
+#define COEFF_0 10273905LL
 
-/** lrint(M_SQRT2*cos(0*M_PI/12)*(1<<15)) = lrint(M_SQRT2*(1<<15)) */
-#define COEFF_1 46341
+/** lrint(M_SQRT2*cos(0*M_PI/12)*(1<<23)) = lrint(M_SQRT2*(1<<23)) */
+#define COEFF_1 11863283LL
 
-/** lrint(M_SQRT2*cos(5*M_PI/12)*(1<<15)) */
-#define COEFF_2 11994
+/** lrint(M_SQRT2*cos(5*M_PI/12)*(1<<23)) */
+#define COEFF_2  3070444LL
 
 /**
  * Calculate 6-point IDCT of the pre-mantissas.
- * All calculations are 16-bit fixed-point.
+ * All calculations are 24-bit fixed-point.
  */
 static void idct6(int pre_mant[6])
 {
@@ -86,9 +86,9 @@ static void idct6(int pre_mant[6])
 
     odd1 = pre_mant[1] - pre_mant[3] - pre_mant[5];
 
-    even2 = ( pre_mant[2]                * COEFF_0) >> 15;
-    tmp   = ( pre_mant[4]                * COEFF_1) >> 15;
-    odd0  = ((pre_mant[1] + pre_mant[5]) * COEFF_2) >> 15;
+    even2 = ( pre_mant[2]                * COEFF_0) >> 23;
+    tmp   = ( pre_mant[4]                * COEFF_1) >> 23;
+    odd0  = ((pre_mant[1] + pre_mant[5]) * COEFF_2) >> 23;
 
     even0 = pre_mant[0] + (tmp >> 1);
     even1 = pre_mant[0] - tmp;
@@ -155,13 +155,13 @@ void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch)
         if (!hebap) {
             /* zero-mantissa dithering */
             for (blk = 0; blk < 6; blk++) {
-                s->pre_mantissa[ch][bin][blk] = (av_lfg_get(&s->dith_state) & 0x7FFF) - 0x4000;
+                s->pre_mantissa[ch][bin][blk] = (av_lfg_get(&s->dith_state) & 0x7FFFFF) - 0x400000;
             }
         } else if (hebap < 8) {
             /* Vector Quantization */
             int v = get_bits(gbc, bits);
             for (blk = 0; blk < 6; blk++) {
-                s->pre_mantissa[ch][bin][blk] = ff_eac3_mantissa_vq[hebap][v][blk];
+                s->pre_mantissa[ch][bin][blk] = ff_eac3_mantissa_vq[hebap][v][blk] << 8;
             }
         } else {
             /* Gain Adaptive Quantization */
@@ -175,24 +175,22 @@ void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch)
 
             for (blk = 0; blk < 6; blk++) {
                 int mant = get_sbits(gbc, gbits);
-                if (log_gain > 0 && mant == -(1 << (gbits-1))) {
+                if (mant == -(1 << (gbits-1))) {
                     /* large mantissa */
                     int b;
-                    int mbits = bits - (2 - log_gain);
-                    mant = get_sbits(gbc, mbits);
-                    mant <<= (15 - (mbits - 1));
+                    mant = get_sbits(gbc, bits-2+log_gain) << (26-log_gain-bits);
                     /* remap mantissa value to correct for asymmetric quantization */
                     if (mant >= 0)
-                        b = 32768 >> log_gain;
+                        b = 32768 >> (log_gain+8);
                     else
                         b = ff_eac3_gaq_remap_2_4_b[hebap-8][log_gain-1];
-                    mant += ((ff_eac3_gaq_remap_2_4_a[hebap-8][log_gain-1] * mant) >> 15) + b;
+                    mant += (ff_eac3_gaq_remap_2_4_a[hebap-8][log_gain-1] * (mant>>8) + b) >> 7;
                 } else {
                     /* small mantissa, no GAQ, or Gk=1 */
-                    mant <<= 15 - (bits-1);
+                    mant <<= 24 - bits;
                     if (!log_gain) {
                         /* remap mantissa value for no GAQ or Gk=1 */
-                        mant += (ff_eac3_gaq_remap_1[hebap-8] * mant) >> 15;
+                        mant += (ff_eac3_gaq_remap_1[hebap-8] * (mant>>8)) >> 7;
                     }
                 }
                 s->pre_mantissa[ch][bin][blk] = mant;
