@@ -87,12 +87,12 @@ static av_cold int encode_init(AVCodecContext* avc_context)
 
     /* Set up the theora_info struct */
     theora_info_init( &t_info );
-    t_info.width = avc_context->width;
-    t_info.height = avc_context->height;
+    t_info.width = FFALIGN(avc_context->width, 16);
+    t_info.height = FFALIGN(avc_context->height, 16);
     t_info.frame_width = avc_context->width;
     t_info.frame_height = avc_context->height;
     t_info.offset_x = 0;
-    t_info.offset_y = 0;
+    t_info.offset_y = avc_context->height & 0xf;
     /* Swap numerator and denominator as time_base in AVCodecContext gives the
      * time period between frames, but theora_info needs the framerate.  */
     t_info.fps_numerator = avc_context->time_base.den;
@@ -186,8 +186,8 @@ static int encode_frame(
         return -1;
     }
 
-    t_yuv_buffer.y_width = avc_context->width;
-    t_yuv_buffer.y_height = avc_context->height;
+    t_yuv_buffer.y_width = FFALIGN(avc_context->width, 16);
+    t_yuv_buffer.y_height = FFALIGN(avc_context->height, 16);
     t_yuv_buffer.y_stride = frame->linesize[0];
     t_yuv_buffer.uv_width = t_yuv_buffer.y_width / 2;
     t_yuv_buffer.uv_height = t_yuv_buffer.y_height / 2;
