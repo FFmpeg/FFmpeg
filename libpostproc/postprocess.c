@@ -951,7 +951,7 @@ static const AVClass av_codec_context_class = { "Postproc", context_to_name, NUL
 
 pp_context *pp_get_context(int width, int height, int cpuCaps){
     PPContext *c= av_malloc(sizeof(PPContext));
-    int stride= (width+15)&(~15);    //assumed / will realloc if needed
+    int stride= FFALIGN(width, 16);  //assumed / will realloc if needed
     int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
 
     memset(c, 0, sizeof(PPContext));

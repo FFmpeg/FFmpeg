@@ -696,13 +696,13 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   for (i=0; i < 3; i++) {
     int linesize;
     if (i == 0) {
-      width  = (s->width+15)&~15;
-      height = (s->height+15)&~15;
+      width  = FFALIGN(s->width, 16);
+      height = FFALIGN(s->height, 16);
       linesize= s->linesize;
     } else {
       if(s->flags&CODEC_FLAG_GRAY) break;
-      width  = (s->width/4+15)&~15;
-      height = (s->height/4+15)&~15;
+      width  = FFALIGN(s->width/4, 16);
+      height = FFALIGN(s->height/4, 16);
       linesize= s->uvlinesize;
     }
 

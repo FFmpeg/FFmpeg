@@ -29,10 +29,6 @@ void avfilter_default_free_video_buffer(AVFilterPic *pic)
     av_free(pic);
 }
 
-#define ALIGN(a) do{ \
-                     (a) = ((a) + 15) & (~15); \
-                 } while(0);
-
 /* TODO: set the buffer's priv member to a context structure for the whole
  * filter chain.  This will allow for a buffer pool instead of the constant
  * alloc & free cycle currently implemented. */
@@ -56,7 +52,7 @@ AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link, int perms)
     ff_fill_linesize((AVPicture *)pic, pic->format, ref->w);
 
     for (i=0; i<4;i++)
-        ALIGN(pic->linesize[i]);
+        pic->linesize[i] = FFALIGN(pic->linesize[i], 16);
 
     tempsize = ff_fill_pointer((AVPicture *)pic, NULL, pic->format, ref->h);
     buf = av_malloc(tempsize);
