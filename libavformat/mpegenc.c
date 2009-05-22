@@ -382,6 +382,8 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             return -1;
         }
         stream->fifo= av_fifo_alloc(16);
+        if (!stream->fifo)
+            goto fail;
     }
     bitrate = 0;
     audio_bitrate = 0;
