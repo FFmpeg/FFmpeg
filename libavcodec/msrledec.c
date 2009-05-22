@@ -1,5 +1,5 @@
 /*
- * Micrsoft RLE Decoder
+ * Microsoft RLE decoder
  * Copyright (C) 2008 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file libavcodec/msrledec.c
- * MS RLE Decoder based on decoder by Mike Melanson and my own for TSCC
+ * MS RLE decoder based on decoder by Mike Melanson and my own for TSCC
  * For more information about the MS RLE format, visit:
  *   http://www.multimedia.cx/msrle.txt
  */
@@ -195,7 +195,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
                 }
             }
             pos += p2;
-        } else { //Run of pixels
+        } else { //run of pixels
             uint8_t pix[3]; //original pixel
             switch(depth){
             case  8: pix[0] = *src++;
@@ -233,7 +233,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
         }
     }
 
-    av_log(avctx, AV_LOG_WARNING, "MS RLE warning: no End-of-picture code\n");
+    av_log(avctx, AV_LOG_WARNING, "MS RLE warning: no end-of-picture code\n");
     return 0;
 }
 
