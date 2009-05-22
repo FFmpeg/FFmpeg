@@ -36,6 +36,7 @@
 #include "libswscale/swscale.h"
 #include "libavcodec/opt.h"
 #include "libavcodec/audioconvert.h"
+#include "libavcodec/colorspace.h"
 #include "libavutil/fifo.h"
 #include "libavutil/avstring.h"
 #include "libavformat/os_support.h"
@@ -2455,23 +2456,6 @@ static void opt_frame_size(const char *arg)
         av_exit(1);
     }
 }
-
-
-#define SCALEBITS 10
-#define ONE_HALF  (1 << (SCALEBITS - 1))
-#define FIX(x)    ((int) ((x) * (1<<SCALEBITS) + 0.5))
-
-#define RGB_TO_Y(r, g, b) \
-((FIX(0.29900) * (r) + FIX(0.58700) * (g) + \
-  FIX(0.11400) * (b) + ONE_HALF) >> SCALEBITS)
-
-#define RGB_TO_U(r1, g1, b1, shift)\
-(((- FIX(0.16874) * r1 - FIX(0.33126) * g1 +         \
-     FIX(0.50000) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
-
-#define RGB_TO_V(r1, g1, b1, shift)\
-(((FIX(0.50000) * r1 - FIX(0.41869) * g1 -           \
-   FIX(0.08131) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
 
 static void opt_pad_color(const char *arg) {
     /* Input is expected to be six hex digits similar to
