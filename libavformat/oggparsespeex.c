@@ -45,6 +45,7 @@ static int speex_header(AVFormatContext *s, int idx) {
 
         st->codec->sample_rate = AV_RL32(p + 36);
         st->codec->channels = AV_RL32(p + 48);
+        st->codec->frame_size = AV_RL32(p + 56);
         st->codec->extradata_size = os->psize;
         st->codec->extradata = av_malloc(st->codec->extradata_size);
         memcpy(st->codec->extradata, p, st->codec->extradata_size);
