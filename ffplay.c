@@ -2368,6 +2368,7 @@ static void event_loop(void)
             break;
         case SDL_MOUSEBUTTONDOWN:
             if (cur_stream) {
+                int64_t ts;
                 int ns, hh, mm, ss;
                 int tns, thh, tmm, tss;
                 tns = cur_stream->ic->duration/1000000LL;
@@ -2381,7 +2382,10 @@ static void event_loop(void)
                 ss = (ns%60);
                 fprintf(stderr, "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac*100,
                         hh, mm, ss, thh, tmm, tss);
-                stream_seek(cur_stream, (int64_t)(cur_stream->ic->start_time+frac*cur_stream->ic->duration), 0);
+                ts = frac*cur_stream->ic->duration;
+                if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
+                    ts += cur_stream->ic->start_time;
+                stream_seek(cur_stream, ts, 0);
             }
             break;
         case SDL_VIDEORESIZE:
