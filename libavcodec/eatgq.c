@@ -42,6 +42,7 @@ typedef struct TgqContext {
     int width,height;
     ScanTable scantable;
     int qtable[64];
+    DECLARE_ALIGNED_16(DCTELEM, block[6][64]);
 } TgqContext;
 
 static av_cold int tgq_decode_init(AVCodecContext *avctx){
@@ -144,7 +145,6 @@ static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x, const uint8_t **bs,
     int mode;
     int i;
     int8_t dc[6];
-    DCTELEM block[6][64];
 
     mode = bytestream_get_byte(bs);
     if (mode>buf_end-*bs) {
@@ -156,8 +156,8 @@ static void tgq_decode_mb(TgqContext *s, int mb_y, int mb_x, const uint8_t **bs,
         GetBitContext gb;
         init_get_bits(&gb, *bs, mode*8);
         for(i=0; i<6; i++)
-            tgq_decode_block(s, block[i], &gb);
-        tgq_idct_put_mb(s, block, mb_x, mb_y);
+            tgq_decode_block(s, s->block[i], &gb);
+        tgq_idct_put_mb(s, s->block, mb_x, mb_y);
     }else{
         if (mode==3) {
             memset(dc, (*bs)[0], 4);
