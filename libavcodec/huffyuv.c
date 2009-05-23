@@ -1257,11 +1257,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         put_bits(&s->pb, 8, leftu= p->data[1][0]);
         put_bits(&s->pb, 8,        p->data[0][0]);
 
-        lefty= sub_left_prediction(s, s->temp[0], p->data[0]+2, width-2 , lefty);
-        leftu= sub_left_prediction(s, s->temp[1], p->data[1]+1, width2-1, leftu);
-        leftv= sub_left_prediction(s, s->temp[2], p->data[2]+1, width2-1, leftv);
+        lefty= sub_left_prediction(s, s->temp[0], p->data[0], width , 0);
+        leftu= sub_left_prediction(s, s->temp[1], p->data[1], width2, 0);
+        leftv= sub_left_prediction(s, s->temp[2], p->data[2], width2, 0);
 
-        encode_422_bitstream(s, 0, width-2);
+        encode_422_bitstream(s, 2, width-2);
 
         if(s->predictor==MEDIAN){
             int lefttopy, lefttopu, lefttopv;
