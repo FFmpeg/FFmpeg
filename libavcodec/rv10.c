@@ -511,7 +511,7 @@ av_log(s->avctx, AV_LOG_DEBUG, "\n");*/
 //    s->umvplus=1;
     s->modified_quant=1;
     if(!s->avctx->lowres)
-    s->loop_filter=1;
+        s->loop_filter=1;
 
     if(s->avctx->debug & FF_DEBUG_PICT_INFO){
             av_log(s->avctx, AV_LOG_INFO, "num:%5d x:%2d y:%2d type:%d qscale:%2d rnd:%d\n",
