@@ -649,6 +649,9 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
 
     s->encoding = 1;
 
+    s->progressive_frame=
+    s->progressive_sequence= !(avctx->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME|CODEC_FLAG_ALT_SCAN));
+
     /* init */
     if (MPV_common_init(s) < 0)
         return -1;
@@ -663,8 +666,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
 
     if((CONFIG_H263P_ENCODER || CONFIG_RV20_ENCODER) && s->modified_quant)
         s->chroma_qscale_table= ff_h263_chroma_qscale_table;
-    s->progressive_frame=
-    s->progressive_sequence= !(avctx->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME|CODEC_FLAG_ALT_SCAN));
+
     s->quant_precision=5;
 
     ff_set_cmp(&s->dsp, s->dsp.ildct_cmp, s->avctx->ildct_cmp);
