@@ -426,6 +426,12 @@ static int mpegts_write_header(AVFormatContext *s)
             service->pcr_pid == 0x1fff)
             service->pcr_pid = ts_st->pid;
         total_bit_rate += st->codec->bit_rate;
+        /* PES header size */
+        if (st->codec->codec_type == CODEC_TYPE_VIDEO ||
+            st->codec->codec_type == CODEC_TYPE_SUBTITLE)
+            total_bit_rate += 25 * 8 / av_q2d(st->codec->time_base);
+        else
+            total_bit_rate += total_bit_rate * 25 / DEFAULT_PES_PAYLOAD_SIZE;
     }
 
     /* if no video stream, use the first stream as PCR */
@@ -458,7 +464,6 @@ static int mpegts_write_header(AVFormatContext *s)
     pat_pmt_size = url_ftell(s->pb) - pos;
 
     total_bit_rate +=
-        total_bit_rate * 25 / DEFAULT_PES_PAYLOAD_SIZE + /* PES header size */
         total_bit_rate *  4 / TS_PACKET_SIZE           + /* TS  header size */
         SDT_RETRANS_TIME * 8 * sdt_size     / 1000     + /* SDT size */
         PAT_RETRANS_TIME * 8 * pat_pmt_size / 1000     + /* PAT+PMT size */

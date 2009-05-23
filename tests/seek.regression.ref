@@ -3599,57 +3599,57 @@ ret:-1 st:-1 ts:-0.645825 flags:1
 tests/data/b-lavf.ts
 ret: 0 st: 0 dts:0.660000 pts:0.700000 pos:564 size:24921 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
-ret: 0 st: 0 dts:0.044344 pts:-102481911520608.625000 pos:29704 size:22036 flags:1
+ret: 0 st: 0 dts:0.043533 pts:-102481911520608.625000 pos:29328 size:21852 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret: 0 st: 0 dts:1.881344 pts:-102481911520608.625000 pos:29704 size:852 flags:1
+ret: 0 st: 0 dts:0.780000 pts:0.820000 pos:65800 size:14260 flags:0
 ret: 0 st: 0 ts:0.788333 flags:0
-ret: 0 st: 0 dts:0.700000 pts:0.740000 pos:29704 size:16769 flags:0
+ret: 0 st: 0 dts:0.700000 pts:0.740000 pos:29328 size:16309 flags:0
 ret: 0 st: 0 ts:-0.317500 flags:1
-ret: 0 st: 0 dts:0.027844 pts:-102481911520608.625000 pos:48880 size:22036 flags:1
+ret: 0 st: 0 dts:0.027333 pts:-102481911520608.625000 pos:48504 size:21852 flags:1
 ret: 0 st: 1 ts:2.576667 flags:0
-ret: 0 st: 0 dts:2.590844 pts:-102481911520608.625000 pos:29704 size:7612 flags:1
+ret: 0 st: 0 dts:2.581533 pts:-102481911520608.625000 pos:29328 size:6340 flags:1
 ret: 0 st: 1 ts:1.470833 flags:1
-ret: 0 st: 0 dts:1.468844 pts:-102481911520608.625000 pos:99264 size:13188 flags:1
+ret: 0 st: 0 dts:1.458333 pts:-102481911520608.625000 pos:98512 size:10644 flags:1
 ret: 0 st:-1 ts:0.365002 flags:0
-ret: 0 st: 0 dts:0.374344 pts:-102481911520608.625000 pos:66176 size:12788 flags:1
+ret: 0 st: 0 dts:0.367533 pts:-102481911520608.625000 pos:65800 size:12060 flags:1
 ret: 0 st:-1 ts:-0.740831 flags:1
-ret: 0 st: 0 dts:0.027844 pts:-102481911520608.625000 pos:29704 size:22036 flags:1
+ret: 0 st: 0 dts:0.027333 pts:-102481911520608.625000 pos:29328 size:21852 flags:1
 ret: 0 st: 0 ts:2.153333 flags:0
-ret: 0 st: 0 dts:2.167344 pts:-102481911520608.625000 pos:29704 size:5935 flags:1
+ret: 0 st: 0 dts:2.160333 pts:-102481911520608.625000 pos:29328 size:5391 flags:1
 ret: 0 st: 0 ts:1.047500 flags:1
-ret: 0 st: 0 dts:1.039844 pts:-102481911520608.625000 pos:82720 size:10704 flags:1
+ret: 0 st: 0 dts:1.037133 pts:-102481911520608.625000 pos:82344 size:8888 flags:1
 ret: 0 st: 1 ts:-0.058333 flags:0
-ret: 0 st: 0 dts:0.044344 pts:-102481911520608.625000 pos:48880 size:22036 flags:1
+ret: 0 st: 0 dts:0.043533 pts:-102481911520608.625000 pos:48504 size:21852 flags:1
 ret: 0 st: 1 ts:2.835833 flags:1
-ret: 0 st: 0 dts:2.832844 pts:-102481911520608.625000 pos:29704 size:1444 flags:1
+ret: 0 st: 0 dts:0.860000 pts:0.900000 pos:98512 size:12495 flags:0
 ret: 0 st:-1 ts:1.730004 flags:0
-ret: 0 st: 0 dts:1.738344 pts:-102481911520608.625000 pos:99264 size:3940 flags:1
+ret: 0 st: 0 dts:1.755333 pts:-102481911520608.625000 pos:113176 size:852 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
-ret: 0 st: 0 dts:0.616344 pts:-102481911520608.625000 pos:66176 size:6620 flags:1
+ret: 0 st: 0 dts:0.621333 pts:-102481911520608.625000 pos:65800 size:5532 flags:1
 ret: 0 st: 0 ts:-0.481667 flags:0
-ret: 0 st: 0 dts:0.044344 pts:-102481911520608.625000 pos:29704 size:22036 flags:1
+ret: 0 st: 0 dts:0.043533 pts:-102481911520608.625000 pos:29328 size:21852 flags:1
 ret: 0 st: 0 ts:2.412500 flags:1
-ret: 0 st: 0 dts:0.820000 pts:0.860000 pos:82720 size:13937 flags:0
+ret: 0 st: 0 dts:2.408733 pts:-102481911520608.625000 pos:29328 size:9604 flags:1
 ret: 0 st: 1 ts:1.306667 flags:0
-ret: 0 st: 0 dts:1.309344 pts:-102481911520608.625000 pos:99264 size:1456 flags:1
+ret: 0 st: 0 dts:0.740000 pts:0.780000 pos:48504 size:14617 flags:0
 ret: 0 st: 1 ts:0.200844 flags:1
-ret: 0 st: 0 dts:0.187344 pts:-102481911520608.625000 pos:48880 size:18956 flags:1
+ret: 0 st: 0 dts:0.200133 pts:-102481911520608.625000 pos:65800 size:18588 flags:1
 ret: 0 st:-1 ts:-0.904994 flags:0
-ret: 0 st: 0 dts:0.044344 pts:-102481911520608.625000 pos:29704 size:22036 flags:1
+ret: 0 st: 0 dts:0.043533 pts:-102481911520608.625000 pos:29328 size:21852 flags:1
 ret: 0 st:-1 ts:1.989173 flags:1
-ret: 0 st: 0 dts:1.974844 pts:-102481911520608.625000 pos:29704 size:12103 flags:1
+ret: 0 st: 0 dts:1.987533 pts:-102481911520608.625000 pos:29328 size:8655 flags:1
 ret: 0 st: 0 ts:0.883344 flags:0
-ret: 0 st: 0 dts:0.896844 pts:-102481911520608.625000 pos:82720 size:13784 flags:1
+ret: 0 st: 0 dts:0.896733 pts:-102481911520608.625000 pos:82344 size:12152 flags:1
 ret: 0 st: 0 ts:-0.222489 flags:1
-ret: 0 st: 0 dts:0.027844 pts:-102481911520608.625000 pos:48880 size:22036 flags:1
+ret: 0 st: 0 dts:0.027333 pts:-102481911520608.625000 pos:48504 size:21852 flags:1
 ret: 0 st: 1 ts:2.671678 flags:0
-ret: 0 st: 0 dts:2.684344 pts:-102481911520608.625000 pos:29704 size:5796 flags:1
+ret: 0 st: 0 dts:2.673333 pts:-102481911520608.625000 pos:29328 size:3076 flags:1
 ret: 0 st: 1 ts:1.565844 flags:1
-ret: 0 st: 0 dts:1.562344 pts:-102481911520608.625000 pos:99264 size:10100 flags:1
+ret: 0 st: 0 dts:1.550133 pts:-102481911520608.625000 pos:98512 size:7380 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
-ret: 0 st: 0 dts:0.467844 pts:-102481911520608.625000 pos:66176 size:9708 flags:1
+ret: 0 st: 0 dts:0.475533 pts:-102481911520608.625000 pos:65800 size:8796 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
-ret: 0 st: 0 dts:0.027844 pts:-102481911520608.625000 pos:29704 size:22036 flags:1
+ret: 0 st: 0 dts:0.027333 pts:-102481911520608.625000 pos:29328 size:21852 flags:1
 ----------------
 tests/data/b-lavf.ul
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
