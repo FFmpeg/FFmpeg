@@ -701,7 +701,6 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t *buf= pkt->data;
     uint8_t *data= NULL;
     MpegTSWriteStream *ts_st = st->priv_data;
-    const uint8_t *access_unit_index = NULL;
     const uint64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
     int64_t dts = AV_NOPTS_VALUE, pts = AV_NOPTS_VALUE;
 
@@ -732,14 +731,6 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
             buf  = data;
             size = pkt->size+6;
         }
-        access_unit_index = buf;
-    } else {
-        access_unit_index = pkt->data;
-    }
-
-    if (!access_unit_index) {
-        av_log(s, AV_LOG_ERROR, "error, could not find access unit start\n");
-        return -1;
     }
 
     if (st->codec->codec_type == CODEC_TYPE_SUBTITLE ||
@@ -748,6 +739,11 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         mpegts_write_pes(s, st, buf, size, pts, dts);
         av_free(data);
         return 0;
+    }
+
+    if (ts_st->payload_pts == AV_NOPTS_VALUE) {
+        ts_st->payload_dts = dts;
+        ts_st->payload_pts = pts;
     }
 
     // audio
@@ -759,19 +755,12 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         buf += len;
         size -= len;
         ts_st->payload_index += len;
-        if (access_unit_index && access_unit_index < buf &&
-            ts_st->payload_pts == AV_NOPTS_VALUE &&
-            ts_st->payload_dts == AV_NOPTS_VALUE) {
-            ts_st->payload_dts = dts;
-            ts_st->payload_pts = pts;
-        }
         if (ts_st->payload_index >= DEFAULT_PES_PAYLOAD_SIZE) {
             mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
                              ts_st->payload_pts, ts_st->payload_dts);
             ts_st->payload_pts = AV_NOPTS_VALUE;
             ts_st->payload_dts = AV_NOPTS_VALUE;
             ts_st->payload_index = 0;
-            access_unit_index = NULL; // unset access unit to avoid setting pts/dts again
         }
     }
 
