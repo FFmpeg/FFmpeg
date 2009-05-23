@@ -7,24 +7,19 @@
  * Copyright (c) 2007-2008 Bartlomiej Wolowiec <bartek.wolowiec@gmail.com>
  * Copyright (c) 2007 Justin Ruggles <justin.ruggles@gmail.com>
  *
- * Portions of this code are derived from liba52
- * http://liba52.sourceforge.net
- * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
- * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public
+ * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public
+ * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
@@ -438,12 +433,12 @@ static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
  * Grouped mantissas for 3-level 5-level and 11-level quantization
  */
 typedef struct {
-    int b1_mant[3];
-    int b2_mant[3];
-    int b4_mant[2];
-    int b1ptr;
-    int b2ptr;
-    int b4ptr;
+    int b1_mant[2];
+    int b2_mant[2];
+    int b4_mant;
+    int b1;
+    int b2;
+    int b4;
 } mant_groups;
 
 /**
@@ -452,73 +447,72 @@ typedef struct {
  */
 static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, mant_groups *m)
 {
+    int start_freq = s->start_freq[ch_index];
+    int end_freq = s->end_freq[ch_index];
+    uint8_t *baps = s->bap[ch_index];
+    int8_t *exps = s->dexps[ch_index];
+    int *coeffs = s->fixed_coeffs[ch_index];
     GetBitContext *gbc = &s->gbc;
-    int i, gcode, tbap, start, end;
-    uint8_t *exps;
-    uint8_t *bap;
-    int *coeffs;
+    int freq;
 
-    exps = s->dexps[ch_index];
-    bap = s->bap[ch_index];
-    coeffs = s->fixed_coeffs[ch_index];
-    start = s->start_freq[ch_index];
-    end = s->end_freq[ch_index];
-
-    for (i = start; i < end; i++) {
-        tbap = bap[i];
-        switch (tbap) {
+    for(freq = start_freq; freq < end_freq; freq++){
+        int bap = baps[freq];
+        int mantissa;
+        switch(bap){
             case 0:
-                coeffs[i] = (av_lfg_get(&s->dith_state) & 0x7FFFFF) - 0x400000;
+                mantissa = (av_lfg_get(&s->dith_state) & 0x7FFFFF) - 0x400000;
                 break;
-
             case 1:
-                if(m->b1ptr > 2) {
-                    gcode = get_bits(gbc, 5);
-                    m->b1_mant[0] = b1_mantissas[gcode][0];
-                    m->b1_mant[1] = b1_mantissas[gcode][1];
-                    m->b1_mant[2] = b1_mantissas[gcode][2];
-                    m->b1ptr = 0;
+                if(m->b1){
+                    m->b1--;
+                    mantissa = m->b1_mant[m->b1];
                 }
-                coeffs[i] = m->b1_mant[m->b1ptr++];
+                else{
+                    int bits      = get_bits(gbc, 5);
+                    mantissa      = b1_mantissas[bits][0];
+                    m->b1_mant[1] = b1_mantissas[bits][1];
+                    m->b1_mant[0] = b1_mantissas[bits][2];
+                    m->b1         = 2;
+                }
                 break;
-
             case 2:
-                if(m->b2ptr > 2) {
-                    gcode = get_bits(gbc, 7);
-                    m->b2_mant[0] = b2_mantissas[gcode][0];
-                    m->b2_mant[1] = b2_mantissas[gcode][1];
-                    m->b2_mant[2] = b2_mantissas[gcode][2];
-                    m->b2ptr = 0;
+                if(m->b2){
+                    m->b2--;
+                    mantissa = m->b2_mant[m->b2];
                 }
-                coeffs[i] = m->b2_mant[m->b2ptr++];
+                else{
+                    int bits      = get_bits(gbc, 7);
+                    mantissa      = b2_mantissas[bits][0];
+                    m->b2_mant[1] = b2_mantissas[bits][1];
+                    m->b2_mant[0] = b2_mantissas[bits][2];
+                    m->b2         = 2;
+                }
                 break;
-
             case 3:
-                coeffs[i] = b3_mantissas[get_bits(gbc, 3)];
+                mantissa = b3_mantissas[get_bits(gbc, 3)];
                 break;
-
             case 4:
-                if(m->b4ptr > 1) {
-                    gcode = get_bits(gbc, 7);
-                    m->b4_mant[0] = b4_mantissas[gcode][0];
-                    m->b4_mant[1] = b4_mantissas[gcode][1];
-                    m->b4ptr = 0;
+                if(m->b4){
+                    m->b4 = 0;
+                    mantissa = m->b4_mant;
                 }
-                coeffs[i] = m->b4_mant[m->b4ptr++];
+                else{
+                    int bits   = get_bits(gbc, 7);
+                    mantissa   = b4_mantissas[bits][0];
+                    m->b4_mant = b4_mantissas[bits][1];
+                    m->b4      = 1;
+                }
                 break;
-
             case 5:
-                coeffs[i] = b5_mantissas[get_bits(gbc, 4)];
+                mantissa = b5_mantissas[get_bits(gbc, 4)];
                 break;
-
-            default: {
-                /* asymmetric dequantization */
-                int qlevel = quantization_tab[tbap];
-                coeffs[i] = get_sbits(gbc, qlevel) << (24 - qlevel);
+            default: /* 6 to 15 */
+                mantissa = get_bits(gbc, quantization_tab[bap]);
+                /* Shift mantissa and sign-extend it. */
+                mantissa = (mantissa << (32-quantization_tab[bap]))>>8;
                 break;
-            }
         }
-        coeffs[i] >>= exps[i];
+        coeffs[freq] = mantissa >> exps[freq];
     }
 }
 
@@ -581,7 +575,7 @@ static void decode_transform_coeffs(AC3DecodeContext *s, int blk)
     int got_cplchan = 0;
     mant_groups m;
 
-    m.b1ptr = m.b2ptr = m.b4ptr = 3;
+    m.b1 = m.b2 = m.b4 = 0;
 
     for (ch = 1; ch <= s->channels; ch++) {
         /* transform coefficients for full-bandwidth channel */

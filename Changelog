@@ -8,6 +8,8 @@ version 0.5.1:
 - documentation updates
 - fix for GPL code in libswscale that was erroneously activated
 - AltiVec code in libswscale is now LGPL
+- remaining GPL parts in AC-3 decoder converted to LGPL
+
 
 
 version 0.5:
