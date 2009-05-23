@@ -1013,8 +1013,11 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack *track)
     put_be32(pb ,0); /* reserved */
     put_be32(pb ,0); /* reserved */
     put_be32(pb ,0); /* reserved */
-    put_byte(pb, strlen(descr)); /* string counter */
+    if (!track || track->mode == MODE_MOV)
+        put_byte(pb, strlen(descr)); /* pascal string */
     put_buffer(pb, descr, strlen(descr)); /* handler description */
+    if (track && track->mode != MODE_MOV)
+        put_byte(pb, 0); /* c string */
     return updateSize(pb, pos);
 }
 

@@ -62,7 +62,7 @@ c7644d40e9f40bbd98e5a978f9f94bb4 *./tests/data/a-h263p.avi
 868018 ./tests/data/a-h263p.avi
 4b0ee791f280029dc03c528f76f195d4 *./tests/data/h263p.rotozoom.out.yuv
 stddev:    1.91 PSNR: 42.49 bytes:  7603200/  7603200
-1392b035d1db775c33b4fb90c7b70fa3 *./tests/data/a-odivx.mp4
+47de227982e77830a2db278214a08773 *./tests/data/a-odivx.mp4
 119797 ./tests/data/a-odivx.mp4
 90a3577850239083a9042bef33c50e85 *./tests/data/mpeg4.rotozoom.out.yuv
 stddev:    5.34 PSNR: 33.56 bytes:  7603200/  7603200
