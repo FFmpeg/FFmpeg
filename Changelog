@@ -2,6 +2,14 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version 0.5.1:
+
+- build system updates
+- documentation updates
+- fix for GPL code in libswscale that was erroneously activated
+- AltiVec code in libswscale is now LGPL
+
+
 version 0.5:
 
 - The "device" muxers and demuxers are now in a new libavdevice library
