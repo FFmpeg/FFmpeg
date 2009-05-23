@@ -35,7 +35,6 @@
 #include <math.h>
 #include <time.h>
 
-#include "libavutil/fifo.h"
 #include "libavutil/random_seed.h"
 #include "libavcodec/bytestream.h"
 #include "audiointerleave.h"
