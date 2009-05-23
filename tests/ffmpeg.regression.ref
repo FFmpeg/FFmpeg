@@ -170,49 +170,49 @@ stddev:    9.53 PSNR: 28.53 bytes:  7603200/  7603200
 14684984 ./tests/data/a-flashsv.flv
 012717e7c928641410eaa6abaf126fdc *./tests/data/flashsv.vsynth.out.yuv
 stddev:    2.84 PSNR: 39.05 bytes:  7603200/  7603200
-21f8ff9f1daacd9133683bb4ea0f50a4 *./tests/data/a-mp2.mp2
-95712 ./tests/data/a-mp2.mp2
-83f8df5d5f84480566af548bb037fceb *./tests/data/mp2.vsynth.out.wav
-stddev: 9328.41 PSNR: 16.92 bytes:  1055276/  1058444
-stddev: 4394.71 PSNR: 23.46 bytes:  1053352/  1058444
-3bfe347421de458dbfe572b8d4047b46 *./tests/data/a-ac3.rm
-98183 ./tests/data/a-ac3.rm
+28fbc7485c7939f40368f79adccb3e3d *./tests/data/a-mp2.mp2
+96130 ./tests/data/a-mp2.mp2
+c02d5b881c424498457298739f168368 *./tests/data/mp2.vsynth.out.wav
+stddev: 9315.45 PSNR: 16.94 bytes:  1059884/  1058444
+stddev: 4385.18 PSNR: 23.48 bytes:  1057960/  1058444
+081bfd5e683b13cccf1b07c43c1c5005 *./tests/data/a-ac3.rm
+98751 ./tests/data/a-ac3.rm
 5d8cce28f83dd33c3c7eaf43a5db5294 *./tests/data/a-g726.wav
 24082 ./tests/data/a-g726.wav
 4f1ba1af75dee64625a1c852e6cd01d3 *./tests/data/g726.vsynth.out.wav
 stddev: 8506.46 PSNR: 17.72 bytes:    96148/  1058444
-3b969c43e45582f713e3c35faee9e0cc *./tests/data/a-adpcm_ima.wav
-266300 ./tests/data/a-adpcm_ima.wav
-947196b1739a9d6fe0c29424cf61cd8c *./tests/data/adpcm_ima_wav.vsynth.out.wav
-stddev:  903.80 PSNR: 37.20 bytes:  1057724/  1058444
-efdae2746040dbc27be402b149556f1e *./tests/data/a-adpcm_qt.aiff
-281184 ./tests/data/a-adpcm_qt.aiff
-5a2084ad27674d5cf3bc2945061e7910 *./tests/data/adpcm_ima_qt.vsynth.out.wav
-stddev:  914.67 PSNR: 37.09 bytes:  1058348/  1058444
-88a0c48c9bc6d50a84c408151c6a3d64 *./tests/data/a-adpcm_ms.wav
-267320 ./tests/data/a-adpcm_ms.wav
-d5f98f5136040be42232a34df92d61f2 *./tests/data/adpcm_ms.vsynth.out.wav
-stddev: 1050.92 PSNR: 35.89 bytes:  1056572/  1058444
-ab11d9151644cbff27827b7e89f37aa9 *./tests/data/a-adpcm_yam.wav
-264248 ./tests/data/a-adpcm_yam.wav
-e92cec8c07913ffb91ad2b11f79cdc00 *./tests/data/adpcm_yam.vsynth.out.wav
-stddev:18312.78 PSNR: 11.06 bytes:  1056812/  1058444
-7187eb46a4987b7ca9beafecffbda55d *./tests/data/a-adpcm_swf.flv
-267097 ./tests/data/a-adpcm_swf.flv
-e48b800e2d9be6afcd430d4f08a34eb6 *./tests/data/adpcm_swf.vsynth.out.wav
-stddev:  934.28 PSNR: 36.91 bytes:  1056812/  1058444
+56b75c3a6dacedcf2ce7b0586aa33594 *./tests/data/a-adpcm_ima.wav
+267324 ./tests/data/a-adpcm_ima.wav
+78a2af1c895792d0c221d127bdd48ece *./tests/data/adpcm_ima_wav.vsynth.out.wav
+stddev:  903.51 PSNR: 37.20 bytes:  1061792/  1058444
+3c06fd2f7831e3e8735b936e23ca220c *./tests/data/a-adpcm_qt.aiff
+281252 ./tests/data/a-adpcm_qt.aiff
+9580492803ba1c1a3746367b24b751c8 *./tests/data/adpcm_ima_qt.vsynth.out.wav
+stddev:  914.63 PSNR: 37.09 bytes:  1058604/  1058444
+9f813f0cc8b2c05821a31828eadf1188 *./tests/data/a-adpcm_ms.wav
+268344 ./tests/data/a-adpcm_ms.wav
+7be370f937c51e8a967e6a3d08d5156a *./tests/data/adpcm_ms.vsynth.out.wav
+stddev: 1050.00 PSNR: 35.90 bytes:  1060620/  1058444
+14df8b8bb7c127ec70c0167df1c0dbf7 *./tests/data/a-adpcm_yam.wav
+266296 ./tests/data/a-adpcm_yam.wav
+2f73107dafef6db42e545f9e466d3f05 *./tests/data/adpcm_yam.vsynth.out.wav
+stddev:18302.45 PSNR: 11.07 bytes:  1065004/  1058444
+c0c2a66f75ea32ef6656ac7cdd08023c *./tests/data/a-adpcm_swf.flv
+269166 ./tests/data/a-adpcm_swf.flv
+628089745a7059ae4055c2515b6d668b *./tests/data/adpcm_swf.vsynth.out.wav
+stddev:  933.65 PSNR: 36.92 bytes:  1065004/  1058444
 7781a016edfc242a39e4d65af02d861a *./tests/data/a-flac.flac
 353368 ./tests/data/a-flac.flac
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/flac.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-4435d87463cd6c5407bd88cca241ca56 *./tests/data/a-wmav1.asf
+26a7f6b0f0b7181df8df3fa589f6bf81 *./tests/data/a-wmav1.asf
 106004 ./tests/data/a-wmav1.asf
-stddev:12251.38 PSNR: 14.56 bytes:  1056812/  1058444
-stddev: 2105.96 PSNR: 29.85 bytes:  1048620/  1058444
-24ae726aef89e5d17e315c64182f4c61 *./tests/data/a-wmav2.asf
+stddev:12245.27 PSNR: 14.56 bytes:  1065004/  1058444
+stddev: 2097.78 PSNR: 29.88 bytes:  1056812/  1058444
+7c6c0cb692af01b312ae345723674b5f *./tests/data/a-wmav2.asf
 106044 ./tests/data/a-wmav2.asf
-stddev:12255.80 PSNR: 14.55 bytes:  1056812/  1058444
-stddev: 2099.27 PSNR: 29.88 bytes:  1048620/  1058444
+stddev:12249.69 PSNR: 14.56 bytes:  1065004/  1058444
+stddev: 2091.12 PSNR: 29.91 bytes:  1056812/  1058444
 89f5b8dd97e0dddbe59af0d44fd229f3 *./tests/data/a-pcm_alaw.wav
 529256 ./tests/data/a-pcm_alaw.wav
 0568b0b9a72e31559e150e7e09d301cd *./tests/data/pcm.vsynth.out.wav
