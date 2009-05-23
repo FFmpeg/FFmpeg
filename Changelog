@@ -1,3 +1,7 @@
+Entries are sorted chronologically from oldest to youngest within each release,
+releases are sorted from youngest to oldest.
+
+
 version 0.5:
 
 - The "device" muxers and demuxers are now in a new libavdevice library
