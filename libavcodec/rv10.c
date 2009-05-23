@@ -510,6 +510,7 @@ av_log(s->avctx, AV_LOG_DEBUG, "\n");*/
 //    s->obmc=1;
 //    s->umvplus=1;
     s->modified_quant=1;
+    if(!s->avctx->lowres)
     s->loop_filter=1;
 
     if(s->avctx->debug & FF_DEBUG_PICT_INFO){
@@ -538,8 +539,8 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     s->out_format = FMT_H263;
     s->codec_id= avctx->codec_id;
 
-    s->width = avctx->width;
-    s->height = avctx->height;
+    s->width = avctx->coded_width;
+    s->height = avctx->coded_height;
 
     s->h263_long_vectors= ((uint8_t*)avctx->extradata)[3] & 1;
     avctx->sub_id= AV_RB32((uint8_t*)avctx->extradata + 4);
