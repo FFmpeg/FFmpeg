@@ -387,6 +387,7 @@ static int decode_frame(AVCodecContext *avctx,
     PNGDecContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame *p;
+    uint8_t *crow_buf_base = NULL;
     uint32_t tag, length;
     int ret, crc;
 
@@ -527,9 +528,12 @@ static int decode_frame(AVCodecContext *avctx,
                         goto fail;
                 }
                 /* compressed row */
-                s->crow_buf = av_malloc(s->row_size + 1);
-                if (!s->crow_buf)
+                crow_buf_base = av_malloc(s->row_size + 16);
+                if (!crow_buf_base)
                     goto fail;
+
+                /* we want crow_buf+1 to be 16-byte aligned */
+                s->crow_buf = crow_buf_base + 15;
                 s->zstream.avail_out = s->crow_size;
                 s->zstream.next_out = s->crow_buf;
             }
@@ -612,7 +616,8 @@ static int decode_frame(AVCodecContext *avctx,
     ret = s->bytestream - s->bytestream_start;
  the_end:
     inflateEnd(&s->zstream);
-    av_freep(&s->crow_buf);
+    av_free(crow_buf_base);
+    s->crow_buf = NULL;
     av_freep(&s->last_row);
     av_freep(&s->tmp_row);
     return ret;
