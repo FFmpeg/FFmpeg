@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+//#define DEBUG
+//#define DEBUG_SEEK
+
 #include "libavutil/intreadwrite.h"
 #include "libavutil/bswap.h"
 #include "avformat.h"
@@ -28,9 +31,6 @@
 
 #undef NDEBUG
 #include <assert.h>
-
-//#define DEBUG
-//#define DEBUG_SEEK
 
 typedef struct AVIStream {
     int64_t frame_offset; /* current frame (video) or byte (audio) counter
@@ -78,7 +78,7 @@ static int guess_ni_flag(AVFormatContext *s);
 #ifdef DEBUG
 static void print_tag(const char *str, unsigned int tag, int size)
 {
-    printf("%s: tag=%c%c%c%c size=0x%x\n",
+    dprintf(NULL, "%s: tag=%c%c%c%c size=0x%x\n",
            str, tag & 0xff,
            (tag >> 8) & 0xff,
            (tag >> 16) & 0xff,
@@ -287,7 +287,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 if(size) avi->movi_end = avi->movi_list + size + (size & 1);
                 else     avi->movi_end = url_fsize(pb);
 #ifdef DEBUG
-                printf("movi end=%"PRIx64"\n", avi->movi_end);
+                dprintf(NULL, "movi end=%"PRIx64"\n", avi->movi_end);
 #endif
                 goto end_of_header;
             }
