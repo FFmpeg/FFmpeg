@@ -98,7 +98,6 @@ static inline int get_block(GetBitContext *gb, DCTELEM *block, const uint8_t *sc
  */
 int rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
                                const uint8_t *buf, int buf_size) {
-    DECLARE_ALIGNED_16(DCTELEM, block[64]);
     GetBitContext gb;
     int w = c->w / 16, h = c->h / 16;
     int x, y;
@@ -107,6 +106,7 @@ int rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
     init_get_bits(&gb, buf, buf_size * 8);
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
+            DCTELEM *block = c->block;
             if (get_block(&gb, block, c->scan, c->lquant))
                 c->dsp->idct_put(y1, f->linesize[0], block);
             y1 += 8;
