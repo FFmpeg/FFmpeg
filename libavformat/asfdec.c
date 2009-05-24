@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+//#define DEBUG
+
 #include "libavutil/common.h"
 #include "libavutil/avstring.h"
 #include "libavcodec/mpegaudio.h"
@@ -46,7 +48,10 @@ static const ff_asf_guid stream_bitrate_guid = { /* (http://get.to/sdp) */
 /**********************************/
 /* decoding */
 
-//#define DEBUG
+static int guidcmp(const void *g1, const void *g2)
+{
+    return memcmp(g1, g2, sizeof(ff_asf_guid));
+}
 
 #ifdef DEBUG
 #define PRINT_IF_GUID(g,cmp) \
@@ -89,11 +94,6 @@ static void print_guid(const ff_asf_guid *g)
 #else
 #define print_guid(g)
 #endif
-
-static int guidcmp(const void *g1, const void *g2)
-{
-    return memcmp(g1, g2, sizeof(ff_asf_guid));
-}
 
 static void get_guid(ByteIOContext *s, ff_asf_guid *g)
 {
