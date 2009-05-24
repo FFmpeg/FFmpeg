@@ -122,11 +122,12 @@ static void get_str16(ByteIOContext *pb, char *buf, int buf_size)
 static void get_str16_nolen(ByteIOContext *pb, int len, char *buf, int buf_size)
 {
     char* q = buf;
-    len /= 2;
-    while (len--) {
+    for (; len > 1; len -= 2) {
         uint8_t tmp;
         PUT_UTF8(get_le16(pb), tmp, if (q - buf < buf_size - 1) *q++ = tmp;)
     }
+    if (len > 0)
+        url_fskip(pb, len);
     *q = '\0';
 }
 
