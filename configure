@@ -2333,11 +2333,11 @@ for type in decoder encoder parser demuxer muxer protocol filter bsf indev outde
     echo
 done
 
-license="LGPL"
+license="LGPL version 2.1 or later"
 if enabled nonfree; then
-    license="unredistributable"
+    license="nonfree and unredistributable"
 elif enabled gpl; then
-    license="GPL"
+    license="GPL version 2 or later"
 fi
 
 echo "License: $license"
