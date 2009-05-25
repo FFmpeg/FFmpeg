@@ -41,7 +41,7 @@
  * version bump.
  * sizeof(URLContext) must not be used outside libav*.
  */
-struct URLContext {
+typedef struct URLContext {
 #if LIBAVFORMAT_VERSION_MAJOR >= 53
     const AVClass *av_class; ///< information for av_log(). Set by url_open().
 #endif
@@ -51,9 +51,7 @@ struct URLContext {
     int max_packet_size;  /**< if non zero, the stream is packetized with this max packet size */
     void *priv_data;
     char *filename; /**< specified filename */
-};
-
-typedef struct URLContext URLContext;
+} URLContext;
 
 typedef struct URLPollEntry {
     URLContext *handle;
