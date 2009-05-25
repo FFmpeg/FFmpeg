@@ -434,6 +434,11 @@ OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o
 
 # processor-specific code
+X86-OBJS-$(CONFIG_MLP_DECODER)         += x86/mlpdsp.o
+X86-OBJS-$(CONFIG_TRUEHD_DECODER)      += x86/mlpdsp.o
+
+OBJS-$(ARCH_X86)                       += $(X86-OBJS-yes)
+
 YASM-OBJS-FFT-$(HAVE_AMD3DNOW)         += x86/fft_3dn.o
 YASM-OBJS-FFT-$(HAVE_AMD3DNOWEXT)      += x86/fft_3dn2.o
 YASM-OBJS-FFT-$(HAVE_SSE)              += x86/fft_sse.o
@@ -445,10 +450,8 @@ MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
 MMX-OBJS-$(CONFIG_FLAC_ENCODER)        += x86/flacdsp_mmx.o
 MMX-OBJS-$(CONFIG_GPL)                 += x86/idct_mmx.o
-MMX-OBJS-$(CONFIG_MLP_DECODER)         += x86/mlpdsp.o
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp_mmx.o
 MMX-OBJS-$(CONFIG_THEORA_DECODER)      += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
-MMX-OBJS-$(CONFIG_TRUEHD_DECODER)      += x86/mlpdsp.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 MMX-OBJS-$(CONFIG_VP3_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP5_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
