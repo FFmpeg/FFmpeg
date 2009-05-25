@@ -186,13 +186,13 @@ void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch)
                         b = 1 << (23 - log_gain);
                     else
                         b = ff_eac3_gaq_remap_2_4_b[hebap-8][log_gain-1] << 8;
-                    mant += (((ff_eac3_gaq_remap_2_4_a[hebap-8][log_gain-1] << 8) * (int64_t)mant) >> 23) + b;
+                    mant += ((ff_eac3_gaq_remap_2_4_a[hebap-8][log_gain-1] * (int64_t)mant) >> 15) + b;
                 } else {
                     /* small mantissa, no GAQ, or Gk=1 */
                     mant <<= 24 - bits;
                     if (!log_gain) {
                         /* remap mantissa value for no GAQ or Gk=1 */
-                        mant += ((ff_eac3_gaq_remap_1[hebap-8] << 8) * (int64_t)mant) >> 23;
+                        mant += (ff_eac3_gaq_remap_1[hebap-8] * (int64_t)mant) >> 15;
                     }
                 }
                 s->pre_mantissa[ch][bin][blk] = mant;
