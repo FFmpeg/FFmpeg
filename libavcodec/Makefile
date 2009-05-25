@@ -521,7 +521,13 @@ OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
 OBJS-$(ARCH_PPC)                       += ppc/dsputil_ppc.o             \
 
 ALTIVEC-OBJS-$(CONFIG_H264_DECODER)    += ppc/h264_altivec.o
+ALTIVEC-OBJS-$(CONFIG_THEORA_DECODER)  += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o
+ALTIVEC-OBJS-$(CONFIG_VP3_DECODER)     += ppc/vp3dsp_altivec.o
+ALTIVEC-OBJS-$(CONFIG_VP5_DECODER)     += ppc/vp3dsp_altivec.o
+ALTIVEC-OBJS-$(CONFIG_VP6_DECODER)     += ppc/vp3dsp_altivec.o
+ALTIVEC-OBJS-$(CONFIG_VP6A_DECODER)    += ppc/vp3dsp_altivec.o
+ALTIVEC-OBJS-$(CONFIG_VP6F_DECODER)    += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_WMV3_DECODER)    += ppc/vc1dsp_altivec.o
 
 OBJS-$(HAVE_ALTIVEC)                   += ppc/check_altivec.o           \

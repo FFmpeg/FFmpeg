@@ -32,6 +32,10 @@ void gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
 void idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
 void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
 
+void ff_vp3_idct_altivec(DCTELEM *block);
+void ff_vp3_idct_put_altivec(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_vp3_idct_add_altivec(uint8_t *dest, int line_size, DCTELEM *block);
+
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx);
@@ -282,6 +286,12 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
                 (avctx->idct_algo == FF_IDCT_ALTIVEC)) {
                 c->idct_put = idct_put_altivec;
                 c->idct_add = idct_add_altivec;
+                c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
+            }else if((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER || CONFIG_THEORA_DECODER) &&
+                     avctx->idct_algo==FF_IDCT_VP3){
+                c->idct_put = ff_vp3_idct_put_altivec;
+                c->idct_add = ff_vp3_idct_add_altivec;
+                c->idct     = ff_vp3_idct_altivec;
                 c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
             }
         }
