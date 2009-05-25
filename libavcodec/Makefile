@@ -505,7 +505,7 @@ OBJS-$(HAVE_NEON)                      += arm/dsputil_neon.o            \
                                           arm/h264dsp_neon.o            \
                                           arm/h264idct_neon.o           \
                                           arm/simple_idct_neon.o        \
-					  $(NEON-OBJS-yes)
+                                          $(NEON-OBJS-yes)
 
 OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
                                           bfin/fdct_bfin.o              \
