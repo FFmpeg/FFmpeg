@@ -53,14 +53,14 @@ static const void *iirtable[5] = { &ff_mlp_iirorder_0, &ff_mlp_iirorder_1,
 #if ARCH_X86_64
 
 #define MLPMUL(label, offset, offs, offc)   \
-    MANGLE(label)":                   \n\t" \
+    LABEL_MANGLE(label)":             \n\t" \
     "movslq "offset"+"offs"(%0), %%rax\n\t" \
     "movslq "offset"+"offc"(%1), %%rdx\n\t" \
     "imul                 %%rdx, %%rax\n\t" \
     "add                  %%rax, %%rsi\n\t"
 
 #define FIRMULREG(label, offset, firc)\
-    MANGLE(label)":             \n\t" \
+    LABEL_MANGLE(label)":       \n\t" \
     "movslq "#offset"(%0), %%rax\n\t" \
     "imul        %"#firc", %%rax\n\t" \
     "add            %%rax, %%rsi\n\t"
@@ -83,7 +83,7 @@ static const void *iirtable[5] = { &ff_mlp_iirorder_0, &ff_mlp_iirorder_1,
 #else /* if ARCH_X86_32 */
 
 #define MLPMUL(label, offset, offs, offc)  \
-    MANGLE(label)":                  \n\t" \
+    LABEL_MANGLE(label)":            \n\t" \
     "mov   "offset"+"offs"(%0), %%eax\n\t" \
     "imull "offset"+"offc"(%1)       \n\t" \
     "add                %%eax , %%esi\n\t" \
@@ -142,13 +142,13 @@ static void mlp_filter_channel_x86(int32_t *state, const int32_t *coeff,
         FIRMULREG(ff_mlp_firorder_3, 0x08,10)
         FIRMULREG(ff_mlp_firorder_2, 0x04, 9)
         FIRMULREG(ff_mlp_firorder_1, 0x00, 8)
-        MANGLE   (ff_mlp_firorder_0)":\n\t"
+        LABEL_MANGLE(ff_mlp_firorder_0)":\n\t"
         "jmp  *%6                     \n\t"
         IIRMUL   (ff_mlp_iirorder_4, 0x0c   )
         IIRMUL   (ff_mlp_iirorder_3, 0x08   )
         IIRMUL   (ff_mlp_iirorder_2, 0x04   )
         IIRMUL   (ff_mlp_iirorder_1, 0x00   )
-        MANGLE   (ff_mlp_iirorder_0)":\n\t"
+        LABEL_MANGLE(ff_mlp_iirorder_0)":\n\t"
         SHIFT_ACCUM
         "mov  "RESULT"  ,"ACCUM"      \n\t"
         "add  (%2)      ,"RESULT"     \n\t"
