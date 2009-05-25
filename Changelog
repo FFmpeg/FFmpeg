@@ -13,6 +13,7 @@ version <next>:
 - RTP packetization of H.263
 - RTP packetization of AMR
 - RTP depacketization of Vorbis
+- CorePNG decoding support
 - Cook multichannel decoding support
 - introduced avlanguage helpers in libavformat
 - 8088flex TMV demuxer and decoder
