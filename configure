@@ -1698,7 +1698,6 @@ case $target_os in
     gnu/kfreebsd)
         ;;
     gnu)
-        disable dv1394
         ;;
 
     *)
