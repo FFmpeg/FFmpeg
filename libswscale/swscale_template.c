@@ -1799,74 +1799,6 @@ static inline void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *s
 #endif
 }
 
-#define BGR2Y(type, name, shr, shg, shb, maskr, maskg, maskb, RY, GY, BY, S)\
-static inline void RENAME(name)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)\
-{\
-    int i;\
-    for (i=0; i<width; i++)\
-    {\
-        int b= (((const type*)src)[i]>>shb)&maskb;\
-        int g= (((const type*)src)[i]>>shg)&maskg;\
-        int r= (((const type*)src)[i]>>shr)&maskr;\
-\
-        dst[i]= (((RY)*r + (GY)*g + (BY)*b + (33<<((S)-1)))>>(S));\
-    }\
-}
-
-BGR2Y(uint32_t, bgr32ToY,16, 0, 0, 0x00FF, 0xFF00, 0x00FF, RY<< 8, GY   , BY<< 8, RGB2YUV_SHIFT+8)
-BGR2Y(uint32_t, rgb32ToY, 0, 0,16, 0x00FF, 0xFF00, 0x00FF, RY<< 8, GY   , BY<< 8, RGB2YUV_SHIFT+8)
-BGR2Y(uint16_t, bgr16ToY, 0, 0, 0, 0x001F, 0x07E0, 0xF800, RY<<11, GY<<5, BY    , RGB2YUV_SHIFT+8)
-BGR2Y(uint16_t, bgr15ToY, 0, 0, 0, 0x001F, 0x03E0, 0x7C00, RY<<10, GY<<5, BY    , RGB2YUV_SHIFT+7)
-BGR2Y(uint16_t, rgb16ToY, 0, 0, 0, 0xF800, 0x07E0, 0x001F, RY    , GY<<5, BY<<11, RGB2YUV_SHIFT+8)
-BGR2Y(uint16_t, rgb15ToY, 0, 0, 0, 0x7C00, 0x03E0, 0x001F, RY    , GY<<5, BY<<10, RGB2YUV_SHIFT+7)
-
-static inline void RENAME(abgrToA)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused){
-    int i;
-    for (i=0; i<width; i++){
-        dst[i]= src[4*i];
-    }
-}
-
-#define BGR2UV(type, name, shr, shg, shb, maska, maskr, maskg, maskb, RU, GU, BU, RV, GV, BV, S)\
-static inline void RENAME(name)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, const uint8_t *dummy, long width, uint32_t *unused)\
-{\
-    int i;\
-    for (i=0; i<width; i++)\
-    {\
-        int b= (((const type*)src)[i]&maskb)>>shb;\
-        int g= (((const type*)src)[i]&maskg)>>shg;\
-        int r= (((const type*)src)[i]&maskr)>>shr;\
-\
-        dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (257<<((S)-1)))>>(S);\
-        dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (257<<((S)-1)))>>(S);\
-    }\
-}\
-static inline void RENAME(name ## _half)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, const uint8_t *dummy, long width, uint32_t *unused)\
-{\
-    int i;\
-    for (i=0; i<width; i++)\
-    {\
-        int pix0= ((const type*)src)[2*i+0];\
-        int pix1= ((const type*)src)[2*i+1];\
-        int g= (pix0&~(maskr|maskb))+(pix1&~(maskr|maskb));\
-        int b= ((pix0+pix1-g)&(maskb|(2*maskb)))>>shb;\
-        int r= ((pix0+pix1-g)&(maskr|(2*maskr)))>>shr;\
-        g&= maskg|(2*maskg);\
-\
-        g>>=shg;\
-\
-        dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (257<<(S)))>>((S)+1);\
-        dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (257<<(S)))>>((S)+1);\
-    }\
-}
-
-BGR2UV(uint32_t, bgr32ToUV,16, 0, 0, 0xFF000000, 0xFF0000, 0xFF00,   0x00FF, RU<< 8, GU   , BU<< 8, RV<< 8, GV   , BV<< 8, RGB2YUV_SHIFT+8)
-BGR2UV(uint32_t, rgb32ToUV, 0, 0,16, 0xFF000000,   0x00FF, 0xFF00, 0xFF0000, RU<< 8, GU   , BU<< 8, RV<< 8, GV   , BV<< 8, RGB2YUV_SHIFT+8)
-BGR2UV(uint16_t, bgr16ToUV, 0, 0, 0,          0,   0x001F, 0x07E0,   0xF800, RU<<11, GU<<5, BU    , RV<<11, GV<<5, BV    , RGB2YUV_SHIFT+8)
-BGR2UV(uint16_t, bgr15ToUV, 0, 0, 0,          0,   0x001F, 0x03E0,   0x7C00, RU<<10, GU<<5, BU    , RV<<10, GV<<5, BV    , RGB2YUV_SHIFT+7)
-BGR2UV(uint16_t, rgb16ToUV, 0, 0, 0,          0,   0xF800, 0x07E0,   0x001F, RU    , GU<<5, BU<<11, RV    , GV<<5, BV<<11, RGB2YUV_SHIFT+8)
-BGR2UV(uint16_t, rgb15ToUV, 0, 0, 0,          0,   0x7C00, 0x03E0,   0x001F, RU    , GU<<5, BU<<10, RV    , GV<<5, BV<<10, RGB2YUV_SHIFT+7)
-
 #if HAVE_MMX
 static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long width, int srcFormat)
 {
@@ -2083,52 +2015,6 @@ static inline void RENAME(rgb24ToUV_half)(uint8_t *dstU, uint8_t *dstV, const ui
     }
 }
 
-
-static inline void RENAME(palToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *pal)
-{
-    int i;
-    for (i=0; i<width; i++)
-    {
-        int d= src[i];
-
-        dst[i]= pal[d] & 0xFF;
-    }
-}
-
-static inline void RENAME(palToUV)(uint8_t *dstU, uint8_t *dstV,
-                                   const uint8_t *src1, const uint8_t *src2,
-                                   long width, uint32_t *pal)
-{
-    int i;
-    assert(src1 == src2);
-    for (i=0; i<width; i++)
-    {
-        int p= pal[src1[i]];
-
-        dstU[i]= p>>8;
-        dstV[i]= p>>16;
-    }
-}
-
-static inline void RENAME(monowhite2Y)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
-{
-    int i, j;
-    for (i=0; i<width/8; i++){
-        int d= ~src[i];
-        for(j=0; j<8; j++)
-            dst[8*i+j]= ((d>>(7-j))&1)*255;
-    }
-}
-
-static inline void RENAME(monoblack2Y)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
-{
-    int i, j;
-    for (i=0; i<width/8; i++){
-        int d= src[i];
-        for(j=0; j<8; j++)
-            dst[8*i+j]= ((d>>(7-j))&1)*255;
-    }
-}
 
 // bilinear / bicubic scaling
 static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, int srcW, int xInc,
@@ -3151,7 +3037,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_BGR8     :
         case PIX_FMT_PAL8     :
         case PIX_FMT_BGR4_BYTE:
-        case PIX_FMT_RGB4_BYTE: c->hcscale_internal = RENAME(palToUV); break;
+        case PIX_FMT_RGB4_BYTE: c->hcscale_internal = palToUV; break;
         case PIX_FMT_YUV420PBE:
         case PIX_FMT_YUV422PBE:
         case PIX_FMT_YUV444PBE: c->hcscale_internal = RENAME(BEToUV); break;
@@ -3162,28 +3048,28 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     if (c->chrSrcHSubSample) {
         switch(srcFormat) {
         case PIX_FMT_RGB32  :
-        case PIX_FMT_RGB32_1: c->hcscale_internal = RENAME(bgr32ToUV_half); break;
+        case PIX_FMT_RGB32_1: c->hcscale_internal = bgr32ToUV_half; break;
         case PIX_FMT_BGR24  : c->hcscale_internal = RENAME(bgr24ToUV_half); break;
-        case PIX_FMT_BGR565 : c->hcscale_internal = RENAME(bgr16ToUV_half); break;
-        case PIX_FMT_BGR555 : c->hcscale_internal = RENAME(bgr15ToUV_half); break;
+        case PIX_FMT_BGR565 : c->hcscale_internal = bgr16ToUV_half; break;
+        case PIX_FMT_BGR555 : c->hcscale_internal = bgr15ToUV_half; break;
         case PIX_FMT_BGR32  :
-        case PIX_FMT_BGR32_1: c->hcscale_internal = RENAME(rgb32ToUV_half); break;
+        case PIX_FMT_BGR32_1: c->hcscale_internal = rgb32ToUV_half; break;
         case PIX_FMT_RGB24  : c->hcscale_internal = RENAME(rgb24ToUV_half); break;
-        case PIX_FMT_RGB565 : c->hcscale_internal = RENAME(rgb16ToUV_half); break;
-        case PIX_FMT_RGB555 : c->hcscale_internal = RENAME(rgb15ToUV_half); break;
+        case PIX_FMT_RGB565 : c->hcscale_internal = rgb16ToUV_half; break;
+        case PIX_FMT_RGB555 : c->hcscale_internal = rgb15ToUV_half; break;
         }
     } else {
         switch(srcFormat) {
         case PIX_FMT_RGB32  :
-        case PIX_FMT_RGB32_1: c->hcscale_internal = RENAME(bgr32ToUV); break;
+        case PIX_FMT_RGB32_1: c->hcscale_internal = bgr32ToUV; break;
         case PIX_FMT_BGR24  : c->hcscale_internal = RENAME(bgr24ToUV); break;
-        case PIX_FMT_BGR565 : c->hcscale_internal = RENAME(bgr16ToUV); break;
-        case PIX_FMT_BGR555 : c->hcscale_internal = RENAME(bgr15ToUV); break;
+        case PIX_FMT_BGR565 : c->hcscale_internal = bgr16ToUV; break;
+        case PIX_FMT_BGR555 : c->hcscale_internal = bgr15ToUV; break;
         case PIX_FMT_BGR32  :
-        case PIX_FMT_BGR32_1: c->hcscale_internal = RENAME(rgb32ToUV); break;
+        case PIX_FMT_BGR32_1: c->hcscale_internal = rgb32ToUV; break;
         case PIX_FMT_RGB24  : c->hcscale_internal = RENAME(rgb24ToUV); break;
-        case PIX_FMT_RGB565 : c->hcscale_internal = RENAME(rgb16ToUV); break;
-        case PIX_FMT_RGB555 : c->hcscale_internal = RENAME(rgb15ToUV); break;
+        case PIX_FMT_RGB565 : c->hcscale_internal = rgb16ToUV; break;
+        case PIX_FMT_RGB555 : c->hcscale_internal = rgb15ToUV; break;
         }
     }
 
@@ -3201,29 +3087,29 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     case PIX_FMT_YUV444PLE:
     case PIX_FMT_GRAY16LE : c->hyscale_internal = RENAME(uyvyToY); break;
     case PIX_FMT_BGR24    : c->hyscale_internal = RENAME(bgr24ToY); break;
-    case PIX_FMT_BGR565   : c->hyscale_internal = RENAME(bgr16ToY); break;
-    case PIX_FMT_BGR555   : c->hyscale_internal = RENAME(bgr15ToY); break;
+    case PIX_FMT_BGR565   : c->hyscale_internal = bgr16ToY; break;
+    case PIX_FMT_BGR555   : c->hyscale_internal = bgr15ToY; break;
     case PIX_FMT_RGB24    : c->hyscale_internal = RENAME(rgb24ToY); break;
-    case PIX_FMT_RGB565   : c->hyscale_internal = RENAME(rgb16ToY); break;
-    case PIX_FMT_RGB555   : c->hyscale_internal = RENAME(rgb15ToY); break;
+    case PIX_FMT_RGB565   : c->hyscale_internal = rgb16ToY; break;
+    case PIX_FMT_RGB555   : c->hyscale_internal = rgb15ToY; break;
     case PIX_FMT_RGB8     :
     case PIX_FMT_BGR8     :
     case PIX_FMT_PAL8     :
     case PIX_FMT_BGR4_BYTE:
-    case PIX_FMT_RGB4_BYTE: c->hyscale_internal = RENAME(palToY); break;
-    case PIX_FMT_MONOBLACK: c->hyscale_internal = RENAME(monoblack2Y); break;
-    case PIX_FMT_MONOWHITE: c->hyscale_internal = RENAME(monowhite2Y); break;
+    case PIX_FMT_RGB4_BYTE: c->hyscale_internal = palToY; break;
+    case PIX_FMT_MONOBLACK: c->hyscale_internal = monoblack2Y; break;
+    case PIX_FMT_MONOWHITE: c->hyscale_internal = monowhite2Y; break;
     case PIX_FMT_RGB32  :
-    case PIX_FMT_RGB32_1: c->hyscale_internal = RENAME(bgr32ToY); break;
+    case PIX_FMT_RGB32_1: c->hyscale_internal = bgr32ToY; break;
     case PIX_FMT_BGR32  :
-    case PIX_FMT_BGR32_1: c->hyscale_internal = RENAME(rgb32ToY); break;
+    case PIX_FMT_BGR32_1: c->hyscale_internal = rgb32ToY; break;
     }
     if (c->alpPixBuf) {
         switch (srcFormat) {
         case PIX_FMT_RGB32  :
         case PIX_FMT_RGB32_1:
         case PIX_FMT_BGR32  :
-        case PIX_FMT_BGR32_1: c->hascale_internal = RENAME(abgrToA); break;
+        case PIX_FMT_BGR32_1: c->hascale_internal = abgrToA; break;
         }
     }
 }
