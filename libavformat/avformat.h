@@ -190,7 +190,7 @@ typedef struct AVOutputFormat {
     const char *name;
     /**
      * Descriptive name for the format, meant to be more human-readable
-     * than \p name. You \e should use the NULL_IF_CONFIG_SMALL() macro
+     * than name. You should use the NULL_IF_CONFIG_SMALL() macro
      * to define it.
      */
     const char *long_name;
@@ -229,7 +229,7 @@ typedef struct AVInputFormat {
     const char *name;
     /**
      * Descriptive name for the format, meant to be more human-readable
-     * than \p name. You \e should use the NULL_IF_CONFIG_SMALL() macro
+     * than name. You should use the NULL_IF_CONFIG_SMALL() macro
      * to define it.
      */
     const char *long_name;
@@ -1114,7 +1114,7 @@ attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
 #endif
 
 /**
- * Parses \p datestr and returns a corresponding number of microseconds.
+ * Parses datestr and returns a corresponding number of microseconds.
  * @param datestr String representing a date or a duration.
  * - If a date the syntax is:
  * @code
@@ -1125,7 +1125,7 @@ attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
  * If the year-month-day part is not specified it takes the current
  * year-month-day.
  * Returns the number of microseconds since 1st of January, 1970 up to
- * the time of the parsed date or INT64_MIN if \p datestr cannot be
+ * the time of the parsed date or INT64_MIN if datestr cannot be
  * successfully parsed.
  * - If a duration the syntax is:
  * @code
@@ -1133,10 +1133,10 @@ attribute_deprecated int parse_frame_rate(int *frame_rate, int *frame_rate_base,
  *  [-]S+[.m...]
  * @endcode
  * Returns the number of microseconds contained in a time interval
- * with the specified duration or INT64_MIN if \p datestr cannot be
+ * with the specified duration or INT64_MIN if datestr cannot be
  * successfully parsed.
- * @param duration Flag which tells how to interpret \p datestr, if
- * not zero \p datestr is interpreted as a duration, otherwise as a
+ * @param duration Flag which tells how to interpret datestr, if
+ * not zero datestr is interpreted as a duration, otherwise as a
  * date.
  */
 int64_t parse_date(const char *datestr, int duration);
