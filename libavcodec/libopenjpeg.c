@@ -89,6 +89,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     }
     opj_set_event_mgr((opj_common_ptr)dec, NULL, NULL);
 
+    ctx->dec_params.cp_reduce = avctx->lowres;
     // Tie decoder with decoding parameters
     opj_setup_decoder(dec, &ctx->dec_params);
     stream = opj_cio_open((opj_common_ptr)dec, buf, buf_size);
@@ -106,8 +107,8 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         opj_destroy_decompress(dec);
         return -1;
     }
-    width  = image->comps[0].w;
-    height = image->comps[0].h;
+    width  = image->comps[0].w << avctx->lowres;
+    height = image->comps[0].h << avctx->lowres;
     if(avcodec_check_dimensions(avctx, width, height) < 0) {
         av_log(avctx, AV_LOG_ERROR, "%dx%d dimension invalid.\n", width, height);
         goto done;
