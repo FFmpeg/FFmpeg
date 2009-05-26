@@ -95,6 +95,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_WMV2,         MKTAG('W', 'M', 'V', '2') },
     { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 's', 'd') },
     { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'h', 'd') },
+    { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'h', '1') },
     { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 's', 'l') },
     { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', '2', '5') },
     { CODEC_ID_DVVIDEO,      MKTAG('d', 'v', '5', '0') },
