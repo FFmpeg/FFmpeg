@@ -32,6 +32,7 @@ const PixelFormatTag ff_raw_pixelFormatTags[] = {
     { PIX_FMT_YUV420P, MKTAG('I', 'Y', 'U', 'V') },
     { PIX_FMT_YUV420P, MKTAG('Y', 'V', '1', '2') },
     { PIX_FMT_YUV410P, MKTAG('Y', 'U', 'V', '9') },
+    { PIX_FMT_YUV410P, MKTAG('Y', 'V', 'U', '9') },
     { PIX_FMT_YUV411P, MKTAG('Y', '4', '1', 'B') },
     { PIX_FMT_YUV422P, MKTAG('Y', '4', '2', 'B') },
     { PIX_FMT_GRAY8,   MKTAG('Y', '8', '0', '0') },

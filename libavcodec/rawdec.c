@@ -139,7 +139,8 @@ static int raw_decode(AVCodecContext *avctx,
     if(context->flip)
         flip(avctx, picture);
 
-    if (avctx->codec_tag == MKTAG('Y', 'V', '1', '2'))
+    if (   avctx->codec_tag == MKTAG('Y', 'V', '1', '2')
+        || avctx->codec_tag == MKTAG('Y', 'V', 'U', '9'))
     {
         // swap fields
         unsigned char *tmp = picture->data[1];
