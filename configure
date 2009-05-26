@@ -833,6 +833,7 @@ ARCH_LIST='
     mips64
     parisc
     ppc
+    ppc64
     s390
     sh4
     sparc
@@ -906,7 +907,6 @@ HAVE_LIST="
     mkstemp
     pld
     posix_memalign
-    ppc64
     round
     roundf
     sdl
@@ -1514,6 +1514,7 @@ case "$arch" in
     ;;
     ppc64)
         arch="ppc"
+        subarch="ppc64"
         enable fast_64bit
         enable fast_unaligned
     ;;
@@ -1807,12 +1808,11 @@ if test $cpu != "generic"; then
         G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
             add_cflags -mcpu=970 -mpowerpc-gfxopt -mpowerpc64
             warn_altivec disabled PPC970
-            enable ppc64
         ;;
         Cell|CELL|cell)
             add_cflags -mcpu=cell
             warn_altivec disabled Cell
-            enable ppc64 ldbrx
+            enable ldbrx
         ;;
         # targets that do NOT support conditional mov (cmov)
         i[345]86|pentium|pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)

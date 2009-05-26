@@ -44,7 +44,7 @@ static inline av_const int MULH(int a, int b){
     return r;
 }
 
-#if !HAVE_PPC64
+#if !ARCH_PPC64
 static inline av_const int64_t MAC64(int64_t d, int a, int b)
 {
     union { uint64_t x; unsigned hl[2]; } x = { d };
