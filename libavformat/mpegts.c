@@ -19,15 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+//#define DEBUG
+//#define DEBUG_SEEK
+
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"
-
-//#define DEBUG
-//#define DEBUG_SEEK
 
 /* 1.0 second at 24Mbit/s */
 #define MAX_SCAN_PACKETS 32000
