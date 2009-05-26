@@ -153,7 +153,8 @@ int av_parser_parse2(AVCodecParserContext *s,
         /* padding is always necessary even if EOF, so we add it here */
         memset(dummy_buf, 0, sizeof(dummy_buf));
         buf = dummy_buf;
-    } else {
+    } else if (s->cur_offset + buf_size !=
+               s->cur_frame_end[s->cur_frame_start_index]) { /* skip remainder packets */
         /* add a new packet descriptor */
             i = (s->cur_frame_start_index + 1) & (AV_PARSER_PTS_NB - 1);
             s->cur_frame_start_index = i;
