@@ -231,12 +231,9 @@ static int decode_pce(AACContext * ac, enum ChannelPosition new_che_pos[4][MAX_E
     skip_bits(gb, 2);  // object_type
 
     sampling_index = get_bits(gb, 4);
-    if(sampling_index > 12) {
-        av_log(ac->avccontext, AV_LOG_ERROR, "invalid sampling rate index %d\n", ac->m4ac.sampling_index);
-        return -1;
-    }
-    ac->m4ac.sampling_index = sampling_index;
-    ac->m4ac.sample_rate = ff_mpeg4audio_sample_rates[ac->m4ac.sampling_index];
+    if (ac->m4ac.sampling_index != sampling_index)
+        av_log(ac->avccontext, AV_LOG_WARNING, "Sample rate index in program config element does not match the sample rate index configured by the container.\n");
+
     num_front       = get_bits(gb, 4);
     num_side        = get_bits(gb, 4);
     num_back        = get_bits(gb, 4);
