@@ -144,10 +144,10 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         adjust[x] = FFMAX(image->comps[x].prec - 8, 0);
     }
 
-    for(y = 0; y < height; y++) {
-        index = y*width;
+    for(y = 0; y < avctx->height; y++) {
+        index = y*avctx->width;
         img_ptr = picture->data[0] + y*picture->linesize[0];
-        for(x = 0; x < width; x++, index++) {
+        for(x = 0; x < avctx->width; x++, index++) {
             *img_ptr++ = image->comps[0].data[index] >> adjust[0];
             if(image->numcomps > 2 && check_image_attributes(image)) {
                 *img_ptr++ = image->comps[1].data[index] >> adjust[1];
