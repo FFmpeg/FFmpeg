@@ -869,7 +869,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     pes->header[2] == 0x01) {
                     /* it must be an mpeg2 PES stream */
                     code = pes->header[3] | 0x100;
-                    if (!pes->st ||
+                    if (!pes->st || pes->st->discard == AVDISCARD_ALL ||
                         !((code >= 0x1c0 && code <= 0x1df) ||
                           (code >= 0x1e0 && code <= 0x1ef) ||
                           (code == 0x1bd) || (code == 0x1fd)))
