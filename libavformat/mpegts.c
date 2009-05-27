@@ -892,6 +892,8 @@ static void mpegts_push_data(MpegTSFilter *filter,
             /* PES packing parsing */
         case MPEGTS_PESHEADER_FILL:
             len = pes->pes_header_size - pes->data_index;
+            if (len < 0)
+                return
             if (len > buf_size)
                 len = buf_size;
             memcpy(pes->header + pes->data_index, p, len);
