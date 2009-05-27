@@ -1231,6 +1231,12 @@ void url_split(char *proto, int proto_size,
                char *path, int path_size,
                const char *url);
 
+/**
+ * Returns a positive value if the given filename has one of the given
+ * extensions, 0 otherwise.
+ *
+ * @param extensions a comma-separated list of filename extensions
+ */
 int match_ext(const char *filename, const char *extensions);
 
 #endif /* HAVE_AV_CONFIG_H */
