@@ -1216,7 +1216,6 @@ vbv_retry:
         if (encode_picture(s, s->picture_number) < 0)
             return -1;
 
-        avctx->real_pict_num  = s->picture_number;
         avctx->header_bits = s->header_bits;
         avctx->mv_bits     = s->mv_bits;
         avctx->misc_bits   = s->misc_bits;
