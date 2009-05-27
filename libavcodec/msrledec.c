@@ -146,7 +146,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
             p2 = *src++;
             if(p2 == 0) { //End-of-line
                 output = pic->data[0] + (--line) * pic->linesize[0];
-                if (line < 0){
+                if (line < 0 && !(src+1 < data + srcsize && AV_RB16(src) == 1)) {
                     av_log(avctx, AV_LOG_ERROR, "Next line is beyond picture bounds\n");
                     return -1;
                 }
