@@ -51,7 +51,7 @@ enum MpegTSFilterType {
 
 typedef struct MpegTSFilter MpegTSFilter;
 
-typedef void PESCallback(MpegTSFilter *f, const uint8_t *buf, int len, int is_start, int64_t pos);
+typedef int PESCallback(MpegTSFilter *f, const uint8_t *buf, int len, int is_start, int64_t pos);
 
 typedef struct MpegTSPESFilter {
     PESCallback *pes_cb;
@@ -827,9 +827,9 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
 }
 
 /* return non zero if a packet could be constructed */
-static void mpegts_push_data(MpegTSFilter *filter,
-                             const uint8_t *buf, int buf_size, int is_start,
-                             int64_t pos)
+static int mpegts_push_data(MpegTSFilter *filter,
+                            const uint8_t *buf, int buf_size, int is_start,
+                            int64_t pos)
 {
     PESContext *pes = filter->u.pes_filter.opaque;
     MpegTSContext *ts = pes->ts;
@@ -837,7 +837,7 @@ static void mpegts_push_data(MpegTSFilter *filter,
     int len, code;
 
     if(!ts->pkt)
-        return;
+        return 0;
 
     if (is_start) {
         if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
@@ -893,7 +893,7 @@ static void mpegts_push_data(MpegTSFilter *filter,
         case MPEGTS_PESHEADER_FILL:
             len = pes->pes_header_size - pes->data_index;
             if (len < 0)
-                return;
+                return -1;
             if (len > buf_size)
                 len = buf_size;
             memcpy(pes->header + pes->data_index, p, len);
@@ -925,7 +925,7 @@ static void mpegts_push_data(MpegTSFilter *filter,
                 /* allocate pes buffer */
                 pes->buffer = av_malloc(pes->total_size+FF_INPUT_BUFFER_PADDING_SIZE);
                 if (!pes->buffer)
-                    return;
+                    return AVERROR(ENOMEM);
 
                 /* we got the full header. We parse it and get the payload */
                 pes->state = MPEGTS_PAYLOAD;
@@ -939,7 +939,7 @@ static void mpegts_push_data(MpegTSFilter *filter,
                     pes->total_size = MAX_PES_PAYLOAD;
                     pes->buffer = av_malloc(pes->total_size+FF_INPUT_BUFFER_PADDING_SIZE);
                     if (!pes->buffer)
-                        return;
+                        return AVERROR(ENOMEM);
                     ts->stop_parse = 1;
                 }
                 memcpy(pes->buffer+pes->data_index, p, buf_size);
@@ -952,6 +952,8 @@ static void mpegts_push_data(MpegTSFilter *filter,
             break;
         }
     }
+
+    return 0;
 }
 
 static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code)
@@ -1053,7 +1055,7 @@ static PESContext *add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid, int s
 }
 
 /* handle one TS packet */
-static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
+static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 {
     AVFormatContext *s = ts->stream;
     MpegTSFilter *tss;
@@ -1063,7 +1065,7 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
 
     pid = AV_RB16(packet + 1) & 0x1fff;
     if(pid && discard_pid(ts, pid))
-        return;
+        return 0;
     is_start = packet[1] & 0x40;
     tss = ts->pids[pid];
     if (ts->auto_guess && tss == NULL && is_start) {
@@ -1071,7 +1073,7 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
         tss = ts->pids[pid];
     }
     if (!tss)
-        return;
+        return 0;
 
     /* continuity check (currently not used) */
     cc = (packet[3] & 0xf);
@@ -1082,9 +1084,9 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
     afc = (packet[3] >> 4) & 3;
     p = packet + 4;
     if (afc == 0) /* reserved value */
-        return;
+        return 0;
     if (afc == 2) /* adaptation field only */
-        return;
+        return 0;
     if (afc == 3) {
         /* skip adapation field */
         p += p[0] + 1;
@@ -1092,7 +1094,7 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
     /* if past the end of packet, ignore */
     p_end = packet + TS_PACKET_SIZE;
     if (p >= p_end)
-        return;
+        return 0;
 
     pos = url_ftell(ts->stream->pb);
     ts->pos47= pos % ts->raw_packet_size;
@@ -1102,14 +1104,14 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
             /* pointer field present */
             len = *p++;
             if (p + len > p_end)
-                return;
+                return 0;
             if (len && cc_ok) {
                 /* write remaining section bytes */
                 write_section_data(s, tss,
                                    p, len, 0);
                 /* check whether filter has been closed */
                 if (!ts->pids[pid])
-                    return;
+                    return 0;
             }
             p += len;
             if (p < p_end) {
@@ -1123,10 +1125,14 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
             }
         }
     } else {
+        int ret;
         // Note: The position here points actually behind the current packet.
-        tss->u.pes_filter.pes_cb(tss,
-                                 p, p_end - p, is_start, pos - ts->raw_packet_size);
+        if ((ret = tss->u.pes_filter.pes_cb(tss, p, p_end - p, is_start,
+                                            pos - ts->raw_packet_size)) < 0)
+            return ret;
     }
+
+    return 0;
 }
 
 /* XXX: try to find a better synchro over several packets (use
@@ -1193,7 +1199,9 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
         ret = read_packet(pb, packet, ts->raw_packet_size);
         if (ret != 0)
             return ret;
-        handle_packet(ts, packet);
+        ret = handle_packet(ts, packet);
+        if (ret != 0)
+            return ret;
     }
     return 0;
 }
