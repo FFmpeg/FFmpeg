@@ -129,7 +129,7 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
         if ((mask & (1 << (--maskbit))) == 0) {
             if (destptr + 4 > destptr_end)
                 break;
-            *(int*)destptr = *(int*)srcptr;
+            AV_WN32(destptr, AV_RN32(srcptr));
             srclen -= 4;
             destptr += 4;
             srcptr += 4;
