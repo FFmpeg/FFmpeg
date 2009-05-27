@@ -37,6 +37,8 @@
 #define MAX_RESYNC_SIZE 4096
 #define REGISTRATION_DESCRIPTOR 5
 
+#define MAX_PES_PAYLOAD 200*1024
+
 typedef struct PESContext PESContext;
 
 static PESContext* add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid, int stream_type);
@@ -109,6 +111,8 @@ struct MpegTSContext {
     int stop_parse;
     /** packet containing Audio/Video data                   */
     AVPacket *pkt;
+    /** to detect seek                                       */
+    int64_t last_pos;
 
     /******************************************/
     /* private mpegts data */
@@ -150,6 +154,7 @@ struct PESContext {
     int64_t pts, dts;
     int64_t ts_packet_pos; /**< position of first TS packet of this PES packet */
     uint8_t header[MAX_PES_HEADER_SIZE];
+    uint8_t *buffer;
 };
 
 extern AVInputFormat mpegts_demuxer;
@@ -336,6 +341,8 @@ static void mpegts_close_filter(MpegTSContext *ts, MpegTSFilter *filter)
     if (filter->type == MPEGTS_SECTION)
         av_freep(&filter->u.section_filter.section_buf);
     else if (filter->type == MPEGTS_PES) {
+        PESContext *pes = filter->u.pes_filter.opaque;
+        av_freep(&pes->buffer);
         /* referenced private data will be freed later in
          * av_close_input_stream */
         if (!((PESContext *)filter->u.pes_filter.opaque)->st) {
@@ -797,6 +804,28 @@ static int64_t get_pts(const uint8_t *p)
     return pts;
 }
 
+static void new_pes_packet(PESContext *pes, AVPacket *pkt)
+{
+    av_init_packet(pkt);
+
+    pkt->destruct = av_destruct_packet;
+    pkt->data = pes->buffer;
+    pkt->size = pes->data_index;
+    memset(pkt->data+pkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+
+    pkt->stream_index = pes->st->index;
+    pkt->pts = pes->pts;
+    pkt->dts = pes->dts;
+    /* store position of first TS packet of this PES packet */
+    pkt->pos = pes->ts_packet_pos;
+
+    /* reset pts values */
+    pes->pts = AV_NOPTS_VALUE;
+    pes->dts = AV_NOPTS_VALUE;
+    pes->buffer = NULL;
+    pes->data_index = 0;
+}
+
 /* return non zero if a packet could be constructed */
 static void mpegts_push_data(MpegTSFilter *filter,
                              const uint8_t *buf, int buf_size, int is_start,
@@ -811,6 +840,10 @@ static void mpegts_push_data(MpegTSFilter *filter,
         return;
 
     if (is_start) {
+        if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
+            new_pes_packet(pes, ts->pkt);
+            ts->stop_parse = 1;
+        }
         pes->state = MPEGTS_HEADER;
         pes->data_index = 0;
         pes->ts_packet_pos = pos;
@@ -845,8 +878,6 @@ static void mpegts_push_data(MpegTSFilter *filter,
                     pes->total_size = AV_RB16(pes->header + 4);
                     /* NOTE: a zero total size means the PES size is
                        unbounded */
-                    if (pes->total_size)
-                        pes->total_size += 6;
                     pes->pes_header_size = pes->header[8] + 9;
                 } else {
                     /* otherwise, it should be a table */
@@ -884,33 +915,33 @@ static void mpegts_push_data(MpegTSFilter *filter,
                     pes->dts = get_pts(r);
                     r += 5;
                 }
+
+                if (pes->total_size > pes->data_index - 6)
+                    pes->total_size -= pes->data_index - 6;
+                else
+                    pes->total_size = MAX_PES_PAYLOAD;
+                /* allocate pes buffer */
+                pes->buffer = av_malloc(pes->total_size+FF_INPUT_BUFFER_PADDING_SIZE);
+                if (!pes->buffer)
+                    return;
+
                 /* we got the full header. We parse it and get the payload */
                 pes->state = MPEGTS_PAYLOAD;
+                pes->data_index = 0;
             }
             break;
         case MPEGTS_PAYLOAD:
-            if (pes->total_size) {
-                len = pes->total_size - pes->data_index;
-                if (len > buf_size)
-                    len = buf_size;
-            } else {
-                len = buf_size;
-            }
-            if (len > 0) {
-                AVPacket *pkt = ts->pkt;
-                if (pes->st && av_new_packet(pkt, len) == 0) {
-                    memcpy(pkt->data, p, len);
-                    pkt->stream_index = pes->st->index;
-                    pkt->pts = pes->pts;
-                    pkt->dts = pes->dts;
-                    /* store position of first TS packet of this PES packet */
-                    pkt->pos = pes->ts_packet_pos;
-                    /* reset pts values */
-                    pes->pts = AV_NOPTS_VALUE;
-                    pes->dts = AV_NOPTS_VALUE;
+            if (buf_size > 0) {
+                if (pes->data_index+buf_size > pes->total_size) {
+                    new_pes_packet(pes, ts->pkt);
+                    pes->total_size = MAX_PES_PAYLOAD;
+                    pes->buffer = av_malloc(pes->total_size+FF_INPUT_BUFFER_PADDING_SIZE);
+                    if (!pes->buffer)
+                        return;
                     ts->stop_parse = 1;
-                    return;
                 }
+                memcpy(pes->buffer+pes->data_index, p, buf_size);
+                pes->data_index += buf_size;
             }
             buf_size = 0;
             break;
@@ -1376,9 +1407,39 @@ static int mpegts_read_packet(AVFormatContext *s,
                               AVPacket *pkt)
 {
     MpegTSContext *ts = s->priv_data;
+    int ret, i;
+
+    if (url_ftell(s->pb) != ts->last_pos) {
+        /* seek detected, flush pes buffer */
+        for (i = 0; i < NB_PID_MAX; i++) {
+            if (ts->pids[i] && ts->pids[i]->type == MPEGTS_PES) {
+                PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
+                av_freep(&pes->buffer);
+                pes->data_index = 0;
+                pes->state = MPEGTS_SKIP; /* skip until pes header */
+            }
+        }
+    }
 
     ts->pkt = pkt;
-    return handle_packets(ts, 0);
+    ret = handle_packets(ts, 0);
+    if (ret < 0) {
+        /* flush pes data left */
+        for (i = 0; i < NB_PID_MAX; i++) {
+            if (ts->pids[i] && ts->pids[i]->type == MPEGTS_PES) {
+                PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
+                if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
+                    new_pes_packet(pes, pkt);
+                    ret = 0;
+                    break;
+                }
+            }
+        }
+    }
+
+    ts->last_pos = url_ftell(s->pb);
+
+    return ret;
 }
 
 static int mpegts_read_close(AVFormatContext *s)
