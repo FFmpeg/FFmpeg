@@ -817,14 +817,14 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
             pic->data[i]= pic_arg->data[i];
             pic->linesize[i]= pic_arg->linesize[i];
         }
-        alloc_picture(s, (Picture*)pic, 1);
+        ff_alloc_picture(s, (Picture*)pic, 1);
     }else{
         i= ff_find_unused_picture(s, 0);
 
         pic= (AVFrame*)&s->picture[i];
         pic->reference= 3;
 
-        alloc_picture(s, (Picture*)pic, 0);
+        ff_alloc_picture(s, (Picture*)pic, 0);
 
         if(   pic->data[0] + INPLACE_OFFSET == pic_arg->data[0]
            && pic->data[1] + INPLACE_OFFSET == pic_arg->data[1]
@@ -1150,7 +1150,7 @@ no_output_pic:
             Picture *pic= &s->picture[i];
 
             pic->reference              = s->reordered_input_picture[0]->reference;
-            alloc_picture(s, pic, 0);
+            ff_alloc_picture(s, pic, 0);
 
             /* mark us unused / free shared pic */
             if(s->reordered_input_picture[0]->type == FF_BUFFER_TYPE_INTERNAL)

@@ -219,7 +219,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
  * allocates a Picture
  * The pixels are allocated/set by calling get_buffer() if shared=0
  */
-int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
+int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
     const int big_mb_num= s->mb_stride*(s->mb_height+1) + 1; //the +1 is needed so memset(,,stride*height) does not sig11
     const int mb_array_size= s->mb_stride*s->mb_height;
     const int b8_array_size= s->b8_stride*s->mb_height*2;
@@ -917,7 +917,7 @@ alloc:
 
         pic->coded_picture_number= s->coded_picture_number++;
 
-        if(alloc_picture(s, pic, 0) < 0)
+        if(ff_alloc_picture(s, pic, 0) < 0)
             return -1;
 
         s->current_picture_ptr= pic;
