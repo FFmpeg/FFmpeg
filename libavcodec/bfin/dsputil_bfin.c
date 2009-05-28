@@ -242,8 +242,8 @@ void dsputil_init_bfin( DSPContext* c, AVCodecContext *avctx )
     c->sad[0]             = bfin_pix_abs16;
     c->sad[1]             = bfin_pix_abs8;
 
-    c->vsad[0]            = bfin_vsad;
-    c->vsad[4]            = bfin_vsad_intra16;
+/*     c->vsad[0]            = bfin_vsad; */
+/*     c->vsad[4]            = bfin_vsad_intra16; */
 
     /* TODO [0] 16  [1] 8 */
     c->pix_abs[0][0] = bfin_pix_abs16;
@@ -286,12 +286,12 @@ void dsputil_init_bfin( DSPContext* c, AVCodecContext *avctx )
     c->put_no_rnd_pixels_tab[1][0] = bfin_put_pixels8_nornd;
     c->put_no_rnd_pixels_tab[1][1] = bfin_put_pixels8_x2_nornd;
     c->put_no_rnd_pixels_tab[1][2] = bfin_put_pixels8_y2_nornd;
-    c->put_no_rnd_pixels_tab[1][3] = ff_bfin_put_pixels8_xy2_nornd;
+/*     c->put_no_rnd_pixels_tab[1][3] = ff_bfin_put_pixels8_xy2_nornd; */
 
     c->put_no_rnd_pixels_tab[0][0] = bfin_put_pixels16_nornd;
     c->put_no_rnd_pixels_tab[0][1] = bfin_put_pixels16_x2_nornd;
     c->put_no_rnd_pixels_tab[0][2] = bfin_put_pixels16_y2_nornd;
-    c->put_no_rnd_pixels_tab[0][3] = ff_bfin_put_pixels16_xy2_nornd;
+/*     c->put_no_rnd_pixels_tab[0][3] = ff_bfin_put_pixels16_xy2_nornd; */
 
     if (avctx->dct_algo == FF_DCT_AUTO)
         c->fdct               = ff_bfin_fdct;
