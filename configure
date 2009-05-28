@@ -897,6 +897,7 @@ HAVE_LIST="
     libdc1394_1
     libdc1394_2
     llrint
+    loongson
     lrint
     lrintf
     lzo1x_999_compress
@@ -1915,6 +1916,8 @@ EOF
 fi
 
 # check for assembler specific support
+
+enabled mips && check_asm loongson '"dmult.g $1, $2, $3"'
 
 enabled ppc && check_asm dcbzl '"dcbzl 0, 1"'
 enabled ppc && check_asm ppc4xx '"maclhw r10, r11, r12"'
