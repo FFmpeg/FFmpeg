@@ -25,10 +25,6 @@
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_bfin.h"
 
-
-void ff_bfin_fdct (DCTELEM *block) attribute_l1_text;
-
-
 static int dct_quantize_bfin (MpegEncContext *s,
                               DCTELEM *block, int n,
                               int qscale, int *overflow)
@@ -41,7 +37,7 @@ static int dct_quantize_bfin (MpegEncContext *s,
     int   max=0;
 
     PROF("fdct",0);
-    ff_bfin_fdct (block);
+    s->dsp.fdct(block);
     EPROF();
 
     PROF("denoise",1);
