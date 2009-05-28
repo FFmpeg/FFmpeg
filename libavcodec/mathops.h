@@ -28,6 +28,8 @@
 #   include "arm/mathops.h"
 #elif ARCH_BFIN
 #   include "bfin/mathops.h"
+#elif ARCH_MIPS
+#   include "mips/mathops.h"
 #elif ARCH_PPC
 #   include "ppc/mathops.h"
 #elif ARCH_X86
