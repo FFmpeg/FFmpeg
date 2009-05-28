@@ -119,12 +119,14 @@ testclean:
 
 clean:: testclean
 	rm -f $(ALLPROGS) $(ALLPROGS_G)
+	rm -f $(CLEANSUFFIXES)
 	rm -f doc/*.html doc/*.pod doc/*.1
 	rm -f tests/seek_test$(EXESUF)
 	rm -f $(addprefix tests/,$(addsuffix $(HOSTEXESUF),audiogen videogen rotozoom tiny_psnr))
 	rm -f $(addprefix tools/,$(addsuffix $(EXESUF),cws2fws pktdumper qt-faststart trasher))
 
 distclean::
+	rm -f $(DISTCLEANSUFFIXES)
 	rm -f version.h config.*
 
 # regression tests
