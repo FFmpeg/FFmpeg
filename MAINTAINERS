@@ -40,6 +40,7 @@ build system (configure,Makefiles)      Diego Biurrun, Mans Rullgard
 project server                          Diego Biurrun, Mans Rullgard
 mailinglists                            Michael Niedermayer, Baptiste Coudurier
 presets                                 Robert Swain
+metadata subsystem                      Aurelien Jacobs
 
 
 libavutil
@@ -254,6 +255,7 @@ Muxers/Demuxers:
   lmlm4.c                               Ivo van Poorten
   matroska.c                            Aurelien Jacobs
   matroskaenc.c                         David Conrad
+  metadata*                             Aurelien Jacobs
   mm.c                                  Peter Ross
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
   movenc.c                              Michael Niedermayer, Baptiste Coudurier
