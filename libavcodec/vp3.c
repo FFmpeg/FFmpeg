@@ -60,6 +60,7 @@ typedef struct Vp3Fragment {
     uint8_t coding_method;
     int8_t motion_x;
     int8_t motion_y;
+    uint8_t qpi;
 } Vp3Fragment;
 
 #define SB_NOT_CODED        0
@@ -134,10 +135,9 @@ typedef struct Vp3DecodeContext {
     DSPContext dsp;
     int flipped_image;
 
-    int qis[3];
-    int nqis;
-    int quality_index;
-    int last_quality_index;
+    int qps[3];
+    int nqps;
+    int last_qps[3];
 
     int superblock_count;
     int y_superblock_width;
@@ -191,7 +191,7 @@ typedef struct Vp3DecodeContext {
 
     /* these arrays need to be on 16-byte boundaries since SSE2 operations
      * index into them */
-    DECLARE_ALIGNED_16(int16_t, qmat[2][4][64]);        //<qmat[is_inter][plane]
+    DECLARE_ALIGNED_16(int16_t, qmat[3][2][3][64]);     //<qmat[qpi][is_inter][plane]
 
     /* This table contains superblock_count * 16 entries. Each set of 16
      * numbers corresponds to the fragment indexes 0..15 of the superblock.
@@ -467,6 +467,7 @@ static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
         s->all_fragments[i].motion_x = 127;
         s->all_fragments[i].motion_y = 127;
         s->all_fragments[i].next_coeff= NULL;
+        s->all_fragments[i].qpi = 0;
         s->coeffs[i].index=
         s->coeffs[i].coeff=0;
         s->coeffs[i].next= NULL;
@@ -477,10 +478,10 @@ static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
  * This function sets up the dequantization tables used for a particular
  * frame.
  */
-static void init_dequantizer(Vp3DecodeContext *s)
+static void init_dequantizer(Vp3DecodeContext *s, int qpi)
 {
-    int ac_scale_factor = s->coded_ac_scale_factor[s->quality_index];
-    int dc_scale_factor = s->coded_dc_scale_factor[s->quality_index];
+    int ac_scale_factor = s->coded_ac_scale_factor[s->qps[qpi]];
+    int dc_scale_factor = s->coded_dc_scale_factor[s->qps[qpi]];
     int i, plane, inter, qri, bmi, bmj, qistart;
 
     for(inter=0; inter<2; inter++){
@@ -488,27 +489,29 @@ static void init_dequantizer(Vp3DecodeContext *s)
             int sum=0;
             for(qri=0; qri<s->qr_count[inter][plane]; qri++){
                 sum+= s->qr_size[inter][plane][qri];
-                if(s->quality_index <= sum)
+                if(s->qps[qpi] <= sum)
                     break;
             }
             qistart= sum - s->qr_size[inter][plane][qri];
             bmi= s->qr_base[inter][plane][qri  ];
             bmj= s->qr_base[inter][plane][qri+1];
             for(i=0; i<64; i++){
-                int coeff= (  2*(sum    -s->quality_index)*s->base_matrix[bmi][i]
-                            - 2*(qistart-s->quality_index)*s->base_matrix[bmj][i]
+                int coeff= (  2*(sum    -s->qps[qpi])*s->base_matrix[bmi][i]
+                            - 2*(qistart-s->qps[qpi])*s->base_matrix[bmj][i]
                             + s->qr_size[inter][plane][qri])
                            / (2*s->qr_size[inter][plane][qri]);
 
                 int qmin= 8<<(inter + !i);
                 int qscale= i ? ac_scale_factor : dc_scale_factor;
 
-                s->qmat[inter][plane][s->dsp.idct_permutation[i]]= av_clip((qscale * coeff)/100 * 4, qmin, 4096);
+                s->qmat[qpi][inter][plane][s->dsp.idct_permutation[i]]= av_clip((qscale * coeff)/100 * 4, qmin, 4096);
             }
+            // all DC coefficients use the same quant so as not to interfere with DC prediction
+            s->qmat[qpi][inter][plane][0] = s->qmat[0][inter][plane][0];
         }
     }
 
-    memset(s->qscale_table, (FFMAX(s->qmat[0][0][1], s->qmat[0][1][1])+8)/16, 512); //FIXME finetune
+    memset(s->qscale_table, (FFMAX(s->qmat[0][0][0][1], s->qmat[0][0][1][1])+8)/16, 512); //FIXME finetune
 }
 
 /*
@@ -521,7 +524,7 @@ static void init_loop_filter(Vp3DecodeContext *s)
     int filter_limit;
     int x;
 
-    filter_limit = s->filter_limit_values[s->quality_index];
+    filter_limit = s->filter_limit_values[s->qps[0]];
 
     /* set up the bounding values */
     memset(s->bounding_values_array, 0, 256 * sizeof(int));
@@ -963,6 +966,47 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
     return 0;
 }
 
+static int unpack_block_qpis(Vp3DecodeContext *s, GetBitContext *gb)
+{
+    int qpi, i, j, bit, run_length, blocks_decoded, num_blocks_at_qpi;
+    int num_blocks = s->coded_fragment_list_index;
+
+    for (qpi = 0; qpi < s->nqps-1 && num_blocks > 0; qpi++) {
+        i = blocks_decoded = num_blocks_at_qpi = 0;
+
+        bit = get_bits1(gb);
+
+        do {
+            run_length = get_vlc2(gb, s->superblock_run_length_vlc.table, 6, 2) + 1;
+            if (run_length == 34)
+                run_length += get_bits(gb, 12);
+            blocks_decoded += run_length;
+
+            if (!bit)
+                num_blocks_at_qpi += run_length;
+
+            for (j = 0; j < run_length; i++) {
+                if (i > s->coded_fragment_list_index)
+                    return -1;
+
+                if (s->all_fragments[s->coded_fragment_list[i]].qpi == qpi) {
+                    s->all_fragments[s->coded_fragment_list[i]].qpi += bit;
+                    j++;
+                }
+            }
+
+            if (run_length == 4129)
+                bit = get_bits1(gb);
+            else
+                bit ^= 1;
+        } while (blocks_decoded < num_blocks);
+
+        num_blocks -= num_blocks_at_qpi;
+    }
+
+    return 0;
+}
+
 /*
  * This function is called by unpack_dct_coeffs() to extract the VLCs from
  * the bitstream. The VLCs encode tokens which are used to unpack DCT
@@ -1394,9 +1438,9 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                                 motion_source + stride + 1 + d,
                                 stride, 8);
                         }
-                        dequantizer = s->qmat[1][plane];
+                        dequantizer = s->qmat[s->all_fragments[i].qpi][1][plane];
                     }else{
-                        dequantizer = s->qmat[0][plane];
+                        dequantizer = s->qmat[s->all_fragments[i].qpi][0][plane];
                     }
 
                     /* dequantize the DCT coefficients */
@@ -1648,7 +1692,8 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
 
     /* initialize to an impossible value which will force a recalculation
      * in the first frame decode */
-    s->quality_index = -1;
+    for (i = 0; i < 3; i++)
+        s->qps[i] = -1;
 
     s->y_superblock_width = (s->width + 31) / 32;
     s->y_superblock_height = (s->height + 31) / 32;
@@ -1819,24 +1864,29 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     s->keyframe = !get_bits1(&gb);
     if (!s->theora)
         skip_bits(&gb, 1);
-    s->last_quality_index = s->quality_index;
+    for (i = 0; i < 3; i++)
+        s->last_qps[i] = s->qps[i];
 
-    s->nqis=0;
+    s->nqps=0;
     do{
-        s->qis[s->nqis++]= get_bits(&gb, 6);
-    } while(s->theora >= 0x030200 && s->nqis<3 && get_bits1(&gb));
-
-    s->quality_index= s->qis[0];
+        s->qps[s->nqps++]= get_bits(&gb, 6);
+    } while(s->theora >= 0x030200 && s->nqps<3 && get_bits1(&gb));
+    for (i = s->nqps; i < 3; i++)
+        s->qps[i] = -1;
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_INFO, " VP3 %sframe #%d: Q index = %d\n",
-            s->keyframe?"key":"", counter, s->quality_index);
+            s->keyframe?"key":"", counter, s->qps[0]);
     counter++;
 
-    if (s->quality_index != s->last_quality_index) {
-        init_dequantizer(s);
+    if (s->qps[0] != s->last_qps[0])
         init_loop_filter(s);
-    }
+
+    for (i = 0; i < s->nqps; i++)
+        // reinit all dequantizers if the first one changed, because
+        // the DC of the first quantizer must be used for all matrices
+        if (s->qps[i] != s->last_qps[i] || s->qps[0] != s->last_qps[0])
+            init_dequantizer(s, i);
 
     if (avctx->skip_frame >= AVDISCARD_NONKEY && !s->keyframe)
         return buf_size;
@@ -1914,6 +1964,10 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     }
     if (unpack_vectors(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_vectors\n");
+        return -1;
+    }
+    if (unpack_block_qpis(s, &gb)){
+        av_log(s->avctx, AV_LOG_ERROR, "error in unpack_block_qpis\n");
         return -1;
     }
     if (unpack_dct_coeffs(s, &gb)){
