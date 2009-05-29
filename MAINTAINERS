@@ -254,6 +254,7 @@ Muxers/Demuxers:
   libnut.c                              Oded Shimon
   lmlm4.c                               Ivo van Poorten
   matroska.c                            Aurelien Jacobs
+  matroskadec.c                         Aurelien Jacobs
   matroskaenc.c                         David Conrad
   metadata*                             Aurelien Jacobs
   mm.c                                  Peter Ross
