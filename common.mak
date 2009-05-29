@@ -79,8 +79,8 @@ checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 DEPS := $(OBJS:.o=.d)
 depend dep: $(DEPS)
 
-CLEANSUFFIXES     = *.o *~ *.ho
+CLEANSUFFIXES     = *.o *~ *.ho *.map
 DISTCLEANSUFFIXES = *.d *.pc
-LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
+LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp
 
 -include $(DEPS)
