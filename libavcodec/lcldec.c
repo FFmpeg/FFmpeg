@@ -81,11 +81,7 @@ static inline unsigned char fix (int pix14)
     int tmp;
 
     tmp = (pix14 + 0x80000) >> 20;
-    if (tmp < 0)
-        return 0;
-    if (tmp > 255)
-        return 255;
-    return tmp;
+    return av_clip_uint8(tmp);
 }
 
 
