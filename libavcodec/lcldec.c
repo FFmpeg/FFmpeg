@@ -432,12 +432,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     case IMGTYPE_RGB24:
         for (row = height - 1; row >= 0; row--) {
             pixel_ptr = row * c->pic.linesize[0];
-            for (col = 0; col < width; col++) {
-                outptr[pixel_ptr++] = encoded[0];
-                outptr[pixel_ptr++] = encoded[1];
-                outptr[pixel_ptr++] = encoded[2];
-                encoded += 3;
-            }
+            memcpy(outptr + pixel_ptr, encoded, 3 * width);
+            encoded += 3 * width;
         }
         break;
     case IMGTYPE_YUV411:
