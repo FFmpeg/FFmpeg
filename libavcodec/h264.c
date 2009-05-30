@@ -7902,12 +7902,7 @@ static int decode_frame(AVCodecContext *avctx,
     assert(pict->data[0] || !*data_size);
     ff_print_debug_info(s, pict);
 //printf("out %d\n", (int)pict->data[0]);
-#if 0 //?
 
-    /* Return the Picture timestamp as the frame number */
-    /* we subtract 1 because it is added on utils.c     */
-    avctx->frame_number = s->picture_number - 1;
-#endif
     return get_consumed_bytes(s, buf_index, buf_size);
 }
 #if 0

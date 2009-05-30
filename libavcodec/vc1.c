@@ -4237,10 +4237,6 @@ assert(s->current_picture.pict_type == s->pict_type);
         ff_print_debug_info(s, pict);
     }
 
-    /* Return the Picture timestamp as the frame number */
-    /* we subtract 1 because it is added on utils.c     */
-    avctx->frame_number = s->picture_number - 1;
-
     av_free(buf2);
     return buf_size;
 }

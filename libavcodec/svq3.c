@@ -1031,8 +1031,6 @@ static int svq3_decode_frame(AVCodecContext *avctx,
         *(AVFrame *) data = *(AVFrame *) &s->last_picture;
     }
 
-    avctx->frame_number = s->picture_number - 1;
-
     /* Do not output the last pic after seeking. */
     if (s->last_picture_ptr || s->low_delay) {
         *data_size = sizeof(AVFrame);
