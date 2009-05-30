@@ -2025,7 +2025,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!url_is_streamed(s->pb) ||
             mov_read_default(mov, s->pb, (MOVAtom){ 0, 0, INT64_MAX }) < 0 ||
             url_feof(s->pb))
-            return -1;
+            return AVERROR_EOF;
         dprintf(s, "read fragments, offset 0x%llx\n", url_ftell(s->pb));
         goto retry;
     }
