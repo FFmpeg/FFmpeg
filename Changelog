@@ -21,6 +21,7 @@ version <next>:
 - V210 decoder and encoder
 - remaining GPL parts in AC-3 decoder converted to LGPL
 - QCP demuxer
+- SoX native format muxer and demuxer
 
 
 
