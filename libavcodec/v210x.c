@@ -42,7 +42,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     int y=0;
     int width= avctx->width;
     AVFrame *pic= avctx->coded_frame;
-    const uint32_t *src= avpkt->data;
+    const uint32_t *src= (const uint32_t *)avpkt->data;
     uint16_t *ydst, *udst, *vdst, *yend;
 
     if(pic->data[0])
@@ -61,9 +61,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if(avctx->get_buffer(avctx, pic) < 0)
         return -1;
 
-    ydst= pic->data[0];
-    udst= pic->data[1];
-    vdst= pic->data[2];
+    ydst= (uint16_t *)pic->data[0];
+    udst= (uint16_t *)pic->data[1];
+    vdst= (uint16_t *)pic->data[2];
     yend= ydst + width;
     pic->pict_type= FF_I_TYPE;
     pic->key_frame= 1;
