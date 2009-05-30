@@ -28,6 +28,14 @@
 #include "mjpeg.h"
 #include "mjpegdec.h"
 
+static uint32_t read_offs(AVCodecContext *avctx, GetBitContext *gb, uint32_t size, const char *err_msg){
+    uint32_t offs= get_bits_long(gb, 32);
+    if(offs >= size){
+        av_log(avctx, AV_LOG_WARNING, err_msg, offs, size);
+        return 0;
+    }
+    return offs;
+}
 
 static int mjpegb_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
@@ -64,10 +72,10 @@ read_header:
     field_size = get_bits_long(&hgb, 32); /* field size */
     av_log(avctx, AV_LOG_DEBUG, "field size: 0x%x\n", field_size);
     skip_bits(&hgb, 32); /* padded field size */
-    second_field_offs = get_bits_long(&hgb, 32);
+    second_field_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "second_field_offs is %d and size is %d\n");
     av_log(avctx, AV_LOG_DEBUG, "second field offs: 0x%x\n", second_field_offs);
 
-    dqt_offs = get_bits_long(&hgb, 32);
+    dqt_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "dqt is %d and size is %d\n");
     av_log(avctx, AV_LOG_DEBUG, "dqt offs: 0x%x\n", dqt_offs);
     if (dqt_offs)
     {
@@ -76,7 +84,7 @@ read_header:
         ff_mjpeg_decode_dqt(s);
     }
 
-    dht_offs = get_bits_long(&hgb, 32);
+    dht_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "dht is %d and size is %d\n");
     av_log(avctx, AV_LOG_DEBUG, "dht offs: 0x%x\n", dht_offs);
     if (dht_offs)
     {
@@ -85,7 +93,7 @@ read_header:
         ff_mjpeg_decode_dht(s);
     }
 
-    sof_offs = get_bits_long(&hgb, 32);
+    sof_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "sof is %d and size is %d\n");
     av_log(avctx, AV_LOG_DEBUG, "sof offs: 0x%x\n", sof_offs);
     if (sof_offs)
     {
@@ -95,9 +103,9 @@ read_header:
             return -1;
     }
 
-    sos_offs = get_bits_long(&hgb, 32);
+    sos_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "sos is %d and size is %d\n");
     av_log(avctx, AV_LOG_DEBUG, "sos offs: 0x%x\n", sos_offs);
-    sod_offs = get_bits_long(&hgb, 32);
+    sod_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "sof is %d and size is %d\n");
     av_log(avctx, AV_LOG_DEBUG, "sod offs: 0x%x\n", sod_offs);
     if (sos_offs)
     {
