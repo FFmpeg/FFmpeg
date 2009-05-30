@@ -986,7 +986,7 @@ static void do_video_out(AVFormatContext *s,
                 fprintf(stderr, "Video encoding failed\n");
                 av_exit(1);
             }
-            //enc->frame_number = enc->real_pict_num;
+
             if(ret>0){
                 pkt.data= bit_buffer;
                 pkt.size= ret;
@@ -1001,9 +1001,8 @@ static void do_video_out(AVFormatContext *s,
                 write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
                 *frame_size = ret;
                 video_size += ret;
-                //fprintf(stderr,"\nFrame: %3d %3d size: %5d type: %d",
-                //        enc->frame_number-1, enc->real_pict_num, ret,
-                //        enc->pict_type);
+                //fprintf(stderr,"\nFrame: %3d size: %5d type: %d",
+                //        enc->frame_number-1, ret, enc->pict_type);
                 /* if two pass, output log */
                 if (ost->logfile && enc->stats_out) {
                     fprintf(ost->logfile, "%s", enc->stats_out);
