@@ -600,7 +600,7 @@ static int get_audio_frame_size(AVCodecContext *enc, int size)
             /* used for example by ADPCM codecs */
             if (enc->bit_rate == 0)
                 return -1;
-            frame_size = (size * 8 * enc->sample_rate) / enc->bit_rate;
+            frame_size = ((int64_t)size * 8 * enc->sample_rate) / enc->bit_rate;
         }
     } else {
         frame_size = enc->frame_size;
