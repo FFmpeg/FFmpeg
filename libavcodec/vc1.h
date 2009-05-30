@@ -310,6 +310,57 @@ typedef struct VC1Context{
     uint8_t bfraction_lut_index;///< Index for BFRACTION value (see Table 40, reproduced into ff_vc1_bfraction_lut[])
     uint8_t broken_link;        ///< Broken link flag (BROKEN_LINK syntax element)
     uint8_t closed_entry;       ///< Closed entry point flag (CLOSED_ENTRY syntax element)
+
+    int parse_only;             ///< Context is used within parser
 } VC1Context;
+
+/** Find VC-1 marker in buffer
+ * @return position where next marker starts or end of buffer if no marker found
+ */
+static av_always_inline const uint8_t* find_next_marker(const uint8_t *src, const uint8_t *end)
+{
+    uint32_t mrk = 0xFFFFFFFF;
+
+    if(end-src < 4) return end;
+    while(src < end){
+        mrk = (mrk << 8) | *src++;
+        if(IS_MARKER(mrk))
+            return src-4;
+    }
+    return end;
+}
+
+static av_always_inline int vc1_unescape_buffer(const uint8_t *src, int size, uint8_t *dst)
+{
+    int dsize = 0, i;
+
+    if(size < 4){
+        for(dsize = 0; dsize < size; dsize++) *dst++ = *src++;
+        return size;
+    }
+    for(i = 0; i < size; i++, src++) {
+        if(src[0] == 3 && i >= 2 && !src[-1] && !src[-2] && i < size-1 && src[1] < 4) {
+            dst[dsize++] = src[1];
+            src++;
+            i++;
+        } else
+            dst[dsize++] = *src;
+    }
+    return dsize;
+}
+
+/**
+ * Decode Simple/Main Profiles sequence header
+ * @see Figure 7-8, p16-17
+ * @param avctx Codec context
+ * @param gb GetBit context initialized from Codec context extra_data
+ * @return Status
+ */
+int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitContext *gb);
+
+int vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContext *gb);
+
+int vc1_parse_frame_header    (VC1Context *v, GetBitContext *gb);
+int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext *gb);
 
 #endif /* AVCODEC_VC1_H */

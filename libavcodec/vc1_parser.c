@@ -27,6 +27,58 @@
 
 #include "parser.h"
 #include "vc1.h"
+#include "get_bits.h"
+
+typedef struct {
+    ParseContext pc;
+    VC1Context v;
+} VC1ParseContext;
+
+static void vc1_extract_headers(AVCodecParserContext *s, AVCodecContext *avctx,
+                                const uint8_t *buf, int buf_size)
+{
+    VC1ParseContext *vpc = s->priv_data;
+    GetBitContext gb;
+    const uint8_t *start, *end, *next;
+    uint8_t *buf2 = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+
+    vpc->v.s.avctx = avctx;
+    vpc->v.parse_only = 1;
+    next = buf;
+
+    for(start = buf, end = buf + buf_size; next < end; start = next){
+        int buf2_size, size;
+
+        next = find_next_marker(start + 4, end);
+        size = next - start - 4;
+        buf2_size = vc1_unescape_buffer(start + 4, size, buf2);
+        init_get_bits(&gb, buf2, buf2_size * 8);
+        if(size <= 0) continue;
+        switch(AV_RB32(start)){
+        case VC1_CODE_SEQHDR:
+            vc1_decode_sequence_header(avctx, &vpc->v, &gb);
+            break;
+        case VC1_CODE_ENTRYPOINT:
+            vc1_decode_entry_point(avctx, &vpc->v, &gb);
+            break;
+        case VC1_CODE_FRAME:
+            if(vpc->v.profile < PROFILE_ADVANCED)
+                vc1_parse_frame_header    (&vpc->v, &gb);
+            else
+                vc1_parse_frame_header_adv(&vpc->v, &gb);
+
+            /* keep FF_BI_TYPE internal to VC1 */
+            if (vpc->v.s.pict_type == FF_BI_TYPE)
+                s->pict_type = FF_B_TYPE;
+            else
+                s->pict_type = vpc->v.s.pict_type;
+
+            break;
+        }
+    }
+
+    av_free(buf2);
+}
 
 /**
  * finds the end of the current frame in the bitstream.
@@ -75,20 +127,23 @@ static int vc1_parse(AVCodecParserContext *s,
                            const uint8_t **poutbuf, int *poutbuf_size,
                            const uint8_t *buf, int buf_size)
 {
-    ParseContext *pc = s->priv_data;
+    VC1ParseContext *vpc = s->priv_data;
     int next;
 
     if(s->flags & PARSER_FLAG_COMPLETE_FRAMES){
         next= buf_size;
     }else{
-        next= vc1_find_frame_end(pc, buf, buf_size);
+        next= vc1_find_frame_end(&vpc->pc, buf, buf_size);
 
-        if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
+        if (ff_combine_frame(&vpc->pc, next, &buf, &buf_size) < 0) {
             *poutbuf = NULL;
             *poutbuf_size = 0;
             return buf_size;
         }
     }
+
+    vc1_extract_headers(s, avctx, buf, buf_size);
+
     *poutbuf = buf;
     *poutbuf_size = buf_size;
     return next;
@@ -116,7 +171,7 @@ static int vc1_split(AVCodecContext *avctx,
 
 AVCodecParser vc1_parser = {
     { CODEC_ID_VC1 },
-    sizeof(ParseContext1),
+    sizeof(VC1ParseContext),
     NULL,
     vc1_parse,
     ff_parse1_close,

@@ -805,10 +805,8 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb);
  * @param gb GetBit context initialized from Codec context extra_data
  * @return Status
  */
-static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
+int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitContext *gb)
 {
-    VC1Context *v = avctx->priv_data;
-
     av_log(avctx, AV_LOG_DEBUG, "Header: %0X\n", show_bits(gb, 32));
     v->profile = get_bits(gb, 2);
     if (v->profile == PROFILE_COMPLEX)
@@ -1025,9 +1023,8 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     return 0;
 }
 
-static int decode_entry_point(AVCodecContext *avctx, GetBitContext *gb)
+int vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContext *gb)
 {
-    VC1Context *v = avctx->priv_data;
     int i;
 
     av_log(avctx, AV_LOG_DEBUG, "Entry point: %08X\n", show_bits_long(gb, 32));
@@ -1074,7 +1071,7 @@ static int decode_entry_point(AVCodecContext *avctx, GetBitContext *gb)
     return 0;
 }
 
-static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
+int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 {
     int pqindex, lowquant, status;
 
@@ -1100,6 +1097,9 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     }
     if(v->s.pict_type == FF_I_TYPE || v->s.pict_type == FF_BI_TYPE)
         skip_bits(gb, 7); // skip buffer fullness
+
+    if(v->parse_only)
+        return 0;
 
     /* calculate RND */
     if(v->s.pict_type == FF_I_TYPE || v->s.pict_type == FF_BI_TYPE)
@@ -1286,7 +1286,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     return 0;
 }
 
-static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
+int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
 {
     int pqindex, lowquant;
     int status;
@@ -1361,6 +1361,9 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         v->postproc = get_bits(gb, 2);
 
     if(v->s.pict_type == FF_I_TYPE || v->s.pict_type == FF_P_TYPE) v->use_ic = 0;
+
+    if(v->parse_only)
+        return 0;
 
     switch(v->s.pict_type) {
     case FF_I_TYPE:
@@ -3915,41 +3918,6 @@ static void vc1_decode_blocks(VC1Context *v)
     }
 }
 
-/** Find VC-1 marker in buffer
- * @return position where next marker starts or end of buffer if no marker found
- */
-static av_always_inline const uint8_t* find_next_marker(const uint8_t *src, const uint8_t *end)
-{
-    uint32_t mrk = 0xFFFFFFFF;
-
-    if(end-src < 4) return end;
-    while(src < end){
-        mrk = (mrk << 8) | *src++;
-        if(IS_MARKER(mrk))
-            return src-4;
-    }
-    return end;
-}
-
-static av_always_inline int vc1_unescape_buffer(const uint8_t *src, int size, uint8_t *dst)
-{
-    int dsize = 0, i;
-
-    if(size < 4){
-        for(dsize = 0; dsize < size; dsize++) *dst++ = *src++;
-        return size;
-    }
-    for(i = 0; i < size; i++, src++) {
-        if(src[0] == 3 && i >= 2 && !src[-1] && !src[-2] && i < size-1 && src[1] < 4) {
-            dst[dsize++] = src[1];
-            src++;
-            i++;
-        } else
-            dst[dsize++] = *src;
-    }
-    return dsize;
-}
-
 /** Initialize a VC1/WMV3 decoder
  * @todo TODO: Handle VC-1 IDUs (Transport level?)
  * @todo TODO: Decypher remaining bits in extra_data
@@ -3991,7 +3959,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
 
         init_get_bits(&gb, avctx->extradata, avctx->extradata_size*8);
 
-        if (decode_sequence_header(avctx, &gb) < 0)
+        if (vc1_decode_sequence_header(avctx, v, &gb) < 0)
           return -1;
 
         count = avctx->extradata_size*8 - get_bits_count(&gb);
@@ -4028,14 +3996,14 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
             init_get_bits(&gb, buf2, buf2_size * 8);
             switch(AV_RB32(start)){
             case VC1_CODE_SEQHDR:
-                if(decode_sequence_header(avctx, &gb) < 0){
+                if(vc1_decode_sequence_header(avctx, v, &gb) < 0){
                     av_free(buf2);
                     return -1;
                 }
                 seq_initialized = 1;
                 break;
             case VC1_CODE_ENTRYPOINT:
-                if(decode_entry_point(avctx, &gb) < 0){
+                if(vc1_decode_entry_point(avctx, v, &gb) < 0){
                     av_free(buf2);
                     return -1;
                 }
@@ -4150,7 +4118,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
                 case VC1_CODE_ENTRYPOINT: /* it should be before frame data */
                     buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
                     init_get_bits(&s->gb, buf2, buf_size2*8);
-                    decode_entry_point(avctx, &s->gb);
+                    vc1_decode_entry_point(avctx, v, &s->gb);
                     break;
                 case VC1_CODE_SLICE:
                     av_log(avctx, AV_LOG_ERROR, "Sliced decoding is not implemented (yet)\n");
