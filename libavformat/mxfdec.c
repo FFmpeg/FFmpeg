@@ -339,7 +339,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         skip:
             url_fskip(s->pb, klv.length);
     }
-    return AVERROR(EIO);
+    return AVERROR_EOF;
 }
 
 static int mxf_read_primer_pack(MXFContext *mxf)
