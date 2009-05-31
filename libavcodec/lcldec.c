@@ -74,11 +74,11 @@ typedef struct LclDecContext {
 /**
  * \param srcptr compressed source buffer, must be padded with at least 4 extra bytes
  */
-static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned char * destptr, unsigned int destsize)
+static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsigned char * destptr, unsigned int destsize)
 {
     unsigned char *destptr_bak = destptr;
     unsigned char *destptr_end = destptr + destsize;
-    unsigned char *srcptr_end = srcptr + srclen;
+    const unsigned char *srcptr_end = srcptr + srclen;
     unsigned char mask = 0;
     unsigned char maskbit = 0;
     unsigned int ofs, cnt;
