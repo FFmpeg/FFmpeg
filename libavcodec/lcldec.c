@@ -443,13 +443,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     unsigned int max_basesize = FFALIGN(avctx->width, 4) * FFALIGN(avctx->height, 4) + AV_LZO_OUTPUT_PADDING;
     unsigned int max_decomp_size;
 
-    c->pic.data[0] = NULL;
-
-#if CONFIG_ZLIB_DECODER
-    // Needed if zlib unused or init aborted before inflateInit
-    memset(&c->zstream, 0, sizeof(z_stream));
-#endif
-
     if (avctx->extradata_size < 8) {
         av_log(avctx, AV_LOG_ERROR, "Extradata size too small.\n");
         return 1;
