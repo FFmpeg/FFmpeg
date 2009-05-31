@@ -1437,7 +1437,7 @@ static int mov_write_3gp_udta_tag(ByteIOContext *pb, AVFormatContext *s,
         put_be16(pb, atoi(t->value));
     else {
         put_be16(pb, language_code("eng")); /* language */
-        ascii_to_wc(pb, t->value);
+        put_buffer(pb, t->value, strlen(t->value)+1); /* UTF8 string value */
         if (!strcmp(tag, "albm") &&
             (t = av_metadata_get(s->metadata, "year", NULL, 0)))
             put_byte(pb, atoi(t->value));
