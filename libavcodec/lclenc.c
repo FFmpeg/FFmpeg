@@ -150,14 +150,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
             return -1;
     }
 
-    ((uint8_t*)avctx->extradata)[0]= 4;
-    ((uint8_t*)avctx->extradata)[1]= 0;
-    ((uint8_t*)avctx->extradata)[2]= 0;
-    ((uint8_t*)avctx->extradata)[3]= 0;
-    ((uint8_t*)avctx->extradata)[4]= c->imgtype;
-    ((uint8_t*)avctx->extradata)[5]= c->compression;
-    ((uint8_t*)avctx->extradata)[6]= c->flags;
-    ((uint8_t*)avctx->extradata)[7]= CODEC_ZLIB;
+    avctx->extradata[0]= 4;
+    avctx->extradata[1]= 0;
+    avctx->extradata[2]= 0;
+    avctx->extradata[3]= 0;
+    avctx->extradata[4]= c->imgtype;
+    avctx->extradata[5]= c->compression;
+    avctx->extradata[6]= c->flags;
+    avctx->extradata[7]= CODEC_ZLIB;
     c->avctx->extradata_size= 8;
 
     c->zstream.zalloc = Z_NULL;
