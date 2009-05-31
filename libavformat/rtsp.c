@@ -339,9 +339,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
     struct in_addr sdp_ip;
     int ttl;
 
-#ifdef DEBUG
-    printf("sdp: %c='%s'\n", letter, buf);
-#endif
+    dprintf(s, "sdp: %c='%s'\n", letter, buf);
 
     p = buf;
     if (s1->skip_media && letter != 'm')
@@ -730,9 +728,9 @@ static void rtsp_skip_packet(AVFormatContext *s)
     if (ret != 3)
         return;
     len = AV_RB16(buf + 1);
-#ifdef DEBUG
-    printf("skipping RTP packet len=%d\n", len);
-#endif
+
+    dprintf(s, "skipping RTP packet len=%d\n", len);
+
     /* skip payload */
     while (len > 0) {
         len1 = len;
@@ -786,7 +784,7 @@ rtsp_read_reply (AVFormatContext *s, RTSPMessageHeader *reply,
         for(;;) {
             ret = url_readbuf(rt->rtsp_hd, &ch, 1);
 #ifdef DEBUG_RTP_TCP
-            printf("ret=%d c=%02x [%c]\n", ret, ch, ch);
+            dprintf(s, "ret=%d c=%02x [%c]\n", ret, ch, ch);
 #endif
             if (ret != 1)
                 return -1;
@@ -804,9 +802,9 @@ rtsp_read_reply (AVFormatContext *s, RTSPMessageHeader *reply,
             }
         }
         *q = '\0';
-#ifdef DEBUG
-        printf("line='%s'\n", buf);
-#endif
+
+        dprintf(s, "line='%s'\n", buf);
+
         /* test if last line */
         if (buf[0] == '\0')
             break;
@@ -858,9 +856,9 @@ static void rtsp_send_cmd_async (AVFormatContext *s,
         av_strlcat(buf, buf1, sizeof(buf));
     }
     av_strlcat(buf, "\r\n", sizeof(buf));
-#ifdef DEBUG
-    printf("Sending:\n%s--\n", buf);
-#endif
+
+    dprintf(s, "Sending:\n%s--\n", buf);
+
     url_write(rt->rtsp_hd, buf, strlen(buf));
     rt->last_cmd_time = av_gettime();
 }
@@ -1318,7 +1316,7 @@ static int tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     RTSPStream *rtsp_st;
 
 #ifdef DEBUG_RTP_TCP
-    printf("tcp_read_packet:\n");
+    dprintf(s, "tcp_read_packet:\n");
 #endif
  redo:
     for(;;) {
@@ -1337,7 +1335,7 @@ static int tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     id = buf[0];
     len = AV_RB16(buf + 1);
 #ifdef DEBUG_RTP_TCP
-    printf("id=%d len=%d\n", id, len);
+    dprintf(s, "id=%d len=%d\n", id, len);
 #endif
     if (len > buf_size || len < 12)
         goto redo;
