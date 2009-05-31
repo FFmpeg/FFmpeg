@@ -590,7 +590,6 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     int comp_page, anc_page;
     char language[4];
     uint32_t prog_reg_desc = 0; /* registration descriptor */
-    uint32_t reg_desc; /* registration descriptor */
 
 #ifdef DEBUG
     dprintf(ts->stream, "PMT: len %i\n", section_len);
@@ -707,10 +706,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 av_metadata_set(&st->metadata, "language", language);
                 break;
             case 0x05: /* registration descriptor */
-                reg_desc = bytestream_get_le32(&p);
+                st->codec->codec_tag = bytestream_get_le32(&p);
                 if (st->codec->codec_id == CODEC_ID_PROBE &&
                     stream_type == STREAM_TYPE_PRIVATE_DATA)
-                    mpegts_find_stream_type(st, reg_desc, REGD_types);
+                    mpegts_find_stream_type(st, st->codec->codec_tag, REGD_types);
                 break;
             default:
                 break;
