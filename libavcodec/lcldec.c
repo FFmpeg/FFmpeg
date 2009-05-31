@@ -42,7 +42,6 @@
 #include <stdlib.h>
 
 #include "avcodec.h"
-#include "get_bits.h"
 #include "bytestream.h"
 #include "lcl.h"
 
