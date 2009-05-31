@@ -94,7 +94,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         return -1;
     }
 
-    zret = deflateReset(&(c->zstream));
+    zret = deflateReset(&c->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Deflate reset error: %d\n", zret);
         return -1;
@@ -105,13 +105,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     for(i = avctx->height - 1; i >= 0; i--) {
         c->zstream.next_in = p->data[0]+p->linesize[0]*i;
         c->zstream.avail_in = avctx->width*3;
-        zret = deflate(&(c->zstream), Z_NO_FLUSH);
+        zret = deflate(&c->zstream, Z_NO_FLUSH);
         if (zret != Z_OK) {
             av_log(avctx, AV_LOG_ERROR, "Deflate error: %d\n", zret);
             return -1;
         }
     }
-    zret = deflate(&(c->zstream), Z_FINISH);
+    zret = deflate(&c->zstream, Z_FINISH);
     if (zret != Z_STREAM_END) {
         av_log(avctx, AV_LOG_ERROR, "Deflate error: %d\n", zret);
         return -1;
@@ -169,7 +169,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     c->zstream.zalloc = Z_NULL;
     c->zstream.zfree = Z_NULL;
     c->zstream.opaque = Z_NULL;
-    zret = deflateInit(&(c->zstream), c->compression);
+    zret = deflateInit(&c->zstream, c->compression);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Deflate init error: %d\n", zret);
         return 1;
@@ -197,7 +197,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
     av_freep(&avctx->extradata);
     av_freep(&c->comp_buf);
-    deflateEnd(&(c->zstream));
+    deflateEnd(&c->zstream);
 
     return 0;
 }
