@@ -622,27 +622,26 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                stream_type, pid);
 
         /* now create ffmpeg stream */
-            if(ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES){
-                pes= ts->pids[pid]->u.pes_filter.opaque;
-                st= pes->st;
-            }else{
-                if (ts->pids[pid]) mpegts_close_filter(ts, ts->pids[pid]); //wrongly added sdt filter probably
-                pes = add_pes_stream(ts, pid, pcr_pid, stream_type);
-                if (pes)
-                    st = new_pes_av_stream(pes, 0);
-            }
-            add_pid_to_pmt(ts, h->id, pid);
-            if(st)
-                av_program_add_stream_index(ts->stream, h->id, st->index);
+        if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
+            pes= ts->pids[pid]->u.pes_filter.opaque;
+            st= pes->st;
+        } else {
+            if (ts->pids[pid]) mpegts_close_filter(ts, ts->pids[pid]); //wrongly added sdt filter probably
+            pes = add_pes_stream(ts, pid, pcr_pid, stream_type);
+            if (pes)
+                st = new_pes_av_stream(pes, 0);
+        }
 
-        if (st) {
-            if (language[0] != 0) {
+        add_pid_to_pmt(ts, h->id, pid);
+
+        if(st) {
+            av_program_add_stream_index(ts->stream, h->id, st->index);
+
+            if (language[0] != 0)
                 av_metadata_set(&st->metadata, "language", language);
-            }
 
-            if (stream_type == STREAM_TYPE_SUBTITLE_DVB) {
+            if (stream_type == STREAM_TYPE_SUBTITLE_DVB)
                 st->codec->sub_id = (anc_page << 16) | comp_page;
-            }
         }
     }
     /* all parameters are there */
