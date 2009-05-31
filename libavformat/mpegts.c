@@ -521,6 +521,14 @@ static const StreamType REGD_types[] = {
     { 0 },
 };
 
+/* descriptor present */
+static const StreamType DESC_types[] = {
+    { 0x6a, CODEC_TYPE_AUDIO,             CODEC_ID_AC3 }, /* AC-3 descriptor */
+    { 0x7a, CODEC_TYPE_AUDIO,             CODEC_ID_AC3 },
+    { 0x7b, CODEC_TYPE_AUDIO,             CODEC_ID_DTS },
+    { 0x59, CODEC_TYPE_SUBTITLE, CODEC_ID_DVB_SUBTITLE }, /* subtitling descriptor */
+};
+
 static void mpegts_find_stream_type(AVStream *st,
                                     uint32_t stream_type, const StreamType *types)
 {
@@ -665,21 +673,12 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             dprintf(ts->stream, "tag: 0x%02x len=%d\n",
                    desc_tag, desc_len);
 
+            if (st->codec->codec_id == CODEC_ID_PROBE &&
+                stream_type == STREAM_TYPE_PRIVATE_DATA)
+                mpegts_find_stream_type(st, desc_tag, DESC_types);
+
             switch(desc_tag) {
-            case 0x6a: /* AC-3 descriptor */
-            case 0x7a: /* AC-3 descriptor */
-                st->codec->codec_type = CODEC_TYPE_AUDIO;
-                st->codec->codec_id   = CODEC_ID_AC3;
-                break;
-            case 0x7b:
-                st->codec->codec_type = CODEC_TYPE_AUDIO;
-                st->codec->codec_id   = CODEC_ID_DTS;
-                break;
             case 0x59: /* subtitling descriptor */
-                if (stream_type == STREAM_TYPE_PRIVATE_DATA) {
-                    st->codec->codec_type = CODEC_TYPE_SUBTITLE;
-                    st->codec->codec_id   = CODEC_ID_DVB_SUBTITLE;
-                }
                 language[0] = get8(&p, desc_end);
                 language[1] = get8(&p, desc_end);
                 language[2] = get8(&p, desc_end);
