@@ -523,7 +523,7 @@ static const StreamType REGD_types[] = {
 /* descriptor present */
 static const StreamType DESC_types[] = {
     { 0x6a, CODEC_TYPE_AUDIO,             CODEC_ID_AC3 }, /* AC-3 descriptor */
-    { 0x7a, CODEC_TYPE_AUDIO,             CODEC_ID_AC3 },
+    { 0x7a, CODEC_TYPE_AUDIO,            CODEC_ID_EAC3 }, /* E-AC-3 descriptor */
     { 0x7b, CODEC_TYPE_AUDIO,             CODEC_ID_DTS },
     { 0x59, CODEC_TYPE_SUBTITLE, CODEC_ID_DVB_SUBTITLE }, /* subtitling descriptor */
 };
