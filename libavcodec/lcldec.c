@@ -93,6 +93,7 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
             unsigned ofs = bytestream_get_le16(&srcptr);
             unsigned cnt = (ofs >> 11) + 1;
             ofs &= 0x7ff;
+            ofs = FFMIN(ofs, destptr - destptr_bak);
             cnt *= 4;
             cnt = FFMIN(cnt, destptr_end - destptr);
             av_memcpy_backptr(destptr, ofs, cnt);
