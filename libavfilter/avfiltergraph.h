@@ -57,6 +57,13 @@ int avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
 int avfilter_graph_check_validity(AVFilterGraph *graphctx, AVClass *log_ctx);
 
 /**
+ * Configures all the links of graphctx.
+ *
+ * @return 0 in case of success, a negative value otherwise
+ */
+int avfilter_graph_config_links(AVFilterGraph *graphctx, AVClass *log_ctx);
+
+/**
  * Configures the formats of all the links in the graph.
  */
 int avfilter_graph_config_formats(AVFilterGraph *graphctx);

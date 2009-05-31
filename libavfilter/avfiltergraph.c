@@ -77,6 +77,23 @@ int avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
+int avfilter_graph_config_links(AVFilterGraph *graph, AVClass *log_ctx)
+{
+    AVFilterContext *filt;
+    int i, ret;
+
+    for (i=0; i < graph->filter_count; i++) {
+        filt = graph->filters[i];
+
+        if (!filt->output_count) {
+            if ((ret = avfilter_config_links(filt)))
+                return ret;
+        }
+    }
+
+    return 0;
+}
+
 AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
 {
     int i;
