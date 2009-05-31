@@ -42,7 +42,7 @@
 typedef struct PESContext PESContext;
 
 static PESContext* add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid, int stream_type);
-static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code);
+static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code, uint32_t prog_reg_desc, uint32_t reg_desc);
 
 enum MpegTSFilterType {
     MPEGTS_PES,
@@ -496,8 +496,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     int desc_list_len, desc_len, desc_tag;
     int comp_page = 0, anc_page = 0; /* initialize to kill warnings */
     char language[4] = {0}; /* initialize to kill warnings */
-    int has_hdmv_descr = 0;
-    int has_dirac_descr = 0;
+    uint32_t prog_reg_desc = 0; /* registration descriptor */
     uint32_t reg_desc = 0; /* registration descriptor */
 
 #ifdef DEBUG
@@ -536,10 +535,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             break;
         program_info_length -= len + 2;
         if(tag == REGISTRATION_DESCRIPTOR && len >= 4) {
-            reg_desc = bytestream_get_le32(&p);
+            prog_reg_desc = bytestream_get_le32(&p);
             len -= 4;
-            if(reg_desc == AV_RL32("HDMV"))
-                has_hdmv_descr = 1;
         }
         p += len;
     }
@@ -547,6 +544,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (p >= p_end)
         return;
     for(;;) {
+        reg_desc = 0;
         language[0] = 0;
         st = 0;
         stream_type = get8(&p, p_end);
@@ -587,7 +585,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             switch(desc_tag) {
             case DVB_SUBT_DESCID:
                 if (stream_type == STREAM_TYPE_PRIVATE_DATA)
-                    stream_type = STREAM_TYPE_SUBTITLE_DVB;
+                    stream_type = STREAM_TYPE_SUBTITLE_DVB; // demuxer internal
 
                 language[0] = get8(&p, desc_end);
                 language[1] = get8(&p, desc_end);
@@ -606,10 +604,6 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 break;
             case REGISTRATION_DESCRIPTOR: /*MPEG-2 Registration descriptor */
                 reg_desc = bytestream_get_le32(&p);
-                if(reg_desc == AV_RL32("drac"))
-                    has_dirac_descr = 1;
-                else if(reg_desc == AV_RL32("AC-3"))
-                    stream_type = STREAM_TYPE_AUDIO_AC3;
                 break;
             default:
                 break;
@@ -629,7 +623,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             if (ts->pids[pid]) mpegts_close_filter(ts, ts->pids[pid]); //wrongly added sdt filter probably
             pes = add_pes_stream(ts, pid, pcr_pid, stream_type);
             if (pes)
-                st = new_pes_av_stream(pes, 0);
+                st = new_pes_av_stream(pes, 0, prog_reg_desc, reg_desc);
         }
 
         add_pid_to_pmt(ts, h->id, pid);
@@ -933,78 +927,86 @@ static int mpegts_push_data(MpegTSFilter *filter,
     return 0;
 }
 
-static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code)
-{
-    AVStream *st;
-    enum CodecID codec_id;
+typedef struct {
+    uint32_t stream_type;
     enum CodecType codec_type;
+    enum CodecID codec_id;
+} StreamType;
 
-    switch(pes->stream_type){
-    case STREAM_TYPE_AUDIO_MPEG1:
-    case STREAM_TYPE_AUDIO_MPEG2:
-        codec_type = CODEC_TYPE_AUDIO;
-        codec_id = CODEC_ID_MP3;
-        break;
-    case STREAM_TYPE_VIDEO_MPEG1:
-    case STREAM_TYPE_VIDEO_MPEG2:
-        codec_type = CODEC_TYPE_VIDEO;
-        codec_id = CODEC_ID_MPEG2VIDEO;
-        break;
-    case STREAM_TYPE_VIDEO_MPEG4:
-        codec_type = CODEC_TYPE_VIDEO;
-        codec_id = CODEC_ID_MPEG4;
-        break;
-    case STREAM_TYPE_VIDEO_H264:
-        codec_type = CODEC_TYPE_VIDEO;
-        codec_id = CODEC_ID_H264;
-        break;
-    case STREAM_TYPE_VIDEO_VC1:
-        codec_type = CODEC_TYPE_VIDEO;
-        codec_id = CODEC_ID_VC1;
-        break;
-    case STREAM_TYPE_VIDEO_DIRAC:
-        codec_type = CODEC_TYPE_VIDEO;
-        codec_id = CODEC_ID_DIRAC;
-        break;
-    case STREAM_TYPE_AUDIO_AAC:
-        codec_type = CODEC_TYPE_AUDIO;
-        codec_id = CODEC_ID_AAC;
-        break;
-    case STREAM_TYPE_AUDIO_AC3:
-        codec_type = CODEC_TYPE_AUDIO;
-        codec_id = CODEC_ID_AC3;
-        break;
-    case STREAM_TYPE_AUDIO_DTS:
-    case STREAM_TYPE_AUDIO_HDMV_DTS:
-        codec_type = CODEC_TYPE_AUDIO;
-        codec_id = CODEC_ID_DTS;
-        break;
-    case STREAM_TYPE_SUBTITLE_DVB:
-        codec_type = CODEC_TYPE_SUBTITLE;
-        codec_id = CODEC_ID_DVB_SUBTITLE;
-        break;
-    default:
-        if (code >= 0x1c0 && code <= 0x1df) {
-            codec_type = CODEC_TYPE_AUDIO;
-            codec_id = CODEC_ID_MP2;
-        } else if (code == 0x1bd) {
-            codec_type = CODEC_TYPE_AUDIO;
-            codec_id = CODEC_ID_AC3;
-        } else {
-            codec_type = CODEC_TYPE_DATA;
-            codec_id = CODEC_ID_PROBE;
+static const StreamType ISO_types[] = {
+    { 0x01, CODEC_TYPE_VIDEO, CODEC_ID_MPEG2VIDEO },
+    { 0x02, CODEC_TYPE_VIDEO, CODEC_ID_MPEG2VIDEO },
+    { 0x03, CODEC_TYPE_AUDIO,        CODEC_ID_MP3 },
+    { 0x04, CODEC_TYPE_AUDIO,        CODEC_ID_MP3 },
+    { 0x0f, CODEC_TYPE_AUDIO,        CODEC_ID_AAC },
+    { 0x10, CODEC_TYPE_VIDEO,      CODEC_ID_MPEG4 },
+    { 0x1b, CODEC_TYPE_VIDEO,       CODEC_ID_H264 },
+    { 0xd1, CODEC_TYPE_VIDEO,      CODEC_ID_DIRAC },
+    { 0xea, CODEC_TYPE_VIDEO,        CODEC_ID_VC1 },
+    { 0 },
+};
+
+static const StreamType HDMV_types[] = {
+    { 0x81, CODEC_TYPE_AUDIO, CODEC_ID_AC3 },
+    { 0x82, CODEC_TYPE_AUDIO, CODEC_ID_DTS },
+    { 0 },
+};
+
+/* ATSC ? */
+static const StreamType MISC_types[] = {
+    { 0x81, CODEC_TYPE_AUDIO,   CODEC_ID_AC3 },
+    { 0x8a, CODEC_TYPE_AUDIO,   CODEC_ID_DTS },
+    { STREAM_TYPE_SUBTITLE_DVB, CODEC_TYPE_SUBTITLE, CODEC_ID_DVB_SUBTITLE }, // demuxer internal
+    { 0 },
+};
+
+static const StreamType REGD_types[] = {
+    { MKTAG('d','r','a','c'), CODEC_TYPE_VIDEO, CODEC_ID_DIRAC },
+    { MKTAG('A','C','-','3'), CODEC_TYPE_AUDIO,   CODEC_ID_AC3 },
+    { 0 },
+};
+
+static void mpegts_find_stream_type(AVStream *st,
+                                    uint32_t stream_type, const StreamType *types)
+{
+    for (; types->stream_type; types++) {
+        if (stream_type == types->stream_type) {
+            st->codec->codec_type = types->codec_type;
+            st->codec->codec_id   = types->codec_id;
+            return;
         }
-        break;
     }
-    st = av_new_stream(pes->stream, pes->pid);
-    if (st) {
-        av_set_pts_info(st, 33, 1, 90000);
-        st->priv_data = pes;
-        st->codec->codec_type = codec_type;
-        st->codec->codec_id = codec_id;
-        st->need_parsing = AVSTREAM_PARSE_FULL;
-        pes->st = st;
+}
+
+static AVStream *new_pes_av_stream(PESContext *pes, uint32_t code,
+                                   uint32_t prog_reg_desc, uint32_t reg_desc)
+{
+    AVStream *st = av_new_stream(pes->stream, pes->pid);
+
+    if (!st)
+        return NULL;
+
+    av_set_pts_info(st, 33, 1, 90000);
+    st->priv_data = pes;
+    st->codec->codec_type = CODEC_TYPE_DATA;
+    st->codec->codec_id   = CODEC_ID_PROBE;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
+    pes->st = st;
+
+    dprintf(pes->stream, "stream_type=%x prog_reg_desc=%.4s reg_desc=%.4s\n",
+            pes->stream_type, (char*)&prog_reg_desc, (char*)&reg_desc);
+
+    if (pes->stream_type == 0x06) { // private data carrying pes data
+        mpegts_find_stream_type(st, reg_desc, REGD_types);
+    } else {
+        mpegts_find_stream_type(st, pes->stream_type, ISO_types);
+        if (prog_reg_desc == AV_RL32("HDMV") &&
+            st->codec->codec_id == CODEC_ID_PROBE)
+            mpegts_find_stream_type(st, pes->stream_type, HDMV_types);
+        if (st->codec->codec_id == CODEC_ID_PROBE)
+            mpegts_find_stream_type(st, pes->stream_type, MISC_types);
     }
+
     return st;
 }
 
