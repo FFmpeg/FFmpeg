@@ -88,10 +88,10 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
     while (srcptr < srcptr_end && destptr < destptr_end) {
         if (maskbit == 0) {
             mask = *srcptr++;
-            maskbit = 8;
+            maskbit = 0x80;
             continue;
         }
-        if ((mask & (1 << (--maskbit))) == 0) {
+        if (!(mask & maskbit)) {
             memcpy(destptr, srcptr, 4);
             destptr += 4;
             srcptr += 4;
@@ -104,6 +104,7 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
             av_memcpy_backptr(destptr, ofs, cnt);
             destptr += cnt;
         }
+        maskbit >>= 1;
     }
 
     return destptr - destptr_bak;
