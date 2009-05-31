@@ -44,6 +44,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "lcl.h"
+#include "libavutil/lzo.h"
 
 #if CONFIG_ZLIB_DECODER
 #include <zlib.h>
@@ -73,6 +74,7 @@ typedef struct LclDecContext {
 
 /**
  * \param srcptr compressed source buffer, must be padded with at least 4 extra bytes
+ * \param destptr must be padded sufficiently for av_memcpy_backptr
  */
 static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsigned char * destptr, unsigned int destsize)
 {
@@ -103,10 +105,8 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
             if (destptr_end - destptr < cnt) {
                 cnt =  destptr_end - destptr;
             }
-            for (; cnt > 0; cnt--) {
-                *destptr = *(destptr - ofs);
-                destptr++;
-            }
+            av_memcpy_backptr(destptr, ofs, cnt);
+            destptr += cnt;
         }
     }
 
@@ -445,7 +445,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     LclDecContext * const c = avctx->priv_data;
     unsigned int basesize = avctx->width * avctx->height;
-    unsigned int max_basesize = FFALIGN(avctx->width, 4) * FFALIGN(avctx->height, 4);
+    unsigned int max_basesize = FFALIGN(avctx->width, 4) * FFALIGN(avctx->height, 4) + AV_LZO_OUTPUT_PADDING;
     unsigned int max_decomp_size;
 
     c->pic.data[0] = NULL;
