@@ -336,6 +336,9 @@ static int set_codec_from_probe_data(AVStream *st, AVProbeData *pd, int score)
         } else if (!strcmp(fmt->name, "h264")) {
             st->codec->codec_id = CODEC_ID_H264;
             st->codec->codec_type = CODEC_TYPE_VIDEO;
+        } else if (!strcmp(fmt->name, "dts")) {
+            st->codec->codec_id = CODEC_ID_DTS;
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
         }
     }
     return !!fmt;
