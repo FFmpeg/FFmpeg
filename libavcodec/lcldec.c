@@ -81,8 +81,8 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
     unsigned char *destptr_bak = destptr;
     unsigned char *destptr_end = destptr + destsize;
     const unsigned char *srcptr_end = srcptr + srclen;
-    unsigned char mask = *srcptr++;
-    unsigned char maskbit = 0x80;
+    unsigned mask = *srcptr++;
+    unsigned maskbit = 0x80;
     unsigned int ofs, cnt;
 
     while (srcptr < srcptr_end && destptr < destptr_end) {
