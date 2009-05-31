@@ -83,8 +83,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     int i;
     int zret; // Zlib return code
 
-    init_put_bits(&c->pb, buf, buf_size);
-
     *p = *pict;
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
@@ -99,8 +97,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         av_log(avctx, AV_LOG_ERROR, "Deflate reset error: %d\n", zret);
         return -1;
     }
-    c->zstream.next_out = c->comp_buf;
-    c->zstream.avail_out = c->max_comp_size;
+    c->zstream.next_out = buf;
+    c->zstream.avail_out = buf_size;
 
     for(i = avctx->height - 1; i >= 0; i--) {
         c->zstream.next_in = p->data[0]+p->linesize[0]*i;
@@ -116,10 +114,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         av_log(avctx, AV_LOG_ERROR, "Deflate error: %d\n", zret);
         return -1;
     }
-
-    for (i = 0; i < c->zstream.total_out; i++)
-        put_bits(&c->pb, 8, c->comp_buf[i]);
-    flush_put_bits(&c->pb);
 
     return c->zstream.total_out;
 }
@@ -172,14 +166,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     zret = deflateInit(&c->zstream, c->compression);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Deflate init error: %d\n", zret);
-        return 1;
-    }
-
-    /* Conservative upper bound taken from zlib v1.2.1 source */
-    c->max_comp_size = c->decomp_size + ((c->decomp_size + 7) >> 3) +
-                       ((c->decomp_size + 63) >> 6) + 11;
-    if ((c->comp_buf = av_malloc(c->max_comp_size)) == NULL) {
-        av_log(avctx, AV_LOG_ERROR, "Can't allocate compression buffer.\n");
         return 1;
     }
 
