@@ -52,8 +52,8 @@
  */
 typedef struct LclEncContext {
 
-        AVCodecContext *avctx;
-        AVFrame pic;
+    AVCodecContext *avctx;
+    AVFrame pic;
     PutBitContext pb;
 
     // Image type
@@ -175,9 +175,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return 1;
     }
 
-        /* Conservative upper bound taken from zlib v1.2.1 source */
-        c->max_comp_size = c->decomp_size + ((c->decomp_size + 7) >> 3) +
-                           ((c->decomp_size + 63) >> 6) + 11;
+    /* Conservative upper bound taken from zlib v1.2.1 source */
+    c->max_comp_size = c->decomp_size + ((c->decomp_size + 7) >> 3) +
+                       ((c->decomp_size + 63) >> 6) + 11;
     if ((c->comp_buf = av_malloc(c->max_comp_size)) == NULL) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate compression buffer.\n");
         return 1;
