@@ -512,7 +512,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     /* Detect compression method */
-    c->compression = avctx->extradata[5];
+    c->compression = (int8_t)avctx->extradata[5];
     switch (avctx->codec_id) {
     case CODEC_ID_MSZH:
         switch (c->compression) {
