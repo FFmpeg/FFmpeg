@@ -115,6 +115,38 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
 }
 
 
+/**
+ * \brief decompress a zlib-compressed data block into decomp_buf
+ * \param src compressed input buffer
+ * \param src_len data length in input buffer
+ * \param offset offset in decomp_buf
+ * \param expected expected decompressed length
+ */
+static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, int offset, int expected)
+{
+    LclDecContext *c = avctx->priv_data;
+    int zret = inflateReset(&c->zstream);
+    if (zret != Z_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
+        return -1;
+    }
+    c->zstream.next_in = src;
+    c->zstream.avail_in = src_len;
+    c->zstream.next_out = c->decomp_buf + offset;
+    c->zstream.avail_out = c->decomp_size - offset;
+    zret = inflate(&c->zstream, Z_FINISH);
+    if (zret != Z_OK && zret != Z_STREAM_END) {
+        av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", zret);
+        return -1;
+    }
+    if (expected != (unsigned int)c->zstream.total_out) {
+        av_log(avctx, AV_LOG_ERROR, "Decoded size differs (%d != %lu)\n",
+               expected, c->zstream.total_out);
+        return -1;
+    }
+    return c->zstream.total_out;
+}
+
 
 /*
  *
@@ -137,9 +169,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     unsigned char yq, y1q, uq, vq;
     int uqvq;
     unsigned int mthread_inlen, mthread_outlen;
-#if CONFIG_ZLIB_DECODER
-    int zret; // Zlib return code
-#endif
     unsigned int len = buf_size;
 
     if(c->pic.data[0])
@@ -205,64 +234,20 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         if (c->compression == COMP_ZLIB_NORMAL && c->imgtype == IMGTYPE_RGB24 &&
             len == width * height * 3)
             break;
-        zret = inflateReset(&c->zstream);
-        if (zret != Z_OK) {
-            av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
-            return -1;
-        }
         if (c->flags & FLAG_MULTITHREAD) {
+            int ret;
             mthread_inlen = *(unsigned int*)encoded;
             mthread_outlen = *(unsigned int*)(encoded+4);
             if (mthread_outlen > c->decomp_size)
                 mthread_outlen = c->decomp_size;
-            c->zstream.next_in = encoded + 8;
-            c->zstream.avail_in = mthread_inlen;
-            c->zstream.next_out = c->decomp_buf;
-            c->zstream.avail_out = c->decomp_size;
-            zret = inflate(&c->zstream, Z_FINISH);
-            if (zret != Z_OK && zret != Z_STREAM_END) {
-                av_log(avctx, AV_LOG_ERROR, "Mthread1 inflate error: %d\n", zret);
-                return -1;
-            }
-            if (mthread_outlen != (unsigned int)c->zstream.total_out) {
-                av_log(avctx, AV_LOG_ERROR, "Mthread1 decoded size differs (%u != %lu)\n",
-                       mthread_outlen, c->zstream.total_out);
-                return -1;
-            }
-            zret = inflateReset(&c->zstream);
-            if (zret != Z_OK) {
-                av_log(avctx, AV_LOG_ERROR, "Mthread2 inflate reset error: %d\n", zret);
-                return -1;
-            }
-            c->zstream.next_in = encoded + 8 + mthread_inlen;
-            c->zstream.avail_in = len - mthread_inlen;
-            c->zstream.next_out = c->decomp_buf + mthread_outlen;
-            c->zstream.avail_out = c->decomp_size - mthread_outlen;
-            zret = inflate(&c->zstream, Z_FINISH);
-            if (zret != Z_OK && zret != Z_STREAM_END) {
-                av_log(avctx, AV_LOG_ERROR, "Mthread2 inflate error: %d\n", zret);
-                return -1;
-            }
-            if (mthread_outlen != (unsigned int)c->zstream.total_out) {
-                av_log(avctx, AV_LOG_ERROR, "Mthread2 decoded size differs (%d != %lu)\n",
-                       mthread_outlen, c->zstream.total_out);
-                return -1;
-            }
+            ret = zlib_decomp(avctx, encoded + 8, mthread_inlen, 0, mthread_outlen);
+            if (ret < 0) return ret;
+            ret = zlib_decomp(avctx, encoded + 8 + mthread_inlen, len - mthread_inlen,
+                              mthread_outlen, mthread_outlen);
+            if (ret < 0) return ret;
         } else {
-            c->zstream.next_in = encoded;
-            c->zstream.avail_in = len;
-            c->zstream.next_out = c->decomp_buf;
-            c->zstream.avail_out = c->decomp_size;
-            zret = inflate(&c->zstream, Z_FINISH);
-            if (zret != Z_OK && zret != Z_STREAM_END) {
-                av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", zret);
-                return -1;
-            }
-            if (c->decomp_size != (unsigned int)c->zstream.total_out) {
-                av_log(avctx, AV_LOG_ERROR, "Decoded size differs (%d != %lu)\n",
-                       c->decomp_size, c->zstream.total_out);
-                return -1;
-            }
+            int ret = zlib_decomp(avctx, encoded, len, 0, c->decomp_size);
+            if (ret < 0) return ret;
         }
         encoded = c->decomp_buf;
         len = c->decomp_size;
