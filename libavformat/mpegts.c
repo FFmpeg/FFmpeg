@@ -533,8 +533,7 @@ static void mpegts_find_stream_type(AVStream *st,
     }
 }
 
-static AVStream *new_pes_av_stream(PESContext *pes, uint32_t code,
-                                   uint32_t prog_reg_desc, uint32_t reg_desc)
+static AVStream *new_pes_av_stream(PESContext *pes, uint32_t prog_reg_desc)
 {
     AVStream *st = av_new_stream(pes->stream, pes->pid);
 
@@ -548,19 +547,15 @@ static AVStream *new_pes_av_stream(PESContext *pes, uint32_t code,
     st->need_parsing = AVSTREAM_PARSE_FULL;
     pes->st = st;
 
-    dprintf(pes->stream, "stream_type=%x prog_reg_desc=%.4s reg_desc=%.4s\n",
-            pes->stream_type, (char*)&prog_reg_desc, (char*)&reg_desc);
+    dprintf(pes->stream, "stream_type=%x pid=%x prog_reg_desc=%.4s\n",
+            pes->stream_type, pes->pid, (char*)&prog_reg_desc);
 
-    if (pes->stream_type == 0x06) { // private data carrying pes data
-        mpegts_find_stream_type(st, reg_desc, REGD_types);
-    } else {
         mpegts_find_stream_type(st, pes->stream_type, ISO_types);
         if (prog_reg_desc == AV_RL32("HDMV") &&
             st->codec->codec_id == CODEC_ID_PROBE)
             mpegts_find_stream_type(st, pes->stream_type, HDMV_types);
         if (st->codec->codec_id == CODEC_ID_PROBE)
             mpegts_find_stream_type(st, pes->stream_type, MISC_types);
-    }
 
     return st;
 }
@@ -624,8 +619,6 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (p >= p_end)
         return;
     for(;;) {
-        reg_desc = 0;
-        language[0] = 0;
         st = 0;
         stream_type = get8(&p, p_end);
         if (stream_type < 0)
@@ -633,6 +626,25 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         pid = get16(&p, p_end) & 0x1fff;
         if (pid < 0)
             break;
+
+        /* now create ffmpeg stream */
+        if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
+            pes = ts->pids[pid]->u.pes_filter.opaque;
+            st = pes->st;
+        } else {
+            if (ts->pids[pid]) mpegts_close_filter(ts, ts->pids[pid]); //wrongly added sdt filter probably
+            pes = add_pes_stream(ts, pid, pcr_pid, stream_type);
+            if (pes)
+                st = new_pes_av_stream(pes, prog_reg_desc);
+        }
+
+        if (!st)
+            return;
+
+        add_pid_to_pmt(ts, h->id, pid);
+
+        av_program_add_stream_index(ts->stream, h->id, st->index);
+
         desc_list_len = get16(&p, p_end) & 0xfff;
         if (desc_list_len < 0)
             break;
@@ -643,15 +655,6 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             desc_tag = get8(&p, desc_list_end);
             if (desc_tag < 0)
                 break;
-            if (stream_type == STREAM_TYPE_PRIVATE_DATA) {
-                if((desc_tag == 0x6A) || (desc_tag == 0x7A)) {
-                    /*assume DVB AC-3 Audio*/
-                    stream_type = STREAM_TYPE_AUDIO_AC3;
-                } else if(desc_tag == 0x7B) {
-                    /* DVB DTS audio */
-                    stream_type = STREAM_TYPE_AUDIO_DTS;
-                }
-            }
             desc_len = get8(&p, desc_list_end);
             if (desc_len < 0)
                 break;
@@ -663,10 +666,20 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                    desc_tag, desc_len);
 
             switch(desc_tag) {
+            case 0x6a: /* AC-3 descriptor */
+            case 0x7a: /* AC-3 descriptor */
+                st->codec->codec_type = CODEC_TYPE_AUDIO;
+                st->codec->codec_id   = CODEC_ID_AC3;
+                break;
+            case 0x7b:
+                st->codec->codec_type = CODEC_TYPE_AUDIO;
+                st->codec->codec_id   = CODEC_ID_DTS;
+                break;
             case 0x59: /* subtitling descriptor */
-                if (stream_type == STREAM_TYPE_PRIVATE_DATA)
-                    stream_type = 0x100; // demuxer internal
-
+                if (stream_type == STREAM_TYPE_PRIVATE_DATA) {
+                    st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+                    st->codec->codec_id   = CODEC_ID_DVB_SUBTITLE;
+                }
                 language[0] = get8(&p, desc_end);
                 language[1] = get8(&p, desc_end);
                 language[2] = get8(&p, desc_end);
@@ -674,16 +687,21 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 get8(&p, desc_end);
                 comp_page = get16(&p, desc_end);
                 anc_page = get16(&p, desc_end);
-
+                st->codec->sub_id = (anc_page << 16) | comp_page;
+                av_metadata_set(&st->metadata, "language", language);
                 break;
             case 0x0a: /* ISO 639 language descriptor */
                 language[0] = get8(&p, desc_end);
                 language[1] = get8(&p, desc_end);
                 language[2] = get8(&p, desc_end);
                 language[3] = 0;
+                av_metadata_set(&st->metadata, "language", language);
                 break;
             case 0x05: /* registration descriptor */
                 reg_desc = bytestream_get_le32(&p);
+                if (st->codec->codec_id == CODEC_ID_PROBE &&
+                    stream_type == STREAM_TYPE_PRIVATE_DATA)
+                    mpegts_find_stream_type(st, reg_desc, REGD_types);
                 break;
             default:
                 break;
@@ -691,32 +709,6 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             p = desc_end;
         }
         p = desc_list_end;
-
-        dprintf(ts->stream, "stream_type=%x pid=0x%x\n",
-               stream_type, pid);
-
-        /* now create ffmpeg stream */
-        if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
-            pes= ts->pids[pid]->u.pes_filter.opaque;
-            st= pes->st;
-        } else {
-            if (ts->pids[pid]) mpegts_close_filter(ts, ts->pids[pid]); //wrongly added sdt filter probably
-            pes = add_pes_stream(ts, pid, pcr_pid, stream_type);
-            if (pes)
-                st = new_pes_av_stream(pes, 0, prog_reg_desc, reg_desc);
-        }
-
-        add_pid_to_pmt(ts, h->id, pid);
-
-        if(st) {
-            av_program_add_stream_index(ts->stream, h->id, st->index);
-
-            if (language[0] != 0)
-                av_metadata_set(&st->metadata, "language", language);
-
-            if (stream_type == 0x100)
-                st->codec->sub_id = (anc_page << 16) | comp_page;
-        }
     }
     /* all parameters are there */
     ts->stop_parse++;
