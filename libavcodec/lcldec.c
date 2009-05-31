@@ -197,8 +197,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             return -1;
         }
         break;
-    case CODEC_ID_ZLIB:
 #if CONFIG_ZLIB_DECODER
+    case CODEC_ID_ZLIB:
         /* Using the original dll with normal compression (-1) and RGB format
          * gives a file with ZLIB fourcc, but frame is really uncompressed.
          * To be sure that's true check also frame size */
@@ -266,11 +266,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         }
         encoded = c->decomp_buf;
         len = c->decomp_size;
-#else
-        av_log(avctx, AV_LOG_ERROR, "BUG! Zlib support not compiled in frame decoder.\n");
-        return -1;
-#endif
         break;
+#endif
     default:
         av_log(avctx, AV_LOG_ERROR, "BUG! Unknown codec in frame decoder compression switch.\n");
         return -1;
@@ -550,8 +547,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
             return 1;
         }
         break;
-    case CODEC_ID_ZLIB:
 #if CONFIG_ZLIB_DECODER
+    case CODEC_ID_ZLIB:
         switch (c->compression) {
         case COMP_ZLIB_HISPEED:
             av_log(avctx, AV_LOG_INFO, "High speed compression.\n");
@@ -569,11 +566,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
             }
             av_log(avctx, AV_LOG_INFO, "Compression level for ZLIB: (%d).\n", c->compression);
         }
-#else
-        av_log(avctx, AV_LOG_ERROR, "Zlib support not compiled.\n");
-        return 1;
-#endif
         break;
+#endif
     default:
         av_log(avctx, AV_LOG_ERROR, "BUG! Unknown codec in compression switch.\n");
         return 1;
@@ -599,8 +593,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Unknown flag set (%d).\n", c->flags);
 
     /* If needed init zlib */
-    if (avctx->codec_id == CODEC_ID_ZLIB) {
 #if CONFIG_ZLIB_DECODER
+    if (avctx->codec_id == CODEC_ID_ZLIB) {
         c->zstream.zalloc = Z_NULL;
         c->zstream.zfree = Z_NULL;
         c->zstream.opaque = Z_NULL;
@@ -609,11 +603,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
             return 1;
         }
-#else
-        av_log(avctx, AV_LOG_ERROR, "Zlib support not compiled.\n");
-        return 1;
-#endif
     }
+#endif
 
     return 0;
 }
