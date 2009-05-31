@@ -12,6 +12,14 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-06-01 - r19025 - lavc 52.30.0 - av_lockmgr_register()
+  av_lockmgr_register() can be used to register a callback function
+  that lavc (and in the future, libraries that depend on lavc) can use
+  to implement mutexes. The application should provide a callback function
+  the implements the AV_LOCK_* operations described in avcodec.h.
+  When the lock manager is registered FFmpeg is guaranteed to behave
+  correct also in a multi-threaded application.
+
 2009-04-30 - r18719 - lavc 52.28.0 - av_free_packet
   av_free_packet() is no longer an inline function. It is now exported.
 

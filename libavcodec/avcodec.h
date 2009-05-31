@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 29
+#define LIBAVCODEC_VERSION_MINOR 30
 #define LIBAVCODEC_VERSION_MICRO  1
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -3710,5 +3710,31 @@ void av_register_hwaccel(AVHWAccel *hwaccel);
  * after hwaccel, or NULL if hwaccel is the last one.
  */
 AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel);
+
+
+/**
+ * Lock operation used by lockmgr
+ */
+enum AVLockOp {
+  AV_LOCK_CREATE,  ///< Create a mutex
+  AV_LOCK_OBTAIN,  ///< Lock the mutex
+  AV_LOCK_RELEASE, ///< Unlock the mutex
+  AV_LOCK_DESTROY, ///< Free mutex resources
+};
+
+/**
+ * Register a user provided lock manager supporting the operations
+ * specified by AVLockOp. \p mutex points to a (void *) where the
+ * lockmgr should store/get a pointer to a user allocated mutex. It's
+ * NULL upon AV_LOCK_CREATE and != NULL for all other ops.
+ *
+ * @param cb User defined callback. Note: FFmpeg may invoke calls to this
+ *           callback during the call to av_lockmgr_register().
+ *           Thus, the application must be prepared to handle that.
+ *           If cb is set to NULL the lockmgr will be unregistered.
+ *           Also note that during unregistration the previously registered
+ *           lockmgr callback may also be invoked.
+ */
+int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
 
 #endif /* AVCODEC_AVCODEC_H */
