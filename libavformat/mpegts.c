@@ -35,7 +35,6 @@
 /* maximum size in which we look for synchronisation if
    synchronisation is lost */
 #define MAX_RESYNC_SIZE 4096
-#define REGISTRATION_DESCRIPTOR 5
 
 #define MAX_PES_PAYLOAD 200*1024
 
@@ -534,7 +533,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             //something else is broken, exit the program_descriptors_loop
             break;
         program_info_length -= len + 2;
-        if(tag == REGISTRATION_DESCRIPTOR && len >= 4) {
+        if(tag == 0x05 && len >= 4) { // registration descriptor
             prog_reg_desc = bytestream_get_le32(&p);
             len -= 4;
         }
@@ -583,9 +582,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                    desc_tag, desc_len);
 
             switch(desc_tag) {
-            case DVB_SUBT_DESCID:
+            case 0x59: /* subtitling descriptor */
                 if (stream_type == STREAM_TYPE_PRIVATE_DATA)
-                    stream_type = STREAM_TYPE_SUBTITLE_DVB; // demuxer internal
+                    stream_type = 0x100; // demuxer internal
 
                 language[0] = get8(&p, desc_end);
                 language[1] = get8(&p, desc_end);
@@ -602,7 +601,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 language[2] = get8(&p, desc_end);
                 language[3] = 0;
                 break;
-            case REGISTRATION_DESCRIPTOR: /*MPEG-2 Registration descriptor */
+            case 0x05: /* registration descriptor */
                 reg_desc = bytestream_get_le32(&p);
                 break;
             default:
@@ -634,7 +633,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             if (language[0] != 0)
                 av_metadata_set(&st->metadata, "language", language);
 
-            if (stream_type == STREAM_TYPE_SUBTITLE_DVB)
+            if (stream_type == 0x100)
                 st->codec->sub_id = (anc_page << 16) | comp_page;
         }
     }
@@ -956,7 +955,7 @@ static const StreamType HDMV_types[] = {
 static const StreamType MISC_types[] = {
     { 0x81, CODEC_TYPE_AUDIO,   CODEC_ID_AC3 },
     { 0x8a, CODEC_TYPE_AUDIO,   CODEC_ID_DTS },
-    { STREAM_TYPE_SUBTITLE_DVB, CODEC_TYPE_SUBTITLE, CODEC_ID_DVB_SUBTITLE }, // demuxer internal
+    {0x100, CODEC_TYPE_SUBTITLE, CODEC_ID_DVB_SUBTITLE }, // demuxer internal
     { 0 },
 };
 
