@@ -709,7 +709,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 break;
             case 0x05: /* registration descriptor */
                 st->codec->codec_tag = bytestream_get_le32(&p);
-                dprintf("reg_desc=%x\n", st->codec->codec_tag);
+                dprintf(ts->stream, "reg_desc=%x\n", st->codec->codec_tag);
                 if (st->codec->codec_id == CODEC_ID_PROBE &&
                     stream_type == STREAM_TYPE_PRIVATE_DATA)
                     mpegts_find_stream_type(st, st->codec->codec_tag, REGD_types);
