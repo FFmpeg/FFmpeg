@@ -139,7 +139,7 @@ Codecs:
   interplayvideo.c                      Mike Melanson
   jpeg_ls.c                             Kostya Shishkov
   kmvc.c                                Kostya Shishkov
-  lcl*.c                                Roberto Togni
+  lcl*.c                                Roberto Togni, Reimar Doeffinger
   libgsm.c                              Michel Bardiaux
   libopenjpeg.c                         Jaikrishnan Menon
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
