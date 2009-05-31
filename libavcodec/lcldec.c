@@ -593,7 +593,8 @@ static av_cold int decode_end(AVCodecContext *avctx)
     if (c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
 #if CONFIG_ZLIB_DECODER
-    inflateEnd(&c->zstream);
+    if (avctx->codec_id == CODEC_ID_ZLIB)
+        inflateEnd(&c->zstream);
 #endif
 
     return 0;
