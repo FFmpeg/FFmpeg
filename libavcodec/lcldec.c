@@ -43,6 +43,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
+#include "bytestream.h"
 #include "lcl.h"
 
 #if CONFIG_ZLIB_DECODER
@@ -96,10 +97,8 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
             destptr += 4;
             srcptr += 4;
         } else {
-            ofs = *srcptr++;
-            cnt = *srcptr++;
-            ofs += cnt * 256;
-            cnt = (cnt >> 3) + 1;
+            ofs = bytestream_get_le16(&srcptr);
+            cnt = (ofs >> 11) + 1;
             ofs &= 0x7ff;
             cnt *= 4;
             if (destptr_end - destptr < cnt) {
