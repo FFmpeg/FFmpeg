@@ -463,7 +463,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     unsigned int basesize = avctx->width * avctx->height;
     unsigned int max_basesize = ((avctx->width + 3) & ~3) * ((avctx->height + 3) & ~3);
     unsigned int max_decomp_size;
-    int zret; // Zlib return code
 
     c->pic.data[0] = NULL;
 
@@ -595,6 +594,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     /* If needed init zlib */
 #if CONFIG_ZLIB_DECODER
     if (avctx->codec_id == CODEC_ID_ZLIB) {
+        int zret;
         c->zstream.zalloc = Z_NULL;
         c->zstream.zfree = Z_NULL;
         c->zstream.opaque = Z_NULL;
