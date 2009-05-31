@@ -573,6 +573,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         zret = inflateInit(&c->zstream);
         if (zret != Z_OK) {
             av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
+            av_freep(&c->decomp_buf);
             return 1;
         }
     }
@@ -590,6 +591,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     LclDecContext * const c = avctx->priv_data;
 
+    av_freep(&c->decomp_buf);
     if (c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
 #if CONFIG_ZLIB_DECODER
