@@ -102,9 +102,7 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
             cnt = (ofs >> 11) + 1;
             ofs &= 0x7ff;
             cnt *= 4;
-            if (destptr_end - destptr < cnt) {
-                cnt =  destptr_end - destptr;
-            }
+            cnt = FFMIN(cnt, destptr_end - destptr);
             av_memcpy_backptr(destptr, ofs, cnt);
             destptr += cnt;
         }
