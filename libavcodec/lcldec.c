@@ -102,6 +102,13 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
         maskbit >>= 1;
         if (!maskbit) {
             mask = *srcptr++;
+            while (!mask) {
+                if (destptr_end - destptr < 32 || srcptr_end - srcptr < 32) break;
+                memcpy(destptr, srcptr, 32);
+                destptr += 32;
+                srcptr += 32;
+                mask = *srcptr++;
+            }
             maskbit = 0x80;
         }
     }
