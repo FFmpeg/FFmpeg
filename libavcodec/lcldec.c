@@ -75,22 +75,21 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
 {
     unsigned char *destptr_bak = destptr;
     unsigned char *destptr_end = destptr + destsize;
+    unsigned char *srcptr_end = srcptr + srclen;
     unsigned char mask = 0;
     unsigned char maskbit = 0;
     unsigned int ofs, cnt;
 
-    while (srclen > 0 && destptr < destptr_end) {
+    while (srcptr < srcptr_end && destptr < destptr_end) {
         if (maskbit == 0) {
             mask = *srcptr++;
             maskbit = 8;
-            srclen--;
             continue;
         }
         if ((mask & (1 << (--maskbit))) == 0) {
             if (destptr_end - destptr < 4)
                 break;
             memcpy(destptr, srcptr, 4);
-            srclen -= 4;
             destptr += 4;
             srcptr += 4;
         } else {
@@ -99,7 +98,6 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
             ofs += cnt * 256;
             cnt = ((cnt >> 3) & 0x1f) + 1;
             ofs &= 0x7ff;
-            srclen -= 2;
             cnt *= 4;
             if (destptr_end - destptr < cnt) {
                 cnt =  destptr_end - destptr;
