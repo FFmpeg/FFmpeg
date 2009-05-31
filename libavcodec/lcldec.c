@@ -493,37 +493,37 @@ static av_cold int decode_init(AVCodecContext *avctx)
         c->decomp_size = basesize * 3;
         max_decomp_size = max_basesize * 3;
         avctx->pix_fmt = PIX_FMT_YUV444P;
-        av_log(avctx, AV_LOG_INFO, "Image type is YUV 1:1:1.\n");
+        av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 1:1:1.\n");
         break;
     case IMGTYPE_YUV422:
         c->decomp_size = basesize * 2;
         max_decomp_size = max_basesize * 2;
         avctx->pix_fmt = PIX_FMT_YUV422P;
-        av_log(avctx, AV_LOG_INFO, "Image type is YUV 4:2:2.\n");
+        av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 4:2:2.\n");
         break;
     case IMGTYPE_RGB24:
         c->decomp_size = basesize * 3;
         max_decomp_size = max_basesize * 3;
         avctx->pix_fmt = PIX_FMT_BGR24;
-        av_log(avctx, AV_LOG_INFO, "Image type is RGB 24.\n");
+        av_log(avctx, AV_LOG_DEBUG, "Image type is RGB 24.\n");
         break;
     case IMGTYPE_YUV411:
         c->decomp_size = basesize / 2 * 3;
         max_decomp_size = max_basesize / 2 * 3;
         avctx->pix_fmt = PIX_FMT_YUV411P;
-        av_log(avctx, AV_LOG_INFO, "Image type is YUV 4:1:1.\n");
+        av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 4:1:1.\n");
         break;
     case IMGTYPE_YUV211:
         c->decomp_size = basesize * 2;
         max_decomp_size = max_basesize * 2;
         avctx->pix_fmt = PIX_FMT_YUV422P;
-        av_log(avctx, AV_LOG_INFO, "Image type is YUV 2:1:1.\n");
+        av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 2:1:1.\n");
         break;
     case IMGTYPE_YUV420:
         c->decomp_size = basesize / 2 * 3;
         max_decomp_size = max_basesize / 2 * 3;
         avctx->pix_fmt = PIX_FMT_YUV420P;
-        av_log(avctx, AV_LOG_INFO, "Image type is YUV 4:2:0.\n");
+        av_log(avctx, AV_LOG_DEBUG, "Image type is YUV 4:2:0.\n");
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported image format %d.\n", c->imgtype);
@@ -536,11 +536,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     case CODEC_ID_MSZH:
         switch (c->compression) {
         case COMP_MSZH:
-            av_log(avctx, AV_LOG_INFO, "Compression enabled.\n");
+            av_log(avctx, AV_LOG_DEBUG, "Compression enabled.\n");
             break;
         case COMP_MSZH_NOCOMP:
             c->decomp_size = 0;
-            av_log(avctx, AV_LOG_INFO, "No compression.\n");
+            av_log(avctx, AV_LOG_DEBUG, "No compression.\n");
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported compression format for MSZH (%d).\n", c->compression);
@@ -551,20 +551,20 @@ static av_cold int decode_init(AVCodecContext *avctx)
     case CODEC_ID_ZLIB:
         switch (c->compression) {
         case COMP_ZLIB_HISPEED:
-            av_log(avctx, AV_LOG_INFO, "High speed compression.\n");
+            av_log(avctx, AV_LOG_DEBUG, "High speed compression.\n");
             break;
         case COMP_ZLIB_HICOMP:
-            av_log(avctx, AV_LOG_INFO, "High compression.\n");
+            av_log(avctx, AV_LOG_DEBUG, "High compression.\n");
             break;
         case COMP_ZLIB_NORMAL:
-            av_log(avctx, AV_LOG_INFO, "Normal compression.\n");
+            av_log(avctx, AV_LOG_DEBUG, "Normal compression.\n");
             break;
         default:
             if (c->compression < Z_NO_COMPRESSION || c->compression > Z_BEST_COMPRESSION) {
                 av_log(avctx, AV_LOG_ERROR, "Unsupported compression level for ZLIB: (%d).\n", c->compression);
                 return 1;
             }
-            av_log(avctx, AV_LOG_INFO, "Compression level for ZLIB: (%d).\n", c->compression);
+            av_log(avctx, AV_LOG_DEBUG, "Compression level for ZLIB: (%d).\n", c->compression);
         }
         break;
 #endif
@@ -584,11 +584,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     /* Detect flags */
     c->flags = avctx->extradata[6];
     if (c->flags & FLAG_MULTITHREAD)
-        av_log(avctx, AV_LOG_INFO, "Multithread encoder flag set.\n");
+        av_log(avctx, AV_LOG_DEBUG, "Multithread encoder flag set.\n");
     if (c->flags & FLAG_NULLFRAME)
-        av_log(avctx, AV_LOG_INFO, "Nullframe insertion flag set.\n");
+        av_log(avctx, AV_LOG_DEBUG, "Nullframe insertion flag set.\n");
     if ((avctx->codec_id == CODEC_ID_ZLIB) && (c->flags & FLAG_PNGFILTER))
-        av_log(avctx, AV_LOG_INFO, "PNG filter flag set.\n");
+        av_log(avctx, AV_LOG_DEBUG, "PNG filter flag set.\n");
     if (c->flags & FLAGMASK_UNUSED)
         av_log(avctx, AV_LOG_ERROR, "Unknown flag set (%d).\n", c->flags);
 
