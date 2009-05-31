@@ -191,8 +191,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             if (c->flags & FLAG_MULTITHREAD) {
                 mthread_inlen = *(unsigned int*)encoded;
                 mthread_outlen = *(unsigned int*)(encoded+4);
-                if (mthread_outlen > c->decomp_size) // this should not happen
-                    mthread_outlen = c->decomp_size;
+                mthread_outlen = FFMIN(mthread_outlen, c->decomp_size);
                 mszh_dlen = mszh_decomp(encoded + 8, mthread_inlen, c->decomp_buf, c->decomp_size);
                 if (mthread_outlen != mszh_dlen) {
                     av_log(avctx, AV_LOG_ERROR, "Mthread1 decoded size differs (%d != %d)\n",
@@ -238,8 +237,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             int ret;
             mthread_inlen = *(unsigned int*)encoded;
             mthread_outlen = *(unsigned int*)(encoded+4);
-            if (mthread_outlen > c->decomp_size)
-                mthread_outlen = c->decomp_size;
+            mthread_outlen = FFMIN(mthread_outlen, c->decomp_size);
             ret = zlib_decomp(avctx, encoded + 8, mthread_inlen, 0, mthread_outlen);
             if (ret < 0) return ret;
             ret = zlib_decomp(avctx, encoded + 8 + mthread_inlen, len - mthread_inlen,
