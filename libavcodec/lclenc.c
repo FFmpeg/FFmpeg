@@ -54,7 +54,6 @@ typedef struct LclEncContext {
 
     AVCodecContext *avctx;
     AVFrame pic;
-    PutBitContext pb;
 
     // Image type
     int imgtype;
@@ -62,12 +61,6 @@ typedef struct LclEncContext {
     int compression;
     // Flags
     int flags;
-    // Decompressed data size
-    unsigned int decomp_size;
-    // Maximum compressed data size
-    unsigned int max_comp_size;
-    // Compression buffer
-    unsigned char* comp_buf;
     z_stream zstream;
 } LclEncContext;
 
@@ -142,7 +135,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     switch(avctx->pix_fmt){
         case PIX_FMT_BGR24:
             c->imgtype = IMGTYPE_RGB24;
-            c->decomp_size = avctx->width * avctx->height * 3;
             avctx->bits_per_coded_sample= 24;
             break;
         default:
@@ -182,7 +174,6 @@ static av_cold int encode_end(AVCodecContext *avctx)
     LclEncContext *c = avctx->priv_data;
 
     av_freep(&avctx->extradata);
-    av_freep(&c->comp_buf);
     deflateEnd(&c->zstream);
 
     return 0;
