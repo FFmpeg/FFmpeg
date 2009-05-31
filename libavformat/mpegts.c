@@ -577,10 +577,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     const uint8_t *p, *p_end, *desc_list_end, *desc_end;
     int program_info_length, pcr_pid, pid, stream_type;
     int desc_list_len, desc_len, desc_tag;
-    int comp_page = 0, anc_page = 0; /* initialize to kill warnings */
-    char language[4] = {0}; /* initialize to kill warnings */
+    int comp_page, anc_page;
+    char language[4];
     uint32_t prog_reg_desc = 0; /* registration descriptor */
-    uint32_t reg_desc = 0; /* registration descriptor */
+    uint32_t reg_desc; /* registration descriptor */
 
 #ifdef DEBUG
     dprintf(ts->stream, "PMT: len %i\n", section_len);
