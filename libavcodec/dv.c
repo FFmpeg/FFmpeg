@@ -1077,7 +1077,7 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
             int sz = s->sys->block_sizes[i]>>3;
 
             init_put_bits(&pbs[j], dif, sz);
-            put_bits(&pbs[j], 9, (uint16_t)(((enc_blks[j].mb[0] >> 3) - 1024 + 2) >> 2));
+            put_sbits(&pbs[j], 9, ((enc_blks[j].mb[0] >> 3) - 1024 + 2) >> 2);
             put_bits(&pbs[j], 1, enc_blks[j].dct_mode);
             put_bits(&pbs[j], 2, enc_blks[j].cno);
 
