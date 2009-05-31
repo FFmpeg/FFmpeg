@@ -45,9 +45,7 @@
 #include "put_bits.h"
 #include "lcl.h"
 
-#if CONFIG_ZLIB
 #include <zlib.h>
-#endif
 
 /*
  * Decoder context
@@ -70,9 +68,7 @@ typedef struct LclEncContext {
     unsigned int max_comp_size;
     // Compression buffer
     unsigned char* comp_buf;
-#if CONFIG_ZLIB
     z_stream zstream;
-#endif
 } LclEncContext;
 
 /*
@@ -86,11 +82,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     AVFrame * const p = &c->pic;
     int i;
     int zret; // Zlib return code
-
-#if !CONFIG_ZLIB
-    av_log(avctx, AV_LOG_ERROR, "Zlib support not compiled in.\n");
-    return -1;
-#else
 
     init_put_bits(&c->pb, buf, buf_size);
 
@@ -131,7 +122,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     flush_put_bits(&c->pb);
 
     return c->zstream.total_out;
-#endif
 }
 
 /*
@@ -143,11 +133,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     LclEncContext *c = avctx->priv_data;
     int zret; // Zlib return code
-
-#if !CONFIG_ZLIB
-    av_log(avctx, AV_LOG_ERROR, "Zlib support not compiled.\n");
-    return 1;
-#else
 
     c->avctx= avctx;
 
@@ -199,7 +184,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     return 0;
-#endif
 }
 
 /*
@@ -213,9 +197,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
     av_freep(&avctx->extradata);
     av_freep(&c->comp_buf);
-#if CONFIG_ZLIB
     deflateEnd(&(c->zstream));
-#endif
 
     return 0;
 }
