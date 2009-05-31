@@ -99,7 +99,7 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
             ofs = *srcptr++;
             cnt = *srcptr++;
             ofs += cnt * 256;
-            cnt = ((cnt >> 3) & 0x1f) + 1;
+            cnt = (cnt >> 3) + 1;
             ofs &= 0x7ff;
             cnt *= 4;
             if (destptr_end - destptr < cnt) {
