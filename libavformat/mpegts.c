@@ -540,7 +540,7 @@ static void mpegts_find_stream_type(AVStream *st,
     }
 }
 
-static AVStream *new_pes_av_stream(PESContext *pes, uint32_t prog_reg_desc)
+static AVStream *new_pes_av_stream(PESContext *pes, uint32_t prog_reg_desc, uint32_t code)
 {
     AVStream *st = av_new_stream(pes->stream, pes->pid);
 
@@ -563,6 +563,17 @@ static AVStream *new_pes_av_stream(PESContext *pes, uint32_t prog_reg_desc)
         mpegts_find_stream_type(st, pes->stream_type, HDMV_types);
     if (st->codec->codec_id == CODEC_ID_PROBE)
         mpegts_find_stream_type(st, pes->stream_type, MISC_types);
+
+    /* stream was not present in PMT, guess based on PES start code */
+    if (st->codec->codec_id == CODEC_ID_PROBE) {
+        if (code >= 0x1c0 && code <= 0x1df) {
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_id = CODEC_ID_MP2;
+        } else if (code == 0x1bd) {
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_id = CODEC_ID_AC3;
+        }
+    }
 
     return st;
 }
@@ -642,7 +653,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             if (ts->pids[pid]) mpegts_close_filter(ts, ts->pids[pid]); //wrongly added sdt filter probably
             pes = add_pes_stream(ts, pid, pcr_pid, stream_type);
             if (pes)
-                st = new_pes_av_stream(pes, prog_reg_desc);
+                st = new_pes_av_stream(pes, prog_reg_desc, 0);
         }
 
         if (!st)
@@ -910,7 +921,14 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     pes->header[2] == 0x01) {
                     /* it must be an mpeg2 PES stream */
                     code = pes->header[3] | 0x100;
-                    if (!pes->st || pes->st->discard == AVDISCARD_ALL ||
+
+                    /* stream not present in PMT */
+                    if (!pes->st)
+                        pes->st = new_pes_av_stream(pes, 0, code);
+                    if (!pes->st)
+                        return AVERROR(ENOMEM);
+
+                    if (pes->st->discard == AVDISCARD_ALL ||
                         !((code >= 0x1c0 && code <= 0x1df) ||
                           (code >= 0x1e0 && code <= 0x1ef) ||
                           (code == 0x1bd) || (code == 0x1fd)))
