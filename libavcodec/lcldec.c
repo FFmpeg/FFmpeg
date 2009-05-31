@@ -124,6 +124,7 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
  * \param offset offset in decomp_buf
  * \param expected expected decompressed length
  */
+#if CONFIG_ZLIB_DECODER
 static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, int offset, int expected)
 {
     LclDecContext *c = avctx->priv_data;
@@ -148,6 +149,7 @@ static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, i
     }
     return c->zstream.total_out;
 }
+#endif
 
 
 /*
