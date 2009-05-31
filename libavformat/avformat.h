@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 33
+#define LIBAVFORMAT_VERSION_MINOR 34
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -443,6 +443,13 @@ typedef struct AVStream {
      * AV_NOPTS_VALUE by default.
      */
     int64_t reference_dts;
+
+    /**
+     * Number of packets to buffer for codec probing
+     * NOT PART OF PUBLIC API
+     */
+#define MAX_PROBE_PACKETS 100
+    int probe_packets;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1

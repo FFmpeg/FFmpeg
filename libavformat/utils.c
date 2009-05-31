@@ -520,7 +520,7 @@ static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
 
 int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret;
+    int ret, i;
     AVStream *st;
 
     for(;;){
@@ -528,7 +528,8 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (pktl) {
             *pkt = pktl->pkt;
-            if(s->streams[pkt->stream_index]->codec->codec_id != CODEC_ID_PROBE){
+            if(s->streams[pkt->stream_index]->codec->codec_id != CODEC_ID_PROBE ||
+               !s->streams[pkt->stream_index]->probe_packets){
                 s->raw_packet_buffer = pktl->next;
                 av_free(pktl);
                 return 0;
@@ -537,8 +538,13 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         av_init_packet(pkt);
         ret= s->iformat->read_packet(s, pkt);
-        if (ret < 0)
-            return ret;
+        if (ret < 0) {
+            if (!pktl || ret == AVERROR(EAGAIN))
+                return ret;
+            for (i = 0; i < s->nb_streams; i++)
+                s->streams[i]->probe_packets = 0;
+            continue;
+        }
         st= s->streams[pkt->stream_index];
 
         switch(st->codec->codec_type){
@@ -553,13 +559,16 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             break;
         }
 
-        if(!pktl && st->codec->codec_id!=CODEC_ID_PROBE)
+        if(!pktl && (st->codec->codec_id != CODEC_ID_PROBE ||
+                     !st->probe_packets))
             return ret;
 
         add_to_pktbuf(&s->raw_packet_buffer, pkt, &s->raw_packet_buffer_end);
 
         if(st->codec->codec_id == CODEC_ID_PROBE){
             AVProbeData *pd = &st->probe_data;
+
+            --st->probe_packets;
 
             pd->buf = av_realloc(pd->buf, pd->buf_size+pkt->size+AVPROBE_PADDING_SIZE);
             memcpy(pd->buf+pd->buf_size, pkt->data, pkt->size);
@@ -1081,6 +1090,12 @@ static void flush_packet_queue(AVFormatContext *s)
         av_free_packet(&pktl->pkt);
         av_free(pktl);
     }
+    while(s->raw_packet_buffer){
+        pktl = s->raw_packet_buffer;
+        s->raw_packet_buffer = pktl->next;
+        av_free_packet(&pktl->pkt);
+        av_free(pktl);
+    }
 }
 
 /*******************************************************/
@@ -1132,6 +1147,8 @@ static void av_read_frame_flush(AVFormatContext *s)
         /* fail safe */
         st->cur_ptr = NULL;
         st->cur_len = 0;
+
+        st->probe_packets = MAX_PROBE_PACKETS;
     }
 }
 
@@ -2342,6 +2359,7 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
            timestamps corrected before they are returned to the user */
     st->cur_dts = 0;
     st->first_dts = AV_NOPTS_VALUE;
+    st->probe_packets = MAX_PROBE_PACKETS;
 
     /* default pts setting is MPEG-like */
     av_set_pts_info(st, 33, 1, 90000);
