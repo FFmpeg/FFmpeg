@@ -511,7 +511,6 @@ static const StreamType HDMV_types[] = {
 static const StreamType MISC_types[] = {
     { 0x81, CODEC_TYPE_AUDIO,   CODEC_ID_AC3 },
     { 0x8a, CODEC_TYPE_AUDIO,   CODEC_ID_DTS },
-    {0x100, CODEC_TYPE_SUBTITLE, CODEC_ID_DVB_SUBTITLE }, // demuxer internal
     { 0 },
 };
 
