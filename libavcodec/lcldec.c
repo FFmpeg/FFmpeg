@@ -73,7 +73,7 @@ typedef struct LclDecContext {
 
 
 /**
- * \param srcptr compressed source buffer, must be padded with at least 4 extra bytes
+ * \param srcptr compressed source buffer, must be padded with at least 5 extra bytes
  * \param destptr must be padded sufficiently for av_memcpy_backptr
  */
 static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsigned char * destptr, unsigned int destsize)
@@ -81,16 +81,11 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
     unsigned char *destptr_bak = destptr;
     unsigned char *destptr_end = destptr + destsize;
     const unsigned char *srcptr_end = srcptr + srclen;
-    unsigned char mask = 0;
-    unsigned char maskbit = 0;
+    unsigned char mask = *srcptr++;
+    unsigned char maskbit = 0x80;
     unsigned int ofs, cnt;
 
     while (srcptr < srcptr_end && destptr < destptr_end) {
-        if (maskbit == 0) {
-            mask = *srcptr++;
-            maskbit = 0x80;
-            continue;
-        }
         if (!(mask & maskbit)) {
             memcpy(destptr, srcptr, 4);
             destptr += 4;
@@ -105,6 +100,10 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
             destptr += cnt;
         }
         maskbit >>= 1;
+        if (!maskbit) {
+            mask = *srcptr++;
+            maskbit = 0x80;
+        }
     }
 
     return destptr - destptr_bak;
