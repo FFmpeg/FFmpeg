@@ -87,7 +87,7 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
             continue;
         }
         if ((mask & (1 << (--maskbit))) == 0) {
-            if (destptr + 4 > destptr_end)
+            if (destptr_end - destptr < 4)
                 break;
             memcpy(destptr, srcptr, 4);
             srclen -= 4;
@@ -101,7 +101,7 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
             ofs &= 0x7ff;
             srclen -= 2;
             cnt *= 4;
-            if (destptr + cnt > destptr_end) {
+            if (destptr_end - destptr < cnt) {
                 cnt =  destptr_end - destptr;
             }
             for (; cnt > 0; cnt--) {
