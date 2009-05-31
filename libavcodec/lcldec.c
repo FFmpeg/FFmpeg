@@ -83,7 +83,6 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
     const unsigned char *srcptr_end = srcptr + srclen;
     unsigned mask = *srcptr++;
     unsigned maskbit = 0x80;
-    unsigned int ofs, cnt;
 
     while (srcptr < srcptr_end && destptr < destptr_end) {
         if (!(mask & maskbit)) {
@@ -91,8 +90,8 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
             destptr += 4;
             srcptr += 4;
         } else {
-            ofs = bytestream_get_le16(&srcptr);
-            cnt = (ofs >> 11) + 1;
+            unsigned ofs = bytestream_get_le16(&srcptr);
+            unsigned cnt = (ofs >> 11) + 1;
             ofs &= 0x7ff;
             cnt *= 4;
             cnt = FFMIN(cnt, destptr_end - destptr);
