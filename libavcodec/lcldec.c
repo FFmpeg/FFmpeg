@@ -461,7 +461,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     LclDecContext * const c = avctx->priv_data;
     unsigned int basesize = avctx->width * avctx->height;
-    unsigned int max_basesize = ((avctx->width + 3) & ~3) * ((avctx->height + 3) & ~3);
+    unsigned int max_basesize = FFALIGN(avctx->width, 4) * FFALIGN(avctx->height, 4);
     unsigned int max_decomp_size;
 
     c->pic.data[0] = NULL;
