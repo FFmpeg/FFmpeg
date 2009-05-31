@@ -571,7 +571,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "Multithread encoder flag set.\n");
     if (c->flags & FLAG_NULLFRAME)
         av_log(avctx, AV_LOG_DEBUG, "Nullframe insertion flag set.\n");
-    if ((avctx->codec_id == CODEC_ID_ZLIB) && (c->flags & FLAG_PNGFILTER))
+    if (avctx->codec_id == CODEC_ID_ZLIB && (c->flags & FLAG_PNGFILTER))
         av_log(avctx, AV_LOG_DEBUG, "PNG filter flag set.\n");
     if (c->flags & FLAGMASK_UNUSED)
         av_log(avctx, AV_LOG_ERROR, "Unknown flag set (%d).\n", c->flags);
