@@ -1031,6 +1031,7 @@ static PESContext *add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid, int s
     pes->pid = pid;
     pes->pcr_pid = pcr_pid;
     pes->stream_type = stream_type;
+    pes->state = MPEGTS_SKIP;
     tss = mpegts_open_pes_filter(ts, pid, mpegts_push_data, pes);
     if (!tss) {
         av_free(pes);
