@@ -190,6 +190,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         case COMP_MSZH:
             if (c->flags & FLAG_MULTITHREAD) {
                 mthread_inlen = *(unsigned int*)encoded;
+                mthread_inlen = FFMIN(mthread_inlen, len - 8);
                 mthread_outlen = *(unsigned int*)(encoded+4);
                 mthread_outlen = FFMIN(mthread_outlen, c->decomp_size);
                 mszh_dlen = mszh_decomp(encoded + 8, mthread_inlen, c->decomp_buf, c->decomp_size);
@@ -236,6 +237,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         if (c->flags & FLAG_MULTITHREAD) {
             int ret;
             mthread_inlen = *(unsigned int*)encoded;
+            mthread_inlen = FFMIN(mthread_inlen, len - 8);
             mthread_outlen = *(unsigned int*)(encoded+4);
             mthread_outlen = FFMIN(mthread_outlen, c->decomp_size);
             ret = zlib_decomp(avctx, encoded + 8, mthread_inlen, 0, mthread_outlen);
