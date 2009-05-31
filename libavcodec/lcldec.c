@@ -485,13 +485,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     /* Check codec type */
-    if ((avctx->codec_id == CODEC_ID_MSZH  && *((char *)avctx->extradata + 7) != CODEC_MSZH) ||
-        (avctx->codec_id == CODEC_ID_ZLIB  && *((char *)avctx->extradata + 7) != CODEC_ZLIB)) {
+    if ((avctx->codec_id == CODEC_ID_MSZH  && avctx->extradata[7] != CODEC_MSZH) ||
+        (avctx->codec_id == CODEC_ID_ZLIB  && avctx->extradata[7] != CODEC_ZLIB)) {
         av_log(avctx, AV_LOG_ERROR, "Codec id and codec type mismatch. This should not happen.\n");
     }
 
     /* Detect image type */
-    switch (c->imgtype = *((char *)avctx->extradata + 4)) {
+    switch (c->imgtype = avctx->extradata[4]) {
     case IMGTYPE_YUV111:
         c->decomp_size = basesize * 3;
         max_decomp_size = max_basesize * 3;
@@ -534,7 +534,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     /* Detect compression method */
-    c->compression = *((char *)avctx->extradata + 5);
+    c->compression = avctx->extradata[5];
     switch (avctx->codec_id) {
     case CODEC_ID_MSZH:
         switch (c->compression) {
@@ -588,7 +588,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     /* Detect flags */
-    c->flags = *((char *)avctx->extradata + 6);
+    c->flags = avctx->extradata[6];
     if (c->flags & FLAG_MULTITHREAD)
         av_log(avctx, AV_LOG_INFO, "Multithread encoder flag set.\n");
     if (c->flags & FLAG_NULLFRAME)
