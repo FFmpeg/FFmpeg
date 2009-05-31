@@ -71,42 +71,6 @@ typedef struct LclDecContext {
 } LclDecContext;
 
 
-/*
- *
- * Helper functions
- *
- */
-static inline unsigned char fix (int pix14)
-{
-    int tmp;
-
-    tmp = (pix14 + 0x80000) >> 20;
-    return av_clip_uint8(tmp);
-}
-
-
-
-static inline unsigned char get_b (unsigned char yq, signed char bq)
-{
-    return fix((yq << 20) + bq * 1858076);
-}
-
-
-
-static inline unsigned char get_g (unsigned char yq, signed char bq, signed char rq)
-{
-    return fix((yq << 20) - bq * 360857 - rq * 748830);
-}
-
-
-
-static inline unsigned char get_r (unsigned char yq, signed char rq)
-{
-    return fix((yq << 20) + rq * 1470103);
-}
-
-
-
 static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned char * destptr, unsigned int destsize)
 {
     unsigned char *destptr_bak = destptr;
@@ -166,6 +130,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     unsigned int pixel_ptr;
     int row, col;
     unsigned char *outptr;
+    uint8_t *y_out, *u_out, *v_out;
     unsigned int width = avctx->width; // Real image width
     unsigned int height = avctx->height; // Real image height
     unsigned int mszh_dlen;
@@ -397,36 +362,35 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
     /* Convert colorspace */
+    y_out = c->pic.data[0] + (height - 1) * c->pic.linesize[0];
+    u_out = c->pic.data[1] + (height - 1) * c->pic.linesize[1];
+    v_out = c->pic.data[2] + (height - 1) * c->pic.linesize[2];
     switch (c->imgtype) {
     case IMGTYPE_YUV111:
-        for (row = height - 1; row >= 0; row--) {
-            pixel_ptr = row * c->pic.linesize[0];
+        for (row = 0; row < height; row++) {
             for (col = 0; col < width; col++) {
-                outptr[pixel_ptr++] = get_b(encoded[0], encoded[1]);
-                outptr[pixel_ptr++] = get_g(encoded[0], encoded[1], encoded[2]);
-                outptr[pixel_ptr++] = get_r(encoded[0], encoded[2]);
-                encoded += 3;
+                y_out[col] = *encoded++;
+                u_out[col] = *encoded++ + 128;
+                v_out[col] = *encoded++ + 128;
             }
+            y_out -= c->pic.linesize[0];
+            u_out -= c->pic.linesize[1];
+            v_out -= c->pic.linesize[2];
         }
         break;
     case IMGTYPE_YUV422:
-        for (row = height - 1; row >= 0; row--) {
-            pixel_ptr = row * c->pic.linesize[0];
-            for (col = 0; col < width/4; col++) {
-                outptr[pixel_ptr++] = get_b(encoded[0], encoded[4]);
-                outptr[pixel_ptr++] = get_g(encoded[0], encoded[4], encoded[6]);
-                outptr[pixel_ptr++] = get_r(encoded[0], encoded[6]);
-                outptr[pixel_ptr++] = get_b(encoded[1], encoded[4]);
-                outptr[pixel_ptr++] = get_g(encoded[1], encoded[4], encoded[6]);
-                outptr[pixel_ptr++] = get_r(encoded[1], encoded[6]);
-                outptr[pixel_ptr++] = get_b(encoded[2], encoded[5]);
-                outptr[pixel_ptr++] = get_g(encoded[2], encoded[5], encoded[7]);
-                outptr[pixel_ptr++] = get_r(encoded[2], encoded[7]);
-                outptr[pixel_ptr++] = get_b(encoded[3], encoded[5]);
-                outptr[pixel_ptr++] = get_g(encoded[3], encoded[5], encoded[7]);
-                outptr[pixel_ptr++] = get_r(encoded[3], encoded[7]);
-                encoded += 8;
+        for (row = 0; row < height; row++) {
+            for (col = 0; col < width - 3; col += 4) {
+                memcpy(y_out + col, encoded, 4);
+                encoded += 4;
+                u_out[ col >> 1     ] = *encoded++ + 128;
+                u_out[(col >> 1) + 1] = *encoded++ + 128;
+                v_out[ col >> 1     ] = *encoded++ + 128;
+                v_out[(col >> 1) + 1] = *encoded++ + 128;
             }
+            y_out -= c->pic.linesize[0];
+            u_out -= c->pic.linesize[1];
+            v_out -= c->pic.linesize[2];
         }
         break;
     case IMGTYPE_RGB24:
@@ -437,58 +401,46 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         }
         break;
     case IMGTYPE_YUV411:
-        for (row = height - 1; row >= 0; row--) {
-            pixel_ptr = row * c->pic.linesize[0];
-            for (col = 0; col < width/4; col++) {
-                outptr[pixel_ptr++] = get_b(encoded[0], encoded[4]);
-                outptr[pixel_ptr++] = get_g(encoded[0], encoded[4], encoded[5]);
-                outptr[pixel_ptr++] = get_r(encoded[0], encoded[5]);
-                outptr[pixel_ptr++] = get_b(encoded[1], encoded[4]);
-                outptr[pixel_ptr++] = get_g(encoded[1], encoded[4], encoded[5]);
-                outptr[pixel_ptr++] = get_r(encoded[1], encoded[5]);
-                outptr[pixel_ptr++] = get_b(encoded[2], encoded[4]);
-                outptr[pixel_ptr++] = get_g(encoded[2], encoded[4], encoded[5]);
-                outptr[pixel_ptr++] = get_r(encoded[2], encoded[5]);
-                outptr[pixel_ptr++] = get_b(encoded[3], encoded[4]);
-                outptr[pixel_ptr++] = get_g(encoded[3], encoded[4], encoded[5]);
-                outptr[pixel_ptr++] = get_r(encoded[3], encoded[5]);
-                encoded += 6;
+        for (row = 0; row < height; row++) {
+            for (col = 0; col < width - 3; col += 4) {
+                memcpy(y_out + col, encoded, 4);
+                encoded += 4;
+                u_out[col >> 2] = *encoded++ + 128;
+                v_out[col >> 2] = *encoded++ + 128;
             }
+            y_out -= c->pic.linesize[0];
+            u_out -= c->pic.linesize[1];
+            v_out -= c->pic.linesize[2];
         }
         break;
     case IMGTYPE_YUV211:
-        for (row = height - 1; row >= 0; row--) {
-            pixel_ptr = row * c->pic.linesize[0];
-            for (col = 0; col < width/2; col++) {
-                outptr[pixel_ptr++] = get_b(encoded[0], encoded[2]);
-                outptr[pixel_ptr++] = get_g(encoded[0], encoded[2], encoded[3]);
-                outptr[pixel_ptr++] = get_r(encoded[0], encoded[3]);
-                outptr[pixel_ptr++] = get_b(encoded[1], encoded[2]);
-                outptr[pixel_ptr++] = get_g(encoded[1], encoded[2], encoded[3]);
-                outptr[pixel_ptr++] = get_r(encoded[1], encoded[3]);
-                encoded += 4;
+        for (row = 0; row < height; row++) {
+            for (col = 0; col < width - 1; col += 2) {
+                memcpy(y_out + col, encoded, 2);
+                encoded += 2;
+                u_out[col >> 1] = *encoded++ + 128;
+                v_out[col >> 1] = *encoded++ + 128;
             }
+            y_out -= c->pic.linesize[0];
+            u_out -= c->pic.linesize[1];
+            v_out -= c->pic.linesize[2];
         }
         break;
     case IMGTYPE_YUV420:
-        for (row = height / 2 - 1; row >= 0; row--) {
-            pixel_ptr = 2 * row * c->pic.linesize[0];
-            for (col = 0; col < width/2; col++) {
-                outptr[pixel_ptr] = get_b(encoded[0], encoded[4]);
-                outptr[pixel_ptr+1] = get_g(encoded[0], encoded[4], encoded[5]);
-                outptr[pixel_ptr+2] = get_r(encoded[0], encoded[5]);
-                outptr[pixel_ptr+3] = get_b(encoded[1], encoded[4]);
-                outptr[pixel_ptr+4] = get_g(encoded[1], encoded[4], encoded[5]);
-                outptr[pixel_ptr+5] = get_r(encoded[1], encoded[5]);
-                outptr[pixel_ptr-c->pic.linesize[0]] = get_b(encoded[2], encoded[4]);
-                outptr[pixel_ptr-c->pic.linesize[0]+1] = get_g(encoded[2], encoded[4], encoded[5]);
-                outptr[pixel_ptr-c->pic.linesize[0]+2] = get_r(encoded[2], encoded[5]);
-                outptr[pixel_ptr-c->pic.linesize[0]+3] = get_b(encoded[3], encoded[4]);
-                outptr[pixel_ptr-c->pic.linesize[0]+4] = get_g(encoded[3], encoded[4], encoded[5]);
-                outptr[pixel_ptr-c->pic.linesize[0]+5] = get_r(encoded[3], encoded[5]);
-                pixel_ptr += 6;
-                encoded += 6;
+        u_out = c->pic.data[1] + ((height >> 1) - 1) * c->pic.linesize[1];
+        v_out = c->pic.data[2] + ((height >> 1) - 1) * c->pic.linesize[2];
+        for (row = 0; row < height - 1; row += 2) {
+            for (col = 0; col < width - 1; col += 2) {
+                memcpy(y_out + col, encoded, 2);
+                encoded += 2;
+                memcpy(y_out + col - c->pic.linesize[0], encoded, 2);
+                encoded += 2;
+                u_out[col >> 1] = *encoded++ + 128;
+                v_out[col >> 1] = *encoded++ + 128;
             }
+            y_out -= c->pic.linesize[0] << 1;
+            u_out -= c->pic.linesize[1];
+            v_out -= c->pic.linesize[2];
         }
         break;
     default:
@@ -543,31 +495,37 @@ static av_cold int decode_init(AVCodecContext *avctx)
     case IMGTYPE_YUV111:
         c->decomp_size = basesize * 3;
         max_decomp_size = max_basesize * 3;
+        avctx->pix_fmt = PIX_FMT_YUV444P;
         av_log(avctx, AV_LOG_INFO, "Image type is YUV 1:1:1.\n");
         break;
     case IMGTYPE_YUV422:
         c->decomp_size = basesize * 2;
         max_decomp_size = max_basesize * 2;
+        avctx->pix_fmt = PIX_FMT_YUV422P;
         av_log(avctx, AV_LOG_INFO, "Image type is YUV 4:2:2.\n");
         break;
     case IMGTYPE_RGB24:
         c->decomp_size = basesize * 3;
         max_decomp_size = max_basesize * 3;
+        avctx->pix_fmt = PIX_FMT_BGR24;
         av_log(avctx, AV_LOG_INFO, "Image type is RGB 24.\n");
         break;
     case IMGTYPE_YUV411:
         c->decomp_size = basesize / 2 * 3;
         max_decomp_size = max_basesize / 2 * 3;
+        avctx->pix_fmt = PIX_FMT_YUV411P;
         av_log(avctx, AV_LOG_INFO, "Image type is YUV 4:1:1.\n");
         break;
     case IMGTYPE_YUV211:
         c->decomp_size = basesize * 2;
         max_decomp_size = max_basesize * 2;
+        avctx->pix_fmt = PIX_FMT_YUV422P;
         av_log(avctx, AV_LOG_INFO, "Image type is YUV 2:1:1.\n");
         break;
     case IMGTYPE_YUV420:
         c->decomp_size = basesize / 2 * 3;
         max_decomp_size = max_basesize / 2 * 3;
+        avctx->pix_fmt = PIX_FMT_YUV420P;
         av_log(avctx, AV_LOG_INFO, "Image type is YUV 4:2:0.\n");
         break;
     default:
@@ -656,8 +614,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return 1;
 #endif
     }
-
-    avctx->pix_fmt = PIX_FMT_BGR24;
 
     return 0;
 }
