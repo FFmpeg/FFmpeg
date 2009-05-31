@@ -558,12 +558,12 @@ static AVStream *new_pes_av_stream(PESContext *pes, uint32_t prog_reg_desc)
     dprintf(pes->stream, "stream_type=%x pid=%x prog_reg_desc=%.4s\n",
             pes->stream_type, pes->pid, (char*)&prog_reg_desc);
 
-        mpegts_find_stream_type(st, pes->stream_type, ISO_types);
-        if (prog_reg_desc == AV_RL32("HDMV") &&
-            st->codec->codec_id == CODEC_ID_PROBE)
-            mpegts_find_stream_type(st, pes->stream_type, HDMV_types);
-        if (st->codec->codec_id == CODEC_ID_PROBE)
-            mpegts_find_stream_type(st, pes->stream_type, MISC_types);
+    mpegts_find_stream_type(st, pes->stream_type, ISO_types);
+    if (prog_reg_desc == AV_RL32("HDMV") &&
+        st->codec->codec_id == CODEC_ID_PROBE)
+        mpegts_find_stream_type(st, pes->stream_type, HDMV_types);
+    if (st->codec->codec_id == CODEC_ID_PROBE)
+        mpegts_find_stream_type(st, pes->stream_type, MISC_types);
 
     return st;
 }
