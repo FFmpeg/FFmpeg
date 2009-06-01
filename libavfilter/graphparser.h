@@ -29,7 +29,7 @@
  * A linked-list of the inputs/outputs of the filter chain.
  */
 typedef struct AVFilterInOut {
-    const char *name;
+    char *name;
     AVFilterContext *filter;
     int pad_idx;
 
