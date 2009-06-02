@@ -80,6 +80,16 @@ const int32_t ff_yuv2rgb_coeffs[8][4] = {
     Y = ysrc[2*i+1-o];                                  \
     dst[2*i+1] = r[Y] + g[Y] + b[Y] + (asrc[2*i+1]<<s);
 
+#define PUTRGB48(dst,src,i)             \
+    Y = src[2*i];                       \
+    dst[12*i+ 0] = dst[12*i+ 1] = r[Y]; \
+    dst[12*i+ 2] = dst[12*i+ 3] = g[Y]; \
+    dst[12*i+ 4] = dst[12*i+ 5] = b[Y]; \
+    Y = src[2*i+1];                     \
+    dst[12*i+ 6] = dst[12*i+ 7] = r[Y]; \
+    dst[12*i+ 8] = dst[12*i+ 9] = g[Y]; \
+    dst[12*i+10] = dst[12*i+11] = b[Y];
+
 #define YUV2RGBFUNC(func_name, dst_type, alpha) \
 static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, \
                      int srcSliceH, uint8_t* dst[], int dstStride[]){\
@@ -128,6 +138,32 @@ static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSlic
 #define CLOSEYUV2RGBFUNC(dst_delta)\
     ENDYUV2RGBLINE(dst_delta)\
     ENDYUV2RGBFUNC()
+
+YUV2RGBFUNC(yuv2rgb_c_48, uint8_t, 0)
+    LOADCHROMA(0);
+    PUTRGB48(dst_1,py_1,0);
+    PUTRGB48(dst_2,py_2,0);
+
+    LOADCHROMA(1);
+    PUTRGB48(dst_2,py_2,1);
+    PUTRGB48(dst_1,py_1,1);
+
+    LOADCHROMA(2);
+    PUTRGB48(dst_1,py_1,2);
+    PUTRGB48(dst_2,py_2,2);
+
+    LOADCHROMA(3);
+    PUTRGB48(dst_2,py_2,3);
+    PUTRGB48(dst_1,py_1,3);
+ENDYUV2RGBLINE(48)
+    LOADCHROMA(0);
+    PUTRGB48(dst_1,py_1,0);
+    PUTRGB48(dst_2,py_2,0);
+
+    LOADCHROMA(1);
+    PUTRGB48(dst_2,py_2,1);
+    PUTRGB48(dst_1,py_1,1);
+ENDYUV2RGBFUNC()
 
 YUV2RGBFUNC(yuv2rgb_c_32, uint32_t, 0)
     LOADCHROMA(0);
@@ -491,6 +527,8 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
     av_log(c, AV_LOG_WARNING, "No accelerated colorspace conversion found.\n");
 
     switch (c->dstFormat) {
+    case PIX_FMT_RGB48BE:
+    case PIX_FMT_RGB48LE:    return yuv2rgb_c_48;
     case PIX_FMT_ARGB:
     case PIX_FMT_ABGR:       if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P) return yuva2argb_c;
     case PIX_FMT_RGBA:
@@ -664,6 +702,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
         fill_gv_table(c->table_gV, 2, cgv);
         break;
     case 24:
+    case 48:
         c->yuvTable = av_malloc(1024);
         y_table = c->yuvTable;
         yb = -(384<<16) - oy;
