@@ -243,31 +243,28 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
                 s->bpp = -1;
             }
         }
-        switch(s->bpp){
-        case 1:
+        if(count > 4){
+            av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%d, %d components)\n", s->bpp, count);
+            return -1;
+        }
+        switch(s->bpp*10 + count){
+        case 11:
             s->avctx->pix_fmt = PIX_FMT_MONOBLACK;
             break;
-        case 8:
+        case 81:
             s->avctx->pix_fmt = PIX_FMT_PAL8;
             break;
-        case 24:
+        case 243:
             s->avctx->pix_fmt = PIX_FMT_RGB24;
             break;
-        case 16:
-            if(count == 1){
-                s->avctx->pix_fmt = PIX_FMT_GRAY16BE;
-            }else{
-                av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%i)\n", s->bpp);
-                return -1;
-            }
+        case 161:
+            s->avctx->pix_fmt = PIX_FMT_GRAY16BE;
             break;
-        case 32:
-            if(count == 4){
-                s->avctx->pix_fmt = PIX_FMT_RGBA;
-            }else{
-                av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%d, %d components)\n", s->bpp, count);
-                return -1;
-            }
+        case 324:
+            s->avctx->pix_fmt = PIX_FMT_RGBA;
+            break;
+        case 483:
+            s->avctx->pix_fmt = s->le ? PIX_FMT_RGB48LE : PIX_FMT_RGB48BE;
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%d, %d components)\n", s->bpp, count);
