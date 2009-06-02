@@ -2235,6 +2235,9 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
             src += ALT32_CORR;
     }
 
+    if (srcFormat == PIX_FMT_RGB48LE)
+        src++;
+
     if (internal_func) {
         internal_func(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
@@ -2422,6 +2425,11 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     if (srcFormat==PIX_FMT_RGB32_1 || srcFormat==PIX_FMT_BGR32_1) {
         src1 += ALT32_CORR;
         src2 += ALT32_CORR;
+    }
+
+    if (srcFormat==PIX_FMT_RGB48LE) {
+        src1++;
+        src2++;
     }
 
     if (c->hcscale_internal) {
@@ -3047,6 +3055,8 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     }
     if (c->chrSrcHSubSample) {
         switch(srcFormat) {
+        case PIX_FMT_RGB48BE:
+        case PIX_FMT_RGB48LE: c->hcscale_internal = rgb48ToUV_half; break;
         case PIX_FMT_RGB32  :
         case PIX_FMT_RGB32_1: c->hcscale_internal = bgr32ToUV_half; break;
         case PIX_FMT_BGR24  : c->hcscale_internal = RENAME(bgr24ToUV_half); break;
@@ -3060,6 +3070,8 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         }
     } else {
         switch(srcFormat) {
+        case PIX_FMT_RGB48BE:
+        case PIX_FMT_RGB48LE: c->hcscale_internal = rgb48ToUV; break;
         case PIX_FMT_RGB32  :
         case PIX_FMT_RGB32_1: c->hcscale_internal = bgr32ToUV; break;
         case PIX_FMT_BGR24  : c->hcscale_internal = RENAME(bgr24ToUV); break;
@@ -3103,6 +3115,8 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     case PIX_FMT_RGB32_1: c->hyscale_internal = bgr32ToY; break;
     case PIX_FMT_BGR32  :
     case PIX_FMT_BGR32_1: c->hyscale_internal = rgb32ToY; break;
+    case PIX_FMT_RGB48BE:
+    case PIX_FMT_RGB48LE: c->hyscale_internal = rgb48ToY; break;
     }
     if (c->alpPixBuf) {
         switch (srcFormat) {

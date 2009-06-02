@@ -108,6 +108,8 @@ unsigned swscale_version(void)
         || (x)==PIX_FMT_YUVA420P    \
         || (x)==PIX_FMT_YUYV422     \
         || (x)==PIX_FMT_UYVY422     \
+        || (x)==PIX_FMT_RGB48BE     \
+        || (x)==PIX_FMT_RGB48LE     \
         || (x)==PIX_FMT_RGB32       \
         || (x)==PIX_FMT_RGB32_1     \
         || (x)==PIX_FMT_BGR24       \
@@ -1119,6 +1121,48 @@ static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, 
     for (i=0; i<height; i++){
         memset(ptr, val, width);
         ptr += stride;
+    }
+}
+
+static inline void rgb48ToY(uint8_t *dst, const uint8_t *src, int width)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        int r = src[i*6+0];
+        int g = src[i*6+2];
+        int b = src[i*6+4];
+
+        dst[i] = (RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+    }
+}
+
+static inline void rgb48ToUV(uint8_t *dstU, uint8_t *dstV,
+                             uint8_t *src1, uint8_t *src2, int width)
+{
+    int i;
+    assert(src1==src2);
+    for (i = 0; i < width; i++) {
+        int r = src1[6*i + 0];
+        int g = src1[6*i + 2];
+        int b = src1[6*i + 4];
+
+        dstU[i] = (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+        dstV[i] = (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+    }
+}
+
+static inline void rgb48ToUV_half(uint8_t *dstU, uint8_t *dstV,
+                                  uint8_t *src1, uint8_t *src2, int width)
+{
+    int i;
+    assert(src1==src2);
+    for (i = 0; i < width; i++) {
+        int r= src1[12*i + 0] + src1[12*i + 6];
+        int g= src1[12*i + 2] + src1[12*i + 8];
+        int b= src1[12*i + 4] + src1[12*i + 10];
+
+        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
+        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
     }
 }
 

@@ -344,7 +344,9 @@ const char *sws_format_name(int format);
         || (x)==PIX_FMT_GRAY16LE    \
     )
 #define isRGB(x)        (           \
-           (x)==PIX_FMT_RGB32       \
+           (x)==PIX_FMT_RGB48BE     \
+        || (x)==PIX_FMT_RGB48LE     \
+        || (x)==PIX_FMT_RGB32       \
         || (x)==PIX_FMT_RGB32_1     \
         || (x)==PIX_FMT_RGB24       \
         || (x)==PIX_FMT_RGB565      \
