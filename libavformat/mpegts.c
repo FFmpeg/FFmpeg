@@ -128,13 +128,15 @@ struct MpegTSContext {
 
 enum MpegTSState {
     MPEGTS_HEADER = 0,
+    MPEGTS_PESHEADER,
     MPEGTS_PESHEADER_FILL,
     MPEGTS_PAYLOAD,
     MPEGTS_SKIP,
 };
 
 /* enough for PES header + length */
-#define PES_START_SIZE 9
+#define PES_START_SIZE  6
+#define PES_HEADER_SIZE 9
 #define MAX_PES_HEADER_SIZE (9 + 255)
 
 struct PESContext {
@@ -951,8 +953,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                         code != 0x1f0 && code != 0x1f1 && /* ECM, EMM */
                         code != 0x1ff && code != 0x1f2 && /* program_stream_directory, DSMCC_stream */
                         code != 0x1f8) {                  /* ITU-T Rec. H.222.1 type E stream */
-                        pes->state = MPEGTS_PESHEADER_FILL;
-                        pes->pes_header_size = pes->header[8] + 9;
+                        pes->state = MPEGTS_PESHEADER;
                     } else {
                         pes->state = MPEGTS_PAYLOAD;
                         pes->data_index = 0;
@@ -968,6 +969,21 @@ static int mpegts_push_data(MpegTSFilter *filter,
             break;
             /**********************************************/
             /* PES packing parsing */
+        case MPEGTS_PESHEADER:
+            len = PES_HEADER_SIZE - pes->data_index;
+            if (len < 0)
+                return -1;
+            if (len > buf_size)
+                len = buf_size;
+            memcpy(pes->header + pes->data_index, p, len);
+            pes->data_index += len;
+            p += len;
+            buf_size -= len;
+            if (pes->data_index == PES_HEADER_SIZE) {
+                pes->pes_header_size = pes->header[8] + 9;
+                pes->state = MPEGTS_PESHEADER_FILL;
+            }
+            break;
         case MPEGTS_PESHEADER_FILL:
             len = pes->pes_header_size - pes->data_index;
             if (len < 0)
