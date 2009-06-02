@@ -66,11 +66,15 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
         // avoid stride % bpp != 0
         if (srcFormat==PIX_FMT_RGB24 || srcFormat==PIX_FMT_BGR24)
             srcStride[i]= srcW*3;
+        else if (srcFormat==PIX_FMT_RGB48BE || srcFormat==PIX_FMT_RGB48LE)
+            srcStride[i]= srcW*6;
         else
             srcStride[i]= srcW*4;
 
         if (dstFormat==PIX_FMT_RGB24 || dstFormat==PIX_FMT_BGR24)
             dstStride[i]= dstW*3;
+        else if (dstFormat==PIX_FMT_RGB48BE || dstFormat==PIX_FMT_RGB48LE)
+            dstStride[i]= dstW*6;
         else
             dstStride[i]= dstW*4;
 
