@@ -7793,7 +7793,7 @@ static int decode_frame(AVCodecContext *avctx,
 
             /* Signal interlacing information externally. */
             /* Prioritize picture timing SEI information over used decoding process if it exists. */
-            if (h->sei_ct_type)
+            if (h->sei_ct_type & 3)
                 cur->interlaced_frame = (h->sei_ct_type & (1<<1)) != 0;
             else
                 cur->interlaced_frame = FIELD_OR_MBAFF_PICTURE;
