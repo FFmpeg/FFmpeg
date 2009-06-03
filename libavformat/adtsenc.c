@@ -148,7 +148,7 @@ AVOutputFormat adts_muxer = {
     "adts",
     NULL_IF_CONFIG_SMALL("ADTS AAC"),
     "audio/aac",
-    "aac",
+    "aac,adts",
     sizeof(ADTSContext),
     CODEC_ID_AAC,
     CODEC_ID_NONE,
