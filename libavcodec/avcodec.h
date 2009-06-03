@@ -31,7 +31,7 @@
 
 #define LIBAVCODEC_VERSION_MAJOR 52
 #define LIBAVCODEC_VERSION_MINOR 30
-#define LIBAVCODEC_VERSION_MICRO  1
+#define LIBAVCODEC_VERSION_MICRO  2
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -950,7 +950,10 @@ typedef struct AVPacket {
      */
     int64_t convergence_duration;
 } AVPacket;
-#define PKT_FLAG_KEY   0x0001
+#define AV_PKT_FLAG_KEY   0x0001
+#if LIBAVCODEC_VERSION_MAJOR < 53
+#define PKT_FLAG_KEY AV_PKT_FLAG_KEY
+#endif
 
 /**
  * Audio Video Frame.

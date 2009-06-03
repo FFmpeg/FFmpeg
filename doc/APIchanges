@@ -12,6 +12,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-06-03 - r19078 - lavc 52.30.2 - AV_PKT_FLAG_KEY
+  PKT_FLAG_KEY has been deprecated and will be dropped for the next
+  major version. Use AV_PKT_FLAG_KEY instead.
+
 2009-06-01 - r19025 - lavc 52.30.0 - av_lockmgr_register()
   av_lockmgr_register() can be used to register a callback function
   that lavc (and in the future, libraries that depend on lavc) can use
