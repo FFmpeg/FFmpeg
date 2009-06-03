@@ -339,6 +339,7 @@ void avcodec_register_all(void)
     REGISTER_PARSER  (VP3, vp3);
 
     /* bitstream filters */
+    REGISTER_BSF     (AAC_ADTSTOASC, aac_adtstoasc);
     REGISTER_BSF     (DUMP_EXTRADATA, dump_extradata);
     REGISTER_BSF     (H264_MP4TOANNEXB, h264_mp4toannexb);
     REGISTER_BSF     (IMX_DUMP_HEADER, imx_dump_header);
