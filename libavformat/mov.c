@@ -763,15 +763,17 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     for(pseudo_stream_id=0; pseudo_stream_id<entries; pseudo_stream_id++) {
         //Parsing Sample description table
         enum CodecID id;
-        int dref_id;
+        int dref_id = 1;
         MOVAtom a = { 0, 0, 0 };
         int64_t start_pos = url_ftell(pb);
         int size = get_be32(pb); /* size */
         uint32_t format = get_le32(pb); /* data format */
 
-        get_be32(pb); /* reserved */
-        get_be16(pb); /* reserved */
-        dref_id = get_be16(pb);
+        if (size >= 16) {
+            get_be32(pb); /* reserved */
+            get_be16(pb); /* reserved */
+            dref_id = get_be16(pb);
+        }
 
         if (st->codec->codec_tag &&
             st->codec->codec_tag != format &&
