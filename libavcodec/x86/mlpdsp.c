@@ -75,11 +75,6 @@ static const void *iirtable[5] = { &ff_mlp_iirorder_0, &ff_mlp_iirorder_1,
 #define RESULT   "%%rsi"
 #define RESULT32 "%%esi"
 
-#define READVAL "r"
-#define RDWRVAL "+r"
-#define COUNTER "c"
-#define ECXUSED
-
 #else /* if ARCH_X86_32 */
 
 #define MLPMUL(label, offset, offs, offc)  \
@@ -105,11 +100,6 @@ static const void *iirtable[5] = { &ff_mlp_iirorder_0, &ff_mlp_iirorder_1,
 #define ACCUM    "%%edx"
 #define RESULT   "%%eax"
 #define RESULT32 "%%eax"
-
-#define READVAL "m"
-#define RDWRVAL "+m"
-#define COUNTER "m"
-#define ECXUSED , "ecx"
 
 #endif /* !ARCH_X86_64 */
 
@@ -164,19 +154,20 @@ static void mlp_filter_channel_x86(int32_t *state, const int32_t *coeff,
         : /* 0*/"+r"(state),
           /* 1*/"+r"(coeff),
           /* 2*/"+r"(sample_buffer),
-          /* 3*/RDWRVAL(blocksize)
-        :
-          /* 4*/READVAL((x86_reg)mask),
-          /* 5*/READVAL(firjump),
-          /* 6*/READVAL(iirjump),
-          /* 7*/COUNTER(filter_shift)
 #if ARCH_X86_64
+          /* 3*/"+r"(blocksize)
+        : /* 4*/"r"((x86_reg)mask), /* 5*/"r"(firjump),
+          /* 6*/"r"(iirjump)      , /* 7*/"c"(filter_shift)
         , /* 8*/"r"((int64_t)coeff[0])
         , /* 9*/"r"((int64_t)coeff[1])
         , /*10*/"r"((int64_t)coeff[2])
-#endif /* ARCH_X86_64 */
-        : REG_a, REG_d, REG_S
-          ECXUSED
+        : "rax", "rdx", "rsi"
+#else /* ARCH_X86_32 */
+          /* 3*/"+m"(blocksize)
+        : /* 4*/"m"(         mask), /* 5*/"m"(firjump),
+          /* 6*/"m"(iirjump)      , /* 7*/"m"(filter_shift)
+        : "eax", "edx", "esi", "ecx"
+#endif /* !ARCH_X86_64 */
     );
 }
 
