@@ -557,6 +557,8 @@ int attribute_align_arg avcodec_decode_video(AVCodecContext *avctx, AVFrame *pic
     av_init_packet(&avpkt);
     avpkt.data = buf;
     avpkt.size = buf_size;
+    // HACK for CorePNG to decode as normal PNG by default
+    avpkt.flags = AV_PKT_FLAG_KEY;
 
     return avcodec_decode_video2(avctx, picture, got_picture_ptr, &avpkt);
 }
