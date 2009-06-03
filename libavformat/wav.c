@@ -118,11 +118,10 @@ static int wav_write_trailer(AVFormatContext *s)
 #endif /* CONFIG_WAV_MUXER */
 
 /* return the size of the found tag */
-/* XXX: > 2GB ? */
-static int find_tag(ByteIOContext *pb, uint32_t tag1)
+static int64_t find_tag(ByteIOContext *pb, uint32_t tag1)
 {
     unsigned int tag;
-    int size;
+    int64_t size;
 
     for(;;) {
         if (url_feof(pb))
@@ -133,8 +132,6 @@ static int find_tag(ByteIOContext *pb, uint32_t tag1)
             break;
         url_fseek(pb, size, SEEK_CUR);
     }
-    if (size < 0)
-        size = 0x7fffffff;
     return size;
 }
 
@@ -161,7 +158,7 @@ static int wav_probe(AVProbeData *p)
 static int wav_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    int size;
+    int64_t size;
     unsigned int tag;
     ByteIOContext *pb = s->pb;
     AVStream *st;
