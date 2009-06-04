@@ -753,7 +753,7 @@ SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c)
 void ff_yuv2rgb_init_tables_altivec(SwsContext *c, const int inv_table[4], int brightness, int contrast, int saturation)
 {
     union {
-        signed short tmp[8] __attribute__ ((aligned(16)));
+        DECLARE_ALIGNED(16, signed short, tmp[8]);
         vector signed short vec;
     } buf;
 
@@ -800,7 +800,7 @@ ff_yuv2packedX_altivec(SwsContext *c,
 
     vector signed short   RND = vec_splat_s16(1<<3);
     vector unsigned short SCL = vec_splat_u16(4);
-    unsigned long scratch[16] __attribute__ ((aligned (16)));
+    DECLARE_ALIGNED(16, unsigned long, scratch[16]);
 
     vector signed short *YCoeffs, *CCoeffs;
 
