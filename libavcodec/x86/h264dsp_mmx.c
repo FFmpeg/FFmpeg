@@ -157,7 +157,7 @@ static inline void h264_idct8_1d(int16_t *block)
 static void ff_h264_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
 {
     int i;
-    int16_t __attribute__ ((aligned(8))) b2[64];
+    DECLARE_ALIGNED_8(int16_t, b2[64]);
 
     block[0] += 32;
 

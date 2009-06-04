@@ -186,9 +186,9 @@ static void idct_mmx_init(void)
     }
 }
 
-static DCTELEM block[64] __attribute__ ((aligned (16)));
-static DCTELEM block1[64] __attribute__ ((aligned (8)));
-static DCTELEM block_org[64] __attribute__ ((aligned (8)));
+DECLARE_ALIGNED(16, static DCTELEM, block[64]);
+DECLARE_ALIGNED(8, static DCTELEM, block1[64]);
+DECLARE_ALIGNED(8, static DCTELEM, block_org[64]);
 
 static inline void mmx_emms(void)
 {
@@ -384,8 +384,8 @@ static void dct_error(const char *name, int is_idct,
 #endif
 }
 
-static uint8_t img_dest[64] __attribute__ ((aligned (8)));
-static uint8_t img_dest1[64] __attribute__ ((aligned (8)));
+DECLARE_ALIGNED(8, static uint8_t, img_dest[64]);
+DECLARE_ALIGNED(8, static uint8_t, img_dest1[64]);
 
 static void idct248_ref(uint8_t *dest, int linesize, int16_t *block)
 {

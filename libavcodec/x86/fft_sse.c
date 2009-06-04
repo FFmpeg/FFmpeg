@@ -22,7 +22,7 @@
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
 
-static const int m1m1m1m1[4] __attribute__((aligned(16))) =
+DECLARE_ALIGNED(16, static const int, m1m1m1m1[4]) =
     { 1 << 31, 1 << 31, 1 << 31, 1 << 31 };
 
 void ff_fft_dispatch_sse(FFTComplex *z, int nbits);
