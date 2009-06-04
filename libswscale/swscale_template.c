@@ -2258,7 +2258,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 #if HAVE_MMX2
         int i;
 #if defined(PIC)
-        uint64_t ebxsave __attribute__((aligned(8)));
+        DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
         if (canMMX2BeUsed)
         {
@@ -2454,7 +2454,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 #if HAVE_MMX2
         int i;
 #if defined(PIC)
-        uint64_t ebxsave __attribute__((aligned(8)));
+        DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
         if (canMMX2BeUsed)
         {
