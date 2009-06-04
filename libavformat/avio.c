@@ -149,6 +149,20 @@ int url_read(URLContext *h, unsigned char *buf, int size)
     return ret;
 }
 
+int url_read_complete(URLContext *h, unsigned char *buf, int size)
+{
+    int ret, len;
+
+    len = 0;
+    while (len < size) {
+        ret = url_read(h, buf+len, size-len);
+        if (ret < 1)
+            return ret;
+        len += ret;
+    }
+    return len;
+}
+
 int url_write(URLContext *h, unsigned char *buf, int size)
 {
     int ret;

@@ -703,20 +703,6 @@ void rtsp_parse_line(RTSPMessageHeader *reply, const char *buf)
     }
 }
 
-static int url_readbuf(URLContext *h, unsigned char *buf, int size)
-{
-    int ret, len;
-
-    len = 0;
-    while (len < size) {
-        ret = url_read(h, buf+len, size-len);
-        if (ret < 1)
-            return ret;
-        len += ret;
-    }
-    return len;
-}
-
 /* skip a RTP/TCP interleaved packet */
 static void rtsp_skip_packet(AVFormatContext *s)
 {
@@ -724,7 +710,7 @@ static void rtsp_skip_packet(AVFormatContext *s)
     int ret, len, len1;
     uint8_t buf[1024];
 
-    ret = url_readbuf(rt->rtsp_hd, buf, 3);
+    ret = url_read_complete(rt->rtsp_hd, buf, 3);
     if (ret != 3)
         return;
     len = AV_RB16(buf + 1);
@@ -736,7 +722,7 @@ static void rtsp_skip_packet(AVFormatContext *s)
         len1 = len;
         if (len1 > sizeof(buf))
             len1 = sizeof(buf);
-        ret = url_readbuf(rt->rtsp_hd, buf, len1);
+        ret = url_read_complete(rt->rtsp_hd, buf, len1);
         if (ret != len1)
             return;
         len -= len1;
@@ -782,7 +768,7 @@ rtsp_read_reply (AVFormatContext *s, RTSPMessageHeader *reply,
     for(;;) {
         q = buf;
         for(;;) {
-            ret = url_readbuf(rt->rtsp_hd, &ch, 1);
+            ret = url_read_complete(rt->rtsp_hd, &ch, 1);
 #ifdef DEBUG_RTP_TCP
             dprintf(s, "ret=%d c=%02x [%c]\n", ret, ch, ch);
 #endif
@@ -829,7 +815,7 @@ rtsp_read_reply (AVFormatContext *s, RTSPMessageHeader *reply,
     if (content_length > 0) {
         /* leave some room for a trailing '\0' (useful for simple parsing) */
         content = av_malloc(content_length + 1);
-        (void)url_readbuf(rt->rtsp_hd, content, content_length);
+        (void)url_read_complete(rt->rtsp_hd, content, content_length);
         content[content_length] = '\0';
     }
     if (content_ptr)
@@ -1329,7 +1315,7 @@ static int tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             break;
         /* XXX: parse message */
     }
-    ret = url_readbuf(rt->rtsp_hd, buf, 3);
+    ret = url_read_complete(rt->rtsp_hd, buf, 3);
     if (ret != 3)
         return -1;
     id = buf[0];
@@ -1340,7 +1326,7 @@ static int tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     if (len > buf_size || len < 12)
         goto redo;
     /* get the data */
-    ret = url_readbuf(rt->rtsp_hd, buf, len);
+    ret = url_read_complete(rt->rtsp_hd, buf, len);
     if (ret != len)
         return -1;
     if (rt->transport == RTSP_TRANSPORT_RDT &&
