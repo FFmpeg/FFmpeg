@@ -135,6 +135,12 @@ typedef struct {
     int16_t was_periodic;       ///< whether previous frame was declared as periodic or not (4.4)
     uint16_t rand_value;        ///< random number generator value (4.4.4)
     int ma_predictor_prev;      ///< switched MA predictor of LSP quantizer from last good frame
+
+    /// (14.14) high-pass filter data (past input)
+    int hpf_f[2];
+
+    /// high-pass filter data (past output)
+    int16_t hpf_z[2];
 }  G729Context;
 
 static const G729FormatDescription format_g729_8k = {
@@ -577,9 +583,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         memcpy(synth, ctx->syn_filter_data, 10 * sizeof(int16_t));
 
-        /* Temporary synth buffer is required since filter needs additional space at top of buffer and, thus,
-           synthesis can not be done directly to output buffer. This buffer will be reused by future
-           postprocessing filters. */
         if (ff_celp_lp_synthesis_filter(
             synth+10,
             &lp[i][1],
@@ -627,8 +630,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         else
             ctx->pitch_delay_int_prev = pitch_delay_int;
 
-        /* Dumb. Will be replaced by high-pass filter */
-        memcpy(out_frame + i * SUBFRAME_SIZE, synth + 10, SUBFRAME_SIZE * sizeof(int16_t));
+        memcpy(synth+8, ctx->hpf_z, 2*sizeof(int16_t));
+        ff_acelp_high_pass_filter(
+                out_frame + i*SUBFRAME_SIZE,
+                ctx->hpf_f,
+                synth+10,
+                SUBFRAME_SIZE);
+        memcpy(ctx->hpf_z, synth+8+SUBFRAME_SIZE, 2*sizeof(int16_t));
     }
 
     ctx->was_periodic = is_periodic;
