@@ -25,8 +25,7 @@
 #include "avcodec.h"
 #include "acelp_filters.h"
 
-const int16_t ff_acelp_interp_filter[61] =
-{ /* (0.15) */
+const int16_t ff_acelp_interp_filter[61] = { /* (0.15) */
   29443, 28346, 25207, 20449, 14701,  8693,
    3143, -1352, -4402, -5865, -5850, -4673,
   -2783,  -672,  1211,  2536,  3130,  2991,
@@ -40,26 +39,19 @@ const int16_t ff_acelp_interp_filter[61] =
       0,
 };
 
-void ff_acelp_interpolate(
-        int16_t* out,
-        const int16_t* in,
-        const int16_t* filter_coeffs,
-        int precision,
-        int frac_pos,
-        int filter_length,
-        int length)
+void ff_acelp_interpolate(int16_t* out, const int16_t* in,
+                          const int16_t* filter_coeffs, int precision,
+                          int frac_pos, int filter_length, int length)
 {
     int n, i;
 
     assert(pitch_delay_frac >= 0 && pitch_delay_frac < precision);
 
-    for(n=0; n<length; n++)
-    {
+    for (n = 0; n < length; n++) {
         int idx = 0;
         int v = 0x4000;
 
-        for(i=0; i<filter_length;)
-        {
+        for (i = 0; i < filter_length;) {
 
             /* The reference G.729 and AMR fixed point code performs clipping after
                each of the two following accumulations.
@@ -75,26 +67,22 @@ void ff_acelp_interpolate(
             i++;
             v += in[n - i] * filter_coeffs[idx - frac_pos];
         }
-        if(av_clip_int16(v>>15) != (v>>15))
+        if (av_clip_int16(v >> 15) != (v >> 15))
             av_log(NULL, AV_LOG_WARNING, "overflow that would need cliping in ff_acelp_interpolate()\n");
         out[n] = v >> 15;
     }
 }
 
 
-void ff_acelp_high_pass_filter(
-        int16_t* out,
-        int hpf_f[2],
-        const int16_t* in,
-        int length)
+void ff_acelp_high_pass_filter(int16_t* out, int hpf_f[2],
+                               const int16_t* in, int length)
 {
     int i;
     int tmp;
 
-    for(i=0; i<length; i++)
-    {
-        tmp =  (hpf_f[0]* 15836LL)>>13;
-        tmp += (hpf_f[1]* -7667LL)>>13;
+    for (i = 0; i < length; i++) {
+        tmp  = (hpf_f[0]* 15836LL) >> 13;
+        tmp += (hpf_f[1]* -7667LL) >> 13;
         tmp += 7699 * (in[i] - 2*in[i-1] + in[i-2]);
 
         /* With "+0x800" rounding, clipping is needed
