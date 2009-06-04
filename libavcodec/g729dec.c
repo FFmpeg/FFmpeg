@@ -95,6 +95,10 @@ typedef struct {
 typedef struct {
     DSPContext dsp;
 
+    /// past excitation signal buffer
+    int16_t exc_base[2*SUBFRAME_SIZE+PITCH_DELAY_MAX+INTERPOL_LEN];
+
+    int16_t* exc;               ///< start of past excitation data in buffer
     int pitch_delay_int_prev;   ///< integer part of previous subframe's pitch delay (4.1.3)
 
     /// (2.13) LSP quantizer outputs
@@ -113,6 +117,7 @@ typedef struct {
     /// (14.1) gain code from previous subframe
     int16_t gain_code;
 
+    int16_t was_periodic;       ///< whether previous frame was declared as periodic or not (4.4)
     uint16_t rand_value;        ///< random number generator value (4.4.4)
     int ma_predictor_prev;      ///< switched MA predictor of LSP quantizer from last good frame
 }  G729Context;
@@ -241,6 +246,8 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     ctx->lsp[1] = ctx->lsp_buf[1];
     memcpy(ctx->lsp[0], lsp_init, 10 * sizeof(int16_t));
 
+    ctx->exc = &ctx->exc_base[PITCH_DELAY_MAX+INTERPOL_LEN];
+
     /* random seed initialization */
     ctx->rand_value = 21845;
 
@@ -276,6 +283,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int pitch_delay_int;         // pitch delay, integer part
     int pitch_delay_3x;          // pitch delay, multiplied by 3
     int16_t fc[SUBFRAME_SIZE];   // fixed-codebook vector
+    int is_periodic = 0;         // whether one of the subframes is declared as periodic or not
 
     if (*data_size < SUBFRAME_SIZE << 2) {
         av_log(avctx, AV_LOG_ERROR, "Error processing packet: output buffer too small\n");
@@ -422,10 +430,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
         ff_acelp_update_past_gain(ctx->quant_energy, gain_corr_factor, 2, frame_erasure);
 
+        /* Routine requires rounding to lowest. */
+        ff_acelp_interpolate(ctx->exc + i * SUBFRAME_SIZE,
+                             ctx->exc + i * SUBFRAME_SIZE - pitch_delay_3x / 3,
+                             ff_acelp_interp_filter, 6,
+                             (pitch_delay_3x % 3) << 1,
+                             10, SUBFRAME_SIZE);
+
         ff_acelp_weighted_vector_sum(ctx->exc + i * SUBFRAME_SIZE,
                                      ctx->exc + i * SUBFRAME_SIZE, fc,
-                                     (!voicing && frame_erasure) ? 0 : ctx->gain_pitch,
-                                     ( voicing && frame_erasure) ? 0 : ctx->gain_code,
+                                     (!ctx->was_periodic && frame_erasure) ? 0 : ctx->gain_pitch,
+                                     ( ctx->was_periodic && frame_erasure) ? 0 : ctx->gain_code,
                                      1 << 13, 14, SUBFRAME_SIZE);
 
         if (frame_erasure)
@@ -433,6 +448,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         else
             ctx->pitch_delay_int_prev = pitch_delay_int;
     }
+
+    ctx->was_periodic = is_periodic;
+
+    /* Save signal for use in next frame. */
+    memmove(ctx->exc_base, ctx->exc_base + 2 * SUBFRAME_SIZE, (PITCH_DELAY_MAX+INTERPOL_LEN)*sizeof(int16_t));
 
     *data_size = SUBFRAME_SIZE << 2;
     return buf_size;
