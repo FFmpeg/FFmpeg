@@ -166,26 +166,26 @@ typedef struct SwsContext{
 #define Y_TEMP                "11*8+4*4*256*2+40"
 #define ALP_MMX_FILTER_OFFSET "11*8+4*4*256*2+48"
 
-    uint64_t redDither   __attribute__((aligned(8)));
-    uint64_t greenDither __attribute__((aligned(8)));
-    uint64_t blueDither  __attribute__((aligned(8)));
+    DECLARE_ALIGNED(8, uint64_t, redDither);
+    DECLARE_ALIGNED(8, uint64_t, greenDither);
+    DECLARE_ALIGNED(8, uint64_t, blueDither);
 
-    uint64_t yCoeff      __attribute__((aligned(8)));
-    uint64_t vrCoeff     __attribute__((aligned(8)));
-    uint64_t ubCoeff     __attribute__((aligned(8)));
-    uint64_t vgCoeff     __attribute__((aligned(8)));
-    uint64_t ugCoeff     __attribute__((aligned(8)));
-    uint64_t yOffset     __attribute__((aligned(8)));
-    uint64_t uOffset     __attribute__((aligned(8)));
-    uint64_t vOffset     __attribute__((aligned(8)));
+    DECLARE_ALIGNED(8, uint64_t, yCoeff);
+    DECLARE_ALIGNED(8, uint64_t, vrCoeff);
+    DECLARE_ALIGNED(8, uint64_t, ubCoeff);
+    DECLARE_ALIGNED(8, uint64_t, vgCoeff);
+    DECLARE_ALIGNED(8, uint64_t, ugCoeff);
+    DECLARE_ALIGNED(8, uint64_t, yOffset);
+    DECLARE_ALIGNED(8, uint64_t, uOffset);
+    DECLARE_ALIGNED(8, uint64_t, vOffset);
     int32_t  lumMmxFilter[4*MAX_FILTER_SIZE];
     int32_t  chrMmxFilter[4*MAX_FILTER_SIZE];
     int dstW;
-    uint64_t esp          __attribute__((aligned(8)));
-    uint64_t vRounder     __attribute__((aligned(8)));
-    uint64_t u_temp       __attribute__((aligned(8)));
-    uint64_t v_temp       __attribute__((aligned(8)));
-    uint64_t y_temp       __attribute__((aligned(8)));
+    DECLARE_ALIGNED(8, uint64_t, esp);
+    DECLARE_ALIGNED(8, uint64_t, vRounder);
+    DECLARE_ALIGNED(8, uint64_t, u_temp);
+    DECLARE_ALIGNED(8, uint64_t, v_temp);
+    DECLARE_ALIGNED(8, uint64_t, y_temp);
     int32_t  alpMmxFilter[4*MAX_FILTER_SIZE];
 
 #if HAVE_ALTIVEC
@@ -200,21 +200,21 @@ typedef struct SwsContext{
 #endif
 
 #if ARCH_BFIN
-    uint32_t oy           __attribute__((aligned(4)));
-    uint32_t oc           __attribute__((aligned(4)));
-    uint32_t zero         __attribute__((aligned(4)));
-    uint32_t cy           __attribute__((aligned(4)));
-    uint32_t crv          __attribute__((aligned(4)));
-    uint32_t rmask        __attribute__((aligned(4)));
-    uint32_t cbu          __attribute__((aligned(4)));
-    uint32_t bmask        __attribute__((aligned(4)));
-    uint32_t cgu          __attribute__((aligned(4)));
-    uint32_t cgv          __attribute__((aligned(4)));
-    uint32_t gmask        __attribute__((aligned(4)));
+    DECLARE_ALIGNED(4, uint32_t, oy);
+    DECLARE_ALIGNED(4, uint32_t, oc);
+    DECLARE_ALIGNED(4, uint32_t, zero);
+    DECLARE_ALIGNED(4, uint32_t, cy);
+    DECLARE_ALIGNED(4, uint32_t, crv);
+    DECLARE_ALIGNED(4, uint32_t, rmask);
+    DECLARE_ALIGNED(4, uint32_t, cbu);
+    DECLARE_ALIGNED(4, uint32_t, bmask);
+    DECLARE_ALIGNED(4, uint32_t, cgu);
+    DECLARE_ALIGNED(4, uint32_t, cgv);
+    DECLARE_ALIGNED(4, uint32_t, gmask);
 #endif
 
 #if HAVE_VIS
-    uint64_t sparc_coeffs[10] __attribute__((aligned(8)));
+    DECLARE_ALIGNED(8, uint64_t, sparc_coeffs[10]);
 #endif
 
     /* function pointers for swScale() */
