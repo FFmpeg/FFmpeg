@@ -249,6 +249,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     int pitch_delay_int;         // pitch delay, integer part
     int pitch_delay_3x;          // pitch delay, multiplied by 3
+    int16_t fc[SUBFRAME_SIZE];   // fixed-codebook vector
 
     if (*data_size < SUBFRAME_SIZE << 2) {
         av_log(avctx, AV_LOG_ERROR, "Error processing packet: output buffer too small\n");
@@ -335,6 +336,28 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         /* Round pitch delay to nearest (used everywhere except ff_acelp_interpolate). */
         pitch_delay_int  = (pitch_delay_3x + 1) / 3;
 
+        memset(fc, 0, sizeof(int16_t) * SUBFRAME_SIZE);
+        switch (packet_type) {
+            case FORMAT_G729_8K:
+                ff_acelp_fc_pulse_per_track(fc, ff_fc_4pulses_8bits_tracks_13,
+                                            ff_fc_4pulses_8bits_track_4,
+                                            fc_indexes, pulses_signs, 3, 3);
+                break;
+            case FORMAT_G729D_6K4:
+                ff_acelp_fc_pulse_per_track(fc, ff_fc_2pulses_9bits_track1_gray,
+                                            ff_fc_2pulses_9bits_track2_gray,
+                                            fc_indexes, pulses_signs, 1, 4);
+                break;
+        }
+
+        /*
+          This filter enhances harmonic components of the fixed-codebook vector to
+          improve the quality of the reconstructed speech.
+
+                     / fc_v[i],                                    i < pitch_delay
+          fc_v[i] = <
+                     \ fc_v[i] + gain_pitch * fc_v[i-pitch_delay], i >= pitch_delay
+        */
         ff_acelp_weighted_vector_sum(fc + pitch_delay_int,
                                      fc + pitch_delay_int,
                                      fc, 1 << 14,
