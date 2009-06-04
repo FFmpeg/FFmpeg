@@ -308,6 +308,13 @@ static const int16_t cb_ma_predictor_sum_inv[2][10] = { /* (3.12) */
 };
 
 /**
+ * MA prediction coefficients (3.9.1 of G.729, near Equation 69)
+ */
+static const uint16_t ma_prediction_coeff[4] = { /* (0.13) */
+  5571, 4751, 2785, 1556
+};
+
+/**
  * initial LSP coefficients belongs to virtual frame preceding  the
  * first frame of the stream
  */

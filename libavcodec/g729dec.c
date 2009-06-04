@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "libavutil/avutil.h"
 #include "get_bits.h"
+#include "dsputil.h"
 
 #include "g729.h"
 #include "lsp.h"
@@ -71,6 +72,11 @@
  */
 #define SHARP_MAX                  13017
 
+/**
+ * MR_ENERGY (mean removed energy) = mean_energy + 10 * log10(2^26  * subframe_size) in (7.13)
+ */
+#define MR_ENERGY 1018156
+
 typedef enum {
     FORMAT_G729_8K = 0,
     FORMAT_G729D_6K4,
@@ -87,6 +93,8 @@ typedef struct {
 } G729FormatDescription;
 
 typedef struct {
+    DSPContext dsp;
+
     int pitch_delay_int_prev;   ///< integer part of previous subframe's pitch delay (4.1.3)
 
     /// (2.13) LSP quantizer outputs
@@ -96,6 +104,14 @@ typedef struct {
     int16_t lsfq[10];           ///< (2.13) quantized LSF coefficients from previous frame
     int16_t lsp_buf[2][10];     ///< (0.15) LSP coefficients (previous and current frames) (3.2.5)
     int16_t *lsp[2];            ///< pointers to lsp_buf
+
+    int16_t quant_energy[4];    ///< (5.10) past quantized energy
+
+    /// (1.14) pitch gain of previous subframe
+    int16_t gain_pitch;
+
+    /// (14.1) gain code from previous subframe
+    int16_t gain_code;
 
     uint16_t rand_value;        ///< random number generator value (4.4.4)
     int ma_predictor_prev;      ///< switched MA predictor of LSP quantizer from last good frame
@@ -228,6 +244,12 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     /* random seed initialization */
     ctx->rand_value = 21845;
 
+    /* quantized prediction error */
+    for(i=0; i<4; i++)
+        ctx->quant_energy[i] = -14336; // -14 in (5.10)
+
+    dsputil_init(&ctx->dsp, avctx);
+
     return 0;
 }
 
@@ -306,6 +328,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     FFSWAP(int16_t*, ctx->lsp[1], ctx->lsp[0]);
 
     for (i = 0; i < 2; i++) {
+        int gain_corr_factor;
+
         uint8_t ac_index;      ///< adaptive codebook index
         uint8_t pulses_signs;  ///< fixed-codebook vector pulse signs
         int fc_indexes;        ///< fixed-codebook indexes
@@ -388,6 +412,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                                cb_gain_2nd_8k[gc_2nd_index][0];
             gain_corr_factor = cb_gain_1st_8k[gc_1st_index][1] +
                                cb_gain_2nd_8k[gc_2nd_index][1];
+
+            /* Decode the fixed-codebook gain. */
+            ctx->gain_code = ff_acelp_decode_gain_code(&ctx->dsp, gain_corr_factor,
+                                                       fc, MR_ENERGY,
+                                                       ctx->quant_energy,
+                                                       ma_prediction_coeff,
+                                                       SUBFRAME_SIZE, 4);
+        }
+        ff_acelp_update_past_gain(ctx->quant_energy, gain_corr_factor, 2, frame_erasure);
 
         ff_acelp_weighted_vector_sum(ctx->exc + i * SUBFRAME_SIZE,
                                      ctx->exc + i * SUBFRAME_SIZE, fc,
