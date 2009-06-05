@@ -4680,7 +4680,7 @@ AVCodec snow_decoder = {
     NULL,
     decode_end,
     decode_frame,
-    0 /*CODEC_CAP_DR1*/ /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
+    CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Snow"),
 };
