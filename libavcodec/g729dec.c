@@ -85,7 +85,7 @@ typedef struct
 /**
  * \brief pseudo random number generator
  */
-static inline uint16_t g729_random(uint16_t value)
+static inline uint16_t random(uint16_t value)
 {
     return 31821 * value + 13849;
 }
@@ -93,7 +93,7 @@ static inline uint16_t g729_random(uint16_t value)
 /**
  * Get parity bit of bit 2..7
  */
-static inline int g729_get_parity(uint8_t value)
+static inline int get_parity(uint8_t value)
 {
    return (0x6996966996696996ULL >> (value >> 2)) & 1;
 }
@@ -155,9 +155,9 @@ AVCodec g729_decoder =
     CODEC_TYPE_AUDIO,
     CODEC_ID_G729,
     sizeof(G729_Context),
-    ff_g729_decoder_init,
+    decoder_init,
     NULL,
     NULL,
-    ff_g729_decode_frame,
+    decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("G.729"),
 };
