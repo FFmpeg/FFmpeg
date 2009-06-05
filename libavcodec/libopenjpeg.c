@@ -188,6 +188,6 @@ AVCodec libopenjpeg_decoder = {
     NULL,
     libopenjpeg_decode_close,
     libopenjpeg_decode_frame,
-    NULL,
+    CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("OpenJPEG based JPEG 2000 decoder"),
 } ;
