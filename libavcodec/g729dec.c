@@ -97,6 +97,7 @@ typedef struct {
     int16_t lsp_buf[2][10];     ///< (0.15) LSP coefficients (previous and current frames) (3.2.5)
     int16_t *lsp[2];            ///< pointers to lsp_buf
 
+    uint16_t rand_value;        ///< random number generator value (4.4.4)
     int ma_predictor_prev;      ///< switched MA predictor of LSP quantizer from last good frame
 }  G729Context;
 
@@ -224,6 +225,9 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     ctx->lsp[1] = ctx->lsp_buf[1];
     memcpy(ctx->lsp[0], lsp_init, 10 * sizeof(int16_t));
 
+    /* random seed initialization */
+    ctx->rand_value = 21845;
+
     return 0;
 }
 
@@ -335,6 +339,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         /* Round pitch delay to nearest (used everywhere except ff_acelp_interpolate). */
         pitch_delay_int  = (pitch_delay_3x + 1) / 3;
+
+        if (frame_erasure) {
+            ctx->rand_value = g729_prng(ctx->rand_value);
+            fc_indexes   = ctx->rand_value & ((1 << format.fc_indexes_bits) - 1);
+
+            ctx->rand_value = g729_prng(ctx->rand_value);
+            pulses_signs = ctx->rand_value;
+        }
+
 
         memset(fc, 0, sizeof(int16_t) * SUBFRAME_SIZE);
         switch (packet_type) {
