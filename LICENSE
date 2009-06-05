@@ -39,6 +39,11 @@ Some external libraries, e.g. libx264, are under GPL and can be used in
 conjunction with FFmpeg. They require --enable-gpl to be passed to configure
 as well.
 
+The OpenCORE external libraries are under the Apache License 2.0. That license
+is incompatible with the LGPL v2.1 and the GPL v2, but not with version 3 of
+those licenses. So to combine the OpenCORE libraries with FFmpeg, the license
+version needs to be upgraded by passing --enable-version3 to configure.
+
 The nonfree external libraries libamrnb, libamrwb and libfaac can be hooked up
 in FFmpeg. You need to pass --enable-nonfree to configure to enable them. Employ
 this option with care as FFmpeg then becomes nonfree and unredistributable.
