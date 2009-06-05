@@ -105,5 +105,6 @@ AVCodec tmv_decoder = {
     .priv_data_size = sizeof(TMVContext),
     .close          = tmv_decode_close,
     .decode         = tmv_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("8088flex TMV"),
 };
