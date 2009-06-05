@@ -1,3 +1,6 @@
+FFmpeg:
+-------
+
 Most files in FFmpeg are under the GNU Lesser General Public License version 2.1
 or later (LGPL v2.1+). Read the file COPYING.LGPLv2.1 for details. Some other
 files have MIT/X11/BSD-style licenses. In combination the LGPL v2.1+ applies to
@@ -18,6 +21,15 @@ Specifically, the GPL parts of FFmpeg are
   libavcodec/x86/idct_mmx.c
 - the X11 grabber in libavdevice/x11grab.c
 
+There are a handful of files under other licensing terms, namely:
+
+* The files libavcodec/jfdctfst.c, libavcodec/jfdctint.c, libavcodec/jrevdct.c
+  are taken from libjpeg, see the top of the files for licensing details.
+
+
+external libraries:
+-------------------
+
 Some external libraries, e.g. libx264, are under GPL and can be used in
 conjunction with FFmpeg. They require --enable-gpl to be passed to configure
 as well.
@@ -26,8 +38,3 @@ The nonfree external libraries libamrnb, libamrwb and libfaac can be hooked up
 in FFmpeg. You need to pass --enable-nonfree to configure to enable them. Employ
 this option with care as FFmpeg then becomes nonfree and unredistributable.
 Note that libfaac claims to be LGPL, but is not.
-
-There are a handful of files under other licensing terms, namely:
-
-* The files libavcodec/jfdctfst.c, libavcodec/jfdctint.c, libavcodec/jrevdct.c
-  are taken from libjpeg, see the top of the files for licensing details.
