@@ -2335,7 +2335,7 @@ AVCodec theora_decoder = {
     NULL,
     vp3_decode_end,
     vp3_decode_frame,
-    0,
+    CODEC_CAP_DR1,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Theora"),
 };
@@ -2350,7 +2350,7 @@ AVCodec vp3_decoder = {
     NULL,
     vp3_decode_end,
     vp3_decode_frame,
-    0,
+    CODEC_CAP_DR1,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("On2 VP3"),
 };
