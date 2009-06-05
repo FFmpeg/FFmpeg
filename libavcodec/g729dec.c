@@ -34,6 +34,7 @@
 #include "g729.h"
 #include "lsp.h"
 #include "celp_math.h"
+#include "celp_filters.h"
 #include "acelp_filters.h"
 #include "acelp_pitch_delay.h"
 #include "acelp_vectors.h"
@@ -56,6 +57,9 @@
  * 0.0391 in Q13
  */
 #define LSFQ_DIFF_MIN              321
+
+/// interpolation filter length
+#define INTERPOL_LEN              11
 
 /**
  * minimum gain pitch value (3.8, Equation 47)
@@ -110,6 +114,9 @@ typedef struct {
     int16_t *lsp[2];            ///< pointers to lsp_buf
 
     int16_t quant_energy[4];    ///< (5.10) past quantized energy
+
+    /// previous speech data for LP synthesis filter
+    int16_t syn_filter_data[10];
 
     /// (1.14) pitch gain of current and five previous subframes
     int16_t past_gain_pitch[6];
@@ -283,6 +290,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int pitch_delay_int;         // pitch delay, integer part
     int pitch_delay_3x;          // pitch delay, multiplied by 3
     int16_t fc[SUBFRAME_SIZE];   // fixed-codebook vector
+    int16_t synth[SUBFRAME_SIZE+10]; // fixed-codebook vector
+    int j;
     int is_periodic = 0;         // whether one of the subframes is declared as periodic or not
 
     if (*data_size < SUBFRAME_SIZE << 2) {
@@ -476,10 +485,42 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                                      ( ctx->was_periodic && frame_erasure) ? 0 : ctx->past_gain_code[0],
                                      1 << 13, 14, SUBFRAME_SIZE);
 
+        memcpy(synth, ctx->syn_filter_data, 10 * sizeof(int16_t));
+
+        /* Temporary synth buffer is required since filter needs additional space at top of buffer and, thus,
+           synthesis can not be done directly to output buffer. This buffer will be reused by future
+           postprocessing filters. */
+        if (ff_celp_lp_synthesis_filter(
+            synth+10,
+            &lp[i][1],
+            ctx->exc  + i * SUBFRAME_SIZE,
+            SUBFRAME_SIZE,
+            10,
+            1,
+            0x800)) {
+            /* Overflow occured, downscale excitation signal... */
+            for (j = 0; j < 2 * SUBFRAME_SIZE + PITCH_DELAY_MAX + INTERPOL_LEN; j++)
+                ctx->exc_base[j] >>= 2;
+
+            ff_celp_lp_synthesis_filter(
+                    synth+10,
+                    &lp[i][1],
+                    ctx->exc  + i * SUBFRAME_SIZE,
+                    SUBFRAME_SIZE,
+                    10,
+                    0,
+                    0x800);
+        }
+        /* Save data (without postfilter) for use in next subframe. */
+        memcpy(ctx->syn_filter_data, synth+SUBFRAME_SIZE, 10 * sizeof(int16_t));
+
         if (frame_erasure)
             ctx->pitch_delay_int_prev = FFMIN(ctx->pitch_delay_int_prev + 1, PITCH_DELAY_MAX);
         else
             ctx->pitch_delay_int_prev = pitch_delay_int;
+
+        /* Dumb. Will be replaced by high-pass filter */
+        memcpy(out_frame + i * SUBFRAME_SIZE, synth + 10, SUBFRAME_SIZE * sizeof(int16_t));
     }
 
     ctx->was_periodic = is_periodic;
