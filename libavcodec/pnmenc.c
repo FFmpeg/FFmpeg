@@ -373,6 +373,7 @@ AVCodec pgm_decoder = {
     NULL,
     NULL,
     pnm_decode_frame,
+    CODEC_CAP_DR1,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_GRAY8, PIX_FMT_GRAY16BE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
 };
@@ -401,6 +402,7 @@ AVCodec pgmyuv_decoder = {
     NULL,
     NULL,
     pnm_decode_frame,
+    CODEC_CAP_DR1,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
 };
@@ -429,6 +431,7 @@ AVCodec ppm_decoder = {
     NULL,
     NULL,
     pnm_decode_frame,
+    CODEC_CAP_DR1,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB48BE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
 };
@@ -457,6 +460,7 @@ AVCodec pbm_decoder = {
     NULL,
     NULL,
     pnm_decode_frame,
+    CODEC_CAP_DR1,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_MONOWHITE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
 };
@@ -485,6 +489,7 @@ AVCodec pam_decoder = {
     NULL,
     NULL,
     pnm_decode_frame,
+    CODEC_CAP_DR1,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
 };
