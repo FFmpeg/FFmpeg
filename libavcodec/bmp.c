@@ -325,5 +325,6 @@ AVCodec bmp_decoder = {
     NULL,
     bmp_decode_end,
     bmp_decode_frame,
+    CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("BMP image"),
 };
