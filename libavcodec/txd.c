@@ -163,7 +163,7 @@ AVCodec txd_decoder = {
     NULL,
     txd_end,
     txd_decode_frame,
-    0,
+    CODEC_CAP_DR1,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Renderware TXD (TeXture Dictionary) image"),
 };
