@@ -216,5 +216,6 @@ AVCodec amv_decoder = {
     NULL,
     ff_mjpeg_decode_end,
     sp5x_decode_frame,
+    CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("AMV Video"),
 };
