@@ -279,14 +279,14 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
         if (http_get_line(s, line, sizeof(line)) < 0)
             return AVERROR(EIO);
 #ifdef DEBUG
-            printf("header='%s'\n", line);
+        printf("header='%s'\n", line);
 #endif
-            err = process_line(h, line, s->line_count, new_location);
-            if (err < 0)
-                return err;
-            if (err == 0)
-                break;
-            s->line_count++;
+        err = process_line(h, line, s->line_count, new_location);
+        if (err < 0)
+            return err;
+        if (err == 0)
+            break;
+        s->line_count++;
     }
 
     return (off == s->off) ? 0 : -1;
