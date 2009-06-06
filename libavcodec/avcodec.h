@@ -3208,11 +3208,11 @@ attribute_deprecated int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *s
  * @note You might have to align the input buffer avpkt->data and output buffer
  * samples. The alignment requirements depend on the CPU: On some CPUs it isn't
  * necessary at all, on others it won't work at all if not aligned and on others
- * it will work but it will have an impact on performance. In practice, the
- * bitstream should have 4 byte alignment at minimum and all sample data should
- * be 16 byte aligned unless the CPU doesn't need it (AltiVec and SSE do). If
- * the linesize is not a multiple of 16 then there's no sense in aligning the
- * start of the buffer to 16.
+ * it will work but it will have an impact on performance.
+ *
+ * In practice, avpkt->data should have 4 byte alignment at minimum and
+ * samples should be 16 byte aligned unless the CPU doesn't need it
+ * (AltiVec and SSE do).
  *
  * @param avctx the codec context
  * @param[out] samples the output buffer
@@ -3259,14 +3259,12 @@ attribute_deprecated int avcodec_decode_video(AVCodecContext *avctx, AVFrame *pi
  * @warning The end of the input buffer buf should be set to 0 to ensure that
  * no overreading happens for damaged MPEG streams.
  *
- * @note You might have to align the input buffer avpkt->data and output buffer
- * samples. The alignment requirements depend on the CPU: on some CPUs it isn't
+ * @note You might have to align the input buffer avpkt->data.
+ * The alignment requirements depend on the CPU: on some CPUs it isn't
  * necessary at all, on others it won't work at all if not aligned and on others
- * it will work but it will have an impact on performance. In practice, the
- * bitstream should have 4 byte alignment at minimum and all sample data should
- * be 16 byte aligned unless the CPU doesn't need it (AltiVec and SSE do). If
- * the linesize is not a multiple of 16 then there's no sense in aligning the
- * start of the buffer to 16.
+ * it will work but it will have an impact on performance.
+ *
+ * In practice, avpkt->data should have 4 byte alignment at minimum.
  *
  * @note Some codecs have a delay between input and output, these need to be
  * feeded with avpkt->data=NULL, avpkt->size=0 at the end to return the remaining frames.
