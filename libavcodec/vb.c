@@ -185,6 +185,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     int rest = buf_size;
     int offset = 0;
 
+    if(c->pic.data[0])
+        avctx->release_buffer(avctx, &c->pic);
+    c->pic.reference = 1;
+    if(avctx->get_buffer(avctx, &c->pic) < 0){
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return -1;
+    }
+
     c->stream = buf;
     flags = bytestream_get_le16(&c->stream);
     rest -= 2;
@@ -244,12 +252,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = PIX_FMT_PAL8;
 
     if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
-        return -1;
-    }
-
-    c->pic.reference = 1;
-    if(avctx->get_buffer(avctx, &c->pic) < 0){
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 
