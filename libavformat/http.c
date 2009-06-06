@@ -29,8 +29,6 @@
 /* XXX: POST protocol is not completely implemented because ffmpeg uses
    only a subset of it. */
 
-//#define DEBUG
-
 /* used for protocol handling */
 #define BUFFER_SIZE 1024
 #define URL_SIZE    4096
@@ -192,9 +190,9 @@ static int process_line(URLContext *h, char *line, int line_count,
         while (isspace(*p))
             p++;
         s->http_code = strtol(p, NULL, 10);
-#ifdef DEBUG
-        printf("http_code=%d\n", s->http_code);
-#endif
+
+        dprintf(NULL, "http_code=%d\n", s->http_code);
+
         /* error codes are 4xx and 5xx */
         if (s->http_code >= 400 && s->http_code < 600)
             return -1;
@@ -278,9 +276,9 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     for(;;) {
         if (http_get_line(s, line, sizeof(line)) < 0)
             return AVERROR(EIO);
-#ifdef DEBUG
-        printf("header='%s'\n", line);
-#endif
+
+        dprintf(NULL, "header='%s'\n", line);
+
         err = process_line(h, line, s->line_count, new_location);
         if (err < 0)
             return err;
