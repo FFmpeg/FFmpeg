@@ -71,8 +71,7 @@
  */
 #define SHARP_MAX                  13017
 
-typedef struct
-{
+typedef struct {
     int sample_rate;
     uint8_t packed_frame_size;  ///< input frame size(in bytes)
     uint8_t unpacked_frame_size;///< output frame size (in bytes)
@@ -98,53 +97,40 @@ static inline int get_parity(uint8_t value)
    return (0x6996966996696996ULL >> (value >> 2)) & 1;
 }
 
-    if(avctx->channels != 1)
-    {
+    if (avctx->channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "Only mono sound is supported (requested channels: %d).\n", avctx->channels);
         return AVERROR_NOFMT;
     }
 
-        ff_acelp_weighted_vector_sum(
-                fc + pitch_delay_int[i],
-                fc + pitch_delay_int[i],
-                fc,
-                1 << 14,
-                av_clip(ctx->gain_pitch, SHARP_MIN, SHARP_MAX),
-                0,
-                14,
-                ctx->subframe_size - pitch_delay_int[i]);
+        ff_acelp_weighted_vector_sum(fc + pitch_delay_int[i],
+                                     fc + pitch_delay_int[i],
+                                     fc, 1 << 14,
+                                     av_clip(ctx->gain_pitch, SHARP_MIN, SHARP_MAX),
+                                     0, 14,
+                                     ctx->subframe_size - pitch_delay_int[i]);
 
-        if(ctx->frame_erasure)
-        {
-            ctx->gain_pitch = (29491 * ctx->gain_pitch) >> 15; // 0.9 (0.15)
-            ctx->gain_code  = (2007 * ctx->gain_code) >> 11;   // 0.98 in (0.11)
+        if (ctx->frame_erasure) {
+            ctx->gain_pitch = (29491 * ctx->gain_pitch) >> 15; // 0.90 (0.15)
+            ctx->gain_code  = ( 2007 * ctx->gain_code ) >> 11; // 0.98 (0.11)
 
             gain_corr_factor = 0;
-        }
-        else
-        {
+        } else {
             ctx->gain_pitch  = cb_gain_1st_8k[parm->gc_1st_index[i]][0] +
                                cb_gain_2nd_8k[parm->gc_2nd_index[i]][0];
             gain_corr_factor = cb_gain_1st_8k[parm->gc_1st_index[i]][1] +
                                cb_gain_2nd_8k[parm->gc_2nd_index[i]][1];
 
-        ff_acelp_weighted_vector_sum(
-                ctx->exc + i * ctx->subframe_size,
-                ctx->exc + i * ctx->subframe_size,
-                fc,
-                (!voicing && ctx->frame_erasure) ? 0 : ctx->gain_pitch,
-                ( voicing && ctx->frame_erasure) ? 0 : ctx->gain_code,
-                1<<13,
-                14,
-                ctx->subframe_size);
+        ff_acelp_weighted_vector_sum(ctx->exc + i * ctx->subframe_size,
+                                     ctx->exc + i * ctx->subframe_size, fc,
+                                     (!voicing && ctx->frame_erasure) ? 0 : ctx->gain_pitch,
+                                     ( voicing && ctx->frame_erasure) ? 0 : ctx->gain_code,
+                                     1<<13, 14, ctx->subframe_size);
 
-    if (buf_size<packed_frame_size)
-    {
+    if (buf_size < packed_frame_size) {
         av_log(avctx, AV_LOG_ERROR, "Error processing packet: packet size too small\n");
         return AVERROR(EIO);
     }
-    if (*data_size<unpacked_frame_size)
-    {
+    if (*data_size < unpacked_frame_size) {
         av_log(avctx, AV_LOG_ERROR, "Error processing packet: output buffer too small\n");
         return AVERROR(EIO);
     }

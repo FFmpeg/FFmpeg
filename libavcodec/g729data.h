@@ -39,8 +39,7 @@
  * first stage LSP codebook
  * (10-dimensional, with 128 entries (3.24 of G.729)
  */
-static const int16_t cb_lsp_1st[1<<VQ_1ST_BITS][10] =
-{ /* (2.13) */
+static const int16_t cb_lsp_1st[1<<VQ_1ST_BITS][10] = { /* (2.13) */
   { 1486,  2168,  3751,  9074, 12134, 13944, 17983, 19173, 21190, 21820},
   { 1730,  2640,  3450,  4870,  6126,  7876, 15644, 17817, 20294, 21902},
   { 1568,  2256,  3088,  4874, 11063, 13393, 18307, 19293, 21109, 21741},
@@ -175,8 +174,7 @@ static const int16_t cb_lsp_1st[1<<VQ_1ST_BITS][10] =
  * second stage LSP codebook, high and low parts
    (both 5-dimensional, with 32 entries (3.2.4 of G.729)
  */
-static const int16_t cb_lsp_2nd[1<<VQ_2ND_BITS][10] =
-{ /* (2.13) */
+static const int16_t cb_lsp_2nd[1<<VQ_2ND_BITS][10] = { /* (2.13) */
   { -435,  -815,  -742,  1033,  -518,   582, -1201,   829,    86,   385},
   { -833,  -891,   463,    -8, -1251,  1450,    72,  -231,   864,   661},
   {-1021,   231,  -306,   321,  -220,  -163,  -526,  -754, -1633,   267},
@@ -214,8 +212,7 @@ static const int16_t cb_lsp_2nd[1<<VQ_2ND_BITS][10] =
 /**
  * gain codebook (first stage), 8k mode (3.9.2 of G.729)
  */
-static const int16_t cb_gain_1st_8k[1<<GC_1ST_IDX_BITS_8K][2] =
-{ /*(0.14) (2.13) */
+static const int16_t cb_gain_1st_8k[1<<GC_1ST_IDX_BITS_8K][2] = { /*(0.14) (2.13) */
   { 3242 ,  9949 },
   { 1551 ,  2425 },
   { 2678 , 27162 },
@@ -229,8 +226,7 @@ static const int16_t cb_gain_1st_8k[1<<GC_1ST_IDX_BITS_8K][2] =
 /**
  * gain codebook (second stage), 8k mode (3.9.2 of G.729)
  */
-static const int16_t cb_gain_2nd_8k[1<<GC_2ND_IDX_BITS_8K][2] =
-{ /*(1.14) (1.13) */
+static const int16_t cb_gain_2nd_8k[1<<GC_2ND_IDX_BITS_8K][2] = { /*(1.14) (1.13) */
   {  5142 ,   592 },
   { 17299 ,  1861 },
   {  6160 ,  2395 },
@@ -252,8 +248,7 @@ static const int16_t cb_gain_2nd_8k[1<<GC_2ND_IDX_BITS_8K][2] =
 /**
  * 4th order Moving Average (MA) Predictor codebook (3.2.4 of G.729)
  */
-static const int16_t cb_ma_predictor[2][MA_NP][10] =
-{ /* (0.15) */
+static const int16_t cb_ma_predictor[2][MA_NP][10] = { /* (0.15) */
   {
     { 8421,  9109,  9175,  8965,  9034,  9057,  8765,  8775,  9106,  8673},
     { 7018,  7189,  7638,  7307,  7444,  7379,  7038,  6956,  6930,  6868},
