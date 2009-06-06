@@ -151,6 +151,30 @@ static int http_getc(HTTPContext *s)
     return *s->buf_ptr++;
 }
 
+static int http_get_line(HTTPContext *s, char *line, int line_size)
+{
+    int ch;
+    char *q;
+
+    q = line;
+    for(;;) {
+        ch = http_getc(s);
+        if (ch < 0)
+            return AVERROR(EIO);
+        if (ch == '\n') {
+            /* process line */
+            if (q > line && q[-1] == '\r')
+                q--;
+            *q = '\0';
+
+            return 0;
+        } else {
+            if ((q - line) < line_size - 1)
+                *q++ = ch;
+        }
+    }
+}
+
 static int process_line(URLContext *h, char *line, int line_count,
                         int *new_location)
 {
@@ -209,8 +233,8 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
                         const char *auth, int *new_location)
 {
     HTTPContext *s = h->priv_data;
-    int post, err, ch;
-    char line[1024], *q;
+    int post, err;
+    char line[1024];
     char *auth_b64;
     int auth_b64_len = (strlen(auth) + 2) / 3 * 4 + 1;
     int64_t off = s->off;
@@ -251,16 +275,9 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     }
 
     /* wait for header */
-    q = line;
     for(;;) {
-        ch = http_getc(s);
-        if (ch < 0)
+        if (http_get_line(s, line, sizeof(line)) < 0)
             return AVERROR(EIO);
-        if (ch == '\n') {
-            /* process line */
-            if (q > line && q[-1] == '\r')
-                q--;
-            *q = '\0';
 #ifdef DEBUG
             printf("header='%s'\n", line);
 #endif
@@ -270,11 +287,6 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
             if (err == 0)
                 break;
             s->line_count++;
-            q = line;
-        } else {
-            if ((q - line) < sizeof(line) - 1)
-                *q++ = ch;
-        }
     }
 
     return (off == s->off) ? 0 : -1;
