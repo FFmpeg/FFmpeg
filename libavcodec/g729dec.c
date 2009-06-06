@@ -85,7 +85,7 @@ typedef struct
 /**
  * \brief pseudo random number generator
  */
-static inline uint16_t random(uint16_t value)
+static inline uint16_t g729_prng(uint16_t value)
 {
     return 31821 * value + 13849;
 }
