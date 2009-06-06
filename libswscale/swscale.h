@@ -133,8 +133,8 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
                                   SwsFilter *dstFilter, const double *param);
 
 /**
- * Scales the image slice in \p srcSlice and puts the resulting scaled
- * slice in the image in \p dst. A slice is a sequence of consecutive
+ * Scales the image slice in srcSlice and puts the resulting scaled
+ * slice in the image in dst. A slice is a sequence of consecutive
  * rows in an image.
  *
  * @param context   the scaling context previously created with
@@ -188,8 +188,8 @@ int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table,
 SwsVector *sws_getGaussianVec(double variance, double quality);
 
 /**
- * Allocates and returns a vector with \p length coefficients, all
- * with the same value \p c.
+ * Allocates and returns a vector with length coefficients, all
+ * with the same value c.
  */
 SwsVector *sws_getConstVec(double c, int length);
 
@@ -200,13 +200,12 @@ SwsVector *sws_getConstVec(double c, int length);
 SwsVector *sws_getIdentityVec(void);
 
 /**
- * Scales all the coefficients of \p a by the \p scalar value.
+ * Scales all the coefficients of a by the scalar value.
  */
 void sws_scaleVec(SwsVector *a, double scalar);
 
 /**
- * Scales all the coefficients of \p a so that their sum equals \p
- * height."
+ * Scales all the coefficients of a so that their sum equals height.
  */
 void sws_normalizeVec(SwsVector *a, double height);
 void sws_convVec(SwsVector *a, SwsVector *b);
@@ -215,8 +214,8 @@ void sws_subVec(SwsVector *a, SwsVector *b);
 void sws_shiftVec(SwsVector *a, int shift);
 
 /**
- * Allocates and returns a clone of the vector \p a, that is a vector
- * with the same coefficients as \p a.
+ * Allocates and returns a clone of the vector a, that is a vector
+ * with the same coefficients as a.
  */
 SwsVector *sws_cloneVec(SwsVector *a);
 
@@ -228,8 +227,8 @@ attribute_deprecated void sws_printVec(SwsVector *a);
 #endif
 
 /**
- * Prints with av_log() a textual representation of the vector \p a
- * if \p log_level <= av_log_level.
+ * Prints with av_log() a textual representation of the vector a
+ * if log_level <= av_log_level.
  */
 void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level);
 
@@ -242,16 +241,16 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
 void sws_freeFilter(SwsFilter *filter);
 
 /**
- * Checks if \p context can be reused, otherwise reallocates a new
+ * Checks if context can be reused, otherwise reallocates a new
  * one.
  *
- * If \p context is NULL, just calls sws_getContext() to get a new
+ * If context is NULL, just calls sws_getContext() to get a new
  * context. Otherwise, checks if the parameters are the ones already
- * saved in \p context. If that is the case, returns the current
- * context. Otherwise, frees \p context and gets a new context with
+ * saved in context. If that is the case, returns the current
+ * context. Otherwise, frees context and gets a new context with
  * the new parameters.
  *
- * Be warned that \p srcFilter and \p dstFilter are not checked, they
+ * Be warned that srcFilter and dstFilter are not checked, they
  * are assumed to remain the same.
  */
 struct SwsContext *sws_getCachedContext(struct SwsContext *context,
