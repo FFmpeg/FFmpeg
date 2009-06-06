@@ -39,7 +39,7 @@ struct AVCLASS {
 
     /**
      * A pointer to a function which returns the name of a context
-     * instance \p ctx associated with the class.
+     * instance ctx associated with the class.
      */
     const char* (*item_name)(void* ctx);
 

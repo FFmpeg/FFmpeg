@@ -24,23 +24,23 @@
 #include <stdint.h>
 
 /**
- * Decodes the base64-encoded string in \p in and puts the decoded
- * data in \p out.
+ * Decodes the base64-encoded string in in and puts the decoded
+ * data in out.
  *
- * @param out_size size in bytes of the \p out buffer, it should be at
- * least 3/4 of the length of \p in
+ * @param out_size size in bytes of the out buffer, it should be at
+ * least 3/4 of the length of in
  * @return the number of bytes written, or a negative value in case of
  * error
  */
 int av_base64_decode(uint8_t *out, const char *in, int out_size);
 
 /**
- * Encodes in base64 the data in \p in and puts the resulting string
- * in \p out.
+ * Encodes in base64 the data in in and puts the resulting string
+ * in out.
  *
- * @param out_size size in bytes of the \p out string, it should be at
- * least ((\p in_size + 2) / 3) * 4 + 1
- * @param in_size size in bytes of the \p in buffer
+ * @param out_size size in bytes of the out string, it should be at
+ * least ((in_size + 2) / 3) * 4 + 1
+ * @param in_size size in bytes of the in buffer
  * @return the string containing the encoded data, or NULL in case of
  * error
  */

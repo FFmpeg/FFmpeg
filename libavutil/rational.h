@@ -114,13 +114,13 @@ AVRational av_sub_q(AVRational b, AVRational c) av_const;
 AVRational av_d2q(double d, int max) av_const;
 
 /**
- * @return 1 if \q1 is nearer to \p q than \p q2, -1 if \p q2 is nearer
- * than \p q1, 0 if they have the same distance.
+ * @return 1 if q1 is nearer to q than q2, -1 if q2 is nearer
+ * than q1, 0 if they have the same distance.
  */
 int av_nearer_q(AVRational q, AVRational q1, AVRational q2);
 
 /**
- * Finds the nearest value in \p q_list to \p q.
+ * Finds the nearest value in q_list to q.
  * @param q_list an array of rationals terminated by {0, 0}
  * @return the index of the nearest value found in the array
  */

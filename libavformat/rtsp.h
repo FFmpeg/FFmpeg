@@ -207,7 +207,7 @@ typedef struct RTSPState {
 
     /** timestamp of the last RTSP command that we sent to the RTSP server.
      * This is used to calculate when to send dummy commands to keep the
-     * connection alive, in conjunction with \p timeout. */
+     * connection alive, in conjunction with timeout. */
     int64_t last_cmd_time;
 
     /** the negotiated data/packet transport protocol; e.g. RTP or RDT */

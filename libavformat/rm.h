@@ -64,8 +64,8 @@ int ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
  * @param flags pointer to an integer containing the packet flags, may be
                 updated
  * @param ts pointer to timestamp, may be updated
- * @return <0 on error, 0 if a packet was placed in the \p pkt pointer. A
- *         value >0 means that no data was placed in \p pkt, but that cached
+ * @return <0 on error, 0 if a packet was placed in the pkt pointer. A
+ *         value >0 means that no data was placed in pkt, but that cached
  *         data is available by calling ff_rm_retrieve_cache().
  */
 int ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,

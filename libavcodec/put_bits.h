@@ -52,10 +52,10 @@ typedef struct PutBitContext {
 } PutBitContext;
 
 /**
- * Initializes the PutBitContext \p s.
+ * Initializes the PutBitContext s.
  *
  * @param buffer the buffer where to put bits
- * @param buffer_size the size in bytes of \p buffer
+ * @param buffer_size the size in bytes of buffer
  */
 static inline void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size)
 {
@@ -123,16 +123,16 @@ static inline void flush_put_bits(PutBitContext *s)
 void align_put_bits(PutBitContext *s);
 
 /**
- * Puts the string \p s in the bitstream.
+ * Puts the string s in the bitstream.
  *
  * @param terminate_string 0-terminates the written string if value is 1
  */
 void ff_put_string(PutBitContext * pbc, const char *s, int terminate_string);
 
 /**
- * Copies the content of \p src to the bitstream.
+ * Copies the content of src to the bitstream.
  *
- * @param length the number of bits of \p src to copy
+ * @param length the number of bits of src to copy
  */
 void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
 
@@ -290,7 +290,7 @@ static inline void skip_put_bytes(PutBitContext *s, int n){
 /**
  * Skips the given number of bits.
  * Must only be used if the actual values in the bitstream do not matter.
- * If \p n is 0 the behavior is undefined.
+ * If n is 0 the behavior is undefined.
  */
 static inline void skip_put_bits(PutBitContext *s, int n){
 #ifdef ALT_BITSTREAM_WRITER

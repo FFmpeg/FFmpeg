@@ -87,8 +87,8 @@ typedef struct AVOption {
 
 
 /**
- * Looks for an option in \p obj. Looks only for the options which
- * have the flags set as specified in \p mask and \p flags (that is,
+ * Looks for an option in obj. Looks only for the options which
+ * have the flags set as specified in mask and flags (that is,
  * for which it is the case that opt->flags & mask == flags).
  *
  * @param[in] obj a pointer to a struct whose first element is a
@@ -108,7 +108,7 @@ attribute_deprecated const AVOption *av_set_string(void *obj, const char *name, 
 
 /**
  * @return a pointer to the AVOption corresponding to the field set or
- * NULL if no matching AVOption exists, or if the value \p val is not
+ * NULL if no matching AVOption exists, or if the value val is not
  * valid
  * @see av_set_string3()
  */

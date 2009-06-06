@@ -86,8 +86,8 @@ typedef struct AVPixFmtDescriptor{
 extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
 
 /**
- * Reads a line from an image, and writes to \p dst the values of the
- * pixel format component \p c.
+ * Reads a line from an image, and writes to dst the values of the
+ * pixel format component c.
  *
  * @param data the array containing the pointers to the planes of the image
  * @param linesizes the array containing the linesizes of the image
@@ -95,10 +95,10 @@ extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
  * @param x the horizontal coordinate of the first pixel to read
  * @param y the vertical coordinate of the first pixel to read
  * @param w the width of the line to read, that is the number of
- * values to write to \p dst
+ * values to write to dst
  * @param read_pal_component if not zero and the format is a paletted
- * format writes to \p dst the values corresponding to the palette
- * component \p c in data[1], rather than the palette indexes in
+ * format writes to dst the values corresponding to the palette
+ * component c in data[1], rather than the palette indexes in
  * data[0]. The behavior is undefined if the format is not paletted.
  */
 static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4],

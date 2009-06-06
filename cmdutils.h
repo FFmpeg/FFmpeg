@@ -73,8 +73,8 @@ double parse_number_or_die(const char *context, const char *numstr, int type, do
  * @param context the context of the value to be set (e.g. the
  * corresponding commandline option name)
  * @param timestr the string to be parsed
- * @param is_duration a flag which tells how to interpret \p timestr, if
- * not zero \p timestr is interpreted as a duration, otherwise as a
+ * @param is_duration a flag which tells how to interpret timestr, if
+ * not zero timestr is interpreted as a duration, otherwise as a
  * date
  *
  * @see parse_date()
