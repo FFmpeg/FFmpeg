@@ -80,7 +80,7 @@ typedef struct
 
     /// mr_energy = mean_energy + 10 * log10(2^26  * subframe_size) in (7.13)
     int mr_energy;
-} G729_format_description;
+} G729FormatDescription;
 
 /**
  * \brief pseudo random number generator
@@ -154,7 +154,7 @@ AVCodec g729_decoder =
     "g729",
     CODEC_TYPE_AUDIO,
     CODEC_ID_G729,
-    sizeof(G729_Context),
+    sizeof(G729Context),
     decoder_init,
     NULL,
     NULL,
