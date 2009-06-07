@@ -18,7 +18,22 @@ explicitly requested by passing the appropriate flags to @file{./configure}.
 
 AMR comes in two different flavors, wideband and narrowband. FFmpeg can make
 use of the AMR wideband (floating-point mode) and the AMR narrowband
-(floating-point mode) reference decoders and encoders.
+(floating-point mode) reference decoders and encoders (libamr) as well as
+the OpenCORE libraries for AMR-NB decoding/encoding and AMR-WB decoding.
+
+@subsection OpenCORE
+
+Go to @url{http://gitorious.org/opencore-amr/} and follow the instructions for
+installing the libraries. Then pass @code{--enable-libopencore-amrnb} and/or
+@code{--enable-libopencore-amrwb} to configure to enable the libraries.
+
+Note that OpenCORE is under the Apache License 2.0 (see
+@url{http://www.apache.org/licenses/LICENSE-2.0} for details), which is
+incompatible with the LGPL version 2.1 and GPL version 2. You have to
+upgrade FFmpeg's license to LGPL version 3 (or if you have enabled
+GPL components, GPL version 3) to use it.
+
+@subsection libamr
 
 Go to @url{http://www.penguin.cz/~utx/amr} and follow the instructions for
 installing the libraries. Then pass @code{--enable-libamr-nb} and/or
@@ -511,9 +526,10 @@ following image formats are supported:
     @tab Used in Westwood Studios games like Command and Conquer.
 @item ADPCM Yamaha           @tab  X  @tab  X
 @item AMR-NB                 @tab  E  @tab  E
-    @tab supported through external library libamrnb
+    @tab supported through external libraries libamrnb and libopencore-amrnb
 @item AMR-WB                 @tab  E  @tab  E
-    @tab supported through external library libamrwb
+    @tab decoding supported through external libraries libamrwb and libopencore-amrwb,
+         encoding supported through external library libamrwb
 @item Apple lossless audio   @tab  X  @tab  X
     @tab QuickTime fourcc 'alac'
 @item Atrac 3                @tab     @tab  X

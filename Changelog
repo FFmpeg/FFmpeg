@@ -9,6 +9,7 @@ version 0.5.1:
 - fix for GPL code in libswscale that was erroneously activated
 - AltiVec code in libswscale is now LGPL
 - remaining GPL parts in AC-3 decoder converted to LGPL
+- AMR-NB decoding/encoding, AMR-WB decoding via OpenCORE libraries
 
 
 
