@@ -25,15 +25,10 @@
  * This code implements both an AMR-NarrowBand (AMR-NB) and an AMR-WideBand
  * (AMR-WB) audio encoder/decoder through external reference code from
  * http://www.3gpp.org/. The license of the code from 3gpp is unclear so you
- * have to download the code separately. Two versions exists: One fixed-point
- * and one floating-point. For some reason the float encoder is significantly
- * faster at least on a P4 1.5GHz (0.9s instead of 9.9s on a 30s audio clip
- * at MR102). Both float and fixed point are supported for AMR-NB, but only
- * float for AMR-WB.
+ * have to download the code separately.
  *
  * \section AMR-NB
  *
- * \subsection Float
  * The float version (default) can be downloaded from:
  * http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-610.zip
  *
@@ -44,7 +39,6 @@
  *
  * \section AMR-WB
  *
- * \subsection Float
  * The reference code can be downloaded from:
  * http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-600.zip
  *
@@ -79,7 +73,6 @@ static void amr_decode_fix_avctx(AVCodecContext *avctx)
 static const char nb_bitrate_unsupported[] =
     "bitrate not supported: use one of 4.75k, 5.15k, 5.9k, 6.7k, 7.4k, 7.95k, 10.2k or 12.2k\n";
 
-/* Common code for fixed and float version*/
 typedef struct AMR_bitrates {
     int       rate;
     enum Mode mode;
@@ -278,7 +271,6 @@ AVCodec libamr_nb_encoder = {
 static const char wb_bitrate_unsupported[] =
     "bitrate not supported: use one of 6.6k, 8.85k, 12.65k, 14.25k, 15.85k, 18.25k, 19.85k, 23.05k, or 23.85k\n";
 
-/* Common code for fixed and float version*/
 typedef struct AMRWB_bitrates {
     int rate;
     int mode;
