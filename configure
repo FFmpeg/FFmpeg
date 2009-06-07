@@ -75,6 +75,7 @@ show_help(){
   echo "  --enable-shared          build shared libraries [no]"
   echo "  --enable-gpl             allow use of GPL code, the resulting libs"
   echo "                           and binaries will be under GPL [no]"
+  echo "  --enable-version3        upgrade (L)GPL to version 3 [no]"
   echo "  --enable-nonfree         allow use of nonfree code, the resulting libs"
   echo "                           and binaries will be unredistributable [no]"
   echo "  --disable-ffmpeg         disable ffmpeg build"
@@ -801,6 +802,7 @@ CONFIG_LIST="
     swscale
     vdpau
     vhook
+    version3
     x11grab
     zlib
 "
@@ -917,6 +919,8 @@ HAVE_LIST="
 
 # options emitted with CONFIG_ prefix but not available on command line
 CONFIG_EXTRA="
+    gplv3
+    lgplv3
     oldscaler
 "
 
@@ -1695,6 +1699,7 @@ die_license_disabled nonfree libamr_nb
 die_license_disabled nonfree libamr_wb
 die_license_disabled nonfree libfaac
 
+enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
 check_deps $ARCH_EXT_LIST
 
@@ -2336,6 +2341,10 @@ done
 license="LGPL version 2.1 or later"
 if enabled nonfree; then
     license="nonfree and unredistributable"
+elif enabled gplv3; then
+    license="GPL version 3 or later"
+elif enabled lgplv3; then
+    license="LGPL version 3 or later"
 elif enabled gpl; then
     license="GPL version 2 or later"
 fi
