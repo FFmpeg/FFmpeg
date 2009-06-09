@@ -554,6 +554,9 @@ av_cold int MPV_common_init(MpegEncContext *s)
         }
     }
     CHECKED_ALLOCZ(s->picture, MAX_PICTURE_COUNT * sizeof(Picture))
+    for(i = 0; i < MAX_PICTURE_COUNT; i++) {
+        avcodec_get_frame_defaults((AVFrame *)&s->picture[i]);
+    }
 
     CHECKED_ALLOCZ(s->error_status_table, mb_array_size*sizeof(uint8_t))
 
