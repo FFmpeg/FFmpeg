@@ -197,8 +197,8 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc.o      \
                                             rtpenc_h264.o \
                                             avc.o
-OBJS-$(CONFIG_RTSP_DEMUXER)              += rdt.o rtsp.o
-OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o rtp.o rtpdec.o rtp_h264.o rtp_vorbis.o
+OBJS-$(CONFIG_RTSP_DEMUXER)              += rdt.o rtsp.o rtp_vorbis.o rtp_asf.o
+OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o rtp.o rtpdec.o rtp_h264.o rtp_vorbis.o rtp_asf.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += raw.o id3v2.o
 OBJS-$(CONFIG_SIFF_DEMUXER)              += siff.o
