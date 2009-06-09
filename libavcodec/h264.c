@@ -3153,6 +3153,7 @@ static void flush_dpb(AVCodecContext *avctx){
         h->delayed_pic[i]= NULL;
     }
     h->outputed_poc= INT_MIN;
+    h->prev_interlaced_frame = 1;
     idr(h);
     if(h->s.current_picture_ptr)
         h->s.current_picture_ptr->reference= 0;
@@ -3807,6 +3808,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         if (MPV_common_init(s) < 0)
             return -1;
         s->first_field = 0;
+        h->prev_interlaced_frame = 1;
 
         init_scan_tables(h);
         alloc_tables(h);
@@ -7789,18 +7791,29 @@ static int decode_frame(AVCodecContext *avctx,
             *data_size = 0;
 
         } else {
+            cur->interlaced_frame = 0;
             cur->repeat_pict = 0;
 
             /* Signal interlacing information externally. */
             /* Prioritize picture timing SEI information over used decoding process if it exists. */
-            if (h->sei_ct_type & 3)
-                cur->interlaced_frame = (h->sei_ct_type & (1<<1)) != 0;
-            else
-                cur->interlaced_frame = FIELD_OR_MBAFF_PICTURE;
 
             if(h->sps.pic_struct_present_flag){
                 switch (h->sei_pic_struct)
                 {
+                case SEI_PIC_STRUCT_FRAME:
+                    break;
+                case SEI_PIC_STRUCT_TOP_FIELD:
+                case SEI_PIC_STRUCT_BOTTOM_FIELD:
+                    cur->interlaced_frame = 1;
+                    break;
+                case SEI_PIC_STRUCT_TOP_BOTTOM:
+                case SEI_PIC_STRUCT_BOTTOM_TOP:
+                    if (FIELD_OR_MBAFF_PICTURE)
+                        cur->interlaced_frame = 1;
+                    else
+                        // try to flag soft telecine progressive
+                        cur->interlaced_frame = h->prev_interlaced_frame;
+                    break;
                 case SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
                 case SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
                     // Signal the possibility of telecined film externally (pic_struct 5,6)
@@ -7809,18 +7822,20 @@ static int decode_frame(AVCodecContext *avctx,
                     break;
                 case SEI_PIC_STRUCT_FRAME_DOUBLING:
                     // Force progressive here, as doubling interlaced frame is a bad idea.
-                    cur->interlaced_frame = 0;
                     cur->repeat_pict = 2;
                     break;
                 case SEI_PIC_STRUCT_FRAME_TRIPLING:
-                    cur->interlaced_frame = 0;
                     cur->repeat_pict = 4;
                     break;
                 }
+
+                if ((h->sei_ct_type & 3) && h->sei_pic_struct <= SEI_PIC_STRUCT_BOTTOM_TOP)
+                    cur->interlaced_frame = (h->sei_ct_type & (1<<1)) != 0;
             }else{
                 /* Derive interlacing flag from used decoding process. */
                 cur->interlaced_frame = FIELD_OR_MBAFF_PICTURE;
             }
+            h->prev_interlaced_frame = cur->interlaced_frame;
 
             if (cur->field_poc[0] != cur->field_poc[1]){
                 /* Derive top_field_first from field pocs. */

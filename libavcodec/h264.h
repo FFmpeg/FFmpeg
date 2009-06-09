@@ -504,6 +504,14 @@ typedef struct H264Context{
     SEI_PicStructType sei_pic_struct;
 
     /**
+     * Complement sei_pic_struct
+     * SEI_PIC_STRUCT_TOP_BOTTOM and SEI_PIC_STRUCT_BOTTOM_TOP indicate interlaced frames.
+     * However, soft telecined frames may have these values.
+     * This is used in an attempt to flag soft telecine progressive.
+     */
+    int prev_interlaced_frame;
+
+    /**
      * Bit set of clock types for fields/frames in picture timing SEI message.
      * For each found ct_type, appropriate bit is set (e.g., bit 1 for
      * interlaced).
