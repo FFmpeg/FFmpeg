@@ -17,7 +17,7 @@ HEADERS = adler32.h                                                     \
           mem.h                                                         \
           pixfmt.h                                                      \
           rational.h                                                    \
-          sha1.h
+          sha1.h                                                        \
 
 OBJS = adler32.o                                                        \
        aes.o                                                            \
