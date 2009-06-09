@@ -582,7 +582,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     default: var = defval; break; \
     }
 
-int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb)
+/**
+ * Load a single ASF packet into the demuxer.
+ * @param s demux context
+ * @param pb context to read data from
+ * @returns 0 on success, <0 on error
+ */
+static int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb)
 {
     ASFContext *asf = s->priv_data;
     uint32_t packet_length, padsize;
@@ -726,7 +732,16 @@ static int asf_read_frame_header(AVFormatContext *s, ByteIOContext *pb){
     return 0;
 }
 
-int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
+/**
+ * Parse data from individual ASF packets (which were previously loaded
+ * with asf_get_packet()).
+ * @param s demux context
+ * @param pb context to read data from
+ * @param pkt pointer to store packet data into
+ * @returns 0 if data was stored in pkt, <0 on error or 1 if more ASF
+ *          packets need to be loaded (through asf_get_packet())
+ */
+static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
 {
     ASFContext *asf = s->priv_data;
     ASFStream *asf_st = 0;
