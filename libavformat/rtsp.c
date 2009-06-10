@@ -1599,6 +1599,9 @@ static int rtsp_read_seek(AVFormatContext *s, int stream_index,
     case RTSP_STATE_IDLE:
         break;
     case RTSP_STATE_PLAYING:
+        if (rtsp_read_pause(s) != 0)
+            return -1;
+        rt->state = RTSP_STATE_SEEKING;
         if (rtsp_read_play(s) != 0)
             return -1;
         break;
