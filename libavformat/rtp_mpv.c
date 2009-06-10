@@ -31,6 +31,7 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
     RTPMuxContext *s = s1->priv_data;
     int len, h, max_packet_size;
     uint8_t *q;
+    const uint8_t *end = buf1 + size;
     int begin_of_slice, end_of_slice, frame_type, temporal_reference;
 
     max_packet_size = s->max_payload_size;
@@ -55,7 +56,7 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
             r1 = buf1;
             while (1) {
                 start_code = -1;
-                r = ff_find_start_code(r1, buf1 + size, &start_code);
+                r = ff_find_start_code(r1, end, &start_code);
                 if((start_code & 0xFFFFFF00) == 0x100) {
                     /* New start code found */
                     if (start_code == 0x100) {
