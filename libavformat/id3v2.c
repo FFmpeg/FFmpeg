@@ -25,24 +25,24 @@
 
 int ff_id3v2_match(const uint8_t *buf)
 {
-    return  buf[0] == 'I' &&
-            buf[1] == 'D' &&
-            buf[2] == '3' &&
-            buf[3] != 0xff &&
-            buf[4] != 0xff &&
-            (buf[6] & 0x80) == 0 &&
-            (buf[7] & 0x80) == 0 &&
-            (buf[8] & 0x80) == 0 &&
-            (buf[9] & 0x80) == 0;
+    return  buf[0]         ==  'I' &&
+            buf[1]         ==  'D' &&
+            buf[2]         ==  '3' &&
+            buf[3]         != 0xff &&
+            buf[4]         != 0xff &&
+           (buf[6] & 0x80) ==    0 &&
+           (buf[7] & 0x80) ==    0 &&
+           (buf[8] & 0x80) ==    0 &&
+           (buf[9] & 0x80) == 0;
 }
 
 int ff_id3v2_tag_len(const uint8_t * buf)
 {
     int len = ((buf[6] & 0x7f) << 21) +
-        ((buf[7] & 0x7f) << 14) +
-        ((buf[8] & 0x7f) << 7) +
-        (buf[9] & 0x7f) +
-        ID3v2_HEADER_SIZE;
+              ((buf[7] & 0x7f) << 14) +
+              ((buf[8] & 0x7f) << 7) +
+               (buf[9] & 0x7f) +
+              ID3v2_HEADER_SIZE;
     if (buf[5] & 0x10)
         len += ID3v2_HEADER_SIZE;
     return len;
@@ -50,9 +50,9 @@ int ff_id3v2_tag_len(const uint8_t * buf)
 
 static unsigned int get_size(ByteIOContext *s, int len)
 {
-    int v=0;
-    while(len--)
-        v= (v<<7) + (get_byte(s)&0x7F);
+    int v = 0;
+    while (len--)
+        v = (v << 7) + (get_byte(s) & 0x7F);
     return v;
 }
 
@@ -62,17 +62,17 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
     int len, dstlen = sizeof(dst) - 1;
     unsigned genre;
 
-    dst[0]= 0;
-    if(taglen < 1)
+    dst[0] = 0;
+    if (taglen < 1)
         return;
 
     taglen--; /* account for encoding type byte */
 
-    switch(get_byte(s->pb)) { /* encoding type */
+    switch (get_byte(s->pb)) { /* encoding type */
 
     case 0:  /* ISO-8859-1 (0 - 255 maps directly into unicode) */
         q = dst;
-        while(taglen--) {
+        while (taglen--) {
             uint8_t tmp;
             PUT_UTF8(get_byte(s->pb), tmp, if (q - dst < dstlen - 1) *q++ = tmp;)
         }
@@ -80,7 +80,7 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
         break;
 
     case 3:  /* UTF-8 */
-        len = FFMIN(taglen, dstlen-1);
+        len = FFMIN(taglen, dstlen - 1);
         get_buffer(s->pb, dst, len);
         dst[len] = 0;
         break;
@@ -103,9 +103,9 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
     int taghdrlen;
     const char *reason;
 
-    switch(version) {
+    switch (version) {
     case 2:
-        if(flags & 0x40) {
+        if (flags & 0x40) {
             reason = "compression";
             goto error;
         }
@@ -124,16 +124,16 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
         goto error;
     }
 
-    if(flags & 0x80) {
+    if (flags & 0x80) {
         reason = "unsynchronization";
         goto error;
     }
 
-    if(isv34 && flags & 0x40) /* Extended header present, just skip over it */
+    if (isv34 && flags & 0x40) /* Extended header present, just skip over it */
         url_fskip(s->pb, get_size(s->pb, 4));
 
-    while(len >= taghdrlen) {
-        if(isv34) {
+    while (len >= taghdrlen) {
+        if (isv34) {
             tag  = get_be32(s->pb);
             tlen = get_size(s->pb, 4);
             get_be16(s->pb); /* flags */
@@ -143,12 +143,12 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
         }
         len -= taghdrlen + tlen;
 
-        if(len < 0)
+        if (len < 0)
             break;
 
         next = url_ftell(s->pb) + tlen;
 
-        switch(tag) {
+        switch (tag) {
         case MKBETAG('T', 'I', 'T', '2'):
         case MKBETAG(0,   'T', 'T', '2'):
             read_ttag(s, tlen, "title");
@@ -183,7 +183,7 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
         url_fseek(s->pb, next, SEEK_SET);
     }
 
-    if(version == 4 && flags & 0x10) /* Footer preset, always 10 bytes, skip over it */
+    if (version == 4 && flags & 0x10) /* Footer preset, always 10 bytes, skip over it */
         url_fskip(s->pb, 10);
     return;
 
@@ -191,4 +191,3 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
     av_log(s, AV_LOG_INFO, "ID3v2.%d tag skipped, cannot handle %s\n", version, reason);
     url_fskip(s->pb, len);
 }
-
