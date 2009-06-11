@@ -1,5 +1,5 @@
 /*
- * ID3v2 header parser
+ * ID3v1 header parser
  * Copyright (c) 2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -19,31 +19,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_ID3V2_H
-#define AVFORMAT_ID3V2_H
+#ifndef AVFORMAT_ID3V1_H
+#define AVFORMAT_ID3V1_H
 
-#include <stdint.h>
-#include "avformat.h"
+#define ID3v1_TAG_SIZE 128
 
-#define ID3v2_HEADER_SIZE 10
-
-/**
- * Detects ID3v2 Header.
- * @buf must be ID3v2_HEADER_SIZE byte long
- */
-int ff_id3v2_match(const uint8_t *buf);
+#define ID3v1_GENRE_MAX 125
 
 /**
- * Gets the length of an ID3v2 tag.
- * @buf must be ID3v2_HEADER_SIZE bytes long and point to the start of an
- * already detected ID3v2 tag
+ * ID3v1 genres
  */
-int ff_id3v2_tag_len(const uint8_t *buf);
+extern const char *ff_id3v1_genre_str[ID3v1_GENRE_MAX + 1];
 
-/**
- * ID3v2 parser
- * Handles ID3v2.2, 2.3 and 2.4.
- */
-void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags);
+#endif /* AVFORMAT_ID3V1_H */
 
-#endif /* AVFORMAT_ID3V2_H */
