@@ -33,7 +33,7 @@ int ff_id3v2_match(const uint8_t *buf)
            (buf[6] & 0x80) ==    0 &&
            (buf[7] & 0x80) ==    0 &&
            (buf[8] & 0x80) ==    0 &&
-           (buf[9] & 0x80) == 0;
+           (buf[9] & 0x80) ==    0;
 }
 
 int ff_id3v2_tag_len(const uint8_t * buf)
