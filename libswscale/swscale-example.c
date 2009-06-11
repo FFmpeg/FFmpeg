@@ -30,6 +30,12 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
+#undef fprintf
+#undef free
+#undef malloc
+#undef perror
+#undef printf
+
 static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
     int x,y;
     uint64_t ssd=0;
