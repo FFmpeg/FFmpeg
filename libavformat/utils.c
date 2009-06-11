@@ -751,6 +751,9 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     int num, den, presentation_delayed, delay, i;
     int64_t offset;
 
+    if (pc && pc->pict_type == FF_B_TYPE)
+        st->codec->has_b_frames = 1;
+
     /* do we have a video B-frame ? */
     delay= st->codec->has_b_frames;
     presentation_delayed = 0;
