@@ -257,7 +257,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
             s->buffer_size[0] = input_size;
             s->buffer[0] = av_malloc(s->buffer_size[0]);
             if (!s->buffer[0]) {
-                av_log(s, AV_LOG_ERROR, "Could not allocate buffer\n");
+                av_log(s->resample_context, AV_LOG_ERROR, "Could not allocate buffer\n");
                 return 0;
             }
         }
@@ -266,7 +266,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
 
         if (av_audio_convert(s->convert_ctx[0], obuf, ostride,
                              ibuf, istride, nb_samples*s->input_channels) < 0) {
-            av_log(s, AV_LOG_ERROR, "Audio sample format conversion failed\n");
+            av_log(s->resample_context, AV_LOG_ERROR, "Audio sample format conversion failed\n");
             return 0;
         }
 
@@ -283,7 +283,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
             s->buffer_size[1] = lenout;
             s->buffer[1] = av_malloc(s->buffer_size[1]);
             if (!s->buffer[1]) {
-                av_log(s, AV_LOG_ERROR, "Could not allocate buffer\n");
+                av_log(s->resample_context, AV_LOG_ERROR, "Could not allocate buffer\n");
                 return 0;
             }
         }
@@ -348,7 +348,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
 
         if (av_audio_convert(s->convert_ctx[1], obuf, ostride,
                              ibuf, istride, nb_samples1*s->output_channels) < 0) {
-            av_log(s, AV_LOG_ERROR, "Audio sample format convertion failed\n");
+            av_log(s->resample_context, AV_LOG_ERROR, "Audio sample format convertion failed\n");
             return 0;
         }
     }
