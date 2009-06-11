@@ -2384,10 +2384,6 @@ static void opt_frame_crop_top(const char *arg)
         fprintf(stderr, "Incorrect top crop size\n");
         av_exit(1);
     }
-    if ((frame_topBand % 2) != 0) {
-        fprintf(stderr, "Top crop size must be a multiple of 2\n");
-        av_exit(1);
-    }
     if ((frame_topBand) >= frame_height){
         fprintf(stderr, "Vertical crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
         av_exit(1);
@@ -2400,10 +2396,6 @@ static void opt_frame_crop_bottom(const char *arg)
     frame_bottomBand = atoi(arg);
     if (frame_bottomBand < 0) {
         fprintf(stderr, "Incorrect bottom crop size\n");
-        av_exit(1);
-    }
-    if ((frame_bottomBand % 2) != 0) {
-        fprintf(stderr, "Bottom crop size must be a multiple of 2\n");
         av_exit(1);
     }
     if ((frame_bottomBand) >= frame_height){
@@ -2420,10 +2412,6 @@ static void opt_frame_crop_left(const char *arg)
         fprintf(stderr, "Incorrect left crop size\n");
         av_exit(1);
     }
-    if ((frame_leftBand % 2) != 0) {
-        fprintf(stderr, "Left crop size must be a multiple of 2\n");
-        av_exit(1);
-    }
     if ((frame_leftBand) >= frame_width){
         fprintf(stderr, "Horizontal crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
         av_exit(1);
@@ -2436,10 +2424,6 @@ static void opt_frame_crop_right(const char *arg)
     frame_rightBand = atoi(arg);
     if (frame_rightBand < 0) {
         fprintf(stderr, "Incorrect right crop size\n");
-        av_exit(1);
-    }
-    if ((frame_rightBand % 2) != 0) {
-        fprintf(stderr, "Right crop size must be a multiple of 2\n");
         av_exit(1);
     }
     if ((frame_rightBand) >= frame_width){
@@ -2483,10 +2467,6 @@ static void opt_frame_pad_top(const char *arg)
         fprintf(stderr, "Incorrect top pad size\n");
         av_exit(1);
     }
-    if ((frame_padtop % 2) != 0) {
-        fprintf(stderr, "Top pad size must be a multiple of 2\n");
-        av_exit(1);
-    }
 }
 
 static void opt_frame_pad_bottom(const char *arg)
@@ -2494,10 +2474,6 @@ static void opt_frame_pad_bottom(const char *arg)
     frame_padbottom = atoi(arg);
     if (frame_padbottom < 0) {
         fprintf(stderr, "Incorrect bottom pad size\n");
-        av_exit(1);
-    }
-    if ((frame_padbottom % 2) != 0) {
-        fprintf(stderr, "Bottom pad size must be a multiple of 2\n");
         av_exit(1);
     }
 }
@@ -2510,10 +2486,6 @@ static void opt_frame_pad_left(const char *arg)
         fprintf(stderr, "Incorrect left pad size\n");
         av_exit(1);
     }
-    if ((frame_padleft % 2) != 0) {
-        fprintf(stderr, "Left pad size must be a multiple of 2\n");
-        av_exit(1);
-    }
 }
 
 
@@ -2522,10 +2494,6 @@ static void opt_frame_pad_right(const char *arg)
     frame_padright = atoi(arg);
     if (frame_padright < 0) {
         fprintf(stderr, "Incorrect right pad size\n");
-        av_exit(1);
-    }
-    if ((frame_padright % 2) != 0) {
-        fprintf(stderr, "Right pad size must be a multiple of 2\n");
         av_exit(1);
     }
 }
