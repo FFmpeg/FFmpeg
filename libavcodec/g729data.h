@@ -268,6 +268,11 @@ static const int16_t cb_ma_predictor_sum[2][10] = { /* (0.15) */
   {14585, 18333, 19772, 17344, 16426, 16459, 15155, 15220, 16043, 15708}
 };
 
+static const int16_t cb_ma_predictor_sum_inv[2][10] = { /* (3.12) */
+  {17210, 15888, 16357, 16183, 16516, 15833, 15888, 15421, 14840, 15597},
+  { 9202,  7320,  6788,  7738,  8170,  8154,  8856,  8818,  8366,  8544}
+};
+
 /**
  * initial LSP coefficients belongs to virtual frame preceding  the
  * first frame of the stream

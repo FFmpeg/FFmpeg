@@ -90,6 +90,8 @@ typedef struct {
     int16_t lsfq[10];           ///< (2.13) quantized LSF coefficients from previous frame
     int16_t lsp_buf[2][10];     ///< (0.15) LSP coefficients (previous and current frames) (3.2.5)
     int16_t *lsp[2];            ///< pointers to lsp_buf
+
+    int ma_predictor_prev;      ///< switched MA predictor of LSP quantizer from last good frame
 }  G729Context;
 
 static const G729FormatDescription format_g729_8k = {
@@ -157,11 +159,24 @@ static void lsf_decode(int16_t* lsfq, int16_t* past_quantizer_outputs[MA_NP + 1]
         lsfq[i] = sum >> 15;
     }
 
-    /* Rotate past_quantizer_outputs. */
-    memmove(past_quantizer_outputs + 1, past_quantizer_outputs, MA_NP * sizeof(int16_t*));
-    past_quantizer_outputs[0] = quantizer_output;
-
     ff_acelp_reorder_lsf(lsfq, LSFQ_DIFF_MIN, LSFQ_MIN, LSFQ_MAX, 10);
+}
+
+static void lsf_restore_from_previous(int16_t* lsfq,
+                                      int16_t* past_quantizer_outputs[MA_NP + 1],
+                                      int ma_predictor_prev)
+{
+    int16_t* quantizer_output = past_quantizer_outputs[MA_NP];
+    int i,k;
+
+    for (i = 0; i < 10; i++) {
+        int tmp = lsfq[i] << 15;
+
+        for (k = 0; k < MA_NP; k++)
+            tmp -= past_quantizer_outputs[k][i] * cb_ma_predictor[ma_predictor_prev][k][i];
+
+        quantizer_output[i] = ((tmp >> 15) * cb_ma_predictor_sum_inv[ma_predictor_prev][i]) >> 12;
+    }
 }
 
 static av_cold int decoder_init(AVCodecContext * avctx)
@@ -201,6 +216,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int frame_erasure = 0;    ///< frame erasure detected during decoding
     int bad_pitch = 0;        ///< parity check failed
     int i;
+    int16_t *tmp;
     G729Context *ctx = avctx->priv_data;
     int16_t lp[2][11];           // (3.12)
     uint8_t ma_predictor;     ///< switched MA predictor of LSP quantizer
@@ -238,9 +254,20 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     quantizer_2nd_lo = get_bits(&gb, VQ_2ND_BITS);
     quantizer_2nd_hi = get_bits(&gb, VQ_2ND_BITS);
 
+    if(frame_erasure)
+        lsf_restore_from_previous(ctx->lsfq, ctx->past_quantizer_outputs,
+                                  ctx->ma_predictor_prev);
+    else {
     lsf_decode(ctx->lsfq, ctx->past_quantizer_outputs,
                ma_predictor,
                quantizer_1st, quantizer_2nd_lo, quantizer_2nd_hi);
+        ctx->ma_predictor_prev = ma_predictor;
+    }
+
+    tmp = ctx->past_quantizer_outputs[MA_NP];
+    memmove(ctx->past_quantizer_outputs + 1, ctx->past_quantizer_outputs,
+            MA_NP * sizeof(int16_t*));
+    ctx->past_quantizer_outputs[0] = tmp;
 
     ff_acelp_lsf2lsp(ctx->lsp[1], ctx->lsfq, 10);
 
