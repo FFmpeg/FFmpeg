@@ -212,7 +212,7 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
     s->resample_context= av_resample_init(output_rate, input_rate,
                          filter_length, log2_phase_count, linear, cutoff);
 
-    *(AVClass**)s->resample_context = &audioresample_context_class;
+    *(const AVClass**)s->resample_context = &audioresample_context_class;
 
     return s;
 }
