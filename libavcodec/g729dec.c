@@ -306,7 +306,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         gc_1st_index  = get_bits(&gb, format.gc_1st_index_bits);
         gc_2nd_index  = get_bits(&gb, format.gc_2nd_index_bits);
 
-        if(!i) {
+        if (frame_erasure)
+            pitch_delay_3x   = 3 * ctx->pitch_delay_int_prev;
+        else if(!i) {
             if (bad_pitch)
                 pitch_delay_3x   = 3 * ctx->pitch_delay_int_prev;
             else
@@ -348,6 +350,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                                      ( voicing && frame_erasure) ? 0 : ctx->gain_code,
                                      1 << 13, 14, SUBFRAME_SIZE);
 
+        if (frame_erasure)
+            ctx->pitch_delay_int_prev = FFMIN(ctx->pitch_delay_int_prev + 1, PITCH_DELAY_MAX);
+        else
             ctx->pitch_delay_int_prev = pitch_delay_int;
     }
 
