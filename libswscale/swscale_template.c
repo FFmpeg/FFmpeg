@@ -2221,10 +2221,10 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
                                    int srcFormat, uint8_t *formatConvBuffer,
                                    uint32_t *pal, int isAlpha)
 {
-    int32_t *mmx2FilterPos = c->lumMmx2FilterPos;
-    int16_t *mmx2Filter = c->lumMmx2Filter;
-    int canMMX2BeUsed = c->canMMX2BeUsed;
-    void *funnyYCode = c->funnyYCode;
+    int32_t av_unused *mmx2FilterPos = c->lumMmx2FilterPos;
+    int16_t av_unused *mmx2Filter    = c->lumMmx2Filter;
+    int     av_unused canMMX2BeUsed  = c->canMMX2BeUsed;
+    void    av_unused *funnyYCode    = c->funnyYCode;
     void (*internal_func)(uint8_t *, const uint8_t *, long, uint32_t *) = isAlpha ? c->hascale_internal : c->hyscale_internal;
 
     if (isAlpha) {
@@ -2414,10 +2414,10 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
                                    int srcFormat, uint8_t *formatConvBuffer,
                                    uint32_t *pal)
 {
-    int32_t *mmx2FilterPos = c->chrMmx2FilterPos;
-    int16_t *mmx2Filter = c->chrMmx2Filter;
-    int canMMX2BeUsed = c->canMMX2BeUsed;
-    void *funnyUVCode = c->funnyUVCode;
+    int32_t av_unused *mmx2FilterPos = c->chrMmx2FilterPos;
+    int16_t av_unused *mmx2Filter    = c->chrMmx2Filter;
+    int     av_unused canMMX2BeUsed  = c->canMMX2BeUsed;
+    void    av_unused *funnyUVCode   = c->funnyUVCode;
 
     if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || srcFormat==PIX_FMT_MONOWHITE)
         return;
