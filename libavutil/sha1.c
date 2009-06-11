@@ -35,17 +35,18 @@ const int av_sha1_size = sizeof(AVSHA1);
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
 #define blk0(i) (block[i] = be2me_32(((const uint32_t*)buffer)[i]))
-#define blk(i) (block[i] = rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1))
+#define blk(i)  (block[i] = rol(block[i-3] ^ block[i-8] ^ block[i-14] ^ block[i-16], 1))
 
-#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)    +blk0(i)+0x5A827999+rol(v,5);w=rol(w,30);
-#define R1(v,w,x,y,z,i) z+=((w&(x^y))^y)    +blk (i)+0x5A827999+rol(v,5);w=rol(w,30);
-#define R2(v,w,x,y,z,i) z+=( w^x     ^y)    +blk (i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
-#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk (i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
-#define R4(v,w,x,y,z,i) z+=( w^x     ^y)    +blk (i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
+#define R0(v,w,x,y,z,i) z += ((w&(x^y))^y)     + blk0(i) + 0x5A827999 + rol(v, 5); w = rol(w, 30);
+#define R1(v,w,x,y,z,i) z += ((w&(x^y))^y)     + blk (i) + 0x5A827999 + rol(v, 5); w = rol(w, 30);
+#define R2(v,w,x,y,z,i) z += ( w^x     ^y)     + blk (i) + 0x6ED9EBA1 + rol(v, 5); w = rol(w, 30);
+#define R3(v,w,x,y,z,i) z += (((w|x)&y)|(w&x)) + blk (i) + 0x8F1BBCDC + rol(v, 5); w = rol(w, 30);
+#define R4(v,w,x,y,z,i) z += ( w^x     ^y)     + blk (i) + 0xCA62C1D6 + rol(v, 5); w = rol(w, 30);
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
-static void transform(uint32_t state[5], const uint8_t buffer[64]){
+static void transform(uint32_t state[5], const uint8_t buffer[64])
+{
     uint32_t block[80];
     unsigned int i, a, b, c, d, e;
 
@@ -55,38 +56,64 @@ static void transform(uint32_t state[5], const uint8_t buffer[64]){
     d = state[3];
     e = state[4];
 #if CONFIG_SMALL
-    for(i=0; i<80; i++){
+    for (i = 0; i < 80; i++) {
         int t;
-        if(i<16) t= be2me_32(((uint32_t*)buffer)[i]);
-        else     t= rol(block[i-3]^block[i-8]^block[i-14]^block[i-16],1);
-        block[i]= t;
-        t+= e+rol(a,5);
-        if(i<40){
-            if(i<20)    t+= ((b&(c^d))^d)    +0x5A827999;
-            else        t+= ( b^c     ^d)    +0x6ED9EBA1;
-        }else{
-            if(i<60)    t+= (((b|c)&d)|(b&c))+0x8F1BBCDC;
-            else        t+= ( b^c     ^d)    +0xCA62C1D6;
+        if (i < 16)
+            t = be2me_32(((uint32_t*)buffer)[i]);
+        else
+            t = rol(block[i-3] ^ block[i-8] ^ block[i-14] ^ block[i-16], 1);
+        block[i] = t;
+        t += e + rol(a, 5);
+        if (i < 40) {
+            if (i < 20)
+                t += ((b&(c^d))^d)     + 0x5A827999;
+            else
+                t += ( b^c     ^d)     + 0x6ED9EBA1;
+        } else {
+            if (i < 60)
+                t += (((b|c)&d)|(b&c)) + 0x8F1BBCDC;
+            else
+                t += ( b^c     ^d)     + 0xCA62C1D6;
         }
-        e= d;
-        d= c;
-        c= rol(b,30);
-        b= a;
-        a= t;
+        e = d;
+        d = c;
+        c = rol(b, 30);
+        b = a;
+        a = t;
     }
 #else
-    for(i=0; i<15; i+=5){
-        R0(a,b,c,d,e,0+i); R0(e,a,b,c,d,1+i); R0(d,e,a,b,c,2+i); R0(c,d,e,a,b,3+i); R0(b,c,d,e,a,4+i);
+    for (i = 0; i < 15; i += 5) {
+        R0(a, b, c, d, e, 0 + i);
+        R0(e, a, b, c, d, 1 + i);
+        R0(d, e, a, b, c, 2 + i);
+        R0(c, d, e, a, b, 3 + i);
+        R0(b, c, d, e, a, 4 + i);
     }
-    R0(a,b,c,d,e,15); R1(e,a,b,c,d,16); R1(d,e,a,b,c,17); R1(c,d,e,a,b,18); R1(b,c,d,e,a,19);
-    for(i=20; i<40; i+=5){
-        R2(a,b,c,d,e,0+i); R2(e,a,b,c,d,1+i); R2(d,e,a,b,c,2+i); R2(c,d,e,a,b,3+i); R2(b,c,d,e,a,4+i);
+    R0(a, b, c, d, e, 15);
+    R1(e, a, b, c, d, 16);
+    R1(d, e, a, b, c, 17);
+    R1(c, d, e, a, b, 18);
+    R1(b, c, d, e, a, 19);
+    for (i = 20; i < 40; i += 5) {
+        R2(a, b, c, d, e, 0 + i);
+        R2(e, a, b, c, d, 1 + i);
+        R2(d, e, a, b, c, 2 + i);
+        R2(c, d, e, a, b, 3 + i);
+        R2(b, c, d, e, a, 4 + i);
     }
-    for(; i<60; i+=5){
-        R3(a,b,c,d,e,0+i); R3(e,a,b,c,d,1+i); R3(d,e,a,b,c,2+i); R3(c,d,e,a,b,3+i); R3(b,c,d,e,a,4+i);
+    for (; i < 60; i += 5) {
+        R3(a, b, c, d, e, 0 + i);
+        R3(e, a, b, c, d, 1 + i);
+        R3(d, e, a, b, c, 2 + i);
+        R3(c, d, e, a, b, 3 + i);
+        R3(b, c, d, e, a, 4 + i);
     }
-    for(; i<80; i+=5){
-        R4(a,b,c,d,e,0+i); R4(e,a,b,c,d,1+i); R4(d,e,a,b,c,2+i); R4(c,d,e,a,b,3+i); R4(b,c,d,e,a,4+i);
+    for (; i < 80; i += 5) {
+        R4(a, b, c, d, e, 0 + i);
+        R4(e, a, b, c, d, 1 + i);
+        R4(d, e, a, b, c, 2 + i);
+        R4(c, d, e, a, b, 3 + i);
+        R4(b, c, d, e, a, 4 + i);
     }
 #endif
     state[0] += a;
@@ -96,7 +123,8 @@ static void transform(uint32_t state[5], const uint8_t buffer[64]){
     state[4] += e;
 }
 
-void av_sha1_init(AVSHA1* ctx){
+void av_sha1_init(AVSHA1* ctx)
+{
     ctx->state[0] = 0x67452301;
     ctx->state[1] = 0xEFCDAB89;
     ctx->state[2] = 0x98BADCFE;
@@ -105,63 +133,64 @@ void av_sha1_init(AVSHA1* ctx){
     ctx->count    = 0;
 }
 
-void av_sha1_update(AVSHA1* ctx, const uint8_t* data, unsigned int len){
+void av_sha1_update(AVSHA1* ctx, const uint8_t* data, unsigned int len)
+{
     unsigned int i, j;
 
     j = ctx->count & 63;
     ctx->count += len;
 #if CONFIG_SMALL
-    for( i = 0; i < len; i++ ){
-        ctx->buffer[ j++ ] = data[i];
-        if( 64 == j ){
+    for (i = 0; i < len; i++) {
+        ctx->buffer[j++] = data[i];
+        if (64 == j) {
             transform(ctx->state, ctx->buffer);
             j = 0;
         }
     }
 #else
     if ((j + len) > 63) {
-        memcpy(&ctx->buffer[j], data, (i = 64-j));
+        memcpy(&ctx->buffer[j], data, (i = 64 - j));
         transform(ctx->state, ctx->buffer);
-        for ( ; i + 63 < len; i += 64) {
+        for (; i + 63 < len; i += 64)
             transform(ctx->state, &data[i]);
-        }
-        j=0;
-    }
-    else i = 0;
+        j = 0;
+    } else
+        i = 0;
     memcpy(&ctx->buffer[j], &data[i], len - i);
 #endif
 }
 
-void av_sha1_final(AVSHA1* ctx, uint8_t digest[20]){
+void av_sha1_final(AVSHA1* ctx, uint8_t digest[20])
+{
     int i;
-    uint64_t finalcount= be2me_64(ctx->count<<3);
+    uint64_t finalcount = be2me_64(ctx->count << 3);
 
     av_sha1_update(ctx, "\200", 1);
-    while ((ctx->count & 63) != 56) {
+    while ((ctx->count & 63) != 56)
         av_sha1_update(ctx, "", 1);
-    }
     av_sha1_update(ctx, (uint8_t *)&finalcount, 8); /* Should cause a transform() */
-    for(i=0; i<5; i++)
-        ((uint32_t*)digest)[i]= be2me_32(ctx->state[i]);
+    for (i = 0; i < 5; i++)
+        ((uint32_t*)digest)[i] = be2me_32(ctx->state[i]);
 }
 
 #ifdef TEST
 #include <stdio.h>
 #undef printf
 
-int main(void){
+int main(void)
+{
     int i, k;
     AVSHA1 ctx;
     unsigned char digest[20];
 
-    for(k=0; k<3; k++){
+    for (k = 0; k < 3; k++) {
         av_sha1_init(&ctx);
-        if(k==0)
+        if (k == 0)
             av_sha1_update(&ctx, "abc", 3);
-        else if(k==1)
+        else if (k == 1)
             av_sha1_update(&ctx, "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56);
         else
-            for(i=0; i<1000*1000; i++)
+            for (i = 0; i < 1000 * 1000; i++)
                 av_sha1_update(&ctx, "a", 1);
         av_sha1_final(&ctx, digest);
         for (i = 0; i < 20; i++)
