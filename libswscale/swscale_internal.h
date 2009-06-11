@@ -28,6 +28,7 @@
 #endif
 
 #include "libavutil/avutil.h"
+#include "libavutil/internal.h"
 
 #define STR(s)         AV_TOSTRING(s) //AV_STRINGIFY is too long
 
