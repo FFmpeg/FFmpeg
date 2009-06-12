@@ -254,6 +254,7 @@ const AVCodecTag codec_wav_tags[] = {
     { CODEC_ID_DTS,             0x2001 },
     { CODEC_ID_SONIC,           0x2048 },
     { CODEC_ID_SONIC_LS,        0x2048 },
+    { CODEC_ID_PCM_MULAW,       0x6c75 },
     { CODEC_ID_AAC,             0x706d },
     { CODEC_ID_AAC,             0x4143 },
     { CODEC_ID_FLAC,            0xF1AC },
