@@ -111,11 +111,11 @@ typedef struct {
 
     int16_t quant_energy[4];    ///< (5.10) past quantized energy
 
-    /// (1.14) pitch gain of previous subframe
-    int16_t gain_pitch;
+    /// (1.14) pitch gain of current and five previous subframes
+    int16_t past_gain_pitch[6];
 
-    /// (14.1) gain code from previous subframe
-    int16_t gain_code;
+    /// (14.1) gain code from current and previous subframe
+    int16_t past_gain_code[2];
 
     int16_t was_periodic;       ///< whether previous frame was declared as periodic or not (4.4)
     uint16_t rand_value;        ///< random number generator value (4.4.4)
@@ -406,23 +406,26 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         ff_acelp_weighted_vector_sum(fc + pitch_delay_int,
                                      fc + pitch_delay_int,
                                      fc, 1 << 14,
-                                     av_clip(ctx->gain_pitch, SHARP_MIN, SHARP_MAX),
+                                     av_clip(ctx->past_gain_pitch[0], SHARP_MIN, SHARP_MAX),
                                      0, 14,
                                      SUBFRAME_SIZE - pitch_delay_int);
 
+        memmove(ctx->past_gain_pitch+1, ctx->past_gain_pitch, 5 * sizeof(int16_t));
+        ctx->past_gain_code[1] = ctx->past_gain_code[0];
+
         if (frame_erasure) {
-            ctx->gain_pitch = (29491 * ctx->gain_pitch) >> 15; // 0.90 (0.15)
-            ctx->gain_code  = ( 2007 * ctx->gain_code ) >> 11; // 0.98 (0.11)
+            ctx->past_gain_pitch[0] = (29491 * ctx->past_gain_pitch[0]) >> 15; // 0.90 (0.15)
+            ctx->past_gain_code[0]  = ( 2007 * ctx->past_gain_code[0] ) >> 11; // 0.98 (0.11)
 
             gain_corr_factor = 0;
         } else {
-            ctx->gain_pitch  = cb_gain_1st_8k[gc_1st_index][0] +
-                               cb_gain_2nd_8k[gc_2nd_index][0];
+            ctx->past_gain_pitch[0]  = cb_gain_1st_8k[gc_1st_index][0] +
+                                       cb_gain_2nd_8k[gc_2nd_index][0];
             gain_corr_factor = cb_gain_1st_8k[gc_1st_index][1] +
                                cb_gain_2nd_8k[gc_2nd_index][1];
 
             /* Decode the fixed-codebook gain. */
-            ctx->gain_code = ff_acelp_decode_gain_code(&ctx->dsp, gain_corr_factor,
+            ctx->past_gain_code[0] = ff_acelp_decode_gain_code(&ctx->dsp, gain_corr_factor,
                                                        fc, MR_ENERGY,
                                                        ctx->quant_energy,
                                                        ma_prediction_coeff,
@@ -439,8 +442,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         ff_acelp_weighted_vector_sum(ctx->exc + i * SUBFRAME_SIZE,
                                      ctx->exc + i * SUBFRAME_SIZE, fc,
-                                     (!ctx->was_periodic && frame_erasure) ? 0 : ctx->gain_pitch,
-                                     ( ctx->was_periodic && frame_erasure) ? 0 : ctx->gain_code,
+                                     (!ctx->was_periodic && frame_erasure) ? 0 : ctx->past_gain_pitch[0],
+                                     ( ctx->was_periodic && frame_erasure) ? 0 : ctx->past_gain_code[0],
                                      1 << 13, 14, SUBFRAME_SIZE);
 
         if (frame_erasure)
