@@ -87,7 +87,8 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     if (!context->buffer)
         return -1;
 
-    if(avctx->extradata_size >= 9 && !memcmp(avctx->extradata + avctx->extradata_size - 9, "BottomUp", 9))
+    if((avctx->extradata_size >= 9 && !memcmp(avctx->extradata + avctx->extradata_size - 9, "BottomUp", 9)) ||
+       avctx->codec_tag == MKTAG( 3 ,  0 ,  0 ,  0 ))
         context->flip=1;
 
     return 0;

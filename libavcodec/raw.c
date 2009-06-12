@@ -48,6 +48,7 @@ const PixelFormatTag ff_raw_pixelFormatTags[] = {
     { PIX_FMT_BGR555,  MKTAG('B', 'G', 'R', 15) },
     { PIX_FMT_RGB565,  MKTAG('R', 'G', 'B', 16) },
     { PIX_FMT_BGR565,  MKTAG('B', 'G', 'R', 16) },
+    { PIX_FMT_RGB565,  MKTAG( 3 ,  0 ,  0 ,  0 ) },
 
     /* quicktime */
     { PIX_FMT_UYVY422, MKTAG('2', 'v', 'u', 'y') },
