@@ -75,12 +75,12 @@ int av_cold ff_wma_get_frame_len_bits(int sample_rate, int version,
 
     int frame_len_bits;
 
-    if (sample_rate <= 16000)
+    if (sample_rate <= 16000) {
         frame_len_bits = 9;
-    else if (sample_rate <= 22050 ||
-             (sample_rate <= 32000 && version == 1))
+    } else if (sample_rate <= 22050 ||
+             (sample_rate <= 32000 && version == 1)) {
         frame_len_bits = 10;
-    else if (sample_rate <= 48000) {
+    } else if (sample_rate <= 48000) {
         frame_len_bits = 11;
     } else if (sample_rate <= 96000) {
         frame_len_bits = 12;
@@ -153,16 +153,17 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
     /* if version 2, then the rates are normalized */
     sample_rate1 = s->sample_rate;
     if (s->version == 2) {
-        if (sample_rate1 >= 44100)
+        if (sample_rate1 >= 44100) {
             sample_rate1 = 44100;
-        else if (sample_rate1 >= 22050)
+        } else if (sample_rate1 >= 22050) {
             sample_rate1 = 22050;
-        else if (sample_rate1 >= 16000)
+        } else if (sample_rate1 >= 16000) {
             sample_rate1 = 16000;
-        else if (sample_rate1 >= 11025)
+        } else if (sample_rate1 >= 11025) {
             sample_rate1 = 11025;
-        else if (sample_rate1 >= 8000)
+        } else if (sample_rate1 >= 8000) {
             sample_rate1 = 8000;
+        }
     }
 
     bps = (float)s->bit_rate / (float)(s->nb_channels * s->sample_rate);
@@ -174,22 +175,25 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
     if (s->nb_channels == 2)
         bps1 = bps * 1.6;
     if (sample_rate1 == 44100) {
-        if (bps1 >= 0.61)
+        if (bps1 >= 0.61) {
             s->use_noise_coding = 0;
-        else
+        } else {
             high_freq = high_freq * 0.4;
+        }
     } else if (sample_rate1 == 22050) {
-        if (bps1 >= 1.16)
+        if (bps1 >= 1.16) {
             s->use_noise_coding = 0;
-        else if (bps1 >= 0.72)
+        } else if (bps1 >= 0.72) {
             high_freq = high_freq * 0.7;
-        else
+        } else {
             high_freq = high_freq * 0.6;
+        }
     } else if (sample_rate1 == 16000) {
-        if (bps > 0.5)
+        if (bps > 0.5) {
             high_freq = high_freq * 0.5;
-        else
+        } else {
             high_freq = high_freq * 0.3;
+        }
     } else if (sample_rate1 == 11025) {
         high_freq = high_freq * 0.7;
     } else if (sample_rate1 == 8000) {
@@ -252,12 +256,13 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
                 table = NULL;
                 a = s->frame_len_bits - BLOCK_MIN_BITS - k;
                 if (a < 3) {
-                    if (s->sample_rate >= 44100)
+                    if (s->sample_rate >= 44100) {
                         table = exponent_band_44100[a];
-                    else if (s->sample_rate >= 32000)
+                    } else if (s->sample_rate >= 32000) {
                         table = exponent_band_32000[a];
-                    else if (s->sample_rate >= 22050)
+                    } else if (s->sample_rate >= 22050) {
                         table = exponent_band_22050[a];
+                    }
                 }
                 if (table) {
                     n = *table++;
@@ -345,10 +350,11 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
     if (s->use_noise_coding) {
 
         /* init the noise generator */
-        if (s->use_exp_vlc)
+        if (s->use_exp_vlc) {
             s->noise_mult = 0.02;
-        else
+        } else {
             s->noise_mult = 0.04;
+        }
 
 #ifdef TRACE
         for (i = 0; i < NOISE_TAB_SIZE; i++)
@@ -370,10 +376,11 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
     /* choose the VLC tables for the coefficients */
     coef_vlc_table = 2;
     if (s->sample_rate >= 32000) {
-        if (bps1 < 0.72)
+        if (bps1 < 0.72) {
             coef_vlc_table = 0;
-        else if (bps1 < 1.16)
+        } else if (bps1 < 1.16) {
             coef_vlc_table = 1;
+        }
     }
     s->coef_vlcs[0]= &coef_vlcs[coef_vlc_table * 2    ];
     s->coef_vlcs[1]= &coef_vlcs[coef_vlc_table * 2 + 1];
