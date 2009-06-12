@@ -246,6 +246,36 @@ static const int16_t cb_gain_2nd_8k[1<<GC_2ND_IDX_BITS_8K][2] = { /*(1.14) (1.13
 };
 
 /**
+ * gain codebook (first stage), 6.4k mode (D.3.9.2 of G.729)
+ */
+static const int16_t cb_gain_1st_6k4[1<<GC_1ST_IDX_BITS_6K4][2] =
+{ /*(0.14) (1.14)*/
+ { 5849,     0 },
+ { 3171,  9280 },
+ { 3617,  6747 },
+ { 4987, 22294 },
+ { 2929,  1078 },
+ { 6068,  6093 },
+ { 9425,  2731 },
+ { 3915, 12872 },
+};
+
+/**
+ * gain codebook (second stage), 6.4k mode (D.3.9.2 of G.729)
+ */
+static const int16_t cb_gain_2nd_6k4[1<<GC_2ND_IDX_BITS_6K4][2] =
+{ /*(1.14) (1.14)*/
+ {    0,  4175 },
+ {10828, 27602 },
+ {16423, 15724 },
+ { 4478,  7324 },
+ { 3988,     0 },
+ {10291, 11385 },
+ {11956, 10735 },
+ { 7876,  7821 },
+};
+
+/**
  * 4th order Moving Average (MA) Predictor codebook (3.2.4 of G.729)
  *
  * float cb_ma_predictor_float[2][MA_NP][10] = {

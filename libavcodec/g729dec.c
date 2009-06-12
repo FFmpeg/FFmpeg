@@ -419,10 +419,25 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
             gain_corr_factor = 0;
         } else {
+            if (packet_type == FORMAT_G729D_6K4) {
+                ctx->past_gain_pitch[0]  = cb_gain_1st_6k4[gc_1st_index][0] +
+                                           cb_gain_2nd_6k4[gc_2nd_index][0];
+                gain_corr_factor = cb_gain_1st_6k4[gc_1st_index][1] +
+                                   cb_gain_2nd_6k4[gc_2nd_index][1];
+
+                /* Without check below overflow can occure in ff_acelp_update_past_gain.
+                   It is not issue for G.729, because gain_corr_factor in it's case is always
+                   greater than 1024, while in G.729D it can be even zero. */
+                gain_corr_factor = FFMAX(gain_corr_factor, 1024);
+#ifndef G729_BITEXACT
+                gain_corr_factor >>= 1;
+#endif
+            } else {
             ctx->past_gain_pitch[0]  = cb_gain_1st_8k[gc_1st_index][0] +
                                        cb_gain_2nd_8k[gc_2nd_index][0];
             gain_corr_factor = cb_gain_1st_8k[gc_1st_index][1] +
                                cb_gain_2nd_8k[gc_2nd_index][1];
+            }
 
             /* Decode the fixed-codebook gain. */
             ctx->past_gain_code[0] = ff_acelp_decode_gain_code(&ctx->dsp, gain_corr_factor,
@@ -430,6 +445,21 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                                                                ctx->quant_energy,
                                                                ma_prediction_coeff,
                                                                SUBFRAME_SIZE, 4);
+#ifdef G729_BITEXACT
+            /*
+              This correction required to get bit-exact result with
+              reference code, because gain_corr_factor in G.729D is
+              two times larger than in original G.729.
+
+              If bit-exact result is not issue then gain_corr_factor
+              can be simpler devided by 2 before call to g729_get_gain_code
+              instead of using correction below.
+            */
+            if (packet_type == FORMAT_G729D_6K4) {
+                gain_corr_factor >>= 1;
+                ctx->past_gain_code[0] >>= 1;
+            }
+#endif
         }
         ff_acelp_update_past_gain(ctx->quant_energy, gain_corr_factor, 2, frame_erasure);
 
