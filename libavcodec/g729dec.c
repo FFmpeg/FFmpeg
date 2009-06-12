@@ -71,6 +71,12 @@
  */
 #define SHARP_MAX                  13017
 
+typedef enum {
+    FORMAT_G729_8K = 0,
+    FORMAT_G729D_6K4,
+    FORMAT_COUNT,
+} G729Formats;
+
 typedef struct {
     uint8_t ac_index_bits[2];   ///< adaptive codebook index for second subframe (size in bits)
     uint8_t parity_bit;         ///< parity bit for pitch delay
@@ -233,6 +239,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int bad_pitch = 0;        ///< parity check failed
     int i;
     int16_t *tmp;
+    G729Formats packet_type;
     G729Context *ctx = avctx->priv_data;
     int16_t lp[2][11];           // (3.12)
     uint8_t ma_predictor;     ///< switched MA predictor of LSP quantizer
@@ -249,9 +256,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     if (buf_size == 10) {
+        packet_type = FORMAT_G729_8K;
         format = format_g729_8k;
         av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729 @ 8kbit/s");
     } else if (buf_size == 8) {
+        packet_type = FORMAT_G729D_6K4;
         format = format_g729d_6k4;
         av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729D @ 6.4kbit/s");
     } else {
