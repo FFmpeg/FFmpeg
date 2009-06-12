@@ -424,3 +424,64 @@ int ff_wma_end(AVCodecContext *avctx)
 
     return 0;
 }
+
+/**
+ * Decode run level compressed coefficients.
+ * @param avctx codec context
+ * @param gb bitstream reader context
+ * @param vlc vlc table for get_vlc2
+ * @param level_table level codes
+ * @param run_table run codes
+ * @param version 0 for wma1,2 1 for wmapro
+ * @param ptr output buffer
+ * @param offset offset in the output buffer
+ * @param num_coefs number of input coefficents
+ * @param block_len input buffer length (2^n)
+ * @param frame_len_bits number of bits for escaped run codes
+ * @param coef_nb_bits number of bits for escaped level codes
+ * @return 0 on success, -1 otherwise
+ */
+int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
+                            VLC *vlc,
+                            const uint16_t *level_table, const uint16_t *run_table,
+                            int version, int16_t *ptr, int offset,
+                            int num_coefs, int block_len, int frame_len_bits,
+                            int coef_nb_bits)
+{
+    int code, run, level, sign;
+    int16_t* eptr = ptr + num_coefs;
+    for(;;) {
+        code = get_vlc2(gb, vlc->table, VLCBITS, VLCMAX);
+        if (code < 0)
+            return -1;
+        if (code == 1) {
+            /* EOB */
+            break;
+        } else if (code == 0) {
+            /* escape */
+            level = get_bits(gb, coef_nb_bits);
+            /* NOTE: this is rather suboptimal. reading
+               block_len_bits would be better */
+            run = get_bits(gb, frame_len_bits);
+        } else {
+            /* normal code */
+            run = run_table[code];
+            level = level_table[code];
+        }
+        sign = get_bits1(gb);
+        if (!sign)
+             level = -level;
+        ptr += run;
+        if (ptr >= eptr)
+        {
+            av_log(NULL, AV_LOG_ERROR, "overflow in spectral RLE, ignoring\n");
+            break;
+        }
+        *ptr++ = level;
+        /* NOTE: EOB can be omitted */
+        if (ptr >= eptr)
+            break;
+    }
+    return 0;
+}
+

@@ -148,5 +148,11 @@ int av_cold ff_wma_get_frame_len_bits(int sample_rate, int version,
 int ff_wma_init(AVCodecContext * avctx, int flags2);
 int ff_wma_total_gain_to_bits(int total_gain);
 int ff_wma_end(AVCodecContext *avctx);
+int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
+                            VLC *vlc,
+                            const uint16_t *level_table, const uint16_t *run_table,
+                            int version, int16_t *ptr, int offset,
+                            int num_coefs, int block_len, int frame_len_bits,
+                            int coef_nb_bits);
 
 #endif /* AVCODEC_WMA_H */

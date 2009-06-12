@@ -349,7 +349,7 @@ static void wma_window(WMACodecContext *s, float *out)
  */
 static int wma_decode_block(WMACodecContext *s)
 {
-    int n, v, a, ch, code, bsize;
+    int n, v, a, ch, bsize;
     int coef_nb_bits, total_gain;
     int nb_coefs[MAX_CHANNELS];
     float mdct_norm;
@@ -485,53 +485,17 @@ static int wma_decode_block(WMACodecContext *s)
     /* parse spectral coefficients : just RLE encoding */
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
-            VLC *coef_vlc;
-            int level, run, sign, tindex;
-            int16_t *ptr, *eptr;
-            const uint16_t *level_table, *run_table;
+            int tindex;
+            int16_t* ptr = &s->coefs1[ch][0];
 
             /* special VLC tables are used for ms stereo because
                there is potentially less energy there */
             tindex = (ch == 1 && s->ms_stereo);
-            coef_vlc = &s->coef_vlc[tindex];
-            run_table = s->run_table[tindex];
-            level_table = s->level_table[tindex];
-            /* XXX: optimize */
-            ptr = &s->coefs1[ch][0];
-            eptr = ptr + nb_coefs[ch];
             memset(ptr, 0, s->block_len * sizeof(int16_t));
-            for(;;) {
-                code = get_vlc2(&s->gb, coef_vlc->table, VLCBITS, VLCMAX);
-                if (code < 0)
-                    return -1;
-                if (code == 1) {
-                    /* EOB */
-                    break;
-                } else if (code == 0) {
-                    /* escape */
-                    level = get_bits(&s->gb, coef_nb_bits);
-                    /* NOTE: this is rather suboptimal. reading
-                       block_len_bits would be better */
-                    run = get_bits(&s->gb, s->frame_len_bits);
-                } else {
-                    /* normal code */
-                    run = run_table[code];
-                    level = level_table[code];
-                }
-                sign = get_bits1(&s->gb);
-                if (!sign)
-                    level = -level;
-                ptr += run;
-                if (ptr >= eptr)
-                {
-                    av_log(NULL, AV_LOG_ERROR, "overflow in spectral RLE, ignoring\n");
-                    break;
-                }
-                *ptr++ = level;
-                /* NOTE: EOB can be omitted */
-                if (ptr >= eptr)
-                    break;
-            }
+            ff_wma_run_level_decode(s->avctx, &s->gb, &s->coef_vlc[tindex],
+                  s->level_table[tindex], s->run_table[tindex],
+                  0, ptr, 0, nb_coefs[ch],
+                  s->block_len, s->frame_len_bits, coef_nb_bits);
         }
         if (s->version == 1 && s->nb_channels >= 2) {
             align_get_bits(&s->gb);
