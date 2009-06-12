@@ -258,9 +258,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         lsf_restore_from_previous(ctx->lsfq, ctx->past_quantizer_outputs,
                                   ctx->ma_predictor_prev);
     else {
-    lsf_decode(ctx->lsfq, ctx->past_quantizer_outputs,
-               ma_predictor,
-               quantizer_1st, quantizer_2nd_lo, quantizer_2nd_hi);
+        lsf_decode(ctx->lsfq, ctx->past_quantizer_outputs,
+                   ma_predictor,
+                   quantizer_1st, quantizer_2nd_lo, quantizer_2nd_hi);
         ctx->ma_predictor_prev = ma_predictor;
     }
 
