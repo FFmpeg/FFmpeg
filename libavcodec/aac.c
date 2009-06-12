@@ -565,16 +565,16 @@ static int decode_ics_info(AACContext * ac, IndividualChannelStream * ics, GetBi
             }
         }
         ics->num_windows   = 8;
-        ics->swb_offset    =      swb_offset_128[ac->m4ac.sampling_index];
+        ics->swb_offset    =   ff_swb_offset_128[ac->m4ac.sampling_index];
         ics->num_swb       =  ff_aac_num_swb_128[ac->m4ac.sampling_index];
-        ics->tns_max_bands =   tns_max_bands_128[ac->m4ac.sampling_index];
+        ics->tns_max_bands = ff_tns_max_bands_128[ac->m4ac.sampling_index];
         ics->predictor_present = 0;
     } else {
         ics->max_sfb       = get_bits(gb, 6);
         ics->num_windows   = 1;
-        ics->swb_offset    =     swb_offset_1024[ac->m4ac.sampling_index];
+        ics->swb_offset    =  ff_swb_offset_1024[ac->m4ac.sampling_index];
         ics->num_swb       = ff_aac_num_swb_1024[ac->m4ac.sampling_index];
-        ics->tns_max_bands =  tns_max_bands_1024[ac->m4ac.sampling_index];
+        ics->tns_max_bands = ff_tns_max_bands_1024[ac->m4ac.sampling_index];
         ics->predictor_present = get_bits1(gb);
         ics->predictor_reset_group = 0;
         if (ics->predictor_present) {
