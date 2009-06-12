@@ -556,6 +556,7 @@ following image formats are supported:
     @tab Used in Sierra Online game audio files.
 @item DPCM Sol               @tab     @tab  X
 @item DPCM Xan               @tab     @tab  X
+    @tab Used in Origin's Wing Commander IV AVI files.
 @item DSP Group TrueSpeech   @tab     @tab  X
 @item DV audio               @tab     @tab  X
 @item Enhanced AC-3          @tab     @tab  X
@@ -630,7 +631,6 @@ following image formats are supported:
 @item Westwood Audio (SND1)  @tab     @tab  X
 @item Windows Media Audio 1  @tab  X  @tab  X
 @item Windows Media Audio 2  @tab  X  @tab  X
-    @tab Used in Origin's Wing Commander IV AVI files.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
