@@ -62,6 +62,30 @@ static void init_coef_vlc(VLC *vlc, uint16_t **prun_table,
     *pint_table   = int_table;
 }
 
+/**
+ *@brief Get the samples per frame for this stream.
+ *@param sample_rate output sample_rate
+ *@param version wma version
+ *@param decode_flags codec compression features
+ *@return log2 of the number of output samples per frame
+ */
+int av_cold ff_wma_get_frame_len_bits(int sample_rate, int version,
+                                      unsigned int decode_flags)
+{
+
+    int frame_len_bits;
+
+    if (sample_rate <= 16000)
+        frame_len_bits = 9;
+    else if (sample_rate <= 22050 ||
+             (sample_rate <= 32000 && version == 1))
+        frame_len_bits = 10;
+    else
+        frame_len_bits = 11;
+
+    return frame_len_bits;
+}
+
 int ff_wma_init(AVCodecContext *avctx, int flags2)
 {
     WMACodecContext *s = avctx->priv_data;
@@ -90,14 +114,8 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
     }
 
     /* compute MDCT block size */
-    if (s->sample_rate <= 16000) {
-        s->frame_len_bits = 9;
-    } else if ( s->sample_rate <= 22050 ||
-               (s->sample_rate <= 32000 && s->version == 1)) {
-        s->frame_len_bits = 10;
-    } else {
-        s->frame_len_bits = 11;
-    }
+    s->frame_len_bits = ff_wma_get_frame_len_bits(s->sample_rate, s->version, 0);
+
     s->frame_len = 1 << s->frame_len_bits;
     if (s->use_variable_block_len) {
         int nb_max, nb;
