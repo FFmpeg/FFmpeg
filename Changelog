@@ -23,6 +23,7 @@ version <next>:
 - QCP demuxer
 - SoX native format muxer and demuxer
 - AMR-NB decoding/encoding, AMR-WB decoding via OpenCORE libraries
+- DPX image decoder
 
 
 
