@@ -433,10 +433,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 gain_corr_factor >>= 1;
 #endif
             } else {
-            ctx->past_gain_pitch[0]  = cb_gain_1st_8k[gc_1st_index][0] +
-                                       cb_gain_2nd_8k[gc_2nd_index][0];
-            gain_corr_factor = cb_gain_1st_8k[gc_1st_index][1] +
-                               cb_gain_2nd_8k[gc_2nd_index][1];
+                ctx->past_gain_pitch[0]  = cb_gain_1st_8k[gc_1st_index][0] +
+                                           cb_gain_2nd_8k[gc_2nd_index][0];
+                gain_corr_factor = cb_gain_1st_8k[gc_1st_index][1] +
+                                   cb_gain_2nd_8k[gc_2nd_index][1];
             }
 
             /* Decode the fixed-codebook gain. */
