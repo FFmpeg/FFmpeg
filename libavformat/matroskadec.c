@@ -1036,7 +1036,8 @@ static void matroska_convert_tags(AVFormatContext *s)
                     matroska_convert_tag(s, &tags[i].tag,
                                          &track[j].stream->metadata, NULL);
         } else {
-            matroska_convert_tag(s, &tags[i].tag, &s->metadata, NULL);
+            matroska_convert_tag(s, &tags[i].tag, &s->metadata,
+                                 tags[i].target.type);
         }
     }
 }
