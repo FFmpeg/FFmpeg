@@ -44,7 +44,8 @@ static const int quant_offsets[6] = { MPC8_Q5_OFFSET, MPC8_Q6_OFFSET, MPC8_Q7_OF
 
 static inline int mpc8_dec_base(GetBitContext *gb, int k, int n)
 {
-    int code = get_bits(gb, mpc8_cnk_len[k-1][n-1] - 1);
+    int len = mpc8_cnk_len[k-1][n-1] - 1;
+    int code = len ? get_bits_long(gb, len) : 0;
 
     if (code >= mpc8_cnk_lost[k-1][n-1])
         code = ((code << 1) | get_bits1(gb)) - mpc8_cnk_lost[k-1][n-1];
