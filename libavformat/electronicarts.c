@@ -47,6 +47,8 @@
 #define fVGT_TAG MKTAG('f', 'V', 'G', 'T')    /* TGV p-frame */
 #define mTCD_TAG MKTAG('m', 'T', 'C', 'D')    /* MDEC */
 #define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD i-frame */
+#define MADm_TAG MKTAG('M', 'A', 'D', 'm')    /* MAD p-frame */
+#define MADe_TAG MKTAG('M', 'A', 'D', 'e')    /* MAD lqp-frame */
 #define MPCh_TAG MKTAG('M', 'P', 'C', 'h')    /* MPEG2 */
 #define TGQs_TAG MKTAG('T', 'G', 'Q', 's')    /* TGQ i-frame (appears in .TGQ files) */
 #define pQGT_TAG MKTAG('p', 'Q', 'G', 'T')    /* TGQ i-frame (appears in .UV files) */
@@ -352,6 +354,10 @@ static int process_ea_header(AVFormatContext *s) {
                 ea->video_codec = CODEC_ID_TQI;
                 break;
 
+            case MADk_TAG :
+                ea->video_codec = CODEC_ID_MAD;
+                break;
+
             case MVhd_TAG :
                 err = process_video_header_vp6(s);
                 break;
@@ -508,9 +514,12 @@ static int ea_read_packet(AVFormatContext *s,
         case kVGT_TAG:
         case pQGT_TAG:
         case TGQs_TAG:
+        case MADk_TAG:
             key = PKT_FLAG_KEY;
         case MVIf_TAG:
         case fVGT_TAG:
+        case MADm_TAG:
+        case MADe_TAG:
             url_fseek(pb, -8, SEEK_CUR);     // include chunk preamble
             chunk_size += 8;
             goto get_video_packet;
