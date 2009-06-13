@@ -583,4 +583,5 @@ AVInputFormat ogg_demuxer = {
     NULL,
     ogg_read_timestamp,
     .extensions = "ogg",
+    .metadata_conv = ff_vorbiscomment_metadata_conv,
 };

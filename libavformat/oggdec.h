@@ -26,6 +26,7 @@
 #define AVFORMAT_OGGDEC_H
 
 #include "avformat.h"
+#include "metadata.h"
 
 struct ogg_codec {
     const int8_t *magic;
@@ -90,6 +91,8 @@ extern const struct ogg_codec ff_old_flac_codec;
 extern const struct ogg_codec ff_speex_codec;
 extern const struct ogg_codec ff_theora_codec;
 extern const struct ogg_codec ff_vorbis_codec;
+
+extern const AVMetadataConv ff_vorbiscomment_metadata_conv[];
 
 int vorbis_comment(AVFormatContext *ms, uint8_t *buf, int size);
 
