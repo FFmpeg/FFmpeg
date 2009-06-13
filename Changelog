@@ -24,6 +24,7 @@ version <next>:
 - SoX native format muxer and demuxer
 - AMR-NB decoding/encoding, AMR-WB decoding via OpenCORE libraries
 - DPX image decoder
+- Electronic Arts Madcow decoder
 
 
 

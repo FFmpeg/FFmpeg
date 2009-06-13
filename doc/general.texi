@@ -356,6 +356,7 @@ following image formats are supported:
     @tab Codec originally used in Feeble Files game.
 @item Electronic Arts CMV video  @tab     @tab  X
     @tab Used in NHL 95 game.
+@item Electronic Arts Madcow video  @tab     @tab  X
 @item Electronic Arts TGV video  @tab     @tab  X
 @item Electronic Arts TGQ video  @tab     @tab  X
 @item Electronic Arts TQI video  @tab     @tab  X
