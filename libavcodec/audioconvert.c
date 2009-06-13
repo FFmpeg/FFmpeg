@@ -107,7 +107,6 @@ static const struct {
 } channel_layout_map[] = {
     { "mono",        1,  CH_LAYOUT_MONO },
     { "stereo",      2,  CH_LAYOUT_STEREO },
-    { "surround",    3,  CH_LAYOUT_SURROUND },
     { "4.0",         4,  CH_LAYOUT_4POINT0 },
     { "quad",        4,  CH_LAYOUT_QUAD },
     { "5.0",         5,  CH_LAYOUT_5POINT0 },
