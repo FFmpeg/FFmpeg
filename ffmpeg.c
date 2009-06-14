@@ -1930,6 +1930,8 @@ static int av_encode(AVFormatContext **output_files,
     if (!bit_buffer)
         bit_buffer = av_malloc(bit_buffer_size);
     if (!bit_buffer) {
+        fprintf(stderr, "Cannot allocate %d bytes output buffer\n",
+                bit_buffer_size);
         ret = AVERROR(ENOMEM);
         goto fail;
     }
