@@ -124,6 +124,7 @@ static inline void decode_block_intra(MadContext * t, DCTELEM * block)
 
     /* The RL decoder is derived from mpeg1_decode_block_intra;
        Escaped level and run values a decoded differently */
+    i = 0;
     {
         OPEN_READER(re, &s->gb);
         /* now quantify & encode AC coefficients */
