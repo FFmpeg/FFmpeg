@@ -1632,6 +1632,8 @@ case $target_os in
     freebsd)
         disable need_memalign
         ;;
+    dragonfly)
+        ;;
     bsd/os)
         osextralibs="-lpoll -lgnugetopt"
         strip="strip -d"
