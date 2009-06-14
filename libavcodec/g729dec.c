@@ -97,10 +97,18 @@ static inline int get_parity(uint8_t value)
    return (0x6996966996696996ULL >> (value >> 2)) & 1;
 }
 
+static av_cold int decoder_init(AVCodecContext * avctx)
+{
     if (avctx->channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "Only mono sound is supported (requested channels: %d).\n", avctx->channels);
         return AVERROR_NOFMT;
     }
+
+    /* Both 8kbit/s and 6.4kbit/s modes uses two subframes per frame. */
+    avctx->frame_size = SUBFRAME_SIZE << 1;
+
+    return 0;
+}
 
         ff_acelp_weighted_vector_sum(fc + pitch_delay_int[i],
                                      fc + pitch_delay_int[i],
