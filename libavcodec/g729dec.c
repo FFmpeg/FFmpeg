@@ -107,7 +107,7 @@ static inline int get_parity(uint8_t value)
                                      fc, 1 << 14,
                                      av_clip(ctx->gain_pitch, SHARP_MIN, SHARP_MAX),
                                      0, 14,
-                                     ctx->subframe_size - pitch_delay_int[i]);
+                                     SUBFRAME_SIZE - pitch_delay_int[i]);
 
         if (ctx->frame_erasure) {
             ctx->gain_pitch = (29491 * ctx->gain_pitch) >> 15; // 0.90 (0.15)
@@ -120,11 +120,11 @@ static inline int get_parity(uint8_t value)
             gain_corr_factor = cb_gain_1st_8k[parm->gc_1st_index[i]][1] +
                                cb_gain_2nd_8k[parm->gc_2nd_index[i]][1];
 
-        ff_acelp_weighted_vector_sum(ctx->exc + i * ctx->subframe_size,
-                                     ctx->exc + i * ctx->subframe_size, fc,
+        ff_acelp_weighted_vector_sum(ctx->exc + i * SUBFRAME_SIZE,
+                                     ctx->exc + i * SUBFRAME_SIZE, fc,
                                      (!voicing && ctx->frame_erasure) ? 0 : ctx->gain_pitch,
                                      ( voicing && ctx->frame_erasure) ? 0 : ctx->gain_code,
-                                     1<<13, 14, ctx->subframe_size);
+                                     1 << 13, 14, SUBFRAME_SIZE);
 
     if (buf_size < packed_frame_size) {
         av_log(avctx, AV_LOG_ERROR, "Error processing packet: packet size too small\n");

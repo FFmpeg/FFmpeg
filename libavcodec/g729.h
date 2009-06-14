@@ -22,8 +22,8 @@
 #define AVCODEC_G729_H
 
 /**
- * maximum possible subframe size
+ * subframe size
  */
-#define MAX_SUBFRAME_SIZE 44
+#define SUBFRAME_SIZE 40
 
 #endif // AVCODEC_G729_H
