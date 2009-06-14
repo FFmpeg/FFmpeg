@@ -1629,10 +1629,8 @@ case $target_os in
         oss_demuxer_extralibs="-lossaudio"
         oss_muxer_extralibs="-lossaudio"
         ;;
-    freebsd)
+    freebsd|dragonfly)
         disable need_memalign
-        ;;
-    dragonfly)
         ;;
     bsd/os)
         osextralibs="-lpoll -lgnugetopt"
