@@ -322,7 +322,7 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     uint8_t *ppcm[4] = {0};
 
     if (buf_size < DV_PROFILE_BYTES ||
-        !(c->sys = dv_frame_profile(buf)) ||
+        !(c->sys = dv_frame_profile(c->sys, buf, buf_size)) ||
         buf_size < c->sys->frame_size) {
           return -1;   /* Broken frame, or not enough data */
     }
@@ -421,7 +421,7 @@ static int dv_read_header(AVFormatContext *s,
         url_fseek(s->pb, -DV_PROFILE_BYTES, SEEK_CUR) < 0)
         return AVERROR(EIO);
 
-    c->dv_demux->sys = dv_frame_profile(c->buf);
+    c->dv_demux->sys = dv_frame_profile(c->dv_demux->sys, c->buf, DV_PROFILE_BYTES);
     if (!c->dv_demux->sys) {
         av_log(s, AV_LOG_ERROR, "Can't determine profile of DV input stream.\n");
         return -1;

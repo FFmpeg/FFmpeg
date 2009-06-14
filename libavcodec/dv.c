@@ -1119,7 +1119,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     DVVideoContext *s = avctx->priv_data;
 
-    s->sys = dv_frame_profile(buf);
+    s->sys = dv_frame_profile(s->sys, buf, buf_size);
     if (!s->sys || buf_size < s->sys->frame_size || dv_init_dynamic_tables(s->sys))
         return -1; /* NOTE: we only accept several full frames */
 

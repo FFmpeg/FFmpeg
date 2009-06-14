@@ -698,7 +698,9 @@ enum dv_pack_type {
  */
 #define DV_MAX_BPM 8
 
-static inline const DVprofile* dv_frame_profile(const uint8_t* frame)
+static inline
+const DVprofile* dv_frame_profile(const DVprofile *sys,
+                                  const uint8_t* frame, unsigned buf_size)
 {
    int i;
 
@@ -714,6 +716,10 @@ static inline const DVprofile* dv_frame_profile(const uint8_t* frame)
    for (i=0; i<FF_ARRAY_ELEMS(dv_profiles); i++)
        if (dsf == dv_profiles[i].dsf && stype == dv_profiles[i].video_stype)
            return &dv_profiles[i];
+
+   /* check if old sys matches and assumes corrupted input */
+   if (sys && buf_size == sys->frame_size)
+       return sys;
 
    return NULL;
 }
