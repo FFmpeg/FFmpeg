@@ -400,7 +400,7 @@ typedef struct RawDVContext {
 static int dv_read_header(AVFormatContext *s,
                           AVFormatParameters *ap)
 {
-    unsigned state;
+    unsigned state, marker_pos = 0;
     RawDVContext *c = s->priv_data;
 
     c->dv_demux = dv_init_demux(s);
@@ -412,6 +412,13 @@ static int dv_read_header(AVFormatContext *s,
         if (url_feof(s->pb)) {
             av_log(s, AV_LOG_ERROR, "Cannot find DV header.\n");
             return -1;
+        }
+        if (state == 0x003f0700 || state == 0xff3f0700)
+            marker_pos = url_ftell(s->pb);
+        if (state == 0xff3f0701 && url_ftell(s->pb) - marker_pos == 80) {
+            url_fseek(s->pb, -163, SEEK_CUR);
+            state = get_be32(s->pb);
+            break;
         }
         state = (state << 8) | get_byte(s->pb);
     }
@@ -476,7 +483,7 @@ static int dv_read_close(AVFormatContext *s)
 
 static int dv_probe(AVProbeData *p)
 {
-    unsigned state;
+    unsigned state, marker_pos = 0;
     int i;
 
     if (p->buf_size < 5)
@@ -486,6 +493,10 @@ static int dv_probe(AVProbeData *p)
     for (i = 4; i < p->buf_size; i++) {
         if ((state & 0xffffff7f) == 0x1f07003f)
             return AVPROBE_SCORE_MAX*3/4; // not max to avoid dv in mov to match
+        if (state == 0x003f0700 || state == 0xff3f0700)
+            marker_pos = i;
+        if (state == 0xff3f0701 && i - marker_pos == 80)
+            return AVPROBE_SCORE_MAX/4;
         state = (state << 8) | p->buf[i];
     }
 
