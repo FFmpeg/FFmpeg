@@ -1831,6 +1831,9 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     get_be24(pb); /* flags */
     edit_count = get_be32(pb); /* entries */
 
+    if((uint64_t)edit_count*12+8 > atom.size)
+        return -1;
+
     for(i=0; i<edit_count; i++){
         int time;
         int duration = get_be32(pb); /* Track duration */
