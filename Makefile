@@ -129,6 +129,9 @@ distclean::
 	rm -f $(DISTCLEANSUFFIXES)
 	rm -f version.h config.*
 
+config:
+	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
+
 # regression tests
 
 check: test checkheaders
@@ -305,4 +308,4 @@ tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
 	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
-.PHONY: documentation *test regtest-* zlib-error alltools check
+.PHONY: documentation *test regtest-* zlib-error alltools check config
