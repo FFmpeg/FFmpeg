@@ -51,6 +51,11 @@ extern struct SwsContext *sws_opts;
 int opt_default(const char *opt, const char *arg);
 
 /**
+ * Sets the libav* libraries log level.
+ */
+int opt_loglevel(const char *opt, const char *arg);
+
+/**
  * Parses a string and returns its corresponding value as a double.
  * Exits from the application if the string cannot be correctly
  * parsed or the corresponding value is invalid.

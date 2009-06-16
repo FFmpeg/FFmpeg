@@ -2354,41 +2354,6 @@ static int opt_me_threshold(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_loglevel(const char *opt, const char *arg)
-{
-    const struct { const char *name; int level; } const log_levels[] = {
-        { "quiet"  , AV_LOG_QUIET   },
-        { "panic"  , AV_LOG_PANIC   },
-        { "fatal"  , AV_LOG_FATAL   },
-        { "error"  , AV_LOG_ERROR   },
-        { "warning", AV_LOG_WARNING },
-        { "info"   , AV_LOG_INFO    },
-        { "verbose", AV_LOG_VERBOSE },
-        { "debug"  , AV_LOG_DEBUG   },
-    };
-    char *tail;
-    int level;
-    int i;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(log_levels); i++) {
-        if (!strcmp(log_levels[i].name, arg)) {
-            av_log_set_level(log_levels[i].level);
-            return 0;
-        }
-    }
-
-    level = strtol(arg, &tail, 10);
-    if (*tail) {
-        fprintf(stderr, "Invalid loglevel \"%s\". "
-                        "Possible levels are numbers or:\n", arg);
-        for (i = 0; i < FF_ARRAY_ELEMS(log_levels); i++)
-            fprintf(stderr, "\"%s\"\n", log_levels[i].name);
-        av_exit(1);
-    }
-    av_log_set_level(level);
-    return 0;
-}
-
 static int opt_verbose(const char *opt, const char *arg)
 {
     verbose = parse_number_or_die(opt, arg, OPT_INT64, -10, 10);
