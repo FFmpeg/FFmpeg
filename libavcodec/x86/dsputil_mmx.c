@@ -528,6 +528,28 @@ static void clear_block_sse(DCTELEM *block)
     );
 }
 
+static void clear_blocks_sse(DCTELEM *blocks)
+{\
+    __asm__ volatile(
+        "xorps  %%xmm0, %%xmm0  \n"
+        "mov     %1, %%"REG_a"  \n"
+        "1:                     \n"
+        "movaps %%xmm0,    (%0, %%"REG_a") \n"
+        "movaps %%xmm0,  16(%0, %%"REG_a") \n"
+        "movaps %%xmm0,  32(%0, %%"REG_a") \n"
+        "movaps %%xmm0,  48(%0, %%"REG_a") \n"
+        "movaps %%xmm0,  64(%0, %%"REG_a") \n"
+        "movaps %%xmm0,  80(%0, %%"REG_a") \n"
+        "movaps %%xmm0,  96(%0, %%"REG_a") \n"
+        "movaps %%xmm0, 112(%0, %%"REG_a") \n"
+        "add $128, %%"REG_a"    \n"
+        " js 1b                 \n"
+        : : "r" (((uint8_t *)blocks)+128*6),
+            "i" (-128*6)
+        : "%"REG_a
+    );
+}
+
 static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
     x86_reg i=0;
     __asm__ volatile(
@@ -2671,8 +2693,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->add_pixels_clamped = add_pixels_clamped_mmx;
         c->clear_block  = clear_block_mmx;
         c->clear_blocks = clear_blocks_mmx;
-        if (mm_flags & FF_MM_SSE)
-            c->clear_block = clear_block_sse;
+        if (mm_flags & FF_MM_SSE){
+            c->clear_block  = clear_block_sse;
+            c->clear_blocks = clear_blocks_sse;
+        }
 
 #define SET_HPEL_FUNCS(PFX, IDX, SIZE, CPU) \
         c->PFX ## _pixels_tab[IDX][0] = PFX ## _pixels ## SIZE ## _ ## CPU; \
