@@ -344,7 +344,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (type == FLV_TAG_TYPE_META && size > 13+1+4 && 0)
             flv_read_metabody(s, next);
         else /* skip packet */
-            av_log(s, AV_LOG_ERROR, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
+            av_log(s, AV_LOG_DEBUG, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
     skip:
         url_fseek(s->pb, next, SEEK_SET);
         continue;
