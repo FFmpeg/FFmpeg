@@ -1800,6 +1800,8 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     int scale;
     int q1, q2 = 0;
 
+    s->dsp.clear_block(block);
+
     /* XXX: Guard against dumb values of mquant */
     mquant = (mquant < 1) ? 0 : ( (mquant>31) ? 31 : mquant );
 
@@ -1989,6 +1991,8 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
     int ttblk = ttmb & 7;
     int pat = 0;
 
+    s->dsp.clear_block(block);
+
     if(ttmb == -1) {
         ttblk = ff_vc1_ttblk_to_tt[v->tt_index][get_vlc2(gb, ff_vc1_ttblk_vlc[v->tt_index].table, VC1_TTBLK_VLC_BITS, 1)];
     }
@@ -2165,8 +2169,6 @@ static int vc1_decode_p_mb(VC1Context *v)
         skipped = get_bits1(gb);
     else
         skipped = v->s.mbskip_table[mb_pos];
-
-    s->dsp.clear_blocks(s->block[0]);
 
     apply_loop_filter = s->loop_filter && !(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY);
     if (!fourmv) /* 1MV mode */
@@ -2459,7 +2461,6 @@ static void vc1_decode_b_mb(VC1Context *v)
     else
         skipped = v->s.mbskip_table[mb_pos];
 
-    s->dsp.clear_blocks(s->block[0]);
     dmv_x[0] = dmv_x[1] = dmv_y[0] = dmv_y[1] = 0;
     for(i = 0; i < 6; i++) {
         v->mb_type[0][s->block_index[i]] = 0;
@@ -2851,7 +2852,6 @@ static void vc1_decode_p_blocks(VC1Context *v)
         for(s->mb_x = 0; s->mb_x < s->mb_width; s->mb_x++) {
             ff_init_block_index(s);
             ff_update_block_index(s);
-            s->dsp.clear_blocks(s->block[0]);
 
             vc1_decode_p_mb(v);
             if(get_bits_count(&s->gb) > v->bits || get_bits_count(&s->gb) < 0) {
@@ -2901,7 +2901,6 @@ static void vc1_decode_b_blocks(VC1Context *v)
         for(s->mb_x = 0; s->mb_x < s->mb_width; s->mb_x++) {
             ff_init_block_index(s);
             ff_update_block_index(s);
-            s->dsp.clear_blocks(s->block[0]);
 
             vc1_decode_b_mb(v);
             if(get_bits_count(&s->gb) > v->bits || get_bits_count(&s->gb) < 0) {
