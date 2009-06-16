@@ -337,6 +337,10 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
         v->s.dsp.vc1_inv_trans_8x4 = ff_simple_idct84_add;
         v->s.dsp.vc1_inv_trans_4x8 = ff_simple_idct48_add;
         v->s.dsp.vc1_inv_trans_4x4 = ff_simple_idct44_add;
+        v->s.dsp.vc1_inv_trans_8x8_dc = ff_simple_idct_add;
+        v->s.dsp.vc1_inv_trans_8x4_dc = ff_simple_idct84_add;
+        v->s.dsp.vc1_inv_trans_4x8_dc = ff_simple_idct48_add;
+        v->s.dsp.vc1_inv_trans_4x4_dc = ff_simple_idct44_add;
     }
 
     v->fastuvmc =  get_bits1(gb); //common

@@ -2028,8 +2028,12 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                 block[idx] += (block[idx] < 0) ? -mquant : mquant;
         }
         if(!skip_block){
-            s->dsp.vc1_inv_trans_8x8(block);
-            s->dsp.add_pixels_clamped(block, dst, linesize);
+            if(i==1)
+                s->dsp.vc1_inv_trans_8x8_dc(dst, linesize, block);
+            else{
+                s->dsp.vc1_inv_trans_8x8(block);
+                s->dsp.add_pixels_clamped(block, dst, linesize);
+            }
             if(apply_filter && cbp_top  & 0xC)
                 s->dsp.vc1_v_loop_filter8(dst, linesize, v->pq);
             if(apply_filter && cbp_left & 0xA)
@@ -2053,7 +2057,10 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                     block[idx + off] += (block[idx + off] < 0) ? -mquant : mquant;
             }
             if(!(subblkpat & (1 << (3 - j))) && !skip_block){
-                s->dsp.vc1_inv_trans_4x4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, block + off);
+                if(i==1)
+                    s->dsp.vc1_inv_trans_4x4_dc(dst + (j&1)*4 + (j&2)*2*linesize, linesize, block + off);
+                else
+                    s->dsp.vc1_inv_trans_4x4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, block + off);
                 if(apply_filter && (j&2 ? pat & (1<<(j-2)) : (cbp_top & (1 << (j + 2)))))
                     s->dsp.vc1_v_loop_filter4(dst + (j&1)*4 + (j&2)*2*linesize, linesize, v->pq);
                 if(apply_filter && (j&1 ? pat & (1<<(j-1)) : (cbp_left & (1 << (j + 1)))))
@@ -2078,7 +2085,10 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                     block[idx] += (block[idx] < 0) ? -mquant : mquant;
             }
             if(!(subblkpat & (1 << (1 - j))) && !skip_block){
-                s->dsp.vc1_inv_trans_8x4(dst + j*4*linesize, linesize, block + off);
+                if(i==1)
+                    s->dsp.vc1_inv_trans_8x4_dc(dst + j*4*linesize, linesize, block + off);
+                else
+                    s->dsp.vc1_inv_trans_8x4(dst + j*4*linesize, linesize, block + off);
                 if(apply_filter && j ? pat & 0x3 : (cbp_top & 0xC))
                     s->dsp.vc1_v_loop_filter8(dst + j*4*linesize, linesize, v->pq);
                 if(apply_filter && cbp_left & (2 << j))
@@ -2103,7 +2113,10 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                     block[idx] += (block[idx] < 0) ? -mquant : mquant;
             }
             if(!(subblkpat & (1 << (1 - j))) && !skip_block){
-                s->dsp.vc1_inv_trans_4x8(dst + j*4, linesize, block + off);
+                if(i==1)
+                    s->dsp.vc1_inv_trans_4x8_dc(dst + j*4, linesize, block + off);
+                else
+                    s->dsp.vc1_inv_trans_4x8(dst + j*4, linesize, block + off);
                 if(apply_filter && cbp_top & (2 << j))
                     s->dsp.vc1_v_loop_filter4(dst + j*4, linesize, v->pq);
                 if(apply_filter && j ? pat & 0x5 : (cbp_left & 0xA))

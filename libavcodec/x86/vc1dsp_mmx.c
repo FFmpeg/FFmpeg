@@ -494,6 +494,204 @@ DECLARE_FUNCTION(3, 1)
 DECLARE_FUNCTION(3, 2)
 DECLARE_FUNCTION(3, 3)
 
+static void vc1_inv_trans_4x4_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    int dc = block[0];
+    dc = (17 * dc +  4) >> 3;
+    dc = (17 * dc + 64) >> 7;
+    __asm__ volatile(
+        "movd          %0, %%mm0 \n\t"
+        "pshufw $0, %%mm0, %%mm0 \n\t"
+        "pxor       %%mm1, %%mm1 \n\t"
+        "psubw      %%mm0, %%mm1 \n\t"
+        "packuswb   %%mm0, %%mm0 \n\t"
+        "packuswb   %%mm1, %%mm1 \n\t"
+        ::"r"(dc)
+    );
+    __asm__ volatile(
+        "movd          %0, %%mm2 \n\t"
+        "movd          %1, %%mm3 \n\t"
+        "movd          %2, %%mm4 \n\t"
+        "movd          %3, %%mm5 \n\t"
+        "paddusb    %%mm0, %%mm2 \n\t"
+        "paddusb    %%mm0, %%mm3 \n\t"
+        "paddusb    %%mm0, %%mm4 \n\t"
+        "paddusb    %%mm0, %%mm5 \n\t"
+        "psubusb    %%mm1, %%mm2 \n\t"
+        "psubusb    %%mm1, %%mm3 \n\t"
+        "psubusb    %%mm1, %%mm4 \n\t"
+        "psubusb    %%mm1, %%mm5 \n\t"
+        "movd       %%mm2, %0    \n\t"
+        "movd       %%mm3, %1    \n\t"
+        "movd       %%mm4, %2    \n\t"
+        "movd       %%mm5, %3    \n\t"
+        :"+m"(*(uint32_t*)(dest+0*linesize)),
+         "+m"(*(uint32_t*)(dest+1*linesize)),
+         "+m"(*(uint32_t*)(dest+2*linesize)),
+         "+m"(*(uint32_t*)(dest+3*linesize))
+    );
+}
+
+static void vc1_inv_trans_4x8_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    int dc = block[0];
+    dc = (17 * dc +  4) >> 3;
+    dc = (12 * dc + 64) >> 7;
+    __asm__ volatile(
+        "movd          %0, %%mm0 \n\t"
+        "pshufw $0, %%mm0, %%mm0 \n\t"
+        "pxor       %%mm1, %%mm1 \n\t"
+        "psubw      %%mm0, %%mm1 \n\t"
+        "packuswb   %%mm0, %%mm0 \n\t"
+        "packuswb   %%mm1, %%mm1 \n\t"
+        ::"r"(dc)
+    );
+    __asm__ volatile(
+        "movd          %0, %%mm2 \n\t"
+        "movd          %1, %%mm3 \n\t"
+        "movd          %2, %%mm4 \n\t"
+        "movd          %3, %%mm5 \n\t"
+        "paddusb    %%mm0, %%mm2 \n\t"
+        "paddusb    %%mm0, %%mm3 \n\t"
+        "paddusb    %%mm0, %%mm4 \n\t"
+        "paddusb    %%mm0, %%mm5 \n\t"
+        "psubusb    %%mm1, %%mm2 \n\t"
+        "psubusb    %%mm1, %%mm3 \n\t"
+        "psubusb    %%mm1, %%mm4 \n\t"
+        "psubusb    %%mm1, %%mm5 \n\t"
+        "movd       %%mm2, %0    \n\t"
+        "movd       %%mm3, %1    \n\t"
+        "movd       %%mm4, %2    \n\t"
+        "movd       %%mm5, %3    \n\t"
+        :"+m"(*(uint32_t*)(dest+0*linesize)),
+         "+m"(*(uint32_t*)(dest+1*linesize)),
+         "+m"(*(uint32_t*)(dest+2*linesize)),
+         "+m"(*(uint32_t*)(dest+3*linesize))
+    );
+    dest += 4*linesize;
+    __asm__ volatile(
+        "movd          %0, %%mm2 \n\t"
+        "movd          %1, %%mm3 \n\t"
+        "movd          %2, %%mm4 \n\t"
+        "movd          %3, %%mm5 \n\t"
+        "paddusb    %%mm0, %%mm2 \n\t"
+        "paddusb    %%mm0, %%mm3 \n\t"
+        "paddusb    %%mm0, %%mm4 \n\t"
+        "paddusb    %%mm0, %%mm5 \n\t"
+        "psubusb    %%mm1, %%mm2 \n\t"
+        "psubusb    %%mm1, %%mm3 \n\t"
+        "psubusb    %%mm1, %%mm4 \n\t"
+        "psubusb    %%mm1, %%mm5 \n\t"
+        "movd       %%mm2, %0    \n\t"
+        "movd       %%mm3, %1    \n\t"
+        "movd       %%mm4, %2    \n\t"
+        "movd       %%mm5, %3    \n\t"
+        :"+m"(*(uint32_t*)(dest+0*linesize)),
+         "+m"(*(uint32_t*)(dest+1*linesize)),
+         "+m"(*(uint32_t*)(dest+2*linesize)),
+         "+m"(*(uint32_t*)(dest+3*linesize))
+    );
+}
+
+static void vc1_inv_trans_8x4_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    int dc = block[0];
+    dc = ( 3 * dc +  1) >> 1;
+    dc = (17 * dc + 64) >> 7;
+    __asm__ volatile(
+        "movd          %0, %%mm0 \n\t"
+        "pshufw $0, %%mm0, %%mm0 \n\t"
+        "pxor       %%mm1, %%mm1 \n\t"
+        "psubw      %%mm0, %%mm1 \n\t"
+        "packuswb   %%mm0, %%mm0 \n\t"
+        "packuswb   %%mm1, %%mm1 \n\t"
+        ::"r"(dc)
+    );
+    __asm__ volatile(
+        "movq          %0, %%mm2 \n\t"
+        "movq          %1, %%mm3 \n\t"
+        "movq          %2, %%mm4 \n\t"
+        "movq          %3, %%mm5 \n\t"
+        "paddusb    %%mm0, %%mm2 \n\t"
+        "paddusb    %%mm0, %%mm3 \n\t"
+        "paddusb    %%mm0, %%mm4 \n\t"
+        "paddusb    %%mm0, %%mm5 \n\t"
+        "psubusb    %%mm1, %%mm2 \n\t"
+        "psubusb    %%mm1, %%mm3 \n\t"
+        "psubusb    %%mm1, %%mm4 \n\t"
+        "psubusb    %%mm1, %%mm5 \n\t"
+        "movq       %%mm2, %0    \n\t"
+        "movq       %%mm3, %1    \n\t"
+        "movq       %%mm4, %2    \n\t"
+        "movq       %%mm5, %3    \n\t"
+        :"+m"(*(uint32_t*)(dest+0*linesize)),
+         "+m"(*(uint32_t*)(dest+1*linesize)),
+         "+m"(*(uint32_t*)(dest+2*linesize)),
+         "+m"(*(uint32_t*)(dest+3*linesize))
+    );
+}
+
+static void vc1_inv_trans_8x8_dc_mmx2(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    int dc = block[0];
+    dc = (3 * dc +  1) >> 1;
+    dc = (3 * dc + 16) >> 5;
+    __asm__ volatile(
+        "movd          %0, %%mm0 \n\t"
+        "pshufw $0, %%mm0, %%mm0 \n\t"
+        "pxor       %%mm1, %%mm1 \n\t"
+        "psubw      %%mm0, %%mm1 \n\t"
+        "packuswb   %%mm0, %%mm0 \n\t"
+        "packuswb   %%mm1, %%mm1 \n\t"
+        ::"r"(dc)
+    );
+    __asm__ volatile(
+        "movq          %0, %%mm2 \n\t"
+        "movq          %1, %%mm3 \n\t"
+        "movq          %2, %%mm4 \n\t"
+        "movq          %3, %%mm5 \n\t"
+        "paddusb    %%mm0, %%mm2 \n\t"
+        "paddusb    %%mm0, %%mm3 \n\t"
+        "paddusb    %%mm0, %%mm4 \n\t"
+        "paddusb    %%mm0, %%mm5 \n\t"
+        "psubusb    %%mm1, %%mm2 \n\t"
+        "psubusb    %%mm1, %%mm3 \n\t"
+        "psubusb    %%mm1, %%mm4 \n\t"
+        "psubusb    %%mm1, %%mm5 \n\t"
+        "movq       %%mm2, %0    \n\t"
+        "movq       %%mm3, %1    \n\t"
+        "movq       %%mm4, %2    \n\t"
+        "movq       %%mm5, %3    \n\t"
+        :"+m"(*(uint32_t*)(dest+0*linesize)),
+         "+m"(*(uint32_t*)(dest+1*linesize)),
+         "+m"(*(uint32_t*)(dest+2*linesize)),
+         "+m"(*(uint32_t*)(dest+3*linesize))
+    );
+    dest += 4*linesize;
+    __asm__ volatile(
+        "movq          %0, %%mm2 \n\t"
+        "movq          %1, %%mm3 \n\t"
+        "movq          %2, %%mm4 \n\t"
+        "movq          %3, %%mm5 \n\t"
+        "paddusb    %%mm0, %%mm2 \n\t"
+        "paddusb    %%mm0, %%mm3 \n\t"
+        "paddusb    %%mm0, %%mm4 \n\t"
+        "paddusb    %%mm0, %%mm5 \n\t"
+        "psubusb    %%mm1, %%mm2 \n\t"
+        "psubusb    %%mm1, %%mm3 \n\t"
+        "psubusb    %%mm1, %%mm4 \n\t"
+        "psubusb    %%mm1, %%mm5 \n\t"
+        "movq       %%mm2, %0    \n\t"
+        "movq       %%mm3, %1    \n\t"
+        "movq       %%mm4, %2    \n\t"
+        "movq       %%mm5, %3    \n\t"
+        :"+m"(*(uint32_t*)(dest+0*linesize)),
+         "+m"(*(uint32_t*)(dest+1*linesize)),
+         "+m"(*(uint32_t*)(dest+2*linesize)),
+         "+m"(*(uint32_t*)(dest+3*linesize))
+    );
+}
+
 void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx) {
     mm_flags = mm_support();
 
@@ -537,5 +735,10 @@ void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx) {
         dsp->avg_vc1_mspel_pixels_tab[ 7] = avg_vc1_mspel_mc31_mmx2;
         dsp->avg_vc1_mspel_pixels_tab[11] = avg_vc1_mspel_mc32_mmx2;
         dsp->avg_vc1_mspel_pixels_tab[15] = avg_vc1_mspel_mc33_mmx2;
+
+        dsp->vc1_inv_trans_8x8_dc = vc1_inv_trans_8x8_dc_mmx2;
+        dsp->vc1_inv_trans_4x8_dc = vc1_inv_trans_4x8_dc_mmx2;
+        dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_mmx2;
+        dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_mmx2;
     }
 }

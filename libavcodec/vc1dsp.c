@@ -178,6 +178,26 @@ static void vc1_h_loop_filter16_c(uint8_t *src, int stride, int pq)
 
 /** Do inverse transform on 8x8 block
 */
+static void vc1_inv_trans_8x8_dc_c(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    int i;
+    int dc = block[0];
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    dc = (3 * dc +  1) >> 1;
+    dc = (3 * dc + 16) >> 5;
+    for(i = 0; i < 8; i++){
+        dest[0] = cm[dest[0]+dc];
+        dest[1] = cm[dest[1]+dc];
+        dest[2] = cm[dest[2]+dc];
+        dest[3] = cm[dest[3]+dc];
+        dest[4] = cm[dest[4]+dc];
+        dest[5] = cm[dest[5]+dc];
+        dest[6] = cm[dest[6]+dc];
+        dest[7] = cm[dest[7]+dc];
+        dest += linesize;
+    }
+}
+
 static void vc1_inv_trans_8x8_c(DCTELEM block[64])
 {
     int i;
@@ -249,6 +269,26 @@ static void vc1_inv_trans_8x8_c(DCTELEM block[64])
 
 /** Do inverse transform on 8x4 part of block
 */
+static void vc1_inv_trans_8x4_dc_c(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    int i;
+    int dc = block[0];
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    dc = ( 3 * dc +  1) >> 1;
+    dc = (17 * dc + 64) >> 7;
+    for(i = 0; i < 4; i++){
+        dest[0] = cm[dest[0]+dc];
+        dest[1] = cm[dest[1]+dc];
+        dest[2] = cm[dest[2]+dc];
+        dest[3] = cm[dest[3]+dc];
+        dest[4] = cm[dest[4]+dc];
+        dest[5] = cm[dest[5]+dc];
+        dest[6] = cm[dest[6]+dc];
+        dest[7] = cm[dest[7]+dc];
+        dest += linesize;
+    }
+}
+
 static void vc1_inv_trans_8x4_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
@@ -306,6 +346,22 @@ static void vc1_inv_trans_8x4_c(uint8_t *dest, int linesize, DCTELEM *block)
 
 /** Do inverse transform on 4x8 parts of block
 */
+static void vc1_inv_trans_4x8_dc_c(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    int i;
+    int dc = block[0];
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    dc = (17 * dc +  4) >> 3;
+    dc = (12 * dc + 64) >> 7;
+    for(i = 0; i < 8; i++){
+        dest[0] = cm[dest[0]+dc];
+        dest[1] = cm[dest[1]+dc];
+        dest[2] = cm[dest[2]+dc];
+        dest[3] = cm[dest[3]+dc];
+        dest += linesize;
+    }
+}
+
 static void vc1_inv_trans_4x8_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
@@ -363,6 +419,22 @@ static void vc1_inv_trans_4x8_c(uint8_t *dest, int linesize, DCTELEM *block)
 
 /** Do inverse transform on 4x4 part of block
 */
+static void vc1_inv_trans_4x4_dc_c(uint8_t *dest, int linesize, DCTELEM *block)
+{
+    int i;
+    int dc = block[0];
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    dc = (17 * dc +  4) >> 3;
+    dc = (17 * dc + 64) >> 7;
+    for(i = 0; i < 4; i++){
+        dest[0] = cm[dest[0]+dc];
+        dest[1] = cm[dest[1]+dc];
+        dest[2] = cm[dest[2]+dc];
+        dest[3] = cm[dest[3]+dc];
+        dest += linesize;
+    }
+}
+
 static void vc1_inv_trans_4x4_c(uint8_t *dest, int linesize, DCTELEM *block)
 {
     int i;
@@ -545,6 +617,10 @@ void ff_vc1dsp_init(DSPContext* dsp, AVCodecContext *avctx) {
     dsp->vc1_inv_trans_4x8 = vc1_inv_trans_4x8_c;
     dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_c;
     dsp->vc1_inv_trans_4x4 = vc1_inv_trans_4x4_c;
+    dsp->vc1_inv_trans_8x8_dc = vc1_inv_trans_8x8_dc_c;
+    dsp->vc1_inv_trans_4x8_dc = vc1_inv_trans_4x8_dc_c;
+    dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_c;
+    dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_c;
     dsp->vc1_h_overlap = vc1_h_overlap_c;
     dsp->vc1_v_overlap = vc1_v_overlap_c;
     dsp->vc1_v_loop_filter4 = vc1_v_loop_filter4_c;
