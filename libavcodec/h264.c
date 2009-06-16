@@ -1997,6 +1997,9 @@ static void free_tables(H264Context *h){
         av_freep(&hx->top_borders[1]);
         av_freep(&hx->top_borders[0]);
         av_freep(&hx->s.obmc_scratchpad);
+        av_freep(&hx->rbsp_buffer[1]);
+        av_freep(&hx->rbsp_buffer[0]);
+        if (i) av_freep(&h->thread_context[i]);
     }
 }
 
@@ -8123,8 +8126,6 @@ av_cold void ff_h264_free_context(H264Context *h)
 {
     int i;
 
-    av_freep(&h->rbsp_buffer[0]);
-    av_freep(&h->rbsp_buffer[1]);
     free_tables(h); //FIXME cleanup init stuff perhaps
 
     for(i = 0; i < MAX_SPS_COUNT; i++)
