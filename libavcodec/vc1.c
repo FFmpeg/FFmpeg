@@ -323,7 +323,7 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
     if(v->s.loop_filter == 1 && v->profile == PROFILE_SIMPLE)
     {
         av_log(avctx, AV_LOG_ERROR,
-               "LOOPFILTER shell not be enabled in simple profile\n");
+               "LOOPFILTER shall not be enabled in Simple Profile\n");
     }
     if(v->s.avctx->skip_loop_filter >= AVDISCARD_ALL)
         v->s.loop_filter = 0;
@@ -371,7 +371,7 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
     if (v->rangered && v->profile == PROFILE_SIMPLE)
     {
         av_log(avctx, AV_LOG_INFO,
-               "RANGERED should be set to 0 in simple profile\n");
+               "RANGERED should be set to 0 in Simple Profile\n");
     }
 
     v->s.max_b_frames = avctx->max_b_frames = get_bits(gb, 3); //common
