@@ -37,6 +37,13 @@
         vtrn.8          \r6, \r7
         .endm
 
+        .macro transpose_4x4 r0 r1 r2 r3
+        vtrn.16         \r0, \r2
+        vtrn.16         \r1, \r3
+        vtrn.8          \r0, \r1
+        vtrn.8          \r2, \r3
+        .endm
+
         .macro swap4 r0 r1 r2 r3 r4 r5 r6 r7
         vswp            \r0, \r4
         vswp            \r1, \r5
@@ -469,35 +476,29 @@ function ff_h264_h_loop_filter_luma_neon, export=1
         transpose_8x8   q3, q10, q9, q8, q0, q1, q2, q13
 
         align_push_regs
-        sub             sp,  sp,  #16
-        vst1.64         {d4, d5},  [sp,:128]
-        sub             sp,  sp,  #16
-        vst1.64         {d20,d21}, [sp,:128]
 
         h264_loop_filter_luma
 
-        vld1.64         {d20,d21}, [sp,:128]!
-        vld1.64         {d4, d5},  [sp,:128]!
-
-        transpose_8x8   q3, q10, q4, q8, q0, q5, q2, q13
+        transpose_4x4   q4, q8, q0, q5
 
         sub             r0,  r0,  r1, lsl #4
-        vst1.64         {d6},  [r0], r1
-        vst1.64         {d20}, [r0], r1
-        vst1.64         {d8},  [r0], r1
-        vst1.64         {d16}, [r0], r1
-        vst1.64         {d0},  [r0], r1
-        vst1.64         {d10}, [r0], r1
-        vst1.64         {d4},  [r0], r1
-        vst1.64         {d26}, [r0], r1
-        vst1.64         {d7},  [r0], r1
-        vst1.64         {d21}, [r0], r1
-        vst1.64         {d9},  [r0], r1
-        vst1.64         {d17}, [r0], r1
-        vst1.64         {d1},  [r0], r1
-        vst1.64         {d11}, [r0], r1
-        vst1.64         {d5},  [r0], r1
-        vst1.64         {d27}, [r0], r1
+        add             r0,  r0,  #2
+        vst1.32         {d8[0]},  [r0], r1
+        vst1.32         {d16[0]}, [r0], r1
+        vst1.32         {d0[0]},  [r0], r1
+        vst1.32         {d10[0]}, [r0], r1
+        vst1.32         {d8[1]},  [r0], r1
+        vst1.32         {d16[1]}, [r0], r1
+        vst1.32         {d0[1]},  [r0], r1
+        vst1.32         {d10[1]}, [r0], r1
+        vst1.32         {d9[0]},  [r0], r1
+        vst1.32         {d17[0]}, [r0], r1
+        vst1.32         {d1[0]},  [r0], r1
+        vst1.32         {d11[0]}, [r0], r1
+        vst1.32         {d9[1]},  [r0], r1
+        vst1.32         {d17[1]}, [r0], r1
+        vst1.32         {d1[1]},  [r0], r1
+        vst1.32         {d11[1]}, [r0], r1
 
         align_pop_regs
         bx              lr
