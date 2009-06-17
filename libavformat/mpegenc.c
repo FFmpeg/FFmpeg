@@ -304,9 +304,14 @@ static int mpeg_mux_init(AVFormatContext *ctx)
                    (CONFIG_MPEG2SVCD_MUXER && ctx->oformat == &mpeg2svcd_muxer));
     s->is_dvd =    (CONFIG_MPEG2DVD_MUXER  && ctx->oformat == &mpeg2dvd_muxer);
 
-    if(ctx->packet_size)
+    if(ctx->packet_size) {
+        if (ctx->packet_size < 20 || ctx->packet_size > (1 << 23) + 10) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid packet size %d\n",
+                   ctx->packet_size);
+            goto fail;
+        }
         s->packet_size = ctx->packet_size;
-    else
+    } else
         s->packet_size = 2048;
 
     s->vcd_padding_bytes_written = 0;
