@@ -2732,6 +2732,8 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
            && srcFormat != PIX_FMT_MONOWHITE && dstFormat != PIX_FMT_MONOWHITE
                                              && dstFormat != PIX_FMT_RGB32_1
                                              && dstFormat != PIX_FMT_BGR32_1
+           && srcFormat != PIX_FMT_RGB48LE   && dstFormat != PIX_FMT_RGB48LE
+           && srcFormat != PIX_FMT_RGB48BE   && dstFormat != PIX_FMT_RGB48BE
            && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
              c->swScale= rgb2rgbWrapper;
 
