@@ -2617,8 +2617,9 @@ static void vc1_decode_i_blocks(VC1Context *v)
     s->mb_intra = 1;
     s->first_slice_line = 1;
     for(s->mb_y = 0; s->mb_y < s->mb_height; s->mb_y++) {
-        for(s->mb_x = 0; s->mb_x < s->mb_width; s->mb_x++) {
-            ff_init_block_index(s);
+        s->mb_x = 0;
+        ff_init_block_index(s);
+        for(; s->mb_x < s->mb_width; s->mb_x++) {
             ff_update_block_index(s);
             s->dsp.clear_blocks(s->block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_width;
@@ -2730,8 +2731,9 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
     s->mb_intra = 1;
     s->first_slice_line = 1;
     for(s->mb_y = 0; s->mb_y < s->mb_height; s->mb_y++) {
-        for(s->mb_x = 0; s->mb_x < s->mb_width; s->mb_x++) {
-            ff_init_block_index(s);
+        s->mb_x = 0;
+        ff_init_block_index(s);
+        for(;s->mb_x < s->mb_width; s->mb_x++) {
             ff_update_block_index(s);
             s->dsp.clear_blocks(s->block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_stride;
@@ -2849,8 +2851,9 @@ static void vc1_decode_p_blocks(VC1Context *v)
     s->first_slice_line = 1;
     memset(v->cbp_base, 0, sizeof(v->cbp_base[0])*2*s->mb_stride);
     for(s->mb_y = 0; s->mb_y < s->mb_height; s->mb_y++) {
-        for(s->mb_x = 0; s->mb_x < s->mb_width; s->mb_x++) {
-            ff_init_block_index(s);
+        s->mb_x = 0;
+        ff_init_block_index(s);
+        for(; s->mb_x < s->mb_width; s->mb_x++) {
             ff_update_block_index(s);
 
             vc1_decode_p_mb(v);
@@ -2898,8 +2901,9 @@ static void vc1_decode_b_blocks(VC1Context *v)
 
     s->first_slice_line = 1;
     for(s->mb_y = 0; s->mb_y < s->mb_height; s->mb_y++) {
-        for(s->mb_x = 0; s->mb_x < s->mb_width; s->mb_x++) {
-            ff_init_block_index(s);
+        s->mb_x = 0;
+        ff_init_block_index(s);
+        for(; s->mb_x < s->mb_width; s->mb_x++) {
             ff_update_block_index(s);
 
             vc1_decode_b_mb(v);
