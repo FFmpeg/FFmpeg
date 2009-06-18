@@ -72,14 +72,31 @@
 #define SHARP_MAX                  13017
 
 typedef struct {
-    int sample_rate;
-    uint8_t packed_frame_size;  ///< input frame size(in bytes)
-    uint8_t unpacked_frame_size;///< output frame size (in bytes)
+    uint8_t ac_index_bits[2];   ///< adaptive codebook index for second subframe (size in bits)
+    uint8_t parity_bit;         ///< parity bit for pitch delay
+    uint8_t gc_1st_index_bits;  ///< gain codebook (first stage) index (size in bits)
+    uint8_t gc_2nd_index_bits;  ///< gain codebook (second stage) index (size in bits)
+    uint8_t fc_signs_bits;      ///< number of pulses in fixed-codebook vector
     uint8_t fc_indexes_bits;    ///< size (in bits) of fixed-codebook index entry
-
-    /// mr_energy = mean_energy + 10 * log10(2^26  * subframe_size) in (7.13)
-    int mr_energy;
 } G729FormatDescription;
+
+static const G729FormatDescription format_g729_8k = {
+    .ac_index_bits     = {8,5},
+    .parity_bit        = 1,
+    .gc_1st_index_bits = GC_1ST_IDX_BITS_8K,
+    .gc_2nd_index_bits = GC_2ND_IDX_BITS_8K,
+    .fc_signs_bits     = 4,
+    .fc_indexes_bits   = 13,
+};
+
+static const G729FormatDescription format_g729d_6k4 = {
+    .ac_index_bits     = {8,4},
+    .parity_bit        = 0,
+    .gc_1st_index_bits = GC_1ST_IDX_BITS_6K4,
+    .gc_2nd_index_bits = GC_2ND_IDX_BITS_6K4,
+    .fc_signs_bits     = 2,
+    .fc_indexes_bits   = 9,
+};
 
 /**
  * \brief pseudo random number generator
@@ -110,6 +127,64 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     return 0;
 }
 
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+                        AVPacket *avpkt)
+{
+    const uint8_t *buf = avpkt->data;
+    int buf_size       = avpkt->size;
+    int16_t *out_frame = data;
+    GetBitContext gb;
+    G729FormatDescription format;
+    int frame_erasure = 0;    ///< frame erasure detected during decoding
+    int bad_pitch = 0;        ///< parity check failed
+    int i;
+    uint8_t ma_predictor;     ///< switched MA predictor of LSP quantizer
+    uint8_t quantizer_1st;    ///< first stage vector of quantizer
+    uint8_t quantizer_2nd_lo; ///< second stage lower vector of quantizer (size in bits)
+    uint8_t quantizer_2nd_hi; ///< second stage higher vector of quantizer (size in bits)
+
+    if (*data_size < SUBFRAME_SIZE << 2) {
+        av_log(avctx, AV_LOG_ERROR, "Error processing packet: output buffer too small\n");
+        return AVERROR(EIO);
+    }
+
+    if (buf_size == 10) {
+        format = format_g729_8k;
+        av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729 @ 8kbit/s");
+    } else if (buf_size == 8) {
+        format = format_g729d_6k4;
+        av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729D @ 6.4kbit/s");
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Packet size %d is unknown.\n", buf_size);
+        return (AVERROR_NOFMT);
+    }
+
+    for (i=0; i < buf_size; i++)
+        frame_erasure |= buf[i];
+    frame_erasure = !frame_erasure;
+
+    init_get_bits(&gb, buf, buf_size);
+
+    ma_predictor     = get_bits(&gb, 1);
+    quantizer_1st    = get_bits(&gb, VQ_1ST_BITS);
+    quantizer_2nd_lo = get_bits(&gb, VQ_2ND_BITS);
+    quantizer_2nd_hi = get_bits(&gb, VQ_2ND_BITS);
+
+    for (i = 0; i < 2; i++) {
+        uint8_t ac_index;      ///< adaptive codebook index
+        uint8_t pulses_signs;  ///< fixed-codebook vector pulse signs
+        int fc_indexes;        ///< fixed-codebook indexes
+        uint8_t gc_1st_index;  ///< gain codebook (first stage) index
+        uint8_t gc_2nd_index;  ///< gain codebook (second stage) index
+
+        ac_index      = get_bits(&gb, format.ac_index_bits[i]);
+        if(!i && format.parity_bit)
+            bad_pitch = get_parity(ac_index) == get_bits1(&gb);
+        fc_indexes    = get_bits(&gb, format.fc_indexes_bits);
+        pulses_signs  = get_bits(&gb, format.fc_signs_bits);
+        gc_1st_index  = get_bits(&gb, format.gc_1st_index_bits);
+        gc_2nd_index  = get_bits(&gb, format.gc_2nd_index_bits);
+
         ff_acelp_weighted_vector_sum(fc + pitch_delay_int[i],
                                      fc + pitch_delay_int[i],
                                      fc, 1 << 14,
@@ -117,31 +192,27 @@ static av_cold int decoder_init(AVCodecContext * avctx)
                                      0, 14,
                                      SUBFRAME_SIZE - pitch_delay_int[i]);
 
-        if (ctx->frame_erasure) {
+        if (frame_erasure) {
             ctx->gain_pitch = (29491 * ctx->gain_pitch) >> 15; // 0.90 (0.15)
             ctx->gain_code  = ( 2007 * ctx->gain_code ) >> 11; // 0.98 (0.11)
 
             gain_corr_factor = 0;
         } else {
-            ctx->gain_pitch  = cb_gain_1st_8k[parm->gc_1st_index[i]][0] +
-                               cb_gain_2nd_8k[parm->gc_2nd_index[i]][0];
-            gain_corr_factor = cb_gain_1st_8k[parm->gc_1st_index[i]][1] +
-                               cb_gain_2nd_8k[parm->gc_2nd_index[i]][1];
+            ctx->gain_pitch  = cb_gain_1st_8k[gc_1st_index][0] +
+                               cb_gain_2nd_8k[gc_2nd_index][0];
+            gain_corr_factor = cb_gain_1st_8k[gc_1st_index][1] +
+                               cb_gain_2nd_8k[gc_2nd_index][1];
 
         ff_acelp_weighted_vector_sum(ctx->exc + i * SUBFRAME_SIZE,
                                      ctx->exc + i * SUBFRAME_SIZE, fc,
-                                     (!voicing && ctx->frame_erasure) ? 0 : ctx->gain_pitch,
-                                     ( voicing && ctx->frame_erasure) ? 0 : ctx->gain_code,
+                                     (!voicing && frame_erasure) ? 0 : ctx->gain_pitch,
+                                     ( voicing && frame_erasure) ? 0 : ctx->gain_code,
                                      1 << 13, 14, SUBFRAME_SIZE);
+    }
 
-    if (buf_size < packed_frame_size) {
-        av_log(avctx, AV_LOG_ERROR, "Error processing packet: packet size too small\n");
-        return AVERROR(EIO);
-    }
-    if (*data_size < unpacked_frame_size) {
-        av_log(avctx, AV_LOG_ERROR, "Error processing packet: output buffer too small\n");
-        return AVERROR(EIO);
-    }
+    *data_size = SUBFRAME_SIZE << 2;
+    return buf_size;
+}
 
 AVCodec g729_decoder =
 {
