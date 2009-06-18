@@ -138,11 +138,11 @@ check: test checkheaders
 
 fulltest test: codectest lavftest seektest
 
-FFMPEG_REFFILE   = $(SRC_PATH)/tests/ffmpeg.regression.ref
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
 LAVF_REFFILE     = $(SRC_PATH)/tests/lavf.regression.ref
 ROTOZOOM_REFFILE = $(SRC_PATH)/tests/rotozoom.regression.ref
 SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
+VSYNTH_REFFILE   = $(SRC_PATH)/tests/vsynth.regression.ref
 
 CODEC_TESTS = $(addprefix regtest-,             \
         mpeg                                    \
@@ -251,7 +251,7 @@ zlib-error:
 	@exit 1
 
 codectest: $(VSYNTH_REG) $(ROTOZOOM_REG)
-	diff -u -w $(FFMPEG_REFFILE)   $(VSYNTH_REG)
+	diff -u -w $(VSYNTH_REFFILE)   $(VSYNTH_REG)
 	diff -u -w $(ROTOZOOM_REFFILE) $(ROTOZOOM_REG)
 
 lavftest: $(LAVF_REG)
