@@ -22,6 +22,8 @@
 #ifndef AVFORMAT_ID3V1_H
 #define AVFORMAT_ID3V1_H
 
+#include "avformat.h"
+
 #define ID3v1_TAG_SIZE 128
 
 #define ID3v1_GENRE_MAX 125
@@ -30,6 +32,11 @@
  * ID3v1 genres
  */
 extern const char *ff_id3v1_genre_str[ID3v1_GENRE_MAX + 1];
+
+/**
+ * Read an ID3v1 tag
+ */
+void ff_id3v1_read(AVFormatContext *s);
 
 #endif /* AVFORMAT_ID3V1_H */
 

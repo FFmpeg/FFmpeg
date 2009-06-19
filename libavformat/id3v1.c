@@ -20,6 +20,7 @@
  */
 
 #include "id3v1.h"
+#include "libavcodec/avcodec.h"
 
 const char *ff_id3v1_genre_str[ID3v1_GENRE_MAX + 1] = {
       [0] = "Blues",
@@ -149,3 +150,72 @@ const char *ff_id3v1_genre_str[ID3v1_GENRE_MAX + 1] = {
     [124] = "Euro-House",
     [125] = "Dance Hall",
 };
+
+static void get_string(AVFormatContext *s, const char *key,
+                       const uint8_t *buf, int buf_size)
+{
+    int i, c;
+    char *q, str[512];
+
+    q = str;
+    for(i = 0; i < buf_size; i++) {
+        c = buf[i];
+        if (c == '\0')
+            break;
+        if ((q - str) >= sizeof(str) - 1)
+            break;
+        *q++ = c;
+    }
+    *q = '\0';
+
+    if (*str)
+        av_metadata_set(&s->metadata, key, str);
+}
+
+/**
+ * Parse an ID3v1 tag
+ *
+ * @param buf ID3v1_TAG_SIZE long buffer containing the tag
+ */
+static int parse_tag(AVFormatContext *s, const uint8_t *buf)
+{
+    char str[5];
+    int genre;
+
+    if (!(buf[0] == 'T' &&
+          buf[1] == 'A' &&
+          buf[2] == 'G'))
+        return -1;
+    get_string(s, "title",   buf +  3, 30);
+    get_string(s, "author",  buf + 33, 30);
+    get_string(s, "album",   buf + 63, 30);
+    get_string(s, "year",    buf + 93,  4);
+    get_string(s, "comment", buf + 97, 30);
+    if (buf[125] == 0 && buf[126] != 0) {
+        snprintf(str, sizeof(str), "%d", buf[126]);
+        av_metadata_set(&s->metadata, "track", str);
+    }
+    genre = buf[127];
+    if (genre <= ID3v1_GENRE_MAX)
+        av_metadata_set(&s->metadata, "genre", ff_id3v1_genre_str[genre]);
+    return 0;
+}
+
+void ff_id3v1_read(AVFormatContext *s)
+{
+    int ret, filesize;
+    uint8_t buf[ID3v1_TAG_SIZE];
+
+    if (!url_is_streamed(s->pb)) {
+        /* XXX: change that */
+        filesize = url_fsize(s->pb);
+        if (filesize > 128) {
+            url_fseek(s->pb, filesize - 128, SEEK_SET);
+            ret = get_buffer(s->pb, buf, ID3v1_TAG_SIZE);
+            if (ret == ID3v1_TAG_SIZE) {
+                parse_tag(s, buf);
+            }
+            url_fseek(s->pb, 0, SEEK_SET);
+        }
+    }
+}

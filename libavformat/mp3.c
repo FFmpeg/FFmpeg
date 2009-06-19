@@ -27,52 +27,6 @@
 #include "id3v2.h"
 #include "id3v1.h"
 
-static void id3v1_get_string(AVFormatContext *s, const char *key,
-                             const uint8_t *buf, int buf_size)
-{
-    int i, c;
-    char *q, str[512];
-
-    q = str;
-    for(i = 0; i < buf_size; i++) {
-        c = buf[i];
-        if (c == '\0')
-            break;
-        if ((q - str) >= sizeof(str) - 1)
-            break;
-        *q++ = c;
-    }
-    *q = '\0';
-
-    if (*str)
-        av_metadata_set(&s->metadata, key, str);
-}
-
-/* 'buf' must be ID3v1_TAG_SIZE byte long */
-static int id3v1_parse_tag(AVFormatContext *s, const uint8_t *buf)
-{
-    char str[5];
-    int genre;
-
-    if (!(buf[0] == 'T' &&
-          buf[1] == 'A' &&
-          buf[2] == 'G'))
-        return -1;
-    id3v1_get_string(s, "title",   buf +  3, 30);
-    id3v1_get_string(s, "author",  buf + 33, 30);
-    id3v1_get_string(s, "album",   buf + 63, 30);
-    id3v1_get_string(s, "year",    buf + 93,  4);
-    id3v1_get_string(s, "comment", buf + 97, 30);
-    if (buf[125] == 0 && buf[126] != 0) {
-        snprintf(str, sizeof(str), "%d", buf[126]);
-        av_metadata_set(&s->metadata, "track", str);
-    }
-    genre = buf[127];
-    if (genre <= ID3v1_GENRE_MAX)
-        av_metadata_set(&s->metadata, "genre", ff_id3v1_genre_str[genre]);
-    return 0;
-}
-
 /* mp3 read */
 
 static int mp3_read_probe(AVProbeData *p)
@@ -172,8 +126,6 @@ static int mp3_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     AVStream *st;
-    uint8_t buf[ID3v1_TAG_SIZE];
-    int len, ret, filesize;
     int64_t off;
 
     st = av_new_stream(s, 0);
@@ -185,34 +137,8 @@ static int mp3_read_header(AVFormatContext *s,
     st->need_parsing = AVSTREAM_PARSE_FULL;
     st->start_time = 0;
 
-    /* try to get the TAG */
-    if (!url_is_streamed(s->pb)) {
-        /* XXX: change that */
-        filesize = url_fsize(s->pb);
-        if (filesize > 128) {
-            url_fseek(s->pb, filesize - 128, SEEK_SET);
-            ret = get_buffer(s->pb, buf, ID3v1_TAG_SIZE);
-            if (ret == ID3v1_TAG_SIZE) {
-                id3v1_parse_tag(s, buf);
-            }
-            url_fseek(s->pb, 0, SEEK_SET);
-        }
-    }
-
-    /* if ID3v2 header found, skip it */
-    ret = get_buffer(s->pb, buf, ID3v2_HEADER_SIZE);
-    if (ret != ID3v2_HEADER_SIZE)
-        return -1;
-    if (ff_id3v2_match(buf)) {
-        /* parse ID3v2 header */
-        len = ((buf[6] & 0x7f) << 21) |
-            ((buf[7] & 0x7f) << 14) |
-            ((buf[8] & 0x7f) << 7) |
-            (buf[9] & 0x7f);
-        ff_id3v2_parse(s, len, buf[3], buf[5]);
-    } else {
-        url_fseek(s->pb, 0, SEEK_SET);
-    }
+    ff_id3v1_read(s);
+    ff_id3v2_read(s);
 
     off = url_ftell(s->pb);
     if (mp3_parse_vbr_tags(s, st, off) < 0)
