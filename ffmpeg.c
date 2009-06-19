@@ -255,13 +255,28 @@ typedef struct AVOutputStream {
     AVFrame pict_tmp;      /* temporary image for resampling */
     struct SwsContext *img_resample_ctx; /* for image resampling */
     int resample_height;
+    int resample_width;
 
+    /* full frame size of first frame */
+    int original_height;
+    int original_width;
+
+    /* cropping area sizes */
     int video_crop;
-    int topBand;             /* cropping area sizes */
+    int topBand;
+    int bottomBand;
     int leftBand;
+    int rightBand;
 
+    /* cropping area of first frame */
+    int original_topBand;
+    int original_bottomBand;
+    int original_leftBand;
+    int original_rightBand;
+
+    /* padding area sizes */
     int video_pad;
-    int padtop;              /* padding area sizes */
+    int padtop;
     int padbottom;
     int padleft;
     int padright;
@@ -845,6 +860,7 @@ static void do_video_out(AVFormatContext *s,
                          int *frame_size)
 {
     int nb_frames, i, ret;
+    int64_t topBand, bottomBand, leftBand, rightBand;
     AVFrame *final_picture, *formatted_picture, *resampling_dst, *padding_src;
     AVFrame picture_crop_temp, picture_pad_temp;
     AVCodecContext *enc, *dec;
@@ -921,6 +937,46 @@ static void do_video_out(AVFormatContext *s,
     if (ost->video_resample) {
         padding_src = NULL;
         final_picture = &ost->pict_tmp;
+        if(  (ost->resample_height != (ist->st->codec->height - (ost->topBand  + ost->bottomBand)))
+          || (ost->resample_width  != (ist->st->codec->width  - (ost->leftBand + ost->rightBand)))) {
+
+            fprintf(stderr,"Input Stream #%d.%d frame size changed to %dx%d\n", ist->file_index, ist->index, ist->st->codec->width, ist->st->codec->height);
+            /* keep bands proportional to the frame size */
+            topBand    = ((int64_t)ist->st->codec->height * ost->original_topBand    / ost->original_height) & ~1;
+            bottomBand = ((int64_t)ist->st->codec->height * ost->original_bottomBand / ost->original_height) & ~1;
+            leftBand   = ((int64_t)ist->st->codec->width  * ost->original_leftBand   / ost->original_width)  & ~1;
+            rightBand  = ((int64_t)ist->st->codec->width  * ost->original_rightBand  / ost->original_width)  & ~1;
+
+            /* sanity check to ensure no bad band sizes sneak in */
+            assert(topBand    <= INT_MAX && topBand    >= 0);
+            assert(bottomBand <= INT_MAX && bottomBand >= 0);
+            assert(leftBand   <= INT_MAX && leftBand   >= 0);
+            assert(rightBand  <= INT_MAX && rightBand  >= 0);
+
+            ost->topBand    = topBand;
+            ost->bottomBand = bottomBand;
+            ost->leftBand   = leftBand;
+            ost->rightBand  = rightBand;
+
+            ost->resample_height = ist->st->codec->height - (ost->topBand  + ost->bottomBand);
+            ost->resample_width  = ist->st->codec->width  - (ost->leftBand + ost->rightBand);
+
+            /* initialize a new scaler context */
+            sws_freeContext(ost->img_resample_ctx);
+            sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
+            ost->img_resample_ctx = sws_getContext(
+                ist->st->codec->width  - (ost->leftBand + ost->rightBand),
+                ist->st->codec->height - (ost->topBand  + ost->bottomBand),
+                ist->st->codec->pix_fmt,
+                ost->st->codec->width  - (ost->padleft  + ost->padright),
+                ost->st->codec->height - (ost->padtop   + ost->padbottom),
+                ost->st->codec->pix_fmt,
+                sws_flags, NULL, NULL, NULL);
+            if (ost->img_resample_ctx == NULL) {
+                fprintf(stderr, "Cannot get resampling context\n");
+                av_exit(1);
+            }
+        }
         sws_scale(ost->img_resample_ctx, formatted_picture->data, formatted_picture->linesize,
               0, ost->resample_height, resampling_dst->data, resampling_dst->linesize);
     }
@@ -1838,8 +1894,10 @@ static int av_encode(AVFormatContext **output_files,
                                 (frame_padtop + frame_padbottom)) ||
                         (codec->pix_fmt != icodec->pix_fmt));
                 if (ost->video_crop) {
-                    ost->topBand = frame_topBand;
-                    ost->leftBand = frame_leftBand;
+                    ost->topBand    = ost->original_topBand    = frame_topBand;
+                    ost->bottomBand = ost->original_bottomBand = frame_bottomBand;
+                    ost->leftBand   = ost->original_leftBand   = frame_leftBand;
+                    ost->rightBand  = ost->original_rightBand  = frame_rightBand;
                 }
                 if (ost->video_pad) {
                     ost->padtop = frame_padtop;
@@ -1873,7 +1931,12 @@ static int av_encode(AVFormatContext **output_files,
                         fprintf(stderr, "Cannot get resampling context\n");
                         av_exit(1);
                     }
-                    ost->resample_height = icodec->height - (frame_topBand + frame_bottomBand);
+
+                    ost->original_height = icodec->height;
+                    ost->original_width  = icodec->width;
+
+                    ost->resample_height = icodec->height - (frame_topBand  + frame_bottomBand);
+                    ost->resample_width  = icodec->width  - (frame_leftBand + frame_rightBand);
                     codec->bits_per_raw_sample= 0;
                 }
                 ost->encoding_needed = 1;
