@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include "raw.h"
 #include "id3v2.h"
+#include "id3v1.h"
 
 /* simple formats */
 
@@ -625,6 +626,26 @@ static int adts_aac_probe(AVProbeData *p)
     else if(max_frames>=1) return 1;
     else                   return 0;
 }
+
+static int adts_aac_read_header(AVFormatContext *s,
+                                AVFormatParameters *ap)
+{
+    AVStream *st;
+
+    st = av_new_stream(s, 0);
+    if (!st)
+        return AVERROR(ENOMEM);
+
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_id = s->iformat->value;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
+
+    ff_id3v1_read(s);
+    ff_id3v2_read(s);
+
+    return 0;
+}
+
 #endif
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
@@ -635,7 +656,7 @@ AVInputFormat aac_demuxer = {
     NULL_IF_CONFIG_SMALL("raw ADTS AAC"),
     0,
     adts_aac_probe,
-    audio_read_header,
+    adts_aac_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "aac",
