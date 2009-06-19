@@ -301,7 +301,7 @@ void avcodec_register_all(void)
     /* subtitles */
     REGISTER_ENCDEC  (DVBSUB, dvbsub);
     REGISTER_ENCDEC  (DVDSUB, dvdsub);
-    REGISTER_DECODER (XSUB, xsub);
+    REGISTER_ENCDEC  (XSUB, xsub);
 
     /* external libraries */
     REGISTER_ENCDEC  (LIBAMR_NB, libamr_nb);

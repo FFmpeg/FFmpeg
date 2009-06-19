@@ -648,7 +648,7 @@ performance on systems without hardware floating point support).
 @item SSA/ASS      @tab X @tab X
 @item DVB          @tab X @tab X @tab X @tab X
 @item DVD          @tab X @tab X @tab X @tab X
-@item XSUB         @tab   @tab   @tab   @tab X
+@item XSUB         @tab   @tab   @tab X @tab X
 @end multitable
 
 @code{X} means that the feature is supported.
