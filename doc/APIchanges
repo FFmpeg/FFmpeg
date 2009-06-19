@@ -12,6 +12,11 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-06-19 - r19222 - lavc 52.32.0 - AVSubtitle.pts
+  Added a pts field to AVSubtitle which gives the subtitle's packet
+  PTS in AV_TIME_BASE. Some subtitle de-/encoders (e.g. XSUB) will
+  not work right without this.
+
 2009-06-03 - r19078 - lavc 52.30.2 - AV_PKT_FLAG_KEY
   PKT_FLAG_KEY has been deprecated and will be dropped for the next
   major version. Use AV_PKT_FLAG_KEY instead.
