@@ -336,15 +336,18 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
        ppcm[i] = c->audio_buf[i];
     }
     dv_extract_audio(buf, ppcm, c->sys);
-    c->abytes += size;
 
     /* We work with 720p frames split in half, thus even frames have
      * channels 0,1 and odd 2,3. */
     if (c->sys->height == 720) {
-        if (buf[1] & 0x0C)
+        if (buf[1] & 0x0C) {
             c->audio_pkt[2].size = c->audio_pkt[3].size = 0;
-        else
+        } else {
             c->audio_pkt[0].size = c->audio_pkt[1].size = 0;
+            c->abytes += size;
+        }
+    } else {
+        c->abytes += size;
     }
 
     /* Now it's time to return video packet */
