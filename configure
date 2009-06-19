@@ -2173,6 +2173,8 @@ if enabled network; then
         network_extralibs="-lws2_32"
         check_type ws2tcpip.h socklen_t
         check_func_headers winsock2.h closesocket
+    else
+        disable network
     fi
 fi
 
