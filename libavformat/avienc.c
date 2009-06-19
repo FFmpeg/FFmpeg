@@ -81,6 +81,10 @@ static char* avi_stream2fourcc(char* tag, int index, enum CodecType type)
     if (type == CODEC_TYPE_VIDEO) {
         tag[2] = 'd';
         tag[3] = 'c';
+    } else if (type == CODEC_TYPE_SUBTITLE) {
+        // note: this is not an official code
+        tag[2] = 's';
+        tag[3] = 'b';
     } else {
         tag[2] = 'w';
         tag[3] = 'b';
@@ -208,12 +212,17 @@ static int avi_write_header(AVFormatContext *s)
         /* stream generic header */
         strh = start_tag(pb, "strh");
         switch(stream->codec_type) {
+        case CODEC_TYPE_SUBTITLE:
+            // XSUB subtitles behave like video tracks, other subtitles
+            // are not (yet) supported.
+            if (stream->codec_id != CODEC_ID_XSUB) break;
         case CODEC_TYPE_VIDEO: put_tag(pb, "vids"); break;
         case CODEC_TYPE_AUDIO: put_tag(pb, "auds"); break;
 //        case CODEC_TYPE_TEXT : put_tag(pb, "txts"); break;
         case CODEC_TYPE_DATA : put_tag(pb, "dats"); break;
         }
-        if(stream->codec_type == CODEC_TYPE_VIDEO)
+        if(stream->codec_type == CODEC_TYPE_VIDEO ||
+           stream->codec_id == CODEC_ID_XSUB)
             put_le32(pb, stream->codec_tag);
         else
             put_le32(pb, 1);
@@ -252,6 +261,10 @@ static int avi_write_header(AVFormatContext *s)
       if(stream->codec_type != CODEC_TYPE_DATA){
         strf = start_tag(pb, "strf");
         switch(stream->codec_type) {
+        case CODEC_TYPE_SUBTITLE:
+            // XSUB subtitles behave like video tracks, other subtitles
+            // are not (yet) supported.
+            if (stream->codec_id != CODEC_ID_XSUB) break;
         case CODEC_TYPE_VIDEO:
             put_bmp_header(pb, stream, codec_bmp_tags, 0);
             break;
