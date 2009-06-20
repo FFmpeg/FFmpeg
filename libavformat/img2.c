@@ -42,7 +42,7 @@ typedef struct {
 static const IdStrMap img_tags[] = {
     { CODEC_ID_MJPEG     , "jpeg"},
     { CODEC_ID_MJPEG     , "jpg"},
-    { CODEC_ID_JPEGLS    , "ljpg"},
+    { CODEC_ID_LJPEG     , "ljpg"},
     { CODEC_ID_PNG       , "png"},
     { CODEC_ID_PNG       , "mng"},
     { CODEC_ID_PPM       , "ppm"},
