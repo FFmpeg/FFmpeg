@@ -262,4 +262,12 @@ static const int16_t cb_ma_predictor[2][MA_NP][10] = { /* (0.15) */
     { 3024,  1592,   940,  1631,  1723,  1579,  2034,  2084,  1913,  2601}
   }
 };
+
+/**
+ * initial LSP coefficients belongs to virtual frame preceding  the
+ * first frame of the stream
+ */
+static const int16_t lsp_init[10]= { /* (0.15) */
+   30000, 26000, 21000, 15000, 8000, 0, -8000,-15000,-21000,-26000
+};
 #endif /* AVCODEC_G729DATA_H */

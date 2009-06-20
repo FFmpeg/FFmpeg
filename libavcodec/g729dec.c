@@ -80,6 +80,11 @@ typedef struct {
     uint8_t fc_indexes_bits;    ///< size (in bits) of fixed-codebook index entry
 } G729FormatDescription;
 
+typedef struct {
+    int16_t lsp_buf[2][10];     ///< (0.15) LSP coefficients (previous and current frames) (3.2.5)
+    int16_t *lsp[2];            ///< pointers to lsp_buf
+}  G729Context;
+
 static const G729FormatDescription format_g729_8k = {
     .ac_index_bits     = {8,5},
     .parity_bit        = 1,
@@ -124,6 +129,10 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     /* Both 8kbit/s and 6.4kbit/s modes uses two subframes per frame. */
     avctx->frame_size = SUBFRAME_SIZE << 1;
 
+    ctx->lsp[0] = ctx->lsp_buf[0];
+    ctx->lsp[1] = ctx->lsp_buf[1];
+    memcpy(ctx->lsp[0], lsp_init, 10 * sizeof(int16_t));
+
     return 0;
 }
 
@@ -138,6 +147,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int frame_erasure = 0;    ///< frame erasure detected during decoding
     int bad_pitch = 0;        ///< parity check failed
     int i;
+    G729Context *ctx = avctx->priv_data;
+    int16_t lp[2][11];           // (3.12)
     uint8_t ma_predictor;     ///< switched MA predictor of LSP quantizer
     uint8_t quantizer_1st;    ///< first stage vector of quantizer
     uint8_t quantizer_2nd_lo; ///< second stage lower vector of quantizer (size in bits)
@@ -169,6 +180,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     quantizer_1st    = get_bits(&gb, VQ_1ST_BITS);
     quantizer_2nd_lo = get_bits(&gb, VQ_2ND_BITS);
     quantizer_2nd_hi = get_bits(&gb, VQ_2ND_BITS);
+
+    ff_acelp_lsf2lsp(ctx->lsp[1], ctx->lsfq, 10);
+
+    ff_acelp_lp_decode(&lp[0][0], &lp[1][0], ctx->lsp[1], ctx->lsp[0], 10);
+
+    FFSWAP(int16_t*, ctx->lsp[1], ctx->lsp[0]);
 
     for (i = 0; i < 2; i++) {
         uint8_t ac_index;      ///< adaptive codebook index
