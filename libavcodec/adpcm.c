@@ -648,14 +648,11 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
                     *dst++ = buf[0][i] | (buf[1][i] << 4);
             }
         } else
-        for (; n>0; n--) {
-            for(i = 0; i < avctx->channels; i++) {
-                int nibble;
-                nibble  = adpcm_yamaha_compress_sample(&c->status[i], samples[i]);
-                nibble |= adpcm_yamaha_compress_sample(&c->status[i], samples[i+avctx->channels]) << 4;
-                *dst++ = nibble;
-            }
-            samples += 2 * avctx->channels;
+        for (n *= avctx->channels; n>0; n--) {
+            int nibble;
+            nibble  = adpcm_yamaha_compress_sample(&c->status[ 0], *samples++);
+            nibble |= adpcm_yamaha_compress_sample(&c->status[st], *samples++) << 4;
+            *dst++ = nibble;
         }
         break;
     default:
