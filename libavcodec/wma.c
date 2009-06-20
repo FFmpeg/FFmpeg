@@ -479,14 +479,14 @@ int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
             offset += run_table[code];
             level = level_table[code];
         } else if (code == 1) {
-            /* EOB */
+            /** EOB */
             break;
         } else {
-            /* escape */
+            /** escape */
             if (!version) {
                 level = get_bits(gb, coef_nb_bits);
-                /* NOTE: this is rather suboptimal. reading
-                   block_len_bits would be better */
+                /** NOTE: this is rather suboptimal. reading
+                    block_len_bits would be better */
                 offset += get_bits(gb, frame_len_bits);
             } else {
                 level = ff_wma_get_large_val(gb);
