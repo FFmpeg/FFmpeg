@@ -470,23 +470,24 @@ int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
                             int num_coefs, int block_len, int frame_len_bits,
                             int coef_nb_bits)
 {
-    int code, run, level, sign;
-    WMACoef* eptr = ptr + num_coefs;
-    ptr += offset;
-    for(;;) {
+    int code, level, sign;
+    const unsigned int coef_mask = block_len - 1;
+    for (; offset < num_coefs; offset++) {
         code = get_vlc2(gb, vlc->table, VLCBITS, VLCMAX);
-        if (code < 0)
-            return -1;
-        if (code == 1) {
+        if (code > 1) {
+            /** normal code */
+            offset += run_table[code];
+            level = level_table[code];
+        } else if (code == 1) {
             /* EOB */
             break;
-        } else if (code == 0) {
+        } else {
             /* escape */
             if (!version) {
                 level = get_bits(gb, coef_nb_bits);
                 /* NOTE: this is rather suboptimal. reading
                    block_len_bits would be better */
-                run = get_bits(gb, frame_len_bits);
+                offset += get_bits(gb, frame_len_bits);
             } else {
                 level = ff_wma_get_large_val(gb);
                 /** escape decode */
@@ -497,31 +498,21 @@ int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
                                 "broken escape sequence\n");
                             return -1;
                         } else
-                            run = get_bits(gb, frame_len_bits) + 4;
+                            offset += get_bits(gb, frame_len_bits) + 4;
                     } else
-                        run = get_bits(gb, 2) + 1;
-                } else
-                     run = 0;
+                        offset += get_bits(gb, 2) + 1;
+                }
             }
-        } else {
-            /* normal code */
-            run = run_table[code];
-            level = level_table[code];
         }
-        sign = get_bits1(gb);
-        if (!sign)
-             level = -level;
-        ptr += run;
-        if (ptr >= eptr)
-        {
-            av_log(NULL, AV_LOG_ERROR, "overflow in spectral RLE, ignoring\n");
-            break;
-        }
-        *ptr++ = level;
-        /* NOTE: EOB can be omitted */
-        if (ptr >= eptr)
-            break;
+        sign = get_bits1(gb) - 1;
+        ptr[offset & coef_mask] = (level^sign) - sign;
     }
+    /** NOTE: EOB can be omitted */
+    if (offset > num_coefs) {
+        av_log(avctx, AV_LOG_ERROR, "overflow in spectral RLE, ignoring\n");
+        return -1;
+    }
+
     return 0;
 }
 
