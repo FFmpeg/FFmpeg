@@ -426,6 +426,28 @@ int ff_wma_end(AVCodecContext *avctx)
 }
 
 /**
+ * Decode an uncompressed coefficient.
+ * @param s codec context
+ * @return the decoded coefficient
+ */
+unsigned int ff_wma_get_large_val(GetBitContext* gb)
+{
+    /** consumes up to 34 bits */
+    int n_bits = 8;
+    /** decode length */
+    if (get_bits1(gb)) {
+        n_bits += 8;
+        if (get_bits1(gb)) {
+            n_bits += 8;
+            if (get_bits1(gb)) {
+                n_bits += 7;
+            }
+        }
+    }
+    return get_bits_long(gb, n_bits);
+}
+
+/**
  * Decode run level compressed coefficients.
  * @param avctx codec context
  * @param gb bitstream reader context
@@ -450,6 +472,7 @@ int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
 {
     int code, run, level, sign;
     WMACoef* eptr = ptr + num_coefs;
+    ptr += offset;
     for(;;) {
         code = get_vlc2(gb, vlc->table, VLCBITS, VLCMAX);
         if (code < 0)
@@ -459,10 +482,27 @@ int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
             break;
         } else if (code == 0) {
             /* escape */
+            if (!version) {
             level = get_bits(gb, coef_nb_bits);
             /* NOTE: this is rather suboptimal. reading
                block_len_bits would be better */
             run = get_bits(gb, frame_len_bits);
+            } else {
+                level = ff_wma_get_large_val(gb);
+                /** escape decode */
+                if (get_bits1(gb)) {
+                    if (get_bits1(gb)) {
+                        if (get_bits1(gb)) {
+                            av_log(avctx,AV_LOG_ERROR,
+                                "broken escape sequence\n");
+                            return -1;
+                        } else
+                            run = get_bits(gb, frame_len_bits) + 4;
+                    } else
+                        run = get_bits(gb, 2) + 1;
+                } else
+                     run = 0;
+            }
         } else {
             /* normal code */
             run = run_table[code];
