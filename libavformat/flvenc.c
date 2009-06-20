@@ -200,7 +200,7 @@ static int flv_write_header(AVFormatContext *s)
 
     /* mixed array (hash) with size and string/type/data tuples */
     put_byte(pb, AMF_DATA_TYPE_MIXEDARRAY);
-    put_be32(pb, 5*!!video_enc + 4*!!audio_enc + 2); // +2 for duration and file size
+    put_be32(pb, 5*!!video_enc + 5*!!audio_enc + 2); // +2 for duration and file size
 
     put_amf_string(pb, "duration");
     flv->duration_offset= url_ftell(pb);

@@ -197,7 +197,7 @@ stddev: 1050.00 PSNR: 35.90 bytes:  1060620/  1058444
 266296 ./tests/data/a-adpcm_yam.wav
 2f73107dafef6db42e545f9e466d3f05 *./tests/data/adpcm_yam.vsynth.out.wav
 stddev:18302.45 PSNR: 11.07 bytes:  1065004/  1058444
-c0c2a66f75ea32ef6656ac7cdd08023c *./tests/data/a-adpcm_swf.flv
+42d4639866ed4d692eaf126228a4fa2a *./tests/data/a-adpcm_swf.flv
 269166 ./tests/data/a-adpcm_swf.flv
 628089745a7059ae4055c2515b6d668b *./tests/data/adpcm_swf.vsynth.out.wav
 stddev:  933.65 PSNR: 36.92 bytes:  1065004/  1058444
