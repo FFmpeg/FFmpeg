@@ -486,12 +486,12 @@ static int wma_decode_block(WMACodecContext *s)
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
             int tindex;
-            int16_t* ptr = &s->coefs1[ch][0];
+            WMACoef* ptr = &s->coefs1[ch][0];
 
             /* special VLC tables are used for ms stereo because
                there is potentially less energy there */
             tindex = (ch == 1 && s->ms_stereo);
-            memset(ptr, 0, s->block_len * sizeof(int16_t));
+            memset(ptr, 0, s->block_len * sizeof(WMACoef));
             ff_wma_run_level_decode(s->avctx, &s->gb, &s->coef_vlc[tindex],
                   s->level_table[tindex], s->run_table[tindex],
                   0, ptr, 0, nb_coefs[ch],
@@ -514,7 +514,7 @@ static int wma_decode_block(WMACodecContext *s)
     /* finally compute the MDCT coefficients */
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
-            int16_t *coefs1;
+            WMACoef *coefs1;
             float *coefs, *exponents, mult, mult1, noise;
             int i, j, n, n1, last_high_band, esize;
             float exp_power[HIGH_BAND_MAX_SIZE];

@@ -444,12 +444,12 @@ int ff_wma_end(AVCodecContext *avctx)
 int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
                             VLC *vlc,
                             const uint16_t *level_table, const uint16_t *run_table,
-                            int version, int16_t *ptr, int offset,
+                            int version, WMACoef *ptr, int offset,
                             int num_coefs, int block_len, int frame_len_bits,
                             int coef_nb_bits)
 {
     int code, run, level, sign;
-    int16_t* eptr = ptr + num_coefs;
+    WMACoef* eptr = ptr + num_coefs;
     for(;;) {
         code = get_vlc2(gb, vlc->table, VLCBITS, VLCMAX);
         if (code < 0)

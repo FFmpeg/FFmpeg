@@ -186,7 +186,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
 
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
-            int16_t *coefs1;
+            WMACoef *coefs1;
             float *coefs, *exponents, mult;
             int i, n;
 
@@ -264,7 +264,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
             int run, tindex;
-            int16_t *ptr, *eptr;
+            WMACoef *ptr, *eptr;
             tindex = (ch == 1 && s->ms_stereo);
             ptr = &s->coefs1[ch][0];
             eptr = ptr + nb_coefs[ch];

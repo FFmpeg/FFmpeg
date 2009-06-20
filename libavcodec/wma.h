@@ -51,6 +51,8 @@
 #define VLCBITS 9
 #define VLCMAX ((22+VLCBITS-1)/VLCBITS)
 
+typedef float WMACoef;          ///< type for decoded coefficients, int16_t would be enough for wma 1/2
+
 typedef struct CoefVLCTable {
     int n;                      ///< total number of codes
     int max_level;
@@ -111,7 +113,7 @@ typedef struct WMACodecContext {
     int exponents_bsize[MAX_CHANNELS];      ///< log2 ratio frame/exp. length
     DECLARE_ALIGNED_16(float, exponents[MAX_CHANNELS][BLOCK_MAX_SIZE]);
     float max_exponent[MAX_CHANNELS];
-    int16_t coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
+    WMACoef coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
     DECLARE_ALIGNED_16(float, coefs[MAX_CHANNELS][BLOCK_MAX_SIZE]);
     DECLARE_ALIGNED_16(FFTSample, output[BLOCK_MAX_SIZE * 2]);
     MDCTContext mdct_ctx[BLOCK_NB_SIZES];
@@ -151,7 +153,7 @@ int ff_wma_end(AVCodecContext *avctx);
 int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
                             VLC *vlc,
                             const uint16_t *level_table, const uint16_t *run_table,
-                            int version, int16_t *ptr, int offset,
+                            int version, WMACoef *ptr, int offset,
                             int num_coefs, int block_len, int frame_len_bits,
                             int coef_nb_bits);
 
