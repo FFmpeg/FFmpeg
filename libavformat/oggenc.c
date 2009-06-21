@@ -95,6 +95,8 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
     oggstream->header_len[0] = 51;
     oggstream->header[0] = av_mallocz(51); // per ogg flac specs
     p = oggstream->header[0];
+    if (!p)
+        return AVERROR_NOMEM;
     bytestream_put_byte(&p, 0x7F);
     bytestream_put_buffer(&p, "FLAC", 4);
     bytestream_put_byte(&p, 1); // major version
@@ -107,6 +109,8 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
     oggstream->header_len[1] = 1+3+4+strlen(vendor)+4;
     oggstream->header[1] = av_mallocz(oggstream->header_len[1]);
     p = oggstream->header[1];
+    if (!p)
+        return AVERROR_NOMEM;
     bytestream_put_byte(&p, 0x84); // last metadata block and vorbis comment
     bytestream_put_be24(&p, oggstream->header_len[1] - 4);
     bytestream_put_le32(&p, strlen(vendor));
