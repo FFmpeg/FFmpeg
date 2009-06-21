@@ -149,10 +149,12 @@ static int ogg_write_header(AVFormatContext *s)
         oggstream = av_mallocz(sizeof(*oggstream));
         st->priv_data = oggstream;
         if (st->codec->codec_id == CODEC_ID_FLAC) {
-            if (ogg_build_flac_headers(st->codec,
-                                       oggstream, st->codec->flags & CODEC_FLAG_BITEXACT) < 0) {
+            int err = ogg_build_flac_headers(st->codec, oggstream,
+                                             st->codec->flags & CODEC_FLAG_BITEXACT);
+            if (err) {
                 av_log(s, AV_LOG_ERROR, "Extradata corrupted\n");
                 av_freep(&st->priv_data);
+                return err;
             }
         } else {
             if (ff_split_xiph_headers(st->codec->extradata, st->codec->extradata_size,
