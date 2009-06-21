@@ -2013,13 +2013,13 @@ static int av_encode(AVFormatContext **output_files,
             if (!codec)
                 codec = avcodec_find_encoder(ost->st->codec->codec_id);
             if (!codec) {
-                snprintf(error, sizeof(error), "Unsupported codec for output stream #%d.%d",
-                        ost->file_index, ost->index);
+                snprintf(error, sizeof(error), "Encoder (codec id %d) not found for output stream #%d.%d",
+                         ost->st->codec->codec_id, ost->file_index, ost->index);
                 ret = AVERROR(EINVAL);
                 goto dump_format;
             }
             if (avcodec_open(ost->st->codec, codec) < 0) {
-                snprintf(error, sizeof(error), "Error while opening codec for output stream #%d.%d - maybe incorrect parameters such as bit_rate, rate, width or height",
+                snprintf(error, sizeof(error), "Error while opening encoder for output stream #%d.%d - maybe incorrect parameters such as bit_rate, rate, width or height",
                         ost->file_index, ost->index);
                 ret = AVERROR(EINVAL);
                 goto dump_format;
@@ -2036,13 +2036,13 @@ static int av_encode(AVFormatContext **output_files,
             if (!codec)
                 codec = avcodec_find_decoder(ist->st->codec->codec_id);
             if (!codec) {
-                snprintf(error, sizeof(error), "Unsupported codec (id=%d) for input stream #%d.%d",
+                snprintf(error, sizeof(error), "Decoder (codec id %d) not found for input stream #%d.%d",
                         ist->st->codec->codec_id, ist->file_index, ist->index);
                 ret = AVERROR(EINVAL);
                 goto dump_format;
             }
             if (avcodec_open(ist->st->codec, codec) < 0) {
-                snprintf(error, sizeof(error), "Error while opening codec for input stream #%d.%d",
+                snprintf(error, sizeof(error), "Error while opening decoder for input stream #%d.%d",
                         ist->file_index, ist->index);
                 ret = AVERROR(EINVAL);
                 goto dump_format;
