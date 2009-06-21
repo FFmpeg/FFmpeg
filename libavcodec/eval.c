@@ -86,12 +86,12 @@ static const int8_t si_prefixes['z' - 'E' + 1]={
  * postfixes.  This allows using f.e. kB, MiB, G and B as a postfix. This
  * function assumes that the unit of numbers is bits not bytes.
  */
-static double av_strtod(const char *name, char **tail) {
+static double av_strtod(const char *numstr, char **tail) {
     double d;
     char *next;
-    d = strtod(name, &next);
+    d = strtod(numstr, &next);
     /* if parsing succeeded, check for and interpret postfixes */
-    if (next!=name) {
+    if (next!=numstr) {
 
         if(*next >= 'E' && *next <= 'z'){
             int e= si_prefixes[*next - 'E'];
