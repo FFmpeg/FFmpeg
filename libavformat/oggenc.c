@@ -152,7 +152,7 @@ static int ogg_write_header(AVFormatContext *s)
             int err = ogg_build_flac_headers(st->codec, oggstream,
                                              st->codec->flags & CODEC_FLAG_BITEXACT);
             if (err) {
-                av_log(s, AV_LOG_ERROR, "Extradata corrupted\n");
+                av_log(s, AV_LOG_ERROR, "Error writing FLAC headers\n");
                 av_freep(&st->priv_data);
                 return err;
             }
