@@ -230,16 +230,16 @@ LAVF_TESTS = $(addprefix regtest-,              \
         pcx                                     \
     )
 
-REGFILES = $(addprefix tests/data/,$(addsuffix .$(1),$(2:regtest-%=%)))
+RESFILES = $(addprefix tests/data/,$(addsuffix .$(1),$(2:regtest-%=%)))
 
-CODEC_ROTOZOOM = $(call REGFILES,rotozoom.regression,$(CODEC_TESTS))
-CODEC_VSYNTH   = $(call REGFILES,vsynth.regression,$(CODEC_TESTS))
+ROTOZOOM_RESFILES = $(call RESFILES,rotozoom.regression,$(CODEC_TESTS))
+VSYNTH_RESFILES   = $(call RESFILES,vsynth.regression,$(CODEC_TESTS))
 
-LAVF_REGFILES = $(call REGFILES,lavf.regression,$(LAVF_TESTS))
+LAVF_RESFILES = $(call RESFILES,lavf.regression,$(LAVF_TESTS))
 
-LAVF_REG     = tests/data/lavf.regression
-ROTOZOOM_REG = tests/data/rotozoom.regression
-VSYNTH_REG   = tests/data/vsynth.regression
+LAVF_RESFILE     = tests/data/lavf.regression
+ROTOZOOM_RESFILE = tests/data/rotozoom.regression
+VSYNTH_RESFILE   = tests/data/vsynth.regression
 
 ifneq ($(CONFIG_ZLIB),yes)
 regtest-flashsv codectest: zlib-error
@@ -250,23 +250,23 @@ zlib-error:
 	@echo
 	@exit 1
 
-codectest: $(VSYNTH_REG) $(ROTOZOOM_REG)
-	diff -u -w $(VSYNTH_REFFILE)   $(VSYNTH_REG)
-	diff -u -w $(ROTOZOOM_REFFILE) $(ROTOZOOM_REG)
+codectest: $(VSYNTH_RESFILE) $(ROTOZOOM_RESFILE)
+	diff -u -w $(VSYNTH_REFFILE)   $(VSYNTH_RESFILE)
+	diff -u -w $(ROTOZOOM_REFFILE) $(ROTOZOOM_RESFILE)
 
-lavftest: $(LAVF_REG)
-	diff -u -w $(LAVF_REFFILE) $(LAVF_REG)
+lavftest: $(LAVF_RESFILE)
+	diff -u -w $(LAVF_REFFILE) $(LAVF_RESFILE)
 
-$(VSYNTH_REG) $(ROTOZOOM_REG) $(LAVF_REG):
+$(VSYNTH_RESFILE) $(ROTOZOOM_RESFILE) $(LAVF_RESFILE):
 	cat $^ > $@
 
-$(LAVF_REG):     $(LAVF_REGFILES)
-$(ROTOZOOM_REG): $(CODEC_ROTOZOOM)
-$(VSYNTH_REG):   $(CODEC_VSYNTH)
+$(LAVF_RESFILE):     $(LAVF_RESFILES)
+$(ROTOZOOM_RESFILE): $(ROTOZOOM_RESFILES)
+$(VSYNTH_RESFILE):   $(VSYNTH_RESFILES)
 
-$(CODEC_VSYNTH) $(CODEC_ROTOZOOM): $(CODEC_TESTS)
+$(VSYNTH_RESFILES) $(ROTOZOOM_RESFILES): $(CODEC_TESTS)
 
-$(LAVF_REGFILES): $(LAVF_TESTS)
+$(LAVF_RESFILES): $(LAVF_TESTS)
 
 $(CODEC_TESTS) $(LAVF_TESTS): regtest-ref
 
