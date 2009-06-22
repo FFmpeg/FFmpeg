@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 #include "avformat.h"
-/* For codec_get_id(). */
+/* For ff_codec_get_id(). */
 #include "riff.h"
 #include "isom.h"
 #include "matroska.h"
@@ -1243,13 +1243,13 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             && track->codec_priv.size >= 40
             && track->codec_priv.data != NULL) {
             track->video.fourcc = AV_RL32(track->codec_priv.data + 16);
-            codec_id = codec_get_id(codec_bmp_tags, track->video.fourcc);
+            codec_id = ff_codec_get_id(ff_codec_bmp_tags, track->video.fourcc);
         } else if (!strcmp(track->codec_id, "A_MS/ACM")
                    && track->codec_priv.size >= 18
                    && track->codec_priv.data != NULL) {
             init_put_byte(&b, track->codec_priv.data, track->codec_priv.size,
                           URL_RDONLY, NULL, NULL, NULL, NULL);
-            get_wav_header(&b, st->codec, track->codec_priv.size);
+            ff_get_wav_header(&b, st->codec, track->codec_priv.size);
             codec_id = st->codec->codec_id;
             extradata_offset = 18;
             track->codec_priv.size -= extradata_offset;
@@ -1257,7 +1257,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                    && (track->codec_priv.size >= 86)
                    && (track->codec_priv.data != NULL)) {
             track->video.fourcc = AV_RL32(track->codec_priv.data);
-            codec_id=codec_get_id(codec_movvideo_tags, track->video.fourcc);
+            codec_id=ff_codec_get_id(codec_movvideo_tags, track->video.fourcc);
         } else if (codec_id == CODEC_ID_PCM_S16BE) {
             switch (track->audio.bitdepth) {
             case  8:  codec_id = CODEC_ID_PCM_U8;     break;

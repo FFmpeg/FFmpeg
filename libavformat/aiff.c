@@ -119,7 +119,7 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
     /* Got an AIFF-C? */
     if (version == AIFF_C_VERSION1) {
         codec->codec_tag = get_le32(pb);
-        codec->codec_id  = codec_get_id(codec_aiff_tags, codec->codec_tag);
+        codec->codec_id  = ff_codec_get_id(codec_aiff_tags, codec->codec_tag);
 
         switch (codec->codec_id) {
         case CODEC_ID_PCM_S16BE:

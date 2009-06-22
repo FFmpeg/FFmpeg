@@ -110,7 +110,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (!vst)
                 return -1;
             vst->codec->codec_type = CODEC_TYPE_VIDEO;
-            vst->codec->codec_id = codec_get_id(swf_codec_tags, get_byte(pb));
+            vst->codec->codec_id = ff_codec_get_id(swf_codec_tags, get_byte(pb));
             av_set_pts_info(vst, 16, 256, swf->frame_rate);
             vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
             len -= 8;
@@ -132,7 +132,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return -1;
             ast->codec->channels = 1 + (v&1);
             ast->codec->codec_type = CODEC_TYPE_AUDIO;
-            ast->codec->codec_id = codec_get_id(swf_audio_codec_tags, (v>>4) & 15);
+            ast->codec->codec_id = ff_codec_get_id(swf_audio_codec_tags, (v>>4) & 15);
             ast->need_parsing = AVSTREAM_PARSE_FULL;
             sample_rate_code= (v>>2) & 3;
             if (!sample_rate_code)

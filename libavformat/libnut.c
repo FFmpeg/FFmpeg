@@ -80,11 +80,11 @@ static int nut_write_header(AVFormatContext * avf) {
         s[i].type = codec->codec_type == CODEC_TYPE_VIDEO ? NUT_VIDEO_CLASS : NUT_AUDIO_CLASS;
 
         if (codec->codec_tag) fourcc = codec->codec_tag;
-        else fourcc = codec_get_tag(nut_tags, codec->codec_id);
+        else fourcc = ff_codec_get_tag(nut_tags, codec->codec_id);
 
         if (!fourcc) {
-            if (codec->codec_type == CODEC_TYPE_VIDEO) fourcc = codec_get_tag(codec_bmp_tags, codec->codec_id);
-            if (codec->codec_type == CODEC_TYPE_AUDIO) fourcc = codec_get_tag(codec_wav_tags, codec->codec_id);
+            if (codec->codec_type == CODEC_TYPE_VIDEO) fourcc = ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id);
+            if (codec->codec_type == CODEC_TYPE_AUDIO) fourcc = ff_codec_get_tag(ff_codec_wav_tags, codec->codec_id);
         }
 
         s[i].fourcc_len = 4;
@@ -230,19 +230,19 @@ static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
         st->start_time = 0;
         st->duration = s[i].max_pts;
 
-        st->codec->codec_id = codec_get_id(nut_tags, st->codec->codec_tag);
+        st->codec->codec_id = ff_codec_get_id(nut_tags, st->codec->codec_tag);
 
         switch(s[i].type) {
         case NUT_AUDIO_CLASS:
             st->codec->codec_type = CODEC_TYPE_AUDIO;
-            if (st->codec->codec_id == CODEC_ID_NONE) st->codec->codec_id = codec_get_id(codec_wav_tags, st->codec->codec_tag);
+            if (st->codec->codec_id == CODEC_ID_NONE) st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, st->codec->codec_tag);
 
             st->codec->channels = s[i].channel_count;
             st->codec->sample_rate = s[i].samplerate_num / s[i].samplerate_denom;
             break;
         case NUT_VIDEO_CLASS:
             st->codec->codec_type = CODEC_TYPE_VIDEO;
-            if (st->codec->codec_id == CODEC_ID_NONE) st->codec->codec_id = codec_get_id(codec_bmp_tags, st->codec->codec_tag);
+            if (st->codec->codec_id == CODEC_ID_NONE) st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, st->codec->codec_tag);
 
             st->codec->width = s[i].width;
             st->codec->height = s[i].height;

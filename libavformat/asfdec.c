@@ -289,7 +289,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             st->codec->codec_type = type;
             if (type == CODEC_TYPE_AUDIO) {
-                get_wav_header(pb, st->codec, type_specific_size);
+                ff_get_wav_header(pb, st->codec, type_specific_size);
                 if (is_dvr_ms_audio) {
                     // codec_id and codec_tag are unreliable in dvr_ms
                     // files. Set them later by probing stream.
@@ -375,7 +375,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 }
 
                 st->codec->codec_tag = tag1;
-                st->codec->codec_id = codec_get_id(codec_bmp_tags, tag1);
+                st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag1);
                 if(tag1 == MKTAG('D', 'V', 'R', ' '))
                     st->need_parsing = AVSTREAM_PARSE_FULL;
             }

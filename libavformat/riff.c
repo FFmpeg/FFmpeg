@@ -26,7 +26,7 @@
 
 /* Note: when encoding, the first matching tag is used, so order is
    important if multiple tags possible for a given codec. */
-const AVCodecTag codec_bmp_tags[] = {
+const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_H264,         MKTAG('H', '2', '6', '4') },
     { CODEC_ID_H264,         MKTAG('h', '2', '6', '4') },
     { CODEC_ID_H264,         MKTAG('X', '2', '6', '4') },
@@ -218,7 +218,7 @@ const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_NONE,         0 }
 };
 
-const AVCodecTag codec_wav_tags[] = {
+const AVCodecTag ff_codec_wav_tags[] = {
     { CODEC_ID_PCM_S16LE,       0x0001 },
     { CODEC_ID_PCM_U8,          0x0001 }, /* must come after s16le in this list */
     { CODEC_ID_PCM_S24LE,       0x0001 },
@@ -272,14 +272,14 @@ const AVCodecTag codec_wav_tags[] = {
 };
 
 #if CONFIG_MUXERS
-int64_t start_tag(ByteIOContext *pb, const char *tag)
+int64_t ff_start_tag(ByteIOContext *pb, const char *tag)
 {
     put_tag(pb, tag);
     put_le32(pb, 0);
     return url_ftell(pb);
 }
 
-void end_tag(ByteIOContext *pb, int64_t start)
+void ff_end_tag(ByteIOContext *pb, int64_t start)
 {
     int64_t pos;
 
@@ -291,7 +291,7 @@ void end_tag(ByteIOContext *pb, int64_t start)
 
 /* WAVEFORMATEX header */
 /* returns the size or -1 on error */
-int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
+int ff_put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 {
     int bps, blkalign, bytespersec;
     int hdrsize = 18;
@@ -394,7 +394,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 }
 
 /* BITMAPINFOHEADER header */
-void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf)
+void ff_put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf)
 {
     put_le32(pb, 40 + enc->extradata_size); /* size */
     put_le32(pb, enc->width);
@@ -426,7 +426,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *ta
  * WAVEFORMATEX adds 'WORD  cbSize' and basically makes itself
  * an openended structure.
  */
-void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
+void ff_get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
 {
     int id;
 
@@ -464,14 +464,14 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
         if (size > 0)
             url_fskip(pb, size);
     }
-    codec->codec_id = wav_codec_get_id(id, codec->bits_per_coded_sample);
+    codec->codec_id = ff_wav_codec_get_id(id, codec->bits_per_coded_sample);
 }
 
 
-enum CodecID wav_codec_get_id(unsigned int tag, int bps)
+enum CodecID ff_wav_codec_get_id(unsigned int tag, int bps)
 {
     enum CodecID id;
-    id = codec_get_id(codec_wav_tags, tag);
+    id = ff_codec_get_id(ff_codec_wav_tags, tag);
     if (id <= 0)
         return id;
     /* handle specific u8 codec */

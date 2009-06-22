@@ -504,7 +504,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 #endif
                     st->codec->codec_type = CODEC_TYPE_VIDEO;
                     st->codec->codec_tag = tag1;
-                    st->codec->codec_id = codec_get_id(codec_bmp_tags, tag1);
+                    st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag1);
                     st->need_parsing = AVSTREAM_PARSE_HEADERS; // This is needed to get the pict type which is necessary for generating correct pts.
 
                     if(st->codec->codec_tag==0 && st->codec->height > 0 && st->codec->extradata_size < 1U<<30){
@@ -518,7 +518,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 //                    url_fskip(pb, size - 5 * 4);
                     break;
                 case CODEC_TYPE_AUDIO:
-                    get_wav_header(pb, st->codec, size);
+                    ff_get_wav_header(pb, st->codec, size);
                     if(ast->sample_size && st->codec->block_align && ast->sample_size != st->codec->block_align){
                         av_log(s, AV_LOG_WARNING, "sample size (%d) != block align (%d)\n", ast->sample_size, st->codec->block_align);
                         ast->sample_size= st->codec->block_align;

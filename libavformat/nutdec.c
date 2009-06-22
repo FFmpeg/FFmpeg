@@ -316,15 +316,15 @@ static int decode_stream_header(NUTContext *nut){
     {
         case 0:
             st->codec->codec_type = CODEC_TYPE_VIDEO;
-            st->codec->codec_id = codec_get_id(codec_bmp_tags, tmp);
+            st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tmp);
             break;
         case 1:
             st->codec->codec_type = CODEC_TYPE_AUDIO;
-            st->codec->codec_id = codec_get_id(codec_wav_tags, tmp);
+            st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, tmp);
             break;
         case 2:
             st->codec->codec_type = CODEC_TYPE_SUBTITLE;
-            st->codec->codec_id = codec_get_id(ff_nut_subtitle_tags, tmp);
+            st->codec->codec_id = ff_codec_get_id(ff_nut_subtitle_tags, tmp);
             break;
         case 3:
             st->codec->codec_type = CODEC_TYPE_DATA;

@@ -96,7 +96,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
         ast = av_new_stream(s, 0);
         if (!ast)
             return -1;
-        get_wav_header(pb, ast->codec, fsize);
+        ff_get_wav_header(pb, ast->codec, fsize);
         // find 'data' chunk
         while(url_ftell(pb) < c->vidpos && !url_feof(pb)){
             tag = get_le32(pb);

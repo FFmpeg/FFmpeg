@@ -351,7 +351,7 @@ static int swf_write_video(AVFormatContext *s,
             put_le16(pb, enc->width);
             put_le16(pb, enc->height);
             put_byte(pb, 0);
-            put_byte(pb,codec_get_tag(swf_codec_tags,enc->codec_id));
+            put_byte(pb,ff_codec_get_tag(swf_codec_tags,enc->codec_id));
             put_swf_end_tag(s);
 
             /* place the video object for the first time */

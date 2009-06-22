@@ -137,7 +137,7 @@ static int au_read_header(AVFormatContext *s,
     rate = get_be32(pb);
     channels = get_be32(pb);
 
-    codec = codec_get_id(codec_au_tags, id);
+    codec = ff_codec_get_id(codec_au_tags, id);
 
     if (size >= 24) {
         /* skip unused data */

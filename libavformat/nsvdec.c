@@ -458,7 +458,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             st->priv_data = nst;
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_tag = vtag;
-            st->codec->codec_id = codec_get_id(nsv_codec_video_tags, vtag);
+            st->codec->codec_id = ff_codec_get_id(nsv_codec_video_tags, vtag);
             st->codec->width = vwidth;
             st->codec->height = vheight;
             st->codec->bits_per_coded_sample = 24; /* depth XXX */
@@ -489,7 +489,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             st->priv_data = nst;
             st->codec->codec_type = CODEC_TYPE_AUDIO;
             st->codec->codec_tag = atag;
-            st->codec->codec_id = codec_get_id(nsv_codec_audio_tags, atag);
+            st->codec->codec_id = ff_codec_get_id(nsv_codec_audio_tags, atag);
 
             st->need_parsing = AVSTREAM_PARSE_FULL; /* for PCM we will read a chunk later and put correct info */
 

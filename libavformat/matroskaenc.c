@@ -470,29 +470,29 @@ static int mkv_write_codecprivate(AVFormatContext *s, ByteIOContext *pb, AVCodec
     } else if (codec->codec_type == CODEC_TYPE_VIDEO) {
         if (qt_id) {
             if (!codec->codec_tag)
-                codec->codec_tag = codec_get_tag(codec_movvideo_tags, codec->codec_id);
+                codec->codec_tag = ff_codec_get_tag(codec_movvideo_tags, codec->codec_id);
             if (codec->extradata_size)
                 put_buffer(dyn_cp, codec->extradata, codec->extradata_size);
         } else {
         if (!codec->codec_tag)
-            codec->codec_tag = codec_get_tag(codec_bmp_tags, codec->codec_id);
+            codec->codec_tag = ff_codec_get_tag(ff_codec_bmp_tags, codec->codec_id);
         if (!codec->codec_tag) {
             av_log(s, AV_LOG_ERROR, "No bmp codec ID found.");
             ret = -1;
         }
 
-        put_bmp_header(dyn_cp, codec, codec_bmp_tags, 0);
+        ff_put_bmp_header(dyn_cp, codec, ff_codec_bmp_tags, 0);
         }
 
     } else if (codec->codec_type == CODEC_TYPE_AUDIO) {
         if (!codec->codec_tag)
-            codec->codec_tag = codec_get_tag(codec_wav_tags, codec->codec_id);
+            codec->codec_tag = ff_codec_get_tag(ff_codec_wav_tags, codec->codec_id);
         if (!codec->codec_tag) {
             av_log(s, AV_LOG_ERROR, "No wav codec ID found.");
             ret = -1;
         }
 
-        put_wav_header(dyn_cp, codec);
+        ff_put_wav_header(dyn_cp, codec);
     }
 
     codecpriv_size = url_close_dyn_buf(dyn_cp, &codecpriv);
@@ -558,8 +558,8 @@ static int mkv_write_tracks(AVFormatContext *s)
                 put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
 
                 if (!native_id &&
-                      codec_get_tag(codec_movvideo_tags, codec->codec_id) &&
-                    (!codec_get_tag(codec_bmp_tags,      codec->codec_id)
+                      ff_codec_get_tag(codec_movvideo_tags, codec->codec_id) &&
+                    (!ff_codec_get_tag(ff_codec_bmp_tags,   codec->codec_id)
                      || codec->codec_id == CODEC_ID_SVQ1
                      || codec->codec_id == CODEC_ID_SVQ3
                      || codec->codec_id == CODEC_ID_CINEPAK))
@@ -889,7 +889,7 @@ AVOutputFormat matroska_muxer = {
     mkv_write_packet,
     mkv_write_trailer,
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
-    .codec_tag = (const AVCodecTag* const []){codec_bmp_tags, codec_wav_tags, 0},
+    .codec_tag = (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .subtitle_codec = CODEC_ID_TEXT,
 };
 
@@ -905,5 +905,5 @@ AVOutputFormat matroska_audio_muxer = {
     mkv_write_packet,
     mkv_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag = (const AVCodecTag* const []){codec_wav_tags, 0},
+    .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
 };

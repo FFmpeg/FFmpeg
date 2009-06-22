@@ -109,7 +109,7 @@ static int oma_read_header(AVFormatContext *s,
     st->start_time = 0;
     st->codec->codec_type  = CODEC_TYPE_AUDIO;
     st->codec->codec_tag   = buf[32];
-    st->codec->codec_id    = codec_get_id(codec_oma_tags, st->codec->codec_tag);
+    st->codec->codec_id    = ff_codec_get_id(codec_oma_tags, st->codec->codec_tag);
 
     switch (buf[32]) {
         case OMA_CODECID_ATRAC3:

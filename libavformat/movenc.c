@@ -330,7 +330,7 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack *track) // Basic
         track->enc->sample_rate > 24000)
         put_byte(pb, 0x6B); // 11172-3
     else
-        put_byte(pb, codec_get_tag(ff_mp4_obj_type, track->enc->codec_id));
+        put_byte(pb, ff_codec_get_tag(ff_mp4_obj_type, track->enc->codec_id));
 
     // the following fields is made of 6 bits to identify the streamtype (4 for video, 5 for audio)
     // plus 1 bit to indicate upstream and 1 bit set to 1 (reserved)
@@ -555,7 +555,7 @@ static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->enc->codec_tag;
 
-    if (!codec_get_tag(ff_mp4_obj_type, track->enc->codec_id))
+    if (!ff_codec_get_tag(ff_mp4_obj_type, track->enc->codec_id))
         return 0;
 
     if      (track->enc->codec_id == CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
@@ -587,7 +587,7 @@ static int ipod_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     if (!(track->enc->codec_type == CODEC_TYPE_SUBTITLE &&
         (tag == MKTAG('t','x','3','g') ||
          tag == MKTAG('t','e','x','t'))))
-        tag = codec_get_tag(codec_ipod_tags, track->enc->codec_id);
+        tag = ff_codec_get_tag(codec_ipod_tags, track->enc->codec_id);
 
     if (!match_ext(s->filename, "m4a") && !match_ext(s->filename, "m4v"))
         av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
@@ -657,17 +657,17 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
         else if (track->enc->codec_id == CODEC_ID_RAWVIDEO)
             tag = mov_get_rawvideo_codec_tag(s, track);
         else if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
-            tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
+            tag = ff_codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
             if (!tag) { // if no mac fcc found, try with Microsoft tags
-                tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
+                tag = ff_codec_get_tag(ff_codec_bmp_tags, track->enc->codec_id);
                 if (tag)
                     av_log(s, AV_LOG_INFO, "Warning, using MS style video codec tag, "
                            "the file may be unplayable!\n");
             }
         } else if (track->enc->codec_type == CODEC_TYPE_AUDIO) {
-            tag = codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
+            tag = ff_codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
             if (!tag) { // if no mac fcc found, try with Microsoft tags
-                int ms_tag = codec_get_tag(codec_wav_tags, track->enc->codec_id);
+                int ms_tag = ff_codec_get_tag(ff_codec_wav_tags, track->enc->codec_id);
                 if (ms_tag) {
                     tag = MKTAG('m', 's', ((ms_tag >> 8) & 0xff), (ms_tag & 0xff));
                     av_log(s, AV_LOG_INFO, "Warning, using MS style audio codec tag, "
@@ -675,7 +675,7 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
                 }
             }
         } else if (track->enc->codec_type == CODEC_TYPE_SUBTITLE)
-            tag = codec_get_tag(ff_codec_movsubtitle_tags, track->enc->codec_id);
+            tag = ff_codec_get_tag(ff_codec_movsubtitle_tags, track->enc->codec_id);
     }
 
     return tag;
@@ -701,7 +701,7 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
     else if (track->mode == MODE_IPOD)
         tag = ipod_get_codec_tag(s, track);
     else if (track->mode & MODE_3GP)
-        tag = codec_get_tag(codec_3gp_tags, track->enc->codec_id);
+        tag = ff_codec_get_tag(codec_3gp_tags, track->enc->codec_id);
     else
         tag = mov_get_codec_tag(s, track);
 

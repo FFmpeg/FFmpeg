@@ -405,7 +405,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
         if (enc->codec_type == CODEC_TYPE_AUDIO) {
             /* WAVEFORMATEX header */
-            int wavsize = put_wav_header(pb, enc);
+            int wavsize = ff_put_wav_header(pb, enc);
             if ((enc->codec_id != CODEC_ID_MP3) && (enc->codec_id != CODEC_ID_MP2) && (enc->codec_id != CODEC_ID_ADPCM_IMA_WAV) && (enc->extradata_size==0)) {
                 wavsize += 2;
                 put_le16(pb, 0);
@@ -437,7 +437,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
             put_le16(pb, 40 + enc->extradata_size); /* size */
 
             /* BITMAPINFOHEADER header */
-            put_bmp_header(pb, enc, codec_bmp_tags, 1);
+            ff_put_bmp_header(pb, enc, ff_codec_bmp_tags, 1);
         }
         end_header(pb, hpos);
     }
@@ -854,7 +854,7 @@ AVOutputFormat asf_muxer = {
     asf_write_packet,
     asf_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag= (const AVCodecTag* const []){codec_asf_bmp_tags, codec_bmp_tags, codec_wav_tags, 0},
+    .codec_tag= (const AVCodecTag* const []){codec_asf_bmp_tags, ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .metadata_conv = ff_asf_metadata_conv,
 };
 #endif
@@ -876,7 +876,7 @@ AVOutputFormat asf_stream_muxer = {
     asf_write_packet,
     asf_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag= (const AVCodecTag* const []){codec_asf_bmp_tags, codec_bmp_tags, codec_wav_tags, 0},
+    .codec_tag= (const AVCodecTag* const []){codec_asf_bmp_tags, ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .metadata_conv = ff_asf_metadata_conv,
 };
 #endif //CONFIG_ASF_STREAM_MUXER

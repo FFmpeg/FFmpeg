@@ -42,20 +42,20 @@ static int wav_write_header(AVFormatContext *s)
     put_tag(pb, "WAVE");
 
     /* format header */
-    fmt = start_tag(pb, "fmt ");
-    if (put_wav_header(pb, s->streams[0]->codec) < 0) {
+    fmt = ff_start_tag(pb, "fmt ");
+    if (ff_put_wav_header(pb, s->streams[0]->codec) < 0) {
         av_log(s, AV_LOG_ERROR, "%s codec not supported in WAVE format\n",
                s->streams[0]->codec->codec ? s->streams[0]->codec->codec->name : "NONE");
         av_free(wav);
         return -1;
     }
-    end_tag(pb, fmt);
+    ff_end_tag(pb, fmt);
 
     if(s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
        && !url_is_streamed(s->pb)) {
-        fact = start_tag(pb, "fact");
+        fact = ff_start_tag(pb, "fact");
         put_le32(pb, 0);
-        end_tag(pb, fact);
+        ff_end_tag(pb, fact);
     }
 
     av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
@@ -63,7 +63,7 @@ static int wav_write_header(AVFormatContext *s)
     wav->minpts = INT64_MAX;
 
     /* data header */
-    wav->data = start_tag(pb, "data");
+    wav->data = ff_start_tag(pb, "data");
 
     put_flush_packet(pb);
 
@@ -91,7 +91,7 @@ static int wav_write_trailer(AVFormatContext *s)
     int64_t file_size;
 
     if (!url_is_streamed(s->pb)) {
-        end_tag(pb, wav->data);
+        ff_end_tag(pb, wav->data);
 
         /* update file size */
         file_size = url_ftell(pb);
@@ -182,7 +182,7 @@ static int wav_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
 
-    get_wav_header(pb, st->codec, size);
+    ff_get_wav_header(pb, st->codec, size);
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
     av_set_pts_info(st, 64, 1, st->codec->sample_rate);
@@ -264,7 +264,7 @@ AVInputFormat wav_demuxer = {
     NULL,
     wav_read_seek,
     .flags= AVFMT_GENERIC_INDEX,
-    .codec_tag= (const AVCodecTag* const []){codec_wav_tags, 0},
+    .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
 };
 #endif
 #if CONFIG_WAV_MUXER
@@ -279,6 +279,6 @@ AVOutputFormat wav_muxer = {
     wav_write_header,
     wav_write_packet,
     wav_write_trailer,
-    .codec_tag= (const AVCodecTag* const []){codec_wav_tags, 0},
+    .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
 };
 #endif

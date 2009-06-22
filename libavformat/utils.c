@@ -1904,7 +1904,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt)
     return ret;
 }
 
-unsigned int codec_get_tag(const AVCodecTag *tags, int id)
+unsigned int ff_codec_get_tag(const AVCodecTag *tags, int id)
 {
     while (tags->id != CODEC_ID_NONE) {
         if (tags->id == id)
@@ -1914,7 +1914,7 @@ unsigned int codec_get_tag(const AVCodecTag *tags, int id)
     return 0;
 }
 
-enum CodecID codec_get_id(const AVCodecTag *tags, unsigned int tag)
+enum CodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag)
 {
     int i;
     for(i=0; tags[i].id != CODEC_ID_NONE;i++) {
@@ -1935,7 +1935,7 @@ unsigned int av_codec_get_tag(const AVCodecTag * const *tags, enum CodecID id)
 {
     int i;
     for(i=0; tags && tags[i]; i++){
-        int tag= codec_get_tag(tags[i], id);
+        int tag= ff_codec_get_tag(tags[i], id);
         if(tag) return tag;
     }
     return 0;
@@ -1945,7 +1945,7 @@ enum CodecID av_codec_get_id(const AVCodecTag * const *tags, unsigned int tag)
 {
     int i;
     for(i=0; tags && tags[i]; i++){
-        enum CodecID id= codec_get_id(tags[i], tag);
+        enum CodecID id= ff_codec_get_id(tags[i], tag);
         if(id!=CODEC_ID_NONE) return id;
     }
     return CODEC_ID_NONE;

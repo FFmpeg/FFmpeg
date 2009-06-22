@@ -86,7 +86,7 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
                 if (vst) {
                     vst->codec->codec_tag = get_le32(pb);
                     vst->codec->codec_id =
-                        codec_get_id(codec_bmp_tags, vst->codec->codec_tag);
+                        ff_codec_get_id(ff_codec_bmp_tags, vst->codec->codec_tag);
                     if (vst->codec->codec_tag == MKTAG('R', 'J', 'P', 'G'))
                         vst->codec->codec_id = CODEC_ID_NUV;
                 } else
@@ -98,7 +98,7 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
                     ast->codec->bits_per_coded_sample = get_le32(pb);
                     ast->codec->channels = get_le32(pb);
                     ast->codec->codec_id =
-                        wav_codec_get_id(ast->codec->codec_tag,
+                        ff_wav_codec_get_id(ast->codec->codec_tag,
                                          ast->codec->bits_per_coded_sample);
                     ast->need_parsing = AVSTREAM_PARSE_FULL;
                 } else
