@@ -23,7 +23,7 @@
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
 #define LIBAVFORMAT_VERSION_MINOR 34
-#define LIBAVFORMAT_VERSION_MICRO  0
+#define LIBAVFORMAT_VERSION_MICRO  1
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -553,7 +553,7 @@ typedef struct AVFormatContext {
     int index_built;
 
     int mux_rate;
-    int packet_size;
+    unsigned int packet_size;
     int preload;
     int max_delay;
 
