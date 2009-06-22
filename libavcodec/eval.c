@@ -82,11 +82,7 @@ static const int8_t si_prefixes['z' - 'E' + 1]={
     ['Y'-'E']=  24,
 };
 
-/** strtod() function extended with 'k', 'M', 'G', 'ki', 'Mi', 'Gi' and 'B'
- * postfixes.  This allows using f.e. kB, MiB, G and B as a postfix. This
- * function assumes that the unit of numbers is bits not bytes.
- */
-static double av_strtod(const char *numstr, char **tail) {
+double av_strtod(const char *numstr, char **tail) {
     double d;
     char *next;
     d = strtod(numstr, &next);
