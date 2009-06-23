@@ -128,6 +128,15 @@ static inline int get_parity(uint8_t value)
    return (0x6996966996696996ULL >> (value >> 2)) & 1;
 }
 
+/*
+ * Decodes LSF (Line Spectral Frequencies) from L0-L3 (3.2.4).
+ * @param lsfq [out] (2.13) quantized LSF coefficients
+ * @param past_quantizer_outputs [in/out] (2.13) quantizer outputs from previous frames
+ * @param ma_predictor switched MA predictor of LSP quantizer
+ * @param vq_1st first stage vector of quantizer
+ * @param vq_2nd_low second stage lower vector of LSP quantizer
+ * @param vq_2nd_high second stage higher vector of LSP quantizer
+ */
 static void lsf_decode(int16_t* lsfq, int16_t* past_quantizer_outputs[MA_NP + 1],
                        int16_t ma_predictor,
                        int16_t vq_1st, int16_t vq_2nd_low, int16_t vq_2nd_high)
