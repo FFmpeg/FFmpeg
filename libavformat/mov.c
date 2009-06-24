@@ -2063,7 +2063,7 @@ static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *avst = s->streams[i];
         MOVStreamContext *msc = avst->priv_data;
-        if (avst->discard != AVDISCARD_ALL && msc->pb && msc->current_sample < avst->nb_index_entries) {
+        if (msc->pb && msc->current_sample < avst->nb_index_entries) {
             AVIndexEntry *current_sample = &avst->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp, AV_TIME_BASE, msc->time_scale);
             dprintf(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
@@ -2102,6 +2102,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     sc = st->priv_data;
     /* must be done just before reading, to avoid infinite loop on sample */
     sc->current_sample++;
+
+    if (st->discard != AVDISCARD_ALL) {
     if (url_fseek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
         av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n",
                sc->ffindex, sample->pos);
@@ -2120,6 +2122,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
     }
 #endif
+    }
+
     pkt->stream_index = sc->ffindex;
     pkt->dts = sample->timestamp;
     if (sc->ctts_data) {
@@ -2139,6 +2143,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->duration = next_dts - pkt->dts;
         pkt->pts = pkt->dts;
     }
+    if (st->discard == AVDISCARD_ALL)
+        goto retry;
     pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? PKT_FLAG_KEY : 0;
     pkt->pos = sample->pos;
     dprintf(s, "stream %d, pts %"PRId64", dts %"PRId64", pos 0x%"PRIx64", duration %d\n",
@@ -2196,7 +2202,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
-        if (stream_index == i || st->discard == AVDISCARD_ALL)
+        if (stream_index == i)
             continue;
 
         timestamp = av_rescale_q(seek_timestamp, s->streams[stream_index]->time_base, st->time_base);
