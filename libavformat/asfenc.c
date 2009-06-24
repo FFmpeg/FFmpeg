@@ -321,8 +321,8 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     put_le64(pb, asf->duration); /* duration (in 100ns units) */
     put_le64(pb, PREROLL_TIME); /* start time stamp */
     put_le32(pb, (asf->is_streamed || url_is_streamed(pb)) ? 3 : 2); /* ??? */
-    put_le32(pb, asf->packet_size); /* packet size */
-    put_le32(pb, asf->packet_size); /* packet size */
+    put_le32(pb, s->packet_size); /* packet size */
+    put_le32(pb, s->packet_size); /* packet size */
     put_le32(pb, bit_rate); /* Nominal data rate in bps */
     end_header(pb, hpos);
 
@@ -514,7 +514,7 @@ static int asf_write_header(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
 
-    asf->packet_size = PACKET_SIZE;
+    s->packet_size  = PACKET_SIZE;
     asf->nb_packets = 0;
 
     asf->last_indexed_pts = 0;
@@ -536,7 +536,7 @@ static int asf_write_header(AVFormatContext *s)
     asf->packet_nb_payloads = 0;
     asf->packet_timestamp_start = -1;
     asf->packet_timestamp_end = -1;
-    init_put_byte(&asf->pb, asf->packet_buf, asf->packet_size, 1,
+    init_put_byte(&asf->pb, asf->packet_buf, s->packet_size, 1,
                   NULL, NULL, NULL, NULL);
 
     return 0;
@@ -612,7 +612,7 @@ static void flush_packet(AVFormatContext *s)
     assert(asf->packet_timestamp_end >= asf->packet_timestamp_start);
 
     if (asf->is_streamed) {
-        put_chunk(s, 0x4424, asf->packet_size, 0);
+        put_chunk(s, 0x4424, s->packet_size, 0);
     }
 
     packet_hdr_size = put_payload_parsing_info(
@@ -627,14 +627,14 @@ static void flush_packet(AVFormatContext *s)
     assert(packet_hdr_size <= asf->packet_size_left);
     memset(asf->packet_buf + packet_filled_size, 0, asf->packet_size_left);
 
-    put_buffer(s->pb, asf->packet_buf, asf->packet_size - packet_hdr_size);
+    put_buffer(s->pb, asf->packet_buf, s->packet_size - packet_hdr_size);
 
     put_flush_packet(s->pb);
     asf->nb_packets++;
     asf->packet_nb_payloads = 0;
     asf->packet_timestamp_start = -1;
     asf->packet_timestamp_end = -1;
-    init_put_byte(&asf->pb, asf->packet_buf, asf->packet_size, 1,
+    init_put_byte(&asf->pb, asf->packet_buf, s->packet_size, 1,
                   NULL, NULL, NULL, NULL);
 }
 

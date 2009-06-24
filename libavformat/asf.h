@@ -82,7 +82,6 @@ typedef struct {
 
 typedef struct {
     uint32_t seqno;
-    unsigned int packet_size;
     int is_streamed;
     int asfid2avid[128];                 ///< conversion table from asf ID 2 AVStream ID
     ASFStream streams[128];              ///< it's max number and it's not that big
