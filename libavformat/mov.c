@@ -2104,23 +2104,23 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     sc->current_sample++;
 
     if (st->discard != AVDISCARD_ALL) {
-    if (url_fseek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
-        av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n",
-               sc->ffindex, sample->pos);
-        return -1;
-    }
-    ret = av_get_packet(sc->pb, pkt, sample->size);
-    if (ret < 0)
-        return ret;
-#if CONFIG_DV_DEMUXER
-    if (mov->dv_demux && sc->dv_audio_container) {
-        dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
-        av_free(pkt->data);
-        pkt->size = 0;
-        ret = dv_get_packet(mov->dv_demux, pkt);
+        if (url_fseek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
+            av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n",
+                   sc->ffindex, sample->pos);
+            return -1;
+        }
+        ret = av_get_packet(sc->pb, pkt, sample->size);
         if (ret < 0)
             return ret;
-    }
+#if CONFIG_DV_DEMUXER
+        if (mov->dv_demux && sc->dv_audio_container) {
+            dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
+            av_free(pkt->data);
+            pkt->size = 0;
+            ret = dv_get_packet(mov->dv_demux, pkt);
+            if (ret < 0)
+                return ret;
+        }
 #endif
     }
 
