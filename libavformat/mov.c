@@ -2060,14 +2060,15 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     MOVContext *mov = s->priv_data;
     MOVStreamContext *sc = 0;
     AVIndexEntry *sample = 0;
+    AVStream *st = NULL;
     int64_t best_dts = INT64_MAX;
     int i, ret;
  retry:
     for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        MOVStreamContext *msc = st->priv_data;
-        if (st->discard != AVDISCARD_ALL && msc->pb && msc->current_sample < st->nb_index_entries) {
-            AVIndexEntry *current_sample = &st->index_entries[msc->current_sample];
+        AVStream *avst = s->streams[i];
+        MOVStreamContext *msc = avst->priv_data;
+        if (avst->discard != AVDISCARD_ALL && msc->pb && msc->current_sample < avst->nb_index_entries) {
+            AVIndexEntry *current_sample = &avst->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp, AV_TIME_BASE, msc->time_scale);
             dprintf(s, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
             if (!sample || (url_is_streamed(s->pb) && current_sample->pos < sample->pos) ||
@@ -2077,7 +2078,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                   (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts)))))) {
                 sample = current_sample;
                 best_dts = dts;
-                sc = msc;
+                st = avst;
             }
         }
     }
@@ -2090,6 +2091,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         dprintf(s, "read fragments, offset 0x%llx\n", url_ftell(s->pb));
         goto retry;
     }
+    sc = st->priv_data;
     /* must be done just before reading, to avoid infinite loop on sample */
     sc->current_sample++;
     if (url_fseek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
@@ -2123,7 +2125,6 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (sc->wrong_dts)
             pkt->dts = AV_NOPTS_VALUE;
     } else {
-        AVStream *st = s->streams[sc->ffindex];
         int64_t next_dts = (sc->current_sample < st->nb_index_entries) ?
             st->index_entries[sc->current_sample].timestamp : st->duration;
         pkt->duration = next_dts - pkt->dts;
