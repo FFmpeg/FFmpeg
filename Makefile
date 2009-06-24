@@ -76,7 +76,7 @@ cmdutils.o cmdutils.d: version.h
 
 alltools: $(addsuffix $(EXESUF),$(addprefix tools/, cws2fws pktdumper qt-faststart trasher))
 
-documentation: $(addprefix doc/, ffmpeg-doc.html faq.html ffserver-doc.html \
+documentation: $(addprefix doc/, developer.html faq.html ffmpeg-doc.html ffserver-doc.html \
                                  ffplay-doc.html general.html $(ALLMANPAGES))
 
 doc/%.html: doc/%.texi
