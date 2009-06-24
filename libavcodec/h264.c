@@ -2240,7 +2240,7 @@ static int frame_start(H264Context *h){
      * See decode_nal_units().
      */
     s->current_picture_ptr->key_frame= 0;
-    s->current_picture_ptr->mmco_reseted= 0;
+    s->current_picture_ptr->mmco_reset= 0;
 
     assert(s->linesize && s->uvlinesize);
 
@@ -3370,7 +3370,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             h->poc_msb=
             h->frame_num=
             s->current_picture_ptr->frame_num= 0;
-            s->current_picture_ptr->mmco_reseted=1;
+            s->current_picture_ptr->mmco_reset=1;
             break;
         default: assert(0);
         }
@@ -7710,7 +7710,7 @@ static int decode_frame(AVCodecContext *avctx,
 //FIXME factorize this with the output code below
         out = h->delayed_pic[0];
         out_idx = 0;
-        for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame && !h->delayed_pic[i]->mmco_reseted; i++)
+        for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame && !h->delayed_pic[i]->mmco_reset; i++)
             if(h->delayed_pic[i]->poc < out->poc){
                 out = h->delayed_pic[i];
                 out_idx = i;
@@ -7886,12 +7886,12 @@ static int decode_frame(AVCodecContext *avctx,
 
             out = h->delayed_pic[0];
             out_idx = 0;
-            for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame && !h->delayed_pic[i]->mmco_reseted; i++)
+            for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame && !h->delayed_pic[i]->mmco_reset; i++)
                 if(h->delayed_pic[i]->poc < out->poc){
                     out = h->delayed_pic[i];
                     out_idx = i;
                 }
-            cross_idr = !!h->delayed_pic[i] || h->delayed_pic[0]->key_frame || h->delayed_pic[0]->mmco_reseted;
+            cross_idr = !!h->delayed_pic[i] || h->delayed_pic[0]->key_frame || h->delayed_pic[0]->mmco_reset;
 
             out_of_order = !cross_idr && out->poc < h->outputed_poc;
 
