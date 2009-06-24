@@ -81,6 +81,11 @@ typedef struct {
 } G729FormatDescription;
 
 typedef struct {
+    /// (2.13) LSP quantizer outputs
+    int16_t  past_quantizer_output_buf[MA_NP + 1][10];
+    int16_t* past_quantizer_outputs[MA_NP + 1];
+
+    int16_t lsfq[10];           ///< (2.13) quantized LSF coefficients from previous frame
     int16_t lsp_buf[2][10];     ///< (0.15) LSP coefficients (previous and current frames) (3.2.5)
     int16_t *lsp[2];            ///< pointers to lsp_buf
 }  G729Context;
@@ -119,8 +124,49 @@ static inline int get_parity(uint8_t value)
    return (0x6996966996696996ULL >> (value >> 2)) & 1;
 }
 
+static void lsf_decode(int16_t* lsfq, int16_t* past_quantizer_outputs[MA_NP + 1],
+                       int16_t ma_predictor,
+                       int16_t vq_1st, int16_t vq_2nd_low, int16_t vq_2nd_high)
+{
+    int i,j;
+    static const uint8_t min_distance[2]={10, 5}; //(2.13)
+    int16_t* quantizer_output = past_quantizer_outputs[MA_NP];
+
+    for (i = 0; i < 5; i++) {
+        quantizer_output[i]     = cb_lsp_1st[vq_1st][i    ] + cb_lsp_2nd[vq_2nd_low ][i    ];
+        quantizer_output[i + 5] = cb_lsp_1st[vq_1st][i + 5] + cb_lsp_2nd[vq_2nd_high][i + 5];
+    }
+
+    for (j = 0; j < 2; j++) {
+        for (i = 1; i < 10; i++) {
+            int diff = (quantizer_output[i - 1] - quantizer_output[i] + min_distance[j]) >> 1;
+            if (diff > 0) {
+                quantizer_output[i - 1] -= diff;
+                quantizer_output[i    ] += diff;
+            }
+        }
+    }
+
+    for (i = 0; i < 10; i++) {
+        int sum = quantizer_output[i] * cb_ma_predictor_sum[ma_predictor][i];
+        for (j = 0; j < MA_NP; j++)
+            sum += past_quantizer_outputs[j][i] * cb_ma_predictor[ma_predictor][j][i];
+
+        lsfq[i] = sum >> 15;
+    }
+
+    /* Rotate past_quantizer_outputs. */
+    memmove(past_quantizer_outputs + 1, past_quantizer_outputs, MA_NP * sizeof(int16_t*));
+    past_quantizer_outputs[0] = quantizer_output;
+
+    ff_acelp_reorder_lsf(lsfq, LSFQ_DIFF_MIN, LSFQ_MIN, LSFQ_MAX, 10);
+}
+
 static av_cold int decoder_init(AVCodecContext * avctx)
 {
+    G729Context* ctx = avctx->priv_data;
+    int i,k;
+
     if (avctx->channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "Only mono sound is supported (requested channels: %d).\n", avctx->channels);
         return AVERROR_NOFMT;
@@ -128,6 +174,12 @@ static av_cold int decoder_init(AVCodecContext * avctx)
 
     /* Both 8kbit/s and 6.4kbit/s modes uses two subframes per frame. */
     avctx->frame_size = SUBFRAME_SIZE << 1;
+
+    for (k = 0; k < MA_NP + 1; k++) {
+        ctx->past_quantizer_outputs[k] = ctx->past_quantizer_output_buf[k];
+        for (i = 1; i < 11; i++)
+            ctx->past_quantizer_outputs[k][i - 1] = (18717 * i) >> 3;
+    }
 
     ctx->lsp[0] = ctx->lsp_buf[0];
     ctx->lsp[1] = ctx->lsp_buf[1];
@@ -180,6 +232,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     quantizer_1st    = get_bits(&gb, VQ_1ST_BITS);
     quantizer_2nd_lo = get_bits(&gb, VQ_2ND_BITS);
     quantizer_2nd_hi = get_bits(&gb, VQ_2ND_BITS);
+
+    lsf_decode(ctx->lsfq, ctx->past_quantizer_outputs,
+               ma_predictor,
+               quantizer_1st, quantizer_2nd_lo, quantizer_2nd_hi);
 
     ff_acelp_lsf2lsp(ctx->lsp[1], ctx->lsfq, 10);
 
