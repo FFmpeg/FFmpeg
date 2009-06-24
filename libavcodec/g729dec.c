@@ -171,6 +171,13 @@ static void lsf_decode(int16_t* lsfq, int16_t* past_quantizer_outputs[MA_NP + 1]
     ff_acelp_reorder_lsf(lsfq, LSFQ_DIFF_MIN, LSFQ_MIN, LSFQ_MAX, 10);
 }
 
+/**
+ * Restores past LSP quantizer output using LSF from previous frame
+ * @param lsfq [in/out] (2.13) quantized LSF coefficients
+ * @param past_quantizer_outputs [in/out] (2.13) quantizer outputs from previous frames
+ * @param ma_predictor_prev MA predictor from previous frame
+ * @param lsfq_prev (2.13) quantized LSF coefficients from previous frame
+ */
 static void lsf_restore_from_previous(int16_t* lsfq,
                                       int16_t* past_quantizer_outputs[MA_NP + 1],
                                       int ma_predictor_prev)
