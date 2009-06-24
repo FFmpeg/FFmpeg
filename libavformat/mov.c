@@ -2107,8 +2107,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
         av_free(pkt->data);
         pkt->size = 0;
-        if (dv_get_packet(mov->dv_demux, pkt) < 0)
-            return -1;
+        ret = dv_get_packet(mov->dv_demux, pkt);
+        if (ret < 0)
+            return ret;
     }
 #endif
     pkt->stream_index = sc->ffindex;
