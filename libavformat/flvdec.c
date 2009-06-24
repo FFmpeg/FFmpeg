@@ -24,6 +24,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
 #include "flv.h"
@@ -41,6 +42,32 @@ static int flv_probe(AVProbeData *p)
         return AVPROBE_SCORE_MAX;
     }
     return 0;
+}
+
+/**
+ * Builds a Speex header.
+ * This is not needed for the libavcodec libspeex decoder, but is needed for
+ * stream copy and for decoders which require a header.
+ */
+static void flv_build_speex_header(uint8_t *extradata)
+{
+    memset(extradata, 0, 80);
+    bytestream_put_buffer(&extradata, "Speex   ", 8);   // speex_string
+    bytestream_put_buffer(&extradata, "1.2rc1",   6);   // speex_version
+    extradata += 14;                                    // speex_version padding
+    bytestream_put_le32(&extradata,     1);             // speex_version_id
+    bytestream_put_le32(&extradata,    80);             // header_size
+    bytestream_put_le32(&extradata, 16000);             // rate
+    bytestream_put_le32(&extradata,     1);             // mode
+    bytestream_put_le32(&extradata,     4);             // mode_bitstream_version
+    bytestream_put_le32(&extradata,     1);             // nb_channels
+    bytestream_put_le32(&extradata,    -1);             // bitrate
+    bytestream_put_le32(&extradata,   320);             // frame_size
+                                                        // vbr = 0
+                                                        // frames_per_packet = 0
+                                                        // extra_headers = 0
+                                                        // reserved1 = 0
+                                                        // reserved2 = 0
 }
 
 static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_codecid) {
@@ -62,6 +89,13 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_c
         case FLV_CODECID_SPEEX:
             acodec->codec_id = CODEC_ID_SPEEX;
             acodec->sample_rate = 16000;
+            acodec->extradata = av_mallocz(80 + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (acodec->extradata) {
+                acodec->extradata_size = 80;
+                flv_build_speex_header(acodec->extradata);
+            } else {
+                av_log(s, AV_LOG_WARNING, "Unable to create Speex extradata\n");
+            }
             break;
         case FLV_CODECID_MP3  : acodec->codec_id = CODEC_ID_MP3      ; astream->need_parsing = AVSTREAM_PARSE_FULL; break;
         case FLV_CODECID_NELLYMOSER_8KHZ_MONO:
