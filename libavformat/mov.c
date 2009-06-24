@@ -2055,15 +2055,11 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
-static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
+static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
 {
-    MOVContext *mov = s->priv_data;
-    MOVStreamContext *sc = 0;
-    AVIndexEntry *sample = 0;
-    AVStream *st = NULL;
+    AVIndexEntry *sample = NULL;
     int64_t best_dts = INT64_MAX;
-    int i, ret;
- retry:
+    int i;
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *avst = s->streams[i];
         MOVStreamContext *msc = avst->priv_data;
@@ -2078,10 +2074,22 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                   (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts)))))) {
                 sample = current_sample;
                 best_dts = dts;
-                st = avst;
+                *st = avst;
             }
         }
     }
+    return sample;
+}
+
+static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    MOVContext *mov = s->priv_data;
+    MOVStreamContext *sc;
+    AVIndexEntry *sample;
+    AVStream *st = NULL;
+    int ret;
+ retry:
+    sample = mov_find_next_sample(s, &st);
     if (!sample) {
         mov->found_mdat = 0;
         if (!url_is_streamed(s->pb) ||
