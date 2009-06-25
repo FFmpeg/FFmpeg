@@ -1306,7 +1306,7 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #endif
 
 #if ARCH_PPC
-#if (HAVE_ALTIVEC || CONFIG_RUNTIME_CPUDETECT) && CONFIG_GPL
+#if HAVE_ALTIVEC || CONFIG_RUNTIME_CPUDETECT
 #define COMPILE_ALTIVEC
 #endif
 #endif //ARCH_PPC
