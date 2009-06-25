@@ -1301,13 +1301,12 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 
 //Note: we have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
 //Plain C versions
-#if !HAVE_MMX || CONFIG_RUNTIME_CPUDETECT || !CONFIG_GPL
+#if (!HAVE_MMX && !HAVE_ALTIVEC) || CONFIG_RUNTIME_CPUDETECT || !CONFIG_GPL
 #define COMPILE_C
 #endif
 
 #if ARCH_PPC
 #if (HAVE_ALTIVEC || CONFIG_RUNTIME_CPUDETECT) && CONFIG_GPL
-#undef COMPILE_C
 #define COMPILE_ALTIVEC
 #endif
 #endif //ARCH_PPC
