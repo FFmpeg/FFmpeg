@@ -40,7 +40,7 @@ static const char* format_to_name(void* ptr)
 #define D AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[]={
-{"probesize", NULL, OFFSET(probesize), FF_OPT_TYPE_INT, 32000, 32, INT_MAX, D}, /* 32000 from mpegts.c: 1.0 second at 24Mbit/s */
+{"probesize", "set probing size", OFFSET(probesize), FF_OPT_TYPE_INT, 5000000, 32, INT_MAX, D},
 {"muxrate", "set mux rate", OFFSET(mux_rate), FF_OPT_TYPE_INT, DEFAULT, 0, INT_MAX, E},
 {"packetsize", "set packet size", OFFSET(packet_size), FF_OPT_TYPE_INT, DEFAULT, 0, INT_MAX, E},
 {"fflags", NULL, OFFSET(flags), FF_OPT_TYPE_FLAGS, DEFAULT, INT_MIN, INT_MAX, D|E, "fflags"},

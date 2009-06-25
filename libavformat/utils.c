@@ -1980,9 +1980,6 @@ static void compute_chapters_end(AVFormatContext *s)
     }
 }
 
-/* absolute maximum size we read until we abort */
-#define MAX_READ_SIZE        5000000
-
 #define MAX_STD_TIMEBASES (60*12+5)
 static int get_std_framerate(int i){
     if(i<60*12) return i*1001;
@@ -2081,9 +2078,9 @@ int av_find_stream_info(AVFormatContext *ic)
             }
         }
         /* we did not get all the codec info, but we read too much data */
-        if (read_size >= MAX_READ_SIZE) {
+        if (read_size >= ic->probesize) {
             ret = count;
-            av_log(ic, AV_LOG_DEBUG, "MAX_READ_SIZE reached\n");
+            av_log(ic, AV_LOG_DEBUG, "MAX_READ_SIZE:%d reached\n", ic->probesize);
             break;
         }
 
