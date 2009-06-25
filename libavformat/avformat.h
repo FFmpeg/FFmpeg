@@ -22,8 +22,8 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 34
-#define LIBAVFORMAT_VERSION_MICRO  1
+#define LIBAVFORMAT_VERSION_MINOR 35
+#define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -638,6 +638,13 @@ typedef struct AVFormatContext {
     struct AVPacketList *packet_buffer_end;
 
     AVMetadata *metadata;
+
+    /**
+     * Remaining size available for raw_packet_buffer, in bytes.
+     * NOT PART OF PUBLIC API
+     */
+#define RAW_PACKET_BUFFER_SIZE 32000
+    int raw_packet_buffer_remaining_size;
 } AVFormatContext;
 
 typedef struct AVPacketList {

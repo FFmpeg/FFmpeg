@@ -401,6 +401,8 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     ff_metadata_demux_compat(ic);
 #endif
 
+    ic->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
+
     *ic_ptr = ic;
     return 0;
  fail:
@@ -532,8 +534,13 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (pktl) {
             *pkt = pktl->pkt;
             if(s->streams[pkt->stream_index]->codec->codec_id != CODEC_ID_PROBE ||
-               !s->streams[pkt->stream_index]->probe_packets){
+               !s->streams[pkt->stream_index]->probe_packets ||
+               s->raw_packet_buffer_remaining_size < pkt->size){
+                AVProbeData *pd = &s->streams[pkt->stream_index]->probe_data;
+                av_freep(&pd->buf);
+                pd->buf_size = 0;
                 s->raw_packet_buffer = pktl->next;
+                s->raw_packet_buffer_remaining_size += pkt->size;
                 av_free(pktl);
                 return 0;
             }
@@ -567,6 +574,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
 
         add_to_pktbuf(&s->raw_packet_buffer, pkt, &s->raw_packet_buffer_end);
+        s->raw_packet_buffer_remaining_size -= pkt->size;
 
         if(st->codec->codec_id == CODEC_ID_PROBE){
             AVProbeData *pd = &st->probe_data;
@@ -1102,6 +1110,7 @@ static void flush_packet_queue(AVFormatContext *s)
         av_free_packet(&pktl->pkt);
         av_free(pktl);
     }
+    s->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
 }
 
 /*******************************************************/
