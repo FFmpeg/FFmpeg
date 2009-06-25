@@ -159,7 +159,7 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
             get_be16(s->pb); /* flags */
         } else {
             tag  = get_be24(s->pb);
-            tlen = get_size(s->pb, 3);
+            tlen = get_be24(s->pb);
         }
         len -= taghdrlen + tlen;
 
