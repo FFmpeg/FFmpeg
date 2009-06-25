@@ -2213,7 +2213,7 @@ check_header dev/ic/bt8xx.h
 check_header sys/soundcard.h
 check_header soundcard.h
 
-check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
+enabled alsa_demuxer || enabled alsa_muxer && check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
 enabled jack_demuxer && check_lib2 jack/jack.h jack_client_open -ljack
 
