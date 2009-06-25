@@ -1671,13 +1671,16 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     sc->width = width >> 16;
     sc->height = height >> 16;
 
-    //transform the display width/height according to the matrix
+    // transform the display width/height according to the matrix
     // skip this if the display matrix is the default identity matrix
+    // or if it is rotating the picture, ex iPhone 3GS
     // to keep the same scale, use [width height 1<<16]
     if (width && height &&
-        (display_matrix[0][0] != 65536 || display_matrix[0][1]           ||
-        display_matrix[1][0]           || display_matrix[1][1] != 65536  ||
-        display_matrix[2][0]           || display_matrix[2][1])) {
+        ((display_matrix[0][0] != 65536  ||
+          display_matrix[1][1] != 65536) &&
+         !display_matrix[0][1] &&
+         !display_matrix[1][0] &&
+         !display_matrix[2][0] && !display_matrix[2][1])) {
         for (i = 0; i < 2; i++)
             disp_transform[i] =
                 (int64_t)  width  * display_matrix[0][i] +
