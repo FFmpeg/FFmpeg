@@ -553,7 +553,7 @@ static AVStream *new_pes_av_stream(PESContext *pes, uint32_t prog_reg_desc, uint
     av_set_pts_info(st, 33, 1, 90000);
     st->priv_data = pes;
     st->codec->codec_type = CODEC_TYPE_DATA;
-    st->codec->codec_id   = CODEC_ID_PROBE;
+    st->codec->codec_id   = CODEC_ID_NONE;
     st->need_parsing = AVSTREAM_PARSE_FULL;
     pes->st = st;
 
@@ -564,13 +564,13 @@ static AVStream *new_pes_av_stream(PESContext *pes, uint32_t prog_reg_desc, uint
 
     mpegts_find_stream_type(st, pes->stream_type, ISO_types);
     if (prog_reg_desc == AV_RL32("HDMV") &&
-        st->codec->codec_id == CODEC_ID_PROBE)
+        st->codec->codec_id == CODEC_ID_NONE)
         mpegts_find_stream_type(st, pes->stream_type, HDMV_types);
-    if (st->codec->codec_id == CODEC_ID_PROBE)
+    if (st->codec->codec_id == CODEC_ID_NONE)
         mpegts_find_stream_type(st, pes->stream_type, MISC_types);
 
     /* stream was not present in PMT, guess based on PES start code */
-    if (st->codec->codec_id == CODEC_ID_PROBE) {
+    if (st->codec->codec_id == CODEC_ID_NONE) {
         if (code >= 0x1c0 && code <= 0x1df) {
             st->codec->codec_type = CODEC_TYPE_AUDIO;
             st->codec->codec_id = CODEC_ID_MP2;
@@ -687,7 +687,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             dprintf(ts->stream, "tag: 0x%02x len=%d\n",
                    desc_tag, desc_len);
 
-            if (st->codec->codec_id == CODEC_ID_PROBE &&
+            if (st->codec->codec_id == CODEC_ID_NONE &&
                 stream_type == STREAM_TYPE_PRIVATE_DATA)
                 mpegts_find_stream_type(st, desc_tag, DESC_types);
 
@@ -713,7 +713,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             case 0x05: /* registration descriptor */
                 st->codec->codec_tag = bytestream_get_le32(&p);
                 dprintf(ts->stream, "reg_desc=%.4s\n", (char*)&st->codec->codec_tag);
-                if (st->codec->codec_id == CODEC_ID_PROBE &&
+                if (st->codec->codec_id == CODEC_ID_NONE &&
                     stream_type == STREAM_TYPE_PRIVATE_DATA)
                     mpegts_find_stream_type(st, st->codec->codec_tag, REGD_types);
                 break;
@@ -955,6 +955,11 @@ static int mpegts_push_data(MpegTSFilter *filter,
                         code != 0x1ff && code != 0x1f2 && /* program_stream_directory, DSMCC_stream */
                         code != 0x1f8) {                  /* ITU-T Rec. H.222.1 type E stream */
                         pes->state = MPEGTS_PESHEADER;
+                        if (pes->st->codec->codec_id == CODEC_ID_NONE) {
+                            dprintf(pes->stream, "pid=%x stream_type=%x probing\n",
+                                    pes->pid, pes->stream_type);
+                            pes->st->codec->codec_id = CODEC_ID_PROBE;
+                        }
                     } else {
                         pes->state = MPEGTS_PAYLOAD;
                         pes->data_index = 0;
