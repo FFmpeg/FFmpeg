@@ -256,6 +256,7 @@ typedef struct AVOutputStream {
     struct SwsContext *img_resample_ctx; /* for image resampling */
     int resample_height;
     int resample_width;
+    int resample_pix_fmt;
 
     /* full frame size of first frame */
     int original_height;
@@ -938,9 +939,10 @@ static void do_video_out(AVFormatContext *s,
         padding_src = NULL;
         final_picture = &ost->pict_tmp;
         if(  (ost->resample_height != (ist->st->codec->height - (ost->topBand  + ost->bottomBand)))
-          || (ost->resample_width  != (ist->st->codec->width  - (ost->leftBand + ost->rightBand)))) {
+          || (ost->resample_width  != (ist->st->codec->width  - (ost->leftBand + ost->rightBand)))
+          || (ost->resample_pix_fmt!= ist->st->codec->pix_fmt) ) {
 
-            fprintf(stderr,"Input Stream #%d.%d frame size changed to %dx%d\n", ist->file_index, ist->index, ist->st->codec->width, ist->st->codec->height);
+            fprintf(stderr,"Input Stream #%d.%d frame size changed to %dx%d, %s\n", ist->file_index, ist->index, ist->st->codec->width, ist->st->codec->height,avcodec_get_pix_fmt_name(ist->st->codec->pix_fmt));
             /* keep bands proportional to the frame size */
             topBand    = ((int64_t)ist->st->codec->height * ost->original_topBand    / ost->original_height) & ~1;
             bottomBand = ((int64_t)ist->st->codec->height * ost->original_bottomBand / ost->original_height) & ~1;
@@ -960,6 +962,7 @@ static void do_video_out(AVFormatContext *s,
 
             ost->resample_height = ist->st->codec->height - (ost->topBand  + ost->bottomBand);
             ost->resample_width  = ist->st->codec->width  - (ost->leftBand + ost->rightBand);
+            ost->resample_pix_fmt= ist->st->codec->pix_fmt;
 
             /* initialize a new scaler context */
             sws_freeContext(ost->img_resample_ctx);
@@ -1937,6 +1940,7 @@ static int av_encode(AVFormatContext **output_files,
 
                     ost->resample_height = icodec->height - (frame_topBand  + frame_bottomBand);
                     ost->resample_width  = icodec->width  - (frame_leftBand + frame_rightBand);
+                    ost->resample_pix_fmt= icodec->pix_fmt;
                     codec->bits_per_raw_sample= 0;
                 }
                 ost->encoding_needed = 1;
