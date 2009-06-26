@@ -258,12 +258,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         gc_1st_index  = get_bits(&gb, format.gc_1st_index_bits);
         gc_2nd_index  = get_bits(&gb, format.gc_2nd_index_bits);
 
-        ff_acelp_weighted_vector_sum(fc + pitch_delay_int[i],
-                                     fc + pitch_delay_int[i],
+        ff_acelp_weighted_vector_sum(fc + pitch_delay_int,
+                                     fc + pitch_delay_int,
                                      fc, 1 << 14,
                                      av_clip(ctx->gain_pitch, SHARP_MIN, SHARP_MAX),
                                      0, 14,
-                                     SUBFRAME_SIZE - pitch_delay_int[i]);
+                                     SUBFRAME_SIZE - pitch_delay_int);
 
         if (frame_erasure) {
             ctx->gain_pitch = (29491 * ctx->gain_pitch) >> 15; // 0.90 (0.15)
