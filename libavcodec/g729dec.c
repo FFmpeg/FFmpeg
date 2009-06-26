@@ -380,7 +380,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     uint8_t quantizer_2nd_lo; ///< second stage lower vector of quantizer (size in bits)
     uint8_t quantizer_2nd_hi; ///< second stage higher vector of quantizer (size in bits)
 
-    int pitch_delay_int;         // pitch delay, integer part
+    int pitch_delay_int[2];      // pitch delay, integer part
     int pitch_delay_3x;          // pitch delay, multiplied by 3
     int16_t fc[SUBFRAME_SIZE];   // fixed-codebook vector
     int16_t synth[SUBFRAME_SIZE+10]; // fixed-codebook vector
@@ -475,7 +475,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
 
         /* Round pitch delay to nearest (used everywhere except ff_acelp_interpolate). */
-        pitch_delay_int  = (pitch_delay_3x + 1) / 3;
+        pitch_delay_int[i]  = (pitch_delay_3x + 1) / 3;
 
         if (frame_erasure) {
             ctx->rand_value = g729_prng(ctx->rand_value);
@@ -508,12 +508,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
           fc_v[i] = <
                      \ fc_v[i] + gain_pitch * fc_v[i-pitch_delay], i >= pitch_delay
         */
-        ff_acelp_weighted_vector_sum(fc + pitch_delay_int,
-                                     fc + pitch_delay_int,
+        ff_acelp_weighted_vector_sum(fc + pitch_delay_int[i],
+                                     fc + pitch_delay_int[i],
                                      fc, 1 << 14,
                                      av_clip(ctx->past_gain_pitch[0], SHARP_MIN, SHARP_MAX),
                                      0, 14,
-                                     SUBFRAME_SIZE - pitch_delay_int);
+                                     SUBFRAME_SIZE - pitch_delay_int[i]);
 
         memmove(ctx->past_gain_pitch+1, ctx->past_gain_pitch, 5 * sizeof(int16_t));
         ctx->past_gain_code[1] = ctx->past_gain_code[0];
@@ -628,7 +628,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         if (frame_erasure)
             ctx->pitch_delay_int_prev = FFMIN(ctx->pitch_delay_int_prev + 1, PITCH_DELAY_MAX);
         else
-            ctx->pitch_delay_int_prev = pitch_delay_int;
+            ctx->pitch_delay_int_prev = pitch_delay_int[i];
 
         memcpy(synth+8, ctx->hpf_z, 2*sizeof(int16_t));
         ff_acelp_high_pass_filter(
