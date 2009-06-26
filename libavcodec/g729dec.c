@@ -426,10 +426,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
             /* Decode the fixed-codebook gain. */
             ctx->past_gain_code[0] = ff_acelp_decode_gain_code(&ctx->dsp, gain_corr_factor,
-                                                       fc, MR_ENERGY,
-                                                       ctx->quant_energy,
-                                                       ma_prediction_coeff,
-                                                       SUBFRAME_SIZE, 4);
+                                                               fc, MR_ENERGY,
+                                                               ctx->quant_energy,
+                                                               ma_prediction_coeff,
+                                                               SUBFRAME_SIZE, 4);
         }
         ff_acelp_update_past_gain(ctx->quant_energy, gain_corr_factor, 2, frame_erasure);
 
