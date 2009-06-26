@@ -81,6 +81,8 @@ typedef struct {
 } G729FormatDescription;
 
 typedef struct {
+    int pitch_delay_int_prev;   ///< integer part of previous subframe's pitch delay (4.1.3)
+
     /// (2.13) LSP quantizer outputs
     int16_t  past_quantizer_output_buf[MA_NP + 1][10];
     int16_t* past_quantizer_outputs[MA_NP + 1];
@@ -206,6 +208,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     uint8_t quantizer_2nd_lo; ///< second stage lower vector of quantizer (size in bits)
     uint8_t quantizer_2nd_hi; ///< second stage higher vector of quantizer (size in bits)
 
+    int pitch_delay_int;         // pitch delay, integer part
+    int pitch_delay_3x;          // pitch delay, multiplied by 3
+
     if (*data_size < SUBFRAME_SIZE << 2) {
         av_log(avctx, AV_LOG_ERROR, "Error processing packet: output buffer too small\n");
         return AVERROR(EIO);
@@ -258,6 +263,24 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         gc_1st_index  = get_bits(&gb, format.gc_1st_index_bits);
         gc_2nd_index  = get_bits(&gb, format.gc_2nd_index_bits);
 
+        if(!i) {
+            if (bad_pitch)
+                pitch_delay_3x   = 3 * ctx->pitch_delay_int_prev;
+            else
+                pitch_delay_3x = ff_acelp_decode_8bit_to_1st_delay3(ac_index);
+        } else {
+            int pitch_delay_min = av_clip(ctx->pitch_delay_int_prev - 5,
+                                          PITCH_DELAY_MIN, PITCH_DELAY_MAX - 9);
+
+            if(packet_type == FORMAT_G729D_6K4)
+                pitch_delay_3x = ff_acelp_decode_4bit_to_2nd_delay3(ac_index, pitch_delay_min);
+            else
+                pitch_delay_3x = ff_acelp_decode_5_6_bit_to_2nd_delay3(ac_index, pitch_delay_min);
+        }
+
+        /* Round pitch delay to nearest (used everywhere except ff_acelp_interpolate). */
+        pitch_delay_int  = (pitch_delay_3x + 1) / 3;
+
         ff_acelp_weighted_vector_sum(fc + pitch_delay_int,
                                      fc + pitch_delay_int,
                                      fc, 1 << 14,
@@ -281,6 +304,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                                      (!voicing && frame_erasure) ? 0 : ctx->gain_pitch,
                                      ( voicing && frame_erasure) ? 0 : ctx->gain_code,
                                      1 << 13, 14, SUBFRAME_SIZE);
+
+            ctx->pitch_delay_int_prev = pitch_delay_int;
     }
 
     *data_size = SUBFRAME_SIZE << 2;
