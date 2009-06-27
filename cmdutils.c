@@ -215,7 +215,7 @@ int opt_default(const char *opt, const char *arg){
 
 int opt_loglevel(const char *opt, const char *arg)
 {
-    const struct { const char *name; int level; } const log_levels[] = {
+    const struct { const char *name; int level; } log_levels[] = {
         { "quiet"  , AV_LOG_QUIET   },
         { "panic"  , AV_LOG_PANIC   },
         { "fatal"  , AV_LOG_FATAL   },
