@@ -74,7 +74,7 @@
 #endif
 
 #ifndef av_cold
-#if (!defined(__ICC) || __ICC > 1100) && AV_GCC_VERSION_AT_LEAST(4,3)
+#if (!defined(__ICC) || __ICC > 1110) && AV_GCC_VERSION_AT_LEAST(4,3)
 #    define av_cold __attribute__((cold))
 #else
 #    define av_cold
