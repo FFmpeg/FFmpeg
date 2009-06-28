@@ -560,3 +560,51 @@ void g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int16_t* voicing,
     *ht_prev_data = apply_tilt_comp(speech, pos_filter_data + 10, tilt_comp_coeff,
                                     subframe_size, *ht_prev_data);
 }
+
+/**
+ * \brief Adaptive gain control (4.2.4)
+ * \param gain_before gain of speech before applying postfilters
+ * \param gain_after  gain of speech after applying postfilters
+ * \param speech [in/out] signal buffer
+ * \param subframe_size length of subframe
+ * \param gain_prev (3.12) previous value of gain coefficient
+ *
+ * \return (3.12) last value of gain coefficient
+ */
+int16_t g729_adaptive_gain_control(int gain_before, int gain_after, int16_t *speech,
+                                   int subframe_size, int16_t gain_prev)
+{
+    int gain; // (3.12)
+    int n;
+    int exp_before, exp_after;
+
+    if(!gain_after && gain_before)
+        return 0;
+
+    if (gain_before) {
+
+        exp_before  = 14 - av_log2(gain_before);
+        gain_before = bidir_sal(gain_before, exp_before);
+
+        exp_after  = 14 - av_log2(gain_after);
+        gain_after = bidir_sal(gain_after, exp_after);
+
+        if (gain_before < gain_after) {
+            gain = (gain_before << 15) / gain_after;
+            gain = bidir_sal(gain, exp_after - exp_before - 1);
+        } else {
+            gain = ((gain_before - gain_after) << 14) / gain_after + 0x4000;
+            gain = bidir_sal(gain, exp_after - exp_before);
+        }
+        gain = (gain * G729_AGC_FAC1 + 0x4000) >> 15; // gain * (1-0.9875)
+    } else
+        gain = 0;
+
+    for (n = 0; n < subframe_size; n++) {
+        // gain_prev = gain + 0.9875 * gain_prev
+        gain_prev = (G729_AGC_FACTOR * gain_prev + 0x4000) >> 15;
+        gain_prev = av_clip_int16(gain + gain_prev);
+        speech[n] = av_clip_int16((speech[n] * gain_prev + 0x2000) >> 14);
+    }
+    return gain_prev;
+}

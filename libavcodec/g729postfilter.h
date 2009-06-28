@@ -40,6 +40,13 @@
 #define FORMANT_PP_FACTOR_DEN  22938             //0.70 in Q15
 
 /**
+ * gain adjustment factor (G.729, 4.2.4)
+ * 0.9875 in Q15
+ */
+#define G729_AGC_FACTOR            32358
+#define G729_AGC_FAC1 (32768-G729_AGC_FACTOR)
+
+/**
  * 1.0 / (1.0 + 0.5) in Q15
  * where 0.5 is the minimum value of
  * weight factor, controlling amount of long-term postfiltering
@@ -91,5 +98,18 @@ void g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int16_t* voicing,
                      int16_t* residual, int16_t* res_filter_data,
                      int16_t* pos_filter_data, int16_t *speech,
                      int subframe_size);
+
+/**
+ * \brief Adaptive gain control (4.2.4)
+ * \param gain_before (Q0) gain of speech before applying postfilters
+ * \param gain_after  (Q0) gain of speech after applying postfilters
+ * \param speech [in/out] (Q0) signal buffer
+ * \param subframe_size length of subframe
+ * \param gain_prev (Q12) previous value of gain coefficient
+ *
+ * \return (Q12) last value of gain coefficient
+ */
+int16_t g729_adaptive_gain_control(int gain_before, int gain_after, int16_t *speech,
+                                   int subframe_size, int16_t gain_prev);
 
 #endif // FFMPEG_G729POSTFILTER_H

@@ -145,6 +145,7 @@ typedef struct {
     int16_t onset;              ///< detected onset level (0-2)
     int16_t was_periodic;       ///< whether previous frame was declared as periodic or not (4.4)
     int16_t ht_prev_data;       ///< previous data for 4.2.3, equation 86
+    int gain_coeff;             ///< (1.14) gain coefficient (4.2.4)
     uint16_t rand_value;        ///< random number generator value (4.4.4)
     int ma_predictor_prev;      ///< switched MA predictor of LSP quantizer from last good frame
 
@@ -348,6 +349,8 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     /* Both 8kbit/s and 6.4kbit/s modes uses two subframes per frame. */
     avctx->frame_size = SUBFRAME_SIZE << 1;
 
+    ctx->gain_coeff = 16384; // 1.0 in (1.14)
+
     for (k = 0; k < MA_NP + 1; k++) {
         ctx->past_quantizer_outputs[k] = ctx->past_quantizer_output_buf[k];
         for (i = 1; i < 11; i++)
@@ -397,6 +400,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int16_t fc[SUBFRAME_SIZE];   // fixed-codebook vector
     int16_t synth[SUBFRAME_SIZE+10]; // fixed-codebook vector
     int j;
+    int gain_before, gain_after;
     int is_periodic = 0;         // whether one of the subframes is declared as periodic or not
 
     if (*data_size < SUBFRAME_SIZE << 2) {
@@ -637,6 +641,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         /* Save data (without postfilter) for use in next subframe. */
         memcpy(ctx->syn_filter_data, synth+SUBFRAME_SIZE, 10 * sizeof(int16_t));
 
+        /* Calculate gain of unfiltered signal for use in AGC. */
+        gain_before = 0;
+        for (j = 0; j < SUBFRAME_SIZE; j++)
+            gain_before += FFABS(synth[j+10]);
+
         /* Call postfilter and also update voicing decision for use in next frame. */
         g729_postfilter(
                 &ctx->dsp,
@@ -649,6 +658,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                 ctx->pos_filter_data,
                 synth+10,
                 SUBFRAME_SIZE);
+
+        /* Calculate gain of filtered signal for use in AGC. */
+        gain_after = 0;
+        for(j=0; j<SUBFRAME_SIZE; j++)
+            gain_after += FFABS(synth[j+10]);
+
+        ctx->gain_coeff = g729_adaptive_gain_control(
+                gain_before,
+                gain_after,
+                synth+10,
+                SUBFRAME_SIZE,
+                ctx->gain_coeff);
 
         if (frame_erasure)
             ctx->pitch_delay_int_prev = FFMIN(ctx->pitch_delay_int_prev + 1, PITCH_DELAY_MAX);
