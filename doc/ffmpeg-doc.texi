@@ -286,7 +286,7 @@ streams are delayed by 'offset' seconds.
 Set the timestamp.
 
 @item -metadata @var{key}=@var{value}
-Set a metadata key/par value.
+Set a metadata key/value pair.
 
 @example
 ffmpeg -i in.avi -metadata title="my title"
