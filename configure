@@ -1629,15 +1629,15 @@ case $target_os in
         add_cflags -D__EXTENSIONS__
         ;;
     netbsd)
-        oss_demuxer_extralibs="-lossaudio"
-        oss_muxer_extralibs="-lossaudio"
+        oss_indev_extralibs="-lossaudio"
+        oss_outdev_extralibs="-lossaudio"
         ;;
     openbsd)
         disable need_memalign
         LIBOBJFLAGS='$(PIC)'
         SHFLAGS='-shared'
-        oss_demuxer_extralibs="-lossaudio"
-        oss_muxer_extralibs="-lossaudio"
+        oss_indev_extralibs="-lossaudio"
+        oss_outdev_extralibs="-lossaudio"
         ;;
     freebsd|dragonfly)
         disable need_memalign
