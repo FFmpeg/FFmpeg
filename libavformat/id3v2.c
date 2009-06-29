@@ -155,7 +155,10 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
     while (len >= taghdrlen) {
         if (isv34) {
             tag  = get_be32(s->pb);
+            if(version==3){
             tlen = get_be32(s->pb);
+            }else
+                tlen = get_size(s->pb, 4);
             get_be16(s->pb); /* flags */
         } else {
             tag  = get_be24(s->pb);
