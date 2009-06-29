@@ -131,6 +131,8 @@ show_help(){
   echo "  --enable-protocol=NAME   enable protocol NAME"
   echo "  --disable-protocol=NAME  disable protocol NAME"
   echo "  --disable-protocols      disable all protocols"
+  echo "  --disable-indev=NAME     disable input device NAME"
+  echo "  --disable-outdev=NAME    disable output device NAME"
   echo "  --disable-indevs         disable input devices"
   echo "  --disable-outdevs        disable output devices"
   echo "  --disable-devices        disable all devices"
@@ -1141,38 +1143,38 @@ libxvid_encoder_deps="libxvid"
 
 # demuxers / muxers
 ac3_demuxer_deps="ac3_parser"
-alsa_demuxer_deps="alsa_asoundlib_h snd_pcm_htimestamp"
-alsa_demuxer_extralibs="-lasound"
-alsa_muxer_deps="alsa_asoundlib_h"
-alsa_muxer_extralibs="-lasound"
-audio_beos_demuxer_deps="audio_beos"
-audio_beos_demuxer_extralibs="-lmedia -lbe"
-audio_beos_muxer_deps="audio_beos"
-audio_beos_muxer_extralibs="-lmedia -lbe"
+alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
+alsa_indev_extralibs="-lasound"
+alsa_outdev_deps="alsa_asoundlib_h"
+alsa_outdev_extralibs="-lasound"
+audio_beos_indev_deps="audio_beos"
+audio_beos_indev_extralibs="-lmedia -lbe"
+audio_beos_outdev_deps="audio_beos"
+audio_beos_outdev_extralibs="-lmedia -lbe"
 avisynth_demuxer_deps="avisynth"
-bktr_demuxer_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
+bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 dirac_demuxer_deps="dirac_parser"
-dv1394_demuxer_deps="dv1394 dv_demuxer"
-jack_demuxer_deps="jack_jack_h"
-jack_demuxer_extralibs="-ljack"
-libdc1394_demuxer_deps="libdc1394"
+dv1394_indev_deps="dv1394 dv_demuxer"
+jack_indev_deps="jack_jack_h"
+jack_indev_extralibs="-ljack"
+libdc1394_indev_deps="libdc1394"
 libnut_demuxer_deps="libnut"
 libnut_muxer_deps="libnut"
 matroska_demuxer_suggest="zlib bzlib"
 mov_demuxer_suggest="zlib"
 mp3_demuxer_deps="mpegaudio_parser"
-oss_demuxer_deps_any="soundcard_h sys_soundcard_h"
-oss_muxer_deps_any="soundcard_h sys_soundcard_h"
+oss_indev_deps_any="soundcard_h sys_soundcard_h"
+oss_outdev_deps_any="soundcard_h sys_soundcard_h"
 redir_demuxer_deps="network"
 rtp_muxer_deps="network rtp_protocol"
 rtsp_demuxer_deps="sdp_demuxer"
 sdp_demuxer_deps="rtp_protocol mpegts_demuxer"
-v4l_demuxer_deps="linux_videodev_h"
-v4l2_demuxer_deps_any="linux_videodev2_h sys_videoio_h"
-vfwcap_demuxer_deps="capCreateCaptureWindow"
-vfwcap_demuxer_extralibs="-lvfw32"
-x11_grab_device_demuxer_deps="x11grab XShmCreateImage"
-x11_grab_device_demuxer_extralibs="-lX11 -lXext"
+v4l_indev_deps="linux_videodev_h"
+v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
+vfwcap_indev_deps="capCreateCaptureWindow"
+vfwcap_indev_extralibs="-lvfw32"
+x11_grab_device_indev_deps="x11grab XShmCreateImage"
+x11_grab_device_indev_extralibs="-lX11 -lXext"
 
 # protocols
 gopher_protocol_deps="network"
@@ -1296,8 +1298,8 @@ PARSER_LIST=$(find_things   parser   PARSER   libavcodec/allcodecs.c)
 BSF_LIST=$(find_things      bsf      BSF      libavcodec/allcodecs.c)
 MUXER_LIST=$(find_things    muxer    _MUX     libavformat/allformats.c)
 DEMUXER_LIST=$(find_things  demuxer  DEMUX    libavformat/allformats.c)
-OUTDEV_LIST=$(find_things   muxer    _MUX     libavdevice/alldevices.c)
-INDEV_LIST=$(find_things    demuxer  DEMUX    libavdevice/alldevices.c)
+OUTDEV_LIST=$(find_things   outdev   OUTDEV   libavdevice/alldevices.c)
+INDEV_LIST=$(find_things    indev    _IN      libavdevice/alldevices.c)
 PROTOCOL_LIST=$(find_things protocol PROTOCOL libavformat/allformats.c)
 FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
 
@@ -1343,7 +1345,7 @@ for opt do
     --enable-*=*|--disable-*=*)
     eval $(echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/')
     case "$thing" in
-        encoder|decoder|hwaccel|muxer|demuxer|parser|bsf|protocol|filter) $action ${optval}_${thing} ;;
+        encoder|decoder|hwaccel|muxer|demuxer|indev|outdev|parser|bsf|protocol|filter) $action ${optval}_${thing} ;;
         *) die_unknown "$opt" ;;
     esac
     ;;

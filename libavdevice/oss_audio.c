@@ -312,7 +312,7 @@ static int audio_read_close(AVFormatContext *s1)
     return 0;
 }
 
-#if CONFIG_OSS_DEMUXER
+#if CONFIG_OSS_INDEV
 AVInputFormat oss_demuxer = {
     "oss",
     NULL_IF_CONFIG_SMALL("Open Sound System capture"),
@@ -325,7 +325,7 @@ AVInputFormat oss_demuxer = {
 };
 #endif
 
-#if CONFIG_OSS_MUXER
+#if CONFIG_OSS_OUTDEV
 AVOutputFormat oss_muxer = {
     "oss",
     NULL_IF_CONFIG_SMALL("Open Sound System playback"),
