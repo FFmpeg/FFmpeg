@@ -61,7 +61,7 @@ static int aac_adtstoasc_filter(AVBitStreamFilterContext *bsfc,
     }
 
     if (!hdr.crc_absent && hdr.num_aac_frames > 1) {
-        ff_log_missing_feature(avctx, "Multiple RDBs per frame with CRC is", 0);
+        av_log_missing_feature(avctx, "Multiple RDBs per frame with CRC is", 0);
         return -1;
     }
 
@@ -74,7 +74,7 @@ static int aac_adtstoasc_filter(AVBitStreamFilterContext *bsfc,
         if (!hdr.chan_config) {
             init_get_bits(&gb, buf, buf_size);
             if (get_bits(&gb, 3) != 5) {
-                ff_log_missing_feature(avctx, "PCE based channel configuration, where the PCE is not the first syntax element is", 0);
+                av_log_missing_feature(avctx, "PCE based channel configuration, where the PCE is not the first syntax element is", 0);
                 return -1;
             }
             init_put_bits(&pb, pce_data, MAX_PCE_SIZE);

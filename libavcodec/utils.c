@@ -1191,19 +1191,19 @@ int av_parse_video_frame_rate(AVRational *frame_rate, const char *arg)
         return 0;
 }
 
-void ff_log_missing_feature(void *avc, const char *feature, int want_sample)
+void av_log_missing_feature(void *avc, const char *feature, int want_sample)
 {
     av_log(avc, AV_LOG_WARNING, "%s not implemented. Update your FFmpeg "
             "version to the newest one from SVN. If the problem still "
             "occurs, it means that your file has a feature which has not "
             "been implemented.", feature);
     if(want_sample)
-        ff_log_ask_for_sample(avc, NULL);
+        av_log_ask_for_sample(avc, NULL);
     else
         av_log(avc, AV_LOG_WARNING, "\n");
 }
 
-void ff_log_ask_for_sample(void *avc, const char *msg)
+void av_log_ask_for_sample(void *avc, const char *msg)
 {
     if (msg)
         av_log(avc, AV_LOG_WARNING, "%s ", msg);

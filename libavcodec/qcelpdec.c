@@ -432,7 +432,7 @@ static float compute_gain_ctrl(const float *v_ref, const float *v_in, const int 
     if(scalefactor)
         scalefactor = sqrt(ff_dot_productf(v_ref, v_ref, len) / scalefactor);
     else
-        ff_log_missing_feature(NULL, "Zero energy for gain control", 1);
+        av_log_missing_feature(NULL, "Zero energy for gain control", 1);
     return scalefactor;
 }
 
@@ -716,7 +716,7 @@ static qcelp_packet_rate determine_bitrate(AVCodecContext *avctx, const int buf_
     if(bitrate == SILENCE)
     {
         //FIXME: Remove experimental warning when tested with samples.
-        ff_log_ask_for_sample(avctx, "'Blank frame handling is experimental.");
+        av_log_ask_for_sample(avctx, "'Blank frame handling is experimental.");
     }
     return bitrate;
 }

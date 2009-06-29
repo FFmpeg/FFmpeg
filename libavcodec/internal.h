@@ -37,7 +37,7 @@
  * message which tells the user how to report samples to the development
  * mailing list.
  */
-void ff_log_missing_feature(void *avc, const char *feature, int want_sample);
+void av_log_missing_feature(void *avc, const char *feature, int want_sample);
 
 /**
  * Logs a generic warning message asking for a sample.
@@ -45,7 +45,7 @@ void ff_log_missing_feature(void *avc, const char *feature, int want_sample);
  * a pointer to an AVClass struct
  * @param[in] msg string containing an optional message, or NULL if no message
  */
-void ff_log_ask_for_sample(void *avc, const char *msg);
+void av_log_ask_for_sample(void *avc, const char *msg);
 
 /**
  * Determines whether pix_fmt is a hardware accelerated format.
