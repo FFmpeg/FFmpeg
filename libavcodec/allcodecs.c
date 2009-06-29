@@ -229,8 +229,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (TRUESPEECH, truespeech);
     REGISTER_DECODER (TTA, tta);
     REGISTER_DECODER (VMDAUDIO, vmdaudio);
-    /* The Vorbis encoder is disabled because it is extremely low quality. */
-    REGISTER_DECODER (VORBIS, vorbis);
+    REGISTER_ENCDEC  (VORBIS, vorbis);
     REGISTER_DECODER (WAVPACK, wavpack);
     REGISTER_ENCDEC  (WMAV1, wmav1);
     REGISTER_ENCDEC  (WMAV2, wmav2);
