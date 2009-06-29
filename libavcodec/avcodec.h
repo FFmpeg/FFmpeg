@@ -3717,7 +3717,9 @@ int av_parse_video_frame_rate(AVRational *frame_rate, const char *str);
 #define AVERROR_PATCHWELCOME    -MKTAG('P','A','W','E') /**< Not yet implemented in FFmpeg. Patches welcome. */
 
 /**
- * Logs a generic warning message about a missing feature.
+ * Logs a generic warning message about a missing feature. This function is
+ * intended to be used internally by FFmpeg (libavcodec, libavformat, etc.)
+ * only, and would normally not be used by applications.
  * @param[in] avc a pointer to an arbitrary struct of which the first field is
  * a pointer to an AVClass struct
  * @param[in] feature string containing the name of the missing feature
@@ -3729,7 +3731,9 @@ int av_parse_video_frame_rate(AVRational *frame_rate, const char *str);
 void av_log_missing_feature(void *avc, const char *feature, int want_sample);
 
 /**
- * Logs a generic warning message asking for a sample.
+ * Logs a generic warning message asking for a sample. This function is
+ * intended to be used internally by FFmpeg (libavcodec, libavformat, etc.)
+ * only, and would normally not be used by applications.
  * @param[in] avc a pointer to an arbitrary struct of which the first field is
  * a pointer to an AVClass struct
  * @param[in] msg string containing an optional message, or NULL if no message
