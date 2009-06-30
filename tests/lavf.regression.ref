@@ -9,7 +9,7 @@ bc5e914594523f7c48f9e044c9a9c0b6 *./tests/data/b-lavf.avi
 bfdec98337e6a9d89dc648d1e65a41db *./tests/data/b-lavf.mpg
 378880 ./tests/data/b-lavf.mpg
 ./tests/data/b-lavf.mpg CRC=0xaf760568
-259a87c8d22aab76665047ecdbfa9267 *./tests/data/b-lavf.mxf
+36ea24816444a40fa47b866a409a79b0 *./tests/data/b-lavf.mxf
 535097 ./tests/data/b-lavf.mxf
 ./tests/data/b-lavf.mxf CRC=0xd7ff387d
 0a7cc51de3da754ce36dffeeda290c45 *./tests/data/b-lavf.mxf_d10

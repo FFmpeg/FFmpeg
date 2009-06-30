@@ -69,6 +69,7 @@ typedef struct {
     int interlaced;       ///< wether picture is interlaced
     int temporal_reordering;
     AVRational aspect_ratio; ///< display aspect ratio
+    int closed_gop;          ///< gop is closed, used in mpeg-2 frame parsing
 } MXFStreamContext;
 
 typedef struct {
@@ -1111,8 +1112,8 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
         put_be32(pb, mxf->edit_units_count);  // num of entries
         put_be32(pb, 11+mxf->slice_count*4);  // size of one entry
         for (i = 0; i < mxf->edit_units_count; i++) {
+            int temporal_offset = 0;
             if (temporal_reordering) {
-                int temporal_offset = 0;
                 for (j = i+1; j < mxf->edit_units_count; j++) {
                     temporal_offset++;
                     if (mxf->index_entries[j].flags & 0x10) { // backward prediction
@@ -1126,15 +1127,17 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
                         break;
                     }
                 }
-                put_byte(pb, temporal_offset);
-            } else
-                put_byte(pb, 0);
+            }
+            put_byte(pb, temporal_offset);
+
             if (!(mxf->index_entries[i].flags & 0x33)) { // I frame
+                if (mxf->index_entries[i].flags & 0x40 && // seq header
+                    (!temporal_reordering || !temporal_offset))
+                    mxf->index_entries[i].flags |= 0x80; // random access
                 mxf->last_key_index = key_index;
                 key_index = i;
             }
-            if (mxf->index_entries[i].flags & 0x10 && // backward prediction
-                !(mxf->index_entries[key_index].flags & 0x80)) { // open gop
+            if ((mxf->index_entries[i].flags & 0x30) == 0x30) { // back and forward prediction
                 put_byte(pb, mxf->last_key_index - i);
             } else {
                 put_byte(pb, key_index - i); // key frame offset
@@ -1315,8 +1318,11 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
                 break;
             }
         } else if (c == 0x1b8) { // gop
-            if (pkt->data[i+4]>>6 & 0x01) // closed
-                *flags |= 0x80; // random access
+            if (pkt->data[i+4]>>6 & 0x01) { // closed
+                sc->closed_gop = 1;
+                if (*flags & 0x40) // sequence header present
+                    *flags |= 0x80; // random access
+            }
             if (!mxf->header_written) {
                 unsigned hours   =  (pkt->data[i+1]>>2) & 0x1f;
                 unsigned minutes = ((pkt->data[i+1] & 0x03) << 4) | (pkt->data[i+2]>>4);
@@ -1347,8 +1353,12 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
             if (pict_type == 2) { // P frame
                 *flags |= 0x22;
                 st->codec->gop_size = 1;
+                sc->closed_gop = 0; // reset closed gop, don't matter anymore
             } else if (pict_type == 3) { // B frame
-                *flags |= 0x33;
+                if (sc->closed_gop)
+                    *flags |= 0x13; // only backward prediction
+                else
+                    *flags |= 0x33;
                 sc->temporal_reordering = -1;
             } else if (!pict_type) {
                 av_log(s, AV_LOG_ERROR, "error parsing mpeg2 frame\n");
