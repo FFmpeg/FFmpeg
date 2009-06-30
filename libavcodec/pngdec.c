@@ -181,6 +181,13 @@ void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w
     else if(bpp == 2) UNROLL1(2, op)\
     else if(bpp == 3) UNROLL1(3, op)\
     else if(bpp == 4) UNROLL1(4, op)\
+    else {\
+        for (; i < size; i += bpp) {\
+            int j;\
+            for (j = 0; j < bpp; j++)\
+                dst[i+j] = op(dst[i+j-bpp], src[i+j], last[i+j]);\
+        }\
+    }
 
 /* NOTE: 'dst' can be equal to 'last' */
 static void png_filter_row(DSPContext *dsp, uint8_t *dst, int filter_type,
@@ -478,6 +485,9 @@ static int decode_frame(AVCodecContext *avctx,
                 } else if (s->bit_depth == 16 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     avctx->pix_fmt = PIX_FMT_GRAY16BE;
+                } else if (s->bit_depth == 16 &&
+                           s->color_type == PNG_COLOR_TYPE_RGB) {
+                    avctx->pix_fmt = PIX_FMT_RGB48BE;
                 } else if (s->bit_depth == 1 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     avctx->pix_fmt = PIX_FMT_MONOBLACK;
