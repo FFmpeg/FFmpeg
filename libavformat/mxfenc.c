@@ -63,10 +63,10 @@ typedef struct {
 typedef struct {
     AudioInterleaveContext aic;
     UID track_essence_element_key;
-    int index;            ///< index in mxf_essence_container_uls table
+    int index;               ///< index in mxf_essence_container_uls table
     const UID *codec_ul;
-    int order;            ///< interleaving order if dts are equal
-    int interlaced;       ///< wether picture is interlaced
+    int order;               ///< interleaving order if dts are equal
+    int interlaced;          ///< wether picture is interlaced
     int temporal_reordering;
     AVRational aspect_ratio; ///< display aspect ratio
     int closed_gop;          ///< gop is closed, used in mpeg-2 frame parsing
@@ -1119,7 +1119,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
                     if (mxf->index_entries[j].flags & 0x10) { // backward prediction
                         // next is not b, so is reordered
                         if (!(mxf->index_entries[i+1].flags & 0x10)) {
-                            if ((mxf->index_entries[i].flags & 0x11) == 0) // i frame
+                            if ((mxf->index_entries[i].flags & 0x11) == 0) // I frame
                                 temporal_offset = 0;
                             else
                                 temporal_offset = -temporal_offset;
@@ -1309,7 +1309,7 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
 
     for(i = 0; i < pkt->size - 4; i++) {
         c = (c<<8) + pkt->data[i];
-        if (c == 0x1B5) {
+        if (c == 0x1b5) {
             if ((pkt->data[i+1] & 0xf0) == 0x10) { // seq ext
                 st->codec->profile = pkt->data[i+1] & 0x07;
                 st->codec->level   = pkt->data[i+2] >> 4;
