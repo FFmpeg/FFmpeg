@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
             ftyp_atom_size = atom_size;
             ftyp_atom = malloc(ftyp_atom_size);
             if (!ftyp_atom) {
-                printf ("could not allocate 0x%llX byte for ftyp atom\n",
+                printf ("could not allocate 0x%"PRId64" byte for ftyp atom\n",
                         atom_size);
                 fclose(infile);
                 return 1;
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
     moov_atom_size = atom_size;
     moov_atom = malloc(moov_atom_size);
     if (!moov_atom) {
-        printf ("could not allocate 0x%llX byte for moov atom\n",
+        printf ("could not allocate 0x%"PRId64" byte for moov atom\n",
             atom_size);
         fclose(infile);
         return 1;
