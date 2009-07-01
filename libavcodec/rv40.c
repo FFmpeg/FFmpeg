@@ -164,7 +164,7 @@ static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
     int pattern;
     int8_t *ptr;
 
-    for(i = 0; i < 4; i++, dst += s->b4_stride){
+    for(i = 0; i < 4; i++, dst += r->intra_types_stride){
         if(!i && s->first_slice_line){
             pattern = get_vlc2(gb, aic_top_vlc.table, AIC_TOP_BITS, 1);
             dst[0] = (pattern >> 2) & 2;
@@ -181,8 +181,8 @@ static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
              * The second one (used for retrieving only one coefficient) is
              * top + 10 * left.
              */
-            A = ptr[-s->b4_stride + 1]; // it won't be used for the last coefficient in a row
-            B = ptr[-s->b4_stride];
+            A = ptr[-r->intra_types_stride + 1]; // it won't be used for the last coefficient in a row
+            B = ptr[-r->intra_types_stride];
             C = ptr[-1];
             pattern = A + (B << 4) + (C << 8);
             for(k = 0; k < MODE2_PATTERNS_NUM; k++)

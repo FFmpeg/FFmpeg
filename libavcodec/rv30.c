@@ -71,7 +71,7 @@ static int rv30_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
 {
     int i, j, k;
 
-    for(i = 0; i < 4; i++, dst += r->s.b4_stride - 4){
+    for(i = 0; i < 4; i++, dst += r->intra_types_stride - 4){
         for(j = 0; j < 4; j+= 2){
             int code = svq3_get_ue_golomb(gb) << 1;
             if(code >= 81*2){
@@ -79,7 +79,7 @@ static int rv30_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
                 return -1;
             }
             for(k = 0; k < 2; k++){
-                int A = dst[-r->s.b4_stride] + 1;
+                int A = dst[-r->intra_types_stride] + 1;
                 int B = dst[-1] + 1;
                 *dst++ = rv30_itype_from_context[A * 90 + B * 9 + rv30_itype_code[code + k]];
                 if(dst[-1] == 9){

@@ -85,6 +85,7 @@ typedef struct RV34DecContext{
     MpegEncContext s;
     int8_t *intra_types_hist;///< old block types, used for prediction
     int8_t *intra_types;     ///< block types
+    int    intra_types_stride;///< block types array stride
     const uint8_t *luma_dc_quant_i;///< luma subblock DC quantizer for intraframes
     const uint8_t *luma_dc_quant_p;///< luma subblock DC quantizer for interframes
 
