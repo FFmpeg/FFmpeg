@@ -963,7 +963,7 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base,
  * @param pts_den denominator to convert to seconds (MPEG: 90000)
  */
 void av_set_pts_info(AVStream *s, int pts_wrap_bits,
-                     int pts_num, int pts_den);
+                     unsigned int pts_num, unsigned int pts_den);
 
 #define AVSEEK_FLAG_BACKWARD 1 ///< seek backward
 #define AVSEEK_FLAG_BYTE     2 ///< seeking based on position in bytes

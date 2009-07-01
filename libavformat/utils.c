@@ -3304,7 +3304,7 @@ char *ff_data_to_hex(char *buff, const uint8_t *src, int s)
 }
 
 void av_set_pts_info(AVStream *s, int pts_wrap_bits,
-                     int pts_num, int pts_den)
+                     unsigned int pts_num, unsigned int pts_den)
 {
     unsigned int gcd= av_gcd(pts_num, pts_den);
     s->pts_wrap_bits = pts_wrap_bits;
