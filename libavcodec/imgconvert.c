@@ -1288,7 +1288,7 @@ static inline int is_yuv_planar(const PixFmtInfo *ps)
 }
 
 int av_picture_crop(AVPicture *dst, const AVPicture *src,
-              int pix_fmt, int top_band, int left_band)
+                    enum PixelFormat pix_fmt, int top_band, int left_band)
 {
     int y_shift;
     int x_shift;

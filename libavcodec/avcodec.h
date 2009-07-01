@@ -2902,7 +2902,7 @@ void avpicture_free(AVPicture *picture);
  * @return size of the image data in bytes
  */
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
-                   int pix_fmt, int width, int height);
+                   enum PixelFormat pix_fmt, int width, int height);
 int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, int height,
                      unsigned char *dest, int dest_size);
 
