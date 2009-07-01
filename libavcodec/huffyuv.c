@@ -735,10 +735,10 @@ static void decode_422_bitstream(HYuvContext *s, int count){
             READ_2PIX(s->temp[0][2*i+1], s->temp[2][i], 2);
         }
     }else{
-    for(i=0; i<count; i++){
-        READ_2PIX(s->temp[0][2*i  ], s->temp[1][i], 1);
-        READ_2PIX(s->temp[0][2*i+1], s->temp[2][i], 2);
-    }
+        for(i=0; i<count; i++){
+            READ_2PIX(s->temp[0][2*i  ], s->temp[1][i], 1);
+            READ_2PIX(s->temp[0][2*i+1], s->temp[2][i], 2);
+        }
     }
 }
 
@@ -752,9 +752,9 @@ static void decode_gray_bitstream(HYuvContext *s, int count){
             READ_2PIX(s->temp[0][2*i  ], s->temp[0][2*i+1], 0);
         }
     }else{
-    for(i=0; i<count; i++){
-        READ_2PIX(s->temp[0][2*i  ], s->temp[0][2*i+1], 0);
-    }
+        for(i=0; i<count; i++){
+            READ_2PIX(s->temp[0][2*i  ], s->temp[0][2*i+1], 0);
+        }
     }
 }
 
