@@ -191,7 +191,6 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         break;
     default:
         return -1;
-        break;
     }
 
     avctx->coded_frame= avcodec_alloc_frame();
