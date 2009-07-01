@@ -288,8 +288,9 @@ Set the timestamp.
 @item -metadata @var{key}=@var{value}
 Set a metadata key/value pair.
 
+For example, for setting the title in the output file:
 @example
-ffmpeg -i in.avi -metadata title="my title"
+ffmpeg -i in.avi -metadata title="my title" out.flv
 @end example
 
 @item -v @var{number}
