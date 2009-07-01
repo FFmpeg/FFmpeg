@@ -40,7 +40,7 @@ static av_always_inline av_const uint32_t bswap_32(uint32_t x)
 }
 #endif /* HAVE_ARMV6 */
 
-#else /* __ARMCC_VERSION */
+#elif HAVE_INLINE_ASM
 
 #if HAVE_ARMV6
 #define bswap_16 bswap_16
