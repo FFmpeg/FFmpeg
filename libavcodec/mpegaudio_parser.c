@@ -145,5 +145,5 @@ AVCodecParser mpegaudio_parser = {
     sizeof(MpegAudioParseContext),
     NULL,
     mpegaudio_parse,
-    NULL,
+    ff_parse_close,
 };
