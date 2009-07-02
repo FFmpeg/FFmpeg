@@ -3313,4 +3313,7 @@ void av_set_pts_info(AVStream *s, int pts_wrap_bits,
             av_log(NULL, AV_LOG_DEBUG, "st:%d removing common factor %d from timebase\n", s->index, pts_num/s->time_base.num);
     }else
         av_log(NULL, AV_LOG_WARNING, "st:%d has too large timebase, reducing\n", s->index);
+
+    if(!s->time_base.num || !s->time_base.den)
+        s->time_base.num= s->time_base.den= 0;
 }
