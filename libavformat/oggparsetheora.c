@@ -86,6 +86,11 @@ theora_header (AVFormatContext * s, int idx)
         }
         st->codec->time_base.den = get_bits_long(&gb, 32);
         st->codec->time_base.num = get_bits_long(&gb, 32);
+        if (!(st->codec->time_base.num > 0 && st->codec->time_base.den > 0)) {
+            av_log(s, AV_LOG_WARNING, "Invalid time base in theora stream, assuming 25 FPS\n");
+            st->codec->time_base.num = 1;
+            st->codec->time_base.den = 25;
+        }
         st->time_base = st->codec->time_base;
 
         st->sample_aspect_ratio.num = get_bits_long(&gb, 24);
