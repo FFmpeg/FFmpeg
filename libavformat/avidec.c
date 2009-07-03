@@ -252,6 +252,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIStream *ast = NULL;
     int avih_width=0, avih_height=0;
     int amv_file_format=0;
+    uint64_t list_end = 0;
 
     avi->stream_index= -1;
 
@@ -277,6 +278,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
         switch(tag) {
         case MKTAG('L', 'I', 'S', 'T'):
+            list_end = url_ftell(pb) + size;
             /* Ignored, except at start of video packets. */
             tag1 = get_le32(pb);
 #ifdef DEBUG
@@ -445,6 +447,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (stream_index >= (unsigned)s->nb_streams || avi->dv_demux) {
                 url_fskip(pb, size);
             } else {
+                uint64_t cur_pos = url_ftell(pb);
+                if (cur_pos < list_end)
+                    size = FFMIN(size, list_end - cur_pos);
                 st = s->streams[stream_index];
                 switch(codec_type) {
                 case CODEC_TYPE_VIDEO:
