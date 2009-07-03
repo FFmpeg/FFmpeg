@@ -598,7 +598,7 @@ static int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb)
     // if we do not know packet size, allow skipping up to 32 kB
     off= 32768;
     if (s->packet_size > 0)
-    off= (url_ftell(pb) - s->data_offset) % s->packet_size + 3;
+        off= (url_ftell(pb) - s->data_offset) % s->packet_size + 3;
 
     c=d=e=-1;
     while(off-- > 0){
@@ -993,7 +993,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
     }
 
     if (s->packet_size > 0)
-    pos= (pos+s->packet_size-1-s->data_offset)/s->packet_size*s->packet_size+ s->data_offset;
+        pos= (pos+s->packet_size-1-s->data_offset)/s->packet_size*s->packet_size+ s->data_offset;
     *ppos= pos;
     url_fseek(s->pb, pos, SEEK_SET);
 
