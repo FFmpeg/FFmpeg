@@ -7603,9 +7603,12 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             init_get_bits(&hx->s.gb, ptr, bit_length);
             hx->intra_gb_ptr=
             hx->inter_gb_ptr= NULL;
+
+            if ((err = decode_slice_header(hx, h)) < 0)
+                break;
+
             hx->s.data_partitioning = 1;
 
-            err = decode_slice_header(hx, h);
             break;
         case NAL_DPB:
             init_get_bits(&hx->intra_gb, ptr, bit_length);
