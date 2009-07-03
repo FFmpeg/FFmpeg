@@ -276,16 +276,29 @@ The offset is added to the timestamps of the input files.
 Specifying a positive offset means that the corresponding
 streams are delayed by 'offset' seconds.
 
+@item -title @var{string}
+Set the title.
+
 @item -timestamp @var{time}
 Set the timestamp.
 
-@item -metadata @var{key}=@var{value}
-Set a metadata key/value pair.
+@item -author @var{string}
+Set the author.
 
-For example, for setting the title in the output file:
-@example
-ffmpeg -i in.avi -metadata title="my title" out.flv
-@end example
+@item -copyright @var{string}
+Set the copyright.
+
+@item -comment @var{string}
+Set the comment.
+
+@item -album @var{string}
+Set the album.
+
+@item -track @var{number}
+Set the track.
+
+@item -year @var{number}
+Set the year.
 
 @item -v @var{number}
 Set the logging verbosity level.
