@@ -922,24 +922,8 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
         if (s->dc_index[i] <  0 || s->ac_index[i] < 0 ||
             s->dc_index[i] >= 4 || s->ac_index[i] >= 4)
             goto out_of_range;
-#if 0 //buggy
-        switch(s->start_code)
-        {
-            case SOF0:
-                if (dc_index[i] > 1 || ac_index[i] > 1)
-                    goto out_of_range;
-                break;
-            case SOF1:
-            case SOF2:
-                if (dc_index[i] > 3 || ac_index[i] > 3)
-                    goto out_of_range;
-                break;
-            case SOF3:
-                if (dc_index[i] > 3 || ac_index[i] != 0)
-                    goto out_of_range;
-                break;
-        }
-#endif
+        if (!s->vlcs[0][s->dc_index[i]].table || !s->vlcs[1][s->ac_index[i]].table)
+            goto out_of_range;
     }
 
     predictor= get_bits(&s->gb, 8); /* JPEG Ss / lossless JPEG predictor /JPEG-LS NEAR */
