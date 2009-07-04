@@ -338,6 +338,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     }
     s->picture.pict_type= FF_I_TYPE;
     s->picture.key_frame= 1;
+    s->got_picture = 1;
 
     for(i=0; i<3; i++){
         s->linesize[i]= s->picture.linesize[i] << s->interlaced;
@@ -1249,6 +1250,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
     int start_code;
     AVFrame *picture = data;
 
+    s->got_picture = 0; // picture from previous image can not be reused
     buf_ptr = buf;
     buf_end = buf + buf_size;
     while (buf_ptr < buf_end) {
@@ -1410,6 +1412,10 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                     if ((s->buggy_avid && !s->interlaced) || s->restart_interval)
                         break;
 eoi_parser:
+                    if (!s->got_picture) {
+                        av_log(avctx, AV_LOG_WARNING, "Found EOI before any SOF, ignoring\n");
+                        break;
+                    }
                     {
                         if (s->interlaced) {
                             s->bottom_field ^= 1;
@@ -1434,6 +1440,10 @@ eoi_parser:
                     }
                     break;
                 case SOS:
+                    if (!s->got_picture) {
+                        av_log(avctx, AV_LOG_WARNING, "Can not process SOS before SOF, skipping\n");
+                        break;
+                    }
                     ff_mjpeg_decode_sos(s);
                     /* buggy avid puts EOI every 10-20th frame */
                     /* if restart period is over process EOI */
