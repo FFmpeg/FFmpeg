@@ -1287,24 +1287,18 @@ static const UID mxf_mpeg2_codec_uls[] = {
 
 static const UID *mxf_get_mpeg2_codec_ul(AVCodecContext *avctx)
 {
+    int long_gop = avctx->gop_size > 1 || avctx->has_b_frames;
+
     if (avctx->profile == 4) { // Main
         if (avctx->level == 8) // Main
-            return avctx->gop_size ?
-                &mxf_mpeg2_codec_uls[1] :
-                &mxf_mpeg2_codec_uls[0];
+            return &mxf_mpeg2_codec_uls[0+long_gop];
         else if (avctx->level == 4) // High
-            return avctx->gop_size ?
-                &mxf_mpeg2_codec_uls[5] :
-                &mxf_mpeg2_codec_uls[4];
+            return &mxf_mpeg2_codec_uls[4+long_gop];
     } else if (avctx->profile == 0) { // 422
         if (avctx->level == 5) // Main
-            return avctx->gop_size ?
-                &mxf_mpeg2_codec_uls[3] :
-                &mxf_mpeg2_codec_uls[2];
+            return &mxf_mpeg2_codec_uls[2+long_gop];
         else if (avctx->level == 2) // High
-            return avctx->gop_size ?
-                &mxf_mpeg2_codec_uls[7] :
-                &mxf_mpeg2_codec_uls[6];
+            return &mxf_mpeg2_codec_uls[6+long_gop];
     }
     return NULL;
 }
@@ -1363,7 +1357,6 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
             int pict_type = (pkt->data[i+2]>>3) & 0x07;
             if (pict_type == 2) { // P frame
                 *flags |= 0x22;
-                st->codec->gop_size = 1;
                 sc->closed_gop = 0; // reset closed gop, don't matter anymore
             } else if (pict_type == 3) { // B frame
                 if (sc->closed_gop)
