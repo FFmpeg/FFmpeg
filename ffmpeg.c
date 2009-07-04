@@ -3051,7 +3051,7 @@ static void new_video_stream(AVFormatContext *oc)
 {
     AVStream *st;
     AVCodecContext *video_enc;
-    int codec_id;
+    enum CodecID codec_id;
 
     st = av_new_stream(oc, oc->nb_streams);
     if (!st) {
@@ -3193,7 +3193,7 @@ static void new_audio_stream(AVFormatContext *oc)
 {
     AVStream *st;
     AVCodecContext *audio_enc;
-    int codec_id;
+    enum CodecID codec_id;
 
     st = av_new_stream(oc, oc->nb_streams);
     if (!st) {
