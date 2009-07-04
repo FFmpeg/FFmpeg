@@ -43,6 +43,10 @@ void ff_simple_idct_neon(DCTELEM *data);
 void ff_simple_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
 void ff_simple_idct_add_neon(uint8_t *dest, int line_size, DCTELEM *data);
 
+void ff_vp3_idct_neon(DCTELEM *data);
+void ff_vp3_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
+void ff_vp3_idct_add_neon(uint8_t *dest, int line_size, DCTELEM *data);
+
 /* XXX: local hack */
 static void (*ff_put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
 static void (*ff_add_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
@@ -180,6 +184,12 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
             c->idct_add= ff_simple_idct_add_neon;
             c->idct    = ff_simple_idct_neon;
             c->idct_permutation_type = FF_PARTTRANS_IDCT_PERM;
+        } else if ((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER || CONFIG_THEORA_DECODER) &&
+                   idct_algo==FF_IDCT_VP3){
+            c->idct_put= ff_vp3_idct_put_neon;
+            c->idct_add= ff_vp3_idct_add_neon;
+            c->idct    = ff_vp3_idct_neon;
+            c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
 #endif
         }
     }
