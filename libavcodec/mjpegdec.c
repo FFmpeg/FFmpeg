@@ -1479,6 +1479,8 @@ not_the_end:
             }
         }
     }
+    av_log(avctx, AV_LOG_FATAL, "No JPEG data found in image\n");
+    return -1;
 the_end:
     av_log(avctx, AV_LOG_DEBUG, "mjpeg decode frame unused %td bytes\n", buf_end - buf_ptr);
 //    return buf_end - buf_ptr;
