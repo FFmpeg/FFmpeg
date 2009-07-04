@@ -1072,7 +1072,10 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
 
     // index duration
     mxf_write_local_tag(pb, 8, 0x3F0D);
-    put_be64(pb, mxf->edit_units_count);
+    if (mxf->edit_unit_byte_count)
+        put_be64(pb, 0); // index table covers whole container
+    else
+        put_be64(pb, mxf->edit_units_count);
 
     // edit unit byte count
     mxf_write_local_tag(pb, 4, 0x3F05);
