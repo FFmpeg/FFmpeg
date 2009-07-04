@@ -1479,6 +1479,10 @@ not_the_end:
             }
         }
     }
+    if (s->got_picture) {
+        av_log(avctx, AV_LOG_WARNING, "EOI missing, emulating\n");
+        goto eoi_parser;
+    }
     av_log(avctx, AV_LOG_FATAL, "No JPEG data found in image\n");
     return -1;
 the_end:
