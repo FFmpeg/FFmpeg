@@ -9,10 +9,10 @@ bc5e914594523f7c48f9e044c9a9c0b6 *./tests/data/b-lavf.avi
 bfdec98337e6a9d89dc648d1e65a41db *./tests/data/b-lavf.mpg
 378880 ./tests/data/b-lavf.mpg
 ./tests/data/b-lavf.mpg CRC=0xaf760568
-36ea24816444a40fa47b866a409a79b0 *./tests/data/b-lavf.mxf
+4c2cd0f62014a7c6571d8dbdf4248965 *./tests/data/b-lavf.mxf
 535097 ./tests/data/b-lavf.mxf
 ./tests/data/b-lavf.mxf CRC=0xd7ff387d
-0a7cc51de3da754ce36dffeeda290c45 *./tests/data/b-lavf.mxf_d10
+4463959da5ebd7536a579a628c4f6412 *./tests/data/b-lavf.mxf_d10
 5330989 ./tests/data/b-lavf.mxf_d10
 ./tests/data/b-lavf.mxf_d10 CRC=0xd241c8b6
 2e9bd99fbb121ae4887109e3a4169acd *./tests/data/b-lavf.ts
