@@ -754,7 +754,7 @@ static void mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UID k
     ByteIOContext *pb = s->pb;
 
     put_buffer(pb, key, 16);
-    klv_encode_ber_length(pb, size+20+8+12+20);
+    klv_encode_ber4_length(pb, size+20+8+12+20);
 
     mxf_write_local_tag(pb, 16, 0x3C0A);
     mxf_write_uuid(pb, SubDescriptor, st->index);
