@@ -511,7 +511,7 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
 #if CONFIG_MLIB
     t = ff_yuv2rgb_init_mlib(c);
 #endif
-#if HAVE_ALTIVEC && CONFIG_GPL
+#if HAVE_ALTIVEC
     if (c->flags & SWS_CPU_CAPS_ALTIVEC)
         t = ff_yuv2rgb_init_altivec(c);
 #endif
