@@ -955,13 +955,12 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 
 //Note: we have C, X86, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
 //Plain C versions
-#if !HAVE_MMX || defined (RUNTIME_CPUDETECT) || !CONFIG_GPL
+#if ((!HAVE_MMX || !CONFIG_GPL) && !HAVE_ALTIVEC) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_C
 #endif
 
 #if ARCH_PPC
-#if (HAVE_ALTIVEC || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
-#undef COMPILE_C
+#if HAVE_ALTIVEC || defined (RUNTIME_CPUDETECT)
 #define COMPILE_ALTIVEC
 #endif
 #endif //ARCH_PPC
@@ -1637,8 +1636,8 @@ static void globalInit(void){
 
 static SwsFunc getSwsFunc(int flags){
 
-#if defined(RUNTIME_CPUDETECT) && CONFIG_GPL
-#if ARCH_X86
+#if defined(RUNTIME_CPUDETECT)
+#if ARCH_X86 && CONFIG_GPL
     // ordered per speed fastest first
     if (flags & SWS_CPU_CAPS_MMX2)
         return swScale_MMX2;
@@ -1657,7 +1656,7 @@ static SwsFunc getSwsFunc(int flags){
         return swScale_C;
 #endif
     return swScale_C;
-#endif /* ARCH_X86 */
+#endif /* ARCH_X86 && CONFIG_GPL */
 #else //RUNTIME_CPUDETECT
 #if   HAVE_MMX2
     return swScale_MMX2;
@@ -2194,7 +2193,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         __asm__ volatile("emms\n\t"::: "memory");
 #endif
 
-#if !defined(RUNTIME_CPUDETECT) || !CONFIG_GPL //ensure that the flags match the compiled variant if cpudetect is off
+#if !defined(RUNTIME_CPUDETECT) //ensure that the flags match the compiled variant if cpudetect is off
     flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC|SWS_CPU_CAPS_BFIN);
 #if   HAVE_MMX2
     flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2;

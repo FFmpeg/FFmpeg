@@ -1699,7 +1699,6 @@ die_license_disabled gpl libfaad2
 die_license_disabled gpl libx264
 die_license_disabled gpl libxvid
 die_license_disabled gpl postproc
-die_license_disabled gpl swscale
 die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libamr_nb
