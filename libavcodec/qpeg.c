@@ -289,6 +289,10 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int decode_init(AVCodecContext *avctx){
     QpegContext * const a = avctx->priv_data;
 
+    if (!avctx->palctrl) {
+        av_log(avctx, AV_LOG_FATAL, "Missing required palette via palctrl\n");
+        return -1;
+    }
     a->avctx = avctx;
     avctx->pix_fmt= PIX_FMT_PAL8;
     a->refdata = av_malloc(avctx->width * avctx->height);
