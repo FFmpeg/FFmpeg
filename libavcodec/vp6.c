@@ -372,6 +372,8 @@ static void vp6_parse_coeff_huffman(VP56Context *s)
                 if (coeff_idx)
                     break;
             } else {
+                if (get_bits_count(&s->gb) >= s->gb.size_in_bits)
+                    return;
                 coeff = get_vlc2(&s->gb, vlc_coeff->table, 9, 3);
                 if (coeff == 0) {
                     if (coeff_idx) {
