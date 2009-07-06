@@ -218,35 +218,10 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         vcodec = vstream ? vstream->codec : NULL;
 
         if(amf_type == AMF_DATA_TYPE_BOOL) {
-            if(!strcmp(key, "stereo") && acodec) acodec->channels = num_val > 0 ? 2 : 1;
         } else if(amf_type == AMF_DATA_TYPE_NUMBER) {
             if(!strcmp(key, "duration")) s->duration = num_val * AV_TIME_BASE;
-//            else if(!strcmp(key, "width")  && vcodec && num_val > 0) vcodec->width  = num_val;
-//            else if(!strcmp(key, "height") && vcodec && num_val > 0) vcodec->height = num_val;
             else if(!strcmp(key, "videodatarate") && vcodec && 0 <= (int)(num_val * 1024.0))
                 vcodec->bit_rate = num_val * 1024.0;
-            else if(!strcmp(key, "audiocodecid") && acodec && 0 <= (int)num_val)
-                flv_set_audio_codec(s, astream, (int)num_val << FLV_AUDIO_CODECID_OFFSET);
-            else if(!strcmp(key, "videocodecid") && vcodec && 0 <= (int)num_val)
-                flv_set_video_codec(s, vstream, (int)num_val);
-            else if(!strcmp(key, "audiosamplesize") && acodec && 0 < (int)num_val) {
-                acodec->bits_per_coded_sample = num_val;
-                //we may have to rewrite a previously read codecid because FLV only marks PCM endianness.
-                if(num_val == 8 && (acodec->codec_id == CODEC_ID_PCM_S16BE || acodec->codec_id == CODEC_ID_PCM_S16LE))
-                    acodec->codec_id = CODEC_ID_PCM_S8;
-            }
-            else if(!strcmp(key, "audiosamplerate") && acodec && num_val >= 0) {
-                //some tools, like FLVTool2, write consistently approximate metadata sample rates
-                if (!acodec->sample_rate) {
-                    switch((int)num_val) {
-                        case 44000: acodec->sample_rate = 44100  ; break;
-                        case 22000: acodec->sample_rate = 22050  ; break;
-                        case 11000: acodec->sample_rate = 11025  ; break;
-                        case 5000 : acodec->sample_rate = 5512   ; break;
-                        default   : acodec->sample_rate = num_val;
-                    }
-                }
-            }
         }
     }
 
