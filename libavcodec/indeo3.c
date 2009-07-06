@@ -143,9 +143,9 @@ static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
 
 static av_cold void iv_free_func(Indeo3DecodeContext *s)
 {
-    av_free(s->buf);
-    av_free(s->ModPred);
-    av_free(s->corrector_type);
+    av_freep(&s->buf);
+    av_freep(&s->ModPred);
+    av_freep(&s->corrector_type);
 }
 
 struct ustr {
