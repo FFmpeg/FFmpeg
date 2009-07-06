@@ -47,4 +47,3 @@ version needs to be upgraded by passing --enable-version3 to configure.
 The nonfree external libraries libamrnb, libamrwb and libfaac can be hooked up
 in FFmpeg. You need to pass --enable-nonfree to configure to enable them. Employ
 this option with care as FFmpeg then becomes nonfree and unredistributable.
-Note that libfaac claims to be LGPL, but is not.
