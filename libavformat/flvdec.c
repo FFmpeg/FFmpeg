@@ -24,6 +24,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avstring.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
@@ -218,11 +219,16 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         vcodec = vstream ? vstream->codec : NULL;
 
         if(amf_type == AMF_DATA_TYPE_BOOL) {
+            av_strlcpy(str_val, num_val > 0 ? "true" : "false", sizeof(str_val));
+            av_metadata_set(&s->metadata, key, str_val);
         } else if(amf_type == AMF_DATA_TYPE_NUMBER) {
+            snprintf(str_val, sizeof(str_val), "%.f", num_val);
+            av_metadata_set(&s->metadata, key, str_val);
             if(!strcmp(key, "duration")) s->duration = num_val * AV_TIME_BASE;
             else if(!strcmp(key, "videodatarate") && vcodec && 0 <= (int)(num_val * 1024.0))
                 vcodec->bit_rate = num_val * 1024.0;
-        }
+        } else if (amf_type == AMF_DATA_TYPE_STRING)
+          av_metadata_set(&s->metadata, key, str_val);
     }
 
     return 0;
