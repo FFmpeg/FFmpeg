@@ -975,9 +975,10 @@ static av_cold int indeo3_decode_init(AVCodecContext *avctx)
     return ret;
 }
 
-static int iv_decode_frame(Indeo3DecodeContext *s,
+static int iv_decode_frame(AVCodecContext *avctx,
                            const uint8_t *buf, int buf_size)
 {
+    Indeo3DecodeContext *s = avctx->priv_data;
     unsigned int image_width, image_height,
                  chroma_width, chroma_height;
     unsigned long flags, cb_offset, data_size,
@@ -994,7 +995,7 @@ static int iv_decode_frame(Indeo3DecodeContext *s,
     image_height = bytestream_get_le16(&buf_pos);
     image_width  = bytestream_get_le16(&buf_pos);
 
-    if(avcodec_check_dimensions(NULL, image_width, image_height))
+    if(avcodec_check_dimensions(avctx, image_width, image_height))
         return -1;
 
     chroma_height = ((image_height >> 2) + 3) & 0x7ffc;
@@ -1070,7 +1071,7 @@ static int indeo3_decode_frame(AVCodecContext *avctx,
     uint8_t *src, *dest;
     int y;
 
-    if (iv_decode_frame(s, buf, buf_size) < 0)
+    if (iv_decode_frame(avctx, buf, buf_size) < 0)
         return -1;
 
     if(s->frame.data[0])
