@@ -633,7 +633,7 @@ static int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb)
     DO_2BITS(asf->packet_flags >> 3, padsize, 0); // padding length
 
     //the following checks prevent overflows and infinite loops
-    if(packet_length >= (1U<<29)){
+    if(!packet_length || packet_length >= (1U<<29)){
         av_log(s, AV_LOG_ERROR, "invalid packet_length %d at:%"PRId64"\n", packet_length, url_ftell(pb));
         return -1;
     }
