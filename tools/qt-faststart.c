@@ -1,5 +1,5 @@
 /*
- * qt-faststart.c, v0.1
+ * qt-faststart.c, v0.2
  * by Mike Melanson (melanson@pcisys.net)
  * This file is placed in the public domain. Use the program however you
  * see fit.
@@ -64,6 +64,7 @@
 #define WIDE_ATOM QT_ATOM('w', 'i', 'd', 'e')
 #define PICT_ATOM QT_ATOM('P', 'I', 'C', 'T')
 #define FTYP_ATOM QT_ATOM('f', 't', 'y', 'p')
+#define UUID_ATOM QT_ATOM('u', 'u', 'i', 'd')
 
 #define CMOV_ATOM QT_ATOM('c', 'm', 'o', 'v')
 #define STCO_ATOM QT_ATOM('s', 't', 'c', 'o')
@@ -119,6 +120,7 @@ int main(int argc, char *argv[])
             (atom_type != SKIP_ATOM) &&
             (atom_type != WIDE_ATOM) &&
             (atom_type != PICT_ATOM) &&
+            (atom_type != UUID_ATOM) &&
             (atom_type != FTYP_ATOM)) {
             printf ("encountered non-QT top-level atom (is this a Quicktime file?)\n");
             break;
