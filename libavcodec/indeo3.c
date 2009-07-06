@@ -107,6 +107,7 @@ static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
     unsigned int bufsize = luma_pixels * 2 + luma_width * 3 +
                           (chroma_pixels   + chroma_width) * 4;
 
+    av_freep(&s->buf);
     if(!(s->buf = av_malloc(bufsize)))
         return AVERROR(ENOMEM);
     s->iv_frame[0].y_w = s->iv_frame[1].y_w = luma_width;
@@ -997,6 +998,17 @@ static int iv_decode_frame(AVCodecContext *avctx,
 
     if(avcodec_check_dimensions(avctx, image_width, image_height))
         return -1;
+    if (image_width != avctx->width || image_height != avctx->height) {
+        int ret;
+        avcodec_set_dimensions(avctx, image_width, image_height);
+        s->width  = avctx->width;
+        s->height = avctx->height;
+        ret = iv_alloc_frames(s);
+        if (ret < 0) {
+            s->width = s->height = 0;
+            return ret;
+        }
+    }
 
     chroma_height = ((image_height >> 2) + 3) & 0x7ffc;
     chroma_width = ((image_width >> 2) + 3) & 0x7ffc;
