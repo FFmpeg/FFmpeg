@@ -2291,7 +2291,6 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
     uint8_t *header_start[3];
     int header_len[3];
     int i;
-    int ret;
 
     s->theora = 1;
 
@@ -2344,8 +2343,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
         break;
   }
 
-    ret = vp3_decode_init(avctx);
-    return ret;
+    return vp3_decode_init(avctx);
 }
 
 AVCodec theora_decoder = {
