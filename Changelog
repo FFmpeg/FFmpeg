@@ -26,6 +26,7 @@ version <next>:
 - DPX image decoder
 - Electronic Arts Madcow decoder
 - DivX (XSUB) subtitle encoder
+- nonfree libamr support for AMR-NB/WB decoding/encoding removed
 
 
 
