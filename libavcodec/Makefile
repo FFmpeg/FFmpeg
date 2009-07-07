@@ -382,8 +382,8 @@ OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o
 
 # external codec libraries
-OBJS-$(CONFIG_LIBDIRAC_DECODER)        += libdiracdec.o
-OBJS-$(CONFIG_LIBDIRAC_ENCODER)        += libdiracenc.o libdirac_libschro.o
+OBJS-$(CONFIG_LIBDIRAC_DECODER)           += libdiracdec.o
+OBJS-$(CONFIG_LIBDIRAC_ENCODER)           += libdiracenc.o libdirac_libschro.o
 OBJS-$(CONFIG_LIBFAAC_ENCODER)            += libfaac.o
 OBJS-$(CONFIG_LIBFAAD_DECODER)            += libfaad.o
 OBJS-$(CONFIG_LIBGSM_DECODER)             += libgsm.o
@@ -395,8 +395,8 @@ OBJS-$(CONFIG_LIBOPENCORE_AMRNB_DECODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRNB_ENCODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRWB_ENCODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENJPEG_DECODER)        += libopenjpeg.o
-OBJS-$(CONFIG_LIBSCHROEDINGER_DECODER) += libschroedingerdec.o libschroedinger.o libdirac_libschro.o
-OBJS-$(CONFIG_LIBSCHROEDINGER_ENCODER) += libschroedingerenc.o libschroedinger.o libdirac_libschro.o
+OBJS-$(CONFIG_LIBSCHROEDINGER_DECODER)    += libschroedingerdec.o libschroedinger.o libdirac_libschro.o
+OBJS-$(CONFIG_LIBSCHROEDINGER_ENCODER)    += libschroedingerenc.o libschroedinger.o libdirac_libschro.o
 OBJS-$(CONFIG_LIBSPEEX_DECODER)           += libspeexdec.o
 OBJS-$(CONFIG_LIBTHEORA_ENCODER)          += libtheoraenc.o
 OBJS-$(CONFIG_LIBVORBIS_ENCODER)          += libvorbis.o
