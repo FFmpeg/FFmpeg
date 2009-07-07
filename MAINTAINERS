@@ -28,7 +28,7 @@ Commandline utility code:
   cmdutils.c, cmdutils.h                Michael Niedermayer
 
 QuickTime faststart:
-  qt-faststart.c                        Mike Melanson
+  tools/qt-faststart.c                  Baptiste Coudurier
 
 
 Miscellaneous Areas
