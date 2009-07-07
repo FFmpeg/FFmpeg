@@ -17,9 +17,7 @@ explicitly requested by passing the appropriate flags to @file{./configure}.
 @section AMR
 
 AMR comes in two different flavors, wideband and narrowband. FFmpeg can make
-use of the AMR wideband (floating-point mode) and the AMR narrowband
-(floating-point mode) reference decoders and encoders (libamr) as well as
-the OpenCORE libraries for AMR-NB decoding/encoding and AMR-WB decoding.
+use of the OpenCORE libraries for AMR-NB decoding/encoding and AMR-WB decoding.
 
 @subsection OpenCORE
 
@@ -32,17 +30,6 @@ Note that OpenCORE is under the Apache License 2.0 (see
 incompatible with the LGPL version 2.1 and GPL version 2. You have to
 upgrade FFmpeg's license to LGPL version 3 (or if you have enabled
 GPL components, GPL version 3) to use it.
-
-@subsection libamr
-
-Go to @url{http://www.penguin.cz/~utx/amr} and follow the instructions for
-installing the libraries. Then pass @code{--enable-libamr-nb} and/or
-@code{--enable-libamr-wb} to configure to enable the libraries.
-
-Note that libamr is copyrighted without any sort of license grant. This means
-that you can use it if you legally obtained it but you are not allowed to
-redistribute it in any way. @strong{Any FFmpeg binaries with libamr support
-you create are non-free and unredistributable!}
 
 
 @chapter Supported File Formats and Codecs
@@ -537,10 +524,9 @@ following image formats are supported:
     @tab Used in Westwood Studios games like Command and Conquer.
 @item ADPCM Yamaha           @tab  X  @tab  X
 @item AMR-NB                 @tab  E  @tab  E
-    @tab supported through external libraries libamrnb and libopencore-amrnb
-@item AMR-WB                 @tab  E  @tab  E
-    @tab decoding supported through external libraries libamrwb and libopencore-amrwb,
-         encoding supported through external library libamrwb
+    @tab supported through external library libopencore-amrnb
+@item AMR-WB                 @tab     @tab  E
+    @tab decoding supported through external library libopencore-amrwb
 @item Apple lossless audio   @tab  X  @tab  X
     @tab QuickTime fourcc 'alac'
 @item Atrac 3                @tab     @tab  X

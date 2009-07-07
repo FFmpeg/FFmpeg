@@ -154,8 +154,6 @@ show_help(){
   echo "External library support:"
   echo "  --enable-avisynth        enable reading of AVISynth script files [no]"
   echo "  --enable-bzlib           enable bzlib [autodetect]"
-  echo "  --enable-libamr-nb       enable libamr-nb floating point audio codec [no]"
-  echo "  --enable-libamr-wb       enable libamr-wb floating point audio codec [no]"
   echo "  --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]"
   echo "  --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]"
   echo "  --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394"
@@ -794,8 +792,6 @@ CONFIG_LIST="
     gray
     hardcoded_tables
     ipv6
-    libamr_nb
-    libamr_wb
     libdc1394
     libdirac
     libfaac
@@ -1115,10 +1111,6 @@ zmbv_encoder_select="zlib"
 h264_parser_select="golomb"
 
 # external libraries
-libamr_nb_decoder_deps="libamr_nb"
-libamr_nb_encoder_deps="libamr_nb"
-libamr_wb_decoder_deps="libamr_wb"
-libamr_wb_encoder_deps="libamr_wb"
 libdirac_decoder_deps="libdirac !libschroedinger"
 libdirac_encoder_deps="libdirac"
 libfaac_encoder_deps="libfaac"
@@ -1792,8 +1784,6 @@ die_license_disabled gpl libxvid
 die_license_disabled gpl postproc
 die_license_disabled gpl x11grab
 
-die_license_disabled nonfree libamr_nb
-die_license_disabled nonfree libamr_wb
 die_license_disabled nonfree libfaac
 
 die_license_disabled version3 libopencore_amrnb
@@ -2097,8 +2087,6 @@ done
 
 # these are off by default, so fail if requested and not available
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
-enabled libamr_nb  && require  libamrnb amrnb/interf_dec.h Decoder_Interface_init -lamrnb -lm
-enabled libamr_wb  && require  libamrwb amrwb/dec_if.h D_IF_init -lamrwb -lm
 enabled libdirac   && add_cflags $(pkg-config --cflags dirac) &&
                       require  libdirac libdirac_decoder/dirac_parser.h dirac_decoder_init -ldirac_decoder &&
                       require  libdirac libdirac_encoder/dirac_encoder.h dirac_encoder_init -ldirac_encoder
@@ -2409,8 +2397,6 @@ if enabled sdl_too_old; then
 fi
 echo "Sun medialib support      ${mlib-no}"
 echo "AVISynth enabled          ${avisynth-no}"
-echo "libamr-nb support         ${libamr_nb-no}"
-echo "libamr-wb support         ${libamr_wb-no}"
 echo "libdc1394 support         ${libdc1394-no}"
 echo "libdirac enabled          ${libdirac-no}"
 echo "libfaac enabled           ${libfaac-no}"

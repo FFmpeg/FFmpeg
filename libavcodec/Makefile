@@ -382,8 +382,6 @@ OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o
 
 # external codec libraries
-OBJS-$(CONFIG_LIBAMR_NB)               += libamr.o
-OBJS-$(CONFIG_LIBAMR_WB)               += libamr.o
 OBJS-$(CONFIG_LIBDIRAC_DECODER)        += libdiracdec.o
 OBJS-$(CONFIG_LIBDIRAC_ENCODER)        += libdiracenc.o libdirac_libschro.o
 OBJS-$(CONFIG_LIBFAAC)                 += libfaac.o
