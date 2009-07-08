@@ -583,6 +583,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
     if (!(avctx->flags & CODEC_FLAG_QSCALE)) {
         float ratio = avctx->bit_rate * 1024.0f / avctx->sample_rate / avctx->frame_bits;
         s->lambda *= ratio;
+        s->lambda = fminf(s->lambda, 65536.f);
     }
 
     if (avctx->frame_bits > 6144*avctx->channels)

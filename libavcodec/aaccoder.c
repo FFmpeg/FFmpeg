@@ -457,15 +457,6 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
     }
 }
 
-static void encode_window_bands_info_fixed(AACEncContext *s,
-                                           SingleChannelElement *sce,
-                                           int win, int group_len,
-                                           const float lambda)
-{
-    encode_window_bands_info(s, sce, win, group_len, 1.0f);
-}
-
-
 typedef struct TrellisPath {
     float cost;
     int prev;
@@ -700,7 +691,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                                                        sce->ics.swb_sizes[g],
                                                        sce->sf_idx[w*16+g],
                                                        ESC_BT,
-                                                       1.0,
+                                                       lambda,
                                                        INFINITY,
                                                        &b);
                             bb += b;
@@ -710,7 +701,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                             minbits = bb;
                         }
                     }
-                    dists[w*16+g] = mindist - minbits;
+                    dists[w*16+g] = (mindist - minbits) / lambda;
                     bits = minbits;
                     if (prev != -1) {
                         bits += ff_aac_scalefactor_bits[sce->sf_idx[w*16+g] - prev + SCALE_DIFF_ZERO];
@@ -870,12 +861,12 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
                                                sce->ics.swb_sizes[g],
                                                scf,
                                                ESC_BT,
-                                               1.0,
+                                               lambda,
                                                INFINITY,
                                                &b);
                     dist -= b;
                 }
-                dist *= 1.0f/512.0f;
+                dist *= 1.0f / 512.0f / lambda;
                 quant_max = quant(maxq[w*16+g], ff_aac_pow2sf_tab[200 - scf + SCALE_ONE_POS - SCALE_DIV_512]);
                 if (quant_max >= 8191) { // too much, return to the previous quantizer
                     sce->sf_idx[w*16+g] = prev_scf;
@@ -1019,7 +1010,7 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
 AACCoefficientsEncoder ff_aac_coders[] = {
     {
         search_for_quantizers_faac,
-        encode_window_bands_info_fixed,
+        encode_window_bands_info,
         quantize_and_encode_band,
 //        search_for_ms,
     },
