@@ -74,6 +74,9 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
     case PIX_FMT_RGB24:
         s->pixel_size = 3;
         break;
+    case PIX_FMT_ARGB:
+        s->pixel_size = 4;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported colorspace.\n");
         break;
@@ -325,6 +328,6 @@ AVCodec qtrle_encoder = {
     qtrle_encode_init,
     qtrle_encode_frame,
     qtrle_encode_end,
-    .pix_fmts = (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_NONE},
+    .pix_fmts = (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_ARGB, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
 };
