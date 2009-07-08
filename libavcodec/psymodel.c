@@ -105,16 +105,14 @@ void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx,
 {
     int ch, i;
     if (ctx->fstate) {
-        for (ch = 0; ch < channels; ch++) {
+        for (ch = 0; ch < channels; ch++)
             ff_iir_filter(ctx->fcoeffs, ctx->fstate[tag+ch], ctx->avctx->frame_size,
                           audio + ch, ctx->avctx->channels,
                           dest  + ch, ctx->avctx->channels);
-        }
     } else {
-        for (ch = 0; ch < channels; ch++) {
+        for (ch = 0; ch < channels; ch++)
             for (i = 0; i < ctx->avctx->frame_size; i++)
                 dest[i*ctx->avctx->channels + ch] = audio[i*ctx->avctx->channels + ch];
-        }
     }
 }
 

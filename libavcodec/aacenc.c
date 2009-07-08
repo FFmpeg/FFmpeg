@@ -276,9 +276,8 @@ static void put_ics_info(AACEncContext *s, IndividualChannelStream *info)
         put_bits(&s->pb, 1, 0);            // no prediction
     } else {
         put_bits(&s->pb, 4, info->max_sfb);
-        for (w = 1; w < 8; w++) {
+        for (w = 1; w < 8; w++)
             put_bits(&s->pb, 1, !info->group_len[w]);
-        }
     }
 }
 
@@ -291,12 +290,10 @@ static void encode_ms_info(PutBitContext *pb, ChannelElement *cpe)
     int i, w;
 
     put_bits(pb, 2, cpe->ms_mode);
-    if (cpe->ms_mode == 1) {
-        for (w = 0; w < cpe->ch[0].ics.num_windows; w += cpe->ch[0].ics.group_len[w]) {
+    if (cpe->ms_mode == 1)
+        for (w = 0; w < cpe->ch[0].ics.num_windows; w += cpe->ch[0].ics.group_len[w])
             for (i = 0; i < cpe->ch[0].ics.max_sfb; i++)
                 put_bits(pb, 1, cpe->ms_mask[w*16 + i]);
-        }
-    }
 }
 
 /**
@@ -324,7 +321,8 @@ static void adjust_frame_information(AACEncContext *apc, ChannelElement *cpe, in
                 }
                 start += ics->swb_sizes[g];
             }
-            for (cmaxsfb = ics->num_swb; cmaxsfb > 0 && cpe->ch[ch].zeroes[w+cmaxsfb-1]; cmaxsfb--);
+            for (cmaxsfb = ics->num_swb; cmaxsfb > 0 && cpe->ch[ch].zeroes[w+cmaxsfb-1]; cmaxsfb--)
+                ;
             maxsfb = FFMAX(maxsfb, cmaxsfb);
         }
         ics->max_sfb = maxsfb;
@@ -352,7 +350,8 @@ static void adjust_frame_information(AACEncContext *apc, ChannelElement *cpe, in
         ics1->max_sfb = ics0->max_sfb;
         for (w = 0; w < ics0->num_windows*16; w += 16)
             for (i = 0; i < ics0->max_sfb; i++)
-                if (cpe->ms_mask[w+i]) msc++;
+                if (cpe->ms_mask[w+i])
+                    msc++;
         if (msc == 0 || ics0->max_sfb == 0)
             cpe->ms_mode = 0;
         else
@@ -367,9 +366,8 @@ static void encode_band_info(AACEncContext *s, SingleChannelElement *sce)
 {
     int w;
 
-    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
+    for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w])
         s->coder->encode_window_bands_info(s, sce, w, sce->ics.group_len[w], s->lambda);
-    }
 }
 
 /**
@@ -427,13 +425,12 @@ static void encode_spectral_coeffs(AACEncContext *s, SingleChannelElement *sce)
                 start += sce->ics.swb_sizes[i];
                 continue;
             }
-            for (w2 = w; w2 < w + sce->ics.group_len[w]; w2++) {
+            for (w2 = w; w2 < w + sce->ics.group_len[w]; w2++)
                 s->coder->quantize_and_encode_band(s, &s->pb, sce->coeffs + start + w2*128,
                                                    sce->ics.swb_sizes[i],
                                                    sce->sf_idx[w*16 + i],
                                                    sce->band_type[w*16 + i],
                                                    s->lambda);
-            }
             start += sce->ics.swb_sizes[i];
         }
     }
@@ -514,9 +511,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
     }
 
     init_put_bits(&s->pb, frame, buf_size*8);
-    if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT)) {
+    if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
         put_bitstream_info(avctx, s, LIBAVCODEC_IDENT);
-    }
     start_ch = 0;
     memset(chan_el_counter, 0, sizeof(chan_el_counter));
     for (i = 0; i < chan_map[0]; i++) {
@@ -526,7 +522,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
         cpe      = &s->cpe[i];
         samples2 = samples + start_ch;
         la       = samples2 + 1024 * avctx->channels + start_ch;
-        if (!data) la = NULL;
+        if (!data)
+            la = NULL;
         for (j = 0; j < chans; j++) {
             IndividualChannelStream *ics = &cpe->ch[j].ics;
             int k;
@@ -588,10 +585,9 @@ static int aac_encode_frame(AVCodecContext *avctx,
         s->lambda *= ratio;
     }
 
-    if (avctx->frame_bits > 6144*avctx->channels) {
+    if (avctx->frame_bits > 6144*avctx->channels)
         av_log(avctx, AV_LOG_ERROR, "input buffer violation %d > %d.\n",
                avctx->frame_bits, 6144*avctx->channels);
-    }
 
     if (!data)
         s->last_frame = 1;
