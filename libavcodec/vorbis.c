@@ -45,6 +45,9 @@ unsigned int ff_vorbis_nth_root(unsigned int x, unsigned int n) {   // x^(1/n)
 
 // Generate vlc codes from vorbis huffman code lengths
 
+// the two bits[p] > 32 checks should be redundant, all calling code should
+// already ensure that, but since it allows overwriting the stack it seems
+// reasonable to check redundantly.
 int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num) {
     uint_fast32_t exit_at_level[33]={404,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -63,6 +66,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num) {
     }
 
     codes[p]=0;
+    if (bits[p] > 32) return 1;
     for(i=0;i<bits[p];++i) {
         exit_at_level[i+1]=1<<i;
     }
@@ -79,6 +83,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num) {
     ++p;
 
     for(;p<num;++p) {
+        if (bits[p] > 32) return 1;
         if (bits[p]==0) continue;
         // find corresponding exit(node which the tree can grow further from)
         for(i=bits[p];i>0;--i) {
