@@ -540,6 +540,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
         }
         start_ch += chans;
     }
+    do {
+        int frame_bits;
     init_put_bits(&s->pb, frame, buf_size*8);
     if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
         put_bitstream_info(avctx, s, LIBAVCODEC_IDENT);
@@ -586,6 +588,14 @@ static int aac_encode_frame(AVCodecContext *avctx,
         start_ch += chans;
     }
 
+        frame_bits = put_bits_count(&s->pb);
+        if (frame_bits <= 6144 * avctx->channels - 3)
+            break;
+
+        s->lambda *= avctx->bit_rate * 1024.0f / avctx->sample_rate / frame_bits;
+
+    } while (1);
+
     put_bits(&s->pb, 3, TYPE_END);
     flush_put_bits(&s->pb);
     avctx->frame_bits = put_bits_count(&s->pb);
@@ -596,10 +606,6 @@ static int aac_encode_frame(AVCodecContext *avctx,
         s->lambda *= ratio;
         s->lambda = fminf(s->lambda, 65536.f);
     }
-
-    if (avctx->frame_bits > 6144*avctx->channels)
-        av_log(avctx, AV_LOG_ERROR, "input buffer violation %d > %d.\n",
-               avctx->frame_bits, 6144*avctx->channels);
 
     if (!data)
         s->last_frame = 1;
