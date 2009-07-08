@@ -106,7 +106,7 @@ static av_cold float calc_bark(float f)
 static av_cold float ath(float f, float add)
 {
     f /= 1000.0f;
-    return   3.64 * pow(f, -0.8)
+    return    3.64 * pow(f, -0.8)
             - 6.8  * exp(-0.6  * (f - 3.4) * (f - 3.4))
             + 6.0  * exp(-0.15 * (f - 8.7) * (f - 8.7))
             + (0.6 + 0.04 * add) * 0.001 * f * f * f * f;
@@ -181,11 +181,11 @@ static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
                                        int channel, int prev_type)
 {
     int i, j;
-    int br = ctx->avctx->bit_rate / ctx->avctx->channels;
-    int attack_ratio = br <= 16000 ? 18 : 10;
+    int br               = ctx->avctx->bit_rate / ctx->avctx->channels;
+    int attack_ratio     = br <= 16000 ? 18 : 10;
     Psy3gppContext *pctx = (Psy3gppContext*) ctx->model_priv_data;
-    Psy3gppChannel *pch = &pctx->ch[channel];
-    uint8_t grouping = 0;
+    Psy3gppChannel *pch  = &pctx->ch[channel];
+    uint8_t grouping     = 0;
     FFPsyWindowInfo wi;
 
     memset(&wi, 0, sizeof(wi));
@@ -199,12 +199,12 @@ static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
                 v = iir_filter(audio[(i*128+j)*ctx->avctx->channels], pch->iir_state);
                 sum += v*v;
             }
-            s[i] = sum;
+            s[i]  = sum;
             sum2 += sum;
         }
         for (i = 0; i < 8; i++) {
             if (s[i] > pch->win_energy * attack_ratio) {
-                attack_n = i + 1;
+                attack_n        = i + 1;
                 switch_to_eight = 1;
                 break;
             }
@@ -255,16 +255,16 @@ static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
 /**
  * Calculate band thresholds as suggested in 3GPP TS26.403
  */
-static void psy_3gpp_analyze(FFPsyContext *ctx, int channel, const float *coefs,
-                             FFPsyWindowInfo *wi)
+static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
+                             const float *coefs, FFPsyWindowInfo *wi)
 {
     Psy3gppContext *pctx = (Psy3gppContext*) ctx->model_priv_data;
-    Psy3gppChannel *pch = &pctx->ch[channel];
+    Psy3gppChannel *pch  = &pctx->ch[channel];
     int start = 0;
     int i, w, g;
-    const int num_bands = ctx->num_bands[wi->num_windows == 8];
+    const int num_bands       = ctx->num_bands[wi->num_windows == 8];
     const uint8_t* band_sizes = ctx->bands[wi->num_windows == 8];
-    Psy3gppCoeffs *coeffs = &pctx->psy_coef[wi->num_windows == 8];
+    Psy3gppCoeffs *coeffs     = &pctx->psy_coef[wi->num_windows == 8];
 
     //calculate energies, initial thresholds and related values - 5.4.2 "Threshold Calculation"
     for (w = 0; w < wi->num_windows*16; w += 16) {
@@ -274,8 +274,8 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel, const float *coefs,
             for (i = 0; i < band_sizes[g]; i++)
                 band->energy += coefs[start+i] * coefs[start+i];
             band->energy *= 1.0f / (512*512);
-            band->thr = band->energy * 0.001258925f;
-            start += band_sizes[g];
+            band->thr     = band->energy * 0.001258925f;
+            start        += band_sizes[g];
 
             ctx->psy_bands[channel*PSY_MAX_BANDS+w+g].energy = band->energy;
         }
