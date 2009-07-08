@@ -36,6 +36,7 @@ OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 
 # decoders/encoders/hardware accelerators
 OBJS-$(CONFIG_AAC_DECODER)             += aac.o aactab.o mpeg4audio.o aac_parser.o aac_ac3_parser.o
+OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacpsy.o aactab.o psymodel.o iirfilter.o mdct.o fft.o mpeg4audio.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
 OBJS-$(CONFIG_AC3_DECODER)             += eac3dec.o ac3dec.o ac3tab.o ac3dec_data.o ac3.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o ac3tab.o ac3.o

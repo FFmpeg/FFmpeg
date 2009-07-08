@@ -27,6 +27,7 @@ version <next>:
 - Electronic Arts Madcow decoder
 - DivX (XSUB) subtitle encoder
 - nonfree libamr support for AMR-NB/WB decoding/encoding removed
+- Experimental AAC encoder
 
 
 
