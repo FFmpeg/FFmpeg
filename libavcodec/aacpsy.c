@@ -112,7 +112,7 @@ static av_cold float ath(float f, float add)
             + (0.6 + 0.04 * add) * 0.001 * f * f * f * f;
 }
 
-static av_cold int psy_3gpp_init(FFPsyContext *ctx){
+static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     Psy3gppContext *pctx;
     float barks[1024];
     int i, j, g, start;
@@ -121,26 +121,26 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx){
     ctx->model_priv_data = av_mallocz(sizeof(Psy3gppContext));
     pctx = (Psy3gppContext*) ctx->model_priv_data;
 
-    for(i = 0; i < 1024; i++)
+    for (i = 0; i < 1024; i++)
         barks[i] = calc_bark(i * ctx->avctx->sample_rate / 2048.0);
     minath = ath(3410, ATH_ADD);
-    for(j = 0; j < 2; j++){
+    for (j = 0; j < 2; j++) {
         Psy3gppCoeffs *coeffs = &pctx->psy_coef[j];
         i = 0;
         prev = 0.0;
-        for(g = 0; g < ctx->num_bands[j]; g++){
+        for (g = 0; g < ctx->num_bands[j]; g++) {
             i += ctx->bands[j][g];
             coeffs->barks[g] = (barks[i - 1] + prev) / 2.0;
             prev = barks[i - 1];
         }
-        for(g = 0; g < ctx->num_bands[j] - 1; g++){
+        for (g = 0; g < ctx->num_bands[j] - 1; g++) {
             coeffs->spread_low[g] = pow(10.0, -(coeffs->barks[g+1] - coeffs->barks[g]) * PSY_3GPP_SPREAD_LOW);
             coeffs->spread_hi [g] = pow(10.0, -(coeffs->barks[g+1] - coeffs->barks[g]) * PSY_3GPP_SPREAD_HI);
         }
         start = 0;
-        for(g = 0; g < ctx->num_bands[j]; g++){
+        for (g = 0; g < ctx->num_bands[j]; g++) {
             minscale = ath(ctx->avctx->sample_rate * start / 1024.0, ATH_ADD);
-            for(i = 1; i < ctx->bands[j][g]; i++){
+            for (i = 1; i < ctx->bands[j][g]; i++) {
                 minscale = fminf(minscale, ath(ctx->avctx->sample_rate * (start + i) / 1024.0 / 2.0, ATH_ADD));
             }
             coeffs->ath[g] = minscale - minath;
@@ -189,21 +189,21 @@ static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
     FFPsyWindowInfo wi;
 
     memset(&wi, 0, sizeof(wi));
-    if(la){
+    if (la) {
         float s[8], v;
         int switch_to_eight = 0;
         float sum = 0.0, sum2 = 0.0;
         int attack_n = 0;
-        for(i = 0; i < 8; i++){
-            for(j = 0; j < 128; j++){
+        for (i = 0; i < 8; i++) {
+            for (j = 0; j < 128; j++) {
                 v = iir_filter(audio[(i*128+j)*ctx->avctx->channels], pch->iir_state);
                 sum += v*v;
             }
             s[i] = sum;
             sum2 += sum;
         }
-        for(i = 0; i < 8; i++){
-            if(s[i] > pch->win_energy * attack_ratio){
+        for (i = 0; i < 8; i++) {
+            if (s[i] > pch->win_energy * attack_ratio) {
                 attack_n = i + 1;
                 switch_to_eight = 1;
                 break;
@@ -212,7 +212,7 @@ static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
         pch->win_energy = pch->win_energy*7/8 + sum2/64;
 
         wi.window_type[1] = prev_type;
-        switch(prev_type){
+        switch (prev_type) {
         case ONLY_LONG_SEQUENCE:
             wi.window_type[0] = switch_to_eight ? LONG_START_SEQUENCE : ONLY_LONG_SEQUENCE;
             break;
@@ -229,21 +229,21 @@ static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
             break;
         }
         pch->next_grouping = window_grouping[attack_n];
-    }else{
-        for(i = 0; i < 3; i++)
+    } else {
+        for (i = 0; i < 3; i++)
             wi.window_type[i] = prev_type;
         grouping = (prev_type == EIGHT_SHORT_SEQUENCE) ? window_grouping[0] : 0;
     }
 
     wi.window_shape   = 1;
-    if(wi.window_type[0] != EIGHT_SHORT_SEQUENCE){
+    if (wi.window_type[0] != EIGHT_SHORT_SEQUENCE) {
         wi.num_windows = 1;
         wi.grouping[0] = 1;
-    }else{
+    } else {
         int lastgrp = 0;
         wi.num_windows = 8;
-        for(i = 0; i < 8; i++){
-            if(!((grouping >> i) & 1))
+        for (i = 0; i < 8; i++) {
+            if (!((grouping >> i) & 1))
                 lastgrp = i;
             wi.grouping[lastgrp]++;
         }
@@ -267,11 +267,11 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel, const float *coefs,
     Psy3gppCoeffs *coeffs = &pctx->psy_coef[wi->num_windows == 8];
 
     //calculate energies, initial thresholds and related values - 5.4.2 "Threshold Calculation"
-    for(w = 0; w < wi->num_windows*16; w += 16){
-        for(g = 0; g < num_bands; g++){
+    for (w = 0; w < wi->num_windows*16; w += 16) {
+        for (g = 0; g < num_bands; g++) {
             Psy3gppBand *band = &pch->band[w+g];
             band->energy = 0.0f;
-            for(i = 0; i < band_sizes[g]; i++)
+            for (i = 0; i < band_sizes[g]; i++)
                 band->energy += coefs[start+i] * coefs[start+i];
             band->energy *= 1.0f / (512*512);
             band->thr = band->energy * 0.001258925f;
@@ -281,17 +281,17 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel, const float *coefs,
         }
     }
     //modify thresholds - spread, threshold in quiet - 5.4.3 "Spreaded Energy Calculation"
-    for(w = 0; w < wi->num_windows*16; w += 16){
+    for (w = 0; w < wi->num_windows*16; w += 16) {
         Psy3gppBand *band = &pch->band[w];
-        for(g = 1; g < num_bands; g++){
+        for (g = 1; g < num_bands; g++) {
             band[g].thr = FFMAX(band[g].thr, band[g-1].thr * coeffs->spread_low[g-1]);
         }
-        for(g = num_bands - 2; g >= 0; g--){
+        for (g = num_bands - 2; g >= 0; g--) {
             band[g].thr = FFMAX(band[g].thr, band[g+1].thr * coeffs->spread_hi [g]);
         }
-        for(g = 0; g < num_bands; g++){
+        for (g = 0; g < num_bands; g++) {
             band[g].thr_quiet = FFMAX(band[g].thr, coeffs->ath[g]);
-            if(wi->num_windows != 8 && wi->window_type[1] != EIGHT_SHORT_SEQUENCE){
+            if (wi->num_windows != 8 && wi->window_type[1] != EIGHT_SHORT_SEQUENCE) {
                 band[g].thr_quiet = fmaxf(PSY_3GPP_RPEMIN*band[g].thr_quiet,
                                           fminf(band[g].thr_quiet,
                                           PSY_3GPP_RPELEV*pch->prev_band[w+g].thr_quiet));

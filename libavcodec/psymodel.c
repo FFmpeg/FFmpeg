@@ -35,12 +35,12 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx,
     ctx->num_bands = av_malloc (sizeof(ctx->num_bands[0]) * num_lens);
     memcpy(ctx->bands,     bands,     sizeof(ctx->bands[0])     *  num_lens);
     memcpy(ctx->num_bands, num_bands, sizeof(ctx->num_bands[0]) *  num_lens);
-    switch(ctx->avctx->codec_id){
+    switch (ctx->avctx->codec_id) {
     case CODEC_ID_AAC:
         ctx->model = &ff_aac_psy_model;
         break;
     }
-    if(ctx->model->init)
+    if (ctx->model->init)
         return ctx->model->init(ctx);
     return 0;
 }
@@ -60,7 +60,7 @@ void ff_psy_set_band_info(FFPsyContext *ctx, int channel,
 
 av_cold void ff_psy_end(FFPsyContext *ctx)
 {
-    if(ctx->model->end)
+    if (ctx->model->end)
         ctx->model->end(ctx);
     av_freep(&ctx->bands);
     av_freep(&ctx->num_bands);
@@ -84,16 +84,16 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
     ctx = av_mallocz(sizeof(FFPsyPreprocessContext));
     ctx->avctx = avctx;
 
-    if(avctx->flags & CODEC_FLAG_QSCALE)
+    if (avctx->flags & CODEC_FLAG_QSCALE)
         cutoff_coeff = 1.0f / av_clip(1 + avctx->global_quality / FF_QUALITY_SCALE, 1, 8);
     else
         cutoff_coeff = avctx->bit_rate / (4.0f * avctx->sample_rate * avctx->channels);
 
     ctx->fcoeffs = ff_iir_filter_init_coeffs(FF_FILTER_TYPE_BUTTERWORTH, FF_FILTER_MODE_LOWPASS,
                                            FILT_ORDER, cutoff_coeff, 0.0, 0.0);
-    if(ctx->fcoeffs){
+    if (ctx->fcoeffs) {
         ctx->fstate = av_mallocz(sizeof(ctx->fstate[0]) * avctx->channels);
-        for(i = 0; i < avctx->channels; i++)
+        for (i = 0; i < avctx->channels; i++)
             ctx->fstate[i] = ff_iir_filter_init_state(FILT_ORDER);
     }
     return ctx;
@@ -104,15 +104,15 @@ void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx,
                        int tag, int channels)
 {
     int ch, i;
-    if(ctx->fstate){
-        for(ch = 0; ch < channels; ch++){
+    if (ctx->fstate) {
+        for (ch = 0; ch < channels; ch++) {
             ff_iir_filter(ctx->fcoeffs, ctx->fstate[tag+ch], ctx->avctx->frame_size,
                           audio + ch, ctx->avctx->channels,
                           dest  + ch, ctx->avctx->channels);
         }
-    }else{
-        for(ch = 0; ch < channels; ch++){
-            for(i = 0; i < ctx->avctx->frame_size; i++)
+    } else {
+        for (ch = 0; ch < channels; ch++) {
+            for (i = 0; i < ctx->avctx->frame_size; i++)
                 dest[i*ctx->avctx->channels + ch] = audio[i*ctx->avctx->channels + ch];
         }
     }
