@@ -499,7 +499,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     av_freep(&pd->buf);
     if (pb)
         url_fclose(pb);
-    *ic_ptr = NULL;
+    av_freep(ic_ptr);
     return err;
 
 }
