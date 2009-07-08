@@ -112,23 +112,26 @@ static int sox_read_header(AVFormatContext *s,
     st->codec->bit_rate              = st->codec->sample_rate *
                                        st->codec->bits_per_coded_sample *
                                        st->codec->channels;
+    st->codec->block_align           = st->codec->bits_per_coded_sample *
+                                       st->codec->channels / 8;
 
     av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     return 0;
 }
 
-#define MAX_SIZE 4096
+#define SOX_SAMPLES 1024
 
 static int sox_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
-    int ret;
+    int ret, size;
 
     if (url_feof(s->pb))
         return AVERROR_EOF;
 
-    ret = av_get_packet(s->pb, pkt, MAX_SIZE);
+    size = SOX_SAMPLES*s->streams[0]->codec->block_align;
+    ret = av_get_packet(s->pb, pkt, size);
     if (ret < 0)
         return AVERROR(EIO);
     pkt->stream_index = 0;
