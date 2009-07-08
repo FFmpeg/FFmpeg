@@ -542,51 +542,51 @@ static int aac_encode_frame(AVCodecContext *avctx,
     }
     do {
         int frame_bits;
-    init_put_bits(&s->pb, frame, buf_size*8);
-    if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
-        put_bitstream_info(avctx, s, LIBAVCODEC_IDENT);
-    start_ch = 0;
-    memset(chan_el_counter, 0, sizeof(chan_el_counter));
-    for (i = 0; i < chan_map[0]; i++) {
-        FFPsyWindowInfo* wi = windows + start_ch;
-        tag      = chan_map[i+1];
-        chans    = tag == TYPE_CPE ? 2 : 1;
-        cpe      = &s->cpe[i];
-        for (j = 0; j < chans; j++) {
-            s->coder->search_for_quantizers(avctx, s, &cpe->ch[j], s->lambda);
-        }
-        cpe->common_window = 0;
-        if (chans > 1
-            && wi[0].window_type[0] == wi[1].window_type[0]
-            && wi[0].window_shape   == wi[1].window_shape) {
+        init_put_bits(&s->pb, frame, buf_size*8);
+        if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
+            put_bitstream_info(avctx, s, LIBAVCODEC_IDENT);
+        start_ch = 0;
+        memset(chan_el_counter, 0, sizeof(chan_el_counter));
+        for (i = 0; i < chan_map[0]; i++) {
+            FFPsyWindowInfo* wi = windows + start_ch;
+            tag      = chan_map[i+1];
+            chans    = tag == TYPE_CPE ? 2 : 1;
+            cpe      = &s->cpe[i];
+            for (j = 0; j < chans; j++) {
+                s->coder->search_for_quantizers(avctx, s, &cpe->ch[j], s->lambda);
+            }
+            cpe->common_window = 0;
+            if (chans > 1
+                && wi[0].window_type[0] == wi[1].window_type[0]
+                && wi[0].window_shape   == wi[1].window_shape) {
 
-            cpe->common_window = 1;
-            for (j = 0; j < wi[0].num_windows; j++) {
-                if (wi[0].grouping[j] != wi[1].grouping[j]) {
-                    cpe->common_window = 0;
-                    break;
+                cpe->common_window = 1;
+                for (j = 0; j < wi[0].num_windows; j++) {
+                    if (wi[0].grouping[j] != wi[1].grouping[j]) {
+                        cpe->common_window = 0;
+                        break;
+                    }
                 }
             }
-        }
-        if (cpe->common_window && s->coder->search_for_ms)
-            s->coder->search_for_ms(s, cpe, s->lambda);
-        adjust_frame_information(s, cpe, chans);
-        put_bits(&s->pb, 3, tag);
-        put_bits(&s->pb, 4, chan_el_counter[tag]++);
-        if (chans == 2) {
-            put_bits(&s->pb, 1, cpe->common_window);
-            if (cpe->common_window) {
-                put_ics_info(s, &cpe->ch[0].ics);
-                encode_ms_info(&s->pb, cpe);
+            if (cpe->common_window && s->coder->search_for_ms)
+                s->coder->search_for_ms(s, cpe, s->lambda);
+            adjust_frame_information(s, cpe, chans);
+            put_bits(&s->pb, 3, tag);
+            put_bits(&s->pb, 4, chan_el_counter[tag]++);
+            if (chans == 2) {
+                put_bits(&s->pb, 1, cpe->common_window);
+                if (cpe->common_window) {
+                    put_ics_info(s, &cpe->ch[0].ics);
+                    encode_ms_info(&s->pb, cpe);
+                }
             }
+            for (j = 0; j < chans; j++) {
+                s->cur_channel = start_ch + j;
+                ff_psy_set_band_info(&s->psy, s->cur_channel, cpe->ch[j].coeffs, &wi[j]);
+                encode_individual_channel(avctx, s, &cpe->ch[j], cpe->common_window);
+            }
+            start_ch += chans;
         }
-        for (j = 0; j < chans; j++) {
-            s->cur_channel = start_ch + j;
-            ff_psy_set_band_info(&s->psy, s->cur_channel, cpe->ch[j].coeffs, &wi[j]);
-            encode_individual_channel(avctx, s, &cpe->ch[j], cpe->common_window);
-        }
-        start_ch += chans;
-    }
 
         frame_bits = put_bits_count(&s->pb);
         if (frame_bits <= 6144 * avctx->channels - 3)
