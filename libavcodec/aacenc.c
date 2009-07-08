@@ -485,6 +485,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
     int i, j, chans, tag, start_ch;
     const uint8_t *chan_map = aac_chan_configs[avctx->channels-1];
     int chan_el_counter[4];
+    FFPsyWindowInfo windows[avctx->channels];
 
     if (s->last_frame)
         return 0;
@@ -510,13 +511,9 @@ static int aac_encode_frame(AVCodecContext *avctx,
         return 0;
     }
 
-    init_put_bits(&s->pb, frame, buf_size*8);
-    if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
-        put_bitstream_info(avctx, s, LIBAVCODEC_IDENT);
     start_ch = 0;
-    memset(chan_el_counter, 0, sizeof(chan_el_counter));
     for (i = 0; i < chan_map[0]; i++) {
-        FFPsyWindowInfo wi[2];
+        FFPsyWindowInfo* wi = windows + start_ch;
         tag      = chan_map[i+1];
         chans    = tag == TYPE_CPE ? 2 : 1;
         cpe      = &s->cpe[i];
@@ -540,6 +537,20 @@ static int aac_encode_frame(AVCodecContext *avctx,
 
             s->cur_channel = start_ch + j;
             apply_window_and_mdct(avctx, s, &cpe->ch[j], samples2, j);
+        }
+        start_ch += chans;
+    }
+    init_put_bits(&s->pb, frame, buf_size*8);
+    if ((avctx->frame_number & 0xFF)==1 && !(avctx->flags & CODEC_FLAG_BITEXACT))
+        put_bitstream_info(avctx, s, LIBAVCODEC_IDENT);
+    start_ch = 0;
+    memset(chan_el_counter, 0, sizeof(chan_el_counter));
+    for (i = 0; i < chan_map[0]; i++) {
+        FFPsyWindowInfo* wi = windows + start_ch;
+        tag      = chan_map[i+1];
+        chans    = tag == TYPE_CPE ? 2 : 1;
+        cpe      = &s->cpe[i];
+        for (j = 0; j < chans; j++) {
             s->coder->search_for_quantizers(avctx, s, &cpe->ch[j], s->lambda);
         }
         cpe->common_window = 0;
