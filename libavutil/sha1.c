@@ -29,6 +29,8 @@ typedef struct AVSHA1 {
     uint64_t count;       ///< number of bytes in buffer
     uint8_t  buffer[64];  ///< 512-bit buffer of input values used in hash updating
     uint32_t state[8];    ///< current hash value
+    /** function used to update hash for 512-bit input block */
+    void     (*transform)(uint32_t *state, const uint8_t buffer[64]);
 } AVSHA1;
 
 const int av_sha1_size = sizeof(AVSHA1);
@@ -132,6 +134,7 @@ void av_sha1_init(AVSHA1* ctx)
     ctx->state[2] = 0x98BADCFE;
     ctx->state[3] = 0x10325476;
     ctx->state[4] = 0xC3D2E1F0;
+    ctx->transform = transform;
     ctx->count    = 0;
 }
 
@@ -145,16 +148,16 @@ void av_sha1_update(AVSHA1* ctx, const uint8_t* data, unsigned int len)
     for (i = 0; i < len; i++) {
         ctx->buffer[j++] = data[i];
         if (64 == j) {
-            transform(ctx->state, ctx->buffer);
+            ctx->transform(ctx->state, ctx->buffer);
             j = 0;
         }
     }
 #else
     if ((j + len) > 63) {
         memcpy(&ctx->buffer[j], data, (i = 64 - j));
-        transform(ctx->state, ctx->buffer);
+        ctx->transform(ctx->state, ctx->buffer);
         for (; i + 63 < len; i += 64)
-            transform(ctx->state, &data[i]);
+            ctx->transform(ctx->state, &data[i]);
         j = 0;
     } else
         i = 0;
