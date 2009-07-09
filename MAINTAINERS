@@ -106,6 +106,7 @@ Codecs:
   8svx.c                                Jaikrishnan Menon
   aasc.c                                Kostya Shishkov
   aac.[ch], aactab.[ch], aacdectab.h    Robert Swain
+  aacenc.* aaccoder.* aacpsy.*          Alex Converse
   ac3*                                  Justin Ruggles
   alacenc.c                             Jaikrishnan Menon
   apedec.c                              Kostya Shishkov
