@@ -56,7 +56,7 @@ struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType filt_type
     int i, j, size;
     FFIIRFilterCoeffs *c;
     double wa;
-    complex p[MAXORDER + 1];
+    double complex p[MAXORDER + 1];
 
     if(filt_type != FF_FILTER_TYPE_BUTTERWORTH || filt_mode != FF_FILTER_MODE_LOWPASS)
         return NULL;
@@ -78,7 +78,7 @@ struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType filt_type
     for(i = 1; i <= order; i++)
         p[i] = 0.0;
     for(i = 0; i < order; i++){
-        complex zp;
+        double complex zp;
         double th = (i + (order >> 1) + 0.5) * M_PI / order;
         zp = cexp(I*th) * wa;
         zp = (zp + 2.0) / (zp - 2.0);
