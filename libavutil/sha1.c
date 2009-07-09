@@ -25,9 +25,10 @@
 
 /** hash context */
 typedef struct AVSHA1 {
+    uint8_t  digest_len;  ///< digest length in 32-bit words
     uint64_t count;       ///< number of bytes in buffer
     uint8_t buffer[64];   ///< 512-bit buffer of input values used in hash updating
-    uint32_t state[5];    ///< current hash value
+    uint32_t state[8];    ///< current hash value
 } AVSHA1;
 
 const int av_sha1_size = sizeof(AVSHA1);
