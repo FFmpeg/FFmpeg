@@ -49,7 +49,7 @@ const int av_sha1_size = sizeof(AVSHA1);
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
-static void transform(uint32_t state[5], const uint8_t buffer[64])
+static void sha1_transform(uint32_t state[5], const uint8_t buffer[64])
 {
     uint32_t block[80];
     unsigned int i, a, b, c, d, e;
@@ -134,7 +134,7 @@ void av_sha1_init(AVSHA1* ctx)
     ctx->state[2] = 0x98BADCFE;
     ctx->state[3] = 0x10325476;
     ctx->state[4] = 0xC3D2E1F0;
-    ctx->transform = transform;
+    ctx->transform = sha1_transform;
     ctx->count    = 0;
 }
 
