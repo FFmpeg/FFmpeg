@@ -511,8 +511,8 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                 for (i = 0; i < sce->ics.swb_sizes[g]; i++) {
                     float t = fabsf(coefs[w2*128+i]);
                     if (t > 0.0f)
-                        qmin = fminf(qmin, t);
-                    qmax = fmaxf(qmax, t);
+                        qmin = FFMIN(qmin, t);
+                    qmax = FFMAX(qmax, t);
                 }
             }
             if (nz) {
@@ -534,8 +534,8 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                     }
                     dist = dists[0];
                     for (i = 1; i <= ESC_BT; i++)
-                        dist = fminf(dist, dists[i]);
-                    minrd = fminf(minrd, dist);
+                        dist = FFMIN(dist, dists[i]);
+                    minrd = FFMIN(minrd, dist);
 
                     for (i = FFMAX(q - SCALE_MAX_DIFF, 0); i < FFMIN(q + SCALE_MAX_DIFF, 256); i++) {
                         float cost;
@@ -640,7 +640,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
             uplims[w*16+g] = uplim *512;
             sce->zeroes[w*16+g] = !nz;
             if (nz)
-                minthr = fminf(minthr, uplim);
+                minthr = FFMIN(minthr, uplim);
             allz = FFMAX(allz, nz);
         }
     }
@@ -650,7 +650,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 sce->sf_idx[w*16+g] = SCALE_ONE_POS;
                 continue;
             }
-            sce->sf_idx[w*16+g] = SCALE_ONE_POS + fminf(log2(uplims[w*16+g]/minthr)*4,59);
+            sce->sf_idx[w*16+g] = SCALE_ONE_POS + FFMIN(log2(uplims[w*16+g]/minthr)*4,59);
         }
     }
 
@@ -810,7 +810,7 @@ static void search_for_quantizers_faac(AVCodecContext *avctx, AACEncContext *s,
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 for (i = 0; i < size; i++) {
                     float t = coefs[w2*128+i]*coefs[w2*128+i];
-                    maxq[w*16+g] = fmaxf(maxq[w*16+g], fabsf(coefs[w2*128 + i]));
+                    maxq[w*16+g] = FFMAX(maxq[w*16+g], fabsf(coefs[w2*128 + i]));
                     thr += t;
                     if (sce->ics.num_windows == 1 && maxval < t) {
                         maxval  = t;
@@ -963,8 +963,8 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
                 for (w2 = 0; w2 < sce0->ics.group_len[w]; w2++) {
                     FFPsyBand *band0 = &s->psy.psy_bands[(s->cur_channel+0)*PSY_MAX_BANDS+(w+w2)*16+g];
                     FFPsyBand *band1 = &s->psy.psy_bands[(s->cur_channel+1)*PSY_MAX_BANDS+(w+w2)*16+g];
-                    float minthr = fminf(band0->threshold, band1->threshold);
-                    float maxthr = fmaxf(band0->threshold, band1->threshold);
+                    float minthr = FFMIN(band0->threshold, band1->threshold);
+                    float maxthr = FFMAX(band0->threshold, band1->threshold);
                     for (i = 0; i < sce0->ics.swb_sizes[g]; i++) {
                         M[i] = (sce0->coeffs[start+w2*128+i]
                               + sce1->coeffs[start+w2*128+i]) * 0.5;

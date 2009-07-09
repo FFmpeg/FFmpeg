@@ -141,7 +141,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
         for (g = 0; g < ctx->num_bands[j]; g++) {
             minscale = ath(ctx->avctx->sample_rate * start / 1024.0, ATH_ADD);
             for (i = 1; i < ctx->bands[j][g]; i++)
-                minscale = fminf(minscale, ath(ctx->avctx->sample_rate * (start + i) / 1024.0 / 2.0, ATH_ADD));
+                minscale = FFMIN(minscale, ath(ctx->avctx->sample_rate * (start + i) / 1024.0 / 2.0, ATH_ADD));
             coeffs->ath[g] = minscale - minath;
             start += ctx->bands[j][g];
         }
@@ -289,8 +289,8 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
         for (g = 0; g < num_bands; g++) {
             band[g].thr_quiet = FFMAX(band[g].thr, coeffs->ath[g]);
             if (wi->num_windows != 8 && wi->window_type[1] != EIGHT_SHORT_SEQUENCE)
-                band[g].thr_quiet = fmaxf(PSY_3GPP_RPEMIN*band[g].thr_quiet,
-                                          fminf(band[g].thr_quiet,
+                band[g].thr_quiet = FFMAX(PSY_3GPP_RPEMIN*band[g].thr_quiet,
+                                          FFMIN(band[g].thr_quiet,
                                           PSY_3GPP_RPELEV*pch->prev_band[w+g].thr_quiet));
             band[g].thr = FFMAX(band[g].thr, band[g].thr_quiet * 0.25);
 
