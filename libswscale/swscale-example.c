@@ -28,13 +28,17 @@
 #include "libavutil/avutil.h"
 #include "libavutil/lfg.h"
 #include "swscale.h"
-#include "swscale_internal.h"
 
-#undef fprintf
-#undef free
-#undef malloc
-#undef perror
-#undef printf
+/* HACK Duplicated from swscale_internal.h.
+ * Should be removed when a cleaner pixel format system exists. */
+const char *sws_format_name(enum PixelFormat format);
+#define isALPHA(x)      (           \
+           (x)==PIX_FMT_BGR32       \
+        || (x)==PIX_FMT_BGR32_1     \
+        || (x)==PIX_FMT_RGB32       \
+        || (x)==PIX_FMT_RGB32_1     \
+        || (x)==PIX_FMT_YUVA420P    \
+    )
 
 static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
     int x,y;
