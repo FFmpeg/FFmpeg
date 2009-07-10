@@ -887,7 +887,12 @@ or leverage the implementation in MinGW (as explained below).
 Just install your Cygwin with all the "Base" packages, plus the
 following "Devel" ones:
 @example
-binutils, gcc-core, make, subversion, mingw-runtime, diffutils
+binutils, gcc-core, make, subversion, mingw-runtime
+@end example
+
+And the following "Utils" one:
+@example
+diffutils
 @end example
 
 The experimental gcc4 package is still buggy, hence please
