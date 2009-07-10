@@ -274,6 +274,8 @@ typedef struct {
     /** @} */
 
     DECLARE_ALIGNED(16, float, temp[128]);
+
+    int output_configured;
 } AACContext;
 
 #endif /* AVCODEC_AAC_H */

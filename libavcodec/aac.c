@@ -199,6 +199,8 @@ static int output_configure(AACContext *ac, enum ChannelPosition che_pos[4][MAX_
 
     avctx->channels = channels;
 
+    ac->output_configured = 1;
+
     return 0;
 }
 
@@ -445,12 +447,6 @@ static av_cold int aac_decode_init(AVCodecContext * avccontext) {
             return -1;
         avccontext->sample_rate = ac->m4ac.sample_rate;
     } else if (avccontext->channels > 0) {
-        enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
-        memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
-        if(set_default_channel_config(ac, new_che_pos, avccontext->channels - (avccontext->channels == 8)))
-            return -1;
-        if(output_configure(ac, ac->che_pos, new_che_pos, 1))
-            return -1;
         ac->m4ac.sample_rate = avccontext->sample_rate;
     }
 
@@ -1579,8 +1575,15 @@ static int parse_adts_frame_header(AACContext * ac, GetBitContext * gb) {
 
     size = ff_aac_parse_header(gb, &hdr_info);
     if (size > 0) {
-        if (hdr_info.chan_config)
+        if (!ac->output_configured && hdr_info.chan_config) {
+            enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
+            memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
             ac->m4ac.chan_config = hdr_info.chan_config;
+            if (set_default_channel_config(ac, new_che_pos, hdr_info.chan_config))
+                return -7;
+            if (output_configure(ac, ac->che_pos, new_che_pos, 1))
+                return -7;
+        }
         ac->m4ac.sample_rate     = hdr_info.sample_rate;
         ac->m4ac.sampling_index  = hdr_info.sampling_index;
         ac->m4ac.object_type     = hdr_info.object_type;
@@ -1655,6 +1658,10 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
             memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
             if((err = decode_pce(ac, new_che_pos, &gb)))
                 break;
+            if (ac->output_configured)
+                av_log(avccontext, AV_LOG_ERROR,
+                       "Not evaluating a further program_config_element as this construct is dubious at best.\n");
+            else
             err = output_configure(ac, ac->che_pos, new_che_pos, 0);
             break;
         }
