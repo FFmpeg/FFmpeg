@@ -52,7 +52,7 @@ struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType filt_type
                                                     int order, float cutoff_ratio,
                                                     float stopband, float ripple)
 {
-    int i, j, size;
+    int i, j;
     FFIIRFilterCoeffs *c;
     double wa;
     double p[MAXORDER + 1][2];
