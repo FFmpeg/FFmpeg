@@ -47,7 +47,7 @@ typedef struct FFIIRFilterState{
 /// maximum supported filter order
 #define MAXORDER 30
 
-struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType filt_type,
+av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType filt_type,
                                                     enum IIRFilterMode filt_mode,
                                                     int order, float cutoff_ratio,
                                                     float stopband, float ripple)
@@ -112,7 +112,7 @@ struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType filt_type
     return c;
 }
 
-struct FFIIRFilterState* ff_iir_filter_init_state(int order)
+av_cold struct FFIIRFilterState* ff_iir_filter_init_state(int order)
 {
     FFIIRFilterState* s = av_mallocz(sizeof(FFIIRFilterState) + sizeof(s->x[0]) * (order - 1));
     return s;
@@ -163,12 +163,12 @@ void ff_iir_filter(const struct FFIIRFilterCoeffs *c, struct FFIIRFilterState *s
     }
 }
 
-void ff_iir_filter_free_state(struct FFIIRFilterState *state)
+av_cold void ff_iir_filter_free_state(struct FFIIRFilterState *state)
 {
     av_free(state);
 }
 
-void ff_iir_filter_free_coeffs(struct FFIIRFilterCoeffs *coeffs)
+av_cold void ff_iir_filter_free_coeffs(struct FFIIRFilterCoeffs *coeffs)
 {
     if(coeffs){
         av_free(coeffs->cx);
