@@ -20,20 +20,21 @@
  */
 
 #include "common.h"
+#include "avutil.h"
 #include "bswap.h"
-#include "sha1.h"
+#include "sha.h"
 
 /** hash context */
-typedef struct AVSHA1 {
+typedef struct AVSHA {
     uint8_t  digest_len;  ///< digest length in 32-bit words
     uint64_t count;       ///< number of bytes in buffer
     uint8_t  buffer[64];  ///< 512-bit buffer of input values used in hash updating
     uint32_t state[8];    ///< current hash value
     /** function used to update hash for 512-bit input block */
     void     (*transform)(uint32_t *state, const uint8_t buffer[64]);
-} AVSHA1;
+} AVSHA;
 
-const int av_sha1_size = sizeof(AVSHA1);
+const int av_sha_size = sizeof(AVSHA);
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
@@ -127,7 +128,7 @@ static void sha1_transform(uint32_t state[5], const uint8_t buffer[64])
     state[4] += e;
 }
 
-void av_sha1_init(AVSHA1* ctx)
+int av_sha_init(AVSHA* ctx, int bits)
 {
     ctx->state[0] = 0x67452301;
     ctx->state[1] = 0xEFCDAB89;
@@ -136,9 +137,10 @@ void av_sha1_init(AVSHA1* ctx)
     ctx->state[4] = 0xC3D2E1F0;
     ctx->transform = sha1_transform;
     ctx->count    = 0;
+    return 0;
 }
 
-void av_sha1_update(AVSHA1* ctx, const uint8_t* data, unsigned int len)
+void av_sha_update(AVSHA* ctx, const uint8_t* data, unsigned int len)
 {
     unsigned int i, j;
 
@@ -165,18 +167,41 @@ void av_sha1_update(AVSHA1* ctx, const uint8_t* data, unsigned int len)
 #endif
 }
 
-void av_sha1_final(AVSHA1* ctx, uint8_t digest[20])
+void av_sha_final(AVSHA* ctx, uint8_t *digest)
 {
     int i;
     uint64_t finalcount = be2me_64(ctx->count << 3);
 
-    av_sha1_update(ctx, "\200", 1);
+    av_sha_update(ctx, "\200", 1);
     while ((ctx->count & 63) != 56)
-        av_sha1_update(ctx, "", 1);
-    av_sha1_update(ctx, (uint8_t *)&finalcount, 8); /* Should cause a transform() */
+        av_sha_update(ctx, "", 1);
+    av_sha_update(ctx, (uint8_t *)&finalcount, 8); /* Should cause a transform() */
     for (i = 0; i < 5; i++)
         ((uint32_t*)digest)[i] = be2me_32(ctx->state[i]);
 }
+
+#if LIBAVUTIL_VERSION_MAJOR < 51
+struct AVSHA1 {
+    AVSHA sha;
+};
+
+const int av_sha1_size = sizeof(struct AVSHA1);
+
+void av_sha1_init(struct AVSHA1* context)
+{
+    av_sha_init(&context->sha, 160);
+}
+
+void av_sha1_update(struct AVSHA1* context, const uint8_t* data, unsigned int len)
+{
+    av_sha_update(&context->sha, data, len);
+}
+
+void av_sha1_final(struct AVSHA1* context, uint8_t digest[20])
+{
+    av_sha_final(&context->sha, digest);
+}
+#endif
 
 #ifdef TEST
 #include <stdio.h>
@@ -185,19 +210,19 @@ void av_sha1_final(AVSHA1* ctx, uint8_t digest[20])
 int main(void)
 {
     int i, k;
-    AVSHA1 ctx;
+    AVSHA ctx;
     unsigned char digest[20];
 
     for (k = 0; k < 3; k++) {
-        av_sha1_init(&ctx);
+        av_sha_init(&ctx, 160);
         if (k == 0)
-            av_sha1_update(&ctx, "abc", 3);
+            av_sha_update(&ctx, "abc", 3);
         else if (k == 1)
-            av_sha1_update(&ctx, "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56);
+            av_sha_update(&ctx, "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56);
         else
-            for (i = 0; i < 1000 * 1000; i++)
-                av_sha1_update(&ctx, "a", 1);
-        av_sha1_final(&ctx, digest);
+            for (i = 0; i < 1000*1000; i++)
+                av_sha_update(&ctx, "a", 1);
+        av_sha_final(&ctx, digest);
         for (i = 0; i < 20; i++)
             printf("%02X", digest[i]);
         putchar('\n');

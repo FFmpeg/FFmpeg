@@ -18,22 +18,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_SHA1_H
-#define AVUTIL_SHA1_H
+#ifndef AVUTIL_SHA_H
+#define AVUTIL_SHA_H
 
 #include <stdint.h>
 
-extern const int av_sha1_size;
+extern const int av_sha_size;
 
-struct AVSHA1;
+struct AVSHA;
 
 /**
  * Initializes SHA-1 hashing.
  *
  * @param context pointer to the function context (of size av_sha_size)
- * @deprecated use av_sha_init() instead
+ * @param bits    number of bits in digest (SHA-1 - 160 bits, SHA-2 224 or 256 bits)
+ * @return        zero if initialization succeeded, -1 otherwise
  */
-void av_sha1_init(struct AVSHA1* context);
+int av_sha_init(struct AVSHA* context, int bits);
 
 /**
  * Updates hash value.
@@ -41,17 +42,15 @@ void av_sha1_init(struct AVSHA1* context);
  * @param context hash function context
  * @param data    input data to update hash with
  * @param len     input data length
- * @deprecated use av_sha_update() instead
  */
-void av_sha1_update(struct AVSHA1* context, const uint8_t* data, unsigned int len);
+void av_sha_update(struct AVSHA* context, const uint8_t* data, unsigned int len);
 
 /**
  * Finishes hashing and output digest value.
  *
  * @param context hash function context
  * @param digest  buffer where output digest value is stored
- * @deprecated use av_sha_final() instead
  */
-void av_sha1_final(struct AVSHA1* context, uint8_t digest[20]);
+void av_sha_final(struct AVSHA* context, uint8_t *digest);
 
-#endif /* AVUTIL_SHA1_H */
+#endif /* AVUTIL_SHA_H */
