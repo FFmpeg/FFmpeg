@@ -911,6 +911,7 @@ HAVE_LIST="
     libdc1394_1
     libdc1394_2
     llrint
+    log2
     loongson
     lrint
     lrintf
@@ -2078,7 +2079,7 @@ check_lib math.h sin -lm
 check_lib va/va.h vaInitialize -lva
 
 # test for C99 functions in math.h
-for func in llrint lrint lrintf round roundf truncf; do
+for func in llrint log2 lrint lrintf round roundf truncf; do
     check_exec <<EOF && enable $func || disable $func
 #include <math.h>
 int main(void) { return ($func(3.999f) > 0)?0:1; }

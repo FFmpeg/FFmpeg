@@ -265,6 +265,13 @@ static av_always_inline av_const long long llrint(double x)
 }
 #endif /* HAVE_LLRINT */
 
+#if !HAVE_LOG2
+static av_always_inline av_const double log2(double x)
+{
+    return log(x) * 1.44269504088896340736;
+}
+#endif /* HAVE_LOG2 */
+
 #if !HAVE_LRINT
 static av_always_inline av_const long int lrint(double x)
 {
