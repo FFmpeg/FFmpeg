@@ -1662,7 +1662,7 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
                 av_log(avccontext, AV_LOG_ERROR,
                        "Not evaluating a further program_config_element as this construct is dubious at best.\n");
             else
-            err = output_configure(ac, ac->che_pos, new_che_pos, 0);
+                err = output_configure(ac, ac->che_pos, new_che_pos, 0);
             break;
         }
 
