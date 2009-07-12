@@ -1490,7 +1490,7 @@ set_default as
 if test -n "$sysroot"; then
     case "$cc_type" in
         gcc)
-            add_cflags  --sysroot="$sysroot"
+            add_cppflags --sysroot="$sysroot"
             add_ldflags --sysroot="$sysroot"
         ;;
     esac
