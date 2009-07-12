@@ -18,16 +18,17 @@ endif
 
 ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
-CFLAGS := -DHAVE_AV_CONFIG_H -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(OPTFLAGS)
+CPPFLAGS += -DHAVE_AV_CONFIG_H -I$(BUILD_ROOT_REL) -I$(SRC_PATH)
+CFLAGS := $(OPTFLAGS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
 %.o: %.S
-	$(AS) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
+	$(AS) $(CPPFLAGS) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
 %.ho: %.h
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -Wno-unused -c -o $@ -x c $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LIBOBJFLAGS) -Wno-unused -c -o $@ -x c $<
 
 %.d: %.c
 	$(DEPEND_CMD) > $@

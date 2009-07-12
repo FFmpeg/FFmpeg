@@ -511,6 +511,10 @@ append(){
     eval "$var=\"\$$var $*\""
 }
 
+add_cppflags(){
+    append CPPFLAGS "$@"
+}
+
 add_cflags(){
     append CFLAGS "$@"
 }
@@ -532,21 +536,21 @@ check_cc(){
     log check_cc "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $cc $CFLAGS "$@" -c -o $TMPO $TMPC
+    check_cmd $cc $CPPFLAGS $CFLAGS "$@" -c -o $TMPO $TMPC
 }
 
 check_cpp(){
     log check_cpp "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $cc $CFLAGS "$@" -E -o $TMPO $TMPC
+    check_cmd $cc $CPPFLAGS "$@" -E -o $TMPO $TMPC
 }
 
 check_as(){
     log check_as "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $as $CFLAGS "$@" -c -o $TMPO $TMPC
+    check_cmd $as $CPPFLAGS $CFLAGS "$@" -c -o $TMPO $TMPC
 }
 
 check_asm(){
@@ -576,6 +580,13 @@ check_ld(){
         test "${f}" = "${f#-l}" && flags="$flags $f" || libs="$libs $f"
     done
     check_cmd $cc $LDFLAGS $flags -o $TMPE $TMPO $extralibs $libs
+}
+
+check_cppflags(){
+    log check_cppflags "$@"
+    check_cc "$@" <<EOF && add_cppflags "$@"
+int x;
+EOF
 }
 
 check_cflags(){
@@ -1235,7 +1246,7 @@ enable stripping
 enable swscale_alpha
 
 # build settings
-add_cflags -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112
+add_cppflags -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
 FFSERVERLDFLAGS=-Wl,-E
 LIBPREF="lib"
@@ -1256,7 +1267,7 @@ target_path='.'
 
 # gcc stupidly only outputs the basename of targets with -MM, but we need the
 # full relative path for objects in subdirectories for non-recursive Make.
-DEPEND_CMD='$(CC) $(CFLAGS) -MM $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
+DEPEND_CMD='$(CC) $(CPPFLAGS) -MM $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
 
 # find source path
 source_path="$(dirname "$0")"
@@ -1456,7 +1467,7 @@ elif $cc -v 2>&1 | grep -q xlc; then
     cc_type=xlc
 elif $cc -V 2>/dev/null | grep -q Compaq; then
     cc_type=ccc
-    DEPEND_CMD='$(CC) $(CFLAGS) -M $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
+    DEPEND_CMD='$(CC) $(CPPFLAGS) -M $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
     debuglevel=3
     add_ldflags -Wl,-z,now # calls to libots crash without this
 elif $cc --vsn 2>/dev/null | grep -q RVCT; then
@@ -1499,10 +1510,10 @@ if test "$?" != 0; then
 fi
 
 check_cflags -std=c99
-check_cc -D_FILE_OFFSET_BITS=64 <<EOF && add_cflags -D_FILE_OFFSET_BITS=64
+check_cc -D_FILE_OFFSET_BITS=64 <<EOF && add_cppflags -D_FILE_OFFSET_BITS=64
 #include <stdlib.h>
 EOF
-check_cc -D_LARGEFILE_SOURCE <<EOF && add_cflags -D_LARGEFILE_SOURCE
+check_cc -D_LARGEFILE_SOURCE <<EOF && add_cppflags -D_LARGEFILE_SOURCE
 #include <stdlib.h>
 EOF
 
@@ -1593,7 +1604,8 @@ case $target_os in
     beos|haiku|zeta)
         prefix_default="$HOME/config"
         # helps building libavcodec
-        add_cflags -DPIC -fomit-frame-pointer
+        add_cppflags -DPIC
+        add_cflags -fomit-frame-pointer
         # 3 gcc releases known for BeOS, each with ugly bugs
         gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f3-)"
         case "$gcc_version" in
@@ -1620,7 +1632,7 @@ case $target_os in
         FFSERVERLDFLAGS=""
         SHFLAGS='-shared -Wl,-h,$$(@F)'
         network_extralibs="-lsocket -lnsl"
-        add_cflags -D__EXTENSIONS__
+        add_cppflags -D__EXTENSIONS__
         ;;
     netbsd)
         oss_indev_extralibs="-lossaudio"
@@ -2472,6 +2484,7 @@ enabled stripping &&
     echo "STRIP=$strip" >> config.mak ||
     echo "STRIP=echo ignoring strip" >> config.mak
 
+echo "CPPFLAGS?=$CPPFLAGS" >> config.mak
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
