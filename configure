@@ -513,15 +513,15 @@ append(){
 }
 
 add_cppflags(){
-    append CPPFLAGS "$@"
+    append CPPFLAGS $($filter_cppflags "$@")
 }
 
 add_cflags(){
-    append CFLAGS "$@"
+    append CFLAGS $($filter_cflags "$@")
 }
 
 add_asflags(){
-    append ASFLAGS "$@"
+    append ASFLAGS $($filter_asflags "$@")
 }
 
 add_ldflags(){
@@ -589,14 +589,16 @@ check_ld(){
 
 check_cppflags(){
     log check_cppflags "$@"
-    check_cc "$@" <<EOF && add_cppflags "$@"
+    set -- $($filter_cppflags "$@")
+    check_cc "$@" <<EOF && append CPPFLAGS "$@"
 int x;
 EOF
 }
 
 check_cflags(){
     log check_cflags "$@"
-    check_cc "$@" <<EOF && add_cflags "$@"
+    set -- $($filter_cflags "$@")
+    check_cc "$@" <<EOF && append CFLAGS "$@"
 int x;
 EOF
 }
@@ -1506,6 +1508,10 @@ test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 set_default as dep_cc ld
+
+: ${filter_cflags:=echo}
+: ${filter_cppflags:=echo}
+: ${filter_asflags:=echo}
 
 add_cflags $extra_cflags
 add_asflags $extra_cflags
