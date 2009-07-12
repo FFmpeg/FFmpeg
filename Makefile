@@ -65,10 +65,10 @@ ffplay_g$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
 ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 
 %_g$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
-	$(CC) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
+	$(LD) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
 
 tools/%$(EXESUF): tools/%.c
-	$(CC) $(CFLAGS) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
+	$(LD) $(CFLAGS) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 ffplay.o ffplay.d: CFLAGS += $(SDL_CFLAGS)
 
@@ -304,8 +304,8 @@ tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF)
 tests/%$(HOSTEXESUF): tests/%.c
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
 
-tests/seek_test$(EXESUF): tests/seek_test.c $(FF_DEP_LIBS)
-	$(CC) $(FF_LDFLAGS) $(CFLAGS) -o $@ $< $(FF_EXTRALIBS)
+tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
+	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 
 .PHONY: documentation *test regtest-* zlib-error alltools check config

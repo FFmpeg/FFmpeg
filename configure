@@ -190,6 +190,7 @@ show_help(){
   echo "  --nm=NM                  use nm tool"
   echo "  --as=AS                  use assembler AS [$as_default]"
   echo "  --cc=CC                  use C compiler CC [$cc_default]"
+  echo "  --ld=LD                  use linker LD"
   echo "  --host-cc=HOSTCC         use host C compiler HOSTCC"
   echo "  --host-cflags=HCFLAGS    use HCFLAGS when compiling for host"
   echo "  --host-ldflags=HLDFLAGS  use HLDFLAGS when linking for host"
@@ -579,7 +580,7 @@ check_ld(){
     for f; do
         test "${f}" = "${f#-l}" && flags="$flags $f" || libs="$libs $f"
     done
-    check_cmd $cc $LDFLAGS $flags -o $TMPE $TMPO $extralibs $libs
+    check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $extralibs $libs
 }
 
 check_cppflags(){
@@ -1000,6 +1001,7 @@ CMDLINE_SET="
     host_ldflags
     host_libs
     host_os
+    ld
     logfile
     nm
     source_path
@@ -1485,7 +1487,8 @@ fi
 
 test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
 
-set_default as
+: ${ld_default:=$cc}
+set_default as ld
 
 if test -n "$sysroot"; then
     case "$cc_type" in
@@ -2476,6 +2479,7 @@ echo "SRC_PATH_BARE=$source_path" >> config.mak
 echo "BUILD_ROOT=\"$PWD\"" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AS=$as" >> config.mak
+echo "LD=$ld" >> config.mak
 echo "YASM=$yasmexe" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
