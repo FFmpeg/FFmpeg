@@ -24,7 +24,7 @@ CPPFLAGS += -DHAVE_AV_CONFIG_H -I$(BUILD_ROOT_REL) -I$(SRC_PATH)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LIBOBJFLAGS) -c $(CC_O) $<
 
 %.o: %.S
-	$(AS) $(CPPFLAGS) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
+	$(AS) $(CPPFLAGS) $(ASFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
 %.ho: %.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LIBOBJFLAGS) -Wno-unused -c -o $@ -x c $<

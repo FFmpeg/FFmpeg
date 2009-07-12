@@ -520,6 +520,10 @@ add_cflags(){
     append CFLAGS "$@"
 }
 
+add_asflags(){
+    append ASFLAGS "$@"
+}
+
 add_ldflags(){
     append LDFLAGS "$@"
 }
@@ -551,7 +555,7 @@ check_as(){
     log check_as "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $as $CPPFLAGS $CFLAGS "$@" -c -o $TMPO $TMPC
+    check_cmd $as $CPPFLAGS $ASFLAGS "$@" -c -o $TMPO $TMPC
 }
 
 check_asm(){
@@ -1494,6 +1498,7 @@ test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
 set_default as dep_cc ld
 
 add_cflags $extra_cflags
+add_asflags $extra_cflags
 
 if test -n "$sysroot"; then
     case "$cc_type" in
@@ -1920,6 +1925,7 @@ if test $cpu != "generic"; then
 fi
 
 add_cflags $cpuflags
+add_asflags $cpuflags
 
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
@@ -2498,6 +2504,7 @@ enabled stripping &&
 
 echo "CPPFLAGS?=$CPPFLAGS" >> config.mak
 echo "CFLAGS=$CFLAGS" >> config.mak
+echo "ASFLAGS=$ASFLAGS" >> config.mak
 echo "CC_O=$CC_O" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
