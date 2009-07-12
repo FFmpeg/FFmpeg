@@ -1277,7 +1277,8 @@ target_path='.'
 
 # gcc stupidly only outputs the basename of targets with -MM, but we need the
 # full relative path for objects in subdirectories for non-recursive Make.
-DEPEND_CMD='$(DEPCC) $(CPPFLAGS) $(CFLAGS) -MM $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
+DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
+DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -MM'
 
 # find source path
 source_path="$(dirname "$0")"
@@ -1474,7 +1475,7 @@ elif $cc -v 2>&1 | grep -q xlc; then
     cc_type=xlc
 elif $cc -V 2>/dev/null | grep -q Compaq; then
     cc_type=ccc
-    DEPEND_CMD='$(CC) $(CPPFLAGS) -M $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
+    DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -M'
     debuglevel=3
     add_ldflags -Wl,-z,now # calls to libots crash without this
 elif $cc --vsn 2>/dev/null | grep -q RVCT; then
@@ -2525,6 +2526,7 @@ echo "SLIBSUF=$SLIBSUF" >> config.mak
 echo "EXESUF=$EXESUF" >> config.mak
 echo "EXTRA_VERSION=$extra_version" >> config.mak
 echo "DEPEND_CMD=$DEPEND_CMD" >> config.mak
+echo "DEPFLAGS=$DEPFLAGS" >> config.mak
 echo "HOSTCC=$host_cc" >> config.mak
 echo "HOSTCFLAGS=$host_cflags" >> config.mak
 echo "HOSTEXESUF=$HOSTEXESUF" >> config.mak
