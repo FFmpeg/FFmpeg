@@ -1277,7 +1277,7 @@ target_path='.'
 
 # gcc stupidly only outputs the basename of targets with -MM, but we need the
 # full relative path for objects in subdirectories for non-recursive Make.
-DEPEND_CMD='$(DEPCC) $(CPPFLAGS) -MM $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
+DEPEND_CMD='$(DEPCC) $(CPPFLAGS) $(CFLAGS) -MM $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
 
 # find source path
 source_path="$(dirname "$0")"
