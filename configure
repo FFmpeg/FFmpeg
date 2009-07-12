@@ -996,6 +996,7 @@ CMDLINE_SET="
     cpu
     cross_prefix
     dep_cc
+    extra_cflags
     extra_version
     host_cc
     host_cflags
@@ -1343,8 +1344,6 @@ show_list() {
 for opt do
     optval="${opt#*=}"
     case "$opt" in
-    --extra-cflags=*) add_cflags $optval
-    ;;
     --extra-ldflags=*) add_ldflags $optval
     ;;
     --extra-libs=*) add_extralibs $optval
@@ -1493,6 +1492,8 @@ test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 set_default as dep_cc ld
+
+add_cflags $extra_cflags
 
 if test -n "$sysroot"; then
     case "$cc_type" in
