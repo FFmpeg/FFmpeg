@@ -2485,7 +2485,7 @@ enabled stripping &&
     echo "STRIP=echo ignoring strip" >> config.mak
 
 echo "CPPFLAGS?=$CPPFLAGS" >> config.mak
-echo "OPTFLAGS=$CFLAGS" >> config.mak
+echo "CFLAGS=$CFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
