@@ -1408,7 +1408,6 @@ strip="${cross_prefix}${strip}"
 sysinclude_default="${sysroot}/usr/include"
 
 set_default cc nm sysinclude
-as_default=$cc
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -1493,6 +1492,7 @@ fi
 
 test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
 
+: ${as_default:=$cc}
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 set_default as dep_cc ld
