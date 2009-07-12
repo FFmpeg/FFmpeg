@@ -2479,6 +2479,9 @@ echo "#define FFMPEG_CONFIG_H" >> $TMPH
 echo "#define FFMPEG_CONFIGURATION \"$(c_escape $FFMPEG_CONFIGURATION)\"" >> $TMPH
 echo "#define FFMPEG_DATADIR \"$(eval c_escape $datadir)\"" >> $TMPH
 
+echo "ifndef FFMPEG_CONFIG_MAK" >> config.mak
+echo "FFMPEG_CONFIG_MAK=1" >> config.mak
+
 echo "FFMPEG_CONFIGURATION=$FFMPEG_CONFIGURATION" >> config.mak
 echo "prefix=$prefix" >> config.mak
 echo "LIBDIR=\$(DESTDIR)$libdir" >> config.mak
@@ -2609,6 +2612,7 @@ enabled asmalign_pot &&
 echo "#define EXTERN_PREFIX \"${extern_prefix}\"" >> $TMPH
 
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
+echo "endif # FFMPEG_CONFIG_MAK" >> config.mak
 
 # Do not overwrite an unchanged config.h to avoid superfluous rebuilds.
 cmp -s $TMPH config.h &&
