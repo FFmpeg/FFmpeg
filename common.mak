@@ -21,7 +21,7 @@ ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 CPPFLAGS += -DHAVE_AV_CONFIG_H -I$(BUILD_ROOT_REL) -I$(SRC_PATH)
 
 %.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LIBOBJFLAGS) -c $(CC_O) $<
 
 %.o: %.S
 	$(AS) $(CPPFLAGS) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<

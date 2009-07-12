@@ -1263,6 +1263,8 @@ SLIBNAME_WITH_VERSION='$(SLIBNAME).$(LIBVERSION)'
 SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
 LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 
+CC_O='-o $@'
+
 host_cflags='-O3 -g -Wall'
 host_libs='-lm'
 
@@ -2493,6 +2495,7 @@ enabled stripping &&
 
 echo "CPPFLAGS?=$CPPFLAGS" >> config.mak
 echo "CFLAGS=$CFLAGS" >> config.mak
+echo "CC_O=$CC_O" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
