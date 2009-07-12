@@ -1837,86 +1837,88 @@ if test $cpu != "generic"; then
     }
     case $cpu in
         601|ppc601|PowerPC601)
-            add_cflags -mcpu=601
+            cpuflags="-mcpu=601"
             warn_altivec enabled PPC601
         ;;
         603*|ppc603*|PowerPC603*)
-            add_cflags -mcpu=603
+            cpuflags="-mcpu=603"
             warn_altivec enabled PPC603
         ;;
         604*|ppc604*|PowerPC604*)
-            add_cflags -mcpu=604
+            cpuflags="-mcpu=604"
             warn_altivec enabled PPC604
         ;;
         G3|g3|75*|ppc75*|PowerPC75*)
-            add_cflags -mcpu=750 -mpowerpc-gfxopt
+            cpuflags="-mcpu=750 -mpowerpc-gfxopt"
             warn_altivec enabled PPC75x
         ;;
         G4|g4|745*|ppc745*|PowerPC745*)
-            add_cflags -mcpu=7450 -mpowerpc-gfxopt
+            cpuflags="-mcpu=7450 -mpowerpc-gfxopt"
             warn_altivec disabled PPC745x
         ;;
         74*|ppc74*|PowerPC74*)
-            add_cflags -mcpu=7400 -mpowerpc-gfxopt
+            cpuflags="-mcpu=7400 -mpowerpc-gfxopt"
             warn_altivec disabled PPC74xx
         ;;
         G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
-            add_cflags -mcpu=970 -mpowerpc-gfxopt -mpowerpc64
+            cpuflags="-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
             warn_altivec disabled PPC970
         ;;
         Cell|CELL|cell)
-            add_cflags -mcpu=cell
+            cpuflags="-mcpu=cell"
             warn_altivec disabled Cell
             enable ldbrx
         ;;
         # targets that do NOT support conditional mov (cmov)
         i[345]86|pentium|pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
-            add_cflags -march=$cpu
+            cpuflags="-march=$cpu"
             disable cmov
         ;;
         # targets that do support conditional mov (cmov)
         i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2)
-            add_cflags -march=$cpu
+            cpuflags="-march=$cpu"
             enable cmov
             enable fast_cmov
         ;;
         # targets that do support conditional mov but on which it's slow
         pentium4|pentium4m|prescott|nocona)
-            add_cflags -march=$cpu
+            cpuflags="-march=$cpu"
             enable cmov
             disable fast_cmov
         ;;
         sparc64)
-            add_cflags -mcpu=v9
+            cpuflags="-mcpu=v9"
         ;;
         arm11*|cortex*)
-            add_cflags -mcpu=$cpu
+            cpuflags="-mcpu=$cpu"
             enable fast_unaligned
         ;;
         armv[67]*)
-            add_cflags -march=$cpu
+            cpuflags="-march=$cpu"
             enable fast_unaligned
         ;;
         armv*)
-            add_cflags -march=$cpu
+            cpuflags="-march=$cpu"
         ;;
         arm*)
-            add_cflags -mcpu=$cpu
+            cpuflags="-mcpu=$cpu"
         ;;
         ev4|ev45|ev5|ev56|pca56|ev6|ev67)
-            enabled ccc && add_cflags -arch $cpu || add_cflags -mcpu=$cpu
+            enabled ccc && cpuflags="-arch $cpu" || cpuflags="-mcpu=$cpu"
         ;;
         bf*)
-            add_cflags -mcpu=$cpu
+            cpuflags="-mcpu=$cpu"
         ;;
         mips*|[45]k*|[237]4k*|m4k|r*000|loongson2[ef])
-            add_cflags -march=$cpu
+            cpuflags="-march=$cpu"
         ;;
         *)
             echo "WARNING: Unknown CPU \"$cpu\", ignored."
         ;;
     esac
 fi
+
+add_cflags $cpuflags
 
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
