@@ -1265,7 +1265,6 @@ enable stripping
 enable swscale_alpha
 
 # build settings
-add_cppflags -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
 FFSERVERLDFLAGS=-Wl,-E
 LIBPREF="lib"
@@ -1538,6 +1537,7 @@ if test "$?" != 0; then
     die "C compiler test failed."
 fi
 
+add_cppflags -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112
 check_cflags -std=c99
 check_cc -D_FILE_OFFSET_BITS=64 <<EOF && add_cppflags -D_FILE_OFFSET_BITS=64
 #include <stdlib.h>
