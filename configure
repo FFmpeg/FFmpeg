@@ -2505,7 +2505,7 @@ enabled stripping &&
     echo "STRIP=$strip" >> config.mak ||
     echo "STRIP=echo ignoring strip" >> config.mak
 
-echo "CPPFLAGS?=$CPPFLAGS" >> config.mak
+echo "CPPFLAGS=$CPPFLAGS" >> config.mak
 echo "CFLAGS=$CFLAGS" >> config.mak
 echo "ASFLAGS=$ASFLAGS" >> config.mak
 echo "CC_O=$CC_O" >> config.mak
