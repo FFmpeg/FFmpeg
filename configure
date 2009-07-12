@@ -548,7 +548,7 @@ check_cpp(){
     log check_cpp "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $cc $CPPFLAGS "$@" -E -o $TMPO $TMPC
+    check_cmd $cc $CPPFLAGS $CFLAGS "$@" -E -o $TMPO $TMPC
 }
 
 check_as(){
