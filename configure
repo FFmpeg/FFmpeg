@@ -995,6 +995,7 @@ CMDLINE_SET="
     cc
     cpu
     cross_prefix
+    dep_cc
     extra_version
     host_cc
     host_cflags
@@ -1269,7 +1270,7 @@ target_path='.'
 
 # gcc stupidly only outputs the basename of targets with -MM, but we need the
 # full relative path for objects in subdirectories for non-recursive Make.
-DEPEND_CMD='$(CC) $(CPPFLAGS) -MM $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
+DEPEND_CMD='$(DEPCC) $(CPPFLAGS) -MM $< | sed -e "/^\#.*/d" -e "s,^[[:space:]]*$(*F)\\.o,$(@D)/$(*F).o,"'
 
 # find source path
 source_path="$(dirname "$0")"
@@ -1487,8 +1488,9 @@ fi
 
 test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
 
+: ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
-set_default as ld
+set_default as dep_cc ld
 
 if test -n "$sysroot"; then
     case "$cc_type" in
@@ -2480,6 +2482,7 @@ echo "BUILD_ROOT=\"$PWD\"" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AS=$as" >> config.mak
 echo "LD=$ld" >> config.mak
+echo "DEPCC=$dep_cc" >> config.mak
 echo "YASM=$yasmexe" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
