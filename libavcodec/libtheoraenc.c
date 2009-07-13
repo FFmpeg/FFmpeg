@@ -47,7 +47,7 @@ typedef struct TheoraContext{
 */
 static int concatenate_packet(unsigned int* offset, AVCodecContext* avc_context, const ogg_packet* packet)
 {
-    char* message = NULL;
+    const char* message = NULL;
     uint8_t* newdata = NULL;
     int newsize = avc_context->extradata_size + 2 + packet->bytes;
 
