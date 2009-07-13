@@ -1477,6 +1477,10 @@ EOF
     die "Sanity test failed."
 fi
 
+filter_cflags=echo
+filter_cppflags=echo
+filter_asflags=echo
+
 if   $cc --version 2>/dev/null | grep -qi gcc; then
     cc_type=gcc
 elif $cc --version 2>/dev/null | grep -q Intel; then
@@ -1507,10 +1511,6 @@ test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 set_default as dep_cc ld
-
-: ${filter_cflags:=echo}
-: ${filter_cppflags:=echo}
-: ${filter_asflags:=echo}
 
 add_cflags $extra_cflags
 add_asflags $extra_cflags
