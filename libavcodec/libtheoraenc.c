@@ -150,15 +150,17 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     if (concatenate_packet( &offset, avc_context, &o_packet ) != 0) {
         return -1;
     }
+    /* Clear up theora_comment struct before we reset the packet */
+    theora_comment_clear( &t_comment );
+    /* And despite documentation to the contrary, theora_comment_clear
+     * does not release the packet */
+    ogg_packet_clear(&o_packet);
 
     /* Tables */
     theora_encode_tables( &(h->t_state), &o_packet );
     if (concatenate_packet( &offset, avc_context, &o_packet ) != 0) {
         return -1;
     }
-
-    /* Clear up theora_comment struct */
-    theora_comment_clear( &t_comment );
 
     /* Set up the output AVFrame */
     avc_context->coded_frame= avcodec_alloc_frame();
@@ -249,6 +251,10 @@ static av_cold int encode_close(AVCodecContext* avc_context)
 
     result = theora_encode_packetout( &(h->t_state), 1, &o_packet );
     theora_clear( &(h->t_state) );
+    av_freep(&avc_context->coded_frame);
+    av_freep(&avc_context->extradata);
+    avc_context->extradata_size = 0;
+
     switch (result) {
         case 0:/* No packet is ready */
         case -1:/* Encoding finished */
