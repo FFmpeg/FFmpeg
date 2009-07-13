@@ -1699,6 +1699,8 @@ case $target_os in
         if enabled x86_64; then
             disable need_memalign
             LIBTARGET=x64
+        elif enabled arm; then
+            LIBTARGET=arm
         fi
         shlibdir_default="$bindir_default"
         disable ffserver
