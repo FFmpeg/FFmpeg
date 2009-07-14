@@ -84,7 +84,9 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
     ctx        = av_mallocz(sizeof(FFPsyPreprocessContext));
     ctx->avctx = avctx;
 
-    if (avctx->flags & CODEC_FLAG_QSCALE)
+    if (avctx->cutoff > 0)
+        cutoff_coeff = 2.0 * avctx->cutoff / avctx->sample_rate;
+    else if (avctx->flags & CODEC_FLAG_QSCALE)
         cutoff_coeff = 1.0f / av_clip(1 + avctx->global_quality / FF_QUALITY_SCALE, 1, 8);
     else
         cutoff_coeff = avctx->bit_rate / (4.0f * avctx->sample_rate * avctx->channels);
