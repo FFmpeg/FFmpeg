@@ -2216,9 +2216,11 @@ if enabled network; then
     if check_header arpa/inet.h ; then
         check_func closesocket
     elif check_header winsock2.h ; then
-        network_extralibs="-lws2_32"
+        check_func_headers winsock2.h closesocket -lws2 && \
+            network_extralibs="-lws2" || \
+        { check_func_headers winsock2.h closesocket -lws2_32 && \
+            network_extralibs="-lws2_32"; }
         check_type ws2tcpip.h socklen_t
-        check_func_headers winsock2.h closesocket
     else
         disable network
     fi
