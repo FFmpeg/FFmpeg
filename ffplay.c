@@ -23,7 +23,6 @@
 #include <limits.h>
 #include "libavutil/avstring.h"
 #include "libavformat/avformat.h"
-#include "libavformat/rtsp.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
 #include "libavcodec/audioconvert.h"
