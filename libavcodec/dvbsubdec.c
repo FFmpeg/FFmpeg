@@ -1305,6 +1305,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
         rect->w = region->width;
         rect->h = region->height;
         rect->nb_colors = 16;
+        rect->type      = SUBTITLE_BITMAP;
         rect->pict.linesize[0] = region->width;
 
         clut = get_clut(ctx, region->clut);
