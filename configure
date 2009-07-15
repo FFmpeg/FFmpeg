@@ -2335,6 +2335,8 @@ elif enabled ccc; then
     add_cflags -msg_disable nomainieee
     add_cflags -msg_disable ptrmismatch1
     add_cflags -msg_disable unreachcode
+elif enabled gcc; then
+    check_cflags -fno-tree-vectorize
 fi
 
 # PIC flags for shared library objects where they are needed
