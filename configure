@@ -1040,6 +1040,8 @@ sse_deps="mmx"
 ssse3_deps="sse"
 vis_deps="sparc"
 
+need_memalign="altivec neon sse"
+
 # decoders / encoders / hardware accelerators
 aac_decoder_select="fft mdct"
 ac3_decoder_select="fft mdct"
@@ -1668,21 +1670,21 @@ case $target_os in
         oss_outdev_extralibs="-lossaudio"
         ;;
     openbsd)
-        disable need_memalign
+        enable malloc_aligned
         LIBOBJFLAGS='$(PIC)'
         SHFLAGS='-shared'
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
         ;;
     freebsd|dragonfly)
-        disable need_memalign
+        enable malloc_aligned
         ;;
     bsd/os)
         osextralibs="-lpoll -lgnugetopt"
         strip="strip -d"
         ;;
     darwin)
-        disable need_memalign
+        enable malloc_aligned
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(SHLIBDIR)/$(SLIBNAME),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR) -Wl,-read_only_relocs,suppress'
         strip="strip -x"
         FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
@@ -1697,7 +1699,7 @@ case $target_os in
         target_os=mingw32
         LIBTARGET=i386
         if enabled x86_64; then
-            disable need_memalign
+            enable malloc_aligned
             LIBTARGET=x64
         elif enabled arm; then
             LIBTARGET=arm
@@ -1839,8 +1841,6 @@ die_license_disabled version3 libopencore_amrwb
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
 check_deps $ARCH_EXT_LIST
-
-test -z "$need_memalign" && need_memalign="$mmx"
 
 #Darwin CC versions
 if test $target_os = darwin; then
@@ -2091,7 +2091,8 @@ check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
 check_header X11/extensions/XvMClib.h
 
-if enabled sse && { ! enabled_any memalign memalign_hack posix_memalign && enabled need_memalign ;} ; then
+if ! enabled_any memalign memalign_hack posix_memalign malloc_aligned &&
+     enabled_any $need_memalign ; then
     die "Error, no aligned memory allocator but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
