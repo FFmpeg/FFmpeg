@@ -2127,13 +2127,13 @@ done
 check_lib math.h sin -lm
 check_lib va/va.h vaInitialize -lva
 
-# test for C99 functions in math.h
-for func in llrint log2 lrint lrintf round roundf truncf; do
-    check_exec <<EOF && enable $func || disable $func
-#include <math.h>
-int main(void) { return ($func(3.999f) > 0)?0:1; }
-EOF
-done
+check_func llrint
+check_func log2
+check_func lrint
+check_func lrintf
+check_func round
+check_func roundf
+check_func truncf
 
 # these are off by default, so fail if requested and not available
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
