@@ -479,12 +479,7 @@ static void modified_levinson_durbin(int *window, int window_entries,
 
     av_free(state);
 }
-#endif /* CONFIG_SONIC_ENCODER || CONFIG_SONIC_LS_ENCODER */
 
-static const int samplerate_table[] =
-    { 44100, 22050, 11025, 96000, 48000, 32000, 24000, 16000, 8000 };
-
-#if CONFIG_SONIC_ENCODER || CONFIG_SONIC_LS_ENCODER
 static inline int code_samplerate(int samplerate)
 {
     switch (samplerate)
@@ -750,6 +745,9 @@ static int sonic_encode_frame(AVCodecContext *avctx,
 #endif /* CONFIG_SONIC_ENCODER || CONFIG_SONIC_LS_ENCODER */
 
 #if CONFIG_SONIC_DECODER
+static const int samplerate_table[] =
+    { 44100, 22050, 11025, 96000, 48000, 32000, 24000, 16000, 8000 };
+
 static av_cold int sonic_decode_init(AVCodecContext *avctx)
 {
     SonicContext *s = avctx->priv_data;
@@ -936,6 +934,18 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 
     return (get_bits_count(&gb)+7)/8;
 }
+
+AVCodec sonic_decoder = {
+    "sonic",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_SONIC,
+    sizeof(SonicContext),
+    sonic_decode_init,
+    NULL,
+    sonic_decode_close,
+    sonic_decode_frame,
+    .long_name = NULL_IF_CONFIG_SMALL("Sonic"),
+};
 #endif /* CONFIG_SONIC_DECODER */
 
 #if CONFIG_SONIC_ENCODER
@@ -963,19 +973,5 @@ AVCodec sonic_ls_encoder = {
     sonic_encode_close,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Sonic lossless"),
-};
-#endif
-
-#if CONFIG_SONIC_DECODER
-AVCodec sonic_decoder = {
-    "sonic",
-    CODEC_TYPE_AUDIO,
-    CODEC_ID_SONIC,
-    sizeof(SonicContext),
-    sonic_decode_init,
-    NULL,
-    sonic_decode_close,
-    sonic_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("Sonic"),
 };
 #endif
