@@ -25,10 +25,10 @@ $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
 	$(LD) $(FFLDFLAGS) -o $$@ $$^ -l$(FULLNAME) $(FFEXTRALIBS) $$(ELIBS)
 
 $(SUBDIR)%-test.o: $(SUBDIR)%.c
-	$(CC) $(CFLAGS) -DTEST -c -o $$@ $$^
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c -o $$@ $$^
 
 $(SUBDIR)%-test.o: $(SUBDIR)%-test.c
-	$(CC) $(CFLAGS) -DTEST -c -o $$@ $$^
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c -o $$@ $$^
 
 $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
 	$(YASM) $(YASMFLAGS) -I $$(<D)/ -o $$@ $$<
