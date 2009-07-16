@@ -1857,41 +1857,30 @@ disabled optimizations || check_cflags -fomit-frame-pointer
 
 # Add processor-specific flags
 if test $cpu != "generic"; then
-    warn_altivec(){
-        $1 altivec && echo "WARNING: Tuning for $2 but AltiVec $1.";
-    }
     case $cpu in
         601|ppc601|PowerPC601)
             cpuflags="-mcpu=601"
-            warn_altivec enabled PPC601
         ;;
         603*|ppc603*|PowerPC603*)
             cpuflags="-mcpu=603"
-            warn_altivec enabled PPC603
         ;;
         604*|ppc604*|PowerPC604*)
             cpuflags="-mcpu=604"
-            warn_altivec enabled PPC604
         ;;
         G3|g3|75*|ppc75*|PowerPC75*)
             cpuflags="-mcpu=750 -mpowerpc-gfxopt"
-            warn_altivec enabled PPC75x
         ;;
         G4|g4|745*|ppc745*|PowerPC745*)
             cpuflags="-mcpu=7450 -mpowerpc-gfxopt"
-            warn_altivec disabled PPC745x
         ;;
         74*|ppc74*|PowerPC74*)
             cpuflags="-mcpu=7400 -mpowerpc-gfxopt"
-            warn_altivec disabled PPC74xx
         ;;
         G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
             cpuflags="-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
-            warn_altivec disabled PPC970
         ;;
         Cell|CELL|cell)
             cpuflags="-mcpu=cell"
-            warn_altivec disabled Cell
             enable ldbrx
         ;;
         # targets that do NOT support conditional mov (cmov)
