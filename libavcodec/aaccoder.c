@@ -124,6 +124,8 @@ static float quantize_band_cost(struct AACEncContext *s, const float *in,
     if (!cb) {
         for (i = 0; i < size; i++)
             cost += in[i]*in[i]*lambda;
+        if (bits)
+            *bits = 0;
         return cost;
     }
 #ifndef USE_REALLY_FULL_SEARCH
