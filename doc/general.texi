@@ -21,7 +21,7 @@ use of the OpenCORE libraries for AMR-NB decoding/encoding and AMR-WB decoding.
 
 @subsection OpenCORE
 
-Go to @url{http://gitorious.org/opencore-amr/} and follow the instructions for
+Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the instructions for
 installing the libraries. Then pass @code{--enable-libopencore-amrnb} and/or
 @code{--enable-libopencore-amrwb} to configure to enable the libraries.
 
