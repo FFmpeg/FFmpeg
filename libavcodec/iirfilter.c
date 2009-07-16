@@ -177,3 +177,39 @@ av_cold void ff_iir_filter_free_coeffs(struct FFIIRFilterCoeffs *coeffs)
     av_free(coeffs);
 }
 
+#ifdef TEST
+#define FILT_ORDER 4
+#define SIZE 1024
+int main(void)
+{
+    struct FFIIRFilterCoeffs *fcoeffs = NULL;
+    struct FFIIRFilterState  *fstate  = NULL;
+    float cutoff_coeff = 0.4;
+    int16_t x[SIZE], y[SIZE];
+    int i;
+    FILE* fd;
+
+    fcoeffs = ff_iir_filter_init_coeffs(FF_FILTER_TYPE_BUTTERWORTH,
+                                        FF_FILTER_MODE_LOWPASS, FILT_ORDER,
+                                        cutoff_coeff, 0.0, 0.0);
+    fstate  = ff_iir_filter_init_state(FILT_ORDER);
+
+    for (i = 0; i < SIZE; i++) {
+        x[i] = lrint(0.75 * INT16_MAX * sin(0.5*M_PI*i*i/SIZE));
+    }
+
+    ff_iir_filter(fcoeffs, fstate, SIZE, x, 1, y, 1);
+
+    fd = fopen("in.bin", "w");
+    fwrite(x, sizeof(x[0]), SIZE, fd);
+    fclose(fd);
+
+    fd = fopen("out.bin", "w");
+    fwrite(y, sizeof(y[0]), SIZE, fd);
+    fclose(fd);
+
+    ff_iir_filter_free_coeffs(fcoeffs);
+    ff_iir_filter_free_state(fstate);
+    return 0;
+}
+#endif /* TEST */
