@@ -646,8 +646,7 @@ check_func_headers(){
     check_ld "$@" <<EOF && enable $func && enable_safe $headers
 $incs
 int main(int argc, char **argv){
-    (void) $func;
-    return 0;
+    return (long) $func;
 }
 EOF
 }
