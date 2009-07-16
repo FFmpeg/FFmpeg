@@ -563,7 +563,7 @@ OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
 
 EXAMPLES = api
 
-TESTPROGS = cabac dct eval fft h264 rangecoder snow
+TESTPROGS = cabac dct eval fft h264 iirfilter rangecoder snow
 TESTPROGS-$(ARCH_X86) += x86/cpuid
 TESTPROGS-$(HAVE_MMX) += motion
 
