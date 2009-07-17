@@ -89,11 +89,6 @@ static void abs_pow34_v(float *out, const float *in, const int size)
 #endif /* USE_REALLY_FULL_SEARCH */
 }
 
-static av_always_inline int quant2(float coef, const float Q)
-{
-    return pow(coef * Q, 0.75);
-}
-
 static const uint8_t aac_cb_range [12] = {0, 3, 3, 3, 3, 9, 9, 8, 8, 13, 13, 17};
 static const uint8_t aac_cb_maxval[12] = {0, 1, 1, 2, 2, 4, 4, 7, 7, 12, 12, 16};
 
