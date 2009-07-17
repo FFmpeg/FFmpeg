@@ -1525,6 +1525,86 @@ if test -n "$sysroot"; then
     esac
 fi
 
+# Add processor-specific flags
+case $cpu in
+    601|ppc601|PowerPC601)
+        cpuflags="-mcpu=601"
+    ;;
+    603*|ppc603*|PowerPC603*)
+        cpuflags="-mcpu=603"
+    ;;
+    604*|ppc604*|PowerPC604*)
+        cpuflags="-mcpu=604"
+    ;;
+    G3|g3|75*|ppc75*|PowerPC75*)
+        cpuflags="-mcpu=750 -mpowerpc-gfxopt"
+    ;;
+    G4|g4|745*|ppc745*|PowerPC745*)
+        cpuflags="-mcpu=7450 -mpowerpc-gfxopt"
+    ;;
+    74*|ppc74*|PowerPC74*)
+        cpuflags="-mcpu=7400 -mpowerpc-gfxopt"
+    ;;
+    G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
+        cpuflags="-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
+    ;;
+    Cell|CELL|cell)
+        cpuflags="-mcpu=cell"
+        enable ldbrx
+    ;;
+    # targets that do NOT support conditional mov (cmov)
+    i[345]86|pentium|pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
+        cpuflags="-march=$cpu"
+        disable cmov
+    ;;
+    # targets that do support conditional mov (cmov)
+    i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2)
+        cpuflags="-march=$cpu"
+        enable cmov
+        enable fast_cmov
+    ;;
+    # targets that do support conditional mov but on which it's slow
+    pentium4|pentium4m|prescott|nocona)
+        cpuflags="-march=$cpu"
+        enable cmov
+        disable fast_cmov
+    ;;
+    sparc64)
+        cpuflags="-mcpu=v9"
+    ;;
+    arm11*|cortex*)
+        cpuflags="-mcpu=$cpu"
+        enable fast_unaligned
+    ;;
+    armv[67]*)
+        cpuflags="-march=$cpu"
+        enable fast_unaligned
+    ;;
+    armv*)
+        cpuflags="-march=$cpu"
+    ;;
+    arm*)
+        cpuflags="-mcpu=$cpu"
+    ;;
+    ev4|ev45|ev5|ev56|pca56|ev6|ev67)
+        enabled ccc && cpuflags="-arch $cpu" || cpuflags="-mcpu=$cpu"
+    ;;
+    bf*)
+        cpuflags="-mcpu=$cpu"
+    ;;
+    mips*|[45]k*|[237]4k*|m4k|r*000|loongson2[ef])
+        cpuflags="-march=$cpu"
+    ;;
+    generic)
+    ;;
+    *)
+        echo "WARNING: Unknown CPU \"$cpu\", ignored."
+    ;;
+esac
+
+add_cflags $cpuflags
+add_asflags $cpuflags
+
 # compiler sanity check
 check_exec <<EOF
 int main(void){ return 0; }
@@ -1854,86 +1934,6 @@ if test $target_os = darwin; then
 fi
 
 disabled optimizations || check_cflags -fomit-frame-pointer
-
-# Add processor-specific flags
-    case $cpu in
-        601|ppc601|PowerPC601)
-            cpuflags="-mcpu=601"
-        ;;
-        603*|ppc603*|PowerPC603*)
-            cpuflags="-mcpu=603"
-        ;;
-        604*|ppc604*|PowerPC604*)
-            cpuflags="-mcpu=604"
-        ;;
-        G3|g3|75*|ppc75*|PowerPC75*)
-            cpuflags="-mcpu=750 -mpowerpc-gfxopt"
-        ;;
-        G4|g4|745*|ppc745*|PowerPC745*)
-            cpuflags="-mcpu=7450 -mpowerpc-gfxopt"
-        ;;
-        74*|ppc74*|PowerPC74*)
-            cpuflags="-mcpu=7400 -mpowerpc-gfxopt"
-        ;;
-        G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
-            cpuflags="-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
-        ;;
-        Cell|CELL|cell)
-            cpuflags="-mcpu=cell"
-            enable ldbrx
-        ;;
-        # targets that do NOT support conditional mov (cmov)
-        i[345]86|pentium|pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
-            cpuflags="-march=$cpu"
-            disable cmov
-        ;;
-        # targets that do support conditional mov (cmov)
-        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2)
-            cpuflags="-march=$cpu"
-            enable cmov
-            enable fast_cmov
-        ;;
-        # targets that do support conditional mov but on which it's slow
-        pentium4|pentium4m|prescott|nocona)
-            cpuflags="-march=$cpu"
-            enable cmov
-            disable fast_cmov
-        ;;
-        sparc64)
-            cpuflags="-mcpu=v9"
-        ;;
-        arm11*|cortex*)
-            cpuflags="-mcpu=$cpu"
-            enable fast_unaligned
-        ;;
-        armv[67]*)
-            cpuflags="-march=$cpu"
-            enable fast_unaligned
-        ;;
-        armv*)
-            cpuflags="-march=$cpu"
-        ;;
-        arm*)
-            cpuflags="-mcpu=$cpu"
-        ;;
-        ev4|ev45|ev5|ev56|pca56|ev6|ev67)
-            enabled ccc && cpuflags="-arch $cpu" || cpuflags="-mcpu=$cpu"
-        ;;
-        bf*)
-            cpuflags="-mcpu=$cpu"
-        ;;
-        mips*|[45]k*|[237]4k*|m4k|r*000|loongson2[ef])
-            cpuflags="-march=$cpu"
-        ;;
-        generic)
-        ;;
-        *)
-            echo "WARNING: Unknown CPU \"$cpu\", ignored."
-        ;;
-    esac
-
-add_cflags $cpuflags
-add_asflags $cpuflags
 
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
