@@ -2037,15 +2037,10 @@ enabled vis     && check_asm vis     '"pdist %f0, %f0, %f0"' -mcpu=ultrasparc
 
 enabled vis && add_cflags -mcpu=ultrasparc -mtune=ultrasparc
 
-# ---
-# big/little-endian test
 check_cc <<EOF || die "endian test failed"
 unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -A n -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
-
-# ---
-# check availability of some header files
 
 if check_func dlopen; then
     ldl=
@@ -2170,9 +2165,6 @@ check_cc <<EOF && enable attribute_packed
 struct { int x; } __attribute__((packed)) x;
 EOF
 
-##########################################
-# SDL check
-
 disable sdl_too_old
 disable sdl
 SDL_CONFIG="${cross_prefix}sdl-config"
@@ -2201,9 +2193,6 @@ fi
 
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 
-##########################################
-# Network check
-
 if enabled network; then
     check_type "sys/types.h sys/socket.h" socklen_t
     # Prefer arpa/inet.h over winsock2
@@ -2219,9 +2208,6 @@ if enabled network; then
         disable network
     fi
 fi
-
-##########################################
-# IPv6 check
 
 enabled network && enabled ipv6 && check_ld <<EOF && enable ipv6 || disable ipv6
 #include <sys/types.h>
@@ -2259,7 +2245,6 @@ enabled alsa_demuxer || enabled alsa_muxer && check_lib2 alsa/asoundlib.h snd_pc
 
 enabled jack_demuxer && check_lib2 jack/jack.h jack_client_open -ljack
 
-# deal with the X11 frame grabber
 enabled x11grab                         &&
 check_header X11/Xlib.h                 &&
 check_header X11/extensions/XShm.h      &&
@@ -2304,7 +2289,6 @@ fi
 check_cflags -fno-math-errno
 check_cflags -fno-signed-zeros
 
-# add some flags for Intel C Compiler
 if enabled icc; then
     # Just warnings, no remarks
     check_cflags -w1
