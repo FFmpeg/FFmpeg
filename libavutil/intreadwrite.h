@@ -42,7 +42,7 @@
  * by per-arch headers.
  */
 
-#if   defined(__GNUC__)
+#if   HAVE_ATTRIBUTE_PACKED
 
 struct unaligned_64 { uint64_t l; } __attribute__((packed));
 struct unaligned_32 { uint32_t l; } __attribute__((packed));

@@ -899,6 +899,7 @@ HAVE_LIST="
     alsa_asoundlib_h
     altivec_h
     arpa_inet_h
+    attribute_packed
     bigendian
     bswap
     closesocket
@@ -2164,6 +2165,10 @@ for restrict_keyword in restrict __restrict__ __restrict; do
 void foo(char * $restrict_keyword p);
 EOF
 done
+
+check_cc <<EOF && enable attribute_packed
+struct { int x; } __attribute__((packed)) x;
+EOF
 
 ##########################################
 # SDL check
