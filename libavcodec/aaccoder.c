@@ -61,7 +61,8 @@ static const uint8_t *run_value_bits[2] = {
  */
 static av_always_inline int quant(float coef, const float Q)
 {
-    return pow(coef * Q, 0.75) + 0.4054;
+    float a = coef * Q;
+    return sqrtf(a * sqrtf(a)) + 0.4054;
 }
 
 static void quantize_bands(int (*out)[2], const float *in, const float *scaled,
@@ -84,8 +85,10 @@ static void abs_pow34_v(float *out, const float *in, const int size)
 {
 #ifndef USE_REALLY_FULL_SEARCH
     int i;
-    for (i = 0; i < size; i++)
-        out[i] = pow(fabsf(in[i]), 0.75);
+    for (i = 0; i < size; i++) {
+        float a = fabsf(in[i]);
+        out[i] = sqrtf(a * sqrtf(a));
+    }
 #endif /* USE_REALLY_FULL_SEARCH */
 }
 
@@ -110,7 +113,7 @@ static float quantize_band_cost(struct AACEncContext *s, const float *in,
     const int dim = cb < FIRST_PAIR_BT ? 4 : 2;
     int resbits = 0;
 #ifndef USE_REALLY_FULL_SEARCH
-    const float  Q34 = pow(Q, 0.75);
+    const float  Q34 = sqrtf(Q * sqrtf(Q));
     const int range  = aac_cb_range[cb];
     const int maxval = aac_cb_maxval[cb];
     int offs[4];
@@ -225,7 +228,7 @@ static void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
     const int dim = (cb < FIRST_PAIR_BT) ? 4 : 2;
     int i, j, k;
 #ifndef USE_REALLY_FULL_SEARCH
-    const float  Q34 = pow(Q, 0.75);
+    const float  Q34 = sqrtf(Q * sqrtf(Q));
     const int range  = aac_cb_range[cb];
     const int maxval = aac_cb_maxval[cb];
     int offs[4];
