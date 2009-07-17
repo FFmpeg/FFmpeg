@@ -1856,7 +1856,6 @@ fi
 disabled optimizations || check_cflags -fomit-frame-pointer
 
 # Add processor-specific flags
-if test $cpu != "generic"; then
     case $cpu in
         601|ppc601|PowerPC601)
             cpuflags="-mcpu=601"
@@ -1926,11 +1925,12 @@ if test $cpu != "generic"; then
         mips*|[45]k*|[237]4k*|m4k|r*000|loongson2[ef])
             cpuflags="-march=$cpu"
         ;;
+        generic)
+        ;;
         *)
             echo "WARNING: Unknown CPU \"$cpu\", ignored."
         ;;
     esac
-fi
 
 add_cflags $cpuflags
 add_asflags $cpuflags
