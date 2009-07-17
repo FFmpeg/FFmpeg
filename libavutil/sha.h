@@ -28,7 +28,7 @@ extern const int av_sha_size;
 struct AVSHA;
 
 /**
- * Initializes SHA-1 hashing.
+ * Initializes SHA-1 or SHA-2 hashing.
  *
  * @param context pointer to the function context (of size av_sha_size)
  * @param bits    number of bits in digest (SHA-1 - 160 bits, SHA-2 224 or 256 bits)
