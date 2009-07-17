@@ -1295,7 +1295,7 @@ DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -MM'
 # find source path
 source_path="$(dirname "$0")"
 enable source_path_used
-if test -z "$source_path" -o "$source_path" = "." ; then
+if test -f configure; then
     source_path="$(pwd)"
     disable source_path_used
 else
