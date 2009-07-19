@@ -2341,8 +2341,8 @@ enabled_any $BSF_LIST          && enable bsfs
 enabled_any $DEMUXER_LIST      && enable demuxers
 enabled_any $MUXER_LIST        && enable muxers
 enabled_any $FILTER_LIST       && enable filters
-enabled_any $INDEV_LIST        && enable demuxers
-enabled_any $OUTDEV_LIST       && enable muxers
+enabled_any $INDEV_LIST        && enable indevs
+enabled_any $OUTDEV_LIST       && enable outdevs
 enabled_any $PROTOCOL_LIST     && enable protocols
 
 enabled_any $THREADS_LIST      && enable threads
