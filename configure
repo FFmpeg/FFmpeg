@@ -1041,6 +1041,7 @@ ssse3_deps="sse"
 vis_deps="sparc"
 
 need_memalign="altivec neon sse"
+inline_asm_deps="!tms470"
 
 # decoders / encoders / hardware accelerators
 aac_decoder_select="fft mdct"
@@ -1505,6 +1506,41 @@ elif $cc --vsn 2>/dev/null | grep -q RVCT; then
         die "Error creating armcc configuration file."
     cc="$cc --arm_linux_config_file=$armcc_conf --translate_gcc"
     as_default="${cross_prefix}gcc"
+elif $cc -version 2>/dev/null | grep -q TMS470; then
+    cc_type=tms470
+    cc="$cc --gcc --abi=eabi -eo=.o -mc -me"
+    CC_O='-fr=$(@D)'
+    as_default="${cross_prefix}gcc"
+    ld_default="${cross_prefix}gcc"
+    dep_cc_default="${cross_prefix}gcc"
+    TMPO=$(basename $TMPC .c).o
+    append TMPFILES $TMPO
+    add_cflags -D__gnuc_va_list=va_list -D__USER_LABEL_PREFIX__=
+    DEPFLAGS='$(CPPFLAGS) -MM'
+    filter_cflags=tms470_flags
+    tms470_flags(){
+        for flag; do
+            case $flag in
+                -march=*|-mcpu=*)
+                    case "${flag#*=}" in
+                        armv7-a|cortex-a*)      echo -mv=7a8 ;;
+                        armv7-r|cortex-r*)      echo -mv=7r4 ;;
+                        armv7-m|cortex-m*)      echo -mv=7m3 ;;
+                        armv6*|arm11*)          echo -mv=6   ;;
+                        armv5*e|arm[79]*e*|arm9[24]6*|arm96*|arm102[26])
+                                                echo -mv=5e  ;;
+                        armv4*|arm7*|arm9[24]*) echo -mv=4   ;;
+                    esac
+                    ;;
+                -mfpu=neon)     echo --float_support=vfpv3 --neon ;;
+                -mfpu=vfp)      echo --float_support=vfpv2        ;;
+                -mfpu=softvfp)  echo --float_support=vfplib       ;;
+                -Os)            echo -O3 -mf=2                    ;;
+                -O[0-3])        echo $flag -mf=5                  ;;
+                -g)             echo -g -mn                       ;;
+            esac
+        done
+    }
 fi
 
 test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
@@ -1522,6 +1558,10 @@ if test -n "$sysroot"; then
         gcc)
             add_cppflags --sysroot="$sysroot"
             add_ldflags --sysroot="$sysroot"
+        ;;
+        tms470)
+            add_cppflags -I"$sysinclude"
+            add_ldflags  --sysroot="$sysroot"
         ;;
     esac
 fi
