@@ -1638,10 +1638,10 @@ static int http_parse_request(HTTPContext *c)
                   "HTTP/1.0 404 Not Found\r\n"
                   "Content-type: text/html\r\n"
                   "\r\n"
-                  "<HTML>\n"
-                  "<HEAD><TITLE>404 Not Found</TITLE></HEAD>\n"
-                  "<BODY>%s</BODY>\n"
-                  "</HTML>\n", msg);
+                  "<html>\n"
+                  "<head><title>404 Not Found</title></head>\n"
+                  "<body>%s</body>\n"
+                  "</html>\n", msg);
     /* prepare output buffer */
     c->buffer_ptr = c->buffer;
     c->buffer_end = q;
@@ -1686,15 +1686,15 @@ static void compute_status(HTTPContext *c)
     url_fprintf(pb, "Pragma: no-cache\r\n");
     url_fprintf(pb, "\r\n");
 
-    url_fprintf(pb, "<HTML><HEAD><TITLE>%s Status</TITLE>\n", program_name);
+    url_fprintf(pb, "<html><head><title>%s Status</title>\n", program_name);
     if (c->stream->feed_filename[0])
         url_fprintf(pb, "<link rel=\"shortcut icon\" href=\"%s\">\n", c->stream->feed_filename);
-    url_fprintf(pb, "</HEAD>\n<BODY>");
-    url_fprintf(pb, "<H1>%s Status</H1>\n", program_name);
+    url_fprintf(pb, "</head>\n<body>");
+    url_fprintf(pb, "<h1>%s Status</h1>\n", program_name);
     /* format status */
-    url_fprintf(pb, "<H2>Available Streams</H2>\n");
-    url_fprintf(pb, "<TABLE cellspacing=0 cellpadding=4>\n");
-    url_fprintf(pb, "<TR><Th valign=top>Path<th align=left>Served<br>Conns<Th><br>bytes<Th valign=top>Format<Th>Bit rate<br>kbits/s<Th align=left>Video<br>kbits/s<th><br>Codec<Th align=left>Audio<br>kbits/s<th><br>Codec<Th align=left valign=top>Feed\n");
+    url_fprintf(pb, "<h2>Available Streams</h2>\n");
+    url_fprintf(pb, "<table cellspacing=0 cellpadding=4>\n");
+    url_fprintf(pb, "<tr><th valign=top>Path<th align=left>Served<br>Conns<th><br>bytes<th valign=top>Format<th>Bit rate<br>kbits/s<th align=left>Video<br>kbits/s<th><br>Codec<th align=left>Audio<br>kbits/s<th><br>Codec<th align=left valign=top>Feed\n");
     stream = first_stream;
     while (stream != NULL) {
         char sfilename[1024];
@@ -1722,7 +1722,7 @@ static void compute_status(HTTPContext *c)
                 }
             }
 
-            url_fprintf(pb, "<TR><TD><A HREF=\"/%s\">%s</A> ",
+            url_fprintf(pb, "<tr><td><a href=\"/%s\">%s</a> ",
                          sfilename, stream->filename);
             url_fprintf(pb, "<td align=right> %d <td align=right> ",
                         stream->conns_served);
@@ -1763,26 +1763,26 @@ static void compute_status(HTTPContext *c)
                             abort();
                         }
                     }
-                    url_fprintf(pb, "<TD align=center> %s <TD align=right> %d <TD align=right> %d <TD> %s %s <TD align=right> %d <TD> %s %s",
+                    url_fprintf(pb, "<td align=center> %s <td align=right> %d <td align=right> %d <td> %s %s <td align=right> %d <td> %s %s",
                                  stream->fmt->name,
                                  stream->bandwidth,
                                  video_bit_rate / 1000, video_codec_name, video_codec_name_extra,
                                  audio_bit_rate / 1000, audio_codec_name, audio_codec_name_extra);
                     if (stream->feed)
-                        url_fprintf(pb, "<TD>%s", stream->feed->filename);
+                        url_fprintf(pb, "<td>%s", stream->feed->filename);
                     else
-                        url_fprintf(pb, "<TD>%s", stream->feed_filename);
+                        url_fprintf(pb, "<td>%s", stream->feed_filename);
                     url_fprintf(pb, "\n");
                 }
                 break;
             default:
-                url_fprintf(pb, "<TD align=center> - <TD align=right> - <TD align=right> - <td><td align=right> - <TD>\n");
+                url_fprintf(pb, "<td align=center> - <td align=right> - <td align=right> - <td><td align=right> - <td>\n");
                 break;
             }
         }
         stream = stream->next;
     }
-    url_fprintf(pb, "</TABLE>\n");
+    url_fprintf(pb, "</table>\n");
 
     stream = first_stream;
     while (stream != NULL) {
@@ -1859,9 +1859,9 @@ static void compute_status(HTTPContext *c)
         /* feed status */
         stream = first_feed;
         while (stream != NULL) {
-            url_fprintf(pb, "<H1>Feed '%s'</H1>\n", stream->filename);
-            url_fprintf(pb, "<TABLE>\n");
-            url_fprintf(pb, "<TR><TD>Parameters<TD>Frame count<TD>Size<TD>Avg bitrate (kbits/s)\n");
+            url_fprintf(pb, "<h1>Feed '%s'</h1>\n", stream->filename);
+            url_fprintf(pb, "<table>\n");
+            url_fprintf(pb, "<tr><td>Parameters<td>Frame count<td>Size<td>Avg bitrate (kbits/s)\n");
             for(i=0;i<stream->nb_streams;i++) {
                 AVStream *st = stream->streams[i];
                 FeedData *fdata = st->priv_data;
@@ -1871,26 +1871,26 @@ static void compute_status(HTTPContext *c)
                 avg = fdata->avg_frame_size * (float)enc->rate * 8.0;
                 if (enc->codec->type == CODEC_TYPE_AUDIO && enc->frame_size > 0)
                     avg /= enc->frame_size;
-                url_fprintf(pb, "<TR><TD>%s <TD> %d <TD> %"PRId64" <TD> %0.1f\n",
+                url_fprintf(pb, "<tr><td>%s <td> %d <td> %"PRId64" <td> %0.1f\n",
                              buf, enc->frame_number, fdata->data_count, avg / 1000.0);
             }
-            url_fprintf(pb, "</TABLE>\n");
+            url_fprintf(pb, "</table>\n");
             stream = stream->next_feed;
         }
     }
 #endif
 
     /* connection status */
-    url_fprintf(pb, "<H2>Connection Status</H2>\n");
+    url_fprintf(pb, "<h2>Connection Status</h2>\n");
 
-    url_fprintf(pb, "Number of connections: %d / %d<BR>\n",
+    url_fprintf(pb, "Number of connections: %d / %d<br>\n",
                  nb_connections, nb_max_connections);
 
-    url_fprintf(pb, "Bandwidth in use: %"PRIu64"k / %"PRIu64"k<BR>\n",
+    url_fprintf(pb, "Bandwidth in use: %"PRIu64"k / %"PRIu64"k<br>\n",
                  current_bandwidth, max_bandwidth);
 
-    url_fprintf(pb, "<TABLE>\n");
-    url_fprintf(pb, "<TR><th>#<th>File<th>IP<th>Proto<th>State<th>Target bits/sec<th>Actual bits/sec<th>Bytes transferred\n");
+    url_fprintf(pb, "<table>\n");
+    url_fprintf(pb, "<tr><th>#<th>File<th>IP<th>Proto<th>State<th>Target bits/sec<th>Actual bits/sec<th>Bytes transferred\n");
     c1 = first_http_ctx;
     i = 0;
     while (c1 != NULL) {
@@ -1909,7 +1909,7 @@ static void compute_status(HTTPContext *c)
 
         i++;
         p = inet_ntoa(c1->from_addr.sin_addr);
-        url_fprintf(pb, "<TR><TD><B>%d</B><TD>%s%s<TD>%s<TD>%s<TD>%s<td align=right>",
+        url_fprintf(pb, "<tr><td><b>%d</b><td>%s%s<td>%s<td>%s<td>%s<td align=right>",
                     i,
                     c1->stream ? c1->stream->filename : "",
                     c1->state == HTTPSTATE_RECEIVE_DATA ? "(input)" : "",
@@ -1924,13 +1924,13 @@ static void compute_status(HTTPContext *c)
         url_fprintf(pb, "\n");
         c1 = c1->next;
     }
-    url_fprintf(pb, "</TABLE>\n");
+    url_fprintf(pb, "</table>\n");
 
     /* date */
     ti = time(NULL);
     p = ctime(&ti);
-    url_fprintf(pb, "<HR size=1 noshade>Generated at %s", p);
-    url_fprintf(pb, "</BODY>\n</HTML>\n");
+    url_fprintf(pb, "<hr size=1 noshade>Generated at %s", p);
+    url_fprintf(pb, "</body>\n</html>\n");
 
     len = url_close_dyn_buf(pb, &c->pb_buffer);
     c->buffer_ptr = c->pb_buffer;
