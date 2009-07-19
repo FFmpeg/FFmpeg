@@ -465,7 +465,6 @@ MMX-OBJS-$(CONFIG_VP6A_DECODER)        += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o \
                                           x86/vp6dsp_mmx.o x86/vp6dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP6F_DECODER)        += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o \
                                           x86/vp6dsp_mmx.o x86/vp6dsp_sse2.o
-MMX-OBJS-$(CONFIG_WMV3_DECODER)        += x86/vc1dsp_mmx.o
 MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
                                           $(YASM-OBJS-yes)
 
@@ -532,7 +531,6 @@ ALTIVEC-OBJS-$(CONFIG_VP5_DECODER)     += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP6_DECODER)     += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP6A_DECODER)    += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP6F_DECODER)    += ppc/vp3dsp_altivec.o
-ALTIVEC-OBJS-$(CONFIG_WMV3_DECODER)    += ppc/vc1dsp_altivec.o
 
 OBJS-$(HAVE_ALTIVEC)                   += ppc/check_altivec.o           \
                                           ppc/dsputil_altivec.o         \
