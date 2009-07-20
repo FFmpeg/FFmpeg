@@ -1002,7 +1002,6 @@ CMDLINE_SET="
     cpu
     cross_prefix
     dep_cc
-    extra_cflags
     extra_version
     host_cc
     host_cflags
@@ -1018,6 +1017,10 @@ CMDLINE_SET="
     target_exec
     target_os
     target_path
+"
+
+CMDLINE_APPEND="
+    extra_cflags
 "
 
 # code dependency declarations
@@ -1401,8 +1404,13 @@ for opt do
     optname="${opt%%=*}"
     optname="${optname#--}"
     optname=$(echo "$optname" | sed 's/-/_/g')
-    is_in $optname $CMDLINE_SET || die_unknown $opt
-    eval $optname='$optval'
+    if is_in $optname $CMDLINE_SET; then
+        eval $optname='$optval'
+    elif is_in $optname $CMDLINE_APPEND; then
+        append $optname "$optval"
+    else
+         die_unknown $opt
+    fi
     ;;
     esac
 done
