@@ -347,7 +347,6 @@ static void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
  */
 typedef struct BandCodingPath {
     int prev_idx; ///< pointer to the previous path point
-    int codebook; ///< codebook for coding band run
     float cost;   ///< path cost
     int run;
 } BandCodingPath;
