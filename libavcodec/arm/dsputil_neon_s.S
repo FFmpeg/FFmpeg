@@ -745,9 +745,11 @@ function ff_vector_fmul_neon, export=1
         .endfunc
 
 function ff_vector_fmul_window_neon, export=1
-        vld1.32         {d16[],d17[]}, [sp,:32]
+VFP     vdup.32         q8,  d0[0]
+NOVFP   vld1.32         {d16[],d17[]}, [sp,:32]
         push            {r4,r5,lr}
-        ldr             lr,  [sp, #16]
+VFP     ldr             lr,  [sp, #12]
+NOVFP   ldr             lr,  [sp, #16]
         sub             r2,  r2,  #8
         sub             r5,  lr,  #2
         add             r2,  r2,  r5, lsl #2
