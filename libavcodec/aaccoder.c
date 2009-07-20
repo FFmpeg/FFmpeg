@@ -690,7 +690,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                                                        scaled + w2*128,
                                                        sce->ics.swb_sizes[g],
                                                        sce->sf_idx[w*16+g],
-                                                       ESC_BT,
+                                                       cb,
                                                        lambda,
                                                        INFINITY,
                                                        &b);
