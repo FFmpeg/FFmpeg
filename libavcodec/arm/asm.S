@@ -45,3 +45,12 @@
         ldr             \rd, =\val
 #endif
         .endm
+
+#if HAVE_VFP_ARGS
+        .eabi_attribute 28, 1
+#   define VFP
+#   define NOVFP @
+#else
+#   define VFP   @
+#   define NOVFP
+#endif

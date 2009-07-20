@@ -958,6 +958,7 @@ HAVE_LIST="
     termios_h
     threads
     truncf
+    vfp_args
     VirtualAlloc
     winsock2_h
     xform_asm
@@ -2041,6 +2042,11 @@ EOF
 fi
 
 # check for assembler specific support
+
+enabled arm && check_ld <<EOF && enable vfp_args
+__asm__ (".eabi_attribute 28, 1");
+int main(void) { return 0; }
+EOF
 
 enabled mips && check_asm loongson '"dmult.g $1, $2, $3"'
 
