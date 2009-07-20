@@ -72,8 +72,8 @@ static void quantize_bands(int (*out)[2], const float *in, const float *scaled,
     double qc;
     for (i = 0; i < size; i++) {
         qc = scaled[i] * Q34;
-        out[i][0] = (int)FFMIN((int)qc,            maxval);
-        out[i][1] = (int)FFMIN((int)(qc + 0.4054), maxval);
+        out[i][0] = (int)FFMIN(qc,          (double)maxval);
+        out[i][1] = (int)FFMIN(qc + 0.4054, (double)maxval);
         if (is_signed && in[i] < 0.0f) {
             out[i][0] = -out[i][0];
             out[i][1] = -out[i][1];
