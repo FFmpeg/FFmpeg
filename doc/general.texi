@@ -14,12 +14,10 @@ FFmpeg can be hooked up with a number of external libraries to add support
 for more formats. None of them are used by default, their use has to be
 explicitly requested by passing the appropriate flags to @file{./configure}.
 
-@section AMR
+@section OpenCORE AMR
 
-AMR comes in two different flavors, wideband and narrowband. FFmpeg can make
-use of the OpenCORE libraries for AMR-NB decoding/encoding and AMR-WB decoding.
-
-@subsection OpenCORE
+FFmpeg can make use of the OpenCORE libraries for AMR-NB
+decoding/encoding and AMR-WB decoding.
 
 Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the instructions for
 installing the libraries. Then pass @code{--enable-libopencore-amrnb} and/or
