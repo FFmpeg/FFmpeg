@@ -37,18 +37,12 @@
 
 #include "config.h"
 #include "libavformat/avformat.h"
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/time.h>
-#define _LINUX_TIME_H 1
 #include <time.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
-#include <sys/ipc.h>
 #include <sys/shm.h>
 #include <X11/extensions/XShm.h>
 
