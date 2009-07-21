@@ -222,7 +222,7 @@ static void gen_image(int num, int w, int h)
     for(y=0;y<h;y++) {
         for(x=0;x<w;x++) {
             x1 = (x << FRAC_BITS) + dx;
-            y1 = (y << FRAC_BITS) + dx;
+            y1 = (y << FRAC_BITS) + dy;
             r = ((y1 * 7) >> FRAC_BITS) & 0xff;
             g = (((x1 + y1) * 9) >> FRAC_BITS) & 0xff;
             b = ((x1 * 5) >> FRAC_BITS) & 0xff;
