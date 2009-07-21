@@ -2683,9 +2683,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         c->param[1] = SWS_PARAM_DEFAULT;
     }
 
-    c->chrIntHSubSample= c->chrDstHSubSample;
-    c->chrIntVSubSample= c->chrSrcVSubSample;
-
     // Note the -((-x)>>y) is so that we always round toward +inf.
     c->chrSrcW= -((-srcW) >> c->chrSrcHSubSample);
     c->chrSrcH= -((-srcH) >> c->chrSrcVSubSample);

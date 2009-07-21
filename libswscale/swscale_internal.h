@@ -82,7 +82,6 @@ typedef struct SwsContext{
     enum PixelFormat dstFormat, srcFormat;  ///< format 4:2:0 type is always YV12
     int origDstFormat, origSrcFormat;       ///< format
     int chrSrcHSubSample, chrSrcVSubSample;
-    int chrIntHSubSample, chrIntVSubSample;
     int chrDstHSubSample, chrDstVSubSample;
     int vChrDrop;
     int sliceDir;
