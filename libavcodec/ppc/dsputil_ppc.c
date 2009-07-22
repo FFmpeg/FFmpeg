@@ -287,7 +287,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
                 c->idct_put = idct_put_altivec;
                 c->idct_add = idct_add_altivec;
                 c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
-            }else if((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER || CONFIG_THEORA_DECODER) &&
+            }else if((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER) &&
                      avctx->idct_algo==FF_IDCT_VP3){
                 c->idct_put = ff_vp3_idct_put_altivec;
                 c->idct_add = ff_vp3_idct_add_altivec;

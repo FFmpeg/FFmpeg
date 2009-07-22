@@ -258,7 +258,7 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->h264_idct_add16intra = ff_h264_idct_add16intra_neon;
     c->h264_idct_add8       = ff_h264_idct_add8_neon;
 
-    if (CONFIG_VP3_DECODER || CONFIG_THEORA_DECODER) {
+    if (CONFIG_VP3_DECODER) {
         c->vp3_v_loop_filter = ff_vp3_v_loop_filter_neon;
         c->vp3_h_loop_filter = ff_vp3_h_loop_filter_neon;
     }

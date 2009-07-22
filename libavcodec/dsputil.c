@@ -4363,7 +4363,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_add= ff_jref_idct_add;
             c->idct    = j_rev_dct;
             c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
-        }else if((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER || CONFIG_THEORA_DECODER ) &&
+        }else if((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER ) &&
                 avctx->idct_algo==FF_IDCT_VP3){
             c->idct_put= ff_vp3_idct_put_c;
             c->idct_add= ff_vp3_idct_add_c;
@@ -4636,7 +4636,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         c->h263_v_loop_filter= h263_v_loop_filter_c;
     }
 
-    if (CONFIG_VP3_DECODER || CONFIG_THEORA_DECODER) {
+    if (CONFIG_VP3_DECODER) {
         c->vp3_h_loop_filter= ff_vp3_h_loop_filter_c;
         c->vp3_v_loop_filter= ff_vp3_v_loop_filter_c;
     }

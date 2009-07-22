@@ -184,7 +184,7 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
             c->idct_add= ff_simple_idct_add_neon;
             c->idct    = ff_simple_idct_neon;
             c->idct_permutation_type = FF_PARTTRANS_IDCT_PERM;
-        } else if ((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER || CONFIG_THEORA_DECODER) &&
+        } else if ((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER) &&
                    idct_algo==FF_IDCT_VP3){
             c->idct_put= ff_vp3_idct_put_neon;
             c->idct_add= ff_vp3_idct_add_neon;
