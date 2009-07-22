@@ -176,7 +176,6 @@ unsigned char tab_r[256*256];
 unsigned char tab_g[256*256];
 unsigned char tab_b[256*256];
 
-int teta = 0;
 int h_cos [360];
 int h_sin [360];
 
@@ -234,7 +233,6 @@ static void gen_image(int num, int w, int h)
 #endif
     }
   }
-  teta = (teta+1) % 360;
 }
 
 #define W 256
