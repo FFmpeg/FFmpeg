@@ -677,8 +677,10 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     float mindist = INFINITY;
                     int minbits = 0;
 
-                    if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218)
+                    if (sce->zeroes[w*16+g] || sce->sf_idx[w*16+g] >= 218) {
+                        start += sce->ics.swb_sizes[g];
                         continue;
+                    }
                     minscaler = FFMIN(minscaler, sce->sf_idx[w*16+g]);
                     for (cb = 0; cb <= ESC_BT; cb++) {
                         float dist = 0.0f;
