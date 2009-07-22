@@ -21,15 +21,15 @@
 
 /**
  * @file libavcodec/ac3dec_data.c
- * tables taken directly from the AC-3 spec.
+ * Tables taken directly from the AC-3 spec.
  */
 
 #include "ac3dec_data.h"
 #include "ac3.h"
 
 /**
- * table used to ungroup 3 values stored in 5 bits.
- * used by bap=1 mantissas and GAQ.
+ * Table used to ungroup 3 values stored in 5 bits.
+ * Used by bap=1 mantissas and GAQ.
  * ff_ac3_ungroup_3_in_5_bits_tab[i] = { i/9, (i%9)/3, (i%9)%3 }
  */
 const uint8_t ff_ac3_ungroup_3_in_5_bits_tab[32][3] = {
