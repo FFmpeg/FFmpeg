@@ -1985,6 +1985,22 @@ check_cc <<EOF && enable inline_asm
 void foo(void) { __asm__ volatile ("" ::); }
 EOF
 
+_restrict=
+for restrict_keyword in restrict __restrict__ __restrict; do
+    check_cc <<EOF && _restrict=$restrict_keyword && break
+void foo(char * $restrict_keyword p);
+EOF
+done
+
+check_cc <<EOF && enable attribute_packed
+struct { int x; } __attribute__((packed)) x;
+EOF
+
+check_cc <<EOF || die "endian test failed"
+unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
+EOF
+od -A n -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
+
 if enabled arm; then
     check_ld <<EOF && enable vfp_args
 __asm__ (".eabi_attribute 28, 1");
@@ -2077,11 +2093,6 @@ EOF
     esac
     disabled yasm || { check_yasm "pabsw xmm0, xmm0" && enable yasm; }
 fi
-
-check_cc <<EOF || die "endian test failed"
-unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
-EOF
-od -A n -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
 if check_func dlopen; then
     ldl=
@@ -2193,18 +2204,6 @@ if enabled libdc1394; then
         enable libdc1394_1; } ||
     die "ERROR: No version of libdc1394 found "
 fi
-
-
-_restrict=
-for restrict_keyword in restrict __restrict__ __restrict; do
-    check_cc <<EOF && _restrict=$restrict_keyword && break
-void foo(char * $restrict_keyword p);
-EOF
-done
-
-check_cc <<EOF && enable attribute_packed
-struct { int x; } __attribute__((packed)) x;
-EOF
 
 disable sdl_too_old
 disable sdl
