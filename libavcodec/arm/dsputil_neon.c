@@ -187,6 +187,7 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->put_pixels_clamped = ff_put_pixels_clamped_neon;
     c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_neon;
 
+    if (CONFIG_H264_DECODER) {
     c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_neon;
     c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_neon;
 
@@ -257,6 +258,7 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->h264_idct_add16      = ff_h264_idct_add16_neon;
     c->h264_idct_add16intra = ff_h264_idct_add16intra_neon;
     c->h264_idct_add8       = ff_h264_idct_add8_neon;
+    }
 
     if (CONFIG_VP3_DECODER) {
         c->vp3_v_loop_filter = ff_vp3_v_loop_filter_neon;

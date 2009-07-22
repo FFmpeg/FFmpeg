@@ -495,12 +495,13 @@ OBJS-$(HAVE_ARMVFP)                    += arm/dsputil_vfp.o             \
 OBJS-$(HAVE_IWMMXT)                    += arm/dsputil_iwmmxt.o          \
                                           arm/mpegvideo_iwmmxt.o        \
 
+NEON-OBJS-$(CONFIG_H264_DECODER)       += arm/h264dsp_neon.o            \
+                                          arm/h264idct_neon.o           \
+
 NEON-OBJS-$(CONFIG_VP3_DECODER)        += arm/vp3dsp_neon.o
 
 OBJS-$(HAVE_NEON)                      += arm/dsputil_neon.o            \
                                           arm/dsputil_neon_s.o          \
-                                          arm/h264dsp_neon.o            \
-                                          arm/h264idct_neon.o           \
                                           arm/simple_idct_neon.o        \
                                           $(NEON-OBJS-yes)
 
