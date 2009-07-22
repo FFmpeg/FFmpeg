@@ -197,8 +197,8 @@ static int ipol(uint8_t *src, int x, int y){
 
 static void gen_image(int num, int w, int h)
 {
-  const int c = h_cos [teta];
-  const int s = h_sin [teta];
+  const int c = h_cos [num % 360];
+  const int s = h_sin [num % 360];
 
   const int xi = -(w/2) * c;
   const int yi =  (w/2) * s;
