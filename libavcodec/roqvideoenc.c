@@ -55,7 +55,6 @@
  */
 
 #include <string.h>
-#include <unistd.h>
 
 #include "roqvideo.h"
 #include "bytestream.h"

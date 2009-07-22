@@ -21,7 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <unistd.h>
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_bfin.h"
