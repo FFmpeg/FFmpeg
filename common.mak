@@ -30,13 +30,13 @@ CPPFLAGS := -DHAVE_AV_CONFIG_H -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(CPPFLAGS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LIBOBJFLAGS) -Wno-unused -c -o $@ -x c $<
 
 %.d: %.c
-	$(DEPEND_CMD) > $@
+	$(DEPEND_CMD)
 
 %.d: %.S
-	$(DEPEND_CMD) > $@
+	$(DEPEND_CMD)
 
 %.d: %.cpp
-	$(DEPEND_CMD) > $@
+	$(DEPEND_CMD)
 
 %.o: %.d
 
