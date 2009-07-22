@@ -22,7 +22,7 @@
 #ifndef AVCODEC_AC3DEC_DATA_H
 #define AVCODEC_AC3DEC_DATA_H
 
-#include "libavutil/common.h"
+#include <stdint.h>
 
 extern const uint8_t ff_ac3_ungroup_3_in_5_bits_tab[32][3];
 extern const uint8_t ff_eac3_hebap_tab[64];
