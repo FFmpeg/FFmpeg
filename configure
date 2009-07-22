@@ -1824,6 +1824,7 @@ case $target_os in
         FFSERVERLDFLAGS=-Wl,-bind_at_load
         objformat="macho"
         enabled x86_64 && objformat="macho64"
+        enabled shared || check_cflags -mdynamic-no-pic
         ;;
     mingw32*)
         target_os=mingw32
@@ -1971,11 +1972,6 @@ die_license_disabled version3 libopencore_amrwb
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
 check_deps $ARCH_EXT_LIST
-
-#Darwin CC versions
-if test $target_os = darwin; then
-        enabled shared || check_cflags -mdynamic-no-pic
-fi
 
 disabled optimizations || check_cflags -fomit-frame-pointer
 
