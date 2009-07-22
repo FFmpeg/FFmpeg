@@ -217,7 +217,7 @@ OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o motion_est.o h263.o m
 OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o h264idct.o h264pred.o h264_parser.o cabac.o mpegvideo.o error_resilience.o svq1dec.o svq1.o h263.o
 OBJS-$(CONFIG_TARGA_DECODER)           += targa.o
 OBJS-$(CONFIG_TARGA_ENCODER)           += targaenc.o rle.o
-OBJS-$(CONFIG_THEORA_DECODER)          += vp3.o xiph.o vp3dsp.o
+OBJS-$(CONFIG_THEORA_DECODER)          += xiph.o
 OBJS-$(CONFIG_THP_DECODER)             += mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_TIERTEXSEQVIDEO_DECODER) += tiertexseqv.o
 OBJS-$(CONFIG_TIFF_DECODER)            += tiff.o lzw.o faxcompr.o
@@ -452,7 +452,6 @@ MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
 MMX-OBJS-$(CONFIG_FLAC_ENCODER)        += x86/flacdsp_mmx.o
 MMX-OBJS-$(CONFIG_GPL)                 += x86/idct_mmx.o
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp_mmx.o
-MMX-OBJS-$(CONFIG_THEORA_DECODER)      += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 MMX-OBJS-$(CONFIG_VP3_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
 MMX-OBJS-$(CONFIG_VP5_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
@@ -496,7 +495,6 @@ OBJS-$(HAVE_ARMVFP)                    += arm/dsputil_vfp.o             \
 OBJS-$(HAVE_IWMMXT)                    += arm/dsputil_iwmmxt.o          \
                                           arm/mpegvideo_iwmmxt.o        \
 
-NEON-OBJS-$(CONFIG_THEORA_DECODER)     += arm/vp3dsp_neon.o
 NEON-OBJS-$(CONFIG_VP3_DECODER)        += arm/vp3dsp_neon.o
 
 OBJS-$(HAVE_NEON)                      += arm/dsputil_neon.o            \
@@ -517,7 +515,6 @@ OBJS-$(ARCH_BFIN)                      += bfin/dsputil_bfin.o           \
 OBJS-$(ARCH_PPC)                       += ppc/dsputil_ppc.o             \
 
 ALTIVEC-OBJS-$(CONFIG_H264_DECODER)    += ppc/h264_altivec.o
-ALTIVEC-OBJS-$(CONFIG_THEORA_DECODER)  += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP3_DECODER)     += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP5_DECODER)     += ppc/vp3dsp_altivec.o
