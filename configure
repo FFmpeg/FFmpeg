@@ -1977,9 +1977,6 @@ if test $target_os = darwin; then
     if enabled xlc; then
         add_cflags -qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto
     else
-        add_cflags -pipe
-        check_cflags -force_cpusubtype_ALL
-        check_cflags -Wno-sign-compare
         enabled shared || check_cflags -mdynamic-no-pic
     fi
 fi
