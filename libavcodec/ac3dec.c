@@ -314,9 +314,12 @@ static int parse_frame_header(AC3DecodeContext *s)
         s->skip_syntax           = 1;
         memset(s->channel_uses_aht, 0, sizeof(s->channel_uses_aht));
         return ac3_parse_header(s);
-    } else {
+    } else if (CONFIG_EAC3_DECODER) {
         s->eac3 = 1;
         return ff_eac3_parse_header(s);
+    } else {
+        av_log(s->avctx, AV_LOG_ERROR, "E-AC-3 support not compiled in\n");
+        return -1;
     }
 }
 
@@ -559,7 +562,7 @@ static void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk, int ch,
         /* if AHT is used, mantissas for all blocks are encoded in the first
            block of the frame. */
         int bin;
-        if (!blk)
+        if (!blk && CONFIG_EAC3_DECODER)
             ff_eac3_decode_transform_coeffs_aht_ch(s, ch);
         for (bin = s->start_freq[ch]; bin < s->end_freq[ch]; bin++) {
             s->fixed_coeffs[ch][bin] = s->pre_mantissa[ch][bin][blk] >> s->dexps[ch][bin];

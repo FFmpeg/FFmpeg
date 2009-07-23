@@ -55,6 +55,7 @@
 #include "ac3_parser.h"
 #include "ac3dec.h"
 #include "ac3dec_data.h"
+#include "eac3dec_data.h"
 
 /** gain adaptive quantization mode */
 typedef enum {
