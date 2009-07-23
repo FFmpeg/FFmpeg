@@ -59,7 +59,6 @@ untested special converters
 #include <string.h>
 #include <math.h>
 #include <stdio.h>
-#include <unistd.h>
 #include "config.h"
 #include <assert.h>
 #if HAVE_SYS_MMAN_H
