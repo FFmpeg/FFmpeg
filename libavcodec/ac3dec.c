@@ -1355,6 +1355,7 @@ AVCodec ac3_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
 };
 
+#if CONFIG_EAC3_DECODER
 AVCodec eac3_decoder = {
     .name = "eac3",
     .type = CODEC_TYPE_AUDIO,
@@ -1365,3 +1366,4 @@ AVCodec eac3_decoder = {
     .decode = ac3_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52B (AC-3, E-AC-3)"),
 };
+#endif
