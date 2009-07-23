@@ -2003,6 +2003,7 @@ EOF
 od -A n -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
 if enabled arm; then
+
     check_ld <<EOF && enable vfp_args
 __asm__ (".eabi_attribute 28, 1");
 int main(void) { return 0; }
@@ -2017,10 +2018,14 @@ EOF
     enabled armvfp  && check_asm armvfp  '"fadds s0, s0, s0"'
     enabled iwmmxt  && check_asm iwmmxt  '"wunpckelub wr6, wr4"'
     enabled neon    && check_asm neon    '"vadd.i16 q0, q0, q0"'
+
 elif enabled mips; then
+
     check_asm loongson '"dmult.g $1, $2, $3"'
     enabled mmi     && check_asm mmi     '"lq $2, 0($2)"'
+
 elif enabled ppc; then
+
     check_asm dcbzl     '"dcbzl 0, 1"'
     check_asm ppc4xx    '"maclhw r10, r11, r12"'
     check_asm xform_asm '"lwzx 0, %y0" :: "Z"(*(int*)0)'
@@ -2047,10 +2052,14 @@ $inc_altivec_h
 int main (void) { (vector int) {1}; return 0; }
 EOF
     fi
+
 elif enabled sparc; then
+
     enabled vis && check_asm vis '"pdist %f0, %f0, %f0"' -mcpu=ultrasparc &&
         add_cflags -mcpu=ultrasparc -mtune=ultrasparc
+
 elif enabled x86; then
+
     # check whether EBP is available on x86
     # As 'i' is stored on the stack, this program will crash
     # if the base pointer is used to access it because the
@@ -2093,6 +2102,7 @@ EOF
         *)                    append YASMFLAGS "-DPREFIX"  ;;
     esac
     disabled yasm || { check_yasm "pabsw xmm0, xmm0" && enable yasm; }
+
 fi
 
 if check_func dlopen; then
