@@ -2260,7 +2260,7 @@ if enabled network; then
     fi
 fi
 
-enabled network && enabled ipv6 && check_ld <<EOF && enable ipv6 || disable ipv6
+enabled_all network ipv6 && check_ld <<EOF || disable ipv6
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -2292,7 +2292,7 @@ check_header dev/ic/bt8xx.h
 check_header sys/soundcard.h
 check_header soundcard.h
 
-enabled alsa_indev || enabled alsa_outdev && check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
+enabled_any alsa_indev alsa_outdev && check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
 enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack
 
