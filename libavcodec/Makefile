@@ -36,9 +36,9 @@ OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 
 # decoders/encoders/hardware accelerators
 OBJS-$(CONFIG_AAC_DECODER)             += aac.o aactab.o mpeg4audio.o aac_parser.o aac_ac3_parser.o
-OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacpsy.o aactab.o psymodel.o iirfilter.o mdct.o fft.o mpeg4audio.o
+OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacpsy.o aactab.o psymodel.o iirfilter.o mpeg4audio.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
-OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3tab.o ac3dec_data.o ac3.o
+OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3tab.o ac3dec_data.o ac3.o ac3_parser.o aac_ac3_parser.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o ac3tab.o ac3.o
 OBJS-$(CONFIG_ALAC_DECODER)            += alac.o
 OBJS-$(CONFIG_ALAC_ENCODER)            += alacenc.o lpc.o
@@ -77,7 +77,7 @@ OBJS-$(CONFIG_DVVIDEO_ENCODER)         += dv.o
 OBJS-$(CONFIG_DXA_DECODER)             += dxa.o
 OBJS-$(CONFIG_EAC3_DECODER)            += eac3dec.o eac3dec_data.o
 OBJS-$(CONFIG_EACMV_DECODER)           += eacmv.o
-OBJS-$(CONFIG_EAMAD_DECODER)           += eamad.o eaidct.o
+OBJS-$(CONFIG_EAMAD_DECODER)           += eamad.o eaidct.o mpeg12.o mpeg12data.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_EATGQ_DECODER)           += eatgq.o eaidct.o
 OBJS-$(CONFIG_EATGV_DECODER)           += eatgv.o
 OBJS-$(CONFIG_EATQI_DECODER)           += eatqi.o eaidct.o mpeg12.o mpeg12data.o mpegvideo.o error_resilience.o
@@ -417,7 +417,7 @@ OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o msmpeg4da
 OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 
 # bitstream filters
-OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o aac_parser.o mpeg4audio.o
+OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o aac_parser.o aac_ac3_parser.o mpeg4audio.o
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
 OBJS-$(CONFIG_H264_MP4TOANNEXB_BSF)       += h264_mp4toannexb_bsf.o
 OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)        += imx_dump_header_bsf.o
