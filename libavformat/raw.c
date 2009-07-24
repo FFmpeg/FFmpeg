@@ -329,7 +329,9 @@ static int mpegvideo_probe(AVProbeData *p)
         return AVPROBE_SCORE_MAX/2+1; // +1 for .mpg
     return 0;
 }
+#endif
 
+#if CONFIG_CAVSVIDEO_DEMUXER
 #define CAVS_SEQ_START_CODE       0x000001b0
 #define CAVS_PIC_I_START_CODE     0x000001b3
 #define CAVS_UNDEF_START_CODE     0x000001b4
