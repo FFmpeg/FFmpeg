@@ -609,6 +609,14 @@ static int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb)
     }
 
     if (c != 0x82) {
+        /**
+         * This code allows handling of -EAGAIN at packet boundaries (i.e.
+         * if the packet sync code above triggers -EAGAIN). This does not
+         * imply complete -EAGAIN handling support at random positions in
+         * the stream.
+         */
+        if (url_ferror(pb) == AVERROR(EAGAIN))
+            return AVERROR(EAGAIN);
         if (!url_feof(pb))
             av_log(s, AV_LOG_ERROR, "ff asf bad header %x  at:%"PRId64"\n", c, url_ftell(pb));
     }
