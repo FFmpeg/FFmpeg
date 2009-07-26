@@ -353,6 +353,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                 sub_header->rects[0]->y = y1;
                 sub_header->rects[0]->w = w;
                 sub_header->rects[0]->h = h;
+                sub_header->rects[0]->type = SUBTITLE_BITMAP;
                 sub_header->rects[0]->pict.linesize[0] = w;
             }
         }

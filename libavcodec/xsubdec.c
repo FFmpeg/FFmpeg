@@ -91,6 +91,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     av_freep(&sub->rects[0]->pict.data[0]);
     sub->rects[0]->x = x; sub->rects[0]->y = y;
     sub->rects[0]->w = w; sub->rects[0]->h = h;
+    sub->rects[0]->type = SUBTITLE_BITMAP;
     sub->rects[0]->pict.linesize[0] = w;
     sub->rects[0]->pict.data[0] = av_malloc(w * h);
     sub->rects[0]->nb_colors = 4;
