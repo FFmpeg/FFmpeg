@@ -183,7 +183,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
                 case 32:
                         avctx->pix_fmt = PIX_FMT_RGB32;
                         c->planes = 4;
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
                         c->planemap[0] = 1; // 1st plane is red
                         c->planemap[1] = 2; // 2nd plane is green
                         c->planemap[2] = 3; // 3rd plane is blue

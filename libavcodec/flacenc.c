@@ -1224,7 +1224,7 @@ static void output_frame_footer(FlacEncodeContext *s)
 
 static void update_md5_sum(FlacEncodeContext *s, int16_t *samples)
 {
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     int i;
     for(i = 0; i < s->frame.blocksize*s->channels; i++) {
         int16_t smp = le2me_16(samples[i]);

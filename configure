@@ -2591,11 +2591,6 @@ echo "HOSTLIBS=$host_libs" >> config.mak
 echo "TARGET_EXEC=$target_exec" >> config.mak
 echo "TARGET_PATH=$target_path" >> config.mak
 
-if enabled bigendian; then
-    echo "WORDS_BIGENDIAN=yes" >> config.mak
-    echo "#define WORDS_BIGENDIAN 1" >> $TMPH
-fi
-
 if enabled sdl; then
     echo "SDL_LIBS=$("${SDL_CONFIG}" --libs)" >> config.mak
     echo "SDL_CFLAGS=$("${SDL_CONFIG}" --cflags)" >> config.mak

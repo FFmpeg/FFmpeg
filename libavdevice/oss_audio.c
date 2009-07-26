@@ -89,7 +89,7 @@ static int audio_open(AVFormatContext *s1, int is_output, const char *audio_devi
     /* select format : favour native format */
     err = ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &tmp);
 
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     if (tmp & AFMT_S16_BE) {
         tmp = AFMT_S16_BE;
     } else if (tmp & AFMT_S16_LE) {
@@ -335,7 +335,7 @@ AVOutputFormat oss_muxer = {
     /* XXX: we make the assumption that the soundcard accepts this format */
     /* XXX: find better solution with "preinit" method, needed also in
        other formats */
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     CODEC_ID_PCM_S16BE,
 #else
     CODEC_ID_PCM_S16LE,

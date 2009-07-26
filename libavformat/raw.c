@@ -1103,7 +1103,7 @@ AVOutputFormat null_muxer = {
     NULL,
     NULL,
     0,
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     CODEC_ID_PCM_S16BE,
 #else
     CODEC_ID_PCM_S16LE,
@@ -1232,7 +1232,7 @@ AVOutputFormat pcm_ ## name ## _muxer = {\
 #define PCMDEF(name, long_name, ext, codec)
 #endif
 
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
 #define BE_DEF(s) s
 #define LE_DEF(s) NULL
 #else

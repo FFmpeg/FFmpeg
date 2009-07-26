@@ -576,7 +576,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                                 lv1 = ref_lp[0];
                                 lv2 = ref_lp[1];
                                 if(lp2 == 0 && flag1 != 0) {
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
                                     lv1 = lv1 & 0xFF00FF00;
                                     lv1 = (lv1 >> 8) | lv1;
                                     lv2 = lv2 & 0xFF00FF00;

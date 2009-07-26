@@ -82,7 +82,7 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
 static Picture * remove_long(H264Context *h, int i, int ref_mask);
 
 static av_always_inline uint32_t pack16to32(int a, int b){
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
    return (b&0xFFFF) + (a<<16);
 #else
    return (a&0xFFFF) + (b<<16);

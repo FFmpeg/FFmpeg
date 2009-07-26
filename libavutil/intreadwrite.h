@@ -155,7 +155,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
                     ((uint8_t*)(p))[7] = (d)>>56; } while(0)
 #endif
 
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
 #   define AV_RN(s, p)    AV_RB##s(p)
 #   define AV_WN(s, p, v) AV_WB##s(p, v)
 #else
@@ -189,7 +189,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 #   define AV_WN64(p, v) AV_WN(64, p, v)
 #endif
 
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
 #   define AV_RB(s, p)    AV_RN(s, p)
 #   define AV_WB(s, p, v) AV_WN(s, p, v)
 #   define AV_RL(s, p)    bswap_##s(AV_RN(s, p))

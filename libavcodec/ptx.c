@@ -79,7 +79,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     stride = p->linesize[0];
 
     for (y=0; y<h; y++) {
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
         unsigned int x;
         for (x=0; x<w*bytes_per_pixel; x+=bytes_per_pixel)
             AV_WN16(ptr+x, AV_RL16(buf+x));

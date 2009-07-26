@@ -35,7 +35,7 @@
 
 #define VLC_BITS 11
 
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
 #define B 3
 #define G 2
 #define R 1

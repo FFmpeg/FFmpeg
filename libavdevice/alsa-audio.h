@@ -37,7 +37,7 @@
 /* XXX: we make the assumption that the soundcard accepts this format */
 /* XXX: find better solution with "preinit" method, needed also in
         other formats */
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
 #define DEFAULT_CODEC_ID CODEC_ID_PCM_S16BE
 #else
 #define DEFAULT_CODEC_ID CODEC_ID_PCM_S16LE

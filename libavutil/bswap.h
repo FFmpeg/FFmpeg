@@ -80,7 +80,7 @@ static inline uint64_t av_const bswap_64(uint64_t x)
 // be2me ... big-endian to machine-endian
 // le2me ... little-endian to machine-endian
 
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
 #define be2me_16(x) (x)
 #define be2me_32(x) (x)
 #define be2me_64(x) (x)

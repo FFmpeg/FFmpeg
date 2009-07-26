@@ -126,7 +126,7 @@ enum PixelFormat {
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
 #   define PIX_FMT_NE(be, le) PIX_FMT_##be
 #else
 #   define PIX_FMT_NE(be, le) PIX_FMT_##le

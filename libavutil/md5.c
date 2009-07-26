@@ -93,7 +93,7 @@ static void body(uint32_t ABCD[4], uint32_t X[16]){
     unsigned int c= ABCD[1];
     unsigned int d= ABCD[0];
 
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     for(i=0; i<16; i++)
         X[i]= bswap_32(X[i]);
 #endif

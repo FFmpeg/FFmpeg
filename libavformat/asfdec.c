@@ -364,7 +364,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 /* This is true for all paletted codecs implemented in ffmpeg */
                 if (st->codec->extradata_size && (st->codec->bits_per_coded_sample <= 8)) {
                     st->codec->palctrl = av_mallocz(sizeof(AVPaletteControl));
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
                     for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)
                         st->codec->palctrl->palette[i] = bswap_32(((uint32_t*)st->codec->extradata)[i]);
 #else

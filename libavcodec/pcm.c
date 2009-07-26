@@ -214,7 +214,7 @@ static int pcm_encode_frame(AVCodecContext *avctx,
             *dst++ = v - 128;
         }
         break;
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     case CODEC_ID_PCM_F64LE:
         ENCODE(int64_t, le64, samples, dst, n, 0, 0)
         break;
@@ -244,7 +244,7 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_F32LE:
     case CODEC_ID_PCM_S32LE:
     case CODEC_ID_PCM_S16LE:
-#endif /* WORDS_BIGENDIAN */
+#endif /* HAVE_BIGENDIAN */
     case CODEC_ID_PCM_U8:
         memcpy(dst, samples, n*sample_size);
         dst += n*sample_size;
@@ -422,7 +422,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         }
         samples= (short*)dstu8;
         break;
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     case CODEC_ID_PCM_F64LE:
         DECODE(int64_t, le64, src, samples, n, 0, 0)
         break;
@@ -452,7 +452,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_F32LE:
     case CODEC_ID_PCM_S32LE:
     case CODEC_ID_PCM_S16LE:
-#endif /* WORDS_BIGENDIAN */
+#endif /* HAVE_BIGENDIAN */
     case CODEC_ID_PCM_U8:
         memcpy(samples, src, n*sample_size);
         src += n*sample_size;

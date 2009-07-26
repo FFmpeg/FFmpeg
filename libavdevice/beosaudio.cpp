@@ -439,7 +439,7 @@ AVOutputFormat audio_beos_muxer = {
     "",
     "",
     sizeof(AudioData),
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     CODEC_ID_PCM_S16BE,
 #else
     CODEC_ID_PCM_S16LE,
