@@ -115,7 +115,7 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long s
     #endif
     while (s < end)
     {
-    #ifdef WORDS_BIGENDIAN
+    #if HAVE_BIGENDIAN
         /* RGB24 (= R,G,B) -> RGB32 (= A,B,G,R) */
         *dest++ = 255;
         *dest++ = s[2];
@@ -201,7 +201,7 @@ static inline void RENAME(rgb32tobgr24)(const uint8_t *src, uint8_t *dst, long s
 #endif
     while (s < end)
     {
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
         /* RGB32 (= A,B,G,R) -> RGB24 (= R,G,B) */
         s++;
         dest[2] = *s++;
@@ -1264,7 +1264,7 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
 #else
         register uint16_t bgr;
         bgr = *s++;
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
         *d++ = 255;
         *d++ = (bgr&0x7C00)>>7;
         *d++ = (bgr&0x3E0)>>2;
@@ -1321,7 +1321,7 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
     {
         register uint16_t bgr;
         bgr = *s++;
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
         *d++ = 255;
         *d++ = (bgr&0xF800)>>8;
         *d++ = (bgr&0x7E0)>>3;
@@ -1581,7 +1581,7 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
         int i, *idst = (int32_t *) dst;
         const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
         for (i = 0; i < chromWidth; i++){
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
             *idst++ = (yc[0] << 24)+ (uc[0] << 16) +
                 (yc[1] << 8) + (vc[0] << 0);
 #else
@@ -1687,7 +1687,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
         int i, *idst = (int32_t *) dst;
         const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
         for (i = 0; i < chromWidth; i++){
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
             *idst++ = (uc[0] << 24)+ (yc[0] << 16) +
                 (vc[0] << 8) + (yc[1] << 0);
 #else

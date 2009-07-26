@@ -275,7 +275,7 @@ void rgb32to24(const uint8_t *src, uint8_t *dst, long src_size)
     long num_pixels = src_size >> 2;
     for (i=0; i<num_pixels; i++)
     {
-        #ifdef WORDS_BIGENDIAN
+        #if HAVE_BIGENDIAN
             /* RGB32 (= A,B,G,R) -> BGR24 (= B,G,R) */
             dst[3*i + 0] = src[4*i + 1];
             dst[3*i + 1] = src[4*i + 2];
@@ -293,7 +293,7 @@ void rgb24to32(const uint8_t *src, uint8_t *dst, long src_size)
     long i;
     for (i=0; 3*i<src_size; i++)
     {
-        #ifdef WORDS_BIGENDIAN
+        #if HAVE_BIGENDIAN
             /* RGB24 (= R,G,B) -> BGR32 (= A,R,G,B) */
             dst[4*i + 0] = 255;
             dst[4*i + 1] = src[3*i + 0];
@@ -318,7 +318,7 @@ void rgb16tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
     {
         register uint16_t bgr;
         bgr = *s++;
-        #ifdef WORDS_BIGENDIAN
+        #if HAVE_BIGENDIAN
             *d++ = 255;
             *d++ = (bgr&0x1F)<<3;
             *d++ = (bgr&0x7E0)>>3;
@@ -382,7 +382,7 @@ void rgb15tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
     {
         register uint16_t bgr;
         bgr = *s++;
-        #ifdef WORDS_BIGENDIAN
+        #if HAVE_BIGENDIAN
             *d++ = 255;
             *d++ = (bgr&0x1F)<<3;
             *d++ = (bgr&0x3E0)>>2;

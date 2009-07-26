@@ -41,7 +41,7 @@
 
 #define VOF  (VOFW*2)
 
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
 #define ALT32_CORR (-1)
 #else
 #define ALT32_CORR   1

@@ -89,7 +89,6 @@ unsigned swscale_version(void)
 //#define HAVE_AMD3DNOW
 //#undef HAVE_MMX
 //#undef ARCH_X86
-//#define WORDS_BIGENDIAN
 #define DITHER1XBPP
 
 #define FAST_BGR2YV12 // use 7 bit coefficients instead of 15 bit
@@ -3161,25 +3160,25 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
 
             switch(c->dstFormat) {
             case PIX_FMT_BGR32:
-#ifndef WORDS_BIGENDIAN
+#if !HAVE_BIGENDIAN
             case PIX_FMT_RGB24:
 #endif
                 c->pal_rgb[i]=  r + (g<<8) + (b<<16);
                 break;
             case PIX_FMT_BGR32_1:
-#ifdef  WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
             case PIX_FMT_BGR24:
 #endif
                 c->pal_rgb[i]= (r + (g<<8) + (b<<16)) << 8;
                 break;
             case PIX_FMT_RGB32_1:
-#ifdef  WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
             case PIX_FMT_RGB24:
 #endif
                 c->pal_rgb[i]= (b + (g<<8) + (r<<16)) << 8;
                 break;
             case PIX_FMT_RGB32:
-#ifndef WORDS_BIGENDIAN
+#if !HAVE_BIGENDIAN
             case PIX_FMT_BGR24:
 #endif
             default:
