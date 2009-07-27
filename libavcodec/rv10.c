@@ -289,21 +289,6 @@ void rv20_encode_picture_header(MpegEncContext *s, int picture_number){
     }
 }
 
-#if 0 /* unused, remove? */
-static int get_num(GetBitContext *gb)
-{
-    int n, n1;
-
-    n = get_bits(gb, 16);
-    if (n >= 0x4000) {
-        return n - 0x4000;
-    } else {
-        n1 = get_bits(gb, 16);
-        return (n << 16) | n1;
-    }
-}
-#endif
-
 #endif /* CONFIG_RV10_ENCODER || CONFIG_RV20_ENCODER */
 
 /* read RV 1.0 compatible frame header */
