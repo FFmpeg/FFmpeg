@@ -27,10 +27,72 @@
 
 #include <libavutil/base64.h>
 #include <libavutil/avstring.h>
+#include <libavutil/intreadwrite.h>
 #include "rtp.h"
 #include "rtp_asf.h"
 #include "rtsp.h"
 #include "asf.h"
+
+/**
+ * From MSDN 2.2.1.4, we learn that ASF data packets over RTP should not
+ * contain any padding. Unfortunately, the header min/max_pktsize are not
+ * updated (thus making min_pktsize invalid). Here, we "fix" these faulty
+ * min_pktsize values in the ASF file header.
+ * @return 0 on success, <0 on failure (currently -1).
+ */
+static int
+rtp_asf_fix_header(uint8_t *buf, int len)
+{
+    uint8_t *p = buf, *end = buf + len;
+
+    if (len < sizeof(ff_asf_guid) * 2 + 22 ||
+        memcmp(p, ff_asf_header, sizeof(ff_asf_guid))) {
+        return -1;
+    }
+    p += sizeof(ff_asf_guid) + 14;
+    do {
+        uint64_t chunksize = AV_RL64(p + sizeof(ff_asf_guid));
+        if (memcmp(p, ff_asf_file_header, sizeof(ff_asf_guid))) {
+            if (chunksize > end - p)
+                return -1;
+            p += chunksize;
+            continue;
+        }
+
+        /* skip most of the file header, to min_pktsize */
+        p += 6 * 8 + 3 * 4 + sizeof(ff_asf_guid) * 2;
+        if (p + 8 <= end && AV_RL32(p) == AV_RL32(p + 4)) {
+            /* and set that to zero */
+            AV_WL32(p, 0);
+            return 0;
+        }
+        break;
+    } while (end - p >= sizeof(ff_asf_guid) + 8);
+
+    return -1;
+}
+
+/**
+ * The following code is basically a buffered ByteIOContext,
+ * with the added benefit of returning -EAGAIN (instead of 0)
+ * on packet boundaries, such that the ASF demuxer can return
+ * safely and resume business at the next packet.
+ */
+static int
+packetizer_read(void *opaque, uint8_t *buf, int buf_size)
+{
+    return AVERROR(EAGAIN);
+}
+
+static void
+init_packetizer(ByteIOContext *pb, uint8_t *buf, int len)
+{
+    init_put_byte(pb, buf, len, 0, NULL, packetizer_read, NULL, NULL);
+
+    /* this "fills" the buffer with its current content */
+    pb->pos     = len;
+    pb->buf_end = buf + len;
+}
 
 void ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
 {
@@ -41,12 +103,16 @@ void ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         char *buf = av_mallocz(len);
         av_base64_decode(buf, p, len);
 
-        init_put_byte(&pb, buf, len, 0, NULL, NULL, NULL, NULL);
+        if (rtp_asf_fix_header(buf, len) < 0)
+            av_log(s, AV_LOG_ERROR,
+                   "Failed to fix invalid RTSP-MS/ASF min_pktsize\n");
+        init_packetizer(&pb, buf, len);
         if (rt->asf_ctx) {
             av_close_input_stream(rt->asf_ctx);
             rt->asf_ctx = NULL;
         }
         av_open_input_stream(&rt->asf_ctx, &pb, "", &asf_demuxer, NULL);
+        rt->asf_pb_pos = url_ftell(&pb);
         av_free(buf);
         rt->asf_ctx->pb = NULL;
     }
@@ -79,12 +145,142 @@ asfrtp_parse_sdp_line (AVFormatContext *s, int stream_index,
     return 0;
 }
 
+struct PayloadContext {
+    ByteIOContext *pktbuf, pb;
+    char *buf;
+};
+
+/**
+ * @return 0 when a packet was written into /p pkt, and no more data is left;
+ *         1 when a packet was written into /p pkt, and more packets might be left;
+ *        <0 when not enough data was provided to return a full packet, or on error.
+ */
+static int
+asfrtp_parse_packet (AVFormatContext *s, PayloadContext *asf, AVStream *st,
+                     AVPacket *pkt, uint32_t *timestamp,
+                     const uint8_t *buf, int len, int flags)
+{
+    ByteIOContext *pb = &asf->pb;
+    int res, mflags, len_off;
+    RTSPState *rt = s->priv_data;
+
+    if (!rt->asf_ctx)
+        return -1;
+
+    if (len > 0) {
+        int off, out_len;
+
+        if (len < 4)
+            return -1;
+
+        init_put_byte(pb, buf, len, 0, NULL, NULL, NULL, NULL);
+        mflags = get_byte(pb);
+        if (mflags & 0x80)
+            flags |= RTP_FLAG_KEY;
+        len_off = get_be24(pb);
+        if (mflags & 0x20)   /**< relative timestamp */
+            url_fskip(pb, 4);
+        if (mflags & 0x10)   /**< has duration */
+            url_fskip(pb, 4);
+        if (mflags & 0x8)    /**< has location ID */
+            url_fskip(pb, 4);
+        off = url_ftell(pb);
+
+        av_freep(&asf->buf);
+        if (!(mflags & 0x40)) {
+            /**
+             * If 0x40 is not set, the len_off field specifies an offset of this
+             * packet's payload data in the complete (reassembled) ASF packet.
+             * This is used to spread one ASF packet over multiple RTP packets.
+             */
+            if (asf->pktbuf && len_off != url_ftell(asf->pktbuf)) {
+                uint8_t *p;
+                url_close_dyn_buf(asf->pktbuf, &p);
+                asf->pktbuf = NULL;
+                av_free(p);
+            }
+            if (!len_off && !asf->pktbuf &&
+                !(res = url_open_dyn_packet_buf(&asf->pktbuf, rt->asf_ctx->packet_size)))
+                return res;
+            if (!asf->pktbuf)
+                return AVERROR(EIO);
+
+            put_buffer(asf->pktbuf, buf + off, len - off);
+            if (!(flags & RTP_FLAG_MARKER))
+                return -1;
+            out_len     = url_close_dyn_buf(asf->pktbuf, &asf->buf);
+            asf->pktbuf = NULL;
+        } else {
+            /**
+             * If 0x40 is set, the len_off field specifies the length of the
+             * next ASF packet that can be read from this payload data alone.
+             * This is commonly the same as the payload size, but could be
+             * less in case of packet splitting (i.e. multiple ASF packets in
+             * one RTP packet).
+             */
+            if (len_off != len) {
+                av_log_missing_feature(s,
+                    "RTSP-MS packet splitting", 1);
+                return -1;
+            }
+            asf->buf = av_malloc(len - off);
+            out_len  = len - off;
+            memcpy(asf->buf, buf + off, len - off);
+        }
+
+        init_packetizer(pb, asf->buf, out_len);
+        pb->pos += rt->asf_pb_pos;
+        pb->eof_reached = 0;
+        rt->asf_ctx->pb = pb;
+    }
+
+    for (;;) {
+        int i;
+
+        res = av_read_packet(rt->asf_ctx, pkt);
+        rt->asf_pb_pos = url_ftell(pb);
+        if (res != 0)
+            break;
+        for (i = 0; i < s->nb_streams; i++) {
+            if (s->streams[i]->id == rt->asf_ctx->streams[pkt->stream_index]->id) {
+                pkt->stream_index = i;
+                return 1; // FIXME: return 0 if last packet
+            }
+        }
+        av_free_packet(pkt);
+    }
+
+    return res == 1 ? -1 : res;
+}
+
+static PayloadContext *
+asfrtp_new_context (void)
+{
+    return av_mallocz(sizeof(PayloadContext));
+}
+
+static void
+asfrtp_free_context (PayloadContext *asf)
+{
+    if (asf->pktbuf) {
+        uint8_t *p = NULL;
+        url_close_dyn_buf(asf->pktbuf, &p);
+        asf->pktbuf = NULL;
+        av_free(p);
+    }
+    av_freep(&asf->buf);
+    av_free(asf);
+}
+
 #define RTP_ASF_HANDLER(n, s, t) \
 RTPDynamicProtocolHandler ff_ms_rtp_ ## n ## _handler = { \
     s, \
     t, \
     CODEC_ID_NONE, \
     asfrtp_parse_sdp_line, \
+    asfrtp_new_context, \
+    asfrtp_free_context, \
+    asfrtp_parse_packet,   \
 };
 
 RTP_ASF_HANDLER(asf_pfv, "x-asf-pf",  CODEC_TYPE_VIDEO);

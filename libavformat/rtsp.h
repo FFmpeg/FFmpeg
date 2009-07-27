@@ -249,6 +249,10 @@ typedef struct RTSPState {
     //@{
     /** ASF demuxer context for the embedded ASF stream from WMS servers */
     AVFormatContext *asf_ctx;
+
+    /** cache for position of the asf demuxer, since we load a new
+     * data packet in the bytecontext for each incoming RTSP packet. */
+    uint64_t asf_pb_pos;
     //@}
 } RTSPState;
 
