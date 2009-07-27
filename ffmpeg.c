@@ -326,7 +326,7 @@ static void term_exit(void)
 #endif
 }
 
-static volatile sig_atomic_t received_sigterm = 0;
+static volatile int received_sigterm = 0;
 
 static void
 sigterm_handler(int sig)
