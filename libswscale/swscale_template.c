@@ -2330,32 +2330,32 @@ FUNNY_Y_CODE
         __asm__ volatile(
         "xor %%"REG_a", %%"REG_a"            \n\t" // i
         "xor %%"REG_d", %%"REG_d"            \n\t" // xx
-        "xorl    %%ecx, %%ecx                \n\t" // 2*xalpha
+        "xorl    %%ecx, %%ecx                \n\t" // xalpha
         ASMALIGN(4)
         "1:                                  \n\t"
         "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
         "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
         "subl    %%edi, %%esi                \n\t" //src[xx+1] - src[xx]
-        "imull   %%ecx, %%esi                \n\t" //(src[xx+1] - src[xx])*2*xalpha
+        "imull   %%ecx, %%esi                \n\t" //(src[xx+1] - src[xx])*xalpha
         "shll      $16, %%edi                \n\t"
-        "addl    %%edi, %%esi                \n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
+        "addl    %%edi, %%esi                \n\t" //src[xx+1]*xalpha + src[xx]*(1-xalpha)
         "mov        %1, %%"REG_D"            \n\t"
         "shrl       $9, %%esi                \n\t"
         "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
-        "addw       %4, %%cx                 \n\t" //2*xalpha += xInc&0xFF
-        "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>8 + carry
+        "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
+        "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
 
         "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
         "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
         "subl    %%edi, %%esi                \n\t" //src[xx+1] - src[xx]
-        "imull   %%ecx, %%esi                \n\t" //(src[xx+1] - src[xx])*2*xalpha
+        "imull   %%ecx, %%esi                \n\t" //(src[xx+1] - src[xx])*xalpha
         "shll      $16, %%edi                \n\t"
-        "addl    %%edi, %%esi                \n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
+        "addl    %%edi, %%esi                \n\t" //src[xx+1]*xalpha + src[xx]*(1-xalpha)
         "mov        %1, %%"REG_D"            \n\t"
         "shrl       $9, %%esi                \n\t"
         "movw     %%si, 2(%%"REG_D", %%"REG_a", 2)  \n\t"
-        "addw       %4, %%cx                 \n\t" //2*xalpha += xInc&0xFF
-        "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>8 + carry
+        "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
+        "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
 
 
         "add        $2, %%"REG_a"            \n\t"
@@ -2538,16 +2538,16 @@ FUNNY_UV_CODE
             __asm__ volatile(
             "xor %%"REG_a", %%"REG_a"               \n\t" // i
             "xor %%"REG_d", %%"REG_d"               \n\t" // xx
-            "xorl    %%ecx, %%ecx                   \n\t" // 2*xalpha
+            "xorl    %%ecx, %%ecx                   \n\t" // xalpha
             ASMALIGN(4)
             "1:                                     \n\t"
             "mov        %0, %%"REG_S"               \n\t"
             "movzbl  (%%"REG_S", %%"REG_d"), %%edi  \n\t" //src[xx]
             "movzbl 1(%%"REG_S", %%"REG_d"), %%esi  \n\t" //src[xx+1]
             "subl    %%edi, %%esi                   \n\t" //src[xx+1] - src[xx]
-            "imull   %%ecx, %%esi                   \n\t" //(src[xx+1] - src[xx])*2*xalpha
+            "imull   %%ecx, %%esi                   \n\t" //(src[xx+1] - src[xx])*xalpha
             "shll      $16, %%edi                   \n\t"
-            "addl    %%edi, %%esi                   \n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
+            "addl    %%edi, %%esi                   \n\t" //src[xx+1]*xalpha + src[xx]*(1-xalpha)
             "mov        %1, %%"REG_D"               \n\t"
             "shrl       $9, %%esi                   \n\t"
             "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
@@ -2555,15 +2555,15 @@ FUNNY_UV_CODE
             "movzbl    (%5, %%"REG_d"), %%edi       \n\t" //src[xx]
             "movzbl   1(%5, %%"REG_d"), %%esi       \n\t" //src[xx+1]
             "subl    %%edi, %%esi                   \n\t" //src[xx+1] - src[xx]
-            "imull   %%ecx, %%esi                   \n\t" //(src[xx+1] - src[xx])*2*xalpha
+            "imull   %%ecx, %%esi                   \n\t" //(src[xx+1] - src[xx])*xalpha
             "shll      $16, %%edi                   \n\t"
-            "addl    %%edi, %%esi                   \n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
+            "addl    %%edi, %%esi                   \n\t" //src[xx+1]*xalpha + src[xx]*(1-xalpha)
             "mov        %1, %%"REG_D"               \n\t"
             "shrl       $9, %%esi                   \n\t"
             "movw     %%si, "AV_STRINGIFY(VOF)"(%%"REG_D", %%"REG_a", 2)   \n\t"
 
-            "addw       %4, %%cx                    \n\t" //2*xalpha += xInc&0xFF
-            "adc        %3, %%"REG_d"               \n\t" //xx+= xInc>>8 + carry
+            "addw       %4, %%cx                    \n\t" //xalpha += xInc&0xFFFF
+            "adc        %3, %%"REG_d"               \n\t" //xx+= xInc>>16 + carry
             "add        $1, %%"REG_a"               \n\t"
             "cmp        %2, %%"REG_a"               \n\t"
             " jb        1b                          \n\t"
