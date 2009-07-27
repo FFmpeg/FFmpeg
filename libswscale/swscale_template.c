@@ -2199,6 +2199,14 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
 #endif /* HAVE_MMX */
 }
 
+#define FAST_BILINEAR_X86 \
+    "subl    %%edi, %%esi    \n\t" /*  src[xx+1] - src[xx] */                   \
+    "imull   %%ecx, %%esi    \n\t" /* (src[xx+1] - src[xx])*xalpha */           \
+    "shll      $16, %%edi    \n\t"                                              \
+    "addl    %%edi, %%esi    \n\t" /* src[xx+1]*xalpha + src[xx]*(1-xalpha) */  \
+    "mov        %1, %%"REG_D"\n\t"                                              \
+    "shrl       $9, %%esi    \n\t"                                              \
+
 static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
                                         int dstWidth, const uint8_t *src, int srcW,
                                         int xInc)
@@ -2335,24 +2343,14 @@ FUNNY_Y_CODE
         "1:                                  \n\t"
         "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
         "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
-        "subl    %%edi, %%esi                \n\t" //src[xx+1] - src[xx]
-        "imull   %%ecx, %%esi                \n\t" //(src[xx+1] - src[xx])*xalpha
-        "shll      $16, %%edi                \n\t"
-        "addl    %%edi, %%esi                \n\t" //src[xx+1]*xalpha + src[xx]*(1-xalpha)
-        "mov        %1, %%"REG_D"            \n\t"
-        "shrl       $9, %%esi                \n\t"
+        FAST_BILINEAR_X86
         "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
         "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
         "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
 
         "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
         "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
-        "subl    %%edi, %%esi                \n\t" //src[xx+1] - src[xx]
-        "imull   %%ecx, %%esi                \n\t" //(src[xx+1] - src[xx])*xalpha
-        "shll      $16, %%edi                \n\t"
-        "addl    %%edi, %%esi                \n\t" //src[xx+1]*xalpha + src[xx]*(1-xalpha)
-        "mov        %1, %%"REG_D"            \n\t"
-        "shrl       $9, %%esi                \n\t"
+        FAST_BILINEAR_X86
         "movw     %%si, 2(%%"REG_D", %%"REG_a", 2)  \n\t"
         "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
         "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
@@ -2544,22 +2542,12 @@ FUNNY_UV_CODE
             "mov        %0, %%"REG_S"               \n\t"
             "movzbl  (%%"REG_S", %%"REG_d"), %%edi  \n\t" //src[xx]
             "movzbl 1(%%"REG_S", %%"REG_d"), %%esi  \n\t" //src[xx+1]
-            "subl    %%edi, %%esi                   \n\t" //src[xx+1] - src[xx]
-            "imull   %%ecx, %%esi                   \n\t" //(src[xx+1] - src[xx])*xalpha
-            "shll      $16, %%edi                   \n\t"
-            "addl    %%edi, %%esi                   \n\t" //src[xx+1]*xalpha + src[xx]*(1-xalpha)
-            "mov        %1, %%"REG_D"               \n\t"
-            "shrl       $9, %%esi                   \n\t"
+            FAST_BILINEAR_X86
             "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
 
             "movzbl    (%5, %%"REG_d"), %%edi       \n\t" //src[xx]
             "movzbl   1(%5, %%"REG_d"), %%esi       \n\t" //src[xx+1]
-            "subl    %%edi, %%esi                   \n\t" //src[xx+1] - src[xx]
-            "imull   %%ecx, %%esi                   \n\t" //(src[xx+1] - src[xx])*xalpha
-            "shll      $16, %%edi                   \n\t"
-            "addl    %%edi, %%esi                   \n\t" //src[xx+1]*xalpha + src[xx]*(1-xalpha)
-            "mov        %1, %%"REG_D"               \n\t"
-            "shrl       $9, %%esi                   \n\t"
+            FAST_BILINEAR_X86
             "movw     %%si, "AV_STRINGIFY(VOF)"(%%"REG_D", %%"REG_a", 2)   \n\t"
 
             "addw       %4, %%cx                    \n\t" //xalpha += xInc&0xFFFF
