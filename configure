@@ -1831,7 +1831,11 @@ case $target_os in
         enabled shared || check_cflags -mdynamic-no-pic
         ;;
     mingw32*)
-        target_os=mingw32
+        if test target_os = "mingw32ce"; then
+            disable network
+        else
+            target_os=mingw32
+        fi
         LIBTARGET=i386
         if enabled x86_64; then
             enable malloc_aligned
