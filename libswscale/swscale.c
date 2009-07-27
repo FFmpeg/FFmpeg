@@ -1324,14 +1324,10 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #endif
 #endif //ARCH_X86
 
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#undef HAVE_ALTIVEC
-#define HAVE_MMX 0
-#define HAVE_MMX2 0
-#define HAVE_AMD3DNOW 0
-#define HAVE_ALTIVEC 0
+#define COMPILE_TEMPLATE_MMX 0
+#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_AMD3DNOW 0
+#define COMPILE_TEMPLATE_ALTIVEC 0
 
 #ifdef COMPILE_C
 #define RENAME(a) a ## _C
@@ -1340,8 +1336,8 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 
 #ifdef COMPILE_ALTIVEC
 #undef RENAME
-#undef HAVE_ALTIVEC
-#define HAVE_ALTIVEC 1
+#undef COMPILE_TEMPLATE_ALTIVEC
+#define COMPILE_TEMPLATE_ALTIVEC 1
 #define RENAME(a) a ## _altivec
 #include "swscale_template.c"
 #endif
@@ -1351,12 +1347,12 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 //MMX versions
 #ifdef COMPILE_MMX
 #undef RENAME
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#define HAVE_MMX 1
-#define HAVE_MMX2 0
-#define HAVE_AMD3DNOW 0
+#undef COMPILE_TEMPLATE_MMX
+#undef COMPILE_TEMPLATE_MMX2
+#undef COMPILE_TEMPLATE_AMD3DNOW
+#define COMPILE_TEMPLATE_MMX 1
+#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX
 #include "swscale_template.c"
 #endif
@@ -1364,12 +1360,12 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 //MMX2 versions
 #ifdef COMPILE_MMX2
 #undef RENAME
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#define HAVE_MMX 1
-#define HAVE_MMX2 1
-#define HAVE_AMD3DNOW 0
+#undef COMPILE_TEMPLATE_MMX
+#undef COMPILE_TEMPLATE_MMX2
+#undef COMPILE_TEMPLATE_AMD3DNOW
+#define COMPILE_TEMPLATE_MMX 1
+#define COMPILE_TEMPLATE_MMX2 1
+#define COMPILE_TEMPLATE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX2
 #include "swscale_template.c"
 #endif
@@ -1377,19 +1373,17 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 //3DNOW versions
 #ifdef COMPILE_3DNOW
 #undef RENAME
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#define HAVE_MMX 1
-#define HAVE_MMX2 0
-#define HAVE_AMD3DNOW 1
+#undef COMPILE_TEMPLATE_MMX
+#undef COMPILE_TEMPLATE_MMX2
+#undef COMPILE_TEMPLATE_AMD3DNOW
+#define COMPILE_TEMPLATE_MMX 1
+#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_AMD3DNOW 1
 #define RENAME(a) a ## _3DNow
 #include "swscale_template.c"
 #endif
 
 #endif //ARCH_X86
-
-// minor note: the HAVE_xyz are messed up after this line so don't use them
 
 static double getSplineCoeff(double a, double b, double c, double d, double dist)
 {
@@ -2003,16 +1997,16 @@ static SwsFunc getSwsFunc(SwsContext *c)
     return swScale_C;
 #endif /* ARCH_X86 && CONFIG_GPL */
 #else //CONFIG_RUNTIME_CPUDETECT
-#if   HAVE_MMX2
+#if   COMPILE_TEMPLATE_MMX2
     sws_init_swScale_MMX2(c);
     return swScale_MMX2;
-#elif HAVE_AMD3DNOW
+#elif COMPILE_TEMPLATE_AMD3DNOW
     sws_init_swScale_3DNow(c);
     return swScale_3DNow;
-#elif HAVE_MMX
+#elif COMPILE_TEMPLATE_MMX
     sws_init_swScale_MMX(c);
     return swScale_MMX;
-#elif HAVE_ALTIVEC
+#elif COMPILE_TEMPLATE_ALTIVEC
     sws_init_swScale_altivec(c);
     return swScale_altivec;
 #else
@@ -2565,13 +2559,13 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 
 #if !CONFIG_RUNTIME_CPUDETECT //ensure that the flags match the compiled variant if cpudetect is off
     flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC|SWS_CPU_CAPS_BFIN);
-#if   HAVE_MMX2
+#if   COMPILE_TEMPLATE_MMX2
     flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2;
-#elif HAVE_AMD3DNOW
+#elif COMPILE_TEMPLATE_AMD3DNOW
     flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_3DNOW;
-#elif HAVE_MMX
+#elif COMPILE_TEMPLATE_MMX
     flags |= SWS_CPU_CAPS_MMX;
-#elif HAVE_ALTIVEC
+#elif COMPILE_TEMPLATE_ALTIVEC
     flags |= SWS_CPU_CAPS_ALTIVEC;
 #elif ARCH_BFIN
     flags |= SWS_CPU_CAPS_BFIN;

@@ -27,10 +27,10 @@
 #undef PREFETCH
 #undef PREFETCHW
 
-#if HAVE_AMD3DNOW
+#if COMPILE_TEMPLATE_AMD3DNOW
 #define PREFETCH  "prefetch"
 #define PREFETCHW "prefetchw"
-#elif HAVE_MMX2
+#elif COMPILE_TEMPLATE_MMX2
 #define PREFETCH "prefetchnta"
 #define PREFETCHW "prefetcht0"
 #else
@@ -38,20 +38,20 @@
 #define PREFETCHW " # nop"
 #endif
 
-#if HAVE_MMX2
+#if COMPILE_TEMPLATE_MMX2
 #define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
-#elif HAVE_AMD3DNOW
+#elif COMPILE_TEMPLATE_AMD3DNOW
 #define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
 #endif
 
-#if HAVE_MMX2
+#if COMPILE_TEMPLATE_MMX2
 #define REAL_MOVNTQ(a,b) "movntq " #a ", " #b " \n\t"
 #else
 #define REAL_MOVNTQ(a,b) "movq " #a ", " #b " \n\t"
 #endif
 #define MOVNTQ(a,b)  REAL_MOVNTQ(a,b)
 
-#if HAVE_ALTIVEC
+#if COMPILE_TEMPLATE_ALTIVEC
 #include "ppc/swscale_altivec_template.c"
 #endif
 
@@ -875,7 +875,7 @@
     "cmp  "#dstw", "#index"     \n\t"\
     " jb       1b               \n\t"
 
-#if HAVE_MMX2
+#if COMPILE_TEMPLATE_MMX2
 #undef WRITEBGR24
 #define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMX2(dst, dstw, index)
 #else
@@ -905,7 +905,7 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, con
                                     const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize, const int16_t **alpSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     if(!(c->flags & SWS_BITEXACT)){
         if (c->flags & SWS_ACCURATE_RND){
             if (uDest){
@@ -931,15 +931,15 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, con
         return;
     }
 #endif
-#if HAVE_ALTIVEC
+#if COMPILE_TEMPLATE_ALTIVEC
 yuv2yuvX_altivec_real(lumFilter, lumSrc, lumFilterSize,
                       chrFilter, chrSrc, chrFilterSize,
                       dest, uDest, vDest, dstW, chrDstW);
-#else //HAVE_ALTIVEC
+#else //COMPILE_TEMPLATE_ALTIVEC
 yuv2yuvXinC(lumFilter, lumSrc, lumFilterSize,
             chrFilter, chrSrc, chrFilterSize,
             alpSrc, dest, uDest, vDest, aDest, dstW, chrDstW);
-#endif //!HAVE_ALTIVEC
+#endif //!COMPILE_TEMPLATE_ALTIVEC
 }
 
 static inline void RENAME(yuv2nv12X)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
@@ -955,7 +955,7 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const 
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
 {
     int i;
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     if(!(c->flags & SWS_BITEXACT)){
         long p= 4;
         uint8_t *src[4]= {alpSrc + dstW, lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
@@ -1032,7 +1032,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
                                        const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                                        const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     x86_reg dummy=0;
     if(!(c->flags & SWS_BITEXACT)){
         if (c->flags & SWS_ACCURATE_RND){
@@ -1193,8 +1193,8 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
             }
         }
     }
-#endif /* HAVE_MMX */
-#if HAVE_ALTIVEC
+#endif /* COMPILE_TEMPLATE_MMX */
+#if COMPILE_TEMPLATE_ALTIVEC
     /* The following list of supported dstFormat values should
        match what's found in the body of ff_yuv2packedX_altivec() */
     if (!(c->flags & SWS_BITEXACT) && !c->alpPixBuf &&
@@ -1221,7 +1221,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
     int uvalpha1=4095-uvalpha;
     int i;
 
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     if(!(c->flags & SWS_BITEXACT)){
         switch(c->dstFormat)
         {
@@ -1357,7 +1357,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
             default: break;
         }
     }
-#endif //HAVE_MMX
+#endif //COMPILE_TEMPLATE_MMX
 YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_PACKED2_C(void,0), YSCALE_YUV_2_GRAY16_2_C, YSCALE_YUV_2_MONO2_C)
 }
 
@@ -1379,7 +1379,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
         return;
     }
 
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     if(!(flags & SWS_BITEXACT)){
         if (uvalpha < 2048) // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
         {
@@ -1600,7 +1600,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
             }
         }
     }
-#endif /* HAVE_MMX */
+#endif /* COMPILE_TEMPLATE_MMX */
     if (uvalpha < 2048)
     {
         YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C(void,0), YSCALE_YUV_2_GRAY16_1_C, YSCALE_YUV_2_MONO2_C)
@@ -1613,7 +1613,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
 
 static inline void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
     "movq "MANGLE(bm01010101)", %%mm2           \n\t"
     "mov                    %0, %%"REG_a"       \n\t"
@@ -1638,7 +1638,7 @@ static inline void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src, long width,
 
 static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
     "movq "MANGLE(bm01010101)", %%mm4           \n\t"
     "mov                    %0, %%"REG_a"       \n\t"
@@ -1673,7 +1673,7 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t 
 
 static inline void RENAME(LEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
     "mov                    %0, %%"REG_a"       \n\t"
     "1:                                         \n\t"
@@ -1708,7 +1708,7 @@ static inline void RENAME(LEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *s
  * yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses. */
 static inline void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
     "mov                  %0, %%"REG_a"         \n\t"
     "1:                                         \n\t"
@@ -1732,7 +1732,7 @@ static inline void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src, long width,
 
 static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
     "movq "MANGLE(bm01010101)", %%mm4           \n\t"
     "mov                    %0, %%"REG_a"       \n\t"
@@ -1767,7 +1767,7 @@ static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t 
 
 static inline void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
     "movq "MANGLE(bm01010101)", %%mm4           \n\t"
     "mov                    %0, %%"REG_a"       \n\t"
@@ -1799,7 +1799,7 @@ static inline void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *s
 #endif
 }
 
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
 static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long width, int srcFormat)
 {
 
@@ -1914,7 +1914,7 @@ static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, const uin
 
 static inline void RENAME(bgr24ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_BGR24);
 #else
     int i;
@@ -1926,12 +1926,12 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, const uint8_t *src, long width
 
         dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
     }
-#endif /* HAVE_MMX */
+#endif /* COMPILE_TEMPLATE_MMX */
 }
 
 static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_BGR24);
 #else
     int i;
@@ -1944,7 +1944,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t
         dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
         dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
     }
-#endif /* HAVE_MMX */
+#endif /* COMPILE_TEMPLATE_MMX */
     assert(src1 == src2);
 }
 
@@ -1965,7 +1965,7 @@ static inline void RENAME(bgr24ToUV_half)(uint8_t *dstU, uint8_t *dstV, const ui
 
 static inline void RENAME(rgb24ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_RGB24);
 #else
     int i;
@@ -1982,7 +1982,7 @@ static inline void RENAME(rgb24ToY)(uint8_t *dst, const uint8_t *src, long width
 
 static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     assert(src1==src2);
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_RGB24);
 #else
@@ -2020,7 +2020,7 @@ static inline void RENAME(rgb24ToUV_half)(uint8_t *dstU, uint8_t *dstV, const ui
 static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, int srcW, int xInc,
                                   const int16_t *filter, const int16_t *filterPos, long filterSize)
 {
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     assert(filterSize % 4 == 0 && filterSize>0);
     if (filterSize==4) // Always true for upscaling, sometimes for down, too.
     {
@@ -2176,7 +2176,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
         );
     }
 #else
-#if HAVE_ALTIVEC
+#if COMPILE_TEMPLATE_ALTIVEC
     hScale_altivec_real(dst, dstW, src, srcW, xInc, filter, filterPos, filterSize);
 #else
     int i;
@@ -2195,8 +2195,8 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
         dst[i] = FFMIN(val>>7, (1<<15)-1); // the cubic equation does overflow ...
         //dst[i] = val>>7;
     }
-#endif /* HAVE_ALTIVEC */
-#endif /* HAVE_MMX */
+#endif /* COMPILE_ALTIVEC */
+#endif /* COMPILE_MMX */
 }
 
 #define FAST_BILINEAR_X86 \
@@ -2251,7 +2251,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         src= formatConvBuffer;
     }
 
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
     if (!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
 #else
@@ -2263,7 +2263,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     else // fast bilinear upscale / crap downscale
     {
 #if ARCH_X86 && CONFIG_GPL
-#if HAVE_MMX2
+#if COMPILE_TEMPLATE_MMX2
         int i;
 #if defined(PIC)
         DECLARE_ALIGNED(8, uint64_t, ebxsave);
@@ -2331,7 +2331,7 @@ FUNNY_Y_CODE
         }
         else
         {
-#endif /* HAVE_MMX2 */
+#endif /* COMPILE_TEMPLATE_MMX2 */
         x86_reg xInc_shr16 = xInc >> 16;
         uint16_t xInc_mask = xInc & 0xffff;
         //NO MMX just normal asm ...
@@ -2364,7 +2364,7 @@ FUNNY_Y_CODE
         :: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask)
         : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
         );
-#if HAVE_MMX2
+#if COMPILE_TEMPLATE_MMX2
         } //if MMX2 can't be used
 #endif
 #else
@@ -2436,7 +2436,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         src2= formatConvBuffer+VOFW;
     }
 
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
     if (!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
 #else
@@ -2449,7 +2449,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     else // fast bilinear upscale / crap downscale
     {
 #if ARCH_X86 && CONFIG_GPL
-#if HAVE_MMX2
+#if COMPILE_TEMPLATE_MMX2
         int i;
 #if defined(PIC)
         DECLARE_ALIGNED(8, uint64_t, ebxsave);
@@ -2530,7 +2530,7 @@ FUNNY_UV_CODE
         }
         else
         {
-#endif /* HAVE_MMX2 */
+#endif /* COMPILE_TEMPLATE_MMX2 */
             x86_reg xInc_shr16 = (x86_reg) (xInc >> 16);
             uint16_t xInc_mask = xInc & 0xffff;
             __asm__ volatile(
@@ -2566,7 +2566,7 @@ FUNNY_UV_CODE
             "r" (src2)
             : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
             );
-#if HAVE_MMX2
+#if COMPILE_TEMPLATE_MMX2
         } //if MMX2 can't be used
 #endif
 #else
@@ -2807,7 +2807,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             break; //we can't output a dstY line so let's try with the next slice
         }
 
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
         c->blueDither= ff_dither8[dstY&1];
         if (c->dstFormat == PIX_FMT_RGB555 || c->dstFormat == PIX_FMT_BGR555)
             c->greenDither= ff_dither8[dstY&1];
@@ -2820,7 +2820,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             const int16_t **lumSrcPtr= (const int16_t **) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
             const int16_t **chrSrcPtr= (const int16_t **) chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
             int i;
         if (flags & SWS_ACCURATE_RND){
             int s= APCK_SIZE / 8;
@@ -2993,7 +2993,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
     if ((dstFormat == PIX_FMT_YUVA420P) && !alpPixBuf)
         fillPlane(dst[3], dstStride[3], dstW, dstY-lastDstY, lastDstY, 255);
 
-#if HAVE_MMX
+#if COMPILE_TEMPLATE_MMX
     if (flags & SWS_CPU_CAPS_MMX2 )  __asm__ volatile("sfence":::"memory");
     /* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
     if (flags & SWS_CPU_CAPS_3DNOW)  __asm__ volatile("femms" :::"memory");
