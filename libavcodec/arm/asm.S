@@ -21,18 +21,24 @@
 #include "config.h"
 
         .macro require8, val=1
+#ifdef __ELF__
         .eabi_attribute 24, \val
+#endif
         .endm
 
         .macro preserve8, val=1
+#ifdef __ELF__
         .eabi_attribute 25, \val
+#endif
         .endm
 
         .macro function name, export=0
 .if \export
         .global \name
 .endif
+#ifdef __ELF__
         .type   \name, %function
+#endif
         .func   \name
 \name:
         .endm
