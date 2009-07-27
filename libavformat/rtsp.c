@@ -700,6 +700,9 @@ void rtsp_parse_line(RTSPMessageHeader *reply, const char *buf)
     } else if (av_stristart(p, "Server:", &p)) {
         skip_spaces(&p);
         av_strlcpy(reply->server, p, sizeof(reply->server));
+    } else if (av_stristart(p, "Notice:", &p) ||
+               av_stristart(p, "X-Notice:", &p)) {
+        reply->notice = strtol(p, NULL, 10);
     }
 }
 
@@ -822,6 +825,17 @@ rtsp_read_reply (AVFormatContext *s, RTSPMessageHeader *reply,
         *content_ptr = content;
     else
         av_free(content);
+
+    /* EOS */
+    if (reply->notice == 2101 /* End-of-Stream Reached */      ||
+        reply->notice == 2104 /* Start-of-Stream Reached */    ||
+        reply->notice == 2306 /* Continuous Feed Terminated */)
+        rt->state = RTSP_STATE_IDLE;
+    else if (reply->notice >= 4400 && reply->notice < 5500)
+        return AVERROR(EIO); /* data or server error */
+    else if (reply->notice == 2401 /* Ticket Expired */ ||
+             (reply->notice >= 5500 && reply->notice < 5600) /* end of term */ )
+        return AVERROR(EPERM);
 
     return 0;
 }
@@ -1314,6 +1328,8 @@ static int tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         if (ret == 1) /* received '$' */
             break;
         /* XXX: parse message */
+        if (rt->state != RTSP_STATE_PLAYING)
+            return 0;
     }
     ret = url_read_complete(rt->rtsp_hd, buf, 3);
     if (ret != 3)
@@ -1399,6 +1415,8 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
 
                 rtsp_read_reply(s, &reply, NULL, 0);
                 /* XXX: parse message */
+                if (rt->state != RTSP_STATE_PLAYING)
+                    return 0;
             }
         }
     }
@@ -1506,6 +1524,8 @@ static int rtsp_read_packet(AVFormatContext *s,
     }
     if (len < 0)
         return len;
+    if (len == 0)
+        return AVERROR_EOF;
     if (rt->transport == RTSP_TRANSPORT_RDT)
         ret = ff_rdt_parse_packet(rtsp_st->transport_priv, pkt, buf, len);
     else

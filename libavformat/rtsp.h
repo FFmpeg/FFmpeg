@@ -140,6 +140,11 @@ typedef struct RTSPMessageHeader {
      * this, sent dummy requests (e.g. OPTIONS) with intervals smaller
      * than this value. */
     int timeout;
+
+    /** The "Notice" or "X-Notice" field value. See
+     * http://tools.ietf.org/html/draft-stiemerling-rtsp-announce-00
+     * for a complete list of supported values. */
+    int notice;
 } RTSPMessageHeader;
 
 /**
