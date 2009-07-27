@@ -51,7 +51,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
     access |= O_BINARY;
 #endif
     fd = open(filename, access, 0666);
-    if (fd < 0)
+    if (fd == -1)
         return AVERROR(ENOENT);
     h->priv_data = (void *) (intptr_t) fd;
     return 0;
