@@ -511,7 +511,7 @@ ff_real_parse_sdp_a_line (AVFormatContext *s, int stream_index,
 }
 
 static PayloadContext *
-rdt_new_extradata (void)
+rdt_new_context (void)
 {
     PayloadContext *rdt = av_mallocz(sizeof(PayloadContext));
 
@@ -521,7 +521,7 @@ rdt_new_extradata (void)
 }
 
 static void
-rdt_free_extradata (PayloadContext *rdt)
+rdt_free_context (PayloadContext *rdt)
 {
     int i;
 
@@ -538,13 +538,13 @@ rdt_free_extradata (PayloadContext *rdt)
 
 #define RDT_HANDLER(n, s, t) \
 static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
-    s, \
-    t, \
-    CODEC_ID_NONE, \
-    rdt_parse_sdp_line, \
-    rdt_new_extradata, \
-    rdt_free_extradata, \
-    rdt_parse_packet \
+    .enc_name         = s, \
+    .codec_type       = t, \
+    .codec_id         = CODEC_ID_NONE, \
+    .parse_sdp_a_line = rdt_parse_sdp_line, \
+    .open             = rdt_new_context, \
+    .close            = rdt_free_context, \
+    .parse_packet     = rdt_parse_packet \
 };
 
 RDT_HANDLER(live_video, "x-pn-multirate-realvideo-live", CODEC_TYPE_VIDEO);

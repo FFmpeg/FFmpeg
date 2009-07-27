@@ -274,13 +274,13 @@ asfrtp_free_context (PayloadContext *asf)
 
 #define RTP_ASF_HANDLER(n, s, t) \
 RTPDynamicProtocolHandler ff_ms_rtp_ ## n ## _handler = { \
-    s, \
-    t, \
-    CODEC_ID_NONE, \
-    asfrtp_parse_sdp_line, \
-    asfrtp_new_context, \
-    asfrtp_free_context, \
-    asfrtp_parse_packet,   \
+    .enc_name         = s, \
+    .codec_type       = t, \
+    .codec_id         = CODEC_ID_NONE, \
+    .parse_sdp_a_line = asfrtp_parse_sdp_line, \
+    .open             = asfrtp_new_context, \
+    .close            = asfrtp_free_context, \
+    .parse_packet     = asfrtp_parse_packet,   \
 };
 
 RTP_ASF_HANDLER(asf_pfv, "x-asf-pf",  CODEC_TYPE_VIDEO);

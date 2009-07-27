@@ -316,7 +316,7 @@ static int h264_handle_packet(AVFormatContext *ctx,
 }
 
 /* ---------------- public code */
-static PayloadContext *h264_new_extradata(void)
+static PayloadContext *h264_new_context(void)
 {
     PayloadContext *data =
         av_mallocz(sizeof(PayloadContext) +
@@ -329,7 +329,7 @@ static PayloadContext *h264_new_extradata(void)
     return data;
 }
 
-static void h264_free_extradata(PayloadContext *data)
+static void h264_free_context(PayloadContext *data)
 {
 #ifdef DEBUG
     int ii;
@@ -406,11 +406,11 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
 This is the structure for expanding on the dynamic rtp protocols (makes everything static. yay!)
 */
 RTPDynamicProtocolHandler ff_h264_dynamic_handler = {
-    "H264",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_H264,
-    parse_h264_sdp_line,
-    h264_new_extradata,
-    h264_free_extradata,
-    h264_handle_packet
+    .enc_name         = "H264",
+    .codec_type       = CODEC_TYPE_VIDEO,
+    .codec_id         = CODEC_ID_H264,
+    .parse_sdp_a_line = parse_h264_sdp_line,
+    .open             = h264_new_context,
+    .close            = h264_free_context,
+    .parse_packet     = h264_handle_packet
 };
