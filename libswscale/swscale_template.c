@@ -2720,54 +2720,54 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             lastChrSrcY = chrSrcSliceY + chrSrcSliceH - 1;
         }
 
-            /* printf("%d %d Last:%d %d LastInBuf:%d %d Index:%d %d Y:%d FSize: %d %d BSize: %d %d\n",
-            firstChrSrcY,firstLumSrcY,lastChrSrcY,lastLumSrcY,
-            lastInChrBuf,lastInLumBuf,chrBufIndex,lumBufIndex,dstY,vChrFilterSize,vLumFilterSize,
-            vChrBufSize, vLumBufSize);*/
+        /* printf("%d %d Last:%d %d LastInBuf:%d %d Index:%d %d Y:%d FSize: %d %d BSize: %d %d\n",
+        firstChrSrcY,firstLumSrcY,lastChrSrcY,lastLumSrcY,
+        lastInChrBuf,lastInLumBuf,chrBufIndex,lumBufIndex,dstY,vChrFilterSize,vLumFilterSize,
+        vChrBufSize, vLumBufSize);*/
 
-            //Do horizontal scaling
-            while(lastInLumBuf < lastLumSrcY)
-            {
-                uint8_t *src1= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
-                uint8_t *src2= src[3]+(lastInLumBuf + 1 - srcSliceY)*srcStride[3];
-                lumBufIndex++;
-                //printf("%d %d %d %d\n", lumBufIndex, vLumBufSize, lastInLumBuf,  lastLumSrcY);
-                assert(lumBufIndex < 2*vLumBufSize);
-                assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
-                assert(lastInLumBuf + 1 - srcSliceY >= 0);
-                //printf("%d %d\n", lumBufIndex, vLumBufSize);
-                RENAME(hyscale)(c, lumPixBuf[ lumBufIndex ], dstW, src1, srcW, lumXInc,
+        //Do horizontal scaling
+        while(lastInLumBuf < lastLumSrcY)
+        {
+            uint8_t *src1= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
+            uint8_t *src2= src[3]+(lastInLumBuf + 1 - srcSliceY)*srcStride[3];
+            lumBufIndex++;
+            //printf("%d %d %d %d\n", lumBufIndex, vLumBufSize, lastInLumBuf,  lastLumSrcY);
+            assert(lumBufIndex < 2*vLumBufSize);
+            assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
+            assert(lastInLumBuf + 1 - srcSliceY >= 0);
+            //printf("%d %d\n", lumBufIndex, vLumBufSize);
+            RENAME(hyscale)(c, lumPixBuf[ lumBufIndex ], dstW, src1, srcW, lumXInc,
+                            flags, hLumFilter, hLumFilterPos, hLumFilterSize,
+                            c->srcFormat, formatConvBuffer,
+                            pal, 0);
+            if (CONFIG_SWSCALE_ALPHA && alpPixBuf)
+                RENAME(hyscale)(c, alpPixBuf[ lumBufIndex ], dstW, src2, srcW, lumXInc,
                                 flags, hLumFilter, hLumFilterPos, hLumFilterSize,
                                 c->srcFormat, formatConvBuffer,
-                                pal, 0);
-                if (CONFIG_SWSCALE_ALPHA && alpPixBuf)
-                    RENAME(hyscale)(c, alpPixBuf[ lumBufIndex ], dstW, src2, srcW, lumXInc,
-                                    flags, hLumFilter, hLumFilterPos, hLumFilterSize,
-                                    c->srcFormat, formatConvBuffer,
-                                    pal, 1);
-                lastInLumBuf++;
-            }
-            while(lastInChrBuf < lastChrSrcY)
-            {
-                uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
-                uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
-                chrBufIndex++;
-                assert(chrBufIndex < 2*vChrBufSize);
-                assert(lastInChrBuf + 1 - chrSrcSliceY < (chrSrcSliceH));
-                assert(lastInChrBuf + 1 - chrSrcSliceY >= 0);
-                //FIXME replace parameters through context struct (some at least)
+                                pal, 1);
+            lastInLumBuf++;
+        }
+        while(lastInChrBuf < lastChrSrcY)
+        {
+            uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
+            uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
+            chrBufIndex++;
+            assert(chrBufIndex < 2*vChrBufSize);
+            assert(lastInChrBuf + 1 - chrSrcSliceY < (chrSrcSliceH));
+            assert(lastInChrBuf + 1 - chrSrcSliceY >= 0);
+            //FIXME replace parameters through context struct (some at least)
 
-                if (!(isGray(srcFormat) || isGray(dstFormat)))
-                    RENAME(hcscale)(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
-                                    flags, hChrFilter, hChrFilterPos, hChrFilterSize,
-                                    c->srcFormat, formatConvBuffer,
-                                    pal);
-                lastInChrBuf++;
-            }
-            //wrap buf index around to stay inside the ring buffer
-            if (lumBufIndex >= vLumBufSize) lumBufIndex-= vLumBufSize;
-            if (chrBufIndex >= vChrBufSize) chrBufIndex-= vChrBufSize;
-            if (!enough_lines)
+            if (!(isGray(srcFormat) || isGray(dstFormat)))
+                RENAME(hcscale)(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
+                                flags, hChrFilter, hChrFilterPos, hChrFilterSize,
+                                c->srcFormat, formatConvBuffer,
+                                pal);
+            lastInChrBuf++;
+        }
+        //wrap buf index around to stay inside the ring buffer
+        if (lumBufIndex >= vLumBufSize) lumBufIndex-= vLumBufSize;
+        if (chrBufIndex >= vChrBufSize) chrBufIndex-= vChrBufSize;
+        if (!enough_lines)
             break; //we can't output a dstY line so let's try with the next slice
 
 #if COMPILE_TEMPLATE_MMX
