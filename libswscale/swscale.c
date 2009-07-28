@@ -1450,9 +1450,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     {
         int i;
         int xDstInSrc;
-        if      (flags&SWS_BICUBIC) filterSize= 4;
-        else if (flags&SWS_X      ) filterSize= 4;
-        else                        filterSize= 2; // SWS_BILINEAR / SWS_AREA
+        filterSize= 2;
         filter= av_malloc(dstW*sizeof(*filter)*filterSize);
 
         xDstInSrc= xInc/2 - 0x8000;
