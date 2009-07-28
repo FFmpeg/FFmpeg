@@ -1687,6 +1687,7 @@ case "$arch" in
         arch="alpha"
         enable fast_64bit
         check_cflags -mieee
+        pic=$shared
     ;;
     arm|armv[4567]*l)
         arch="arm"
@@ -1699,24 +1700,29 @@ case "$arch" in
     ia64)
         arch="ia64"
         enable fast_64bit
+        pic=$shared
     ;;
     m68k)
         arch="m68k"
     ;;
     mips|mipsel|IP*)
         arch="mips"
+        pic=$shared
     ;;
     mips64)
         arch="mips"
         subarch="mips64"
         enable fast_64bit
+        pic=$shared
     ;;
     parisc|hppa)
         arch="parisc"
+        pic=$shared
     ;;
     parisc64|hppa64)
         arch="parisc"
         enable fast_64bit
+        pic=$shared
     ;;
     "Power Macintosh"|ppc|powerpc)
         arch="ppc"
@@ -1736,11 +1742,13 @@ case "$arch" in
     ;;
     sparc)
         arch="sparc"
+        pic=$shared
     ;;
     sun4u|sparc64)
         arch="sparc"
         subarch="sparc64"
         enable fast_64bit
+        pic=$shared
     ;;
     i386|i486|i586|i686|i86pc|BePC)
         arch="x86"
@@ -1753,7 +1761,7 @@ case "$arch" in
         enable cmov
         enable fast_cmov
         enable fast_unaligned
-        check_cc <<EOF && enable fast_64bit && subarch="x86_64"
+        check_cc <<EOF && enable fast_64bit && subarch="x86_64" && pic=$shared
         int test[sizeof(char*) - 7];
 EOF
     ;;
@@ -2375,15 +2383,7 @@ elif enabled gcc; then
     check_cflags -fno-tree-vectorize
 fi
 
-# PIC flags for shared library objects where they are needed
-if enabled shared; then
-    # LIBOBJFLAGS may have already been set in the OS configuration
-    if test -z "$LIBOBJFLAGS" ; then
-        case "${subarch-$arch}" in
-            x86_64|ia64|alpha|sparc*|power*|parisc*|mips*) LIBOBJFLAGS='$(PIC)' ;;
-        esac
-    fi
-fi
+enabled pic && LIBOBJFLAGS='$(PIC)'
 
 if enabled gprof; then
     add_cflags  -p
