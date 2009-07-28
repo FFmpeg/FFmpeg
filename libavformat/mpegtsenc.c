@@ -44,7 +44,7 @@ typedef struct MpegTSService {
     char *provider_name;
     int pcr_pid;
     int pcr_packet_count;
-    int pcr_packet_freq;
+    int pcr_packet_period;
 } MpegTSService;
 
 typedef struct MpegTSWrite {
@@ -52,9 +52,9 @@ typedef struct MpegTSWrite {
     MpegTSSection sdt; /* MPEG2 sdt table context */
     MpegTSService **services;
     int sdt_packet_count;
-    int sdt_packet_freq;
+    int sdt_packet_period;
     int pat_packet_count;
-    int pat_packet_freq;
+    int pat_packet_period;
     int nb_services;
     int onid;
     int tsid;
@@ -442,11 +442,11 @@ static int mpegts_write_header(AVFormatContext *s)
 
     if (total_bit_rate <= 8 * 1024)
         total_bit_rate = 8 * 1024;
-    service->pcr_packet_freq = (total_bit_rate * PCR_RETRANS_TIME) /
+    service->pcr_packet_period = (total_bit_rate * PCR_RETRANS_TIME) /
         (TS_PACKET_SIZE * 8 * 1000);
-    ts->sdt_packet_freq = (total_bit_rate * SDT_RETRANS_TIME) /
+    ts->sdt_packet_period = (total_bit_rate * SDT_RETRANS_TIME) /
         (TS_PACKET_SIZE * 8 * 1000);
-    ts->pat_packet_freq = (total_bit_rate * PAT_RETRANS_TIME) /
+    ts->pat_packet_period = (total_bit_rate * PAT_RETRANS_TIME) /
         (TS_PACKET_SIZE * 8 * 1000);
 
     ts->mux_rate = 1; // avoid div by 0
@@ -470,7 +470,7 @@ static int mpegts_write_header(AVFormatContext *s)
         PCR_RETRANS_TIME * 8 * 8            / 1000;      /* PCR size */
 
     av_log(s, AV_LOG_DEBUG, "muxrate %d freq sdt %d pat %d\n",
-           total_bit_rate, ts->sdt_packet_freq, ts->pat_packet_freq);
+           total_bit_rate, ts->sdt_packet_period, ts->pat_packet_period);
 
     if (s->mux_rate)
         ts->mux_rate = s->mux_rate;
@@ -498,11 +498,11 @@ static void retransmit_si_info(AVFormatContext *s)
     MpegTSWrite *ts = s->priv_data;
     int i;
 
-    if (++ts->sdt_packet_count == ts->sdt_packet_freq) {
+    if (++ts->sdt_packet_count == ts->sdt_packet_period) {
         ts->sdt_packet_count = 0;
         mpegts_write_sdt(s);
     }
-    if (++ts->pat_packet_count == ts->pat_packet_freq) {
+    if (++ts->pat_packet_count == ts->pat_packet_period) {
         ts->pat_packet_count = 0;
         mpegts_write_pat(s);
         for(i = 0; i < ts->nb_services; i++) {
@@ -546,7 +546,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         if (ts_st->pid == ts_st->service->pcr_pid) {
             ts_st->service->pcr_packet_count++;
             if (ts_st->service->pcr_packet_count >=
-                ts_st->service->pcr_packet_freq) {
+                ts_st->service->pcr_packet_period) {
                 ts_st->service->pcr_packet_count = 0;
                 write_pcr = 1;
             }
