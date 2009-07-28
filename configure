@@ -1831,7 +1831,7 @@ case $target_os in
         enabled shared || check_cflags -mdynamic-no-pic
         ;;
     mingw32*)
-        if test target_os = "mingw32ce"; then
+        if test $target_os = "mingw32ce"; then
             disable network
         else
             target_os=mingw32
