@@ -2575,6 +2575,7 @@ echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
 echo "YASMFLAGS=$YASMFLAGS" >> config.mak
 echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
+echo "PIC=-fPIC -DPIC" >> config.mak
 echo "BUILD_STATIC=$static" >> config.mak
 echo "BUILDSUF=$build_suffix" >> config.mak
 echo "FULLNAME=$FULLNAME" >> config.mak
@@ -2623,7 +2624,6 @@ get_version LIBAVFILTER libavfilter/avfilter.h
 
 if enabled shared; then
     echo "BUILD_SHARED=yes" >> config.mak
-    echo "PIC=-fPIC -DPIC" >> config.mak
     echo "LIBTARGET=${LIBTARGET}" >> config.mak
     echo "SLIBNAME=${SLIBNAME}" >> config.mak
     echo "SLIBNAME_WITH_VERSION=${SLIBNAME_WITH_VERSION}" >> config.mak
