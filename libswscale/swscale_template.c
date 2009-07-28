@@ -2700,8 +2700,9 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
 
         const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
         const int firstChrSrcY= vChrFilterPos[chrDstY]; //First line needed as input
-        const int lastLumSrcY= firstLumSrcY + vLumFilterSize -1; // Last line needed as input
-        const int lastChrSrcY= firstChrSrcY + vChrFilterSize -1; // Last line needed as input
+        int lastLumSrcY= firstLumSrcY + vLumFilterSize -1; // Last line needed as input
+        int lastChrSrcY= firstChrSrcY + vChrFilterSize -1; // Last line needed as input
+        int enough_lines;
 
         //printf("dstY:%d dstH:%d firstLumSrcY:%d lastInLumBuf:%d vLumBufSize: %d vChrBufSize: %d slice: %d %d vLumFilterSize: %d firstChrSrcY: %d vChrFilterSize: %d c->chrSrcVSubSample: %d\n",
         // dstY, dstH, firstLumSrcY, lastInLumBuf, vLumBufSize, vChrBufSize, srcSliceY, srcSliceH, vLumFilterSize, firstChrSrcY, vChrFilterSize,  c->chrSrcVSubSample);
@@ -2713,8 +2714,17 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
         assert(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1);
 
         // Do we have enough lines in this slice to output the dstY line
-        if (lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < -((-srcSliceY - srcSliceH)>>c->chrSrcVSubSample))
-        {
+        enough_lines = lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < -((-srcSliceY - srcSliceH)>>c->chrSrcVSubSample);
+        if (!enough_lines) {
+            lastLumSrcY = srcSliceY + srcSliceH - 1;
+            lastChrSrcY = chrSrcSliceY + chrSrcSliceH - 1;
+        }
+
+            /* printf("%d %d Last:%d %d LastInBuf:%d %d Index:%d %d Y:%d FSize: %d %d BSize: %d %d\n",
+            firstChrSrcY,firstLumSrcY,lastChrSrcY,lastLumSrcY,
+            lastInChrBuf,lastInLumBuf,chrBufIndex,lumBufIndex,dstY,vChrFilterSize,vLumFilterSize,
+            vChrBufSize, vLumBufSize);*/
+
             //Do horizontal scaling
             while(lastInLumBuf < lastLumSrcY)
             {
@@ -2757,55 +2767,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             //wrap buf index around to stay inside the ring buffer
             if (lumBufIndex >= vLumBufSize) lumBufIndex-= vLumBufSize;
             if (chrBufIndex >= vChrBufSize) chrBufIndex-= vChrBufSize;
-        }
-        else // not enough lines left in this slice -> load the rest in the buffer
-        {
-            /* printf("%d %d Last:%d %d LastInBuf:%d %d Index:%d %d Y:%d FSize: %d %d BSize: %d %d\n",
-            firstChrSrcY,firstLumSrcY,lastChrSrcY,lastLumSrcY,
-            lastInChrBuf,lastInLumBuf,chrBufIndex,lumBufIndex,dstY,vChrFilterSize,vLumFilterSize,
-            vChrBufSize, vLumBufSize);*/
-
-            //Do horizontal scaling
-            while(lastInLumBuf+1 < srcSliceY + srcSliceH)
-            {
-                uint8_t *src1= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
-                uint8_t *src2= src[3]+(lastInLumBuf + 1 - srcSliceY)*srcStride[3];
-                lumBufIndex++;
-                assert(lumBufIndex < 2*vLumBufSize);
-                assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
-                assert(lastInLumBuf + 1 - srcSliceY >= 0);
-                RENAME(hyscale)(c, lumPixBuf[ lumBufIndex ], dstW, src1, srcW, lumXInc,
-                                flags, hLumFilter, hLumFilterPos, hLumFilterSize,
-                                c->srcFormat, formatConvBuffer,
-                                pal, 0);
-                if (CONFIG_SWSCALE_ALPHA && alpPixBuf)
-                    RENAME(hyscale)(c, alpPixBuf[ lumBufIndex ], dstW, src2, srcW, lumXInc,
-                                    flags, hLumFilter, hLumFilterPos, hLumFilterSize,
-                                    c->srcFormat, formatConvBuffer,
-                                    pal, 1);
-                lastInLumBuf++;
-            }
-            while(lastInChrBuf+1 < (chrSrcSliceY + chrSrcSliceH))
-            {
-                uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
-                uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
-                chrBufIndex++;
-                assert(chrBufIndex < 2*vChrBufSize);
-                assert(lastInChrBuf + 1 - chrSrcSliceY < chrSrcSliceH);
-                assert(lastInChrBuf + 1 - chrSrcSliceY >= 0);
-
-                if (!(isGray(srcFormat) || isGray(dstFormat)))
-                    RENAME(hcscale)(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
-                            flags, hChrFilter, hChrFilterPos, hChrFilterSize,
-                            c->srcFormat, formatConvBuffer,
-                            pal);
-                lastInChrBuf++;
-            }
-            //wrap buf index around to stay inside the ring buffer
-            if (lumBufIndex >= vLumBufSize) lumBufIndex-= vLumBufSize;
-            if (chrBufIndex >= vChrBufSize) chrBufIndex-= vChrBufSize;
+            if (!enough_lines)
             break; //we can't output a dstY line so let's try with the next slice
-        }
 
 #if COMPILE_TEMPLATE_MMX
         c->blueDither= ff_dither8[dstY&1];
