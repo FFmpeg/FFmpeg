@@ -1888,6 +1888,7 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
             int b=((xpos+xInc)>>16) - xx;
             int c=((xpos+xInc*2)>>16) - xx;
             int d=((xpos+xInc*3)>>16) - xx;
+            int inc                = (d+1<4);
 
             filter[i  ] = (( xpos         & 0xFFFF) ^ 0xFFFF)>>9;
             filter[i+1] = (((xpos+xInc  ) & 0xFFFF) ^ 0xFFFF)>>9;
@@ -1897,17 +1898,17 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
 
             if (d+1<4)
             {
-                int maxShift= 3-(d+1);
+                int maxShift= 3-(d+inc);
                 int shift=0;
 
                 memcpy(funnyCode + fragmentPos, fragmentB, fragmentLengthB);
 
                 funnyCode[fragmentPos + imm8OfPShufW1B]=
-                    (a+1) | ((b+1)<<2) | ((c+1)<<4) | ((d+1)<<6);
+                    (a+inc) | ((b+inc)<<2) | ((c+inc)<<4) | ((d+inc)<<6);
                 funnyCode[fragmentPos + imm8OfPShufW2B]=
                     a | (b<<2) | (c<<4) | (d<<6);
 
-                if (i+3>=dstW) shift=maxShift; //avoid overread
+                if (i+4-inc>=dstW) shift=maxShift; //avoid overread
                 else if ((filterPos[i/2]&3) <= maxShift) shift=filterPos[i/2]&3; //Align
 
                 if (shift && i>=shift)
