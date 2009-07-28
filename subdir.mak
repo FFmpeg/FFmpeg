@@ -5,7 +5,7 @@ include $(SUBDIR)../common.mak
 LIBVERSION := $(lib$(NAME)_VERSION)
 LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
 
-ifeq ($(BUILD_STATIC),yes)
+ifeq ($(CONFIG_STATIC),yes)
 all: $(SUBDIR)$(LIBNAME)
 
 install-libs: install-lib$(NAME)-static
@@ -18,7 +18,7 @@ endif
 
 INCINSTDIR := $(INCDIR)/lib$(NAME)
 
-THIS_LIB := $(SUBDIR)$($(BUILD_SHARED:yes=S)LIBNAME)
+THIS_LIB := $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
 
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
@@ -44,7 +44,7 @@ distclean:: clean
 	rm -f  $(addprefix $(SUBDIR),$(DISTCLEANSUFFIXES)) \
             $(addprefix $(SUBDIR), $(foreach suffix,$(DISTCLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 
-ifdef BUILD_SHARED
+ifdef CONFIG_SHARED
 all: $(SUBDIR)$(SLIBNAME)
 
 install-libs: install-lib$(NAME)-shared

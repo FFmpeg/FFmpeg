@@ -37,7 +37,7 @@ ifneq ($(PROGS),)
 INSTALL_TARGETS-yes             += install-progs install-data
 INSTALL_TARGETS-$(BUILD_DOC)    += install-man
 endif
-INSTALL_PROGS_TARGETS-$(BUILD_SHARED) = install-libs
+INSTALL_PROGS_TARGETS-$(CONFIG_SHARED) = install-libs
 
 all: $(FF_DEP_LIBS) $(PROGS) $(ALL_TARGETS-yes)
 
