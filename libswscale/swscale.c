@@ -1889,6 +1889,10 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
             int c=((xpos+xInc*2)>>16) - xx;
             int d=((xpos+xInc*3)>>16) - xx;
             int inc                = (d+1<4);
+            uint8_t *fragment      = (d+1<4) ? fragmentB       : fragmentA;
+            x86_reg imm8OfPShufW1  = (d+1<4) ? imm8OfPShufW1B  : imm8OfPShufW1A;
+            x86_reg imm8OfPShufW2  = (d+1<4) ? imm8OfPShufW2B  : imm8OfPShufW2A;
+            x86_reg fragmentLength = (d+1<4) ? fragmentLengthB : fragmentLengthA;
 
             filter[i  ] = (( xpos         & 0xFFFF) ^ 0xFFFF)>>9;
             filter[i+1] = (((xpos+xInc  ) & 0xFFFF) ^ 0xFFFF)>>9;
@@ -1896,16 +1900,15 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
             filter[i+3] = (((xpos+xInc*3) & 0xFFFF) ^ 0xFFFF)>>9;
             filterPos[i/2]= xx;
 
-            if (d+1<4)
             {
                 int maxShift= 3-(d+inc);
                 int shift=0;
 
-                memcpy(funnyCode + fragmentPos, fragmentB, fragmentLengthB);
+                memcpy(funnyCode + fragmentPos, fragment, fragmentLength);
 
-                funnyCode[fragmentPos + imm8OfPShufW1B]=
+                funnyCode[fragmentPos + imm8OfPShufW1]=
                     (a+inc) | ((b+inc)<<2) | ((c+inc)<<4) | ((d+inc)<<6);
-                funnyCode[fragmentPos + imm8OfPShufW2B]=
+                funnyCode[fragmentPos + imm8OfPShufW2]=
                     a | (b<<2) | (c<<4) | (d<<6);
 
                 if (i+4-inc>=dstW) shift=maxShift; //avoid overread
@@ -1913,35 +1916,12 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
 
                 if (shift && i>=shift)
                 {
-                    funnyCode[fragmentPos + imm8OfPShufW1B]+= 0x55*shift;
-                    funnyCode[fragmentPos + imm8OfPShufW2B]+= 0x55*shift;
+                    funnyCode[fragmentPos + imm8OfPShufW1]+= 0x55*shift;
+                    funnyCode[fragmentPos + imm8OfPShufW2]+= 0x55*shift;
                     filterPos[i/2]-=shift;
                 }
 
-                fragmentPos+= fragmentLengthB;
-            }
-            else
-            {
-                int maxShift= 3-d;
-                int shift=0;
-
-                memcpy(funnyCode + fragmentPos, fragmentA, fragmentLengthA);
-
-                funnyCode[fragmentPos + imm8OfPShufW1A]=
-                funnyCode[fragmentPos + imm8OfPShufW2A]=
-                    a | (b<<2) | (c<<4) | (d<<6);
-
-                if (i+4>=dstW) shift=maxShift; //avoid overread
-                else if ((filterPos[i/2]&3) <= maxShift) shift=filterPos[i/2]&3; //partial align
-
-                if (shift && i>=shift)
-                {
-                    funnyCode[fragmentPos + imm8OfPShufW1A]+= 0x55*shift;
-                    funnyCode[fragmentPos + imm8OfPShufW2A]+= 0x55*shift;
-                    filterPos[i/2]-=shift;
-                }
-
-                fragmentPos+= fragmentLengthA;
+                fragmentPos+= fragmentLength;
             }
 
             funnyCode[fragmentPos]= RET;
