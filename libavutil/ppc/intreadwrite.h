@@ -78,7 +78,7 @@ static inline uint64_t AV_RL64(const void *p)
     union { uint64_t v; uint32_t hl[2]; } v;
     __asm__ ("lwbrx   %0, %y2  \n\t"
              "lwbrx   %1, %y3  \n\t"
-             : "=r"(v.hl[1]), "=r"(v.hl[0])
+             : "=&r"(v.hl[1]), "=r"(v.hl[0])
              : "Z"(*(const uint32_t*)p), "Z"(*((const uint32_t*)p+1)));
     return v.v;
 }
