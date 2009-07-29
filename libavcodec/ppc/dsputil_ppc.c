@@ -268,7 +268,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         mm_flags |= FF_MM_ALTIVEC;
 
         dsputil_init_altivec(c, avctx);
-        if(CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER)
+        if(CONFIG_VC1_DECODER)
             vc1dsp_init_altivec(c, avctx);
         float_init_altivec(c, avctx);
         int_init_altivec(c, avctx);

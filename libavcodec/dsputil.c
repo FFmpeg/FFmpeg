@@ -2756,7 +2756,7 @@ void ff_avg_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
 
 void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);
 
-#if CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER
+#if CONFIG_VC1_DECODER
 /* VC-1 specific */
 void ff_vc1dsp_init(DSPContext* c, AVCodecContext *avctx);
 
@@ -2766,7 +2766,7 @@ void ff_put_vc1_mspel_mc00_c(uint8_t *dst, uint8_t *src, int stride, int rnd) {
 void ff_avg_vc1_mspel_mc00_c(uint8_t *dst, uint8_t *src, int stride, int rnd) {
     avg_pixels8_c(dst, src, stride, 8);
 }
-#endif /* CONFIG_VC1_DECODER||CONFIG_WMV3_DECODER */
+#endif /* CONFIG_VC1_DECODER */
 
 void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
 
@@ -4548,10 +4548,10 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #if CONFIG_MLP_DECODER || CONFIG_TRUEHD_DECODER
     ff_mlp_init(c, avctx);
 #endif
-#if CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER
+#if CONFIG_VC1_DECODER
     ff_vc1dsp_init(c,avctx);
 #endif
-#if CONFIG_WMV2_DECODER || CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER
+#if CONFIG_WMV2_DECODER || CONFIG_VC1_DECODER
     ff_intrax8dsp_init(c,avctx);
 #endif
 #if CONFIG_RV30_DECODER

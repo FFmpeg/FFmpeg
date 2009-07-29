@@ -109,7 +109,7 @@ static av_cold void common_init(MpegEncContext * s)
         s->y_dc_scale_table= wmv1_y_dc_scale_table;
         s->c_dc_scale_table= wmv1_c_dc_scale_table;
         break;
-#if CONFIG_WMV3_DECODER || CONFIG_VC1_DECODER
+#if CONFIG_VC1_DECODER
     case 6:
         s->y_dc_scale_table= wmv3_dc_scale_table;
         s->c_dc_scale_table= wmv3_dc_scale_table;

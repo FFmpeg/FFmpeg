@@ -2866,7 +2866,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             if (CONFIG_CAVS_DECODER)
                 ff_cavsdsp_init_mmx2(c, avctx);
 
-            if (CONFIG_VC1_DECODER || CONFIG_WMV3_DECODER)
+            if (CONFIG_VC1_DECODER)
                 ff_vc1dsp_init_mmx(c, avctx);
 
             c->add_png_paeth_prediction= add_png_paeth_prediction_mmx2;
