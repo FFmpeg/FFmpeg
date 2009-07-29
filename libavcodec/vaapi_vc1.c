@@ -340,7 +340,6 @@ AVHWAccel wmv3_vaapi_hwaccel = {
 };
 #endif
 
-#if CONFIG_VC1_VAAPI_HWACCEL
 AVHWAccel vc1_vaapi_hwaccel = {
     .name           = "vc1_vaapi",
     .type           = CODEC_TYPE_VIDEO,
@@ -352,4 +351,3 @@ AVHWAccel vc1_vaapi_hwaccel = {
     .decode_slice   = vaapi_vc1_decode_slice,
     .priv_data_size = 0,
 };
-#endif
