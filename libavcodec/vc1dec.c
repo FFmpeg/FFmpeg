@@ -3333,6 +3333,7 @@ AVCodec vc1_decoder = {
     .pix_fmts = ff_hwaccel_pixfmt_list_420
 };
 
+#if CONFIG_WMV3_DECODER
 AVCodec wmv3_decoder = {
     "wmv3",
     CODEC_TYPE_VIDEO,
@@ -3347,6 +3348,7 @@ AVCodec wmv3_decoder = {
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
     .pix_fmts = ff_hwaccel_pixfmt_list_420
 };
+#endif
 
 #if CONFIG_WMV3_VDPAU_DECODER
 AVCodec wmv3_vdpau_decoder = {
