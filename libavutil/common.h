@@ -35,6 +35,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_AV_CONFIG_H
+#include "config.h"
+#endif
+
 #ifdef __GNUC__
 #    define AV_GCC_VERSION_AT_LEAST(x,y) (__GNUC__ > x || __GNUC__ == x && __GNUC_MINOR__ >= y)
 #else
@@ -280,7 +284,6 @@ static inline av_const float av_clipf(float a, float amin, float amax)
 #include "mem.h"
 
 #ifdef HAVE_AV_CONFIG_H
-#    include "config.h"
 #    include "internal.h"
 #endif /* HAVE_AV_CONFIG_H */
 
