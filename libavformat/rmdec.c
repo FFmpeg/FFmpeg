@@ -689,7 +689,7 @@ rm_reorder_sipr_data (RMStream *ast)
 int
 ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
                     AVStream *st, RMStream *ast, int len, AVPacket *pkt,
-                    int *seq, int *flags, int64_t *timestamp)
+                    int *seq, int flags, int64_t timestamp)
 {
     RMDemuxContext *rm = s->priv_data;
 
@@ -709,10 +709,10 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
             int y = ast->sub_packet_cnt;
             int w = ast->audio_framesize;
 
-            if (*flags & 2)
+            if (flags & 2)
                 y = ast->sub_packet_cnt = 0;
             if (!y)
-                ast->audiotimestamp = *timestamp;
+                ast->audiotimestamp = timestamp;
 
             switch(st->codec->codec_id) {
                 case CODEC_ID_RA_288:
@@ -745,7 +745,7 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
                 for (x = 0; x < ast->sub_packet_cnt; x++)
                     ast->sub_packet_lengths[x] = get_be16(pb);
                 rm->audio_pkt_cnt = ast->sub_packet_cnt;
-                ast->audiotimestamp = *timestamp;
+                ast->audiotimestamp = timestamp;
             } else
                 return -1;
         } else {
@@ -763,15 +763,15 @@ ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
             int seq= 128*(pkt->data[2]&0x7F) + (pkt->data[3]>>1);
             av_log(s, AV_LOG_DEBUG, "%d %"PRId64" %d\n", *timestamp, *timestamp*512LL/25, seq);
 
-            seq |= (*timestamp&~0x3FFF);
-            if(seq - *timestamp >  0x2000) seq -= 0x4000;
-            if(seq - *timestamp < -0x2000) seq += 0x4000;
+            seq |= (timestamp&~0x3FFF);
+            if(seq - timestamp >  0x2000) seq -= 0x4000;
+            if(seq - timestamp < -0x2000) seq += 0x4000;
         }
     }
 #endif
 
-    pkt->pts= *timestamp;
-    if (*flags & 2)
+    pkt->pts= timestamp;
+    if (flags & 2)
         pkt->flags |= PKT_FLAG_KEY;
 
     return st->codec->codec_type == CODEC_TYPE_AUDIO ? rm->audio_pkt_cnt : 0;
@@ -838,7 +838,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             old_flags = flags;
             res = ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
-                                      &seq, &flags, &timestamp);
+                                      &seq, flags, timestamp);
             if((old_flags&2) && (seq&0x7F) == 1)
                 av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
             if (res)

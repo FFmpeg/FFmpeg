@@ -61,16 +61,15 @@ int ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
  * @param pkt packet location to store the parsed packet data
  * @param seq pointer to an integer containing the sequence number, may be
  *            updated
- * @param flags pointer to an integer containing the packet flags, may be
-                updated
- * @param ts pointer to timestamp, may be updated
+ * @param flags the packet flags
+ * @param ts timestamp of the current packet
  * @return <0 on error, 0 if a packet was placed in the pkt pointer. A
  *         value >0 means that no data was placed in pkt, but that cached
  *         data is available by calling ff_rm_retrieve_cache().
  */
 int ff_rm_parse_packet (AVFormatContext *s, ByteIOContext *pb,
                         AVStream *st, RMStream *rst, int len,
-                        AVPacket *pkt, int *seq, int *flags, int64_t *ts);
+                        AVPacket *pkt, int *seq, int flags, int64_t ts);
 
 /**
  * Retrieve one cached packet from the rm-context. The real container can
