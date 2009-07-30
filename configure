@@ -2654,7 +2654,7 @@ print_config CONFIG_ $TMPH config.mak $CONFIG_LIST       \
 
 echo "#define restrict $_restrict" >> $TMPH
 
-if enabled small; then
+if enabled small || disabled optimizations; then
     echo "#define av_always_inline"  >> $TMPH
 fi
 
