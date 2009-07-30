@@ -362,10 +362,6 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
     s->esc3_level_length= 0;
     s->esc3_run_length= 0;
-
-#ifdef DEBUG
-    av_log(s->avctx, AV_LOG_DEBUG, "*****frame %d:\n", frame_count++);
-#endif
 }
 
 void msmpeg4_encode_ext_header(MpegEncContext * s)
@@ -1325,9 +1321,6 @@ return -1;
     s->esc3_level_length= 0;
     s->esc3_run_length= 0;
 
-#ifdef DEBUG
-    av_log(s->avctx, AV_LOG_DEBUG, "*****frame %d:\n", frame_count++);
-#endif
     return 0;
 }
 

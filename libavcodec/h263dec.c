@@ -345,11 +345,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx,
 #ifdef PRINT_FRAME_TIME
 uint64_t time= rdtsc();
 #endif
-#ifdef DEBUG
-    av_log(avctx, AV_LOG_DEBUG, "*****frame %d size=%d\n", avctx->frame_number, buf_size);
-    if(buf_size>0)
-        av_log(avctx, AV_LOG_DEBUG, "bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
-#endif
     s->flags= avctx->flags;
     s->flags2= avctx->flags2;
 
@@ -630,10 +625,6 @@ retry:
         if (avctx->hwaccel->start_frame(avctx, buf, buf_size) < 0)
             return -1;
     }
-
-#ifdef DEBUG
-    av_log(avctx, AV_LOG_DEBUG, "qscale=%d\n", s->qscale);
-#endif
 
     ff_er_frame_start(s);
 
