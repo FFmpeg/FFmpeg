@@ -260,6 +260,8 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         if (s1->loop_input && s->img_number > s->img_last) {
             s->img_number = s->img_first;
         }
+        if (s->img_number > s->img_last)
+            return AVERROR_EOF;
         if (av_get_frame_filename(filename, sizeof(filename),
                                   s->path, s->img_number)<0 && s->img_number > 1)
             return AVERROR(EIO);
