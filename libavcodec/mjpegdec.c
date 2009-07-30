@@ -1232,9 +1232,7 @@ static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
     }
     val = -1;
 found:
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_VERBOSE, "find_marker skipped %d bytes\n", skipped);
-#endif
+    dprintf(NULL, "find_marker skipped %d bytes\n", skipped);
     *pbuf_ptr = buf_ptr;
     return val;
 }

@@ -250,9 +250,7 @@ static void compute_exp_strategy(uint8_t exp_strategy[NB_BLOCKS][AC3_MAX_CHANNEL
     exp_strategy[0][ch] = EXP_NEW;
     for(i=1;i<NB_BLOCKS;i++) {
         exp_diff = calc_exp_diff(exp[i][ch], exp[i-1][ch], N/2);
-#ifdef DEBUG
-        av_log(NULL, AV_LOG_DEBUG, "exp_diff=%d\n", exp_diff);
-#endif
+        dprintf(NULL, "exp_diff=%d\n", exp_diff);
         if (exp_diff > EXP_DIFF_THRESHOLD)
             exp_strategy[i][ch] = EXP_NEW;
         else

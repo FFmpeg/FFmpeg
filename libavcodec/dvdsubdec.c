@@ -194,19 +194,15 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
     while ((cmd_pos + 2 + offset_size) < buf_size) {
         date = AV_RB16(buf + cmd_pos);
         next_cmd_pos = READ_OFFSET(buf + cmd_pos + 2);
-#ifdef DEBUG
-        av_log(NULL, AV_LOG_INFO, "cmd_pos=0x%04x next=0x%04x date=%d\n",
-               cmd_pos, next_cmd_pos, date);
-#endif
+        dprintf(NULL, "cmd_pos=0x%04x next=0x%04x date=%d\n",
+                cmd_pos, next_cmd_pos, date);
         pos = cmd_pos + 2 + offset_size;
         offset1 = -1;
         offset2 = -1;
         x1 = y1 = x2 = y2 = 0;
         while (pos < buf_size) {
             cmd = buf[pos++];
-#ifdef DEBUG
-            av_log(NULL, AV_LOG_INFO, "cmd=%02x\n", cmd);
-#endif
+            dprintf(NULL, "cmd=%02x\n", cmd);
             switch(cmd) {
             case 0x00:
                 /* menu subpicture */
@@ -239,9 +235,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                 alpha[1] = buf[pos + 1] >> 4;
                 alpha[0] = buf[pos + 1] & 0x0f;
                 pos += 2;
-#ifdef DEBUG
-            av_log(NULL, AV_LOG_INFO, "alpha=%x%x%x%x\n", alpha[0],alpha[1],alpha[2],alpha[3]);
-#endif
+            dprintf(NULL, "alpha=%x%x%x%x\n", alpha[0],alpha[1],alpha[2],alpha[3]);
                 break;
             case 0x05:
             case 0x85:
@@ -253,10 +247,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                 y2 = ((buf[pos + 4] & 0x0f) << 8) | buf[pos + 5];
                 if (cmd & 0x80)
                     is_8bit = 1;
-#ifdef DEBUG
-                av_log(NULL, AV_LOG_INFO, "x1=%d x2=%d y1=%d y2=%d\n",
-                       x1, x2, y1, y2);
-#endif
+                dprintf(NULL, "x1=%d x2=%d y1=%d y2=%d\n", x1, x2, y1, y2);
                 pos += 6;
                 break;
             case 0x06:
@@ -264,9 +255,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                     goto fail;
                 offset1 = AV_RB16(buf + pos);
                 offset2 = AV_RB16(buf + pos + 2);
-#ifdef DEBUG
-                av_log(NULL, AV_LOG_INFO, "offset1=0x%04x offset2=0x%04x\n", offset1, offset2);
-#endif
+                dprintf(NULL, "offset1=0x%04x offset2=0x%04x\n", offset1, offset2);
                 pos += 4;
                 break;
             case 0x86:
@@ -274,9 +263,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                     goto fail;
                 offset1 = AV_RB32(buf + pos);
                 offset2 = AV_RB32(buf + pos + 4);
-#ifdef DEBUG
-                av_log(NULL, AV_LOG_INFO, "offset1=0x%04x offset2=0x%04x\n", offset1, offset2);
-#endif
+                dprintf(NULL, "offset1=0x%04x offset2=0x%04x\n", offset1, offset2);
                 pos += 8;
                 break;
 
@@ -299,9 +286,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
             case 0xff:
                 goto the_end;
             default:
-#ifdef DEBUG
-                av_log(NULL, AV_LOG_INFO, "unrecognised subpicture command 0x%x\n", cmd);
-#endif
+                dprintf(NULL, "unrecognised subpicture command 0x%x\n", cmd);
                 goto the_end;
             }
         }
@@ -495,9 +480,9 @@ static int dvdsub_decode(AVCodecContext *avctx,
         goto no_subtitle;
 
 #if defined(DEBUG)
-    av_log(NULL, AV_LOG_INFO, "start=%d ms end =%d ms\n",
-           sub->start_display_time,
-           sub->end_display_time);
+    dprintf(NULL, "start=%d ms end =%d ms\n",
+            sub->start_display_time,
+            sub->end_display_time);
     ppm_save("/tmp/a.ppm", sub->rects[0]->pict.data[0],
              sub->rects[0]->w, sub->rects[0]->h, sub->rects[0]->pict.data[1]);
 #endif

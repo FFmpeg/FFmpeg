@@ -55,10 +55,8 @@ static int dvbsub_parse(AVCodecParserContext *s,
     uint8_t *p, *p_end;
     int len, buf_pos = 0;
 
-#ifdef DEBUG
-    av_log(avctx, AV_LOG_INFO, "DVB parse packet pts=%"PRIx64", lpts=%"PRIx64", cpts=%"PRIx64":\n",
+    dprintf(avctx, "DVB parse packet pts=%"PRIx64", lpts=%"PRIx64", cpts=%"PRIx64":\n",
             s->pts, s->last_pts, s->cur_frame_pts[s->cur_frame_start_index]);
-#endif
 
 #ifdef DEBUG_PACKET_CONTENTS
     int i;
@@ -84,19 +82,15 @@ static int dvbsub_parse(AVCodecParserContext *s,
     {
         if (pc->packet_index != pc->packet_start)
         {
-#ifdef DEBUG
-            av_log(avctx, AV_LOG_INFO, "Discarding %d bytes\n",
-                pc->packet_index - pc->packet_start);
-#endif
+            dprintf(avctx, "Discarding %d bytes\n",
+                    pc->packet_index - pc->packet_start);
         }
 
         pc->packet_start = 0;
         pc->packet_index = 0;
 
         if (buf_size < 2 || buf[0] != 0x20 || buf[1] != 0x00) {
-#ifdef DEBUG
-            av_log(avctx, AV_LOG_INFO, "Bad packet header\n");
-#endif
+            dprintf(avctx, "Bad packet header\n");
             return -1;
         }
 
@@ -153,9 +147,7 @@ static int dvbsub_parse(AVCodecParserContext *s,
         } else if (*p == 0xff) {
             if (p + 1 < p_end)
             {
-#ifdef DEBUG
-                av_log(avctx, AV_LOG_INFO, "Junk at end of packet\n");
-#endif
+                dprintf(avctx, "Junk at end of packet\n");
             }
             pc->packet_index = p - pc->packet_buf;
             pc->in_packet = 0;
