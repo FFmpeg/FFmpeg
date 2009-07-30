@@ -66,7 +66,7 @@ static enum PixelFormat vfw_pixfmt(DWORD biCompression, WORD biBitCount)
                 return PIX_FMT_RGB32;
         }
     }
-    return -1;
+    return PIX_FMT_NONE;
 }
 
 #define dstruct(pctx, sname, var, type) \
@@ -326,7 +326,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     av_set_pts_info(st, 32, 1, 1000);
 
-    if(codec->pix_fmt == -1) {
+    if(codec->pix_fmt == PIX_FMT_NONE) {
         av_log(s, AV_LOG_ERROR, "Unknown compression type. "
                          "Please report verbose (-v 9) debug information.\n");
         vfw_read_close(s);
