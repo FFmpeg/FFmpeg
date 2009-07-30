@@ -46,7 +46,7 @@ const int program_birth_year = 2003;
 //#define DEBUG_SYNC
 
 #define MAX_VIDEOQ_SIZE (5 * 256 * 1024)
-#define MAX_AUDIOQ_SIZE (5 * 16 * 1024)
+#define MAX_AUDIOQ_SIZE (20 * 16 * 1024)
 #define MAX_SUBTITLEQ_SIZE (5 * 16 * 1024)
 
 /* SDL audio buffer size, in samples. Should be small to have precise
