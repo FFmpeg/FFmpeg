@@ -73,7 +73,6 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 extern const uint8_t wmv3_dc_scale_table[32];
 
 #ifdef DEBUG
-int intra_count = 0;
 int frame_count = 0;
 #endif
 
@@ -365,7 +364,6 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     s->esc3_run_length= 0;
 
 #ifdef DEBUG
-    intra_count = 0;
     av_log(s->avctx, AV_LOG_DEBUG, "*****frame %d:\n", frame_count++);
 #endif
 }
