@@ -69,6 +69,15 @@ static enum PixelFormat vfw_pixfmt(DWORD biCompression, WORD biBitCount)
     return PIX_FMT_NONE;
 }
 
+static enum CodecID vfw_codecid(DWORD biCompression)
+{
+    switch(biCompression) {
+    case MKTAG('d', 'v', 's', 'd'):
+        return CODEC_ID_DVVIDEO;
+    }
+    return CODEC_ID_NONE;
+}
+
 #define dstruct(pctx, sname, var, type) \
     av_log(pctx, AV_LOG_DEBUG, #var":\t%"type"\n", sname->var)
 
@@ -321,14 +330,20 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     codec->height = height;
     codec->pix_fmt = vfw_pixfmt(biCompression, biBitCount);
     if(codec->pix_fmt == PIX_FMT_NONE) {
+        codec->codec_id = vfw_codecid(biCompression);
+        if(codec->codec_id == CODEC_ID_NONE) {
         av_log(s, AV_LOG_ERROR, "Unknown compression type. "
                          "Please report verbose (-v 9) debug information.\n");
         vfw_read_close(s);
         return AVERROR_PATCHWELCOME;
+        }
+        codec->bits_per_coded_sample = biBitCount;
     }
+    else {
     codec->codec_id = CODEC_ID_RAWVIDEO;
     if(biCompression == BI_RGB)
         codec->bits_per_coded_sample = biBitCount;
+    }
 
     av_set_pts_info(st, 32, 1, 1000);
 
