@@ -195,7 +195,7 @@ static int wanted_video_stream= 0;
 static int wanted_subtitle_stream= -1;
 static int seek_by_bytes;
 static int display_disable;
-static int show_status;
+static int show_status = 1;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
 static int64_t start_time = AV_NOPTS_VALUE;
 static int debug = 0;
@@ -1138,7 +1138,7 @@ static void video_refresh_timer(void *opaque)
         double av_diff;
 
         cur_time = av_gettime();
-        if (!last_time || (cur_time - last_time) >= 500 * 1000) {
+        if (!last_time || (cur_time - last_time) >= 30000) {
             aqsize = 0;
             vqsize = 0;
             sqsize = 0;
@@ -2495,7 +2495,7 @@ static const OptionDef options[] = {
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format", "format" },
-    { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
+    { "stats", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
     { "debug", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
     { "bug", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&workaround_bugs}, "workaround bugs", "" },
     { "vismv", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
