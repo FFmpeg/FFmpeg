@@ -319,19 +319,18 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     codec->codec_type = CODEC_TYPE_VIDEO;
     codec->width = width;
     codec->height = height;
-    codec->codec_id = CODEC_ID_RAWVIDEO;
     codec->pix_fmt = vfw_pixfmt(biCompression, biBitCount);
-    if(biCompression == BI_RGB)
-        codec->bits_per_coded_sample = biBitCount;
-
-    av_set_pts_info(st, 32, 1, 1000);
-
     if(codec->pix_fmt == PIX_FMT_NONE) {
         av_log(s, AV_LOG_ERROR, "Unknown compression type. "
                          "Please report verbose (-v 9) debug information.\n");
         vfw_read_close(s);
         return AVERROR_PATCHWELCOME;
     }
+    codec->codec_id = CODEC_ID_RAWVIDEO;
+    if(biCompression == BI_RGB)
+        codec->bits_per_coded_sample = biBitCount;
+
+    av_set_pts_info(st, 32, 1, 1000);
 
     ctx->mutex = CreateMutex(NULL, 0, NULL);
     if(!ctx->mutex) {
