@@ -810,7 +810,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st;
     int i, len, res, seq = 1;
     int64_t timestamp, pos;
-    int old_flags, flags;
+    int flags;
 
     for (;;) {
         if (rm->audio_pkt_cnt) {
@@ -836,10 +836,9 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(len<0 || url_feof(s->pb))
                 return AVERROR(EIO);
 
-            old_flags = flags;
             res = ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
                                       &seq, flags, timestamp);
-            if((old_flags&2) && (seq&0x7F) == 1)
+            if((flags&2) && (seq&0x7F) == 1)
                 av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
             if (res)
                 continue;
