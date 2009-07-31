@@ -29,6 +29,7 @@ version <next>:
 - nonfree libamr support for AMR-NB/WB decoding/encoding removed
 - Experimental AAC encoder
 - RTP depacketization of ASF and RTSP from WMS servers
+- RTMP support in libavformat
 
 
 
