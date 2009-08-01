@@ -2759,7 +2759,9 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             || (isGray(dstFormat) && isGray(srcFormat))
             || (isPlanarYUV(srcFormat) && isPlanarYUV(dstFormat)
                 && c->chrDstHSubSample == c->chrSrcHSubSample
-                && c->chrDstVSubSample == c->chrSrcVSubSample))
+                && c->chrDstVSubSample == c->chrSrcVSubSample
+                && dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21
+                && srcFormat != PIX_FMT_NV12 && srcFormat != PIX_FMT_NV21))
         {
             if (isPacked(c->srcFormat))
                 c->swScale= packedCopy;
