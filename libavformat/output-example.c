@@ -56,7 +56,7 @@ int audio_input_frame_size;
 /*
  * add an audio output stream
  */
-static AVStream *add_audio_stream(AVFormatContext *oc, int codec_id)
+static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
@@ -185,7 +185,7 @@ uint8_t *video_outbuf;
 int frame_count, video_outbuf_size;
 
 /* add a video output stream */
-static AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
+static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
@@ -230,7 +230,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
     return st;
 }
 
-static AVFrame *alloc_picture(int pix_fmt, int width, int height)
+static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 {
     AVFrame *picture;
     uint8_t *picture_buf;
