@@ -71,9 +71,9 @@ static int find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size){
 }
 
 static int jpeg_parse(AVCodecParserContext *s,
-                           AVCodecContext *avctx,
-                           const uint8_t **poutbuf, int *poutbuf_size,
-                           const uint8_t *buf, int buf_size)
+                      AVCodecContext *avctx,
+                      const uint8_t **poutbuf, int *poutbuf_size,
+                      const uint8_t *buf, int buf_size)
 {
     ParseContext *pc = s->priv_data;
     int next;
