@@ -201,7 +201,22 @@ fail:
     return FALSE;
 }
 
-static int vfw_read_close(AVFormatContext *s);
+static int vfw_read_close(AVFormatContext *s)
+{
+    struct vfw_ctx *ctx = s->priv_data;
+
+    if(ctx->hwnd) {
+        SendMessage(ctx->hwnd, WM_CAP_SET_CALLBACK_VIDEOSTREAM, 0, 0);
+        SendMessage(ctx->hwnd, WM_CAP_DRIVER_DISCONNECT, 0, 0);
+        DestroyWindow(ctx->hwnd);
+    }
+    if(ctx->mutex)
+        CloseHandle(ctx->mutex);
+    if(ctx->event)
+        CloseHandle(ctx->event);
+
+    return 0;
+}
 
 static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
@@ -400,23 +415,6 @@ static int vfw_read_packet(AVFormatContext *s, AVPacket *pkt)
     ctx->curbufsize -= pkt->size;
 
     return pkt->size;
-}
-
-static int vfw_read_close(AVFormatContext *s)
-{
-    struct vfw_ctx *ctx = s->priv_data;
-
-    if(ctx->hwnd) {
-        SendMessage(ctx->hwnd, WM_CAP_SET_CALLBACK_VIDEOSTREAM, 0, 0);
-        SendMessage(ctx->hwnd, WM_CAP_DRIVER_DISCONNECT, 0, 0);
-        DestroyWindow(ctx->hwnd);
-    }
-    if(ctx->mutex)
-        CloseHandle(ctx->mutex);
-    if(ctx->event)
-        CloseHandle(ctx->event);
-
-    return 0;
 }
 
 AVInputFormat vfwcap_demuxer = {
