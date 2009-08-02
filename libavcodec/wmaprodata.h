@@ -40,11 +40,11 @@ static const uint16_t critical_freq[] = {
 
 
 /**
- * @name huffman tables for DPCM-coded scale factors
+ * @name Huffman tables for DPCM-coded scale factors
  * @{
  */
-#define HUFF_SCALE_SIZE 121
-#define HUFF_SCALE_MAXBITS 19
+#define HUFF_SCALE_SIZE    121
+#define HUFF_SCALE_MAXBITS  19
 static const uint16_t scale_huffcodes[HUFF_SCALE_SIZE] = {
     0xE639, 0xE6C2, 0xE6C1, 0xE6C0, 0xE63F, 0xE63E, 0xE63D, 0xE63C,
     0xE63B, 0xE63A, 0xE638, 0xE637, 0xE636, 0xE635, 0xE634, 0xE632,
@@ -86,11 +86,11 @@ static const uint8_t scale_huffbits[HUFF_SCALE_SIZE] = {
 
 
 /**
- * @name huffman, run and level tables for run level coded scale factors
+ * @name Huffman, run and level tables for runlevel-coded scale factors
  * @{
  */
-#define HUFF_SCALE_RL_SIZE 120
-#define HUFF_SCALE_RL_MAXBITS 21
+#define HUFF_SCALE_RL_SIZE    120
+#define HUFF_SCALE_RL_MAXBITS  21
 static const uint32_t scale_rl_huffcodes[HUFF_SCALE_RL_SIZE] = {
     0x00010C, 0x000001, 0x10FE2A, 0x000003, 0x000003, 0x000001, 0x000013,
     0x000020, 0x000029, 0x000014, 0x000016, 0x000045, 0x000049, 0x00002F,
@@ -157,11 +157,11 @@ static const uint8_t scale_rl_level[HUFF_SCALE_RL_SIZE] = {
 
 
 /**
- * @name huffman, run and level codes for run level coded coefficients
+ * @name Huffman, run and level codes for runlevel-coded coefficients
  * @{
  */
-#define HUFF_COEF0_SIZE 272
-#define HUFF_COEF0_MAXBITS 21
+#define HUFF_COEF0_SIZE    272
+#define HUFF_COEF0_MAXBITS  21
 static const uint32_t coef0_huffcodes[HUFF_COEF0_SIZE] = {
     0x00004A, 0x00002B, 0x000000, 0x000003, 0x000006, 0x000009, 0x00000F,
     0x000010, 0x000016, 0x000011, 0x000016, 0x000028, 0x00002F, 0x000026,
@@ -247,8 +247,8 @@ static const uint8_t coef0_huffbits[HUFF_COEF0_SIZE] = {
 };
 
 
-#define HUFF_COEF1_SIZE 244
-#define HUFF_COEF1_MAXBITS 22
+#define HUFF_COEF1_SIZE    244
+#define HUFF_COEF1_MAXBITS  22
 static const uint32_t coef1_huffcodes[HUFF_COEF1_SIZE] = {
     0x0001E2, 0x00007F, 0x000000, 0x000002, 0x000008, 0x00000E, 0x000019,
     0x00002F, 0x000037, 0x000060, 0x00006C, 0x000095, 0x0000C6, 0x0000F0,
@@ -410,11 +410,11 @@ static const uint16_t coef1_level[HUFF_COEF1_SIZE] = {
 
 
 /**
- * @name huffman and vector lookup tables for vector-coded coefficients
+ * @name Huffman and vector lookup tables for vector-coded coefficients
  * @{
  */
-#define HUFF_VEC4_SIZE 127
-#define HUFF_VEC4_MAXBITS 14
+#define HUFF_VEC4_SIZE    127
+#define HUFF_VEC4_MAXBITS  14
 static const uint16_t vec4_huffcodes[HUFF_VEC4_SIZE] = {
     0x0019, 0x0027, 0x00F2, 0x03BA, 0x0930, 0x1267, 0x0031, 0x0030,
     0x0097, 0x0221, 0x058B, 0x0124, 0x00EB, 0x01D4, 0x03D8, 0x0584,
@@ -454,8 +454,8 @@ static const uint8_t vec4_huffbits[HUFF_VEC4_SIZE] = {
 };
 
 
-#define HUFF_VEC2_SIZE 137
-#define HUFF_VEC2_MAXBITS 12
+#define HUFF_VEC2_SIZE    137
+#define HUFF_VEC2_MAXBITS  12
 static const uint16_t vec2_huffcodes[HUFF_VEC2_SIZE] = {
     0x055, 0x01C, 0x01A, 0x02B, 0x028, 0x067, 0x08B, 0x039,
     0x170, 0x10D, 0x2A5, 0x047, 0x464, 0x697, 0x523, 0x8CB,
@@ -499,8 +499,8 @@ static const uint8_t vec2_huffbits[HUFF_VEC2_SIZE] = {
 };
 
 
-#define HUFF_VEC1_SIZE 101
-#define HUFF_VEC1_MAXBITS 11
+#define HUFF_VEC1_SIZE    101
+#define HUFF_VEC1_MAXBITS  11
 static const uint16_t vec1_huffcodes[HUFF_VEC1_SIZE] = {
     0x01A, 0x003, 0x017, 0x010, 0x00C, 0x009, 0x005, 0x000,
     0x00D, 0x00A, 0x009, 0x00C, 0x00F, 0x002, 0x004, 0x007,
