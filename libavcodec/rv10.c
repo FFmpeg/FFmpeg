@@ -273,7 +273,6 @@ void rv20_encode_picture_header(MpegEncContext *s, int picture_number){
 
     assert(s->f_code == 1);
     assert(s->unrestricted_mv == 1);
-//    assert(s->h263_aic== (s->pict_type == FF_I_TYPE));
     assert(s->alt_inter_vlc == 0);
     assert(s->umvplus == 0);
     assert(s->modified_quant==1);
@@ -296,14 +295,12 @@ static int rv10_decode_picture_header(MpegEncContext *s)
 {
     int mb_count, pb_frame, marker, unk, mb_xy;
 
-//printf("ff:%d\n", full_frame);
     marker = get_bits1(&s->gb);
 
     if (get_bits1(&s->gb))
         s->pict_type = FF_P_TYPE;
     else
         s->pict_type = FF_I_TYPE;
-//printf("h:%X ver:%d\n",h,s->rv10_version);
     if(!marker) av_log(s->avctx, AV_LOG_ERROR, "marker missing\n");
     pb_frame = get_bits1(&s->gb);
 
@@ -344,7 +341,6 @@ static int rv10_decode_picture_header(MpegEncContext *s)
         mb_count = s->mb_width * s->mb_height;
     }
     unk= get_bits(&s->gb, 3);   /* ignored */
-//printf("%d\n", unk);
     s->f_code = 1;
     s->unrestricted_mv = 1;
 
@@ -418,7 +414,6 @@ static int rv20_decode_picture_header(MpegEncContext *s)
 
         if (get_bits1(&s->gb)){
             av_log(s->avctx, AV_LOG_ERROR, "unknown bit3 set\n");
-//            return -1;
         }
         seq= get_bits(&s->gb, 13)<<2;
 
@@ -611,7 +606,6 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         av_log(s->avctx, AV_LOG_ERROR, "COUNT ERROR\n");
         return -1;
     }
-//if(s->pict_type == FF_P_TYPE) return 0;
 
     if ((s->mb_x == 0 && s->mb_y == 0) || s->current_picture_ptr==NULL) {
         if(s->current_picture_ptr){ //FIXME write parser so we always have complete frames?
@@ -651,7 +645,6 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     s->rv10_first_dc_coded[0] = 0;
     s->rv10_first_dc_coded[1] = 0;
     s->rv10_first_dc_coded[2] = 0;
-//printf("%d %X %X\n", s->pict_type, s->current_picture.motion_val[0], s->current_picture.motion_val[1]);
     s->block_wrap[0]=
     s->block_wrap[1]=
     s->block_wrap[2]=
