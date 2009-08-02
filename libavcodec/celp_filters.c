@@ -25,11 +25,10 @@
 #include "avcodec.h"
 #include "celp_filters.h"
 
-void ff_celp_convolve_circ(
-        int16_t* fc_out,
-        const int16_t* fc_in,
-        const int16_t* filter,
-        int len)
+void ff_celp_convolve_circ(int16_t* fc_out,
+                           const int16_t* fc_in,
+                           const int16_t* filter,
+                           int len)
 {
     int i, k;
 
@@ -37,44 +36,39 @@ void ff_celp_convolve_circ(
 
     /* Since there are few pulses over an entire subframe (i.e. almost
        all fc_in[i] are zero) it is faster to loop over fc_in first. */
-    for(i=0; i<len; i++)
-    {
-        if(fc_in[i])
-        {
-            for(k=0; k<i; k++)
+    for (i = 0; i < len; i++) {
+        if (fc_in[i]) {
+            for (k = 0; k < i; k++)
                 fc_out[k] += (fc_in[i] * filter[len + k - i]) >> 15;
 
-            for(k=i; k<len; k++)
+            for (k = i; k < len; k++)
                 fc_out[k] += (fc_in[i] * filter[      k - i]) >> 15;
         }
     }
 }
 
-int ff_celp_lp_synthesis_filter(
-        int16_t *out,
-        const int16_t* filter_coeffs,
-        const int16_t* in,
-        int buffer_length,
-        int filter_length,
-        int stop_on_overflow,
-        int rounder)
+int ff_celp_lp_synthesis_filter(int16_t *out,
+                                const int16_t* filter_coeffs,
+                                const int16_t* in,
+                                int buffer_length,
+                                int filter_length,
+                                int stop_on_overflow,
+                                int rounder)
 {
     int i,n;
 
     // Avoids a +1 in the inner loop.
     filter_length++;
 
-    for(n=0; n<buffer_length; n++)
-    {
+    for (n = 0; n < buffer_length; n++) {
         int sum = rounder;
-        for(i=1; i<filter_length; i++)
+        for (i = 1; i < filter_length; i++)
             sum -= filter_coeffs[i-1] * out[n-i];
 
         sum = (sum >> 12) + in[n];
 
-        if(sum + 0x8000 > 0xFFFFU)
-        {
-            if(stop_on_overflow)
+        if (sum + 0x8000 > 0xFFFFU) {
+            if (stop_on_overflow)
                 return 1;
             sum = (sum >> 31) ^ 32767;
         }
@@ -84,42 +78,38 @@ int ff_celp_lp_synthesis_filter(
     return 0;
 }
 
-void ff_celp_lp_synthesis_filterf(
-        float *out,
-        const float* filter_coeffs,
-        const float* in,
-        int buffer_length,
-        int filter_length)
+void ff_celp_lp_synthesis_filterf(float *out,
+                                  const float* filter_coeffs,
+                                  const float* in,
+                                  int buffer_length,
+                                  int filter_length)
 {
     int i,n;
 
     // Avoids a +1 in the inner loop.
     filter_length++;
 
-    for(n=0; n<buffer_length; n++)
-    {
+    for (n = 0; n < buffer_length; n++) {
         out[n] = in[n];
-        for(i=1; i<filter_length; i++)
+        for (i = 1; i < filter_length; i++)
             out[n] -= filter_coeffs[i-1] * out[n-i];
     }
 }
 
-void ff_celp_lp_zero_synthesis_filterf(
-        float *out,
-        const float* filter_coeffs,
-        const float* in,
-        int buffer_length,
-        int filter_length)
+void ff_celp_lp_zero_synthesis_filterf(float *out,
+                                       const float* filter_coeffs,
+                                       const float* in,
+                                       int buffer_length,
+                                       int filter_length)
 {
     int i,n;
 
     // Avoids a +1 in the inner loop.
     filter_length++;
 
-    for(n=0; n<buffer_length; n++)
-    {
+    for (n = 0; n < buffer_length; n++) {
         out[n] = in[n];
-        for(i=1; i<filter_length; i++)
+        for (i = 1; i < filter_length; i++)
             out[n] -= filter_coeffs[i-1] * in[n-i];
     }
 }
