@@ -201,6 +201,7 @@ Codecs:
   vp6                                   Aurelien Jacobs
   vqavideo.c                            Mike Melanson
   wavpack.c                             Kostya Shishkov
+  wmaprodec.c                           Sascha Sommer
   wmv2.c                                Michael Niedermayer
   wnv1.c                                Kostya Shishkov
   xan.c                                 Mike Melanson
