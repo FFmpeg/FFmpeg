@@ -718,6 +718,10 @@ static void ac3_upmix_delay(AC3DecodeContext *s)
 
 /**
  * Decode band structure for coupling, spectral extension, or enhanced coupling.
+ * The band structure defines how many subbands are in each band.  For each
+ * subband in the range, 1 means it is combined with the previous band, and 0
+ * means that it starts a new band.
+ *
  * @param[in] gbc bit reader context
  * @param[in] blk block number
  * @param[in] eac3 flag to indicate E-AC-3
