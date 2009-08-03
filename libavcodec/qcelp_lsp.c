@@ -34,21 +34,21 @@
  * needed for LSP to LPC conversion.
  * We only need to calculate the 6 first elements of the polynomial.
  *
- * @param lspf line spectral pair frequencies
+ * @param lsp line spectral pairs in cosine domain
  * @param f [out] polynomial input/output as a vector
  *
  * TIA/EIA/IS-733 2.4.3.3.5-1/2
  */
-static void lsp2polyf(const double *lspf, double *f, int lp_half_order)
+static void lsp2polyf(const double *lsp, double *f, int lp_half_order)
 {
     int i, j;
 
     f[0] = 1.0;
-    f[1] = -2 * lspf[0];
-    lspf -= 2;
+    f[1] = -2 * lsp[0];
+    lsp -= 2;
     for(i=2; i<=lp_half_order; i++)
     {
-        double val = -2 * lspf[2*i];
+        double val = -2 * lsp[2*i];
         f[i] = val * f[i-1] + 2*f[i-2];
         for(j=i-1; j>1; j--)
             f[j] += f[j-1] * val + f[j-2];
@@ -59,16 +59,16 @@ static void lsp2polyf(const double *lspf, double *f, int lp_half_order)
 /**
  * Reconstructs LPC coefficients from the line spectral pair frequencies.
  *
- * @param lspf line spectral pair frequencies
+ * @param lsp line spectral pairs in cosine domain
  * @param lpc linear predictive coding coefficients
  */
-void ff_celp_lspf2lpc(const double *lspf, float *lpc)
+void ff_acelp_lspd2lpc(const double *lsp, float *lpc)
 {
     double pa[6], qa[6];
     int   i;
 
-    lsp2polyf(lspf,     pa, 5);
-    lsp2polyf(lspf + 1, qa, 5);
+    lsp2polyf(lsp,     pa, 5);
+    lsp2polyf(lsp + 1, qa, 5);
 
     for (i=4; i>=0; i--)
     {
