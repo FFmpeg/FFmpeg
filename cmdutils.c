@@ -125,11 +125,19 @@ void parse_options(int argc, char **argv, const OptionDef *options,
         opt = argv[optindex++];
 
         if (handleoptions && opt[0] == '-' && opt[1] != '\0') {
+            int bool_val = 1;
             if (opt[1] == '-' && opt[2] == '\0') {
                 handleoptions = 0;
                 continue;
             }
             po= find_option(options, opt + 1);
+            if (!po->name && opt[1] == 'n' && opt[2] == 'o') {
+                /* handle 'no' bool option */
+                po = find_option(options, opt + 3);
+                if (!(po->name && (po->flags & OPT_BOOL)))
+                    goto unknown_opt;
+                bool_val = 0;
+            }
             if (!po->name)
                 po= find_option(options, "default");
             if (!po->name) {
@@ -150,7 +158,7 @@ unknown_opt:
                 str = av_strdup(arg);
                 *po->u.str_arg = str;
             } else if (po->flags & OPT_BOOL) {
-                *po->u.int_arg = 1;
+                *po->u.int_arg = bool_val;
             } else if (po->flags & OPT_INT) {
                 *po->u.int_arg = parse_number_or_die(opt+1, arg, OPT_INT64, INT_MIN, INT_MAX);
             } else if (po->flags & OPT_INT64) {
