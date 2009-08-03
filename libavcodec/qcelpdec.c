@@ -38,6 +38,7 @@
 #include "celp_math.h"
 #include "celp_filters.h"
 #include "acelp_vectors.h"
+#include "lsp.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -74,13 +75,6 @@ typedef struct
     uint16_t first16bits;
     uint8_t  warned_buf_mismatch_bitrate;
 } QCELPContext;
-
-/**
- * Reconstructs LPC coefficients from the line spectral pair frequencies.
- *
- * TIA/EIA/IS-733 2.4.3.3.5
- */
-void ff_acelp_lspd2lpc(const double *lsp, float *lpc);
 
 /**
  * Initialize the speech codec according to the specification.

@@ -67,4 +67,14 @@ void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order);
  */
 void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd, const int16_t* lsp_prev, int lp_order);
 
+/**
+ * Reconstructs LPC coefficients from the line spectral pair frequencies.
+ *
+ * @param lsp line spectral pairs in cosine domain
+ * @param lpc linear predictive coding coefficients
+ *
+ * TIA/EIA/IS-733 2.4.3.3.5
+ */
+void ff_acelp_lspd2lpc(const double *lsp, float *lpc);
+
 #endif /* AVCODEC_LSP_H */

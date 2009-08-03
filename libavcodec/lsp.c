@@ -1,6 +1,7 @@
 /*
  * LSP routines for ACELP-based codecs
  *
+ * Copyright (c) 2007 Reynaldo H. Verdejo Pinochet (QCELP decoder)
  * Copyright (c) 2008 Vladimir Voroshilov
  *
  * This file is part of FFmpeg.
@@ -117,4 +118,49 @@ void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd
 
     /* LSP values for second subframe (3.2.5 of G.729)*/
     ff_acelp_lsp2lpc(lp_2nd, lsp_2nd, lp_order >> 1);
+}
+
+/**
+ * Computes the Pa / (1 + z(-1)) or Qa / (1 - z(-1)) coefficients
+ * needed for LSP to LPC conversion.
+ * We only need to calculate the 6 first elements of the polynomial.
+ *
+ * @param lsp line spectral pairs in cosine domain
+ * @param f [out] polynomial input/output as a vector
+ *
+ * TIA/EIA/IS-733 2.4.3.3.5-1/2
+ */
+static void lsp2polyf(const double *lsp, double *f, int lp_half_order)
+{
+    int i, j;
+
+    f[0] = 1.0;
+    f[1] = -2 * lsp[0];
+    lsp -= 2;
+    for(i=2; i<=lp_half_order; i++)
+    {
+        double val = -2 * lsp[2*i];
+        f[i] = val * f[i-1] + 2*f[i-2];
+        for(j=i-1; j>1; j--)
+            f[j] += f[j-1] * val + f[j-2];
+        f[1] += val;
+    }
+}
+
+void ff_acelp_lspd2lpc(const double *lsp, float *lpc)
+{
+    double pa[6], qa[6];
+    int   i;
+
+    lsp2polyf(lsp,     pa, 5);
+    lsp2polyf(lsp + 1, qa, 5);
+
+    for (i=4; i>=0; i--)
+    {
+        double paf = pa[i+1] + pa[i];
+        double qaf = qa[i+1] - qa[i];
+
+        lpc[i  ] = 0.5*(paf+qaf);
+        lpc[9-i] = 0.5*(paf-qaf);
+    }
 }
