@@ -3759,30 +3759,6 @@ AVCodec flv_encoder = {
     .long_name= NULL_IF_CONFIG_SMALL("Flash Video (FLV)"),
 };
 
-AVCodec rv10_encoder = {
-    "rv10",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_RV10,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
-};
-
-AVCodec rv20_encoder = {
-    "rv20",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_RV20,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
-};
-
 AVCodec mpeg4_encoder = {
     "mpeg4",
     CODEC_TYPE_VIDEO,
