@@ -819,14 +819,25 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         if (extradata && !memcmp(extradata, "SEQH", 4)) {
 
             GetBitContext gb;
+            int frame_size_code;
 
             size = AV_RB32(&extradata[4]);
             init_get_bits(&gb, extradata + 8, size*8);
 
             /* 'frame size code' and optional 'width, height' */
-            if (get_bits(&gb, 3) == 7) {
-                skip_bits(&gb, 12);
-                skip_bits(&gb, 12);
+            frame_size_code = get_bits(&gb, 3);
+            switch (frame_size_code) {
+                case 0: avctx->width = 160; avctx->height = 120; break;
+                case 1: avctx->width = 128; avctx->height =  96; break;
+                case 2: avctx->width = 176; avctx->height = 144; break;
+                case 3: avctx->width = 352; avctx->height = 288; break;
+                case 4: avctx->width = 704; avctx->height = 576; break;
+                case 5: avctx->width = 240; avctx->height = 180; break;
+                case 6: avctx->width = 320; avctx->height = 240; break;
+                case 7:
+                    avctx->width  = get_bits(&gb, 12);
+                    avctx->height = get_bits(&gb, 12);
+                    break;
             }
 
             h->halfpel_flag  = get_bits1(&gb);
