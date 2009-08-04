@@ -278,7 +278,7 @@ SECTION .text
 ; void x264_deblock_v_luma_sse2( uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0 )
 ;-----------------------------------------------------------------------------
 INIT_XMM
-cglobal x264_deblock_v_luma_sse2
+cglobal x264_deblock_v_luma_sse2, 5,5,10
     movd    m8, [r4] ; tc0
     lea     r4, [r1*3]
     dec     r2d        ; alpha-1
@@ -318,54 +318,66 @@ cglobal x264_deblock_v_luma_sse2
     DEBLOCK_P0_Q0
     mova    [r4+2*r1], m1
     mova    [r0], m2
-    ret
+    RET
 
 ;-----------------------------------------------------------------------------
 ; void x264_deblock_h_luma_sse2( uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0 )
 ;-----------------------------------------------------------------------------
 INIT_MMX
-cglobal x264_deblock_h_luma_sse2
-    movsxd r10, esi
+cglobal x264_deblock_h_luma_sse2, 5,7
+    movsxd r10, r1d
     lea    r11, [r10+r10*2]
-    lea    rax, [r0-4]
-    lea    r9,  [r0-4+r11]
+    lea    r6,  [r0-4]
+    lea    r5,  [r0-4+r11]
+%ifdef WIN64
+    sub    rsp, 0x98
+    %define pix_tmp rsp+0x30
+%else
     sub    rsp, 0x68
     %define pix_tmp rsp
+%endif
 
     ; transpose 6x16 -> tmp space
-    TRANSPOSE6x8_MEM  PASS8ROWS(rax, r9, r10, r11), pix_tmp
-    lea    rax, [rax+r10*8]
-    lea    r9,  [r9 +r10*8]
-    TRANSPOSE6x8_MEM  PASS8ROWS(rax, r9, r10, r11), pix_tmp+8
+    TRANSPOSE6x8_MEM  PASS8ROWS(r6, r5, r10, r11), pix_tmp
+    lea    r6, [r6+r10*8]
+    lea    r5, [r5+r10*8]
+    TRANSPOSE6x8_MEM  PASS8ROWS(r6, r5, r10, r11), pix_tmp+8
 
     ; vertical filter
     ; alpha, beta, tc0 are still in r2d, r3d, r4
-    ; don't backup rax, r9, r10, r11 because x264_deblock_v_luma_sse2 doesn't use them
+    ; don't backup r6, r5, r10, r11 because x264_deblock_v_luma_sse2 doesn't use them
     lea    r0, [pix_tmp+0x30]
-    mov    esi, 0x10
+    mov    r1d, 0x10
+%ifdef WIN64
+    mov    [rsp+0x20], r4
+%endif
     call   x264_deblock_v_luma_sse2
 
     ; transpose 16x4 -> original space  (only the middle 4 rows were changed by the filter)
-    add    rax, 2
-    add    r9,  2
+    add    r6, 2
+    add    r5, 2
     movq   m0, [pix_tmp+0x18]
     movq   m1, [pix_tmp+0x28]
     movq   m2, [pix_tmp+0x38]
     movq   m3, [pix_tmp+0x48]
-    TRANSPOSE8x4_STORE  PASS8ROWS(rax, r9, r10, r11)
+    TRANSPOSE8x4_STORE  PASS8ROWS(r6, r5, r10, r11)
 
     shl    r10, 3
-    sub    rax, r10
-    sub    r9,  r10
+    sub    r6,  r10
+    sub    r5,  r10
     shr    r10, 3
     movq   m0, [pix_tmp+0x10]
     movq   m1, [pix_tmp+0x20]
     movq   m2, [pix_tmp+0x30]
     movq   m3, [pix_tmp+0x40]
-    TRANSPOSE8x4_STORE  PASS8ROWS(rax, r9, r10, r11)
+    TRANSPOSE8x4_STORE  PASS8ROWS(r6, r5, r10, r11)
 
+%ifdef WIN64
+    add    rsp, 0x98
+%else
     add    rsp, 0x68
-    ret
+%endif
+    RET
 
 %else
 
@@ -388,7 +400,7 @@ cglobal x264_deblock_%2_luma_%1, 5,5
     mova    m3, [r0+r1]   ; q1
     LOAD_MASK r2, r3
 
-    mov     r3, r4m
+    mov     r3, r4mp
     movd    m4, [r3] ; tc0
     punpcklbw m4, m4
     punpcklbw m4, m4 ; tc = 4x tc0[3], 4x tc0[2], 4x tc0[1], 4x tc0[0]
@@ -428,7 +440,7 @@ cglobal x264_deblock_%2_luma_%1, 5,5
 ;-----------------------------------------------------------------------------
 INIT_MMX
 cglobal x264_deblock_h_luma_%1, 0,5
-    mov    r0, r0m
+    mov    r0, r0mp
     mov    r3, r1m
     lea    r4, [r3*3]
     sub    r0, 4
@@ -459,7 +471,7 @@ cglobal x264_deblock_h_luma_%1, 0,5
     ADD    esp, 20
 
     ; transpose 16x4 -> original space  (only the middle 4 rows were changed by the filter)
-    mov    r0, r0m
+    mov    r0, r0mp
     sub    r0, 2
     lea    r1, [r0+r4]
 
@@ -607,7 +619,7 @@ DEBLOCK_LUMA sse2, v, 16
 ;-----------------------------------------------------------------------------
 ; void x264_deblock_v_luma_intra_sse2( uint8_t *pix, int stride, int alpha, int beta )
 ;-----------------------------------------------------------------------------
-cglobal x264_deblock_%2_luma_intra_%1, 4,6
+cglobal x264_deblock_%2_luma_intra_%1, 4,6,16
 %ifndef ARCH_X86_64
     sub     esp, 0x60
 %endif
@@ -669,34 +681,34 @@ INIT_MMX
 ;-----------------------------------------------------------------------------
 ; void x264_deblock_h_luma_intra_sse2( uint8_t *pix, int stride, int alpha, int beta )
 ;-----------------------------------------------------------------------------
-cglobal x264_deblock_h_luma_intra_%1
+cglobal x264_deblock_h_luma_intra_%1, 4,7
     movsxd r10, r1d
     lea    r11, [r10*3]
-    lea    rax, [r0-4]
-    lea    r9,  [r0-4+r11]
+    lea    r6,  [r0-4]
+    lea    r5,  [r0-4+r11]
     sub    rsp, 0x88
     %define pix_tmp rsp
 
     ; transpose 8x16 -> tmp space
-    TRANSPOSE8x8_MEM  PASS8ROWS(rax, r9, r10, r11), PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30)
-    lea    rax, [rax+r10*8]
-    lea    r9,  [r9+r10*8]
-    TRANSPOSE8x8_MEM  PASS8ROWS(rax, r9, r10, r11), PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30)
+    TRANSPOSE8x8_MEM  PASS8ROWS(r6, r5, r10, r11), PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30)
+    lea    r6, [r6+r10*8]
+    lea    r5, [r5+r10*8]
+    TRANSPOSE8x8_MEM  PASS8ROWS(r6, r5, r10, r11), PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30)
 
     lea    r0,  [pix_tmp+0x40]
     mov    r1,  0x10
     call   x264_deblock_v_luma_intra_%1
 
     ; transpose 16x6 -> original space (but we can't write only 6 pixels, so really 16x8)
-    lea    r9, [rax+r11]
-    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30), PASS8ROWS(rax, r9, r10, r11)
+    lea    r5, [r6+r11]
+    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30), PASS8ROWS(r6, r5, r10, r11)
     shl    r10, 3
-    sub    rax, r10
-    sub    r9,  r10
+    sub    r6,  r10
+    sub    r5,  r10
     shr    r10, 3
-    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30), PASS8ROWS(rax, r9, r10, r11)
+    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30), PASS8ROWS(r6, r5, r10, r11)
     add    rsp, 0x88
-    ret
+    RET
 %else
 cglobal x264_deblock_h_luma_intra_%1, 2,4
     lea    r3,  [r1*3]
@@ -725,7 +737,7 @@ cglobal x264_deblock_h_luma_intra_%1, 2,4
     ADD    esp, 16
 
     mov    r1,  r1m
-    mov    r0,  r0m
+    mov    r0,  r0mp
     lea    r3,  [r1*3]
     sub    r0,  4
     lea    r2,  [r0+r3]

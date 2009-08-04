@@ -31,15 +31,8 @@ pw_32: times 8 dw 32
 
 SECTION .text
 
-%macro IDCT4_1D 6
-    SUMSUB_BA   m%3, m%1
-    SUMSUBD2_AB m%2, m%4, m%6, m%5
-    SUMSUB_BADC m%2, m%3, m%5, m%1
-    SWAP %1, %2, %5, %4, %3
-%endmacro
-
 INIT_XMM
-cglobal x264_add8x4_idct_sse2, 3,3
+cglobal x264_add8x4_idct_sse2, 3,3,8
     movq   m0, [r1+ 0]
     movq   m1, [r1+ 8]
     movq   m2, [r1+16]
