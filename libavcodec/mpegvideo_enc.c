@@ -1724,8 +1724,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
     case CODEC_ID_FLV1:
     case CODEC_ID_RV10:
     case CODEC_ID_RV20:
-        if (CONFIG_H263_ENCODER || CONFIG_H263P_ENCODER ||
-            CONFIG_FLV_ENCODER  || CONFIG_RV10_ENCODER  || CONFIG_RV20_ENCODER)
+        if (CONFIG_H263_ENCODER || CONFIG_H263P_ENCODER || CONFIG_FLV_ENCODER)
             h263_encode_mb(s, s->block, motion_x, motion_y);
         break;
     case CODEC_ID_MJPEG:
