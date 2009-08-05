@@ -452,6 +452,7 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
     uint8_t *baps = s->bap[ch_index];
     int8_t *exps = s->dexps[ch_index];
     int *coeffs = s->fixed_coeffs[ch_index];
+    int dither = (ch_index == CPL_CH) || s->dither_flag[ch_index];
     GetBitContext *gbc = &s->gbc;
     int freq;
 
@@ -460,7 +461,10 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
         int mantissa;
         switch(bap){
             case 0:
+                if (dither)
                 mantissa = (av_lfg_get(&s->dith_state) & 0x7FFFFF) - 0x400000;
+                else
+                    mantissa = 0;
                 break;
             case 1:
                 if(m->b1){
@@ -517,33 +521,18 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
 }
 
 /**
- * Remove random dithering from coefficients with zero-bit mantissas
+ * Remove random dithering from coupling range coefficients with zero-bit
+ * mantissas for coupled channels which do not use dithering.
  * reference: Section 7.3.4 Dither for Zero Bit Mantissas (bap=0)
  */
 static void remove_dithering(AC3DecodeContext *s) {
     int ch, i;
-    int end=0;
-    int *coeffs;
-    uint8_t *bap;
 
     for(ch=1; ch<=s->fbw_channels; ch++) {
-        if(!s->dither_flag[ch]) {
-            coeffs = s->fixed_coeffs[ch];
-            bap = s->bap[ch];
-            if(s->channel_in_cpl[ch])
-                end = s->start_freq[CPL_CH];
-            else
-                end = s->end_freq[ch];
-            for(i=0; i<end; i++) {
-                if(!bap[i])
-                    coeffs[i] = 0;
-            }
-            if(s->channel_in_cpl[ch]) {
-                bap = s->bap[CPL_CH];
-                for(; i<s->end_freq[CPL_CH]; i++) {
-                    if(!bap[i])
-                        coeffs[i] = 0;
-                }
+        if(!s->dither_flag[ch] && s->channel_in_cpl[ch]) {
+            for(i = s->start_freq[CPL_CH]; i<s->end_freq[CPL_CH]; i++) {
+                if(!s->bap[CPL_CH][i])
+                    s->fixed_coeffs[ch][i] = 0;
             }
         }
     }
