@@ -95,7 +95,6 @@ OBJS-$(CONFIG_FLASHSV_DECODER)         += flashsv.o
 OBJS-$(CONFIG_FLASHSV_ENCODER)         += flashsvenc.o
 OBJS-$(CONFIG_FLIC_DECODER)            += flicvideo.o
 OBJS-$(CONFIG_FLV_DECODER)             += h263dec.o h263.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_FLV_ENCODER)             += mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_FOURXM_DECODER)          += 4xm.o
 OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o huffman.o
 OBJS-$(CONFIG_GIF_DECODER)             += gifdec.o lzw.o
