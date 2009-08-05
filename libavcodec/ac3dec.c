@@ -730,8 +730,7 @@ static void ac3_upmix_delay(AC3DecodeContext *s)
 static void decode_band_structure(GetBitContext *gbc, int blk, int eac3,
                                   int ecpl, int start_subband, int end_subband,
                                   const uint8_t *default_band_struct,
-                                  int *num_bands,
-                                  uint8_t *band_sizes)
+                                  int *num_bands, uint8_t *band_sizes)
 {
     int subbnd, bnd, n_subbands, n_bands=0;
     uint8_t bnd_sz[22];
@@ -881,8 +880,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             decode_band_structure(gbc, blk, s->eac3, 0, cpl_start_subband,
                                   cpl_end_subband,
                                   ff_eac3_default_cpl_band_struct,
-                                  &s->num_cpl_bands,
-                                  s->cpl_band_sizes);
+                                  &s->num_cpl_bands, s->cpl_band_sizes);
         } else {
             /* coupling not in use */
             for (ch = 1; ch <= fbw_channels; ch++) {
