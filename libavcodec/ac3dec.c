@@ -412,14 +412,11 @@ static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
  */
 static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
 {
-    int i, j, ch, bnd, subbnd;
+    int i, j, ch, bnd;
 
-    subbnd = -1;
     i = s->start_freq[CPL_CH];
     for(bnd=0; bnd<s->num_cpl_bands; bnd++) {
-        do {
-            subbnd++;
-            for(j=0; j<12; j++) {
+        for (j = 0; j < s->cpl_band_sizes[bnd]; j++,i++) {
                 for(ch=1; ch<=s->fbw_channels; ch++) {
                     if(s->channel_in_cpl[ch]) {
                         s->fixed_coeffs[ch][i] = ((int64_t)s->fixed_coeffs[CPL_CH][i] * (int64_t)s->cpl_coords[ch][bnd]) >> 23;
@@ -427,9 +424,7 @@ static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
                             s->fixed_coeffs[ch][i] = -s->fixed_coeffs[ch][i];
                     }
                 }
-                i++;
-            }
-        } while(s->cpl_band_struct[subbnd]);
+        }
     }
 }
 
@@ -884,7 +879,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             decode_band_structure(gbc, blk, s->eac3, 0, cpl_start_subband,
                                   cpl_end_subband,
                                   ff_eac3_default_cpl_band_struct,
-                                  s->cpl_band_struct, &s->num_cpl_bands, NULL);
+                                  s->cpl_band_struct, &s->num_cpl_bands,
+                                  s->cpl_band_sizes);
         } else {
             /* coupling not in use */
             for (ch = 1; ch <= fbw_channels; ch++) {
