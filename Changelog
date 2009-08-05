@@ -30,6 +30,7 @@ version <next>:
 - Experimental AAC encoder
 - RTP depacketization of ASF and RTSP from WMS servers
 - RTMP support in libavformat
+- noX handling for OPT_BOOL X options
 
 
 
