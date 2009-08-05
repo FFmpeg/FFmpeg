@@ -462,7 +462,7 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
         switch(bap){
             case 0:
                 if (dither)
-                mantissa = (av_lfg_get(&s->dith_state) & 0x7FFFFF) - 0x400000;
+                    mantissa = (av_lfg_get(&s->dith_state) & 0x7FFFFF) - 0x400000;
                 else
                     mantissa = 0;
                 break;
