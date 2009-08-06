@@ -253,7 +253,6 @@ OBJS-$(CONFIG_WMAV1_ENCODER)           += wmaenc.o wma.o
 OBJS-$(CONFIG_WMAV2_DECODER)           += wmadec.o wma.o
 OBJS-$(CONFIG_WMAV2_ENCODER)           += wmaenc.o wma.o
 OBJS-$(CONFIG_WMV1_DECODER)            += h263dec.o h263.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_WMV1_ENCODER)            += mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o msmpeg4.o msmpeg4data.o h263dec.o h263.o intrax8.o intrax8dsp.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_WMV2_ENCODER)            += wmv2enc.o wmv2.o msmpeg4.o msmpeg4data.o mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_WNV1_DECODER)            += wnv1.o
