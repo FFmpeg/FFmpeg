@@ -1582,6 +1582,22 @@ if test -n "$sysroot"; then
     esac
 fi
 
+if test "$cpu" = host; then
+    enabled cross_compile && die "--cpu=host makes no sense when cross-compiling."
+
+    case "$cc_type" in
+        gcc)
+            check_native(){
+                $cc $1=native -v -c -o $TMPO $TMPC >$TMPE 2>&1 || return
+                awk "/$1=/{ match(\$0, /$1=(\\w+)/, a);print a[1];exit }" $TMPE
+            }
+            cpu=$(check_native -march || check_native -mcpu)
+        ;;
+    esac
+
+    test "${cpu:-host}" = host && die "--cpu=host not supported with compiler $cc"
+fi
+
 # Add processor-specific flags
 case $cpu in
     601|ppc601|PowerPC601)
