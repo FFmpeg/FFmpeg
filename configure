@@ -1390,10 +1390,11 @@ for opt do
     --enable-debug=*) debuglevel="$optval"
     ;;
     --enable-*=*|--disable-*=*)
-    eval $(echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/')
+    eval $(echo "${opt%%=*}" | sed 's/--/action=/;s/-/ thing=/')
     is_in "${thing}s" $COMPONENT_LIST || die_unknown "$opt"
     eval list=\$$(toupper $thing)_LIST
-    $action $(filter "${optval}_${thing}" $list)
+    name=$(echo "${optval}" | sed "s/,/_${thing}|/g")_${thing}
+    $action $(filter "$name" $list)
     ;;
     --enable-?*|--disable-?*)
     eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
