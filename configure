@@ -290,6 +290,14 @@ sh_quote(){
     echo "$v"
 }
 
+filter(){
+    pat=$1
+    shift
+    for v; do
+        case "$v" in $pat) echo "$v" ;; esac
+    done
+}
+
 set_all(){
     value=$1
     shift
@@ -1383,10 +1391,9 @@ for opt do
     ;;
     --enable-*=*|--disable-*=*)
     eval $(echo "$opt" | sed 's/=/-/;s/--/action=/;s/-/ thing=/;s/-/ name=/')
-    case "$thing" in
-        encoder|decoder|hwaccel|muxer|demuxer|indev|outdev|parser|bsf|protocol|filter) $action ${optval}_${thing} ;;
-        *) die_unknown "$opt" ;;
-    esac
+    is_in "${thing}s" $COMPONENT_LIST || die_unknown "$opt"
+    eval list=\$$(toupper $thing)_LIST
+    $action $(filter "${optval}_${thing}" $list)
     ;;
     --enable-?*|--disable-?*)
     eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
