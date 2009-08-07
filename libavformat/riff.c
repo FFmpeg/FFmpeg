@@ -497,7 +497,8 @@ void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssiz
     if(stream->frame_size && stream->sample_rate){
         *au_scale=stream->frame_size;
         *au_rate= stream->sample_rate;
-    }else if(stream->codec_type == CODEC_TYPE_VIDEO){
+    }else if(stream->codec_type == CODEC_TYPE_VIDEO ||
+             stream->codec_type == CODEC_TYPE_SUBTITLE){
         *au_scale= stream->time_base.num;
         *au_rate = stream->time_base.den;
     }else{
