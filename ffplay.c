@@ -1171,23 +1171,6 @@ static void alloc_picture(void *opaque)
     if (vp->bmp)
         SDL_FreeYUVOverlay(vp->bmp);
 
-#if 0
-    /* XXX: use generic function */
-    /* XXX: disable overlay if no hardware acceleration or if RGB format */
-    switch(is->video_st->codec->pix_fmt) {
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV444P:
-    case PIX_FMT_YUYV422:
-    case PIX_FMT_YUV410P:
-    case PIX_FMT_YUV411P:
-        is_yuv = 1;
-        break;
-    default:
-        is_yuv = 0;
-        break;
-    }
-#endif
     vp->bmp = SDL_CreateYUVOverlay(is->video_st->codec->width,
                                    is->video_st->codec->height,
                                    SDL_YV12_OVERLAY,

@@ -130,11 +130,6 @@ static AVRational frame_rate;
 static float video_qscale = 0;
 static uint16_t *intra_matrix = NULL;
 static uint16_t *inter_matrix = NULL;
-#if 0 //experimental, (can be removed)
-static float video_rc_qsquish=1.0;
-static float video_rc_qmod_amp=0;
-static int video_rc_qmod_freq=0;
-#endif
 static const char *video_rc_override_string=NULL;
 static int video_disable = 0;
 static int video_discard = 0;
@@ -1401,12 +1396,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 if (ost->source_index == ist_index) {
                     os = output_files[ost->file_index];
 
-#if 0
-                    printf("%d: got pts=%0.3f %0.3f\n", i,
-                           (double)pkt->pts / AV_TIME_BASE,
-                           ((double)ist->pts / AV_TIME_BASE) -
-                           ((double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den));
-#endif
                     /* set the input output pts pairs */
                     //ost->sync_ipts = (double)(ist->pts + input_files_ts_offset[ist->file_index] - start_time)/ AV_TIME_BASE;
 
@@ -2370,28 +2359,6 @@ static int av_encode(AVFormatContext **output_files,
     }
     return ret;
 }
-
-#if 0
-int file_read(const char *filename)
-{
-    URLContext *h;
-    unsigned char buffer[1024];
-    int len, i;
-
-    if (url_open(&h, filename, O_RDONLY) < 0) {
-        printf("could not open '%s'\n", filename);
-        return -1;
-    }
-    for(;;) {
-        len = url_read(h, buffer, sizeof(buffer));
-        if (len <= 0)
-            break;
-        for(i=0;i<len;i++) putchar(buffer[i]);
-    }
-    url_close(h);
-    return 0;
-}
-#endif
 
 static void opt_format(const char *arg)
 {

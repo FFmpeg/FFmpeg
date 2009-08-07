@@ -273,11 +273,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-#if 0
-    for(i=0;i<256;i++)
-        printf("cos(%d)=%d\n", i, int_cos(i));
-#endif
-
     w = DEFAULT_WIDTH;
     h = DEFAULT_HEIGHT;
 
