@@ -1258,10 +1258,6 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
 #endif
     while (s < end)
     {
-#if 0 //slightly slower on Athlon
-        int bgr= *s++;
-        *((uint32_t*)d)++ = ((bgr&0x1F)<<3) + ((bgr&0x3E0)<<6) + ((bgr&0x7C00)<<9);
-#else
         register uint16_t bgr;
         bgr = *s++;
 #if HAVE_BIGENDIAN
@@ -1274,8 +1270,6 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
         *d++ = (bgr&0x3E0)>>2;
         *d++ = (bgr&0x7C00)>>7;
         *d++ = 255;
-#endif
-
 #endif
     }
 }
