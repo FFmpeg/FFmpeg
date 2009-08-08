@@ -1510,8 +1510,12 @@ filter_asflags=echo
 
 if   $cc --version 2>/dev/null | grep -qi gcc; then
     cc_type=gcc
+    CC_DEPFLAGS='-MMD'
+    AS_DEPFLAGS='-MMD'
 elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
+    CC_DEPFLAGS='-MMD'
+    AS_DEPFLAGS='-MMD'
 elif $cc -v 2>&1 | grep -q xlc; then
     cc_type=xlc
 elif $cc -V 2>/dev/null | grep -q Compaq; then
@@ -1530,17 +1534,19 @@ elif $cc --vsn 2>/dev/null | grep -q RVCT; then
         die "Error creating armcc configuration file."
     cc="$cc --arm_linux_config_file=$armcc_conf --translate_gcc"
     as_default="${cross_prefix}gcc"
+    CC_DEPFLAGS='-MMD'
+    AS_DEPFLAGS='-MMD'
 elif $cc -version 2>/dev/null | grep -q TMS470; then
     cc_type=tms470
     cc="$cc --gcc --abi=eabi -eo=.o -mc -me"
     CC_O='-fr=$(@D)'
     as_default="${cross_prefix}gcc"
     ld_default="${cross_prefix}gcc"
-    dep_cc_default="${cross_prefix}gcc"
     TMPO=$(basename $TMPC .c).o
     append TMPFILES $TMPO
     add_cflags -D__gnuc_va_list=va_list -D__USER_LABEL_PREFIX__=
-    DEPFLAGS='$(CPPFLAGS) -MM'
+    CC_DEPFLAGS='-ppa -ppd=$(@:.o=.d)'
+    AS_DEPFLAGS='-MMD'
     filter_cflags=tms470_flags
     tms470_flags(){
         for flag; do
@@ -1573,6 +1579,9 @@ test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 set_default as dep_cc ld
+
+test -n "$CC_DEPFLAGS" || CCDEP=$DEPEND_CMD
+test -n "$AS_DEPFLAGS" || ASDEP=$DEPEND_CMD
 
 add_cflags $extra_cflags
 add_asflags $extra_cflags
@@ -2611,8 +2620,11 @@ echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=$SLIBSUF" >> config.mak
 echo "EXESUF=$EXESUF" >> config.mak
 echo "EXTRA_VERSION=$extra_version" >> config.mak
-echo "DEPEND_CMD=$DEPEND_CMD" >> config.mak
 echo "DEPFLAGS=$DEPFLAGS" >> config.mak
+echo "CCDEP=$CCDEP" >> config.mak
+echo "ASDEP=$ASDEP" >> config.mak
+echo "CC_DEPFLAGS=$CC_DEPFLAGS" >> config.mak
+echo "AS_DEPFLAGS=$AS_DEPFLAGS" >> config.mak
 echo "HOSTCC=$host_cc" >> config.mak
 echo "HOSTCFLAGS=$host_cflags" >> config.mak
 echo "HOSTEXESUF=$HOSTEXESUF" >> config.mak
