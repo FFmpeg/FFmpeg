@@ -2853,7 +2853,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
                    (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
                    srcFilter->chrV, dstFilter->chrV, c->param);
 
-#if HAVE_ALTIVEC
+#ifdef COMPILE_ALTIVEC
         c->vYCoeffsBank = av_malloc(sizeof (vector signed short)*c->vLumFilterSize*c->dstH);
         c->vCCoeffsBank = av_malloc(sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH);
 
@@ -3487,7 +3487,7 @@ void sws_freeContext(SwsContext *c){
     av_freep(&c->vChrFilter);
     av_freep(&c->hLumFilter);
     av_freep(&c->hChrFilter);
-#if HAVE_ALTIVEC
+#ifdef COMPILE_ALTIVEC
     av_freep(&c->vYCoeffsBank);
     av_freep(&c->vCCoeffsBank);
 #endif
