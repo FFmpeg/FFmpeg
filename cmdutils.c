@@ -426,7 +426,11 @@ void show_formats(void)
     AVBitStreamFilter *bsf=NULL;
     const char *last_name;
 
-    printf("File formats:\n");
+    printf(
+        "File formats:\n"
+        " D. = Demuxing supported\n"
+        " .E = Muxing supported\n"
+        " --\n");
     last_name= "000";
     for(;;){
         int decode=0;
@@ -465,7 +469,17 @@ void show_formats(void)
     }
     printf("\n");
 
-    printf("Codecs:\n");
+    printf(
+        "Codecs:\n"
+        " D..... = Decoding supported\n"
+        " .E.... = Encoding supported\n"
+        " ..V... = Video codec\n"
+        " ..A... = Audio codec\n"
+        " ..S... = Subtitle codec\n"
+        " ...S.. = Supports draw_horiz_band\n"
+        " ....D. = Supports direct rendering method 1\n"
+        " .....T = Supports weird frame truncation\n"
+        " ------\n");
     last_name= "000";
     for(;;){
         int decode=0;
