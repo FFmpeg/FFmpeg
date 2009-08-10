@@ -968,6 +968,7 @@ void av_set_pts_info(AVStream *s, int pts_wrap_bits,
 #define AVSEEK_FLAG_BACKWARD 1 ///< seek backward
 #define AVSEEK_FLAG_BYTE     2 ///< seeking based on position in bytes
 #define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non-keyframes
+#define AVSEEK_FLAG_FRAME    8 ///< seeking based on frame number
 
 int av_find_default_stream_index(AVFormatContext *s);
 
