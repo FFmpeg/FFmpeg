@@ -1510,8 +1510,10 @@ filter_asflags=echo
 
 if   $cc -v 2>&1 | grep -qi ^gcc; then
     cc_type=gcc
-    CC_DEPFLAGS='-MMD'
-    AS_DEPFLAGS='-MMD'
+    if ! $cc -dumpversion | grep -q '^2\.'; then
+        CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
+        AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
+    fi
 elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
     CC_DEPFLAGS='-MMD'
