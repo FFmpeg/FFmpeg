@@ -1508,7 +1508,7 @@ filter_cflags=echo
 filter_cppflags=echo
 filter_asflags=echo
 
-if   $cc --version 2>/dev/null | grep -qi gcc; then
+if   $cc -v 2>&1 | grep -qi ^gcc; then
     cc_type=gcc
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
