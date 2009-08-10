@@ -26,10 +26,6 @@
 #ifndef AVCODEC_LIBSCHROEDINGER_H
 #define AVCODEC_LIBSCHROEDINGER_H
 
-#include "config.h"
-
-#if CONFIG_LIBSCHROEDINGER
-
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schroframe.h>
 #include "avcodec.h"
@@ -57,5 +53,4 @@ SchroVideoFormatEnum ff_get_schro_video_format_preset (AVCodecContext *avccontex
 int ff_get_schro_frame_format (SchroChromaFormat schro_chroma_fmt,
                                SchroFrameFormat  *schro_frame_fmt);
 
-#endif /* CONFIG_LIBSCHROEDINGER */
 #endif /* AVCODEC_LIBSCHROEDINGER_H */
