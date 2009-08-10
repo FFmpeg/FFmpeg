@@ -772,15 +772,6 @@ void ff_yuv2rgb_init_tables_altivec(SwsContext *c, const int inv_table[4], int b
     c->CBU  = vec_splat ((vector signed short)buf.vec, 3);
     c->CGU  = vec_splat ((vector signed short)buf.vec, 4);
     c->CGV  = vec_splat ((vector signed short)buf.vec, 5);
-#if 0
-    {
-    int i;
-    char *v[6]={"cy","oy","crv","cbu","cgu","cgv"};
-    for (i=0; i<6; i++)
-        printf("%s %d ", v[i],buf.tmp[i] );
-        printf("\n");
-    }
-#endif
     return;
 }
 
