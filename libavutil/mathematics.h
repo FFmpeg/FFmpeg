@@ -41,6 +41,12 @@
 #ifndef M_SQRT1_2
 #define M_SQRT1_2      0.70710678118654752440  /* 1/sqrt(2) */
 #endif
+#ifndef NAN
+#define NAN            (0.0/0.0)
+#endif
+#ifndef INFINITY
+#define INFINITY       (1.0/0.0)
+#endif
 
 enum AVRounding {
     AV_ROUND_ZERO     = 0, ///< Round toward zero.
