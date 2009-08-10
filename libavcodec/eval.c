@@ -28,13 +28,13 @@
  * see http://joe.hotchkiss.com/programming/eval/eval.html
  */
 
-#include "avcodec.h"
-#include "eval.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
+#include "avcodec.h"
+#include "eval.h"
 
 #ifndef NAN
   #define NAN 0.0/0.0
