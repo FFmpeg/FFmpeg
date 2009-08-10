@@ -33,16 +33,9 @@
 #include <string.h>
 #include <math.h>
 
+#include "libavutil/mathematics.h"
 #include "avcodec.h"
 #include "eval.h"
-
-#ifndef NAN
-  #define NAN 0.0/0.0
-#endif
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 typedef struct Parser{
     int stack_index;
