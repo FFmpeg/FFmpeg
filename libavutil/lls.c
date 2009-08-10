@@ -118,20 +118,10 @@ int main(void){
     for(i=0; i<100; i++){
         double var[4];
         double eval;
-#if 0
-        var[1] = rand() / (double)RAND_MAX;
-        var[2] = rand() / (double)RAND_MAX;
-        var[3] = rand() / (double)RAND_MAX;
-
-        var[2]= var[1] + var[3]/2;
-
-        var[0] = var[1] + var[2] + var[3] +  var[1]*var[2]/100;
-#else
         var[0] = (rand() / (double)RAND_MAX - 0.5)*2;
         var[1] = var[0] + rand() / (double)RAND_MAX - 0.5;
         var[2] = var[1] + rand() / (double)RAND_MAX - 0.5;
         var[3] = var[2] + rand() / (double)RAND_MAX - 0.5;
-#endif
         av_update_lls(&m, var, 0.99);
         av_solve_lls(&m, 0.001, 0);
         for(order=0; order<3; order++){
