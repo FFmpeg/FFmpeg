@@ -1871,7 +1871,8 @@ case $target_os in
         FFSERVERLDFLAGS=-Wl,-bind_at_load
         objformat="macho"
         enabled x86_64 && objformat="macho64"
-        enabled shared || check_cflags -mdynamic-no-pic
+        enabled shared ||
+            { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
         ;;
     mingw32*)
         if test $target_os = "mingw32ce"; then
