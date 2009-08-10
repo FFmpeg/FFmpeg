@@ -1376,6 +1376,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                       st->codec->height * track->video.display_width,
                       st->codec-> width * track->video.display_height,
                       255);
+            if (st->codec->codec_id != CODEC_ID_H264)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             st->codec->codec_type = CODEC_TYPE_AUDIO;
