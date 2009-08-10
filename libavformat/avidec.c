@@ -682,7 +682,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             if(ast->sample_size)
                 ts /= ast->sample_size;
-            ts= av_rescale(ts, AV_TIME_BASE * (int64_t)st->time_base.num, st->time_base.den);
+            ts = av_rescale_q(ts, st->time_base, AV_TIME_BASE_Q);
 
 //            av_log(s, AV_LOG_DEBUG, "%"PRId64" %d/%d %"PRId64"\n", ts, st->time_base.num, st->time_base.den, ast->frame_offset);
             if(ts < best_ts && st->nb_index_entries){
@@ -695,7 +695,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             return -1;
 
         best_ast = best_st->priv_data;
-        best_ts= av_rescale(best_ts, best_st->time_base.den, AV_TIME_BASE * (int64_t)best_st->time_base.num); //FIXME a little ugly
+        best_ts = av_rescale_q(best_ts, AV_TIME_BASE_Q, best_st->time_base);
         if(best_ast->remaining)
             i= av_index_search_timestamp(best_st, best_ts, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
         else{
@@ -1086,7 +1086,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         assert((int64_t)st2->time_base.num*ast2->rate == (int64_t)st2->time_base.den*ast2->scale);
         index = av_index_search_timestamp(
                 st2,
-                av_rescale(timestamp, st2->time_base.den*(int64_t)st->time_base.num, st->time_base.den * (int64_t)st2->time_base.num),
+                av_rescale_q(timestamp, st->time_base, st2->time_base),
                 flags | AVSEEK_FLAG_BACKWARD);
         if(index<0)
             index=0;
