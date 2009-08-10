@@ -2,6 +2,9 @@
  * WAV muxer and demuxer
  * Copyright (c) 2001, 2002 Fabrice Bellard
  *
+ * Sony Wave64 demuxer
+ * Copyright (c) 2009 Daniel Verkamp
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -28,6 +31,7 @@ typedef struct {
     int64_t minpts;
     int64_t maxpts;
     int last_duration;
+    int w64;
 } WAVContext;
 
 #if CONFIG_WAV_MUXER
@@ -194,12 +198,109 @@ static int wav_read_header(AVFormatContext *s,
     return 0;
 }
 
+#if CONFIG_W64_DEMUXER
+
+static const uint8_t guid_riff[16] = { 'r', 'i', 'f', 'f',
+    0x2E, 0x91, 0xCF, 0x11, 0xA5, 0xD6, 0x28, 0xDB, 0x04, 0xC1, 0x00, 0x00 };
+
+static const uint8_t guid_wave[16] = { 'w', 'a', 'v', 'e',
+    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
+
+static const uint8_t guid_fmt [16] = { 'f', 'm', 't', ' ',
+    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
+
+static const uint8_t guid_data[16] = { 'd', 'a', 't', 'a',
+    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
+
+static int w64_probe(AVProbeData *p)
+{
+    if (p->buf_size <= 40)
+        return 0;
+    if (!memcmp(p->buf,      guid_riff, 16) &&
+        !memcmp(p->buf + 24, guid_wave, 16)) {
+        return AVPROBE_SCORE_MAX;
+    } else
+        return 0;
+}
+
+/** Find chunk with w64 GUID by skipping over other chunks
+ * @return the size of the found chunk
+ */
+static int64_t find_guid(ByteIOContext *pb, const uint8_t guid1[16])
+{
+    uint8_t guid[16];
+    int64_t size;
+
+    while (!url_feof(pb)) {
+        get_buffer(pb, guid, 16);
+        size = get_le64(pb);
+        if (size <= 24)
+            return -1;
+        if (!memcmp(guid, guid1, 16))
+            return size;
+        url_fskip(pb, FFALIGN(size, INT64_C(8)) - 24);
+    }
+    return -1;
+}
+
+static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
+{
+    int64_t size;
+    ByteIOContext *pb = s->pb;
+    WAVContext *wav   = s->priv_data;
+    AVStream *st;
+    uint8_t guid[16];
+
+    get_buffer(pb, guid, 16);
+    if (memcmp(guid, guid_riff, 16))
+        return -1;
+
+    if (get_le64(pb) < 16 + 8 + 16 + 8 + 16 + 8) /* riff + wave + fmt + sizes */
+        return -1;
+
+    get_buffer(pb, guid, 16);
+    if (memcmp(guid, guid_wave, 16)) {
+        av_log(s, AV_LOG_ERROR, "could not find wave guid\n");
+        return -1;
+    }
+
+    size = find_guid(pb, guid_fmt);
+    if (size < 0) {
+        av_log(s, AV_LOG_ERROR, "could not find fmt guid\n");
+        return -1;
+    }
+
+    st = av_new_stream(s, 0);
+    if (!st)
+        return AVERROR(ENOMEM);
+
+    /* subtract chunk header size - normal wav file doesn't count it */
+    ff_get_wav_header(pb, st->codec, size - 24);
+    url_fskip(pb, FFALIGN(size, INT64_C(8)) - size);
+
+    st->need_parsing = AVSTREAM_PARSE_FULL;
+
+    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+
+    size = find_guid(pb, guid_data);
+    if (size < 0) {
+        av_log(s, AV_LOG_ERROR, "could not find data guid\n");
+        return -1;
+    }
+    wav->data_end = url_ftell(pb) + size - 24;
+    wav->w64 = 1;
+
+    return 0;
+}
+#endif /* CONFIG_W64_DEMUXER */
+
 #define MAX_SIZE 4096
 
 static int wav_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
-    int ret, size, left;
+    int ret, size;
+    int64_t left;
     AVStream *st;
     WAVContext *wav = s->priv_data;
 
@@ -209,6 +310,9 @@ static int wav_read_packet(AVFormatContext *s,
 
     left= wav->data_end - url_ftell(s->pb);
     if(left <= 0){
+        if (CONFIG_W64_DEMUXER && wav->w64) {
+            left = find_guid(s->pb, guid_data) - 24;
+        } else
         left = find_tag(s->pb, MKTAG('d', 'a', 't', 'a'));
         if (left < 0) {
             return AVERROR(EIO);
@@ -280,5 +384,19 @@ AVOutputFormat wav_muxer = {
     wav_write_packet,
     wav_write_trailer,
     .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
+};
+#endif
+#if CONFIG_W64_DEMUXER
+AVInputFormat w64_demuxer = {
+    "w64",
+    NULL_IF_CONFIG_SMALL("Sony Wave64 format"),
+    sizeof(WAVContext),
+    w64_probe,
+    w64_read_header,
+    wav_read_packet,
+    NULL,
+    wav_read_seek,
+    .flags = AVFMT_GENERIC_INDEX,
+    .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
 };
 #endif
