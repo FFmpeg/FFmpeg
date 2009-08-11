@@ -24,6 +24,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "apetag.h"
 
 #define ENABLE_DEBUG 0
 
@@ -41,12 +42,6 @@
 #define MAC_SUBFRAME_SIZE 4608
 
 #define APE_EXTRADATA_SIZE 6
-
-/* APE tags */
-#define APE_TAG_VERSION               2000
-#define APE_TAG_FOOTER_BYTES          32
-#define APE_TAG_FLAG_CONTAINS_HEADER  (1 << 31)
-#define APE_TAG_FLAG_IS_HEADER        (1 << 29)
 
 typedef struct {
     int64_t pos;
@@ -90,97 +85,6 @@ typedef struct {
     /* Seektable */
     uint32_t *seektable;
 } APEContext;
-
-static int ape_tag_read_field(AVFormatContext *s)
-{
-    ByteIOContext *pb = s->pb;
-    uint8_t key[1024], value[1024];
-    uint32_t size, flags;
-    int i, l, c;
-
-    size = get_le32(pb);  /* field size */
-    flags = get_le32(pb); /* field flags */
-    for (i = 0; i < sizeof(key) - 1; i++) {
-        c = get_byte(pb);
-        if (c < 0x20 || c > 0x7E)
-            break;
-        else
-            key[i] = c;
-    }
-    key[i] = 0;
-    if (c != 0) {
-        av_log(s, AV_LOG_WARNING, "Invalid APE tag key '%s'.\n", key);
-        return -1;
-    }
-    l = FFMIN(size, sizeof(value)-1);
-    get_buffer(pb, value, l);
-    value[l] = 0;
-    url_fskip(pb, size-l);
-    if (l < size)
-        av_log(s, AV_LOG_WARNING, "Too long '%s' tag was truncated.\n", key);
-    av_metadata_set(&s->metadata, key, value);
-    return 0;
-}
-
-static void ape_parse_tag(AVFormatContext *s)
-{
-    ByteIOContext *pb = s->pb;
-    int file_size = url_fsize(pb);
-    uint32_t val, fields, tag_bytes;
-    uint8_t buf[8];
-    int i;
-
-    if (file_size < APE_TAG_FOOTER_BYTES)
-        return;
-
-    url_fseek(pb, file_size - APE_TAG_FOOTER_BYTES, SEEK_SET);
-
-    get_buffer(pb, buf, 8);    /* APETAGEX */
-    if (strncmp(buf, "APETAGEX", 8)) {
-        return;
-    }
-
-    val = get_le32(pb);        /* APE tag version */
-    if (val > APE_TAG_VERSION) {
-        av_log(s, AV_LOG_ERROR, "Unsupported tag version. (>=%d)\n", APE_TAG_VERSION);
-        return;
-    }
-
-    tag_bytes = get_le32(pb);  /* tag size */
-    if (tag_bytes - APE_TAG_FOOTER_BYTES > (1024 * 1024 * 16)) {
-        av_log(s, AV_LOG_ERROR, "Tag size is way too big\n");
-        return;
-    }
-
-    fields = get_le32(pb);     /* number of fields */
-    if (fields > 65536) {
-        av_log(s, AV_LOG_ERROR, "Too many tag fields (%d)\n", fields);
-        return;
-    }
-
-    val = get_le32(pb);        /* flags */
-    if (val & APE_TAG_FLAG_IS_HEADER) {
-        av_log(s, AV_LOG_ERROR, "APE Tag is a header\n");
-        return;
-    }
-
-    url_fseek(pb, file_size - tag_bytes, SEEK_SET);
-
-    for (i=0; i<fields; i++)
-        if (ape_tag_read_field(s) < 0) break;
-
-#if ENABLE_DEBUG
-    av_log(s, AV_LOG_DEBUG, "\nAPE Tags:\n\n");
-    av_log(s, AV_LOG_DEBUG, "title     = %s\n", s->title);
-    av_log(s, AV_LOG_DEBUG, "author    = %s\n", s->author);
-    av_log(s, AV_LOG_DEBUG, "copyright = %s\n", s->copyright);
-    av_log(s, AV_LOG_DEBUG, "comment   = %s\n", s->comment);
-    av_log(s, AV_LOG_DEBUG, "album     = %s\n", s->album);
-    av_log(s, AV_LOG_DEBUG, "year      = %d\n", s->year);
-    av_log(s, AV_LOG_DEBUG, "track     = %d\n", s->track);
-    av_log(s, AV_LOG_DEBUG, "genre     = %s\n", s->genre);
-#endif
-}
 
 static int ape_probe(AVProbeData * p)
 {
@@ -384,7 +288,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
 
     /* try to read APE tags */
     if (!url_is_streamed(pb)) {
-        ape_parse_tag(s);
+        ff_ape_parse_tag(s);
         url_fseek(pb, 0, SEEK_SET);
     }
 
