@@ -158,9 +158,6 @@ static void ape_parse_tag(AVFormatContext *s)
         return;
     }
 
-    if (val & APE_TAG_FLAG_CONTAINS_HEADER)
-        tag_bytes += 2*APE_TAG_FOOTER_BYTES;
-
     url_fseek(pb, file_size - tag_bytes, SEEK_SET);
 
     for (i=0; i<fields; i++)
