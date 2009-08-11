@@ -91,22 +91,27 @@ typedef struct {
     uint32_t *seektable;
 } APEContext;
 
-static void ape_tag_read_field(AVFormatContext *s)
+static int ape_tag_read_field(AVFormatContext *s)
 {
     ByteIOContext *pb = s->pb;
     uint8_t key[1024], value[1024];
-    uint32_t size;
-    int i, l;
+    uint32_t size, flags;
+    int i, l, c;
 
     size = get_le32(pb);  /* field size */
-    url_fskip(pb, 4);     /* skip field flags */
-
-    for (i=0; pb->buf_ptr[i]!='0' && pb->buf_ptr[i]>=0x20 && pb->buf_ptr[i]<=0x7E; i++);
-
-    l = FFMIN(i,    sizeof(key) -1);
-    get_buffer(pb, key,  l);
-    key[l]  = 0;
-    url_fskip(pb, 1 + i-l);
+    flags = get_le32(pb); /* field flags */
+    for (i = 0; i < sizeof(key) - 1; i++) {
+        c = get_byte(pb);
+        if (c < 0x20 || c > 0x7E)
+            break;
+        else
+            key[i] = c;
+    }
+    key[i] = 0;
+    if (c != 0) {
+        av_log(s, AV_LOG_WARNING, "Invalid APE tag key '%s'.\n", key);
+        return -1;
+    }
     l = FFMIN(size, sizeof(value)-1);
     get_buffer(pb, value, l);
     value[l] = 0;
@@ -114,6 +119,7 @@ static void ape_tag_read_field(AVFormatContext *s)
     if (l < size)
         av_log(s, AV_LOG_WARNING, "Too long '%s' tag was truncated.\n", key);
     av_metadata_set(&s->metadata, key, value);
+    return 0;
 }
 
 static void ape_parse_tag(AVFormatContext *s)
@@ -161,7 +167,7 @@ static void ape_parse_tag(AVFormatContext *s)
     url_fseek(pb, file_size - tag_bytes, SEEK_SET);
 
     for (i=0; i<fields; i++)
-        ape_tag_read_field(s);
+        if (ape_tag_read_field(s) < 0) break;
 
 #if ENABLE_DEBUG
     av_log(s, AV_LOG_DEBUG, "\nAPE Tags:\n\n");
