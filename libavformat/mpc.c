@@ -22,6 +22,7 @@
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
 #include "id3v2.h"
+#include "apetag.h"
 
 #define MPC_FRAMESIZE  1152
 #define DELAY_FRAMES   32
@@ -110,6 +111,13 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* scan for seekpoints */
     s->start_time = 0;
     s->duration = (int64_t)c->fcount * MPC_FRAMESIZE * AV_TIME_BASE / st->codec->sample_rate;
+
+    /* try to read APE tags */
+    if (!url_is_streamed(s->pb)) {
+        int64_t pos = url_ftell(s->pb);
+        ff_ape_parse_tag(s);
+        url_fseek(s->pb, pos, SEEK_SET);
+    }
 
     return 0;
 }
