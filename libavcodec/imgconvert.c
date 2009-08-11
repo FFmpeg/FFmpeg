@@ -702,10 +702,14 @@ int ff_fill_linesize(AVPicture *picture, enum PixelFormat pix_fmt, int width)
         break;
     case PIX_FMT_GRAY16BE:
     case PIX_FMT_GRAY16LE:
-    case PIX_FMT_BGR555:
-    case PIX_FMT_BGR565:
-    case PIX_FMT_RGB555:
-    case PIX_FMT_RGB565:
+    case PIX_FMT_BGR555BE:
+    case PIX_FMT_BGR555LE:
+    case PIX_FMT_BGR565BE:
+    case PIX_FMT_BGR565LE:
+    case PIX_FMT_RGB555BE:
+    case PIX_FMT_RGB555LE:
+    case PIX_FMT_RGB565BE:
+    case PIX_FMT_RGB565LE:
     case PIX_FMT_YUYV422:
         picture->linesize[0] = width * 2;
         break;
@@ -796,10 +800,14 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
     case PIX_FMT_RGB48LE:
     case PIX_FMT_GRAY16BE:
     case PIX_FMT_GRAY16LE:
-    case PIX_FMT_BGR555:
-    case PIX_FMT_BGR565:
-    case PIX_FMT_RGB555:
-    case PIX_FMT_RGB565:
+    case PIX_FMT_BGR555BE:
+    case PIX_FMT_BGR555LE:
+    case PIX_FMT_BGR565BE:
+    case PIX_FMT_BGR565LE:
+    case PIX_FMT_RGB555BE:
+    case PIX_FMT_RGB555LE:
+    case PIX_FMT_RGB565BE:
+    case PIX_FMT_RGB565LE:
     case PIX_FMT_YUYV422:
     case PIX_FMT_UYVY422:
     case PIX_FMT_UYYVYY411:
@@ -860,10 +868,14 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
     if (pf->pixel_type == FF_PIXEL_PACKED || pf->pixel_type == FF_PIXEL_PALETTE) {
         if (pix_fmt == PIX_FMT_YUYV422 ||
             pix_fmt == PIX_FMT_UYVY422 ||
-            pix_fmt == PIX_FMT_BGR565 ||
-            pix_fmt == PIX_FMT_BGR555 ||
-            pix_fmt == PIX_FMT_RGB565 ||
-            pix_fmt == PIX_FMT_RGB555)
+            pix_fmt == PIX_FMT_BGR565BE ||
+            pix_fmt == PIX_FMT_BGR565LE ||
+            pix_fmt == PIX_FMT_BGR555BE ||
+            pix_fmt == PIX_FMT_BGR555LE ||
+            pix_fmt == PIX_FMT_RGB565BE ||
+            pix_fmt == PIX_FMT_RGB565LE ||
+            pix_fmt == PIX_FMT_RGB555BE ||
+            pix_fmt == PIX_FMT_RGB555LE)
             w = width * 2;
         else if (pix_fmt == PIX_FMT_UYYVYY411)
           w = width + width/2;
@@ -934,7 +946,8 @@ int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_
     loss = 0;
     pf = &pix_fmt_info[dst_pix_fmt];
     if (pf->depth < ps->depth ||
-        (dst_pix_fmt == PIX_FMT_RGB555 && src_pix_fmt == PIX_FMT_RGB565))
+        ((dst_pix_fmt == PIX_FMT_RGB555BE || dst_pix_fmt == PIX_FMT_RGB555LE) &&
+         (src_pix_fmt == PIX_FMT_RGB565BE || src_pix_fmt == PIX_FMT_RGB565LE)))
         loss |= FF_LOSS_DEPTH;
     if (pf->x_chroma_shift > ps->x_chroma_shift ||
         pf->y_chroma_shift > ps->y_chroma_shift)
@@ -987,10 +1000,14 @@ static int avg_bits_per_pixel(enum PixelFormat pix_fmt)
         switch(pix_fmt) {
         case PIX_FMT_YUYV422:
         case PIX_FMT_UYVY422:
-        case PIX_FMT_RGB565:
-        case PIX_FMT_RGB555:
-        case PIX_FMT_BGR565:
-        case PIX_FMT_BGR555:
+        case PIX_FMT_RGB565BE:
+        case PIX_FMT_RGB565LE:
+        case PIX_FMT_RGB555BE:
+        case PIX_FMT_RGB555LE:
+        case PIX_FMT_BGR565BE:
+        case PIX_FMT_BGR565LE:
+        case PIX_FMT_BGR555BE:
+        case PIX_FMT_BGR555LE:
             bits = 16;
             break;
         case PIX_FMT_UYYVYY411:
@@ -1102,10 +1119,14 @@ int ff_get_plane_bytewidth(enum PixelFormat pix_fmt, int width, int plane)
         switch(pix_fmt) {
         case PIX_FMT_YUYV422:
         case PIX_FMT_UYVY422:
-        case PIX_FMT_RGB565:
-        case PIX_FMT_RGB555:
-        case PIX_FMT_BGR565:
-        case PIX_FMT_BGR555:
+        case PIX_FMT_RGB565BE:
+        case PIX_FMT_RGB565LE:
+        case PIX_FMT_RGB555BE:
+        case PIX_FMT_RGB555LE:
+        case PIX_FMT_BGR565BE:
+        case PIX_FMT_BGR565LE:
+        case PIX_FMT_BGR555BE:
+        case PIX_FMT_BGR555LE:
             bits = 16;
             break;
         case PIX_FMT_UYYVYY411:
