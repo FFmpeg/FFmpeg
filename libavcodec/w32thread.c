@@ -69,6 +69,7 @@ void avcodec_thread_free(AVCodecContext *s){
         WaitForSingleObject(c[i].thread, INFINITE);
         if(c[i].work_sem) CloseHandle(c[i].work_sem);
         if(c[i].done_sem) CloseHandle(c[i].done_sem);
+        if(c[i].thread)   CloseHandle(c[i].thread);
     }
 
     av_freep(&s->thread_opaque);
