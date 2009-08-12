@@ -1860,13 +1860,6 @@ static void stream_component_close(VideoState *is, int stream_index)
     }
 }
 
-static void dump_stream_info(const AVFormatContext *s)
-{
-    AVMetadataTag *tag = NULL;
-    while ((tag=av_metadata_get(s->metadata,"",tag,AV_METADATA_IGNORE_SUFFIX)))
-        fprintf(stderr, "%s: %s\n", tag->key, tag->value);
-}
-
 /* since we have only one decoding thread, we can use a global
    variable instead of a thread local variable */
 static VideoState *global_video_state;
@@ -1960,7 +1953,6 @@ static int decode_thread(void *arg)
     }
     if (show_status) {
         dump_format(ic, 0, is->filename, 0);
-        dump_stream_info(ic);
     }
 
     /* open the streams */

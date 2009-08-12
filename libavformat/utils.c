@@ -2916,6 +2916,14 @@ void dump_format(AVFormatContext *ic,
     } else
     for(i=0;i<ic->nb_streams;i++)
         dump_stream_format(ic, i, index, is_output);
+    if (ic->metadata) {
+        AVMetadataTag *tag=NULL;
+        av_log(NULL, AV_LOG_INFO, "  Metadata\n");
+        while((tag=av_metadata_get(ic->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
+            av_log(NULL, AV_LOG_INFO, "    %-16s: %s\n", tag->key, tag->value);
+        }
+    }
+
 }
 
 #if LIBAVFORMAT_VERSION_MAJOR < 53
