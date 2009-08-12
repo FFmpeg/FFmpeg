@@ -42,6 +42,21 @@ void ff_celp_convolve_circ(int16_t* fc_out,
                            int len);
 
 /**
+ * Add an array to a rotated array.
+ *
+ * out[k] = in[k] + fac * lagged[k-lag] with wrap-around
+ *
+ * @param out result vector
+ * @param in samples to be added unfiltered
+ * @param lagged samples to be rotated, multiplied and added
+ * @param lag lagged vector delay in the range [0, n]
+ * @param fac scalefactor for lagged samples
+ * @param n number of samples
+ */
+void ff_celp_circ_addf(float *out, const float *in,
+                       const float *lagged, int lag, float fac, int n);
+
+/**
  * LP synthesis filter.
  * @param out [out] pointer to output buffer
  * @param filter_coeffs filter coefficients (-0x8000 <= (3.12) < 0x8000)
