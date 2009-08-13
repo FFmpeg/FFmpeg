@@ -37,6 +37,11 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_GRAY16BE    \
         || (x)==PIX_FMT_GRAY16LE    \
     )
+#define hasChroma(x)   (!(           \
+            isGray(x)               \
+        || (x)==PIX_FMT_MONOBLACK   \
+        || (x)==PIX_FMT_MONOWHITE   \
+    ))
 #define isALPHA(x)      (           \
            (x)==PIX_FMT_BGR32       \
         || (x)==PIX_FMT_BGR32_1     \
@@ -139,7 +144,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
     sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
 
     ssdY= getSSD(ref[0], out[0], refStride[0], refStride[0], w, h);
-    if (!isGray(srcFormat) && !isGray(dstFormat)) {
+    if (hasChroma(srcFormat) && hasChroma(dstFormat)) {
         //FIXME check that output is really gray
         ssdU= getSSD(ref[1], out[1], refStride[1], refStride[1], (w+1)>>1, (h+1)>>1);
         ssdV= getSSD(ref[2], out[2], refStride[2], refStride[2], (w+1)>>1, (h+1)>>1);
