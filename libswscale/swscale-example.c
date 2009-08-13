@@ -233,5 +233,5 @@ int main(int argc, char **argv){
 
     selfTest(src, stride, W, H);
 
-    return 123;
+    return 0;
 }
