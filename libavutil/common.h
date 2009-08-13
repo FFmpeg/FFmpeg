@@ -190,6 +190,17 @@ static inline av_const uint8_t av_clip_uint8(int a)
 }
 
 /**
+ * Clips a signed integer value into the 0-65535 range.
+ * @param a value to clip
+ * @return clipped value
+ */
+static inline av_const uint16_t av_clip_uint16(int a)
+{
+    if (a&(~65535)) return (-a)>>31;
+    else            return a;
+}
+
+/**
  * Clips a signed integer value into the -32768,32767 range.
  * @param a value to clip
  * @return clipped value
