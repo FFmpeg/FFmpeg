@@ -1753,7 +1753,7 @@ error:
 }
 
 #ifdef COMPILE_MMX2
-static void initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *filter, int32_t *filterPos, int numSplits)
+static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *filter, int32_t *filterPos, int numSplits)
 {
     uint8_t *fragmentA;
     x86_reg imm8OfPShufW1A;
@@ -1870,6 +1870,7 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *fi
             int maxShift= 3-(d+inc);
             int shift=0;
 
+            if (filterCode) {
             filter[i  ] = (( xpos         & 0xFFFF) ^ 0xFFFF)>>9;
             filter[i+1] = (((xpos+xInc  ) & 0xFFFF) ^ 0xFFFF)>>9;
             filter[i+2] = (((xpos+xInc*2) & 0xFFFF) ^ 0xFFFF)>>9;
@@ -1892,14 +1893,19 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *fi
                 filterCode[fragmentPos + imm8OfPShufW2]+= 0x55*shift;
                 filterPos[i/2]-=shift;
             }
+            }
 
             fragmentPos+= fragmentLength;
 
+            if (filterCode)
             filterCode[fragmentPos]= RET;
         }
         xpos+=xInc;
     }
+    if (filterCode)
     filterPos[((i/2)+1)&(~1)]= xpos>>16; // needed to jump to the next part
+
+    return fragmentPos + 1;
 }
 #endif /* COMPILE_MMX2 */
 
@@ -2808,20 +2814,22 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
                    (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
                    srcFilter->chrH, dstFilter->chrH, c->param);
 
-#define MAX_MMX2_FILTER_CODE_SIZE 10000
 #if defined(COMPILE_MMX2)
 // can't downscale !!!
         if (c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR))
         {
+            c->lumMmx2FilterCodeSize = initMMX2HScaler(      dstW, c->lumXInc, NULL, NULL, NULL, 8);
+            c->chrMmx2FilterCodeSize = initMMX2HScaler(c->chrDstW, c->chrXInc, NULL, NULL, NULL, 4);
+
 #ifdef MAP_ANONYMOUS
-            c->lumMmx2FilterCode = mmap(NULL, MAX_MMX2_FILTER_CODE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-            c->chrMmx2FilterCode = mmap(NULL, MAX_MMX2_FILTER_CODE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+            c->lumMmx2FilterCode = mmap(NULL, c->lumMmx2FilterCodeSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+            c->chrMmx2FilterCode = mmap(NULL, c->chrMmx2FilterCodeSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 #elif HAVE_VIRTUALALLOC
-            c->lumMmx2FilterCode = VirtualAlloc(NULL, MAX_MMX2_FILTER_CODE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-            c->chrMmx2FilterCode = VirtualAlloc(NULL, MAX_MMX2_FILTER_CODE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+            c->lumMmx2FilterCode = VirtualAlloc(NULL, c->lumMmx2FilterCodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+            c->chrMmx2FilterCode = VirtualAlloc(NULL, c->chrMmx2FilterCodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 #else
-            c->lumMmx2FilterCode = av_malloc(MAX_MMX2_FILTER_CODE_SIZE);
-            c->chrMmx2FilterCode = av_malloc(MAX_MMX2_FILTER_CODE_SIZE);
+            c->lumMmx2FilterCode = av_malloc(c->lumMmx2FilterCodeSize);
+            c->chrMmx2FilterCode = av_malloc(c->chrMmx2FilterCodeSize);
 #endif
 
             c->lumMmx2Filter   = av_malloc((dstW        /8+8)*sizeof(int16_t));
@@ -2833,8 +2841,8 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmx2FilterCode, c->chrMmx2Filter, c->chrMmx2FilterPos, 4);
 
 #ifdef MAP_ANONYMOUS
-            mprotect(c->lumMmx2FilterCode, MAX_MMX2_FILTER_CODE_SIZE, PROT_EXEC | PROT_READ);
-            mprotect(c->chrMmx2FilterCode, MAX_MMX2_FILTER_CODE_SIZE, PROT_EXEC | PROT_READ);
+            mprotect(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
+            mprotect(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
 #endif
         }
 #endif /* defined(COMPILE_MMX2) */
@@ -3504,11 +3512,11 @@ void sws_freeContext(SwsContext *c){
 
 #if ARCH_X86 && CONFIG_GPL
 #ifdef MAP_ANONYMOUS
-    if (c->lumMmx2FilterCode) munmap(c->lumMmx2FilterCode, MAX_MMX2_FILTER_CODE_SIZE);
-    if (c->chrMmx2FilterCode) munmap(c->chrMmx2FilterCode, MAX_MMX2_FILTER_CODE_SIZE);
+    if (c->lumMmx2FilterCode) munmap(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize);
+    if (c->chrMmx2FilterCode) munmap(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize);
 #elif HAVE_VIRTUALALLOC
-    if (c->lumMmx2FilterCode) VirtualFree(c->lumMmx2FilterCode, MAX_MMX2_FILTER_CODE_SIZE, MEM_RELEASE);
-    if (c->chrMmx2FilterCode) VirtualFree(c->chrMmx2FilterCode, MAX_MMX2_FILTER_CODE_SIZE, MEM_RELEASE);
+    if (c->lumMmx2FilterCode) VirtualFree(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize, MEM_RELEASE);
+    if (c->chrMmx2FilterCode) VirtualFree(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize, MEM_RELEASE);
 #else
     av_free(c->lumMmx2FilterCode);
     av_free(c->chrMmx2FilterCode);
