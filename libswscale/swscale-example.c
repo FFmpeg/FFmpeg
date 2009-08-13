@@ -32,6 +32,11 @@
 /* HACK Duplicated from swscale_internal.h.
  * Should be removed when a cleaner pixel format system exists. */
 const char *sws_format_name(enum PixelFormat format);
+#define isGray(x)       (           \
+           (x)==PIX_FMT_GRAY8       \
+        || (x)==PIX_FMT_GRAY16BE    \
+        || (x)==PIX_FMT_GRAY16LE    \
+    )
 #define isALPHA(x)      (           \
            (x)==PIX_FMT_BGR32       \
         || (x)==PIX_FMT_BGR32_1     \
@@ -66,7 +71,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
     uint8_t *out[4] = {0};
     int srcStride[4], dstStride[4];
     int i;
-    uint64_t ssdY, ssdU, ssdV, ssdA=0;
+    uint64_t ssdY, ssdU=0, ssdV=0, ssdA=0;
     struct SwsContext *srcContext = NULL, *dstContext = NULL,
                       *outContext = NULL;
     int res;
@@ -134,12 +139,13 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
     sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
 
     ssdY= getSSD(ref[0], out[0], refStride[0], refStride[0], w, h);
+    if (!isGray(srcFormat) && !isGray(dstFormat)) {
+        //FIXME check that output is really gray
     ssdU= getSSD(ref[1], out[1], refStride[1], refStride[1], (w+1)>>1, (h+1)>>1);
     ssdV= getSSD(ref[2], out[2], refStride[2], refStride[2], (w+1)>>1, (h+1)>>1);
+    }
     if (isALPHA(srcFormat) && isALPHA(dstFormat))
         ssdA= getSSD(ref[3], out[3], refStride[3], refStride[3], w, h);
-
-    if (srcFormat == PIX_FMT_GRAY8 || dstFormat==PIX_FMT_GRAY8) ssdU=ssdV=0; //FIXME check that output is really gray
 
     ssdY/= w*h;
     ssdU/= w*h/4;
