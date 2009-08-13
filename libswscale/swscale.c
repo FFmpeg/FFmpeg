@@ -1871,39 +1871,39 @@ static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *fil
             int shift=0;
 
             if (filterCode) {
-            filter[i  ] = (( xpos         & 0xFFFF) ^ 0xFFFF)>>9;
-            filter[i+1] = (((xpos+xInc  ) & 0xFFFF) ^ 0xFFFF)>>9;
-            filter[i+2] = (((xpos+xInc*2) & 0xFFFF) ^ 0xFFFF)>>9;
-            filter[i+3] = (((xpos+xInc*3) & 0xFFFF) ^ 0xFFFF)>>9;
-            filterPos[i/2]= xx;
+                filter[i  ] = (( xpos         & 0xFFFF) ^ 0xFFFF)>>9;
+                filter[i+1] = (((xpos+xInc  ) & 0xFFFF) ^ 0xFFFF)>>9;
+                filter[i+2] = (((xpos+xInc*2) & 0xFFFF) ^ 0xFFFF)>>9;
+                filter[i+3] = (((xpos+xInc*3) & 0xFFFF) ^ 0xFFFF)>>9;
+                filterPos[i/2]= xx;
 
-            memcpy(filterCode + fragmentPos, fragment, fragmentLength);
+                memcpy(filterCode + fragmentPos, fragment, fragmentLength);
 
-            filterCode[fragmentPos + imm8OfPShufW1]=
-                (a+inc) | ((b+inc)<<2) | ((c+inc)<<4) | ((d+inc)<<6);
-            filterCode[fragmentPos + imm8OfPShufW2]=
-                a | (b<<2) | (c<<4) | (d<<6);
+                filterCode[fragmentPos + imm8OfPShufW1]=
+                    (a+inc) | ((b+inc)<<2) | ((c+inc)<<4) | ((d+inc)<<6);
+                filterCode[fragmentPos + imm8OfPShufW2]=
+                    a | (b<<2) | (c<<4) | (d<<6);
 
-            if (i+4-inc>=dstW) shift=maxShift; //avoid overread
-            else if ((filterPos[i/2]&3) <= maxShift) shift=filterPos[i/2]&3; //Align
+                if (i+4-inc>=dstW) shift=maxShift; //avoid overread
+                else if ((filterPos[i/2]&3) <= maxShift) shift=filterPos[i/2]&3; //Align
 
-            if (shift && i>=shift)
-            {
-                filterCode[fragmentPos + imm8OfPShufW1]+= 0x55*shift;
-                filterCode[fragmentPos + imm8OfPShufW2]+= 0x55*shift;
-                filterPos[i/2]-=shift;
-            }
+                if (shift && i>=shift)
+                {
+                    filterCode[fragmentPos + imm8OfPShufW1]+= 0x55*shift;
+                    filterCode[fragmentPos + imm8OfPShufW2]+= 0x55*shift;
+                    filterPos[i/2]-=shift;
+                }
             }
 
             fragmentPos+= fragmentLength;
 
             if (filterCode)
-            filterCode[fragmentPos]= RET;
+                filterCode[fragmentPos]= RET;
         }
         xpos+=xInc;
     }
     if (filterCode)
-    filterPos[((i/2)+1)&(~1)]= xpos>>16; // needed to jump to the next part
+        filterPos[((i/2)+1)&(~1)]= xpos>>16; // needed to jump to the next part
 
     return fragmentPos + 1;
 }
