@@ -2814,8 +2814,8 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         if (c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR))
         {
 #ifdef MAP_ANONYMOUS
-            c->lumMmx2FilterCode = mmap(NULL, MAX_MMX2_FILTER_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-            c->chrMmx2FilterCode = mmap(NULL, MAX_MMX2_FILTER_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+            c->lumMmx2FilterCode = mmap(NULL, MAX_MMX2_FILTER_CODE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+            c->chrMmx2FilterCode = mmap(NULL, MAX_MMX2_FILTER_CODE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 #elif HAVE_VIRTUALALLOC
             c->lumMmx2FilterCode = VirtualAlloc(NULL, MAX_MMX2_FILTER_CODE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
             c->chrMmx2FilterCode = VirtualAlloc(NULL, MAX_MMX2_FILTER_CODE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
@@ -2831,6 +2831,11 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 
             initMMX2HScaler(      dstW, c->lumXInc, c->lumMmx2FilterCode, c->lumMmx2Filter, c->lumMmx2FilterPos, 8);
             initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmx2FilterCode, c->chrMmx2Filter, c->chrMmx2FilterPos, 4);
+
+#ifdef MAP_ANONYMOUS
+            mprotect(c->lumMmx2FilterCode, MAX_MMX2_FILTER_CODE_SIZE, PROT_EXEC | PROT_READ);
+            mprotect(c->chrMmx2FilterCode, MAX_MMX2_FILTER_CODE_SIZE, PROT_EXEC | PROT_READ);
+#endif
         }
 #endif /* defined(COMPILE_MMX2) */
     } // initialize horizontal stuff
