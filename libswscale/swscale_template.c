@@ -2232,7 +2232,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     int32_t av_unused *mmx2FilterPos = c->lumMmx2FilterPos;
     int16_t av_unused *mmx2Filter    = c->lumMmx2Filter;
     int     av_unused canMMX2BeUsed  = c->canMMX2BeUsed;
-    void    av_unused *funnyYCode    = c->funnyYCode;
+    void    av_unused *mmx2FilterCode= c->lumMmx2FilterCode;
     void (*internal_func)(uint8_t *, const uint8_t *, long, uint32_t *) = isAlpha ? c->hascale_internal : c->hyscale_internal;
 
     if (isAlpha) {
@@ -2286,7 +2286,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 
 #if ARCH_X86_64
 
-#define FUNNY_Y_CODE \
+#define CALL_MMX2_FILTER_CODE \
             "movl            (%%"REG_b"), %%esi     \n\t"\
             "call                    *%4            \n\t"\
             "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
@@ -2296,7 +2296,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 
 #else
 
-#define FUNNY_Y_CODE \
+#define CALL_MMX2_FILTER_CODE \
             "movl (%%"REG_b"), %%esi        \n\t"\
             "call         *%4                       \n\t"\
             "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
@@ -2305,20 +2305,20 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 
 #endif /* ARCH_X86_64 */
 
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
 
 #if defined(PIC)
             "mov                      %5, %%"REG_b" \n\t"
 #endif
             :: "m" (src), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
-            "m" (funnyYCode)
+            "m" (mmx2FilterCode)
 #if defined(PIC)
             ,"m" (ebxsave)
 #endif
@@ -2415,7 +2415,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     int32_t av_unused *mmx2FilterPos = c->chrMmx2FilterPos;
     int16_t av_unused *mmx2Filter    = c->chrMmx2Filter;
     int     av_unused canMMX2BeUsed  = c->canMMX2BeUsed;
-    void    av_unused *funnyUVCode   = c->funnyUVCode;
+    void    av_unused *mmx2FilterCode= c->chrMmx2FilterCode;
 
     if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || srcFormat==PIX_FMT_MONOWHITE)
         return;
@@ -2472,7 +2472,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 
 #if ARCH_X86_64
 
-#define FUNNY_UV_CODE \
+#define CALL_MMX2_FILTER_CODE \
             "movl       (%%"REG_b"), %%esi      \n\t"\
             "call               *%4             \n\t"\
             "movl (%%"REG_b", %%"REG_a"), %%esi \n\t"\
@@ -2482,7 +2482,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 
 #else
 
-#define FUNNY_UV_CODE \
+#define CALL_MMX2_FILTER_CODE \
             "movl       (%%"REG_b"), %%esi      \n\t"\
             "call               *%4             \n\t"\
             "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
@@ -2491,10 +2491,10 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 
 #endif /* ARCH_X86_64 */
 
-FUNNY_UV_CODE
-FUNNY_UV_CODE
-FUNNY_UV_CODE
-FUNNY_UV_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
             "xor          %%"REG_a", %%"REG_a"  \n\t" // i
             "mov                 %5, %%"REG_c"  \n\t" // src
             "mov                 %1, %%"REG_D"  \n\t" // buf1
@@ -2503,16 +2503,16 @@ FUNNY_UV_CODE
             PREFETCH" 32(%%"REG_c")             \n\t"
             PREFETCH" 64(%%"REG_c")             \n\t"
 
-FUNNY_UV_CODE
-FUNNY_UV_CODE
-FUNNY_UV_CODE
-FUNNY_UV_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
+CALL_MMX2_FILTER_CODE
 
 #if defined(PIC)
             "mov %6, %%"REG_b"    \n\t"
 #endif
             :: "m" (src1), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
-            "m" (funnyUVCode), "m" (src2)
+            "m" (mmx2FilterCode), "m" (src2)
 #if defined(PIC)
             ,"m" (ebxsave)
 #endif

@@ -111,8 +111,8 @@ typedef struct SwsContext{
     int vLumBufSize;
     int vChrBufSize;
 
-    uint8_t *funnyYCode;
-    uint8_t *funnyUVCode;
+    uint8_t *lumMmx2FilterCode;
+    uint8_t *chrMmx2FilterCode;
     int32_t *lumMmx2FilterPos;
     int32_t *chrMmx2FilterPos;
     int16_t *lumMmx2Filter;
