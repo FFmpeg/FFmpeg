@@ -2470,27 +2470,6 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
             PREFETCH" 32(%%"REG_c")             \n\t"
             PREFETCH" 64(%%"REG_c")             \n\t"
 
-#if ARCH_X86_64
-
-#define CALL_MMX2_FILTER_CODE \
-            "movl       (%%"REG_b"), %%esi      \n\t"\
-            "call               *%4             \n\t"\
-            "movl (%%"REG_b", %%"REG_a"), %%esi \n\t"\
-            "add          %%"REG_S", %%"REG_c"  \n\t"\
-            "add          %%"REG_a", %%"REG_D"  \n\t"\
-            "xor          %%"REG_a", %%"REG_a"  \n\t"\
-
-#else
-
-#define CALL_MMX2_FILTER_CODE \
-            "movl       (%%"REG_b"), %%esi      \n\t"\
-            "call               *%4             \n\t"\
-            "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
-            "add          %%"REG_a", %%"REG_D"  \n\t"\
-            "xor          %%"REG_a", %%"REG_a"  \n\t"\
-
-#endif /* ARCH_X86_64 */
-
 CALL_MMX2_FILTER_CODE
 CALL_MMX2_FILTER_CODE
 CALL_MMX2_FILTER_CODE
