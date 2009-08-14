@@ -74,6 +74,7 @@ untested special converters
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "rgb2rgb.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/x86_cpu.h"
 #include "libavutil/bswap.h"
 
@@ -471,6 +472,86 @@ const char *sws_format_name(enum PixelFormat format)
             return "yuv444pbe";
         default:
             return "Unknown format";
+    }
+}
+
+static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                                    const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                                    const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest,
+                                                    int dstW, int chrDstW, int big_endian)
+{
+    //FIXME Optimize (just quickly written not optimized..)
+    int i;
+
+    for (i = 0; i < dstW; i++) {
+        int val = 1 << 10;
+        int j;
+
+        for (j = 0; j < lumFilterSize; j++)
+            val += lumSrc[j][i] * lumFilter[j];
+
+        if (big_endian) {
+            AV_WB16(&dest[i], av_clip_uint16(val >> 11));
+        } else {
+            AV_WL16(&dest[i], av_clip_uint16(val >> 11));
+        }
+    }
+
+    if (uDest) {
+        for (i = 0; i < chrDstW; i++) {
+            int u = 1 << 10;
+            int v = 1 << 10;
+            int j;
+
+            for (j = 0; j < chrFilterSize; j++) {
+                u += chrSrc[j][i       ] * chrFilter[j];
+                v += chrSrc[j][i + VOFW] * chrFilter[j];
+            }
+
+            if (big_endian) {
+                AV_WB16(&uDest[i], av_clip_uint16(u >> 11));
+                AV_WB16(&vDest[i], av_clip_uint16(v >> 11));
+            } else {
+                AV_WL16(&uDest[i], av_clip_uint16(u >> 11));
+                AV_WL16(&vDest[i], av_clip_uint16(v >> 11));
+            }
+        }
+    }
+
+    if (CONFIG_SWSCALE_ALPHA && aDest) {
+        for (i = 0; i < dstW; i++) {
+            int val = 1 << 10;
+            int j;
+
+            for (j = 0; j < lumFilterSize; j++)
+                val += alpSrc[j][i] * lumFilter[j];
+
+            if (big_endian) {
+                AV_WB16(&aDest[i], av_clip_uint16(val >> 11));
+            } else {
+                AV_WL16(&aDest[i], av_clip_uint16(val >> 11));
+            }
+        }
+    }
+}
+
+static inline void yuv2yuvX16inC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                 const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                 const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest, int dstW, int chrDstW,
+                                 enum PixelFormat dstFormat)
+{
+    if (isBE(dstFormat)) {
+        yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize,
+                               chrFilter, chrSrc, chrFilterSize,
+                               alpSrc,
+                               dest, uDest, vDest, aDest,
+                               dstW, chrDstW, 1);
+    } else {
+        yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize,
+                               chrFilter, chrSrc, chrFilterSize,
+                               alpSrc,
+                               dest, uDest, vDest, aDest,
+                               dstW, chrDstW, 0);
     }
 }
 

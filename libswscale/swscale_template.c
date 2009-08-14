@@ -2813,6 +2813,15 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             {
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
+                if (is16BPS(dstFormat))
+                {
+                    yuv2yuvX16inC(
+                        vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
+                        vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+                        alpSrcPtr, (uint16_t *) dest, (uint16_t *) uDest, (uint16_t *) vDest, (uint16_t *) aDest, dstW, chrDstW,
+                        dstFormat);
+                }
+                else
                 if (vLumFilterSize == 1 && vChrFilterSize == 1) // unscaled YV12
                 {
                     int16_t *lumBuf = lumPixBuf[0];
@@ -2898,10 +2907,21 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             {
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
+                if (is16BPS(dstFormat))
+                {
+                    yuv2yuvX16inC(
+                        vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
+                        vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+                        alpSrcPtr, (uint16_t *) dest, (uint16_t *) uDest, (uint16_t *) vDest, (uint16_t *) aDest, dstW, chrDstW,
+                        dstFormat);
+                }
+                else
+                {
                 yuv2yuvXinC(
                     vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                     vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
                     alpSrcPtr, dest, uDest, vDest, aDest, dstW, chrDstW);
+                }
             }
             else
             {
