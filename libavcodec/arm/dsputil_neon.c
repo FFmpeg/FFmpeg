@@ -161,6 +161,8 @@ void ff_vector_fmul_window_neon(float *dst, const float *src0,
 void ff_float_to_int16_neon(int16_t *, const float *, long);
 void ff_float_to_int16_interleave_neon(int16_t *, const float **, long, int);
 
+void ff_vorbis_inverse_coupling_neon(float *mag, float *ang, int blocksize);
+
 void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
 {
     c->put_pixels_tab[0][0] = ff_put_pixels16_neon;
@@ -272,4 +274,7 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
         c->float_to_int16 = ff_float_to_int16_neon;
         c->float_to_int16_interleave = ff_float_to_int16_interleave_neon;
     }
+
+    if (CONFIG_VORBIS_DECODER)
+        c->vorbis_inverse_coupling = ff_vorbis_inverse_coupling_neon;
 }
