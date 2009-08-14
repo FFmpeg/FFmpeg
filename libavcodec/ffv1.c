@@ -675,7 +675,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             return -1;
         }
         if(avctx->bits_per_raw_sample <=8){
-            av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample inavlid\n");
+            av_log(avctx, AV_LOG_ERROR, "bits_per_raw_sample invalid\n");
             return -1;
         }
         s->version= 1;
