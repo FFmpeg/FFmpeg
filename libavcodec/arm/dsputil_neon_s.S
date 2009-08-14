@@ -801,7 +801,6 @@ NOVFP   ldr             lr,  [sp, #16]
 function ff_vorbis_inverse_coupling_neon, export=1
         vmov.i32        q10, #1<<31
         subs            r2,  r2,  #4
-        tst             r2,  #4
         mov             r3,  r0
         mov             r12, r1
         beq             3f
