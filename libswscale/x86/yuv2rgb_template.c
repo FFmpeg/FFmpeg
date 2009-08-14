@@ -408,37 +408,57 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
     YUV2RGB_OPERANDS
 }
 
-#define RGB_PLANAR2PACKED32                                             \
+/*
+
+RGB_PLANAR2PACKED32(red,green,blue,alpha)
+
+convert RGB plane to RGB packed format
+
+macro parameters specify the output color channel order:
+
+RGB_PLANAR2PACKED32(REG_RED,  REG_GREEN, REG_BLUE, REG_ALPHA) for RGBA output,
+RGB_PLANAR2PACKED32(REG_BLUE, REG_GREEN, REG_RED,  REG_ALPHA) for BGRA output,
+RGB_PLANAR2PACKED32(REG_ALPHA,REG_BLUE,  REG_GREEN,REG_RED)   for ABGR output,
+
+etc.
+*/
+
+#define REG_BLUE  "0"
+#define REG_RED   "1"
+#define REG_GREEN "2"
+#define REG_ALPHA "3"
+
+#define RGB_PLANAR2PACKED32(red,green,blue,alpha)                       \
     /* convert RGB plane to RGB packed format,                          \
        mm0 ->  B, mm1 -> R, mm2 -> G, mm3 -> A,                         \
        mm4 -> GB, mm5 -> AR pixel 4-7,                                  \
        mm6 -> GB, mm7 -> AR pixel 0-3 */                                \
-    "movq      %%mm0, %%mm6;"   /* B7 B6 B5 B4 B3 B2 B1 B0 */           \
-    "movq      %%mm1, %%mm7;"   /* R7 R6 R5 R4 R3 R2 R1 R0 */           \
+    "movq      %%mm" blue ", %%mm6;"   /* B7 B6 B5 B4 B3 B2 B1 B0 */    \
+    "movq      %%mm" red  ", %%mm7;"   /* R7 R6 R5 R4 R3 R2 R1 R0 */    \
 \
-    "movq      %%mm0, %%mm4;"   /* B7 B6 B5 B4 B3 B2 B1 B0 */           \
-    "movq      %%mm1, %%mm5;"   /* R7 R6 R5 R4 R3 R2 R1 R0 */           \
+    "movq      %%mm" blue ", %%mm4;"   /* B7 B6 B5 B4 B3 B2 B1 B0 */    \
+    "movq      %%mm" red  ", %%mm5;"   /* R7 R6 R5 R4 R3 R2 R1 R0 */    \
 \
-    "punpcklbw %%mm2, %%mm6;"   /* G3 B3 G2 B2 G1 B1 G0 B0 */           \
-    "punpcklbw %%mm3, %%mm7;"   /* A3 R3 A2 R2 A1 R1 A0 R0 */           \
+    "punpcklbw %%mm" green ", %%mm6;"  /* G3 B3 G2 B2 G1 B1 G0 B0 */    \
+    "punpcklbw %%mm" alpha ", %%mm7;"  /* A3 R3 A2 R2 A1 R1 A0 R0 */    \
 \
-    "punpcklwd %%mm7, %%mm6;"   /* A1 R1 B1 G1 A0 R0 B0 G0 */           \
-    MOVNTQ "   %%mm6, (%1);"    /* Store ARGB1 ARGB0 */                 \
+    "punpcklwd %%mm7, %%mm6;"          /* A1 R1 B1 G1 A0 R0 B0 G0 */    \
+    MOVNTQ "   %%mm6, (%1);"           /* Store ARGB1 ARGB0 */          \
 \
-    "movq      %%mm0, %%mm6;"   /* B7 B6 B5 B4 B3 B2 B1 B0 */           \
-    "punpcklbw %%mm2, %%mm6;"   /* G3 B3 G2 B2 G1 B1 G0 B0 */           \
+    "movq      %%mm" blue ", %%mm6;"   /* B7 B6 B5 B4 B3 B2 B1 B0 */    \
+    "punpcklbw %%mm" green ", %%mm6;"  /* G3 B3 G2 B2 G1 B1 G0 B0 */    \
 \
-    "punpckhwd %%mm7, %%mm6;"   /* A3 R3 G3 B3 A2 R2 B3 G2 */           \
-    MOVNTQ "   %%mm6, 8 (%1);"  /* Store ARGB3 ARGB2 */                 \
+    "punpckhwd %%mm7, %%mm6;"          /* A3 R3 G3 B3 A2 R2 B3 G2 */    \
+    MOVNTQ "   %%mm6, 8 (%1);"         /* Store ARGB3 ARGB2 */          \
 \
-    "punpckhbw %%mm2, %%mm4;"   /* G7 B7 G6 B6 G5 B5 G4 B4 */           \
-    "punpckhbw %%mm3, %%mm5;"   /* A7 R7 A6 R6 A5 R5 A4 R4 */           \
+    "punpckhbw %%mm" green ", %%mm4;"  /* G7 B7 G6 B6 G5 B5 G4 B4 */    \
+    "punpckhbw %%mm" alpha ", %%mm5;"  /* A7 R7 A6 R6 A5 R5 A4 R4 */    \
 \
-    "punpcklwd %%mm5, %%mm4;"   /* A5 R5 B5 G5 A4 R4 B4 G4 */           \
-    MOVNTQ "   %%mm4, 16 (%1);" /* Store ARGB5 ARGB4 */                 \
+    "punpcklwd %%mm5, %%mm4;"          /* A5 R5 B5 G5 A4 R4 B4 G4 */    \
+    MOVNTQ "   %%mm4, 16 (%1);"        /* Store ARGB5 ARGB4 */          \
 \
-    "movq      %%mm0, %%mm4;"   /* B7 B6 B5 B4 B3 B2 B1 B0 */           \
-    "punpckhbw %%mm2, %%mm4;"   /* G7 B7 G6 B6 G5 B5 G4 B4 */           \
+    "movq      %%mm" blue ", %%mm4;"   /* B7 B6 B5 B4 B3 B2 B1 B0 */    \
+    "punpckhbw %%mm" green ", %%mm4;"  /* G7 B7 G6 B6 G5 B5 G4 B4 */    \
 \
     "punpckhwd %%mm5, %%mm4;"   /* A7 R7 G7 B7 A6 R6 B6 G6 */           \
     MOVNTQ "   %%mm4, 24 (%1);" /* Store ARGB7 ARGB6 */                 \
@@ -459,7 +479,7 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
         YUV2RGB_INIT
         YUV2RGB
         "pcmpeqd   %%mm3, %%mm3;"   /* fill mm3 */
-        RGB_PLANAR2PACKED32
+        RGB_PLANAR2PACKED32(REG_RED,REG_GREEN,REG_BLUE,REG_ALPHA)
 
     YUV2RGB_ENDLOOP(4)
     YUV2RGB_OPERANDS
@@ -476,7 +496,41 @@ static inline int RENAME(yuva420_rgb32)(SwsContext *c, uint8_t* src[], int srcSt
         YUV2RGB_INIT
         YUV2RGB
         "movq     (%6, %0, 2), %%mm3;"            /* Load 8 A A7 A6 A5 A4 A3 A2 A1 A0 */
-        RGB_PLANAR2PACKED32
+        RGB_PLANAR2PACKED32(REG_RED,REG_GREEN,REG_BLUE,REG_ALPHA)
+
+    YUV2RGB_ENDLOOP(4)
+    YUV2RGB_OPERANDS_ALPHA
+#endif
+}
+
+static inline int RENAME(yuv420_bgr32)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+                                       int srcSliceH, uint8_t* dst[], int dstStride[]){
+    int y, h_size;
+
+    YUV422_UNSHIFT
+    YUV2RGB_LOOP(4)
+
+        YUV2RGB_INIT
+        YUV2RGB
+        "pcmpeqd   %%mm3, %%mm3;"   /* fill mm3 */
+        RGB_PLANAR2PACKED32(REG_BLUE,REG_GREEN,REG_RED,REG_ALPHA)
+
+    YUV2RGB_ENDLOOP(4)
+    YUV2RGB_OPERANDS
+}
+
+static inline int RENAME(yuva420_bgr32)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+                                        int srcSliceH, uint8_t* dst[], int dstStride[]){
+#if HAVE_7REGS
+    int y, h_size;
+
+    YUV2RGB_LOOP(4)
+
+        uint8_t *pa = src[3] + y*srcStride[3];
+        YUV2RGB_INIT
+        YUV2RGB
+        "movq     (%6, %0, 2), %%mm3;"            /* Load 8 A A7 A6 A5 A4 A3 A2 A1 A0 */
+        RGB_PLANAR2PACKED32(REG_BLUE,REG_GREEN,REG_RED,REG_ALPHA)
 
     YUV2RGB_ENDLOOP(4)
     YUV2RGB_OPERANDS_ALPHA
