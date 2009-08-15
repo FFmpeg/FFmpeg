@@ -828,6 +828,10 @@ static void do_subtitle_out(AVFormatContext *s,
         sub->pts = av_rescale_q(pts, ist->st->time_base, AV_TIME_BASE_Q);
         subtitle_out_size = avcodec_encode_subtitle(enc, subtitle_out,
                                                     subtitle_out_max_size, sub);
+        if (subtitle_out_size < 0) {
+            fprintf(stderr, "Subtitle encoding failed\n");
+            av_exit(1);
+        }
 
         av_init_packet(&pkt);
         pkt.stream_index = ost->index;
