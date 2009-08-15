@@ -83,9 +83,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     rlelen = bytestream_get_le16(&buf);
 
     // allocate sub and set values
-        sub->rects =  av_mallocz(sizeof(*sub->rects));
-        sub->rects[0] = av_mallocz(sizeof(*sub->rects[0]));
-        sub->num_rects = 1;
+    sub->rects =  av_mallocz(sizeof(*sub->rects));
+    sub->rects[0] = av_mallocz(sizeof(*sub->rects[0]));
+    sub->num_rects = 1;
     sub->rects[0]->x = x; sub->rects[0]->y = y;
     sub->rects[0]->w = w; sub->rects[0]->h = h;
     sub->rects[0]->type = SUBTITLE_BITMAP;
