@@ -50,7 +50,7 @@ SchroVideoFormatEnum ff_get_schro_video_format_preset (AVCodecContext *avccontex
 * Sets the Schroedinger frame format corresponding to the Schro chroma format
 * passed. Returns 0 on success, -1 on failure.
 */
-int ff_get_schro_frame_format (SchroChromaFormat schro_chroma_fmt,
-                               SchroFrameFormat  *schro_frame_fmt);
+int ff_get_schro_frame_format(SchroChromaFormat schro_chroma_fmt,
+                              SchroFrameFormat  *schro_frame_fmt);
 
 #endif /* AVCODEC_LIBSCHROEDINGER_H */

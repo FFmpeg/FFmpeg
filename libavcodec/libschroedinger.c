@@ -57,8 +57,8 @@ SchroVideoFormatEnum ff_get_schro_video_format_preset(AVCodecContext *avccontext
 
     unsigned int idx = ff_dirac_schro_get_video_format_idx (avccontext);
 
-    return (idx < num_formats) ?
-                 ff_schro_video_formats[idx] : SCHRO_VIDEO_FORMAT_CUSTOM;
+    return (idx < num_formats) ? ff_schro_video_formats[idx] :
+                                 SCHRO_VIDEO_FORMAT_CUSTOM;
 }
 
 int ff_get_schro_frame_format (SchroChromaFormat schro_pix_fmt,
@@ -71,8 +71,7 @@ int ff_get_schro_frame_format (SchroChromaFormat schro_pix_fmt,
 
     for (idx = 0; idx < num_formats; ++idx) {
         if (ffmpeg_schro_pixel_format_map[idx].schro_pix_fmt == schro_pix_fmt) {
-            *schro_frame_fmt =
-                         ffmpeg_schro_pixel_format_map[idx].schro_frame_fmt;
+            *schro_frame_fmt = ffmpeg_schro_pixel_format_map[idx].schro_frame_fmt;
             return 0;
         }
     }

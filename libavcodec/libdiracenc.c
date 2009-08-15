@@ -38,8 +38,7 @@
 #include <libdirac_encoder/dirac_encoder.h>
 
 /** Dirac encoder private data */
-typedef struct FfmpegDiracEncoderParams
-{
+typedef struct FfmpegDiracEncoderParams {
     /** Dirac encoder context */
     dirac_encoder_context_t enc_ctx;
 
@@ -114,12 +113,12 @@ static const VideoFormat ff_dirac_video_formats[]={
 * Returns the video format preset matching the input video dimensions and
 * time base.
 */
-static VideoFormat GetDiracVideoFormatPreset (AVCodecContext *avccontext)
+static VideoFormat GetDiracVideoFormatPreset(AVCodecContext *avccontext)
 {
     unsigned int num_formats = sizeof(ff_dirac_video_formats) /
                                sizeof(ff_dirac_video_formats[0]);
 
-    unsigned int idx = ff_dirac_schro_get_video_format_idx (avccontext);
+    unsigned int idx = ff_dirac_schro_get_video_format_idx(avccontext);
 
     return (idx < num_formats) ?
                  ff_dirac_video_formats[idx] : VIDEO_FORMAT_CUSTOM;
@@ -130,30 +129,27 @@ static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
 
     FfmpegDiracEncoderParams* p_dirac_params = avccontext->priv_data;
     int no_local = 1;
-    int verbose = avccontext->debug;
+    int verbose  = avccontext->debug;
     VideoFormat preset;
 
     /* get Dirac preset */
     preset = GetDiracVideoFormatPreset(avccontext);
 
     /* initialize the encoder context */
-    dirac_encoder_context_init (&(p_dirac_params->enc_ctx), preset);
+    dirac_encoder_context_init(&(p_dirac_params->enc_ctx), preset);
 
-    p_dirac_params->enc_ctx.src_params.chroma =
-                                GetDiracChromaFormat(avccontext->pix_fmt);
+    p_dirac_params->enc_ctx.src_params.chroma = GetDiracChromaFormat(avccontext->pix_fmt);
 
     if (p_dirac_params->enc_ctx.src_params.chroma == formatNK) {
-        av_log (avccontext, AV_LOG_ERROR,
-                "Unsupported pixel format %d. This codec supports only "
-                "Planar YUV formats (yuv420p, yuv422p, yuv444p\n",
-                avccontext->pix_fmt);
+        av_log(avccontext, AV_LOG_ERROR,
+               "Unsupported pixel format %d. This codec supports only "
+               "Planar YUV formats (yuv420p, yuv422p, yuv444p\n",
+               avccontext->pix_fmt);
         return -1;
     }
 
-    p_dirac_params->enc_ctx.src_params.frame_rate.numerator   =
-                                             avccontext->time_base.den;
-    p_dirac_params->enc_ctx.src_params.frame_rate.denominator =
-                                             avccontext->time_base.num;
+    p_dirac_params->enc_ctx.src_params.frame_rate.numerator   = avccontext->time_base.den;
+    p_dirac_params->enc_ctx.src_params.frame_rate.denominator = avccontext->time_base.num;
 
     p_dirac_params->enc_ctx.src_params.width  = avccontext->width;
     p_dirac_params->enc_ctx.src_params.height = avccontext->height;
@@ -182,20 +178,20 @@ static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
 
     if (avccontext->flags & CODEC_FLAG_QSCALE) {
         if (avccontext->global_quality) {
-            p_dirac_params->enc_ctx.enc_params.qf =
-                            avccontext->global_quality / (FF_QP2LAMBDA*10.0);
+            p_dirac_params->enc_ctx.enc_params.qf = avccontext->global_quality
+                                                    / (FF_QP2LAMBDA * 10.0);
             /* if it is not default bitrate then send target rate. */
             if (avccontext->bit_rate >= 1000 &&
                 avccontext->bit_rate != 200000)
-               p_dirac_params->enc_ctx.enc_params.trate =
-                             avccontext->bit_rate / 1000;
+                p_dirac_params->enc_ctx.enc_params.trate = avccontext->bit_rate
+                                                           / 1000;
         } else
             p_dirac_params->enc_ctx.enc_params.lossless = 1;
     } else if (avccontext->bit_rate >= 1000)
         p_dirac_params->enc_ctx.enc_params.trate = avccontext->bit_rate / 1000;
 
     if ((preset > VIDEO_FORMAT_QCIF || preset < VIDEO_FORMAT_QSIF525) &&
-        avccontext->bit_rate == 200000)
+         avccontext->bit_rate == 200000)
         p_dirac_params->enc_ctx.enc_params.trate = 0;
 
     if (avccontext->flags & CODEC_FLAG_INTERLACED_ME)
@@ -203,8 +199,8 @@ static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
          * irrespective of the type of source material */
         p_dirac_params->enc_ctx.enc_params.picture_coding_mode = 1;
 
-    p_dirac_params->p_encoder = dirac_encoder_init (&(p_dirac_params->enc_ctx),
-                                                    verbose );
+    p_dirac_params->p_encoder = dirac_encoder_init(&(p_dirac_params->enc_ctx),
+                                                   verbose);
 
     if (!p_dirac_params->p_encoder) {
         av_log(avccontext, AV_LOG_ERROR,
@@ -218,14 +214,14 @@ static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
     /* initialize the encoded frame queue */
     ff_dirac_schro_queue_init(&p_dirac_params->enc_frame_queue);
 
-    return 0 ;
+    return 0;
 }
 
-static void DiracFreeFrame (void *data)
+static void DiracFreeFrame(void *data)
 {
     FfmpegDiracSchroEncodedFrame *enc_frame = data;
 
-    av_freep (&(enc_frame->p_encbuf));
+    av_freep(&(enc_frame->p_encbuf));
     av_free(enc_frame);
 }
 
@@ -236,7 +232,7 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
     int enc_size = 0;
     dirac_encoder_state_t state;
     FfmpegDiracEncoderParams* p_dirac_params = avccontext->priv_data;
-    FfmpegDiracSchroEncodedFrame* p_frame_output = NULL;
+    FfmpegDiracSchroEncodedFrame* p_frame_output      = NULL;
     FfmpegDiracSchroEncodedFrame* p_next_output_frame = NULL;
     int go = 1;
     int last_frame_in_sequence = 0;
@@ -244,7 +240,7 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
     if (!data) {
         /* push end of sequence if not already signalled */
         if (!p_dirac_params->eos_signalled) {
-            dirac_encoder_end_sequence( p_dirac_params->p_encoder );
+            dirac_encoder_end_sequence(p_dirac_params->p_encoder);
             p_dirac_params->eos_signalled = 1;
         }
     } else {
@@ -253,15 +249,15 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
          * Input line size may differ from what the codec supports,
          * especially when transcoding from one format to another.
          * So use avpicture_layout to copy the frame. */
-        avpicture_layout ((AVPicture *)data, avccontext->pix_fmt,
-                          avccontext->width, avccontext->height,
-                          p_dirac_params->p_in_frame_buf,
-                          p_dirac_params->frame_size);
+        avpicture_layout((AVPicture *)data, avccontext->pix_fmt,
+                         avccontext->width, avccontext->height,
+                         p_dirac_params->p_in_frame_buf,
+                         p_dirac_params->frame_size);
 
         /* load next frame */
-        if (dirac_encoder_load (p_dirac_params->p_encoder,
-                                p_dirac_params->p_in_frame_buf,
-                                p_dirac_params->frame_size ) < 0) {
+        if (dirac_encoder_load(p_dirac_params->p_encoder,
+                               p_dirac_params->p_in_frame_buf,
+                               p_dirac_params->frame_size) < 0) {
             av_log(avccontext, AV_LOG_ERROR, "Unrecoverable Encoder Error."
                    " dirac_encoder_load failed...\n");
             return -1;
@@ -271,34 +267,30 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
     if (p_dirac_params->eos_pulled)
         go = 0;
 
-    while(go) {
+    while (go) {
         p_dirac_params->p_encoder->enc_buf.buffer = frame;
         p_dirac_params->p_encoder->enc_buf.size   = buf_size;
         /* process frame */
-        state = dirac_encoder_output ( p_dirac_params->p_encoder );
+        state = dirac_encoder_output(p_dirac_params->p_encoder);
 
-        switch (state)
-        {
+        switch (state) {
         case ENC_STATE_AVAIL:
         case ENC_STATE_EOS:
-            assert (p_dirac_params->p_encoder->enc_buf.size > 0);
+            assert(p_dirac_params->p_encoder->enc_buf.size > 0);
 
             /* All non-frame data is prepended to actual frame data to
              * be able to set the pts correctly. So we don't write data
              * to the frame output queue until we actually have a frame
              */
 
-            p_dirac_params->enc_buf = av_realloc (
-                                      p_dirac_params->enc_buf,
-                                      p_dirac_params->enc_buf_size +
-                                      p_dirac_params->p_encoder->enc_buf.size
-                                      );
+            p_dirac_params->enc_buf = av_realloc(p_dirac_params->enc_buf,
+                                                 p_dirac_params->enc_buf_size +
+                                                 p_dirac_params->p_encoder->enc_buf.size);
             memcpy(p_dirac_params->enc_buf + p_dirac_params->enc_buf_size,
                    p_dirac_params->p_encoder->enc_buf.buffer,
                    p_dirac_params->p_encoder->enc_buf.size);
 
-            p_dirac_params->enc_buf_size +=
-                                     p_dirac_params->p_encoder->enc_buf.size;
+            p_dirac_params->enc_buf_size += p_dirac_params->p_encoder->enc_buf.size;
 
             if (state == ENC_STATE_EOS) {
                 p_dirac_params->eos_pulled = 1;
@@ -313,17 +305,16 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
             /* create output frame */
             p_frame_output = av_mallocz(sizeof(FfmpegDiracSchroEncodedFrame));
             /* set output data */
-            p_frame_output->size     = p_dirac_params->enc_buf_size;
-            p_frame_output->p_encbuf = p_dirac_params->enc_buf;
-            p_frame_output->frame_num =
-                            p_dirac_params->p_encoder->enc_pparams.pnum;
+            p_frame_output->size      = p_dirac_params->enc_buf_size;
+            p_frame_output->p_encbuf  = p_dirac_params->enc_buf;
+            p_frame_output->frame_num = p_dirac_params->p_encoder->enc_pparams.pnum;
 
             if (p_dirac_params->p_encoder->enc_pparams.ptype == INTRA_PICTURE &&
                 p_dirac_params->p_encoder->enc_pparams.rtype == REFERENCE_PICTURE)
                 p_frame_output->key_frame = 1;
 
-            ff_dirac_schro_queue_push_back (&p_dirac_params->enc_frame_queue,
-                                            p_frame_output);
+            ff_dirac_schro_queue_push_back(&p_dirac_params->enc_frame_queue,
+                                           p_frame_output);
 
             p_dirac_params->enc_buf_size = 0;
             p_dirac_params->enc_buf      = NULL;
@@ -346,12 +337,10 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
 
     /* copy 'next' frame in queue */
 
-    if (p_dirac_params->enc_frame_queue.size == 1 &&
-        p_dirac_params->eos_pulled)
+    if (p_dirac_params->enc_frame_queue.size == 1 && p_dirac_params->eos_pulled)
         last_frame_in_sequence = 1;
 
-    p_next_output_frame =
-          ff_dirac_schro_queue_pop(&p_dirac_params->enc_frame_queue);
+    p_next_output_frame = ff_dirac_schro_queue_pop(&p_dirac_params->enc_frame_queue);
 
     if (!p_next_output_frame)
         return 0;
@@ -366,12 +355,11 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
 
     /* Append the end of sequence information to the last frame in the
      * sequence. */
-    if (last_frame_in_sequence && p_dirac_params->enc_buf_size > 0)
-    {
-        memcpy (frame + enc_size, p_dirac_params->enc_buf,
-                p_dirac_params->enc_buf_size);
+    if (last_frame_in_sequence && p_dirac_params->enc_buf_size > 0) {
+        memcpy(frame + enc_size, p_dirac_params->enc_buf,
+               p_dirac_params->enc_buf_size);
         enc_size += p_dirac_params->enc_buf_size;
-        av_freep (&p_dirac_params->enc_buf);
+        av_freep(&p_dirac_params->enc_buf);
         p_dirac_params->enc_buf_size = 0;
     }
 
@@ -386,7 +374,7 @@ static av_cold int libdirac_encode_close(AVCodecContext *avccontext)
     FfmpegDiracEncoderParams* p_dirac_params  = avccontext->priv_data;
 
     /* close the encoder */
-    dirac_encoder_close(p_dirac_params->p_encoder );
+    dirac_encoder_close(p_dirac_params->p_encoder);
 
     /* free data in the output frame queue */
     ff_dirac_schro_queue_free(&p_dirac_params->enc_frame_queue,
@@ -399,7 +387,7 @@ static av_cold int libdirac_encode_close(AVCodecContext *avccontext)
     /* free the input frame buffer */
     av_freep(&p_dirac_params->p_in_frame_buf);
 
-    return 0 ;
+    return 0;
 }
 
 
@@ -411,7 +399,7 @@ AVCodec libdirac_encoder = {
     libdirac_encode_init,
     libdirac_encode_frame,
     libdirac_encode_close,
-   .capabilities= CODEC_CAP_DELAY,
-   .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_NONE},
-   .long_name= NULL_IF_CONFIG_SMALL("libdirac Dirac 2.2"),
-} ;
+   .capabilities = CODEC_CAP_DELAY,
+   .pix_fmts = (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_NONE},
+   .long_name = NULL_IF_CONFIG_SMALL("libdirac Dirac 2.2"),
+};

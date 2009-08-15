@@ -45,18 +45,17 @@ static const FfmpegDiracSchroVideoFormatInfo ff_dirac_schro_video_format_info[] 
     { 4096, 2160, 24,    1   },
 };
 
-unsigned int ff_dirac_schro_get_video_format_idx (AVCodecContext *avccontext)
+unsigned int ff_dirac_schro_get_video_format_idx(AVCodecContext *avccontext)
 {
     unsigned int ret_idx = 0;
     unsigned int idx;
     unsigned int num_formats = sizeof(ff_dirac_schro_video_format_info) /
                                sizeof(ff_dirac_schro_video_format_info[0]);
 
-    for (idx = 1 ; idx < num_formats; ++idx ) {
-        const FfmpegDiracSchroVideoFormatInfo *vf =
-                                        &ff_dirac_schro_video_format_info[idx];
+    for (idx = 1; idx < num_formats; ++idx) {
+        const FfmpegDiracSchroVideoFormatInfo *vf = &ff_dirac_schro_video_format_info[idx];
         if (avccontext->width  == vf->width &&
-            avccontext->height == vf->height){
+            avccontext->height == vf->height) {
             ret_idx = idx;
             if (avccontext->time_base.den == vf->frame_rate_num &&
                 avccontext->time_base.num == vf->frame_rate_denom)
@@ -66,23 +65,22 @@ unsigned int ff_dirac_schro_get_video_format_idx (AVCodecContext *avccontext)
     return ret_idx;
 }
 
-void ff_dirac_schro_queue_init (FfmpegDiracSchroQueue *queue)
+void ff_dirac_schro_queue_init(FfmpegDiracSchroQueue *queue)
 {
     queue->p_head = queue->p_tail = NULL;
     queue->size = 0;
 }
 
-void ff_dirac_schro_queue_free (FfmpegDiracSchroQueue *queue,
-                                void (*free_func)(void *))
+void ff_dirac_schro_queue_free(FfmpegDiracSchroQueue *queue,
+                               void (*free_func)(void *))
 {
     while (queue->p_head)
-        free_func( ff_dirac_schro_queue_pop(queue) );
+        free_func(ff_dirac_schro_queue_pop(queue));
 }
 
-int ff_dirac_schro_queue_push_back (FfmpegDiracSchroQueue *queue, void *p_data)
+int ff_dirac_schro_queue_push_back(FfmpegDiracSchroQueue *queue, void *p_data)
 {
-    FfmpegDiracSchroQueueElement *p_new =
-                             av_mallocz(sizeof(FfmpegDiracSchroQueueElement));
+    FfmpegDiracSchroQueueElement *p_new = av_mallocz(sizeof(FfmpegDiracSchroQueueElement));
 
     if (!p_new)
         return -1;
@@ -99,7 +97,7 @@ int ff_dirac_schro_queue_push_back (FfmpegDiracSchroQueue *queue, void *p_data)
     return 0;
 }
 
-void *ff_dirac_schro_queue_pop (FfmpegDiracSchroQueue *queue)
+void *ff_dirac_schro_queue_pop(FfmpegDiracSchroQueue *queue)
 {
     FfmpegDiracSchroQueueElement *top = queue->p_head;
 
@@ -107,7 +105,7 @@ void *ff_dirac_schro_queue_pop (FfmpegDiracSchroQueue *queue)
         void *data = top->data;
         queue->p_head = queue->p_head->next;
         --queue->size;
-        av_freep (&top);
+        av_freep(&top);
         return data;
     }
 

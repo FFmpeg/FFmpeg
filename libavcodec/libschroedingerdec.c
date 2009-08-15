@@ -40,8 +40,7 @@
 #include <schroedinger/schrovideoformat.h>
 
 /** libschroedinger decoder private data */
-typedef struct FfmpegSchroDecoderParams
-{
+typedef struct FfmpegSchroDecoderParams {
     /** Schroedinger video format */
     SchroVideoFormat *format;
 
@@ -64,24 +63,23 @@ typedef struct FfmpegSchroDecoderParams
     AVPicture dec_pic;
 } FfmpegSchroDecoderParams;
 
-typedef struct FfmpegSchroParseUnitContext
-{
+typedef struct FfmpegSchroParseUnitContext {
     const uint8_t *buf;
     int           buf_size;
 } FfmpegSchroParseUnitContext;
 
 
-static void libschroedinger_decode_buffer_free (SchroBuffer *schro_buf,
-                                                void *priv);
+static void libschroedinger_decode_buffer_free(SchroBuffer *schro_buf,
+                                               void *priv);
 
-static void FfmpegSchroParseContextInit (FfmpegSchroParseUnitContext *parse_ctx,
-                                         const uint8_t *buf, int buf_size)
+static void FfmpegSchroParseContextInit(FfmpegSchroParseUnitContext *parse_ctx,
+                                        const uint8_t *buf, int buf_size)
 {
     parse_ctx->buf           = buf;
     parse_ctx->buf_size      = buf_size;
 }
 
-static SchroBuffer* FfmpegFindNextSchroParseUnit (FfmpegSchroParseUnitContext *parse_ctx)
+static SchroBuffer* FfmpegFindNextSchroParseUnit(FfmpegSchroParseUnitContext *parse_ctx)
 {
     SchroBuffer *enc_buf = NULL;
     int next_pu_offset = 0;
@@ -107,12 +105,12 @@ static SchroBuffer* FfmpegFindNextSchroParseUnit (FfmpegSchroParseUnitContext *p
         return NULL;
 
     in_buf = av_malloc(next_pu_offset);
-    memcpy (in_buf, parse_ctx->buf, next_pu_offset);
-    enc_buf = schro_buffer_new_with_data (in_buf, next_pu_offset);
+    memcpy(in_buf, parse_ctx->buf, next_pu_offset);
+    enc_buf       = schro_buffer_new_with_data(in_buf, next_pu_offset);
     enc_buf->free = libschroedinger_decode_buffer_free;
     enc_buf->priv = in_buf;
 
-    parse_ctx->buf += next_pu_offset;
+    parse_ctx->buf      += next_pu_offset;
     parse_ctx->buf_size -= next_pu_offset;
 
     return enc_buf;
@@ -136,29 +134,29 @@ static enum PixelFormat GetFfmpegChromaFormat(SchroChromaFormat schro_pix_fmt)
 static av_cold int libschroedinger_decode_init(AVCodecContext *avccontext)
 {
 
-    FfmpegSchroDecoderParams *p_schro_params = avccontext->priv_data ;
+    FfmpegSchroDecoderParams *p_schro_params = avccontext->priv_data;
     /* First of all, initialize our supporting libraries. */
     schro_init();
 
     schro_debug_set_level(avccontext->debug);
-    p_schro_params->decoder =  schro_decoder_new();
+    p_schro_params->decoder = schro_decoder_new();
     schro_decoder_set_skip_ratio(p_schro_params->decoder, 1);
 
     if (!p_schro_params->decoder)
         return -1;
 
     /* Initialize the decoded frame queue. */
-    ff_dirac_schro_queue_init (&p_schro_params->dec_frame_queue);
-    return 0 ;
+    ff_dirac_schro_queue_init(&p_schro_params->dec_frame_queue);
+    return 0;
 }
 
-static void libschroedinger_decode_buffer_free (SchroBuffer *schro_buf,
-                                                void *priv)
+static void libschroedinger_decode_buffer_free(SchroBuffer *schro_buf,
+                                               void *priv)
 {
     av_freep(&priv);
 }
 
-static void libschroedinger_decode_frame_free (void *frame)
+static void libschroedinger_decode_frame_free(void *frame)
 {
     schro_frame_unref(frame);
 }
@@ -168,11 +166,11 @@ static void libschroedinger_handle_first_access_unit(AVCodecContext *avccontext)
     FfmpegSchroDecoderParams *p_schro_params = avccontext->priv_data;
     SchroDecoder *decoder = p_schro_params->decoder;
 
-    p_schro_params->format = schro_decoder_get_video_format (decoder);
+    p_schro_params->format = schro_decoder_get_video_format(decoder);
 
     /* Tell FFmpeg about sequence details. */
-    if(avcodec_check_dimensions(avccontext, p_schro_params->format->width,
-                                p_schro_params->format->height) < 0) {
+    if (avcodec_check_dimensions(avccontext, p_schro_params->format->width,
+                                 p_schro_params->format->height) < 0) {
         av_log(avccontext, AV_LOG_ERROR, "invalid dimensions (%dx%d)\n",
                p_schro_params->format->width, p_schro_params->format->height);
         avccontext->height = avccontext->width = 0;
@@ -180,14 +178,13 @@ static void libschroedinger_handle_first_access_unit(AVCodecContext *avccontext)
     }
     avccontext->height  = p_schro_params->format->height;
     avccontext->width   = p_schro_params->format->width;
-    avccontext->pix_fmt =
-                   GetFfmpegChromaFormat(p_schro_params->format->chroma_format);
+    avccontext->pix_fmt = GetFfmpegChromaFormat(p_schro_params->format->chroma_format);
 
-    if (ff_get_schro_frame_format( p_schro_params->format->chroma_format,
-                                   &p_schro_params->frame_format) == -1) {
-        av_log (avccontext, AV_LOG_ERROR,
-                "This codec currently only supports planar YUV 4:2:0, 4:2:2 "
-                "and 4:4:4 formats.\n");
+    if (ff_get_schro_frame_format(p_schro_params->format->chroma_format,
+                                  &p_schro_params->frame_format) == -1) {
+        av_log(avccontext, AV_LOG_ERROR,
+               "This codec currently only supports planar YUV 4:2:0, 4:2:2 "
+               "and 4:4:4 formats.\n");
         return;
     }
 
@@ -221,7 +218,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
 
     *data_size = 0;
 
-    FfmpegSchroParseContextInit (&parse_ctx, buf, buf_size);
+    FfmpegSchroParseContextInit(&parse_ctx, buf, buf_size);
     if (!buf_size) {
         if (!p_schro_params->eos_signalled) {
             state = schro_decoder_push_end_of_stream(decoder);
@@ -236,77 +233,74 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
             if (SCHRO_PARSE_CODE_IS_PICTURE(enc_buf->data[4]) &&
                 SCHRO_PARSE_CODE_NUM_REFS(enc_buf->data[4]) > 0)
                 avccontext->has_b_frames = 1;
-            state = schro_decoder_push (decoder, enc_buf);
+            state = schro_decoder_push(decoder, enc_buf);
             if (state == SCHRO_DECODER_FIRST_ACCESS_UNIT)
-                  libschroedinger_handle_first_access_unit(avccontext);
+                libschroedinger_handle_first_access_unit(avccontext);
             go = 1;
-        }
-        else
+        } else
             outer = 0;
-    format = p_schro_params->format;
+        format = p_schro_params->format;
 
-    while (go) {
-        /* Parse data and process result. */
-        state = schro_decoder_wait (decoder);
-        switch (state)
-        {
-        case SCHRO_DECODER_FIRST_ACCESS_UNIT:
-            libschroedinger_handle_first_access_unit (avccontext);
-            break;
+        while (go) {
+            /* Parse data and process result. */
+            state = schro_decoder_wait(decoder);
+            switch (state) {
+            case SCHRO_DECODER_FIRST_ACCESS_UNIT:
+                libschroedinger_handle_first_access_unit(avccontext);
+                break;
 
-        case SCHRO_DECODER_NEED_BITS:
-            /* Need more input data - stop iterating over what we have. */
-            go = 0;
-            break;
+            case SCHRO_DECODER_NEED_BITS:
+                /* Need more input data - stop iterating over what we have. */
+                go = 0;
+                break;
 
-        case SCHRO_DECODER_NEED_FRAME:
-            /* Decoder needs a frame - create one and push it in. */
+            case SCHRO_DECODER_NEED_FRAME:
+                /* Decoder needs a frame - create one and push it in. */
 
-            frame = schro_frame_new_and_alloc(NULL,
-                                              p_schro_params->frame_format,
-                                              format->width,
-                                              format->height);
-            schro_decoder_add_output_picture (decoder, frame);
-            break;
+                frame = schro_frame_new_and_alloc(NULL,
+                                                  p_schro_params->frame_format,
+                                                  format->width,
+                                                  format->height);
+                schro_decoder_add_output_picture(decoder, frame);
+                break;
 
-        case SCHRO_DECODER_OK:
-            /* Pull a frame out of the decoder. */
-            frame = schro_decoder_pull (decoder);
+            case SCHRO_DECODER_OK:
+                /* Pull a frame out of the decoder. */
+                frame = schro_decoder_pull(decoder);
 
-            if (frame)
-                ff_dirac_schro_queue_push_back(
-                                             &p_schro_params->dec_frame_queue,
-                                             frame);
-            break;
-        case SCHRO_DECODER_EOS:
-            go = 0;
-            p_schro_params->eos_pulled = 1;
-            schro_decoder_reset (decoder);
-            outer = 0;
-            break;
+                if (frame)
+                    ff_dirac_schro_queue_push_back(&p_schro_params->dec_frame_queue,
+                                                   frame);
+                break;
+            case SCHRO_DECODER_EOS:
+                go = 0;
+                p_schro_params->eos_pulled = 1;
+                schro_decoder_reset(decoder);
+                outer = 0;
+                break;
 
-        case SCHRO_DECODER_ERROR:
-            return -1;
-            break;
+            case SCHRO_DECODER_ERROR:
+                return -1;
+                break;
+            }
         }
-    }
-    } while(outer);
+    } while (outer);
 
     /* Grab next frame to be returned from the top of the queue. */
     frame = ff_dirac_schro_queue_pop(&p_schro_params->dec_frame_queue);
 
     if (frame) {
-        memcpy (p_schro_params->dec_pic.data[0],
-                frame->components[0].data,
-                frame->components[0].length);
+        memcpy(p_schro_params->dec_pic.data[0],
+               frame->components[0].data,
+               frame->components[0].length);
 
-        memcpy (p_schro_params->dec_pic.data[1],
-                frame->components[1].data,
-                frame->components[1].length);
+        memcpy(p_schro_params->dec_pic.data[1],
+               frame->components[1].data,
+               frame->components[1].length);
 
-        memcpy (p_schro_params->dec_pic.data[2],
-                frame->components[2].data,
-                frame->components[2].length);
+        memcpy(p_schro_params->dec_pic.data[2],
+               frame->components[2].data,
+               frame->components[2].length);
 
         /* Fill picture with current buffer data from Schroedinger. */
         avpicture_fill(picture, p_schro_params->dec_pic.data[0],
@@ -316,7 +310,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
         *data_size = sizeof(AVPicture);
 
         /* Now free the frame resources. */
-        libschroedinger_decode_frame_free (frame);
+        libschroedinger_decode_frame_free(frame);
     }
     return buf_size;
 }
@@ -326,36 +320,36 @@ static av_cold int libschroedinger_decode_close(AVCodecContext *avccontext)
 {
     FfmpegSchroDecoderParams *p_schro_params = avccontext->priv_data;
     /* Free the decoder. */
-    schro_decoder_free (p_schro_params->decoder);
+    schro_decoder_free(p_schro_params->decoder);
     av_freep(&p_schro_params->format);
 
-    avpicture_free (&p_schro_params->dec_pic);
+    avpicture_free(&p_schro_params->dec_pic);
 
     /* Free data in the output frame queue. */
-    ff_dirac_schro_queue_free (&p_schro_params->dec_frame_queue,
-                               libschroedinger_decode_frame_free);
+    ff_dirac_schro_queue_free(&p_schro_params->dec_frame_queue,
+                              libschroedinger_decode_frame_free);
 
-    return 0 ;
+    return 0;
 }
 
-static void libschroedinger_flush (AVCodecContext *avccontext)
+static void libschroedinger_flush(AVCodecContext *avccontext)
 {
     /* Got a seek request. Free the decoded frames queue and then reset
      * the decoder */
     FfmpegSchroDecoderParams *p_schro_params = avccontext->priv_data;
 
     /* Free data in the output frame queue. */
-    ff_dirac_schro_queue_free (&p_schro_params->dec_frame_queue,
-                               libschroedinger_decode_frame_free);
+    ff_dirac_schro_queue_free(&p_schro_params->dec_frame_queue,
+                              libschroedinger_decode_frame_free);
 
-    ff_dirac_schro_queue_init (&p_schro_params->dec_frame_queue);
+    ff_dirac_schro_queue_init(&p_schro_params->dec_frame_queue);
     schro_decoder_reset(p_schro_params->decoder);
     p_schro_params->eos_pulled = 0;
     p_schro_params->eos_signalled = 0;
 }
 
 AVCodec libschroedinger_decoder = {
-     "libschroedinger",
+    "libschroedinger",
     CODEC_TYPE_VIDEO,
     CODEC_ID_DIRAC,
     sizeof(FfmpegSchroDecoderParams),
