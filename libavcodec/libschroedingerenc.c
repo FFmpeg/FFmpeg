@@ -223,15 +223,13 @@ static SchroFrame *libschroedinger_frame_from_data(AVCodecContext *avccontext,
     /* Input line size may differ from what the codec supports. Especially
      * when transcoding from one format to another. So use avpicture_layout
      * to copy the frame. */
-    in_frame = schro_frame_new_and_alloc(NULL,
-                                         p_schro_params->frame_format,
-                                         p_schro_params->format->width,
-                                         p_schro_params->format->height);
+    in_frame = ff_create_schro_frame(avccontext, p_schro_params->frame_format);
 
-    avpicture_layout((AVPicture *)in_data, avccontext->pix_fmt,
-                     avccontext->width, avccontext->height,
-                     in_frame->components[0].data,
-                     p_schro_params->frame_size);
+    if (in_frame)
+        avpicture_layout((AVPicture *)in_data, avccontext->pix_fmt,
+                          avccontext->width, avccontext->height,
+                          in_frame->components[0].data,
+                          p_schro_params->frame_size);
 
     return in_frame;
 }

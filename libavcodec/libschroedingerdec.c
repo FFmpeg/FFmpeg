@@ -256,11 +256,8 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
 
             case SCHRO_DECODER_NEED_FRAME:
                 /* Decoder needs a frame - create one and push it in. */
-
-                frame = schro_frame_new_and_alloc(NULL,
-                                                  p_schro_params->frame_format,
-                                                  format->width,
-                                                  format->height);
+                frame = ff_create_schro_frame(avccontext,
+                                              p_schro_params->frame_format);
                 schro_decoder_add_output_picture(decoder, frame);
                 break;
 

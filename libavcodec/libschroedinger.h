@@ -53,4 +53,11 @@ SchroVideoFormatEnum ff_get_schro_video_format_preset (AVCodecContext *avccontex
 int ff_get_schro_frame_format(SchroChromaFormat schro_chroma_fmt,
                               SchroFrameFormat  *schro_frame_fmt);
 
+/**
+* Create a Schro frame based on the dimensions and frame format
+* passed. Returns a pointer to a frame on success, NULL on failure.
+*/
+SchroFrame *ff_create_schro_frame(AVCodecContext *avccontext,
+                                  SchroFrameFormat schro_frame_fmt);
+
 #endif /* AVCODEC_LIBSCHROEDINGER_H */
