@@ -150,10 +150,9 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
                                           "gop_structure",
                                           SCHRO_ENCODER_GOP_INTRA_ONLY);
 
-        if (avccontext->coder_type == FF_CODER_TYPE_VLC) {
+        if (avccontext->coder_type == FF_CODER_TYPE_VLC)
             schro_encoder_setting_set_double (p_schro_params->encoder,
                                               "enable_noarith", 1);
-        }
     }
     else {
         schro_encoder_setting_set_double (p_schro_params->encoder,
@@ -194,12 +193,11 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
 
     }
 
-    if (avccontext->flags & CODEC_FLAG_INTERLACED_ME) {
+    if (avccontext->flags & CODEC_FLAG_INTERLACED_ME)
         /* All material can be coded as interlaced or progressive
            irrespective of the type of source material. */
         schro_encoder_setting_set_double (p_schro_params->encoder,
                                             "interlaced_coding", 1);
-    }
 
     /* FIXME: Signal range hardcoded to 8-bit data until both libschroedinger
      * and libdirac support other bit-depth data. */
@@ -324,9 +322,8 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
             p_frame_output->size     = p_schro_params->enc_buf_size;
             p_frame_output->p_encbuf = p_schro_params->enc_buf;
             if (SCHRO_PARSE_CODE_IS_INTRA(parse_code) &&
-                SCHRO_PARSE_CODE_IS_REFERENCE(parse_code)) {
+                SCHRO_PARSE_CODE_IS_REFERENCE(parse_code))
                 p_frame_output->key_frame = 1;
-            }
 
             /* Parse the coded frame number from the bitstream. Bytes 14
              * through 17 represesent the frame number. */

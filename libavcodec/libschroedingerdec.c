@@ -127,11 +127,9 @@ static enum PixelFormat GetFfmpegChromaFormat(SchroChromaFormat schro_pix_fmt)
                       sizeof(ffmpeg_schro_pixel_format_map[0]);
     int idx;
 
-    for (idx = 0; idx < num_formats; ++idx) {
-        if (ffmpeg_schro_pixel_format_map[idx].schro_pix_fmt == schro_pix_fmt) {
+    for (idx = 0; idx < num_formats; ++idx)
+        if (ffmpeg_schro_pixel_format_map[idx].schro_pix_fmt == schro_pix_fmt)
             return ffmpeg_schro_pixel_format_map[idx].ff_pix_fmt;
-        }
-    }
     return PIX_FMT_NONE;
 }
 
@@ -197,12 +195,10 @@ static void libschroedinger_handle_first_access_unit(AVCodecContext *avccontext)
     avccontext->time_base.num = p_schro_params->format->frame_rate_denominator;
 
     if (!p_schro_params->dec_pic.data[0])
-    {
         avpicture_alloc(&p_schro_params->dec_pic,
                         avccontext->pix_fmt,
                         avccontext->width,
                         avccontext->height);
-    }
 }
 
 static int libschroedinger_decode_frame(AVCodecContext *avccontext,
@@ -277,11 +273,10 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
             /* Pull a frame out of the decoder. */
             frame = schro_decoder_pull (decoder);
 
-            if (frame) {
+            if (frame)
                 ff_dirac_schro_queue_push_back(
                                              &p_schro_params->dec_frame_queue,
                                              frame);
-            }
             break;
         case SCHRO_DECODER_EOS:
             go = 0;

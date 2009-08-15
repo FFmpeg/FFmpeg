@@ -188,25 +188,22 @@ static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
                             avccontext->global_quality / (FF_QP2LAMBDA*10.0);
             /* if it is not default bitrate then send target rate. */
             if (avccontext->bit_rate >= 1000 &&
-                avccontext->bit_rate != 200000) {
+                avccontext->bit_rate != 200000)
                p_dirac_params->enc_ctx.enc_params.trate =
                              avccontext->bit_rate / 1000;
-            }
         } else
             p_dirac_params->enc_ctx.enc_params.lossless = 1;
     } else if (avccontext->bit_rate >= 1000)
         p_dirac_params->enc_ctx.enc_params.trate = avccontext->bit_rate / 1000;
 
     if ((preset > VIDEO_FORMAT_QCIF || preset < VIDEO_FORMAT_QSIF525) &&
-         avccontext->bit_rate == 200000) {
+        avccontext->bit_rate == 200000)
         p_dirac_params->enc_ctx.enc_params.trate = 0;
-    }
 
-    if (avccontext->flags & CODEC_FLAG_INTERLACED_ME) {
+    if (avccontext->flags & CODEC_FLAG_INTERLACED_ME)
         /* all material can be coded as interlaced or progressive
          * irrespective of the type of source material */
         p_dirac_params->enc_ctx.enc_params.picture_coding_mode = 1;
-    }
 
     p_dirac_params->p_encoder = dirac_encoder_init (&(p_dirac_params->enc_ctx),
                                                     verbose );

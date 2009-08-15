@@ -55,11 +55,9 @@ static enum PixelFormat GetFfmpegChromaFormat(dirac_chroma_t dirac_pix_fmt)
                       sizeof(ffmpeg_dirac_pixel_format_map[0]);
     int idx;
 
-    for (idx = 0; idx < num_formats; ++idx) {
-        if (ffmpeg_dirac_pixel_format_map[idx].dirac_pix_fmt == dirac_pix_fmt) {
+    for (idx = 0; idx < num_formats; ++idx)
+        if (ffmpeg_dirac_pixel_format_map[idx].dirac_pix_fmt == dirac_pix_fmt)
             return ffmpeg_dirac_pixel_format_map[idx].ff_pix_fmt;
-        }
-    }
     return PIX_FMT_NONE;
 }
 
