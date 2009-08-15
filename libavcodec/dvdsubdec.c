@@ -191,7 +191,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
 
     cmd_pos = READ_OFFSET(buf + cmd_pos);
 
-    while ((cmd_pos + 2 + offset_size) < buf_size) {
+    while (cmd_pos > 0 && cmd_pos < buf_size - 2 - offset_size) {
         date = AV_RB16(buf + cmd_pos);
         next_cmd_pos = READ_OFFSET(buf + cmd_pos + 2);
         dprintf(NULL, "cmd_pos=0x%04x next=0x%04x date=%d\n",
