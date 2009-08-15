@@ -80,11 +80,9 @@ static dirac_chroma_t GetDiracChromaFormat(enum PixelFormat ff_pix_fmt)
                       sizeof(ffmpeg_dirac_pixel_format_map[0]);
     int idx;
 
-    for (idx = 0; idx < num_formats; ++idx) {
-        if (ffmpeg_dirac_pixel_format_map[idx].ff_pix_fmt == ff_pix_fmt) {
+    for (idx = 0; idx < num_formats; ++idx)
+        if (ffmpeg_dirac_pixel_format_map[idx].ff_pix_fmt == ff_pix_fmt)
             return ffmpeg_dirac_pixel_format_map[idx].dirac_pix_fmt;
-        }
-    }
     return formatNK;
 }
 
