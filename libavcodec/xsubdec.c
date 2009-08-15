@@ -54,7 +54,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     GetBitContext gb;
 
     memset(sub, 0, sizeof(*sub));
-    sub->format = 0;
 
     // check that at least header fits
     if (buf_size < 27 + 7 * 2 + 4 * 3) {
@@ -84,12 +83,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     rlelen = bytestream_get_le16(&buf);
 
     // allocate sub and set values
-    if (!sub->rects) {
         sub->rects =  av_mallocz(sizeof(*sub->rects));
         sub->rects[0] = av_mallocz(sizeof(*sub->rects[0]));
         sub->num_rects = 1;
-    }
-    av_freep(&sub->rects[0]->pict.data[0]);
     sub->rects[0]->x = x; sub->rects[0]->y = y;
     sub->rects[0]->w = w; sub->rects[0]->h = h;
     sub->rects[0]->type = SUBTITLE_BITMAP;
