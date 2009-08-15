@@ -2917,10 +2917,10 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                 }
                 else
                 {
-                yuv2yuvXinC(
-                    vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
-                    vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
-                    alpSrcPtr, dest, uDest, vDest, aDest, dstW, chrDstW);
+                    yuv2yuvXinC(
+                        vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
+                        vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+                        alpSrcPtr, dest, uDest, vDest, aDest, dstW, chrDstW);
                 }
             }
             else
