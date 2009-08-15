@@ -261,7 +261,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
     int parse_code;
     int last_frame_in_sequence = 0;
 
-    if(data == NULL) {
+    if (!data) {
         /* Push end of sequence if not already signalled. */
         if (!p_schro_params->eos_signalled) {
             schro_encoder_end_of_stream(encoder);
