@@ -53,6 +53,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int w, h, x, y, rlelen, i;
     GetBitContext gb;
 
+    memset(sub, 0, sizeof(*sub));
     sub->format = 0;
 
     // check that at least header fits
