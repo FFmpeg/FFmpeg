@@ -173,11 +173,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
 
     if (buf_size < 10)
         return -1;
-    sub_header->rects = NULL;
-    sub_header->num_rects = 0;
-    sub_header->format = 0;
-    sub_header->start_display_time = 0;
-    sub_header->end_display_time = 0;
+    memset(sub_header, 0, sizeof(*sub_header));
 
     if (AV_RB16(buf) == 0) {   /* HD subpicture with 4-byte offsets */
         big_offsets = 1;
