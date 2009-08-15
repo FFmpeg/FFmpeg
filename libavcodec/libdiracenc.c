@@ -175,7 +175,7 @@ static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
     }
 
     /* Intra-only sequence */
-    if (avccontext->gop_size == 0 ) {
+    if (!avccontext->gop_size) {
         p_dirac_params->enc_ctx.enc_params.num_L1 = 0;
         if (avccontext->coder_type == FF_CODER_TYPE_VLC)
             p_dirac_params->enc_ctx.enc_params.using_ac = 0;
@@ -183,7 +183,7 @@ static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
         avccontext->has_b_frames = 1;
 
     if (avccontext->flags & CODEC_FLAG_QSCALE) {
-        if (avccontext->global_quality != 0) {
+        if (avccontext->global_quality) {
             p_dirac_params->enc_ctx.enc_params.qf =
                             avccontext->global_quality / (FF_QP2LAMBDA*10.0);
             /* if it is not default bitrate then send target rate. */
@@ -246,7 +246,7 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
     int go = 1;
     int last_frame_in_sequence = 0;
 
-    if (data == NULL) {
+    if (!data) {
         /* push end of sequence if not already signalled */
         if (!p_dirac_params->eos_signalled) {
             dirac_encoder_end_sequence( p_dirac_params->p_encoder );
@@ -358,7 +358,7 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
     p_next_output_frame =
           ff_dirac_schro_queue_pop(&p_dirac_params->enc_frame_queue);
 
-    if (p_next_output_frame == NULL)
+    if (!p_next_output_frame)
         return 0;
 
     memcpy(frame, p_next_output_frame->p_encbuf, p_next_output_frame->size);

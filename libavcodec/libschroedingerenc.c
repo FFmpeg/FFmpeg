@@ -145,7 +145,7 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
 
     avccontext->coded_frame = &p_schro_params->picture;
 
-    if (avccontext->gop_size == 0){
+    if (!avccontext->gop_size) {
         schro_encoder_setting_set_double (p_schro_params->encoder,
                                           "gop_structure",
                                           SCHRO_ENCODER_GOP_INTRA_ONLY);
@@ -164,7 +164,7 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
 
     /* FIXME - Need to handle SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY. */
     if (avccontext->flags & CODEC_FLAG_QSCALE) {
-        if (avccontext->global_quality == 0) {
+        if (!avccontext->global_quality) {
             /* lossless coding */
             schro_encoder_setting_set_double (p_schro_params->encoder,
                                           "rate_control",
@@ -366,7 +366,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
     p_frame_output =
                ff_dirac_schro_queue_pop (&p_schro_params->enc_frame_queue);
 
-    if (p_frame_output == NULL)
+    if (!p_frame_output)
         return 0;
 
     memcpy(frame, p_frame_output->p_encbuf, p_frame_output->size);

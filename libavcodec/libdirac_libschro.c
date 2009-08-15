@@ -86,12 +86,12 @@ int ff_dirac_schro_queue_push_back (FfmpegDiracSchroQueue *queue, void *p_data)
     FfmpegDiracSchroQueueElement *p_new =
                              av_mallocz(sizeof(FfmpegDiracSchroQueueElement));
 
-    if (p_new == NULL)
+    if (!p_new)
         return -1;
 
     p_new->data = p_data;
 
-    if (queue->p_head == NULL)
+    if (!queue->p_head)
         queue->p_head = p_new;
     else
         queue->p_tail->next = p_new;
@@ -105,7 +105,7 @@ void *ff_dirac_schro_queue_pop (FfmpegDiracSchroQueue *queue)
 {
     FfmpegDiracSchroQueueElement *top = queue->p_head;
 
-    if (top != NULL) {
+    if (top) {
         void *data = top->data;
         queue->p_head = queue->p_head->next;
         --queue->size;

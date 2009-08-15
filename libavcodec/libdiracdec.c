@@ -141,7 +141,7 @@ static int libdirac_decode_frame(AVCodecContext *avccontext,
                                            avccontext->height);
 
             /* allocate output buffer */
-            if (p_dirac_params->p_out_frame_buf == NULL)
+            if (!p_dirac_params->p_out_frame_buf)
                 p_dirac_params->p_out_frame_buf = av_malloc (pict_size);
             buffer[0] = p_dirac_params->p_out_frame_buf;
             buffer[1] = p_dirac_params->p_out_frame_buf +

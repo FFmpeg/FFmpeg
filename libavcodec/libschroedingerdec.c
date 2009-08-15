@@ -196,7 +196,7 @@ static void libschroedinger_handle_first_access_unit(AVCodecContext *avccontext)
     avccontext->time_base.den = p_schro_params->format->frame_rate_numerator;
     avccontext->time_base.num = p_schro_params->format->frame_rate_denominator;
 
-    if (p_schro_params->dec_pic.data[0] == NULL)
+    if (!p_schro_params->dec_pic.data[0])
     {
         avpicture_alloc(&p_schro_params->dec_pic,
                         avccontext->pix_fmt,
@@ -226,7 +226,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
     *data_size = 0;
 
     FfmpegSchroParseContextInit (&parse_ctx, buf, buf_size);
-    if (buf_size == 0) {
+    if (!buf_size) {
         if (!p_schro_params->eos_signalled) {
             state = schro_decoder_push_end_of_stream(decoder);
             p_schro_params->eos_signalled = 1;
@@ -300,7 +300,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
     /* Grab next frame to be returned from the top of the queue. */
     frame = ff_dirac_schro_queue_pop(&p_schro_params->dec_frame_queue);
 
-    if (frame != NULL) {
+    if (frame) {
         memcpy (p_schro_params->dec_pic.data[0],
                 frame->components[0].data,
                 frame->components[0].length);
