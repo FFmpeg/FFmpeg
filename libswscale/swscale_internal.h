@@ -64,7 +64,7 @@ typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[],
                        uint8_t* dst[], int dstStride[]);
 
 /* This struct should be aligned on at least a 32-byte boundary. */
-typedef struct SwsContext{
+typedef struct SwsContext {
     /**
      * info on struct for av_log
      */

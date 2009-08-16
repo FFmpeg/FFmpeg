@@ -23,7 +23,8 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
-static const char * sws_context_to_name(void * ptr) {
+static const char * sws_context_to_name(void * ptr)
+{
     return "swscaler";
 }
 

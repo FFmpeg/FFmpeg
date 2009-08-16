@@ -50,14 +50,15 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_YUVA420P    \
     )
 
-static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
+static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h)
+{
     int x,y;
     uint64_t ssd=0;
 
 //printf("%d %d\n", w, h);
 
-    for (y=0; y<h; y++){
-        for (x=0; x<w; x++){
+    for (y=0; y<h; y++) {
+        for (x=0; x<w; x++) {
             int d= src1[x + y*stride1] - src2[x + y*stride2];
             ssd+= d*d;
 //printf("%d", abs(src1[x + y*stride1] - src2[x + y*stride2])/26 );
@@ -70,7 +71,8 @@ static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, i
 // test by ref -> src -> dst -> out & compare out against ref
 // ref & out are YV12
 static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat, int dstFormat,
-                  int srcW, int srcH, int dstW, int dstH, int flags){
+                  int srcW, int srcH, int dstW, int dstH, int flags)
+{
     uint8_t *src[4] = {0};
     uint8_t *dst[4] = {0};
     uint8_t *out[4] = {0};
@@ -82,7 +84,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
     int res;
 
     res = 0;
-    for (i=0; i<4; i++){
+    for (i=0; i<4; i++) {
         // avoid stride % bpp != 0
         if (srcFormat==PIX_FMT_RGB24 || srcFormat==PIX_FMT_BGR24)
             srcStride[i]= srcW*3;
@@ -169,7 +171,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
     sws_freeContext(dstContext);
     sws_freeContext(outContext);
 
-    for (i=0; i<4; i++){
+    for (i=0; i<4; i++) {
         free(src[i]);
         free(dst[i]);
         free(out[i]);
@@ -178,7 +180,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
     return res;
 }
 
-static void selfTest(uint8_t *src[4], int stride[4], int w, int h){
+static void selfTest(uint8_t *src[4], int stride[4], int w, int h)
+{
     enum PixelFormat srcFormat, dstFormat;
     int srcW, srcH, dstW, dstH;
     int flags;
@@ -206,7 +209,8 @@ static void selfTest(uint8_t *src[4], int stride[4], int w, int h){
 #define W 96
 #define H 96
 
-int main(int argc, char **argv){
+int main(int argc, char **argv)
+{
     uint8_t *rgb_data = malloc (W*H*4);
     uint8_t *rgb_src[3]= {rgb_data, NULL, NULL};
     int rgb_stride[3]={4*W, 0, 0};
@@ -221,8 +225,8 @@ int main(int argc, char **argv){
 
     av_lfg_init(&rand, 1);
 
-    for (y=0; y<H; y++){
-        for (x=0; x<W*4; x++){
+    for (y=0; y<H; y++) {
+        for (x=0; x<W*4; x++) {
             rgb_data[ x + y*4*W]= av_lfg_get(&rand);
         }
     }

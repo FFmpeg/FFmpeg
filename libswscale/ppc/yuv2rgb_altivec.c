@@ -714,7 +714,7 @@ SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c)
         if ((c->srcH & 0x1) != 0)
             return NULL;
 
-        switch(c->dstFormat){
+        switch(c->dstFormat) {
         case PIX_FMT_RGB24:
             av_log(c, AV_LOG_WARNING, "ALTIVEC: Color Space RGB24\n");
             return altivec_yuv2_rgb24;
@@ -738,7 +738,7 @@ SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c)
         break;
 
     case PIX_FMT_UYVY422:
-        switch(c->dstFormat){
+        switch(c->dstFormat) {
         case PIX_FMT_BGR32:
             av_log(c, AV_LOG_WARNING, "ALTIVEC: Color Space UYVY -> RGB32\n");
             return altivec_uyvy_rgb32;
@@ -800,7 +800,7 @@ ff_yuv2packedX_altivec(SwsContext *c,
 
     out = (vector unsigned char *)dest;
 
-    for (i=0; i<dstW; i+=16){
+    for (i=0; i<dstW; i+=16) {
         Y0 = RND;
         Y1 = RND;
         /* extract 16 coeffs from lumSrc */

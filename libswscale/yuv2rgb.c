@@ -92,7 +92,8 @@ const int32_t ff_yuv2rgb_coeffs[8][4] = {
 
 #define YUV2RGBFUNC(func_name, dst_type, alpha) \
 static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, \
-                     int srcSliceH, uint8_t* dst[], int dstStride[]){\
+                     int srcSliceH, uint8_t* dst[], int dstStride[]) \
+{\
     int y;\
 \
     if (!alpha && c->srcFormat == PIX_FMT_YUV422P) {\
@@ -110,7 +111,7 @@ static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSlic
         uint8_t *pv = src[2] + (y>>1)*srcStride[2];\
         uint8_t av_unused *pa_1, *pa_2;\
         unsigned int h_size = c->dstW>>3;\
-        if (alpha){\
+        if (alpha) {\
             pa_1 = src[3] + y*srcStride[3];\
             pa_2 = pa_1 + srcStride[3];\
         }\

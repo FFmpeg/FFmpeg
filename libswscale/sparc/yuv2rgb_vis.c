@@ -82,7 +82,8 @@
 
 // FIXME: must be changed to set alpha to 255 instead of 0
 static int vis_420P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-                           int srcSliceH, uint8_t* dst[], int dstStride[]){
+                           int srcSliceH, uint8_t* dst[], int dstStride[])
+{
     int y, out1, out2, out3, out4, out5, out6;
 
     for(y=0;y < srcSliceH;++y) {
@@ -134,7 +135,8 @@ static int vis_420P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int s
 
 // FIXME: must be changed to set alpha to 255 instead of 0
 static int vis_422P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-                           int srcSliceH, uint8_t* dst[], int dstStride[]){
+                           int srcSliceH, uint8_t* dst[], int dstStride[])
+{
     int y, out1, out2, out3, out4, out5, out6;
 
     for(y=0;y < srcSliceH;++y) {
@@ -184,7 +186,8 @@ static int vis_422P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int s
     return srcSliceH;
 }
 
-SwsFunc ff_yuv2rgb_init_vis(SwsContext *c){
+SwsFunc ff_yuv2rgb_init_vis(SwsContext *c)
+{
     c->sparc_coeffs[5]=c->yCoeff;
     c->sparc_coeffs[6]=c->vgCoeff;
     c->sparc_coeffs[7]=c->vrCoeff;
