@@ -52,19 +52,19 @@ static inline void AV_WN32(void *p, uint32_t v)
 static inline uint64_t AV_RN64(const void *p)
 {
     uint64_t v;
-    __asm__ ("lwl %0, %1  \n\t"
-             "lwr %0, %2  \n\t"
+    __asm__ ("ldl %0, %1  \n\t"
+             "ldr %0, %2  \n\t"
              : "=&r"(v)
-             : "m"(*(const uint64_t *)((const uint8_t *)p+3*!HAVE_BIGENDIAN)),
-               "m"(*(const uint64_t *)((const uint8_t *)p+3*HAVE_BIGENDIAN)));
+             : "m"(*(const uint64_t *)((const uint8_t *)p+7*!HAVE_BIGENDIAN)),
+               "m"(*(const uint64_t *)((const uint8_t *)p+7*HAVE_BIGENDIAN)));
     return v;
 }
 
 #define AV_WN64 AV_WN64
 static inline void AV_WN64(void *p, uint64_t v)
 {
-    __asm__ ("swl %2, %0  \n\t"
-             "swr %2, %1  \n\t"
+    __asm__ ("sdl %2, %0  \n\t"
+             "sdr %2, %1  \n\t"
              : "=m"(*(uint64_t *)((uint8_t *)p+7*!HAVE_BIGENDIAN)),
                "=m"(*(uint64_t *)((uint8_t *)p+7*HAVE_BIGENDIAN))
              : "r"(v));
