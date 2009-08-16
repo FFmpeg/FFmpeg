@@ -57,100 +57,100 @@
 
 #define YSCALEYUV2YV12X(x, offset, dest, width) \
     __asm__ volatile(\
-    "xor                          %%"REG_a", %%"REG_a"  \n\t"\
-    "movq             "VROUNDER_OFFSET"(%0), %%mm3      \n\t"\
-    "movq                             %%mm3, %%mm4      \n\t"\
-    "lea                     " offset "(%0), %%"REG_d"  \n\t"\
-    "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-    ASMALIGN(4) /* FIXME Unroll? */\
-    "1:                                                 \n\t"\
-    "movq                      8(%%"REG_d"), %%mm0      \n\t" /* filterCoeff */\
-    "movq   "  x "(%%"REG_S", %%"REG_a", 2), %%mm2      \n\t" /* srcData */\
-    "movq 8+"  x "(%%"REG_S", %%"REG_a", 2), %%mm5      \n\t" /* srcData */\
-    "add                                $16, %%"REG_d"  \n\t"\
-    "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-    "test                         %%"REG_S", %%"REG_S"  \n\t"\
-    "pmulhw                           %%mm0, %%mm2      \n\t"\
-    "pmulhw                           %%mm0, %%mm5      \n\t"\
-    "paddw                            %%mm2, %%mm3      \n\t"\
-    "paddw                            %%mm5, %%mm4      \n\t"\
-    " jnz                                1b             \n\t"\
-    "psraw                               $3, %%mm3      \n\t"\
-    "psraw                               $3, %%mm4      \n\t"\
-    "packuswb                         %%mm4, %%mm3      \n\t"\
-    MOVNTQ(%%mm3, (%1, %%REGa))\
-    "add                                 $8, %%"REG_a"  \n\t"\
-    "cmp                                 %2, %%"REG_a"  \n\t"\
-    "movq             "VROUNDER_OFFSET"(%0), %%mm3      \n\t"\
-    "movq                             %%mm3, %%mm4      \n\t"\
-    "lea                     " offset "(%0), %%"REG_d"  \n\t"\
-    "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-    "jb                                  1b             \n\t"\
-    :: "r" (&c->redDither),\
-    "r" (dest), "g" (width)\
-    : "%"REG_a, "%"REG_d, "%"REG_S\
+        "xor                          %%"REG_a", %%"REG_a"  \n\t"\
+        "movq             "VROUNDER_OFFSET"(%0), %%mm3      \n\t"\
+        "movq                             %%mm3, %%mm4      \n\t"\
+        "lea                     " offset "(%0), %%"REG_d"  \n\t"\
+        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        ASMALIGN(4) /* FIXME Unroll? */\
+        "1:                                                 \n\t"\
+        "movq                      8(%%"REG_d"), %%mm0      \n\t" /* filterCoeff */\
+        "movq   "  x "(%%"REG_S", %%"REG_a", 2), %%mm2      \n\t" /* srcData */\
+        "movq 8+"  x "(%%"REG_S", %%"REG_a", 2), %%mm5      \n\t" /* srcData */\
+        "add                                $16, %%"REG_d"  \n\t"\
+        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        "test                         %%"REG_S", %%"REG_S"  \n\t"\
+        "pmulhw                           %%mm0, %%mm2      \n\t"\
+        "pmulhw                           %%mm0, %%mm5      \n\t"\
+        "paddw                            %%mm2, %%mm3      \n\t"\
+        "paddw                            %%mm5, %%mm4      \n\t"\
+        " jnz                                1b             \n\t"\
+        "psraw                               $3, %%mm3      \n\t"\
+        "psraw                               $3, %%mm4      \n\t"\
+        "packuswb                         %%mm4, %%mm3      \n\t"\
+        MOVNTQ(%%mm3, (%1, %%REGa))\
+        "add                                 $8, %%"REG_a"  \n\t"\
+        "cmp                                 %2, %%"REG_a"  \n\t"\
+        "movq             "VROUNDER_OFFSET"(%0), %%mm3      \n\t"\
+        "movq                             %%mm3, %%mm4      \n\t"\
+        "lea                     " offset "(%0), %%"REG_d"  \n\t"\
+        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        "jb                                  1b             \n\t"\
+        :: "r" (&c->redDither),\
+        "r" (dest), "g" (width)\
+        : "%"REG_a, "%"REG_d, "%"REG_S\
     );
 
 #define YSCALEYUV2YV12X_ACCURATE(x, offset, dest, width) \
     __asm__ volatile(\
-    "lea                     " offset "(%0), %%"REG_d"  \n\t"\
-    "xor                          %%"REG_a", %%"REG_a"  \n\t"\
-    "pxor                             %%mm4, %%mm4      \n\t"\
-    "pxor                             %%mm5, %%mm5      \n\t"\
-    "pxor                             %%mm6, %%mm6      \n\t"\
-    "pxor                             %%mm7, %%mm7      \n\t"\
-    "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-    ASMALIGN(4) \
-    "1:                                                 \n\t"\
-    "movq   "  x "(%%"REG_S", %%"REG_a", 2), %%mm0      \n\t" /* srcData */\
-    "movq 8+"  x "(%%"REG_S", %%"REG_a", 2), %%mm2      \n\t" /* srcData */\
-    "mov        "STR(APCK_PTR2)"(%%"REG_d"), %%"REG_S"  \n\t"\
-    "movq   "  x "(%%"REG_S", %%"REG_a", 2), %%mm1      \n\t" /* srcData */\
-    "movq                             %%mm0, %%mm3      \n\t"\
-    "punpcklwd                        %%mm1, %%mm0      \n\t"\
-    "punpckhwd                        %%mm1, %%mm3      \n\t"\
-    "movq       "STR(APCK_COEF)"(%%"REG_d"), %%mm1      \n\t" /* filterCoeff */\
-    "pmaddwd                          %%mm1, %%mm0      \n\t"\
-    "pmaddwd                          %%mm1, %%mm3      \n\t"\
-    "paddd                            %%mm0, %%mm4      \n\t"\
-    "paddd                            %%mm3, %%mm5      \n\t"\
-    "movq 8+"  x "(%%"REG_S", %%"REG_a", 2), %%mm3      \n\t" /* srcData */\
-    "mov        "STR(APCK_SIZE)"(%%"REG_d"), %%"REG_S"  \n\t"\
-    "add                  $"STR(APCK_SIZE)", %%"REG_d"  \n\t"\
-    "test                         %%"REG_S", %%"REG_S"  \n\t"\
-    "movq                             %%mm2, %%mm0      \n\t"\
-    "punpcklwd                        %%mm3, %%mm2      \n\t"\
-    "punpckhwd                        %%mm3, %%mm0      \n\t"\
-    "pmaddwd                          %%mm1, %%mm2      \n\t"\
-    "pmaddwd                          %%mm1, %%mm0      \n\t"\
-    "paddd                            %%mm2, %%mm6      \n\t"\
-    "paddd                            %%mm0, %%mm7      \n\t"\
-    " jnz                                1b             \n\t"\
-    "psrad                              $16, %%mm4      \n\t"\
-    "psrad                              $16, %%mm5      \n\t"\
-    "psrad                              $16, %%mm6      \n\t"\
-    "psrad                              $16, %%mm7      \n\t"\
-    "movq             "VROUNDER_OFFSET"(%0), %%mm0      \n\t"\
-    "packssdw                         %%mm5, %%mm4      \n\t"\
-    "packssdw                         %%mm7, %%mm6      \n\t"\
-    "paddw                            %%mm0, %%mm4      \n\t"\
-    "paddw                            %%mm0, %%mm6      \n\t"\
-    "psraw                               $3, %%mm4      \n\t"\
-    "psraw                               $3, %%mm6      \n\t"\
-    "packuswb                         %%mm6, %%mm4      \n\t"\
-    MOVNTQ(%%mm4, (%1, %%REGa))\
-    "add                                 $8, %%"REG_a"  \n\t"\
-    "cmp                                 %2, %%"REG_a"  \n\t"\
-    "lea                     " offset "(%0), %%"REG_d"  \n\t"\
-    "pxor                             %%mm4, %%mm4      \n\t"\
-    "pxor                             %%mm5, %%mm5      \n\t"\
-    "pxor                             %%mm6, %%mm6      \n\t"\
-    "pxor                             %%mm7, %%mm7      \n\t"\
-    "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-    "jb                                  1b             \n\t"\
-    :: "r" (&c->redDither),\
-    "r" (dest), "g" (width)\
-    : "%"REG_a, "%"REG_d, "%"REG_S\
+        "lea                     " offset "(%0), %%"REG_d"  \n\t"\
+        "xor                          %%"REG_a", %%"REG_a"  \n\t"\
+        "pxor                             %%mm4, %%mm4      \n\t"\
+        "pxor                             %%mm5, %%mm5      \n\t"\
+        "pxor                             %%mm6, %%mm6      \n\t"\
+        "pxor                             %%mm7, %%mm7      \n\t"\
+        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        ASMALIGN(4) \
+        "1:                                                 \n\t"\
+        "movq   "  x "(%%"REG_S", %%"REG_a", 2), %%mm0      \n\t" /* srcData */\
+        "movq 8+"  x "(%%"REG_S", %%"REG_a", 2), %%mm2      \n\t" /* srcData */\
+        "mov        "STR(APCK_PTR2)"(%%"REG_d"), %%"REG_S"  \n\t"\
+        "movq   "  x "(%%"REG_S", %%"REG_a", 2), %%mm1      \n\t" /* srcData */\
+        "movq                             %%mm0, %%mm3      \n\t"\
+        "punpcklwd                        %%mm1, %%mm0      \n\t"\
+        "punpckhwd                        %%mm1, %%mm3      \n\t"\
+        "movq       "STR(APCK_COEF)"(%%"REG_d"), %%mm1      \n\t" /* filterCoeff */\
+        "pmaddwd                          %%mm1, %%mm0      \n\t"\
+        "pmaddwd                          %%mm1, %%mm3      \n\t"\
+        "paddd                            %%mm0, %%mm4      \n\t"\
+        "paddd                            %%mm3, %%mm5      \n\t"\
+        "movq 8+"  x "(%%"REG_S", %%"REG_a", 2), %%mm3      \n\t" /* srcData */\
+        "mov        "STR(APCK_SIZE)"(%%"REG_d"), %%"REG_S"  \n\t"\
+        "add                  $"STR(APCK_SIZE)", %%"REG_d"  \n\t"\
+        "test                         %%"REG_S", %%"REG_S"  \n\t"\
+        "movq                             %%mm2, %%mm0      \n\t"\
+        "punpcklwd                        %%mm3, %%mm2      \n\t"\
+        "punpckhwd                        %%mm3, %%mm0      \n\t"\
+        "pmaddwd                          %%mm1, %%mm2      \n\t"\
+        "pmaddwd                          %%mm1, %%mm0      \n\t"\
+        "paddd                            %%mm2, %%mm6      \n\t"\
+        "paddd                            %%mm0, %%mm7      \n\t"\
+        " jnz                                1b             \n\t"\
+        "psrad                              $16, %%mm4      \n\t"\
+        "psrad                              $16, %%mm5      \n\t"\
+        "psrad                              $16, %%mm6      \n\t"\
+        "psrad                              $16, %%mm7      \n\t"\
+        "movq             "VROUNDER_OFFSET"(%0), %%mm0      \n\t"\
+        "packssdw                         %%mm5, %%mm4      \n\t"\
+        "packssdw                         %%mm7, %%mm6      \n\t"\
+        "paddw                            %%mm0, %%mm4      \n\t"\
+        "paddw                            %%mm0, %%mm6      \n\t"\
+        "psraw                               $3, %%mm4      \n\t"\
+        "psraw                               $3, %%mm6      \n\t"\
+        "packuswb                         %%mm6, %%mm4      \n\t"\
+        MOVNTQ(%%mm4, (%1, %%REGa))\
+        "add                                 $8, %%"REG_a"  \n\t"\
+        "cmp                                 %2, %%"REG_a"  \n\t"\
+        "lea                     " offset "(%0), %%"REG_d"  \n\t"\
+        "pxor                             %%mm4, %%mm4      \n\t"\
+        "pxor                             %%mm5, %%mm5      \n\t"\
+        "pxor                             %%mm6, %%mm6      \n\t"\
+        "pxor                             %%mm7, %%mm7      \n\t"\
+        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        "jb                                  1b             \n\t"\
+        :: "r" (&c->redDither),\
+        "r" (dest), "g" (width)\
+        : "%"REG_a, "%"REG_d, "%"REG_S\
     );
 
 #define YSCALEYUV2YV121 \
@@ -193,27 +193,27 @@
 */
 #define YSCALEYUV2PACKEDX_UV \
     __asm__ volatile(\
-    "xor                   %%"REG_a", %%"REG_a"     \n\t"\
-    ASMALIGN(4)\
-    "nop                                            \n\t"\
-    "1:                                             \n\t"\
-    "lea "CHR_MMX_FILTER_OFFSET"(%0), %%"REG_d"     \n\t"\
-    "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
-    "movq      "VROUNDER_OFFSET"(%0), %%mm3         \n\t"\
-    "movq                      %%mm3, %%mm4         \n\t"\
-    ASMALIGN(4)\
-    "2:                                             \n\t"\
-    "movq               8(%%"REG_d"), %%mm0         \n\t" /* filterCoeff */\
-    "movq     (%%"REG_S", %%"REG_a"), %%mm2         \n\t" /* UsrcData */\
-    "movq "AV_STRINGIFY(VOF)"(%%"REG_S", %%"REG_a"), %%mm5         \n\t" /* VsrcData */\
-    "add                         $16, %%"REG_d"     \n\t"\
-    "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
-    "pmulhw                    %%mm0, %%mm2         \n\t"\
-    "pmulhw                    %%mm0, %%mm5         \n\t"\
-    "paddw                     %%mm2, %%mm3         \n\t"\
-    "paddw                     %%mm5, %%mm4         \n\t"\
-    "test                  %%"REG_S", %%"REG_S"     \n\t"\
-    " jnz                         2b                \n\t"\
+        "xor                   %%"REG_a", %%"REG_a"     \n\t"\
+        ASMALIGN(4)\
+        "nop                                            \n\t"\
+        "1:                                             \n\t"\
+        "lea "CHR_MMX_FILTER_OFFSET"(%0), %%"REG_d"     \n\t"\
+        "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
+        "movq      "VROUNDER_OFFSET"(%0), %%mm3         \n\t"\
+        "movq                      %%mm3, %%mm4         \n\t"\
+        ASMALIGN(4)\
+        "2:                                             \n\t"\
+        "movq               8(%%"REG_d"), %%mm0         \n\t" /* filterCoeff */\
+        "movq     (%%"REG_S", %%"REG_a"), %%mm2         \n\t" /* UsrcData */\
+        "movq "AV_STRINGIFY(VOF)"(%%"REG_S", %%"REG_a"), %%mm5         \n\t" /* VsrcData */\
+        "add                         $16, %%"REG_d"     \n\t"\
+        "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
+        "pmulhw                    %%mm0, %%mm2         \n\t"\
+        "pmulhw                    %%mm0, %%mm5         \n\t"\
+        "paddw                     %%mm2, %%mm3         \n\t"\
+        "paddw                     %%mm5, %%mm4         \n\t"\
+        "test                  %%"REG_S", %%"REG_S"     \n\t"\
+        " jnz                         2b                \n\t"\
 
 #define YSCALEYUV2PACKEDX_YA(offset,coeff,src1,src2,dst1,dst2) \
     "lea                "offset"(%0), %%"REG_d"     \n\t"\
@@ -238,62 +238,62 @@
     YSCALEYUV2PACKEDX_UV \
     YSCALEYUV2PACKEDX_YA(LUM_MMX_FILTER_OFFSET,%%mm0,%%mm2,%%mm5,%%mm1,%%mm7) \
 
-#define YSCALEYUV2PACKEDX_END                 \
-    :: "r" (&c->redDither),                   \
-        "m" (dummy), "m" (dummy), "m" (dummy),\
-        "r" (dest), "m" (dstW)                \
-    : "%"REG_a, "%"REG_d, "%"REG_S            \
+#define YSCALEYUV2PACKEDX_END                     \
+        :: "r" (&c->redDither),                   \
+            "m" (dummy), "m" (dummy), "m" (dummy),\
+            "r" (dest), "m" (dstW)                \
+        : "%"REG_a, "%"REG_d, "%"REG_S            \
     );
 
 #define YSCALEYUV2PACKEDX_ACCURATE_UV \
     __asm__ volatile(\
-    "xor %%"REG_a", %%"REG_a"                       \n\t"\
-    ASMALIGN(4)\
-    "nop                                            \n\t"\
-    "1:                                             \n\t"\
-    "lea "CHR_MMX_FILTER_OFFSET"(%0), %%"REG_d"     \n\t"\
-    "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
-    "pxor                      %%mm4, %%mm4         \n\t"\
-    "pxor                      %%mm5, %%mm5         \n\t"\
-    "pxor                      %%mm6, %%mm6         \n\t"\
-    "pxor                      %%mm7, %%mm7         \n\t"\
-    ASMALIGN(4)\
-    "2:                                             \n\t"\
-    "movq     (%%"REG_S", %%"REG_a"), %%mm0         \n\t" /* UsrcData */\
-    "movq "AV_STRINGIFY(VOF)"(%%"REG_S", %%"REG_a"), %%mm2         \n\t" /* VsrcData */\
-    "mov "STR(APCK_PTR2)"(%%"REG_d"), %%"REG_S"     \n\t"\
-    "movq     (%%"REG_S", %%"REG_a"), %%mm1         \n\t" /* UsrcData */\
-    "movq                      %%mm0, %%mm3         \n\t"\
-    "punpcklwd                 %%mm1, %%mm0         \n\t"\
-    "punpckhwd                 %%mm1, %%mm3         \n\t"\
-    "movq "STR(APCK_COEF)"(%%"REG_d"),%%mm1         \n\t" /* filterCoeff */\
-    "pmaddwd                   %%mm1, %%mm0         \n\t"\
-    "pmaddwd                   %%mm1, %%mm3         \n\t"\
-    "paddd                     %%mm0, %%mm4         \n\t"\
-    "paddd                     %%mm3, %%mm5         \n\t"\
-    "movq "AV_STRINGIFY(VOF)"(%%"REG_S", %%"REG_a"), %%mm3         \n\t" /* VsrcData */\
-    "mov "STR(APCK_SIZE)"(%%"REG_d"), %%"REG_S"     \n\t"\
-    "add           $"STR(APCK_SIZE)", %%"REG_d"     \n\t"\
-    "test                  %%"REG_S", %%"REG_S"     \n\t"\
-    "movq                      %%mm2, %%mm0         \n\t"\
-    "punpcklwd                 %%mm3, %%mm2         \n\t"\
-    "punpckhwd                 %%mm3, %%mm0         \n\t"\
-    "pmaddwd                   %%mm1, %%mm2         \n\t"\
-    "pmaddwd                   %%mm1, %%mm0         \n\t"\
-    "paddd                     %%mm2, %%mm6         \n\t"\
-    "paddd                     %%mm0, %%mm7         \n\t"\
-    " jnz                         2b                \n\t"\
-    "psrad                       $16, %%mm4         \n\t"\
-    "psrad                       $16, %%mm5         \n\t"\
-    "psrad                       $16, %%mm6         \n\t"\
-    "psrad                       $16, %%mm7         \n\t"\
-    "movq      "VROUNDER_OFFSET"(%0), %%mm0         \n\t"\
-    "packssdw                  %%mm5, %%mm4         \n\t"\
-    "packssdw                  %%mm7, %%mm6         \n\t"\
-    "paddw                     %%mm0, %%mm4         \n\t"\
-    "paddw                     %%mm0, %%mm6         \n\t"\
-    "movq                      %%mm4, "U_TEMP"(%0)  \n\t"\
-    "movq                      %%mm6, "V_TEMP"(%0)  \n\t"\
+        "xor %%"REG_a", %%"REG_a"                       \n\t"\
+        ASMALIGN(4)\
+        "nop                                            \n\t"\
+        "1:                                             \n\t"\
+        "lea "CHR_MMX_FILTER_OFFSET"(%0), %%"REG_d"     \n\t"\
+        "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
+        "pxor                      %%mm4, %%mm4         \n\t"\
+        "pxor                      %%mm5, %%mm5         \n\t"\
+        "pxor                      %%mm6, %%mm6         \n\t"\
+        "pxor                      %%mm7, %%mm7         \n\t"\
+        ASMALIGN(4)\
+        "2:                                             \n\t"\
+        "movq     (%%"REG_S", %%"REG_a"), %%mm0         \n\t" /* UsrcData */\
+        "movq "AV_STRINGIFY(VOF)"(%%"REG_S", %%"REG_a"), %%mm2         \n\t" /* VsrcData */\
+        "mov "STR(APCK_PTR2)"(%%"REG_d"), %%"REG_S"     \n\t"\
+        "movq     (%%"REG_S", %%"REG_a"), %%mm1         \n\t" /* UsrcData */\
+        "movq                      %%mm0, %%mm3         \n\t"\
+        "punpcklwd                 %%mm1, %%mm0         \n\t"\
+        "punpckhwd                 %%mm1, %%mm3         \n\t"\
+        "movq "STR(APCK_COEF)"(%%"REG_d"),%%mm1         \n\t" /* filterCoeff */\
+        "pmaddwd                   %%mm1, %%mm0         \n\t"\
+        "pmaddwd                   %%mm1, %%mm3         \n\t"\
+        "paddd                     %%mm0, %%mm4         \n\t"\
+        "paddd                     %%mm3, %%mm5         \n\t"\
+        "movq "AV_STRINGIFY(VOF)"(%%"REG_S", %%"REG_a"), %%mm3         \n\t" /* VsrcData */\
+        "mov "STR(APCK_SIZE)"(%%"REG_d"), %%"REG_S"     \n\t"\
+        "add           $"STR(APCK_SIZE)", %%"REG_d"     \n\t"\
+        "test                  %%"REG_S", %%"REG_S"     \n\t"\
+        "movq                      %%mm2, %%mm0         \n\t"\
+        "punpcklwd                 %%mm3, %%mm2         \n\t"\
+        "punpckhwd                 %%mm3, %%mm0         \n\t"\
+        "pmaddwd                   %%mm1, %%mm2         \n\t"\
+        "pmaddwd                   %%mm1, %%mm0         \n\t"\
+        "paddd                     %%mm2, %%mm6         \n\t"\
+        "paddd                     %%mm0, %%mm7         \n\t"\
+        " jnz                         2b                \n\t"\
+        "psrad                       $16, %%mm4         \n\t"\
+        "psrad                       $16, %%mm5         \n\t"\
+        "psrad                       $16, %%mm6         \n\t"\
+        "psrad                       $16, %%mm7         \n\t"\
+        "movq      "VROUNDER_OFFSET"(%0), %%mm0         \n\t"\
+        "packssdw                  %%mm5, %%mm4         \n\t"\
+        "packssdw                  %%mm7, %%mm6         \n\t"\
+        "paddw                     %%mm0, %%mm4         \n\t"\
+        "paddw                     %%mm0, %%mm6         \n\t"\
+        "movq                      %%mm4, "U_TEMP"(%0)  \n\t"\
+        "movq                      %%mm6, "V_TEMP"(%0)  \n\t"\
 
 #define YSCALEYUV2PACKEDX_ACCURATE_YA(offset) \
     "lea                "offset"(%0), %%"REG_d"     \n\t"\
@@ -351,14 +351,14 @@
     "movq            %%mm4, %%mm5       \n\t" /* (V-128)8*/\
     "pmulhw "UG_COEFF"(%0), %%mm3       \n\t"\
     "pmulhw "VG_COEFF"(%0), %%mm4       \n\t"\
-/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
+    /* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
     "pmulhw "UB_COEFF"(%0), %%mm2       \n\t"\
     "pmulhw "VR_COEFF"(%0), %%mm5       \n\t"\
     "psubw  "Y_OFFSET"(%0), %%mm1       \n\t" /* 8(Y-16)*/\
     "psubw  "Y_OFFSET"(%0), %%mm7       \n\t" /* 8(Y-16)*/\
     "pmulhw  "Y_COEFF"(%0), %%mm1       \n\t"\
     "pmulhw  "Y_COEFF"(%0), %%mm7       \n\t"\
-/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
+    /* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
     "paddw           %%mm3, %%mm4       \n\t"\
     "movq            %%mm2, %%mm0       \n\t"\
     "movq            %%mm5, %%mm6       \n\t"\
@@ -1221,11 +1221,11 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
 #if COMPILE_TEMPLATE_MMX
     if(!(c->flags & SWS_BITEXACT)) {
         switch(c->dstFormat) {
-            //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
-            case PIX_FMT_RGB32:
-                if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+        //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
+        case PIX_FMT_RGB32:
+            if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
 #if ARCH_X86_64
-                    __asm__ volatile(
+                __asm__ volatile(
                     YSCALEYUV2RGB(%%REGBP, %5)
                     YSCALEYUV2RGB_YA(%%REGBP, %5, %6, %7)
                     "psraw                  $3, %%mm1       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
@@ -1237,11 +1237,11 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                     "a" (&c->redDither)
                     ,"r" (abuf0), "r" (abuf1)
                     : "%"REG_BP
-                    );
+                );
 #else
-                    *(uint16_t **)(&c->u_temp)=abuf0;
-                    *(uint16_t **)(&c->v_temp)=abuf1;
-                    __asm__ volatile(
+                *(uint16_t **)(&c->u_temp)=abuf0;
+                *(uint16_t **)(&c->v_temp)=abuf1;
+                __asm__ volatile(
                     "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                     "mov        %4, %%"REG_b"               \n\t"
                     "push %%"REG_BP"                        \n\t"
@@ -1262,10 +1262,10 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
 
                     :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                     "a" (&c->redDither)
-                    );
+                );
 #endif
-                } else {
-                    __asm__ volatile(
+            } else {
+                __asm__ volatile(
                     "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                     "mov        %4, %%"REG_b"               \n\t"
                     "push %%"REG_BP"                        \n\t"
@@ -1277,11 +1277,11 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
 
                     :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                     "a" (&c->redDither)
-                    );
-                }
-                return;
-            case PIX_FMT_BGR24:
-                __asm__ volatile(
+                );
+            }
+            return;
+        case PIX_FMT_BGR24:
+            __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1292,10 +1292,10 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
                 :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                 "a" (&c->redDither)
-                );
-                return;
-            case PIX_FMT_RGB555:
-                __asm__ volatile(
+            );
+            return;
+        case PIX_FMT_RGB555:
+            __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1314,10 +1314,10 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
 
                 :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                 "a" (&c->redDither)
-                );
-                return;
-            case PIX_FMT_RGB565:
-                __asm__ volatile(
+            );
+            return;
+        case PIX_FMT_RGB565:
+            __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1335,10 +1335,10 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
                 :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                 "a" (&c->redDither)
-                );
-                return;
-            case PIX_FMT_YUYV422:
-                __asm__ volatile(
+            );
+            return;
+        case PIX_FMT_YUYV422:
+            __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov %4, %%"REG_b"                        \n\t"
                 "push %%"REG_BP"                        \n\t"
@@ -1348,9 +1348,9 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
                 :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                 "a" (&c->redDither)
-                );
-                return;
-            default: break;
+            );
+            return;
+        default: break;
         }
     }
 #endif //COMPILE_TEMPLATE_MMX
@@ -1381,104 +1381,104 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
             case PIX_FMT_RGB32:
                 if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
                     __asm__ volatile(
-                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                    "mov        %4, %%"REG_b"               \n\t"
-                    "push %%"REG_BP"                        \n\t"
-                    YSCALEYUV2RGB1(%%REGBP, %5)
-                    YSCALEYUV2RGB1_ALPHA(%%REGBP)
-                    WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-                    "pop %%"REG_BP"                         \n\t"
-                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                        "mov        %4, %%"REG_b"               \n\t"
+                        "push %%"REG_BP"                        \n\t"
+                        YSCALEYUV2RGB1(%%REGBP, %5)
+                        YSCALEYUV2RGB1_ALPHA(%%REGBP)
+                        WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+                        "pop %%"REG_BP"                         \n\t"
+                        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                    :: "c" (buf0), "d" (abuf0), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                    "a" (&c->redDither)
+                        :: "c" (buf0), "d" (abuf0), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                        "a" (&c->redDither)
                     );
                 } else {
                     __asm__ volatile(
-                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                    "mov        %4, %%"REG_b"               \n\t"
-                    "push %%"REG_BP"                        \n\t"
-                    YSCALEYUV2RGB1(%%REGBP, %5)
-                    "pcmpeqd %%mm7, %%mm7                   \n\t"
-                    WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-                    "pop %%"REG_BP"                         \n\t"
-                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                        "mov        %4, %%"REG_b"               \n\t"
+                        "push %%"REG_BP"                        \n\t"
+                        YSCALEYUV2RGB1(%%REGBP, %5)
+                        "pcmpeqd %%mm7, %%mm7                   \n\t"
+                        WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+                        "pop %%"REG_BP"                         \n\t"
+                        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                    "a" (&c->redDither)
+                        :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                        "a" (&c->redDither)
                     );
                 }
                 return;
             case PIX_FMT_BGR24:
                 __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1(%%REGBP, %5)
-                "pxor    %%mm7, %%mm7                   \n\t"
-                WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2RGB1(%%REGBP, %5)
+                    "pxor    %%mm7, %%mm7                   \n\t"
+                    WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                "a" (&c->redDither)
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
                 );
                 return;
             case PIX_FMT_RGB555:
                 __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1(%%REGBP, %5)
-                "pxor    %%mm7, %%mm7                   \n\t"
-                /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2RGB1(%%REGBP, %5)
+                    "pxor    %%mm7, %%mm7                   \n\t"
+                    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
-                "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-                "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+                    "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                    "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                    "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
 #endif
-                WRITERGB15(%%REGb, 8280(%5), %%REGBP)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                    WRITERGB15(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                "a" (&c->redDither)
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
                 );
                 return;
             case PIX_FMT_RGB565:
                 __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1(%%REGBP, %5)
-                "pxor    %%mm7, %%mm7                   \n\t"
-                /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2RGB1(%%REGBP, %5)
+                    "pxor    %%mm7, %%mm7                   \n\t"
+                    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
-                "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-                "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+                    "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                    "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                    "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
 #endif
 
-                WRITERGB16(%%REGb, 8280(%5), %%REGBP)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                    WRITERGB16(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                "a" (&c->redDither)
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
                 );
                 return;
             case PIX_FMT_YUYV422:
                 __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2PACKED1(%%REGBP, %5)
-                WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2PACKED1(%%REGBP, %5)
+                    WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                "a" (&c->redDither)
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
                 );
                 return;
             }
@@ -1487,104 +1487,104 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
             case PIX_FMT_RGB32:
                 if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
                     __asm__ volatile(
-                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                    "mov        %4, %%"REG_b"               \n\t"
-                    "push %%"REG_BP"                        \n\t"
-                    YSCALEYUV2RGB1b(%%REGBP, %5)
-                    YSCALEYUV2RGB1_ALPHA(%%REGBP)
-                    WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-                    "pop %%"REG_BP"                         \n\t"
-                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                        "mov        %4, %%"REG_b"               \n\t"
+                        "push %%"REG_BP"                        \n\t"
+                        YSCALEYUV2RGB1b(%%REGBP, %5)
+                        YSCALEYUV2RGB1_ALPHA(%%REGBP)
+                        WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+                        "pop %%"REG_BP"                         \n\t"
+                        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                    :: "c" (buf0), "d" (abuf0), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                    "a" (&c->redDither)
+                        :: "c" (buf0), "d" (abuf0), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                        "a" (&c->redDither)
                     );
                 } else {
                     __asm__ volatile(
-                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                    "mov        %4, %%"REG_b"               \n\t"
-                    "push %%"REG_BP"                        \n\t"
-                    YSCALEYUV2RGB1b(%%REGBP, %5)
-                    "pcmpeqd %%mm7, %%mm7                   \n\t"
-                    WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-                    "pop %%"REG_BP"                         \n\t"
-                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                        "mov        %4, %%"REG_b"               \n\t"
+                        "push %%"REG_BP"                        \n\t"
+                        YSCALEYUV2RGB1b(%%REGBP, %5)
+                        "pcmpeqd %%mm7, %%mm7                   \n\t"
+                        WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+                        "pop %%"REG_BP"                         \n\t"
+                        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                    "a" (&c->redDither)
+                        :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                        "a" (&c->redDither)
                     );
                 }
                 return;
             case PIX_FMT_BGR24:
                 __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1b(%%REGBP, %5)
-                "pxor    %%mm7, %%mm7                   \n\t"
-                WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2RGB1b(%%REGBP, %5)
+                    "pxor    %%mm7, %%mm7                   \n\t"
+                    WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                "a" (&c->redDither)
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
                 );
                 return;
             case PIX_FMT_RGB555:
                 __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1b(%%REGBP, %5)
-                "pxor    %%mm7, %%mm7                   \n\t"
-                /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2RGB1b(%%REGBP, %5)
+                    "pxor    %%mm7, %%mm7                   \n\t"
+                    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
-                "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-                "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+                    "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                    "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                    "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
 #endif
-                WRITERGB15(%%REGb, 8280(%5), %%REGBP)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                    WRITERGB15(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                "a" (&c->redDither)
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
                 );
                 return;
             case PIX_FMT_RGB565:
                 __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1b(%%REGBP, %5)
-                "pxor    %%mm7, %%mm7                   \n\t"
-                /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2RGB1b(%%REGBP, %5)
+                    "pxor    %%mm7, %%mm7                   \n\t"
+                    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-                "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
-                "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-                "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+                    "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                    "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                    "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
 #endif
 
-                WRITERGB16(%%REGb, 8280(%5), %%REGBP)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                    WRITERGB16(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                "a" (&c->redDither)
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
                 );
                 return;
             case PIX_FMT_YUYV422:
                 __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2PACKED1b(%%REGBP, %5)
-                WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2PACKED1b(%%REGBP, %5)
+                    WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
 
-                :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                "a" (&c->redDither)
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
                 );
                 return;
             }
@@ -1604,19 +1604,19 @@ static inline void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src, long width,
 {
 #if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
-    "movq "MANGLE(bm01010101)", %%mm2           \n\t"
-    "mov                    %0, %%"REG_a"       \n\t"
-    "1:                                         \n\t"
-    "movq    (%1, %%"REG_a",2), %%mm0           \n\t"
-    "movq   8(%1, %%"REG_a",2), %%mm1           \n\t"
-    "pand                %%mm2, %%mm0           \n\t"
-    "pand                %%mm2, %%mm1           \n\t"
-    "packuswb            %%mm1, %%mm0           \n\t"
-    "movq                %%mm0, (%2, %%"REG_a") \n\t"
-    "add                    $8, %%"REG_a"       \n\t"
-    " js                    1b                  \n\t"
-    : : "g" ((x86_reg)-width), "r" (src+width*2), "r" (dst+width)
-    : "%"REG_a
+        "movq "MANGLE(bm01010101)", %%mm2           \n\t"
+        "mov                    %0, %%"REG_a"       \n\t"
+        "1:                                         \n\t"
+        "movq    (%1, %%"REG_a",2), %%mm0           \n\t"
+        "movq   8(%1, %%"REG_a",2), %%mm1           \n\t"
+        "pand                %%mm2, %%mm0           \n\t"
+        "pand                %%mm2, %%mm1           \n\t"
+        "packuswb            %%mm1, %%mm0           \n\t"
+        "movq                %%mm0, (%2, %%"REG_a") \n\t"
+        "add                    $8, %%"REG_a"       \n\t"
+        " js                    1b                  \n\t"
+        : : "g" ((x86_reg)-width), "r" (src+width*2), "r" (dst+width)
+        : "%"REG_a
     );
 #else
     int i;
@@ -1629,25 +1629,25 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t 
 {
 #if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
-    "movq "MANGLE(bm01010101)", %%mm4           \n\t"
-    "mov                    %0, %%"REG_a"       \n\t"
-    "1:                                         \n\t"
-    "movq    (%1, %%"REG_a",4), %%mm0           \n\t"
-    "movq   8(%1, %%"REG_a",4), %%mm1           \n\t"
-    "psrlw                  $8, %%mm0           \n\t"
-    "psrlw                  $8, %%mm1           \n\t"
-    "packuswb            %%mm1, %%mm0           \n\t"
-    "movq                %%mm0, %%mm1           \n\t"
-    "psrlw                  $8, %%mm0           \n\t"
-    "pand                %%mm4, %%mm1           \n\t"
-    "packuswb            %%mm0, %%mm0           \n\t"
-    "packuswb            %%mm1, %%mm1           \n\t"
-    "movd                %%mm0, (%3, %%"REG_a") \n\t"
-    "movd                %%mm1, (%2, %%"REG_a") \n\t"
-    "add                    $4, %%"REG_a"       \n\t"
-    " js                    1b                  \n\t"
-    : : "g" ((x86_reg)-width), "r" (src1+width*4), "r" (dstU+width), "r" (dstV+width)
-    : "%"REG_a
+        "movq "MANGLE(bm01010101)", %%mm4           \n\t"
+        "mov                    %0, %%"REG_a"       \n\t"
+        "1:                                         \n\t"
+        "movq    (%1, %%"REG_a",4), %%mm0           \n\t"
+        "movq   8(%1, %%"REG_a",4), %%mm1           \n\t"
+        "psrlw                  $8, %%mm0           \n\t"
+        "psrlw                  $8, %%mm1           \n\t"
+        "packuswb            %%mm1, %%mm0           \n\t"
+        "movq                %%mm0, %%mm1           \n\t"
+        "psrlw                  $8, %%mm0           \n\t"
+        "pand                %%mm4, %%mm1           \n\t"
+        "packuswb            %%mm0, %%mm0           \n\t"
+        "packuswb            %%mm1, %%mm1           \n\t"
+        "movd                %%mm0, (%3, %%"REG_a") \n\t"
+        "movd                %%mm1, (%2, %%"REG_a") \n\t"
+        "add                    $4, %%"REG_a"       \n\t"
+        " js                    1b                  \n\t"
+        : : "g" ((x86_reg)-width), "r" (src1+width*4), "r" (dstU+width), "r" (dstV+width)
+        : "%"REG_a
     );
 #else
     int i;
@@ -1663,24 +1663,24 @@ static inline void RENAME(LEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *s
 {
 #if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
-    "mov                    %0, %%"REG_a"       \n\t"
-    "1:                                         \n\t"
-    "movq    (%1, %%"REG_a",2), %%mm0           \n\t"
-    "movq   8(%1, %%"REG_a",2), %%mm1           \n\t"
-    "movq    (%2, %%"REG_a",2), %%mm2           \n\t"
-    "movq   8(%2, %%"REG_a",2), %%mm3           \n\t"
-    "psrlw                  $8, %%mm0           \n\t"
-    "psrlw                  $8, %%mm1           \n\t"
-    "psrlw                  $8, %%mm2           \n\t"
-    "psrlw                  $8, %%mm3           \n\t"
-    "packuswb            %%mm1, %%mm0           \n\t"
-    "packuswb            %%mm3, %%mm2           \n\t"
-    "movq                %%mm0, (%3, %%"REG_a") \n\t"
-    "movq                %%mm2, (%4, %%"REG_a") \n\t"
-    "add                    $8, %%"REG_a"       \n\t"
-    " js                    1b                  \n\t"
-    : : "g" ((x86_reg)-width), "r" (src1+width*2), "r" (src2+width*2), "r" (dstU+width), "r" (dstV+width)
-    : "%"REG_a
+        "mov                    %0, %%"REG_a"       \n\t"
+        "1:                                         \n\t"
+        "movq    (%1, %%"REG_a",2), %%mm0           \n\t"
+        "movq   8(%1, %%"REG_a",2), %%mm1           \n\t"
+        "movq    (%2, %%"REG_a",2), %%mm2           \n\t"
+        "movq   8(%2, %%"REG_a",2), %%mm3           \n\t"
+        "psrlw                  $8, %%mm0           \n\t"
+        "psrlw                  $8, %%mm1           \n\t"
+        "psrlw                  $8, %%mm2           \n\t"
+        "psrlw                  $8, %%mm3           \n\t"
+        "packuswb            %%mm1, %%mm0           \n\t"
+        "packuswb            %%mm3, %%mm2           \n\t"
+        "movq                %%mm0, (%3, %%"REG_a") \n\t"
+        "movq                %%mm2, (%4, %%"REG_a") \n\t"
+        "add                    $8, %%"REG_a"       \n\t"
+        " js                    1b                  \n\t"
+        : : "g" ((x86_reg)-width), "r" (src1+width*2), "r" (src2+width*2), "r" (dstU+width), "r" (dstV+width)
+        : "%"REG_a
     );
 #else
     int i;
@@ -1697,18 +1697,18 @@ static inline void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src, long width,
 {
 #if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
-    "mov                  %0, %%"REG_a"         \n\t"
-    "1:                                         \n\t"
-    "movq  (%1, %%"REG_a",2), %%mm0             \n\t"
-    "movq 8(%1, %%"REG_a",2), %%mm1             \n\t"
-    "psrlw                $8, %%mm0             \n\t"
-    "psrlw                $8, %%mm1             \n\t"
-    "packuswb          %%mm1, %%mm0             \n\t"
-    "movq              %%mm0, (%2, %%"REG_a")   \n\t"
-    "add                  $8, %%"REG_a"         \n\t"
-    " js                  1b                    \n\t"
-    : : "g" ((x86_reg)-width), "r" (src+width*2), "r" (dst+width)
-    : "%"REG_a
+        "mov                  %0, %%"REG_a"         \n\t"
+        "1:                                         \n\t"
+        "movq  (%1, %%"REG_a",2), %%mm0             \n\t"
+        "movq 8(%1, %%"REG_a",2), %%mm1             \n\t"
+        "psrlw                $8, %%mm0             \n\t"
+        "psrlw                $8, %%mm1             \n\t"
+        "packuswb          %%mm1, %%mm0             \n\t"
+        "movq              %%mm0, (%2, %%"REG_a")   \n\t"
+        "add                  $8, %%"REG_a"         \n\t"
+        " js                  1b                    \n\t"
+        : : "g" ((x86_reg)-width), "r" (src+width*2), "r" (dst+width)
+        : "%"REG_a
     );
 #else
     int i;
@@ -1721,25 +1721,25 @@ static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t 
 {
 #if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
-    "movq "MANGLE(bm01010101)", %%mm4           \n\t"
-    "mov                    %0, %%"REG_a"       \n\t"
-    "1:                                         \n\t"
-    "movq    (%1, %%"REG_a",4), %%mm0           \n\t"
-    "movq   8(%1, %%"REG_a",4), %%mm1           \n\t"
-    "pand                %%mm4, %%mm0           \n\t"
-    "pand                %%mm4, %%mm1           \n\t"
-    "packuswb            %%mm1, %%mm0           \n\t"
-    "movq                %%mm0, %%mm1           \n\t"
-    "psrlw                  $8, %%mm0           \n\t"
-    "pand                %%mm4, %%mm1           \n\t"
-    "packuswb            %%mm0, %%mm0           \n\t"
-    "packuswb            %%mm1, %%mm1           \n\t"
-    "movd                %%mm0, (%3, %%"REG_a") \n\t"
-    "movd                %%mm1, (%2, %%"REG_a") \n\t"
-    "add                    $4, %%"REG_a"       \n\t"
-    " js                    1b                  \n\t"
-    : : "g" ((x86_reg)-width), "r" (src1+width*4), "r" (dstU+width), "r" (dstV+width)
-    : "%"REG_a
+        "movq "MANGLE(bm01010101)", %%mm4           \n\t"
+        "mov                    %0, %%"REG_a"       \n\t"
+        "1:                                         \n\t"
+        "movq    (%1, %%"REG_a",4), %%mm0           \n\t"
+        "movq   8(%1, %%"REG_a",4), %%mm1           \n\t"
+        "pand                %%mm4, %%mm0           \n\t"
+        "pand                %%mm4, %%mm1           \n\t"
+        "packuswb            %%mm1, %%mm0           \n\t"
+        "movq                %%mm0, %%mm1           \n\t"
+        "psrlw                  $8, %%mm0           \n\t"
+        "pand                %%mm4, %%mm1           \n\t"
+        "packuswb            %%mm0, %%mm0           \n\t"
+        "packuswb            %%mm1, %%mm1           \n\t"
+        "movd                %%mm0, (%3, %%"REG_a") \n\t"
+        "movd                %%mm1, (%2, %%"REG_a") \n\t"
+        "add                    $4, %%"REG_a"       \n\t"
+        " js                    1b                  \n\t"
+        : : "g" ((x86_reg)-width), "r" (src1+width*4), "r" (dstU+width), "r" (dstV+width)
+        : "%"REG_a
     );
 #else
     int i;
@@ -1755,25 +1755,25 @@ static inline void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *s
 {
 #if COMPILE_TEMPLATE_MMX
     __asm__ volatile(
-    "movq "MANGLE(bm01010101)", %%mm4           \n\t"
-    "mov                    %0, %%"REG_a"       \n\t"
-    "1:                                         \n\t"
-    "movq    (%1, %%"REG_a",2), %%mm0           \n\t"
-    "movq   8(%1, %%"REG_a",2), %%mm1           \n\t"
-    "movq    (%2, %%"REG_a",2), %%mm2           \n\t"
-    "movq   8(%2, %%"REG_a",2), %%mm3           \n\t"
-    "pand                %%mm4, %%mm0           \n\t"
-    "pand                %%mm4, %%mm1           \n\t"
-    "pand                %%mm4, %%mm2           \n\t"
-    "pand                %%mm4, %%mm3           \n\t"
-    "packuswb            %%mm1, %%mm0           \n\t"
-    "packuswb            %%mm3, %%mm2           \n\t"
-    "movq                %%mm0, (%3, %%"REG_a") \n\t"
-    "movq                %%mm2, (%4, %%"REG_a") \n\t"
-    "add                    $8, %%"REG_a"       \n\t"
-    " js                    1b                  \n\t"
-    : : "g" ((x86_reg)-width), "r" (src1+width*2), "r" (src2+width*2), "r" (dstU+width), "r" (dstV+width)
-    : "%"REG_a
+        "movq "MANGLE(bm01010101)", %%mm4           \n\t"
+        "mov                    %0, %%"REG_a"       \n\t"
+        "1:                                         \n\t"
+        "movq    (%1, %%"REG_a",2), %%mm0           \n\t"
+        "movq   8(%1, %%"REG_a",2), %%mm1           \n\t"
+        "movq    (%2, %%"REG_a",2), %%mm2           \n\t"
+        "movq   8(%2, %%"REG_a",2), %%mm3           \n\t"
+        "pand                %%mm4, %%mm0           \n\t"
+        "pand                %%mm4, %%mm1           \n\t"
+        "pand                %%mm4, %%mm2           \n\t"
+        "pand                %%mm4, %%mm3           \n\t"
+        "packuswb            %%mm1, %%mm0           \n\t"
+        "packuswb            %%mm3, %%mm2           \n\t"
+        "movq                %%mm0, (%3, %%"REG_a") \n\t"
+        "movq                %%mm2, (%4, %%"REG_a") \n\t"
+        "add                    $8, %%"REG_a"       \n\t"
+        " js                    1b                  \n\t"
+        : : "g" ((x86_reg)-width), "r" (src1+width*2), "r" (src2+width*2), "r" (dstU+width), "r" (dstV+width)
+        : "%"REG_a
     );
 #else
     int i;
@@ -2008,41 +2008,41 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
         dst-= counter/2;
         __asm__ volatile(
 #if defined(PIC)
-        "push            %%"REG_b"              \n\t"
+            "push            %%"REG_b"              \n\t"
 #endif
-        "pxor                %%mm7, %%mm7       \n\t"
-        "push           %%"REG_BP"              \n\t" // we use 7 regs here ...
-        "mov             %%"REG_a", %%"REG_BP"  \n\t"
-        ASMALIGN(4)
-        "1:                                     \n\t"
-        "movzwl   (%2, %%"REG_BP"), %%eax       \n\t"
-        "movzwl  2(%2, %%"REG_BP"), %%ebx       \n\t"
-        "movq  (%1, %%"REG_BP", 4), %%mm1       \n\t"
-        "movq 8(%1, %%"REG_BP", 4), %%mm3       \n\t"
-        "movd      (%3, %%"REG_a"), %%mm0       \n\t"
-        "movd      (%3, %%"REG_b"), %%mm2       \n\t"
-        "punpcklbw           %%mm7, %%mm0       \n\t"
-        "punpcklbw           %%mm7, %%mm2       \n\t"
-        "pmaddwd             %%mm1, %%mm0       \n\t"
-        "pmaddwd             %%mm2, %%mm3       \n\t"
-        "movq                %%mm0, %%mm4       \n\t"
-        "punpckldq           %%mm3, %%mm0       \n\t"
-        "punpckhdq           %%mm3, %%mm4       \n\t"
-        "paddd               %%mm4, %%mm0       \n\t"
-        "psrad                  $7, %%mm0       \n\t"
-        "packssdw            %%mm0, %%mm0       \n\t"
-        "movd                %%mm0, (%4, %%"REG_BP")    \n\t"
-        "add                    $4, %%"REG_BP"  \n\t"
-        " jnc                   1b              \n\t"
+            "pxor                %%mm7, %%mm7       \n\t"
+            "push           %%"REG_BP"              \n\t" // we use 7 regs here ...
+            "mov             %%"REG_a", %%"REG_BP"  \n\t"
+            ASMALIGN(4)
+            "1:                                     \n\t"
+            "movzwl   (%2, %%"REG_BP"), %%eax       \n\t"
+            "movzwl  2(%2, %%"REG_BP"), %%ebx       \n\t"
+            "movq  (%1, %%"REG_BP", 4), %%mm1       \n\t"
+            "movq 8(%1, %%"REG_BP", 4), %%mm3       \n\t"
+            "movd      (%3, %%"REG_a"), %%mm0       \n\t"
+            "movd      (%3, %%"REG_b"), %%mm2       \n\t"
+            "punpcklbw           %%mm7, %%mm0       \n\t"
+            "punpcklbw           %%mm7, %%mm2       \n\t"
+            "pmaddwd             %%mm1, %%mm0       \n\t"
+            "pmaddwd             %%mm2, %%mm3       \n\t"
+            "movq                %%mm0, %%mm4       \n\t"
+            "punpckldq           %%mm3, %%mm0       \n\t"
+            "punpckhdq           %%mm3, %%mm4       \n\t"
+            "paddd               %%mm4, %%mm0       \n\t"
+            "psrad                  $7, %%mm0       \n\t"
+            "packssdw            %%mm0, %%mm0       \n\t"
+            "movd                %%mm0, (%4, %%"REG_BP")    \n\t"
+            "add                    $4, %%"REG_BP"  \n\t"
+            " jnc                   1b              \n\t"
 
-        "pop            %%"REG_BP"              \n\t"
+            "pop            %%"REG_BP"              \n\t"
 #if defined(PIC)
-        "pop             %%"REG_b"              \n\t"
+            "pop             %%"REG_b"              \n\t"
 #endif
-        : "+a" (counter)
-        : "c" (filter), "d" (filterPos), "S" (src), "D" (dst)
+            : "+a" (counter)
+            : "c" (filter), "d" (filterPos), "S" (src), "D" (dst)
 #if !defined(PIC)
-        : "%"REG_b
+            : "%"REG_b
 #endif
         );
     } else if (filterSize==8) {
@@ -2052,52 +2052,52 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
         dst-= counter/2;
         __asm__ volatile(
 #if defined(PIC)
-        "push             %%"REG_b"             \n\t"
+            "push             %%"REG_b"             \n\t"
 #endif
-        "pxor                 %%mm7, %%mm7      \n\t"
-        "push            %%"REG_BP"             \n\t" // we use 7 regs here ...
-        "mov              %%"REG_a", %%"REG_BP" \n\t"
-        ASMALIGN(4)
-        "1:                                     \n\t"
-        "movzwl    (%2, %%"REG_BP"), %%eax      \n\t"
-        "movzwl   2(%2, %%"REG_BP"), %%ebx      \n\t"
-        "movq   (%1, %%"REG_BP", 8), %%mm1      \n\t"
-        "movq 16(%1, %%"REG_BP", 8), %%mm3      \n\t"
-        "movd       (%3, %%"REG_a"), %%mm0      \n\t"
-        "movd       (%3, %%"REG_b"), %%mm2      \n\t"
-        "punpcklbw            %%mm7, %%mm0      \n\t"
-        "punpcklbw            %%mm7, %%mm2      \n\t"
-        "pmaddwd              %%mm1, %%mm0      \n\t"
-        "pmaddwd              %%mm2, %%mm3      \n\t"
+            "pxor                 %%mm7, %%mm7      \n\t"
+            "push            %%"REG_BP"             \n\t" // we use 7 regs here ...
+            "mov              %%"REG_a", %%"REG_BP" \n\t"
+            ASMALIGN(4)
+            "1:                                     \n\t"
+            "movzwl    (%2, %%"REG_BP"), %%eax      \n\t"
+            "movzwl   2(%2, %%"REG_BP"), %%ebx      \n\t"
+            "movq   (%1, %%"REG_BP", 8), %%mm1      \n\t"
+            "movq 16(%1, %%"REG_BP", 8), %%mm3      \n\t"
+            "movd       (%3, %%"REG_a"), %%mm0      \n\t"
+            "movd       (%3, %%"REG_b"), %%mm2      \n\t"
+            "punpcklbw            %%mm7, %%mm0      \n\t"
+            "punpcklbw            %%mm7, %%mm2      \n\t"
+            "pmaddwd              %%mm1, %%mm0      \n\t"
+            "pmaddwd              %%mm2, %%mm3      \n\t"
 
-        "movq  8(%1, %%"REG_BP", 8), %%mm1      \n\t"
-        "movq 24(%1, %%"REG_BP", 8), %%mm5      \n\t"
-        "movd      4(%3, %%"REG_a"), %%mm4      \n\t"
-        "movd      4(%3, %%"REG_b"), %%mm2      \n\t"
-        "punpcklbw            %%mm7, %%mm4      \n\t"
-        "punpcklbw            %%mm7, %%mm2      \n\t"
-        "pmaddwd              %%mm1, %%mm4      \n\t"
-        "pmaddwd              %%mm2, %%mm5      \n\t"
-        "paddd                %%mm4, %%mm0      \n\t"
-        "paddd                %%mm5, %%mm3      \n\t"
-        "movq                 %%mm0, %%mm4      \n\t"
-        "punpckldq            %%mm3, %%mm0      \n\t"
-        "punpckhdq            %%mm3, %%mm4      \n\t"
-        "paddd                %%mm4, %%mm0      \n\t"
-        "psrad                   $7, %%mm0      \n\t"
-        "packssdw             %%mm0, %%mm0      \n\t"
-        "movd                 %%mm0, (%4, %%"REG_BP")   \n\t"
-        "add                     $4, %%"REG_BP" \n\t"
-        " jnc                    1b             \n\t"
+            "movq  8(%1, %%"REG_BP", 8), %%mm1      \n\t"
+            "movq 24(%1, %%"REG_BP", 8), %%mm5      \n\t"
+            "movd      4(%3, %%"REG_a"), %%mm4      \n\t"
+            "movd      4(%3, %%"REG_b"), %%mm2      \n\t"
+            "punpcklbw            %%mm7, %%mm4      \n\t"
+            "punpcklbw            %%mm7, %%mm2      \n\t"
+            "pmaddwd              %%mm1, %%mm4      \n\t"
+            "pmaddwd              %%mm2, %%mm5      \n\t"
+            "paddd                %%mm4, %%mm0      \n\t"
+            "paddd                %%mm5, %%mm3      \n\t"
+            "movq                 %%mm0, %%mm4      \n\t"
+            "punpckldq            %%mm3, %%mm0      \n\t"
+            "punpckhdq            %%mm3, %%mm4      \n\t"
+            "paddd                %%mm4, %%mm0      \n\t"
+            "psrad                   $7, %%mm0      \n\t"
+            "packssdw             %%mm0, %%mm0      \n\t"
+            "movd                 %%mm0, (%4, %%"REG_BP")   \n\t"
+            "add                     $4, %%"REG_BP" \n\t"
+            " jnc                    1b             \n\t"
 
-        "pop             %%"REG_BP"             \n\t"
+            "pop             %%"REG_BP"             \n\t"
 #if defined(PIC)
-        "pop              %%"REG_b"             \n\t"
+            "pop              %%"REG_b"             \n\t"
 #endif
-        : "+a" (counter)
-        : "c" (filter), "d" (filterPos), "S" (src), "D" (dst)
+            : "+a" (counter)
+            : "c" (filter), "d" (filterPos), "S" (src), "D" (dst)
 #if !defined(PIC)
-        : "%"REG_b
+            : "%"REG_b
 #endif
         );
     } else {
@@ -2107,46 +2107,46 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
         filterPos-= counter/2;
         dst-= counter/2;
         __asm__ volatile(
-        "pxor                  %%mm7, %%mm7     \n\t"
-        ASMALIGN(4)
-        "1:                                     \n\t"
-        "mov                      %2, %%"REG_c" \n\t"
-        "movzwl      (%%"REG_c", %0), %%eax     \n\t"
-        "movzwl     2(%%"REG_c", %0), %%edx     \n\t"
-        "mov                      %5, %%"REG_c" \n\t"
-        "pxor                  %%mm4, %%mm4     \n\t"
-        "pxor                  %%mm5, %%mm5     \n\t"
-        "2:                                     \n\t"
-        "movq                   (%1), %%mm1     \n\t"
-        "movq               (%1, %6), %%mm3     \n\t"
-        "movd (%%"REG_c", %%"REG_a"), %%mm0     \n\t"
-        "movd (%%"REG_c", %%"REG_d"), %%mm2     \n\t"
-        "punpcklbw             %%mm7, %%mm0     \n\t"
-        "punpcklbw             %%mm7, %%mm2     \n\t"
-        "pmaddwd               %%mm1, %%mm0     \n\t"
-        "pmaddwd               %%mm2, %%mm3     \n\t"
-        "paddd                 %%mm3, %%mm5     \n\t"
-        "paddd                 %%mm0, %%mm4     \n\t"
-        "add                      $8, %1        \n\t"
-        "add                      $4, %%"REG_c" \n\t"
-        "cmp                      %4, %%"REG_c" \n\t"
-        " jb                      2b            \n\t"
-        "add                      %6, %1        \n\t"
-        "movq                  %%mm4, %%mm0     \n\t"
-        "punpckldq             %%mm5, %%mm4     \n\t"
-        "punpckhdq             %%mm5, %%mm0     \n\t"
-        "paddd                 %%mm0, %%mm4     \n\t"
-        "psrad                    $7, %%mm4     \n\t"
-        "packssdw              %%mm4, %%mm4     \n\t"
-        "mov                      %3, %%"REG_a" \n\t"
-        "movd                  %%mm4, (%%"REG_a", %0)   \n\t"
-        "add                      $4, %0        \n\t"
-        " jnc                     1b            \n\t"
+            "pxor                  %%mm7, %%mm7     \n\t"
+            ASMALIGN(4)
+            "1:                                     \n\t"
+            "mov                      %2, %%"REG_c" \n\t"
+            "movzwl      (%%"REG_c", %0), %%eax     \n\t"
+            "movzwl     2(%%"REG_c", %0), %%edx     \n\t"
+            "mov                      %5, %%"REG_c" \n\t"
+            "pxor                  %%mm4, %%mm4     \n\t"
+            "pxor                  %%mm5, %%mm5     \n\t"
+            "2:                                     \n\t"
+            "movq                   (%1), %%mm1     \n\t"
+            "movq               (%1, %6), %%mm3     \n\t"
+            "movd (%%"REG_c", %%"REG_a"), %%mm0     \n\t"
+            "movd (%%"REG_c", %%"REG_d"), %%mm2     \n\t"
+            "punpcklbw             %%mm7, %%mm0     \n\t"
+            "punpcklbw             %%mm7, %%mm2     \n\t"
+            "pmaddwd               %%mm1, %%mm0     \n\t"
+            "pmaddwd               %%mm2, %%mm3     \n\t"
+            "paddd                 %%mm3, %%mm5     \n\t"
+            "paddd                 %%mm0, %%mm4     \n\t"
+            "add                      $8, %1        \n\t"
+            "add                      $4, %%"REG_c" \n\t"
+            "cmp                      %4, %%"REG_c" \n\t"
+            " jb                      2b            \n\t"
+            "add                      %6, %1        \n\t"
+            "movq                  %%mm4, %%mm0     \n\t"
+            "punpckldq             %%mm5, %%mm4     \n\t"
+            "punpckhdq             %%mm5, %%mm0     \n\t"
+            "paddd                 %%mm0, %%mm4     \n\t"
+            "psrad                    $7, %%mm4     \n\t"
+            "packssdw              %%mm4, %%mm4     \n\t"
+            "mov                      %3, %%"REG_a" \n\t"
+            "movd                  %%mm4, (%%"REG_a", %0)   \n\t"
+            "add                      $4, %0        \n\t"
+            " jnc                     1b            \n\t"
 
-        : "+r" (counter), "+r" (filter)
-        : "m" (filterPos), "m" (dst), "m"(offset),
-          "m" (src), "r" ((x86_reg)filterSize*2)
-        : "%"REG_a, "%"REG_c, "%"REG_d
+            : "+r" (counter), "+r" (filter)
+            : "m" (filterPos), "m" (dst), "m"(offset),
+            "m" (src), "r" ((x86_reg)filterSize*2)
+            : "%"REG_a, "%"REG_c, "%"REG_d
         );
     }
 #else
@@ -2240,59 +2240,59 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         if (canMMX2BeUsed) {
             __asm__ volatile(
 #if defined(PIC)
-            "mov               %%"REG_b", %5        \n\t"
+                "mov               %%"REG_b", %5        \n\t"
 #endif
-            "pxor                  %%mm7, %%mm7     \n\t"
-            "mov                      %0, %%"REG_c" \n\t"
-            "mov                      %1, %%"REG_D" \n\t"
-            "mov                      %2, %%"REG_d" \n\t"
-            "mov                      %3, %%"REG_b" \n\t"
-            "xor               %%"REG_a", %%"REG_a" \n\t" // i
-            PREFETCH"        (%%"REG_c")            \n\t"
-            PREFETCH"      32(%%"REG_c")            \n\t"
-            PREFETCH"      64(%%"REG_c")            \n\t"
+                "pxor                  %%mm7, %%mm7     \n\t"
+                "mov                      %0, %%"REG_c" \n\t"
+                "mov                      %1, %%"REG_D" \n\t"
+                "mov                      %2, %%"REG_d" \n\t"
+                "mov                      %3, %%"REG_b" \n\t"
+                "xor               %%"REG_a", %%"REG_a" \n\t" // i
+                PREFETCH"        (%%"REG_c")            \n\t"
+                PREFETCH"      32(%%"REG_c")            \n\t"
+                PREFETCH"      64(%%"REG_c")            \n\t"
 
 #if ARCH_X86_64
 
 #define CALL_MMX2_FILTER_CODE \
-            "movl            (%%"REG_b"), %%esi     \n\t"\
-            "call                    *%4            \n\t"\
-            "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
-            "add               %%"REG_S", %%"REG_c" \n\t"\
-            "add               %%"REG_a", %%"REG_D" \n\t"\
-            "xor               %%"REG_a", %%"REG_a" \n\t"\
+                "movl            (%%"REG_b"), %%esi     \n\t"\
+                "call                    *%4            \n\t"\
+                "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
+                "add               %%"REG_S", %%"REG_c" \n\t"\
+                "add               %%"REG_a", %%"REG_D" \n\t"\
+                "xor               %%"REG_a", %%"REG_a" \n\t"\
 
 #else
 
 #define CALL_MMX2_FILTER_CODE \
-            "movl (%%"REG_b"), %%esi        \n\t"\
-            "call         *%4                       \n\t"\
-            "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
-            "add               %%"REG_a", %%"REG_D" \n\t"\
-            "xor               %%"REG_a", %%"REG_a" \n\t"\
+                "movl (%%"REG_b"), %%esi        \n\t"\
+                "call         *%4                       \n\t"\
+                "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
+                "add               %%"REG_a", %%"REG_D" \n\t"\
+                "xor               %%"REG_a", %%"REG_a" \n\t"\
 
 #endif /* ARCH_X86_64 */
 
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
 
 #if defined(PIC)
-            "mov                      %5, %%"REG_b" \n\t"
+                "mov                      %5, %%"REG_b" \n\t"
 #endif
-            :: "m" (src), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
-            "m" (mmx2FilterCode)
+                :: "m" (src), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
+                "m" (mmx2FilterCode)
 #if defined(PIC)
-            ,"m" (ebxsave)
+                ,"m" (ebxsave)
 #endif
-            : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+                : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 #if !defined(PIC)
-            ,"%"REG_b
+                ,"%"REG_b
 #endif
             );
             for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) dst[i] = src[srcW-1]*128;
@@ -2302,33 +2302,33 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         uint16_t xInc_mask = xInc & 0xffff;
         //NO MMX just normal asm ...
         __asm__ volatile(
-        "xor %%"REG_a", %%"REG_a"            \n\t" // i
-        "xor %%"REG_d", %%"REG_d"            \n\t" // xx
-        "xorl    %%ecx, %%ecx                \n\t" // xalpha
-        ASMALIGN(4)
-        "1:                                  \n\t"
-        "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
-        "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
-        FAST_BILINEAR_X86
-        "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
-        "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
-        "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
+            "xor %%"REG_a", %%"REG_a"            \n\t" // i
+            "xor %%"REG_d", %%"REG_d"            \n\t" // xx
+            "xorl    %%ecx, %%ecx                \n\t" // xalpha
+            ASMALIGN(4)
+            "1:                                  \n\t"
+            "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
+            "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
+            FAST_BILINEAR_X86
+            "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
+            "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
+            "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
 
-        "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
-        "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
-        FAST_BILINEAR_X86
-        "movw     %%si, 2(%%"REG_D", %%"REG_a", 2)  \n\t"
-        "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
-        "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
-
-
-        "add        $2, %%"REG_a"            \n\t"
-        "cmp        %2, %%"REG_a"            \n\t"
-        " jb        1b                       \n\t"
+            "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
+            "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
+            FAST_BILINEAR_X86
+            "movw     %%si, 2(%%"REG_D", %%"REG_a", 2)  \n\t"
+            "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
+            "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
 
 
-        :: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask)
-        : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
+            "add        $2, %%"REG_a"            \n\t"
+            "cmp        %2, %%"REG_a"            \n\t"
+            " jb        1b                       \n\t"
+
+
+            :: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask)
+            : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
         );
 #if COMPILE_TEMPLATE_MMX2
         } //if MMX2 can't be used
@@ -2420,46 +2420,46 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         if (canMMX2BeUsed) {
             __asm__ volatile(
 #if defined(PIC)
-            "mov          %%"REG_b", %6         \n\t"
+                "mov          %%"REG_b", %6         \n\t"
 #endif
-            "pxor             %%mm7, %%mm7      \n\t"
-            "mov                 %0, %%"REG_c"  \n\t"
-            "mov                 %1, %%"REG_D"  \n\t"
-            "mov                 %2, %%"REG_d"  \n\t"
-            "mov                 %3, %%"REG_b"  \n\t"
-            "xor          %%"REG_a", %%"REG_a"  \n\t" // i
-            PREFETCH"   (%%"REG_c")             \n\t"
-            PREFETCH" 32(%%"REG_c")             \n\t"
-            PREFETCH" 64(%%"REG_c")             \n\t"
+                "pxor             %%mm7, %%mm7      \n\t"
+                "mov                 %0, %%"REG_c"  \n\t"
+                "mov                 %1, %%"REG_D"  \n\t"
+                "mov                 %2, %%"REG_d"  \n\t"
+                "mov                 %3, %%"REG_b"  \n\t"
+                "xor          %%"REG_a", %%"REG_a"  \n\t" // i
+                PREFETCH"   (%%"REG_c")             \n\t"
+                PREFETCH" 32(%%"REG_c")             \n\t"
+                PREFETCH" 64(%%"REG_c")             \n\t"
 
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            "xor          %%"REG_a", %%"REG_a"  \n\t" // i
-            "mov                 %5, %%"REG_c"  \n\t" // src
-            "mov                 %1, %%"REG_D"  \n\t" // buf1
-            "add              $"AV_STRINGIFY(VOF)", %%"REG_D"  \n\t"
-            PREFETCH"   (%%"REG_c")             \n\t"
-            PREFETCH" 32(%%"REG_c")             \n\t"
-            PREFETCH" 64(%%"REG_c")             \n\t"
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                "xor          %%"REG_a", %%"REG_a"  \n\t" // i
+                "mov                 %5, %%"REG_c"  \n\t" // src
+                "mov                 %1, %%"REG_D"  \n\t" // buf1
+                "add              $"AV_STRINGIFY(VOF)", %%"REG_D"  \n\t"
+                PREFETCH"   (%%"REG_c")             \n\t"
+                PREFETCH" 32(%%"REG_c")             \n\t"
+                PREFETCH" 64(%%"REG_c")             \n\t"
 
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
+                CALL_MMX2_FILTER_CODE
 
 #if defined(PIC)
-            "mov %6, %%"REG_b"    \n\t"
+                "mov %6, %%"REG_b"    \n\t"
 #endif
-            :: "m" (src1), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
-            "m" (mmx2FilterCode), "m" (src2)
+                :: "m" (src1), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
+                "m" (mmx2FilterCode), "m" (src2)
 #if defined(PIC)
-            ,"m" (ebxsave)
+                ,"m" (ebxsave)
 #endif
-            : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+                : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 #if !defined(PIC)
-             ,"%"REG_b
+                ,"%"REG_b
 #endif
             );
             for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) {
@@ -2472,37 +2472,37 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
             x86_reg xInc_shr16 = (x86_reg) (xInc >> 16);
             uint16_t xInc_mask = xInc & 0xffff;
             __asm__ volatile(
-            "xor %%"REG_a", %%"REG_a"               \n\t" // i
-            "xor %%"REG_d", %%"REG_d"               \n\t" // xx
-            "xorl    %%ecx, %%ecx                   \n\t" // xalpha
-            ASMALIGN(4)
-            "1:                                     \n\t"
-            "mov        %0, %%"REG_S"               \n\t"
-            "movzbl  (%%"REG_S", %%"REG_d"), %%edi  \n\t" //src[xx]
-            "movzbl 1(%%"REG_S", %%"REG_d"), %%esi  \n\t" //src[xx+1]
-            FAST_BILINEAR_X86
-            "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
+                "xor %%"REG_a", %%"REG_a"               \n\t" // i
+                "xor %%"REG_d", %%"REG_d"               \n\t" // xx
+                "xorl    %%ecx, %%ecx                   \n\t" // xalpha
+                ASMALIGN(4)
+                "1:                                     \n\t"
+                "mov        %0, %%"REG_S"               \n\t"
+                "movzbl  (%%"REG_S", %%"REG_d"), %%edi  \n\t" //src[xx]
+                "movzbl 1(%%"REG_S", %%"REG_d"), %%esi  \n\t" //src[xx+1]
+                FAST_BILINEAR_X86
+                "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
 
-            "movzbl    (%5, %%"REG_d"), %%edi       \n\t" //src[xx]
-            "movzbl   1(%5, %%"REG_d"), %%esi       \n\t" //src[xx+1]
-            FAST_BILINEAR_X86
-            "movw     %%si, "AV_STRINGIFY(VOF)"(%%"REG_D", %%"REG_a", 2)   \n\t"
+                "movzbl    (%5, %%"REG_d"), %%edi       \n\t" //src[xx]
+                "movzbl   1(%5, %%"REG_d"), %%esi       \n\t" //src[xx+1]
+                FAST_BILINEAR_X86
+                "movw     %%si, "AV_STRINGIFY(VOF)"(%%"REG_D", %%"REG_a", 2)   \n\t"
 
-            "addw       %4, %%cx                    \n\t" //xalpha += xInc&0xFFFF
-            "adc        %3, %%"REG_d"               \n\t" //xx+= xInc>>16 + carry
-            "add        $1, %%"REG_a"               \n\t"
-            "cmp        %2, %%"REG_a"               \n\t"
-            " jb        1b                          \n\t"
+                "addw       %4, %%cx                    \n\t" //xalpha += xInc&0xFFFF
+                "adc        %3, %%"REG_d"               \n\t" //xx+= xInc>>16 + carry
+                "add        $1, %%"REG_a"               \n\t"
+                "cmp        %2, %%"REG_a"               \n\t"
+                " jb        1b                          \n\t"
 
 /* GCC 3.3 makes MPlayer crash on IA-32 machines when using "g" operand here,
    which is needed to support GCC 4.0. */
 #if ARCH_X86_64 && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
-            :: "m" (src1), "m" (dst), "g" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+                :: "m" (src1), "m" (dst), "g" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 #else
-            :: "m" (src1), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+                :: "m" (src1), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 #endif
-            "r" (src2)
-            : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
+                "r" (src2)
+                : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
             );
 #if COMPILE_TEMPLATE_MMX2
         } //if MMX2 can't be used

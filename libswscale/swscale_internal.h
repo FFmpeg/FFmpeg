@@ -381,38 +381,38 @@ const char *sws_format_name(enum PixelFormat format);
 static inline int fmt_depth(int fmt)
 {
     switch(fmt) {
-        case PIX_FMT_RGB48BE:
-        case PIX_FMT_RGB48LE:
-            return 48;
-        case PIX_FMT_BGRA:
-        case PIX_FMT_ABGR:
-        case PIX_FMT_RGBA:
-        case PIX_FMT_ARGB:
-            return 32;
-        case PIX_FMT_BGR24:
-        case PIX_FMT_RGB24:
-            return 24;
-        case PIX_FMT_BGR565:
-        case PIX_FMT_RGB565:
-        case PIX_FMT_GRAY16BE:
-        case PIX_FMT_GRAY16LE:
-            return 16;
-        case PIX_FMT_BGR555:
-        case PIX_FMT_RGB555:
-            return 15;
-        case PIX_FMT_BGR8:
-        case PIX_FMT_RGB8:
-            return 8;
-        case PIX_FMT_BGR4:
-        case PIX_FMT_RGB4:
-        case PIX_FMT_BGR4_BYTE:
-        case PIX_FMT_RGB4_BYTE:
-            return 4;
-        case PIX_FMT_MONOBLACK:
-        case PIX_FMT_MONOWHITE:
-            return 1;
-        default:
-            return 0;
+    case PIX_FMT_RGB48BE:
+    case PIX_FMT_RGB48LE:
+        return 48;
+    case PIX_FMT_BGRA:
+    case PIX_FMT_ABGR:
+    case PIX_FMT_RGBA:
+    case PIX_FMT_ARGB:
+        return 32;
+    case PIX_FMT_BGR24:
+    case PIX_FMT_RGB24:
+        return 24;
+    case PIX_FMT_BGR565:
+    case PIX_FMT_RGB565:
+    case PIX_FMT_GRAY16BE:
+    case PIX_FMT_GRAY16LE:
+        return 16;
+    case PIX_FMT_BGR555:
+    case PIX_FMT_RGB555:
+        return 15;
+    case PIX_FMT_BGR8:
+    case PIX_FMT_RGB8:
+        return 8;
+    case PIX_FMT_BGR4:
+    case PIX_FMT_RGB4:
+    case PIX_FMT_BGR4_BYTE:
+    case PIX_FMT_RGB4_BYTE:
+        return 4;
+    case PIX_FMT_MONOBLACK:
+    case PIX_FMT_MONOWHITE:
+        return 1;
+    default:
+        return 0;
     }
 }
 
