@@ -38,6 +38,112 @@
 #endif
 
 /*
+ * Map AV_RNXX <-> AV_R[BL]XX for all variants provided by per-arch headers.
+ */
+
+#if HAVE_BIGENDIAN
+
+#   if    defined(AV_RN16) && !defined(AV_RB16)
+#       define AV_RB16(p) AV_RN16(p)
+#   elif !defined(AV_RN16) &&  defined(AV_RB16)
+#       define AV_RN16(p) AV_RB16(p)
+#   endif
+
+#   if    defined(AV_WN16) && !defined(AV_WB16)
+#       define AV_WB16(p, v) AV_WN16(p, v)
+#   elif !defined(AV_WN16) &&  defined(AV_WB16)
+#       define AV_WN16(p, v) AV_WB16(p, v)
+#   endif
+
+#   if    defined(AV_RN32) && !defined(AV_RB32)
+#       define AV_RB32(p) AV_RN32(p)
+#   elif !defined(AV_RN32) &&  defined(AV_RB32)
+#       define AV_RN32(p) AV_RB32(p)
+#   endif
+
+#   if    defined(AV_RN24) && !defined(AV_RB24)
+#       define AV_RB24(p) AV_RN24(p)
+#   elif !defined(AV_RN24) &&  defined(AV_RB24)
+#       define AV_RN24(p) AV_RB24(p)
+#   endif
+
+#   if    defined(AV_WN24) && !defined(AV_WB24)
+#       define AV_WB24(p, v) AV_WN24(p, v)
+#   elif !defined(AV_WN24) &&  defined(AV_WB24)
+#       define AV_WN24(p, v) AV_WB24(p, v)
+#   endif
+
+#   if    defined(AV_WN32) && !defined(AV_WB32)
+#       define AV_WB32(p, v) AV_WN32(p, v)
+#   elif !defined(AV_WN32) &&  defined(AV_WB32)
+#       define AV_WN32(p, v) AV_WB32(p, v)
+#   endif
+
+#   if    defined(AV_RN64) && !defined(AV_RB64)
+#       define AV_RB64(p) AV_RN64(p)
+#   elif !defined(AV_RN64) &&  defined(AV_RB64)
+#       define AV_RN64(p) AV_RB64(p)
+#   endif
+
+#   if    defined(AV_WN64) && !defined(AV_WB64)
+#       define AV_WB64(p, v) AV_WN64(p, v)
+#   elif !defined(AV_WN64) &&  defined(AV_WB64)
+#       define AV_WN64(p, v) AV_WB64(p, v)
+#   endif
+
+#else /* HAVE_BIGENDIAN */
+
+#   if    defined(AV_RN16) && !defined(AV_RL16)
+#       define AV_RL16(p) AV_RN16(p)
+#   elif !defined(AV_RN16) &&  defined(AV_RL16)
+#       define AV_RN16(p) AV_RL16(p)
+#   endif
+
+#   if    defined(AV_WN16) && !defined(AV_WL16)
+#       define AV_WL16(p, v) AV_WN16(p, v)
+#   elif !defined(AV_WN16) &&  defined(AV_WL16)
+#       define AV_WN16(p, v) AV_WL16(p, v)
+#   endif
+
+#   if    defined(AV_RN32) && !defined(AV_RL32)
+#       define AV_RL32(p) AV_RN32(p)
+#   elif !defined(AV_RN32) &&  defined(AV_RL32)
+#       define AV_RN32(p) AV_RL32(p)
+#   endif
+
+#   if    defined(AV_RN24) && !defined(AV_RL24)
+#       define AV_RL24(p) AV_RN24(p)
+#   elif !defined(AV_RN24) &&  defined(AV_RL24)
+#       define AV_RN24(p) AV_RL24(p)
+#   endif
+
+#   if    defined(AV_WN24) && !defined(AV_WL24)
+#       define AV_WL24(p, v) AV_WN24(p, v)
+#   elif !defined(AV_WN24) &&  defined(AV_WL24)
+#       define AV_WN24(p, v) AV_WL24(p, v)
+#   endif
+
+#   if    defined(AV_WN32) && !defined(AV_WL32)
+#       define AV_WL32(p, v) AV_WN32(p, v)
+#   elif !defined(AV_WN32) &&  defined(AV_WL32)
+#       define AV_WN32(p, v) AV_WL32(p, v)
+#   endif
+
+#   if    defined(AV_RN64) && !defined(AV_RL64)
+#       define AV_RL64(p) AV_RN64(p)
+#   elif !defined(AV_RN64) &&  defined(AV_RL64)
+#       define AV_RN64(p) AV_RL64(p)
+#   endif
+
+#   if    defined(AV_WN64) && !defined(AV_WL64)
+#       define AV_WL64(p, v) AV_WN64(p, v)
+#   elif !defined(AV_WN64) &&  defined(AV_WL64)
+#       define AV_WN64(p, v) AV_WL64(p, v)
+#   endif
+
+#endif /* !HAVE_BIGENDIAN */
+
+/*
  * Define AV_[RW]N helper macros to simplify definitions not provided
  * by per-arch headers.
  */
@@ -190,15 +296,15 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 #endif
 
 #if HAVE_BIGENDIAN
-#   define AV_RB(s, p)    AV_RN(s, p)
-#   define AV_WB(s, p, v) AV_WN(s, p, v)
-#   define AV_RL(s, p)    bswap_##s(AV_RN(s, p))
-#   define AV_WL(s, p, v) AV_WN(s, p, bswap_##s(v))
+#   define AV_RB(s, p)    AV_RN##s(p)
+#   define AV_WB(s, p, v) AV_WN##s(p, v)
+#   define AV_RL(s, p)    bswap_##s(AV_RN##s(p))
+#   define AV_WL(s, p, v) AV_WN##s(p, bswap_##s(v))
 #else
-#   define AV_RB(s, p)    bswap_##s(AV_RN(s, p))
-#   define AV_WB(s, p, v) AV_WN(s, p, bswap_##s(v))
-#   define AV_RL(s, p)    AV_RN(s, p)
-#   define AV_WL(s, p, v) AV_WN(s, p, v)
+#   define AV_RB(s, p)    bswap_##s(AV_RN##s(p))
+#   define AV_WB(s, p, v) AV_WN##s(p, bswap_##s(v))
+#   define AV_RL(s, p)    AV_RN##s(p)
+#   define AV_WL(s, p, v) AV_WN##s(p, v)
 #endif
 
 #define AV_RB8(x)     (((const uint8_t*)(x))[0])
