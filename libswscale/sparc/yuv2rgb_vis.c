@@ -83,105 +83,105 @@
 // FIXME: must be changed to set alpha to 255 instead of 0
 static int vis_420P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
-  int y, out1, out2, out3, out4, out5, out6;
+    int y, out1, out2, out3, out4, out5, out6;
 
-  for(y=0;y < srcSliceH;++y) {
-      __asm__ volatile (
-          YUV2RGB_INIT
-          "wr %%g0, 0xd2, %%asi        \n\t" /* ASI_FL16_P */
-          "1:                          \n\t"
-          "ldda [%1] %%asi, %%f2       \n\t"
-          "ldda [%1+2] %%asi, %%f18    \n\t"
-          "ldda [%2] %%asi, %%f4       \n\t"
-          "ldda [%2+2] %%asi, %%f20    \n\t"
-          "ld [%0], %%f0               \n\t"
-          "ld [%0+4], %%f16            \n\t"
-          "fpmerge %%f3, %%f3, %%f2    \n\t"
-          "fpmerge %%f19, %%f19, %%f18 \n\t"
-          "fpmerge %%f5, %%f5, %%f4    \n\t"
-          "fpmerge %%f21, %%f21, %%f20 \n\t"
-          YUV2RGB_KERNEL
-          "fzero %%f0                  \n\t"
-          "fpmerge %%f4, %%f6, %%f8    \n\t"  // r,b,t1
-          "fpmerge %%f20, %%f22, %%f24 \n\t"  // r,b,t1
-          "fpmerge %%f0, %%f2, %%f10   \n\t"  // 0,g,t2
-          "fpmerge %%f0, %%f18, %%f26  \n\t"  // 0,g,t2
-          "fpmerge %%f10, %%f8, %%f4   \n\t"  // t2,t1,msb
-          "fpmerge %%f26, %%f24, %%f20 \n\t"  // t2,t1,msb
-          "fpmerge %%f11, %%f9, %%f6   \n\t"  // t2,t1,lsb
-          "fpmerge %%f27, %%f25, %%f22 \n\t"  // t2,t1,lsb
-          "std %%f4, [%3]              \n\t"
-          "std %%f20, [%3+16]          \n\t"
-          "std %%f6, [%3+8]            \n\t"
-          "std %%f22, [%3+24]          \n\t"
+    for(y=0;y < srcSliceH;++y) {
+        __asm__ volatile (
+            YUV2RGB_INIT
+            "wr %%g0, 0xd2, %%asi        \n\t" /* ASI_FL16_P */
+            "1:                          \n\t"
+            "ldda [%1] %%asi, %%f2       \n\t"
+            "ldda [%1+2] %%asi, %%f18    \n\t"
+            "ldda [%2] %%asi, %%f4       \n\t"
+            "ldda [%2+2] %%asi, %%f20    \n\t"
+            "ld [%0], %%f0               \n\t"
+            "ld [%0+4], %%f16            \n\t"
+            "fpmerge %%f3, %%f3, %%f2    \n\t"
+            "fpmerge %%f19, %%f19, %%f18 \n\t"
+            "fpmerge %%f5, %%f5, %%f4    \n\t"
+            "fpmerge %%f21, %%f21, %%f20 \n\t"
+            YUV2RGB_KERNEL
+            "fzero %%f0                  \n\t"
+            "fpmerge %%f4, %%f6, %%f8    \n\t"  // r,b,t1
+            "fpmerge %%f20, %%f22, %%f24 \n\t"  // r,b,t1
+            "fpmerge %%f0, %%f2, %%f10   \n\t"  // 0,g,t2
+            "fpmerge %%f0, %%f18, %%f26  \n\t"  // 0,g,t2
+            "fpmerge %%f10, %%f8, %%f4   \n\t"  // t2,t1,msb
+            "fpmerge %%f26, %%f24, %%f20 \n\t"  // t2,t1,msb
+            "fpmerge %%f11, %%f9, %%f6   \n\t"  // t2,t1,lsb
+            "fpmerge %%f27, %%f25, %%f22 \n\t"  // t2,t1,lsb
+            "std %%f4, [%3]              \n\t"
+            "std %%f20, [%3+16]          \n\t"
+            "std %%f6, [%3+8]            \n\t"
+            "std %%f22, [%3+24]          \n\t"
 
-          "add %0, 8, %0   \n\t"
-          "add %1, 4, %1   \n\t"
-          "add %2, 4, %2   \n\t"
-          "subcc %4, 8, %4 \n\t"
-          "bne 1b          \n\t"
-          "add %3, 32, %3  \n\t" //delay slot
-          : "=r" (out1), "=r" (out2), "=r" (out3), "=r" (out4), "=r" (out5), "=r" (out6)
-          : "0" (src[0]+(y+srcSliceY)*srcStride[0]), "1" (src[1]+((y+srcSliceY)>>1)*srcStride[1]),
-            "2" (src[2]+((y+srcSliceY)>>1)*srcStride[2]), "3" (dst[0]+(y+srcSliceY)*dstStride[0]),
-            "4" (c->dstW),
-            "5" (c->sparc_coeffs)
-      );
-  }
+            "add %0, 8, %0   \n\t"
+            "add %1, 4, %1   \n\t"
+            "add %2, 4, %2   \n\t"
+            "subcc %4, 8, %4 \n\t"
+            "bne 1b          \n\t"
+            "add %3, 32, %3  \n\t" //delay slot
+            : "=r" (out1), "=r" (out2), "=r" (out3), "=r" (out4), "=r" (out5), "=r" (out6)
+            : "0" (src[0]+(y+srcSliceY)*srcStride[0]), "1" (src[1]+((y+srcSliceY)>>1)*srcStride[1]),
+                "2" (src[2]+((y+srcSliceY)>>1)*srcStride[2]), "3" (dst[0]+(y+srcSliceY)*dstStride[0]),
+                "4" (c->dstW),
+                "5" (c->sparc_coeffs)
+        );
+    }
 
-  return srcSliceH;
+    return srcSliceH;
 }
 
 // FIXME: must be changed to set alpha to 255 instead of 0
 static int vis_422P_ARGB32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
-  int y, out1, out2, out3, out4, out5, out6;
+    int y, out1, out2, out3, out4, out5, out6;
 
-  for(y=0;y < srcSliceH;++y) {
-      __asm__ volatile (
-          YUV2RGB_INIT
-          "wr %%g0, 0xd2, %%asi        \n\t" /* ASI_FL16_P */
-          "1:                          \n\t"
-          "ldda [%1] %%asi, %%f2       \n\t"
-          "ldda [%1+2] %%asi, %%f18    \n\t"
-          "ldda [%2] %%asi, %%f4       \n\t"
-          "ldda [%2+2] %%asi, %%f20    \n\t"
-          "ld [%0], %%f0               \n\t"
-          "ld [%0+4], %%f16            \n\t"
-          "fpmerge %%f3, %%f3, %%f2    \n\t"
-          "fpmerge %%f19, %%f19, %%f18 \n\t"
-          "fpmerge %%f5, %%f5, %%f4    \n\t"
-          "fpmerge %%f21, %%f21, %%f20 \n\t"
-          YUV2RGB_KERNEL
-          "fzero %%f0 \n\t"
-          "fpmerge %%f4, %%f6, %%f8    \n\t"  // r,b,t1
-          "fpmerge %%f20, %%f22, %%f24 \n\t"  // r,b,t1
-          "fpmerge %%f0, %%f2, %%f10   \n\t"  // 0,g,t2
-          "fpmerge %%f0, %%f18, %%f26  \n\t"  // 0,g,t2
-          "fpmerge %%f10, %%f8, %%f4   \n\t"  // t2,t1,msb
-          "fpmerge %%f26, %%f24, %%f20 \n\t"  // t2,t1,msb
-          "fpmerge %%f11, %%f9, %%f6   \n\t"  // t2,t1,lsb
-          "fpmerge %%f27, %%f25, %%f22 \n\t"  // t2,t1,lsb
-          "std %%f4, [%3]              \n\t"
-          "std %%f20, [%3+16]          \n\t"
-          "std %%f6, [%3+8]            \n\t"
-          "std %%f22, [%3+24]          \n\t"
+    for(y=0;y < srcSliceH;++y) {
+        __asm__ volatile (
+            YUV2RGB_INIT
+            "wr %%g0, 0xd2, %%asi        \n\t" /* ASI_FL16_P */
+            "1:                          \n\t"
+            "ldda [%1] %%asi, %%f2       \n\t"
+            "ldda [%1+2] %%asi, %%f18    \n\t"
+            "ldda [%2] %%asi, %%f4       \n\t"
+            "ldda [%2+2] %%asi, %%f20    \n\t"
+            "ld [%0], %%f0               \n\t"
+            "ld [%0+4], %%f16            \n\t"
+            "fpmerge %%f3, %%f3, %%f2    \n\t"
+            "fpmerge %%f19, %%f19, %%f18 \n\t"
+            "fpmerge %%f5, %%f5, %%f4    \n\t"
+            "fpmerge %%f21, %%f21, %%f20 \n\t"
+            YUV2RGB_KERNEL
+            "fzero %%f0 \n\t"
+            "fpmerge %%f4, %%f6, %%f8    \n\t"  // r,b,t1
+            "fpmerge %%f20, %%f22, %%f24 \n\t"  // r,b,t1
+            "fpmerge %%f0, %%f2, %%f10   \n\t"  // 0,g,t2
+            "fpmerge %%f0, %%f18, %%f26  \n\t"  // 0,g,t2
+            "fpmerge %%f10, %%f8, %%f4   \n\t"  // t2,t1,msb
+            "fpmerge %%f26, %%f24, %%f20 \n\t"  // t2,t1,msb
+            "fpmerge %%f11, %%f9, %%f6   \n\t"  // t2,t1,lsb
+            "fpmerge %%f27, %%f25, %%f22 \n\t"  // t2,t1,lsb
+            "std %%f4, [%3]              \n\t"
+            "std %%f20, [%3+16]          \n\t"
+            "std %%f6, [%3+8]            \n\t"
+            "std %%f22, [%3+24]          \n\t"
 
-          "add %0, 8, %0   \n\t"
-          "add %1, 4, %1   \n\t"
-          "add %2, 4, %2   \n\t"
-          "subcc %4, 8, %4 \n\t"
-          "bne 1b          \n\t"
-          "add %3, 32, %3  \n\t" //delay slot
-          : "=r" (out1), "=r" (out2), "=r" (out3), "=r" (out4), "=r" (out5), "=r" (out6)
-          : "0" (src[0]+(y+srcSliceY)*srcStride[0]), "1" (src[1]+(y+srcSliceY)*srcStride[1]),
-            "2" (src[2]+(y+srcSliceY)*srcStride[2]), "3" (dst[0]+(y+srcSliceY)*dstStride[0]),
-            "4" (c->dstW),
-            "5" (c->sparc_coeffs)
-      );
-  }
+            "add %0, 8, %0   \n\t"
+            "add %1, 4, %1   \n\t"
+            "add %2, 4, %2   \n\t"
+            "subcc %4, 8, %4 \n\t"
+            "bne 1b          \n\t"
+            "add %3, 32, %3  \n\t" //delay slot
+            : "=r" (out1), "=r" (out2), "=r" (out3), "=r" (out4), "=r" (out5), "=r" (out6)
+            : "0" (src[0]+(y+srcSliceY)*srcStride[0]), "1" (src[1]+(y+srcSliceY)*srcStride[1]),
+                "2" (src[2]+(y+srcSliceY)*srcStride[2]), "3" (dst[0]+(y+srcSliceY)*dstStride[0]),
+                "4" (c->dstW),
+                "5" (c->sparc_coeffs)
+        );
+    }
 
-  return srcSliceH;
+    return srcSliceH;
 }
 
 SwsFunc ff_yuv2rgb_init_vis(SwsContext *c){

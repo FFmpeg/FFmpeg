@@ -855,13 +855,13 @@ ff_yuv2packedX_altivec(SwsContext *c,
         B  = vec_packclp (B0,B1);
 
         switch(c->dstFormat) {
-            case PIX_FMT_ABGR:  out_abgr  (R,G,B,out); break;
-            case PIX_FMT_BGRA:  out_bgra  (R,G,B,out); break;
-            case PIX_FMT_RGBA:  out_rgba  (R,G,B,out); break;
-            case PIX_FMT_ARGB:  out_argb  (R,G,B,out); break;
-            case PIX_FMT_RGB24: out_rgb24 (R,G,B,out); break;
-            case PIX_FMT_BGR24: out_bgr24 (R,G,B,out); break;
-            default:
+        case PIX_FMT_ABGR:  out_abgr  (R,G,B,out); break;
+        case PIX_FMT_BGRA:  out_bgra  (R,G,B,out); break;
+        case PIX_FMT_RGBA:  out_rgba  (R,G,B,out); break;
+        case PIX_FMT_ARGB:  out_argb  (R,G,B,out); break;
+        case PIX_FMT_RGB24: out_rgb24 (R,G,B,out); break;
+        case PIX_FMT_BGR24: out_bgr24 (R,G,B,out); break;
+        default:
             {
                 /* If this is reached, the caller should have called yuv2packedXinC
                    instead. */
@@ -934,17 +934,17 @@ ff_yuv2packedX_altivec(SwsContext *c,
 
         nout = (vector unsigned char *)scratch;
         switch(c->dstFormat) {
-            case PIX_FMT_ABGR:  out_abgr  (R,G,B,nout); break;
-            case PIX_FMT_BGRA:  out_bgra  (R,G,B,nout); break;
-            case PIX_FMT_RGBA:  out_rgba  (R,G,B,nout); break;
-            case PIX_FMT_ARGB:  out_argb  (R,G,B,nout); break;
-            case PIX_FMT_RGB24: out_rgb24 (R,G,B,nout); break;
-            case PIX_FMT_BGR24: out_bgr24 (R,G,B,nout); break;
-            default:
-                /* Unreachable, I think. */
-                av_log(c, AV_LOG_ERROR, "altivec_yuv2packedX doesn't support %s output\n",
-                       sws_format_name(c->dstFormat));
-                return;
+        case PIX_FMT_ABGR:  out_abgr  (R,G,B,nout); break;
+        case PIX_FMT_BGRA:  out_bgra  (R,G,B,nout); break;
+        case PIX_FMT_RGBA:  out_rgba  (R,G,B,nout); break;
+        case PIX_FMT_ARGB:  out_argb  (R,G,B,nout); break;
+        case PIX_FMT_RGB24: out_rgb24 (R,G,B,nout); break;
+        case PIX_FMT_BGR24: out_bgr24 (R,G,B,nout); break;
+        default:
+            /* Unreachable, I think. */
+            av_log(c, AV_LOG_ERROR, "altivec_yuv2packedX doesn't support %s output\n",
+                   sws_format_name(c->dstFormat));
+            return;
         }
 
         memcpy (&((uint32_t*)dest)[i], scratch, (dstW-i)/4);

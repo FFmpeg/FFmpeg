@@ -41,17 +41,17 @@ static char *args_parse(int argc, char *argv[])
 
     while ((o = getopt(argc, argv, "m23")) != -1) {
         switch (o) {
-            case 'm':
-                cpu_caps |= SWS_CPU_CAPS_MMX;
-                break;
-            case '2':
-                cpu_caps |= SWS_CPU_CAPS_MMX2;
-                break;
-            case '3':
-                cpu_caps |= SWS_CPU_CAPS_3DNOW;
-                break;
-            default:
-                av_log(NULL, AV_LOG_ERROR, "Unknown option %c\n", o);
+        case 'm':
+            cpu_caps |= SWS_CPU_CAPS_MMX;
+            break;
+        case '2':
+            cpu_caps |= SWS_CPU_CAPS_MMX2;
+            break;
+        case '3':
+            cpu_caps |= SWS_CPU_CAPS_3DNOW;
+            break;
+        default:
+            av_log(NULL, AV_LOG_ERROR, "Unknown option %c\n", o);
         }
     }
 
