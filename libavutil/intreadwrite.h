@@ -25,7 +25,7 @@
 
 /*
  * Arch-specific headers can provide any combination of
- * AV_[RW][BLN](16|32|64) macros.  Preprocessor symbols must be
+ * AV_[RW][BLN](16|24|32|64) macros.  Preprocessor symbols must be
  * defined, even if these are implemented as inline functions.
  */
 
@@ -249,20 +249,28 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 #   define AV_WL64(p, v) AV_WL(64, p, v)
 #endif
 
+#ifndef AV_RB24
 #define AV_RB24(x)  ((((const uint8_t*)(x))[0] << 16) | \
                      (((const uint8_t*)(x))[1] <<  8) | \
                       ((const uint8_t*)(x))[2])
+#endif
+#ifndef AV_WB24
 #define AV_WB24(p, d) do { \
                     ((uint8_t*)(p))[2] = (d); \
                     ((uint8_t*)(p))[1] = (d)>>8; \
                     ((uint8_t*)(p))[0] = (d)>>16; } while(0)
+#endif
 
+#ifndef AV_RL24
 #define AV_RL24(x)  ((((const uint8_t*)(x))[2] << 16) | \
                      (((const uint8_t*)(x))[1] <<  8) | \
                       ((const uint8_t*)(x))[0])
+#endif
+#ifndef AV_WL24
 #define AV_WL24(p, d) do { \
                     ((uint8_t*)(p))[0] = (d); \
                     ((uint8_t*)(p))[1] = (d)>>8; \
                     ((uint8_t*)(p))[2] = (d)>>16; } while(0)
+#endif
 
 #endif /* AVUTIL_INTREADWRITE_H */
