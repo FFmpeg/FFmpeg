@@ -26,6 +26,8 @@
 
 #if   ARCH_ARM
 #   include "arm/mathops.h"
+#elif ARCH_AVR32
+#   include "avr32/mathops.h"
 #elif ARCH_BFIN
 #   include "bfin/mathops.h"
 #elif ARCH_MIPS
