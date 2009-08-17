@@ -865,6 +865,9 @@ THREADS_LIST='
 ARCH_LIST='
     alpha
     arm
+    avr32
+    avr32_ap
+    avr32_uc
     bfin
     ia64
     m68k
@@ -1685,6 +1688,22 @@ case $cpu in
         cpuflags="-mcpu=$cpu"
     ;;
     mips*|[45]k*|[237]4k*|m4k|r*000|loongson2[ef])
+        cpuflags="-march=$cpu"
+    ;;
+    ap7[02]0[0-2])
+        subarch="avr32_ap"
+        cpuflags="-mpart=$cpu"
+    ;;
+    ap)
+        subarch="avr32_ap"
+        cpuflags="-march=$cpu"
+    ;;
+    uc3[ab]*)
+        subarch="avr32_uc"
+        cpuflags="-mcpu=$cpu"
+    ;;
+    uc)
+        subarch="avr32_uc"
         cpuflags="-march=$cpu"
     ;;
     generic)
