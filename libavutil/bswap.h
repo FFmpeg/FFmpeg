@@ -32,6 +32,8 @@
 
 #if   ARCH_ARM
 #   include "arm/bswap.h"
+#elif ARCH_AVR32
+#   include "avr32/bswap.h"
 #elif ARCH_BFIN
 #   include "bfin/bswap.h"
 #elif ARCH_SH4
