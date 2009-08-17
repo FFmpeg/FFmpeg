@@ -36,7 +36,7 @@ const uint8_t ff_mpeg4audio_channels[8] = {
 static inline int get_object_type(GetBitContext *gb)
 {
     int object_type = get_bits(gb, 5);
-    if (object_type == 31)
+    if (object_type == AOT_ESCAPE)
         object_type = 32 + get_bits(gb, 6);
     return object_type;
 }
@@ -66,7 +66,7 @@ int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_si
         if (c->object_type == AOT_ER_BSAC)
             c->ext_chan_config = get_bits(&gb, 4);
     } else {
-        c->ext_object_type = 0;
+        c->ext_object_type = AOT_NULL;
         c->ext_sample_rate = 0;
     }
     specific_config_bitindex = get_bits_count(&gb);
