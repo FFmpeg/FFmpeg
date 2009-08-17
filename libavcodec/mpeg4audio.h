@@ -90,6 +90,9 @@ enum AudioObjectType {
     AOT_ER_AAC_ELD,            ///< N                       Error Resilient Enhanced Low Delay
     AOT_SMR_SIMPLE,            ///< N                       Symbolic Music Representation Simple
     AOT_SMR_MAIN,              ///< N                       Symbolic Music Representation Main
+    AOT_USAC_NOSBR,            ///< N                       Unified Speech and Audio Coding (no SBR)
+    AOT_SAOC,                  ///< N                       Spatial Audio Object Coding
+    AOT_USAC             = 45, ///< N                       Unified Speech and Audio Coding
 };
 
 #define MAX_PCE_SIZE 304 ///<Maximum size of a PCE including the 3-bit ID_PCE
