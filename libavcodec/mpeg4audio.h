@@ -79,7 +79,7 @@ enum AudioObjectType {
     AOT_SSC,                   ///< N                       SinuSoidal Coding
     AOT_PS,                    ///< N                       Parametric Stereo
     AOT_SURROUND,              ///< N                       MPEG Surround
-    AOT_ESCAPE,                ///< N                       Escape Value
+    AOT_ESCAPE,                ///< Y                       Escape Value
     AOT_L1,                    ///< Y                       Layer 1
     AOT_L2,                    ///< Y                       Layer 2
     AOT_L3,                    ///< Y                       Layer 3
