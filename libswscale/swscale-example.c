@@ -182,12 +182,18 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
 
 static void selfTest(uint8_t *src[4], int stride[4], int w, int h)
 {
+    const int flags[] = { SWS_FAST_BILINEAR,
+                          SWS_BILINEAR, SWS_BICUBIC,
+                          SWS_X       , SWS_POINT  , SWS_AREA, 0 };
+    const int srcW = w;
+    const int srcH = h;
+    const int dstW[] = { srcW - srcW/3, srcW, srcW + srcW/3, 0 };
+    const int dstH[] = { srcH - srcH/3, srcH, srcH + srcH/3, 0 };
     enum PixelFormat srcFormat, dstFormat;
-    int srcW, srcH, dstW, dstH;
-    int flags;
 
     for (srcFormat = 0; srcFormat < PIX_FMT_NB; srcFormat++) {
         for (dstFormat = 0; dstFormat < PIX_FMT_NB; dstFormat++) {
+            int i, j, k;
             int res = 0;
 
             printf("%s -> %s\n",
@@ -195,13 +201,11 @@ static void selfTest(uint8_t *src[4], int stride[4], int w, int h)
                    sws_format_name(dstFormat));
             fflush(stdout);
 
-            srcW= w;
-            srcH= h;
-            for (dstW=w - w/3; !res && dstW<= 4*w/3; dstW+= w/3)
-                for (dstH=h - h/3; !res && dstH<= 4*h/3; dstH+= h/3)
-                    for (flags=1; !res && flags<33; flags*=2)
+            for (i = 0; dstW[i] && !res; i++)
+                for (j = 0; dstH[j] && !res; j++)
+                    for (k = 0; flags[k] && !res; k++)
                         res = doTest(src, stride, w, h, srcFormat, dstFormat,
-                                     srcW, srcH, dstW, dstH, flags);
+                                     srcW, srcH, dstW[i], dstH[j], flags[k]);
         }
     }
 }
