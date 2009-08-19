@@ -369,8 +369,12 @@ AVEvalExpr * ff_parse(const char *s, const char * const *const_name,
                double (**func2)(void *, double, double), const char **func2_name,
                const char **error){
     Parser p;
-    AVEvalExpr * e;
-    char w[strlen(s) + 1], * wp = w;
+    AVEvalExpr *e = NULL;
+    char *w = av_malloc(strlen(s) + 1);
+    char *wp = w;
+
+    if (!w)
+        goto end;
 
     while (*s)
         if (!isspace(*s++)) *wp++ = s[-1];
@@ -388,8 +392,10 @@ AVEvalExpr * ff_parse(const char *s, const char * const *const_name,
     e = parse_expr(&p);
     if (!verify_expr(e)) {
         ff_eval_free(e);
-        return NULL;
+        e = NULL;
     }
+end:
+    av_free(w);
     return e;
 }
 
