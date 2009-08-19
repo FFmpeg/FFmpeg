@@ -3831,9 +3831,11 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
     MpegEncContext * const s= (MpegEncContext *)c;
     const uint8_t *scantable= s->intra_scantable.permutated;
     DECLARE_ALIGNED_8 (uint64_t, aligned_temp[sizeof(DCTELEM)*64/8]);
-    DECLARE_ALIGNED_8 (uint64_t, aligned_bak[stride]);
+    DECLARE_ALIGNED_8 (uint64_t, aligned_src1[8]);
+    DECLARE_ALIGNED_8 (uint64_t, aligned_src2[8]);
     DCTELEM * const temp= (DCTELEM*)aligned_temp;
-    uint8_t * const bak= (uint8_t*)aligned_bak;
+    uint8_t * const lsrc1 = (uint8_t*)aligned_src1;
+    uint8_t * const lsrc2 = (uint8_t*)aligned_src2;
     int i, last, run, bits, level, distortion, start_i;
     const int esc_length= s->ac_esc_length;
     uint8_t * length;
@@ -3841,12 +3843,10 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
 
     assert(h==8);
 
-    for(i=0; i<8; i++){
-        ((uint32_t*)(bak + i*stride))[0]= ((uint32_t*)(src2 + i*stride))[0];
-        ((uint32_t*)(bak + i*stride))[1]= ((uint32_t*)(src2 + i*stride))[1];
-    }
+    copy_block8(lsrc1, src1, 8, stride, 8);
+    copy_block8(lsrc2, src2, 8, stride, 8);
 
-    s->dsp.diff_pixels(temp, src1, src2, stride);
+    s->dsp.diff_pixels(temp, lsrc1, lsrc2, 8);
 
     s->block_last_index[0/*FIXME*/]= last= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
 
@@ -3899,9 +3899,9 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
             s->dct_unquantize_inter(s, temp, 0, s->qscale);
     }
 
-    s->dsp.idct_add(bak, stride, temp);
+    s->dsp.idct_add(lsrc2, 8, temp);
 
-    distortion= s->dsp.sse[1](NULL, bak, src1, stride, 8);
+    distortion= s->dsp.sse[1](NULL, lsrc2, lsrc1, 8, 8);
 
     return distortion + ((bits*s->qscale*s->qscale*109 + 64)>>7);
 }
