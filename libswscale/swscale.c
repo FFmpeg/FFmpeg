@@ -3309,18 +3309,12 @@ void sws_normalizeVec(SwsVector *a, double height)
 static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b)
 {
     int length= a->length + b->length - 1;
-    double *coeff= av_malloc(length*sizeof(double));
     int i, j;
-    SwsVector *vec= av_malloc(sizeof(SwsVector));
-
-    vec->coeff= coeff;
-    vec->length= length;
-
-    for (i=0; i<length; i++) coeff[i]= 0.0;
+    SwsVector *vec= sws_getConstVec(0.0, length);
 
     for (i=0; i<a->length; i++) {
         for (j=0; j<b->length; j++) {
-            coeff[i+j]+= a->coeff[i]*b->coeff[j];
+            vec->coeff[i+j]+= a->coeff[i]*b->coeff[j];
         }
     }
 
@@ -3330,17 +3324,11 @@ static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b)
 static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b)
 {
     int length= FFMAX(a->length, b->length);
-    double *coeff= av_malloc(length*sizeof(double));
     int i;
-    SwsVector *vec= av_malloc(sizeof(SwsVector));
+    SwsVector *vec= sws_getConstVec(0.0, length);
 
-    vec->coeff= coeff;
-    vec->length= length;
-
-    for (i=0; i<length; i++) coeff[i]= 0.0;
-
-    for (i=0; i<a->length; i++) coeff[i + (length-1)/2 - (a->length-1)/2]+= a->coeff[i];
-    for (i=0; i<b->length; i++) coeff[i + (length-1)/2 - (b->length-1)/2]+= b->coeff[i];
+    for (i=0; i<a->length; i++) vec->coeff[i + (length-1)/2 - (a->length-1)/2]+= a->coeff[i];
+    for (i=0; i<b->length; i++) vec->coeff[i + (length-1)/2 - (b->length-1)/2]+= b->coeff[i];
 
     return vec;
 }
@@ -3348,17 +3336,11 @@ static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b)
 static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b)
 {
     int length= FFMAX(a->length, b->length);
-    double *coeff= av_malloc(length*sizeof(double));
     int i;
-    SwsVector *vec= av_malloc(sizeof(SwsVector));
+    SwsVector *vec= sws_getConstVec(0.0, length);
 
-    vec->coeff= coeff;
-    vec->length= length;
-
-    for (i=0; i<length; i++) coeff[i]= 0.0;
-
-    for (i=0; i<a->length; i++) coeff[i + (length-1)/2 - (a->length-1)/2]+= a->coeff[i];
-    for (i=0; i<b->length; i++) coeff[i + (length-1)/2 - (b->length-1)/2]-= b->coeff[i];
+    for (i=0; i<a->length; i++) vec->coeff[i + (length-1)/2 - (a->length-1)/2]+= a->coeff[i];
+    for (i=0; i<b->length; i++) vec->coeff[i + (length-1)/2 - (b->length-1)/2]-= b->coeff[i];
 
     return vec;
 }
@@ -3367,17 +3349,11 @@ static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b)
 static SwsVector *sws_getShiftedVec(SwsVector *a, int shift)
 {
     int length= a->length + FFABS(shift)*2;
-    double *coeff= av_malloc(length*sizeof(double));
     int i;
-    SwsVector *vec= av_malloc(sizeof(SwsVector));
-
-    vec->coeff= coeff;
-    vec->length= length;
-
-    for (i=0; i<length; i++) coeff[i]= 0.0;
+    SwsVector *vec= sws_getConstVec(0.0, length);
 
     for (i=0; i<a->length; i++) {
-        coeff[i + (length-1)/2 - (a->length-1)/2 - shift]= a->coeff[i];
+        vec->coeff[i + (length-1)/2 - (a->length-1)/2 - shift]= a->coeff[i];
     }
 
     return vec;
