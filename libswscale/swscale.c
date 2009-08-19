@@ -3240,20 +3240,28 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
     return filter;
 }
 
+SwsVector *sws_allocVec(int length)
+{
+    SwsVector *vec = av_malloc(sizeof(SwsVector));
+    if (!vec)
+        return NULL;
+    vec->length = length;
+    vec->coeff  = av_malloc(sizeof(double) * length);
+    if (!vec->coeff)
+        av_freep(&vec);
+    return vec;
+}
+
 SwsVector *sws_getGaussianVec(double variance, double quality)
 {
     const int length= (int)(variance*quality + 0.5) | 1;
     int i;
-    double *coeff= av_malloc(length*sizeof(double));
     double middle= (length-1)*0.5;
-    SwsVector *vec= av_malloc(sizeof(SwsVector));
-
-    vec->coeff= coeff;
-    vec->length= length;
+    SwsVector *vec= sws_allocVec(length);
 
     for (i=0; i<length; i++) {
         double dist= i-middle;
-        coeff[i]= exp(-dist*dist/(2*variance*variance)) / sqrt(2*variance*PI);
+        vec->coeff[i]= exp(-dist*dist/(2*variance*variance)) / sqrt(2*variance*PI);
     }
 
     sws_normalizeVec(vec, 1.0);
@@ -3264,14 +3272,10 @@ SwsVector *sws_getGaussianVec(double variance, double quality)
 SwsVector *sws_getConstVec(double c, int length)
 {
     int i;
-    double *coeff= av_malloc(length*sizeof(double));
-    SwsVector *vec= av_malloc(sizeof(SwsVector));
-
-    vec->coeff= coeff;
-    vec->length= length;
+    SwsVector *vec= sws_allocVec(length);
 
     for (i=0; i<length; i++)
-        coeff[i]= c;
+        vec->coeff[i]= c;
 
     return vec;
 }
@@ -3397,14 +3401,10 @@ void sws_convVec(SwsVector *a, SwsVector *b)
 
 SwsVector *sws_cloneVec(SwsVector *a)
 {
-    double *coeff= av_malloc(a->length*sizeof(double));
     int i;
-    SwsVector *vec= av_malloc(sizeof(SwsVector));
+    SwsVector *vec= sws_allocVec(a->length);
 
-    vec->coeff= coeff;
-    vec->length= a->length;
-
-    for (i=0; i<a->length; i++) coeff[i]= a->coeff[i];
+    for (i=0; i<a->length; i++) vec->coeff[i]= a->coeff[i];
 
     return vec;
 }

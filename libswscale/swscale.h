@@ -182,6 +182,11 @@ int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table,
                              int *brightness, int *contrast, int *saturation);
 
 /**
+ * Allocates and returns an uninitialized vector with length coefficients.
+ */
+SwsVector *sws_allocVec(int length);
+
+/**
  * Returns a normalized Gaussian curve used to filter stuff
  * quality=3 is high quality, lower is lower quality.
  */
