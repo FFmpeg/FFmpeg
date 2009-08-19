@@ -235,6 +235,7 @@ int main(int argc, char **argv)
         }
     }
     sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
+    sws_freeContext(sws);
 
     selfTest(src, stride, W, H);
 
