@@ -358,7 +358,7 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
 {
     int i, j;
     int coeff_prec, qlevel;
-    int coeffs[pred_order];
+    int coeffs[32];
     int32_t *decoded = s->decoded[channel];
 
     /* warm up samples */
