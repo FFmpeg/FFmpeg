@@ -221,6 +221,7 @@ show_help(){
   echo "  --disable-neon           disable neon optimizations"
   echo "  --disable-vis            disable VIS optimizations"
   echo "  --disable-yasm           disable use of yasm assembler"
+  echo "  --enable-pic             build position-independent code"
   echo
   echo "Developer options (useful when working on FFmpeg itself):"
   echo "  --disable-debug          disable debugging symbols"
@@ -840,6 +841,7 @@ CONFIG_LIST="
     mpegaudio_hp
     network
     nonfree
+    pic
     postproc
     powerpc_perf
     rdft
@@ -1743,7 +1745,7 @@ case "$arch" in
         arch="alpha"
         enable fast_64bit
         check_cflags -mieee
-        pic=$shared
+        spic=$shared
     ;;
     arm|armv[4567]*l)
         arch="arm"
@@ -1756,29 +1758,29 @@ case "$arch" in
     ia64)
         arch="ia64"
         enable fast_64bit
-        pic=$shared
+        spic=$shared
     ;;
     m68k)
         arch="m68k"
     ;;
     mips|mipsel|IP*)
         arch="mips"
-        pic=$shared
+        spic=$shared
     ;;
     mips64)
         arch="mips"
         subarch="mips64"
         enable fast_64bit
-        pic=$shared
+        spic=$shared
     ;;
     parisc|hppa)
         arch="parisc"
-        pic=$shared
+        spic=$shared
     ;;
     parisc64|hppa64)
         arch="parisc"
         enable fast_64bit
-        pic=$shared
+        spic=$shared
     ;;
     "Power Macintosh"|ppc|powerpc)
         arch="ppc"
@@ -1798,13 +1800,13 @@ case "$arch" in
     ;;
     sparc)
         arch="sparc"
-        pic=$shared
+        spic=$shared
     ;;
     sun4u|sparc64)
         arch="sparc"
         subarch="sparc64"
         enable fast_64bit
-        pic=$shared
+        spic=$shared
     ;;
     i386|i486|i586|i686|i86pc|BePC)
         arch="x86"
@@ -1817,7 +1819,7 @@ case "$arch" in
         enable cmov
         enable fast_cmov
         enable fast_unaligned
-        check_cc <<EOF && enable fast_64bit && subarch="x86_64" && pic=$shared
+        check_cc <<EOF && enable fast_64bit && subarch="x86_64" && spic=$shared
         int test[sizeof(char*) - 7];
 EOF
     ;;
@@ -1827,6 +1829,7 @@ EOF
 esac
 
 enable $arch $subarch
+enabled spic && enable pic
 
 # OS specific
 case $target_os in
