@@ -1314,7 +1314,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
             break;
         }
 
-        rect->pict.data[1] = av_malloc((1 << region->depth) * sizeof(uint32_t));
+        rect->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
         memcpy(rect->pict.data[1], clut_table, (1 << region->depth) * sizeof(uint32_t));
 
         rect->pict.data[0] = av_malloc(region->buf_size);

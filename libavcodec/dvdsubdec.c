@@ -318,14 +318,13 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                            buf, offset1, buf_size, is_8bit);
                 decode_rle(bitmap + w, w * 2, w, h / 2,
                            buf, offset2, buf_size, is_8bit);
+                sub_header->rects[0]->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
                 if (is_8bit) {
                     if (yuv_palette == 0)
                         goto fail;
-                    sub_header->rects[0]->pict.data[1] = av_malloc(256 * 4);
                     sub_header->rects[0]->nb_colors = 256;
                     yuv_a_to_rgba(yuv_palette, alpha, (uint32_t*)sub_header->rects[0]->pict.data[1], 256);
                 } else {
-                    sub_header->rects[0]->pict.data[1] = av_malloc(4 * 4);
                     sub_header->rects[0]->nb_colors = 4;
                     guess_palette((uint32_t*)sub_header->rects[0]->pict.data[1],
                                   colormap, alpha, 0xffff00);
