@@ -3259,6 +3259,9 @@ SwsVector *sws_getGaussianVec(double variance, double quality)
     double middle= (length-1)*0.5;
     SwsVector *vec= sws_allocVec(length);
 
+    if (!vec)
+        return NULL;
+
     for (i=0; i<length; i++) {
         double dist= i-middle;
         vec->coeff[i]= exp(-dist*dist/(2*variance*variance)) / sqrt(2*variance*PI);
@@ -3273,6 +3276,9 @@ SwsVector *sws_getConstVec(double c, int length)
 {
     int i;
     SwsVector *vec= sws_allocVec(length);
+
+    if (!vec)
+        return NULL;
 
     for (i=0; i<length; i++)
         vec->coeff[i]= c;
@@ -3316,6 +3322,9 @@ static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b)
     int i, j;
     SwsVector *vec= sws_getConstVec(0.0, length);
 
+    if (!vec)
+        return NULL;
+
     for (i=0; i<a->length; i++) {
         for (j=0; j<b->length; j++) {
             vec->coeff[i+j]+= a->coeff[i]*b->coeff[j];
@@ -3331,6 +3340,9 @@ static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b)
     int i;
     SwsVector *vec= sws_getConstVec(0.0, length);
 
+    if (!vec)
+        return NULL;
+
     for (i=0; i<a->length; i++) vec->coeff[i + (length-1)/2 - (a->length-1)/2]+= a->coeff[i];
     for (i=0; i<b->length; i++) vec->coeff[i + (length-1)/2 - (b->length-1)/2]+= b->coeff[i];
 
@@ -3342,6 +3354,9 @@ static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b)
     int length= FFMAX(a->length, b->length);
     int i;
     SwsVector *vec= sws_getConstVec(0.0, length);
+
+    if (!vec)
+        return NULL;
 
     for (i=0; i<a->length; i++) vec->coeff[i + (length-1)/2 - (a->length-1)/2]+= a->coeff[i];
     for (i=0; i<b->length; i++) vec->coeff[i + (length-1)/2 - (b->length-1)/2]-= b->coeff[i];
@@ -3355,6 +3370,9 @@ static SwsVector *sws_getShiftedVec(SwsVector *a, int shift)
     int length= a->length + FFABS(shift)*2;
     int i;
     SwsVector *vec= sws_getConstVec(0.0, length);
+
+    if (!vec)
+        return NULL;
 
     for (i=0; i<a->length; i++) {
         vec->coeff[i + (length-1)/2 - (a->length-1)/2 - shift]= a->coeff[i];
@@ -3403,6 +3421,9 @@ SwsVector *sws_cloneVec(SwsVector *a)
 {
     int i;
     SwsVector *vec= sws_allocVec(a->length);
+
+    if (!vec)
+        return NULL;
 
     for (i=0; i<a->length; i++) vec->coeff[i]= a->coeff[i];
 
