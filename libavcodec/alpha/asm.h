@@ -24,14 +24,9 @@
 
 #include <inttypes.h>
 
-#if defined __GNUC__
-# define GNUC_PREREQ(maj, min) \
-        ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
-#else
-# define GNUC_PREREQ(maj, min) 0
-#endif
+#include "libavutil/common.h"
 
-#if GNUC_PREREQ(2,96)
+#if AV_GCC_VERSION_AT_LEAST(2,96)
 # define likely(x)      __builtin_expect((x) != 0, 1)
 # define unlikely(x)    __builtin_expect((x) != 0, 0)
 #else
@@ -89,7 +84,7 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define ldq_u(p)        (*(const uint64_t *) (((uint64_t) (p)) & ~7ul))
 #define uldq(a)         (((const struct unaligned_long *) (a))->l)
 
-#if GNUC_PREREQ(3,3)
+#if AV_GCC_VERSION_AT_LEAST(3,3)
 #define prefetch(p)     __builtin_prefetch((p), 0, 1)
 #define prefetch_en(p)  __builtin_prefetch((p), 0, 0)
 #define prefetch_m(p)   __builtin_prefetch((p), 1, 1)
@@ -121,7 +116,7 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #endif
 #define wh64(p) __asm__ volatile("wh64 (%0)" : : "r"(p) : "memory")
 
-#if GNUC_PREREQ(3,3) && defined(__alpha_max__)
+#if AV_GCC_VERSION_AT_LEAST(3,3) && defined(__alpha_max__)
 #define minub8  __builtin_alpha_minub8
 #define minsb8  __builtin_alpha_minsb8
 #define minuw4  __builtin_alpha_minuw4
