@@ -28,6 +28,9 @@
 #ifndef AVCODEC_WMAPRODATA_H
 #define AVCODEC_WMAPRODATA_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 /**
  * @brief frequencies to divide the frequency spectrum into scale factor bands
  */
