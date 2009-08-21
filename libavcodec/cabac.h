@@ -637,7 +637,7 @@ static int av_unused get_cabac_bypass(CABACContext *c){
 
 
 static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
-#if ARCH_X86 && !(defined(PIC) && defined(__GNUC__))
+#if ARCH_X86 && HAVE_EBX_AVAILABLE
     __asm__ volatile(
         "movl "RANGE    "(%1), %%ebx            \n\t"
         "movl "LOW      "(%1), %%eax            \n\t"

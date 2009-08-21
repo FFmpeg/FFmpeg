@@ -31,6 +31,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "msmpeg4.h"
+#include "libavutil/x86_cpu.h"
 
 /*
  * You can also call this codec : MPEG4 with a twist !
@@ -647,7 +648,7 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
        necessitate to modify mpegvideo.c. The problem comes from the
        fact they decided to store the quantized DC (which would lead
        to problems if Q could vary !) */
-#if ARCH_X86 && !defined PIC
+#if ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE
     __asm__ volatile(
         "movl %3, %%eax         \n\t"
         "shrl $1, %%eax         \n\t"
