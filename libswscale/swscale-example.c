@@ -37,7 +37,7 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_GRAY16BE    \
         || (x)==PIX_FMT_GRAY16LE    \
     )
-#define hasChroma(x)   (!(           \
+#define hasChroma(x)   (!(          \
             isGray(x)               \
         || (x)==PIX_FMT_MONOBLACK   \
         || (x)==PIX_FMT_MONOWHITE   \
@@ -165,7 +165,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
            flags, ssdY, ssdU, ssdV, ssdA);
     fflush(stdout);
 
-    end:
+end:
 
     sws_freeContext(srcContext);
     sws_freeContext(dstContext);
