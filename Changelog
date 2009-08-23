@@ -33,6 +33,7 @@ version <next>:
 - noX handling for OPT_BOOL X options
 - Wave64 demuxer
 - IEC-61937 compatible Muxer
+- TwinVQ decoder
 
 
 
