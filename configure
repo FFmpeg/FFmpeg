@@ -2742,25 +2742,15 @@ if enabled source_path_used; then
     DIRS="\
         doc               \
         libavcodec        \
-        libavcodec/alpha  \
-        libavcodec/arm    \
-        libavcodec/bfin   \
-        libavcodec/mlib   \
-        libavcodec/ppc    \
-        libavcodec/sh4    \
-        libavcodec/sparc  \
-        libavcodec/x86    \
+        libavcodec/$arch  \
         libavdevice       \
         libavfilter       \
         libavformat       \
         libavutil         \
+        libavutil/$arch   \
         libpostproc       \
         libswscale        \
-        libswscale/bfin   \
-        libswscale/mlib   \
-        libswscale/ppc    \
-        libswscale/sparc  \
-        libswscale/x86    \
+        libswscale/$arch  \
         tests             \
         tools             \
         "
