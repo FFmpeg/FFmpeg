@@ -21,7 +21,8 @@
 #ifndef AVCODEC_MIPS_MATHOPS_H
 #define AVCODEC_MIPS_MATHOPS_H
 
-#include "config.h"
+#include <stdint.h>
+#include "libavutil/common.h"
 
 #if HAVE_LOONGSON
 

@@ -23,7 +23,8 @@
 #ifndef AVCODEC_PPC_MATHOPS_H
 #define AVCODEC_PPC_MATHOPS_H
 
-#include "config.h"
+#include <stdint.h>
+#include "libavutil/common.h"
 
 #if HAVE_PPC4XX
 /* signed 16x16 -> 32 multiply add accumulate */
