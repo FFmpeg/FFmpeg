@@ -2051,6 +2051,12 @@ check_deps $ARCH_EXT_LIST
 
 disabled optimizations || check_cflags -fomit-frame-pointer
 
+if enabled pic; then
+    add_cppflags -DPIC
+    add_cflags   -fPIC
+    add_asflags  -fPIC
+fi
+
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
 EOF
@@ -2443,8 +2449,6 @@ elif enabled gcc; then
     check_cflags -fno-tree-vectorize
 fi
 
-enabled pic && LIBOBJFLAGS='$(PIC)'
-
 if enabled gprof; then
     add_cflags  -p
     add_ldflags -p
@@ -2634,8 +2638,6 @@ echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
 echo "YASMFLAGS=$YASMFLAGS" >> config.mak
-echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
-echo "PIC=-fPIC -DPIC" >> config.mak
 echo "BUILDSUF=$build_suffix" >> config.mak
 echo "FULLNAME=$FULLNAME" >> config.mak
 echo "LIBPREF=$LIBPREF" >> config.mak
