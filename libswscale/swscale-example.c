@@ -225,7 +225,7 @@ int main(int argc, char **argv)
     struct SwsContext *sws;
     AVLFG rand;
 
-    sws= sws_getContext(W/12, H/12, PIX_FMT_RGB32, W, H, PIX_FMT_YUVA420P, 2, NULL, NULL, NULL);
+    sws= sws_getContext(W/12, H/12, PIX_FMT_RGB32, W, H, PIX_FMT_YUVA420P, SWS_BILINEAR, NULL, NULL, NULL);
 
     av_lfg_init(&rand, 1);
 
