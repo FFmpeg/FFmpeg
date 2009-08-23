@@ -31,10 +31,8 @@ $(SUBDIR)%-test.o: $(SUBDIR)%-test.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c -o $$@ $$^
 
 $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
+	$(YASM) $(YASMFLAGS) -I $$(<D)/ -M -o $$@ $$< > $$(@:.o=.d)
 	$(YASM) $(YASMFLAGS) -I $$(<D)/ -o $$@ $$<
-
-$(SUBDIR)x86/%.d: $(SUBDIR)x86/%.asm
-	$(YASM) $(YASMFLAGS) -I $$(<D)/ -M -o $$(@:%.d=%.o) $$< > $$@
 
 clean::
 	rm -f $(addprefix $(SUBDIR),*-example$(EXESUF) *-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
