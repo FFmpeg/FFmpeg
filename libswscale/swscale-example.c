@@ -180,7 +180,7 @@ end:
     return res;
 }
 
-static void selfTest(uint8_t *src[4], int stride[4], int w, int h)
+static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
 {
     const int flags[] = { SWS_FAST_BILINEAR,
                           SWS_BILINEAR, SWS_BICUBIC,
@@ -204,7 +204,7 @@ static void selfTest(uint8_t *src[4], int stride[4], int w, int h)
             for (i = 0; dstW[i] && !res; i++)
                 for (j = 0; dstH[j] && !res; j++)
                     for (k = 0; flags[k] && !res; k++)
-                        res = doTest(src, stride, w, h, srcFormat, dstFormat,
+                        res = doTest(ref, refStride, w, h, srcFormat, dstFormat,
                                      srcW, srcH, dstW[i], dstH[j], flags[k]);
         }
     }
