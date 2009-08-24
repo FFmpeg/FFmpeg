@@ -1254,7 +1254,6 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             ff_get_wav_header(&b, st->codec, track->codec_priv.size);
             codec_id = st->codec->codec_id;
             extradata_offset = 18;
-            track->codec_priv.size -= extradata_offset;
         } else if (!strcmp(track->codec_id, "V_QUICKTIME")
                    && (track->codec_priv.size >= 86)
                    && (track->codec_priv.data != NULL)) {
@@ -1306,7 +1305,6 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (codec_id == CODEC_ID_RV10 || codec_id == CODEC_ID_RV20 ||
                    codec_id == CODEC_ID_RV30 || codec_id == CODEC_ID_RV40) {
             extradata_offset = 26;
-            track->codec_priv.size -= extradata_offset;
         } else if (codec_id == CODEC_ID_RA_144) {
             track->audio.out_samplerate = 8000;
             track->audio.channels = 1;
@@ -1327,9 +1325,9 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             } else {
                 st->codec->block_align = track->audio.sub_packet_size;
                 extradata_offset = 78;
-                track->codec_priv.size -= extradata_offset;
             }
         }
+        track->codec_priv.size -= extradata_offset;
 
         if (codec_id == CODEC_ID_NONE)
             av_log(matroska->ctx, AV_LOG_INFO,
