@@ -24,6 +24,7 @@
 #define AVCODEC_PPC_MATHOPS_H
 
 #include <stdint.h>
+#include "config.h"
 #include "libavutil/common.h"
 
 #if HAVE_PPC4XX
