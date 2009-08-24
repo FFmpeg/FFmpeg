@@ -356,7 +356,7 @@ static void mpegts_close_filter(MpegTSContext *ts, MpegTSFilter *filter)
 }
 
 static int analyze(const uint8_t *buf, int size, int packet_size, int *index){
-    int stat[packet_size];
+    int stat[TS_MAX_PACKET_SIZE];
     int i;
     int x=0;
     int best_score=0;
