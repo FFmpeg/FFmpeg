@@ -114,7 +114,7 @@ static int32_t scalarproduct_int16_altivec(int16_t * v1, int16_t * v2, int order
     register vec_s16 vec1, *pv;
     register vec_s32 res = vec_splat_s32(0), t;
     register vec_u32 shifts;
-    DECLARE_ALIGNED_16(int32_t, ires);
+    int32_t ires;
 
     shifts = zero_u32v;
     if(shift & 0x10) shifts = vec_add(shifts, vec_sl(vec_splat_u32(0x08), vec_splat_u32(0x1)));
