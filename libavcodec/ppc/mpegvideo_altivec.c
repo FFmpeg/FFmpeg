@@ -28,6 +28,8 @@
 
 #include "dsputil_ppc.h"
 #include "util_altivec.h"
+#include "types_altivec.h"
+
 // Swaps two variables (used for altivec registers)
 #define SWAP(a,b) \
 do { \
@@ -504,29 +506,16 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
 
     {
         register const vector signed short vczero = (const vector signed short)vec_splat_s16(0);
-        DECLARE_ALIGNED_16(short, qmul8[]) =
-            {
-              qmul, qmul, qmul, qmul,
-              qmul, qmul, qmul, qmul
-            };
-        DECLARE_ALIGNED_16(short, qadd8[]) =
-            {
-              qadd, qadd, qadd, qadd,
-              qadd, qadd, qadd, qadd
-            };
-        DECLARE_ALIGNED_16(short, nqadd8[]) =
-            {
-              -qadd, -qadd, -qadd, -qadd,
-              -qadd, -qadd, -qadd, -qadd
-            };
+        DECLARE_ALIGNED_16(short, qmul8) = qmul;
+        DECLARE_ALIGNED_16(short, qadd8) = qadd;
         register vector signed short blockv, qmulv, qaddv, nqaddv, temp1;
         register vector bool short blockv_null, blockv_neg;
         register short backup_0 = block[0];
         register int j = 0;
 
-        qmulv = vec_ld(0, qmul8);
-        qaddv = vec_ld(0, qadd8);
-        nqaddv = vec_ld(0, nqadd8);
+        qmulv = vec_splat((vec_s16)vec_lde(0, &qmul8), 0);
+        qaddv = vec_splat((vec_s16)vec_lde(0, &qadd8), 0);
+        nqaddv = vec_sub(vczero, qaddv);
 
 #if 0   // block *is* 16 bytes-aligned, it seems.
         // first make sure block[j] is 16 bytes-aligned
