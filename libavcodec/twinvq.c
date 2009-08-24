@@ -234,7 +234,7 @@ static float eval_lpc_spectrum(const float *lsp, float cos_val, int order)
     float q = 0.5f;
     float two_cos_w = 2.0f*cos_val;
 
-    for (j=0; j+1 < order; j += 2*2) {
+    for (j=0; j + 1 < order; j += 2*2) {
         // Unroll the loop once since order is a multiple of four
         q *= lsp[j  ] - two_cos_w;
         p *= lsp[j+1] - two_cos_w;
@@ -458,7 +458,7 @@ static void add_peak(int period, int width, const float *shape,
 
     // For the last block, be careful not to go beyond the end of the buffer
     center = very_broken_op(period, i);
-    for (j=-width/2; j < (width+1)/2 && shape < shape_end; j++)
+    for (j=-width/2; j < (width + 1)/2 && shape < shape_end; j++)
         speech[j+center] += ppc_gain * *shape++;
 }
 
