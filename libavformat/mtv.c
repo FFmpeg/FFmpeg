@@ -102,6 +102,8 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->height          = mtv->img_height;
     st->codec->bits_per_coded_sample = mtv->img_bpp;
     st->codec->sample_rate     = mtv->video_fps;
+    st->codec->extradata       = av_strdup("BottomUp");
+    st->codec->extradata_size  = 9;
 
     // audio - mp3
 
