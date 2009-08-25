@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 32
+#define LIBAVCODEC_VERSION_MINOR 33
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -327,6 +327,7 @@ enum CodecID {
     CODEC_ID_XSUB,
     CODEC_ID_SSA,
     CODEC_ID_MOV_TEXT,
+    CODEC_ID_HDMV_PGS_SUBTITLE,
 
     /* other specific kind of codecs (generally used for attachments) */
     CODEC_ID_TTF= 0x18000,

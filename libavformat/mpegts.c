@@ -507,6 +507,7 @@ static const StreamType ISO_types[] = {
 static const StreamType HDMV_types[] = {
     { 0x81, CODEC_TYPE_AUDIO, CODEC_ID_AC3 },
     { 0x82, CODEC_TYPE_AUDIO, CODEC_ID_DTS },
+    { 0x90, CODEC_TYPE_SUBTITLE, CODEC_ID_HDMV_PGS_SUBTITLE },
     { 0 },
 };
 
