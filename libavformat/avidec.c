@@ -826,6 +826,12 @@ resync:
         if(!((i-avi->last_pkt_pos)&1) && get_stream_idx(d+1) < s->nb_streams)
             continue;
 
+        //detect ##ix chunk and skip
+        if(d[2] == 'i' && d[3] == 'x' && n < s->nb_streams){
+            url_fskip(pb, size);
+            goto resync;
+        }
+
         //parse ##dc/##wb
         if(n < s->nb_streams){
             AVStream *st;
