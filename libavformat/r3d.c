@@ -87,6 +87,8 @@ static int r3d_read_red1(AVFormatContext *s)
     dprintf(s, "audio channels %d\n", tmp);
     if (tmp > 0) {
         AVStream *ast = av_new_stream(s, 1);
+        if (!ast)
+            return AVERROR(ENOMEM);
         ast->codec->codec_type = CODEC_TYPE_AUDIO;
         ast->codec->codec_id = CODEC_ID_PCM_S32BE;
         ast->codec->channels = tmp;
