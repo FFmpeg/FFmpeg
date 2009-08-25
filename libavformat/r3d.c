@@ -55,7 +55,7 @@ static int r3d_read_red1(AVFormatContext *s)
     int tmp, tmp2;
 
     if (!st)
-        return -1;
+        return AVERROR(ENOMEM);
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_JPEG2000;
 
