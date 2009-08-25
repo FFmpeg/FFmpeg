@@ -96,7 +96,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     WMA3DecodeContext *s = avctx->priv_data;
     int i;
 
-    for (i = 0 ; i < WMAPRO_BLOCK_SIZES ; i++)
+    for (i = 0; i < WMAPRO_BLOCK_SIZES; i++)
         ff_mdct_end(&s->mdct_ctx[i]);
 
     return 0;
@@ -113,11 +113,11 @@ static void decode_decorrelation_matrix(WMA3DecodeContext *s,
     int i;
     int offset = 0;
     int8_t rotation_offset[WMAPRO_MAX_CHANNELS * WMAPRO_MAX_CHANNELS];
-    memset(chgroup->decorrelation_matrix,0,
+    memset(chgroup->decorrelation_matrix, 0,
            sizeof(float) *s->num_channels * s->num_channels);
 
     for (i = 0; i < chgroup->num_channels * (chgroup->num_channels - 1) >> 1; i++)
-        rotation_offset[i] = get_bits(&s->gb,6);
+        rotation_offset[i] = get_bits(&s->gb, 6);
 
     for (i = 0; i < chgroup->num_channels; i++)
         chgroup->decorrelation_matrix[chgroup->num_channels * i + i] =
@@ -127,7 +127,7 @@ static void decode_decorrelation_matrix(WMA3DecodeContext *s,
         int x;
         for (x = 0; x < i; x++) {
             int y;
-            for (y = 0; y < i + 1 ; y++) {
+            for (y = 0; y < i + 1; y++) {
                 float v1 = chgroup->decorrelation_matrix[x * chgroup->num_channels + y];
                 float v2 = chgroup->decorrelation_matrix[i * chgroup->num_channels + y];
                 int n = rotation_offset[offset + x];
@@ -172,7 +172,7 @@ static void inverse_channel_transform(WMA3DecodeContext *s)
 
             while (tb < tb_end) {
                 const float* ch0_end = s->channel[0].coeffs +
-                                       FFMIN(*sfb_offsets,s->subframe_len);
+                                       FFMIN(*sfb_offsets, s->subframe_len);
                 if (*tb++ == 1) {
                     while (ch0 < ch0_end) {
                         const float v1 = *ch0;
@@ -197,7 +197,7 @@ static void inverse_channel_transform(WMA3DecodeContext *s)
             int16_t* sfb;
 
             /** multichannel decorrelation */
-            for (sfb = s->cur_sfb_offsets ;
+            for (sfb = s->cur_sfb_offsets;
                 sfb < s->cur_sfb_offsets + s->num_bands;sfb++) {
                 if (*tb++ == 1) {
                     int y;
@@ -208,7 +208,7 @@ static void inverse_channel_transform(WMA3DecodeContext *s)
                         float* data_ptr = data;
                         float** ch;
 
-                        for (ch = ch_data;ch < ch_end; ch++)
+                        for (ch = ch_data; ch < ch_end; ch++)
                            *data_ptr++ = (*ch)[y];
 
                         for (ch = ch_data; ch < ch_end; ch++) {
