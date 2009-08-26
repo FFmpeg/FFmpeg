@@ -191,10 +191,10 @@ static int decode_coeffs(WMA3DecodeContext *s, int c)
 
         idx = get_vlc2(&s->gb, vec4_vlc.table, VLCBITS, VEC4MAXDEPTH);
 
-        if ( idx == HUFF_VEC4_SIZE - 1 ) {
+        if (idx == HUFF_VEC4_SIZE - 1) {
             for (i = 0; i < 4; i += 2) {
                 idx = get_vlc2(&s->gb, vec2_vlc.table, VLCBITS, VEC2MAXDEPTH);
-                if ( idx == HUFF_VEC2_SIZE - 1 ) {
+                if (idx == HUFF_VEC2_SIZE - 1) {
                     vals[i] = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
                     if (vals[i] == HUFF_VEC1_SIZE - 1)
                         vals[i] += ff_wma_get_large_val(&s->gb);
@@ -230,10 +230,10 @@ static int decode_coeffs(WMA3DecodeContext *s, int c)
 
     /** decode run level coded coefficients */
     if (rl_mode) {
-        if(ff_wma_run_level_decode(s->avctx, &s->gb, vlc,
-                             level, run, 1, ci->coeffs,
-                             cur_coeff, s->subframe_len, s->subframe_len,
-                             s->esc_len, 0))
+        if (ff_wma_run_level_decode(s->avctx, &s->gb, vlc,
+                                    level, run, 1, ci->coeffs,
+                                    cur_coeff, s->subframe_len,
+                                    s->subframe_len, s->esc_len, 0))
             return AVERROR_INVALIDDATA;
     }
 
