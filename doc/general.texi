@@ -583,6 +583,7 @@ following image formats are supported:
 @item PCM signed 24-bit little-endian  @tab  X  @tab  X
 @item PCM signed 32-bit big-endian  @tab  X  @tab  X
 @item PCM signed 32-bit little-endian  @tab  X  @tab  X
+@item PCM signed 16/20/24-bit big-endian in MPEG-TS  @tab     @tab  X
 @item PCM unsigned 8-bit     @tab  X  @tab  X
 @item PCM unsigned 16-bit big-endian  @tab  X  @tab  X
 @item PCM unsigned 16-bit little-endian  @tab  X  @tab  X

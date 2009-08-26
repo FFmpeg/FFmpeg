@@ -238,6 +238,7 @@ void avcodec_register_all(void)
 
     /* PCM codecs */
     REGISTER_ENCDEC  (PCM_ALAW, pcm_alaw);
+    REGISTER_DECODER (PCM_BLURAY, pcm_bluray);
     REGISTER_DECODER (PCM_DVD, pcm_dvd);
     REGISTER_ENCDEC  (PCM_F32BE, pcm_f32be);
     REGISTER_ENCDEC  (PCM_F32LE, pcm_f32le);
