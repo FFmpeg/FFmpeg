@@ -212,7 +212,7 @@ typedef struct FFV1Context{
     int picture_number;
     AVFrame picture;
     int plane_count;
-    int ac;                              ///< 1-> CABAC 0-> golomb rice
+    int ac;                              ///< 1=range coder <-> 0=golomb rice
     PlaneContext plane[MAX_PLANES];
     int16_t quant_table[5][256];
     int run_index;
@@ -736,7 +736,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     uint8_t keystate=128;
 
     ff_init_range_encoder(c, buf, buf_size);
-//    ff_init_cabac_states(c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
     *p = *pict;
