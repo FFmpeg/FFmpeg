@@ -154,7 +154,7 @@ static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
     snprintf(buf, 28,
         "[%02d:%02d:%02d.%03d-%02d:%02d:%02d.%03d]",
         start_tc[3], start_tc[2], start_tc[1], start_tc[0],
-        end_tc[3],   end_tc[3],   end_tc[1],   end_tc[0]);
+        end_tc[3],   end_tc[2],   end_tc[1],   end_tc[0]);
 
     // Width and height must probably be multiples of 2.
     // 2 pixels required on either side of subtitle.
