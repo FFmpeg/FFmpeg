@@ -436,7 +436,7 @@ typedef struct MpegEncContext {
     uint16_t (*q_inter_matrix16)[2][64];
     int block_last_index[12];  ///< last non zero coefficient in block
     /* scantables */
-    DECLARE_ALIGNED_8(ScanTable, intra_scantable);
+    ScanTable intra_scantable;
     ScanTable intra_h_scantable;
     ScanTable intra_v_scantable;
     ScanTable inter_scantable; ///< if inter == intra then intra should be used to reduce tha cache usage
