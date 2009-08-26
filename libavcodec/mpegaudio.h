@@ -108,7 +108,7 @@ typedef struct MPADecodeHeader {
 
 typedef struct MPADecodeContext {
     MPA_DECODE_HEADER
-    DECLARE_ALIGNED_8(uint8_t, last_buf[2*BACKSTEP_SIZE + EXTRABYTES]);
+    uint8_t last_buf[2*BACKSTEP_SIZE + EXTRABYTES];
     int last_buf_size;
     /* next header (used in free format parsing) */
     uint32_t free_format_next_header;

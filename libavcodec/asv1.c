@@ -49,8 +49,8 @@ typedef struct ASV1Context{
     int mb_width2;
     int mb_height2;
     DECLARE_ALIGNED_16(DCTELEM, block[6][64]);
-    DECLARE_ALIGNED_8(uint16_t, intra_matrix[64]);
-    DECLARE_ALIGNED_8(int, q_intra_matrix[64]);
+    uint16_t intra_matrix[64];
+    int q_intra_matrix[64];
     uint8_t *bitstream_buffer;
     unsigned int bitstream_buffer_size;
 } ASV1Context;

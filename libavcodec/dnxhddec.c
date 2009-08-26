@@ -40,7 +40,7 @@ typedef struct {
     int last_dc[3];
     DSPContext dsp;
     DECLARE_ALIGNED_16(DCTELEM, blocks[8][64]);
-    DECLARE_ALIGNED_8(ScanTable, scantable);
+    ScanTable scantable;
     const CIDEntry *cid_table;
 } DNXHDContext;
 
