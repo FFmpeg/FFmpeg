@@ -153,6 +153,94 @@ static void decode_decorrelation_matrix(WMA3DecodeContext *s,
 }
 
 /**
+ *@brief Extract the coefficients from the bitstream.
+ *@param s codec context
+ *@param c current channel number
+ *@return 0 on success, < 0 in case of bitstream errors
+ */
+static int decode_coeffs(WMA3DecodeContext *s, int c)
+{
+    int vlctable;
+    VLC* vlc;
+    WMA3ChannelCtx* ci = &s->channel[c];
+    int rl_mode = 0;
+    int cur_coeff = 0;
+    int num_zeros = 0;
+    const uint16_t* run;
+    const uint16_t* level;
+
+    dprintf(s->avctx, "decode coefficients for channel %i\n", c);
+
+    vlctable = get_bits1(&s->gb);
+    vlc = &coef_vlc[vlctable];
+
+    if (vlctable) {
+        run = coef1_run;
+        level = coef1_level;
+    } else {
+        run = coef0_run;
+        level = coef0_level;
+    }
+
+    /** decode vector coefficients (consumes up to 167 bits per iteration for
+      4 vector coded large values) */
+    while (!rl_mode && cur_coeff + 3 < s->subframe_len) {
+        int vals[4];
+        int i;
+        unsigned int idx;
+
+        idx = get_vlc2(&s->gb, vec4_vlc.table, VLCBITS, VEC4MAXDEPTH);
+
+        if ( idx == HUFF_VEC4_SIZE - 1 ) {
+            for (i = 0; i < 4; i += 2) {
+                idx = get_vlc2(&s->gb, vec2_vlc.table, VLCBITS, VEC2MAXDEPTH);
+                if ( idx == HUFF_VEC2_SIZE - 1 ) {
+                    vals[i] = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
+                    if (vals[i] == HUFF_VEC1_SIZE - 1)
+                        vals[i] += ff_wma_get_large_val(&s->gb);
+                    vals[i+1] = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
+                    if (vals[i+1] == HUFF_VEC1_SIZE - 1)
+                        vals[i+1] += ff_wma_get_large_val(&s->gb);
+                } else {
+                    vals[i]   = symbol_to_vec2[idx] >> 4;
+                    vals[i+1] = symbol_to_vec2[idx] & 0xF;
+                }
+            }
+        } else {
+             vals[0] =  symbol_to_vec4[idx] >> 12;
+             vals[1] = (symbol_to_vec4[idx] >> 8) & 0xF;
+             vals[2] = (symbol_to_vec4[idx] >> 4) & 0xF;
+             vals[3] =  symbol_to_vec4[idx]       & 0xF;
+        }
+
+        /** decode sign */
+        for (i = 0; i < 4; i++) {
+            if (vals[i]) {
+                int sign = get_bits1(&s->gb) - 1;
+                ci->coeffs[cur_coeff] = (vals[i]^sign) - sign;
+                num_zeros = 0;
+            } else {
+                /** switch to run level mode when subframe_len / 128 zeros
+                   were found in a row */
+                rl_mode |= (++num_zeros > s->subframe_len>>8);
+            }
+            ++cur_coeff;
+        }
+    }
+
+    /** decode run level coded coefficients */
+    if (rl_mode) {
+        if(ff_wma_run_level_decode(s->avctx, &s->gb, vlc,
+                             level, run, 1, ci->coeffs,
+                             cur_coeff, s->subframe_len, s->subframe_len,
+                             s->esc_len, 0))
+            return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
+}
+
+/**
  *@brief Reconstruct the individual channel data.
  *@param s codec context
  */
