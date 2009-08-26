@@ -798,7 +798,7 @@ static void do_subtitle_out(AVFormatContext *s,
                             int64_t pts)
 {
     static uint8_t *subtitle_out = NULL;
-    int subtitle_out_max_size = 65536;
+    int subtitle_out_max_size = 1024 * 1024;
     int subtitle_out_size, nb, i;
     AVCodecContext *enc;
     AVPacket pkt;
