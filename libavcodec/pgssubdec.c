@@ -343,6 +343,7 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
      *      not been cleared by a subsequent empty display command.
      */
 
+    memset(sub, 0, sizeof(*sub));
     sub->start_display_time = 0;
     sub->end_display_time   = 20000;
     sub->format             = 0;
