@@ -161,34 +161,7 @@ static void inverse_channel_transform(WMA3DecodeContext *s)
     int i;
 
     for (i = 0; i < s->num_chgroups; i++) {
-
-        if (s->chgroup[i].transform == 1) {
-            /** M/S stereo decoding */
-            int16_t* sfb_offsets = s->cur_sfb_offsets;
-            float* ch0 = *sfb_offsets + s->channel[0].coeffs;
-            float* ch1 = *sfb_offsets++ + s->channel[1].coeffs;
-            const char* tb = s->chgroup[i].transform_band;
-            const char* tb_end = tb + s->num_bands;
-
-            while (tb < tb_end) {
-                const float* ch0_end = s->channel[0].coeffs +
-                                       FFMIN(*sfb_offsets, s->subframe_len);
-                if (*tb++ == 1) {
-                    while (ch0 < ch0_end) {
-                        const float v1 = *ch0;
-                        const float v2 = *ch1;
-                        *ch0++ = v1 - v2;
-                        *ch1++ = v1 + v2;
-                    }
-                } else {
-                    while (ch0 < ch0_end) {
-                        *ch0++ *= 181.0 / 128;
-                        *ch1++ *= 181.0 / 128;
-                    }
-                }
-                ++sfb_offsets;
-            }
-        } else if (s->chgroup[i].transform) {
+        if (s->chgroup[i].transform) {
             float data[WMAPRO_MAX_CHANNELS];
             const int num_channels = s->chgroup[i].num_channels;
             float** ch_data = s->chgroup[i].channel_data;
@@ -199,8 +172,8 @@ static void inverse_channel_transform(WMA3DecodeContext *s)
             /** multichannel decorrelation */
             for (sfb = s->cur_sfb_offsets;
                 sfb < s->cur_sfb_offsets + s->num_bands;sfb++) {
+                int y;
                 if (*tb++ == 1) {
-                    int y;
                     /** multiply values with the decorrelation_matrix */
                     for (y = sfb[0]; y < FFMIN(sfb[1], s->subframe_len); y++) {
                         const float* mat = s->chgroup[i].decorrelation_matrix;
@@ -219,6 +192,11 @@ static void inverse_channel_transform(WMA3DecodeContext *s)
 
                             (*ch)[y] = sum;
                         }
+                    }
+                } else if (s->num_channels == 2) {
+                    for (y = sfb[0]; y < FFMIN(sfb[1], s->subframe_len); y++) {
+                        ch_data[0][y] *= 181.0 / 128;
+                        ch_data[1][y] *= 181.0 / 128;
                     }
                 }
             }
