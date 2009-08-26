@@ -348,11 +348,9 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
     sub->end_display_time   = 20000;
     sub->format             = 0;
 
-    if (!sub->rects) {
         sub->rects     = av_mallocz(sizeof(*sub->rects));
         sub->rects[0]  = av_mallocz(sizeof(*sub->rects[0]));
         sub->num_rects = 1;
-    }
 
     sub->rects[0]->x    = ctx->presentation.x;
     sub->rects[0]->y    = ctx->presentation.y;
