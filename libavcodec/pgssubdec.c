@@ -367,7 +367,7 @@ static int display_end_segment(AVCodecContext *avctx, void *data,
 
     /* Allocate memory for colors */
     sub->rects[0]->nb_colors    = 256;
-    sub->rects[0]->pict.data[1] = av_malloc(sub->rects[0]->nb_colors * sizeof(uint32_t));
+    sub->rects[0]->pict.data[1] = av_mallocz(AVPALETTE_SIZE);
 
     memcpy(sub->rects[0]->pict.data[1], ctx->clut, sub->rects[0]->nb_colors * sizeof(uint32_t));
 
