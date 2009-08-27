@@ -234,7 +234,7 @@ static float eval_lpc_spectrum(const float *lsp, float cos_val, int order)
     float q = 0.5f;
     float two_cos_w = 2.0f*cos_val;
 
-    for (j=0; j + 1 < order; j += 2*2) {
+    for (j = 0; j + 1 < order; j += 2*2) {
         // Unroll the loop once since order is a multiple of four
         q *= lsp[j  ] - two_cos_w;
         p *= lsp[j+1] - two_cos_w;
@@ -258,7 +258,7 @@ static void eval_lpcenv(TwinContext *tctx, const float *cos_vals, float *lpc)
     const ModeTab *mtab = tctx->mtab;
     int size_s = mtab->size / mtab->fmode[FT_SHORT].sub;
 
-    for (i=0; i < size_s/2; i++) {
+    for (i = 0; i < size_s/2; i++) {
         float cos_i = tctx->cos_tabs[0][i];
         lpc[i]          = eval_lpc_spectrum(cos_vals,  cos_i, mtab->n_lsp);
         lpc[size_s-i-1] = eval_lpc_spectrum(cos_vals, -cos_i, mtab->n_lsp);
@@ -270,7 +270,7 @@ static void interpolate(float *out, float v1, float v2, int size)
     int i;
     float step = (v1 - v2)/(size + 1);
 
-    for (i=0; i < size; i++) {
+    for (i = 0; i < size; i++) {
         v2 += step;
         out[i] = v2;
     }
@@ -306,14 +306,14 @@ static inline void eval_lpcenv_or_interp(TwinContext *tctx,
     const float *cos_tab = tctx->cos_tabs[ftype];
 
     // Fill the 's'
-    for (i=0; i < size; i += step)
+    for (i = 0; i < size; i += step)
         out[i] =
             eval_lpc_spectrum(in,
                               get_cos(i, part, cos_tab, size),
                               mtab->n_lsp);
 
     // Fill the 'iiiibiiii'
-    for (i=step; i <= size - 2*step; i += step) {
+    for (i = step; i <= size - 2*step; i += step) {
         if (out[i + step] + out[i - step] >  1.95*out[i] ||
             out[i + step]                 >=  out[i - step]) {
             interpolate(out + i - step + 1, out[i], out[i-step], step - 1);
@@ -354,7 +354,7 @@ static void dequant(TwinContext *tctx, GetBitContext *gb, float *out,
     int pos = 0;
     int i, j;
 
-    for (i=0; i < tctx->n_div[ftype]; i++) {
+    for (i = 0; i < tctx->n_div[ftype]; i++) {
         int tmp0, tmp1;
         int sign0 = 1;
         int sign1 = 1;
@@ -383,7 +383,7 @@ static void dequant(TwinContext *tctx, GetBitContext *gb, float *out,
         tab0 = cb0 + tmp0*cb_len;
         tab1 = cb1 + tmp1*cb_len;
 
-        for (j=0; j < length; j++)
+        for (j = 0; j < length; j++)
             out[tctx->permut[ftype][pos+j]] = sign0*tab0[j] + sign1*tab1[j];
 
         pos += length;
@@ -447,18 +447,18 @@ static void add_peak(int period, int width, const float *shape,
     int center;
 
     // First peak centered around zero
-    for (i=0; i < width/2; i++)
+    for (i = 0; i < width/2; i++)
         speech[i] += ppc_gain * *shape++;
 
-    for (i=1; i < ROUNDED_DIV(len,width) ; i++) {
+    for (i = 1; i < ROUNDED_DIV(len,width) ; i++) {
         center = very_broken_op(period, i);
-        for (j=-width/2; j < (width+1)/2; j++)
+        for (j = -width/2; j < (width+1)/2; j++)
             speech[j+center] += ppc_gain * *shape++;
     }
 
     // For the last block, be careful not to go beyond the end of the buffer
     center = very_broken_op(period, i);
-    for (j=-width/2; j < (width + 1)/2 && shape < shape_end; j++)
+    for (j = -width/2; j < (width + 1)/2 && shape < shape_end; j++)
         speech[j+center] += ppc_gain * *shape++;
 }
 
@@ -497,17 +497,17 @@ static void dec_gain(TwinContext *tctx, GetBitContext *gb, enum FrameType ftype,
     float sub_step = SUB_AMP_MAX / ((1 << SUB_GAIN_BITS) - 1);
 
     if (ftype == FT_LONG) {
-        for (i=0; i < tctx->avctx->channels; i++)
+        for (i = 0; i < tctx->avctx->channels; i++)
             out[i] = (1./(1<<13)) *
                 mulawinv(step * 0.5 + step * get_bits(gb, GAIN_BITS),
                          AMP_MAX, MULAW_MU);
     } else {
-        for (i=0; i < tctx->avctx->channels; i++) {
+        for (i = 0; i < tctx->avctx->channels; i++) {
             float val = (1./(1<<23)) *
                 mulawinv(step * 0.5 + step * get_bits(gb, GAIN_BITS),
                          AMP_MAX, MULAW_MU);
 
-            for (j=0; j < sub; j++) {
+            for (j = 0; j < sub; j++) {
                 out[i*sub + j] =
                     val*mulawinv(sub_step* 0.5 +
                                  sub_step* get_bits(gb, SUB_GAIN_BITS),
@@ -527,7 +527,7 @@ static void rearrange_lsp(int order, float *lsp, float min_dist)
 {
     int i;
     float min_dist2 = min_dist * 0.5;
-    for (i=1; i < order; i++)
+    for (i = 1; i < order; i++)
         if (lsp[i] - lsp[i-1] < min_dist) {
             float avg = (lsp[i] + lsp[i-1]) * 0.5;
 
@@ -542,8 +542,8 @@ static void bubblesort(float *lsp, int lp_order)
 
     /* sort lsp in ascending order. float bubble agorithm,
        O(n) if data already sorted, O(n^2) - otherwise */
-    for (i=0; i < lp_order - 1; i++)
-        for (j=i; j >= 0 && lsp[j] > lsp[j+1]; j--)
+    for (i = 0; i < lp_order - 1; i++)
+        for (j = i; j >= 0 && lsp[j] > lsp[j+1]; j--)
             FFSWAP(float, lsp[j], lsp[j+1]);
 }
 
@@ -564,8 +564,8 @@ static void decode_lsp(TwinContext *tctx, int lpc_idx1, uint8_t *lpc_idx2,
         0
     };
 
-    j=0;
-    for (i=0; i < mtab->lsp_split; i++) {
+    j = 0;
+    for (i = 0; i < mtab->lsp_split; i++) {
         int chunk_end = ((i + 1)*mtab->n_lsp + funny_rounding[i])/mtab->lsp_split;
         for (; j < chunk_end; j++)
             lsp[j] = cb [lpc_idx1    * mtab->n_lsp + j] +
@@ -574,7 +574,7 @@ static void decode_lsp(TwinContext *tctx, int lpc_idx1, uint8_t *lpc_idx2,
 
     rearrange_lsp(mtab->n_lsp, lsp, 0.0001);
 
-    for (i=0; i < mtab->n_lsp; i++) {
+    for (i = 0; i < mtab->n_lsp; i++) {
         float tmp1 = 1. -          cb3[lpc_hist_idx*mtab->n_lsp + i];
         float tmp2 =     hist[i] * cb3[lpc_hist_idx*mtab->n_lsp + i];
         hist[i] = lsp[i];
@@ -592,7 +592,7 @@ static void dec_lpc_spectrum_inv(TwinContext *tctx, float *lsp,
     int i;
     int size = tctx->mtab->size / tctx->mtab->fmode[ftype].sub;
 
-    for (i=0; i < tctx->mtab->n_lsp; i++)
+    for (i = 0; i < tctx->mtab->n_lsp; i++)
         lsp[i] =  2*cos(lsp[i]);
 
     switch (ftype) {
@@ -633,7 +633,7 @@ static void imdct_and_window(TwinContext *tctx, enum FrameType ftype, int wtype,
     first_wsize = wsize;
     prev_buf = prev + (size - bsize)/2;
 
-    for (j=0; j < mtab->fmode[ftype].sub; j++) {
+    for (j = 0; j < mtab->fmode[ftype].sub; j++) {
         int sub_wtype = ftype == FT_MEDIUM ? 8 : wtype;
 
         if (!j && wtype == 4)
@@ -670,7 +670,7 @@ static void imdct_output(TwinContext *tctx, enum FrameType ftype, int wtype,
     float *prev_buf = tctx->prev_frame + tctx->last_block_pos[0];
     int i, j;
 
-    for (i=0; i < tctx->avctx->channels; i++) {
+    for (i = 0; i < tctx->avctx->channels; i++) {
         imdct_and_window(tctx, ftype, wtype,
                          tctx->spectrum + i*mtab->size,
                          prev_buf + 2*i*mtab->size,
@@ -678,13 +678,13 @@ static void imdct_output(TwinContext *tctx, enum FrameType ftype, int wtype,
     }
 
     if (tctx->avctx->channels == 2) {
-        for (i=0; i < mtab->size - tctx->last_block_pos[0]; i++) {
+        for (i = 0; i < mtab->size - tctx->last_block_pos[0]; i++) {
             float f1 = prev_buf[               i];
             float f2 = prev_buf[2*mtab->size + i];
             out[2*i    ] = f1 + f2;
             out[2*i + 1] = f1 - f2;
         }
-        for (j=0; i < mtab->size; j++,i++) {
+        for (j = 0; i < mtab->size; j++,i++) {
             float f1 = tctx->curr_frame[               j];
             float f2 = tctx->curr_frame[2*mtab->size + j];
             out[2*i    ] = f1 + f2;
@@ -713,8 +713,8 @@ static void dec_bark_env(TwinContext *tctx, const uint8_t *in, int use_hist,
     int fw_cb_len = mtab->fmode[ftype].bark_env_size / bark_n_coef;
     int idx = 0;
 
-    for (i=0; i < fw_cb_len; i++)
-        for (j=0; j < bark_n_coef; j++, idx++) {
+    for (i = 0; i < fw_cb_len; i++)
+        for (j = 0; j < bark_n_coef; j++, idx++) {
             float tmp2 =
                 mtab->fmode[ftype].bark_cb[fw_cb_len*in[j] + i] * (1./4096);
             float st = use_hist ?
@@ -751,23 +751,23 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
             mtab->fmode[ftype].cb0, mtab->fmode[ftype].cb1,
             mtab->fmode[ftype].cb_len_read);
 
-    for (i=0; i < channels; i++)
-        for (j=0; j < sub; j++)
-            for (k=0; k < mtab->fmode[ftype].bark_n_coef; k++)
+    for (i = 0; i < channels; i++)
+        for (j = 0; j < sub; j++)
+            for (k = 0; k < mtab->fmode[ftype].bark_n_coef; k++)
                 bark1[i][j][k] =
                     get_bits(gb, mtab->fmode[ftype].bark_n_bit);
 
-    for (i=0; i < channels; i++)
-        for (j=0; j < sub; j++)
+    for (i = 0; i < channels; i++)
+        for (j = 0; j < sub; j++)
             bark_use_hist[i][j] = get_bits1(gb);
 
     dec_gain(tctx, gb, ftype, gain);
 
-    for (i=0; i < channels; i++) {
+    for (i = 0; i < channels; i++) {
         lpc_hist_idx[i] = get_bits(gb, tctx->mtab->lsp_bit0);
         lpc_idx1    [i] = get_bits(gb, tctx->mtab->lsp_bit1);
 
-        for (j=0; j < tctx->mtab->lsp_split; j++)
+        for (j = 0; j < tctx->mtab->lsp_split; j++)
             lpc_idx2[i][j] = get_bits(gb, tctx->mtab->lsp_bit2);
     }
 
@@ -778,11 +778,11 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
                 mtab->ppc_shape_cb + cb_len_p*PPC_SHAPE_CB_SIZE, cb_len_p);
     }
 
-    for (i=0; i < channels; i++) {
+    for (i = 0; i < channels; i++) {
         float *chunk = out + mtab->size * i;
         float lsp[tctx->mtab->n_lsp];
 
-        for (j=0; j < sub; j++) {
+        for (j = 0; j < sub; j++) {
             dec_bark_env(tctx, bark1[i][j], bark_use_hist[i][j], i,
                          tctx->tmp_buf, gain[sub*i+j], ftype);
 
@@ -807,7 +807,7 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
 
         dec_lpc_spectrum_inv(tctx, lsp, ftype, tctx->tmp_buf);
 
-        for (j=0; j < mtab->fmode[ftype].sub; j++) {
+        for (j = 0; j < mtab->fmode[ftype].sub; j++) {
             tctx->dsp.vector_fmul(chunk, tctx->tmp_buf, block_size);
             chunk += block_size;
         }
@@ -879,7 +879,7 @@ static av_cold void init_mdct_win(TwinContext *tctx)
     int channels = tctx->avctx->channels;
     float norm = channels == 1 ? 2. : 1.;
 
-    for (i=0; i < 3; i++) {
+    for (i = 0; i < 3; i++) {
         int bsize = tctx->mtab->size/tctx->mtab->fmode[i].sub;
         ff_mdct_init(&tctx->mdct_ctx[i], av_log2(bsize) + 1, 1,
                      -sqrt(norm/bsize) / (1<<15));
@@ -891,14 +891,14 @@ static av_cold void init_mdct_win(TwinContext *tctx)
     tctx->curr_frame = av_malloc(2*mtab->size*channels*sizeof(float));
     tctx->prev_frame  = av_malloc(2*mtab->size*channels*sizeof(float));
 
-    for(i=0; i < 3; i++) {
+    for (i = 0; i < 3; i++) {
         int m = 4*mtab->size/mtab->fmode[i].sub;
         double freq = 2*M_PI/m;
         tctx->cos_tabs[i] = av_malloc((m/4)*sizeof(*tctx->cos_tabs));
 
-        for (j=0; j <= m/8; j++)
+        for (j = 0; j <= m/8; j++)
             tctx->cos_tabs[i][j] = cos((2*j + 1)*freq);
-        for (j=1; j <  m/8; j++)
+        for (j = 1; j <  m/8; j++)
             tctx->cos_tabs[i][m/4-j] = tctx->cos_tabs[i][j];
     }
 
@@ -922,7 +922,7 @@ static void permutate_in_line(int16_t *tab, int num_vect, int num_blocks,
 {
     int i,j;
 
-    for (i=0; i < line_len[0]; i++) {
+    for (i = 0; i < line_len[0]; i++) {
         int shift;
 
         if (num_blocks == 1 ||
@@ -935,7 +935,7 @@ static void permutate_in_line(int16_t *tab, int num_vect, int num_blocks,
         } else
             shift = i*i;
 
-        for (j=0; j < num_vect && (j+num_vect*i < block_size*num_blocks); j++)
+        for (j = 0; j < num_vect && (j+num_vect*i < block_size*num_blocks); j++)
             tab[i*num_vect+j] = i*num_vect + (j + shift) % num_vect;
     }
 }
@@ -960,8 +960,8 @@ static void transpose_perm(int16_t *out, int16_t *in, int num_vect,
 {
     int i,j;
     int cont= 0;
-    for (i=0; i < num_vect; i++)
-        for (j=0; j < line_len[i >= length_div]; j++)
+    for (i = 0; i < num_vect; i++)
+        for (j = 0; j < line_len[i >= length_div]; j++)
             out[cont++] = in[j*num_vect + i];
 }
 
@@ -970,7 +970,7 @@ static void linear_perm(int16_t *out, int16_t *in, int n_blocks, int size)
     int block_size = size/n_blocks;
     int i;
 
-    for (i=0; i < size; i++)
+    for (i = 0; i < size; i++)
         out[i] = block_size * (in[i] % n_blocks) + in[i] / n_blocks;
 }
 
@@ -1015,7 +1015,7 @@ static av_cold void init_bitstream_params(TwinContext *tctx)
     int bse_bits[3];
     int i;
 
-    for (i=0; i < 3; i++)
+    for (i = 0; i < 3; i++)
         // +1 for history usage switch
         bse_bits[i] = n_ch *
             (mtab->fmode[i].bark_n_coef * mtab->fmode[i].bark_n_bit + 1);
@@ -1023,13 +1023,13 @@ static av_cold void init_bitstream_params(TwinContext *tctx)
     bsize_no_main_cb[2] = bse_bits[2] + lsp_bits_per_block + ppc_bits +
                           WINDOW_TYPE_BITS + n_ch*GAIN_BITS;
 
-    for (i=0; i < 2; i++)
+    for (i = 0; i < 2; i++)
         bsize_no_main_cb[i] =
             lsp_bits_per_block + n_ch*GAIN_BITS + WINDOW_TYPE_BITS +
             mtab->fmode[i].sub*(bse_bits[i] + n_ch*SUB_GAIN_BITS);
 
     // The remaining bits are all used for the main spectrum coefficients
-    for (i=0; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
         int bit_size;
         int vect_size;
         int rounded_up, rounded_down, num_rounded_down, num_rounded_up;
@@ -1062,7 +1062,7 @@ static av_cold void init_bitstream_params(TwinContext *tctx)
         tctx->length_change[i] = num_rounded_up;
     }
 
-    for (i=0; i < 4; i++)
+    for (i = 0; i < 4; i++)
         construct_perm_table(tctx, i);
 }
 
@@ -1110,7 +1110,7 @@ static av_cold int twin_decode_close(AVCodecContext *avctx)
     TwinContext *tctx = avctx->priv_data;
     int i;
 
-    for (i=0; i < 3; i++) {
+    for (i = 0; i < 3; i++) {
         ff_mdct_end(&tctx->mdct_ctx[i]);
         av_free(tctx->cos_tabs[i]);
     }
