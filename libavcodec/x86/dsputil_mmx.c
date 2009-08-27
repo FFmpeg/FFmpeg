@@ -2346,7 +2346,7 @@ static void int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mu
     );
 }
 
-static void vector_clipf_sse(float *dst, float *src, float min, float max,
+static void vector_clipf_sse(float *dst, const float *src, float min, float max,
                              int len)
 {
     x86_reg i = (len-16)*4;
