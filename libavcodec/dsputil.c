@@ -4093,6 +4093,51 @@ static void int32_to_float_fmul_scalar_c(float *dst, const int *src, float mul, 
         dst[i] = src[i] * mul;
 }
 
+static inline uint32_t clipf_c_one(uint32_t a, uint32_t mini,
+                   uint32_t maxi, uint32_t maxisign)
+{
+
+    if(a > mini) return mini;
+    else if((a^(1<<31)) > maxisign) return maxi;
+    else return a;
+}
+
+static void vector_clipf_c_opposite_sign(float *dst, float *src, float *min, float *max, int len){
+    int i;
+    uint32_t mini = *(uint32_t*)min;
+    uint32_t maxi = *(uint32_t*)max;
+    uint32_t maxisign = maxi ^ (1<<31);
+    uint32_t *dsti = (uint32_t*)dst;
+    uint32_t *srci = (uint32_t*)src;
+    for(i=0; i<len; i+=8) {
+        dsti[i + 0] = clipf_c_one(srci[i + 0], mini, maxi, maxisign);
+        dsti[i + 1] = clipf_c_one(srci[i + 1], mini, maxi, maxisign);
+        dsti[i + 2] = clipf_c_one(srci[i + 2], mini, maxi, maxisign);
+        dsti[i + 3] = clipf_c_one(srci[i + 3], mini, maxi, maxisign);
+        dsti[i + 4] = clipf_c_one(srci[i + 4], mini, maxi, maxisign);
+        dsti[i + 5] = clipf_c_one(srci[i + 5], mini, maxi, maxisign);
+        dsti[i + 6] = clipf_c_one(srci[i + 6], mini, maxi, maxisign);
+        dsti[i + 7] = clipf_c_one(srci[i + 7], mini, maxi, maxisign);
+    }
+}
+static void vector_clipf_c(float *dst, float *src, float min, float max, int len){
+    int i;
+    if(min < 0 && max > 0) {
+        vector_clipf_c_opposite_sign(dst, src, &min, &max, len);
+    } else {
+        for(i=0; i < len; i+=8) {
+            dst[i    ] = av_clipf(src[i    ], min, max);
+            dst[i + 1] = av_clipf(src[i + 1], min, max);
+            dst[i + 2] = av_clipf(src[i + 2], min, max);
+            dst[i + 3] = av_clipf(src[i + 3], min, max);
+            dst[i + 4] = av_clipf(src[i + 4], min, max);
+            dst[i + 5] = av_clipf(src[i + 5], min, max);
+            dst[i + 6] = av_clipf(src[i + 6], min, max);
+            dst[i + 7] = av_clipf(src[i + 7], min, max);
+        }
+    }
+}
+
 static av_always_inline int float_to_int16_one(const float *src){
     int_fast32_t tmp = *(const int32_t*)src;
     if(tmp & 0xf0000){
@@ -4669,6 +4714,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_fmul_add_add = ff_vector_fmul_add_add_c;
     c->vector_fmul_window = ff_vector_fmul_window_c;
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
+    c->vector_clipf = vector_clipf_c;
     c->float_to_int16 = ff_float_to_int16_c;
     c->float_to_int16_interleave = ff_float_to_int16_interleave_c;
     c->add_int16 = add_int16_c;

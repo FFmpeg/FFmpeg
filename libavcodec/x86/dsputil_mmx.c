@@ -2346,6 +2346,40 @@ static void int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mu
     );
 }
 
+static void vector_clipf_sse(float *dst, float *src, float min, float max,
+                             int len)
+{
+    x86_reg i = (len-16)*4;
+    __asm__ volatile(
+        "movss  %3, %%xmm4 \n"
+        "movss  %4, %%xmm5 \n"
+        "shufps $0, %%xmm4, %%xmm4 \n"
+        "shufps $0, %%xmm5, %%xmm5 \n"
+        "1: \n\t"
+        "movaps    (%2,%0), %%xmm0 \n\t" // 3/1 on intel
+        "movaps  16(%2,%0), %%xmm1 \n\t"
+        "movaps  32(%2,%0), %%xmm2 \n\t"
+        "movaps  48(%2,%0), %%xmm3 \n\t"
+        "maxps      %%xmm4, %%xmm0 \n\t"
+        "maxps      %%xmm4, %%xmm1 \n\t"
+        "maxps      %%xmm4, %%xmm2 \n\t"
+        "maxps      %%xmm4, %%xmm3 \n\t"
+        "minps      %%xmm5, %%xmm0 \n\t"
+        "minps      %%xmm5, %%xmm1 \n\t"
+        "minps      %%xmm5, %%xmm2 \n\t"
+        "minps      %%xmm5, %%xmm3 \n\t"
+        "movaps  %%xmm0,   (%1,%0) \n\t"
+        "movaps  %%xmm1, 16(%1,%0) \n\t"
+        "movaps  %%xmm2, 32(%1,%0) \n\t"
+        "movaps  %%xmm3, 48(%1,%0) \n\t"
+        "sub  $64, %0 \n\t"
+        "jge 1b \n\t"
+        :"+r"(i)
+        :"r"(dst), "r"(src), "m"(min), "m"(max)
+        :"memory"
+    );
+}
+
 static void float_to_int16_3dnow(int16_t *dst, const float *src, long len){
     x86_reg reglen = len;
     // not bit-exact: pf2id uses different rounding than C and SSE
@@ -3046,6 +3080,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vector_fmul_add_add = vector_fmul_add_add_sse;
             c->vector_fmul_window = vector_fmul_window_sse;
             c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse;
+            c->vector_clipf = vector_clipf_sse;
             c->float_to_int16 = float_to_int16_sse;
             c->float_to_int16_interleave = float_to_int16_interleave_sse;
         }

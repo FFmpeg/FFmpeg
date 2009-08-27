@@ -825,7 +825,6 @@ static int twin_decode_frame(AVCodecContext * avctx, void *data,
     float *out = data;
     enum FrameType ftype;
     int window_type;
-    int i;
     static const enum FrameType wtype_to_ftype_table[] = {
         FT_LONG,   FT_LONG, FT_SHORT, FT_LONG,
         FT_MEDIUM, FT_LONG, FT_LONG,  FT_MEDIUM, FT_MEDIUM
@@ -860,8 +859,8 @@ static int twin_decode_frame(AVCodecContext * avctx, void *data,
         return buf_size;
     }
 
-    for (i=0; i < avctx->channels * mtab->size; i++)
-        out[i] = av_clipf(out[i], -32700./(1<<15), 32700./(1<<15));
+    tctx->dsp.vector_clipf(out, out, -32700./(1<<15), 32700./(1<<15),
+                           mtab->size);
 
     *data_size = mtab->size*avctx->channels*4;
 
