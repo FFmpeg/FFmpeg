@@ -2374,7 +2374,7 @@ static void vector_clipf_sse(float *dst, const float *src, float min, float max,
         "movaps  %%xmm3, 48(%1,%0) \n\t"
         "sub  $64, %0 \n\t"
         "jge 1b \n\t"
-        :"+r"(i)
+        :"+&r"(i)
         :"r"(dst), "r"(src), "m"(min), "m"(max)
         :"memory"
     );
