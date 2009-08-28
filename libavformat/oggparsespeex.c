@@ -40,12 +40,22 @@ static int speex_header(AVFormatContext *s, int idx) {
         return 0;
 
     if (os->seq == 0) {
+        int frames_per_packet;
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_SPEEX;
 
         st->codec->sample_rate = AV_RL32(p + 36);
         st->codec->channels = AV_RL32(p + 48);
+
+        /* We treat the whole Speex packet as a single frame everywhere Speex
+           is handled in FFmpeg.  This avoids the complexities of splitting
+           and joining individual Speex frames, which are not always
+           byte-aligned. */
         st->codec->frame_size = AV_RL32(p + 56);
+        frames_per_packet     = AV_RL32(p + 64);
+        if (frames_per_packet)
+            st->codec->frame_size *= frames_per_packet;
+
         st->codec->extradata_size = os->psize;
         st->codec->extradata = av_malloc(st->codec->extradata_size
                                          + FF_INPUT_BUFFER_PADDING_SIZE);

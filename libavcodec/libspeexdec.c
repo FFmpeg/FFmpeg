@@ -53,6 +53,8 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
         avctx->sample_rate = s->header->rate;
         avctx->channels    = s->header->nb_channels;
         avctx->frame_size  = s->header->frame_size;
+        if (s->header->frames_per_packet)
+            avctx->frame_size *= s->header->frames_per_packet;
 
         mode = speex_lib_get_mode(s->header->mode);
         if (!mode) {
@@ -98,7 +100,7 @@ static int libspeex_decode_frame(AVCodecContext *avctx,
     int16_t *output = data, *end;
     int i, num_samples;
 
-    num_samples = avctx->frame_size * avctx->channels;
+    num_samples = s->header->frame_size * avctx->channels;
     end = output + *data_size/2;
 
     speex_bits_read_from(&s->bits, buf, buf_size);
@@ -113,12 +115,13 @@ static int libspeex_decode_frame(AVCodecContext *avctx,
             break;
 
         if (avctx->channels == 2)
-            speex_decode_stereo_int(output, avctx->frame_size, &s->stereo);
+            speex_decode_stereo_int(output, s->header->frame_size, &s->stereo);
 
         output += num_samples;
     }
 
-    *data_size = i * avctx->channels * avctx->frame_size * 2;
+    avctx->frame_size = s->header->frame_size * i;
+    *data_size = avctx->channels * avctx->frame_size * sizeof(*output);
     return buf_size;
 }
 
