@@ -143,6 +143,7 @@ Codecs:
   lcl*.c                                Roberto Togni, Reimar Doeffinger
   libgsm.c                              Michel Bardiaux
   libopenjpeg.c                         Jaikrishnan Menon
+  libspeexdec.c                         Justin Ruggles
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
   loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger
