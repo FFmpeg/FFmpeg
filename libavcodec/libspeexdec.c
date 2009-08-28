@@ -101,7 +101,7 @@ static int libspeex_decode_frame(AVCodecContext *avctx,
     int i, num_samples;
 
     num_samples = s->header->frame_size * avctx->channels;
-    end = output + *data_size/2;
+    end = output + *data_size / sizeof(*output);
 
     speex_bits_read_from(&s->bits, buf, buf_size);
 
