@@ -249,6 +249,15 @@ if((y)<(x)){\
 #define perror please_use_av_log_instead_of_perror
 #endif
 
+#define CHECKED_ALLOC(p, size)\
+{\
+    p= av_malloc(size);\
+    if(p==NULL && (size)!=0){\
+        av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory.");\
+        goto fail;\
+    }\
+}
+
 #define CHECKED_ALLOCZ(p, size)\
 {\
     p= av_mallocz(size);\
