@@ -610,6 +610,7 @@ void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 #define DECLARE_ALIGNED_16(t, v) DECLARE_ALIGNED(16, t, v)
+#define DECLARE_ALIGNED_8(t, v)  DECLARE_ALIGNED(8, t, v)
 
 #if HAVE_MMX
 
@@ -659,8 +660,6 @@ extern int mm_flags;
 #define mm_support() 0
 
 #endif
-
-#   define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
 
 #ifndef STRIDE_ALIGN
 #   define STRIDE_ALIGN 8
