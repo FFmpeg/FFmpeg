@@ -66,6 +66,9 @@ int main(int argc, char **argv)
     int failedNum=0;
     int passedNum=0;
 
+    if (!srcBuffer || !dstBuffer)
+        return -1;
+
     av_log(NULL, AV_LOG_INFO, "memory corruption test ...\n");
     args_parse(argc, argv);
     av_log(NULL, AV_LOG_INFO, "CPU capabilities forced to %x\n", cpu_caps);

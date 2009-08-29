@@ -76,6 +76,7 @@ untested special converters
 #include "rgb2rgb.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/x86_cpu.h"
+#include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
 
 unsigned swscale_version(void)
@@ -1450,12 +1451,12 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 #endif
 
     // NOTE: the +1 is for the MMX scaler which reads over the end
-    *filterPos = av_malloc((dstW+1)*sizeof(int16_t));
+    CHECKED_ALLOC(*filterPos, (dstW+1)*sizeof(int16_t));
 
     if (FFABS(xInc - 0x10000) <10) { // unscaled
         int i;
         filterSize= 1;
-        filter= av_mallocz(dstW*sizeof(*filter)*filterSize);
+        CHECKED_ALLOCZ(filter, dstW*sizeof(*filter)*filterSize);
 
         for (i=0; i<dstW; i++) {
             filter[i*filterSize]= fone;
@@ -1466,7 +1467,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         int i;
         int xDstInSrc;
         filterSize= 1;
-        filter= av_malloc(dstW*sizeof(*filter)*filterSize);
+        CHECKED_ALLOC(filter, dstW*sizeof(*filter)*filterSize);
 
         xDstInSrc= xInc/2 - 0x8000;
         for (i=0; i<dstW; i++) {
@@ -1480,7 +1481,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         int i;
         int xDstInSrc;
         filterSize= 2;
-        filter= av_malloc(dstW*sizeof(*filter)*filterSize);
+        CHECKED_ALLOC(filter, dstW*sizeof(*filter)*filterSize);
 
         xDstInSrc= xInc/2 - 0x8000;
         for (i=0; i<dstW; i++) {
@@ -1519,7 +1520,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 
         if (filterSize > srcW-2) filterSize=srcW-2;
 
-        filter= av_malloc(dstW*sizeof(*filter)*filterSize);
+        CHECKED_ALLOC(filter, dstW*sizeof(*filter)*filterSize);
 
         xDstInSrc= xInc - 0x10000;
         for (i=0; i<dstW; i++) {
@@ -1607,7 +1608,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     if (srcFilter) filter2Size+= srcFilter->length - 1;
     if (dstFilter) filter2Size+= dstFilter->length - 1;
     assert(filter2Size>0);
-    filter2= av_mallocz(filter2Size*dstW*sizeof(*filter2));
+    CHECKED_ALLOCZ(filter2, filter2Size*dstW*sizeof(*filter2));
 
     for (i=0; i<dstW; i++) {
         int j, k;
@@ -1690,7 +1691,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     assert(filterSize > 0);
     filter= av_malloc(filterSize*dstW*sizeof(*filter));
     if (filterSize >= MAX_FILTER_SIZE*16/((flags&SWS_ACCURATE_RND) ? APCK_SIZE : 16) || !filter)
-        goto error;
+        goto fail;
     *outFilterSize= filterSize;
 
     if (flags&SWS_PRINT_INFO)
@@ -1737,7 +1738,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 
     // Note the +1 is for the MMX scaler which reads over the end
     /* align at 16 for AltiVec (needed by hScale_altivec_real) */
-    *outFilter= av_mallocz(*outFilterSize*(dstW+1)*sizeof(int16_t));
+    CHECKED_ALLOCZ(*outFilter, *outFilterSize*(dstW+1)*sizeof(int16_t));
 
     /* normalize & store in outFilter */
     for (i=0; i<dstW; i++) {
@@ -1764,7 +1765,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     }
 
     ret=0;
-error:
+fail:
     av_free(filter);
     av_free(filter2);
     return ret;
@@ -2598,7 +2599,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     if (!dstFilter) dstFilter= &dummyFilter;
     if (!srcFilter) srcFilter= &dummyFilter;
 
-    c= av_mallocz(sizeof(SwsContext));
+    CHECKED_ALLOCZ(c, sizeof(SwsContext));
 
     c->av_class = &sws_context_class;
     c->srcW= srcW;
@@ -2837,10 +2838,10 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             c->chrMmx2FilterCode = av_malloc(c->chrMmx2FilterCodeSize);
 #endif
 
-            c->lumMmx2Filter   = av_malloc((dstW        /8+8)*sizeof(int16_t));
-            c->chrMmx2Filter   = av_malloc((c->chrDstW  /4+8)*sizeof(int16_t));
-            c->lumMmx2FilterPos= av_malloc((dstW      /2/8+8)*sizeof(int32_t));
-            c->chrMmx2FilterPos= av_malloc((c->chrDstW/2/4+8)*sizeof(int32_t));
+            CHECKED_ALLOCZ(c->lumMmx2Filter   , (dstW        /8+8)*sizeof(int16_t));
+            CHECKED_ALLOCZ(c->chrMmx2Filter   , (c->chrDstW  /4+8)*sizeof(int16_t));
+            CHECKED_ALLOCZ(c->lumMmx2FilterPos, (dstW      /2/8+8)*sizeof(int32_t));
+            CHECKED_ALLOCZ(c->chrMmx2FilterPos, (c->chrDstW/2/4+8)*sizeof(int32_t));
 
             initMMX2HScaler(      dstW, c->lumXInc, c->lumMmx2FilterCode, c->lumMmx2Filter, c->lumMmx2FilterPos, 8);
             initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmx2FilterCode, c->chrMmx2Filter, c->chrMmx2FilterPos, 4);
@@ -2872,8 +2873,8 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
                    srcFilter->chrV, dstFilter->chrV, c->param);
 
 #ifdef COMPILE_ALTIVEC
-        c->vYCoeffsBank = av_malloc(sizeof (vector signed short)*c->vLumFilterSize*c->dstH);
-        c->vCCoeffsBank = av_malloc(sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH);
+        CHECKED_ALLOC(c->vYCoeffsBank, sizeof (vector signed short)*c->vLumFilterSize*c->dstH);
+        CHECKED_ALLOC(c->vCCoeffsBank, sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH);
 
         for (i=0;i<c->vLumFilterSize*c->dstH;i++) {
             int j;
@@ -2909,19 +2910,28 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 
     // allocate pixbufs (we use dynamic allocation because otherwise we would need to
     // allocate several megabytes to handle all possible cases)
-    c->lumPixBuf= av_malloc(c->vLumBufSize*2*sizeof(int16_t*));
-    c->chrPixBuf= av_malloc(c->vChrBufSize*2*sizeof(int16_t*));
+    CHECKED_ALLOC(c->lumPixBuf, c->vLumBufSize*2*sizeof(int16_t*));
+    CHECKED_ALLOC(c->chrPixBuf, c->vChrBufSize*2*sizeof(int16_t*));
     if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat) && isALPHA(c->dstFormat))
-        c->alpPixBuf= av_malloc(c->vLumBufSize*2*sizeof(int16_t*));
+        CHECKED_ALLOCZ(c->alpPixBuf, c->vLumBufSize*2*sizeof(int16_t*));
     //Note we need at least one pixel more at the end because of the MMX code (just in case someone wanna replace the 4000/8000)
     /* align at 16 bytes for AltiVec */
     for (i=0; i<c->vLumBufSize; i++)
-        c->lumPixBuf[i]= c->lumPixBuf[i+c->vLumBufSize]= av_mallocz(VOF+1);
+    {
+        CHECKED_ALLOCZ(c->lumPixBuf[i+c->vLumBufSize], VOF+1);
+        c->lumPixBuf[i] = c->lumPixBuf[i+c->vLumBufSize];
+    }
     for (i=0; i<c->vChrBufSize; i++)
-        c->chrPixBuf[i]= c->chrPixBuf[i+c->vChrBufSize]= av_malloc((VOF+1)*2);
+    {
+        CHECKED_ALLOC(c->chrPixBuf[i+c->vChrBufSize], (VOF+1)*2);
+        c->chrPixBuf[i] = c->chrPixBuf[i+c->vChrBufSize];
+    }
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
         for (i=0; i<c->vLumBufSize; i++)
-            c->alpPixBuf[i]= c->alpPixBuf[i+c->vLumBufSize]= av_mallocz(VOF+1);
+        {
+            CHECKED_ALLOCZ(c->alpPixBuf[i+c->vLumBufSize], VOF+1);
+            c->alpPixBuf[i] = c->alpPixBuf[i+c->vLumBufSize];
+        }
 
     //try to avoid drawing green stuff between the right end and the stride end
     for (i=0; i<c->vChrBufSize; i++) memset(c->chrPixBuf[i], 64, (VOF+1)*2);
@@ -3045,6 +3055,10 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 
     c->swScale= getSwsFunc(c);
     return c;
+
+fail:
+    sws_freeContext(c);
+    return NULL;
 }
 
 static void reset_ptr(uint8_t* src[], int format)
@@ -3189,6 +3203,8 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
                                 int verbose)
 {
     SwsFilter *filter= av_malloc(sizeof(SwsFilter));
+    if (!filter)
+        return NULL;
 
     if (lumaGBlur!=0.0) {
         filter->lumH= sws_getGaussianVec(lumaGBlur, 3.0);

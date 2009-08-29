@@ -183,8 +183,9 @@ end:
 static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
 {
     const int flags[] = { SWS_FAST_BILINEAR,
-                          SWS_BILINEAR, SWS_BICUBIC,
-                          SWS_X       , SWS_POINT  , SWS_AREA, 0 };
+//                          SWS_BILINEAR, SWS_BICUBIC,
+//                          SWS_X       , SWS_POINT  , SWS_AREA, 0 };
+                                                                 0 };
     const int srcW = w;
     const int srcH = h;
     const int dstW[] = { srcW - srcW/3, srcW, srcW + srcW/3, 0 };
@@ -224,6 +225,9 @@ int main(int argc, char **argv)
     int x, y;
     struct SwsContext *sws;
     AVLFG rand;
+
+    if (!rgb_data || !data)
+        return -1;
 
     sws= sws_getContext(W/12, H/12, PIX_FMT_RGB32, W, H, PIX_FMT_YUVA420P, SWS_BILINEAR, NULL, NULL, NULL);
 
