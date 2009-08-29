@@ -2812,14 +2812,16 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
             1;
 
-        initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
+        if (initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
                    srcW      ,       dstW, filterAlign, 1<<14,
                    (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
-                   srcFilter->lumH, dstFilter->lumH, c->param);
-        initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
+                   srcFilter->lumH, dstFilter->lumH, c->param) < 0)
+            goto fail;
+        if (initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
                    c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
                    (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
-                   srcFilter->chrH, dstFilter->chrH, c->param);
+                   srcFilter->chrH, dstFilter->chrH, c->param) < 0)
+            goto fail;
 
 #if defined(COMPILE_MMX2)
 // can't downscale !!!
@@ -2863,14 +2865,16 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
             1;
 
-        initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
+        if (initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
                    srcH      ,        dstH, filterAlign, (1<<12),
                    (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
-                   srcFilter->lumV, dstFilter->lumV, c->param);
-        initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
+                   srcFilter->lumV, dstFilter->lumV, c->param) < 0)
+            goto fail;
+        if (initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
                    c->chrSrcH, c->chrDstH, filterAlign, (1<<12),
                    (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
-                   srcFilter->chrV, dstFilter->chrV, c->param);
+                   srcFilter->chrV, dstFilter->chrV, c->param) < 0)
+            goto fail;
 
 #ifdef COMPILE_ALTIVEC
         CHECKED_ALLOC(c->vYCoeffsBank, sizeof (vector signed short)*c->vLumFilterSize*c->dstH);
