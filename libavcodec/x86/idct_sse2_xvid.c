@@ -40,6 +40,7 @@
 
 #include "libavcodec/dsputil.h"
 #include "idct_xvid.h"
+#include "dsputil_mmx.h"
 
 /*!
  * @file libavcodec/x86/idct_sse2_xvid.c

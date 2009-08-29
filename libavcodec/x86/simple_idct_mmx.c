@@ -21,6 +21,7 @@
  */
 #include "libavcodec/dsputil.h"
 #include "libavcodec/simple_idct.h"
+#include "dsputil_mmx.h"
 
 /*
 23170.475006

@@ -24,6 +24,7 @@
 
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
+#include "dsputil_mmx.h"
 
 DECLARE_ASM_CONST(8, uint64_t, round_tab[3])={
 0x0000000000000000ULL,

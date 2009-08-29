@@ -618,10 +618,6 @@ void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 extern int mm_flags;
 
-void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
-void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
-void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
-
 static inline void emms(void)
 {
     __asm__ volatile ("emms;":::"memory");
@@ -633,8 +629,6 @@ static inline void emms(void)
     if (mm_flags & FF_MM_MMX)\
         emms();\
 }
-
-void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 
 #elif ARCH_ARM
 
