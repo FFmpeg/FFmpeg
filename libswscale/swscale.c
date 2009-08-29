@@ -2908,6 +2908,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     }
 
     // allocate pixbufs (we use dynamic allocation because otherwise we would need to
+    // allocate several megabytes to handle all possible cases)
     c->lumPixBuf= av_malloc(c->vLumBufSize*2*sizeof(int16_t*));
     c->chrPixBuf= av_malloc(c->vChrBufSize*2*sizeof(int16_t*));
     if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat) && isALPHA(c->dstFormat))
