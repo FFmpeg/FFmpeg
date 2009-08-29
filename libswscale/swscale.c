@@ -2920,19 +2920,16 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         CHECKED_ALLOCZ(c->alpPixBuf, c->vLumBufSize*2*sizeof(int16_t*));
     //Note we need at least one pixel more at the end because of the MMX code (just in case someone wanna replace the 4000/8000)
     /* align at 16 bytes for AltiVec */
-    for (i=0; i<c->vLumBufSize; i++)
-    {
+    for (i=0; i<c->vLumBufSize; i++) {
         CHECKED_ALLOCZ(c->lumPixBuf[i+c->vLumBufSize], VOF+1);
         c->lumPixBuf[i] = c->lumPixBuf[i+c->vLumBufSize];
     }
-    for (i=0; i<c->vChrBufSize; i++)
-    {
+    for (i=0; i<c->vChrBufSize; i++) {
         CHECKED_ALLOC(c->chrPixBuf[i+c->vChrBufSize], (VOF+1)*2);
         c->chrPixBuf[i] = c->chrPixBuf[i+c->vChrBufSize];
     }
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
-        for (i=0; i<c->vLumBufSize; i++)
-        {
+        for (i=0; i<c->vLumBufSize; i++) {
             CHECKED_ALLOCZ(c->alpPixBuf[i+c->vLumBufSize], VOF+1);
             c->alpPixBuf[i] = c->alpPixBuf[i+c->vLumBufSize];
         }
