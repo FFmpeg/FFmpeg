@@ -598,6 +598,7 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
 /* should be defined by architectures supporting
    one or more MultiMedia extension */
 int mm_support(void);
+extern int mm_flags;
 
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
@@ -616,8 +617,6 @@ void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 #undef emms_c
 
-extern int mm_flags;
-
 static inline void emms(void)
 {
     __asm__ volatile ("emms;":::"memory");
@@ -632,15 +631,11 @@ static inline void emms(void)
 
 #elif ARCH_ARM
 
-extern int mm_flags;
-
 #if HAVE_NEON
 #   define STRIDE_ALIGN 16
 #endif
 
 #elif ARCH_PPC
-
-extern int mm_flags;
 
 #define STRIDE_ALIGN 16
 
