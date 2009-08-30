@@ -235,13 +235,13 @@ static int rv40_decode_mb_info(RV34DecContext *r)
     if(--r->s.mb_skip_run)
          return RV34_MB_SKIP;
 
-    if(r->avail_cache[5-1])
+    if(r->avail_cache[6-1])
         blocks[r->mb_type[mb_pos - 1]]++;
-    if(r->avail_cache[5-4]){
+    if(r->avail_cache[6-4]){
         blocks[r->mb_type[mb_pos - s->mb_stride]]++;
-        if(r->avail_cache[5-2])
+        if(r->avail_cache[6-2])
             blocks[r->mb_type[mb_pos - s->mb_stride + 1]]++;
-        if(r->avail_cache[5-5])
+        if(r->avail_cache[6-5])
             blocks[r->mb_type[mb_pos - s->mb_stride - 1]]++;
     }
 
