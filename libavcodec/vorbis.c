@@ -148,7 +148,6 @@ void ff_vorbis_ready_floor1_list(vorbis_floor1_entry * list, int values) {
 
 static inline void render_line_unrolled(intptr_t x, intptr_t y, int x1, intptr_t sy, int ady, int adx, float * buf) {
     int err = -adx;
-    int tmp;
     x -= x1-1;
     buf += x1-1;
     while (++x < 0) {
