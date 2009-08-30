@@ -37,6 +37,10 @@
 
 //#define DEBUG
 
+#define ZERO8x2(dst, stride) \
+    fill_rectangle(dst,                 1, 2, stride, 0, 4); \
+    fill_rectangle(((uint8_t*)(dst))+4, 1, 2, stride, 0, 4); \
+
 /** translation of RV30/40 macroblock types to lavc ones */
 static const int rv34_mb_type_to_lavc[12] = {
     MB_TYPE_INTRA,
@@ -584,8 +588,9 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
             cur_pic->motion_val[dir][mv_pos + i + j*s->b8_stride][1] = my;
         }
     }
-    if(block_type == RV34_MB_B_BACKWARD || block_type == RV34_MB_B_FORWARD)
-        fill_rectangle(cur_pic->motion_val[!dir][mv_pos], 2, 2, s->b8_stride, 0, 4);
+    if(block_type == RV34_MB_B_BACKWARD || block_type == RV34_MB_B_FORWARD){
+        ZERO8x2(cur_pic->motion_val[!dir][mv_pos], s->b8_stride);
+    }
 }
 
 /**
@@ -806,11 +811,11 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
     switch(block_type){
     case RV34_MB_TYPE_INTRA:
     case RV34_MB_TYPE_INTRA16x16:
-        fill_rectangle(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], 2, 2, s->b8_stride, 0, 4);
+        ZERO8x2(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
         return 0;
     case RV34_MB_SKIP:
         if(s->pict_type == FF_P_TYPE){
-            fill_rectangle(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], 2, 2, s->b8_stride, 0, 4);
+            ZERO8x2(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
             rv34_mc_1mv (r, block_type, 0, 0, 0, 2, 2, 0);
             break;
         }
@@ -818,8 +823,8 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         //surprisingly, it uses motion scheme from next reference frame
         next_bt = s->next_picture_ptr->mb_type[s->mb_x + s->mb_y * s->mb_stride];
         if(IS_INTRA(next_bt) || IS_SKIP(next_bt)){
-            fill_rectangle(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], 2, 2, s->b8_stride, 0, 4);
-            fill_rectangle(s->current_picture_ptr->motion_val[1][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], 2, 2, s->b8_stride, 0, 4);
+            ZERO8x2(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+            ZERO8x2(s->current_picture_ptr->motion_val[1][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
         }else
             for(j = 0; j < 2; j++)
                 for(i = 0; i < 2; i++)
@@ -830,7 +835,7 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
             rv34_mc_2mv(r, block_type);
         else
             rv34_mc_2mv_skip(r);
-        fill_rectangle(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], 2, 2, s->b8_stride, 0, 4);
+        ZERO8x2(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
         break;
     case RV34_MB_P_16x16:
     case RV34_MB_P_MIX16x16:
