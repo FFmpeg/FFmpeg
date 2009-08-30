@@ -37,9 +37,11 @@
 
 //#define DEBUG
 
-#define ZERO8x2(dst, stride) \
-    fill_rectangle(dst,                 1, 2, stride, 0, 4); \
-    fill_rectangle(((uint8_t*)(dst))+4, 1, 2, stride, 0, 4); \
+static inline void ZERO8x2(void* dst, int stride)
+{
+    fill_rectangle(dst,                 1, 2, stride, 0, 4);
+    fill_rectangle(((uint8_t*)(dst))+4, 1, 2, stride, 0, 4);
+}
 
 /** translation of RV30/40 macroblock types to lavc ones */
 static const int rv34_mb_type_to_lavc[12] = {
