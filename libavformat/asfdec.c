@@ -245,7 +245,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             asf_st->stream_language_index = 128; // invalid stream index means no language info
 
             if(!(asf->hdr.flags & 0x01)) { // if we aren't streaming...
-                st->duration = asf->hdr.send_time /
+                st->duration = asf->hdr.play_time /
                     (10000000 / 1000) - start_time;
             }
             get_guid(pb, &g);
