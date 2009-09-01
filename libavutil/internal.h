@@ -56,7 +56,7 @@
 #endif
 
 #ifndef INT16_MIN
-#define INT16_MIN       (-0x7fff-1)
+#define INT16_MIN       (-0x7fff - 1)
 #endif
 
 #ifndef INT16_MAX
@@ -64,7 +64,7 @@
 #endif
 
 #ifndef INT32_MIN
-#define INT32_MIN       (-0x7fffffff-1)
+#define INT32_MIN       (-0x7fffffff - 1)
 #endif
 
 #ifndef INT32_MAX
@@ -76,7 +76,7 @@
 #endif
 
 #ifndef INT64_MIN
-#define INT64_MIN       (-0x7fffffffffffffffLL-1)
+#define INT64_MIN       (-0x7fffffffffffffffLL - 1)
 #endif
 
 #ifndef INT64_MAX
@@ -96,7 +96,7 @@
 #endif
 
 #ifndef offsetof
-#    define offsetof(T,F) ((unsigned int)((char *)&((T *)0)->F))
+#    define offsetof(T, F) ((unsigned int)((char *)&((T *)0)->F))
 #endif
 
 /* Use to export labels from asm. */
@@ -129,11 +129,11 @@ extern const uint32_t ff_inverse[256];
 #if ARCH_X86
 #    define FASTDIV(a,b) \
     ({\
-        int ret,dmy;\
+        int ret, dmy;\
         __asm__ volatile(\
             "mull %3"\
-            :"=d"(ret),"=a"(dmy)\
-            :"1"(a),"g"(ff_inverse[b])\
+            :"=d"(ret), "=a"(dmy)\
+            :"1"(a), "g"(ff_inverse[b])\
             );\
         ret;\
     })
@@ -152,14 +152,14 @@ static inline av_const int FASTDIV(int a, int b)
 static inline av_const int FASTDIV(int a, int b)
 {
     int r, t;
-    __asm__ volatile ("umull %1, %0, %2, %3"
-                      : "=&r"(r), "=&r"(t) : "r"(a), "r"(ff_inverse[b]));
+    __asm__ volatile("umull %1, %0, %2, %3"
+                     : "=&r"(r), "=&r"(t) : "r"(a), "r"(ff_inverse[b]));
     return r;
 }
 #elif CONFIG_FASTDIV
-#    define FASTDIV(a,b)   ((uint32_t)((((uint64_t)a)*ff_inverse[b])>>32))
+#    define FASTDIV(a,b)   ((uint32_t)((((uint64_t)a) * ff_inverse[b]) >> 32))
 #else
-#    define FASTDIV(a,b)   ((a)/(b))
+#    define FASTDIV(a,b)   ((a) / (b))
 #endif
 
 extern const uint8_t ff_sqrt_tab[256];
@@ -168,20 +168,20 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
 {
     unsigned int b;
 
-    if(a<255) return (ff_sqrt_tab[a+1]-1)>>4;
-    else if(a<(1<<12)) b= ff_sqrt_tab[a>>4 ]>>2;
+    if (a < 255) return (ff_sqrt_tab[a + 1] - 1) >> 4;
+    else if (a < (1 << 12)) b = ff_sqrt_tab[a >> 4] >> 2;
 #if !CONFIG_SMALL
-    else if(a<(1<<14)) b= ff_sqrt_tab[a>>6 ]>>1;
-    else if(a<(1<<16)) b= ff_sqrt_tab[a>>8 ]   ;
+    else if (a < (1 << 14)) b = ff_sqrt_tab[a >> 6] >> 1;
+    else if (a < (1 << 16)) b = ff_sqrt_tab[a >> 8]   ;
 #endif
-    else{
-        int s= av_log2_16bit(a>>16)>>1;
-        unsigned int c= a>>(s+2);
-        b= ff_sqrt_tab[c>>(s+8)];
-        b= FASTDIV(c,b) + (b<<s);
+    else {
+        int s = av_log2_16bit(a >> 16) >> 1;
+        unsigned int c = a >> (s + 2);
+        b = ff_sqrt_tab[c >> (s + 8)];
+        b = FASTDIV(c,b) + (b << s);
     }
 
-    return b - (a<b*b);
+    return b - (a < b * b);
 }
 
 #if ARCH_X86
@@ -194,14 +194,14 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
             );
 #else
 #define MASK_ABS(mask, level)\
-            mask= level>>31;\
-            level= (level^mask)-mask;
+            mask  = level >> 31;\
+            level = (level ^ mask) - mask;
 #endif
 
 #if HAVE_CMOV
-#define COPY3_IF_LT(x,y,a,b,c,d)\
-__asm__ volatile (\
-    "cmpl %0, %3        \n\t"\
+#define COPY3_IF_LT(x, y, a, b, c, d)\
+__asm__ volatile(\
+    "cmpl  %0, %3       \n\t"\
     "cmovl %3, %0       \n\t"\
     "cmovl %4, %1       \n\t"\
     "cmovl %5, %2       \n\t"\
@@ -209,11 +209,11 @@ __asm__ volatile (\
     : "r" (y), "r" (b), "r" (d)\
 );
 #else
-#define COPY3_IF_LT(x,y,a,b,c,d)\
-if((y)<(x)){\
-     (x)=(y);\
-     (a)=(b);\
-     (c)=(d);\
+#define COPY3_IF_LT(x, y, a, b, c, d)\
+if ((y) < (x)) {\
+    (x) = (y);\
+    (a) = (b);\
+    (c) = (d);\
 }
 #endif
 
@@ -251,8 +251,8 @@ if((y)<(x)){\
 
 #define CHECKED_ALLOC(p, size)\
 {\
-    p= av_malloc(size);\
-    if(p==NULL && (size)!=0){\
+    p = av_malloc(size);\
+    if (p == NULL && (size) != 0) {\
         av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory.");\
         goto fail;\
     }\
@@ -260,8 +260,8 @@ if((y)<(x)){\
 
 #define CHECKED_ALLOCZ(p, size)\
 {\
-    p= av_mallocz(size);\
-    if(p==NULL && (size)!=0){\
+    p = av_mallocz(size);\
+    if (p == NULL && (size) != 0) {\
         av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory.");\
         goto fail;\
     }\
