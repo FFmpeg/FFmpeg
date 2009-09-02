@@ -36,6 +36,7 @@ version <next>:
 - TwinVQ decoder
 - Bluray (PGS) subtitle decoder
 - LPCM support in MPEG-TS (HDMV RID as found on Blu-ray disks)
+- Wmapro decoder
 
 
 
