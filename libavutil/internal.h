@@ -253,7 +253,7 @@ if ((y) < (x)) {\
 {\
     p = av_malloc(size);\
     if (p == NULL && (size) != 0) {\
-        av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory.");\
+        av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto fail;\
     }\
 }
@@ -262,7 +262,7 @@ if ((y) < (x)) {\
 {\
     p = av_mallocz(size);\
     if (p == NULL && (size) != 0) {\
-        av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory.");\
+        av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory.\n");\
         goto fail;\
     }\
 }
