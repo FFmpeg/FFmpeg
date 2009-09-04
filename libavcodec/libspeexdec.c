@@ -78,8 +78,7 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
     }
 
     if (!s->header) {
-        speex_decoder_ctl(s->dec_state, SPEEX_GET_FRAME_SIZE, &avctx->frame_size);
-        s->frame_size = avctx->frame_size;
+        speex_decoder_ctl(s->dec_state, SPEEX_GET_FRAME_SIZE, &s->frame_size);
     }
 
     if (avctx->channels == 2) {
