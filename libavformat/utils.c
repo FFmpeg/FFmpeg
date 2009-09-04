@@ -1862,7 +1862,8 @@ static int has_codec_parameters(AVCodecContext *enc)
         val = enc->sample_rate && enc->channels && enc->sample_fmt != SAMPLE_FMT_NONE;
         if(!enc->frame_size &&
            (enc->codec_id == CODEC_ID_VORBIS ||
-            enc->codec_id == CODEC_ID_AAC))
+            enc->codec_id == CODEC_ID_AAC ||
+            enc->codec_id == CODEC_ID_SPEEX))
             return 0;
         break;
     case CODEC_TYPE_VIDEO:
