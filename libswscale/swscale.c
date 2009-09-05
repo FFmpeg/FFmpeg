@@ -2813,14 +2813,14 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             1;
 
         if (initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
-                   srcW      ,       dstW, filterAlign, 1<<14,
-                   (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
-                   srcFilter->lumH, dstFilter->lumH, c->param) < 0)
+                       srcW      ,       dstW, filterAlign, 1<<14,
+                       (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
+                       srcFilter->lumH, dstFilter->lumH, c->param) < 0)
             goto fail;
         if (initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
-                   c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
-                   (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
-                   srcFilter->chrH, dstFilter->chrH, c->param) < 0)
+                       c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
+                       (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
+                       srcFilter->chrH, dstFilter->chrH, c->param) < 0)
             goto fail;
 
 #if defined(COMPILE_MMX2)
