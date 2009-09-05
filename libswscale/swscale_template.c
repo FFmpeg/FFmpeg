@@ -2914,12 +2914,12 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_PAL8     :
         case PIX_FMT_BGR4_BYTE:
         case PIX_FMT_RGB4_BYTE: c->hcscale_internal = palToUV; break;
-        case PIX_FMT_YUV420PBE:
-        case PIX_FMT_YUV422PBE:
-        case PIX_FMT_YUV444PBE: c->hcscale_internal = RENAME(BEToUV); break;
-        case PIX_FMT_YUV420PLE:
-        case PIX_FMT_YUV422PLE:
-        case PIX_FMT_YUV444PLE: c->hcscale_internal = RENAME(LEToUV); break;
+        case PIX_FMT_YUV420P16BE:
+        case PIX_FMT_YUV422P16BE:
+        case PIX_FMT_YUV444P16BE: c->hcscale_internal = RENAME(BEToUV); break;
+        case PIX_FMT_YUV420P16LE:
+        case PIX_FMT_YUV422P16LE:
+        case PIX_FMT_YUV444P16LE: c->hcscale_internal = RENAME(LEToUV); break;
     }
     if (c->chrSrcHSubSample) {
         switch(srcFormat) {
@@ -2957,14 +2957,14 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     c->hascale_internal = NULL;
     switch (srcFormat) {
     case PIX_FMT_YUYV422  :
-    case PIX_FMT_YUV420PBE:
-    case PIX_FMT_YUV422PBE:
-    case PIX_FMT_YUV444PBE:
+    case PIX_FMT_YUV420P16BE:
+    case PIX_FMT_YUV422P16BE:
+    case PIX_FMT_YUV444P16BE:
     case PIX_FMT_GRAY16BE : c->hyscale_internal = RENAME(yuy2ToY); break;
     case PIX_FMT_UYVY422  :
-    case PIX_FMT_YUV420PLE:
-    case PIX_FMT_YUV422PLE:
-    case PIX_FMT_YUV444PLE:
+    case PIX_FMT_YUV420P16LE:
+    case PIX_FMT_YUV422P16LE:
+    case PIX_FMT_YUV444P16LE:
     case PIX_FMT_GRAY16LE : c->hyscale_internal = RENAME(uyvyToY); break;
     case PIX_FMT_BGR24    : c->hyscale_internal = RENAME(bgr24ToY); break;
     case PIX_FMT_BGR565   : c->hyscale_internal = bgr16ToY; break;

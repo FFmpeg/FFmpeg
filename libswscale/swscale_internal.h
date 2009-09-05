@@ -302,12 +302,12 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_GRAY16LE    \
         || (x)==PIX_FMT_RGB48BE     \
         || (x)==PIX_FMT_RGB48LE     \
-        || (x)==PIX_FMT_YUV420PLE   \
-        || (x)==PIX_FMT_YUV422PLE   \
-        || (x)==PIX_FMT_YUV444PLE   \
-        || (x)==PIX_FMT_YUV420PBE   \
-        || (x)==PIX_FMT_YUV422PBE   \
-        || (x)==PIX_FMT_YUV444PBE   \
+        || (x)==PIX_FMT_YUV420P16LE   \
+        || (x)==PIX_FMT_YUV422P16LE   \
+        || (x)==PIX_FMT_YUV444P16LE   \
+        || (x)==PIX_FMT_YUV420P16BE   \
+        || (x)==PIX_FMT_YUV422P16BE   \
+        || (x)==PIX_FMT_YUV444P16BE   \
     )
 #define isBE(x) ((x)&1)
 #define isPlanar8YUV(x) (           \
@@ -323,12 +323,12 @@ const char *sws_format_name(enum PixelFormat format);
     )
 #define isPlanarYUV(x)  (           \
         isPlanar8YUV(x)             \
-        || (x)==PIX_FMT_YUV420PLE   \
-        || (x)==PIX_FMT_YUV422PLE   \
-        || (x)==PIX_FMT_YUV444PLE   \
-        || (x)==PIX_FMT_YUV420PBE   \
-        || (x)==PIX_FMT_YUV422PBE   \
-        || (x)==PIX_FMT_YUV444PBE   \
+        || (x)==PIX_FMT_YUV420P16LE   \
+        || (x)==PIX_FMT_YUV422P16LE   \
+        || (x)==PIX_FMT_YUV444P16LE   \
+        || (x)==PIX_FMT_YUV420P16BE   \
+        || (x)==PIX_FMT_YUV422P16BE   \
+        || (x)==PIX_FMT_YUV444P16BE   \
     )
 #define isYUV(x)        (           \
            (x)==PIX_FMT_UYVY422     \
