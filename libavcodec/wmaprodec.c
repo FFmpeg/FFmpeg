@@ -188,6 +188,7 @@ typedef struct WMAProDecodeCtx {
     int16_t          subwoofer_cutoffs[WMAPRO_BLOCK_SIZES]; ///< subwoofer cutoff values
 
     /* packet decode state */
+    GetBitContext    pgb;                           ///< bitstream reader context for the packet
     uint8_t          packet_sequence_number;        ///< current packet number
     int              num_saved_bits;                ///< saved number of bits
     int              frame_offset;                  ///< frame offset in the bit reservoir
@@ -1441,8 +1442,8 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
 static int decode_packet(AVCodecContext *avctx,
                          void *data, int *data_size, AVPacket* avpkt)
 {
-    GetBitContext gb;
     WMAProDecodeCtx *s = avctx->priv_data;
+    GetBitContext* gb    = &s->pgb;
     const uint8_t* buf   = avpkt->data;
     int buf_size         = avpkt->size;
     int more_frames      = 1;
@@ -1463,12 +1464,12 @@ static int decode_packet(AVCodecContext *avctx,
     buf_size = avctx->block_align;
 
     /** parse packet header */
-    init_get_bits(&gb, buf, s->buf_bit_size);
-    packet_sequence_number = get_bits(&gb, 4);
-    skip_bits(&gb, 2);
+    init_get_bits(gb, buf, s->buf_bit_size);
+    packet_sequence_number = get_bits(gb, 4);
+    skip_bits(gb, 2);
 
     /** get number of bits that need to be added to the previous frame */
-    num_bits_prev_frame = get_bits(&gb, s->log2_frame_size);
+    num_bits_prev_frame = get_bits(gb, s->log2_frame_size);
     dprintf(avctx, "packet[%d]: nbpf %x\n", avctx->frame_number,
             num_bits_prev_frame);
 
@@ -1484,7 +1485,7 @@ static int decode_packet(AVCodecContext *avctx,
     if (num_bits_prev_frame > 0) {
         /** append the previous frame data to the remaining data from the
             previous packet to create a full frame */
-        save_bits(s, &gb, num_bits_prev_frame, 1);
+        save_bits(s, gb, num_bits_prev_frame, 1);
         dprintf(avctx, "accumulated %x bits of frame data\n",
                 s->num_saved_bits - s->frame_offset);
 
@@ -1499,12 +1500,12 @@ static int decode_packet(AVCodecContext *avctx,
     s->packet_loss = 0;
     /** decode the rest of the packet */
     while (!s->packet_loss && more_frames &&
-           remaining_bits(s, &gb) > s->log2_frame_size) {
-        int frame_size = show_bits(&gb, s->log2_frame_size);
+           remaining_bits(s, gb) > s->log2_frame_size) {
+        int frame_size = show_bits(gb, s->log2_frame_size);
 
         /** there is enough data for a full frame */
-        if (remaining_bits(s, &gb) >= frame_size && frame_size > 0) {
-            save_bits(s, &gb, frame_size, 0);
+        if (remaining_bits(s, gb) >= frame_size && frame_size > 0) {
+            save_bits(s, gb, frame_size, 0);
 
             /** decode the frame */
             more_frames = decode_frame(s);
@@ -1516,10 +1517,10 @@ static int decode_packet(AVCodecContext *avctx,
             more_frames = 0;
     }
 
-    if (!s->packet_loss && remaining_bits(s, &gb) > 0) {
+    if (!s->packet_loss && remaining_bits(s, gb) > 0) {
         /** save the rest of the data so that it can be decoded
             with the next packet */
-        save_bits(s, &gb, remaining_bits(s, &gb), 0);
+        save_bits(s, gb, remaining_bits(s, gb), 0);
     }
 
     *data_size = (int8_t *)s->samples - (int8_t *)data;
