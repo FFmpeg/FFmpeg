@@ -1449,62 +1449,62 @@ static int decode_packet(AVCodecContext *avctx,
                          void *data, int *data_size, AVPacket* avpkt)
 {
     WMAProDecodeCtx *s = avctx->priv_data;
-    GetBitContext* gb    = &s->pgb;
-    const uint8_t* buf   = avpkt->data;
-    int buf_size         = avpkt->size;
-    int more_frames      = 1;
+    GetBitContext* gb  = &s->pgb;
+    const uint8_t* buf = avpkt->data;
+    int buf_size       = avpkt->size;
+    int more_frames    = 1;
     int num_bits_prev_frame;
     int packet_sequence_number;
 
-    s->samples      = data;
+    s->samples       = data;
     s->samples_start = data;
-    s->samples_end  = (float*)((int8_t*)data + *data_size);
+    s->samples_end   = (float*)((int8_t*)data + *data_size);
     *data_size = 0;
 
     if (!s->output_buffer_full) {
-    s->buf_bit_size = buf_size << 3;
+        s->buf_bit_size = buf_size << 3;
 
-    /** sanity check for the buffer length */
-    if (buf_size < avctx->block_align)
-        return 0;
+        /** sanity check for the buffer length */
+        if (buf_size < avctx->block_align)
+            return 0;
 
-    buf_size = avctx->block_align;
+        buf_size = avctx->block_align;
 
-    /** parse packet header */
-    init_get_bits(gb, buf, s->buf_bit_size);
-    packet_sequence_number = get_bits(gb, 4);
-    skip_bits(gb, 2);
+        /** parse packet header */
+        init_get_bits(gb, buf, s->buf_bit_size);
+        packet_sequence_number = get_bits(gb, 4);
+        skip_bits(gb, 2);
 
-    /** get number of bits that need to be added to the previous frame */
-    num_bits_prev_frame = get_bits(gb, s->log2_frame_size);
-    dprintf(avctx, "packet[%d]: nbpf %x\n", avctx->frame_number,
-            num_bits_prev_frame);
+        /** get number of bits that need to be added to the previous frame */
+        num_bits_prev_frame = get_bits(gb, s->log2_frame_size);
+        dprintf(avctx, "packet[%d]: nbpf %x\n", avctx->frame_number,
+                num_bits_prev_frame);
 
-    /** check for packet loss */
-    if (!s->packet_loss &&
-        ((s->packet_sequence_number + 1) & 0xF) != packet_sequence_number) {
-        s->packet_loss = 1;
-        av_log(avctx, AV_LOG_ERROR, "Packet loss detected! seq %x vs %x\n",
-               s->packet_sequence_number, packet_sequence_number);
-    }
-    s->packet_sequence_number = packet_sequence_number;
+        /** check for packet loss */
+        if (!s->packet_loss &&
+            ((s->packet_sequence_number + 1) & 0xF) != packet_sequence_number) {
+            s->packet_loss = 1;
+            av_log(avctx, AV_LOG_ERROR, "Packet loss detected! seq %x vs %x\n",
+                   s->packet_sequence_number, packet_sequence_number);
+        }
+        s->packet_sequence_number = packet_sequence_number;
 
-    if (num_bits_prev_frame > 0) {
-        /** append the previous frame data to the remaining data from the
-            previous packet to create a full frame */
-        save_bits(s, gb, num_bits_prev_frame, 1);
-        dprintf(avctx, "accumulated %x bits of frame data\n",
-                s->num_saved_bits - s->frame_offset);
+        if (num_bits_prev_frame > 0) {
+            /** append the previous frame data to the remaining data from the
+                previous packet to create a full frame */
+            save_bits(s, gb, num_bits_prev_frame, 1);
+            dprintf(avctx, "accumulated %x bits of frame data\n",
+                    s->num_saved_bits - s->frame_offset);
 
-        /** decode the cross packet frame if it is valid */
-        if (!s->packet_loss)
-            decode_frame(s);
-    } else if (s->num_saved_bits - s->frame_offset) {
-        dprintf(avctx, "ignoring %x previously saved bits\n",
-                s->num_saved_bits - s->frame_offset);
-    }
+            /** decode the cross packet frame if it is valid */
+            if (!s->packet_loss)
+                decode_frame(s);
+        } else if (s->num_saved_bits - s->frame_offset) {
+            dprintf(avctx, "ignoring %x previously saved bits\n",
+                    s->num_saved_bits - s->frame_offset);
+        }
 
-    s->packet_loss = 0;
+        s->packet_loss = 0;
 
     } else {
         /** continue decoding */
