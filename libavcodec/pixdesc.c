@@ -511,8 +511,8 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,1,1,0,4},        /* R */
         },
     },
-    [PIX_FMT_YUV420PLE] = {
-        .name = "yuv420ple",
+    [PIX_FMT_YUV420P16LE] = {
+        .name = "yuv420p16le",
         .nb_channels  = 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 1,
@@ -522,8 +522,8 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {2,1,1,0,15},        /* V */
         },
     },
-    [PIX_FMT_YUV420PBE] = {
-        .name = "yuv420pbe",
+    [PIX_FMT_YUV420P16BE] = {
+        .name = "yuv420p16be",
         .nb_channels  = 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 1,
@@ -534,8 +534,8 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         },
         .flags = PIX_FMT_BE,
     },
-    [PIX_FMT_YUV422PLE] = {
-        .name = "yuv422ple",
+    [PIX_FMT_YUV422P16LE] = {
+        .name = "yuv422p16le",
         .nb_channels  = 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 0,
@@ -545,8 +545,8 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {2,1,1,0,15},        /* V */
         },
     },
-    [PIX_FMT_YUV422PBE] = {
-        .name = "yuv422pbe",
+    [PIX_FMT_YUV422P16BE] = {
+        .name = "yuv422p16be",
         .nb_channels  = 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 0,
@@ -557,8 +557,8 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         },
         .flags = PIX_FMT_BE,
     },
-    [PIX_FMT_YUV444PLE] = {
-        .name = "yuv444ple",
+    [PIX_FMT_YUV444P16LE] = {
+        .name = "yuv444p16le",
         .nb_channels  = 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
@@ -568,8 +568,8 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {2,1,1,0,15},        /* V */
         },
     },
-    [PIX_FMT_YUV444PBE] = {
-        .name = "yuv444pbe",
+    [PIX_FMT_YUV444P16BE] = {
+        .name = "yuv444p16be",
         .nb_channels  = 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,

@@ -130,48 +130,48 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .depth = 8,
         .x_chroma_shift = 0, .y_chroma_shift = 1,
     },
-    [PIX_FMT_YUV420PLE] = {
-        .name = "yuv420ple",
+    [PIX_FMT_YUV420P16LE] = {
+        .name = "yuv420p16le",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
         .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
-    [PIX_FMT_YUV422PLE] = {
-        .name = "yuv422ple",
+    [PIX_FMT_YUV422P16LE] = {
+        .name = "yuv422p16le",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
         .x_chroma_shift = 1, .y_chroma_shift = 0,
     },
-    [PIX_FMT_YUV444PLE] = {
-        .name = "yuv444ple",
+    [PIX_FMT_YUV444P16LE] = {
+        .name = "yuv444p16le",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
         .x_chroma_shift = 0, .y_chroma_shift = 0,
     },
-    [PIX_FMT_YUV420PBE] = {
-        .name = "yuv420pbe",
+    [PIX_FMT_YUV420P16BE] = {
+        .name = "yuv420p16be",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
         .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
-    [PIX_FMT_YUV422PBE] = {
-        .name = "yuv422pbe",
+    [PIX_FMT_YUV422P16BE] = {
+        .name = "yuv422p16be",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
         .x_chroma_shift = 1, .y_chroma_shift = 0,
     },
-    [PIX_FMT_YUV444PBE] = {
-        .name = "yuv444pbe",
+    [PIX_FMT_YUV444P16BE] = {
+        .name = "yuv444p16be",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
@@ -662,12 +662,12 @@ int ff_fill_linesize(AVPicture *picture, enum PixelFormat pix_fmt, int width)
         picture->linesize[1] = w2;
         picture->linesize[2] = w2;
         break;
-    case PIX_FMT_YUV420PLE:
-    case PIX_FMT_YUV422PLE:
-    case PIX_FMT_YUV444PLE:
-    case PIX_FMT_YUV420PBE:
-    case PIX_FMT_YUV422PBE:
-    case PIX_FMT_YUV444PBE:
+    case PIX_FMT_YUV420P16LE:
+    case PIX_FMT_YUV422P16LE:
+    case PIX_FMT_YUV444P16LE:
+    case PIX_FMT_YUV420P16BE:
+    case PIX_FMT_YUV422P16BE:
+    case PIX_FMT_YUV444P16BE:
         w2 = (width + (1 << pinfo->x_chroma_shift) - 1) >> pinfo->x_chroma_shift;
         picture->linesize[0] = 2*width;
         picture->linesize[1] = 2*w2;
@@ -760,12 +760,12 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
     case PIX_FMT_YUVJ422P:
     case PIX_FMT_YUVJ444P:
     case PIX_FMT_YUVJ440P:
-    case PIX_FMT_YUV420PLE:
-    case PIX_FMT_YUV422PLE:
-    case PIX_FMT_YUV444PLE:
-    case PIX_FMT_YUV420PBE:
-    case PIX_FMT_YUV422PBE:
-    case PIX_FMT_YUV444PBE:
+    case PIX_FMT_YUV420P16LE:
+    case PIX_FMT_YUV422P16LE:
+    case PIX_FMT_YUV444P16LE:
+    case PIX_FMT_YUV420P16BE:
+    case PIX_FMT_YUV422P16BE:
+    case PIX_FMT_YUV444P16BE:
         h2 = (height + (1 << pinfo->y_chroma_shift) - 1) >> pinfo->y_chroma_shift;
         size2 = picture->linesize[1] * h2;
         picture->data[0] = ptr;
