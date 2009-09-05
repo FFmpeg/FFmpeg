@@ -1461,7 +1461,8 @@ static int decode_packet(AVCodecContext *avctx,
     s->samples_end   = (float*)((int8_t*)data + *data_size);
     *data_size = 0;
 
-    if (!s->output_buffer_full) {
+    if (!s->output_buffer_full || s->packet_loss) {
+        s->output_buffer_full = 0;
         s->buf_bit_size = buf_size << 3;
 
         /** sanity check for the buffer length */
@@ -1537,7 +1538,7 @@ static int decode_packet(AVCodecContext *avctx,
 
     *data_size = (int8_t *)s->samples - (int8_t *)data;
 
-    return (s->output_buffer_full)?0: avctx->block_align;
+    return (s->output_buffer_full && !s->packet_loss)?0: avctx->block_align;
 }
 
 /**
