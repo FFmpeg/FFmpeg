@@ -1524,9 +1524,6 @@ static int decode_packet(AVCodecContext *avctx,
             /** decode the frame */
             more_frames = decode_frame(s);
 
-            if (!more_frames) {
-                dprintf(avctx, "no more frames\n");
-            }
         } else
             more_frames = 0;
     }
