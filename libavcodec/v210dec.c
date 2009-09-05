@@ -32,15 +32,16 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
     if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0)
         return -1;
-    avctx->pix_fmt = PIX_FMT_YUV422P16;
+    avctx->pix_fmt             = PIX_FMT_YUV422P16;
     avctx->bits_per_raw_sample = 10;
 
-    avctx->coded_frame = avcodec_alloc_frame();
+    avctx->coded_frame         = avcodec_alloc_frame();
 
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+                        AVPacket *avpkt)
 {
     int h, w;
     AVFrame *pic = avctx->coded_frame;
@@ -67,9 +68,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     pic->pict_type = FF_I_TYPE;
     pic->key_frame = 1;
 
-#define READ_PIXELS(a, b, c)       \
-    do {                           \
-        val = le2me_32(*src++);      \
+#define READ_PIXELS(a, b, c)         \
+    do {                             \
+        val  = le2me_32(*src++);     \
         *a++ =  val <<  6;           \
         *b++ = (val >>  4) & 0xFFC0; \
         *c++ = (val >> 14) & 0xFFC0; \
@@ -100,9 +101,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         }
 
         psrc += stride;
-        y += pic->linesize[0]/2 - avctx->width;
-        u += pic->linesize[1]/2 - avctx->width/2;
-        v += pic->linesize[2]/2 - avctx->width/2;
+        y += pic->linesize[0] / 2 - avctx->width;
+        u += pic->linesize[1] / 2 - avctx->width / 2;
+        v += pic->linesize[2] / 2 - avctx->width / 2;
     }
 
     *data_size = sizeof(AVFrame);

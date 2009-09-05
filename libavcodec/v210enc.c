@@ -48,7 +48,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data)
+static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
+                        int buf_size, void *data)
 {
     const AVFrame *pic = data;
     int aligned_width = ((avctx->width + 47) / 48) * 48;
@@ -101,9 +102,9 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         pdst += stride;
         memset(p, 0, pdst - p);
         p = pdst;
-        y += pic->linesize[0]/2 - avctx->width;
-        u += pic->linesize[1]/2 - avctx->width/2;
-        v += pic->linesize[2]/2 - avctx->width/2;
+        y += pic->linesize[0] / 2 - avctx->width;
+        u += pic->linesize[1] / 2 - avctx->width / 2;
+        v += pic->linesize[2] / 2 - avctx->width / 2;
     }
 
     return p - buf;
