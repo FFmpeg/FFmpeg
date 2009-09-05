@@ -46,8 +46,6 @@
 static inline void debug_ipmovie(const char *format, ...) { }
 #endif
 
-#define IPMOVIE_SIGNATURE "Interplay MVE File\x1A\0"
-#define IPMOVIE_SIGNATURE_SIZE 20
 #define CHUNK_PREAMBLE_SIZE 4
 #define OPCODE_PREAMBLE_SIZE 4
 
@@ -499,9 +497,11 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
     return chunk_type;
 }
 
+static const char signature[] = "Interplay MVE File\x1A\0\x1A";
+
 static int ipmovie_probe(AVProbeData *p)
 {
-    if (strncmp(p->buf, IPMOVIE_SIGNATURE, IPMOVIE_SIGNATURE_SIZE) != 0)
+    if (memcmp(p->buf, signature, sizeof(signature)) != 0)
         return 0;
 
     return AVPROBE_SCORE_MAX;
@@ -523,7 +523,7 @@ static int ipmovie_read_header(AVFormatContext *s,
     ipmovie->decode_map_chunk_offset = 0;
 
     /* on the first read, this will position the stream at the first chunk */
-    ipmovie->next_chunk_offset = IPMOVIE_SIGNATURE_SIZE + 6;
+    ipmovie->next_chunk_offset = sizeof(signature) + 4;
 
     /* process the first chunk which should be CHUNK_INIT_VIDEO */
     if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_VIDEO)
