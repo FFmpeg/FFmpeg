@@ -222,7 +222,7 @@ AVCodec libopencore_amrnb_encoder = {
     amr_nb_encode_frame,
     amr_nb_encode_close,
     NULL,
-    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("OpenCORE Adaptive Multi-Rate (AMR) Narrow-Band"),
 };
 

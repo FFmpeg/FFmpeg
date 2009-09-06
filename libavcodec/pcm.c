@@ -523,7 +523,7 @@ AVCodec name ## _encoder = {                    \
     pcm_encode_frame,                           \
     pcm_encode_close,                           \
     NULL,                                       \
-    .sample_fmts = (enum SampleFormat[]){sample_fmt_,SAMPLE_FMT_NONE}, \
+    .sample_fmts = (const enum SampleFormat[]){sample_fmt_,SAMPLE_FMT_NONE}, \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else
@@ -541,7 +541,7 @@ AVCodec name ## _decoder = {                    \
     NULL,                                       \
     NULL,                                       \
     pcm_decode_frame,                           \
-    .sample_fmts = (enum SampleFormat[]){sample_fmt_,SAMPLE_FMT_NONE}, \
+    .sample_fmts = (const enum SampleFormat[]){sample_fmt_,SAMPLE_FMT_NONE}, \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else

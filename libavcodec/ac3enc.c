@@ -1400,9 +1400,9 @@ AVCodec ac3_encoder = {
     AC3_encode_frame,
     AC3_encode_close,
     NULL,
-    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
-    .channel_layouts = (int64_t[]){
+    .channel_layouts = (const int64_t[]){
         CH_LAYOUT_MONO,
         CH_LAYOUT_STEREO,
         CH_LAYOUT_2_1,

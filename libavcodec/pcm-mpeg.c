@@ -310,7 +310,7 @@ AVCodec pcm_bluray_decoder = {
     NULL,
     NULL,
     pcm_bluray_decode_frame,
-    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16, SAMPLE_FMT_S32,
+    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16, SAMPLE_FMT_S32,
                                          SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PCM signed 16|20|24-bit big-endian for Blu-ray media"),
 };

@@ -1324,6 +1324,6 @@ AVCodec flac_encoder = {
     flac_encode_close,
     NULL,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
-    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
 };

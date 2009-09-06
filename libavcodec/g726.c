@@ -394,7 +394,7 @@ AVCodec adpcm_g726_encoder = {
     g726_encode_frame,
     g726_close,
     NULL,
-    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };
 #endif
