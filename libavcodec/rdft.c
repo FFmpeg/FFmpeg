@@ -40,7 +40,7 @@ DECLARE_ALIGNED_16(FFTSample, ff_sin_8192[4096]);
 DECLARE_ALIGNED_16(FFTSample, ff_sin_16384[8192]);
 DECLARE_ALIGNED_16(FFTSample, ff_sin_32768[16384]);
 DECLARE_ALIGNED_16(FFTSample, ff_sin_65536[32768]);
-FFTSample *ff_sin_tabs[] = {
+FFTSample * const ff_sin_tabs[] = {
     ff_sin_16, ff_sin_32, ff_sin_64, ff_sin_128, ff_sin_256, ff_sin_512, ff_sin_1024,
     ff_sin_2048, ff_sin_4096, ff_sin_8192, ff_sin_16384, ff_sin_32768, ff_sin_65536,
 };
