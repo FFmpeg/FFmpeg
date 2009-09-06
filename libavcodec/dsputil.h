@@ -757,7 +757,7 @@ extern float ff_sine_512 [ 512];
 extern float ff_sine_1024[1024];
 extern float ff_sine_2048[2048];
 extern float ff_sine_4096[4096];
-extern float *ff_sine_windows[6];
+extern float * const ff_sine_windows[6];
 
 int ff_mdct_init(MDCTContext *s, int nbits, int inverse, double scale);
 void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
