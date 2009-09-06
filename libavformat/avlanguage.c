@@ -29,10 +29,10 @@ typedef struct LangEntry {
     uint16_t next_equivalent;
 } LangEntry;
 
-const uint16_t lang_table_counts[] = { 484, 20, 184 };
-const uint16_t lang_table_offsets[] = { 0, 484, 504 };
+static const uint16_t lang_table_counts[] = { 484, 20, 184 };
+static const uint16_t lang_table_offsets[] = { 0, 484, 504 };
 
-static LangEntry lang_table[] = {
+static const LangEntry lang_table[] = {
     /*----- AV_LANG_ISO639_2_BIBL entries (484) -----*/
     /*0000*/ { "aar",  504 },
     /*0001*/ { "abk",  505 },
