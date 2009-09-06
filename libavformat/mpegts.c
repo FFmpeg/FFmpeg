@@ -21,6 +21,7 @@
 
 //#define DEBUG
 //#define DEBUG_SEEK
+//#define USE_SYNCPOINT_SEARCH
 
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
@@ -1524,6 +1525,8 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
     return timestamp;
 }
 
+#ifdef USE_SYNCPOINT_SEARCH
+
 static int read_seek2(AVFormatContext *s,
                       int stream_index,
                       int64_t min_ts,
@@ -1606,6 +1609,33 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, in
     return ret;
 }
 
+#else
+
+static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, int flags){
+    MpegTSContext *ts = s->priv_data;
+    uint8_t buf[TS_PACKET_SIZE];
+    int64_t pos;
+
+    if(av_seek_frame_binary(s, stream_index, target_ts, flags) < 0)
+        return -1;
+
+    pos= url_ftell(s->pb);
+
+    for(;;) {
+        url_fseek(s->pb, pos, SEEK_SET);
+        if (get_buffer(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
+            return -1;
+//        pid = AV_RB16(buf + 1) & 0x1fff;
+        if(buf[1] & 0x40) break;
+        pos += ts->raw_packet_size;
+    }
+    url_fseek(s->pb, pos, SEEK_SET);
+
+    return 0;
+}
+
+#endif
+
 /**************************************************************/
 /* parsing functions - called from other demuxers such as RTP */
 
@@ -1670,7 +1700,9 @@ AVInputFormat mpegts_demuxer = {
     read_seek,
     mpegts_get_pcr,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
+#ifdef USE_SYNCPOINT_SEARCH
     .read_seek2 = read_seek2,
+#endif
 };
 
 AVInputFormat mpegtsraw_demuxer = {
@@ -1684,5 +1716,7 @@ AVInputFormat mpegtsraw_demuxer = {
     read_seek,
     mpegts_get_pcr,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
+#ifdef USE_SYNCPOINT_SEARCH
     .read_seek2 = read_seek2,
+#endif
 };
