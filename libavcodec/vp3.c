@@ -1225,7 +1225,7 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
      * from other INTRA blocks. There are 2 golden frame coding types;
      * blocks encoding in these modes can only predict from other blocks
      * that were encoded with these 1 of these 2 modes. */
-    unsigned char compatible_frame[8] = {
+    static const unsigned char compatible_frame[8] = {
         1,    /* MODE_INTER_NO_MV */
         0,    /* MODE_INTRA */
         1,    /* MODE_INTER_PLUS_MV */
