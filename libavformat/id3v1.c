@@ -22,7 +22,7 @@
 #include "id3v1.h"
 #include "libavcodec/avcodec.h"
 
-const char *ff_id3v1_genre_str[ID3v1_GENRE_MAX + 1] = {
+const char * const ff_id3v1_genre_str[ID3v1_GENRE_MAX + 1] = {
       [0] = "Blues",
       [1] = "Classic Rock",
       [2] = "Country",
