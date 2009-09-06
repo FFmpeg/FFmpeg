@@ -374,7 +374,7 @@ AVCodec pgm_decoder = {
     NULL,
     pnm_decode_frame,
     CODEC_CAP_DR1,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_GRAY8, PIX_FMT_GRAY16BE, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_GRAY8, PIX_FMT_GRAY16BE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
 };
 #endif
@@ -387,7 +387,7 @@ AVCodec pgm_encoder = {
     sizeof(PNMContext),
     common_init,
     pnm_encode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_GRAY8, PIX_FMT_GRAY16BE, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_GRAY8, PIX_FMT_GRAY16BE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
 };
 #endif // CONFIG_PGM_ENCODER
@@ -403,7 +403,7 @@ AVCodec pgmyuv_decoder = {
     NULL,
     pnm_decode_frame,
     CODEC_CAP_DR1,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
 };
 #endif
@@ -416,7 +416,7 @@ AVCodec pgmyuv_encoder = {
     sizeof(PNMContext),
     common_init,
     pnm_encode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
 };
 #endif // CONFIG_PGMYUV_ENCODER
@@ -432,7 +432,7 @@ AVCodec ppm_decoder = {
     NULL,
     pnm_decode_frame,
     CODEC_CAP_DR1,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB48BE, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB48BE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
 };
 #endif
@@ -445,7 +445,7 @@ AVCodec ppm_encoder = {
     sizeof(PNMContext),
     common_init,
     pnm_encode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB48BE, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB48BE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
 };
 #endif // CONFIG_PPM_ENCODER
@@ -461,7 +461,7 @@ AVCodec pbm_decoder = {
     NULL,
     pnm_decode_frame,
     CODEC_CAP_DR1,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_MONOWHITE, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_MONOWHITE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
 };
 #endif
@@ -474,7 +474,7 @@ AVCodec pbm_encoder = {
     sizeof(PNMContext),
     common_init,
     pnm_encode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_MONOWHITE, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_MONOWHITE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
 };
 #endif // CONFIG_PBM_ENCODER
@@ -490,7 +490,7 @@ AVCodec pam_decoder = {
     NULL,
     pnm_decode_frame,
     CODEC_CAP_DR1,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
 };
 #endif
@@ -503,7 +503,7 @@ AVCodec pam_encoder = {
     sizeof(PNMContext),
     common_init,
     pam_encode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
 };
 #endif // CONFIG_PAM_ENCODER

@@ -125,6 +125,6 @@ AVCodec v210_encoder = {
     encode_init,
     encode_frame,
     encode_close,
-    .pix_fmts = (enum PixelFormat[]){PIX_FMT_YUV422P16, PIX_FMT_NONE},
+    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV422P16, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
 };

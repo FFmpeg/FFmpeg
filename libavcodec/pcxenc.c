@@ -197,7 +197,7 @@ AVCodec pcx_encoder = {
     pcx_encode_init,
     pcx_encode_frame,
     NULL,
-    .pix_fmts = (enum PixelFormat[]){
+    .pix_fmts = (const enum PixelFormat[]){
         PIX_FMT_RGB24,
         PIX_FMT_RGB8, PIX_FMT_BGR8, PIX_FMT_RGB4_BYTE, PIX_FMT_BGR4_BYTE, PIX_FMT_GRAY8, PIX_FMT_PAL8,
         PIX_FMT_MONOBLACK,

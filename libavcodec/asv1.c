@@ -645,7 +645,7 @@ AVCodec asv1_encoder = {
     encode_init,
     encode_frame,
     //encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("ASUS V1"),
 };
 #endif
@@ -659,7 +659,7 @@ AVCodec asv2_encoder = {
     encode_init,
     encode_frame,
     //encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("ASUS V2"),
 };
 #endif
