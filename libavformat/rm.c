@@ -21,7 +21,7 @@
 
 #include "rm.h"
 
-const char *ff_rm_metadata[4] = {
+const char * const ff_rm_metadata[4] = {
     "title",
     "author",
     "copyright",
