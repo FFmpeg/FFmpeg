@@ -195,13 +195,12 @@ typedef struct WMAProDecodeCtx {
     int              frame_offset;                  ///< frame offset in the bit reservoir
     int              subframe_offset;               ///< subframe offset in the bit reservoir
     uint8_t          packet_loss;                   ///< set in case of bitstream error
-    uint8_t          output_buffer_full;            ///< flag indicating that the output buffer is full
+    uint8_t          packet_done;                   ///< set when a packet is fully decoded
 
     /* frame decode state */
     uint32_t         frame_num;                     ///< current frame number (not used for decoding)
     GetBitContext    gb;                            ///< bitstream reader context
     int              buf_bit_size;                  ///< buffer size in bits
-    float*           samples_start;                 ///< start samplebuffer pointer
     float*           samples;                       ///< current samplebuffer pointer
     float*           samples_end;                   ///< maximum samplebuffer pointer
     uint8_t          drc_gain;                      ///< gain for the DRC tool
@@ -1258,12 +1257,9 @@ static int decode_frame(WMAProDecodeCtx *s)
     /** check for potential output buffer overflow */
     if (s->num_channels * s->samples_per_frame > s->samples_end - s->samples) {
         /** return an error if no frame could be decoded at all */
-        if (s->samples_start == s->samples) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "not enough space for the output samples\n");
-            s->packet_loss = 1;
-        } else
-            s->output_buffer_full = 1;
+        av_log(s->avctx, AV_LOG_ERROR,
+               "not enough space for the output samples\n");
+        s->packet_loss = 1;
         return 0;
     }
 
@@ -1451,17 +1447,15 @@ static int decode_packet(AVCodecContext *avctx,
     GetBitContext* gb  = &s->pgb;
     const uint8_t* buf = avpkt->data;
     int buf_size       = avpkt->size;
-    int more_frames    = 1;
     int num_bits_prev_frame;
     int packet_sequence_number;
 
     s->samples       = data;
-    s->samples_start = data;
     s->samples_end   = (float*)((int8_t*)data + *data_size);
     *data_size = 0;
 
-    if (!s->output_buffer_full || s->packet_loss) {
-        s->output_buffer_full = 0;
+    if (s->packet_done || s->packet_loss) {
+        s->packet_done = 0;
         s->buf_bit_size = buf_size << 3;
 
         /** sanity check for the buffer length */
@@ -1507,28 +1501,17 @@ static int decode_packet(AVCodecContext *avctx,
         s->packet_loss = 0;
 
     } else {
-        /** continue decoding */
-        s->output_buffer_full = 0;
-        more_frames = decode_frame(s);
-    }
-
-    /** decode the rest of the packet */
-    while (!s->packet_loss && !s->output_buffer_full && more_frames &&
-           remaining_bits(s, gb) > s->log2_frame_size) {
-        int frame_size = show_bits(gb, s->log2_frame_size);
-
-        /** there is enough data for a full frame */
-        if (remaining_bits(s, gb) >= frame_size && frame_size > 0) {
+        int frame_size;
+        if (remaining_bits(s, gb) > s->log2_frame_size &&
+            (frame_size = show_bits(gb, s->log2_frame_size)) &&
+            frame_size <= remaining_bits(s, gb)) {
             save_bits(s, gb, frame_size, 0);
-
-            /** decode the frame */
-            more_frames = decode_frame(s);
-
+            s->packet_done = !decode_frame(s);
         } else
-            more_frames = 0;
+            s->packet_done = 1;
     }
 
-    if (!s->output_buffer_full && !s->packet_loss &&
+    if (s->packet_done && !s->packet_loss &&
         remaining_bits(s, gb) > 0) {
         /** save the rest of the data so that it can be decoded
             with the next packet */
@@ -1537,7 +1520,7 @@ static int decode_packet(AVCodecContext *avctx,
 
     *data_size = (int8_t *)s->samples - (int8_t *)data;
 
-    return (s->output_buffer_full && !s->packet_loss)?0: avctx->block_align;
+    return (!s->packet_done && !s->packet_loss)?0: avctx->block_align;
 }
 
 /**
