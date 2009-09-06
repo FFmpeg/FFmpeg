@@ -243,35 +243,35 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
 
     if(pic->qscale_table==NULL){
         if (s->encoding) {
-            CHECKED_ALLOCZ(pic->mb_var   , mb_array_size * sizeof(int16_t))
-            CHECKED_ALLOCZ(pic->mc_mb_var, mb_array_size * sizeof(int16_t))
-            CHECKED_ALLOCZ(pic->mb_mean  , mb_array_size * sizeof(int8_t))
+            FF_ALLOCZ_OR_GOTO(s->avctx, pic->mb_var   , mb_array_size * sizeof(int16_t)  , fail)
+            FF_ALLOCZ_OR_GOTO(s->avctx, pic->mc_mb_var, mb_array_size * sizeof(int16_t)  , fail)
+            FF_ALLOCZ_OR_GOTO(s->avctx, pic->mb_mean  , mb_array_size * sizeof(int8_t )  , fail)
         }
 
-        CHECKED_ALLOCZ(pic->mbskip_table , mb_array_size * sizeof(uint8_t)+2) //the +2 is for the slice end check
-        CHECKED_ALLOCZ(pic->qscale_table , mb_array_size * sizeof(uint8_t))
-        CHECKED_ALLOCZ(pic->mb_type_base , (big_mb_num + s->mb_stride) * sizeof(uint32_t))
+        FF_ALLOCZ_OR_GOTO(s->avctx, pic->mbskip_table , mb_array_size * sizeof(uint8_t)+2, fail) //the +2 is for the slice end check
+        FF_ALLOCZ_OR_GOTO(s->avctx, pic->qscale_table , mb_array_size * sizeof(uint8_t)  , fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, pic->mb_type_base , (big_mb_num + s->mb_stride) * sizeof(uint32_t), fail)
         pic->mb_type= pic->mb_type_base + 2*s->mb_stride+1;
         if(s->out_format == FMT_H264){
             for(i=0; i<2; i++){
-                CHECKED_ALLOCZ(pic->motion_val_base[i], 2 * (b4_array_size+4)  * sizeof(int16_t))
+                FF_ALLOCZ_OR_GOTO(s->avctx, pic->motion_val_base[i], 2 * (b4_array_size+4)  * sizeof(int16_t), fail)
                 pic->motion_val[i]= pic->motion_val_base[i]+4;
-                CHECKED_ALLOCZ(pic->ref_index[i], b8_array_size * sizeof(uint8_t))
+                FF_ALLOCZ_OR_GOTO(s->avctx, pic->ref_index[i], b8_array_size * sizeof(uint8_t), fail)
             }
             pic->motion_subsample_log2= 2;
         }else if(s->out_format == FMT_H263 || s->encoding || (s->avctx->debug&FF_DEBUG_MV) || (s->avctx->debug_mv)){
             for(i=0; i<2; i++){
-                CHECKED_ALLOCZ(pic->motion_val_base[i], 2 * (b8_array_size+4) * sizeof(int16_t))
+                FF_ALLOCZ_OR_GOTO(s->avctx, pic->motion_val_base[i], 2 * (b8_array_size+4) * sizeof(int16_t), fail)
                 pic->motion_val[i]= pic->motion_val_base[i]+4;
-                CHECKED_ALLOCZ(pic->ref_index[i], b8_array_size * sizeof(uint8_t))
+                FF_ALLOCZ_OR_GOTO(s->avctx, pic->ref_index[i], b8_array_size * sizeof(uint8_t), fail)
             }
             pic->motion_subsample_log2= 3;
         }
         if(s->avctx->debug&FF_DEBUG_DCT_COEFF) {
-            CHECKED_ALLOCZ(pic->dct_coeff, 64 * mb_array_size * sizeof(DCTELEM)*6)
+            FF_ALLOCZ_OR_GOTO(s->avctx, pic->dct_coeff, 64 * mb_array_size * sizeof(DCTELEM)*6, fail)
         }
         pic->qstride= s->mb_stride;
-        CHECKED_ALLOCZ(pic->pan_scan , 1 * sizeof(AVPanScan))
+        FF_ALLOCZ_OR_GOTO(s->avctx, pic->pan_scan , 1 * sizeof(AVPanScan), fail)
     }
 
     /* It might be nicer if the application would keep track of these
@@ -282,7 +282,7 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
         pic->age= INT_MAX; // Skipped MBs in B-frames are quite rare in MPEG-1/2 and it is a bit tricky to skip them anyway.
 
     return 0;
-fail: //for the CHECKED_ALLOCZ macro
+fail: //for the FF_ALLOCZ_OR_GOTO macro
     if(r>=0)
         free_frame_buffer(s, pic);
     return -1;
@@ -325,23 +325,23 @@ static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base){
     int i;
 
     // edge emu needs blocksize + filter length - 1 (=17x17 for halfpel / 21x21 for h264)
-    CHECKED_ALLOCZ(s->allocated_edge_emu_buffer, (s->width+64)*2*21*2); //(width + edge + align)*interlaced*MBsize*tolerance
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->allocated_edge_emu_buffer, (s->width+64)*2*21*2, fail); //(width + edge + align)*interlaced*MBsize*tolerance
     s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*21;
 
      //FIXME should be linesize instead of s->width*2 but that is not known before get_buffer()
-    CHECKED_ALLOCZ(s->me.scratchpad,  (s->width+64)*4*16*2*sizeof(uint8_t))
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->me.scratchpad,  (s->width+64)*4*16*2*sizeof(uint8_t), fail)
     s->me.temp=         s->me.scratchpad;
     s->rd_scratchpad=   s->me.scratchpad;
     s->b_scratchpad=    s->me.scratchpad;
     s->obmc_scratchpad= s->me.scratchpad + 16;
     if (s->encoding) {
-        CHECKED_ALLOCZ(s->me.map      , ME_MAP_SIZE*sizeof(uint32_t))
-        CHECKED_ALLOCZ(s->me.score_map, ME_MAP_SIZE*sizeof(uint32_t))
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->me.map      , ME_MAP_SIZE*sizeof(uint32_t), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->me.score_map, ME_MAP_SIZE*sizeof(uint32_t), fail)
         if(s->avctx->noise_reduction){
-            CHECKED_ALLOCZ(s->dct_error_sum, 2 * 64 * sizeof(int))
+            FF_ALLOCZ_OR_GOTO(s->avctx, s->dct_error_sum, 2 * 64 * sizeof(int), fail)
         }
     }
-    CHECKED_ALLOCZ(s->blocks, 64*12*2 * sizeof(DCTELEM))
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->blocks, 64*12*2 * sizeof(DCTELEM), fail)
     s->block= s->blocks[0];
 
     for(i=0;i<12;i++){
@@ -509,7 +509,7 @@ av_cold int MPV_common_init(MpegEncContext *s)
 
     s->avctx->coded_frame= (AVFrame*)&s->current_picture;
 
-    CHECKED_ALLOCZ(s->mb_index2xy, (s->mb_num+1)*sizeof(int)) //error ressilience code looks cleaner with this
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->mb_index2xy, (s->mb_num+1)*sizeof(int), fail) //error ressilience code looks cleaner with this
     for(y=0; y<s->mb_height; y++){
         for(x=0; x<s->mb_width; x++){
             s->mb_index2xy[ x + y*s->mb_width ] = x + y*s->mb_stride;
@@ -519,12 +519,12 @@ av_cold int MPV_common_init(MpegEncContext *s)
 
     if (s->encoding) {
         /* Allocate MV tables */
-        CHECKED_ALLOCZ(s->p_mv_table_base            , mv_table_size * 2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->b_forw_mv_table_base       , mv_table_size * 2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->b_back_mv_table_base       , mv_table_size * 2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->b_bidir_forw_mv_table_base , mv_table_size * 2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->b_bidir_back_mv_table_base , mv_table_size * 2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->b_direct_mv_table_base     , mv_table_size * 2 * sizeof(int16_t))
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->p_mv_table_base            , mv_table_size * 2 * sizeof(int16_t), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->b_forw_mv_table_base       , mv_table_size * 2 * sizeof(int16_t), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->b_back_mv_table_base       , mv_table_size * 2 * sizeof(int16_t), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->b_bidir_forw_mv_table_base , mv_table_size * 2 * sizeof(int16_t), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->b_bidir_back_mv_table_base , mv_table_size * 2 * sizeof(int16_t), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->b_direct_mv_table_base     , mv_table_size * 2 * sizeof(int16_t), fail)
         s->p_mv_table           = s->p_mv_table_base            + s->mb_stride + 1;
         s->b_forw_mv_table      = s->b_forw_mv_table_base       + s->mb_stride + 1;
         s->b_back_mv_table      = s->b_back_mv_table_base       + s->mb_stride + 1;
@@ -533,32 +533,32 @@ av_cold int MPV_common_init(MpegEncContext *s)
         s->b_direct_mv_table    = s->b_direct_mv_table_base     + s->mb_stride + 1;
 
         if(s->msmpeg4_version){
-            CHECKED_ALLOCZ(s->ac_stats, 2*2*(MAX_LEVEL+1)*(MAX_RUN+1)*2*sizeof(int));
+            FF_ALLOCZ_OR_GOTO(s->avctx, s->ac_stats, 2*2*(MAX_LEVEL+1)*(MAX_RUN+1)*2*sizeof(int), fail);
         }
-        CHECKED_ALLOCZ(s->avctx->stats_out, 256);
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->avctx->stats_out, 256, fail);
 
         /* Allocate MB type table */
-        CHECKED_ALLOCZ(s->mb_type  , mb_array_size * sizeof(uint16_t)) //needed for encoding
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->mb_type  , mb_array_size * sizeof(uint16_t), fail) //needed for encoding
 
-        CHECKED_ALLOCZ(s->lambda_table, mb_array_size * sizeof(int))
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->lambda_table, mb_array_size * sizeof(int), fail)
 
-        CHECKED_ALLOCZ(s->q_intra_matrix, 64*32 * sizeof(int))
-        CHECKED_ALLOCZ(s->q_inter_matrix, 64*32 * sizeof(int))
-        CHECKED_ALLOCZ(s->q_intra_matrix16, 64*32*2 * sizeof(uint16_t))
-        CHECKED_ALLOCZ(s->q_inter_matrix16, 64*32*2 * sizeof(uint16_t))
-        CHECKED_ALLOCZ(s->input_picture, MAX_PICTURE_COUNT * sizeof(Picture*))
-        CHECKED_ALLOCZ(s->reordered_input_picture, MAX_PICTURE_COUNT * sizeof(Picture*))
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->q_intra_matrix  , 64*32   * sizeof(int), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->q_inter_matrix  , 64*32   * sizeof(int), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->q_intra_matrix16, 64*32*2 * sizeof(uint16_t), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->q_inter_matrix16, 64*32*2 * sizeof(uint16_t), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->input_picture, MAX_PICTURE_COUNT * sizeof(Picture*), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->reordered_input_picture, MAX_PICTURE_COUNT * sizeof(Picture*), fail)
 
         if(s->avctx->noise_reduction){
-            CHECKED_ALLOCZ(s->dct_offset, 2 * 64 * sizeof(uint16_t))
+            FF_ALLOCZ_OR_GOTO(s->avctx, s->dct_offset, 2 * 64 * sizeof(uint16_t), fail)
         }
     }
-    CHECKED_ALLOCZ(s->picture, MAX_PICTURE_COUNT * sizeof(Picture))
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->picture, MAX_PICTURE_COUNT * sizeof(Picture), fail)
     for(i = 0; i < MAX_PICTURE_COUNT; i++) {
         avcodec_get_frame_defaults((AVFrame *)&s->picture[i]);
     }
 
-    CHECKED_ALLOCZ(s->error_status_table, mb_array_size*sizeof(uint8_t))
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->error_status_table, mb_array_size*sizeof(uint8_t), fail)
 
     if(s->codec_id==CODEC_ID_MPEG4 || (s->flags & CODEC_FLAG_INTERLACED_ME)){
         /* interlaced direct mode decoding tables */
@@ -566,36 +566,36 @@ av_cold int MPV_common_init(MpegEncContext *s)
                 int j, k;
                 for(j=0; j<2; j++){
                     for(k=0; k<2; k++){
-                        CHECKED_ALLOCZ(s->b_field_mv_table_base[i][j][k]     , mv_table_size * 2 * sizeof(int16_t))
-                        s->b_field_mv_table[i][j][k]    = s->b_field_mv_table_base[i][j][k]     + s->mb_stride + 1;
+                        FF_ALLOCZ_OR_GOTO(s->avctx,    s->b_field_mv_table_base[i][j][k], mv_table_size * 2 * sizeof(int16_t), fail)
+                        s->b_field_mv_table[i][j][k] = s->b_field_mv_table_base[i][j][k] + s->mb_stride + 1;
                     }
-                    CHECKED_ALLOCZ(s->b_field_select_table[i][j]     , mb_array_size * 2 * sizeof(uint8_t))
-                    CHECKED_ALLOCZ(s->p_field_mv_table_base[i][j]     , mv_table_size * 2 * sizeof(int16_t))
-                    s->p_field_mv_table[i][j]    = s->p_field_mv_table_base[i][j]     + s->mb_stride + 1;
+                    FF_ALLOCZ_OR_GOTO(s->avctx, s->b_field_select_table [i][j], mb_array_size * 2 * sizeof(uint8_t), fail)
+                    FF_ALLOCZ_OR_GOTO(s->avctx, s->p_field_mv_table_base[i][j], mv_table_size * 2 * sizeof(int16_t), fail)
+                    s->p_field_mv_table[i][j] = s->p_field_mv_table_base[i][j]+ s->mb_stride + 1;
                 }
-                CHECKED_ALLOCZ(s->p_field_select_table[i]      , mb_array_size * 2 * sizeof(uint8_t))
+                FF_ALLOCZ_OR_GOTO(s->avctx, s->p_field_select_table[i], mb_array_size * 2 * sizeof(uint8_t), fail)
             }
     }
     if (s->out_format == FMT_H263) {
         /* ac values */
-        CHECKED_ALLOCZ(s->ac_val_base, yc_size * sizeof(int16_t) * 16);
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->ac_val_base, yc_size * sizeof(int16_t) * 16, fail);
         s->ac_val[0] = s->ac_val_base + s->b8_stride + 1;
         s->ac_val[1] = s->ac_val_base + y_size + s->mb_stride + 1;
         s->ac_val[2] = s->ac_val[1] + c_size;
 
         /* cbp values */
-        CHECKED_ALLOCZ(s->coded_block_base, y_size);
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->coded_block_base, y_size, fail);
         s->coded_block= s->coded_block_base + s->b8_stride + 1;
 
         /* cbp, ac_pred, pred_dir */
-        CHECKED_ALLOCZ(s->cbp_table  , mb_array_size * sizeof(uint8_t))
-        CHECKED_ALLOCZ(s->pred_dir_table, mb_array_size * sizeof(uint8_t))
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->cbp_table     , mb_array_size * sizeof(uint8_t), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->pred_dir_table, mb_array_size * sizeof(uint8_t), fail)
     }
 
     if (s->h263_pred || s->h263_plus || !s->encoding) {
         /* dc values */
         //MN: we need these for error resilience of intra-frames
-        CHECKED_ALLOCZ(s->dc_val_base, yc_size * sizeof(int16_t));
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->dc_val_base, yc_size * sizeof(int16_t), fail);
         s->dc_val[0] = s->dc_val_base + s->b8_stride + 1;
         s->dc_val[1] = s->dc_val_base + y_size + s->mb_stride + 1;
         s->dc_val[2] = s->dc_val[1] + c_size;
@@ -604,13 +604,13 @@ av_cold int MPV_common_init(MpegEncContext *s)
     }
 
     /* which mb is a intra block */
-    CHECKED_ALLOCZ(s->mbintra_table, mb_array_size);
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->mbintra_table, mb_array_size, fail);
     memset(s->mbintra_table, 1, mb_array_size);
 
     /* init macroblock skip table */
-    CHECKED_ALLOCZ(s->mbskip_table, mb_array_size+2);
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->mbskip_table, mb_array_size+2, fail);
     //Note the +1 is for a quicker mpeg4 slice_end detection
-    CHECKED_ALLOCZ(s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE);
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE, fail);
 
     s->parse_context.state= -1;
     if((s->avctx->debug&(FF_DEBUG_VIS_QP|FF_DEBUG_VIS_MB_TYPE)) || (s->avctx->debug_mv)){

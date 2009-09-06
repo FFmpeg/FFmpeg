@@ -55,10 +55,10 @@ static int dnxhd_init_vlc(DNXHDEncContext *ctx)
     int i, j, level, run;
     int max_level = 1<<(ctx->cid_table->bit_depth+2);
 
-    CHECKED_ALLOCZ(ctx->vlc_codes, max_level*4*sizeof(*ctx->vlc_codes));
-    CHECKED_ALLOCZ(ctx->vlc_bits,  max_level*4*sizeof(*ctx->vlc_bits));
-    CHECKED_ALLOCZ(ctx->run_codes, 63*2);
-    CHECKED_ALLOCZ(ctx->run_bits,    63);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->vlc_codes, max_level*4*sizeof(*ctx->vlc_codes), fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->vlc_bits , max_level*4*sizeof(*ctx->vlc_bits ), fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->run_codes, 63*2                               , fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->run_bits , 63                                 , fail);
 
     ctx->vlc_codes += max_level*2;
     ctx->vlc_bits  += max_level*2;
@@ -111,10 +111,10 @@ static int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
     uint16_t weight_matrix[64] = {1,}; // convert_matrix needs uint16_t*
     int qscale, i;
 
-    CHECKED_ALLOCZ(ctx->qmatrix_l,   (ctx->m.avctx->qmax+1) * 64 * sizeof(int));
-    CHECKED_ALLOCZ(ctx->qmatrix_c,   (ctx->m.avctx->qmax+1) * 64 * sizeof(int));
-    CHECKED_ALLOCZ(ctx->qmatrix_l16, (ctx->m.avctx->qmax+1) * 64 * 2 * sizeof(uint16_t));
-    CHECKED_ALLOCZ(ctx->qmatrix_c16, (ctx->m.avctx->qmax+1) * 64 * 2 * sizeof(uint16_t));
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->qmatrix_l,   (ctx->m.avctx->qmax+1) * 64 *     sizeof(int)     , fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->qmatrix_c,   (ctx->m.avctx->qmax+1) * 64 *     sizeof(int)     , fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->qmatrix_l16, (ctx->m.avctx->qmax+1) * 64 * 2 * sizeof(uint16_t), fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->qmatrix_c16, (ctx->m.avctx->qmax+1) * 64 * 2 * sizeof(uint16_t), fail);
 
     for (i = 1; i < 64; i++) {
         int j = ctx->m.dsp.idct_permutation[ff_zigzag_direct[i]];
@@ -142,9 +142,9 @@ static int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
 
 static int dnxhd_init_rc(DNXHDEncContext *ctx)
 {
-    CHECKED_ALLOCZ(ctx->mb_rc, 8160*ctx->m.avctx->qmax*sizeof(RCEntry));
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_rc, 8160*ctx->m.avctx->qmax*sizeof(RCEntry), fail);
     if (ctx->m.avctx->mb_decision != FF_MB_DECISION_RD)
-        CHECKED_ALLOCZ(ctx->mb_cmp, ctx->m.mb_num*sizeof(RCCMPEntry));
+        FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_cmp, ctx->m.mb_num*sizeof(RCCMPEntry), fail);
 
     ctx->frame_bits = (ctx->cid_table->coding_unit_size - 640 - 4) * 8;
     ctx->qscale = 1;
@@ -203,9 +203,9 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
     if (dnxhd_init_rc(ctx) < 0)
         return -1;
 
-    CHECKED_ALLOCZ(ctx->slice_size, ctx->m.mb_height*sizeof(uint32_t));
-    CHECKED_ALLOCZ(ctx->mb_bits,    ctx->m.mb_num   *sizeof(uint16_t));
-    CHECKED_ALLOCZ(ctx->mb_qscale,  ctx->m.mb_num   *sizeof(uint8_t));
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->slice_size, ctx->m.mb_height*sizeof(uint32_t), fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_bits,    ctx->m.mb_num   *sizeof(uint16_t), fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_qscale,  ctx->m.mb_num   *sizeof(uint8_t) , fail);
 
     ctx->frame.key_frame = 1;
     ctx->frame.pict_type = FF_I_TYPE;
@@ -228,7 +228,7 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
     }
 
     return 0;
- fail: //for CHECKED_ALLOCZ
+ fail: //for FF_ALLOCZ_OR_GOTO
     return -1;
 }
 

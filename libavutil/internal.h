@@ -249,21 +249,21 @@ if ((y) < (x)) {\
 #define perror please_use_av_log_instead_of_perror
 #endif
 
-#define CHECKED_ALLOC(p, size)\
+#define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_malloc(size);\
     if (p == NULL && (size) != 0) {\
-        av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory.\n");\
-        goto fail;\
+        av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
+        goto label;\
     }\
 }
 
-#define CHECKED_ALLOCZ(p, size)\
+#define FF_ALLOCZ_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_mallocz(size);\
     if (p == NULL && (size) != 0) {\
-        av_log(NULL, AV_LOG_ERROR, "Cannot allocate memory.\n");\
-        goto fail;\
+        av_log(ctx, AV_LOG_ERROR, "Cannot allocate memory.\n");\
+        goto label;\
     }\
 }
 
