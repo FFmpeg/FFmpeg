@@ -137,8 +137,9 @@ typedef struct {
     int8_t   reuse_sf;                                ///< share scale factors between subframes
     int8_t   scale_factor_step;                       ///< scaling step for the current subframe
     int      max_scale_factor;                        ///< maximum scale factor for the current subframe
-    int      scale_factors[MAX_BANDS];                ///< scale factor values for the current subframe
-    int      saved_scale_factors[MAX_BANDS];          ///< scale factors from a previous subframe
+    int      saved_scale_factors[2][MAX_BANDS];       ///< resampled and (previously) transmitted scale factor values
+    int8_t   scale_factor_idx;                        ///< index for the transmitted scale factor values (used for resampling)
+    int*     scale_factors;                           ///< pointer to the scale factor values used for decoding
     uint8_t  table_idx;                               ///< index in sf_offsets for the scale factor reference block
     float*   coeffs;                                  ///< pointer to the subframe decode buffer
     DECLARE_ALIGNED_16(float, out[WMAPRO_BLOCK_MAX_SIZE + WMAPRO_BLOCK_MAX_SIZE / 2]); ///< output buffer
@@ -860,7 +861,9 @@ static int decode_scale_factors(WMAProDecodeCtx* s)
     for (i = 0; i < s->channels_for_cur_subframe; i++) {
         int c = s->channel_indexes_for_cur_subframe[i];
         int* sf;
-        int* sf_end = s->channel[c].scale_factors + s->num_bands;
+        int* sf_end;
+        s->channel[c].scale_factors = s->channel[c].saved_scale_factors[!s->channel[c].scale_factor_idx];
+        sf_end = s->channel[c].scale_factors + s->num_bands;
 
         /** resample scale factors for the new block size
          *  as the scale factors might need to be resampled several times
@@ -872,7 +875,7 @@ static int decode_scale_factors(WMAProDecodeCtx* s)
             int b;
             for (b = 0; b < s->num_bands; b++)
                 s->channel[c].scale_factors[b] =
-                                   s->channel[c].saved_scale_factors[*sf_offsets++];
+                    s->channel[c].saved_scale_factors[s->channel[c].scale_factor_idx][*sf_offsets++];
         }
 
         if (!s->channel[c].cur_subframe || get_bits1(&s->gb)) {
@@ -919,12 +922,8 @@ static int decode_scale_factors(WMAProDecodeCtx* s)
                     s->channel[c].scale_factors[i] += (val ^ sign) - sign;
                 }
             }
-
-            /** save transmitted scale factors so that they can be reused for
-                the next subframe */
-            memcpy(s->channel[c].saved_scale_factors,
-                   s->channel[c].scale_factors, s->num_bands *
-                   sizeof(*s->channel[c].saved_scale_factors));
+            /** swap buffers */
+            s->channel[c].scale_factor_idx = !s->channel[c].scale_factor_idx;
             s->channel[c].table_idx = s->table_idx;
             s->channel[c].reuse_sf  = 1;
         }
