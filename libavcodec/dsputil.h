@@ -684,7 +684,7 @@ typedef struct FFTContext {
     void (*imdct_half)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
 } FFTContext;
 
-extern FFTSample* ff_cos_tabs[13];
+extern FFTSample* const ff_cos_tabs[13];
 
 /**
  * Sets up a complex FFT.
