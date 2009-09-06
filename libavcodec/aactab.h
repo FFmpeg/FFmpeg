@@ -65,8 +65,8 @@ extern const uint16_t  ff_aac_spectral_sizes[11];
 
 extern const float *ff_aac_codebook_vectors[];
 
-extern const uint16_t *ff_swb_offset_1024[13];
-extern const uint16_t *ff_swb_offset_128 [13];
+extern const uint16_t * const ff_swb_offset_1024[13];
+extern const uint16_t * const ff_swb_offset_128 [13];
 
 extern const uint8_t ff_tns_max_bands_1024[13];
 extern const uint8_t ff_tns_max_bands_128 [13];

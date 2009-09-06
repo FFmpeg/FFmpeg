@@ -1003,7 +1003,7 @@ static const uint16_t swb_offset_128_8[] = {
     36,  44,  52,  60,  72,  88, 108, 128
 };
 
-const uint16_t *ff_swb_offset_1024[] = {
+const uint16_t * const ff_swb_offset_1024[] = {
     swb_offset_1024_96, swb_offset_1024_96, swb_offset_1024_64,
     swb_offset_1024_48, swb_offset_1024_48, swb_offset_1024_32,
     swb_offset_1024_24, swb_offset_1024_24, swb_offset_1024_16,
@@ -1011,7 +1011,7 @@ const uint16_t *ff_swb_offset_1024[] = {
     swb_offset_1024_8
 };
 
-const uint16_t *ff_swb_offset_128[] = {
+const uint16_t * const ff_swb_offset_128[] = {
     /* The last entry on the following row is swb_offset_128_64 but is a
        duplicate of swb_offset_128_96. */
     swb_offset_128_96, swb_offset_128_96, swb_offset_128_96,
