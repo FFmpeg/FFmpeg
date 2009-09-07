@@ -1905,8 +1905,12 @@ free_and_return:
 /* edit list atom */
 static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    MOVStreamContext *sc = c->fc->streams[c->fc->nb_streams-1]->priv_data;
+    MOVStreamContext *sc;
     int i, edit_count;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    sc = c->fc->streams[c->fc->nb_streams-1]->priv_data;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
