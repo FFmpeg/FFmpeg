@@ -274,16 +274,16 @@ void rgb32to24(const uint8_t *src, uint8_t *dst, long src_size)
     long i;
     long num_pixels = src_size >> 2;
     for (i=0; i<num_pixels; i++) {
-        #if HAVE_BIGENDIAN
-            /* RGB32 (= A,B,G,R) -> BGR24 (= B,G,R) */
-            dst[3*i + 0] = src[4*i + 1];
-            dst[3*i + 1] = src[4*i + 2];
-            dst[3*i + 2] = src[4*i + 3];
-        #else
-            dst[3*i + 0] = src[4*i + 2];
-            dst[3*i + 1] = src[4*i + 1];
-            dst[3*i + 2] = src[4*i + 0];
-        #endif
+#if HAVE_BIGENDIAN
+        /* RGB32 (= A,B,G,R) -> BGR24 (= B,G,R) */
+        dst[3*i + 0] = src[4*i + 1];
+        dst[3*i + 1] = src[4*i + 2];
+        dst[3*i + 2] = src[4*i + 3];
+#else
+        dst[3*i + 0] = src[4*i + 2];
+        dst[3*i + 1] = src[4*i + 1];
+        dst[3*i + 2] = src[4*i + 0];
+#endif
     }
 }
 
@@ -291,18 +291,18 @@ void rgb24to32(const uint8_t *src, uint8_t *dst, long src_size)
 {
     long i;
     for (i=0; 3*i<src_size; i++) {
-        #if HAVE_BIGENDIAN
-            /* RGB24 (= R,G,B) -> BGR32 (= A,R,G,B) */
-            dst[4*i + 0] = 255;
-            dst[4*i + 1] = src[3*i + 0];
-            dst[4*i + 2] = src[3*i + 1];
-            dst[4*i + 3] = src[3*i + 2];
-        #else
-            dst[4*i + 0] = src[3*i + 2];
-            dst[4*i + 1] = src[3*i + 1];
-            dst[4*i + 2] = src[3*i + 0];
-            dst[4*i + 3] = 255;
-        #endif
+#if HAVE_BIGENDIAN
+        /* RGB24 (= R,G,B) -> BGR32 (= A,R,G,B) */
+        dst[4*i + 0] = 255;
+        dst[4*i + 1] = src[3*i + 0];
+        dst[4*i + 2] = src[3*i + 1];
+        dst[4*i + 3] = src[3*i + 2];
+#else
+        dst[4*i + 0] = src[3*i + 2];
+        dst[4*i + 1] = src[3*i + 1];
+        dst[4*i + 2] = src[3*i + 0];
+        dst[4*i + 3] = 255;
+#endif
     }
 }
 
@@ -315,17 +315,17 @@ void rgb16tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
-        #if HAVE_BIGENDIAN
-            *d++ = 255;
-            *d++ = (bgr&0x1F)<<3;
-            *d++ = (bgr&0x7E0)>>3;
-            *d++ = (bgr&0xF800)>>8;
-        #else
-            *d++ = (bgr&0xF800)>>8;
-            *d++ = (bgr&0x7E0)>>3;
-            *d++ = (bgr&0x1F)<<3;
-            *d++ = 255;
-        #endif
+#if HAVE_BIGENDIAN
+        *d++ = 255;
+        *d++ = (bgr&0x1F)<<3;
+        *d++ = (bgr&0x7E0)>>3;
+        *d++ = (bgr&0xF800)>>8;
+#else
+        *d++ = (bgr&0xF800)>>8;
+        *d++ = (bgr&0x7E0)>>3;
+        *d++ = (bgr&0x1F)<<3;
+        *d++ = 255;
+#endif
     }
 }
 
@@ -375,17 +375,17 @@ void rgb15tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
-        #if HAVE_BIGENDIAN
-            *d++ = 255;
-            *d++ = (bgr&0x1F)<<3;
-            *d++ = (bgr&0x3E0)>>2;
-            *d++ = (bgr&0x7C00)>>7;
-        #else
-            *d++ = (bgr&0x7C00)>>7;
-            *d++ = (bgr&0x3E0)>>2;
-            *d++ = (bgr&0x1F)<<3;
-            *d++ = 255;
-        #endif
+#if HAVE_BIGENDIAN
+        *d++ = 255;
+        *d++ = (bgr&0x1F)<<3;
+        *d++ = (bgr&0x3E0)>>2;
+        *d++ = (bgr&0x7C00)>>7;
+#else
+        *d++ = (bgr&0x7C00)>>7;
+        *d++ = (bgr&0x3E0)>>2;
+        *d++ = (bgr&0x1F)<<3;
+        *d++ = 255;
+#endif
     }
 }
 

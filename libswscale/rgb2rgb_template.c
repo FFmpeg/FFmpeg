@@ -76,11 +76,11 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long s
     uint8_t *dest = dst;
     const uint8_t *s = src;
     const uint8_t *end;
-    #if HAVE_MMX
+#if HAVE_MMX
     const uint8_t *mm_end;
-    #endif
+#endif
     end = s + src_size;
-    #if HAVE_MMX
+#if HAVE_MMX
     __asm__ volatile(PREFETCH"    %0"::"m"(*s):"memory");
     mm_end = end - 23;
     __asm__ volatile("movq        %0, %%mm7"::"m"(mask32a):"memory");
@@ -111,21 +111,21 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long s
     }
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
-    #endif
+#endif
     while (s < end) {
-    #if HAVE_BIGENDIAN
+#if HAVE_BIGENDIAN
         /* RGB24 (= R,G,B) -> RGB32 (= A,B,G,R) */
         *dest++ = 255;
         *dest++ = s[2];
         *dest++ = s[1];
         *dest++ = s[0];
         s+=3;
-    #else
+#else
         *dest++ = *s++;
         *dest++ = *s++;
         *dest++ = *s++;
         *dest++ = 255;
-    #endif
+#endif
     }
 }
 
@@ -1436,7 +1436,7 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
     const x86_reg chromWidth= width>>1;
     for (y=0; y<height; y++) {
 #if HAVE_MMX
-//FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
+        //FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
         __asm__ volatile(
             "xor                 %%"REG_a", %%"REG_a"   \n\t"
             ASMALIGN(4)
@@ -1586,7 +1586,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
     const x86_reg chromWidth= width>>1;
     for (y=0; y<height; y++) {
 #if HAVE_MMX
-//FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
+        //FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
         __asm__ volatile(
             "xor                %%"REG_a", %%"REG_a"    \n\t"
             ASMALIGN(4)
