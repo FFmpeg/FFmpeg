@@ -369,7 +369,9 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         size= get_be32(s->pb);
         url_fseek(s->pb, fsize-3-size, SEEK_SET);
         if(size == get_be24(s->pb) + 11){
-            s->duration= get_be24(s->pb) * (int64_t)AV_TIME_BASE / 1000;
+            uint32_t ts = get_be24(s->pb);
+            ts |= get_byte(s->pb) << 24;
+            s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
         }
         url_fseek(s->pb, pos, SEEK_SET);
     }
