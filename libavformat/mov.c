@@ -1256,7 +1256,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         return -1;
     }
 
-    if(entries >= UINT_MAX / sizeof(int))
+    if (entries >= UINT_MAX / sizeof(int) || entries >= (UINT_MAX - 4) / field_size)
         return -1;
     sc->sample_sizes = av_malloc(entries * sizeof(int));
     if (!sc->sample_sizes)
