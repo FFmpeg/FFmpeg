@@ -145,12 +145,6 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx,
     sample_size = (num_source_channels * avctx->bits_per_coded_sample) >> 3;
     samples = buf_size / sample_size;
 
-    if (avctx->debug & FF_DEBUG_BITSTREAM)
-        dprintf(avctx,
-                "pcm_bluray_decode_frame: c: %d sc: %d s: %d in: %d ds: %d\n",
-                avctx->channels, num_source_channels, num_samples, buf_size,
-                *data_size);
-
     output_size = samples * avctx->channels *
                   (avctx->sample_fmt == SAMPLE_FMT_S32 ? 4 : 2);
     if (output_size > *data_size) {
