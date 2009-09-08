@@ -489,6 +489,9 @@ static inline int check_marker(GetBitContext *s, const char *msg)
  * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes larger then the actual read bits
  * because some optimized bitstream readers read 32 or 64 bit at once and could read over the end
  * @param bit_size the size of the buffer in bits
+ *
+ * While GetBitContext stores the buffer size, for performance reasons you are
+ * responsible for checking for the buffer end yourself (take advantage of the padding)!
  */
 static inline void init_get_bits(GetBitContext *s,
                    const uint8_t *buffer, int bit_size)
