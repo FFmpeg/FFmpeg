@@ -41,6 +41,7 @@
 #include "dsputil.h"
 #include "bytestream.h"
 
+#include "atrac.h"
 #include "atrac3data.h"
 
 #define JOINT_STEREO    0x12
@@ -119,67 +120,12 @@ typedef struct {
 } ATRAC3Context;
 
 static DECLARE_ALIGNED_16(float,mdct_window[512]);
-static float            qmf_window[48];
 static VLC              spectral_coeff_tab[7];
-static float            SFTable[64];
 static float            gain_tab1[16];
 static float            gain_tab2[31];
 static MDCTContext      mdct_ctx;
 static DSPContext       dsp;
 
-
-/* quadrature mirror synthesis filter */
-
-/**
- * Quadrature mirror synthesis filter.
- *
- * @param inlo      lower part of spectrum
- * @param inhi      higher part of spectrum
- * @param nIn       size of spectrum buffer
- * @param pOut      out buffer
- * @param delayBuf  delayBuf buffer
- * @param temp      temp buffer
- */
-
-
-static void iqmf (float *inlo, float *inhi, unsigned int nIn, float *pOut, float *delayBuf, float *temp)
-{
-    int   i, j;
-    float   *p1, *p3;
-
-    memcpy(temp, delayBuf, 46*sizeof(float));
-
-    p3 = temp + 46;
-
-    /* loop1 */
-    for(i=0; i<nIn; i+=2){
-        p3[2*i+0] = inlo[i  ] + inhi[i  ];
-        p3[2*i+1] = inlo[i  ] - inhi[i  ];
-        p3[2*i+2] = inlo[i+1] + inhi[i+1];
-        p3[2*i+3] = inlo[i+1] - inhi[i+1];
-    }
-
-    /* loop2 */
-    p1 = temp;
-    for (j = nIn; j != 0; j--) {
-        float s1 = 0.0;
-        float s2 = 0.0;
-
-        for (i = 0; i < 48; i += 2) {
-            s1 += p1[i] * qmf_window[i];
-            s2 += p1[i+1] * qmf_window[i+1];
-        }
-
-        pOut[0] = s2;
-        pOut[1] = s1;
-
-        p1 += 2;
-        pOut += 2;
-    }
-
-    /* Update the delay buffer. */
-    memcpy(delayBuf, temp + nIn*2, 46*sizeof(float));
-}
 
 /**
  * Regular 512 points IMDCT without overlapping, with the exception of the swapping of odd bands
@@ -386,7 +332,7 @@ static int decodeSpectrum (GetBitContext *gb, float *pOut)
             readQuantSpectralCoeffs (gb, subband_vlc_index[cnt], codingMode, mantissas, subbWidth);
 
             /* Decode the scale factor for this subband. */
-            SF = SFTable[SF_idxs[cnt]] * iMaxQuant[subband_vlc_index[cnt]];
+            SF = sf_table[SF_idxs[cnt]] * iMaxQuant[subband_vlc_index[cnt]];
 
             /* Inverse quantize the coefficients. */
             for (pIn=mantissas ; first<last; first++, pIn++)
@@ -459,7 +405,7 @@ static int decodeTonalComponents (GetBitContext *gb, tonal_component *pComponent
                 coded_values = coded_values_per_component + 1;
                 coded_values = FFMIN(max_coded_values,coded_values);
 
-                scalefactor = SFTable[sfIndx] * iMaxQuant[quant_step_index];
+                scalefactor = sf_table[sfIndx] * iMaxQuant[quant_step_index];
 
                 readQuantSpectralCoeffs(gb, quant_step_index, coding_mode, mantissa, coded_values);
 
@@ -860,9 +806,9 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf)
         p2= p1+256;
         p3= p2+256;
         p4= p3+256;
-        iqmf (p1, p2, 256, p1, q->pUnits[i].delayBuf1, q->tempBuf);
-        iqmf (p4, p3, 256, p3, q->pUnits[i].delayBuf2, q->tempBuf);
-        iqmf (p1, p3, 512, p1, q->pUnits[i].delayBuf3, q->tempBuf);
+        atrac_iqmf (p1, p2, 256, p1, q->pUnits[i].delayBuf1, q->tempBuf);
+        atrac_iqmf (p4, p3, 256, p3, q->pUnits[i].delayBuf2, q->tempBuf);
+        atrac_iqmf (p1, p3, 512, p1, q->pUnits[i].delayBuf3, q->tempBuf);
         p1 +=1024;
     }
 
@@ -1038,9 +984,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     init_atrac3_transforms(q);
 
-    /* Generate the scale factors. */
-    for (i=0 ; i<64 ; i++)
-        SFTable[i] = pow(2.0, (i - 15) / 3.0);
+    atrac_generate_tables();
 
     /* Generate gain tables. */
     for (i=0 ; i<16 ; i++)
