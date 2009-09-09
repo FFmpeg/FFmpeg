@@ -784,6 +784,11 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     unsigned char *extradata;
     unsigned int size;
 
+    if(avctx->thread_count > 1){
+        av_log(avctx, AV_LOG_ERROR, "SVQ3 does not support multithreaded decoding, patch welcome! (check latest SVN too)\n");
+        return -1;
+    }
+
     if (decode_init(avctx) < 0)
         return -1;
 
