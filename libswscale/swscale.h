@@ -135,7 +135,7 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
 /**
  * Scales the image slice in srcSlice and puts the resulting scaled
  * slice in the image in dst. A slice is a sequence of consecutive
- * rows in an image.
+ * rows in an image. Slices can be bottom to top or top to bottom.
  *
  * @param context   the scaling context previously created with
  *                  sws_getContext()
