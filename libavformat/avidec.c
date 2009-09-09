@@ -680,12 +680,15 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             AVIStream *ast = st->priv_data;
             int64_t ts= ast->frame_offset;
 
+            if(!st->nb_index_entries)
+                continue;
+
             if(ast->sample_size)
                 ts /= ast->sample_size;
             ts = av_rescale_q(ts, st->time_base, AV_TIME_BASE_Q);
 
 //            av_log(s, AV_LOG_DEBUG, "%"PRId64" %d/%d %"PRId64"\n", ts, st->time_base.num, st->time_base.den, ast->frame_offset);
-            if(ts < best_ts && st->nb_index_entries){
+            if(ts < best_ts){
                 best_ts= ts;
                 best_st= st;
                 best_stream_index= i;
