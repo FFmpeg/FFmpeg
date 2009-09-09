@@ -1479,7 +1479,7 @@ fi
 tmpfile(){
     tmp=$(mktemp -u "${TMPDIR}/ffconf.XXXXXXXX")$2 &&
         (set -C; exec > $tmp) 2>/dev/null ||
-        die "Unable to create temoporary file in $TMPDIR."
+        die "Unable to create temporary file in $TMPDIR."
     append TMPFILES $tmp
     eval $1=$tmp
 }
