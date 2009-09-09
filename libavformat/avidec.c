@@ -679,12 +679,18 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             AVStream *st = s->streams[i];
             AVIStream *ast = st->priv_data;
             int64_t ts= ast->frame_offset;
+            int64_t last_ts;
 
             if(!st->nb_index_entries)
                 continue;
 
             if(ast->sample_size)
                 ts /= ast->sample_size;
+
+            last_ts = st->index_entries[st->nb_index_entries - 1].timestamp;
+            if(!ast->remaining && ts > last_ts)
+                continue;
+
             ts = av_rescale_q(ts, st->time_base, AV_TIME_BASE_Q);
 
 //            av_log(s, AV_LOG_DEBUG, "%"PRId64" %d/%d %"PRId64"\n", ts, st->time_base.num, st->time_base.den, ast->frame_offset);
