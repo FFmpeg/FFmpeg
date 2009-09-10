@@ -36,7 +36,7 @@ static int aea_read_probe(AVProbeData *p)
         return 0;
 
     /* Magic is '00 08 00 00' in Little Endian*/
-    if(AV_RL32(p->buf)==0x800) {
+    if (AV_RL32(p->buf)==0x800) {
         int bsm_s, bsm_e, inb_s, inb_e;
         bsm_s = p->buf[2048];
         inb_s = p->buf[2048+1];
@@ -50,7 +50,7 @@ static int aea_read_probe(AVProbeData *p)
          * the block size mode and info byte can't be the same
          */
         if (bsm_s == bsm_e && inb_s == inb_e && bsm_s != inb_s)
-            return AVPROBE_SCORE_MAX/2;
+            return AVPROBE_SCORE_MAX / 2;
     }
     return 0;
 }
@@ -78,7 +78,7 @@ static int aea_read_header(AVFormatContext *s,
         return -1;
     }
 
-    st->codec->channel_layout = (st->codec->channels==1) ? CH_LAYOUT_MONO : CH_LAYOUT_STEREO;
+    st->codec->channel_layout = (st->codec->channels == 1) ? CH_LAYOUT_MONO : CH_LAYOUT_STEREO;
 
     st->codec->block_align = AT1_SU_SIZE * st->codec->channels;
     return 0;
