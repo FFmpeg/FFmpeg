@@ -64,6 +64,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     float alpha, c1, s1, s2;
     int split_radix = 1;
     int av_unused has_vectors;
+    int revtab_shift = 0;
 
     if (nbits < 2 || nbits > 16)
         goto fail;
@@ -112,6 +113,12 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
         s->fft_calc = ff_fft_calc_altivec;
         split_radix = 0;
     }
+#elif HAVE_NEON
+    s->fft_permute = ff_fft_permute_neon;
+    s->fft_calc    = ff_fft_calc_neon;
+    s->imdct_calc  = ff_imdct_calc_neon;
+    s->imdct_half  = ff_imdct_half_neon;
+    revtab_shift = 3;
 #endif
 
     if (split_radix) {
@@ -125,7 +132,8 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
                 tab[m/2-i] = tab[i];
         }
         for(i=0; i<n; i++)
-            s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = i;
+            s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] =
+                i << revtab_shift;
         s->tmp_buf = av_malloc(n * sizeof(FFTComplex));
     } else {
         int np, nblocks, np2, l;
