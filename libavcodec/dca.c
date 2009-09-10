@@ -230,6 +230,7 @@ typedef struct {
     DECLARE_ALIGNED_16(float, subband_fir_hist[DCA_PRIM_CHANNELS_MAX][512]);
     float subband_fir_noidea[DCA_PRIM_CHANNELS_MAX][32];
     int hist_index[DCA_PRIM_CHANNELS_MAX];
+    DECLARE_ALIGNED_16(float, raXin[32]);
 
     int output;                 ///< type of output
     float add_bias;             ///< output bias
@@ -751,7 +752,6 @@ static void qmf_32_subbands(DCAContext * s, int chans,
 {
     const float *prCoeff;
     int i, j;
-    DECLARE_ALIGNED_16(float, raXin[32]);
 
     int hist_index= s->hist_index[chans];
     float *subband_fir_hist2 = s->subband_fir_noidea[chans];
@@ -771,13 +771,13 @@ static void qmf_32_subbands(DCAContext * s, int chans,
         float *subband_fir_hist = s->subband_fir_hist[chans] + hist_index;
         /* Load in one sample from each subband and clear inactive subbands */
         for (i = 0; i < s->subband_activity[chans]; i++){
-            if((i-1)&2) raXin[i] = -samples_in[i][subindex];
-            else        raXin[i] =  samples_in[i][subindex];
+            if((i-1)&2) s->raXin[i] = -samples_in[i][subindex];
+            else        s->raXin[i] =  samples_in[i][subindex];
         }
         for (; i < 32; i++)
-            raXin[i] = 0.0;
+            s->raXin[i] = 0.0;
 
-        ff_imdct_half(&s->imdct, subband_fir_hist, raXin);
+        ff_imdct_half(&s->imdct, subband_fir_hist, s->raXin);
 
         /* Multiply by filter coefficients */
         for (i = 0; i < 16; i++){
