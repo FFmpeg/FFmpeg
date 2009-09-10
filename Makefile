@@ -70,7 +70,7 @@ ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 tools/%$(EXESUF): tools/%.o
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
-tools/%.o: tools.%.c
+tools/%.o: tools/%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(CC_O) $<
 
 ffplay.o ffplay.d: CFLAGS += $(SDL_CFLAGS)
