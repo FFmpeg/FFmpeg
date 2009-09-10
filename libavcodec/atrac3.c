@@ -206,13 +206,6 @@ static av_cold void init_atrac3_transforms(ATRAC3Context *q) {
             mdct_window[511-i] = mdct_window[i];
         }
 
-    /* Generate the QMF window. */
-    for (i=0 ; i<24; i++) {
-        s = qmf_48tap_half[i] * 2.0;
-        qmf_window[i] = s;
-        qmf_window[47 - i] = s;
-    }
-
     /* Initialize the MDCT transform. */
     ff_mdct_init(&mdct_ctx, 9, 1, 1.0);
 }
