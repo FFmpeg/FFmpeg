@@ -2384,7 +2384,7 @@ check_header X11/extensions/XShm.h      &&
 check_func XOpenDisplay -lX11           &&
 check_func XShmCreateImage -lX11 -lXext
 
-enabled debug && add_cflags -g"$debuglevel"
+enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
 # add some useful compiler flags if supported
 check_cflags -Wdeclaration-after-statement
