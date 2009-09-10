@@ -1192,6 +1192,38 @@ static void get_word(char *buf, int buf_size, const char **pp)
     *pp = p;
 }
 
+static void get_arg(char *buf, int buf_size, const char **pp)
+{
+    const char *p;
+    char *q;
+    int quote;
+
+    p = *pp;
+    while (isspace(*p)) p++;
+    q = buf;
+    quote = 0;
+    if (*p == '\"' || *p == '\'')
+        quote = *p++;
+    for(;;) {
+        if (quote) {
+            if (*p == quote)
+                break;
+        } else {
+            if (isspace(*p))
+                break;
+        }
+        if (*p == '\0')
+            break;
+        if ((q - buf) < buf_size - 1)
+            *q++ = *p;
+        p++;
+    }
+    *q = '\0';
+    if (quote && *p == quote)
+        p++;
+    *pp = p;
+}
+
 static int validate_acl(FFStream *stream, HTTPContext *c)
 {
     enum IPAddressAction last_action = IP_DENY;
@@ -3618,38 +3650,6 @@ static void compute_bandwidth(void)
         }
         stream->bandwidth = (bandwidth + 999) / 1000;
     }
-}
-
-static void get_arg(char *buf, int buf_size, const char **pp)
-{
-    const char *p;
-    char *q;
-    int quote;
-
-    p = *pp;
-    while (isspace(*p)) p++;
-    q = buf;
-    quote = 0;
-    if (*p == '\"' || *p == '\'')
-        quote = *p++;
-    for(;;) {
-        if (quote) {
-            if (*p == quote)
-                break;
-        } else {
-            if (isspace(*p))
-                break;
-        }
-        if (*p == '\0')
-            break;
-        if ((q - buf) < buf_size - 1)
-            *q++ = *p;
-        p++;
-    }
-    *q = '\0';
-    if (quote && *p == quote)
-        p++;
-    *pp = p;
 }
 
 /* add a codec and set the default parameters */
