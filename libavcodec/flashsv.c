@@ -162,10 +162,10 @@ static int flashsv_decode_frame(AVCodecContext *avctx,
         h_blocks, v_blocks, h_part, v_part);
 
     s->frame.reference = 1;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if (avctx->get_buffer(avctx, &s->frame) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
+    if(avctx->reget_buffer(avctx, &s->frame) < 0){
+      av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+      return -1;
     }
 
     /* loop over all block columns */
