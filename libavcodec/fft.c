@@ -119,6 +119,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     s->fft_calc    = ff_fft_calc_neon;
     s->imdct_calc  = ff_imdct_calc_neon;
     s->imdct_half  = ff_imdct_half_neon;
+    s->mdct_calc   = ff_mdct_calc_neon;
     revtab_shift = 3;
 #endif
 

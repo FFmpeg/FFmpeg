@@ -780,6 +780,7 @@ void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output, const FFTSample *input
 void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_calc_neon(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_neon(MDCTContext *s, FFTSample *output, const FFTSample *input);
+void ff_mdct_calc_neon(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_mdct_end(MDCTContext *s);
 
 /* Real Discrete Fourier Transform */
