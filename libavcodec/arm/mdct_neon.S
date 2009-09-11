@@ -38,30 +38,28 @@ function ff_imdct_half_neon, export=1
         mov             r12,  #-16
         sub             r7,  r7,  #16
 
-        vld1.32         {d16-d17},[r7,:128],r12 @ d16=x,n1 d17=x,n0
-        vld1.32         {d0-d1},  [r2,:128]!    @ d0 =m0,x d1 =m1,x
+        vld2.32         {d16-d17},[r7,:128],r12 @ d16=x,n1 d17=x,n0
+        vld2.32         {d0-d1},  [r2,:128]!    @ d0 =m0,x d1 =m1,x
+        vrev64.32       d17, d17
         vld1.32         {d2},     [r4,:64]!     @ d2=c0,c1
+        vmul.f32        d6,  d17, d2
         vld1.32         {d3},     [r5,:64]!     @ d3=s0,s1
-        vuzp.32         d17, d16
-        vuzp.32         d0,  d1
-        vmul.f32        d6,  d16, d2
         vmul.f32        d7,  d0,  d2
 1:
         subs            lr,  lr,  #2
         ldr             r6,  [r3], #4
         vmul.f32        d4,  d0,  d3
-        vmul.f32        d5,  d16, d3
+        vmul.f32        d5,  d17, d3
         vsub.f32        d4,  d6,  d4
         vadd.f32        d5,  d5,  d7
         uxtah           r8,  r1,  r6,  ror #16
         uxtah           r6,  r1,  r6
         beq             1f
-        vld1.32         {d16-d17},[r7,:128],r12
-        vld1.32         {d0-d1},  [r2,:128]!
-        vuzp.32         d17, d16
+        vld2.32         {d16-d17},[r7,:128],r12
+        vld2.32         {d0-d1},  [r2,:128]!
+        vrev64.32       d17, d17
         vld1.32         {d2},     [r4,:64]!
-        vuzp.32         d0,  d1
-        vmul.f32        d6,  d16, d2
+        vmul.f32        d6,  d17, d2
         vld1.32         {d3},     [r5,:64]!
         vmul.f32        d7,  d0,  d2
         vst2.32         {d4[0],d5[0]}, [r6,:64]
@@ -95,11 +93,9 @@ function ff_imdct_half_neon, export=1
         mov             r8,  r6
         mov             r0,  r3
 
-        vld1.32         {d0-d1},  [r3,:128], r7 @ d0 =i1,r1 d1 =i0,r0
-        vld1.32         {d20-d21},[r6,:128]!    @ d20=i2,r2 d21=i3,r3
+        vld2.32         {d0-d1},  [r3,:128], r7 @ d0 =i1,r1 d1 =i0,r0
+        vld2.32         {d20-d21},[r6,:128]!    @ d20=i2,r2 d21=i3,r3
         vld1.32         {d18},    [r2,:64], r12 @ d18=s1,s0
-        vuzp.32         d20, d21
-        vuzp.32         d0,  d1
 1:
         subs            lr,  lr,  #2
         vmul.f32        d7,  d0,  d18
@@ -118,25 +114,17 @@ function ff_imdct_half_neon, export=1
         vsub.f32        d4,  d4,  d24
         vsub.f32        d5,  d5,  d25
         beq             1f
-        vld1.32         {d0-d1},  [r3,:128], r7
-        vld1.32         {d20-d21},[r6,:128]!
+        vld2.32         {d0-d1},  [r3,:128], r7
+        vld2.32         {d20-d21},[r6,:128]!
         vld1.32         {d18},    [r2,:64], r12
-        vuzp.32         d20, d21
-        vuzp.32         d0,  d1
         vrev64.32       q3,  q3
-        vtrn.32         d4,  d6
-        vtrn.32         d5,  d7
-        vswp            d5,  d6
-        vst1.32         {d4-d5},  [r0,:128], r7
-        vst1.32         {d6-d7},  [r8,:128]!
+        vst2.32         {d4,d6},  [r0,:128], r7
+        vst2.32         {d5,d7},  [r8,:128]!
         b               1b
 1:
         vrev64.32       q3,  q3
-        vtrn.32         d4,  d6
-        vtrn.32         d5,  d7
-        vswp            d5,  d6
-        vst1.32         {d4-d5},  [r0,:128]
-        vst1.32         {d6-d7},  [r8,:128]
+        vst2.32         {d4,d6},  [r0,:128]
+        vst2.32         {d5,d7},  [r8,:128]
 
         pop             {r4-r8,pc}
 .endfunc
