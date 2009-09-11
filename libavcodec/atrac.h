@@ -21,8 +21,8 @@
  */
 
 /**
- * @file libavcodec/atrac1data.h
- * Atrac 1 compatible decoder data
+ * @file libavcodec/atrac.h
+ * Atrac common header
  */
 
 #ifndef AVCODEC_ATRAC_H
