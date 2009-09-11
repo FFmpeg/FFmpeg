@@ -180,7 +180,7 @@ void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input)
  * @param input N samples
  * @param out N/2 samples
  */
-void ff_mdct_calc(MDCTContext *s, FFTSample *out, const FFTSample *input)
+void ff_mdct_calc_c(MDCTContext *s, FFTSample *out, const FFTSample *input)
 {
     int i, j, n, n8, n4, n2, n3;
     FFTSample re, im;
