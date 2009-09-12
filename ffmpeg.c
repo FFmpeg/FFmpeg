@@ -483,6 +483,10 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
         st = av_mallocz(sizeof(AVStream));
         memcpy(st, ic->streams[i], sizeof(AVStream));
         st->codec = avcodec_alloc_context();
+        if (!st->codec) {
+            print_error(filename, AVERROR(ENOMEM));
+            av_exit(1);
+        }
         memcpy(st->codec, ic->streams[i]->codec, sizeof(AVCodecContext));
         s->streams[i] = st;
 
@@ -2836,6 +2840,10 @@ static void opt_input_file(const char *filename)
 
     /* get default parameters from command line */
     ic = avformat_alloc_context();
+    if (!ic) {
+        print_error(filename, AVERROR(ENOMEM));
+        av_exit(1);
+    }
 
     memset(ap, 0, sizeof(*ap));
     ap->prealloced_context = 1;
@@ -3332,6 +3340,10 @@ static void opt_output_file(const char *filename)
         filename = "pipe:";
 
     oc = avformat_alloc_context();
+    if (!oc) {
+        print_error(filename, AVERROR(ENOMEM));
+        av_exit(1);
+    }
 
     if (!file_oformat) {
         file_oformat = guess_format(NULL, filename, NULL);
