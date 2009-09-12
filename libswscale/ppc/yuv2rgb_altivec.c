@@ -167,7 +167,7 @@ do {                                    \
     vec_st (_0, 0, ptr++);              \
     vec_st (_1, 0, ptr++);              \
     vec_st (_2, 0, ptr++);              \
-}  while (0);
+}  while (0)
 
 #define vec_mstrgb24(x0,x1,x2,ptr)      \
 do {                                    \
@@ -176,7 +176,7 @@ do {                                    \
     vec_st (_0, 0, ptr++);              \
     vec_st (_1, 0, ptr++);              \
     vec_st (_2, 0, ptr++);              \
-}  while (0);
+}  while (0)
 
 /* pack the pixels in rgb0 format
    msb R
@@ -198,7 +198,7 @@ do {                                                                          \
     vec_st (_2, 2*16, (T *)ptr);                                              \
     vec_st (_3, 3*16, (T *)ptr);                                              \
     ptr += 4;                                                                 \
-}  while (0);
+}  while (0)
 
 /*
 
