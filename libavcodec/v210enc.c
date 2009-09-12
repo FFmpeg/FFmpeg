@@ -72,7 +72,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
               ((*b++ & 0xFFC0) <<  4);  \
         val|=  (*c++ & 0xFFC0) << 14;   \
         bytestream_put_le32(&p, val);   \
-    } while (0);
+    } while (0)
 
     for (h = 0; h < avctx->height; h++) {
         uint32_t val;

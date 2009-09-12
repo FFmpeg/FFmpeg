@@ -74,7 +74,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         *a++ =  val <<  6;           \
         *b++ = (val >>  4) & 0xFFC0; \
         *c++ = (val >> 14) & 0xFFC0; \
-    } while (0);
+    } while (0)
 
     for (h = 0; h < avctx->height; h++) {
         const uint32_t *src = (const uint32_t*)psrc;
