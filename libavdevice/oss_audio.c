@@ -228,7 +228,6 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     ret = audio_open(s1, 0, s1->filename);
     if (ret < 0) {
-        av_free(st);
         return AVERROR(EIO);
     }
 
