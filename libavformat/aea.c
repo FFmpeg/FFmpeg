@@ -37,12 +37,15 @@ static int aea_read_probe(AVProbeData *p)
 
     /* Magic is '00 08 00 00' in Little Endian*/
     if (AV_RL32(p->buf)==0x800) {
-        int bsm_s, bsm_e, inb_s, inb_e;
+        int bsm_s, bsm_e, inb_s, inb_e, ch;
+        ch    = p->buf[264];
         bsm_s = p->buf[2048];
         inb_s = p->buf[2048+1];
         inb_e = p->buf[2048+210];
         bsm_e = p->buf[2048+211];
 
+        if (ch != 1 && ch != 2)
+            return 0;
 
         /* Check so that the redundant bsm bytes and info bytes are valid
          * the block size mode bytes have to be the same
