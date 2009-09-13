@@ -826,7 +826,7 @@ absolute pathname, ffmpeg will search for that filename. This way you
 can specify the absolute and complete filename of the preset file, for
 example @file{./ffpresets/libx264-max.ffpreset}.
 
-@node FFmpeg formula evaluator
+@anchor{FFmpeg formula evaluator}
 @section FFmpeg formula evaluator
 
 When evaluating a rate control string, FFmpeg uses an internal formula
