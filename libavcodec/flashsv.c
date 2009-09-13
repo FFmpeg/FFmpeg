@@ -114,9 +114,6 @@ static int flashsv_decode_frame(AVCodecContext *avctx,
     if (buf_size == 0)
         return 0;
 
-    if(s->frame.data[0])
-            avctx->release_buffer(avctx, &s->frame);
-
     init_get_bits(&gb, buf, buf_size * 8);
 
     /* start to parse the bitstream */
