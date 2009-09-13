@@ -342,8 +342,8 @@ int64_t ff_gen_syncpoint_search(AVFormatContext *s,
 
     // Find keyframes in all active streams with timestamp/position just before
     // and just after requested timestamp/position.
-    step = 1024;
-    curpos = pos;
+    step = s->pb->buffer_size;
+    curpos = FFMAX(pos - step / 2, 0);
     for (;;) {
         url_fseek(s->pb, curpos, SEEK_SET);
         search_hi_lo_keyframes(s,
