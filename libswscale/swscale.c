@@ -3167,6 +3167,10 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
         reset_ptr(src2, c->srcFormat);
         reset_ptr(dst2, c->dstFormat);
 
+        /* reset slice direction at end of frame */
+        if (srcSliceY + srcSliceH == c->srcH)
+            c->sliceDir = 0;
+
         return c->swScale(c, src2, srcStride2, srcSliceY, srcSliceH, dst2, dstStride2);
     } else {
         // slices go from bottom to top => we flip the image internally
@@ -3185,6 +3189,10 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
 
         reset_ptr(src2, c->srcFormat);
         reset_ptr(dst2, c->dstFormat);
+
+        /* reset slice direction at end of frame */
+        if (!srcSliceY)
+            c->sliceDir = 0;
 
         return c->swScale(c, src2, srcStride2, c->srcH-srcSliceY-srcSliceH, srcSliceH, dst2, dstStride2);
     }
