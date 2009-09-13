@@ -1461,6 +1461,7 @@ static int mpegts_read_packet(AVFormatContext *s,
                 PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
                 if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
                     new_pes_packet(pes, pkt);
+                    pes->state = MPEGTS_SKIP;
                     ret = 0;
                     break;
                 }
