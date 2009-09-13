@@ -637,6 +637,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, ByteIOContext *pb,
         pkt->size = vst->videobufpos + 8*(vst->cur_slice - vst->slices);
         pkt->pts = AV_NOPTS_VALUE;
         pkt->pos = vst->pktpos;
+        vst->slices = 0;
         return 0;
     }
 
