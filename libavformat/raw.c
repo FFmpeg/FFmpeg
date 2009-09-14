@@ -580,10 +580,19 @@ static int dirac_probe(AVProbeData *p)
 static int dnxhd_probe(AVProbeData *p)
 {
     static const uint8_t header[] = {0x00,0x00,0x02,0x80,0x01};
-    if (!memcmp(p->buf, header, 5))
-        return AVPROBE_SCORE_MAX;
-    else
+    int w, h, compression_id;
+    if (p->buf_size < 0x2c)
         return 0;
+    if (memcmp(p->buf, header, 5))
+        return 0;
+    h = AV_RB16(p->buf + 0x18);
+    w = AV_RB16(p->buf + 0x1a);
+    if (!w || !h)
+        return 0;
+    compression_id = AV_RB32(p->buf + 0x28);
+    if (compression_id < 1237 || compression_id > 1253)
+        return 0;
+    return AVPROBE_SCORE_MAX;
 }
 #endif
 
