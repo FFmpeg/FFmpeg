@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "voc.h"
+#include "libavutil/intreadwrite.h"
 
 typedef struct {
     uint16_t index;
@@ -43,13 +44,16 @@ typedef struct {
 
 static int probe(AVProbeData *p)
 {
-    if (p->buf[0] == 0x01 && p->buf[1] == 0x00 &&
-        p->buf[4] == 0x01 + p->buf[2] &&
-        p->buf[8] == p->buf[4] + p->buf[6] &&
-        p->buf[12] == p->buf[8] + p->buf[10])
-        return AVPROBE_SCORE_MAX;
-
-    return 0;
+    int i;
+    int index = 1;
+    if (p->buf_size < 16)
+        return 0;
+    for (i = 0; i < 16; i += 4) {
+        if (AV_RL16(p->buf + i) != index || !p->buf[i + 2] || !p->buf[i + 3])
+            return 0;
+        index += p->buf[i + 2];
+    }
+    return AVPROBE_SCORE_MAX;
 }
 
 static int read_header(AVFormatContext *s,
