@@ -510,6 +510,8 @@ static int dts_probe(AVProbeData *p)
 {
     const uint8_t *buf, *bufp;
     uint32_t state = -1;
+    int markers[3] = {0};
+    int sum, max;
 
     buf = p->buf;
 
@@ -519,18 +521,24 @@ static int dts_probe(AVProbeData *p)
 
         /* regular bitstream */
         if (state == DCA_MARKER_RAW_BE || state == DCA_MARKER_RAW_LE)
-            return AVPROBE_SCORE_MAX/2+1;
+            markers[0]++;
 
         /* 14 bits big-endian bitstream */
         if (state == DCA_MARKER_14B_BE)
             if ((bytestream_get_be16(&bufp) & 0xFFF0) == 0x07F0)
-                return AVPROBE_SCORE_MAX/2+1;
+                markers[1]++;
 
         /* 14 bits little-endian bitstream */
         if (state == DCA_MARKER_14B_LE)
             if ((bytestream_get_be16(&bufp) & 0xF0FF) == 0xF007)
-                return AVPROBE_SCORE_MAX/2+1;
+                markers[2]++;
     }
+    sum = markers[0] + markers[1] + markers[2];
+    max = markers[1] > markers[0];
+    max = markers[2] > markers[max] ? 2 : max;
+    if (markers[max] > 3 && p->buf_size / markers[max] < 32*1024 &&
+        markers[max] * 4 > sum * 3)
+        return AVPROBE_SCORE_MAX/2+1;
 
     return 0;
 }
