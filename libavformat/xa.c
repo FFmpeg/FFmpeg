@@ -42,13 +42,24 @@ typedef struct MaxisXADemuxContext {
 
 static int xa_probe(AVProbeData *p)
 {
+    int channels, srate, bits_per_sample;
+    if (p->buf_size < 24)
+        return 0;
     switch(AV_RL32(p->buf)) {
     case XA00_TAG:
     case XAI0_TAG:
     case XAJ0_TAG:
-        return AVPROBE_SCORE_MAX;
+        break;
+    default:
+        return 0;
     }
-    return 0;
+    channels        = AV_RL16(p->buf + 10);
+    srate           = AV_RL32(p->buf + 12);
+    bits_per_sample = AV_RL16(p->buf + 22);
+    if (!channels || channels > 8 || !srate || srate > 192000 ||
+        bits_per_sample < 4 || bits_per_sample > 32)
+        return 0;
+    return AVPROBE_SCORE_MAX/2;
 }
 
 static int xa_read_header(AVFormatContext *s,
