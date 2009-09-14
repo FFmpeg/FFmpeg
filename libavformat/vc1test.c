@@ -33,7 +33,7 @@
 
 static int vc1t_probe(AVProbeData *p)
 {
-    if (p->buf[3] != 0xC5 && AV_RL32(&p->buf[4]) != 4)
+    if (p->buf[3] != 0xC5 || AV_RL32(&p->buf[4]) != 4)
         return 0;
 
     return AVPROBE_SCORE_MAX/2;
