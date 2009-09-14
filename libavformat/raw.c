@@ -455,14 +455,33 @@ static int h264_probe(AVProbeData *p)
 #if CONFIG_H263_DEMUXER
 static int h263_probe(AVProbeData *p)
 {
-    int code;
-    const uint8_t *d;
+    uint64_t code= -1;
+    int i;
+    int valid_psc=0;
+    int invalid_psc=0;
+    int res_change=0;
+    int src_fmt, last_src_fmt=-1;
 
-    d = p->buf;
-    code = (d[0] << 14) | (d[1] << 6) | (d[2] >> 2);
-    if (code == 0x20) {
-        return 50;
+    for(i=0; i<p->buf_size; i++){
+        code = (code<<8) + p->buf[i];
+        if ((code & 0xfffffc0000) == 0x800000) {
+            src_fmt= (code>>2)&3;
+            if(   src_fmt != last_src_fmt
+               && last_src_fmt>0 && last_src_fmt<6
+               && src_fmt<6)
+                res_change++;
+
+            if((code&0x300)==0x200 && src_fmt){
+                valid_psc++;
+            }else
+                invalid_psc++;
+            last_src_fmt= src_fmt;
+        }
     }
+    if(valid_psc > 2*invalid_psc + 2*res_change + 2){
+        return 50;
+    }else if(valid_psc > 2*invalid_psc)
+        return 25;
     return 0;
 }
 #endif
