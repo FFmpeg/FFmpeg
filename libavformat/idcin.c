@@ -105,6 +105,11 @@ static int idcin_probe(AVProbeData *p)
      * audio channels: 0 for no audio, or 1 or 2
      */
 
+    /* check we have enough data to do all checks, otherwise the
+       0-padding may cause a wrong recognition */
+    if (p->buf_size < 20)
+        return 0;
+
     /* check the video width */
     number = AV_RL32(&p->buf[0]);
     if ((number == 0) || (number > 1024))
