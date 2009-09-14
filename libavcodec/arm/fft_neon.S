@@ -327,8 +327,10 @@ function ff_fft_permute_neon, export=1
 1:
         vld1.32         {d0-d1}, [r1,:128]!
         ldr             r4,  [r0], #4
-        uxtah           lr,  r3,  r4
-        uxtah           r4,  r3,  r4,  ror #16
+        uxth            lr,  r4
+        uxth            r4,  r4,  ror #16
+        add             lr,  r3,  lr,  lsl #3
+        add             r4,  r3,  r4,  lsl #3
         vst1.32         {d0}, [lr,:64]
         vst1.32         {d1}, [r4,:64]
         subs            r12, r12, #2

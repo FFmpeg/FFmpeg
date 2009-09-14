@@ -52,8 +52,10 @@ function ff_imdct_half_neon, export=1
         vmul.f32        d5,  d17, d3
         vsub.f32        d4,  d6,  d4
         vadd.f32        d5,  d5,  d7
-        uxtah           r8,  r1,  r6,  ror #16
-        uxtah           r6,  r1,  r6
+        uxth            r8,  r6,  ror #16
+        uxth            r6,  r6
+        add             r8,  r1,  r8,  lsl #3
+        add             r6,  r1,  r6,  lsl #3
         beq             1f
         vld2.32         {d16-d17},[r7,:128],r12
         vld2.32         {d0-d1},  [r2,:128]!
@@ -198,8 +200,10 @@ function ff_mdct_calc_neon, export=1
         subs            lr,  lr,  #16
         vsub.f32        d6,  d6,  d7            @ -R*c-I*s
         vadd.f32        d7,  d4,  d5            @ -R*s+I*c
-        uxtah           r10, r1,  r6,  ror #16
-        uxtah           r6,  r1,  r6
+        uxth            r10, r6,  ror #16
+        uxth            r6,  r6
+        add             r10, r1,  r10, lsl #3
+        add             r6,  r1,  r6,  lsl #3
         beq             1f
         vld2.32         {d16,d18},[r9,:128],r12 @ x,x in4d1,in4d0
         vld2.32         {d17,d19},[r8,:128],r12 @ x,x in3d1,in3d0
@@ -245,8 +249,10 @@ function ff_mdct_calc_neon, export=1
         subs            lr,  lr,  #16
         vsub.f32        d6,  d7,  d6            @ I*s-R*c
         vadd.f32        d7,  d4,  d5            @ R*s-I*c
-        uxtah           r10, r1,  r6,  ror #16
-        uxtah           r6,  r1,  r6
+        uxth            r10, r6,  ror #16
+        uxth            r6,  r6
+        add             r10, r1,  r10, lsl #3
+        add             r6,  r1,  r6,  lsl #3
         beq             1f
         vld2.32         {d16,d18},[r9,:128],r12 @ x,x in2d1,in2d0
         vld2.32         {d17,d19},[r8,:128],r12 @ x,x in1d1,in1d0
