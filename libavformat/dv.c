@@ -488,6 +488,7 @@ static int dv_probe(AVProbeData *p)
 {
     unsigned state, marker_pos = 0;
     int i;
+    int matches = 0;
 
     if (p->buf_size < 5)
         return 0;
@@ -495,14 +496,19 @@ static int dv_probe(AVProbeData *p)
     state = AV_RB32(p->buf);
     for (i = 4; i < p->buf_size; i++) {
         if ((state & 0xffffff7f) == 0x1f07003f)
-            return AVPROBE_SCORE_MAX*3/4; // not max to avoid dv in mov to match
+            matches++;
         if (state == 0x003f0700 || state == 0xff3f0700)
             marker_pos = i;
         if (state == 0xff3f0701 && i - marker_pos == 80)
-            return AVPROBE_SCORE_MAX/4;
+            matches++;
         state = (state << 8) | p->buf[i];
     }
 
+    if (matches && p->buf_size / matches < 1024*1024) {
+        if (matches > 4)
+            return AVPROBE_SCORE_MAX*3/4; // not max to avoid dv in mov to match
+        return AVPROBE_SCORE_MAX/4;
+    }
     return 0;
 }
 
