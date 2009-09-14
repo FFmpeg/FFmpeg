@@ -489,14 +489,36 @@ static int h263_probe(AVProbeData *p)
 #if CONFIG_H261_DEMUXER
 static int h261_probe(AVProbeData *p)
 {
-    int code;
-    const uint8_t *d;
+    uint32_t code= -1;
+    int i;
+    int valid_psc=0;
+    int invalid_psc=0;
+    int next_gn=0;
+    int src_fmt=0;
+    GetBitContext gb;
 
-    d = p->buf;
-    code = (d[0] << 12) | (d[1] << 4) | (d[2] >> 4);
-    if (code == 0x10) {
-        return 50;
+    init_get_bits(&gb, p->buf, p->buf_size*8);
+
+    for(i=0; i<p->buf_size*8; i++){
+        code = (code<<1) + get_bits1(&gb);
+        if ((code & 0xffff0000) == 0x10000) {
+            int gn= (code>>12)&0xf;
+            if(!gn)
+                src_fmt= code&8;
+            if(gn != next_gn) invalid_psc++;
+            else              valid_psc++;
+
+            if(src_fmt){ // CIF
+                next_gn= (gn+1     )%13;
+            }else{       //QCIF
+                next_gn= (gn+1+!!gn)% 7;
+            }
+        }
     }
+    if(valid_psc > 2*invalid_psc + 4){
+        return 50;
+    }else if(valid_psc > 2*invalid_psc + 2)
+        return 25;
     return 0;
 }
 #endif
