@@ -78,10 +78,10 @@ static int mpegps_probe(AVProbeData *p)
 
 //av_log(NULL, AV_LOG_ERROR, "%d %d %d %d %d len:%d\n", sys, priv1, pspack,vid, audio, p->buf_size);
     if(sys>invalid && sys*9 <= pspack*10)
-        return AVPROBE_SCORE_MAX/2+2; // +1 for .mpg
+        return pspack > 2 ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
     if(priv1 + vid + audio > invalid && (priv1+vid+audio)*9 <= pspack*10)
-        return AVPROBE_SCORE_MAX/2+2; // +1 for .mpg
-    if((!!vid ^ !!audio) && (audio > 4 || vid > 1) && !sys && !pspack && p->buf_size>2048) /* PES stream */
+        return pspack > 2 ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
+    if((!!vid ^ !!audio) && (audio > 4 || vid > 1) && !sys && !pspack && p->buf_size>2048 && vid + audio > invalid) /* PES stream */
         return (audio > 12 || vid > 3) ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4;
 
     //02-Penguin.flac has sys:0 priv1:0 pspack:0 vid:0 audio:1
