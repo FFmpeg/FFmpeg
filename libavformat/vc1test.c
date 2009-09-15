@@ -73,6 +73,10 @@ static int vc1t_read_header(AVFormatContext *s,
     if(fps == 0xFFFFFFFF)
         av_set_pts_info(st, 32, 1, 1000);
     else{
+        if (!fps) {
+            av_log(s, AV_LOG_ERROR, "Zero FPS specified, defaulting to 1 FPS\n");
+            fps = 1;
+        }
         av_set_pts_info(st, 24, 1, fps);
         st->duration = frames;
     }
