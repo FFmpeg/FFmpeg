@@ -326,7 +326,7 @@ static int mpegvideo_probe(AVProbeData *p)
         }
     }
     if(seq && seq*9<=pic*10 && pic*9<=slice*10 && !pspack && !pes)
-        return AVPROBE_SCORE_MAX/2+1; // +1 for .mpg
+        return pic>1 ? AVPROBE_SCORE_MAX/2+1 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
     return 0;
 }
 #endif
@@ -515,7 +515,7 @@ static int h261_probe(AVProbeData *p)
             }
         }
     }
-    if(valid_psc > 2*invalid_psc + 4){
+    if(valid_psc > 2*invalid_psc + 6){
         return 50;
     }else if(valid_psc > 2*invalid_psc + 2)
         return 25;
