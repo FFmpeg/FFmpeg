@@ -648,7 +648,7 @@ static void imdct_and_window(TwinContext *tctx, enum FrameType ftype, int wtype,
         tctx->dsp.vector_fmul_window(out2,
                                      prev_buf + (bsize-wsize)/2,
                                      buf1 + bsize*j,
-                                     ff_sine_windows[av_log2(wsize) - 7],
+                                     ff_sine_windows[av_log2(wsize)],
                                      0.0,
                                      wsize/2);
         out2 += wsize;
@@ -903,9 +903,9 @@ static av_cold void init_mdct_win(TwinContext *tctx)
     }
 
 
-    ff_sine_window_init(ff_sine_windows[av_log2(size_m)     - 7], size_m  );
-    ff_sine_window_init(ff_sine_windows[av_log2(size_s/2)   - 7], size_s/2);
-    ff_sine_window_init(ff_sine_windows[av_log2(mtab->size) - 7], mtab->size);
+    ff_sine_window_init(ff_sine_windows[av_log2(size_m)    ], size_m  );
+    ff_sine_window_init(ff_sine_windows[av_log2(size_s/2)  ], size_s/2);
+    ff_sine_window_init(ff_sine_windows[av_log2(mtab->size)], mtab->size);
 }
 
 /**

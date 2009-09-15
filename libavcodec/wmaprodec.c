@@ -426,7 +426,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     /** init MDCT windows: simple sinus window */
     for (i = 0; i < WMAPRO_BLOCK_SIZES; i++) {
         const int n       = 1 << (WMAPRO_BLOCK_MAX_BITS - i);
-        const int win_idx = WMAPRO_BLOCK_MAX_BITS - i - 7;
+        const int win_idx = WMAPRO_BLOCK_MAX_BITS - i;
         ff_sine_window_init(ff_sine_windows[win_idx], n);
         s->windows[WMAPRO_BLOCK_SIZES - i - 1] = ff_sine_windows[win_idx];
     }
