@@ -385,8 +385,7 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
     s->rc.k_modifier      = 14;
     s->rc.rice_modifier   = 4;
 
-    s->max_coded_frame_size = (ALAC_FRAME_HEADER_SIZE + ALAC_FRAME_FOOTER_SIZE +
-                               avctx->frame_size*avctx->channels*avctx->bits_per_coded_sample)>>3;
+    s->max_coded_frame_size = 8 + (avctx->frame_size*avctx->channels*avctx->bits_per_coded_sample>>3);
 
     s->write_sample_size  = avctx->bits_per_coded_sample + avctx->channels - 1; // FIXME: consider wasted_bytes
 
