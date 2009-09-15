@@ -699,7 +699,7 @@ void ff_fft_calc_c(FFTContext *s, FFTComplex *z);
 
 void ff_fft_init_altivec(FFTContext *s);
 void ff_fft_init_mmx(FFTContext *s);
-void ff_fft_init_neon(FFTContext *s);
+void ff_fft_init_arm(FFTContext *s);
 
 /**
  * Do the permutation needed BEFORE calling ff_fft_calc().
