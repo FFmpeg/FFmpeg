@@ -61,9 +61,16 @@ typedef struct VmdDemuxContext {
 
 static int vmd_probe(AVProbeData *p)
 {
+    int w, h;
+    if (p->buf_size < 16)
+        return 0;
     /* check if the first 2 bytes of the file contain the appropriate size
      * of a VMD header chunk */
     if (AV_RL16(&p->buf[0]) != VMD_HEADER_SIZE - 2)
+        return 0;
+    w = AV_RL16(&p->buf[12]);
+    h = AV_RL16(&p->buf[14]);
+    if (!w || w > 2048 || !h || h > 2048)
         return 0;
 
     /* only return half certainty since this check is a bit sketchy */
