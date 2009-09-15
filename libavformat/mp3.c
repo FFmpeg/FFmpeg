@@ -193,6 +193,7 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
     count += id3v1_set_string(s, "album",   buf + 63, 30);
     count += id3v1_set_string(s, "year",    buf + 93,  4);
     count += id3v1_set_string(s, "comment", buf + 97, 30);
+    buf[127] = 0xFF; /* default to unknown genre */
     if ((tag = av_metadata_get(s->metadata, "track", NULL, 0))) {
         buf[125] = 0;
         buf[126] = atoi(tag->value);
