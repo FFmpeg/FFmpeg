@@ -29,7 +29,7 @@ static int failures=0;
 
 static void probe(AVProbeData *pd, int type, int p, int size)
 {
-    int i;
+    int i = 0;
     AVInputFormat *fmt;
 
     for(fmt = first_iformat; fmt != NULL; fmt = fmt->next) {
