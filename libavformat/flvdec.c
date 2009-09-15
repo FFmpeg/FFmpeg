@@ -39,7 +39,7 @@ static int flv_probe(AVProbeData *p)
     const uint8_t *d;
 
     d = p->buf;
-    if (d[0] == 'F' && d[1] == 'L' && d[2] == 'V' && d[3] < 5 && d[5]==0) {
+    if (d[0] == 'F' && d[1] == 'L' && d[2] == 'V' && d[3] < 5 && d[5]==0 && AV_RB32(d+5)>8) {
         return AVPROBE_SCORE_MAX;
     }
     return 0;
