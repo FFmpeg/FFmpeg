@@ -133,3 +133,9 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
 
 POWERPC_PERF_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
 }
+
+av_cold void ff_fft_init_altivec(FFTContext *s)
+{
+    s->fft_calc = ff_fft_calc_altivec;
+    s->split_radix = 0;
+}

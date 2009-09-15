@@ -683,6 +683,7 @@ typedef struct FFTContext {
     void (*imdct_calc)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
     void (*imdct_half)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
     void (*mdct_calc)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
+    int split_radix;
 } FFTContext;
 
 extern FFTSample* const ff_cos_tabs[13];
@@ -694,14 +695,11 @@ extern FFTSample* const ff_cos_tabs[13];
  */
 int ff_fft_init(FFTContext *s, int nbits, int inverse);
 void ff_fft_permute_c(FFTContext *s, FFTComplex *z);
-void ff_fft_permute_sse(FFTContext *s, FFTComplex *z);
-void ff_fft_permute_neon(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_c(FFTContext *s, FFTComplex *z);
-void ff_fft_calc_sse(FFTContext *s, FFTComplex *z);
-void ff_fft_calc_3dn(FFTContext *s, FFTComplex *z);
-void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z);
-void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z);
-void ff_fft_calc_neon(FFTContext *s, FFTComplex *z);
+
+void ff_fft_init_altivec(FFTContext *s);
+void ff_fft_init_mmx(FFTContext *s);
+void ff_fft_init_neon(FFTContext *s);
 
 /**
  * Do the permutation needed BEFORE calling ff_fft_calc().
@@ -774,15 +772,6 @@ int ff_mdct_init(MDCTContext *s, int nbits, int inverse, double scale);
 void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_mdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_calc_3dn(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_half_3dn(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_calc_neon(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_half_neon(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_mdct_calc_neon(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_mdct_end(MDCTContext *s);
 
 /* Real Discrete Fourier Transform */

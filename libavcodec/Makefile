@@ -465,6 +465,7 @@ OBJS-$(HAVE_MMX)                       += x86/cpuid.o                   \
                                           x86/dnxhd_mmx.o               \
                                           x86/dsputil_mmx.o             \
                                           x86/fdct_mmx.o                \
+                                          x86/fft.o                     \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
                                           x86/motion_est_mmx.o          \
@@ -480,6 +481,7 @@ OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
 
 OBJS-$(ARCH_ARM)                       += arm/dsputil_arm.o             \
                                           arm/dsputil_arm_s.o           \
+                                          arm/fft_init_arm.o            \
                                           arm/jrevdct_arm.o             \
                                           arm/mpegvideo_arm.o           \
                                           arm/simple_idct_arm.o         \
