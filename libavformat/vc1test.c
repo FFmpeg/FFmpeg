@@ -46,7 +46,8 @@ static int vc1t_read_header(AVFormatContext *s,
 {
     ByteIOContext *pb = s->pb;
     AVStream *st;
-    int fps, frames;
+    int frames;
+    uint32_t fps;
 
     frames = get_le24(pb);
     if(get_byte(pb) != 0xC5 || get_le32(pb) != 4)
@@ -69,7 +70,7 @@ static int vc1t_read_header(AVFormatContext *s,
         return -1;
     url_fskip(pb, 8);
     fps = get_le32(pb);
-    if(fps == -1)
+    if(fps == 0xFFFFFFFF)
         av_set_pts_info(st, 32, 1, 1000);
     else{
         av_set_pts_info(st, 24, 1, fps);
