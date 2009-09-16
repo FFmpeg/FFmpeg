@@ -474,6 +474,8 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             }
             /* guess file format */
             fmt = av_probe_input_format2(pd, 1, &score);
+            if(fmt)
+                av_log(*ic_ptr, AV_LOG_DEBUG, "Probe with size=%d detected %s with score=%d\n", probe_size, fmt->name, score);
         }
         av_freep(&pd->buf);
     }
