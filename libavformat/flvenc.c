@@ -399,5 +399,5 @@ AVOutputFormat flv_muxer = {
     flv_write_packet,
     flv_write_trailer,
     .codec_tag= (const AVCodecTag* const []){flv_video_codec_ids, flv_audio_codec_ids, 0},
-    .flags= AVFMT_GLOBALHEADER,
+    .flags= AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
 };
