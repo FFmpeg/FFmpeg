@@ -2657,25 +2657,30 @@ void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     pkt->destruct= NULL;             // do not free original but only the copy
     av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-alloced memory
 
-    if(!s->packet_buffer_end || compare(s, &s->packet_buffer_end->pkt, pkt)){
+    if(s->streams[pkt->stream_index]->last_in_packet_buffer){
+        next_point = &(s->streams[pkt->stream_index]->last_in_packet_buffer->next);
+    }else
         next_point = &s->packet_buffer;
-        while(*next_point){
-            if(compare(s, &(*next_point)->pkt, pkt))
-                break;
+
+    if(*next_point){
+        if(compare(s, &s->packet_buffer_end->pkt, pkt)){
+            while(!compare(s, &(*next_point)->pkt, pkt)){
             next_point= &(*next_point)->next;
         }
+            goto next_non_null;
     }else{
         next_point = &(s->packet_buffer_end->next);
-        assert(!*next_point);
+        }
     }
+        assert(!*next_point);
+
+        s->packet_buffer_end= this_pktl;
+next_non_null:
+
     this_pktl->next= *next_point;
 
-    if(!*next_point)
-        s->packet_buffer_end= this_pktl;
-
+    s->streams[pkt->stream_index]->last_in_packet_buffer=
     *next_point= this_pktl;
-
-    s->streams[pkt->stream_index]->num_in_packet_buffer++;
 }
 
 int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
@@ -2701,7 +2706,7 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
     }
 
     for(i=0; i < s->nb_streams; i++)
-        stream_count+= !!s->streams[i]->num_in_packet_buffer;
+        stream_count+= !!s->streams[i]->last_in_packet_buffer;
 
     if(stream_count && (s->nb_streams == stream_count || flush)){
         pktl= s->packet_buffer;
@@ -2711,7 +2716,8 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
         if(!s->packet_buffer)
             s->packet_buffer_end= NULL;
 
-        s->streams[out->stream_index]->num_in_packet_buffer--;
+        if(s->streams[out->stream_index]->last_in_packet_buffer == pktl)
+            s->streams[out->stream_index]->last_in_packet_buffer= NULL;
         av_freep(&pktl);
         return 1;
     }else{

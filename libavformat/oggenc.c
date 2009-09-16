@@ -261,6 +261,12 @@ static int ogg_interleave_per_granule(AVFormatContext *s, AVPacket *out, AVPacke
             OGGStreamContext *ogg = s->streams[out->stream_index]->priv_data;
             ogg->eos = 1;
         }
+        if(!s->packet_buffer)
+            s->packet_buffer_end= NULL;
+
+        if(s->streams[out->stream_index]->last_in_packet_buffer == pktl)
+            s->streams[out->stream_index]->last_in_packet_buffer= NULL;
+
         av_freep(&pktl);
         return 1;
     } else {
