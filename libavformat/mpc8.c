@@ -53,9 +53,35 @@ typedef struct {
 
 static int mpc8_probe(AVProbeData *p)
 {
-    if (AV_RL32(p->buf) == TAG_MPCK)
+    if (p->buf_size < 16)
+        return 0;
+    if (AV_RL32(p->buf) != TAG_MPCK)
+        return 0;
+    if (p->buf[4] == 'S' && p->buf[5] == 'H') {
+        int size = p->buf[6];
+
+        if (size < 12 || size > 30)
+            return 0;
+        if (!AV_RL32(&p->buf[7])) //zero CRC is invalid
+            return 0;
+        //check whether some tag follows stream header or not
+        if (p->buf[4 + size] < 'A' || p->buf[4 + size] > 'Z')
+            return 0;
+        if (p->buf[5 + size] < 'A' || p->buf[5 + size] > 'Z')
+            return 0;
+        if (p->buf[6 + size] < 3)
+            return 0;
         return AVPROBE_SCORE_MAX;
-    return 0;
+    }
+    /* file magic number should be followed by tag name which consists of
+       two uppercase letters */
+    if (p->buf[4] < 'A' || p->buf[4] > 'Z' || p->buf[5] < 'A' || p->buf[5] > 'Z')
+        return 0;
+    // tag size should be >= 3
+    if (p->buf[6] < 3)
+        return 0;
+    // if first tag is not stream header, that's suspicious
+    return AVPROBE_SCORE_MAX / 4;
 }
 
 static inline int64_t gb_get_v(GetBitContext *gb)
