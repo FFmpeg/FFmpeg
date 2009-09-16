@@ -90,12 +90,11 @@ static int mpc8_probe(AVProbeData *p)
         if (bs + size - 2 >= bs_end)
             return AVPROBE_SCORE_MAX / 4 - 1; //seems to be valid MPC but no header yet
         if (header_found) {
-
-        if (size < 11 || size > 28)
-            return 0;
-        if (!AV_RL32(bs)) //zero CRC is invalid
-            return 0;
-        return AVPROBE_SCORE_MAX;
+            if (size < 11 || size > 28)
+                return 0;
+            if (!AV_RL32(bs)) //zero CRC is invalid
+                return 0;
+            return AVPROBE_SCORE_MAX;
         } else {
             bs += size - 2;
         }
