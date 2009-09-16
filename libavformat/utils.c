@@ -2085,7 +2085,7 @@ int av_find_stream_info(AVFormatContext *ic)
         /* we did not get all the codec info, but we read too much data */
         if (read_size >= ic->probesize) {
             ret = count;
-            av_log(ic, AV_LOG_DEBUG, "MAX_READ_SIZE:%d reached\n", ic->probesize);
+            av_log(ic, AV_LOG_WARNING, "MAX_READ_SIZE:%d reached\n", ic->probesize);
             break;
         }
 
@@ -2102,7 +2102,7 @@ int av_find_stream_info(AVFormatContext *ic)
                 if (!has_codec_parameters(st->codec)){
                     char buf[256];
                     avcodec_string(buf, sizeof(buf), st->codec, 0);
-                    av_log(ic, AV_LOG_INFO, "Could not find codec parameters (%s)\n", buf);
+                    av_log(ic, AV_LOG_WARNING, "Could not find codec parameters (%s)\n", buf);
                 } else {
                     ret = 0;
                 }
@@ -2121,7 +2121,7 @@ int av_find_stream_info(AVFormatContext *ic)
         st = ic->streams[pkt->stream_index];
         if(codec_info_nb_frames[st->index]>1) {
             if (st->time_base.den > 0 && av_rescale_q(codec_info_duration[st->index], st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration){
-                av_log(ic, AV_LOG_DEBUG, "max_analyze_duration reached\n");
+                av_log(ic, AV_LOG_WARNING, "max_analyze_duration reached\n");
                 break;
             }
             codec_info_duration[st->index] += pkt->duration;
