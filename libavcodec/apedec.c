@@ -901,5 +901,6 @@ AVCodec ape_decoder = {
     NULL,
     ape_decode_close,
     ape_decode_frame,
+    .capabilities = CODEC_CAP_SUBFRAMES,
     .long_name = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
 };
