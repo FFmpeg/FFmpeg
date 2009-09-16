@@ -37,6 +37,7 @@ version <next>:
 - Bluray (PGS) subtitle decoder
 - LPCM support in MPEG-TS (HDMV RID as found on Blu-ray disks)
 - Wmapro decoder
+- Core Audio Format demuxer
 
 
 

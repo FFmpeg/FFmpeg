@@ -63,6 +63,8 @@ library:
     @tab Used in the game Cyberia from Interplay.
 @item Delphine Software International CIN @tab   @tab X
     @tab Multimedia format used by Delphine Software games.
+@item Core Audio Format         @tab   @tab X
+    @tab Apple Core Audio Format
 @item CRC testing format        @tab X @tab
 @item Creative Voice            @tab X @tab X
     @tab Created for the Sound Blaster Pro.
