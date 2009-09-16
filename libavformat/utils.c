@@ -1112,6 +1112,8 @@ static void flush_packet_queue(AVFormatContext *s)
         av_free_packet(&pktl->pkt);
         av_free(pktl);
     }
+    s->packet_buffer_end=
+    s->raw_packet_buffer_end= NULL;
     s->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
 }
 
