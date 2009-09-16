@@ -2529,6 +2529,9 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     }
 }
 
+#define DEBUG_SWSCALE_BUFFERS 0
+#define DEBUG_BUFFERS(...) if (DEBUG_SWSCALE_BUFFERS) av_log(c, AV_LOG_DEBUG, __VA_ARGS__)
+
 static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[])
 {
@@ -2589,11 +2592,13 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
     srcStride[1]<<= c->vChrDrop;
     srcStride[2]<<= c->vChrDrop;
 
-    //printf("swscale %X %X %X -> %X %X %X\n", (int)src[0], (int)src[1], (int)src[2],
-    //       (int)dst[0], (int)dst[1], (int)dst[2]);
-
-    //printf("sws Strides:%d %d %d -> %d %d %d\n", srcStride[0],srcStride[1],srcStride[2],
-    //dstStride[0],dstStride[1],dstStride[2]);
+    DEBUG_BUFFERS("swScale() %p[%d] %p[%d] %p[%d] %p[%d] -> %p[%d] %p[%d] %p[%d] %p[%d]\n",
+                  src[0], srcStride[0], src[1], srcStride[1], src[2], srcStride[2], src[3], srcStride[3],
+                  dst[0], dstStride[0], dst[1], dstStride[1], dst[2], dstStride[2], dst[3], dstStride[3]);
+    DEBUG_BUFFERS("srcSliceY: %d srcSliceH: %d dstY: %d dstH: %d\n",
+                   srcSliceY,    srcSliceH,    dstY,    dstH);
+    DEBUG_BUFFERS("vLumFilterSize: %d vLumBufSize: %d vChrFilterSize: %d vChrBufSize: %d\n",
+                   vLumFilterSize,    vLumBufSize,    vChrFilterSize,    vChrBufSize);
 
     if (dstStride[0]%8 !=0 || dstStride[1]%8 !=0 || dstStride[2]%8 !=0 || dstStride[3]%8 != 0) {
         static int warnedAlready=0; //FIXME move this into the context perhaps
@@ -2630,12 +2635,9 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
         int lastChrSrcY= firstChrSrcY + vChrFilterSize -1; // Last line needed as input
         int enough_lines;
 
-        //printf("dstY:%d dstH:%d firstLumSrcY:%d lastInLumBuf:%d vLumBufSize: %d vChrBufSize: %d slice: %d %d vLumFilterSize: %d firstChrSrcY: %d vChrFilterSize: %d c->chrSrcVSubSample: %d\n",
-        // dstY, dstH, firstLumSrcY, lastInLumBuf, vLumBufSize, vChrBufSize, srcSliceY, srcSliceH, vLumFilterSize, firstChrSrcY, vChrFilterSize,  c->chrSrcVSubSample);
         //handle holes (FAST_BILINEAR & weird filters)
         if (firstLumSrcY > lastInLumBuf) lastInLumBuf= firstLumSrcY-1;
         if (firstChrSrcY > lastInChrBuf) lastInChrBuf= firstChrSrcY-1;
-        //printf("%d %d %d\n", firstChrSrcY, lastInChrBuf, vChrBufSize);
         assert(firstLumSrcY >= lastInLumBuf - vLumBufSize + 1);
         assert(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1);
 
@@ -2646,21 +2648,22 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             lastChrSrcY = chrSrcSliceY + chrSrcSliceH - 1;
         }
 
-        /* printf("%d %d Last:%d %d LastInBuf:%d %d Index:%d %d Y:%d FSize: %d %d BSize: %d %d\n",
-        firstChrSrcY,firstLumSrcY,lastChrSrcY,lastLumSrcY,
-        lastInChrBuf,lastInLumBuf,chrBufIndex,lumBufIndex,dstY,vChrFilterSize,vLumFilterSize,
-        vChrBufSize, vLumBufSize);*/
+        DEBUG_BUFFERS("dstY: %d\n", dstY);
+        DEBUG_BUFFERS("\tfirstLumSrcY: %d lastLumSrcY: %d lastInLumBuf: %d\n",
+                         firstLumSrcY,    lastLumSrcY,    lastInLumBuf);
+        DEBUG_BUFFERS("\tfirstChrSrcY: %d lastChrSrcY: %d lastInChrBuf: %d\n",
+                         firstChrSrcY,    lastChrSrcY,    lastInChrBuf);
 
         //Do horizontal scaling
         while(lastInLumBuf < lastLumSrcY) {
             uint8_t *src1= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
             uint8_t *src2= src[3]+(lastInLumBuf + 1 - srcSliceY)*srcStride[3];
             lumBufIndex++;
-            //printf("%d %d %d %d\n", lumBufIndex, vLumBufSize, lastInLumBuf,  lastLumSrcY);
+            DEBUG_BUFFERS("\t\tlumBufIndex %d: lastInLumBuf: %d\n",
+                               lumBufIndex,    lastInLumBuf);
             assert(lumBufIndex < 2*vLumBufSize);
             assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
             assert(lastInLumBuf + 1 - srcSliceY >= 0);
-            //printf("%d %d\n", lumBufIndex, vLumBufSize);
             RENAME(hyscale)(c, lumPixBuf[ lumBufIndex ], dstW, src1, srcW, lumXInc,
                             flags, hLumFilter, hLumFilterPos, hLumFilterSize,
                             c->srcFormat, formatConvBuffer,
@@ -2676,6 +2679,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
             uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
             chrBufIndex++;
+            DEBUG_BUFFERS("\t\tchrBufIndex %d: lastInChrBuf: %d\n",
+                               chrBufIndex,    lastInChrBuf);
             assert(chrBufIndex < 2*vChrBufSize);
             assert(lastInChrBuf + 1 - chrSrcSliceY < (chrSrcSliceH));
             assert(lastInChrBuf + 1 - chrSrcSliceY >= 0);
