@@ -2658,12 +2658,12 @@ void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-alloced memory
 
     if(!s->packet_buffer_end || compare(s, &s->packet_buffer_end->pkt, pkt)){
-    next_point = &s->packet_buffer;
-    while(*next_point){
-        if(compare(s, &(*next_point)->pkt, pkt))
-            break;
-        next_point= &(*next_point)->next;
-    }
+        next_point = &s->packet_buffer;
+        while(*next_point){
+            if(compare(s, &(*next_point)->pkt, pkt))
+                break;
+            next_point= &(*next_point)->next;
+        }
     }else{
         next_point = &(s->packet_buffer_end->next);
         assert(!*next_point);
