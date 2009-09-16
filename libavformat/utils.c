@@ -2665,16 +2665,16 @@ void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     if(*next_point){
         if(compare(s, &s->packet_buffer_end->pkt, pkt)){
             while(!compare(s, &(*next_point)->pkt, pkt)){
-            next_point= &(*next_point)->next;
-        }
+                next_point= &(*next_point)->next;
+            }
             goto next_non_null;
-    }else{
-        next_point = &(s->packet_buffer_end->next);
+        }else{
+            next_point = &(s->packet_buffer_end->next);
         }
     }
-        assert(!*next_point);
+    assert(!*next_point);
 
-        s->packet_buffer_end= this_pktl;
+    s->packet_buffer_end= this_pktl;
 next_non_null:
 
     this_pktl->next= *next_point;
