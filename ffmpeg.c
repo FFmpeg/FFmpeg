@@ -1280,7 +1280,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
     handle_eof:
         ist->pts= ist->next_pts;
 
-        if(avpkt.size && avpkt.size != pkt->size && verbose>0)
+        if(avpkt.size && avpkt.size != pkt->size &&
+           !(ist->st->codec->codec->capabilities & CODEC_CAP_SUBFRAMES) && verbose>0)
             fprintf(stderr, "Multiple frames in a packet from stream %d\n", pkt->stream_index);
 
         /* decode the packet if needed */

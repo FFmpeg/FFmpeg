@@ -964,5 +964,6 @@ AVCodec wavpack_decoder = {
     NULL,
     NULL,
     wavpack_decode_frame,
+    .capabilities = CODEC_CAP_SUBFRAMES,
     .long_name = NULL_IF_CONFIG_SMALL("WavPack"),
 };

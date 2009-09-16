@@ -605,6 +605,10 @@ typedef struct RcOverride{
  * Codec can export data for HW decoding (VDPAU).
  */
 #define CODEC_CAP_HWACCEL_VDPAU    0x0080
+/**
+ * Codec can output multiple frames per AVPacket
+ */
+#define CODEC_CAP_SUBFRAMES        0x0100
 
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
