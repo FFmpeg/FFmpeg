@@ -51,37 +51,56 @@ typedef struct {
     int64_t samples;
 } MPCContext;
 
+static inline int64_t bs_get_v(uint8_t **bs)
+{
+    int64_t v = 0;
+    int br = 0;
+    int c;
+
+    do {
+        c = **bs; (*bs)++;
+        v <<= 7;
+        v |= c & 0x7F;
+        br++;
+        if (br > 10)
+            return -1;
+    } while (c & 0x80);
+
+    return v - br;
+}
+
 static int mpc8_probe(AVProbeData *p)
 {
+    uint8_t *bs = p->buf + 4;
+    uint8_t *bs_end = bs + p->buf_size;
+    int64_t size;
+
     if (p->buf_size < 16)
         return 0;
     if (AV_RL32(p->buf) != TAG_MPCK)
         return 0;
-    if (p->buf[4] == 'S' && p->buf[5] == 'H') {
-        int size = p->buf[6];
+    while (bs < bs_end + 3) {
+        int header_found = (bs[0] == 'S' && bs[1] == 'H');
+        if (bs[0] < 'A' || bs[0] > 'Z' || bs[1] < 'A' || bs[1] > 'Z')
+            return 0;
+        bs += 2;
+        size = bs_get_v(&bs);
+        if (size < 2)
+            return 0;
+        if (bs + size - 2 >= bs_end)
+            return AVPROBE_SCORE_MAX / 4 - 1; //seems to be valid MPC but no header yet
+        if (header_found) {
 
-        if (size < 12 || size > 30)
+        if (size < 11 || size > 28)
             return 0;
-        if (!AV_RL32(&p->buf[7])) //zero CRC is invalid
-            return 0;
-        //check whether some tag follows stream header or not
-        if (p->buf[4 + size] < 'A' || p->buf[4 + size] > 'Z')
-            return 0;
-        if (p->buf[5 + size] < 'A' || p->buf[5 + size] > 'Z')
-            return 0;
-        if (p->buf[6 + size] < 3)
+        if (!AV_RL32(bs)) //zero CRC is invalid
             return 0;
         return AVPROBE_SCORE_MAX;
+        } else {
+            bs += size - 2;
+        }
     }
-    /* file magic number should be followed by tag name which consists of
-       two uppercase letters */
-    if (p->buf[4] < 'A' || p->buf[4] > 'Z' || p->buf[5] < 'A' || p->buf[5] > 'Z')
-        return 0;
-    // tag size should be >= 3
-    if (p->buf[6] < 3)
-        return 0;
-    // if first tag is not stream header, that's suspicious
-    return AVPROBE_SCORE_MAX / 4;
+    return 0;
 }
 
 static inline int64_t gb_get_v(GetBitContext *gb)
