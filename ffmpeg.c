@@ -1257,6 +1257,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     AVSubtitle subtitle, *subtitle_to_free;
     int got_subtitle;
     AVPacket avpkt;
+    int bps = av_get_bits_per_sample_format(ist->st->codec->sample_fmt)>>3;
 
     if(ist->next_pts == AV_NOPTS_VALUE)
         ist->next_pts= ist->pts;
@@ -1310,7 +1311,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     continue;
                 }
                 data_buf = (uint8_t *)samples;
-                ist->next_pts += ((int64_t)AV_TIME_BASE/2 * data_size) /
+                ist->next_pts += ((int64_t)AV_TIME_BASE/bps * data_size) /
                     (ist->st->codec->sample_rate * ist->st->codec->channels);
                 break;}
             case CODEC_TYPE_VIDEO:
