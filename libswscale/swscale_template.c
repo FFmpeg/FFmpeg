@@ -2770,9 +2770,9 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                                   alpSrcPtr, (uint16_t *) dest, (uint16_t *) uDest, (uint16_t *) vDest, (uint16_t *) aDest, dstW, chrDstW,
                                   dstFormat);
                 } else if (vLumFilterSize == 1 && vChrFilterSize == 1) { // unscaled YV12
-                    int16_t *lumBuf = lumPixBuf[0];
-                    int16_t *chrBuf= chrPixBuf[0];
-                    int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpPixBuf[0] : NULL;
+                    int16_t *lumBuf = lumSrcPtr[0];
+                    int16_t *chrBuf= chrSrcPtr[0];
+                    int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpSrcPtr[0] : NULL;
                     c->yuv2yuv1(c, lumBuf, chrBuf, alpBuf, dest, uDest, vDest, aDest, dstW, chrDstW);
                 } else { //General YV12
                     c->yuv2yuvX(c,
