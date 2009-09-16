@@ -358,7 +358,7 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mp4_read_descr_len(ByteIOContext *pb)
+int ff_mp4_read_descr_len(ByteIOContext *pb)
 {
     int len = 0;
     int count = 4;
@@ -371,12 +371,12 @@ static int mp4_read_descr_len(ByteIOContext *pb)
     return len;
 }
 
-static int mp4_read_descr(MOVContext *c, ByteIOContext *pb, int *tag)
+int mp4_read_descr(AVFormatContext *fc, ByteIOContext *pb, int *tag)
 {
     int len;
     *tag = get_byte(pb);
-    len = mp4_read_descr_len(pb);
-    dprintf(c->fc, "MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
+    len = ff_mp4_read_descr_len(pb);
+    dprintf(fc, "MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
     return len;
 }
 
@@ -393,24 +393,24 @@ static const AVCodecTag mp4_audio_types[] = {
     { CODEC_ID_NONE,   AOT_NULL },
 };
 
-static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     int tag, len;
 
-    if (c->fc->nb_streams < 1)
+    if (fc->nb_streams < 1)
         return 0;
-    st = c->fc->streams[c->fc->nb_streams-1];
+    st = fc->streams[fc->nb_streams-1];
 
     get_be32(pb); /* version + flags */
-    len = mp4_read_descr(c, pb, &tag);
+    len = mp4_read_descr(fc, pb, &tag);
     if (tag == MP4ESDescrTag) {
         get_be16(pb); /* ID */
         get_byte(pb); /* priority */
     } else
         get_be16(pb); /* ID */
 
-    len = mp4_read_descr(c, pb, &tag);
+    len = mp4_read_descr(fc, pb, &tag);
     if (tag == MP4DecConfigDescrTag) {
         int object_type_id = get_byte(pb);
         get_byte(pb); /* stream type */
@@ -419,10 +419,10 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         get_be32(pb); /* avg bitrate */
 
         st->codec->codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
-        dprintf(c->fc, "esds object type id %d\n", object_type_id);
-        len = mp4_read_descr(c, pb, &tag);
+        dprintf(fc, "esds object type id %d\n", object_type_id);
+        len = mp4_read_descr(fc, pb, &tag);
         if (tag == MP4DecSpecificDescrTag) {
-            dprintf(c->fc, "Specific MPEG4 header len=%d\n", len);
+            dprintf(fc, "Specific MPEG4 header len=%d\n", len);
             if((uint64_t)len > (1<<30))
                 return -1;
             st->codec->extradata = av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -441,7 +441,7 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                     st->codec->sample_rate = ff_mpa_freq_tab[cfg.sampling_index];
                 else
                     st->codec->sample_rate = cfg.sample_rate; // ext sample rate ?
-                dprintf(c->fc, "mp4a config channels %d obj %d ext obj %d "
+                dprintf(fc, "mp4a config channels %d obj %d ext obj %d "
                         "sample rate %d ext sample rate %d\n", st->codec->channels,
                         cfg.object_type, cfg.ext_object_type,
                         cfg.sample_rate, cfg.ext_sample_rate);
@@ -452,6 +452,11 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         }
     }
     return 0;
+}
+
+static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
+{
+    return ff_mov_read_esds(c->fc, pb, atom);
 }
 
 static int mov_read_pasp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
@@ -760,7 +765,7 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
  * Compute codec id for 'lpcm' tag.
  * See CoreAudioTypes and AudioStreamBasicDescription at Apple.
  */
-static enum CodecID mov_get_lpcm_codec_id(int bps, int flags)
+enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags)
 {
     if (flags & 1) { // floating point
         if (flags & 2) { // big endian
@@ -998,7 +1003,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                     sc->bytes_per_frame = get_be32(pb); /* bytes per audio packet if constant */
                     sc->samples_per_frame = get_be32(pb); /* lpcm frames per audio packet if constant */
                     if (format == MKTAG('l','p','c','m'))
-                        st->codec->codec_id = mov_get_lpcm_codec_id(st->codec->bits_per_coded_sample, flags);
+                        st->codec->codec_id = ff_mov_get_lpcm_codec_id(st->codec->bits_per_coded_sample, flags);
                 }
             }
 
