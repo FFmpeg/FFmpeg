@@ -450,6 +450,12 @@ typedef struct AVStream {
      */
 #define MAX_PROBE_PACKETS 100
     int probe_packets;
+
+    /**
+     * Number of packets in packet_buffer for this stream when muxing.
+     * used internally, NOT PART OF PUBLIC API, dont read or write from outside of libav*
+     */
+    int num_in_packet_buffer;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1

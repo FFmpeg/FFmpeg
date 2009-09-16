@@ -2657,14 +2657,25 @@ void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     pkt->destruct= NULL;             // do not free original but only the copy
     av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-alloced memory
 
+    if(!s->packet_buffer_end || compare(s, &s->packet_buffer_end->pkt, pkt)){
     next_point = &s->packet_buffer;
     while(*next_point){
         if(compare(s, &(*next_point)->pkt, pkt))
             break;
         next_point= &(*next_point)->next;
     }
+    }else{
+        next_point = &(s->packet_buffer_end->next);
+        assert(!*next_point);
+    }
     this_pktl->next= *next_point;
+
+    if(!*next_point)
+        s->packet_buffer_end= this_pktl;
+
     *next_point= this_pktl;
+
+    s->streams[pkt->stream_index]->num_in_packet_buffer++;
 }
 
 int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
@@ -2683,27 +2694,24 @@ int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
 int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
     AVPacketList *pktl;
     int stream_count=0;
-    int streams[MAX_STREAMS];
+    int i;
 
     if(pkt){
         ff_interleave_add_packet(s, pkt, ff_interleave_compare_dts);
     }
 
-    memset(streams, 0, sizeof(streams));
-    pktl= s->packet_buffer;
-    while(pktl){
-//av_log(s, AV_LOG_DEBUG, "show st:%d dts:%"PRId64"\n", pktl->pkt.stream_index, pktl->pkt.dts);
-        if(streams[ pktl->pkt.stream_index ] == 0)
-            stream_count++;
-        streams[ pktl->pkt.stream_index ]++;
-        pktl= pktl->next;
-    }
+    for(i=0; i < s->nb_streams; i++)
+        stream_count+= !!s->streams[i]->num_in_packet_buffer;
 
     if(stream_count && (s->nb_streams == stream_count || flush)){
         pktl= s->packet_buffer;
         *out= pktl->pkt;
 
         s->packet_buffer= pktl->next;
+        if(!s->packet_buffer)
+            s->packet_buffer_end= NULL;
+
+        s->streams[out->stream_index]->num_in_packet_buffer--;
         av_freep(&pktl);
         return 1;
     }else{
