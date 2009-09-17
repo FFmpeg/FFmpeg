@@ -428,10 +428,18 @@ static int mpegts_write_header(AVFormatContext *s)
         total_bit_rate += st->codec->bit_rate;
         /* PES header size */
         if (st->codec->codec_type == CODEC_TYPE_VIDEO ||
-            st->codec->codec_type == CODEC_TYPE_SUBTITLE)
-            total_bit_rate += 25 * 8 / av_q2d(st->codec->time_base);
-        else
-            total_bit_rate += total_bit_rate * 25 / DEFAULT_PES_PAYLOAD_SIZE;
+            st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
+            /* 1 PES per frame
+             * 19 bytes of PES header
+             * on average a half TS-packet (184/2) of padding-overhead every PES */
+            total_bit_rate += (19 + 184/2)*8 / av_q2d(st->codec->time_base);
+        } else {
+            /* 1 PES per DEFAULT_PES_PAYLOAD_SIZE bytes of audio data
+             * 14 bytes of PES header
+             * on average a half TS-packet (184/2) of padding-overhead every PES */
+            total_bit_rate += (14 + 184/2) *
+                st->codec->bit_rate / DEFAULT_PES_PAYLOAD_SIZE;
+        }
     }
 
     /* if no video stream, use the first stream as PCR */
