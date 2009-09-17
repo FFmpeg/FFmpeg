@@ -179,6 +179,7 @@ CODEC_TESTS = $(addprefix regtest-,             \
         snowll                                  \
         dv                                      \
         dv50                                    \
+        dnxhd                                   \
         svq1                                    \
         flashsv                                 \
         mp2                                     \

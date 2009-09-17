@@ -370,6 +370,11 @@ do_video_encoding dv50.dv "-dct int" "-s pal -pix_fmt yuv422p -an -sws_flags nei
 do_video_decoding "" "-s cif -pix_fmt yuv420p -sws_flags neighbor+bitexact"
 fi
 
+if [ -n "$do_dnxhd" ] ; then
+do_video_encoding dnxhd.dnxhd "" "-s hd1080 -b 120Mb -pix_fmt yuv422p -an -sws_flags neighbor+bitexact"
+do_video_decoding "-r 25" "-s cif -pix_fmt yuv420p -sws_flags neighbor+bitexact"
+fi
+
 if [ -n "$do_svq1" ] ; then
 do_video_encoding svq1.mov "" "-an -vcodec svq1 -qscale 3 -pix_fmt yuv410p"
 do_video_decoding "" "-pix_fmt yuv420p"
