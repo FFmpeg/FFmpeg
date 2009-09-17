@@ -389,9 +389,13 @@ static int ea_probe(AVProbeData *p)
     case MPCh_TAG:
     case MVhd_TAG:
     case MVIh_TAG:
-        return AVPROBE_SCORE_MAX;
+        break;
+    default:
+        return 0;
     }
-    return 0;
+    if (AV_RL32(&p->buf[4]) > 0xfffff && AV_RB32(&p->buf[4]) > 0xfffff)
+        return 0;
+    return AVPROBE_SCORE_MAX;
 }
 
 static int ea_read_header(AVFormatContext *s,
