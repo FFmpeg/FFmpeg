@@ -22,6 +22,7 @@
 /* needed by inet_aton() */
 #define _SVID_SOURCE
 
+#include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
@@ -855,6 +856,10 @@ static void rtsp_send_cmd_async (AVFormatContext *s,
         snprintf(buf1, sizeof(buf1), "Session: %s\r\n", rt->session_id);
         av_strlcat(buf, buf1, sizeof(buf));
     }
+    if (rt->auth_b64)
+        av_strlcatf(buf, sizeof(buf),
+                   "Authorization: Basic %s\r\n",
+                   rt->auth_b64);
     av_strlcat(buf, "\r\n", sizeof(buf));
 
     dprintf(s, "Sending:\n%s--\n", buf);
@@ -899,6 +904,7 @@ static void rtsp_close_streams(RTSPState *rt)
         av_close_input_stream (rt->asf_ctx);
         rt->asf_ctx = NULL;
     }
+    av_freep(&rt->auth_b64);
 }
 
 static int
@@ -1159,7 +1165,7 @@ static int rtsp_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
     RTSPState *rt = s->priv_data;
-    char host[1024], path[1024], tcpname[1024], cmd[2048], *option_list, *option;
+    char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128], *option_list, *option;
     URLContext *rtsp_hd;
     int port, ret, err;
     RTSPMessageHeader reply1, *reply = &reply1;
@@ -1168,8 +1174,18 @@ static int rtsp_read_header(AVFormatContext *s,
     char real_challenge[64];
 
     /* extract hostname and port */
-    url_split(NULL, 0, NULL, 0,
+    url_split(NULL, 0, auth, sizeof(auth),
               host, sizeof(host), &port, path, sizeof(path), s->filename);
+    if (*auth) {
+        int auth_len = strlen(auth), b64_len = ((auth_len + 2) / 3) * 4 + 1;
+
+        if (!(rt->auth_b64 = av_malloc(b64_len)))
+            return AVERROR(ENOMEM);
+        if (!av_base64_encode(rt->auth_b64, b64_len, auth, auth_len)) {
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
+    }
     if (port < 0)
         port = RTSP_DEFAULT_PORT;
 
@@ -1199,8 +1215,10 @@ static int rtsp_read_header(AVFormatContext *s,
 
     /* open the tcp connexion */
     snprintf(tcpname, sizeof(tcpname), "tcp://%s:%d", host, port);
-    if (url_open(&rtsp_hd, tcpname, URL_RDWR) < 0)
-        return AVERROR(EIO);
+    if (url_open(&rtsp_hd, tcpname, URL_RDWR) < 0) {
+        err = AVERROR(EIO);
+        goto fail;
+    }
     rt->rtsp_hd = rtsp_hd;
     rt->seq = 0;
 
@@ -1305,6 +1323,7 @@ static int rtsp_read_header(AVFormatContext *s,
     rtsp_close_streams(rt);
     av_freep(&content);
     url_close(rt->rtsp_hd);
+    av_freep(&rt->auth_b64);
     return err;
 }
 

@@ -228,6 +228,9 @@ typedef struct RTSPState {
      * of RTSPMessageHeader->real_challenge */
     enum RTSPServerType server_type;
 
+    /** base64-encoded authorization lines (username:password) */
+    char *auth_b64;
+
     /** The last reply of the server to a RTSP command */
     char last_reply[2048]; /* XXX: allocate ? */
 
