@@ -60,11 +60,12 @@ typedef struct SIFFContext{
 
 static int siff_probe(AVProbeData *p)
 {
+    uint32_t tag = AV_RL32(p->buf + 8);
     /* check file header */
-    if (AV_RL32(p->buf) == TAG_SIFF)
-        return AVPROBE_SCORE_MAX;
-    else
+    if (AV_RL32(p->buf) != TAG_SIFF ||
+        (tag != TAG_VBV1 && tag != TAG_SOUN))
         return 0;
+    return AVPROBE_SCORE_MAX;
 }
 
 static int create_audio_stream(AVFormatContext *s, SIFFContext *c)
