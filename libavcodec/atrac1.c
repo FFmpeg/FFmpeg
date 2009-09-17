@@ -73,7 +73,8 @@ typedef struct {
 typedef struct {
     AT1SUCtx            SUs[AT1_MAX_CHANNELS];              ///< channel sound unit
     DECLARE_ALIGNED_16(float,spec[AT1_SU_SAMPLES]);         ///< the mdct spectrum buffer
-    DECLARE_ALIGNED_16(float,short_buf[64]);                ///< buffer for the short mode
+    DECLARE_ALIGNED_16(float,short_buf[512]);               ///< buffer for the short mode
+
     DECLARE_ALIGNED_16(float, low[256]);
     DECLARE_ALIGNED_16(float, mid[256]);
     DECLARE_ALIGNED_16(float,high[512]);
@@ -84,10 +85,7 @@ typedef struct {
     DSPContext          dsp;
 } AT1Ctx;
 
-static float *short_window;
-static float *mid_window;
-DECLARE_ALIGNED_16(static float, long_window[256]);
-static float *window_per_band[3];
+DECLARE_ALIGNED_16(static float, short_window[32]);
 
 /** size of the transform in samples in the long mode for each QMF band */
 static const uint16_t samples_per_band[3] = {128, 128, 256};
@@ -137,28 +135,37 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
         if (num_blocks == 1) {
             at1_imdct(q, &q->spec[pos], &su->spectrum[0][ref_pos], nbits, band_num);
             pos += block_size; // move to the next mdct block in the spectrum
+
+            /* overlap and window long blocks */
+            q->dsp.vector_fmul_window(q->bands[band_num], &su->spectrum[1][ref_pos+band_samples-16],
+                &su->spectrum[0][ref_pos], short_window, 0, 16);
+            memcpy(q->bands[band_num]+32, &su->spectrum[0][ref_pos+16], 240 * sizeof(float));
+
         } else {
             /* calc start position for the 1st short block: 96(128) or 112(256) */
+            int short_pos = 32;
+            float *prev_buf;
             start_pos = (band_samples * (num_blocks - 1)) >> (log2_block_count + 1);
             memset(&su->spectrum[0][ref_pos], 0, sizeof(float) * (band_samples * 2));
 
+            prev_buf = &su->spectrum[1][ref_pos+band_samples-16];
             for (; num_blocks!=0 ; num_blocks--) {
                 /* use hardcoded nbits for the short mode */
-                at1_imdct(q, &q->spec[pos], q->short_buf, 5, band_num);
+                at1_imdct(q, &q->spec[pos], &q->short_buf[short_pos], 5, band_num);
 
                 /* overlap and window between short blocks */
                 q->dsp.vector_fmul_window(&su->spectrum[0][ref_pos+start_pos],
-                                          &su->spectrum[0][ref_pos+start_pos],
-                                          q->short_buf,short_window, 0, 16);
+                                          &q->short_buf[short_pos-16],
+                                          &q->short_buf[short_pos],short_window, 0, 16);
+
+                prev_buf = &q->short_buf[short_pos+16];
+
                 start_pos += 32; // use hardcoded block_size
                 pos += 32;
+                short_pos +=32;
             }
+            memcpy(q->bands[band_num], &su->spectrum[0][ref_pos], band_samples*sizeof(float));
         }
-
-        /* overlap and window with the previous frame and output the result */
-        q->dsp.vector_fmul_window(q->bands[band_num], &su->spectrum[1][ref_pos+band_samples/2],
-            &su->spectrum[0][ref_pos], window_per_band[band_num], 0, band_samples/2);
-
         ref_pos += band_samples;
     }
 
@@ -331,42 +338,6 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 
-static av_cold void init_mdct_windows(void)
-{
-    int i;
-
-    /** The mid and long windows uses the same sine window splitted
-     *  in the middle and wrapped into zero/one regions as follows:
-     *
-     *                   region of "ones"
-     *               -------------
-     *              /
-     *             / 1st half
-     *            / of the sine
-     *           /  window
-     * ---------/
-     * zero region
-     *
-     * The mid and short windows are subsets of the long window.
-     */
-
-    /* Build "zero" region */
-    memset(long_window, 0, sizeof(long_window));
-    /* Build sine window region */
-    short_window = &long_window[112];
-    ff_sine_window_init(short_window,32);
-    /* Build "ones" region */
-    for (i = 0; i < 112; i++)
-        long_window[144 + i] = 1.0f;
-    /* Save the mid window subset start */
-    mid_window = &long_window[64];
-
-    /* Prepare the window table */
-    window_per_band[0] = mid_window;
-    window_per_band[1] = mid_window;
-    window_per_band[2] = long_window;
-}
-
 static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 {
     AT1Ctx *q = avctx->priv_data;
@@ -379,7 +350,8 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     ff_mdct_init(&q->mdct_ctx[0], 6, 1, -1.0/ (1<<15));
     ff_mdct_init(&q->mdct_ctx[1], 8, 1, -1.0/ (1<<15));
     ff_mdct_init(&q->mdct_ctx[2], 9, 1, -1.0/ (1<<15));
-    init_mdct_windows();
+
+    ff_sine_window_init(short_window, 32);
 
     atrac_generate_tables();
 
