@@ -315,12 +315,14 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened){
     return av_probe_input_format2(pd, is_opened, &score);
 }
 
-static int set_codec_from_probe_data(AVStream *st, AVProbeData *pd, int score)
+static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeData *pd, int score)
 {
     AVInputFormat *fmt;
     fmt = av_probe_input_format2(pd, 1, &score);
 
     if (fmt) {
+        av_log(s, AV_LOG_DEBUG, "Probe with size=%d, packets=%d detected %s with score=%d\n",
+               pd->buf_size, MAX_PROBE_PACKETS - st->probe_packets, fmt->name, score);
         if (!strcmp(fmt->name, "mp3")) {
             st->codec->codec_id = CODEC_ID_MP3;
             st->codec->codec_type = CODEC_TYPE_AUDIO;
@@ -595,7 +597,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
 
             if(av_log2(pd->buf_size) != av_log2(pd->buf_size - pkt->size)){
-                set_codec_from_probe_data(st, pd, 1);
+                set_codec_from_probe_data(s, st, pd, 1);
                 if(st->codec->codec_id != CODEC_ID_PROBE){
                     pd->buf_size=0;
                     av_freep(&pd->buf);
