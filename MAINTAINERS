@@ -283,6 +283,7 @@ Muxers/Demuxers:
   rdt.c                                 Ronald S. Bultje
   rl2.c                                 Sascha Sommer
   rmdec.c, rmenc.c                      Ronald S. Bultje, Kostya Shishkov
+  rtmp*                                 Kostya Shishkov
   rtp.c, rtpenc.c                       Luca Abeni
   rtp_asf.*                             Ronald S. Bultje
   rtp_mpv.*, rtp_aac.*                  Luca Abeni
