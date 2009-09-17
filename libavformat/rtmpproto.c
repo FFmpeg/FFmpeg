@@ -611,8 +611,9 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
                 fname = path + 1;
                 app[0] = '\0';
             } else {
+                char *c = strchr(p + 1, ':');
                 fname = strchr(p + 1, '/');
-                if (!fname) {
+                if (!fname || c < fname) {
                     fname = p + 1;
                     av_strlcpy(app, path + 1, p - path);
                 } else {
@@ -621,8 +622,9 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
                 }
             }
         }
-        if (!strcmp(fname + strlen(fname) - 4, ".f4v") ||
-            !strcmp(fname + strlen(fname) - 4, ".mp4")) {
+        if (!strchr(fname, ':') &&
+            (!strcmp(fname + strlen(fname) - 4, ".f4v") ||
+             !strcmp(fname + strlen(fname) - 4, ".mp4"))) {
             memcpy(rt->playpath, "mp4:", 5);
         } else {
             rt->playpath[0] = 0;
