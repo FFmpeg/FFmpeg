@@ -48,7 +48,7 @@ static void probe(AVProbeData *pd, int type, int p, int size)
     }
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
     unsigned int p, i, type, size, retry;
     AVProbeData pd;
