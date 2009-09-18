@@ -237,6 +237,8 @@ static int dnxhd_write_header(AVCodecContext *avctx, uint8_t *buf)
     DNXHDEncContext *ctx = avctx->priv_data;
     const uint8_t header_prefix[5] = { 0x00,0x00,0x02,0x80,0x01 };
 
+    memset(buf, 0, 640);
+
     memcpy(buf, header_prefix, 5);
     buf[5] = ctx->interlaced ? ctx->cur_field+2 : 0x01;
     buf[6] = 0x80; // crc flag off
@@ -752,6 +754,9 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, unsigned char *buf, int b
     }
 
     avctx->execute(avctx, dnxhd_encode_thread, (void**)&ctx->thread[0], NULL, avctx->thread_count, sizeof(void*));
+
+    assert(640 + offset + 4 <= ctx->cid_table->coding_unit_size);
+    memset(buf + 640 + offset, 0, ctx->cid_table->coding_unit_size - 4 - offset - 640);
 
     AV_WB32(buf + ctx->cid_table->coding_unit_size - 4, 0x600DC0DE); // EOF
 
