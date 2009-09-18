@@ -437,6 +437,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     int err, probe_size;
     AVProbeData probe_data, *pd = &probe_data;
     ByteIOContext *pb = NULL;
+    void *logctx= ap && ap->prealloced_context ? *ic_ptr : NULL;
 
     pd->filename = "";
     if (filename)
@@ -478,9 +479,9 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             fmt = av_probe_input_format2(pd, 1, &score);
             if(fmt){
                 if(score <= AVPROBE_SCORE_MAX/4){ //this can only be true in the last iteration
-                    av_log(*ic_ptr, AV_LOG_WARNING, "Format detected only with low score of %d, misdetection possible!\n", score);
+                    av_log(logctx, AV_LOG_WARNING, "Format detected only with low score of %d, misdetection possible!\n", score);
                 }else
-                    av_log(*ic_ptr, AV_LOG_DEBUG, "Probed with size=%d and score=%d\n", probe_size, score);
+                    av_log(logctx, AV_LOG_DEBUG, "Probed with size=%d and score=%d\n", probe_size, score);
             }
         }
         av_freep(&pd->buf);
