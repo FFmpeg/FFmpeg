@@ -12,7 +12,7 @@ PROGS       = $(addsuffix   $(EXESUF), $(PROGS-yes))
 PROGS_G     = $(addsuffix _g$(EXESUF), $(PROGS-yes))
 OBJS        = $(addsuffix .o,          $(PROGS-yes)) cmdutils.o
 MANPAGES    = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
-TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws pktdumper qt-faststart trasher))
+TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws pktdumper probetest qt-faststart trasher))
 
 BASENAMES   = ffmpeg ffplay ffserver
 ALLPROGS    = $(addsuffix   $(EXESUF), $(BASENAMES))
