@@ -27,7 +27,7 @@
 #ifndef AVFORMAT_CAF_H
 #define AVFORMAT_CAF_H
 
-#include "avformat.h"
+#include "riff.h"
 
 extern const AVCodecTag ff_codec_caf_tags[];
 
