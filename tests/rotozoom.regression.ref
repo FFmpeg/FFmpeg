@@ -162,7 +162,7 @@ stddev:   10.09 PSNR: 28.04 bytes:  7603200/  7603200
 14400000 ./tests/data/a-dv50.dv
 af3f2dd5ab62c1a1d98b07d4aeb6852f *./tests/data/dv50.rotozoom.out.yuv
 stddev:    0.82 PSNR: 49.81 bytes:  7603200/  7603200
-06947a671a04bcfb9600834ea02d3390 *./tests/data/a-dnxhd.dnxhd
+09cd0751b1a4062e7a66b250b29ec859 *./tests/data/a-dnxhd.dnxhd
 30310400 ./tests/data/a-dnxhd.dnxhd
 444fb0dfcfc538a1cbcdbedffda0a5fa *./tests/data/dnxhd.rotozoom.out.yuv
 stddev:    0.71 PSNR: 51.03 bytes:  7603200/  7603200

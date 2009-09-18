@@ -162,7 +162,7 @@ stddev:   30.76 PSNR: 18.36 bytes:  7603200/  7603200
 14400000 ./tests/data/a-dv50.dv
 a2ff093e93ffed10f730fa21df02fc50 *./tests/data/dv50.vsynth.out.yuv
 stddev:    1.72 PSNR: 43.37 bytes:  7603200/  7603200
-f361f3755373325551ac8d639531a8f0 *./tests/data/a-dnxhd.dnxhd
+0f03af66259a656c16b3dfb4a3519685 *./tests/data/a-dnxhd.dnxhd
 30310400 ./tests/data/a-dnxhd.dnxhd
 ccdceaf818b898fd58fc15977bab2eeb *./tests/data/dnxhd.vsynth.out.yuv
 stddev:    1.68 PSNR: 43.61 bytes:  7603200/  7603200
