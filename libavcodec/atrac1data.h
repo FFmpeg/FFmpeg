@@ -28,6 +28,8 @@
 #ifndef AVCODEC_ATRAC1DATA_H
 #define AVCODEC_ATRAC1DATA_H
 
+#include <stdint.h>
+
 static const uint8_t bfu_amount_tab1[8] = {20,  28,  32,  36, 40, 44, 48, 52};
 static const uint8_t bfu_amount_tab2[4] = { 0, 112, 176, 208};
 static const uint8_t bfu_amount_tab3[8] = { 0,  24,  36,  48, 72, 108, 132, 156};
