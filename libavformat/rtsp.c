@@ -858,8 +858,8 @@ static void rtsp_send_cmd_async (AVFormatContext *s,
     }
     if (rt->auth_b64)
         av_strlcatf(buf, sizeof(buf),
-                   "Authorization: Basic %s\r\n",
-                   rt->auth_b64);
+                    "Authorization: Basic %s\r\n",
+                    rt->auth_b64);
     av_strlcat(buf, "\r\n", sizeof(buf));
 
     dprintf(s, "Sending:\n%s--\n", buf);
