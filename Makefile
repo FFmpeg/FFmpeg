@@ -12,6 +12,7 @@ PROGS       = $(addsuffix   $(EXESUF), $(PROGS-yes))
 PROGS_G     = $(addsuffix _g$(EXESUF), $(PROGS-yes))
 OBJS        = $(addsuffix .o,          $(PROGS-yes)) cmdutils.o
 MANPAGES    = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
+TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws pktdumper qt-faststart trasher))
 
 BASENAMES   = ffmpeg ffplay ffserver
 ALLPROGS    = $(addsuffix   $(EXESUF), $(BASENAMES))
@@ -77,7 +78,7 @@ ffplay.o ffplay.d: CFLAGS += $(SDL_CFLAGS)
 
 cmdutils.o cmdutils.d: version.h
 
-alltools: $(addsuffix $(EXESUF),$(addprefix tools/, cws2fws pktdumper qt-faststart trasher))
+alltools: $(TOOLS)
 
 documentation: $(addprefix doc/, developer.html faq.html ffmpeg-doc.html ffserver-doc.html \
                                  ffplay-doc.html general.html $(ALLMANPAGES))
@@ -126,7 +127,7 @@ clean:: testclean
 	rm -f doc/*.html doc/*.pod doc/*.1
 	rm -f tests/seek_test$(EXESUF) tests/seek_test.o
 	rm -f $(addprefix tests/,$(addsuffix $(HOSTEXESUF),audiogen videogen rotozoom tiny_psnr))
-	rm -f $(addprefix tools/,$(addsuffix $(EXESUF),cws2fws pktdumper qt-faststart trasher))
+	rm -f $(TOOLS)
 
 distclean::
 	rm -f $(DISTCLEANSUFFIXES)
