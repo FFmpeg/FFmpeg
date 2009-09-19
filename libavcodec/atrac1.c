@@ -73,7 +73,6 @@ typedef struct {
 typedef struct {
     AT1SUCtx            SUs[AT1_MAX_CHANNELS];              ///< channel sound unit
     DECLARE_ALIGNED_16(float,spec[AT1_SU_SAMPLES]);         ///< the mdct spectrum buffer
-    DECLARE_ALIGNED_16(float,short_buf[512]);               ///< buffer for the short mode
 
     DECLARE_ALIGNED_16(float, low[256]);
     DECLARE_ALIGNED_16(float, mid[256]);
@@ -133,6 +132,7 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
             return -1;
 
         if (num_blocks == 1) {
+            /* long blocks */
             at1_imdct(q, &q->spec[pos], &su->spectrum[0][ref_pos], nbits, band_num);
             pos += block_size; // move to the next mdct block in the spectrum
 
@@ -142,29 +142,21 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
             memcpy(q->bands[band_num]+32, &su->spectrum[0][ref_pos+16], 240 * sizeof(float));
 
         } else {
-            /* calc start position for the 1st short block: 96(128) or 112(256) */
-            int short_pos = 32;
+            /* short blocks */
             float *prev_buf;
-            start_pos = (band_samples * (num_blocks - 1)) >> (log2_block_count + 1);
-            memset(&su->spectrum[0][ref_pos], 0, sizeof(float) * (band_samples * 2));
-
+            start_pos = 0;
             prev_buf = &su->spectrum[1][ref_pos+band_samples-16];
             for (; num_blocks!=0 ; num_blocks--) {
-                /* use hardcoded nbits for the short mode */
-                at1_imdct(q, &q->spec[pos], &q->short_buf[short_pos], 5, band_num);
+                at1_imdct(q, &q->spec[pos], &su->spectrum[0][ref_pos+start_pos], 5, band_num);
 
                 /* overlap and window between short blocks */
-                q->dsp.vector_fmul_window(&su->spectrum[0][ref_pos+start_pos],
-                                          &q->short_buf[short_pos-16],
-                                          &q->short_buf[short_pos],short_window, 0, 16);
+                q->dsp.vector_fmul_window(&q->bands[band_num][start_pos], prev_buf,
+                                          &su->spectrum[0][ref_pos+start_pos], short_window, 0, 16);
 
-                prev_buf = &q->short_buf[short_pos+16];
-
+                prev_buf = &su->spectrum[0][ref_pos+start_pos+16];
                 start_pos += 32; // use hardcoded block_size
                 pos += 32;
-                short_pos +=32;
             }
-            memcpy(q->bands[band_num], &su->spectrum[0][ref_pos], band_samples*sizeof(float));
         }
         ref_pos += band_samples;
     }
