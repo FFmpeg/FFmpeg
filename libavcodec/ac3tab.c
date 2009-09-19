@@ -108,7 +108,7 @@ const uint16_t ff_ac3_channel_layout_tab[8] = {
  */
 const uint8_t ff_ac3_enc_channel_map[8][2][6] = {
     COMMON_CHANNEL_MAP
-    { { 0, 1, 2, 3, 4, }, { 0, 1, 3, 4, 2,   } },
+    { { 0, 1, 2, 3,    }, { 0, 1, 3, 4, 2,   } },
     { { 0, 2, 1, 3, 4, }, { 0, 2, 1, 4, 5, 3 } },
 };
 
@@ -118,7 +118,7 @@ const uint8_t ff_ac3_enc_channel_map[8][2][6] = {
  */
 const uint8_t ff_ac3_dec_channel_map[8][2][6] = {
     COMMON_CHANNEL_MAP
-    { { 0, 1, 2, 3, 4, }, { 0, 1, 4, 2, 3,   } },
+    { { 0, 1, 2, 3,    }, { 0, 1, 4, 2, 3,   } },
     { { 0, 2, 1, 3, 4, }, { 0, 2, 1, 5, 3, 4 } },
 };
 
