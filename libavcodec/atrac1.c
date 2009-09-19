@@ -78,7 +78,7 @@ typedef struct {
     DECLARE_ALIGNED_16(float, mid[256]);
     DECLARE_ALIGNED_16(float,high[512]);
     float*              bands[3];
-    float               out_samples[AT1_MAX_CHANNELS][AT1_SU_SAMPLES];
+    DECLARE_ALIGNED_16(float,out_samples[AT1_MAX_CHANNELS][AT1_SU_SAMPLES]);
     MDCTContext         mdct_ctx[3];
     int                 channels;
     DSPContext          dsp;
