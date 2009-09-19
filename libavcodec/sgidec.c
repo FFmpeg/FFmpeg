@@ -28,6 +28,7 @@ typedef struct SgiState {
     unsigned int width;
     unsigned int height;
     unsigned int depth;
+    unsigned int bytes_per_channel;
     int linesize;
 } SgiState;
 
@@ -125,7 +126,7 @@ static int read_uncompressed_sgi(unsigned char* out_buf, uint8_t* out_end,
 {
     int x, y, z;
     const uint8_t *ptr;
-    unsigned int offset = s->height * s->width;
+    unsigned int offset = s->height * s->width * s->bytes_per_channel;
 
     /* Test buffer size. */
     if (offset * s->depth > in_end - in_buf) {
@@ -135,9 +136,10 @@ static int read_uncompressed_sgi(unsigned char* out_buf, uint8_t* out_end,
     for (y = s->height - 1; y >= 0; y--) {
         out_end = out_buf + (y * s->linesize);
         for (x = s->width; x > 0; x--) {
-            ptr = in_buf++;
+            ptr = in_buf += s->bytes_per_channel;
             for(z = 0; z < s->depth; z ++) {
-                bytestream_put_byte(&out_end, *ptr);
+                memcpy(out_end, ptr, s->bytes_per_channel);
+                out_end += s->bytes_per_channel;
                 ptr += offset;
             }
         }
@@ -155,7 +157,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *picture = data;
     AVFrame *p = &s->picture;
     const uint8_t *in_end = in_buf + buf_size;
-    unsigned int dimension, bytes_per_channel, rle;
+    unsigned int dimension, rle;
     int ret = 0;
     uint8_t *out_buf, *out_end;
 
@@ -171,13 +173,13 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     rle = bytestream_get_byte(&in_buf);
-    bytes_per_channel = bytestream_get_byte(&in_buf);
+    s->bytes_per_channel = bytestream_get_byte(&in_buf);
     dimension = bytestream_get_be16(&in_buf);
     s->width  = bytestream_get_be16(&in_buf);
     s->height = bytestream_get_be16(&in_buf);
     s->depth  = bytestream_get_be16(&in_buf);
 
-    if (bytes_per_channel != 1) {
+    if (s->bytes_per_channel != 1 && (s->bytes_per_channel != 2 || rle)) {
         av_log(avctx, AV_LOG_ERROR, "wrong channel number\n");
         return -1;
     }
@@ -189,10 +191,10 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (s->depth == SGI_GRAYSCALE) {
-        avctx->pix_fmt = PIX_FMT_GRAY8;
+        avctx->pix_fmt = s->bytes_per_channel == 2 ? PIX_FMT_GRAY16BE : PIX_FMT_GRAY8;
     } else if (s->depth == SGI_RGB) {
-        avctx->pix_fmt = PIX_FMT_RGB24;
-    } else if (s->depth == SGI_RGBA) {
+        avctx->pix_fmt = s->bytes_per_channel == 2 ? PIX_FMT_RGB48BE : PIX_FMT_RGB24;
+    } else if (s->depth == SGI_RGBA && s->bytes_per_channel == 1) {
         avctx->pix_fmt = PIX_FMT_RGBA;
     } else {
         av_log(avctx, AV_LOG_ERROR, "wrong picture format\n");
