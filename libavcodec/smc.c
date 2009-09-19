@@ -366,16 +366,11 @@ static void smc_decode_stream(SmcContext *s)
                     flags_a = xx012456, flags_b = xx89A37B
                 */
                 /* build the color flags */
-                color_flags_a = color_flags_b = 0;
                 color_flags_a =
-                    (s->buf[stream_ptr + 0] << 16) |
-                    ((s->buf[stream_ptr + 1] & 0xF0) << 8) |
-                    ((s->buf[stream_ptr + 2] & 0xF0) << 4) |
-                    ((s->buf[stream_ptr + 2] & 0x0F) << 4) |
-                    ((s->buf[stream_ptr + 3] & 0xF0) >> 4);
+                    ((AV_RB16(s->buf + stream_ptr    ) & 0xFFF0) << 8) |
+                     (AV_RB16(s->buf + stream_ptr + 2) >> 4);
                 color_flags_b =
-                    (s->buf[stream_ptr + 4] << 16) |
-                    ((s->buf[stream_ptr + 5] & 0xF0) << 8) |
+                    ((AV_RB16(s->buf + stream_ptr + 4) & 0xFFF0) << 8) |
                     ((s->buf[stream_ptr + 1] & 0x0F) << 8) |
                     ((s->buf[stream_ptr + 3] & 0x0F) << 4) |
                     (s->buf[stream_ptr + 5] & 0x0F);
