@@ -44,6 +44,7 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <strings.h>
 
 typedef struct {
     int video_fd;
