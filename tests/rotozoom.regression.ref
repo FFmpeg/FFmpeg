@@ -162,14 +162,18 @@ stddev:   10.09 PSNR: 28.04 bytes:  7603200/  7603200
 14400000 ./tests/data/a-dv50.dv
 af3f2dd5ab62c1a1d98b07d4aeb6852f *./tests/data/dv50.rotozoom.out.yuv
 stddev:    0.82 PSNR: 49.81 bytes:  7603200/  7603200
-e315015a1319202bd8b6138adb2868d0 *./tests/data/a-dnxhd-1080i.mov
+981a11fcd1f5419facc016a7608b3df9 *./tests/data/a-dnxhd-1080i.mov
 30311415 ./tests/data/a-dnxhd-1080i.mov
-f324e370fa360839f718e9b3920a6e99 *./tests/data/dnxhd.rotozoom.out.yuv
-stddev:    0.84 PSNR: 49.54 bytes:  7603200/  7603200
-a4504ebdf689b683ab48c26abfea410b *./tests/data/a-dnxhd-720p.dnxhd
+a0119aa04a86c80d6dfd0776c9ece580 *./tests/data/dnxhd.rotozoom.out.yuv
+stddev:    1.53 PSNR: 44.37 bytes:  7603200/  7603200
+1ab8a3f04bde27c33e92fe110892e2cd *./tests/data/a-dnxhd-720p.dnxhd
 22937600 ./tests/data/a-dnxhd-720p.dnxhd
-117c8574c2940df3558ac82db337016a *./tests/data/dnxhd.rotozoom.out.yuv
-stddev:    0.72 PSNR: 50.90 bytes:  7603200/  7603200
+7d546dc6d2bc87551614c0f730c59e1f *./tests/data/dnxhd.rotozoom.out.yuv
+stddev:    2.10 PSNR: 41.64 bytes:  7603200/  7603200
+bf8621a44fb65452aded9cbdece81aa2 *./tests/data/a-dnxhd-720p-rd.dnxhd
+22937600 ./tests/data/a-dnxhd-720p-rd.dnxhd
+e556f5fe58df25b5b07930148a23a553 *./tests/data/dnxhd.rotozoom.out.yuv
+stddev:    1.54 PSNR: 44.33 bytes:  7603200/  7603200
 7f9fbe4890bc1df67867bf03803dca48 *./tests/data/a-svq1.mov
 766851 ./tests/data/a-svq1.mov
 aa03471dac3f49455a33a2b19fda1098 *./tests/data/svq1.rotozoom.out.yuv
