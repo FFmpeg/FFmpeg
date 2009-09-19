@@ -162,10 +162,14 @@ stddev:   30.76 PSNR: 18.36 bytes:  7603200/  7603200
 14400000 ./tests/data/a-dv50.dv
 a2ff093e93ffed10f730fa21df02fc50 *./tests/data/dv50.vsynth.out.yuv
 stddev:    1.72 PSNR: 43.37 bytes:  7603200/  7603200
-0f03af66259a656c16b3dfb4a3519685 *./tests/data/a-dnxhd.dnxhd
-30310400 ./tests/data/a-dnxhd.dnxhd
-ccdceaf818b898fd58fc15977bab2eeb *./tests/data/dnxhd.vsynth.out.yuv
-stddev:    1.68 PSNR: 43.61 bytes:  7603200/  7603200
+78ae79c285b3a7607b8be96e925d0795 *./tests/data/a-dnxhd-1080i.mov
+30311415 ./tests/data/a-dnxhd-1080i.mov
+6674aca7d4bc08543a3c316af82207c0 *./tests/data/dnxhd.vsynth.out.yuv
+stddev:    2.24 PSNR: 41.10 bytes:  7603200/  7603200
+fcb138df8e991e2e2133044da234f36b *./tests/data/a-dnxhd-720p.dnxhd
+22937600 ./tests/data/a-dnxhd-720p.dnxhd
+a5810fbc20aaed082b701c839da10c75 *./tests/data/dnxhd.vsynth.out.yuv
+stddev:    1.28 PSNR: 45.97 bytes:  7603200/  7603200
 595fc4e38734521356b60e67b813f0fa *./tests/data/a-svq1.mov
 1334367 ./tests/data/a-svq1.mov
 9cc35c54b2c77d36bd7e308b393c1f81 *./tests/data/svq1.vsynth.out.yuv
