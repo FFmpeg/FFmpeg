@@ -591,7 +591,7 @@ static const float default_decorrelation_matrices[] = {
 /**
  * @brief default decorrelation matrix offsets
  */
-static const float *default_decorrelation[] = {
+static const float * const default_decorrelation[] = {
     NULL,
     &default_decorrelation_matrices[0],
     &default_decorrelation_matrices[1],
