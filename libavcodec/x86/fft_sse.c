@@ -71,14 +71,14 @@ void ff_fft_permute_sse(FFTContext *s, FFTComplex *z)
     memcpy(z, s->tmp_buf, n*sizeof(FFTComplex));
 }
 
-void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input)
+void ff_imdct_half_sse(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     av_unused x86_reg i, j, k, l;
-    long n = 1 << s->nbits;
+    long n = 1 << s->mdct_bits;
     long n2 = n >> 1;
     long n4 = n >> 2;
     long n8 = n >> 3;
-    const uint16_t *revtab = s->fft.revtab + n8;
+    const uint16_t *revtab = s->revtab + n8;
     const FFTSample *tcos = s->tcos;
     const FFTSample *tsin = s->tsin;
     FFTComplex *z = (FFTComplex *)output;
@@ -129,7 +129,7 @@ void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input
 #endif
     }
 
-    ff_fft_dispatch_sse(z, s->fft.nbits);
+    ff_fft_dispatch_sse(z, s->nbits);
 
     /* post rotation + reinterleave + reorder */
 
@@ -172,10 +172,10 @@ void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input
     );
 }
 
-void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output, const FFTSample *input)
+void ff_imdct_calc_sse(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     x86_reg j, k;
-    long n = 1 << s->nbits;
+    long n = 1 << s->mdct_bits;
     long n4 = n >> 2;
 
     ff_imdct_half_sse(s, output+n4, input);

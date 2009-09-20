@@ -184,7 +184,7 @@ int main(int argc, char **argv)
     int do_mdct = 0;
     int do_inverse = 0;
     FFTContext s1, *s = &s1;
-    MDCTContext m1, *m = &m1;
+    FFTContext m1, *m = &m1;
     int fft_nbits, fft_size;
     double scale = 1.0;
     AVLFG prng;

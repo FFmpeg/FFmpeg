@@ -665,8 +665,6 @@ void get_psnr(uint8_t *orig_image[3], uint8_t *coded_image[3],
    FFTSample type */
 typedef float FFTSample;
 
-struct MDCTContext;
-
 typedef struct FFTComplex {
     FFTSample re, im;
 } FFTComplex;
@@ -678,11 +676,16 @@ typedef struct FFTContext {
     FFTComplex *exptab;
     FFTComplex *exptab1; /* only used by SSE code */
     FFTComplex *tmp_buf;
+    int mdct_size; /* size of MDCT (i.e. number of input data * 2) */
+    int mdct_bits; /* n = 2^nbits */
+    /* pre/post rotation tables */
+    FFTSample *tcos;
+    FFTSample *tsin;
     void (*fft_permute)(struct FFTContext *s, FFTComplex *z);
     void (*fft_calc)(struct FFTContext *s, FFTComplex *z);
-    void (*imdct_calc)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
-    void (*imdct_half)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
-    void (*mdct_calc)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
+    void (*imdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
+    void (*imdct_half)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
+    void (*mdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     int split_radix;
 } FFTContext;
 
@@ -720,28 +723,19 @@ void ff_fft_end(FFTContext *s);
 
 /* MDCT computation */
 
-typedef struct MDCTContext {
-    int n;  /* size of MDCT (i.e. number of input data * 2) */
-    int nbits; /* n = 2^nbits */
-    /* pre/post rotation tables */
-    FFTSample *tcos;
-    FFTSample *tsin;
-    FFTContext fft;
-} MDCTContext;
-
-static inline void ff_imdct_calc(MDCTContext *s, FFTSample *output, const FFTSample *input)
+static inline void ff_imdct_calc(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
-    s->fft.imdct_calc(s, output, input);
+    s->imdct_calc(s, output, input);
 }
-static inline void ff_imdct_half(MDCTContext *s, FFTSample *output, const FFTSample *input)
+static inline void ff_imdct_half(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
-    s->fft.imdct_half(s, output, input);
+    s->imdct_half(s, output, input);
 }
 
-static inline void ff_mdct_calc(MDCTContext *s, FFTSample *output,
+static inline void ff_mdct_calc(FFTContext *s, FFTSample *output,
                                 const FFTSample *input)
 {
-    s->fft.mdct_calc(s, output, input);
+    s->mdct_calc(s, output, input);
 }
 
 /**
@@ -768,11 +762,11 @@ extern float ff_sine_2048[2048];
 extern float ff_sine_4096[4096];
 extern float * const ff_sine_windows[13];
 
-int ff_mdct_init(MDCTContext *s, int nbits, int inverse, double scale);
-void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_half_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_mdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_mdct_end(MDCTContext *s);
+int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale);
+void ff_imdct_calc_c(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_c(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_mdct_calc_c(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_mdct_end(FFTContext *s);
 
 /* Real Discrete Fourier Transform */
 

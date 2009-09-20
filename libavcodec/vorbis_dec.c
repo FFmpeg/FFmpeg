@@ -128,7 +128,7 @@ typedef struct vorbis_context_s {
     GetBitContext gb;
     DSPContext dsp;
 
-    MDCTContext mdct[2];
+    FFTContext mdct[2];
     uint_fast8_t first_frame;
     uint_fast32_t version;
     uint_fast8_t audio_channels;

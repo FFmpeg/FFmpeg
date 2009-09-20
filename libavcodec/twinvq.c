@@ -172,7 +172,7 @@ static const ModeTab mode_44_48 = {
 typedef struct TwinContext {
     AVCodecContext *avctx;
     DSPContext      dsp;
-    MDCTContext mdct_ctx[3];
+    FFTContext mdct_ctx[3];
 
     const ModeTab *mtab;
 

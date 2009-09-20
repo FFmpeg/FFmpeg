@@ -98,7 +98,7 @@ typedef struct {
     int channels;
     int sample_rate;
     int log2_blocksize[2];
-    MDCTContext mdct[2];
+    FFTContext mdct[2];
     const float * win[2];
     int have_saved;
     float * saved;

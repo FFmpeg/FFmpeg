@@ -250,7 +250,7 @@ typedef struct {
 
     int debug_flag;             ///< used for suppressing repeated error messages output
     DSPContext dsp;
-    MDCTContext imdct;
+    FFTContext imdct;
 } DCAContext;
 
 static const uint16_t dca_vlc_offs[] = {

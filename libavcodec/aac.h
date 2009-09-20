@@ -257,8 +257,8 @@ typedef struct {
      * @defgroup tables   Computed / set up during initialization.
      * @{
      */
-    MDCTContext mdct;
-    MDCTContext mdct_small;
+    FFTContext mdct;
+    FFTContext mdct_small;
     DSPContext dsp;
     int random_state;
     /** @} */

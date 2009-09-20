@@ -123,7 +123,7 @@ static DECLARE_ALIGNED_16(float,mdct_window[512]);
 static VLC              spectral_coeff_tab[7];
 static float            gain_tab1[16];
 static float            gain_tab2[31];
-static MDCTContext      mdct_ctx;
+static FFTContext       mdct_ctx;
 static DSPContext       dsp;
 
 

@@ -146,8 +146,8 @@ typedef struct {
 
 ///@defgroup imdct IMDCT
     int block_switch[AC3_MAX_CHANNELS];     ///< block switch flags                     (blksw)
-    MDCTContext imdct_512;                  ///< for 512 sample IMDCT
-    MDCTContext imdct_256;                  ///< for 256 sample IMDCT
+    FFTContext imdct_512;                   ///< for 512 sample IMDCT
+    FFTContext imdct_256;                   ///< for 256 sample IMDCT
 ///@}
 
 ///@defgroup opt optimization

@@ -79,7 +79,7 @@ typedef struct {
     DECLARE_ALIGNED_16(float, high[512]);
     float*              bands[3];
     DECLARE_ALIGNED_16(float, out_samples[AT1_MAX_CHANNELS][AT1_SU_SAMPLES]);
-    MDCTContext         mdct_ctx[3];
+    FFTContext          mdct_ctx[3];
     int                 channels;
     DSPContext          dsp;
 } AT1Ctx;
@@ -94,7 +94,7 @@ static const uint8_t   mdct_long_nbits[3] = {7, 7, 8};
 static void at1_imdct(AT1Ctx *q, float *spec, float *out, int nbits,
                       int rev_spec)
 {
-    MDCTContext* mdct_context;
+    FFTContext* mdct_context;
     int transf_size = 1 << nbits;
 
     mdct_context = &q->mdct_ctx[nbits - 5 - (nbits > 6)];

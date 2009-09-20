@@ -28,10 +28,10 @@ function ff_imdct_half_neon, export=1
         push            {r4-r8,lr}
 
         mov             r12, #1
-        ldr             lr,  [r0, #4]           @ nbits
-        ldr             r4,  [r0, #8]           @ tcos
-        ldr             r5,  [r0, #12]          @ tsin
-        ldr             r3,  [r0, #24]          @ revtab
+        ldr             lr,  [r0, #28]          @ mdct_bits
+        ldr             r4,  [r0, #32]          @ tcos
+        ldr             r5,  [r0, #36]          @ tsin
+        ldr             r3,  [r0, #8]           @ revtab
         lsl             r12, r12, lr            @ n  = 1 << nbits
         lsr             lr,  r12, #2            @ n4 = n >> 2
         add             r7,  r2,  r12,  lsl #1
@@ -73,13 +73,12 @@ function ff_imdct_half_neon, export=1
 
         mov             r4,  r0
         mov             r6,  r1
-        add             r0,  r0,  #16
         bl              ff_fft_calc_neon
 
         mov             r12, #1
-        ldr             lr,  [r4, #4]           @ nbits
-        ldr             r5,  [r4, #12]          @ tsin
-        ldr             r4,  [r4, #8]           @ tcos
+        ldr             lr,  [r4, #28]          @ mdct_bits
+        ldr             r5,  [r4, #36]          @ tsin
+        ldr             r4,  [r4, #32]          @ tcos
         lsl             r12, r12, lr            @ n  = 1 << nbits
         lsr             lr,  r12, #3            @ n8 = n >> 3
 
@@ -134,7 +133,7 @@ function ff_imdct_half_neon, export=1
 function ff_imdct_calc_neon, export=1
         push            {r4-r6,lr}
 
-        ldr             r3,  [r0, #4]
+        ldr             r3,  [r0, #28]
         mov             r4,  #1
         mov             r5,  r1
         lsl             r4,  r4,  r3
@@ -171,10 +170,10 @@ function ff_mdct_calc_neon, export=1
         push            {r4-r10,lr}
 
         mov             r12, #1
-        ldr             lr,  [r0, #4]           @ nbits
-        ldr             r4,  [r0, #8]           @ tcos
-        ldr             r5,  [r0, #12]          @ tsin
-        ldr             r3,  [r0, #24]          @ revtab
+        ldr             lr,  [r0, #28]          @ mdct_bits
+        ldr             r4,  [r0, #32]          @ tcos
+        ldr             r5,  [r0, #36]          @ tsin
+        ldr             r3,  [r0, #8]           @ revtab
         lsl             lr,  r12, lr            @ n  = 1 << nbits
         add             r7,  r2,  lr            @ in4u
         sub             r9,  r7,  #16           @ in4d
@@ -224,7 +223,7 @@ function ff_mdct_calc_neon, export=1
         vst2.32         {d6[1],d7[1]}, [r10,:64]
 
         mov             r12, #1
-        ldr             lr,  [r0, #4]           @ nbits
+        ldr             lr,  [r0, #28]          @ mdct_bits
         lsl             lr,  r12, lr            @ n  = 1 << nbits
         sub             r8,  r2,  #16           @ in1d
         add             r2,  r9,  #16           @ in0u
@@ -272,13 +271,12 @@ function ff_mdct_calc_neon, export=1
 
         mov             r4,  r0
         mov             r6,  r1
-        add             r0,  r0,  #16
         bl              ff_fft_calc_neon
 
         mov             r12, #1
-        ldr             lr,  [r4, #4]           @ nbits
-        ldr             r5,  [r4, #12]          @ tsin
-        ldr             r4,  [r4, #8]           @ tcos
+        ldr             lr,  [r4, #28]          @ mdct_bits
+        ldr             r5,  [r4, #36]          @ tsin
+        ldr             r4,  [r4, #32]          @ tcos
         lsl             r12, r12, lr            @ n  = 1 << nbits
         lsr             lr,  r12, #3            @ n8 = n >> 3
 

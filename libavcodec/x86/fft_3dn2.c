@@ -53,14 +53,14 @@ void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z)
             FFSWAP(FFTSample, z[i].im, z[i+1].re);
 }
 
-void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input)
+void ff_imdct_half_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     x86_reg j, k;
-    long n = 1 << s->nbits;
+    long n = 1 << s->mdct_bits;
     long n2 = n >> 1;
     long n4 = n >> 2;
     long n8 = n >> 3;
-    const uint16_t *revtab = s->fft.revtab;
+    const uint16_t *revtab = s->revtab;
     const FFTSample *tcos = s->tcos;
     const FFTSample *tsin = s->tsin;
     const FFTSample *in1, *in2;
@@ -101,7 +101,7 @@ void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *inpu
         );
     }
 
-    ff_fft_dispatch_3dn2(z, s->fft.nbits);
+    ff_fft_dispatch_3dn2(z, s->nbits);
 
 #define CMUL(j,mm0,mm1)\
         "movq  (%2,"#j",2), %%mm6 \n"\
@@ -144,10 +144,10 @@ void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *inpu
     __asm__ volatile("femms");
 }
 
-void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input)
+void ff_imdct_calc_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     x86_reg j, k;
-    long n = 1 << s->nbits;
+    long n = 1 << s->mdct_bits;
     long n4 = n >> 2;
 
     ff_imdct_half_3dn2(s, output+n4, input);

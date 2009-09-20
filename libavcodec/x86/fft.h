@@ -26,11 +26,11 @@ void ff_fft_calc_sse(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_3dn(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z);
 
-void ff_imdct_calc_3dn(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_half_3dn(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_calc_3dn(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_3dn(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_calc_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_3dn2(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_calc_sse(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_sse(FFTContext *s, FFTSample *output, const FFTSample *input);
 
 #endif

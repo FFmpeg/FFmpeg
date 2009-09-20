@@ -136,7 +136,7 @@ typedef struct cook {
     AVLFG               random_state;
 
     /* transform data */
-    MDCTContext         mdct_ctx;
+    FFTContext          mdct_ctx;
     float*              mlt_window;
 
     /* VLC data */
