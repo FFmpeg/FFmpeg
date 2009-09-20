@@ -111,7 +111,7 @@ static void at1_imdct(AT1Ctx *q, float *spec, float *out, int nbits,
 static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
 {
     int          band_num, band_samples, log2_block_count, nbits, num_blocks, block_size;
-    unsigned int start_pos, ref_pos = 0 pos = 0;
+    unsigned int start_pos, ref_pos = 0, pos = 0;
 
     for (band_num = 0; band_num < AT1_QMF_BANDS; band_num++) {
         band_samples = samples_per_band[band_num];
