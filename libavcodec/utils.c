@@ -472,8 +472,9 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         avcodec_set_dimensions(avctx, avctx->width, avctx->height);
 
 #define SANE_NB_CHANNELS 128U
-    if((avctx->coded_width||avctx->coded_height) && avcodec_check_dimensions(avctx,avctx->coded_width,avctx->coded_height) ||
-        avctx->channels > SANE_NB_CHANNELS) {
+    if (((avctx->coded_width || avctx->coded_height)
+        && avcodec_check_dimensions(avctx, avctx->coded_width, avctx->coded_height))
+        || avctx->channels > SANE_NB_CHANNELS) {
         av_freep(&avctx->priv_data);
         ret = AVERROR(EINVAL);
         goto end;
