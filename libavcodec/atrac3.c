@@ -192,7 +192,6 @@ static int decode_bytes(const uint8_t* inbuffer, uint8_t* out, int bytes){
 
 static av_cold void init_atrac3_transforms(ATRAC3Context *q) {
     float enc_window[256];
-    float s;
     int i;
 
     /* Generate the mdct window, for details see
