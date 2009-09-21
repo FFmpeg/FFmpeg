@@ -651,9 +651,60 @@ static int dnxhd_find_qscale(DNXHDEncContext *ctx)
     return 0;
 }
 
-static int dnxhd_rc_cmp(const void *a, const void *b)
+#define BUCKET_BITS 8
+#define RADIX_PASSES 4
+#define NBUCKETS (1 << BUCKET_BITS)
+
+static inline int get_bucket(int value, int shift)
 {
-    return ((const RCCMPEntry *)b)->value - ((const RCCMPEntry *)a)->value;
+    value >>= shift;
+    value &= NBUCKETS - 1;
+    return NBUCKETS - 1 - value;
+}
+
+static void radix_count(const RCCMPEntry *data, int size, int buckets[RADIX_PASSES][NBUCKETS])
+{
+    int i, j;
+    memset(buckets, 0, sizeof(buckets[0][0]) * RADIX_PASSES * NBUCKETS);
+    for (i = 0; i < size; i++) {
+        int v = data[i].value;
+        for (j = 0; j < RADIX_PASSES; j++) {
+            buckets[j][get_bucket(v, 0)]++;
+            v >>= BUCKET_BITS;
+        }
+        assert(!v);
+    }
+    for (j = 0; j < RADIX_PASSES; j++) {
+        int offset = size;
+        for (i = NBUCKETS - 1; i >= 0; i--)
+            buckets[j][i] = offset -= buckets[j][i];
+        assert(!buckets[j][0]);
+    }
+}
+
+static void radix_sort_pass(RCCMPEntry *dst, const RCCMPEntry *data, int size, int buckets[NBUCKETS], int pass)
+{
+    int shift = pass * BUCKET_BITS;
+    int i;
+    for (i = 0; i < size; i++) {
+        int v = get_bucket(data[i].value, shift);
+        int pos = buckets[v]++;
+        dst[pos] = data[i];
+    }
+}
+
+static void radix_sort(RCCMPEntry *data, int size)
+{
+    int buckets[RADIX_PASSES][NBUCKETS];
+    RCCMPEntry *tmp = av_malloc(sizeof(*tmp) * size);
+    radix_count(data, size, buckets);
+    radix_sort_pass(tmp, data, size, buckets[0], 0);
+    radix_sort_pass(data, tmp, size, buckets[1], 1);
+    if (buckets[2][NBUCKETS - 1] || buckets[3][NBUCKETS - 1]) {
+        radix_sort_pass(tmp, data, size, buckets[2], 2);
+        radix_sort_pass(data, tmp, size, buckets[3], 3);
+    }
+    av_free(tmp);
 }
 
 static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
@@ -682,7 +733,7 @@ static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
     if (!ret) {
         if (RC_VARIANCE)
             avctx->execute(avctx, dnxhd_mb_var_thread, (void**)&ctx->thread[0], NULL, avctx->thread_count, sizeof(void*));
-        qsort(ctx->mb_cmp, ctx->m.mb_num, sizeof(RCEntry), dnxhd_rc_cmp);
+        radix_sort(ctx->mb_cmp, ctx->m.mb_num);
         for (x = 0; x < ctx->m.mb_num && max_bits > ctx->frame_bits; x++) {
             int mb = ctx->mb_cmp[x].mb;
             max_bits -= ctx->mb_rc[ctx->qscale][mb].bits - ctx->mb_rc[ctx->qscale+1][mb].bits;
