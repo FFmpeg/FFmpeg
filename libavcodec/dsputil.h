@@ -687,6 +687,9 @@ typedef struct FFTContext {
     void (*imdct_half)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*mdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     int split_radix;
+    int permutation;
+#define FF_MDCT_PERM_NONE       0
+#define FF_MDCT_PERM_INTERLEAVE 1
 } FFTContext;
 
 extern FFTSample* const ff_cos_tabs[13];
