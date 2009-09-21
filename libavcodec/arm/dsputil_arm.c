@@ -20,9 +20,6 @@
  */
 
 #include "libavcodec/dsputil.h"
-#if HAVE_IPP
-#include <ipp.h>
-#endif
 
 void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx);
 void ff_float_init_arm_vfp(DSPContext* c, AVCodecContext *avctx);
@@ -97,29 +94,6 @@ static void simple_idct_ARM_add(uint8_t *dest, int line_size, DCTELEM *block)
     ff_add_pixels_clamped(block, dest, line_size);
 }
 
-#if HAVE_IPP
-static void simple_idct_ipp(DCTELEM *block)
-{
-    ippiDCT8x8Inv_Video_16s_C1I(block);
-}
-static void simple_idct_ipp_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ippiDCT8x8Inv_Video_16s8u_C1R(block, dest, line_size);
-}
-
-void add_pixels_clamped_iwmmxt(const DCTELEM *block, uint8_t *pixels, int line_size);
-
-static void simple_idct_ipp_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ippiDCT8x8Inv_Video_16s_C1I(block);
-#if HAVE_IWMMXT
-    add_pixels_clamped_iwmmxt(block, dest, line_size);
-#else
-    ff_add_pixels_clamped_ARM(block, dest, line_size);
-#endif
-}
-#endif
-
 int mm_support(void)
 {
     return HAVE_IWMMXT * FF_MM_IWMMXT;
@@ -134,9 +108,7 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 
     if (avctx->lowres == 0) {
         if(idct_algo == FF_IDCT_AUTO){
-#if   HAVE_IPP
-            idct_algo = FF_IDCT_IPP;
-#elif HAVE_NEON
+#if   HAVE_NEON
             idct_algo = FF_IDCT_SIMPLENEON;
 #elif HAVE_ARMV6
             idct_algo = FF_IDCT_SIMPLEARMV6;
@@ -170,13 +142,6 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
             c->idct_add= simple_idct_add_armv5te;
             c->idct    = simple_idct_armv5te;
             c->idct_permutation_type = FF_NO_IDCT_PERM;
-#endif
-#if HAVE_IPP
-        } else if (idct_algo==FF_IDCT_IPP){
-            c->idct_put= simple_idct_ipp_put;
-            c->idct_add= simple_idct_ipp_add;
-            c->idct    = simple_idct_ipp;
-            c->idct_permutation_type= FF_NO_IDCT_PERM;
 #endif
 #if HAVE_NEON
         } else if (idct_algo==FF_IDCT_SIMPLENEON){
