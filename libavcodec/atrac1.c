@@ -92,10 +92,8 @@ static const uint8_t   mdct_long_nbits[3] = {7, 7, 8};
 static void at1_imdct(AT1Ctx *q, float *spec, float *out, int nbits,
                       int rev_spec)
 {
-    FFTContext* mdct_context;
+    FFTContext* mdct_context = &q->mdct_ctx[nbits - 5 - (nbits > 6)];
     int transf_size = 1 << nbits;
-
-    mdct_context = &q->mdct_ctx[nbits - 5 - (nbits > 6)];
 
     if (rev_spec) {
         int i;
