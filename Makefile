@@ -180,7 +180,9 @@ CODEC_TESTS = $(addprefix regtest-,             \
         snowll                                  \
         dv                                      \
         dv50                                    \
-        dnxhd                                   \
+        dnxhd_1080i                             \
+        dnxhd_720p                              \
+        dnxhd_720p_rd                           \
         svq1                                    \
         flashsv                                 \
         mp2                                     \
