@@ -226,7 +226,7 @@ static int at1_unpack_dequant(GetBitContext* gb, AT1SUCtx* su,
             int num_specs = specs_per_bfu[bfu_num];
             int word_len  = !!idwls[bfu_num] + idwls[bfu_num];
             float scale_factor = sf_table[idsfs[bfu_num]];
-            bits_used    += word_len * num_specs; /* add number of bits consumed by current BFU */
+            bits_used += word_len * num_specs; /* add number of bits consumed by current BFU */
 
             /* check for bitstream overflow */
             if (bits_used > AT1_SU_MAX_BITS)
