@@ -1035,8 +1035,14 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     int zero_run = 0;
     DCTELEM coeff = 0;
     Vp3Fragment *fragment;
-    uint8_t *perm= s->scantable.permutated;
     int bits_to_get;
+
+    /* local references to structure members to avoid repeated deferences */
+    uint8_t *perm= s->scantable.permutated;
+    int *coded_fragment_list = s->coded_fragment_list;
+    Vp3Fragment *all_fragments = s->all_fragments;
+    uint8_t *coeff_counts = s->coeff_counts;
+    VLC_TYPE (*vlc_table)[2] = table->table;
 
     if ((first_fragment >= s->fragment_count) ||
         (last_fragment >= s->fragment_count)) {
@@ -1047,15 +1053,15 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     }
 
     for (i = first_fragment; i <= last_fragment; i++) {
-        int fragment_num = s->coded_fragment_list[i];
+        int fragment_num = coded_fragment_list[i];
 
-        if (s->coeff_counts[fragment_num] > coeff_index)
+        if (coeff_counts[fragment_num] > coeff_index)
             continue;
-        fragment = &s->all_fragments[fragment_num];
+        fragment = &all_fragments[fragment_num];
 
         if (!eob_run) {
             /* decode a VLC into a token */
-            token = get_vlc2(gb, table->table, 5, 3);
+            token = get_vlc2(gb, vlc_table, 5, 3);
             /* use the token to get a zero run, a coefficient, and an eob run */
             if (token <= 6) {
                 eob_run = eob_run_base[token];
@@ -1076,16 +1082,16 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
         }
 
         if (!eob_run) {
-            s->coeff_counts[fragment_num] += zero_run;
-            if (s->coeff_counts[fragment_num] < 64){
+            coeff_counts[fragment_num] += zero_run;
+            if (coeff_counts[fragment_num] < 64){
                 fragment->next_coeff->coeff= coeff;
-                fragment->next_coeff->index= perm[s->coeff_counts[fragment_num]++]; //FIXME perm here already?
+                fragment->next_coeff->index= perm[coeff_counts[fragment_num]++]; //FIXME perm here already?
                 fragment->next_coeff->next= s->next_coeff;
                 s->next_coeff->next=NULL;
                 fragment->next_coeff= s->next_coeff++;
             }
         } else {
-            s->coeff_counts[fragment_num] |= 128;
+            coeff_counts[fragment_num] |= 128;
             eob_run--;
         }
     }
