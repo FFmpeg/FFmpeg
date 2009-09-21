@@ -361,13 +361,24 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+
+static av_cold int atrac1_decode_end(AVCodecContext * avctx) {
+    AT1Ctx *q = avctx->priv_data;
+
+    ff_mdct_end(&q->mdct_ctx[0]);
+    ff_mdct_end(&q->mdct_ctx[1]);
+    ff_mdct_end(&q->mdct_ctx[2]);
+    return 0;
+}
+
+
 AVCodec atrac1_decoder = {
     .name = "atrac1",
     .type = CODEC_TYPE_AUDIO,
     .id = CODEC_ID_ATRAC1,
     .priv_data_size = sizeof(AT1Ctx),
     .init = atrac1_decode_init,
-    .close = NULL,
+    .close = atrac1_decode_end,
     .decode = atrac1_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("Atrac 1 (Adaptive TRansform Acoustic Coding)"),
 };
