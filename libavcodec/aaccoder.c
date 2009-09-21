@@ -184,7 +184,7 @@ static float quantize_band_cost(struct AACEncContext *s, const float *in,
                             curbits += 21;
                         } else {
                             int c = av_clip(quant(t, Q), 0, 8191);
-                            di = t - c*cbrt(c)*IQ;
+                            di = t - c*cbrtf(c)*IQ;
                             curbits += av_log2(c)*2 - 4 + 1;
                         }
                     } else {
@@ -299,7 +299,7 @@ static void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
                             curbits += 21;
                         } else {
                             int c = av_clip(quant(t, Q), 0, 8191);
-                            di = t - c*cbrt(c)*IQ;
+                            di = t - c*cbrtf(c)*IQ;
                             curbits += av_log2(c)*2 - 4 + 1;
                         }
                     } else {
