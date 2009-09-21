@@ -121,10 +121,10 @@ static float quantize_band_cost(struct AACEncContext *s, const float *in,
 
     if (!cb) {
         for (i = 0; i < size; i++)
-            cost += in[i]*in[i]*lambda;
+            cost += in[i]*in[i];
         if (bits)
             *bits = 0;
-        return cost;
+        return cost * lambda;
     }
 #ifndef USE_REALLY_FULL_SEARCH
     offs[0] = 1;
@@ -141,10 +141,10 @@ static float quantize_band_cost(struct AACEncContext *s, const float *in,
         int (*quants)[2] = &s->qcoefs[i];
         mincost = 0.0f;
         for (j = 0; j < dim; j++)
-            mincost += in[i+j]*in[i+j]*lambda;
+            mincost += in[i+j]*in[i+j];
         minidx = IS_CODEBOOK_UNSIGNED(cb) ? 0 : 40;
         minbits = ff_aac_spectral_bits[cb-1][minidx];
-        mincost += minbits;
+        mincost = mincost * lambda + minbits;
         for (j = 0; j < (1<<dim); j++) {
             float rd = 0.0f;
             int curbits;
@@ -192,15 +192,15 @@ static float quantize_band_cost(struct AACEncContext *s, const float *in,
                     }
                     if (vec[k] != 0.0f)
                         curbits++;
-                    rd += di*di*lambda;
+                    rd += di*di;
                 }
             } else {
                 for (k = 0; k < dim; k++) {
                     float di = in[i+k] - vec[k]*IQ;
-                    rd += di*di*lambda;
+                    rd += di*di;
                 }
             }
-            rd += curbits;
+            rd = rd * lambda + curbits;
             if (rd < mincost) {
                 mincost = rd;
                 minidx  = j;
@@ -255,10 +255,10 @@ static void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
         int (*quants)[2] = &s->qcoefs[i];
         mincost = 0.0f;
         for (j = 0; j < dim; j++)
-            mincost += in[i+j]*in[i+j]*lambda;
+            mincost += in[i+j]*in[i+j];
         minidx = IS_CODEBOOK_UNSIGNED(cb) ? 0 : 40;
         minbits = ff_aac_spectral_bits[cb-1][minidx];
-        mincost += minbits;
+        mincost = mincost * lambda + minbits;
         for (j = 0; j < (1<<dim); j++) {
             float rd = 0.0f;
             int curbits;
@@ -307,15 +307,15 @@ static void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
                     }
                     if (vec[k] != 0.0f)
                         curbits++;
-                    rd += di*di*lambda;
+                    rd += di*di;
                 }
             } else {
                 for (k = 0; k < dim; k++) {
                     float di = in[i+k] - vec[k]*IQ;
-                    rd += di*di*lambda;
+                    rd += di*di;
                 }
             }
-            rd += curbits;
+            rd = rd * lambda + curbits;
             if (rd < mincost) {
                 mincost = rd;
                 minidx  = curidx;
