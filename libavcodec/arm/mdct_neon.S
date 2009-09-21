@@ -169,91 +169,81 @@ function ff_mdct_calc_neon, export=1
         sub             r9,  r7,  #16           @ in4d
         add             r2,  r7,  lr,  lsl #1   @ in3u
         add             r8,  r9,  lr,  lsl #1   @ in3d
+        add             r5,  r4,  lr,  lsl #1
+        sub             r5,  r5,  #16
+        sub             r3,  r3,  #4
         mov             r12, #-16
 
-        vld2.32         {d16,d18},[r9,:128],r12 @ x,x in4d1,in4d0
-        vld2.32         {d17,d19},[r8,:128],r12 @ x,x in3d1,in3d0
-        vld2.32         {d20,d21},[r7,:128]!    @ in4u0,in4u1 x,x
+        vld2.32         {d16,d18},[r9,:128],r12 @ in0u0,in0u1 in4d1,in4d0
+        vld2.32         {d17,d19},[r8,:128],r12 @ in2u0,in2u1 in3d1,in3d0
+        vld2.32         {d0, d2}, [r7,:128]!    @ in4u0,in4u1 in2d1,in2d0
         vrev64.32       q9,  q9                 @ in4d0,in4d1 in3d0,in3d1
-        vld2.32         {d0, d1}, [r2,:128]!    @ in3u0,in3u1 x,x
-        vsub.f32        d20, d18, d20           @ in4d-in4u      I
-        vld2.32         {d2,d3},  [r4,:128]!    @ c0,c1 s0,s1
-        vadd.f32        d0,  d0,  d19           @ in3u+in3d     -R
+        vld2.32         {d1, d3}, [r2,:128]!    @ in3u0,in3u1 in1d1,in1d0
+        vsub.f32        d0,  d18, d0            @ in4d-in4u      I
+        vld2.32         {d20,d21},[r4,:128]!    @ c0,c1 s0,s1
+        vrev64.32       q1,  q1                 @ in2d0,in2d1 in1d0,in1d1
+        vld2.32         {d30,d31},[r5,:128],r12 @ c2,c3 s2,s3
+        vadd.f32        d1,  d1,  d19           @ in3u+in3d     -R
+        vsub.f32        d16, d16, d2            @ in0u-in2d      R
+        vadd.f32        d17, d17, d3            @ in2u+in1d     -I
 1:
-        vmul.f32        d7,  d20, d3            @  I*s
-        vmul.f32        d6,  d0,  d2            @ -R*c
-        ldr             r6,  [r3], #4
-        vmul.f32        d4,  d0,  d3            @ -R*s
-        vmul.f32        d5,  d20, d2            @  I*c
+        vmul.f32        d7,  d0,  d21           @  I*s
+        ldr             r10, [r3, lr, lsr #1]
+        vmul.f32        d6,  d1,  d20           @ -R*c
+        ldr             r6,  [r3, #4]!
+        vmul.f32        d4,  d1,  d21           @ -R*s
+        vmul.f32        d5,  d0,  d20           @  I*c
+        vmul.f32        d24, d16, d30           @  R*c
+        vmul.f32        d25, d17, d31           @ -I*s
+        vmul.f32        d22, d16, d31           @  R*s
+        vmul.f32        d23, d17, d30           @  I*c
         subs            lr,  lr,  #16
         vsub.f32        d6,  d6,  d7            @ -R*c-I*s
         vadd.f32        d7,  d4,  d5            @ -R*s+I*c
-        uxth            r10, r6,  ror #16
-        uxth            r6,  r6
-        add             r10, r1,  r10, lsl #3
-        add             r6,  r1,  r6,  lsl #3
+        vsub.f32        d24, d25, d24           @ I*s-R*c
+        vadd.f32        d25, d22, d23           @ R*s-I*c
         beq             1f
-        vld2.32         {d16,d18},[r9,:128],r12 @ x,x in4d1,in4d0
-        vld2.32         {d17,d19},[r8,:128],r12 @ x,x in3d1,in3d0
-        vneg.f32        d7,  d7                 @  R*s-I*c
-        vld2.32         {d20,d21},[r7,:128]!    @ in4u0,in4u1 x,x
-        vrev64.32       q9,  q9                 @ in4d0,in4d1 in3d0,in3d1
-        vld2.32         {d0, d1}, [r2,:128]!    @ in3u0,in3u1 x,x
-        vsub.f32        d20, d18, d20           @ in4d-in4u      I
-        vld2.32         {d2,d3},  [r4,:128]!    @ c0,c1 s0,s1
-        vadd.f32        d0,  d0,  d19           @ in3u+in3d     -R
-        vst2.32         {d6[0],d7[0]}, [r6,:64]
-        vst2.32         {d6[1],d7[1]}, [r10,:64]
-        b               1b
-1:
-        vneg.f32        d7,  d7                 @  R*s-I*c
-        vst2.32         {d6[0],d7[0]}, [r6,:64]
-        vst2.32         {d6[1],d7[1]}, [r10,:64]
-
-        mov             r12, #1
-        ldr             lr,  [r0, #28]          @ mdct_bits
-        lsl             lr,  r12, lr            @ n  = 1 << nbits
-        sub             r8,  r2,  #16           @ in1d
-        add             r2,  r9,  #16           @ in0u
-        sub             r9,  r7,  #16           @ in2d
         mov             r12, #-16
-
-        vld2.32         {d16,d18},[r9,:128],r12 @ x,x in2d1,in2d0
-        vld2.32         {d17,d19},[r8,:128],r12 @ x,x in1d1,in1d0
-        vld2.32         {d20,d21},[r7,:128]!    @ in2u0,in2u1 x,x
-        vrev64.32       q9,  q9                 @ in2d0,in2d1 in1d0,in1d1
-        vld2.32         {d0, d1}, [r2,:128]!    @ in0u0,in0u1 x,x
-        vsub.f32        d0,  d0,  d18           @ in0u-in2d      R
-        vld2.32         {d2,d3},  [r4,:128]!    @ c0,c1 s0,s1
-        vadd.f32        d20, d20, d19           @ in2u+in1d     -I
-1:
-        vmul.f32        d6,  d0,  d2            @  R*c
-        vmul.f32        d7,  d20, d3            @ -I*s
-        ldr             r6,  [r3], #4
-        vmul.f32        d4,  d0,  d3            @ R*s
-        vmul.f32        d5,  d20, d2            @ I*c
-        subs            lr,  lr,  #16
-        vsub.f32        d6,  d7,  d6            @ I*s-R*c
-        vadd.f32        d7,  d4,  d5            @ R*s-I*c
-        uxth            r10, r6,  ror #16
+        vld2.32         {d16,d18},[r9,:128],r12 @ in0u0,in0u1 in4d1,in4d0
+        vld2.32         {d17,d19},[r8,:128],r12 @ in2u0,in2u1 in3d1,in3d0
+        vneg.f32        d7,  d7                 @  R*s-I*c
+        vld2.32         {d0, d2}, [r7,:128]!    @ in4u0,in4u1 in2d1,in2d0
+        vrev64.32       q9,  q9                 @ in4d0,in4d1 in3d0,in3d1
+        vld2.32         {d1, d3}, [r2,:128]!    @ in3u0,in3u1 in1d1,in1d0
+        vsub.f32        d0,  d18, d0            @ in4d-in4u      I
+        vld2.32         {d20,d21},[r4,:128]!    @ c0,c1 s0,s1
+        vrev64.32       q1,  q1                 @ in2d0,in2d1 in1d0,in1d1
+        vld2.32         {d30,d31},[r5,:128],r12 @ c2,c3 s2,s3
+        vadd.f32        d1,  d1,  d19           @ in3u+in3d     -R
+        vsub.f32        d16, d16, d2            @ in0u-in2d      R
+        vadd.f32        d17, d17, d3            @ in2u+in1d     -I
+        uxth            r12, r6,  ror #16
         uxth            r6,  r6
-        add             r10, r1,  r10, lsl #3
+        add             r12, r1,  r12, lsl #3
         add             r6,  r1,  r6,  lsl #3
-        beq             1f
-        vld2.32         {d16,d18},[r9,:128],r12 @ x,x in2d1,in2d0
-        vld2.32         {d17,d19},[r8,:128],r12 @ x,x in1d1,in1d0
-        vld2.32         {d20,d21},[r7,:128]!    @ in2u0,in2u1 x,x
-        vrev64.32       q9,  q9                 @ in2d0,in2d1 in1d0,in1d1
-        vld2.32         {d0, d1}, [r2,:128]!    @ in0u0,in0u1 x,x
-        vsub.f32        d0,  d0,  d18           @ in0u-in2d      R
-        vld2.32         {d2,d3},  [r4,:128]!    @ c0,c1 s0,s1
-        vadd.f32        d20, d20, d19           @ in2u+in1d     -I
         vst2.32         {d6[0],d7[0]}, [r6,:64]
-        vst2.32         {d6[1],d7[1]}, [r10,:64]
+        vst2.32         {d6[1],d7[1]}, [r12,:64]
+        uxth            r6,  r10, ror #16
+        uxth            r10, r10
+        add             r6 , r1,  r6,  lsl #3
+        add             r10, r1,  r10, lsl #3
+        vst2.32         {d24[0],d25[0]},[r10,:64]
+        vst2.32         {d24[1],d25[1]},[r6,:64]
         b               1b
 1:
+        vneg.f32        d7,  d7                 @  R*s-I*c
+        uxth            r12, r6,  ror #16
+        uxth            r6,  r6
+        add             r12, r1,  r12, lsl #3
+        add             r6,  r1,  r6,  lsl #3
         vst2.32         {d6[0],d7[0]}, [r6,:64]
-        vst2.32         {d6[1],d7[1]}, [r10,:64]
+        vst2.32         {d6[1],d7[1]}, [r12,:64]
+        uxth            r6,  r10, ror #16
+        uxth            r10, r10
+        add             r6 , r1,  r6,  lsl #3
+        add             r10, r1,  r10, lsl #3
+        vst2.32         {d24[0],d25[0]},[r10,:64]
+        vst2.32         {d24[1],d25[1]},[r6,:64]
 
         mov             r4,  r0
         mov             r6,  r1
