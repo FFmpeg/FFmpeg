@@ -463,6 +463,9 @@ typedef struct TrellisPath {
     int max_val;
 } TrellisPath;
 
+#define TRELLIS_STAGES 121
+#define TRELLIS_STATES 256
+
 static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                                        SingleChannelElement *sce,
                                        const float lambda)
@@ -470,19 +473,19 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
     int q, w, w2, g, start = 0;
     int i, j;
     int idx;
-    TrellisPath paths[121][256];
-    int bandaddr[121];
+    TrellisPath paths[TRELLIS_STAGES][TRELLIS_STATES];
+    int bandaddr[TRELLIS_STAGES];
     int minq;
     float mincost;
 
-    for (i = 0; i < 256; i++) {
+    for (i = 0; i < TRELLIS_STATES; i++) {
         paths[0][i].cost    = 0.0f;
         paths[0][i].prev    = -1;
         paths[0][i].min_val = i;
         paths[0][i].max_val = i;
     }
-    for (j = 1; j < 121; j++) {
-        for (i = 0; i < 256; i++) {
+    for (j = 1; j < TRELLIS_STAGES; j++) {
+        for (i = 0; i < TRELLIS_STATES; i++) {
             paths[j][i].cost    = INFINITY;
             paths[j][i].prev    = -2;
             paths[j][i].min_val = INT_MAX;
@@ -538,7 +541,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                         dist = FFMIN(dist, dists[i]);
                     minrd = FFMIN(minrd, dist);
 
-                    for (i = FFMAX(q - SCALE_MAX_DIFF, 0); i < FFMIN(q + SCALE_MAX_DIFF, 256); i++) {
+                    for (i = FFMAX(q - SCALE_MAX_DIFF, 0); i < FFMIN(q + SCALE_MAX_DIFF, TRELLIS_STATES); i++) {
                         float cost;
                         int minv, maxv;
                         if (isinf(paths[idx - 1][i].cost))
@@ -556,7 +559,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                     }
                 }
             } else {
-                for (q = 0; q < 256; q++) {
+                for (q = 0; q < TRELLIS_STATES; q++) {
                     if (!isinf(paths[idx - 1][q].cost)) {
                         paths[idx][q].cost = paths[idx - 1][q].cost + 1;
                         paths[idx][q].prev = q;
@@ -564,7 +567,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
                         paths[idx][q].max_val = FFMAX(paths[idx - 1][q].max_val, q);
                         continue;
                     }
-                    for (i = FFMAX(q - SCALE_MAX_DIFF, 0); i < FFMIN(q + SCALE_MAX_DIFF, 256); i++) {
+                    for (i = FFMAX(q - SCALE_MAX_DIFF, 0); i < FFMIN(q + SCALE_MAX_DIFF, TRELLIS_STATES); i++) {
                         float cost;
                         int minv, maxv;
                         if (isinf(paths[idx - 1][i].cost))
@@ -589,7 +592,7 @@ static void search_for_quantizers_anmr(AVCodecContext *avctx, AACEncContext *s,
     idx--;
     mincost = paths[idx][0].cost;
     minq    = 0;
-    for (i = 1; i < 256; i++) {
+    for (i = 1; i < TRELLIS_STATES; i++) {
         if (paths[idx][i].cost < mincost) {
             mincost = paths[idx][i].cost;
             minq = i;
