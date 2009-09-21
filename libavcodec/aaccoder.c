@@ -173,12 +173,12 @@ static float quantize_band_cost(struct AACEncContext *s, const float *in,
                 for (k = 0; k < dim; k++) {
                     float t = fabsf(in[i+k]);
                     float di;
+                    if (vec[k] == 64.0f) { //FIXME: slow
                     //do not code with escape sequence small values
-                    if (vec[k] == 64.0f && t < 39.0f*IQ) {
+                    if (t < 39.0f*IQ) {
                         rd = INFINITY;
                         break;
                     }
-                    if (vec[k] == 64.0f) { //FIXME: slow
                         if (t >= CLIPPED_ESCAPE) {
                             di = t - CLIPPED_ESCAPE;
                             curbits += 21;
@@ -288,12 +288,12 @@ static void quantize_and_encode_band(struct AACEncContext *s, PutBitContext *pb,
                 for (k = 0; k < dim; k++) {
                     float t = fabsf(in[i+k]);
                     float di;
+                    if (vec[k] == 64.0f) { //FIXME: slow
                     //do not code with escape sequence small values
-                    if (vec[k] == 64.0f && t < 39.0f*IQ) {
+                    if (t < 39.0f*IQ) {
                         rd = INFINITY;
                         break;
                     }
-                    if (vec[k] == 64.0f) { //FIXME: slow
                         if (t >= CLIPPED_ESCAPE) {
                             di = t - CLIPPED_ESCAPE;
                             curbits += 21;
