@@ -45,7 +45,7 @@ else
     do_md5sum() { echo No md5sum program found; }
 fi
 
-FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
+FFMPEG_OPTS="-v 0 -y -flags +bitexact -dct fastint -idct simple -sws_flags +accurate_rnd+bitexact"
 
 do_ffmpeg()
 {
@@ -53,9 +53,7 @@ do_ffmpeg()
     shift
     set -- $* ${target_path}/$f
     echo $ffmpeg $FFMPEG_OPTS $*
-    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench 2> /tmp/ffmpeg$$
-    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
-    rm -f /tmp/ffmpeg$$
+    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench
     do_md5sum $f >> $logfile
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
@@ -74,9 +72,7 @@ do_ffmpeg_nomd5()
     shift
     set -- $* ${target_path}/$f
     echo $ffmpeg $FFMPEG_OPTS $*
-    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench 2> /tmp/ffmpeg$$
-    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
-    rm -f /tmp/ffmpeg$$
+    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
     elif [ $f = $pcm_dst ] ; then
@@ -93,9 +89,7 @@ do_ffmpeg_crc()
     f="$1"
     shift
     echo $ffmpeg $FFMPEG_OPTS $* -f crc "$target_crcfile"
-    $ffmpeg $FFMPEG_OPTS $* -f crc "$target_crcfile" > /tmp/ffmpeg$$ 2>&1
-    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:|ffmpeg version|  configuration|  built)" /tmp/ffmpeg$$ || true
-    rm -f /tmp/ffmpeg$$
+    $ffmpeg $FFMPEG_OPTS $* -f crc "$target_crcfile"
     echo "$f `cat $crcfile`" >> $logfile
     rm -f "$crcfile"
 }
@@ -105,9 +99,7 @@ do_ffmpeg_nocheck()
     f="$1"
     shift
     echo $ffmpeg $FFMPEG_OPTS $*
-    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench 2> /tmp/ffmpeg$$
-    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
-    rm -f /tmp/ffmpeg$$
+    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench
     expr "`cat $bench`" : '.*utime=\(.*s\)' > $bench2
     echo `cat $bench2` $f >> $benchfile
 }
