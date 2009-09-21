@@ -124,7 +124,7 @@
 
 /* math */
 
-extern const uint32_t ff_inverse[256];
+extern const uint32_t ff_inverse[257];
 
 #if ARCH_X86
 #    define FASTDIV(a,b) \
