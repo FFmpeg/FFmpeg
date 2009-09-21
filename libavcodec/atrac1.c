@@ -57,8 +57,6 @@
 typedef struct {
     int                 log2_block_count[AT1_QMF_BANDS];    ///< log2 number of blocks in a band
     int                 num_bfus;                           ///< number of Block Floating Units
-    int                 idwls[AT1_MAX_BFU];                 ///< the word length indexes for each BFU
-    int                 idsfs[AT1_MAX_BFU];                 ///< the scalefactor indexes for each BFU
     float*              spectrum[2];
     DECLARE_ALIGNED_16(float, spec1[AT1_SU_SAMPLES]);       ///< mdct buffer
     DECLARE_ALIGNED_16(float, spec2[AT1_SU_SAMPLES]);       ///< mdct buffer
@@ -197,6 +195,8 @@ static int at1_unpack_dequant(GetBitContext* gb, AT1SUCtx* su,
                               float spec[AT1_SU_SAMPLES])
 {
     int bits_used, band_num, bfu_num, i;
+    uint8_t idwls[AT1_MAX_BFU];                 ///< the word length indexes for each BFU
+    uint8_t idsfs[AT1_MAX_BFU];                 ///< the scalefactor indexes for each BFU
 
     /* parse the info byte (2nd byte) telling how much BFUs were coded */
     su->num_bfus = bfu_amount_tab1[get_bits(gb, 3)];
@@ -210,15 +210,15 @@ static int at1_unpack_dequant(GetBitContext* gb, AT1SUCtx* su,
 
     /* get word length index (idwl) for each BFU */
     for (i = 0; i < su->num_bfus; i++)
-        su->idwls[i] = get_bits(gb, 4);
+        idwls[i] = get_bits(gb, 4);
 
     /* get scalefactor index (idsf) for each BFU */
     for (i = 0; i < su->num_bfus; i++)
-        su->idsfs[i] = get_bits(gb, 6);
+        idsfs[i] = get_bits(gb, 6);
 
     /* zero idwl/idsf for empty BFUs */
     for (i = su->num_bfus; i < AT1_MAX_BFU; i++)
-        su->idwls[i] = su->idsfs[i] = 0;
+        idwls[i] = idsfs[i] = 0;
 
     /* read in the spectral data and reconstruct MDCT spectrum of this channel */
     for (band_num = 0; band_num < AT1_QMF_BANDS; band_num++) {
@@ -226,8 +226,8 @@ static int at1_unpack_dequant(GetBitContext* gb, AT1SUCtx* su,
             int pos;
 
             int num_specs = specs_per_bfu[bfu_num];
-            int word_len  = !!su->idwls[bfu_num] + su->idwls[bfu_num];
-            float scale_factor = sf_table[su->idsfs[bfu_num]];
+            int word_len  = !!idwls[bfu_num] + idwls[bfu_num];
+            float scale_factor = sf_table[idsfs[bfu_num]];
             bits_used    += word_len * num_specs; /* add number of bits consumed by current BFU */
 
             /* check for bitstream overflow */
