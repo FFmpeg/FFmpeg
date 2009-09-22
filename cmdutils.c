@@ -333,14 +333,14 @@ void show_banner(void)
 {
     fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-%d Fabrice Bellard, et al.\n",
             program_name, program_birth_year, this_year);
-    fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
-    print_all_lib_versions(stderr, 1);
     fprintf(stderr, "  built on " __DATE__ " " __TIME__);
 #ifdef __GNUC__
     fprintf(stderr, ", gcc: " __VERSION__ "\n");
 #else
     fprintf(stderr, ", using a non-gcc compiler\n");
 #endif
+    fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
+    print_all_lib_versions(stderr, 1);
 }
 
 void show_version(void) {
