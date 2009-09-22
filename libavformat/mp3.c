@@ -21,11 +21,14 @@
 
 #include <strings.h>
 #include "libavutil/avstring.h"
-#include "libavcodec/mpegaudio.h"
-#include "libavcodec/mpegaudiodecheader.h"
 #include "avformat.h"
 #include "id3v2.h"
 #include "id3v1.h"
+
+#if CONFIG_MP3_DEMUXER
+
+#include "libavcodec/mpegaudio.h"
+#include "libavcodec/mpegaudiodecheader.h"
 
 /* mp3 read */
 
@@ -169,6 +172,18 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+AVInputFormat mp3_demuxer = {
+    "mp3",
+    NULL_IF_CONFIG_SMALL("MPEG audio layer 2/3"),
+    0,
+    mp3_read_probe,
+    mp3_read_header,
+    mp3_read_packet,
+    .flags= AVFMT_GENERIC_INDEX,
+    .extensions = "mp2,mp3,m2a", /* XXX: use probe */
+};
+#endif
+
 #if CONFIG_MP2_MUXER || CONFIG_MP3_MUXER
 static int id3v1_set_string(AVFormatContext *s, const char *key,
                             uint8_t *buf, int buf_size)
@@ -300,18 +315,6 @@ static int mp3_write_trailer(struct AVFormatContext *s)
 }
 #endif /* CONFIG_MP2_MUXER || CONFIG_MP3_MUXER */
 
-#if CONFIG_MP3_DEMUXER
-AVInputFormat mp3_demuxer = {
-    "mp3",
-    NULL_IF_CONFIG_SMALL("MPEG audio layer 2/3"),
-    0,
-    mp3_read_probe,
-    mp3_read_header,
-    mp3_read_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "mp2,mp3,m2a", /* XXX: use probe */
-};
-#endif
 #if CONFIG_MP2_MUXER
 AVOutputFormat mp2_muxer = {
     "mp2",
