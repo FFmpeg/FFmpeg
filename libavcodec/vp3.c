@@ -1099,6 +1099,10 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     return eob_run;
 }
 
+static void reverse_dc_prediction(Vp3DecodeContext *s,
+                                  int first_fragment,
+                                  int fragment_width,
+                                  int fragment_height);
 /*
  * This function unpacks all of the DCT coefficient data from the
  * bitstream.
@@ -1120,9 +1124,21 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_y_table], 0,
         s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
+    /* reverse prediction of the Y-plane DC coefficients */
+    reverse_dc_prediction(s, 0, s->fragment_width, s->fragment_height);
+
     /* unpack the C plane DC coefficients */
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
         s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
+
+    /* reverse prediction of the C-plane DC coefficients */
+    if (!(s->avctx->flags & CODEC_FLAG_GRAY))
+    {
+        reverse_dc_prediction(s, s->fragment_start[1],
+            s->fragment_width / 2, s->fragment_height / 2);
+        reverse_dc_prediction(s, s->fragment_start[2],
+            s->fragment_width / 2, s->fragment_height / 2);
+    }
 
     /* fetch the AC table indexes */
     ac_y_table = get_bits(gb, 4);
@@ -1994,14 +2010,6 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     if (unpack_dct_coeffs(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_dct_coeffs\n");
         return -1;
-    }
-
-    reverse_dc_prediction(s, 0, s->fragment_width, s->fragment_height);
-    if ((avctx->flags & CODEC_FLAG_GRAY) == 0) {
-        reverse_dc_prediction(s, s->fragment_start[1],
-            s->fragment_width / 2, s->fragment_height / 2);
-        reverse_dc_prediction(s, s->fragment_start[2],
-            s->fragment_width / 2, s->fragment_height / 2);
     }
 
     for (i = 0; i < s->macroblock_height; i++)
