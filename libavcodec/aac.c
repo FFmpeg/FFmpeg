@@ -861,7 +861,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                 for (group = 0; group < ics->group_len[g]; group++) {
                     float scale;
                     float band_energy = 0;
-                    float *cf = coef + group * 128;
+                    float *cf = coef + group * 128 + offsets[i];
                     int len = offsets[i+1] - offsets[i];
 
                     for (k = offsets[i]; k < offsets[i + 1]; k++) {
