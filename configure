@@ -1203,6 +1203,7 @@ rtsp_demuxer_deps="sdp_demuxer"
 sdp_demuxer_deps="rtp_protocol mpegts_demuxer"
 tg2_muxer_select="mov_muxer"
 tgp_muxer_select="mov_muxer"
+w64_demuxer_deps="wav_demuxer"
 
 # indevs / outdevs
 alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
