@@ -861,18 +861,25 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                 for (group = 0; group < ics->group_len[g]; group++) {
                     float scale;
                     float band_energy = 0;
+                    float *cf = coef + group * 128;
+                    int len = offsets[i+1] - offsets[i];
+
                     for (k = offsets[i]; k < offsets[i + 1]; k++) {
                         ac->random_state  = lcg_random(ac->random_state);
                         coef[group * 128 + k] = ac->random_state;
-                        band_energy += coef[group * 128 + k] * coef[group * 128 + k];
                     }
+
+                    band_energy += ac->dsp.scalarproduct_float(cf, cf, len);
                     scale = sf[idx] / sqrtf(band_energy);
-                    for (k = offsets[i]; k < offsets[i + 1]; k++) {
-                        coef[group * 128 + k] *= scale;
-                    }
+                    ac->dsp.vector_fmul_scalar(cf, cf, scale, len);
                 }
             } else {
                 for (group = 0; group < ics->group_len[g]; group++) {
+                    const float *vq[96];
+                    const float **vqp = vq;
+                    float *cf = coef + (group << 7) + offsets[i];
+                    int len = offsets[i + 1] - offsets[i];
+
                     for (k = offsets[i]; k < offsets[i + 1]; k += dim) {
                         const int index = get_vlc2(gb, vlc_spectral[cur_band_type - 1].table, 6, 3);
                         const int coef_tmp_idx = (group << 7) + k;
@@ -885,6 +892,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             return -1;
                         }
                         vq_ptr = &ff_aac_codebook_vectors[cur_band_type - 1][index * dim];
+                        *vqp++ = vq_ptr;
                         if (is_cb_unsigned) {
                             if (vq_ptr[0])
                                 coef[coef_tmp_idx    ] = sign_lookup[get_bits1(gb)];
@@ -912,28 +920,17 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                                     } else
                                         coef[coef_tmp_idx + j] *= vq_ptr[j];
                                 }
-                            } else {
-                                coef[coef_tmp_idx    ] *= vq_ptr[0];
-                                coef[coef_tmp_idx + 1] *= vq_ptr[1];
-                                if (dim == 4) {
-                                    coef[coef_tmp_idx + 2] *= vq_ptr[2];
-                                    coef[coef_tmp_idx + 3] *= vq_ptr[3];
-                                }
-                            }
-                        } else {
-                            coef[coef_tmp_idx    ] = vq_ptr[0];
-                            coef[coef_tmp_idx + 1] = vq_ptr[1];
-                            if (dim == 4) {
-                                coef[coef_tmp_idx + 2] = vq_ptr[2];
-                                coef[coef_tmp_idx + 3] = vq_ptr[3];
                             }
                         }
-                        coef[coef_tmp_idx    ] *= sf[idx];
-                        coef[coef_tmp_idx + 1] *= sf[idx];
-                        if (dim == 4) {
-                            coef[coef_tmp_idx + 2] *= sf[idx];
-                            coef[coef_tmp_idx + 3] *= sf[idx];
-                        }
+                    }
+
+                    if (is_cb_unsigned && cur_band_type != ESC_BT) {
+                        ac->dsp.vector_fmul_sv_scalar[dim>>2](
+                            cf, cf, vq, sf[idx], len);
+                    } else if (is_cb_unsigned && cur_band_type == ESC_BT) {
+                        ac->dsp.vector_fmul_scalar(cf, cf, sf[idx], len);
+                    } else {    /* !is_cb_unsigned */
+                        ac->dsp.sv_fmul_scalar[dim>>2](cf, vq, sf[idx], len);
                     }
                 }
             }
@@ -1103,23 +1100,21 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
 /**
  * Mid/Side stereo decoding; reference: 4.6.8.1.3.
  */
-static void apply_mid_side_stereo(ChannelElement *cpe)
+static void apply_mid_side_stereo(AACContext *ac, ChannelElement *cpe)
 {
     const IndividualChannelStream *ics = &cpe->ch[0].ics;
     float *ch0 = cpe->ch[0].coeffs;
     float *ch1 = cpe->ch[1].coeffs;
-    int g, i, k, group, idx = 0;
+    int g, i, group, idx = 0;
     const uint16_t *offsets = ics->swb_offset;
     for (g = 0; g < ics->num_window_groups; g++) {
         for (i = 0; i < ics->max_sfb; i++, idx++) {
             if (cpe->ms_mask[idx] &&
                     cpe->ch[0].band_type[idx] < NOISE_BT && cpe->ch[1].band_type[idx] < NOISE_BT) {
                 for (group = 0; group < ics->group_len[g]; group++) {
-                    for (k = offsets[i]; k < offsets[i + 1]; k++) {
-                        float tmp = ch0[group * 128 + k] - ch1[group * 128 + k];
-                        ch0[group * 128 + k] += ch1[group * 128 + k];
-                        ch1[group * 128 + k]  = tmp;
-                    }
+                    ac->dsp.butterflies_float(ch0 + group * 128 + offsets[i],
+                                              ch1 + group * 128 + offsets[i],
+                                              offsets[i+1] - offsets[i]);
                 }
             }
         }
@@ -1200,7 +1195,7 @@ static int decode_cpe(AACContext *ac, GetBitContext *gb, ChannelElement *cpe)
 
     if (common_window) {
         if (ms_present)
-            apply_mid_side_stereo(cpe);
+            apply_mid_side_stereo(ac, cpe);
         if (ac->m4ac.object_type == AOT_AAC_MAIN) {
             apply_prediction(ac, &cpe->ch[0]);
             apply_prediction(ac, &cpe->ch[1]);
