@@ -481,7 +481,10 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     }
 
     avctx->codec = codec;
-    avctx->codec_id = codec->id;
+    if(avctx->codec_id != codec->id || avctx->codec_type != codec->type){
+        av_log(avctx, AV_LOG_ERROR, "codec type or id mismatches\n");
+        goto end;
+    }
     avctx->frame_number = 0;
     if(avctx->codec->init){
         ret = avctx->codec->init(avctx);
