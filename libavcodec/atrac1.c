@@ -23,7 +23,7 @@
 /**
  * @file libavcodec/atrac1.c
  * Atrac 1 compatible decoder.
- * This decoder handles raw ATRAC1 data.
+ * This decoder handles raw ATRAC1 data and probably SDDS data.
  */
 
 /* Many thanks to Tim Craig for all the help! */
