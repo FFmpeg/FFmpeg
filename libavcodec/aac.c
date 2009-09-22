@@ -927,7 +927,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                     if (is_cb_unsigned && cur_band_type != ESC_BT) {
                         ac->dsp.vector_fmul_sv_scalar[dim>>2](
                             cf, cf, vq, sf[idx], len);
-                    } else if (is_cb_unsigned && cur_band_type == ESC_BT) {
+                    } else if (cur_band_type == ESC_BT) {
                         ac->dsp.vector_fmul_scalar(cf, cf, sf[idx], len);
                     } else {    /* !is_cb_unsigned */
                         ac->dsp.sv_fmul_scalar[dim>>2](cf, vq, sf[idx], len);
