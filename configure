@@ -1261,6 +1261,7 @@ shlibdir_default="$libdir_default"
 # toolchain
 ar="ar"
 cc_default="gcc"
+cc_version=\"unknown\"
 host_cc_default="gcc"
 ln_s="ln -sf"
 nm_default="nm"
@@ -1516,6 +1517,7 @@ filter_asflags=echo
 
 if   $cc -v 2>&1 | grep -qi ^gcc; then
     cc_type=gcc
+    cc_version=__VERSION__
     if ! $cc -dumpversion | grep -q '^2\.'; then
         CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
         AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
@@ -2703,6 +2705,8 @@ echo "#define FFMPEG_CONFIG_H" >> $TMPH
 echo "#define FFMPEG_CONFIGURATION \"$(c_escape $FFMPEG_CONFIGURATION)\"" >> $TMPH
 echo "#define FFMPEG_DATADIR \"$(eval c_escape $datadir)\"" >> $TMPH
 
+echo "#define CC_TYPE \"$cc_type\"" >> $TMPH
+echo "#define CC_VERSION $cc_version" >> $TMPH
 echo "#define restrict $_restrict" >> $TMPH
 
 if enabled small || disabled optimizations; then
