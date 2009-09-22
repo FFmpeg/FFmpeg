@@ -4089,6 +4089,80 @@ void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1, c
     }
 }
 
+static void vector_fmul_scalar_c(float *dst, const float *src, float mul,
+                                 int len)
+{
+    int i;
+    for (i = 0; i < len; i++)
+        dst[i] = src[i] * mul;
+}
+
+static void vector_fmul_sv_scalar_2_c(float *dst, const float *src,
+                                      const float **sv, float mul, int len)
+{
+    int i;
+    for (i = 0; i < len; i += 2, sv++) {
+        dst[i  ] = src[i  ] * sv[0][0] * mul;
+        dst[i+1] = src[i+1] * sv[0][1] * mul;
+    }
+}
+
+static void vector_fmul_sv_scalar_4_c(float *dst, const float *src,
+                                      const float **sv, float mul, int len)
+{
+    int i;
+    for (i = 0; i < len; i += 4, sv++) {
+        dst[i  ] = src[i  ] * sv[0][0] * mul;
+        dst[i+1] = src[i+1] * sv[0][1] * mul;
+        dst[i+2] = src[i+2] * sv[0][2] * mul;
+        dst[i+3] = src[i+3] * sv[0][3] * mul;
+    }
+}
+
+static void sv_fmul_scalar_2_c(float *dst, const float **sv, float mul,
+                               int len)
+{
+    int i;
+    for (i = 0; i < len; i += 2, sv++) {
+        dst[i  ] = sv[0][0] * mul;
+        dst[i+1] = sv[0][1] * mul;
+    }
+}
+
+static void sv_fmul_scalar_4_c(float *dst, const float **sv, float mul,
+                               int len)
+{
+    int i;
+    for (i = 0; i < len; i += 4, sv++) {
+        dst[i  ] = sv[0][0] * mul;
+        dst[i+1] = sv[0][1] * mul;
+        dst[i+2] = sv[0][2] * mul;
+        dst[i+3] = sv[0][3] * mul;
+    }
+}
+
+static void butterflies_float_c(float *restrict v1, float *restrict v2,
+                                int len)
+{
+    int i;
+    for (i = 0; i < len; i++) {
+        float t = v1[i] - v2[i];
+        v1[i] += v2[i];
+        v2[i] = t;
+    }
+}
+
+static float scalarproduct_float_c(const float *v1, const float *v2, int len)
+{
+    float p = 0.0;
+    int i;
+
+    for (i = 0; i < len; i++)
+        p += v1[i] * v2[i];
+
+    return p;
+}
+
 static void int32_to_float_fmul_scalar_c(float *dst, const int *src, float mul, int len){
     int i;
     for(i=0; i<len; i++)
@@ -4722,6 +4796,15 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->add_int16 = add_int16_c;
     c->sub_int16 = sub_int16_c;
     c->scalarproduct_int16 = scalarproduct_int16_c;
+    c->scalarproduct_float = scalarproduct_float_c;
+    c->butterflies_float = butterflies_float_c;
+    c->vector_fmul_scalar = vector_fmul_scalar_c;
+
+    c->vector_fmul_sv_scalar[0] = vector_fmul_sv_scalar_2_c;
+    c->vector_fmul_sv_scalar[1] = vector_fmul_sv_scalar_4_c;
+
+    c->sv_fmul_scalar[0] = sv_fmul_scalar_2_c;
+    c->sv_fmul_scalar[1] = sv_fmul_scalar_4_c;
 
     c->shrink[0]= ff_img_copy_plane;
     c->shrink[1]= ff_shrink22;

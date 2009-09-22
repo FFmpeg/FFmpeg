@@ -397,6 +397,56 @@ typedef struct DSPContext {
     /* assume len is a multiple of 8, and arrays are 16-byte aligned */
     void (*int32_to_float_fmul_scalar)(float *dst, const int *src, float mul, int len);
     void (*vector_clipf)(float *dst /* align 16 */, const float *src /* align 16 */, float min, float max, int len /* align 16 */);
+    /**
+     * Multiply a vector of floats by a scalar float.  Source and
+     * destination vectors must overlap exactly or not at all.
+     * @param dst result vector, 16-byte aligned
+     * @param src input vector, 16-byte aligned
+     * @param mul scalar value
+     * @param len length of vector, multiple of 4
+     */
+    void (*vector_fmul_scalar)(float *dst, const float *src, float mul,
+                               int len);
+    /**
+     * Multiply a vector of floats by concatenated short vectors of
+     * floats and by a scalar float.  Source and destination vectors
+     * must overlap exactly or not at all.
+     * [0]: short vectors of length 2, 8-byte aligned
+     * [1]: short vectors of length 4, 16-byte aligned
+     * @param dst output vector, 16-byte aligned
+     * @param src input vector, 16-byte aligned
+     * @param sv  array of pointers to short vectors
+     * @param mul scalar value
+     * @param len number of elements in src and dst, multiple of 4
+     */
+    void (*vector_fmul_sv_scalar[2])(float *dst, const float *src,
+                                     const float **sv, float mul, int len);
+    /**
+     * Multiply short vectors of floats by a scalar float, store
+     * concatenated result.
+     * [0]: short vectors of length 2, 8-byte aligned
+     * [1]: short vectors of length 4, 16-byte aligned
+     * @param dst output vector, 16-byte aligned
+     * @param sv  array of pointers to short vectors
+     * @param mul scalar value
+     * @param len number of output elements, multiple of 4
+     */
+    void (*sv_fmul_scalar[2])(float *dst, const float **sv,
+                              float mul, int len);
+    /**
+     * Calculate the scalar product of two vectors of floats.
+     * @param v1  first vector, 16-byte aligned
+     * @param v2  second vector, 16-byte aligned
+     * @param len length of vectors, multiple of 4
+     */
+    float (*scalarproduct_float)(const float *v1, const float *v2, int len);
+    /**
+     * Calculate the sum and difference of two vectors of floats.
+     * @param v1  first input vector, sum output, 16-byte aligned
+     * @param v2  second input vector, difference output, 16-byte aligned
+     * @param len length of vectors, multiple of 4
+     */
+    void (*butterflies_float)(float *restrict v1, float *restrict v2, int len);
 
     /* C version: convert floats from the range [384.0,386.0] to ints in [-32768,32767]
      * simd versions: convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */
