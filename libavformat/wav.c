@@ -119,8 +119,24 @@ static int wav_write_trailer(AVFormatContext *s)
     }
     return 0;
 }
+
+AVOutputFormat wav_muxer = {
+    "wav",
+    NULL_IF_CONFIG_SMALL("WAV format"),
+    "audio/x-wav",
+    "wav",
+    sizeof(WAVContext),
+    CODEC_ID_PCM_S16LE,
+    CODEC_ID_NONE,
+    wav_write_header,
+    wav_write_packet,
+    wav_write_trailer,
+    .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
+};
 #endif /* CONFIG_WAV_MUXER */
 
+
+#if CONFIG_WAV_DEMUXER
 /* return the size of the found tag */
 static int64_t find_tag(ByteIOContext *pb, uint32_t tag1)
 {
@@ -221,8 +237,84 @@ static int64_t find_guid(ByteIOContext *pb, const uint8_t guid1[16])
 static const uint8_t guid_data[16] = { 'd', 'a', 't', 'a',
     0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
 
-#if CONFIG_W64_DEMUXER
+#define MAX_SIZE 4096
 
+static int wav_read_packet(AVFormatContext *s,
+                           AVPacket *pkt)
+{
+    int ret, size;
+    int64_t left;
+    AVStream *st;
+    WAVContext *wav = s->priv_data;
+
+    if (url_feof(s->pb))
+        return AVERROR(EIO);
+    st = s->streams[0];
+
+    left = wav->data_end - url_ftell(s->pb);
+    if (left <= 0){
+        if (CONFIG_W64_DEMUXER && wav->w64)
+            left = find_guid(s->pb, guid_data) - 24;
+        else
+            left = find_tag(s->pb, MKTAG('d', 'a', 't', 'a'));
+        if (left < 0)
+            return AVERROR(EIO);
+        wav->data_end= url_ftell(s->pb) + left;
+    }
+
+    size = MAX_SIZE;
+    if (st->codec->block_align > 1) {
+        if (size < st->codec->block_align)
+            size = st->codec->block_align;
+        size = (size / st->codec->block_align) * st->codec->block_align;
+    }
+    size = FFMIN(size, left);
+    ret  = av_get_packet(s->pb, pkt, size);
+    if (ret <= 0)
+        return AVERROR(EIO);
+    pkt->stream_index = 0;
+
+    /* note: we need to modify the packet size here to handle the last
+       packet */
+    pkt->size = ret;
+    return ret;
+}
+
+static int wav_read_seek(AVFormatContext *s,
+                         int stream_index, int64_t timestamp, int flags)
+{
+    AVStream *st;
+
+    st = s->streams[0];
+    switch (st->codec->codec_id) {
+    case CODEC_ID_MP2:
+    case CODEC_ID_MP3:
+    case CODEC_ID_AC3:
+    case CODEC_ID_DTS:
+        /* use generic seeking with dynamically generated indexes */
+        return -1;
+    default:
+        break;
+    }
+    return pcm_read_seek(s, stream_index, timestamp, flags);
+}
+
+AVInputFormat wav_demuxer = {
+    "wav",
+    NULL_IF_CONFIG_SMALL("WAV format"),
+    sizeof(WAVContext),
+    wav_probe,
+    wav_read_header,
+    wav_read_packet,
+    NULL,
+    wav_read_seek,
+    .flags= AVFMT_GENERIC_INDEX,
+    .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
+};
+#endif /* CONFIG_WAV_DEMUXER */
+
+
+#if CONFIG_W64_DEMUXER
 static const uint8_t guid_riff[16] = { 'r', 'i', 'f', 'f',
     0x2E, 0x91, 0xCF, 0x11, 0xA5, 0xD6, 0x28, 0xDB, 0x04, 0xC1, 0x00, 0x00 };
 
@@ -292,102 +384,7 @@ static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     return 0;
 }
-#endif /* CONFIG_W64_DEMUXER */
 
-#define MAX_SIZE 4096
-
-static int wav_read_packet(AVFormatContext *s,
-                           AVPacket *pkt)
-{
-    int ret, size;
-    int64_t left;
-    AVStream *st;
-    WAVContext *wav = s->priv_data;
-
-    if (url_feof(s->pb))
-        return AVERROR(EIO);
-    st = s->streams[0];
-
-    left = wav->data_end - url_ftell(s->pb);
-    if (left <= 0){
-        if (CONFIG_W64_DEMUXER && wav->w64)
-            left = find_guid(s->pb, guid_data) - 24;
-        else
-            left = find_tag(s->pb, MKTAG('d', 'a', 't', 'a'));
-        if (left < 0)
-            return AVERROR(EIO);
-        wav->data_end= url_ftell(s->pb) + left;
-    }
-
-    size = MAX_SIZE;
-    if (st->codec->block_align > 1) {
-        if (size < st->codec->block_align)
-            size = st->codec->block_align;
-        size = (size / st->codec->block_align) * st->codec->block_align;
-    }
-    size = FFMIN(size, left);
-    ret  = av_get_packet(s->pb, pkt, size);
-    if (ret <= 0)
-        return AVERROR(EIO);
-    pkt->stream_index = 0;
-
-    /* note: we need to modify the packet size here to handle the last
-       packet */
-    pkt->size = ret;
-    return ret;
-}
-
-static int wav_read_seek(AVFormatContext *s,
-                         int stream_index, int64_t timestamp, int flags)
-{
-    AVStream *st;
-
-    st = s->streams[0];
-    switch (st->codec->codec_id) {
-    case CODEC_ID_MP2:
-    case CODEC_ID_MP3:
-    case CODEC_ID_AC3:
-    case CODEC_ID_DTS:
-        /* use generic seeking with dynamically generated indexes */
-        return -1;
-    default:
-        break;
-    }
-    return pcm_read_seek(s, stream_index, timestamp, flags);
-}
-
-#if CONFIG_WAV_DEMUXER
-AVInputFormat wav_demuxer = {
-    "wav",
-    NULL_IF_CONFIG_SMALL("WAV format"),
-    sizeof(WAVContext),
-    wav_probe,
-    wav_read_header,
-    wav_read_packet,
-    NULL,
-    wav_read_seek,
-    .flags= AVFMT_GENERIC_INDEX,
-    .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
-};
-#endif
-
-#if CONFIG_WAV_MUXER
-AVOutputFormat wav_muxer = {
-    "wav",
-    NULL_IF_CONFIG_SMALL("WAV format"),
-    "audio/x-wav",
-    "wav",
-    sizeof(WAVContext),
-    CODEC_ID_PCM_S16LE,
-    CODEC_ID_NONE,
-    wav_write_header,
-    wav_write_packet,
-    wav_write_trailer,
-    .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
-};
-#endif
-
-#if CONFIG_W64_DEMUXER
 AVInputFormat w64_demuxer = {
     "w64",
     NULL_IF_CONFIG_SMALL("Sony Wave64 format"),
@@ -400,4 +397,4 @@ AVInputFormat w64_demuxer = {
     .flags = AVFMT_GENERIC_INDEX,
     .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
 };
-#endif
+#endif /* CONFIG_W64_DEMUXER */
