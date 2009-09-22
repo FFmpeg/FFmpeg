@@ -1524,18 +1524,22 @@ if   $cc -v 2>&1 | grep -qi ^gcc; then
     fi
 elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
+    cc_version="AV_STRINGIFY(__INTEL_COMPILER)"
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
 elif $cc -v 2>&1 | grep -q xlc; then
     cc_type=xlc
+    cc_version="AV_STRINGIFY(__IBMC__)"
 elif $cc -V 2>/dev/null | grep -q Compaq; then
     cc_type=ccc
+    cc_version="AV_STRINGIFY(__DECC_VER)"
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -M'
     debuglevel=3
     add_ldflags -Wl,-z,now # calls to libots crash without this
 elif $cc --vsn 2>/dev/null | grep -q RVCT; then
     test -d "$sysroot" || die "No valid sysroot specified."
     cc_type=armcc
+    cc_version="AV_STRINGIFY(__ARMCC_VERSION)"
     armcc_conf="$PWD/armcc.conf"
     $cc --arm_linux_configure                 \
         --arm_linux_config_file="$armcc_conf" \
@@ -1548,6 +1552,7 @@ elif $cc --vsn 2>/dev/null | grep -q RVCT; then
     AS_DEPFLAGS='-MMD'
 elif $cc -version 2>/dev/null | grep -q TMS470; then
     cc_type=tms470
+    cc_version="AV_STRINGIFY(__TI_COMPILER_VERSION__)"
     cc="$cc --gcc --abi=eabi -eo=.o -mc -me"
     CC_O='-fr=$(@D)'
     as_default="${cross_prefix}gcc"
