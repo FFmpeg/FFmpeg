@@ -38,6 +38,8 @@ version <next>:
 - LPCM support in MPEG-TS (HDMV RID as found on Blu-ray disks)
 - Wmapro decoder
 - Core Audio Format demuxer
+- Atrac1 decoder
+- MD STUDIO audio demuxer
 
 
 

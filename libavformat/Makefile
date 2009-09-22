@@ -12,6 +12,7 @@ OBJS-$(CONFIG_AAC_DEMUXER)               += raw.o id3v1.o id3v2.o
 OBJS-$(CONFIG_AC3_DEMUXER)               += raw.o
 OBJS-$(CONFIG_AC3_MUXER)                 += raw.o
 OBJS-$(CONFIG_ADTS_MUXER)                += adtsenc.o
+OBJS-$(CONFIG_AEA_DEMUXER)               += aea.o
 OBJS-$(CONFIG_AIFF_DEMUXER)              += aiff.o riff.o raw.o
 OBJS-$(CONFIG_AIFF_MUXER)                += aiff.o riff.o
 OBJS-$(CONFIG_AMR_DEMUXER)               += amr.o
