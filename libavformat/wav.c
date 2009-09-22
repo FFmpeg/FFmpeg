@@ -198,31 +198,6 @@ static int wav_read_header(AVFormatContext *s,
     return 0;
 }
 
-#if CONFIG_W64_DEMUXER
-
-static const uint8_t guid_riff[16] = { 'r', 'i', 'f', 'f',
-    0x2E, 0x91, 0xCF, 0x11, 0xA5, 0xD6, 0x28, 0xDB, 0x04, 0xC1, 0x00, 0x00 };
-
-static const uint8_t guid_wave[16] = { 'w', 'a', 'v', 'e',
-    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
-
-static const uint8_t guid_fmt [16] = { 'f', 'm', 't', ' ',
-    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
-
-static const uint8_t guid_data[16] = { 'd', 'a', 't', 'a',
-    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
-
-static int w64_probe(AVProbeData *p)
-{
-    if (p->buf_size <= 40)
-        return 0;
-    if (!memcmp(p->buf,      guid_riff, 16) &&
-        !memcmp(p->buf + 24, guid_wave, 16))
-        return AVPROBE_SCORE_MAX;
-    else
-        return 0;
-}
-
 /** Find chunk with w64 GUID by skipping over other chunks
  * @return the size of the found chunk
  */
@@ -241,6 +216,31 @@ static int64_t find_guid(ByteIOContext *pb, const uint8_t guid1[16])
         url_fskip(pb, FFALIGN(size, INT64_C(8)) - 24);
     }
     return -1;
+}
+
+static const uint8_t guid_data[16] = { 'd', 'a', 't', 'a',
+    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
+
+#if CONFIG_W64_DEMUXER
+
+static const uint8_t guid_riff[16] = { 'r', 'i', 'f', 'f',
+    0x2E, 0x91, 0xCF, 0x11, 0xA5, 0xD6, 0x28, 0xDB, 0x04, 0xC1, 0x00, 0x00 };
+
+static const uint8_t guid_wave[16] = { 'w', 'a', 'v', 'e',
+    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
+
+static const uint8_t guid_fmt [16] = { 'f', 'm', 't', ' ',
+    0xF3, 0xAC, 0xD3, 0x11, 0x8C, 0xD1, 0x00, 0xC0, 0x4F, 0x8E, 0xDB, 0x8A };
+
+static int w64_probe(AVProbeData *p)
+{
+    if (p->buf_size <= 40)
+        return 0;
+    if (!memcmp(p->buf,      guid_riff, 16) &&
+        !memcmp(p->buf + 24, guid_wave, 16))
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
 }
 
 static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
