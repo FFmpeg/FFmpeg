@@ -82,8 +82,6 @@ typedef struct {
     DSPContext          dsp;
 } AT1Ctx;
 
-DECLARE_ALIGNED_16(static float, short_window[32]);
-
 /** size of the transform in samples in the long mode for each QMF band */
 static const uint16_t samples_per_band[3] = {128, 128, 256};
 static const uint8_t   mdct_long_nbits[3] = {7, 7, 8};
@@ -134,7 +132,7 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
 
             /* overlap and window long blocks */
             q->dsp.vector_fmul_window(q->bands[band_num], &su->spectrum[1][ref_pos + band_samples - 16],
-                                      &su->spectrum[0][ref_pos], short_window, 0, 16);
+                                      &su->spectrum[0][ref_pos], ff_sine_32, 0, 16);
             memcpy(q->bands[band_num] + 32, &su->spectrum[0][ref_pos + 16], 240 * sizeof(float));
         } else {
             /* short blocks */
@@ -146,7 +144,7 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
 
                 /* overlap and window between short blocks */
                 q->dsp.vector_fmul_window(&q->bands[band_num][start_pos], prev_buf,
-                                          &su->spectrum[0][ref_pos + start_pos], short_window, 0, 16);
+                                          &su->spectrum[0][ref_pos + start_pos], ff_sine_32, 0, 16);
 
                 prev_buf = &su->spectrum[0][ref_pos+start_pos + 16];
                 start_pos += 32; // use hardcoded block_size
@@ -342,7 +340,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     ff_mdct_init(&q->mdct_ctx[1], 8, 1, -1.0/ (1 << 15));
     ff_mdct_init(&q->mdct_ctx[2], 9, 1, -1.0/ (1 << 15));
 
-    ff_sine_window_init(short_window, 32);
+    ff_sine_window_init(ff_sine_32, 32);
 
     atrac_generate_tables();
 
