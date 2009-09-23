@@ -553,12 +553,11 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
                 uint_fast8_t book_idx;
                 for (idx=0;idx<floor_setup->data.t0.num_books;++idx) {
                     book_idx=get_bits(gb, 8);
+                    if (book_idx>=vc->codebook_count)
+                        return 1;
                     floor_setup->data.t0.book_list[idx]=book_idx;
                     if (vc->codebooks[book_idx].dimensions > max_codebook_dim)
                         max_codebook_dim=vc->codebooks[book_idx].dimensions;
-
-                    if (floor_setup->data.t0.book_list[idx]>vc->codebook_count)
-                        return 1;
                 }
             }
 
