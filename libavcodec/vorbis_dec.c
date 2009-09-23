@@ -630,6 +630,10 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc){
         res_setup->partition_size=get_bits(gb, 24)+1;
         res_setup->classifications=get_bits(gb, 6)+1;
         res_setup->classbook=get_bits(gb, 8);
+        if (res_setup->classbook>=vc->codebook_count) {
+            av_log(vc->avccontext, AV_LOG_ERROR, "classbook value %d out of range. \n", res_setup->classbook);
+            return 1;
+        }
 
         AV_DEBUG("    begin %d end %d part.size %d classif.s %d classbook %d \n", res_setup->begin, res_setup->end, res_setup->partition_size,
           res_setup->classifications, res_setup->classbook);
