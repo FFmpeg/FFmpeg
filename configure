@@ -1536,7 +1536,7 @@ elif $cc -V 2>/dev/null | grep -q Compaq; then
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -M'
     debuglevel=3
     add_ldflags -Wl,-z,now # calls to libots crash without this
-elif $cc --vsn 2>/dev/null | grep -q RVCT; then
+elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
     test -d "$sysroot" || die "No valid sysroot specified."
     cc_type=armcc
     cc_version="AV_STRINGIFY(__ARMCC_VERSION)"
