@@ -1070,10 +1070,9 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
                 coeff = zero_run = 0;
             } else {
                 bits_to_get = coeff_get_bits[token];
-                if (!bits_to_get)
-                    coeff = coeff_tables[token][0];
-                else
-                    coeff = coeff_tables[token][get_bits(gb, bits_to_get)];
+                if (bits_to_get)
+                    bits_to_get = get_bits(gb, bits_to_get);
+                coeff = coeff_tables[token][bits_to_get];
 
                 zero_run = zero_run_base[token];
                 if (zero_run_get_bits[token])
