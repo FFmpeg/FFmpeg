@@ -663,7 +663,12 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc){
         for(j=0;j<res_setup->classifications;++j) {
             for(k=0;k<8;++k) {
                 if (cascade[j]&(1<<k)) {
-                        res_setup->books[j][k]=get_bits(gb, 8);
+                    int bits=get_bits(gb, 8);
+                    if (bits>=vc->codebook_count) {
+                        av_log(vc->avccontext, AV_LOG_ERROR, "book value %d out of range. \n", bits);
+                        return 1;
+                    }
+                    res_setup->books[j][k]=bits;
 
                     AV_DEBUG("     %d class casscade depth %d book: %d \n", j, k, res_setup->books[j][k]);
 
