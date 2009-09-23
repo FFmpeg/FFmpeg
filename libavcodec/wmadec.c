@@ -625,9 +625,6 @@ static int wma_decode_block(WMACodecContext *s)
 #endif
 
     if (s->ms_stereo && s->channel_coded[1]) {
-        float a, b;
-        int i;
-
         /* nominal case for ms stereo: we do it before mdct */
         /* no need to optimize this case because it should almost
            never happen */
