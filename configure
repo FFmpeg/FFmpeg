@@ -1579,7 +1579,7 @@ elif $cc -version 2>/dev/null | grep -q TMS470; then
                     ;;
                 -mfpu=neon)     echo --float_support=vfpv3 --neon ;;
                 -mfpu=vfp)      echo --float_support=vfpv2        ;;
-                -mfpu=softvfp)  echo --float_support=vfplib       ;;
+                -msoft-float)   echo --float_support=vfplib       ;;
                 -Os)            echo -O3 -mf=2                    ;;
                 -O[0-3])        echo $flag -mf=5                  ;;
                 -g)             echo -g -mn                       ;;
