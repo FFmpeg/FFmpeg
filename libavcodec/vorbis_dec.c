@@ -37,6 +37,7 @@
 #define V_NB_BITS 8
 #define V_NB_BITS2 11
 #define V_MAX_VLCS (1<<16)
+#define V_MAX_PARTITIONS (1<<20)
 
 #ifndef V_DEBUG
 #define AV_DEBUG(...)
@@ -638,6 +639,14 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc){
         res_setup->begin=get_bits(gb, 24);
         res_setup->end=get_bits(gb, 24);
         res_setup->partition_size=get_bits(gb, 24)+1;
+        /* Validations to prevent a buffer overflow later. */
+        if (res_setup->begin>res_setup->end
+        || res_setup->end>vc->blocksize[1]/(res_setup->type==2?1:2)
+        || (res_setup->end-res_setup->begin)/res_setup->partition_size>V_MAX_PARTITIONS) {
+            av_log(vc->avccontext, AV_LOG_ERROR, "partition out of bounds: type, begin, end, size, blocksize: %d, %d, %d, %d, %d\n", res_setup->type, res_setup->begin, res_setup->end, res_setup->partition_size, vc->blocksize[1]/2);
+            return 1;
+        }
+
         res_setup->classifications=get_bits(gb, 6)+1;
         res_setup->classbook=get_bits(gb, 8);
         if (res_setup->classbook>=vc->codebook_count) {
