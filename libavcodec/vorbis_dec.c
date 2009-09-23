@@ -752,9 +752,20 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc) {
         }
 
         for(j=0;j<mapping_setup->submaps;++j) {
+            int bits;
             skip_bits(gb, 8); // FIXME check?
-            mapping_setup->submap_floor[j]=get_bits(gb, 8);
-            mapping_setup->submap_residue[j]=get_bits(gb, 8);
+            bits=get_bits(gb, 8);
+            if (bits>=vc->floor_count) {
+                av_log(vc->avccontext, AV_LOG_ERROR, "submap floor value %d out of range. \n", bits);
+                return -1;
+            }
+            mapping_setup->submap_floor[j]=bits;
+            bits=get_bits(gb, 8);
+            if (bits>=vc->residue_count) {
+                av_log(vc->avccontext, AV_LOG_ERROR, "submap residue value %d out of range. \n", bits);
+                return -1;
+            }
+            mapping_setup->submap_residue[j]=bits;
 
             AV_DEBUG("   %d mapping %d submap : floor %d, residue %d \n", i, j, mapping_setup->submap_floor[j], mapping_setup->submap_residue[j]);
         }
