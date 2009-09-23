@@ -2319,7 +2319,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
     }
 
   for(i=0;i<3;i++) {
-    init_get_bits(&gb, header_start[i], header_len[i]);
+    init_get_bits(&gb, header_start[i], header_len[i] * 8);
 
     ptype = get_bits(&gb, 8);
 
