@@ -475,23 +475,20 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     if (((avctx->coded_width || avctx->coded_height)
         && avcodec_check_dimensions(avctx, avctx->coded_width, avctx->coded_height))
         || avctx->channels > SANE_NB_CHANNELS) {
-        av_freep(&avctx->priv_data);
         ret = AVERROR(EINVAL);
-        goto end;
+        goto free_and_end;
     }
 
     avctx->codec = codec;
     if(avctx->codec_id != codec->id || avctx->codec_type != codec->type){
         av_log(avctx, AV_LOG_ERROR, "codec type or id mismatches\n");
-        goto end;
+        goto free_and_end;
     }
     avctx->frame_number = 0;
     if(avctx->codec->init){
         ret = avctx->codec->init(avctx);
         if (ret < 0) {
-            av_freep(&avctx->priv_data);
-            avctx->codec= NULL;
-            goto end;
+            goto free_and_end;
         }
     }
     ret=0;
@@ -503,6 +500,10 @@ end:
         (*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE);
     }
     return ret;
+free_and_end:
+    av_freep(&avctx->priv_data);
+    avctx->codec= NULL;
+    goto end;
 }
 
 int attribute_align_arg avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
