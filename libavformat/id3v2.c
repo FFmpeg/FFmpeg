@@ -92,9 +92,9 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
 
     case 0:  /* ISO-8859-1 (0 - 255 maps directly into unicode) */
         q = dst;
-        while (taglen--) {
+        while (taglen-- && q - dst < dstlen - 7) {
             uint8_t tmp;
-            PUT_UTF8(get_byte(s->pb), tmp, if (q - dst < dstlen - 1) *q++ = tmp;)
+            PUT_UTF8(get_byte(s->pb), tmp, *q++ = tmp;)
         }
         *q = '\0';
         break;
