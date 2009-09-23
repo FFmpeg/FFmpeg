@@ -2466,6 +2466,9 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     OUT_INT *outptr, *bp;
     int fr, j, n;
 
+    if(*data_size < MPA_FRAME_SIZE * MPA_MAX_CHANNELS * s->frames * sizeof(OUT_INT))
+        return -1;
+
     *data_size = 0;
     // Discard too short frames
     if (buf_size < HEADER_SIZE)
