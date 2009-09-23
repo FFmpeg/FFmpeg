@@ -2278,6 +2278,7 @@ static int decode_frame(AVCodecContext * avctx,
 
     if(*data_size < 1152*avctx->channels*sizeof(OUT_INT))
         return -1;
+    *data_size = 0;
 
     if(s->frame_size<=0 || s->frame_size > buf_size){
         av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
