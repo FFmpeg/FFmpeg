@@ -697,7 +697,14 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc) {
             for(j=0;j<mapping_setup->coupling_steps;++j) {
                 mapping_setup->magnitude[j]=get_bits(gb, ilog(vc->audio_channels-1));
                 mapping_setup->angle[j]=get_bits(gb, ilog(vc->audio_channels-1));
-                // FIXME: sanity checks
+                if (mapping_setup->magnitude[j]>=vc->audio_channels) {
+                    av_log(vc->avccontext, AV_LOG_ERROR, "magnitude channel %d out of range. \n", mapping_setup->magnitude[j]);
+                    return 1;
+                }
+                if (mapping_setup->angle[j]>=vc->audio_channels) {
+                    av_log(vc->avccontext, AV_LOG_ERROR, "angle channel %d out of range. \n", mapping_setup->angle[j]);
+                    return 1;
+                }
             }
         } else {
             mapping_setup->coupling_steps=0;
