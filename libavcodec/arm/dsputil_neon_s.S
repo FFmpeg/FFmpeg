@@ -1023,3 +1023,31 @@ function ff_scalarproduct_float_neon, export=1
 NOVFP   vmov.32         r0,  d0[0]
         bx              lr
         .endfunc
+
+function ff_int32_to_float_fmul_scalar_neon, export=1
+VFP     vdup.32         q0,  d0[0]
+VFP     len     .req    r2
+NOVFP   vdup.32         q0,  r2
+NOVFP   len     .req    r3
+
+        vld1.32         {q1},[r1,:128]!
+        vcvt.f32.s32    q3,  q1
+        vld1.32         {q2},[r1,:128]!
+        vcvt.f32.s32    q8,  q2
+1:      subs            len, len, #8
+        pld             [r1, #16]
+        vmul.f32        q9,  q3,  q0
+        vmul.f32        q10, q8,  q0
+        beq             2f
+        vld1.32         {q1},[r1,:128]!
+        vcvt.f32.s32    q3,  q1
+        vld1.32         {q2},[r1,:128]!
+        vcvt.f32.s32    q8,  q2
+        vst1.32         {q9}, [r0,:128]!
+        vst1.32         {q10},[r0,:128]!
+        b               1b
+2:      vst1.32         {q9}, [r0,:128]!
+        vst1.32         {q10},[r0,:128]!
+        bx              lr
+        .unreq  len
+        .endfunc

@@ -169,6 +169,8 @@ void ff_sv_fmul_scalar_4_neon(float *dst, const float **vp, float mul,
                               int len);
 void ff_butterflies_float_neon(float *v1, float *v2, int len);
 float ff_scalarproduct_float_neon(const float *v1, const float *v2, int len);
+void ff_int32_to_float_fmul_scalar_neon(float *dst, const int *src,
+                                        float mul, int len);
 
 void ff_float_to_int16_neon(int16_t *, const float *, long);
 void ff_float_to_int16_interleave_neon(int16_t *, const float **, long, int);
@@ -284,6 +286,7 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->vector_fmul_scalar = ff_vector_fmul_scalar_neon;
     c->butterflies_float = ff_butterflies_float_neon;
     c->scalarproduct_float = ff_scalarproduct_float_neon;
+    c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_neon;
 
     c->vector_fmul_sv_scalar[0] = ff_vector_fmul_sv_scalar_2_neon;
     c->vector_fmul_sv_scalar[1] = ff_vector_fmul_sv_scalar_4_neon;
