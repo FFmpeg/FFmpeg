@@ -848,8 +848,16 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
     }
 
     vc->version=get_bits_long(gb, 32);    //FIXME check 0
-    vc->audio_channels=get_bits(gb, 8);   //FIXME check >0
-    vc->audio_samplerate=get_bits_long(gb, 32);   //FIXME check >0
+    vc->audio_channels=get_bits(gb, 8);
+    if(vc->audio_channels <= 0){
+        av_log(vc->avccontext, AV_LOG_ERROR, "Invalid number of channels\n");
+        return -1;
+    }
+    vc->audio_samplerate=get_bits_long(gb, 32);
+    if(vc->audio_samplerate <= 0){
+        av_log(vc->avccontext, AV_LOG_ERROR, "Invalid samplerate\n");
+        return -1;
+    }
     vc->bitrate_maximum=get_bits_long(gb, 32);
     vc->bitrate_nominal=get_bits_long(gb, 32);
     vc->bitrate_minimum=get_bits_long(gb, 32);
