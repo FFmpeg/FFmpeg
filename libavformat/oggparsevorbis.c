@@ -112,7 +112,7 @@ vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
     }
 
     if (p != end)
-        av_log(as, AV_LOG_INFO, "%ti bytes of comment header remain\n", p-end);
+        av_log(as, AV_LOG_INFO, "%ti bytes of comment header remain\n", end-p);
     if (n > 0)
         av_log(as, AV_LOG_INFO,
                "truncated comment header, %i comments not found\n", n);
