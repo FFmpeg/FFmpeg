@@ -992,7 +992,7 @@ static int unpack_block_qpis(Vp3DecodeContext *s, GetBitContext *gb)
                 num_blocks_at_qpi += run_length;
 
             for (j = 0; j < run_length; i++) {
-                if (i > s->coded_fragment_list_index)
+                if (i >= s->coded_fragment_list_index)
                     return -1;
 
                 if (s->all_fragments[s->coded_fragment_list[i]].qpi == qpi) {
