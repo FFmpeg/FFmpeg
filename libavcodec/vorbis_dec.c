@@ -1484,7 +1484,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
         uint_fast8_t ch=0;
 
         for(j=0;j<vc->audio_channels;++j) {
-            if ((mapping->submaps==1) || (i=mapping->mux[j])) {
+            if ((mapping->submaps==1) || (i==mapping->mux[j])) {
                 res_chan[j]=res_num;
                 if (no_residue[j]) {
                     do_not_decode[ch]=1;
