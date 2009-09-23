@@ -81,6 +81,7 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
     char *q, dst[512];
     int len, dstlen = sizeof(dst) - 1;
     unsigned genre;
+    unsigned int (*get)(ByteIOContext*) = get_be16;
 
     dst[0] = 0;
     if (taglen < 1)
@@ -99,11 +100,38 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
         *q = 0;
         break;
 
+    case 1:  /* UTF-16 with BOM */
+        taglen -= 2;
+        switch (get_be16(s->pb)) {
+        case 0xfffe:
+            get = get_le16;
+        case 0xfeff:
+            break;
+        default:
+            av_log(s, AV_LOG_ERROR, "Incorrect BOM value in tag %s.\n", key);
+            return;
+        }
+        // fall-through
+
+    case 2:  /* UTF-16BE without BOM */
+        q = dst;
+        while (taglen > 1 && q - dst < dstlen - 7) {
+            uint32_t ch;
+            uint8_t tmp;
+
+            GET_UTF16(ch, ((taglen -= 2) >= 0 ? get(s->pb) : 0), break;)
+            PUT_UTF8(ch, tmp, *q++ = tmp;)
+        }
+        *q = 0;
+        break;
+
     case 3:  /* UTF-8 */
         len = FFMIN(taglen, dstlen - 1);
         get_buffer(s->pb, dst, len);
         dst[len] = 0;
         break;
+    default:
+        av_log(s, AV_LOG_WARNING, "Unknown encoding in tag %s\n.", key);
     }
 
     if (!strcmp(key, "genre")

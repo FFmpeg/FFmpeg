@@ -266,6 +266,30 @@ static inline av_const int av_ceil_log2(int x)
     }
 
 /*!
+ * \def GET_UTF16(val, GET_16BIT, ERROR)
+ * Converts a UTF-16 character (2 or 4 bytes) to its 32-bit UCS-4 encoded form
+ * \param val is the output and should be of type uint32_t. It holds the converted
+ * UCS-4 character and should be a left value.
+ * \param GET_16BIT gets two bytes of UTF-16 encoded data converted to native endianness.
+ * It can be a function or a statement whose return value or evaluated value is of type
+ * uint16_t. It will be executed up to 2 times.
+ * \param ERROR action that should be taken when an invalid UTF-16 surrogate is
+ * returned from GET_BYTE. It should be a statement that jumps out of the macro,
+ * like exit(), goto, return, break, or continue.
+ */
+#define GET_UTF16(val, GET_16BIT, ERROR)\
+    val = GET_16BIT;\
+    {\
+        unsigned int hi = val - 0xD800;\
+        if (hi < 0x800) {\
+            val = GET_16BIT - 0xDC00;\
+            if (val > 0x3FFU || hi > 0x3FFU)\
+                ERROR\
+            val += (hi<<10) + 0x10000;\
+        }\
+    }\
+
+/*!
  * \def PUT_UTF8(val, tmp, PUT_BYTE)
  * Converts a 32-bit Unicode character to its UTF-8 encoded form (up to 4 bytes long).
  * \param val is an input-only argument and should be of type uint32_t. It holds
