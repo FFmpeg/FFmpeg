@@ -860,16 +860,16 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
             } else if (cur_band_type == NOISE_BT) {
                 for (group = 0; group < ics->group_len[g]; group++) {
                     float scale;
-                    float band_energy = 0;
+                    float band_energy;
                     float *cf = coef + group * 128 + offsets[i];
                     int len = offsets[i+1] - offsets[i];
 
-                    for (k = offsets[i]; k < offsets[i + 1]; k++) {
+                    for (k = 0; k < len; k++) {
                         ac->random_state  = lcg_random(ac->random_state);
-                        coef[group * 128 + k] = ac->random_state;
+                        cf[k] = ac->random_state;
                     }
 
-                    band_energy += ac->dsp.scalarproduct_float(cf, cf, len);
+                    band_energy = ac->dsp.scalarproduct_float(cf, cf, len);
                     scale = sf[idx] / sqrtf(band_energy);
                     ac->dsp.vector_fmul_scalar(cf, cf, scale, len);
                 }
