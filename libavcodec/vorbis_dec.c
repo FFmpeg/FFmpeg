@@ -793,7 +793,11 @@ static int vorbis_parse_setup_hdr_modes(vorbis_context *vc) {
         mode_setup->blockflag=get_bits1(gb);
         mode_setup->windowtype=get_bits(gb, 16); //FIXME check
         mode_setup->transformtype=get_bits(gb, 16); //FIXME check
-        mode_setup->mapping=get_bits(gb, 8); //FIXME check
+        mode_setup->mapping=get_bits(gb, 8);
+        if (mode_setup->mapping>=vc->mapping_count) {
+            av_log(vc->avccontext, AV_LOG_ERROR, "mode mapping value %d out of range. \n", mode_setup->mapping);
+            return 1;
+        }
 
         AV_DEBUG(" %d mode: blockflag %d, windowtype %d, transformtype %d, mapping %d \n", i, mode_setup->blockflag, mode_setup->windowtype, mode_setup->transformtype, mode_setup->mapping);
     }
@@ -1449,6 +1453,10 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
         mode_number=0;
     } else {
         mode_number=get_bits(gb, ilog(vc->mode_count-1));
+    }
+    if (mode_number>=vc->mode_count) {
+        av_log(vc->avccontext, AV_LOG_ERROR, "mode number %d out of range.\n", mode_number);
+        return -1;
     }
     vc->mode_number=mode_number;
     mapping=&vc->mappings[vc->modes[mode_number].mapping];
