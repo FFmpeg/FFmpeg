@@ -96,7 +96,7 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
             uint8_t tmp;
             PUT_UTF8(get_byte(s->pb), tmp, *q++ = tmp;)
         }
-        *q = '\0';
+        *q = 0;
         break;
 
     case 3:  /* UTF-8 */
