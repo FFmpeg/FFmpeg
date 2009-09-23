@@ -487,13 +487,23 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
                 AV_DEBUG(" %d floor %d class dim: %d subclasses %d \n", i, j, floor_setup->data.t1.class_dimensions[j], floor_setup->data.t1.class_subclasses[j]);
 
                 if (floor_setup->data.t1.class_subclasses[j]) {
-                    floor_setup->data.t1.class_masterbook[j]=get_bits(gb, 8);
+                    int bits=get_bits(gb, 8);
+                    if (bits>=vc->codebook_count) {
+                        av_log(vc->avccontext, AV_LOG_ERROR, "Masterbook index %d is out of range.\n", bits);
+                        return 1;
+                    }
+                    floor_setup->data.t1.class_masterbook[j]=bits;
 
                     AV_DEBUG("   masterbook: %d \n", floor_setup->data.t1.class_masterbook[j]);
                 }
 
                 for(k=0;k<(1<<floor_setup->data.t1.class_subclasses[j]);++k) {
-                    floor_setup->data.t1.subclass_books[j][k]=(int16_t)get_bits(gb, 8)-1;
+                    int16_t bits=get_bits(gb, 8)-1;
+                    if (bits!=-1 && bits>=vc->codebook_count) {
+                        av_log(vc->avccontext, AV_LOG_ERROR, "Subclass book index %d is out of range.\n", bits);
+                        return 1;
+                    }
+                    floor_setup->data.t1.subclass_books[j][k]=bits;
 
                     AV_DEBUG("    book %d. : %d \n", k, floor_setup->data.t1.subclass_books[j][k]);
                 }
