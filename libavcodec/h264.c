@@ -7087,6 +7087,10 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
     if(sps->timing_info_present_flag){
         sps->num_units_in_tick = get_bits_long(&s->gb, 32);
         sps->time_scale = get_bits_long(&s->gb, 32);
+        if(sps->num_units_in_tick-1 > 0x7FFFFFFEU || sps->time_scale-1 > 0x7FFFFFFEU){
+            av_log(h->s.avctx, AV_LOG_ERROR, "time_scale/num_units_in_tick inavlid or unsupported (%d/%d)\n", sps->time_scale, sps->num_units_in_tick);
+            return -1;
+        }
         sps->fixed_frame_rate_flag = get_bits1(&s->gb);
     }
 
