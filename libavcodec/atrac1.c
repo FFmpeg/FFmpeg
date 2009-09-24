@@ -108,6 +108,9 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
     unsigned int start_pos, ref_pos = 0, pos = 0;
 
     for (band_num = 0; band_num < AT1_QMF_BANDS; band_num++) {
+        float *prev_buf;
+        int j;
+
         band_samples = samples_per_band[band_num];
         log2_block_count = su->log2_block_count[band_num];
 
@@ -115,6 +118,7 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
         /* 4 for short mode(low/middle bands) and 8 for short mode(high band)*/
         num_blocks = 1 << log2_block_count;
 
+        if (num_blocks == 1) {
         /* mdct block size in samples: 128 (long mode, low & mid bands), */
         /* 256 (long mode, high band) and 32 (short mode, all bands) */
         block_size = band_samples >> log2_block_count;
@@ -124,33 +128,28 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
 
         if (nbits != 5 && nbits != 7 && nbits != 8)
             return -1;
-
-        if (num_blocks == 1) {
-            /* long blocks */
-            at1_imdct(q, &q->spec[pos], &su->spectrum[0][ref_pos], nbits, band_num);
-            pos += block_size; // move to the next mdct block in the spectrum
-
-            /* overlap and window long blocks */
-            q->dsp.vector_fmul_window(q->bands[band_num], &su->spectrum[1][ref_pos + band_samples - 16],
-                                      &su->spectrum[0][ref_pos], ff_sine_32, 0, 16);
-            memcpy(q->bands[band_num] + 32, &su->spectrum[0][ref_pos + 16], 240 * sizeof(float));
         } else {
-            /* short blocks */
-            float *prev_buf;
+            block_size = 32;
+            nbits = 5;
+        }
+
             start_pos = 0;
             prev_buf = &su->spectrum[1][ref_pos + band_samples - 16];
-            for (; num_blocks != 0; num_blocks--) {
-                at1_imdct(q, &q->spec[pos], &su->spectrum[0][ref_pos + start_pos], 5, band_num);
+            for (j=0; j < num_blocks; j++) {
+                at1_imdct(q, &q->spec[pos], &su->spectrum[0][ref_pos + start_pos], nbits, band_num);
 
-                /* overlap and window between short blocks */
+                /* overlap and window */
                 q->dsp.vector_fmul_window(&q->bands[band_num][start_pos], prev_buf,
                                           &su->spectrum[0][ref_pos + start_pos], ff_sine_32, 0, 16);
 
                 prev_buf = &su->spectrum[0][ref_pos+start_pos + 16];
-                start_pos += 32; // use hardcoded block_size
-                pos += 32;
+                start_pos += block_size;
+                pos += block_size;
             }
-        }
+
+        if (num_blocks == 1)
+            memcpy(q->bands[band_num] + 32, &su->spectrum[0][ref_pos + 16], 240 * sizeof(float));
+
         ref_pos += band_samples;
     }
 
