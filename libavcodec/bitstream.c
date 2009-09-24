@@ -38,25 +38,6 @@ const uint8_t ff_log2_run[32]={
  8, 9,10,11,12,13,14,15
 };
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
-/**
- * Same as av_mallocz_static(), but does a realloc.
- *
- * @param[in] ptr The block of memory to reallocate.
- * @param[in] size The requested size.
- * @return Block of memory of requested size.
- * @deprecated. Code which uses ff_realloc_static is broken/misdesigned
- * and should correctly use static arrays
- */
-attribute_deprecated av_alloc_size(2)
-static void *ff_realloc_static(void *ptr, unsigned int size);
-
-static void *ff_realloc_static(void *ptr, unsigned int size)
-{
-    return av_realloc(ptr, size);
-}
-#endif
-
 void align_put_bits(PutBitContext *s)
 {
 #ifdef ALT_BITSTREAM_WRITER
