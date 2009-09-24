@@ -42,6 +42,8 @@
 
 #define FRAGMENT_PIXELS 8
 
+static av_cold int vp3_decode_end(AVCodecContext *avctx);
+
 typedef struct Coeff {
     struct Coeff *next;
     DCTELEM coeff;
@@ -1755,6 +1757,11 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     s->coeffs = av_malloc(s->fragment_count * sizeof(Coeff) * 65);
     s->coded_fragment_list = av_malloc(s->fragment_count * sizeof(int));
     s->pixel_addresses_initialized = 0;
+    if (!s->superblock_coding || !s->all_fragments || !s->coeff_counts ||
+        !s->coeffs || !s->coded_fragment_list) {
+        vp3_decode_end(avctx);
+        return -1;
+    }
 
     if (!s->theora_tables)
     {
@@ -1860,6 +1867,11 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     s->superblock_macroblocks = av_malloc(s->superblock_count * 4 * sizeof(int));
     s->macroblock_fragments = av_malloc(s->macroblock_count * 6 * sizeof(int));
     s->macroblock_coding = av_malloc(s->macroblock_count + 1);
+    if (!s->superblock_fragments || !s->superblock_macroblocks ||
+        !s->macroblock_fragments || !s->macroblock_coding) {
+        vp3_decode_end(avctx);
+        return -1;
+    }
     init_block_mapping(s);
 
     for (i = 0; i < 3; i++) {
