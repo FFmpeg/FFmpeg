@@ -10,6 +10,12 @@ q
 }' .svn/entries 2>/dev/null)
 test $revision && revision=SVN-r$revision
 
+# check for git svn revision number
+if ! test $revision; then
+    revision=$(cd "$1" && git svn find-rev HEAD)
+    test $revision && revision=git-svn-r$revision
+fi
+
 # check for git short hash
 if ! test $revision; then
     revision=$(cd "$1" && git log -1 --pretty=format:%h)
