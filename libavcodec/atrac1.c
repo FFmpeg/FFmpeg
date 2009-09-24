@@ -119,33 +119,33 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
         num_blocks = 1 << log2_block_count;
 
         if (num_blocks == 1) {
-        /* mdct block size in samples: 128 (long mode, low & mid bands), */
-        /* 256 (long mode, high band) and 32 (short mode, all bands) */
-        block_size = band_samples >> log2_block_count;
+            /* mdct block size in samples: 128 (long mode, low & mid bands), */
+            /* 256 (long mode, high band) and 32 (short mode, all bands) */
+            block_size = band_samples >> log2_block_count;
 
-        /* calc transform size in bits according to the block_size_mode */
-        nbits = mdct_long_nbits[band_num] - log2_block_count;
+            /* calc transform size in bits according to the block_size_mode */
+            nbits = mdct_long_nbits[band_num] - log2_block_count;
 
-        if (nbits != 5 && nbits != 7 && nbits != 8)
-            return -1;
+            if (nbits != 5 && nbits != 7 && nbits != 8)
+                return -1;
         } else {
             block_size = 32;
             nbits = 5;
         }
 
-            start_pos = 0;
-            prev_buf = &su->spectrum[1][ref_pos + band_samples - 16];
-            for (j=0; j < num_blocks; j++) {
-                at1_imdct(q, &q->spec[pos], &su->spectrum[0][ref_pos + start_pos], nbits, band_num);
+        start_pos = 0;
+        prev_buf = &su->spectrum[1][ref_pos + band_samples - 16];
+        for (j=0; j < num_blocks; j++) {
+            at1_imdct(q, &q->spec[pos], &su->spectrum[0][ref_pos + start_pos], nbits, band_num);
 
-                /* overlap and window */
-                q->dsp.vector_fmul_window(&q->bands[band_num][start_pos], prev_buf,
-                                          &su->spectrum[0][ref_pos + start_pos], ff_sine_32, 0, 16);
+            /* overlap and window */
+            q->dsp.vector_fmul_window(&q->bands[band_num][start_pos], prev_buf,
+                                      &su->spectrum[0][ref_pos + start_pos], ff_sine_32, 0, 16);
 
-                prev_buf = &su->spectrum[0][ref_pos+start_pos + 16];
-                start_pos += block_size;
-                pos += block_size;
-            }
+            prev_buf = &su->spectrum[0][ref_pos+start_pos + 16];
+            start_pos += block_size;
+            pos += block_size;
+        }
 
         if (num_blocks == 1)
             memcpy(q->bands[band_num] + 32, &su->spectrum[0][ref_pos + 16], 240 * sizeof(float));
