@@ -44,6 +44,7 @@ typedef struct TiffContext {
     int invert;
     int fax_opts;
     int predictor;
+    int fill_order;
 
     int strips, rps, sstype;
     int sot;
@@ -113,8 +114,12 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
             return -1;
         }
-        for(i = 0; i < size; i++)
-            src2[i] = ff_reverse[src[i]];
+        if(!s->fill_order){
+            memcpy(src2, src, size);
+        }else{
+            for(i = 0; i < size; i++)
+                src2[i] = ff_reverse[src[i]];
+        }
         memset(src2+size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
         if(s->compr == TIFF_G3 && !(s->fax_opts & 1))
             s->compr = TIFF_CCITT_RLE;
@@ -375,6 +380,13 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             return -1;
         }
         break;
+    case TIFF_FILL_ORDER:
+        if(value < 1 || value > 2){
+            av_log(s->avctx, AV_LOG_ERROR, "Unknown FillOrder value %d, trying default one\n", value);
+            value = 1;
+        }
+        s->fill_order = value - 1;
+        break;
     case TIFF_PAL:
         if(s->avctx->pix_fmt != PIX_FMT_PAL8){
             av_log(s->avctx, AV_LOG_ERROR, "Palette met but this is not palettized format\n");
@@ -433,6 +445,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->le = le;
     s->invert = 0;
     s->compr = TIFF_RAW;
+    s->fill_order = 0;
     // As TIFF 6.0 specification puts it "An arbitrary but carefully chosen number
     // that further identifies the file as a TIFF file"
     if(tget_short(&buf, le) != 42){
