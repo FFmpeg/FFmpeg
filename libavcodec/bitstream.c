@@ -127,8 +127,8 @@ static int alloc_table(VLC *vlc, int size, int use_static)
         if(use_static)
             abort(); //cant do anything, init_vlc() is used with too little memory
         vlc->table_allocated += (1 << vlc->bits);
-            vlc->table = av_realloc(vlc->table,
-                                    sizeof(VLC_TYPE) * 2 * vlc->table_allocated);
+        vlc->table = av_realloc(vlc->table,
+                                sizeof(VLC_TYPE) * 2 * vlc->table_allocated);
         if (!vlc->table)
             return -1;
     }
