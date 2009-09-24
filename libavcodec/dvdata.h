@@ -654,6 +654,26 @@ static const DVprofile dv_profiles[] = {
       .audio_min_samples  = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32kHz */
       .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },
       .audio_shuffle = dv_audio_shuffle625,
+    },
+    { .dsf = 1,
+      .video_stype = 0x1,
+      .frame_size = 144000,        /* IEC 61883-5 - 625/50 (PAL) */
+      .difseg_size = 12,
+      .n_difchan = 1,
+      .time_base = { 1, 25 },
+      .ltc_divisor = 25,
+      .height = 576,
+      .width = 720,
+      .sar = {{59, 54}, {118, 81}},
+      .work_chunks = &work_chunks_dv25pal[0],
+      .idct_factor = &dv_idct_factor_sd[0],
+      .pix_fmt = PIX_FMT_YUV420P,
+      .bpm = 6,
+      .block_sizes = block_sizes_dv2550,
+      .audio_stride = 108,
+      .audio_min_samples  = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32kHz */
+      .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },
+      .audio_shuffle = dv_audio_shuffle625,
     }
 };
 
