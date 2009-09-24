@@ -231,12 +231,23 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }
 
     if(avctx->pix_fmt == PIX_FMT_PAL8){
+        int colors = 1 << depth;
+        if(ihsize >= 36){
+            int t;
+            buf = buf0 + 46;
+            t = bytestream_get_le32(&buf);
+            if(t < 0 || t > (1 << depth)){
+                av_log(avctx, AV_LOG_ERROR, "Incorrect number of colors - %X for bitdepth %d\n", t, depth);
+            }else if(t){
+                colors = t;
+            }
+        }
         buf = buf0 + 14 + ihsize; //palette location
-        if((hsize-ihsize-14)>>depth < 4){ // OS/2 bitmap, 3 bytes per palette entry
-            for(i = 0; i < (1 << depth); i++)
+        if((hsize-ihsize-14) < (colors << 2)){ // OS/2 bitmap, 3 bytes per palette entry
+            for(i = 0; i < colors; i++)
                 ((uint32_t*)p->data[1])[i] = bytestream_get_le24(&buf);
         }else{
-            for(i = 0; i < (1 << depth); i++)
+            for(i = 0; i < colors; i++)
                 ((uint32_t*)p->data[1])[i] = bytestream_get_le32(&buf);
         }
         buf = buf0 + hsize;
