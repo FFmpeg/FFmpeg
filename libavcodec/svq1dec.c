@@ -780,13 +780,13 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
     s->flags= avctx->flags;
     if (MPV_common_init(s) < 0) return -1;
 
-    init_vlc(&svq1_block_type, 2, 4,
+    INIT_VLC_STATIC(&svq1_block_type, 2, 4,
         &ff_svq1_block_type_vlc[0][1], 2, 1,
-        &ff_svq1_block_type_vlc[0][0], 2, 1, INIT_VLC_USE_STATIC);
+        &ff_svq1_block_type_vlc[0][0], 2, 1, 6);
 
-    init_vlc(&svq1_motion_component, 7, 33,
+    INIT_VLC_STATIC(&svq1_motion_component, 7, 33,
         &mvtab[0][1], 2, 1,
-        &mvtab[0][0], 2, 1, INIT_VLC_USE_STATIC);
+        &mvtab[0][0], 2, 1, 176);
 
     for (i = 0; i < 6; i++) {
         init_vlc(&svq1_intra_multistage[i], 3, 8,
@@ -797,13 +797,13 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
             &ff_svq1_inter_multistage_vlc[i][0][0], 2, 1, INIT_VLC_USE_STATIC);
     }
 
-    init_vlc(&svq1_intra_mean, 8, 256,
+    INIT_VLC_STATIC(&svq1_intra_mean, 8, 256,
         &ff_svq1_intra_mean_vlc[0][1], 4, 2,
-        &ff_svq1_intra_mean_vlc[0][0], 4, 2, INIT_VLC_USE_STATIC);
+        &ff_svq1_intra_mean_vlc[0][0], 4, 2, 632);
 
-    init_vlc(&svq1_inter_mean, 9, 512,
+    INIT_VLC_STATIC(&svq1_inter_mean, 9, 512,
         &ff_svq1_inter_mean_vlc[0][1], 4, 2,
-        &ff_svq1_inter_mean_vlc[0][0], 4, 2, INIT_VLC_USE_STATIC);
+        &ff_svq1_inter_mean_vlc[0][0], 4, 2, 1434);
 
     return 0;
 }
