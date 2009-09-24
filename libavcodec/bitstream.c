@@ -151,7 +151,7 @@ static int build_table(VLC *vlc, int table_nb_bits,
     VLC_TYPE (*table)[2];
 
     table_size = 1 << table_nb_bits;
-    table_index = alloc_table(vlc, table_size, flags & (INIT_VLC_USE_STATIC|INIT_VLC_USE_NEW_STATIC));
+    table_index = alloc_table(vlc, table_size, flags & INIT_VLC_USE_NEW_STATIC);
 #ifdef DEBUG_VLC
     av_log(NULL,AV_LOG_DEBUG,"new table index=%d size=%d code_prefix=%x n=%d\n",
            table_index, table_size, code_prefix, n_prefix);
@@ -286,15 +286,10 @@ int init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
         }else if(vlc->table_size){
             abort(); // fatal error, we are called on a partially initialized table
         }
-    }else if(!(flags & INIT_VLC_USE_STATIC)) {
+    }else {
         vlc->table = NULL;
         vlc->table_allocated = 0;
         vlc->table_size = 0;
-    } else {
-        /* Static tables are initially always NULL, return
-           if vlc->table != NULL to avoid double allocation */
-        if(vlc->table)
-            return 0;
     }
 
 #ifdef DEBUG_VLC
