@@ -82,20 +82,17 @@ static void dump_floats(WMACodecContext *s, const char *name, int prec, const fl
 static int wma_decode_init(AVCodecContext * avctx)
 {
     WMACodecContext *s = avctx->priv_data;
-    int i, flags1, flags2;
+    int i, flags2;
     uint8_t *extradata;
 
     s->avctx = avctx;
 
     /* extract flag infos */
-    flags1 = 0;
     flags2 = 0;
     extradata = avctx->extradata;
     if (avctx->codec->id == CODEC_ID_WMAV1 && avctx->extradata_size >= 4) {
-        flags1 = AV_RL16(extradata);
         flags2 = AV_RL16(extradata+2);
     } else if (avctx->codec->id == CODEC_ID_WMAV2 && avctx->extradata_size >= 6) {
-        flags1 = AV_RL32(extradata);
         flags2 = AV_RL16(extradata+4);
     }
 // for(i=0; i<avctx->extradata_size; i++)
@@ -249,11 +246,10 @@ static void decode_exp_lsp(WMACodecContext *s, int ch)
 static int decode_exp_vlc(WMACodecContext *s, int ch)
 {
     int last_exp, n, code;
-    const uint16_t *ptr, *band_ptr;
+    const uint16_t *ptr;
     float v, *q, max_scale, *q_end;
 
-    band_ptr = s->exponent_bands[s->frame_len_bits - s->block_len_bits];
-    ptr = band_ptr;
+    ptr = s->exponent_bands[s->frame_len_bits - s->block_len_bits];
     q = s->exponents[ch];
     q_end = q + s->block_len;
     max_scale = 0;
