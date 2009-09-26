@@ -293,12 +293,14 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
                 return -1;
             }
         }else{
-            if(find_group3_syncmarker(&gb, srcsize*8) < 0)
+            if(compr!=TIFF_CCITT_RLE && find_group3_syncmarker(&gb, srcsize*8) < 0)
                 break;
             if(compr==TIFF_CCITT_RLE || get_bits1(&gb))
                 ret = decode_group3_1d_line(avctx, &gb, avctx->width, runs, runend);
             else
                 ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, runend, ref);
+            if(compr==TIFF_CCITT_RLE && (get_bits_count(&gb) & 7))
+                skip_bits(&gb, 8 - (get_bits_count(&gb) & 7));
         }
         if(ret < 0){
             put_line(dst, stride, avctx->width, ref);
