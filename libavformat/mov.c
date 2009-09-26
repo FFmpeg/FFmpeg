@@ -500,7 +500,7 @@ static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     uint8_t type[5] = {0};
 
     get_buffer(pb, type, 4);
-    if (strcmp(type, "qt, "))
+    if (strcmp(type, "qt  "))
         c->isom = 1;
     av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
     av_metadata_set(&c->fc->metadata, "major_brand", type);
