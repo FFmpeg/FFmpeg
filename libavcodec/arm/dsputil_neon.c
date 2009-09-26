@@ -174,6 +174,8 @@ void ff_int32_to_float_fmul_scalar_neon(float *dst, const int *src,
 void ff_vector_fmul_reverse_neon(float *dst, const float *src0,
                                  const float *src1, int len);
 
+void ff_vector_clipf_neon(float *dst, const float *src, float min, float max,
+                          int len);
 void ff_float_to_int16_neon(int16_t *, const float *, long);
 void ff_float_to_int16_interleave_neon(int16_t *, const float **, long, int);
 
@@ -296,6 +298,8 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
 
     c->sv_fmul_scalar[0] = ff_sv_fmul_scalar_2_neon;
     c->sv_fmul_scalar[1] = ff_sv_fmul_scalar_4_neon;
+
+    c->vector_clipf = ff_vector_clipf_neon;
 
     if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
         c->float_to_int16 = ff_float_to_int16_neon;
