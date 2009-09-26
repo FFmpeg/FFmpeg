@@ -585,7 +585,7 @@ void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
         char is_alpha_char= info.is_alpha ? 'y' : 'n';
 
         snprintf (buf, buf_size,
-                  "%-11s" "     %1d     " "   %2d " "     %c   ",
+                  "%-11s %5d %9d %6c",
                   info.name,
                   info.nb_channels,
                   info.depth,
