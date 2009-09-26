@@ -490,15 +490,35 @@ static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0; /* now go for moov */
 }
 
+/* read major brand, minor version and compatible brands and store them as metadata */
 static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    uint32_t type = get_le32(pb);
+    uint32_t minor_ver;
+    int comp_brand_size;
+    char minor_ver_str[11]; /* 32 bit integer -> 10 digits + null */
+    char* comp_brands_str;
+    uint8_t type[5] = {0};
 
-    if (type != MKTAG('q','t',' ',' '))
+    get_buffer(pb, type, 4);
+    if (strcmp(type, "qt, "))
         c->isom = 1;
     av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
-    get_be32(pb); /* minor version */
-    url_fskip(pb, atom.size - 8);
+    av_metadata_set(&c->fc->metadata, "major_brand", type);
+    minor_ver = get_be32(pb); /* minor version */
+    snprintf(minor_ver_str, sizeof(minor_ver_str), "%d", minor_ver);
+    av_metadata_set(&c->fc->metadata, "minor_version", minor_ver_str);
+
+    comp_brand_size = atom.size - 8;
+    if (comp_brand_size < 0)
+        return -1;
+    comp_brands_str = av_malloc(comp_brand_size + 1); /* Add null terminator */
+    if (!comp_brands_str)
+        return AVERROR(ENOMEM);
+    get_buffer(pb, comp_brands_str, comp_brand_size);
+    comp_brands_str[comp_brand_size] = 0;
+    av_metadata_set(&c->fc->metadata, "compatible_brands", comp_brands_str);
+    av_freep(&comp_brands_str);
+
     return 0;
 }
 
