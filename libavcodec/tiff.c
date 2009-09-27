@@ -75,6 +75,27 @@ static int tget(const uint8_t **p, int type, int le){
     }
 }
 
+static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src, int size)
+{
+    z_stream zstream;
+    int zret;
+
+    memset(&zstream, 0, sizeof(zstream));
+    zstream.next_in = src;
+    zstream.avail_in = size;
+    zstream.next_out = dst;
+    zstream.avail_out = *len;
+    zret = inflateInit(&zstream);
+    if (zret != Z_OK) {
+        av_log(NULL, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
+        return zret;
+    }
+    zret = inflate(&zstream, Z_SYNC_FLUSH);
+    inflateEnd(&zstream);
+    *len = zstream.total_out;
+    return zret == Z_STREAM_END ? Z_OK : zret;
+}
+
 static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uint8_t *src, int size, int lines){
     int c, line, pixels, code;
     const uint8_t *ssrc = src;
@@ -83,10 +104,12 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
     uint8_t *zbuf; unsigned long outlen;
 
     if(s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE){
+        int ret;
         outlen = width * lines;
         zbuf = av_malloc(outlen);
-        if(uncompress(zbuf, &outlen, src, size) != Z_OK){
-            av_log(s->avctx, AV_LOG_ERROR, "Uncompressing failed (%lu of %lu)\n", outlen, (unsigned long)width * lines);
+        ret = tiff_uncompress(zbuf, &outlen, src, size);
+        if(ret != Z_OK){
+            av_log(s->avctx, AV_LOG_ERROR, "Uncompressing failed (%lu of %lu) with error %d\n", outlen, (unsigned long)width * lines, ret);
             av_free(zbuf);
             return -1;
         }
