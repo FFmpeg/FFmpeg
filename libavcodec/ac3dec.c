@@ -412,11 +412,11 @@ static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
  */
 static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
 {
-    int bin, band, ch, band_end;
+    int bin, band, ch;
 
     bin = s->start_freq[CPL_CH];
     for (band = 0; band < s->num_cpl_bands; band++) {
-        band_end = bin + s->cpl_band_sizes[band];
+        int band_end = bin + s->cpl_band_sizes[band];
         for (; bin < band_end; bin++) {
             for (ch = 1; ch <= s->fbw_channels; ch++) {
                 if (s->channel_in_cpl[ch]) {
