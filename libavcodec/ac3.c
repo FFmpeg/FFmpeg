@@ -28,8 +28,51 @@
 #include "ac3.h"
 #include "get_bits.h"
 
+#if CONFIG_HARDCODED_TABLES
+
+/**
+ * Starting frequency coefficient bin for each critical band.
+ */
+static const uint8_t band_start_tab[51] = {
+      0,  1,   2,   3,   4,   5,   6,   7,   8,   9,
+     10,  11, 12,  13,  14,  15,  16,  17,  18,  19,
+     20,  21, 22,  23,  24,  25,  26,  27,  28,  31,
+     34,  37, 40,  43,  46,  49,  55,  61,  67,  73,
+     79,  85, 97, 109, 121, 133, 157, 181, 205, 229, 253
+};
+
+/**
+ * Maps each frequency coefficient bin to the critical band that contains it.
+ */
+static const uint8_t bin_to_band_tab[253] = {
+     0,
+     1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12,
+    13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+    25, 26, 27, 28, 28, 28, 29, 29, 29, 30, 30, 30,
+    31, 31, 31, 32, 32, 32, 33, 33, 33, 34, 34, 34,
+    35, 35, 35, 35, 35, 35, 36, 36, 36, 36, 36, 36,
+    37, 37, 37, 37, 37, 37, 38, 38, 38, 38, 38, 38,
+    39, 39, 39, 39, 39, 39, 40, 40, 40, 40, 40, 40,
+    41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+    42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
+    43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43,
+    44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44,
+    45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
+    45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
+    46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46,
+    46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46,
+    47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
+    47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
+    48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+    48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+    49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49,
+    49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49
+};
+
+#else /* CONFIG_HARDCODED_TABLES */
 static uint8_t band_start_tab[51];
 static uint8_t bin_to_band_tab[253];
+#endif
 
 static inline int calc_lowcomp1(int a, int b0, int b1, int c)
 {
@@ -232,6 +275,7 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
  */
 av_cold void ac3_common_init(void)
 {
+#if !CONFIG_HARDCODED_TABLES
     int i, j, k, l, v;
     /* compute bndtab and masktab from bandsz */
     k = 0;
@@ -243,4 +287,5 @@ av_cold void ac3_common_init(void)
         l += v;
     }
     band_start_tab[50] = l;
+#endif /* !CONFIG_HARDCODED_TABLES */
 }
