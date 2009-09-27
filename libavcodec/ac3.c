@@ -127,74 +127,71 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
                                int16_t *mask)
 {
     int16_t excite[50]; /* excitation */
-    int bin, k;
-    int bndstrt, bndend, begin, end1, tmp;
+    int band;
+    int band_start, band_end, begin, end1;
     int lowcomp, fastleak, slowleak;
 
     /* excitation function */
-    bndstrt = bin_to_band_tab[start];
-    bndend  = bin_to_band_tab[end-1] + 1;
+    band_start = bin_to_band_tab[start];
+    band_end   = bin_to_band_tab[end-1] + 1;
 
-    if (bndstrt == 0) {
+    if (band_start == 0) {
         lowcomp = 0;
         lowcomp = calc_lowcomp1(lowcomp, band_psd[0], band_psd[1], 384);
         excite[0] = band_psd[0] - fast_gain - lowcomp;
         lowcomp = calc_lowcomp1(lowcomp, band_psd[1], band_psd[2], 384);
         excite[1] = band_psd[1] - fast_gain - lowcomp;
         begin = 7;
-        for (bin = 2; bin < 7; bin++) {
-            if (!(is_lfe && bin == 6))
-                lowcomp = calc_lowcomp1(lowcomp, band_psd[bin], band_psd[bin+1], 384);
-            fastleak = band_psd[bin] - fast_gain;
-            slowleak = band_psd[bin] - s->slow_gain;
-            excite[bin] = fastleak - lowcomp;
-            if (!(is_lfe && bin == 6)) {
-                if (band_psd[bin] <= band_psd[bin+1]) {
-                    begin = bin + 1;
+        for (band = 2; band < 7; band++) {
+            if (!(is_lfe && band == 6))
+                lowcomp = calc_lowcomp1(lowcomp, band_psd[band], band_psd[band+1], 384);
+            fastleak = band_psd[band] - fast_gain;
+            slowleak = band_psd[band] - s->slow_gain;
+            excite[band] = fastleak - lowcomp;
+            if (!(is_lfe && band == 6)) {
+                if (band_psd[band] <= band_psd[band+1]) {
+                    begin = band + 1;
                     break;
                 }
             }
         }
 
-        end1 = FFMIN(bndend, 22);
-
-        for (bin = begin; bin < end1; bin++) {
-            if (!(is_lfe && bin == 6))
-                lowcomp = calc_lowcomp(lowcomp, band_psd[bin], band_psd[bin+1], bin);
-
-            fastleak = FFMAX(fastleak - s->fast_decay, band_psd[bin] - fast_gain);
-            slowleak = FFMAX(slowleak - s->slow_decay, band_psd[bin] - s->slow_gain);
-            excite[bin] = FFMAX(fastleak - lowcomp, slowleak);
+        end1 = FFMIN(band_end, 22);
+        for (band = begin; band < end1; band++) {
+            if (!(is_lfe && band == 6))
+                lowcomp = calc_lowcomp(lowcomp, band_psd[band], band_psd[band+1], band);
+            fastleak = FFMAX(fastleak - s->fast_decay, band_psd[band] - fast_gain);
+            slowleak = FFMAX(slowleak - s->slow_decay, band_psd[band] - s->slow_gain);
+            excite[band] = FFMAX(fastleak - lowcomp, slowleak);
         }
         begin = 22;
     } else {
         /* coupling channel */
-        begin = bndstrt;
-
+        begin = band_start;
         fastleak = (s->cpl_fast_leak << 8) + 768;
         slowleak = (s->cpl_slow_leak << 8) + 768;
     }
 
-    for (bin = begin; bin < bndend; bin++) {
-        fastleak = FFMAX(fastleak - s->fast_decay, band_psd[bin] - fast_gain);
-        slowleak = FFMAX(slowleak - s->slow_decay, band_psd[bin] - s->slow_gain);
-        excite[bin] = FFMAX(fastleak, slowleak);
+    for (band = begin; band < band_end; band++) {
+        fastleak = FFMAX(fastleak - s->fast_decay, band_psd[band] - fast_gain);
+        slowleak = FFMAX(slowleak - s->slow_decay, band_psd[band] - s->slow_gain);
+        excite[band] = FFMAX(fastleak, slowleak);
     }
 
     /* compute masking curve */
 
-    for (bin = bndstrt; bin < bndend; bin++) {
-        tmp = s->db_per_bit - band_psd[bin];
+    for (band = band_start; band < band_end; band++) {
+        int tmp = s->db_per_bit - band_psd[band];
         if (tmp > 0) {
-            excite[bin] += tmp >> 2;
+            excite[band] += tmp >> 2;
         }
-        mask[bin] = FFMAX(ff_ac3_hearing_threshold_tab[bin >> s->sr_shift][s->sr_code], excite[bin]);
+        mask[band] = FFMAX(ff_ac3_hearing_threshold_tab[band >> s->sr_shift][s->sr_code], excite[band]);
     }
 
     /* delta bit allocation */
 
     if (dba_mode == DBA_REUSE || dba_mode == DBA_NEW) {
-        int band, seg, delta;
+        int i, seg, delta;
         if (dba_nsegs >= 8)
             return -1;
         band = 0;
@@ -207,9 +204,8 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
             } else {
                 delta = (dba_values[seg] - 4) << 7;
             }
-            for (k = 0; k < dba_lengths[seg]; k++) {
-                mask[band] += delta;
-                band++;
+            for (i = 0; i < dba_lengths[seg]; i++) {
+                mask[band++] += delta;
             }
         }
     }
