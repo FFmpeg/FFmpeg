@@ -101,7 +101,7 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
     int bin, band;
 
     /* exponent mapping to PSD */
-    for(bin=start;bin<end;bin++) {
+    for (bin = start; bin < end; bin++) {
         psd[bin]=(3072 - (exp[bin] << 7));
     }
 
@@ -133,7 +133,7 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
 
     /* excitation function */
     bndstrt = bin_to_band_tab[start];
-    bndend = bin_to_band_tab[end-1] + 1;
+    bndend  = bin_to_band_tab[end-1] + 1;
 
     if (bndstrt == 0) {
         lowcomp = 0;
@@ -224,7 +224,7 @@ void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
     int i, j, k, end1, v, address;
 
     /* special case, if snr offset is -960, set all bap's to zero */
-    if(snr_offset == -960) {
+    if (snr_offset == -960) {
         memset(bap, 0, 256);
         return;
     }
@@ -258,8 +258,8 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
     ff_ac3_bit_alloc_calc_psd(exp, start, end, psd, band_psd);
 
     ff_ac3_bit_alloc_calc_mask(s, band_psd, start, end, fast_gain, is_lfe,
-                               dba_mode, dba_nsegs, dba_offsets, dba_lengths, dba_values,
-                               mask);
+                               dba_mode, dba_nsegs, dba_offsets, dba_lengths,
+                               dba_values, mask);
 
     ff_ac3_bit_alloc_calc_bap(mask, psd, start, end, snr_offset, s->floor,
                               ff_ac3_bap_tab, bap);
@@ -277,10 +277,11 @@ av_cold void ac3_common_init(void)
     /* compute bndtab and masktab from bandsz */
     k = 0;
     l = 0;
-    for(i=0;i<50;i++) {
+    for (i = 0; i < 50; i++) {
         band_start_tab[i] = l;
         v = ff_ac3_critical_band_size_tab[i];
-        for(j=0;j<v;j++) bin_to_band_tab[k++]=i;
+        for (j = 0; j < v; j++)
+            bin_to_band_tab[k++] = i;
         l += v;
     }
     band_start_tab[50] = l;
