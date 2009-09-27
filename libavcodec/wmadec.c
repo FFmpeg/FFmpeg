@@ -301,16 +301,16 @@ static void wma_window(WMACodecContext *s, float *out)
         block_len = s->block_len;
         bsize = s->frame_len_bits - s->block_len_bits;
 
-        s->dsp.vector_fmul_add_add(out, in, s->windows[bsize],
-                                   out, 0, block_len, 1);
+        s->dsp.vector_fmul_add(out, in, s->windows[bsize],
+                               out, block_len);
 
     } else {
         block_len = 1 << s->prev_block_len_bits;
         n = (s->block_len - block_len) / 2;
         bsize = s->frame_len_bits - s->prev_block_len_bits;
 
-        s->dsp.vector_fmul_add_add(out+n, in+n, s->windows[bsize],
-                                   out+n, 0, block_len, 1);
+        s->dsp.vector_fmul_add(out+n, in+n, s->windows[bsize],
+                               out+n, block_len);
 
         memcpy(out+n+block_len, in+n+block_len, n*sizeof(float));
     }

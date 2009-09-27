@@ -4068,10 +4068,10 @@ static void vector_fmul_reverse_c(float *dst, const float *src0, const float *sr
         dst[i] = src0[i] * src1[-i];
 }
 
-void ff_vector_fmul_add_add_c(float *dst, const float *src0, const float *src1, const float *src2, int src3, int len, int step){
+static void vector_fmul_add_c(float *dst, const float *src0, const float *src1, const float *src2, int len){
     int i;
     for(i=0; i<len; i++)
-        dst[i*step] = src0[i] * src1[i] + src2[i] + src3;
+        dst[i] = src0[i] * src1[i] + src2[i];
 }
 
 void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1, const float *win, float add_bias, int len){
@@ -4787,7 +4787,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #endif
     c->vector_fmul = vector_fmul_c;
     c->vector_fmul_reverse = vector_fmul_reverse_c;
-    c->vector_fmul_add_add = ff_vector_fmul_add_add_c;
+    c->vector_fmul_add = vector_fmul_add_c;
     c->vector_fmul_window = ff_vector_fmul_window_c;
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
     c->vector_clipf = vector_clipf_c;
