@@ -1076,6 +1076,33 @@ function ff_vector_fmul_reverse_neon, export=1
         bx              lr
         .endfunc
 
+function ff_vector_fmul_add_neon, export=1
+        ldr             r12, [sp]
+        vld1.32         {q0-q1},  [r1,:128]!
+        vld1.32         {q8-q9},  [r2,:128]!
+        vld1.32         {q2-q3},  [r3,:128]!
+        vmul.f32        q10, q0,  q8
+        vmul.f32        q11, q1,  q9
+1:      vadd.f32        q12, q2,  q10
+        vadd.f32        q13, q3,  q11
+        pld             [r1, #16]
+        pld             [r2, #16]
+        pld             [r3, #16]
+        subs            r12, r12, #8
+        beq             2f
+        vld1.32         {q0},     [r1,:128]!
+        vld1.32         {q8},     [r2,:128]!
+        vmul.f32        q10, q0,  q8
+        vld1.32         {q1},     [r1,:128]!
+        vld1.32         {q9},     [r2,:128]!
+        vmul.f32        q11, q1,  q9
+        vld1.32         {q2-q3},  [r3,:128]!
+        vst1.32         {q12-q13},[r0,:128]!
+        b               1b
+2:      vst1.32         {q12-q13},[r0,:128]!
+        bx              lr
+        .endfunc
+
 function ff_vector_clipf_neon, export=1
 VFP     vdup.32         q1,  d0[1]
 VFP     vdup.32         q0,  d0[0]

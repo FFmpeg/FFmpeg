@@ -173,6 +173,8 @@ void ff_int32_to_float_fmul_scalar_neon(float *dst, const int *src,
                                         float mul, int len);
 void ff_vector_fmul_reverse_neon(float *dst, const float *src0,
                                  const float *src1, int len);
+void ff_vector_fmul_add_neon(float *dst, const float *src0, const float *src1,
+                             const float *src2, int len);
 
 void ff_vector_clipf_neon(float *dst, const float *src, float min, float max,
                           int len);
@@ -292,6 +294,7 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     c->scalarproduct_float = ff_scalarproduct_float_neon;
     c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_neon;
     c->vector_fmul_reverse = ff_vector_fmul_reverse_neon;
+    c->vector_fmul_add = ff_vector_fmul_add_neon;
 
     c->vector_fmul_sv_scalar[0] = ff_vector_fmul_sv_scalar_2_neon;
     c->vector_fmul_sv_scalar[1] = ff_vector_fmul_sv_scalar_4_neon;
