@@ -75,6 +75,7 @@ static int tget(const uint8_t **p, int type, int le){
     }
 }
 
+#if CONFIG_ZLIB
 static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src, int size)
 {
     z_stream zstream;
@@ -95,6 +96,7 @@ static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src,
     *len = zstream.total_out;
     return zret == Z_STREAM_END ? Z_OK : zret;
 }
+#endif
 
 static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uint8_t *src, int size, int lines){
     int c, line, pixels, code;
