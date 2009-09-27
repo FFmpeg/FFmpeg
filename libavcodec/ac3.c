@@ -98,7 +98,7 @@ static inline int calc_lowcomp(int a, int b0, int b1, int bin)
 void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
                                int16_t *band_psd)
 {
-    int bin, i, j, k, end1, v;
+    int bin, j, k, end1, v;
 
     /* exponent mapping to PSD */
     for(bin=start;bin<end;bin++) {
@@ -112,11 +112,10 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
         v=psd[j];
         j++;
         end1 = FFMIN(band_start_tab[k+1], end);
-        for(i=j;i<end1;i++) {
+        for (; j < end1; j++) {
             /* logadd */
             int adr = FFMIN(FFABS(v - psd[j]) >> 1, 255);
             v = FFMAX(v, psd[j]) + ff_ac3_log_add_tab[adr];
-            j++;
         }
         band_psd[k]=v;
         k++;
