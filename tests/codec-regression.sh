@@ -662,7 +662,7 @@ fi
 
 # libavfilter testing
 
-function do_lavfi() {
+do_lavfi() {
     test_name=$1
     eval test=\$do_$test_name
     vfilters=$2
@@ -678,7 +678,7 @@ function do_lavfi() {
 
 # libavfilter testing
 
-function do_lavfi() {
+do_lavfi() {
     test_name=$1
     eval test=\$do_$test_name
     vfilters=$2
