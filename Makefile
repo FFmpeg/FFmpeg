@@ -144,6 +144,7 @@ fulltest test: codectest lavftest seektest
 
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
 LAVF_REFFILE     = $(SRC_PATH)/tests/lavf.regression.ref
+LAVFI_REFFILE    = $(SRC_PATH)/tests/lavfi.regression.ref
 ROTOZOOM_REFFILE = $(SRC_PATH)/tests/rotozoom.regression.ref
 SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
 VSYNTH_REFFILE   = $(SRC_PATH)/tests/vsynth.regression.ref
@@ -237,14 +238,19 @@ LAVF_TESTS = $(addprefix regtest-,              \
         pcx                                     \
     )
 
+LAVFI_TESTS = $(addprefix regtest-,             \
+    )
+
 RESFILES = $(addprefix tests/data/,$(addsuffix .$(1),$(2:regtest-%=%)))
 
 ROTOZOOM_RESFILES = $(call RESFILES,rotozoom.regression,$(CODEC_TESTS))
 VSYNTH_RESFILES   = $(call RESFILES,vsynth.regression,$(CODEC_TESTS))
 
 LAVF_RESFILES = $(call RESFILES,lavf.regression,$(LAVF_TESTS))
+LAVFI_RESFILES = $(call RESFILES,lavfi.regression,$(LAVFI_TESTS))
 
 LAVF_RESFILE     = tests/data/lavf.regression
+LAVFI_RESFILE    = tests/data/lavfi.regression
 ROTOZOOM_RESFILE = tests/data/rotozoom.regression
 VSYNTH_RESFILE   = tests/data/vsynth.regression
 
@@ -264,18 +270,23 @@ codectest: $(VSYNTH_RESFILE) $(ROTOZOOM_RESFILE)
 lavftest: $(LAVF_RESFILE)
 	diff -u -w $(LAVF_REFFILE) $(LAVF_RESFILE)
 
-$(VSYNTH_RESFILE) $(ROTOZOOM_RESFILE) $(LAVF_RESFILE):
+# lavfitest: $(LAVFI_RESFILE)
+# 	diff -u -w $(LAVFI_REFFILE) $(LAVFI_RESFILE)
+
+$(VSYNTH_RESFILE) $(ROTOZOOM_RESFILE) $(LAVF_RESFILE) $(LAVFI_RESFILE):
 	cat $^ > $@
 
 $(LAVF_RESFILE):     $(LAVF_RESFILES)
+$(LAVFI_RESFILE):    $(LAVFI_RESFILES)
 $(ROTOZOOM_RESFILE): $(ROTOZOOM_RESFILES)
 $(VSYNTH_RESFILE):   $(VSYNTH_RESFILES)
 
 $(VSYNTH_RESFILES) $(ROTOZOOM_RESFILES): $(CODEC_TESTS)
 
 $(LAVF_RESFILES): $(LAVF_TESTS)
+$(LAVFI_RESFILES): $(LAVFI_TESTS)
 
-$(CODEC_TESTS) $(LAVF_TESTS): regtest-ref
+$(CODEC_TESTS) $(LAVF_TESTS) $(LAVFI_TESTS): regtest-ref
 
 regtest-ref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/data/asynth1.sw
 
@@ -285,6 +296,9 @@ $(CODEC_TESTS) regtest-ref: tests/tiny_psnr$(HOSTEXESUF)
 
 $(LAVF_TESTS):
 	$(SRC_PATH)/tests/codec-regression.sh $@ lavf tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
+
+$(LAVFI_TESTS):
+	$(SRC_PATH)/tests/codec-regression.sh $@ lavfi tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 seektest: codectest lavftest tests/seek_test$(EXESUF)
 	$(SRC_PATH)/tests/seek-regression.sh $(SEEK_REFFILE) "$(TARGET_EXEC)" "$(TARGET_PATH)"
