@@ -98,7 +98,7 @@ static inline int calc_lowcomp(int a, int b0, int b1, int bin)
 void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
                                int16_t *band_psd)
 {
-    int bin, j, k;
+    int bin, band;
 
     /* exponent mapping to PSD */
     for(bin=start;bin<end;bin++) {
@@ -106,19 +106,19 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
     }
 
     /* PSD integration */
-    j=start;
-    k=bin_to_band_tab[start];
+    bin  = start;
+    band = bin_to_band_tab[start];
     do {
-        int v = psd[j++];
-        int end1 = FFMIN(band_start_tab[k+1], end);
-        for (; j < end1; j++) {
+        int v = psd[bin++];
+        int band_end = FFMIN(band_start_tab[band+1], end);
+        for (; bin < band_end; bin++) {
             /* logadd */
-            int adr = FFMIN(FFABS(v - psd[j]) >> 1, 255);
-            v = FFMAX(v, psd[j]) + ff_ac3_log_add_tab[adr];
+            int adr = FFMIN(FFABS(v - psd[bin]) >> 1, 255);
+            v = FFMAX(v, psd[bin]) + ff_ac3_log_add_tab[adr];
         }
-        band_psd[k]=v;
-        k++;
-    } while (end > band_start_tab[k]);
+        band_psd[band] = v;
+        band++;
+    } while (end > band_start_tab[band]);
 }
 
 int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
