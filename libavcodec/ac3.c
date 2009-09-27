@@ -109,8 +109,7 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
     j=start;
     k=bin_to_band_tab[start];
     do {
-        v=psd[j];
-        j++;
+        v = psd[j++];
         end1 = FFMIN(band_start_tab[k+1], end);
         for (; j < end1; j++) {
             /* logadd */
