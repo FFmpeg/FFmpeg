@@ -412,18 +412,18 @@ static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
  */
 static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
 {
-    int i, j, ch, bnd;
+    int bin, band, ch, band_end;
 
-    i = s->start_freq[CPL_CH];
-    for(bnd=0; bnd<s->num_cpl_bands; bnd++) {
-        j = i + s->cpl_band_sizes[bnd];
-        for (; i < j; i++) {
-            for(ch=1; ch<=s->fbw_channels; ch++) {
-                if(s->channel_in_cpl[ch]) {
-                    s->fixed_coeffs[ch][i] = ((int64_t)s->fixed_coeffs[CPL_CH][i] *
-                                              (int64_t)s->cpl_coords[ch][bnd]) >> 23;
-                    if (ch == 2 && s->phase_flags[bnd])
-                        s->fixed_coeffs[ch][i] = -s->fixed_coeffs[ch][i];
+    bin = s->start_freq[CPL_CH];
+    for (band = 0; band < s->num_cpl_bands; band++) {
+        band_end = bin + s->cpl_band_sizes[band];
+        for (; bin < band_end; bin++) {
+            for (ch = 1; ch <= s->fbw_channels; ch++) {
+                if (s->channel_in_cpl[ch]) {
+                    s->fixed_coeffs[ch][bin] = ((int64_t)s->fixed_coeffs[CPL_CH][bin] *
+                                                (int64_t)s->cpl_coords[ch][band]) >> 23;
+                    if (ch == 2 && s->phase_flags[band])
+                        s->fixed_coeffs[ch][bin] = -s->fixed_coeffs[ch][bin];
                 }
             }
         }
