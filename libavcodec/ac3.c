@@ -156,8 +156,7 @@ int ff_ac3_bit_alloc_calc_mask(AC3BitAllocParameters *s, int16_t *band_psd,
             }
         }
 
-        end1=bndend;
-        if (end1 > 22) end1=22;
+        end1 = FFMIN(bndend, 22);
 
         for (bin = begin; bin < end1; bin++) {
             if (!(is_lfe && bin == 6))
