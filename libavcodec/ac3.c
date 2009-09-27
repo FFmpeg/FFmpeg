@@ -268,17 +268,16 @@ void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
 av_cold void ac3_common_init(void)
 {
 #if !CONFIG_HARDCODED_TABLES
-    int i, j, k, l, v;
+    int i, k, l;
     /* compute bndtab and masktab from bandsz */
     k = 0;
     l = 0;
     for (i = 0; i < 50; i++) {
-        band_start_tab[i] = l;
-        v = ff_ac3_critical_band_size_tab[i];
-        for (j = 0; j < v; j++)
+        band_start_tab[i] = k;
+        l = k + ff_ac3_critical_band_size_tab[i];
+        while (k < l)
             bin_to_band_tab[k++] = i;
-        l += v;
     }
-    band_start_tab[50] = l;
+    band_start_tab[50] = k;
 #endif /* !CONFIG_HARDCODED_TABLES */
 }
