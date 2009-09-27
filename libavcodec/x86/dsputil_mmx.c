@@ -2128,43 +2128,43 @@ static void vector_fmul_reverse_sse(float *dst, const float *src0, const float *
 static void vector_fmul_add_3dnow(float *dst, const float *src0, const float *src1,
                                   const float *src2, int len){
     x86_reg i = (len-4)*4;
-        __asm__ volatile(
-            "1: \n\t"
-            "movq    (%2,%0), %%mm0 \n\t"
-            "movq   8(%2,%0), %%mm1 \n\t"
-            "pfmul   (%3,%0), %%mm0 \n\t"
-            "pfmul  8(%3,%0), %%mm1 \n\t"
-            "pfadd   (%4,%0), %%mm0 \n\t"
-            "pfadd  8(%4,%0), %%mm1 \n\t"
-            "movq  %%mm0,   (%1,%0) \n\t"
-            "movq  %%mm1,  8(%1,%0) \n\t"
-            "sub  $16, %0 \n\t"
-            "jge  1b \n\t"
-            :"+r"(i)
-            :"r"(dst), "r"(src0), "r"(src1), "r"(src2)
-            :"memory"
-        );
+    __asm__ volatile(
+        "1: \n\t"
+        "movq    (%2,%0), %%mm0 \n\t"
+        "movq   8(%2,%0), %%mm1 \n\t"
+        "pfmul   (%3,%0), %%mm0 \n\t"
+        "pfmul  8(%3,%0), %%mm1 \n\t"
+        "pfadd   (%4,%0), %%mm0 \n\t"
+        "pfadd  8(%4,%0), %%mm1 \n\t"
+        "movq  %%mm0,   (%1,%0) \n\t"
+        "movq  %%mm1,  8(%1,%0) \n\t"
+        "sub  $16, %0 \n\t"
+        "jge  1b \n\t"
+        :"+r"(i)
+        :"r"(dst), "r"(src0), "r"(src1), "r"(src2)
+        :"memory"
+    );
     __asm__ volatile("femms");
 }
 static void vector_fmul_add_sse(float *dst, const float *src0, const float *src1,
                                 const float *src2, int len){
     x86_reg i = (len-8)*4;
-        __asm__ volatile(
-            "1: \n\t"
-            "movaps   (%2,%0), %%xmm0 \n\t"
-            "movaps 16(%2,%0), %%xmm1 \n\t"
-            "mulps    (%3,%0), %%xmm0 \n\t"
-            "mulps  16(%3,%0), %%xmm1 \n\t"
-            "addps    (%4,%0), %%xmm0 \n\t"
-            "addps  16(%4,%0), %%xmm1 \n\t"
-            "movaps %%xmm0,   (%1,%0) \n\t"
-            "movaps %%xmm1, 16(%1,%0) \n\t"
-            "sub  $32, %0 \n\t"
-            "jge  1b \n\t"
-            :"+r"(i)
-            :"r"(dst), "r"(src0), "r"(src1), "r"(src2)
-            :"memory"
-        );
+    __asm__ volatile(
+        "1: \n\t"
+        "movaps   (%2,%0), %%xmm0 \n\t"
+        "movaps 16(%2,%0), %%xmm1 \n\t"
+        "mulps    (%3,%0), %%xmm0 \n\t"
+        "mulps  16(%3,%0), %%xmm1 \n\t"
+        "addps    (%4,%0), %%xmm0 \n\t"
+        "addps  16(%4,%0), %%xmm1 \n\t"
+        "movaps %%xmm0,   (%1,%0) \n\t"
+        "movaps %%xmm1, 16(%1,%0) \n\t"
+        "sub  $32, %0 \n\t"
+        "jge  1b \n\t"
+        :"+r"(i)
+        :"r"(dst), "r"(src0), "r"(src1), "r"(src2)
+        :"memory"
+    );
 }
 
 static void vector_fmul_window_3dnow2(float *dst, const float *src0, const float *src1,
