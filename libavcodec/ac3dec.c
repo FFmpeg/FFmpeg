@@ -416,7 +416,8 @@ static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
 
     i = s->start_freq[CPL_CH];
     for(bnd=0; bnd<s->num_cpl_bands; bnd++) {
-        for (j = 0; j < s->cpl_band_sizes[bnd]; j++,i++) {
+        j = i + s->cpl_band_sizes[bnd];
+        for (; i < j; i++) {
             for(ch=1; ch<=s->fbw_channels; ch++) {
                 if(s->channel_in_cpl[ch]) {
                     s->fixed_coeffs[ch][i] = ((int64_t)s->fixed_coeffs[CPL_CH][i] *
