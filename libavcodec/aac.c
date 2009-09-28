@@ -104,7 +104,6 @@ static VLC vlc_spectral[11];
 
 static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
 {
-    static const int8_t tags_per_config[16] = { 0, 1, 1, 2, 3, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0 };
     if (ac->tag_che_map[type][elem_id]) {
         return ac->tag_che_map[type][elem_id];
     }
@@ -171,6 +170,26 @@ static int output_configure(AACContext *ac,
 
     memcpy(che_pos, new_che_pos, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
 
+    if (channel_config) {
+        for (i = 0; i < tags_per_config[channel_config]; i++) {
+            const int id = aac_channel_layout_map[channel_config - 1][i][1];
+            type         = aac_channel_layout_map[channel_config - 1][i][0];
+
+            if (!ac->che[type][id] && !(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
+                return AVERROR(ENOMEM);
+
+            if (type != TYPE_CCE) {
+                ac->output_data[channels++] = ac->che[type][id]->ch[0].ret;
+                if (type == TYPE_CPE)
+                    ac->output_data[channels++] = ac->che[type][id]->ch[1].ret;
+            }
+        }
+
+        memset(ac->tag_che_map, 0,       4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
+        ac->tags_mapped = 0;
+
+        avctx->channel_layout = aac_channel_layout[channel_config - 1];
+    } else {
     /* Allocate or free elements depending on if they are in the
      * current program configuration.
      *
@@ -196,12 +215,10 @@ static int output_configure(AACContext *ac,
         }
     }
 
-    if (channel_config) {
-        memset(ac->tag_che_map, 0,       4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
-        ac->tags_mapped = 0;
-    } else {
         memcpy(ac->tag_che_map, ac->che, 4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
         ac->tags_mapped = 4 * MAX_ELEM_ID;
+
+        avctx->channel_layout = 0;
     }
 
     avctx->channels = channels;
@@ -1802,4 +1819,5 @@ AVCodec aac_decoder = {
     .sample_fmts = (const enum SampleFormat[]) {
         SAMPLE_FMT_S16,SAMPLE_FMT_NONE
     },
+    .channel_layouts = aac_channel_layout,
 };

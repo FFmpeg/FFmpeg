@@ -69,4 +69,27 @@ static const float * const tns_tmp2_map[4] = {
 };
 // @}
 
+static const int8_t tags_per_config[16] = { 0, 1, 1, 2, 3, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+static const uint8_t aac_channel_layout_map[7][5][2] = {
+    { { TYPE_SCE, 0 }, },
+    { { TYPE_CPE, 0 }, },
+    { { TYPE_CPE, 0 }, { TYPE_SCE, 0 }, },
+    { { TYPE_CPE, 0 }, { TYPE_SCE, 0 }, { TYPE_SCE, 1 }, },
+    { { TYPE_CPE, 0 }, { TYPE_SCE, 0 }, { TYPE_CPE, 1 }, },
+    { { TYPE_CPE, 0 }, { TYPE_SCE, 0 }, { TYPE_LFE, 0 }, { TYPE_CPE, 1 }, },
+    { { TYPE_CPE, 0 }, { TYPE_SCE, 0 }, { TYPE_LFE, 0 }, { TYPE_CPE, 2 }, { TYPE_CPE, 1 }, },
+};
+
+static const int64_t aac_channel_layout[8] = {
+    CH_LAYOUT_MONO,
+    CH_LAYOUT_STEREO,
+    CH_LAYOUT_SURROUND,
+    CH_LAYOUT_4POINT0,
+    CH_LAYOUT_5POINT0_BACK,
+    CH_LAYOUT_5POINT1_BACK,
+    CH_LAYOUT_7POINT1_WIDE,
+    0,
+};
+
 #endif /* AVCODEC_AACDECTAB_H */
