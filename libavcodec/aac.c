@@ -153,6 +153,37 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
 }
 
 /**
+ * Check for the channel element in the current channel position configuration.
+ * If it exists, make sure the appropriate element is allocated and map the
+ * channel order to match the internal FFmpeg channel layout.
+ *
+ * @param   che_pos current channel position configuration
+ * @param   type channel element type
+ * @param   id channel element id
+ * @param   channels count of the number of channels in the configuration
+ *
+ * @return  Returns error status. 0 - OK, !0 - error
+ */
+static int che_configure(AACContext *ac,
+                         enum ChannelPosition che_pos[4][MAX_ELEM_ID],
+                         int type, int id,
+                         int *channels)
+{
+    if (che_pos[type][id]) {
+        if (!ac->che[type][id] && !(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
+            return AVERROR(ENOMEM);
+        if (type != TYPE_CCE) {
+            ac->output_data[(*channels)++] = ac->che[type][id]->ch[0].ret;
+            if (type == TYPE_CPE) {
+                ac->output_data[(*channels)++] = ac->che[type][id]->ch[1].ret;
+            }
+        }
+    } else
+        av_freep(&ac->che[type][id]);
+    return 0;
+}
+
+/**
  * Configure output channel order based on the current program configuration element.
  *
  * @param   che_pos current channel position configuration
@@ -166,23 +197,17 @@ static int output_configure(AACContext *ac,
                             int channel_config)
 {
     AVCodecContext *avctx = ac->avccontext;
-    int i, type, channels = 0;
+    int i, type, channels = 0, ret;
 
     memcpy(che_pos, new_che_pos, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
 
     if (channel_config) {
         for (i = 0; i < tags_per_config[channel_config]; i++) {
-            const int id = aac_channel_layout_map[channel_config - 1][i][1];
-            type         = aac_channel_layout_map[channel_config - 1][i][0];
-
-            if (!ac->che[type][id] && !(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
-                return AVERROR(ENOMEM);
-
-            if (type != TYPE_CCE) {
-                ac->output_data[channels++] = ac->che[type][id]->ch[0].ret;
-                if (type == TYPE_CPE)
-                    ac->output_data[channels++] = ac->che[type][id]->ch[1].ret;
-            }
+            if ((ret = che_configure(ac, che_pos,
+                                     aac_channel_layout_map[channel_config - 1][i][0],
+                                     aac_channel_layout_map[channel_config - 1][i][1],
+                                     &channels)))
+                return ret;
         }
 
         memset(ac->tag_che_map, 0,       4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
@@ -201,17 +226,8 @@ static int output_configure(AACContext *ac,
 
         for (i = 0; i < MAX_ELEM_ID; i++) {
             for (type = 0; type < 4; type++) {
-                if (che_pos[type][i]) {
-                    if (!ac->che[type][i] && !(ac->che[type][i] = av_mallocz(sizeof(ChannelElement))))
-                        return AVERROR(ENOMEM);
-                    if (type != TYPE_CCE) {
-                        ac->output_data[channels++] = ac->che[type][i]->ch[0].ret;
-                        if (type == TYPE_CPE) {
-                            ac->output_data[channels++] = ac->che[type][i]->ch[1].ret;
-                        }
-                    }
-                } else
-                    av_freep(&ac->che[type][i]);
+                if ((ret = che_configure(ac, che_pos, type, i, &channels)))
+                    return ret;
             }
         }
 
