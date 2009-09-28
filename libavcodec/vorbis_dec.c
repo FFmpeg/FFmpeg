@@ -747,9 +747,8 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc)
 
         if (mapping_setup->submaps>1) {
             mapping_setup->mux=av_mallocz(vc->audio_channels * sizeof(uint_fast8_t));
-            for(j=0;j<vc->audio_channels;++j) {
+            for(j=0;j<vc->audio_channels;++j)
                 mapping_setup->mux[j]=get_bits(gb, 4);
-            }
         }
 
         for(j=0;j<mapping_setup->submaps;++j) {
@@ -1162,7 +1161,8 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc,
     int_fast16_t dy, err;
 
 
-    if (!get_bits1(gb)) return 1; // silence
+    if (!get_bits1(gb)) // silence
+        return 1;
 
 // Read values (or differences) for the floor's points
 

@@ -39,7 +39,8 @@ unsigned int ff_vorbis_nth_root(unsigned int x, unsigned int n)
 
     do {
         ++ret;
-        for(i=0,j=ret;i<n-1;i++) j*=ret;
+        for(i=0,j=ret;i<n-1;i++)
+            j*=ret;
     } while (j<=x);
 
     return ret - 1;
@@ -62,14 +63,16 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num)
     GetBitContext gb;
 #endif
 
-    for(p=0;(bits[p]==0) && (p<num);++p);
+    for(p=0;(bits[p]==0) && (p<num);++p)
+        ;
     if (p==num) {
 //        av_log(vc->avccontext, AV_LOG_INFO, "An empty codebook. Heh?! \n");
         return 0;
     }
 
     codes[p]=0;
-    if (bits[p] > 32) return 1;
+    if (bits[p] > 32)
+        return 1;
     for(i=0;i<bits[p];++i)
         exit_at_level[i+1]=1<<i;
 
@@ -84,12 +87,16 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num)
     ++p;
 
     for(;p<num;++p) {
-        if (bits[p] > 32) return 1;
-        if (bits[p]==0) continue;
+        if (bits[p] > 32)
+            return 1;
+        if (bits[p]==0)
+            continue;
         // find corresponding exit(node which the tree can grow further from)
         for(i=bits[p];i>0;--i)
-            if (exit_at_level[i]) break;
-        if (!i) return 1; // overspecified tree
+            if (exit_at_level[i])
+                break;
+        if (!i) // overspecified tree
+            return 1;
         code=exit_at_level[i];
         exit_at_level[i]=0;
         // construct code (append 0s to end) and introduce new exits
@@ -109,7 +116,8 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num)
 
     //no exits should be left (underspecified tree - ie. unused valid vlcs - not allowed by SPEC)
     for (p=1; p<33; p++)
-        if (exit_at_level[p]) return 1;
+        if (exit_at_level[p])
+            return 1;
 
     return 0;
 }
@@ -127,9 +135,11 @@ void ff_vorbis_ready_floor1_list(vorbis_floor1_entry * list, int values)
         for (j = 2; j < i; j++) {
             int tmp = list[j].x;
             if (tmp < list[i].x) {
-                if (tmp > list[list[i].low].x) list[i].low = j;
+                if (tmp > list[list[i].low].x)
+                    list[i].low = j;
             } else {
-                if (tmp < list[list[i].high].x) list[i].high = j;
+                if (tmp < list[list[i].high].x)
+                    list[i].high = j;
             }
         }
     }
@@ -212,7 +222,9 @@ void ff_vorbis_floor1_render_list(vorbis_floor1_entry * list, int values,
             lx = x1;
             ly = y1;
         }
-        if (lx >= samples) break;
+        if (lx >= samples)
+            break;
     }
-    if (lx < samples) render_line(lx, ly, samples, ly, out);
+    if (lx < samples)
+        render_line(lx, ly, samples, ly, out);
 }

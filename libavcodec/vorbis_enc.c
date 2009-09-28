@@ -894,7 +894,8 @@ static int apply_window_and_mdct(vorbis_enc_context * venc,
     float n = (float)(1 << venc->log2_blocksize[0]) / 4.;
     // FIXME use dsp
 
-    if (!venc->have_saved && !samples) return 0;
+    if (!venc->have_saved && !samples)
+        return 0;
 
     if (venc->have_saved)
         for (channel = 0; channel < venc->channels; channel++)
