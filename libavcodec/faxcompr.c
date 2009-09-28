@@ -268,8 +268,9 @@ static int find_group3_syncmarker(GetBitContext *gb, int srcsize)
 }
 
 int ff_ccitt_unpack(AVCodecContext *avctx,
-                       const uint8_t *src, int srcsize,
-                       uint8_t *dst, int height, int stride, enum TiffCompr compr, int opts)
+                    const uint8_t *src, int srcsize,
+                    uint8_t *dst, int height, int stride,
+                    enum TiffCompr compr, int opts)
 {
     int j;
     GetBitContext gb;

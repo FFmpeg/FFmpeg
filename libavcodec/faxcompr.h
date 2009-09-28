@@ -39,7 +39,8 @@ void ff_ccitt_unpack_init(void);
  * unpack data compressed with CCITT Group 3 1/2-D or Group 4 method
  */
 int ff_ccitt_unpack(AVCodecContext *avctx,
-                       const uint8_t *src, int srcsize,
-                       uint8_t *dst, int height, int stride, enum TiffCompr compr, int opts);
+                    const uint8_t *src, int srcsize,
+                    uint8_t *dst, int height, int stride,
+                    enum TiffCompr compr, int opts);
 
 #endif /* AVCODEC_FAXCOMPR_H */
