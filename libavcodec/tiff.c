@@ -437,8 +437,12 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
         }
         break;
     case TIFF_T4OPTIONS:
+        if(s->compr == TIFF_G3)
+            s->fax_opts = value;
+        break;
     case TIFF_T6OPTIONS:
-        s->fax_opts = value;
+        if(s->compr == TIFF_G4)
+            s->fax_opts = value;
         break;
     }
     return 0;
