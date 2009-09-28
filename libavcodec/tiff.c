@@ -146,13 +146,11 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
                 src2[i] = ff_reverse[src[i]];
         }
         memset(src2+size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-        if(s->compr == TIFF_G3 && !(s->fax_opts & 1))
-            s->compr = TIFF_CCITT_RLE;
         switch(s->compr){
         case TIFF_CCITT_RLE:
         case TIFF_G3:
         case TIFF_G4:
-            ret = ff_ccitt_unpack(s->avctx, src2, size, dst, lines, stride, s->compr);
+            ret = ff_ccitt_unpack(s->avctx, src2, size, dst, lines, stride, s->compr, s->fax_opts);
             break;
         }
         av_free(src2);
