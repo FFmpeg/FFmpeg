@@ -32,7 +32,9 @@
 
 /* Helper functions */
 
-unsigned int ff_vorbis_nth_root(unsigned int x, unsigned int n) {   // x^(1/n)
+// x^(1/n)
+unsigned int ff_vorbis_nth_root(unsigned int x, unsigned int n)
+{
     unsigned int ret=0, i, j;
 
     do {
@@ -48,7 +50,8 @@ unsigned int ff_vorbis_nth_root(unsigned int x, unsigned int n) {   // x^(1/n)
 // the two bits[p] > 32 checks should be redundant, all calling code should
 // already ensure that, but since it allows overwriting the stack it seems
 // reasonable to check redundantly.
-int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num) {
+int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num)
+{
     uint_fast32_t exit_at_level[33]={404,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
@@ -67,16 +70,14 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num) {
 
     codes[p]=0;
     if (bits[p] > 32) return 1;
-    for(i=0;i<bits[p];++i) {
+    for(i=0;i<bits[p];++i)
         exit_at_level[i+1]=1<<i;
-    }
 
 #ifdef V_DEBUG
     av_log(NULL, AV_LOG_INFO, " %d. of %d code len %d code %d - ", p, num, bits[p], codes[p]);
     init_get_bits(&gb, (uint_fast8_t *)&codes[p], bits[p]);
-    for(i=0;i<bits[p];++i) {
+    for(i=0;i<bits[p];++i)
         av_log(NULL, AV_LOG_INFO, "%s", get_bits1(&gb) ? "1" : "0");
-    }
     av_log(NULL, AV_LOG_INFO, "\n");
 #endif
 
@@ -86,24 +87,21 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num) {
         if (bits[p] > 32) return 1;
         if (bits[p]==0) continue;
         // find corresponding exit(node which the tree can grow further from)
-        for(i=bits[p];i>0;--i) {
+        for(i=bits[p];i>0;--i)
             if (exit_at_level[i]) break;
-        }
         if (!i) return 1; // overspecified tree
         code=exit_at_level[i];
         exit_at_level[i]=0;
         // construct code (append 0s to end) and introduce new exits
-        for(j=i+1;j<=bits[p];++j) {
+        for(j=i+1;j<=bits[p];++j)
             exit_at_level[j]=code+(1<<(j-1));
-        }
         codes[p]=code;
 
 #ifdef V_DEBUG
         av_log(NULL, AV_LOG_INFO, " %d. code len %d code %d - ", p, bits[p], codes[p]);
         init_get_bits(&gb, (uint_fast8_t *)&codes[p], bits[p]);
-        for(i=0;i<bits[p];++i) {
+        for(i=0;i<bits[p];++i)
             av_log(NULL, AV_LOG_INFO, "%s", get_bits1(&gb) ? "1" : "0");
-        }
         av_log(NULL, AV_LOG_INFO, "\n");
 #endif
 
@@ -116,7 +114,8 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num) {
     return 0;
 }
 
-void ff_vorbis_ready_floor1_list(vorbis_floor1_entry * list, int values) {
+void ff_vorbis_ready_floor1_list(vorbis_floor1_entry * list, int values)
+{
     int i;
     list[0].sort = 0;
     list[1].sort = 1;
@@ -146,7 +145,10 @@ void ff_vorbis_ready_floor1_list(vorbis_floor1_entry * list, int values) {
     }
 }
 
-static inline void render_line_unrolled(intptr_t x, intptr_t y, int x1, intptr_t sy, int ady, int adx, float * buf) {
+static inline void render_line_unrolled(intptr_t x, intptr_t y, int x1,
+                                        intptr_t sy, int ady, int adx,
+                                        float * buf)
+{
     int err = -adx;
     x -= x1-1;
     buf += x1-1;
@@ -166,7 +168,8 @@ static inline void render_line_unrolled(intptr_t x, intptr_t y, int x1, intptr_t
     }
 }
 
-static void render_line(int x0, int y0, int x1, int y1, float * buf) {
+static void render_line(int x0, int y0, int x1, int y1, float * buf)
+{
     int dy = y1 - y0;
     int adx = x1 - x0;
     int ady = FFABS(dy);
@@ -192,7 +195,10 @@ static void render_line(int x0, int y0, int x1, int y1, float * buf) {
     }
 }
 
-void ff_vorbis_floor1_render_list(vorbis_floor1_entry * list, int values, uint_fast16_t * y_list, int * flag, int multiplier, float * out, int samples) {
+void ff_vorbis_floor1_render_list(vorbis_floor1_entry * list, int values,
+                                  uint_fast16_t * y_list, int * flag,
+                                  int multiplier, float * out, int samples)
+{
     int lx, ly, i;
     lx = 0;
     ly = y_list[0] * multiplier;

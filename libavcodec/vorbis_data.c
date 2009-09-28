@@ -2152,5 +2152,8 @@ const float ff_vorbis_floor1_inverse_db_table[256]={
   0.82788260F, 0.88168307F, 0.9389798F, 1.F,
 };
 
-const float * const ff_vorbis_vwin[8] = { vwin64, vwin128, vwin256, vwin512, vwin1024, vwin2048, vwin4096, vwin8192 };
+const float * const ff_vorbis_vwin[8] = {
+      vwin64,  vwin128,  vwin256,  vwin512,
+    vwin1024, vwin2048, vwin4096, vwin8192
+};
 
