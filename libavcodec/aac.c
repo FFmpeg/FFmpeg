@@ -190,30 +190,30 @@ static int output_configure(AACContext *ac,
 
         avctx->channel_layout = aac_channel_layout[channel_config - 1];
     } else {
-    /* Allocate or free elements depending on if they are in the
-     * current program configuration.
-     *
-     * Set up default 1:1 output mapping.
-     *
-     * For a 5.1 stream the output order will be:
-     *    [ Center ] [ Front Left ] [ Front Right ] [ LFE ] [ Surround Left ] [ Surround Right ]
-     */
+        /* Allocate or free elements depending on if they are in the
+         * current program configuration.
+         *
+         * Set up default 1:1 output mapping.
+         *
+         * For a 5.1 stream the output order will be:
+         *    [ Center ] [ Front Left ] [ Front Right ] [ LFE ] [ Surround Left ] [ Surround Right ]
+         */
 
-    for (i = 0; i < MAX_ELEM_ID; i++) {
-        for (type = 0; type < 4; type++) {
-            if (che_pos[type][i]) {
-                if (!ac->che[type][i] && !(ac->che[type][i] = av_mallocz(sizeof(ChannelElement))))
-                    return AVERROR(ENOMEM);
-                if (type != TYPE_CCE) {
-                    ac->output_data[channels++] = ac->che[type][i]->ch[0].ret;
-                    if (type == TYPE_CPE) {
-                        ac->output_data[channels++] = ac->che[type][i]->ch[1].ret;
+        for (i = 0; i < MAX_ELEM_ID; i++) {
+            for (type = 0; type < 4; type++) {
+                if (che_pos[type][i]) {
+                    if (!ac->che[type][i] && !(ac->che[type][i] = av_mallocz(sizeof(ChannelElement))))
+                        return AVERROR(ENOMEM);
+                    if (type != TYPE_CCE) {
+                        ac->output_data[channels++] = ac->che[type][i]->ch[0].ret;
+                        if (type == TYPE_CPE) {
+                            ac->output_data[channels++] = ac->che[type][i]->ch[1].ret;
+                        }
                     }
-                }
-            } else
-                av_freep(&ac->che[type][i]);
+                } else
+                    av_freep(&ac->che[type][i]);
+            }
         }
-    }
 
         memcpy(ac->tag_che_map, ac->che, 4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
         ac->tags_mapped = 4 * MAX_ELEM_ID;
