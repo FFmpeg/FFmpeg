@@ -242,3 +242,22 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
     av_log(s, AV_LOG_INFO, "ID3v2.%d tag skipped, cannot handle %s\n", version, reason);
     url_fskip(s->pb, len);
 }
+
+const AVMetadataConv ff_id3v2_metadata_conv[] = {
+    { "TALB", "album"},
+    { "TCOM", "composer"},
+    { "TCON", "genre"},
+    { "TCOP", "copyright"},
+    { "TDRL", "date"},
+    { "TENC", "encoder"},
+    { "TIT2", "title"},
+    { "TLAN", "language"},
+    { "TPE1", "author"},
+    { "TPOS", "disc"},
+    { "TPUB", "publisher"},
+    { "TRCK", "track"},
+    { "TSOA", "albumsort"},
+    { "TSOP", "authorsort"},
+    { "TSOT", "titlesort"},
+    { 0 }
+};

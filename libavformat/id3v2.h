@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include "avformat.h"
+#include "metadata.h"
 
 #define ID3v2_HEADER_SIZE 10
 
@@ -50,5 +51,7 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
  * Read an ID3v2 tag
  */
 void ff_id3v2_read(AVFormatContext *s);
+
+extern const AVMetadataConv ff_id3v2_metadata_conv[];
 
 #endif /* AVFORMAT_ID3V2_H */

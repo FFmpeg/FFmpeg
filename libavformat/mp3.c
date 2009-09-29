@@ -341,5 +341,6 @@ AVOutputFormat mp3_muxer = {
     mp3_write_header,
     mp3_write_packet,
     mp3_write_trailer,
+    .metadata_conv = ff_id3v2_metadata_conv,
 };
 #endif
