@@ -330,12 +330,12 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
         iv = iptab[last_exp];
         max_scale = v;
         n = *ptr++;
-        do {
-            *q++ = iv;
-            *q++ = iv;
-            *q++ = iv;
-            *q++ = iv;
-        } while (n -= 4);
+        switch (n & 3) do {
+        case 0: *q++ = iv;
+        case 3: *q++ = iv;
+        case 2: *q++ = iv;
+        case 1: *q++ = iv;
+        } while ((n -= 4) > 0);
     }else
         last_exp = 36;
 
@@ -352,12 +352,12 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
         if (v > max_scale)
             max_scale = v;
         n = *ptr++;
-        do {
-            *q++ = iv;
-            *q++ = iv;
-            *q++ = iv;
-            *q++ = iv;
-        } while (n -= 4);
+        switch (n & 3) do {
+        case 0: *q++ = iv;
+        case 3: *q++ = iv;
+        case 2: *q++ = iv;
+        case 1: *q++ = iv;
+        } while ((n -= 4) > 0);
     }
     s->max_exponent[ch] = max_scale;
     return 0;
