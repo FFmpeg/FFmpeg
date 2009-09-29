@@ -1882,36 +1882,6 @@ static void compute_status(HTTPContext *c)
         stream = stream->next;
     }
 
-#if 0
-    {
-        float avg;
-        AVCodecContext *enc;
-        char buf[1024];
-
-        /* feed status */
-        stream = first_feed;
-        while (stream != NULL) {
-            url_fprintf(pb, "<h1>Feed '%s'</h1>\n", stream->filename);
-            url_fprintf(pb, "<table>\n");
-            url_fprintf(pb, "<tr><td>Parameters<td>Frame count<td>Size<td>Avg bitrate (kbits/s)\n");
-            for(i=0;i<stream->nb_streams;i++) {
-                AVStream *st = stream->streams[i];
-                FeedData *fdata = st->priv_data;
-                enc = st->codec;
-
-                avcodec_string(buf, sizeof(buf), enc);
-                avg = fdata->avg_frame_size * (float)enc->rate * 8.0;
-                if (enc->codec->type == CODEC_TYPE_AUDIO && enc->frame_size > 0)
-                    avg /= enc->frame_size;
-                url_fprintf(pb, "<tr><td>%s <td> %d <td> %"PRId64" <td> %0.1f\n",
-                             buf, enc->frame_number, fdata->data_count, avg / 1000.0);
-            }
-            url_fprintf(pb, "</table>\n");
-            stream = stream->next_feed;
-        }
-    }
-#endif
-
     /* connection status */
     url_fprintf(pb, "<h2>Connection Status</h2>\n");
 
@@ -2020,12 +1990,6 @@ static int open_input_stream(HTTPContext *c, const char *info)
     }
     if (input_filename[0] == '\0')
         return -1;
-
-#if 0
-    { time_t when = stream_pos / 1000000;
-    http_log("Stream pos = %"PRId64", time=%s", stream_pos, ctime(&when));
-    }
-#endif
 
     /* open stream */
     if ((ret = av_open_input_file(&s, input_filename, c->stream->ifmt,
@@ -2234,14 +2198,6 @@ static int http_prepare_data(HTTPContext *c)
                         if (ist->start_time != AV_NOPTS_VALUE)
                             c->cur_pts -= av_rescale_q(ist->start_time, ist->time_base, AV_TIME_BASE_Q);
                         c->cur_frame_duration = av_rescale_q(pkt.duration, ist->time_base, AV_TIME_BASE_Q);
-#if 0
-                        printf("index=%d pts=%0.3f duration=%0.6f\n",
-                               pkt.stream_index,
-                               (double)c->cur_pts /
-                               AV_TIME_BASE,
-                               (double)c->cur_frame_duration /
-                               AV_TIME_BASE);
-#endif
                         /* find RTP context */
                         c->packet_stream_index = pkt.stream_index;
                         ctx = c->rtp_ctx[c->packet_stream_index];
@@ -3071,14 +3027,6 @@ static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPMessageHeader *h)
         rtsp_reply_error(c, RTSP_STATUS_STATE);
         return;
     }
-
-#if 0
-    /* XXX: seek in stream */
-    if (h->range_start != AV_NOPTS_VALUE) {
-        printf("range_start=%0.3f\n", (double)h->range_start / AV_TIME_BASE);
-        av_seek_frame(rtp_c->fmt_in, -1, h->range_start);
-    }
-#endif
 
     rtp_c->state = HTTPSTATE_SEND_DATA;
 
