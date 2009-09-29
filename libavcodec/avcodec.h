@@ -2525,7 +2525,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: Set by libavcodec
      */
-     enum AVChromaLocation chroma_sample_location;
+    enum AVChromaLocation chroma_sample_location;
 } AVCodecContext;
 
 /**
