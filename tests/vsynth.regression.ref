@@ -150,15 +150,15 @@ stddev:   22.77 PSNR: 20.97 bytes:  7603200/  7603200
 3419980 ./tests/data/a-snow53.avi
 c5ccac874dbf808e9088bc3107860042 *./tests/data/snowll.vsynth.out.yuv
 stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
-1482a23e323277f1ff67a29dd07b158d *./tests/data/a-dv.dv
+27ade3031b17214cf81c19cbf70f37d7 *./tests/data/a-dv.dv
 7200000 ./tests/data/a-dv.dv
 02ac7cdeab91d4d5621e7ce96dddc498 *./tests/data/dv.vsynth.out.yuv
 stddev:    6.90 PSNR: 31.33 bytes:  7603200/  7603200
-ec643f879ccc4d53d285712ec25b5d32 *./tests/data/a-dv411.dv
+bd67f2431db160d4bb6dcd791cea6efd *./tests/data/a-dv411.dv
 7200000 ./tests/data/a-dv411.dv
 b6640a3a572353f51284acb746eb00c4 *./tests/data/dv.vsynth.out.yuv
 stddev:   30.76 PSNR: 18.36 bytes:  7603200/  7603200
-2a0eace8da46f0061493677deb1fd66d *./tests/data/a-dv50.dv
+26dba84f0ea895b914ef5b333d8394ac *./tests/data/a-dv50.dv
 14400000 ./tests/data/a-dv50.dv
 a2ff093e93ffed10f730fa21df02fc50 *./tests/data/dv50.vsynth.out.yuv
 stddev:    1.72 PSNR: 43.37 bytes:  7603200/  7603200

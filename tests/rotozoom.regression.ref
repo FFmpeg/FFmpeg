@@ -150,15 +150,15 @@ a8fccf278bbb17d37a756ecf11672b09 *./tests/data/a-snow53.avi
 2721758 ./tests/data/a-snow53.avi
 dde5895817ad9d219f79a52d0bdfb001 *./tests/data/snowll.rotozoom.out.yuv
 stddev:    0.00 PSNR:999.99 bytes:  7603200/  7603200
-02c85b9bebb23f147ef598da7bcbf736 *./tests/data/a-dv.dv
+bfa766f89bfeabc0ae1044f3954bed52 *./tests/data/a-dv.dv
 7200000 ./tests/data/a-dv.dv
 7ec62bd3350a6848364669e6e1e4b9cc *./tests/data/dv.rotozoom.out.yuv
 stddev:    1.71 PSNR: 43.46 bytes:  7603200/  7603200
-203e50e75a43fb1b26e1b53d99e1de4f *./tests/data/a-dv411.dv
+00a9d8683ac6826af41bcf7223fb0389 *./tests/data/a-dv411.dv
 7200000 ./tests/data/a-dv411.dv
 7f9fa421028aabb11eaf4c6513a5a843 *./tests/data/dv.rotozoom.out.yuv
 stddev:   10.09 PSNR: 28.04 bytes:  7603200/  7603200
-2bae05531a24cd6764eefba64db345bc *./tests/data/a-dv50.dv
+61e31c79e8949b25c849753a0785b0d7 *./tests/data/a-dv50.dv
 14400000 ./tests/data/a-dv50.dv
 af3f2dd5ab62c1a1d98b07d4aeb6852f *./tests/data/dv50.rotozoom.out.yuv
 stddev:    0.82 PSNR: 49.81 bytes:  7603200/  7603200

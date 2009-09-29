@@ -30,7 +30,7 @@ b3174e2db508564c1cce0b5e3c1bc1bd *./tests/data/b-lavf.mxf_d10
 c145305a775eb2de43cdf94eb1ab5240 *./tests/data/b-lavf.mov
 357669 ./tests/data/b-lavf.mov
 ./tests/data/b-lavf.mov CRC=0x2f6a9b26
-31f115e7106265a7a7cea7f4fcf5c329 *./tests/data/b-lavf.dv
+522e5e5a46b99f8ad8aabdaf3d2f1869 *./tests/data/b-lavf.dv
 3600000 ./tests/data/b-lavf.dv
 ./tests/data/b-lavf.dv CRC=0x02c0af30
 bf5c730bb8426dbcfc5420e71ee490f2 *./tests/data/b-lavf.gxf
