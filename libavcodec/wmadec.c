@@ -315,21 +315,27 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
 {
     int last_exp, n, code;
     const uint16_t *ptr;
-    float v, *q, max_scale, *q_end;
+    float v, max_scale;
+    uint32_t *q, *q_end, iv;
     const float *ptab = pow_tab + 60;
+    const uint32_t *iptab = (const uint32_t*)ptab;
 
     ptr = s->exponent_bands[s->frame_len_bits - s->block_len_bits];
-    q = s->exponents[ch];
+    q = (uint32_t *)s->exponents[ch];
     q_end = q + s->block_len;
     max_scale = 0;
     if (s->version == 1) {
         last_exp = get_bits(&s->gb, 5) + 10;
         v = ptab[last_exp];
+        iv = iptab[last_exp];
         max_scale = v;
         n = *ptr++;
         do {
-            *q++ = v;
-        } while (--n);
+            *q++ = iv;
+            *q++ = iv;
+            *q++ = iv;
+            *q++ = iv;
+        } while (n -= 4);
     }else
         last_exp = 36;
 
@@ -342,12 +348,16 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
         if ((unsigned)last_exp + 60 > FF_ARRAY_ELEMS(pow_tab))
             return -1;
         v = ptab[last_exp];
+        iv = iptab[last_exp];
         if (v > max_scale)
             max_scale = v;
         n = *ptr++;
         do {
-            *q++ = v;
-        } while (--n);
+            *q++ = iv;
+            *q++ = iv;
+            *q++ = iv;
+            *q++ = iv;
+        } while (n -= 4);
     }
     s->max_exponent[ch] = max_scale;
     return 0;
