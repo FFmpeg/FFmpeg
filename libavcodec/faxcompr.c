@@ -253,6 +253,7 @@ static void put_line(uint8_t *dst, int size, int width, const int *runs)
         if(run)
             put_sbits(&pb, run, mode);
     }
+    flush_put_bits(&pb);
 }
 
 static int find_group3_syncmarker(GetBitContext *gb, int srcsize)
