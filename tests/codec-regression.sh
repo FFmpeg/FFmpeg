@@ -668,7 +668,7 @@ do_lavfi() {
     vfilters=$2
 
     if [ -n "$test" ] ; then
-        do_video_encoding ${test_name}.avi "-qscale 10" "-vcodec huffyuv -vfilters $vfilters"
+        do_video_encoding ${test_name}.avi "" "-vcodec rawvideo -vfilters $vfilters"
     fi
 }
 
