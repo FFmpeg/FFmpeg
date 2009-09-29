@@ -302,8 +302,8 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
                 ret = decode_group3_1d_line(avctx, &gb, avctx->width, runs, runend);
             else
                 ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, runend, ref);
-            if(compr==TIFF_CCITT_RLE && (get_bits_count(&gb) & 7))
-                skip_bits(&gb, 8 - (get_bits_count(&gb) & 7));
+            if(compr==TIFF_CCITT_RLE)
+                align_get_bits(&gb);
         }
         if(ret < 0){
             put_line(dst, stride, avctx->width, ref);
