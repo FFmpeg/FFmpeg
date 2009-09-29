@@ -29,7 +29,7 @@
 /* XXX: use same run/length optimization as mpeg decoders */
 //FIXME maybe split decode / encode or pass flag
 static void init_coef_vlc(VLC *vlc, uint16_t **prun_table,
-                          uint16_t **plevel_table, uint16_t **pint_table,
+                          float **plevel_table, uint16_t **pint_table,
                           const CoefVLCTable *vlc_table)
 {
     int n = vlc_table->n;
@@ -37,12 +37,14 @@ static void init_coef_vlc(VLC *vlc, uint16_t **prun_table,
     const uint32_t *table_codes  = vlc_table->huffcodes;
     const uint16_t *levels_table = vlc_table->levels;
     uint16_t *run_table, *level_table, *int_table;
+    float *flevel_table;
     int i, l, j, k, level;
 
     init_vlc(vlc, VLCBITS, n, table_bits, 1, 1, table_codes, 4, 4, 0);
 
     run_table   = av_malloc(n * sizeof(uint16_t));
     level_table = av_malloc(n * sizeof(uint16_t));
+    flevel_table= av_malloc(n * sizeof(*flevel_table));
     int_table   = av_malloc(n * sizeof(uint16_t));
     i = 2;
     level = 1;
@@ -53,13 +55,15 @@ static void init_coef_vlc(VLC *vlc, uint16_t **prun_table,
         for (j = 0; j < l; j++) {
             run_table[i]   = j;
             level_table[i] = level;
+            flevel_table[i]= level;
             i++;
         }
         level++;
     }
     *prun_table   = run_table;
-    *plevel_table = level_table;
+    *plevel_table = flevel_table;
     *pint_table   = int_table;
+    av_free(level_table);
 }
 
 /**
@@ -465,19 +469,22 @@ unsigned int ff_wma_get_large_val(GetBitContext* gb)
  */
 int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
                             VLC *vlc,
-                            const uint16_t *level_table, const uint16_t *run_table,
+                            const float *level_table, const uint16_t *run_table,
                             int version, WMACoef *ptr, int offset,
                             int num_coefs, int block_len, int frame_len_bits,
                             int coef_nb_bits)
 {
     int code, level, sign;
+    const uint32_t *ilvl = (const uint32_t*)level_table;
+    uint32_t *iptr = (uint32_t*)ptr;
     const unsigned int coef_mask = block_len - 1;
     for (; offset < num_coefs; offset++) {
         code = get_vlc2(gb, vlc->table, VLCBITS, VLCMAX);
         if (code > 1) {
             /** normal code */
             offset += run_table[code];
-            level = level_table[code];
+            sign = get_bits1(gb) - 1;
+            iptr[offset & coef_mask] = ilvl[code] ^ sign<<31;
         } else if (code == 1) {
             /** EOB */
             break;
@@ -503,9 +510,9 @@ int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
                         offset += get_bits(gb, 2) + 1;
                 }
             }
+            sign = get_bits1(gb) - 1;
+            ptr[offset & coef_mask] = (level^sign) - sign;
         }
-        sign = get_bits1(gb) - 1;
-        ptr[offset & coef_mask] = (level^sign) - sign;
     }
     /** NOTE: EOB can be omitted */
     if (offset > num_coefs) {

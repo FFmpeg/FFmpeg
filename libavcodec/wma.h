@@ -93,7 +93,7 @@ typedef struct WMACodecContext {
 //FIXME the following 3 tables should be shared between decoders
     VLC coef_vlc[2];
     uint16_t *run_table[2];
-    uint16_t *level_table[2];
+    float *level_table[2];
     uint16_t *int_table[2];
     const CoefVLCTable *coef_vlcs[2];
     /* frame info */
@@ -153,7 +153,7 @@ int ff_wma_end(AVCodecContext *avctx);
 unsigned int ff_wma_get_large_val(GetBitContext* gb);
 int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
                             VLC *vlc,
-                            const uint16_t *level_table, const uint16_t *run_table,
+                            const float *level_table, const uint16_t *run_table,
                             int version, WMACoef *ptr, int offset,
                             int num_coefs, int block_len, int frame_len_bits,
                             int coef_nb_bits);

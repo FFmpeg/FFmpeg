@@ -769,7 +769,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
     int cur_coeff = 0;
     int num_zeros = 0;
     const uint16_t* run;
-    const uint16_t* level;
+    const float* level;
 
     dprintf(s->avctx, "decode coefficients for channel %i\n", c);
 
