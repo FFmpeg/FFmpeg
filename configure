@@ -2161,7 +2161,7 @@ elif enabled x86; then
     return i;
 EOF
 
-    # check wether EBX is available on x86
+    # check whether EBX is available on x86
     check_asm ebx_available '"":::"%ebx"'
 
     # check whether more than 10 operands are supported
