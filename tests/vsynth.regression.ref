@@ -182,11 +182,11 @@ stddev:    9.58 PSNR: 28.49 bytes:  7603200/  7603200
 14681925 ./tests/data/a-flashsv.flv
 947cb24ec45a453348ae6fe3fa278071 *./tests/data/flashsv.vsynth.out.yuv
 stddev:    2.85 PSNR: 39.02 bytes:  7603200/  7603200
-28fbc7485c7939f40368f79adccb3e3d *./tests/data/a-mp2.mp2
+f6eb0a205350bbd7fb1028a01c7ae8aa *./tests/data/a-mp2.mp2
 96130 ./tests/data/a-mp2.mp2
-c02d5b881c424498457298739f168368 *./tests/data/mp2.vsynth.out.wav
-stddev: 9315.45 PSNR: 16.94 bytes:  1059884/  1058444
-stddev: 4385.18 PSNR: 23.48 bytes:  1057960/  1058444
+74c7b6b15a001add199619fafe4059a1 *./tests/data/mp2.vsynth.out.wav
+stddev: 9315.80 PSNR: 16.93 bytes:  1059884/  1058444
+stddev: 4385.25 PSNR: 23.48 bytes:  1057960/  1058444
 081bfd5e683b13cccf1b07c43c1c5005 *./tests/data/a-ac3.rm
 98751 ./tests/data/a-ac3.rm
 5d8cce28f83dd33c3c7eaf43a5db5294 *./tests/data/a-g726.wav
