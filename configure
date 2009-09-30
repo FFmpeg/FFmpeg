@@ -572,7 +572,8 @@ check_asm(){
     name="$1"
     asm="$2"
     shift 2
-    check_as "$@" <<EOF && enable $name || disable $name
+    disable $name
+    check_as "$@" <<EOF && enable $name
 void foo(void){ __asm__ volatile($asm); }
 EOF
 }
