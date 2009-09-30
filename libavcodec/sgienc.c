@@ -83,7 +83,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
     /* Encode header. */
     bytestream_put_be16(&buf, SGI_MAGIC);
-    bytestream_put_byte(&buf, 1); /* RLE */
+    bytestream_put_byte(&buf, avctx->coder_type != FF_CODER_TYPE_RAW); /* RLE 1 - VERBATIM 0*/
     bytestream_put_byte(&buf, 1); /* bytes_per_channel */
     bytestream_put_be16(&buf, dimension);
     bytestream_put_be16(&buf, width);
@@ -106,6 +106,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
     buf += 404;
     offsettab = buf;
 
+    if (avctx->coder_type  != FF_CODER_TYPE_RAW) {
     /* Skip RLE offset table. */
     buf += tablesize;
     lengthtab = buf;
@@ -139,6 +140,19 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
     }
 
     av_free(encode_buf);
+    } else {
+        for (z = 0; z < depth; z++) {
+            in_buf = p->data[0] + p->linesize[0] * (height - 1) + z;
+
+            for (y = 0; y < height; y++) {
+                for (x = 0; x < width * depth; x += depth)
+                    bytestream_put_byte(&buf, in_buf[x]);
+
+                in_buf -= p->linesize[0];
+            }
+        }
+    }
+
     /* total length */
     return buf - orig_buf;
 }
