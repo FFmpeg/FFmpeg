@@ -913,7 +913,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                 int pos = 0;
                 for (i = 0; i < codec_name[0] && pos < sizeof(st->codec->codec_name) - 3; i++) {
                     uint8_t tmp;
-                    PUT_UTF8(codec_name[i], tmp, st->codec->codec_name[pos++] = tmp;)
+                    PUT_UTF8(codec_name[i+1], tmp, st->codec->codec_name[pos++] = tmp;)
                 }
                 st->codec->codec_name[pos] = 0;
             }
