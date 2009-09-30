@@ -313,11 +313,8 @@ static void escape_FF(MpegEncContext *s, int start)
 
     if(ff_count==0) return;
 
-    /* skip put bits */
-    for(i=0; i<ff_count-3; i+=4)
-        put_bits(&s->pb, 32, 0);
-    put_bits(&s->pb, (ff_count-i)*8, 0);
     flush_put_bits(&s->pb);
+    skip_put_bytes(&s->pb, ff_count);
 
     for(i=size-1; ff_count; i--){
         int v= buf[i];
