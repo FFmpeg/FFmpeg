@@ -613,7 +613,7 @@ static void do_rematrixing(AC3DecodeContext *s)
             bndend = FFMIN(end, ff_ac3_rematrix_band_tab[bnd+1]);
             for(; i<bndend; i++) {
                 int tmp0 = s->fixed_coeffs[1][i];
-                s->fixed_coeffs[1][i] -= s->fixed_coeffs[2][i];
+                s->fixed_coeffs[1][i] += s->fixed_coeffs[2][i];
                 s->fixed_coeffs[2][i]  = tmp0 - s->fixed_coeffs[2][i];
             }
         }
