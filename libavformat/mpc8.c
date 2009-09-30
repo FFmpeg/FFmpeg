@@ -250,6 +250,8 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
     while(!url_feof(s->pb)){
         pos = url_ftell(s->pb);
         mpc8_get_chunk_header(s->pb, &tag, &size);
+        if (size < 0)
+            return -1;
         if(tag == TAG_AUDIOPACKET){
             if(av_get_packet(s->pb, pkt, size) < 0)
                 return AVERROR(ENOMEM);
