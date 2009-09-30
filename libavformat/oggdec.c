@@ -477,11 +477,16 @@ static int
 ogg_read_header (AVFormatContext * s, AVFormatParameters * ap)
 {
     struct ogg *ogg = s->priv_data;
+    int i;
     ogg->curidx = -1;
     //linear headers seek from start
     if (ogg_get_headers (s) < 0){
         return -1;
     }
+
+    for (i = 0; i < ogg->nstreams; i++)
+        if (ogg->streams[i].header < 0)
+            ogg->streams[i].codec = NULL;
 
     //linear granulepos seek from end
     ogg_get_length (s);
