@@ -2162,7 +2162,7 @@ elif enabled x86; then
 EOF
 
     # check whether EBX is available on x86
-    check_asm ebx_available '"":::"%ebx"'
+    check_asm ebx_available '""::"b"(0)'
 
     # check whether more than 10 operands are supported
     check_cc <<EOF && enable ten_operands
