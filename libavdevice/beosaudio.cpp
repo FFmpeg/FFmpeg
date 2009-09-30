@@ -297,11 +297,12 @@ static int audio_write_header(AVFormatContext *s1)
     return 0;
 }
 
-static int audio_write_packet(AVFormatContext *s1, int stream_index,
-                              const uint8_t *buf, int size, int64_t force_pts)
+static int audio_write_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     AudioData *s = (AudioData *)s1->priv_data;
     int len, ret;
+    const uint8_t *buf = pkt->data;
+    int size = pkt->size;
 #ifdef LATENCY_CHECK
 bigtime_t lat1, lat2;
 lat1 = s->player->Latency();
@@ -372,7 +373,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->sample_rate = s->sample_rate;
     st->codec->channels = s->channels;
     return 0;
-    av_set_pts_info(s1, 48, 1, 1000000);  /* 48 bits pts in us */
+    av_set_pts_info(st, 48, 1, 1000000);  /* 48 bits pts in us */
 }
 
 static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
@@ -429,6 +430,7 @@ static AVInputFormat audio_beos_demuxer = {
     audio_read_header,
     audio_read_packet,
     audio_read_close,
+    NULL,
     NULL,
     AVFMT_NOFILE,
 };
