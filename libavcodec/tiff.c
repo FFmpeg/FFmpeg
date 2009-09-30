@@ -498,8 +498,19 @@ static int decode_frame(AVCodecContext *avctx,
     }
     /* now we have the data and may start decoding */
     if(!p->data[0]){
-        av_log(s->avctx, AV_LOG_ERROR, "Picture initialization missing\n");
-        return -1;
+        s->bpp = 1;
+        avctx->pix_fmt = PIX_FMT_MONOBLACK;
+        if(s->width != s->avctx->width || s->height != s->avctx->height){
+            if(avcodec_check_dimensions(s->avctx, s->width, s->height))
+                return -1;
+            avcodec_set_dimensions(s->avctx, s->width, s->height);
+        }
+        if(s->picture.data[0])
+            s->avctx->release_buffer(s->avctx, &s->picture);
+        if(s->avctx->get_buffer(s->avctx, &s->picture) < 0){
+            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return -1;
+        }
     }
     if(s->strips == 1 && !s->stripsize){
         av_log(avctx, AV_LOG_WARNING, "Image data size missing\n");
