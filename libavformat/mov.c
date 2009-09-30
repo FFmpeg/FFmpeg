@@ -909,8 +909,13 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
             get_buffer(pb, codec_name, 32); /* codec name, pascal string */
             if (codec_name[0] <= 31) {
-                memcpy(st->codec->codec_name, &codec_name[1],codec_name[0]);
-                st->codec->codec_name[codec_name[0]] = 0;
+                int i;
+                int pos = 0;
+                for (i = 0; i < codec_name[0] && pos < sizeof(st->codec->codec_name) - 3; i++) {
+                    uint8_t tmp;
+                    PUT_UTF8(codec_name[i], tmp, st->codec->codec_name[pos++] = tmp;)
+                }
+                st->codec->codec_name[pos] = 0;
             }
 
             st->codec->bits_per_coded_sample = get_be16(pb); /* depth */
