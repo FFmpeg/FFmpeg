@@ -542,7 +542,7 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     put_bits(&pb,  1, 1); // framing
 
     flush_put_bits(&pb);
-    hlens[0] = (put_bits_count(&pb) + 7) / 8;
+    hlens[0] = put_bits_count(&pb) >> 3;
     buffer_len -= hlens[0];
     p += hlens[0];
 
@@ -555,7 +555,7 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     put_bits(&pb,  1, 1); // framing
 
     flush_put_bits(&pb);
-    hlens[1] = (put_bits_count(&pb) + 7) / 8;
+    hlens[1] = put_bits_count(&pb) >> 3;
     buffer_len -= hlens[1];
     p += hlens[1];
 
@@ -628,7 +628,7 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     put_bits(&pb, 1, 1); // framing
 
     flush_put_bits(&pb);
-    hlens[2] = (put_bits_count(&pb) + 7) / 8;
+    hlens[2] = put_bits_count(&pb) >> 3;
 
     len = hlens[0] + hlens[1] + hlens[2];
     p = *out = av_mallocz(64 + len + len/255);
@@ -1023,7 +1023,7 @@ static int vorbis_encode_frame(AVCodecContext *avccontext,
     avccontext->coded_frame->pts = venc->sample_count;
     venc->sample_count += avccontext->frame_size;
     flush_put_bits(&pb);
-    return (put_bits_count(&pb) + 7) / 8;
+    return put_bits_count(&pb) >> 3;
 }
 
 
