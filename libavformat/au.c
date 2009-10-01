@@ -168,7 +168,7 @@ static int au_read_packet(AVFormatContext *s,
         return AVERROR(EIO);
     ret= av_get_packet(s->pb, pkt, MAX_SIZE);
     if (ret < 0)
-        return AVERROR(EIO);
+        return ret;
     pkt->stream_index = 0;
 
     /* note: we need to modify the packet size here to handle the last
