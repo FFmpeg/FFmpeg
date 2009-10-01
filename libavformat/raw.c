@@ -171,7 +171,7 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->dts= pkt->pos / packet_size;
 
     pkt->stream_index = 0;
-    if (ret != packet_size)
+    if (ret <= 0)
         return AVERROR(EIO);
     return 0;
 }
