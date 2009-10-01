@@ -1352,19 +1352,19 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                       track->default_duration, 1000000000, 30000);
 
         if (!st->codec->extradata) {
-        if(extradata){
-            st->codec->extradata = extradata;
-            st->codec->extradata_size = extradata_size;
-        } else if(track->codec_priv.data && track->codec_priv.size > 0){
-            st->codec->extradata = av_mallocz(track->codec_priv.size +
-                                              FF_INPUT_BUFFER_PADDING_SIZE);
-            if(st->codec->extradata == NULL)
-                return AVERROR(ENOMEM);
-            st->codec->extradata_size = track->codec_priv.size;
-            memcpy(st->codec->extradata,
-                   track->codec_priv.data + extradata_offset,
-                   track->codec_priv.size);
-        }
+            if(extradata){
+                st->codec->extradata = extradata;
+                st->codec->extradata_size = extradata_size;
+            } else if(track->codec_priv.data && track->codec_priv.size > 0){
+                st->codec->extradata = av_mallocz(track->codec_priv.size +
+                                                  FF_INPUT_BUFFER_PADDING_SIZE);
+                if(st->codec->extradata == NULL)
+                    return AVERROR(ENOMEM);
+                st->codec->extradata_size = track->codec_priv.size;
+                memcpy(st->codec->extradata,
+                       track->codec_priv.data + extradata_offset,
+                       track->codec_priv.size);
+            }
         }
 
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
