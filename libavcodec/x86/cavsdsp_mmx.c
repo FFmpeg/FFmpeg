@@ -182,12 +182,12 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
  ****************************************************************************/
 
 /* vertical filter [-1 -2 96 42 -7  0]  */
-#define QPEL_CAVSV1(A,B,C,D,E,F,OP)      \
+#define QPEL_CAVSV1(A,B,C,D,E,F,OP,MUL2) \
         "movd (%0), "#F"            \n\t"\
         "movq "#C", %%mm6           \n\t"\
         "pmullw %5, %%mm6           \n\t"\
         "movq "#D", %%mm7           \n\t"\
-        "pmullw %6, %%mm7           \n\t"\
+        "pmullw "MANGLE(MUL2)", %%mm7\n\t"\
         "psllw $3, "#E"             \n\t"\
         "psubw "#E", %%mm6          \n\t"\
         "psraw $3, "#E"             \n\t"\
@@ -207,7 +207,7 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         "add %3, %1                 \n\t"
 
 /* vertical filter [ 0 -1  5  5 -1  0]  */
-#define QPEL_CAVSV2(A,B,C,D,E,F,OP)      \
+#define QPEL_CAVSV2(A,B,C,D,E,F,OP,MUL2) \
         "movd (%0), "#F"            \n\t"\
         "movq "#C", %%mm6           \n\t"\
         "paddw "#D", %%mm6          \n\t"\
@@ -223,10 +223,10 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         "add %3, %1                 \n\t"
 
 /* vertical filter [ 0 -7 42 96 -2 -1]  */
-#define QPEL_CAVSV3(A,B,C,D,E,F,OP)      \
+#define QPEL_CAVSV3(A,B,C,D,E,F,OP,MUL2) \
         "movd (%0), "#F"            \n\t"\
         "movq "#C", %%mm6           \n\t"\
-        "pmullw %6, %%mm6           \n\t"\
+        "pmullw "MANGLE(MUL2)", %%mm6\n\t"\
         "movq "#D", %%mm7           \n\t"\
         "pmullw %5, %%mm7           \n\t"\
         "psllw $3, "#B"             \n\t"\
@@ -270,32 +270,32 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
         "punpcklbw %%mm7, %%mm2     \n\t"\
         "punpcklbw %%mm7, %%mm3     \n\t"\
         "punpcklbw %%mm7, %%mm4     \n\t"\
-        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP)\
-        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP)\
-        VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP)\
-        VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP)\
-        VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP)\
-        VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP)\
-        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP)\
-        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP)\
+        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, MUL2)\
+        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, MUL2)\
+        VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, MUL2)\
+        VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, MUL2)\
+        VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP, MUL2)\
+        VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP, MUL2)\
+        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, MUL2)\
+        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, MUL2)\
         \
         : "+a"(src), "+c"(dst)\
-        : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride), "m"(ADD), "m"(MUL1), "m"(MUL2)\
+        : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride), "m"(ADD), "m"(MUL1)\
         : "memory"\
      );\
      if(h==16){\
         __asm__ volatile(\
-            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP)\
-            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP)\
-            VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP)\
-            VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP)\
-            VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP)\
-            VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP)\
-            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP)\
-            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP)\
+            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, MUL2)\
+            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, MUL2)\
+            VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP, MUL2)\
+            VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP, MUL2)\
+            VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, MUL2)\
+            VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, MUL2)\
+            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, MUL2)\
+            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, MUL2)\
             \
            : "+a"(src), "+c"(dst)\
-           : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride), "m"(ADD),  "m"(MUL1), "m"(MUL2)\
+           : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride), "m"(ADD),  "m"(MUL1)\
            : "memory"\
         );\
      }\
