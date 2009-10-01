@@ -734,6 +734,8 @@ Force subtitle codec ('copy' to copy stream).
 Add a new subtitle stream to the current output stream.
 @item -slang @var{code}
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
+@item -sn
+Disable subtitle recording.
 @item -sbsf @var{bitstream_filter}
 Bitstream filters available are "mov2textsub", "text2movsub".
 @example
