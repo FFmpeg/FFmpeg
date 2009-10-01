@@ -117,7 +117,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         buf += tablesize;
 
         /* Make an intermediate consecutive buffer. */
-        if ((encode_buf = av_malloc(width)) == NULL)
+        if (!(encode_buf = av_malloc(width)))
             return -1;
 
         for (z = 0; z < depth; z++) {
