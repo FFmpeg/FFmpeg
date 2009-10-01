@@ -830,6 +830,12 @@ resync:
             goto resync;
         }
 
+        //parse stray LIST
+        if(d[0] == 'L' && d[1] == 'I' && d[2] == 'S' && d[3] == 'T'){
+            url_fskip(pb, 4);
+            goto resync;
+        }
+
         n= get_stream_idx(d);
 
         if(!((i-avi->last_pkt_pos)&1) && get_stream_idx(d+1) < s->nb_streams)
