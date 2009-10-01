@@ -123,9 +123,6 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret <= 0) {
         return AVERROR(EIO);
     }
-    /* note: we need to modify the packet size here to handle the last
-       packet */
-    pkt->size = ret;
 
     bps= av_get_bits_per_sample(s->streams[0]->codec->codec_id);
     assert(bps); // if false there IS a bug elsewhere (NOT in this function)
