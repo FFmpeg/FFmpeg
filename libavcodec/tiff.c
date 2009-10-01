@@ -139,6 +139,11 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
             return -1;
         }
+        if(s->fax_opts & 2){
+            av_log(s->avctx, AV_LOG_ERROR, "Uncompressed fax mode is not supported (yet)\n");
+            av_free(src2);
+            return -1;
+        }
         if(!s->fill_order){
             memcpy(src2, src, size);
         }else{
