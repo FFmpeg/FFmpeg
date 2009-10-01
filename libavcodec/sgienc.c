@@ -142,18 +142,18 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         }
 
         av_free(encode_buf);
-        } else {
-            for (z = 0; z < depth; z++) {
-                in_buf = p->data[0] + p->linesize[0] * (height - 1) + z;
+    } else {
+        for (z = 0; z < depth; z++) {
+            in_buf = p->data[0] + p->linesize[0] * (height - 1) + z;
 
-                for (y = 0; y < height; y++) {
-                    for (x = 0; x < width * depth; x += depth)
-                        bytestream_put_byte(&buf, in_buf[x]);
+            for (y = 0; y < height; y++) {
+                for (x = 0; x < width * depth; x += depth)
+                    bytestream_put_byte(&buf, in_buf[x]);
 
-                    in_buf -= p->linesize[0];
-                }
+                in_buf -= p->linesize[0];
             }
         }
+    }
 
     /* total length */
     return buf - orig_buf;
