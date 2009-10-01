@@ -1374,6 +1374,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                     }
                     break;
                 case SOF0:
+                case SOF1:
                     s->lossless=0;
                     s->ls=0;
                     s->progressive=0;
@@ -1451,7 +1452,6 @@ eoi_parser:
                 case DRI:
                     mjpeg_decode_dri(s);
                     break;
-                case SOF1:
                 case SOF5:
                 case SOF6:
                 case SOF7:
