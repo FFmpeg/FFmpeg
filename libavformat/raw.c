@@ -142,7 +142,7 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     size = RAW_PACKET_SIZE;
 
     if (av_new_packet(pkt, size) < 0)
-        return AVERROR(EIO);
+        return AVERROR(ENOMEM);
 
     pkt->pos= url_ftell(s->pb);
     pkt->stream_index = 0;
@@ -206,7 +206,7 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
         size, w, h, unk1, unk2);
 
     if (av_new_packet(pkt, size) < 0)
-        return AVERROR(EIO);
+        return AVERROR(ENOMEM);
 
     pkt->pos = url_ftell(s->pb);
     pkt->stream_index = 0;
