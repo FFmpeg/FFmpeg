@@ -123,7 +123,7 @@ static void write_frame_header(AlacEncodeContext *s, int is_verbatim)
     put_bits(&s->pbctx, 1,  1);                             // Sample count is in the header
     put_bits(&s->pbctx, 2,  0);                             // FIXME: Wasted bytes field
     put_bits(&s->pbctx, 1,  is_verbatim);                   // Audio block is verbatim
-    put_bits(&s->pbctx, 32, s->avctx->frame_size);          // No. of samples in the frame
+    put_bits32(&s->pbctx, s->avctx->frame_size);            // No. of samples in the frame
 }
 
 static void calc_predictor_params(AlacEncodeContext *s, int ch)

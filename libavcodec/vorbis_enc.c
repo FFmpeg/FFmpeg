@@ -386,7 +386,7 @@ static void put_float(PutBitContext *pb, float f)
         mant = -mant;
     }
     res |= mant | (exp << 21);
-    put_bits(pb, 32, res);
+    put_bits32(pb, res);
 }
 
 static void put_codebook_header(PutBitContext *pb, vorbis_enc_codebook *cb)
@@ -531,12 +531,12 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     init_put_bits(&pb, p, buffer_len);
     put_bits(&pb, 8, 1); //magic
     ff_put_string(&pb, "vorbis", 0);
-    put_bits(&pb, 32, 0); // version
+    put_bits32(&pb, 0); // version
     put_bits(&pb,  8, venc->channels);
-    put_bits(&pb, 32, venc->sample_rate);
-    put_bits(&pb, 32, 0); // bitrate
-    put_bits(&pb, 32, 0); // bitrate
-    put_bits(&pb, 32, 0); // bitrate
+    put_bits32(&pb, venc->sample_rate);
+    put_bits32(&pb, 0); // bitrate
+    put_bits32(&pb, 0); // bitrate
+    put_bits32(&pb, 0); // bitrate
     put_bits(&pb,  4, venc->log2_blocksize[0]);
     put_bits(&pb,  4, venc->log2_blocksize[1]);
     put_bits(&pb,  1, 1); // framing
@@ -550,8 +550,8 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     init_put_bits(&pb, p, buffer_len);
     put_bits(&pb, 8, 3); //magic
     ff_put_string(&pb, "vorbis", 0);
-    put_bits(&pb, 32, 0); // vendor length TODO
-    put_bits(&pb, 32, 0); // amount of comments
+    put_bits32(&pb, 0); // vendor length TODO
+    put_bits32(&pb, 0); // amount of comments
     put_bits(&pb,  1, 1); // framing
 
     flush_put_bits(&pb);

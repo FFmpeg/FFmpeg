@@ -136,6 +136,10 @@ void ff_put_string(PutBitContext * pbc, const char *s, int terminate_string);
  */
 void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
 
+/**
+ * Write up to 31 bits into a bitstream.
+ * Use put_bits32 to write 32 bits.
+ */
 static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #ifndef ALT_BITSTREAM_WRITER
 {
@@ -143,7 +147,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     int bit_left;
 
     //    printf("put_bits=%d %x\n", n, value);
-    assert(n == 32 || value < (1U << n));
+    assert(n <= 31 && value < (1U << n));
 
     bit_buf = s->bit_buf;
     bit_left = s->bit_left;
@@ -257,6 +261,22 @@ static inline void put_sbits(PutBitContext *pb, int bits, int32_t val)
     assert(bits >= 0 && bits <= 31);
 
     put_bits(pb, bits, val & ((1<<bits)-1));
+}
+
+/**
+ * Write exactly 32 bits into a bitstream
+ */
+static void av_unused put_bits32(PutBitContext *s, uint32_t value)
+{
+    int lo = value & 0xffff;
+    int hi = value >> 16;
+#ifdef ALT_BITSTREAM_WRITER_LE
+    put_bits(s, 16, lo);
+    put_bits(s, 16, hi);
+#else
+    put_bits(s, 16, hi);
+    put_bits(s, 16, lo);
+#endif
 }
 
 /**

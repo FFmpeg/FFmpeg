@@ -89,7 +89,7 @@ static int put_pack_header(AVFormatContext *ctx,
 
     init_put_bits(&pb, buf, 128);
 
-    put_bits(&pb, 32, PACK_START_CODE);
+    put_bits32(&pb, PACK_START_CODE);
     if (s->is_mpeg2) {
         put_bits(&pb, 2, 0x1);
     } else {
@@ -125,7 +125,7 @@ static int put_system_header(AVFormatContext *ctx, uint8_t *buf,int only_for_str
 
     init_put_bits(&pb, buf, 128);
 
-    put_bits(&pb, 32, SYSTEM_HEADER_START_CODE);
+    put_bits32(&pb, SYSTEM_HEADER_START_CODE);
     put_bits(&pb, 16, 0);
     put_bits(&pb, 1, 1);
 
