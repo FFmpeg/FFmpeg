@@ -253,7 +253,15 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         buf = buf0 + hsize;
     }
     if(comp == BMP_RLE4 || comp == BMP_RLE8){
+        if(height < 0){
+            p->data[0] += p->linesize[0] * (avctx->height - 1);
+            p->linesize[0] = -p->linesize[0];
+        }
         ff_msrle_decode(avctx, (AVPicture*)p, depth, buf, dsize);
+        if(height < 0){
+            p->data[0] += p->linesize[0] * (avctx->height - 1);
+            p->linesize[0] = -p->linesize[0];
+        }
     }else{
         switch(depth){
         case 1:
