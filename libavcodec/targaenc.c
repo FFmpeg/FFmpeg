@@ -121,7 +121,7 @@ static int targa_encode_frame(AVCodecContext *avctx,
 
     /* try RLE compression */
     if (avctx->coder_type != FF_CODER_TYPE_RAW)
-    datasize = targa_encode_rle(out, picsize, p, bpp, avctx->width, avctx->height);
+        datasize = targa_encode_rle(out, picsize, p, bpp, avctx->width, avctx->height);
 
     /* if that worked well, mark the picture as RLE compressed */
     if(datasize >= 0)
