@@ -267,6 +267,16 @@ and has no lrint()')
 Also please if you send several patches, send each patch as a separate mail,
 do not attach several unrelated patches to the same mail.
 
+Your patch will be reviewed on the mailing list. You will likely be asked
+to make some changes and are expected to send in an improved version that
+incorporates the requests from the review. This process may go through
+several iterations. Once your patch is deemed good enough, some developer
+will pick it up and commit it to the official FFmpeg tree.
+
+Give us a few days to react. But if some time passes without reaction,
+send a reminder by email. Your patch should eventually be dealt with.
+
+
 @section New codecs or formats checklist
 
 @enumerate
