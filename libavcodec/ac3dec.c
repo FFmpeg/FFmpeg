@@ -941,8 +941,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             for(bnd=0; bnd<s->num_rematrixing_bands; bnd++)
                 s->rematrixing_flags[bnd] = get_bits1(gbc);
         } else if (!blk) {
-            av_log(s->avctx, AV_LOG_ERROR, "new rematrixing strategy must be present in block 0\n");
-            return -1;
+            av_log(s->avctx, AV_LOG_WARNING, "Warning: new rematrixing strategy not present in block 0\n");
+            s->num_rematrixing_bands = 0;
         }
     }
 
