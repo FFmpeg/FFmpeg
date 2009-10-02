@@ -2726,6 +2726,7 @@ enabled asmalign_pot &&
     printf '#define ASMALIGN(ZEROBITS) ".align 1 << " #ZEROBITS "\\n\\t"\n' >> $TMPH
 
 echo "#define EXTERN_PREFIX \"${extern_prefix}\"" >> $TMPH
+echo "#define EXTERN_ASM ${extern_prefix}" >> $TMPH
 
 print_config ARCH_   $TMPH config.mak $ARCH_LIST
 print_config HAVE_   $TMPH config.mak $HAVE_LIST
