@@ -120,9 +120,8 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret= av_get_packet(s->pb, pkt, size);
 
     pkt->stream_index = 0;
-    if (ret <= 0) {
-        return AVERROR(EIO);
-    }
+    if (ret < 0)
+        return ret;
 
     bps= av_get_bits_per_sample(s->streams[0]->codec->codec_id);
     assert(bps); // if false there IS a bug elsewhere (NOT in this function)
@@ -144,9 +143,9 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pos= url_ftell(s->pb);
     pkt->stream_index = 0;
     ret = get_partial_buffer(s->pb, pkt->data, size);
-    if (ret <= 0) {
+    if (ret < 0) {
         av_free_packet(pkt);
-        return AVERROR(EIO);
+        return ret;
     }
     pkt->size = ret;
     return ret;
@@ -171,8 +170,8 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->dts= pkt->pos / packet_size;
 
     pkt->stream_index = 0;
-    if (ret <= 0)
-        return AVERROR(EIO);
+    if (ret < 0)
+        return ret;
     return 0;
 }
 #endif
@@ -206,9 +205,9 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pos = url_ftell(s->pb);
     pkt->stream_index = 0;
     ret = get_buffer(s->pb, pkt->data, size);
-    if (ret <= 0) {
+    if (ret < 0) {
         av_free_packet(pkt);
-        return AVERROR(EIO);
+        return ret;
     }
     pkt->size = ret;
     return ret;
