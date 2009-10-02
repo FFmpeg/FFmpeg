@@ -21,6 +21,25 @@
 #include "dsputil.h"
 #include "vorbis.h"
 
+const uint8_t ff_vorbis_channel_layout_offsets[6][6] = {
+    { 0, },
+    { 0, 1, },
+    { 0, 2, 1, },
+    { 0, 1, 2, 3, },
+    { 0, 2, 1, 3, 4, },
+    { 0, 2, 1, 5, 3, 4, }
+};
+
+const int64_t ff_vorbis_channel_layouts[7] = {
+    CH_LAYOUT_MONO,
+    CH_LAYOUT_STEREO,
+    CH_LAYOUT_SURROUND,
+    CH_LAYOUT_QUAD,
+    CH_LAYOUT_5POINT0_BACK,
+    CH_LAYOUT_5POINT1_BACK,
+    0
+};
+
 DECLARE_ALIGNED_16(static const float, vwin64[32]) = {
     0.0009460463F, 0.0085006468F, 0.0235352254F, 0.0458950567F,
     0.0753351908F, 0.1115073077F, 0.1539457973F, 0.2020557475F,

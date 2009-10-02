@@ -1012,6 +1012,11 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
         return -1;
     }
 
+    if (vc->audio_channels > 6)
+        avccontext->channel_layout = 0;
+    else
+        avccontext->channel_layout = ff_vorbis_channel_layouts[vc->audio_channels - 1];
+
     avccontext->channels    = vc->audio_channels;
     avccontext->sample_rate = vc->audio_samplerate;
     avccontext->frame_size  = FFMIN(vc->blocksize[0], vc->blocksize[1]) >> 2;
@@ -1643,8 +1648,15 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 
     AV_DEBUG("parsed %d bytes %d bits, returned %d samples (*ch*bits) \n", get_bits_count(gb)/8, get_bits_count(gb)%8, len);
 
+    if (vc->audio_channels > 6) {
     for (i = 0; i < vc->audio_channels; i++)
         channel_ptrs[i] = vc->channel_floors + i * len;
+    } else {
+        for (i = 0; i < vc->audio_channels; i++)
+            channel_ptrs[i] = vc->channel_floors +
+                              len * ff_vorbis_channel_layout_offsets[vc->audio_channels - 1][i];
+    }
+
     vc->dsp.float_to_int16_interleave(data, channel_ptrs, len, vc->audio_channels);
     *data_size = len * 2 * vc->audio_channels;
 
@@ -1672,5 +1684,6 @@ AVCodec vorbis_decoder = {
     vorbis_decode_close,
     vorbis_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("Vorbis"),
+    .channel_layouts = ff_vorbis_channel_layouts,
 };
 
