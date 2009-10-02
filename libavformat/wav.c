@@ -274,9 +274,6 @@ static int wav_read_packet(AVFormatContext *s,
         return AVERROR(EIO);
     pkt->stream_index = 0;
 
-    /* note: we need to modify the packet size here to handle the last
-       packet */
-    pkt->size = ret;
     return ret;
 }
 
