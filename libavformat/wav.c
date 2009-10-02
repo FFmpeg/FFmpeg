@@ -256,7 +256,7 @@ static int wav_read_packet(AVFormatContext *s,
         else
             left = find_tag(s->pb, MKTAG('d', 'a', 't', 'a'));
         if (left < 0)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         wav->data_end= url_ftell(s->pb) + left;
     }
 
