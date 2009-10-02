@@ -415,6 +415,10 @@ int get_buffer(ByteIOContext *s, unsigned char *buf, int size)
             size -= len;
         }
     }
+    if (size1 == size) {
+        if (url_ferror(s)) return url_ferror(s);
+        if (url_feof(s))   return AVERROR_EOF;
+    }
     return size1 - size;
 }
 
@@ -434,6 +438,10 @@ int get_partial_buffer(ByteIOContext *s, unsigned char *buf, int size)
         len = size;
     memcpy(buf, s->buf_ptr, len);
     s->buf_ptr += len;
+    if (!len) {
+        if (url_ferror(s)) return url_ferror(s);
+        if (url_feof(s))   return AVERROR_EOF;
+    }
     return len;
 }
 
