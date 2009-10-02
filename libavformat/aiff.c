@@ -422,10 +422,6 @@ static int aiff_read_packet(AVFormatContext *s,
     AVStream *st = s->streams[0];
     int res;
 
-    /* End of stream may be reached */
-    if (url_feof(s->pb))
-        return AVERROR(EIO);
-
     /* Now for that packet */
     res = av_get_packet(s->pb, pkt, (MAX_SIZE / st->codec->block_align) * st->codec->block_align);
     if (res < 0)

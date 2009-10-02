@@ -164,8 +164,6 @@ static int au_read_packet(AVFormatContext *s,
 {
     int ret;
 
-    if (url_feof(s->pb))
-        return AVERROR(EIO);
     ret= av_get_packet(s->pb, pkt, MAX_SIZE);
     if (ret < 0)
         return ret;
