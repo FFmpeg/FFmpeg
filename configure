@@ -2091,6 +2091,8 @@ od -A n -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
 if enabled arm; then
 
+    check_cflags -marm
+
     check_ld <<EOF && enable vfp_args
 __asm__ (".eabi_attribute 28, 1");
 int main(void) { return 0; }
