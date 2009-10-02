@@ -247,8 +247,6 @@ static int wav_read_packet(AVFormatContext *s,
     AVStream *st;
     WAVContext *wav = s->priv_data;
 
-    if (url_feof(s->pb))
-        return AVERROR(EIO);
     st = s->streams[0];
 
     left = wav->data_end - url_ftell(s->pb);
