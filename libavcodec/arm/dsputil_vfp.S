@@ -21,7 +21,7 @@
 #include "config.h"
 #include "asm.S"
 
-        .fpu neon       @ required for gas to accept UAL syntax
+        .syntax unified
 /*
  * VFP is a floating point coprocessor used in some ARM cores. VFP11 has 1 cycle
  * throughput for almost all the instructions (except for double precision
