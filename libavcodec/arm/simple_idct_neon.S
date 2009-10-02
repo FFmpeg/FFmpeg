@@ -45,8 +45,6 @@
 #define w7 d1[2]
 #define w4c d1[3]
 
-        .fpu neon
-
         .macro idct_col4_top
         vmull.s16       q7,  d6,  w2    /* q9   = W2 * col[2] */
         vmull.s16       q8,  d6,  w6    /* q10  = W6 * col[2] */

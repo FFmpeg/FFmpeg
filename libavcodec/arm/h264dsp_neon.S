@@ -20,8 +20,6 @@
 
 #include "asm.S"
 
-        .fpu neon
-
         .macro transpose_8x8 r0 r1 r2 r3 r4 r5 r6 r7
         vtrn.32         \r0, \r4
         vtrn.32         \r1, \r5

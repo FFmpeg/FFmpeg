@@ -21,7 +21,6 @@
 
 #include "asm.S"
 
-        .fpu neon
         .text
 
 #define ff_fft_calc_neon X(ff_fft_calc_neon)

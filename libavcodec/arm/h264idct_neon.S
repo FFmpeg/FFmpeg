@@ -21,8 +21,6 @@
 #include "asm.S"
 
         preserve8
-        .fpu neon
-
         .text
 
 function ff_h264_idct_add_neon, export=1

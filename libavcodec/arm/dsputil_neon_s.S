@@ -23,7 +23,6 @@
 #include "asm.S"
 
         preserve8
-        .fpu neon
         .text
 
         .macro pixels16 avg=0
