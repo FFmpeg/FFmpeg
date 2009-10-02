@@ -24,6 +24,8 @@
         .fpu neon
         .text
 
+#define ff_fft_calc_neon X(ff_fft_calc_neon)
+
 function ff_imdct_half_neon, export=1
         push            {r4-r8,lr}
 

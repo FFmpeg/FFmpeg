@@ -36,7 +36,8 @@ ELF     .eabi_attribute 25, \val
 
         .macro function name, export=0
 .if \export
-        .global \name
+        .global EXTERN_ASM\name
+EXTERN_ASM\name:
 .endif
 ELF     .type   \name, %function
         .func   \name
@@ -60,3 +61,7 @@ ELF     .type   \name, %function
 #   define VFP   @
 #   define NOVFP
 #endif
+
+#define GLUE(a, b) a ## b
+#define JOIN(a, b) GLUE(a, b)
+#define X(s) JOIN(EXTERN_ASM, s)
