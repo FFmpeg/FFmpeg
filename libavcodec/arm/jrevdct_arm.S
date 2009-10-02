@@ -65,7 +65,7 @@ function j_rev_dct_ARM, export=1
 
         mov lr, r0                      @ lr = pointer to the current row
         mov r12, #8                     @ r12 = row-counter
-        add r11, pc, #(const_array-.-8) @ r11 = base pointer to the constants array
+        adr r11, const_array            @ r11 = base pointer to the constants array
 row_loop:
         ldrsh r0, [lr, # 0]             @ r0 = 'd0'
         ldrsh r2, [lr, # 2]             @ r2 = 'd2'

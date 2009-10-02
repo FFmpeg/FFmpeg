@@ -57,7 +57,7 @@ function idct_row_armv5te
         mov    ip, #16384
         sub    ip, ip, #1            /* ip = W4 */
         smlabb v1, ip, a3, v1        /* v1 = W4*row[0]+(1<<(RS-1)) */
-        ldr    ip, [pc, #(w26-.-8)]  /* ip = W2 | (W6 << 16) */
+        ldr    ip, w26               /* ip = W2 | (W6 << 16) */
         smultb a2, ip, a4
         smulbb lr, ip, a4
         add    v2, v1, a2
@@ -65,8 +65,8 @@ function idct_row_armv5te
         sub    v4, v1, lr
         add    v1, v1, lr
 
-        ldr    ip, [pc, #(w13-.-8)]  /* ip = W1 | (W3 << 16) */
-        ldr    lr, [pc, #(w57-.-8)]  /* lr = W5 | (W7 << 16) */
+        ldr    ip, w13               /* ip = W1 | (W3 << 16) */
+        ldr    lr, w57               /* lr = W5 | (W7 << 16) */
         smulbt v5, ip, a3
         smultt v6, lr, a4
         smlatt v5, ip, a4, v5
@@ -93,7 +93,7 @@ function idct_row_armv5te
         smlatt v7, ip, a4, v7
         sub    fp, fp, a2
 
-        ldr    ip, [pc, #(w26-.-8)]  /* ip = W2 | (W6 << 16) */
+        ldr    ip, w26               /* ip = W2 | (W6 << 16) */
         mov    a2, #16384
         sub    a2, a2, #1            /* a2 =  W4 */
         smulbb a2, a2, a3            /* a2 =  W4*row[4] */
@@ -177,7 +177,7 @@ row_dc_only:
         sub    v4, v2, a3
         sub    v6, v2, a3
         add    fp, v2, a3
-        ldr    ip, [pc, #(w26-.-8)]
+        ldr    ip, w26
         ldr    a4, [a1, #(16*2)]
         add    v2, v2, a3
 
@@ -210,9 +210,9 @@ row_dc_only:
 
         stmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp}
 
-        ldr    ip, [pc, #(w13-.-8)]
+        ldr    ip, w13
         ldr    a4, [a1, #(16*1)]
-        ldr    lr, [pc, #(w57-.-8)]
+        ldr    lr, w57
         smulbb v1, ip, a4
         smultb v3, ip, a4
         smulbb v5, lr, a4
