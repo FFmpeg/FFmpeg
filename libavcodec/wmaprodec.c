@@ -98,7 +98,7 @@
 #define WMAPRO_MAX_CHANNELS    8                             ///< max number of handled channels
 #define MAX_SUBFRAMES  32                                    ///< max number of subframes per channel
 #define MAX_BANDS      29                                    ///< max number of scale factor bands
-#define MAX_FRAMESIZE  16384                                 ///< maximum compressed frame size
+#define MAX_FRAMESIZE  32768                                 ///< maximum compressed frame size
 
 #define WMAPRO_BLOCK_MAX_BITS 12                                           ///< log2 of max block size
 #define WMAPRO_BLOCK_MAX_SIZE (1 << WMAPRO_BLOCK_MAX_BITS)                 ///< maximum block size
