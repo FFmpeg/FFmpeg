@@ -43,19 +43,24 @@ static av_cold int pcx_init(AVCodecContext *avctx) {
  * @return advanced src pointer
  */
 static const uint8_t *pcx_rle_decode(const uint8_t *src, uint8_t *dst,
-                            unsigned int bytes_per_scanline) {
+                            unsigned int bytes_per_scanline, int compressed) {
     unsigned int i = 0;
     unsigned char run, value;
 
-    while (i<bytes_per_scanline) {
-        run = 1;
-        value = *src++;
-        if (value >= 0xc0) {
-            run = value & 0x3f;
+    if (compressed) {
+        while (i<bytes_per_scanline) {
+            run = 1;
             value = *src++;
+            if (value >= 0xc0) {
+                run = value & 0x3f;
+                value = *src++;
+            }
+            while (i<bytes_per_scanline && run--)
+                dst[i++] = value;
         }
-        while (i<bytes_per_scanline && run--)
-            dst[i++] = value;
+    } else {
+        memcpy(dst, src, bytes_per_scanline);
+        src += bytes_per_scanline;
     }
 
     return src;
@@ -76,17 +81,18 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     PCXContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p = &s->picture;
-    int xmin, ymin, xmax, ymax;
+    int compressed, xmin, ymin, xmax, ymax;
     unsigned int w, h, bits_per_pixel, bytes_per_line, nplanes, stride, y, x,
                  bytes_per_scanline;
     uint8_t *ptr;
     uint8_t const *bufstart = buf;
 
-    if (buf[0] != 0x0a || buf[1] > 5 || buf[1] == 1 || buf[2] != 1) {
+    if (buf[0] != 0x0a || buf[1] > 5) {
         av_log(avctx, AV_LOG_ERROR, "this is not PCX encoded data\n");
         return -1;
     }
 
+    compressed = buf[2];
     xmin = AV_RL16(buf+ 4);
     ymin = AV_RL16(buf+ 6);
     xmax = AV_RL16(buf+ 8);
@@ -151,7 +157,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         uint8_t scanline[bytes_per_scanline];
 
         for (y=0; y<h; y++) {
-            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline);
+            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline, compressed);
 
             for (x=0; x<w; x++) {
                 ptr[3*x  ] = scanline[x                    ];
@@ -167,7 +173,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         const uint8_t *palstart = bufstart + buf_size - 769;
 
         for (y=0; y<h; y++, ptr+=stride) {
-            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline);
+            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline, compressed);
             memcpy(ptr, scanline, w);
         }
 
@@ -187,7 +193,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         for (y=0; y<h; y++) {
             init_get_bits(&s, scanline, bytes_per_scanline<<3);
 
-            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline);
+            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline, compressed);
 
             for (x=0; x<w; x++)
                 ptr[x] = get_bits(&s, bits_per_pixel);
@@ -199,7 +205,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         int i;
 
         for (y=0; y<h; y++) {
-            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline);
+            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline, compressed);
 
             for (x=0; x<w; x++) {
                 int m = 0x80 >> (x&7), v = 0;
