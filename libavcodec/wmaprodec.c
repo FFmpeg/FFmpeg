@@ -1528,7 +1528,7 @@ static int decode_packet(AVCodecContext *avctx,
     *data_size = (int8_t *)s->samples - (int8_t *)data;
     s->packet_offset = get_bits_count(gb) & 7;
 
-    return get_bits_count(gb) >> 3;
+    return (s->packet_loss) ? AVERROR_INVALIDDATA : get_bits_count(gb) >> 3;
 }
 
 /**
