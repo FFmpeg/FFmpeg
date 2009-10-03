@@ -39,7 +39,7 @@ function ff_prefetch_arm, export=1
         .endfunc
 #endif
 
-.macro  ADJ_ALIGN_QUADWORD_D shift, Rd0, Rd1, Rd2, Rd3, Rn0, Rn1, Rn2, Rn3, Rn4
+.macro  ALIGN_QWORD_D shift, Rd0, Rd1, Rd2, Rd3, Rn0, Rn1, Rn2, Rn3, Rn4
         mov             \Rd0, \Rn0, lsr #(\shift * 8)
         mov             \Rd1, \Rn1, lsr #(\shift * 8)
         mov             \Rd2, \Rn2, lsr #(\shift * 8)
@@ -49,13 +49,13 @@ function ff_prefetch_arm, export=1
         orr             \Rd2, \Rd2, \Rn3, lsl #(32 - \shift * 8)
         orr             \Rd3, \Rd3, \Rn4, lsl #(32 - \shift * 8)
 .endm
-.macro  ADJ_ALIGN_DOUBLEWORD shift, R0, R1, R2
+.macro  ALIGN_DWORD shift, R0, R1, R2
         mov             \R0, \R0, lsr #(\shift * 8)
         orr             \R0, \R0, \R1, lsl #(32 - \shift * 8)
         mov             \R1, \R1, lsr #(\shift * 8)
         orr             \R1, \R1, \R2, lsl #(32 - \shift * 8)
 .endm
-.macro  ADJ_ALIGN_DOUBLEWORD_D shift, Rdst0, Rdst1, Rsrc0, Rsrc1, Rsrc2
+.macro  ALIGN_DWORD_D shift, Rdst0, Rdst1, Rsrc0, Rsrc1, Rsrc2
         mov             \Rdst0, \Rsrc0, lsr #(\shift * 8)
         mov             \Rdst1, \Rsrc1, lsr #(\shift * 8)
         orr             \Rdst0, \Rdst0, \Rsrc1, lsl #(32 - (\shift * 8))
@@ -122,7 +122,7 @@ function put_pixels16_arm, export=1
 2:
         ldm             r1,  {r4-r8}
         add             r1,  r1,  r2
-        ADJ_ALIGN_QUADWORD_D 1, r9,  r10, r11, r12, r4,  r5,  r6,  r7,  r8
+        ALIGN_QWORD_D   1,   r9,  r10, r11, r12, r4,  r5,  r6,  r7,  r8
         pld             [r1]
         subs            r3,  r3,  #1
         stm             r0,  {r9-r12}
@@ -133,7 +133,7 @@ function put_pixels16_arm, export=1
 3:
         ldm             r1,  {r4-r8}
         add             r1,  r1,  r2
-        ADJ_ALIGN_QUADWORD_D 2, r9,  r10, r11, r12, r4,  r5,  r6,  r7,  r8
+        ALIGN_QWORD_D   2,   r9,  r10, r11, r12, r4,  r5,  r6,  r7,  r8
         pld             [r1]
         subs            r3,  r3,  #1
         stm             r0,  {r9-r12}
@@ -144,7 +144,7 @@ function put_pixels16_arm, export=1
 4:
         ldm             r1,  {r4-r8}
         add             r1,  r1,  r2
-        ADJ_ALIGN_QUADWORD_D 3, r9,  r10, r11, r12, r4,  r5,  r6,  r7,  r8
+        ALIGN_QWORD_D   3,   r9,  r10, r11, r12, r4,  r5,  r6,  r7,  r8
         pld             [r1]
         subs            r3,  r3,  #1
         stm             r0,  {r9-r12}
@@ -174,7 +174,7 @@ function put_pixels8_arm, export=1
 2:
         ldm             r1,  {r4-r5, r12}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD 1, r4,  r5,  r12
+        ALIGN_DWORD     1,   r4,  r5,  r12
         pld             [r1]
         subs            r3,  r3,  #1
         stm             r0,  {r4-r5}
@@ -185,7 +185,7 @@ function put_pixels8_arm, export=1
 3:
         ldm             r1,  {r4-r5, r12}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD 2, r4,  r5,  r12
+        ALIGN_DWORD     2,   r4,  r5,  r12
         pld             [r1]
         subs            r3,  r3,  #1
         stm             r0,  {r4-r5}
@@ -196,7 +196,7 @@ function put_pixels8_arm, export=1
 4:
         ldm             r1,  {r4-r5, r12}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD 3, r4,  r5,  r12
+        ALIGN_DWORD     3,   r4,  r5,  r12
         pld             [r1]
         subs            r3,  r3,  #1
         stm             r0,  {r4-r5}
@@ -217,7 +217,7 @@ function put_pixels8_x2_arm, export=1
 1:
         ldm             r1,  {r4-r5, r10}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD_D 1, r6,  r7,  r4,  r5,  r10
+        ALIGN_DWORD_D   1,   r6,  r7,  r4,  r5,  r10
         pld             [r1]
         RND_AVG32       r8,  r9,  r4,  r5,  r6,  r7,  r12
         subs            r3,  r3,  #1
@@ -229,8 +229,8 @@ function put_pixels8_x2_arm, export=1
 2:
         ldm             r1,  {r4-r5, r10}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD_D 1, r6,  r7,  r4,  r5,  r10
-        ADJ_ALIGN_DOUBLEWORD_D 2, r8,  r9,  r4,  r5,  r10
+        ALIGN_DWORD_D   1,   r6,  r7,  r4,  r5,  r10
+        ALIGN_DWORD_D   2,   r8,  r9,  r4,  r5,  r10
         pld             [r1]
         RND_AVG32       r4,  r5,  r6,  r7,  r8,  r9,  r12
         subs            r3,  r3,  #1
@@ -242,8 +242,8 @@ function put_pixels8_x2_arm, export=1
 3:
         ldm             r1,  {r4-r5, r10}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD_D 2, r6,  r7,  r4,  r5,  r10
-        ADJ_ALIGN_DOUBLEWORD_D 3, r8,  r9,  r4,  r5,  r10
+        ALIGN_DWORD_D   2,   r6,  r7,  r4,  r5,  r10
+        ALIGN_DWORD_D   3,   r8,  r9,  r4,  r5,  r10
         pld             [r1]
         RND_AVG32       r4,  r5,  r6,  r7,  r8,  r9,  r12
         subs            r3,  r3,  #1
@@ -255,7 +255,7 @@ function put_pixels8_x2_arm, export=1
 4:
         ldm             r1,  {r4-r5, r10}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD_D 3, r6,  r7,  r4,  r5,  r10
+        ALIGN_DWORD_D   3,   r6,  r7,  r4,  r5,  r10
         pld             [r1]
         RND_AVG32       r8,  r9,  r6,  r7,  r5,  r10, r12
         subs            r3,  r3,  #1
@@ -276,7 +276,7 @@ function put_no_rnd_pixels8_x2_arm, export=1
 1:
         ldm             r1,  {r4-r5, r10}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD_D 1, r6,  r7,  r4,  r5,  r10
+        ALIGN_DWORD_D   1,   r6,  r7,  r4,  r5,  r10
         pld             [r1]
         NO_RND_AVG32    r8,  r9,  r4,  r5,  r6,  r7,  r12
         subs            r3,  r3,  #1
@@ -288,8 +288,8 @@ function put_no_rnd_pixels8_x2_arm, export=1
 2:
         ldm             r1,  {r4-r5, r10}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD_D 1, r6,  r7,  r4,  r5,  r10
-        ADJ_ALIGN_DOUBLEWORD_D 2, r8,  r9,  r4,  r5,  r10
+        ALIGN_DWORD_D   1,   r6,  r7,  r4,  r5,  r10
+        ALIGN_DWORD_D   2,   r8,  r9,  r4,  r5,  r10
         pld             [r1]
         NO_RND_AVG32    r4,  r5,  r6,  r7,  r8,  r9,  r12
         subs            r3,  r3,  #1
@@ -301,8 +301,8 @@ function put_no_rnd_pixels8_x2_arm, export=1
 3:
         ldm             r1,  {r4-r5, r10}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD_D 2, r6,  r7,  r4,  r5,  r10
-        ADJ_ALIGN_DOUBLEWORD_D 3, r8,  r9,  r4,  r5,  r10
+        ALIGN_DWORD_D   2,   r6,  r7,  r4,  r5,  r10
+        ALIGN_DWORD_D   3,   r8,  r9,  r4,  r5,  r10
         pld             [r1]
         NO_RND_AVG32    r4,  r5,  r6,  r7,  r8,  r9,  r12
         subs            r3,  r3,  #1
@@ -314,7 +314,7 @@ function put_no_rnd_pixels8_x2_arm, export=1
 4:
         ldm             r1,  {r4-r5, r10}
         add             r1,  r1,  r2
-        ADJ_ALIGN_DOUBLEWORD_D 3, r6,  r7,  r4,  r5,  r10
+        ALIGN_DWORD_D   3,   r6,  r7,  r4,  r5,  r10
         pld             [r1]
         NO_RND_AVG32    r8,  r9,  r6,  r7,  r5,  r10, r12
         subs            r3,  r3,  #1
@@ -358,18 +358,18 @@ function put_pixels8_y2_arm, export=1
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 1, r4,  r5,  r6
+        ALIGN_DWORD     1,   r4,  r5,  r6
 6:      ldm             r1,  {r7-r9}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 1, r7,  r8,  r9
+        ALIGN_DWORD     1,   r7,  r8,  r9
         RND_AVG32       r10, r11, r4,  r5,  r7,  r8,  r12
         stm             r0,  {r10-r11}
         add             r0,  r0,  r2
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 1, r4,  r5,  r6
+        ALIGN_DWORD     1,   r4,  r5,  r6
         subs            r3,  r3,  #1
         RND_AVG32       r10, r11, r7,  r8,  r4,  r5,  r12
         stm             r0,  {r10-r11}
@@ -381,18 +381,18 @@ function put_pixels8_y2_arm, export=1
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 2, r4,  r5,  r6
+        ALIGN_DWORD     2,   r4,  r5,  r6
 6:      ldm             r1,  {r7-r9}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 2, r7,  r8,  r9
+        ALIGN_DWORD     2,   r7,  r8,  r9
         RND_AVG32       r10, r11, r4,  r5,  r7,  r8,  r12
         stm             r0,  {r10-r11}
         add             r0,  r0,  r2
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 2, r4,  r5,  r6
+        ALIGN_DWORD     2,   r4,  r5,  r6
         subs            r3,  r3,  #1
         RND_AVG32       r10, r11, r7,  r8,  r4,  r5,  r12
         stm             r0,  {r10-r11}
@@ -404,18 +404,18 @@ function put_pixels8_y2_arm, export=1
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 3, r4,  r5,  r6
+        ALIGN_DWORD     3,   r4,  r5,  r6
 6:      ldm             r1,  {r7-r9}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 3, r7,  r8,  r9
+        ALIGN_DWORD     3,   r7,  r8,  r9
         RND_AVG32       r10, r11, r4,  r5,  r7,  r8,  r12
         stm             r0,  {r10-r11}
         add             r0,  r0,  r2
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 3, r4,  r5,  r6
+        ALIGN_DWORD     3,   r4,  r5,  r6
         subs            r3,  r3,  #1
         RND_AVG32       r10, r11, r7,  r8,  r4,  r5,  r12
         stm             r0,  {r10-r11}
@@ -456,18 +456,18 @@ function put_no_rnd_pixels8_y2_arm, export=1
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 1, r4,  r5,  r6
+        ALIGN_DWORD     1,   r4,  r5,  r6
 6:      ldm             r1,  {r7-r9}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 1, r7,  r8,  r9
+        ALIGN_DWORD     1,   r7,  r8,  r9
         NO_RND_AVG32    r10, r11, r4,  r5,  r7,  r8,  r12
         stm             r0,  {r10-r11}
         add             r0,  r0,  r2
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 1, r4,  r5,  r6
+        ALIGN_DWORD     1,   r4,  r5,  r6
         subs            r3,  r3,  #1
         NO_RND_AVG32    r10, r11, r7,  r8,  r4,  r5,  r12
         stm             r0,  {r10-r11}
@@ -479,18 +479,18 @@ function put_no_rnd_pixels8_y2_arm, export=1
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 2, r4,  r5,  r6
+        ALIGN_DWORD     2,   r4,  r5,  r6
 6:      ldm             r1,  {r7-r9}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 2, r7,  r8,  r9
+        ALIGN_DWORD     2,   r7,  r8,  r9
         NO_RND_AVG32    r10, r11, r4,  r5,  r7,  r8,  r12
         stm             r0,  {r10-r11}
         add             r0,  r0,  r2
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 2, r4,  r5,  r6
+        ALIGN_DWORD     2,   r4,  r5,  r6
         subs            r3,  r3,  #1
         NO_RND_AVG32    r10, r11, r7,  r8,  r4,  r5,  r12
         stm             r0,  {r10-r11}
@@ -502,18 +502,18 @@ function put_no_rnd_pixels8_y2_arm, export=1
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 3, r4,  r5,  r6
+        ALIGN_DWORD     3,   r4,  r5,  r6
 6:      ldm             r1,  {r7-r9}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 3, r7,  r8,  r9
+        ALIGN_DWORD     3,   r7,  r8,  r9
         NO_RND_AVG32    r10, r11, r4,  r5,  r7,  r8,  r12
         stm             r0,  {r10-r11}
         add             r0,  r0,  r2
         ldm             r1,  {r4-r6}
         add             r1,  r1,  r2
         pld             [r1]
-        ADJ_ALIGN_DOUBLEWORD 3, r4,  r5,  r6
+        ALIGN_DWORD     3,   r4,  r5,  r6
         subs            r3,  r3,  #1
         NO_RND_AVG32    r10, r11, r7,  r8,  r4,  r5,  r12
         stm             r0,  {r10-r11}
@@ -538,15 +538,15 @@ function put_no_rnd_pixels8_y2_arm, export=1
         add             r1,  r1,  r2
         pld             [r1]
 .if \align == 0
-        ADJ_ALIGN_DOUBLEWORD_D 1, r4,  r5,  r6,  r7,  r8
+        ALIGN_DWORD_D   1,   r4,  r5,  r6,  r7,  r8
 .elseif \align == 1
-        ADJ_ALIGN_DOUBLEWORD_D 1, r4,  r5,  r8,  r9,  r10
-        ADJ_ALIGN_DOUBLEWORD_D 2, r6,  r7,  r8,  r9,  r10
+        ALIGN_DWORD_D   1,   r4,  r5,  r8,  r9,  r10
+        ALIGN_DWORD_D   2,   r6,  r7,  r8,  r9,  r10
 .elseif \align == 2
-        ADJ_ALIGN_DOUBLEWORD_D 2, r4,  r5,  r8,  r9,  r10
-        ADJ_ALIGN_DOUBLEWORD_D 3, r6,  r7,  r8,  r9,  r10
+        ALIGN_DWORD_D   2,   r4,  r5,  r8,  r9,  r10
+        ALIGN_DWORD_D   3,   r6,  r7,  r8,  r9,  r10
 .elseif \align == 3
-        ADJ_ALIGN_DOUBLEWORD_D 3, r4,  r5,  r5,  r6,  r7
+        ALIGN_DWORD_D   3,   r4,  r5,  r5,  r6,  r7
 .endif
         ldr             r14, =0x03030303
         tst             r3,  #1
