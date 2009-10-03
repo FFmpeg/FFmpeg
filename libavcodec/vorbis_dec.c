@@ -1649,8 +1649,8 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
     AV_DEBUG("parsed %d bytes %d bits, returned %d samples (*ch*bits) \n", get_bits_count(gb)/8, get_bits_count(gb)%8, len);
 
     if (vc->audio_channels > 6) {
-    for (i = 0; i < vc->audio_channels; i++)
-        channel_ptrs[i] = vc->channel_floors + i * len;
+        for (i = 0; i < vc->audio_channels; i++)
+            channel_ptrs[i] = vc->channel_floors + i * len;
     } else {
         for (i = 0; i < vc->audio_channels; i++)
             channel_ptrs[i] = vc->channel_floors +
