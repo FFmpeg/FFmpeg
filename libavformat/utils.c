@@ -771,6 +771,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     int64_t offset;
 
     if (st->codec->codec_id != CODEC_ID_H264 && pc && pc->pict_type == FF_B_TYPE)
+        //FIXME Set low_delay = 0 when has_b_frames = 1
         st->codec->has_b_frames = 1;
 
     /* do we have a video B-frame ? */
