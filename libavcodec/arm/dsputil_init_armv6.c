@@ -29,9 +29,9 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 {
     if (!avctx->lowres && (avctx->idct_algo == FF_IDCT_AUTO ||
                            avctx->idct_algo == FF_IDCT_SIMPLEARMV6)) {
-        c->idct_put= ff_simple_idct_put_armv6;
-        c->idct_add= ff_simple_idct_add_armv6;
-        c->idct    = ff_simple_idct_armv6;
-        c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+        c->idct_put              = ff_simple_idct_put_armv6;
+        c->idct_add              = ff_simple_idct_add_armv6;
+        c->idct                  = ff_simple_idct_armv6;
+        c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
     }
 }

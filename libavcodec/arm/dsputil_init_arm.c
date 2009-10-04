@@ -40,11 +40,11 @@ void put_no_rnd_pixels8_xy2_arm(uint8_t *block, const uint8_t *pixels, int line_
 
 void put_pixels16_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 
-CALL_2X_PIXELS(put_pixels16_x2_arm , put_pixels8_x2_arm , 8)
-CALL_2X_PIXELS(put_pixels16_y2_arm , put_pixels8_y2_arm , 8)
-CALL_2X_PIXELS(put_pixels16_xy2_arm, put_pixels8_xy2_arm, 8)
-CALL_2X_PIXELS(put_no_rnd_pixels16_x2_arm , put_no_rnd_pixels8_x2_arm , 8)
-CALL_2X_PIXELS(put_no_rnd_pixels16_y2_arm , put_no_rnd_pixels8_y2_arm , 8)
+CALL_2X_PIXELS(put_pixels16_x2_arm,         put_pixels8_x2_arm,         8)
+CALL_2X_PIXELS(put_pixels16_y2_arm,         put_pixels8_y2_arm,         8)
+CALL_2X_PIXELS(put_pixels16_xy2_arm,        put_pixels8_xy2_arm,        8)
+CALL_2X_PIXELS(put_no_rnd_pixels16_x2_arm,  put_no_rnd_pixels8_x2_arm,  8)
+CALL_2X_PIXELS(put_no_rnd_pixels16_y2_arm,  put_no_rnd_pixels8_y2_arm,  8)
 CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_arm, put_no_rnd_pixels8_xy2_arm, 8)
 
 void ff_add_pixels_clamped_ARM(short *block, unsigned char *dest,
@@ -83,18 +83,18 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
     ff_put_pixels_clamped = c->put_pixels_clamped;
     ff_add_pixels_clamped = c->add_pixels_clamped;
 
-    if (avctx->lowres == 0) {
+    if (!avctx->lowres) {
         if(avctx->idct_algo == FF_IDCT_AUTO ||
            avctx->idct_algo == FF_IDCT_ARM){
-            c->idct_put= j_rev_dct_ARM_put;
-            c->idct_add= j_rev_dct_ARM_add;
-            c->idct    = j_rev_dct_ARM;
-            c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
-        } else if (avctx->idct_algo==FF_IDCT_SIMPLEARM){
-            c->idct_put= simple_idct_ARM_put;
-            c->idct_add= simple_idct_ARM_add;
-            c->idct    = simple_idct_ARM;
-            c->idct_permutation_type= FF_NO_IDCT_PERM;
+            c->idct_put              = j_rev_dct_ARM_put;
+            c->idct_add              = j_rev_dct_ARM_add;
+            c->idct                  = j_rev_dct_ARM;
+            c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
+        } else if (avctx->idct_algo == FF_IDCT_SIMPLEARM){
+            c->idct_put              = simple_idct_ARM_put;
+            c->idct_add              = simple_idct_ARM_add;
+            c->idct                  = simple_idct_ARM;
+            c->idct_permutation_type = FF_NO_IDCT_PERM;
         }
     }
 
@@ -102,14 +102,15 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
     c->put_pixels_tab[0][1] = put_pixels16_x2_arm;
     c->put_pixels_tab[0][2] = put_pixels16_y2_arm;
     c->put_pixels_tab[0][3] = put_pixels16_xy2_arm;
-    c->put_no_rnd_pixels_tab[0][0] = put_pixels16_arm;
-    c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_arm;
-    c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_arm;
-    c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_arm;
     c->put_pixels_tab[1][0] = put_pixels8_arm;
     c->put_pixels_tab[1][1] = put_pixels8_x2_arm;
     c->put_pixels_tab[1][2] = put_pixels8_y2_arm;
     c->put_pixels_tab[1][3] = put_pixels8_xy2_arm;
+
+    c->put_no_rnd_pixels_tab[0][0] = put_pixels16_arm;
+    c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_arm;
+    c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_arm;
+    c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_arm;
     c->put_no_rnd_pixels_tab[1][0] = put_pixels8_arm;
     c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_arm;
     c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_arm;
