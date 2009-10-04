@@ -600,7 +600,7 @@ function idct_col_add_armv5te
         ldr    pc, [sp], #4
         .endfunc
 
-function simple_idct_armv5te, export=1
+function ff_simple_idct_armv5te, export=1
         stmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, lr}
 
         bl     idct_row_armv5te
@@ -632,7 +632,7 @@ function simple_idct_armv5te, export=1
         ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
         .endfunc
 
-function simple_idct_add_armv5te, export=1
+function ff_simple_idct_add_armv5te, export=1
         stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
 
         mov    a1, a3
@@ -667,7 +667,7 @@ function simple_idct_add_armv5te, export=1
         ldmfd  sp!, {v1, v2, v3, v4, v5, v6, v7, fp, pc}
         .endfunc
 
-function simple_idct_put_armv5te, export=1
+function ff_simple_idct_put_armv5te, export=1
         stmfd  sp!, {a1, a2, v1, v2, v3, v4, v5, v6, v7, fp, lr}
 
         mov    a1, a3

@@ -152,7 +152,7 @@ static void nop(uint8_t *block, const uint8_t *pixels, int line_size, int h)
  */
 int mm_flags = FF_MM_IWMMXT; /* multimedia extension flags */
 
-void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx)
+void ff_dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx)
 {
     if (avctx->dsp_mask) {
         if (avctx->dsp_mask & FF_MM_FORCE)

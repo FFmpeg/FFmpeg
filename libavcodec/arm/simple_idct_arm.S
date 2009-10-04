@@ -56,7 +56,7 @@
 
         .text
 
-function simple_idct_ARM, export=1
+function ff_simple_idct_ARM, export=1
         @@ void simple_idct_ARM(int16_t *block)
         @@ save stack for reg needed (take all of them),
         @@ R0-R3 are scratch regs, so no need to save them, but R0 contains the pointer to block
