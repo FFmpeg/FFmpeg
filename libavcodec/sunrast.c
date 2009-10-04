@@ -64,7 +64,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     maptype   = AV_RB32(buf+24);
     maplength = AV_RB32(buf+28);
 
-    if (type > RT_BYTE_ENCODED && type <= RT_FORMAT_IFF) {
+    if (type == RT_FORMAT_TIFF || type == RT_FORMAT_IFF) {
         av_log(avctx, AV_LOG_ERROR, "unsupported (compression) type\n");
         return -1;
     }
@@ -87,7 +87,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             avctx->pix_fmt = PIX_FMT_PAL8;
             break;
         case 24:
-            avctx->pix_fmt = PIX_FMT_BGR24;
+            avctx->pix_fmt = (type == RT_FORMAT_RGB) ? PIX_FMT_RGB24 : PIX_FMT_BGR24;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "invalid depth\n");
