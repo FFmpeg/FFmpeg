@@ -23,6 +23,15 @@
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
+#include "dsputil_arm.h"
+
+void ff_simple_idct_neon(DCTELEM *data);
+void ff_simple_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
+void ff_simple_idct_add_neon(uint8_t *dest, int line_size, DCTELEM *data);
+
+void ff_vp3_idct_neon(DCTELEM *data);
+void ff_vp3_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
+void ff_vp3_idct_add_neon(uint8_t *dest, int line_size, DCTELEM *data);
 
 void ff_put_pixels16_neon(uint8_t *, const uint8_t *, int, int);
 void ff_put_pixels16_x2_neon(uint8_t *, const uint8_t *, int, int);
@@ -185,6 +194,23 @@ void ff_vorbis_inverse_coupling_neon(float *mag, float *ang, int blocksize);
 
 void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
 {
+    if (!avctx->lowres) {
+        if (avctx->idct_algo == FF_IDCT_AUTO ||
+            avctx->idct_algo == FF_IDCT_SIMPLENEON) {
+            c->idct_put= ff_simple_idct_put_neon;
+            c->idct_add= ff_simple_idct_add_neon;
+            c->idct    = ff_simple_idct_neon;
+            c->idct_permutation_type = FF_PARTTRANS_IDCT_PERM;
+        } else if ((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER ||
+                    CONFIG_VP6_DECODER) &&
+                   avctx->idct_algo == FF_IDCT_VP3) {
+            c->idct_put= ff_vp3_idct_put_neon;
+            c->idct_add= ff_vp3_idct_add_neon;
+            c->idct    = ff_vp3_idct_neon;
+            c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
+        }
+    }
+
     c->put_pixels_tab[0][0] = ff_put_pixels16_neon;
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_neon;
     c->put_pixels_tab[0][2] = ff_put_pixels16_y2_neon;

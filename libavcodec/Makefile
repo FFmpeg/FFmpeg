@@ -487,11 +487,13 @@ OBJS-$(ARCH_ARM)                       += arm/dsputil_arm.o             \
                                           arm/mpegvideo_arm.o           \
                                           arm/simple_idct_arm.o         \
 
-OBJS-$(HAVE_ARMV5TE)                   += arm/mpegvideo_armv5te.o       \
+OBJS-$(HAVE_ARMV5TE)                   += arm/dsputil_init_armv5te.o    \
+                                          arm/mpegvideo_armv5te.o       \
                                           arm/mpegvideo_armv5te_s.o     \
                                           arm/simple_idct_armv5te.o     \
 
-OBJS-$(HAVE_ARMV6)                     += arm/simple_idct_armv6.o       \
+OBJS-$(HAVE_ARMV6)                     += arm/dsputil_init_armv6.o      \
+                                          arm/simple_idct_armv6.o       \
 
 OBJS-$(HAVE_ARMVFP)                    += arm/dsputil_vfp.o             \
                                           arm/float_arm_vfp.o           \

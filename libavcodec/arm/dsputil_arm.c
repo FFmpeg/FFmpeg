@@ -20,29 +20,10 @@
  */
 
 #include "libavcodec/dsputil.h"
-
-void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx);
-void ff_float_init_arm_vfp(DSPContext* c, AVCodecContext *avctx);
-void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx);
+#include "dsputil_arm.h"
 
 void j_rev_dct_ARM(DCTELEM *data);
 void simple_idct_ARM(DCTELEM *data);
-
-void simple_idct_armv5te(DCTELEM *data);
-void simple_idct_put_armv5te(uint8_t *dest, int line_size, DCTELEM *data);
-void simple_idct_add_armv5te(uint8_t *dest, int line_size, DCTELEM *data);
-
-void ff_simple_idct_armv6(DCTELEM *data);
-void ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data);
-void ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data);
-
-void ff_simple_idct_neon(DCTELEM *data);
-void ff_simple_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
-void ff_simple_idct_add_neon(uint8_t *dest, int line_size, DCTELEM *data);
-
-void ff_vp3_idct_neon(DCTELEM *data);
-void ff_vp3_idct_put_neon(uint8_t *dest, int line_size, DCTELEM *data);
-void ff_vp3_idct_add_neon(uint8_t *dest, int line_size, DCTELEM *data);
 
 /* XXX: local hack */
 static void (*ff_put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
@@ -58,8 +39,6 @@ void put_no_rnd_pixels8_y2_arm(uint8_t *block, const uint8_t *pixels, int line_s
 void put_no_rnd_pixels8_xy2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 
 void put_pixels16_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-
-void ff_prefetch_arm(void *mem, int stride, int h);
 
 CALL_2X_PIXELS(put_pixels16_x2_arm , put_pixels8_x2_arm , 8)
 CALL_2X_PIXELS(put_pixels16_y2_arm , put_pixels8_y2_arm , 8)
@@ -101,61 +80,21 @@ int mm_support(void)
 
 void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
 {
-    int idct_algo= avctx->idct_algo;
-
     ff_put_pixels_clamped = c->put_pixels_clamped;
     ff_add_pixels_clamped = c->add_pixels_clamped;
 
     if (avctx->lowres == 0) {
-        if(idct_algo == FF_IDCT_AUTO){
-#if   HAVE_NEON
-            idct_algo = FF_IDCT_SIMPLENEON;
-#elif HAVE_ARMV6
-            idct_algo = FF_IDCT_SIMPLEARMV6;
-#elif HAVE_ARMV5TE
-            idct_algo = FF_IDCT_SIMPLEARMV5TE;
-#else
-            idct_algo = FF_IDCT_ARM;
-#endif
-        }
-
-        if(idct_algo==FF_IDCT_ARM){
+        if(avctx->idct_algo == FF_IDCT_AUTO ||
+           avctx->idct_algo == FF_IDCT_ARM){
             c->idct_put= j_rev_dct_ARM_put;
             c->idct_add= j_rev_dct_ARM_add;
             c->idct    = j_rev_dct_ARM;
             c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
-        } else if (idct_algo==FF_IDCT_SIMPLEARM){
+        } else if (avctx->idct_algo==FF_IDCT_SIMPLEARM){
             c->idct_put= simple_idct_ARM_put;
             c->idct_add= simple_idct_ARM_add;
             c->idct    = simple_idct_ARM;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
-#if HAVE_ARMV6
-        } else if (idct_algo==FF_IDCT_SIMPLEARMV6){
-            c->idct_put= ff_simple_idct_put_armv6;
-            c->idct_add= ff_simple_idct_add_armv6;
-            c->idct    = ff_simple_idct_armv6;
-            c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
-#endif
-#if HAVE_ARMV5TE
-        } else if (idct_algo==FF_IDCT_SIMPLEARMV5TE){
-            c->idct_put= simple_idct_put_armv5te;
-            c->idct_add= simple_idct_add_armv5te;
-            c->idct    = simple_idct_armv5te;
-            c->idct_permutation_type = FF_NO_IDCT_PERM;
-#endif
-#if HAVE_NEON
-        } else if (idct_algo==FF_IDCT_SIMPLENEON){
-            c->idct_put= ff_simple_idct_put_neon;
-            c->idct_add= ff_simple_idct_add_neon;
-            c->idct    = ff_simple_idct_neon;
-            c->idct_permutation_type = FF_PARTTRANS_IDCT_PERM;
-        } else if ((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER) &&
-                   idct_algo==FF_IDCT_VP3){
-            c->idct_put= ff_vp3_idct_put_neon;
-            c->idct_add= ff_vp3_idct_add_neon;
-            c->idct    = ff_vp3_idct_neon;
-            c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
-#endif
         }
     }
 
@@ -176,9 +115,8 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
     c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_arm;
     c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_arm;
 
-#if HAVE_ARMV5TE
-    c->prefetch = ff_prefetch_arm;
-#endif
+    if (HAVE_ARMV5TE) ff_dsputil_init_armv5te(c, avctx);
+    if (HAVE_ARMV6)   ff_dsputil_init_armv6(c, avctx);
 
 #if HAVE_IWMMXT
     dsputil_init_iwmmxt(c, avctx);

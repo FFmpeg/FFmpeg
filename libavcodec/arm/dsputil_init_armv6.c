@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008 Siarhei Siamashka <ssvb@users.sourceforge.net>
+ * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
  *
  * This file is part of FFmpeg.
  *
@@ -21,16 +21,17 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
-void ff_vector_fmul_vfp(float *dst, const float *src, int len);
-void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
-                                const float *src1, int len);
-void ff_float_to_int16_vfp(int16_t *dst, const float *src, long len);
+void ff_simple_idct_armv6(DCTELEM *data);
+void ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data);
+void ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data);
 
-void ff_float_init_arm_vfp(DSPContext* c, AVCodecContext *avctx)
+void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 {
-    c->vector_fmul = ff_vector_fmul_vfp;
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
-#if HAVE_ARMV6
-    c->float_to_int16 = ff_float_to_int16_vfp;
-#endif
+    if (!avctx->lowres && (avctx->idct_algo == FF_IDCT_AUTO ||
+                           avctx->idct_algo == FF_IDCT_SIMPLEARMV6)) {
+        c->idct_put= ff_simple_idct_put_armv6;
+        c->idct_add= ff_simple_idct_add_armv6;
+        c->idct    = ff_simple_idct_armv6;
+        c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+    }
 }

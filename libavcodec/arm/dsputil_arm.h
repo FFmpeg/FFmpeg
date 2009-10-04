@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008 Siarhei Siamashka <ssvb@users.sourceforge.net>
+ * Copyright (c) 2009 Mans Rullgard <mans@mansr.com>
  *
  * This file is part of FFmpeg.
  *
@@ -18,19 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
-#include "dsputil_arm.h"
+#ifndef AVCODEC_ARM_DSPUTIL_H
+#define AVCODEC_ARM_DSPUTIL_H
 
-void ff_vector_fmul_vfp(float *dst, const float *src, int len);
-void ff_vector_fmul_reverse_vfp(float *dst, const float *src0,
-                                const float *src1, int len);
-void ff_float_to_int16_vfp(int16_t *dst, const float *src, long len);
+void ff_dsputil_init_armv5te(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx);
+void ff_float_init_arm_vfp(DSPContext* c, AVCodecContext *avctx);
+void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx);
+void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx);
 
-void ff_float_init_arm_vfp(DSPContext* c, AVCodecContext *avctx)
-{
-    c->vector_fmul = ff_vector_fmul_vfp;
-    c->vector_fmul_reverse = ff_vector_fmul_reverse_vfp;
-#if HAVE_ARMV6
-    c->float_to_int16 = ff_float_to_int16_vfp;
 #endif
-}
