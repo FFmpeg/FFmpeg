@@ -122,7 +122,7 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
     dsputil_init_iwmmxt(c, avctx);
 #endif
 #if HAVE_ARMVFP
-    ff_float_init_arm_vfp(c, avctx);
+    ff_dsputil_init_vfp(c, avctx);
 #endif
 #if HAVE_NEON
     ff_dsputil_init_neon(c, avctx);
