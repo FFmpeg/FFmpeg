@@ -148,11 +148,13 @@ struct PESContext {
     MpegTSContext *ts;
     AVFormatContext *stream;
     AVStream *st;
+    AVStream *sub_st; /**< stream for the embedded AC3 stream in HDMV TrueHD */
     enum MpegTSState state;
     /* used to get the format */
     int data_index;
     int total_size;
     int pes_header_size;
+    int extended_stream_id;
     int64_t pts, dts;
     int64_t ts_packet_pos; /**< position of first TS packet of this PES packet */
     uint8_t header[MAX_PES_HEADER_SIZE];
@@ -509,6 +511,7 @@ static const StreamType HDMV_types[] = {
     { 0x80, CODEC_TYPE_AUDIO, CODEC_ID_PCM_BLURAY },
     { 0x81, CODEC_TYPE_AUDIO, CODEC_ID_AC3 },
     { 0x82, CODEC_TYPE_AUDIO, CODEC_ID_DTS },
+    { 0x83, CODEC_TYPE_AUDIO, CODEC_ID_TRUEHD },
     { 0x90, CODEC_TYPE_SUBTITLE, CODEC_ID_HDMV_PGS_SUBTITLE },
     { 0 },
 };
@@ -568,8 +571,32 @@ static AVStream *new_pes_av_stream(PESContext *pes, uint32_t prog_reg_desc, uint
 
     mpegts_find_stream_type(st, pes->stream_type, ISO_types);
     if (prog_reg_desc == AV_RL32("HDMV") &&
-        st->codec->codec_id == CODEC_ID_NONE)
+        st->codec->codec_id == CODEC_ID_NONE) {
         mpegts_find_stream_type(st, pes->stream_type, HDMV_types);
+        if (pes->stream_type == 0x83) {
+            // HDMV TrueHD streams also contain an AC3 coded version of the
+            // audio track - add a second stream for this
+            AVStream *sub_st;
+            // priv_data cannot be shared between streams
+            PESContext *sub_pes = av_malloc(sizeof(*sub_pes));
+            if (!sub_pes)
+                return NULL;
+            memcpy(sub_pes, pes, sizeof(*sub_pes));
+
+            sub_st = av_new_stream(pes->stream, pes->pid);
+            if (!sub_st) {
+                av_free(sub_pes);
+                return NULL;
+            }
+
+            av_set_pts_info(sub_st, 33, 1, 90000);
+            sub_st->priv_data = sub_pes;
+            sub_st->codec->codec_type = CODEC_TYPE_AUDIO;
+            sub_st->codec->codec_id   = CODEC_ID_AC3;
+            sub_st->need_parsing = AVSTREAM_PARSE_FULL;
+            sub_pes->sub_st = pes->sub_st = sub_st;
+        }
+    }
     if (st->codec->codec_id == CODEC_ID_NONE)
         mpegts_find_stream_type(st, pes->stream_type, MISC_types);
 
@@ -730,6 +757,11 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 break;
             }
             p = desc_end;
+
+            if (prog_reg_desc == AV_RL32("HDMV") && stream_type == 0x83 && pes->sub_st) {
+                av_program_add_stream_index(ts->stream, h->id, pes->sub_st->index);
+                pes->sub_st->codec->codec_tag = st->codec->codec_tag;
+            }
         }
         p = desc_list_end;
     }
@@ -873,7 +905,11 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
     pkt->size = pes->data_index;
     memset(pkt->data+pkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
-    pkt->stream_index = pes->st->index;
+    // Separate out the AC3 substream from an HDMV combined TrueHD/AC3 PID
+    if (pes->sub_st && pes->stream_type == 0x83 && pes->extended_stream_id == 0x76)
+        pkt->stream_index = pes->sub_st->index;
+    else
+        pkt->stream_index = pes->st->index;
     pkt->pts = pes->pts;
     pkt->dts = pes->dts;
     /* store position of first TS packet of this PES packet */
@@ -1005,7 +1041,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
             buf_size -= len;
             if (pes->data_index == pes->pes_header_size) {
                 const uint8_t *r;
-                unsigned int flags;
+                unsigned int flags, pes_ext, skip;
 
                 flags = pes->header[7];
                 r = pes->header + 9;
@@ -1019,6 +1055,20 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     r += 5;
                     pes->dts = get_pts(r);
                     r += 5;
+                }
+                pes->extended_stream_id = -1;
+                if (flags & 0x01) { /* PES extension */
+                    pes_ext = *r++;
+                    /* Skip PES private data, program packet sequence counter and P-STD buffer */
+                    skip = (pes_ext >> 4) & 0xb;
+                    skip += skip & 0x9;
+                    r += skip;
+                    if ((pes_ext & 0x41) == 0x01 &&
+                        (r + 2) <= (pes->header + pes->pes_header_size)) {
+                        /* PES extension 2 */
+                        if ((r[0] & 0x7f) > 0 && (r[1] & 0x80) == 0)
+                            pes->extended_stream_id = r[1];
+                    }
                 }
 
                 /* we got the full header. We parse it and get the payload */
