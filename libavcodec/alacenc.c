@@ -133,12 +133,16 @@ static void calc_predictor_params(AlacEncodeContext *s, int ch)
     int opt_order;
 
     if (s->avctx->compression_level > 1) {
-    opt_order = ff_lpc_calc_coefs(&s->dspctx, s->sample_buf[ch], s->avctx->frame_size, s->min_prediction_order, s->max_prediction_order,
-                                   ALAC_MAX_LPC_PRECISION, coefs, shift, 1, ORDER_METHOD_EST, ALAC_MAX_LPC_SHIFT, 1);
+        opt_order = ff_lpc_calc_coefs(&s->dspctx, s->sample_buf[ch],
+                                      s->avctx->frame_size,
+                                      s->min_prediction_order,
+                                      s->max_prediction_order,
+                                      ALAC_MAX_LPC_PRECISION, coefs, shift, 1,
+                                      ORDER_METHOD_EST, ALAC_MAX_LPC_SHIFT, 1);
 
-    s->lpc[ch].lpc_order = opt_order;
-    s->lpc[ch].lpc_quant = shift[opt_order-1];
-    memcpy(s->lpc[ch].lpc_coeff, coefs[opt_order-1], opt_order*sizeof(int));
+        s->lpc[ch].lpc_order = opt_order;
+        s->lpc[ch].lpc_quant = shift[opt_order-1];
+        memcpy(s->lpc[ch].lpc_coeff, coefs[opt_order-1], opt_order*sizeof(int));
     } else {
         s->lpc[ch].lpc_order = 6;
         s->lpc[ch].lpc_quant = 6;
