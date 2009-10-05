@@ -219,8 +219,8 @@ int pcm_read_seek(AVFormatContext *s,
                   int stream_index, int64_t timestamp, int flags)
 {
     AVStream *st;
-    int block_align, byte_rate, ret;
-    int64_t pos;
+    int block_align, byte_rate;
+    int64_t pos, ret;
 
     st = s->streams[0];
 
