@@ -54,4 +54,10 @@ void ff_id3v2_read(AVFormatContext *s);
 
 extern const AVMetadataConv ff_id3v2_metadata_conv[];
 
+/**
+ * A list of ID3v2.4 text information frames.
+ * http://www.id3.org/id3v2.4.0-frames
+ */
+extern const char const ff_id3v2_tags[][4];
+
 #endif /* AVFORMAT_ID3V2_H */

@@ -261,3 +261,12 @@ const AVMetadataConv ff_id3v2_metadata_conv[] = {
     { "TSOT", "titlesort"},
     { 0 }
 };
+
+const char ff_id3v2_tags[][4] = {
+   "TALB", "TBPM", "TCOM", "TCON", "TCOP", "TDEN", "TDLY", "TDOR", "TDRC",
+   "TDRL", "TDTG", "TENC", "TEXT", "TFLT", "TIPL", "TIT1", "TIT2", "TIT3",
+   "TKEY", "TLAN", "TLEN", "TMCL", "TMED", "TMOO", "TOAL", "TOFN", "TOLY",
+   "TOPE", "TOWN", "TPE1", "TPE2", "TPE3", "TPE4", "TPOS", "TPRO", "TPUB",
+   "TRCK", "TRSN", "TRSO", "TSOA", "TSOP", "TSOT", "TSRC", "TSSE", "TSST",
+   { 0 },
+};

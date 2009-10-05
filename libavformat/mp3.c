@@ -238,14 +238,14 @@ static void id3v2_put_size(AVFormatContext *s, int size)
     put_byte(s->pb, size       & 0x7f);
 }
 
-static void id3v2_put_ttag(AVFormatContext *s, const char *string, uint32_t tag)
+static void id3v2_put_ttag(AVFormatContext *s, const char *buf, int len,
+                           uint32_t tag)
 {
-    int len = strlen(string);
     put_be32(s->pb, tag);
     id3v2_put_size(s, len + 1);
     put_be16(s->pb, 0);
     put_byte(s->pb, 3); /* UTF-8 */
-    put_buffer(s->pb, string, len);
+    put_buffer(s->pb, buf, len);
 }
 
 
@@ -255,45 +255,57 @@ static void id3v2_put_ttag(AVFormatContext *s, const char *string, uint32_t tag)
 
 static int mp3_write_header(struct AVFormatContext *s)
 {
-    AVMetadataTag *title, *author, *album, *genre, *copyright, *track, *year;
+    AVMetadataTag *t = NULL;
     int totlen = 0;
-
-    title     = av_metadata_get(s->metadata, "title",     NULL, 0);
-    author    = av_metadata_get(s->metadata, "author",    NULL, 0);
-    album     = av_metadata_get(s->metadata, "album",     NULL, 0);
-    genre     = av_metadata_get(s->metadata, "genre",     NULL, 0);
-    copyright = av_metadata_get(s->metadata, "copyright", NULL, 0);
-    track     = av_metadata_get(s->metadata, "track",     NULL, 0);
-    year      = av_metadata_get(s->metadata, "year",      NULL, 0);
-
-    if(title)     totlen += 11 + strlen(title->value);
-    if(author)    totlen += 11 + strlen(author->value);
-    if(album)     totlen += 11 + strlen(album->value);
-    if(genre)     totlen += 11 + strlen(genre->value);
-    if(copyright) totlen += 11 + strlen(copyright->value);
-    if(track)     totlen += 11 + strlen(track->value);
-    if(year)      totlen += 11 + strlen(year->value);
-    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
-        totlen += strlen(LIBAVFORMAT_IDENT) + 11;
-
-    if(totlen == 0)
-        return 0;
+    int64_t size_pos, cur_pos;
 
     put_be32(s->pb, MKBETAG('I', 'D', '3', 0x04)); /* ID3v2.4 */
     put_byte(s->pb, 0);
     put_byte(s->pb, 0); /* flags */
 
-    id3v2_put_size(s, totlen);
+    /* reserve space for size */
+    size_pos = url_ftell(s->pb);
+    put_be32(s->pb, 0);
 
-    if(title)     id3v2_put_ttag(s, title->value,     MKBETAG('T', 'I', 'T', '2'));
-    if(author)    id3v2_put_ttag(s, author->value,    MKBETAG('T', 'P', 'E', '1'));
-    if(album)     id3v2_put_ttag(s, album->value,     MKBETAG('T', 'A', 'L', 'B'));
-    if(genre)     id3v2_put_ttag(s, genre->value,     MKBETAG('T', 'C', 'O', 'N'));
-    if(copyright) id3v2_put_ttag(s, copyright->value, MKBETAG('T', 'C', 'O', 'P'));
-    if(track)     id3v2_put_ttag(s, track->value,     MKBETAG('T', 'R', 'C', 'K'));
-    if(year)      id3v2_put_ttag(s, year->value,      MKBETAG('T', 'Y', 'E', 'R'));
-    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
-        id3v2_put_ttag(s, LIBAVFORMAT_IDENT,            MKBETAG('T', 'E', 'N', 'C'));
+    while ((t = av_metadata_get(s->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
+        uint32_t tag = 0;
+
+        if (t->key[0] == 'T' && strcmp(t->key, "TSSE")) {
+            int i;
+            for (i = 0; *ff_id3v2_tags[i]; i++)
+                if (AV_RB32(t->key) == AV_RB32(ff_id3v2_tags[i])) {
+                    int len = strlen(t->value);
+                    tag = AV_RB32(t->key);
+                    totlen += len + ID3v2_HEADER_SIZE + 2;
+                    id3v2_put_ttag(s, t->value, len + 1, tag);
+                    break;
+                }
+        }
+
+        if (!tag) { /* unknown tag, write as TXXX frame */
+            int   len = strlen(t->key), len1 = strlen(t->value);
+            char *buf = av_malloc(len + len1 + 2);
+            if (!buf)
+                return AVERROR(ENOMEM);
+            tag = MKBETAG('T', 'X', 'X', 'X');
+            strcpy(buf,           t->key);
+            strcpy(buf + len + 1, t->value);
+            id3v2_put_ttag(s, buf, len + len1 + 2, tag);
+            totlen += len + len1 + ID3v2_HEADER_SIZE + 3;
+            av_free(buf);
+        }
+    }
+    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
+        totlen += strlen(LIBAVFORMAT_IDENT) + ID3v2_HEADER_SIZE + 2;
+        id3v2_put_ttag(s, LIBAVFORMAT_IDENT, strlen(LIBAVFORMAT_IDENT) + 1,
+                       MKBETAG('T', 'S', 'S', 'E'));
+    }
+
+    cur_pos = url_ftell(s->pb);
+    url_fseek(s->pb, size_pos, SEEK_SET);
+    id3v2_put_size(s, totlen);
+    url_fseek(s->pb, cur_pos, SEEK_SET);
+
     return 0;
 }
 
