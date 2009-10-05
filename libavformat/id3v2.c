@@ -79,6 +79,7 @@ static unsigned int get_size(ByteIOContext *s, int len)
 static void read_ttag(AVFormatContext *s, int taglen, const char *key)
 {
     char *q, dst[512];
+    const char *val = NULL;
     int len, dstlen = sizeof(dst) - 1;
     unsigned genre;
     unsigned int (*get)(ByteIOContext*) = get_be16;
@@ -134,19 +135,28 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
         av_log(s, AV_LOG_WARNING, "Unknown encoding in tag %s\n.", key);
     }
 
-    if (!strcmp(key, "genre")
+    if (!(strcmp(key, "TCON") && strcmp(key, "TCO"))
         && (sscanf(dst, "(%d)", &genre) == 1 || sscanf(dst, "%d", &genre) == 1)
         && genre <= ID3v1_GENRE_MAX)
-        av_strlcpy(dst, ff_id3v1_genre_str[genre], sizeof(dst));
+        val = ff_id3v1_genre_str[genre];
+    else if (!(strcmp(key, "TXXX") && strcmp(key, "TXX"))) {
+        /* dst now contains two 0-terminated strings */
+        dst[dstlen] = 0;
+        len = strlen(dst);
+        key = dst;
+        val = dst + FFMIN(len + 1, dstlen);
+    }
+    else if (*dst)
+        val = dst;
 
-    if (*dst)
-        av_metadata_set(&s->metadata, key, dst);
+    if (val)
+        av_metadata_set(&s->metadata, key, val);
 }
 
 void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
 {
     int isv34, tlen;
-    uint32_t tag;
+    char tag[5];
     int64_t next;
     int taghdrlen;
     const char *reason;
@@ -182,14 +192,16 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
 
     while (len >= taghdrlen) {
         if (isv34) {
-            tag  = get_be32(s->pb);
+            get_buffer(s->pb, tag, 4);
+            tag[4] = 0;
             if(version==3){
                 tlen = get_be32(s->pb);
             }else
                 tlen = get_size(s->pb, 4);
             get_be16(s->pb); /* flags */
         } else {
-            tag  = get_be24(s->pb);
+            get_buffer(s->pb, tag, 3);
+            tag[3] = 0;
             tlen = get_be24(s->pb);
         }
         len -= taghdrlen + tlen;
@@ -199,37 +211,9 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
 
         next = url_ftell(s->pb) + tlen;
 
-        switch (tag) {
-        case MKBETAG('T', 'I', 'T', '2'):
-        case MKBETAG(0,   'T', 'T', '2'):
-            read_ttag(s, tlen, "title");
-            break;
-        case MKBETAG('T', 'P', 'E', '1'):
-        case MKBETAG(0,   'T', 'P', '1'):
-            read_ttag(s, tlen, "author");
-            break;
-        case MKBETAG('T', 'A', 'L', 'B'):
-        case MKBETAG(0,   'T', 'A', 'L'):
-            read_ttag(s, tlen, "album");
-            break;
-        case MKBETAG('T', 'C', 'O', 'N'):
-        case MKBETAG(0,   'T', 'C', 'O'):
-            read_ttag(s, tlen, "genre");
-            break;
-        case MKBETAG('T', 'C', 'O', 'P'):
-        case MKBETAG(0,   'T', 'C', 'R'):
-            read_ttag(s, tlen, "copyright");
-            break;
-        case MKBETAG('T', 'R', 'C', 'K'):
-        case MKBETAG(0,   'T', 'R', 'K'):
-            read_ttag(s, tlen, "track");
-            break;
-        case 0:
-            /* padding, skip to end */
-            url_fskip(s->pb, len);
-            len = 0;
-            continue;
-        }
+        if (tag[0] == 'T')
+            read_ttag(s, tlen, tag);
+
         /* Skip to end of tag */
         url_fseek(s->pb, next, SEEK_SET);
     }
