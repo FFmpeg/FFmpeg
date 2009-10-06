@@ -431,6 +431,11 @@ do_audio_encoding adpcm_swf.flv "-ar 44100" "-acodec adpcm_swf"
 do_audio_decoding
 fi
 
+if [ -n "$do_alac" ] ; then
+do_audio_encoding alac.m4a "-ar 44100" "-acodec alac -compression_level 1"
+do_audio_decoding
+fi
+
 if [ -n "$do_flac" ] ; then
 do_audio_encoding flac.flac "-ar 44100" "-acodec flac -compression_level 2"
 do_audio_decoding

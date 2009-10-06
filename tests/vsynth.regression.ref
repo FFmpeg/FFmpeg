@@ -213,6 +213,10 @@ stddev: 1247.64 PSNR: 34.40 bytes:  1065004/  1058444
 269166 ./tests/data/a-adpcm_swf.flv
 628089745a7059ae4055c2515b6d668b *./tests/data/adpcm_swf.vsynth.out.wav
 stddev:  933.65 PSNR: 36.92 bytes:  1065004/  1058444
+c68f649777ab8e7c9a0f1f221451d3ad *./tests/data/a-alac.m4a
+389386 ./tests/data/a-alac.m4a
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/alac.vsynth.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 7781a016edfc242a39e4d65af02d861a *./tests/data/a-flac.flac
 353368 ./tests/data/a-flac.flac
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/flac.vsynth.out.wav

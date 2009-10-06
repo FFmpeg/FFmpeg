@@ -194,6 +194,7 @@ CODEC_TESTS = $(addprefix regtest-,             \
         adpcm_ms                                \
         adpcm_yam                               \
         adpcm_swf                               \
+        alac                                    \
         flac                                    \
         wma                                     \
         pcm                                     \
