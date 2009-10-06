@@ -1,6 +1,6 @@
 /*
    C-like prototype :
-        void j_rev_dct_ARM(DCTBLOCK data)
+        void j_rev_dct_arm(DCTBLOCK data)
 
    With DCTBLOCK being a pointer to an array of 64 'signed shorts'
 
@@ -57,7 +57,7 @@
         .text
         .align
 
-function ff_j_rev_dct_ARM, export=1
+function ff_j_rev_dct_arm, export=1
         stmdb   sp!, { r4 - r12, lr }   @ all callee saved regs
 
         sub sp, sp, #4                  @ reserve some space on the stack

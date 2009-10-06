@@ -56,8 +56,8 @@
 
         .text
 
-function ff_simple_idct_ARM, export=1
-        @@ void simple_idct_ARM(int16_t *block)
+function ff_simple_idct_arm, export=1
+        @@ void simple_idct_arm(int16_t *block)
         @@ save stack for reg needed (take all of them),
         @@ R0-R3 are scratch regs, so no need to save them, but R0 contains the pointer to block
         @@ so it must not be overwritten, if it is not saved!!
@@ -458,7 +458,7 @@ __end_col_loop:
 
 
 
-__end_simple_idct_ARM:
+__end_simple_idct_arm:
         @@ restore registers to previous status!
         add sp, sp, #8 @@ the local variables!
         ldmfd sp!, {r4-r11, r15} @@ update PC with LR content.

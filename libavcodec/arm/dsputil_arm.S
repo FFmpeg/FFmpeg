@@ -622,8 +622,8 @@ function ff_put_no_rnd_pixels8_xy2_arm, export=1
         .endfunc
 
         .align 5
-@ void ff_add_pixels_clamped_ARM(int16_t *block, uint8_t *dest, int stride)
-function ff_add_pixels_clamped_ARM, export=1
+@ void ff_add_pixels_clamped_arm(int16_t *block, uint8_t *dest, int stride)
+function ff_add_pixels_clamped_arm, export=1
         push            {r4-r10}
         mov             r10, #8
 1:

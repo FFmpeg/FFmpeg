@@ -22,8 +22,8 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
-void ff_j_rev_dct_ARM(DCTELEM *data);
-void ff_simple_idct_ARM(DCTELEM *data);
+void ff_j_rev_dct_arm(DCTELEM *data);
+void ff_simple_idct_arm(DCTELEM *data);
 
 /* XXX: local hack */
 static void (*ff_put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
@@ -47,29 +47,29 @@ CALL_2X_PIXELS(ff_put_no_rnd_pixels16_x2_arm,  ff_put_no_rnd_pixels8_x2_arm, 8)
 CALL_2X_PIXELS(ff_put_no_rnd_pixels16_y2_arm,  ff_put_no_rnd_pixels8_y2_arm, 8)
 CALL_2X_PIXELS(ff_put_no_rnd_pixels16_xy2_arm, ff_put_no_rnd_pixels8_xy2_arm,8)
 
-void ff_add_pixels_clamped_ARM(const DCTELEM *block, uint8_t *dest,
+void ff_add_pixels_clamped_arm(const DCTELEM *block, uint8_t *dest,
                                int line_size);
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
-static void j_rev_dct_ARM_put(uint8_t *dest, int line_size, DCTELEM *block)
+static void j_rev_dct_arm_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    ff_j_rev_dct_ARM (block);
+    ff_j_rev_dct_arm (block);
     ff_put_pixels_clamped(block, dest, line_size);
 }
-static void j_rev_dct_ARM_add(uint8_t *dest, int line_size, DCTELEM *block)
+static void j_rev_dct_arm_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    ff_j_rev_dct_ARM (block);
+    ff_j_rev_dct_arm (block);
     ff_add_pixels_clamped(block, dest, line_size);
 }
-static void simple_idct_ARM_put(uint8_t *dest, int line_size, DCTELEM *block)
+static void simple_idct_arm_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    ff_simple_idct_ARM (block);
+    ff_simple_idct_arm (block);
     ff_put_pixels_clamped(block, dest, line_size);
 }
-static void simple_idct_ARM_add(uint8_t *dest, int line_size, DCTELEM *block)
+static void simple_idct_arm_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    ff_simple_idct_ARM (block);
+    ff_simple_idct_arm (block);
     ff_add_pixels_clamped(block, dest, line_size);
 }
 
@@ -86,19 +86,19 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
     if (!avctx->lowres) {
         if(avctx->idct_algo == FF_IDCT_AUTO ||
            avctx->idct_algo == FF_IDCT_ARM){
-            c->idct_put              = j_rev_dct_ARM_put;
-            c->idct_add              = j_rev_dct_ARM_add;
-            c->idct                  = ff_j_rev_dct_ARM;
+            c->idct_put              = j_rev_dct_arm_put;
+            c->idct_add              = j_rev_dct_arm_add;
+            c->idct                  = ff_j_rev_dct_arm;
             c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
         } else if (avctx->idct_algo == FF_IDCT_SIMPLEARM){
-            c->idct_put              = simple_idct_ARM_put;
-            c->idct_add              = simple_idct_ARM_add;
-            c->idct                  = ff_simple_idct_ARM;
+            c->idct_put              = simple_idct_arm_put;
+            c->idct_add              = simple_idct_arm_add;
+            c->idct                  = ff_simple_idct_arm;
             c->idct_permutation_type = FF_NO_IDCT_PERM;
         }
     }
 
-    c->add_pixels_clamped = ff_add_pixels_clamped_ARM;
+    c->add_pixels_clamped = ff_add_pixels_clamped_arm;
 
     c->put_pixels_tab[0][0] = ff_put_pixels16_arm;
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_arm;
