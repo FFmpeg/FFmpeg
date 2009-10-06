@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* #define DEBUG */
+
 #include "libavcodec/imgconvert.h"
 #include "avfilter.h"
 
@@ -160,9 +162,34 @@ int avfilter_config_links(AVFilterContext *filter)
     return 0;
 }
 
+static void dprintf_picref(void *ctx, AVFilterPicRef *picref, int end)
+{
+    dprintf(ctx,
+            "picref[%p data[%p, %p, %p, %p] linesize[%d, %d, %d, %d] pts:%"PRId64" s:%dx%d]%s",
+            picref,
+            picref->data    [0], picref->data    [1], picref->data    [2], picref->data    [3],
+            picref->linesize[0], picref->linesize[1], picref->linesize[2], picref->linesize[3],
+            picref->pts, picref->w, picref->h,
+            end ? "\n" : "");
+}
+
+static void dprintf_link(void *ctx, AVFilterLink *link, int end)
+{
+    dprintf(ctx,
+            "link[%p s:%dx%d %-16s->%-16s]%s",
+            link, link->w, link->h,
+            link->src ? link->src->filter->name : "",
+            link->dst ? link->dst->filter->name : "",
+            end ? "\n" : "");
+}
+
+#define DPRINTF_START(ctx, func) dprintf(NULL, "%-16s: ", #func)
+
 AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms)
 {
     AVFilterPicRef *ret = NULL;
+
+    DPRINTF_START(NULL, get_video_buffer); dprintf_link(NULL, link, 0); dprintf(NULL, " perms:%d\n", perms);
 
     if(link_dpad(link).get_video_buffer)
         ret = link_dpad(link).get_video_buffer(link, perms);
@@ -170,11 +197,15 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms)
     if(!ret)
         ret = avfilter_default_get_video_buffer(link, perms);
 
+    DPRINTF_START(NULL, get_video_buffer); dprintf_link(NULL, link, 0); dprintf(NULL, " returning "); dprintf_picref(NULL, ret, 1);
+
     return ret;
 }
 
 int avfilter_request_frame(AVFilterLink *link)
 {
+    DPRINTF_START(NULL, request_frame); dprintf_link(NULL, link, 1);
+
     if(link_spad(link).request_frame)
         return link_spad(link).request_frame(link);
     else if(link->src->inputs[0])
@@ -204,6 +235,8 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
     void (*start_frame)(AVFilterLink *, AVFilterPicRef *);
     AVFilterPad *dst = &link_dpad(link);
+
+    DPRINTF_START(NULL, start_frame); dprintf_link(NULL, link, 0); dprintf(NULL, " "); dprintf_picref(NULL, picref, 1);
 
     if(!(start_frame = dst->start_frame))
         start_frame = avfilter_default_start_frame;
@@ -252,6 +285,8 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
     uint8_t *src[4], *dst[4];
     int i, j, hsub, vsub;
     void (*draw_slice)(AVFilterLink *, int, int);
+
+    DPRINTF_START(NULL, draw_slice); dprintf_link(NULL, link, 0); dprintf(NULL, " y:%d h:%d\n", y, h);
 
     /* copy the slice if needed for permission reasons */
     if(link->srcpic) {
