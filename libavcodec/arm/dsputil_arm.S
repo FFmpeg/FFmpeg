@@ -596,20 +596,13 @@ function ff_put_pixels8_xy2_arm, export=1
         pld             [r1]
         push            {r4-r11,lr} @ R14 is also called LR
         JMP_ALIGN       r5,  r1
-1:
-        RND_XY2_EXPAND  0, lsl
-
+1:      RND_XY2_EXPAND  0, lsl
         .align 5
-2:
-        RND_XY2_EXPAND  1, lsl
-
+2:      RND_XY2_EXPAND  1, lsl
         .align 5
-3:
-        RND_XY2_EXPAND  2, lsl
-
+3:      RND_XY2_EXPAND  2, lsl
         .align 5
-4:
-        RND_XY2_EXPAND  3, lsl
+4:      RND_XY2_EXPAND  3, lsl
         .endfunc
 
         .align 5
@@ -619,20 +612,13 @@ function ff_put_no_rnd_pixels8_xy2_arm, export=1
         pld             [r1]
         push            {r4-r11,lr}
         JMP_ALIGN       r5,  r1
-1:
-        RND_XY2_EXPAND  0, lsr
-
+1:      RND_XY2_EXPAND  0, lsr
         .align 5
-2:
-        RND_XY2_EXPAND  1, lsr
-
+2:      RND_XY2_EXPAND  1, lsr
         .align 5
-3:
-        RND_XY2_EXPAND  2, lsr
-
+3:      RND_XY2_EXPAND  2, lsr
         .align 5
-4:
-        RND_XY2_EXPAND  3, lsr
+4:      RND_XY2_EXPAND  3, lsr
         .endfunc
 
         .align 5
