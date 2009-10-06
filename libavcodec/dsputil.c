@@ -3608,6 +3608,59 @@ static void sub_hfyu_median_prediction_c(uint8_t *dst, uint8_t *src1, uint8_t *s
     *left_top= lt;
 }
 
+static int add_hfyu_left_prediction_c(uint8_t *dst, uint8_t *src, int w, int acc){
+    int i;
+
+    for(i=0; i<w-1; i++){
+        acc+= src[i];
+        dst[i]= acc;
+        i++;
+        acc+= src[i];
+        dst[i]= acc;
+    }
+
+    for(; i<w; i++){
+        acc+= src[i];
+        dst[i]= acc;
+    }
+
+    return acc;
+}
+
+#if HAVE_BIGENDIAN
+#define B 3
+#define G 2
+#define R 1
+#else
+#define B 0
+#define G 1
+#define R 2
+#endif
+static inline void add_hfyu_left_prediction_bgr32_c(uint8_t *dst, uint8_t *src, int w, int *red, int *green, int *blue){
+    int i;
+    int r,g,b;
+    r= *red;
+    g= *green;
+    b= *blue;
+
+    for(i=0; i<w; i++){
+        b+= src[4*i+B];
+        g+= src[4*i+G];
+        r+= src[4*i+R];
+
+        dst[4*i+B]= b;
+        dst[4*i+G]= g;
+        dst[4*i+R]= r;
+    }
+
+    *red= r;
+    *green= g;
+    *blue= b;
+}
+#undef B
+#undef G
+#undef R
+
 #define BUTTERFLY2(o1,o2,i1,i2) \
 o1= (i1)+(i2);\
 o2= (i1)-(i2);
@@ -4737,6 +4790,8 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->diff_bytes= diff_bytes_c;
     c->add_hfyu_median_prediction= add_hfyu_median_prediction_c;
     c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_c;
+    c->add_hfyu_left_prediction  = add_hfyu_left_prediction_c;
+    c->add_hfyu_left_prediction_bgr32 = add_hfyu_left_prediction_bgr32_c;
     c->bswap_buf= bswap_buf;
 #if CONFIG_PNG_DECODER
     c->add_png_paeth_prediction= ff_add_png_paeth_prediction;
