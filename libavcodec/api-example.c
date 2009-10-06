@@ -35,7 +35,7 @@
 #undef HAVE_AV_CONFIG_H
 #endif
 
-#include "avcodec.h"
+#include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
 
 #define INBUF_SIZE 4096
