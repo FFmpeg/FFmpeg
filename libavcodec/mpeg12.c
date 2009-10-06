@@ -2309,7 +2309,7 @@ static int decode_chunks(AVCodecContext *avctx,
                 if(avctx->thread_count > 1){
                     int i;
 
-                    avctx->execute(avctx, slice_decode_thread,  (void**)&(s2->thread_context[0]), NULL, s->slice_count, sizeof(void*));
+                    avctx->execute(avctx, slice_decode_thread,  &s2->thread_context[0], NULL, s->slice_count, sizeof(void*));
                     for(i=0; i<s->slice_count; i++)
                         s2->error_count += s2->thread_context[i]->error_count;
                 }

@@ -528,7 +528,7 @@ static int dnxhd_encode_rdo(AVCodecContext *avctx, DNXHDEncContext *ctx)
 
     for (q = 1; q < avctx->qmax; q++) {
         ctx->qscale = q;
-        avctx->execute(avctx, dnxhd_calc_bits_thread, (void**)&ctx->thread[0], NULL, avctx->thread_count, sizeof(void*));
+        avctx->execute(avctx, dnxhd_calc_bits_thread, &ctx->thread[0], NULL, avctx->thread_count, sizeof(void*));
     }
     up_step = down_step = 2<<LAMBDA_FRAC_BITS;
     lambda = ctx->lambda;
@@ -608,7 +608,7 @@ static int dnxhd_find_qscale(DNXHDEncContext *ctx)
         bits = 0;
         ctx->qscale = qscale;
         // XXX avoid recalculating bits
-        ctx->m.avctx->execute(ctx->m.avctx, dnxhd_calc_bits_thread, (void**)&ctx->thread[0], NULL, ctx->m.avctx->thread_count, sizeof(void*));
+        ctx->m.avctx->execute(ctx->m.avctx, dnxhd_calc_bits_thread, &ctx->thread[0], NULL, ctx->m.avctx->thread_count, sizeof(void*));
         for (y = 0; y < ctx->m.mb_height; y++) {
             for (x = 0; x < ctx->m.mb_width; x++)
                 bits += ctx->mb_rc[qscale][y*ctx->m.mb_width+x].bits;
@@ -732,7 +732,7 @@ static int dnxhd_encode_fast(AVCodecContext *avctx, DNXHDEncContext *ctx)
     }
     if (!ret) {
         if (RC_VARIANCE)
-            avctx->execute(avctx, dnxhd_mb_var_thread, (void**)&ctx->thread[0], NULL, avctx->thread_count, sizeof(void*));
+            avctx->execute(avctx, dnxhd_mb_var_thread, &ctx->thread[0], NULL, avctx->thread_count, sizeof(void*));
         radix_sort(ctx->mb_cmp, ctx->m.mb_num);
         for (x = 0; x < ctx->m.mb_num && max_bits > ctx->frame_bits; x++) {
             int mb = ctx->mb_cmp[x].mb;
@@ -804,7 +804,7 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, unsigned char *buf, int b
         assert(!(ctx->slice_size[i] & 3));
     }
 
-    avctx->execute(avctx, dnxhd_encode_thread, (void**)&ctx->thread[0], NULL, avctx->thread_count, sizeof(void*));
+    avctx->execute(avctx, dnxhd_encode_thread, &ctx->thread[0], NULL, avctx->thread_count, sizeof(void*));
 
     assert(640 + offset + 4 <= ctx->cid_table->coding_unit_size);
     memset(buf + 640 + offset, 0, ctx->cid_table->coding_unit_size - 4 - offset - 640);
