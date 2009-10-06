@@ -493,6 +493,7 @@ OBJS-$(HAVE_ARMV5TE)                   += arm/dsputil_init_armv5te.o    \
                                           arm/simple_idct_armv5te.o     \
 
 OBJS-$(HAVE_ARMV6)                     += arm/dsputil_init_armv6.o      \
+                                          arm/dsputil_armv6.o           \
                                           arm/simple_idct_armv6.o       \
 
 OBJS-$(HAVE_ARMVFP)                    += arm/dsputil_vfp.o             \

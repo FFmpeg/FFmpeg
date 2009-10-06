@@ -25,6 +25,10 @@ void ff_simple_idct_armv6(DCTELEM *data);
 void ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data);
 void ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data);
 
+void ff_add_pixels_clamped_armv6(const DCTELEM *block,
+                                 uint8_t *restrict pixels,
+                                 int line_size);
+
 void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 {
     if (!avctx->lowres && (avctx->idct_algo == FF_IDCT_AUTO ||
@@ -34,4 +38,6 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
         c->idct                  = ff_simple_idct_armv6;
         c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
     }
+
+    c->add_pixels_clamped = ff_add_pixels_clamped_armv6;
 }
