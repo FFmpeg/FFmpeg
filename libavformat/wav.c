@@ -3,6 +3,7 @@
  * Copyright (c) 2001, 2002 Fabrice Bellard
  *
  * Sony Wave64 demuxer
+ * RF64 demuxer
  * Copyright (c) 2009 Daniel Verkamp
  *
  * This file is part of FFmpeg.
@@ -160,17 +161,18 @@ static int wav_probe(AVProbeData *p)
     /* check file header */
     if (p->buf_size <= 32)
         return 0;
-    if (p->buf[ 0] == 'R' && p->buf[ 1] == 'I' &&
-        p->buf[ 2] == 'F' && p->buf[ 3] == 'F' &&
-        p->buf[ 8] == 'W' && p->buf[ 9] == 'A' &&
-        p->buf[10] == 'V' && p->buf[11] == 'E')
+    if (!memcmp(p->buf + 8, "WAVE", 4)) {
+        if (!memcmp(p->buf, "RIFF", 4))
         /*
           Since ACT demuxer has standard WAV header at top of it's own,
           returning score is decreased to avoid probe conflict
           between ACT and WAV.
         */
         return AVPROBE_SCORE_MAX - 1;
-    else
+        else if (!memcmp(p->buf,      "RF64", 4) &&
+                 !memcmp(p->buf + 12, "ds64", 4))
+            return AVPROBE_SCORE_MAX;
+    }
         return 0;
 }
 
@@ -178,7 +180,8 @@ static int wav_probe(AVProbeData *p)
 static int wav_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    int64_t size;
+    int64_t size, av_uninit(data_size);
+    int rf64;
     unsigned int tag;
     ByteIOContext *pb = s->pb;
     AVStream *st;
@@ -187,12 +190,24 @@ static int wav_read_header(AVFormatContext *s,
     /* check RIFF header */
     tag = get_le32(pb);
 
-    if (tag != MKTAG('R', 'I', 'F', 'F'))
+    rf64 = tag == MKTAG('R', 'F', '6', '4');
+    if (!rf64 && tag != MKTAG('R', 'I', 'F', 'F'))
         return -1;
     get_le32(pb); /* file size */
     tag = get_le32(pb);
     if (tag != MKTAG('W', 'A', 'V', 'E'))
         return -1;
+
+    if (rf64) {
+        if (get_le32(pb) != MKTAG('d', 's', '6', '4'))
+            return -1;
+        size = get_le32(pb);
+        if (size < 16)
+            return -1;
+        get_le64(pb); /* RIFF size */
+        data_size = get_le64(pb);
+        url_fskip(pb, size - 16); /* skip rest of ds64 chunk */
+    }
 
     /* parse fmt header */
     size = find_tag(pb, MKTAG('f', 'm', 't', ' '));
@@ -208,6 +223,8 @@ static int wav_read_header(AVFormatContext *s,
     av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     size = find_tag(pb, MKTAG('d', 'a', 't', 'a'));
+    if (rf64)
+        size = data_size;
     if (size < 0)
         return -1;
     wav->data_end= url_ftell(pb) + size;

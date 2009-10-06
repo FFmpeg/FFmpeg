@@ -40,6 +40,7 @@ version <next>:
 - Core Audio Format demuxer
 - Atrac1 decoder
 - MD STUDIO audio demuxer
+- RF64 support in WAV demuxer
 
 
 
