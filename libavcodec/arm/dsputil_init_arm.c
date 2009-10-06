@@ -47,8 +47,8 @@ CALL_2X_PIXELS(ff_put_no_rnd_pixels16_x2_arm,  ff_put_no_rnd_pixels8_x2_arm, 8)
 CALL_2X_PIXELS(ff_put_no_rnd_pixels16_y2_arm,  ff_put_no_rnd_pixels8_y2_arm, 8)
 CALL_2X_PIXELS(ff_put_no_rnd_pixels16_xy2_arm, ff_put_no_rnd_pixels8_xy2_arm,8)
 
-void ff_add_pixels_clamped_ARM(short *block, unsigned char *dest,
-                                      int line_size);
+void ff_add_pixels_clamped_ARM(const DCTELEM *block, uint8_t *dest,
+                               int line_size);
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
@@ -97,6 +97,8 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
             c->idct_permutation_type = FF_NO_IDCT_PERM;
         }
     }
+
+    c->add_pixels_clamped = ff_add_pixels_clamped_ARM;
 
     c->put_pixels_tab[0][0] = ff_put_pixels16_arm;
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_arm;
