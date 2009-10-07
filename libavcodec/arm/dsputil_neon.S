@@ -249,7 +249,7 @@ function ff_\pfx\name\suf\()_neon, export=1
         .endm
 
 function ff_put_h264_qpel16_mc00_neon, export=1
-        mov   r3, #16
+        mov             r3,  #16
         .endfunc
 
         pixfunc  put_ pixels16
@@ -258,13 +258,13 @@ function ff_put_h264_qpel16_mc00_neon, export=1
         pixfunc2 put_ pixels16_xy2, _no_rnd, vshrn.u16, 1
 
 function ff_avg_h264_qpel16_mc00_neon, export=1
-        mov   r3, #16
+        mov             r3,  #16
         .endfunc
 
         pixfunc  avg_ pixels16,, 1
 
 function ff_put_h264_qpel8_mc00_neon, export=1
-        mov   r3, #8
+        mov             r3,  #8
         .endfunc
 
         pixfunc  put_ pixels8
