@@ -77,6 +77,11 @@ static int tmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(ENOMEM);
 
     ast->codec->sample_rate = get_le16(pb);
+    if (!ast->codec->sample_rate) {
+        av_log(s, AV_LOG_ERROR, "invalid sample rate\n");
+        return -1;
+    }
+
     tmv->audio_chunk_size   = get_le16(pb);
     if (!tmv->audio_chunk_size) {
         av_log(s, AV_LOG_ERROR, "invalid audio chunk size\n");
