@@ -1682,7 +1682,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
             ac->m4ac.chan_config = hdr_info.chan_config;
             if (set_default_channel_config(ac, new_che_pos, hdr_info.chan_config))
                 return -7;
-            if (output_configure(ac, ac->che_pos, new_che_pos, 1))
+            if (output_configure(ac, ac->che_pos, new_che_pos, hdr_info.chan_config))
                 return -7;
         }
         ac->m4ac.sample_rate     = hdr_info.sample_rate;
