@@ -43,10 +43,19 @@ typedef struct TMVContext {
     unsigned stream_index;
 } TMVContext;
 
+#define PROBE_MIN_SAMPLE_RATE 5000
+#define PROBE_MAX_FPS         120
+#define PROBE_MIN_AUDIO_SIZE  (PROBE_MIN_SAMPLE_RATE / PROBE_MAX_FPS)
+
 static int tmv_probe(AVProbeData *p)
 {
-    if (AV_RL32(p->buf) == TMV_TAG)
-        return AVPROBE_SCORE_MAX;
+    if (AV_RL32(p->buf)   == TMV_TAG &&
+        AV_RL16(p->buf+4) >= PROBE_MIN_SAMPLE_RATE &&
+        AV_RL16(p->buf+6) >= PROBE_MIN_AUDIO_SIZE  &&
+               !p->buf[8] && // compression method
+                p->buf[9] && // char cols
+                p->buf[10])  // char rows
+        return AVPROBE_SCORE_MAX / (p->buf[9] == 40 && p->buf[10] == 25)? 1 : 4;
     return 0;
 }
 
