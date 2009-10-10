@@ -312,6 +312,8 @@ typedef struct VC1Context{
     uint8_t closed_entry;       ///< Closed entry point flag (CLOSED_ENTRY syntax element)
 
     int parse_only;             ///< Context is used within parser
+
+    int warn_interlaced;
 } VC1Context;
 
 /** Find VC-1 marker in buffer

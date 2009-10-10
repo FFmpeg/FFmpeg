@@ -781,7 +781,11 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
 
     if(v->interlace){
         v->fcm = decode012(gb);
-        if(v->fcm) return -1; // interlaced frames/fields are not implemented
+        if(v->fcm){
+            if(!v->warn_interlaced++)
+                av_log(v->s.avctx, AV_LOG_ERROR, "Interlaced frames/fields support is not implemented\n");
+            return -1;
+        }
     }
     switch(get_unary(gb, 0, 4)) {
     case 0:
