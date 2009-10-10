@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-10-07 - r20189 - lavfi 0.5.1 - AVFilterPic
+  Added w and h fields to AVFilterPic.
+
 2009-06-22 - r19250 - lavf 52.34.1 - AVFormatContext.packet_size
   This is now an unsigned int instead of a signed int.
 
