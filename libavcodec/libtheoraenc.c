@@ -250,6 +250,9 @@ static int encode_frame(
     }
     memcpy(outbuf, o_packet.packet, o_packet.bytes);
 
+    // HACK: does not take codec delay into account (neither does the decoder though)
+    avc_context->coded_frame->pts= frame->pts;
+
     return o_packet.bytes;
 }
 
