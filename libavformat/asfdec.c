@@ -532,6 +532,15 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (url_feof(pb)) {
             return -1;
         } else {
+            if (!s->keylen) {
+                if (!guidcmp(&g, &ff_asf_content_encryption)) {
+                    av_log(s, AV_LOG_WARNING, "DRM protected stream detected, decoding will likely fail!\n");
+                } else if (!guidcmp(&g, &ff_asf_ext_content_encryption)) {
+                    av_log(s, AV_LOG_WARNING, "Ext DRM protected stream detected, decoding will likely fail!\n");
+                } else if (!guidcmp(&g, &ff_asf_digital_signature)) {
+                    av_log(s, AV_LOG_WARNING, "Digital signature detected, decoding will likely fail!\n");
+                }
+            }
             url_fseek(pb, gsize - 24, SEEK_CUR);
         }
     }

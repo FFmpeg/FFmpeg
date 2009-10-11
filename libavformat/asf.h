@@ -160,6 +160,9 @@ extern const ff_asf_guid ff_asf_ext_stream_audio_stream;
 extern const ff_asf_guid ff_asf_metadata_header;
 extern const ff_asf_guid ff_asf_my_guid;
 extern const ff_asf_guid ff_asf_language_guid;
+extern const ff_asf_guid ff_asf_content_encryption;
+extern const ff_asf_guid ff_asf_ext_content_encryption;
+extern const ff_asf_guid ff_asf_digital_signature;
 
 extern const AVMetadataConv ff_asf_metadata_conv[];
 
