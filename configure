@@ -1758,7 +1758,6 @@ case "$arch" in
     ;;
     arm|armv[4567]*l)
         arch="arm"
-        spic=$shared
     ;;
     avr32)
     ;;
@@ -2058,11 +2057,14 @@ check_deps $ARCH_EXT_LIST
 
 disabled optimizations || check_cflags -fomit-frame-pointer
 
-if enabled pic; then
+enable_pic() {
+    enable pic
     add_cppflags -DPIC
     add_cflags   -fPIC
     add_asflags  -fPIC
-fi
+}
+
+enabled pic && enable_pic
 
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
@@ -2108,6 +2110,8 @@ EOF
     enabled armvfp  && check_asm armvfp  '"fadds s0, s0, s0"'
     enabled iwmmxt  && check_asm iwmmxt  '"wunpckelub wr6, wr4"'
     enabled neon    && check_asm neon    '"vadd.i16 q0, q0, q0"'
+
+    enabled_all armv6t2 shared !pic && enable_pic
 
 elif enabled mips; then
 
