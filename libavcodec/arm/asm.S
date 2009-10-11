@@ -45,7 +45,7 @@ ELF     .type   \name, %function
         .endm
 
         .macro movrel rd, val
-#if HAVE_ARMV6T2 && !CONFIG_SHARED && !CONFIG_PIC
+#if HAVE_ARMV6T2 && !CONFIG_PIC
         movw            \rd, #:lower16:\val
         movt            \rd, #:upper16:\val
 #else
