@@ -3191,6 +3191,8 @@ static int vc1_decode_frame(AVCodecContext *avctx,
 
             buf_size2 = vc1_unescape_buffer(buf, divider - buf, buf2);
             // TODO
+            if(!v->warn_interlaced++)
+                av_log(v->s.avctx, AV_LOG_ERROR, "Interlaced WVC1 support is not implemented\n");
             av_free(buf2);return -1;
         }else{
             buf_size2 = vc1_unescape_buffer(buf, buf_size, buf2);
