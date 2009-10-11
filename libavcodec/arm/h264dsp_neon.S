@@ -1064,9 +1064,11 @@ put_h264_qpel8_mc01:
         .endfunc
 
 function ff_put_h264_qpel8_mc11_neon, export=1
-        push            {r0, r1, r2, lr}
+        push            {r0, r1, r11, lr}
 put_h264_qpel8_mc11:
         lowpass_const   r3
+        mov             r11, sp
+        bic             sp,  sp,  #15
         sub             sp,  sp,  #64
         mov             r0,  sp
         sub             r1,  r1,  #2
@@ -1074,15 +1076,15 @@ put_h264_qpel8_mc11:
         mov             ip,  #8
         vpush           {d8-d15}
         bl              put_h264_qpel8_h_lowpass_neon
-        ldrd            r0,  [sp, #128]
+        ldrd            r0,  [r11]
         mov             r3,  r2
         add             ip,  sp,  #64
         sub             r1,  r1,  r2, lsl #1
         mov             r2,  #8
         bl              put_h264_qpel8_v_lowpass_l2_neon
         vpop            {d8-d15}
-        add             sp,  sp,  #76
-        pop             {pc}
+        add             sp,  r11, #8
+        pop             {r11, pc}
         .endfunc
 
 function ff_put_h264_qpel8_mc21_neon, export=1
@@ -1112,7 +1114,7 @@ put_h264_qpel8_mc21:
 
 function ff_put_h264_qpel8_mc31_neon, export=1
         add             r1,  r1,  #1
-        push            {r0, r1, r2, lr}
+        push            {r0, r1, r11, lr}
         sub             r1,  r1,  #1
         b               put_h264_qpel8_mc11
         .endfunc
@@ -1181,7 +1183,7 @@ function ff_put_h264_qpel8_mc03_neon, export=1
         .endfunc
 
 function ff_put_h264_qpel8_mc13_neon, export=1
-        push            {r0, r1, r2, lr}
+        push            {r0, r1, r11, lr}
         add             r1,  r1,  r2
         b               put_h264_qpel8_mc11
         .endfunc
@@ -1194,7 +1196,7 @@ function ff_put_h264_qpel8_mc23_neon, export=1
 
 function ff_put_h264_qpel8_mc33_neon, export=1
         add             r1,  r1,  #1
-        push            {r0, r1, r2, lr}
+        push            {r0, r1, r11, lr}
         add             r1,  r1,  r2
         sub             r1,  r1,  #1
         b               put_h264_qpel8_mc11
@@ -1235,25 +1237,26 @@ put_h264_qpel16_mc01:
         .endfunc
 
 function ff_put_h264_qpel16_mc11_neon, export=1
-        push            {r0, r1, r4, lr}
+        push            {r0, r1, r4, r11, lr}
 put_h264_qpel16_mc11:
         lowpass_const   r3
+        mov             r11, sp
+        bic             sp,  sp,  #15
         sub             sp,  sp,  #256
         mov             r0,  sp
         sub             r1,  r1,  #2
         mov             r3,  #16
         vpush           {d8-d15}
         bl              put_h264_qpel16_h_lowpass_neon
-        add             r0,  sp,  #256
-        ldrd            r0,  [r0, #64]
+        ldrd            r0,  [r11]
         mov             r3,  r2
         add             ip,  sp,  #64
         sub             r1,  r1,  r2, lsl #1
         mov             r2,  #16
         bl              put_h264_qpel16_v_lowpass_l2_neon
         vpop            {d8-d15}
-        add             sp,  sp,  #(256+8)
-        pop             {r4, pc}
+        add             sp,  r11, #8
+        pop             {r4, r11, pc}
         .endfunc
 
 function ff_put_h264_qpel16_mc21_neon, export=1
@@ -1280,7 +1283,7 @@ put_h264_qpel16_mc21:
 
 function ff_put_h264_qpel16_mc31_neon, export=1
         add             r1,  r1,  #1
-        push            {r0, r1, r4, lr}
+        push            {r0, r1, r4, r11, lr}
         sub             r1,  r1,  #1
         b               put_h264_qpel16_mc11
         .endfunc
@@ -1349,7 +1352,7 @@ function ff_put_h264_qpel16_mc03_neon, export=1
         .endfunc
 
 function ff_put_h264_qpel16_mc13_neon, export=1
-        push            {r0, r1, r4, lr}
+        push            {r0, r1, r4, r11, lr}
         add             r1,  r1,  r2
         b               put_h264_qpel16_mc11
         .endfunc
@@ -1362,7 +1365,7 @@ function ff_put_h264_qpel16_mc23_neon, export=1
 
 function ff_put_h264_qpel16_mc33_neon, export=1
         add             r1,  r1,  #1
-        push            {r0, r1, r4, lr}
+        push            {r0, r1, r4, r11, lr}
         add             r1,  r1,  r2
         sub             r1,  r1,  #1
         b               put_h264_qpel16_mc11
