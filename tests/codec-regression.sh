@@ -374,7 +374,7 @@ do_video_decoding "-r 25" "-s cif -pix_fmt yuv420p"
 fi
 
 if [ -n "$do_dnxhd_720p_rd" ] ; then
-do_video_encoding dnxhd-720p-rd.dnxhd "" "-mbd rd -s hd720 -b 90Mb -pix_fmt yuv422p -an"
+do_video_encoding dnxhd-720p-rd.dnxhd "" "-threads 4 -mbd rd -s hd720 -b 90Mb -pix_fmt yuv422p -an"
 do_video_decoding "-r 25" "-s cif -pix_fmt yuv420p"
 fi
 
