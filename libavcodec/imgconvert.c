@@ -897,7 +897,7 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
 
     for (i=0; i<data_planes; i++) {
          if (i == 1) {
-             w = width >> pf->x_chroma_shift;
+             w = ((width >> pf->x_chroma_shift) * pf->depth + 7) / 8;
              h = height >> pf->y_chroma_shift;
          } else if (i == 3) {
              w = ow;
