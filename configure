@@ -1758,6 +1758,7 @@ case "$arch" in
     ;;
     arm|armv[4567]*l)
         arch="arm"
+        spic=$shared
     ;;
     avr32)
     ;;
