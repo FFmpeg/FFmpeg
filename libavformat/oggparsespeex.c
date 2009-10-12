@@ -30,6 +30,10 @@
 #include "avformat.h"
 #include "oggdec.h"
 
+struct speex_params {
+    int final_packet_duration;
+};
+
 static int speex_header(AVFormatContext *s, int idx) {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
@@ -69,8 +73,52 @@ static int speex_header(AVFormatContext *s, int idx) {
     return 1;
 }
 
+static int ogg_page_packets(struct ogg_stream *os)
+{
+    int i;
+    int packets = 0;
+    for (i = 0; i < os->nsegs; i++)
+        if (os->segments[i] < 255)
+            packets++;
+    return packets;
+}
+
+static int speex_packet(AVFormatContext *s, int idx)
+{
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *os = ogg->streams + idx;
+    struct speex_params *spxp = os->private;
+    int packet_size = s->streams[idx]->codec->frame_size;
+
+    if (!spxp) {
+        spxp = av_mallocz(sizeof(*spxp));
+        os->private = spxp;
+    }
+
+    if (os->flags & OGG_FLAG_EOS && os->lastgp != -1 && os->granule > 0) {
+        /* first packet of final page. we have to calculate the final packet
+           duration here because it is the only place we know the next-to-last
+           granule position. */
+        spxp->final_packet_duration = os->granule - os->lastgp -
+                                      packet_size * (ogg_page_packets(os) - 1);
+    }
+
+    if (!os->lastgp && os->granule > 0)
+        /* first packet */
+        os->pduration = os->granule - packet_size * (ogg_page_packets(os) - 1);
+    else if (os->flags & OGG_FLAG_EOS && os->segp == os->nsegs &&
+             spxp->final_packet_duration)
+        /* final packet */
+        os->pduration = spxp->final_packet_duration;
+    else
+        os->pduration = packet_size;
+
+    return 0;
+}
+
 const struct ogg_codec ff_speex_codec = {
     .magic = "Speex   ",
     .magicsize = 8,
-    .header = speex_header
+    .header = speex_header,
+    .packet = speex_packet
 };

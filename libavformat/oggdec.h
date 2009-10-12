@@ -50,6 +50,7 @@ struct ogg_stream {
     unsigned int pstart;
     unsigned int psize;
     unsigned int pflags;
+    unsigned int pduration;
     uint32_t serial;
     uint32_t seq;
     uint64_t granule, lastgp;

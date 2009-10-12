@@ -380,6 +380,7 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize)
 
     if (os->header > -1 && os->seq > os->header){
         os->pflags = 0;
+        os->pduration = 0;
         if (os->codec && os->codec->packet)
             os->codec->packet (s, idx);
         if (str)
@@ -524,6 +525,7 @@ ogg_read_packet (AVFormatContext * s, AVPacket * pkt)
     }
 
     pkt->flags = os->pflags;
+    pkt->duration = os->pduration;
 
     return psize;
 }
