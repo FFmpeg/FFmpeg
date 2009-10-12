@@ -104,10 +104,8 @@ void put_byte(ByteIOContext *s, int b)
 
 void put_buffer(ByteIOContext *s, const unsigned char *buf, int size)
 {
-    int len;
-
     while (size > 0) {
-        len = FFMIN(s->buf_end - s->buf_ptr, size);
+        int len = FFMIN(s->buf_end - s->buf_ptr, size);
         memcpy(s->buf_ptr, buf, len);
         s->buf_ptr += len;
 
