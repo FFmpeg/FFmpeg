@@ -433,6 +433,7 @@ void avcodec_get_context_defaults2(AVCodecContext *s, enum CodecType codec_type)
     s->release_buffer= avcodec_default_release_buffer;
     s->get_format= avcodec_default_get_format;
     s->execute= avcodec_default_execute;
+    s->execute2= avcodec_default_execute2;
     s->sample_aspect_ratio= (AVRational){0,1};
     s->pix_fmt= PIX_FMT_NONE;
     s->sample_fmt= SAMPLE_FMT_S16; // FIXME: set to NONE

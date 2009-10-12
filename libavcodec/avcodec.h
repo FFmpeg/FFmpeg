@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 36
+#define LIBAVCODEC_VERSION_MINOR 37
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -2526,6 +2526,26 @@ typedef struct AVCodecContext {
      * - decoding: Set by libavcodec
      */
     enum AVChromaLocation chroma_sample_location;
+
+    /**
+     * The codec may call this to execute several independent things.
+     * It will return only after finishing all tasks.
+     * The user may replace this with some multithreaded implementation,
+     * the default implementation will execute the parts serially.
+     * Also see avcodec_thread_init and e.g. the --enable-pthread configure option.
+     * @param c context passed also to func
+     * @param count the number of things to execute
+     * @param arg2 argument passed unchanged to func
+     * @param ret return values of executed functions, must have space for "count" values. May be NULL.
+     * @param func function that will be called count times, with jobnr from 0 to count-1.
+     *             threadnr will be in the range 0 to c->thread_count-1 < MAX_THREADS and so that no
+     *             two instances of func executing at the same time will have the same threadnr.
+     * @return always 0 currently, but code should handle a future improvement where when any call to func
+     *         returns < 0 no further calls to func may be done and < 0 is returned.
+     * - encoding: Set by libavcodec, user can override.
+     * - decoding: Set by libavcodec, user can override.
+     */
+    int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
 } AVCodecContext;
 
 /**
@@ -3154,6 +3174,7 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count);
 void avcodec_thread_free(AVCodecContext *s);
 int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
+int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);
 //FIXME func typedef
 
 /**

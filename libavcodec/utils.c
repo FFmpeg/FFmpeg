@@ -414,6 +414,16 @@ int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, v
     return 0;
 }
 
+int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int jobnr, int threadnr),void *arg, int *ret, int count){
+    int i;
+
+    for(i=0; i<count; i++){
+        int r= func(c, arg, i, 0);
+        if(ret) ret[i]= r;
+    }
+    return 0;
+}
+
 enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat *fmt){
     while (*fmt != PIX_FMT_NONE && ff_is_hwaccel_pix_fmt(*fmt))
         ++fmt;
