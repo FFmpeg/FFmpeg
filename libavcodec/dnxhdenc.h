@@ -46,6 +46,7 @@ typedef struct DNXHDEncContext {
     const CIDEntry *cid_table;
     uint8_t *msip; ///< Macroblock Scan Indexes Payload
     uint32_t *slice_size;
+    uint32_t *slice_offs;
 
     struct DNXHDEncContext *thread[MAX_THREADS];
 
