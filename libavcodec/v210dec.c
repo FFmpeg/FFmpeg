@@ -114,6 +114,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
 static av_cold int decode_close(AVCodecContext *avctx)
 {
+    AVFrame *pic = avctx->coded_frame;
+    if (pic->data[0])
+        avctx->release_buffer(avctx, pic);
     av_freep(&avctx->coded_frame);
 
     return 0;

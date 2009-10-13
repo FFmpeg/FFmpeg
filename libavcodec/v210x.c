@@ -124,6 +124,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     return avpkt->size;
 }
 
+static av_cold int decode_close(AVCodecContext *avctx)
+{
+    AVFrame *pic = avctx->coded_frame;
+    if (pic->data[0])
+        avctx->release_buffer(avctx, pic);
+    av_freep(&avctx->coded_frame);
+
+    return 0;
+}
+
 AVCodec v210x_decoder = {
     "v210x",
     CODEC_TYPE_VIDEO,
@@ -131,7 +141,7 @@ AVCodec v210x_decoder = {
     0,
     decode_init,
     NULL,
-    NULL,
+    decode_close,
     decode_frame,
     CODEC_CAP_DR1,
 };
