@@ -263,10 +263,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
-        return -1;
-    }
-
     // Needed if zlib unused or init aborted before deflateInit
     memset(&(c->zstream), 0, sizeof(z_stream));
     c->comp_size = avctx->width * avctx->height + 1024 +

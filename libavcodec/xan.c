@@ -74,9 +74,6 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = PIX_FMT_PAL8;
 
-    if(avcodec_check_dimensions(avctx, avctx->width, avctx->height))
-        return -1;
-
     s->buffer1_size = avctx->width * avctx->height;
     s->buffer1 = av_malloc(s->buffer1_size);
     s->buffer2_size = avctx->width * avctx->height;

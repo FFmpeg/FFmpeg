@@ -939,12 +939,6 @@ static int roq_encode_init(AVCodecContext *avctx)
     if (((avctx->width)&(avctx->width-1))||((avctx->height)&(avctx->height-1)))
         av_log(avctx, AV_LOG_ERROR, "Warning: dimensions not power of two\n");
 
-    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height)) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid dimensions (%dx%d)\n",
-               avctx->width, avctx->height);
-        return -1;
-    }
-
     enc->width = avctx->width;
     enc->height = avctx->height;
 

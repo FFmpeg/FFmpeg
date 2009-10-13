@@ -216,9 +216,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
 static av_cold int decode_init(AVCodecContext *avctx) {
     CamStudioContext *c = avctx->priv_data;
-    if (avcodec_check_dimensions(avctx, avctx->height, avctx->width) < 0) {
-        return 1;
-    }
     switch (avctx->bits_per_coded_sample) {
         case 16: avctx->pix_fmt = PIX_FMT_RGB555; break;
         case 24: avctx->pix_fmt = PIX_FMT_BGR24; break;

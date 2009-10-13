@@ -108,10 +108,6 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
-        return -1;
-    }
-
     // Needed if zlib unused or init aborted before deflateInit
     memset(&(s->zstream), 0, sizeof(z_stream));
 

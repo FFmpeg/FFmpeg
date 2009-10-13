@@ -251,10 +251,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
 
-    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
-        return -1;
-    }
-
     c->frame      = av_malloc( avctx->width * avctx->height);
     c->prev_frame = av_malloc( avctx->width * avctx->height);
 

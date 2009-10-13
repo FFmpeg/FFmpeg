@@ -159,10 +159,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
         c->pic.data[0] = NULL;
 
-    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
-        return 1;
-    }
-
         switch (avctx->bits_per_coded_sample) {
                 case 8:
                         avctx->pix_fmt = PIX_FMT_PAL8;

@@ -813,9 +813,6 @@ static av_cold int decode_init(AVCodecContext *avctx){
     TM2Context * const l = avctx->priv_data;
     int i;
 
-    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
-        return -1;
-    }
     if((avctx->width & 3) || (avctx->height & 3)){
         av_log(avctx, AV_LOG_ERROR, "Width and height must be multiple of 4\n");
         return -1;

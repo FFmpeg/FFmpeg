@@ -58,9 +58,6 @@ static av_cold int mm_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = PIX_FMT_PAL8;
 
-    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height))
-        return -1;
-
     s->frame.reference = 1;
     if (avctx->get_buffer(avctx, &s->frame)) {
         av_log(s->avctx, AV_LOG_ERROR, "mmvideo: get_buffer() failed\n");
