@@ -142,12 +142,7 @@ static int raw_decode(AVCodecContext *avctx,
 
     if (   avctx->codec_tag == MKTAG('Y', 'V', '1', '2')
         || avctx->codec_tag == MKTAG('Y', 'V', 'U', '9'))
-    {
-        // swap fields
-        unsigned char *tmp = picture->data[1];
-        picture->data[1] = picture->data[2];
-        picture->data[2] = tmp;
-    }
+        FFSWAP(uint8_t *, picture->data[1], picture->data[2]);
 
     if(avctx->codec_tag == AV_RL32("yuv2") &&
        avctx->pix_fmt   == PIX_FMT_YUYV422) {
