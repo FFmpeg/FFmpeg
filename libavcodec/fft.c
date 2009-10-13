@@ -340,7 +340,7 @@ DECL_FFT(16384,8192,4096)
 DECL_FFT(32768,16384,8192)
 DECL_FFT(65536,32768,16384)
 
-static void (*fft_dispatch[])(FFTComplex*) = {
+static void (* const fft_dispatch[])(FFTComplex*) = {
     fft4, fft8, fft16, fft32, fft64, fft128, fft256, fft512, fft1024,
     fft2048, fft4096, fft8192, fft16384, fft32768, fft65536,
 };
