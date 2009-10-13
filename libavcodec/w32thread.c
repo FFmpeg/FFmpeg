@@ -32,10 +32,12 @@ typedef struct ThreadContext{
     HANDLE job_sem;
     HANDLE done_sem;
     int (*func)(AVCodecContext *c, void *arg);
+    int (*func2)(AVCodecContext *c, void *arg, int, int);
     void *arg;
     int argsize;
     int *jobnr;
     int *ret;
+    int threadnr;
 }ThreadContext;
 
 
@@ -52,6 +54,8 @@ static unsigned WINAPI attribute_align_arg thread_func(void *v){
 //printf("thread_func %X after wait (func=%X)\n", (int)v, (int)c->func); fflush(stdout);
         if(c->func)
             ret= c->func(c->avctx, (uint8_t *)c->arg + jobnr*c->argsize);
+        else if (c->func2)
+            ret= c->func2(c->avctx, c->arg, jobnr, c->threadnr);
         else
             return 0;
         if (c->ret)
@@ -74,6 +78,7 @@ void avcodec_thread_free(AVCodecContext *s){
     for(i=0; i<s->thread_count; i++){
 
         c[i].func= NULL;
+        c[i].func2= NULL;
     }
     ReleaseSemaphore(c[0].work_sem, s->thread_count, 0);
     for(i=0; i<s->thread_count; i++){
@@ -110,6 +115,14 @@ int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, vo
     return 0;
 }
 
+int avcodec_thread_execute2(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count){
+    ThreadContext *c= s->thread_opaque;
+    int i;
+    for(i=0; i<s->thread_count; i++)
+        c[i].func2 = func;
+    avcodec_thread_execute(s, NULL, arg, ret, count, 0);
+}
+
 int avcodec_thread_init(AVCodecContext *s, int thread_count){
     int i;
     ThreadContext *c;
@@ -133,6 +146,7 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
         c[i].work_sem = c[0].work_sem;
         c[i].job_sem  = c[0].job_sem;
         c[i].done_sem = c[0].done_sem;
+        c[i].threadnr = i;
 
 //printf("create thread %d\n", i); fflush(stdout);
         c[i].thread = (HANDLE)_beginthreadex(NULL, 0, thread_func, &c[i], 0, &threadid );
@@ -141,6 +155,7 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
 //printf("init done\n"); fflush(stdout);
 
     s->execute= avcodec_thread_execute;
+    s->execute2= avcodec_thread_execute2;
 
     return 0;
 fail:
