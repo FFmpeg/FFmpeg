@@ -946,6 +946,8 @@ void avcodec_default_free_buffers(AVCodecContext *s){
 
     if(s->internal_buffer==NULL) return;
 
+    if (s->internal_buffer_count)
+        av_log(s, AV_LOG_WARNING, "Found %i unreleased buffers!\n", s->internal_buffer_count);
     for(i=0; i<INTERNAL_BUFFER_SIZE; i++){
         InternalBuffer *buf= &((InternalBuffer*)s->internal_buffer)[i];
         for(j=0; j<4; j++){
