@@ -690,7 +690,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 
         if (!(material_track->sequence = mxf_resolve_strong_ref(mxf, &material_track->sequence_ref, Sequence))) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not resolve material track sequence strong ref\n");
-            return -1;
+            continue;
         }
 
         /* TODO: handle multiple source clips */
