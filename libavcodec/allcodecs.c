@@ -96,6 +96,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (FLV, flv);
     REGISTER_DECODER (FOURXM, fourxm);
     REGISTER_DECODER (FRAPS, fraps);
+    REGISTER_DECODER (FRWU, frwu);
     REGISTER_ENCDEC  (GIF, gif);
     REGISTER_ENCDEC  (H261, h261);
     REGISTER_ENCDEC  (H263, h263);
