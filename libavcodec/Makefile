@@ -27,7 +27,8 @@ OBJS = allcodecs.o                                                      \
 # parts needed for many different codecs
 OBJS-$(CONFIG_AANDCT)                  += aandcttab.o
 OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
-OBJS-$(CONFIG_FFT)                     += fft.o
+FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o
+OBJS-$(CONFIG_FFT)                     += fft.o $(FFT-OBJS-yes)
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o
@@ -571,6 +572,14 @@ TESTPROGS-$(HAVE_MMX) += motion
 
 DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
 
+CLEANFILES = cos_tables.c costablegen$(HOSTEXESUF)
+
 include $(SUBDIR)../subdir.mak
 
 $(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dctref.o
+
+$(SUBDIR)costablegen$(HOSTEXESUF): $(SUBDIR)costablegen.c
+	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
+
+$(SUBDIR)cos_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
+	./$< > $@

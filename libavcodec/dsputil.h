@@ -742,7 +742,11 @@ typedef struct FFTContext {
 #define FF_MDCT_PERM_INTERLEAVE 1
 } FFTContext;
 
+#if CONFIG_HARDCODED_TABLES
+extern const FFTSample* const ff_cos_tabs[13];
+#else
 extern FFTSample* const ff_cos_tabs[13];
+#endif
 
 /**
  * Sets up a complex FFT.

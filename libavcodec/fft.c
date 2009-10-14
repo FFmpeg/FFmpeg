@@ -28,20 +28,31 @@
 
 #include "dsputil.h"
 
+#if CONFIG_HARDCODED_TABLES
+#define COSTABLE(size) \
+    extern const DECLARE_ALIGNED_16(FFTSample, ff_cos_##size[size/2]);
+#else
+#define COSTABLE(size) \
+    DECLARE_ALIGNED_16(FFTSample, ff_cos_##size[size/2]);
+#endif
+
 /* cos(2*pi*x/n) for 0<=x<=n/4, followed by its reverse */
-DECLARE_ALIGNED_16(FFTSample, ff_cos_16[8]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_32[16]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_64[32]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_128[64]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_256[128]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_512[256]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_1024[512]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_2048[1024]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_4096[2048]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_8192[4096]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_16384[8192]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_32768[16384]);
-DECLARE_ALIGNED_16(FFTSample, ff_cos_65536[32768]);
+COSTABLE(16)
+COSTABLE(32)
+COSTABLE(64)
+COSTABLE(128)
+COSTABLE(256)
+COSTABLE(512)
+COSTABLE(1024)
+COSTABLE(2048)
+COSTABLE(4096)
+COSTABLE(8192)
+COSTABLE(16384)
+COSTABLE(32768)
+COSTABLE(65536)
+#if CONFIG_HARDCODED_TABLES
+const
+#endif
 FFTSample * const ff_cos_tabs[] = {
     ff_cos_16, ff_cos_32, ff_cos_64, ff_cos_128, ff_cos_256, ff_cos_512, ff_cos_1024,
     ff_cos_2048, ff_cos_4096, ff_cos_8192, ff_cos_16384, ff_cos_32768, ff_cos_65536,
@@ -93,6 +104,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     if (HAVE_MMX)     ff_fft_init_mmx(s);
 
     if (s->split_radix) {
+#if !CONFIG_HARDCODED_TABLES
         for(j=4; j<=nbits; j++) {
             int m = 1<<j;
             double freq = 2*M_PI/m;
@@ -102,6 +114,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
             for(i=1; i<m/4; i++)
                 tab[m/2-i] = tab[i];
         }
+#endif
         for(i=0; i<n; i++)
             s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = i;
         s->tmp_buf = av_malloc(n * sizeof(FFTComplex));
