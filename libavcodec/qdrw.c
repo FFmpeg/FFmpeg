@@ -140,6 +140,17 @@ static av_cold int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
+static av_cold int decode_end(AVCodecContext *avctx){
+    QdrawContext * const a = avctx->priv_data;
+    AVFrame *pic = &a->pic;
+
+    if (pic->data[0])
+        avctx->release_buffer(avctx, pic);
+    av_freep(&a->pic);
+
+    return 0;
+}
+
 AVCodec qdraw_decoder = {
     "qdraw",
     CODEC_TYPE_VIDEO,
@@ -147,7 +158,7 @@ AVCodec qdraw_decoder = {
     sizeof(QdrawContext),
     decode_init,
     NULL,
-    NULL,
+    decode_end,
     decode_frame,
     CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Apple QuickDraw"),

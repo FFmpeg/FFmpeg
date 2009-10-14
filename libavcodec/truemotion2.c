@@ -845,6 +845,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
 static av_cold int decode_end(AVCodecContext *avctx){
     TM2Context * const l = avctx->priv_data;
+    AVFrame *pic = &l->pic;
     int i;
 
     if(l->last)
@@ -862,6 +863,11 @@ static av_cold int decode_end(AVCodecContext *avctx){
         av_free(l->U2);
         av_free(l->V2);
     }
+
+    if (pic->data[0])
+        avctx->release_buffer(avctx, pic);
+    av_freep(&l->pic);
+
     return 0;
 }
 

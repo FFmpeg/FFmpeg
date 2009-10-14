@@ -55,6 +55,17 @@ static av_cold int ulti_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int ulti_decode_end(AVCodecContext *avctx){
+    UltimotionDecodeContext *s = avctx->priv_data;
+    AVFrame *pic = &s->frame;
+
+    if (pic->data[0])
+        avctx->release_buffer(avctx, pic);
+    av_freep(&s->frame);
+
+    return 0;
+}
+
 static const int block_coords[8] = // 4x4 block coords in 8x8 superblock
     { 0, 0, 0, 4, 4, 4, 4, 0};
 
@@ -401,7 +412,7 @@ AVCodec ulti_decoder = {
     sizeof(UltimotionDecodeContext),
     ulti_decode_init,
     NULL,
-    NULL,
+    ulti_decode_end,
     ulti_decode_frame,
     CODEC_CAP_DR1,
     NULL,
