@@ -37,7 +37,7 @@ int main(void)
     for (i = 4; i <= BITS; i++) {
         int m = 1 << i;
         double freq = 2*M_PI/m;
-        printf("const DECLARE_ALIGNED_16(FFTSample, ff_cos_%i[]) = {\n   ", m);
+        printf("COSTABLE(%i) = {\n   ", m);
         for (j = 0; j < m/2 - 1; j++) {
             int idx = j > m/4 ? m/2 - j : j;
             printf(" "FLOATFMT",", cos(idx*freq));

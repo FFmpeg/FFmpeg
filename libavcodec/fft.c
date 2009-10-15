@@ -28,32 +28,23 @@
 
 #include "dsputil.h"
 
-#if CONFIG_HARDCODED_TABLES
-#define COSTABLE(size) \
-    extern const DECLARE_ALIGNED_16(FFTSample, ff_cos_##size[size/2]);
-#else
-#define COSTABLE(size) \
-    DECLARE_ALIGNED_16(FFTSample, ff_cos_##size[size/2]);
-#endif
-
 /* cos(2*pi*x/n) for 0<=x<=n/4, followed by its reverse */
-COSTABLE(16)
-COSTABLE(32)
-COSTABLE(64)
-COSTABLE(128)
-COSTABLE(256)
-COSTABLE(512)
-COSTABLE(1024)
-COSTABLE(2048)
-COSTABLE(4096)
-COSTABLE(8192)
-COSTABLE(16384)
-COSTABLE(32768)
-COSTABLE(65536)
-#if CONFIG_HARDCODED_TABLES
-const
+#if !CONFIG_HARDCODED_TABLES
+COSTABLE(16);
+COSTABLE(32);
+COSTABLE(64);
+COSTABLE(128);
+COSTABLE(256);
+COSTABLE(512);
+COSTABLE(1024);
+COSTABLE(2048);
+COSTABLE(4096);
+COSTABLE(8192);
+COSTABLE(16384);
+COSTABLE(32768);
+COSTABLE(65536);
 #endif
-FFTSample * const ff_cos_tabs[] = {
+COSTABLE_CONST FFTSample * const ff_cos_tabs[] = {
     ff_cos_16, ff_cos_32, ff_cos_64, ff_cos_128, ff_cos_256, ff_cos_512, ff_cos_1024,
     ff_cos_2048, ff_cos_4096, ff_cos_8192, ff_cos_16384, ff_cos_32768, ff_cos_65536,
 };
