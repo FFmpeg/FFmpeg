@@ -744,14 +744,16 @@ typedef struct FFTContext {
 
 #if CONFIG_HARDCODED_TABLES
 #define COSTABLE_CONST const
+#define SINTABLE_CONST const
 #else
 #define COSTABLE_CONST
+#define SINTABLE_CONST
 #endif
 
 #define COSTABLE(size) \
     COSTABLE_CONST DECLARE_ALIGNED_16(FFTSample, ff_cos_##size[size/2])
 #define SINTABLE(size) \
-    DECLARE_ALIGNED_16(FFTSample, ff_sin_##size[size/2])
+    SINTABLE_CONST DECLARE_ALIGNED_16(FFTSample, ff_sin_##size[size/2])
 extern COSTABLE(16);
 extern COSTABLE(32);
 extern COSTABLE(64);
@@ -874,7 +876,7 @@ typedef struct {
 
     /* pre/post rotation tables */
     const FFTSample *tcos;
-    FFTSample *tsin;
+    SINTABLE_CONST FFTSample *tsin;
     FFTContext fft;
 } RDFTContext;
 

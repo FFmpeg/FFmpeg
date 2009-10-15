@@ -31,7 +31,8 @@ FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o
 OBJS-$(CONFIG_FFT)                     += fft.o $(FFT-OBJS-yes)
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
-OBJS-$(CONFIG_RDFT)                    += rdft.o
+RDFT-OBJS-$(CONFIG_HARDCODED_TABLES)   += sin_tables.o
+OBJS-$(CONFIG_RDFT)                    += rdft.o $(RDFT-OBJS-yes)
 OBJS-$(CONFIG_VAAPI)                   += vaapi.o
 OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 
@@ -583,3 +584,6 @@ $(SUBDIR)costablegen$(HOSTEXESUF): $(SUBDIR)costablegen.c
 
 $(SUBDIR)cos_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
 	./$< > $@
+
+$(SUBDIR)sin_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
+	./$< sin > $@
