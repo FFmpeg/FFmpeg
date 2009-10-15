@@ -607,6 +607,9 @@ static av_cold int decode_end(AVCodecContext *avctx){
     av_freep(&a->picture.qscale_table);
     a->bitstream_buffer_size=0;
 
+    if(a->picture.data[0])
+        avctx->release_buffer(avctx, &a->picture);
+
     return 0;
 }
 
