@@ -1,5 +1,5 @@
 /*
- * AIFF/AIFF-C muxer and demuxer
+ * AIFF/AIFF-C demuxer
  * Copyright (c) 2006  Patrick Guimond
  *
  * This file is part of FFmpeg.
@@ -22,26 +22,7 @@
 #include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
 #include "raw.h"
-#include "riff.h"
-
-static const AVCodecTag codec_aiff_tags[] = {
-    { CODEC_ID_PCM_S16BE,    MKTAG('N','O','N','E') },
-    { CODEC_ID_PCM_S8,       MKTAG('N','O','N','E') },
-    { CODEC_ID_PCM_S24BE,    MKTAG('N','O','N','E') },
-    { CODEC_ID_PCM_S32BE,    MKTAG('N','O','N','E') },
-    { CODEC_ID_PCM_F32BE,    MKTAG('f','l','3','2') },
-    { CODEC_ID_PCM_F64BE,    MKTAG('f','l','6','4') },
-    { CODEC_ID_PCM_ALAW,     MKTAG('a','l','a','w') },
-    { CODEC_ID_PCM_MULAW,    MKTAG('u','l','a','w') },
-    { CODEC_ID_MACE3,        MKTAG('M','A','C','3') },
-    { CODEC_ID_MACE6,        MKTAG('M','A','C','6') },
-    { CODEC_ID_GSM,          MKTAG('G','S','M',' ') },
-    { CODEC_ID_ADPCM_G726,   MKTAG('G','7','2','6') },
-    { CODEC_ID_PCM_S16LE,    MKTAG('s','o','w','t') },
-    { CODEC_ID_ADPCM_IMA_QT, MKTAG('i','m','a','4') },
-    { CODEC_ID_QDM2,         MKTAG('Q','D','M','2') },
-    { 0, 0 },
-};
+#include "aiff.h"
 
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
@@ -123,7 +104,7 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
     /* Got an AIFF-C? */
     if (version == AIFF_C_VERSION1) {
         codec->codec_tag = get_le32(pb);
-        codec->codec_id  = ff_codec_get_id(codec_aiff_tags, codec->codec_tag);
+        codec->codec_id  = ff_codec_get_id(ff_codec_aiff_tags, codec->codec_tag);
 
         switch (codec->codec_id) {
         case CODEC_ID_PCM_S16BE:
@@ -170,131 +151,6 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
 
     return num_frames;
 }
-
-#if CONFIG_AIFF_MUXER
-typedef struct {
-    int64_t form;
-    int64_t frames;
-    int64_t ssnd;
-} AIFFOutputContext;
-
-static int aiff_write_header(AVFormatContext *s)
-{
-    AIFFOutputContext *aiff = s->priv_data;
-    ByteIOContext *pb = s->pb;
-    AVCodecContext *enc = s->streams[0]->codec;
-    AVExtFloat sample_rate;
-    int aifc = 0;
-
-    /* First verify if format is ok */
-    if (!enc->codec_tag)
-        return -1;
-    if (enc->codec_tag != MKTAG('N','O','N','E'))
-        aifc = 1;
-
-    /* FORM AIFF header */
-    put_tag(pb, "FORM");
-    aiff->form = url_ftell(pb);
-    put_be32(pb, 0);                    /* file length */
-    put_tag(pb, aifc ? "AIFC" : "AIFF");
-
-    if (aifc) { // compressed audio
-        enc->bits_per_coded_sample = 16;
-        if (!enc->block_align) {
-            av_log(s, AV_LOG_ERROR, "block align not set\n");
-            return -1;
-        }
-        /* Version chunk */
-        put_tag(pb, "FVER");
-        put_be32(pb, 4);
-        put_be32(pb, 0xA2805140);
-    }
-
-    /* Common chunk */
-    put_tag(pb, "COMM");
-    put_be32(pb, aifc ? 24 : 18); /* size */
-    put_be16(pb, enc->channels);  /* Number of channels */
-
-    aiff->frames = url_ftell(pb);
-    put_be32(pb, 0);              /* Number of frames */
-
-    if (!enc->bits_per_coded_sample)
-        enc->bits_per_coded_sample = av_get_bits_per_sample(enc->codec_id);
-    if (!enc->bits_per_coded_sample) {
-        av_log(s, AV_LOG_ERROR, "could not compute bits per sample\n");
-        return -1;
-    }
-    if (!enc->block_align)
-        enc->block_align = (enc->bits_per_coded_sample * enc->channels) >> 3;
-
-    put_be16(pb, enc->bits_per_coded_sample); /* Sample size */
-
-    sample_rate = av_dbl2ext((double)enc->sample_rate);
-    put_buffer(pb, (uint8_t*)&sample_rate, sizeof(sample_rate));
-
-    if (aifc) {
-        put_le32(pb, enc->codec_tag);
-        put_be16(pb, 0);
-    }
-
-    /* Sound data chunk */
-    put_tag(pb, "SSND");
-    aiff->ssnd = url_ftell(pb);         /* Sound chunk size */
-    put_be32(pb, 0);                    /* Sound samples data size */
-    put_be32(pb, 0);                    /* Data offset */
-    put_be32(pb, 0);                    /* Block-size (block align) */
-
-    av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
-
-    /* Data is starting here */
-    put_flush_packet(pb);
-
-    return 0;
-}
-
-static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    ByteIOContext *pb = s->pb;
-    put_buffer(pb, pkt->data, pkt->size);
-    return 0;
-}
-
-static int aiff_write_trailer(AVFormatContext *s)
-{
-    ByteIOContext *pb = s->pb;
-    AIFFOutputContext *aiff = s->priv_data;
-    AVCodecContext *enc = s->streams[0]->codec;
-
-    /* Chunks sizes must be even */
-    int64_t file_size, end_size;
-    end_size = file_size = url_ftell(pb);
-    if (file_size & 1) {
-        put_byte(pb, 0);
-        end_size++;
-    }
-
-    if (!url_is_streamed(s->pb)) {
-        /* File length */
-        url_fseek(pb, aiff->form, SEEK_SET);
-        put_be32(pb, file_size - aiff->form - 4);
-
-        /* Number of sample frames */
-        url_fseek(pb, aiff->frames, SEEK_SET);
-        put_be32(pb, (file_size-aiff->ssnd-12)/enc->block_align);
-
-        /* Sound Data chunk size */
-        url_fseek(pb, aiff->ssnd, SEEK_SET);
-        put_be32(pb, file_size - aiff->ssnd - 4);
-
-        /* return to the end */
-        url_fseek(pb, end_size, SEEK_SET);
-
-        put_flush_packet(pb);
-    }
-
-    return 0;
-}
-#endif /* CONFIG_AIFF_MUXER */
 
 static int aiff_probe(AVProbeData *p)
 {
@@ -446,7 +302,6 @@ static int aiff_read_packet(AVFormatContext *s,
     return 0;
 }
 
-#if CONFIG_AIFF_DEMUXER
 AVInputFormat aiff_demuxer = {
     "aiff",
     NULL_IF_CONFIG_SMALL("Audio IFF"),
@@ -456,22 +311,5 @@ AVInputFormat aiff_demuxer = {
     aiff_read_packet,
     NULL,
     pcm_read_seek,
-    .codec_tag= (const AVCodecTag* const []){codec_aiff_tags, 0},
+    .codec_tag= (const AVCodecTag* const []){ff_codec_aiff_tags, 0},
 };
-#endif
-
-#if CONFIG_AIFF_MUXER
-AVOutputFormat aiff_muxer = {
-    "aiff",
-    NULL_IF_CONFIG_SMALL("Audio IFF"),
-    "audio/aiff",
-    "aif,aiff,afc,aifc",
-    sizeof(AIFFOutputContext),
-    CODEC_ID_PCM_S16BE,
-    CODEC_ID_NONE,
-    aiff_write_header,
-    aiff_write_packet,
-    aiff_write_trailer,
-    .codec_tag= (const AVCodecTag* const []){codec_aiff_tags, 0},
-};
-#endif
