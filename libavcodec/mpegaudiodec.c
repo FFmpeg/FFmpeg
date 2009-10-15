@@ -411,7 +411,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
             double value = i/4;
             double f, fm;
             int e, m;
-            f = value * cbrtf(value) * exp2f((i&3)*0.25);
+            f = value * cbrtf(value) * pow(2, (i&3)*0.25);
             fm = frexp(f, &e);
             m = (uint32_t)(fm*(1LL<<31) + 0.5);
             e+= FRAC_BITS - 31 + 5 - 100;
@@ -423,7 +423,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
         for(i=0; i<512*16; i++){
             double value = i & 15;
             int exponent= (i>>4);
-            double f= value * cbrtf(value) * exp2f((exponent-400)*0.25 + FRAC_BITS + 5);
+            double f= value * cbrtf(value) * pow(2, (exponent-400)*0.25 + FRAC_BITS + 5);
             expval_table[exponent][i&15]= llrint(f);
             if((i&15)==1)
                 exp_table[exponent]= llrint(f);
