@@ -213,7 +213,12 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
 
         if (tag[0] == 'T')
             read_ttag(s, tlen, tag);
-
+        else if (!tag[0]) {
+            if (tag[1])
+                av_log(s, AV_LOG_WARNING, "invalid frame id, assuming padding");
+            url_fskip(s->pb, len);
+            break;
+        }
         /* Skip to end of tag */
         url_fseek(s->pb, next, SEEK_SET);
     }
