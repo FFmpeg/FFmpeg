@@ -840,7 +840,7 @@ typedef struct {
     int sign_convention;
 
     /* pre/post rotation tables */
-    FFTSample *tcos;
+    const FFTSample *tcos;
     FFTSample *tsin;
     FFTContext fft;
 } RDFTContext;
