@@ -394,7 +394,7 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     ASV1Context * const a = avctx->priv_data;
     AVFrame *picture = data;
-    AVFrame * const p= (AVFrame*)&a->picture;
+    AVFrame * const p= &a->picture;
     int mb_x, mb_y;
 
     if(p->data[0])
@@ -474,7 +474,7 @@ for(i=0; i<s->avctx->extradata_size; i++){
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     ASV1Context * const a = avctx->priv_data;
     AVFrame *pict = data;
-    AVFrame * const p= (AVFrame*)&a->picture;
+    AVFrame * const p= &a->picture;
     int size;
     int mb_x, mb_y;
 
@@ -536,13 +536,13 @@ static av_cold void common_init(AVCodecContext *avctx){
     a->mb_width2  = (avctx->width  + 0) / 16;
     a->mb_height2 = (avctx->height + 0) / 16;
 
-    avctx->coded_frame= (AVFrame*)&a->picture;
+    avctx->coded_frame= &a->picture;
     a->avctx= avctx;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
-    AVFrame *p= (AVFrame*)&a->picture;
+    AVFrame *p= &a->picture;
     int i;
     const int scale= avctx->codec_id == CODEC_ID_ASV1 ? 1 : 2;
 
@@ -551,7 +551,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, scantab);
     avctx->pix_fmt= PIX_FMT_YUV420P;
 
-    a->inv_qscale= ((uint8_t*)avctx->extradata)[0];
+    a->inv_qscale= avctx->extradata[0];
     if(a->inv_qscale == 0){
         av_log(avctx, AV_LOG_ERROR, "illegal qscale 0\n");
         if(avctx->codec_id == CODEC_ID_ASV1)
