@@ -406,9 +406,7 @@ static av_cold void alloc_temp(HYuvContext *s){
             s->temp[i]= av_malloc(s->width + 16);
         }
     }else{
-        for(i=0; i<2; i++){
-            s->temp[i]= av_malloc(4*s->width + 16);
-        }
+        s->temp[0]= av_malloc(4*s->width + 16);
     }
 }
 
