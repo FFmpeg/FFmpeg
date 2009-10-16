@@ -322,7 +322,7 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     uint8_t *ppcm[4] = {0};
 
     if (buf_size < DV_PROFILE_BYTES ||
-        !(c->sys = dv_frame_profile(c->sys, buf, buf_size)) ||
+        !(c->sys = ff_dv_frame_profile(c->sys, buf, buf_size)) ||
         buf_size < c->sys->frame_size) {
           return -1;   /* Broken frame, or not enough data */
     }
@@ -368,7 +368,7 @@ static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
                               int64_t timestamp, int flags)
 {
     // FIXME: sys may be wrong if last dv_read_packet() failed (buffer is junk)
-    const DVprofile* sys = dv_codec_profile(c->vst->codec);
+    const DVprofile* sys = ff_dv_codec_profile(c->vst->codec);
     int64_t offset;
     int64_t size = url_fsize(s->pb);
     int64_t max_offset = ((size-1) / sys->frame_size) * sys->frame_size;
@@ -431,7 +431,7 @@ static int dv_read_header(AVFormatContext *s,
         url_fseek(s->pb, -DV_PROFILE_BYTES, SEEK_CUR) < 0)
         return AVERROR(EIO);
 
-    c->dv_demux->sys = dv_frame_profile(c->dv_demux->sys, c->buf, DV_PROFILE_BYTES);
+    c->dv_demux->sys = ff_dv_frame_profile(c->dv_demux->sys, c->buf, DV_PROFILE_BYTES);
     if (!c->dv_demux->sys) {
         av_log(s, AV_LOG_ERROR, "Can't determine profile of DV input stream.\n");
         return -1;
