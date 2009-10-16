@@ -54,7 +54,7 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { CODEC_ID_VORBIS    , 0xDD }, /* non standard, gpac uses it */
     { CODEC_ID_DVD_SUBTITLE, 0xE0 }, /* non standard, see unsupported-embedded-subs-2.mp4 */
     { CODEC_ID_QCELP     , 0xE1 },
-    { 0, 0 },
+    { CODEC_ID_NONE      ,    0 },
 };
 
 const AVCodecTag codec_movvideo_tags[] = {

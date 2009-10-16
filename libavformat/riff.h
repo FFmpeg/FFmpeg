@@ -35,7 +35,7 @@ int64_t ff_start_tag(ByteIOContext *pb, const char *tag);
 void ff_end_tag(ByteIOContext *pb, int64_t start);
 
 typedef struct AVCodecTag {
-    int id;
+    enum CodecID id;
     unsigned int tag;
 } AVCodecTag;
 

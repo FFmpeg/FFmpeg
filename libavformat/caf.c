@@ -54,5 +54,5 @@ const AVCodecTag ff_codec_caf_tags[] = {
   /*{ MPEG4CELP                 MKBETAG('c','e','l','p') },*/
   /*{ MPEG4HVXC                 MKBETAG('h','v','x','c') },*/
   /*{ MPEG4TwinVQ               MKBETAG('t','w','v','q') },*/
-    { 0, 0 },
+    { CODEC_ID_NONE,            0 },
 };

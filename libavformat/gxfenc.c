@@ -93,7 +93,7 @@ static const AVCodecTag gxf_media_types[] = {
     { CODEC_ID_MPEG2VIDEO,  20 }, /* MPEG HD */
     { CODEC_ID_MPEG1VIDEO,  22 }, /* NTSC */
     { CODEC_ID_MPEG1VIDEO,  23 }, /* PAL */
-    { 0, 0 },
+    { CODEC_ID_NONE,         0 },
 };
 
 #define SERVER_PATH "EXT:/PDR/default/"

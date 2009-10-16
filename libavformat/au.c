@@ -44,7 +44,7 @@ static const AVCodecTag codec_au_tags[] = {
     { CODEC_ID_PCM_F32BE, 6 },
     { CODEC_ID_PCM_F64BE, 7 },
     { CODEC_ID_PCM_ALAW, 27 },
-    { 0, 0 },
+    { CODEC_ID_NONE, 0 },
 };
 
 #if CONFIG_AU_MUXER
