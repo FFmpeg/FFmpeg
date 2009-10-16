@@ -3636,7 +3636,7 @@ static int add_hfyu_left_prediction_c(uint8_t *dst, const uint8_t *src, int w, i
 #define G 1
 #define R 2
 #endif
-static inline void add_hfyu_left_prediction_bgr32_c(uint8_t *dst, const uint8_t *src, int w, int *red, int *green, int *blue){
+static void add_hfyu_left_prediction_bgr32_c(uint8_t *dst, const uint8_t *src, int w, int *red, int *green, int *blue){
     int i;
     int r,g,b;
     r= *red;
