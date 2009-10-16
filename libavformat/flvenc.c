@@ -70,9 +70,9 @@ static int get_audio_flags(AVCodecContext *enc){
             return -1;
         }
         if (enc->frame_size / 320 > 8) {
-            av_log(enc, AV_LOG_WARNING, "Warning: Adobe Flash Player is known "
-                                        "to have trouble with Speex streams "
-                                        "with more than 8 frames per packet.\n");
+            av_log(enc, AV_LOG_WARNING, "Warning: Speex stream has more than "
+                                        "8 frames per packet. Adobe Flash "
+                                        "Player cannot handle this!\n");
         }
         return FLV_CODECID_SPEEX | FLV_SAMPLERATE_11025HZ | FLV_SAMPLESSIZE_16BIT;
     } else {
