@@ -1494,6 +1494,9 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
     MJpegDecodeContext *s = avctx->priv_data;
     int i, j;
 
+    if (s->picture.data[0])
+        avctx->release_buffer(avctx, &s->picture);
+
     av_free(s->buffer);
     av_free(s->qscale_table);
 

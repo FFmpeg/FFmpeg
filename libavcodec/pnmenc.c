@@ -328,6 +328,15 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     return s->bytestream - s->bytestream_start;
 }
 
+static av_cold int common_end(AVCodecContext *avctx){
+    PNMContext *s = avctx->priv_data;
+
+    if (s->picture.data[0])
+        avctx->release_buffer(avctx, &s->picture);
+
+    return 0;
+}
+
 #if 0
 static int pnm_probe(AVProbeData *pd)
 {
@@ -371,7 +380,7 @@ AVCodec pgm_decoder = {
     sizeof(PNMContext),
     common_init,
     NULL,
-    NULL,
+    common_end,
     pnm_decode_frame,
     CODEC_CAP_DR1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_GRAY8, PIX_FMT_GRAY16BE, PIX_FMT_NONE},
@@ -400,7 +409,7 @@ AVCodec pgmyuv_decoder = {
     sizeof(PNMContext),
     common_init,
     NULL,
-    NULL,
+    common_end,
     pnm_decode_frame,
     CODEC_CAP_DR1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
@@ -429,7 +438,7 @@ AVCodec ppm_decoder = {
     sizeof(PNMContext),
     common_init,
     NULL,
-    NULL,
+    common_end,
     pnm_decode_frame,
     CODEC_CAP_DR1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB48BE, PIX_FMT_NONE},
@@ -458,7 +467,7 @@ AVCodec pbm_decoder = {
     sizeof(PNMContext),
     common_init,
     NULL,
-    NULL,
+    common_end,
     pnm_decode_frame,
     CODEC_CAP_DR1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_MONOWHITE, PIX_FMT_NONE},
@@ -487,7 +496,7 @@ AVCodec pam_decoder = {
     sizeof(PNMContext),
     common_init,
     NULL,
-    NULL,
+    common_end,
     pnm_decode_frame,
     CODEC_CAP_DR1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, PIX_FMT_NONE},
