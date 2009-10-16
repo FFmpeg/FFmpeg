@@ -85,6 +85,58 @@ typedef struct AVOption {
     const char *unit;
 } AVOption;
 
+/**
+ * AVOption2.
+ * THIS IS NOT PART OF THE API/ABI YET!
+ * This is identical to AVOption except that default_val was replaced by
+ * an union, it should be compatible with AVOption on normal platforms.
+ */
+typedef struct AVOption2 {
+    const char *name;
+
+    /**
+     * short English help text
+     * @todo What about other languages?
+     */
+    const char *help;
+
+    /**
+     * The offset relative to the context structure where the option
+     * value is stored. It should be 0 for named constants.
+     */
+    int offset;
+    enum AVOptionType type;
+
+    /**
+     * the default value for scalar options
+     */
+    union {
+        double dbl;
+        const char *str;
+    } default_val;
+
+    double min;                 ///< minimum valid value for the option
+    double max;                 ///< maximum valid value for the option
+
+    int flags;
+/*
+#define AV_OPT_FLAG_ENCODING_PARAM  1   ///< a generic parameter which can be set by the user for muxing or encoding
+#define AV_OPT_FLAG_DECODING_PARAM  2   ///< a generic parameter which can be set by the user for demuxing or decoding
+#define AV_OPT_FLAG_METADATA        4   ///< some data extracted or inserted into the file like title, comment, ...
+#define AV_OPT_FLAG_AUDIO_PARAM     8
+#define AV_OPT_FLAG_VIDEO_PARAM     16
+#define AV_OPT_FLAG_SUBTITLE_PARAM  32
+*/
+//FIXME think about enc-audio, ... style flags
+
+    /**
+     * The logical unit to which the option belongs. Non-constant
+     * options and corresponding named constants share the same
+     * unit. May be NULL.
+     */
+    const char *unit;
+} AVOption2;
+
 
 /**
  * Looks for an option in obj. Looks only for the options which
