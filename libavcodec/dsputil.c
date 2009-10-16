@@ -3573,7 +3573,7 @@ static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
         dst[i+0] = src1[i+0]-src2[i+0];
 }
 
-static void add_hfyu_median_prediction_c(uint8_t *dst, uint8_t *src1, uint8_t *diff, int w, int *left, int *left_top){
+static void add_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1, uint8_t *diff, int w, int *left, int *left_top){
     int i;
     uint8_t l, lt;
 
@@ -3590,7 +3590,7 @@ static void add_hfyu_median_prediction_c(uint8_t *dst, uint8_t *src1, uint8_t *d
     *left_top= lt;
 }
 
-static void sub_hfyu_median_prediction_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w, int *left, int *left_top){
+static void sub_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1, uint8_t *src2, int w, int *left, int *left_top){
     int i;
     uint8_t l, lt;
 
@@ -3608,7 +3608,7 @@ static void sub_hfyu_median_prediction_c(uint8_t *dst, uint8_t *src1, uint8_t *s
     *left_top= lt;
 }
 
-static int add_hfyu_left_prediction_c(uint8_t *dst, uint8_t *src, int w, int acc){
+static int add_hfyu_left_prediction_c(uint8_t *dst, const uint8_t *src, int w, int acc){
     int i;
 
     for(i=0; i<w-1; i++){
@@ -3636,7 +3636,7 @@ static int add_hfyu_left_prediction_c(uint8_t *dst, uint8_t *src, int w, int acc
 #define G 1
 #define R 2
 #endif
-static inline void add_hfyu_left_prediction_bgr32_c(uint8_t *dst, uint8_t *src, int w, int *red, int *green, int *blue){
+static inline void add_hfyu_left_prediction_bgr32_c(uint8_t *dst, const uint8_t *src, int w, int *red, int *green, int *blue){
     int i;
     int r,g,b;
     r= *red;
