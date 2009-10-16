@@ -61,7 +61,6 @@ static av_cold int ulti_decode_end(AVCodecContext *avctx){
 
     if (pic->data[0])
         avctx->release_buffer(avctx, pic);
-    av_freep(&s->frame);
 
     return 0;
 }

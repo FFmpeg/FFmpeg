@@ -134,7 +134,6 @@ static av_cold int decode_end(AVCodecContext *avctx){
 
     if (pic->data[0])
         avctx->release_buffer(avctx, pic);
-    av_freep(&a->pic);
 
     return 0;
 }
