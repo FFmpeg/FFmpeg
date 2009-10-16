@@ -942,6 +942,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if (!s->bitstream_buffer)
         return AVERROR(ENOMEM);
 
+    memset(s->bitstream_buffer + buf_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     s->dsp.bswap_buf((uint32_t*)s->bitstream_buffer, (const uint32_t*)buf, buf_size/4);
 
     if(p->data[0])
