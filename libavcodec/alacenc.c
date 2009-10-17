@@ -132,7 +132,7 @@ static void calc_predictor_params(AlacEncodeContext *s, int ch)
     int shift[MAX_LPC_ORDER];
     int opt_order;
 
-    if (s->avctx->compression_level == 1) {
+    if (s->compression_level == 1) {
         s->lpc[ch].lpc_order = 6;
         s->lpc[ch].lpc_quant = 6;
         s->lpc[ch].lpc_coeff[0] =  160;
