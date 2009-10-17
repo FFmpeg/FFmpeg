@@ -58,14 +58,14 @@ static void sdp_write_header(char *buff, int size, struct sdp_session_level *s)
 {
     av_strlcatf(buff, size, "v=%d\r\n"
                             "o=- %d %d IN IP4 %s\r\n"
-                            "t=%d %d\r\n"
-                            "s=%s\r\n"
-                            "a=tool:libavformat " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\r\n",
+                            "s=%s\r\n",
                             s->sdp_version,
                             s->id, s->version, s->src_addr,
-                            s->start_time, s->end_time,
                             s->name);
     sdp_write_address(buff, size, s->dst_addr, s->ttl);
+    av_strlcatf(buff, size, "t=%d %d\r\n"
+                            "a=tool:libavformat " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\r\n",
+                            s->start_time, s->end_time);
 }
 
 static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
