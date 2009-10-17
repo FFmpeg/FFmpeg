@@ -408,19 +408,6 @@ int av_opt_show(void *obj, void *av_log_obj){
 void av_opt_set_defaults2(void *s, int mask, int flags)
 {
     const AVOption *opt = NULL;
-
-    if(   sizeof(AVOption) != sizeof(AVOption2)
-       || offsetof(AVOption,default_val) != offsetof(AVOption2,default_val.dbl)
-       || offsetof(AVOption,min) != offsetof(AVOption2,min)
-    ){
-        av_log(NULL, AV_LOG_ERROR, "AVOpt1/2 missmatch %zd %zd %td %td %td %td\n",
-               sizeof(AVOption), sizeof(AVOption2),
-               offsetof(AVOption,default_val), offsetof(AVOption2,default_val.dbl),
-               offsetof(AVOption,min), offsetof(AVOption2,min));
-#undef exit
-        exit(123);
-    }
-
     while ((opt = av_next_option(s, opt)) != NULL) {
         if((opt->flags & mask) != flags)
             continue;
