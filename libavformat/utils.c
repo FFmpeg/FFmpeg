@@ -469,6 +469,12 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             /* read probe data */
             pd->buf= av_realloc(pd->buf, probe_size + AVPROBE_PADDING_SIZE);
             pd->buf_size = get_buffer(pb, pd->buf, probe_size);
+
+            if ((int)pd->buf_size < 0) {
+                err = pd->buf_size;
+                goto fail;
+            }
+
             memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
             if (url_fseek(pb, 0, SEEK_SET) < 0) {
                 url_fclose(pb);
