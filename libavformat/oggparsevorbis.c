@@ -37,11 +37,8 @@
  */
 const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
     { "ARTIST"     , "author" },
-    { "TITLE"      , "title"  },
-    { "ALBUM"      , "album"  },
     { "DATE"       , "year"   },
     { "TRACKNUMBER", "track"  },
-    { "GENRE"      , "genre"  },
     { 0 }
 };
 
