@@ -1348,8 +1348,7 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int si
 #endif //HAVE_SSSE3
 
 
-/* FLAC specific */
-void ff_flac_compute_autocorr_sse2(const int32_t *data, int len, int lag,
+void ff_lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                                    double *autoc);
 
 
@@ -1414,8 +1413,7 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->sum_abs_dctelem= sum_abs_dctelem_sse2;
             c->hadamard8_diff[0]= hadamard8_diff16_sse2;
             c->hadamard8_diff[1]= hadamard8_diff_sse2;
-            if (CONFIG_FLAC_ENCODER)
-                c->flac_compute_autocorr = ff_flac_compute_autocorr_sse2;
+            c->lpc_compute_autocorr = ff_lpc_compute_autocorr_sse2;
         }
 
 #if HAVE_SSSE3

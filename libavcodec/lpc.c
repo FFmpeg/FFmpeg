@@ -27,6 +27,68 @@
 
 
 /**
+ * Apply Welch window function to audio block
+ */
+static void apply_welch_window(const int32_t *data, int len, double *w_data)
+{
+    int i, n2;
+    double w;
+    double c;
+
+    assert(!(len&1)); //the optimization in r11881 does not support odd len
+                      //if someone wants odd len extend the change in r11881
+
+    n2 = (len >> 1);
+    c = 2.0 / (len - 1.0);
+
+    w_data+=n2;
+      data+=n2;
+    for(i=0; i<n2; i++) {
+        w = c - n2 + i;
+        w = 1.0 - (w * w);
+        w_data[-i-1] = data[-i-1] * w;
+        w_data[+i  ] = data[+i  ] * w;
+    }
+}
+
+/**
+ * Calculates autocorrelation data from audio samples
+ * A Welch window function is applied before calculation.
+ */
+void ff_lpc_compute_autocorr(const int32_t *data, int len, int lag,
+                             double *autoc)
+{
+    int i, j;
+    double tmp[len + lag + 1];
+    double *data1= tmp + lag;
+
+    apply_welch_window(data, len, data1);
+
+    for(j=0; j<lag; j++)
+        data1[j-lag]= 0.0;
+    data1[len] = 0.0;
+
+    for(j=0; j<lag; j+=2){
+        double sum0 = 1.0, sum1 = 1.0;
+        for(i=j; i<len; i++){
+            sum0 += data1[i] * data1[i-j];
+            sum1 += data1[i] * data1[i-j-1];
+        }
+        autoc[j  ] = sum0;
+        autoc[j+1] = sum1;
+    }
+
+    if(j==lag){
+        double sum = 1.0;
+        for(i=j-1; i<len; i+=2){
+            sum += data1[i  ] * data1[i-j  ]
+                 + data1[i+1] * data1[i-j+1];
+        }
+        autoc[j] = sum;
+    }
+}
+
+/**
  * Quantize LPC coefficients
  */
 static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
@@ -115,7 +177,7 @@ int ff_lpc_calc_coefs(DSPContext *s,
     assert(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER && use_lpc > 0);
 
     if(use_lpc == 1){
-        s->flac_compute_autocorr(samples, blocksize, max_order, autoc);
+        s->lpc_compute_autocorr(samples, blocksize, max_order, autoc);
 
         compute_lpc_coefs(autoc, max_order, &lpc[0][0], MAX_LPC_ORDER, 0, 1);
 

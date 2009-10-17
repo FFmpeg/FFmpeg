@@ -1,5 +1,5 @@
 /*
- * MMX optimized FLAC DSP utils
+ * MMX optimized LPC DSP utils
  * Copyright (c) 2007 Loren Merritt
  *
  * This file is part of FFmpeg.
@@ -65,7 +65,7 @@ static void apply_welch_window_sse2(const int32_t *data, int len, double *w_data
 #undef WELCH
 }
 
-void ff_flac_compute_autocorr_sse2(const int32_t *data, int len, int lag,
+void ff_lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                                    double *autoc)
 {
     double tmp[len + lag + 2];

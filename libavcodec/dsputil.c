@@ -45,8 +45,8 @@ void vorbis_inverse_coupling(float *mag, float *ang, int blocksize);
 /* ac3dec.c */
 void ff_ac3_downmix_c(float (*samples)[256], float (*matrix)[2], int out_ch, int in_ch, int len);
 
-/* flacenc.c */
-void ff_flac_compute_autocorr(const int32_t *data, int len, int lag, double *autoc);
+/* lpc.c */
+void ff_lpc_compute_autocorr(const int32_t *data, int len, int lag, double *autoc);
 
 /* pngdec.c */
 void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp);
@@ -4837,9 +4837,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #if CONFIG_AC3_DECODER
     c->ac3_downmix = ff_ac3_downmix_c;
 #endif
-#if CONFIG_FLAC_ENCODER
-    c->flac_compute_autocorr = ff_flac_compute_autocorr;
-#endif
+    c->lpc_compute_autocorr = ff_lpc_compute_autocorr;
     c->vector_fmul = vector_fmul_c;
     c->vector_fmul_reverse = vector_fmul_reverse_c;
     c->vector_fmul_add = vector_fmul_add_c;
