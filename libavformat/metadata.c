@@ -107,16 +107,16 @@ static void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
         if (s_conv != d_conv) {
             if (s_conv)
                 for (sc=s_conv; sc->native; sc++)
-                if (!strcasecmp(key, sc->native)) {
-                    key = sc->generic;
-                    break;
-                }
+                    if (!strcasecmp(key, sc->native)) {
+                        key = sc->generic;
+                        break;
+                    }
             if (d_conv)
                 for (dc=d_conv; dc->native; dc++)
                     if (!strcasecmp(key, dc->generic)) {
-                    key = dc->native;
-                    break;
-                }
+                        key = dc->native;
+                        break;
+                    }
         }
         av_metadata_set(&dst, key, mtag->value);
     }
