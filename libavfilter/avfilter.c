@@ -224,9 +224,11 @@ int avfilter_poll_frame(AVFilterLink *link)
         return link_spad(link).poll_frame(link);
 
     for (i=0; i<link->src->input_count; i++) {
+        int val;
         if(!link->src->inputs[i])
             return -1;
-        min = FFMIN(min, avfilter_poll_frame(link->src->inputs[i]));
+        val = avfilter_poll_frame(link->src->inputs[i]);
+        min = FFMIN(min, val);
     }
 
     return min;
