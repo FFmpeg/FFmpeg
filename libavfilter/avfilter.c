@@ -185,17 +185,20 @@ static void dprintf_link(void *ctx, AVFilterLink *link, int end)
 
 #define DPRINTF_START(ctx, func) dprintf(NULL, "%-16s: ", #func)
 
-AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms)
+AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
 {
     AVFilterPicRef *ret = NULL;
 
-    DPRINTF_START(NULL, get_video_buffer); dprintf_link(NULL, link, 0); dprintf(NULL, " perms:%d\n", perms);
+    DPRINTF_START(NULL, get_video_buffer); dprintf_link(NULL, link, 0); dprintf(NULL, " perms:%d w:%d h:%d\n", perms, w, h);
 
     if(link_dpad(link).get_video_buffer)
-        ret = link_dpad(link).get_video_buffer(link, perms);
+        ret = link_dpad(link).get_video_buffer(link, perms, w, h);
+
+    if(!ret && link->dst->output_count)
+        ret = avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
 
     if(!ret)
-        ret = avfilter_default_get_video_buffer(link, perms);
+        ret = avfilter_default_get_video_buffer(link, perms, w, h);
 
     DPRINTF_START(NULL, get_video_buffer); dprintf_link(NULL, link, 0); dprintf(NULL, " returning "); dprintf_picref(NULL, ret, 1);
 
@@ -251,7 +254,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
                 link_dpad(link).min_perms, link_dpad(link).rej_perms);
         */
 
-        link->cur_pic = avfilter_default_get_video_buffer(link, dst->min_perms);
+        link->cur_pic = avfilter_default_get_video_buffer(link, dst->min_perms, link->w, link->h);
         link->srcpic = picref;
         link->cur_pic->pts = link->srcpic->pts;
         link->cur_pic->pixel_aspect = link->srcpic->pixel_aspect;

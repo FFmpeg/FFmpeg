@@ -22,9 +22,9 @@
 #ifndef AVFILTER_AVFILTER_H
 #define AVFILTER_AVFILTER_H
 
-#define LIBAVFILTER_VERSION_MAJOR  0
-#define LIBAVFILTER_VERSION_MINOR  5
-#define LIBAVFILTER_VERSION_MICRO  1
+#define LIBAVFILTER_VERSION_MAJOR  1
+#define LIBAVFILTER_VERSION_MINOR  0
+#define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -293,7 +293,7 @@ struct AVFilterPad
      *
      * Input video pads only.
      */
-    AVFilterPicRef *(*get_video_buffer)(AVFilterLink *link, int perms);
+    AVFilterPicRef *(*get_video_buffer)(AVFilterLink *link, int perms, int w, int h);
 
     /**
      * Callback called after the slices of a frame are completely sent. If
@@ -361,7 +361,7 @@ int avfilter_default_config_output_link(AVFilterLink *link);
 int avfilter_default_config_input_link (AVFilterLink *link);
 /** default handler for get_video_buffer() for video inputs */
 AVFilterPicRef *avfilter_default_get_video_buffer(AVFilterLink *link,
-                                                  int perms);
+                                                  int perms, int w, int h);
 /**
  * A helper for query_formats() which sets all links to the same list of
  * formats. If there are no links hooked to this filter, the list of formats is
@@ -499,10 +499,13 @@ int avfilter_config_links(AVFilterContext *filter);
  * @param link  the output link to the filter from which the picture will
  *              be requested
  * @param perms the required access permissions
+ * @param w     the minimum width of the buffer to allocate
+ * @param h     the minimum height of the buffer to allocate
  * @return      A reference to the picture. This must be unreferenced with
  *              avfilter_unref_pic when you are finished with it.
  */
-AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms);
+AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
+                                          int w, int h);
 
 /**
  * Requests an input frame from the filter at the other end of the link.
