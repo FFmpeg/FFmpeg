@@ -762,6 +762,15 @@ static int decode_channel_transform(WMAProDecodeCtx* s)
  */
 static int decode_coeffs(WMAProDecodeCtx *s, int c)
 {
+    /* Integers 0..15 as single-precision floats.  The table saves a
+       costly int to float conversion, and storing the values as
+       integers allows fast sign-flipping. */
+    static const int fval_tab[16] = {
+        0x00000000, 0x3f800000, 0x40000000, 0x40400000,
+        0x40800000, 0x40a00000, 0x40c00000, 0x40e00000,
+        0x41000000, 0x41100000, 0x41200000, 0x41300000,
+        0x41400000, 0x41500000, 0x41600000, 0x41700000,
+    };
     int vlctable;
     VLC* vlc;
     WMAProChannelCtx* ci = &s->channel[c];
@@ -797,29 +806,32 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
             for (i = 0; i < 4; i += 2) {
                 idx = get_vlc2(&s->gb, vec2_vlc.table, VLCBITS, VEC2MAXDEPTH);
                 if (idx == HUFF_VEC2_SIZE - 1) {
-                    vals[i] = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
-                    if (vals[i] == HUFF_VEC1_SIZE - 1)
-                        vals[i] += ff_wma_get_large_val(&s->gb);
-                    vals[i+1] = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
-                    if (vals[i+1] == HUFF_VEC1_SIZE - 1)
-                        vals[i+1] += ff_wma_get_large_val(&s->gb);
+                    int v0, v1;
+                    v0 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
+                    if (v0 == HUFF_VEC1_SIZE - 1)
+                        v0 += ff_wma_get_large_val(&s->gb);
+                    v1 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
+                    if (v1 == HUFF_VEC1_SIZE - 1)
+                        v1 += ff_wma_get_large_val(&s->gb);
+                    ((float*)vals)[i  ] = v0;
+                    ((float*)vals)[i+1] = v1;
                 } else {
-                    vals[i]   = symbol_to_vec2[idx] >> 4;
-                    vals[i+1] = symbol_to_vec2[idx] & 0xF;
+                    vals[i]   = fval_tab[symbol_to_vec2[idx] >> 4 ];
+                    vals[i+1] = fval_tab[symbol_to_vec2[idx] & 0xF];
                 }
             }
         } else {
-            vals[0] =  symbol_to_vec4[idx] >> 12;
-            vals[1] = (symbol_to_vec4[idx] >> 8) & 0xF;
-            vals[2] = (symbol_to_vec4[idx] >> 4) & 0xF;
-            vals[3] =  symbol_to_vec4[idx]       & 0xF;
+            vals[0] = fval_tab[ symbol_to_vec4[idx] >> 12      ];
+            vals[1] = fval_tab[(symbol_to_vec4[idx] >> 8) & 0xF];
+            vals[2] = fval_tab[(symbol_to_vec4[idx] >> 4) & 0xF];
+            vals[3] = fval_tab[ symbol_to_vec4[idx]       & 0xF];
         }
 
         /** decode sign */
         for (i = 0; i < 4; i++) {
             if (vals[i]) {
                 int sign = get_bits1(&s->gb) - 1;
-                ci->coeffs[cur_coeff] = (vals[i] ^ sign) - sign;
+                *(uint32_t*)&ci->coeffs[cur_coeff] = vals[i] ^ sign<<31;
                 num_zeros = 0;
             } else {
                 ci->coeffs[cur_coeff] = 0;
