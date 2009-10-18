@@ -87,8 +87,7 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
 
     hdr >>= 6;
     if (hdr == RTMP_PS_ONEBYTE) {
-        //todo
-        return -1;
+        timestamp = prev_pkt[channel_id].timestamp;
     } else {
         if (url_read_complete(h, buf, 3) != 3)
             return AVERROR(EIO);
