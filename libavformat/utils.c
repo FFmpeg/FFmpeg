@@ -2949,9 +2949,10 @@ void dump_format(AVFormatContext *ic,
             for(k=0; k<ic->programs[j]->nb_stream_indexes; k++)
                 dump_stream_format(ic, ic->programs[j]->stream_index[k], index, is_output);
          }
-    } else
-    for(i=0;i<ic->nb_streams;i++)
-        dump_stream_format(ic, i, index, is_output);
+    } else {
+        for(i=0;i<ic->nb_streams;i++)
+            dump_stream_format(ic, i, index, is_output);
+    }
     if (ic->metadata) {
         AVMetadataTag *tag=NULL;
         av_log(NULL, AV_LOG_INFO, "  Metadata\n");
