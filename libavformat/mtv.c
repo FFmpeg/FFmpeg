@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/bswap.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define MTV_ASUBCHUNK_DATA_SIZE 500
@@ -54,6 +55,10 @@ static int mtv_probe(AVProbeData *p)
 {
     /* Magic is 'AMV' */
     if(*(p->buf) != 'A' || *(p->buf+1) != 'M' || *(p->buf+2) != 'V')
+        return 0;
+
+    /* Check for nonzero in bpp and (width|height) header fields */
+    if(!(p->buf[51] && AV_RL16(&p->buf[52]) | AV_RL16(&p->buf[54])))
         return 0;
 
     return AVPROBE_SCORE_MAX;
