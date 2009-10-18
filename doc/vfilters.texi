@@ -28,6 +28,8 @@ integrate it into ffmpeg and ffplay.
 But note that there may still be serious bugs in the code and its API
 and ABI should not be considered stable yet!
 
+@chapter Tutorial
+
 In libavfilter, it is possible for filters to have multiple inputs and
 multiple outputs.
 To illustrate the sorts of things that are possible, we can
