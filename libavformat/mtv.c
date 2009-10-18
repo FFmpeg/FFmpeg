@@ -61,6 +61,15 @@ static int mtv_probe(AVProbeData *p)
     if(!(p->buf[51] && AV_RL16(&p->buf[52]) | AV_RL16(&p->buf[54])))
         return 0;
 
+    /* If width or height are 0 then imagesize header field should not */
+    if(AV_RL16(&p->buf[52]) && AV_RL16(&p->buf[54]))
+    {
+        if(!!AV_RL16(&p->buf[56]))
+            return AVPROBE_SCORE_MAX/2;
+        else
+            return 0;
+    }
+
     return AVPROBE_SCORE_MAX;
 }
 
@@ -82,6 +91,17 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     mtv->img_width         = get_le16(pb);
     mtv->img_height        = get_le16(pb);
     mtv->img_segment_size  = get_le16(pb);
+
+    /* Calculate width and height if missing from header */
+
+    if(!mtv->img_width)
+        mtv->img_width=mtv->img_segment_size / (mtv->img_bpp>>3)
+                        / mtv->img_height;
+
+    if(!mtv->img_height)
+        mtv->img_height=mtv->img_segment_size / (mtv->img_bpp>>3)
+                        / mtv->img_width;
+
     url_fskip(pb, 4);
     audio_subsegments = get_le16(pb);
     mtv->full_segment_size =
