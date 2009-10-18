@@ -30,6 +30,21 @@
 #undef printf
 #undef fprintf
 
+static char buffer[20];
+
+static const char *ret_str(int v)
+{
+    switch (v) {
+    case AVERROR_EOF:     return "-EOF";
+    case AVERROR(EIO):    return "-EIO";
+    case AVERROR(ENOMEM): return "-ENOMEM";
+    case AVERROR(EINVAL): return "-EINVAL";
+    default:
+        snprintf(buffer, sizeof(buffer), "%2d", v);
+        return buffer;
+    }
+}
+
 int main(int argc, char **argv)
 {
     const char *filename;
@@ -78,7 +93,7 @@ int main(int argc, char **argv)
         memset(&pkt, 0, sizeof(pkt));
         if(ret>=0){
             ret= av_read_frame(ic, &pkt);
-            printf("ret:%2d", ret);
+            printf("ret:%s", ret_str(ret));
             if(ret>=0){
                 st= ic->streams[pkt.stream_index];
                 printf(" st:%2d dts:%f pts:%f pos:%" PRId64 " size:%d flags:%d", pkt.stream_index, pkt.dts*av_q2d(st->time_base), pkt.pts*av_q2d(st->time_base), pkt.pos, pkt.size, pkt.flags);
@@ -97,7 +112,7 @@ int main(int argc, char **argv)
         //FIXME fully test the new seek API
         if(i&1) ret = avformat_seek_file(ic, stream_id, INT64_MIN, timestamp, timestamp, 0);
         else    ret = avformat_seek_file(ic, stream_id, timestamp, timestamp, INT64_MAX, 0);
-        printf("ret:%2d st:%2d ts:%f flags:%d\n", ret, stream_id, timestamp*(stream_id<0 ? 1.0/AV_TIME_BASE : av_q2d(st->time_base)), i&1);
+        printf("ret:%s st:%2d ts:%f flags:%d\n", ret_str(ret), stream_id, timestamp*(stream_id<0 ? 1.0/AV_TIME_BASE : av_q2d(st->time_base)), i&1);
     }
 
     return 0;

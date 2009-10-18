@@ -2521,51 +2521,51 @@ ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:54 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:54 size:4096 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:0.788345 flags:0
 ret: 0 st: 0 dts:0.788345 pts:0.788345 pos:69586 size:4096 flags:1
 ret: 0 st: 0 ts:-0.317506 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:54 size:4096 flags:1
 ret: 0 st:-1 ts:2.576668 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.470835 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:0.365011 flags:0
 ret: 0 st: 0 dts:0.365011 pts:0.365011 pos:32248 size:4096 flags:1
 ret: 0 st: 0 ts:-0.740839 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:54 size:4096 flags:1
 ret: 0 st:-1 ts:2.153336 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.047503 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:-0.058322 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:54 size:4096 flags:1
 ret: 0 st: 0 ts:2.835828 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.730004 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.624171 flags:1
 ret: 0 st: 0 dts:0.624172 pts:0.624172 pos:55106 size:4096 flags:1
 ret: 0 st: 0 ts:-0.481655 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:54 size:4096 flags:1
 ret: 0 st: 0 ts:2.412494 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.306672 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.200839 flags:1
 ret: 0 st: 0 dts:0.200839 pts:0.200839 pos:17768 size:4096 flags:1
 ret: 0 st: 0 ts:-0.904989 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:54 size:4096 flags:1
 ret: 0 st: 0 ts:1.989184 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.883340 flags:0
 ret: 0 st: 0 dts:0.883333 pts:0.883333 pos:77964 size:4096 flags:1
 ret: 0 st:-1 ts:-0.222493 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:54 size:4096 flags:1
 ret: 0 st: 0 ts:2.671678 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:1.565850 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.460000 pts:0.460000 pos:40626 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
@@ -2582,7 +2582,7 @@ ret: 0 st: 0 dts:0.788345 pts:0.788345 pos:17383 size:1024 flags:1
 ret: 0 st: 0 ts:-0.317506 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st:-1 ts:2.576668 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.470835 flags:1
 ret: 0 st: 0 dts:1.470839 pts:1.470839 pos:32432 size:1024 flags:1
 ret: 0 st: 0 ts:0.364989 flags:0
@@ -2590,13 +2590,13 @@ ret: 0 st: 0 dts:0.364989 pts:0.364989 pos:8048 size:1024 flags:1
 ret: 0 st: 0 ts:-0.740816 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st:-1 ts:2.153336 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.047503 flags:1
 ret: 0 st: 0 dts:1.047483 pts:1.047483 pos:23097 size:1024 flags:1
 ret: 0 st: 0 ts:-0.058322 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st: 0 ts:2.835828 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.730004 flags:0
 ret: 0 st: 0 dts:1.730023 pts:1.730023 pos:38147 size:1024 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
@@ -2604,7 +2604,7 @@ ret: 0 st: 0 dts:0.624172 pts:0.624172 pos:13763 size:1024 flags:1
 ret: 0 st: 0 ts:-0.481678 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st: 0 ts:2.412517 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.306672 flags:0
 ret: 0 st: 0 dts:1.306667 pts:1.306667 pos:28812 size:1024 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
@@ -2618,7 +2618,7 @@ ret: 0 st: 0 dts:0.883356 pts:0.883356 pos:19478 size:1024 flags:1
 ret: 0 st:-1 ts:-0.222493 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st: 0 ts:2.671655 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:1.565850 flags:1
 ret: 0 st: 0 dts:1.565850 pts:1.565850 pos:34527 size:1024 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
@@ -2686,51 +2686,51 @@ ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:24 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:24 size:4096 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:0.788345 flags:0
 ret: 0 st: 0 dts:0.788345 pts:0.788345 pos:69556 size:4096 flags:1
 ret: 0 st: 0 ts:-0.317506 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:24 size:4096 flags:1
 ret: 0 st:-1 ts:2.576668 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.470835 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:0.365011 flags:0
 ret: 0 st: 0 dts:0.365011 pts:0.365011 pos:32218 size:4096 flags:1
 ret: 0 st: 0 ts:-0.740839 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:24 size:4096 flags:1
 ret: 0 st:-1 ts:2.153336 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.047503 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:-0.058322 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:24 size:4096 flags:1
 ret: 0 st: 0 ts:2.835828 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.730004 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.624171 flags:1
 ret: 0 st: 0 dts:0.624172 pts:0.624172 pos:55076 size:4096 flags:1
 ret: 0 st: 0 ts:-0.481655 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:24 size:4096 flags:1
 ret: 0 st: 0 ts:2.412494 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.306672 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.200839 flags:1
 ret: 0 st: 0 dts:0.200839 pts:0.200839 pos:17738 size:4096 flags:1
 ret: 0 st: 0 ts:-0.904989 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:24 size:4096 flags:1
 ret: 0 st: 0 ts:1.989184 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.883340 flags:0
 ret: 0 st: 0 dts:0.883333 pts:0.883333 pos:77934 size:4096 flags:1
 ret: 0 st:-1 ts:-0.222493 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:24 size:4096 flags:1
 ret: 0 st: 0 ts:2.671678 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:1.565850 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.460000 pts:0.460000 pos:40596 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
@@ -2940,32 +2940,32 @@ ret:-1 st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/b-lavf.gif
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:2906382 flags:1
-ret:-22 st:-1 ts:-1.000000 flags:0
-ret:-22 st:-1 ts:1.894167 flags:1
-ret:-22 st: 0 ts:0.800000 flags:0
-ret:-22 st: 0 ts:-0.320000 flags:1
-ret:-22 st:-1 ts:2.576668 flags:0
-ret:-22 st:-1 ts:1.470835 flags:1
-ret:-22 st: 0 ts:0.360000 flags:0
-ret:-22 st: 0 ts:-0.760000 flags:1
-ret:-22 st:-1 ts:2.153336 flags:0
-ret:-22 st:-1 ts:1.047503 flags:1
-ret:-22 st: 0 ts:-0.040000 flags:0
-ret:-22 st: 0 ts:2.840000 flags:1
-ret:-22 st:-1 ts:1.730004 flags:0
-ret:-22 st:-1 ts:0.624171 flags:1
-ret:-22 st: 0 ts:-0.480000 flags:0
-ret:-22 st: 0 ts:2.400000 flags:1
-ret:-22 st:-1 ts:1.306672 flags:0
-ret:-22 st:-1 ts:0.200839 flags:1
-ret:-22 st: 0 ts:-0.920000 flags:0
-ret:-22 st: 0 ts:2.000000 flags:1
-ret:-22 st:-1 ts:0.883340 flags:0
-ret:-22 st:-1 ts:-0.222493 flags:1
-ret:-22 st: 0 ts:2.680000 flags:0
-ret:-22 st: 0 ts:1.560000 flags:1
-ret:-22 st:-1 ts:0.460008 flags:0
-ret:-22 st:-1 ts:-0.645825 flags:1
+ret:-EINVAL st:-1 ts:-1.000000 flags:0
+ret:-EINVAL st:-1 ts:1.894167 flags:1
+ret:-EINVAL st: 0 ts:0.800000 flags:0
+ret:-EINVAL st: 0 ts:-0.320000 flags:1
+ret:-EINVAL st:-1 ts:2.576668 flags:0
+ret:-EINVAL st:-1 ts:1.470835 flags:1
+ret:-EINVAL st: 0 ts:0.360000 flags:0
+ret:-EINVAL st: 0 ts:-0.760000 flags:1
+ret:-EINVAL st:-1 ts:2.153336 flags:0
+ret:-EINVAL st:-1 ts:1.047503 flags:1
+ret:-EINVAL st: 0 ts:-0.040000 flags:0
+ret:-EINVAL st: 0 ts:2.840000 flags:1
+ret:-EINVAL st:-1 ts:1.730004 flags:0
+ret:-EINVAL st:-1 ts:0.624171 flags:1
+ret:-EINVAL st: 0 ts:-0.480000 flags:0
+ret:-EINVAL st: 0 ts:2.400000 flags:1
+ret:-EINVAL st:-1 ts:1.306672 flags:0
+ret:-EINVAL st:-1 ts:0.200839 flags:1
+ret:-EINVAL st: 0 ts:-0.920000 flags:0
+ret:-EINVAL st: 0 ts:2.000000 flags:1
+ret:-EINVAL st:-1 ts:0.883340 flags:0
+ret:-EINVAL st:-1 ts:-0.222493 flags:1
+ret:-EINVAL st: 0 ts:2.680000 flags:0
+ret:-EINVAL st: 0 ts:1.560000 flags:1
+ret:-EINVAL st:-1 ts:0.460008 flags:0
+ret:-EINVAL st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/b-lavf.gxf
 ret: 0 st: 1 dts:0.000000 pts:0.000000 pos:5024 size:65536 flags:1
@@ -3033,7 +3033,7 @@ ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:291894 size:27834 flags:1
 ret: 0 st: 0 ts:-0.317000 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:505 size:27837 flags:1
 ret: 0 st: 1 ts:2.577000 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st: 1 ts:1.471000 flags:1
 ret: 0 st: 1 dts:1.019000 pts:1.019000 pos:320167 size:209 flags:1
 ret: 0 st:-1 ts:0.365002 flags:0
@@ -3041,7 +3041,7 @@ ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:146679 size:27925 flags:1
 ret: 0 st:-1 ts:-0.740831 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:505 size:27837 flags:1
 ret: 0 st: 0 ts:2.153000 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:1.048000 flags:1
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:291894 size:27834 flags:1
 ret: 0 st: 1 ts:-0.058000 flags:0
@@ -3049,7 +3049,7 @@ ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:505 size:27837 flags:1
 ret: 0 st: 1 ts:2.836000 flags:1
 ret: 0 st: 1 dts:1.019000 pts:1.019000 pos:320167 size:209 flags:1
 ret: 0 st:-1 ts:1.730004 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.624171 flags:1
 ret: 0 st: 0 dts:0.480000 pts:0.480000 pos:146679 size:27925 flags:1
 ret: 0 st: 0 ts:-0.482000 flags:0
@@ -3057,7 +3057,7 @@ ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:505 size:27837 flags:1
 ret: 0 st: 0 ts:2.413000 flags:1
 ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:291894 size:27834 flags:1
 ret: 0 st: 1 ts:1.307000 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st: 1 ts:0.201000 flags:1
 ret: 0 st: 1 dts:0.183000 pts:0.183000 pos:72075 size:209 flags:1
 ret: 0 st:-1 ts:-0.904994 flags:0
@@ -3069,7 +3069,7 @@ ret: 0 st: 0 dts:0.960000 pts:0.960000 pos:291894 size:27834 flags:1
 ret: 0 st: 0 ts:-0.222000 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:505 size:27837 flags:1
 ret: 0 st: 1 ts:2.672000 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st: 1 ts:1.566000 flags:1
 ret: 0 st: 1 dts:1.019000 pts:1.019000 pos:320167 size:209 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
@@ -3381,7 +3381,7 @@ ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:1364 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1390 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret:-5
+ret:-EIO
 ret: 0 st: 0 ts:0.788345 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1365 flags:1
 ret: 0 st: 0 ts:-0.317506 flags:1
@@ -3389,7 +3389,7 @@ ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size
 ret: 0 st:-1 ts:2.576668 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1369 flags:1
 ret: 0 st:-1 ts:1.470835 flags:1
-ret:-5
+ret:-EIO
 ret: 0 st: 0 ts:0.365011 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1390 flags:1
 ret: 0 st: 0 ts:-0.740839 flags:1
@@ -3397,11 +3397,11 @@ ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size
 ret: 0 st:-1 ts:2.153336 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1369 flags:1
 ret: 0 st:-1 ts:1.047503 flags:1
-ret:-5
+ret:-EIO
 ret: 0 st: 0 ts:-0.058322 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1390 flags:1
 ret: 0 st: 0 ts:2.835828 flags:1
-ret:-5
+ret:-EIO
 ret: 0 st:-1 ts:1.730004 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1369 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
@@ -3409,7 +3409,7 @@ ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size
 ret: 0 st: 0 ts:-0.481655 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1390 flags:1
 ret: 0 st: 0 ts:2.412494 flags:1
-ret:-5
+ret:-EIO
 ret: 0 st:-1 ts:1.306672 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1369 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
@@ -3417,15 +3417,15 @@ ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size
 ret: 0 st: 0 ts:-0.904989 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1390 flags:1
 ret: 0 st: 0 ts:1.989184 flags:1
-ret:-5
+ret:-EIO
 ret: 0 st:-1 ts:0.883340 flags:0
-ret:-5
+ret:-EIO
 ret: 0 st:-1 ts:-0.222493 flags:1
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1384 flags:1
 ret: 0 st: 0 ts:2.671678 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1369 flags:1
 ret: 0 st: 0 ts:1.565850 flags:1
-ret:-5
+ret:-EIO
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size:1381 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
@@ -3433,90 +3433,90 @@ ret: 0 st: 0 dts:-209146758205323.718750 pts:-209146758205323.718750 pos:-1 size
 ----------------
 tests/data/b-pbmpipe.pbm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:317075 flags:1
-ret:-22 st:-1 ts:-1.000000 flags:0
-ret:-22 st:-1 ts:1.894167 flags:1
-ret:-22 st: 0 ts:0.800000 flags:0
-ret:-22 st: 0 ts:-0.320000 flags:1
-ret:-22 st:-1 ts:2.576668 flags:0
-ret:-22 st:-1 ts:1.470835 flags:1
-ret:-22 st: 0 ts:0.360000 flags:0
-ret:-22 st: 0 ts:-0.760000 flags:1
-ret:-22 st:-1 ts:2.153336 flags:0
-ret:-22 st:-1 ts:1.047503 flags:1
-ret:-22 st: 0 ts:-0.040000 flags:0
-ret:-22 st: 0 ts:2.840000 flags:1
-ret:-22 st:-1 ts:1.730004 flags:0
-ret:-22 st:-1 ts:0.624171 flags:1
-ret:-22 st: 0 ts:-0.480000 flags:0
-ret:-22 st: 0 ts:2.400000 flags:1
-ret:-22 st:-1 ts:1.306672 flags:0
-ret:-22 st:-1 ts:0.200839 flags:1
-ret:-22 st: 0 ts:-0.920000 flags:0
-ret:-22 st: 0 ts:2.000000 flags:1
-ret:-22 st:-1 ts:0.883340 flags:0
-ret:-22 st:-1 ts:-0.222493 flags:1
-ret:-22 st: 0 ts:2.680000 flags:0
-ret:-22 st: 0 ts:1.560000 flags:1
-ret:-22 st:-1 ts:0.460008 flags:0
-ret:-22 st:-1 ts:-0.645825 flags:1
+ret:-EINVAL st:-1 ts:-1.000000 flags:0
+ret:-EINVAL st:-1 ts:1.894167 flags:1
+ret:-EINVAL st: 0 ts:0.800000 flags:0
+ret:-EINVAL st: 0 ts:-0.320000 flags:1
+ret:-EINVAL st:-1 ts:2.576668 flags:0
+ret:-EINVAL st:-1 ts:1.470835 flags:1
+ret:-EINVAL st: 0 ts:0.360000 flags:0
+ret:-EINVAL st: 0 ts:-0.760000 flags:1
+ret:-EINVAL st:-1 ts:2.153336 flags:0
+ret:-EINVAL st:-1 ts:1.047503 flags:1
+ret:-EINVAL st: 0 ts:-0.040000 flags:0
+ret:-EINVAL st: 0 ts:2.840000 flags:1
+ret:-EINVAL st:-1 ts:1.730004 flags:0
+ret:-EINVAL st:-1 ts:0.624171 flags:1
+ret:-EINVAL st: 0 ts:-0.480000 flags:0
+ret:-EINVAL st: 0 ts:2.400000 flags:1
+ret:-EINVAL st:-1 ts:1.306672 flags:0
+ret:-EINVAL st:-1 ts:0.200839 flags:1
+ret:-EINVAL st: 0 ts:-0.920000 flags:0
+ret:-EINVAL st: 0 ts:2.000000 flags:1
+ret:-EINVAL st:-1 ts:0.883340 flags:0
+ret:-EINVAL st:-1 ts:-0.222493 flags:1
+ret:-EINVAL st: 0 ts:2.680000 flags:0
+ret:-EINVAL st: 0 ts:1.560000 flags:1
+ret:-EINVAL st:-1 ts:0.460008 flags:0
+ret:-EINVAL st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/b-pgmpipe.pgm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:2534775 flags:1
-ret:-22 st:-1 ts:-1.000000 flags:0
-ret:-22 st:-1 ts:1.894167 flags:1
-ret:-22 st: 0 ts:0.800000 flags:0
-ret:-22 st: 0 ts:-0.320000 flags:1
-ret:-22 st:-1 ts:2.576668 flags:0
-ret:-22 st:-1 ts:1.470835 flags:1
-ret:-22 st: 0 ts:0.360000 flags:0
-ret:-22 st: 0 ts:-0.760000 flags:1
-ret:-22 st:-1 ts:2.153336 flags:0
-ret:-22 st:-1 ts:1.047503 flags:1
-ret:-22 st: 0 ts:-0.040000 flags:0
-ret:-22 st: 0 ts:2.840000 flags:1
-ret:-22 st:-1 ts:1.730004 flags:0
-ret:-22 st:-1 ts:0.624171 flags:1
-ret:-22 st: 0 ts:-0.480000 flags:0
-ret:-22 st: 0 ts:2.400000 flags:1
-ret:-22 st:-1 ts:1.306672 flags:0
-ret:-22 st:-1 ts:0.200839 flags:1
-ret:-22 st: 0 ts:-0.920000 flags:0
-ret:-22 st: 0 ts:2.000000 flags:1
-ret:-22 st:-1 ts:0.883340 flags:0
-ret:-22 st:-1 ts:-0.222493 flags:1
-ret:-22 st: 0 ts:2.680000 flags:0
-ret:-22 st: 0 ts:1.560000 flags:1
-ret:-22 st:-1 ts:0.460008 flags:0
-ret:-22 st:-1 ts:-0.645825 flags:1
+ret:-EINVAL st:-1 ts:-1.000000 flags:0
+ret:-EINVAL st:-1 ts:1.894167 flags:1
+ret:-EINVAL st: 0 ts:0.800000 flags:0
+ret:-EINVAL st: 0 ts:-0.320000 flags:1
+ret:-EINVAL st:-1 ts:2.576668 flags:0
+ret:-EINVAL st:-1 ts:1.470835 flags:1
+ret:-EINVAL st: 0 ts:0.360000 flags:0
+ret:-EINVAL st: 0 ts:-0.760000 flags:1
+ret:-EINVAL st:-1 ts:2.153336 flags:0
+ret:-EINVAL st:-1 ts:1.047503 flags:1
+ret:-EINVAL st: 0 ts:-0.040000 flags:0
+ret:-EINVAL st: 0 ts:2.840000 flags:1
+ret:-EINVAL st:-1 ts:1.730004 flags:0
+ret:-EINVAL st:-1 ts:0.624171 flags:1
+ret:-EINVAL st: 0 ts:-0.480000 flags:0
+ret:-EINVAL st: 0 ts:2.400000 flags:1
+ret:-EINVAL st:-1 ts:1.306672 flags:0
+ret:-EINVAL st:-1 ts:0.200839 flags:1
+ret:-EINVAL st: 0 ts:-0.920000 flags:0
+ret:-EINVAL st: 0 ts:2.000000 flags:1
+ret:-EINVAL st:-1 ts:0.883340 flags:0
+ret:-EINVAL st:-1 ts:-0.222493 flags:1
+ret:-EINVAL st: 0 ts:2.680000 flags:0
+ret:-EINVAL st: 0 ts:1.560000 flags:1
+ret:-EINVAL st:-1 ts:0.460008 flags:0
+ret:-EINVAL st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/b-ppmpipe.ppm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:-1 size:7603575 flags:1
-ret:-22 st:-1 ts:-1.000000 flags:0
-ret:-22 st:-1 ts:1.894167 flags:1
-ret:-22 st: 0 ts:0.800000 flags:0
-ret:-22 st: 0 ts:-0.320000 flags:1
-ret:-22 st:-1 ts:2.576668 flags:0
-ret:-22 st:-1 ts:1.470835 flags:1
-ret:-22 st: 0 ts:0.360000 flags:0
-ret:-22 st: 0 ts:-0.760000 flags:1
-ret:-22 st:-1 ts:2.153336 flags:0
-ret:-22 st:-1 ts:1.047503 flags:1
-ret:-22 st: 0 ts:-0.040000 flags:0
-ret:-22 st: 0 ts:2.840000 flags:1
-ret:-22 st:-1 ts:1.730004 flags:0
-ret:-22 st:-1 ts:0.624171 flags:1
-ret:-22 st: 0 ts:-0.480000 flags:0
-ret:-22 st: 0 ts:2.400000 flags:1
-ret:-22 st:-1 ts:1.306672 flags:0
-ret:-22 st:-1 ts:0.200839 flags:1
-ret:-22 st: 0 ts:-0.920000 flags:0
-ret:-22 st: 0 ts:2.000000 flags:1
-ret:-22 st:-1 ts:0.883340 flags:0
-ret:-22 st:-1 ts:-0.222493 flags:1
-ret:-22 st: 0 ts:2.680000 flags:0
-ret:-22 st: 0 ts:1.560000 flags:1
-ret:-22 st:-1 ts:0.460008 flags:0
-ret:-22 st:-1 ts:-0.645825 flags:1
+ret:-EINVAL st:-1 ts:-1.000000 flags:0
+ret:-EINVAL st:-1 ts:1.894167 flags:1
+ret:-EINVAL st: 0 ts:0.800000 flags:0
+ret:-EINVAL st: 0 ts:-0.320000 flags:1
+ret:-EINVAL st:-1 ts:2.576668 flags:0
+ret:-EINVAL st:-1 ts:1.470835 flags:1
+ret:-EINVAL st: 0 ts:0.360000 flags:0
+ret:-EINVAL st: 0 ts:-0.760000 flags:1
+ret:-EINVAL st:-1 ts:2.153336 flags:0
+ret:-EINVAL st:-1 ts:1.047503 flags:1
+ret:-EINVAL st: 0 ts:-0.040000 flags:0
+ret:-EINVAL st: 0 ts:2.840000 flags:1
+ret:-EINVAL st:-1 ts:1.730004 flags:0
+ret:-EINVAL st:-1 ts:0.624171 flags:1
+ret:-EINVAL st: 0 ts:-0.480000 flags:0
+ret:-EINVAL st: 0 ts:2.400000 flags:1
+ret:-EINVAL st:-1 ts:1.306672 flags:0
+ret:-EINVAL st:-1 ts:0.200839 flags:1
+ret:-EINVAL st: 0 ts:-0.920000 flags:0
+ret:-EINVAL st: 0 ts:2.000000 flags:1
+ret:-EINVAL st:-1 ts:0.883340 flags:0
+ret:-EINVAL st:-1 ts:-0.222493 flags:1
+ret:-EINVAL st: 0 ts:2.680000 flags:0
+ret:-EINVAL st: 0 ts:1.560000 flags:1
+ret:-EINVAL st:-1 ts:0.460008 flags:0
+ret:-EINVAL st:-1 ts:-0.645825 flags:1
 ----------------
 tests/data/b-lavf.rm
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:398 size:31082 flags:1
@@ -3662,7 +3662,7 @@ ret: 0 st: 0 dts:0.788345 pts:0.788345 pos:17383 size:1024 flags:1
 ret: 0 st: 0 ts:-0.317506 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st:-1 ts:2.576668 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.470835 flags:1
 ret: 0 st: 0 dts:1.470839 pts:1.470839 pos:32432 size:1024 flags:1
 ret: 0 st: 0 ts:0.364989 flags:0
@@ -3670,13 +3670,13 @@ ret: 0 st: 0 dts:0.364989 pts:0.364989 pos:8048 size:1024 flags:1
 ret: 0 st: 0 ts:-0.740816 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st:-1 ts:2.153336 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.047503 flags:1
 ret: 0 st: 0 dts:1.047483 pts:1.047483 pos:23097 size:1024 flags:1
 ret: 0 st: 0 ts:-0.058322 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st: 0 ts:2.835828 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.730004 flags:0
 ret: 0 st: 0 dts:1.730023 pts:1.730023 pos:38147 size:1024 flags:1
 ret: 0 st:-1 ts:0.624171 flags:1
@@ -3684,7 +3684,7 @@ ret: 0 st: 0 dts:0.624172 pts:0.624172 pos:13763 size:1024 flags:1
 ret: 0 st: 0 ts:-0.481678 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st: 0 ts:2.412517 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.306672 flags:0
 ret: 0 st: 0 dts:1.306667 pts:1.306667 pos:28812 size:1024 flags:1
 ret: 0 st:-1 ts:0.200839 flags:1
@@ -3698,7 +3698,7 @@ ret: 0 st: 0 dts:0.883356 pts:0.883356 pos:19478 size:1024 flags:1
 ret: 0 st:-1 ts:-0.222493 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:0 size:1024 flags:1
 ret: 0 st: 0 ts:2.671655 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:1.565850 flags:1
 ret: 0 st: 0 dts:1.565850 pts:1.565850 pos:34527 size:1024 flags:1
 ret: 0 st:-1 ts:0.460008 flags:0
@@ -3740,51 +3740,51 @@ ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:4096 flags:1
 ret: 0 st:-1 ts:-1.000000 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:4096 flags:1
 ret: 0 st:-1 ts:1.894167 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:0.788345 flags:0
 ret: 0 st: 0 dts:0.788345 pts:0.788345 pos:69576 size:4096 flags:1
 ret: 0 st: 0 ts:-0.317506 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:4096 flags:1
 ret: 0 st:-1 ts:2.576668 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.470835 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:0.365011 flags:0
 ret: 0 st: 0 dts:0.365011 pts:0.365011 pos:32238 size:4096 flags:1
 ret: 0 st: 0 ts:-0.740839 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:4096 flags:1
 ret: 0 st:-1 ts:2.153336 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.047503 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:-0.058322 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:4096 flags:1
 ret: 0 st: 0 ts:2.835828 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.730004 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.624171 flags:1
 ret: 0 st: 0 dts:0.624172 pts:0.624172 pos:55096 size:4096 flags:1
 ret: 0 st: 0 ts:-0.481655 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:4096 flags:1
 ret: 0 st: 0 ts:2.412494 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:1.306672 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.200839 flags:1
 ret: 0 st: 0 dts:0.200839 pts:0.200839 pos:17758 size:4096 flags:1
 ret: 0 st: 0 ts:-0.904989 flags:0
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:4096 flags:1
 ret: 0 st: 0 ts:1.989184 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.883340 flags:0
 ret: 0 st: 0 dts:0.883333 pts:0.883333 pos:77954 size:4096 flags:1
 ret: 0 st:-1 ts:-0.222493 flags:1
 ret: 0 st: 0 dts:0.000000 pts:0.000000 pos:44 size:4096 flags:1
 ret: 0 st: 0 ts:2.671678 flags:0
-ret:-32
+ret:-EOF
 ret: 0 st: 0 ts:1.565850 flags:1
-ret:-32
+ret:-EOF
 ret: 0 st:-1 ts:0.460008 flags:0
 ret: 0 st: 0 dts:0.460000 pts:0.460000 pos:40616 size:4096 flags:1
 ret: 0 st:-1 ts:-0.645825 flags:1
