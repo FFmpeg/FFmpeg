@@ -741,8 +741,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (st->codec->codec_type == CODEC_TYPE_SUBTITLE ||
-        st->codec->codec_type == CODEC_TYPE_VIDEO) {
+    if (st->codec->codec_type != CODEC_TYPE_AUDIO) {
         // for video and subtitle, write a single pes packet
         mpegts_write_pes(s, st, buf, size, pts, dts);
         av_free(data);
