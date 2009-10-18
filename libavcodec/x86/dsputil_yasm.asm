@@ -217,7 +217,7 @@ cglobal add_hfyu_left_prediction_sse4, 3,3,7, dst, src, w, left
     movd    m0, leftm
     pslldq  m0, 15
     test    srcq, 15
-    jnz ff_add_hfyu_left_prediction_ssse3 %+ .skip_prologue
+    jnz add_hfyu_left_prediction_ssse3.skip_prologue
     test    dstq, 15
     jnz .unaligned
     ADD_HFYU_LEFT_LOOP 1
