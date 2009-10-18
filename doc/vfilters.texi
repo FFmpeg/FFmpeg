@@ -78,4 +78,8 @@ build.
 
 Below is a description of the currently available video filters.
 
+@section null
+
+Pass the source unchanged to the output.
+
 @bye
