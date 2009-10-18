@@ -107,16 +107,4 @@ void ff_ape_parse_tag(AVFormatContext *s)
 
     for (i=0; i<fields; i++)
         if (ape_tag_read_field(s) < 0) break;
-
-#if ENABLE_DEBUG
-    av_log(s, AV_LOG_DEBUG, "\nAPE Tags:\n\n");
-    av_log(s, AV_LOG_DEBUG, "title     = %s\n", s->title);
-    av_log(s, AV_LOG_DEBUG, "author    = %s\n", s->author);
-    av_log(s, AV_LOG_DEBUG, "copyright = %s\n", s->copyright);
-    av_log(s, AV_LOG_DEBUG, "comment   = %s\n", s->comment);
-    av_log(s, AV_LOG_DEBUG, "album     = %s\n", s->album);
-    av_log(s, AV_LOG_DEBUG, "year      = %d\n", s->year);
-    av_log(s, AV_LOG_DEBUG, "track     = %d\n", s->track);
-    av_log(s, AV_LOG_DEBUG, "genre     = %s\n", s->genre);
-#endif
 }
