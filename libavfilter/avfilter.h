@@ -23,7 +23,7 @@
 #define AVFILTER_AVFILTER_H
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR  2
+#define LIBAVFILTER_VERSION_MINOR  3
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -176,7 +176,7 @@ struct AVFilterFormats
  * @param pix_fmt list of pixel formats, terminated by PIX_FMT_NONE
  * @return the format list, with no existing references
  */
-AVFilterFormats *avfilter_make_format_list2(enum PixelFormat *pix_fmt);
+AVFilterFormats *avfilter_make_format_list(enum PixelFormat *pix_fmt);
 
 /**
  * Returns a list of all colorspaces supported by FFmpeg.
