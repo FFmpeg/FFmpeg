@@ -21,6 +21,8 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "apetag.h"
+#include "id3v1.h"
 
 // specs say that maximum block size is 1Mb
 #define WV_BLOCK_LIMIT 1047576
@@ -146,6 +148,15 @@ static int wv_read_header(AVFormatContext *s,
     av_set_pts_info(st, 64, 1, wc->rate);
     s->start_time = 0;
     s->duration = (int64_t)wc->samples * AV_TIME_BASE / st->codec->sample_rate;
+
+    if(!url_is_streamed(s->pb)) {
+        int64_t cur = url_ftell(s->pb);
+        ff_ape_parse_tag(s);
+        if(!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
+            ff_id3v1_read(s);
+        url_fseek(s->pb, cur, SEEK_SET);
+    }
+
     return 0;
 }
 
