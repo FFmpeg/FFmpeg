@@ -69,24 +69,6 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     return ret;
 }
 
-AVFilterFormats *avfilter_make_format_list(int len, ...)
-{
-    AVFilterFormats *ret;
-    int i;
-    va_list vl;
-
-    ret = av_mallocz(sizeof(AVFilterFormats));
-    ret->formats = av_malloc(sizeof(*ret->formats) * len);
-    ret->format_count = len;
-
-    va_start(vl, len);
-    for(i = 0; i < len; i ++)
-        ret->formats[i] = va_arg(vl, int);
-    va_end(vl);
-
-    return ret;
-}
-
 AVFilterFormats *avfilter_make_format_list2(enum PixelFormat *pix_fmt)
 {
     AVFilterFormats *formats;

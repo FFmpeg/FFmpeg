@@ -23,7 +23,7 @@
 #define AVFILTER_AVFILTER_H
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR  1
+#define LIBAVFILTER_VERSION_MINOR  2
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -169,15 +169,6 @@ struct AVFilterFormats
     unsigned refcount;          ///< number of references to this list
     AVFilterFormats ***refs;    ///< references to this list
 };
-
-/**
- * Helper function to create a list of supported formats.  This is intended
- * for use in AVFilter->query_formats().
- * @param len the number of formats supported
- * @param ... a list of the supported formats
- * @return    the format list, with no existing references
- */
-AVFilterFormats *avfilter_make_format_list(int len, ...);
 
 /**
  * Creates a list of supported formats. This is intended for use in
