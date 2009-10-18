@@ -80,8 +80,9 @@ cmdutils.o cmdutils.d: version.h
 
 alltools: $(TOOLS)
 
-documentation: $(addprefix doc/, developer.html faq.html ffmpeg-doc.html ffserver-doc.html \
-                                 ffplay-doc.html general.html vfilters.html $(ALLMANPAGES))
+documentation: $(addprefix doc/, developer.html faq.html ffmpeg-doc.html \
+                                 ffplay-doc.html ffserver-doc.html       \
+                                 general.html vfilters.html $(ALLMANPAGES))
 
 doc/%.html: doc/%.texi
 	texi2html -monolithic -number $<
