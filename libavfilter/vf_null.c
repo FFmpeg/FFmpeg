@@ -18,7 +18,7 @@
 
 /**
  * @file libavfilter/vf_null.c
- * null filter
+ * null video filter
  */
 
 #include "avfilter.h"
