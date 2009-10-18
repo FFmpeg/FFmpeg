@@ -165,7 +165,7 @@ static void gen_play(URLContext *s, RTMPContext *rt)
 
     av_log(LOG_CONTEXT, AV_LOG_DEBUG, "Sending play command for '%s'\n", rt->playpath);
     ff_rtmp_packet_create(&pkt, RTMP_VIDEO_CHANNEL, RTMP_PT_INVOKE, 0,
-                          29 + strlen(rt->playpath));
+                          20 + strlen(rt->playpath));
     pkt.extra = rt->main_channel_id;
 
     p = pkt.data;
@@ -173,7 +173,6 @@ static void gen_play(URLContext *s, RTMPContext *rt)
     ff_amf_write_number(&p, 0.0);
     ff_amf_write_null(&p);
     ff_amf_write_string(&p, rt->playpath);
-    ff_amf_write_number(&p, 0.0);
 
     ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size, rt->prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
