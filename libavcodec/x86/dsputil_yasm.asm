@@ -21,6 +21,13 @@
 
 %include "x86inc.asm"
 
+SECTION_RODATA
+pb_f: times 16 db 15
+pb_zzzzzzzz77777777: times 8 db -1
+pb_7: times 8 db 7
+pb_zzzz3333zzzzbbbb: db -1,-1,-1,-1,3,3,3,3,-1,-1,-1,-1,11,11,11,11
+pb_zz11zz55zz99zzdd: db -1,-1,1,1,-1,-1,5,5,-1,-1,9,9,-1,-1,13,13
+
 section .text align=16
 
 %macro PSWAPD_SSE 2
@@ -150,3 +157,70 @@ cglobal add_hfyu_median_prediction_mmx2, 6,6,0, dst, top, diff, w, left, left_to
     movzx   r2d, byte [topq-1]
     mov [left_topq], r2d
     RET
+
+
+%macro ADD_HFYU_LEFT_LOOP 1 ; %1 = is_aligned
+    add     srcq, wq
+    add     dstq, wq
+    neg     wq
+%%.loop:
+    mova    m1, [srcq+wq]
+    mova    m2, m1
+    psllw   m1, 8
+    paddb   m1, m2
+    mova    m2, m1
+    pshufb  m1, m3
+    paddb   m1, m2
+    pshufb  m0, m5
+    mova    m2, m1
+    pshufb  m1, m4
+    paddb   m1, m2
+%if mmsize == 16
+    mova    m2, m1
+    pshufb  m1, m6
+    paddb   m1, m2
+%endif
+    paddb   m0, m1
+%if %1
+    mova    [dstq+wq], m0
+%else
+    movq    [dstq+wq], m0
+    movhps  [dstq+wq+8], m0
+%endif
+    add     wq, mmsize
+    jl %%.loop
+    mov     eax, mmsize-1
+    sub     eax, wd
+    movd    m1, eax
+    pshufb  m0, m1
+    movd    eax, m0
+    RET
+%endmacro
+
+; int ff_add_hfyu_left_prediction(uint8_t *dst, uint8_t *src, int w, int left)
+INIT_MMX
+cglobal add_hfyu_left_prediction_ssse3, 3,3,7, dst, src, w, left
+.skip_prologue:
+    mova    m5, [pb_7 GLOBAL]
+    mova    m4, [pb_zzzz3333zzzzbbbb GLOBAL]
+    mova    m3, [pb_zz11zz55zz99zzdd GLOBAL]
+    movd    m0, leftm
+    psllq   m0, 56
+    ADD_HFYU_LEFT_LOOP 1
+
+INIT_XMM
+cglobal add_hfyu_left_prediction_sse4, 3,3,7, dst, src, w, left
+    mova    m5, [pb_f GLOBAL]
+    mova    m6, [pb_zzzzzzzz77777777 GLOBAL]
+    mova    m4, [pb_zzzz3333zzzzbbbb GLOBAL]
+    mova    m3, [pb_zz11zz55zz99zzdd GLOBAL]
+    movd    m0, leftm
+    pslldq  m0, 15
+    test    srcq, 15
+    jnz ff_add_hfyu_left_prediction_ssse3 %+ .skip_prologue
+    test    dstq, 15
+    jnz .unaligned
+    ADD_HFYU_LEFT_LOOP 1
+.unaligned:
+    ADD_HFYU_LEFT_LOOP 0
+
