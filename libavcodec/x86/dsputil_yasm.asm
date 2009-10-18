@@ -99,7 +99,7 @@ FLOAT_TO_INT16_INTERLEAVE6 3dn2
 
 
 
-; void ff_add_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *top, uint8_t *diff, int w, int *left, int *left_top)
+; void ff_add_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top)
 cglobal add_hfyu_median_prediction_mmx2, 6,6,0, dst, top, diff, w, left, left_top
     movq    mm0, [topq]
     movq    mm2, mm0
@@ -197,7 +197,7 @@ cglobal add_hfyu_median_prediction_mmx2, 6,6,0, dst, top, diff, w, left, left_to
     RET
 %endmacro
 
-; int ff_add_hfyu_left_prediction(uint8_t *dst, uint8_t *src, int w, int left)
+; int ff_add_hfyu_left_prediction(uint8_t *dst, const uint8_t *src, int w, int left)
 INIT_MMX
 cglobal add_hfyu_left_prediction_ssse3, 3,3,7, dst, src, w, left
 .skip_prologue:

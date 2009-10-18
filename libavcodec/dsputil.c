@@ -3573,7 +3573,7 @@ static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
         dst[i+0] = src1[i+0]-src2[i+0];
 }
 
-static void add_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1, uint8_t *diff, int w, int *left, int *left_top){
+static void add_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1, const uint8_t *diff, int w, int *left, int *left_top){
     int i;
     uint8_t l, lt;
 
@@ -3590,7 +3590,7 @@ static void add_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1, uint
     *left_top= lt;
 }
 
-static void sub_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1, uint8_t *src2, int w, int *left, int *left_top){
+static void sub_hfyu_median_prediction_c(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int w, int *left, int *left_top){
     int i;
     uint8_t l, lt;
 
