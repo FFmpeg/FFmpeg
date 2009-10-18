@@ -25,7 +25,7 @@
 #include "avformat.h"
 
 /** maximum possible number of different RTMP channels */
-#define RTMP_CHANNELS 64
+#define RTMP_CHANNELS 65599
 
 /**
  * channels used to for RTMP packets with different purposes (i.e. data, network
