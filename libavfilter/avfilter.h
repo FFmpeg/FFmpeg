@@ -23,8 +23,8 @@
 #define AVFILTER_AVFILTER_H
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR  0
-#define LIBAVFILTER_VERSION_MICRO  1
+#define LIBAVFILTER_VERSION_MINOR  1
+#define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -178,6 +178,14 @@ struct AVFilterFormats
  * @return    the format list, with no existing references
  */
 AVFilterFormats *avfilter_make_format_list(int len, ...);
+
+/**
+ * Creates a list of supported formats. This is intended for use in
+ * AVFilter->query_formats().
+ * @param pix_fmt list of pixel formats, terminated by PIX_FMT_NONE
+ * @return the format list, with no existing references
+ */
+AVFilterFormats *avfilter_make_format_list2(enum PixelFormat *pix_fmt);
 
 /**
  * Returns a list of all colorspaces supported by FFmpeg.
