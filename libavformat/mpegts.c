@@ -36,7 +36,7 @@
 
 /* maximum size in which we look for synchronisation if
    synchronisation is lost */
-#define MAX_RESYNC_SIZE 4096
+#define MAX_RESYNC_SIZE 65536
 
 #define MAX_PES_PAYLOAD 200*1024
 
@@ -1209,8 +1209,9 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 
 /* XXX: try to find a better synchro over several packets (use
    get_packet_size() ?) */
-static int mpegts_resync(ByteIOContext *pb)
+static int mpegts_resync(AVFormatContext *s)
 {
+    ByteIOContext *pb = s->pb;
     int c, i;
 
     for(i = 0;i < MAX_RESYNC_SIZE; i++) {
@@ -1222,13 +1223,15 @@ static int mpegts_resync(ByteIOContext *pb)
             return 0;
         }
     }
+    av_log(s, AV_LOG_ERROR, "max resync size reached, could not find sync byte\n");
     /* no sync found */
     return -1;
 }
 
 /* return -1 if error or EOF. Return 0 if OK. */
-static int read_packet(ByteIOContext *pb, uint8_t *buf, int raw_packet_size)
+static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size)
 {
+    ByteIOContext *pb = s->pb;
     int skip, len;
 
     for(;;) {
@@ -1239,8 +1242,8 @@ static int read_packet(ByteIOContext *pb, uint8_t *buf, int raw_packet_size)
         if (buf[0] != 0x47) {
             /* find a new packet start */
             url_fseek(pb, -TS_PACKET_SIZE, SEEK_CUR);
-            if (mpegts_resync(pb) < 0)
-                return AVERROR_INVALIDDATA;
+            if (mpegts_resync(s) < 0)
+                return AVERROR(EAGAIN);
             else
                 continue;
         } else {
@@ -1256,7 +1259,6 @@ static int read_packet(ByteIOContext *pb, uint8_t *buf, int raw_packet_size)
 static int handle_packets(MpegTSContext *ts, int nb_packets)
 {
     AVFormatContext *s = ts->stream;
-    ByteIOContext *pb = s->pb;
     uint8_t packet[TS_PACKET_SIZE];
     int packet_num, ret;
 
@@ -1268,7 +1270,7 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
         packet_num++;
         if (nb_packets != 0 && packet_num >= nb_packets)
             break;
-        ret = read_packet(pb, packet, ts->raw_packet_size);
+        ret = read_packet(s, packet, ts->raw_packet_size);
         if (ret != 0)
             return ret;
         ret = handle_packet(ts, packet);
@@ -1404,7 +1406,7 @@ static int mpegts_read_header(AVFormatContext *s,
         nb_pcrs = 0;
         nb_packets = 0;
         for(;;) {
-            ret = read_packet(s->pb, packet, ts->raw_packet_size);
+            ret = read_packet(s, packet, ts->raw_packet_size);
             if (ret < 0)
                 return -1;
             pid = AV_RB16(packet + 1) & 0x1fff;
@@ -1453,7 +1455,7 @@ static int mpegts_raw_read_packet(AVFormatContext *s,
     if (av_new_packet(pkt, TS_PACKET_SIZE) < 0)
         return AVERROR(ENOMEM);
     pkt->pos= url_ftell(s->pb);
-    ret = read_packet(s->pb, pkt->data, ts->raw_packet_size);
+    ret = read_packet(s, pkt->data, ts->raw_packet_size);
     if (ret < 0) {
         av_free_packet(pkt);
         return ret;
