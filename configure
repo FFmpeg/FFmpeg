@@ -99,6 +99,7 @@ show_help(){
   echo "  --disable-aandct         disable AAN DCT code"
   echo "  --disable-fft            disable FFT code"
   echo "  --disable-golomb         disable Golomb code"
+  echo "  --disable-lpc            disable LPC code"
   echo "  --disable-mdct           disable MDCT code"
   echo "  --disable-rdft           disable RDFT code"
   echo "  --disable-vaapi          disable VAAPI code"
@@ -836,6 +837,7 @@ CONFIG_LIST="
     libvorbis
     libx264
     libxvid
+    lpc
     mdct
     memalign_hack
     mlib
@@ -1066,6 +1068,7 @@ inline_asm_deps="!tms470"
 aac_decoder_select="fft mdct"
 aac_encoder_select="fft mdct"
 ac3_decoder_select="fft mdct"
+alac_encoder_select="lpc"
 atrac3_decoder_select="fft mdct"
 cavs_decoder_select="golomb"
 cook_decoder_select="fft mdct"
@@ -1079,7 +1082,7 @@ eatgq_decoder_select="aandct"
 eatqi_decoder_select="aandct"
 ffv1_decoder_select="golomb"
 flac_decoder_select="golomb"
-flac_encoder_select="golomb"
+flac_encoder_select="golomb lpc"
 flashsv_decoder_select="zlib"
 flashsv_encoder_select="zlib"
 flv_encoder_select="h263_encoder"

@@ -563,6 +563,7 @@ YASM-OBJS-$(CONFIG_GPL)                += x86/h264_deblock_sse2.o       \
 MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
 MMX-OBJS-$(CONFIG_GPL)                 += x86/idct_mmx.o
+MMX-OBJS-$(CONFIG_LPC)                 += x86/lpc_mmx.o
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp_mmx.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 MMX-OBJS-$(CONFIG_VP3_DECODER)         += x86/vp3dsp_mmx.o              \
@@ -583,7 +584,6 @@ OBJS-$(HAVE_MMX)                       += x86/cpuid.o                   \
                                           x86/fft.o                     \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
-                                          x86/lpc_mmx.o                 \
                                           x86/motion_est_mmx.o          \
                                           x86/mpegvideo_mmx.o           \
                                           x86/simple_idct_mmx.o         \
