@@ -62,7 +62,7 @@ static int mtv_probe(AVProbeData *p)
         return 0;
 
     /* If width or height are 0 then imagesize header field should not */
-    if(AV_RL16(&p->buf[52]) && AV_RL16(&p->buf[54]))
+    if(!AV_RL16(&p->buf[52]) || !AV_RL16(&p->buf[54]))
     {
         if(!!AV_RL16(&p->buf[56]))
             return AVPROBE_SCORE_MAX/2;
