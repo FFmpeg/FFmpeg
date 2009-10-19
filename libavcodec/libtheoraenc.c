@@ -59,9 +59,8 @@ static int concatenate_packet(unsigned int* offset, AVCodecContext* avc_context,
         message = "extradata_size would overflow";
     } else {
         newdata = av_realloc(avc_context->extradata, newsize);
-        if (newdata == NULL) {
+        if (newdata == NULL)
             message = "av_realloc failed";
-        }
     }
     if (message != NULL) {
         av_log(avc_context, AV_LOG_ERROR, "concatenate_packet failed: %s\n", message);
@@ -151,16 +150,14 @@ static av_cold int encode_init(AVCodecContext* avc_context)
 
     /* Header */
     theora_encode_header( &(h->t_state), &o_packet );
-    if (concatenate_packet( &offset, avc_context, &o_packet ) != 0) {
+    if (concatenate_packet( &offset, avc_context, &o_packet ) != 0)
         return -1;
-    }
 
     /* Comment */
     theora_comment_init( &t_comment );
     theora_encode_comment( &t_comment, &o_packet );
-    if (concatenate_packet( &offset, avc_context, &o_packet ) != 0) {
+    if (concatenate_packet( &offset, avc_context, &o_packet ) != 0)
         return -1;
-    }
     /* Clear up theora_comment struct before we reset the packet */
     theora_comment_clear( &t_comment );
     /* And despite documentation to the contrary, theora_comment_clear
@@ -169,9 +166,8 @@ static av_cold int encode_init(AVCodecContext* avc_context)
 
     /* Tables */
     theora_encode_tables( &(h->t_state), &o_packet );
-    if (concatenate_packet( &offset, avc_context, &o_packet ) != 0) {
+    if (concatenate_packet( &offset, avc_context, &o_packet ) != 0)
         return -1;
-    }
 
     /* Set up the output AVFrame */
     avc_context->coded_frame= avcodec_alloc_frame();
