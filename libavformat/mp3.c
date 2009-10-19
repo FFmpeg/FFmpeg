@@ -252,6 +252,42 @@ static void id3v2_put_ttag(AVFormatContext *s, const char *buf, int len,
 }
 
 
+static int mp3_write_packet(struct AVFormatContext *s, AVPacket *pkt)
+{
+    put_buffer(s->pb, pkt->data, pkt->size);
+    put_flush_packet(s->pb);
+    return 0;
+}
+
+static int mp3_write_trailer(struct AVFormatContext *s)
+{
+    uint8_t buf[ID3v1_TAG_SIZE];
+
+    /* write the id3v1 tag */
+    if (id3v1_create_tag(s, buf) > 0) {
+        put_buffer(s->pb, buf, ID3v1_TAG_SIZE);
+        put_flush_packet(s->pb);
+    }
+    return 0;
+}
+#endif /* CONFIG_MP2_MUXER || CONFIG_MP3_MUXER */
+
+#if CONFIG_MP2_MUXER
+AVOutputFormat mp2_muxer = {
+    "mp2",
+    NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
+    "audio/x-mpeg",
+    "mp2,m2a",
+    0,
+    CODEC_ID_MP2,
+    CODEC_ID_NONE,
+    NULL,
+    mp3_write_packet,
+    mp3_write_trailer,
+};
+#endif
+
+#if CONFIG_MP3_MUXER
 /**
  * Write an ID3v2.4 header at beginning of stream
  */
@@ -312,41 +348,6 @@ static int mp3_write_header(struct AVFormatContext *s)
     return 0;
 }
 
-static int mp3_write_packet(struct AVFormatContext *s, AVPacket *pkt)
-{
-    put_buffer(s->pb, pkt->data, pkt->size);
-    put_flush_packet(s->pb);
-    return 0;
-}
-
-static int mp3_write_trailer(struct AVFormatContext *s)
-{
-    uint8_t buf[ID3v1_TAG_SIZE];
-
-    /* write the id3v1 tag */
-    if (id3v1_create_tag(s, buf) > 0) {
-        put_buffer(s->pb, buf, ID3v1_TAG_SIZE);
-        put_flush_packet(s->pb);
-    }
-    return 0;
-}
-#endif /* CONFIG_MP2_MUXER || CONFIG_MP3_MUXER */
-
-#if CONFIG_MP2_MUXER
-AVOutputFormat mp2_muxer = {
-    "mp2",
-    NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
-    "audio/x-mpeg",
-    "mp2,m2a",
-    0,
-    CODEC_ID_MP2,
-    CODEC_ID_NONE,
-    NULL,
-    mp3_write_packet,
-    mp3_write_trailer,
-};
-#endif
-#if CONFIG_MP3_MUXER
 AVOutputFormat mp3_muxer = {
     "mp3",
     NULL_IF_CONFIG_SMALL("MPEG audio layer 3"),
