@@ -2958,8 +2958,8 @@ void dump_format(AVFormatContext *ic,
         if (total < ic->nb_streams)
             av_log(NULL, AV_LOG_INFO, "  No Program\n");
     }
-        for(i=0;i<ic->nb_streams;i++)
-            if (!printed[i])
+    for(i=0;i<ic->nb_streams;i++)
+        if (!printed[i])
             dump_stream_format(ic, i, index, is_output);
 
     if (ic->metadata) {
