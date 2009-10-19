@@ -38,17 +38,19 @@
 /* libtheora includes */
 #include <theora/theora.h>
 
-typedef struct TheoraContext{
+typedef struct TheoraContext {
     theora_state t_state;
 } TheoraContext;
 
 /*!
     Concatenates an ogg_packet into the extradata.
 */
-static int concatenate_packet(unsigned int* offset, AVCodecContext* avc_context, const ogg_packet* packet)
+static int concatenate_packet(unsigned int* offset,
+                              AVCodecContext* avc_context,
+                              const ogg_packet* packet)
 {
     const char* message = NULL;
-    uint8_t* newdata = NULL;
+    uint8_t* newdata    = NULL;
     int newsize = avc_context->extradata_size + 2 + packet->bytes;
 
     if (packet->bytes < 0) {
@@ -67,11 +69,11 @@ static int concatenate_packet(unsigned int* offset, AVCodecContext* avc_context,
         return -1;
     }
 
-    avc_context->extradata = newdata;
+    avc_context->extradata      = newdata;
     avc_context->extradata_size = newsize;
     AV_WB16(avc_context->extradata + (*offset), packet->bytes);
     *offset += 2;
-    memcpy( avc_context->extradata + (*offset), packet->packet, packet->bytes );
+    memcpy(avc_context->extradata + (*offset), packet->packet, packet->bytes);
     (*offset) += packet->bytes;
     return 0;
 }
@@ -85,37 +87,37 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     TheoraContext *h = avc_context->priv_data;
 
     /* Set up the theora_info struct */
-    theora_info_init( &t_info );
-    t_info.width = FFALIGN(avc_context->width, 16);
-    t_info.height = FFALIGN(avc_context->height, 16);
-    t_info.frame_width = avc_context->width;
+    theora_info_init(&t_info);
+    t_info.width        = FFALIGN(avc_context->width,  16);
+    t_info.height       = FFALIGN(avc_context->height, 16);
+    t_info.frame_width  = avc_context->width;
     t_info.frame_height = avc_context->height;
-    t_info.offset_x = 0;
-    t_info.offset_y = avc_context->height & 0xf;
+    t_info.offset_x     = 0;
+    t_info.offset_y     = avc_context->height & 0xf;
     /* Swap numerator and denominator as time_base in AVCodecContext gives the
      * time period between frames, but theora_info needs the framerate.  */
-    t_info.fps_numerator = avc_context->time_base.den;
+    t_info.fps_numerator   = avc_context->time_base.den;
     t_info.fps_denominator = avc_context->time_base.num;
     if (avc_context->sample_aspect_ratio.num != 0) {
-        t_info.aspect_numerator = avc_context->sample_aspect_ratio.num;
+        t_info.aspect_numerator   = avc_context->sample_aspect_ratio.num;
         t_info.aspect_denominator = avc_context->sample_aspect_ratio.den;
     } else {
-        t_info.aspect_numerator = 1;
+        t_info.aspect_numerator   = 1;
         t_info.aspect_denominator = 1;
     }
-    t_info.colorspace = OC_CS_UNSPECIFIED;
-    t_info.pixelformat = OC_PF_420;
-    t_info.keyframe_frequency = avc_context->gop_size;
+    t_info.colorspace               = OC_CS_UNSPECIFIED;
+    t_info.pixelformat              = OC_PF_420;
+    t_info.keyframe_frequency       = avc_context->gop_size;
     t_info.keyframe_frequency_force = avc_context->gop_size;
-    t_info.keyframe_mindistance = avc_context->keyint_min;
+    t_info.keyframe_mindistance     = avc_context->keyint_min;
 
-    t_info.quick_p = 1;
-    t_info.dropframes_p = 0;
-    t_info.keyframe_auto_p = 1;
+    t_info.quick_p                      = 1;
+    t_info.dropframes_p                 = 0;
+    t_info.keyframe_auto_p              = 1;
     t_info.keyframe_data_target_bitrate = t_info.target_bitrate * 1.5;
-    t_info.keyframe_auto_threshold = 80;
-    t_info.noise_sensitivity = 1;
-    t_info.sharpness = 0;
+    t_info.keyframe_auto_threshold      = 80;
+    t_info.noise_sensitivity            = 1;
+    t_info.sharpness                    = 0;
 
     if (avc_context->flags & CODEC_FLAG_QSCALE) {
         /* to be constant with the libvorbis implementation, clip global_quality to 0 - 10
@@ -123,21 +125,21 @@ static av_cold int encode_init(AVCodecContext* avc_context)
                 * 0 <= p <=63
                 * an int value
          */
-        t_info.quality = av_clip(avc_context->global_quality / (float)FF_QP2LAMBDA, 0, 10) * 6.3;
+        t_info.quality        = av_clip(avc_context->global_quality / (float)FF_QP2LAMBDA, 0, 10) * 6.3;
         t_info.target_bitrate = 0;
     } else {
         t_info.target_bitrate = avc_context->bit_rate;
-        t_info.quality = 0;
+        t_info.quality        = 0;
     }
 
     /* Now initialise libtheora */
-    if (theora_encode_init( &(h->t_state), &t_info ) != 0) {
+    if (theora_encode_init(&(h->t_state), &t_info) != 0) {
         av_log(avc_context, AV_LOG_ERROR, "theora_encode_init failed\n");
         return -1;
     }
 
     /* Clear up theora_info struct */
-    theora_info_clear( &t_info );
+    theora_info_clear(&t_info);
 
     /*
         Output first header packet consisting of theora
@@ -149,24 +151,24 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     offset = 0;
 
     /* Header */
-    theora_encode_header( &(h->t_state), &o_packet );
-    if (concatenate_packet( &offset, avc_context, &o_packet ) != 0)
+    theora_encode_header(&(h->t_state), &o_packet);
+    if (concatenate_packet(&offset, avc_context, &o_packet) != 0)
         return -1;
 
     /* Comment */
-    theora_comment_init( &t_comment );
-    theora_encode_comment( &t_comment, &o_packet );
-    if (concatenate_packet( &offset, avc_context, &o_packet ) != 0)
+    theora_comment_init(&t_comment);
+    theora_encode_comment(&t_comment, &o_packet);
+    if (concatenate_packet(&offset, avc_context, &o_packet) != 0)
         return -1;
     /* Clear up theora_comment struct before we reset the packet */
-    theora_comment_clear( &t_comment );
+    theora_comment_clear(&t_comment);
     /* And despite documentation to the contrary, theora_comment_clear
      * does not release the packet */
     ogg_packet_clear(&o_packet);
 
     /* Tables */
-    theora_encode_tables( &(h->t_state), &o_packet );
-    if (concatenate_packet( &offset, avc_context, &o_packet ) != 0)
+    theora_encode_tables(&(h->t_state), &o_packet);
+    if (concatenate_packet(&offset, avc_context, &o_packet) != 0)
         return -1;
 
     /* Set up the output AVFrame */
@@ -175,11 +177,8 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     return 0;
 }
 
-static int encode_frame(
-    AVCodecContext* avc_context,
-    uint8_t *outbuf,
-    int buf_size,
-    void *data)
+static int encode_frame(AVCodecContext* avc_context, uint8_t *outbuf,
+                        int buf_size, void *data)
 {
     yuv_buffer t_yuv_buffer;
     TheoraContext *h = avc_context->priv_data;
@@ -195,10 +194,10 @@ static int encode_frame(
         return -1;
     }
 
-    t_yuv_buffer.y_width = FFALIGN(avc_context->width, 16);
-    t_yuv_buffer.y_height = FFALIGN(avc_context->height, 16);
-    t_yuv_buffer.y_stride = frame->linesize[0];
-    t_yuv_buffer.uv_width = t_yuv_buffer.y_width / 2;
+    t_yuv_buffer.y_width   = FFALIGN(avc_context->width, 16);
+    t_yuv_buffer.y_height  = FFALIGN(avc_context->height, 16);
+    t_yuv_buffer.y_stride  = frame->linesize[0];
+    t_yuv_buffer.uv_width  = t_yuv_buffer.y_width / 2;
     t_yuv_buffer.uv_height = t_yuv_buffer.y_height / 2;
     t_yuv_buffer.uv_stride = frame->linesize[1];
 
@@ -207,36 +206,36 @@ static int encode_frame(
     t_yuv_buffer.v = frame->data[2];
 
     /* Now call into theora_encode_YUVin */
-    result = theora_encode_YUVin( &(h->t_state), &t_yuv_buffer );
+    result = theora_encode_YUVin(&(h->t_state), &t_yuv_buffer);
     if (result != 0) {
         const char* message;
         switch (result) {
-            case -1:
-                message = "differing frame sizes";
-                break;
-            case OC_EINVAL:
-                message = "encoder is not ready or is finished";
-                break;
-            default:
-                message = "unknown reason";
-                break;
+        case -1:
+            message = "differing frame sizes";
+            break;
+        case OC_EINVAL:
+            message = "encoder is not ready or is finished";
+            break;
+        default:
+            message = "unknown reason";
+            break;
         }
         av_log(avc_context, AV_LOG_ERROR, "theora_encode_YUVin failed (%s) [%d]\n", message, result);
         return -1;
     }
 
     /* Pick up returned ogg_packet */
-    result = theora_encode_packetout( &(h->t_state), 0, &o_packet );
+    result = theora_encode_packetout(&(h->t_state), 0, &o_packet);
     switch (result) {
-        case 0:
-            /* No packet is ready */
-            return 0;
-        case 1:
-            /* Success, we have a packet */
-            break;
-        default:
-            av_log(avc_context, AV_LOG_ERROR, "theora_encode_packetout failed [%d]\n", result);
-            return -1;
+    case 0:
+        /* No packet is ready */
+        return 0;
+    case 1:
+        /* Success, we have a packet */
+        break;
+    default:
+        av_log(avc_context, AV_LOG_ERROR, "theora_encode_packetout failed [%d]\n", result);
+        return -1;
     }
 
     /* Copy ogg_packet content out to buffer */
@@ -247,7 +246,7 @@ static int encode_frame(
     memcpy(outbuf, o_packet.packet, o_packet.bytes);
 
     // HACK: does not take codec delay into account (neither does the decoder though)
-    avc_context->coded_frame->pts= frame->pts;
+    avc_context->coded_frame->pts = frame->pts;
 
     return o_packet.bytes;
 }
@@ -259,23 +258,23 @@ static av_cold int encode_close(AVCodecContext* avc_context)
     int result;
     const char* message;
 
-    result = theora_encode_packetout( &(h->t_state), 1, &o_packet );
-    theora_clear( &(h->t_state) );
+    result = theora_encode_packetout(&(h->t_state), 1, &o_packet);
+    theora_clear(&(h->t_state));
     av_freep(&avc_context->coded_frame);
     av_freep(&avc_context->extradata);
     avc_context->extradata_size = 0;
 
     switch (result) {
-        case 0:/* No packet is ready */
-        case -1:/* Encoding finished */
-            return 0;
-        case 1:
-            /* We have a packet */
-            message = "gave us a packet";
-            break;
-        default:
-            message = "unknown reason";
-            break;
+    case 0:  /* No packet is ready */
+    case -1: /* Encoding finished */
+        return 0;
+    case 1:
+        /* We have a packet */
+        message = "gave us a packet";
+        break;
+    default:
+        message = "unknown reason";
+        break;
     }
     av_log(avc_context, AV_LOG_ERROR, "theora_encode_packetout failed (%s) [%d]\n", message, result);
     return -1;
@@ -284,8 +283,7 @@ static av_cold int encode_close(AVCodecContext* avc_context)
 static const enum PixelFormat supported_pixel_formats[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
 
 /*! AVCodec struct exposed to libavcodec */
-AVCodec libtheora_encoder =
-{
+AVCodec libtheora_encoder = {
     .name = "libtheora",
     .type = CODEC_TYPE_VIDEO,
     .id = CODEC_ID_THEORA,
