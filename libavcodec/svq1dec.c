@@ -838,5 +838,5 @@ AVCodec svq1_decoder = {
     CODEC_CAP_DR1,
     .flush= ff_mpeg_flush,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV410P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1"),
+    .long_name= NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
 };
