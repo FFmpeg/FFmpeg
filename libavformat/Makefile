@@ -209,6 +209,7 @@ OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o        \
                                             rtp_asf.o     \
                                             rtp_vorbis.o
 OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o        \
+                                            rdt.o         \
                                             rtp.o         \
                                             rtpdec.o      \
                                             rtp_asf.o     \
