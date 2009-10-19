@@ -2833,6 +2833,11 @@ void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
     AVProgram *program=NULL;
     void *tmp;
 
+    if (idx >= ac->nb_streams) {
+        av_log(ac, AV_LOG_ERROR, "stream index %d is not valid\n", idx);
+        return;
+    }
+
     for(i=0; i<ac->nb_programs; i++){
         if(ac->programs[i]->id != progid)
             continue;
