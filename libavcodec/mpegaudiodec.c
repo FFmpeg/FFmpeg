@@ -120,7 +120,7 @@ static const int32_t scale_factor_mult2[3][3] = {
     SCALE_GEN(4.0 / 9.0), /* 9 steps */
 };
 
-static DECLARE_ALIGNED_16(MPA_INT, window[512]);
+DECLARE_ALIGNED_16(MPA_INT, ff_mpa_synth_window[512]);
 
 /**
  * Convert region offsets to region sizes and truncate
@@ -351,7 +351,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
                     scale_factor_mult[i][2]);
         }
 
-        ff_mpa_synth_init(window);
+        ff_mpa_synth_init(ff_mpa_synth_window);
 
         /* huffman decode tables */
         offset = 0;
@@ -2238,7 +2238,7 @@ static int mp_decode_frame(MPADecodeContext *s,
         samples_ptr = samples + ch;
         for(i=0;i<nb_frames;i++) {
             ff_mpa_synth_filter(s->synth_buf[ch], &(s->synth_buf_offset[ch]),
-                         window, &s->dither_state,
+                         ff_mpa_synth_window, &s->dither_state,
                          samples_ptr, s->nb_channels,
                          s->sb_samples[ch][i]);
             samples_ptr += 32 * s->nb_channels;

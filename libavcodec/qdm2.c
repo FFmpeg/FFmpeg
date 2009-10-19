@@ -219,8 +219,6 @@ static uint8_t random_dequant_index[256][5];
 static uint8_t random_dequant_type24[128][3];
 static float noise_samples[128];
 
-static DECLARE_ALIGNED_16(MPA_INT, mpa_window[512]);
-
 
 static av_cold void softclip_table_init(void) {
     int i;
@@ -1684,7 +1682,7 @@ static void qdm2_synthesis_filter (QDM2Context *q, int index)
 
         for (i = 0; i < 8; i++) {
             ff_mpa_synth_filter(q->synth_buf[ch], &(q->synth_buf_offset[ch]),
-                mpa_window, &dither_state,
+                ff_mpa_synth_window, &dither_state,
                 samples_ptr, q->nb_channels,
                 q->sb_samples[ch][(8 * index) + i]);
             samples_ptr += 32 * q->nb_channels;
@@ -1713,7 +1711,7 @@ static av_cold void qdm2_init(QDM2Context *q) {
     initialized = 1;
 
     qdm2_init_vlc();
-    ff_mpa_synth_init(mpa_window);
+    ff_mpa_synth_init(ff_mpa_synth_window);
     softclip_table_init();
     rnd_table_init();
     init_noise_samples();
