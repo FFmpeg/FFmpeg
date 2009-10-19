@@ -61,10 +61,10 @@ static int concatenate_packet(unsigned int* offset,
         message = "extradata_size would overflow";
     } else {
         newdata = av_realloc(avc_context->extradata, newsize);
-        if (newdata == NULL)
+        if (!newdata)
             message = "av_realloc failed";
     }
-    if (message != NULL) {
+    if (message) {
         av_log(avc_context, AV_LOG_ERROR, "concatenate_packet failed: %s\n", message);
         return -1;
     }
@@ -98,7 +98,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
      * time period between frames, but theora_info needs the framerate.  */
     t_info.fps_numerator   = avc_context->time_base.den;
     t_info.fps_denominator = avc_context->time_base.num;
-    if (avc_context->sample_aspect_ratio.num != 0) {
+    if (avc_context->sample_aspect_ratio.num) {
         t_info.aspect_numerator   = avc_context->sample_aspect_ratio.num;
         t_info.aspect_denominator = avc_context->sample_aspect_ratio.den;
     } else {
@@ -133,7 +133,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     }
 
     /* Now initialise libtheora */
-    if (theora_encode_init(&(h->t_state), &t_info) != 0) {
+    if (theora_encode_init(&(h->t_state), &t_info)) {
         av_log(avc_context, AV_LOG_ERROR, "theora_encode_init failed\n");
         return -1;
     }
@@ -152,13 +152,13 @@ static av_cold int encode_init(AVCodecContext* avc_context)
 
     /* Header */
     theora_encode_header(&(h->t_state), &o_packet);
-    if (concatenate_packet(&offset, avc_context, &o_packet) != 0)
+    if (concatenate_packet(&offset, avc_context, &o_packet))
         return -1;
 
     /* Comment */
     theora_comment_init(&t_comment);
     theora_encode_comment(&t_comment, &o_packet);
-    if (concatenate_packet(&offset, avc_context, &o_packet) != 0)
+    if (concatenate_packet(&offset, avc_context, &o_packet))
         return -1;
     /* Clear up theora_comment struct before we reset the packet */
     theora_comment_clear(&t_comment);
@@ -168,7 +168,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
 
     /* Tables */
     theora_encode_tables(&(h->t_state), &o_packet);
-    if (concatenate_packet(&offset, avc_context, &o_packet) != 0)
+    if (concatenate_packet(&offset, avc_context, &o_packet))
         return -1;
 
     /* Set up the output AVFrame */
@@ -207,7 +207,7 @@ static int encode_frame(AVCodecContext* avc_context, uint8_t *outbuf,
 
     /* Now call into theora_encode_YUVin */
     result = theora_encode_YUVin(&(h->t_state), &t_yuv_buffer);
-    if (result != 0) {
+    if (result) {
         const char* message;
         switch (result) {
         case -1:
