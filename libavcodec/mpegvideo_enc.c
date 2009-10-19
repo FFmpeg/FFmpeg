@@ -3760,7 +3760,7 @@ AVCodec flv_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("Flash Video (FLV)"),
+    .long_name= NULL_IF_CONFIG_SMALL("Flash Video (FLV) / Sorenson Spark / Sorenson H.263"),
 };
 
 AVCodec mpeg4_encoder = {
