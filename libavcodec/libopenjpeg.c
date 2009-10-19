@@ -39,12 +39,12 @@ typedef struct {
 
 static int check_image_attributes(opj_image_t *image)
 {
-    return(image->comps[0].dx == image->comps[1].dx &&
+    return image->comps[0].dx == image->comps[1].dx &&
            image->comps[1].dx == image->comps[2].dx &&
            image->comps[0].dy == image->comps[1].dy &&
            image->comps[1].dy == image->comps[2].dy &&
            image->comps[0].prec == image->comps[1].prec &&
-           image->comps[1].prec == image->comps[2].prec);
+           image->comps[1].prec == image->comps[2].prec;
 }
 
 static av_cold int libopenjpeg_decode_init(AVCodecContext *avctx)
