@@ -7,6 +7,7 @@
 
 set -e
 
+test="${1#regtest-}"
 test_ref=$2
 raw_src_dir=$3
 outfile_prefix=$4
@@ -16,7 +17,6 @@ target_path=$6
 datadir="./tests/data"
 target_datadir="${target_path}/${datadir}"
 
-test="${1#regtest-}"
 this="$test.$test_ref"
 logfile="$datadir/$this.regression"
 outfile="$datadir/${outfile_prefix}-"
