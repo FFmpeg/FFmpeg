@@ -7,6 +7,9 @@
 
 set -e
 
+test_ref=$2
+raw_src_dir=$3
+outfile_prefix=$4
 target_exec=$5
 target_path=$6
 
@@ -14,9 +17,9 @@ datadir="./tests/data"
 target_datadir="${target_path}/${datadir}"
 
 test="${1#regtest-}"
-this="$test.$2"
+this="$test.$test_ref"
 logfile="$datadir/$this.regression"
-outfile="$datadir/$4-"
+outfile="$datadir/${outfile_prefix}-"
 
 eval do_$test=y
 
@@ -26,12 +29,12 @@ tiny_psnr="tests/tiny_psnr"
 benchfile="$datadir/$this.bench"
 bench="$datadir/$this.bench.tmp"
 bench2="$datadir/$this.bench2.tmp"
-raw_src="${target_path}/$3/%02d.pgm"
+raw_src="${target_path}/$raw_src_dir/%02d.pgm"
 raw_dst="$datadir/$this.out.yuv"
-raw_ref="$datadir/$2.ref.yuv"
+raw_ref="$datadir/$test_ref.ref.yuv"
 pcm_src="$target_datadir/asynth1.sw"
 pcm_dst="$datadir/$this.out.wav"
-pcm_ref="$datadir/$2.ref.wav"
+pcm_ref="$datadir/$test_ref.ref.wav"
 crcfile="$datadir/$this.crc"
 target_crcfile="$target_datadir/$this.crc"
 
