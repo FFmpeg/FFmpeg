@@ -23,7 +23,8 @@
 
 #include "avfilter.h"
 
-static AVFilterPicRef *get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+static AVFilterPicRef *get_video_buffer(AVFilterLink *link, int perms,
+                                        int w, int h)
 {
     return avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
 }
