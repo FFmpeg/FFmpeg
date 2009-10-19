@@ -105,6 +105,8 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_DEBUG, "mjpeg bottom field first\n");
         }
     }
+    if (avctx->codec->id == CODEC_ID_AMV)
+        s->flipped = 1;
 
     return 0;
 }
@@ -773,7 +775,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
         data[c] = s->picture.data[c];
         linesize[c]=s->linesize[c];
         s->coefs_finished[c] |= 1;
-        if(s->avctx->codec->id==CODEC_ID_AMV) {
+        if(s->flipped) {
             //picture should be flipped upside-down for this codec
             assert(!(s->avctx->flags & CODEC_FLAG_EMU_EDGE));
             data[c] += (linesize[c] * (s->v_scount[i] * (8 * s->mb_height -((s->height/s->v_max)&7)) - 1 ));
@@ -1175,6 +1177,9 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
             }
             else if(!strcmp(cbuf, "CS=ITU601")){
                 s->cs_itu601= 1;
+            }
+            else if(len > 20 && !strncmp(cbuf, "Intel(R) JPEG Library", 21)){
+                s->flipped = 1;
             }
 
             av_free(cbuf);
