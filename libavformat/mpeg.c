@@ -113,6 +113,8 @@ static int mpegps_read_header(AVFormatContext *s,
         m->sofdec++;
     } while (v == sofdec[i] && i++ < 6);
 
+    m->sofdec = (m->sofdec == 6) ? 1 : 0;
+
     /* no need to do more */
     return 0;
 }
