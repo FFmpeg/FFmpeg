@@ -43,6 +43,8 @@ typedef struct TMVContext {
     unsigned stream_index;
 } TMVContext;
 
+#define TMV_HEADER_SIZE       12
+
 #define PROBE_MIN_SAMPLE_RATE 5000
 #define PROBE_MAX_FPS         120
 #define PROBE_MIN_AUDIO_SIZE  (PROBE_MIN_SAMPLE_RATE / PROBE_MAX_FPS)
@@ -160,6 +162,23 @@ static int tmv_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+static int tmv_read_seek(AVFormatContext *s, int stream_index,
+                         int64_t timestamp, int flags)
+{
+    TMVContext *tmv = s->priv_data;
+    int64_t pos;
+
+    if (stream_index)
+        return -1;
+
+    pos = timestamp *
+          (tmv->audio_chunk_size + tmv->video_chunk_size + tmv->padding);
+
+    url_fseek(s->pb, pos + TMV_HEADER_SIZE, SEEK_SET);
+    tmv->stream_index = 0;
+    return 0;
+}
+
 AVInputFormat tmv_demuxer = {
     "tmv",
     NULL_IF_CONFIG_SMALL("8088flex TMV"),
@@ -167,5 +186,7 @@ AVInputFormat tmv_demuxer = {
     tmv_probe,
     tmv_read_header,
     tmv_read_packet,
+    NULL,
+    tmv_read_seek,
     .flags = AVFMT_GENERIC_INDEX,
 };
