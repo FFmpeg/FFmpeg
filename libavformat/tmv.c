@@ -55,7 +55,8 @@ static int tmv_probe(AVProbeData *p)
                !p->buf[8] && // compression method
                 p->buf[9] && // char cols
                 p->buf[10])  // char rows
-        return AVPROBE_SCORE_MAX / (p->buf[9] == 40 && p->buf[10] == 25)? 1 : 4;
+        return AVPROBE_SCORE_MAX /
+            ((p->buf[9] == 40 && p->buf[10] == 25) ? 1 : 4);
     return 0;
 }
 
