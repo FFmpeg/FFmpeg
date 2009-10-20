@@ -686,7 +686,7 @@ TESTPROGS-$(HAVE_MMX) += motion
 
 DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
 
-CLEANFILES = cos_tables.c costablegen$(HOSTEXESUF)
+CLEANFILES = sin_tables.c cos_tables.c costablegen$(HOSTEXESUF)
 
 include $(SUBDIR)../subdir.mak
 
