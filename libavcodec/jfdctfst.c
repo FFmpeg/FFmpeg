@@ -76,7 +76,6 @@
 #define DCTSIZE 8
 #define GLOBAL(x) x
 #define RIGHT_SHIFT(x, n) ((x) >> (n))
-#define SHIFT_TEMPS
 
 /*
  * This module is specialized to the case DCTSIZE = 8.
@@ -151,7 +150,6 @@ static av_always_inline void row_fdct(DCTELEM * data){
   int_fast16_t z1, z2, z3, z4, z5, z11, z13;
   DCTELEM *dataptr;
   int ctr;
-  SHIFT_TEMPS
 
   /* Pass 1: process rows. */
 
@@ -216,7 +214,6 @@ fdct_ifast (DCTELEM * data)
   int_fast16_t z1, z2, z3, z4, z5, z11, z13;
   DCTELEM *dataptr;
   int ctr;
-  SHIFT_TEMPS
 
   row_fdct(data);
 
@@ -283,7 +280,6 @@ fdct_ifast248 (DCTELEM * data)
   int_fast16_t z1;
   DCTELEM *dataptr;
   int ctr;
-  SHIFT_TEMPS
 
   row_fdct(data);
 

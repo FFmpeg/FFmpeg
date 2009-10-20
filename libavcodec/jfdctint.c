@@ -66,7 +66,6 @@
 #include "libavutil/common.h"
 #include "dsputil.h"
 
-#define SHIFT_TEMPS
 #define DCTSIZE 8
 #define BITS_IN_JSAMPLE 8
 #define GLOBAL(x) x
@@ -187,7 +186,6 @@ static av_always_inline void row_fdct(DCTELEM * data){
   int_fast32_t z1, z2, z3, z4, z5;
   DCTELEM *dataptr;
   int ctr;
-  SHIFT_TEMPS
 
   /* Pass 1: process rows. */
   /* Note results are scaled up by sqrt(8) compared to a true DCT; */
@@ -266,7 +264,6 @@ ff_jpeg_fdct_islow (DCTELEM * data)
   int_fast32_t z1, z2, z3, z4, z5;
   DCTELEM *dataptr;
   int ctr;
-  SHIFT_TEMPS
 
   row_fdct(data);
 
@@ -353,7 +350,6 @@ ff_fdct248_islow (DCTELEM * data)
   int_fast32_t z1;
   DCTELEM *dataptr;
   int ctr;
-  SHIFT_TEMPS
 
   row_fdct(data);
 
