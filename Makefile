@@ -82,7 +82,7 @@ alltools: $(TOOLS)
 
 documentation: $(addprefix doc/, developer.html faq.html ffmpeg-doc.html \
                                  ffplay-doc.html ffserver-doc.html       \
-                                 general.html vfilters.html $(ALLMANPAGES))
+                                 general.html libavfilter.html $(ALLMANPAGES))
 
 doc/%.html: doc/%.texi
 	texi2html -monolithic -number $<

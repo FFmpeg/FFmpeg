@@ -1,9 +1,9 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle Video Filter Documentation
+@settitle Libavfilter Documentation
 @titlepage
 @sp 7
-@center @titlefont{Video Filter Documentation}
+@center @titlefont{Libavfilter Documentation}
 @sp 3
 @end titlepage
 
