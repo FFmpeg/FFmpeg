@@ -84,4 +84,35 @@ Below is a description of the currently available video filters.
 
 Pass the source unchanged to the output.
 
+@section crop
+
+Crop the input video to x:y:width:height.
+
+@example
+./ffmpeg -i in.avi -vfilters "crop=0:0:0:240" out.avi
+@end example
+
+``x'' and ``y'' specify the position of the top-left corner of the
+output (non-cropped) area.
+
+The default value of ``x'' and ``y'' is 0.
+
+The ``w'' and ``h'' parameters specify the width and height of the
+output (non-cropped) area.
+
+A value of 0 is interpreted as the maximum possible size contained in
+the area delimited by the top-left corner at position x:y.
+
+For example the parameters:
+
+@example
+"crop=100:100:0:0"
+@end example
+
+will delimit the rectangle with the top-left corner placed at position
+100:100 and the right-bottom corner corresponding to the right-bottom
+corner of the input image.
+
+The default value of ``w'' and ``h'' is 0.
+
 @bye
