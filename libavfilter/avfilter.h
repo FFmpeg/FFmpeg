@@ -176,7 +176,7 @@ struct AVFilterFormats
  * @param pix_fmt list of pixel formats, terminated by PIX_FMT_NONE
  * @return the format list, with no existing references
  */
-AVFilterFormats *avfilter_make_format_list(const enum PixelFormat *pix_fmt);
+AVFilterFormats *avfilter_make_format_list(const enum PixelFormat *pix_fmts);
 
 /**
  * Returns a list of all colorspaces supported by FFmpeg.

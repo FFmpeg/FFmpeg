@@ -69,18 +69,18 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     return ret;
 }
 
-AVFilterFormats *avfilter_make_format_list(const enum PixelFormat *pix_fmt)
+AVFilterFormats *avfilter_make_format_list(const enum PixelFormat *pix_fmts)
 {
     AVFilterFormats *formats;
     int count;
 
-    for (count = 0; pix_fmt[count] != PIX_FMT_NONE; count++)
+    for (count = 0; pix_fmts[count] != PIX_FMT_NONE; count++)
         ;
 
     formats               = av_mallocz(sizeof(AVFilterFormats));
     formats->formats      = av_malloc(sizeof(*formats->formats) * count);
     formats->format_count = count;
-    memcpy(formats->formats, pix_fmt, sizeof(*formats->formats) * count);
+    memcpy(formats->formats, pix_fmts, sizeof(*formats->formats) * count);
 
     return formats;
 }
