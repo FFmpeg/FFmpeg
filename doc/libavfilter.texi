@@ -80,10 +80,6 @@ build.
 
 Below is a description of the currently available video filters.
 
-@section null
-
-Pass the source unchanged to the output.
-
 @section crop
 
 Crop the input video to x:y:width:height.
@@ -114,5 +110,9 @@ will delimit the rectangle with the top-left corner placed at position
 corner of the input image.
 
 The default value of ``w'' and ``h'' is 0.
+
+@section null
+
+Pass the source unchanged to the output.
 
 @bye
