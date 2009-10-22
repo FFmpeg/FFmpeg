@@ -128,7 +128,9 @@ static int find_image_range(int *pfirst_index, int *plast_index,
         if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0){
             *pfirst_index =
             *plast_index = 1;
-            return 0;
+            if(url_exist(buf))
+                return 0;
+            return -1;
         }
         if (url_exist(buf))
             break;
@@ -221,7 +223,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     if (!s->is_pipe) {
         if (find_image_range(&first_index, &last_index, s->path) < 0)
-            return AVERROR(EIO);
+            return AVERROR(ENOENT);
         s->img_first = first_index;
         s->img_last = last_index;
         s->img_number = first_index;
