@@ -86,10 +86,12 @@ static const int AdaptationTable[] = {
         768, 614, 512, 409, 307, 230, 230, 230
 };
 
+/** Divided by 4 to fit in 8-bit integers */
 static const uint8_t AdaptCoeff1[] = {
         64, 128, 0, 48, 60, 115, 98
 };
 
+/** Divided by 4 to fit in 8-bit integers */
 static const int8_t AdaptCoeff2[] = {
         0, -64, 0, 16, 0, -52, -58
 };
