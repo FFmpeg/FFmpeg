@@ -201,8 +201,8 @@ stddev:  903.51 PSNR: 37.20 bytes:  1061792/  1058444
 281252 ./tests/data/a-adpcm_qt.aiff
 9580492803ba1c1a3746367b24b751c8 *./tests/data/adpcm_ima_qt.rotozoom.out.wav
 stddev:  914.63 PSNR: 37.09 bytes:  1058604/  1058444
-9f813f0cc8b2c05821a31828eadf1188 *./tests/data/a-adpcm_ms.wav
-268344 ./tests/data/a-adpcm_ms.wav
+a407b87daeef5b25dfb6c5b3f519e9c1 *./tests/data/a-adpcm_ms.wav
+268378 ./tests/data/a-adpcm_ms.wav
 7be370f937c51e8a967e6a3d08d5156a *./tests/data/adpcm_ms.rotozoom.out.wav
 stddev: 1050.00 PSNR: 35.90 bytes:  1060620/  1058444
 2546d72df736b5ffa1557e8c9c9ef788 *./tests/data/a-adpcm_yam.wav

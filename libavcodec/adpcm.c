@@ -154,6 +154,8 @@ typedef struct ADPCMContext {
 #if CONFIG_ENCODERS
 static av_cold int adpcm_encode_init(AVCodecContext *avctx)
 {
+    uint8_t *extradata;
+    int i;
     if (avctx->channels > 2)
         return -1; /* only stereo or mono =) */
 
@@ -177,6 +179,16 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->frame_size = (BLKSIZE - 7 * avctx->channels) * 2 / avctx->channels + 2; /* each 16 bits sample gives one nibble */
                                                              /* and we have 7 bytes per channel overhead */
         avctx->block_align = BLKSIZE;
+        avctx->extradata_size = 32;
+        extradata = avctx->extradata = av_malloc(avctx->extradata_size);
+        if (!extradata)
+            return AVERROR(ENOMEM);
+        bytestream_put_le16(&extradata, avctx->frame_size);
+        bytestream_put_le16(&extradata, 7); /* wNumCoef */
+        for (i = 0; i < 7; i++) {
+            bytestream_put_le16(&extradata, AdaptCoeff1[i] * 4);
+            bytestream_put_le16(&extradata, AdaptCoeff2[i] * 4);
+        }
         break;
     case CODEC_ID_ADPCM_YAMAHA:
         avctx->frame_size = BLKSIZE * avctx->channels;
