@@ -170,7 +170,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
 
             if(last_pos == pos || pos == base - 8)
                 avi->non_interleaved= 1;
-            if(last_pos != pos)
+            if(last_pos != pos && (len || !ast->sample_size))
                 av_add_index_entry(st, pos, ast->cum_len, len, 0, key ? AVINDEX_KEYFRAME : 0);
 
             if(ast->sample_size)
@@ -905,7 +905,7 @@ resync:
                 ast->packet_size= size + 8;
                 ast->remaining= size;
 
-                {
+                if(size || !ast->sample_size){
                     uint64_t pos= url_ftell(pb) - 8;
                     if(!st->index_entries || !st->nb_index_entries || st->index_entries[st->nb_index_entries - 1].pos < pos){
                         av_add_index_entry(st, pos, ast->frame_offset, size, 0, AVINDEX_KEYFRAME);
@@ -964,7 +964,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
 
         if(last_pos == pos)
             avi->non_interleaved= 1;
-        else
+        else if(len || !ast->sample_size)
             av_add_index_entry(st, pos, ast->cum_len, len, 0, (flags&AVIIF_INDEX) ? AVINDEX_KEYFRAME : 0);
         if(ast->sample_size)
             ast->cum_len += len;
