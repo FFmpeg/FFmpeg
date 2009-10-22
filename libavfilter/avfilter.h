@@ -24,7 +24,7 @@
 
 #define LIBAVFILTER_VERSION_MAJOR  1
 #define LIBAVFILTER_VERSION_MINOR  4
-#define LIBAVFILTER_VERSION_MICRO  0
+#define LIBAVFILTER_VERSION_MICRO  1
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -406,6 +406,12 @@ typedef struct
 
     const AVFilterPad *inputs;  ///< NULL terminated list of inputs. NULL if none
     const AVFilterPad *outputs; ///< NULL terminated list of outputs. NULL if none
+
+    /**
+     * A description for the filter. You should use the
+     * NULL_IF_CONFIG_SMALL() macro to define it.
+     */
+    const char *description;
 } AVFilter;
 
 /** An instance of a filter */
@@ -426,12 +432,6 @@ struct AVFilterContext
     AVFilterLink **outputs;         ///< array of pointers to output links
 
     void *priv;                     ///< private data for use by the filter
-
-    /**
-     * A description for the filter. You should use the
-     * NULL_IF_CONFIG_SMALL() macro to define it.
-     */
-    const char *description;
 };
 
 /**
