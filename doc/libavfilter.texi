@@ -115,4 +115,12 @@ The default value of ``w'' and ``h'' is 0.
 
 Pass the source unchanged to the output.
 
+@section vflip
+
+Flip the input video vertically.
+
+@example
+./ffmpeg -i in.avi -vfilters "vflip" out.avi
+@end example
+
 @bye

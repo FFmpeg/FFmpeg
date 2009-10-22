@@ -13,5 +13,6 @@ OBJS = allfilters.o                                                     \
 
 OBJS-$(CONFIG_CROP_FILTER)    += vf_crop.o
 OBJS-$(CONFIG_NULL_FILTER)    += vf_null.o
+OBJS-$(CONFIG_VFLIP_FILTER)   += vf_vflip.o
 
 include $(SUBDIR)../subdir.mak
