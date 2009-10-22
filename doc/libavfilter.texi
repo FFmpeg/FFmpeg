@@ -109,7 +109,7 @@ will delimit the rectangle with the top-left corner placed at position
 100:100 and the right-bottom corner corresponding to the right-bottom
 corner of the input image.
 
-The default value of ``w'' and ``h'' is 0.
+The default value of ``width'' and ``height'' is 0.
 
 @section null
 
