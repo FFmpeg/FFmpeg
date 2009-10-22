@@ -93,8 +93,8 @@ output (non-cropped) area.
 
 The default value of ``x'' and ``y'' is 0.
 
-The ``w'' and ``h'' parameters specify the width and height of the
-output (non-cropped) area.
+The ``width'' and ``height'' parameters specify the width and height
+of the output (non-cropped) area.
 
 A value of 0 is interpreted as the maximum possible size contained in
 the area delimited by the top-left corner at position x:y.
