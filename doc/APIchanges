@@ -12,8 +12,8 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
-2009-10-23 - r20354 - lavfi 1.4.0 - AVFilterContext.description
-  Add a description field to AVFilterContext.
+2009-10-23 - r20356 - lavfi 1.4.1 - AVFilter.description
+  Add a description field to AVFilter.
 
 2009-10-19 - r20302 - lavfi 1.3.0 - avfilter_make_format_list()
   Change the interface of avfilter_make_format_list() from
