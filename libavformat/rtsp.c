@@ -1172,7 +1172,8 @@ static int rtsp_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
     RTSPState *rt = s->priv_data;
-    char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128], *option_list, *option;
+    char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128];
+    char *option_list, *option, *filename;
     URLContext *rtsp_hd;
     int port, ret, err;
     RTSPMessageHeader reply1, *reply = &reply1;
@@ -1199,14 +1200,14 @@ static int rtsp_read_header(AVFormatContext *s,
     /* search for options */
     option_list = strchr(path, '?');
     if (option_list) {
-        /* remove the options from the path */
-        *option_list++ = 0;
+        filename = strchr(s->filename, '?');
         while(option_list) {
             /* move the option pointer */
-            option = option_list;
+            option = ++option_list;
             option_list = strchr(option_list, '&');
             if (option_list)
-                *(option_list++) = 0;
+                *option_list = 0;
+
             /* handle the options */
             if (strcmp(option, "udp") == 0)
                 lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_UDP);
@@ -1214,12 +1215,13 @@ static int rtsp_read_header(AVFormatContext *s,
                 lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_UDP_MULTICAST);
             else if (strcmp(option, "tcp") == 0)
                 lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_TCP);
+            else {
+                strcpy(++filename, option);
+                filename += strlen(option);
+                if (option_list) *filename = '&';
+            }
         }
-        // Suppress the options in the filename
-        if (option_list = strchr(s->filename, '?')) {
-            *option_list = 0;
-            dprintf(NULL, "### rtsp_read_header: suppr options:%s\n", s->filename);
-        }
+        *filename = 0;
     }
 
     if (!lower_transport_mask)
