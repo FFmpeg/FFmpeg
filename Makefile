@@ -297,7 +297,7 @@ $(CODEC_TESTS) regtest-ref: tests/tiny_psnr$(HOSTEXESUF)
 	$(SRC_PATH)/tests/codec-regression.sh $@ rotozoom tests/vsynth2 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 $(LAVF_TESTS):
-	$(SRC_PATH)/tests/codec-regression.sh $@ lavf tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	$(SRC_PATH)/tests/lavf-regression.sh $@ lavf tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
 
 $(LAVFI_TESTS):
 	$(SRC_PATH)/tests/codec-regression.sh $@ lavfi tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
