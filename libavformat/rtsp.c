@@ -1125,12 +1125,19 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
             {
                 char url[1024];
                 struct in_addr in;
+                int port, ttl;
 
-                in.s_addr = htonl(reply->transports[0].destination);
+                if (reply->transports[0].destination) {
+                    in.s_addr = htonl(reply->transports[0].destination);
+                    port      = reply->transports[0].port_min;
+                    ttl       = reply->transports[0].ttl;
+                } else {
+                    in        = rtsp_st->sdp_ip;
+                    port      = rtsp_st->sdp_port;
+                    ttl       = rtsp_st->sdp_ttl;
+                }
                 snprintf(url, sizeof(url), "rtp://%s:%d?ttl=%d",
-                         inet_ntoa(in),
-                         reply->transports[0].port_min,
-                         reply->transports[0].ttl);
+                         inet_ntoa(in), port, ttl);
                 if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
                     err = AVERROR_INVALIDDATA;
                     goto fail;
