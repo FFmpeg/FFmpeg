@@ -1215,6 +1215,11 @@ static int rtsp_read_header(AVFormatContext *s,
             else if (strcmp(option, "tcp") == 0)
                 lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_TCP);
         }
+        // Suppress the options in the filename
+        if (option_list = strchr(s->filename, '?')) {
+            *option_list = 0;
+            dprintf(NULL, "### rtsp_read_header: suppr options:%s\n", s->filename);
+        }
     }
 
     if (!lower_transport_mask)
