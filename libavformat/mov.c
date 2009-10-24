@@ -1429,6 +1429,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     unsigned int stss_index = 0;
     unsigned int stps_index = 0;
     unsigned int i, j;
+    uint64_t stream_size = 0;
 
     /* adjust first dts according to edit list */
     if (sc->time_offset) {
@@ -1488,6 +1489,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 }
 
                 current_offset += sample_size;
+                stream_size += sample_size;
                 current_dts += sc->stts_data[stts_index].duration;
                 distance++;
                 stts_sample++;
@@ -1498,6 +1500,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 }
             }
         }
+        st->codec->bit_rate = stream_size*8*sc->time_scale/st->duration;
     } else {
         for (i = 0; i < sc->chunk_count; i++) {
             unsigned chunk_samples;
