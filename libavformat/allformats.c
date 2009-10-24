@@ -162,7 +162,6 @@ void av_register_all(void)
     REGISTER_DEMUXER  (QCP, qcp);
     REGISTER_DEMUXER  (R3D, r3d);
     REGISTER_MUXDEMUX (RAWVIDEO, rawvideo);
-    REGISTER_DEMUXER  (REDIR, redir);
     REGISTER_DEMUXER  (RL2, rl2);
     REGISTER_MUXDEMUX (RM, rm);
     REGISTER_MUXDEMUX (ROQ, roq);
