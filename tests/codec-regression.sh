@@ -7,7 +7,7 @@
 
 set -e
 
-. tests/regression-funcs.sh
+. $(dirname $0)/regression-funcs.sh
 
 eval do_$test=y
 
