@@ -1340,7 +1340,6 @@ static int rtsp_read_header(AVFormatContext *s,
     rtsp_close_streams(rt);
     av_freep(&content);
     url_close(rt->rtsp_hd);
-    av_freep(&rt->auth_b64);
     if (reply->status_code >=300 && reply->status_code < 400) {
         av_strlcpy(s->filename, reply->location, sizeof(s->filename));
         av_log(s, AV_LOG_INFO, "Status %d: Redirecting to %s\n",
