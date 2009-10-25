@@ -264,6 +264,7 @@ IF%1 mova  Z(1), m3
 %endmacro
 
 INIT_XMM
+%define mova movaps
 
 %define Z(x) [r0+mmsize*x]
 
@@ -403,6 +404,7 @@ DEFINE_ARGS z, w, n, o1, o3
 %endmacro
 
 INIT_XMM
+%define mova movaps
 DECL_PASS pass_sse, PASS_BIG 1
 DECL_PASS pass_interleave_sse, PASS_BIG 0
 
