@@ -176,8 +176,9 @@ static void dprintf_picref(void *ctx, AVFilterPicRef *picref, int end)
 static void dprintf_link(void *ctx, AVFilterLink *link, int end)
 {
     dprintf(ctx,
-            "link[%p s:%dx%d %-16s->%-16s]%s",
+            "link[%p s:%dx%d fmt:%-16s %-16s->%-16s]%s",
             link, link->w, link->h,
+            avcodec_get_pix_fmt_name(link->format),
             link->src ? link->src->filter->name : "",
             link->dst ? link->dst->filter->name : "",
             end ? "\n" : "");
