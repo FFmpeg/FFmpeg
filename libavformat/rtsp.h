@@ -121,6 +121,10 @@ typedef struct RTSPMessageHeader {
      * should be re-transmitted by the client in every RTSP command. */
     char session_id[512];
 
+    /** the "Location:" field. This value is used to handle redirection.
+     */
+    char location[4096];
+
     /** the "RealChallenge1:" field from the server */
     char real_challenge[64];
 

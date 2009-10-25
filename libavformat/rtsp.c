@@ -704,6 +704,9 @@ void rtsp_parse_line(RTSPMessageHeader *reply, const char *buf)
     } else if (av_stristart(p, "Notice:", &p) ||
                av_stristart(p, "X-Notice:", &p)) {
         reply->notice = strtol(p, NULL, 10);
+    } else if (av_stristart(p, "Location:", &p)) {
+        skip_spaces(&p);
+        av_strlcpy(reply->location, p , sizeof(reply->location));
     }
 }
 
@@ -1180,7 +1183,7 @@ static int rtsp_read_header(AVFormatContext *s,
     unsigned char *content = NULL;
     int lower_transport_mask = 0;
     char real_challenge[64];
-
+  redirect:
     /* extract hostname and port */
     url_split(NULL, 0, auth, sizeof(auth),
               host, sizeof(host), &port, path, sizeof(path), s->filename);
@@ -1338,6 +1341,13 @@ static int rtsp_read_header(AVFormatContext *s,
     av_freep(&content);
     url_close(rt->rtsp_hd);
     av_freep(&rt->auth_b64);
+    if (reply->status_code >=300 && reply->status_code < 400) {
+        av_strlcpy(s->filename, reply->location, sizeof(s->filename));
+        av_log(s, AV_LOG_INFO, "Status %d: Redirecting to %s\n",
+               reply->status_code,
+               s->filename);
+        goto redirect;
+    }
     return err;
 }
 
