@@ -1880,6 +1880,7 @@ case $target_os in
     sunos)
         FFSERVERLDFLAGS=""
         SHFLAGS='-shared -Wl,-h,$$(@F)'
+        enabled x86 && SHFLAGS="-mimpure-text $SHFLAGS"
         network_extralibs="-lsocket -lnsl"
         add_cppflags -D__EXTENSIONS__
         ;;
