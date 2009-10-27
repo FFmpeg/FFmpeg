@@ -24,16 +24,6 @@
 #include "pnm.h"
 
 
-static av_cold int common_init(AVCodecContext *avctx)
-{
-    PNMContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults((AVFrame*)&s->picture);
-    avctx->coded_frame = (AVFrame*)&s->picture;
-
-    return 0;
-}
-
 static int pnm_decode_frame(AVCodecContext *avctx, void *data,
                             int *data_size, AVPacket *avpkt)
 {
@@ -332,16 +322,6 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf,
     return s->bytestream - s->bytestream_start;
 }
 
-static av_cold int common_end(AVCodecContext *avctx)
-{
-    PNMContext *s = avctx->priv_data;
-
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
-
-    return 0;
-}
-
 
 #if CONFIG_PGM_DECODER
 AVCodec pgm_decoder = {
@@ -349,9 +329,9 @@ AVCodec pgm_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_PGM,
     sizeof(PNMContext),
-    common_init,
+    ff_pnm_init,
     NULL,
-    common_end,
+    ff_pnm_end,
     pnm_decode_frame,
     CODEC_CAP_DR1,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_GRAY8, PIX_FMT_GRAY16BE, PIX_FMT_NONE},
@@ -365,7 +345,7 @@ AVCodec pgm_encoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_PGM,
     sizeof(PNMContext),
-    common_init,
+    ff_pnm_init,
     pnm_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_GRAY8, PIX_FMT_GRAY16BE, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
@@ -378,9 +358,9 @@ AVCodec pgmyuv_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_PGMYUV,
     sizeof(PNMContext),
-    common_init,
+    ff_pnm_init,
     NULL,
-    common_end,
+    ff_pnm_end,
     pnm_decode_frame,
     CODEC_CAP_DR1,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
@@ -394,7 +374,7 @@ AVCodec pgmyuv_encoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_PGMYUV,
     sizeof(PNMContext),
-    common_init,
+    ff_pnm_init,
     pnm_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
@@ -407,9 +387,9 @@ AVCodec ppm_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_PPM,
     sizeof(PNMContext),
-    common_init,
+    ff_pnm_init,
     NULL,
-    common_end,
+    ff_pnm_end,
     pnm_decode_frame,
     CODEC_CAP_DR1,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB48BE, PIX_FMT_NONE},
@@ -423,7 +403,7 @@ AVCodec ppm_encoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_PPM,
     sizeof(PNMContext),
-    common_init,
+    ff_pnm_init,
     pnm_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB48BE, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
@@ -436,9 +416,9 @@ AVCodec pbm_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_PBM,
     sizeof(PNMContext),
-    common_init,
+    ff_pnm_init,
     NULL,
-    common_end,
+    ff_pnm_end,
     pnm_decode_frame,
     CODEC_CAP_DR1,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_MONOWHITE, PIX_FMT_NONE},
@@ -452,7 +432,7 @@ AVCodec pbm_encoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_PBM,
     sizeof(PNMContext),
-    common_init,
+    ff_pnm_init,
     pnm_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_MONOWHITE, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
@@ -465,9 +445,9 @@ AVCodec pam_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_PAM,
     sizeof(PNMContext),
-    common_init,
+    ff_pnm_init,
     NULL,
-    common_end,
+    ff_pnm_end,
     pnm_decode_frame,
     CODEC_CAP_DR1,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, PIX_FMT_NONE},
@@ -481,7 +461,7 @@ AVCodec pam_encoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_PAM,
     sizeof(PNMContext),
-    common_init,
+    ff_pnm_init,
     pam_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
