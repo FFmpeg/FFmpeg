@@ -337,40 +337,6 @@ static av_cold int common_end(AVCodecContext *avctx){
     return 0;
 }
 
-#if 0
-static int pnm_probe(AVProbeData *pd)
-{
-    const char *p = pd->buf;
-    if (pd->buf_size >= 8 &&
-        p[0] == 'P' &&
-        p[1] >= '4' && p[1] <= '6' &&
-        pnm_space(p[2]) )
-        return AVPROBE_SCORE_MAX - 1; /* to permit pgmyuv probe */
-    else
-        return 0;
-}
-
-static int pgmyuv_probe(AVProbeData *pd)
-{
-    if (match_ext(pd->filename, "pgmyuv"))
-        return AVPROBE_SCORE_MAX;
-    else
-        return 0;
-}
-
-static int pam_probe(AVProbeData *pd)
-{
-    const char *p = pd->buf;
-    if (pd->buf_size >= 8 &&
-        p[0] == 'P' &&
-        p[1] == '7' &&
-        p[2] == '\n')
-        return AVPROBE_SCORE_MAX;
-    else
-        return 0;
-}
-#endif
-
 
 #if CONFIG_PGM_DECODER
 AVCodec pgm_decoder = {
