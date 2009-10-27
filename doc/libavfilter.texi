@@ -111,6 +111,40 @@ corner of the input image.
 
 The default value of ``width'' and ``height'' is 0.
 
+@section format
+
+Convert the input video to one of the specified pixel formats.
+Libavfilter will try to pick one that is supported as the input to
+the next filter.
+
+The filter takes as argument a list of pixel format names, separated
+by ``:'', for example ``yuv420p:monow:rgb24''.
+
+The following command:
+
+@example
+./ffmpeg -i in.avi -vfilters "format=yuv420p" out.avi
+@end example
+
+will convert the input video to the format ``yuv420p''.
+
+@section noformat
+
+Force libavfilter not to use any of the specified pixel formats as the
+input to the next filter.
+
+The filter takes as argument a list of pixel format names, separated
+by ``:'', for example ``yuv420p:monow:rgb24''.
+
+The following command:
+
+@example
+./ffmpeg -i in.avi -vfilters "noformat=yuv420p, vflip" out.avi
+@end example
+
+will make libavfilter use a format different from ``yuv420p'' as the
+input to the vflip filter.
+
 @section null
 
 Pass the source unchanged to the output.
