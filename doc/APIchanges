@@ -12,6 +12,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-10-27 - r20385 - lavfi 1.5.0 - AVFilter.next
+  Add a next field to AVFilter, this is used for simplifying the
+  registration and management of the registered filters.
+
 2009-10-23 - r20356 - lavfi 1.4.1 - AVFilter.description
   Add a description field to AVFilter.
 
