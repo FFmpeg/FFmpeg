@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/pixfmt.h"
+#include "pixfmt.h"
 #include "pixdesc.h"
 
 const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {

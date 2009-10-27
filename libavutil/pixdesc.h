@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_PIXDESC_H
-#define AVCODEC_PIXDESC_H
+#ifndef AVUTIL_PIXDESC_H
+#define AVUTIL_PIXDESC_H
 
 #include <inttypes.h>
 
-#include "libavutil/intreadwrite.h"
+#include "intreadwrite.h"
 
 typedef struct AVComponentDescriptor{
     uint16_t plane        :2;            ///< which of the 4 planes contains the component
@@ -204,4 +204,4 @@ static inline void write_line(const uint16_t *src, uint8_t *data[4], const int l
  */
 int av_get_bits_per_pixel(const AVPixFmtDescriptor *pixdesc);
 
-#endif /* AVCODEC_PIXDESC_H */
+#endif /* AVUTIL_PIXDESC_H */
