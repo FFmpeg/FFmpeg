@@ -28,13 +28,6 @@ unsigned avfilter_version(void) {
     return LIBAVFILTER_VERSION_INT;
 }
 
-/** list of registered filters */
-static struct FilterList
-{
-    AVFilter *filter;
-    struct FilterList *next;
-} *filters = NULL;
-
 /** helper macros to get the in/out pad on the dst/src filter */
 #define link_dpad(link)     link->dst-> input_pads[link->dstpad]
 #define link_spad(link)     link->src->output_pads[link->srcpad]
@@ -327,34 +320,33 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
     draw_slice(link, y, h);
 }
 
+AVFilter *first_avfilter = NULL;
+
 AVFilter *avfilter_get_by_name(const char *name)
 {
-    struct FilterList *filt;
+    AVFilter *filter;
 
-    for(filt = filters; filt; filt = filt->next)
-        if(!strcmp(filt->filter->name, name))
-            return filt->filter;
+    for (filter = first_avfilter; filter; filter = filter->next)
+        if (!strcmp(filter->name, name))
+            return filter;
 
     return NULL;
 }
 
 void avfilter_register(AVFilter *filter)
 {
-    struct FilterList *newfilt = av_malloc(sizeof(struct FilterList));
+    AVFilter **p;
+    p = &first_avfilter;
+    while (*p)
+        p = &(*p)->next;
 
-    newfilt->filter = filter;
-    newfilt->next   = filters;
-    filters         = newfilt;
+    *p = filter;
+    filter->next = NULL;
 }
 
 void avfilter_uninit(void)
 {
-    struct FilterList *tmp;
-
-    for(; filters; filters = tmp) {
-        tmp = filters->next;
-        av_free(filters);
-    }
+    first_avfilter = NULL;
 }
 
 static int pad_count(const AVFilterPad *pads)
