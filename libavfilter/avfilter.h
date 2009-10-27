@@ -23,8 +23,8 @@
 #define AVFILTER_AVFILTER_H
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR  4
-#define LIBAVFILTER_VERSION_MICRO  1
+#define LIBAVFILTER_VERSION_MINOR  5
+#define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -374,7 +374,7 @@ int avfilter_default_query_formats(AVFilterContext *ctx);
  * Filter definition. This defines the pads a filter contains, and all the
  * callback functions used to interact with the filter.
  */
-typedef struct
+typedef struct AVFilter
 {
     const char *name;         ///< filter name
 
@@ -412,6 +412,11 @@ typedef struct
      * NULL_IF_CONFIG_SMALL() macro to define it.
      */
     const char *description;
+
+    /**
+     * The next registered filter, NULL if this is the last one.
+     */
+    struct AVFilter *next;
 } AVFilter;
 
 /** An instance of a filter */
