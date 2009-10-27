@@ -87,6 +87,8 @@ static void draw_slice(AVFilterLink *link, int y, int h)
 
 AVFilter avfilter_vf_vflip = {
     .name      = "vflip",
+    .description = NULL_IF_CONFIG_SMALL("Flip the input video vertically."),
+
     .priv_size = sizeof(FlipContext),
 
     .inputs    = (AVFilterPad[]) {{ .name             = "default",

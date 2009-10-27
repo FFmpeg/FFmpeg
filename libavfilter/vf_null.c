@@ -41,6 +41,7 @@ static void end_frame(AVFilterLink *link)
 
 AVFilter avfilter_vf_null = {
     .name      = "null",
+    .description = NULL_IF_CONFIG_SMALL("Pass the source unchanged to the output."),
 
     .priv_size = 0,
 

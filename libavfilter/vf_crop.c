@@ -214,6 +214,8 @@ static void draw_slice(AVFilterLink *link, int y, int h)
 
 AVFilter avfilter_vf_crop = {
     .name      = "crop",
+    .description = NULL_IF_CONFIG_SMALL("Crop the input video to x:y:width:height."),
+
     .priv_size = sizeof(CropContext),
 
     .query_formats = query_formats,
