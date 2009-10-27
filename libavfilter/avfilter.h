@@ -556,10 +556,10 @@ void avfilter_end_frame(AVFilterLink *link);
  */
 void avfilter_draw_slice(AVFilterLink *link, int y, int h);
 
-/** Initialize the filter system. Registers all builtin filters */
+/** Initializes the filter system. Registers all builtin filters. */
 void avfilter_register_all(void);
 
-/** Uninitialize the filter system. Unregisters all filters */
+/** Uninitializes the filter system. Unregisters all filters. */
 void avfilter_uninit(void);
 
 /**
