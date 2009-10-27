@@ -40,6 +40,19 @@
 void ff_acelp_reorder_lsf(int16_t* lsfq, int lsfq_min_distance, int lsfq_min, int lsfq_max, int lp_order);
 
 /**
+ * Adjust the quantized LSFs so they are increasing and not too close.
+ *
+ * This step is not mentioned in the AMR spec but is in the reference C decoder.
+ * Omitting this step creates audible distortion on the sinusoidal sweep
+ * test vectors in 3GPP TS 26.074.
+ *
+ * @param[in,out] lsf    LSFs in Hertz
+ * @param min_spacing    minimum distance between two consecutive lsf values
+ * @param                size size of the lsf vector
+ */
+void ff_set_min_dist_lsf(float *lsf, float min_spacing, int order);
+
+/**
  * \brief Convert LSF to LSP
  * \param lsp [out] LSP coefficients (-0x8000 <= (0.15) < 0x8000)
  * \param lsf normalized LSF coefficients (0 <= (2.13) < 0x2000 * PI)

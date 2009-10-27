@@ -164,4 +164,16 @@ void ff_acelp_weighted_vector_sum(
 void ff_weighted_vector_sumf(float *out, const float *in_a, const float *in_b,
                              float weight_coeff_a, float weight_coeff_b, int length);
 
+/**
+ * Adaptative gain control (as used in AMR postfiltering)
+ *
+ * @param buf_out the input speech buffer
+ * @param speech_energ input energy
+ * @param size the input buffer size
+ * @param alpha exponential filter factor
+ * @param gain_mem a pointer to the filter memory (single float of size)
+ */
+void ff_adaptative_gain_control(float *buf_out, float speech_energ,
+                                int size, float alpha, float *gain_mem);
+
 #endif /* AVCODEC_ACELP_VECTORS_H */

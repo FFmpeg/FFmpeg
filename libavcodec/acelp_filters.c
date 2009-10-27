@@ -73,6 +73,26 @@ void ff_acelp_interpolate(int16_t* out, const int16_t* in,
     }
 }
 
+void ff_acelp_interpolatef(float *out, const float *in,
+                           const float *filter_coeffs, int precision,
+                           int frac_pos, int filter_length, int length)
+{
+    int n, i;
+
+    for (n = 0; n < length; n++) {
+        int idx = 0;
+        float v = 0;
+
+        for (i = 0; i < filter_length;) {
+            v += in[n + i] * filter_coeffs[idx + frac_pos];
+            idx += precision;
+            i++;
+            v += in[n - i] * filter_coeffs[idx - frac_pos];
+        }
+        out[n] = v;
+    }
+}
+
 
 void ff_acelp_high_pass_filter(int16_t* out, int hpf_f[2],
                                const int16_t* in, int length)
@@ -110,3 +130,16 @@ void ff_acelp_apply_order_2_transfer_function(float *buf,
         mem[0] = tmp;
     }
 }
+
+void ff_tilt_compensation(float *mem, float tilt, float *samples, int size)
+{
+    float new_tilt_mem = samples[size - 1];
+    int i;
+
+    for (i = size - 1; i > 0; i--)
+        samples[i] -= tilt * samples[i - 1];
+
+    samples[0] -= tilt * *mem;
+    *mem = new_tilt_mem;
+}
+
