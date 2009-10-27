@@ -18,6 +18,7 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
 #include "avcodec.h"
 #include "pnm.h"
 
@@ -32,10 +33,10 @@ static void pnm_get(PNMContext *sc, char *str, int buf_size)
     int c;
 
     /* skip spaces and comments */
-    for(;;) {
+    for (;;) {
         c = *sc->bytestream++;
         if (c == '#')  {
-            do  {
+            do {
                 c = *sc->bytestream++;
             } while (c != '\n' && sc->bytestream < sc->bytestream_end);
         } else if (!pnm_space(c)) {
@@ -52,7 +53,8 @@ static void pnm_get(PNMContext *sc, char *str, int buf_size)
     *s = '\0';
 }
 
-int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
+int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
+{
     char buf1[32], tuple_type[32];
     int h, w, depth, maxval;
 
@@ -67,12 +69,12 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
     } else if (!strcmp(buf1, "P6")) {
         avctx->pix_fmt = PIX_FMT_RGB24;
     } else if (!strcmp(buf1, "P7")) {
-        w = -1;
-        h = -1;
+        w      = -1;
+        h      = -1;
         maxval = -1;
-        depth = -1;
+        depth  = -1;
         tuple_type[0] = '\0';
-        for(;;) {
+        for (;;) {
             pnm_get(s, buf1, sizeof(buf1));
             if (!strcmp(buf1, "WIDTH")) {
                 pnm_get(s, buf1, sizeof(buf1));
@@ -98,7 +100,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
         if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0' || avcodec_check_dimensions(avctx, w, h))
             return -1;
 
-        avctx->width = w;
+        avctx->width  = w;
         avctx->height = h;
         if (depth == 1) {
             if (maxval == 1)

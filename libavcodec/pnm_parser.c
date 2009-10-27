@@ -23,63 +23,62 @@
 #include "pnm.h"
 
 
-static int pnm_parse(AVCodecParserContext *s,
-                           AVCodecContext *avctx,
-                           const uint8_t **poutbuf, int *poutbuf_size,
-                           const uint8_t *buf, int buf_size)
+static int pnm_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+                     const uint8_t **poutbuf, int *poutbuf_size,
+                     const uint8_t *buf, int buf_size)
 {
     ParseContext *pc = s->priv_data;
     PNMContext pnmctx;
     int next;
 
-    for(; pc->overread>0; pc->overread--){
+    for (; pc->overread > 0; pc->overread--) {
         pc->buffer[pc->index++]= pc->buffer[pc->overread_index++];
     }
 retry:
-    if(pc->index){
-        pnmctx.bytestream_start=
-        pnmctx.bytestream= pc->buffer;
-        pnmctx.bytestream_end= pc->buffer + pc->index;
-    }else{
-        pnmctx.bytestream_start=
-        pnmctx.bytestream= (uint8_t *) buf; /* casts avoid warnings */
-        pnmctx.bytestream_end= (uint8_t *) buf + buf_size;
+    if (pc->index) {
+        pnmctx.bytestream_start =
+        pnmctx.bytestream       = pc->buffer;
+        pnmctx.bytestream_end   = pc->buffer + pc->index;
+    } else {
+        pnmctx.bytestream_start =
+        pnmctx.bytestream       = (uint8_t *) buf; /* casts avoid warnings */
+        pnmctx.bytestream_end   = (uint8_t *) buf + buf_size;
     }
-    if(ff_pnm_decode_header(avctx, &pnmctx) < 0){
-        if(pnmctx.bytestream < pnmctx.bytestream_end){
-            if(pc->index){
-                pc->index=0;
-            }else{
+    if (ff_pnm_decode_header(avctx, &pnmctx) < 0) {
+        if (pnmctx.bytestream < pnmctx.bytestream_end) {
+            if (pc->index) {
+                pc->index = 0;
+            } else {
                 buf++;
                 buf_size--;
             }
             goto retry;
         }
 #if 0
-        if(pc->index && pc->index*2 + FF_INPUT_BUFFER_PADDING_SIZE < pc->buffer_size && buf_size > pc->index){
+        if (pc->index && pc->index * 2 + FF_INPUT_BUFFER_PADDING_SIZE < pc->buffer_size && buf_size > pc->index) {
             memcpy(pc->buffer + pc->index, buf, pc->index);
             pc->index += pc->index;
-            buf += pc->index;
-            buf_size -= pc->index;
+            buf       += pc->index;
+            buf_size  -= pc->index;
             goto retry;
         }
 #endif
-        next= END_NOT_FOUND;
-    }else{
-        next= pnmctx.bytestream - pnmctx.bytestream_start
-            + avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
-        if(pnmctx.bytestream_start!=buf)
-            next-= pc->index;
-        if(next > buf_size)
-            next= END_NOT_FOUND;
+        next = END_NOT_FOUND;
+    } else {
+        next = pnmctx.bytestream - pnmctx.bytestream_start
+               + avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+        if (pnmctx.bytestream_start != buf)
+            next -= pc->index;
+        if (next > buf_size)
+            next = END_NOT_FOUND;
     }
 
-    if(ff_combine_frame(pc, next, &buf, &buf_size)<0){
-        *poutbuf = NULL;
+    if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
+        *poutbuf      = NULL;
         *poutbuf_size = 0;
         return buf_size;
     }
-    *poutbuf = buf;
+    *poutbuf      = buf;
     *poutbuf_size = buf_size;
     return next;
 }
