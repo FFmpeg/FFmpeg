@@ -75,9 +75,11 @@ struct vdpau_render_state {
         VdpPictureInfoVC1       vc1;
     } info;
 
-    /** Describe size/location of the compressed video data. */
+    /** Describe size/location of the compressed video data.
+        Set to 0 when freeing bitstream_buffers. */
     int bitstream_buffers_allocated;
     int bitstream_buffers_used;
+    /** The user is responsible for freeing this buffer using av_freep(). */
     VdpBitstreamBuffer *bitstream_buffers;
 };
 
