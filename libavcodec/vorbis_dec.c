@@ -160,6 +160,20 @@ typedef struct vorbis_context_s {
 #define BARK(x) \
     (13.1f * atan(0.00074f * (x)) + 2.24f * atan(1.85e-8f * (x) * (x)) + 1e-4f * (x))
 
+static const char idx_err_str[] = "Index value %d out of range (0 - %d) for %s at %s:%i\n";
+#define VALIDATE_INDEX(idx, limit) \
+    if (idx >= limit) {\
+        av_log(vc->avccontext, AV_LOG_ERROR,\
+               idx_err_str,\
+               (int)(idx), (int)(limit - 1), #idx, __FILE__, __LINE__);\
+        return -1;\
+    }
+#define GET_VALIDATED_INDEX(idx, bits, limit) \
+    {\
+        idx = get_bits(gb, bits);\
+        VALIDATE_INDEX(idx, limit)\
+    }
+
 static float vorbisfloat2float(uint_fast32_t val)
 {
     double mant = val & 0x1fffff;
@@ -490,22 +504,15 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
                 AV_DEBUG(" %d floor %d class dim: %d subclasses %d \n", i, j, floor_setup->data.t1.class_dimensions[j], floor_setup->data.t1.class_subclasses[j]);
 
                 if (floor_setup->data.t1.class_subclasses[j]) {
-                    int bits = get_bits(gb, 8);
-                    if (bits >= vc->codebook_count) {
-                        av_log(vc->avccontext, AV_LOG_ERROR, "Masterbook index %d is out of range.\n", bits);
-                        return -1;
-                    }
-                    floor_setup->data.t1.class_masterbook[j] = bits;
+                    GET_VALIDATED_INDEX(floor_setup->data.t1.class_masterbook[j], 8, vc->codebook_count)
 
                     AV_DEBUG("   masterbook: %d \n", floor_setup->data.t1.class_masterbook[j]);
                 }
 
                 for (k = 0; k < (1 << floor_setup->data.t1.class_subclasses[j]); ++k) {
                     int16_t bits = get_bits(gb, 8) - 1;
-                    if (bits != -1 && bits >= vc->codebook_count) {
-                        av_log(vc->avccontext, AV_LOG_ERROR, "Subclass book index %d is out of range.\n", bits);
-                        return -1;
-                    }
+                    if (bits != -1)
+                        VALIDATE_INDEX(bits, vc->codebook_count)
                     floor_setup->data.t1.subclass_books[j][k] = bits;
 
                     AV_DEBUG("    book %d. : %d \n", k, floor_setup->data.t1.subclass_books[j][k]);
@@ -564,10 +571,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
                 int idx;
                 uint_fast8_t book_idx;
                 for (idx = 0; idx < floor_setup->data.t0.num_books; ++idx) {
-                    book_idx = get_bits(gb, 8);
-                    if (book_idx >= vc->codebook_count)
-                        return -1;
-                    floor_setup->data.t0.book_list[idx] = book_idx;
+                    GET_VALIDATED_INDEX(floor_setup->data.t0.book_list[idx], 8, vc->codebook_count)
                     if (vc->codebooks[book_idx].dimensions > max_codebook_dim)
                         max_codebook_dim = vc->codebooks[book_idx].dimensions;
                 }
@@ -650,11 +654,7 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc)
         }
 
         res_setup->classifications = get_bits(gb, 6) + 1;
-        res_setup->classbook = get_bits(gb, 8);
-        if (res_setup->classbook >= vc->codebook_count) {
-            av_log(vc->avccontext, AV_LOG_ERROR, "classbook value %d out of range. \n", res_setup->classbook);
-            return -1;
-        }
+        GET_VALIDATED_INDEX(res_setup->classbook, 8, vc->codebook_count)
 
         AV_DEBUG("    begin %d end %d part.size %d classif.s %d classbook %d \n", res_setup->begin, res_setup->end, res_setup->partition_size,
           res_setup->classifications, res_setup->classbook);
@@ -673,12 +673,7 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc)
         for (j = 0; j < res_setup->classifications; ++j) {
             for (k = 0; k < 8; ++k) {
                 if (cascade[j]&(1 << k)) {
-                    int bits = get_bits(gb, 8);
-                    if (bits >= vc->codebook_count) {
-                        av_log(vc->avccontext, AV_LOG_ERROR, "book value %d out of range. \n", bits);
-                        return -1;
-                    }
-                    res_setup->books[j][k] = bits;
+                    GET_VALIDATED_INDEX(res_setup->books[j][k], 8, vc->codebook_count)
 
                     AV_DEBUG("     %d class casscade depth %d book: %d \n", j, k, res_setup->books[j][k]);
 
@@ -723,16 +718,8 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc)
             mapping_setup->magnitude      = av_mallocz(mapping_setup->coupling_steps * sizeof(uint_fast8_t));
             mapping_setup->angle          = av_mallocz(mapping_setup->coupling_steps * sizeof(uint_fast8_t));
             for (j = 0; j < mapping_setup->coupling_steps; ++j) {
-                mapping_setup->magnitude[j] = get_bits(gb, ilog(vc->audio_channels - 1));
-                mapping_setup->angle[j] = get_bits(gb, ilog(vc->audio_channels - 1));
-                if (mapping_setup->magnitude[j] >= vc->audio_channels) {
-                    av_log(vc->avccontext, AV_LOG_ERROR, "magnitude channel %d out of range. \n", mapping_setup->magnitude[j]);
-                    return -1;
-                }
-                if (mapping_setup->angle[j] >= vc->audio_channels) {
-                    av_log(vc->avccontext, AV_LOG_ERROR, "angle channel %d out of range. \n", mapping_setup->angle[j]);
-                    return -1;
-                }
+                GET_VALIDATED_INDEX(mapping_setup->magnitude[j], ilog(vc->audio_channels - 1), vc->audio_channels)
+                GET_VALIDATED_INDEX(mapping_setup->angle[j],     ilog(vc->audio_channels - 1), vc->audio_channels)
             }
         } else {
             mapping_setup->coupling_steps = 0;
@@ -752,20 +739,9 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc)
         }
 
         for (j = 0; j < mapping_setup->submaps; ++j) {
-            int bits;
             skip_bits(gb, 8); // FIXME check?
-            bits = get_bits(gb, 8);
-            if (bits >= vc->floor_count) {
-                av_log(vc->avccontext, AV_LOG_ERROR, "submap floor value %d out of range. \n", bits);
-                return -1;
-            }
-            mapping_setup->submap_floor[j] = bits;
-            bits = get_bits(gb, 8);
-            if (bits >= vc->residue_count) {
-                av_log(vc->avccontext, AV_LOG_ERROR, "submap residue value %d out of range. \n", bits);
-                return -1;
-            }
-            mapping_setup->submap_residue[j] = bits;
+            GET_VALIDATED_INDEX(mapping_setup->submap_floor[j],   8, vc->floor_count)
+            GET_VALIDATED_INDEX(mapping_setup->submap_residue[j], 8, vc->residue_count)
 
             AV_DEBUG("   %d mapping %d submap : floor %d, residue %d \n", i, j, mapping_setup->submap_floor[j], mapping_setup->submap_residue[j]);
         }
@@ -827,11 +803,7 @@ static int vorbis_parse_setup_hdr_modes(vorbis_context *vc)
         mode_setup->blockflag     = get_bits1(gb);
         mode_setup->windowtype    = get_bits(gb, 16); //FIXME check
         mode_setup->transformtype = get_bits(gb, 16); //FIXME check
-        mode_setup->mapping       = get_bits(gb,  8);
-        if (mode_setup->mapping >= vc->mapping_count) {
-            av_log(vc->avccontext, AV_LOG_ERROR, "mode mapping value %d out of range. \n", mode_setup->mapping);
-            return -1;
-        }
+        GET_VALIDATED_INDEX(mode_setup->mapping, 8, vc->mapping_count);
 
         AV_DEBUG(" %d mode: blockflag %d, windowtype %d, transformtype %d, mapping %d \n", i, mode_setup->blockflag, mode_setup->windowtype, mode_setup->transformtype, mode_setup->mapping);
     }
@@ -1498,11 +1470,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc)
     if (vc->mode_count == 1) {
         mode_number = 0;
     } else {
-        mode_number = get_bits(gb, ilog(vc->mode_count-1));
-    }
-    if (mode_number >= vc->mode_count) {
-        av_log(vc->avccontext, AV_LOG_ERROR, "mode number %d out of range.\n", mode_number);
-        return -1;
+        GET_VALIDATED_INDEX(mode_number, ilog(vc->mode_count-1), vc->mode_count)
     }
     vc->mode_number = mode_number;
     mapping = &vc->mappings[vc->modes[mode_number].mapping];
