@@ -63,6 +63,6 @@ static void mpegaudio_tableinit(void)
             exp_table[exponent]= llrint(f);
     }
 }
-#endif /* CONFIG_HARDCODED_TABLES && !TABLEGEN */
+#endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* MPEGAUDIO_TABLEGEN_H */
