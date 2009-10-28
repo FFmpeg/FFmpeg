@@ -687,7 +687,7 @@ TESTPROGS-$(HAVE_MMX) += motion
 
 DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
 
-CLEANFILES = sin_tables.c cos_tables.c costablegen$(HOSTEXESUF)
+CLEANFILES = sin_tables.c cos_tables.c costablegen$(HOSTEXESUF) *_tables.h *_tablegen$(HOSTEXESUF)
 
 include $(SUBDIR)../subdir.mak
 
@@ -701,3 +701,15 @@ $(SUBDIR)cos_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
 
 $(SUBDIR)sin_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
 	./$< sin > $@
+
+ifeq ($(CONFIG_MPEGAUDIO_HP),yes)
+$(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=23
+else
+$(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=15
+endif
+$(SUBDIR)%_tablegen$(HOSTEXESUF): $(SUBDIR)%_tablegen.c $(SUBDIR)tableprint.c
+	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^ $(HOSTLIBS)
+
+$(SUBDIR)mpegaudiodec.c: $(SUBDIR)mpegaudio_tables.h
+$(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
+	./$< > $@

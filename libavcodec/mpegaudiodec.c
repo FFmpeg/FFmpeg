@@ -92,12 +92,7 @@ static const int huff_quad_vlc_tables_sizes[2] = {
 };
 /* computed from band_size_long */
 static uint16_t band_index_long[9][23];
-/* XXX: free when all decoders are closed */
-#define TABLE_4_3_SIZE (8191 + 16)*4
-static int8_t  table_4_3_exp[TABLE_4_3_SIZE];
-static uint32_t table_4_3_value[TABLE_4_3_SIZE];
-static uint32_t exp_table[512];
-static uint32_t expval_table[512][16];
+#include "mpegaudio_tablegen.h"
 /* intensity stereo coef table */
 static int32_t is_table[2][16];
 static int32_t is_table_lsf[2][2][16];
@@ -407,27 +402,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
         /* compute n ^ (4/3) and store it in mantissa/exp format */
 
         int_pow_init();
-        for(i=1;i<TABLE_4_3_SIZE;i++) {
-            double value = i/4;
-            double f, fm;
-            int e, m;
-            f = value * cbrtf(value) * pow(2, (i&3)*0.25);
-            fm = frexp(f, &e);
-            m = (uint32_t)(fm*(1LL<<31) + 0.5);
-            e+= FRAC_BITS - 31 + 5 - 100;
-
-            /* normalized to FRAC_BITS */
-            table_4_3_value[i] = m;
-            table_4_3_exp[i] = -e;
-        }
-        for(i=0; i<512*16; i++){
-            double value = i & 15;
-            int exponent= (i>>4);
-            double f= value * cbrtf(value) * pow(2, (exponent-400)*0.25 + FRAC_BITS + 5);
-            expval_table[exponent][i&15]= llrint(f);
-            if((i&15)==1)
-                exp_table[exponent]= llrint(f);
-        }
+        mpegaudio_tableinit();
 
         for(i=0;i<7;i++) {
             float f;
