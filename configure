@@ -1800,6 +1800,8 @@ case "$arch" in
         arch="ia64"
         enable fast_64bit
         spic=$shared
+        # HACK: currently fails to build if .bss is > 4MB and shared libs are built
+        enabled shared && enable hardcoded_tables
     ;;
     m68k)
         arch="m68k"
