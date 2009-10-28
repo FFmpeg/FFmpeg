@@ -702,11 +702,12 @@ $(SUBDIR)cos_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
 $(SUBDIR)sin_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
 	./$< sin > $@
 
-ifeq ($(CONFIG_MPEGAUDIO_HP),yes)
+ifdef CONFIG_MPEGAUDIO_HP
 $(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=23
 else
 $(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=15
 endif
+
 $(SUBDIR)%_tablegen$(HOSTEXESUF): $(SUBDIR)%_tablegen.c $(SUBDIR)tableprint.c
 	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^ $(HOSTLIBS)
 
