@@ -778,6 +778,20 @@ check_foo_config(){
     return $err
 }
 
+check_host_cc(){
+    log check_host_cc "$@"
+    cat > $TMPC
+    log_file $TMPC
+    check_cmd $host_cc $host_cflags "$@" -c -o $TMPO $TMPC
+}
+
+check_host_cflags(){
+    log check_host_cflags "$@"
+    check_host_cc "$@" <<EOF && append host_cflags "$@"
+int x;
+EOF
+}
+
 apply(){
     file=$1
     shift
@@ -1312,7 +1326,7 @@ LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 
 CC_O='-o $@'
 
-host_cflags='-O3 -g -Wall'
+host_cflags='-D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112 -O3 -g -Wall'
 host_libs='-lm'
 
 target_path='.'
@@ -1764,6 +1778,8 @@ EOF
 check_cc -D_LARGEFILE_SOURCE <<EOF && add_cppflags -D_LARGEFILE_SOURCE
 #include <stdlib.h>
 EOF
+
+check_host_cflags -std=c99
 
 case "$arch" in
     alpha)
