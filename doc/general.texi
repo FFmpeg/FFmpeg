@@ -722,7 +722,7 @@ a GCC bug (see @url{http://gcc.gnu.org/bugzilla/show_bug.cgi?id=37216}).
 Within the MSYS shell, configure and make with:
 
 @example
-./configure --enable-memalign-hack --extra-cflags=-fno-common
+./configure --enable-memalign-hack
 make
 make install
 @end example
