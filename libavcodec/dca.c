@@ -752,7 +752,7 @@ static void qmf_32_subbands(DCAContext * s, int chans,
                             float scale, float bias)
 {
     const float *prCoeff;
-    int i, j;
+    int i;
 
     int subindex;
 
