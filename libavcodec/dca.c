@@ -37,6 +37,7 @@
 #include "dcadata.h"
 #include "dcahuff.h"
 #include "dca.h"
+#include "synth_filter.h"
 
 //#define TRACE
 
@@ -753,9 +754,6 @@ static void qmf_32_subbands(DCAContext * s, int chans,
     const float *prCoeff;
     int i, j;
 
-    int hist_index= s->hist_index[chans];
-    float *subband_fir_hist2 = s->subband_fir_noidea[chans];
-
     int subindex;
 
     scale *= sqrt(1/8.0);
@@ -768,7 +766,6 @@ static void qmf_32_subbands(DCAContext * s, int chans,
 
     /* Reconstructed channel sample index */
     for (subindex = 0; subindex < 8; subindex++) {
-        float *subband_fir_hist = s->subband_fir_hist[chans] + hist_index;
         /* Load in one sample from each subband and clear inactive subbands */
         for (i = 0; i < s->subband_activity[chans]; i++){
             if((i-1)&2) s->raXin[i] = -samples_in[i][subindex];
@@ -777,36 +774,13 @@ static void qmf_32_subbands(DCAContext * s, int chans,
         for (; i < 32; i++)
             s->raXin[i] = 0.0;
 
-        ff_imdct_half(&s->imdct, subband_fir_hist, s->raXin);
-
-        /* Multiply by filter coefficients */
-        for (i = 0; i < 16; i++){
-            float a= subband_fir_hist2[i   ];
-            float b= subband_fir_hist2[i+16];
-            float c= 0;
-            float d= 0;
-            for (j = 0; j < 512-hist_index; j += 64){
-                a += prCoeff[i+j   ]*(-subband_fir_hist[15-i+j]);
-                b += prCoeff[i+j+16]*( subband_fir_hist[   i+j]);
-                c += prCoeff[i+j+32]*( subband_fir_hist[16+i+j]);
-                d += prCoeff[i+j+48]*( subband_fir_hist[31-i+j]);
-            }
-            for (     ; j < 512; j += 64){
-                a += prCoeff[i+j   ]*(-subband_fir_hist[15-i+j-512]);
-                b += prCoeff[i+j+16]*( subband_fir_hist[   i+j-512]);
-                c += prCoeff[i+j+32]*( subband_fir_hist[16+i+j-512]);
-                d += prCoeff[i+j+48]*( subband_fir_hist[31-i+j-512]);
-            }
-            samples_out[i   ] = a * scale + bias;
-            samples_out[i+16] = b * scale + bias;
-            subband_fir_hist2[i   ] = c;
-            subband_fir_hist2[i+16] = d;
-        }
+        ff_synth_filter_float(&s->imdct,
+                              s->subband_fir_hist[chans], &s->hist_index[chans],
+                              s->subband_fir_noidea[chans], prCoeff,
+                              samples_out, s->raXin, scale, bias);
         samples_out+= 32;
 
-        hist_index = (hist_index-32)&511;
     }
-    s->hist_index[chans]= hist_index;
 }
 
 static void lfe_interpolation_fir(int decimation_select,
