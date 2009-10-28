@@ -1594,6 +1594,11 @@ elif $cc -v 2>&1 | grep -q clang; then
     cc_version=__VERSION__
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
+elif $cc -V 2>&1 | grep -q Sun; then
+    cc_type=suncc
+    cc_version="AV_STRINGIFY(__SUNPRO_C)"
+    DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\\\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
+    DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -xM1'
 fi
 
 test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
