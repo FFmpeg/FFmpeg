@@ -45,7 +45,7 @@ void write_##name##_2d_array(const void *arg, int len, int len2)\
 {\
     const type *data = arg;\
     int i;\
-    printf("    {");\
+    printf("    {\n");\
     for (i = 0; i < len; i++) {\
         write_##name##_array(data + i * len2, len2, 0);\
         printf(i == len - 1 ? "    }\n" : "    }, {\n");\
