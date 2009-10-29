@@ -31,26 +31,26 @@ void ff_synth_filter_float(FFTContext *imdct,
     ff_imdct_half(imdct, synth_buf, in);
 
     for (i = 0; i < 16; i++){
-        float a= synth_buf2[i   ];
-        float b= synth_buf2[i+16];
+        float a= synth_buf2[i     ];
+        float b= synth_buf2[i + 16];
         float c= 0;
         float d= 0;
         for (j = 0; j < 512 - *synth_buf_offset; j += 64){
-            a += window[i+j   ]*(-synth_buf[15-i+j]);
-            b += window[i+j+16]*( synth_buf[   i+j]);
-            c += window[i+j+32]*( synth_buf[16+i+j]);
-            d += window[i+j+48]*( synth_buf[31-i+j]);
+            a += window[i + j     ]*(-synth_buf[15 - i + j      ]);
+            b += window[i + j + 16]*( synth_buf[     i + j      ]);
+            c += window[i + j + 32]*( synth_buf[16 + i + j      ]);
+            d += window[i + j + 48]*( synth_buf[31 - i + j      ]);
         }
         for (     ; j < 512; j += 64){
-            a += window[i+j   ]*(-synth_buf[15-i+j-512]);
-            b += window[i+j+16]*( synth_buf[   i+j-512]);
-            c += window[i+j+32]*( synth_buf[16+i+j-512]);
-            d += window[i+j+48]*( synth_buf[31-i+j-512]);
+            a += window[i + j     ]*(-synth_buf[15 - i + j - 512]);
+            b += window[i + j + 16]*( synth_buf[     i + j - 512]);
+            c += window[i + j + 32]*( synth_buf[16 + i + j - 512]);
+            d += window[i + j + 48]*( synth_buf[31 - i + j - 512]);
         }
-        out[i   ] = a * scale + bias;
-        out[i+16] = b * scale + bias;
-        synth_buf2[i   ] = c;
-        synth_buf2[i+16] = d;
+        out[i     ] = a*scale + bias;
+        out[i + 16] = b*scale + bias;
+        synth_buf2[i     ] = c;
+        synth_buf2[i + 16] = d;
     }
-    *synth_buf_offset= (*synth_buf_offset-32)&511;
+    *synth_buf_offset= (*synth_buf_offset - 32)&511;
 }
