@@ -13,6 +13,7 @@ PROGS_G     = $(addsuffix _g$(EXESUF), $(PROGS-yes))
 OBJS        = $(addsuffix .o,          $(PROGS-yes)) cmdutils.o
 MANPAGES    = $(addprefix doc/, $(addsuffix .1, $(PROGS-yes)))
 TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws pktdumper probetest qt-faststart trasher))
+HOSTPROGS   = $(addprefix tests/, audiogen videogen rotozoom tiny_psnr)
 
 BASENAMES   = ffmpeg ffplay ffserver
 ALLPROGS    = $(addsuffix   $(EXESUF), $(BASENAMES))
@@ -47,7 +48,8 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	$(STRIP) $@
 
 SUBDIR_VARS := OBJS FFLIBS CLEANFILES DIRS TESTPROGS EXAMPLES SKIPHEADERS \
-               ALTIVEC-OBJS MMX-OBJS NEON-OBJS X86-OBJS YASM-OBJS-FFT YASM-OBJS
+               ALTIVEC-OBJS MMX-OBJS NEON-OBJS X86-OBJS YASM-OBJS-FFT YASM-OBJS \
+               HOSTPROGS
 
 define RESET
 $(1) :=
@@ -323,9 +325,6 @@ tests/vsynth2/00.pgm: tests/rotozoom$(HOSTEXESUF)
 tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF)
 	mkdir -p tests/data
 	$(BUILD_ROOT)/$< $@
-
-tests/%$(HOSTEXESUF): tests/%.c
-	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
 
 tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)

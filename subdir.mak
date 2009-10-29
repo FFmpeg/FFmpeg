@@ -36,7 +36,8 @@ $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
 
 clean::
 	rm -f $(addprefix $(SUBDIR),*-example$(EXESUF) *-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
-	    $(addprefix $(SUBDIR), $(foreach suffix,$(CLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
+	    $(addprefix $(SUBDIR), $(foreach suffix,$(CLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS)))) \
+	    $(HOSTOBJS) $(HOSTPROGS)
 
 distclean:: clean
 	rm -f  $(addprefix $(SUBDIR),$(DISTCLEANSUFFIXES)) \
