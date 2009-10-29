@@ -535,6 +535,7 @@ static const StreamType DESC_types[] = {
     { 0x6a, CODEC_TYPE_AUDIO,             CODEC_ID_AC3 }, /* AC-3 descriptor */
     { 0x7a, CODEC_TYPE_AUDIO,            CODEC_ID_EAC3 }, /* E-AC-3 descriptor */
     { 0x7b, CODEC_TYPE_AUDIO,             CODEC_ID_DTS },
+    { 0x56, CODEC_TYPE_SUBTITLE, CODEC_ID_DVB_TELETEXT },
     { 0x59, CODEC_TYPE_SUBTITLE, CODEC_ID_DVB_SUBTITLE }, /* subtitling descriptor */
     { 0 },
 };
@@ -729,6 +730,13 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 mpegts_find_stream_type(st, desc_tag, DESC_types);
 
             switch(desc_tag) {
+            case 0x56: /* DVB teletext descriptor */
+                language[0] = get8(&p, desc_end);
+                language[1] = get8(&p, desc_end);
+                language[2] = get8(&p, desc_end);
+                language[3] = 0;
+                av_metadata_set(&st->metadata, "language", language);
+                break;
             case 0x59: /* subtitling descriptor */
                 language[0] = get8(&p, desc_end);
                 language[1] = get8(&p, desc_end);
