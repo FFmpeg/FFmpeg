@@ -91,6 +91,7 @@ static const OptionDef options[];
 
 #define MAX_FILES 20
 
+static char *last_asked_format = NULL;
 static AVFormatContext *input_files[MAX_FILES];
 static int64_t input_files_ts_offset[MAX_FILES];
 static double input_files_ts_scale[MAX_FILES][MAX_STREAMS];
@@ -109,8 +110,6 @@ static int nb_stream_maps;
 static AVMetaDataMap meta_data_maps[MAX_FILES];
 static int nb_meta_data_maps;
 
-static AVInputFormat *file_iformat;
-static AVOutputFormat *file_oformat;
 static int frame_width  = 0;
 static int frame_height = 0;
 static float frame_aspect_ratio = 0;
@@ -2384,12 +2383,7 @@ static void opt_format(const char *arg)
         fprintf(stderr, "pgmyuv format is deprecated, use image2\n");
     }
 
-    file_iformat = av_find_input_format(arg);
-    file_oformat = guess_format(arg, NULL, NULL);
-    if (!file_iformat && !file_oformat) {
-        fprintf(stderr, "Unknown input or output format: %s\n", arg);
-        av_exit(1);
-    }
+    last_asked_format = arg;
 }
 
 static void opt_video_rc_override_string(const char *arg)
@@ -2831,8 +2825,14 @@ static void opt_input_file(const char *filename)
 {
     AVFormatContext *ic;
     AVFormatParameters params, *ap = &params;
+    AVInputFormat *file_iformat = NULL;
     int err, i, ret, rfps, rfps_base;
     int64_t timestamp;
+
+    if (last_asked_format) {
+        file_iformat = av_find_input_format(last_asked_format);
+        last_asked_format = NULL;
+    }
 
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -2985,8 +2985,6 @@ static void opt_input_file(const char *filename)
         dump_format(ic, nb_input_files, filename, 0);
 
     nb_input_files++;
-    file_iformat = NULL;
-    file_oformat = NULL;
 
     video_channel = 0;
 
@@ -3337,6 +3335,7 @@ static void opt_output_file(const char *filename)
     int use_video, use_audio, use_subtitle;
     int input_has_video, input_has_audio, input_has_subtitle;
     AVFormatParameters params, *ap = &params;
+    AVOutputFormat *file_oformat;
 
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -3347,7 +3346,14 @@ static void opt_output_file(const char *filename)
         av_exit(1);
     }
 
-    if (!file_oformat) {
+    if (last_asked_format) {
+        file_oformat = guess_format(last_asked_format, NULL, NULL);
+        if (!file_oformat) {
+            fprintf(stderr, "Requested output format '%s' is not a suitable output format\n", last_asked_format);
+            av_exit(1);
+        }
+        last_asked_format = NULL;
+    } else {
         file_oformat = guess_format(NULL, filename, NULL);
         if (!file_oformat) {
             fprintf(stderr, "Unable to find a suitable output format for '%s'\n",
@@ -3470,10 +3476,6 @@ static void opt_output_file(const char *filename)
     oc->flags |= AVFMT_FLAG_NONBLOCK;
 
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM);
-
-    /* reset some options */
-    file_oformat = NULL;
-    file_iformat = NULL;
 }
 
 /* same option as mencoder */
