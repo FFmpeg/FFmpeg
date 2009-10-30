@@ -735,6 +735,12 @@ Notes:
 
 @itemize
 
+@item Building natively using MSYS can be sped up by disabling implicit rules
+in the Makefile by calling @code{make -r} instead of plain @code{make}. This
+speed up is close to non-existent for normal one-off builds and is only
+noticeable when running make for a second time (for example in
+@code{make install}).
+
 @item In order to compile FFplay, you must have the MinGW development library
 of SDL. Get it from @url{http://www.libsdl.org}.
 Edit the @file{bin/sdl-config} script so that it points to the correct prefix
