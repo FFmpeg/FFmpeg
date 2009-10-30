@@ -1022,11 +1022,12 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
 
             if(s->debug & FF_FDEBUG_TS)
-                av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d,  flags=%d\n",
+                av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
                     st->cur_pkt.stream_index,
                     st->cur_pkt.pts,
                     st->cur_pkt.dts,
                     st->cur_pkt.size,
+                    st->cur_pkt.duration,
                     st->cur_pkt.flags);
 
             s->cur_st = st;
@@ -1048,11 +1049,12 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         }
     }
     if(s->debug & FF_FDEBUG_TS)
-        av_log(s, AV_LOG_DEBUG, "av_read_frame_internal stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, flags=%d\n",
+        av_log(s, AV_LOG_DEBUG, "av_read_frame_internal stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
             pkt->stream_index,
             pkt->pts,
             pkt->dts,
             pkt->size,
+            pkt->duration,
             pkt->flags);
 
     return 0;
