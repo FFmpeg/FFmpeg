@@ -220,4 +220,18 @@ int16_t ff_acelp_decode_gain_code(
     int subframe_size,
     int max_pred_order);
 
+/**
+ * Calculate fixed gain (part of section 6.1.3 of AMR spec)
+ *
+ * @param fixed_gain_factor gain correction factor
+ * @param fixed_energy decoded algebraic codebook vector energy
+ * @param prediction_error vector of the quantified predictor errors of
+ *        the four previous subframes. It is updated by this function.
+ * @param energy_mean desired mean innovation energy
+ * @param pred_table table of four moving average coefficients
+ */
+float ff_amr_set_fixed_gain(float fixed_gain_factor, float fixed_mean_energy,
+                            float *prediction_error, float energy_mean,
+                            const float *pred_table);
+
 #endif /* AVCODEC_ACELP_PITCH_DELAY_H */
