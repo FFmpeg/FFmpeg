@@ -2356,8 +2356,9 @@ disable sdl
 SDL_CONFIG="${cross_prefix}sdl-config"
 if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
     sdl_cflags=$("${SDL_CONFIG}" --cflags)
+    sdl_libs=$("${SDL_CONFIG}" --libs)
     temp_cflags $sdl_cflags
-    temp_extralibs $("${SDL_CONFIG}" --libs)
+    temp_extralibs $sdl_libs
     if check_lib2 SDL.h SDL_Init; then
         _sdlversion=$("${SDL_CONFIG}" --version | sed 's/[^0-9]//g')
         if test "$_sdlversion" -lt 121 ; then
@@ -2707,11 +2708,8 @@ echo "HOSTLDFLAGS=$host_ldflags" >> config.mak
 echo "HOSTLIBS=$host_libs" >> config.mak
 echo "TARGET_EXEC=$target_exec" >> config.mak
 echo "TARGET_PATH=$target_path" >> config.mak
-
-if enabled sdl; then
-    echo "SDL_LIBS=$("${SDL_CONFIG}" --libs)" >> config.mak
-    echo "SDL_CFLAGS=$("${SDL_CONFIG}" --cflags)" >> config.mak
-fi
+echo "SDL_LIBS=$sdl_libs" >> config.mak
+echo "SDL_CFLAGS=$sdl_cflags" >> config.mak
 
 get_version(){
     name=$1
