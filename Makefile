@@ -33,11 +33,11 @@ FF_LDFLAGS   := $(FFLDFLAGS)
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
 
-ALL_TARGETS-$(BUILD_DOC)    += documentation
+ALL_TARGETS-$(CONFIG_DOC)       += documentation
 
 ifdef PROGS
 INSTALL_TARGETS-yes             += install-progs install-data
-INSTALL_TARGETS-$(BUILD_DOC)    += install-man
+INSTALL_TARGETS-$(CONFIG_DOC)   += install-man
 endif
 INSTALL_PROGS_TARGETS-$(CONFIG_SHARED) = install-libs
 

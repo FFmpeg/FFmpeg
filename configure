@@ -78,6 +78,7 @@ show_help(){
   echo "  --enable-version3        upgrade (L)GPL to version 3 [no]"
   echo "  --enable-nonfree         allow use of nonfree code, the resulting libs"
   echo "                           and binaries will be unredistributable [no]"
+  echo "  --disable-doc            do not build documentation"
   echo "  --disable-ffmpeg         disable ffmpeg build"
   echo "  --disable-ffplay         disable ffplay build"
   echo "  --disable-ffserver       disable ffserver build"
@@ -823,6 +824,7 @@ CONFIG_LIST="
     avisynth
     beos_netserver
     bzlib
+    doc
     fastdiv
     ffmpeg
     ffplay
@@ -1261,6 +1263,7 @@ ffplay_deps="sdl"
 ffserver_deps="ffm_muxer rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 
+doc_deps="texi2html"
 
 # default parameters
 
@@ -1297,6 +1300,7 @@ host_os=$target_os
 
 # configurable options
 enable debug
+enable doc
 enable fastdiv
 enable ffmpeg
 enable ffplay
@@ -2707,9 +2711,6 @@ echo "TARGET_PATH=$target_path" >> config.mak
 if enabled sdl; then
     echo "SDL_LIBS=$("${SDL_CONFIG}" --libs)" >> config.mak
     echo "SDL_CFLAGS=$("${SDL_CONFIG}" --cflags)" >> config.mak
-fi
-if enabled texi2html; then
-    echo "BUILD_DOC=yes" >> config.mak
 fi
 
 get_version(){
