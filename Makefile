@@ -35,7 +35,7 @@ FF_DEP_LIBS  := $(DEP_LIBS)
 
 ALL_TARGETS-$(BUILD_DOC)    += documentation
 
-ifneq ($(PROGS),)
+ifdef PROGS
 INSTALL_TARGETS-yes             += install-progs install-data
 INSTALL_TARGETS-$(BUILD_DOC)    += install-man
 endif
