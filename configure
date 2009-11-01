@@ -1862,7 +1862,7 @@ case "$arch" in
         subarch="x86_32"
         enable fast_unaligned
         check_cc <<EOF && enable fast_64bit && subarch="x86_64" && spic=$shared
-        int test[sizeof(char*) - 7];
+        int test[(int)sizeof(char*) - 7];
 EOF
         if test "$subarch" = "x86_64"; then
             enable cmov
