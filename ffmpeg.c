@@ -3776,17 +3776,17 @@ static int opt_preset(const char *opt, const char *arg)
                          };
 
     if (*opt != 'f') {
-    for(i=!base[0]; i<2 && !f; i++){
-        snprintf(filename, sizeof(filename), "%s%s/%s.ffpreset", base[i], i ? "" : "/.ffmpeg", arg);
-        f= fopen(filename, "r");
-        if(!f){
-            char *codec_name= *opt == 'v' ? video_codec_name :
-                              *opt == 'a' ? audio_codec_name :
-                                            subtitle_codec_name;
-            snprintf(filename, sizeof(filename), "%s%s/%s-%s.ffpreset", base[i],  i ? "" : "/.ffmpeg", codec_name, arg);
+        for(i=!base[0]; i<2 && !f; i++){
+            snprintf(filename, sizeof(filename), "%s%s/%s.ffpreset", base[i], i ? "" : "/.ffmpeg", arg);
             f= fopen(filename, "r");
+            if(!f){
+                char *codec_name= *opt == 'v' ? video_codec_name :
+                                  *opt == 'a' ? audio_codec_name :
+                                                subtitle_codec_name;
+                snprintf(filename, sizeof(filename), "%s%s/%s-%s.ffpreset", base[i],  i ? "" : "/.ffmpeg", codec_name, arg);
+                f= fopen(filename, "r");
+            }
         }
-    }
     } else {
         av_strlcpy(filename, arg, sizeof(filename));
         f= fopen(filename, "r");
