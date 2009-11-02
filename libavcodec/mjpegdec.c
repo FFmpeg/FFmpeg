@@ -616,13 +616,13 @@ static int decode_block_refinement(MJpegDecodeContext *s, DCTELEM *block, uint8_
 
 static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point_transform){
     int i, mb_x, mb_y;
-    uint16_t buffer[32768][4];
+    uint16_t (*buffer)[4];
     int left[3], top[3], topleft[3];
     const int linesize= s->linesize[0];
     const int mask= (1<<s->bits)-1;
 
-    if((unsigned)s->mb_width > 32768) //dynamic alloc
-        return -1;
+    av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size, (unsigned)s->mb_width * 4 * sizeof(s->ljpeg_buffer[0][0]));
+    buffer= s->ljpeg_buffer;
 
     for(i=0; i<3; i++){
         buffer[0][i]= 1 << (s->bits + point_transform - 1);
@@ -1504,6 +1504,8 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
 
     av_free(s->buffer);
     av_free(s->qscale_table);
+    av_freep(&s->ljpeg_buffer);
+    s->ljpeg_buffer_size=0;
 
     for(i=0;i<2;i++) {
         for(j=0;j<4;j++)
