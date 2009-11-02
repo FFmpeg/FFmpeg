@@ -215,6 +215,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,0,1,3,2},        /* G */
             {0,0,1,0,2},        /* R */
         },
+        .flags = PIX_FMT_PAL,
     },
     [PIX_FMT_BGR4] = {
         .name = "bgr4",
@@ -238,6 +239,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,0,1,1,1},        /* G */
             {0,0,1,0,0},        /* R */
         },
+        .flags = PIX_FMT_PAL,
     },
     [PIX_FMT_RGB8] = {
         .name = "rgb8",
@@ -249,6 +251,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,0,1,3,2},        /* G */
             {0,0,1,0,2},        /* B */
         },
+        .flags = PIX_FMT_PAL,
     },
     [PIX_FMT_RGB4] = {
         .name = "rgb4",
@@ -272,6 +275,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,0,1,1,1},        /* G */
             {0,0,1,0,0},        /* B */
         },
+        .flags = PIX_FMT_PAL,
     },
     [PIX_FMT_NV12] = {
         .name = "nv12",
