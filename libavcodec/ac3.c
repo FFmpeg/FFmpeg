@@ -228,7 +228,7 @@ void ff_ac3_bit_alloc_calc_bap(int16_t *mask, int16_t *psd, int start, int end,
     band = bin_to_band_tab[start];
     do {
         int m = (FFMAX(mask[band] - snr_offset - floor, 0) & 0x1FE0) + floor;
-        int band_end = FFMIN(band_start_tab[band] + ff_ac3_critical_band_size_tab[band], end);
+        int band_end = FFMIN(band_start_tab[band+1], end);
         for (; bin < band_end; bin++) {
             int address = av_clip((psd[bin] - m) >> 5, 0, 63);
             bap[bin] = bap_tab[address];
