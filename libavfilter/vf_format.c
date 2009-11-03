@@ -20,7 +20,7 @@
 
 /**
  * @file libavfilter/vf_format.c
- * video format and noformat filters
+ * format and noformat video filters
  */
 
 #include "avfilter.h"
