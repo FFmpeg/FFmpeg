@@ -134,7 +134,7 @@ AVFilter avfilter_vf_format = {
 
 AVFilter avfilter_vf_noformat = {
     .name      = "noformat",
-    .description = "Force libavfilter not to use any of the specified pixel formats as the input to the next filter.",
+    .description = "Force libavfilter not to use any of the specified pixel formats for the input to the next filter.",
 
     .init      = init,
 
