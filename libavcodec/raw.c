@@ -62,6 +62,7 @@ const PixelFormatTag ff_raw_pixelFormatTags[] = {
     { PIX_FMT_UYVY422, MKTAG('2', 'v', 'u', 'y') },
     { PIX_FMT_UYVY422, MKTAG('A', 'V', 'U', 'I') }, /* FIXME merge both fields */
     { PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', '2') },
+    { PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', 's') },
     { PIX_FMT_PAL8,    MKTAG('W', 'R', 'A', 'W') },
 
     { PIX_FMT_NONE, 0 },
