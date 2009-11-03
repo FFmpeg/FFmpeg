@@ -188,9 +188,6 @@ AVFilterPicRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int w, 
     if(link_dpad(link).get_video_buffer)
         ret = link_dpad(link).get_video_buffer(link, perms, w, h);
 
-    if(!ret && link->dst->output_count)
-        ret = avfilter_get_video_buffer(link->dst->outputs[0], perms, w, h);
-
     if(!ret)
         ret = avfilter_default_get_video_buffer(link, perms, w, h);
 

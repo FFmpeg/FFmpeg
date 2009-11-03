@@ -24,7 +24,7 @@
 
 #define LIBAVFILTER_VERSION_MAJOR  1
 #define LIBAVFILTER_VERSION_MINOR  6
-#define LIBAVFILTER_VERSION_MICRO  0
+#define LIBAVFILTER_VERSION_MICRO  1
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -288,7 +288,7 @@ struct AVFilterPad
 
     /**
      * Callback function to get a buffer. If NULL, the filter system will
-     * handle buffer requests.
+     * use avfilter_default_get_video_buffer().
      *
      * Input video pads only.
      */
