@@ -149,6 +149,21 @@ input to the vflip filter.
 
 Pass the source unchanged to the output.
 
+@section slicify
+
+Pass the images of input video on to next video filter as multiple
+slices.
+
+@example
+./ffmpeg -i in.avi -vfilters "slicify=32" out.avi
+@end example
+
+The filter accepts the slice height as parameter. If the parameter is
+not specified it will use the default value of 16.
+
+Adding this in the beginning of filter chains should make filtering
+faster due to better use of the memory cache.
+
 @section vflip
 
 Flip the input video vertically.

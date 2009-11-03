@@ -15,6 +15,7 @@ OBJS-$(CONFIG_CROP_FILTER)    += vf_crop.o
 OBJS-$(CONFIG_FORMAT_FILTER)  += vf_format.o
 OBJS-$(CONFIG_NOFORMAT_FILTER) += vf_format.o
 OBJS-$(CONFIG_NULL_FILTER)    += vf_null.o
+OBJS-$(CONFIG_SLICIFY_FILTER) += vf_slicify.o
 OBJS-$(CONFIG_VFLIP_FILTER)   += vf_vflip.o
 
 include $(SUBDIR)../subdir.mak
