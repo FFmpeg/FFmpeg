@@ -194,7 +194,7 @@ static int che_configure(AACContext *ac,
 static int output_configure(AACContext *ac,
                             enum ChannelPosition che_pos[4][MAX_ELEM_ID],
                             enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
-                            int channel_config)
+                            int channel_config, enum OCStatus oc_type)
 {
     AVCodecContext *avctx = ac->avccontext;
     int i, type, channels = 0, ret;
@@ -239,7 +239,7 @@ static int output_configure(AACContext *ac,
 
     avctx->channels = channels;
 
-    ac->output_configured = 1;
+    ac->output_configured = oc_type;
 
     return 0;
 }
@@ -390,7 +390,7 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
         if ((ret = set_default_channel_config(ac, new_che_pos, channel_config)))
             return ret;
     }
-    if ((ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config)))
+    if ((ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config, OC_LOCKED)))
         return ret;
 
     if (extension_flag) {
@@ -1676,14 +1676,16 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
 
     size = ff_aac_parse_header(gb, &hdr_info);
     if (size > 0) {
-        if (!ac->output_configured && hdr_info.chan_config) {
+        if (ac->output_configured != OC_LOCKED && hdr_info.chan_config) {
             enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
             memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
             ac->m4ac.chan_config = hdr_info.chan_config;
             if (set_default_channel_config(ac, new_che_pos, hdr_info.chan_config))
                 return -7;
-            if (output_configure(ac, ac->che_pos, new_che_pos, hdr_info.chan_config))
+            if (output_configure(ac, ac->che_pos, new_che_pos, hdr_info.chan_config, OC_TRIAL_FRAME))
                 return -7;
+        } else if (ac->output_configured != OC_LOCKED) {
+            ac->output_configured = OC_NONE;
         }
         ac->m4ac.sample_rate     = hdr_info.sample_rate;
         ac->m4ac.sampling_index  = hdr_info.sampling_index;
@@ -1760,11 +1762,11 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
             memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
             if ((err = decode_pce(ac, new_che_pos, &gb)))
                 break;
-            if (ac->output_configured)
+            if (ac->output_configured <= OC_TRIAL_PCE)
                 av_log(avccontext, AV_LOG_ERROR,
                        "Not evaluating a further program_config_element as this construct is dubious at best.\n");
             else
-                err = output_configure(ac, ac->che_pos, new_che_pos, 0);
+                err = output_configure(ac, ac->che_pos, new_che_pos, 0, OC_TRIAL_PCE);
             break;
         }
 
@@ -1803,6 +1805,9 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
     *data_size = data_size_tmp;
 
     ac->dsp.float_to_int16_interleave(data, (const float **)ac->output_data, 1024, avccontext->channels);
+
+    if (ac->output_configured)
+        ac->output_configured = OC_LOCKED;
 
     return buf_size;
 }

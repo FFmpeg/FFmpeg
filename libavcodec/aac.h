@@ -103,6 +103,16 @@ enum CouplingPoint {
 };
 
 /**
+ * Output configuration status
+ */
+enum OCStatus {
+    OC_NONE,        //< Output unconfigured
+    OC_TRIAL_PCE,   //< Output configuration under trial specified by an inband PCE
+    OC_TRIAL_FRAME, //< Output configuration under trial specified by a frame header
+    OC_LOCKED,      //< Output configuration locked in place
+};
+
+/**
  * Predictor State
  */
 typedef struct {
@@ -275,7 +285,7 @@ typedef struct {
 
     DECLARE_ALIGNED(16, float, temp[128]);
 
-    int output_configured;
+    enum OCStatus output_configured;
 } AACContext;
 
 #endif /* AVCODEC_AAC_H */
