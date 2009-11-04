@@ -767,7 +767,7 @@ extern COSTABLE(8192);
 extern COSTABLE(16384);
 extern COSTABLE(32768);
 extern COSTABLE(65536);
-extern COSTABLE_CONST FFTSample* const ff_cos_tabs[13];
+extern COSTABLE_CONST FFTSample* const ff_cos_tabs[17];
 
 extern SINTABLE(16);
 extern SINTABLE(32);

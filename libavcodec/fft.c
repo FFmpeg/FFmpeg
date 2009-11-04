@@ -45,6 +45,7 @@ COSTABLE(32768);
 COSTABLE(65536);
 #endif
 COSTABLE_CONST FFTSample * const ff_cos_tabs[] = {
+    NULL, NULL, NULL, NULL,
     ff_cos_16, ff_cos_32, ff_cos_64, ff_cos_128, ff_cos_256, ff_cos_512, ff_cos_1024,
     ff_cos_2048, ff_cos_4096, ff_cos_8192, ff_cos_16384, ff_cos_32768, ff_cos_65536,
 };
@@ -99,7 +100,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
         for(j=4; j<=nbits; j++) {
             int m = 1<<j;
             double freq = 2*M_PI/m;
-            FFTSample *tab = ff_cos_tabs[j-4];
+            FFTSample *tab = ff_cos_tabs[j];
             for(i=0; i<=m/4; i++)
                 tab[i] = cos(i*freq);
             for(i=1; i<m/4; i++)
