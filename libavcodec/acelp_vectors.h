@@ -176,4 +176,22 @@ void ff_weighted_vector_sumf(float *out, const float *in_a, const float *in_b,
 void ff_adaptative_gain_control(float *buf_out, float speech_energ,
                                 int size, float alpha, float *gain_mem);
 
+/**
+ * Set the sum of squares of a signal by scaling
+ *
+ * @param out output samples
+ * @param in input samples
+ * @param sum_of_squares new sum of squares
+ * @param n number of samples
+ *
+ * @note If the input is zero (or its energy underflows), the output is zero.
+ *       This is the behavior of AGC in the AMR reference decoder. The QCELP
+ *       reference decoder seems to have undefined behavior.
+ *
+ * TIA/EIA/IS-733 2.4.8.3-2/3/4/5, 2.4.8.6
+ * 3GPP TS 26.090 6.1 (6)
+ */
+void ff_scale_vector_to_given_sum_of_squares(float *out, const float *in,
+                                             float sum_of_squares, const int n);
+
 #endif /* AVCODEC_ACELP_VECTORS_H */

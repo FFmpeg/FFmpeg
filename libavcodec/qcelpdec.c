@@ -406,31 +406,6 @@ static void compute_svector(QCELPContext *q, const float *gain,
 }
 
 /**
- * Compute the gain control
- *
- * @param v_in gain-controlled vector
- * @param v_ref vector to control gain of
- *
- * @return gain control
- *
- * FIXME: If v_ref is a zero vector, it energy is zero
- *        and the behavior of the gain control is
- *        undefined in the specs.
- *
- * TIA/EIA/IS-733 2.4.8.3-2/3/4/5, 2.4.8.6
- */
-static float compute_gain_ctrl(const float *v_ref, const float *v_in, const int len)
-{
-    float scalefactor = ff_dot_productf(v_in, v_in, len);
-
-    if(scalefactor)
-        scalefactor = sqrt(ff_dot_productf(v_ref, v_ref, len) / scalefactor);
-    else
-        av_log_missing_feature(NULL, "Zero energy for gain control", 1);
-    return scalefactor;
-}
-
-/**
  * Apply generic gain control.
  *
  * @param v_out output vector
@@ -442,15 +417,13 @@ static float compute_gain_ctrl(const float *v_ref, const float *v_in, const int 
 static void apply_gain_ctrl(float *v_out, const float *v_ref,
                             const float *v_in)
 {
-    int   i, j, len;
-    float scalefactor;
+    int i;
 
-    for(i=0, j=0; i<4; i++)
-    {
-        scalefactor = compute_gain_ctrl(v_ref + j, v_in + j, 40);
-        for(len=j+40; j<len; j++)
-            v_out[j] = scalefactor * v_in[j];
-    }
+    for (i = 0; i < 160; i += 40)
+        ff_scale_vector_to_given_sum_of_squares(v_out + i, v_in + i,
+                                                ff_dot_productf(v_ref + i,
+                                                                v_ref + i, 40),
+                                                40);
 }
 
 /**
