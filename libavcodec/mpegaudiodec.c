@@ -49,26 +49,6 @@
 
 #define HEADER_SIZE 4
 
-/* layer 3 "granule" */
-typedef struct GranuleDef {
-    uint8_t scfsi;
-    int part2_3_length;
-    int big_values;
-    int global_gain;
-    int scalefac_compress;
-    uint8_t block_type;
-    uint8_t switch_point;
-    int table_select[3];
-    int subblock_gain[3];
-    uint8_t scalefac_scale;
-    uint8_t count1table_select;
-    int region_size[3]; /* number of huffman codes in each region */
-    int preflag;
-    int short_start, long_end; /* long/short band indexes */
-    uint8_t scale_factors[40];
-    int32_t sb_hybrid[SBLIMIT * 18]; /* 576 samples */
-} GranuleDef;
-
 #include "mpegaudiodata.h"
 #include "mpegaudiodectab.h"
 
@@ -1912,7 +1892,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
 {
     int nb_granules, main_data_begin, private_bits;
     int gr, ch, blocksplit_flag, i, j, k, n, bits_pos;
-    GranuleDef granules[2][2], *g;
+    GranuleDef *g;
     int16_t exponents[576];
 
     /* read side info */
@@ -1928,15 +1908,15 @@ static int mp_decode_layer3(MPADecodeContext *s)
             private_bits = get_bits(&s->gb, 5);
         nb_granules = 2;
         for(ch=0;ch<s->nb_channels;ch++) {
-            granules[ch][0].scfsi = 0; /* all scale factors are transmitted */
-            granules[ch][1].scfsi = get_bits(&s->gb, 4);
+            s->granules[ch][0].scfsi = 0;/* all scale factors are transmitted */
+            s->granules[ch][1].scfsi = get_bits(&s->gb, 4);
         }
     }
 
     for(gr=0;gr<nb_granules;gr++) {
         for(ch=0;ch<s->nb_channels;ch++) {
             dprintf(s->avctx, "gr=%d ch=%d: side_info\n", gr, ch);
-            g = &granules[ch][gr];
+            g = &s->granules[ch][gr];
             g->part2_3_length = get_bits(&s->gb, 12);
             g->big_values = get_bits(&s->gb, 9);
             if(g->big_values > 288){
@@ -2008,7 +1988,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
 
     for(gr=0;gr<nb_granules;gr++) {
         for(ch=0;ch<s->nb_channels;ch++) {
-            g = &granules[ch][gr];
+            g = &s->granules[ch][gr];
             if(get_bits_count(&s->gb)<0){
                 av_log(s->avctx, AV_LOG_DEBUG, "mdb:%d, lastbuf:%d skipping granule %d\n",
                                             main_data_begin, s->last_buf_size, gr);
@@ -2052,7 +2032,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                             g->scale_factors[j++] = 0;
                     }
                 } else {
-                    sc = granules[ch][0].scale_factors;
+                    sc = s->granules[ch][0].scale_factors;
                     j = 0;
                     for(k=0;k<4;k++) {
                         n = (k == 0 ? 6 : 5);
@@ -2137,10 +2117,10 @@ static int mp_decode_layer3(MPADecodeContext *s)
         } /* ch */
 
         if (s->nb_channels == 2)
-            compute_stereo(s, &granules[0][gr], &granules[1][gr]);
+            compute_stereo(s, &s->granules[0][gr], &s->granules[1][gr]);
 
         for(ch=0;ch<s->nb_channels;ch++) {
-            g = &granules[ch][gr];
+            g = &s->granules[ch][gr];
 
             reorder_block(s, g);
             s->compute_antialias(s, g);
