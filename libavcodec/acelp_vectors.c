@@ -22,7 +22,6 @@
 
 #include <inttypes.h>
 #include "avcodec.h"
-#include "celp_math.h"
 #include "acelp_vectors.h"
 #include "celp_math.h"
 
