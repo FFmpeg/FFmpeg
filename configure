@@ -2163,7 +2163,7 @@ elif enabled ppc; then
 
     check_asm dcbzl     '"dcbzl 0, 1"'
     check_asm ppc4xx    '"maclhw r10, r11, r12"'
-    check_asm xform_asm '"lwzx 0, %y0" :: "Z"(*(int*)0)'
+    check_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
 
     # AltiVec flags: The FSF version of GCC differs from the Apple version
     if enabled altivec; then
