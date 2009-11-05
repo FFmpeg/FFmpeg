@@ -101,9 +101,30 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb)
     bpp = ((wc->flags & 3) + 1) << 3;
     chan = 1 + !(wc->flags & WV_MONO);
     rate = wv_rates[(wc->flags >> 23) & 0xF];
-    if(rate == -1){
-        av_log(ctx, AV_LOG_ERROR, "Unknown sampling rate\n");
-        return -1;
+    if(rate == -1 && !wc->block_parsed){
+        int64_t block_end = url_ftell(pb) + wc->blksize - 24;
+        if(url_is_streamed(pb)){
+            av_log(ctx, AV_LOG_ERROR, "Cannot determine custom sampling rate\n");
+            return -1;
+        }
+        while(url_ftell(pb) < block_end){
+            int id, size;
+            id = get_byte(pb);
+            size = (id & 0x80) ? get_le24(pb) : get_byte(pb);
+            size <<= 1;
+            if(id&0x40)
+                size--;
+            if((id&0x3F) == 0x27){
+                rate = get_le24(pb);
+                break;
+            }else{
+                url_fskip(pb, size);
+            }
+        }
+        if(rate == -1){
+            av_log(ctx, AV_LOG_ERROR, "Cannot determine custom sampling rate\n");
+            return -1;
+        }
     }
     if(!wc->bpp) wc->bpp = bpp;
     if(!wc->chan) wc->chan = chan;
@@ -117,7 +138,7 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb)
         av_log(ctx, AV_LOG_ERROR, "Channels differ, this block: %i, header block: %i\n", chan, wc->chan);
         return -1;
     }
-    if(wc->flags && rate != wc->rate){
+    if(wc->flags && rate != -1 && rate != wc->rate){
         av_log(ctx, AV_LOG_ERROR, "Sampling rate differ, this block: %i, header block: %i\n", rate, wc->rate);
         return -1;
     }
