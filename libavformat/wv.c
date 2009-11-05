@@ -132,10 +132,10 @@ static int wv_read_header(AVFormatContext *s,
     WVContext *wc = s->priv_data;
     AVStream *st;
 
+    wc->block_parsed = 0;
     if(wv_read_block_header(s, pb) < 0)
         return -1;
 
-    wc->block_parsed = 0;
     /* now we are ready: build format streams */
     st = av_new_stream(s, 0);
     if (!st)
