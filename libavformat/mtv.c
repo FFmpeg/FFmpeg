@@ -40,7 +40,7 @@ typedef struct MTVDemuxContext {
     unsigned int file_size;         ///< filesize, not always right
     unsigned int segments;          ///< number of 512 byte segments
     unsigned int audio_identifier;  ///< 'MP3' on all files I have seen
-    unsigned int audio_br;          ///< bitrate of audio chanel (mp3)
+    unsigned int audio_br;          ///< bitrate of audio channel (mp3)
     unsigned int img_colorfmt;      ///< frame colorfmt rgb 565/555
     unsigned int img_bpp;           ///< frame bits per pixel
     unsigned int img_width;         //
@@ -71,7 +71,7 @@ static int mtv_probe(AVProbeData *p)
     }
 
     if(p->buf[51] != 16)
-        return AVPROBE_SCORE_MAX/4; // But we are going to assume 16bbp anyway ..
+        return AVPROBE_SCORE_MAX/4; // But we are going to assume 16bpp anyway ..
 
     return AVPROBE_SCORE_MAX;
 }
