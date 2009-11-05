@@ -183,6 +183,14 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {2,0,1,0,7},        /* V */
         },
     },
+    [PIX_FMT_XVMC_MPEG2_MC] = {
+        .name = "xvmc_mpeg2_mc",
+        .flags = PIX_FMT_HWACCEL,
+    },
+    [PIX_FMT_XVMC_MPEG2_IDCT] = {
+        .name = "xvmc_mpeg2_idct",
+        .flags = PIX_FMT_HWACCEL,
+    },
     [PIX_FMT_UYVY422] = {
         .name = "uyvy422",
         .nb_channels  = 3,
@@ -400,6 +408,36 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {3,0,1,0,7},        /* A */
         },
     },
+    [PIX_FMT_VDPAU_H264] = {
+        .name = "vdpau_h264",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = PIX_FMT_HWACCEL,
+    },
+    [PIX_FMT_VDPAU_MPEG1] = {
+        .name = "vdpau_mpeg1",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = PIX_FMT_HWACCEL,
+    },
+    [PIX_FMT_VDPAU_MPEG2] = {
+        .name = "vdpau_mpeg2",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = PIX_FMT_HWACCEL,
+    },
+    [PIX_FMT_VDPAU_WMV3] = {
+        .name = "vdpau_wmv3",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = PIX_FMT_HWACCEL,
+    },
+    [PIX_FMT_VDPAU_VC1] = {
+        .name = "vdpau_vc1",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = PIX_FMT_HWACCEL,
+    },
     [PIX_FMT_RGB48BE] = {
         .name = "rgb48be",
         .nb_channels  = 3,
@@ -514,6 +552,24 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,1,1,5,4},        /* G */
             {0,1,1,0,4},        /* R */
         },
+    },
+    [PIX_FMT_VAAPI_MOCO] = {
+        .name = "vaapi_moco",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = PIX_FMT_HWACCEL,
+    },
+    [PIX_FMT_VAAPI_IDCT] = {
+        .name = "vaapi_idct",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = PIX_FMT_HWACCEL,
+    },
+    [PIX_FMT_VAAPI_VLD] = {
+        .name = "vaapi_vld",
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 1,
+        .flags = PIX_FMT_HWACCEL,
     },
     [PIX_FMT_YUV420P16LE] = {
         .name = "yuv420p16le",
