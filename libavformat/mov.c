@@ -1500,7 +1500,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 }
             }
         }
-        st->codec->bit_rate = stream_size*8*sc->time_scale/st->duration;
+        if (st->duration > 0)
+            st->codec->bit_rate = stream_size*8*sc->time_scale/st->duration;
     } else {
         for (i = 0; i < sc->chunk_count; i++) {
             unsigned chunk_samples;
