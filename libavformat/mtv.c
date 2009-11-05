@@ -70,6 +70,9 @@ static int mtv_probe(AVProbeData *p)
             return 0;
     }
 
+    if(p->buf[51] != 16)
+        return AVPROBE_SCORE_MAX/4; // But we are going to assume 16bbp anyway ..
+
     return AVPROBE_SCORE_MAX;
 }
 
