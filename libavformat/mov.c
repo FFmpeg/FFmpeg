@@ -1396,7 +1396,7 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
             sc->dts_shift = FFMAX(sc->dts_shift, -duration);
     }
 
-    dprintf(c->fc, "dts shift %d\n", sc->shift);
+    dprintf(c->fc, "dts shift %d\n", sc->dts_shift);
 
     return 0;
 }
