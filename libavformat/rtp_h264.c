@@ -368,7 +368,7 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
         while (*p && *p == ' ') p++; // strip spaces.
         while (*p && *p != ' ') p++; // eat protocol identifier
         while (*p && *p == ' ') p++; // strip trailing spaces.
-        while (*p && *p != '-' && (buf1 - dst) < sizeof(buf1) - 1) {
+        while (*p && *p != '-' && (dst - buf1) < sizeof(buf1) - 1) {
             *dst++ = *p++;
         }
         *dst = '\0';
