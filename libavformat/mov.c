@@ -1436,7 +1436,6 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
         current_dts -= sc->dts_shift;
 
-        st->nb_frames = sc->sample_count;
         for (i = 0; i < sc->chunk_count; i++) {
             current_offset = sc->chunk_offsets[i];
             if (stsc_index + 1 < sc->stsc_count &&
