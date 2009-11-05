@@ -64,6 +64,7 @@ av_cold int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans)
     if (ff_fft_init(&s->fft, nbits-1, trans == IRDFT || trans == RIDFT) < 0)
         return -1;
 
+    ff_init_ff_cos_tabs(nbits);
     s->tcos = ff_cos_tabs[nbits];
     s->tsin = ff_sin_tabs[nbits]+(trans == RDFT || trans == IRIDFT)*(n>>2);
 #if !CONFIG_HARDCODED_TABLES

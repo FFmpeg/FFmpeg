@@ -61,6 +61,20 @@ static int split_radix_permutation(int i, int n, int inverse)
     else                  return split_radix_permutation(i, m, inverse)*4 - 1;
 }
 
+av_cold void ff_init_ff_cos_tabs(int index)
+{
+#if !CONFIG_HARDCODED_TABLES
+    int i;
+    int m = 1<<index;
+    double freq = 2*M_PI/m;
+    FFTSample *tab = ff_cos_tabs[index];
+    for(i=0; i<=m/4; i++)
+        tab[i] = cos(i*freq);
+    for(i=1; i<m/4; i++)
+        tab[m/2-i] = tab[i];
+#endif
+}
+
 av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 {
     int i, j, m, n;
@@ -96,17 +110,9 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     if (HAVE_MMX)     ff_fft_init_mmx(s);
 
     if (s->split_radix) {
-#if !CONFIG_HARDCODED_TABLES
         for(j=4; j<=nbits; j++) {
-            int m = 1<<j;
-            double freq = 2*M_PI/m;
-            FFTSample *tab = ff_cos_tabs[j];
-            for(i=0; i<=m/4; i++)
-                tab[i] = cos(i*freq);
-            for(i=1; i<m/4; i++)
-                tab[m/2-i] = tab[i];
+            ff_init_ff_cos_tabs(j);
         }
-#endif
         for(i=0; i<n; i++)
             s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = i;
         s->tmp_buf = av_malloc(n * sizeof(FFTComplex));
