@@ -115,7 +115,7 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'d','a','y'): key = "year";      break;
     case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
     case MKTAG(0xa9,'t','o','o'):
-    case MKTAG(0xa9,'e','n','c'): key = "muxer";     break;
+    case MKTAG(0xa9,'e','n','c'): key = "encoder";   break;
     case MKTAG( 't','r','k','n'): key = "track";
         parse = mov_metadata_trkn; break;
     }
