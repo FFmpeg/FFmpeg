@@ -111,7 +111,6 @@ static int tmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     ast->codec->codec_type            = CODEC_TYPE_AUDIO;
     ast->codec->codec_id              = CODEC_ID_PCM_U8;
-    ast->codec->sample_fmt            = SAMPLE_FMT_U8;
     ast->codec->channels              = features & TMV_STEREO ? 2 : 1;
     ast->codec->bits_per_coded_sample = 8;
     ast->codec->bit_rate              = ast->codec->sample_rate *

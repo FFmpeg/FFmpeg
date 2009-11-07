@@ -107,7 +107,6 @@ static int sox_read_header(AVFormatContext *s,
     url_fskip(pb, header_size - SOX_FIXED_HDR - comment_size);
 
     st->codec->sample_rate           = sample_rate;
-    st->codec->sample_fmt            = SAMPLE_FMT_S32;
     st->codec->bits_per_coded_sample = 32;
     st->codec->bit_rate              = st->codec->sample_rate *
                                        st->codec->bits_per_coded_sample *
