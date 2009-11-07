@@ -112,6 +112,10 @@ typedef struct {
 
 struct SwsContext;
 
+/**
+ * Frees the swscaler context swsContext.
+ * If swsContext is NULL, then does nothing.
+ */
 void sws_freeContext(struct SwsContext *swsContext);
 
 /**
