@@ -40,7 +40,7 @@ static uint32_t expval_table[512][16];
 
 static void mpegaudio_tableinit(void)
 {
-    int i;
+    int i, value, exponent;
     for(i=1;i<TABLE_4_3_SIZE;i++) {
         double value = i/4;
         double f, fm;
@@ -54,13 +54,13 @@ static void mpegaudio_tableinit(void)
         table_4_3_value[i] = m;
         table_4_3_exp[i] = -e;
     }
-    for(i=0; i<512*16; i++){
-        double value = i & 15;
-        int exponent= (i>>4);
-        double f= value * cbrtf(value) * pow(2, (exponent-400)*0.25 + FRAC_BITS + 5);
-        expval_table[exponent][i&15]= llrint(f);
-        if((i&15)==1)
-            exp_table[exponent]= llrint(f);
+    for(exponent=0; exponent<512; exponent++) {
+        for(value=0; value<16; value++) {
+            int i= value + 16*exponent;
+            double f= (double)value * cbrtf(value) * pow(2, (exponent-400)*0.25 + FRAC_BITS + 5);
+            expval_table[exponent][value]= llrint(f);
+        }
+        exp_table[exponent]= expval_table[exponent][1];
     }
 }
 #endif /* CONFIG_HARDCODED_TABLES */
