@@ -180,7 +180,7 @@ static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
         for (i = 1; i < 3; i ++) {
             if (ref2->data[i]) {
                 ref2->data[i] += (crop->y >> crop->vsub) * ref2->linesize[i];
-                ref2->data[i] +=  crop->x >> crop->hsub;
+                ref2->data[i] += ((crop->x * crop->bpp) >> 3) >> crop->hsub;
             }
         }
     }
