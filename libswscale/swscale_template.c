@@ -944,7 +944,7 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, con
 
 static inline void RENAME(yuv2nv12X)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                      const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
-                                     uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, int dstFormat)
+                                     uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, enum PixelFormat dstFormat)
 {
     yuv2nv12XinC(lumFilter, lumSrc, lumFilterSize,
                  chrFilter, chrSrc, chrFilterSize,
@@ -1361,7 +1361,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
  * YV12 to RGB without scaling or interpolating
  */
 static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
-                          const uint16_t *abuf0, uint8_t *dest, int dstW, int uvalpha, int dstFormat, int flags, int y)
+                          const uint16_t *abuf0, uint8_t *dest, int dstW, int uvalpha, enum PixelFormat dstFormat, int flags, int y)
 {
     const int yalpha1=0;
     int i;
@@ -1785,7 +1785,7 @@ static inline void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *s
 }
 
 #if COMPILE_TEMPLATE_MMX
-static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long width, int srcFormat)
+static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long width, enum PixelFormat srcFormat)
 {
 
     if(srcFormat == PIX_FMT_BGR24) {
@@ -1838,7 +1838,7 @@ static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long w
     );
 }
 
-static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, long width, int srcFormat)
+static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, long width, enum PixelFormat srcFormat)
 {
     __asm__ volatile(
         "movq                    24+%4, %%mm6       \n\t"
@@ -2197,7 +2197,7 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, const uint8_t *src, int srcW, int xInc,
                                    int flags, const int16_t *hLumFilter,
                                    const int16_t *hLumFilterPos, int hLumFilterSize,
-                                   int srcFormat, uint8_t *formatConvBuffer,
+                                   enum PixelFormat srcFormat, uint8_t *formatConvBuffer,
                                    uint32_t *pal, int isAlpha)
 {
     int32_t av_unused *mmx2FilterPos = c->lumMmx2FilterPos;
@@ -2374,7 +2374,7 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
 inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, const uint8_t *src1, const uint8_t *src2,
                                    int srcW, int xInc, int flags, const int16_t *hChrFilter,
                                    const int16_t *hChrFilterPos, int hChrFilterSize,
-                                   int srcFormat, uint8_t *formatConvBuffer,
+                                   enum PixelFormat srcFormat, uint8_t *formatConvBuffer,
                                    uint32_t *pal)
 {
     int32_t av_unused *mmx2FilterPos = c->chrMmx2FilterPos;
@@ -2543,8 +2543,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
     const int chrSrcW= c->chrSrcW;
     const int lumXInc= c->lumXInc;
     const int chrXInc= c->chrXInc;
-    const int dstFormat= c->dstFormat;
-    const int srcFormat= c->srcFormat;
+    const enum PixelFormat dstFormat= c->dstFormat;
+    const enum PixelFormat srcFormat= c->srcFormat;
     const int flags= c->flags;
     int16_t *vLumFilterPos= c->vLumFilterPos;
     int16_t *vChrFilterPos= c->vChrFilterPos;
