@@ -2232,10 +2232,10 @@ EOF
     YASMFLAGS="-f $objformat -DARCH_$(toupper $subarch)"
     enabled     x86_64        && append YASMFLAGS "-m amd64"
     enabled     pic           && append YASMFLAGS "-DPIC"
+    test -n "$extern_prefix"  && append YASMFLAGS "-DPREFIX"
     case "$objformat" in
         elf) enabled debug && append YASMFLAGS "-g dwarf2" ;;
-        macho64)              append YASMFLAGS "-DPIC -DPREFIX" ;;
-        *)                    append YASMFLAGS "-DPREFIX"  ;;
+        macho64)              append YASMFLAGS "-DPIC" ;;
     esac
     disabled yasm || { check_yasm "pabsw xmm0, xmm0" && enable yasm; }
 
