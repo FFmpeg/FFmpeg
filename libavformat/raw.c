@@ -66,7 +66,7 @@ static int raw_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVStream *st;
-    int id;
+    enum CodecID id;
 
     st = av_new_stream(s, 0);
     if (!st)
