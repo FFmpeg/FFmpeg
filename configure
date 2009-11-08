@@ -2231,7 +2231,7 @@ EOF
 
     YASMFLAGS="-f $objformat -DARCH_$(toupper $subarch)"
     enabled     x86_64        && append YASMFLAGS "-m amd64"
-    enabled_all x86_64 shared && append YASMFLAGS "-DPIC"
+    enabled     pic           && append YASMFLAGS "-DPIC"
     case "$objformat" in
         elf) enabled debug && append YASMFLAGS "-g dwarf2" ;;
         macho64)              append YASMFLAGS "-DPIC -DPREFIX" ;;
