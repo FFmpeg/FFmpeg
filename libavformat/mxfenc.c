@@ -86,7 +86,7 @@ static const struct {
     { CODEC_ID_MPEG2VIDEO, 0 },
     { CODEC_ID_PCM_S24LE,  1 },
     { CODEC_ID_PCM_S16LE,  1 },
-    { 0 }
+    { CODEC_ID_NONE }
 };
 
 static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st);
