@@ -1014,6 +1014,7 @@ static av_cold void init_bitstream_params(TwinContext *tctx)
     int bsize_no_main_cb[3];
     int bse_bits[3];
     int i;
+    enum FrameType frametype;
 
     for (i = 0; i < 3; i++)
         // +1 for history usage switch
@@ -1062,8 +1063,8 @@ static av_cold void init_bitstream_params(TwinContext *tctx)
         tctx->length_change[i] = num_rounded_up;
     }
 
-    for (i = 0; i < 4; i++)
-        construct_perm_table(tctx, i);
+    for (frametype = FT_SHORT; frametype <= FT_PPC; frametype++)
+        construct_perm_table(tctx, frametype);
 }
 
 static av_cold int twin_decode_init(AVCodecContext *avctx)
