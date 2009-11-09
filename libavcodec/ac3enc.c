@@ -27,7 +27,7 @@
 //#define DEBUG_BITALLOC
 #include "libavutil/crc.h"
 #include "avcodec.h"
-#include "get_bits.h" // for ff_reverse
+#include "libavutil/common.h" /* for av_reverse */
 #include "put_bits.h"
 #include "ac3.h"
 #include "audioconvert.h"
@@ -138,7 +138,7 @@ static void fft(IComplex *z, int ln)
 
     /* reverse */
     for(j=0;j<np;j++) {
-        int k = ff_reverse[j] >> (8 - ln);
+        int k = av_reverse[j] >> (8 - ln);
         if (k < j)
             FFSWAP(IComplex, z[k], z[j]);
     }

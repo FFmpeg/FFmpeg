@@ -136,6 +136,8 @@
 /* misc math functions */
 extern const uint8_t ff_log2_tab[256];
 
+extern const uint8_t av_reverse[256];
+
 static inline av_const int av_log2(unsigned int v)
 {
     int n = 0;

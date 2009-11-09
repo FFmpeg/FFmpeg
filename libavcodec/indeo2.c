@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "indeo2data.h"
+#include "libavutil/common.h"
 
 typedef struct Ir2Context{
     AVCodecContext *avctx;
@@ -160,7 +161,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     /* decide whether frame uses deltas or not */
 #ifndef ALT_BITSTREAM_READER_LE
     for (i = 0; i < buf_size; i++)
-        buf[i] = ff_reverse[buf[i]];
+        buf[i] = av_reverse[buf[i]];
 #endif
     start = 48; /* hardcoded for now */
 

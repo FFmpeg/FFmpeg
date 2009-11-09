@@ -49,8 +49,6 @@
 #   endif
 #endif
 
-extern const uint8_t ff_reverse[256];
-
 #if ARCH_X86
 // avoid +32 for shift optimization (gcc should do that ...)
 static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
