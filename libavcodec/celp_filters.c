@@ -67,12 +67,9 @@ int ff_celp_lp_synthesis_filter(int16_t *out,
 {
     int i,n;
 
-    // Avoids a +1 in the inner loop.
-    filter_length++;
-
     for (n = 0; n < buffer_length; n++) {
         int sum = rounder;
-        for (i = 1; i < filter_length; i++)
+        for (i = 1; i <= filter_length; i++)
             sum -= filter_coeffs[i-1] * out[n-i];
 
         sum = (sum >> 12) + in[n];
@@ -96,12 +93,9 @@ void ff_celp_lp_synthesis_filterf(float *out,
 {
     int i,n;
 
-    // Avoids a +1 in the inner loop.
-    filter_length++;
-
     for (n = 0; n < buffer_length; n++) {
         out[n] = in[n];
-        for (i = 1; i < filter_length; i++)
+        for (i = 1; i <= filter_length; i++)
             out[n] -= filter_coeffs[i-1] * out[n-i];
     }
 }
@@ -114,12 +108,9 @@ void ff_celp_lp_zero_synthesis_filterf(float *out,
 {
     int i,n;
 
-    // Avoids a +1 in the inner loop.
-    filter_length++;
-
     for (n = 0; n < buffer_length; n++) {
         out[n] = in[n];
-        for (i = 1; i < filter_length; i++)
+        for (i = 1; i <= filter_length; i++)
             out[n] += filter_coeffs[i-1] * in[n-i];
     }
 }
