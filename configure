@@ -1916,6 +1916,10 @@ case $target_os in
         ;;
     openbsd)
         enable malloc_aligned
+        # on OpenBSD 4.5. the compiler does not use PIC unless explicitly using
+        # -fPIC. FFmpeg builds fine without PIC, however the generated executable
+        # will not do anything (simply quits with exit-code 1, no crash, no output).
+        # Thus explicitly enable PIC here.
         enable pic
         SHFLAGS='-shared'
         oss_indev_extralibs="-lossaudio"
