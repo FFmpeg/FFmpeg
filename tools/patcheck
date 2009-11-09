@@ -72,6 +72,10 @@ hiegrep '(:\+|,|;)( *|static|\*)*'"$ERE_PRITYP"' *(src|source|input|in)([0-9A-Z_
 hiegrep ' *static *'"$ERE_FUNCS"'[^)]*\);' 'static prototype, maybe you should reorder your functions' $*
 
 hiegrep2 '\.long_name *=' 'NULL_IF_CONFIG_SMAL' 'missing NULL_IF_CONFIG_SMAL' $*
+hiegrep2 '\.pix_fmts *= *(' 'const' 'missing const for pix_fmts array' $*
+hiegrep2 '\.sample_fmts *= *(' 'const' 'missing const for sample_fmts array' $*
+hiegrep2 '\.supported_framerates *= *(' 'const' 'missing const for supported_framerates array' $*
+hiegrep2 '\.channel_layouts *= *(' 'const' 'missing const for channel_layouts array' $*
 
 #egrep $OPT '^\+.*const ' $*| grep -v 'static'> $TMP && printf '\nnon static const\n'
 #cat $TMP
