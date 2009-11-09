@@ -155,20 +155,19 @@ static void lsp2polyf(const double *lsp, double *f, int lp_half_order)
     }
 }
 
-void ff_acelp_lspd2lpc(const double *lsp, float *lpc)
+void ff_acelp_lspd2lpc(const double *lsp, float *lpc, int lp_half_order)
 {
-    double pa[6], qa[6];
-    int   i;
+    double pa[lp_half_order+1], qa[lp_half_order+1];
+    float *lpc2 = lpc + (lp_half_order << 1) - 1;
 
-    lsp2polyf(lsp,     pa, 5);
-    lsp2polyf(lsp + 1, qa, 5);
+    lsp2polyf(lsp,     pa, lp_half_order);
+    lsp2polyf(lsp + 1, qa, lp_half_order);
 
-    for (i=4; i>=0; i--)
-    {
-        double paf = pa[i+1] + pa[i];
-        double qaf = qa[i+1] - qa[i];
+    while (lp_half_order--) {
+        double paf = pa[lp_half_order+1] + pa[lp_half_order];
+        double qaf = qa[lp_half_order+1] - qa[lp_half_order];
 
-        lpc[i  ] = 0.5*(paf+qaf);
-        lpc[9-i] = 0.5*(paf-qaf);
+        lpc [ lp_half_order] = 0.5*(paf+qaf);
+        lpc2[-lp_half_order] = 0.5*(paf-qaf);
     }
 }

@@ -578,7 +578,7 @@ static void lspf2lpc(const float *lspf, float *lpc)
     for (i=0; i<10; i++)
         lsp[i] = cos(M_PI * lspf[i]);
 
-    ff_acelp_lspd2lpc(lsp, lpc);
+    ff_acelp_lspd2lpc(lsp, lpc, 5);
 
     for (i=0; i<10; i++)
     {

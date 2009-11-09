@@ -86,8 +86,10 @@ void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd
  * @param lsp line spectral pairs in cosine domain
  * @param lpc linear predictive coding coefficients
  *
+ * @note buffers should have a minimux size of 2*lp_half_order elements.
+ *
  * TIA/EIA/IS-733 2.4.3.3.5
  */
-void ff_acelp_lspd2lpc(const double *lsp, float *lpc);
+void ff_acelp_lspd2lpc(const double *lsp, float *lpc, int lp_half_order);
 
 #endif /* AVCODEC_LSP_H */
