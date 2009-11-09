@@ -416,11 +416,6 @@ static const int vs_total_ac_bits = (100 * 4 + 68*2) * 5;
 /* see dv_88_areas and dv_248_areas for details */
 static const int mb_area_start[5] = { 1, 6, 21, 43, 64 };
 
-static inline int get_bits_left(GetBitContext *s)
-{
-    return s->size_in_bits - get_bits_count(s);
-}
-
 static inline int put_bits_left(PutBitContext* s)
 {
     return (s->buf_end - s->buf) * 8 - put_bits_count(s);

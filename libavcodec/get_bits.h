@@ -702,4 +702,9 @@ static inline int decode210(GetBitContext *gb){
         return 2 - get_bits1(gb);
 }
 
+static inline int get_bits_left(GetBitContext *gb)
+{
+    return gb->size_in_bits - get_bits_count(gb);
+}
+
 #endif /* AVCODEC_GET_BITS_H */
