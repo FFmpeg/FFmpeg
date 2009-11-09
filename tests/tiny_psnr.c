@@ -155,7 +155,7 @@ int main(int argc,char* argv[]){
     if(!i) i=1;
     dev= int_sqrt( ((sse/i)*F*F) + (((sse%i)*F*F) + i/2)/i );
     if(sse)
-        psnr= ((2*log16(max<<16) + log16(i) - log16(sse))*284619LL*F + (1<<31)) / (1LL<<32);
+        psnr= ((2*log16(max<<16) + log16(i) - log16(sse))*284619LL*F + (1LL<<31)) / (1LL<<32);
     else
         psnr= 1000*F-1; //floating point free infinity :)
 
