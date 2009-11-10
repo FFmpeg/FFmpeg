@@ -80,11 +80,16 @@ void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order);
  */
 void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd, const int16_t* lsp_prev, int lp_order);
 
+
+#define MAX_LP_HALF_ORDER 8
+
 /**
  * Reconstructs LPC coefficients from the line spectral pair frequencies.
  *
  * @param lsp line spectral pairs in cosine domain
  * @param lpc linear predictive coding coefficients
+ * @param lp_half_order half the number of the amount of LPCs to be
+ *        reconstructed, need to be smaller or equal to MAX_LP_HALF_ORDER
  *
  * @note buffers should have a minimux size of 2*lp_half_order elements.
  *

@@ -157,8 +157,10 @@ static void lsp2polyf(const double *lsp, double *f, int lp_half_order)
 
 void ff_acelp_lspd2lpc(const double *lsp, float *lpc, int lp_half_order)
 {
-    double pa[lp_half_order+1], qa[lp_half_order+1];
+    double pa[MAX_LP_HALF_ORDER+1], qa[MAX_LP_HALF_ORDER+1];
     float *lpc2 = lpc + (lp_half_order << 1) - 1;
+
+    assert(lp_half_order <= MAX_LP_HALF_ORDER);
 
     lsp2polyf(lsp,     pa, lp_half_order);
     lsp2polyf(lsp + 1, qa, lp_half_order);
