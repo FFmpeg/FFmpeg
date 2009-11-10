@@ -91,10 +91,6 @@
 #    define INT_BIT (CHAR_BIT * sizeof(int))
 #endif
 
-#if ( defined(__PIC__) || defined(__pic__) ) && ! defined(PIC)
-#    define PIC
-#endif
-
 #ifndef offsetof
 #    define offsetof(T, F) ((unsigned int)((char *)&((T *)0)->F))
 #endif
