@@ -80,6 +80,10 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
        (AV_RB32(buf + 8) == JP2_SIG_VALUE)) {
         dec = opj_create_decompress(CODEC_JP2);
     } else {
+        // If the AVPacket contains a jp2c box, then skip to
+        // the starting byte of the codestream.
+        if (AV_RB32(buf + 4) == AV_RB32("jp2c"))
+            buf += 8;
         dec = opj_create_decompress(CODEC_J2K);
     }
 
