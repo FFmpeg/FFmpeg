@@ -7922,7 +7922,7 @@ static int decode_frame(AVCodecContext *avctx,
                 if(out_idx==0 && h->delayed_pic[0] && (h->delayed_pic[0]->key_frame || h->delayed_pic[0]->mmco_reset)) {
                     h->outputed_poc = INT_MIN;
                 } else
-                h->outputed_poc = out->poc;
+                    h->outputed_poc = out->poc;
                 *pict= *(AVFrame*)out;
             }else{
                 av_log(avctx, AV_LOG_DEBUG, "no picture\n");
