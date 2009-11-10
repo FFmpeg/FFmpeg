@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 37
+#define LIBAVCODEC_VERSION_MINOR 38
 #define LIBAVCODEC_VERSION_MICRO  1
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -386,6 +386,11 @@ enum SampleFormat {
 #define CH_TOP_BACK_RIGHT         0x00020000
 #define CH_STEREO_LEFT            0x20000000  ///< Stereo downmix.
 #define CH_STEREO_RIGHT           0x40000000  ///< See CH_STEREO_LEFT.
+
+/** Channel mask value used for AVCodecContext.request_channel_layout
+    to indicate that the user requests the channel order of the decoder output
+    to be the native codec channel order. */
+#define CH_LAYOUT_NATIVE          0x8000000000000000LL
 
 /* Audio channel convenience macros */
 #define CH_LAYOUT_MONO              (CH_FRONT_CENTER)
