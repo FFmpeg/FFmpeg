@@ -376,6 +376,11 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .is_hwaccel = 1,
         .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
+    [PIX_FMT_VDPAU_MPEG4] = {
+        .name = "vdpau_mpeg4",
+        .is_hwaccel = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 1,
+    },
     [PIX_FMT_UYYVYY411] = {
         .name = "uyyvyy411",
         .nb_channels = 1,

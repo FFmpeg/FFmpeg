@@ -39,4 +39,7 @@ void ff_vdpau_h264_picture_complete(MpegEncContext *s);
 void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
                                  int buf_size);
 
+void ff_vdpau_mpeg4_decode_picture(MpegEncContext *s, const uint8_t *buf,
+                                   int buf_size);
+
 #endif /* AVCODEC_VDPAU_INTERNAL_H */

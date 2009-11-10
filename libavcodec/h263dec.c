@@ -32,6 +32,7 @@
 #include "h263_parser.h"
 #include "mpeg4video_parser.h"
 #include "msmpeg4.h"
+#include "vdpau_internal.h"
 
 //#define DEBUG
 //#define PRINT_FRAME_TIME
@@ -621,6 +622,11 @@ retry:
     if(MPV_frame_start(s, avctx) < 0)
         return -1;
 
+    if (CONFIG_MPEG4_VDPAU_DECODER && (s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)) {
+        ff_vdpau_mpeg4_decode_picture(s, buf, buf_size);
+        goto frame_end;
+    }
+
     if (avctx->hwaccel) {
         if (avctx->hwaccel->start_frame(avctx, buf, buf_size) < 0)
             return -1;
@@ -695,6 +701,7 @@ retry:
 intrax8_decoded:
     ff_er_frame_end(s);
 
+frame_end:
     if (avctx->hwaccel) {
         if (avctx->hwaccel->end_frame(avctx) < 0)
             return -1;
@@ -835,3 +842,19 @@ AVCodec flv_decoder = {
     .long_name= NULL_IF_CONFIG_SMALL("Flash Video (FLV) / Sorenson Spark / Sorenson H.263"),
     .pix_fmts= ff_pixfmt_list_420,
 };
+
+#if CONFIG_MPEG4_VDPAU_DECODER
+AVCodec mpeg4_vdpau_decoder = {
+    "mpeg4_vdpau",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MPEG4,
+    sizeof(MpegEncContext),
+    ff_h263_decode_init,
+    NULL,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
+    CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
+    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 (VDPAU)"),
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_VDPAU_MPEG4, PIX_FMT_NONE},
+};
+#endif
