@@ -1184,9 +1184,7 @@ void av_picture_copy(AVPicture *dst, const AVPicture *src,
                        src->data[0], src->linesize[0],
                        width, height);
         /* copy the palette */
-        ff_img_copy_plane(dst->data[1], dst->linesize[1],
-                       src->data[1], src->linesize[1],
-                       4, 256);
+        memcpy(dst->data[1], src->data[1], 4*256);
         break;
     }
 }
