@@ -1876,6 +1876,9 @@ esac
 
 enable $arch $subarch
 enabled spic && enable pic
+# This is the same check as used in libavutil/internal.h
+# to enable RIP-relative addressing for x86_64 inline asm.
+check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable pic
 
 # OS specific
 case $target_os in
@@ -2237,7 +2240,6 @@ EOF
     test -n "$extern_prefix"  && append YASMFLAGS "-DPREFIX"
     case "$objformat" in
         elf) enabled debug && append YASMFLAGS "-g dwarf2" ;;
-        macho64)              append YASMFLAGS "-DPIC" ;;
     esac
     disabled yasm || { check_yasm "pabsw xmm0, xmm0" && enable yasm; }
 
