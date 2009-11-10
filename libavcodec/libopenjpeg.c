@@ -78,9 +78,9 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     if((AV_RB32(buf) == 12) &&
        (AV_RB32(buf + 4) == JP2_SIG_TYPE) &&
        (AV_RB32(buf + 8) == JP2_SIG_VALUE)) {
-         dec = opj_create_decompress(CODEC_JP2);
+        dec = opj_create_decompress(CODEC_JP2);
     } else {
-         dec = opj_create_decompress(CODEC_J2K);
+        dec = opj_create_decompress(CODEC_J2K);
     }
 
     if(!dec) {
