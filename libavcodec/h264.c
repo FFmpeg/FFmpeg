@@ -2196,7 +2196,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     if(!avctx->has_b_frames)
     s->low_delay= 1;
 
-        avctx->pix_fmt= avctx->get_format(avctx, avctx->codec->pix_fmts);
+    avctx->pix_fmt= avctx->get_format(avctx, avctx->codec->pix_fmts);
     avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
 
