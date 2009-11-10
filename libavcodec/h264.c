@@ -2196,9 +2196,6 @@ static av_cold int decode_init(AVCodecContext *avctx){
     if(!avctx->has_b_frames)
     s->low_delay= 1;
 
-    if(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
-        avctx->pix_fmt= PIX_FMT_VDPAU_H264;
-    else
         avctx->pix_fmt= avctx->get_format(avctx, avctx->codec->pix_fmts);
     avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
@@ -8191,6 +8188,7 @@ AVCodec h264_vdpau_decoder = {
     CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),
+    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_VDPAU_H264, PIX_FMT_NONE},
 };
 #endif
 
