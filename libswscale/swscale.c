@@ -459,6 +459,8 @@ const char *sws_format_name(enum PixelFormat format)
         return "vdpau_wmv3";
     case PIX_FMT_VDPAU_VC1:
         return "vdpau_vc1";
+    case PIX_FMT_VDPAU_MPEG4:
+        return "vdpau_mpeg4";
     case PIX_FMT_YUV420P16LE:
         return "yuv420p16le";
     case PIX_FMT_YUV422P16LE:
