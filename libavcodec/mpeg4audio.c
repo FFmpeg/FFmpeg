@@ -24,6 +24,34 @@
 #include "put_bits.h"
 #include "mpeg4audio.h"
 
+/**
+ * Parse MPEG-4 audio configuration for ALS object type.
+ * @param[in] gb       bit reader context
+ * @param[in] c        MPEG4AudioConfig structure to fill
+ * @return on success 0 is returned, otherwise a value < 0
+ */
+static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c)
+{
+    if (gb->size_in_bits - get_bits_count(gb) < 112)
+        return -1;
+
+    if (get_bits_long(gb, 32) != MKBETAG('A','L','S','\0'))
+        return -1;
+
+    // override AudioSpecificConfig channel configuration and sample rate
+    // which are buggy in old ALS conformance files
+    c->sample_rate = get_bits_long(gb, 32);
+
+    // skip number of samples
+    skip_bits_long(gb, 32);
+
+    // read number of channels
+    c->chan_config = 0;
+    c->channels    = get_bits(gb, 16) + 1;
+
+    return 0;
+}
+
 const int ff_mpeg4audio_sample_rates[16] = {
     96000, 88200, 64000, 48000, 44100, 32000,
     24000, 22050, 16000, 12000, 11025, 8000, 7350
@@ -73,8 +101,19 @@ int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_si
     }
     specific_config_bitindex = get_bits_count(&gb);
 
+    if (c->object_type == AOT_ALS) {
+        skip_bits(&gb, 5);
+        if (show_bits_long(&gb, 24) != MKBETAG('\0','A','L','S'))
+            skip_bits_long(&gb, 24);
+
+        specific_config_bitindex = get_bits_count(&gb);
+
+        if (parse_config_ALS(&gb, c))
+            return -1;
+    }
+
     if (c->ext_object_type != AOT_SBR) {
-        int bits_left = buf_size*8 - specific_config_bitindex;
+        int bits_left = buf_size*8 - get_bits_count(&gb);
         for (; bits_left > 15; bits_left--) {
             if (show_bits(&gb, 11) == 0x2b7) { // sync extension
                 get_bits(&gb, 11);
