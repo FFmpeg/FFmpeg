@@ -47,7 +47,7 @@ void ff_acelp_reorder_lsf(int16_t* lsfq, int lsfq_min_distance, int lsfq_min, in
     lsfq[lp_order-1] = FFMIN(lsfq[lp_order-1], lsfq_max);//Is warning required ?
 }
 
-void ff_set_min_dist_lsf(float *lsf, float min_spacing, int size)
+void ff_set_min_dist_lsf(float *lsf, double min_spacing, int size)
 {
     int i;
     float prev = 0.0;
