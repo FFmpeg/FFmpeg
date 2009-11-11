@@ -434,9 +434,7 @@ int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
                 MPEG4AudioConfig cfg;
                 ff_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                          st->codec->extradata_size);
-                if (cfg.chan_config > 7)
-                    return -1;
-                st->codec->channels = ff_mpeg4audio_channels[cfg.chan_config];
+                st->codec->channels = cfg.channels;
                 if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
                     st->codec->sample_rate = ff_mpa_freq_tab[cfg.sampling_index];
                 else

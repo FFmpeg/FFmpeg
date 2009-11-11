@@ -57,6 +57,8 @@ int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_si
     c->object_type = get_object_type(&gb);
     c->sample_rate = get_sample_rate(&gb, &c->sampling_index);
     c->chan_config = get_bits(&gb, 4);
+    if (c->chan_config < FF_ARRAY_ELEMS(ff_mpeg4audio_channels))
+        c->channels = ff_mpeg4audio_channels[c->chan_config];
     c->sbr = -1;
     if (c->object_type == AOT_SBR) {
         c->ext_object_type = c->object_type;
