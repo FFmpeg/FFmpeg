@@ -164,6 +164,31 @@ not specified it will use the default value of 16.
 Adding this in the beginning of filter chains should make filtering
 faster due to better use of the memory cache.
 
+@section scale
+
+Scale the input video to width:height and/or convert the image format.
+
+For example the command:
+
+@example
+./ffmpeg -i in.avi -vfilters "scale=200:100" out.avi
+@end example
+
+will scale the input video to a size of 200x100.
+
+If the input image format is different from the format requested by
+the next filter, the scale filter will convert the input to the
+requested format.
+
+If the value for ``width'' or ``height'' is 0, the respective input
+size is used for the output.
+
+If the value for ``width'' or ``height'' is -1, the scale filter will
+use, for the respective output size, a value that maintains the aspect
+ratio of the input image.
+
+The default value of ``width'' and ``height'' is 0.
+
 @section vflip
 
 Flip the input video vertically.

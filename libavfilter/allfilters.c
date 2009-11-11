@@ -38,6 +38,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (FORMAT, format, vf);
     REGISTER_FILTER (NOFORMAT, noformat, vf);
     REGISTER_FILTER (NULL, null, vf);
+    REGISTER_FILTER (SCALE, scale, vf);
     REGISTER_FILTER (SLICIFY, slicify, vf);
     REGISTER_FILTER (VFLIP, vflip, vf);
 }
