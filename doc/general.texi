@@ -569,6 +569,7 @@ following image formats are supported:
 @item MP2 (MPEG audio layer 2)  @tab IX  @tab IX
 @item MP3 (MPEG audio layer 3)  @tab  E  @tab IX
     @tab encoding supported through external library LAME, ADU MP3 and MP3onMP4 also supported
+@item MPEG-4 Audio Lossless Coding (ALS)  @tab     @tab  X
 @item Musepack SV7           @tab     @tab  X
 @item Musepack SV8           @tab     @tab  X
 @item Nellymoser Asao        @tab  X  @tab  X
