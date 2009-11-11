@@ -678,7 +678,7 @@ static int decode_band_types(AACContext *ac, enum BandType band_type[120],
     for (g = 0; g < ics->num_window_groups; g++) {
         int k = 0;
         while (k < ics->max_sfb) {
-            uint8_t sect_len = k;
+            uint8_t sect_end = k;
             int sect_len_incr;
             int sect_band_type = get_bits(gb, 4);
             if (sect_band_type == 12) {
@@ -686,17 +686,17 @@ static int decode_band_types(AACContext *ac, enum BandType band_type[120],
                 return -1;
             }
             while ((sect_len_incr = get_bits(gb, bits)) == (1 << bits) - 1)
-                sect_len += sect_len_incr;
-            sect_len += sect_len_incr;
-            if (sect_len > ics->max_sfb) {
+                sect_end += sect_len_incr;
+            sect_end += sect_len_incr;
+            if (sect_end > ics->max_sfb) {
                 av_log(ac->avccontext, AV_LOG_ERROR,
                        "Number of bands (%d) exceeds limit (%d).\n",
-                       sect_len, ics->max_sfb);
+                       sect_end, ics->max_sfb);
                 return -1;
             }
-            for (; k < sect_len; k++) {
+            for (; k < sect_end; k++) {
                 band_type        [idx]   = sect_band_type;
-                band_type_run_end[idx++] = sect_len;
+                band_type_run_end[idx++] = sect_end;
             }
         }
     }
