@@ -670,6 +670,7 @@ static void zero_remaining(unsigned int b, unsigned int b_max,
     while (b < b_max)
         count += div_blocks[b];
 
+    if (count)
     memset(buf, 0, sizeof(*buf) * count);
 }
 
