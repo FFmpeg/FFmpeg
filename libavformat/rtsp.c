@@ -43,18 +43,13 @@
 //#define DEBUG
 //#define DEBUG_RTP_TCP
 
-static int rtsp_read_play(AVFormatContext *s);
+static int rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
+                           unsigned char **content_ptr,
+                           int return_on_interleaved_data);
 
 #if LIBAVFORMAT_VERSION_INT < (53 << 16)
 int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
 #endif
-
-static int rtsp_probe(AVProbeData *p)
-{
-    if (av_strstart(p->filename, "rtsp:", NULL))
-        return AVPROBE_SCORE_MAX;
-    return 0;
-}
 
 #define SPACE_CHARS " \t\r\n"
 /* we use memchr() instead of strchr() here because strchr() will return
@@ -554,6 +549,136 @@ static int sdp_parse(AVFormatContext *s, const char *content)
     return 0;
 }
 
+static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
+                           uint8_t *buf, int buf_size)
+{
+    RTSPState *rt = s->priv_data;
+    RTSPStream *rtsp_st;
+    fd_set rfds;
+    int fd, fd_max, n, i, ret, tcp_fd;
+    struct timeval tv;
+
+    for(;;) {
+        if (url_interrupt_cb())
+            return AVERROR(EINTR);
+        FD_ZERO(&rfds);
+        if (rt->rtsp_hd) {
+            tcp_fd = fd_max = url_get_file_handle(rt->rtsp_hd);
+            FD_SET(tcp_fd, &rfds);
+        } else {
+            fd_max = 0;
+            tcp_fd = -1;
+        }
+        for(i = 0; i < rt->nb_rtsp_streams; i++) {
+            rtsp_st = rt->rtsp_streams[i];
+            if (rtsp_st->rtp_handle) {
+                /* currently, we cannot probe RTCP handle because of
+                 * blocking restrictions */
+                fd = url_get_file_handle(rtsp_st->rtp_handle);
+                if (fd > fd_max)
+                    fd_max = fd;
+                FD_SET(fd, &rfds);
+            }
+        }
+        tv.tv_sec = 0;
+        tv.tv_usec = 100 * 1000;
+        n = select(fd_max + 1, &rfds, NULL, NULL, &tv);
+        if (n > 0) {
+            for(i = 0; i < rt->nb_rtsp_streams; i++) {
+                rtsp_st = rt->rtsp_streams[i];
+                if (rtsp_st->rtp_handle) {
+                    fd = url_get_file_handle(rtsp_st->rtp_handle);
+                    if (FD_ISSET(fd, &rfds)) {
+                        ret = url_read(rtsp_st->rtp_handle, buf, buf_size);
+                        if (ret > 0) {
+                            *prtsp_st = rtsp_st;
+                            return ret;
+                        }
+                    }
+                }
+            }
+            if (FD_ISSET(tcp_fd, &rfds)) {
+                RTSPMessageHeader reply;
+
+                rtsp_read_reply(s, &reply, NULL, 0);
+                /* XXX: parse message */
+                if (rt->state != RTSP_STATE_PLAYING)
+                    return 0;
+            }
+        }
+    }
+}
+
+/* close and free RTSP streams */
+static void rtsp_close_streams(RTSPState *rt)
+{
+    int i;
+    RTSPStream *rtsp_st;
+
+    for(i=0;i<rt->nb_rtsp_streams;i++) {
+        rtsp_st = rt->rtsp_streams[i];
+        if (rtsp_st) {
+            if (rtsp_st->transport_priv) {
+                if (rt->transport == RTSP_TRANSPORT_RDT)
+                    ff_rdt_parse_close(rtsp_st->transport_priv);
+                else
+                    rtp_parse_close(rtsp_st->transport_priv);
+            }
+            if (rtsp_st->rtp_handle)
+                url_close(rtsp_st->rtp_handle);
+            if (rtsp_st->dynamic_handler && rtsp_st->dynamic_protocol_context)
+                rtsp_st->dynamic_handler->close(rtsp_st->dynamic_protocol_context);
+        }
+    }
+    av_free(rt->rtsp_streams);
+    if (rt->asf_ctx) {
+        av_close_input_stream (rt->asf_ctx);
+        rt->asf_ctx = NULL;
+    }
+    av_freep(&rt->auth_b64);
+}
+
+static int
+rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
+{
+    RTSPState *rt = s->priv_data;
+    AVStream *st = NULL;
+
+    /* open the RTP context */
+    if (rtsp_st->stream_index >= 0)
+        st = s->streams[rtsp_st->stream_index];
+    if (!st)
+        s->ctx_flags |= AVFMTCTX_NOHEADER;
+
+    if (rt->transport == RTSP_TRANSPORT_RDT)
+        rtsp_st->transport_priv = ff_rdt_parse_open(s, st->index,
+                                            rtsp_st->dynamic_protocol_context,
+                                            rtsp_st->dynamic_handler);
+    else
+        rtsp_st->transport_priv = rtp_parse_open(s, st, rtsp_st->rtp_handle,
+                                         rtsp_st->sdp_payload_type,
+                                         &rtsp_st->rtp_payload_data);
+
+    if (!rtsp_st->transport_priv) {
+         return AVERROR(ENOMEM);
+    } else if (rt->transport != RTSP_TRANSPORT_RDT) {
+        if(rtsp_st->dynamic_handler) {
+            rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
+                                           rtsp_st->dynamic_protocol_context,
+                                           rtsp_st->dynamic_handler);
+        }
+    }
+
+    return 0;
+}
+
+static int rtsp_probe(AVProbeData *p)
+{
+    if (av_strstart(p->filename, "rtsp:", NULL))
+        return AVPROBE_SCORE_MAX;
+    return 0;
+}
+
 static void rtsp_parse_range(int *min_ptr, int *max_ptr, const char **pp)
 {
     const char *p;
@@ -880,70 +1005,6 @@ static void rtsp_send_cmd (AVFormatContext *s,
     rtsp_read_reply(s, reply, content_ptr, 0);
 }
 
-
-/* close and free RTSP streams */
-static void rtsp_close_streams(RTSPState *rt)
-{
-    int i;
-    RTSPStream *rtsp_st;
-
-    for(i=0;i<rt->nb_rtsp_streams;i++) {
-        rtsp_st = rt->rtsp_streams[i];
-        if (rtsp_st) {
-            if (rtsp_st->transport_priv) {
-                if (rt->transport == RTSP_TRANSPORT_RDT)
-                    ff_rdt_parse_close(rtsp_st->transport_priv);
-                else
-                    rtp_parse_close(rtsp_st->transport_priv);
-            }
-            if (rtsp_st->rtp_handle)
-                url_close(rtsp_st->rtp_handle);
-            if (rtsp_st->dynamic_handler && rtsp_st->dynamic_protocol_context)
-                rtsp_st->dynamic_handler->close(rtsp_st->dynamic_protocol_context);
-        }
-    }
-    av_free(rt->rtsp_streams);
-    if (rt->asf_ctx) {
-        av_close_input_stream (rt->asf_ctx);
-        rt->asf_ctx = NULL;
-    }
-    av_freep(&rt->auth_b64);
-}
-
-static int
-rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
-{
-    RTSPState *rt = s->priv_data;
-    AVStream *st = NULL;
-
-    /* open the RTP context */
-    if (rtsp_st->stream_index >= 0)
-        st = s->streams[rtsp_st->stream_index];
-    if (!st)
-        s->ctx_flags |= AVFMTCTX_NOHEADER;
-
-    if (rt->transport == RTSP_TRANSPORT_RDT)
-        rtsp_st->transport_priv = ff_rdt_parse_open(s, st->index,
-                                            rtsp_st->dynamic_protocol_context,
-                                            rtsp_st->dynamic_handler);
-    else
-        rtsp_st->transport_priv = rtp_parse_open(s, st, rtsp_st->rtp_handle,
-                                         rtsp_st->sdp_payload_type,
-                                         &rtsp_st->rtp_payload_data);
-
-    if (!rtsp_st->transport_priv) {
-         return AVERROR(ENOMEM);
-    } else if (rt->transport != RTSP_TRANSPORT_RDT) {
-        if(rtsp_st->dynamic_handler) {
-            rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
-                                           rtsp_st->dynamic_protocol_context,
-                                           rtsp_st->dynamic_handler);
-        }
-    }
-
-    return 0;
-}
-
 /**
  * @returns 0 on success, <0 on error, 1 if protocol is unavailable.
  */
@@ -1169,6 +1230,35 @@ fail:
         }
     }
     return err;
+}
+
+static int rtsp_read_play(AVFormatContext *s)
+{
+    RTSPState *rt = s->priv_data;
+    RTSPMessageHeader reply1, *reply = &reply1;
+    char cmd[1024];
+
+    av_log(s, AV_LOG_DEBUG, "hello state=%d\n", rt->state);
+
+    if (!(rt->server_type == RTSP_SERVER_REAL && rt->need_subscription)) {
+        if (rt->state == RTSP_STATE_PAUSED) {
+            snprintf(cmd, sizeof(cmd),
+                     "PLAY %s RTSP/1.0\r\n",
+                     s->filename);
+        } else {
+            snprintf(cmd, sizeof(cmd),
+                     "PLAY %s RTSP/1.0\r\n"
+                     "Range: npt=%0.3f-\r\n",
+                     s->filename,
+                     (double)rt->seek_timestamp / AV_TIME_BASE);
+        }
+        rtsp_send_cmd(s, cmd, reply, NULL);
+        if (reply->status_code != RTSP_STATUS_OK) {
+            return -1;
+        }
+    }
+    rt->state = RTSP_STATE_PLAYING;
+    return 0;
 }
 
 static int rtsp_read_header(AVFormatContext *s,
@@ -1404,66 +1494,6 @@ static int tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     return len;
 }
 
-static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
-                           uint8_t *buf, int buf_size)
-{
-    RTSPState *rt = s->priv_data;
-    RTSPStream *rtsp_st;
-    fd_set rfds;
-    int fd, fd_max, n, i, ret, tcp_fd;
-    struct timeval tv;
-
-    for(;;) {
-        if (url_interrupt_cb())
-            return AVERROR(EINTR);
-        FD_ZERO(&rfds);
-        if (rt->rtsp_hd) {
-            tcp_fd = fd_max = url_get_file_handle(rt->rtsp_hd);
-            FD_SET(tcp_fd, &rfds);
-        } else {
-            fd_max = 0;
-            tcp_fd = -1;
-        }
-        for(i = 0; i < rt->nb_rtsp_streams; i++) {
-            rtsp_st = rt->rtsp_streams[i];
-            if (rtsp_st->rtp_handle) {
-                /* currently, we cannot probe RTCP handle because of
-                 * blocking restrictions */
-                fd = url_get_file_handle(rtsp_st->rtp_handle);
-                if (fd > fd_max)
-                    fd_max = fd;
-                FD_SET(fd, &rfds);
-            }
-        }
-        tv.tv_sec = 0;
-        tv.tv_usec = 100 * 1000;
-        n = select(fd_max + 1, &rfds, NULL, NULL, &tv);
-        if (n > 0) {
-            for(i = 0; i < rt->nb_rtsp_streams; i++) {
-                rtsp_st = rt->rtsp_streams[i];
-                if (rtsp_st->rtp_handle) {
-                    fd = url_get_file_handle(rtsp_st->rtp_handle);
-                    if (FD_ISSET(fd, &rfds)) {
-                        ret = url_read(rtsp_st->rtp_handle, buf, buf_size);
-                        if (ret > 0) {
-                            *prtsp_st = rtsp_st;
-                            return ret;
-                        }
-                    }
-                }
-            }
-            if (FD_ISSET(tcp_fd, &rfds)) {
-                RTSPMessageHeader reply;
-
-                rtsp_read_reply(s, &reply, NULL, 0);
-                /* XXX: parse message */
-                if (rt->state != RTSP_STATE_PLAYING)
-                    return 0;
-            }
-        }
-    }
-}
-
 static int rtsp_read_packet(AVFormatContext *s,
                             AVPacket *pkt)
 {
@@ -1594,35 +1624,6 @@ static int rtsp_read_packet(AVFormatContext *s,
         }
     }
 
-    return 0;
-}
-
-static int rtsp_read_play(AVFormatContext *s)
-{
-    RTSPState *rt = s->priv_data;
-    RTSPMessageHeader reply1, *reply = &reply1;
-    char cmd[1024];
-
-    av_log(s, AV_LOG_DEBUG, "hello state=%d\n", rt->state);
-
-    if (!(rt->server_type == RTSP_SERVER_REAL && rt->need_subscription)) {
-        if (rt->state == RTSP_STATE_PAUSED) {
-            snprintf(cmd, sizeof(cmd),
-                     "PLAY %s RTSP/1.0\r\n",
-                     s->filename);
-        } else {
-            snprintf(cmd, sizeof(cmd),
-                     "PLAY %s RTSP/1.0\r\n"
-                     "Range: npt=%0.3f-\r\n",
-                     s->filename,
-                     (double)rt->seek_timestamp / AV_TIME_BASE);
-        }
-        rtsp_send_cmd(s, cmd, reply, NULL);
-        if (reply->status_code != RTSP_STATUS_OK) {
-            return -1;
-        }
-    }
-    rt->state = RTSP_STATE_PLAYING;
     return 0;
 }
 
