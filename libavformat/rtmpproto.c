@@ -475,7 +475,10 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
  * there is some significant data (media data or expected status notification).
  *
  * @param s          reading context
- * @param for_header non-zero value tells function to work until it gets notification from the server that playing has been started, otherwise function will work until some media data is received (or an error happens)
+ * @param for_header non-zero value tells function to work until it
+ * gets notification from the server that playing has been started,
+ * otherwise function will work until some media data is received (or
+ * an error happens)
  * @return 0 for successful operation, negative value in case of error
  */
 static int get_packet(URLContext *s, int for_header)
