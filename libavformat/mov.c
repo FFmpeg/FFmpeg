@@ -419,7 +419,7 @@ int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
         get_be32(pb); /* avg bitrate */
 
         st->codec->codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
-        dprintf(fc, "esds object type id %d\n", object_type_id);
+        dprintf(fc, "esds object type id 0x%02x\n", object_type_id);
         len = mp4_read_descr(fc, pb, &tag);
         if (tag == MP4DecSpecificDescrTag) {
             dprintf(fc, "Specific MPEG4 header len=%d\n", len);
