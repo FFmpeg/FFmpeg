@@ -85,7 +85,7 @@ enum AudioObjectType {
     AOT_L2,                    ///< Y                       Layer 2
     AOT_L3,                    ///< Y                       Layer 3
     AOT_DST,                   ///< N                       Direct Stream Transfer
-    AOT_ALS,                   ///< N                       Audio LosslesS
+    AOT_ALS,                   ///< Y                       Audio LosslesS
     AOT_SLS,                   ///< N                       Scalable LosslesS
     AOT_SLS_NON_CORE,          ///< N                       Scalable LosslesS (non core)
     AOT_ER_AAC_ELD,            ///< N                       Error Resilient Enhanced Low Delay
