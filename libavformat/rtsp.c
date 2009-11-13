@@ -43,11 +43,13 @@
 //#define DEBUG
 //#define DEBUG_RTP_TCP
 
+#if CONFIG_RTSP_DEMUXER
 static int tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                            uint8_t *buf, int buf_size);
 static int rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
                            unsigned char **content_ptr,
                            int return_on_interleaved_data);
+#endif
 
 #if LIBAVFORMAT_VERSION_INT < (53 << 16)
 int rtsp_default_protocols = (1 << RTSP_LOWER_TRANSPORT_UDP);
@@ -599,6 +601,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                     }
                 }
             }
+#if CONFIG_RTSP_DEMUXER
             if (FD_ISSET(tcp_fd, &rfds)) {
                 RTSPMessageHeader reply;
 
@@ -607,6 +610,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                 if (rt->state != RTSP_STATE_PLAYING)
                     return 0;
             }
+#endif
         }
     }
 }
@@ -731,6 +735,7 @@ rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
     return 0;
 }
 
+#if CONFIG_RTSP_DEMUXER
 static int rtsp_probe(AVProbeData *p)
 {
     if (av_strstart(p->filename, "rtsp:", NULL))
@@ -1714,7 +1719,6 @@ static int rtsp_read_close(AVFormatContext *s)
     return 0;
 }
 
-#if CONFIG_RTSP_DEMUXER
 AVInputFormat rtsp_demuxer = {
     "rtsp",
     NULL_IF_CONFIG_SMALL("RTSP input format"),
@@ -1801,7 +1805,6 @@ static int sdp_read_close(AVFormatContext *s)
     return 0;
 }
 
-#if CONFIG_SDP_DEMUXER
 AVInputFormat sdp_demuxer = {
     "sdp",
     NULL_IF_CONFIG_SMALL("SDP"),
@@ -1811,4 +1814,3 @@ AVInputFormat sdp_demuxer = {
     sdp_read_packet,
     sdp_read_close,
 };
-#endif
