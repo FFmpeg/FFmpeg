@@ -1621,6 +1621,41 @@ elif $cc -V 2>&1 | grep -q Sun; then
     cc_version="AV_STRINGIFY(__SUNPRO_C)"
     DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -xM1'
+    filter_cflags=suncc_flags
+    suncc_flags(){
+        for flag; do
+            case $flag in
+                -march=*|-mcpu=*)
+                    case "${flag#*=}" in
+                        native)                   echo -xtarget=native       ;;
+                        v9)                       echo -xarch=sparc          ;;
+                        ultrasparc)               echo -xarch=sparcvis       ;;
+                        ultrasparc3|niagara*)     echo -xarch=sparcvis2      ;;
+                        i586|pentium)             echo -xchip=pentium        ;;
+                        i686|pentiumpro|pentium2) echo -xtarget=pentium_pro  ;;
+                        pentium3*|c3-2)           echo -xtarget=pentium3     ;;
+                        pentium-m)          echo -xarch=sse2 -xchip=pentium3 ;;
+                        pentium4*)          echo -xtarget=pentium4           ;;
+                        prescott|nocona)    echo -xarch=sse3 -xchip=pentium4 ;;
+                        *-sse3)             echo -xarch=sse3                 ;;
+                        core2)              echo -xarch=ssse3 -xchip=core2   ;;
+                        amdfam10|barcelona)       echo -xarch=sse4_1         ;;
+                        athlon-4|athlon-[mx]p)    echo -xarch=ssea           ;;
+                        k8|opteron|athlon64|athlon-fx)
+                                                  echo -xarch=sse2a          ;;
+                        athlon*)                  echo -xarch=pentium_proa   ;;
+                    esac
+                    ;;
+                -std=c99)             echo -xc99              ;;
+                -fomit-frame-pointer) echo -xregs=frameptr    ;;
+                -fPIC)                echo -KPIC -xcode=pic32 ;;
+                -Os)                  echo -O5 -xspace        ;;
+                -W*,*)                echo $flag              ;;
+                -f*-*|-W*)                                    ;;
+                *)                    echo $flag              ;;
+            esac
+        done
+    }
 fi
 
 test -n "$cc_type" && enable $cc_type || echolog "Unknown C compiler $cc"
@@ -2473,6 +2508,8 @@ elif enabled optimizations; then
     if enabled xlc; then
         add_cflags  -O5
         add_ldflags -O5
+    elif enabled suncc; then
+        add_cflags -O5
     elif enabled ccc; then
         add_cflags -fast
     else
