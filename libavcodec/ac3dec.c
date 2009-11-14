@@ -1167,7 +1167,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     for(ch=1; ch<=s->channels; ch++) {
         float gain = s->mul_bias / 4194304.0f;
         if(s->channel_mode == AC3_CHMODE_DUALMONO) {
-            gain *= s->dynamic_range[ch-1];
+            gain *= s->dynamic_range[2-ch];
         } else {
             gain *= s->dynamic_range[0];
         }
