@@ -92,4 +92,14 @@ static const int16_t parcor_scaled_values[] = {
 };
 
 
+/** Gain values of p(0) for long-term prediction.
+ *  To be indexed by the Rice coded indices.
+ */
+static const uint8_t ltp_gain_values [4][4] = {
+    { 0,  8, 16,  24},
+    {32, 40, 48,  56},
+    {64, 70, 76,  82},
+    {88, 92, 96, 100}
+};
+
 #endif /* AVCODEC_ALS_DATA_H */
