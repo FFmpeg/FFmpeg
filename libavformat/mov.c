@@ -274,18 +274,33 @@ static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         if (dref->type == MKTAG('a','l','i','s') && size > 150) {
             /* macintosh alias record */
             uint16_t volume_len, len;
-            char volume[28];
             int16_t type;
 
             url_fskip(pb, 10);
 
             volume_len = get_byte(pb);
             volume_len = FFMIN(volume_len, 27);
-            get_buffer(pb, volume, 27);
-            volume[volume_len] = 0;
-            av_log(c->fc, AV_LOG_DEBUG, "volume %s, len %d\n", volume, volume_len);
+            get_buffer(pb, dref->volume, 27);
+            dref->volume[volume_len] = 0;
+            av_log(c->fc, AV_LOG_DEBUG, "volume %s, len %d\n", dref->volume, volume_len);
 
-            url_fskip(pb, 112);
+            url_fskip(pb, 12);
+
+            len = get_byte(pb);
+            len = FFMIN(len, 63);
+            get_buffer(pb, dref->filename, 63);
+            dref->filename[len] = 0;
+            av_log(c->fc, AV_LOG_DEBUG, "filename %s, len %d\n", dref->filename, len);
+
+            url_fskip(pb, 16);
+
+            /* read next level up_from_alias/down_to_target */
+            dref->nlvl_from = get_be16(pb);
+            dref->nlvl_to   = get_be16(pb);
+            av_log(c->fc, AV_LOG_DEBUG, "nlvl from %d, nlvl to %d\n",
+                   dref->nlvl_from, dref->nlvl_to);
+
+            url_fskip(pb, 16);
 
             for (type = 0; type != -1 && url_ftell(pb) < next; ) {
                 type = get_be16(pb);
@@ -299,7 +314,7 @@ static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                     if (!dref->path)
                         return AVERROR(ENOMEM);
                     get_buffer(pb, dref->path, len);
-                    if (len > volume_len && !strncmp(dref->path, volume, volume_len)) {
+                    if (len > volume_len && !strncmp(dref->path, dref->volume, volume_len)) {
                         len -= volume_len;
                         memmove(dref->path, dref->path+volume_len, len);
                         dref->path[len] = 0;
@@ -308,6 +323,17 @@ static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                         if (dref->path[j] == ':')
                             dref->path[j] = '/';
                     av_log(c->fc, AV_LOG_DEBUG, "path %s\n", dref->path);
+                } else if (type == 0) { // directory name
+                    av_free(dref->dir);
+                    dref->dir = av_malloc(len+1);
+                    if (!dref->dir)
+                        return AVERROR(ENOMEM);
+                    get_buffer(pb, dref->dir, len);
+                    dref->dir[len] = 0;
+                    for (j = 0; j < len; j++)
+                        if (dref->dir[j] == ':')
+                            dref->dir[j] = '/';
+                    av_log(c->fc, AV_LOG_DEBUG, "dir %s\n", dref->dir);
                 } else
                     url_fskip(pb, len);
             }
@@ -1526,6 +1552,52 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     }
 }
 
+static int mov_open_dref(ByteIOContext **pb, char *src, MOVDref *ref)
+{
+    /* try absolute path */
+    if (!url_fopen(pb, ref->path, URL_RDONLY))
+        return 0;
+
+    /* try relative path */
+    if (ref->nlvl_to > 0 && ref->nlvl_from > 0) {
+        char filename[1024];
+        char *src_path;
+        int i, l;
+
+        /* find a source dir */
+        src_path = strrchr(src, '/');
+        if (src_path)
+            src_path++;
+        else
+            src_path = src;
+
+        /* find a next level down to target */
+        for (i = 0, l = strlen(ref->path) - 1; l >= 0; l--)
+            if (ref->path[l] == '/') {
+                if (i == ref->nlvl_to - 1)
+                    break;
+                else
+                    i++;
+            }
+
+        /* compose filename if next level down to target was found */
+        if (i == ref->nlvl_to - 1) {
+            memcpy(filename, src, src_path - src);
+            filename[src_path - src] = 0;
+
+            for (i = 1; i < ref->nlvl_from; i++)
+                av_strlcat(filename, "../", 1024);
+
+            av_strlcat(filename, ref->path + l + 1, 1024);
+
+            if (!url_fopen(pb, filename, URL_RDONLY))
+                return 0;
+        }
+    }
+
+    return AVERROR(ENOENT);
+};
+
 static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -1571,9 +1643,13 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     mov_build_index(c, st);
 
     if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
-        if (url_fopen(&sc->pb, sc->drefs[sc->dref_id-1].path, URL_RDONLY) < 0)
-            av_log(c->fc, AV_LOG_ERROR, "stream %d, error opening file %s: %s\n",
-                   st->index, sc->drefs[sc->dref_id-1].path, strerror(errno));
+        MOVDref *dref = &sc->drefs[sc->dref_id - 1];
+        if (mov_open_dref(&sc->pb, c->fc->filename, dref) < 0)
+            av_log(c->fc, AV_LOG_ERROR,
+                   "stream %d, error opening alias: path='%s', dir='%s', "
+                   "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d\n",
+                   st->index, dref->path, dref->dir, dref->filename,
+                   dref->volume, dref->nlvl_from, dref->nlvl_to);
     } else
         sc->pb = c->fc->pb;
 
@@ -2244,8 +2320,10 @@ static int mov_read_close(AVFormatContext *s)
         MOVStreamContext *sc = st->priv_data;
 
         av_freep(&sc->ctts_data);
-        for (j = 0; j < sc->drefs_count; j++)
+        for (j = 0; j < sc->drefs_count; j++) {
             av_freep(&sc->drefs[j].path);
+            av_freep(&sc->drefs[j].dir);
+        }
         av_freep(&sc->drefs);
         if (sc->pb && sc->pb != s->pb)
             url_fclose(sc->pb);
