@@ -268,8 +268,8 @@ static int decode_slice(MpegEncContext *s){
     /* try to detect the padding bug */
     if(      s->codec_id==CODEC_ID_MPEG4
        &&   (s->workaround_bugs&FF_BUG_AUTODETECT)
-       &&    s->gb.size_in_bits - get_bits_count(&s->gb) >=0
-       &&    s->gb.size_in_bits - get_bits_count(&s->gb) < 48
+       &&    get_bits_left(&s->gb) >=0
+       &&    get_bits_left(&s->gb) < 48
 //       &&   !s->resync_marker
        &&   !s->data_partitioning){
 
@@ -300,7 +300,7 @@ static int decode_slice(MpegEncContext *s){
 
     // handle formats which don't have unique end markers
     if(s->msmpeg4_version || (s->workaround_bugs&FF_BUG_NO_PADDING)){ //FIXME perhaps solve this more cleanly
-        int left= s->gb.size_in_bits - get_bits_count(&s->gb);
+        int left= get_bits_left(&s->gb);
         int max_extra=7;
 
         /* no markers in M$ crap */
@@ -325,7 +325,7 @@ static int decode_slice(MpegEncContext *s){
     }
 
     av_log(s->avctx, AV_LOG_ERROR, "slice end not reached but screenspace end (%d left %06X, score= %d)\n",
-            s->gb.size_in_bits - get_bits_count(&s->gb),
+            get_bits_left(&s->gb),
             show_bits(&s->gb, 24), s->padding_bug_score);
 
     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);

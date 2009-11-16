@@ -32,7 +32,7 @@
  */
 static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c)
 {
-    if (gb->size_in_bits - get_bits_count(gb) < 112)
+    if (get_bits_left(gb) < 112)
         return -1;
 
     if (get_bits_long(gb, 32) != MKBETAG('A','L','S','\0'))

@@ -378,7 +378,7 @@ static float wv_get_value_float(WavpackContext *s, uint32_t *crc, int S)
 
     if(s->got_extra_bits){
         const int max_bits = 1 + 23 + 8 + 1;
-        const int left_bits = s->gb_extra_bits.size_in_bits - get_bits_count(&s->gb_extra_bits);
+        const int left_bits = get_bits_left(&s->gb_extra_bits);
 
         if(left_bits + 8 * FF_INPUT_BUFFER_PADDING_SIZE < max_bits)
             return 0.0;
@@ -897,7 +897,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         return -1;
     }
     if(s->got_extra_bits && avctx->sample_fmt != SAMPLE_FMT_FLT){
-        const int size = s->gb_extra_bits.size_in_bits - get_bits_count(&s->gb_extra_bits);
+        const int size = get_bits_left(&s->gb_extra_bits);
         const int wanted = s->samples * s->extra_bits << s->stereo_in;
         if(size < wanted){
             av_log(avctx, AV_LOG_ERROR, "Too small EXTRABITS\n");

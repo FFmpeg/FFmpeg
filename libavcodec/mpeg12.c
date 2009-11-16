@@ -1818,7 +1818,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
             s->mb_y++;
 
             if(s->mb_y<<field_pic >= s->mb_height){
-                int left= s->gb.size_in_bits - get_bits_count(&s->gb);
+                int left= get_bits_left(&s->gb);
                 int is_d10= s->chroma_format==2 && s->pict_type==FF_I_TYPE && avctx->profile==0 && avctx->level==5
                             && s->intra_dc_precision == 2 && s->q_scale_type == 1 && s->alternate_scan == 0
                             && s->progressive_frame == 0 /* vbv_delay == 0xBBB || 0xE10*/;

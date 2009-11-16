@@ -2994,7 +2994,7 @@ static int h263_decode_gob_header(MpegEncContext *s)
 
         /* We have a GBSC probably with GSTUFF */
     skip_bits(&s->gb, 16); /* Drop the zeros */
-    left= s->gb.size_in_bits - get_bits_count(&s->gb);
+    left= get_bits_left(&s->gb);
     //MN: we must check the bits left or we might end in a infinite loop (or segfault)
     for(;left>13; left--){
         if(get_bits1(&s->gb)) break; /* Seek the '1' bit */
@@ -3329,7 +3329,7 @@ int ff_h263_resync(MpegEncContext *s){
     //OK, it's not where it is supposed to be ...
     s->gb= s->last_resync_gb;
     align_get_bits(&s->gb);
-    left= s->gb.size_in_bits - get_bits_count(&s->gb);
+    left= get_bits_left(&s->gb);
 
     for(;left>16+1+5+5; left-=8){
         if(show_bits(&s->gb, 16)==0){
@@ -3774,7 +3774,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
     /* per-MB end of slice check */
 
     if(--s->mb_num_left <= 0){
-//printf("%06X %d\n", show_bits(&s->gb, 24), s->gb.size_in_bits - get_bits_count(&s->gb));
+//printf("%06X %d\n", show_bits(&s->gb, 24), get_bits_left(&s->gb));
         if(mpeg4_is_resync(s))
             return SLICE_END;
         else
@@ -5034,7 +5034,7 @@ int h263_decode_picture_header(MpegEncContext *s)
 
     startcode= get_bits(&s->gb, 22-8);
 
-    for(i= s->gb.size_in_bits - get_bits_count(&s->gb); i>24; i-=8) {
+    for(i= get_bits_left(&s->gb); i>24; i-=8) {
         startcode = ((startcode << 8) | get_bits(&s->gb, 8)) & 0x003FFFFF;
 
         if(startcode == 0x20)
