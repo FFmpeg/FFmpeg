@@ -22,6 +22,8 @@
 #ifndef AVFILTER_AVFILTER_H
 #define AVFILTER_AVFILTER_H
 
+#include "libavutil/avutil.h"
+
 #define LIBAVFILTER_VERSION_MAJOR  1
 #define LIBAVFILTER_VERSION_MINOR  8
 #define LIBAVFILTER_VERSION_MICRO  0
