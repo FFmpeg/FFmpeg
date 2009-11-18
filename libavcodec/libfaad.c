@@ -329,5 +329,6 @@ AVCodec libfaad_decoder = {
     NULL,
     faac_decode_end,
     faac_decode_frame,
+    .capabilities = CODEC_CAP_DELAY,
     .long_name = NULL_IF_CONFIG_SMALL("libfaad AAC (Advanced Audio Codec)"),
 };
