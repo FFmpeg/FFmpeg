@@ -28,6 +28,17 @@ unsigned avfilter_version(void) {
     return LIBAVFILTER_VERSION_INT;
 }
 
+const char * avfilter_configuration(void)
+{
+    return FFMPEG_CONFIGURATION;
+}
+
+const char * avfilter_license(void)
+{
+#define LICENSE_PREFIX "libavfilter license: "
+    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+}
+
 /** helper macros to get the in/out pad on the dst/src filter */
 #define link_dpad(link)     link->dst-> input_pads[link->dstpad]
 #define link_spad(link)     link->src->output_pads[link->srcpad]

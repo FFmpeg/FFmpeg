@@ -40,6 +40,16 @@
  */
 unsigned avformat_version(void);
 
+/**
+ * Returns the libavformat build-time configuration.
+ */
+const char * avformat_configuration(void);
+
+/**
+ * Returns the libavformat license.
+ */
+const char * avformat_license(void);
+
 #include <time.h>
 #include <stdio.h>  /* FILE */
 #include "libavcodec/avcodec.h"

@@ -3067,6 +3067,16 @@ AVCodec *av_codec_next(AVCodec *c);
 unsigned avcodec_version(void);
 
 /**
+ * Returns the libavcodec build-time configuration.
+ */
+const char * avcodec_configuration(void);
+
+/**
+ * Returns the libavcodec license.
+ */
+const char * avcodec_license(void);
+
+/**
  * Initializes libavcodec.
  *
  * @warning This function must be called before any other libavcodec

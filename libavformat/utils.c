@@ -41,6 +41,17 @@ unsigned avformat_version(void)
     return LIBAVFORMAT_VERSION_INT;
 }
 
+const char * avformat_configuration(void)
+{
+    return FFMPEG_CONFIGURATION;
+}
+
+const char * avformat_license(void)
+{
+#define LICENSE_PREFIX "libavformat license: "
+    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+}
+
 /* fraction handling */
 
 /**
