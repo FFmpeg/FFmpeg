@@ -5,7 +5,7 @@ FFLIBS  = avformat avcodec avutil
 
 HEADERS = avdevice.h
 
-OBJS    = alldevices.o
+OBJS    = alldevices.o avdevice.o
 
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa-audio-common.o \
