@@ -25,7 +25,7 @@
 const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     [PIX_FMT_YUV420P] = {
         .name = "yuv420p",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 1,
         .comp = {
@@ -36,7 +36,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUYV422] = {
         .name = "yuyv422",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 0,
         .comp = {
@@ -47,7 +47,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB24] = {
         .name = "rgb24",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -58,7 +58,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_BGR24] = {
         .name = "bgr24",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -69,7 +69,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV422P] = {
         .name = "yuv422p",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 0,
         .comp = {
@@ -80,7 +80,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV444P] = {
         .name = "yuv444p",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -91,7 +91,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV410P] = {
         .name = "yuv410p",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 2,
         .log2_chroma_h= 2,
         .comp = {
@@ -102,7 +102,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV411P] = {
         .name = "yuv411p",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 2,
         .log2_chroma_h= 0,
         .comp = {
@@ -113,7 +113,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_GRAY8] = {
         .name = "gray8",
-        .nb_channels  = 1,
+        .nb_components= 1,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -122,7 +122,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_MONOWHITE] = {
         .name = "monowhite",
-        .nb_channels  = 1,
+        .nb_components= 1,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -132,7 +132,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_MONOBLACK] = {
         .name = "monoblack",
-        .nb_channels  = 1,
+        .nb_components= 1,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -142,7 +142,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_PAL8] = {
         .name = "pal8",
-        .nb_channels  = 1,
+        .nb_components= 1,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -152,7 +152,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUVJ420P] = {
         .name = "yuvj420p",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 1,
         .comp = {
@@ -163,7 +163,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUVJ422P] = {
         .name = "yuvj422p",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 0,
         .comp = {
@@ -174,7 +174,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUVJ444P] = {
         .name = "yuvj444p",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -193,7 +193,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_UYVY422] = {
         .name = "uyvy422",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 0,
         .comp = {
@@ -204,7 +204,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_UYYVYY411] = {
         .name = "uyyvyy411",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 2,
         .log2_chroma_h= 0,
         .comp = {
@@ -215,7 +215,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_BGR8] = {
         .name = "bgr8",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -227,7 +227,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_BGR4] = {
         .name = "bgr4",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -239,7 +239,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_BGR4_BYTE] = {
         .name = "bgr4_byte",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -251,7 +251,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB8] = {
         .name = "rgb8",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -263,7 +263,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB4] = {
         .name = "rgb4",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -275,7 +275,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB4_BYTE] = {
         .name = "rgb4_byte",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -287,7 +287,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_NV12] = {
         .name = "nv12",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 1,
         .comp = {
@@ -298,7 +298,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_NV21] = {
         .name = "nv21",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 1,
         .comp = {
@@ -309,7 +309,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_ARGB] = {
         .name = "argb",
-        .nb_channels  = 4,
+        .nb_components= 4,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -321,7 +321,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGBA] = {
         .name = "rgba",
-        .nb_channels  = 4,
+        .nb_components= 4,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -333,7 +333,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_ABGR] = {
         .name = "abgr",
-        .nb_channels  = 4,
+        .nb_components= 4,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -345,7 +345,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_BGRA] = {
         .name = "bgra",
-        .nb_channels  = 4,
+        .nb_components= 4,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -357,7 +357,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_GRAY16BE] = {
         .name = "gray16be",
-        .nb_channels  = 1,
+        .nb_components= 1,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -367,7 +367,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_GRAY16LE] = {
         .name = "gray16le",
-        .nb_channels  = 1,
+        .nb_components= 1,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -376,7 +376,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV440P] = {
         .name = "yuv440p",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 1,
         .comp = {
@@ -387,7 +387,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUVJ440P] = {
         .name = "yuvj440p",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 1,
         .comp = {
@@ -398,7 +398,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUVA420P] = {
         .name = "yuva420p",
-        .nb_channels  = 4,
+        .nb_components= 4,
         .log2_chroma_w= 1,
         .log2_chroma_h= 1,
         .comp = {
@@ -446,7 +446,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB48BE] = {
         .name = "rgb48be",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -458,7 +458,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB48LE] = {
         .name = "rgb48le",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -469,7 +469,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB565BE] = {
         .name = "rgb565be",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -481,7 +481,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB565LE] = {
         .name = "rgb565le",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -492,7 +492,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB555BE] = {
         .name = "rgb555be",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -504,7 +504,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB555LE] = {
         .name = "rgb555le",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -515,7 +515,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_BGR565BE] = {
         .name = "bgr565be",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -527,7 +527,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_BGR565LE] = {
         .name = "bgr565le",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -538,7 +538,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_BGR555BE] = {
         .name = "bgr555be",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -550,7 +550,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
      },
     [PIX_FMT_BGR555LE] = {
         .name = "bgr555le",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -579,7 +579,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV420P16LE] = {
         .name = "yuv420p16le",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 1,
         .comp = {
@@ -590,7 +590,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV420P16BE] = {
         .name = "yuv420p16be",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 1,
         .comp = {
@@ -602,7 +602,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV422P16LE] = {
         .name = "yuv422p16le",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 0,
         .comp = {
@@ -613,7 +613,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV422P16BE] = {
         .name = "yuv422p16be",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 1,
         .log2_chroma_h= 0,
         .comp = {
@@ -625,7 +625,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV444P16LE] = {
         .name = "yuv444p16le",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -636,7 +636,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
     [PIX_FMT_YUV444P16BE] = {
         .name = "yuv444p16be",
-        .nb_channels  = 3,
+        .nb_components= 3,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
@@ -653,7 +653,7 @@ int av_get_bits_per_pixel(const AVPixFmtDescriptor *pixdesc)
     int c, bits = 0;
     int log2_pixels = pixdesc->log2_chroma_w + pixdesc->log2_chroma_h;
 
-    for (c = 0; c < pixdesc->nb_channels; c++) {
+    for (c = 0; c < pixdesc->nb_components; c++) {
         int s = c==1 || c==2 ? 0 : log2_pixels;
         bits += (pixdesc->comp[c].depth_minus1+1) << s;
     }
