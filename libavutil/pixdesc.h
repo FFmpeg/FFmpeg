@@ -62,6 +62,7 @@ typedef struct AVPixFmtDescriptor{
      * For YV12 this is 1 for example.
      * chroma_width = -((-luma_width) >> log2_chroma_w)
      * The note above is needed to ensure rounding up.
+     * This value only refers to the chroma components.
      */
     uint8_t log2_chroma_w;      ///< chroma_width = -((-luma_width )>>log2_chroma_w)
 
@@ -70,10 +71,17 @@ typedef struct AVPixFmtDescriptor{
      * For YV12 this is 1 for example.
      * chroma_height= -((-luma_height) >> log2_chroma_h)
      * The note above is needed to ensure rounding up.
+     * This value only refers to the chroma components.
      */
     uint8_t log2_chroma_h;
     uint8_t flags;
-    AVComponentDescriptor comp[4]; ///< parameters that describe how pixels are packed
+
+    /**
+     * Parameters that describe how pixels are packed. If the format
+     * has chroma components, they must be stored in comp[1] and
+     * comp[2].
+     */
+    AVComponentDescriptor comp[4];
 }AVPixFmtDescriptor;
 
 #define PIX_FMT_BE        1 ///< big-endian
