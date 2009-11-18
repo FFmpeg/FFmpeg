@@ -532,7 +532,7 @@ void show_formats(void)
 
     printf("Bitstream filters:\n");
     while((bsf = av_bitstream_filter_next(bsf)))
-        printf(" %s", bsf->name);
+        printf("%s\n", bsf->name);
     printf("\n");
 
     printf("Supported file protocols:\n");
