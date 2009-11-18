@@ -84,6 +84,17 @@ unsigned swscale_version(void)
     return LIBSWSCALE_VERSION_INT;
 }
 
+const char * swscale_configuration(void)
+{
+    return FFMPEG_CONFIGURATION;
+}
+
+const char * swscale_license(void)
+{
+#define LICENSE_PREFIX "libswscale license: "
+    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+}
+
 #undef MOVNTQ
 #undef PAVGB
 
