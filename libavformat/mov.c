@@ -2251,18 +2251,18 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int mov_seek_stream(AVStream *st, int64_t timestamp, int flags)
+static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, int flags)
 {
     MOVStreamContext *sc = st->priv_data;
     int sample, time_sample;
     int i;
 
     sample = av_index_search_timestamp(st, timestamp, flags);
-    dprintf(st->codec, "stream %d, timestamp %"PRId64", sample %d\n", st->index, timestamp, sample);
+    dprintf(s, "stream %d, timestamp %"PRId64", sample %d\n", st->index, timestamp, sample);
     if (sample < 0) /* not sure what to do */
         return -1;
     sc->current_sample = sample;
-    dprintf(st->codec, "stream %d, found sample %d\n", st->index, sc->current_sample);
+    dprintf(s, "stream %d, found sample %d\n", st->index, sc->current_sample);
     /* adjust ctts index */
     if (sc->ctts_data) {
         time_sample = 0;
@@ -2292,7 +2292,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         sample_time = 0;
 
     st = s->streams[stream_index];
-    sample = mov_seek_stream(st, sample_time, flags);
+    sample = mov_seek_stream(s, st, sample_time, flags);
     if (sample < 0)
         return -1;
 
@@ -2305,7 +2305,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             continue;
 
         timestamp = av_rescale_q(seek_timestamp, s->streams[stream_index]->time_base, st->time_base);
-        mov_seek_stream(st, timestamp, flags);
+        mov_seek_stream(s, st, timestamp, flags);
     }
     return 0;
 }
