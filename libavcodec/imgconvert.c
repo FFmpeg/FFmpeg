@@ -486,7 +486,7 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .x_chroma_shift = 1, .y_chroma_shift = 1,
     },
     [PIX_FMT_NV21] = {
-        .name = "nv12",
+        .name = "nv21",
         .nb_channels = 2,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
