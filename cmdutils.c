@@ -417,9 +417,6 @@ void show_formats(void)
 {
     AVInputFormat *ifmt=NULL;
     AVOutputFormat *ofmt=NULL;
-    URLProtocol *up=NULL;
-    AVCodec *p=NULL, *p2;
-    AVBitStreamFilter *bsf=NULL;
     const char *last_name;
 
     printf(
@@ -463,8 +460,12 @@ void show_formats(void)
             name,
             long_name ? long_name:" ");
     }
-    printf("\n");
+}
 
+void show_codecs(void)
+{
+    AVCodec *p=NULL, *p2;
+    const char *last_name;
     printf(
         "Codecs:\n"
         " D..... = Decoding supported\n"
@@ -529,11 +530,27 @@ void show_formats(void)
         printf("\n");
     }
     printf("\n");
+    printf(
+"Note, the names of encoders and decoders do not always match, so there are\n"
+"several cases where the above table shows encoder only or decoder only entries\n"
+"even though both encoding and decoding are supported. For example, the h263\n"
+"decoder corresponds to the h263 and h263p encoders, for file formats it is even\n"
+"worse.\n");
+}
+
+void show_bsfs(void)
+{
+    AVBitStreamFilter *bsf=NULL;
 
     printf("Bitstream filters:\n");
     while((bsf = av_bitstream_filter_next(bsf)))
         printf("%s\n", bsf->name);
     printf("\n");
+}
+
+void show_protocols(void)
+{
+    URLProtocol *up=NULL;
 
     printf("Supported file protocols:\n");
     while((up = av_protocol_next(up)))
@@ -541,13 +558,6 @@ void show_formats(void)
     printf("\n");
 
     printf("Frame size, frame rate abbreviations:\n ntsc pal qntsc qpal sntsc spal film ntsc-film sqcif qcif cif 4cif\n");
-    printf("\n");
-    printf(
-"Note, the names of encoders and decoders do not always match, so there are\n"
-"several cases where the above table shows encoder only or decoder only entries\n"
-"even though both encoding and decoding are supported. For example, the h263\n"
-"decoder corresponds to the h263 and h263p encoders, for file formats it is even\n"
-"worse.\n");
 }
 
 int read_yesno(void)

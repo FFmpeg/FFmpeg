@@ -158,6 +158,24 @@ void show_license(void);
 void show_formats(void);
 
 /**
+ * Prints a listing containing all the codecs supported by the
+ * program.
+ */
+void show_codecs(void);
+
+/**
+ * Prints a listing containing all the bit stream filters supported by the
+ * program.
+ */
+void show_bsfs(void);
+
+/**
+ * Prints a listing containing all the protocols supported by the
+ * program.
+ */
+void show_protocols(void);
+
+/**
  * Returns a positive value if reads from standard input a line
  * starting with [yY], otherwise returns 0.
  */
