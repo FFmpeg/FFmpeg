@@ -783,7 +783,8 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, unsigned char *buf, int b
     else
         ret = dnxhd_encode_fast(avctx, ctx);
     if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "picture could not fit ratecontrol constraints\n");
+        av_log(avctx, AV_LOG_ERROR,
+               "picture could not fit ratecontrol constraints, increase qmax\n");
         return -1;
     }
 
