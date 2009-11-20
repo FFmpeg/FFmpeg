@@ -48,16 +48,17 @@ static unsigned WINAPI attribute_align_arg thread_func(void *v){
         int ret, jobnr;
 //printf("thread_func %X enter wait\n", (int)v); fflush(stdout);
         WaitForSingleObject(c->work_sem, INFINITE);
+        // avoid trying to access jobnr if we should quit
+        if (!c->func && !c->func2)
+            break;
         WaitForSingleObject(c->job_sem, INFINITE);
         jobnr = (*c->jobnr)++;
         ReleaseSemaphore(c->job_sem, 1, 0);
 //printf("thread_func %X after wait (func=%X)\n", (int)v, (int)c->func); fflush(stdout);
         if(c->func)
             ret= c->func(c->avctx, (uint8_t *)c->arg + jobnr*c->argsize);
-        else if (c->func2)
-            ret= c->func2(c->avctx, c->arg, jobnr, c->threadnr);
         else
-            return 0;
+            ret= c->func2(c->avctx, c->arg, jobnr, c->threadnr);
         if (c->ret)
             c->ret[jobnr] = ret;
 //printf("thread_func %X signal complete\n", (int)v); fflush(stdout);
