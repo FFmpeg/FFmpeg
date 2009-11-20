@@ -61,11 +61,12 @@ static int score_tab[256];
  * XXX should be optimized and moved to DSPContext
  * TODO handle out of edge ME
  */
-static inline int block_cmp(uint8_t *src, int stride, uint8_t *src2, int stride2, int bw, int bh, int *xored)
+static inline int block_cmp(uint8_t *src, int stride, uint8_t *src2, int stride2,
+                            int bw, int bh, int *xored)
 {
     int sum = 0;
     int i, j;
-    uint8_t histogram[256]={0};
+    uint8_t histogram[256] = {0};
 
     *xored = 0;
     for(j = 0; j < bh; j++){
@@ -78,8 +79,8 @@ static inline int block_cmp(uint8_t *src, int stride, uint8_t *src2, int stride2
         src2 += stride2;
     }
 
-    for(i=1; i<256; i++)
-        sum+= score_tab[histogram[i]];
+    for(i = 1; i < 256; i++)
+        sum += score_tab[histogram[i]];
 
     return sum;
 }
@@ -87,8 +88,8 @@ static inline int block_cmp(uint8_t *src, int stride, uint8_t *src2, int stride2
 /** Motion estimation function
  * TODO make better ME decisions
  */
-static int zmbv_me(ZmbvEncContext *c, uint8_t *src, int sstride, uint8_t *prev, int pstride,
-                    int x, int y, int *mx, int *my, int *xored)
+static int zmbv_me(ZmbvEncContext *c, uint8_t *src, int sstride, uint8_t *prev,
+                   int pstride, int x, int y, int *mx, int *my, int *xored)
 {
     int dx, dy, tx, ty, tv, bv, bw, bh;
 
