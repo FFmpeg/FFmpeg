@@ -574,9 +574,11 @@ static int dnxhd_encode_rdo(AVCodecContext *avctx, DNXHDEncContext *ctx)
             last_higher = FFMAX(lambda, last_higher);
             if (last_lower != INT_MAX)
                 lambda = (lambda+last_lower)>>1;
+            else if ((int64_t)lambda + up_step > INT_MAX)
+                return -1;
             else
                 lambda += up_step;
-            up_step *= 5;
+            up_step = FFMIN((int64_t)up_step*5, INT_MAX);
             down_step = 1<<LAMBDA_FRAC_BITS;
         }
     }
