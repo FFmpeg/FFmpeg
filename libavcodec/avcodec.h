@@ -199,6 +199,7 @@ enum CodecID {
     CODEC_ID_DPX,
     CODEC_ID_MAD,
     CODEC_ID_FRWU,
+    CODEC_ID_FLASHSV2,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
