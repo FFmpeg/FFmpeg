@@ -29,6 +29,7 @@
 static const AVCodecTag flv_video_codec_ids[] = {
     {CODEC_ID_FLV1,    FLV_CODECID_H263  },
     {CODEC_ID_FLASHSV, FLV_CODECID_SCREEN},
+    {CODEC_ID_FLASHSV2, FLV_CODECID_SCREEN2},
     {CODEC_ID_VP6F,    FLV_CODECID_VP6   },
     {CODEC_ID_VP6,     FLV_CODECID_VP6   },
     {CODEC_ID_H264,    FLV_CODECID_H264  },
