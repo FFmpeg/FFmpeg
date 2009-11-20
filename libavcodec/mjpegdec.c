@@ -292,9 +292,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
                  (s->h_count[2] << 12) | (s->v_count[2] <<  8) |
                  (s->h_count[3] <<  4) |  s->v_count[3];
     av_log(s->avctx, AV_LOG_DEBUG, "pix fmt id %x\n", pix_fmt_id);
-    if(!(pix_fmt_id & 0x10101010))
+    //NOTE we do not allocate pictures large enough for the possible padding of h/v_count being 4
+    if(!(pix_fmt_id & 0xD0D0D0D0))
         pix_fmt_id-= (pix_fmt_id & 0xF0F0F0F0)>>1;
-    if(!(pix_fmt_id & 0x01010101))
+    if(!(pix_fmt_id & 0x0D0D0D0D))
         pix_fmt_id-= (pix_fmt_id & 0x0F0F0F0F)>>1;
 
     switch(pix_fmt_id){
