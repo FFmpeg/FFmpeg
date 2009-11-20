@@ -214,18 +214,17 @@ static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv)
 /* XXX: use AVBitStreamFilter */
 static int mxf_get_d10_aes3_packet(ByteIOContext *pb, AVStream *st, AVPacket *pkt, int64_t length)
 {
-    uint8_t buffer[61444];
     const uint8_t *buf_ptr, *end_ptr;
     uint8_t *data_ptr;
     int i;
 
     if (length > 61444) /* worst case PAL 1920 samples 8 channels */
         return -1;
-    get_buffer(pb, buffer, length);
     av_new_packet(pkt, length);
+    get_buffer(pb, pkt->data, length);
     data_ptr = pkt->data;
-    end_ptr = buffer + length;
-    buf_ptr = buffer + 4; /* skip SMPTE 331M header */
+    end_ptr = pkt->data + length;
+    buf_ptr = pkt->data + 4; /* skip SMPTE 331M header */
     for (; buf_ptr < end_ptr; ) {
         for (i = 0; i < st->codec->channels; i++) {
             uint32_t sample = bytestream_get_le32(&buf_ptr);
