@@ -32,7 +32,7 @@ GPL components, GPL version 3) to use it.
 
 @chapter Supported File Formats and Codecs
 
-You can use the @code{-formats} option to have an exhaustive list.
+You can use the @code{-formats} and @code{-codecs} options to have an exhaustive list.
 
 @section File Formats
 

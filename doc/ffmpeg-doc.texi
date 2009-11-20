@@ -235,9 +235,20 @@ Show help.
 Show version.
 
 @item -formats
-Show available formats, codecs, bitstream filters, protocols, and frame size and frame rate abbreviations.
+Show available formats.
 
-The fields preceding the format and codec names have the following meanings:
+The fields preceding the format names have the following meanings:
+@table @samp
+@item D
+Decoding available
+@item E
+Encoding available
+@end table
+
+@item -codecs
+Show available codecs.
+
+The fields preceding the codec names have the following meanings:
 @table @samp
 @item D
 Decoding available
@@ -252,6 +263,12 @@ Codec supports direct rendering
 @item T
 Codec can handle input truncated at random locations instead of only at frame boundaries
 @end table
+
+@item -bsfs
+Show available bitstream filters.
+
+@item -protocols
+Show available protocols.
 
 @item -f @var{fmt}
 Force format.
@@ -933,7 +950,7 @@ to standard output.
 
 FFmpeg also handles many protocols specified with an URL syntax.
 
-Use 'ffmpeg -formats' to see a list of the supported protocols.
+Use 'ffmpeg -protocols' to see a list of the supported protocols.
 
 The protocol @code{http:} is currently used only to communicate with
 FFserver (see the FFserver documentation). When FFmpeg will be a
