@@ -1762,7 +1762,7 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
             memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
             if ((err = decode_pce(ac, new_che_pos, &gb)))
                 break;
-            if (ac->output_configured <= OC_TRIAL_PCE)
+            if (ac->output_configured > OC_TRIAL_PCE)
                 av_log(avccontext, AV_LOG_ERROR,
                        "Not evaluating a further program_config_element as this construct is dubious at best.\n");
             else
