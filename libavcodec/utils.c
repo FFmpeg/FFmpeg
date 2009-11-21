@@ -743,6 +743,35 @@ AVCodec *avcodec_find_decoder_by_name(const char *name)
     return NULL;
 }
 
+int av_get_bit_rate(AVCodecContext *ctx)
+{
+    int bit_rate;
+    int bits_per_sample;
+
+    switch(ctx->codec_type) {
+    case CODEC_TYPE_VIDEO:
+        bit_rate = ctx->bit_rate;
+        break;
+    case CODEC_TYPE_AUDIO:
+        bits_per_sample = av_get_bits_per_sample(ctx->codec_id);
+        bit_rate = bits_per_sample ? ctx->sample_rate * ctx->channels * bits_per_sample : ctx->bit_rate;
+        break;
+    case CODEC_TYPE_DATA:
+        bit_rate = ctx->bit_rate;
+        break;
+    case CODEC_TYPE_SUBTITLE:
+        bit_rate = ctx->bit_rate;
+        break;
+    case CODEC_TYPE_ATTACHMENT:
+        bit_rate = ctx->bit_rate;
+        break;
+    default:
+        bit_rate = 0;
+        break;
+    }
+    return bit_rate;
+}
+
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 {
     const char *codec_name;
@@ -815,7 +844,6 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", q=%d-%d", enc->qmin, enc->qmax);
         }
-        bitrate = enc->bit_rate;
         break;
     case CODEC_TYPE_AUDIO:
         snprintf(buf, buf_size,
@@ -831,58 +859,15 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s", avcodec_get_sample_fmt_name(enc->sample_fmt));
         }
-
-        /* for PCM codecs, compute bitrate directly */
-        switch(enc->codec_id) {
-        case CODEC_ID_PCM_F64BE:
-        case CODEC_ID_PCM_F64LE:
-            bitrate = enc->sample_rate * enc->channels * 64;
-            break;
-        case CODEC_ID_PCM_S32LE:
-        case CODEC_ID_PCM_S32BE:
-        case CODEC_ID_PCM_U32LE:
-        case CODEC_ID_PCM_U32BE:
-        case CODEC_ID_PCM_F32BE:
-        case CODEC_ID_PCM_F32LE:
-            bitrate = enc->sample_rate * enc->channels * 32;
-            break;
-        case CODEC_ID_PCM_S24LE:
-        case CODEC_ID_PCM_S24BE:
-        case CODEC_ID_PCM_U24LE:
-        case CODEC_ID_PCM_U24BE:
-        case CODEC_ID_PCM_S24DAUD:
-            bitrate = enc->sample_rate * enc->channels * 24;
-            break;
-        case CODEC_ID_PCM_S16LE:
-        case CODEC_ID_PCM_S16BE:
-        case CODEC_ID_PCM_S16LE_PLANAR:
-        case CODEC_ID_PCM_U16LE:
-        case CODEC_ID_PCM_U16BE:
-            bitrate = enc->sample_rate * enc->channels * 16;
-            break;
-        case CODEC_ID_PCM_S8:
-        case CODEC_ID_PCM_U8:
-        case CODEC_ID_PCM_ALAW:
-        case CODEC_ID_PCM_MULAW:
-        case CODEC_ID_PCM_ZORK:
-            bitrate = enc->sample_rate * enc->channels * 8;
-            break;
-        default:
-            bitrate = enc->bit_rate;
-            break;
-        }
         break;
     case CODEC_TYPE_DATA:
         snprintf(buf, buf_size, "Data: %s", codec_name);
-        bitrate = enc->bit_rate;
         break;
     case CODEC_TYPE_SUBTITLE:
         snprintf(buf, buf_size, "Subtitle: %s", codec_name);
-        bitrate = enc->bit_rate;
         break;
     case CODEC_TYPE_ATTACHMENT:
         snprintf(buf, buf_size, "Attachment: %s", codec_name);
-        bitrate = enc->bit_rate;
         break;
     default:
         snprintf(buf, buf_size, "Invalid Codec type %d", enc->codec_type);
@@ -896,6 +881,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", pass 2");
     }
+    bitrate = av_get_bit_rate(enc);
     if (bitrate != 0) {
         snprintf(buf + strlen(buf), buf_size - strlen(buf),
                  ", %d kb/s", bitrate / 1000);
