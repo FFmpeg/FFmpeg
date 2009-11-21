@@ -554,7 +554,7 @@ void show_protocols(void)
 
     printf("Supported file protocols:\n");
     while((up = av_protocol_next(up)))
-        printf(" %s:", up->name);
+        printf("%s\n", up->name);
     printf("\n");
 
     printf("Frame size, frame rate abbreviations:\n ntsc pal qntsc qpal sntsc spal film ntsc-film sqcif qcif cif 4cif\n");
