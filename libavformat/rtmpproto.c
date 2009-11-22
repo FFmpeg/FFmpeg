@@ -511,7 +511,7 @@ static int get_packet(URLContext *s, int for_header)
             continue;
         }
         if (rpkt.type == RTMP_PT_VIDEO || rpkt.type == RTMP_PT_AUDIO ||
-            rpkt.type == RTMP_PT_NOTIFY) {
+           (rpkt.type == RTMP_PT_NOTIFY && !memcmp("\002\000\012onMetaData", rpkt.data, 13))) {
             uint8_t *p;
             uint32_t ts = rpkt.timestamp;
 
