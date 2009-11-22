@@ -97,4 +97,11 @@ void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd
  */
 void ff_acelp_lspd2lpc(const double *lsp, float *lpc, int lp_half_order);
 
+/**
+ * Sort values in ascending order.
+ *
+ * @note O(n) if data already sorted, O(n^2) - otherwise
+ */
+void ff_sort_nearly_sorted_floats(float *vals, int len);
+
 #endif /* AVCODEC_LSP_H */

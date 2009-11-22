@@ -536,17 +536,6 @@ static void rearrange_lsp(int order, float *lsp, float min_dist)
         }
 }
 
-static void bubblesort(float *lsp, int lp_order)
-{
-    int i,j;
-
-    /* sort lsp in ascending order. float bubble agorithm,
-       O(n) if data already sorted, O(n^2) - otherwise */
-    for (i = 0; i < lp_order - 1; i++)
-        for (j = i; j >= 0 && lsp[j] > lsp[j+1]; j--)
-            FFSWAP(float, lsp[j], lsp[j+1]);
-}
-
 static void decode_lsp(TwinContext *tctx, int lpc_idx1, uint8_t *lpc_idx2,
                        int lpc_hist_idx, float *lsp, float *hist)
 {
@@ -583,7 +572,7 @@ static void decode_lsp(TwinContext *tctx, int lpc_idx1, uint8_t *lpc_idx2,
 
     rearrange_lsp(mtab->n_lsp, lsp, 0.0001);
     rearrange_lsp(mtab->n_lsp, lsp, 0.000095);
-    bubblesort(lsp, mtab->n_lsp);
+    ff_sort_nearly_sorted_floats(lsp, mtab->n_lsp);
 }
 
 static void dec_lpc_spectrum_inv(TwinContext *tctx, float *lsp,
