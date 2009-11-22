@@ -33,6 +33,7 @@
 /* FFmpeg includes */
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
+#include "libavutil/base64.h"
 #include "avcodec.h"
 
 /* libtheora includes */
@@ -40,6 +41,9 @@
 
 typedef struct TheoraContext {
     th_enc_ctx *t_state;
+    uint8_t    *stats;
+    int         stats_size;
+    int         stats_offset;
 } TheoraContext;
 
 /*!
@@ -75,6 +79,62 @@ static int concatenate_packet(unsigned int* offset,
     *offset += 2;
     memcpy(avc_context->extradata + (*offset), packet->packet, packet->bytes);
     (*offset) += packet->bytes;
+    return 0;
+}
+
+static int get_stats(AVCodecContext *avctx, int eos)
+{
+    TheoraContext *h = avctx->priv_data;
+    uint8_t *buf;
+    int bytes;
+
+    bytes = th_encode_ctl(h->t_state, TH_ENCCTL_2PASS_OUT, &buf, sizeof(buf));
+    if (bytes < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting first pass stats\n");
+        return -1;
+    }
+    if (!eos) {
+        h->stats = av_fast_realloc(h->stats, &h->stats_size,
+                                   h->stats_offset + bytes);
+        memcpy(h->stats + h->stats_offset, buf, bytes);
+        h->stats_offset += bytes;
+    } else {
+        int b64_size = ((h->stats_offset + 2) / 3) * 4 + 1;
+        // libtheora generates a summary header at the end
+        memcpy(h->stats, buf, bytes);
+        avctx->stats_out = av_malloc(b64_size);
+        av_base64_encode(avctx->stats_out, b64_size, h->stats, h->stats_offset);
+    }
+    return 0;
+}
+
+// libtheora won't read the entire buffer we give it at once, so we have to
+// repeatedly submit it...
+static int submit_stats(AVCodecContext *avctx)
+{
+    TheoraContext *h = avctx->priv_data;
+    int bytes;
+    if (!h->stats) {
+        if (!avctx->stats_in) {
+            av_log(avctx, AV_LOG_ERROR, "No statsfile for second pass\n");
+            return -1;
+        }
+        h->stats_size = strlen(avctx->stats_in) * 3/4;
+        h->stats      = av_malloc(h->stats_size);
+        h->stats_size = av_base64_decode(h->stats, avctx->stats_in, h->stats_size);
+    }
+    while (h->stats_size - h->stats_offset > 0) {
+        bytes = th_encode_ctl(h->t_state, TH_ENCCTL_2PASS_IN,
+                              h->stats + h->stats_offset,
+                              h->stats_size - h->stats_offset);
+        if (bytes < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Error submitting stats\n");
+            return -1;
+        }
+        if (!bytes)
+            return 0;
+        h->stats_offset += bytes;
+    }
     return 0;
 }
 
@@ -138,6 +198,15 @@ static av_cold int encode_init(AVCodecContext* avc_context)
         return -1;
     }
 
+    // need to enable 2 pass (via TH_ENCCTL_2PASS_) before encoding headers
+    if (avc_context->flags & CODEC_FLAG_PASS1) {
+        if (get_stats(avc_context, 0))
+            return -1;
+    } else if (avc_context->flags & CODEC_FLAG_PASS2) {
+        if (submit_stats(avc_context))
+            return -1;
+    }
+
     /*
         Output first header packet consisting of theora
         header, comment, and tables.
@@ -173,6 +242,15 @@ static int encode_frame(AVCodecContext* avc_context, uint8_t *outbuf,
 
     assert(avc_context->pix_fmt == PIX_FMT_YUV420P);
 
+    // EOS, finish and get 1st pass stats if applicable
+    if (!frame) {
+        th_encode_packetout(h->t_state, 1, &o_packet);
+        if (avc_context->flags & CODEC_FLAG_PASS1)
+            if (get_stats(avc_context, 1))
+                return -1;
+        return 0;
+    }
+
     /* Copy planes to the theora yuv_buffer */
     for (i = 0; i < 3; i++) {
         t_yuv_buffer[i].width  = FFALIGN(avc_context->width,  16) >> !!i;
@@ -180,6 +258,10 @@ static int encode_frame(AVCodecContext* avc_context, uint8_t *outbuf,
         t_yuv_buffer[i].stride = frame->linesize[i];
         t_yuv_buffer[i].data   = frame->data[i];
     }
+
+    if (avc_context->flags & CODEC_FLAG_PASS2)
+        if (submit_stats(avc_context))
+            return -1;
 
     /* Now call into theora_encode_YUVin */
     result = th_encode_ycbcr_in(h->t_state, t_yuv_buffer);
@@ -199,6 +281,10 @@ static int encode_frame(AVCodecContext* avc_context, uint8_t *outbuf,
         av_log(avc_context, AV_LOG_ERROR, "theora_encode_YUVin failed (%s) [%d]\n", message, result);
         return -1;
     }
+
+    if (avc_context->flags & CODEC_FLAG_PASS1)
+        if (get_stats(avc_context, 0))
+            return -1;
 
     /* Pick up returned ogg_packet */
     result = th_encode_packetout(h->t_state, 0, &o_packet);
@@ -229,31 +315,16 @@ static int encode_frame(AVCodecContext* avc_context, uint8_t *outbuf,
 
 static av_cold int encode_close(AVCodecContext* avc_context)
 {
-    ogg_packet o_packet;
     TheoraContext *h = avc_context->priv_data;
-    int result;
-    const char* message;
 
-    result = th_encode_packetout(h->t_state, 1, &o_packet);
     th_encode_free(h->t_state);
+    av_freep(&h->stats);
     av_freep(&avc_context->coded_frame);
+    av_freep(&avc_context->stats_out);
     av_freep(&avc_context->extradata);
     avc_context->extradata_size = 0;
 
-    switch (result) {
-    case 0:  /* No packet is ready */
-    case -1: /* Encoding finished */
-        return 0;
-    case 1:
-        /* We have a packet */
-        message = "gave us a packet";
-        break;
-    default:
-        message = "unknown reason";
-        break;
-    }
-    av_log(avc_context, AV_LOG_ERROR, "theora_encode_packetout failed (%s) [%d]\n", message, result);
-    return -1;
+    return 0;
 }
 
 static const enum PixelFormat supported_pixel_formats[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
@@ -267,6 +338,7 @@ AVCodec libtheora_encoder = {
     .init = encode_init,
     .close = encode_close,
     .encode = encode_frame,
+    .capabilities = CODEC_CAP_DELAY, // needed to get the statsfile summary
     .pix_fmts = supported_pixel_formats,
     .long_name = NULL_IF_CONFIG_SMALL("libtheora Theora"),
 };
