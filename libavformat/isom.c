@@ -32,6 +32,7 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { CODEC_ID_MPEG4     , 0x20 },
     { CODEC_ID_H264      , 0x21 },
     { CODEC_ID_AAC       , 0x40 },
+    { CODEC_ID_MP4ALS    , 0x40 }, /* 14496-3 ALS */
     { CODEC_ID_MPEG2VIDEO, 0x61 }, /* MPEG2 Main */
     { CODEC_ID_MPEG2VIDEO, 0x60 }, /* MPEG2 Simple */
     { CODEC_ID_MPEG2VIDEO, 0x62 }, /* MPEG2 SNR */
