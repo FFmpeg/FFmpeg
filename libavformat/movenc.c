@@ -1275,7 +1275,7 @@ static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVMuxContext *mov,
     put_tag(pb, "appl");
     put_be32(pb, 0);
     put_be32(pb, 0);
-    put_be16(pb, 0);
+    put_byte(pb, 0);
     return updateSize(pb, pos);
 }
 
