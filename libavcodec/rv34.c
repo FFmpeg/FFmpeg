@@ -1285,8 +1285,8 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
         if(s->width != r->si.width || s->height != r->si.height){
             av_log(s->avctx, AV_LOG_DEBUG, "Changing dimensions to %dx%d\n", r->si.width,r->si.height);
             MPV_common_end(s);
-            s->width  = r->si.width;
-            s->height = r->si.height;
+            s->width  = s->avctx->width  = r->si.width;
+            s->height = s->avctx->height = r->si.height;
             if(MPV_common_init(s) < 0)
                 return -1;
             r->intra_types_stride = s->mb_width*4 + 4;
