@@ -168,7 +168,13 @@ static av_cold int encode_init(AVCodecContext* avc_context)
         t_info.aspect_numerator   = 1;
         t_info.aspect_denominator = 1;
     }
-    t_info.colorspace = TH_CS_UNSPECIFIED;
+
+    if (avc_context->color_primaries == AVCOL_PRI_BT470M)
+        t_info.colorspace = TH_CS_ITU_REC_470M;
+    else if (avc_context->color_primaries == AVCOL_PRI_BT470BG)
+        t_info.colorspace = TH_CS_ITU_REC_470BG;
+    else
+        t_info.colorspace = TH_CS_UNSPECIFIED;
 
     if (avc_context->pix_fmt == PIX_FMT_YUV420P)
         t_info.pixel_fmt = TH_PF_420;
