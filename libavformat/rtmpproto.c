@@ -590,8 +590,10 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         port = RTMP_DEFAULT_PORT;
     snprintf(buf, sizeof(buf), "tcp://%s:%d", hostname, port);
 
-    if (url_open(&rt->stream, buf, URL_RDWR) < 0)
+    if (url_open(&rt->stream, buf, URL_RDWR) < 0) {
+        av_log(LOG_CONTEXT, AV_LOG_ERROR, "Cannot open connection %s\n", buf);
         goto fail;
+    }
 
     if (!is_input) {
         av_log(LOG_CONTEXT, AV_LOG_ERROR, "RTMP output is not supported yet.\n");
