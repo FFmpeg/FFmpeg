@@ -79,8 +79,8 @@ $(HOSTPROGS): %$(HOSTEXESUF): %.o
 DEPS := $(OBJS:.o=.d)
 depend dep: $(DEPS)
 
-CLEANSUFFIXES     = *.o *~ *.ho *.map
-DISTCLEANSUFFIXES = *.d *.pc
+CLEANSUFFIXES     = *.d *.o *~ *.ho *.map
+DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp
 
 -include $(wildcard $(DEPS))
