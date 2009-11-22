@@ -233,10 +233,15 @@ int ff_amf_get_field_value(const uint8_t *data, const uint8_t *data_end,
     int namelen = strlen(name);
     int len;
 
+    while (*data != AMF_DATA_TYPE_OBJECT && data < data_end) {
+        len = ff_amf_tag_size(data, data_end);
+        if (len < 0)
+            len = data_end - data;
+        data += len;
+    }
     if (data_end - data < 3)
         return -1;
-    if (*data++ != AMF_DATA_TYPE_OBJECT)
-        return -1;
+    data++;
     for (;;) {
         int size = bytestream_get_be16(&data);
         if (!size)
