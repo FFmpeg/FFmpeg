@@ -44,6 +44,8 @@ typedef struct TheoraContext {
     uint8_t    *stats;
     int         stats_size;
     int         stats_offset;
+    int         uv_hshift;
+    int         uv_vshift;
 } TheoraContext;
 
 /*!
@@ -167,7 +169,18 @@ static av_cold int encode_init(AVCodecContext* avc_context)
         t_info.aspect_denominator = 1;
     }
     t_info.colorspace = TH_CS_UNSPECIFIED;
-    t_info.pixel_fmt  = TH_PF_420;
+
+    if (avc_context->pix_fmt == PIX_FMT_YUV420P)
+        t_info.pixel_fmt = TH_PF_420;
+    else if (avc_context->pix_fmt == PIX_FMT_YUV422P)
+        t_info.pixel_fmt = TH_PF_422;
+    else if (avc_context->pix_fmt == PIX_FMT_YUV444P)
+        t_info.pixel_fmt = TH_PF_444;
+    else {
+        av_log(avc_context, AV_LOG_ERROR, "Unsupported pix_fmt\n");
+        return -1;
+    }
+    avcodec_get_chroma_sub_sample(avc_context->pix_fmt, &h->uv_hshift, &h->uv_vshift);
 
     if (avc_context->flags & CODEC_FLAG_QSCALE) {
         /* to be constant with the libvorbis implementation, clip global_quality to 0 - 10
@@ -240,8 +253,6 @@ static int encode_frame(AVCodecContext* avc_context, uint8_t *outbuf,
     ogg_packet o_packet;
     int result, i;
 
-    assert(avc_context->pix_fmt == PIX_FMT_YUV420P);
-
     // EOS, finish and get 1st pass stats if applicable
     if (!frame) {
         th_encode_packetout(h->t_state, 1, &o_packet);
@@ -253,8 +264,8 @@ static int encode_frame(AVCodecContext* avc_context, uint8_t *outbuf,
 
     /* Copy planes to the theora yuv_buffer */
     for (i = 0; i < 3; i++) {
-        t_yuv_buffer[i].width  = FFALIGN(avc_context->width,  16) >> !!i;
-        t_yuv_buffer[i].height = FFALIGN(avc_context->height, 16) >> !!i;
+        t_yuv_buffer[i].width  = FFALIGN(avc_context->width,  16) >> (i && h->uv_hshift);
+        t_yuv_buffer[i].height = FFALIGN(avc_context->height, 16) >> (i && h->uv_vshift);
         t_yuv_buffer[i].stride = frame->linesize[i];
         t_yuv_buffer[i].data   = frame->data[i];
     }
@@ -327,8 +338,6 @@ static av_cold int encode_close(AVCodecContext* avc_context)
     return 0;
 }
 
-static const enum PixelFormat supported_pixel_formats[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
-
 /*! AVCodec struct exposed to libavcodec */
 AVCodec libtheora_encoder = {
     .name = "libtheora",
@@ -339,6 +348,6 @@ AVCodec libtheora_encoder = {
     .close = encode_close,
     .encode = encode_frame,
     .capabilities = CODEC_CAP_DELAY, // needed to get the statsfile summary
-    .pix_fmts = supported_pixel_formats,
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("libtheora Theora"),
 };
