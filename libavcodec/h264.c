@@ -3832,8 +3832,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             if(context_init(h->thread_context[i]) < 0)
                 return -1;
 
-        s->avctx->width = s->width;
-        s->avctx->height = s->height;
+        avcodec_set_dimensions(s->avctx, s->width, s->height);
         s->avctx->sample_aspect_ratio= h->sps.sar;
         if(!s->avctx->sample_aspect_ratio.den)
             s->avctx->sample_aspect_ratio.den = 1;
