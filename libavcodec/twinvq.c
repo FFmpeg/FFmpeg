@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "lsp.h"
 
 #include <math.h>
 #include <stdint.h>
