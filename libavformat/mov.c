@@ -108,6 +108,7 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'a','u','t'):
     case MKTAG(0xa9,'A','R','T'): key = "author";    break;
     case MKTAG(0xa9,'w','r','t'): key = "composer";  break;
+    case MKTAG( 'c','p','r','t'):
     case MKTAG(0xa9,'c','p','y'): key = "copyright"; break;
     case MKTAG(0xa9,'c','m','t'):
     case MKTAG(0xa9,'i','n','f'): key = "comment";   break;
