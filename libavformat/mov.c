@@ -116,6 +116,11 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
     case MKTAG(0xa9,'t','o','o'):
     case MKTAG(0xa9,'e','n','c'): key = "encoder";   break;
+    case MKTAG( 'd','e','s','c'): key = "description";break;
+    case MKTAG( 'l','d','e','s'): key = "synopsis";  break;
+    case MKTAG( 't','v','s','h'): key = "show";      break;
+    case MKTAG( 't','v','e','n'): key = "episode_id";break;
+    case MKTAG( 't','v','n','n'): key = "network";   break;
     case MKTAG( 't','r','k','n'): key = "track";
         parse = mov_metadata_trkn; break;
     }
