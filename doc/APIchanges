@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-11-25 - r20603 - lavu 50.5.0 - pixdesc.h API
+  Make the pixdesc.h API public.
+
 2009-10-27 - r20385 - lavfi 1.5.0 - AVFilter.next
   Add a next field to AVFilter, this is used for simplifying the
   registration and management of the registered filters.
