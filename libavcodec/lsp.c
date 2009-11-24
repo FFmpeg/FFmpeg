@@ -128,17 +128,7 @@ void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd
     ff_acelp_lsp2lpc(lp_2nd, lsp_2nd, lp_order >> 1);
 }
 
-/**
- * Computes the Pa / (1 + z(-1)) or Qa / (1 - z(-1)) coefficients
- * needed for LSP to LPC conversion.
- * We only need to calculate the 6 first elements of the polynomial.
- *
- * @param lsp line spectral pairs in cosine domain
- * @param f [out] polynomial input/output as a vector
- *
- * TIA/EIA/IS-733 2.4.3.3.5-1/2
- */
-static void lsp2polyf(const double *lsp, double *f, int lp_half_order)
+void ff_lsp2polyf(const double *lsp, double *f, int lp_half_order)
 {
     int i, j;
 
@@ -162,8 +152,8 @@ void ff_acelp_lspd2lpc(const double *lsp, float *lpc, int lp_half_order)
 
     assert(lp_half_order <= MAX_LP_HALF_ORDER);
 
-    lsp2polyf(lsp,     pa, lp_half_order);
-    lsp2polyf(lsp + 1, qa, lp_half_order);
+    ff_lsp2polyf(lsp,     pa, lp_half_order);
+    ff_lsp2polyf(lsp + 1, qa, lp_half_order);
 
     while (lp_half_order--) {
         double paf = pa[lp_half_order+1] + pa[lp_half_order];
