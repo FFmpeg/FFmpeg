@@ -26,7 +26,7 @@
 #include "riff.h"    /* for CodecTag */
 
 typedef struct voc_dec_context {
-    int remaining_size;
+    int64_t remaining_size;
 } VocDecContext;
 
 typedef enum voc_type {
