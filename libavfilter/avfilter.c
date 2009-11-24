@@ -328,33 +328,36 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
     draw_slice(link, y, h);
 }
 
-AVFilter *first_avfilter = NULL;
+#define MAX_REGISTERED_AVFILTERS_NB 64
+
+static AVFilter *registered_avfilters[MAX_REGISTERED_AVFILTERS_NB + 1];
+
+static int next_registered_avfilter_idx = 0;
 
 AVFilter *avfilter_get_by_name(const char *name)
 {
-    AVFilter *filter;
+    int i;
 
-    for (filter = first_avfilter; filter; filter = filter->next)
-        if (!strcmp(filter->name, name))
-            return filter;
+    for (i = 0; registered_avfilters[i]; i++)
+        if (!strcmp(registered_avfilters[i]->name, name))
+            return registered_avfilters[i];
 
     return NULL;
 }
 
-void avfilter_register(AVFilter *filter)
+int avfilter_register(AVFilter *filter)
 {
-    AVFilter **p;
-    p = &first_avfilter;
-    while (*p)
-        p = &(*p)->next;
+    if (next_registered_avfilter_idx == MAX_REGISTERED_AVFILTERS_NB)
+        return -1;
 
-    *p = filter;
-    filter->next = NULL;
+    registered_avfilters[next_registered_avfilter_idx++] = filter;
+    return 0;
 }
 
 void avfilter_uninit(void)
 {
-    first_avfilter = NULL;
+    memset(registered_avfilters, 0, sizeof(registered_avfilters));
+    next_registered_avfilter_idx = 0;
 }
 
 static int pad_count(const AVFilterPad *pads)

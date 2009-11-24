@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR  8
+#define LIBAVFILTER_VERSION_MINOR  9
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -581,8 +581,10 @@ void avfilter_uninit(void);
  * filter can still by instantiated with avfilter_open even if it is not
  * registered.
  * @param filter the filter to register
+ * @return 0 if the registration was succesfull, a negative value
+ * otherwise
  */
-void avfilter_register(AVFilter *filter);
+int avfilter_register(AVFilter *filter);
 
 /**
  * Gets a filter definition matching the given name.
