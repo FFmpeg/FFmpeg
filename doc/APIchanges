@@ -12,6 +12,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-11-25 - r20605 - lavfi 1.9.0 - avfilter_register()
+  Change the signature of avfilter_register() to make it return an
+  int. This is required since now the registration operation may fail.
+
 2009-11-25 - r20603 - lavu 50.5.0 - pixdesc.h API
   Make the pixdesc.h API public.
 
