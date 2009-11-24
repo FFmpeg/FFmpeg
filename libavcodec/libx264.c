@@ -228,6 +228,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.i_direct_mv_pred  = avctx->directpred;
 
     x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
+    x4->params.analyse.i_weighted_pred = avctx->weighted_p_pred;
 
     if (avctx->me_method == ME_EPZS)
         x4->params.analyse.i_me_method = X264_ME_DIA;

@@ -19,3 +19,4 @@ refs=16
 directpred=3
 trellis=2
 flags2=+wpred+mixed_refs+dct8x8-fastpskip
+wpredp=2

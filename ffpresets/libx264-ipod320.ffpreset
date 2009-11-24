@@ -4,3 +4,4 @@ flags2=-wpred-dct8x8
 level=13
 maxrate=768000
 bufsize=3000000
+wpredp=0

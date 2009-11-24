@@ -17,3 +17,4 @@ qdiff=4
 directpred=1
 flags2=+fastpskip
 cqp=0
+wpredp=2

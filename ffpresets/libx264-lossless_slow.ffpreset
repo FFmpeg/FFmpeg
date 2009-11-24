@@ -18,3 +18,4 @@ refs=2
 directpred=1
 flags2=+dct8x8+fastpskip
 cqp=0
+wpredp=2
