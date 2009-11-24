@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR  9
+#define LIBAVFILTER_VERSION_MINOR 10
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -593,6 +593,14 @@ int avfilter_register(AVFilter *filter);
  *             NULL if none found.
  */
 AVFilter *avfilter_get_by_name(const char *name);
+
+/**
+ * If filter is NULL, returns a pointer to the first registered filter pointer,
+ * if filter is non-NULL, returns the next pointer after filter.
+ * If the returned pointer points to NULL, the last registered filter
+ * was already reached.
+ */
+AVFilter **av_filter_next(AVFilter **filter);
 
 /**
  * Creates a filter instance.

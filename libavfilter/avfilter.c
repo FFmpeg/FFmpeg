@@ -354,6 +354,11 @@ int avfilter_register(AVFilter *filter)
     return 0;
 }
 
+AVFilter **av_filter_next(AVFilter **filter)
+{
+    return filter ? ++filter : &registered_avfilters[0];
+}
+
 void avfilter_uninit(void)
 {
     memset(registered_avfilters, 0, sizeof(registered_avfilters));
