@@ -336,6 +336,19 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->rc_buffer_aggressivity = av_int2dbl(get_be64(pb));
             codec->codec_tag = get_be32(pb);
             codec->thread_count = get_byte(pb);
+            codec->coder_type = get_be32(pb);
+            codec->me_cmp = get_be32(pb);
+            codec->partitions = get_be32(pb);
+            codec->me_subpel_quality = get_be32(pb);
+            codec->me_range = get_be32(pb);
+            codec->keyint_min = get_be32(pb);
+            codec->scenechange_threshold = get_be32(pb);
+            codec->b_frame_strategy = get_be32(pb);
+            codec->qcompress = av_int2dbl(get_be64(pb));
+            codec->qblur = av_int2dbl(get_be64(pb));
+            codec->max_qdiff = get_be32(pb);
+            codec->refs = get_be32(pb);
+            codec->directpred = get_be32(pb);
             break;
         case CODEC_TYPE_AUDIO:
             codec->sample_rate = get_be32(pb);

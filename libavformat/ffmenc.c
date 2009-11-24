@@ -154,6 +154,19 @@ static int ffm_write_header(AVFormatContext *s)
             put_be64(pb, av_dbl2int(codec->rc_buffer_aggressivity));
             put_be32(pb, codec->codec_tag);
             put_byte(pb, codec->thread_count);
+            put_be32(pb, codec->coder_type);
+            put_be32(pb, codec->me_cmp);
+            put_be32(pb, codec->partitions);
+            put_be32(pb, codec->me_subpel_quality);
+            put_be32(pb, codec->me_range);
+            put_be32(pb, codec->keyint_min);
+            put_be32(pb, codec->scenechange_threshold);
+            put_be32(pb, codec->b_frame_strategy);
+            put_be64(pb, av_dbl2int(codec->qcompress));
+            put_be64(pb, av_dbl2int(codec->qblur));
+            put_be32(pb, codec->max_qdiff);
+            put_be32(pb, codec->refs);
+            put_be32(pb, codec->directpred);
             break;
         case CODEC_TYPE_AUDIO:
             put_be32(pb, codec->sample_rate);
