@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 10
+#define LIBAVFILTER_VERSION_MINOR 11
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -425,11 +425,6 @@ typedef struct AVFilter
      * NULL_IF_CONFIG_SMALL() macro to define it.
      */
     const char *description;
-
-    /**
-     * The next registered filter, NULL if this is the last one.
-     */
-    struct AVFilter *next;
 } AVFilter;
 
 /** An instance of a filter */
