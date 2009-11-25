@@ -33,6 +33,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "colorspace.h"
+#include "libavutil/pixdesc.h"
 
 #if HAVE_MMX
 #include "x86/mmx.h"
@@ -601,7 +602,7 @@ void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
 
 int ff_is_hwaccel_pix_fmt(enum PixelFormat pix_fmt)
 {
-    return pix_fmt_info[pix_fmt].is_hwaccel;
+    return av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_HWACCEL;
 }
 
 int ff_set_systematic_pal(uint32_t pal[256], enum PixelFormat pix_fmt){
