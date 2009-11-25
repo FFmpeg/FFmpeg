@@ -86,6 +86,7 @@ static int concatenate_packet(unsigned int* offset,
 
 static int get_stats(AVCodecContext *avctx, int eos)
 {
+#ifdef TH_ENCCTL_2PASS_OUT
     TheoraContext *h = avctx->priv_data;
     uint8_t *buf;
     int bytes;
@@ -108,12 +109,17 @@ static int get_stats(AVCodecContext *avctx, int eos)
         av_base64_encode(avctx->stats_out, b64_size, h->stats, h->stats_offset);
     }
     return 0;
+#else
+    av_log(avctx, AV_LOG_ERROR, "libtheora too old to support 2pass\n");
+    return -1;
+#endif
 }
 
 // libtheora won't read the entire buffer we give it at once, so we have to
 // repeatedly submit it...
 static int submit_stats(AVCodecContext *avctx)
 {
+#ifdef TH_ENCCTL_2PASS_IN
     TheoraContext *h = avctx->priv_data;
     int bytes;
     if (!h->stats) {
@@ -138,6 +144,10 @@ static int submit_stats(AVCodecContext *avctx)
         h->stats_offset += bytes;
     }
     return 0;
+#else
+    av_log(avctx, AV_LOG_ERROR, "libtheora too old to support 2pass\n");
+    return -1;
+#endif
 }
 
 static av_cold int encode_init(AVCodecContext* avc_context)
