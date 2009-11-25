@@ -689,7 +689,7 @@ int ff_fill_linesize(AVPicture *picture, enum PixelFormat pix_fmt, int width)
     case PIX_FMT_NV21:
         w2 = (width + (1 << pinfo->x_chroma_shift) - 1) >> pinfo->x_chroma_shift;
         picture->linesize[0] = width;
-        picture->linesize[1] = w2;
+        picture->linesize[1] = 2 * w2;
         break;
     case PIX_FMT_RGB24:
     case PIX_FMT_BGR24:
@@ -789,12 +789,12 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
     case PIX_FMT_NV12:
     case PIX_FMT_NV21:
         h2 = (height + (1 << pinfo->y_chroma_shift) - 1) >> pinfo->y_chroma_shift;
-        size2 = picture->linesize[1] * h2 * 2;
+        size2 = picture->linesize[1] * h2;
         picture->data[0] = ptr;
         picture->data[1] = picture->data[0] + size;
         picture->data[2] = NULL;
         picture->data[3] = NULL;
-        return size + 2 * size2;
+        return size + size2;
     case PIX_FMT_RGB24:
     case PIX_FMT_BGR24:
     case PIX_FMT_ARGB:
@@ -904,6 +904,8 @@ int avpicture_layout(const AVPicture* src, enum PixelFormat pix_fmt, int width, 
         if (i == 1) {
             w = ((width >> pf->x_chroma_shift) * pf->depth + 7) / 8;
             h = height >> pf->y_chroma_shift;
+            if (pix_fmt == PIX_FMT_NV12 || pix_fmt == PIX_FMT_NV21)
+                w <<= 1;
         } else if (i == 3) {
             w = ow;
             h = oh;
