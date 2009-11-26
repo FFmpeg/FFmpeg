@@ -112,7 +112,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         },
     },
     [PIX_FMT_GRAY8] = {
-        .name = "gray8",
+        .name = "gray",
         .nb_components= 1,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
@@ -121,7 +121,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         },
     },
     [PIX_FMT_MONOWHITE] = {
-        .name = "monowhite",
+        .name = "monow",
         .nb_components= 1,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
@@ -131,7 +131,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .flags = PIX_FMT_BITSTREAM,
     },
     [PIX_FMT_MONOBLACK] = {
-        .name = "monoblack",
+        .name = "monob",
         .nb_components= 1,
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
@@ -184,11 +184,11 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         },
     },
     [PIX_FMT_XVMC_MPEG2_MC] = {
-        .name = "xvmc_mpeg2_mc",
+        .name = "xvmcmc",
         .flags = PIX_FMT_HWACCEL,
     },
     [PIX_FMT_XVMC_MPEG2_IDCT] = {
-        .name = "xvmc_mpeg2_idct",
+        .name = "xvmcidct",
         .flags = PIX_FMT_HWACCEL,
     },
     [PIX_FMT_UYVY422] = {
