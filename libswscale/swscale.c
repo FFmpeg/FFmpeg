@@ -78,6 +78,7 @@ untested special converters
 #include "libavutil/x86_cpu.h"
 #include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
+#include "libavutil/pixdesc.h"
 
 unsigned swscale_version(void)
 {
@@ -377,116 +378,10 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
 
 const char *sws_format_name(enum PixelFormat format)
 {
-    switch (format) {
-    case PIX_FMT_YUV420P:
-        return "yuv420p";
-    case PIX_FMT_YUVA420P:
-        return "yuva420p";
-    case PIX_FMT_YUYV422:
-        return "yuyv422";
-    case PIX_FMT_RGB24:
-        return "rgb24";
-    case PIX_FMT_BGR24:
-        return "bgr24";
-    case PIX_FMT_YUV422P:
-        return "yuv422p";
-    case PIX_FMT_YUV444P:
-        return "yuv444p";
-    case PIX_FMT_RGB32:
-        return "rgb32";
-    case PIX_FMT_YUV410P:
-        return "yuv410p";
-    case PIX_FMT_YUV411P:
-        return "yuv411p";
-    case PIX_FMT_RGB565:
-        return "rgb565";
-    case PIX_FMT_RGB555:
-        return "rgb555";
-    case PIX_FMT_GRAY16BE:
-        return "gray16be";
-    case PIX_FMT_GRAY16LE:
-        return "gray16le";
-    case PIX_FMT_GRAY8:
-        return "gray8";
-    case PIX_FMT_MONOWHITE:
-        return "mono white";
-    case PIX_FMT_MONOBLACK:
-        return "mono black";
-    case PIX_FMT_PAL8:
-        return "Palette";
-    case PIX_FMT_YUVJ420P:
-        return "yuvj420p";
-    case PIX_FMT_YUVJ422P:
-        return "yuvj422p";
-    case PIX_FMT_YUVJ444P:
-        return "yuvj444p";
-    case PIX_FMT_XVMC_MPEG2_MC:
-        return "xvmc_mpeg2_mc";
-    case PIX_FMT_XVMC_MPEG2_IDCT:
-        return "xvmc_mpeg2_idct";
-    case PIX_FMT_UYVY422:
-        return "uyvy422";
-    case PIX_FMT_UYYVYY411:
-        return "uyyvyy411";
-    case PIX_FMT_RGB32_1:
-        return "rgb32x";
-    case PIX_FMT_BGR32_1:
-        return "bgr32x";
-    case PIX_FMT_BGR32:
-        return "bgr32";
-    case PIX_FMT_BGR565:
-        return "bgr565";
-    case PIX_FMT_BGR555:
-        return "bgr555";
-    case PIX_FMT_BGR8:
-        return "bgr8";
-    case PIX_FMT_BGR4:
-        return "bgr4";
-    case PIX_FMT_BGR4_BYTE:
-        return "bgr4 byte";
-    case PIX_FMT_RGB8:
-        return "rgb8";
-    case PIX_FMT_RGB4:
-        return "rgb4";
-    case PIX_FMT_RGB4_BYTE:
-        return "rgb4 byte";
-    case PIX_FMT_RGB48BE:
-        return "rgb48be";
-    case PIX_FMT_RGB48LE:
-        return "rgb48le";
-    case PIX_FMT_NV12:
-        return "nv12";
-    case PIX_FMT_NV21:
-        return "nv21";
-    case PIX_FMT_YUV440P:
-        return "yuv440p";
-    case PIX_FMT_VDPAU_H264:
-        return "vdpau_h264";
-    case PIX_FMT_VDPAU_MPEG1:
-        return "vdpau_mpeg1";
-    case PIX_FMT_VDPAU_MPEG2:
-        return "vdpau_mpeg2";
-    case PIX_FMT_VDPAU_WMV3:
-        return "vdpau_wmv3";
-    case PIX_FMT_VDPAU_VC1:
-        return "vdpau_vc1";
-    case PIX_FMT_VDPAU_MPEG4:
-        return "vdpau_mpeg4";
-    case PIX_FMT_YUV420P16LE:
-        return "yuv420p16le";
-    case PIX_FMT_YUV422P16LE:
-        return "yuv422p16le";
-    case PIX_FMT_YUV444P16LE:
-        return "yuv444p16le";
-    case PIX_FMT_YUV420P16BE:
-        return "yuv420p16be";
-    case PIX_FMT_YUV422P16BE:
-        return "yuv422p16be";
-    case PIX_FMT_YUV444P16BE:
-        return "yuv444p16be";
-    default:
+    if ((unsigned)format < PIX_FMT_NB && av_pix_fmt_descriptors[format].name)
+        return av_pix_fmt_descriptors[format].name;
+    else
         return "Unknown format";
-    }
 }
 
 static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
