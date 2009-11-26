@@ -21,7 +21,7 @@ b3174e2db508564c1cce0b5e3c1bc1bd *./tests/data/b-lavf.mxf_d10
 62c5aeb636fc82cf6ba6277d36e42cb5 *./tests/data/b-lavf.swf
 329479 ./tests/data/b-lavf.swf
 ./tests/data/b-lavf.swf CRC=0x881785d1
-7841ec48bf18b29aff8223b7134e99f1 *./tests/data/b-lavf.ffm
+43a1bea450c0d19156d405f37767b9de *./tests/data/b-lavf.ffm
 376832 ./tests/data/b-lavf.ffm
 ./tests/data/b-lavf.ffm CRC=0x2b39ed74
 62c3177547fb5853a5116661802e1ae2 *./tests/data/b-lavf.flv
