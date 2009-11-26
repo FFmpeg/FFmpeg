@@ -86,7 +86,6 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     av_set_pts_info(vst, 64, msecs_per_frame, 1000000);
     vst->codec->codec_type = CODEC_TYPE_VIDEO;
     vst->codec->codec_id   = CODEC_ID_MOTIONPIXELS;
-    vst->codec->pix_fmt    = PIX_FMT_RGB555;
 
     mvi->get_int = (vst->codec->width * vst->codec->height < (1 << 16)) ? get_le16 : get_le24;
 
