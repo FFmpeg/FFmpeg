@@ -110,7 +110,7 @@ static const float quant_lut_mul[7] = { 0.0,  0.0,  2.0,  2.0,  5.0, 12.0,  36.6
 static const float quant_lut_add[7] = { 0.0,  0.0,  2.0,  7.0, 21.0, 56.0, 157.0 };
 static const uint8_t quant_lut_offset[8] = { 0, 0, 1, 4, 11, 32, 81, 230 };
 
-void apply_mdct(NellyMoserEncodeContext *s)
+static void apply_mdct(NellyMoserEncodeContext *s)
 {
     memcpy(s->in_buff, s->buf[s->bufsel], NELLY_BUF_LEN * sizeof(float));
     s->dsp.vector_fmul(s->in_buff, ff_sine_128, NELLY_BUF_LEN);
