@@ -718,4 +718,5 @@ $(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
 
 ifdef CONFIG_HARDCODED_TABLES
 $(SUBDIR)mpegaudiodec.o: $(SUBDIR)mpegaudio_tables.h
+$(SUBDIR)motionpixels.o: $(SUBDIR)motionpixels_tables.h
 endif
