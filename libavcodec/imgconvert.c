@@ -532,8 +532,8 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
 
 void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *v_shift)
 {
-    *h_shift = pix_fmt_info[pix_fmt].x_chroma_shift;
-    *v_shift = pix_fmt_info[pix_fmt].y_chroma_shift;
+    *h_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_w;
+    *v_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_h;
 }
 
 const char *avcodec_get_pix_fmt_name(enum PixelFormat pix_fmt)
