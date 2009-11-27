@@ -45,6 +45,7 @@
 #include <X11/Xutil.h>
 #include <sys/shm.h>
 #include <X11/extensions/XShm.h>
+#include <X11/extensions/Xfixes.h>
 
 /**
  * X11 Device Demuxer context
@@ -235,35 +236,6 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 }
 
 /**
- * Get pointer coordinates from X11.
- *
- * @param x Integer where horizontal coordinate will be returned
- * @param y Integer where vertical coordinate will be returned
- * @param dpy X11 display from where pointer coordinates are retrieved
- * @param s1 Context used for logging errors if necessary
- */
-static void
-get_pointer_coordinates(int *x, int *y, Display *dpy, AVFormatContext *s1)
-{
-    Window mrootwindow, childwindow;
-    int dummy;
-
-    mrootwindow = DefaultRootWindow(dpy);
-
-    if (XQueryPointer(dpy, mrootwindow, &mrootwindow, &childwindow,
-                      x, y, &dummy, &dummy, (unsigned int*)&dummy)) {
-    } else {
-        struct x11_grab *s = s1->priv_data;
-        if (!s->mouse_warning_shown) {
-            av_log(s1, AV_LOG_INFO, "couldn't find mouse pointer\n");
-            s->mouse_warning_shown = 1;
-        }
-        *x = -1;
-        *y = -1;
-    }
-}
-
-/**
  * Mouse painting helper function that applies an 'and' and 'or' mask pair to
  * '*dst' pixel. It actually draws a mouse pointer pixel to grabbed frame.
  *
@@ -300,71 +272,43 @@ apply_masks(uint8_t *dst, int and, int or, int bits_per_pixel)
  * @param y Mouse pointer coordinate
  */
 static void
-paint_mouse_pointer(XImage *image, struct x11_grab *s, int x, int y)
+paint_mouse_pointer(XImage *image, struct x11_grab *s)
 {
-    /* 16x20x1bpp bitmap for the black channel of the mouse pointer */
-    static const uint16_t const mousePointerBlack[] =
-        {
-            0x0000, 0x0003, 0x0005, 0x0009, 0x0011,
-            0x0021, 0x0041, 0x0081, 0x0101, 0x0201,
-            0x03c1, 0x0049, 0x0095, 0x0093, 0x0120,
-            0x0120, 0x0240, 0x0240, 0x0380, 0x0000
-        };
-
-    /* 16x20x1bpp bitmap for the white channel of the mouse pointer */
-    static const uint16_t const mousePointerWhite[] =
-        {
-            0x0000, 0x0000, 0x0002, 0x0006, 0x000e,
-            0x001e, 0x003e, 0x007e, 0x00fe, 0x01fe,
-            0x003e, 0x0036, 0x0062, 0x0060, 0x00c0,
-            0x00c0, 0x0180, 0x0180, 0x0000, 0x0000
-        };
-
     int x_off = s->x_off;
     int y_off = s->y_off;
     int width = s->width;
     int height = s->height;
+    Display *dpy = s->dpy;
+    XFixesCursorImage *xcim;
+    int x, y;
+    int line, column;
+    int to_line, to_column;
+    int image_addr, xcim_addr;
 
-    if (   x - x_off >= 0 && x < width + x_off
-        && y - y_off >= 0 && y < height + y_off) {
-        uint8_t *im_data = (uint8_t*)image->data;
-        int bytes_per_pixel;
-        int line;
-        int masks;
+    xcim = XFixesGetCursorImage(dpy);;
 
-        /* Select correct masks and pixel size */
-        if (image->bits_per_pixel == 8) {
-            masks = 1;
-        } else {
-            masks = (image->red_mask|image->green_mask|image->blue_mask);
-        }
-        bytes_per_pixel = image->bits_per_pixel>>3;
+    x = xcim->x - xcim->xhot;
+    y = xcim->y - xcim->yhot;
 
-        /* Shift to right line */
-        im_data += image->bytes_per_line * (y - y_off);
-        /* Shift to right pixel in the line */
-        im_data += bytes_per_pixel * (x - x_off);
+    to_line = FFMIN((y + xcim->height), (height + y_off));
+    to_column = FFMIN((x + xcim->width), (width + x_off));
 
-        /* Draw the cursor - proper loop */
-        for (line = 0; line < FFMIN(20, (y_off + height) - y); line++) {
-            uint8_t *cursor = im_data;
-            int column;
-            uint16_t bm_b;
-            uint16_t bm_w;
+    for (line = FFMAX(y, y_off); line < to_line; line++) {
+        for (column = FFMAX(x, x_off); column < to_column; column++) {
+            xcim_addr = (line - y) * xcim->width + column - x;
 
-            bm_b = mousePointerBlack[line];
-            bm_w = mousePointerWhite[line];
+            if ((unsigned char)(xcim->pixels[xcim_addr] >> 24) != 0) { // skip fully transparent pixel
+                image_addr = ((line - y_off) * width + column - x_off) * 4;
 
-            for (column = 0; column < FFMIN(16, (x_off + width) - x); column++) {
-                apply_masks(cursor, ~(masks*(bm_b&1)), masks*(bm_w&1),
-                            image->bits_per_pixel);
-                cursor += bytes_per_pixel;
-                bm_b >>= 1;
-                bm_w >>= 1;
+                image->data[image_addr] = (unsigned char)(xcim->pixels[xcim_addr] >> 0);
+                image->data[image_addr+1] = (unsigned char)(xcim->pixels[xcim_addr] >> 8);
+                image->data[image_addr+2] = (unsigned char)(xcim->pixels[xcim_addr] >> 16);
             }
-            im_data += image->bytes_per_line;
         }
     }
+
+    XFree(xcim);
+    xcim = NULL;
 }
 
 
@@ -469,9 +413,7 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 
     {
-        int pointer_x, pointer_y;
-        get_pointer_coordinates(&pointer_x, &pointer_y, dpy, s1);
-        paint_mouse_pointer(image, s, pointer_x, pointer_y);
+        paint_mouse_pointer(image, s);
     }
 
 

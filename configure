@@ -1249,7 +1249,7 @@ v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow"
 vfwcap_indev_extralibs="-lvfw32"
 x11_grab_device_indev_deps="x11grab XShmCreateImage"
-x11_grab_device_indev_extralibs="-lX11 -lXext"
+x11_grab_device_indev_extralibs="-lX11 -lXext -lXfixes"
 
 # protocols
 gopher_protocol_deps="network"
@@ -2477,7 +2477,8 @@ enabled x11grab                         &&
 check_header X11/Xlib.h                 &&
 check_header X11/extensions/XShm.h      &&
 check_func XOpenDisplay -lX11           &&
-check_func XShmCreateImage -lX11 -lXext
+check_func XShmCreateImage -lX11 -lXext &&
+check_func XFixesGetCursorImage -lX11 -lXext -lXfixes
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
