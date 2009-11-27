@@ -248,8 +248,8 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int64_t cur_time;
     struct audio_buf_info abufi;
 
-    if (av_new_packet(pkt, s->frame_size) < 0)
-        return AVERROR(EIO);
+    if ((ret=av_new_packet(pkt, s->frame_size)) < 0)
+        return ret;
 
         ret = read(s->fd, pkt->data, pkt->size);
     if (ret <= 0){
