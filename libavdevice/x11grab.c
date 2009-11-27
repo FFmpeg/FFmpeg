@@ -65,6 +65,7 @@ struct x11_grab
     XImage *image;           /**< X11 image holding the grab */
     int use_shm;             /**< !0 when using XShm extension */
     XShmSegmentInfo shminfo; /**< When using XShm, keeps track of XShm infos */
+    int nomouse;
 };
 
 /**
@@ -95,6 +96,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     offset = strchr(param, '+');
     if (offset) {
         sscanf(offset, "%d,%d", &x_off, &y_off);
+        x11grab->nomouse= strstr(offset, "nomouse");
         *offset= 0;
     }
 
@@ -383,7 +385,7 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
         }
     }
 
-    {
+    if(!s->nomouse){
         paint_mouse_pointer(image, s);
     }
 
