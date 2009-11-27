@@ -65,7 +65,6 @@ struct x11_grab
     XImage *image;           /**< X11 image holding the grab */
     int use_shm;             /**< !0 when using XShm extension */
     XShmSegmentInfo shminfo; /**< When using XShm, keeps track of XShm infos */
-    int mouse_warning_shown;
 };
 
 /**
@@ -222,7 +221,6 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     x11grab->y_off = y_off;
     x11grab->image = image;
     x11grab->use_shm = use_shm;
-    x11grab->mouse_warning_shown = 0;
 
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
@@ -233,33 +231,6 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->bit_rate = x11grab->frame_size * 1/av_q2d(ap->time_base) * 8;
 
     return 0;
-}
-
-/**
- * Mouse painting helper function that applies an 'and' and 'or' mask pair to
- * '*dst' pixel. It actually draws a mouse pointer pixel to grabbed frame.
- *
- * @param dst Destination pixel
- * @param and Part of the mask that must be applied using a bitwise 'and'
- *            operator
- * @param or  Part of the mask that must be applied using a bitwise 'or'
- *            operator
- * @param bits_per_pixel Bits per pixel used in the grabbed image
- */
-static void inline
-apply_masks(uint8_t *dst, int and, int or, int bits_per_pixel)
-{
-    switch (bits_per_pixel) {
-    case 32:
-        *(uint32_t*)dst = (*(uint32_t*)dst & and) | or;
-        break;
-    case 16:
-        *(uint16_t*)dst = (*(uint16_t*)dst & and) | or;
-        break;
-    case 8:
-        *dst = !!or;
-        break;
-    }
 }
 
 /**
