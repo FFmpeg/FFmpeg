@@ -2260,6 +2260,7 @@ static int decode_chunks(AVCodecContext *avctx,
     const uint8_t *buf_ptr = buf;
     const uint8_t *buf_end = buf + buf_size;
     int ret, input_size;
+    int last_code= 0;
 
     for(;;) {
         /* find next start code */
@@ -2296,8 +2297,12 @@ static int decode_chunks(AVCodecContext *avctx,
         /* prepare data for next start code */
         switch(start_code) {
         case SEQ_START_CODE:
+            if(last_code == 0){
             mpeg1_decode_sequence(avctx, buf_ptr,
                                     input_size);
+            }else{
+                av_log(avctx, AV_LOG_ERROR, "ignoring SEQ_START_CODE after %X\n", last_code);
+            }
             break;
 
         case PICTURE_START_CODE:
@@ -2310,13 +2315,18 @@ static int decode_chunks(AVCodecContext *avctx,
             if(mpeg1_decode_picture(avctx,
                                     buf_ptr, input_size) < 0)
                 s2->pict_type=0;
+            last_code= PICTURE_START_CODE;
             break;
         case EXT_START_CODE:
             init_get_bits(&s2->gb, buf_ptr, input_size*8);
 
             switch(get_bits(&s2->gb, 4)) {
             case 0x1:
+                if(last_code == 0){
                 mpeg_decode_sequence_extension(s);
+                }else{
+                    av_log(avctx, AV_LOG_ERROR, "ignoring seq ext after %X\n", last_code);
+                }
                 break;
             case 0x2:
                 mpeg_decode_sequence_display_extension(s);
@@ -2329,6 +2339,7 @@ static int decode_chunks(AVCodecContext *avctx,
                 break;
             case 0x8:
                 mpeg_decode_picture_coding_extension(s);
+                last_code= PICTURE_START_CODE;
                 break;
             }
             break;
@@ -2337,14 +2348,19 @@ static int decode_chunks(AVCodecContext *avctx,
                                     buf_ptr, input_size);
             break;
         case GOP_START_CODE:
+            if(last_code == 0){
             s2->first_field=0;
             mpeg_decode_gop(avctx,
                                     buf_ptr, input_size);
+            }else{
+                av_log(avctx, AV_LOG_ERROR, "ignoring GOP_START_CODE after %X\n", last_code);
+            }
             break;
         default:
             if (start_code >= SLICE_MIN_START_CODE &&
-                start_code <= SLICE_MAX_START_CODE) {
+                start_code <= SLICE_MAX_START_CODE && last_code!=0) {
                 int mb_y= start_code - SLICE_MIN_START_CODE;
+                last_code= SLICE_MIN_START_CODE;
 
                 if(s2->last_picture_ptr==NULL){
                 /* Skip B-frames if we do not have reference frames and gop is not closed */
