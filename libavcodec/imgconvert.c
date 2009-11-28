@@ -53,7 +53,6 @@
 #define FF_PIXEL_PALETTE  2  /**< one components containing indexes for a palette */
 
 typedef struct PixFmtInfo {
-    const char *name;
     uint8_t nb_channels;     /**< number of channels (including alpha) */
     uint8_t color_type;      /**< color type (see FF_COLOR_xxx constants) */
     uint8_t pixel_type;      /**< pixel storage type (see FF_PIXEL_xxx constants) */
@@ -65,98 +64,84 @@ typedef struct PixFmtInfo {
 static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     /* YUV formats */
     [PIX_FMT_YUV420P] = {
-        .name = "yuv420p",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_YUV422P] = {
-        .name = "yuv422p",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_YUV444P] = {
-        .name = "yuv444p",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_YUYV422] = {
-        .name = "yuyv422",
         .nb_channels = 1,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_UYVY422] = {
-        .name = "uyvy422",
         .nb_channels = 1,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_YUV410P] = {
-        .name = "yuv410p",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_YUV411P] = {
-        .name = "yuv411p",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_YUV440P] = {
-        .name = "yuv440p",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_YUV420P16LE] = {
-        .name = "yuv420p16le",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
     },
     [PIX_FMT_YUV422P16LE] = {
-        .name = "yuv422p16le",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
     },
     [PIX_FMT_YUV444P16LE] = {
-        .name = "yuv444p16le",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
     },
     [PIX_FMT_YUV420P16BE] = {
-        .name = "yuv420p16be",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
     },
     [PIX_FMT_YUV422P16BE] = {
-        .name = "yuv422p16be",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
     },
     [PIX_FMT_YUV444P16BE] = {
-        .name = "yuv444p16be",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
@@ -166,7 +151,6 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
 
     /* YUV formats with alpha plane */
     [PIX_FMT_YUVA420P] = {
-        .name = "yuva420p",
         .nb_channels = 4,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
@@ -175,28 +159,24 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
 
     /* JPEG YUV */
     [PIX_FMT_YUVJ420P] = {
-        .name = "yuvj420p",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV_JPEG,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_YUVJ422P] = {
-        .name = "yuvj422p",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV_JPEG,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_YUVJ444P] = {
-        .name = "yuvj444p",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV_JPEG,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_YUVJ440P] = {
-        .name = "yuvj440p",
         .nb_channels = 3,
         .color_type = FF_COLOR_YUV_JPEG,
         .pixel_type = FF_PIXEL_PLANAR,
@@ -205,63 +185,54 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
 
     /* RGB formats */
     [PIX_FMT_RGB24] = {
-        .name = "rgb24",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_BGR24] = {
-        .name = "bgr24",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_ARGB] = {
-        .name = "argb",
         .nb_channels = 4, .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_RGB48BE] = {
-        .name = "rgb48be",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 16,
     },
     [PIX_FMT_RGB48LE] = {
-        .name = "rgb48le",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 16,
     },
     [PIX_FMT_RGB565BE] = {
-        .name = "rgb565be",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
     },
     [PIX_FMT_RGB565LE] = {
-        .name = "rgb565le",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
     },
     [PIX_FMT_RGB555BE] = {
-        .name = "rgb555be",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
     },
     [PIX_FMT_RGB555LE] = {
-        .name = "rgb555le",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
@@ -270,35 +241,30 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
 
     /* gray / mono formats */
     [PIX_FMT_GRAY16BE] = {
-        .name = "gray16be",
         .nb_channels = 1,
         .color_type = FF_COLOR_GRAY,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
     },
     [PIX_FMT_GRAY16LE] = {
-        .name = "gray16le",
         .nb_channels = 1,
         .color_type = FF_COLOR_GRAY,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 16,
     },
     [PIX_FMT_GRAY8] = {
-        .name = "gray",
         .nb_channels = 1,
         .color_type = FF_COLOR_GRAY,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_MONOWHITE] = {
-        .name = "monow",
         .nb_channels = 1,
         .color_type = FF_COLOR_GRAY,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 1,
     },
     [PIX_FMT_MONOBLACK] = {
-        .name = "monob",
         .nb_channels = 1,
         .color_type = FF_COLOR_GRAY,
         .pixel_type = FF_PIXEL_PLANAR,
@@ -307,129 +273,106 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
 
     /* paletted formats */
     [PIX_FMT_PAL8] = {
-        .name = "pal8",
         .nb_channels = 4, .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PALETTE,
         .depth = 8,
     },
     [PIX_FMT_XVMC_MPEG2_MC] = {
-        .name = "xvmcmc",
     },
     [PIX_FMT_XVMC_MPEG2_IDCT] = {
-        .name = "xvmcidct",
     },
     [PIX_FMT_VDPAU_MPEG1] = {
-        .name = "vdpau_mpeg1",
     },
     [PIX_FMT_VDPAU_MPEG2] = {
-        .name = "vdpau_mpeg2",
     },
     [PIX_FMT_VDPAU_H264] = {
-        .name = "vdpau_h264",
     },
     [PIX_FMT_VDPAU_WMV3] = {
-        .name = "vdpau_wmv3",
     },
     [PIX_FMT_VDPAU_VC1] = {
-        .name = "vdpau_vc1",
     },
     [PIX_FMT_VDPAU_MPEG4] = {
-        .name = "vdpau_mpeg4",
     },
     [PIX_FMT_UYYVYY411] = {
-        .name = "uyyvyy411",
         .nb_channels = 1,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_ABGR] = {
-        .name = "abgr",
         .nb_channels = 4, .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_BGR565BE] = {
-        .name = "bgr565be",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
     },
     [PIX_FMT_BGR565LE] = {
-        .name = "bgr565le",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
     },
     [PIX_FMT_BGR555BE] = {
-        .name = "bgr555be",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
     },
     [PIX_FMT_BGR555LE] = {
-        .name = "bgr555le",
         .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
     },
     [PIX_FMT_RGB8] = {
-        .name = "rgb8",
         .nb_channels = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_RGB4] = {
-        .name = "rgb4",
         .nb_channels = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 4,
     },
     [PIX_FMT_RGB4_BYTE] = {
-        .name = "rgb4_byte",
         .nb_channels = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_BGR8] = {
-        .name = "bgr8",
         .nb_channels = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_BGR4] = {
-        .name = "bgr4",
         .nb_channels = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 4,
     },
     [PIX_FMT_BGR4_BYTE] = {
-        .name = "bgr4_byte",
         .nb_channels = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_NV12] = {
-        .name = "nv12",
         .nb_channels = 2,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
         .depth = 8,
     },
     [PIX_FMT_NV21] = {
-        .name = "nv21",
         .nb_channels = 2,
         .color_type = FF_COLOR_YUV,
         .pixel_type = FF_PIXEL_PLANAR,
@@ -437,14 +380,12 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     },
 
     [PIX_FMT_BGRA] = {
-        .name = "bgra",
         .nb_channels = 4, .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
     },
     [PIX_FMT_RGBA] = {
-        .name = "rgba",
         .nb_channels = 4, .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
@@ -453,13 +394,10 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
 
     /* VA API formats */
     [PIX_FMT_VAAPI_MOCO] = {
-        .name = "vaapi_moco",
     },
     [PIX_FMT_VAAPI_IDCT] = {
-        .name = "vaapi_idct",
     },
     [PIX_FMT_VAAPI_VLD] = {
-        .name = "vaapi_vld",
     },
 };
 
@@ -482,7 +420,7 @@ static enum PixelFormat avcodec_get_pix_fmt_internal(const char *name)
     int i;
 
     for (i=0; i < PIX_FMT_NB; i++)
-        if (pix_fmt_info[i].name && !strcmp(pix_fmt_info[i].name, name))
+        if (av_pix_fmt_descriptors[i].name && !strcmp(av_pix_fmt_descriptors[i].name, name))
             return i;
     return PIX_FMT_NONE;
 }
@@ -525,7 +463,7 @@ void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
 
         snprintf (buf, buf_size,
                   "%-11s %5d %9d %6c",
-                  info.name,
+                  av_pix_fmt_descriptors[pix_fmt].name,
                   info.nb_channels,
                   info.depth,
                   is_alpha_char
