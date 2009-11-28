@@ -1384,7 +1384,6 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
 
     s->y_dc_scale = 8;
     s->c_dc_scale = 8;
-    s->first_slice = 1;
     return 0;
 }
 
@@ -1533,7 +1532,6 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
             s->pict_type= FF_B_TYPE;
         s->current_picture.pict_type= s->pict_type;
         s->current_picture.key_frame= s->pict_type == FF_I_TYPE;
-        s->first_slice= 1;
     }
     s->intra_dc_precision = get_bits(&s->gb, 2);
     s->picture_structure = get_bits(&s->gb, 2);
@@ -2316,6 +2314,7 @@ static int decode_chunks(AVCodecContext *avctx,
             if(mpeg1_decode_picture(avctx,
                                     buf_ptr, input_size) < 0)
                 s2->pict_type=0;
+                s2->first_slice = 1;
             last_code= PICTURE_START_CODE;
             }else{
                 av_log(avctx, AV_LOG_ERROR, "ignoring pic after %X\n", last_code);
