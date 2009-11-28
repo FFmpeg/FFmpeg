@@ -2306,6 +2306,7 @@ static int decode_chunks(AVCodecContext *avctx,
             break;
 
         case PICTURE_START_CODE:
+            if(last_code == 0 || last_code == SLICE_MIN_START_CODE){
             if(mpeg_decode_postinit(avctx) < 0){
                 av_log(avctx, AV_LOG_ERROR, "mpeg_decode_postinit() failure\n");
                 return -1;
@@ -2316,6 +2317,9 @@ static int decode_chunks(AVCodecContext *avctx,
                                     buf_ptr, input_size) < 0)
                 s2->pict_type=0;
             last_code= PICTURE_START_CODE;
+            }else{
+                av_log(avctx, AV_LOG_ERROR, "ignoring pic after %X\n", last_code);
+            }
             break;
         case EXT_START_CODE:
             init_get_bits(&s2->gb, buf_ptr, input_size*8);
@@ -2338,8 +2342,11 @@ static int decode_chunks(AVCodecContext *avctx,
                 mpeg_decode_picture_display_extension(s);
                 break;
             case 0x8:
+                if(last_code == PICTURE_START_CODE){
                 mpeg_decode_picture_coding_extension(s);
-                last_code= PICTURE_START_CODE;
+                }else{
+                    av_log(avctx, AV_LOG_ERROR, "ignoring pic cod ext after %X\n", last_code);
+                }
                 break;
             }
             break;
