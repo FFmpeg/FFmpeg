@@ -137,7 +137,7 @@ void ff_put_string(PutBitContext * pbc, const char *s, int terminate_string);
 void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
 
 /**
- * Write up to 31 bits into a bitstream.
+ * Writes up to 31 bits into a bitstream.
  * Use put_bits32 to write 32 bits.
  */
 static inline void put_bits(PutBitContext *s, int n, unsigned int value)
