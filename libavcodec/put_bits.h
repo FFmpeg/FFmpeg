@@ -264,7 +264,7 @@ static inline void put_sbits(PutBitContext *pb, int bits, int32_t val)
 }
 
 /**
- * Write exactly 32 bits into a bitstream
+ * Writes exactly 32 bits into a bitstream.
  */
 static void av_unused put_bits32(PutBitContext *s, uint32_t value)
 {
