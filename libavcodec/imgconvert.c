@@ -58,7 +58,6 @@ typedef struct PixFmtInfo {
     uint8_t color_type;      /**< color type (see FF_COLOR_xxx constants) */
     uint8_t pixel_type;      /**< pixel storage type (see FF_PIXEL_xxx constants) */
     uint8_t is_alpha : 1;    /**< true if alpha can be specified */
-    uint8_t is_hwaccel : 1;  /**< true if this is an HW accelerated format */
     uint8_t depth;           /**< bit depth of the color components */
 } PixFmtInfo;
 
@@ -316,35 +315,27 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     },
     [PIX_FMT_XVMC_MPEG2_MC] = {
         .name = "xvmcmc",
-        .is_hwaccel = 1,
     },
     [PIX_FMT_XVMC_MPEG2_IDCT] = {
         .name = "xvmcidct",
-        .is_hwaccel = 1,
     },
     [PIX_FMT_VDPAU_MPEG1] = {
         .name = "vdpau_mpeg1",
-        .is_hwaccel = 1,
     },
     [PIX_FMT_VDPAU_MPEG2] = {
         .name = "vdpau_mpeg2",
-        .is_hwaccel = 1,
     },
     [PIX_FMT_VDPAU_H264] = {
         .name = "vdpau_h264",
-        .is_hwaccel = 1,
     },
     [PIX_FMT_VDPAU_WMV3] = {
         .name = "vdpau_wmv3",
-        .is_hwaccel = 1,
     },
     [PIX_FMT_VDPAU_VC1] = {
         .name = "vdpau_vc1",
-        .is_hwaccel = 1,
     },
     [PIX_FMT_VDPAU_MPEG4] = {
         .name = "vdpau_mpeg4",
-        .is_hwaccel = 1,
     },
     [PIX_FMT_UYYVYY411] = {
         .name = "uyyvyy411",
@@ -463,15 +454,12 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     /* VA API formats */
     [PIX_FMT_VAAPI_MOCO] = {
         .name = "vaapi_moco",
-        .is_hwaccel = 1,
     },
     [PIX_FMT_VAAPI_IDCT] = {
         .name = "vaapi_idct",
-        .is_hwaccel = 1,
     },
     [PIX_FMT_VAAPI_VLD] = {
         .name = "vaapi_vld",
-        .is_hwaccel = 1,
     },
 };
 
