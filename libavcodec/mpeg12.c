@@ -1579,35 +1579,6 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
     dprintf(s->avctx, "progressive_frame=%d\n", s->progressive_frame);
 }
 
-static void mpeg_decode_extension(AVCodecContext *avctx,
-                                  const uint8_t *buf, int buf_size)
-{
-    Mpeg1Context *s1 = avctx->priv_data;
-    MpegEncContext *s = &s1->mpeg_enc_ctx;
-    int ext_type;
-
-    init_get_bits(&s->gb, buf, buf_size*8);
-
-    ext_type = get_bits(&s->gb, 4);
-    switch(ext_type) {
-    case 0x1:
-        mpeg_decode_sequence_extension(s1);
-        break;
-    case 0x2:
-        mpeg_decode_sequence_display_extension(s1);
-        break;
-    case 0x3:
-        mpeg_decode_quant_matrix_extension(s);
-        break;
-    case 0x7:
-        mpeg_decode_picture_display_extension(s1);
-        break;
-    case 0x8:
-        mpeg_decode_picture_coding_extension(s1);
-        break;
-    }
-}
-
 static void exchange_uv(MpegEncContext *s){
     DCTELEM (*tmp)[64];
 
@@ -2339,8 +2310,25 @@ static int decode_chunks(AVCodecContext *avctx,
                 s2->pict_type=0;
             break;
         case EXT_START_CODE:
-            mpeg_decode_extension(avctx,
-                                    buf_ptr, input_size);
+            init_get_bits(&s2->gb, buf_ptr, input_size*8);
+
+            switch(get_bits(&s2->gb, 4)) {
+            case 0x1:
+                mpeg_decode_sequence_extension(s);
+                break;
+            case 0x2:
+                mpeg_decode_sequence_display_extension(s);
+                break;
+            case 0x3:
+                mpeg_decode_quant_matrix_extension(s2);
+                break;
+            case 0x7:
+                mpeg_decode_picture_display_extension(s);
+                break;
+            case 0x8:
+                mpeg_decode_picture_coding_extension(s);
+                break;
+            }
             break;
         case USER_START_CODE:
             mpeg_decode_user_data(avctx,
