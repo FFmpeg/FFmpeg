@@ -1352,9 +1352,6 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     int ref, f_code, vbv_delay;
 
-    if(mpeg_decode_postinit(s->avctx) < 0)
-       return -2;
-
     init_get_bits(&s->gb, buf, buf_size*8);
 
     ref = get_bits(&s->gb, 10); /* temporal ref */
@@ -2304,6 +2301,11 @@ static int decode_chunks(AVCodecContext *avctx,
             break;
 
         case PICTURE_START_CODE:
+            if(mpeg_decode_postinit(avctx) < 0){
+                av_log(avctx, AV_LOG_ERROR, "mpeg_decode_postinit() failure\n");
+                return -1;
+            }
+
             /* we have a complete image: we try to decompress it */
             if(mpeg1_decode_picture(avctx,
                                     buf_ptr, input_size) < 0)
