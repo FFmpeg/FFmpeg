@@ -296,7 +296,8 @@ static inline uint8_t* put_bits_ptr(PutBitContext *s)
  * Skips the given number of bytes.
  * PutBitContext must be flushed & aligned to a byte boundary before calling this.
  */
-static inline void skip_put_bytes(PutBitContext *s, int n){
+static inline void skip_put_bytes(PutBitContext *s, int n)
+{
         assert((put_bits_count(s)&7)==0);
 #ifdef ALT_BITSTREAM_WRITER
         FIXME may need some cleaning of the buffer
@@ -312,7 +313,8 @@ static inline void skip_put_bytes(PutBitContext *s, int n){
  * Must only be used if the actual values in the bitstream do not matter.
  * If n is 0 the behavior is undefined.
  */
-static inline void skip_put_bits(PutBitContext *s, int n){
+static inline void skip_put_bits(PutBitContext *s, int n)
+{
 #ifdef ALT_BITSTREAM_WRITER
     s->index += n;
 #else
@@ -327,7 +329,8 @@ static inline void skip_put_bits(PutBitContext *s, int n){
  *
  * @param size the new size in bytes of the buffer where to put bits
  */
-static inline void set_put_bits_buffer_size(PutBitContext *s, int size){
+static inline void set_put_bits_buffer_size(PutBitContext *s, int size)
+{
     s->buf_end= s->buf + size;
 }
 
