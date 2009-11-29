@@ -1847,7 +1847,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
                     s->mv[0][0][0] = s->mv[0][0][1] = 0;
                     s->last_mv[0][0][0] = s->last_mv[0][0][1] = 0;
                     s->last_mv[0][1][0] = s->last_mv[0][1][1] = 0;
-                    s->field_select[0][0]= s->picture_structure - 1;
+                    s->field_select[0][0]= (s->picture_structure - 1) & 1;
                 } else {
                     /* if B type, reuse previous vectors and directions */
                     s->mv[0][0][0] = s->last_mv[0][0][0];
