@@ -115,8 +115,6 @@ static int config_props(AVFilterLink *outlink)
     av_log(ctx, AV_LOG_INFO, "w:%d h:%d fmt:%s\n",
            outlink->w, outlink->h, avcodec_get_pix_fmt_name(outlink->format));
 
-    avcodec_get_chroma_sub_sample(outlink->format, &scale->hsub, &scale->vsub);
-
     scale->input_is_pal = inlink->format == PIX_FMT_PAL8      ||
                           inlink->format == PIX_FMT_BGR4_BYTE ||
                           inlink->format == PIX_FMT_RGB4_BYTE ||
@@ -131,6 +129,8 @@ static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     ScaleContext *scale = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[0];
     AVFilterPicRef *outpicref;
+
+    avcodec_get_chroma_sub_sample(link->format, &scale->hsub, &scale->vsub);
 
     outpicref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
     outpicref->pts = picref->pts;
