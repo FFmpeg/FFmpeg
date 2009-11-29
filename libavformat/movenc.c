@@ -475,23 +475,23 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
         put_be32(pb, track->sampleSize);
         put_be32(pb, track->enc->frame_size);
     } else {
-    if (track->mode == MODE_MOV) {
-        put_be16(pb, track->enc->channels);
-        if (track->enc->codec_id == CODEC_ID_PCM_U8 ||
-            track->enc->codec_id == CODEC_ID_PCM_S8)
-            put_be16(pb, 8); /* bits per sample */
-        else
+        if (track->mode == MODE_MOV) {
+            put_be16(pb, track->enc->channels);
+            if (track->enc->codec_id == CODEC_ID_PCM_U8 ||
+                track->enc->codec_id == CODEC_ID_PCM_S8)
+                put_be16(pb, 8); /* bits per sample */
+            else
+                put_be16(pb, 16);
+            put_be16(pb, track->audio_vbr ? -2 : 0); /* compression ID */
+        } else { /* reserved for mp4/3gp */
+            put_be16(pb, 2);
             put_be16(pb, 16);
-        put_be16(pb, track->audio_vbr ? -2 : 0); /* compression ID */
-    } else { /* reserved for mp4/3gp */
-        put_be16(pb, 2);
-        put_be16(pb, 16);
-        put_be16(pb, 0);
-    }
+            put_be16(pb, 0);
+        }
 
-    put_be16(pb, 0); /* packet size (= 0) */
-    put_be16(pb, track->timescale); /* Time scale */
-    put_be16(pb, 0); /* Reserved */
+        put_be16(pb, 0); /* packet size (= 0) */
+        put_be16(pb, track->timescale); /* Time scale */
+        put_be16(pb, 0); /* Reserved */
     }
 
     if(version == 1) { /* SoundDescription V1 extended info */
@@ -1850,9 +1850,9 @@ static int mov_write_header(AVFormatContext *s)
                     goto error;
                 }
                 if (track->enc->codec_id == CODEC_ID_MP3 && track->timescale < 16000) {
-                av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not supported\n",
-                       i, track->enc->sample_rate);
-                goto error;
+                    av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not supported\n",
+                           i, track->enc->sample_rate);
+                    goto error;
                 }
             }
         }else if(st->codec->codec_type == CODEC_TYPE_SUBTITLE){
