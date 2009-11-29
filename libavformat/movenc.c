@@ -360,6 +360,14 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack *track) // Basic
     return updateSize(pb, pos);
 }
 
+static int mov_pcm_le_gt16(enum CodecID codec_id)
+{
+    return codec_id == CODEC_ID_PCM_S24LE ||
+           codec_id == CODEC_ID_PCM_S32LE ||
+           codec_id == CODEC_ID_PCM_F32LE ||
+           codec_id == CODEC_ID_PCM_F64LE;
+}
+
 static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack *track)
 {
     int64_t pos = url_ftell(pb);
@@ -377,8 +385,7 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack *track)
         put_tag(pb, "mp4a");
         put_be32(pb, 0);
         mov_write_esds_tag(pb, track);
-    } else if (track->enc->codec_id == CODEC_ID_PCM_S24LE ||
-               track->enc->codec_id == CODEC_ID_PCM_S32LE) {
+    } else if (mov_pcm_le_gt16(track->enc->codec_id)) {
         mov_write_enda_tag(pb);
     } else if (track->enc->codec_id == CODEC_ID_AMR_NB) {
         mov_write_amr_tag(pb, track);
@@ -442,9 +449,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
             if (mov_get_lpcm_flags(track->enc->codec_id))
                 tag = AV_RL32("lpcm");
             version = 2;
-        } else if (track->audio_vbr ||
-                   track->enc->codec_id == CODEC_ID_PCM_S32LE ||
-                   track->enc->codec_id == CODEC_ID_PCM_S24LE) {
+        } else if (track->audio_vbr || mov_pcm_le_gt16(track->enc->codec_id)) {
             version = 1;
         }
     }
@@ -505,9 +510,8 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
        (track->enc->codec_id == CODEC_ID_AAC ||
         track->enc->codec_id == CODEC_ID_AC3 ||
         track->enc->codec_id == CODEC_ID_AMR_NB ||
-        track->enc->codec_id == CODEC_ID_PCM_S24LE ||
-        track->enc->codec_id == CODEC_ID_PCM_S32LE ||
-        track->enc->codec_id == CODEC_ID_ALAC))
+        track->enc->codec_id == CODEC_ID_ALAC ||
+        mov_pcm_le_gt16(track->enc->codec_id)))
         mov_write_wave_tag(pb, track);
     else if(track->tag == MKTAG('m','p','4','a'))
         mov_write_esds_tag(pb, track);
