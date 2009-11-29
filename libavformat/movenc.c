@@ -402,16 +402,55 @@ static int mov_write_glbl_tag(ByteIOContext *pb, MOVTrack *track)
     return 8+track->vosLen;
 }
 
+/**
+ * Compute flags for 'lpcm' tag.
+ * See CoreAudioTypes and AudioStreamBasicDescription at Apple.
+ */
+static int mov_get_lpcm_flags(enum CodecID codec_id)
+{
+    switch (codec_id) {
+    case CODEC_ID_PCM_F32BE:
+    case CODEC_ID_PCM_F64BE:
+        return 11;
+    case CODEC_ID_PCM_F32LE:
+    case CODEC_ID_PCM_F64LE:
+        return 9;
+    case CODEC_ID_PCM_U8:
+        return 10;
+    case CODEC_ID_PCM_S16BE:
+    case CODEC_ID_PCM_S24BE:
+    case CODEC_ID_PCM_S32BE:
+        return 14;
+    case CODEC_ID_PCM_S8:
+    case CODEC_ID_PCM_S16LE:
+    case CODEC_ID_PCM_S24LE:
+    case CODEC_ID_PCM_S32LE:
+        return 12;
+    default:
+        return 0;
+    }
+}
+
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
 {
     int64_t pos = url_ftell(pb);
-    int version = track->mode == MODE_MOV &&
-        (track->audio_vbr ||
-         track->enc->codec_id == CODEC_ID_PCM_S32LE ||
-         track->enc->codec_id == CODEC_ID_PCM_S24LE);
+    int version = 0;
+    uint32_t tag = track->tag;
+
+    if (track->mode == MODE_MOV) {
+        if (track->timescale > UINT16_MAX) {
+            if (mov_get_lpcm_flags(track->enc->codec_id))
+                tag = AV_RL32("lpcm");
+            version = 2;
+        } else if (track->audio_vbr ||
+                   track->enc->codec_id == CODEC_ID_PCM_S32LE ||
+                   track->enc->codec_id == CODEC_ID_PCM_S24LE) {
+            version = 1;
+        }
+    }
 
     put_be32(pb, 0); /* size */
-    put_le32(pb, track->tag); // store it byteswapped
+    put_le32(pb, tag); // store it byteswapped
     put_be32(pb, 0); /* Reserved */
     put_be16(pb, 0); /* Reserved */
     put_be16(pb, 1); /* Data-reference index, XXX  == 1 */
@@ -421,6 +460,21 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
     put_be16(pb, 0); /* Revision level */
     put_be32(pb, 0); /* Reserved */
 
+    if (version == 2) {
+        put_be16(pb, 3);
+        put_be16(pb, 16);
+        put_be16(pb, 0xfffe);
+        put_be16(pb, 0);
+        put_be32(pb, 0x00010000);
+        put_be32(pb, 72);
+        put_be64(pb, av_dbl2int(track->timescale));
+        put_be32(pb, track->enc->channels);
+        put_be32(pb, 0x7F000000);
+        put_be32(pb, av_get_bits_per_sample(track->enc->codec_id));
+        put_be32(pb, mov_get_lpcm_flags(track->enc->codec_id));
+        put_be32(pb, track->sampleSize);
+        put_be32(pb, track->enc->frame_size);
+    } else {
     if (track->mode == MODE_MOV) {
         put_be16(pb, track->enc->channels);
         if (track->enc->codec_id == CODEC_ID_PCM_U8 ||
@@ -438,6 +492,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack *track)
     put_be16(pb, 0); /* packet size (= 0) */
     put_be16(pb, track->timescale); /* Time scale */
     put_be16(pb, 0); /* Reserved */
+    }
 
     if(version == 1) { /* SoundDescription V1 extended info */
         put_be32(pb, track->enc->frame_size); /* Samples per packet */
@@ -1788,11 +1843,17 @@ static int mov_write_header(AVFormatContext *s)
                 st->codec->frame_size = 1;
                 track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
             }
-            if(track->mode != MODE_MOV &&
-               track->enc->codec_id == CODEC_ID_MP3 && track->enc->sample_rate < 16000){
+            if (track->mode != MODE_MOV) {
+                if (track->timescale > INT16_MAX) {
+                    av_log(s, AV_LOG_ERROR, "track %d: output format does not support "
+                           "sample rate %dhz\n", i, track->timescale);
+                    goto error;
+                }
+                if (track->enc->codec_id == CODEC_ID_MP3 && track->timescale < 16000) {
                 av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not supported\n",
                        i, track->enc->sample_rate);
                 goto error;
+                }
             }
         }else if(st->codec->codec_type == CODEC_TYPE_SUBTITLE){
             track->timescale = st->codec->time_base.den;
