@@ -58,7 +58,7 @@ typedef struct MOVIentry {
 typedef struct MOVIndex {
     int         mode;
     int         entry;
-    long        timescale;
+    unsigned    timescale;
     uint64_t    time;
     int64_t     trackDuration;
     long        sampleCount;
