@@ -123,11 +123,11 @@ static inline void flush_put_bits(PutBitContext *s)
 void align_put_bits(PutBitContext *s);
 
 /**
- * Puts the string s in the bitstream.
+ * Puts the string string in the bitstream.
  *
  * @param terminate_string 0-terminates the written string if value is 1
  */
-void ff_put_string(PutBitContext * pbc, const char *s, int terminate_string);
+void ff_put_string(PutBitContext *pb, const char *string, int terminate_string);
 
 /**
  * Copies the content of src to the bitstream.

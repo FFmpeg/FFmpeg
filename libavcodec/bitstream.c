@@ -47,14 +47,14 @@ void align_put_bits(PutBitContext *s)
 #endif
 }
 
-void ff_put_string(PutBitContext * pbc, const char *s, int terminate_string)
+void ff_put_string(PutBitContext *pb, const char *string, int terminate_string)
 {
-    while(*s){
-        put_bits(pbc, 8, *s);
-        s++;
+    while(*string){
+        put_bits(pb, 8, *string);
+        string++;
     }
     if(terminate_string)
-        put_bits(pbc, 8, 0);
+        put_bits(pb, 8, 0);
 }
 
 void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
