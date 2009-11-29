@@ -154,7 +154,7 @@ static void draw_slice(AVFilterLink *link, int y, int h)
 
     if (!scale->slice_dir) {
         if (y != 0 && y + h != link->h) {
-            av_log(scale, AV_LOG_ERROR, "Slices start in the middle!\n");
+            av_log(link->dst, AV_LOG_ERROR, "Slices start in the middle!\n");
             return;
         }
         scale->slice_dir = y ?                       -1 : 1;
