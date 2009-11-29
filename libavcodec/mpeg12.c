@@ -1545,10 +1545,18 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
     s->chroma_420_type = get_bits1(&s->gb);
     s->progressive_frame = get_bits1(&s->gb);
 
-    if(s->progressive_sequence)
+    if(s->progressive_sequence && !s->progressive_frame){
         s->progressive_frame= 1;
-    if(s->progressive_frame){
+        av_log(s->avctx, AV_LOG_ERROR, "interlaced frame in progressive sequence, ignoring\n");
+    }
+
+    if(s->picture_structure==0 || (s->progressive_frame && s->picture_structure!=PICT_FRAME)){
+        av_log(s->avctx, AV_LOG_ERROR, "picture_structure %d invalid, ignoring\n", s->picture_structure);
         s->picture_structure= PICT_FRAME;
+    }
+
+    if(s->progressive_frame && !s->frame_pred_frame_dct){
+        av_log(s->avctx, AV_LOG_ERROR, "invalid frame_pred_frame_dct\n");
         s->frame_pred_frame_dct= 1;
     }
 
