@@ -558,6 +558,11 @@ void avfilter_end_frame(AVFilterLink *link);
 
 /**
  * Sends a slice to the next filter.
+ *
+ * Slices have to be provided in sequential order, either in
+ * top-bottom or bottom-top order. If slices are provided in
+ * non-sequential order the behavior of the function is undefined.
+ *
  * @param link the output link over which the frame is being sent
  * @param y    offset in pixels from the top of the image for this slice
  * @param h    height of this slice in pixels
