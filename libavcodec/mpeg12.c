@@ -1545,6 +1545,13 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
     s->chroma_420_type = get_bits1(&s->gb);
     s->progressive_frame = get_bits1(&s->gb);
 
+    if(s->progressive_sequence)
+        s->progressive_frame= 1;
+    if(s->progressive_frame){
+        s->picture_structure= PICT_FRAME;
+        s->frame_pred_frame_dct= 1;
+    }
+
     if(s->picture_structure == PICT_FRAME){
         s->first_field=0;
         s->v_edge_pos= 16*s->mb_height;
