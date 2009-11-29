@@ -59,7 +59,7 @@ typedef struct MOVIndex {
     int         mode;
     int         entry;
     long        timescale;
-    long        time;
+    uint64_t    time;
     int64_t     trackDuration;
     long        sampleCount;
     long        sampleSize;
