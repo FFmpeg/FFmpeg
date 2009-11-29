@@ -33,7 +33,7 @@
 #include <assert.h>
 
 #define MOV_INDEX_CLUSTER_SIZE 16384
-#define globalTimescale 1000
+#define MOV_TIMESCALE 1000
 
 #define MODE_MP4  0x01
 #define MODE_MOV  0x02
@@ -85,7 +85,6 @@ typedef struct MOVMuxContext {
     int     nb_streams;
     int64_t mdat_pos;
     uint64_t mdat_size;
-    long    timescale;
     MOVTrack *tracks;
 } MOVMuxContext;
 
@@ -1143,7 +1142,8 @@ static int mov_write_mdia_tag(ByteIOContext *pb, MOVTrack *track)
 
 static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack *track, AVStream *st)
 {
-    int64_t duration = av_rescale_rnd(track->trackDuration, globalTimescale, track->timescale, AV_ROUND_UP);
+    int64_t duration = av_rescale_rnd(track->trackDuration, MOV_TIMESCALE,
+                                      track->timescale, AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
 
     (version == 1) ? put_be32(pb, 104) : put_be32(pb, 92); /* size */
@@ -1208,7 +1208,9 @@ static int mov_write_edts_tag(ByteIOContext *pb, MOVTrack *track)
     put_be32(pb, 0x0);
     put_be32(pb, 0x1);
 
-    put_be32(pb, av_rescale_rnd(track->trackDuration, globalTimescale, track->timescale, AV_ROUND_UP)); /* duration   ... doesn't seem to effect psp */
+    /* duration   ... doesn't seem to effect psp */
+    put_be32(pb, av_rescale_rnd(track->trackDuration, MOV_TIMESCALE,
+                                track->timescale, AV_ROUND_UP));
 
     put_be32(pb, track->cluster[0].cts); /* first pts is cts since dts is 0 */
     put_be32(pb, 0x00010000);
@@ -1272,7 +1274,10 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVMuxContext *mov)
 
     for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry > 0) {
-            maxTrackLenTemp = av_rescale_rnd(mov->tracks[i].trackDuration, globalTimescale, mov->tracks[i].timescale, AV_ROUND_UP);
+            maxTrackLenTemp = av_rescale_rnd(mov->tracks[i].trackDuration,
+                                             MOV_TIMESCALE,
+                                             mov->tracks[i].timescale,
+                                             AV_ROUND_UP);
             if(maxTrackLen < maxTrackLenTemp)
                 maxTrackLen = maxTrackLenTemp;
             if(maxTrackID < mov->tracks[i].trackID)
@@ -1292,7 +1297,7 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVMuxContext *mov)
         put_be32(pb, mov->time); /* creation time */
         put_be32(pb, mov->time); /* modification time */
     }
-    put_be32(pb, mov->timescale); /* timescale */
+    put_be32(pb, MOV_TIMESCALE);
     (version == 1) ? put_be64(pb, maxTrackLen) : put_be32(pb, maxTrackLen); /* duration of longest track */
 
     put_be32(pb, 0x00010000); /* reserved (preferred rate) 1.0 = normal */
@@ -1615,7 +1620,6 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVMuxContext *mov,
     int64_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size placeholder*/
     put_tag(pb, "moov");
-    mov->timescale = globalTimescale;
 
     for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry <= 0) continue;
