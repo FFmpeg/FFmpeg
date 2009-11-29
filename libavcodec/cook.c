@@ -1101,7 +1101,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     q->bit_rate = avctx->bit_rate;
 
     /* Initialize RNG. */
-    av_lfg_init(&q->random_state, ff_random_get_seed());
+    av_lfg_init(&q->random_state, 0);
 
     while(edata_ptr < edata_ptr_end){
         /* 8 for mono, 16 for stereo, ? for multichannel
