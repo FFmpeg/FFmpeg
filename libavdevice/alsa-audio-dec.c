@@ -45,8 +45,8 @@
  * plugin.
  */
 
-#include "libavformat/avformat.h"
 #include <alsa/asoundlib.h>
+#include "libavformat/avformat.h"
 
 #include "alsa-audio.h"
 
