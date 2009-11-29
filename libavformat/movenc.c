@@ -1852,7 +1852,7 @@ static int mov_write_header(AVFormatContext *s)
                 track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
             }
             if (track->mode != MODE_MOV) {
-                if (track->timescale > INT16_MAX) {
+                if (track->timescale > UINT16_MAX) {
                     av_log(s, AV_LOG_ERROR, "track %d: output format does not support "
                            "sample rate %dhz\n", i, track->timescale);
                     goto error;
