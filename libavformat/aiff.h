@@ -46,6 +46,7 @@ static const AVCodecTag ff_codec_aiff_tags[] = {
     { CODEC_ID_PCM_S16LE,    MKTAG('s','o','w','t') },
     { CODEC_ID_ADPCM_IMA_QT, MKTAG('i','m','a','4') },
     { CODEC_ID_QDM2,         MKTAG('Q','D','M','2') },
+    { CODEC_ID_QCELP,        MKTAG('Q','c','l','p') },
     { CODEC_ID_NONE,         0 },
 };
 

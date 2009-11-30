@@ -127,6 +127,10 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
             codec->block_align = 33;
             codec->frame_size = 160;
             break;
+        case CODEC_ID_QCELP:
+            codec->block_align = 35;
+            codec->frame_size= 160;
+            break;
         default:
             break;
         }
@@ -284,7 +288,7 @@ static int aiff_read_packet(AVFormatContext *s,
     AVStream *st = s->streams[0];
     AIFFInputContext *aiff = s->priv_data;
     int64_t max_size;
-    int res;
+    int res, size;
 
     /* calculate size of remaining data */
     max_size = aiff->data_end - url_ftell(s->pb);
@@ -292,8 +296,12 @@ static int aiff_read_packet(AVFormatContext *s,
         return AVERROR_EOF;
 
     /* Now for that packet */
-    max_size = FFMIN(max_size, (MAX_SIZE / st->codec->block_align) * st->codec->block_align);
-    res = av_get_packet(s->pb, pkt, max_size);
+    if (st->codec->block_align >= 33) // GSM, QCLP, IMA4
+        size = st->codec->block_align;
+    else
+        size = (MAX_SIZE / st->codec->block_align) * st->codec->block_align;
+    size = FFMIN(max_size, size);
+    res = av_get_packet(s->pb, pkt, size);
     if (res < 0)
         return res;
 
