@@ -1673,7 +1673,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
     s->resync_mb_x=
     s->resync_mb_y= -1;
 
-    if (mb_y<<field_pic >= s->mb_height){
+    if (mb_y >= s->mb_height){
         av_log(s->avctx, AV_LOG_ERROR, "slice below image (%d >= %d)\n", mb_y, s->mb_height);
         return -1;
     }
@@ -1756,11 +1756,9 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
             return -1;
 
         if(s->current_picture.motion_val[0] && !s->encoding){ //note motion_val is normally NULL unless we want to extract the MVs
-            const int wrap = field_pic ? 2*s->b8_stride : s->b8_stride;
+            const int wrap = s->b8_stride;
             int xy = s->mb_x*2 + s->mb_y*2*wrap;
             int motion_x, motion_y, dir, i;
-            if(field_pic && !s->first_field)
-                xy += wrap/2;
 
             for(i=0; i<2; i++){
                 for(dir=0; dir<2; dir++){
@@ -1795,12 +1793,12 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
         if (++s->mb_x >= s->mb_width) {
             const int mb_size= 16>>s->avctx->lowres;
 
-            ff_draw_horiz_band(s, mb_size*s->mb_y, mb_size);
+            ff_draw_horiz_band(s, mb_size*(s->mb_y>>field_pic), mb_size);
 
             s->mb_x = 0;
-            s->mb_y++;
+            s->mb_y += 1<<field_pic;
 
-            if(s->mb_y<<field_pic >= s->mb_height){
+            if(s->mb_y >= s->mb_height){
                 int left= get_bits_left(&s->gb);
                 int is_d10= s->chroma_format==2 && s->pict_type==FF_I_TYPE && avctx->profile==0 && avctx->level==5
                             && s->intra_dc_precision == 2 && s->q_scale_type == 1 && s->alternate_scan == 0
@@ -1885,8 +1883,9 @@ static int slice_decode_thread(AVCodecContext *c, void *arg){
     MpegEncContext *s= *(void**)arg;
     const uint8_t *buf= s->gb.buffer;
     int mb_y= s->start_mb_y;
+    const int field_pic= s->picture_structure != PICT_FRAME;
 
-    s->error_count= 3*(s->end_mb_y - s->start_mb_y)*s->mb_width;
+    s->error_count= (3*(s->end_mb_y - s->start_mb_y)*s->mb_width) >> field_pic;
 
     for(;;){
         uint32_t start_code;
@@ -2384,8 +2383,12 @@ static int decode_chunks(AVCodecContext *avctx,
         default:
             if (start_code >= SLICE_MIN_START_CODE &&
                 start_code <= SLICE_MAX_START_CODE && last_code!=0) {
-                int mb_y= start_code - SLICE_MIN_START_CODE;
+                const int field_pic= s2->picture_structure != PICT_FRAME;
+                int mb_y= (start_code - SLICE_MIN_START_CODE) << field_pic;
                 last_code= SLICE_MIN_START_CODE;
+
+                if(s2->picture_structure == PICT_BOTTOM_FIELD)
+                    mb_y++;
 
                 if(s2->last_picture_ptr==NULL){
                 /* Skip B-frames if we do not have reference frames and gop is not closed */

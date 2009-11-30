@@ -242,7 +242,7 @@ void mpeg_motion_internal(MpegEncContext *s,
                  uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                  int field_based, int bottom_field, int field_select,
                  uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
-                 int motion_x, int motion_y, int h, int is_mpeg12)
+                 int motion_x, int motion_y, int h, int is_mpeg12, int mb_y)
 {
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
     int dxy, uvdxy, mx, my, src_x, src_y,
@@ -262,7 +262,7 @@ if(s->quarter_sample)
 
     dxy = ((motion_y & 1) << 1) | (motion_x & 1);
     src_x = s->mb_x* 16               + (motion_x >> 1);
-    src_y =(s->mb_y<<(4-field_based)) + (motion_y >> 1);
+    src_y =(   mb_y<<(4-field_based)) + (motion_y >> 1);
 
     if (!is_mpeg12 && s->out_format == FMT_H263) {
         if((s->workaround_bugs & FF_BUG_HPEL_CHROMA) && field_based){
@@ -270,7 +270,7 @@ if(s->quarter_sample)
             my = motion_y >>1;
             uvdxy = ((my & 1) << 1) | (mx & 1);
             uvsrc_x = s->mb_x* 8               + (mx >> 1);
-            uvsrc_y = (s->mb_y<<(3-field_based)) + (my >> 1);
+            uvsrc_y =(   mb_y<<(3-field_based))+ (my >> 1);
         }else{
             uvdxy = dxy | (motion_y & 2) | ((motion_x & 2) >> 1);
             uvsrc_x = src_x>>1;
@@ -281,14 +281,14 @@ if(s->quarter_sample)
         my = motion_y / 4;
         uvdxy = 0;
         uvsrc_x = s->mb_x*8 + mx;
-        uvsrc_y = s->mb_y*8 + my;
+        uvsrc_y =    mb_y*8 + my;
     } else {
         if(s->chroma_y_shift){
             mx = motion_x / 2;
             my = motion_y / 2;
             uvdxy = ((my & 1) << 1) | (mx & 1);
             uvsrc_x = s->mb_x* 8               + (mx >> 1);
-            uvsrc_y = (s->mb_y<<(3-field_based)) + (my >> 1);
+            uvsrc_y =(   mb_y<<(3-field_based))+ (my >> 1);
         } else {
             if(s->chroma_x_shift){
             //Chroma422
@@ -370,18 +370,18 @@ void mpeg_motion(MpegEncContext *s,
                  uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                  int field_based, int bottom_field, int field_select,
                  uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
-                 int motion_x, int motion_y, int h)
+                 int motion_x, int motion_y, int h, int mb_y)
 {
 #if !CONFIG_SMALL
     if(s->out_format == FMT_MPEG1)
         mpeg_motion_internal(s, dest_y, dest_cb, dest_cr, field_based,
                     bottom_field, field_select, ref_picture, pix_op,
-                    motion_x, motion_y, h, 1);
+                    motion_x, motion_y, h, 1, mb_y);
     else
 #endif
         mpeg_motion_internal(s, dest_y, dest_cb, dest_cr, field_based,
                     bottom_field, field_select, ref_picture, pix_op,
-                    motion_x, motion_y, h, 0);
+                    motion_x, motion_y, h, 0, mb_y);
 }
 
 //FIXME move to dsputil, avg variant, 16x16 version
@@ -736,7 +736,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
             mpeg_motion(s, dest_y, dest_cb, dest_cr,
                         0, 0, 0,
                         ref_picture, pix_op,
-                        s->mv[dir][0][0], s->mv[dir][0][1], 16);
+                        s->mv[dir][0][0], s->mv[dir][0][1], 16, mb_y);
         }
         break;
     case MV_TYPE_8X8:
@@ -810,12 +810,12 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
                 mpeg_motion(s, dest_y, dest_cb, dest_cr,
                             1, 0, s->field_select[dir][0],
                             ref_picture, pix_op,
-                            s->mv[dir][0][0], s->mv[dir][0][1], 8);
+                            s->mv[dir][0][0], s->mv[dir][0][1], 8, mb_y);
                 /* bottom field */
                 mpeg_motion(s, dest_y, dest_cb, dest_cr,
                             1, 1, s->field_select[dir][1],
                             ref_picture, pix_op,
-                            s->mv[dir][1][0], s->mv[dir][1][1], 8);
+                            s->mv[dir][1][0], s->mv[dir][1][1], 8, mb_y);
             }
         } else {
             if(s->picture_structure != s->field_select[dir][0] + 1 && s->pict_type != FF_B_TYPE && !s->first_field){
@@ -825,7 +825,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
             mpeg_motion(s, dest_y, dest_cb, dest_cr,
                         0, 0, s->field_select[dir][0],
                         ref_picture, pix_op,
-                        s->mv[dir][0][0], s->mv[dir][0][1], 16);
+                        s->mv[dir][0][0], s->mv[dir][0][1], 16, mb_y>>1);
         }
         break;
     case MV_TYPE_16X8:
@@ -842,7 +842,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
             mpeg_motion(s, dest_y, dest_cb, dest_cr,
                         0, 0, s->field_select[dir][i],
                         ref2picture, pix_op,
-                        s->mv[dir][i][0], s->mv[dir][i][1] + 16*i, 8);
+                        s->mv[dir][i][0], s->mv[dir][i][1] + 16*i, 8, mb_y>>1);
 
             dest_y += 16*s->linesize;
             dest_cb+= (16>>s->chroma_y_shift)*s->uvlinesize;
@@ -857,7 +857,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
                     mpeg_motion(s, dest_y, dest_cb, dest_cr,
                                 1, j, j^i,
                                 ref_picture, pix_op,
-                                s->mv[dir][2*i + j][0], s->mv[dir][2*i + j][1], 8);
+                                s->mv[dir][2*i + j][0], s->mv[dir][2*i + j][1], 8, mb_y);
                 }
                 pix_op = s->dsp.avg_pixels_tab;
             }
@@ -866,7 +866,7 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
                 mpeg_motion(s, dest_y, dest_cb, dest_cr,
                             0, 0, s->picture_structure != i+1,
                             ref_picture, pix_op,
-                            s->mv[dir][2*i][0],s->mv[dir][2*i][1],16);
+                            s->mv[dir][2*i][0],s->mv[dir][2*i][1],16, mb_y>>1);
 
                 // after put we make avg of the same block
                 pix_op=s->dsp.avg_pixels_tab;
