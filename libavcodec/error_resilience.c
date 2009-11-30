@@ -685,6 +685,7 @@ void ff_er_frame_end(MpegEncContext *s){
     if(!s->error_recognition || s->error_count==0 || s->avctx->lowres ||
        s->avctx->hwaccel ||
        s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU ||
+       s->picture_structure != PICT_FRAME || // we dont support ER of field pictures yet, though it should not crash if enabled
        s->error_count==3*s->mb_width*(s->avctx->skip_top + s->avctx->skip_bottom)) return;
 
     if(s->current_picture.motion_val[0] == NULL){
