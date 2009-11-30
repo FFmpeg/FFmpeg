@@ -448,18 +448,20 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 for(i=0;i<2;i++) {
                     if (USES_LIST(mb_type, i)) {
                         int dmx, dmy, mx, my, m;
+                        const int my_shift= s->picture_structure == PICT_FRAME;
+
                         mx = mpeg_decode_motion(s, s->mpeg_f_code[i][0],
                                                 s->last_mv[i][0][0]);
                         s->last_mv[i][0][0] = mx;
                         s->last_mv[i][1][0] = mx;
                         dmx = get_dmv(s);
                         my = mpeg_decode_motion(s, s->mpeg_f_code[i][1],
-                                                s->last_mv[i][0][1] >> 1);
+                                                s->last_mv[i][0][1] >> my_shift);
                         dmy = get_dmv(s);
 
 
-                        s->last_mv[i][0][1] = my<<1;
-                        s->last_mv[i][1][1] = my<<1;
+                        s->last_mv[i][0][1] = my<<my_shift;
+                        s->last_mv[i][1][1] = my<<my_shift;
 
                         s->mv[i][0][0] = mx;
                         s->mv[i][0][1] = my;
