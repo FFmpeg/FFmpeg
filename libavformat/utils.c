@@ -1865,6 +1865,7 @@ static void av_estimate_timings(AVFormatContext *ic, int64_t old_offset)
            the components */
         fill_all_stream_timings(ic);
     } else {
+        av_log(ic, AV_LOG_WARNING, "Estimating duration from bitrate, this may be inaccurate\n");
         /* less precise: use bitrate info */
         av_estimate_timings_from_bit_rate(ic);
     }
