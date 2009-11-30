@@ -1174,7 +1174,7 @@ typedef struct Mpeg1Context {
     int save_aspect_info;
     int save_width, save_height, save_progressive_seq;
     AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
-
+    int sync;                        ///< Did we reach a sync point like a GOP/SEQ/KEYFrame?
 } Mpeg1Context;
 
 static av_cold int mpeg_decode_init(AVCodecContext *avctx)
@@ -2315,6 +2315,7 @@ static int decode_chunks(AVCodecContext *avctx,
             if(last_code == 0){
             mpeg1_decode_sequence(avctx, buf_ptr,
                                     input_size);
+                s->sync=1;
             }else{
                 av_log(avctx, AV_LOG_ERROR, "ignoring SEQ_START_CODE after %X\n", last_code);
             }
@@ -2375,6 +2376,7 @@ static int decode_chunks(AVCodecContext *avctx,
             s2->first_field=0;
             mpeg_decode_gop(avctx,
                                     buf_ptr, input_size);
+                s->sync=1;
             }else{
                 av_log(avctx, AV_LOG_ERROR, "ignoring GOP_START_CODE after %X\n", last_code);
             }
@@ -2392,9 +2394,11 @@ static int decode_chunks(AVCodecContext *avctx,
                             break;
                     }
                 }
+                if(s2->pict_type==FF_I_TYPE)
+                    s->sync=1;
                 if(s2->next_picture_ptr==NULL){
                 /* Skip P-frames if we do not have a reference frame or we have an invalid header. */
-                    if(s2->pict_type==FF_P_TYPE && (s2->first_field || s2->picture_structure==PICT_FRAME)) break;
+                    if(s2->pict_type==FF_P_TYPE && !s->sync) break;
                 }
                 /* Skip B-frames if we are in a hurry. */
                 if(avctx->hurry_up && s2->pict_type==FF_B_TYPE) break;
@@ -2483,6 +2487,14 @@ static int decode_chunks(AVCodecContext *avctx,
     }
 }
 
+static void flush(AVCodecContext *avctx){
+    Mpeg1Context *s = avctx->priv_data;
+
+    s->sync=0;
+
+    ff_mpeg_flush(avctx);
+}
+
 static int mpeg_decode_end(AVCodecContext *avctx)
 {
     Mpeg1Context *s = avctx->priv_data;
@@ -2502,7 +2514,7 @@ AVCodec mpeg1video_decoder = {
     mpeg_decode_end,
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
-    .flush= ff_mpeg_flush,
+    .flush= flush,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
 };
 
@@ -2516,7 +2528,7 @@ AVCodec mpeg2video_decoder = {
     mpeg_decode_end,
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
-    .flush= ff_mpeg_flush,
+    .flush= flush,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-2 video"),
 };
 
@@ -2531,7 +2543,7 @@ AVCodec mpegvideo_decoder = {
     mpeg_decode_end,
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
-    .flush= ff_mpeg_flush,
+    .flush= flush,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
 };
 
@@ -2562,7 +2574,7 @@ AVCodec mpeg_xvmc_decoder = {
     mpeg_decode_end,
     mpeg_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED| CODEC_CAP_HWACCEL | CODEC_CAP_DELAY,
-    .flush= ff_mpeg_flush,
+    .flush= flush,
     .long_name = NULL_IF_CONFIG_SMALL("MPEG-1/2 video XvMC (X-Video Motion Compensation)"),
 };
 
@@ -2579,7 +2591,7 @@ AVCodec mpeg_vdpau_decoder = {
     mpeg_decode_end,
     mpeg_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
-    .flush= ff_mpeg_flush,
+    .flush= flush,
     .long_name = NULL_IF_CONFIG_SMALL("MPEG-1/2 video (VDPAU acceleration)"),
 };
 #endif
@@ -2595,7 +2607,7 @@ AVCodec mpeg1_vdpau_decoder = {
     mpeg_decode_end,
     mpeg_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
-    .flush= ff_mpeg_flush,
+    .flush= flush,
     .long_name = NULL_IF_CONFIG_SMALL("MPEG-1 video (VDPAU acceleration)"),
 };
 #endif
