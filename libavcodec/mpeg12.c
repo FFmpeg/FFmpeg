@@ -2434,25 +2434,6 @@ static int decode_chunks(AVCodecContext *avctx,
                     return -1;
                 }
 
-                if(s2->last_picture_ptr==NULL && s2->pict_type!=FF_I_TYPE){
-                    int i;
-                    /* Allocate a dummy frame */
-                    i= ff_find_unused_picture(s2, 0);
-                    s2->last_picture_ptr= &s2->picture[i];
-                    if(ff_alloc_picture(s2, s2->last_picture_ptr, 0) < 0)
-                        return -1;
-                    s2->last_picture= *s2->last_picture_ptr;
-                }
-                if(s2->next_picture_ptr==NULL && s2->pict_type==FF_B_TYPE){
-                    int i;
-                    /* Allocate a dummy frame */
-                    i= ff_find_unused_picture(s2, 0);
-                    s2->next_picture_ptr= &s2->picture[i];
-                    if(ff_alloc_picture(s2, s2->next_picture_ptr, 0) < 0)
-                        return -1;
-                    s2->next_picture= *s2->next_picture_ptr;
-                }
-
                 if (avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU) {
                     s->slice_count++;
                     break;

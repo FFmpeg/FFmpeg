@@ -894,7 +894,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         }
       }
     }
-alloc:
+
     if(!s->encoding){
         /* release non reference frames */
         for(i=0; i<MAX_PICTURE_COUNT; i++){
@@ -946,14 +946,26 @@ alloc:
         s->current_picture_ptr ? s->current_picture_ptr->data[0] : NULL,
         s->pict_type, s->dropable);*/
 
+    if(s->codec_id != CODEC_ID_H264){
+        if((s->last_picture_ptr==NULL || s->last_picture_ptr->data[0]==NULL) && s->pict_type!=FF_I_TYPE){
+            av_log(avctx, AV_LOG_ERROR, "warning: first frame is no keyframe\n");
+            /* Allocate a dummy frame */
+            i= ff_find_unused_picture(s, 0);
+            s->last_picture_ptr= &s->picture[i];
+            if(ff_alloc_picture(s, s->last_picture_ptr, 0) < 0)
+                return -1;
+        }
+        if((s->next_picture_ptr==NULL || s->next_picture_ptr->data[0]==NULL) && s->pict_type==FF_B_TYPE){
+            /* Allocate a dummy frame */
+            i= ff_find_unused_picture(s, 0);
+            s->next_picture_ptr= &s->picture[i];
+            if(ff_alloc_picture(s, s->next_picture_ptr, 0) < 0)
+                return -1;
+        }
+    }
+
     if(s->last_picture_ptr) ff_copy_picture(&s->last_picture, s->last_picture_ptr);
     if(s->next_picture_ptr) ff_copy_picture(&s->next_picture, s->next_picture_ptr);
-
-    if(s->pict_type != FF_I_TYPE && (s->last_picture_ptr==NULL || s->last_picture_ptr->data[0]==NULL) && !s->dropable && s->codec_id != CODEC_ID_H264){
-        av_log(avctx, AV_LOG_ERROR, "warning: first frame is no keyframe\n");
-        assert(s->pict_type != FF_B_TYPE); //these should have been dropped if we don't have a reference
-        goto alloc;
-    }
 
     assert(s->pict_type == FF_I_TYPE || (s->last_picture_ptr && s->last_picture_ptr->data[0]));
 
