@@ -1673,10 +1673,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
     s->resync_mb_x=
     s->resync_mb_y= -1;
 
-    if (mb_y >= s->mb_height){
-        av_log(s->avctx, AV_LOG_ERROR, "slice below image (%d >= %d)\n", mb_y, s->mb_height);
-        return -1;
-    }
+    assert(mb_y < s->mb_height);
 
     init_get_bits(&s->gb, *buf, buf_size*8);
 
@@ -2389,6 +2386,11 @@ static int decode_chunks(AVCodecContext *avctx,
 
                 if(s2->picture_structure == PICT_BOTTOM_FIELD)
                     mb_y++;
+
+                if (mb_y >= s2->mb_height){
+                    av_log(s2->avctx, AV_LOG_ERROR, "slice below image (%d >= %d)\n", mb_y, s2->mb_height);
+                    return -1;
+                }
 
                 if(s2->last_picture_ptr==NULL){
                 /* Skip B-frames if we do not have reference frames and gop is not closed */
