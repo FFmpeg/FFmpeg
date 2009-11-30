@@ -256,11 +256,11 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 }
 #endif
 
-static inline void put_sbits(PutBitContext *pb, int bits, int32_t val)
+static inline void put_sbits(PutBitContext *pb, int n, int32_t value)
 {
-    assert(bits >= 0 && bits <= 31);
+    assert(n >= 0 && n <= 31);
 
-    put_bits(pb, bits, val & ((1<<bits)-1));
+    put_bits(pb, n, value & ((1<<n)-1));
 }
 
 /**
