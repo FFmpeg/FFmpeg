@@ -314,7 +314,7 @@ if(s->quarter_sample)
             if(is_mpeg12 || s->codec_id == CODEC_ID_MPEG2VIDEO ||
                s->codec_id == CODEC_ID_MPEG1VIDEO){
                 av_log(s->avctx,AV_LOG_DEBUG,
-                        "MPEG motion vector out of boundary\n");
+                        "MPEG motion vector out of boundary (%d %d)\n", src_x, src_y);
                 return;
             }
             ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, s->linesize,
