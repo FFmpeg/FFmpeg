@@ -642,6 +642,18 @@ static av_cold int png_dec_init(AVCodecContext *avctx){
     return 0;
 }
 
+static av_cold int png_dec_end(AVCodecContext *avctx)
+{
+    PNGDecContext *s = avctx->priv_data;
+
+    if (s->picture1.data[0])
+        avctx->release_buffer(avctx, &s->picture1);
+    if (s->picture2.data[0])
+        avctx->release_buffer(avctx, &s->picture2);
+
+    return 0;
+}
+
 AVCodec png_decoder = {
     "png",
     CODEC_TYPE_VIDEO,
@@ -649,7 +661,7 @@ AVCodec png_decoder = {
     sizeof(PNGDecContext),
     png_dec_init,
     NULL,
-    NULL, //decode_end,
+    png_dec_end,
     decode_frame,
     CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
     NULL,
