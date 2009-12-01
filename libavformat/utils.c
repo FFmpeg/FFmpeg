@@ -1513,7 +1513,8 @@ static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos,
 static int av_seek_frame_generic(AVFormatContext *s,
                                  int stream_index, int64_t timestamp, int flags)
 {
-    int index, ret;
+    int index;
+    int64_t ret;
     AVStream *st;
     AVIndexEntry *ie;
 
