@@ -102,8 +102,9 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
             if (url_read_complete(h, buf, 3) != 3)
                 return AVERROR(EIO);
             data_size = AV_RB24(buf);
-            if (url_read_complete(h, &type, 1) != 1)
+            if (url_read_complete(h, buf, 1) != 1)
                 return AVERROR(EIO);
+            type = buf[0];
             if (hdr == RTMP_PS_TWELVEBYTES) {
                 if (url_read_complete(h, buf, 4) != 4)
                     return AVERROR(EIO);
