@@ -151,7 +151,15 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
     int off = 0;
 
     //TODO: header compression
-    bytestream_put_byte(&p, pkt->channel_id | (mode << 6));
+    if (pkt->channel_id < 64) {
+        bytestream_put_byte(&p, pkt->channel_id | (mode << 6));
+    } else if (pkt->channel_id < 64 + 256) {
+        bytestream_put_byte(&p, 0               | (mode << 6));
+        bytestream_put_byte(&p, pkt->channel_id - 64);
+    } else {
+        bytestream_put_byte(&p, 1               | (mode << 6));
+        bytestream_put_le16(&p, pkt->channel_id - 64);
+    }
     if (mode != RTMP_PS_ONEBYTE) {
         bytestream_put_be24(&p, pkt->timestamp >= 0xFFFFFF ? 0xFFFFFF : pkt->timestamp);
         if (mode != RTMP_PS_FOURBYTES) {
