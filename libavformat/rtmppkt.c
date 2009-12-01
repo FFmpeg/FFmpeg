@@ -111,6 +111,11 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
                 extra = AV_RL32(buf);
             }
         }
+        if (timestamp == 0xFFFFFF) {
+            if (url_read_complete(h, buf, 4) != 4)
+                return AVERROR(EIO);
+            timestamp = AV_RB32(buf);
+        }
     }
     if (ff_rtmp_packet_create(p, channel_id, type, timestamp, data_size))
         return -1;
@@ -148,13 +153,15 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
     //TODO: header compression
     bytestream_put_byte(&p, pkt->channel_id | (mode << 6));
     if (mode != RTMP_PS_ONEBYTE) {
-        bytestream_put_be24(&p, pkt->timestamp);
+        bytestream_put_be24(&p, pkt->timestamp >= 0xFFFFFF ? 0xFFFFFF : pkt->timestamp);
         if (mode != RTMP_PS_FOURBYTES) {
             bytestream_put_be24(&p, pkt->data_size);
             bytestream_put_byte(&p, pkt->type);
             if (mode == RTMP_PS_TWELVEBYTES)
                 bytestream_put_le32(&p, pkt->extra);
         }
+        if (pkt->timestamp >= 0xFFFFFF)
+            bytestream_put_be32(&p, pkt->timestamp);
     }
     url_write(h, pkt_hdr, p-pkt_hdr);
     while (off < pkt->data_size) {
