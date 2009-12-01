@@ -163,15 +163,18 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
         bytestream_put_le16(&p, pkt->channel_id - 64);
     }
     if (mode != RTMP_PS_ONEBYTE) {
-        bytestream_put_be24(&p, pkt->timestamp >= 0xFFFFFF ? 0xFFFFFF : pkt->timestamp);
+        uint32_t timestamp = pkt->timestamp;
+        if (mode != RTMP_PS_TWELVEBYTES)
+            timestamp -= prev_pkt[pkt->channel_id].timestamp;
+        bytestream_put_be24(&p, timestamp >= 0xFFFFFF ? 0xFFFFFF : timestamp);
         if (mode != RTMP_PS_FOURBYTES) {
             bytestream_put_be24(&p, pkt->data_size);
             bytestream_put_byte(&p, pkt->type);
             if (mode == RTMP_PS_TWELVEBYTES)
                 bytestream_put_le32(&p, pkt->extra);
         }
-        if (pkt->timestamp >= 0xFFFFFF)
-            bytestream_put_be32(&p, pkt->timestamp);
+        if (timestamp >= 0xFFFFFF)
+            bytestream_put_be32(&p, timestamp);
     }
     url_write(h, pkt_hdr, p-pkt_hdr);
     while (off < pkt->data_size) {
