@@ -343,8 +343,10 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!img->is_pipe) {
         if (av_get_frame_filename(filename, sizeof(filename),
-                                  img->path, img->img_number) < 0 && img->img_number>1)
+                                  img->path, img->img_number) < 0 && img->img_number>1) {
+            av_log(s, AV_LOG_ERROR, "Could not get frame filename from pattern\n");
             return AVERROR(EIO);
+        }
         for(i=0; i<3; i++){
             if (url_fopen(&pb[i], filename, URL_WRONLY) < 0) {
                 av_log(s, AV_LOG_ERROR, "Could not open file : %s\n",filename);
