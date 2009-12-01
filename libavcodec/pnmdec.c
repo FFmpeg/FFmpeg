@@ -21,6 +21,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "put_bits.h"
 #include "pnm.h"
 
 
@@ -32,8 +33,9 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     PNMContext * const s = avctx->priv_data;
     AVFrame *picture     = data;
     AVFrame * const p    = (AVFrame*)&s->picture;
-    int i, n, linesize, h, upgrade = 0;
+    int i, j, n, linesize, h, upgrade = 0;
     unsigned char *ptr;
+    int components, sample_len;
 
     s->bytestream_start =
     s->bytestream       = buf;
@@ -58,29 +60,60 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     case PIX_FMT_RGB48BE:
         n = avctx->width * 6;
+        components=3;
+        sample_len=16;
         goto do_read;
     case PIX_FMT_RGB24:
         n = avctx->width * 3;
+        components=3;
+        sample_len=8;
         goto do_read;
     case PIX_FMT_GRAY8:
         n = avctx->width;
+        components=1;
+        sample_len=8;
         if (s->maxval < 255)
             upgrade = 1;
         goto do_read;
     case PIX_FMT_GRAY16BE:
     case PIX_FMT_GRAY16LE:
         n = avctx->width * 2;
+        components=1;
+        sample_len=16;
         if (s->maxval < 65535)
             upgrade = 2;
         goto do_read;
     case PIX_FMT_MONOWHITE:
     case PIX_FMT_MONOBLACK:
         n = (avctx->width + 7) >> 3;
+        components=1;
+        sample_len=1;
     do_read:
         ptr      = p->data[0];
         linesize = p->linesize[0];
         if (s->bytestream + n * avctx->height > s->bytestream_end)
             return -1;
+        if(s->type < 4){
+            for (i=0; i<avctx->height; i++) {
+                PutBitContext pb;
+                init_put_bits(&pb, ptr, linesize);
+                for(j=0; j<avctx->width * components; j++){
+                    unsigned int c=0;
+                    int v=0;
+                    while(s->bytestream < s->bytestream_end && (*s->bytestream < '0' || *s->bytestream > '9' ))
+                        s->bytestream++;
+                    if(s->bytestream >= s->bytestream_end)
+                        return -1;
+                    do{
+                        v= 10*v + c;
+                        c= (*s->bytestream++) - '0';
+                    }while(c <= 9);
+                    put_bits(&pb, sample_len, (((1<<sample_len)-1)*v + (s->maxval>>1))/s->maxval);
+                }
+                flush_put_bits(&pb);
+                ptr+= linesize;
+            }
+        }else{
         for (i = 0; i < avctx->height; i++) {
             if (!upgrade)
                 memcpy(ptr, s->bytestream, n);
@@ -97,6 +130,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             }
             s->bytestream += n;
             ptr           += linesize;
+        }
         }
         break;
     case PIX_FMT_YUV420P:
