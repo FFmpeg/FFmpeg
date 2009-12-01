@@ -270,7 +270,7 @@ static void av_unused put_bits32(PutBitContext *s, uint32_t value)
 {
     int lo = value & 0xffff;
     int hi = value >> 16;
-#ifdef ALT_BITSTREAM_WRITER_LE
+#ifdef BITSTREAM_WRITER_LE
     put_bits(s, 16, lo);
     put_bits(s, 16, hi);
 #else
