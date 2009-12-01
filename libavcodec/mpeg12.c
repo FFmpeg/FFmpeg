@@ -1694,6 +1694,9 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
 
     s->mb_x=0;
 
+    if(mb_y==0 && s->codec_tag == AV_RL32("SLIF")){
+        skip_bits1(&s->gb);
+    }else{
     for(;;) {
         int code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
         if (code < 0){
@@ -1710,6 +1713,8 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
             break;
         }
     }
+    }
+
     if(s->mb_x >= (unsigned)s->mb_width){
         av_log(s->avctx, AV_LOG_ERROR, "initial skip overflow\n");
         return -1;

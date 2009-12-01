@@ -116,6 +116,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_MPEG2VIDEO,   MKTAG('D', 'V', 'R', ' ') },
     { CODEC_ID_MPEG2VIDEO,   MKTAG('M', 'M', 'E', 'S') },
     { CODEC_ID_MPEG2VIDEO,   MKTAG('L', 'M', 'P', '2') }, /* Lead MPEG2 in avi */
+    { CODEC_ID_MPEG2VIDEO,   MKTAG('s', 'l', 'i', 'f') },
     { CODEC_ID_MJPEG,        MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG,        MKTAG('L', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG,        MKTAG('d', 'm', 'b', '1') },
