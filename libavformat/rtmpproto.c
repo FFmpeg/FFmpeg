@@ -63,8 +63,6 @@ typedef struct RTMPContext {
     uint8_t*      flv_data;                   ///< buffer with data for demuxer
     int           flv_size;                   ///< current buffer size
     int           flv_off;                    ///< number of bytes read from current buffer
-    uint32_t      video_ts;                   ///< current video timestamp in milliseconds
-    uint32_t      audio_ts;                   ///< current audio timestamp in milliseconds
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -515,13 +513,6 @@ static int get_packet(URLContext *s, int for_header)
             uint8_t *p;
             uint32_t ts = rpkt.timestamp;
 
-            if (rpkt.type == RTMP_PT_VIDEO) {
-                rt->video_ts += rpkt.timestamp;
-                ts = rt->video_ts;
-            } else if (rpkt.type == RTMP_PT_AUDIO) {
-                rt->audio_ts += rpkt.timestamp;
-                ts = rt->audio_ts;
-            }
             // generate packet header and put data into buffer for FLV demuxer
             rt->flv_off  = 0;
             rt->flv_size = rpkt.data_size + 15;

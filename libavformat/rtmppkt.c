@@ -116,6 +116,8 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
                 return AVERROR(EIO);
             timestamp = AV_RB32(buf);
         }
+        if (hdr != RTMP_PS_TWELVEBYTES)
+            timestamp += prev_pkt[channel_id].timestamp;
     }
     if (ff_rtmp_packet_create(p, channel_id, type, timestamp, data_size))
         return -1;
