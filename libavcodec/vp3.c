@@ -1163,6 +1163,8 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     int ac_y_table;
     int ac_c_table;
     int residual_eob_run = 0;
+    VLC *y_tables[64];
+    VLC *c_tables[64];
 
     /* fetch the DC table indexes */
     dc_y_table = get_bits(gb, 4);
@@ -1192,40 +1194,33 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     ac_y_table = get_bits(gb, 4);
     ac_c_table = get_bits(gb, 4);
 
-    /* unpack the group 1 AC coefficients (coeffs 1-5) */
+    /* build tables of AC VLC tables */
     for (i = 1; i <= 5; i++) {
-        residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_1[ac_y_table], i,
-            1, residual_eob_run);
-
-        residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_1[ac_c_table], i,
-            0, residual_eob_run);
+        y_tables[i] = &s->ac_vlc_1[ac_y_table];
+        c_tables[i] = &s->ac_vlc_1[ac_c_table];
     }
-
-    /* unpack the group 2 AC coefficients (coeffs 6-14) */
     for (i = 6; i <= 14; i++) {
-        residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_2[ac_y_table], i,
-            1, residual_eob_run);
-
-        residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_2[ac_c_table], i,
-            0, residual_eob_run);
+        y_tables[i] = &s->ac_vlc_2[ac_y_table];
+        c_tables[i] = &s->ac_vlc_2[ac_c_table];
     }
-
-    /* unpack the group 3 AC coefficients (coeffs 15-27) */
     for (i = 15; i <= 27; i++) {
-        residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_3[ac_y_table], i,
-            1, residual_eob_run);
-
-        residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_3[ac_c_table], i,
-            0, residual_eob_run);
+        y_tables[i] = &s->ac_vlc_3[ac_y_table];
+        c_tables[i] = &s->ac_vlc_3[ac_c_table];
+    }
+    for (i = 28; i <= 63; i++) {
+        y_tables[i] = &s->ac_vlc_4[ac_y_table];
+        c_tables[i] = &s->ac_vlc_4[ac_c_table];
     }
 
-    /* unpack the group 4 AC coefficients (coeffs 28-63) */
-    for (i = 28; i <= 63; i++) {
-        residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_4[ac_y_table], i,
-            1, residual_eob_run);
+    /* decode all AC coefficents */
+    for (i = 1; i <= 63; i++) {
+        if (s->fragment_list_y_head != -1)
+            residual_eob_run = unpack_vlcs(s, gb, y_tables[i], i,
+                1, residual_eob_run);
 
-        residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_4[ac_c_table], i,
-            0, residual_eob_run);
+        if (s->fragment_list_c_head != -1)
+            residual_eob_run = unpack_vlcs(s, gb, c_tables[i], i,
+                0, residual_eob_run);
     }
 
     return 0;
