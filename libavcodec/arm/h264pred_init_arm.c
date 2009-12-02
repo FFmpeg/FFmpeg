@@ -62,7 +62,6 @@ static void ff_h264_pred_init_neon(H264PredContext *h, int codec_id)
     h->pred16x16[DC_PRED8x8     ] = ff_pred16x16_dc_neon;
     h->pred16x16[VERT_PRED8x8   ] = ff_pred16x16_vert_neon;
     h->pred16x16[HOR_PRED8x8    ] = ff_pred16x16_hor_neon;
-    h->pred16x16[PLANE_PRED8x8  ] = ff_pred16x16_plane_neon;
     h->pred16x16[LEFT_DC_PRED8x8] = ff_pred16x16_left_dc_neon;
     h->pred16x16[TOP_DC_PRED8x8 ] = ff_pred16x16_top_dc_neon;
     h->pred16x16[DC_128_PRED8x8 ] = ff_pred16x16_128_dc_neon;
