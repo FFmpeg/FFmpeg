@@ -58,17 +58,16 @@ typedef struct {
 } GIFContext;
 
 /* GIF header */
-static int gif_image_write_header(uint8_t **bytestream,
-                                  int width, int height,
-                                  uint32_t *palette)
+static int gif_image_write_header(AVCodecContext *avctx,
+                                  uint8_t **bytestream, uint32_t *palette)
 {
     int i;
     unsigned int v;
 
     bytestream_put_buffer(bytestream, "GIF", 3);
     bytestream_put_buffer(bytestream, "89a", 3);
-    bytestream_put_le16(bytestream, width);
-    bytestream_put_le16(bytestream, height);
+    bytestream_put_le16(bytestream, avctx->width);
+    bytestream_put_le16(bytestream, avctx->height);
 
     bytestream_put_byte(bytestream, 0xf7); /* flags: global clut, 256 entries */
     bytestream_put_byte(bytestream, 0x1f); /* background color index */
@@ -83,8 +82,7 @@ static int gif_image_write_header(uint8_t **bytestream,
     return 0;
 }
 
-static int gif_image_write_image(uint8_t **bytestream,
-                                 int width, int height,
+static int gif_image_write_image(AVCodecContext *avctx, uint8_t **bytestream,
                                  const uint8_t *buf, int linesize)
 {
     PutBitContext p;
@@ -96,14 +94,14 @@ static int gif_image_write_image(uint8_t **bytestream,
     bytestream_put_byte(bytestream, 0x2c);
     bytestream_put_le16(bytestream, 0);
     bytestream_put_le16(bytestream, 0);
-    bytestream_put_le16(bytestream, width);
-    bytestream_put_le16(bytestream, height);
+    bytestream_put_le16(bytestream, avctx->width);
+    bytestream_put_le16(bytestream, avctx->height);
     bytestream_put_byte(bytestream, 0x00); /* flags */
     /* no local clut */
 
     bytestream_put_byte(bytestream, 0x08);
 
-    left= width * height;
+    left= avctx->width * avctx->height;
 
     init_put_bits(&p, buffer, 130);
 
@@ -112,7 +110,7 @@ static int gif_image_write_image(uint8_t **bytestream,
  * but it's still the same bitstream between packets (no flush !)
  */
     ptr = buf;
-    w = width;
+    w = avctx->width;
     while(left>0) {
 
         put_bits(&p, 9, 0x0100); /* clear code */
@@ -120,7 +118,7 @@ static int gif_image_write_image(uint8_t **bytestream,
         for(i=(left<GIF_CHUNKS)?left:GIF_CHUNKS;i;i--) {
             put_bits(&p, 9, *ptr++);
             if (--w == 0) {
-                w = width;
+                w = avctx->width;
                 buf += linesize;
                 ptr = buf;
             }
@@ -161,8 +159,8 @@ static int gif_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     *p = *pict;
     p->pict_type = FF_I_TYPE;
     p->key_frame = 1;
-    gif_image_write_header(&outbuf_ptr, avctx->width, avctx->height, (uint32_t *)pict->data[1]);
-    gif_image_write_image(&outbuf_ptr, avctx->width, avctx->height, pict->data[0], pict->linesize[0]);
+    gif_image_write_header(avctx, &outbuf_ptr, (uint32_t *)pict->data[1]);
+    gif_image_write_image(avctx, &outbuf_ptr, pict->data[0], pict->linesize[0]);
     return outbuf_ptr - outbuf;
 }
 
