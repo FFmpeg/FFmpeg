@@ -84,7 +84,7 @@ static int gif_image_write_header(uint8_t **bytestream,
 }
 
 static int gif_image_write_image(uint8_t **bytestream,
-                                 int x1, int y1, int width, int height,
+                                 int width, int height,
                                  const uint8_t *buf, int linesize, int pix_fmt)
 {
     PutBitContext p;
@@ -94,8 +94,8 @@ static int gif_image_write_image(uint8_t **bytestream,
     /* image block */
 
     bytestream_put_byte(bytestream, 0x2c);
-    bytestream_put_le16(bytestream, x1);
-    bytestream_put_le16(bytestream, y1);
+    bytestream_put_le16(bytestream, 0);
+    bytestream_put_le16(bytestream, 0);
     bytestream_put_le16(bytestream, width);
     bytestream_put_le16(bytestream, height);
     bytestream_put_byte(bytestream, 0x00); /* flags */
@@ -162,7 +162,7 @@ static int gif_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     p->pict_type = FF_I_TYPE;
     p->key_frame = 1;
     gif_image_write_header(&outbuf_ptr, avctx->width, avctx->height, (uint32_t *)pict->data[1]);
-    gif_image_write_image(&outbuf_ptr, 0, 0, avctx->width, avctx->height, pict->data[0], pict->linesize[0], PIX_FMT_PAL8);
+    gif_image_write_image(&outbuf_ptr, avctx->width, avctx->height, pict->data[0], pict->linesize[0], PIX_FMT_PAL8);
     return outbuf_ptr - outbuf;
 }
 
