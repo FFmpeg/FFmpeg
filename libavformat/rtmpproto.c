@@ -57,6 +57,7 @@ typedef struct RTMPContext {
     URLContext*   stream;                     ///< TCP stream used in interactions with RTMP server
     RTMPPacket    prev_pkt[2][RTMP_CHANNELS]; ///< packet history used when reading and sending packets
     int           chunk_size;                 ///< size of the chunks RTMP packets are divided into
+    int           is_input;                   ///< input/output flag
     char          playpath[256];              ///< path to filename to play (with possible "mp4:" prefix)
     ClientState   state;                      ///< current state
     int           main_channel_id;            ///< an additional channel ID which is used for some invocations
@@ -564,15 +565,14 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     RTMPContext *rt;
     char proto[8], hostname[256], path[1024], app[128], *fname;
     uint8_t buf[2048];
-    int port, is_input;
+    int port;
     int ret;
-
-    is_input = !(flags & URL_WRONLY);
 
     rt = av_mallocz(sizeof(RTMPContext));
     if (!rt)
         return AVERROR(ENOMEM);
     s->priv_data = rt;
+    rt->is_input = !(flags & URL_WRONLY);
 
     url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
               path, sizeof(path), s->filename);
@@ -586,7 +586,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         goto fail;
     }
 
-    if (!is_input) {
+    if (!rt->is_input) {
         av_log(LOG_CONTEXT, AV_LOG_ERROR, "RTMP output is not supported yet.\n");
         goto fail;
     } else {
