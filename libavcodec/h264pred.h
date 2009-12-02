@@ -84,5 +84,6 @@ typedef struct H264PredContext{
 }H264PredContext;
 
 void ff_h264_pred_init(H264PredContext *h, int codec_id);
+void ff_h264_pred_init_arm(H264PredContext *h, int codec_id);
 
 #endif /* AVCODEC_H264PRED_H */
