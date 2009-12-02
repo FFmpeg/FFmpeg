@@ -390,7 +390,7 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
         if ((ret = set_default_channel_config(ac, new_che_pos, channel_config)))
             return ret;
     }
-    if ((ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config, OC_LOCKED)))
+    if ((ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config, OC_GLOBAL_HDR)))
         return ret;
 
     if (extension_flag) {
