@@ -24,11 +24,7 @@
         .text
 
 function ff_h264_idct_add_neon, export=1
-        mov             r3,  #(1<<5)
-        vmov.i16        d16, #0
-        vmov.16         d16[0],   r3
         vld1.64         {d0-d3},  [r1,:128]
-        vadd.i16        d0,  d0,  d16
 
         vswp            d1,  d2
         vadd.i16        d4,  d0,  d1
@@ -58,8 +54,8 @@ function ff_h264_idct_add_neon, export=1
         vadd.i16        q0,  q2,  q3
         vsub.i16        q1,  q2,  q3
 
-        vshr.s16        q0,  q0,  #6
-        vshr.s16        q1,  q1,  #6
+        vrshr.s16       q0,  q0,  #6
+        vrshr.s16       q1,  q1,  #6
 
         vaddw.u8        q0,  q0,  d18
         vaddw.u8        q1,  q1,  d19
