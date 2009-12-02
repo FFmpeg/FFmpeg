@@ -530,7 +530,8 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     // identification header
     init_put_bits(&pb, p, buffer_len);
     put_bits(&pb, 8, 1); //magic
-    ff_put_string(&pb, "vorbis", 0);
+    for (i = 0; "vorbis"[i]; i++)
+        put_bits(&pb, 8, "vorbis"[i]);
     put_bits32(&pb, 0); // version
     put_bits(&pb,  8, venc->channels);
     put_bits32(&pb, venc->sample_rate);
@@ -549,7 +550,8 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     // comment header
     init_put_bits(&pb, p, buffer_len);
     put_bits(&pb, 8, 3); //magic
-    ff_put_string(&pb, "vorbis", 0);
+    for (i = 0; "vorbis"[i]; i++)
+        put_bits(&pb, 8, "vorbis"[i]);
     put_bits32(&pb, 0); // vendor length TODO
     put_bits32(&pb, 0); // amount of comments
     put_bits(&pb,  1, 1); // framing
@@ -562,7 +564,8 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
     // setup header
     init_put_bits(&pb, p, buffer_len);
     put_bits(&pb, 8, 5); //magic
-    ff_put_string(&pb, "vorbis", 0);
+    for (i = 0; "vorbis"[i]; i++)
+        put_bits(&pb, 8, "vorbis"[i]);
 
     // codebooks
     put_bits(&pb, 8, venc->ncodebooks - 1);
