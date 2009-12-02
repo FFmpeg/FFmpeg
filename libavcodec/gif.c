@@ -53,6 +53,10 @@
 /* bitstream minipacket size */
 #define GIF_CHUNKS 100
 
+typedef struct {
+    AVFrame picture;
+} GIFContext;
+
 /* GIF header */
 static int gif_image_write_header(uint8_t **bytestream,
                                   int width, int height,
@@ -137,10 +141,6 @@ static int gif_image_write_image(uint8_t **bytestream,
     bytestream_put_byte(bytestream, 0x3b);
     return 0;
 }
-
-typedef struct {
-    AVFrame picture;
-} GIFContext;
 
 static av_cold int gif_encode_init(AVCodecContext *avctx)
 {
