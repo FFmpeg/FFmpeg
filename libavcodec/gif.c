@@ -85,7 +85,7 @@ static int gif_image_write_header(uint8_t **bytestream,
 
 static int gif_image_write_image(uint8_t **bytestream,
                                  int width, int height,
-                                 const uint8_t *buf, int linesize, int pix_fmt)
+                                 const uint8_t *buf, int linesize)
 {
     PutBitContext p;
     uint8_t buffer[200]; /* 100 * 9 / 8 = 113 */
@@ -162,7 +162,7 @@ static int gif_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     p->pict_type = FF_I_TYPE;
     p->key_frame = 1;
     gif_image_write_header(&outbuf_ptr, avctx->width, avctx->height, (uint32_t *)pict->data[1]);
-    gif_image_write_image(&outbuf_ptr, avctx->width, avctx->height, pict->data[0], pict->linesize[0], PIX_FMT_PAL8);
+    gif_image_write_image(&outbuf_ptr, avctx->width, avctx->height, pict->data[0], pict->linesize[0]);
     return outbuf_ptr - outbuf;
 }
 
