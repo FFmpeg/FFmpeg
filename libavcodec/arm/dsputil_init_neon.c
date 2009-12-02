@@ -125,9 +125,11 @@ void ff_avg_h264_qpel8_mc33_neon(uint8_t *, uint8_t *, int);
 
 void ff_put_h264_chroma_mc8_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_put_h264_chroma_mc4_neon(uint8_t *, uint8_t *, int, int, int, int);
+void ff_put_h264_chroma_mc2_neon(uint8_t *, uint8_t *, int, int, int, int);
 
 void ff_avg_h264_chroma_mc8_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_avg_h264_chroma_mc4_neon(uint8_t *, uint8_t *, int, int, int, int);
+void ff_avg_h264_chroma_mc2_neon(uint8_t *, uint8_t *, int, int, int, int);
 
 void ff_h264_v_loop_filter_luma_neon(uint8_t *pix, int stride, int alpha,
                                      int beta, int8_t *tc0);
@@ -272,9 +274,11 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
     if (CONFIG_H264_DECODER) {
         c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_neon;
         c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_neon;
+        c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_neon;
 
         c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_neon;
         c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_neon;
+        c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_neon;
 
         c->put_h264_qpel_pixels_tab[0][ 0] = ff_put_h264_qpel16_mc00_neon;
         c->put_h264_qpel_pixels_tab[0][ 1] = ff_put_h264_qpel16_mc10_neon;

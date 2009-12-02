@@ -320,6 +320,74 @@ function ff_\type\()_h264_chroma_mc4_neon, export=1
         .endfunc
         .endm
 
+        .macro  h264_chroma_mc2 type
+function ff_\type\()_h264_chroma_mc2_neon, export=1
+        push            {r4-r6, lr}
+        ldr             r4,  [sp, #16]
+        ldr             lr,  [sp, #20]
+        pld             [r1]
+        pld             [r1, r2]
+        orrs            r5,  r4,  lr
+        beq             2f
+
+        mul             r5,  r4,  lr
+        rsb             r6,  r5,  lr,  lsl #3
+        rsb             r12, r5,  r4,  lsl #3
+        sub             r4,  r5,  r4,  lsl #3
+        sub             r4,  r4,  lr,  lsl #3
+        add             r4,  r4,  #64
+        vdup.8          d0,  r4
+        vdup.8          d2,  r12
+        vdup.8          d1,  r6
+        vdup.8          d3,  r5
+        vtrn.16         q0,  q1
+1:
+        vld1.32         {d4[0]},  [r1], r2
+        vld1.32         {d4[1]},  [r1], r2
+        vrev64.32       d5,  d4
+        vld1.32         {d5[1]},  [r1]
+        vext.8          q3,  q2,  q2,  #1
+        vtrn.16         q2,  q3
+        vmull.u8        q8,  d4,  d0
+        vmlal.u8        q8,  d5,  d1
+.ifc \type,avg
+        vld1.16         {d18[0]}, [r0,:16], r2
+        vld1.16         {d18[1]}, [r0,:16]
+        sub             r0,  r0,  r2
+.endif
+        vtrn.32         d16, d17
+        vadd.i16        d16, d16, d17
+        vrshrn.u16      d16, q8,  #6
+.ifc \type,avg
+        vrhadd.u8       d16, d16, d18
+.endif
+        vst1.16         {d16[0]}, [r0,:16], r2
+        vst1.16         {d16[1]}, [r0,:16], r2
+        subs            r3,  r3,  #2
+        bgt             1b
+        pop             {r4-r6, pc}
+2:
+.ifc \type,put
+        ldrh            r5,  [r1], r2
+        strh            r5,  [r0], r2
+        ldrh            r6,  [r1], r2
+        strh            r6,  [r0], r2
+.else
+        vld1.16         {d16[0]}, [r1], r2
+        vld1.16         {d16[1]}, [r1], r2
+        vld1.16         {d18[0]}, [r0,:16], r2
+        vld1.16         {d18[1]}, [r0,:16]
+        sub             r0,  r0,  r2
+        vrhadd.u8       d16, d16, d18
+        vst1.16         {d16[0]}, [r0,:16], r2
+        vst1.16         {d16[1]}, [r0,:16], r2
+.endif
+        subs            r3,  r3,  #2
+        bgt             2b
+        pop             {r4-r6, pc}
+        .endfunc
+.endm
+
         .text
         .align
 
@@ -327,6 +395,8 @@ function ff_\type\()_h264_chroma_mc4_neon, export=1
         h264_chroma_mc8 avg
         h264_chroma_mc4 put
         h264_chroma_mc4 avg
+        h264_chroma_mc2 put
+        h264_chroma_mc2 avg
 
         /* H.264 loop filter */
 
