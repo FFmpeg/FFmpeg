@@ -4451,6 +4451,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     frame_start(s);
 
     s->m.current_picture_ptr= &s->m.current_picture;
+    s->m.last_picture.pts= s->m.current_picture.pts;
+    s->m.current_picture.pts= pict->pts;
     if(pict->pict_type == FF_P_TYPE){
         int block_width = (width +15)>>4;
         int block_height= (height+15)>>4;
