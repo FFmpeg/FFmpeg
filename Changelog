@@ -43,6 +43,7 @@ version <next>:
 - RF64 support in WAV demuxer
 - MPEG-4 Audio Lossless Coding (ALS) decoder
 - -formats option split into -formats, -codecs, -bsfs, and -protocols
+- IV8 demuxer
 
 
 
