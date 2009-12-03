@@ -135,6 +135,8 @@ const char * swscale_license(void)
         || (x)==PIX_FMT_GRAY8       \
         || (x)==PIX_FMT_YUV410P     \
         || (x)==PIX_FMT_YUV440P     \
+        || (x)==PIX_FMT_NV12        \
+        || (x)==PIX_FMT_NV21        \
         || (x)==PIX_FMT_GRAY16BE    \
         || (x)==PIX_FMT_GRAY16LE    \
         || (x)==PIX_FMT_YUV444P     \
