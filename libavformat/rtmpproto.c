@@ -100,7 +100,7 @@ static void gen_connect(URLContext *s, RTMPContext *rt, const char *proto,
     uint8_t ver[32], *p;
     char tcurl[512];
 
-    ff_rtmp_packet_create(&pkt, RTMP_VIDEO_CHANNEL, RTMP_PT_INVOKE, 0, 4096);
+    ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL, RTMP_PT_INVOKE, 0, 4096);
     p = pkt.data;
 
     snprintf(tcurl, sizeof(tcurl), "%s://%s:%d/%s", proto, host, port, rt->app);
@@ -143,7 +143,7 @@ static void gen_create_stream(URLContext *s, RTMPContext *rt)
     uint8_t *p;
 
     av_log(LOG_CONTEXT, AV_LOG_DEBUG, "Creating stream...\n");
-    ff_rtmp_packet_create(&pkt, RTMP_VIDEO_CHANNEL, RTMP_PT_INVOKE, 0, 25);
+    ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL, RTMP_PT_INVOKE, 0, 25);
 
     p = pkt.data;
     ff_amf_write_string(&p, "createStream");
