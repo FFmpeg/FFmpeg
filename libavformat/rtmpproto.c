@@ -442,7 +442,6 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
         } else if (!memcmp(pkt->data, "\002\000\010onStatus", 11)) {
             const uint8_t* ptr = pkt->data + 11;
             uint8_t tmpstr[256];
-            int t;
 
             for (i = 0; i < 2; i++) {
                 t = ff_amf_tag_size(ptr, data_end);
