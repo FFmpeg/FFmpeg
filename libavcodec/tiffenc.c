@@ -32,6 +32,7 @@
 #include "tiff.h"
 #include "rle.h"
 #include "lzw.h"
+#include "put_bits.h"
 
 #define TIFF_MAX_ENTRY 32
 
@@ -352,7 +353,8 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         for (i = 0; i < s->height; i++) {
             if (strip_sizes[i / s->rps] == 0) {
                 if(s->compr == TIFF_LZW){
-                    ff_lzw_encode_init(s->lzws, ptr, s->buf_size - (*s->buf - s->buf_start), 12);
+                    ff_lzw_encode_init(s->lzws, ptr, s->buf_size - (*s->buf - s->buf_start),
+                                       12, FF_LZW_TIFF, put_bits);
                 }
                 strip_offsets[i / s->rps] = ptr - buf;
             }
@@ -372,7 +374,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
             ptr += n;
             if(s->compr == TIFF_LZW && (i==s->height-1 || i%s->rps == s->rps-1)){
                 int ret;
-                ret = ff_lzw_encode_flush(s->lzws);
+                ret = ff_lzw_encode_flush(s->lzws, flush_put_bits);
                 strip_sizes[(i / s->rps )] += ret ;
                 ptr += ret;
             }
