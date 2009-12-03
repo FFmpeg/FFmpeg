@@ -32,7 +32,7 @@
 #include "tiff.h"
 #include "faxcompr.h"
 #include "libavutil/common.h"
-
+#include "libavutil/intreadwrite.h"
 
 typedef struct TiffContext {
     AVCodecContext *avctx;
