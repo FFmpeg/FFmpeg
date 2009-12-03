@@ -519,7 +519,7 @@ static inline int APESIGN(int32_t x) {
 
 static av_always_inline int predictor_update_filter(APEPredictor *p, const int decoded, const int filter, const int delayA, const int delayB, const int adaptA, const int adaptB)
 {
-    int32_t predictionA, predictionB;
+    int32_t predictionA, predictionB, sign;
 
     p->buf[delayA]     = p->lastA[filter];
     p->buf[adaptA]     = APESIGN(p->buf[delayA]);
@@ -547,32 +547,17 @@ static av_always_inline int predictor_update_filter(APEPredictor *p, const int d
     p->lastA[filter] = decoded + ((predictionA + (predictionB >> 1)) >> 10);
     p->filterA[filter] = p->lastA[filter] + ((p->filterA[filter] * 31) >> 5);
 
-    if (!decoded) // no need updating filter coefficients
-        return p->filterA[filter];
+    sign = APESIGN(decoded);
+    p->coeffsA[filter][0] += p->buf[adaptA    ] * sign;
+    p->coeffsA[filter][1] += p->buf[adaptA - 1] * sign;
+    p->coeffsA[filter][2] += p->buf[adaptA - 2] * sign;
+    p->coeffsA[filter][3] += p->buf[adaptA - 3] * sign;
+    p->coeffsB[filter][0] += p->buf[adaptB    ] * sign;
+    p->coeffsB[filter][1] += p->buf[adaptB - 1] * sign;
+    p->coeffsB[filter][2] += p->buf[adaptB - 2] * sign;
+    p->coeffsB[filter][3] += p->buf[adaptB - 3] * sign;
+    p->coeffsB[filter][4] += p->buf[adaptB - 4] * sign;
 
-    if (decoded > 0) {
-        p->coeffsA[filter][0] -= p->buf[adaptA    ];
-        p->coeffsA[filter][1] -= p->buf[adaptA - 1];
-        p->coeffsA[filter][2] -= p->buf[adaptA - 2];
-        p->coeffsA[filter][3] -= p->buf[adaptA - 3];
-
-        p->coeffsB[filter][0] -= p->buf[adaptB    ];
-        p->coeffsB[filter][1] -= p->buf[adaptB - 1];
-        p->coeffsB[filter][2] -= p->buf[adaptB - 2];
-        p->coeffsB[filter][3] -= p->buf[adaptB - 3];
-        p->coeffsB[filter][4] -= p->buf[adaptB - 4];
-    } else {
-        p->coeffsA[filter][0] += p->buf[adaptA    ];
-        p->coeffsA[filter][1] += p->buf[adaptA - 1];
-        p->coeffsA[filter][2] += p->buf[adaptA - 2];
-        p->coeffsA[filter][3] += p->buf[adaptA - 3];
-
-        p->coeffsB[filter][0] += p->buf[adaptB    ];
-        p->coeffsB[filter][1] += p->buf[adaptB - 1];
-        p->coeffsB[filter][2] += p->buf[adaptB - 2];
-        p->coeffsB[filter][3] += p->buf[adaptB - 3];
-        p->coeffsB[filter][4] += p->buf[adaptB - 4];
-    }
     return p->filterA[filter];
 }
 
@@ -604,7 +589,7 @@ static void predictor_decode_mono(APEContext * ctx, int count)
 {
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded0;
-    int32_t predictionA, currentA, A;
+    int32_t predictionA, currentA, A, sign;
 
     currentA = p->lastA[0];
 
@@ -624,17 +609,11 @@ static void predictor_decode_mono(APEContext * ctx, int count)
         p->buf[YADAPTCOEFFSA]     = APESIGN(p->buf[YDELAYA    ]);
         p->buf[YADAPTCOEFFSA - 1] = APESIGN(p->buf[YDELAYA - 1]);
 
-        if (A > 0) {
-            p->coeffsA[0][0] -= p->buf[YADAPTCOEFFSA    ];
-            p->coeffsA[0][1] -= p->buf[YADAPTCOEFFSA - 1];
-            p->coeffsA[0][2] -= p->buf[YADAPTCOEFFSA - 2];
-            p->coeffsA[0][3] -= p->buf[YADAPTCOEFFSA - 3];
-        } else if (A < 0) {
-            p->coeffsA[0][0] += p->buf[YADAPTCOEFFSA    ];
-            p->coeffsA[0][1] += p->buf[YADAPTCOEFFSA - 1];
-            p->coeffsA[0][2] += p->buf[YADAPTCOEFFSA - 2];
-            p->coeffsA[0][3] += p->buf[YADAPTCOEFFSA - 3];
-        }
+        sign = APESIGN(A);
+        p->coeffsA[0][0] += p->buf[YADAPTCOEFFSA    ] * sign;
+        p->coeffsA[0][1] += p->buf[YADAPTCOEFFSA - 1] * sign;
+        p->coeffsA[0][2] += p->buf[YADAPTCOEFFSA - 2] * sign;
+        p->coeffsA[0][3] += p->buf[YADAPTCOEFFSA - 3] * sign;
 
         p->buf++;
 
