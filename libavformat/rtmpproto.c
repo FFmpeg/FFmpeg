@@ -59,6 +59,7 @@ typedef struct RTMPContext {
     int           chunk_size;                 ///< size of the chunks RTMP packets are divided into
     int           is_input;                   ///< input/output flag
     char          playpath[256];              ///< path to filename to play (with possible "mp4:" prefix)
+    char          app[128];                   ///< application
     ClientState   state;                      ///< current state
     int           main_channel_id;            ///< an additional channel ID which is used for some invocations
     uint8_t*      flv_data;                   ///< buffer with data for demuxer
@@ -93,7 +94,7 @@ static const uint8_t rtmp_server_key[] = {
  * Generates 'connect' call and sends it to the server.
  */
 static void gen_connect(URLContext *s, RTMPContext *rt, const char *proto,
-                        const char *host, int port, const char *app)
+                        const char *host, int port)
 {
     RTMPPacket pkt;
     uint8_t ver[32], *p;
@@ -102,12 +103,12 @@ static void gen_connect(URLContext *s, RTMPContext *rt, const char *proto,
     ff_rtmp_packet_create(&pkt, RTMP_VIDEO_CHANNEL, RTMP_PT_INVOKE, 0, 4096);
     p = pkt.data;
 
-    snprintf(tcurl, sizeof(tcurl), "%s://%s:%d/%s", proto, host, port, app);
+    snprintf(tcurl, sizeof(tcurl), "%s://%s:%d/%s", proto, host, port, rt->app);
     ff_amf_write_string(&p, "connect");
     ff_amf_write_number(&p, 1.0);
     ff_amf_write_object_start(&p);
     ff_amf_write_field_name(&p, "app");
-    ff_amf_write_string(&p, app);
+    ff_amf_write_string(&p, rt->app);
 
     snprintf(ver, sizeof(ver), "%s %d,%d,%d,%d", RTMP_CLIENT_PLATFORM, RTMP_CLIENT_VER1,
              RTMP_CLIENT_VER2, RTMP_CLIENT_VER3, RTMP_CLIENT_VER4);
@@ -563,7 +564,7 @@ static int rtmp_close(URLContext *h)
 static int rtmp_open(URLContext *s, const char *uri, int flags)
 {
     RTMPContext *rt;
-    char proto[8], hostname[256], path[1024], app[128], *fname;
+    char proto[8], hostname[256], path[1024], *fname;
     uint8_t buf[2048];
     int port;
     int ret;
@@ -599,21 +600,21 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         //extract "app" part from path
         if (!strncmp(path, "/ondemand/", 10)) {
             fname = path + 10;
-            memcpy(app, "ondemand", 9);
+            memcpy(rt->app, "ondemand", 9);
         } else {
             char *p = strchr(path + 1, '/');
             if (!p) {
                 fname = path + 1;
-                app[0] = '\0';
+                rt->app[0] = '\0';
             } else {
                 char *c = strchr(p + 1, ':');
                 fname = strchr(p + 1, '/');
                 if (!fname || c < fname) {
                     fname = p + 1;
-                    av_strlcpy(app, path + 1, p - path);
+                    av_strlcpy(rt->app, path + 1, p - path);
                 } else {
                     fname++;
-                    av_strlcpy(app, path + 1, fname - path - 1);
+                    av_strlcpy(rt->app, path + 1, fname - path - 1);
                 }
             }
         }
@@ -627,8 +628,8 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         strncat(rt->playpath, fname, sizeof(rt->playpath) - 5);
 
         av_log(LOG_CONTEXT, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
-               proto, path, app, rt->playpath);
-        gen_connect(s, rt, proto, hostname, port, app);
+               proto, path, rt->app, rt->playpath);
+        gen_connect(s, rt, proto, hostname, port);
 
         do {
             ret = get_packet(s, 1);
