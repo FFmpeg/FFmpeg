@@ -2704,6 +2704,8 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
             if (CONFIG_H263_ENCODER)
                 ff_clean_h263_qscales(s);
             break;
+        default:
+            ff_init_qscale_tab(s);
         }
 
         s->lambda= s->lambda_table[0];
