@@ -93,7 +93,7 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
 
     hdr >>= 6;
     if (hdr == RTMP_PS_ONEBYTE) {
-        timestamp = prev_pkt[channel_id].timestamp;
+        timestamp = prev_pkt[channel_id].ts_delta;
     } else {
         if (url_read_complete(h, buf, 3) != 3)
             return AVERROR(EIO);
@@ -116,9 +116,10 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
                 return AVERROR(EIO);
             timestamp = AV_RB32(buf);
         }
-        if (hdr != RTMP_PS_TWELVEBYTES)
-            timestamp += prev_pkt[channel_id].timestamp;
     }
+    if (hdr != RTMP_PS_TWELVEBYTES)
+        timestamp += prev_pkt[channel_id].timestamp;
+
     if (ff_rtmp_packet_create(p, channel_id, type, timestamp, data_size))
         return -1;
     p->extra = extra;
@@ -126,6 +127,7 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
     prev_pkt[channel_id].channel_id = channel_id;
     prev_pkt[channel_id].type       = type;
     prev_pkt[channel_id].data_size  = data_size;
+    prev_pkt[channel_id].ts_delta   = timestamp - prev_pkt[channel_id].timestamp;
     prev_pkt[channel_id].timestamp  = timestamp;
     prev_pkt[channel_id].extra      = extra;
     while (data_size > 0) {
@@ -151,6 +153,7 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
     uint8_t pkt_hdr[16], *p = pkt_hdr;
     int mode = RTMP_PS_TWELVEBYTES;
     int off = 0;
+    pkt->ts_delta = pkt->timestamp - prev_pkt[pkt->channel_id].timestamp;
 
     //TODO: header compression
     if (pkt->channel_id < 64) {
@@ -165,7 +168,7 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
     if (mode != RTMP_PS_ONEBYTE) {
         uint32_t timestamp = pkt->timestamp;
         if (mode != RTMP_PS_TWELVEBYTES)
-            timestamp -= prev_pkt[pkt->channel_id].timestamp;
+            timestamp = pkt->ts_delta;
         bytestream_put_be24(&p, timestamp >= 0xFFFFFF ? 0xFFFFFF : timestamp);
         if (mode != RTMP_PS_FOURBYTES) {
             bytestream_put_be24(&p, pkt->data_size);
@@ -200,6 +203,7 @@ int ff_rtmp_packet_create(RTMPPacket *pkt, int channel_id, RTMPPacketType type,
     pkt->type       = type;
     pkt->timestamp  = timestamp;
     pkt->extra      = 0;
+    pkt->ts_delta   = 0;
 
     return 0;
 }
