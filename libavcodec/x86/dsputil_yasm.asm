@@ -99,6 +99,81 @@ FLOAT_TO_INT16_INTERLEAVE6 3dn2
 
 
 
+%macro SCALARPRODUCT 1
+; void add_int16(int16_t * v1, int16_t * v2, int order)
+cglobal add_int16_%1, 3,3,2, v1, v2, order
+    shl orderq, 1
+    add v1q, orderq
+    add v2q, orderq
+    neg orderq
+.loop:
+    movu    m0, [v2q + orderq]
+    movu    m1, [v2q + orderq + mmsize]
+    paddw   m0, [v1q + orderq]
+    paddw   m1, [v1q + orderq + mmsize]
+    mova    [v1q + orderq], m0
+    mova    [v1q + orderq + mmsize], m1
+    add     orderq, mmsize*2
+    jl .loop
+    REP_RET
+
+; void sub_int16(int16_t * v1, int16_t * v2, int order)
+cglobal sub_int16_%1, 3,3,4, v1, v2, order
+    shl orderq, 1
+    add v1q, orderq
+    add v2q, orderq
+    neg orderq
+.loop:
+    movu    m2, [v2q + orderq]
+    movu    m3, [v2q + orderq + mmsize]
+    mova    m0, [v1q + orderq]
+    mova    m1, [v1q + orderq + mmsize]
+    psubw   m0, m2
+    psubw   m1, m3
+    mova    [v1q + orderq], m0
+    mova    [v1q + orderq + mmsize], m1
+    add     orderq, mmsize*2
+    jl .loop
+    REP_RET
+
+; int scalarproduct_int16_sse2(int16_t * v1, int16_t * v2, int order, int shift)
+cglobal scalarproduct_int16_%1, 3,3,4, v1, v2, order, shift
+    shl orderq, 1
+    add v1q, orderq
+    add v2q, orderq
+    neg orderq
+    movd    m3, shiftm
+    pxor    m2, m2
+.loop:
+    movu    m0, [v1q + orderq]
+    movu    m1, [v1q + orderq + mmsize]
+    pmaddwd m0, [v2q + orderq]
+    pmaddwd m1, [v2q + orderq + mmsize]
+    paddd   m2, m0
+    paddd   m2, m1
+    add     orderq, mmsize*2
+    jl .loop
+%if mmsize == 16
+    movhlps m0, m2
+    paddd   m2, m0
+    psrad   m2, m3
+    pshuflw m0, m2, 0x4e
+%else
+    psrad   m2, m3
+    pshufw  m0, m2, 0x4e
+%endif
+    paddd   m2, m0
+    movd   eax, m2
+    RET
+%endmacro
+
+INIT_MMX
+SCALARPRODUCT mmx2
+INIT_XMM
+SCALARPRODUCT sse2
+
+
+
 ; void ff_add_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top)
 cglobal add_hfyu_median_prediction_mmx2, 6,6,0, dst, top, diff, w, left, left_top
     movq    mm0, [topq]

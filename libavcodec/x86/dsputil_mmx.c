@@ -2384,6 +2384,12 @@ static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
 void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dnow(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dn2(int16_t *dst, const float **src, int len);
+void ff_add_int16_mmx2(int16_t * v1, int16_t * v2, int order);
+void ff_add_int16_sse2(int16_t * v1, int16_t * v2, int order);
+void ff_sub_int16_mmx2(int16_t * v1, int16_t * v2, int order);
+void ff_sub_int16_sse2(int16_t * v1, int16_t * v2, int order);
+int32_t ff_scalarproduct_int16_mmx2(int16_t * v1, int16_t * v2, int order, int shift);
+int32_t ff_scalarproduct_int16_sse2(int16_t * v1, int16_t * v2, int order, int shift);
 void ff_add_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top);
 int  ff_add_hfyu_left_prediction_ssse3(uint8_t *dst, const uint8_t *src, int w, int left);
 int  ff_add_hfyu_left_prediction_sse4(uint8_t *dst, const uint8_t *src, int w, int left);
@@ -2506,78 +2512,6 @@ void ff_snow_inner_add_yblock_sse2(const uint8_t *obmc, const int obmc_stride, u
 void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
                                   int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
 
-
-static void add_int16_sse2(int16_t * v1, int16_t * v2, int order)
-{
-    x86_reg o = -(order << 1);
-    v1 += order;
-    v2 += order;
-    __asm__ volatile(
-        "1:                          \n\t"
-        "movdqu   (%1,%2),   %%xmm0  \n\t"
-        "movdqu 16(%1,%2),   %%xmm1  \n\t"
-        "paddw    (%0,%2),   %%xmm0  \n\t"
-        "paddw  16(%0,%2),   %%xmm1  \n\t"
-        "movdqa   %%xmm0,    (%0,%2) \n\t"
-        "movdqa   %%xmm1,  16(%0,%2) \n\t"
-        "add      $32,       %2      \n\t"
-        "js       1b                 \n\t"
-        : "+r"(v1), "+r"(v2), "+r"(o)
-    );
-}
-
-static void sub_int16_sse2(int16_t * v1, int16_t * v2, int order)
-{
-    x86_reg o = -(order << 1);
-    v1 += order;
-    v2 += order;
-    __asm__ volatile(
-        "1:                           \n\t"
-        "movdqa    (%0,%2),   %%xmm0  \n\t"
-        "movdqa  16(%0,%2),   %%xmm2  \n\t"
-        "movdqu    (%1,%2),   %%xmm1  \n\t"
-        "movdqu  16(%1,%2),   %%xmm3  \n\t"
-        "psubw     %%xmm1,    %%xmm0  \n\t"
-        "psubw     %%xmm3,    %%xmm2  \n\t"
-        "movdqa    %%xmm0,    (%0,%2) \n\t"
-        "movdqa    %%xmm2,  16(%0,%2) \n\t"
-        "add       $32,       %2      \n\t"
-        "js        1b                 \n\t"
-        : "+r"(v1), "+r"(v2), "+r"(o)
-    );
-}
-
-static int32_t scalarproduct_int16_sse2(int16_t * v1, int16_t * v2, int order, int shift)
-{
-    int res = 0;
-    DECLARE_ALIGNED_16(xmm_reg, sh);
-    x86_reg o = -(order << 1);
-
-    v1 += order;
-    v2 += order;
-    sh.a = shift;
-    __asm__ volatile(
-        "pxor      %%xmm7,  %%xmm7        \n\t"
-        "1:                               \n\t"
-        "movdqu    (%0,%3), %%xmm0        \n\t"
-        "movdqu  16(%0,%3), %%xmm1        \n\t"
-        "pmaddwd   (%1,%3), %%xmm0        \n\t"
-        "pmaddwd 16(%1,%3), %%xmm1        \n\t"
-        "paddd     %%xmm0,  %%xmm7        \n\t"
-        "paddd     %%xmm1,  %%xmm7        \n\t"
-        "add       $32,     %3            \n\t"
-        "js        1b                     \n\t"
-        "movhlps   %%xmm7,  %%xmm2        \n\t"
-        "paddd     %%xmm2,  %%xmm7        \n\t"
-        "psrad     %4,      %%xmm7        \n\t"
-        "pshuflw   $0x4E,   %%xmm7,%%xmm2 \n\t"
-        "paddd     %%xmm2,  %%xmm7        \n\t"
-        "movd      %%xmm7,  %2            \n\t"
-        : "+r"(v1), "+r"(v2), "=r"(res), "+r"(o)
-        : "m"(sh)
-    );
-    return res;
-}
 
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
@@ -3015,6 +2949,13 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->float_to_int16_interleave = float_to_int16_interleave_3dn2;
             }
         }
+        if(mm_flags & FF_MM_MMX2){
+#if HAVE_YASM
+            c->add_int16 = ff_add_int16_mmx2;
+            c->sub_int16 = ff_sub_int16_mmx2;
+            c->scalarproduct_int16 = ff_scalarproduct_int16_mmx2;
+#endif
+        }
         if(mm_flags & FF_MM_SSE){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
             c->ac3_downmix = ac3_downmix_sse;
@@ -3033,9 +2974,11 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse2;
             c->float_to_int16 = float_to_int16_sse2;
             c->float_to_int16_interleave = float_to_int16_interleave_sse2;
-            c->add_int16 = add_int16_sse2;
-            c->sub_int16 = sub_int16_sse2;
-            c->scalarproduct_int16 = scalarproduct_int16_sse2;
+#if HAVE_YASM
+            c->add_int16 = ff_add_int16_sse2;
+            c->sub_int16 = ff_sub_int16_sse2;
+            c->scalarproduct_int16 = ff_scalarproduct_int16_sse2;
+#endif
         }
     }
 
