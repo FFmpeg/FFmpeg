@@ -678,14 +678,9 @@ static inline void do_apply_filter(APEContext * ctx, int version, APEFilter *f, 
             /* Version 3.98 and later files */
 
             /* Update the adaption coefficients */
-            absres = (res < 0 ? -res : res);
-
-            if (absres > (f->avg * 3))
-                *f->adaptcoeffs = ((res >> 25) & 64) - 32;
-            else if (absres > (f->avg * 4) / 3)
-                *f->adaptcoeffs = ((res >> 26) & 32) - 16;
-            else if (absres > 0)
-                *f->adaptcoeffs = ((res >> 27) & 16) - 8;
+            absres = FFABS(res);
+            if (absres)
+                *f->adaptcoeffs = ((res & (1<<31)) - (1<<30)) >> (25 + (absres <= f->avg*3) + (absres <= f->avg*4/3));
             else
                 *f->adaptcoeffs = 0;
 
