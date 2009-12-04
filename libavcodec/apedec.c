@@ -865,6 +865,7 @@ static int ape_decode_frame(AVCodecContext * avctx,
         ape_unpack_mono(s, blockstodecode);
     else
         ape_unpack_stereo(s, blockstodecode);
+    emms_c();
 
     if(s->error || s->ptr > s->data_end){
         s->samples=0;
