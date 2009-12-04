@@ -278,22 +278,6 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .pixel_type = FF_PIXEL_PALETTE,
         .depth = 8,
     },
-    [PIX_FMT_XVMC_MPEG2_MC] = {
-    },
-    [PIX_FMT_XVMC_MPEG2_IDCT] = {
-    },
-    [PIX_FMT_VDPAU_MPEG1] = {
-    },
-    [PIX_FMT_VDPAU_MPEG2] = {
-    },
-    [PIX_FMT_VDPAU_H264] = {
-    },
-    [PIX_FMT_VDPAU_WMV3] = {
-    },
-    [PIX_FMT_VDPAU_VC1] = {
-    },
-    [PIX_FMT_VDPAU_MPEG4] = {
-    },
     [PIX_FMT_UYYVYY411] = {
         .nb_channels = 1,
         .color_type = FF_COLOR_YUV,
@@ -390,14 +374,6 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
-    },
-
-    /* VA API formats */
-    [PIX_FMT_VAAPI_MOCO] = {
-    },
-    [PIX_FMT_VAAPI_IDCT] = {
-    },
-    [PIX_FMT_VAAPI_VLD] = {
     },
 };
 
