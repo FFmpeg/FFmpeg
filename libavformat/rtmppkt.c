@@ -155,7 +155,19 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
     int off = 0;
     pkt->ts_delta = pkt->timestamp - prev_pkt[pkt->channel_id].timestamp;
 
-    //TODO: header compression
+    //if channel_id = 0, this is first presentation of prev_pkt, send full hdr.
+    if (prev_pkt[pkt->channel_id].channel_id &&
+        pkt->extra == prev_pkt[pkt->channel_id].extra) {
+        if (pkt->type == prev_pkt[pkt->channel_id].type &&
+            pkt->data_size == prev_pkt[pkt->channel_id].data_size) {
+            mode = RTMP_PS_FOURBYTES;
+            if (pkt->ts_delta == prev_pkt[pkt->channel_id].ts_delta)
+                mode = RTMP_PS_ONEBYTE;
+        } else {
+            mode = RTMP_PS_EIGHTBYTES;
+        }
+    }
+
     if (pkt->channel_id < 64) {
         bytestream_put_byte(&p, pkt->channel_id | (mode << 6));
     } else if (pkt->channel_id < 64 + 256) {
@@ -179,6 +191,18 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
         if (timestamp >= 0xFFFFFF)
             bytestream_put_be32(&p, timestamp);
     }
+    // save history
+    prev_pkt[pkt->channel_id].channel_id = pkt->channel_id;
+    prev_pkt[pkt->channel_id].type       = pkt->type;
+    prev_pkt[pkt->channel_id].data_size  = pkt->data_size;
+    prev_pkt[pkt->channel_id].timestamp  = pkt->timestamp;
+    if (mode != RTMP_PS_TWELVEBYTES) {
+        prev_pkt[pkt->channel_id].ts_delta   = pkt->ts_delta;
+    } else {
+        prev_pkt[pkt->channel_id].ts_delta   = pkt->timestamp;
+    }
+    prev_pkt[pkt->channel_id].extra      = pkt->extra;
+
     url_write(h, pkt_hdr, p-pkt_hdr);
     while (off < pkt->data_size) {
         int towrite = FFMIN(chunk_size, pkt->data_size - off);
