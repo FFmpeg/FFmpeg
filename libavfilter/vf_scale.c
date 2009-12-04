@@ -38,7 +38,6 @@ typedef struct {
 
     int hsub, vsub;             ///< chroma subsampling
     int slice_y;                ///< top of current output slice
-    int slice_dir;              ///< detected slice direction order for the current frame
     int input_is_pal;           ///< set to 1 if the input format is paletted
 } ScaleContext;
 
@@ -141,25 +140,19 @@ static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
               (int64_t)picref->pixel_aspect.den * outlink->w * link->h,
               INT_MAX);
 
-    scale->slice_dir = 0;
+    scale->slice_y = 0;
     avfilter_start_frame(outlink, avfilter_ref_pic(outpicref, ~0));
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h)
+static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     ScaleContext *scale = link->dst->priv;
     int out_h;
     AVFilterPicRef *cur_pic = link->cur_pic;
     uint8_t *data[4];
 
-    if (!scale->slice_dir) {
-        if (y != 0 && y + h != link->h) {
-            av_log(link->dst, AV_LOG_ERROR, "Slices start in the middle!\n");
-            return;
-        }
-        scale->slice_dir = y ?                       -1 : 1;
-        scale->slice_y   = y ? link->dst->outputs[0]->h : y;
-    }
+    if (scale->slice_y == 0 && slice_dir == -1)
+        scale->slice_y = link->dst->outputs[0]->h;
 
     data[0] = cur_pic->data[0] +  y               * cur_pic->linesize[0];
     data[1] = scale->input_is_pal ?
@@ -172,10 +165,10 @@ static void draw_slice(AVFilterLink *link, int y, int h)
                       link->dst->outputs[0]->outpic->data,
                       link->dst->outputs[0]->outpic->linesize);
 
-    if (scale->slice_dir == -1)
+    if (slice_dir == -1)
         scale->slice_y -= out_h;
-    avfilter_draw_slice(link->dst->outputs[0], scale->slice_y, out_h);
-    if (scale->slice_dir == 1)
+    avfilter_draw_slice(link->dst->outputs[0], scale->slice_y, out_h, slice_dir);
+    if (slice_dir == 1)
         scale->slice_y += out_h;
 }
 

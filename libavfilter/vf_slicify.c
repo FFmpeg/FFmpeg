@@ -73,16 +73,16 @@ static void end_frame(AVFilterLink *link)
     avfilter_end_frame(link->dst->outputs[0]);
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h)
+static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     SliceContext *slice = link->dst->priv;
     int y2;
 
     for (y2 = y; y2 + slice->h <= y + h; y2 += slice->h)
-        avfilter_draw_slice(link->dst->outputs[0], y2, slice->h);
+        avfilter_draw_slice(link->dst->outputs[0], y2, slice->h, slice_dir);
 
     if (y2 < y + h)
-        avfilter_draw_slice(link->dst->outputs[0], y2, y + h - y2);
+        avfilter_draw_slice(link->dst->outputs[0], y2, y + h - y2, slice_dir);
 }
 
 AVFilter avfilter_vf_slicify = {

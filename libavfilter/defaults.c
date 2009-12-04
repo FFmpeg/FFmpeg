@@ -78,7 +78,7 @@ void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     }
 }
 
-void avfilter_default_draw_slice(AVFilterLink *link, int y, int h)
+void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     AVFilterLink *out = NULL;
 
@@ -86,7 +86,7 @@ void avfilter_default_draw_slice(AVFilterLink *link, int y, int h)
         out = link->dst->outputs[0];
 
     if(out)
-        avfilter_draw_slice(out, y, h);
+        avfilter_draw_slice(out, y, h, slice_dir);
 }
 
 void avfilter_default_end_frame(AVFilterLink *link)

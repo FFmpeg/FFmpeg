@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 11
+#define LIBAVFILTER_VERSION_MINOR 12
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -322,7 +322,7 @@ struct AVFilterPad
      *
      * Input video pads only.
      */
-    void (*draw_slice)(AVFilterLink *link, int y, int height);
+    void (*draw_slice)(AVFilterLink *link, int y, int height, int slice_dir);
 
     /**
      * Frame poll callback. This returns the number of immediately available
@@ -364,7 +364,7 @@ struct AVFilterPad
 /** default handler for start_frame() for video inputs */
 void avfilter_default_start_frame(AVFilterLink *link, AVFilterPicRef *picref);
 /** default handler for draw_slice() for video inputs */
-void avfilter_default_draw_slice(AVFilterLink *link, int y, int h);
+void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 /** default handler for end_frame() for video inputs */
 void avfilter_default_end_frame(AVFilterLink *link);
 /** default handler for config_props() for video outputs */
@@ -566,8 +566,12 @@ void avfilter_end_frame(AVFilterLink *link);
  * @param link the output link over which the frame is being sent
  * @param y    offset in pixels from the top of the image for this slice
  * @param h    height of this slice in pixels
+ * @param slice_dir the assumed direction for sending slices,
+ *             from the top slice to the bottom slice if the value is 1,
+ *             from the bottom slice to the top slice if the value is -1,
+ *             for other values the behavior of the function is undefined.
  */
-void avfilter_draw_slice(AVFilterLink *link, int y, int h);
+void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 
 /** Initializes the filter system. Registers all builtin filters. */
 void avfilter_register_all(void);

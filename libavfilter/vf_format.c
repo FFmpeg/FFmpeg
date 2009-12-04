@@ -112,9 +112,9 @@ static void end_frame(AVFilterLink *link)
     avfilter_end_frame(link->dst->outputs[0]);
 }
 
-static void draw_slice(AVFilterLink *link, int y, int h)
+static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
-    avfilter_draw_slice(link->dst->outputs[0], y, h);
+    avfilter_draw_slice(link->dst->outputs[0], y, h, slice_dir);
 }
 
 AVFilter avfilter_vf_format = {

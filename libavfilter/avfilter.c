@@ -287,13 +287,13 @@ void avfilter_end_frame(AVFilterLink *link)
 
 }
 
-void avfilter_draw_slice(AVFilterLink *link, int y, int h)
+void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 {
     uint8_t *src[4], *dst[4];
     int i, j, hsub, vsub;
-    void (*draw_slice)(AVFilterLink *, int, int);
+    void (*draw_slice)(AVFilterLink *, int, int, int);
 
-    DPRINTF_START(NULL, draw_slice); dprintf_link(NULL, link, 0); dprintf(NULL, " y:%d h:%d\n", y, h);
+    DPRINTF_START(NULL, draw_slice); dprintf_link(NULL, link, 0); dprintf(NULL, " y:%d h:%d dir:%d\n", y, h, slice_dir);
 
     /* copy the slice if needed for permission reasons */
     if(link->srcpic) {
@@ -325,7 +325,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h)
 
     if(!(draw_slice = link_dpad(link).draw_slice))
         draw_slice = avfilter_default_draw_slice;
-    draw_slice(link, y, h);
+    draw_slice(link, y, h, slice_dir);
 }
 
 #define MAX_REGISTERED_AVFILTERS_NB 64
