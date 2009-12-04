@@ -115,8 +115,8 @@ static void gen_connect(URLContext *s, RTMPContext *rt, const char *proto,
     ff_amf_write_string(&p, rt->app);
 
     if (rt->is_input) {
-    snprintf(ver, sizeof(ver), "%s %d,%d,%d,%d", RTMP_CLIENT_PLATFORM, RTMP_CLIENT_VER1,
-             RTMP_CLIENT_VER2, RTMP_CLIENT_VER3, RTMP_CLIENT_VER4);
+        snprintf(ver, sizeof(ver), "%s %d,%d,%d,%d", RTMP_CLIENT_PLATFORM, RTMP_CLIENT_VER1,
+                 RTMP_CLIENT_VER2, RTMP_CLIENT_VER3, RTMP_CLIENT_VER4);
     } else {
         snprintf(ver, sizeof(ver), "FMLE/3.0 (compatible; %s)", LIBAVFORMAT_IDENT);
         ff_amf_write_field_name(&p, "type");
@@ -127,16 +127,16 @@ static void gen_connect(URLContext *s, RTMPContext *rt, const char *proto,
     ff_amf_write_field_name(&p, "tcUrl");
     ff_amf_write_string(&p, tcurl);
     if (rt->is_input) {
-    ff_amf_write_field_name(&p, "fpad");
-    ff_amf_write_bool(&p, 0);
-    ff_amf_write_field_name(&p, "capabilities");
-    ff_amf_write_number(&p, 15.0);
-    ff_amf_write_field_name(&p, "audioCodecs");
-    ff_amf_write_number(&p, 1639.0);
-    ff_amf_write_field_name(&p, "videoCodecs");
-    ff_amf_write_number(&p, 252.0);
-    ff_amf_write_field_name(&p, "videoFunction");
-    ff_amf_write_number(&p, 1.0);
+        ff_amf_write_field_name(&p, "fpad");
+        ff_amf_write_bool(&p, 0);
+        ff_amf_write_field_name(&p, "capabilities");
+        ff_amf_write_number(&p, 15.0);
+        ff_amf_write_field_name(&p, "audioCodecs");
+        ff_amf_write_number(&p, 1639.0);
+        ff_amf_write_field_name(&p, "videoCodecs");
+        ff_amf_write_number(&p, 252.0);
+        ff_amf_write_field_name(&p, "videoFunction");
+        ff_amf_write_number(&p, 1.0);
     }
     ff_amf_write_object_end(&p);
 
@@ -478,37 +478,37 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
            serverdata[5], serverdata[6], serverdata[7], serverdata[8]);
 
     if (rt->is_input) {
-    server_pos = rtmp_validate_digest(serverdata + 1, 772);
-    if (!server_pos) {
-        server_pos = rtmp_validate_digest(serverdata + 1, 8);
+        server_pos = rtmp_validate_digest(serverdata + 1, 772);
         if (!server_pos) {
-            av_log(LOG_CONTEXT, AV_LOG_ERROR, "Server response validating failed\n");
+            server_pos = rtmp_validate_digest(serverdata + 1, 8);
+            if (!server_pos) {
+                av_log(LOG_CONTEXT, AV_LOG_ERROR, "Server response validating failed\n");
+                return -1;
+            }
+        }
+
+        rtmp_calc_digest(tosend + 1 + client_pos, 32, 0,
+                         rtmp_server_key, sizeof(rtmp_server_key),
+                         digest);
+        rtmp_calc_digest(clientdata, RTMP_HANDSHAKE_PACKET_SIZE-32, 0,
+                         digest, 32,
+                         digest);
+        if (memcmp(digest, clientdata + RTMP_HANDSHAKE_PACKET_SIZE - 32, 32)) {
+            av_log(LOG_CONTEXT, AV_LOG_ERROR, "Signature mismatch\n");
             return -1;
         }
-    }
 
-    rtmp_calc_digest(tosend + 1 + client_pos, 32, 0,
-                     rtmp_server_key, sizeof(rtmp_server_key),
-                     digest);
-    rtmp_calc_digest(clientdata, RTMP_HANDSHAKE_PACKET_SIZE-32, 0,
-                     digest, 32,
-                     digest);
-    if (memcmp(digest, clientdata + RTMP_HANDSHAKE_PACKET_SIZE - 32, 32)) {
-        av_log(LOG_CONTEXT, AV_LOG_ERROR, "Signature mismatch\n");
-        return -1;
-    }
+        for (i = 0; i < RTMP_HANDSHAKE_PACKET_SIZE; i++)
+            tosend[i] = av_lfg_get(&rnd) >> 24;
+        rtmp_calc_digest(serverdata + 1 + server_pos, 32, 0,
+                         rtmp_player_key, sizeof(rtmp_player_key),
+                         digest);
+        rtmp_calc_digest(tosend,  RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
+                         digest, 32,
+                         tosend + RTMP_HANDSHAKE_PACKET_SIZE - 32);
 
-    for (i = 0; i < RTMP_HANDSHAKE_PACKET_SIZE; i++)
-        tosend[i] = av_lfg_get(&rnd) >> 24;
-    rtmp_calc_digest(serverdata + 1 + server_pos, 32, 0,
-                     rtmp_player_key, sizeof(rtmp_player_key),
-                     digest);
-    rtmp_calc_digest(tosend,  RTMP_HANDSHAKE_PACKET_SIZE - 32, 0,
-                     digest, 32,
-                     tosend + RTMP_HANDSHAKE_PACKET_SIZE - 32);
-
-    // write reply back to the server
-    url_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE);
+        // write reply back to the server
+        url_write(rt->stream, tosend, RTMP_HANDSHAKE_PACKET_SIZE);
     } else {
         url_write(rt->stream, serverdata+1, RTMP_HANDSHAKE_PACKET_SIZE);
     }
@@ -591,7 +591,7 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                     rt->main_channel_id = (int) av_int2dbl(AV_RB64(pkt->data + 21));
                 }
                 if (rt->is_input) {
-                gen_play(s, rt);
+                    gen_play(s, rt);
                 } else {
                     gen_publish(s, rt);
                 }
@@ -751,51 +751,51 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         goto fail;
     }
 
-        rt->state = STATE_START;
-        if (rtmp_handshake(s, rt))
-            return -1;
+    rt->state = STATE_START;
+    if (rtmp_handshake(s, rt))
+        return -1;
 
-        rt->chunk_size = 128;
-        rt->state = STATE_HANDSHAKED;
-        //extract "app" part from path
-        if (!strncmp(path, "/ondemand/", 10)) {
-            fname = path + 10;
-            memcpy(rt->app, "ondemand", 9);
+    rt->chunk_size = 128;
+    rt->state = STATE_HANDSHAKED;
+    //extract "app" part from path
+    if (!strncmp(path, "/ondemand/", 10)) {
+        fname = path + 10;
+        memcpy(rt->app, "ondemand", 9);
+    } else {
+        char *p = strchr(path + 1, '/');
+        if (!p) {
+            fname = path + 1;
+            rt->app[0] = '\0';
         } else {
-            char *p = strchr(path + 1, '/');
-            if (!p) {
-                fname = path + 1;
-                rt->app[0] = '\0';
+            char *c = strchr(p + 1, ':');
+            fname = strchr(p + 1, '/');
+            if (!fname || c < fname) {
+                fname = p + 1;
+                av_strlcpy(rt->app, path + 1, p - path);
             } else {
-                char *c = strchr(p + 1, ':');
-                fname = strchr(p + 1, '/');
-                if (!fname || c < fname) {
-                    fname = p + 1;
-                    av_strlcpy(rt->app, path + 1, p - path);
-                } else {
-                    fname++;
-                    av_strlcpy(rt->app, path + 1, fname - path - 1);
-                }
+                fname++;
+                av_strlcpy(rt->app, path + 1, fname - path - 1);
             }
         }
-        if (!strchr(fname, ':') &&
-            (!strcmp(fname + strlen(fname) - 4, ".f4v") ||
-             !strcmp(fname + strlen(fname) - 4, ".mp4"))) {
-            memcpy(rt->playpath, "mp4:", 5);
-        } else {
-            rt->playpath[0] = 0;
-        }
-        strncat(rt->playpath, fname, sizeof(rt->playpath) - 5);
+    }
+    if (!strchr(fname, ':') &&
+        (!strcmp(fname + strlen(fname) - 4, ".f4v") ||
+         !strcmp(fname + strlen(fname) - 4, ".mp4"))) {
+        memcpy(rt->playpath, "mp4:", 5);
+    } else {
+        rt->playpath[0] = 0;
+    }
+    strncat(rt->playpath, fname, sizeof(rt->playpath) - 5);
 
-        av_log(LOG_CONTEXT, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
-               proto, path, rt->app, rt->playpath);
-        gen_connect(s, rt, proto, hostname, port);
+    av_log(LOG_CONTEXT, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
+           proto, path, rt->app, rt->playpath);
+    gen_connect(s, rt, proto, hostname, port);
 
-        do {
-            ret = get_packet(s, 1);
-        } while (ret == EAGAIN);
-        if (ret < 0)
-            goto fail;
+    do {
+        ret = get_packet(s, 1);
+    } while (ret == EAGAIN);
+    if (ret < 0)
+        goto fail;
 
     if (rt->is_input) {
         // generate FLV header for demuxer
