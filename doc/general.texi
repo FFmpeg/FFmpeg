@@ -201,7 +201,8 @@ library:
 @item RL2                       @tab   @tab X
     @tab Audio and video format used in some games by Entertainment Software Partners.
 @item RPL/ARMovie               @tab   @tab X
-@item RTMP                      @tab   @tab X
+@item RTMP                      @tab X @tab X
+    @tab Output is performed by publishing stream to RTMP server
 @item RTP                       @tab   @tab X
 @item RTSP                      @tab   @tab X
 @item SDP                       @tab   @tab X
