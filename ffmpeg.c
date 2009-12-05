@@ -91,7 +91,7 @@ static const OptionDef options[];
 
 #define MAX_FILES 20
 
-static char *last_asked_format = NULL;
+static const char *last_asked_format = NULL;
 static AVFormatContext *input_files[MAX_FILES];
 static int64_t input_files_ts_offset[MAX_FILES];
 static double input_files_ts_scale[MAX_FILES][MAX_STREAMS];
