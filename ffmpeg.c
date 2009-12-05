@@ -2944,7 +2944,11 @@ static void opt_input_file(const char *filename)
             frame_pix_fmt = enc->pix_fmt;
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
-            if(enc->lowres) enc->flags |= CODEC_FLAG_EMU_EDGE;
+            if(enc->lowres) {
+                enc->flags |= CODEC_FLAG_EMU_EDGE;
+                frame_height >>= enc->lowres;
+                frame_width  >>= enc->lowres;
+            }
             if(me_threshold)
                 enc->debug |= FF_DEBUG_MV;
 
