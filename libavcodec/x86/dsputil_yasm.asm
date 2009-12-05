@@ -202,12 +202,20 @@ align 16
     mova    m2, [v3q + orderq]
     mova    m3, [v3q + orderq + mmsize]
 %endif
-    pmaddwd m0, [v1q + orderq]
-    pmaddwd m1, [v1q + orderq + mmsize]
+    %define t0  [v1q + orderq]
+    %define t1  [v1q + orderq + mmsize]
+%ifdef ARCH_X86_64
+    mova    m8, t0
+    mova    m9, t1
+    %define t0  m8
+    %define t1  m9
+%endif
+    pmaddwd m0, t0
+    pmaddwd m1, t1
     pmullw  m2, m7
     pmullw  m3, m7
-    paddw   m2, [v1q + orderq]
-    paddw   m3, [v1q + orderq + mmsize]
+    paddw   m2, t0
+    paddw   m3, t1
     paddd   m6, m0
     paddd   m6, m1
     mova    [v1q + orderq], m2
@@ -219,7 +227,7 @@ align 16
 %endmacro
 
 ; int scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul)
-cglobal scalarproduct_and_madd_int16_ssse3, 4,5,8, v1, v2, v3, order, mul
+cglobal scalarproduct_and_madd_int16_ssse3, 4,5,10, v1, v2, v3, order, mul
     shl orderq, 1
     movd    m7, mulm
     pshuflw m7, m7, 0
