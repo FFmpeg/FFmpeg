@@ -1818,16 +1818,16 @@ static inline void RENAME(nvXXtoUV)(uint8_t *dst1, uint8_t *dst2,
 #endif
 }
 
-static inline void nv12ToUV(uint8_t *dstU, uint8_t *dstV,
-                            const uint8_t *src1, const uint8_t *src2,
-                            long width, uint32_t *unused)
+static inline void RENAME(nv12ToUV)(uint8_t *dstU, uint8_t *dstV,
+                                    const uint8_t *src1, const uint8_t *src2,
+                                    long width, uint32_t *unused)
 {
     RENAME(nvXXtoUV)(dstU, dstV, src1, width);
 }
 
-static inline void nv21ToUV(uint8_t *dstU, uint8_t *dstV,
-                            const uint8_t *src1, const uint8_t *src2,
-                            long width, uint32_t *unused)
+static inline void RENAME(nv21ToUV)(uint8_t *dstU, uint8_t *dstV,
+                                    const uint8_t *src1, const uint8_t *src2,
+                                    long width, uint32_t *unused)
 {
     RENAME(nvXXtoUV)(dstV, dstU, src1, width);
 }
@@ -2962,8 +2962,8 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     switch(srcFormat) {
         case PIX_FMT_YUYV422  : c->hcscale_internal = RENAME(yuy2ToUV); break;
         case PIX_FMT_UYVY422  : c->hcscale_internal = RENAME(uyvyToUV); break;
-        case PIX_FMT_NV12     : c->hcscale_internal = nv12ToUV; break;
-        case PIX_FMT_NV21     : c->hcscale_internal = nv21ToUV; break;
+        case PIX_FMT_NV12     : c->hcscale_internal = RENAME(nv12ToUV); break;
+        case PIX_FMT_NV21     : c->hcscale_internal = RENAME(nv21ToUV); break;
         case PIX_FMT_RGB8     :
         case PIX_FMT_BGR8     :
         case PIX_FMT_PAL8     :
