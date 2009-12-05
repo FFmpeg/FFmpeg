@@ -1697,22 +1697,22 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
     if(mb_y==0 && s->codec_tag == AV_RL32("SLIF")){
         skip_bits1(&s->gb);
     }else{
-    for(;;) {
-        int code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
-        if (code < 0){
-            av_log(s->avctx, AV_LOG_ERROR, "first mb_incr damaged\n");
-            return -1;
-        }
-        if (code >= 33) {
-            if (code == 33) {
-                s->mb_x += 33;
+        for(;;) {
+            int code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
+            if (code < 0){
+                av_log(s->avctx, AV_LOG_ERROR, "first mb_incr damaged\n");
+                return -1;
             }
-            /* otherwise, stuffing, nothing to do */
-        } else {
-            s->mb_x += code;
-            break;
+            if (code >= 33) {
+                if (code == 33) {
+                    s->mb_x += 33;
+                }
+                /* otherwise, stuffing, nothing to do */
+            } else {
+                s->mb_x += code;
+                break;
+            }
         }
-    }
     }
 
     if(s->mb_x >= (unsigned)s->mb_width){
