@@ -34,6 +34,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     int frame_rate_ext_n, frame_rate_ext_d;
     int picture_structure, top_field_first, repeat_first_field, progressive_frame;
     int horiz_size_ext, vert_size_ext, bit_rate_ext;
+    int did_set_size=0;
 //FIXME replace the crap with get_bits()
     s->repeat_pict = 0;
     buf_end = buf + buf_size;
@@ -51,7 +52,10 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
             if (bytes_left >= 7) {
                 pc->width  = (buf[0] << 4) | (buf[1] >> 4);
                 pc->height = ((buf[1] & 0x0f) << 8) | buf[2];
+                if(!avctx->width || !avctx->height || !avctx->coded_width || !avctx->coded_height){
                 avcodec_set_dimensions(avctx, pc->width, pc->height);
+                    did_set_size=1;
+                }
                 frame_rate_index = buf[3] & 0xf;
                 pc->frame_rate.den = avctx->time_base.den = ff_frame_rate_tab[frame_rate_index].num;
                 pc->frame_rate.num = avctx->time_base.num = ff_frame_rate_tab[frame_rate_index].den;
@@ -77,6 +81,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         pc->width  |=(horiz_size_ext << 12);
                         pc->height |=( vert_size_ext << 12);
                         avctx->bit_rate += (bit_rate_ext << 18) * 400;
+                        if(did_set_size)
                         avcodec_set_dimensions(avctx, pc->width, pc->height);
                         avctx->time_base.den = pc->frame_rate.den * (frame_rate_ext_n + 1) * 2;
                         avctx->time_base.num = pc->frame_rate.num * (frame_rate_ext_d + 1);
