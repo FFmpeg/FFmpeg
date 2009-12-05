@@ -648,22 +648,16 @@ static void init_filter(APEContext * ctx, APEFilter *f, int16_t * buf, int order
     do_init_filter(&f[1], buf + order * 3 + HISTORY_SIZE, order);
 }
 
-static inline void do_apply_filter(APEContext * ctx, int version, APEFilter *f, int32_t *data, int count, int order, int fracbits)
+static void do_apply_filter(APEContext * ctx, int version, APEFilter *f, int32_t *data, int count, int order, int fracbits)
 {
     int res;
     int absres;
 
     while (count--) {
         /* round fixedpoint scalar product */
-        res = (ctx->dsp.scalarproduct_int16(f->delay - order, f->coeffs, order, 0) + (1 << (fracbits - 1))) >> fracbits;
-
-        if (*data < 0)
-            ctx->dsp.add_int16(f->coeffs, f->adaptcoeffs - order, order);
-        else if (*data > 0)
-            ctx->dsp.sub_int16(f->coeffs, f->adaptcoeffs - order, order);
-
+        res = ctx->dsp.scalarproduct_and_madd_int16(f->coeffs, f->delay - order, f->adaptcoeffs - order, order, APESIGN(*data));
+        res = (res + (1 << (fracbits - 1))) >> fracbits;
         res += *data;
-
         *data++ = res;
 
         /* Update the output history */

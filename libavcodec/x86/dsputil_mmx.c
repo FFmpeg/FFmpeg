@@ -2384,12 +2384,11 @@ static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
 void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dnow(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dn2(int16_t *dst, const float **src, int len);
-void ff_add_int16_mmx2(int16_t * v1, int16_t * v2, int order);
-void ff_add_int16_sse2(int16_t * v1, int16_t * v2, int order);
-void ff_sub_int16_mmx2(int16_t * v1, int16_t * v2, int order);
-void ff_sub_int16_sse2(int16_t * v1, int16_t * v2, int order);
-int32_t ff_scalarproduct_int16_mmx2(int16_t * v1, int16_t * v2, int order, int shift);
-int32_t ff_scalarproduct_int16_sse2(int16_t * v1, int16_t * v2, int order, int shift);
+int32_t ff_scalarproduct_int16_mmx2(int16_t *v1, int16_t *v2, int order, int shift);
+int32_t ff_scalarproduct_int16_sse2(int16_t *v1, int16_t *v2, int order, int shift);
+int32_t ff_scalarproduct_and_madd_int16_mmx2(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul);
+int32_t ff_scalarproduct_and_madd_int16_sse2(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul);
+int32_t ff_scalarproduct_and_madd_int16_ssse3(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul);
 void ff_add_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top);
 int  ff_add_hfyu_left_prediction_ssse3(uint8_t *dst, const uint8_t *src, int w, int left);
 int  ff_add_hfyu_left_prediction_sse4(uint8_t *dst, const uint8_t *src, int w, int left);
@@ -2951,9 +2950,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
         if(mm_flags & FF_MM_MMX2){
 #if HAVE_YASM
-            c->add_int16 = ff_add_int16_mmx2;
-            c->sub_int16 = ff_sub_int16_mmx2;
             c->scalarproduct_int16 = ff_scalarproduct_int16_mmx2;
+            c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_mmx2;
 #endif
         }
         if(mm_flags & FF_MM_SSE){
@@ -2975,11 +2973,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->float_to_int16 = float_to_int16_sse2;
             c->float_to_int16_interleave = float_to_int16_interleave_sse2;
 #if HAVE_YASM
-            c->add_int16 = ff_add_int16_sse2;
-            c->sub_int16 = ff_sub_int16_sse2;
             c->scalarproduct_int16 = ff_scalarproduct_int16_sse2;
+            c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_sse2;
 #endif
         }
+        if((mm_flags & FF_MM_SSSE3) && !(mm_flags & (FF_MM_SSE42|FF_MM_3DNOW)) && HAVE_YASM) // cachesplit
+            c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_ssse3;
     }
 
     if (CONFIG_ENCODERS)

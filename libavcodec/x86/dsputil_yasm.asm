@@ -100,43 +100,7 @@ FLOAT_TO_INT16_INTERLEAVE6 3dn2
 
 
 %macro SCALARPRODUCT 1
-; void add_int16(int16_t * v1, int16_t * v2, int order)
-cglobal add_int16_%1, 3,3,2, v1, v2, order
-    shl orderq, 1
-    add v1q, orderq
-    add v2q, orderq
-    neg orderq
-.loop:
-    movu    m0, [v2q + orderq]
-    movu    m1, [v2q + orderq + mmsize]
-    paddw   m0, [v1q + orderq]
-    paddw   m1, [v1q + orderq + mmsize]
-    mova    [v1q + orderq], m0
-    mova    [v1q + orderq + mmsize], m1
-    add     orderq, mmsize*2
-    jl .loop
-    REP_RET
-
-; void sub_int16(int16_t * v1, int16_t * v2, int order)
-cglobal sub_int16_%1, 3,3,4, v1, v2, order
-    shl orderq, 1
-    add v1q, orderq
-    add v2q, orderq
-    neg orderq
-.loop:
-    movu    m2, [v2q + orderq]
-    movu    m3, [v2q + orderq + mmsize]
-    mova    m0, [v1q + orderq]
-    mova    m1, [v1q + orderq + mmsize]
-    psubw   m0, m2
-    psubw   m1, m3
-    mova    [v1q + orderq], m0
-    mova    [v1q + orderq + mmsize], m1
-    add     orderq, mmsize*2
-    jl .loop
-    REP_RET
-
-; int scalarproduct_int16_sse2(int16_t * v1, int16_t * v2, int order, int shift)
+; int scalarproduct_int16(int16_t *v1, int16_t *v2, int order, int shift)
 cglobal scalarproduct_int16_%1, 3,3,4, v1, v2, order, shift
     shl orderq, 1
     add v1q, orderq
@@ -165,12 +129,138 @@ cglobal scalarproduct_int16_%1, 3,3,4, v1, v2, order, shift
     paddd   m2, m0
     movd   eax, m2
     RET
+
+; int scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul)
+cglobal scalarproduct_and_madd_int16_%1, 3,4,8, v1, v2, v3, order, mul
+    shl orderq, 1
+    movd    m7, mulm
+%if mmsize == 16
+    pshuflw m7, m7, 0
+    punpcklqdq m7, m7
+%else
+    pshufw  m7, m7, 0
+%endif
+    pxor    m6, m6
+    add v1q, orderq
+    add v2q, orderq
+    add v3q, orderq
+    neg orderq
+.loop:
+    movu    m0, [v2q + orderq]
+    movu    m1, [v2q + orderq + mmsize]
+    mova    m4, [v1q + orderq]
+    mova    m5, [v1q + orderq + mmsize]
+    movu    m2, [v3q + orderq]
+    movu    m3, [v3q + orderq + mmsize]
+    pmaddwd m0, m4
+    pmaddwd m1, m5
+    pmullw  m2, m7
+    pmullw  m3, m7
+    paddd   m6, m0
+    paddd   m6, m1
+    paddw   m2, m4
+    paddw   m3, m5
+    mova    [v1q + orderq], m2
+    mova    [v1q + orderq + mmsize], m3
+    add     orderq, mmsize*2
+    jl .loop
+%if mmsize == 16
+    movhlps m0, m6
+    paddd   m6, m0
+    pshuflw m0, m6, 0x4e
+%else
+    pshufw  m0, m6, 0x4e
+%endif
+    paddd   m6, m0
+    movd   eax, m6
+    RET
 %endmacro
 
 INIT_MMX
 SCALARPRODUCT mmx2
 INIT_XMM
 SCALARPRODUCT sse2
+
+%macro SCALARPRODUCT_LOOP 1
+align 16
+.loop%1:
+    sub     orderq, mmsize*2
+%if %1
+    mova    m1, m4
+    mova    m4, [v2q + orderq]
+    mova    m0, [v2q + orderq + mmsize]
+    palignr m1, m0, %1
+    palignr m0, m4, %1
+    mova    m3, m5
+    mova    m5, [v3q + orderq]
+    mova    m2, [v3q + orderq + mmsize]
+    palignr m3, m2, %1
+    palignr m2, m5, %1
+%else
+    mova    m0, [v2q + orderq]
+    mova    m1, [v2q + orderq + mmsize]
+    mova    m2, [v3q + orderq]
+    mova    m3, [v3q + orderq + mmsize]
+%endif
+    pmaddwd m0, [v1q + orderq]
+    pmaddwd m1, [v1q + orderq + mmsize]
+    pmullw  m2, m7
+    pmullw  m3, m7
+    paddw   m2, [v1q + orderq]
+    paddw   m3, [v1q + orderq + mmsize]
+    paddd   m6, m0
+    paddd   m6, m1
+    mova    [v1q + orderq], m2
+    mova    [v1q + orderq + mmsize], m3
+    jg .loop%1
+%if %1
+    jmp .end
+%endif
+%endmacro
+
+; int scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul)
+cglobal scalarproduct_and_madd_int16_ssse3, 4,5,8, v1, v2, v3, order, mul
+    shl orderq, 1
+    movd    m7, mulm
+    pshuflw m7, m7, 0
+    punpcklqdq m7, m7
+    pxor    m6, m6
+    mov    r4d, v2d
+    and    r4d, 15
+    and    v2q, ~15
+    and    v3q, ~15
+    mova    m4, [v2q + orderq]
+    mova    m5, [v3q + orderq]
+    ; linear is faster than branch tree or jump table, because the branches taken are cyclic (i.e. predictable)
+    cmp    r4d, 0
+    je .loop0
+    cmp    r4d, 2
+    je .loop2
+    cmp    r4d, 4
+    je .loop4
+    cmp    r4d, 6
+    je .loop6
+    cmp    r4d, 8
+    je .loop8
+    cmp    r4d, 10
+    je .loop10
+    cmp    r4d, 12
+    je .loop12
+SCALARPRODUCT_LOOP 14
+SCALARPRODUCT_LOOP 12
+SCALARPRODUCT_LOOP 10
+SCALARPRODUCT_LOOP 8
+SCALARPRODUCT_LOOP 6
+SCALARPRODUCT_LOOP 4
+SCALARPRODUCT_LOOP 2
+SCALARPRODUCT_LOOP 0
+.end:
+    movhlps m0, m6
+    paddd   m6, m0
+    pshuflw m0, m6, 0x4e
+    paddd   m6, m0
+    movd   eax, m6
+    RET
 
 
 

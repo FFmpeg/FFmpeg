@@ -4298,18 +4298,6 @@ void ff_float_to_int16_interleave_c(int16_t *dst, const float **src, long len, i
     }
 }
 
-static void add_int16_c(int16_t * v1, int16_t * v2, int order)
-{
-    while (order--)
-       *v1++ += *v2++;
-}
-
-static void sub_int16_c(int16_t * v1, int16_t * v2, int order)
-{
-    while (order--)
-        *v1++ -= *v2++;
-}
-
 static int32_t scalarproduct_int16_c(int16_t * v1, int16_t * v2, int order, int shift)
 {
     int res = 0;
@@ -4317,6 +4305,16 @@ static int32_t scalarproduct_int16_c(int16_t * v1, int16_t * v2, int order, int 
     while (order--)
         res += (*v1++ * *v2++) >> shift;
 
+    return res;
+}
+
+static int32_t scalarproduct_and_madd_int16_c(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul)
+{
+    int res = 0;
+    while (order--) {
+        res   += *v1 * *v2++;
+        *v1++ += mul * *v3++;
+    }
     return res;
 }
 
@@ -4848,9 +4846,8 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_clipf = vector_clipf_c;
     c->float_to_int16 = ff_float_to_int16_c;
     c->float_to_int16_interleave = ff_float_to_int16_interleave_c;
-    c->add_int16 = add_int16_c;
-    c->sub_int16 = sub_int16_c;
     c->scalarproduct_int16 = scalarproduct_int16_c;
+    c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_c;
     c->scalarproduct_float = scalarproduct_float_c;
     c->butterflies_float = butterflies_float_c;
     c->vector_fmul_scalar = vector_fmul_scalar_c;
