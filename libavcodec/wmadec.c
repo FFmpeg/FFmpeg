@@ -630,7 +630,7 @@ static int wma_decode_block(WMACodecContext *s)
 
                 /* compute power of high bands */
                 exponents = s->exponents[ch] +
-                    (s->high_band_start[bsize]<<bsize);
+                    (s->high_band_start[bsize]<<bsize>>esize);
                 last_high_band = 0; /* avoid warning */
                 for(j=0;j<n1;j++) {
                     n = s->exponent_high_bands[s->frame_len_bits -
@@ -646,11 +646,11 @@ static int wma_decode_block(WMACodecContext *s)
                         last_high_band = j;
                         tprintf(s->avctx, "%d: power=%f (%d)\n", j, exp_power[j], n);
                     }
-                    exponents += n<<bsize;
+                    exponents += n<<bsize>>esize;
                 }
 
                 /* main freqs and high freqs */
-                exponents = s->exponents[ch] + (s->coefs_start<<bsize);
+                exponents = s->exponents[ch] + (s->coefs_start<<bsize>>esize);
                 for(j=-1;j<n1;j++) {
                     if (j < 0) {
                         n = s->high_band_start[bsize] -
@@ -672,7 +672,7 @@ static int wma_decode_block(WMACodecContext *s)
                             *coefs++ =  noise *
                                 exponents[i<<bsize>>esize] * mult1;
                         }
-                        exponents += n<<bsize;
+                        exponents += n<<bsize>>esize;
                     } else {
                         /* coded values + small noise */
                         for(i = 0;i < n; i++) {
@@ -681,7 +681,7 @@ static int wma_decode_block(WMACodecContext *s)
                             *coefs++ = ((*coefs1++) + noise) *
                                 exponents[i<<bsize>>esize] * mult;
                         }
-                        exponents += n<<bsize;
+                        exponents += n<<bsize>>esize;
                     }
                 }
 
