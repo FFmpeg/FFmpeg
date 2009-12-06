@@ -581,7 +581,7 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                     if (pkt_id == 4)
                         rt->state = STATE_CONNECTING;
                 }
-                if(rt->state != STATE_CONNECTING)
+                if (rt->state != STATE_CONNECTING)
                     break;
             case STATE_CONNECTING:
                 //extract a number from the result
@@ -642,7 +642,7 @@ static int get_packet(URLContext *s, int for_header)
     RTMPContext *rt = s->priv_data;
     int ret;
 
-    for(;;) {
+    for (;;) {
         RTMPPacket rpkt;
         if ((ret = ff_rtmp_packet_read(rt->stream, &rpkt,
                                        rt->chunk_size, rt->prev_pkt[0])) != 0) {
@@ -702,7 +702,7 @@ static int rtmp_close(URLContext *h)
 {
     RTMPContext *rt = h->priv_data;
 
-    if(!rt->is_input) {
+    if (!rt->is_input) {
         rt->flv_data = NULL;
         if (rt->out_pkt.data_size)
             ff_rtmp_packet_destroy(&rt->out_pkt);
