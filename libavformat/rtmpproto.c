@@ -706,9 +706,11 @@ static int rtmp_close(URLContext *h)
         rt->flv_data = NULL;
         if (rt->out_pkt.data_size)
             ff_rtmp_packet_destroy(&rt->out_pkt);
-        gen_fcunpublish_stream(h, rt);
+        if (rt->state > STATE_FCPUBLISH)
+            gen_fcunpublish_stream(h, rt);
     }
-    gen_delete_stream(h, rt);
+    if (rt->state > STATE_HANDSHAKED)
+        gen_delete_stream(h, rt);
 
     av_freep(&rt->flv_data);
     url_close(rt->stream);
