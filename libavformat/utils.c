@@ -1311,6 +1311,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     int64_t av_uninit(pos_min), av_uninit(pos_max), pos, pos_limit;
     int64_t ts_min, ts_max, ts;
     int index;
+    int64_t ret;
     AVStream *st;
 
     if (stream_index < 0)
@@ -1363,7 +1364,8 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         return -1;
 
     /* do the seek */
-    url_fseek(s->pb, pos, SEEK_SET);
+    if ((ret = url_fseek(s->pb, pos, SEEK_SET)) < 0)
+        return ret;
 
     av_update_cur_dts(s, st, ts);
 
