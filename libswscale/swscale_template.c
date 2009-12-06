@@ -2661,8 +2661,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
        will not get executed. This is not really intended but works
        currently, so people might do it. */
     if (srcSliceY ==0) {
-        lumBufIndex=0;
-        chrBufIndex=0;
+        lumBufIndex=-1;
+        chrBufIndex=-1;
         dstY=0;
         lastInLumBuf= -1;
         lastInChrBuf= -1;
