@@ -1233,7 +1233,6 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
  */
 #define COMPATIBLE_FRAME(x) \
   (compatible_frame[s->all_fragments[x].coding_method] == current_frame_type)
-#define FRAME_CODED(x) (s->all_fragments[x].coding_method != MODE_COPY)
 #define DC_COEFF(u) (s->coeffs[u].index ? 0 : s->coeffs[u].coeff) //FIXME do somethin to simplify this
 
 static void reverse_dc_prediction(Vp3DecodeContext *s,
@@ -1290,7 +1289,7 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
      * from other INTRA blocks. There are 2 golden frame coding types;
      * blocks encoding in these modes can only predict from other blocks
      * that were encoded with these 1 of these 2 modes. */
-    static const unsigned char compatible_frame[8] = {
+    static const unsigned char compatible_frame[9] = {
         1,    /* MODE_INTER_NO_MV */
         0,    /* MODE_INTRA */
         1,    /* MODE_INTER_PLUS_MV */
@@ -1298,7 +1297,8 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
         1,    /* MODE_INTER_PRIOR_MV */
         2,    /* MODE_USING_GOLDEN */
         2,    /* MODE_GOLDEN_MV */
-        1     /* MODE_INTER_FOUR_MV */
+        1,    /* MODE_INTER_FOUR_MV */
+        3     /* MODE_COPY */
     };
     int current_frame_type;
 
@@ -1326,24 +1326,24 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
                 if(x){
                     l= i-1;
                     vl = DC_COEFF(l);
-                    if(FRAME_CODED(l) && COMPATIBLE_FRAME(l))
+                    if(COMPATIBLE_FRAME(l))
                         transform |= PL;
                 }
                 if(y){
                     u= i-fragment_width;
                     vu = DC_COEFF(u);
-                    if(FRAME_CODED(u) && COMPATIBLE_FRAME(u))
+                    if(COMPATIBLE_FRAME(u))
                         transform |= PU;
                     if(x){
                         ul= i-fragment_width-1;
                         vul = DC_COEFF(ul);
-                        if(FRAME_CODED(ul) && COMPATIBLE_FRAME(ul))
+                        if(COMPATIBLE_FRAME(ul))
                             transform |= PUL;
                     }
                     if(x + 1 < fragment_width){
                         ur= i-fragment_width+1;
                         vur = DC_COEFF(ur);
-                        if(FRAME_CODED(ur) && COMPATIBLE_FRAME(ur))
+                        if(COMPATIBLE_FRAME(ur))
                             transform |= PUR;
                     }
                 }
@@ -1366,7 +1366,7 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
 
                     /* check for outranging on the [ul u l] and
                      * [ul u ur l] predictors */
-                    if ((transform == 13) || (transform == 15)) {
+                    if ((transform == 15) || (transform == 13)) {
                         if (FFABS(predicted_dc - vu) > 128)
                             predicted_dc = vu;
                         else if (FFABS(predicted_dc - vl) > 128)
@@ -1641,42 +1641,45 @@ static void apply_loop_filter(Vp3DecodeContext *s)
         for (y = 0; y < height; y++) {
 
             for (x = 0; x < width; x++) {
-                /* do not perform left edge filter for left columns frags */
-                if ((x > 0) &&
-                    (s->all_fragments[fragment].coding_method != MODE_COPY)) {
-                    s->dsp.vp3_h_loop_filter(
-                        plane_data + s->all_fragments[fragment].first_pixel,
-                        stride, bounding_values);
-                }
+                /* This code basically just deblocks on the edges of coded blocks.
+                 * However, it has to be much more complicated because of the
+                 * braindamaged deblock ordering used in VP3/Theora. Order matters
+                 * because some pixels get filtered twice. */
+                if( s->all_fragments[fragment].coding_method != MODE_COPY )
+                {
+                    /* do not perform left edge filter for left columns frags */
+                    if (x > 0) {
+                        s->dsp.vp3_h_loop_filter(
+                            plane_data + s->all_fragments[fragment].first_pixel,
+                            stride, bounding_values);
+                    }
 
-                /* do not perform top edge filter for top row fragments */
-                if ((y > 0) &&
-                    (s->all_fragments[fragment].coding_method != MODE_COPY)) {
-                    s->dsp.vp3_v_loop_filter(
-                        plane_data + s->all_fragments[fragment].first_pixel,
-                        stride, bounding_values);
-                }
+                    /* do not perform top edge filter for top row fragments */
+                    if (y > 0) {
+                        s->dsp.vp3_v_loop_filter(
+                            plane_data + s->all_fragments[fragment].first_pixel,
+                            stride, bounding_values);
+                    }
 
-                /* do not perform right edge filter for right column
-                 * fragments or if right fragment neighbor is also coded
-                 * in this frame (it will be filtered in next iteration) */
-                if ((x < width - 1) &&
-                    (s->all_fragments[fragment].coding_method != MODE_COPY) &&
-                    (s->all_fragments[fragment + 1].coding_method == MODE_COPY)) {
-                    s->dsp.vp3_h_loop_filter(
-                        plane_data + s->all_fragments[fragment + 1].first_pixel,
-                        stride, bounding_values);
-                }
+                    /* do not perform right edge filter for right column
+                     * fragments or if right fragment neighbor is also coded
+                     * in this frame (it will be filtered in next iteration) */
+                    if ((x < width - 1) &&
+                        (s->all_fragments[fragment + 1].coding_method == MODE_COPY)) {
+                        s->dsp.vp3_h_loop_filter(
+                            plane_data + s->all_fragments[fragment + 1].first_pixel,
+                            stride, bounding_values);
+                    }
 
-                /* do not perform bottom edge filter for bottom row
-                 * fragments or if bottom fragment neighbor is also coded
-                 * in this frame (it will be filtered in the next row) */
-                if ((y < height - 1) &&
-                    (s->all_fragments[fragment].coding_method != MODE_COPY) &&
-                    (s->all_fragments[fragment + width].coding_method == MODE_COPY)) {
-                    s->dsp.vp3_v_loop_filter(
-                        plane_data + s->all_fragments[fragment + width].first_pixel,
-                        stride, bounding_values);
+                    /* do not perform bottom edge filter for bottom row
+                     * fragments or if bottom fragment neighbor is also coded
+                     * in this frame (it will be filtered in the next row) */
+                    if ((y < height - 1) &&
+                        (s->all_fragments[fragment + width].coding_method == MODE_COPY)) {
+                        s->dsp.vp3_v_loop_filter(
+                            plane_data + s->all_fragments[fragment + width].first_pixel,
+                            stride, bounding_values);
+                    }
                 }
 
                 fragment++;
