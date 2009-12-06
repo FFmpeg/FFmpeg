@@ -1647,39 +1647,39 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                  * because some pixels get filtered twice. */
                 if( s->all_fragments[fragment].coding_method != MODE_COPY )
                 {
-                /* do not perform left edge filter for left columns frags */
+                    /* do not perform left edge filter for left columns frags */
                     if (x > 0) {
-                    s->dsp.vp3_h_loop_filter(
-                        plane_data + s->all_fragments[fragment].first_pixel,
-                        stride, bounding_values);
-                }
+                        s->dsp.vp3_h_loop_filter(
+                            plane_data + s->all_fragments[fragment].first_pixel,
+                            stride, bounding_values);
+                    }
 
-                /* do not perform top edge filter for top row fragments */
+                    /* do not perform top edge filter for top row fragments */
                     if (y > 0) {
-                    s->dsp.vp3_v_loop_filter(
-                        plane_data + s->all_fragments[fragment].first_pixel,
-                        stride, bounding_values);
-                }
+                        s->dsp.vp3_v_loop_filter(
+                            plane_data + s->all_fragments[fragment].first_pixel,
+                            stride, bounding_values);
+                    }
 
-                /* do not perform right edge filter for right column
-                 * fragments or if right fragment neighbor is also coded
-                 * in this frame (it will be filtered in next iteration) */
-                if ((x < width - 1) &&
-                    (s->all_fragments[fragment + 1].coding_method == MODE_COPY)) {
-                    s->dsp.vp3_h_loop_filter(
-                        plane_data + s->all_fragments[fragment + 1].first_pixel,
-                        stride, bounding_values);
-                }
+                    /* do not perform right edge filter for right column
+                     * fragments or if right fragment neighbor is also coded
+                     * in this frame (it will be filtered in next iteration) */
+                    if ((x < width - 1) &&
+                        (s->all_fragments[fragment + 1].coding_method == MODE_COPY)) {
+                        s->dsp.vp3_h_loop_filter(
+                            plane_data + s->all_fragments[fragment + 1].first_pixel,
+                            stride, bounding_values);
+                    }
 
-                /* do not perform bottom edge filter for bottom row
-                 * fragments or if bottom fragment neighbor is also coded
-                 * in this frame (it will be filtered in the next row) */
-                if ((y < height - 1) &&
-                    (s->all_fragments[fragment + width].coding_method == MODE_COPY)) {
-                    s->dsp.vp3_v_loop_filter(
-                        plane_data + s->all_fragments[fragment + width].first_pixel,
-                        stride, bounding_values);
-                }
+                    /* do not perform bottom edge filter for bottom row
+                     * fragments or if bottom fragment neighbor is also coded
+                     * in this frame (it will be filtered in the next row) */
+                    if ((y < height - 1) &&
+                        (s->all_fragments[fragment + width].coding_method == MODE_COPY)) {
+                        s->dsp.vp3_v_loop_filter(
+                            plane_data + s->all_fragments[fragment + width].first_pixel,
+                            stride, bounding_values);
+                    }
                 }
 
                 fragment++;
