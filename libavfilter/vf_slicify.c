@@ -79,11 +79,11 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     int y2;
 
     if (slice_dir == 1) {
-    for (y2 = y; y2 + slice->h <= y + h; y2 += slice->h)
-        avfilter_draw_slice(link->dst->outputs[0], y2, slice->h, slice_dir);
+        for (y2 = y; y2 + slice->h <= y + h; y2 += slice->h)
+            avfilter_draw_slice(link->dst->outputs[0], y2, slice->h, slice_dir);
 
-    if (y2 < y + h)
-        avfilter_draw_slice(link->dst->outputs[0], y2, y + h - y2, slice_dir);
+        if (y2 < y + h)
+            avfilter_draw_slice(link->dst->outputs[0], y2, y + h - y2, slice_dir);
     } else if (slice_dir == -1) {
         for (y2 = y + h; y2 - slice->h >= y; y2 -= slice->h)
             avfilter_draw_slice(link->dst->outputs[0], y2 - slice->h, slice->h, slice_dir);
