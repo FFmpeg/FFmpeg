@@ -355,8 +355,10 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
 
     while (q < q_end) {
         code = get_vlc2(&s->gb, s->exp_vlc.table, EXPVLCBITS, EXPMAX);
-        if (code < 0)
+        if (code < 0){
+            av_log(s->avctx, AV_LOG_ERROR, "Exponent vlc invalid\n");
             return -1;
+        }
         /* NOTE: this offset is the same as MPEG4 AAC ! */
         last_exp += code - 60;
         if ((unsigned)last_exp + 60 > FF_ARRAY_ELEMS(pow_tab)) {
@@ -457,12 +459,16 @@ static int wma_decode_block(WMACodecContext *s)
         if (s->reset_block_lengths) {
             s->reset_block_lengths = 0;
             v = get_bits(&s->gb, n);
-            if (v >= s->nb_block_sizes)
+            if (v >= s->nb_block_sizes){
+                av_log(s->avctx, AV_LOG_ERROR, "prev_block_len_bits %d out of range\n", s->frame_len_bits - v);
                 return -1;
+            }
             s->prev_block_len_bits = s->frame_len_bits - v;
             v = get_bits(&s->gb, n);
-            if (v >= s->nb_block_sizes)
+            if (v >= s->nb_block_sizes){
+                av_log(s->avctx, AV_LOG_ERROR, "block_len_bits %d out of range\n", s->frame_len_bits - v);
                 return -1;
+            }
             s->block_len_bits = s->frame_len_bits - v;
         } else {
             /* update block lengths */
@@ -470,8 +476,10 @@ static int wma_decode_block(WMACodecContext *s)
             s->block_len_bits = s->next_block_len_bits;
         }
         v = get_bits(&s->gb, n);
-        if (v >= s->nb_block_sizes)
+        if (v >= s->nb_block_sizes){
+            av_log(s->avctx, AV_LOG_ERROR, "next_block_len_bits %d out of range\n", s->frame_len_bits - v);
             return -1;
+        }
         s->next_block_len_bits = s->frame_len_bits - v;
     } else {
         /* fixed block len */
@@ -482,8 +490,10 @@ static int wma_decode_block(WMACodecContext *s)
 
     /* now check if the block length is coherent with the frame length */
     s->block_len = 1 << s->block_len_bits;
-    if ((s->block_pos + s->block_len) > s->frame_len)
+    if ((s->block_pos + s->block_len) > s->frame_len){
+        av_log(s->avctx, AV_LOG_ERROR, "frame_len overflow\n");
         return -1;
+    }
 
     if (s->nb_channels == 2) {
         s->ms_stereo = get_bits1(&s->gb);
@@ -547,8 +557,10 @@ static int wma_decode_block(WMACodecContext *s)
                             val = get_bits(&s->gb, 7) - 19;
                         } else {
                             code = get_vlc2(&s->gb, s->hgain_vlc.table, HGAINVLCBITS, HGAINMAX);
-                            if (code < 0)
+                            if (code < 0){
+                                av_log(s->avctx, AV_LOG_ERROR, "hgain vlc invalid\n");
                                 return -1;
+                            }
                             val += code - 18;
                         }
                         s->high_band_values[ch][i] = val;
@@ -882,6 +894,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
         pos >>= 3;
         len = buf_size - pos;
         if (len > MAX_CODED_SUPERFRAME_SIZE || len < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "len %d invalid\n", len);
             goto fail;
         }
         s->last_superframe_len = len;
