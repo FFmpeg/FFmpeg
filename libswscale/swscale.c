@@ -1697,6 +1697,12 @@ static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *fil
     int xpos, i;
 
     // create an optimized horizontal scaling routine
+    /* This scaler is made of runtime-generated MMX2 code using specially
+     * tuned pshufw instructions. For every four output pixels, if four
+     * input pixels are enough for the fast bilinear scaling, then a chunk
+     * of fragmentB is used. If five input pixels are needed, then a chunk
+     * of fragmentA is used.
+     */
 
     //code fragment
 
