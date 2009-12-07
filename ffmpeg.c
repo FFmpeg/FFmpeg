@@ -219,7 +219,6 @@ static int64_t timer_start;
 
 static uint8_t *audio_buf;
 static uint8_t *audio_out;
-static uint8_t *audio_out2;
 
 static short *samples;
 
@@ -450,7 +449,6 @@ static int av_exit(int ret)
     av_free(sws_opts);
     av_free(audio_buf);
     av_free(audio_out);
-    av_free(audio_out2);
     av_free(samples);
 
     if (received_sigterm) {
@@ -567,7 +565,7 @@ static void do_audio_out(AVFormatContext *s,
 
     /* SC: dynamic allocation of buffers */
     if (!audio_buf)
-        audio_buf = av_malloc(2*MAX_AUDIO_PACKET_SIZE);
+        audio_buf = av_malloc(audio_out_size);
     if (!audio_out)
         audio_out = av_malloc(audio_out_size);
     if (!audio_buf || !audio_out)
@@ -594,10 +592,6 @@ static void do_audio_out(AVFormatContext *s,
 #define MAKE_SFMT_PAIR(a,b) ((a)+SAMPLE_FMT_NB*(b))
     if (!ost->audio_resample && dec->sample_fmt!=enc->sample_fmt &&
         MAKE_SFMT_PAIR(enc->sample_fmt,dec->sample_fmt)!=ost->reformat_pair) {
-        if (!audio_out2)
-            audio_out2 = av_malloc(audio_out_size);
-        if (!audio_out2)
-            av_exit(1);
         if (ost->reformat_ctx)
             av_audio_convert_free(ost->reformat_ctx);
         ost->reformat_ctx = av_audio_convert_alloc(enc->sample_fmt, 1,
@@ -671,7 +665,7 @@ static void do_audio_out(AVFormatContext *s,
 
     if (!ost->audio_resample && dec->sample_fmt!=enc->sample_fmt) {
         const void *ibuf[6]= {buftmp};
-        void *obuf[6]= {audio_out2};
+        void *obuf[6]= {audio_buf};
         int istride[6]= {isize};
         int ostride[6]= {osize};
         int len= size_out/istride[0];
@@ -681,7 +675,7 @@ static void do_audio_out(AVFormatContext *s,
                 av_exit(1);
             return;
         }
-        buftmp = audio_out2;
+        buftmp = audio_buf;
         size_out = len*osize;
     }
 
