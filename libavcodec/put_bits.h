@@ -117,6 +117,11 @@ static inline void flush_put_bits(PutBitContext *s)
 #endif
 }
 
+#if defined(ALT_BITSTREAM_WRITER) || defined(BITSTREAM_WRITER_LE)
+#define align_put_bits align_put_bits_unsupported_here
+#define ff_put_string ff_put_string_unsupported_here
+#define ff_copy_bits ff_copy_bits_unsupported_here
+#else
 /**
  * Pads the bitstream with zeros up to the next byte boundary.
  */
@@ -135,6 +140,7 @@ void ff_put_string(PutBitContext *pb, const char *string, int terminate_string);
  * @param length the number of bits of src to copy
  */
 void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
+#endif
 
 /**
  * Writes up to 31 bits into a bitstream.
