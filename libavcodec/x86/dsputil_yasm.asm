@@ -131,7 +131,7 @@ cglobal scalarproduct_int16_%1, 3,3,4, v1, v2, order, shift
     RET
 
 ; int scalarproduct_and_madd_int16(int16_t *v1, int16_t *v2, int16_t *v3, int order, int mul)
-cglobal scalarproduct_and_madd_int16_%1, 3,4,8, v1, v2, v3, order, mul
+cglobal scalarproduct_and_madd_int16_%1, 4,4,8, v1, v2, v3, order, mul
     shl orderq, 1
     movd    m7, mulm
 %if mmsize == 16
