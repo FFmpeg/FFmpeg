@@ -219,6 +219,7 @@ static int64_t timer_start;
 
 static uint8_t *audio_buf;
 static uint8_t *audio_out;
+unsigned int allocated_audio_out_size, allocated_audio_buf_size;
 
 static short *samples;
 
@@ -449,6 +450,7 @@ static int av_exit(int ret)
     av_free(sws_opts);
     av_free(audio_buf);
     av_free(audio_out);
+    allocated_audio_buf_size= allocated_audio_out_size= 0;
     av_free(samples);
 
     if (received_sigterm) {
@@ -579,11 +581,8 @@ static void do_audio_out(AVFormatContext *s,
         av_exit(1);
     }
 
-    /* SC: dynamic allocation of buffers */
-    if (!audio_buf)
-        audio_buf = av_malloc(audio_buf_size);
-    if (!audio_out)
-        audio_out = av_malloc(audio_out_size);
+    av_fast_malloc(&audio_buf, &allocated_audio_buf_size, audio_buf_size);
+    av_fast_malloc(&audio_out, &allocated_audio_out_size, audio_out_size);
     if (!audio_buf || !audio_out)
         return;               /* Should signal an error ! */
 
