@@ -159,7 +159,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.rc.i_bitrate         = avctx->bit_rate       / 1000;
     x4->params.rc.i_vbv_buffer_size = avctx->rc_buffer_size / 1000;
     x4->params.rc.i_vbv_max_bitrate = avctx->rc_max_rate    / 1000;
-    x4->params.rc.b_stat_write      = avctx->flags & CODEC_FLAG_PASS1;
+    x4->params.rc.b_stat_write      = !!(avctx->flags & CODEC_FLAG_PASS1);
     if (avctx->flags & CODEC_FLAG_PASS2) {
         x4->params.rc.b_stat_read = 1;
     } else {
@@ -190,7 +190,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.i_scenecut_threshold        = avctx->scenechange_threshold;
 
-    x4->params.b_deblocking_filter         = avctx->flags & CODEC_FLAG_LOOP_FILTER;
+    x4->params.b_deblocking_filter         = !!(avctx->flags & CODEC_FLAG_LOOP_FILTER);
     x4->params.i_deblocking_filter_alphac0 = avctx->deblockalpha;
     x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
 
@@ -227,7 +227,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.analyse.i_direct_mv_pred  = avctx->directpred;
 
-    x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
+    x4->params.analyse.b_weighted_bipred = !!(avctx->flags2 & CODEC_FLAG2_WPRED);
     x4->params.analyse.i_weighted_pred = avctx->weighted_p_pred;
 
     if (avctx->me_method == ME_EPZS)
@@ -245,10 +245,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.i_me_range         = avctx->me_range;
     x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
 
-    x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
-    x4->params.analyse.b_chroma_me        = avctx->me_cmp & FF_CMP_CHROMA;
-    x4->params.analyse.b_transform_8x8    = avctx->flags2 & CODEC_FLAG2_8X8DCT;
-    x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
+    x4->params.analyse.b_mixed_references = !!(avctx->flags2 & CODEC_FLAG2_MIXED_REFS);
+    x4->params.analyse.b_chroma_me        = !!(avctx->me_cmp & FF_CMP_CHROMA);
+    x4->params.analyse.b_transform_8x8    = !!(avctx->flags2 & CODEC_FLAG2_8X8DCT);
+    x4->params.analyse.b_fast_pskip       = !!(avctx->flags2 & CODEC_FLAG2_FASTPSKIP);
 
     x4->params.analyse.i_trellis          = avctx->trellis;
     x4->params.analyse.i_noise_reduction  = avctx->noise_reduction;
@@ -271,14 +271,14 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
 
-    x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
+    x4->params.analyse.b_psnr = !!(avctx->flags & CODEC_FLAG_PSNR);
     x4->params.i_log_level    = X264_LOG_DEBUG;
 
-    x4->params.b_aud          = avctx->flags2 & CODEC_FLAG2_AUD;
+    x4->params.b_aud          = !!(avctx->flags2 & CODEC_FLAG2_AUD);
 
     x4->params.i_threads      = avctx->thread_count;
 
-    x4->params.b_interlaced   = avctx->flags & CODEC_FLAG_INTERLACED_DCT;
+    x4->params.b_interlaced   = !!(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER)
         x4->params.b_repeat_headers = 0;
