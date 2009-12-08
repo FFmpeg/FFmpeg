@@ -717,7 +717,7 @@ static void do_audio_out(AVFormatContext *s,
         }
     } else {
         AVPacket pkt;
-        int coded_bps = av_get_bits_per_sample(enc->codec->id)/8;
+        int coded_bps = av_get_bits_per_sample(enc->codec->id);
         av_init_packet(&pkt);
 
         ost->sync_opts += size_out / (osize * enc->channels);
@@ -726,7 +726,7 @@ static void do_audio_out(AVFormatContext *s,
         /* determine the size of the coded buffer */
         size_out /= osize;
         if (coded_bps)
-            size_out *= coded_bps;
+            size_out = size_out*coded_bps/8;
 
         //FIXME pass ost->sync_opts as AVFrame.pts in avcodec_encode_audio()
         ret = avcodec_encode_audio(enc, audio_out, size_out,
