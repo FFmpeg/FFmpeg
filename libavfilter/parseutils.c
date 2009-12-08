@@ -292,6 +292,8 @@ static int parse_key_value_pair(void *ctx, const char **buf,
     av_log(ctx, AV_LOG_DEBUG, "Setting value '%s' for key '%s'\n", val, key);
 
     ret = av_set_string3(ctx, key, val, 1, NULL);
+    if (ret == AVERROR(ENOENT))
+        av_log(ctx, AV_LOG_ERROR, "Key '%s' not found.\n", key);
 
     av_free(key);
     av_free(val);
