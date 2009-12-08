@@ -583,8 +583,10 @@ static void do_audio_out(AVFormatContext *s,
 
     av_fast_malloc(&audio_buf, &allocated_audio_buf_size, audio_buf_size);
     av_fast_malloc(&audio_out, &allocated_audio_out_size, audio_out_size);
-    if (!audio_buf || !audio_out)
-        return;               /* Should signal an error ! */
+    if (!audio_buf || !audio_out){
+        fprintf(stderr, "Out of memory in do_audio_out\n");
+        av_exit(1);
+    }
 
     if (enc->channels != dec->channels)
         ost->audio_resample = 1;
