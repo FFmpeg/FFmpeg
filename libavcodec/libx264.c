@@ -266,6 +266,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     } else
         x4->params.rc.f_vbv_buffer_init = 0.9;
 
+    x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
