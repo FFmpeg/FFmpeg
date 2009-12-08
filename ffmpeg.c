@@ -728,6 +728,11 @@ static void do_audio_out(AVFormatContext *s,
         if (coded_bps)
             size_out = size_out*coded_bps/8;
 
+        if(size_out > audio_out_size){
+            fprintf(stderr, "Internal error, buffer size too small\n");
+            av_exit(1);
+        }
+
         //FIXME pass ost->sync_opts as AVFrame.pts in avcodec_encode_audio()
         ret = avcodec_encode_audio(enc, audio_out, size_out,
                                    (short *)buftmp);
