@@ -472,6 +472,7 @@ static int h263_probe(AVProbeData *p)
             last_src_fmt= src_fmt;
         }
     }
+//av_log(NULL, AV_LOG_ERROR, "h263_probe: psc:%d invalid:%d res_change:%d\n", valid_psc, invalid_psc, res_change);
     if(valid_psc > 2*invalid_psc + 2*res_change + 2){
         return 50;
     }else if(valid_psc > 2*invalid_psc)
