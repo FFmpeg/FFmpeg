@@ -555,17 +555,33 @@ static void do_audio_out(AVFormatContext *s,
                          unsigned char *buf, int size)
 {
     uint8_t *buftmp;
-    const int audio_out_size= 4*MAX_AUDIO_PACKET_SIZE;
+    int64_t audio_out_size, audio_buf_size;
 
     int size_out, frame_bytes, ret;
     AVCodecContext *enc= ost->st->codec;
     AVCodecContext *dec= ist->st->codec;
     int osize= av_get_bits_per_sample_format(enc->sample_fmt)/8;
     int isize= av_get_bits_per_sample_format(dec->sample_fmt)/8;
+    const int coded_bps = av_get_bits_per_sample(enc->codec->id);
+
+    audio_buf_size= (size + isize*dec->channels - 1) / (isize*dec->channels);
+    audio_buf_size= (audio_buf_size*enc->sample_rate + dec->sample_rate) / dec->sample_rate;
+    audio_buf_size= audio_buf_size*2 + 10000; //saftey factors for the deprecated resampling API
+    audio_buf_size*= osize*enc->channels;
+
+    audio_out_size= FFMAX(audio_buf_size, enc->frame_size * osize * enc->channels);
+    if(coded_bps > 8*osize)
+        audio_out_size= audio_out_size * coded_bps / (8*osize);
+    audio_out_size += FF_MIN_BUFFER_SIZE;
+
+    if(audio_out_size > INT_MAX || audio_buf_size > INT_MAX){
+        fprintf(stderr, "Buffer sizes too large\n");
+        av_exit(1);
+    }
 
     /* SC: dynamic allocation of buffers */
     if (!audio_buf)
-        audio_buf = av_malloc(audio_out_size);
+        audio_buf = av_malloc(audio_buf_size);
     if (!audio_out)
         audio_out = av_malloc(audio_out_size);
     if (!audio_buf || !audio_out)
@@ -717,7 +733,6 @@ static void do_audio_out(AVFormatContext *s,
         }
     } else {
         AVPacket pkt;
-        int coded_bps = av_get_bits_per_sample(enc->codec->id);
         av_init_packet(&pkt);
 
         ost->sync_opts += size_out / (osize * enc->channels);
