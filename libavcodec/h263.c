@@ -5903,7 +5903,11 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
         av_log(s->avctx, AV_LOG_ERROR, "hmm, seems the headers are not complete, trying to guess time_increment_bits\n");
 
         for(s->time_increment_bits=1 ;s->time_increment_bits<16; s->time_increment_bits++){
-            if(show_bits(gb, s->time_increment_bits+1)&1) break;
+            if (    s->pict_type == FF_P_TYPE
+                || (s->pict_type == FF_S_TYPE && s->vol_sprite_usage==GMC_SPRITE)) {
+                if((show_bits(gb, s->time_increment_bits+6)&0x37) == 0x30) break;
+            }else
+                if((show_bits(gb, s->time_increment_bits+5)&0x1F) == 0x18) break;
         }
 
         av_log(s->avctx, AV_LOG_ERROR, "my guess is %d bits ;)\n",s->time_increment_bits);
