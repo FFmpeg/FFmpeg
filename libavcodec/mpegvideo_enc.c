@@ -531,12 +531,18 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     case CODEC_ID_MJPEG:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
+        if(avctx->codec->id == CODEC_ID_MJPEG){
         s->mjpeg_vsample[0] = 2;
         s->mjpeg_vsample[1] = 2>>chroma_v_shift;
         s->mjpeg_vsample[2] = 2>>chroma_v_shift;
         s->mjpeg_hsample[0] = 2;
         s->mjpeg_hsample[1] = 2>>chroma_h_shift;
         s->mjpeg_hsample[2] = 2>>chroma_h_shift;
+        }else{
+            s->mjpeg_vsample[0] = s->mjpeg_hsample[0] =
+            s->mjpeg_vsample[1] = s->mjpeg_hsample[1] =
+            s->mjpeg_vsample[2] = s->mjpeg_hsample[2] = 1;
+        }
         if (!(CONFIG_MJPEG_ENCODER || CONFIG_LJPEG_ENCODER)
             || ff_mjpeg_encode_init(s) < 0)
             return -1;
