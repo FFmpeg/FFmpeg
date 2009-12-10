@@ -531,7 +531,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     case CODEC_ID_MJPEG:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
-        if(avctx->codec->id == CODEC_ID_MJPEG){
+        if(avctx->codec->id == CODEC_ID_MJPEG || avctx->pix_fmt != PIX_FMT_BGRA){
         s->mjpeg_vsample[0] = 2;
         s->mjpeg_vsample[1] = 2>>chroma_v_shift;
         s->mjpeg_vsample[2] = 2>>chroma_v_shift;
