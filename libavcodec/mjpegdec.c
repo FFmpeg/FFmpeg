@@ -674,9 +674,9 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point
             }
         }else{
             for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
-                ptr[4*mb_x+0] = buffer[mb_x][0];
+                ptr[4*mb_x+0] = buffer[mb_x][2];
                 ptr[4*mb_x+1] = buffer[mb_x][1];
-                ptr[4*mb_x+2] = buffer[mb_x][2];
+                ptr[4*mb_x+2] = buffer[mb_x][0];
             }
         }
     }
