@@ -56,7 +56,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
 
     s->header_bits= put_bits_count(&s->pb);
 
-    if(avctx->pix_fmt == PIX_FMT_RGB32){
+    if(avctx->pix_fmt == PIX_FMT_BGRA){
         int x, y, i;
         const int linesize= p->linesize[0];
         uint16_t (*buffer)[4]= (void *) s->rd_scratchpad;
