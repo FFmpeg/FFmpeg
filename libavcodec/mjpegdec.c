@@ -1182,7 +1182,8 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
             else if(!strcmp(cbuf, "CS=ITU601")){
                 s->cs_itu601= 1;
             }
-            else if(len > 20 && !strncmp(cbuf, "Intel(R) JPEG Library", 21)){
+            else if((len > 20 && !strncmp(cbuf, "Intel(R) JPEG Library", 21)) ||
+                    (len > 19 && !strncmp(cbuf, "Metasoft MJPEG Codec", 20))){
                 s->flipped = 1;
             }
 
