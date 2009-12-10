@@ -301,7 +301,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     switch(pix_fmt_id){
     case 0x11111100:
         if(s->rgb){
-            s->avctx->pix_fmt = PIX_FMT_RGB32;
+            s->avctx->pix_fmt = PIX_FMT_BGRA;
         }else
             s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV444P : PIX_FMT_YUVJ444P;
         assert(s->nb_components==3);
