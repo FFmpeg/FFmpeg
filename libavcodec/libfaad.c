@@ -183,7 +183,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
         unsigned char channels;
         int r = s->faacDecInit(s->faac_handle, buf, buf_size, &srate, &channels);
         if(r < 0){
-            av_log(avctx, AV_LOG_ERROR, "faac: codec init failed.\n");
+            av_log(avctx, AV_LOG_ERROR, "libfaad: codec init failed.\n");
             return -1;
         }
         avctx->sample_rate = srate;
@@ -195,7 +195,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
     out = s->faacDecDecode(s->faac_handle, &frame_info, (unsigned char*)buf, (unsigned long)buf_size);
 
     if (frame_info.error > 0) {
-        av_log(avctx, AV_LOG_ERROR, "faac: frame decoding failed: %s\n",
+        av_log(avctx, AV_LOG_ERROR, "libfaad: frame decoding failed: %s\n",
                s->faacDecGetErrorMessage(frame_info.error));
         return -1;
     }
