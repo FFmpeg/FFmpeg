@@ -398,6 +398,17 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int dvvideo_init_encoder(AVCodecContext *avctx)
+{
+    if (!ff_dv_codec_profile(avctx)) {
+        av_log(avctx, AV_LOG_ERROR, "Found no DV profile for %ix%i %s video\n",
+               avctx->width, avctx->height, avcodec_get_pix_fmt_name(avctx->pix_fmt));
+        return -1;
+    }
+
+    return dvvideo_init(avctx);
+}
+
 // #define VLC_DEBUG
 // #define printf(...) av_log(NULL, AV_LOG_ERROR, __VA_ARGS__)
 
@@ -1326,7 +1337,7 @@ AVCodec dvvideo_encoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_DVVIDEO,
     sizeof(DVVideoContext),
-    dvvideo_init,
+    dvvideo_init_encoder,
     dvvideo_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]) {PIX_FMT_YUV411P, PIX_FMT_YUV422P, PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
