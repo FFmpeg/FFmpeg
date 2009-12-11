@@ -53,6 +53,7 @@ typedef enum {
     STATE_READY,      ///< client has sent all needed commands and waits for server reply
     STATE_PLAYING,    ///< client has started receiving multimedia data from server
     STATE_PUBLISHING, ///< client has started sending multimedia data to server (for output)
+    STATE_STOPPED,    ///< the broadcast has been stopped
 } ClientState;
 
 /** protocol handler context */
@@ -619,6 +620,8 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
             t = ff_amf_get_field_value(ptr, data_end,
                                        "code", tmpstr, sizeof(tmpstr));
             if (!t && !strcmp(tmpstr, "NetStream.Play.Start")) rt->state = STATE_PLAYING;
+            if (!t && !strcmp(tmpstr, "NetStream.Play.Stop")) rt->state = STATE_STOPPED;
+            if (!t && !strcmp(tmpstr, "NetStream.Play.UnpublishNotify")) rt->state = STATE_STOPPED;
             if (!t && !strcmp(tmpstr, "NetStream.Publish.Start")) rt->state = STATE_PUBLISHING;
         }
         break;
@@ -642,6 +645,9 @@ static int get_packet(URLContext *s, int for_header)
     RTMPContext *rt = s->priv_data;
     int ret;
 
+    if (rt->state == STATE_STOPPED)
+        return AVERROR_EOF;
+
     for (;;) {
         RTMPPacket rpkt;
         if ((ret = ff_rtmp_packet_read(rt->stream, &rpkt,
@@ -657,6 +663,10 @@ static int get_packet(URLContext *s, int for_header)
         if (ret < 0) {//serious error in current packet
             ff_rtmp_packet_destroy(&rpkt);
             return -1;
+        }
+        if (rt->state == STATE_STOPPED) {
+            ff_rtmp_packet_destroy(&rpkt);
+            return AVERROR_EOF;
         }
         if (for_header && (rt->state == STATE_PLAYING || rt->state == STATE_PUBLISHING)) {
             ff_rtmp_packet_destroy(&rpkt);
