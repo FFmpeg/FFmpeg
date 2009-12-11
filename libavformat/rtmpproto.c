@@ -144,6 +144,7 @@ static void gen_connect(URLContext *s, RTMPContext *rt, const char *proto,
     pkt.data_size = p - pkt.data;
 
     ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size, rt->prev_pkt[1]);
+    ff_rtmp_packet_destroy(&pkt);
 }
 
 /**
