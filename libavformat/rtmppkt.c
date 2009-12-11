@@ -322,3 +322,113 @@ int ff_amf_get_field_value(const uint8_t *data, const uint8_t *data_end,
     }
     return -1;
 }
+
+static const char* rtmp_packet_type(int type)
+{
+    switch (type) {
+    case RTMP_PT_CHUNK_SIZE:     return "chunk size";
+    case RTMP_PT_BYTES_READ:     return "bytes read";
+    case RTMP_PT_PING:           return "ping";
+    case RTMP_PT_SERVER_BW:      return "server bandwidth";
+    case RTMP_PT_CLIENT_BW:      return "client bandwidth";
+    case RTMP_PT_AUDIO:          return "audio packet";
+    case RTMP_PT_VIDEO:          return "video packet";
+    case RTMP_PT_FLEX_STREAM:    return "Flex shared stream";
+    case RTMP_PT_FLEX_OBJECT:    return "Flex shared object";
+    case RTMP_PT_FLEX_MESSAGE:   return "Flex shared message";
+    case RTMP_PT_NOTIFY:         return "notification";
+    case RTMP_PT_SHARED_OBJ:     return "shared object";
+    case RTMP_PT_INVOKE:         return "invoke";
+    case RTMP_PT_METADATA:       return "metadata";
+    default:                     return "unknown";
+    }
+}
+
+static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *data_end)
+{
+    const uint8_t *base = data;
+    int i, size;
+    char buf[1024];
+
+    if (data >= data_end)
+        return;
+    switch (*data++) {
+    case AMF_DATA_TYPE_NUMBER:
+        av_log(ctx, AV_LOG_DEBUG, " number %g\n", av_int2dbl(AV_RB64(data)));
+        return;
+    case AMF_DATA_TYPE_BOOL:
+        av_log(ctx, AV_LOG_DEBUG, " bool %d\n", *data);
+        return;
+    case AMF_DATA_TYPE_STRING:
+    case AMF_DATA_TYPE_LONG_STRING:
+        if (data[-1] == AMF_DATA_TYPE_STRING) {
+            size = bytestream_get_be16(&data);
+        } else {
+            size = bytestream_get_be32(data);
+        }
+        size = FFMIN(size, 1023);
+        memcpy(buf, data, size);
+        buf[size] = 0;
+        av_log(ctx, AV_LOG_DEBUG, " string '%s'\n", buf);
+        return;
+    case AMF_DATA_TYPE_NULL:
+        av_log(ctx, AV_LOG_DEBUG, " NULL\n");
+        return;
+    case AMF_DATA_TYPE_ARRAY:
+        data += 4;
+    case AMF_DATA_TYPE_OBJECT:
+        av_log(ctx, AV_LOG_DEBUG, " {\n");
+        for (;;) {
+            int size = bytestream_get_be16(&data);
+            int t;
+            memcpy(buf, data, size);
+            buf[size] = 0;
+            if (!size) {
+                av_log(ctx, AV_LOG_DEBUG, " }\n");
+                data++;
+                break;
+            }
+            if (data + size >= data_end || data + size < data)
+                return;
+            data += size;
+            av_log(ctx, AV_LOG_DEBUG, "  %s: ", buf);
+            ff_amf_tag_contents(ctx, data, data_end);
+            t = ff_amf_tag_size(data, data_end);
+            if (t < 0 || data + t >= data_end)
+                return;
+            data += t;
+        }
+        return;
+    case AMF_DATA_TYPE_OBJECT_END:
+        av_log(ctx, AV_LOG_DEBUG, " }\n");
+        return;
+    default:
+        return;
+    }
+}
+
+void ff_rtmp_packet_dump(void *ctx, RTMPPacket *p)
+{
+    av_log(ctx, AV_LOG_DEBUG, "RTMP packet type '%s'(%d) for channel %d, timestamp %d, extra field %d size %d\n",
+           rtmp_packet_type(p->type), p->type, p->channel_id, p->timestamp, p->extra, p->data_size);
+    if (p->type == RTMP_PT_INVOKE || p->type == RTMP_PT_NOTIFY) {
+        uint8_t *src = p->data, *src_end = p->data + p->data_size;
+        while (src < src_end) {
+            int sz;
+            ff_amf_tag_contents(ctx, src, src_end);
+            sz = ff_amf_tag_size(src, src_end);
+            if (sz < 0)
+                break;
+            src += sz;
+        }
+    } else if (p->type == RTMP_PT_SERVER_BW){
+        av_log(ctx, AV_LOG_DEBUG, "Server BW = %d\n", AV_RB32(p->data));
+    } else if (p->type == RTMP_PT_CLIENT_BW){
+        av_log(ctx, AV_LOG_DEBUG, "Client BW = %d\n", AV_RB32(p->data));
+    } else if (p->type != RTMP_PT_AUDIO && p->type != RTMP_PT_VIDEO && p->type != RTMP_PT_METADATA) {
+        int i;
+        for (i = 0; i < p->data_size; i++)
+            av_log(ctx, AV_LOG_DEBUG, " %02X", p->data[i]);
+        av_log(ctx, AV_LOG_DEBUG, "\n");
+    }
+}

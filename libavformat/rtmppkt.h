@@ -129,6 +129,14 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *p,
                          int chunk_size, RTMPPacket *prev_pkt);
 
 /**
+ * Prints information and contents of RTMP packet.
+ *
+ * @param h          output context
+ * @param p          packet to dump
+ */
+void ff_rtmp_packet_dump(void *ctx, RTMPPacket *p);
+
+/**
  * @defgroup amffuncs functions used to work with AMF format (which is also used in .flv)
  * @see amf_* funcs in libavformat/flvdec.c
  * @{

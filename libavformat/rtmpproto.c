@@ -43,6 +43,8 @@
 #define LOG_CONTEXT s
 #endif
 
+//#define DEBUG
+
 /** RTMP protocol handler state */
 typedef enum {
     STATE_START,      ///< client has not done anything yet
@@ -528,6 +530,10 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
 {
     int i, t;
     const uint8_t *data_end = pkt->data + pkt->data_size;
+
+#ifdef DEBUG
+    ff_rtmp_packet_dump(LOG_CONTEXT, pkt);
+#endif
 
     switch (pkt->type) {
     case RTMP_PT_CHUNK_SIZE:
