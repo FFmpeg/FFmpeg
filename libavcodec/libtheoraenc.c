@@ -46,6 +46,7 @@ typedef struct TheoraContext {
     int         stats_offset;
     int         uv_hshift;
     int         uv_vshift;
+    int         keyframe_mask;
 } TheoraContext;
 
 /*!
@@ -218,6 +219,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
         return -1;
     }
 
+    h->keyframe_mask = (1 << t_info.keyframe_granule_shift) - 1;
     /* Clear up theora_info struct */
     th_info_clear(&t_info);
 
@@ -336,6 +338,7 @@ static int encode_frame(AVCodecContext* avc_context, uint8_t *outbuf,
 
     // HACK: does not take codec delay into account (neither does the decoder though)
     avc_context->coded_frame->pts = frame->pts;
+    avc_context->coded_frame->key_frame = !(o_packet.granulepos & h->keyframe_mask);
 
     return o_packet.bytes;
 }
