@@ -5,4 +5,5 @@
     { "codecs"   , OPT_EXIT, {(void*)show_codecs   }, "show available codecs" },
     { "bsfs"     , OPT_EXIT, {(void*)show_bsfs     }, "show available bit stream filters" },
     { "protocols", OPT_EXIT, {(void*)show_protocols}, "show available protocols" },
+    { "filters",   OPT_EXIT, {(void*)show_filters  }, "show available filters" },
     { "loglevel", HAS_ARG | OPT_FUNC2, {(void*)opt_loglevel}, "set libav* logging level", "loglevel" },

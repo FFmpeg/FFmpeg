@@ -249,6 +249,8 @@ Show available codecs.
 Show available bitstream filters.
 @item -protocols
 Show available protocols.
+@item -filters
+Show available libavfilter filters.
 @item -h
 Show help.
 @item -loglevel @var{loglevel}

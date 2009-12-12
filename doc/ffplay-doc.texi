@@ -43,6 +43,8 @@ Show available codecs.
 Show available bitstream filters.
 @item -protocols
 Show available protocols.
+@item -filters
+Show available libavfilter filters.
 @item -x @var{width}
 Force displayed width.
 @item -y @var{height}

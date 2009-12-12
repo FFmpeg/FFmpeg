@@ -164,6 +164,12 @@ void show_formats(void);
 void show_codecs(void);
 
 /**
+ * Prints a listing containing all the filters supported by the
+ * program.
+ */
+void show_filters(void);
+
+/**
  * Prints a listing containing all the bit stream filters supported by the
  * program.
  */

@@ -270,6 +270,9 @@ Show available bitstream filters.
 @item -protocols
 Show available protocols.
 
+@item -filters
+Show available libavfilter filters.
+
 @item -f @var{fmt}
 Force format.
 

@@ -560,6 +560,15 @@ void show_protocols(void)
     printf("Frame size, frame rate abbreviations:\n ntsc pal qntsc qpal sntsc spal film ntsc-film sqcif qcif cif 4cif\n");
 }
 
+void show_filters(void)
+{
+    AVFilter **filter = NULL;
+
+    printf("Filters:\n");
+    while ((filter = av_filter_next(filter)) && *filter)
+        printf("%-16s %s\n", (*filter)->name, (*filter)->description);
+}
+
 int read_yesno(void)
 {
     int c = getchar();
