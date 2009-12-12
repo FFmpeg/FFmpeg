@@ -575,8 +575,10 @@ void show_filters(void)
     AVFilter **filter = NULL;
 
     printf("Filters:\n");
+#if CONFIG_AVFILTER
     while ((filter = av_filter_next(filter)) && *filter)
         printf("%-16s %s\n", (*filter)->name, (*filter)->description);
+#endif
 }
 
 int read_yesno(void)
