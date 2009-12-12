@@ -1557,7 +1557,7 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
         s->picture_structure= PICT_FRAME;
     }
 
-    if(s->progressive_frame && !s->frame_pred_frame_dct){
+    if(s->progressive_sequence && !s->frame_pred_frame_dct){
         av_log(s->avctx, AV_LOG_ERROR, "invalid frame_pred_frame_dct\n");
         s->frame_pred_frame_dct= 1;
     }
