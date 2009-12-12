@@ -189,6 +189,7 @@ CODEC_TESTS = $(addprefix regtest-,             \
         dnxhd_720p_rd                           \
         svq1                                    \
         flashsv                                 \
+        roq                                     \
         mp2                                     \
         ac3                                     \
         g726                                    \

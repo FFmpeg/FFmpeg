@@ -182,6 +182,10 @@ stddev:    3.23 PSNR: 37.93 bytes:  7603200/  7603200
 12368953 ./tests/data/a-flashsv.flv
 592b3321994e26a990deb3a0a1415de9 *./tests/data/flashsv.rotozoom.out.yuv
 stddev:    0.65 PSNR: 51.84 bytes:  7603200/  7603200
+7ed9804f2e4b962421007afa23a157a9 *./tests/data/a-roqav.roq
+92322 ./tests/data/a-roqav.roq
+fe633f931dbc84fd6ca1a79e25edfd4f *./tests/data/roq.rotozoom.out.yuv
+stddev:    3.80 PSNR: 36.52 bytes:   760320/  7603200
 f6eb0a205350bbd7fb1028a01c7ae8aa *./tests/data/a-mp2.mp2
 96130 ./tests/data/a-mp2.mp2
 74c7b6b15a001add199619fafe4059a1 *./tests/data/mp2.rotozoom.out.wav

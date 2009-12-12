@@ -241,6 +241,11 @@ do_video_encoding flashsv.flv "" "-an -vcodec flashsv -sws_flags neighbor+full_c
 do_video_decoding "" "-pix_fmt yuv420p -sws_flags area+accurate_rnd+bitexact"
 fi
 
+if [ -n "$do_roq" ] ; then
+do_video_encoding roqav.roq "" "-vframes 5"
+do_video_decoding "" "-pix_fmt yuv420p"
+fi
+
 if [ -n "$do_mp2" ] ; then
 do_audio_encoding mp2.mp2 "-ar 44100"
 do_audio_decoding
