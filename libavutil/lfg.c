@@ -39,6 +39,21 @@ void av_cold av_lfg_init(AVLFG *c, unsigned int seed){
     c->index=0;
 }
 
+void av_bmg_get(AVLFG *lfg, double out[2])
+{
+    double x1, x2, w;
+
+    do {
+        x1 = 2.0/UINT_MAX*av_lfg_get(lfg) - 1.0;
+        x2 = 2.0/UINT_MAX*av_lfg_get(lfg) - 1.0;
+        w = x1*x1 + x2*x2;
+    } while (w >= 1.0);
+
+    w = sqrt((-2.0 * log(w)) / w);
+    out[0] = x1 * w;
+    out[1] = x2 * w;
+}
+
 #ifdef TEST
 #include "log.h"
 #include "common.h"
@@ -59,6 +74,24 @@ int main(void)
         STOP_TIMER("624 calls of av_lfg_get");
     }
     av_log(NULL, AV_LOG_ERROR, "final value:%X\n", x);
+
+    /* BMG usage example */
+    {
+        double mean   = 1000;
+        double stddev = 53;
+
+        av_lfg_init(&state, 42);
+
+        for (i = 0; i < 1000; i += 2) {
+            double bmg_out[2];
+            av_bmg_get(&state, bmg_out);
+            av_log(NULL, AV_LOG_INFO,
+                   "%f\n%f\n",
+                   bmg_out[0] * stddev + mean,
+                   bmg_out[1] * stddev + mean);
+        }
+    }
+
     return 0;
 }
 #endif
