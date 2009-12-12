@@ -217,17 +217,17 @@ fi
 
 if [ -n "$do_dnxhd_1080i" ] ; then
 # FIXME: interlaced raw DNxHD decoding is broken
-do_video_encoding dnxhd-1080i.mov "" "-vcodec dnxhd -flags +ildct -s hd1080 -b 120Mb -pix_fmt yuv422p -an"
+do_video_encoding dnxhd-1080i.mov "" "-vcodec dnxhd -flags +ildct -s hd1080 -b 120Mb -pix_fmt yuv422p -vframes 5 -an"
 do_video_decoding "-r 25" "-s cif -pix_fmt yuv420p"
 fi
 
 if [ -n "$do_dnxhd_720p" ] ; then
-do_video_encoding dnxhd-720p.dnxhd "" "-s hd720 -b 90Mb -pix_fmt yuv422p -an"
+do_video_encoding dnxhd-720p.dnxhd "" "-s hd720 -b 90Mb -pix_fmt yuv422p -vframes 5 -an"
 do_video_decoding "-r 25" "-s cif -pix_fmt yuv420p"
 fi
 
 if [ -n "$do_dnxhd_720p_rd" ] ; then
-do_video_encoding dnxhd-720p-rd.dnxhd "" "-threads 4 -mbd rd -s hd720 -b 90Mb -pix_fmt yuv422p -an"
+do_video_encoding dnxhd-720p-rd.dnxhd "" "-threads 4 -mbd rd -s hd720 -b 90Mb -pix_fmt yuv422p -vframes 5 -an"
 do_video_decoding "-r 25" "-s cif -pix_fmt yuv420p"
 fi
 

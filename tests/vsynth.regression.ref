@@ -162,18 +162,18 @@ stddev:   30.76 PSNR: 18.37 bytes:  7603200/  7603200
 14400000 ./tests/data/a-dv50.dv
 a2ff093e93ffed10f730fa21df02fc50 *./tests/data/dv50.vsynth.out.yuv
 stddev:    1.72 PSNR: 43.38 bytes:  7603200/  7603200
-8ff3c18dabe28509b4e5b3fdaa7f0856 *./tests/data/a-dnxhd-1080i.mov
-30311415 ./tests/data/a-dnxhd-1080i.mov
-52f50a8031eebf980a1303e4744a49f8 *./tests/data/dnxhd_1080i.vsynth.out.yuv
-stddev:    6.28 PSNR: 32.17 bytes:  7603200/  7603200
-d206daba40f3c1be8b834de8a41e984c *./tests/data/a-dnxhd-720p.dnxhd
-22937600 ./tests/data/a-dnxhd-720p.dnxhd
-d7f14ee0dd3a4df95f05999677da348b *./tests/data/dnxhd_720p.vsynth.out.yuv
-stddev:    6.39 PSNR: 32.01 bytes:  7603200/  7603200
-c0a42b916489d3c1d0a315974821e28d *./tests/data/a-dnxhd-720p-rd.dnxhd
-22937600 ./tests/data/a-dnxhd-720p-rd.dnxhd
-50efe763b272af3367985218aff68b1b *./tests/data/dnxhd_720p_rd.vsynth.out.yuv
-stddev:    6.25 PSNR: 32.21 bytes:  7603200/  7603200
+cd1489f18d2186a49ab23c61ed33bce7 *./tests/data/a-dnxhd-1080i.mov
+3031875 ./tests/data/a-dnxhd-1080i.mov
+0c651e840f860592f0d5b66030d9fa32 *./tests/data/dnxhd_1080i.vsynth.out.yuv
+stddev:    6.29 PSNR: 32.15 bytes:   760320/  7603200
+81f5be451dc18cf8a1d333c7885de60b *./tests/data/a-dnxhd-720p.dnxhd
+2293760 ./tests/data/a-dnxhd-720p.dnxhd
+94b21e5e68ccf9471eff74afd0ebe319 *./tests/data/dnxhd_720p.vsynth.out.yuv
+stddev:    6.32 PSNR: 32.11 bytes:   760320/  7603200
+1dc6e95925c4f3a230848ec17c02abed *./tests/data/a-dnxhd-720p-rd.dnxhd
+2293760 ./tests/data/a-dnxhd-720p-rd.dnxhd
+02972d2aec120ec1577ec9053d68ae0f *./tests/data/dnxhd_720p_rd.vsynth.out.yuv
+stddev:    6.26 PSNR: 32.19 bytes:   760320/  7603200
 595fc4e38734521356b60e67b813f0fa *./tests/data/a-svq1.mov
 1334367 ./tests/data/a-svq1.mov
 9cc35c54b2c77d36bd7e308b393c1f81 *./tests/data/svq1.vsynth.out.yuv
