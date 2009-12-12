@@ -413,6 +413,16 @@ void show_license(void)
     );
 }
 
+void list_fmts(void (*get_fmt_string)(char *buf, int buf_size, int fmt), int nb_fmts)
+{
+    int i;
+    char fmt_str[128];
+    for (i=-1; i < nb_fmts; i++) {
+        get_fmt_string (fmt_str, sizeof(fmt_str), i);
+        fprintf(stdout, "%s\n", fmt_str);
+    }
+}
+
 void show_formats(void)
 {
     AVInputFormat *ifmt=NULL;

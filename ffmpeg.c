@@ -2564,16 +2564,6 @@ static void opt_frame_pad_right(const char *arg)
     }
 }
 
-static void list_fmts(void (*get_fmt_string)(char *buf, int buf_size, int fmt), int nb_fmts)
-{
-    int i;
-    char fmt_str[128];
-    for (i=-1; i < nb_fmts; i++) {
-        get_fmt_string (fmt_str, sizeof(fmt_str), i);
-        fprintf(stdout, "%s\n", fmt_str);
-    }
-}
-
 static void opt_frame_pix_fmt(const char *arg)
 {
     if (strcmp(arg, "list")) {
