@@ -25,6 +25,15 @@
 
 #include <stdint.h>
 
+/** Sparse representation for the algebraic codebook (fixed) vector */
+typedef struct {
+    int      n;
+    int      x[10];
+    float    y[10];
+    int      pitch_lag;
+    float    pitch_fac;
+} AMRFixed;
+
 /**
  * Track|Pulse|        Positions
  * -------------------------------------------------------------------------
@@ -126,6 +135,24 @@ void ff_acelp_fc_pulse_per_track(
         int bits);
 
 /**
+ * Decode the algebraic codebook index to pulse positions and signs and
+ * construct the algebraic codebook vector for MODE_12k2.
+ *
+ * @note: The positions and signs are explicitly coded in MODE_12k2.
+ *
+ * @param fixed_index          positions of the ten pulses
+ * @param fixed_sparse         pointer to the algebraic codebook vector
+ * @param gray_decode          gray decoding table
+ * @param half_pulse_count     number of couples of pulses
+ * @param bits                 length of one pulse index in bits
+ */
+void ff_decode_10_pulses_35bits(const int16_t *fixed_index,
+                                AMRFixed *fixed_sparse,
+                                const uint8_t *gray_decode,
+                                int half_pulse_count, int bits);
+
+
+/**
  * weighted sum of two vectors with rounding.
  * @param out [out] result of addition
  * @param in_a first vector
@@ -193,5 +220,24 @@ void ff_adaptative_gain_control(float *buf_out, float speech_energ,
  */
 void ff_scale_vector_to_given_sum_of_squares(float *out, const float *in,
                                              float sum_of_squares, const int n);
+
+/**
+ * Add fixed vector to an array from a sparse representation
+ *
+ * @param out fixed vector with pitch sharpening
+ * @param in sparse fixed vector
+ * @param scale number to multiply the fixed vector by
+ * @param size the output vector size
+ */
+void ff_set_fixed_vector(float *out, const AMRFixed *in, float scale, int size);
+
+/**
+ * Clear array values set by set_fixed_vector
+ *
+ * @param out fixed vector to be cleared
+ * @param in sparse fixed vector
+ * @param size the output vector size
+ */
+void ff_clear_fixed_vector(float *out, const AMRFixed *in, int size);
 
 #endif /* AVCODEC_ACELP_VECTORS_H */
