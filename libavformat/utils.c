@@ -1177,7 +1177,7 @@ int av_find_default_stream_index(AVFormatContext *s)
 void av_read_frame_flush(AVFormatContext *s)
 {
     AVStream *st;
-    int i;
+    int i, j;
 
     flush_packet_queue(s);
 
@@ -1200,6 +1200,9 @@ void av_read_frame_flush(AVFormatContext *s)
         st->cur_len = 0;
 
         st->probe_packets = MAX_PROBE_PACKETS;
+
+        for(j=0; j<MAX_REORDER_DELAY+1; j++)
+            st->pts_buffer[j]= AV_NOPTS_VALUE;
     }
 }
 
