@@ -95,15 +95,16 @@ static int speex_packet(AVFormatContext *s, int idx)
         os->private = spxp;
     }
 
-    if (os->flags & OGG_FLAG_EOS && os->lastgp != -1 && os->granule > 0) {
+    if (os->flags & OGG_FLAG_EOS && os->lastpts != AV_NOPTS_VALUE &&
+        os->granule > 0) {
         /* first packet of final page. we have to calculate the final packet
            duration here because it is the only place we know the next-to-last
            granule position. */
-        spxp->final_packet_duration = os->granule - os->lastgp -
+        spxp->final_packet_duration = os->granule - os->lastpts -
                                       packet_size * (ogg_page_packets(os) - 1);
     }
 
-    if (!os->lastgp && os->granule > 0)
+    if (!os->lastpts && os->granule > 0)
         /* first packet */
         os->pduration = os->granule - packet_size * (ogg_page_packets(os) - 1);
     else if (os->flags & OGG_FLAG_EOS && os->segp == os->nsegs &&

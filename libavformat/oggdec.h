@@ -41,6 +41,11 @@ struct ogg_codec {
     int (*header)(AVFormatContext *, int);
     int (*packet)(AVFormatContext *, int);
     uint64_t (*gptopts)(AVFormatContext *, int, uint64_t);
+    /**
+     * 1 if granule is the start time of the associated packet.
+     * 0 if granule is the end time of the associated packet.
+     */
+    int granule_is_start;
 };
 
 struct ogg_stream {
@@ -53,12 +58,14 @@ struct ogg_stream {
     unsigned int pduration;
     uint32_t serial;
     uint32_t seq;
-    uint64_t granule, lastgp;
+    uint64_t granule;
+    int64_t lastpts;
     int flags;
     const struct ogg_codec *codec;
     int header;
     int nsegs, segp;
     uint8_t segments[255];
+    int page_end;   ///< current packet is the last one completed in the page
     void *private;
 };
 

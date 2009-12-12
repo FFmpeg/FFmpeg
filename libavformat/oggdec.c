@@ -116,7 +116,7 @@ ogg_reset (struct ogg * ogg)
         os->pstart = 0;
         os->psize = 0;
         os->granule = -1;
-        os->lastgp = -1;
+        os->lastpts = AV_NOPTS_VALUE;
         os->nsegs = 0;
         os->segp = 0;
     }
@@ -288,7 +288,6 @@ ogg_read_page (AVFormatContext * s, int *str)
     if (get_buffer (bc, os->buf + os->bufpos, size) < size)
         return -1;
 
-    os->lastgp = os->granule;
     os->bufpos += size;
     os->granule = gp;
     os->flags = flags;
@@ -303,7 +302,7 @@ static int
 ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize)
 {
     struct ogg *ogg = s->priv_data;
-    int idx;
+    int idx, i;
     struct ogg_stream *os;
     int complete = 0;
     int segp = 0, psize = 0;
@@ -392,6 +391,15 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize)
         os->pstart += os->psize;
         os->psize = 0;
     }
+
+    // determine whether there are more complete packets in this page
+    // if not, the page's granule will apply to this packet
+    os->page_end = 1;
+    for (i = os->segp; i < os->nsegs; i++)
+        if (os->segments[i] < 255) {
+            os->page_end = 0;
+            break;
+        }
 
     os->seq++;
     if (os->segp == os->nsegs)
@@ -519,9 +527,20 @@ ogg_read_packet (AVFormatContext * s, AVPacket * pkt)
         return AVERROR(EIO);
     pkt->stream_index = idx;
     memcpy (pkt->data, os->buf + pstart, psize);
-    if (os->lastgp != -1LL){
-        pkt->pts = ogg_gptopts (s, idx, os->lastgp);
-        os->lastgp = -1;
+
+    if (os->lastpts != AV_NOPTS_VALUE) {
+        pkt->pts = os->lastpts;
+        os->lastpts = AV_NOPTS_VALUE;
+    }
+    if (os->page_end) {
+        if (os->granule != -1LL) {
+            if (os->codec && os->codec->granule_is_start)
+                pkt->pts    = ogg_gptopts(s, idx, os->granule);
+            else
+                os->lastpts = ogg_gptopts(s, idx, os->granule);
+            os->granule = -1LL;
+        } else
+            av_log(s, AV_LOG_WARNING, "Packet is missing granule\n");
     }
 
     pkt->flags = os->pflags;

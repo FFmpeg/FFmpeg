@@ -153,26 +153,30 @@ const struct ogg_codec ff_ogm_video_codec = {
     .magic = "\001video",
     .magicsize = 6,
     .header = ogm_header,
-    .packet = ogm_packet
+    .packet = ogm_packet,
+    .granule_is_start = 1,
 };
 
 const struct ogg_codec ff_ogm_audio_codec = {
     .magic = "\001audio",
     .magicsize = 6,
     .header = ogm_header,
-    .packet = ogm_packet
+    .packet = ogm_packet,
+    .granule_is_start = 1,
 };
 
 const struct ogg_codec ff_ogm_text_codec = {
     .magic = "\001text",
     .magicsize = 5,
     .header = ogm_header,
-    .packet = ogm_packet
+    .packet = ogm_packet,
+    .granule_is_start = 1,
 };
 
 const struct ogg_codec ff_ogm_old_codec = {
     .magic = "\001Direct Show Samples embedded in Ogg",
     .magicsize = 35,
     .header = ogm_dshow_header,
-    .packet = ogm_packet
+    .packet = ogm_packet,
+    .granule_is_start = 1,
 };
