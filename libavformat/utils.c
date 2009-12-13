@@ -2852,6 +2852,18 @@ static void print_fps(double d, const char *postfix){
     else                  av_log(NULL, AV_LOG_INFO, ", %1.0fk %s", d/1000, postfix);
 }
 
+static void dump_metadata(void *ctx, AVMetadata *m, const char *indent)
+{
+    if(m){
+        AVMetadataTag *tag=NULL;
+
+        av_log(ctx, AV_LOG_INFO, "%sMetadata:\n", indent);
+        while((tag=av_metadata_get(m, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
+            av_log(ctx, AV_LOG_INFO, "%s  %-16s: %s\n", indent, tag->key, tag->value);
+        }
+    }
+}
+
 /* "user interface" functions */
 static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_output)
 {
@@ -2960,13 +2972,7 @@ void dump_format(AVFormatContext *ic,
         if (!printed[i])
             dump_stream_format(ic, i, index, is_output);
 
-    if (ic->metadata) {
-        AVMetadataTag *tag=NULL;
-        av_log(NULL, AV_LOG_INFO, "  Metadata\n");
-        while((tag=av_metadata_get(ic->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
-            av_log(NULL, AV_LOG_INFO, "    %-16s: %s\n", tag->key, tag->value);
-        }
-    }
+    dump_metadata(NULL, ic->metadata, "  ");
     av_free(printed);
 }
 
