@@ -22,7 +22,6 @@
 #define AVUTIL_AVSTRING_H
 
 #include <stddef.h>
-#include "mem.h"
 
 /**
  * Return non-zero if pfx is a prefix of str. If it is, *ptr is set to
