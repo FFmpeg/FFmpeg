@@ -100,6 +100,20 @@ static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
     get_strl(pb, buf, buf_size, get_byte(pb));
 }
 
+static int rm_read_extradata(ByteIOContext *pb, AVCodecContext *avctx, unsigned size)
+{
+    if (size >= 1<<24)
+        return -1;
+    avctx->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!avctx->extradata)
+        return AVERROR_NOMEM;
+    avctx->extradata_size = get_buffer(pb, avctx->extradata, size);
+    memset(avctx->extradata + avctx->extradata_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    if (avctx->extradata_size != size)
+        return AVERROR(EIO);
+    return 0;
+}
+
 static void rm_read_metadata(AVFormatContext *s, int wide)
 {
     char buf[1024];
@@ -128,6 +142,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
 {
     char buf[256];
     uint32_t version;
+    int ret;
 
     /* ra type header */
     version = get_be16(pb); /* version */
@@ -230,9 +245,8 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
                 }
                 st->codec->block_align = ast->sub_packet_size;
             }
-            st->codec->extradata_size= codecdata_length;
-            st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-            get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
+            if ((ret = rm_read_extradata(s->pb, st->codec, codecdata_length)) < 0)
+                return ret;
 
             if(ast->audio_framesize >= UINT_MAX / sub_packet_h){
                 av_log(s, AV_LOG_ERROR, "rm->audio_framesize * sub_packet_h too large\n");
@@ -252,10 +266,9 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
                 return -1;
             }
             if (codecdata_length >= 1) {
-                st->codec->extradata_size = codecdata_length - 1;
-                st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                 get_byte(pb);
-                get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
+                if ((ret = rm_read_extradata(s->pb, st->codec, codecdata_length - 1)) < 0)
+                    return ret;
             }
             break;
         default:
@@ -278,6 +291,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
     unsigned int v;
     int size;
     int64_t codec_pos;
+    int ret;
 
     av_set_pts_info(st, 64, 1, 1000);
     codec_pos = url_ftell(pb);
@@ -307,17 +321,8 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
         fps2= get_be16(pb);
         get_be16(pb);
 
-        st->codec->extradata_size= codec_data_size - (url_ftell(pb) - codec_pos);
-
-        if(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)st->codec->extradata_size){
-            //check is redundant as get_buffer() will catch this
-            av_log(s, AV_LOG_ERROR, "st->codec->extradata_size too large\n");
-            return -1;
-        }
-        st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!st->codec->extradata)
-            return AVERROR(ENOMEM);
-        get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
+        if ((ret = rm_read_extradata(s->pb, st->codec, codec_data_size - (url_ftell(pb) - codec_pos))) < 0)
+            return ret;
 
 //        av_log(s, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
         st->codec->time_base.den = fps * st->codec->time_base.num;
