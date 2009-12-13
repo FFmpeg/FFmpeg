@@ -104,25 +104,25 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
     return 0;
 }
 
-static int amf_get_string(ByteIOContext *ioc, char *buffer, int buffsize) {
-    int length = get_be16(ioc);
-    if(length >= buffsize) {
-        url_fskip(ioc, length);
-        return -1;
-    }
+static int amf_get_string(ByteIOContext *ioc, char **buf)
+{
+    uint16_t len = get_be16(ioc);
 
-    get_buffer(ioc, buffer, length);
+    *buf = av_malloc(len+1);
+    if (!*buf)
+        return AVERROR_NOMEM;
 
-    buffer[length] = '\0';
+    get_buffer(ioc, *buf, len);
+    (*buf)[len] = '\0';
 
-    return length;
+    return len;
 }
 
 static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vstream, const char *key, int64_t max_pos, int depth) {
     AVCodecContext *acodec, *vcodec;
     ByteIOContext *ioc;
     AMFDataType amf_type;
-    char str_val[256];
+    char *str = NULL;
     double num_val;
 
     num_val = 0;
@@ -136,7 +136,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         case AMF_DATA_TYPE_BOOL:
             num_val = get_byte(ioc); break;
         case AMF_DATA_TYPE_STRING:
-            if(amf_get_string(ioc, str_val, sizeof(str_val)) < 0)
+            if(amf_get_string(ioc, &str) < 0)
                 return -1;
             break;
         case AMF_DATA_TYPE_OBJECT: {
@@ -157,10 +157,11 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
             break; //these take up no additional space
         case AMF_DATA_TYPE_MIXEDARRAY:
             url_fskip(ioc, 4); //skip 32-bit max array index
-            while(url_ftell(ioc) < max_pos - 2 && amf_get_string(ioc, str_val, sizeof(str_val)) > 0) {
+            while(url_ftell(ioc) < max_pos - 2 && amf_get_string(ioc, &str) > 0) {
                 //this is the only case in which we would want a nested parse to not skip over the object
-                if(amf_parse_object(s, astream, vstream, str_val, max_pos, depth + 1) < 0)
+                if(amf_parse_object(s, astream, vstream, str, max_pos, depth + 1) < 0)
                     return -1;
+                av_freep(&str);
             }
             if(get_byte(ioc) != AMF_END_OF_OBJECT)
                 return -1;
@@ -187,16 +188,15 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         vcodec = vstream ? vstream->codec : NULL;
 
         if(amf_type == AMF_DATA_TYPE_BOOL) {
-            av_strlcpy(str_val, num_val > 0 ? "true" : "false", sizeof(str_val));
-            av_metadata_set(&s->metadata, key, str_val);
+            av_metadata_set2(&s->metadata, key, av_d2str(num_val), AV_METADATA_DONT_STRDUP_VAL);
         } else if(amf_type == AMF_DATA_TYPE_NUMBER) {
-            snprintf(str_val, sizeof(str_val), "%.f", num_val);
-            av_metadata_set(&s->metadata, key, str_val);
+            av_metadata_set2(&s->metadata, key, av_d2str(num_val), AV_METADATA_DONT_STRDUP_VAL);
             if(!strcmp(key, "duration")) s->duration = num_val * AV_TIME_BASE;
             else if(!strcmp(key, "videodatarate") && vcodec && 0 <= (int)(num_val * 1024.0))
                 vcodec->bit_rate = num_val * 1024.0;
         } else if (amf_type == AMF_DATA_TYPE_STRING)
-          av_metadata_set(&s->metadata, key, str_val);
+            av_metadata_set2(&s->metadata, key, str,
+                                   AV_METADATA_DONT_STRDUP_VAL);
     }
 
     return 0;
@@ -207,7 +207,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     AVStream *stream, *astream, *vstream;
     ByteIOContext *ioc;
     int i;
-    char buffer[11]; //only needs to hold the string "onMetaData". Anything longer is something we don't want.
+    char *buf = NULL; //only needs to hold the string "onMetaData". Anything longer is something we don't want.
 
     astream = NULL;
     vstream = NULL;
@@ -215,8 +215,11 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
 
     //first object needs to be "onMetaData" string
     type = get_byte(ioc);
-    if(type != AMF_DATA_TYPE_STRING || amf_get_string(ioc, buffer, sizeof(buffer)) < 0 || strcmp(buffer, "onMetaData"))
+    if (type != AMF_DATA_TYPE_STRING ||
+        amf_get_string(ioc, &buf) < 0 || strcmp(buf, "onMetaData")) {
+        av_freep(&buf);
         return -1;
+    }
 
     //find the streams now so that amf_parse_object doesn't need to do the lookup every time it is called.
     for(i = 0; i < s->nb_streams; i++) {
@@ -226,8 +229,9 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     }
 
     //parse the second object (we want a mixed array)
-    if(amf_parse_object(s, astream, vstream, buffer, next_pos, 0) < 0)
+    if(amf_parse_object(s, astream, vstream, buf, next_pos, 0) < 0)
         return -1;
+    av_freep(&buf);
 
     return 0;
 }

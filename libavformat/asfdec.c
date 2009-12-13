@@ -152,19 +152,27 @@ static int get_value(ByteIOContext *pb, int type){
 
 static void get_tag(AVFormatContext *s, const char *key, int type, int len)
 {
-    char value[1024];
+    char *value;
+
+    if ((unsigned)len >= UINT_MAX)
+        return;
+
+    value = av_malloc(len+1);
+    if (!value)
+        return;
+
     if (type <= 1) {         // unicode or byte
-        get_str16_nolen(s->pb, len, value, sizeof(value));
+        get_str16_nolen(s->pb, len, value, len);
     } else if (type <= 5) {  // boolean or DWORD or QWORD or WORD
         uint64_t num = get_value(s->pb, type);
-        snprintf(value, sizeof(value), "%"PRIu64, num);
+        snprintf(value, len, "%"PRIu64, num);
     } else {
         url_fskip(s->pb, len);
         return;
     }
     if (!strncmp(key, "WM/", 3))
         key += 3;
-    av_metadata_set(&s->metadata, key, value);
+    av_metadata_set2(&s->metadata, key, value, AV_METADATA_DONT_STRDUP_VAL);
 }
 
 static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)

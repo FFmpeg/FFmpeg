@@ -102,10 +102,9 @@ vorbis_comment(AVFormatContext * as, uint8_t *buf, int size)
             memcpy(ct, v, vl);
             ct[vl] = 0;
 
-            av_metadata_set(&as->metadata, tt, ct);
-
-            av_freep(&tt);
-            av_freep(&ct);
+            av_metadata_set2(&as->metadata, tt, ct,
+                                   AV_METADATA_DONT_STRDUP_KEY |
+                                   AV_METADATA_DONT_STRDUP_VAL);
         }
     }
 

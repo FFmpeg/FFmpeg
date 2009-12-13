@@ -140,10 +140,9 @@ static int wc3_read_header(AVFormatContext *s,
     unsigned int fourcc_tag;
     unsigned int size;
     AVStream *st;
-    char buffer[513];
     int ret = 0;
     int current_palette = 0;
-    int bytes_to_read;
+    char *buffer;
     int i;
     unsigned char rotate;
 
@@ -185,14 +184,14 @@ static int wc3_read_header(AVFormatContext *s,
 
         case BNAM_TAG:
             /* load up the name */
-            if ((unsigned)size < 512)
-                bytes_to_read = size;
-            else
-                bytes_to_read = 512;
-            if ((ret = get_buffer(pb, buffer, bytes_to_read)) != bytes_to_read)
+            buffer = av_malloc(size+1);
+            if (!buffer)
+                return AVERROR_NOMEM;
+            if ((ret = get_buffer(pb, buffer, size)) != size)
                 return AVERROR(EIO);
-            buffer[bytes_to_read] = 0;
-            av_metadata_set(&s->metadata, "title", buffer);
+            buffer[size] = 0;
+            av_metadata_set2(&s->metadata, "title", buffer,
+                                   AV_METADATA_DONT_STRDUP_VAL);
             break;
 
         case SIZE_TAG:

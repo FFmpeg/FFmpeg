@@ -66,19 +66,20 @@ static int get_tag(ByteIOContext *pb, uint32_t * tag)
 /* Metadata string read */
 static void get_meta(AVFormatContext *s, const char *key, int size)
 {
-    uint8_t str[1024];
-    int res = get_buffer(s->pb, str, FFMIN(sizeof(str)-1, size));
+    uint8_t *str = av_malloc(size+1);
+    int res;
+
+    if (!str) {
+        url_fskip(s->pb, size);
+        return;
+    }
+
+    res = get_buffer(s->pb, str, size);
     if (res < 0)
         return;
 
     str[res] = 0;
-    if (size & 1)
-        size++;
-    size -= res;
-    if (size)
-        url_fskip(s->pb, size);
-
-    av_metadata_set(&s->metadata, key, str);
+    av_metadata_set2(&s->metadata, key, str, AV_METADATA_DONT_STRDUP_VAL);
 }
 
 /* Returns the number of sound data frames or negative on error */

@@ -45,15 +45,18 @@ static int vqf_probe(AVProbeData *probe_packet)
 static void add_metadata(AVFormatContext *s, const char *tag,
                          unsigned int tag_len, unsigned int remaining)
 {
-    char buf[2048];
-    int len = FFMIN3(tag_len, remaining, sizeof(buf) - 1);
+    int len = FFMIN(tag_len, remaining);
+    char *buf;
 
-    if (len != tag_len)
-        av_log(s, AV_LOG_ERROR, "Warning: truncating metadata!\n");
+    if (len == UINT_MAX)
+        return;
 
+    buf = av_malloc(len+1);
+    if (!buf)
+        return;
     get_buffer(s->pb, buf, len);
     buf[len] = 0;
-    av_metadata_set(&s->metadata, tag, buf);
+    av_metadata_set2(&s->metadata, tag, buf, AV_METADATA_DONT_STRDUP_VAL);
 }
 
 static int vqf_read_header(AVFormatContext *s, AVFormatParameters *ap)
