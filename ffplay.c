@@ -40,6 +40,8 @@
 #endif
 
 #undef exit
+#undef printf
+#undef fprintf
 
 const char program_name[] = "FFplay";
 const int program_birth_year = 2003;
