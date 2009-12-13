@@ -282,6 +282,7 @@ static int video_read_header(AVFormatContext *s,
     } else if ( st->codec->codec_id == CODEC_ID_MJPEG ||
                 st->codec->codec_id == CODEC_ID_MPEG4 ||
                 st->codec->codec_id == CODEC_ID_DIRAC ||
+                st->codec->codec_id == CODEC_ID_DNXHD ||
                 st->codec->codec_id == CODEC_ID_H264) {
         st->codec->time_base= (AVRational){1,25};
     }
