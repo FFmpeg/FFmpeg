@@ -332,7 +332,9 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
         case 2: st->codec->codec_id = CODEC_ID_RV20; break;
         case 3: st->codec->codec_id = CODEC_ID_RV30; break;
         case 4: st->codec->codec_id = CODEC_ID_RV40; break;
-        default: goto fail1;
+        default:
+            av_log(st->codec, AV_LOG_ERROR, "extra:%02X %02X %02X %02X %02X\n", ((uint8_t*)st->codec->extradata)[0], ((uint8_t*)st->codec->extradata)[1], ((uint8_t*)st->codec->extradata)[2], ((uint8_t*)st->codec->extradata)[3], ((uint8_t*)st->codec->extradata)[4]);
+            goto fail1;
         }
     }
 
