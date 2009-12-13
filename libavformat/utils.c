@@ -2223,6 +2223,10 @@ int av_find_stream_info(AVFormatContext *ic)
     }
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
+        if(codec_info_nb_frames[i]>2)
+            av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
+                     (codec_info_nb_frames[i]-2)*(int64_t)st->time_base.den,
+                      codec_info_duration[i]    *(int64_t)st->time_base.num, 60000);
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
             if(st->codec->codec_id == CODEC_ID_RAWVIDEO && !st->codec->codec_tag && !st->codec->bits_per_coded_sample)
                 st->codec->codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
@@ -2900,6 +2904,8 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
                  display_aspect_ratio.num, display_aspect_ratio.den);
     }
     if(st->codec->codec_type == CODEC_TYPE_VIDEO){
+        if(st->avg_frame_rate.den && st->avg_frame_rate.num)
+            print_fps(av_q2d(st->avg_frame_rate), "fps");
         if(st->r_frame_rate.den && st->r_frame_rate.num)
             print_fps(av_q2d(st->r_frame_rate), "tbr");
         if(st->time_base.den && st->time_base.num)

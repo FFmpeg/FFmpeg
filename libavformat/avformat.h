@@ -466,6 +466,11 @@ typedef struct AVStream {
      * used internally, NOT PART OF PUBLIC API, dont read or write from outside of libav*
      */
     struct AVPacketList *last_in_packet_buffer;
+
+    /**
+     * Average framerate
+     */
+    AVRational avg_frame_rate;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
