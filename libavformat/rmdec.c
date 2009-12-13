@@ -131,6 +131,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
         st->codec->codec_id = CODEC_ID_RA_144;
     } else {
         int flavor, sub_packet_h, coded_framesize, sub_packet_size;
+        int codecdata_length;
         /* old version (4) */
         get_be32(pb); /* .ra4 */
         get_be32(pb); /* data size */
@@ -176,7 +177,6 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
 
             av_new_packet(&ast->pkt, ast->audio_framesize * sub_packet_h);
         } else if ((!strcmp(buf, "cook")) || (!strcmp(buf, "atrc")) || (!strcmp(buf, "sipr"))) {
-            int codecdata_length;
             get_be16(pb); get_byte(pb);
             if (((version >> 16) & 0xff) == 5)
                 get_byte(pb);
@@ -216,7 +216,6 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
 
             av_new_packet(&ast->pkt, ast->audio_framesize * sub_packet_h);
         } else if (!strcmp(buf, "raac") || !strcmp(buf, "racp")) {
-            int codecdata_length;
             get_be16(pb); get_byte(pb);
             if (((version >> 16) & 0xff) == 5)
                 get_byte(pb);
