@@ -2923,6 +2923,7 @@ void dump_format(AVFormatContext *ic,
             index,
             is_output ? ic->oformat->name : ic->iformat->name,
             is_output ? "to" : "from", url);
+    dump_metadata(NULL, ic->metadata, "  ");
     if (!is_output) {
         av_log(NULL, AV_LOG_INFO, "  Duration: ");
         if (ic->duration != AV_NOPTS_VALUE) {
@@ -2975,7 +2976,6 @@ void dump_format(AVFormatContext *ic,
         if (!printed[i])
             dump_stream_format(ic, i, index, is_output);
 
-    dump_metadata(NULL, ic->metadata, "  ");
     av_free(printed);
 }
 
