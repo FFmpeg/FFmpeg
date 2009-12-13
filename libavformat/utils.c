@@ -609,7 +609,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         if(st->codec->codec_id == CODEC_ID_PROBE){
             AVProbeData *pd = &st->probe_data;
-
+            av_log(s, AV_LOG_DEBUG, "probing stream %d\n", st->index);
             --st->probe_packets;
 
             pd->buf = av_realloc(pd->buf, pd->buf_size+pkt->size+AVPROBE_PADDING_SIZE);
@@ -622,6 +622,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
                 if(st->codec->codec_id != CODEC_ID_PROBE){
                     pd->buf_size=0;
                     av_freep(&pd->buf);
+                    av_log(s, AV_LOG_DEBUG, "probed stream %d\n", st->index);
                 }
             }
         }
