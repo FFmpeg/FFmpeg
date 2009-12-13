@@ -2904,6 +2904,7 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
             print_fps(1/av_q2d(st->codec->time_base), "tbc");
     }
     av_log(NULL, AV_LOG_INFO, "\n");
+    dump_metadata(NULL, st->metadata, "    ");
 }
 
 void dump_format(AVFormatContext *ic,
@@ -2959,6 +2960,7 @@ void dump_format(AVFormatContext *ic,
                                                   "name", NULL, 0);
             av_log(NULL, AV_LOG_INFO, "  Program %d %s\n", ic->programs[j]->id,
                    name ? name->value : "");
+            dump_metadata(NULL, ic->programs[j]->metadata, "    ");
             for(k=0; k<ic->programs[j]->nb_stream_indexes; k++) {
                 dump_stream_format(ic, ic->programs[j]->stream_index[k], index, is_output);
                 printed[ic->programs[j]->stream_index[k]] = 1;
