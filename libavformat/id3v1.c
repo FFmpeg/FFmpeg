@@ -209,7 +209,7 @@ static int parse_tag(AVFormatContext *s, const uint8_t *buf)
           buf[2] == 'G'))
         return -1;
     get_string(s, "title",   buf +  3, 30);
-    get_string(s, "author",  buf + 33, 30);
+    get_string(s, "artist",  buf + 33, 30);
     get_string(s, "album",   buf + 63, 30);
     get_string(s, "year",    buf + 93,  4);
     get_string(s, "comment", buf + 97, 30);

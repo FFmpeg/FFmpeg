@@ -241,7 +241,7 @@ const AVMetadataConv ff_id3v2_metadata_conv[] = {
     { "TENC", "encoder"},
     { "TIT2", "title"},
     { "TLAN", "language"},
-    { "TPE1", "author"},
+    { "TPE1", "artist"},
     { "TPOS", "disc"},
     { "TPUB", "publisher"},
     { "TRCK", "track"},
