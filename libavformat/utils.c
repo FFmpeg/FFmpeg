@@ -2854,7 +2854,7 @@ static void print_fps(double d, const char *postfix){
 
 static void dump_metadata(void *ctx, AVMetadata *m, const char *indent)
 {
-    if(m){
+    if(m && !(m->count == 1 && av_metadata_get(m, "language", NULL, 0))){
         AVMetadataTag *tag=NULL;
 
         av_log(ctx, AV_LOG_INFO, "%sMetadata:\n", indent);
