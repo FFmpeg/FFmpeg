@@ -21,6 +21,7 @@
 
 #include "id3v1.h"
 #include "libavcodec/avcodec.h"
+#include "libavutil/avstring.h"
 
 const char * const ff_id3v1_genre_str[ID3v1_GENRE_MAX + 1] = {
       [0] = "Blues",
@@ -201,7 +202,6 @@ static void get_string(AVFormatContext *s, const char *key,
  */
 static int parse_tag(AVFormatContext *s, const uint8_t *buf)
 {
-    char str[5];
     int genre;
 
     if (!(buf[0] == 'T' &&
@@ -213,10 +213,8 @@ static int parse_tag(AVFormatContext *s, const uint8_t *buf)
     get_string(s, "album",   buf + 63, 30);
     get_string(s, "year",    buf + 93,  4);
     get_string(s, "comment", buf + 97, 30);
-    if (buf[125] == 0 && buf[126] != 0) {
-        snprintf(str, sizeof(str), "%d", buf[126]);
-        av_metadata_set(&s->metadata, "track", str);
-    }
+    if (buf[125] == 0 && buf[126] != 0)
+        av_metadata_set2(&s->metadata, "track", av_d2str(buf[126]), AV_METADATA_DONT_STRDUP_VAL);
     genre = buf[127];
     if (genre <= ID3v1_GENRE_MAX)
         av_metadata_set(&s->metadata, "genre", ff_id3v1_genre_str[genre]);
