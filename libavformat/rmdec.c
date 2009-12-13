@@ -130,19 +130,20 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
     uint32_t version;
 
     /* ra type header */
-    version = get_be32(pb); /* version */
-    if (((version >> 16) & 0xff) == 3) {
+    version = get_be16(pb); /* version */
+    if (version == 3) {
+        int header_size = get_be16(pb);
         int64_t startpos = url_ftell(pb);
         url_fskip(pb, 14);
         rm_read_metadata(s, 0);
-        if ((startpos + (version & 0xffff)) >= url_ftell(pb) + 2) {
+        if ((startpos + header_size) >= url_ftell(pb) + 2) {
             // fourcc (should always be "lpcJ")
             get_byte(pb);
             get_str8(pb, buf, sizeof(buf));
         }
         // Skip extra header crap (this should never happen)
-        if ((startpos + (version & 0xffff)) > url_ftell(pb))
-            url_fskip(pb, (version & 0xffff) + startpos - url_ftell(pb));
+        if ((startpos + header_size) > url_ftell(pb))
+            url_fskip(pb, header_size + startpos - url_ftell(pb));
         st->codec->sample_rate = 8000;
         st->codec->channels = 1;
         st->codec->codec_type = CODEC_TYPE_AUDIO;
@@ -151,6 +152,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
         int flavor, sub_packet_h, coded_framesize, sub_packet_size;
         int codecdata_length;
         /* old version (4) */
+        url_fskip(pb, 2); /* unused */
         get_be32(pb); /* .ra4 */
         get_be32(pb); /* data size */
         get_be16(pb); /* version2 */
@@ -164,13 +166,13 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
         st->codec->block_align= get_be16(pb); /* frame size */
         ast->sub_packet_size = sub_packet_size = get_be16(pb); /* sub packet size */
         get_be16(pb); /* ??? */
-        if (((version >> 16) & 0xff) == 5) {
+        if (version == 5) {
             get_be16(pb); get_be16(pb); get_be16(pb);
         }
         st->codec->sample_rate = get_be16(pb);
         get_be32(pb);
         st->codec->channels = get_be16(pb);
-        if (((version >> 16) & 0xff) == 5) {
+        if (version == 5) {
             get_be32(pb);
             get_buffer(pb, buf, 4);
             buf[4] = 0;
@@ -201,7 +203,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
         case CODEC_ID_ATRAC3:
         case CODEC_ID_SIPR:
             get_be16(pb); get_byte(pb);
-            if (((version >> 16) & 0xff) == 5)
+            if (version == 5)
                 get_byte(pb);
             codecdata_length = get_be32(pb);
             if(codecdata_length + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)codecdata_length){
@@ -241,7 +243,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
             break;
         case CODEC_ID_AAC:
             get_be16(pb); get_byte(pb);
-            if (((version >> 16) & 0xff) == 5)
+            if (version == 5)
                 get_byte(pb);
             st->codec->codec_id = CODEC_ID_AAC;
             codecdata_length = get_be32(pb);
