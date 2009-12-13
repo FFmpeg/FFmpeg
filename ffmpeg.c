@@ -3985,6 +3985,9 @@ int main(int argc, char **argv)
     /* parse options */
     parse_options(argc, argv, options, opt_output_file);
 
+    if(nb_output_files <= 0 && nb_input_files == 0)
+        show_help();
+
     /* file converter / grab */
     if (nb_output_files <= 0) {
         fprintf(stderr, "At least one output file must be specified\n");
