@@ -63,7 +63,7 @@ static const AVCodecTag rm_codec_tags[] = {
     { CODEC_ID_SIPR,   MKTAG('s','i','p','r') },
     { CODEC_ID_AAC,    MKTAG('r','a','a','c') },
     { CODEC_ID_AAC,    MKTAG('r','a','c','p') },
-    { 0 },
+    { CODEC_ID_NONE },
 };
 
 static const unsigned char sipr_swaps[38][2] = {
