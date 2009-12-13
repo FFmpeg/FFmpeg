@@ -2209,21 +2209,7 @@ int av_find_stream_info(AVFormatContext *ic)
            decompress the frame. We try to avoid that in most cases as
            it takes longer and uses more memory. For MPEG-4, we need to
            decompress for QuickTime. */
-        if (!has_codec_parameters(st->codec) /*&&
-            (st->codec->codec_id == CODEC_ID_FLV1 ||
-             st->codec->codec_id == CODEC_ID_H264 ||
-             st->codec->codec_id == CODEC_ID_H263 ||
-             st->codec->codec_id == CODEC_ID_H261 ||
-             st->codec->codec_id == CODEC_ID_VORBIS ||
-             st->codec->codec_id == CODEC_ID_MJPEG ||
-             st->codec->codec_id == CODEC_ID_PNG ||
-             st->codec->codec_id == CODEC_ID_PAM ||
-             st->codec->codec_id == CODEC_ID_PGM ||
-             st->codec->codec_id == CODEC_ID_PGMYUV ||
-             st->codec->codec_id == CODEC_ID_PBM ||
-             st->codec->codec_id == CODEC_ID_PPM ||
-             st->codec->codec_id == CODEC_ID_SHORTEN ||
-             (st->codec->codec_id == CODEC_ID_MPEG4 && !st->need_parsing))*/)
+        if (!has_codec_parameters(st->codec))
             try_decode_frame(st, pkt);
 
         count++;
