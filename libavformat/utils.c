@@ -2859,6 +2859,7 @@ static void dump_metadata(void *ctx, AVMetadata *m, const char *indent)
 
         av_log(ctx, AV_LOG_INFO, "%sMetadata:\n", indent);
         while((tag=av_metadata_get(m, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
+            if(strcmp("language", tag->key))
             av_log(ctx, AV_LOG_INFO, "%s  %-16s: %s\n", indent, tag->key, tag->value);
         }
     }
