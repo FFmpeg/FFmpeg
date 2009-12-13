@@ -46,7 +46,7 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
     return NULL;
 }
 
-int av_metadata_set(AVMetadata **pm, const char *key, const char *value)
+int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int flags)
 {
     AVMetadata *m= *pm;
     AVMetadataTag *tag= av_metadata_get(m, key, NULL, AV_METADATA_MATCH_CASE);
@@ -66,7 +66,13 @@ int av_metadata_set(AVMetadata **pm, const char *key, const char *value)
             return AVERROR(ENOMEM);
     }
     if(value){
+        if(flags & AV_METADATA_DONT_STRDUP_KEY){
+            m->elems[m->count].key  = key;
+        }else
         m->elems[m->count].key  = av_strdup(key  );
+        if(flags & AV_METADATA_DONT_STRDUP_VAL){
+            m->elems[m->count].value= value;
+        }else
         m->elems[m->count].value= av_strdup(value);
         m->count++;
     }
@@ -77,6 +83,13 @@ int av_metadata_set(AVMetadata **pm, const char *key, const char *value)
 
     return 0;
 }
+
+#if LIBAVFORMAT_VERSION_MAJOR == 52
+int av_metadata_set(AVMetadata **pm, const char *key, const char *value)
+{
+    return av_metadata_set2(pm, key, value, 0);
+}
+#endif
 
 void av_metadata_free(AVMetadata **pm)
 {
