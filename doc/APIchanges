@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2009-12-13 - r20834 - lavf 52.43.0 - metadata API
+  add av_metadata_set2(), AV_METADATA_DONT_STRDUP_KEY and AV_METADATA_DONT_STRDUP_VAL
+
 2009-12-13 - r20829 - lavu 50.7.0 - avstring.h API
   add av_d2str()
 
