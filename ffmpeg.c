@@ -568,7 +568,7 @@ static void do_audio_out(AVFormatContext *s,
 
     audio_buf_size= (size + isize*dec->channels - 1) / (isize*dec->channels);
     audio_buf_size= (audio_buf_size*enc->sample_rate + dec->sample_rate) / dec->sample_rate;
-    audio_buf_size= audio_buf_size*2 + 10000; //saftey factors for the deprecated resampling API
+    audio_buf_size= audio_buf_size*2 + 10000; //safety factors for the deprecated resampling API
     audio_buf_size*= osize*enc->channels;
 
     audio_out_size= FFMAX(audio_buf_size, enc->frame_size * osize * enc->channels);
