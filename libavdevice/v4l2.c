@@ -72,57 +72,80 @@ struct buff_data {
 
 struct fmt_map {
     enum PixelFormat ff_fmt;
+    enum CodecID codec_id;
     uint32_t v4l2_fmt;
 };
 
 static struct fmt_map fmt_conversion_table[] = {
     {
         .ff_fmt = PIX_FMT_YUV420P,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_YUV420,
     },
     {
         .ff_fmt = PIX_FMT_YUV422P,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_YUV422P,
     },
     {
         .ff_fmt = PIX_FMT_YUYV422,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_YUYV,
     },
     {
         .ff_fmt = PIX_FMT_UYVY422,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_UYVY,
     },
     {
         .ff_fmt = PIX_FMT_YUV411P,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_YUV411P,
     },
     {
         .ff_fmt = PIX_FMT_YUV410P,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_YUV410,
     },
     {
         .ff_fmt = PIX_FMT_RGB555,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_RGB555,
     },
     {
         .ff_fmt = PIX_FMT_RGB565,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_RGB565,
     },
     {
         .ff_fmt = PIX_FMT_BGR24,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_BGR24,
     },
     {
         .ff_fmt = PIX_FMT_RGB24,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_RGB24,
     },
     {
         .ff_fmt = PIX_FMT_BGRA,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_BGR32,
     },
     {
         .ff_fmt = PIX_FMT_GRAY8,
+        .codec_id = CODEC_ID_RAWVIDEO,
         .v4l2_fmt = V4L2_PIX_FMT_GREY,
+    },
+    {
+        .ff_fmt = PIX_FMT_NONE,
+        .codec_id = CODEC_ID_MJPEG,
+        .v4l2_fmt = V4L2_PIX_FMT_MJPEG,
+    },
+    {
+        .ff_fmt = PIX_FMT_NONE,
+        .codec_id = CODEC_ID_MJPEG,
+        .v4l2_fmt = V4L2_PIX_FMT_JPEG,
     },
 };
 
