@@ -28,7 +28,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                                       const uint8_t *buf, int buf_size)
 {
     ParseContext1 *pc = s->priv_data;
-    const uint8_t *buf_end;
+    const uint8_t *buf_end = buf + buf_size;
     uint32_t start_code;
     int frame_rate_index, ext_type, bytes_left;
     int frame_rate_ext_n, frame_rate_ext_d;
@@ -37,7 +37,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     int did_set_size=0;
 //FIXME replace the crap with get_bits()
     s->repeat_pict = 0;
-    buf_end = buf + buf_size;
+
     while (buf < buf_end) {
         start_code= -1;
         buf= ff_find_start_code(buf, buf_end, &start_code);
