@@ -917,7 +917,7 @@ static void do_video_out(AVFormatContext *s,
             if (verbose>2)
                 fprintf(stderr, "*** drop!\n");
         }else if (nb_frames > 1) {
-            nb_frames_dup += nb_frames;
+            nb_frames_dup += nb_frames - 1;
             if (verbose>2)
                 fprintf(stderr, "*** %d dup!\n", nb_frames-1);
         }
