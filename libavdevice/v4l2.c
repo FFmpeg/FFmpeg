@@ -625,7 +625,7 @@ static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
         s1->streams[0]->codec->coded_frame->top_field_first = s->top_field_first;
     }
 
-    return s->frame_size;
+    return pkt->size;
 }
 
 static int v4l2_read_close(AVFormatContext *s1)
