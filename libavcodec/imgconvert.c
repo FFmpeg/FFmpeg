@@ -902,7 +902,7 @@ static enum PixelFormat avcodec_find_best_pix_fmt1(int64_t pix_fmt_mask,
     enum PixelFormat dst_pix_fmt;
 
     /* find exact color match with smallest size */
-    dst_pix_fmt = -1;
+    dst_pix_fmt = PIX_FMT_NONE;
     min_dist = 0x7fffffff;
     for(i = 0;i < PIX_FMT_NB; i++) {
         if (pix_fmt_mask & (1ULL << i)) {
@@ -945,7 +945,7 @@ enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelForma
         if (loss_mask == 0)
             break;
     }
-    return -1;
+    return PIX_FMT_NONE;
  found:
     if (loss_ptr)
         *loss_ptr = avcodec_get_pix_fmt_loss(dst_pix_fmt, src_pix_fmt, has_alpha);
