@@ -354,6 +354,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->sample_rate = get_be32(pb);
             codec->channels = get_le16(pb);
             codec->frame_size = get_le16(pb);
+            codec->sample_fmt = get_le16(pb);
             break;
         default:
             goto fail;

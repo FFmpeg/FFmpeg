@@ -172,6 +172,7 @@ static int ffm_write_header(AVFormatContext *s)
             put_be32(pb, codec->sample_rate);
             put_le16(pb, codec->channels);
             put_le16(pb, codec->frame_size);
+            put_le16(pb, codec->sample_fmt);
             break;
         default:
             return -1;
