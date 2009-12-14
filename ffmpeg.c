@@ -1241,7 +1241,7 @@ static void print_report(AVFormatContext **output_files,
             "size=%8.0fkB time=%0.2f bitrate=%6.1fkbits/s",
             (double)total_size / 1024, ti1, bitrate);
 
-        if (verbose > 1)
+        if (nb_frames_dup || nb_frames_drop)
           snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
                   nb_frames_dup, nb_frames_drop);
 
