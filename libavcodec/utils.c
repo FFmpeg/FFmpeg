@@ -367,8 +367,10 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
     }
 
     /* If internal buffer type return the same buffer */
-    if(pic->type == FF_BUFFER_TYPE_INTERNAL)
+    if(pic->type == FF_BUFFER_TYPE_INTERNAL) {
+        pic->reordered_opaque= s->reordered_opaque;
         return 0;
+    }
 
     /*
      * Not internal type and reget_buffer not overridden, emulate cr buffer
