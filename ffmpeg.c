@@ -3599,26 +3599,26 @@ static void show_help(void)
 
 static void opt_target(const char *arg)
 {
-    int norm = -1;
+    enum { PAL, NTSC, FILM, UNKNOWN } norm = UNKNOWN;
     static const char *const frame_rates[] = {"25", "30000/1001", "24000/1001"};
 
     if(!strncmp(arg, "pal-", 4)) {
-        norm = 0;
+        norm = PAL;
         arg += 4;
     } else if(!strncmp(arg, "ntsc-", 5)) {
-        norm = 1;
+        norm = NTSC;
         arg += 5;
     } else if(!strncmp(arg, "film-", 5)) {
-        norm = 2;
+        norm = FILM;
         arg += 5;
     } else {
         int fr;
         /* Calculate FR via float to avoid int overflow */
         fr = (int)(frame_rate.num * 1000.0 / frame_rate.den);
         if(fr == 25000) {
-            norm = 0;
+            norm = PAL;
         } else if((fr == 29970) || (fr == 23976)) {
-            norm = 1;
+            norm = NTSC;
         } else {
             /* Try to determine PAL/NTSC by peeking in the input files */
             if(nb_input_files) {
@@ -3630,23 +3630,23 @@ static void opt_target(const char *arg)
                             continue;
                         fr = c->time_base.den * 1000 / c->time_base.num;
                         if(fr == 25000) {
-                            norm = 0;
+                            norm = PAL;
                             break;
                         } else if((fr == 29970) || (fr == 23976)) {
-                            norm = 1;
+                            norm = NTSC;
                             break;
                         }
                     }
-                    if(norm >= 0)
+                    if(norm != UNKNOWN)
                         break;
                 }
             }
         }
-        if(verbose && norm >= 0)
-            fprintf(stderr, "Assuming %s for target.\n", norm ? "NTSC" : "PAL");
+        if(verbose && norm != UNKNOWN)
+            fprintf(stderr, "Assuming %s for target.\n", norm != PAL ? "NTSC" : "PAL");
     }
 
-    if(norm < 0) {
+    if(norm == UNKNOWN) {
         fprintf(stderr, "Could not determine norm (PAL/NTSC/NTSC-Film) for target.\n");
         fprintf(stderr, "Please prefix target with \"pal-\", \"ntsc-\" or \"film-\",\n");
         fprintf(stderr, "or set a framerate with \"-r xxx\".\n");
@@ -3659,9 +3659,9 @@ static void opt_target(const char *arg)
         opt_audio_codec("mp2");
         opt_format("vcd");
 
-        opt_frame_size(norm ? "352x240" : "352x288");
+        opt_frame_size(norm != PAL ? "352x240" : "352x288");
         opt_frame_rate(NULL, frame_rates[norm]);
-        opt_default("g", norm ? "18" : "15");
+        opt_default("g", norm != PAL ? "18" : "15");
 
         opt_default("b", "1150000");
         opt_default("maxrate", "1150000");
@@ -3687,9 +3687,9 @@ static void opt_target(const char *arg)
         opt_audio_codec("mp2");
         opt_format("svcd");
 
-        opt_frame_size(norm ? "480x480" : "480x576");
+        opt_frame_size(norm != PAL ? "480x480" : "480x576");
         opt_frame_rate(NULL, frame_rates[norm]);
-        opt_default("g", norm ? "18" : "15");
+        opt_default("g", norm != PAL ? "18" : "15");
 
         opt_default("b", "2040000");
         opt_default("maxrate", "2516000");
@@ -3709,9 +3709,9 @@ static void opt_target(const char *arg)
         opt_audio_codec("ac3");
         opt_format("dvd");
 
-        opt_frame_size(norm ? "720x480" : "720x576");
+        opt_frame_size(norm != PAL ? "720x480" : "720x576");
         opt_frame_rate(NULL, frame_rates[norm]);
-        opt_default("g", norm ? "18" : "15");
+        opt_default("g", norm != PAL ? "18" : "15");
 
         opt_default("b", "6000000");
         opt_default("maxrate", "9000000");
@@ -3728,9 +3728,9 @@ static void opt_target(const char *arg)
 
         opt_format("dv");
 
-        opt_frame_size(norm ? "720x480" : "720x576");
+        opt_frame_size(norm != PAL ? "720x480" : "720x576");
         opt_frame_pix_fmt(!strncmp(arg, "dv50", 4) ? "yuv422p" :
-                                             (norm ? "yuv411p" : "yuv420p"));
+                                             (norm != PAL ? "yuv411p" : "yuv420p"));
         opt_frame_rate(NULL, frame_rates[norm]);
 
         audio_sample_rate = 48000;
