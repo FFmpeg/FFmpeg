@@ -72,7 +72,7 @@ struct buff_data {
 
 struct fmt_map {
     enum PixelFormat ff_fmt;
-    int32_t v4l2_fmt;
+    uint32_t v4l2_fmt;
 };
 
 static struct fmt_map fmt_conversion_table[] = {
@@ -171,7 +171,7 @@ static int device_open(AVFormatContext *ctx, uint32_t *capabilities)
     return fd;
 }
 
-static int device_init(AVFormatContext *ctx, int *width, int *height, int pix_fmt)
+static int device_init(AVFormatContext *ctx, int *width, int *height, uint32_t pix_fmt)
 {
     struct video_data *s = ctx->priv_data;
     int fd = s->fd;
