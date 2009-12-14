@@ -50,7 +50,7 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_c
     switch(flv_codecid) {
         //no distinction between S16 and S8 PCM codec flags
         case FLV_CODECID_PCM:
-            acodec->codec_id = acodec->bits_per_coded_sample == 8 ? CODEC_ID_PCM_S8 :
+            acodec->codec_id = acodec->bits_per_coded_sample == 8 ? CODEC_ID_PCM_U8 :
 #if HAVE_BIGENDIAN
                                 CODEC_ID_PCM_S16BE;
 #else
@@ -58,7 +58,7 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_c
 #endif
             break;
         case FLV_CODECID_PCM_LE:
-            acodec->codec_id = acodec->bits_per_coded_sample == 8 ? CODEC_ID_PCM_S8 : CODEC_ID_PCM_S16LE; break;
+            acodec->codec_id = acodec->bits_per_coded_sample == 8 ? CODEC_ID_PCM_U8 : CODEC_ID_PCM_S16LE; break;
         case FLV_CODECID_AAC  : acodec->codec_id = CODEC_ID_AAC;                                    break;
         case FLV_CODECID_ADPCM: acodec->codec_id = CODEC_ID_ADPCM_SWF;                              break;
         case FLV_CODECID_SPEEX:

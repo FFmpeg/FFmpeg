@@ -38,7 +38,7 @@ static const AVCodecTag flv_video_codec_ids[] = {
 
 static const AVCodecTag flv_audio_codec_ids[] = {
     {CODEC_ID_MP3,       FLV_CODECID_MP3    >> FLV_AUDIO_CODECID_OFFSET},
-    {CODEC_ID_PCM_S8,    FLV_CODECID_PCM    >> FLV_AUDIO_CODECID_OFFSET},
+    {CODEC_ID_PCM_U8,    FLV_CODECID_PCM    >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_PCM_S16BE, FLV_CODECID_PCM    >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_PCM_S16LE, FLV_CODECID_PCM_LE >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_ADPCM_SWF, FLV_CODECID_ADPCM  >> FLV_AUDIO_CODECID_OFFSET},
@@ -107,7 +107,7 @@ static int get_audio_flags(AVCodecContext *enc){
     case CODEC_ID_MP3:
         flags |= FLV_CODECID_MP3    | FLV_SAMPLESSIZE_16BIT;
         break;
-    case CODEC_ID_PCM_S8:
+    case CODEC_ID_PCM_U8:
         flags |= FLV_CODECID_PCM    | FLV_SAMPLESSIZE_8BIT;
         break;
     case CODEC_ID_PCM_S16BE:
@@ -248,7 +248,7 @@ static int flv_write_header(AVFormatContext *s)
         put_amf_double(pb, audio_enc->sample_rate);
 
         put_amf_string(pb, "audiosamplesize");
-        put_amf_double(pb, audio_enc->codec_id == CODEC_ID_PCM_S8 ? 8 : 16);
+        put_amf_double(pb, audio_enc->codec_id == CODEC_ID_PCM_U8 ? 8 : 16);
 
         put_amf_string(pb, "stereo");
         put_amf_bool(pb, audio_enc->channels == 2);
