@@ -238,12 +238,15 @@ static int first_field(int fd)
     return 1;
 }
 
-static uint32_t fmt_ff2v4l(enum PixelFormat pix_fmt)
+static uint32_t fmt_ff2v4l(enum PixelFormat pix_fmt, enum CodecID codec_id)
 {
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(fmt_conversion_table); i++) {
-        if (fmt_conversion_table[i].ff_fmt == pix_fmt) {
+        if ((codec_id == CODEC_ID_NONE ||
+             fmt_conversion_table[i].codec_id == codec_id) &&
+            (pix_fmt == PIX_FMT_NONE ||
+             fmt_conversion_table[i].ff_fmt == pix_fmt)) {
             return fmt_conversion_table[i].v4l2_fmt;
         }
     }
@@ -251,17 +254,31 @@ static uint32_t fmt_ff2v4l(enum PixelFormat pix_fmt)
     return 0;
 }
 
-static enum PixelFormat fmt_v4l2ff(uint32_t pix_fmt)
+static enum PixelFormat fmt_v4l2ff(uint32_t v4l2_fmt, enum CodecID codec_id)
 {
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(fmt_conversion_table); i++) {
-        if (fmt_conversion_table[i].v4l2_fmt == pix_fmt) {
+        if (fmt_conversion_table[i].v4l2_fmt == v4l2_fmt &&
+            fmt_conversion_table[i].codec_id == codec_id) {
             return fmt_conversion_table[i].ff_fmt;
         }
     }
 
     return PIX_FMT_NONE;
+}
+
+static enum CodecID fmt_v4l2codec(uint32_t v4l2_fmt)
+{
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(fmt_conversion_table); i++) {
+        if (fmt_conversion_table[i].v4l2_fmt == v4l2_fmt) {
+            return fmt_conversion_table[i].codec_id;
+        }
+    }
+
+    return CODEC_ID_NONE;
 }
 
 static int mmap_init(AVFormatContext *ctx)
@@ -320,7 +337,7 @@ static int mmap_init(AVFormatContext *ctx)
         }
 
         s->buf_len[i] = buf.length;
-        if (s->buf_len[i] < s->frame_size) {
+        if (s->frame_size > 0 && s->buf_len[i] < s->frame_size) {
             av_log(ctx, AV_LOG_ERROR, "Buffer len [%d] = %d != %d\n", i, s->buf_len[i], s->frame_size);
 
             return -1;
@@ -391,7 +408,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         return -1;
     }
     assert (buf.index < s->buffers);
-    if (buf.bytesused != s->frame_size) {
+    if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
         av_log(ctx, AV_LOG_ERROR, "The v4l2 frame is %d bytes, but %d bytes are expected\n", buf.bytesused, s->frame_size);
 
         return -1;
@@ -529,6 +546,38 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
     return 0;
 }
 
+uint32_t device_try_init(AVFormatContext *s1,
+                         const AVFormatParameters *ap,
+                         int *width,
+                         int *height,
+                         enum CodecID *codec_id)
+{
+    uint32_t desired_format = fmt_ff2v4l(ap->pix_fmt, ap->video_codec_id);
+
+    if (desired_format == 0 ||
+        device_init(s1, width, height, desired_format) < 0) {
+        int i;
+
+        desired_format = 0;
+        for (i = 0; i<FF_ARRAY_ELEMS(fmt_conversion_table); i++) {
+            if (ap->video_codec_id == CODEC_ID_NONE ||
+                fmt_conversion_table[i].codec_id == ap->video_codec_id) {
+                desired_format = fmt_conversion_table[i].v4l2_fmt;
+                if (device_init(s1, width, height, desired_format) >= 0) {
+                    break;
+                }
+                desired_format = 0;
+            }
+        }
+    }
+    if (desired_format != 0) {
+        *codec_id = fmt_v4l2codec(desired_format);
+        assert(*codec_id != CODEC_ID_NONE);
+    }
+
+    return desired_format;
+}
+
 static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     struct video_data *s = s1->priv_data;
@@ -536,6 +585,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int width, height;
     int res;
     uint32_t desired_format, capabilities;
+    enum CodecID codec_id;
 
     if (ap->width <= 0 || ap->height <= 0) {
         av_log(s1, AV_LOG_ERROR, "Wrong size (%dx%d)\n", ap->width, ap->height);
@@ -564,26 +614,10 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     av_log(s1, AV_LOG_INFO, "[%d]Capabilities: %x\n", s->fd, capabilities);
 
-    desired_format = fmt_ff2v4l(ap->pix_fmt);
-    if (desired_format == 0 || (device_init(s1, &width, &height, desired_format) < 0)) {
-        int i, done;
-
-        done = 0; i = 0;
-        while (!done) {
-            desired_format = fmt_conversion_table[i].v4l2_fmt;
-            if (device_init(s1, &width, &height, desired_format) < 0) {
-                desired_format = 0;
-                i++;
-            } else {
-               done = 1;
-            }
-            if (i == FF_ARRAY_ELEMS(fmt_conversion_table)) {
-               done = 1;
-            }
-        }
-    }
+    desired_format = device_try_init(s1, ap, &width, &height, &codec_id);
     if (desired_format == 0) {
-        av_log(s1, AV_LOG_ERROR, "Cannot find a proper format.\n");
+        av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
+               "codec_id %d, pix_fmt %d.\n", ap->video_codec_id, ap->pix_fmt);
         close(s->fd);
 
         return AVERROR(EIO);
@@ -593,7 +627,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if( v4l2_set_parameters( s1, ap ) < 0 )
         return AVERROR(EIO);
 
-    st->codec->pix_fmt = fmt_v4l2ff(desired_format);
+    st->codec->pix_fmt = fmt_v4l2ff(desired_format, codec_id);
     s->frame_size = avpicture_get_size(st->codec->pix_fmt, width, height);
     if (capabilities & V4L2_CAP_STREAMING) {
         s->io_method = io_mmap;
@@ -613,7 +647,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->top_field_first = first_field(s->fd);
 
     st->codec->codec_type = CODEC_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_RAWVIDEO;
+    st->codec->codec_id = codec_id;
     st->codec->width = width;
     st->codec->height = height;
     st->codec->time_base.den = ap->time_base.den;
