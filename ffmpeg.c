@@ -3259,8 +3259,7 @@ static void new_audio_stream(AVFormatContext *oc)
     audio_enc->time_base= (AVRational){1, audio_sample_rate};
     if (audio_language) {
         av_metadata_set(&st->metadata, "language", audio_language);
-        av_free(audio_language);
-        audio_language = NULL;
+        av_freep(&audio_language);
     }
 
     /* reset some key parameters */
@@ -3301,8 +3300,7 @@ static void new_subtitle_stream(AVFormatContext *oc)
 
     if (subtitle_language) {
         av_metadata_set(&st->metadata, "language", subtitle_language);
-        av_free(subtitle_language);
-        subtitle_language = NULL;
+        av_freep(&subtitle_language);
     }
 
     subtitle_disable = 0;
