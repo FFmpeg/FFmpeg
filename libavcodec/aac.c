@@ -1645,8 +1645,9 @@ static void apply_channel_coupling(AACContext *ac, ChannelElement *cc,
  */
 static void spectral_to_sample(AACContext *ac)
 {
-    int i, type;
-    for (type = 3; type >= 0; type--) {
+    enum RawDataBlockType type;
+    for (type = TYPE_LFE; type >= TYPE_SCE; type--) {
+        int i;
         for (i = 0; i < MAX_ELEM_ID; i++) {
             ChannelElement *che = ac->che[type][i];
             if (che) {
