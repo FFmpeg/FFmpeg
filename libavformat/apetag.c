@@ -35,7 +35,7 @@ static int ape_tag_read_field(AVFormatContext *s)
     ByteIOContext *pb = s->pb;
     uint8_t key[1024], *value;
     uint32_t size, flags;
-    int i, l, c;
+    int i, c;
 
     size = get_le32(pb);  /* field size */
     flags = get_le32(pb); /* field flags */
