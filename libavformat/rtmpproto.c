@@ -332,7 +332,7 @@ static void gen_pong(URLContext *s, RTMPContext *rt, RTMPPacket *ppkt)
     ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_PING, ppkt->timestamp + 1, 6);
     p = pkt.data;
     bytestream_put_be16(&p, 7);
-    bytestream_put_be32(&p, AV_RB32(ppkt->data+2) + 1);
+    bytestream_put_be32(&p, AV_RB32(ppkt->data+2));
     ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size, rt->prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
 }
