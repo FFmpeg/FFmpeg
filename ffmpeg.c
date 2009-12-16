@@ -134,6 +134,7 @@ static int video_disable = 0;
 static int video_discard = 0;
 static char *video_codec_name = NULL;
 static int video_codec_tag = 0;
+static char *video_language = NULL;
 static int same_quality = 0;
 static int do_deinterlace = 0;
 static int top_field_first = -1;
@@ -3179,6 +3180,10 @@ static void new_video_stream(AVFormatContext *oc)
         }
     }
     nb_ocodecs++;
+    if (video_language) {
+        av_metadata_set(&st->metadata, "language", video_language);
+        av_freep(&video_language);
+    }
 
     /* reset some key parameters */
     video_disable = 0;
@@ -3913,6 +3918,7 @@ static const OptionDef options[] = {
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "newvideo", OPT_VIDEO, {(void*)opt_new_video_stream}, "add a new video stream to the current output stream" },
+    { "vlang", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void *)&video_language}, "set the ISO 639 language code (3 letters) of the current video stream" , "code" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
     { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&force_fps}, "force the selected framerate, disable the best supported framerate selection" },
 

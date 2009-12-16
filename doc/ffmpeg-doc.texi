@@ -505,6 +505,9 @@ stream.
 @item -newvideo
 Add a new video stream to the current output stream.
 
+@item -vlang @var{code}
+Set the ISO 639 language code (3 letters) of the current video stream.
+
 @end table
 
 @section Advanced Video Options
