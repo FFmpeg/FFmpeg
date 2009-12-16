@@ -1065,7 +1065,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
     url_fseek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET);
     get_guid(s->pb, &g);
     if (!guidcmp(&g, &index_guid)) {
-        int64_t itime;
+        int64_t itime, last_pos=-1;
         int pct, ict;
         int64_t av_unused gsize= get_le64(s->pb);
         get_guid(s->pb, &g);
@@ -1080,8 +1080,11 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
             int64_t pos      = s->data_offset + s->packet_size*(int64_t)pktnum;
             int64_t index_pts= av_rescale(itime, i, 10000);
 
+            if(pos != last_pos){
             av_log(s, AV_LOG_DEBUG, "pktnum:%d, pktct:%d\n", pktnum, pktct);
             av_add_index_entry(s->streams[stream_index], pos, index_pts, s->packet_size, 0, AVINDEX_KEYFRAME);
+            last_pos=pos;
+            }
         }
         asf->index_read= 1;
     }
