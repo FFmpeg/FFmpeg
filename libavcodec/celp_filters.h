@@ -90,7 +90,8 @@ int ff_celp_lp_synthesis_filter(int16_t *out,
  * @param filter_coeffs filter coefficients.
  * @param in input signal
  * @param buffer_length amount of data to process
- * @param filter_length filter length (10 for 10th order LP filter)
+ * @param filter_length filter length (10 for 10th order LP filter). Must be
+ *                      greater than 4 and even.
  *
  * @note Output buffer must contain filter_length samples of past
  *       speech data before pointer.
