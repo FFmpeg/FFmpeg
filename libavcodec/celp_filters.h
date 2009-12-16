@@ -36,10 +36,8 @@
  *
  * \note fc_in and fc_out should not overlap!
  */
-void ff_celp_convolve_circ(int16_t* fc_out,
-                           const int16_t* fc_in,
-                           const int16_t* filter,
-                           int len);
+void ff_celp_convolve_circ(int16_t *fc_out, const int16_t *fc_in,
+                           const int16_t *filter, int len);
 
 /**
  * Add an array to a rotated array.
@@ -74,12 +72,9 @@ void ff_celp_circ_addf(float *out, const float *in,
  *
  * Routine applies 1/A(z) filter to given speech data.
  */
-int ff_celp_lp_synthesis_filter(int16_t *out,
-                                const int16_t* filter_coeffs,
-                                const int16_t* in,
-                                int buffer_length,
-                                int filter_length,
-                                int stop_on_overflow,
+int ff_celp_lp_synthesis_filter(int16_t *out, const int16_t *filter_coeffs,
+                                const int16_t *in, int buffer_length,
+                                int filter_length, int stop_on_overflow,
                                 int rounder);
 
 /**
@@ -98,10 +93,8 @@ int ff_celp_lp_synthesis_filter(int16_t *out,
  *
  * Routine applies 1/A(z) filter to given speech data.
  */
-void ff_celp_lp_synthesis_filterf(float *out,
-                                  const float* filter_coeffs,
-                                  const float* in,
-                                  int buffer_length,
+void ff_celp_lp_synthesis_filterf(float *out, const float *filter_coeffs,
+                                  const float *in, int buffer_length,
                                   int filter_length);
 
 /**
@@ -119,10 +112,8 @@ void ff_celp_lp_synthesis_filterf(float *out,
  *
  * Routine applies A(z) filter to given speech data.
  */
-void ff_celp_lp_zero_synthesis_filterf(float *out,
-                                       const float* filter_coeffs,
-                                       const float* in,
-                                       int buffer_length,
+void ff_celp_lp_zero_synthesis_filterf(float *out, const float *filter_coeffs,
+                                       const float *in, int buffer_length,
                                        int filter_length);
 
 #endif /* AVCODEC_CELP_FILTERS_H */
