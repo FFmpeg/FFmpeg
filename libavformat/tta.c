@@ -35,6 +35,9 @@ static int tta_probe(AVProbeData *p)
     if (ff_id3v2_match(d))
         d += ff_id3v2_tag_len(d);
 
+    if (d - p->buf >= p->buf_size)
+        return 0;
+
     if (d[0] == 'T' && d[1] == 'T' && d[2] == 'A' && d[3] == '1')
         return 80;
     return 0;
