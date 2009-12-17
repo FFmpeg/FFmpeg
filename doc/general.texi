@@ -63,6 +63,8 @@ library:
     @tab Used in the game Cyberia from Interplay.
 @item Delphine Software International CIN @tab   @tab X
     @tab Multimedia format used by Delphine Software games.
+@item CD+G                      @tab   @tab X
+    @tab Video format used by CD+G karaoke disks
 @item Core Audio Format         @tab   @tab X
     @tab Apple Core Audio Format
 @item CRC testing format        @tab X @tab
@@ -329,6 +331,8 @@ following image formats are supported:
     @tab Codec used in Cyberia game.
 @item CamStudio              @tab     @tab  X
     @tab fourcc: CSCD
+@item CD+G                   @tab     @tab  X
+    @tab Video codec for CD+G karaoke disks
 @item Chinese AVS video      @tab     @tab  X
     @tab AVS1-P2, JiZhun profile
 @item Delphine Software International CIN video  @tab     @tab  X

@@ -68,6 +68,7 @@ OBJS-$(CONFIG_BMP_ENCODER)             += bmpenc.o
 OBJS-$(CONFIG_C93_DECODER)             += c93.o
 OBJS-$(CONFIG_CAVS_DECODER)            += cavs.o cavsdec.o cavsdsp.o \
                                           mpeg12data.o mpegvideo.o
+OBJS-$(CONFIG_CDGRAPHICS_DECODER)      += cdgraphics.o
 OBJS-$(CONFIG_CINEPAK_DECODER)         += cinepak.o
 OBJS-$(CONFIG_CLJR_DECODER)            += cljr.o
 OBJS-$(CONFIG_CLJR_ENCODER)            += cljr.o
