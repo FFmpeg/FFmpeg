@@ -45,6 +45,7 @@ version <next>:
 - -formats option split into -formats, -codecs, -bsfs, and -protocols
 - IV8 demuxer
 - CDG demuxer and decoder
+- R210 decoder
 
 
 
