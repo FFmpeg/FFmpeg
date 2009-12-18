@@ -269,32 +269,32 @@ stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 1589237 ./tests/data/a-pcm_s24be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-aaba3cf534ddddf5bcf663bc8c5b5331 *./tests/data/a-pcm_s24le.wav
-1587644 ./tests/data/a-pcm_s24le.wav
+a85380fb79b0d4fff38e24ac1e34bb94 *./tests/data/a-pcm_s24le.wav
+1587668 ./tests/data/a-pcm_s24le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 d7792f0343cd66fda8b50b569e2bcc48 *./tests/data/a-pcm_s32be.mov
 2118437 ./tests/data/a-pcm_s32be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-7661c9b6f221d9f57985a9e4d92c4e63 *./tests/data/a-pcm_s32le.wav
-2116844 ./tests/data/a-pcm_s32le.wav
+da6ed80f4f40f0082577dea80827e014 *./tests/data/a-pcm_s32le.wav
+2116868 ./tests/data/a-pcm_s32le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 118ff3dc83c62ce9ce669eef57e55bb2 *./tests/data/a-pcm_f32be.au
 2116824 ./tests/data/a-pcm_f32be.au
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-4104d0804a80fb8d02952ca5103b1012 *./tests/data/a-pcm_f32le.wav
-2116856 ./tests/data/a-pcm_f32le.wav
+46f44f86a18984a832206ab9e29a79f2 *./tests/data/a-pcm_f32le.wav
+2116880 ./tests/data/a-pcm_f32le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 8112296b1ed94f72f20d04b1a54850a7 *./tests/data/a-pcm_f64be.au
 4233624 ./tests/data/a-pcm_f64be.au
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
-26598accec99bdbaf76d575045aca7a9 *./tests/data/a-pcm_f64le.wav
-4233656 ./tests/data/a-pcm_f64le.wav
+ba17c6d1a270e1333e981f239bf7eb45 *./tests/data/a-pcm_f64le.wav
+4233680 ./tests/data/a-pcm_f64le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.vsynth.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 8c74234928ed425b1171211a89f67ead *./tests/data/a-pcm_zork.wav
@@ -303,5 +303,5 @@ stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444
 stddev:  633.10 PSNR: 40.30 bytes:  1058444/  1058444
 8168a5c1343553ef027541830f2cb879 *./tests/data/a-pcm_s24daud.302
 10368730 ./tests/data/a-pcm_s24daud.302
-fff1dc03aa2750031203a7d72b832fad *./tests/data/pcm.vsynth.out.wav
-stddev: 9416.45 PSNR: 16.85 bytes:  6911840/  1058444
+f552afadfdfcd6348a07095da6382de5 *./tests/data/pcm.vsynth.out.wav
+stddev: 9415.16 PSNR: 16.85 bytes:  6911864/  1058444

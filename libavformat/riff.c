@@ -322,7 +322,9 @@ int ff_put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 
     if(!enc->codec_tag || enc->codec_tag > 0xffff)
         return -1;
-    waveformatextensible = enc->channels > 2 && enc->channel_layout;
+    waveformatextensible =   (enc->channels > 2 && enc->channel_layout)
+                          || enc->sample_rate > 48000
+                          || av_get_bits_per_sample(enc->codec_id) > 16;
 
     if (waveformatextensible) {
         put_le16(pb, 0xfffe);
