@@ -950,7 +950,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
     }
 
     if (!headers_len) {
-        av_log(avccontext, AV_LOG_ERROR, "Extradata corrupt.\n");
+        av_log(avccontext, AV_LOG_ERROR, "Extradata missing.\n");
         return -1;
     }
 
