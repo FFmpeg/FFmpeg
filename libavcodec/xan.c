@@ -370,7 +370,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
 
     palette_control->palette_changed = 0;
     memcpy(s->current_frame.data[1], palette_control->palette,
-        AVPALETTE_SIZE);
+           AVPALETTE_SIZE);
     s->current_frame.palette_has_changed = 1;
 
     s->buf = buf;
