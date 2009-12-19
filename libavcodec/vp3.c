@@ -980,8 +980,8 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     return 1;
                 }
                 if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
-                s->all_fragments[current_fragment].motion_x = motion_x[k];
-                s->all_fragments[current_fragment].motion_y = motion_y[k];
+                    s->all_fragments[current_fragment].motion_x = motion_x[k];
+                    s->all_fragments[current_fragment].motion_y = motion_y[k];
                 } else {
                     s->all_fragments[current_fragment].motion_x = motion_x[0];
                     s->all_fragments[current_fragment].motion_y = motion_y[0];
