@@ -76,10 +76,14 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
 
     s->buffer1_size = avctx->width * avctx->height;
     s->buffer1 = av_malloc(s->buffer1_size);
+    if (!s->buffer1)
+        return -1;
     s->buffer2_size = avctx->width * avctx->height;
     s->buffer2 = av_malloc(s->buffer2_size + 130);
-    if (!s->buffer1 || !s->buffer2)
+    if (!s->buffer2) {
+        av_freep(&s->buffer1);
         return -1;
+    }
 
     return 0;
 }
@@ -405,8 +409,8 @@ static av_cold int xan_decode_end(AVCodecContext *avctx)
     if (s->current_frame.data[0])
         avctx->release_buffer(avctx, &s->current_frame);
 
-    av_free(s->buffer1);
-    av_free(s->buffer2);
+    av_freep(&s->buffer1);
+    av_freep(&s->buffer2);
 
     return 0;
 }
