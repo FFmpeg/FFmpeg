@@ -112,6 +112,26 @@ extern const uint8_t ff_fc_2pulses_9bits_track1_gray[16];
 extern const uint8_t ff_fc_2pulses_9bits_track2_gray[32];
 
 /**
+ * b60 hamming windowed sinc function coefficients
+ */
+extern const float ff_b60_sinc[61];
+
+/**
+ * Table of pow(0.7,n)
+ */
+extern const float ff_pow_0_7[10];
+
+/**
+ * Table of pow(0.75,n)
+ */
+extern const float ff_pow_0_75[10];
+
+/**
+ * Table of pow(0.55,n)
+ */
+extern const float ff_pow_0_55[10];
+
+/**
  * Decode fixed-codebook vector (3.8 and D.5.8 of G.729, 5.7.1 of AMR).
  * @param fc_v [out] decoded fixed codebook vector (2.13)
  * @param tab1 table used for first pulse_count pulses
