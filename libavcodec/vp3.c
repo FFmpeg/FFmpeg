@@ -891,11 +891,6 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     motion_y[0] = fixed_motion_vector_table[get_bits(gb, 6)];
                 }
 
-                for (k = 1; k < 6; k++) {
-                    motion_x[k] = motion_x[0];
-                    motion_y[k] = motion_y[0];
-                }
-
                 /* vector maintenance, only on MODE_INTER_PLUS_MV */
                 if (s->macroblock_coding[current_macroblock] ==
                     MODE_INTER_PLUS_MV) {
@@ -946,10 +941,6 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 /* all 6 fragments use the last motion vector */
                 motion_x[0] = last_motion_x;
                 motion_y[0] = last_motion_y;
-                for (k = 1; k < 6; k++) {
-                    motion_x[k] = motion_x[0];
-                    motion_y[k] = motion_y[0];
-                }
 
                 /* no vector maintenance (last vector remains the
                  * last vector) */
@@ -960,10 +951,6 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                  * last motion vector */
                 motion_x[0] = prior_last_motion_x;
                 motion_y[0] = prior_last_motion_y;
-                for (k = 1; k < 6; k++) {
-                    motion_x[k] = motion_x[0];
-                    motion_y[k] = motion_y[0];
-                }
 
                 /* vector maintenance */
                 prior_last_motion_x = last_motion_x;
@@ -974,8 +961,8 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
 
             default:
                 /* covers intra, inter without MV, golden without MV */
-                memset(motion_x, 0, 6 * sizeof(int));
-                memset(motion_y, 0, 6 * sizeof(int));
+                motion_x[0] = 0;
+                motion_y[0] = 0;
 
                 /* no vector maintenance */
                 break;
@@ -992,8 +979,13 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                         current_fragment, s->fragment_count);
                     return 1;
                 }
+                if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
                 s->all_fragments[current_fragment].motion_x = motion_x[k];
                 s->all_fragments[current_fragment].motion_y = motion_y[k];
+                } else {
+                    s->all_fragments[current_fragment].motion_x = motion_x[0];
+                    s->all_fragments[current_fragment].motion_y = motion_y[0];
+                }
             }
         }
     }
