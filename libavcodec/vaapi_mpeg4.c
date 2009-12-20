@@ -69,6 +69,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     pic_param->vol_fields.bits.quarter_sample           = s->quarter_sample;
     pic_param->vol_fields.bits.data_partitioned         = s->data_partitioning;
     pic_param->vol_fields.bits.reversible_vlc           = s->rvlc;
+    pic_param->vol_fields.bits.resync_marker_disable    = !s->resync_marker;
     pic_param->no_of_sprite_warping_points              = s->num_sprite_warping_points;
     for (i = 0; i < s->num_sprite_warping_points && i < 3; i++) {
         pic_param->sprite_trajectory_du[i]              = s->sprite_traj[i][0];
@@ -84,6 +85,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     pic_param->vop_fields.bits.alternate_vertical_scan_flag = s->alternate_scan;
     pic_param->vop_fcode_forward                        = s->f_code;
     pic_param->vop_fcode_backward                       = s->b_code;
+    pic_param->vop_time_increment_resolution            = avctx->time_base.den;
     pic_param->num_macroblocks_in_gob                   = s->mb_width * ff_h263_get_gob_height(s);
     pic_param->num_gobs_in_vop                          = (s->mb_width * s->mb_height) / pic_param->num_macroblocks_in_gob;
     pic_param->TRB                                      = s->pb_time;
