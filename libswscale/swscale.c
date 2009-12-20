@@ -2782,14 +2782,14 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             1;
 
         if (initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
-                   srcH      ,        dstH, filterAlign, (1<<12),
-                   (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
-                   srcFilter->lumV, dstFilter->lumV, c->param) < 0)
+                       srcH      ,        dstH, filterAlign, (1<<12),
+                       (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
+                       srcFilter->lumV, dstFilter->lumV, c->param) < 0)
             goto fail;
         if (initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
-                   c->chrSrcH, c->chrDstH, filterAlign, (1<<12),
-                   (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
-                   srcFilter->chrV, dstFilter->chrV, c->param) < 0)
+                       c->chrSrcH, c->chrDstH, filterAlign, (1<<12),
+                       (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
+                       srcFilter->chrV, dstFilter->chrV, c->param) < 0)
             goto fail;
 
 #ifdef COMPILE_ALTIVEC

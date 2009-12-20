@@ -190,14 +190,14 @@ typedef struct SwsContext {
     int32_t  alpMmxFilter[4*MAX_FILTER_SIZE];
 
 #if HAVE_ALTIVEC
-  vector signed short   CY;
-  vector signed short   CRV;
-  vector signed short   CBU;
-  vector signed short   CGU;
-  vector signed short   CGV;
-  vector signed short   OY;
-  vector unsigned short CSHIFT;
-  vector signed short   *vYCoeffsBank, *vCCoeffsBank;
+    vector signed short   CY;
+    vector signed short   CRV;
+    vector signed short   CBU;
+    vector signed short   CGU;
+    vector signed short   CGV;
+    vector signed short   OY;
+    vector unsigned short CSHIFT;
+    vector signed short   *vYCoeffsBank, *vCCoeffsBank;
 #endif
 
 #if ARCH_BFIN
