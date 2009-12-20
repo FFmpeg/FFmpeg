@@ -2219,6 +2219,37 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
 #endif /* COMPILE_MMX */
 }
 
+//FIXME all pal and rgb srcFormats could do this convertion as well
+//FIXME all scalers more complex than bilinear could do half of this transform
+static void RENAME(chrRangeToJpeg)(uint16_t *dst, int width)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        dst[i     ] = (FFMIN(dst[i     ],30775)*4663 - 9289992)>>12; //-264
+        dst[i+VOFW] = (FFMIN(dst[i+VOFW],30775)*4663 - 9289992)>>12; //-264
+    }
+}
+static void RENAME(chrRangeFromJpeg)(uint16_t *dst, int width)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        dst[i     ] = (dst[i     ]*1799 + 4081085)>>11; //1469
+        dst[i+VOFW] = (dst[i+VOFW]*1799 + 4081085)>>11; //1469
+    }
+}
+static void RENAME(lumRangeToJpeg)(uint16_t *dst, int width)
+{
+    int i;
+    for (i = 0; i < width; i++)
+        dst[i] = (FFMIN(dst[i],30189)*19077 - 39057361)>>14;
+}
+static void RENAME(lumRangeFromJpeg)(uint16_t *dst, int width)
+{
+    int i;
+    for (i = 0; i < width; i++)
+        dst[i] = (dst[i]*14071 + 33561947)>>14;
+}
+
 #define FAST_BILINEAR_X86 \
     "subl    %%edi, %%esi    \n\t" /*  src[xx+1] - src[xx] */                   \
     "imull   %%ecx, %%esi    \n\t" /* (src[xx+1] - src[xx])*xalpha */           \
@@ -2253,6 +2284,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     int     av_unused canMMX2BeUsed  = c->canMMX2BeUsed;
     void    av_unused *mmx2FilterCode= c->lumMmx2FilterCode;
     void (*internal_func)(uint8_t *, const uint8_t *, long, uint32_t *) = isAlpha ? c->hascale_internal : c->hyscale_internal;
+    void (*convertRange)(uint16_t *, int) = isAlpha ? NULL : c->lumConvertRange;
 
     src += isAlpha ? c->alpSrcOffset : c->lumSrcOffset;
 
@@ -2377,18 +2409,8 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 #endif /* ARCH_X86 */
     }
 
-    if(!isAlpha && c->srcRange != c->dstRange && !(isRGB(c->dstFormat) || isBGR(c->dstFormat))) {
-        int i;
-        //FIXME all pal and rgb srcFormats could do this convertion as well
-        //FIXME all scalers more complex than bilinear could do half of this transform
-        if(c->srcRange) {
-            for (i=0; i<dstWidth; i++)
-                dst[i]= (dst[i]*14071 + 33561947)>>14;
-        } else {
-            for (i=0; i<dstWidth; i++)
-                dst[i]= (FFMIN(dst[i],30189)*19077 - 39057361)>>14;
-        }
-    }
+    if (convertRange)
+        convertRange(dst, dstWidth);
 }
 
 static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
@@ -2543,22 +2565,9 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         c->hcscale_fast(c, dst, dstWidth, src1, src2, srcW, xInc);
 #endif /* ARCH_X86 */
     }
-    if(c->srcRange != c->dstRange && !(isRGB(c->dstFormat) || isBGR(c->dstFormat))) {
-        int i;
-        //FIXME all pal and rgb srcFormats could do this convertion as well
-        //FIXME all scalers more complex than bilinear could do half of this transform
-        if(c->srcRange) {
-            for (i=0; i<dstWidth; i++) {
-                dst[i     ]= (dst[i     ]*1799 + 4081085)>>11; //1469
-                dst[i+VOFW]= (dst[i+VOFW]*1799 + 4081085)>>11; //1469
-            }
-        } else {
-            for (i=0; i<dstWidth; i++) {
-                dst[i     ]= (FFMIN(dst[i     ],30775)*4663 - 9289992)>>12; //-264
-                dst[i+VOFW]= (FFMIN(dst[i+VOFW],30775)*4663 - 9289992)>>12; //-264
-            }
-        }
-    }
+
+    if (c->chrConvertRange)
+        c->chrConvertRange(dst, dstWidth);
 }
 
 #define DEBUG_SWSCALE_BUFFERS 0
@@ -3049,5 +3058,15 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         c->chrSrcOffset = 1;
         c->alpSrcOffset = 1;
         break;
+    }
+
+    if (c->srcRange != c->dstRange && !(isRGB(c->dstFormat) || isBGR(c->dstFormat))) {
+        if (c->srcRange) {
+            c->lumConvertRange = RENAME(lumRangeFromJpeg);
+            c->chrConvertRange = RENAME(chrRangeFromJpeg);
+        } else {
+            c->lumConvertRange = RENAME(lumRangeToJpeg);
+            c->chrConvertRange = RENAME(chrRangeToJpeg);
+        }
     }
 }
