@@ -273,6 +273,10 @@ typedef struct SwsContext {
                    int xInc, const int16_t *filter, const int16_t *filterPos,
                    long filterSize);
 
+    int lumSrcOffset; ///< Offset given to luma src pointers passed to horizontal input functions.
+    int chrSrcOffset; ///< Offset given to chroma src pointers passed to horizontal input functions.
+    int alpSrcOffset; ///< Offset given to alpha src pointers passed to horizontal input functions.
+
 } SwsContext;
 //FIXME check init (where 0)
 

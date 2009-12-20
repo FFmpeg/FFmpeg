@@ -2254,16 +2254,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     void    av_unused *mmx2FilterCode= c->lumMmx2FilterCode;
     void (*internal_func)(uint8_t *, const uint8_t *, long, uint32_t *) = isAlpha ? c->hascale_internal : c->hyscale_internal;
 
-    if (isAlpha) {
-        if (srcFormat == PIX_FMT_RGB32   || srcFormat == PIX_FMT_BGR32  )
-            src += 3;
-    } else {
-        if (srcFormat == PIX_FMT_RGB32_1 || srcFormat == PIX_FMT_BGR32_1)
-            src += ALT32_CORR;
-    }
-
-    if (srcFormat == PIX_FMT_RGB48LE)
-        src++;
+    src += isAlpha ? c->alpSrcOffset : c->lumSrcOffset;
 
     if (internal_func) {
         internal_func(formatConvBuffer, src, srcW, pal);
@@ -2433,15 +2424,8 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || srcFormat==PIX_FMT_MONOWHITE)
         return;
 
-    if (srcFormat==PIX_FMT_RGB32_1 || srcFormat==PIX_FMT_BGR32_1) {
-        src1 += ALT32_CORR;
-        src2 += ALT32_CORR;
-    }
-
-    if (srcFormat==PIX_FMT_RGB48LE) {
-        src1++;
-        src2++;
-    }
+    src1 += c->chrSrcOffset;
+    src2 += c->chrSrcOffset;
 
     if (c->hcscale_internal) {
         c->hcscale_internal(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
@@ -3048,5 +3032,22 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_BGR32  :
         case PIX_FMT_BGR32_1: c->hascale_internal = abgrToA; break;
         }
+    }
+
+    switch (srcFormat) {
+    case PIX_FMT_RGB32  :
+    case PIX_FMT_BGR32  :
+        c->alpSrcOffset = 3;
+        break;
+    case PIX_FMT_RGB32_1:
+    case PIX_FMT_BGR32_1:
+        c->lumSrcOffset = ALT32_CORR;
+        c->chrSrcOffset = ALT32_CORR;
+        break;
+    case PIX_FMT_RGB48LE:
+        c->lumSrcOffset = 1;
+        c->chrSrcOffset = 1;
+        c->alpSrcOffset = 1;
+        break;
     }
 }
