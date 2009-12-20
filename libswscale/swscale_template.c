@@ -2945,8 +2945,8 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     if (c->flags & SWS_FAST_BILINEAR)
 #endif
     {
-    c->hyscale_fast = RENAME(hyscale_fast);
-    c->hcscale_fast = RENAME(hcscale_fast);
+        c->hyscale_fast = RENAME(hyscale_fast);
+        c->hcscale_fast = RENAME(hcscale_fast);
     }
 
     c->hcscale_internal = NULL;
