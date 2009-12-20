@@ -2293,12 +2293,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         src= formatConvBuffer;
     }
 
-#if COMPILE_TEMPLATE_MMX
-    // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
-    if (!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
-#else
-    if (!(flags&SWS_FAST_BILINEAR))
-#endif
+    if (!c->hyscale_fast)
     {
         c->hScale(dst, dstWidth, src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize);
     } else { // fast bilinear upscale / crap downscale
@@ -2455,12 +2450,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         src2= formatConvBuffer+VOFW;
     }
 
-#if COMPILE_TEMPLATE_MMX
-    // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
-    if (!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
-#else
-    if (!(flags&SWS_FAST_BILINEAR))
-#endif
+    if (!c->hcscale_fast)
     {
         c->hScale(dst     , dstWidth, src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
         c->hScale(dst+VOFW, dstWidth, src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
@@ -2948,8 +2938,16 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
 
     c->hScale       = RENAME(hScale      );
 
+#if COMPILE_TEMPLATE_MMX
+    // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
+    if (c->flags & SWS_FAST_BILINEAR && c->canMMX2BeUsed)
+#else
+    if (c->flags & SWS_FAST_BILINEAR)
+#endif
+    {
     c->hyscale_fast = RENAME(hyscale_fast);
     c->hcscale_fast = RENAME(hcscale_fast);
+    }
 
     c->hcscale_internal = NULL;
     switch(srcFormat) {
