@@ -2438,9 +2438,6 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     int     av_unused canMMX2BeUsed  = c->canMMX2BeUsed;
     void    av_unused *mmx2FilterCode= c->chrMmx2FilterCode;
 
-    if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || srcFormat==PIX_FMT_MONOWHITE)
-        return;
-
     src1 += c->chrSrcOffset;
     src2 += c->chrSrcOffset;
 
@@ -2717,7 +2714,7 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             assert(lastInChrBuf + 1 - chrSrcSliceY >= 0);
             //FIXME replace parameters through context struct (some at least)
 
-            if (!(isGray(srcFormat) || isGray(dstFormat)))
+            if (c->needs_hcscale)
                 RENAME(hcscale)(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
                                 flags, hChrFilter, hChrFilterPos, hChrFilterSize,
                                 c->srcFormat, formatConvBuffer,
@@ -3067,4 +3064,8 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
             c->chrConvertRange = RENAME(chrRangeToJpeg);
         }
     }
+
+    if (!(isGray(srcFormat) || isGray(c->dstFormat) ||
+          srcFormat == PIX_FMT_MONOBLACK || srcFormat == PIX_FMT_MONOWHITE))
+        c->needs_hcscale = 1;
 }

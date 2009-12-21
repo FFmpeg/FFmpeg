@@ -279,6 +279,8 @@ typedef struct SwsContext {
     int chrSrcOffset; ///< Offset given to chroma src pointers passed to horizontal input functions.
     int alpSrcOffset; ///< Offset given to alpha src pointers passed to horizontal input functions.
 
+    int needs_hcscale; ///< Set if there are chroma planes to be converted.
+
 } SwsContext;
 //FIXME check init (where 0)
 
