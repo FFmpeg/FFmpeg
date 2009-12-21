@@ -2546,8 +2546,9 @@ int main(int argc, char **argv)
     parse_options(argc, argv, options, opt_input_file);
 
     if (!input_filename) {
-        show_help();
+        show_usage();
         fprintf(stderr, "An input file must be specified\n");
+        fprintf(stderr, "Use -h to get full help or, even better, run 'man ffplay'\n");
         exit(1);
     }
 

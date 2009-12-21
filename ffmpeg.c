@@ -3995,8 +3995,11 @@ int main(int argc, char **argv)
     /* parse options */
     parse_options(argc, argv, options, opt_output_file);
 
-    if(nb_output_files <= 0 && nb_input_files == 0)
-        show_help();
+    if(nb_output_files <= 0 && nb_input_files == 0) {
+        show_usage();
+        fprintf(stderr, "Use -h to get full help or, even better, run 'man ffmpeg'\n");
+        av_exit(1);
+    }
 
     /* file converter / grab */
     if (nb_output_files <= 0) {
