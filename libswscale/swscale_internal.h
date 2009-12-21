@@ -253,13 +253,13 @@ typedef struct SwsContext {
                         const int16_t **alpSrc, uint8_t *dest,
                         long dstW, long dstY);
 
-    void (*hyscale_internal)(uint8_t *dst, const uint8_t *src,
-                             long width, uint32_t *pal);
-    void (*hascale_internal)(uint8_t *dst, const uint8_t *src,
-                             long width, uint32_t *pal);
-    void (*hcscale_internal)(uint8_t *dstU, uint8_t *dstV,
-                             const uint8_t *src1, const uint8_t *src2,
-                             long width, uint32_t *pal);
+    void (*lumToYV12)(uint8_t *dst, const uint8_t *src,
+                      long width, uint32_t *pal); ///< Unscaled conversion of luma plane to YV12 for horizontal scaler.
+    void (*alpToYV12)(uint8_t *dst, const uint8_t *src,
+                      long width, uint32_t *pal); ///< Unscaled conversion of alpha plane to YV12 for horizontal scaler.
+    void (*chrToYV12)(uint8_t *dstU, uint8_t *dstV,
+                      const uint8_t *src1, const uint8_t *src2,
+                      long width, uint32_t *pal); ///< Unscaled conversion of chroma planes to YV12 for horizontal scaler.
     void (*hyscale_fast)(struct SwsContext *c,
                          int16_t *dst, int dstWidth,
                          const uint8_t *src, int srcW, int xInc);
