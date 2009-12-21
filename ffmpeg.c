@@ -3563,12 +3563,17 @@ static void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
     vfprintf(stdout, fmt, vl);
 }
 
-static void show_help(void)
+static void show_usage(void)
 {
-    av_log_set_callback(log_callback_help);
     printf("Hyper fast Audio and Video encoder\n");
     printf("usage: ffmpeg [options] [[infile options] -i infile]... {[outfile options] outfile}...\n");
     printf("\n");
+}
+
+static void show_help(void)
+{
+    av_log_set_callback(log_callback_help);
+    show_usage();
     show_help_options(options, "Main options:\n",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB, 0);
     show_help_options(options, "\nAdvanced options:\n",
