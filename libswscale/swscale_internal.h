@@ -261,10 +261,10 @@ typedef struct SwsContext {
                       const uint8_t *src1, const uint8_t *src2,
                       long width, uint32_t *pal); ///< Unscaled conversion of chroma planes to YV12 for horizontal scaler.
     void (*hyscale_fast)(struct SwsContext *c,
-                         int16_t *dst, int dstWidth,
+                         int16_t *dst, long dstWidth,
                          const uint8_t *src, int srcW, int xInc);
     void (*hcscale_fast)(struct SwsContext *c,
-                         int16_t *dst, int dstWidth,
+                         int16_t *dst, long dstWidth,
                          const uint8_t *src1, const uint8_t *src2,
                          int srcW, int xInc);
 

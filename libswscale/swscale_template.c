@@ -2259,9 +2259,116 @@ static void RENAME(lumRangeFromJpeg)(uint16_t *dst, int width)
     "shrl       $9, %%esi    \n\t"                                              \
 
 static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
-                                        int dstWidth, const uint8_t *src, int srcW,
+                                        long dstWidth, const uint8_t *src, int srcW,
                                         int xInc)
 {
+#if ARCH_X86 && CONFIG_GPL
+#if COMPILE_TEMPLATE_MMX2
+    int32_t *mmx2FilterPos = c->lumMmx2FilterPos;
+    int16_t *mmx2Filter    = c->lumMmx2Filter;
+    int     canMMX2BeUsed  = c->canMMX2BeUsed;
+    void    *mmx2FilterCode= c->lumMmx2FilterCode;
+    int i;
+#if defined(PIC)
+    DECLARE_ALIGNED(8, uint64_t, ebxsave);
+#endif
+    if (canMMX2BeUsed) {
+        __asm__ volatile(
+#if defined(PIC)
+            "mov               %%"REG_b", %5        \n\t"
+#endif
+            "pxor                  %%mm7, %%mm7     \n\t"
+            "mov                      %0, %%"REG_c" \n\t"
+            "mov                      %1, %%"REG_D" \n\t"
+            "mov                      %2, %%"REG_d" \n\t"
+            "mov                      %3, %%"REG_b" \n\t"
+            "xor               %%"REG_a", %%"REG_a" \n\t" // i
+            PREFETCH"        (%%"REG_c")            \n\t"
+            PREFETCH"      32(%%"REG_c")            \n\t"
+            PREFETCH"      64(%%"REG_c")            \n\t"
+
+#if ARCH_X86_64
+
+#define CALL_MMX2_FILTER_CODE \
+            "movl            (%%"REG_b"), %%esi     \n\t"\
+            "call                    *%4            \n\t"\
+            "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
+            "add               %%"REG_S", %%"REG_c" \n\t"\
+            "add               %%"REG_a", %%"REG_D" \n\t"\
+            "xor               %%"REG_a", %%"REG_a" \n\t"\
+
+#else
+
+#define CALL_MMX2_FILTER_CODE \
+            "movl (%%"REG_b"), %%esi        \n\t"\
+            "call         *%4                       \n\t"\
+            "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
+            "add               %%"REG_a", %%"REG_D" \n\t"\
+            "xor               %%"REG_a", %%"REG_a" \n\t"\
+
+#endif /* ARCH_X86_64 */
+
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+
+#if defined(PIC)
+            "mov                      %5, %%"REG_b" \n\t"
+#endif
+            :: "m" (src), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
+            "m" (mmx2FilterCode)
+#if defined(PIC)
+            ,"m" (ebxsave)
+#endif
+            : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+#if !defined(PIC)
+            ,"%"REG_b
+#endif
+        );
+        for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) dst[i] = src[srcW-1]*128;
+    } else {
+#endif /* COMPILE_TEMPLATE_MMX2 */
+    x86_reg xInc_shr16 = xInc >> 16;
+    uint16_t xInc_mask = xInc & 0xffff;
+    //NO MMX just normal asm ...
+    __asm__ volatile(
+        "xor %%"REG_a", %%"REG_a"            \n\t" // i
+        "xor %%"REG_d", %%"REG_d"            \n\t" // xx
+        "xorl    %%ecx, %%ecx                \n\t" // xalpha
+        ASMALIGN(4)
+        "1:                                  \n\t"
+        "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
+        "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
+        FAST_BILINEAR_X86
+        "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
+        "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
+        "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
+
+        "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
+        "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
+        FAST_BILINEAR_X86
+        "movw     %%si, 2(%%"REG_D", %%"REG_a", 2)  \n\t"
+        "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
+        "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
+
+
+        "add        $2, %%"REG_a"            \n\t"
+        "cmp        %2, %%"REG_a"            \n\t"
+        " jb        1b                       \n\t"
+
+
+        :: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask)
+        : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
+    );
+#if COMPILE_TEMPLATE_MMX2
+    } //if MMX2 can't be used
+#endif
+#else
     int i;
     unsigned int xpos=0;
     for (i=0;i<dstWidth;i++) {
@@ -2270,6 +2377,7 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
         dst[i]= (src[xx]<<7) + (src[xx+1] - src[xx])*xalpha;
         xpos+=xInc;
     }
+#endif /* ARCH_X86 */
 }
 
       // *** horizontal scale Y line to temp buffer
@@ -2279,10 +2387,6 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
                                    enum PixelFormat srcFormat, uint8_t *formatConvBuffer,
                                    uint32_t *pal, int isAlpha)
 {
-    int32_t av_unused *mmx2FilterPos = c->lumMmx2FilterPos;
-    int16_t av_unused *mmx2Filter    = c->lumMmx2Filter;
-    int     av_unused canMMX2BeUsed  = c->canMMX2BeUsed;
-    void    av_unused *mmx2FilterCode= c->lumMmx2FilterCode;
     void (*toYV12)(uint8_t *, const uint8_t *, long, uint32_t *) = isAlpha ? c->alpToYV12 : c->lumToYV12;
     void (*convertRange)(uint16_t *, int) = isAlpha ? NULL : c->lumConvertRange;
 
@@ -2297,111 +2401,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     {
         c->hScale(dst, dstWidth, src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize);
     } else { // fast bilinear upscale / crap downscale
-#if ARCH_X86 && CONFIG_GPL
-#if COMPILE_TEMPLATE_MMX2
-        int i;
-#if defined(PIC)
-        DECLARE_ALIGNED(8, uint64_t, ebxsave);
-#endif
-        if (canMMX2BeUsed) {
-            __asm__ volatile(
-#if defined(PIC)
-                "mov               %%"REG_b", %5        \n\t"
-#endif
-                "pxor                  %%mm7, %%mm7     \n\t"
-                "mov                      %0, %%"REG_c" \n\t"
-                "mov                      %1, %%"REG_D" \n\t"
-                "mov                      %2, %%"REG_d" \n\t"
-                "mov                      %3, %%"REG_b" \n\t"
-                "xor               %%"REG_a", %%"REG_a" \n\t" // i
-                PREFETCH"        (%%"REG_c")            \n\t"
-                PREFETCH"      32(%%"REG_c")            \n\t"
-                PREFETCH"      64(%%"REG_c")            \n\t"
-
-#if ARCH_X86_64
-
-#define CALL_MMX2_FILTER_CODE \
-                "movl            (%%"REG_b"), %%esi     \n\t"\
-                "call                    *%4            \n\t"\
-                "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
-                "add               %%"REG_S", %%"REG_c" \n\t"\
-                "add               %%"REG_a", %%"REG_D" \n\t"\
-                "xor               %%"REG_a", %%"REG_a" \n\t"\
-
-#else
-
-#define CALL_MMX2_FILTER_CODE \
-                "movl (%%"REG_b"), %%esi        \n\t"\
-                "call         *%4                       \n\t"\
-                "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
-                "add               %%"REG_a", %%"REG_D" \n\t"\
-                "xor               %%"REG_a", %%"REG_a" \n\t"\
-
-#endif /* ARCH_X86_64 */
-
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-
-#if defined(PIC)
-                "mov                      %5, %%"REG_b" \n\t"
-#endif
-                :: "m" (src), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
-                "m" (mmx2FilterCode)
-#if defined(PIC)
-                ,"m" (ebxsave)
-#endif
-                : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
-#if !defined(PIC)
-                ,"%"REG_b
-#endif
-            );
-            for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) dst[i] = src[srcW-1]*128;
-        } else {
-#endif /* COMPILE_TEMPLATE_MMX2 */
-        x86_reg xInc_shr16 = xInc >> 16;
-        uint16_t xInc_mask = xInc & 0xffff;
-        //NO MMX just normal asm ...
-        __asm__ volatile(
-            "xor %%"REG_a", %%"REG_a"            \n\t" // i
-            "xor %%"REG_d", %%"REG_d"            \n\t" // xx
-            "xorl    %%ecx, %%ecx                \n\t" // xalpha
-            ASMALIGN(4)
-            "1:                                  \n\t"
-            "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
-            "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
-            FAST_BILINEAR_X86
-            "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
-            "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
-            "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
-
-            "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
-            "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
-            FAST_BILINEAR_X86
-            "movw     %%si, 2(%%"REG_D", %%"REG_a", 2)  \n\t"
-            "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
-            "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
-
-
-            "add        $2, %%"REG_a"            \n\t"
-            "cmp        %2, %%"REG_a"            \n\t"
-            " jb        1b                       \n\t"
-
-
-            :: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask)
-            : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
-        );
-#if COMPILE_TEMPLATE_MMX2
-        } //if MMX2 can't be used
-#endif
-#else
         c->hyscale_fast(c, dst, dstWidth, src, srcW, xInc);
-#endif /* ARCH_X86 */
     }
 
     if (convertRange)
@@ -2409,9 +2409,110 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 }
 
 static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
-                                        int dstWidth, const uint8_t *src1,
+                                        long dstWidth, const uint8_t *src1,
                                         const uint8_t *src2, int srcW, int xInc)
 {
+#if ARCH_X86 && CONFIG_GPL
+#if COMPILE_TEMPLATE_MMX2
+    int32_t *mmx2FilterPos = c->chrMmx2FilterPos;
+    int16_t *mmx2Filter    = c->chrMmx2Filter;
+    int     canMMX2BeUsed  = c->canMMX2BeUsed;
+    void    *mmx2FilterCode= c->chrMmx2FilterCode;
+    int i;
+#if defined(PIC)
+    DECLARE_ALIGNED(8, uint64_t, ebxsave);
+#endif
+    if (canMMX2BeUsed) {
+        __asm__ volatile(
+#if defined(PIC)
+            "mov          %%"REG_b", %6         \n\t"
+#endif
+            "pxor             %%mm7, %%mm7      \n\t"
+            "mov                 %0, %%"REG_c"  \n\t"
+            "mov                 %1, %%"REG_D"  \n\t"
+            "mov                 %2, %%"REG_d"  \n\t"
+            "mov                 %3, %%"REG_b"  \n\t"
+            "xor          %%"REG_a", %%"REG_a"  \n\t" // i
+            PREFETCH"   (%%"REG_c")             \n\t"
+            PREFETCH" 32(%%"REG_c")             \n\t"
+            PREFETCH" 64(%%"REG_c")             \n\t"
+
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            "xor          %%"REG_a", %%"REG_a"  \n\t" // i
+            "mov                 %5, %%"REG_c"  \n\t" // src
+            "mov                 %1, %%"REG_D"  \n\t" // buf1
+            "add              $"AV_STRINGIFY(VOF)", %%"REG_D"  \n\t"
+            PREFETCH"   (%%"REG_c")             \n\t"
+            PREFETCH" 32(%%"REG_c")             \n\t"
+            PREFETCH" 64(%%"REG_c")             \n\t"
+
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+            CALL_MMX2_FILTER_CODE
+
+#if defined(PIC)
+            "mov %6, %%"REG_b"    \n\t"
+#endif
+            :: "m" (src1), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
+            "m" (mmx2FilterCode), "m" (src2)
+#if defined(PIC)
+            ,"m" (ebxsave)
+#endif
+            : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+#if !defined(PIC)
+            ,"%"REG_b
+#endif
+        );
+        for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) {
+            //printf("%d %d %d\n", dstWidth, i, srcW);
+            dst[i] = src1[srcW-1]*128;
+            dst[i+VOFW] = src2[srcW-1]*128;
+        }
+    } else {
+#endif /* COMPILE_TEMPLATE_MMX2 */
+        x86_reg xInc_shr16 = (x86_reg) (xInc >> 16);
+        uint16_t xInc_mask = xInc & 0xffff;
+        __asm__ volatile(
+            "xor %%"REG_a", %%"REG_a"               \n\t" // i
+            "xor %%"REG_d", %%"REG_d"               \n\t" // xx
+            "xorl    %%ecx, %%ecx                   \n\t" // xalpha
+            ASMALIGN(4)
+            "1:                                     \n\t"
+            "mov        %0, %%"REG_S"               \n\t"
+            "movzbl  (%%"REG_S", %%"REG_d"), %%edi  \n\t" //src[xx]
+            "movzbl 1(%%"REG_S", %%"REG_d"), %%esi  \n\t" //src[xx+1]
+            FAST_BILINEAR_X86
+            "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
+
+            "movzbl    (%5, %%"REG_d"), %%edi       \n\t" //src[xx]
+            "movzbl   1(%5, %%"REG_d"), %%esi       \n\t" //src[xx+1]
+            FAST_BILINEAR_X86
+            "movw     %%si, "AV_STRINGIFY(VOF)"(%%"REG_D", %%"REG_a", 2)   \n\t"
+
+            "addw       %4, %%cx                    \n\t" //xalpha += xInc&0xFFFF
+            "adc        %3, %%"REG_d"               \n\t" //xx+= xInc>>16 + carry
+            "add        $1, %%"REG_a"               \n\t"
+            "cmp        %2, %%"REG_a"               \n\t"
+            " jb        1b                          \n\t"
+
+/* GCC 3.3 makes MPlayer crash on IA-32 machines when using "g" operand here,
+which is needed to support GCC 4.0. */
+#if ARCH_X86_64 && AV_GCC_VERSION_AT_LEAST(3,4)
+            :: "m" (src1), "m" (dst), "g" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+#else
+            :: "m" (src1), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+#endif
+            "r" (src2)
+            : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
+        );
+#if COMPILE_TEMPLATE_MMX2
+    } //if MMX2 can't be used
+#endif
+#else
     int i;
     unsigned int xpos=0;
     for (i=0;i<dstWidth;i++) {
@@ -2425,6 +2526,7 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
         */
         xpos+=xInc;
     }
+#endif /* ARCH_X86 */
 }
 
 inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, const uint8_t *src1, const uint8_t *src2,
@@ -2433,10 +2535,6 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
                                    enum PixelFormat srcFormat, uint8_t *formatConvBuffer,
                                    uint32_t *pal)
 {
-    int32_t av_unused *mmx2FilterPos = c->chrMmx2FilterPos;
-    int16_t av_unused *mmx2Filter    = c->chrMmx2Filter;
-    int     av_unused canMMX2BeUsed  = c->canMMX2BeUsed;
-    void    av_unused *mmx2FilterCode= c->chrMmx2FilterCode;
 
     src1 += c->chrSrcOffset;
     src2 += c->chrSrcOffset;
@@ -2452,105 +2550,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         c->hScale(dst     , dstWidth, src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
         c->hScale(dst+VOFW, dstWidth, src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
     } else { // fast bilinear upscale / crap downscale
-#if ARCH_X86 && CONFIG_GPL
-#if COMPILE_TEMPLATE_MMX2
-        int i;
-#if defined(PIC)
-        DECLARE_ALIGNED(8, uint64_t, ebxsave);
-#endif
-        if (canMMX2BeUsed) {
-            __asm__ volatile(
-#if defined(PIC)
-                "mov          %%"REG_b", %6         \n\t"
-#endif
-                "pxor             %%mm7, %%mm7      \n\t"
-                "mov                 %0, %%"REG_c"  \n\t"
-                "mov                 %1, %%"REG_D"  \n\t"
-                "mov                 %2, %%"REG_d"  \n\t"
-                "mov                 %3, %%"REG_b"  \n\t"
-                "xor          %%"REG_a", %%"REG_a"  \n\t" // i
-                PREFETCH"   (%%"REG_c")             \n\t"
-                PREFETCH" 32(%%"REG_c")             \n\t"
-                PREFETCH" 64(%%"REG_c")             \n\t"
-
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                "xor          %%"REG_a", %%"REG_a"  \n\t" // i
-                "mov                 %5, %%"REG_c"  \n\t" // src
-                "mov                 %1, %%"REG_D"  \n\t" // buf1
-                "add              $"AV_STRINGIFY(VOF)", %%"REG_D"  \n\t"
-                PREFETCH"   (%%"REG_c")             \n\t"
-                PREFETCH" 32(%%"REG_c")             \n\t"
-                PREFETCH" 64(%%"REG_c")             \n\t"
-
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-                CALL_MMX2_FILTER_CODE
-
-#if defined(PIC)
-                "mov %6, %%"REG_b"    \n\t"
-#endif
-                :: "m" (src1), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
-                "m" (mmx2FilterCode), "m" (src2)
-#if defined(PIC)
-                ,"m" (ebxsave)
-#endif
-                : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
-#if !defined(PIC)
-                ,"%"REG_b
-#endif
-            );
-            for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) {
-                //printf("%d %d %d\n", dstWidth, i, srcW);
-                dst[i] = src1[srcW-1]*128;
-                dst[i+VOFW] = src2[srcW-1]*128;
-            }
-        } else {
-#endif /* COMPILE_TEMPLATE_MMX2 */
-            x86_reg xInc_shr16 = (x86_reg) (xInc >> 16);
-            uint16_t xInc_mask = xInc & 0xffff;
-            __asm__ volatile(
-                "xor %%"REG_a", %%"REG_a"               \n\t" // i
-                "xor %%"REG_d", %%"REG_d"               \n\t" // xx
-                "xorl    %%ecx, %%ecx                   \n\t" // xalpha
-                ASMALIGN(4)
-                "1:                                     \n\t"
-                "mov        %0, %%"REG_S"               \n\t"
-                "movzbl  (%%"REG_S", %%"REG_d"), %%edi  \n\t" //src[xx]
-                "movzbl 1(%%"REG_S", %%"REG_d"), %%esi  \n\t" //src[xx+1]
-                FAST_BILINEAR_X86
-                "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
-
-                "movzbl    (%5, %%"REG_d"), %%edi       \n\t" //src[xx]
-                "movzbl   1(%5, %%"REG_d"), %%esi       \n\t" //src[xx+1]
-                FAST_BILINEAR_X86
-                "movw     %%si, "AV_STRINGIFY(VOF)"(%%"REG_D", %%"REG_a", 2)   \n\t"
-
-                "addw       %4, %%cx                    \n\t" //xalpha += xInc&0xFFFF
-                "adc        %3, %%"REG_d"               \n\t" //xx+= xInc>>16 + carry
-                "add        $1, %%"REG_a"               \n\t"
-                "cmp        %2, %%"REG_a"               \n\t"
-                " jb        1b                          \n\t"
-
-/* GCC 3.3 makes MPlayer crash on IA-32 machines when using "g" operand here,
-   which is needed to support GCC 4.0. */
-#if ARCH_X86_64 && AV_GCC_VERSION_AT_LEAST(3,4)
-                :: "m" (src1), "m" (dst), "g" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
-#else
-                :: "m" (src1), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
-#endif
-                "r" (src2)
-                : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
-            );
-#if COMPILE_TEMPLATE_MMX2
-        } //if MMX2 can't be used
-#endif
-#else
         c->hcscale_fast(c, dst, dstWidth, src1, src2, srcW, xInc);
-#endif /* ARCH_X86 */
     }
 
     if (c->chrConvertRange)
