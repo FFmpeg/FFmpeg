@@ -29,7 +29,7 @@ ffplay [options] @file{input_file}
 @section Main options
 
 @table @option
-@item -h
+@item -h, -?, -help, --help
 Show help.
 @item -version
 Show version.

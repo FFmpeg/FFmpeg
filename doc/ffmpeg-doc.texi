@@ -228,7 +228,7 @@ specified for the inputs.
 @item -L
 Show license.
 
-@item -h
+@item -h, -?, -help, --help
 Show help.
 
 @item -version

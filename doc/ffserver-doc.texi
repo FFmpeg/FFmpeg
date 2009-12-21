@@ -251,7 +251,7 @@ Show available bitstream filters.
 Show available protocols.
 @item -filters
 Show available libavfilter filters.
-@item -h
+@item -h, -?, -help, --help
 Show help.
 @item -loglevel @var{loglevel}
 Set the logging level used by the library.
