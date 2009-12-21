@@ -2492,8 +2492,8 @@ static const OptionDef options[] = {
 
 static void show_help(void)
 {
-    printf("usage: ffplay [options] input_file\n"
-           "Simple media player\n");
+    printf("Simple media player\n");
+    printf("usage: ffplay [options] input_file\n");
     printf("\n");
     show_help_options(options, "Main options:\n",
                       OPT_EXPERT, 0);
