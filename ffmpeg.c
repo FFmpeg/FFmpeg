@@ -3567,7 +3567,7 @@ static void show_help(void)
 {
     av_log_set_callback(log_callback_help);
     printf("Hyper fast Audio and Video encoder\n");
-    printf("usage: ffmpeg [[infile options] -i infile]... {[outfile options] outfile}...\n");
+    printf("usage: ffmpeg [options] [[infile options] -i infile]... {[outfile options] outfile}...\n");
     printf("\n");
     show_help_options(options, "Main options:\n",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_GRAB, 0);
