@@ -237,36 +237,7 @@ ffserver [options]
 @section Options
 @c man begin OPTIONS
 @table @option
-@item -version
-Show version.
-@item -L
-Show license.
-@item -formats
-Show available formats.
-@item -codecs
-Show available codecs.
-@item -bsfs
-Show available bitstream filters.
-@item -protocols
-Show available protocols.
-@item -filters
-Show available libavfilter filters.
-@item -h, -?, -help, --help
-Show help.
-@item -loglevel @var{loglevel}
-Set the logging level used by the library.
-@var{loglevel} is a number or a string containing one of the following values:
-@table @samp
-@item quiet
-@item panic
-@item fatal
-@item error
-@item warning
-@item info
-@item verbose
-@item debug
-@end table
-
+@include fftools-common-opts.texi
 @item -f @var{configfile}
 Use @file{configfile} instead of @file{/etc/ffserver.conf}.
 @item -n
