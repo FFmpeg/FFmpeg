@@ -49,6 +49,7 @@ Seek by bytes.
 Disable graphical display.
 @item -f @var{fmt}
 Force format.
+@end table
 
 @section Advanced options
 @table @option
