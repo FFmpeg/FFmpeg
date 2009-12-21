@@ -2382,9 +2382,9 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 
       // *** horizontal scale Y line to temp buffer
 static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, const uint8_t *src, int srcW, int xInc,
-                                   int flags, const int16_t *hLumFilter,
+                                   const int16_t *hLumFilter,
                                    const int16_t *hLumFilterPos, int hLumFilterSize,
-                                   enum PixelFormat srcFormat, uint8_t *formatConvBuffer,
+                                   uint8_t *formatConvBuffer,
                                    uint32_t *pal, int isAlpha)
 {
     void (*toYV12)(uint8_t *, const uint8_t *, long, uint32_t *) = isAlpha ? c->alpToYV12 : c->lumToYV12;
@@ -2530,9 +2530,9 @@ which is needed to support GCC 4.0. */
 }
 
 inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, const uint8_t *src1, const uint8_t *src2,
-                                   int srcW, int xInc, int flags, const int16_t *hChrFilter,
+                                   int srcW, int xInc, const int16_t *hChrFilter,
                                    const int16_t *hChrFilterPos, int hChrFilterSize,
-                                   enum PixelFormat srcFormat, uint8_t *formatConvBuffer,
+                                   uint8_t *formatConvBuffer,
                                    uint32_t *pal)
 {
 
@@ -2693,13 +2693,13 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
             assert(lastInLumBuf + 1 - srcSliceY >= 0);
             RENAME(hyscale)(c, lumPixBuf[ lumBufIndex ], dstW, src1, srcW, lumXInc,
-                            flags, hLumFilter, hLumFilterPos, hLumFilterSize,
-                            c->srcFormat, formatConvBuffer,
+                            hLumFilter, hLumFilterPos, hLumFilterSize,
+                            formatConvBuffer,
                             pal, 0);
             if (CONFIG_SWSCALE_ALPHA && alpPixBuf)
                 RENAME(hyscale)(c, alpPixBuf[ lumBufIndex ], dstW, src2, srcW, lumXInc,
-                                flags, hLumFilter, hLumFilterPos, hLumFilterSize,
-                                c->srcFormat, formatConvBuffer,
+                                hLumFilter, hLumFilterPos, hLumFilterSize,
+                                formatConvBuffer,
                                 pal, 1);
             lastInLumBuf++;
         }
@@ -2716,8 +2716,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
 
             if (c->needs_hcscale)
                 RENAME(hcscale)(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
-                                flags, hChrFilter, hChrFilterPos, hChrFilterSize,
-                                c->srcFormat, formatConvBuffer,
+                                hChrFilter, hChrFilterPos, hChrFilterSize,
+                                formatConvBuffer,
                                 pal);
             lastInChrBuf++;
         }
