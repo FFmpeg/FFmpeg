@@ -184,6 +184,12 @@ void show_bsfs(void);
 void show_protocols(void);
 
 /**
+ * Prints a listing containing all the pixel formats supported by the
+ * program.
+ */
+void show_pix_fmts(void);
+
+/**
  * Returns a positive value if reads from standard input a line
  * starting with [yY], otherwise returns 0.
  */

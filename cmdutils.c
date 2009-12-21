@@ -582,6 +582,11 @@ void show_filters(void)
 #endif
 }
 
+void show_pix_fmts(void)
+{
+    list_fmts(avcodec_pix_fmt_string, PIX_FMT_NB);
+}
+
 int read_yesno(void)
 {
     int c = getchar();
