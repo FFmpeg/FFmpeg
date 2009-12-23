@@ -486,6 +486,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         // at this point, the RTP header has been stripped;  This is ASSUMING that there is only 1 CSRC, which in't wise.
         switch(st->codec->codec_id) {
         case CODEC_ID_MP2:
+        case CODEC_ID_MP3:
             /* better than nothing: skip mpeg audio RTP header */
             if (len <= 4)
                 return -1;
