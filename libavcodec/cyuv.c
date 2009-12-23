@@ -82,6 +82,10 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     unsigned char cur_byte;
     int pixel_groups;
 
+    if (avctx->codec_id == CODEC_ID_AURA) {
+        y_table = u_table;
+        u_table = v_table;
+    }
     /* sanity check the buffer size: A buffer has 3x16-bytes tables
      * followed by (height) lines each with 3 bytes to represent groups
      * of 4 pixels. Thus, the total size of the buffer ought to be:
@@ -163,6 +167,23 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
+#if CONFIG_AURA_DECODER
+AVCodec aura_decoder = {
+    "aura",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_AURA,
+    sizeof(CyuvDecodeContext),
+    cyuv_decode_init,
+    NULL,
+    NULL,
+    cyuv_decode_frame,
+    CODEC_CAP_DR1,
+    NULL,
+    .long_name = NULL_IF_CONFIG_SMALL("Auravision AURA"),
+};
+#endif
+
+#if CONFIG_CYUV_DECODER
 AVCodec cyuv_decoder = {
     "cyuv",
     CODEC_TYPE_VIDEO,
@@ -176,4 +197,4 @@ AVCodec cyuv_decoder = {
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Creative YUV (CYUV)"),
 };
-
+#endif

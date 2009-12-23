@@ -317,6 +317,7 @@ following image formats are supported:
     @tab fourcc: VCR1
 @item ATI VCR2               @tab     @tab  X
     @tab fourcc: VCR2
+@item Auravision Aura        @tab     @tab  X
 @item Autodesk Animator Flic video  @tab     @tab  X
 @item Autodesk RLE           @tab     @tab  X
     @tab fourcc: AASC

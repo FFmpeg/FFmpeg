@@ -60,6 +60,7 @@ OBJS-$(CONFIG_ASV2_DECODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ASV2_ENCODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ATRAC1_DECODER)          += atrac1.o atrac.o
 OBJS-$(CONFIG_ATRAC3_DECODER)          += atrac3.o atrac.o
+OBJS-$(CONFIG_AURA_DECODER)            += cyuv.o
 OBJS-$(CONFIG_AVS_DECODER)             += avs.o
 OBJS-$(CONFIG_BETHSOFTVID_DECODER)     += bethsoftvideo.o
 OBJS-$(CONFIG_BFI_DECODER)             += bfi.o
