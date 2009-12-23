@@ -46,7 +46,7 @@ version <next>:
 - IV8 demuxer
 - CDG demuxer and decoder
 - R210 decoder
-- Auravision Aura decoder
+- Auravision Aura 1 and 2 decoders
 
 
 
