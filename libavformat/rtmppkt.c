@@ -346,8 +346,7 @@ static const char* rtmp_packet_type(int type)
 
 static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *data_end)
 {
-    const uint8_t *base = data;
-    int i, size;
+    int size;
     char buf[1024];
 
     if (data >= data_end)
