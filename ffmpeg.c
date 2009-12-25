@@ -3736,7 +3736,7 @@ static void opt_target(const char *arg)
 
         opt_format("dv");
 
-        opt_frame_size(norm != PAL ? "720x480" : "720x576");
+        opt_frame_size(norm == PAL ? "720x576" : "720x480");
         opt_frame_pix_fmt(!strncmp(arg, "dv50", 4) ? "yuv422p" :
                           (norm == PAL ? "yuv420p" : "yuv411p"));
         opt_frame_rate(NULL, frame_rates[norm]);
