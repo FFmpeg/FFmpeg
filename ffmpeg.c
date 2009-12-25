@@ -1854,7 +1854,7 @@ static int av_encode(AVFormatContext **output_files,
 
             if(!codec->codec_tag){
                 if(   !os->oformat->codec_tag
-                   || av_codec_get_id (os->oformat->codec_tag, icodec->codec_tag) > 0
+                   || av_codec_get_id (os->oformat->codec_tag, icodec->codec_tag) == codec->codec_id
                    || av_codec_get_tag(os->oformat->codec_tag, icodec->codec_id) <= 0)
                     codec->codec_tag = icodec->codec_tag;
             }
