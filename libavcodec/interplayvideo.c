@@ -77,11 +77,11 @@ typedef struct IpvideoContext {
 } IpvideoContext;
 
 #define CHECK_STREAM_PTR(n) \
-  if (s->stream_end - s->stream_ptr < n) { \
-    av_log(s->avctx, AV_LOG_ERROR, "Interplay video warning: stream_ptr out of bounds (%p >= %p)\n", \
-      s->stream_ptr + n, s->stream_end); \
-    return -1; \
-  }
+    if (s->stream_end - s->stream_ptr < n) { \
+        av_log(s->avctx, AV_LOG_ERROR, "Interplay video warning: stream_ptr out of bounds (%p >= %p)\n", \
+               s->stream_ptr + n, s->stream_end); \
+        return -1; \
+    }
 
 static int copy_from(IpvideoContext *s, AVFrame *src, int delta_x, int delta_y)
 {
@@ -591,20 +591,20 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
             opcode = get_bits(&gb, 4);
 
             debug_interplay("  block @ (%3d, %3d): encoding 0x%X, data ptr @ %p\n",
-                x - y, y / s->stride, opcode, s->stream_ptr);
+                            x - y, y / s->stride, opcode, s->stream_ptr);
 
             s->pixel_ptr = s->current_frame.data[0] + x;
             ret = ipvideo_decode_block[opcode](s);
             if (ret != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode problem on frame %d, @ block (%d, %d)\n",
-                    frame, x - y, y / s->stride);
+                       frame, x - y, y / s->stride);
                 return;
             }
         }
     }
     if (s->stream_end - s->stream_ptr > 1) {
         av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode finished with %td bytes left over\n",
-            s->stream_end - s->stream_ptr);
+               s->stream_end - s->stream_ptr);
     }
 }
 
