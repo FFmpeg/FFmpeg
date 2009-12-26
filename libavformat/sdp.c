@@ -211,19 +211,19 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                      payload_type, config);
             break;
         case CODEC_ID_PCM_S16BE:
-            if (payload_type >= 96)
+            if (payload_type >= RTP_PT_PRIVATE)
                 av_strlcatf(buff, size, "a=rtpmap:%d L16/%d/%d\r\n",
                                          payload_type,
                                          c->sample_rate, c->channels);
             break;
         case CODEC_ID_PCM_MULAW:
-            if (payload_type >= 96)
+            if (payload_type >= RTP_PT_PRIVATE)
                 av_strlcatf(buff, size, "a=rtpmap:%d PCMU/%d/%d\r\n",
                                          payload_type,
                                          c->sample_rate, c->channels);
             break;
         case CODEC_ID_PCM_ALAW:
-            if (payload_type >= 96)
+            if (payload_type >= RTP_PT_PRIVATE)
                 av_strlcatf(buff, size, "a=rtpmap:%d PCMA/%d/%d\r\n",
                                          payload_type,
                                          c->sample_rate, c->channels);
@@ -257,7 +257,7 @@ static void sdp_write_media(char *buff, int size, AVCodecContext *c, const char 
 
     payload_type = ff_rtp_get_payload_type(c);
     if (payload_type < 0) {
-        payload_type = 96;  /* FIXME: how to assign a private pt? rtp.c is broken too */
+        payload_type = RTP_PT_PRIVATE;  /* FIXME: how to assign a private pt? rtp.c is broken too */
     }
 
     switch (c->codec_type) {
