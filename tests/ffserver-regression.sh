@@ -3,6 +3,8 @@
 #perl -e 'chomp($wd = `pwd`); print map { s!tests/data/!!; "<Stream $_>\nFile $wd/tests/data/$_\n</Stream>\n\n" } @ARGV' tests/data/a* >> tests/data/ffserver.conf
 #perl -e 'chomp($wd = `pwd`); print map { s!tests/data/!!; "<Stream $_.asf>\nFile $wd/tests/data/$_\n</Stream>\n\n" } @ARGV' tests/data/a* >> tests/data/ffserver.conf
 
+. $(dirname $0)/regression-funcs.sh
+
 FILES=$(sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' $2 | grep -v html)
 
 rm -f tests/feed1.ffm
@@ -24,7 +26,7 @@ sleep 2
     done
     wait
     # the status page is always different
-    md5sum $MDFILES > ffserver.regression
+    do_md5sum $MDFILES > ffserver.regression
 )
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
