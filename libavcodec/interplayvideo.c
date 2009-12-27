@@ -67,6 +67,7 @@ typedef struct IpvideoContext {
     const unsigned char *buf;
     int size;
 
+    int is_16bpp;
     const unsigned char *stream_ptr;
     const unsigned char *stream_end;
     unsigned char *pixel_ptr;
@@ -620,7 +621,12 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    s->is_16bpp = avctx->bits_per_coded_sample == 16;
+    avctx->pix_fmt = s->is_16bpp ? PIX_FMT_RGB555 : PIX_FMT_PAL8;
+    if (s->is_16bpp) {
+        av_log(avctx, AV_LOG_ERROR, "16-bit Interplay video is not supported yet.\n");
+        return -1;
+    }
     dsputil_init(&s->dsp, avctx);
 
     /* decoding map contains 4 bits of information per 8x8 block */

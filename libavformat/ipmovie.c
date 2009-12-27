@@ -93,6 +93,7 @@ typedef struct IPMVEContext {
 
     uint64_t frame_pts_inc;
 
+    unsigned int video_bpp;
     unsigned int video_width;
     unsigned int video_height;
     int64_t video_pts;
@@ -375,6 +376,11 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
             }
             s->video_width = AV_RL16(&scratch[0]) * 8;
             s->video_height = AV_RL16(&scratch[2]) * 8;
+            if (opcode_version < 2 || !AV_RL16(&scratch[6])) {
+                s->video_bpp = 8;
+            } else {
+                s->video_bpp = 16;
+            }
             debug_ipmovie("video resolution: %d x %d\n",
                 s->video_width, s->video_height);
             break;
@@ -565,6 +571,7 @@ static int ipmovie_read_header(AVFormatContext *s,
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = ipmovie->video_width;
     st->codec->height = ipmovie->video_height;
+    st->codec->bits_per_coded_sample = ipmovie->video_bpp;
 
     /* palette considerations */
     st->codec->palctrl = &ipmovie->palette_control;
