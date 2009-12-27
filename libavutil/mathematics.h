@@ -56,6 +56,11 @@ enum AVRounding {
     AV_ROUND_NEAR_INF = 5, ///< Round to nearest and halfway cases away from zero.
 };
 
+/**
+ * Returns the greatest common divisor of a and b.
+ * If either a or b are 0 or either or both are <0 then behavior is
+ * undefined.
+ */
 int64_t av_const av_gcd(int64_t a, int64_t b);
 
 /**
