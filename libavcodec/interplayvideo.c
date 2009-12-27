@@ -589,7 +589,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
         s->stride = s->current_frame.linesize[0] >> 1;
     }
     s->line_inc = s->stride - 8;
-    s->upper_motion_limit_offset = (s->avctx->height - 8) * s->stride
+    s->upper_motion_limit_offset = (s->avctx->height - 8) * s->current_frame.linesize[0]
                                   + (s->avctx->width - 8) * (1 + s->is_16bpp);
 
     init_get_bits(&gb, s->decoding_map, s->decoding_map_size * 8);
