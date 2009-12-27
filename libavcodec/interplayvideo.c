@@ -1017,13 +1017,13 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    if (s->avctx->palctrl == NULL) {
+    s->is_16bpp = avctx->bits_per_coded_sample == 16;
+    avctx->pix_fmt = s->is_16bpp ? PIX_FMT_RGB555 : PIX_FMT_PAL8;
+    if (!s->is_16bpp && s->avctx->palctrl == NULL) {
         av_log(avctx, AV_LOG_ERROR, " Interplay video: palette expected.\n");
         return -1;
     }
 
-    s->is_16bpp = avctx->bits_per_coded_sample == 16;
-    avctx->pix_fmt = s->is_16bpp ? PIX_FMT_RGB555 : PIX_FMT_PAL8;
     dsputil_init(&s->dsp, avctx);
 
     /* decoding map contains 4 bits of information per 8x8 block */
