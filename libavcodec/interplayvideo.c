@@ -586,18 +586,19 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
         + s->avctx->width - 8;
 
     init_get_bits(&gb, s->decoding_map, s->decoding_map_size * 8);
-    for (y = 0; y < (s->stride * s->avctx->height); y += s->stride * 8) {
-        for (x = y; x < y + s->avctx->width; x += 8) {
+    for (y = 0; y < s->avctx->height; y += 8) {
+        for (x = 0; x < s->avctx->width; x += 8) {
             opcode = get_bits(&gb, 4);
 
             debug_interplay("  block @ (%3d, %3d): encoding 0x%X, data ptr @ %p\n",
-                            x - y, y / s->stride, opcode, s->stream_ptr);
+                            x, y, opcode, s->stream_ptr);
 
-            s->pixel_ptr = s->current_frame.data[0] + x;
+            s->pixel_ptr = s->current_frame.data[0] + x
+                          + y*s->current_frame.linesize[0];
             ret = ipvideo_decode_block[opcode](s);
             if (ret != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode problem on frame %d, @ block (%d, %d)\n",
-                       frame, x - y, y / s->stride);
+                       frame, x, y);
                 return;
             }
         }
