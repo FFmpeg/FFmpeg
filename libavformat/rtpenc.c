@@ -85,7 +85,7 @@ static int rtp_write_header(AVFormatContext *s1)
 
     payload_type = ff_rtp_get_payload_type(st->codec);
     if (payload_type < 0)
-        payload_type = RTP_PT_PRIVATE; /* private payload type */
+        payload_type = RTP_PT_PRIVATE + (st->codec->codec_type == CODEC_TYPE_AUDIO);
     s->payload_type = payload_type;
 
 // following 2 FIXMEs could be set based on the current time, there is normally no info leak, as RTP will likely be transmitted immediately

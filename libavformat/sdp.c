@@ -257,7 +257,7 @@ static void sdp_write_media(char *buff, int size, AVCodecContext *c, const char 
 
     payload_type = ff_rtp_get_payload_type(c);
     if (payload_type < 0) {
-        payload_type = RTP_PT_PRIVATE;  /* FIXME: how to assign a private pt? rtp.c is broken too */
+        payload_type = RTP_PT_PRIVATE + (c->codec_type == CODEC_TYPE_AUDIO);
     }
 
     switch (c->codec_type) {
