@@ -87,7 +87,7 @@ typedef struct IpvideoContext {
 static int copy_from(IpvideoContext *s, AVFrame *src, int delta_x, int delta_y)
 {
     int current_offset = s->pixel_ptr - s->current_frame.data[0];
-    int motion_offset = current_offset + delta_y * s->current_frame.linesize[0] + delta_x;
+    int motion_offset = current_offset + delta_y * s->current_frame.linesize[0] + delta_x * (1 + s->is_16bpp);
     if (motion_offset < 0) {
         av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset < 0 (%d)\n", motion_offset);
         return -1;
@@ -96,7 +96,7 @@ static int copy_from(IpvideoContext *s, AVFrame *src, int delta_x, int delta_y)
             motion_offset, s->upper_motion_limit_offset);
         return -1;
     }
-    s->dsp.put_pixels_tab[1][0](s->pixel_ptr, src->data[0] + motion_offset, s->current_frame.linesize[0], 8);
+    s->dsp.put_pixels_tab[!s->is_16bpp][0](s->pixel_ptr, src->data[0] + motion_offset, s->current_frame.linesize[0], 8);
     return 0;
 }
 
@@ -576,15 +576,19 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
     debug_interplay("------------------ frame %d\n", frame);
     frame++;
 
+    if (!s->is_16bpp) {
     /* this is PAL8, so make the palette available */
     memcpy(s->current_frame.data[1], s->avctx->palctrl->palette, PALETTE_COUNT * 4);
 
     s->stride = s->current_frame.linesize[0];
     s->stream_ptr = s->buf + 14;  /* data starts 14 bytes in */
     s->stream_end = s->buf + s->size;
+    } else {
+        s->stride = s->current_frame.linesize[0] >> 1;
+    }
     s->line_inc = s->stride - 8;
     s->upper_motion_limit_offset = (s->avctx->height - 8) * s->stride
-        + s->avctx->width - 8;
+        + (s->avctx->width - 8) * (1 + s->is_16bpp);
 
     init_get_bits(&gb, s->decoding_map, s->decoding_map_size * 8);
     for (y = 0; y < s->avctx->height; y += 8) {
@@ -594,9 +598,14 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
             debug_interplay("  block @ (%3d, %3d): encoding 0x%X, data ptr @ %p\n",
                             x, y, opcode, s->stream_ptr);
 
+            if (!s->is_16bpp) {
             s->pixel_ptr = s->current_frame.data[0] + x
                           + y*s->current_frame.linesize[0];
             ret = ipvideo_decode_block[opcode](s);
+            } else {
+            s->pixel_ptr = s->current_frame.data[0] + x*2
+                          + y*s->current_frame.linesize[0];
+            }
             if (ret != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode problem on frame %d, @ block (%d, %d)\n",
                        frame, x, y);
@@ -664,7 +673,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
 
     ipvideo_decode_opcodes(s);
 
-    if (palette_control->palette_changed) {
+    if (!s->is_16bpp && palette_control->palette_changed) {
         palette_control->palette_changed = 0;
         s->current_frame.palette_has_changed = 1;
     }
