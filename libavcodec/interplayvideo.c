@@ -77,10 +77,10 @@ typedef struct IpvideoContext {
 
 } IpvideoContext;
 
-#define CHECK_STREAM_PTR(n) \
-    if (s->stream_end - s->stream_ptr < n) { \
+#define CHECK_STREAM_PTR(stream_ptr, stream_end, n) \
+    if (stream_end - stream_ptr < n) { \
         av_log(s->avctx, AV_LOG_ERROR, "Interplay video warning: stream_ptr out of bounds (%p >= %p)\n", \
-               s->stream_ptr + n, s->stream_end); \
+               stream_ptr + n, stream_end); \
         return -1; \
     }
 
@@ -116,7 +116,7 @@ static int ipvideo_decode_block_opcode_0x2(IpvideoContext *s)
     int x, y;
 
     /* copy block from 2 frames ago using a motion vector; need 1 more byte */
-    CHECK_STREAM_PTR(1);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 1);
     B = *s->stream_ptr++;
 
     if (B < 56) {
@@ -139,7 +139,7 @@ static int ipvideo_decode_block_opcode_0x3(IpvideoContext *s)
     /* copy 8x8 block from current frame from an up/left block */
 
     /* need 1 more byte for motion */
-    CHECK_STREAM_PTR(1);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 1);
     B = *s->stream_ptr++;
 
     if (B < 56) {
@@ -160,7 +160,7 @@ static int ipvideo_decode_block_opcode_0x4(IpvideoContext *s)
     unsigned char B, BL, BH;
 
     /* copy a block from the previous frame; need 1 more byte */
-    CHECK_STREAM_PTR(1);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 1);
 
     B = *s->stream_ptr++;
     BL = B & 0x0F;
@@ -178,7 +178,7 @@ static int ipvideo_decode_block_opcode_0x5(IpvideoContext *s)
 
     /* copy a block from the previous frame using an expanded range;
      * need 2 more bytes */
-    CHECK_STREAM_PTR(2);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 2);
 
     x = *s->stream_ptr++;
     y = *s->stream_ptr++;
@@ -203,7 +203,7 @@ static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
     unsigned int flags;
 
     /* 2-color encoding */
-    CHECK_STREAM_PTR(2);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 2);
 
     P[0] = *s->stream_ptr++;
     P[1] = *s->stream_ptr++;
@@ -211,7 +211,7 @@ static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
     if (P[0] <= P[1]) {
 
         /* need 8 more bytes from the stream */
-        CHECK_STREAM_PTR(8);
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 8);
 
         for (y = 0; y < 8; y++) {
             flags = *s->stream_ptr++ | 0x100;
@@ -223,7 +223,7 @@ static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
     } else {
 
         /* need 2 more bytes from the stream */
-        CHECK_STREAM_PTR(2);
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 2);
 
         flags = bytestream_get_le16(&s->stream_ptr);
         for (y = 0; y < 8; y += 2) {
@@ -249,14 +249,14 @@ static int ipvideo_decode_block_opcode_0x8(IpvideoContext *s)
 
     /* 2-color encoding for each 4x4 quadrant, or 2-color encoding on
      * either top and bottom or left and right halves */
-    CHECK_STREAM_PTR(2);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 2);
 
     P[0] = *s->stream_ptr++;
     P[1] = *s->stream_ptr++;
 
     if (P[0] <= P[1]) {
 
-        CHECK_STREAM_PTR(14);
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 14);
         s->stream_ptr -= 2;
 
         for (y = 0; y < 16; y++) {
@@ -276,7 +276,7 @@ static int ipvideo_decode_block_opcode_0x8(IpvideoContext *s)
     } else {
 
         /* need 10 more bytes */
-        CHECK_STREAM_PTR(10);
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 10);
 
         if (s->stream_ptr[4] <= s->stream_ptr[5]) {
 
@@ -324,7 +324,7 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
     unsigned char P[4];
 
     /* 4-color encoding */
-    CHECK_STREAM_PTR(4);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 4);
 
     memcpy(P, s->stream_ptr, 4);
     s->stream_ptr += 4;
@@ -333,7 +333,7 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
         if (P[2] <= P[3]) {
 
             /* 1 of 4 colors for each pixel, need 16 more bytes */
-            CHECK_STREAM_PTR(16);
+            CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 16);
 
             for (y = 0; y < 8; y++) {
                 /* get the next set of 8 2-bit flags */
@@ -347,7 +347,7 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
             uint32_t flags;
 
             /* 1 of 4 colors for each 2x2 block, need 4 more bytes */
-            CHECK_STREAM_PTR(4);
+            CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 4);
 
             flags = bytestream_get_le32(&s->stream_ptr);
 
@@ -366,7 +366,7 @@ static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
         uint64_t flags;
 
         /* 1 of 4 colors for each 2x1 or 1x2 block, need 8 more bytes */
-        CHECK_STREAM_PTR(8);
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 8);
 
         flags = bytestream_get_le64(&s->stream_ptr);
         if (P[2] <= P[3]) {
@@ -400,12 +400,12 @@ static int ipvideo_decode_block_opcode_0xA(IpvideoContext *s)
 
     /* 4-color encoding for each 4x4 quadrant, or 4-color encoding on
      * either top and bottom or left and right halves */
-    CHECK_STREAM_PTR(24);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 24);
 
     if (s->stream_ptr[0] <= s->stream_ptr[1]) {
 
         /* 4-color encoding for each quadrant; need 32 bytes */
-        CHECK_STREAM_PTR(32);
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 32);
 
         for (y = 0; y < 16; y++) {
             // new values for each 4x4 block
@@ -459,7 +459,7 @@ static int ipvideo_decode_block_opcode_0xB(IpvideoContext *s)
     int y;
 
     /* 64-color encoding (each pixel in block is a different color) */
-    CHECK_STREAM_PTR(64);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 64);
 
     for (y = 0; y < 8; y++) {
         memcpy(s->pixel_ptr, s->stream_ptr, 8);
@@ -476,7 +476,7 @@ static int ipvideo_decode_block_opcode_0xC(IpvideoContext *s)
     int x, y;
 
     /* 16-color block encoding: each 2x2 block is a different color */
-    CHECK_STREAM_PTR(16);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 16);
 
     for (y = 0; y < 8; y += 2) {
         for (x = 0; x < 8; x += 2) {
@@ -498,7 +498,7 @@ static int ipvideo_decode_block_opcode_0xD(IpvideoContext *s)
     unsigned char P[2];
 
     /* 4-color block encoding: each 4x4 block is a different color */
-    CHECK_STREAM_PTR(4);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 4);
 
     for (y = 0; y < 8; y++) {
         if (!(y & 3)) {
@@ -520,7 +520,7 @@ static int ipvideo_decode_block_opcode_0xE(IpvideoContext *s)
     unsigned char pix;
 
     /* 1-color encoding: the whole block is 1 solid color */
-    CHECK_STREAM_PTR(1);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 1);
     pix = *s->stream_ptr++;
 
     for (y = 0; y < 8; y++) {
@@ -538,7 +538,7 @@ static int ipvideo_decode_block_opcode_0xF(IpvideoContext *s)
     unsigned char sample[2];
 
     /* dithered encoding */
-    CHECK_STREAM_PTR(2);
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 2);
     sample[0] = *s->stream_ptr++;
     sample[1] = *s->stream_ptr++;
 
