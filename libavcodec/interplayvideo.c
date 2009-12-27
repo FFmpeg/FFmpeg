@@ -573,6 +573,363 @@ static int ipvideo_decode_block_opcode_0xF(IpvideoContext *s)
     return 0;
 }
 
+static int ipvideo_decode_block_opcode_0x6_16(IpvideoContext *s)
+{
+    signed char x, y;
+
+    /* copy a block from the second last frame using an expanded range */
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 2);
+
+    x = *s->stream_ptr++;
+    y = *s->stream_ptr++;
+
+    debug_interplay ("    motion bytes = %d, %d\n", x, y);
+    return copy_from(s, &s->second_last_frame, x, y);
+}
+
+static int ipvideo_decode_block_opcode_0x7_16(IpvideoContext *s)
+{
+    int x, y;
+    uint16_t P[2];
+    unsigned int flags;
+    uint16_t *pixel_ptr = (uint16_t*)s->pixel_ptr;
+
+    /* 2-color encoding */
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 4);
+
+    P[0] = bytestream_get_le16(&s->stream_ptr);
+    P[1] = bytestream_get_le16(&s->stream_ptr);
+
+    if (!(P[0] & 0x8000)) {
+
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 8);
+
+        for (y = 0; y < 8; y++) {
+            flags = *s->stream_ptr++ | 0x100;
+            for (; flags != 1; flags >>= 1)
+                *pixel_ptr++ = P[flags & 1];
+            pixel_ptr += s->line_inc;
+        }
+
+    } else {
+
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 2);
+
+        flags = bytestream_get_le16(&s->stream_ptr);
+        for (y = 0; y < 8; y += 2) {
+            for (x = 0; x < 8; x += 2, flags >>= 1) {
+                pixel_ptr[x                ] =
+                pixel_ptr[x + 1            ] =
+                pixel_ptr[x +     s->stride] =
+                pixel_ptr[x + 1 + s->stride] = P[flags & 1];
+            }
+            pixel_ptr += s->stride * 2;
+        }
+    }
+
+    return 0;
+}
+
+static int ipvideo_decode_block_opcode_0x8_16(IpvideoContext *s)
+{
+    int x, y;
+    uint16_t P[2];
+    unsigned int flags = 0;
+    uint16_t *pixel_ptr = (uint16_t*)s->pixel_ptr;
+
+    /* 2-color encoding for each 4x4 quadrant, or 2-color encoding on
+     * either top and bottom or left and right halves */
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 4);
+
+    P[0] = bytestream_get_le16(&s->stream_ptr);
+    P[1] = bytestream_get_le16(&s->stream_ptr);
+
+    if (!(P[0] & 0x8000)) {
+
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 24);
+        s->stream_ptr -= 4;
+
+        for (y = 0; y < 16; y++) {
+            // new values for each 4x4 block
+            if (!(y & 3)) {
+                P[0] = bytestream_get_le16(&s->stream_ptr);
+                P[1] = bytestream_get_le16(&s->stream_ptr);
+                flags = bytestream_get_le16(&s->stream_ptr);
+            }
+
+            for (x = 0; x < 4; x++, flags >>= 1)
+                *pixel_ptr++ = P[flags & 1];
+            pixel_ptr += s->stride - 4;
+            // switch to right half
+            if (y == 7) pixel_ptr -= 8 * s->stride - 4;
+        }
+
+    } else {
+
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 12);
+
+        if (!(AV_RL16(s->stream_ptr + 4) & 0x8000)) {
+
+            flags = bytestream_get_le32(&s->stream_ptr);
+
+            /* vertical split; left & right halves are 2-color encoded */
+
+            for (y = 0; y < 16; y++) {
+                for (x = 0; x < 4; x++, flags >>= 1)
+                    *pixel_ptr++ = P[flags & 1];
+                pixel_ptr += s->stride - 4;
+                // switch to right half
+                if (y == 7) {
+                    pixel_ptr -= 8 * s->stride - 4;
+                    P[0] = bytestream_get_le16(&s->stream_ptr);
+                    P[1] = bytestream_get_le16(&s->stream_ptr);
+                    flags = bytestream_get_le32(&s->stream_ptr);
+                }
+            }
+
+        } else {
+
+            /* horizontal split; top & bottom halves are 2-color encoded */
+
+            for (y = 0; y < 8; y++) {
+                if (y == 4) {
+                    P[0] = bytestream_get_le16(&s->stream_ptr);
+                    P[1] = bytestream_get_le16(&s->stream_ptr);
+                }
+                flags = *s->stream_ptr++ | 0x100;
+
+                for (; flags != 1; flags >>= 1)
+                    *pixel_ptr++ = P[flags & 1];
+                pixel_ptr += s->line_inc;
+            }
+        }
+    }
+
+    /* report success */
+    return 0;
+}
+
+static int ipvideo_decode_block_opcode_0x9_16(IpvideoContext *s)
+{
+    int x, y;
+    uint16_t P[4];
+    uint16_t *pixel_ptr = (uint16_t*)s->pixel_ptr;
+
+    /* 4-color encoding */
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 8);
+
+    for (x = 0; x < 4; x++)
+        P[x] = bytestream_get_le16(&s->stream_ptr);
+
+    if (!(P[0] & 0x8000)) {
+        if (!(P[2] & 0x8000)) {
+
+            /* 1 of 4 colors for each pixel */
+            CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 16);
+
+            for (y = 0; y < 8; y++) {
+                /* get the next set of 8 2-bit flags */
+                int flags = bytestream_get_le16(&s->stream_ptr);
+                for (x = 0; x < 8; x++, flags >>= 2)
+                    *pixel_ptr++ = P[flags & 0x03];
+                pixel_ptr += s->line_inc;
+            }
+
+        } else {
+            uint32_t flags;
+
+            /* 1 of 4 colors for each 2x2 block */
+            CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 4);
+
+            flags = bytestream_get_le32(&s->stream_ptr);
+
+            for (y = 0; y < 8; y += 2) {
+                for (x = 0; x < 8; x += 2, flags >>= 2) {
+                    pixel_ptr[x                ] =
+                    pixel_ptr[x + 1            ] =
+                    pixel_ptr[x +     s->stride] =
+                    pixel_ptr[x + 1 + s->stride] = P[flags & 0x03];
+                }
+                pixel_ptr += s->stride * 2;
+            }
+
+        }
+    } else {
+        uint64_t flags;
+
+        /* 1 of 4 colors for each 2x1 or 1x2 block */
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 8);
+
+        flags = bytestream_get_le64(&s->stream_ptr);
+        if (!(P[2] & 0x8000)) {
+            for (y = 0; y < 8; y++) {
+                for (x = 0; x < 8; x += 2, flags >>= 2) {
+                    pixel_ptr[x    ] =
+                    pixel_ptr[x + 1] = P[flags & 0x03];
+                }
+                pixel_ptr += s->stride;
+            }
+        } else {
+            for (y = 0; y < 8; y += 2) {
+                for (x = 0; x < 8; x++, flags >>= 2) {
+                    pixel_ptr[x            ] =
+                    pixel_ptr[x + s->stride] = P[flags & 0x03];
+                }
+                pixel_ptr += s->stride * 2;
+            }
+        }
+    }
+
+    /* report success */
+    return 0;
+}
+
+static int ipvideo_decode_block_opcode_0xA_16(IpvideoContext *s)
+{
+    int x, y;
+    uint16_t P[4];
+    int flags = 0;
+    uint16_t *pixel_ptr = (uint16_t*)s->pixel_ptr;
+
+    /* 4-color encoding for each 4x4 quadrant, or 4-color encoding on
+     * either top and bottom or left and right halves */
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 24);
+
+    if (!(AV_RL16(s->stream_ptr) & 0x8000)) {
+
+        /* 4-color encoding for each quadrant */
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 48);
+
+        for (y = 0; y < 16; y++) {
+            // new values for each 4x4 block
+            if (!(y & 3)) {
+                for (x = 0; x < 4; x++)
+                    P[x] = bytestream_get_le16(&s->stream_ptr);
+                flags = bytestream_get_le32(&s->stream_ptr);
+            }
+
+            for (x = 0; x < 4; x++, flags >>= 2)
+                *pixel_ptr++ = P[flags & 0x03];
+
+            pixel_ptr += s->stride - 4;
+            // switch to right half
+            if (y == 7) pixel_ptr -= 8 * s->stride - 4;
+        }
+
+    } else {
+        // vertical split?
+        int vert = !(AV_RL16(s->stream_ptr + 16) & 0x8000);
+        uint64_t flags = 0;
+
+        /* 4-color encoding for either left and right or top and bottom
+         * halves */
+
+        for (y = 0; y < 16; y++) {
+            // load values for each half
+            if (!(y & 7)) {
+                for (x = 0; x < 4; x++)
+                    P[x] = bytestream_get_le16(&s->stream_ptr);
+                flags = bytestream_get_le64(&s->stream_ptr);
+            }
+
+            for (x = 0; x < 4; x++, flags >>= 2)
+                *pixel_ptr++ = P[flags & 0x03];
+
+            if (vert) {
+                pixel_ptr += s->stride - 4;
+                // switch to right half
+                if (y == 7) pixel_ptr -= 8 * s->stride - 4;
+            } else if (y & 1) pixel_ptr += s->line_inc;
+        }
+    }
+
+    /* report success */
+    return 0;
+}
+
+static int ipvideo_decode_block_opcode_0xB_16(IpvideoContext *s)
+{
+    int x, y;
+    uint16_t *pixel_ptr = (uint16_t*)s->pixel_ptr;
+
+    /* 64-color encoding (each pixel in block is a different color) */
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 128);
+
+    for (y = 0; y < 8; y++) {
+        for (x = 0; x < 8; x++)
+            pixel_ptr[x] = bytestream_get_le16(&s->stream_ptr);
+        pixel_ptr  += s->stride;
+    }
+
+    /* report success */
+    return 0;
+}
+
+static int ipvideo_decode_block_opcode_0xC_16(IpvideoContext *s)
+{
+    int x, y;
+    uint16_t *pixel_ptr = (uint16_t*)s->pixel_ptr;
+
+    /* 16-color block encoding: each 2x2 block is a different color */
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 32);
+
+    for (y = 0; y < 8; y += 2) {
+        for (x = 0; x < 8; x += 2) {
+            pixel_ptr[x                ] =
+            pixel_ptr[x + 1            ] =
+            pixel_ptr[x +     s->stride] =
+            pixel_ptr[x + 1 + s->stride] = bytestream_get_le16(&s->stream_ptr);
+        }
+        pixel_ptr += s->stride * 2;
+    }
+
+    /* report success */
+    return 0;
+}
+
+static int ipvideo_decode_block_opcode_0xD_16(IpvideoContext *s)
+{
+    int x, y;
+    uint16_t P[2];
+    uint16_t *pixel_ptr = (uint16_t*)s->pixel_ptr;
+
+    /* 4-color block encoding: each 4x4 block is a different color */
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 8);
+
+    for (y = 0; y < 8; y++) {
+        if (!(y & 3)) {
+            P[0] = bytestream_get_le16(&s->stream_ptr);
+            P[1] = bytestream_get_le16(&s->stream_ptr);
+        }
+        for (x = 0; x < 8; x++)
+            pixel_ptr[x] = P[x >> 2];
+        pixel_ptr += s->stride;
+    }
+
+    /* report success */
+    return 0;
+}
+
+static int ipvideo_decode_block_opcode_0xE_16(IpvideoContext *s)
+{
+    int x, y;
+    uint16_t pix;
+    uint16_t *pixel_ptr = (uint16_t*)s->pixel_ptr;
+
+    /* 1-color encoding: the whole block is 1 solid color */
+    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 2);
+    pix = bytestream_get_le16(&s->stream_ptr);
+
+    for (y = 0; y < 8; y++) {
+        for (x = 0; x < 8; x++)
+            pixel_ptr[x] = pix;
+        pixel_ptr += s->stride;
+    }
+
+    /* report success */
+    return 0;
+}
+
 static int (* const ipvideo_decode_block[])(IpvideoContext *s) = {
     ipvideo_decode_block_opcode_0x0, ipvideo_decode_block_opcode_0x1,
     ipvideo_decode_block_opcode_0x2, ipvideo_decode_block_opcode_0x3,
@@ -582,6 +939,17 @@ static int (* const ipvideo_decode_block[])(IpvideoContext *s) = {
     ipvideo_decode_block_opcode_0xA, ipvideo_decode_block_opcode_0xB,
     ipvideo_decode_block_opcode_0xC, ipvideo_decode_block_opcode_0xD,
     ipvideo_decode_block_opcode_0xE, ipvideo_decode_block_opcode_0xF,
+};
+
+static int (* const ipvideo_decode_block16[])(IpvideoContext *s) = {
+    ipvideo_decode_block_opcode_0x0,    ipvideo_decode_block_opcode_0x1,
+    ipvideo_decode_block_opcode_0x2,    ipvideo_decode_block_opcode_0x3,
+    ipvideo_decode_block_opcode_0x4,    ipvideo_decode_block_opcode_0x5,
+    ipvideo_decode_block_opcode_0x6_16, ipvideo_decode_block_opcode_0x7_16,
+    ipvideo_decode_block_opcode_0x8_16, ipvideo_decode_block_opcode_0x9_16,
+    ipvideo_decode_block_opcode_0xA_16, ipvideo_decode_block_opcode_0xB_16,
+    ipvideo_decode_block_opcode_0xC_16, ipvideo_decode_block_opcode_0xD_16,
+    ipvideo_decode_block_opcode_0xE_16, ipvideo_decode_block_opcode_0x1,
 };
 
 static void ipvideo_decode_opcodes(IpvideoContext *s)
@@ -628,6 +996,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
             } else {
                 s->pixel_ptr = s->current_frame.data[0] + x*2
                               + y*s->current_frame.linesize[0];
+                ret = ipvideo_decode_block16[opcode](s);
             }
             if (ret != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode problem on frame %d, @ block (%d, %d)\n",
@@ -655,10 +1024,6 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
 
     s->is_16bpp = avctx->bits_per_coded_sample == 16;
     avctx->pix_fmt = s->is_16bpp ? PIX_FMT_RGB555 : PIX_FMT_PAL8;
-    if (s->is_16bpp) {
-        av_log(avctx, AV_LOG_ERROR, "16-bit Interplay video is not supported yet.\n");
-        return -1;
-    }
     dsputil_init(&s->dsp, avctx);
 
     /* decoding map contains 4 bits of information per 8x8 block */
