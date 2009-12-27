@@ -70,6 +70,8 @@ typedef struct IpvideoContext {
     int is_16bpp;
     const unsigned char *stream_ptr;
     const unsigned char *stream_end;
+    const uint8_t *mv_ptr;
+    const uint8_t *mv_end;
     unsigned char *pixel_ptr;
     int line_inc;
     int stride;
@@ -118,8 +120,13 @@ static int ipvideo_decode_block_opcode_0x2(IpvideoContext *s)
     int x, y;
 
     /* copy block from 2 frames ago using a motion vector; need 1 more byte */
-    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 1);
-    B = *s->stream_ptr++;
+    if (!s->is_16bpp) {
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 1);
+        B = *s->stream_ptr++;
+    } else {
+        CHECK_STREAM_PTR(s->mv_ptr, s->mv_end, 1);
+        B = *s->mv_ptr++;
+    }
 
     if (B < 56) {
         x = 8 + (B % 7);
@@ -141,8 +148,13 @@ static int ipvideo_decode_block_opcode_0x3(IpvideoContext *s)
     /* copy 8x8 block from current frame from an up/left block */
 
     /* need 1 more byte for motion */
-    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 1);
-    B = *s->stream_ptr++;
+    if (!s->is_16bpp) {
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 1);
+        B = *s->stream_ptr++;
+    } else {
+        CHECK_STREAM_PTR(s->mv_ptr, s->mv_end, 1);
+        B = *s->mv_ptr++;
+    }
 
     if (B < 56) {
         x = -(8 + (B % 7));
@@ -162,9 +174,14 @@ static int ipvideo_decode_block_opcode_0x4(IpvideoContext *s)
     unsigned char B, BL, BH;
 
     /* copy a block from the previous frame; need 1 more byte */
-    CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 1);
+    if (!s->is_16bpp) {
+        CHECK_STREAM_PTR(s->stream_ptr, s->stream_end, 1);
+        B = *s->stream_ptr++;
+    } else {
+        CHECK_STREAM_PTR(s->mv_ptr, s->mv_end, 1);
+        B = *s->mv_ptr++;
+    }
 
-    B = *s->stream_ptr++;
     BL = B & 0x0F;
     BH = (B >> 4) & 0x0F;
     x = -8 + BL;
@@ -587,6 +604,10 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
         s->stream_end = s->buf + s->size;
     } else {
         s->stride = s->current_frame.linesize[0] >> 1;
+        s->stream_ptr = s->buf + 16;
+        s->stream_end =
+        s->mv_ptr = s->buf + 14 + AV_RL16(s->buf+14);
+        s->mv_end = s->buf + s->size;
     }
     s->line_inc = s->stride - 8;
     s->upper_motion_limit_offset = (s->avctx->height - 8) * s->current_frame.linesize[0]
