@@ -1911,7 +1911,6 @@ static void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab, uint8_t *len_
                     bits_tab[index]= bits;
                     len_tab [index]= len;
                 }
-#if 1
                 /* ESC1 */
                 bits= rl->table_vlc[rl->n][0];
                 len=  rl->table_vlc[rl->n][1];
@@ -1929,8 +1928,6 @@ static void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab, uint8_t *len_
                         len_tab [index]= len;
                     }
                 }
-#endif
-#if 1
                 /* ESC2 */
                 bits= rl->table_vlc[rl->n][0];
                 len=  rl->table_vlc[rl->n][1];
@@ -1948,7 +1945,6 @@ static void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab, uint8_t *len_
                         len_tab [index]= len;
                     }
                 }
-#endif
                 /* ESC3 */
                 bits= rl->table_vlc[rl->n][0];
                 len = rl->table_vlc[rl->n][1];
@@ -5250,7 +5246,6 @@ int h263_decode_picture_header(MpegEncContext *s)
      if(s->avctx->debug&FF_DEBUG_PICT_INFO){
         show_pict_info(s);
      }
-#if 1
     if (s->pict_type == FF_I_TYPE && s->codec_tag == AV_RL32("ZYGO")){
         int i,j;
         for(i=0; i<85; i++) av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&s->gb));
@@ -5265,7 +5260,6 @@ int h263_decode_picture_header(MpegEncContext *s)
         }
         for(i=0; i<50; i++) av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&s->gb));
     }
-#endif
 
     return 0;
 }
