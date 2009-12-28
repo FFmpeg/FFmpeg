@@ -2572,7 +2572,6 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
     const int lumXInc= c->lumXInc;
     const int chrXInc= c->chrXInc;
     const enum PixelFormat dstFormat= c->dstFormat;
-    const enum PixelFormat srcFormat= c->srcFormat;
     const int flags= c->flags;
     int16_t *vLumFilterPos= c->vLumFilterPos;
     int16_t *vChrFilterPos= c->vChrFilterPos;
