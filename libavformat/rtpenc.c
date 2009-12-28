@@ -339,7 +339,6 @@ static void rtp_send_mpegts_raw(AVFormatContext *s1,
     }
 }
 
-/* write an RTP packet. 'buf1' must contain a single specific frame. */
 static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     RTPMuxContext *s = s1->priv_data;
