@@ -56,8 +56,8 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
         return -1;
     pic_param->vop_width                                = s->width;
     pic_param->vop_height                               = s->height;
-    pic_param->forward_reference_picture                = 0xffffffff;
-    pic_param->backward_reference_picture               = 0xffffffff;
+    pic_param->forward_reference_picture                = VA_INVALID_ID;
+    pic_param->backward_reference_picture               = VA_INVALID_ID;
     pic_param->vol_fields.value                         = 0; /* reset all bits */
     pic_param->vol_fields.bits.short_video_header       = avctx->codec->id == CODEC_ID_H263;
     pic_param->vol_fields.bits.chroma_format            = CHROMA_420;

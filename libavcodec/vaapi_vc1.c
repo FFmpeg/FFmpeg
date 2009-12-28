@@ -145,9 +145,9 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t 
     pic_param = ff_vaapi_alloc_pic_param(vactx, sizeof(VAPictureParameterBufferVC1));
     if (!pic_param)
         return -1;
-    pic_param->forward_reference_picture                            = 0xffffffff;
-    pic_param->backward_reference_picture                           = 0xffffffff;
-    pic_param->inloop_decoded_picture                               = 0xffffffff;
+    pic_param->forward_reference_picture                            = VA_INVALID_ID;
+    pic_param->backward_reference_picture                           = VA_INVALID_ID;
+    pic_param->inloop_decoded_picture                               = VA_INVALID_ID;
     pic_param->sequence_fields.value                                = 0; /* reset all bits */
     pic_param->sequence_fields.bits.pulldown                        = v->broadcast;
     pic_param->sequence_fields.bits.interlace                       = v->interlace;

@@ -54,8 +54,8 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
         return -1;
     pic_param->horizontal_size                                  = s->width;
     pic_param->vertical_size                                    = s->height;
-    pic_param->forward_reference_picture                        = 0xffffffff;
-    pic_param->backward_reference_picture                       = 0xffffffff;
+    pic_param->forward_reference_picture                        = VA_INVALID_ID;
+    pic_param->backward_reference_picture                       = VA_INVALID_ID;
     pic_param->picture_coding_type                              = s->pict_type;
     pic_param->f_code                                           = mpeg2_get_f_code(s);
     pic_param->picture_coding_extension.value                   = 0; /* reset all bits */
