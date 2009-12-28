@@ -573,7 +573,7 @@ void show_protocols(void)
 
 void show_filters(void)
 {
-    AVFilter **filter = NULL;
+    AVFilter av_unused(**filter) = NULL;
 
     printf("Filters:\n");
 #if CONFIG_AVFILTER
