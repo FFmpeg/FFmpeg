@@ -2926,7 +2926,6 @@ static void opt_input_file(const char *filename)
         AVCodecContext *enc = st->codec;
         if(thread_count>1)
             avcodec_thread_init(enc, thread_count);
-        enc->thread_count= thread_count;
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
             set_context_opts(enc, avcodec_opts[CODEC_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM);
@@ -3136,7 +3135,6 @@ static void new_video_stream(AVFormatContext *oc)
         if(inter_matrix)
             video_enc->inter_matrix = inter_matrix;
 
-        video_enc->thread_count = thread_count;
         p= video_rc_override_string;
         for(i=0; p; i++){
             int start, end, q;
@@ -3242,7 +3240,6 @@ static void new_audio_stream(AVFormatContext *oc)
             audio_enc->flags |= CODEC_FLAG_QSCALE;
             audio_enc->global_quality = st->quality = FF_QP2LAMBDA * audio_qscale;
         }
-        audio_enc->thread_count = thread_count;
         audio_enc->channels = audio_channels;
         audio_enc->sample_fmt = audio_sample_fmt;
         audio_enc->channel_layout = channel_layout;
