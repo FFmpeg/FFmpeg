@@ -707,7 +707,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
 
     if (CONFIG_H261_ENCODER && s->out_format == FMT_H261)
         ff_h261_encode_init(s);
-    if (CONFIG_ANY_H263_ENCODER && s->out_format == FMT_H263)
+    if (CONFIG_H263_ENCODER && s->out_format == FMT_H263)
         h263_encode_init(s);
     if (CONFIG_MSMPEG4_ENCODER && s->msmpeg4_version)
         ff_msmpeg4_encode_init(s);
@@ -2472,7 +2472,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 }
                 s->last_bits= put_bits_count(&s->pb);
 
-                if (CONFIG_ANY_H263_ENCODER &&
+                if (CONFIG_H263_ENCODER &&
                     s->out_format == FMT_H263 && s->pict_type!=FF_B_TYPE)
                     ff_h263_update_motion_val(s);
 
@@ -2599,7 +2599,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 // RAL: Update last macroblock type
                 s->last_mv_dir = s->mv_dir;
 
-                if (CONFIG_ANY_H263_ENCODER &&
+                if (CONFIG_H263_ENCODER &&
                     s->out_format == FMT_H263 && s->pict_type!=FF_B_TYPE)
                     ff_h263_update_motion_val(s);
 
@@ -2630,7 +2630,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     s->dest[2], w>>1, h>>s->chroma_y_shift, s->uvlinesize);
             }
             if(s->loop_filter){
-                if(CONFIG_ANY_H263_ENCODER && s->out_format == FMT_H263)
+                if(CONFIG_H263_ENCODER && s->out_format == FMT_H263)
                     ff_h263_loop_filter(s);
             }
 //printf("MB %d %d bits\n", s->mb_x+s->mb_y*s->mb_stride, put_bits_count(&s->pb));
@@ -2936,7 +2936,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
             rv20_encode_picture_header(s, picture_number);
         else if (CONFIG_FLV_ENCODER && s->codec_id == CODEC_ID_FLV1)
             ff_flv_encode_picture_header(s, picture_number);
-        else if (CONFIG_ANY_H263_ENCODER)
+        else if (CONFIG_H263_ENCODER)
             h263_encode_picture_header(s, picture_number);
         break;
     case FMT_MPEG1:
