@@ -142,7 +142,7 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t 
     vactx->slice_param_size = sizeof(VASliceParameterBufferVC1);
 
     /* Fill in VAPictureParameterBufferVC1 */
-    pic_param = ff_vaapi_alloc_picture(vactx, sizeof(VAPictureParameterBufferVC1));
+    pic_param = ff_vaapi_alloc_pic_param(vactx, sizeof(VAPictureParameterBufferVC1));
     if (!pic_param)
         return -1;
     pic_param->forward_reference_picture                            = 0xffffffff;

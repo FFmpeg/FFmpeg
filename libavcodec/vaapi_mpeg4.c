@@ -51,7 +51,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     vactx->slice_param_size = sizeof(VASliceParameterBufferMPEG4);
 
     /* Fill in VAPictureParameterBufferMPEG4 */
-    pic_param = ff_vaapi_alloc_picture(vactx, sizeof(VAPictureParameterBufferMPEG4));
+    pic_param = ff_vaapi_alloc_pic_param(vactx, sizeof(VAPictureParameterBufferMPEG4));
     if (!pic_param)
         return -1;
     pic_param->vop_width                                = s->width;

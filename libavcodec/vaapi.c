@@ -129,7 +129,7 @@ static void *alloc_buffer(struct vaapi_context *vactx, int type, unsigned int si
     return data;
 }
 
-void *ff_vaapi_alloc_picture(struct vaapi_context *vactx, unsigned int size)
+void *ff_vaapi_alloc_pic_param(struct vaapi_context *vactx, unsigned int size)
 {
     return alloc_buffer(vactx, VAPictureParameterBufferType, size, &vactx->pic_param_buf_id);
 }

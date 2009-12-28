@@ -49,7 +49,7 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
     vactx->slice_param_size = sizeof(VASliceParameterBufferMPEG2);
 
     /* Fill in VAPictureParameterBufferMPEG2 */
-    pic_param = ff_vaapi_alloc_picture(vactx, sizeof(VAPictureParameterBufferMPEG2));
+    pic_param = ff_vaapi_alloc_pic_param(vactx, sizeof(VAPictureParameterBufferMPEG2));
     if (!pic_param)
         return -1;
     pic_param->horizontal_size                                  = s->width;
