@@ -36,7 +36,7 @@
  */
 
 /** Extract VASurfaceID from a Picture */
-static inline VASurfaceID ff_vaapi_get_surface(Picture *pic)
+static inline VASurfaceID ff_vaapi_get_surface_id(Picture *pic)
 {
     return (uintptr_t)pic->data[3];
 }

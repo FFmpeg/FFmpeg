@@ -185,7 +185,7 @@ int ff_vaapi_common_end_frame(MpegEncContext *s)
     if (commit_slices(vactx) < 0)
         goto done;
     if (vactx->n_slice_buf_ids > 0) {
-        if (render_picture(vactx, ff_vaapi_get_surface(s->current_picture_ptr)) < 0)
+        if (render_picture(vactx, ff_vaapi_get_surface_id(s->current_picture_ptr)) < 0)
             goto done;
         ff_draw_horiz_band(s, 0, s->avctx->height);
     }
