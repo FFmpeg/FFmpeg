@@ -71,7 +71,7 @@ static int is_supported(enum CodecID id)
 static int rtp_write_header(AVFormatContext *s1)
 {
     RTPMuxContext *s = s1->priv_data;
-    int payload_type, max_packet_size, n;
+    int max_packet_size, n;
     AVStream *st;
 
     if (s1->nb_streams != 1)
@@ -83,10 +83,9 @@ static int rtp_write_header(AVFormatContext *s1)
         return -1;
     }
 
-    payload_type = ff_rtp_get_payload_type(st->codec);
-    if (payload_type < 0)
-        payload_type = RTP_PT_PRIVATE + (st->codec->codec_type == CODEC_TYPE_AUDIO);
-    s->payload_type = payload_type;
+    s->payload_type = ff_rtp_get_payload_type(st->codec);
+    if (s->payload_type < 0)
+        s->payload_type = RTP_PT_PRIVATE + (st->codec->codec_type == CODEC_TYPE_AUDIO);
 
 // following 2 FIXMEs could be set based on the current time, there is normally no info leak, as RTP will likely be transmitted immediately
     s->base_timestamp = 0; /* FIXME: was random(), what should this be? */
