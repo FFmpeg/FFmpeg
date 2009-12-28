@@ -345,7 +345,6 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     AVStream *st = s1->streams[0];
     int rtcp_bytes;
     int size= pkt->size;
-    uint8_t *buf1= pkt->data;
 
     dprintf(s1, "%d: write len=%d\n", pkt->stream_index, size);
 
@@ -364,42 +363,42 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     case CODEC_ID_PCM_ALAW:
     case CODEC_ID_PCM_U8:
     case CODEC_ID_PCM_S8:
-        rtp_send_samples(s1, buf1, size, 1 * st->codec->channels);
+        rtp_send_samples(s1, pkt->data, size, 1 * st->codec->channels);
         break;
     case CODEC_ID_PCM_U16BE:
     case CODEC_ID_PCM_U16LE:
     case CODEC_ID_PCM_S16BE:
     case CODEC_ID_PCM_S16LE:
-        rtp_send_samples(s1, buf1, size, 2 * st->codec->channels);
+        rtp_send_samples(s1, pkt->data, size, 2 * st->codec->channels);
         break;
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
-        rtp_send_mpegaudio(s1, buf1, size);
+        rtp_send_mpegaudio(s1, pkt->data, size);
         break;
     case CODEC_ID_MPEG1VIDEO:
     case CODEC_ID_MPEG2VIDEO:
-        ff_rtp_send_mpegvideo(s1, buf1, size);
+        ff_rtp_send_mpegvideo(s1, pkt->data, size);
         break;
     case CODEC_ID_AAC:
-        ff_rtp_send_aac(s1, buf1, size);
+        ff_rtp_send_aac(s1, pkt->data, size);
         break;
     case CODEC_ID_AMR_NB:
     case CODEC_ID_AMR_WB:
-        ff_rtp_send_amr(s1, buf1, size);
+        ff_rtp_send_amr(s1, pkt->data, size);
         break;
     case CODEC_ID_MPEG2TS:
-        rtp_send_mpegts_raw(s1, buf1, size);
+        rtp_send_mpegts_raw(s1, pkt->data, size);
         break;
     case CODEC_ID_H264:
-        ff_rtp_send_h264(s1, buf1, size);
+        ff_rtp_send_h264(s1, pkt->data, size);
         break;
     case CODEC_ID_H263:
     case CODEC_ID_H263P:
-        ff_rtp_send_h263(s1, buf1, size);
+        ff_rtp_send_h263(s1, pkt->data, size);
         break;
     default:
         /* better than nothing : send the codec raw data */
-        rtp_send_raw(s1, buf1, size);
+        rtp_send_raw(s1, pkt->data, size);
         break;
     }
     return 0;
