@@ -251,11 +251,9 @@ OBJS-$(CONFIG_ROQ_ENCODER)             += roqvideoenc.o roqvideo.o elbg.o
 OBJS-$(CONFIG_ROQ_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_ROQ_DPCM_ENCODER)        += roqaudioenc.o
 OBJS-$(CONFIG_RPZA_DECODER)            += rpza.o
-OBJS-$(CONFIG_RV10_DECODER)            += rv10.o h263.o \
-                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_RV10_DECODER)            += rv10.o
 OBJS-$(CONFIG_RV10_ENCODER)            += rv10enc.o
-OBJS-$(CONFIG_RV20_DECODER)            += rv10.o h263.o \
-                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_RV20_DECODER)            += rv10.o
 OBJS-$(CONFIG_RV20_ENCODER)            += rv20enc.o
 OBJS-$(CONFIG_RV30_DECODER)            += rv30.o rv34.o h264pred.o rv30dsp.o \
                                           mpegvideo.o error_resilience.o
