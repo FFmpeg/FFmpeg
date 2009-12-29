@@ -84,6 +84,7 @@ version <next>:
 - Chronomaster DFA decoder
 - Mobotix MxPEG decoder
 - AAC encoding via libvo-aacenc
+- AMR-WB encoding via libvo-amrwbenc
 
 
 version 0.6:
