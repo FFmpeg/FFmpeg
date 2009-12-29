@@ -52,7 +52,7 @@ static const PixelFormatTag pixelFormatBpsMOV[] = {
     // http://developer.apple.com/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html
     { PIX_FMT_BGR555,   16 },
     { PIX_FMT_RGB24,    24 },
-    { PIX_FMT_BGR32_1,  32 },
+    { PIX_FMT_ARGB,     32 },
     { PIX_FMT_NONE, 0 },
 };
 
