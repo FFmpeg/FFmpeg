@@ -163,7 +163,7 @@ OBJS-$(CONFIG_MJPEG_ENCODER)           += mjpegenc.o mjpeg.o           \
                                           ratecontrol.o mpeg12data.o   \
                                           mpegvideo.o
 OBJS-$(CONFIG_MJPEGB_DECODER)          += mjpegbdec.o mjpegdec.o mjpeg.o
-OBJS-$(CONFIG_MLP_DECODER)             += mlpdec.o mlp_parser.o mlp.o mlpdsp.o
+OBJS-$(CONFIG_MLP_DECODER)             += mlpdec.o mlpdsp.o
 OBJS-$(CONFIG_MMVIDEO_DECODER)         += mmvideo.o
 OBJS-$(CONFIG_MOTIONPIXELS_DECODER)    += motionpixels.o
 OBJS-$(CONFIG_MP1_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o \
