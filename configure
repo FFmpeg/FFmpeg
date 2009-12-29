@@ -1083,7 +1083,7 @@ need_memalign="altivec neon sse"
 inline_asm_deps="!tms470"
 
 # decoders / encoders / hardware accelerators
-aac_decoder_select="fft mdct"
+aac_decoder_select="fft mdct aac_parser"
 aac_encoder_select="fft mdct"
 ac3_decoder_select="fft mdct"
 alac_encoder_select="lpc"
@@ -1194,6 +1194,9 @@ zmbv_encoder_select="zlib"
 # parsers
 h264_parser_select="golomb"
 
+# bitstream_filters
+aac_adtstoasc_bsf_select="aac_parser"
+
 # external libraries
 libdirac_decoder_deps="libdirac !libschroedinger"
 libdirac_encoder_deps="libdirac"
@@ -1236,6 +1239,7 @@ psp_muxer_select="mov_muxer"
 rtp_muxer_deps="network rtp_protocol"
 rtsp_demuxer_deps="sdp_demuxer"
 sdp_demuxer_deps="rtp_protocol mpegts_demuxer"
+spdif_muxer_select="aac_parser"
 tg2_muxer_select="mov_muxer"
 tgp_muxer_select="mov_muxer"
 w64_demuxer_deps="wav_demuxer"
