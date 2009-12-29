@@ -131,7 +131,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
                  }
                  break;
         case 4:  has_alpha = 1;
-                 avctx->pix_fmt = PIX_FMT_RGB32;
+                 avctx->pix_fmt = PIX_FMT_RGBA;
                  break;
         default: av_log(avctx, AV_LOG_ERROR, "%d components unsupported.\n", image->numcomps);
                  goto done;
