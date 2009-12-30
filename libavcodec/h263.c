@@ -56,13 +56,6 @@
 #define H263_MBTYPE_B_VLC_BITS 6
 #define CBPC_B_VLC_BITS 3
 
-static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
-static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
-                              int n, int coded, int intra, int rvlc);
-
-static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb);
-static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *dir_ptr, int encoding);
-
 #if CONFIG_ENCODERS
 static void mpeg4_encode_visual_object_header(MpegEncContext *s);
 static void mpeg4_encode_vol_header(MpegEncContext *s, int vo_number,
@@ -870,6 +863,85 @@ static inline void mpeg4_encode_blocks(MpegEncContext * s, DCTELEM block[6][64],
             }
         }
     }
+}
+
+/**
+ * predicts the dc.
+ * encoding quantized level -> quantized diff
+ * decoding quantized diff -> quantized level
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ * @param dir_ptr pointer to an integer where the prediction direction will be stored
+ */
+static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *dir_ptr, int encoding)
+{
+    int a, b, c, wrap, pred, scale, ret;
+    int16_t *dc_val;
+
+    /* find prediction */
+    if (n < 4) {
+        scale = s->y_dc_scale;
+    } else {
+        scale = s->c_dc_scale;
+    }
+    if(IS_3IV1)
+        scale= 8;
+
+    wrap= s->block_wrap[n];
+    dc_val = s->dc_val[0] + s->block_index[n];
+
+    /* B C
+     * A X
+     */
+    a = dc_val[ - 1];
+    b = dc_val[ - 1 - wrap];
+    c = dc_val[ - wrap];
+
+    /* outside slice handling (we can't do that by memset as we need the dc for error resilience) */
+    if(s->first_slice_line && n!=3){
+        if(n!=2) b=c= 1024;
+        if(n!=1 && s->mb_x == s->resync_mb_x) b=a= 1024;
+    }
+    if(s->mb_x == s->resync_mb_x && s->mb_y == s->resync_mb_y+1){
+        if(n==0 || n==4 || n==5)
+            b=1024;
+    }
+
+    if (abs(a - b) < abs(b - c)) {
+        pred = c;
+        *dir_ptr = 1; /* top */
+    } else {
+        pred = a;
+        *dir_ptr = 0; /* left */
+    }
+    /* we assume pred is positive */
+    pred = FASTDIV((pred + (scale >> 1)), scale);
+
+    if(encoding){
+        ret = level - pred;
+    }else{
+        level += pred;
+        ret= level;
+        if(s->error_recognition>=3){
+            if(level<0){
+                av_log(s->avctx, AV_LOG_ERROR, "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
+                return -1;
+            }
+            if(level*scale > 2048 + scale){
+                av_log(s->avctx, AV_LOG_ERROR, "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
+                return -1;
+            }
+        }
+    }
+    level *=scale;
+    if(level&(~2047)){
+        if(level<0)
+            level=0;
+        else if(!(s->workaround_bugs&FF_BUG_DC_CLIP))
+            level=2047;
+    }
+    dc_val[0]= level;
+
+    return ret;
 }
 
 static const int dquant_code[5]= {1,0,9,2,3};
@@ -2475,85 +2547,6 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 #endif //CONFIG_ENCODERS
 
 /**
- * predicts the dc.
- * encoding quantized level -> quantized diff
- * decoding quantized diff -> quantized level
- * @param n block index (0-3 are luma, 4-5 are chroma)
- * @param dir_ptr pointer to an integer where the prediction direction will be stored
- */
-static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *dir_ptr, int encoding)
-{
-    int a, b, c, wrap, pred, scale, ret;
-    int16_t *dc_val;
-
-    /* find prediction */
-    if (n < 4) {
-        scale = s->y_dc_scale;
-    } else {
-        scale = s->c_dc_scale;
-    }
-    if(IS_3IV1)
-        scale= 8;
-
-    wrap= s->block_wrap[n];
-    dc_val = s->dc_val[0] + s->block_index[n];
-
-    /* B C
-     * A X
-     */
-    a = dc_val[ - 1];
-    b = dc_val[ - 1 - wrap];
-    c = dc_val[ - wrap];
-
-    /* outside slice handling (we can't do that by memset as we need the dc for error resilience) */
-    if(s->first_slice_line && n!=3){
-        if(n!=2) b=c= 1024;
-        if(n!=1 && s->mb_x == s->resync_mb_x) b=a= 1024;
-    }
-    if(s->mb_x == s->resync_mb_x && s->mb_y == s->resync_mb_y+1){
-        if(n==0 || n==4 || n==5)
-            b=1024;
-    }
-
-    if (abs(a - b) < abs(b - c)) {
-        pred = c;
-        *dir_ptr = 1; /* top */
-    } else {
-        pred = a;
-        *dir_ptr = 0; /* left */
-    }
-    /* we assume pred is positive */
-    pred = FASTDIV((pred + (scale >> 1)), scale);
-
-    if(encoding){
-        ret = level - pred;
-    }else{
-        level += pred;
-        ret= level;
-        if(s->error_recognition>=3){
-            if(level<0){
-                av_log(s->avctx, AV_LOG_ERROR, "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
-                return -1;
-            }
-            if(level*scale > 2048 + scale){
-                av_log(s->avctx, AV_LOG_ERROR, "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
-                return -1;
-            }
-        }
-    }
-    level *=scale;
-    if(level&(~2047)){
-        if(level<0)
-            level=0;
-        else if(!(s->workaround_bugs&FF_BUG_DC_CLIP))
-            level=2047;
-    }
-    dc_val[0]= level;
-
-    return ret;
-}
-
-/**
  * predicts the ac.
  * @param n block index (0-3 are luma, 4-5 are chroma)
  * @param dir the ac prediction direction
@@ -3126,6 +3119,196 @@ static inline int mpeg4_is_resync(MpegEncContext *s){
     return 0;
 }
 
+static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb)
+{
+    int i;
+    int a= 2<<s->sprite_warping_accuracy;
+    int rho= 3-s->sprite_warping_accuracy;
+    int r=16/a;
+    const int vop_ref[4][2]= {{0,0}, {s->width,0}, {0, s->height}, {s->width, s->height}}; // only true for rectangle shapes
+    int d[4][2]={{0,0}, {0,0}, {0,0}, {0,0}};
+    int sprite_ref[4][2];
+    int virtual_ref[2][2];
+    int w2, h2, w3, h3;
+    int alpha=0, beta=0;
+    int w= s->width;
+    int h= s->height;
+    int min_ab;
+
+    for(i=0; i<s->num_sprite_warping_points; i++){
+        int length;
+        int x=0, y=0;
+
+        length= get_vlc2(gb, sprite_trajectory.table, SPRITE_TRAJ_VLC_BITS, 3);
+        if(length){
+            x= get_xbits(gb, length);
+        }
+        if(!(s->divx_version==500 && s->divx_build==413)) skip_bits1(gb); /* marker bit */
+
+        length= get_vlc2(gb, sprite_trajectory.table, SPRITE_TRAJ_VLC_BITS, 3);
+        if(length){
+            y=get_xbits(gb, length);
+        }
+        skip_bits1(gb); /* marker bit */
+        s->sprite_traj[i][0]= d[i][0]= x;
+        s->sprite_traj[i][1]= d[i][1]= y;
+    }
+    for(; i<4; i++)
+        s->sprite_traj[i][0]= s->sprite_traj[i][1]= 0;
+
+    while((1<<alpha)<w) alpha++;
+    while((1<<beta )<h) beta++; // there seems to be a typo in the mpeg4 std for the definition of w' and h'
+    w2= 1<<alpha;
+    h2= 1<<beta;
+
+// Note, the 4th point isn't used for GMC
+    if(s->divx_version==500 && s->divx_build==413){
+        sprite_ref[0][0]= a*vop_ref[0][0] + d[0][0];
+        sprite_ref[0][1]= a*vop_ref[0][1] + d[0][1];
+        sprite_ref[1][0]= a*vop_ref[1][0] + d[0][0] + d[1][0];
+        sprite_ref[1][1]= a*vop_ref[1][1] + d[0][1] + d[1][1];
+        sprite_ref[2][0]= a*vop_ref[2][0] + d[0][0] + d[2][0];
+        sprite_ref[2][1]= a*vop_ref[2][1] + d[0][1] + d[2][1];
+    } else {
+        sprite_ref[0][0]= (a>>1)*(2*vop_ref[0][0] + d[0][0]);
+        sprite_ref[0][1]= (a>>1)*(2*vop_ref[0][1] + d[0][1]);
+        sprite_ref[1][0]= (a>>1)*(2*vop_ref[1][0] + d[0][0] + d[1][0]);
+        sprite_ref[1][1]= (a>>1)*(2*vop_ref[1][1] + d[0][1] + d[1][1]);
+        sprite_ref[2][0]= (a>>1)*(2*vop_ref[2][0] + d[0][0] + d[2][0]);
+        sprite_ref[2][1]= (a>>1)*(2*vop_ref[2][1] + d[0][1] + d[2][1]);
+    }
+/*    sprite_ref[3][0]= (a>>1)*(2*vop_ref[3][0] + d[0][0] + d[1][0] + d[2][0] + d[3][0]);
+    sprite_ref[3][1]= (a>>1)*(2*vop_ref[3][1] + d[0][1] + d[1][1] + d[2][1] + d[3][1]); */
+
+// this is mostly identical to the mpeg4 std (and is totally unreadable because of that ...)
+// perhaps it should be reordered to be more readable ...
+// the idea behind this virtual_ref mess is to be able to use shifts later per pixel instead of divides
+// so the distance between points is converted from w&h based to w2&h2 based which are of the 2^x form
+    virtual_ref[0][0]= 16*(vop_ref[0][0] + w2)
+        + ROUNDED_DIV(((w - w2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + w2*(r*sprite_ref[1][0] - 16*vop_ref[1][0])),w);
+    virtual_ref[0][1]= 16*vop_ref[0][1]
+        + ROUNDED_DIV(((w - w2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + w2*(r*sprite_ref[1][1] - 16*vop_ref[1][1])),w);
+    virtual_ref[1][0]= 16*vop_ref[0][0]
+        + ROUNDED_DIV(((h - h2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + h2*(r*sprite_ref[2][0] - 16*vop_ref[2][0])),h);
+    virtual_ref[1][1]= 16*(vop_ref[0][1] + h2)
+        + ROUNDED_DIV(((h - h2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + h2*(r*sprite_ref[2][1] - 16*vop_ref[2][1])),h);
+
+    switch(s->num_sprite_warping_points)
+    {
+        case 0:
+            s->sprite_offset[0][0]= 0;
+            s->sprite_offset[0][1]= 0;
+            s->sprite_offset[1][0]= 0;
+            s->sprite_offset[1][1]= 0;
+            s->sprite_delta[0][0]= a;
+            s->sprite_delta[0][1]= 0;
+            s->sprite_delta[1][0]= 0;
+            s->sprite_delta[1][1]= a;
+            s->sprite_shift[0]= 0;
+            s->sprite_shift[1]= 0;
+            break;
+        case 1: //GMC only
+            s->sprite_offset[0][0]= sprite_ref[0][0] - a*vop_ref[0][0];
+            s->sprite_offset[0][1]= sprite_ref[0][1] - a*vop_ref[0][1];
+            s->sprite_offset[1][0]= ((sprite_ref[0][0]>>1)|(sprite_ref[0][0]&1)) - a*(vop_ref[0][0]/2);
+            s->sprite_offset[1][1]= ((sprite_ref[0][1]>>1)|(sprite_ref[0][1]&1)) - a*(vop_ref[0][1]/2);
+            s->sprite_delta[0][0]= a;
+            s->sprite_delta[0][1]= 0;
+            s->sprite_delta[1][0]= 0;
+            s->sprite_delta[1][1]= a;
+            s->sprite_shift[0]= 0;
+            s->sprite_shift[1]= 0;
+            break;
+        case 2:
+            s->sprite_offset[0][0]= (sprite_ref[0][0]<<(alpha+rho))
+                                                  + (-r*sprite_ref[0][0] + virtual_ref[0][0])*(-vop_ref[0][0])
+                                                  + ( r*sprite_ref[0][1] - virtual_ref[0][1])*(-vop_ref[0][1])
+                                                  + (1<<(alpha+rho-1));
+            s->sprite_offset[0][1]= (sprite_ref[0][1]<<(alpha+rho))
+                                                  + (-r*sprite_ref[0][1] + virtual_ref[0][1])*(-vop_ref[0][0])
+                                                  + (-r*sprite_ref[0][0] + virtual_ref[0][0])*(-vop_ref[0][1])
+                                                  + (1<<(alpha+rho-1));
+            s->sprite_offset[1][0]= ( (-r*sprite_ref[0][0] + virtual_ref[0][0])*(-2*vop_ref[0][0] + 1)
+                                     +( r*sprite_ref[0][1] - virtual_ref[0][1])*(-2*vop_ref[0][1] + 1)
+                                     +2*w2*r*sprite_ref[0][0]
+                                     - 16*w2
+                                     + (1<<(alpha+rho+1)));
+            s->sprite_offset[1][1]= ( (-r*sprite_ref[0][1] + virtual_ref[0][1])*(-2*vop_ref[0][0] + 1)
+                                     +(-r*sprite_ref[0][0] + virtual_ref[0][0])*(-2*vop_ref[0][1] + 1)
+                                     +2*w2*r*sprite_ref[0][1]
+                                     - 16*w2
+                                     + (1<<(alpha+rho+1)));
+            s->sprite_delta[0][0]=   (-r*sprite_ref[0][0] + virtual_ref[0][0]);
+            s->sprite_delta[0][1]=   (+r*sprite_ref[0][1] - virtual_ref[0][1]);
+            s->sprite_delta[1][0]=   (-r*sprite_ref[0][1] + virtual_ref[0][1]);
+            s->sprite_delta[1][1]=   (-r*sprite_ref[0][0] + virtual_ref[0][0]);
+
+            s->sprite_shift[0]= alpha+rho;
+            s->sprite_shift[1]= alpha+rho+2;
+            break;
+        case 3:
+            min_ab= FFMIN(alpha, beta);
+            w3= w2>>min_ab;
+            h3= h2>>min_ab;
+            s->sprite_offset[0][0]=  (sprite_ref[0][0]<<(alpha+beta+rho-min_ab))
+                                   + (-r*sprite_ref[0][0] + virtual_ref[0][0])*h3*(-vop_ref[0][0])
+                                   + (-r*sprite_ref[0][0] + virtual_ref[1][0])*w3*(-vop_ref[0][1])
+                                   + (1<<(alpha+beta+rho-min_ab-1));
+            s->sprite_offset[0][1]=  (sprite_ref[0][1]<<(alpha+beta+rho-min_ab))
+                                   + (-r*sprite_ref[0][1] + virtual_ref[0][1])*h3*(-vop_ref[0][0])
+                                   + (-r*sprite_ref[0][1] + virtual_ref[1][1])*w3*(-vop_ref[0][1])
+                                   + (1<<(alpha+beta+rho-min_ab-1));
+            s->sprite_offset[1][0]=  (-r*sprite_ref[0][0] + virtual_ref[0][0])*h3*(-2*vop_ref[0][0] + 1)
+                                   + (-r*sprite_ref[0][0] + virtual_ref[1][0])*w3*(-2*vop_ref[0][1] + 1)
+                                   + 2*w2*h3*r*sprite_ref[0][0]
+                                   - 16*w2*h3
+                                   + (1<<(alpha+beta+rho-min_ab+1));
+            s->sprite_offset[1][1]=  (-r*sprite_ref[0][1] + virtual_ref[0][1])*h3*(-2*vop_ref[0][0] + 1)
+                                   + (-r*sprite_ref[0][1] + virtual_ref[1][1])*w3*(-2*vop_ref[0][1] + 1)
+                                   + 2*w2*h3*r*sprite_ref[0][1]
+                                   - 16*w2*h3
+                                   + (1<<(alpha+beta+rho-min_ab+1));
+            s->sprite_delta[0][0]=   (-r*sprite_ref[0][0] + virtual_ref[0][0])*h3;
+            s->sprite_delta[0][1]=   (-r*sprite_ref[0][0] + virtual_ref[1][0])*w3;
+            s->sprite_delta[1][0]=   (-r*sprite_ref[0][1] + virtual_ref[0][1])*h3;
+            s->sprite_delta[1][1]=   (-r*sprite_ref[0][1] + virtual_ref[1][1])*w3;
+
+            s->sprite_shift[0]= alpha + beta + rho - min_ab;
+            s->sprite_shift[1]= alpha + beta + rho - min_ab + 2;
+            break;
+    }
+    /* try to simplify the situation */
+    if(   s->sprite_delta[0][0] == a<<s->sprite_shift[0]
+       && s->sprite_delta[0][1] == 0
+       && s->sprite_delta[1][0] == 0
+       && s->sprite_delta[1][1] == a<<s->sprite_shift[0])
+    {
+        s->sprite_offset[0][0]>>=s->sprite_shift[0];
+        s->sprite_offset[0][1]>>=s->sprite_shift[0];
+        s->sprite_offset[1][0]>>=s->sprite_shift[1];
+        s->sprite_offset[1][1]>>=s->sprite_shift[1];
+        s->sprite_delta[0][0]= a;
+        s->sprite_delta[0][1]= 0;
+        s->sprite_delta[1][0]= 0;
+        s->sprite_delta[1][1]= a;
+        s->sprite_shift[0]= 0;
+        s->sprite_shift[1]= 0;
+        s->real_sprite_warping_points=1;
+    }
+    else{
+        int shift_y= 16 - s->sprite_shift[0];
+        int shift_c= 16 - s->sprite_shift[1];
+        for(i=0; i<2; i++){
+            s->sprite_offset[0][i]<<= shift_y;
+            s->sprite_offset[1][i]<<= shift_c;
+            s->sprite_delta[0][i]<<= shift_y;
+            s->sprite_delta[1][i]<<= shift_y;
+            s->sprite_shift[i]= 16;
+        }
+        s->real_sprite_warping_points= s->num_sprite_warping_points;
+    }
+}
+
 /**
  * decodes the next video packet.
  * @return <0 if something went wrong
@@ -3396,6 +3579,53 @@ static inline int get_amv(MpegEncContext *s, int n){
     else if (sum >= len) sum= len-1;
 
     return sum;
+}
+
+/**
+ * decodes the dc value.
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ * @param dir_ptr the prediction direction will be stored here
+ * @return the quantized dc
+ */
+static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
+{
+    int level, code;
+
+    if (n < 4)
+        code = get_vlc2(&s->gb, dc_lum.table, DC_VLC_BITS, 1);
+    else
+        code = get_vlc2(&s->gb, dc_chrom.table, DC_VLC_BITS, 1);
+    if (code < 0 || code > 9 /* && s->nbit<9 */){
+        av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
+        return -1;
+    }
+    if (code == 0) {
+        level = 0;
+    } else {
+        if(IS_3IV1){
+            if(code==1)
+                level= 2*get_bits1(&s->gb)-1;
+            else{
+                if(get_bits1(&s->gb))
+                    level = get_bits(&s->gb, code-1) + (1<<(code-1));
+                else
+                    level = -get_bits(&s->gb, code-1) - (1<<(code-1));
+            }
+        }else{
+            level = get_xbits(&s->gb, code);
+        }
+
+        if (code > 8){
+            if(get_bits1(&s->gb)==0){ /* marker */
+                if(s->error_recognition>=2){
+                    av_log(s->avctx, AV_LOG_ERROR, "dc marker bit missing\n");
+                    return -1;
+                }
+            }
+        }
+    }
+
+    return ff_mpeg4_pred_dc(s, n, level, dir_ptr, 0);
 }
 
 /**
@@ -3700,6 +3930,262 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
             ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, DC_END);
     }
 
+    return 0;
+}
+
+/**
+ * decodes a block.
+ * @return <0 if an error occurred
+ */
+static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
+                              int n, int coded, int intra, int rvlc)
+{
+    int level, i, last, run;
+    int dc_pred_dir;
+    RLTable * rl;
+    RL_VLC_ELEM * rl_vlc;
+    const uint8_t * scan_table;
+    int qmul, qadd;
+
+    //Note intra & rvlc should be optimized away if this is inlined
+
+    if(intra) {
+      if(s->use_intra_dc_vlc){
+        /* DC coef */
+        if(s->partitioned_frame){
+            level = s->dc_val[0][ s->block_index[n] ];
+            if(n<4) level= FASTDIV((level + (s->y_dc_scale>>1)), s->y_dc_scale);
+            else    level= FASTDIV((level + (s->c_dc_scale>>1)), s->c_dc_scale);
+            dc_pred_dir= (s->pred_dir_table[s->mb_x + s->mb_y*s->mb_stride]<<n)&32;
+        }else{
+            level = mpeg4_decode_dc(s, n, &dc_pred_dir);
+            if (level < 0)
+                return -1;
+        }
+        block[0] = level;
+        i = 0;
+      }else{
+            i = -1;
+            ff_mpeg4_pred_dc(s, n, 0, &dc_pred_dir, 0);
+      }
+      if (!coded)
+          goto not_coded;
+
+      if(rvlc){
+          rl = &rvlc_rl_intra;
+          rl_vlc = rvlc_rl_intra.rl_vlc[0];
+      }else{
+          rl = &rl_intra;
+          rl_vlc = rl_intra.rl_vlc[0];
+      }
+      if (s->ac_pred) {
+          if (dc_pred_dir == 0)
+              scan_table = s->intra_v_scantable.permutated; /* left */
+          else
+              scan_table = s->intra_h_scantable.permutated; /* top */
+      } else {
+            scan_table = s->intra_scantable.permutated;
+      }
+      qmul=1;
+      qadd=0;
+    } else {
+        i = -1;
+        if (!coded) {
+            s->block_last_index[n] = i;
+            return 0;
+        }
+        if(rvlc) rl = &rvlc_rl_inter;
+        else     rl = &rl_inter;
+
+        scan_table = s->intra_scantable.permutated;
+
+        if(s->mpeg_quant){
+            qmul=1;
+            qadd=0;
+            if(rvlc){
+                rl_vlc = rvlc_rl_inter.rl_vlc[0];
+            }else{
+                rl_vlc = rl_inter.rl_vlc[0];
+            }
+        }else{
+            qmul = s->qscale << 1;
+            qadd = (s->qscale - 1) | 1;
+            if(rvlc){
+                rl_vlc = rvlc_rl_inter.rl_vlc[s->qscale];
+            }else{
+                rl_vlc = rl_inter.rl_vlc[s->qscale];
+            }
+        }
+    }
+  {
+    OPEN_READER(re, &s->gb);
+    for(;;) {
+        UPDATE_CACHE(re, &s->gb);
+        GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2, 0);
+        if (level==0) {
+          /* escape */
+          if(rvlc){
+                if(SHOW_UBITS(re, &s->gb, 1)==0){
+                    av_log(s->avctx, AV_LOG_ERROR, "1. marker bit missing in rvlc esc\n");
+                    return -1;
+                }; SKIP_CACHE(re, &s->gb, 1);
+
+                last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
+                run=   SHOW_UBITS(re, &s->gb, 6); LAST_SKIP_CACHE(re, &s->gb, 6);
+                SKIP_COUNTER(re, &s->gb, 1+1+6);
+                UPDATE_CACHE(re, &s->gb);
+
+                if(SHOW_UBITS(re, &s->gb, 1)==0){
+                    av_log(s->avctx, AV_LOG_ERROR, "2. marker bit missing in rvlc esc\n");
+                    return -1;
+                }; SKIP_CACHE(re, &s->gb, 1);
+
+                level= SHOW_UBITS(re, &s->gb, 11); SKIP_CACHE(re, &s->gb, 11);
+
+                if(SHOW_UBITS(re, &s->gb, 5)!=0x10){
+                    av_log(s->avctx, AV_LOG_ERROR, "reverse esc missing\n");
+                    return -1;
+                }; SKIP_CACHE(re, &s->gb, 5);
+
+                level=  level * qmul + qadd;
+                level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1); LAST_SKIP_CACHE(re, &s->gb, 1);
+                SKIP_COUNTER(re, &s->gb, 1+11+5+1);
+
+                i+= run + 1;
+                if(last) i+=192;
+          }else{
+            int cache;
+            cache= GET_CACHE(re, &s->gb);
+
+            if(IS_3IV1)
+                cache ^= 0xC0000000;
+
+            if (cache&0x80000000) {
+                if (cache&0x40000000) {
+                    /* third escape */
+                    SKIP_CACHE(re, &s->gb, 2);
+                    last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
+                    run=   SHOW_UBITS(re, &s->gb, 6); LAST_SKIP_CACHE(re, &s->gb, 6);
+                    SKIP_COUNTER(re, &s->gb, 2+1+6);
+                    UPDATE_CACHE(re, &s->gb);
+
+                    if(IS_3IV1){
+                        level= SHOW_SBITS(re, &s->gb, 12); LAST_SKIP_BITS(re, &s->gb, 12);
+                    }else{
+                        if(SHOW_UBITS(re, &s->gb, 1)==0){
+                            av_log(s->avctx, AV_LOG_ERROR, "1. marker bit missing in 3. esc\n");
+                            return -1;
+                        }; SKIP_CACHE(re, &s->gb, 1);
+
+                        level= SHOW_SBITS(re, &s->gb, 12); SKIP_CACHE(re, &s->gb, 12);
+
+                        if(SHOW_UBITS(re, &s->gb, 1)==0){
+                            av_log(s->avctx, AV_LOG_ERROR, "2. marker bit missing in 3. esc\n");
+                            return -1;
+                        }; LAST_SKIP_CACHE(re, &s->gb, 1);
+
+                        SKIP_COUNTER(re, &s->gb, 1+12+1);
+                    }
+
+#if 0
+                    if(s->error_recognition >= FF_ER_COMPLIANT){
+                        const int abs_level= FFABS(level);
+                        if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
+                            const int run1= run - rl->max_run[last][abs_level] - 1;
+                            if(abs_level <= rl->max_level[last][run]){
+                                av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, vlc encoding possible\n");
+                                return -1;
+                            }
+                            if(s->error_recognition > FF_ER_COMPLIANT){
+                                if(abs_level <= rl->max_level[last][run]*2){
+                                    av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 1 encoding possible\n");
+                                    return -1;
+                                }
+                                if(run1 >= 0 && abs_level <= rl->max_level[last][run1]){
+                                    av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 2 encoding possible\n");
+                                    return -1;
+                                }
+                            }
+                        }
+                    }
+#endif
+                    if (level>0) level= level * qmul + qadd;
+                    else         level= level * qmul - qadd;
+
+                    if((unsigned)(level + 2048) > 4095){
+                        if(s->error_recognition > FF_ER_COMPLIANT){
+                            if(level > 2560 || level<-2560){
+                                av_log(s->avctx, AV_LOG_ERROR, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
+                                return -1;
+                            }
+                        }
+                        level= level<0 ? -2048 : 2047;
+                    }
+
+                    i+= run + 1;
+                    if(last) i+=192;
+                } else {
+                    /* second escape */
+#if MIN_CACHE_BITS < 20
+                    LAST_SKIP_BITS(re, &s->gb, 2);
+                    UPDATE_CACHE(re, &s->gb);
+#else
+                    SKIP_BITS(re, &s->gb, 2);
+#endif
+                    GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2, 1);
+                    i+= run + rl->max_run[run>>7][level/qmul] +1; //FIXME opt indexing
+                    level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
+                    LAST_SKIP_BITS(re, &s->gb, 1);
+                }
+            } else {
+                /* first escape */
+#if MIN_CACHE_BITS < 19
+                LAST_SKIP_BITS(re, &s->gb, 1);
+                UPDATE_CACHE(re, &s->gb);
+#else
+                SKIP_BITS(re, &s->gb, 1);
+#endif
+                GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2, 1);
+                i+= run;
+                level = level + rl->max_level[run>>7][(run-1)&63] * qmul;//FIXME opt indexing
+                level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
+                LAST_SKIP_BITS(re, &s->gb, 1);
+            }
+          }
+        } else {
+            i+= run;
+            level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
+            LAST_SKIP_BITS(re, &s->gb, 1);
+        }
+        if (i > 62){
+            i-= 192;
+            if(i&(~63)){
+                av_log(s->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
+                return -1;
+            }
+
+            block[scan_table[i]] = level;
+            break;
+        }
+
+        block[scan_table[i]] = level;
+    }
+    CLOSE_READER(re, &s->gb);
+  }
+ not_coded:
+    if (intra) {
+        if(!s->use_intra_dc_vlc){
+            block[0] = ff_mpeg4_pred_dc(s, n, block[0], &dc_pred_dir, 0);
+
+            i -= i>>31; //if(i == -1) i=0;
+        }
+
+        mpeg4_pred_ac(s, block, n, dc_pred_dir);
+        if (s->ac_pred) {
+            i = 63; /* XXX: not optimal */
+        }
+    }
+    s->block_last_index[n] = i;
     return 0;
 }
 
@@ -4682,309 +5168,6 @@ end:
     return SLICE_OK;
 }
 
-/**
- * decodes the dc value.
- * @param n block index (0-3 are luma, 4-5 are chroma)
- * @param dir_ptr the prediction direction will be stored here
- * @return the quantized dc
- */
-static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
-{
-    int level, code;
-
-    if (n < 4)
-        code = get_vlc2(&s->gb, dc_lum.table, DC_VLC_BITS, 1);
-    else
-        code = get_vlc2(&s->gb, dc_chrom.table, DC_VLC_BITS, 1);
-    if (code < 0 || code > 9 /* && s->nbit<9 */){
-        av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
-        return -1;
-    }
-    if (code == 0) {
-        level = 0;
-    } else {
-        if(IS_3IV1){
-            if(code==1)
-                level= 2*get_bits1(&s->gb)-1;
-            else{
-                if(get_bits1(&s->gb))
-                    level = get_bits(&s->gb, code-1) + (1<<(code-1));
-                else
-                    level = -get_bits(&s->gb, code-1) - (1<<(code-1));
-            }
-        }else{
-            level = get_xbits(&s->gb, code);
-        }
-
-        if (code > 8){
-            if(get_bits1(&s->gb)==0){ /* marker */
-                if(s->error_recognition>=2){
-                    av_log(s->avctx, AV_LOG_ERROR, "dc marker bit missing\n");
-                    return -1;
-                }
-            }
-        }
-    }
-
-    return ff_mpeg4_pred_dc(s, n, level, dir_ptr, 0);
-}
-
-/**
- * decodes a block.
- * @return <0 if an error occurred
- */
-static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
-                              int n, int coded, int intra, int rvlc)
-{
-    int level, i, last, run;
-    int dc_pred_dir;
-    RLTable * rl;
-    RL_VLC_ELEM * rl_vlc;
-    const uint8_t * scan_table;
-    int qmul, qadd;
-
-    //Note intra & rvlc should be optimized away if this is inlined
-
-    if(intra) {
-      if(s->use_intra_dc_vlc){
-        /* DC coef */
-        if(s->partitioned_frame){
-            level = s->dc_val[0][ s->block_index[n] ];
-            if(n<4) level= FASTDIV((level + (s->y_dc_scale>>1)), s->y_dc_scale);
-            else    level= FASTDIV((level + (s->c_dc_scale>>1)), s->c_dc_scale);
-            dc_pred_dir= (s->pred_dir_table[s->mb_x + s->mb_y*s->mb_stride]<<n)&32;
-        }else{
-            level = mpeg4_decode_dc(s, n, &dc_pred_dir);
-            if (level < 0)
-                return -1;
-        }
-        block[0] = level;
-        i = 0;
-      }else{
-            i = -1;
-            ff_mpeg4_pred_dc(s, n, 0, &dc_pred_dir, 0);
-      }
-      if (!coded)
-          goto not_coded;
-
-      if(rvlc){
-          rl = &rvlc_rl_intra;
-          rl_vlc = rvlc_rl_intra.rl_vlc[0];
-      }else{
-          rl = &rl_intra;
-          rl_vlc = rl_intra.rl_vlc[0];
-      }
-      if (s->ac_pred) {
-          if (dc_pred_dir == 0)
-              scan_table = s->intra_v_scantable.permutated; /* left */
-          else
-              scan_table = s->intra_h_scantable.permutated; /* top */
-      } else {
-            scan_table = s->intra_scantable.permutated;
-      }
-      qmul=1;
-      qadd=0;
-    } else {
-        i = -1;
-        if (!coded) {
-            s->block_last_index[n] = i;
-            return 0;
-        }
-        if(rvlc) rl = &rvlc_rl_inter;
-        else     rl = &rl_inter;
-
-        scan_table = s->intra_scantable.permutated;
-
-        if(s->mpeg_quant){
-            qmul=1;
-            qadd=0;
-            if(rvlc){
-                rl_vlc = rvlc_rl_inter.rl_vlc[0];
-            }else{
-                rl_vlc = rl_inter.rl_vlc[0];
-            }
-        }else{
-            qmul = s->qscale << 1;
-            qadd = (s->qscale - 1) | 1;
-            if(rvlc){
-                rl_vlc = rvlc_rl_inter.rl_vlc[s->qscale];
-            }else{
-                rl_vlc = rl_inter.rl_vlc[s->qscale];
-            }
-        }
-    }
-  {
-    OPEN_READER(re, &s->gb);
-    for(;;) {
-        UPDATE_CACHE(re, &s->gb);
-        GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2, 0);
-        if (level==0) {
-          /* escape */
-          if(rvlc){
-                if(SHOW_UBITS(re, &s->gb, 1)==0){
-                    av_log(s->avctx, AV_LOG_ERROR, "1. marker bit missing in rvlc esc\n");
-                    return -1;
-                }; SKIP_CACHE(re, &s->gb, 1);
-
-                last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
-                run=   SHOW_UBITS(re, &s->gb, 6); LAST_SKIP_CACHE(re, &s->gb, 6);
-                SKIP_COUNTER(re, &s->gb, 1+1+6);
-                UPDATE_CACHE(re, &s->gb);
-
-                if(SHOW_UBITS(re, &s->gb, 1)==0){
-                    av_log(s->avctx, AV_LOG_ERROR, "2. marker bit missing in rvlc esc\n");
-                    return -1;
-                }; SKIP_CACHE(re, &s->gb, 1);
-
-                level= SHOW_UBITS(re, &s->gb, 11); SKIP_CACHE(re, &s->gb, 11);
-
-                if(SHOW_UBITS(re, &s->gb, 5)!=0x10){
-                    av_log(s->avctx, AV_LOG_ERROR, "reverse esc missing\n");
-                    return -1;
-                }; SKIP_CACHE(re, &s->gb, 5);
-
-                level=  level * qmul + qadd;
-                level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1); LAST_SKIP_CACHE(re, &s->gb, 1);
-                SKIP_COUNTER(re, &s->gb, 1+11+5+1);
-
-                i+= run + 1;
-                if(last) i+=192;
-          }else{
-            int cache;
-            cache= GET_CACHE(re, &s->gb);
-
-            if(IS_3IV1)
-                cache ^= 0xC0000000;
-
-            if (cache&0x80000000) {
-                if (cache&0x40000000) {
-                    /* third escape */
-                    SKIP_CACHE(re, &s->gb, 2);
-                    last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
-                    run=   SHOW_UBITS(re, &s->gb, 6); LAST_SKIP_CACHE(re, &s->gb, 6);
-                    SKIP_COUNTER(re, &s->gb, 2+1+6);
-                    UPDATE_CACHE(re, &s->gb);
-
-                    if(IS_3IV1){
-                        level= SHOW_SBITS(re, &s->gb, 12); LAST_SKIP_BITS(re, &s->gb, 12);
-                    }else{
-                        if(SHOW_UBITS(re, &s->gb, 1)==0){
-                            av_log(s->avctx, AV_LOG_ERROR, "1. marker bit missing in 3. esc\n");
-                            return -1;
-                        }; SKIP_CACHE(re, &s->gb, 1);
-
-                        level= SHOW_SBITS(re, &s->gb, 12); SKIP_CACHE(re, &s->gb, 12);
-
-                        if(SHOW_UBITS(re, &s->gb, 1)==0){
-                            av_log(s->avctx, AV_LOG_ERROR, "2. marker bit missing in 3. esc\n");
-                            return -1;
-                        }; LAST_SKIP_CACHE(re, &s->gb, 1);
-
-                        SKIP_COUNTER(re, &s->gb, 1+12+1);
-                    }
-
-#if 0
-                    if(s->error_recognition >= FF_ER_COMPLIANT){
-                        const int abs_level= FFABS(level);
-                        if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
-                            const int run1= run - rl->max_run[last][abs_level] - 1;
-                            if(abs_level <= rl->max_level[last][run]){
-                                av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, vlc encoding possible\n");
-                                return -1;
-                            }
-                            if(s->error_recognition > FF_ER_COMPLIANT){
-                                if(abs_level <= rl->max_level[last][run]*2){
-                                    av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 1 encoding possible\n");
-                                    return -1;
-                                }
-                                if(run1 >= 0 && abs_level <= rl->max_level[last][run1]){
-                                    av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 2 encoding possible\n");
-                                    return -1;
-                                }
-                            }
-                        }
-                    }
-#endif
-                    if (level>0) level= level * qmul + qadd;
-                    else         level= level * qmul - qadd;
-
-                    if((unsigned)(level + 2048) > 4095){
-                        if(s->error_recognition > FF_ER_COMPLIANT){
-                            if(level > 2560 || level<-2560){
-                                av_log(s->avctx, AV_LOG_ERROR, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
-                                return -1;
-                            }
-                        }
-                        level= level<0 ? -2048 : 2047;
-                    }
-
-                    i+= run + 1;
-                    if(last) i+=192;
-                } else {
-                    /* second escape */
-#if MIN_CACHE_BITS < 20
-                    LAST_SKIP_BITS(re, &s->gb, 2);
-                    UPDATE_CACHE(re, &s->gb);
-#else
-                    SKIP_BITS(re, &s->gb, 2);
-#endif
-                    GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2, 1);
-                    i+= run + rl->max_run[run>>7][level/qmul] +1; //FIXME opt indexing
-                    level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
-                    LAST_SKIP_BITS(re, &s->gb, 1);
-                }
-            } else {
-                /* first escape */
-#if MIN_CACHE_BITS < 19
-                LAST_SKIP_BITS(re, &s->gb, 1);
-                UPDATE_CACHE(re, &s->gb);
-#else
-                SKIP_BITS(re, &s->gb, 1);
-#endif
-                GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2, 1);
-                i+= run;
-                level = level + rl->max_level[run>>7][(run-1)&63] * qmul;//FIXME opt indexing
-                level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
-                LAST_SKIP_BITS(re, &s->gb, 1);
-            }
-          }
-        } else {
-            i+= run;
-            level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
-            LAST_SKIP_BITS(re, &s->gb, 1);
-        }
-        if (i > 62){
-            i-= 192;
-            if(i&(~63)){
-                av_log(s->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
-            }
-
-            block[scan_table[i]] = level;
-            break;
-        }
-
-        block[scan_table[i]] = level;
-    }
-    CLOSE_READER(re, &s->gb);
-  }
- not_coded:
-    if (intra) {
-        if(!s->use_intra_dc_vlc){
-            block[0] = ff_mpeg4_pred_dc(s, n, block[0], &dc_pred_dir, 0);
-
-            i -= i>>31; //if(i == -1) i=0;
-        }
-
-        mpeg4_pred_ac(s, block, n, dc_pred_dir);
-        if (s->ac_pred) {
-            i = 63; /* XXX: not optimal */
-        }
-    }
-    s->block_last_index[n] = i;
-    return 0;
-}
-
 /* most is hardcoded. should extend to handle all h263 streams */
 int h263_decode_picture_header(MpegEncContext *s)
 {
@@ -5252,196 +5435,6 @@ int h263_decode_picture_header(MpegEncContext *s)
     }
 
     return 0;
-}
-
-static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb)
-{
-    int i;
-    int a= 2<<s->sprite_warping_accuracy;
-    int rho= 3-s->sprite_warping_accuracy;
-    int r=16/a;
-    const int vop_ref[4][2]= {{0,0}, {s->width,0}, {0, s->height}, {s->width, s->height}}; // only true for rectangle shapes
-    int d[4][2]={{0,0}, {0,0}, {0,0}, {0,0}};
-    int sprite_ref[4][2];
-    int virtual_ref[2][2];
-    int w2, h2, w3, h3;
-    int alpha=0, beta=0;
-    int w= s->width;
-    int h= s->height;
-    int min_ab;
-
-    for(i=0; i<s->num_sprite_warping_points; i++){
-        int length;
-        int x=0, y=0;
-
-        length= get_vlc2(gb, sprite_trajectory.table, SPRITE_TRAJ_VLC_BITS, 3);
-        if(length){
-            x= get_xbits(gb, length);
-        }
-        if(!(s->divx_version==500 && s->divx_build==413)) skip_bits1(gb); /* marker bit */
-
-        length= get_vlc2(gb, sprite_trajectory.table, SPRITE_TRAJ_VLC_BITS, 3);
-        if(length){
-            y=get_xbits(gb, length);
-        }
-        skip_bits1(gb); /* marker bit */
-        s->sprite_traj[i][0]= d[i][0]= x;
-        s->sprite_traj[i][1]= d[i][1]= y;
-    }
-    for(; i<4; i++)
-        s->sprite_traj[i][0]= s->sprite_traj[i][1]= 0;
-
-    while((1<<alpha)<w) alpha++;
-    while((1<<beta )<h) beta++; // there seems to be a typo in the mpeg4 std for the definition of w' and h'
-    w2= 1<<alpha;
-    h2= 1<<beta;
-
-// Note, the 4th point isn't used for GMC
-    if(s->divx_version==500 && s->divx_build==413){
-        sprite_ref[0][0]= a*vop_ref[0][0] + d[0][0];
-        sprite_ref[0][1]= a*vop_ref[0][1] + d[0][1];
-        sprite_ref[1][0]= a*vop_ref[1][0] + d[0][0] + d[1][0];
-        sprite_ref[1][1]= a*vop_ref[1][1] + d[0][1] + d[1][1];
-        sprite_ref[2][0]= a*vop_ref[2][0] + d[0][0] + d[2][0];
-        sprite_ref[2][1]= a*vop_ref[2][1] + d[0][1] + d[2][1];
-    } else {
-        sprite_ref[0][0]= (a>>1)*(2*vop_ref[0][0] + d[0][0]);
-        sprite_ref[0][1]= (a>>1)*(2*vop_ref[0][1] + d[0][1]);
-        sprite_ref[1][0]= (a>>1)*(2*vop_ref[1][0] + d[0][0] + d[1][0]);
-        sprite_ref[1][1]= (a>>1)*(2*vop_ref[1][1] + d[0][1] + d[1][1]);
-        sprite_ref[2][0]= (a>>1)*(2*vop_ref[2][0] + d[0][0] + d[2][0]);
-        sprite_ref[2][1]= (a>>1)*(2*vop_ref[2][1] + d[0][1] + d[2][1]);
-    }
-/*    sprite_ref[3][0]= (a>>1)*(2*vop_ref[3][0] + d[0][0] + d[1][0] + d[2][0] + d[3][0]);
-    sprite_ref[3][1]= (a>>1)*(2*vop_ref[3][1] + d[0][1] + d[1][1] + d[2][1] + d[3][1]); */
-
-// this is mostly identical to the mpeg4 std (and is totally unreadable because of that ...)
-// perhaps it should be reordered to be more readable ...
-// the idea behind this virtual_ref mess is to be able to use shifts later per pixel instead of divides
-// so the distance between points is converted from w&h based to w2&h2 based which are of the 2^x form
-    virtual_ref[0][0]= 16*(vop_ref[0][0] + w2)
-        + ROUNDED_DIV(((w - w2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + w2*(r*sprite_ref[1][0] - 16*vop_ref[1][0])),w);
-    virtual_ref[0][1]= 16*vop_ref[0][1]
-        + ROUNDED_DIV(((w - w2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + w2*(r*sprite_ref[1][1] - 16*vop_ref[1][1])),w);
-    virtual_ref[1][0]= 16*vop_ref[0][0]
-        + ROUNDED_DIV(((h - h2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + h2*(r*sprite_ref[2][0] - 16*vop_ref[2][0])),h);
-    virtual_ref[1][1]= 16*(vop_ref[0][1] + h2)
-        + ROUNDED_DIV(((h - h2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + h2*(r*sprite_ref[2][1] - 16*vop_ref[2][1])),h);
-
-    switch(s->num_sprite_warping_points)
-    {
-        case 0:
-            s->sprite_offset[0][0]= 0;
-            s->sprite_offset[0][1]= 0;
-            s->sprite_offset[1][0]= 0;
-            s->sprite_offset[1][1]= 0;
-            s->sprite_delta[0][0]= a;
-            s->sprite_delta[0][1]= 0;
-            s->sprite_delta[1][0]= 0;
-            s->sprite_delta[1][1]= a;
-            s->sprite_shift[0]= 0;
-            s->sprite_shift[1]= 0;
-            break;
-        case 1: //GMC only
-            s->sprite_offset[0][0]= sprite_ref[0][0] - a*vop_ref[0][0];
-            s->sprite_offset[0][1]= sprite_ref[0][1] - a*vop_ref[0][1];
-            s->sprite_offset[1][0]= ((sprite_ref[0][0]>>1)|(sprite_ref[0][0]&1)) - a*(vop_ref[0][0]/2);
-            s->sprite_offset[1][1]= ((sprite_ref[0][1]>>1)|(sprite_ref[0][1]&1)) - a*(vop_ref[0][1]/2);
-            s->sprite_delta[0][0]= a;
-            s->sprite_delta[0][1]= 0;
-            s->sprite_delta[1][0]= 0;
-            s->sprite_delta[1][1]= a;
-            s->sprite_shift[0]= 0;
-            s->sprite_shift[1]= 0;
-            break;
-        case 2:
-            s->sprite_offset[0][0]= (sprite_ref[0][0]<<(alpha+rho))
-                                                  + (-r*sprite_ref[0][0] + virtual_ref[0][0])*(-vop_ref[0][0])
-                                                  + ( r*sprite_ref[0][1] - virtual_ref[0][1])*(-vop_ref[0][1])
-                                                  + (1<<(alpha+rho-1));
-            s->sprite_offset[0][1]= (sprite_ref[0][1]<<(alpha+rho))
-                                                  + (-r*sprite_ref[0][1] + virtual_ref[0][1])*(-vop_ref[0][0])
-                                                  + (-r*sprite_ref[0][0] + virtual_ref[0][0])*(-vop_ref[0][1])
-                                                  + (1<<(alpha+rho-1));
-            s->sprite_offset[1][0]= ( (-r*sprite_ref[0][0] + virtual_ref[0][0])*(-2*vop_ref[0][0] + 1)
-                                     +( r*sprite_ref[0][1] - virtual_ref[0][1])*(-2*vop_ref[0][1] + 1)
-                                     +2*w2*r*sprite_ref[0][0]
-                                     - 16*w2
-                                     + (1<<(alpha+rho+1)));
-            s->sprite_offset[1][1]= ( (-r*sprite_ref[0][1] + virtual_ref[0][1])*(-2*vop_ref[0][0] + 1)
-                                     +(-r*sprite_ref[0][0] + virtual_ref[0][0])*(-2*vop_ref[0][1] + 1)
-                                     +2*w2*r*sprite_ref[0][1]
-                                     - 16*w2
-                                     + (1<<(alpha+rho+1)));
-            s->sprite_delta[0][0]=   (-r*sprite_ref[0][0] + virtual_ref[0][0]);
-            s->sprite_delta[0][1]=   (+r*sprite_ref[0][1] - virtual_ref[0][1]);
-            s->sprite_delta[1][0]=   (-r*sprite_ref[0][1] + virtual_ref[0][1]);
-            s->sprite_delta[1][1]=   (-r*sprite_ref[0][0] + virtual_ref[0][0]);
-
-            s->sprite_shift[0]= alpha+rho;
-            s->sprite_shift[1]= alpha+rho+2;
-            break;
-        case 3:
-            min_ab= FFMIN(alpha, beta);
-            w3= w2>>min_ab;
-            h3= h2>>min_ab;
-            s->sprite_offset[0][0]=  (sprite_ref[0][0]<<(alpha+beta+rho-min_ab))
-                                   + (-r*sprite_ref[0][0] + virtual_ref[0][0])*h3*(-vop_ref[0][0])
-                                   + (-r*sprite_ref[0][0] + virtual_ref[1][0])*w3*(-vop_ref[0][1])
-                                   + (1<<(alpha+beta+rho-min_ab-1));
-            s->sprite_offset[0][1]=  (sprite_ref[0][1]<<(alpha+beta+rho-min_ab))
-                                   + (-r*sprite_ref[0][1] + virtual_ref[0][1])*h3*(-vop_ref[0][0])
-                                   + (-r*sprite_ref[0][1] + virtual_ref[1][1])*w3*(-vop_ref[0][1])
-                                   + (1<<(alpha+beta+rho-min_ab-1));
-            s->sprite_offset[1][0]=  (-r*sprite_ref[0][0] + virtual_ref[0][0])*h3*(-2*vop_ref[0][0] + 1)
-                                   + (-r*sprite_ref[0][0] + virtual_ref[1][0])*w3*(-2*vop_ref[0][1] + 1)
-                                   + 2*w2*h3*r*sprite_ref[0][0]
-                                   - 16*w2*h3
-                                   + (1<<(alpha+beta+rho-min_ab+1));
-            s->sprite_offset[1][1]=  (-r*sprite_ref[0][1] + virtual_ref[0][1])*h3*(-2*vop_ref[0][0] + 1)
-                                   + (-r*sprite_ref[0][1] + virtual_ref[1][1])*w3*(-2*vop_ref[0][1] + 1)
-                                   + 2*w2*h3*r*sprite_ref[0][1]
-                                   - 16*w2*h3
-                                   + (1<<(alpha+beta+rho-min_ab+1));
-            s->sprite_delta[0][0]=   (-r*sprite_ref[0][0] + virtual_ref[0][0])*h3;
-            s->sprite_delta[0][1]=   (-r*sprite_ref[0][0] + virtual_ref[1][0])*w3;
-            s->sprite_delta[1][0]=   (-r*sprite_ref[0][1] + virtual_ref[0][1])*h3;
-            s->sprite_delta[1][1]=   (-r*sprite_ref[0][1] + virtual_ref[1][1])*w3;
-
-            s->sprite_shift[0]= alpha + beta + rho - min_ab;
-            s->sprite_shift[1]= alpha + beta + rho - min_ab + 2;
-            break;
-    }
-    /* try to simplify the situation */
-    if(   s->sprite_delta[0][0] == a<<s->sprite_shift[0]
-       && s->sprite_delta[0][1] == 0
-       && s->sprite_delta[1][0] == 0
-       && s->sprite_delta[1][1] == a<<s->sprite_shift[0])
-    {
-        s->sprite_offset[0][0]>>=s->sprite_shift[0];
-        s->sprite_offset[0][1]>>=s->sprite_shift[0];
-        s->sprite_offset[1][0]>>=s->sprite_shift[1];
-        s->sprite_offset[1][1]>>=s->sprite_shift[1];
-        s->sprite_delta[0][0]= a;
-        s->sprite_delta[0][1]= 0;
-        s->sprite_delta[1][0]= 0;
-        s->sprite_delta[1][1]= a;
-        s->sprite_shift[0]= 0;
-        s->sprite_shift[1]= 0;
-        s->real_sprite_warping_points=1;
-    }
-    else{
-        int shift_y= 16 - s->sprite_shift[0];
-        int shift_c= 16 - s->sprite_shift[1];
-        for(i=0; i<2; i++){
-            s->sprite_offset[0][i]<<= shift_y;
-            s->sprite_offset[1][i]<<= shift_c;
-            s->sprite_delta[0][i]<<= shift_y;
-            s->sprite_delta[1][i]<<= shift_y;
-            s->sprite_shift[i]= 16;
-        }
-        s->real_sprite_warping_points= s->num_sprite_warping_points;
-    }
 }
 
 static int mpeg4_decode_gop_header(MpegEncContext * s, GetBitContext *gb){
