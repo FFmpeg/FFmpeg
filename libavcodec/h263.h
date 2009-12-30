@@ -25,10 +25,6 @@
 #include "config.h"
 #include "msmpeg4.h"
 
-#define CONFIG_ANY_H263_DECODER (CONFIG_H263_DECODER    || \
-                                 CONFIG_MSMPEG4_DECODER || \
-                                 CONFIG_WMV1_DECODER    || \
-                                 CONFIG_WMV2_DECODER)
-#define CONFIG_ANY_H263 (CONFIG_ANY_H263_DECODER || CONFIG_H263_ENCODER)
+#define CONFIG_ANY_H263 (CONFIG_H263_DECODER || CONFIG_H263_ENCODER)
 
 #endif /* AVCODEC_H263_H */
