@@ -56,10 +56,6 @@
 #define H263_MBTYPE_B_VLC_BITS 6
 #define CBPC_B_VLC_BITS 3
 
-static int h263_decode_motion(MpegEncContext * s, int pred, int fcode);
-static int h263p_decode_umotion(MpegEncContext * s, int pred);
-static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
-                             int n, int coded);
 static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded, int intra, int rvlc);
@@ -68,10 +64,6 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb
 static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *dir_ptr, int encoding);
 
 #if CONFIG_ENCODERS
-static void h263_encode_block(MpegEncContext *s, DCTELEM *block, int n);
-static void h263p_encode_umotion(MpegEncContext *s, int val);
-static int h263_pred_dc(MpegEncContext *s, int n, int16_t **dc_val_ptr);
-
 static void mpeg4_encode_visual_object_header(MpegEncContext *s);
 static void mpeg4_encode_vol_header(MpegEncContext *s, int vo_number,
                                     int vol_number);
@@ -1244,6 +1236,213 @@ void mpeg4_encode_mb(MpegEncContext * s,
     }
 }
 
+/**
+ * encodes a 8x8 block.
+ * @param block the 8x8 block
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ */
+static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
+{
+    int level, run, last, i, j, last_index, last_non_zero, sign, slevel, code;
+    RLTable *rl;
+
+    rl = &rl_inter;
+    if (s->mb_intra && !s->h263_aic) {
+        /* DC coef */
+        level = block[0];
+        /* 255 cannot be represented, so we clamp */
+        if (level > 254) {
+            level = 254;
+            block[0] = 254;
+        }
+        /* 0 cannot be represented also */
+        else if (level < 1) {
+            level = 1;
+            block[0] = 1;
+        }
+        if (level == 128) //FIXME check rv10
+            put_bits(&s->pb, 8, 0xff);
+        else
+            put_bits(&s->pb, 8, level);
+        i = 1;
+    } else {
+        i = 0;
+        if (s->h263_aic && s->mb_intra)
+            rl = &rl_intra_aic;
+
+        if(s->alt_inter_vlc && !s->mb_intra){
+            int aic_vlc_bits=0;
+            int inter_vlc_bits=0;
+            int wrong_pos=-1;
+            int aic_code;
+
+            last_index = s->block_last_index[n];
+            last_non_zero = i - 1;
+            for (; i <= last_index; i++) {
+                j = s->intra_scantable.permutated[i];
+                level = block[j];
+                if (level) {
+                    run = i - last_non_zero - 1;
+                    last = (i == last_index);
+
+                    if(level<0) level= -level;
+
+                    code = get_rl_index(rl, last, run, level);
+                    aic_code = get_rl_index(&rl_intra_aic, last, run, level);
+                    inter_vlc_bits += rl->table_vlc[code][1]+1;
+                    aic_vlc_bits   += rl_intra_aic.table_vlc[aic_code][1]+1;
+
+                    if (code == rl->n) {
+                        inter_vlc_bits += 1+6+8-1;
+                    }
+                    if (aic_code == rl_intra_aic.n) {
+                        aic_vlc_bits += 1+6+8-1;
+                        wrong_pos += run + 1;
+                    }else
+                        wrong_pos += wrong_run[aic_code];
+                    last_non_zero = i;
+                }
+            }
+            i = 0;
+            if(aic_vlc_bits < inter_vlc_bits && wrong_pos > 63)
+                rl = &rl_intra_aic;
+        }
+    }
+
+    /* AC coefs */
+    last_index = s->block_last_index[n];
+    last_non_zero = i - 1;
+    for (; i <= last_index; i++) {
+        j = s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            run = i - last_non_zero - 1;
+            last = (i == last_index);
+            sign = 0;
+            slevel = level;
+            if (level < 0) {
+                sign = 1;
+                level = -level;
+            }
+            code = get_rl_index(rl, last, run, level);
+            put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
+            if (code == rl->n) {
+              if(s->h263_flv <= 1){
+                put_bits(&s->pb, 1, last);
+                put_bits(&s->pb, 6, run);
+
+                assert(slevel != 0);
+
+                if(level < 128)
+                    put_sbits(&s->pb, 8, slevel);
+                else{
+                    put_bits(&s->pb, 8, 128);
+                    put_sbits(&s->pb, 5, slevel);
+                    put_sbits(&s->pb, 6, slevel>>5);
+                }
+              }else{
+                if(level < 64) { // 7-bit level
+                        put_bits(&s->pb, 1, 0);
+                        put_bits(&s->pb, 1, last);
+                        put_bits(&s->pb, 6, run);
+
+                        put_sbits(&s->pb, 7, slevel);
+                    } else {
+                        /* 11-bit level */
+                        put_bits(&s->pb, 1, 1);
+                        put_bits(&s->pb, 1, last);
+                        put_bits(&s->pb, 6, run);
+
+                        put_sbits(&s->pb, 11, slevel);
+                    }
+              }
+            } else {
+                put_bits(&s->pb, 1, sign);
+            }
+            last_non_zero = i;
+        }
+    }
+}
+
+/* Encode MV differences on H.263+ with Unrestricted MV mode */
+static void h263p_encode_umotion(MpegEncContext * s, int val)
+{
+    short sval = 0;
+    short i = 0;
+    short n_bits = 0;
+    short temp_val;
+    int code = 0;
+    int tcode;
+
+    if ( val == 0)
+        put_bits(&s->pb, 1, 1);
+    else if (val == 1)
+        put_bits(&s->pb, 3, 0);
+    else if (val == -1)
+        put_bits(&s->pb, 3, 2);
+    else {
+
+        sval = ((val < 0) ? (short)(-val):(short)val);
+        temp_val = sval;
+
+        while (temp_val != 0) {
+            temp_val = temp_val >> 1;
+            n_bits++;
+        }
+
+        i = n_bits - 1;
+        while (i > 0) {
+            tcode = (sval & (1 << (i-1))) >> (i-1);
+            tcode = (tcode << 1) | 1;
+            code = (code << 2) | tcode;
+            i--;
+        }
+        code = ((code << 1) | (val < 0)) << 1;
+        put_bits(&s->pb, (2*n_bits)+1, code);
+    }
+}
+
+static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
+{
+    int x, y, wrap, a, c, pred_dc;
+    int16_t *dc_val;
+
+    /* find prediction */
+    if (n < 4) {
+        x = 2 * s->mb_x + (n & 1);
+        y = 2 * s->mb_y + ((n & 2) >> 1);
+        wrap = s->b8_stride;
+        dc_val = s->dc_val[0];
+    } else {
+        x = s->mb_x;
+        y = s->mb_y;
+        wrap = s->mb_stride;
+        dc_val = s->dc_val[n - 4 + 1];
+    }
+    /* B C
+     * A X
+     */
+    a = dc_val[(x - 1) + (y) * wrap];
+    c = dc_val[(x) + (y - 1) * wrap];
+
+    /* No prediction outside GOB boundary */
+    if(s->first_slice_line && n!=3){
+        if(n!=2) c= 1024;
+        if(n!=1 && s->mb_x == s->resync_mb_x) a= 1024;
+    }
+    /* just DC prediction */
+    if (a != 1024 && c != 1024)
+        pred_dc = (a + c) >> 1;
+    else if (a != 1024)
+        pred_dc = a;
+    else
+        pred_dc = c;
+
+    /* we assume pred is positive */
+    *dc_val_ptr = &dc_val[x + y * wrap];
+    return pred_dc;
+}
+
 void h263_encode_mb(MpegEncContext * s,
                     DCTELEM block[6][64],
                     int motion_x, int motion_y)
@@ -1533,49 +1732,6 @@ void ff_h263_loop_filter(MpegEncContext * s){
     }
 }
 
-#if CONFIG_ENCODERS
-static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
-{
-    int x, y, wrap, a, c, pred_dc;
-    int16_t *dc_val;
-
-    /* find prediction */
-    if (n < 4) {
-        x = 2 * s->mb_x + (n & 1);
-        y = 2 * s->mb_y + ((n & 2) >> 1);
-        wrap = s->b8_stride;
-        dc_val = s->dc_val[0];
-    } else {
-        x = s->mb_x;
-        y = s->mb_y;
-        wrap = s->mb_stride;
-        dc_val = s->dc_val[n - 4 + 1];
-    }
-    /* B C
-     * A X
-     */
-    a = dc_val[(x - 1) + (y) * wrap];
-    c = dc_val[(x) + (y - 1) * wrap];
-
-    /* No prediction outside GOB boundary */
-    if(s->first_slice_line && n!=3){
-        if(n!=2) c= 1024;
-        if(n!=1 && s->mb_x == s->resync_mb_x) a= 1024;
-    }
-    /* just DC prediction */
-    if (a != 1024 && c != 1024)
-        pred_dc = (a + c) >> 1;
-    else if (a != 1024)
-        pred_dc = a;
-    else
-        pred_dc = c;
-
-    /* we assume pred is positive */
-    *dc_val_ptr = &dc_val[x + y * wrap];
-    return pred_dc;
-}
-#endif /* CONFIG_ENCODERS */
-
 static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
 {
     int x, y, wrap, a, c, pred_dc, scale, i;
@@ -1748,44 +1904,6 @@ void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code)
         if (bit_size > 0) {
             put_bits(&s->pb, bit_size, bits);
         }
-    }
-}
-
-/* Encode MV differences on H.263+ with Unrestricted MV mode */
-static void h263p_encode_umotion(MpegEncContext * s, int val)
-{
-    short sval = 0;
-    short i = 0;
-    short n_bits = 0;
-    short temp_val;
-    int code = 0;
-    int tcode;
-
-    if ( val == 0)
-        put_bits(&s->pb, 1, 1);
-    else if (val == 1)
-        put_bits(&s->pb, 3, 0);
-    else if (val == -1)
-        put_bits(&s->pb, 3, 2);
-    else {
-
-        sval = ((val < 0) ? (short)(-val):(short)val);
-        temp_val = sval;
-
-        while (temp_val != 0) {
-            temp_val = temp_val >> 1;
-            n_bits++;
-        }
-
-        i = n_bits - 1;
-        while (i > 0) {
-            tcode = (sval & (1 << (i-1))) >> (i-1);
-            tcode = (tcode << 1) | 1;
-            code = (code << 2) | tcode;
-            i--;
-        }
-        code = ((code << 1) | (val < 0)) << 1;
-        put_bits(&s->pb, (2*n_bits)+1, code);
     }
 }
 
@@ -2097,134 +2215,6 @@ void h263_encode_init(MpegEncContext *s)
         s->max_qcoeff=  127;
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
-    }
-}
-
-/**
- * encodes a 8x8 block.
- * @param block the 8x8 block
- * @param n block index (0-3 are luma, 4-5 are chroma)
- */
-static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
-{
-    int level, run, last, i, j, last_index, last_non_zero, sign, slevel, code;
-    RLTable *rl;
-
-    rl = &rl_inter;
-    if (s->mb_intra && !s->h263_aic) {
-        /* DC coef */
-        level = block[0];
-        /* 255 cannot be represented, so we clamp */
-        if (level > 254) {
-            level = 254;
-            block[0] = 254;
-        }
-        /* 0 cannot be represented also */
-        else if (level < 1) {
-            level = 1;
-            block[0] = 1;
-        }
-        if (level == 128) //FIXME check rv10
-            put_bits(&s->pb, 8, 0xff);
-        else
-            put_bits(&s->pb, 8, level);
-        i = 1;
-    } else {
-        i = 0;
-        if (s->h263_aic && s->mb_intra)
-            rl = &rl_intra_aic;
-
-        if(s->alt_inter_vlc && !s->mb_intra){
-            int aic_vlc_bits=0;
-            int inter_vlc_bits=0;
-            int wrong_pos=-1;
-            int aic_code;
-
-            last_index = s->block_last_index[n];
-            last_non_zero = i - 1;
-            for (; i <= last_index; i++) {
-                j = s->intra_scantable.permutated[i];
-                level = block[j];
-                if (level) {
-                    run = i - last_non_zero - 1;
-                    last = (i == last_index);
-
-                    if(level<0) level= -level;
-
-                    code = get_rl_index(rl, last, run, level);
-                    aic_code = get_rl_index(&rl_intra_aic, last, run, level);
-                    inter_vlc_bits += rl->table_vlc[code][1]+1;
-                    aic_vlc_bits   += rl_intra_aic.table_vlc[aic_code][1]+1;
-
-                    if (code == rl->n) {
-                        inter_vlc_bits += 1+6+8-1;
-                    }
-                    if (aic_code == rl_intra_aic.n) {
-                        aic_vlc_bits += 1+6+8-1;
-                        wrong_pos += run + 1;
-                    }else
-                        wrong_pos += wrong_run[aic_code];
-                    last_non_zero = i;
-                }
-            }
-            i = 0;
-            if(aic_vlc_bits < inter_vlc_bits && wrong_pos > 63)
-                rl = &rl_intra_aic;
-        }
-    }
-
-    /* AC coefs */
-    last_index = s->block_last_index[n];
-    last_non_zero = i - 1;
-    for (; i <= last_index; i++) {
-        j = s->intra_scantable.permutated[i];
-        level = block[j];
-        if (level) {
-            run = i - last_non_zero - 1;
-            last = (i == last_index);
-            sign = 0;
-            slevel = level;
-            if (level < 0) {
-                sign = 1;
-                level = -level;
-            }
-            code = get_rl_index(rl, last, run, level);
-            put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
-            if (code == rl->n) {
-              if(s->h263_flv <= 1){
-                put_bits(&s->pb, 1, last);
-                put_bits(&s->pb, 6, run);
-
-                assert(slevel != 0);
-
-                if(level < 128)
-                    put_sbits(&s->pb, 8, slevel);
-                else{
-                    put_bits(&s->pb, 8, 128);
-                    put_sbits(&s->pb, 5, slevel);
-                    put_sbits(&s->pb, 6, slevel>>5);
-                }
-              }else{
-                if(level < 64) { // 7-bit level
-                        put_bits(&s->pb, 1, 0);
-                        put_bits(&s->pb, 1, last);
-                        put_bits(&s->pb, 6, run);
-
-                        put_sbits(&s->pb, 7, slevel);
-                    } else {
-                        /* 11-bit level */
-                        put_bits(&s->pb, 1, 1);
-                        put_bits(&s->pb, 1, last);
-                        put_bits(&s->pb, 6, run);
-
-                        put_sbits(&s->pb, 11, slevel);
-                    }
-              }
-            } else {
-                put_bits(&s->pb, 1, sign);
-            }
-            last_non_zero = i;
-        }
     }
 }
 
@@ -3325,6 +3315,43 @@ int ff_h263_resync(MpegEncContext *s){
     return -1;
 }
 
+static int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
+{
+    int code, val, sign, shift, l;
+    code = get_vlc2(&s->gb, mv_vlc.table, MV_VLC_BITS, 2);
+
+    if (code == 0)
+        return pred;
+    if (code < 0)
+        return 0xffff;
+
+    sign = get_bits1(&s->gb);
+    shift = f_code - 1;
+    val = code;
+    if (shift) {
+        val = (val - 1) << shift;
+        val |= get_bits(&s->gb, shift);
+        val++;
+    }
+    if (sign)
+        val = -val;
+    val += pred;
+
+    /* modulo decoding */
+    if (!s->h263_long_vectors) {
+        l = INT_BIT - 5 - f_code;
+        val = (val<<l)>>l;
+    } else {
+        /* horrible h263 long vector mode */
+        if (pred < -31 && val < -63)
+            val += 64;
+        if (pred > 32 && val > 63)
+            val -= 64;
+
+    }
+    return val;
+}
+
 /**
  * gets the average motion vector for a GMC MB.
  * @param n either 0 for the x component or 1 for y
@@ -3762,6 +3789,30 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
     }
 }
 
+/* Decodes RVLC of H.263+ UMV */
+static int h263p_decode_umotion(MpegEncContext * s, int pred)
+{
+   int code = 0, sign;
+
+   if (get_bits1(&s->gb)) /* Motion difference = 0 */
+      return pred;
+
+   code = 2 + get_bits1(&s->gb);
+
+   while (get_bits1(&s->gb))
+   {
+      code <<= 1;
+      code += get_bits1(&s->gb);
+   }
+   sign = code & 1;
+   code >>= 1;
+
+   code = (sign) ? (pred - code) : (pred + code);
+   dprintf(s->avctx,"H.263+ UMV Motion = %d\n", code);
+   return code;
+
+}
+
 /**
  * read the next MVs for OBMC. yes this is a ugly hack, feel free to send a patch :)
  */
@@ -3868,6 +3919,136 @@ static void h263_decode_dquant(MpegEncContext *s){
     }else
         s->qscale += quant_tab[get_bits(&s->gb, 2)];
     ff_set_qscale(s, s->qscale);
+}
+
+static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
+                             int n, int coded)
+{
+    int code, level, i, j, last, run;
+    RLTable *rl = &rl_inter;
+    const uint8_t *scan_table;
+    GetBitContext gb= s->gb;
+
+    scan_table = s->intra_scantable.permutated;
+    if (s->h263_aic && s->mb_intra) {
+        rl = &rl_intra_aic;
+        i = 0;
+        if (s->ac_pred) {
+            if (s->h263_aic_dir)
+                scan_table = s->intra_v_scantable.permutated; /* left */
+            else
+                scan_table = s->intra_h_scantable.permutated; /* top */
+        }
+    } else if (s->mb_intra) {
+        /* DC coef */
+        if(s->codec_id == CODEC_ID_RV10){
+#if CONFIG_RV10_DECODER
+          if (s->rv10_version == 3 && s->pict_type == FF_I_TYPE) {
+            int component, diff;
+            component = (n <= 3 ? 0 : n - 4 + 1);
+            level = s->last_dc[component];
+            if (s->rv10_first_dc_coded[component]) {
+                diff = rv_decode_dc(s, n);
+                if (diff == 0xffff)
+                    return -1;
+                level += diff;
+                level = level & 0xff; /* handle wrap round */
+                s->last_dc[component] = level;
+            } else {
+                s->rv10_first_dc_coded[component] = 1;
+            }
+          } else {
+                level = get_bits(&s->gb, 8);
+                if (level == 255)
+                    level = 128;
+          }
+#endif
+        }else{
+            level = get_bits(&s->gb, 8);
+            if((level&0x7F) == 0){
+                av_log(s->avctx, AV_LOG_ERROR, "illegal dc %d at %d %d\n", level, s->mb_x, s->mb_y);
+                if(s->error_recognition >= FF_ER_COMPLIANT)
+                    return -1;
+            }
+            if (level == 255)
+                level = 128;
+        }
+        block[0] = level;
+        i = 1;
+    } else {
+        i = 0;
+    }
+    if (!coded) {
+        if (s->mb_intra && s->h263_aic)
+            goto not_coded;
+        s->block_last_index[n] = i - 1;
+        return 0;
+    }
+retry:
+    for(;;) {
+        code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
+        if (code < 0){
+            av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n", s->mb_x, s->mb_y);
+            return -1;
+        }
+        if (code == rl->n) {
+            /* escape */
+            if (s->h263_flv > 1) {
+                int is11 = get_bits1(&s->gb);
+                last = get_bits1(&s->gb);
+                run = get_bits(&s->gb, 6);
+                if(is11){
+                    level = get_sbits(&s->gb, 11);
+                } else {
+                    level = get_sbits(&s->gb, 7);
+                }
+            } else {
+                last = get_bits1(&s->gb);
+                run = get_bits(&s->gb, 6);
+                level = (int8_t)get_bits(&s->gb, 8);
+                if(level == -128){
+                    if (s->codec_id == CODEC_ID_RV10) {
+                        /* XXX: should patch encoder too */
+                        level = get_sbits(&s->gb, 12);
+                    }else{
+                        level = get_bits(&s->gb, 5);
+                        level |= get_sbits(&s->gb, 6)<<5;
+                    }
+                }
+            }
+        } else {
+            run = rl->table_run[code];
+            level = rl->table_level[code];
+            last = code >= rl->last;
+            if (get_bits1(&s->gb))
+                level = -level;
+        }
+        i += run;
+        if (i >= 64){
+            if(s->alt_inter_vlc && rl == &rl_inter && !s->mb_intra){
+                //Looks like a hack but no, it's the way it is supposed to work ...
+                rl = &rl_intra_aic;
+                i = 0;
+                s->gb= gb;
+                s->dsp.clear_block(block);
+                goto retry;
+            }
+            av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d i:%d\n", s->mb_x, s->mb_y, s->mb_intra);
+            return -1;
+        }
+        j = scan_table[i];
+        block[j] = level;
+        if (last)
+            break;
+        i++;
+    }
+not_coded:
+    if (s->mb_intra && s->h263_aic) {
+        h263_pred_acdc(s, block, n);
+        i = 63;
+    }
+    s->block_last_index[n] = i;
+    return 0;
 }
 
 static int h263_skip_b_part(MpegEncContext *s, int cbp)
@@ -4499,197 +4680,6 @@ end:
     }
 
     return SLICE_OK;
-}
-
-static int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
-{
-    int code, val, sign, shift, l;
-    code = get_vlc2(&s->gb, mv_vlc.table, MV_VLC_BITS, 2);
-
-    if (code == 0)
-        return pred;
-    if (code < 0)
-        return 0xffff;
-
-    sign = get_bits1(&s->gb);
-    shift = f_code - 1;
-    val = code;
-    if (shift) {
-        val = (val - 1) << shift;
-        val |= get_bits(&s->gb, shift);
-        val++;
-    }
-    if (sign)
-        val = -val;
-    val += pred;
-
-    /* modulo decoding */
-    if (!s->h263_long_vectors) {
-        l = INT_BIT - 5 - f_code;
-        val = (val<<l)>>l;
-    } else {
-        /* horrible h263 long vector mode */
-        if (pred < -31 && val < -63)
-            val += 64;
-        if (pred > 32 && val > 63)
-            val -= 64;
-
-    }
-    return val;
-}
-
-/* Decodes RVLC of H.263+ UMV */
-static int h263p_decode_umotion(MpegEncContext * s, int pred)
-{
-   int code = 0, sign;
-
-   if (get_bits1(&s->gb)) /* Motion difference = 0 */
-      return pred;
-
-   code = 2 + get_bits1(&s->gb);
-
-   while (get_bits1(&s->gb))
-   {
-      code <<= 1;
-      code += get_bits1(&s->gb);
-   }
-   sign = code & 1;
-   code >>= 1;
-
-   code = (sign) ? (pred - code) : (pred + code);
-   dprintf(s->avctx,"H.263+ UMV Motion = %d\n", code);
-   return code;
-
-}
-
-static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
-                             int n, int coded)
-{
-    int code, level, i, j, last, run;
-    RLTable *rl = &rl_inter;
-    const uint8_t *scan_table;
-    GetBitContext gb= s->gb;
-
-    scan_table = s->intra_scantable.permutated;
-    if (s->h263_aic && s->mb_intra) {
-        rl = &rl_intra_aic;
-        i = 0;
-        if (s->ac_pred) {
-            if (s->h263_aic_dir)
-                scan_table = s->intra_v_scantable.permutated; /* left */
-            else
-                scan_table = s->intra_h_scantable.permutated; /* top */
-        }
-    } else if (s->mb_intra) {
-        /* DC coef */
-        if(s->codec_id == CODEC_ID_RV10){
-#if CONFIG_RV10_DECODER
-          if (s->rv10_version == 3 && s->pict_type == FF_I_TYPE) {
-            int component, diff;
-            component = (n <= 3 ? 0 : n - 4 + 1);
-            level = s->last_dc[component];
-            if (s->rv10_first_dc_coded[component]) {
-                diff = rv_decode_dc(s, n);
-                if (diff == 0xffff)
-                    return -1;
-                level += diff;
-                level = level & 0xff; /* handle wrap round */
-                s->last_dc[component] = level;
-            } else {
-                s->rv10_first_dc_coded[component] = 1;
-            }
-          } else {
-                level = get_bits(&s->gb, 8);
-                if (level == 255)
-                    level = 128;
-          }
-#endif
-        }else{
-            level = get_bits(&s->gb, 8);
-            if((level&0x7F) == 0){
-                av_log(s->avctx, AV_LOG_ERROR, "illegal dc %d at %d %d\n", level, s->mb_x, s->mb_y);
-                if(s->error_recognition >= FF_ER_COMPLIANT)
-                    return -1;
-            }
-            if (level == 255)
-                level = 128;
-        }
-        block[0] = level;
-        i = 1;
-    } else {
-        i = 0;
-    }
-    if (!coded) {
-        if (s->mb_intra && s->h263_aic)
-            goto not_coded;
-        s->block_last_index[n] = i - 1;
-        return 0;
-    }
-retry:
-    for(;;) {
-        code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
-        if (code < 0){
-            av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n", s->mb_x, s->mb_y);
-            return -1;
-        }
-        if (code == rl->n) {
-            /* escape */
-            if (s->h263_flv > 1) {
-                int is11 = get_bits1(&s->gb);
-                last = get_bits1(&s->gb);
-                run = get_bits(&s->gb, 6);
-                if(is11){
-                    level = get_sbits(&s->gb, 11);
-                } else {
-                    level = get_sbits(&s->gb, 7);
-                }
-            } else {
-                last = get_bits1(&s->gb);
-                run = get_bits(&s->gb, 6);
-                level = (int8_t)get_bits(&s->gb, 8);
-                if(level == -128){
-                    if (s->codec_id == CODEC_ID_RV10) {
-                        /* XXX: should patch encoder too */
-                        level = get_sbits(&s->gb, 12);
-                    }else{
-                        level = get_bits(&s->gb, 5);
-                        level |= get_sbits(&s->gb, 6)<<5;
-                    }
-                }
-            }
-        } else {
-            run = rl->table_run[code];
-            level = rl->table_level[code];
-            last = code >= rl->last;
-            if (get_bits1(&s->gb))
-                level = -level;
-        }
-        i += run;
-        if (i >= 64){
-            if(s->alt_inter_vlc && rl == &rl_inter && !s->mb_intra){
-                //Looks like a hack but no, it's the way it is supposed to work ...
-                rl = &rl_intra_aic;
-                i = 0;
-                s->gb= gb;
-                s->dsp.clear_block(block);
-                goto retry;
-            }
-            av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d i:%d\n", s->mb_x, s->mb_y, s->mb_intra);
-            return -1;
-        }
-        j = scan_table[i];
-        block[j] = level;
-        if (last)
-            break;
-        i++;
-    }
-not_coded:
-    if (s->mb_intra && s->h263_aic) {
-        h263_pred_acdc(s, block, n);
-        i = 63;
-    }
-    s->block_last_index[n] = i;
-    return 0;
 }
 
 /**
