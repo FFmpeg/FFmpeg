@@ -35,6 +35,8 @@
 #include "mathops.h"
 #include "h263.h"
 #include "snow.h"
+#include "mpegvideo.h"
+#include "config.h"
 
 /* snow.c */
 void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, int decomposition_count);
