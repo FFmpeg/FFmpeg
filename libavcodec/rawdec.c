@@ -46,6 +46,7 @@ static const PixelFormatTag pixelFormatBpsAVI[] = {
 };
 
 static const PixelFormatTag pixelFormatBpsMOV[] = {
+    { PIX_FMT_MONOWHITE, 1 },
     { PIX_FMT_PAL8,      4 },
     { PIX_FMT_PAL8,      8 },
     // FIXME swscale does not support 16 bit in .mov, sample 16bit.mov
