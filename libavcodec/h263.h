@@ -26,11 +26,6 @@
 #include "msmpeg4.h"
 
 #define CONFIG_ANY_H263_DECODER (CONFIG_H263_DECODER    || \
-                                 CONFIG_H263I_DECODER   || \
-                                 CONFIG_FLV_DECODER     || \
-                                 CONFIG_RV10_DECODER    || \
-                                 CONFIG_RV20_DECODER    || \
-                                 CONFIG_MPEG4_DECODER   || \
                                  CONFIG_MSMPEG4_DECODER || \
                                  CONFIG_WMV_DECODER)
 #define CONFIG_ANY_H263 (CONFIG_ANY_H263_DECODER || CONFIG_H263_ENCODER)
