@@ -615,7 +615,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     }
 }
 
-static int sdp_read_packet(AVFormatContext *s, AVPacket *pkt)
+static int rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RTSPState *rt = s->priv_data;
     int ret, len;
@@ -1626,7 +1626,7 @@ static int rtsp_read_packet(AVFormatContext *s,
         }
     }
 
-    ret = sdp_read_packet(s, pkt);
+    ret = rtsp_fetch_packet(s, pkt);
     if (ret < 0) {
         return ret;
     }
@@ -1811,6 +1811,6 @@ AVInputFormat sdp_demuxer = {
     sizeof(RTSPState),
     sdp_probe,
     sdp_read_header,
-    sdp_read_packet,
+    rtsp_fetch_packet,
     sdp_read_close,
 };
