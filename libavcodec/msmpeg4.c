@@ -62,7 +62,6 @@ static uint32_t v2_dc_chroma_table[512][2];
 
 static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static void init_h263_dc_for_msmpeg4(void);
-static inline void msmpeg4_memsetw(short *tab, int val, int n);
 #if CONFIG_ENCODERS
 static void msmpeg4v2_encode_motion(MpegEncContext * s, int val);
 static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, int level, int intra);
