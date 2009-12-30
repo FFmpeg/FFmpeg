@@ -240,8 +240,6 @@ static void rtp_send_samples(AVFormatContext *s1,
     }
 }
 
-/* NOTE: we suppose that exactly one frame is given as argument here */
-/* XXX: test it */
 static void rtp_send_mpegaudio(AVFormatContext *s1,
                                const uint8_t *buf1, int size)
 {
