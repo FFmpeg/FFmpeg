@@ -33,7 +33,6 @@
 #include "mpegvideo_common.h"
 #include "mjpegenc.h"
 #include "msmpeg4.h"
-#include "h263.h"
 #include "faandct.h"
 #include "aandcttab.h"
 #include <limits.h>

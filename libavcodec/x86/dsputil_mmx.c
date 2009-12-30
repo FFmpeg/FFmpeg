@@ -24,7 +24,6 @@
 
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
-#include "libavcodec/h263.h"
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/simple_idct.h"
 #include "dsputil_mmx.h"
@@ -703,7 +702,7 @@ static void add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top, co
         "paddb %%mm1, %%mm6             \n\t"
 
 static void h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale){
-    if(CONFIG_ANY_H263) {
+    if(CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
     const int strength= ff_h263_loop_filter_strength[qscale];
 
     __asm__ volatile(
@@ -753,7 +752,7 @@ static inline void transpose4x4(uint8_t *dst, uint8_t *src, int dst_stride, int 
 }
 
 static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
-    if(CONFIG_ANY_H263) {
+    if(CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
     const int strength= ff_h263_loop_filter_strength[qscale];
     DECLARE_ALIGNED(8, uint64_t, temp[4]);
     uint8_t *btemp= (uint8_t*)temp;
@@ -2624,7 +2623,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
         c->draw_edges = draw_edges_mmx;
 
-        if (CONFIG_ANY_H263) {
+        if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
             c->h263_v_loop_filter= h263_v_loop_filter_mmx;
             c->h263_h_loop_filter= h263_h_loop_filter_mmx;
         }
