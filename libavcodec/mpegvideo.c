@@ -1966,7 +1966,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
                     }
                 }//fi gray
             }
-            else if (CONFIG_WMV2) {
+            else if (CONFIG_WMV2_DECODER || CONFIG_WMV2_ENCODER) {
                 ff_wmv2_add_mb(s, block, dest_y, dest_cb, dest_cr);
             }
         } else {
