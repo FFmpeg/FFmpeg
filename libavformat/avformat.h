@@ -717,6 +717,19 @@ attribute_deprecated AVOutputFormat *guess_stream_format(const char *short_name,
                                     const char *filename,
                                     const char *mime_type);
 #endif
+
+/**
+ * Returns the output format in the list of registered output formats
+ * which best matches the provided parameters, or returns NULL if
+ * there is no match.
+ *
+ * @param short_name if non-NULL checks if short_name matches with the
+ * names of the registered formats
+ * @param filename if non-NULL checks if filename terminates with the
+ * extensions of the registered formats
+ * @param mime_type if non-NULL checks if mime_type matches with the
+ * MIME type of the registered formats
+ */
 AVOutputFormat *guess_format(const char *short_name,
                              const char *filename,
                              const char *mime_type);
