@@ -219,6 +219,7 @@ AVOutputFormat *guess_format(const char *short_name, const char *filename,
     return fmt_found;
 }
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 AVOutputFormat *guess_stream_format(const char *short_name, const char *filename,
                              const char *mime_type)
 {
@@ -237,6 +238,7 @@ AVOutputFormat *guess_stream_format(const char *short_name, const char *filename
 
     return fmt;
 }
+#endif
 
 enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
                             const char *filename, const char *mime_type, enum CodecType type){

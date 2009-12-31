@@ -3731,6 +3731,25 @@ static int ffserver_opt_default(const char *opt, const char *arg,
     return ret;
 }
 
+static AVOutputFormat *ffserver_guess_format(const char *short_name, const char *filename,
+                                             const char *mime_type)
+{
+    AVOutputFormat *fmt = guess_format(short_name, filename, mime_type);
+
+    if (fmt) {
+        AVOutputFormat *stream_fmt;
+        char stream_format_name[64];
+
+        snprintf(stream_format_name, sizeof(stream_format_name), "%s_stream", fmt->name);
+        stream_fmt = guess_format(stream_format_name, NULL, NULL);
+
+        if (stream_fmt)
+            fmt = stream_fmt;
+    }
+
+    return fmt;
+}
+
 static int parse_ffconfig(const char *filename)
 {
     FILE *f;
@@ -3972,7 +3991,7 @@ static int parse_ffconfig(const char *filename)
                     }
                 }
 
-                stream->fmt = guess_stream_format(NULL, stream->filename, NULL);
+                stream->fmt = ffserver_guess_format(NULL, stream->filename, NULL);
                 /* fetch avclass so AVOption works
                  * FIXME try to use avcodec_get_context_defaults2
                  * without changing defaults too much */
@@ -4020,7 +4039,7 @@ static int parse_ffconfig(const char *filename)
                     /* jpeg cannot be used here, so use single frame jpeg */
                     if (!strcmp(arg, "jpeg"))
                         strcpy(arg, "mjpeg");
-                    stream->fmt = guess_stream_format(arg, NULL, NULL);
+                    stream->fmt = ffserver_guess_format(arg, NULL, NULL);
                     if (!stream->fmt) {
                         fprintf(stderr, "%s:%d: Unknown Format: %s\n",
                                 filename, line_num, arg);
