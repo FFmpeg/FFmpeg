@@ -1588,13 +1588,6 @@ int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
     return 0;
 }
 
-static inline void msmpeg4_memsetw(short *tab, int val, int n)
-{
-    int i;
-    for(i=0;i<n;i++)
-        tab[i] = val;
-}
-
 static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
 {
     int level, pred;
