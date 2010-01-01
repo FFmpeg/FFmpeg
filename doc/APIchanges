@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-01-02 - r20998 - lavf 52.46.0 - av_match_ext()
+  Add av_match_ext(), it should be used in place of match_ext().
+
 2010-01-01 - r20991 - lavf 52.45.0 - av_guess_format()
   Add av_guess_format(), it should be used in place of guess_format().
 
