@@ -1340,20 +1340,20 @@ static int http_parse_request(HTTPContext *c)
     }
 
     redir_type = REDIR_NONE;
-    if (match_ext(filename, "asx")) {
+    if (av_match_ext(filename, "asx")) {
         redir_type = REDIR_ASX;
         filename[strlen(filename)-1] = 'f';
-    } else if (match_ext(filename, "asf") &&
+    } else if (av_match_ext(filename, "asf") &&
         (!useragent || strncasecmp(useragent, "NSPlayer", 8) != 0)) {
         /* if this isn't WMP or lookalike, return the redirector file */
         redir_type = REDIR_ASF;
-    } else if (match_ext(filename, "rpm,ram")) {
+    } else if (av_match_ext(filename, "rpm,ram")) {
         redir_type = REDIR_RAM;
         strcpy(filename + strlen(filename)-2, "m");
-    } else if (match_ext(filename, "rtsp")) {
+    } else if (av_match_ext(filename, "rtsp")) {
         redir_type = REDIR_RTSP;
         compute_real_filename(filename, sizeof(filename) - 1);
-    } else if (match_ext(filename, "sdp")) {
+    } else if (av_match_ext(filename, "sdp")) {
         redir_type = REDIR_SDP;
         compute_real_filename(filename, sizeof(filename) - 1);
     }

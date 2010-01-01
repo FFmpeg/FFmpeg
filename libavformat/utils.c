@@ -222,7 +222,7 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
         if (fmt->mime_type && mime_type && !strcmp(fmt->mime_type, mime_type))
             score += 10;
         if (filename && fmt->extensions &&
-            match_ext(filename, fmt->extensions)) {
+            av_match_ext(filename, fmt->extensions)) {
             score += 5;
         }
         if (score > score_max) {
@@ -325,7 +325,7 @@ static AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int
         if (fmt1->read_probe) {
             score = fmt1->read_probe(pd);
         } else if (fmt1->extensions) {
-            if (match_ext(pd->filename, fmt1->extensions)) {
+            if (av_match_ext(pd->filename, fmt1->extensions)) {
                 score = 50;
             }
         }
