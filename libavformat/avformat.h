@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 45
+#define LIBAVFORMAT_VERSION_MINOR 46
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -1301,13 +1301,20 @@ void url_split(char *proto, int proto_size,
                char *path, int path_size,
                const char *url);
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
+/**
+ * @deprecated Use av_match_ext() instead.
+ */
+attribute_deprecated int match_ext(const char *filename, const char *extensions);
+#endif
+
 /**
  * Returns a positive value if the given filename has one of the given
  * extensions, 0 otherwise.
  *
  * @param extensions a comma-separated list of filename extensions
  */
-int match_ext(const char *filename, const char *extensions);
+int av_match_ext(const char *filename, const char *extensions);
 
 #endif /* HAVE_AV_CONFIG_H */
 

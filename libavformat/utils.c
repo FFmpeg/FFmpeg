@@ -137,7 +137,14 @@ void av_register_output_format(AVOutputFormat *format)
     format->next = NULL;
 }
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 int match_ext(const char *filename, const char *extensions)
+{
+    return av_match_ext(filename, extensions);
+}
+#endif
+
+int av_match_ext(const char *filename, const char *extensions)
 {
     const char *ext, *p;
     char ext1[32], *q;
