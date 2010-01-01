@@ -293,7 +293,7 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
     }
 }
 
-/** Parse a string \p in the form of Range:npt=xx-xx, and determine the start
+/** Parse a string p in the form of Range:npt=xx-xx, and determine the start
  *  and end time.
  *  Used for seeking in the rtp stream.
  */
