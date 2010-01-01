@@ -682,7 +682,7 @@ retry:
                 }
             }
         }
-        if(s->gb.buffer == s->bitstream_buffer && buf_size>20){ //xvid style
+        if(s->gb.buffer == s->bitstream_buffer && buf_size>7 && s->xvid_build){ //xvid style
             startcode_found=1;
             current_pos=0;
         }
