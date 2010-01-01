@@ -3170,7 +3170,7 @@ static int rtp_new_av_stream(HTTPContext *c,
     ctx = avformat_alloc_context();
     if (!ctx)
         return -1;
-    ctx->oformat = guess_format("rtp", NULL, NULL);
+    ctx->oformat = av_guess_format("rtp", NULL, NULL);
 
     st = av_mallocz(sizeof(AVStream));
     if (!st)
@@ -3734,14 +3734,14 @@ static int ffserver_opt_default(const char *opt, const char *arg,
 static AVOutputFormat *ffserver_guess_format(const char *short_name, const char *filename,
                                              const char *mime_type)
 {
-    AVOutputFormat *fmt = guess_format(short_name, filename, mime_type);
+    AVOutputFormat *fmt = av_guess_format(short_name, filename, mime_type);
 
     if (fmt) {
         AVOutputFormat *stream_fmt;
         char stream_format_name[64];
 
         snprintf(stream_format_name, sizeof(stream_format_name), "%s_stream", fmt->name);
-        stream_fmt = guess_format(stream_format_name, NULL, NULL);
+        stream_fmt = av_guess_format(stream_format_name, NULL, NULL);
 
         if (stream_fmt)
             fmt = stream_fmt;
@@ -3880,7 +3880,7 @@ static int parse_ffconfig(const char *filename)
                     }
                 }
 
-                feed->fmt = guess_format("ffm", NULL, NULL);
+                feed->fmt = av_guess_format("ffm", NULL, NULL);
                 /* defaut feed file */
                 snprintf(feed->feed_filename, sizeof(feed->feed_filename),
                          "/tmp/%s.ffm", feed->filename);

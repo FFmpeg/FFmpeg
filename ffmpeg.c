@@ -3361,14 +3361,14 @@ static void opt_output_file(const char *filename)
     }
 
     if (last_asked_format) {
-        file_oformat = guess_format(last_asked_format, NULL, NULL);
+        file_oformat = av_guess_format(last_asked_format, NULL, NULL);
         if (!file_oformat) {
             fprintf(stderr, "Requested output format '%s' is not a suitable output format\n", last_asked_format);
             av_exit(1);
         }
         last_asked_format = NULL;
     } else {
-        file_oformat = guess_format(NULL, filename, NULL);
+        file_oformat = av_guess_format(NULL, filename, NULL);
         if (!file_oformat) {
             fprintf(stderr, "Unable to find a suitable output format for '%s'\n",
                     filename);
