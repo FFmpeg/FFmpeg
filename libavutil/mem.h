@@ -67,7 +67,7 @@ void *av_malloc(unsigned int size) av_malloc_attrib av_alloc_size(1);
 
 /**
  * Allocates or reallocates a block of memory.
- * If ptr is NULL and size > 0, allocates a new block. If \p
+ * If ptr is NULL and size > 0, allocates a new block. If
  * size is zero, frees the memory block pointed to by ptr.
  * @param size Size in bytes for the memory block to be allocated or
  * reallocated.

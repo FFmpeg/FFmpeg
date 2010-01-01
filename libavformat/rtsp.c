@@ -933,7 +933,7 @@ static void rtsp_skip_packet(AVFormatContext *s)
  * @param s RTSP demuxer context
  * @param reply pointer where the RTSP message header will be stored
  * @param content_ptr pointer where the RTSP message body, if any, will
- *                    be stored (length is in \p reply)
+ *                    be stored (length is in reply)
  * @param return_on_interleaved_data whether the function may return if we
  *                   encounter a data marker ('$'), which precedes data
  *                   packets over interleaved TCP/RTSP connections. If this

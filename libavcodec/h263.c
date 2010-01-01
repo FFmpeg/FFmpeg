@@ -3420,7 +3420,7 @@ void ff_mpeg4_clean_buffers(MpegEncContext *s)
  * finds the next resync_marker
  * @param p pointer to buffer to scan
  * @param end pointer to the end of the buffer
- * @return pointer to the next resync_marker, or \p end if none was found
+ * @return pointer to the next resync_marker, or end if none was found
  */
 const uint8_t *ff_h263_find_resync_marker(const uint8_t *restrict p, const uint8_t * restrict end)
 {
