@@ -738,8 +738,8 @@ attribute_deprecated AVOutputFormat *guess_format(const char *short_name,
  * MIME type of the registered formats
  */
 AVOutputFormat *av_guess_format(const char *short_name,
-                             const char *filename,
-                             const char *mime_type);
+                                const char *filename,
+                                const char *mime_type);
 
 /**
  * Guesses the codec ID based upon muxer and filename.
