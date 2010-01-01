@@ -182,8 +182,16 @@ static int match_format(const char *name, const char *names)
     return !strcasecmp(name, names);
 }
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 AVOutputFormat *guess_format(const char *short_name, const char *filename,
                              const char *mime_type)
+{
+    return av_guess_format(short_name, filename, mime_type);
+}
+#endif
+
+AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
+                                const char *mime_type)
 {
     AVOutputFormat *fmt, *fmt_found;
     int score_max, score;

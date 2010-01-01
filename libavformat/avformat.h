@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 44
+#define LIBAVFORMAT_VERSION_MINOR 45
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -716,6 +716,13 @@ void av_register_output_format(AVOutputFormat *format);
 attribute_deprecated AVOutputFormat *guess_stream_format(const char *short_name,
                                     const char *filename,
                                     const char *mime_type);
+
+/**
+ * @deprecated Use av_guess_format() instead.
+ */
+attribute_deprecated AVOutputFormat *guess_format(const char *short_name,
+                                                  const char *filename,
+                                                  const char *mime_type);
 #endif
 
 /**
@@ -730,7 +737,7 @@ attribute_deprecated AVOutputFormat *guess_stream_format(const char *short_name,
  * @param mime_type if non-NULL checks if mime_type matches with the
  * MIME type of the registered formats
  */
-AVOutputFormat *guess_format(const char *short_name,
+AVOutputFormat *av_guess_format(const char *short_name,
                              const char *filename,
                              const char *mime_type);
 
