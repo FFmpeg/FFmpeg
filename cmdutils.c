@@ -50,7 +50,7 @@ AVCodecContext *avcodec_opts[CODEC_TYPE_NB];
 AVFormatContext *avformat_opts;
 struct SwsContext *sws_opts;
 
-const int this_year = 2009;
+const int this_year = 2010;
 
 double parse_number_or_die(const char *context, const char *numstr, int type, double min, double max)
 {
