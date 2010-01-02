@@ -89,12 +89,12 @@ void ff_lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                 "movsd    "MANGLE(ff_pd_1)", %%xmm1 \n\t"
                 "movsd    "MANGLE(ff_pd_1)", %%xmm2 \n\t"
                 "1:                                 \n\t"
-                "movapd   (%4,%0), %%xmm3           \n\t"
-                "movupd -8(%5,%0), %%xmm4           \n\t"
-                "movapd   (%5,%0), %%xmm5           \n\t"
+                "movapd   (%2,%0), %%xmm3           \n\t"
+                "movupd -8(%3,%0), %%xmm4           \n\t"
+                "movapd   (%3,%0), %%xmm5           \n\t"
                 "mulpd     %%xmm3, %%xmm4           \n\t"
                 "mulpd     %%xmm3, %%xmm5           \n\t"
-                "mulpd -16(%5,%0), %%xmm3           \n\t"
+                "mulpd -16(%3,%0), %%xmm3           \n\t"
                 "addpd     %%xmm4, %%xmm1           \n\t"
                 "addpd     %%xmm5, %%xmm0           \n\t"
                 "addpd     %%xmm3, %%xmm2           \n\t"
@@ -106,11 +106,12 @@ void ff_lpc_compute_autocorr_sse2(const int32_t *data, int len, int lag,
                 "addsd     %%xmm3, %%xmm0           \n\t"
                 "addsd     %%xmm4, %%xmm1           \n\t"
                 "addsd     %%xmm5, %%xmm2           \n\t"
-                "movsd     %%xmm0, %1               \n\t"
-                "movsd     %%xmm1, %2               \n\t"
-                "movsd     %%xmm2, %3               \n\t"
-                :"+&r"(i), "=m"(autoc[j]), "=m"(autoc[j+1]), "=m"(autoc[j+2])
-                :"r"(data1+len), "r"(data1+len-j)
+                "movsd     %%xmm0,   (%1)           \n\t"
+                "movsd     %%xmm1,  8(%1)           \n\t"
+                "movsd     %%xmm2, 16(%1)           \n\t"
+                :"+&r"(i)
+                :"r"(autoc+j), "r"(data1+len), "r"(data1+len-j)
+                :"memory"
             );
         } else {
             __asm__ volatile(
