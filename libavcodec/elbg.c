@@ -355,6 +355,7 @@ void ff_do_elbg(int *points, int dim, int numpoints, int *codebook,
     int *size_part = av_malloc(numCB*sizeof(int));
     cell *list_buffer = av_malloc(numpoints*sizeof(cell));
     cell *free_cells;
+    int best_dist, best_idx = 0;
 
     elbg->error = INT_MAX;
     elbg->dim = dim;
@@ -380,14 +381,16 @@ void ff_do_elbg(int *points, int dim, int numpoints, int *codebook,
         /* This loop evaluate the actual Voronoi partition. It is the most
            costly part of the algorithm. */
         for (i=0; i < numpoints; i++) {
-            dist_cb[i] = INT_MAX;
+            best_dist = distance_limited(elbg->points + i*elbg->dim, elbg->codebook + best_idx*elbg->dim, dim, INT_MAX);
             for (k=0; k < elbg->numCB; k++) {
-                dist = distance_limited(elbg->points + i*elbg->dim, elbg->codebook + k*elbg->dim, dim, dist_cb[i]);
-                if (dist < dist_cb[i]) {
-                    dist_cb[i] = dist;
-                    elbg->nearest_cb[i] = k;
+                dist = distance_limited(elbg->points + i*elbg->dim, elbg->codebook + k*elbg->dim, dim, best_dist);
+                if (dist < best_dist) {
+                    best_dist = dist;
+                    best_idx = k;
                 }
             }
+            elbg->nearest_cb[i] = best_idx;
+            dist_cb[i] = best_dist;
             elbg->error += dist_cb[i];
             elbg->utility[elbg->nearest_cb[i]] += dist_cb[i];
             free_cells->index = i;
