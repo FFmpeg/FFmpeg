@@ -85,6 +85,19 @@ AVFilterFormats *avfilter_make_format_list(const enum PixelFormat *pix_fmts)
     return formats;
 }
 
+int avfilter_add_colorspace(AVFilterFormats *avff, enum PixelFormat pix_fmt)
+{
+    enum PixelFormat *pix_fmts =
+        av_realloc(avff->formats, sizeof(avff->formats) * (avff->format_count+1));
+
+    if (!pix_fmts)
+        return AVERROR(ENOMEM);
+
+    avff->formats = pix_fmts;
+    avff->formats[avff->format_count++] = pix_fmt;
+    return 0;
+}
+
 AVFilterFormats *avfilter_all_colorspaces(void)
 {
     AVFilterFormats *ret;
