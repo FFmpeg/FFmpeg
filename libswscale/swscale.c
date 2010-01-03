@@ -188,13 +188,7 @@ const char * swscale_license(void)
         || isRGB(x)                 \
         || isBGR(x)                 \
     )
-#define usePal(x)           (       \
-           (x)==PIX_FMT_PAL8        \
-        || (x)==PIX_FMT_BGR4_BYTE   \
-        || (x)==PIX_FMT_RGB4_BYTE   \
-        || (x)==PIX_FMT_BGR8        \
-        || (x)==PIX_FMT_RGB8        \
-    )
+#define usePal(x) (av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL)
 
 #define RGB2YUV_SHIFT 15
 #define BY ( (int)(0.114*219/255*(1<<RGB2YUV_SHIFT)+0.5))
