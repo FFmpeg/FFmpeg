@@ -47,12 +47,12 @@ unsigned avfilter_version(void);
 /**
  * Returns the libavfilter build-time configuration.
  */
-const char * avfilter_configuration(void);
+const char *avfilter_configuration(void);
 
 /**
  * Returns the libavfilter license.
  */
-const char * avfilter_license(void);
+const char *avfilter_license(void);
 
 
 typedef struct AVFilterContext AVFilterContext;

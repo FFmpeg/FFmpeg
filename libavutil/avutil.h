@@ -56,12 +56,12 @@ unsigned avutil_version(void);
 /**
  * Returns the libavutil build-time configuration.
  */
-const char * avutil_configuration(void);
+const char *avutil_configuration(void);
 
 /**
  * Returns the libavutil license.
  */
-const char * avutil_license(void);
+const char *avutil_license(void);
 
 #include "common.h"
 #include "mathematics.h"

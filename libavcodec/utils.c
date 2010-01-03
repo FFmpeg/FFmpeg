@@ -895,12 +895,12 @@ unsigned avcodec_version( void )
   return LIBAVCODEC_VERSION_INT;
 }
 
-const char * avcodec_configuration(void)
+const char *avcodec_configuration(void)
 {
     return FFMPEG_CONFIGURATION;
 }
 
-const char * avcodec_license(void)
+const char *avcodec_license(void)
 {
 #define LICENSE_PREFIX "libavcodec license: "
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;

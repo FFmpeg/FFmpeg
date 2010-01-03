@@ -3083,12 +3083,12 @@ unsigned avcodec_version(void);
 /**
  * Returns the libavcodec build-time configuration.
  */
-const char * avcodec_configuration(void);
+const char *avcodec_configuration(void);
 
 /**
  * Returns the libavcodec license.
  */
-const char * avcodec_license(void);
+const char *avcodec_license(void);
 
 /**
  * Initializes libavcodec.

@@ -51,12 +51,12 @@ unsigned postproc_version(void);
 /**
  * Returns the libpostproc build-time configuration.
  */
-const char * postproc_configuration(void);
+const char *postproc_configuration(void);
 
 /**
  * Returns the libpostproc license.
  */
-const char * postproc_license(void);
+const char *postproc_license(void);
 
 #define PP_QUALITY_MAX 6
 
