@@ -2272,7 +2272,7 @@ static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 }
 
 
-static void getSubSampleFactors(int *h, int *v, int format)
+static void getSubSampleFactors(int *h, int *v, enum PixelFormat format)
 {
     *h = av_pix_fmt_descriptors[format].log2_chroma_w;
     *v = av_pix_fmt_descriptors[format].log2_chroma_h;
