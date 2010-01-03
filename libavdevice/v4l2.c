@@ -546,11 +546,11 @@ static int v4l2_set_parameters( AVFormatContext *s1, AVFormatParameters *ap )
     return 0;
 }
 
-uint32_t device_try_init(AVFormatContext *s1,
-                         const AVFormatParameters *ap,
-                         int *width,
-                         int *height,
-                         enum CodecID *codec_id)
+static uint32_t device_try_init(AVFormatContext *s1,
+                                const AVFormatParameters *ap,
+                                int *width,
+                                int *height,
+                                enum CodecID *codec_id)
 {
     uint32_t desired_format = fmt_ff2v4l(ap->pix_fmt, ap->video_codec_id);
 
