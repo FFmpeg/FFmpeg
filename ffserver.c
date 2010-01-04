@@ -344,7 +344,7 @@ static void http_vlog(const char *fmt, va_list vargs)
     }
 }
 
-void __attribute__ ((format (printf, 1, 2))) http_log(const char *fmt, ...)
+static void __attribute__ ((format (printf, 1, 2))) http_log(const char *fmt, ...)
 {
     va_list vargs;
     va_start(vargs, fmt);
