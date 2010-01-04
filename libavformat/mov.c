@@ -181,11 +181,10 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     int64_t total_size = 0;
     MOVAtom a;
     int i;
-    int err = 0;
 
     if (atom.size < 0)
         atom.size = INT64_MAX;
-    while(((total_size + 8) < atom.size) && !url_feof(pb) && !err) {
+    while(((total_size + 8) < atom.size) && !url_feof(pb)) {
         int (*parse)(MOVContext*, ByteIOContext*, MOVAtom) = NULL;
         a.size = atom.size;
         a.type=0;
@@ -226,7 +225,9 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         } else {
             int64_t start_pos = url_ftell(pb);
             int64_t left;
-            err = parse(c, pb, a);
+            int err = parse(c, pb, a);
+            if (err < 0)
+                return err;
             if (url_is_streamed(pb) && c->found_moov && c->found_mdat)
                 break;
             left = a.size - url_ftell(pb) + start_pos;
@@ -237,10 +238,10 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         total_size += a.size;
     }
 
-    if (!err && total_size < atom.size && atom.size < 0x7ffff)
+    if (total_size < atom.size && atom.size < 0x7ffff)
         url_fskip(pb, atom.size - total_size);
 
-    return err;
+    return 0;
 }
 
 static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
