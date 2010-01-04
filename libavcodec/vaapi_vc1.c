@@ -117,17 +117,18 @@ static inline VAMvModeVC1 vc1_get_MVMODE2(VC1Context *v)
 }
 
 /** Pack FFmpeg bitplanes into a VABitPlaneBuffer element */
-static inline uint8_t vc1_pack_bitplanes(const uint8_t *ff_bp[3], int x, int y, int stride)
+static inline void vc1_pack_bitplanes(uint8_t *bitplane, int n, const uint8_t *ff_bp[3], int x, int y, int stride)
 {
-    const int n = y * stride + x;
+    const int bitplane_index = n / 2;
+    const int ff_bp_index = y * stride + x;
     uint8_t v = 0;
     if (ff_bp[0])
-        v = ff_bp[0][n];
+        v = ff_bp[0][ff_bp_index];
     if (ff_bp[1])
-        v |= ff_bp[1][n] << 1;
+        v |= ff_bp[1][ff_bp_index] << 1;
     if (ff_bp[2])
-        v |= ff_bp[2][n] << 2;
-    return v;
+        v |= ff_bp[2][ff_bp_index] << 2;
+    bitplane[bitplane_index] = (bitplane[bitplane_index] << 4) | v;
 }
 
 static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t *buffer, av_unused uint32_t size)
@@ -280,18 +281,16 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t 
             break;
         }
 
-        bitplane = ff_vaapi_alloc_bitplane(vactx, s->mb_height * ((s->mb_width + 1) / 2));
+        bitplane = ff_vaapi_alloc_bitplane(vactx, (s->mb_width * s->mb_height + 1) / 2);
         if (!bitplane)
             return -1;
 
         n = 0;
-        for (y = 0; y < s->mb_height; y++) {
-            for (x = 0; x < s->mb_width; x += 2) {
-                bitplane[n] = vc1_pack_bitplanes(ff_bp, x+1, y, s->mb_stride);
-                bitplane[n] |= (vc1_pack_bitplanes(ff_bp, x, y, s->mb_stride) << 4);
-                ++n;
-            }
-        }
+        for (y = 0; y < s->mb_height; y++)
+            for (x = 0; x < s->mb_width; x++, n++)
+                vc1_pack_bitplanes(bitplane, n, ff_bp, x, y, s->mb_stride);
+        if (n & 1) /* move last nibble to the high order */
+            bitplane[n/2] <<= 4;
     }
     return 0;
 }
