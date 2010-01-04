@@ -184,7 +184,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     if (atom.size < 0)
         atom.size = INT64_MAX;
-    while(((total_size + 8) < atom.size) && !url_feof(pb)) {
+    while (total_size + 8 < atom.size && !url_feof(pb)) {
         int (*parse)(MOVContext*, ByteIOContext*, MOVAtom) = NULL;
         a.size = atom.size;
         a.type=0;
