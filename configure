@@ -2500,6 +2500,7 @@ check_func XOpenDisplay -lX11           &&
 check_func XShmCreateImage -lX11 -lXext &&
 check_func XFixesGetCursorImage -lX11 -lXext -lXfixes
 
+enabled vdpau_vdpau_h &&
 check_cpp_condition \
     vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
     { echolog "Please upgrade to libvdpau >= 0.2 if you would like vdpau support." &&
