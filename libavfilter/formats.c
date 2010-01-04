@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
 
 /**
@@ -101,14 +102,12 @@ int avfilter_add_colorspace(AVFilterFormats *avff, enum PixelFormat pix_fmt)
 AVFilterFormats *avfilter_all_colorspaces(void)
 {
     AVFilterFormats *ret;
-    int i;
+    enum PixelFormat pix_fmt;
 
     ret = av_mallocz(sizeof(AVFilterFormats));
-    ret->formats = av_malloc(sizeof(*ret->formats) * PIX_FMT_NB);
-    ret->format_count = PIX_FMT_NB;
-
-    for(i = 0; i < PIX_FMT_NB; i ++)
-        ret->formats[i] = i;
+    for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
+        if (!(av_pix_fmt_descriptors[pix_fmt].flags & PIX_FMT_HWACCEL))
+            avfilter_add_colorspace(ret, pix_fmt);
 
     return ret;
 }
