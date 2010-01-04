@@ -383,10 +383,6 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     get_be32(pb); /* component flags */
     get_be32(pb); /* component flags mask */
 
-    if(atom.size <= 24)
-        return 0; /* nothing left to read */
-
-    url_fskip(pb, atom.size - (url_ftell(pb) - atom.offset));
     return 0;
 }
 
