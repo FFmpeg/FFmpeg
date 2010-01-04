@@ -2596,7 +2596,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->add_pixels_clamped = add_pixels_clamped_mmx;
         c->clear_block  = clear_block_mmx;
         c->clear_blocks = clear_blocks_mmx;
-        if (mm_flags & FF_MM_SSE){
+        if ((mm_flags & FF_MM_SSE) &&
+            !(CONFIG_MPEG_XVMC_DECODER && avctx->xvmc_acceleration > 1)){
+            /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
             c->clear_block  = clear_block_sse;
             c->clear_blocks = clear_blocks_sse;
         }
