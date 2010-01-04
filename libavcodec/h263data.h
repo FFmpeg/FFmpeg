@@ -254,6 +254,7 @@ static RLTable rl_intra_aic = {
     intra_level_aic,
 };
 
+#if CONFIG_ENCODERS
 static const uint8_t wrong_run[102] = {
  1,  2,  3,  5,  4, 10,  9,  8,
 11, 15, 17, 16, 23, 22, 21, 20,
@@ -269,6 +270,7 @@ static const uint8_t wrong_run[102] = {
 11, 12, 13, 14,  1, 21, 20, 18,
 19,  2,  1, 34, 35, 36
 };
+#endif
 
 static const uint16_t h263_format[8][2] = {
     { 0, 0 },
