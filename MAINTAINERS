@@ -305,6 +305,7 @@ Muxers/Demuxers:
   wv.c                                  Kostya Shishkov
 
 Protocols:
+  http.c                                Ronald S. Bultje
   udp.c                                 Luca Abeni
 
 
