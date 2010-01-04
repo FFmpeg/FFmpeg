@@ -598,7 +598,7 @@ static void lspf2lpc(const float *lspf, float *lpc)
  * @param lpc float vector for the resulting LPC
  * @param subframe_num frame number in decoded stream
  */
-void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
+static void interpolate_lpc(QCELPContext *q, const float *curr_lspf, float *lpc,
                      const int subframe_num)
 {
     float interpolated_lspf[10];
