@@ -141,8 +141,11 @@ Codecs:
   kmvc.c                                Kostya Shishkov
   lcl*.c                                Roberto Togni, Reimar Doeffinger
   libgsm.c                              Michel Bardiaux
+  libdirac*                             David Conrad
   libopenjpeg.c                         Jaikrishnan Menon
+  libschroedinger*                      David Conrad
   libspeexdec.c                         Justin Ruggles
+  libtheoraenc.c                        David Conrad
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
   loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger
