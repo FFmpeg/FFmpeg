@@ -5732,9 +5732,9 @@ no_cplx_est:
 
             if(   h_sampling_factor_n==0 || h_sampling_factor_m==0
                || v_sampling_factor_n==0 || v_sampling_factor_m==0){
-
+                /* illegal scalability header (VERY broken encoder),
+                 * trying to workaround */
                 s->scalability=0;
-
                 *gb= bak;
             }else
                 av_log(s->avctx, AV_LOG_ERROR, "scalability not supported\n");
@@ -5847,6 +5847,8 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
         s->time= s->time_base*s->avctx->time_base.den + time_increment;
         if(s->workaround_bugs&FF_BUG_UMP4){
             if(s->time < s->last_non_b_time){
+                /* header is not mpeg-4-compatible, broken encoder,
+                 * trying to workaround */
                 s->time_base++;
                 s->time+= s->avctx->time_base.den;
             }
@@ -5857,6 +5859,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
         s->time= (s->last_time_base + time_incr)*s->avctx->time_base.den + time_increment;
         s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
         if(s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0){
+            /* messed up order, maybe after seeking? skipping current b-frame */
             return FRAME_SKIPPED;
         }
         ff_mpeg4_init_direct_mv(s);
