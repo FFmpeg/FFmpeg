@@ -33,6 +33,8 @@
 
 
 typedef struct {
+    AVCodecContext *avctx;
+
     unsigned int     old_energy;        ///< previous frame energy
 
     unsigned int     lpc_tables[2][10];
@@ -54,6 +56,8 @@ typedef struct {
 static av_cold int ra144_decode_init(AVCodecContext * avctx)
 {
     RA144Context *ractx = avctx->priv_data;
+
+    ractx->avctx = avctx;
 
     ractx->lpc_coef[0] = ractx->lpc_tables[0];
     ractx->lpc_coef[1] = ractx->lpc_tables[1];
@@ -226,7 +230,7 @@ static void int_to_int16(int16_t *out, const int *inp)
  * @return 1 if one of the reflection coefficients is greater than
  *         4095, 0 if not.
  */
-static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
+static int eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx)
 {
     int b, i, j;
     int buffer1[10];
@@ -240,7 +244,7 @@ static int eval_refl(int *refl, const int16_t *coefs, RA144Context *ractx)
     refl[9] = bp2[9];
 
     if ((unsigned) bp2[9] + 0x1000 > 0x1fff) {
-        av_log(ractx, AV_LOG_ERROR, "Overflow. Broken sample?\n");
+        av_log(avctx, AV_LOG_ERROR, "Overflow. Broken sample?\n");
         return 1;
     }
 
@@ -275,7 +279,7 @@ static int interp(RA144Context *ractx, int16_t *out, int a,
     for (i=0; i<30; i++)
         out[i] = (a * ractx->lpc_coef[0][i] + b * ractx->lpc_coef[1][i])>> 2;
 
-    if (eval_refl(work, out, ractx)) {
+    if (eval_refl(work, out, ractx->avctx)) {
         // The interpolated coefficients are unstable, copy either new or old
         // coefficients.
         int_to_int16(out, ractx->lpc_coef[copyold]);
