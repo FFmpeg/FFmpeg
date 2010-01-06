@@ -25,7 +25,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 13
+#define LIBAVFILTER_VERSION_MINOR 14
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -192,12 +192,14 @@ struct AVFilterFormats
 AVFilterFormats *avfilter_make_format_list(const enum PixelFormat *pix_fmts);
 
 /**
- * Adds pix_fmt to the list of pixel formats contained in avff.
+ * Adds pix_fmt to the list of pixel formats contained in *avff.
+ * If *avff is NULL the function allocates the filter formats struct
+ * and puts its pointer in *avff.
  *
  * @return a non negative value in case of success, or a negative
  * value corresponding to an AVERROR code in case of error
  */
-int avfilter_add_colorspace(AVFilterFormats *avff, enum PixelFormat pix_fmt);
+int avfilter_add_colorspace(AVFilterFormats **avff, enum PixelFormat pix_fmt);
 
 /**
  * Returns a list of all colorspaces supported by FFmpeg.
