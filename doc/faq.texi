@@ -316,6 +316,11 @@ ffmpeg -f mpeg -i - -sameq -vcodec mpeg4 -acodec libmp3lame output.avi
 
 Similarly, the yuv4mpegpipe format, and the raw video, raw audio codecs also
 allow concatenation, and the transcoding step is almost lossless.
+When using multiple yuv4mpegpipe(s), the first line needs to be discarded
+from all but the first stream. This can be accomplished by piping through
+@code{tail} as seen below. Note that when piping through @code{tail} you
+must use command grouping, @code{@{  ;@}}, to background properly.
+
 
 For example, let's say we want to join two FLV files into an output.flv file:
 
@@ -329,7 +334,7 @@ mkfifo all.v
 ffmpeg -i input1.flv -vn -f u16le -acodec pcm_s16le -ac 2 -ar 44100 - > temp1.a < /dev/null &
 ffmpeg -i input2.flv -vn -f u16le -acodec pcm_s16le -ac 2 -ar 44100 - > temp2.a < /dev/null &
 ffmpeg -i input1.flv -an -f yuv4mpegpipe - > temp1.v < /dev/null &
-ffmpeg -i input2.flv -an -f yuv4mpegpipe - > temp2.v < /dev/null &
+@{ ffmpeg -i input2.flv -an -f yuv4mpegpipe - < /dev/null | tail -n +2 > temp2.v ; @} &
 cat temp1.a temp2.a > all.a &
 cat temp1.v temp2.v > all.v &
 ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
