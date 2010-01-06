@@ -336,7 +336,7 @@ int ff_put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     put_le32(pb, enc->sample_rate);
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
         bps = 0;
-    } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV || enc->codec_id == CODEC_ID_ADPCM_MS || enc->codec_id == CODEC_ID_ADPCM_G726 || enc->codec_id == CODEC_ID_ADPCM_YAMAHA) { //
+    } else if (enc->codec_id == CODEC_ID_ADPCM_G726) {
         bps = 4;
     } else {
         if (!(bps = av_get_bits_per_sample(enc->codec_id)))
