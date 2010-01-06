@@ -12,6 +12,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-01-06 - r21035 - lavfi 1.14.0 - avfilter_add_colorspace()
+  Change the avfilter_add_colorspace() signature, make it accept an
+  (AVFilterFormats **) rather than an (AVFilterFormats *) as before.
+
 2010-01-03 - r21007 - lavfi 1.13.0 - avfilter_add_colorspace()
   Add avfilter_add_colorspace().
 
