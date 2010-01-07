@@ -831,6 +831,10 @@ void ff_h263_loop_filter(MpegEncContext * s);
 void ff_set_qscale(MpegEncContext * s, int qscale);
 int ff_h263_decode_mba(MpegEncContext *s);
 void ff_h263_encode_mba(MpegEncContext *s);
+
+/**
+ * Prints picture info if FF_DEBUG_PICT_INFO is set.
+ */
 void ff_h263_show_pict_info(MpegEncContext *s);
 
 int ff_intel_h263_decode_picture_header(MpegEncContext *s);
