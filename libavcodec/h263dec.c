@@ -414,7 +414,7 @@ retry:
         }
         ret = ff_mpeg4_decode_picture_header(s, &s->gb);
     } else if (s->codec_id == CODEC_ID_H263I) {
-        ret = intel_h263_decode_picture_header(s);
+        ret = ff_intel_h263_decode_picture_header(s);
     } else if (CONFIG_FLV_DECODER && s->h263_flv) {
         ret = ff_flv_decode_picture_header(s);
     } else {
@@ -814,20 +814,6 @@ AVCodec wmv1_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .long_name= NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
-    .pix_fmts= ff_pixfmt_list_420,
-};
-
-AVCodec h263i_decoder = {
-    "h263i",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_H263I,
-    sizeof(MpegEncContext),
-    ff_h263_decode_init,
-    NULL,
-    ff_h263_decode_end,
-    ff_h263_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Intel H.263"),
     .pix_fmts= ff_pixfmt_list_420,
 };
 

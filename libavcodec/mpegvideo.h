@@ -831,8 +831,9 @@ void ff_h263_loop_filter(MpegEncContext * s);
 void ff_set_qscale(MpegEncContext * s, int qscale);
 int ff_h263_decode_mba(MpegEncContext *s);
 void ff_h263_encode_mba(MpegEncContext *s);
+void ff_h263_show_pict_info(MpegEncContext *s);
 
-int intel_h263_decode_picture_header(MpegEncContext *s);
+int ff_intel_h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_mb(MpegEncContext *s,
                       DCTELEM block[6][64]);
 int ff_mpeg4_decode_mb(MpegEncContext *s,
