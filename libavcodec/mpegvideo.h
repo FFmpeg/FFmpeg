@@ -833,7 +833,6 @@ int ff_h263_decode_mba(MpegEncContext *s);
 void ff_h263_encode_mba(MpegEncContext *s);
 
 int intel_h263_decode_picture_header(MpegEncContext *s);
-int flv_h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_mb(MpegEncContext *s,
                       DCTELEM block[6][64]);
 int ff_mpeg4_decode_mb(MpegEncContext *s,

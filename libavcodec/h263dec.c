@@ -33,6 +33,7 @@
 #include "mpeg4video_parser.h"
 #include "msmpeg4.h"
 #include "vdpau_internal.h"
+#include "flv.h"
 
 //#define DEBUG
 //#define PRINT_FRAME_TIME
@@ -414,8 +415,8 @@ retry:
         ret = ff_mpeg4_decode_picture_header(s, &s->gb);
     } else if (s->codec_id == CODEC_ID_H263I) {
         ret = intel_h263_decode_picture_header(s);
-    } else if (s->h263_flv) {
-        ret = flv_h263_decode_picture_header(s);
+    } else if (CONFIG_FLV_DECODER && s->h263_flv) {
+        ret = ff_flv_decode_picture_header(s);
     } else {
         ret = h263_decode_picture_header(s);
     }
@@ -827,20 +828,6 @@ AVCodec h263i_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Intel H.263"),
-    .pix_fmts= ff_pixfmt_list_420,
-};
-
-AVCodec flv_decoder = {
-    "flv",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_FLV1,
-    sizeof(MpegEncContext),
-    ff_h263_decode_init,
-    NULL,
-    ff_h263_decode_end,
-    ff_h263_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name= NULL_IF_CONFIG_SMALL("Flash Video (FLV) / Sorenson Spark / Sorenson H.263"),
     .pix_fmts= ff_pixfmt_list_420,
 };
 
