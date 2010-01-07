@@ -368,6 +368,15 @@ static inline int get_block_rate(MpegEncContext * s, DCTELEM block[64], int bloc
     return rate;
 }
 
+
+/**
+ * Restores the ac coefficients in block that have been changed by decide_ac_pred().
+ * This function also restores s->block_last_index.
+ * @param[in,out] block MB coefficients, these will be restored
+ * @param[in] dir ac prediction direction for each 8x8 block
+ * @param[out] st scantable for each 8x8 block
+ * @param[in] zigzag_last_index index refering to the last non zero coefficient in zigzag order
+ */
 static inline void restore_ac_coeffs(MpegEncContext * s, DCTELEM block[6][64], int dir[6], uint8_t *st[6], int zigzag_last_index[6])
 {
     int i, n;
@@ -393,6 +402,11 @@ static inline void restore_ac_coeffs(MpegEncContext * s, DCTELEM block[6][64], i
 
 /**
  * Returns the optimal value (0 or 1) for the ac_pred element for the given MB in mpeg4.
+ * This function will also update s->block_last_index and s->ac_val.
+ * @param[in,out] block MB coefficients, these will be updated if 1 is returned
+ * @param[in] dir ac prediction direction for each 8x8 block
+ * @param[out] st scantable for each 8x8 block
+ * @param[out] zigzag_last_index index refering to the last non zero coefficient in zigzag order
  */
 static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int dir[6], uint8_t *st[6], int zigzag_last_index[6])
 {
