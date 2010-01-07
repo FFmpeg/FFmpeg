@@ -508,7 +508,7 @@ static inline int RENAME(yuva420_rgb32)(SwsContext *c, uint8_t* src[], int srcSt
 #endif
 }
 
-static inline int RENAME(yuv420_bgr32)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static inline int RENAME(yuv420_bgr32)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int y, h_size;
@@ -525,7 +525,7 @@ static inline int RENAME(yuv420_bgr32)(SwsContext *c, const uint8_t* src[], int 
     YUV2RGB_OPERANDS
 }
 
-static inline int RENAME(yuva420_bgr32)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static inline int RENAME(yuva420_bgr32)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                                         int srcSliceH, uint8_t* dst[], int dstStride[])
 {
 #if HAVE_7REGS
