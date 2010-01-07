@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
 #include "avformat.h"
@@ -72,10 +73,19 @@ static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
 {
     int port;
     const char *p;
+    char proto[32];
 
-    url_split(NULL, 0, NULL, 0, dest_addr, size, &port, NULL, 0, url);
+    url_split(proto, sizeof(proto), NULL, 0, dest_addr, size, &port, NULL, 0, url);
 
     *ttl = 0;
+
+    if (strcmp(proto, "rtp")) {
+        /* The url isn't for the actual rtp sessions,
+         * don't parse out anything else than the destination.
+         */
+        return 0;
+    }
+
     p = strchr(url, '?');
     if (p) {
         char buff[64];
