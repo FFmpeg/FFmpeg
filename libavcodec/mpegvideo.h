@@ -845,7 +845,7 @@ int ff_mpeg4_decode_mb(MpegEncContext *s,
  * that represents some standard picture dimensions or indicates that
  * width&height are explicitly stored later.
  */
-int h263_get_picture_format(int width, int height);
+int av_const h263_get_picture_format(int width, int height);
 
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
 void ff_mpeg4_clean_buffers(MpegEncContext *s);
