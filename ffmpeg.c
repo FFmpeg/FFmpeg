@@ -1272,8 +1272,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     AVFormatContext *os;
     AVOutputStream *ost;
     int ret, i;
-    uint8_t *data_buf;
-    int data_size, got_picture;
+    int got_picture;
     AVFrame picture;
     void *buffer_to_free;
     static unsigned int samples_size= 0;
@@ -1300,6 +1299,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
     //while we have more to decode or while the decoder did output something on EOF
     while (avpkt.size > 0 || (!pkt && ist->next_pts != ist->pts)) {
+        uint8_t *data_buf;
+        int data_size;
     handle_eof:
         ist->pts= ist->next_pts;
 
