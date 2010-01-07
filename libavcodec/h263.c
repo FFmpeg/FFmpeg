@@ -61,15 +61,32 @@
 #define CBPC_B_VLC_BITS 3
 
 #if CONFIG_ENCODERS
+//The uni_DCtab_* tables below contain unified bits+length tables to encode DC
+//differences in mpeg4. Unified in the sense that the specification specifies
+//this encoding in several steps.
 static uint8_t uni_DCtab_lum_len[512];
 static uint8_t uni_DCtab_chrom_len[512];
 static uint16_t uni_DCtab_lum_bits[512];
 static uint16_t uni_DCtab_chrom_bits[512];
 
+/**
+ * Table of number of bits a motion vector component needs.
+ */
 static uint8_t mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
+
+/**
+ * Minimal fcode that a motion vector component would need.
+ */
 static uint8_t fcode_tab[MAX_MV*2+1];
+
+/**
+ * Minimal fcode that a motion vector component would need in umv.
+ * All entries in this table are 1.
+ */
 static uint8_t umv_fcode_tab[MAX_MV*2+1];
 
+//unified encoding tables for run length encoding of coefficients
+//unified in the sense that the specification specifies the encoding in several steps.
 static uint32_t uni_mpeg4_intra_rl_bits[64*64*2*2];
 static uint8_t  uni_mpeg4_intra_rl_len [64*64*2*2];
 static uint32_t uni_mpeg4_inter_rl_bits[64*64*2*2];
