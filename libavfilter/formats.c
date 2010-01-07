@@ -133,6 +133,9 @@ static int find_ref_index(AVFilterFormats **ref)
 
 void avfilter_formats_unref(AVFilterFormats **ref)
 {
+    if (!*ref)
+        return;
+
     int idx = find_ref_index(ref);
 
     if(idx >= 0)

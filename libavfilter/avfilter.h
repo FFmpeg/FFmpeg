@@ -26,7 +26,7 @@
 
 #define LIBAVFILTER_VERSION_MAJOR  1
 #define LIBAVFILTER_VERSION_MINOR 14
-#define LIBAVFILTER_VERSION_MICRO  0
+#define LIBAVFILTER_VERSION_MICRO  1
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -231,8 +231,9 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b);
 void avfilter_formats_ref(AVFilterFormats *formats, AVFilterFormats **ref);
 
 /**
- * Removes *ref as a reference to the format list it currently points to,
- * deallocates that list if this was the last reference, and sets *ref to NULL.
+ * If *ref is non-NULL, removes *ref as a reference to the format list
+ * it currently points to, deallocates that list if this was the last
+ * reference, and sets *ref to NULL.
  *
  *         Before                                 After
  *   ________                               ________         NULL
