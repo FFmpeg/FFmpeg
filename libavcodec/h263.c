@@ -377,7 +377,7 @@ static inline int get_block_rate(MpegEncContext * s, DCTELEM block[64], int bloc
  * @param[out] st scantable for each 8x8 block
  * @param[in] zigzag_last_index index refering to the last non zero coefficient in zigzag order
  */
-static inline void restore_ac_coeffs(MpegEncContext * s, DCTELEM block[6][64], int dir[6], uint8_t *st[6], int zigzag_last_index[6])
+static inline void restore_ac_coeffs(MpegEncContext * s, DCTELEM block[6][64], const int dir[6], uint8_t *st[6], const int zigzag_last_index[6])
 {
     int i, n;
     memcpy(s->block_last_index, zigzag_last_index, sizeof(int)*6);
@@ -408,7 +408,7 @@ static inline void restore_ac_coeffs(MpegEncContext * s, DCTELEM block[6][64], i
  * @param[out] st scantable for each 8x8 block
  * @param[out] zigzag_last_index index refering to the last non zero coefficient in zigzag order
  */
-static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int dir[6], uint8_t *st[6], int zigzag_last_index[6])
+static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], const int dir[6], uint8_t *st[6], int zigzag_last_index[6])
 {
     int score= 0;
     int i, n;
