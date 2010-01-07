@@ -151,19 +151,18 @@ static void show_pict_info(MpegEncContext *s){
 
 #if CONFIG_ENCODERS
 
-static void aspect_to_info(MpegEncContext * s, AVRational aspect){
+static av_const int aspect_to_info(AVRational aspect){
     int i;
 
     if(aspect.num==0) aspect= (AVRational){1,1};
 
     for(i=1; i<6; i++){
         if(av_cmp_q(pixel_aspect[i], aspect) == 0){
-            s->aspect_ratio_info=i;
-            return;
+            return i;
         }
     }
 
-    s->aspect_ratio_info= FF_ASPECT_EXTENDED;
+    return FF_ASPECT_EXTENDED;
 }
 
 void ff_flv_encode_picture_header(MpegEncContext * s, int picture_number)
@@ -304,7 +303,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 
                 if (format == 7) {
             /* Custom Picture Format (CPFMT) */
-            aspect_to_info(s, s->avctx->sample_aspect_ratio);
+            s->aspect_ratio_info= aspect_to_info(s->avctx->sample_aspect_ratio);
 
             put_bits(&s->pb,4,s->aspect_ratio_info);
             put_bits(&s->pb,9,(s->width >> 2) - 1);
@@ -2308,7 +2307,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
         put_bits(&s->pb, 3, 1);         /* is obj layer priority */
     }
 
-    aspect_to_info(s, s->avctx->sample_aspect_ratio);
+    s->aspect_ratio_info= aspect_to_info(s->avctx->sample_aspect_ratio);
 
     put_bits(&s->pb, 4, s->aspect_ratio_info);/* aspect ratio info */
     if (s->aspect_ratio_info == FF_ASPECT_EXTENDED){
