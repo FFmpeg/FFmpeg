@@ -341,6 +341,10 @@ void h263_encode_gob_header(MpegEncContext * s, int mb_line)
     }
 }
 
+/**
+ * Returns the number of bits that encoding the 8x8 block in block would need.
+ * @param[in]  block_last_index last index in scantable order that refers to a non zero element in block.
+ */
 static inline int get_block_rate(MpegEncContext * s, DCTELEM block[64], int block_last_index, uint8_t scantable[64]){
     int last=0;
     int j;
@@ -364,6 +368,9 @@ static inline int get_block_rate(MpegEncContext * s, DCTELEM block[64], int bloc
     return rate;
 }
 
+/**
+ * Returns the optimal value (0 or 1) for the ac_pred element for the given MB in mpeg4.
+ */
 static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int dir[6], uint8_t *st[6], int zigzag_last_index[6])
 {
     int score= 0;
