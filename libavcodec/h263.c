@@ -462,7 +462,12 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
         score += get_block_rate(s, block[n], s->block_last_index[n], st[n]);
     }
 
-    return score < 0;
+    if(score < 0){
+        return 1;
+    }else{
+        restore_ac_coeffs(s, block, dir, st, zigzag_last_index);
+        return 0;
+    }
 }
 
 /**
@@ -1453,8 +1458,6 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
         if(s->flags & CODEC_FLAG_AC_PRED){
             s->ac_pred= decide_ac_pred(s, block, dir, scan_table, zigzag_last_index);
-            if(!s->ac_pred)
-                restore_ac_coeffs(s, block, dir, scan_table, zigzag_last_index);
         }else{
             for(i=0; i<6; i++)
                 scan_table[i]= s->intra_scantable.permutated;
