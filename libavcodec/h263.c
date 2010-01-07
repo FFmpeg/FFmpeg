@@ -151,6 +151,11 @@ static void show_pict_info(MpegEncContext *s){
 
 #if CONFIG_ENCODERS
 
+/**
+ * Returns the 4 bit value that specifies the given aspect ratio.
+ * This may be one of the standard aspect ratios or it specifies
+ * that the aspect will be stored explicitly later.
+ */
 static av_const int aspect_to_info(AVRational aspect){
     int i;
 
