@@ -1495,8 +1495,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
                         //FIXME remove the following 2 lines they shall be replaced by the bitstream filters
                         if(ost->st->codec->codec_id != CODEC_ID_H264) {
-                        if(av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, data_buf, data_size, pkt->flags & PKT_FLAG_KEY))
-                            opkt.destruct= av_destruct_packet;
+                            if(av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, data_buf, data_size, pkt->flags & PKT_FLAG_KEY))
+                                opkt.destruct= av_destruct_packet;
                         } else {
                             opkt.data = data_buf;
                             opkt.size = data_size;
