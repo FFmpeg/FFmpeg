@@ -67,7 +67,7 @@ ff_rdt_parse_open(AVFormatContext *ic, int first_stream_of_set_idx,
     s->prev_set_id    = -1;
     s->prev_stream_id = -1;
     s->prev_timestamp = -1;
-    s->parse_packet = handler->parse_packet;
+    s->parse_packet = handler ? handler->parse_packet : NULL;
     s->dynamic_protocol_context = priv_data;
 
     return s;
