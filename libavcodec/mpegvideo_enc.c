@@ -35,6 +35,7 @@
 #include "msmpeg4.h"
 #include "faandct.h"
 #include "aandcttab.h"
+#include "flv.h"
 #include <limits.h>
 
 //#undef NDEBUG

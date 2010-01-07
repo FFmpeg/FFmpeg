@@ -41,6 +41,7 @@
 #include "mpeg4data.h"
 #include "mathops.h"
 #include "unary.h"
+#include "flv.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -168,52 +169,6 @@ static av_const int aspect_to_info(AVRational aspect){
     }
 
     return FF_ASPECT_EXTENDED;
-}
-
-void ff_flv_encode_picture_header(MpegEncContext * s, int picture_number)
-{
-      int format;
-
-      align_put_bits(&s->pb);
-
-      put_bits(&s->pb, 17, 1);
-      put_bits(&s->pb, 5, (s->h263_flv-1)); /* 0: h263 escape codes 1: 11-bit escape codes */
-      put_bits(&s->pb, 8, (((int64_t)s->picture_number * 30 * s->avctx->time_base.num) / //FIXME use timestamp
-                           s->avctx->time_base.den) & 0xff); /* TemporalReference */
-      if (s->width == 352 && s->height == 288)
-        format = 2;
-      else if (s->width == 176 && s->height == 144)
-        format = 3;
-      else if (s->width == 128 && s->height == 96)
-        format = 4;
-      else if (s->width == 320 && s->height == 240)
-        format = 5;
-      else if (s->width == 160 && s->height == 120)
-        format = 6;
-      else if (s->width <= 255 && s->height <= 255)
-        format = 0; /* use 1 byte width & height */
-      else
-        format = 1; /* use 2 bytes width & height */
-      put_bits(&s->pb, 3, format); /* PictureSize */
-      if (format == 0) {
-        put_bits(&s->pb, 8, s->width);
-        put_bits(&s->pb, 8, s->height);
-      } else if (format == 1) {
-        put_bits(&s->pb, 16, s->width);
-        put_bits(&s->pb, 16, s->height);
-      }
-      put_bits(&s->pb, 2, s->pict_type == FF_P_TYPE); /* PictureType */
-      put_bits(&s->pb, 1, 1); /* DeblockingFlag: on */
-      put_bits(&s->pb, 5, s->qscale); /* Quantizer */
-      put_bits(&s->pb, 1, 0); /* ExtraInformation */
-
-      if(s->h263_aic){
-        s->y_dc_scale_table=
-          s->c_dc_scale_table= ff_aic_dc_scale_table;
-      }else{
-        s->y_dc_scale_table=
-          s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
-      }
 }
 
 void h263_encode_picture_header(MpegEncContext * s, int picture_number)
@@ -1634,7 +1589,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
             code = get_rl_index(rl, last, run, level);
             put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
             if (code == rl->n) {
-              if(s->h263_flv <= 1){
+              if(!CONFIG_FLV_ENCODER || s->h263_flv <= 1){
                 put_bits(&s->pb, 1, last);
                 put_bits(&s->pb, 6, run);
 
@@ -1648,20 +1603,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
                     put_sbits(&s->pb, 6, slevel>>5);
                 }
               }else{
-                if(level < 64) { // 7-bit level
-                        put_bits(&s->pb, 1, 0);
-                        put_bits(&s->pb, 1, last);
-                        put_bits(&s->pb, 6, run);
-
-                        put_sbits(&s->pb, 7, slevel);
-                    } else {
-                        /* 11-bit level */
-                        put_bits(&s->pb, 1, 1);
-                        put_bits(&s->pb, 1, last);
-                        put_bits(&s->pb, 6, run);
-
-                        put_sbits(&s->pb, 11, slevel);
-                    }
+                    ff_flv2_encode_ac_esc(&s->pb, slevel, level, run, last);
               }
             } else {
                 put_bits(&s->pb, 1, sign);

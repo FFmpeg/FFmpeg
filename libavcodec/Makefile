@@ -128,7 +128,7 @@ OBJS-$(CONFIG_H263_DECODER)            += h263dec.o h263.o \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_H263_VAAPI_HWACCEL)      += vaapi_mpeg4.o
 OBJS-$(CONFIG_H263_ENCODER)            += mpegvideo_enc.o motion_est.o      \
-                                          ratecontrol.o h263.o mpeg12data.o \
+                                          ratecontrol.o h263.o flvenc.o mpeg12data.o \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_H264_DECODER)            += h264.o h264idct.o h264pred.o cabac.o \
                                           mpegvideo.o error_resilience.o

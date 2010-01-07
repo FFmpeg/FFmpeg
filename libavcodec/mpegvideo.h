@@ -814,7 +814,6 @@ void mpeg4_encode_mb(MpegEncContext *s,
                     DCTELEM block[6][64],
                     int motion_x, int motion_y);
 void h263_encode_picture_header(MpegEncContext *s, int picture_number);
-void ff_flv_encode_picture_header(MpegEncContext *s, int picture_number);
 void h263_encode_gob_header(MpegEncContext * s, int mb_line);
 int16_t *h263_pred_motion(MpegEncContext * s, int block, int dir,
                         int *px, int *py);
