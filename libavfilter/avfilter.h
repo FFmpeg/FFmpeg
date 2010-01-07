@@ -419,11 +419,11 @@ typedef struct AVFilter
     void (*uninit)(AVFilterContext *ctx);
 
     /**
-     * Queries formats supported by the filter and its pads. Should set the
+     * Queries formats supported by the filter and its pads, and sets the
      * in_formats for links connected to its output pads, and out_formats
      * for links connected to its input pads.
      *
-     * Should return zero on success.
+     * Returns zero on success.
      */
     int (*query_formats)(AVFilterContext *);
 
