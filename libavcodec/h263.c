@@ -45,6 +45,10 @@
 //#undef NDEBUG
 //#include <assert.h>
 
+// The defines below define the number of bits that are read at once for
+// reading vlc values. Changing these may improve speed and data cache needs
+// be aware though that decreasing them may need the number of stages that is
+// passed to get_vlc* to be increased.
 #define INTRA_MCBPC_VLC_BITS 6
 #define INTER_MCBPC_VLC_BITS 7
 #define CBPY_VLC_BITS 6
