@@ -97,21 +97,18 @@ static uint8_t static_rl_table_store[5][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 int h263_get_picture_format(int width, int height)
 {
-    int format;
-
     if (width == 128 && height == 96)
-        format = 1;
+        return 1;
     else if (width == 176 && height == 144)
-        format = 2;
+        return 2;
     else if (width == 352 && height == 288)
-        format = 3;
+        return 3;
     else if (width == 704 && height == 576)
-        format = 4;
+        return 4;
     else if (width == 1408 && height == 1152)
-        format = 5;
+        return 5;
     else
-        format = 7;
-    return format;
+        return 7;
 }
 
 static void show_pict_info(MpegEncContext *s){
