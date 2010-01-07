@@ -1299,8 +1299,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
     //while we have more to decode or while the decoder did output something on EOF
     while (avpkt.size > 0 || (!pkt && ist->next_pts != ist->pts)) {
-        uint8_t *data_buf;
-        int data_size;
+        uint8_t *data_buf, *decoded_data_buf;
+        int data_size, decoded_data_size;
     handle_eof:
         ist->pts= ist->next_pts;
 
@@ -1309,8 +1309,10 @@ static int output_packet(AVInputStream *ist, int ist_index,
             fprintf(stderr, "Multiple frames in a packet from stream %d\n", pkt->stream_index);
 
         /* decode the packet if needed */
-        data_buf = NULL; /* fail safe */
-        data_size = 0;
+        decoded_data_buf = NULL; /* fail safe */
+        decoded_data_size= 0;
+        data_buf  = avpkt.data;
+        data_size = avpkt.size;
         subtitle_to_free = NULL;
         if (ist->decoding_needed) {
             switch(ist->st->codec->codec_type) {
@@ -1320,27 +1322,28 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     av_free(samples);
                     samples= av_malloc(samples_size);
                 }
-                data_size= samples_size;
+                decoded_data_size= samples_size;
                     /* XXX: could avoid copy if PCM 16 bits with same
                        endianness as CPU */
-                ret = avcodec_decode_audio3(ist->st->codec, samples, &data_size,
+                ret = avcodec_decode_audio3(ist->st->codec, samples, &decoded_data_size,
                                             &avpkt);
                 if (ret < 0)
                     goto fail_decode;
                 avpkt.data += ret;
                 avpkt.size -= ret;
+                data_size   = ret;
                 /* Some bug in mpeg audio decoder gives */
-                /* data_size < 0, it seems they are overflows */
-                if (data_size <= 0) {
+                /* decoded_data_size < 0, it seems they are overflows */
+                if (decoded_data_size <= 0) {
                     /* no audio frame */
                     continue;
                 }
-                data_buf = (uint8_t *)samples;
-                ist->next_pts += ((int64_t)AV_TIME_BASE/bps * data_size) /
+                decoded_data_buf = (uint8_t *)samples;
+                ist->next_pts += ((int64_t)AV_TIME_BASE/bps * decoded_data_size) /
                     (ist->st->codec->sample_rate * ist->st->codec->channels);
                 break;}
             case CODEC_TYPE_VIDEO:
-                    data_size = (ist->st->codec->width * ist->st->codec->height * 3) / 2;
+                    decoded_data_size = (ist->st->codec->width * ist->st->codec->height * 3) / 2;
                     /* XXX: allocate picture correctly */
                     avcodec_get_frame_defaults(&picture);
 
@@ -1390,8 +1393,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 }
                 break;
             }
-            data_buf = avpkt.data;
-            data_size = avpkt.size;
             ret = avpkt.size;
             avpkt.size = 0;
         }
@@ -1407,7 +1408,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
             if (audio_volume != 256) {
                 short *volp;
                 volp = samples;
-                for(i=0;i<(data_size / sizeof(short));i++) {
+                for(i=0;i<(decoded_data_size / sizeof(short));i++) {
                     int v = ((*volp) * audio_volume + 128) >> 8;
                     if (v < -32768) v = -32768;
                     if (v >  32767) v = 32767;
@@ -1438,9 +1439,10 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     //ost->sync_ipts = (double)(ist->pts + input_files_ts_offset[ist->file_index] - start_time)/ AV_TIME_BASE;
 
                     if (ost->encoding_needed) {
+                        assert(ist->decoding_needed);
                         switch(ost->st->codec->codec_type) {
                         case CODEC_TYPE_AUDIO:
-                            do_audio_out(os, ost, ist, data_buf, data_size);
+                            do_audio_out(os, ost, ist, decoded_data_buf, decoded_data_size);
                             break;
                         case CODEC_TYPE_VIDEO:
                             do_video_out(os, ost, ist, &picture, &frame_size);
