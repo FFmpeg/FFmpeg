@@ -92,7 +92,8 @@ static void get_word(char *buf, int buf_size, const char **pp)
 }
 
 /* parse the rtpmap description: <codec_name>/<clock_rate>[/<other params>] */
-static int sdp_parse_rtpmap(AVCodecContext *codec, RTSPStream *rtsp_st,
+static int sdp_parse_rtpmap(AVFormatContext *s,
+                            AVCodecContext *codec, RTSPStream *rtsp_st,
                             int payload_type, const char *p)
 {
     char buf[256];
@@ -134,7 +135,7 @@ static int sdp_parse_rtpmap(AVCodecContext *codec, RTSPStream *rtsp_st,
         i = atoi(buf);
         switch (codec->codec_type) {
         case CODEC_TYPE_AUDIO:
-            av_log(codec, AV_LOG_DEBUG, "audio codec set to: %s\n", c_name);
+            av_log(s, AV_LOG_DEBUG, "audio codec set to: %s\n", c_name);
             codec->sample_rate = RTSP_DEFAULT_AUDIO_SAMPLERATE;
             codec->channels = RTSP_DEFAULT_NB_AUDIO_CHANNELS;
             if (i > 0) {
@@ -148,13 +149,13 @@ static int sdp_parse_rtpmap(AVCodecContext *codec, RTSPStream *rtsp_st,
                 // the frequency.  No problem, but the sample rate is being
                 // set here by the sdp line. Patch on its way. (rdm)
             }
-            av_log(codec, AV_LOG_DEBUG, "audio samplerate set to: %i\n",
+            av_log(s, AV_LOG_DEBUG, "audio samplerate set to: %i\n",
                    codec->sample_rate);
-            av_log(codec, AV_LOG_DEBUG, "audio channels set to: %i\n",
+            av_log(s, AV_LOG_DEBUG, "audio channels set to: %i\n",
                    codec->channels);
             break;
         case CODEC_TYPE_VIDEO:
-            av_log(codec, AV_LOG_DEBUG, "video codec set to: %s\n", c_name);
+            av_log(s, AV_LOG_DEBUG, "video codec set to: %s\n", c_name);
             break;
         default:
             break;
@@ -461,7 +462,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             payload_type = atoi(buf1);
             st = s->streams[s->nb_streams - 1];
             rtsp_st = st->priv_data;
-            sdp_parse_rtpmap(st->codec, rtsp_st, payload_type, p);
+            sdp_parse_rtpmap(s, st->codec, rtsp_st, payload_type, p);
         } else if (av_strstart(p, "fmtp:", &p)) {
             /* NOTE: fmtp is only supported AFTER the 'a=rtpmap:xxx' tag */
             get_word(buf1, sizeof(buf1), &p);
