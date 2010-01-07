@@ -157,6 +157,12 @@ const char *swscale_license(void)
         || (x)==PIX_FMT_YUV422P16BE   \
         || (x)==PIX_FMT_YUV444P16BE   \
     )
+
+int sws_isSupportedInput(enum PixelFormat pix_fmt)
+{
+    return isSupportedIn(pix_fmt);
+}
+
 #define isSupportedOut(x)   (       \
            (x)==PIX_FMT_YUV420P     \
         || (x)==PIX_FMT_YUVA420P    \
@@ -181,6 +187,12 @@ const char *swscale_license(void)
         || (x)==PIX_FMT_YUV422P16BE   \
         || (x)==PIX_FMT_YUV444P16BE   \
     )
+
+int sws_isSupportedOutput(enum PixelFormat pix_fmt)
+{
+    return isSupportedOut(pix_fmt);
+}
+
 #define isPacked(x)         (       \
            (x)==PIX_FMT_PAL8        \
         || (x)==PIX_FMT_YUYV422     \
