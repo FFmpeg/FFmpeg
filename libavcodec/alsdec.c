@@ -712,6 +712,8 @@ static int decode_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
     int32_t *quant_cof        = bd->quant_cof;
     int32_t *lpc_cof          = bd->lpc_cof;
     int32_t *raw_samples      = bd->raw_samples;
+    int32_t *raw_samples_end  = bd->raw_samples + bd->block_length;
+    int32_t lpc_cof_reversed[opt_order];
 
     // reverse long-term prediction
     if (*bd->use_ltp) {
@@ -739,9 +741,9 @@ static int decode_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
             y = 1 << 19;
 
             for (sb = 0; sb < smp; sb++)
-                y += MUL64(lpc_cof[sb], *(raw_samples + smp - (sb + 1)));
+                y += MUL64(lpc_cof[sb], raw_samples[-(sb + 1)]);
 
-            raw_samples[smp] -= y >> 20;
+            *raw_samples++ -= y >> 20;
             parcor_to_lpc(smp, quant_cof, lpc_cof);
         }
     } else {
@@ -775,15 +777,26 @@ static int decode_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
                 raw_samples[sb] >>= bd->shift_lsbs;
     }
 
+    // reverse linear prediction coefficients for efficiency
+    lpc_cof = lpc_cof + opt_order;
+
+    for (sb = 0; sb < opt_order; sb++)
+        lpc_cof_reversed[sb] = lpc_cof[-(sb + 1)];
+
     // reconstruct raw samples
-    for (; smp < bd->block_length; smp++) {
+    raw_samples = bd->raw_samples + smp;
+    lpc_cof     = lpc_cof_reversed + opt_order;
+
+    for (; raw_samples < raw_samples_end; raw_samples++) {
         y = 1 << 19;
 
-        for (sb = 0; sb < opt_order; sb++)
-            y += MUL64(bd->lpc_cof[sb], *(raw_samples + smp - (sb + 1)));
+        for (sb = -opt_order; sb < 0; sb++)
+            y += MUL64(lpc_cof[sb], raw_samples[sb]);
 
-        raw_samples[smp] -= y >> 20;
+        *raw_samples -= y >> 20;
     }
+
+    raw_samples = bd->raw_samples;
 
     // restore previous samples in case that they have been altered
     if (bd->store_prev_samples)
