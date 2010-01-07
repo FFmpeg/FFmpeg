@@ -36,6 +36,7 @@
 #include "faandct.h"
 #include "aandcttab.h"
 #include "flv.h"
+#include "mpeg4video.h"
 #include <limits.h>
 
 //#undef NDEBUG
@@ -3779,19 +3780,6 @@ AVCodec h263p_encoder = {
     MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
-};
-
-AVCodec mpeg4_encoder = {
-    "mpeg4",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_MPEG4,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .capabilities= CODEC_CAP_DELAY,
-    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
 };
 
 AVCodec msmpeg4v1_encoder = {

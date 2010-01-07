@@ -31,43 +31,6 @@
 #include <stdint.h>
 #include "mpegvideo.h"
 
-// shapes
-#define RECT_SHAPE       0
-#define BIN_SHAPE        1
-#define BIN_ONLY_SHAPE   2
-#define GRAY_SHAPE       3
-
-#define SIMPLE_VO_TYPE             1
-#define CORE_VO_TYPE               3
-#define MAIN_VO_TYPE               4
-#define NBIT_VO_TYPE               5
-#define ARTS_VO_TYPE               10
-#define ACE_VO_TYPE                12
-#define ADV_SIMPLE_VO_TYPE         17
-
-// aspect_ratio_info
-#define EXTENDED_PAR 15
-
-//vol_sprite_usage / sprite_enable
-#define STATIC_SPRITE 1
-#define GMC_SPRITE 2
-
-#define MOTION_MARKER 0x1F001
-#define DC_MARKER     0x6B001
-
-static const int mb_type_b_map[4]= {
-    MB_TYPE_DIRECT2 | MB_TYPE_L0L1,
-    MB_TYPE_L0L1 | MB_TYPE_16x16,
-    MB_TYPE_L1 | MB_TYPE_16x16,
-    MB_TYPE_L0 | MB_TYPE_16x16,
-};
-
-#define VOS_STARTCODE        0x1B0
-#define USER_DATA_STARTCODE  0x1B2
-#define GOP_STARTCODE        0x1B3
-#define VISUAL_OBJ_STARTCODE 0x1B5
-#define VOP_STARTCODE        0x1B6
-
 /* dc encoding for mpeg4 */
 const uint8_t DCtab_lum[13][2] =
 {
@@ -143,7 +106,7 @@ const int8_t intra_run[102] = {
  15, 16, 17, 18, 19, 20,
 };
 
-static RLTable rl_intra = {
+RLTable rl_intra = {
     102,
     67,
     intra_vlc,
@@ -152,7 +115,7 @@ static RLTable rl_intra = {
 };
 
 /* Note this is identical to the intra rvlc except that it is reordered. */
-static const uint16_t inter_rvlc[170][2]={
+const uint16_t inter_rvlc[170][2]={
 {0x0006,  3},{0x0001,  4},{0x0004,  5},{0x001C,  7},
 {0x003C,  8},{0x003D,  8},{0x007C,  9},{0x00FC, 10},
 {0x00FD, 10},{0x01FC, 11},{0x01FD, 11},{0x03FC, 12},
@@ -198,7 +161,7 @@ static const uint16_t inter_rvlc[170][2]={
 {0x3F7C, 15},{0x3F7D, 15},{0x0000, 4}
 };
 
-static const int8_t inter_rvlc_run[169]={
+const int8_t inter_rvlc_run[169]={
  0,  0,  0,  0,  0,  0,  0,  0,
  0,  0,  0,  0,  0,  0,  0,  0,
  0,  0,  0,  1,  1,  1,  1,  1,
@@ -223,7 +186,7 @@ static const int8_t inter_rvlc_run[169]={
 43, 44,
 };
 
-static const int8_t inter_rvlc_level[169]={
+const int8_t inter_rvlc_level[169]={
  1,  2,  3,  4,  5,  6,  7,  8,
  9, 10, 11, 12, 13, 14, 15, 16,
 17, 18, 19,  1,  2,  3,  4,  5,
@@ -248,7 +211,7 @@ static const int8_t inter_rvlc_level[169]={
  1,  1,
 };
 
-static RLTable rvlc_rl_inter = {
+RLTable rvlc_rl_inter = {
     169,
     103,
     inter_rvlc,
@@ -256,7 +219,7 @@ static RLTable rvlc_rl_inter = {
     inter_rvlc_level,
 };
 
-static const uint16_t intra_rvlc[170][2]={
+const uint16_t intra_rvlc[170][2]={
 {0x0006,  3},{0x0007,  3},{0x000A,  4},{0x0009,  5},
 {0x0014,  6},{0x0015,  6},{0x0034,  7},{0x0074,  8},
 {0x0075,  8},{0x00DD,  9},{0x00EC,  9},{0x01EC, 10},
@@ -302,7 +265,7 @@ static const uint16_t intra_rvlc[170][2]={
 {0x3F7C, 15},{0x3F7D, 15},{0x0000,  4}
 };
 
-static const int8_t intra_rvlc_run[169]={
+const int8_t intra_rvlc_run[169]={
  0,  0,  0,  0,  0,  0,  0,  0,
  0,  0,  0,  0,  0,  0,  0,  0,
  0,  0,  0,  0,  0,  0,  0,  0,
@@ -327,7 +290,7 @@ static const int8_t intra_rvlc_run[169]={
 43, 44,
 };
 
-static const int8_t intra_rvlc_level[169]={
+const int8_t intra_rvlc_level[169]={
  1,  2,  3,  4,  5,  6,  7,  8,
  9, 10, 11, 12, 13, 14, 15, 16,
 17, 18, 19, 20, 21, 22, 23, 24,
@@ -352,7 +315,7 @@ static const int8_t intra_rvlc_level[169]={
  1,  1,
 };
 
-static RLTable rvlc_rl_intra = {
+RLTable rvlc_rl_intra = {
     169,
     103,
     intra_rvlc,
@@ -360,33 +323,14 @@ static RLTable rvlc_rl_intra = {
     intra_rvlc_level,
 };
 
-static const uint16_t sprite_trajectory_tab[15][2] = {
+const uint16_t sprite_trajectory_tab[15][2] = {
  {0x00, 2}, {0x02, 3},  {0x03, 3},  {0x04, 3}, {0x05, 3}, {0x06, 3},
  {0x0E, 4}, {0x1E, 5},  {0x3E, 6},  {0x7E, 7}, {0xFE, 8},
  {0x1FE, 9},{0x3FE, 10},{0x7FE, 11},{0xFFE, 12},
 };
 
-static const uint8_t mb_type_b_tab[4][2] = {
+const uint8_t mb_type_b_tab[4][2] = {
  {1, 1}, {1, 2}, {1, 3}, {1, 4},
-};
-
-static const AVRational pixel_aspect[16]={
- {0, 1},
- {1, 1},
- {12, 11},
- {10, 11},
- {16, 11},
- {40, 33},
- {0, 1},
- {0, 1},
- {0, 1},
- {0, 1},
- {0, 1},
- {0, 1},
- {0, 1},
- {0, 1},
- {0, 1},
- {0, 1},
 };
 
 /* these matrixes will be permuted for the idct */
@@ -425,7 +369,7 @@ const uint16_t ff_mpeg4_resync_prefix[8]={
     0x7F00, 0x7E00, 0x7C00, 0x7800, 0x7000, 0x6000, 0x4000, 0x0000
 };
 
-static const uint8_t mpeg4_dc_threshold[8]={
+const uint8_t mpeg4_dc_threshold[8]={
     99, 13, 15, 17, 19, 21, 23, 0
 };
 

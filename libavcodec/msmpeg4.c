@@ -32,6 +32,8 @@
 #include "mpegvideo.h"
 #include "msmpeg4.h"
 #include "libavutil/x86_cpu.h"
+#include "h263.h"
+#include "mpeg4video.h"
 
 /*
  * You can also call this codec : MPEG4 with a twist !
@@ -43,7 +45,6 @@
 //#define DEBUG
 
 #define DC_VLC_BITS 9
-#define CBPY_VLC_BITS 6
 #define V1_INTRA_CBPC_VLC_BITS 6
 #define V1_INTER_CBPC_VLC_BITS 6
 #define V2_INTRA_CBPC_VLC_BITS 3
@@ -1059,7 +1060,6 @@ else
 VLC ff_mb_non_intra_vlc[4];
 static VLC v2_dc_lum_vlc;
 static VLC v2_dc_chroma_vlc;
-static VLC cbpy_vlc;
 static VLC v2_intra_cbpc_vlc;
 static VLC v2_mb_type_vlc;
 static VLC v2_mv_vlc;
