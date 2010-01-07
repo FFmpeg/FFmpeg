@@ -423,7 +423,8 @@ typedef struct AVFilter
      * in_formats for links connected to its output pads, and out_formats
      * for links connected to its input pads.
      *
-     * Returns zero on success.
+     * @return zero on success, a negative value corresponding to an
+     * AVERROR code otherwise
      */
     int (*query_formats)(AVFilterContext *);
 
