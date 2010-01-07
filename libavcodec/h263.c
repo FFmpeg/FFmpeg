@@ -134,6 +134,7 @@ int h263_get_picture_format(int width, int height)
 }
 
 void ff_h263_show_pict_info(MpegEncContext *s){
+    if(s->avctx->debug&FF_DEBUG_PICT_INFO){
     av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s%s%s%s %d/%d\n",
          s->qscale, av_get_pict_type_char(s->pict_type),
          s->gb.size_in_bits, 1-s->no_rounding,
@@ -148,6 +149,7 @@ void ff_h263_show_pict_info(MpegEncContext *s){
          s->h263_slice_structured ? " SS" : "",
          s->avctx->time_base.den, s->avctx->time_base.num
     );
+    }
 }
 
 #if CONFIG_ENCODERS
@@ -5358,9 +5360,7 @@ int h263_decode_picture_header(MpegEncContext *s)
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
 
-     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
         ff_h263_show_pict_info(s);
-     }
     if (s->pict_type == FF_I_TYPE && s->codec_tag == AV_RL32("ZYGO")){
         int i,j;
         for(i=0; i<85; i++) av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&s->gb));
