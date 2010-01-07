@@ -303,7 +303,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     ttl = 0;
     if (n_files == 1) {
         port = sdp_get_address(dst, sizeof(dst), &ttl, ac[0]->filename);
-        if (port > 0) {
+        if (dst[0]) {
             s.dst_addr = dst;
             s.ttl = ttl;
         }
