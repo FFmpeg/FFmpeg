@@ -840,8 +840,6 @@ void ff_clean_h263_qscales(MpegEncContext *s);
 int ff_h263_resync(MpegEncContext *s);
 const uint8_t *ff_h263_find_resync_marker(const uint8_t *p, const uint8_t *end);
 int ff_h263_get_gob_height(MpegEncContext *s);
-void ff_mpeg4_init_direct_mv(MpegEncContext *s);
-int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
 void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code);
 void ff_init_qscale_tab(MpegEncContext *s);
 

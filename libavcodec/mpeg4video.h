@@ -104,6 +104,13 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s);
 int ff_mpeg4_decode_partitions(MpegEncContext *s);
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
 int mpeg4_decode_video_packet_header(MpegEncContext *s);
+void ff_mpeg4_init_direct_mv(MpegEncContext *s);
+
+/**
+ *
+ * @return the mb_type
+ */
+int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
 
 extern uint8_t ff_mpeg4_static_rl_table_store[3][2][2*MAX_RUN + MAX_LEVEL + 3];
 
