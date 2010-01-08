@@ -53,7 +53,7 @@ static void fft_ref_init(int nbits, int inverse)
     n = 1 << nbits;
     exptab = av_malloc((n / 2) * sizeof(FFTComplex));
 
-    for(i=0;i<(n/2);i++) {
+    for (i = 0; i < (n/2); i++) {
         alpha = 2 * M_PI * (float)i / (float)n;
         c1 = cos(alpha);
         s1 = sin(alpha);
@@ -72,11 +72,11 @@ static void fft_ref(FFTComplex *tabr, FFTComplex *tab, int nbits)
 
     n = 1 << nbits;
     n2 = n >> 1;
-    for(i=0;i<n;i++) {
+    for (i = 0; i < n; i++) {
         tmp_re = 0;
         tmp_im = 0;
         q = tab;
-        for(j=0;j<n;j++) {
+        for (j = 0; j < n; j++) {
             k = (i * j) & (n - 1);
             if (k >= n2) {
                 c = -exptab[k - n2].re;
@@ -99,9 +99,9 @@ static void imdct_ref(float *out, float *in, int nbits)
     int k, i, a;
     double sum, f;
 
-    for(i=0;i<n;i++) {
+    for (i = 0; i < n; i++) {
         sum = 0;
-        for(k=0;k<n/2;k++) {
+        for (k = 0; k < n/2; k++) {
             a = (2 * i + 1 + (n / 2)) * (2 * k + 1);
             f = cos(M_PI * a / (double)(2 * n));
             sum += f * in[k];
@@ -118,9 +118,9 @@ static void mdct_ref(float *output, float *input, int nbits)
     double a, s;
 
     /* do it by hand */
-    for(k=0;k<n/2;k++) {
+    for (k = 0; k < n/2; k++) {
         s = 0;
-        for(i=0;i<n;i++) {
+        for (i = 0; i < n; i++) {
             a = (2*M_PI*(2*i+1+n/2)*(2*k+1) / (4 * n));
             s += input[i] * cos(a);
         }
@@ -147,7 +147,7 @@ static void check_diff(float *tab1, float *tab2, int n, double scale)
     double max= 0;
     double error= 0;
 
-    for(i=0;i<n;i++) {
+    for (i = 0; i < n; i++) {
         double e= fabsf(tab1[i] - (tab2[i] / scale));
         if (e >= 1e-3) {
             av_log(NULL, AV_LOG_ERROR, "ERROR %d: %f %f\n",
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 
     /* generate random data */
 
-    for(i=0;i<fft_size;i++) {
+    for (i = 0; i < fft_size; i++) {
         tab1[i].re = frandom(&prng);
         tab1[i].im = frandom(&prng);
     }
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
         nb_its = 1;
         for(;;) {
             time_start = gettime();
-            for(it=0;it<nb_its;it++) {
+            for (it = 0; it < nb_its; it++) {
                 if (do_mdct) {
                     if (do_inverse) {
                         ff_imdct_calc(m, (float *)tab, (float *)tab1);
