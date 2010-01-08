@@ -54,7 +54,7 @@ int inet_aton (const char * str, struct in_addr * add)
 
     if (!add1 || (add1|add2|add3|add4) > 255) return 0;
 
-    add->s_addr=(add4<<24)+(add3<<16)+(add2<<8)+add1;
+    add->s_addr = htonl((add1 << 24) + (add2 << 16) + (add3 << 8) + add4);
 
     return 1;
 }
