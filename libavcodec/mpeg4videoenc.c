@@ -242,6 +242,7 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
 static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
 {
 #if 1
+    /* DC will overflow if level is outside the [-255,255] range. */
     level+=256;
     if (n < 4) {
         /* luminance */
