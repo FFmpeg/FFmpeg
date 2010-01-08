@@ -116,7 +116,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 
     if (CONFIG_MSMPEG4_DECODER && s->h263_msmpeg4)
         ff_msmpeg4_decode_init(s);
-    else
+
         h263_decode_init_vlc(s);
 
     return 0;

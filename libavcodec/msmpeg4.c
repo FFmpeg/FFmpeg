@@ -45,8 +45,6 @@
 //#define DEBUG
 
 #define DC_VLC_BITS 9
-#define V1_INTRA_CBPC_VLC_BITS 6
-#define V1_INTER_CBPC_VLC_BITS 6
 #define V2_INTRA_CBPC_VLC_BITS 3
 #define V2_MB_TYPE_VLC_BITS 7
 #define MV_VLC_BITS 9
@@ -1063,8 +1061,6 @@ static VLC v2_dc_chroma_vlc;
 static VLC v2_intra_cbpc_vlc;
 static VLC v2_mb_type_vlc;
 static VLC v2_mv_vlc;
-static VLC v1_intra_cbpc_vlc;
-static VLC v1_inter_cbpc_vlc;
 VLC ff_inter_intra_vlc;
 
 /* This is identical to h263 except that its range is multiplied by 2. */
@@ -1122,7 +1118,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         if(s->msmpeg4_version==2)
             code = get_vlc2(&s->gb, v2_mb_type_vlc.table, V2_MB_TYPE_VLC_BITS, 1);
         else
-            code = get_vlc2(&s->gb, v1_inter_cbpc_vlc.table, V1_INTER_CBPC_VLC_BITS, 3);
+            code = get_vlc2(&s->gb, ff_h263_inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
         if(code<0 || code>7){
             av_log(s->avctx, AV_LOG_ERROR, "cbpc %d invalid at %d %d\n", code, s->mb_x, s->mb_y);
             return -1;
@@ -1136,7 +1132,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         if(s->msmpeg4_version==2)
             cbp= get_vlc2(&s->gb, v2_intra_cbpc_vlc.table, V2_INTRA_CBPC_VLC_BITS, 1);
         else
-            cbp= get_vlc2(&s->gb, v1_intra_cbpc_vlc.table, V1_INTRA_CBPC_VLC_BITS, 1);
+            cbp= get_vlc2(&s->gb, ff_h263_intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 1);
         if(cbp<0 || cbp>3){
             av_log(s->avctx, AV_LOG_ERROR, "cbpc %d invalid at %d %d\n", cbp, s->mb_x, s->mb_y);
             return -1;
@@ -1326,9 +1322,6 @@ av_cold int ff_msmpeg4_decode_init(MpegEncContext *s)
                  &v2_dc_chroma_table[0][1], 8, 4,
                  &v2_dc_chroma_table[0][0], 8, 4, 1506);
 
-        INIT_VLC_STATIC(&ff_h263_cbpy_vlc, CBPY_VLC_BITS, 16,
-                 &ff_h263_cbpy_tab[0][1], 2, 1,
-                 &ff_h263_cbpy_tab[0][0], 2, 1, 64);
         INIT_VLC_STATIC(&v2_intra_cbpc_vlc, V2_INTRA_CBPC_VLC_BITS, 4,
                  &v2_intra_cbpc[0][1], 2, 1,
                  &v2_intra_cbpc[0][0], 2, 1, 8);
@@ -1355,13 +1348,6 @@ av_cold int ff_msmpeg4_decode_init(MpegEncContext *s)
         INIT_VLC_STATIC(&ff_msmp4_mb_i_vlc, MB_INTRA_VLC_BITS, 64,
                  &ff_msmp4_mb_i_table[0][1], 4, 2,
                  &ff_msmp4_mb_i_table[0][0], 4, 2, 536);
-
-        INIT_VLC_STATIC(&v1_intra_cbpc_vlc, V1_INTRA_CBPC_VLC_BITS, 8,
-                 ff_h263_intra_MCBPC_bits, 1, 1,
-                 ff_h263_intra_MCBPC_code, 1, 1, 64);
-        INIT_VLC_STATIC(&v1_inter_cbpc_vlc, V1_INTER_CBPC_VLC_BITS, 25,
-                 ff_h263_inter_MCBPC_bits, 1, 1,
-                 ff_h263_inter_MCBPC_code, 1, 1, 104);
 
         INIT_VLC_STATIC(&ff_inter_intra_vlc, INTER_INTRA_VLC_BITS, 4,
                  &table_inter_intra[0][1], 2, 1,
