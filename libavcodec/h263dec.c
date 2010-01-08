@@ -172,7 +172,7 @@ static int decode_slice(MpegEncContext *s){
     if(s->partitioned_frame){
         const int qscale= s->qscale;
 
-        if(s->codec_id==CODEC_ID_MPEG4){
+        if(CONFIG_MPEG4_DECODER && s->codec_id==CODEC_ID_MPEG4){
             if(ff_mpeg4_decode_partitions(s) < 0)
                 return -1;
         }
