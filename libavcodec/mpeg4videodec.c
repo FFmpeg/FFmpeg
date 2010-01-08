@@ -872,8 +872,8 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
           rl = &rvlc_rl_intra;
           rl_vlc = rvlc_rl_intra.rl_vlc[0];
       }else{
-          rl = &rl_intra;
-          rl_vlc = rl_intra.rl_vlc[0];
+          rl = &ff_mpeg4_rl_intra;
+          rl_vlc = ff_mpeg4_rl_intra.rl_vlc[0];
       }
       if (s->ac_pred) {
           if (dc_pred_dir == 0)
@@ -2200,10 +2200,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!done) {
         done = 1;
 
-        init_rl(&rl_intra, ff_mpeg4_static_rl_table_store[0]);
+        init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
         init_rl(&rvlc_rl_inter, ff_mpeg4_static_rl_table_store[1]);
         init_rl(&rvlc_rl_intra, ff_mpeg4_static_rl_table_store[2]);
-        INIT_VLC_RL(rl_intra, 554);
+        INIT_VLC_RL(ff_mpeg4_rl_intra, 554);
         INIT_VLC_RL(rvlc_rl_inter, 1072);
         INIT_VLC_RL(rvlc_rl_intra, 1072);
         INIT_VLC_STATIC(&dc_lum, DC_VLC_BITS, 10 /* 13 */,

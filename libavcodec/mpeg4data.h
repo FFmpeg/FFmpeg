@@ -44,7 +44,7 @@ const uint8_t ff_mpeg4_DCtab_chrom[13][2] =
     {1,9}, {1,10}, {1,11}, {1,12},
 };
 
-const uint16_t intra_vlc[103][2] = {
+const uint16_t ff_mpeg4_intra_vlc[103][2] = {
 { 0x2, 2 },
 { 0x6, 3 },{ 0xf, 4 },{ 0xd, 5 },{ 0xc, 5 },
 { 0x15, 6 },{ 0x13, 6 },{ 0x12, 6 },{ 0x17, 7 },
@@ -74,7 +74,7 @@ const uint16_t intra_vlc[103][2] = {
 { 0x5f, 12 },{ 0x3, 7 },
 };
 
-const int8_t intra_level[102] = {
+const int8_t ff_mpeg4_intra_level[102] = {
   1,  2,  3,  4,  5,  6,  7,  8,
   9, 10, 11, 12, 13, 14, 15, 16,
  17, 18, 19, 20, 21, 22, 23, 24,
@@ -90,7 +90,7 @@ const int8_t intra_level[102] = {
   1,  1,  1,  1,  1,  1,
 };
 
-const int8_t intra_run[102] = {
+const int8_t ff_mpeg4_intra_run[102] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
@@ -106,12 +106,12 @@ const int8_t intra_run[102] = {
  15, 16, 17, 18, 19, 20,
 };
 
-RLTable rl_intra = {
+RLTable ff_mpeg4_rl_intra = {
     102,
     67,
-    intra_vlc,
-    intra_run,
-    intra_level,
+    ff_mpeg4_intra_vlc,
+    ff_mpeg4_intra_run,
+    ff_mpeg4_intra_level,
 };
 
 /* Note this is identical to the intra rvlc except that it is reordered. */

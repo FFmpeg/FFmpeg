@@ -596,9 +596,9 @@ extern const uint16_t inter_vlc[103][2];
 extern const int8_t inter_level[102];
 extern const int8_t inter_run[102];
 
-extern const uint16_t intra_vlc[103][2];
-extern const int8_t intra_level[102];
-extern const int8_t intra_run[102];
+extern const uint16_t ff_mpeg4_intra_vlc[103][2];
+extern const int8_t ff_mpeg4_intra_level[102];
+extern const int8_t ff_mpeg4_intra_run[102];
 
 RLTable rl_table[NB_RL_TABLES] = {
     /* intra luminance tables */
@@ -622,9 +622,9 @@ RLTable rl_table[NB_RL_TABLES] = {
     {
         102,
         67,
-        intra_vlc,
-        intra_run,
-        intra_level,
+        ff_mpeg4_intra_vlc,
+        ff_mpeg4_intra_run,
+        ff_mpeg4_intra_level,
     },
     /* intra chrominance / non intra tables */
     /* low motion inter */

@@ -309,7 +309,7 @@ static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n
         mpeg4_encode_dc(dc_pb, intra_dc, n);
         if(last_index<1) return;
         i = 1;
-        rl = &rl_intra;
+        rl = &ff_mpeg4_rl_intra;
         bits_tab= uni_mpeg4_intra_rl_bits;
         len_tab = uni_mpeg4_intra_rl_len;
     } else {
@@ -1252,9 +1252,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
         init_uni_dc_tab();
 
-        init_rl(&rl_intra, ff_mpeg4_static_rl_table_store[0]);
+        init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
 
-        init_uni_mpeg4_rl_tab(&rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
+        init_uni_mpeg4_rl_tab(&ff_mpeg4_rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
         init_uni_mpeg4_rl_tab(&rl_inter, uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
     }
 
