@@ -54,8 +54,8 @@
 #define VOP_STARTCODE        0x1B6
 
 /* dc encoding for mpeg4 */
-extern const uint8_t DCtab_lum[13][2];
-extern const uint8_t DCtab_chrom[13][2];
+extern const uint8_t ff_mpeg4_DCtab_lum[13][2];
+extern const uint8_t ff_mpeg4_DCtab_chrom[13][2];
 
 extern const uint16_t intra_vlc[103][2];
 extern const int8_t intra_level[102];

@@ -32,13 +32,13 @@
 #include "mpegvideo.h"
 
 /* dc encoding for mpeg4 */
-const uint8_t DCtab_lum[13][2] =
+const uint8_t ff_mpeg4_DCtab_lum[13][2] =
 {
     {3,3}, {3,2}, {2,2}, {2,3}, {1,3}, {1,4}, {1,5}, {1,6}, {1,7},
     {1,8}, {1,9}, {1,10}, {1,11},
 };
 
-const uint8_t DCtab_chrom[13][2] =
+const uint8_t ff_mpeg4_DCtab_chrom[13][2] =
 {
     {3,2}, {2,2}, {1,2}, {1,3}, {1,4}, {1,5}, {1,6}, {1,7}, {1,8},
     {1,9}, {1,10}, {1,11}, {1,12},

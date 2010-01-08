@@ -263,10 +263,10 @@ static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
 
     if (n < 4) {
         /* luminance */
-        put_bits(&s->pb, DCtab_lum[size][1], DCtab_lum[size][0]);
+        put_bits(&s->pb, ff_mpeg4_DCtab_lum[size][1], ff_mpeg4_DCtab_lum[size][0]);
     } else {
         /* chrominance */
-        put_bits(&s->pb, DCtab_chrom[size][1], DCtab_chrom[size][0]);
+        put_bits(&s->pb, ff_mpeg4_DCtab_chrom[size][1], ff_mpeg4_DCtab_chrom[size][0]);
     }
 
     /* encode remaining bits */
@@ -1125,8 +1125,8 @@ static void init_uni_dc_tab(void)
             l= level;
 
         /* luminance */
-        uni_code= DCtab_lum[size][0];
-        uni_len = DCtab_lum[size][1];
+        uni_code= ff_mpeg4_DCtab_lum[size][0];
+        uni_len = ff_mpeg4_DCtab_lum[size][1];
 
         if (size > 0) {
             uni_code<<=size; uni_code|=l;
@@ -1140,8 +1140,8 @@ static void init_uni_dc_tab(void)
         uni_DCtab_lum_len [level+256]= uni_len;
 
         /* chrominance */
-        uni_code= DCtab_chrom[size][0];
-        uni_len = DCtab_chrom[size][1];
+        uni_code= ff_mpeg4_DCtab_chrom[size][0];
+        uni_len = ff_mpeg4_DCtab_chrom[size][1];
 
         if (size > 0) {
             uni_code<<=size; uni_code|=l;

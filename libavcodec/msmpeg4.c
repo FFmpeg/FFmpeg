@@ -98,8 +98,8 @@ static av_cold void init_h263_dc_for_msmpeg4(void)
                 l= level;
 
             /* luminance h263 */
-            uni_code= DCtab_lum[size][0];
-            uni_len = DCtab_lum[size][1];
+            uni_code= ff_mpeg4_DCtab_lum[size][0];
+            uni_len = ff_mpeg4_DCtab_lum[size][1];
             uni_code ^= (1<<uni_len)-1; //M$ does not like compatibility
 
             if (size > 0) {
@@ -114,8 +114,8 @@ static av_cold void init_h263_dc_for_msmpeg4(void)
             v2_dc_lum_table[level+256][1]= uni_len;
 
             /* chrominance h263 */
-            uni_code= DCtab_chrom[size][0];
-            uni_len = DCtab_chrom[size][1];
+            uni_code= ff_mpeg4_DCtab_chrom[size][0];
+            uni_len = ff_mpeg4_DCtab_chrom[size][1];
             uni_code ^= (1<<uni_len)-1; //M$ does not like compatibility
 
             if (size > 0) {

@@ -2207,11 +2207,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
         INIT_VLC_RL(rvlc_rl_inter, 1072);
         INIT_VLC_RL(rvlc_rl_intra, 1072);
         INIT_VLC_STATIC(&dc_lum, DC_VLC_BITS, 10 /* 13 */,
-                 &DCtab_lum[0][1], 2, 1,
-                 &DCtab_lum[0][0], 2, 1, 512);
+                 &ff_mpeg4_DCtab_lum[0][1], 2, 1,
+                 &ff_mpeg4_DCtab_lum[0][0], 2, 1, 512);
         INIT_VLC_STATIC(&dc_chrom, DC_VLC_BITS, 10 /* 13 */,
-                 &DCtab_chrom[0][1], 2, 1,
-                 &DCtab_chrom[0][0], 2, 1, 512);
+                 &ff_mpeg4_DCtab_chrom[0][1], 2, 1,
+                 &ff_mpeg4_DCtab_chrom[0][0], 2, 1, 512);
         INIT_VLC_STATIC(&sprite_trajectory, SPRITE_TRAJ_VLC_BITS, 15,
                  &sprite_trajectory_tab[0][1], 4, 2,
                  &sprite_trajectory_tab[0][0], 4, 2, 128);
