@@ -866,7 +866,7 @@ static void decode_mid_side_stereo(ChannelElement *cpe, GetBitContext *gb,
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
-                                       GetBitContext *gb, float sf[120],
+                                       GetBitContext *gb, const float sf[120],
                                        int pulse_present, const Pulse *pulse,
                                        const IndividualChannelStream *ics,
                                        enum BandType band_type[120])
