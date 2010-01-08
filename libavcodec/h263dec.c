@@ -114,9 +114,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         if (MPV_common_init(s) < 0)
             return -1;
 
-    if (CONFIG_MSMPEG4_DECODER && s->h263_msmpeg4)
-        ff_msmpeg4_decode_init(s);
-
         h263_decode_init_vlc(s);
 
     return 0;
@@ -740,60 +737,4 @@ AVCodec h263_decoder = {
     .flush= ff_mpeg_flush,
     .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2"),
     .pix_fmts= ff_hwaccel_pixfmt_list_420,
-};
-
-AVCodec msmpeg4v1_decoder = {
-    "msmpeg4v1",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_MSMPEG4V1,
-    sizeof(MpegEncContext),
-    ff_h263_decode_init,
-    NULL,
-    ff_h263_decode_end,
-    ff_h263_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 1"),
-    .pix_fmts= ff_pixfmt_list_420,
-};
-
-AVCodec msmpeg4v2_decoder = {
-    "msmpeg4v2",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_MSMPEG4V2,
-    sizeof(MpegEncContext),
-    ff_h263_decode_init,
-    NULL,
-    ff_h263_decode_end,
-    ff_h263_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
-    .pix_fmts= ff_pixfmt_list_420,
-};
-
-AVCodec msmpeg4v3_decoder = {
-    "msmpeg4",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_MSMPEG4V3,
-    sizeof(MpegEncContext),
-    ff_h263_decode_init,
-    NULL,
-    ff_h263_decode_end,
-    ff_h263_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
-    .pix_fmts= ff_pixfmt_list_420,
-};
-
-AVCodec wmv1_decoder = {
-    "wmv1",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_WMV1,
-    sizeof(MpegEncContext),
-    ff_h263_decode_init,
-    NULL,
-    ff_h263_decode_end,
-    ff_h263_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name= NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
-    .pix_fmts= ff_pixfmt_list_420,
 };

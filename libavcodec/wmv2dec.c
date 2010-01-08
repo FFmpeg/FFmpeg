@@ -465,7 +465,7 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx){
         avctx->idct_algo=FF_IDCT_WMV2;
     }
 
-    if(ff_h263_decode_init(avctx) < 0)
+    if(ff_msmpeg4_decode_init(avctx) < 0)
         return -1;
 
     ff_wmv2_common_init(w);

@@ -1272,11 +1272,14 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 }
 
 /* init all vlc decoding tables */
-av_cold int ff_msmpeg4_decode_init(MpegEncContext *s)
+av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
 {
+    MpegEncContext *s = avctx->priv_data;
     static int done = 0;
     int i;
     MVTable *mv;
+
+    ff_h263_decode_init(avctx);
 
     common_init(s);
 
@@ -1917,3 +1920,59 @@ int ff_msmpeg4_decode_motion(MpegEncContext * s,
     *my_ptr = my;
     return 0;
 }
+
+AVCodec msmpeg4v1_decoder = {
+    "msmpeg4v1",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MSMPEG4V1,
+    sizeof(MpegEncContext),
+    ff_msmpeg4_decode_init,
+    NULL,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 1"),
+    .pix_fmts= ff_pixfmt_list_420,
+};
+
+AVCodec msmpeg4v2_decoder = {
+    "msmpeg4v2",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MSMPEG4V2,
+    sizeof(MpegEncContext),
+    ff_msmpeg4_decode_init,
+    NULL,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
+    .pix_fmts= ff_pixfmt_list_420,
+};
+
+AVCodec msmpeg4v3_decoder = {
+    "msmpeg4",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MSMPEG4V3,
+    sizeof(MpegEncContext),
+    ff_msmpeg4_decode_init,
+    NULL,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
+    .pix_fmts= ff_pixfmt_list_420,
+};
+
+AVCodec wmv1_decoder = {
+    "wmv1",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_WMV1,
+    sizeof(MpegEncContext),
+    ff_msmpeg4_decode_init,
+    NULL,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    .long_name= NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
+    .pix_fmts= ff_pixfmt_list_420,
+};
