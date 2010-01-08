@@ -2966,6 +2966,10 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
     uint8_t* src2[4]= {src[0], src[1], src[2], src[3]};
     uint8_t* dst2[4]= {dst[0], dst[1], dst[2], dst[3]};
 
+    // do not mess up sliceDir if we have a "trailing" 0-size slice
+    if (srcSliceH == 0)
+        return 0;
+
     if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
         av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
         return 0;
