@@ -133,10 +133,12 @@ static int find_ref_index(AVFilterFormats **ref)
 
 void avfilter_formats_unref(AVFilterFormats **ref)
 {
+    int idx;
+
     if (!*ref)
         return;
 
-    int idx = find_ref_index(ref);
+    idx = find_ref_index(ref);
 
     if(idx >= 0)
         memmove((*ref)->refs + idx, (*ref)->refs + idx+1,
