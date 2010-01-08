@@ -75,7 +75,6 @@ extern RLTable rvlc_rl_intra;
 
 extern const uint16_t sprite_trajectory_tab[15][2];
 extern const uint8_t mb_type_b_tab[4][2];
-extern const AVRational pixel_aspect[16];
 
 /* these matrixes will be permuted for the idct */
 extern const int16_t ff_mpeg4_default_intra_matrix[64];
