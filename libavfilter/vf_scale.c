@@ -69,13 +69,27 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats;
+    enum PixelFormat pix_fmt;
+    int ret;
 
     if (ctx->inputs[0]) {
-        formats = avfilter_all_colorspaces();
+        formats = NULL;
+        for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
+            if (   sws_isSupportedInput(pix_fmt)
+                && (ret = avfilter_add_colorspace(&formats, pix_fmt)) < 0) {
+                avfilter_formats_unref(&formats);
+                return ret;
+            }
         avfilter_formats_ref(formats, &ctx->inputs[0]->out_formats);
     }
     if (ctx->outputs[0]) {
-        formats = avfilter_all_colorspaces();
+        formats = NULL;
+        for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
+            if (    sws_isSupportedOutput(pix_fmt)
+                && (ret = avfilter_add_colorspace(&formats, pix_fmt)) < 0) {
+                avfilter_formats_unref(&formats);
+                return ret;
+            }
         avfilter_formats_ref(formats, &ctx->outputs[0]->in_formats);
     }
 
