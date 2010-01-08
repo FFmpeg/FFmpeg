@@ -1298,7 +1298,6 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
     const int h= b->height;
     int x,y;
 
-    if(1){
         int run, runs;
         x_and_coeff *xc= b->x_coeff;
         x_and_coeff *prev_xc= NULL;
@@ -1390,7 +1389,6 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
         }
 
         (xc++)->x= w+1; //end marker
-    }
 }
 
 static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, slice_buffer * sb, int start_y, int h, int save_state[1]){
