@@ -2719,6 +2719,10 @@ static av_cold void common_end(SnowContext *s){
             }
         }
     }
+    if (s->mconly_picture.data[0])
+        s->avctx->release_buffer(s->avctx, &s->mconly_picture);
+    if (s->current_picture.data[0])
+        s->avctx->release_buffer(s->avctx, &s->current_picture);
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
@@ -4681,6 +4685,8 @@ static av_cold int encode_end(AVCodecContext *avctx)
     SnowContext *s = avctx->priv_data;
 
     common_end(s);
+    if (s->input_picture.data[0])
+        avctx->release_buffer(avctx, &s->input_picture);
     av_free(avctx->stats_out);
 
     return 0;
