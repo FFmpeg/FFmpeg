@@ -245,7 +245,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
                 }
                 st->codec->block_align = ast->sub_packet_size;
             }
-            if ((ret = rm_read_extradata(s->pb, st->codec, codecdata_length)) < 0)
+            if ((ret = rm_read_extradata(pb, st->codec, codecdata_length)) < 0)
                 return ret;
 
             if(ast->audio_framesize >= UINT_MAX / sub_packet_h){
@@ -267,7 +267,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, ByteIOContext *pb,
             }
             if (codecdata_length >= 1) {
                 get_byte(pb);
-                if ((ret = rm_read_extradata(s->pb, st->codec, codecdata_length - 1)) < 0)
+                if ((ret = rm_read_extradata(pb, st->codec, codecdata_length - 1)) < 0)
                     return ret;
             }
             break;
@@ -321,7 +321,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, ByteIOContext *pb,
         fps2= get_be16(pb);
         get_be16(pb);
 
-        if ((ret = rm_read_extradata(s->pb, st->codec, codec_data_size - (url_ftell(pb) - codec_pos))) < 0)
+        if ((ret = rm_read_extradata(pb, st->codec, codec_data_size - (url_ftell(pb) - codec_pos))) < 0)
             return ret;
 
 //        av_log(s, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
