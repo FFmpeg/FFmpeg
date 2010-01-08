@@ -724,7 +724,7 @@ static int decode_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
     unsigned int block_length = bd->block_length;
     unsigned int smp = 0;
     unsigned int k;
-    unsigned int opt_order    = bd->opt_order;
+    int opt_order             = bd->opt_order;
     int sb;
     int64_t y;
     int32_t *quant_cof        = bd->quant_cof;
