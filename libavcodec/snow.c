@@ -4016,7 +4016,7 @@ static void iterative_me(SnowContext *s){
                 }
             }
         }
-        av_log(NULL, AV_LOG_ERROR, "pass:%d changed:%d\n", pass, change);
+        av_log(s->avctx, AV_LOG_ERROR, "pass:%d changed:%d\n", pass, change);
         if(!change)
             break;
     }
@@ -4058,7 +4058,7 @@ static void iterative_me(SnowContext *s){
                     change++;
             }
         }
-        av_log(NULL, AV_LOG_ERROR, "pass:4mv changed:%d\n", change*4);
+        av_log(s->avctx, AV_LOG_ERROR, "pass:4mv changed:%d\n", change*4);
     }
 }
 
