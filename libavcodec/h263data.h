@@ -33,12 +33,12 @@
 #include "mpegvideo.h"
 
 /* intra MCBPC, mb_type = (intra), then (intraq) */
-const uint8_t intra_MCBPC_code[9] = { 1, 1, 2, 3, 1, 1, 2, 3, 1 };
-const uint8_t intra_MCBPC_bits[9] = { 1, 3, 3, 3, 4, 6, 6, 6, 9 };
+const uint8_t ff_h263_intra_MCBPC_code[9] = { 1, 1, 2, 3, 1, 1, 2, 3, 1 };
+const uint8_t ff_h263_intra_MCBPC_bits[9] = { 1, 3, 3, 3, 4, 6, 6, 6, 9 };
 
 /* inter MCBPC, mb_type = (inter), (intra), (interq), (intraq), (inter4v) */
 /* Changed the tables for interq and inter4v+q, following the standard ** Juanjo ** */
-const uint8_t inter_MCBPC_code[28] = {
+const uint8_t ff_h263_inter_MCBPC_code[28] = {
     1, 3, 2, 5,
     3, 4, 3, 3,
     3, 7, 6, 5,
@@ -47,7 +47,7 @@ const uint8_t inter_MCBPC_code[28] = {
     1, 0, 0, 0, /* Stuffing */
     2, 12, 14, 15,
 };
-const uint8_t inter_MCBPC_bits[28] = {
+const uint8_t ff_h263_inter_MCBPC_bits[28] = {
     1, 4, 4, 6, /* inter  */
     5, 8, 8, 7, /* intra  */
     3, 7, 7, 9, /* interQ */
@@ -100,7 +100,7 @@ static const uint8_t cbpc_b_tab[4][2] = {
 {6, 3},
 };
 
-const uint8_t cbpy_tab[16][2] =
+const uint8_t ff_h263_cbpy_tab[16][2] =
 {
   {3,4}, {5,5}, {4,5}, {9,4}, {3,5}, {7,4}, {2,6}, {11,4},
   {2,5}, {3,6}, {5,4}, {10,4}, {4,4}, {8,4}, {6,4}, {3,2}
@@ -177,7 +177,7 @@ const int8_t inter_run[102] = {
  35, 36, 37, 38, 39, 40,
 };
 
-RLTable rl_inter = {
+RLTable ff_h263_rl_inter = {
     102,
     58,
     inter_vlc,

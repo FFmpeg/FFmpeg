@@ -576,8 +576,8 @@ void msmpeg4_encode_mb(MpegEncContext * s,
             else             coded_cbp= cbp;
 
             put_bits(&s->pb,
-                     cbpy_tab[coded_cbp>>2][1],
-                     cbpy_tab[coded_cbp>>2][0]);
+                     ff_h263_cbpy_tab[coded_cbp>>2][1],
+                     ff_h263_cbpy_tab[coded_cbp>>2][0]);
 
             s->misc_bits += get_bits_diff(s);
 
@@ -637,8 +637,8 @@ void msmpeg4_encode_mb(MpegEncContext * s,
             }
             put_bits(&s->pb, 1, 0);             /* no AC prediction yet */
             put_bits(&s->pb,
-                     cbpy_tab[cbp>>2][1],
-                     cbpy_tab[cbp>>2][0]);
+                     ff_h263_cbpy_tab[cbp>>2][1],
+                     ff_h263_cbpy_tab[cbp>>2][0]);
         }else{
             if (s->pict_type == FF_I_TYPE) {
                 put_bits(&s->pb,
@@ -1146,7 +1146,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     if (!s->mb_intra) {
         int mx, my, cbpy;
 
-        cbpy= get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
+        cbpy= get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1);
         if(cbpy<0){
             av_log(s->avctx, AV_LOG_ERROR, "cbpy %d invalid at %d %d\n", cbp, s->mb_x, s->mb_y);
             return -1;
@@ -1166,10 +1166,10 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     } else {
         if(s->msmpeg4_version==2){
             s->ac_pred = get_bits1(&s->gb);
-            cbp|= get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1)<<2; //FIXME check errors
+            cbp|= get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1)<<2; //FIXME check errors
         } else{
             s->ac_pred = 0;
-            cbp|= get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1)<<2; //FIXME check errors
+            cbp|= get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1)<<2; //FIXME check errors
             if(s->pict_type==FF_P_TYPE) cbp^=0x3C;
         }
     }
@@ -1326,9 +1326,9 @@ av_cold int ff_msmpeg4_decode_init(MpegEncContext *s)
                  &v2_dc_chroma_table[0][1], 8, 4,
                  &v2_dc_chroma_table[0][0], 8, 4, 1506);
 
-        INIT_VLC_STATIC(&cbpy_vlc, CBPY_VLC_BITS, 16,
-                 &cbpy_tab[0][1], 2, 1,
-                 &cbpy_tab[0][0], 2, 1, 64);
+        INIT_VLC_STATIC(&ff_h263_cbpy_vlc, CBPY_VLC_BITS, 16,
+                 &ff_h263_cbpy_tab[0][1], 2, 1,
+                 &ff_h263_cbpy_tab[0][0], 2, 1, 64);
         INIT_VLC_STATIC(&v2_intra_cbpc_vlc, V2_INTRA_CBPC_VLC_BITS, 4,
                  &v2_intra_cbpc[0][1], 2, 1,
                  &v2_intra_cbpc[0][0], 2, 1, 8);
@@ -1357,11 +1357,11 @@ av_cold int ff_msmpeg4_decode_init(MpegEncContext *s)
                  &ff_msmp4_mb_i_table[0][0], 4, 2, 536);
 
         INIT_VLC_STATIC(&v1_intra_cbpc_vlc, V1_INTRA_CBPC_VLC_BITS, 8,
-                 intra_MCBPC_bits, 1, 1,
-                 intra_MCBPC_code, 1, 1, 64);
+                 ff_h263_intra_MCBPC_bits, 1, 1,
+                 ff_h263_intra_MCBPC_code, 1, 1, 64);
         INIT_VLC_STATIC(&v1_inter_cbpc_vlc, V1_INTER_CBPC_VLC_BITS, 25,
-                 inter_MCBPC_bits, 1, 1,
-                 inter_MCBPC_code, 1, 1, 104);
+                 ff_h263_inter_MCBPC_bits, 1, 1,
+                 ff_h263_inter_MCBPC_code, 1, 1, 104);
 
         INIT_VLC_STATIC(&ff_inter_intra_vlc, INTER_INTRA_VLC_BITS, 4,
                  &table_inter_intra[0][1], 2, 1,

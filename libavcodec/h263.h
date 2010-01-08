@@ -30,21 +30,21 @@
 #define TEX_VLC_BITS 9
 
 extern const AVRational ff_h263_pixel_aspect[16];
-extern const uint8_t cbpy_tab[16][2];
+extern const uint8_t ff_h263_cbpy_tab[16][2];
 
 extern const uint8_t mvtab[33][2];
 
-extern const uint8_t intra_MCBPC_code[9];
-extern const uint8_t intra_MCBPC_bits[9];
+extern const uint8_t ff_h263_intra_MCBPC_code[9];
+extern const uint8_t ff_h263_intra_MCBPC_bits[9];
 
-extern const uint8_t inter_MCBPC_code[28];
-extern const uint8_t inter_MCBPC_bits[28];
+extern const uint8_t ff_h263_inter_MCBPC_code[28];
+extern const uint8_t ff_h263_inter_MCBPC_bits[28];
 
-extern VLC intra_MCBPC_vlc;
-extern VLC inter_MCBPC_vlc;
-extern VLC cbpy_vlc;
+extern VLC ff_h263_intra_MCBPC_vlc;
+extern VLC ff_h263_inter_MCBPC_vlc;
+extern VLC ff_h263_cbpy_vlc;
 
-extern RLTable rl_inter;
+extern RLTable ff_h263_rl_inter;
 
 int h263_decode_motion(MpegEncContext * s, int pred, int f_code);
 av_const int ff_h263_aspect_to_info(AVRational aspect);
@@ -90,7 +90,7 @@ static inline int get_p_cbp(MpegEncContext * s,
         const int lambda= s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
 
         for(i=0; i<4; i++){
-            int score= inter_MCBPC_bits[i + offset] * lambda;
+            int score= ff_h263_inter_MCBPC_bits[i + offset] * lambda;
             if(i&1) score += s->coded_score[5];
             if(i&2) score += s->coded_score[4];
 
@@ -101,7 +101,7 @@ static inline int get_p_cbp(MpegEncContext * s,
         }
 
         for(i=0; i<16; i++){
-            int score= cbpy_tab[i ^ 0xF][1] * lambda;
+            int score= ff_h263_cbpy_tab[i ^ 0xF][1] * lambda;
             if(i&1) score += s->coded_score[3];
             if(i&2) score += s->coded_score[2];
             if(i&4) score += s->coded_score[1];

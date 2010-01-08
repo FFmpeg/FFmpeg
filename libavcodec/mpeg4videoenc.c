@@ -315,7 +315,7 @@ static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n
     } else {
         if(last_index<0) return;
         i = 0;
-        rl = &rl_inter;
+        rl = &ff_h263_rl_inter;
         bits_tab= uni_mpeg4_inter_rl_bits;
         len_tab = uni_mpeg4_inter_rl_len;
     }
@@ -697,10 +697,10 @@ void mpeg4_encode_mb(MpegEncContext * s,
             if(s->mv_type==MV_TYPE_16X16){
                 if(s->dquant) cbpc+= 8;
                 put_bits(&s->pb,
-                        inter_MCBPC_bits[cbpc],
-                        inter_MCBPC_code[cbpc]);
+                        ff_h263_inter_MCBPC_bits[cbpc],
+                        ff_h263_inter_MCBPC_code[cbpc]);
 
-                put_bits(pb2, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+                put_bits(pb2, ff_h263_cbpy_tab[cbpy][1], ff_h263_cbpy_tab[cbpy][0]);
                 if(s->dquant)
                     put_bits(pb2, 2, dquant_code[s->dquant+2]);
 
@@ -722,10 +722,10 @@ void mpeg4_encode_mb(MpegEncContext * s,
             }else if(s->mv_type==MV_TYPE_FIELD){
                 if(s->dquant) cbpc+= 8;
                 put_bits(&s->pb,
-                        inter_MCBPC_bits[cbpc],
-                        inter_MCBPC_code[cbpc]);
+                        ff_h263_inter_MCBPC_bits[cbpc],
+                        ff_h263_inter_MCBPC_code[cbpc]);
 
-                put_bits(pb2, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+                put_bits(pb2, ff_h263_cbpy_tab[cbpy][1], ff_h263_cbpy_tab[cbpy][0]);
                 if(s->dquant)
                     put_bits(pb2, 2, dquant_code[s->dquant+2]);
 
@@ -752,9 +752,9 @@ void mpeg4_encode_mb(MpegEncContext * s,
             }else{
                 assert(s->mv_type==MV_TYPE_8X8);
                 put_bits(&s->pb,
-                        inter_MCBPC_bits[cbpc+16],
-                        inter_MCBPC_code[cbpc+16]);
-                put_bits(pb2, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+                        ff_h263_inter_MCBPC_bits[cbpc+16],
+                        ff_h263_inter_MCBPC_code[cbpc+16]);
+                put_bits(pb2, ff_h263_cbpy_tab[cbpy][1], ff_h263_cbpy_tab[cbpy][0]);
 
                 if(!s->progressive_sequence){
                     if(cbp)
@@ -815,18 +815,18 @@ void mpeg4_encode_mb(MpegEncContext * s,
         if (s->pict_type == FF_I_TYPE) {
             if(s->dquant) cbpc+=4;
             put_bits(&s->pb,
-                intra_MCBPC_bits[cbpc],
-                intra_MCBPC_code[cbpc]);
+                ff_h263_intra_MCBPC_bits[cbpc],
+                ff_h263_intra_MCBPC_code[cbpc]);
         } else {
             if(s->dquant) cbpc+=8;
             put_bits(&s->pb, 1, 0);     /* mb coded */
             put_bits(&s->pb,
-                inter_MCBPC_bits[cbpc + 4],
-                inter_MCBPC_code[cbpc + 4]);
+                ff_h263_inter_MCBPC_bits[cbpc + 4],
+                ff_h263_inter_MCBPC_code[cbpc + 4]);
         }
         put_bits(pb2, 1, s->ac_pred);
         cbpy = cbp >> 2;
-        put_bits(pb2, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+        put_bits(pb2, ff_h263_cbpy_tab[cbpy][1], ff_h263_cbpy_tab[cbpy][0]);
         if(s->dquant)
             put_bits(dc_pb, 2, dquant_code[s->dquant+2]);
 
@@ -1255,7 +1255,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         init_rl(&ff_mpeg4_rl_intra, ff_mpeg4_static_rl_table_store[0]);
 
         init_uni_mpeg4_rl_tab(&ff_mpeg4_rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
-        init_uni_mpeg4_rl_tab(&rl_inter, uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
+        init_uni_mpeg4_rl_tab(&ff_h263_rl_inter, uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
     }
 
     s->min_qcoeff= -2048;
