@@ -167,6 +167,16 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
+static av_cold int cyuv_decode_end(AVCodecContext *avctx)
+{
+    CyuvDecodeContext *s = avctx->priv_data;
+
+    if (s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
+
+    return 0;
+}
+
 #if CONFIG_AURA_DECODER
 AVCodec aura_decoder = {
     "aura",
@@ -175,7 +185,7 @@ AVCodec aura_decoder = {
     sizeof(CyuvDecodeContext),
     cyuv_decode_init,
     NULL,
-    NULL,
+    cyuv_decode_end,
     cyuv_decode_frame,
     CODEC_CAP_DR1,
     NULL,
@@ -191,7 +201,7 @@ AVCodec cyuv_decoder = {
     sizeof(CyuvDecodeContext),
     cyuv_decode_init,
     NULL,
-    NULL,
+    cyuv_decode_end,
     cyuv_decode_frame,
     CODEC_CAP_DR1,
     NULL,
