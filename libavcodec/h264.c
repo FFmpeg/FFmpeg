@@ -7209,6 +7209,8 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         decode_scaling_matrices(h, sps, NULL, 1, sps->scaling_matrix4, sps->scaling_matrix8);
     }else{
         sps->chroma_format_idc= 1;
+        sps->bit_depth_luma   = 8;
+        sps->bit_depth_chroma = 8;
     }
 
     sps->log2_max_frame_num= get_ue_golomb(&s->gb) + 4;
