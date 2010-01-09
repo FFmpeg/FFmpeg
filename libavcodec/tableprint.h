@@ -32,6 +32,7 @@
  */
 void write_int8_array     (const void *, int, int);
 void write_uint32_array   (const void *, int, int);
+void write_float_array    (const void *, int, int);
 void write_int8_2d_array  (const void *, int, int);
 void write_uint32_2d_array(const void *, int, int);
 /** \} */ // end of printfuncs group

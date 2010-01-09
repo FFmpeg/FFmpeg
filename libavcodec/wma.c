@@ -343,9 +343,7 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
 
     /* init MDCT windows : simple sinus window */
     for (i = 0; i < s->nb_block_sizes; i++) {
-        int n;
-        n = 1 << (s->frame_len_bits - i);
-        ff_sine_window_init(ff_sine_windows[s->frame_len_bits - i], n);
+        ff_init_ff_sine_windows(s->frame_len_bits - i);
         s->windows[i] = ff_sine_windows[s->frame_len_bits - i];
     }
 

@@ -178,8 +178,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     // window init
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
-    ff_sine_window_init(ff_sine_1024, 1024);
-    ff_sine_window_init(ff_sine_128, 128);
+    ff_init_ff_sine_windows(10);
+    ff_init_ff_sine_windows(7);
 
     s->samples            = av_malloc(2 * 1024 * avctx->channels * sizeof(s->samples[0]));
     s->cpe                = av_mallocz(sizeof(ChannelElement) * aac_chan_configs[avctx->channels-1][0]);

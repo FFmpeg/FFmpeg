@@ -144,7 +144,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
 
     /* Generate overlap window */
     if (!ff_sine_128[127])
-        ff_sine_window_init(ff_sine_128, 128);
+        ff_init_ff_sine_windows(7);
 
     avctx->sample_fmt = SAMPLE_FMT_S16;
     avctx->channel_layout = CH_LAYOUT_MONO;

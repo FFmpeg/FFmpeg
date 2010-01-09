@@ -39,6 +39,7 @@ void write_##name##_array(const void *arg, int len, int dummy)\
 
 WRITE_1D_FUNC(int8,   int8_t,   "%3"PRIi8, 15)
 WRITE_1D_FUNC(uint32, uint32_t, "0x%08"PRIx32, 7)
+WRITE_1D_FUNC(float,  float,    "%.18e", 3)
 
 #define WRITE_2D_FUNC(name, type)\
 void write_##name##_2d_array(const void *arg, int len, int len2)\

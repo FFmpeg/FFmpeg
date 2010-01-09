@@ -339,7 +339,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     ff_mdct_init(&q->mdct_ctx[1], 8, 1, -1.0/ (1 << 15));
     ff_mdct_init(&q->mdct_ctx[2], 9, 1, -1.0/ (1 << 15));
 
-    ff_sine_window_init(ff_sine_32, 32);
+    ff_init_ff_sine_windows(5);
 
     atrac_generate_tables();
 

@@ -741,15 +741,19 @@ typedef struct FFTContext {
 #if CONFIG_HARDCODED_TABLES
 #define COSTABLE_CONST const
 #define SINTABLE_CONST const
+#define SINETABLE_CONST const
 #else
 #define COSTABLE_CONST
 #define SINTABLE_CONST
+#define SINETABLE_CONST
 #endif
 
 #define COSTABLE(size) \
     COSTABLE_CONST DECLARE_ALIGNED_16(FFTSample, ff_cos_##size[size/2])
 #define SINTABLE(size) \
     SINTABLE_CONST DECLARE_ALIGNED_16(FFTSample, ff_sin_##size[size/2])
+#define SINETABLE(size) \
+    SINETABLE_CONST DECLARE_ALIGNED_16(float, ff_sine_##size[size])
 extern COSTABLE(16);
 extern COSTABLE(32);
 extern COSTABLE(64);
@@ -846,15 +850,19 @@ void ff_kbd_window_init(float *window, float alpha, int n);
  * @param   n       size of half window
  */
 void ff_sine_window_init(float *window, int n);
-extern float ff_sine_32  [  32];
-extern float ff_sine_64  [  64];
-extern float ff_sine_128 [ 128];
-extern float ff_sine_256 [ 256];
-extern float ff_sine_512 [ 512];
-extern float ff_sine_1024[1024];
-extern float ff_sine_2048[2048];
-extern float ff_sine_4096[4096];
-extern float * const ff_sine_windows[13];
+/**
+ * initialize the specified entry of ff_sine_windows
+ */
+void ff_init_ff_sine_windows(int index);
+extern SINETABLE(  32);
+extern SINETABLE(  64);
+extern SINETABLE( 128);
+extern SINETABLE( 256);
+extern SINETABLE( 512);
+extern SINETABLE(1024);
+extern SINETABLE(2048);
+extern SINETABLE(4096);
+extern SINETABLE_CONST float * const ff_sine_windows[13];
 
 int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale);
 void ff_imdct_calc_c(FFTContext *s, FFTSample *output, const FFTSample *input);
