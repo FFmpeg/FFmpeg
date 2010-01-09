@@ -25,17 +25,13 @@
 #undef MOVNTQ
 #undef PAVGB
 #undef PREFETCH
-#undef PREFETCHW
 
 #if COMPILE_TEMPLATE_AMD3DNOW
 #define PREFETCH  "prefetch"
-#define PREFETCHW "prefetchw"
 #elif COMPILE_TEMPLATE_MMX2
 #define PREFETCH "prefetchnta"
-#define PREFETCHW "prefetcht0"
 #else
 #define PREFETCH  " # nop"
-#define PREFETCHW " # nop"
 #endif
 
 #if COMPILE_TEMPLATE_MMX2

@@ -34,7 +34,6 @@
 #undef EMMS
 #undef SFENCE
 #undef MMREG_SIZE
-#undef PREFETCHW
 #undef PAVGB
 
 #if HAVE_SSE2
@@ -45,15 +44,12 @@
 
 #if HAVE_AMD3DNOW
 #define PREFETCH  "prefetch"
-#define PREFETCHW "prefetchw"
 #define PAVGB     "pavgusb"
 #elif HAVE_MMX2
 #define PREFETCH "prefetchnta"
-#define PREFETCHW "prefetcht0"
 #define PAVGB     "pavgb"
 #else
 #define PREFETCH  " # nop"
-#define PREFETCHW " # nop"
 #endif
 
 #if HAVE_AMD3DNOW
