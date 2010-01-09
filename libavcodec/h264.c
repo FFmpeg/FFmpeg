@@ -4155,6 +4155,18 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     return 0;
 }
 
+int ff_h264_get_slice_type(H264Context *h)
+{
+    switch (h->slice_type) {
+    case FF_P_TYPE:  return 0;
+    case FF_B_TYPE:  return 1;
+    case FF_I_TYPE:  return 2;
+    case FF_SP_TYPE: return 3;
+    case FF_SI_TYPE: return 4;
+    default:         return -1;
+    }
+}
+
 /**
  *
  */

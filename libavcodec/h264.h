@@ -582,4 +582,9 @@ int ff_h264_decode_rbsp_trailing(H264Context *h, const uint8_t *src);
  */
 av_cold void ff_h264_free_context(H264Context *h);
 
+/**
+ * reconstructs bitstream slice_type.
+ */
+int ff_h264_get_slice_type(H264Context *h);
+
 #endif /* AVCODEC_H264_H */

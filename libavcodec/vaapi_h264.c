@@ -28,19 +28,6 @@
  *  structures for H.264 decoding.
  */
 
-/** Reconstructs bitstream slice_type. */
-static int get_slice_type(H264Context *h)
-{
-    switch (h->slice_type) {
-    case FF_P_TYPE:  return 0;
-    case FF_B_TYPE:  return 1;
-    case FF_I_TYPE:  return 2;
-    case FF_SP_TYPE: return 3;
-    case FF_SI_TYPE: return 4;
-    default:         return -1;
-    }
-}
-
 /**
  * Initializes an empty VA API picture.
  *
@@ -323,7 +310,7 @@ static int decode_slice(AVCodecContext *avctx,
         return -1;
     slice_param->slice_data_bit_offset          = get_bits_count(&h->s.gb) + 8; /* bit buffer started beyond nal_unit_type */
     slice_param->first_mb_in_slice              = (s->mb_y >> FIELD_OR_MBAFF_PICTURE) * s->mb_width + s->mb_x;
-    slice_param->slice_type                     = get_slice_type(h);
+    slice_param->slice_type                     = ff_h264_get_slice_type(h);
     slice_param->direct_spatial_mv_pred_flag    = h->slice_type == FF_B_TYPE ? h->direct_spatial_mv_pred : 0;
     slice_param->num_ref_idx_l0_active_minus1   = h->list_count > 0 ? h->ref_count[0] - 1 : 0;
     slice_param->num_ref_idx_l1_active_minus1   = h->list_count > 1 ? h->ref_count[1] - 1 : 0;
