@@ -22,7 +22,7 @@
 /**
  * @file libavcodec/mmvideo.c
  * American Laser Games MM Video Decoder
- * by Peter Ross (suxen_drol at hotmail dot com)
+ * by Peter Ross (pross@xvid.org)
  *
  * The MM format was used by IBM-PC ports of ALG's "arcade shooter" games,
  * including Mad Dog McCree and Crime Patrol.

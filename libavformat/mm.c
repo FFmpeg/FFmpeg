@@ -22,7 +22,7 @@
 /**
  * @file libavformat/mm.c
  * American Laser Games MM Format Demuxer
- * by Peter Ross (suxen_drol at hotmail dot com)
+ * by Peter Ross (pross@xvid.org)
  *
  * The MM format was used by IBM-PC ports of ALG's "arcade shooter" games,
  * including Mad Dog McCree and Crime Patrol.
