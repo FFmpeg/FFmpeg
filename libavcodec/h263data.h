@@ -127,7 +127,7 @@ const uint16_t inter_vlc[103][2] = {
 { 0x5e, 12 },{ 0x5f, 12 },{ 0x3, 7 },
 };
 
-const int8_t inter_level[102] = {
+static const int8_t inter_level[102] = {
   1,  2,  3,  4,  5,  6,  7,  8,
   9, 10, 11, 12,  1,  2,  3,  4,
   5,  6,  1,  2,  3,  4,  1,  2,
@@ -143,7 +143,7 @@ const int8_t inter_level[102] = {
   1,  1,  1,  1,  1,  1,
 };
 
-const int8_t inter_run[102] = {
+static const int8_t inter_run[102] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  1,  1,  1,  1,
   1,  1,  2,  2,  2,  2,  3,  3,

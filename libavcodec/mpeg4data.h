@@ -161,7 +161,7 @@ const uint16_t inter_rvlc[170][2]={
 {0x3F7C, 15},{0x3F7D, 15},{0x0000, 4}
 };
 
-const int8_t inter_rvlc_run[169]={
+static const int8_t inter_rvlc_run[169]={
  0,  0,  0,  0,  0,  0,  0,  0,
  0,  0,  0,  0,  0,  0,  0,  0,
  0,  0,  0,  1,  1,  1,  1,  1,
@@ -186,7 +186,7 @@ const int8_t inter_rvlc_run[169]={
 43, 44,
 };
 
-const int8_t inter_rvlc_level[169]={
+static const int8_t inter_rvlc_level[169]={
  1,  2,  3,  4,  5,  6,  7,  8,
  9, 10, 11, 12, 13, 14, 15, 16,
 17, 18, 19,  1,  2,  3,  4,  5,
@@ -265,7 +265,7 @@ const uint16_t intra_rvlc[170][2]={
 {0x3F7C, 15},{0x3F7D, 15},{0x0000,  4}
 };
 
-const int8_t intra_rvlc_run[169]={
+static const int8_t intra_rvlc_run[169]={
  0,  0,  0,  0,  0,  0,  0,  0,
  0,  0,  0,  0,  0,  0,  0,  0,
  0,  0,  0,  0,  0,  0,  0,  0,
@@ -290,7 +290,7 @@ const int8_t intra_rvlc_run[169]={
 43, 44,
 };
 
-const int8_t intra_rvlc_level[169]={
+static const int8_t intra_rvlc_level[169]={
  1,  2,  3,  4,  5,  6,  7,  8,
  9, 10, 11, 12, 13, 14, 15, 16,
 17, 18, 19, 20, 21, 22, 23, 24,
