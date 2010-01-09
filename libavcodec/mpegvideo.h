@@ -797,53 +797,6 @@ void ff_h261_encode_init(MpegEncContext *s);
 int ff_h261_get_picture_format(int width, int height);
 
 
-/* h263.c, h263dec.c */
-int ff_h263_decode_init(AVCodecContext *avctx);
-int ff_h263_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
-                             AVPacket *avpkt);
-int ff_h263_decode_end(AVCodecContext *avctx);
-void h263_encode_mb(MpegEncContext *s,
-                    DCTELEM block[6][64],
-                    int motion_x, int motion_y);
-void h263_encode_picture_header(MpegEncContext *s, int picture_number);
-void h263_encode_gob_header(MpegEncContext * s, int mb_line);
-int16_t *h263_pred_motion(MpegEncContext * s, int block, int dir,
-                        int *px, int *py);
-void h263_encode_init(MpegEncContext *s);
-void h263_decode_init_vlc(MpegEncContext *s);
-int h263_decode_picture_header(MpegEncContext *s);
-int ff_h263_decode_gob_header(MpegEncContext *s);
-void ff_h263_update_motion_val(MpegEncContext * s);
-void ff_h263_loop_filter(MpegEncContext * s);
-void ff_set_qscale(MpegEncContext * s, int qscale);
-int ff_h263_decode_mba(MpegEncContext *s);
-void ff_h263_encode_mba(MpegEncContext *s);
-
-/**
- * Prints picture info if FF_DEBUG_PICT_INFO is set.
- */
-void ff_h263_show_pict_info(MpegEncContext *s);
-
-int ff_intel_h263_decode_picture_header(MpegEncContext *s);
-int ff_h263_decode_mb(MpegEncContext *s,
-                      DCTELEM block[6][64]);
-
-/**
- * Returns the value of the 3bit "source format" syntax element.
- * that represents some standard picture dimensions or indicates that
- * width&height are explicitly stored later.
- */
-int av_const h263_get_picture_format(int width, int height);
-
-void ff_clean_h263_qscales(MpegEncContext *s);
-int ff_h263_resync(MpegEncContext *s);
-const uint8_t *ff_h263_find_resync_marker(const uint8_t *p, const uint8_t *end);
-int ff_h263_get_gob_height(MpegEncContext *s);
-void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code);
-void ff_init_qscale_tab(MpegEncContext *s);
-
-
 /* rv10.c */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number);
 int rv_decode_dc(MpegEncContext *s, int n);

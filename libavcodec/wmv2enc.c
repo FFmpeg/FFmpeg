@@ -23,6 +23,7 @@
 #include "mpegvideo.h"
 #include "msmpeg4.h"
 #include "msmpeg4data.h"
+#include "h263.h"
 #include "wmv2.h"
 
 

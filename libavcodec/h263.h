@@ -32,6 +32,8 @@
 extern const AVRational ff_h263_pixel_aspect[16];
 extern const uint8_t ff_h263_cbpy_tab[16][2];
 
+extern const uint8_t cbpc_b_tab[4][2];
+
 extern const uint8_t mvtab[33][2];
 
 extern const uint8_t ff_h263_intra_MCBPC_code[9];
@@ -39,6 +41,7 @@ extern const uint8_t ff_h263_intra_MCBPC_bits[9];
 
 extern const uint8_t ff_h263_inter_MCBPC_code[28];
 extern const uint8_t ff_h263_inter_MCBPC_bits[28];
+extern const uint8_t h263_mbtype_b_tab[15][2];
 
 extern VLC ff_h263_intra_MCBPC_vlc;
 extern VLC ff_h263_inter_MCBPC_vlc;
@@ -46,8 +49,66 @@ extern VLC ff_h263_cbpy_vlc;
 
 extern RLTable ff_h263_rl_inter;
 
+extern RLTable rl_intra_aic;
+
+extern const uint16_t h263_format[8][2];
+extern const uint8_t modified_quant_tab[2][32];
+extern uint16_t ff_mba_max[6];
+extern uint8_t ff_mba_length[7];
+
+extern uint8_t ff_h263_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
+
+
 int h263_decode_motion(MpegEncContext * s, int pred, int f_code);
 av_const int ff_h263_aspect_to_info(AVRational aspect);
+int ff_h263_decode_init(AVCodecContext *avctx);
+int ff_h263_decode_frame(AVCodecContext *avctx,
+                             void *data, int *data_size,
+                             AVPacket *avpkt);
+int ff_h263_decode_end(AVCodecContext *avctx);
+void h263_encode_mb(MpegEncContext *s,
+                    DCTELEM block[6][64],
+                    int motion_x, int motion_y);
+void h263_encode_picture_header(MpegEncContext *s, int picture_number);
+void h263_encode_gob_header(MpegEncContext * s, int mb_line);
+int16_t *h263_pred_motion(MpegEncContext * s, int block, int dir,
+                        int *px, int *py);
+void h263_encode_init(MpegEncContext *s);
+void h263_decode_init_vlc(MpegEncContext *s);
+int h263_decode_picture_header(MpegEncContext *s);
+int ff_h263_decode_gob_header(MpegEncContext *s);
+void ff_h263_update_motion_val(MpegEncContext * s);
+void ff_h263_loop_filter(MpegEncContext * s);
+void ff_set_qscale(MpegEncContext * s, int qscale);
+int ff_h263_decode_mba(MpegEncContext *s);
+void ff_h263_encode_mba(MpegEncContext *s);
+void ff_init_qscale_tab(MpegEncContext *s);
+int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr);
+void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n);
+
+
+/**
+ * Prints picture info if FF_DEBUG_PICT_INFO is set.
+ */
+void ff_h263_show_pict_info(MpegEncContext *s);
+
+int ff_intel_h263_decode_picture_header(MpegEncContext *s);
+int ff_h263_decode_mb(MpegEncContext *s,
+                      DCTELEM block[6][64]);
+
+/**
+ * Returns the value of the 3bit "source format" syntax element.
+ * that represents some standard picture dimensions or indicates that
+ * width&height are explicitly stored later.
+ */
+int av_const h263_get_picture_format(int width, int height);
+
+void ff_clean_h263_qscales(MpegEncContext *s);
+int ff_h263_resync(MpegEncContext *s);
+const uint8_t *ff_h263_find_resync_marker(const uint8_t *p, const uint8_t *end);
+int ff_h263_get_gob_height(MpegEncContext *s);
+void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code);
+
 
 static inline int h263_get_motion_length(MpegEncContext * s, int val, int f_code){
     int l, bit_size, code;
@@ -174,5 +235,12 @@ static inline int get_b_cbp(MpegEncContext * s, DCTELEM block[6][64],
         }
     }
     return cbp;
+}
+
+static inline void memsetw(short *tab, int val, int n)
+{
+    int i;
+    for(i=0;i<n;i++)
+        tab[i] = val;
 }
 #endif
