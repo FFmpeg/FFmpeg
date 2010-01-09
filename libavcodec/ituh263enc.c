@@ -82,22 +82,6 @@ static const uint8_t wrong_run[102] = {
 19,  2,  1, 34, 35, 36
 };
 
-int h263_get_picture_format(int width, int height)
-{
-    if (width == 128 && height == 96)
-        return 1;
-    else if (width == 176 && height == 144)
-        return 2;
-    else if (width == 352 && height == 288)
-        return 3;
-    else if (width == 704 && height == 576)
-        return 4;
-    else if (width == 1408 && height == 1152)
-        return 5;
-    else
-        return 7;
-}
-
 /**
  * Returns the 4 bit value that specifies the given aspect ratio.
  * This may be one of the standard aspect ratios or it specifies
@@ -156,7 +140,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     put_bits(&s->pb, 1, 0);     /* camera  off */
     put_bits(&s->pb, 1, 0);     /* freeze picture release off */
 
-    format = h263_get_picture_format(s->width, s->height);
+    format = ff_match_2uint16(h263_format, FF_ARRAY_ELEMS(h263_format), s->width, s->height);
     if (!s->h263_plus) {
         /* H.263v1 */
         put_bits(&s->pb, 3, format);

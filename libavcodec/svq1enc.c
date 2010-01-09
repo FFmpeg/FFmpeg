@@ -94,19 +94,11 @@ static void svq1_write_header(SVQ1Context *s, int frame_type)
         /* output 5 unknown bits (2 + 2 + 1) */
         put_bits(&s->pb, 5, 2); /* 2 needed by quicktime decoder */
 
-        for (i = 0; i < 7; i++)
-        {
-            if ((ff_svq1_frame_size_table[i].width == s->frame_width) &&
-                (ff_svq1_frame_size_table[i].height == s->frame_height))
-            {
-                put_bits(&s->pb, 3, i);
-                break;
-            }
-        }
+        i= ff_match_2uint16(ff_svq1_frame_size_table, FF_ARRAY_ELEMS(ff_svq1_frame_size_table), s->frame_width, s->frame_height);
+        put_bits(&s->pb, 3, i);
 
         if (i == 7)
         {
-            put_bits(&s->pb, 3, 7);
                 put_bits(&s->pb, 12, s->frame_width);
                 put_bits(&s->pb, 12, s->frame_height);
         }
