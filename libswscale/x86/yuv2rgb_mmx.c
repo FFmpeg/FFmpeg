@@ -72,7 +72,8 @@ SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
                 if (HAVE_7REGS) return yuva420_bgr32_MMX2;
                 break;
             } else return yuv420_bgr32_MMX2;
-        case PIX_FMT_BGR24:  return yuv420_rgb24_MMX2;
+        case PIX_FMT_RGB24:  return yuv420_rgb24_MMX2;
+        case PIX_FMT_BGR24:  return yuv420_bgr24_MMX2;
         case PIX_FMT_RGB565: return yuv420_rgb16_MMX2;
         case PIX_FMT_RGB555: return yuv420_rgb15_MMX2;
         }
@@ -89,7 +90,8 @@ SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
                 if (HAVE_7REGS) return yuva420_bgr32_MMX;
                 break;
             } else return yuv420_bgr32_MMX;
-        case PIX_FMT_BGR24:  return yuv420_rgb24_MMX;
+        case PIX_FMT_RGB24:  return yuv420_rgb24_MMX;
+        case PIX_FMT_BGR24:  return yuv420_bgr24_MMX;
         case PIX_FMT_RGB565: return yuv420_rgb16_MMX;
         case PIX_FMT_RGB555: return yuv420_rgb15_MMX;
         }
