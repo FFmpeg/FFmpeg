@@ -105,7 +105,7 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
     return NULL;
 }
 
-static int query_formats(AVFilterGraph *graph)
+static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     int i, j;
     int scaler_count = 0;
@@ -186,10 +186,10 @@ static void pick_formats(AVFilterGraph *graph)
     }
 }
 
-int avfilter_graph_config_formats(AVFilterGraph *graph)
+int avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     /* find supported formats from sub-filters, and merge along links */
-    if(query_formats(graph))
+    if(query_formats(graph, log_ctx))
         return -1;
 
     /* Once everything is merged, it's possible that we'll still have

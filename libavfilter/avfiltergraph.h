@@ -66,7 +66,7 @@ int avfilter_graph_config_links(AVFilterGraph *graphctx, AVClass *log_ctx);
 /**
  * Configures the formats of all the links in the graph.
  */
-int avfilter_graph_config_formats(AVFilterGraph *graphctx);
+int avfilter_graph_config_formats(AVFilterGraph *graphctx, AVClass *log_ctx);
 
 /**
  * Frees a graph and destroys its links.
