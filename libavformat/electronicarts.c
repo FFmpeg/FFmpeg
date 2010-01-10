@@ -192,6 +192,7 @@ static int process_audio_header_elements(AVFormatContext *s)
         case 16: ea->audio_codec = CODEC_ID_MP3; break;
         case -1: break;
         default:
+            ea->audio_codec = 0;
             av_log(s, AV_LOG_ERROR, "unsupported stream type; revision2=%i\n", revision2);
             return 0;
         }
