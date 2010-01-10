@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-01-10 - r21121 - lavfi 1.15.0 - avfilter_graph_config_links()
+  Add a log_ctx parameter to avfilter_graph_config_links().
+
 2010-01-07 - r30236 - lsws 0.8.0 - sws_isSupported{In,Out}put
   Add sws_isSupportedInput and sws_isSupportedOutput() functions.
 
