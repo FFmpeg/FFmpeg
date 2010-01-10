@@ -321,7 +321,6 @@ from all but the first stream. This can be accomplished by piping through
 @code{tail} as seen below. Note that when piping through @code{tail} you
 must use command grouping, @code{@{  ;@}}, to background properly.
 
-
 For example, let's say we want to join two FLV files into an output.flv file:
 
 @example
