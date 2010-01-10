@@ -260,6 +260,9 @@ OBJS-$(CONFIG_RV40_DECODER)            += rv40.o rv34.o h264pred.o rv40dsp.o \
 OBJS-$(CONFIG_SGI_DECODER)             += sgidec.o
 OBJS-$(CONFIG_SGI_ENCODER)             += sgienc.o rle.o
 OBJS-$(CONFIG_SHORTEN_DECODER)         += shorten.o
+OBJS-$(CONFIG_SIPR_DECODER)            += sipr.o acelp_pitch_delay.o \
+                                          celp_math.o acelp_vectors.o \
+                                          acelp_filters.o celp_filters.o lsp.o
 OBJS-$(CONFIG_SMACKAUD_DECODER)        += smacker.o
 OBJS-$(CONFIG_SMACKER_DECODER)         += smacker.o
 OBJS-$(CONFIG_SMC_DECODER)             += smc.o
