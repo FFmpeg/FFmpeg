@@ -105,7 +105,7 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
                            unsigned in, unsigned out)
 {
     av_log(link->dst, AV_LOG_INFO, "auto-inserting filter '%s'\n",
-            filt->filter->name);
+            filt->name);
 
     link->dst->inputs[link->dstpad] = NULL;
     if(avfilter_link(filt, out, link->dst, link->dstpad)) {
