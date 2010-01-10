@@ -64,6 +64,7 @@ void avcodec_register_all(void)
     /* video codecs */
     REGISTER_DECODER (AASC, aasc);
     REGISTER_DECODER (AMV, amv);
+    REGISTER_DECODER (ANM, anm);
     REGISTER_ENCDEC  (ASV1, asv1);
     REGISTER_ENCDEC  (ASV2, asv2);
     REGISTER_DECODER (AURA, aura);

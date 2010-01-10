@@ -345,6 +345,7 @@ following image formats are supported:
 @item Creative YUV (CYUV)    @tab     @tab  X
 @item Dirac                  @tab  E  @tab  E
     @tab supported through external libdirac/libschroedinger libraries
+@item Deluxe Paint Animation @tab     @tab  X
 @item DNxHD                  @tab   X @tab  X
     @tab aka SMPTE VC3
 @item Duck TrueMotion 1.0   @tab     @tab  X
