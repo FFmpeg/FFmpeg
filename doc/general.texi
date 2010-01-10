@@ -73,6 +73,7 @@ library:
 @item CRYO APC                  @tab   @tab X
     @tab Audio format used in some games by CRYO Interactive Entertainment.
 @item D-Cinema audio            @tab X @tab X
+@item Deluxe Paint Animation    @tab   @tab X
 @item DV video                  @tab X @tab X
 @item DXA                       @tab   @tab X
     @tab This format is used in the non-Windows version of the Feeble Files
