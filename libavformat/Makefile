@@ -138,6 +138,7 @@ OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o nut.o riff.o
 OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o nut.o riff.o
 OBJS-$(CONFIG_NUV_DEMUXER)               += nuv.o riff.o
 OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
+                                            oggparsedirac.o  \
                                             oggparseflac.o   \
                                             oggparseogm.o    \
                                             oggparsespeex.o  \

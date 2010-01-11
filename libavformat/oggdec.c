@@ -38,10 +38,12 @@
 #define DECODER_BUFFER_SIZE MAX_PAGE_SIZE
 
 static const struct ogg_codec * const ogg_codecs[] = {
+    &ff_dirac_codec,
     &ff_speex_codec,
     &ff_vorbis_codec,
     &ff_theora_codec,
     &ff_flac_codec,
+    &ff_old_dirac_codec,
     &ff_old_flac_codec,
     &ff_ogm_video_codec,
     &ff_ogm_audio_codec,
