@@ -40,7 +40,12 @@ struct ogg_codec {
      */
     int (*header)(AVFormatContext *, int);
     int (*packet)(AVFormatContext *, int);
-    uint64_t (*gptopts)(AVFormatContext *, int, uint64_t);
+    /**
+     * Translate a granule into a timestamp.
+     * Will set dts if non-null and known.
+     * @return pts
+     */
+    uint64_t (*gptopts)(AVFormatContext *, int, uint64_t, int64_t *dts);
     /**
      * 1 if granule is the start time of the associated packet.
      * 0 if granule is the end time of the associated packet.
@@ -60,6 +65,7 @@ struct ogg_stream {
     uint32_t seq;
     uint64_t granule;
     int64_t lastpts;
+    int64_t lastdts;
     int flags;
     const struct ogg_codec *codec;
     int header;

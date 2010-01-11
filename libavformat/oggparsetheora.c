@@ -123,7 +123,7 @@ theora_header (AVFormatContext * s, int idx)
 }
 
 static uint64_t
-theora_gptopts(AVFormatContext *ctx, int idx, uint64_t gp)
+theora_gptopts(AVFormatContext *ctx, int idx, uint64_t gp, int64_t *dts)
 {
     struct ogg *ogg = ctx->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
@@ -136,6 +136,9 @@ theora_gptopts(AVFormatContext *ctx, int idx, uint64_t gp)
 
     if(!pframe)
         os->pflags |= PKT_FLAG_KEY;
+
+    if (dts)
+        *dts = iframe + pframe;
 
     return iframe + pframe;
 }

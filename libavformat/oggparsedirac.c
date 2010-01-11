@@ -47,7 +47,8 @@ static int dirac_header(AVFormatContext *s, int idx)
 }
 
 // various undocument things: granule is signed (only for dirac!)
-static uint64_t dirac_gptopts(AVFormatContext *s, int idx, int64_t gp)
+static uint64_t dirac_gptopts(AVFormatContext *s, int idx, int64_t gp,
+                              int64_t *dts_out)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
@@ -58,6 +59,9 @@ static uint64_t dirac_gptopts(AVFormatContext *s, int idx, int64_t gp)
 
     if (!dist)
         os->pflags |= PKT_FLAG_KEY;
+
+    if (dts_out)
+        *dts_out = dts;
 
     return pts;
 }
@@ -79,7 +83,8 @@ static int old_dirac_header(AVFormatContext *s, int idx)
     return 1;
 }
 
-static uint64_t old_dirac_gptopts(AVFormatContext *s, int idx, uint64_t gp)
+static uint64_t old_dirac_gptopts(AVFormatContext *s, int idx, uint64_t gp,
+                                  int64_t *dts)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
