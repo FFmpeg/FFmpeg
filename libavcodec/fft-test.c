@@ -176,6 +176,7 @@ static void help(void)
 enum tf_transform {
     TRANSFORM_FFT,
     TRANSFORM_MDCT,
+    TRANSFORM_RDFT,
 };
 
 int main(int argc, char **argv)
@@ -188,14 +189,15 @@ int main(int argc, char **argv)
     int do_inverse = 0;
     FFTContext s1, *s = &s1;
     FFTContext m1, *m = &m1;
-    int fft_nbits, fft_size;
+    RDFTContext r1, *r = &r1;
+    int fft_nbits, fft_size, fft_size_2;
     double scale = 1.0;
     AVLFG prng;
     av_lfg_init(&prng, 1);
 
     fft_nbits = 9;
     for(;;) {
-        c = getopt(argc, argv, "hsimn:f:");
+        c = getopt(argc, argv, "hsimrn:f:");
         if (c == -1)
             break;
         switch(c) {
@@ -211,6 +213,9 @@ int main(int argc, char **argv)
         case 'm':
             transform = TRANSFORM_MDCT;
             break;
+        case 'r':
+            transform = TRANSFORM_RDFT;
+            break;
         case 'n':
             fft_nbits = atoi(optarg);
             break;
@@ -221,6 +226,7 @@ int main(int argc, char **argv)
     }
 
     fft_size = 1 << fft_nbits;
+    fft_size_2 = fft_size >> 1;
     tab = av_malloc(fft_size * sizeof(FFTComplex));
     tab1 = av_malloc(fft_size * sizeof(FFTComplex));
     tab_ref = av_malloc(fft_size * sizeof(FFTComplex));
@@ -241,6 +247,14 @@ int main(int argc, char **argv)
         else
             av_log(NULL, AV_LOG_INFO,"FFT");
         ff_fft_init(s, fft_nbits, do_inverse);
+        fft_ref_init(fft_nbits, do_inverse);
+        break;
+    case TRANSFORM_RDFT:
+        if (do_inverse)
+            av_log(NULL, AV_LOG_INFO,"IRDFT");
+        else
+            av_log(NULL, AV_LOG_INFO,"RDFT");
+        ff_rdft_init(r, fft_nbits, do_inverse ? IRDFT : RDFT);
         fft_ref_init(fft_nbits, do_inverse);
         break;
     }
@@ -278,6 +292,35 @@ int main(int argc, char **argv)
         fft_ref(tab_ref, tab1, fft_nbits);
         check_diff((float *)tab_ref, (float *)tab, fft_size * 2, 1.0);
         break;
+    case TRANSFORM_RDFT:
+        if (do_inverse) {
+            tab1[         0].im = 0;
+            tab1[fft_size_2].im = 0;
+            for (i = 1; i < fft_size_2; i++) {
+                tab1[fft_size_2+i].re =  tab1[fft_size_2-i].re;
+                tab1[fft_size_2+i].im = -tab1[fft_size_2-i].im;
+            }
+
+            memcpy(tab2, tab1, fft_size * sizeof(FFTSample));
+            tab2[1] = tab1[fft_size_2].re;
+
+            ff_rdft_calc(r, tab2);
+            fft_ref(tab_ref, tab1, fft_nbits);
+            for (i = 0; i < fft_size; i++) {
+                tab[i].re = tab2[i];
+                tab[i].im = 0;
+            }
+            check_diff((float *)tab_ref, (float *)tab, fft_size * 2, 0.5);
+        } else {
+            for (i = 0; i < fft_size; i++) {
+                tab2[i]    = tab1[i].re;
+                tab1[i].im = 0;
+            }
+            ff_rdft_calc(r, tab2);
+            fft_ref(tab_ref, tab1, fft_nbits);
+            tab_ref[0].im = tab_ref[fft_size_2].re;
+            check_diff((float *)tab_ref, (float *)tab2, fft_size, 1.0);
+        }
     }
 
     /* do a speed test */
@@ -304,6 +347,10 @@ int main(int argc, char **argv)
                     memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
                     ff_fft_calc(s, tab);
                     break;
+                case TRANSFORM_RDFT:
+                    memcpy(tab2, tab1, fft_size * sizeof(FFTSample));
+                    ff_rdft_calc(r, tab2);
+                    break;
                 }
             }
             duration = gettime() - time_start;
@@ -323,6 +370,9 @@ int main(int argc, char **argv)
         break;
     case TRANSFORM_FFT:
         ff_fft_end(s);
+        break;
+    case TRANSFORM_RDFT:
+        ff_rdft_end(r);
         break;
     }
     return 0;
