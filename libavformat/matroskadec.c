@@ -1634,9 +1634,10 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
 
     if (res == 0) {
         for (n = 0; n < laces; n++) {
-            if (st->codec->codec_id == CODEC_ID_RA_288 ||
-                st->codec->codec_id == CODEC_ID_COOK ||
-                st->codec->codec_id == CODEC_ID_ATRAC3) {
+            if ((st->codec->codec_id == CODEC_ID_RA_288 ||
+                 st->codec->codec_id == CODEC_ID_COOK ||
+                 st->codec->codec_id == CODEC_ID_ATRAC3) &&
+                 st->codec->block_align && track->audio.sub_packet_size) {
                 int a = st->codec->block_align;
                 int sps = track->audio.sub_packet_size;
                 int cfs = track->audio.coded_framesize;
