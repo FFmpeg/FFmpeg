@@ -990,6 +990,7 @@ HAVE_LIST="
     soundcard_h
     poll_h
     struct_addrinfo
+    struct_sockaddr_storage
     sys_mman_h
     sys_resource_h
     sys_select_h
@@ -2451,6 +2452,7 @@ texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 if enabled network; then
     check_type "sys/types.h sys/socket.h" socklen_t
     check_type netdb.h "struct addrinfo"
+    check_type sys/socket.h "struct sockaddr_storage"
     # Prefer arpa/inet.h over winsock2
     if check_header arpa/inet.h ; then
         check_func closesocket
@@ -2461,6 +2463,7 @@ if enabled network; then
             network_extralibs="-lws2_32"; }
         check_type ws2tcpip.h socklen_t
         check_type ws2tcpip.h "struct addrinfo"
+        check_type ws2tcpip.h "struct sockaddr_storage"
     else
         disable network
     fi
