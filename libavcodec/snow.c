@@ -1015,45 +1015,23 @@ static void horizontal_compose53i(IDWTELEM *b, int width){
     const int w2= (width+1)>>1;
     int x;
 
-#if 0
-    int A1,A2,A3,A4;
-    A2= temp[1       ];
-    A4= temp[0       ];
-    A1= temp[0+width2];
-    A1 -= (A2 + A4)>>1;
-    A4 += (A1 + 1)>>1;
-    b[0+width2] = A1;
-    b[0       ] = A4;
-    for(x=1; x+1<width2; x+=2){
-        A3= temp[x+width2];
-        A4= temp[x+1     ];
-        A3 -= (A2 + A4)>>1;
-        A2 += (A1 + A3 + 2)>>2;
-        b[x+width2] = A3;
-        b[x       ] = A2;
-
-        A1= temp[x+1+width2];
-        A2= temp[x+2       ];
-        A1 -= (A2 + A4)>>1;
-        A4 += (A1 + A3 + 2)>>2;
-        b[x+1+width2] = A1;
-        b[x+1       ] = A4;
-    }
-    A3= temp[width-1];
-    A3 -= A2;
-    A2 += (A1 + A3 + 2)>>2;
-    b[width -1] = A3;
-    b[width2-1] = A2;
-#else
-    inv_lift(temp   , b   , b+w2, 1, 1, 1, width,  1, 2, 2, 0, 1);
-    inv_lift(temp+w2, b+w2, temp, 1, 1, 1, width, -1, 0, 1, 1, 1);
-#endif /* 0 */
     for(x=0; x<width2; x++){
-        b[2*x    ]= temp[x   ];
-        b[2*x + 1]= temp[x+w2];
+        temp[2*x    ]= b[x   ];
+        temp[2*x + 1]= b[x+w2];
     }
     if(width&1)
-        b[2*x    ]= temp[x   ];
+        temp[2*x    ]= b[x   ];
+
+    b[0] = temp[0] - ((temp[1]+1)>>1);
+    for(x=2; x<width-1; x+=2){
+        b[x  ] = temp[x  ] - ((temp[x-1] + temp[x+1]+2)>>2);
+        b[x-1] = temp[x-1] + ((b   [x-2] + b   [x  ]+1)>>1);
+    }
+    if(width&1){
+        b[x  ] = temp[x  ] - ((temp[x-1]+1)>>1);
+        b[x-1] = temp[x-1] + ((b   [x-2] + b  [x  ]+1)>>1);
+    }else
+        b[x-1] = temp[x-1] + b[x-2];
 }
 
 static void vertical_compose53iH0(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, int width){
