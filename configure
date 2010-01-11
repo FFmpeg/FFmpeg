@@ -958,6 +958,7 @@ HAVE_LIST="
     fast_cmov
     fast_unaligned
     fork
+    getaddrinfo
     gethrtime
     GetProcessTimes
     getrusage
@@ -2314,6 +2315,7 @@ fi
 check_func nanosleep || { check_func nanosleep -lrt && add_extralibs -lrt; }
 
 check_func  fork
+check_func  getaddrinfo $network_extralibs
 check_func  gethrtime
 check_func  getrusage
 check_func  inet_aton $network_extralibs
