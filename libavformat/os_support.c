@@ -60,6 +60,76 @@ int inet_aton (const char * str, struct in_addr * add)
 }
 #endif /* !HAVE_INET_ATON */
 
+#if !HAVE_GETADDRINFO
+int ff_getaddrinfo(const char *node, const char *service,
+                const struct addrinfo *hints, struct addrinfo **res)
+{
+    struct hostent *h = NULL;
+    struct addrinfo *ai;
+    struct sockaddr_in *sin;
+
+    sin = av_mallocz(sizeof(struct sockaddr_in));
+    if (!sin)
+        return EAI_FAIL;
+    sin->sin_family = AF_INET;
+
+    if (node) {
+        if (!inet_aton(node, &sin->sin_addr)) {
+            if (hints && (hints->ai_flags & AI_NUMERICHOST)) {
+                av_free(sin);
+                return EAI_FAIL;
+            }
+            h = gethostbyname(node);
+            if (!h) {
+                av_free(sin);
+                return EAI_FAIL;
+            }
+            memcpy(&sin->sin_addr, h->h_addr_list[0], sizeof(struct in_addr));
+        }
+    } else {
+        if (hints && (hints->ai_flags & AI_PASSIVE)) {
+            sin->sin_addr.s_addr = INADDR_ANY;
+        } else
+            sin->sin_addr.s_addr = INADDR_LOOPBACK;
+    }
+
+    /* Note: getaddrinfo allows service to be a string, which
+     * should be looked up using getservbyname. */
+    if (service)
+        sin->sin_port = htons(atoi(service));
+
+    ai = av_mallocz(sizeof(struct addrinfo));
+    if (!ai) {
+        av_free(sin);
+        return EAI_FAIL;
+    }
+
+    *res = ai;
+    ai->ai_family = AF_INET;
+    ai->ai_socktype = hints ? hints->ai_socktype : 0;
+    switch (ai->ai_socktype) {
+    case SOCK_STREAM: ai->ai_protocol = IPPROTO_TCP; break;
+    case SOCK_DGRAM:  ai->ai_protocol = IPPROTO_UDP; break;
+    default:          ai->ai_protocol = 0;           break;
+    }
+
+    ai->ai_addr = (struct sockaddr *)sin;
+    ai->ai_addrlen = sizeof(struct sockaddr_in);
+    if (hints && (hints->ai_flags & AI_CANONNAME))
+        ai->ai_canonname = h ? av_strdup(h->h_name) : NULL;
+
+    ai->ai_next = NULL;
+    return 0;
+}
+
+void ff_freeaddrinfo(struct addrinfo *res)
+{
+    av_free(res->ai_canonname);
+    av_free(res->ai_addr);
+    av_free(res);
+}
+#endif
+
 /* resolve host with also IP address parsing */
 int resolve_host(struct in_addr *sin_addr, const char *hostname)
 {

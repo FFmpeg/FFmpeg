@@ -68,4 +68,42 @@ static inline void ff_network_close(void)
 int inet_aton (const char * str, struct in_addr * add);
 #endif
 
+#if !HAVE_STRUCT_ADDRINFO
+struct addrinfo {
+    int ai_flags;
+    int ai_family;
+    int ai_socktype;
+    int ai_protocol;
+    int ai_addrlen;
+    struct sockaddr *ai_addr;
+    char *ai_canonname;
+    struct addrinfo *ai_next;
+};
+#endif
+
+/* getaddrinfo constants */
+#ifndef EAI_FAIL
+#define EAI_FAIL 4
+#endif
+
+#ifndef AI_PASSIVE
+#define AI_PASSIVE 1
+#endif
+
+#ifndef AI_CANONNAME
+#define AI_CANONNAME 2
+#endif
+
+#ifndef AI_NUMERICHOST
+#define AI_NUMERICHOST 4
+#endif
+
+#if !HAVE_GETADDRINFO
+int ff_getaddrinfo(const char *node, const char *service,
+                   const struct addrinfo *hints, struct addrinfo **res);
+void ff_freeaddrinfo(struct addrinfo *res);
+#define getaddrinfo ff_getaddrinfo
+#define freeaddrinfo ff_freeaddrinfo
+#endif
+
 #endif /* AVFORMAT_NETWORK_H */
