@@ -1120,10 +1120,36 @@ void ff_snow_horizontal_compose97i(IDWTELEM *b, int width){
     IDWTELEM temp[width];
     const int w2= (width+1)>>1;
 
-    inv_lift (temp   , b      , b   +w2, 1, 1, 1, width,  W_DM, W_DO, W_DS, 0, 1);
-    inv_lift (temp+w2, b   +w2, temp   , 1, 1, 1, width,  W_CM, W_CO, W_CS, 1, 1);
-    inv_liftS(b      , temp   , temp+w2, 2, 1, 1, width,  W_BM, W_BO, W_BS, 0, 1);
-    inv_lift (b+1    , temp+w2, b      , 2, 1, 2, width,  W_AM, W_AO, W_AS, 1, 0);
+#if 0 //maybe more understadable but slower
+    inv_lift (temp   , b      , b   +w2, 2, 1, 1, width,  W_DM, W_DO, W_DS, 0, 1);
+    inv_lift (temp+1 , b   +w2, temp   , 2, 1, 2, width,  W_CM, W_CO, W_CS, 1, 1);
+
+    inv_liftS(b      , temp   , temp+1 , 2, 2, 2, width,  W_BM, W_BO, W_BS, 0, 1);
+    inv_lift (b+1    , temp+1 , b      , 2, 2, 2, width,  W_AM, W_AO, W_AS, 1, 0);
+#else
+    int x;
+    temp[0] = b[0] - ((3*b[w2]+2)>>2);
+    for(x=1; x<(width>>1); x++){
+        temp[2*x  ] = b[x     ] - ((3*(b   [x+w2-1] + b[x+w2])+4)>>3);
+        temp[2*x-1] = b[x+w2-1] - temp[2*x-2] - temp[2*x];
+    }
+    if(width&1){
+        temp[2*x  ] = b[x     ] - ((3*b   [x+w2-1]+2)>>2);
+        temp[2*x-1] = b[x+w2-1] - temp[2*x-2] - temp[2*x];
+    }else
+        temp[2*x-1] = b[x+w2-1] - 2*temp[2*x-2];
+
+    b[0] = temp[0] + ((2*temp[0] + temp[1]+4)>>3);
+    for(x=2; x<width-1; x+=2){
+        b[x  ] = temp[x  ] + ((4*temp[x  ] + temp[x-1] + temp[x+1]+8)>>4);
+        b[x-1] = temp[x-1] + ((3*(b  [x-2] + b   [x  ] ))>>1);
+    }
+    if(width&1){
+        b[x  ] = temp[x  ] + ((2*temp[x  ] + temp[x-1]+4)>>3);
+        b[x-1] = temp[x-1] + ((3*(b  [x-2] + b   [x  ] ))>>1);
+    }else
+        b[x-1] = temp[x-1] + 3*b [x-2];
+#endif
 }
 
 static void vertical_compose97iH0(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, int width){
