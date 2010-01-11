@@ -34,7 +34,7 @@ typedef struct TCPContext {
 /* return non zero if error */
 static int tcp_open(URLContext *h, const char *uri, int flags)
 {
-    struct sockaddr_in dest_addr;
+    struct addrinfo hints, *ai, *cur_ai;
     int port, fd = -1;
     TCPContext *s = NULL;
     fd_set wfds;
@@ -42,6 +42,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     struct timeval tv;
     socklen_t optlen;
     char hostname[1024],proto[1024],path[1024];
+    char portstr[10];
 
     if(!ff_network_init())
         return AVERROR(EIO);
@@ -51,19 +52,23 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (strcmp(proto,"tcp") || port <= 0 || port >= 65536)
         return AVERROR(EINVAL);
 
-    dest_addr.sin_family = AF_INET;
-    dest_addr.sin_port = htons(port);
-    if (resolve_host(&dest_addr.sin_addr, hostname) < 0)
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    snprintf(portstr, sizeof(portstr), "%d", port);
+    if (getaddrinfo(hostname, portstr, &hints, &ai))
         return AVERROR(EIO);
 
-    fd = socket(AF_INET, SOCK_STREAM, 0);
+    cur_ai = ai;
+
+ restart:
+    fd = socket(cur_ai->ai_family, cur_ai->ai_socktype, cur_ai->ai_protocol);
     if (fd < 0)
-        return AVERROR(EIO);
+        goto fail;
     ff_socket_nonblock(fd, 1);
 
  redo:
-    ret = connect(fd, (struct sockaddr *)&dest_addr,
-                  sizeof(dest_addr));
+    ret = connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
     if (ret < 0) {
         if (ff_neterrno() == FF_NETERROR(EINTR))
             goto redo;
@@ -94,18 +99,29 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
     s = av_malloc(sizeof(TCPContext));
-    if (!s)
+    if (!s) {
+        freeaddrinfo(ai);
         return AVERROR(ENOMEM);
+    }
     h->priv_data = s;
     h->is_streamed = 1;
     s->fd = fd;
+    freeaddrinfo(ai);
     return 0;
 
  fail:
+    if (cur_ai->ai_next) {
+        /* Retry with the next sockaddr */
+        cur_ai = cur_ai->ai_next;
+        if (fd >= 0)
+            closesocket(fd);
+        goto restart;
+    }
     ret = AVERROR(EIO);
  fail1:
     if (fd >= 0)
         closesocket(fd);
+    freeaddrinfo(ai);
     return ret;
 }
 
