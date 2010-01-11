@@ -128,6 +128,50 @@ void ff_freeaddrinfo(struct addrinfo *res)
     av_free(res->ai_addr);
     av_free(res);
 }
+
+int ff_getnameinfo(const struct sockaddr *sa, int salen,
+                   char *host, int hostlen,
+                   char *serv, int servlen, int flags)
+{
+    const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
+
+    if (sa->sa_family != AF_INET)
+        return EAI_FAMILY;
+    if (!host && !serv)
+        return EAI_NONAME;
+
+    if (host && hostlen > 0) {
+        struct hostent *ent = NULL;
+        uint32_t a;
+        if (!(flags & NI_NUMERICHOST))
+            ent = gethostbyaddr((const char *)&sin->sin_addr,
+                                sizeof(sin->sin_addr), AF_INET);
+
+        if (ent) {
+            snprintf(host, hostlen, "%s", ent->h_name);
+        } else if (flags & NI_NAMERQD) {
+            return EAI_NONAME;
+        } else {
+            a = ntohl(sin->sin_addr.s_addr);
+            snprintf(host, hostlen, "%d.%d.%d.%d",
+                     ((a >> 24) & 0xff), ((a >> 16) & 0xff),
+                     ((a >>  8) & 0xff), ( a        & 0xff));
+        }
+    }
+
+    if (serv && servlen > 0) {
+        struct servent *ent = NULL;
+        if (!(flags & NI_NUMERICSERV))
+            ent = getservbyport(sin->sin_port, flags & NI_DGRAM ? "udp" : "tcp");
+
+        if (ent) {
+            snprintf(serv, servlen, "%s", ent->s_name);
+        } else
+            snprintf(serv, servlen, "%d", ntohs(sin->sin_port));
+    }
+
+    return 0;
+}
 #endif
 
 /* resolve host with also IP address parsing */

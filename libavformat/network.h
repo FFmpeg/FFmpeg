@@ -92,6 +92,14 @@ struct addrinfo {
 #define EAI_FAIL 4
 #endif
 
+#ifndef EAI_FAMILY
+#define EAI_FAMILY 5
+#endif
+
+#ifndef EAI_NONAME
+#define EAI_NONAME 8
+#endif
+
 #ifndef AI_PASSIVE
 #define AI_PASSIVE 1
 #endif
@@ -104,12 +112,36 @@ struct addrinfo {
 #define AI_NUMERICHOST 4
 #endif
 
+#ifndef NI_NOFQDN
+#define NI_NOFQDN 1
+#endif
+
+#ifndef NI_NUMERICHOST
+#define NI_NUMERICHOST 2
+#endif
+
+#ifndef NI_NAMERQD
+#define NI_NAMERQD 4
+#endif
+
+#ifndef NI_NUMERICSERV
+#define NI_NUMERICSERV 8
+#endif
+
+#ifndef NI_DGRAM
+#define NI_DGRAM 16
+#endif
+
 #if !HAVE_GETADDRINFO
 int ff_getaddrinfo(const char *node, const char *service,
                    const struct addrinfo *hints, struct addrinfo **res);
 void ff_freeaddrinfo(struct addrinfo *res);
+int ff_getnameinfo(const struct sockaddr *sa, int salen,
+                   char *host, int hostlen,
+                   char *serv, int servlen, int flags);
 #define getaddrinfo ff_getaddrinfo
 #define freeaddrinfo ff_freeaddrinfo
+#define getnameinfo ff_getnameinfo
 #endif
 
 #endif /* AVFORMAT_NETWORK_H */
