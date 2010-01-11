@@ -173,7 +173,10 @@ static void help(void)
     exit(1);
 }
 
-
+enum tf_transform {
+    TRANSFORM_FFT,
+    TRANSFORM_MDCT,
+};
 
 int main(int argc, char **argv)
 {
@@ -181,7 +184,7 @@ int main(int argc, char **argv)
     FFTSample *tab2;
     int it, i, c;
     int do_speed = 0;
-    int do_mdct = 0;
+    enum tf_transform transform = TRANSFORM_FFT;
     int do_inverse = 0;
     FFTContext s1, *s = &s1;
     FFTContext m1, *m = &m1;
@@ -206,7 +209,7 @@ int main(int argc, char **argv)
             do_inverse = 1;
             break;
         case 'm':
-            do_mdct = 1;
+            transform = TRANSFORM_MDCT;
             break;
         case 'n':
             fft_nbits = atoi(optarg);
@@ -223,20 +226,23 @@ int main(int argc, char **argv)
     tab_ref = av_malloc(fft_size * sizeof(FFTComplex));
     tab2 = av_malloc(fft_size * sizeof(FFTSample));
 
-    if (do_mdct) {
+    switch (transform) {
+    case TRANSFORM_MDCT:
         av_log(NULL, AV_LOG_INFO,"Scale factor is set to %f\n", scale);
         if (do_inverse)
             av_log(NULL, AV_LOG_INFO,"IMDCT");
         else
             av_log(NULL, AV_LOG_INFO,"MDCT");
         ff_mdct_init(m, fft_nbits, do_inverse, scale);
-    } else {
+        break;
+    case TRANSFORM_FFT:
         if (do_inverse)
             av_log(NULL, AV_LOG_INFO,"IFFT");
         else
             av_log(NULL, AV_LOG_INFO,"FFT");
         ff_fft_init(s, fft_nbits, do_inverse);
         fft_ref_init(fft_nbits, do_inverse);
+        break;
     }
     av_log(NULL, AV_LOG_INFO," %d test\n", fft_size);
 
@@ -250,7 +256,8 @@ int main(int argc, char **argv)
     /* checking result */
     av_log(NULL, AV_LOG_INFO,"Checking...\n");
 
-    if (do_mdct) {
+    switch (transform) {
+    case TRANSFORM_MDCT:
         if (do_inverse) {
             imdct_ref((float *)tab_ref, (float *)tab1, fft_nbits);
             ff_imdct_calc(m, tab2, (float *)tab1);
@@ -262,13 +269,15 @@ int main(int argc, char **argv)
 
             check_diff((float *)tab_ref, tab2, fft_size / 2, scale);
         }
-    } else {
+        break;
+    case TRANSFORM_FFT:
         memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
         ff_fft_permute(s, tab);
         ff_fft_calc(s, tab);
 
         fft_ref(tab_ref, tab1, fft_nbits);
         check_diff((float *)tab_ref, (float *)tab, fft_size * 2, 1.0);
+        break;
     }
 
     /* do a speed test */
@@ -283,15 +292,18 @@ int main(int argc, char **argv)
         for(;;) {
             time_start = gettime();
             for (it = 0; it < nb_its; it++) {
-                if (do_mdct) {
+                switch (transform) {
+                case TRANSFORM_MDCT:
                     if (do_inverse) {
                         ff_imdct_calc(m, (float *)tab, (float *)tab1);
                     } else {
                         ff_mdct_calc(m, (float *)tab, (float *)tab1);
                     }
-                } else {
+                    break;
+                case TRANSFORM_FFT:
                     memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
                     ff_fft_calc(s, tab);
+                    break;
                 }
             }
             duration = gettime() - time_start;
@@ -305,10 +317,13 @@ int main(int argc, char **argv)
                nb_its);
     }
 
-    if (do_mdct) {
+    switch (transform) {
+    case TRANSFORM_MDCT:
         ff_mdct_end(m);
-    } else {
+        break;
+    case TRANSFORM_FFT:
         ff_fft_end(s);
+        break;
     }
     return 0;
 }
