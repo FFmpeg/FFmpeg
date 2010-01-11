@@ -355,11 +355,15 @@ disable_weak(){
 }
 
 enable_safe(){
-    enable $(echo "$*" | sed 's/[^A-Za-z0-9_ ]/_/g')
+    for var; do
+        enable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
+    done
 }
 
 disable_safe(){
-    disable $(echo "$*" | sed 's/[^A-Za-z0-9_ ]/_/g')
+    for var; do
+        disable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
+    done
 }
 
 do_enable_deep(){
