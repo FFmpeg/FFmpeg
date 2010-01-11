@@ -1070,8 +1070,17 @@ static void spatial_compose53i_dy_buffered(DWTCompose *cs, slice_buffer * sb, in
     IDWTELEM *b2= slice_buffer_get_line(sb, mirror(y+1, height-1) * stride_line);
     IDWTELEM *b3= slice_buffer_get_line(sb, mirror(y+2, height-1) * stride_line);
 
+    if(y+1<(unsigned)height && y<(unsigned)height){
+        int x;
+
+        for(x=0; x<width; x++){
+            b2[x] -= (b1[x] + b3[x] + 2)>>2;
+            b1[x] += (b0[x] + b2[x])>>1;
+        }
+    }else{
         if(y+1<(unsigned)height) vertical_compose53iL0(b1, b2, b3, width);
         if(y+0<(unsigned)height) vertical_compose53iH0(b0, b1, b2, width);
+    }
 
         if(y-1<(unsigned)height) horizontal_compose53i(b0, width);
         if(y+0<(unsigned)height) horizontal_compose53i(b1, width);
