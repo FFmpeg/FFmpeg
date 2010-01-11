@@ -63,13 +63,34 @@ int inet_aton (const char * str, struct in_addr * add)
 /* resolve host with also IP address parsing */
 int resolve_host(struct in_addr *sin_addr, const char *hostname)
 {
-    struct hostent *hp;
 
     if (!inet_aton(hostname, sin_addr)) {
+#if HAVE_GETADDRINFO
+        struct addrinfo *ai, *cur;
+        struct addrinfo hints;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_INET;
+        if (getaddrinfo(hostname, NULL, &hints, &ai))
+            return -1;
+        /* getaddrinfo returns a linked list of addrinfo structs.
+         * Even if we set ai_family = AF_INET above, make sure
+         * that the returned one actually is of the correct type. */
+        for (cur = ai; cur; cur = cur->ai_next) {
+            if (cur->ai_family == AF_INET) {
+                *sin_addr = ((struct sockaddr_in *)cur->ai_addr)->sin_addr;
+                freeaddrinfo(ai);
+                return 0;
+            }
+        }
+        freeaddrinfo(ai);
+        return -1;
+#else
+        struct hostent *hp;
         hp = gethostbyname(hostname);
         if (!hp)
             return -1;
         memcpy(sin_addr, hp->h_addr_list[0], sizeof(struct in_addr));
+#endif
     }
     return 0;
 }
