@@ -942,9 +942,9 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                                     if (vq_ptr[j] == 64.0f) {
                                         int n = 4;
                                         /* The total length of escape_sequence must be < 22 bits according
-                                           to the specification (i.e. max is 11111111110xxxxxxxxxx). */
-                                        while (get_bits1(gb) && n < 15) n++;
-                                        if (n == 15) {
+                                           to the specification (i.e. max is 111111110xxxxxxxxxxxx). */
+                                        while (get_bits1(gb) && n < 13) n++;
+                                        if (n == 13) {
                                             av_log(ac->avccontext, AV_LOG_ERROR, "error in spectral data, ESC overflow\n");
                                             return -1;
                                         }
