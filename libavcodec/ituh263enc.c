@@ -38,6 +38,7 @@
 #include "unary.h"
 #include "flv.h"
 #include "mpeg4video.h"
+#include "internal.h"
 
 //#undef NDEBUG
 //#include <assert.h>

@@ -38,6 +38,7 @@
 #include "aandcttab.h"
 #include "flv.h"
 #include "mpeg4video.h"
+#include "internal.h"
 #include <limits.h>
 
 //#undef NDEBUG
