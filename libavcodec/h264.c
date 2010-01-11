@@ -3813,6 +3813,15 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         if(!s->avctx->sample_aspect_ratio.den)
             s->avctx->sample_aspect_ratio.den = 1;
 
+        if(h->sps.video_signal_type_present_flag){
+            s->avctx->color_range = h->sps.full_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+            if(h->sps.colour_description_present_flag){
+                s->avctx->color_primaries = h->sps.color_primaries;
+                s->avctx->color_trc       = h->sps.color_trc;
+                s->avctx->colorspace      = h->sps.colorspace;
+            }
+        }
+
         if(h->sps.timing_info_present_flag){
             s->avctx->time_base= (AVRational){h->sps.num_units_in_tick, h->sps.time_scale};
             if(h->x264_build > 0 && h->x264_build < 44)
@@ -7079,13 +7088,22 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         get_bits1(&s->gb);      /* overscan_appropriate_flag */
     }
 
-    if(get_bits1(&s->gb)){      /* video_signal_type_present_flag */
+    sps->video_signal_type_present_flag = get_bits1(&s->gb);
+    if(sps->video_signal_type_present_flag){
         get_bits(&s->gb, 3);    /* video_format */
-        get_bits1(&s->gb);      /* video_full_range_flag */
-        if(get_bits1(&s->gb)){  /* colour_description_present_flag */
-            get_bits(&s->gb, 8); /* colour_primaries */
-            get_bits(&s->gb, 8); /* transfer_characteristics */
-            get_bits(&s->gb, 8); /* matrix_coefficients */
+        sps->full_range = get_bits1(&s->gb); /* video_full_range_flag */
+
+        sps->colour_description_present_flag = get_bits1(&s->gb);
+        if(sps->colour_description_present_flag){
+            sps->color_primaries = get_bits(&s->gb, 8); /* colour_primaries */
+            sps->color_trc       = get_bits(&s->gb, 8); /* transfer_characteristics */
+            sps->colorspace      = get_bits(&s->gb, 8); /* matrix_coefficients */
+            if (sps->color_primaries >= AVCOL_PRI_NB)
+                sps->color_primaries  = AVCOL_PRI_UNSPECIFIED;
+            if (sps->color_trc >= AVCOL_TRC_NB)
+                sps->color_trc  = AVCOL_TRC_UNSPECIFIED;
+            if (sps->colorspace >= AVCOL_SPC_NB)
+                sps->colorspace  = AVCOL_SPC_UNSPECIFIED;
         }
     }
 
