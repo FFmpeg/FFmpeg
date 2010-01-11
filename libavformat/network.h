@@ -68,6 +68,12 @@ static inline void ff_network_close(void)
 int inet_aton (const char * str, struct in_addr * add);
 #endif
 
+#if !HAVE_STRUCT_SOCKADDR_STORAGE
+struct sockaddr_storage {
+    struct sockaddr_in x;
+};
+#endif
+
 #if !HAVE_STRUCT_ADDRINFO
 struct addrinfo {
     int ai_flags;
