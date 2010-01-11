@@ -295,6 +295,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
     YUV2RGB_OPERANDS
 }
 
+#undef RGB_PLANAR2PACKED24
 #if HAVE_MMX2
 #define RGB_PLANAR2PACKED24(red, blue)\
         "movq "MANGLE(ff_M24A)", %%mm4     \n\t"\
