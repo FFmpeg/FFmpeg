@@ -248,6 +248,7 @@ Muxers/Demuxers:
   daud.c                                Reimar Doeffinger
   dv.c                                  Roman Shaposhnik
   dxa.c                                 Kostya Shishkov
+  electronicarts.c                      Peter Ross
   ffm*                                  Baptiste Coudurier
   flac*                                 Justin Ruggles
   flic.c                                Mike Melanson
