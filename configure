@@ -740,13 +740,13 @@ check_type(){
     headers=$1
     type=$2
     shift 2
-    disable $type
+    disable_safe "$type"
     incs=""
     for hdr in $headers; do
         incs="$incs
 #include <$hdr>"
     done
-    check_cc "$@" <<EOF && enable $type
+    check_cc "$@" <<EOF && enable_safe "$type"
 $incs
 $type v;
 EOF
