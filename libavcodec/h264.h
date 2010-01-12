@@ -93,6 +93,13 @@
 #define IS_REF0(a)         ((a) & MB_TYPE_REF0)
 #define IS_8x8DCT(a)       ((a) & MB_TYPE_8x8DCT)
 
+/**
+ * Value of Picture.reference when Picture is not a reference picture, but
+ * is held for delayed output.
+ */
+#define DELAYED_PIC_REF 4
+
+
 /* NAL unit types */
 enum {
     NAL_SLICE=1,
@@ -602,6 +609,23 @@ int ff_h264_get_slice_type(H264Context *h);
  * needs width/height
  */
 int ff_h264_alloc_tables(H264Context *h);
+
+/**
+ * fills the default_ref_list.
+ */
+int ff_h264_fill_default_ref_list(H264Context *h);
+
+int ff_h264_decode_ref_pic_list_reordering(H264Context *h);
+void ff_h264_fill_mbaff_ref_list(H264Context *h);
+void ff_h264_remove_all_refs(H264Context *h);
+
+/**
+ * Executes the reference picture marking (memory management control operations).
+ */
+int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count);
+
+int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb);
+
 
 /**
  * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
