@@ -256,13 +256,15 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              "Host: %s\r\n"
              "Authorization: Basic %s\r\n"
              "Connection: close\r\n"
+             "%s"
              "\r\n",
              post ? "POST" : "GET",
              path,
              LIBAVFORMAT_IDENT,
              s->off,
              hoststr,
-             auth_b64);
+             auth_b64,
+             post ? "Transfer-Encoding: chunked\r\n" : "");
 
     av_freep(&auth_b64);
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
@@ -275,6 +277,8 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     s->off = 0;
     s->filesize = -1;
     if (post) {
+        /* always use chunked encoding for upload data */
+        s->chunksize = 0;
         return 0;
     }
 
@@ -344,16 +348,45 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
 /* used only when posting data */
 static int http_write(URLContext *h, uint8_t *buf, int size)
 {
+    char temp[11];  /* 32-bit hex + CRLF + nul */
+    int ret;
+    char crlf[] = "\r\n";
     HTTPContext *s = h->priv_data;
+
+    if (s->chunksize == -1) {
+        /* headers are sent without any special encoding */
     return url_write(s->hd, buf, size);
+    }
+
+    /* silently ignore zero-size data since chunk encoding that would
+     * signal EOF */
+    if (size > 0) {
+        /* upload data using chunked encoding */
+        snprintf(temp, sizeof(temp), "%x\r\n", size);
+
+        if ((ret = url_write(s->hd, temp, strlen(temp))) < 0 ||
+            (ret = url_write(s->hd, buf, size)) < 0 ||
+            (ret = url_write(s->hd, crlf, sizeof(crlf) - 1)) < 0)
+            return ret;
+    }
+    return size;
 }
 
 static int http_close(URLContext *h)
 {
+    int ret = 0;
+    char footer[] = "0\r\n\r\n";
     HTTPContext *s = h->priv_data;
+
+    /* signal end of chunked encoding if used */
+    if ((h->flags & URL_WRONLY) && s->chunksize != -1) {
+        ret = url_write(s->hd, footer, sizeof(footer) - 1);
+        ret = ret > 0 ? 0 : ret;
+    }
+
     url_close(s->hd);
     av_free(s);
-    return 0;
+    return ret;
 }
 
 static int64_t http_seek(URLContext *h, int64_t off, int whence)
