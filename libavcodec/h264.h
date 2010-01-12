@@ -610,6 +610,10 @@ int ff_h264_frame_start(H264Context *h);
 av_cold int ff_h264_decode_init(AVCodecContext *avctx);
 av_cold int ff_h264_decode_end(AVCodecContext *avctx);
 
+void ff_h264_direct_dist_scale_factor(H264Context * const h);
+void ff_h264_direct_ref_list_init(H264Context * const h);
+void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type);
+
 void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
 void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
 
