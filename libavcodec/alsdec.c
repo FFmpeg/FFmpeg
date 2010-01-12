@@ -1424,8 +1424,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->lpc_cof_reversed_buffer = av_malloc(sizeof(*ctx->lpc_cof_buffer) *
                                              sconf->max_order);
 
-    if (!ctx->quant_cof        || !ctx->lpc_cof       ||
-        !ctx->quant_cof_buffer || !ctx->lpc_cof_buffer ||
+    if (!ctx->quant_cof              || !ctx->lpc_cof        ||
+        !ctx->quant_cof_buffer       || !ctx->lpc_cof_buffer ||
         !ctx->lpc_cof_reversed_buffer) {
         av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
         return AVERROR(ENOMEM);
