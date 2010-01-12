@@ -25,6 +25,9 @@
 #include "internal.h"
 #include "avc.h"
 #include "rtp.h"
+#if CONFIG_NETWORK
+#include "network.h"
+#endif
 
 #if CONFIG_RTP_MUXER
 #define MAX_EXTRADATA_SIZE ((INT_MAX - 10) / 2)
@@ -68,6 +71,37 @@ static void sdp_write_header(char *buff, int size, struct sdp_session_level *s)
                             "a=tool:libavformat " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\r\n",
                             s->start_time, s->end_time);
 }
+
+#if CONFIG_NETWORK
+static void resolve_destination(char *dest_addr, int size)
+{
+    struct addrinfo hints, *ai, *cur;
+
+    if (!dest_addr[0])
+        return;
+
+    /* Resolve the destination, since it must be written
+     * as a numeric IP address in the SDP. */
+
+    memset(&hints, 0, sizeof(hints));
+    /* We only support IPv4 addresses in the SDP at the moment. */
+    hints.ai_family = AF_INET;
+    if (getaddrinfo(dest_addr, NULL, &hints, &ai))
+        return;
+    for (cur = ai; cur; cur = cur->ai_next) {
+        if (cur->ai_family == AF_INET) {
+            getnameinfo(cur->ai_addr, cur->ai_addrlen, dest_addr, size,
+                        NULL, 0, NI_NUMERICHOST);
+            break;
+        }
+    }
+    freeaddrinfo(ai);
+}
+#else
+static void resolve_destination(char *dest_addr, int size)
+{
+}
+#endif
 
 static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
 {
@@ -303,6 +337,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     ttl = 0;
     if (n_files == 1) {
         port = sdp_get_address(dst, sizeof(dst), &ttl, ac[0]->filename);
+        resolve_destination(dst, sizeof(dst));
         if (dst[0]) {
             s.dst_addr = dst;
             s.ttl = ttl;
@@ -314,6 +349,7 @@ int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size)
     for (i = 0; i < n_files; i++) {
         if (n_files != 1) {
             port = sdp_get_address(dst, sizeof(dst), &ttl, ac[i]->filename);
+            resolve_destination(dst, sizeof(dst));
         }
         for (j = 0; j < ac[i]->nb_streams; j++) {
             sdp_write_media(buff, size,
