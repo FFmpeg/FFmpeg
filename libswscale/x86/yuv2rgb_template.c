@@ -168,7 +168,7 @@
         : "r" (pu - index), "r" (pv - index), "r"(&c->redDither), "r" (py - 2*index) \
         ); \
     } \
-    __asm__ volatile (EMMS); \
+    __asm__ volatile (SFENCE"\n\t"EMMS); \
     return srcSliceH; \
 
 #define YUV2RGB_OPERANDS_ALPHA \
@@ -176,7 +176,7 @@
         : "r" (pu - index), "r" (pv - index), "r"(&c->redDither), "r" (py - 2*index), "r" (pa - 2*index) \
         ); \
     } \
-    __asm__ volatile (EMMS); \
+    __asm__ volatile (SFENCE"\n\t"EMMS); \
     return srcSliceH; \
 
 static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
