@@ -610,6 +610,9 @@ int ff_h264_frame_start(H264Context *h);
 av_cold int ff_h264_decode_init(AVCodecContext *avctx);
 av_cold int ff_h264_decode_end(AVCodecContext *avctx);
 
+void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
+void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
+
 /*
 o-o o-o
  / / /
@@ -677,6 +680,13 @@ static inline int check_intra4x4_pred_mode(H264Context *h){
 
     return 0;
 } //FIXME cleanup like ff_h264_check_intra_pred_mode
+
+/**
+ * gets the chroma qp.
+ */
+static inline int get_chroma_qp(H264Context *h, int t, int qscale){
+    return h->pps.chroma_qp_table[t][qscale];
+}
 
 static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, int list, int part_width){
     const int topright_ref= h->ref_cache[list][ i - 8 + part_width ];
