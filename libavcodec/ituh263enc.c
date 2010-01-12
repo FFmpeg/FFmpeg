@@ -24,7 +24,7 @@
 
 /**
  * @file libavcodec/ituh263enc.c
- * h263 encoder.
+ * h263 bitstream encoder.
  */
 
 //#define DEBUG
