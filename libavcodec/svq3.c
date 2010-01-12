@@ -589,7 +589,7 @@ static int svq3_decode_mb(H264Context *h, unsigned int mb_type)
         ff_h264_write_back_intra_pred_mode(h);
 
         if (mb_type == 8) {
-            check_intra4x4_pred_mode(h);
+            ff_h264_check_intra4x4_pred_mode(h);
 
             h->top_samples_available  = (s->mb_y == 0) ? 0x33FF : 0xFFFF;
             h->left_samples_available = (s->mb_x == 0) ? 0x5F5F : 0xFFFF;
