@@ -553,6 +553,10 @@ typedef struct H264Context{
     int initial_cpb_removal_delay[32]; ///< Initial timestamps for CPBs
 }H264Context;
 
+
+extern const uint8_t ff_h264_chroma_qp[52];
+
+
 /**
  * Decode SEI
  */
