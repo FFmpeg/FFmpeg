@@ -954,6 +954,8 @@ HAVE_LIST="
     dos_paths
     ebp_available
     ebx_available
+    exp2
+    exp2f
     fast_64bit
     fast_cmov
     fast_unaligned
@@ -970,6 +972,7 @@ HAVE_LIST="
     libdc1394_2
     llrint
     log2
+    log2f
     loongson
     lrint
     lrintf
@@ -2379,8 +2382,11 @@ done
 check_lib math.h sin -lm
 check_lib va/va.h vaInitialize -lva
 
+check_func exp2
+check_func exp2f
 check_func llrint
 check_func log2
+check_func log2f
 check_func lrint
 check_func lrintf
 check_func round
