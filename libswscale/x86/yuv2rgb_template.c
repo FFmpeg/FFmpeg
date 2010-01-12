@@ -42,7 +42,7 @@
 #define SFENCE "sfence"
 #else
 #define MOVNTQ "movq"
-#define SFENCE "/nop"
+#define SFENCE " # nop"
 #endif
 
 #define YUV2RGB \
