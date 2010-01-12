@@ -269,6 +269,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
     int block_width, block_height;
     int level;
     int threshold[6];
+    uint8_t *src = s->scratchbuf + stride * 16;
     const int lambda= (s->picture.quality*s->picture.quality) >> (2*FF_LAMBDA_SHIFT);
 
     /* figure out the acceptable level thresholds in advance */
@@ -327,8 +328,6 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
         s->m.me.dia_size= s->avctx->dia_size;
         s->m.first_slice_line=1;
         for (y = 0; y < block_height; y++) {
-            uint8_t src[stride*16];
-
             s->m.new_picture.data[0]= src - y*16*stride; //ugly
             s->m.mb_y= y;
 
@@ -356,8 +355,6 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
 
     s->m.first_slice_line=1;
     for (y = 0; y < block_height; y++) {
-        uint8_t src[stride*16];
-
         for(i=0; i<16 && i + 16*y<height; i++){
             memcpy(&src[i*stride], &src_plane[(i+16*y)*src_stride], width);
             for(x=width; x<16*block_width; x++)
@@ -521,7 +518,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     if(!s->current_picture.data[0]){
         avctx->get_buffer(avctx, &s->current_picture);
         avctx->get_buffer(avctx, &s->last_picture);
-        s->scratchbuf = av_malloc(s->current_picture.linesize[0] * 16);
+        s->scratchbuf = av_malloc(s->current_picture.linesize[0] * 16 * 2);
     }
 
     temp= s->current_picture;
