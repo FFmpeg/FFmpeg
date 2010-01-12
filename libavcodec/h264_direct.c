@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h264.h"
+#include "h264_mvpred.h"
 #include "rectangle.h"
 
 #if ARCH_X86

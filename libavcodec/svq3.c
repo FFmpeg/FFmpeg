@@ -47,6 +47,7 @@
 
 #include "h264data.h" //FIXME FIXME FIXME
 
+#include "h264_mvpred.h"
 #include "golomb.h"
 #include "rectangle.h"
 #include "vdpau_internal.h"
