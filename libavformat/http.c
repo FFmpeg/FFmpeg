@@ -355,7 +355,7 @@ static int http_write(URLContext *h, uint8_t *buf, int size)
 
     if (s->chunksize == -1) {
         /* headers are sent without any special encoding */
-    return url_write(s->hd, buf, size);
+        return url_write(s->hd, buf, size);
     }
 
     /* silently ignore zero-size data since chunk encoding that would
