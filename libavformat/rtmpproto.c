@@ -481,7 +481,7 @@ static int rtmp_handshake(URLContext *s, RTMPContext *rt)
     av_log(LOG_CONTEXT, AV_LOG_DEBUG, "Server version %d.%d.%d.%d\n",
            serverdata[5], serverdata[6], serverdata[7], serverdata[8]);
 
-    if (rt->is_input) {
+    if (rt->is_input && serverdata[5] >= 3) {
         server_pos = rtmp_validate_digest(serverdata + 1, 772);
         if (!server_pos) {
             server_pos = rtmp_validate_digest(serverdata + 1, 8);
