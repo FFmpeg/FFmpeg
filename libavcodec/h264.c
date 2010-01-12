@@ -81,14 +81,6 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
 static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
 static Picture * remove_long(H264Context *h, int i, int ref_mask);
 
-static av_always_inline uint32_t pack16to32(int a, int b){
-#if HAVE_BIGENDIAN
-   return (b&0xFFFF) + (a<<16);
-#else
-   return (a&0xFFFF) + (b<<16);
-#endif
-}
-
 static const uint8_t rem6[52]={
 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3,
 };
@@ -546,7 +538,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     h->neighbor_transform_size= !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[0]);
 }
 
-static inline void write_back_intra_pred_mode(H264Context *h){
+void ff_h264_write_back_intra_pred_mode(H264Context *h){
     const int mb_xy= h->mb_xy;
 
     h->intra4x4_pred_mode[mb_xy][0]= h->intra4x4_pred_mode_cache[7+8*1];
@@ -561,46 +553,7 @@ static inline void write_back_intra_pred_mode(H264Context *h){
 /**
  * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
  */
-static inline int check_intra4x4_pred_mode(H264Context *h){
-    MpegEncContext * const s = &h->s;
-    static const int8_t top [12]= {-1, 0,LEFT_DC_PRED,-1,-1,-1,-1,-1, 0};
-    static const int8_t left[12]= { 0,-1, TOP_DC_PRED, 0,-1,-1,-1, 0,-1,DC_128_PRED};
-    int i;
-
-    if(!(h->top_samples_available&0x8000)){
-        for(i=0; i<4; i++){
-            int status= top[ h->intra4x4_pred_mode_cache[scan8[0] + i] ];
-            if(status<0){
-                av_log(h->s.avctx, AV_LOG_ERROR, "top block unavailable for requested intra4x4 mode %d at %d %d\n", status, s->mb_x, s->mb_y);
-                return -1;
-            } else if(status){
-                h->intra4x4_pred_mode_cache[scan8[0] + i]= status;
-            }
-        }
-    }
-
-    if((h->left_samples_available&0x8888)!=0x8888){
-        static const int mask[4]={0x8000,0x2000,0x80,0x20};
-        for(i=0; i<4; i++){
-            if(!(h->left_samples_available&mask[i])){
-                int status= left[ h->intra4x4_pred_mode_cache[scan8[0] + 8*i] ];
-                if(status<0){
-                    av_log(h->s.avctx, AV_LOG_ERROR, "left block unavailable for requested intra4x4 mode %d at %d %d\n", status, s->mb_x, s->mb_y);
-                    return -1;
-                } else if(status){
-                    h->intra4x4_pred_mode_cache[scan8[0] + 8*i]= status;
-                }
-            }
-        }
-    }
-
-    return 0;
-} //FIXME cleanup like next
-
-/**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
- */
-static inline int check_intra_pred_mode(H264Context *h, int mode){
+int ff_h264_check_intra_pred_mode(H264Context *h, int mode){
     MpegEncContext * const s = &h->s;
     static const int8_t top [7]= {LEFT_DC_PRED8x8, 1,-1,-1};
     static const int8_t left[7]= { TOP_DC_PRED8x8,-1, 2,-1,DC_128_PRED8x8};
@@ -682,119 +635,6 @@ static inline int pred_non_zero_count(H264Context *h, int n){
     tprintf(h->s.avctx, "pred_nnz L%X T%X n%d s%d P%X\n", left, top, n, scan8[n], i&31);
 
     return i&31;
-}
-
-static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, int list, int part_width){
-    const int topright_ref= h->ref_cache[list][ i - 8 + part_width ];
-    MpegEncContext *s = &h->s;
-
-    /* there is no consistent mapping of mvs to neighboring locations that will
-     * make mbaff happy, so we can't move all this logic to fill_caches */
-    if(FRAME_MBAFF){
-        const uint32_t *mb_types = s->current_picture_ptr->mb_type;
-        const int16_t *mv;
-        *(uint32_t*)h->mv_cache[list][scan8[0]-2] = 0;
-        *C = h->mv_cache[list][scan8[0]-2];
-
-        if(!MB_FIELD
-           && (s->mb_y&1) && i < scan8[0]+8 && topright_ref != PART_NOT_AVAILABLE){
-            int topright_xy = s->mb_x + (s->mb_y-1)*s->mb_stride + (i == scan8[0]+3);
-            if(IS_INTERLACED(mb_types[topright_xy])){
-#define SET_DIAG_MV(MV_OP, REF_OP, X4, Y4)\
-                const int x4 = X4, y4 = Y4;\
-                const int mb_type = mb_types[(x4>>2)+(y4>>2)*s->mb_stride];\
-                if(!USES_LIST(mb_type,list))\
-                    return LIST_NOT_USED;\
-                mv = s->current_picture_ptr->motion_val[list][x4 + y4*h->b_stride];\
-                h->mv_cache[list][scan8[0]-2][0] = mv[0];\
-                h->mv_cache[list][scan8[0]-2][1] = mv[1] MV_OP;\
-                return s->current_picture_ptr->ref_index[list][(x4>>1) + (y4>>1)*h->b8_stride] REF_OP;
-
-                SET_DIAG_MV(*2, >>1, s->mb_x*4+(i&7)-4+part_width, s->mb_y*4-1);
-            }
-        }
-        if(topright_ref == PART_NOT_AVAILABLE
-           && ((s->mb_y&1) || i >= scan8[0]+8) && (i&7)==4
-           && h->ref_cache[list][scan8[0]-1] != PART_NOT_AVAILABLE){
-            if(!MB_FIELD
-               && IS_INTERLACED(mb_types[h->left_mb_xy[0]])){
-                SET_DIAG_MV(*2, >>1, s->mb_x*4-1, (s->mb_y|1)*4+(s->mb_y&1)*2+(i>>4)-1);
-            }
-            if(MB_FIELD
-               && !IS_INTERLACED(mb_types[h->left_mb_xy[0]])
-               && i >= scan8[0]+8){
-                // left shift will turn LIST_NOT_USED into PART_NOT_AVAILABLE, but that's OK.
-                SET_DIAG_MV(/2, <<1, s->mb_x*4-1, (s->mb_y&~1)*4 - 1 + ((i-scan8[0])>>3)*2);
-            }
-        }
-#undef SET_DIAG_MV
-    }
-
-    if(topright_ref != PART_NOT_AVAILABLE){
-        *C= h->mv_cache[list][ i - 8 + part_width ];
-        return topright_ref;
-    }else{
-        tprintf(s->avctx, "topright MV not available\n");
-
-        *C= h->mv_cache[list][ i - 8 - 1 ];
-        return h->ref_cache[list][ i - 8 - 1 ];
-    }
-}
-
-/**
- * gets the predicted MV.
- * @param n the block index
- * @param part_width the width of the partition (4, 8,16) -> (1, 2, 4)
- * @param mx the x component of the predicted motion vector
- * @param my the y component of the predicted motion vector
- */
-static inline void pred_motion(H264Context * const h, int n, int part_width, int list, int ref, int * const mx, int * const my){
-    const int index8= scan8[n];
-    const int top_ref=      h->ref_cache[list][ index8 - 8 ];
-    const int left_ref=     h->ref_cache[list][ index8 - 1 ];
-    const int16_t * const A= h->mv_cache[list][ index8 - 1 ];
-    const int16_t * const B= h->mv_cache[list][ index8 - 8 ];
-    const int16_t * C;
-    int diagonal_ref, match_count;
-
-    assert(part_width==1 || part_width==2 || part_width==4);
-
-/* mv_cache
-  B . . A T T T T
-  U . . L . . , .
-  U . . L . . . .
-  U . . L . . , .
-  . . . L . . . .
-*/
-
-    diagonal_ref= fetch_diagonal_mv(h, &C, index8, list, part_width);
-    match_count= (diagonal_ref==ref) + (top_ref==ref) + (left_ref==ref);
-    tprintf(h->s.avctx, "pred_motion match_count=%d\n", match_count);
-    if(match_count > 1){ //most common
-        *mx= mid_pred(A[0], B[0], C[0]);
-        *my= mid_pred(A[1], B[1], C[1]);
-    }else if(match_count==1){
-        if(left_ref==ref){
-            *mx= A[0];
-            *my= A[1];
-        }else if(top_ref==ref){
-            *mx= B[0];
-            *my= B[1];
-        }else{
-            *mx= C[0];
-            *my= C[1];
-        }
-    }else{
-        if(top_ref == PART_NOT_AVAILABLE && diagonal_ref == PART_NOT_AVAILABLE && left_ref != PART_NOT_AVAILABLE){
-            *mx= A[0];
-            *my= A[1];
-        }else{
-            *mx= mid_pred(A[0], B[0], C[0]);
-            *my= mid_pred(A[1], B[1], C[1]);
-        }
-    }
-
-    tprintf(h->s.avctx, "pred_motion (%2d %2d %2d) (%2d %2d %2d) (%2d %2d %2d) -> (%2d %2d %2d) at %2d %2d %d list %d\n", top_ref, B[0], B[1],                    diagonal_ref, C[0], C[1], left_ref, A[0], A[1], ref, *mx, *my, h->s.mb_x, h->s.mb_y, n, list);
 }
 
 /**
@@ -2070,11 +1910,7 @@ static void init_dequant_tables(H264Context *h){
 }
 
 
-/**
- * allocates tables.
- * needs width/height
- */
-static int alloc_tables(H264Context *h){
+int ff_h264_alloc_tables(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int big_mb_num= s->mb_stride * (s->mb_height+1);
     int x,y;
@@ -2180,7 +2016,7 @@ static void reset_sei(H264Context *h) {
     h->sei_buffering_period_present =  0;
 }
 
-static av_cold int decode_init(AVCodecContext *avctx){
+av_cold int ff_h264_decode_init(AVCodecContext *avctx){
     H264Context *h= avctx->priv_data;
     MpegEncContext * const s = &h->s;
 
@@ -2223,7 +2059,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-static int frame_start(H264Context *h){
+int ff_h264_frame_start(H264Context *h){
     MpegEncContext * const s = &h->s;
     int i;
 
@@ -2686,7 +2522,7 @@ static void av_noinline hl_decode_mb_complex(H264Context *h){
     hl_decode_mb_internal(h, 0);
 }
 
-static void hl_decode_mb(H264Context *h){
+void ff_h264_hl_decode_mb(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
     const int mb_type= s->current_picture.mb_type[mb_xy];
@@ -3838,7 +3674,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         h->prev_interlaced_frame = 1;
 
         init_scan_tables(h);
-        alloc_tables(h);
+        ff_h264_alloc_tables(h);
 
         for(i = 1; i < s->avctx->thread_count; i++) {
             H264Context *c;
@@ -3877,7 +3713,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         while(h->frame_num !=  h->prev_frame_num &&
               h->frame_num != (h->prev_frame_num+1)%(1<<h->sps.log2_max_frame_num)){
             av_log(NULL, AV_LOG_DEBUG, "Frame num gap %d %d\n", h->frame_num, h->prev_frame_num);
-            if (frame_start(h) < 0)
+            if (ff_h264_frame_start(h) < 0)
                 return -1;
             h->prev_frame_num++;
             h->prev_frame_num %= 1<<h->sps.log2_max_frame_num;
@@ -3925,7 +3761,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             s0->first_field = FIELD_PICTURE;
         }
 
-        if((!FIELD_PICTURE || s0->first_field) && frame_start(h) < 0) {
+        if((!FIELD_PICTURE || s0->first_field) && ff_h264_frame_start(h) < 0) {
             s0->first_field = 0;
             return -1;
         }
@@ -4561,16 +4397,16 @@ decode_intra_mb:
                 else
                     h->intra4x4_pred_mode_cache[ scan8[i] ] = mode;
             }
-            write_back_intra_pred_mode(h);
+            ff_h264_write_back_intra_pred_mode(h);
             if( check_intra4x4_pred_mode(h) < 0)
                 return -1;
         }else{
-            h->intra16x16_pred_mode= check_intra_pred_mode(h, h->intra16x16_pred_mode);
+            h->intra16x16_pred_mode= ff_h264_check_intra_pred_mode(h, h->intra16x16_pred_mode);
             if(h->intra16x16_pred_mode < 0)
                 return -1;
         }
         if(CHROMA){
-            pred_mode= check_intra_pred_mode(h, get_ue_golomb_31(&s->gb));
+            pred_mode= ff_h264_check_intra_pred_mode(h, get_ue_golomb_31(&s->gb));
             if(pred_mode < 0)
                 return -1;
             h->chroma_pred_mode= pred_mode;
@@ -5662,17 +5498,17 @@ decode_intra_mb:
                 //av_log( s->avctx, AV_LOG_ERROR, "i4x4 pred=%d mode=%d\n", pred, h->intra4x4_pred_mode_cache[ scan8[i] ] );
                 }
             }
-            write_back_intra_pred_mode(h);
+            ff_h264_write_back_intra_pred_mode(h);
             if( check_intra4x4_pred_mode(h) < 0 ) return -1;
         } else {
-            h->intra16x16_pred_mode= check_intra_pred_mode( h, h->intra16x16_pred_mode );
+            h->intra16x16_pred_mode= ff_h264_check_intra_pred_mode( h, h->intra16x16_pred_mode );
             if( h->intra16x16_pred_mode < 0 ) return -1;
         }
         if(CHROMA){
             h->chroma_pred_mode_table[mb_xy] =
             pred_mode                        = decode_cabac_mb_chroma_pre_mode( h );
 
-            pred_mode= check_intra_pred_mode( h, pred_mode );
+            pred_mode= ff_h264_check_intra_pred_mode( h, pred_mode );
             if( pred_mode < 0 ) return -1;
             h->chroma_pred_mode= pred_mode;
         }
@@ -6734,14 +6570,14 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             int eos;
 //STOP_TIMER("decode_mb_cabac")
 
-            if(ret>=0) hl_decode_mb(h);
+            if(ret>=0) ff_h264_hl_decode_mb(h);
 
             if( ret >= 0 && FRAME_MBAFF ) { //FIXME optimal? or let mb_decode decode 16x32 ?
                 s->mb_y++;
 
                 ret = decode_mb_cabac(h);
 
-                if(ret>=0) hl_decode_mb(h);
+                if(ret>=0) ff_h264_hl_decode_mb(h);
                 s->mb_y--;
             }
             eos = get_cabac_terminate( &h->cabac );
@@ -6772,13 +6608,13 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
         for(;;){
             int ret = decode_mb_cavlc(h);
 
-            if(ret>=0) hl_decode_mb(h);
+            if(ret>=0) ff_h264_hl_decode_mb(h);
 
             if(ret>=0 && FRAME_MBAFF){ //FIXME optimal? or let mb_decode decode 16x32 ?
                 s->mb_y++;
                 ret = decode_mb_cavlc(h);
 
-                if(ret>=0) hl_decode_mb(h);
+                if(ret>=0) ff_h264_hl_decode_mb(h);
                 s->mb_y--;
             }
 
@@ -6831,7 +6667,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
         for(;s->mb_x < s->mb_width; s->mb_x++){
             int ret= decode_mb(h);
 
-            hl_decode_mb(h);
+            ff_h264_hl_decode_mb(h);
 
             if(ret<0){
                 av_log(s->avctx, AV_LOG_ERROR, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
@@ -8176,7 +8012,7 @@ av_cold void ff_h264_free_context(H264Context *h)
         av_freep(h->pps_buffers + i);
 }
 
-static av_cold int decode_end(AVCodecContext *avctx)
+av_cold int ff_h264_decode_end(AVCodecContext *avctx)
 {
     H264Context *h = avctx->priv_data;
     MpegEncContext *s = &h->s;
@@ -8196,9 +8032,9 @@ AVCodec h264_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_H264,
     sizeof(H264Context),
-    decode_init,
+    ff_h264_decode_init,
     NULL,
-    decode_end,
+    ff_h264_decode_end,
     decode_frame,
     /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= flush_dpb,
@@ -8212,17 +8048,13 @@ AVCodec h264_vdpau_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_H264,
     sizeof(H264Context),
-    decode_init,
+    ff_h264_decode_init,
     NULL,
-    decode_end,
+    ff_h264_decode_end,
     decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_VDPAU_H264, PIX_FMT_NONE},
 };
-#endif
-
-#if CONFIG_SVQ3_DECODER
-#include "svq3.c"
 #endif
