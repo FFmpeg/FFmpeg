@@ -180,6 +180,7 @@ typedef struct {
     int32_t *quant_cof_buffer;      ///< contains all quantized parcor coefficients
     int32_t **lpc_cof;              ///< coefficients of the direct form prediction filter for a channel
     int32_t *lpc_cof_buffer;        ///< contains all coefficients of the direct form prediction filter
+    int32_t *lpc_cof_reversed_buffer; ///< temporary buffer to set up a reversed versio of lpc_cof_buffer
     ALSChannelData **chan_data;     ///< channel data for multi-channel correlation
     ALSChannelData *chan_data_buffer; ///< contains channel data for all channels
     int *reverted_channels;         ///< stores a flag for each reverted channel
@@ -731,7 +732,7 @@ static int decode_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
     int32_t *lpc_cof          = bd->lpc_cof;
     int32_t *raw_samples      = bd->raw_samples;
     int32_t *raw_samples_end  = bd->raw_samples + bd->block_length;
-    int32_t lpc_cof_reversed[opt_order];
+    int32_t *lpc_cof_reversed = ctx->lpc_cof_reversed_buffer;
 
     // reverse long-term prediction
     if (*bd->use_ltp) {
@@ -1359,6 +1360,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_freep(&ctx->lpc_cof);
     av_freep(&ctx->quant_cof_buffer);
     av_freep(&ctx->lpc_cof_buffer);
+    av_freep(&ctx->lpc_cof_reversed_buffer);
     av_freep(&ctx->prev_raw_samples);
     av_freep(&ctx->raw_samples);
     av_freep(&ctx->raw_buffer);
@@ -1419,9 +1421,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
                                       num_buffers * sconf->max_order);
     ctx->lpc_cof_buffer   = av_malloc(sizeof(*ctx->lpc_cof_buffer) *
                                       num_buffers * sconf->max_order);
+    ctx->lpc_cof_reversed_buffer = av_malloc(sizeof(*ctx->lpc_cof_buffer) *
+                                             sconf->max_order);
 
     if (!ctx->quant_cof        || !ctx->lpc_cof       ||
-        !ctx->quant_cof_buffer || !ctx->lpc_cof_buffer) {
+        !ctx->quant_cof_buffer || !ctx->lpc_cof_buffer ||
+        !ctx->lpc_cof_reversed_buffer) {
         av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
         return AVERROR(ENOMEM);
     }
