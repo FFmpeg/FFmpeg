@@ -2184,8 +2184,6 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
                     (CONFIG_GRAY && (s->flags&CODEC_FLAG_GRAY));
 
     if( h->pps.cabac ) {
-        int i;
-
         /* realign */
         align_get_bits( &s->gb );
 
