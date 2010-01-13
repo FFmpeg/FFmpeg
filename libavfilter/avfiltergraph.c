@@ -147,11 +147,15 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                         return -1;
 
                     scale->filter->query_formats(scale);
-                    if(!avfilter_merge_formats(scale-> inputs[0]->in_formats,
-                                               scale-> inputs[0]->out_formats)||
-                       !avfilter_merge_formats(scale->outputs[0]->in_formats,
-                                               scale->outputs[0]->out_formats))
+                    if (((link = scale-> inputs[0]) &&
+                         !avfilter_merge_formats(link->in_formats, link->out_formats)) ||
+                        ((link = scale->outputs[0]) &&
+                         !avfilter_merge_formats(link->in_formats, link->out_formats))) {
+                        av_log(log_ctx, AV_LOG_ERROR,
+                               "Impossible to convert between the formats supported by the filter "
+                               "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
                         return -1;
+                    }
                 }
             }
         }
