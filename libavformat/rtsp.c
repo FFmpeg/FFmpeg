@@ -102,8 +102,11 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     const char *c_name;
 
     /* Loop into AVRtpDynamicPayloadTypes[] and AVRtpPayloadTypes[] and
-     * see if we can handle this kind of payload. */
-    get_word_sep(buf, sizeof(buf), "/", &p);
+     * see if we can handle this kind of payload.
+     * The space should normally not be there but some Real streams or
+     * particular servers ("RealServer Version 6.1.3.970", see issue 1658)
+     * have a trailing space. */
+    get_word_sep(buf, sizeof(buf), "/ ", &p);
     if (payload_type >= RTP_PT_PRIVATE) {
         RTPDynamicProtocolHandler *handler;
         for (handler = RTPFirstDynamicPayloadHandler;
