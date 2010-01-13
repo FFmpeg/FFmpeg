@@ -46,6 +46,8 @@
 /**  Subframe size for all modes except 16k */
 #define SUBFR_SIZE           48
 
+#define MAX_SUBFRAME_COUNT   5
+
 #include "siprdata.h"
 
 typedef enum {
@@ -233,8 +235,8 @@ static void decode_parameters(SiprParameters* parms, GetBitContext *pgb,
 static void lsp2lpc_sipr(const double *lsp, float *Az)
 {
     int lp_half_order = LP_FILTER_ORDER >> 1;
-    double buf[lp_half_order + 1];
-    double pa[lp_half_order + 1];
+    double buf[(LP_FILTER_ORDER >> 1) + 1];
+    double pa[(LP_FILTER_ORDER >> 1) + 1];
     double *qa = buf + 1;
     int i,j;
 
@@ -409,7 +411,7 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
 {
     int i, j;
     int frame_size = ctx->m.subframe_count * SUBFR_SIZE;
-    float Az[LP_FILTER_ORDER * ctx->m.subframe_count];
+    float Az[LP_FILTER_ORDER * MAX_SUBFRAME_COUNT];
     float *excitation;
     float ir_buf[SUBFR_SIZE + LP_FILTER_ORDER];
     float lsf_new[LP_FILTER_ORDER];
