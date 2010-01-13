@@ -775,7 +775,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
 static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
-    int len, size = pkt->size;
+    int size = pkt->size;
     uint8_t *buf= pkt->data;
     uint8_t *data= NULL;
     MpegTSWriteStream *ts_st = st->priv_data;
@@ -818,28 +818,19 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         return 0;
     }
 
-    if (ts_st->payload_pts == AV_NOPTS_VALUE) {
-        ts_st->payload_dts = dts;
-        ts_st->payload_pts = pts;
+    if (ts_st->payload_index + size > DEFAULT_PES_PAYLOAD_SIZE) {
+        mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
+                         ts_st->payload_pts, ts_st->payload_dts);
+        ts_st->payload_index = 0;
     }
 
-    // audio
-    while (size > 0) {
-        len = DEFAULT_PES_PAYLOAD_SIZE - ts_st->payload_index;
-        if (len > size)
-            len = size;
-        memcpy(ts_st->payload + ts_st->payload_index, buf, len);
-        buf += len;
-        size -= len;
-        ts_st->payload_index += len;
-        if (ts_st->payload_index >= DEFAULT_PES_PAYLOAD_SIZE) {
-            mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
-                             ts_st->payload_pts, ts_st->payload_dts);
-            ts_st->payload_pts = AV_NOPTS_VALUE;
-            ts_st->payload_dts = AV_NOPTS_VALUE;
-            ts_st->payload_index = 0;
-        }
+    if (!ts_st->payload_index) {
+        ts_st->payload_pts = pts;
+        ts_st->payload_dts = dts;
     }
+
+    memcpy(ts_st->payload + ts_st->payload_index, buf, size);
+    ts_st->payload_index += size;
 
     return 0;
 }

@@ -15,7 +15,7 @@ e36a005ecca9add8bda6e0655d03716f *./tests/data/b-lavf.mpg
 b3174e2db508564c1cce0b5e3c1bc1bd *./tests/data/b-lavf.mxf_d10
 5330989 ./tests/data/b-lavf.mxf_d10
 ./tests/data/b-lavf.mxf_d10 CRC=0xc3f4f92e
-da0d4fea54e7473e3cddb1607294c9e2 *./tests/data/b-lavf.ts
+a1a799fe07b3b9944aad8455a9706c5f *./tests/data/b-lavf.ts
 430144 ./tests/data/b-lavf.ts
 ./tests/data/b-lavf.ts CRC=0x133216c1
 62c5aeb636fc82cf6ba6277d36e42cb5 *./tests/data/b-lavf.swf
