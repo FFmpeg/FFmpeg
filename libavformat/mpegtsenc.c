@@ -425,7 +425,16 @@ static int mpegts_write_header(AVFormatContext *s)
         if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
             service->pcr_pid == 0x1fff)
             service->pcr_pid = ts_st->pid;
-        total_bit_rate += st->codec->bit_rate;
+        if (st->codec->rc_max_rate)
+            total_bit_rate += st->codec->rc_max_rate;
+        else {
+            if (!st->codec->bit_rate) {
+                av_log(s, AV_LOG_WARNING,
+                       "stream %d, bit rate is not set, this will cause problems\n",
+                       st->index);
+            }
+            total_bit_rate += st->codec->bit_rate;
+        }
         /* PES header size */
         if (st->codec->codec_type == CODEC_TYPE_VIDEO ||
             st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
