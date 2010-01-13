@@ -508,17 +508,17 @@ static av_cold int aac_decode_init(AVCodecContext *avccontext)
     avccontext->sample_fmt = SAMPLE_FMT_S16;
     avccontext->frame_size = 1024;
 
-    AAC_INIT_VLC_STATIC( 0, 144);
-    AAC_INIT_VLC_STATIC( 1, 114);
-    AAC_INIT_VLC_STATIC( 2, 188);
-    AAC_INIT_VLC_STATIC( 3, 180);
-    AAC_INIT_VLC_STATIC( 4, 172);
-    AAC_INIT_VLC_STATIC( 5, 140);
-    AAC_INIT_VLC_STATIC( 6, 168);
-    AAC_INIT_VLC_STATIC( 7, 114);
-    AAC_INIT_VLC_STATIC( 8, 262);
-    AAC_INIT_VLC_STATIC( 9, 248);
-    AAC_INIT_VLC_STATIC(10, 384);
+    AAC_INIT_VLC_STATIC( 0, 304);
+    AAC_INIT_VLC_STATIC( 1, 270);
+    AAC_INIT_VLC_STATIC( 2, 550);
+    AAC_INIT_VLC_STATIC( 3, 300);
+    AAC_INIT_VLC_STATIC( 4, 328);
+    AAC_INIT_VLC_STATIC( 5, 294);
+    AAC_INIT_VLC_STATIC( 6, 306);
+    AAC_INIT_VLC_STATIC( 7, 268);
+    AAC_INIT_VLC_STATIC( 8, 510);
+    AAC_INIT_VLC_STATIC( 9, 366);
+    AAC_INIT_VLC_STATIC(10, 462);
 
     dsputil_init(&ac->dsp, avccontext);
 
@@ -989,7 +989,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                         int len = off_len;
 
                         do {
-                            const int index = get_vlc2(gb, vlc_tab, 6, 3);
+                            const int index = get_vlc2(gb, vlc_tab, 8, 2);
                             unsigned cb_idx;
 
                             if (index >= cb_size) {
@@ -1009,7 +1009,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                         int len = off_len;
 
                         do {
-                            const int index = get_vlc2(gb, vlc_tab, 6, 3);
+                            const int index = get_vlc2(gb, vlc_tab, 8, 2);
                             unsigned nnz;
                             unsigned cb_idx;
                             uint32_t bits;
@@ -1033,7 +1033,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                         int len = off_len;
 
                         do {
-                            const int index = get_vlc2(gb, vlc_tab, 6, 3);
+                            const int index = get_vlc2(gb, vlc_tab, 8, 2);
                             unsigned cb_idx;
 
                             if (index >= cb_size) {
@@ -1054,7 +1054,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                         int len = off_len;
 
                         do {
-                            const int index = get_vlc2(gb, vlc_tab, 6, 3);
+                            const int index = get_vlc2(gb, vlc_tab, 8, 2);
                             unsigned nnz;
                             unsigned cb_idx;
                             unsigned sign;
@@ -1079,7 +1079,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                         int len = off_len;
 
                         do {
-                            const int index = get_vlc2(gb, vlc_tab, 6, 3);
+                            const int index = get_vlc2(gb, vlc_tab, 8, 2);
                             unsigned nzt, nnz;
                             unsigned cb_idx;
                             uint32_t bits;
