@@ -651,6 +651,14 @@ av_cold void ff_h264_decode_init_vlc(void);
  */
 int ff_h264_decode_mb_cavlc(H264Context *h);
 
+/**
+ * decodes a CABAC coded macroblock
+ * @returns 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
+ */
+int ff_h264_decode_mb_cabac(H264Context *h);
+
+void ff_h264_init_cabac_states(H264Context *h);
+
 void ff_h264_direct_dist_scale_factor(H264Context * const h);
 void ff_h264_direct_ref_list_init(H264Context * const h);
 void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type);
