@@ -482,6 +482,7 @@ print_config(){
             echo "${pfx}${ucname}=yes" >> $makefile
         else
             echo "#define ${pfx}${ucname} 0" >> $header
+            echo "!${pfx}${ucname}=yes" >> $makefile
         fi
     done
 }
