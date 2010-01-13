@@ -950,41 +950,44 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
         memset(coef + g * 128 + offsets[ics->max_sfb], 0, sizeof(float) * (c - offsets[ics->max_sfb]));
 
     for (g = 0; g < ics->num_window_groups; g++) {
+        unsigned g_len = ics->group_len[g];
+
         for (i = 0; i < ics->max_sfb; i++, idx++) {
-            const int cur_band_type = band_type[idx];
+            const unsigned cbt_m1 = band_type[idx] - 1;
+            float *cfo = coef + offsets[i];
+            int off_len = offsets[i + 1] - offsets[i];
             int group;
-            if (cur_band_type == ZERO_BT || cur_band_type == INTENSITY_BT2 || cur_band_type == INTENSITY_BT) {
-                for (group = 0; group < ics->group_len[g]; group++) {
-                    memset(coef + group * 128 + offsets[i], 0, (offsets[i + 1] - offsets[i]) * sizeof(float));
+
+            if (cbt_m1 >= INTENSITY_BT2 - 1) {
+                for (group = 0; group < g_len; group++, cfo+=128) {
+                    memset(cfo, 0, off_len * sizeof(float));
                 }
-            } else if (cur_band_type == NOISE_BT) {
-                for (group = 0; group < ics->group_len[g]; group++) {
+            } else if (cbt_m1 == NOISE_BT - 1) {
+                for (group = 0; group < g_len; group++, cfo+=128) {
                     float scale;
                     float band_energy;
-                    float *cf = coef + group * 128 + offsets[i];
-                    int len = offsets[i+1] - offsets[i];
 
-                    for (k = 0; k < len; k++) {
+                    for (k = 0; k < off_len; k++) {
                         ac->random_state  = lcg_random(ac->random_state);
-                        cf[k] = ac->random_state;
+                        cfo[k] = ac->random_state;
                     }
 
-                    band_energy = ac->dsp.scalarproduct_float(cf, cf, len);
+                    band_energy = ac->dsp.scalarproduct_float(cfo, cfo, off_len);
                     scale = sf[idx] / sqrtf(band_energy);
-                    ac->dsp.vector_fmul_scalar(cf, cf, scale, len);
+                    ac->dsp.vector_fmul_scalar(cfo, cfo, scale, off_len);
                 }
             } else {
-                const float *vq = ff_aac_codebook_vector_vals[cur_band_type-1];
-                const uint16_t *cb_vector_idx = ff_aac_codebook_vector_idx[cur_band_type-1];
-                VLC_TYPE (*vlc_tab)[2] = vlc_spectral[cur_band_type - 1].table;
-                const int cb_size = ff_aac_spectral_sizes[cur_band_type-1];
+                const float *vq = ff_aac_codebook_vector_vals[cbt_m1];
+                const uint16_t *cb_vector_idx = ff_aac_codebook_vector_idx[cbt_m1];
+                VLC_TYPE (*vlc_tab)[2] = vlc_spectral[cbt_m1].table;
+                const int cb_size = ff_aac_spectral_sizes[cbt_m1];
 
-                for (group = 0; group < ics->group_len[g]; group++) {
-                    float *cf = coef + (group << 7) + offsets[i];
+                for (group = 0; group < g_len; group++, cfo+=128) {
+                    float *cf = cfo;
                     uint32_t *icf = (uint32_t *) cf;
-                    int len = offsets[i + 1] - offsets[i];
+                    int len = off_len;
 
-                    switch ((cur_band_type-1) >> 1) {
+                    switch (cbt_m1 >> 1) {
                     case 0:
                         do {
                             const int index = get_vlc2(gb, vlc_tab, 6, 3);
@@ -1051,7 +1054,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                         } while (len -= 2);
                         break;
                     default:
-                        for (k = 0; k < len; k += 2, icf += 2) {
+                        do {
                             const int index = get_vlc2(gb, vlc_tab, 6, 3);
                             unsigned nzt, nnz;
                             unsigned cb_idx;
@@ -1059,7 +1062,8 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             int j;
 
                             if (!index) {
-                                icf[0] = icf[1] = 0;
+                                *icf++ = 0;
+                                *icf++ = 0;
                                 continue;
                             }
 
@@ -1084,23 +1088,23 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                                         return -1;
                                     }
                                     n = (1 << n) + get_bits(gb, n);
-                                    icf[j] = cbrt_tab[n] | (bits & 1<<31);
+                                    *icf++ = cbrt_tab[n] | (bits & 1<<31);
                                     bits <<= 1;
                                 } else {
                                     unsigned v = ((const uint32_t*)vq)[cb_idx & 15];
-                                    icf[j] = (bits & 1<<31) | v;
+                                    *icf++ = (bits & 1<<31) | v;
                                     bits <<= !!v;
                                 }
                                 cb_idx >>= 4;
                             }
-                        }
+                        } while (len -= 2);
 
-                        ac->dsp.vector_fmul_scalar(cf, cf, sf[idx], len);
+                        ac->dsp.vector_fmul_scalar(cfo, cfo, sf[idx], off_len);
                     }
                 }
             }
         }
-        coef += ics->group_len[g] << 7;
+        coef += g_len << 7;
     }
 
     if (pulse_present) {
