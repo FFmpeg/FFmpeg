@@ -24,6 +24,7 @@
 #include <math.h>
 #include <stdint.h>
 
+#include "libavutil/mathematics.h"
 #include "avcodec.h"
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"
@@ -463,7 +464,7 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
 
         gain_code = ff_amr_set_fixed_gain(gain_cb[params->gc_index[i]][1],
                                           avg_energy, ctx->energy_history,
-                                          34 - 15.0/(log2f(10.0) * 0.05),
+                                          34 - 15.0/(0.05*M_LN10/M_LN2),
                                           pred);
 
         ff_weighted_vector_sumf(excitation, excitation, fixed_vector,
