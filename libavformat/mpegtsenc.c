@@ -196,6 +196,8 @@ static void mpegts_write_pat(AVFormatContext *s)
                           data, q - data);
 }
 
+
+
 static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 {
     //    MpegTSWrite *ts = s->priv_data;
@@ -240,7 +242,10 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             stream_type = STREAM_TYPE_AUDIO_AAC;
             break;
         case CODEC_ID_AC3:
-            stream_type = STREAM_TYPE_AUDIO_AC3;
+            if (!strcmp(s->oformat->name, "dvb"))
+                stream_type = STREAM_TYPE_PRIVATE_DATA;
+            else
+                stream_type = STREAM_TYPE_AUDIO_AC3;
             break;
         default:
             stream_type = STREAM_TYPE_PRIVATE_DATA;
@@ -879,6 +884,20 @@ AVOutputFormat mpegts_muxer = {
     NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
     "video/x-mpegts",
     "ts,m2t",
+    sizeof(MpegTSWrite),
+    CODEC_ID_MP2,
+    CODEC_ID_MPEG2VIDEO,
+    mpegts_write_header,
+    mpegts_write_packet,
+    mpegts_write_end,
+};
+
+
+AVOutputFormat dvb_muxer = {
+    "dvb",
+    NULL_IF_CONFIG_SMALL("DVB style MPEG-2 transport stream format"),
+    "video/x-mpegts",
+    "dvb",
     sizeof(MpegTSWrite),
     CODEC_ID_MP2,
     CODEC_ID_MPEG2VIDEO,
