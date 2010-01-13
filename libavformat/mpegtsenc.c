@@ -471,9 +471,6 @@ static int mpegts_write_header(AVFormatContext *s)
         1000 * 8 * pat_pmt_size / SDT_RETRANS_TIME     + /* PAT+PMT size */
         1000 * 8 * 8            / PCR_RETRANS_TIME;      /* PCR size */
 
-    av_log(s, AV_LOG_DEBUG, "muxrate %d freq sdt %d pat %d\n",
-           total_bit_rate, ts->sdt_packet_period, ts->pat_packet_period);
-
     if (s->mux_rate)
         ts->mux_rate = s->mux_rate;
     else
@@ -488,6 +485,12 @@ static int mpegts_write_header(AVFormatContext *s)
 
     // output a PCR as soon as possible
     service->pcr_packet_count = service->pcr_packet_period;
+
+    av_log(s, AV_LOG_DEBUG,
+           "calculated bitrate %d bps, muxrate %d bps, "
+           "sdt every %d, pat/pmt every %d pkts\n",
+           total_bit_rate, ts->mux_rate, ts->sdt_packet_period,
+           ts->pat_packet_period);
 
     // adjust pcr
     ts->cur_pcr /= ts->mux_rate;
