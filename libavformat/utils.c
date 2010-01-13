@@ -2501,6 +2501,11 @@ int av_write_header(AVFormatContext *s)
     AVStream *st;
 
     // some sanity checks
+    if (s->nb_streams == 0) {
+        av_log(s, AV_LOG_ERROR, "no streams\n");
+        return -1;
+    }
+
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
 
