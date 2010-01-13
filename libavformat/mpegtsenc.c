@@ -472,7 +472,7 @@ static int mpegts_write_header(AVFormatContext *s)
     pat_pmt_size = url_ftell(s->pb) - pos;
 
     total_bit_rate +=
-        total_bit_rate *  4 / TS_PACKET_SIZE           + /* TS  header size */
+        total_bit_rate * 4 / (TS_PACKET_SIZE-4)        + /* TS header size */
         1000 * 8 * sdt_size     / PAT_RETRANS_TIME     + /* SDT size */
         1000 * 8 * pat_pmt_size / SDT_RETRANS_TIME     + /* PAT+PMT size */
         1000 * 8 * 8            / PCR_RETRANS_TIME;      /* PCR size */
