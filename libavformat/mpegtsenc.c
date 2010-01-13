@@ -485,6 +485,9 @@ static int mpegts_write_header(AVFormatContext *s)
     else
         ts->mux_rate = total_bit_rate;
 
+    // output a PCR as soon as possible
+    service->pcr_packet_count = service->pcr_packet_period;
+
     // adjust pcr
     ts->cur_pcr /= ts->mux_rate;
 
