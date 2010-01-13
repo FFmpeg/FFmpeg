@@ -101,7 +101,7 @@ union float754 {
 static VLC vlc_scalefactors;
 static VLC vlc_spectral[11];
 
-static float cbrt_tab[1<<13];
+static uint32_t cbrt_tab[1<<13];
 
 static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
 {
@@ -556,9 +556,13 @@ static av_cold int aac_decode_init(AVCodecContext *avccontext)
     ff_init_ff_sine_windows(10);
     ff_init_ff_sine_windows( 7);
 
-    if (!cbrt_tab[(1<<13) - 1])
-        for (i = 0; i < 1<<13; i++)
-            cbrt_tab[i] = cbrtf(i) * i;
+    if (!cbrt_tab[(1<<13) - 1]) {
+        for (i = 0; i < 1<<13; i++) {
+            union float754 f;
+            f.f = cbrtf(i) * i;
+            cbrt_tab[i] = f.i;
+        }
+    }
 
     return 0;
 }
@@ -858,6 +862,66 @@ static void decode_mid_side_stereo(ChannelElement *cpe, GetBitContext *gb,
     }
 }
 
+static inline float *VMUL2(float *dst, const float *v, unsigned idx,
+                           const float *scale)
+{
+    float s = *scale;
+    *dst++ = v[idx    & 15] * s;
+    *dst++ = v[idx>>4 & 15] * s;
+    return dst;
+}
+
+static inline float *VMUL4(float *dst, const float *v, unsigned idx,
+                           const float *scale)
+{
+    float s = *scale;
+    *dst++ = v[idx    & 3] * s;
+    *dst++ = v[idx>>2 & 3] * s;
+    *dst++ = v[idx>>4 & 3] * s;
+    *dst++ = v[idx>>6 & 3] * s;
+    return dst;
+}
+
+static inline float *VMUL2S(float *dst, const float *v, unsigned idx,
+                            unsigned sign, const float *scale)
+{
+    union float754 s0, s1;
+
+    s0.f = s1.f = *scale;
+    s0.i ^= sign >> 1 << 31;
+    s1.i ^= sign      << 31;
+
+    *dst++ = v[idx    & 15] * s0.f;
+    *dst++ = v[idx>>4 & 15] * s1.f;
+
+    return dst;
+}
+
+static inline float *VMUL4S(float *dst, const float *v, unsigned idx,
+                            unsigned sign, const float *scale)
+{
+    unsigned nz = idx >> 12;
+    union float754 s = { .f = *scale };
+    union float754 t;
+
+    t.i = s.i ^ (sign & 1<<31);
+    *dst++ = v[idx    & 3] * t.f;
+
+    sign <<= nz & 1; nz >>= 1;
+    t.i = s.i ^ (sign & 1<<31);
+    *dst++ = v[idx>>2 & 3] * t.f;
+
+    sign <<= nz & 1; nz >>= 1;
+    t.i = s.i ^ (sign & 1<<31);
+    *dst++ = v[idx>>4 & 3] * t.f;
+
+    sign <<= nz & 1; nz >>= 1;
+    t.i = s.i ^ (sign & 1<<31);
+    *dst++ = v[idx>>6 & 3] * t.f;
+
+    return dst;
+}
+
 /**
  * Decode spectral data; reference: table 4.50.
  * Dequantize and scale spectral data; reference: 4.6.3.3.
@@ -880,7 +944,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
     const int c = 1024 / ics->num_windows;
     const uint16_t *offsets = ics->swb_offset;
     float *coef_base = coef;
-    static const float sign_lookup[] = { 1.0f, -1.0f };
+    int err_idx;
 
     for (g = 0; g < ics->num_windows; g++)
         memset(coef + g * 128 + offsets[ics->max_sfb], 0, sizeof(float) * (c - offsets[ics->max_sfb]));
@@ -888,8 +952,6 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
     for (g = 0; g < ics->num_window_groups; g++) {
         for (i = 0; i < ics->max_sfb; i++, idx++) {
             const int cur_band_type = band_type[idx];
-            const int dim = cur_band_type >= FIRST_PAIR_BT ? 2 : 4;
-            const int is_cb_unsigned = IS_CODEBOOK_UNSIGNED(cur_band_type);
             int group;
             if (cur_band_type == ZERO_BT || cur_band_type == INTENSITY_BT2 || cur_band_type == INTENSITY_BT) {
                 for (group = 0; group < ics->group_len[g]; group++) {
@@ -912,63 +974,128 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                     ac->dsp.vector_fmul_scalar(cf, cf, scale, len);
                 }
             } else {
+                const float *vq = ff_aac_codebook_vector_vals[cur_band_type-1];
+                const uint16_t *cb_vector_idx = ff_aac_codebook_vector_idx[cur_band_type-1];
+                VLC_TYPE (*vlc_tab)[2] = vlc_spectral[cur_band_type - 1].table;
+                const int cb_size = ff_aac_spectral_sizes[cur_band_type-1];
+
                 for (group = 0; group < ics->group_len[g]; group++) {
-                    const float *vq[96];
-                    const float **vqp = vq;
                     float *cf = coef + (group << 7) + offsets[i];
+                    uint32_t *icf = (uint32_t *) cf;
                     int len = offsets[i + 1] - offsets[i];
 
-                    for (k = offsets[i]; k < offsets[i + 1]; k += dim) {
-                        const int index = get_vlc2(gb, vlc_spectral[cur_band_type - 1].table, 6, 3);
-                        const int coef_tmp_idx = (group << 7) + k;
-                        const float *vq_ptr;
-                        int j;
-                        if (index >= ff_aac_spectral_sizes[cur_band_type - 1]) {
-                            av_log(ac->avccontext, AV_LOG_ERROR,
-                                   "Read beyond end of ff_aac_codebook_vectors[%d][]. index %d >= %d\n",
-                                   cur_band_type - 1, index, ff_aac_spectral_sizes[cur_band_type - 1]);
-                            return -1;
-                        }
-                        vq_ptr = &ff_aac_codebook_vectors[cur_band_type - 1][index * dim];
-                        *vqp++ = vq_ptr;
-                        if (is_cb_unsigned) {
-                            if (vq_ptr[0])
-                                coef[coef_tmp_idx    ] = sign_lookup[get_bits1(gb)];
-                            if (vq_ptr[1])
-                                coef[coef_tmp_idx + 1] = sign_lookup[get_bits1(gb)];
-                            if (dim == 4) {
-                                if (vq_ptr[2])
-                                    coef[coef_tmp_idx + 2] = sign_lookup[get_bits1(gb)];
-                                if (vq_ptr[3])
-                                    coef[coef_tmp_idx + 3] = sign_lookup[get_bits1(gb)];
-                            }
-                            if (cur_band_type == ESC_BT) {
-                                for (j = 0; j < 2; j++) {
-                                    if (vq_ptr[j] == 64.0f) {
-                                        int n = 4;
-                                        /* The total length of escape_sequence must be < 22 bits according
-                                           to the specification (i.e. max is 111111110xxxxxxxxxxxx). */
-                                        while (get_bits1(gb) && n < 13) n++;
-                                        if (n == 13) {
-                                            av_log(ac->avccontext, AV_LOG_ERROR, "error in spectral data, ESC overflow\n");
-                                            return -1;
-                                        }
-                                        n = (1 << n) + get_bits(gb, n);
-                                        coef[coef_tmp_idx + j] *= cbrt_tab[n];
-                                    } else
-                                        coef[coef_tmp_idx + j] *= vq_ptr[j];
-                                }
-                            }
-                        }
-                    }
+                    switch ((cur_band_type-1) >> 1) {
+                    case 0:
+                        do {
+                            const int index = get_vlc2(gb, vlc_tab, 6, 3);
+                            unsigned cb_idx;
 
-                    if (is_cb_unsigned && cur_band_type != ESC_BT) {
-                        ac->dsp.vector_fmul_sv_scalar[dim>>2](
-                            cf, cf, vq, sf[idx], len);
-                    } else if (cur_band_type == ESC_BT) {
+                            if (index >= cb_size) {
+                                err_idx = index;
+                                goto err_cb_overflow;
+                            }
+
+                            cb_idx = cb_vector_idx[index];
+                            cf = VMUL4(cf, vq, cb_idx, sf + idx);
+                        } while (len -= 4);
+                        break;
+                    case 1:
+                        do {
+                            const int index = get_vlc2(gb, vlc_tab, 6, 3);
+                            unsigned nnz;
+                            unsigned cb_idx;
+                            uint32_t bits;
+
+                            if (index >= cb_size) {
+                                err_idx = index;
+                                goto err_cb_overflow;
+                            }
+
+                            cb_idx = cb_vector_idx[index];
+                            nnz = cb_idx >> 8 & 15;
+                            bits = get_bits(gb, nnz) << (32-nnz);
+                            cf = VMUL4S(cf, vq, cb_idx, bits, sf + idx);
+                        } while (len -= 4);
+                        break;
+                    case 2:
+                        do {
+                            const int index = get_vlc2(gb, vlc_tab, 6, 3);
+                            unsigned cb_idx;
+
+                            if (index >= cb_size) {
+                                err_idx = index;
+                                goto err_cb_overflow;
+                            }
+
+                            cb_idx = cb_vector_idx[index];
+                            cf = VMUL2(cf, vq, cb_idx, sf + idx);
+                        } while (len -= 2);
+                        break;
+                    case 3:
+                    case 4:
+                        do {
+                            const int index = get_vlc2(gb, vlc_tab, 6, 3);
+                            unsigned nnz;
+                            unsigned cb_idx;
+                            unsigned sign;
+
+                            if (index >= cb_size) {
+                                err_idx = index;
+                                goto err_cb_overflow;
+                            }
+
+                            cb_idx = cb_vector_idx[index];
+                            nnz = cb_idx >> 8 & 15;
+                            sign = get_bits(gb, nnz) << (cb_idx >> 12);
+                            cf = VMUL2S(cf, vq, cb_idx, sign, sf + idx);
+                        } while (len -= 2);
+                        break;
+                    default:
+                        for (k = 0; k < len; k += 2, icf += 2) {
+                            const int index = get_vlc2(gb, vlc_tab, 6, 3);
+                            unsigned nzt, nnz;
+                            unsigned cb_idx;
+                            uint32_t bits;
+                            int j;
+
+                            if (!index) {
+                                icf[0] = icf[1] = 0;
+                                continue;
+                            }
+
+                            if (index >= cb_size) {
+                                err_idx = index;
+                                goto err_cb_overflow;
+                            }
+
+                            cb_idx = cb_vector_idx[index];
+                            nnz = cb_idx >> 12;
+                            nzt = cb_idx >> 8;
+                            bits = get_bits(gb, nnz) << (32-nnz);
+
+                            for (j = 0; j < 2; j++) {
+                                if (nzt & 1<<j) {
+                                    int n = 4;
+                                    /* The total length of escape_sequence must be < 22 bits according
+                                       to the specification (i.e. max is 111111110xxxxxxxxxxxx). */
+                                    while (get_bits1(gb) && n < 13) n++;
+                                    if (n == 13) {
+                                        av_log(ac->avccontext, AV_LOG_ERROR, "error in spectral data, ESC overflow\n");
+                                        return -1;
+                                    }
+                                    n = (1 << n) + get_bits(gb, n);
+                                    icf[j] = cbrt_tab[n] | (bits & 1<<31);
+                                    bits <<= 1;
+                                } else {
+                                    unsigned v = ((const uint32_t*)vq)[cb_idx & 15];
+                                    icf[j] = (bits & 1<<31) | v;
+                                    bits <<= !!v;
+                                }
+                                cb_idx >>= 4;
+                            }
+                        }
+
                         ac->dsp.vector_fmul_scalar(cf, cf, sf[idx], len);
-                    } else {    /* !is_cb_unsigned */
-                        ac->dsp.sv_fmul_scalar[dim>>2](cf, vq, sf[idx], len);
                     }
                 }
             }
@@ -993,6 +1120,12 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
         }
     }
     return 0;
+
+err_cb_overflow:
+    av_log(ac->avccontext, AV_LOG_ERROR,
+           "Read beyond end of ff_aac_codebook_vectors[%d][]. index %d >= %d\n",
+           band_type[idx], err_idx, ff_aac_spectral_sizes[band_type[idx]]);
+    return -1;
 }
 
 static av_always_inline float flt16_round(float pf)
