@@ -586,7 +586,11 @@ static void write_pts(uint8_t *q, int fourbits, int64_t pts)
     *q++ = val;
 }
 
-/* NOTE: pes_data contains all the PES packet */
+/* Add a pes header to the front of payload, and segment into an integer number of
+ * ts packets. The final ts packet is padded using an over-sized adaptation header
+ * to exactly fill the last ts packet.
+ * NOTE: 'payload' contains a complete PES payload.
+ */
 static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                              const uint8_t *payload, int payload_size,
                              int64_t pts, int64_t dts)
