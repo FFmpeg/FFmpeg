@@ -228,8 +228,9 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
             int err = parse(c, pb, a);
             if (err < 0)
                 return err;
-            if (url_is_streamed(pb) && c->found_moov && c->found_mdat)
-                break;
+            if (c->found_moov && c->found_mdat &&
+                (url_is_streamed(pb) || start_pos + a.size == url_fsize(pb)))
+                return 0;
             left = a.size - url_ftell(pb) + start_pos;
             if (left > 0) /* skip garbage at atom end */
                 url_fskip(pb, left);
