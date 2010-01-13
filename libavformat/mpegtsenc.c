@@ -448,15 +448,6 @@ static int mpegts_write_header(AVFormatContext *s)
         service->pcr_pid = ts_st->pid;
     }
 
-    if (total_bit_rate <= 8 * 1024)
-        total_bit_rate = 8 * 1024;
-    service->pcr_packet_period = (total_bit_rate * PCR_RETRANS_TIME) /
-        (TS_PACKET_SIZE * 8 * 1000);
-    ts->sdt_packet_period = (total_bit_rate * SDT_RETRANS_TIME) /
-        (TS_PACKET_SIZE * 8 * 1000);
-    ts->pat_packet_period = (total_bit_rate * PAT_RETRANS_TIME) /
-        (TS_PACKET_SIZE * 8 * 1000);
-
     ts->mux_rate = 1; // avoid div by 0
 
     /* write info at the start of the file, so that it will be fast to
@@ -471,6 +462,9 @@ static int mpegts_write_header(AVFormatContext *s)
     }
     pat_pmt_size = url_ftell(s->pb) - pos;
 
+    if (total_bit_rate <= 8 * 1024)
+        total_bit_rate = 8 * 1024;
+
     total_bit_rate +=
         total_bit_rate * 4 / (TS_PACKET_SIZE-4)        + /* TS header size */
         1000 * 8 * sdt_size     / PAT_RETRANS_TIME     + /* SDT size */
@@ -484,6 +478,13 @@ static int mpegts_write_header(AVFormatContext *s)
         ts->mux_rate = s->mux_rate;
     else
         ts->mux_rate = total_bit_rate;
+
+    service->pcr_packet_period = (ts->mux_rate * PCR_RETRANS_TIME) /
+        (TS_PACKET_SIZE * 8 * 1000);
+    ts->sdt_packet_period      = (ts->mux_rate * SDT_RETRANS_TIME) /
+        (TS_PACKET_SIZE * 8 * 1000);
+    ts->pat_packet_period      = (ts->mux_rate * PAT_RETRANS_TIME) /
+        (TS_PACKET_SIZE * 8 * 1000);
 
     // output a PCR as soon as possible
     service->pcr_packet_count = service->pcr_packet_period;
