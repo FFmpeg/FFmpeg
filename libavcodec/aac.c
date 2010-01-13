@@ -982,13 +982,12 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                 VLC_TYPE (*vlc_tab)[2] = vlc_spectral[cbt_m1].table;
                 const int cb_size = ff_aac_spectral_sizes[cbt_m1];
 
-                for (group = 0; group < g_len; group++, cfo+=128) {
-                    float *cf = cfo;
-                    uint32_t *icf = (uint32_t *) cf;
-                    int len = off_len;
+                switch (cbt_m1 >> 1) {
+                case 0:
+                    for (group = 0; group < g_len; group++, cfo+=128) {
+                        float *cf = cfo;
+                        int len = off_len;
 
-                    switch (cbt_m1 >> 1) {
-                    case 0:
                         do {
                             const int index = get_vlc2(gb, vlc_tab, 6, 3);
                             unsigned cb_idx;
@@ -1001,8 +1000,14 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             cb_idx = cb_vector_idx[index];
                             cf = VMUL4(cf, vq, cb_idx, sf + idx);
                         } while (len -= 4);
-                        break;
-                    case 1:
+                    }
+                    break;
+
+                case 1:
+                    for (group = 0; group < g_len; group++, cfo+=128) {
+                        float *cf = cfo;
+                        int len = off_len;
+
                         do {
                             const int index = get_vlc2(gb, vlc_tab, 6, 3);
                             unsigned nnz;
@@ -1019,8 +1024,14 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             bits = get_bits(gb, nnz) << (32-nnz);
                             cf = VMUL4S(cf, vq, cb_idx, bits, sf + idx);
                         } while (len -= 4);
-                        break;
-                    case 2:
+                    }
+                    break;
+
+                case 2:
+                    for (group = 0; group < g_len; group++, cfo+=128) {
+                        float *cf = cfo;
+                        int len = off_len;
+
                         do {
                             const int index = get_vlc2(gb, vlc_tab, 6, 3);
                             unsigned cb_idx;
@@ -1033,9 +1044,15 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             cb_idx = cb_vector_idx[index];
                             cf = VMUL2(cf, vq, cb_idx, sf + idx);
                         } while (len -= 2);
-                        break;
-                    case 3:
-                    case 4:
+                    }
+                    break;
+
+                case 3:
+                case 4:
+                    for (group = 0; group < g_len; group++, cfo+=128) {
+                        float *cf = cfo;
+                        int len = off_len;
+
                         do {
                             const int index = get_vlc2(gb, vlc_tab, 6, 3);
                             unsigned nnz;
@@ -1052,8 +1069,15 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             sign = get_bits(gb, nnz) << (cb_idx >> 12);
                             cf = VMUL2S(cf, vq, cb_idx, sign, sf + idx);
                         } while (len -= 2);
-                        break;
-                    default:
+                    }
+                    break;
+
+                default:
+                    for (group = 0; group < g_len; group++, cfo+=128) {
+                        float *cf = cfo;
+                        uint32_t *icf = (uint32_t *) cf;
+                        int len = off_len;
+
                         do {
                             const int index = get_vlc2(gb, vlc_tab, 6, 3);
                             unsigned nzt, nnz;
