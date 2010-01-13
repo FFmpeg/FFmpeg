@@ -40,8 +40,6 @@
 
 #define MAX_PES_PAYLOAD 200*1024
 
-typedef struct PESContext PESContext;
-
 enum MpegTSFilterType {
     MPEGTS_PES,
     MPEGTS_SECTION,
@@ -87,7 +85,7 @@ struct Program {
     unsigned int pids[MAX_PIDS_PER_PROGRAM];
 };
 
-struct MpegTSContext {
+typedef struct MpegTSContext {
     /* user data */
     AVFormatContext *stream;
     /** raw packet size, including FEC if present            */
@@ -122,7 +120,7 @@ struct MpegTSContext {
 
     /** filters for various streams specified by PMT + for the PAT and PMT */
     MpegTSFilter *pids[NB_PID_MAX];
-};
+} MpegTSContext;
 
 /* TS stream handling */
 
@@ -139,7 +137,7 @@ enum MpegTSState {
 #define PES_HEADER_SIZE 9
 #define MAX_PES_HEADER_SIZE (9 + 255)
 
-struct PESContext {
+typedef struct PESContext {
     int pid;
     int pcr_pid; /**< if -1 then all packets containing PCR are considered */
     int stream_type;
@@ -157,7 +155,7 @@ struct PESContext {
     int64_t ts_packet_pos; /**< position of first TS packet of this PES packet */
     uint8_t header[MAX_PES_HEADER_SIZE];
     uint8_t *buffer;
-};
+} PESContext;
 
 extern AVInputFormat mpegts_demuxer;
 
