@@ -413,7 +413,7 @@ static void x8_v_loop_filter(uint8_t *src, int stride, int qscale){
     x8_loop_filter(src, 1, stride, qscale);
 }
 
-void ff_intrax8dsp_init(DSPContext* dsp, AVCodecContext *avctx) {
+av_cold void ff_intrax8dsp_init(DSPContext* dsp, AVCodecContext *avctx) {
     dsp->x8_h_loop_filter=x8_h_loop_filter;
     dsp->x8_v_loop_filter=x8_v_loop_filter;
     dsp->x8_setup_spatial_compensation=x8_setup_spatial_compensation;

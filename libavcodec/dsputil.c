@@ -4452,7 +4452,7 @@ static void ff_jref_idct1_add(uint8_t *dest, int line_size, DCTELEM *block)
 static void just_return(void *mem av_unused, int stride av_unused, int h av_unused) { return; }
 
 /* init static data */
-void dsputil_static_init(void)
+av_cold void dsputil_static_init(void)
 {
     int i;
 
@@ -4489,7 +4489,7 @@ int ff_check_alignment(void){
     return 0;
 }
 
-void dsputil_init(DSPContext* c, AVCodecContext *avctx)
+av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 {
     int i;
 

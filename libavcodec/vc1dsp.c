@@ -612,7 +612,7 @@ PUT_VC1_MSPEL(1, 3)
 PUT_VC1_MSPEL(2, 3)
 PUT_VC1_MSPEL(3, 3)
 
-void ff_vc1dsp_init(DSPContext* dsp, AVCodecContext *avctx) {
+av_cold void ff_vc1dsp_init(DSPContext* dsp, AVCodecContext *avctx) {
     dsp->vc1_inv_trans_8x8 = vc1_inv_trans_8x8_c;
     dsp->vc1_inv_trans_4x8 = vc1_inv_trans_4x8_c;
     dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_c;
