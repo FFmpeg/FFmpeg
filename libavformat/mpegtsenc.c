@@ -523,6 +523,55 @@ static void retransmit_si_info(AVFormatContext *s)
     }
 }
 
+/* Write a single null transport stream packet */
+static void mpegts_insert_null_packet(AVFormatContext *s)
+{
+    MpegTSWrite *ts = s->priv_data;
+    uint8_t *q;
+    uint8_t buf[TS_PACKET_SIZE];
+
+    q = buf;
+    *q++ = 0x47;
+    *q++ = 0x00 | 0x1f;
+    *q++ = 0xff;
+    *q++ = 0x10;
+    memset(q, 0x0FF, TS_PACKET_SIZE - (q - buf));
+    put_buffer(s->pb, buf, TS_PACKET_SIZE);
+    ts->cur_pcr += TS_PACKET_SIZE*8*90000LL/ts->mux_rate;
+}
+
+/* Write a single transport stream packet with a PCR and no payload */
+static void mpegts_insert_pcr_only(AVFormatContext *s, AVStream *st)
+{
+    MpegTSWrite *ts = s->priv_data;
+    MpegTSWriteStream *ts_st = st->priv_data;
+    uint8_t *q;
+    uint64_t pcr = ts->cur_pcr;
+    uint8_t buf[TS_PACKET_SIZE];
+
+    q = buf;
+    *q++ = 0x47;
+    *q++ = ts_st->pid >> 8;
+    *q++ = ts_st->pid;
+    *q++ = 0x20 | ts_st->cc;   /* Adaptation only */
+    /* Continuity Count field does not increment (see 13818-1 section 2.4.3.3) */
+    *q++ = TS_PACKET_SIZE - 5; /* Adaptation Field Length */
+    *q++ = 0x10;               /* Adaptation flags: PCR present */
+
+    /* PCR coded into 6 bytes */
+    *q++ = pcr >> 25;
+    *q++ = pcr >> 17;
+    *q++ = pcr >> 9;
+    *q++ = pcr >> 1;
+    *q++ = (pcr & 1) << 7;
+    *q++ = 0;
+
+    /* stuffing bytes */
+    memset(q, 0xFF, TS_PACKET_SIZE - (q - buf));
+    put_buffer(s->pb, buf, TS_PACKET_SIZE);
+    ts->cur_pcr += TS_PACKET_SIZE*8*90000LL/ts->mux_rate;
+}
+
 static void write_pts(uint8_t *q, int fourbits, int64_t pts)
 {
     int val;
@@ -549,6 +598,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     int val, is_start, len, header_len, write_pcr, private_code, flags;
     int afc_len, stuffing_len;
     int64_t pcr = -1; /* avoid warning */
+    int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
 
     is_start = 1;
     while (payload_size > 0) {
@@ -562,6 +612,15 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 ts_st->service->pcr_packet_count = 0;
                 write_pcr = 1;
             }
+        }
+
+        if (dts != AV_NOPTS_VALUE && (dts - (int64_t)ts->cur_pcr) > delay) {
+            /* pcr insert gets priority over null packet insert */
+            if (write_pcr)
+                mpegts_insert_pcr_only(s, st);
+            else
+                mpegts_insert_null_packet(s);
+            continue; /* recalculate write_pcr and possibly retransmit si_info */
         }
 
         /* prepare packet header */
