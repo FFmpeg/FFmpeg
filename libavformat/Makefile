@@ -201,7 +201,6 @@ OBJS-$(CONFIG_RPL_DEMUXER)               += rpl.o
 OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtp_aac.o     \
                                             rtp_amr.o     \
-                                            rtp_asf.o     \
                                             rtp_h263.o    \
                                             rtp_mpv.o     \
                                             rtpenc.o      \
