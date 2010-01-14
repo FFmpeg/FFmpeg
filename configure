@@ -450,11 +450,15 @@ check_deps(){
         eval dep_any="\$${cfg}_deps_any"
         eval dep_sel="\$${cfg}_select"
         eval dep_sgs="\$${cfg}_suggest"
+        eval dep_ifa="\$${cfg}_if"
+        eval dep_ifn="\$${cfg}_if_any"
 
-        pushvar cfg dep_all dep_any dep_sel dep_sgs
-        check_deps $dep_all $dep_any $dep_sel $dep_sgs
-        popvar cfg dep_all dep_any dep_sel dep_sgs
+        pushvar cfg dep_all dep_any dep_sel dep_sgs dep_ifa dep_ifn
+        check_deps $dep_all $dep_any $dep_sel $dep_sgs $dep_ifa $dep_ifn
+        popvar cfg dep_all dep_any dep_sel dep_sgs dep_ifa dep_ifn
 
+        [ -n "$dep_ifa" ] && { enabled_all $dep_ifa && enable_weak $cfg; }
+        [ -n "$dep_ifn" ] && { enabled_any $dep_ifn && enable_weak $cfg; }
         enabled_all  $dep_all || disable $cfg
         enabled_any  $dep_any || disable $cfg
         disabled_any $dep_sel && disable $cfg
