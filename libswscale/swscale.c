@@ -298,9 +298,6 @@ DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toUVOffset)= 0x0040400000404000ULL;
 
 #endif /* ARCH_X86 && CONFIG_GPL */
 
-// clipping helper table for C implementations:
-static unsigned char clip_table[768];
-
 static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b);
 
 DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_4[2][8])={
@@ -1850,16 +1847,6 @@ static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *fil
 }
 #endif /* COMPILE_MMX2 */
 
-static void globalInit(void)
-{
-    // generating tables:
-    int i;
-    for (i=0; i<768; i++) {
-        int c= av_clip_uint8(i-256);
-        clip_table[i]=c;
-    }
-}
-
 static SwsFunc getSwsFunc(SwsContext *c)
 {
 #if CONFIG_RUNTIME_CPUDETECT
@@ -2429,7 +2416,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     flags |= SWS_CPU_CAPS_BFIN;
 #endif
 #endif /* CONFIG_RUNTIME_CPUDETECT */
-    if (clip_table[512] != 255) globalInit();
     if (!rgb15to16) sws_rgb2rgb_init(flags);
 
     unscaled = (srcW == dstW && srcH == dstH);
