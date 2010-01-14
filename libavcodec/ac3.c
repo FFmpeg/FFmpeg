@@ -112,9 +112,10 @@ void ff_ac3_bit_alloc_calc_psd(int8_t *exp, int start, int end, int16_t *psd,
         int v = psd[bin++];
         int band_end = FFMIN(band_start_tab[band+1], end);
         for (; bin < band_end; bin++) {
+            int max = FFMAX(v, psd[bin]);
             /* logadd */
-            int adr = FFMIN(FFABS(v - psd[bin]) >> 1, 255);
-            v = FFMAX(v, psd[bin]) + ff_ac3_log_add_tab[adr];
+            int adr = FFMIN(max - ((v + psd[bin] + 1) >> 1), 255);
+            v = max + ff_ac3_log_add_tab[adr];
         }
         band_psd[band++] = v;
     } while (end > band_start_tab[band]);
