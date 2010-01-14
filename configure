@@ -962,6 +962,7 @@ HAVE_LIST="
     exp2
     exp2f
     fast_64bit
+    fast_clz
     fast_cmov
     fast_unaligned
     fork
@@ -1093,6 +1094,8 @@ ppc4xx_deps="ppc"
 sse_deps="mmx"
 ssse3_deps="sse"
 vis_deps="sparc"
+
+fast_clz_if_any="alpha armv5te avr32 mips ppc x86"
 
 need_memalign="altivec neon sse"
 inline_asm_deps="!tms470"
@@ -2311,6 +2314,12 @@ EOF
         elf) enabled debug && append YASMFLAGS "-g dwarf2" ;;
     esac
     disabled yasm || { check_yasm "pabsw xmm0, xmm0" && enable yasm; }
+
+    case "$cpu" in
+        athlon*|opteron*|k8*|pentium|pentium-mmx|prescott|nocona|atom|geode)
+            disable fast_clz
+        ;;
+    esac
 
 fi
 
