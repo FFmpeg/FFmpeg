@@ -39,10 +39,12 @@
 #define B 3
 #define G 2
 #define R 1
+#define A 0
 #else
 #define B 0
 #define G 1
 #define R 2
+#define A 3
 #endif
 
 typedef enum Predictor{
@@ -406,7 +408,7 @@ static av_cold void alloc_temp(HYuvContext *s){
             s->temp[i]= av_malloc(s->width + 16);
         }
     }else{
-        s->temp[0]= av_malloc(4*s->width + 16);
+        s->temp[0]= av_mallocz(4*s->width + 16);
     }
 }
 
@@ -836,7 +838,7 @@ static av_always_inline void decode_bgr_1(HYuvContext *s, int count, int decorre
             s->temp[0][4*i+R] = get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3);
         }
         if(alpha)
-            get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3); //?!
+            s->temp[0][4*i+A] = get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3);
     }
 }
 
@@ -1116,11 +1118,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         }
     }else{
         int y;
-        int leftr, leftg, leftb;
+        int leftr, leftg, leftb, lefta;
         const int last_line= (height-1)*p->linesize[0];
 
         if(s->bitstream_bpp==32){
-            skip_bits(&s->gb, 8);
+            lefta= p->data[0][last_line+A]= get_bits(&s->gb, 8);
             leftr= p->data[0][last_line+R]= get_bits(&s->gb, 8);
             leftg= p->data[0][last_line+G]= get_bits(&s->gb, 8);
             leftb= p->data[0][last_line+B]= get_bits(&s->gb, 8);
@@ -1128,6 +1130,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             leftr= p->data[0][last_line+R]= get_bits(&s->gb, 8);
             leftg= p->data[0][last_line+G]= get_bits(&s->gb, 8);
             leftb= p->data[0][last_line+B]= get_bits(&s->gb, 8);
+            lefta= p->data[0][last_line+A]= 255;
             skip_bits(&s->gb, 8);
         }
 
@@ -1136,13 +1139,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             case LEFT:
             case PLANE:
                 decode_bgr_bitstream(s, width-1);
-                s->dsp.add_hfyu_left_prediction_bgr32(p->data[0] + last_line+4, s->temp[0], width-1, &leftr, &leftg, &leftb);
+                s->dsp.add_hfyu_left_prediction_bgr32(p->data[0] + last_line+4, s->temp[0], width-1, &leftr, &leftg, &leftb, &lefta);
 
                 for(y=s->height-2; y>=0; y--){ //Yes it is stored upside down.
                     decode_bgr_bitstream(s, width);
 
-                    s->dsp.add_hfyu_left_prediction_bgr32(p->data[0] + p->linesize[0]*y, s->temp[0], width, &leftr, &leftg, &leftb);
+                    s->dsp.add_hfyu_left_prediction_bgr32(p->data[0] + p->linesize[0]*y, s->temp[0], width, &leftr, &leftg, &leftb, &lefta);
                     if(s->predictor == PLANE){
+                        if(s->bitstream_bpp!=32) lefta=0;
                         if((y&s->interlaced)==0 && y<s->height-1-s->interlaced){
                             s->dsp.add_bytes(p->data[0] + p->linesize[0]*y,
                                              p->data[0] + p->linesize[0]*y + fake_ystride, fake_ystride);

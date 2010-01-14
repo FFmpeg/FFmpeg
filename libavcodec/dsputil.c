@@ -3632,35 +3632,42 @@ static int add_hfyu_left_prediction_c(uint8_t *dst, const uint8_t *src, int w, i
 #define B 3
 #define G 2
 #define R 1
+#define A 0
 #else
 #define B 0
 #define G 1
 #define R 2
+#define A 3
 #endif
-static void add_hfyu_left_prediction_bgr32_c(uint8_t *dst, const uint8_t *src, int w, int *red, int *green, int *blue){
+static void add_hfyu_left_prediction_bgr32_c(uint8_t *dst, const uint8_t *src, int w, int *red, int *green, int *blue, int *alpha){
     int i;
-    int r,g,b;
+    int r,g,b,a;
     r= *red;
     g= *green;
     b= *blue;
+    a= *alpha;
 
     for(i=0; i<w; i++){
         b+= src[4*i+B];
         g+= src[4*i+G];
         r+= src[4*i+R];
+        a+= src[4*i+A];
 
         dst[4*i+B]= b;
         dst[4*i+G]= g;
         dst[4*i+R]= r;
+        dst[4*i+A]= a;
     }
 
     *red= r;
     *green= g;
     *blue= b;
+    *alpha= a;
 }
 #undef B
 #undef G
 #undef R
+#undef A
 
 #define BUTTERFLY2(o1,o2,i1,i2) \
 o1= (i1)+(i2);\
