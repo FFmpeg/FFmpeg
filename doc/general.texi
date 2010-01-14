@@ -44,6 +44,7 @@ library:
 @item 4xm                       @tab   @tab X
     @tab 4X Technologies format, used in some games.
 @item 8088flex TMV              @tab   @tab X
+@item Adobe Filmstrip           @tab X @tab X
 @item Audio IFF (AIFF)          @tab X @tab X
 @item American Laser Games MM   @tab   @tab X
     @tab Multimedia format used in games like Mad Dog McCree.
