@@ -117,6 +117,10 @@
 #endif
 #endif
 
+#ifdef HAVE_AV_CONFIG_H
+#   include "intmath.h"
+#endif
+
 //rounded division & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
@@ -138,6 +142,7 @@ extern const uint8_t ff_log2_tab[256];
 
 extern const uint8_t av_reverse[256];
 
+#ifndef av_log2
 static inline av_const int av_log2(unsigned int v)
 {
     int n = 0;
@@ -153,7 +158,9 @@ static inline av_const int av_log2(unsigned int v)
 
     return n;
 }
+#endif
 
+#ifndef av_log2_16bit
 static inline av_const int av_log2_16bit(unsigned int v)
 {
     int n = 0;
@@ -165,6 +172,7 @@ static inline av_const int av_log2_16bit(unsigned int v)
 
     return n;
 }
+#endif
 
 /**
  * Clips a signed integer value into the amin-amax range.
