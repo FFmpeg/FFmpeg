@@ -1097,7 +1097,8 @@ static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, 
     }
 }
 
-static inline void rgb48ToY(uint8_t *dst, const uint8_t *src, int width)
+static inline void rgb48ToY(uint8_t *dst, const uint8_t *src, int width,
+                            uint32_t *unused)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -1110,7 +1111,8 @@ static inline void rgb48ToY(uint8_t *dst, const uint8_t *src, int width)
 }
 
 static inline void rgb48ToUV(uint8_t *dstU, uint8_t *dstV,
-                             uint8_t *src1, uint8_t *src2, int width)
+                             uint8_t *src1, uint8_t *src2, int width,
+                             uint32_t *unused)
 {
     int i;
     assert(src1==src2);
@@ -1125,7 +1127,8 @@ static inline void rgb48ToUV(uint8_t *dstU, uint8_t *dstV,
 }
 
 static inline void rgb48ToUV_half(uint8_t *dstU, uint8_t *dstV,
-                                  uint8_t *src1, uint8_t *src2, int width)
+                                  uint8_t *src1, uint8_t *src2, int width,
+                                  uint32_t *unused)
 {
     int i;
     assert(src1==src2);
