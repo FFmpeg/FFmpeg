@@ -2673,22 +2673,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 
     /* precalculate horizontal scaler filter coefficients */
     {
-        const int filterAlign=
-            (flags & SWS_CPU_CAPS_MMX) ? 4 :
-            (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
-            1;
-
-        if (initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
-                       srcW      ,       dstW, filterAlign, 1<<14,
-                       (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
-                       srcFilter->lumH, dstFilter->lumH, c->param) < 0)
-            goto fail;
-        if (initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
-                       c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
-                       (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
-                       srcFilter->chrH, dstFilter->chrH, c->param) < 0)
-            goto fail;
-
 #if defined(COMPILE_MMX2)
 // can't downscale !!!
         if (c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR)) {
@@ -2718,8 +2702,25 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             mprotect(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
             mprotect(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
 #endif
-        }
+        } else
 #endif /* defined(COMPILE_MMX2) */
+        {
+            const int filterAlign=
+                (flags & SWS_CPU_CAPS_MMX) ? 4 :
+                (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
+                1;
+
+            if (initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
+                           srcW      ,       dstW, filterAlign, 1<<14,
+                           (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
+                           srcFilter->lumH, dstFilter->lumH, c->param) < 0)
+                goto fail;
+            if (initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
+                           c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
+                           (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
+                           srcFilter->chrH, dstFilter->chrH, c->param) < 0)
+                goto fail;
+        }
     } // initialize horizontal stuff
 
 
