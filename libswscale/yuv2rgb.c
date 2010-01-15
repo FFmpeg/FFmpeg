@@ -91,7 +91,7 @@ const int32_t ff_yuv2rgb_coeffs[8][4] = {
     dst[12*i+10] = dst[12*i+11] = b[Y];
 
 #define YUV2RGBFUNC(func_name, dst_type, alpha) \
-static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, \
+static int func_name(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY, \
                      int srcSliceH, uint8_t* dst[], int dstStride[]) \
 {\
     int y;\
@@ -105,11 +105,11 @@ static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSlic
         dst_type *dst_2 = (dst_type*)(dst[0] + (y+srcSliceY+1)*dstStride[0]);\
         dst_type av_unused *r, *b;\
         dst_type *g;\
-        uint8_t *py_1 = src[0] + y*srcStride[0];\
-        uint8_t *py_2 = py_1 + srcStride[0];\
-        uint8_t *pu = src[1] + (y>>1)*srcStride[1];\
-        uint8_t *pv = src[2] + (y>>1)*srcStride[2];\
-        uint8_t av_unused *pa_1, *pa_2;\
+        const uint8_t *py_1 = src[0] + y*srcStride[0];\
+        const uint8_t *py_2 = py_1 + srcStride[0];\
+        const uint8_t *pu = src[1] + (y>>1)*srcStride[1];\
+        const uint8_t *pv = src[2] + (y>>1)*srcStride[2];\
+        const uint8_t av_unused *pa_1, *pa_2;\
         unsigned int h_size = c->dstW>>3;\
         if (alpha) {\
             pa_1 = src[3] + y*srcStride[3];\

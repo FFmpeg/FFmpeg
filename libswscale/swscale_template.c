@@ -954,7 +954,7 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const 
 #if COMPILE_TEMPLATE_MMX
     if(!(c->flags & SWS_BITEXACT)) {
         long p= 4;
-        uint8_t *src[4]= {alpSrc + dstW, lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
+        const uint8_t *src[4]= {alpSrc + dstW, lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
         uint8_t *dst[4]= {aDest, dest, uDest, vDest};
         x86_reg counter[4]= {dstW, dstW, chrDstW, chrDstW};
 
@@ -1235,8 +1235,8 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                     : "%r8"
                 );
 #else
-                *(uint16_t **)(&c->u_temp)=abuf0;
-                *(uint16_t **)(&c->v_temp)=abuf1;
+                *(const uint16_t **)(&c->u_temp)=abuf0;
+                *(const uint16_t **)(&c->v_temp)=abuf1;
                 __asm__ volatile(
                     "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                     "mov        %4, %%"REG_b"               \n\t"
@@ -2145,7 +2145,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
 #endif
         );
     } else {
-        uint8_t *offset = src+filterSize;
+        const uint8_t *offset = src+filterSize;
         x86_reg counter= -2*dstW;
         //filter-= counter*filterSize/2;
         filterPos-= counter/2;
@@ -2554,7 +2554,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 #define DEBUG_SWSCALE_BUFFERS 0
 #define DEBUG_BUFFERS(...) if (DEBUG_SWSCALE_BUFFERS) av_log(c, AV_LOG_DEBUG, __VA_ARGS__)
 
-static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     /* load a few things into local vars to make the code more readable? and faster */
@@ -2677,8 +2677,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
 
         //Do horizontal scaling
         while(lastInLumBuf < lastLumSrcY) {
-            uint8_t *src1= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
-            uint8_t *src2= src[3]+(lastInLumBuf + 1 - srcSliceY)*srcStride[3];
+            const uint8_t *src1= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
+            const uint8_t *src2= src[3]+(lastInLumBuf + 1 - srcSliceY)*srcStride[3];
             lumBufIndex++;
             DEBUG_BUFFERS("\t\tlumBufIndex %d: lastInLumBuf: %d\n",
                                lumBufIndex,    lastInLumBuf);
@@ -2697,8 +2697,8 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             lastInLumBuf++;
         }
         while(lastInChrBuf < lastChrSrcY) {
-            uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
-            uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
+            const uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
+            const uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
             chrBufIndex++;
             DEBUG_BUFFERS("\t\tchrBufIndex %d: lastInChrBuf: %d\n",
                                chrBufIndex,    lastInChrBuf);
@@ -2737,21 +2737,21 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
             if (flags & SWS_ACCURATE_RND) {
                 int s= APCK_SIZE / 8;
                 for (i=0; i<vLumFilterSize; i+=2) {
-                    *(void**)&lumMmxFilter[s*i              ]= lumSrcPtr[i  ];
-                    *(void**)&lumMmxFilter[s*i+APCK_PTR2/4  ]= lumSrcPtr[i+(vLumFilterSize>1)];
+                    *(const void**)&lumMmxFilter[s*i              ]= lumSrcPtr[i  ];
+                    *(const void**)&lumMmxFilter[s*i+APCK_PTR2/4  ]= lumSrcPtr[i+(vLumFilterSize>1)];
                               lumMmxFilter[s*i+APCK_COEF/4  ]=
                               lumMmxFilter[s*i+APCK_COEF/4+1]= vLumFilter[dstY*vLumFilterSize + i    ]
                         + (vLumFilterSize>1 ? vLumFilter[dstY*vLumFilterSize + i + 1]<<16 : 0);
                     if (CONFIG_SWSCALE_ALPHA && alpPixBuf) {
-                        *(void**)&alpMmxFilter[s*i              ]= alpSrcPtr[i  ];
-                        *(void**)&alpMmxFilter[s*i+APCK_PTR2/4  ]= alpSrcPtr[i+(vLumFilterSize>1)];
+                        *(const void**)&alpMmxFilter[s*i              ]= alpSrcPtr[i  ];
+                        *(const void**)&alpMmxFilter[s*i+APCK_PTR2/4  ]= alpSrcPtr[i+(vLumFilterSize>1)];
                                   alpMmxFilter[s*i+APCK_COEF/4  ]=
                                   alpMmxFilter[s*i+APCK_COEF/4+1]= lumMmxFilter[s*i+APCK_COEF/4  ];
                     }
                 }
                 for (i=0; i<vChrFilterSize; i+=2) {
-                    *(void**)&chrMmxFilter[s*i              ]= chrSrcPtr[i  ];
-                    *(void**)&chrMmxFilter[s*i+APCK_PTR2/4  ]= chrSrcPtr[i+(vChrFilterSize>1)];
+                    *(const void**)&chrMmxFilter[s*i              ]= chrSrcPtr[i  ];
+                    *(const void**)&chrMmxFilter[s*i+APCK_PTR2/4  ]= chrSrcPtr[i+(vChrFilterSize>1)];
                               chrMmxFilter[s*i+APCK_COEF/4  ]=
                               chrMmxFilter[s*i+APCK_COEF/4+1]= vChrFilter[chrDstY*vChrFilterSize + i    ]
                         + (vChrFilterSize>1 ? vChrFilter[chrDstY*vChrFilterSize + i + 1]<<16 : 0);
@@ -2796,9 +2796,9 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int s
                                   alpSrcPtr, (uint16_t *) dest, (uint16_t *) uDest, (uint16_t *) vDest, (uint16_t *) aDest, dstW, chrDstW,
                                   dstFormat);
                 } else if (vLumFilterSize == 1 && vChrFilterSize == 1) { // unscaled YV12
-                    int16_t *lumBuf = lumSrcPtr[0];
-                    int16_t *chrBuf= chrSrcPtr[0];
-                    int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpSrcPtr[0] : NULL;
+                    const int16_t *lumBuf = lumSrcPtr[0];
+                    const int16_t *chrBuf= chrSrcPtr[0];
+                    const int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpSrcPtr[0] : NULL;
                     c->yuv2yuv1(c, lumBuf, chrBuf, alpBuf, dest, uDest, vDest, aDest, dstW, chrDstW);
                 } else { //General YV12
                     c->yuv2yuvX(c,

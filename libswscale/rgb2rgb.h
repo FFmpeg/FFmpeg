@@ -126,7 +126,7 @@ extern void (*rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uin
 extern void (*planar2x)(const uint8_t *src, uint8_t *dst, long width, long height,
                         long srcStride, long dstStride);
 
-extern void (*interleaveBytes)(uint8_t *src1, uint8_t *src2, uint8_t *dst,
+extern void (*interleaveBytes)(const uint8_t *src1, const uint8_t *src2, uint8_t *dst,
                                long width, long height, long src1Stride,
                                long src2Stride, long dstStride);
 

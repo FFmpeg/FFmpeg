@@ -184,13 +184,13 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
  *                  the destination image
  * @return          the height of the output slice
  */
-int sws_scale(struct SwsContext *context, uint8_t* srcSlice[], int srcStride[],
+int sws_scale(struct SwsContext *context, const uint8_t* srcSlice[], int srcStride[],
               int srcSliceY, int srcSliceH, uint8_t* dst[], int dstStride[]);
 #if LIBSWSCALE_VERSION_MAJOR < 1
 /**
  * @deprecated Use sws_scale() instead.
  */
-int sws_scale_ordered(struct SwsContext *context, uint8_t* src[],
+int sws_scale_ordered(struct SwsContext *context, const uint8_t* src[],
                       int srcStride[], int srcSliceY, int srcSliceH,
                       uint8_t* dst[], int dstStride[]) attribute_deprecated;
 #endif

@@ -59,7 +59,7 @@
 
 struct SwsContext;
 
-typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[],
+typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t* src[],
                        int srcStride[], int srcSliceY, int srcSliceH,
                        uint8_t* dst[], int dstStride[]);
 

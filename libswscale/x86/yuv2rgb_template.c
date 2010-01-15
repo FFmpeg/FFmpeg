@@ -134,9 +134,9 @@
     __asm__ volatile ("pxor %mm4, %mm4;" /* zero mm4 */ );    \
     for (y= 0; y<srcSliceH; y++ ) {                           \
         uint8_t *image = dst[0] + (y+srcSliceY)*dstStride[0]; \
-        uint8_t *py = src[0] + y*srcStride[0];                \
-        uint8_t *pu = src[1] + (y>>1)*srcStride[1];           \
-        uint8_t *pv = src[2] + (y>>1)*srcStride[2];           \
+        const uint8_t *py = src[0] + y*srcStride[0];          \
+        const uint8_t *pu = src[1] + (y>>1)*srcStride[1];     \
+        const uint8_t *pv = src[2] + (y>>1)*srcStride[2];     \
         x86_reg index= -h_size/2;                                \
 
 #define YUV2RGB_INIT                                                       \
@@ -179,7 +179,7 @@
     __asm__ volatile (SFENCE"\n\t"EMMS); \
     return srcSliceH; \
 
-static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static inline int RENAME(yuv420_rgb16)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int y, h_size;
@@ -236,7 +236,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
     YUV2RGB_OPERANDS
 }
 
-static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static inline int RENAME(yuv420_rgb15)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int y, h_size;
@@ -396,7 +396,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
         "pxor      %%mm4, %%mm4     \n\t"
 #endif
 
-static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static inline int RENAME(yuv420_rgb24)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int y, h_size;
@@ -413,7 +413,7 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
     YUV2RGB_OPERANDS
 }
 
-static inline int RENAME(yuv420_bgr24)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static inline int RENAME(yuv420_bgr24)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int y, h_size;
@@ -491,7 +491,7 @@ etc.
     "pxor         %%mm4, %%mm4;" /* zero mm4 */                         \
     "movq 8 (%5, %0, 2), %%mm6;" /* Load 8 Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */ \
 
-static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static inline int RENAME(yuv420_rgb32)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int y, h_size;
@@ -508,7 +508,7 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
     YUV2RGB_OPERANDS
 }
 
-static inline int RENAME(yuva420_rgb32)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static inline int RENAME(yuva420_rgb32)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                         int srcSliceH, uint8_t* dst[], int dstStride[])
 {
 #if HAVE_7REGS
@@ -516,7 +516,7 @@ static inline int RENAME(yuva420_rgb32)(SwsContext *c, uint8_t* src[], int srcSt
 
     YUV2RGB_LOOP(4)
 
-        uint8_t *pa = src[3] + y*srcStride[3];
+        const uint8_t *pa = src[3] + y*srcStride[3];
         YUV2RGB_INIT
         YUV2RGB
         "movq     (%6, %0, 2), %%mm3;"            /* Load 8 A A7 A6 A5 A4 A3 A2 A1 A0 */
@@ -527,7 +527,7 @@ static inline int RENAME(yuva420_rgb32)(SwsContext *c, uint8_t* src[], int srcSt
 #endif
 }
 
-static inline int RENAME(yuv420_bgr32)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static inline int RENAME(yuv420_bgr32)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int y, h_size;
@@ -544,7 +544,7 @@ static inline int RENAME(yuv420_bgr32)(SwsContext *c, uint8_t* src[], int srcStr
     YUV2RGB_OPERANDS
 }
 
-static inline int RENAME(yuva420_bgr32)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static inline int RENAME(yuva420_bgr32)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                         int srcSliceH, uint8_t* dst[], int dstStride[])
 {
 #if HAVE_7REGS
@@ -552,7 +552,7 @@ static inline int RENAME(yuva420_bgr32)(SwsContext *c, uint8_t* src[], int srcSt
 
     YUV2RGB_LOOP(4)
 
-        uint8_t *pa = src[3] + y*srcStride[3];
+        const uint8_t *pa = src[3] + y*srcStride[3];
         YUV2RGB_INIT
         YUV2RGB
         "movq     (%6, %0, 2), %%mm3;"            /* Load 8 A A7 A6 A5 A4 A3 A2 A1 A0 */
