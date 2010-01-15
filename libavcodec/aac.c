@@ -93,6 +93,10 @@
 #include <math.h>
 #include <string.h>
 
+#if ARCH_ARM
+#   include "arm/aac.h"
+#endif
+
 union float754 {
     float f;
     uint32_t i;
@@ -862,6 +866,7 @@ static void decode_mid_side_stereo(ChannelElement *cpe, GetBitContext *gb,
     }
 }
 
+#ifndef VMUL2
 static inline float *VMUL2(float *dst, const float *v, unsigned idx,
                            const float *scale)
 {
@@ -870,7 +875,9 @@ static inline float *VMUL2(float *dst, const float *v, unsigned idx,
     *dst++ = v[idx>>4 & 15] * s;
     return dst;
 }
+#endif
 
+#ifndef VMUL4
 static inline float *VMUL4(float *dst, const float *v, unsigned idx,
                            const float *scale)
 {
@@ -881,7 +888,9 @@ static inline float *VMUL4(float *dst, const float *v, unsigned idx,
     *dst++ = v[idx>>6 & 3] * s;
     return dst;
 }
+#endif
 
+#ifndef VMUL2S
 static inline float *VMUL2S(float *dst, const float *v, unsigned idx,
                             unsigned sign, const float *scale)
 {
@@ -896,7 +905,9 @@ static inline float *VMUL2S(float *dst, const float *v, unsigned idx,
 
     return dst;
 }
+#endif
 
+#ifndef VMUL4S
 static inline float *VMUL4S(float *dst, const float *v, unsigned idx,
                             unsigned sign, const float *scale)
 {
@@ -921,6 +932,7 @@ static inline float *VMUL4S(float *dst, const float *v, unsigned idx,
 
     return dst;
 }
+#endif
 
 /**
  * Decode spectral data; reference: table 4.50.
