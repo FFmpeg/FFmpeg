@@ -110,16 +110,8 @@ install-man: $(MANPAGES)
 	install -d "$(MANDIR)/man1"
 	install -m 644 $(MANPAGES) "$(MANDIR)/man1"
 
-uninstall: uninstall-progs uninstall-data uninstall-man
-
-uninstall-progs:
-	rm -f $(addprefix "$(BINDIR)/", $(ALLPROGS))
-
-uninstall-data:
-	rm -rf "$(DATADIR)"
-
-uninstall-man:
-	rm -f $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
+uninstall:
+	@echo "I'm sorry, Dave. I'm afraid I can't do that"
 
 testclean:
 	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/*~
