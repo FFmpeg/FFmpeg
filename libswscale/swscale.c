@@ -2824,7 +2824,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         else if (flags&SWS_POINT)
             av_log(c, AV_LOG_INFO, "Nearest Neighbor / POINT scaler, ");
         else if (flags&SWS_AREA)
-            av_log(c, AV_LOG_INFO, "Area Averageing scaler, ");
+            av_log(c, AV_LOG_INFO, "Area Averaging scaler, ");
         else if (flags&SWS_BICUBLIN)
             av_log(c, AV_LOG_INFO, "luma BICUBIC / chroma BILINEAR scaler, ");
         else if (flags&SWS_GAUSS)
