@@ -35,7 +35,7 @@ SINETABLE(1024);
 SINETABLE(2048);
 SINETABLE(4096);
 #else
-#include "mdct_tables.h"
+#include "libavcodec/mdct_tables.h"
 #endif
 
 SINETABLE_CONST float * const ff_sine_windows[] = {
