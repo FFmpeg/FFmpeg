@@ -74,8 +74,6 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
 
     if (avctx->codec_tag == MKTAG('r','a','w',' '))
         avctx->pix_fmt = findPixelFormat(pixelFormatBpsMOV, avctx->bits_per_coded_sample);
-    else if (avctx->codec_tag == MKTAG('A', 'V', 'R', 'n'))
-        avctx->pix_fmt = PIX_FMT_UYVY422; // Avid AVI Codec "Resolution 1:1"
     else if (avctx->codec_tag)
         avctx->pix_fmt = findPixelFormat(ff_raw_pixelFormatTags, avctx->codec_tag);
     else if (avctx->bits_per_coded_sample)
