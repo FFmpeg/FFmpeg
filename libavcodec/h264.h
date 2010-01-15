@@ -1298,4 +1298,6 @@ static void decode_mb_skip(H264Context *h){
     h->prev_mb_skipped= 1;
 }
 
+#include "h264_mvpred.h" //For pred_pskip_motion()
+
 #endif /* AVCODEC_H264_H */
