@@ -51,6 +51,7 @@ typedef struct {
 
     /* bitstream parameters */
     uint8_t number_of_fc_indexes;
+    uint8_t ma_predictor_bits;  ///< size in bits of the switched MA predictor
 
     /** size in bits of the i-th stage vector of quantizer */
     uint8_t vq_indexes_bits[5];
@@ -64,6 +65,22 @@ typedef struct {
 } SiprModeParam;
 
 static const SiprModeParam modes[MODE_COUNT] = {
+    [MODE_16k] = {
+        .mode_name          = "16k",
+        .bits_per_frame     = 160,
+        .subframe_count     = SUBFRAME_COUNT_16k,
+        .frames_per_packet  = 1,
+        .pitch_sharp_factor = 0.00,
+
+        .number_of_fc_indexes = 10,
+        .ma_predictor_bits    = 1,
+        .vq_indexes_bits      = {7, 8, 7, 7, 7},
+        .pitch_delay_bits     = {9, 6},
+        .gp_index_bits        = 4,
+        .fc_index_bits        = {4, 5, 4, 5, 4, 5, 4, 5, 4, 5},
+        .gc_index_bits        = 5
+    },
+
     [MODE_8k5] = {
         .mode_name          = "8k5",
         .bits_per_frame     = 152,
@@ -72,6 +89,7 @@ static const SiprModeParam modes[MODE_COUNT] = {
         .pitch_sharp_factor = 0.8,
 
         .number_of_fc_indexes = 3,
+        .ma_predictor_bits    = 0,
         .vq_indexes_bits      = {6, 7, 7, 7, 5},
         .pitch_delay_bits     = {8, 5, 5},
         .gp_index_bits        = 0,
@@ -87,6 +105,7 @@ static const SiprModeParam modes[MODE_COUNT] = {
         .pitch_sharp_factor = 0.8,
 
         .number_of_fc_indexes = 3,
+        .ma_predictor_bits    = 0,
         .vq_indexes_bits      = {6, 7, 7, 7, 5},
         .pitch_delay_bits     = {8, 5, 5},
         .gp_index_bits        = 0,
@@ -102,6 +121,7 @@ static const SiprModeParam modes[MODE_COUNT] = {
         .pitch_sharp_factor = 0.85,
 
         .number_of_fc_indexes = 1,
+        .ma_predictor_bits    = 0,
         .vq_indexes_bits      = {6, 7, 7, 7, 5},
         .pitch_delay_bits     = {8, 5, 8, 5, 5},
         .gp_index_bits        = 0,
@@ -172,6 +192,8 @@ static void decode_parameters(SiprParameters* parms, GetBitContext *pgb,
                               const SiprModeParam *p)
 {
     int i, j;
+
+    parms->ma_pred_switch           = get_bits(pgb, p->ma_predictor_bits);
 
     for (i = 0; i < 5; i++)
         parms->vq_indexes[i]        = get_bits(pgb, p->vq_indexes_bits[i]);
@@ -490,6 +512,9 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
 
     av_log(avctx, AV_LOG_DEBUG, "Mode: %s\n", modes[ctx->mode].mode_name);
 
+    if (ctx->mode == MODE_16k)
+        ff_sipr_init_16k(ctx);
+
     for (i = 0; i < LP_FILTER_ORDER; i++)
         ctx->lsp_history[i] = cos((i+1) * M_PI / (LP_FILTER_ORDER + 1));
 
@@ -497,12 +522,6 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
         ctx->energy_history[i] = -14;
 
     avctx->sample_fmt = SAMPLE_FMT_FLT;
-
-    if (ctx->mode == MODE_16k) {
-        av_log(avctx, AV_LOG_ERROR, "decoding 16kbps SIPR files is not "
-                                    "supported yet.\n");
-        return -1;
-    }
 
     dsputil_init(&ctx->dsp, avctx);
 
@@ -518,6 +537,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
     const SiprModeParam *mode_par = &modes[ctx->mode];
     GetBitContext gb;
     float *data = datap;
+    int subframe_size = ctx->mode == MODE_16k ? L_SUBFR_16k : SUBFR_SIZE;
     int i;
 
     ctx->avctx = avctx;
@@ -529,7 +549,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
         *data_size = 0;
         return -1;
     }
-    if (*data_size < SUBFR_SIZE * mode_par->subframe_count * sizeof(float)) {
+    if (*data_size < subframe_size * mode_par->subframe_count * sizeof(float)) {
         av_log(avctx, AV_LOG_ERROR,
                "Error processing packet: output buffer (%d) too small\n",
                *data_size);
@@ -542,12 +562,16 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
 
     for (i = 0; i < mode_par->frames_per_packet; i++) {
         decode_parameters(&parm, &gb, mode_par);
-        decode_frame(ctx, &parm, data);
 
-        data += SUBFR_SIZE * mode_par->subframe_count;
+        if (ctx->mode == MODE_16k)
+            ff_sipr_decode_frame_16k(ctx, &parm, data);
+        else
+            decode_frame(ctx, &parm, data);
+
+        data += subframe_size * mode_par->subframe_count;
     }
 
-    *data_size = mode_par->frames_per_packet * SUBFR_SIZE *
+    *data_size = mode_par->frames_per_packet * subframe_size *
         mode_par->subframe_count * sizeof(float);
 
     return mode_par->bits_per_frame >> 3;

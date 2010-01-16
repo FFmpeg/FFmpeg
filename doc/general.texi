@@ -620,7 +620,6 @@ following image formats are supported:
 @item RealAudio 3.0 (dnet)   @tab IX  @tab  X
     @tab Real low bitrate AC-3 codec
 @item RealAudio SIPR / ACELP.NET @tab     @tab  X
-    @tab 16 kbps mode not yet supported
 @item Shorten                @tab     @tab  X
 @item Sierra VMD audio       @tab     @tab  X
     @tab Used in Sierra VMD files.
