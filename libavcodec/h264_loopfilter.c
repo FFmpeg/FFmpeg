@@ -103,7 +103,7 @@ static const uint8_t tc0_table[52*3][4] = {
     {-1,13,17,25 }, {-1,13,17,25 }, {-1,13,17,25 }, {-1,13,17,25 },
 };
 
-static void filter_mb_edgev( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int qp ) {
+static void av_noinline filter_mb_edgev( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int qp ) {
     const int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = (alpha_table+52)[index_a];
     const int beta  = (beta_table+52)[qp + h->slice_beta_offset];
@@ -120,7 +120,7 @@ static void filter_mb_edgev( H264Context *h, uint8_t *pix, int stride, int16_t b
         h->s.dsp.h264_h_loop_filter_luma_intra(pix, stride, alpha, beta);
     }
 }
-static void filter_mb_edgecv( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int qp ) {
+static void av_noinline filter_mb_edgecv( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int qp ) {
     const int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = (alpha_table+52)[index_a];
     const int beta  = (beta_table+52)[qp + h->slice_beta_offset];
@@ -289,7 +289,7 @@ static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, in
     }
 }
 
-static void filter_mb_edgeh( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int qp ) {
+static void av_noinline filter_mb_edgeh( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int qp ) {
     const int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = (alpha_table+52)[index_a];
     const int beta  = (beta_table+52)[qp + h->slice_beta_offset];
@@ -307,7 +307,7 @@ static void filter_mb_edgeh( H264Context *h, uint8_t *pix, int stride, int16_t b
     }
 }
 
-static void filter_mb_edgech( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int qp ) {
+static void av_noinline filter_mb_edgech( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int qp ) {
     const int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = (alpha_table+52)[index_a];
     const int beta  = (beta_table+52)[qp + h->slice_beta_offset];
