@@ -2935,12 +2935,8 @@ static void reset_ptr(const uint8_t* src[], int format)
         src[3]=NULL;
     if(!isPlanarYUV(format)) {
         src[3]=src[2]=NULL;
-        if(   format != PIX_FMT_PAL8
-           && format != PIX_FMT_RGB8
-           && format != PIX_FMT_BGR8
-           && format != PIX_FMT_RGB4_BYTE
-           && format != PIX_FMT_BGR4_BYTE
-          )
+
+        if (!usePal(format))
             src[1]= NULL;
     }
 }
