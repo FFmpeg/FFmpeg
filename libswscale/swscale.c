@@ -2809,11 +2809,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     assert(c->chrDstH <= dstH);
 
     if (flags&SWS_PRINT_INFO) {
-#ifdef DITHER1XBPP
-        const char *dither= " dithered";
-#else
-        const char *dither= "";
-#endif
         if (flags&SWS_FAST_BILINEAR)
             av_log(c, AV_LOG_INFO, "FAST_BILINEAR scaler, ");
         else if (flags&SWS_BILINEAR)
@@ -2841,7 +2836,11 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 
         av_log(c, AV_LOG_INFO, "from %s to%s %s ",
                sws_format_name(srcFormat),
-               dstFormat == PIX_FMT_BGR555 || dstFormat == PIX_FMT_BGR565 ? dither : "",
+#ifdef DITHER1XBPP
+               dstFormat == PIX_FMT_BGR555 || dstFormat == PIX_FMT_BGR565 ? " dithered" : "",
+#else
+               "",
+#endif
                sws_format_name(dstFormat));
 
         if (flags & SWS_CPU_CAPS_MMX2)
