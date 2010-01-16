@@ -20,4 +20,6 @@ OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o
 OBJS-$(CONFIG_SLICIFY_FILTER)                += vf_slicify.o
 OBJS-$(CONFIG_VFLIP_FILTER)                  += vf_vflip.o
 
+OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
+
 include $(SUBDIR)../subdir.mak

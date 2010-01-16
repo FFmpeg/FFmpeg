@@ -197,4 +197,20 @@ Flip the input video vertically.
 ./ffmpeg -i in.avi -vfilters "vflip" out.avi
 @end example
 
+@chapter Available video sources
+
+Below is a description of the currently available video sources.
+
+@section nullsrc
+
+Null video source, never return images. It is mainly useful as a
+template and to be employed in analysis / debugging tools.
+
+It accepts as optional parameter a string of the form
+``width:height'', where ``width'' and ``height'' specify the size of
+the configured source.
+
+The default values of ``width'' and ``height'' are respectively 352
+and 288 (corresponding to the CIF size format).
+
 @bye
