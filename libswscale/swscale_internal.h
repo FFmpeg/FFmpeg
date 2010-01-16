@@ -389,7 +389,7 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_YUVA420P    \
     )
 
-static inline int fmt_depth(int fmt)
+static inline int fmt_depth(enum PixelFormat fmt)
 {
     switch(fmt) {
     case PIX_FMT_RGB48BE:
