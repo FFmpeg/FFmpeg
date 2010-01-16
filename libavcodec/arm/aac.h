@@ -18,6 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_ARM_AAC_H
+#define AVCODEC_ARM_AAC_H
+
+#include "config.h"
+
 #if HAVE_NEON && HAVE_INLINE_ASM
 
 #define VMUL2 VMUL2
@@ -128,3 +133,5 @@ static inline float *VMUL4S(float *dst, const float *v, unsigned idx,
 }
 
 #endif /* HAVE_NEON && HAVE_INLINE_ASM */
+
+#endif /* AVCODEC_ARM_AAC_H */
