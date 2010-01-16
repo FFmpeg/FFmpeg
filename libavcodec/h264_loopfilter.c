@@ -589,8 +589,8 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 {
                     bS[i] = 0;
                     for( l = 0; l < 1 + (h->slice_type_nos == FF_B_TYPE); l++ ) {
-                        if( ref2frm[l][h->ref_cache[l][b_idx]] != ref2frmn[l][h->ref_cache[l][bn_idx]] ||
-                            FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
+                        if( ref2frm[l][h->ref_cache[l][b_idx]] != ref2frmn[l][h->ref_cache[l][bn_idx]] |
+                            h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
                             FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit ) {
                             bS[i] = 1;
                             break;
@@ -601,8 +601,8 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                         bS[i] = 0;
                         for( l = 0; l < 2; l++ ) {
                             int ln= 1-l;
-                            if( ref2frm[l][h->ref_cache[l][b_idx]] != ref2frmn[ln][h->ref_cache[ln][bn_idx]] ||
-                                FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] ) >= 4 ||
+                            if( ref2frm[l][h->ref_cache[l][b_idx]] != ref2frmn[ln][h->ref_cache[ln][bn_idx]] |
+                                h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] + 3 >= 7U |
                                 FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit ) {
                                 bS[i] = 1;
                                 break;
