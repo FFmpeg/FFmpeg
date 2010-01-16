@@ -273,6 +273,8 @@ typedef struct H264Context{
 
     int chroma_qp[2]; //QPc
 
+    int qp_thresh;      ///< QP threshold to skip loopfilter
+
     int prev_mb_skipped;
     int next_mb_skipped;
 
