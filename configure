@@ -1561,6 +1561,7 @@ tmpfile TMPE  $EXESUF
 tmpfile TMPH  .h
 tmpfile TMPO  .o
 tmpfile TMPS  .S
+tmpfile TMPV  .ver
 tmpfile TMPSH .sh
 
 unset -f mktemp
@@ -2567,6 +2568,10 @@ check_ldflags -Wl,--warn-common
 check_ldflags -Wl,--as-needed
 check_ldflags '-Wl,-rpath-link,\$(BUILD_ROOT)/libpostproc -Wl,-rpath-link,\$(BUILD_ROOT)/libswscale -Wl,-rpath-link,\$(BUILD_ROOT)/libavfilter -Wl,-rpath-link,\$(BUILD_ROOT)/libavdevice -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 check_ldflags -Wl,-Bsymbolic
+
+echo "X{};" > $TMPV
+test_ldflags -Wl,--version-script,$TMPV &&
+    append SHFLAGS '-Wl,--version-script,\$(SUBDIR)lib\$(NAME).ver'
 
 if enabled small; then
     check_cflags -Os            # not all compilers support -Os
