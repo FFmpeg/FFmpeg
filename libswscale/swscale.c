@@ -2839,12 +2839,10 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         else
             av_log(c, AV_LOG_INFO, "ehh flags invalid?! ");
 
-        if (dstFormat==PIX_FMT_BGR555 || dstFormat==PIX_FMT_BGR565)
-            av_log(c, AV_LOG_INFO, "from %s to%s %s ",
-                   sws_format_name(srcFormat), dither, sws_format_name(dstFormat));
-        else
-            av_log(c, AV_LOG_INFO, "from %s to %s ",
-                   sws_format_name(srcFormat), sws_format_name(dstFormat));
+        av_log(c, AV_LOG_INFO, "from %s to%s %s ",
+               sws_format_name(srcFormat),
+               dstFormat == PIX_FMT_BGR555 || dstFormat == PIX_FMT_BGR565 ? dither : "",
+               sws_format_name(dstFormat));
 
         if (flags & SWS_CPU_CAPS_MMX2)
             av_log(c, AV_LOG_INFO, "using MMX2\n");
