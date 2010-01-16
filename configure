@@ -626,11 +626,16 @@ int x;
 EOF
 }
 
-check_ldflags(){
-    log check_ldflags "$@"
-    check_ld "$@" <<EOF && add_ldflags "$@"
+test_ldflags(){
+    log test_ldflags "$@"
+    check_ld "$@" <<EOF
 int main(void){ return 0; }
 EOF
+}
+
+check_ldflags(){
+    log check_ldflags "$@"
+    test_ldflags "$@" && add_ldflags "$@"
 }
 
 check_header(){
