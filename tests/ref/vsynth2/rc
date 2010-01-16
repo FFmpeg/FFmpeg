@@ -1,0 +1,4 @@
+b517389e425d3065ab26ef4cc0658237 *./tests/data/a-mpeg4-rc.avi
+227762 ./tests/data/a-mpeg4-rc.avi
+cc947bbac9187bf08d3e2d425556aaa5 *./tests/data/rc.vsynth2.out.yuv
+stddev:    4.26 PSNR: 35.54 bytes:  7603200/  7603200

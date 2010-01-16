@@ -1,0 +1,4 @@
+97894502b4cb57aca1105b6333f72dae *./tests/data/a-flashsv.flv
+14681925 ./tests/data/a-flashsv.flv
+947cb24ec45a453348ae6fe3fa278071 *./tests/data/flashsv.vsynth1.out.yuv
+stddev:    2.85 PSNR: 39.03 bytes:  7603200/  7603200

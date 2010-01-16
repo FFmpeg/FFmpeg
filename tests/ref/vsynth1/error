@@ -1,0 +1,4 @@
+7416dfd319f04044d4575dc9d1b406e1 *./tests/data/a-error-mpeg4-adv.avi
+756836 ./tests/data/a-error-mpeg4-adv.avi
+0d21f59c1600f5b6afb90b5278e28cd6 *./tests/data/error.vsynth1.out.yuv
+stddev:   18.08 PSNR: 22.98 bytes:  7603200/  7603200

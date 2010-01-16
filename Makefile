@@ -138,11 +138,7 @@ check: test checkheaders
 fulltest test: codectest lavftest seektest
 
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
-LAVF_REFFILE     = $(SRC_PATH)/tests/lavf.regression.ref
-LAVFI_REFFILE    = $(SRC_PATH)/tests/lavfi.regression.ref
-ROTOZOOM_REFFILE = $(SRC_PATH)/tests/rotozoom.regression.ref
 SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
-VSYNTH_REFFILE   = $(SRC_PATH)/tests/vsynth.regression.ref
 
 CODEC_TESTS = $(addprefix regtest-,             \
         mpeg                                    \
@@ -238,19 +234,6 @@ LAVF_TESTS = $(addprefix regtest-,              \
 LAVFI_TESTS = $(addprefix regtest-,             \
     )
 
-RESFILES = $(addprefix tests/data/,$(addsuffix .$(1),$(2:regtest-%=%)))
-
-ROTOZOOM_RESFILES = $(call RESFILES,rotozoom.regression,$(CODEC_TESTS))
-VSYNTH_RESFILES   = $(call RESFILES,vsynth.regression,$(CODEC_TESTS))
-
-LAVF_RESFILES = $(call RESFILES,lavf.regression,$(LAVF_TESTS))
-LAVFI_RESFILES = $(call RESFILES,lavfi.regression,$(LAVFI_TESTS))
-
-LAVF_RESFILE     = tests/data/lavf.regression
-LAVFI_RESFILE    = tests/data/lavfi.regression
-ROTOZOOM_RESFILE = tests/data/rotozoom.regression
-VSYNTH_RESFILE   = tests/data/vsynth.regression
-
 ifneq ($(CONFIG_ZLIB),yes)
 regtest-flashsv codectest: zlib-error
 endif
@@ -260,42 +243,39 @@ zlib-error:
 	@echo
 	@exit 1
 
-codectest: $(VSYNTH_RESFILE) $(ROTOZOOM_RESFILE)
-	diff -u -w $(VSYNTH_REFFILE)   $(VSYNTH_RESFILE)
-	diff -u -w $(ROTOZOOM_REFFILE) $(ROTOZOOM_RESFILE)
+codectest: $(CODEC_TESTS)
+lavftest:  $(LAVF_TESTS)
 
-lavftest: $(LAVF_RESFILE)
-	diff -u -w $(LAVF_REFFILE) $(LAVF_RESFILE)
-
-# lavfitest: $(LAVFI_RESFILE)
-# 	diff -u -w $(LAVFI_REFFILE) $(LAVFI_RESFILE)
-
-$(VSYNTH_RESFILE) $(ROTOZOOM_RESFILE) $(LAVF_RESFILE) $(LAVFI_RESFILE):
-	cat $^ > $@
-
-$(LAVF_RESFILE):     $(LAVF_RESFILES)
-$(LAVFI_RESFILE):    $(LAVFI_RESFILES)
-$(ROTOZOOM_RESFILE): $(ROTOZOOM_RESFILES)
-$(VSYNTH_RESFILE):   $(VSYNTH_RESFILES)
-
-$(VSYNTH_RESFILES) $(ROTOZOOM_RESFILES): $(CODEC_TESTS)
-
-$(LAVF_RESFILES): $(LAVF_TESTS)
-$(LAVFI_RESFILES): $(LAVFI_TESTS)
+# lavfitest: $(LAVFI_TESTS)
 
 $(CODEC_TESTS) $(LAVF_TESTS) $(LAVFI_TESTS): regtest-ref
 
-regtest-ref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/data/asynth1.sw
+REFFILE = $(SRC_PATH)/tests/ref/$(1)/$(2:regtest-%=%)
+RESFILE = tests/data/$(2:regtest-%=%).$(1).regression
 
-$(CODEC_TESTS) regtest-ref: tests/tiny_psnr$(HOSTEXESUF)
-	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth   tests/vsynth1 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
-	$(SRC_PATH)/tests/codec-regression.sh $@ rotozoom tests/vsynth2 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
+define CODECTEST_CMD
+	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth1 tests/vsynth1 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth2 tests/vsynth2 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
+endef
+
+regtest-ref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/data/asynth1.sw
+	$(CODECTEST_CMD)
+
+$(CODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
+	@echo "TEST CODEC $(@:regtest-%=%)"
+	@$(CODECTEST_CMD)
+	@diff -u -w $(call REFFILE,vsynth1,$@) $(call RESFILE,vsynth1,$@)
+	@diff -u -w $(call REFFILE,vsynth2,$@) $(call RESFILE,vsynth2,$@)
 
 $(LAVF_TESTS):
-	$(SRC_PATH)/tests/lavf-regression.sh $@ lavf tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@echo "TEST LAVF  $(@:regtest-%=%)"
+	@$(SRC_PATH)/tests/lavf-regression.sh $@ lavf tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@diff -u -w $(call REFFILE,lavf,$@) $(call RESFILE,lavf,$@)
 
 $(LAVFI_TESTS):
-	$(SRC_PATH)/tests/lavfi-regression.sh $@ lavfi tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@echo "TEST LAVFI $(@:regtest-%=%)"
+	@$(SRC_PATH)/tests/lavfi-regression.sh $@ lavfi tests/vsynth1 b "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@diff -u -w $(call REFFILE,lavfi,$@) $(call RESFILE,lavfi,$@)
 
 seektest: codectest lavftest tests/seek_test$(EXESUF)
 	$(SRC_PATH)/tests/seek-regression.sh $(SEEK_REFFILE) "$(TARGET_EXEC)" "$(TARGET_PATH)"

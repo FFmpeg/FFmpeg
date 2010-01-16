@@ -1,0 +1,20 @@
+fbddea2368cd2028fc8db4dfd4682e94 *./tests/data/a-mpeg2.mpg
+728044 ./tests/data/a-mpeg2.mpg
+b41ca49c1a02e66ce64d262e2cdaec15 *./tests/data/mpeg2.vsynth1.out.yuv
+stddev:    7.65 PSNR: 30.45 bytes:  7603200/  7603200
+8762c08210b88bf7b8b71a1fe1f5d169 *./tests/data/a-mpeg2ivlc-qprd.mpg
+789623 ./tests/data/a-mpeg2ivlc-qprd.mpg
+606712937b56e82958874d04ae3ba51a *./tests/data/mpeg2.vsynth1.out.yuv
+stddev:   10.07 PSNR: 28.06 bytes:  7603200/  7603200
+9aacd4f385b4d48b723aac50b97f105e *./tests/data/a-mpeg2_422.mpg
+726333 ./tests/data/a-mpeg2_422.mpg
+5f1f31587eca77c95206d4e1bcf93a08 *./tests/data/mpeg2.vsynth1.out.yuv
+stddev:   63.33 PSNR: 12.10 bytes: 10137600/  7603200
+4c067397b504d65532d7779cd36f3f88 *./tests/data/a-mpeg2.mpg
+725668 ./tests/data/a-mpeg2.mpg
+9f7b065f98d57cdecf90e6f7a2524eb5 *./tests/data/mpeg2.vsynth1.out.yuv
+stddev:    7.65 PSNR: 30.45 bytes:  7603200/  7603200
+ec3f6713c88a2b41f6c369fd64341077 *./tests/data/a-mpeg2i.mpg
+737473 ./tests/data/a-mpeg2i.mpg
+97615390fdd69abfcbc7e02df863a7d2 *./tests/data/mpeg2.vsynth1.out.yuv
+stddev:    7.67 PSNR: 30.43 bytes:  7603200/  7603200

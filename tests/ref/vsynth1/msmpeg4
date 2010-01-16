@@ -1,0 +1,4 @@
+d437c6ab3775c50fdec00fa744bb5add *./tests/data/a-msmpeg4.avi
+624718 ./tests/data/a-msmpeg4.avi
+5ca72c39e3fc5df8e62f223c869589f5 *./tests/data/msmpeg4.vsynth1.out.yuv
+stddev:    7.98 PSNR: 30.09 bytes:  7603200/  7603200

@@ -1,0 +1,4 @@
+90e65096aa9ebafa3fe3f44a5a47cdc4 *./tests/data/a-error-mpeg4-adv.avi
+176588 ./tests/data/a-error-mpeg4-adv.avi
+113defd3f8daf878e0b3fc03fafb4c09 *./tests/data/error.vsynth2.out.yuv
+stddev:    9.02 PSNR: 29.02 bytes:  7603200/  7603200

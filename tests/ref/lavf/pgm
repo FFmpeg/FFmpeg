@@ -1,0 +1,3 @@
+388f5c51a678ca6a52cc006095c12f08 *./tests/data/b-lavf02.pgm
+./tests/data/b-lavf%02d.pgm CRC=0x418d2963
+101391 ./tests/data/b-lavf02.pgm

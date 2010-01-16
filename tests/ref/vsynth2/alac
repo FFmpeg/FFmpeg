@@ -1,0 +1,4 @@
+c68f649777ab8e7c9a0f1f221451d3ad *./tests/data/a-alac.m4a
+389386 ./tests/data/a-alac.m4a
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/alac.vsynth2.out.wav
+stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444

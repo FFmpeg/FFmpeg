@@ -1,0 +1,4 @@
+49f656b3a84bd7173ca219fae310750c *./tests/data/a-rv20.rm
+627450 ./tests/data/a-rv20.rm
+a94d2babdc506b95951977cb55642981 *./tests/data/rv20.vsynth1.out.yuv
+stddev:    8.24 PSNR: 29.81 bytes:  7603200/  7603200

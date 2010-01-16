@@ -1,0 +1,4 @@
+fd83f2ef5887a62b4d755d7cb5f0ac59 *./tests/data/a-odivx.mp4
+540144 ./tests/data/a-odivx.mp4
+8828a375448dc5c2215163ba70656f89 *./tests/data/mpeg4.vsynth1.out.yuv
+stddev:    7.97 PSNR: 30.10 bytes:  7603200/  7603200

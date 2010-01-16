@@ -1,0 +1,4 @@
+6bc1f2414aaca7e26f85a68992bc8c1c *./tests/data/a-mpeg1b.mpg
+1035727 ./tests/data/a-mpeg1b.mpg
+8c9ff248bde54f4509913c80f843ed5f *./tests/data/mpeg1b.vsynth1.out.yuv
+stddev:    6.31 PSNR: 32.12 bytes:  7603200/  7603200

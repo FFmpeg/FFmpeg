@@ -1,0 +1,3 @@
+16d5dadf0b362fc8ba3cb676c5dde985 *./tests/data/b-lavf02.ppm
+./tests/data/b-lavf%02d.ppm CRC=0x6da01946
+304143 ./tests/data/b-lavf02.ppm

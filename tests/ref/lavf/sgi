@@ -1,0 +1,3 @@
+7054acafd275e51cec28d4518e213081 *./tests/data/b-lavf02.sgi
+./tests/data/b-lavf%02d.sgi CRC=0x6da01946
+308151 ./tests/data/b-lavf02.sgi

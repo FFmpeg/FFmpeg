@@ -1,0 +1,4 @@
+8496ffe953dc3398c657d99e962e4d77 *./tests/data/a-mpeg4-thread.avi
+250162 ./tests/data/a-mpeg4-thread.avi
+58165c879707aedeab460bab86dae4ef *./tests/data/mpeg4thread.vsynth2.out.yuv
+stddev:    3.73 PSNR: 36.68 bytes:  7603200/  7603200

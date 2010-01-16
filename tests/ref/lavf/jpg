@@ -1,0 +1,3 @@
+d56c19d41e9754939ea0f15d09bc4a32 *./tests/data/b-lavf02.jpg
+./tests/data/b-lavf%02d.jpg CRC=0xb8bc5a32
+31763 ./tests/data/b-lavf02.jpg

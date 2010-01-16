@@ -1,0 +1,4 @@
+765b2637f313eda33afdcdc384bfbc06 *./tests/data/a-mjpeg.avi
+704100 ./tests/data/a-mjpeg.avi
+3dc419bf8ddc7482d811e4c9dcf9d418 *./tests/data/mjpeg.vsynth2.out.yuv
+stddev:    4.38 PSNR: 35.29 bytes:  7603200/  7603200
