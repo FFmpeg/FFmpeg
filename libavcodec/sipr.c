@@ -110,6 +110,13 @@ static const SiprModeParam modes[MODE_COUNT] = {
     }
 };
 
+const float ff_pow_0_5[] = {
+    1.0/(1 <<  1), 1.0/(1 <<  2), 1.0/(1 <<  3), 1.0/(1 <<  4),
+    1.0/(1 <<  5), 1.0/(1 <<  6), 1.0/(1 <<  7), 1.0/(1 <<  8),
+    1.0/(1 <<  9), 1.0/(1 << 10), 1.0/(1 << 11), 1.0/(1 << 12),
+    1.0/(1 << 13), 1.0/(1 << 14), 1.0/(1 << 15), 1.0/(1 << 16)
+};
+
 static void dequant(float *out, const int *idx, const float *cbs[])
 {
     int i;
@@ -273,7 +280,7 @@ static void postfilter_5k0(SiprContext *ctx, const float *lpc, float *samples)
 
     for (i = 0; i < LP_FILTER_ORDER; i++) {
         lpc_d[i] = lpc[i] * ff_pow_0_75[i];
-        lpc_n[i] = lpc[i] *    pow_0_5 [i];
+        lpc_n[i] = lpc[i] * ff_pow_0_5 [i];
     };
 
     memcpy(pole_out - LP_FILTER_ORDER, ctx->postfilter_mem,
