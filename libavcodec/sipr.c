@@ -37,27 +37,10 @@
 #include "acelp_filters.h"
 #include "celp_filters.h"
 
-#define LSFQ_DIFF_MIN        (0.0125 * M_PI)
-
-#define LP_FILTER_ORDER      10
-
-/** Number of past samples needed for excitation interpolation */
-#define L_INTERPOL           (LP_FILTER_ORDER + 1)
-
-/**  Subframe size for all modes except 16k */
-#define SUBFR_SIZE           48
-
 #define MAX_SUBFRAME_COUNT   5
 
+#include "sipr.h"
 #include "siprdata.h"
-
-typedef enum {
-    MODE_16k,
-    MODE_8k5,
-    MODE_6k5,
-    MODE_5k0,
-    MODE_COUNT
-} SiprMode;
 
 typedef struct {
     const char *mode_name;
@@ -126,41 +109,6 @@ static const SiprModeParam modes[MODE_COUNT] = {
         .gc_index_bits        = 7
     }
 };
-
-typedef struct {
-    AVCodecContext *avctx;
-    DSPContext dsp;
-
-    SiprMode mode;
-
-    float past_pitch_gain;
-    float lsf_history[LP_FILTER_ORDER];
-
-    float excitation[L_INTERPOL + PITCH_DELAY_MAX + 5*SUBFR_SIZE];
-
-    DECLARE_ALIGNED_16(float, synth_buf[LP_FILTER_ORDER + 5*SUBFR_SIZE + 6]);
-
-    float lsp_history[LP_FILTER_ORDER];
-    float gain_mem;
-    float energy_history[4];
-    float highpass_filt_mem[2];
-    float postfilter_mem[PITCH_DELAY_MAX + LP_FILTER_ORDER];
-
-    /* 5k0 */
-    float tilt_mem;
-    float postfilter_agc;
-    float postfilter_mem5k0[PITCH_DELAY_MAX + LP_FILTER_ORDER];
-    float postfilter_syn5k0[LP_FILTER_ORDER + SUBFR_SIZE*5];
-} SiprContext;
-
-typedef struct {
-    int vq_indexes[5];
-    int pitch_delay[5];        ///< pitch delay
-    int gp_index[5];           ///< adaptive-codebook gain indexes
-    int16_t fc_indexes[5][10]; ///< fixed-codebook indexes
-    int gc_index[5];           ///< fixed-codebook gain indexes
-} SiprParameters;
-
 
 static void dequant(float *out, const int *idx, const float *cbs[])
 {
