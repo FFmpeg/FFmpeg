@@ -2690,13 +2690,13 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             c->chrMmx2FilterCode = av_malloc(c->chrMmx2FilterCodeSize);
 #endif
 
-            FF_ALLOCZ_OR_GOTO(c, c->lumMmx2Filter   , (dstW        /8+8)*sizeof(int16_t), fail);
-            FF_ALLOCZ_OR_GOTO(c, c->chrMmx2Filter   , (c->chrDstW  /4+8)*sizeof(int16_t), fail);
-            FF_ALLOCZ_OR_GOTO(c, c->lumMmx2FilterPos, (dstW      /2/8+8)*sizeof(int32_t), fail);
-            FF_ALLOCZ_OR_GOTO(c, c->chrMmx2FilterPos, (c->chrDstW/2/4+8)*sizeof(int32_t), fail);
+            FF_ALLOCZ_OR_GOTO(c, c->hLumFilter   , (dstW        /8+8)*sizeof(int16_t), fail);
+            FF_ALLOCZ_OR_GOTO(c, c->hChrFilter   , (c->chrDstW  /4+8)*sizeof(int16_t), fail);
+            FF_ALLOCZ_OR_GOTO(c, c->hLumFilterPos, (dstW      /2/8+8)*sizeof(int32_t), fail);
+            FF_ALLOCZ_OR_GOTO(c, c->hChrFilterPos, (c->chrDstW/2/4+8)*sizeof(int32_t), fail);
 
-            initMMX2HScaler(      dstW, c->lumXInc, c->lumMmx2FilterCode, c->lumMmx2Filter, c->lumMmx2FilterPos, 8);
-            initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmx2FilterCode, c->chrMmx2Filter, c->chrMmx2FilterPos, 4);
+            initMMX2HScaler(      dstW, c->lumXInc, c->lumMmx2FilterCode, c->hLumFilter, c->hLumFilterPos, 8);
+            initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmx2FilterCode, c->hChrFilter, c->hChrFilterPos, 4);
 
 #ifdef MAP_ANONYMOUS
             mprotect(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
@@ -3423,10 +3423,6 @@ void sws_freeContext(SwsContext *c)
     c->chrMmx2FilterCode=NULL;
 #endif /* ARCH_X86 && CONFIG_GPL */
 
-    av_freep(&c->lumMmx2Filter);
-    av_freep(&c->chrMmx2Filter);
-    av_freep(&c->lumMmx2FilterPos);
-    av_freep(&c->chrMmx2FilterPos);
     av_freep(&c->yuvTable);
 
     av_free(c);

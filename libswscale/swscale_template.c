@@ -2260,8 +2260,8 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 {
 #if ARCH_X86 && CONFIG_GPL
 #if COMPILE_TEMPLATE_MMX2
-    int32_t *mmx2FilterPos = c->lumMmx2FilterPos;
-    int16_t *mmx2Filter    = c->lumMmx2Filter;
+    int32_t *filterPos = c->hLumFilterPos;
+    int16_t *filter    = c->hLumFilter;
     int     canMMX2BeUsed  = c->canMMX2BeUsed;
     void    *mmx2FilterCode= c->lumMmx2FilterCode;
     int i;
@@ -2316,7 +2316,7 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 #if defined(PIC)
             "mov                      %5, %%"REG_b" \n\t"
 #endif
-            :: "m" (src), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
+            :: "m" (src), "m" (dst), "m" (filter), "m" (filterPos),
             "m" (mmx2FilterCode)
 #if defined(PIC)
             ,"m" (ebxsave)
@@ -2409,8 +2409,8 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
 {
 #if ARCH_X86 && CONFIG_GPL
 #if COMPILE_TEMPLATE_MMX2
-    int32_t *mmx2FilterPos = c->chrMmx2FilterPos;
-    int16_t *mmx2Filter    = c->chrMmx2Filter;
+    int32_t *filterPos = c->hChrFilterPos;
+    int16_t *filter    = c->hChrFilter;
     int     canMMX2BeUsed  = c->canMMX2BeUsed;
     void    *mmx2FilterCode= c->chrMmx2FilterCode;
     int i;
@@ -2452,7 +2452,7 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
 #if defined(PIC)
             "mov %6, %%"REG_b"    \n\t"
 #endif
-            :: "m" (src1), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
+            :: "m" (src1), "m" (dst), "m" (filter), "m" (filterPos),
             "m" (mmx2FilterCode), "m" (src2)
 #if defined(PIC)
             ,"m" (ebxsave)
