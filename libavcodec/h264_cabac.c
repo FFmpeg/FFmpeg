@@ -25,6 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#define CABAC 1
+
 #include "internal.h"
 #include "dsputil.h"
 #include "avcodec.h"

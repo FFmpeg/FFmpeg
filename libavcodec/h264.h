@@ -87,6 +87,10 @@
 #define CHROMA 1
 #endif
 
+#ifndef CABAC
+#define CABAC h->pps.cabac
+#endif
+
 #define EXTENDED_SAR          255
 
 #define MB_TYPE_REF0       MB_TYPE_ACPRED //dirty but it fits in 16 bit
@@ -923,7 +927,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
         h->non_zero_count_cache[2+8*0]=
 
         h->non_zero_count_cache[1+8*3]=
-        h->non_zero_count_cache[2+8*3]= h->pps.cabac && !IS_INTRA(mb_type) ? 0 : 64;
+        h->non_zero_count_cache[2+8*3]= CABAC && !IS_INTRA(mb_type) ? 0 : 64;
 
     }
 
@@ -937,11 +941,11 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
             h->non_zero_count_cache[3+8*1 + 2*8*i]=
             h->non_zero_count_cache[3+8*2 + 2*8*i]=
             h->non_zero_count_cache[0+8*1 +   8*i]=
-            h->non_zero_count_cache[0+8*4 +   8*i]= h->pps.cabac && !IS_INTRA(mb_type) ? 0 : 64;
+            h->non_zero_count_cache[0+8*4 +   8*i]= CABAC && !IS_INTRA(mb_type) ? 0 : 64;
         }
     }
 
-    if( h->pps.cabac ) {
+    if( CABAC ) {
         // top_cbp
         if(top_type) {
             h->top_cbp = h->cbp_table[top_xy];
@@ -1053,7 +1057,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
             *(uint32_t*)h->mv_cache [list][scan8[4 ]]=
             *(uint32_t*)h->mv_cache [list][scan8[12]]= 0;
 
-            if( h->pps.cabac ) {
+            if( CABAC ) {
                 /* XXX beurk, Load mvd */
                 if(USES_LIST(top_type, list)){
                     const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
@@ -1210,7 +1214,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
             *(uint64_t*)s->current_picture.motion_val[list][b_xy + 0 + y*h->b_stride]= *(uint64_t*)h->mv_cache[list][scan8[0]+0 + 8*y];
             *(uint64_t*)s->current_picture.motion_val[list][b_xy + 2 + y*h->b_stride]= *(uint64_t*)h->mv_cache[list][scan8[0]+2 + 8*y];
         }
-        if( h->pps.cabac ) {
+        if( CABAC ) {
             if(IS_SKIP(mb_type))
                 fill_rectangle(h->mvd_table[list][b_xy], 4, 4, h->b_stride, 0, 4);
             else
@@ -1229,7 +1233,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
         }
     }
 
-    if(h->slice_type_nos == FF_B_TYPE && h->pps.cabac){
+    if(h->slice_type_nos == FF_B_TYPE && CABAC){
         if(IS_8X8(mb_type)){
             uint8_t *direct_table = &h->direct_table[b8_xy];
             direct_table[1+0*h->b8_stride] = IS_DIRECT(h->sub_mb_type[1]) ? 1 : 0;

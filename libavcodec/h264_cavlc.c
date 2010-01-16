@@ -25,6 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#define CABAC 0
+
 #include "internal.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
