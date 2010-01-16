@@ -299,12 +299,12 @@ do_audio_encoding flac.flac "-ar 44100" "-acodec flac -compression_level 2"
 do_audio_decoding
 fi
 
-if [ -n "$do_wma" ] ; then
-# wmav1
+if [ -n "$do_wmav1" ] ; then
 do_audio_encoding wmav1.asf "-ar 44100" "-acodec wmav1"
 do_ffmpeg_nomd5 $pcm_dst -i $target_path/$file -f wav
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
-# wmav2
+fi
+if [ -n "$do_wmav2" ] ; then
 do_audio_encoding wmav2.asf "-ar 44100" "-acodec wmav2"
 do_ffmpeg_nomd5 $pcm_dst -i $target_path/$file -f wav
 $tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile

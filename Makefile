@@ -188,7 +188,8 @@ CODEC_TESTS = $(addprefix regtest-,             \
         adpcm_swf                               \
         alac                                    \
         flac                                    \
-        wma                                     \
+        wmav1                                   \
+        wmav2                                   \
         pcm                                     \
     )
 
