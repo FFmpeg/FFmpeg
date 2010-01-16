@@ -213,4 +213,14 @@ the configured source.
 The default values of ``width'' and ``height'' are respectively 352
 and 288 (corresponding to the CIF size format).
 
+@chapter Available video sinks
+
+Below is a description of the currently available video sinks.
+
+@section nullsink
+
+Null video sink, do absolutely nothing with the input video. It is
+mainly useful as a template and to be employed in analysis / debugging
+tools.
+
 @bye

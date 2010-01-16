@@ -22,4 +22,6 @@ OBJS-$(CONFIG_VFLIP_FILTER)                  += vf_vflip.o
 
 OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
 
+OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
+
 include $(SUBDIR)../subdir.mak

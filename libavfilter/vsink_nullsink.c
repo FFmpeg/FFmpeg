@@ -1,7 +1,4 @@
 /*
- * filter registration
- * copyright (c) 2008 Vitor Sessak
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -21,28 +18,28 @@
 
 #include "avfilter.h"
 
-
-#define REGISTER_FILTER(X,x,y) { \
-          extern AVFilter avfilter_##y##_##x ; \
-          if(CONFIG_##X##_FILTER )  avfilter_register(&avfilter_##y##_##x ); }
-
-void avfilter_register_all(void)
+static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
 {
-    static int initialized;
-
-    if (initialized)
-        return;
-    initialized = 1;
-
-    REGISTER_FILTER (CROP, crop, vf);
-    REGISTER_FILTER (FORMAT, format, vf);
-    REGISTER_FILTER (NOFORMAT, noformat, vf);
-    REGISTER_FILTER (NULL, null, vf);
-    REGISTER_FILTER (SCALE, scale, vf);
-    REGISTER_FILTER (SLICIFY, slicify, vf);
-    REGISTER_FILTER (VFLIP, vflip, vf);
-
-    REGISTER_FILTER (NULLSRC, nullsrc, vsrc);
-
-    REGISTER_FILTER(NULLSINK, nullsink, vsink);
 }
+
+static void end_frame(AVFilterLink *link)
+{
+}
+
+AVFilter avfilter_vsink_nullsink = {
+    .name        = "nullsink",
+    .description = "Do absolutely nothing with the input video.",
+
+    .priv_size = 0,
+
+    .inputs    = (AVFilterPad[]) {
+        {
+            .name            = "default",
+            .type            = CODEC_TYPE_VIDEO,
+            .start_frame     = start_frame,
+            .end_frame       = end_frame,
+        },
+        { .name = NULL},
+    },
+    .outputs   = (AVFilterPad[]) {{ .name = NULL }},
+};
