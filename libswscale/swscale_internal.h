@@ -75,16 +75,22 @@ typedef struct SwsContext {
      * sws_scale() wrapper so they can be freely modified here.
      */
     SwsFunc swScale;
-    int srcW, srcH, dstH;
-    int chrSrcW, chrSrcH, chrDstW, chrDstH;
+    int srcW;                     ///< Width  of source      luma/alpha planes.
+    int srcH;                     ///< Height of source      luma/alpha planes.
+    int dstH;                     ///< Height of destination luma/alpha planes.
+    int chrSrcW;                  ///< Width  of source      chroma     planes.
+    int chrSrcH;                  ///< Height of source      chroma     planes.
+    int chrDstW;                  ///< Width  of destination chroma     planes.
+    int chrDstH;                  ///< Height of destination chroma     planes.
     int lumXInc, chrXInc;
     int lumYInc, chrYInc;
-    enum PixelFormat dstFormat, srcFormat;  ///< format 4:2:0 type is always YV12
+    enum PixelFormat dstFormat;   ///< Destination pixel format.
+    enum PixelFormat srcFormat;   ///< Source      pixel format.
     int chrSrcHSubSample, chrSrcVSubSample;
     int chrDstHSubSample, chrDstVSubSample;
     int vChrDrop;
     int sliceDir;
-    double param[2];
+    double param[2];              ///< Input parameters for scaling algorithms that need them.
 
     uint32_t pal_yuv[256];
     uint32_t pal_rgb[256];
@@ -110,10 +116,10 @@ typedef struct SwsContext {
     int vLumBufSize;
     int vChrBufSize;
 
-    int lumMmx2FilterCodeSize;
-    int chrMmx2FilterCodeSize;
-    uint8_t *lumMmx2FilterCode;
-    uint8_t *chrMmx2FilterCode;
+    int lumMmx2FilterCodeSize;    ///< Runtime-generated MMX2 horizontal fast bilinear scaler code size for luma/alpha planes.
+    int chrMmx2FilterCodeSize;    ///< Runtime-generated MMX2 horizontal fast bilinear scaler code size for chroma     planes.
+    uint8_t *lumMmx2FilterCode;   ///< Runtime-generated MMX2 horizontal fast bilinear scaler code for luma/alpha planes.
+    uint8_t *chrMmx2FilterCode;   ///< Runtime-generated MMX2 horizontal fast bilinear scaler code for chroma     planes.
 
     int canMMX2BeUsed;
 
@@ -121,8 +127,8 @@ typedef struct SwsContext {
     int lastInChrBuf;
     int lumBufIndex;
     int chrBufIndex;
-    int dstY;
-    int flags;
+    int dstY;                     ///< Last destination vertical line output from last slice.
+    int flags;                    ///< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
     void * yuvTable;            // pointer to the yuv->rgb table start so it can be freed()
     uint8_t * table_rV[256];
     uint8_t * table_gU[256];
@@ -133,7 +139,8 @@ typedef struct SwsContext {
     int contrast, brightness, saturation;    // for sws_getColorspaceDetails
     int srcColorspaceTable[4];
     int dstColorspaceTable[4];
-    int srcRange, dstRange;
+    int srcRange;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (source      image).
+    int dstRange;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (destination image).
     int yuv2rgb_y_offset;
     int yuv2rgb_y_coeff;
     int yuv2rgb_v2r_coeff;
