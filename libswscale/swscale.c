@@ -1863,23 +1863,14 @@ static SwsFunc getSwsFunc(SwsContext *c)
     } else if (flags & SWS_CPU_CAPS_MMX) {
         sws_init_swScale_MMX(c);
         return swScale_MMX;
-    } else {
-        sws_init_swScale_C(c);
-        return swScale_C;
     }
-
 #else
 #if ARCH_PPC
     if (flags & SWS_CPU_CAPS_ALTIVEC) {
         sws_init_swScale_altivec(c);
         return swScale_altivec;
-    } else {
-        sws_init_swScale_C(c);
-        return swScale_C;
     }
 #endif
-    sws_init_swScale_C(c);
-    return swScale_C;
 #endif /* ARCH_X86 && CONFIG_GPL */
 #else //CONFIG_RUNTIME_CPUDETECT
 #if   COMPILE_TEMPLATE_MMX2
@@ -1894,11 +1885,11 @@ static SwsFunc getSwsFunc(SwsContext *c)
 #elif COMPILE_TEMPLATE_ALTIVEC
     sws_init_swScale_altivec(c);
     return swScale_altivec;
-#else
-    sws_init_swScale_C(c);
-    return swScale_C;
 #endif
 #endif //!CONFIG_RUNTIME_CPUDETECT
+
+    sws_init_swScale_C(c);
+    return swScale_C;
 }
 
 static int PlanarToNV12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
