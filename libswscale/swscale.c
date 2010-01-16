@@ -1552,7 +1552,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         int j;
         int64_t cutOff=0.0;
 
-        /* get rid off near zero elements on the left by shifting left */
+        /* get rid of near zero elements on the left by shifting left */
         for (j=0; j<filter2Size; j++) {
             int k;
             cutOff += FFABS(filter2[i*filter2Size]);
