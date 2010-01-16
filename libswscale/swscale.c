@@ -2834,10 +2834,10 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         else
             av_log(c, AV_LOG_INFO, "ehh flags invalid?! ");
 
-        av_log(c, AV_LOG_INFO, "from %s to%s %s ",
+        av_log(c, AV_LOG_INFO, "from %s to %s%s ",
                sws_format_name(srcFormat),
 #ifdef DITHER1XBPP
-               dstFormat == PIX_FMT_BGR555 || dstFormat == PIX_FMT_BGR565 ? " dithered" : "",
+               dstFormat == PIX_FMT_BGR555 || dstFormat == PIX_FMT_BGR565 ? "dithered " : "",
 #else
                "",
 #endif
