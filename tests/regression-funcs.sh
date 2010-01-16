@@ -17,6 +17,7 @@ target_datadir="${target_path}/${datadir}"
 this="$test.$test_ref"
 logfile="$datadir/$this.regression"
 outfile="$datadir/${outfile_prefix}-"
+errfile="$datadir/$this.err"
 
 # various files
 ffmpeg="$target_exec ${target_path}/ffmpeg_g"
@@ -32,6 +33,9 @@ pcm_dst="$datadir/$this.out.wav"
 pcm_ref="$datadir/$test_ref.ref.wav"
 crcfile="$datadir/$this.crc"
 target_crcfile="$target_datadir/$this.crc"
+
+[ "${V-0}" -gt 0 ] && echov=echo || echov=:
+[ "${V-0}" -gt 1 ] || exec 2>$errfile
 
 if [ X"$(echo | md5sum 2> /dev/null)" != X ]; then
     do_md5sum() { md5sum -b $1; }
@@ -50,7 +54,7 @@ do_ffmpeg()
     f="$1"
     shift
     set -- $* ${target_path}/$f
-    echo $ffmpeg $FFMPEG_OPTS $*
+    $echov $ffmpeg $FFMPEG_OPTS $*
     $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench
     do_md5sum $f >> $logfile
     if [ $f = $raw_dst ] ; then
@@ -69,7 +73,7 @@ do_ffmpeg_nomd5()
     f="$1"
     shift
     set -- $* ${target_path}/$f
-    echo $ffmpeg $FFMPEG_OPTS $*
+    $echov $ffmpeg $FFMPEG_OPTS $*
     $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
@@ -86,7 +90,7 @@ do_ffmpeg_crc()
 {
     f="$1"
     shift
-    echo $ffmpeg $FFMPEG_OPTS $* -f crc "$target_crcfile"
+    $echov $ffmpeg $FFMPEG_OPTS $* -f crc "$target_crcfile"
     $ffmpeg $FFMPEG_OPTS $* -f crc "$target_crcfile"
     echo "$f $(cat $crcfile)" >> $logfile
     rm -f "$crcfile"
@@ -96,7 +100,7 @@ do_ffmpeg_nocheck()
 {
     f="$1"
     shift
-    echo $ffmpeg $FFMPEG_OPTS $*
+    $echov $ffmpeg $FFMPEG_OPTS $*
     $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench
     expr "$(cat $bench)" : '.*utime=\(.*s\)' > $bench2
     echo $(cat $bench2) $f >> $benchfile

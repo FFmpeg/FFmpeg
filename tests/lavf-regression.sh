@@ -28,7 +28,7 @@ do_streamed_images()
 do_image_formats()
 {
     file=${outfile}lavf%02d.$1
-    echo $ffmpeg -t 0.5 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $2 $3 -flags +bitexact -sws_flags +accurate_rnd+bitexact $target_path/$file
+    $echov $ffmpeg -t 0.5 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $2 $3 -flags +bitexact -sws_flags +accurate_rnd+bitexact $target_path/$file
     $ffmpeg -t 0.5 -y -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src $2 $3 -flags +bitexact -sws_flags +accurate_rnd+bitexact $target_path/$file
     do_md5sum ${outfile}lavf02.$1 >> $logfile
     do_ffmpeg_crc $file $3 -i $target_path/$file
