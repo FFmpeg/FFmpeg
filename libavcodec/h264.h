@@ -830,7 +830,7 @@ static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_de
         left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
         left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
 
-    if(IS_INTRA(mb_type)){
+    if(IS_INTRA(mb_type) && !for_deblock){
         int type_mask= h->pps.constrained_intra_pred ? IS_INTRA(-1) : -1;
         h->topleft_samples_available=
         h->top_samples_available=
@@ -961,7 +961,7 @@ static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_de
         }
     }
 
-    if( CABAC ) {
+    if( CABAC && !for_deblock) {
         // top_cbp
         if(top_type) {
             h->top_cbp = h->cbp_table[top_xy];
@@ -1174,6 +1174,7 @@ static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_de
     }
 #endif
 
+    if(!for_deblock)
     h->neighbor_transform_size= !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[0]);
 }
 
