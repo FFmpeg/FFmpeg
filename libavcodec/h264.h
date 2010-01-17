@@ -719,7 +719,7 @@ static inline int get_chroma_qp(H264Context *h, int t, int qscale){
 
 static inline void pred_pskip_motion(H264Context * const h, int * const mx, int * const my);
 
-static void fill_caches(H264Context *h, int mb_type, int for_deblock){
+static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
@@ -1177,6 +1177,14 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     h->neighbor_transform_size= !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[0]);
 }
 
+static void fill_decode_caches(H264Context *h, int mb_type){
+    fill_caches(h, mb_type, 0);
+}
+
+static void fill_filter_caches(H264Context *h, int mb_type){
+    fill_caches(h, mb_type, 1);
+}
+
 /**
  * gets the predicted intra4x4 prediction mode.
  */
@@ -1313,7 +1321,7 @@ static void decode_mb_skip(H264Context *h){
         // just for fill_caches. pred_direct_motion will set the real mb_type
         mb_type|= MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;
 
-        fill_caches(h, mb_type, 0); //FIXME check what is needed and what not ...
+        fill_decode_caches(h, mb_type); //FIXME check what is needed and what not ...
         ff_h264_pred_direct_motion(h, &mb_type);
         mb_type|= MB_TYPE_SKIP;
     }
@@ -1322,7 +1330,7 @@ static void decode_mb_skip(H264Context *h){
         int mx, my;
         mb_type|= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P1L0|MB_TYPE_SKIP;
 
-        fill_caches(h, mb_type, 0); //FIXME check what is needed and what not ...
+        fill_decode_caches(h, mb_type); //FIXME check what is needed and what not ...
         pred_pskip_motion(h, &mx, &my);
         fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, 0, 1);
         fill_rectangle(  h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mx,my), 4);

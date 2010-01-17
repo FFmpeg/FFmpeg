@@ -1287,7 +1287,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
 
     if(h->deblocking_filter && 0) {
         backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, simple);
-        fill_caches(h, mb_type, 1); //FIXME don't fill stuff which isn't used by filter_mb
+        fill_filter_caches(h, mb_type); //FIXME don't fill stuff which isn't used by filter_mb
         h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
         h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
         if (!simple && FRAME_MBAFF) {
@@ -2184,7 +2184,7 @@ static void loop_filter(H264Context *h){
                     uvlinesize = h->mb_uvlinesize = s->uvlinesize;
                 }
                 backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, !is_complex);
-                fill_caches(h, mb_type, 1); //FIXME don't fill stuff which isn't used by filter_mb
+                fill_filter_caches(h, mb_type); //FIXME don't fill stuff which isn't used by filter_mb
                 h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
                 h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
 
