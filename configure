@@ -683,7 +683,8 @@ check_cpp_condition(){
     log check_cpp_condition "$@"
     header=$1
     condition=$2
-    check_cpp <<EOF
+    shift 2
+    check_cpp $($filter_cppflags "$@") <<EOF
 #include <$header>
 #if !($condition)
 #error "unsatisfied condition: $condition"
