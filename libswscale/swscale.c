@@ -2085,8 +2085,6 @@ static int rgb2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
         case 0x83: conv= rgb15to32; break;
         case 0x84: conv= rgb16to32; break;
         case 0x86: conv= rgb24to32; break;
-        default: av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
-                        sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
         }
     } else if (  (isBGR(srcFormat) && isRGB(dstFormat))
              || (isRGB(srcFormat) && isBGR(dstFormat))) {
@@ -2107,15 +2105,13 @@ static int rgb2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
         case 0x84: conv= rgb16tobgr32; break;
         case 0x86: conv= rgb24tobgr32; break;
         case 0x88: conv= rgb32tobgr32; break;
-        default: av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
-                        sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
         }
-    } else {
-        av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
-               sws_format_name(srcFormat), sws_format_name(dstFormat));
     }
 
-    if(conv) {
+    if (!conv) {
+        av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
+               sws_format_name(srcFormat), sws_format_name(dstFormat));
+    } else {
         const uint8_t *srcPtr= src[0];
         if(srcFormat == PIX_FMT_RGB32_1 || srcFormat == PIX_FMT_BGR32_1)
             srcPtr += ALT32_CORR;
