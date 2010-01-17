@@ -2036,24 +2036,24 @@ static int pal2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
         av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
                sws_format_name(srcFormat), sws_format_name(dstFormat));
     else {
-    switch(dstFormat) {
-    case PIX_FMT_RGB32  : conv = palette8topacked32; break;
-    case PIX_FMT_BGR32  : conv = palette8topacked32; break;
-    case PIX_FMT_BGR32_1: conv = palette8topacked32; break;
-    case PIX_FMT_RGB32_1: conv = palette8topacked32; break;
-    case PIX_FMT_RGB24  : conv = palette8topacked24; break;
-    case PIX_FMT_BGR24  : conv = palette8topacked24; break;
-    default: av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
-                    sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
-    }
+        switch (dstFormat) {
+        case PIX_FMT_RGB32  : conv = palette8topacked32; break;
+        case PIX_FMT_BGR32  : conv = palette8topacked32; break;
+        case PIX_FMT_BGR32_1: conv = palette8topacked32; break;
+        case PIX_FMT_RGB32_1: conv = palette8topacked32; break;
+        case PIX_FMT_RGB24  : conv = palette8topacked24; break;
+        case PIX_FMT_BGR24  : conv = palette8topacked24; break;
+        default: av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
+                        sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
+        }
     }
 
     if (conv)
-    for (i=0; i<srcSliceH; i++) {
-        conv(srcPtr, dstPtr, c->srcW, (uint8_t *) c->pal_rgb);
-        srcPtr+= srcStride[0];
-        dstPtr+= dstStride[0];
-    }
+        for (i=0; i<srcSliceH; i++) {
+            conv(srcPtr, dstPtr, c->srcW, (uint8_t *) c->pal_rgb);
+            srcPtr+= srcStride[0];
+            dstPtr+= dstStride[0];
+        }
 
     return srcSliceH;
 }
