@@ -709,11 +709,7 @@ check_lib2(){
     headers="$1"
     func="$2"
     shift 2
-    temp_extralibs "$@"
-    check_func_headers "$headers" $func && add_extralibs "$@"
-    err=$?
-    restore_flags
-    return $err
+    check_func_headers "$headers" $func "$@" && add_extralibs "$@"
 }
 
 check_exec(){
