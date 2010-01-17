@@ -2965,7 +2965,7 @@ int sws_scale(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSlice
         for (i=0; i<256; i++) {
             int p, r, g, b,y,u,v;
             if(c->srcFormat == PIX_FMT_PAL8) {
-                p=((uint32_t*)(src[1]))[i];
+                p=((const uint32_t*)(src[1]))[i];
                 r= (p>>16)&0xFF;
                 g= (p>> 8)&0xFF;
                 b=  p     &0xFF;
