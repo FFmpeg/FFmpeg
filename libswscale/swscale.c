@@ -588,7 +588,7 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             }\
             A1>>=19;\
             A2>>=19;\
-        }\
+        }
 
 #define YSCALE_YUV_2_PACKEDX_C(type,alpha) \
         YSCALE_YUV_2_PACKEDX_NOCLIP_C(type,alpha)\
@@ -633,7 +633,7 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             A >>=19;\
             if (A&256)\
                 A = av_clip_uint8(A);\
-        }\
+        }
 
 #define YSCALE_YUV_2_RGBX_FULL_C(rnd,alpha) \
     YSCALE_YUV_2_PACKEDX_FULL_C(rnd>>3,alpha)\
@@ -650,8 +650,7 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             else if (G<0)G=0;   \
             if (B>=(256<<22))   B=(256<<22)-1; \
             else if (B<0)B=0;   \
-        }\
-
+        }
 
 #define YSCALE_YUV_2_GRAY16_C \
     for (i=0; i<(dstW>>1); i++) {\
@@ -680,7 +679,7 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
     YSCALE_YUV_2_PACKEDX_C(type,alpha)  /* FIXME fix tables so that clipping is not needed and then use _NOCLIP*/\
     r = (type *)c->table_rV[V];   \
     g = (type *)(c->table_gU[U] + c->table_gV[V]); \
-    b = (type *)c->table_bU[U];   \
+    b = (type *)c->table_bU[U];
 
 #define YSCALE_YUV_2_PACKED2_C(type,alpha)   \
     for (i=0; i<(dstW>>1); i++) { \
@@ -694,19 +693,19 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         if (alpha) {\
             A1= (abuf0[i2  ]*yalpha1+abuf1[i2  ]*yalpha)>>19;         \
             A2= (abuf0[i2+1]*yalpha1+abuf1[i2+1]*yalpha)>>19;         \
-        }\
+        }
 
 #define YSCALE_YUV_2_GRAY16_2_C   \
     for (i=0; i<(dstW>>1); i++) { \
         const int i2= 2*i;       \
         int Y1= (buf0[i2  ]*yalpha1+buf1[i2  ]*yalpha)>>11;           \
-        int Y2= (buf0[i2+1]*yalpha1+buf1[i2+1]*yalpha)>>11;           \
+        int Y2= (buf0[i2+1]*yalpha1+buf1[i2+1]*yalpha)>>11;
 
 #define YSCALE_YUV_2_RGB2_C(type,alpha) \
     YSCALE_YUV_2_PACKED2_C(type,alpha)\
     r = (type *)c->table_rV[V];\
     g = (type *)(c->table_gU[U] + c->table_gV[V]);\
-    b = (type *)c->table_bU[U];\
+    b = (type *)c->table_bU[U];
 
 #define YSCALE_YUV_2_PACKED1_C(type,alpha) \
     for (i=0; i<(dstW>>1); i++) {\
@@ -720,19 +719,19 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         if (alpha) {\
             A1= abuf0[i2  ]>>7;\
             A2= abuf0[i2+1]>>7;\
-        }\
+        }
 
 #define YSCALE_YUV_2_GRAY16_1_C \
     for (i=0; i<(dstW>>1); i++) {\
         const int i2= 2*i;\
         int Y1= buf0[i2  ]<<1;\
-        int Y2= buf0[i2+1]<<1;\
+        int Y2= buf0[i2+1]<<1;
 
 #define YSCALE_YUV_2_RGB1_C(type,alpha) \
     YSCALE_YUV_2_PACKED1_C(type,alpha)\
     r = (type *)c->table_rV[V];\
     g = (type *)(c->table_gU[U] + c->table_gV[V]);\
-    b = (type *)c->table_bU[U];\
+    b = (type *)c->table_bU[U];
 
 #define YSCALE_YUV_2_PACKED1B_C(type,alpha) \
     for (i=0; i<(dstW>>1); i++) {\
@@ -746,13 +745,13 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         if (alpha) {\
             A1= abuf0[i2  ]>>7;\
             A2= abuf0[i2+1]>>7;\
-        }\
+        }
 
 #define YSCALE_YUV_2_RGB1B_C(type,alpha) \
     YSCALE_YUV_2_PACKED1B_C(type,alpha)\
     r = (type *)c->table_rV[V];\
     g = (type *)(c->table_gU[U] + c->table_gV[V]);\
-    b = (type *)c->table_bU[U];\
+    b = (type *)c->table_bU[U];
 
 #define YSCALE_YUV_2_MONO2_C \
     const uint8_t * const d128=dither_8x8_220[y&7];\
@@ -769,7 +768,7 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         acc+= acc + g[((buf0[i+7]*yalpha1+buf1[i+7]*yalpha)>>19) + d128[7]];\
         ((uint8_t*)dest)[0]= c->dstFormat == PIX_FMT_MONOBLACK ? acc : ~acc;\
         dest++;\
-    }\
+    }
 
 #define YSCALE_YUV_2_MONOX_C \
     const uint8_t * const d128=dither_8x8_220[y&7];\
@@ -987,7 +986,7 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             ((uint8_t*)dest)[2*i2+3]= Y2>>8;\
         }                \
         break;\
-    }\
+    }
 
 static inline void yuv2packedXinC(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                   const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
