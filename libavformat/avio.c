@@ -94,7 +94,7 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
         return err;
     }
 
-    //We must be carefull here as url_seek() could be slow, for example for http
+    //We must be careful here as url_seek() could be slow, for example for http
     if(   (flags & (URL_WRONLY | URL_RDWR))
        || !strcmp(up->name, "file"))
         if(!uc->is_streamed && url_seek(uc, 0, SEEK_SET) < 0)
