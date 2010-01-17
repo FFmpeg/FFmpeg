@@ -472,7 +472,6 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         // be done twice (one each of the field) even if we are in a
         // frame macroblock.
         //
-        static const int nnz_idx[4] = {4,5,6,3};
         unsigned int tmp_linesize   = 2 *   linesize;
         unsigned int tmp_uvlinesize = 2 * uvlinesize;
         int mbn_xy = mb_xy - 2 * s->mb_stride;
@@ -488,7 +487,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 const uint8_t *mbn_nnz = h->non_zero_count[mbn_xy];
                 for( i = 0; i < 4; i++ ) {
                     if( h->non_zero_count_cache[scan8[0]+i] != 0 ||
-                        mbn_nnz[nnz_idx[i]] != 0 )
+                        mbn_nnz[i+4+3*8] != 0 )
                         bS[i] = 2;
                     else
                         bS[i] = 1;
@@ -663,36 +662,6 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
             return;
         }
     }
-
-    h->non_zero_count_cache[7+8*1]=h->non_zero_count[mb_xy][0];
-    h->non_zero_count_cache[7+8*2]=h->non_zero_count[mb_xy][1];
-    h->non_zero_count_cache[7+8*3]=h->non_zero_count[mb_xy][2];
-    h->non_zero_count_cache[7+8*4]=h->non_zero_count[mb_xy][3];
-    h->non_zero_count_cache[4+8*4]=h->non_zero_count[mb_xy][4];
-    h->non_zero_count_cache[5+8*4]=h->non_zero_count[mb_xy][5];
-    h->non_zero_count_cache[6+8*4]=h->non_zero_count[mb_xy][6];
-
-    h->non_zero_count_cache[1+8*2]=h->non_zero_count[mb_xy][9];
-    h->non_zero_count_cache[2+8*2]=h->non_zero_count[mb_xy][8];
-    h->non_zero_count_cache[2+8*1]=h->non_zero_count[mb_xy][7];
-
-    h->non_zero_count_cache[1+8*5]=h->non_zero_count[mb_xy][12];
-    h->non_zero_count_cache[2+8*5]=h->non_zero_count[mb_xy][11];
-    h->non_zero_count_cache[2+8*4]=h->non_zero_count[mb_xy][10];
-
-    h->non_zero_count_cache[6+8*1]=h->non_zero_count[mb_xy][13];
-    h->non_zero_count_cache[6+8*2]=h->non_zero_count[mb_xy][14];
-    h->non_zero_count_cache[6+8*3]=h->non_zero_count[mb_xy][15];
-    h->non_zero_count_cache[5+8*1]=h->non_zero_count[mb_xy][16];
-    h->non_zero_count_cache[5+8*2]=h->non_zero_count[mb_xy][17];
-    h->non_zero_count_cache[5+8*3]=h->non_zero_count[mb_xy][18];
-    h->non_zero_count_cache[4+8*1]=h->non_zero_count[mb_xy][19];
-    h->non_zero_count_cache[4+8*2]=h->non_zero_count[mb_xy][20];
-    h->non_zero_count_cache[4+8*3]=h->non_zero_count[mb_xy][21];
-
-    h->non_zero_count_cache[1+8*1]=h->non_zero_count[mb_xy][22];
-    h->non_zero_count_cache[1+8*4]=h->non_zero_count[mb_xy][23];
-
     // CAVLC 8x8dct requires NNZ values for residual decoding that differ from what the loop filter needs
     if(!h->pps.cabac && h->pps.transform_8x8_mode){
         int top_type, left_type[2];
@@ -762,7 +731,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
                          ((!h->pps.cabac && IS_8x8DCT(s->current_picture.mb_type[mbn_xy])) ?
                             (h->cbp_table[mbn_xy] & ((MB_FIELD ? (i&2) : (mb_y&1)) ? 8 : 2))
                                                                        :
-                            h->non_zero_count[mbn_xy][MB_FIELD ? i&3 : (i>>2)+(mb_y&1)*2]))
+                            h->non_zero_count[mbn_xy][7+(MB_FIELD ? (i&3) : (i>>2)+(mb_y&1)*2)*8]))
                     bS[i] = 2;
                 else
                     bS[i] = 1;

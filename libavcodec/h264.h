@@ -300,6 +300,13 @@ typedef struct H264Context{
      * is 64 if not available.
      */
     DECLARE_ALIGNED_8(uint8_t, non_zero_count_cache[6*8]);
+
+    /*
+    .UU.YYYY
+    .UU.YYYY
+    .vv.YYYY
+    .VV.YYYY
+    */
     uint8_t (*non_zero_count)[32];
 
     /**
@@ -727,11 +734,11 @@ static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_de
     const uint8_t * left_block;
     int topleft_partition= -1;
     int i;
-    static const uint8_t left_block_options[4][8]={
-        {0,1,2,3,7,10,8,11},
-        {2,2,3,3,8,11,8,11},
-        {0,0,1,1,7,10,7,10},
-        {0,2,0,2,7,10,7,10}
+    static const uint8_t left_block_options[4][16]={
+        {0,1,2,3,7,10,8,11,7+0*8, 7+1*8, 7+2*8, 7+3*8, 2+0*8, 2+3*8, 2+1*8, 2+2*8},
+        {2,2,3,3,8,11,8,11,7+2*8, 7+2*8, 7+3*8, 7+3*8, 2+1*8, 2+2*8, 2+1*8, 2+2*8},
+        {0,0,1,1,7,10,7,10,7+0*8, 7+0*8, 7+1*8, 7+1*8, 2+0*8, 2+3*8, 2+0*8, 2+3*8},
+        {0,2,0,2,7,10,7,10,7+0*8, 7+2*8, 7+0*8, 7+2*8, 2+0*8, 2+3*8, 2+0*8, 2+3*8}
     };
 
     top_xy     = mb_xy  - (s->mb_stride << FIELD_PICTURE);
@@ -788,6 +795,12 @@ static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_de
     h->left_mb_xy[0] = left_xy[0];
     h->left_mb_xy[1] = left_xy[1];
     if(for_deblock){
+        *((uint64_t*)&h->non_zero_count_cache[0+8*1])= *((uint64_t*)&h->non_zero_count[mb_xy][ 0]);
+        *((uint64_t*)&h->non_zero_count_cache[0+8*2])= *((uint64_t*)&h->non_zero_count[mb_xy][ 8]);
+        *((uint32_t*)&h->non_zero_count_cache[0+8*5])= *((uint32_t*)&h->non_zero_count[mb_xy][16]);
+        *((uint32_t*)&h->non_zero_count_cache[4+8*3])= *((uint32_t*)&h->non_zero_count[mb_xy][20]);
+        *((uint64_t*)&h->non_zero_count_cache[0+8*4])= *((uint64_t*)&h->non_zero_count[mb_xy][24]);
+
         topleft_type = 0;
         topright_type = 0;
         top_type     = h->slice_table[top_xy     ] < 0xFFFF ? s->current_picture.mb_type[top_xy]     : 0;
@@ -922,16 +935,13 @@ static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_de
 */
 //FIXME constraint_intra_pred & partitioning & nnz (let us hope this is just a typo in the spec)
     if(top_type){
-        h->non_zero_count_cache[4+8*0]= h->non_zero_count[top_xy][4];
-        h->non_zero_count_cache[5+8*0]= h->non_zero_count[top_xy][5];
-        h->non_zero_count_cache[6+8*0]= h->non_zero_count[top_xy][6];
-        h->non_zero_count_cache[7+8*0]= h->non_zero_count[top_xy][3];
+        *(uint32_t*)&h->non_zero_count_cache[4+8*0]= *(uint32_t*)&h->non_zero_count[top_xy][4+3*8];
 
-        h->non_zero_count_cache[1+8*0]= h->non_zero_count[top_xy][9];
-        h->non_zero_count_cache[2+8*0]= h->non_zero_count[top_xy][8];
+        h->non_zero_count_cache[1+8*0]= h->non_zero_count[top_xy][1+1*8];
+        h->non_zero_count_cache[2+8*0]= h->non_zero_count[top_xy][2+1*8];
 
-        h->non_zero_count_cache[1+8*3]= h->non_zero_count[top_xy][12];
-        h->non_zero_count_cache[2+8*3]= h->non_zero_count[top_xy][11];
+        h->non_zero_count_cache[1+8*3]= h->non_zero_count[top_xy][1+2*8];
+        h->non_zero_count_cache[2+8*3]= h->non_zero_count[top_xy][2+2*8];
 
     }else{
         h->non_zero_count_cache[4+8*0]=
@@ -949,10 +959,10 @@ static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_de
 
     for (i=0; i<2; i++) {
         if(left_type[i]){
-            h->non_zero_count_cache[3+8*1 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[0+2*i]];
-            h->non_zero_count_cache[3+8*2 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[1+2*i]];
-            h->non_zero_count_cache[0+8*1 +   8*i]= h->non_zero_count[left_xy[i]][left_block[4+2*i]];
-            h->non_zero_count_cache[0+8*4 +   8*i]= h->non_zero_count[left_xy[i]][left_block[5+2*i]];
+            h->non_zero_count_cache[3+8*1 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+0+2*i]];
+            h->non_zero_count_cache[3+8*2 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+1+2*i]];
+            h->non_zero_count_cache[0+8*1 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+4+2*i]];
+            h->non_zero_count_cache[0+8*4 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+5+2*i]];
         }else{
             h->non_zero_count_cache[3+8*1 + 2*8*i]=
             h->non_zero_count_cache[3+8*2 + 2*8*i]=
@@ -1204,38 +1214,11 @@ static inline int pred_intra_mode(H264Context *h, int n){
 static inline void write_back_non_zero_count(H264Context *h){
     const int mb_xy= h->mb_xy;
 
-    h->non_zero_count[mb_xy][0]= h->non_zero_count_cache[7+8*1];
-    h->non_zero_count[mb_xy][1]= h->non_zero_count_cache[7+8*2];
-    h->non_zero_count[mb_xy][2]= h->non_zero_count_cache[7+8*3];
-    h->non_zero_count[mb_xy][3]= h->non_zero_count_cache[7+8*4];
-    h->non_zero_count[mb_xy][4]= h->non_zero_count_cache[4+8*4];
-    h->non_zero_count[mb_xy][5]= h->non_zero_count_cache[5+8*4];
-    h->non_zero_count[mb_xy][6]= h->non_zero_count_cache[6+8*4];
-
-    h->non_zero_count[mb_xy][9]= h->non_zero_count_cache[1+8*2];
-    h->non_zero_count[mb_xy][8]= h->non_zero_count_cache[2+8*2];
-    h->non_zero_count[mb_xy][7]= h->non_zero_count_cache[2+8*1];
-
-    h->non_zero_count[mb_xy][12]=h->non_zero_count_cache[1+8*5];
-    h->non_zero_count[mb_xy][11]=h->non_zero_count_cache[2+8*5];
-    h->non_zero_count[mb_xy][10]=h->non_zero_count_cache[2+8*4];
-
-    //FIXME sort better how things are stored in non_zero_count
-
-
-    h->non_zero_count[mb_xy][13]= h->non_zero_count_cache[6+8*1];
-    h->non_zero_count[mb_xy][14]= h->non_zero_count_cache[6+8*2];
-    h->non_zero_count[mb_xy][15]= h->non_zero_count_cache[6+8*3];
-    h->non_zero_count[mb_xy][16]= h->non_zero_count_cache[5+8*1];
-    h->non_zero_count[mb_xy][17]= h->non_zero_count_cache[5+8*2];
-    h->non_zero_count[mb_xy][18]= h->non_zero_count_cache[5+8*3];
-    h->non_zero_count[mb_xy][19]= h->non_zero_count_cache[4+8*1];
-    h->non_zero_count[mb_xy][20]= h->non_zero_count_cache[4+8*2];
-    h->non_zero_count[mb_xy][21]= h->non_zero_count_cache[4+8*3];
-
-    h->non_zero_count[mb_xy][22]= h->non_zero_count_cache[1+8*1];
-    h->non_zero_count[mb_xy][23]= h->non_zero_count_cache[1+8*4];
-
+    *((uint64_t*)&h->non_zero_count[mb_xy][ 0]) = *((uint64_t*)&h->non_zero_count_cache[0+8*1]);
+    *((uint64_t*)&h->non_zero_count[mb_xy][ 8]) = *((uint64_t*)&h->non_zero_count_cache[0+8*2]);
+    *((uint32_t*)&h->non_zero_count[mb_xy][16]) = *((uint32_t*)&h->non_zero_count_cache[0+8*5]);
+    *((uint32_t*)&h->non_zero_count[mb_xy][20]) = *((uint32_t*)&h->non_zero_count_cache[4+8*3]);
+    *((uint64_t*)&h->non_zero_count[mb_xy][24]) = *((uint64_t*)&h->non_zero_count_cache[0+8*4]);
 }
 
 static inline void write_back_motion(H264Context *h, int mb_type){
