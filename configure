@@ -759,6 +759,24 @@ $type v;
 EOF
 }
 
+check_struct(){
+    log check_type "$@"
+    headers=$1
+    struct=$2
+    member=$3
+    shift 3
+    disable_safe "${struct}_${member}"
+    incs=""
+    for hdr in $headers; do
+        incs="$incs
+#include <$hdr>"
+    done
+    check_cc "$@" <<EOF && enable_safe "${struct}_${member}"
+$incs
+const void *p = &(($struct *)0)->$member;
+EOF
+}
+
 require(){
     name="$1"
     header="$2"
