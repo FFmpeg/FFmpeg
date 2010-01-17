@@ -78,6 +78,7 @@ static int oma_read_header(AVFormatContext *s,
     if (ret != 10)
         return -1;
 
+    if(!memcmp(buf, "ea3", 3)) {
     ea3_taglen = ((buf[6] & 0x7f) << 21) | ((buf[7] & 0x7f) << 14) | ((buf[8] & 0x7f) << 7) | (buf[9] & 0x7f);
 
     EA3_pos = ea3_taglen + 10;
@@ -88,6 +89,10 @@ static int oma_read_header(AVFormatContext *s,
     ret = get_buffer(s->pb, buf, EA3_HEADER_SIZE);
     if (ret != EA3_HEADER_SIZE)
         return -1;
+    } else {
+        ret = get_buffer(s->pb, buf + 10, EA3_HEADER_SIZE - 10);
+        EA3_pos = 0;
+    }
 
     if (memcmp(buf, ((const uint8_t[]){'E', 'A', '3'}),3) || buf[4] != 0 || buf[5] != EA3_HEADER_SIZE) {
         av_log(s, AV_LOG_ERROR, "Couldn't find the EA3 header !\n");
@@ -177,7 +182,9 @@ static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int oma_read_probe(AVProbeData *p)
 {
-    if (!memcmp(p->buf, ((const uint8_t[]){'e', 'a', '3', 3, 0}),5))
+    if (!memcmp(p->buf, ((const uint8_t[]){'e', 'a', '3', 3, 0}), 5) ||
+        (!memcmp(p->buf, "EA3", 3) &&
+         !p->buf[4] && p->buf[5] == EA3_HEADER_SIZE))
         return AVPROBE_SCORE_MAX;
     else
         return 0;
