@@ -771,7 +771,6 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         dest++;\
     }\
 
-
 #define YSCALE_YUV_2_MONOX_C \
     const uint8_t * const d128=dither_8x8_220[y&7];\
     uint8_t *g= c->table_gU[128] + c->table_gV[128];\
@@ -800,7 +799,6 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             dest++;\
         }\
     }
-
 
 #define YSCALE_YUV_2_ANYRGB_C(func, func2, func_g16, func_monoblack)\
     switch(c->dstFormat) {\
@@ -990,7 +988,6 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         }                \
         break;\
     }\
-
 
 static inline void yuv2packedXinC(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                   const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
@@ -1248,7 +1245,6 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
             dst[8*i+j]= ((d>>(7-j))&1)*255;
     }
 }
-
 
 //Note: we have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
 //Plain C versions
@@ -1623,7 +1619,6 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
                 filter[i*filterSize + j]= 0;
         }
     }
-
 
     //FIXME try to align filterPos if possible
 
@@ -2135,7 +2130,6 @@ static int rgb2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
 static int bgr24toyv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                               int srcSliceH, uint8_t* dst[], int dstStride[])
 {
-
     rgb24toyv12(
         src[0],
         dst[0]+ srcSliceY    *dstStride[0],
@@ -2268,7 +2262,6 @@ static int planarCopy(SwsContext *c, const uint8_t* src[], int srcStride[], int 
     }
     return srcSliceH;
 }
-
 
 static void getSubSampleFactors(int *h, int *v, enum PixelFormat format)
 {
@@ -2719,8 +2712,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         }
     } // initialize horizontal stuff
 
-
-
     /* precalculate vertical scaler filter coefficients */
     {
         const int filterAlign=
@@ -2988,7 +2979,6 @@ int sws_scale(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSlice
             v= av_clip_uint8((RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
             c->pal_yuv[i]= y + (u<<8) + (v<<16);
 
-
             switch(c->dstFormat) {
             case PIX_FMT_BGR32:
 #if !HAVE_BIGENDIAN
@@ -3171,7 +3161,6 @@ SwsVector *sws_getConstVec(double c, int length)
 
     return vec;
 }
-
 
 SwsVector *sws_getIdentityVec(void)
 {
@@ -3364,7 +3353,6 @@ void sws_freeFilter(SwsFilter *filter)
     if (filter->chrV) sws_freeVec(filter->chrV);
     av_free(filter);
 }
-
 
 void sws_freeContext(SwsContext *c)
 {
