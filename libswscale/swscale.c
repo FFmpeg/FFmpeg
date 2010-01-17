@@ -1350,8 +1350,8 @@ static double getSplineCoeff(double a, double b, double c, double d, double dist
 }
 
 static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSize, int xInc,
-                             int srcW, int dstW, int filterAlign, int one, int flags,
-                             SwsVector *srcFilter, SwsVector *dstFilter, double param[2])
+                      int srcW, int dstW, int filterAlign, int one, int flags,
+                      SwsVector *srcFilter, SwsVector *dstFilter, double param[2])
 {
     int i;
     int filterSize;
