@@ -2148,7 +2148,7 @@ static int bgr24toyv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride
     return srcSliceH;
 }
 
-static int yvu9toyv12Wrapper(SwsContext *c, const const uint8_t* src[], int srcStride[], int srcSliceY,
+static int yvu9toyv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                              int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int i;
