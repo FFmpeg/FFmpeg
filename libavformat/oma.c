@@ -79,16 +79,16 @@ static int oma_read_header(AVFormatContext *s,
         return -1;
 
     if(!memcmp(buf, "ea3", 3)) {
-    ea3_taglen = ((buf[6] & 0x7f) << 21) | ((buf[7] & 0x7f) << 14) | ((buf[8] & 0x7f) << 7) | (buf[9] & 0x7f);
+        ea3_taglen = ((buf[6] & 0x7f) << 21) | ((buf[7] & 0x7f) << 14) | ((buf[8] & 0x7f) << 7) | (buf[9] & 0x7f);
 
-    EA3_pos = ea3_taglen + 10;
-    if (buf[5] & 0x10)
-        EA3_pos += 10;
+        EA3_pos = ea3_taglen + 10;
+        if (buf[5] & 0x10)
+            EA3_pos += 10;
 
-    url_fseek(s->pb, EA3_pos, SEEK_SET);
-    ret = get_buffer(s->pb, buf, EA3_HEADER_SIZE);
-    if (ret != EA3_HEADER_SIZE)
-        return -1;
+        url_fseek(s->pb, EA3_pos, SEEK_SET);
+        ret = get_buffer(s->pb, buf, EA3_HEADER_SIZE);
+        if (ret != EA3_HEADER_SIZE)
+            return -1;
     } else {
         ret = get_buffer(s->pb, buf + 10, EA3_HEADER_SIZE - 10);
         EA3_pos = 0;
