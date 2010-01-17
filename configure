@@ -2462,31 +2462,14 @@ if enabled libdc1394; then
     die "ERROR: No version of libdc1394 found "
 fi
 
-disable sdl_too_old
-disable sdl
 SDL_CONFIG="${cross_prefix}sdl-config"
 if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
     sdl_cflags=$("${SDL_CONFIG}" --cflags)
     sdl_libs=$("${SDL_CONFIG}" --libs)
-    temp_cflags $sdl_cflags
-    temp_extralibs $sdl_libs
-    if check_lib2 SDL.h SDL_Init; then
-        _sdlversion=$("${SDL_CONFIG}" --version | sed 's/[^0-9]//g')
-        if test "$_sdlversion" -lt 121 ; then
-            enable sdl_too_old
-        else
-            enable sdl
-            check_cc $sdl_cflags <<EOF && enable sdl_video_size
-#include <SDL.h>
-int main(int argc, char **argv){
-    const SDL_VideoInfo *vi = SDL_GetVideoInfo();
-    int w = vi->current_w;
-    return 0;
-}
-EOF
-        fi
-    fi
-    restore_flags
+    check_func_headers SDL.h SDL_Init $sdl_cflags $sdl_libs &&
+    check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
+    enable sdl &&
+    check_struct SDL.h SDL_VideoInfo current_w $sdl_cflags && enable sdl_video_size
 fi
 
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
@@ -2733,9 +2716,6 @@ if enabled network; then
 fi
 echo "threading support         ${thread_type-no}"
 echo "SDL support               ${sdl-no}"
-if enabled sdl_too_old; then
-    echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support."
-fi
 echo "Sun medialib support      ${mlib-no}"
 echo "AVISynth enabled          ${avisynth-no}"
 echo "libdc1394 support         ${libdc1394-no}"
