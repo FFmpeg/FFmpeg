@@ -2035,7 +2035,7 @@ static int pal2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
     if (!usePal(srcFormat))
         av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
                sws_format_name(srcFormat), sws_format_name(dstFormat));
-
+    else {
     switch(dstFormat) {
     case PIX_FMT_RGB32  : conv = palette8topacked32; break;
     case PIX_FMT_BGR32  : conv = palette8topacked32; break;
@@ -2046,8 +2046,9 @@ static int pal2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
     default: av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
                     sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
     }
+    }
 
-
+    if (conv)
     for (i=0; i<srcSliceH; i++) {
         conv(srcPtr, dstPtr, c->srcW, (uint8_t *) c->pal_rgb);
         srcPtr+= srcStride[0];
