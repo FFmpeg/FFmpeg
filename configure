@@ -601,12 +601,12 @@ check_yasm(){
 
 check_ld(){
     log check_ld "$@"
-    check_cc || return
     flags=''
     libs=''
     for f; do
         test "${f}" = "${f#-l}" && flags="$flags $f" || libs="$libs $f"
     done
+    check_cc $($filter_cflags $flags) || return
     check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $extralibs $libs
 }
 
