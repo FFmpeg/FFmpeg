@@ -300,7 +300,7 @@ typedef struct H264Context{
      * is 64 if not available.
      */
     DECLARE_ALIGNED_8(uint8_t, non_zero_count_cache[6*8]);
-    uint8_t (*non_zero_count)[16];
+    uint8_t (*non_zero_count)[32];
 
     /**
      * Motion vector cache.
@@ -423,6 +423,7 @@ typedef struct H264Context{
      */
     unsigned int ref_count[2];   ///< counts frames or fields, depending on current mb mode
     unsigned int list_count;
+    uint8_t *list_counts;            ///< Array of list_count per MB specifying the slice type
     Picture *short_ref[32];
     Picture *long_ref[32];
     Picture default_ref_list[2][32]; ///< base reference list for all slices of a coded picture
@@ -736,8 +737,8 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     top_xy     = mb_xy  - (s->mb_stride << FIELD_PICTURE);
 
     //FIXME deblocking could skip the intra and nnz parts.
-    if(for_deblock && (h->slice_num == 1 || h->slice_table[mb_xy] == h->slice_table[top_xy]) && !FRAME_MBAFF)
-        return;
+//     if(for_deblock && (h->slice_num == 1 || h->slice_table[mb_xy] == h->slice_table[top_xy]) && !FRAME_MBAFF)
+//         return;
 
     /* Wow, what a mess, why didn't they simplify the interlacing & intra
      * stuff, I can't imagine that these complex rules are worth it. */
@@ -793,20 +794,33 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
         left_type[0] = h->slice_table[left_xy[0] ] < 0xFFFF ? s->current_picture.mb_type[left_xy[0]] : 0;
         left_type[1] = h->slice_table[left_xy[1] ] < 0xFFFF ? s->current_picture.mb_type[left_xy[1]] : 0;
 
-        if(MB_MBAFF && !IS_INTRA(mb_type)){
+        if(!IS_INTRA(mb_type)){
             int list;
             for(list=0; list<h->list_count; list++){
-                //These values where changed for ease of performing MC, we need to change them back
-                //FIXME maybe we can make MC and loop filter use the same values or prevent
-                //the MC code from changing ref_cache and rather use a temporary array.
-                if(USES_LIST(mb_type,list)){
-                    int8_t *ref = &s->current_picture.ref_index[list][h->mb2b8_xy[mb_xy]];
+                int8_t *ref;
+                int y, b_xy;
+                if(!USES_LIST(mb_type, list)){
+                    fill_rectangle(  h->mv_cache[list][scan8[0]], 4, 4, 8, pack16to32(0,0), 4);
                     *(uint32_t*)&h->ref_cache[list][scan8[ 0]] =
-                    *(uint32_t*)&h->ref_cache[list][scan8[ 2]] = (pack16to32(ref[0],ref[1])&0x00FF00FF)*0x0101;
-                    ref += h->b8_stride;
+                    *(uint32_t*)&h->ref_cache[list][scan8[ 2]] =
                     *(uint32_t*)&h->ref_cache[list][scan8[ 8]] =
-                    *(uint32_t*)&h->ref_cache[list][scan8[10]] = (pack16to32(ref[0],ref[1])&0x00FF00FF)*0x0101;
+                    *(uint32_t*)&h->ref_cache[list][scan8[10]] = ((LIST_NOT_USED)&0xFF)*0x01010101;
+                    continue;
                 }
+
+                ref = &s->current_picture.ref_index[list][h->mb2b8_xy[mb_xy]];
+                *(uint32_t*)&h->ref_cache[list][scan8[ 0]] =
+                *(uint32_t*)&h->ref_cache[list][scan8[ 2]] = (pack16to32(ref[0],ref[1])&0x00FF00FF)*0x0101;
+                ref += h->b8_stride;
+                *(uint32_t*)&h->ref_cache[list][scan8[ 8]] =
+                *(uint32_t*)&h->ref_cache[list][scan8[10]] = (pack16to32(ref[0],ref[1])&0x00FF00FF)*0x0101;
+
+                b_xy = 4*s->mb_x + 4*s->mb_y*h->b_stride;
+                for(y=0; y<4; y++){
+                    *(uint64_t*)h->mv_cache[list][scan8[0]+0 + 8*y]= *(uint64_t*)s->current_picture.motion_val[list][b_xy + 0 + y*h->b_stride];
+                    *(uint64_t*)h->mv_cache[list][scan8[0]+2 + 8*y]= *(uint64_t*)s->current_picture.motion_val[list][b_xy + 2 + y*h->b_stride];
+                }
+
             }
         }
     }else{
@@ -1196,6 +1210,23 @@ static inline void write_back_non_zero_count(H264Context *h){
     h->non_zero_count[mb_xy][12]=h->non_zero_count_cache[1+8*5];
     h->non_zero_count[mb_xy][11]=h->non_zero_count_cache[2+8*5];
     h->non_zero_count[mb_xy][10]=h->non_zero_count_cache[2+8*4];
+
+    //FIXME sort better how things are stored in non_zero_count
+
+
+    h->non_zero_count[mb_xy][13]= h->non_zero_count_cache[6+8*1];
+    h->non_zero_count[mb_xy][14]= h->non_zero_count_cache[6+8*2];
+    h->non_zero_count[mb_xy][15]= h->non_zero_count_cache[6+8*3];
+    h->non_zero_count[mb_xy][16]= h->non_zero_count_cache[5+8*1];
+    h->non_zero_count[mb_xy][17]= h->non_zero_count_cache[5+8*2];
+    h->non_zero_count[mb_xy][18]= h->non_zero_count_cache[5+8*3];
+    h->non_zero_count[mb_xy][19]= h->non_zero_count_cache[4+8*1];
+    h->non_zero_count[mb_xy][20]= h->non_zero_count_cache[4+8*2];
+    h->non_zero_count[mb_xy][21]= h->non_zero_count_cache[4+8*3];
+
+    h->non_zero_count[mb_xy][22]= h->non_zero_count_cache[1+8*1];
+    h->non_zero_count[mb_xy][23]= h->non_zero_count_cache[1+8*4];
+
 }
 
 static inline void write_back_motion(H264Context *h, int mb_type){
@@ -1271,7 +1302,7 @@ static void decode_mb_skip(H264Context *h){
     const int mb_xy= h->mb_xy;
     int mb_type=0;
 
-    memset(h->non_zero_count[mb_xy], 0, 16);
+    memset(h->non_zero_count[mb_xy], 0, 32);
     memset(h->non_zero_count_cache + 8, 0, 8*5); //FIXME ugly, remove pfui
 
     if(MB_FIELD)

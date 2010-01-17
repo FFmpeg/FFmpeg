@@ -620,7 +620,7 @@ decode_intra_mb:
         // In deblocking, the quantizer is 0
         s->current_picture.qscale_table[mb_xy]= 0;
         // All coeffs are present
-        memset(h->non_zero_count[mb_xy], 16, 16);
+        memset(h->non_zero_count[mb_xy], 16, 32);
 
         s->current_picture.mb_type[mb_xy]= mb_type;
         return 0;

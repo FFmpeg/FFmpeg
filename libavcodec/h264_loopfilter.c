@@ -620,7 +620,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         // Do not use s->qscale as luma quantizer because it has not the same
         // value in IPCM macroblocks.
         qp = ( s->current_picture.qscale_table[mb_xy] + s->current_picture.qscale_table[mbn_xy] + 1 ) >> 1;
-        //tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp, s->current_picture.qscale_table[mbn_xy]);
+        //tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp[0], s->current_picture.qscale_table[mbn_xy]);
         tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
         //{ int i; for (i = 0; i < 4; i++) tprintf(s->avctx, " bS[%d]:%d", i, bS[i]); tprintf(s->avctx, "\n"); }
         if( dir == 0 ) {
@@ -650,6 +650,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
     const int mvy_limit = IS_INTERLACED(mb_type) ? 2 : 4;
     int first_vertical_edge_done = 0;
     av_unused int dir;
+    int list;
 
     //for sufficiently low qp, filtering wouldn't do anything
     //this is a conservative estimate: could also check beta_offset and more accurate chroma_qp
@@ -662,6 +663,35 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
             return;
         }
     }
+
+    h->non_zero_count_cache[7+8*1]=h->non_zero_count[mb_xy][0];
+    h->non_zero_count_cache[7+8*2]=h->non_zero_count[mb_xy][1];
+    h->non_zero_count_cache[7+8*3]=h->non_zero_count[mb_xy][2];
+    h->non_zero_count_cache[7+8*4]=h->non_zero_count[mb_xy][3];
+    h->non_zero_count_cache[4+8*4]=h->non_zero_count[mb_xy][4];
+    h->non_zero_count_cache[5+8*4]=h->non_zero_count[mb_xy][5];
+    h->non_zero_count_cache[6+8*4]=h->non_zero_count[mb_xy][6];
+
+    h->non_zero_count_cache[1+8*2]=h->non_zero_count[mb_xy][9];
+    h->non_zero_count_cache[2+8*2]=h->non_zero_count[mb_xy][8];
+    h->non_zero_count_cache[2+8*1]=h->non_zero_count[mb_xy][7];
+
+    h->non_zero_count_cache[1+8*5]=h->non_zero_count[mb_xy][12];
+    h->non_zero_count_cache[2+8*5]=h->non_zero_count[mb_xy][11];
+    h->non_zero_count_cache[2+8*4]=h->non_zero_count[mb_xy][10];
+
+    h->non_zero_count_cache[6+8*1]=h->non_zero_count[mb_xy][13];
+    h->non_zero_count_cache[6+8*2]=h->non_zero_count[mb_xy][14];
+    h->non_zero_count_cache[6+8*3]=h->non_zero_count[mb_xy][15];
+    h->non_zero_count_cache[5+8*1]=h->non_zero_count[mb_xy][16];
+    h->non_zero_count_cache[5+8*2]=h->non_zero_count[mb_xy][17];
+    h->non_zero_count_cache[5+8*3]=h->non_zero_count[mb_xy][18];
+    h->non_zero_count_cache[4+8*1]=h->non_zero_count[mb_xy][19];
+    h->non_zero_count_cache[4+8*2]=h->non_zero_count[mb_xy][20];
+    h->non_zero_count_cache[4+8*3]=h->non_zero_count[mb_xy][21];
+
+    h->non_zero_count_cache[1+8*1]=h->non_zero_count[mb_xy][22];
+    h->non_zero_count_cache[1+8*4]=h->non_zero_count[mb_xy][23];
 
     // CAVLC 8x8dct requires NNZ values for residual decoding that differ from what the loop filter needs
     if(!h->pps.cabac && h->pps.transform_8x8_mode){
@@ -687,16 +717,16 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
 
         if(IS_8x8DCT(mb_type)){
             h->non_zero_count_cache[scan8[0   ]]= h->non_zero_count_cache[scan8[1   ]]=
-            h->non_zero_count_cache[scan8[2   ]]= h->non_zero_count_cache[scan8[3   ]]= h->cbp & 1;
+            h->non_zero_count_cache[scan8[2   ]]= h->non_zero_count_cache[scan8[3   ]]= h->cbp_table[mb_xy] & 1;
 
             h->non_zero_count_cache[scan8[0+ 4]]= h->non_zero_count_cache[scan8[1+ 4]]=
-            h->non_zero_count_cache[scan8[2+ 4]]= h->non_zero_count_cache[scan8[3+ 4]]= h->cbp & 2;
+            h->non_zero_count_cache[scan8[2+ 4]]= h->non_zero_count_cache[scan8[3+ 4]]= h->cbp_table[mb_xy] & 2;
 
             h->non_zero_count_cache[scan8[0+ 8]]= h->non_zero_count_cache[scan8[1+ 8]]=
-            h->non_zero_count_cache[scan8[2+ 8]]= h->non_zero_count_cache[scan8[3+ 8]]= h->cbp & 4;
+            h->non_zero_count_cache[scan8[2+ 8]]= h->non_zero_count_cache[scan8[3+ 8]]= h->cbp_table[mb_xy] & 4;
 
             h->non_zero_count_cache[scan8[0+12]]= h->non_zero_count_cache[scan8[1+12]]=
-            h->non_zero_count_cache[scan8[2+12]]= h->non_zero_count_cache[scan8[3+12]]= h->cbp & 8;
+            h->non_zero_count_cache[scan8[2+12]]= h->non_zero_count_cache[scan8[3+12]]= h->cbp_table[mb_xy] & 8;
         }
     }
 
