@@ -138,28 +138,21 @@ static void av_noinline filter_mb_edgecv( H264Context *h, uint8_t *pix, int stri
     }
 }
 
-static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int16_t bS[8], int qp[2] ) {
+static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int bsi, int qp ) {
     int i;
-    for( i = 0; i < 16; i++, pix += stride) {
+    for( i = 0; i < 8; i++, pix += stride) {
         int index_a;
         int alpha;
         int beta;
-
-        int qp_index;
-        int bS_index = (i >> 1);
-        if (!MB_FIELD) {
-            bS_index &= ~1;
-            bS_index |= (i & 1);
-        }
+        const int bS_index = (i >> 1) * bsi;
 
         if( bS[bS_index] == 0 ) {
             continue;
         }
 
-        qp_index = MB_FIELD ? (i >> 3) : (i & 1);
-        index_a = qp[qp_index] + h->slice_alpha_c0_offset;
+        index_a = qp + h->slice_alpha_c0_offset;
         alpha = (alpha_table+52)[index_a];
-        beta  = (beta_table+52)[qp[qp_index] + h->slice_beta_offset];
+        beta  = (beta_table+52)[qp + h->slice_beta_offset];
 
         if( bS[bS_index] < 4 ) {
             const int tc0 = (tc0_table+52)[index_a][bS[bS_index]];
@@ -236,24 +229,21 @@ static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int
         }
     }
 }
-static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, int16_t bS[8], int qp[2] ) {
+static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int bsi, int qp ) {
     int i;
-    for( i = 0; i < 8; i++, pix += stride) {
+    for( i = 0; i < 4; i++, pix += stride) {
         int index_a;
         int alpha;
         int beta;
-
-        int qp_index;
-        int bS_index = i;
+        const int bS_index = i*bsi;
 
         if( bS[bS_index] == 0 ) {
             continue;
         }
 
-        qp_index = MB_FIELD ? (i >> 2) : (i & 1);
-        index_a = qp[qp_index] + h->slice_alpha_c0_offset;
+        index_a = qp + h->slice_alpha_c0_offset;
         alpha = (alpha_table+52)[index_a];
-        beta  = (beta_table+52)[qp[qp_index] + h->slice_beta_offset];
+        beta  = (beta_table+52)[qp + h->slice_beta_offset];
 
         if( bS[bS_index] < 4 ) {
             const int tc = (tc0_table+52)[index_a][bS[bS_index]] + 1;
@@ -706,9 +696,21 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
         /* Filter edge */
         tprintf(s->avctx, "filter mb:%d/%d MBAFF, QPy:%d/%d, QPb:%d/%d QPr:%d/%d ls:%d uvls:%d", mb_x, mb_y, qp[0], qp[1], bqp[0], bqp[1], rqp[0], rqp[1], linesize, uvlinesize);
         { int i; for (i = 0; i < 8; i++) tprintf(s->avctx, " bS[%d]:%d", i, bS[i]); tprintf(s->avctx, "\n"); }
-        filter_mb_mbaff_edgev ( h, &img_y [0], linesize,   bS, qp );
-        filter_mb_mbaff_edgecv( h, &img_cb[0], uvlinesize, bS, bqp );
-        filter_mb_mbaff_edgecv( h, &img_cr[0], uvlinesize, bS, rqp );
+        if(MB_FIELD){
+            filter_mb_mbaff_edgev ( h, img_y                ,   linesize, bS  , 1, qp [0] );
+            filter_mb_mbaff_edgev ( h, img_y  + 8*  linesize,   linesize, bS+4, 1, qp [1] );
+            filter_mb_mbaff_edgecv( h, img_cb,                uvlinesize, bS  , 1, bqp[0] );
+            filter_mb_mbaff_edgecv( h, img_cb + 4*uvlinesize, uvlinesize, bS+4, 1, bqp[1] );
+            filter_mb_mbaff_edgecv( h, img_cr,                uvlinesize, bS  , 1, rqp[0] );
+            filter_mb_mbaff_edgecv( h, img_cr + 4*uvlinesize, uvlinesize, bS+4, 1, rqp[1] );
+        }else{
+            filter_mb_mbaff_edgev ( h, img_y              , 2*  linesize, bS  , 2, qp [0] );
+            filter_mb_mbaff_edgev ( h, img_y  +   linesize, 2*  linesize, bS+1, 2, qp [1] );
+            filter_mb_mbaff_edgecv( h, img_cb,              2*uvlinesize, bS  , 2, bqp[0] );
+            filter_mb_mbaff_edgecv( h, img_cb + uvlinesize, 2*uvlinesize, bS+1, 2, bqp[1] );
+            filter_mb_mbaff_edgecv( h, img_cr,              2*uvlinesize, bS  , 2, rqp[0] );
+            filter_mb_mbaff_edgecv( h, img_cr + uvlinesize, 2*uvlinesize, bS+1, 2, rqp[1] );
+        }
     }
 
 #if CONFIG_SMALL
