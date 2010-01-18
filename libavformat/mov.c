@@ -1652,14 +1652,18 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     } else
         sc->pb = c->fc->pb;
 
-    if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
-        (st->codec->width != sc->width || st->codec->height != sc->height)) {
+    if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+        if (st->codec->width != sc->width || st->codec->height != sc->height) {
         AVRational r = av_d2q(((double)st->codec->height * sc->width) /
                               ((double)st->codec->width * sc->height), INT_MAX);
         if (st->sample_aspect_ratio.num)
             st->sample_aspect_ratio = av_mul_q(st->sample_aspect_ratio, r);
         else
             st->sample_aspect_ratio = r;
+        }
+
+        av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
+                  sc->time_scale*st->nb_frames, st->duration, INT_MAX);
     }
 
     switch (st->codec->codec_id) {

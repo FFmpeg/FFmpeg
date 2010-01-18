@@ -2218,7 +2218,7 @@ int av_find_stream_info(AVFormatContext *ic)
     }
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
-        if(codec_info_nb_frames[i]>2)
+        if(codec_info_nb_frames[i]>2 && !st->avg_frame_rate.num)
             av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                      (codec_info_nb_frames[i]-2)*(int64_t)st->time_base.den,
                       codec_info_duration[i]    *(int64_t)st->time_base.num, 60000);
