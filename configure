@@ -1815,7 +1815,9 @@ is_in $arch $ARCH_LIST || echo "WARNING: unknown arch $arch"
 enable $arch
 
 # Add processor-specific flags
-if enabled ppc; then
+if test "$cpu" = generic; then
+    : do nothing
+elif enabled ppc; then
 
     case $cpu in
         601|ppc601|PowerPC601)
@@ -1922,12 +1924,6 @@ elif enabled avr32; then
             cpuflags="-march=$cpu"
         ;;
     esac
-
-else
-
-    if test "$cpu" != generic; then
-        echo "WARNING: Unknown CPU \"$cpu\", ignored."
-    fi
 
 fi
 
