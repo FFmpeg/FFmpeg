@@ -321,6 +321,7 @@ YUV2RGBFUNC(yuv2rgb_c_16, uint16_t, 0)
     PUTRGB(dst_1,py_1,3);
 CLOSEYUV2RGBFUNC(8)
 
+#if 0 // Currently unused
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
 YUV2RGBFUNC(yuv2rgb_c_8, uint8_t, 0)
@@ -340,6 +341,7 @@ YUV2RGBFUNC(yuv2rgb_c_8, uint8_t, 0)
     PUTRGB(dst_2,py_2,3);
     PUTRGB(dst_1,py_1,3);
 CLOSEYUV2RGBFUNC(8)
+#endif
 
 // r, g, b, dst_1, dst_2
 YUV2RGBFUNC(yuv2rgb_c_8_ordered_dither, uint8_t, 0)
@@ -368,7 +370,7 @@ YUV2RGBFUNC(yuv2rgb_c_8_ordered_dither, uint8_t, 0)
     PUTRGB8(dst_1,py_1,3,6);
 CLOSEYUV2RGBFUNC(8)
 
-
+#if 0 // Currently unused
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
 YUV2RGBFUNC(yuv2rgb_c_4, uint8_t, 0)
@@ -396,6 +398,7 @@ YUV2RGBFUNC(yuv2rgb_c_4, uint8_t, 0)
     PUTRGB4(dst_2,py_2,3);
     PUTRGB4(dst_1,py_1,3);
 CLOSEYUV2RGBFUNC(4)
+#endif
 
 YUV2RGBFUNC(yuv2rgb_c_4_ordered_dither, uint8_t, 0)
     const uint8_t *d64 =  dither_8x8_73[y&7];
@@ -426,6 +429,7 @@ YUV2RGBFUNC(yuv2rgb_c_4_ordered_dither, uint8_t, 0)
     PUTRGB4D(dst_1,py_1,3,6);
 CLOSEYUV2RGBFUNC(4)
 
+#if 0 // Currently unused
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
 YUV2RGBFUNC(yuv2rgb_c_4b, uint8_t, 0)
@@ -445,6 +449,7 @@ YUV2RGBFUNC(yuv2rgb_c_4b, uint8_t, 0)
     PUTRGB(dst_2,py_2,3);
     PUTRGB(dst_1,py_1,3);
 CLOSEYUV2RGBFUNC(8)
+#endif
 
 YUV2RGBFUNC(yuv2rgb_c_4b_ordered_dither, uint8_t, 0)
     const uint8_t *d64 =  dither_8x8_73[y&7];
