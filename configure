@@ -1817,67 +1817,67 @@ enable $arch
 # Add processor-specific flags
 if enabled ppc; then
 
-case $cpu in
-    601|ppc601|PowerPC601)
-        cpuflags="-mcpu=601"
-    ;;
-    603*|ppc603*|PowerPC603*)
-        cpuflags="-mcpu=603"
-    ;;
-    604*|ppc604*|PowerPC604*)
-        cpuflags="-mcpu=604"
-    ;;
-    G3|g3|75*|ppc75*|PowerPC75*)
-        cpuflags="-mcpu=750 -mpowerpc-gfxopt"
-    ;;
-    G4|g4|745*|ppc745*|PowerPC745*)
-        cpuflags="-mcpu=7450 -mpowerpc-gfxopt"
-    ;;
-    74*|ppc74*|PowerPC74*)
-        cpuflags="-mcpu=7400 -mpowerpc-gfxopt"
-    ;;
-    G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
-        cpuflags="-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
-    ;;
-    Cell|CELL|cell)
-        cpuflags="-mcpu=cell"
-        enable ldbrx
-    ;;
-esac
+    case $cpu in
+        601|ppc601|PowerPC601)
+            cpuflags="-mcpu=601"
+        ;;
+        603*|ppc603*|PowerPC603*)
+            cpuflags="-mcpu=603"
+        ;;
+        604*|ppc604*|PowerPC604*)
+            cpuflags="-mcpu=604"
+        ;;
+        G3|g3|75*|ppc75*|PowerPC75*)
+            cpuflags="-mcpu=750 -mpowerpc-gfxopt"
+        ;;
+        G4|g4|745*|ppc745*|PowerPC745*)
+            cpuflags="-mcpu=7450 -mpowerpc-gfxopt"
+        ;;
+        74*|ppc74*|PowerPC74*)
+            cpuflags="-mcpu=7400 -mpowerpc-gfxopt"
+        ;;
+        G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
+            cpuflags="-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
+        ;;
+        Cell|CELL|cell)
+            cpuflags="-mcpu=cell"
+            enable ldbrx
+        ;;
+    esac
 
 elif enabled x86; then
 
-case $cpu in
-    i[345]86|pentium)
-        cpuflags="-march=$cpu"
-        disable mmx
-    ;;
-    # targets that do NOT support conditional mov (cmov)
-    pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
-        cpuflags="-march=$cpu"
-        disable cmov
-    ;;
-    # targets that do support conditional mov (cmov)
-    i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2|amdfam10)
-        cpuflags="-march=$cpu"
-        enable cmov
-        enable fast_cmov
-    ;;
-    # targets that do support conditional mov but on which it's slow
-    pentium4|pentium4m|prescott|nocona)
-        cpuflags="-march=$cpu"
-        enable cmov
-        disable fast_cmov
-    ;;
-esac
+    case $cpu in
+        i[345]86|pentium)
+            cpuflags="-march=$cpu"
+            disable mmx
+        ;;
+        # targets that do NOT support conditional mov (cmov)
+        pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
+            cpuflags="-march=$cpu"
+            disable cmov
+        ;;
+        # targets that do support conditional mov (cmov)
+        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2|amdfam10)
+            cpuflags="-march=$cpu"
+            enable cmov
+            enable fast_cmov
+        ;;
+        # targets that do support conditional mov but on which it's slow
+        pentium4|pentium4m|prescott|nocona)
+            cpuflags="-march=$cpu"
+            enable cmov
+            disable fast_cmov
+        ;;
+    esac
 
 elif enabled sparc; then
 
-case $cpu in
-    sparc64)
-        cpuflags="-mcpu=v9"
-    ;;
-esac
+    case $cpu in
+        sparc64)
+            cpuflags="-mcpu=v9"
+        ;;
+    esac
 
 elif enabled arm; then
 
@@ -1922,24 +1922,24 @@ esac
 
 elif enabled avr32; then
 
-case $cpu in
-    ap7[02]0[0-2])
-        subarch="avr32_ap"
-        cpuflags="-mpart=$cpu"
-    ;;
-    ap)
-        subarch="avr32_ap"
-        cpuflags="-march=$cpu"
-    ;;
-    uc3[ab]*)
-        subarch="avr32_uc"
-        cpuflags="-mcpu=$cpu"
-    ;;
-    uc)
-        subarch="avr32_uc"
-        cpuflags="-march=$cpu"
-    ;;
-esac
+    case $cpu in
+        ap7[02]0[0-2])
+            subarch="avr32_ap"
+            cpuflags="-mpart=$cpu"
+        ;;
+        ap)
+            subarch="avr32_ap"
+            cpuflags="-march=$cpu"
+        ;;
+        uc3[ab]*)
+            subarch="avr32_uc"
+            cpuflags="-mcpu=$cpu"
+        ;;
+        uc)
+            subarch="avr32_uc"
+            cpuflags="-march=$cpu"
+        ;;
+    esac
 
 else
 
