@@ -866,7 +866,7 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
         left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
         left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
 
-    if(IS_INTRA(mb_type) && !for_deblock){
+    if(IS_INTRA(mb_type)){
         int type_mask= h->pps.constrained_intra_pred ? IS_INTRA(-1) : -1;
         h->topleft_samples_available=
         h->top_samples_available=
