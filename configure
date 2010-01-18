@@ -583,11 +583,11 @@ check_as(){
 check_asm(){
     log check_asm "$@"
     name="$1"
-    asm="$2"
+    code="$2"
     shift 2
     disable $name
     check_as "$@" <<EOF && enable $name
-void foo(void){ __asm__ volatile($asm); }
+void foo(void){ __asm__ volatile($code); }
 EOF
 }
 
