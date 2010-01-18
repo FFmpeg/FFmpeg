@@ -740,7 +740,7 @@ static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_sl
             return 0;   /* I4x4 */
         state += 2;
     }else{
-        if( get_cabac_noinline( &h->cabac, &state[0] ) == 0 )
+        if( get_cabac_noinline( &h->cabac, state ) == 0 )
             return 0;   /* I4x4 */
     }
 
