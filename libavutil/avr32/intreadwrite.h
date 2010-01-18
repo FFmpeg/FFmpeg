@@ -40,7 +40,7 @@
  */
 
 #define AV_RL16 AV_RL16
-static inline uint16_t AV_RL16(const void *p)
+static av_always_inline uint16_t AV_RL16(const void *p)
 {
     uint16_t v;
     __asm__ ("ld.ub    %0,   %1  \n\t"
@@ -51,7 +51,7 @@ static inline uint16_t AV_RL16(const void *p)
 }
 
 #define AV_RB16 AV_RB16
-static inline uint16_t AV_RB16(const void *p)
+static av_always_inline uint16_t AV_RB16(const void *p)
 {
     uint16_t v;
     __asm__ ("ld.ub    %0,   %2  \n\t"
@@ -62,7 +62,7 @@ static inline uint16_t AV_RB16(const void *p)
 }
 
 #define AV_RB24 AV_RB24
-static inline uint32_t AV_RB24(const void *p)
+static av_always_inline uint32_t AV_RB24(const void *p)
 {
     uint32_t v;
     __asm__ ("ld.ub    %0,   %3  \n\t"
@@ -76,7 +76,7 @@ static inline uint32_t AV_RB24(const void *p)
 }
 
 #define AV_RL24 AV_RL24
-static inline uint32_t AV_RL24(const void *p)
+static av_always_inline uint32_t AV_RL24(const void *p)
 {
     uint32_t v;
     __asm__ ("ld.ub    %0,   %1  \n\t"
@@ -92,7 +92,7 @@ static inline uint32_t AV_RL24(const void *p)
 #if ARCH_AVR32_AP
 
 #define AV_RB32 AV_RB32
-static inline uint32_t AV_RB32(const void *p)
+static av_always_inline uint32_t AV_RB32(const void *p)
 {
     uint32_t v;
     __asm__ ("ld.w %0, %1" : "=r"(v) : "m"(*(const uint32_t*)p));
@@ -100,7 +100,7 @@ static inline uint32_t AV_RB32(const void *p)
 }
 
 #define AV_WB32 AV_WB32
-static inline void AV_WB32(void *p, uint32_t v)
+static av_always_inline void AV_WB32(void *p, uint32_t v)
 {
     __asm__ ("st.w %0, %1" : "=m"(*(uint32_t*)p) : "r"(v));
 }
@@ -110,7 +110,7 @@ static inline void AV_WB32(void *p, uint32_t v)
 #define AV_WL32(p, v) AV_WB32(p, bswap_32(v))
 
 #define AV_WB64 AV_WB64
-static inline void AV_WB64(void *p, uint64_t v)
+static av_always_inline void AV_WB64(void *p, uint64_t v)
 {
     union { uint64_t v; uint32_t hl[2]; } vv = { v };
     AV_WB32(p, vv.hl[0]);
@@ -118,7 +118,7 @@ static inline void AV_WB64(void *p, uint64_t v)
 }
 
 #define AV_WL64 AV_WL64
-static inline void AV_WL64(void *p, uint64_t v)
+static av_always_inline void AV_WL64(void *p, uint64_t v)
 {
     union { uint64_t v; uint32_t hl[2]; } vv = { v };
     AV_WL32(p, vv.hl[1]);
@@ -128,7 +128,7 @@ static inline void AV_WL64(void *p, uint64_t v)
 #else /* ARCH_AVR32_AP */
 
 #define AV_RB32 AV_RB32
-static inline uint32_t AV_RB32(const void *p)
+static av_always_inline uint32_t AV_RB32(const void *p)
 {
     uint32_t v;
     __asm__ ("ld.ub    %0,   %4  \n\t"
@@ -144,7 +144,7 @@ static inline uint32_t AV_RB32(const void *p)
 }
 
 #define AV_RL32 AV_RL32
-static inline uint32_t AV_RL32(const void *p)
+static av_always_inline uint32_t AV_RL32(const void *p)
 {
     uint32_t v;
     __asm__ ("ld.ub    %0,   %1  \n\t"
@@ -162,7 +162,7 @@ static inline uint32_t AV_RL32(const void *p)
 #endif /* ARCH_AVR32_AP */
 
 #define AV_RB64 AV_RB64
-static inline uint64_t AV_RB64(const void *p)
+static av_always_inline uint64_t AV_RB64(const void *p)
 {
     union { uint64_t v; uint32_t hl[2]; } v;
     v.hl[0] = AV_RB32(p);
@@ -171,7 +171,7 @@ static inline uint64_t AV_RB64(const void *p)
 }
 
 #define AV_RL64 AV_RL64
-static inline uint64_t AV_RL64(const void *p)
+static av_always_inline uint64_t AV_RL64(const void *p)
 {
     union { uint64_t v; uint32_t hl[2]; } v;
     v.hl[1] = AV_RL32(p);

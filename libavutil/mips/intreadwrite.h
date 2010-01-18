@@ -25,7 +25,7 @@
 #include "config.h"
 
 #define AV_RN32 AV_RN32
-static inline uint32_t AV_RN32(const void *p)
+static av_always_inline uint32_t AV_RN32(const void *p)
 {
     uint32_t v;
     __asm__ ("lwl %0, %1  \n\t"
@@ -37,7 +37,7 @@ static inline uint32_t AV_RN32(const void *p)
 }
 
 #define AV_WN32 AV_WN32
-static inline void AV_WN32(void *p, uint32_t v)
+static av_always_inline void AV_WN32(void *p, uint32_t v)
 {
     __asm__ ("swl %2, %0  \n\t"
              "swr %2, %1  \n\t"
@@ -49,7 +49,7 @@ static inline void AV_WN32(void *p, uint32_t v)
 #if ARCH_MIPS64
 
 #define AV_RN64 AV_RN64
-static inline uint64_t AV_RN64(const void *p)
+static av_always_inline uint64_t AV_RN64(const void *p)
 {
     uint64_t v;
     __asm__ ("ldl %0, %1  \n\t"
@@ -61,7 +61,7 @@ static inline uint64_t AV_RN64(const void *p)
 }
 
 #define AV_WN64 AV_WN64
-static inline void AV_WN64(void *p, uint64_t v)
+static av_always_inline void AV_WN64(void *p, uint64_t v)
 {
     __asm__ ("sdl %2, %0  \n\t"
              "sdr %2, %1  \n\t"
@@ -73,7 +73,7 @@ static inline void AV_WN64(void *p, uint64_t v)
 #else
 
 #define AV_RN64 AV_RN64
-static inline uint64_t AV_RN64(const void *p)
+static av_always_inline uint64_t AV_RN64(const void *p)
 {
     union { uint64_t v; uint32_t hl[2]; } v;
     v.hl[0] = AV_RN32(p);
@@ -82,7 +82,7 @@ static inline uint64_t AV_RN64(const void *p)
 }
 
 #define AV_WN64 AV_WN64
-static inline void AV_WN64(void *p, uint64_t v)
+static av_always_inline void AV_WN64(void *p, uint64_t v)
 {
     union { uint64_t v; uint32_t hl[2]; } vv = { v };
     AV_WN32(p, vv.hl[0]);
