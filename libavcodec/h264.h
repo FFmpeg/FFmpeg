@@ -813,6 +813,8 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
         *((uint32_t*)&h->non_zero_count_cache[4+8*3])= *((uint32_t*)&h->non_zero_count[mb_xy][20]);
         *((uint64_t*)&h->non_zero_count_cache[0+8*4])= *((uint64_t*)&h->non_zero_count[mb_xy][24]);
 
+        h->cbp= h->cbp_table[mb_xy];
+
         topleft_type = 0;
         topright_type = 0;
         top_type     = h->slice_table[top_xy     ] < 0xFFFF ? s->current_picture.mb_type[top_xy]     : 0;
