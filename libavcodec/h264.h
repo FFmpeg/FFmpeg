@@ -726,7 +726,7 @@ static inline int get_chroma_qp(H264Context *h, int t, int qscale){
 
 static inline void pred_pskip_motion(H264Context * const h, int * const mx, int * const my);
 
-static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
+static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deblock){
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
@@ -795,6 +795,19 @@ static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_de
     h->left_mb_xy[0] = left_xy[0];
     h->left_mb_xy[1] = left_xy[1];
     if(for_deblock){
+
+        //for sufficiently low qp, filtering wouldn't do anything
+        //this is a conservative estimate: could also check beta_offset and more accurate chroma_qp
+        if(!FRAME_MBAFF){
+            int qp_thresh = h->qp_thresh;
+            int qp = s->current_picture.qscale_table[mb_xy];
+            if(qp <= qp_thresh
+            && (s->mb_x == 0 || ((qp + s->current_picture.qscale_table[mb_xy-1] + 1)>>1) <= qp_thresh)
+            && (top_xy   < 0 || ((qp + s->current_picture.qscale_table[top_xy ] + 1)>>1) <= qp_thresh)){
+                return 1;
+            }
+        }
+
         *((uint64_t*)&h->non_zero_count_cache[0+8*1])= *((uint64_t*)&h->non_zero_count[mb_xy][ 0]);
         *((uint64_t*)&h->non_zero_count_cache[0+8*2])= *((uint64_t*)&h->non_zero_count[mb_xy][ 8]);
         *((uint32_t*)&h->non_zero_count_cache[0+8*5])= *((uint32_t*)&h->non_zero_count[mb_xy][16]);
@@ -1186,14 +1199,19 @@ static av_always_inline void fill_caches(H264Context *h, int mb_type, int for_de
 
     if(!for_deblock)
     h->neighbor_transform_size= !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[0]);
+    return 0;
 }
 
 static void fill_decode_caches(H264Context *h, int mb_type){
     fill_caches(h, mb_type, 0);
 }
 
-static void fill_filter_caches(H264Context *h, int mb_type){
-    fill_caches(h, mb_type, 1);
+/**
+ *
+ * @returns non zero if the loop filter can be skiped
+ */
+static int fill_filter_caches(H264Context *h, int mb_type){
+    return fill_caches(h, mb_type, 1);
 }
 
 /**

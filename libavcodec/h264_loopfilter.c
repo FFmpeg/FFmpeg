@@ -651,17 +651,6 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
     av_unused int dir;
     int list;
 
-    //for sufficiently low qp, filtering wouldn't do anything
-    //this is a conservative estimate: could also check beta_offset and more accurate chroma_qp
-    if(!FRAME_MBAFF){
-        int qp_thresh = h->qp_thresh;
-        int qp = s->current_picture.qscale_table[mb_xy];
-        if(qp <= qp_thresh
-           && (mb_x == 0 || ((qp + s->current_picture.qscale_table[mb_xy-1] + 1)>>1) <= qp_thresh)
-           && (h->top_mb_xy < 0 || ((qp + s->current_picture.qscale_table[h->top_mb_xy] + 1)>>1) <= qp_thresh)){
-            return;
-        }
-    }
     // CAVLC 8x8dct requires NNZ values for residual decoding that differ from what the loop filter needs
     if(!h->pps.cabac && h->pps.transform_8x8_mode){
         int top_type, left_type[2];

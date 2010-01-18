@@ -2184,7 +2184,8 @@ static void loop_filter(H264Context *h){
                     uvlinesize = h->mb_uvlinesize = s->uvlinesize;
                 }
                 backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, !is_complex);
-                fill_filter_caches(h, mb_type); //FIXME don't fill stuff which isn't used by filter_mb
+                if(fill_filter_caches(h, mb_type) < 0)
+                    continue;
                 h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
                 h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
 
