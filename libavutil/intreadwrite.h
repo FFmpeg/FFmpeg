@@ -25,8 +25,9 @@
 
 /*
  * Arch-specific headers can provide any combination of
- * AV_[RW][BLN](16|24|32|64) macros.  Preprocessor symbols must be
- * defined, even if these are implemented as inline functions.
+ * AV_[RW][BLN](16|24|32|64) and AV_(COPY|SWAP|ZERO)(64|128) macros.
+ * Preprocessor symbols must be defined, even if these are implemented
+ * as inline functions.
  */
 
 #if   ARCH_ARM
@@ -37,6 +38,8 @@
 #   include "mips/intreadwrite.h"
 #elif ARCH_PPC
 #   include "ppc/intreadwrite.h"
+#elif ARCH_X86
+#   include "x86/intreadwrite.h"
 #endif
 
 /*
@@ -394,6 +397,46 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
         ((uint8_t*)(p))[0] = (d);               \
         ((uint8_t*)(p))[1] = (d)>>8;            \
         ((uint8_t*)(p))[2] = (d)>>16;           \
+    } while(0)
+#endif
+
+/* Parameters for AV_COPY*, AV_SWAP*, AV_ZERO* must be
+ * naturally aligned. They may be implemented using MMX,
+ * so emms_c() must be called before using any float code
+ * afterwards.
+ */
+
+#define AV_COPY(n, d, s) (*(uint##n##_t*)(d) = *(const uint##n##_t*)(s))
+
+#ifndef AV_COPY64
+#   define AV_COPY64(d, s) AV_COPY(64, d, s)
+#endif
+
+#ifndef AV_COPY128
+#   define AV_COPY128(d, s)                    \
+    do {                                       \
+        AV_COPY64(d, s);                       \
+        AV_COPY64((char*)(d)+8, (char*)(s)+8); \
+    } while(0)
+#endif
+
+#define AV_SWAP(n, a, b) FFSWAP(uint##n##_t, *(uint##n##_t*)(a), *(uint##n##_t*)(b))
+
+#ifndef AV_SWAP64
+#   define AV_SWAP64(a, b) AV_SWAP(64, a, b)
+#endif
+
+#define AV_ZERO(n, d) (*(uint##n##_t*)(d) = 0)
+
+#ifndef AV_ZERO64
+#   define AV_ZERO64(d) AV_ZERO(64, d)
+#endif
+
+#ifndef AV_ZERO128
+#   define AV_ZERO128(d)         \
+    do {                         \
+        AV_ZERO64(d);            \
+        AV_ZERO64((char*)(d)+8); \
     } while(0)
 #endif
 
