@@ -798,14 +798,14 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
 
         //for sufficiently low qp, filtering wouldn't do anything
         //this is a conservative estimate: could also check beta_offset and more accurate chroma_qp
-            int qp_thresh = h->qp_thresh; //FIXME strictly we should store qp_thresh for each mb of a slice
-            int qp = s->current_picture.qscale_table[mb_xy];
-            if(qp <= qp_thresh
-            && (left_xy[0]<0 || ((qp + s->current_picture.qscale_table[left_xy[0]] + 1)>>1) <= qp_thresh)
-            && (left_xy[1]<0 || ((qp + s->current_picture.qscale_table[left_xy[1]] + 1)>>1) <= qp_thresh)
-            && (top_xy   < 0 || ((qp + s->current_picture.qscale_table[top_xy ] + 1)>>1) <= qp_thresh)){
-                return 1;
-            }
+        int qp_thresh = h->qp_thresh; //FIXME strictly we should store qp_thresh for each mb of a slice
+        int qp = s->current_picture.qscale_table[mb_xy];
+        if(qp <= qp_thresh
+           && (left_xy[0]<0 || ((qp + s->current_picture.qscale_table[left_xy[0]] + 1)>>1) <= qp_thresh)
+           && (left_xy[1]<0 || ((qp + s->current_picture.qscale_table[left_xy[1]] + 1)>>1) <= qp_thresh)
+           && (top_xy   < 0 || ((qp + s->current_picture.qscale_table[top_xy ] + 1)>>1) <= qp_thresh)){
+            return 1;
+        }
 
         *((uint64_t*)&h->non_zero_count_cache[0+8*1])= *((uint64_t*)&h->non_zero_count[mb_xy][ 0]);
         *((uint64_t*)&h->non_zero_count_cache[0+8*2])= *((uint64_t*)&h->non_zero_count[mb_xy][ 8]);
@@ -866,85 +866,85 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
         left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
         left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
 
-    if(IS_INTRA(mb_type)){
-        int type_mask= h->pps.constrained_intra_pred ? IS_INTRA(-1) : -1;
-        h->topleft_samples_available=
-        h->top_samples_available=
-        h->left_samples_available= 0xFFFF;
-        h->topright_samples_available= 0xEEEA;
+        if(IS_INTRA(mb_type)){
+            int type_mask= h->pps.constrained_intra_pred ? IS_INTRA(-1) : -1;
+            h->topleft_samples_available=
+            h->top_samples_available=
+            h->left_samples_available= 0xFFFF;
+            h->topright_samples_available= 0xEEEA;
 
-        if(!(top_type & type_mask)){
-            h->topleft_samples_available= 0xB3FF;
-            h->top_samples_available= 0x33FF;
-            h->topright_samples_available= 0x26EA;
-        }
-        if(IS_INTERLACED(mb_type) != IS_INTERLACED(left_type[0])){
-            if(IS_INTERLACED(mb_type)){
-                if(!(left_type[0] & type_mask)){
-                    h->topleft_samples_available&= 0xDFFF;
-                    h->left_samples_available&= 0x5FFF;
-                }
-                if(!(left_type[1] & type_mask)){
-                    h->topleft_samples_available&= 0xFF5F;
-                    h->left_samples_available&= 0xFF5F;
+            if(!(top_type & type_mask)){
+                h->topleft_samples_available= 0xB3FF;
+                h->top_samples_available= 0x33FF;
+                h->topright_samples_available= 0x26EA;
+            }
+            if(IS_INTERLACED(mb_type) != IS_INTERLACED(left_type[0])){
+                if(IS_INTERLACED(mb_type)){
+                    if(!(left_type[0] & type_mask)){
+                        h->topleft_samples_available&= 0xDFFF;
+                        h->left_samples_available&= 0x5FFF;
+                    }
+                    if(!(left_type[1] & type_mask)){
+                        h->topleft_samples_available&= 0xFF5F;
+                        h->left_samples_available&= 0xFF5F;
+                    }
+                }else{
+                    int left_typei = h->slice_table[left_xy[0] + s->mb_stride ] == h->slice_num
+                                    ? s->current_picture.mb_type[left_xy[0] + s->mb_stride] : 0;
+                    assert(left_xy[0] == left_xy[1]);
+                    if(!((left_typei & type_mask) && (left_type[0] & type_mask))){
+                        h->topleft_samples_available&= 0xDF5F;
+                        h->left_samples_available&= 0x5F5F;
+                    }
                 }
             }else{
-                int left_typei = h->slice_table[left_xy[0] + s->mb_stride ] == h->slice_num
-                                ? s->current_picture.mb_type[left_xy[0] + s->mb_stride] : 0;
-                assert(left_xy[0] == left_xy[1]);
-                if(!((left_typei & type_mask) && (left_type[0] & type_mask))){
+                if(!(left_type[0] & type_mask)){
                     h->topleft_samples_available&= 0xDF5F;
                     h->left_samples_available&= 0x5F5F;
                 }
             }
-        }else{
-            if(!(left_type[0] & type_mask)){
-                h->topleft_samples_available&= 0xDF5F;
-                h->left_samples_available&= 0x5F5F;
-            }
-        }
 
-        if(!(topleft_type & type_mask))
-            h->topleft_samples_available&= 0x7FFF;
+            if(!(topleft_type & type_mask))
+                h->topleft_samples_available&= 0x7FFF;
 
-        if(!(topright_type & type_mask))
-            h->topright_samples_available&= 0xFBFF;
+            if(!(topright_type & type_mask))
+                h->topright_samples_available&= 0xFBFF;
 
-        if(IS_INTRA4x4(mb_type)){
-            if(IS_INTRA4x4(top_type)){
-                h->intra4x4_pred_mode_cache[4+8*0]= h->intra4x4_pred_mode[top_xy][4];
-                h->intra4x4_pred_mode_cache[5+8*0]= h->intra4x4_pred_mode[top_xy][5];
-                h->intra4x4_pred_mode_cache[6+8*0]= h->intra4x4_pred_mode[top_xy][6];
-                h->intra4x4_pred_mode_cache[7+8*0]= h->intra4x4_pred_mode[top_xy][3];
-            }else{
-                int pred;
-                if(!(top_type & type_mask))
-                    pred= -1;
-                else{
-                    pred= 2;
-                }
-                h->intra4x4_pred_mode_cache[4+8*0]=
-                h->intra4x4_pred_mode_cache[5+8*0]=
-                h->intra4x4_pred_mode_cache[6+8*0]=
-                h->intra4x4_pred_mode_cache[7+8*0]= pred;
-            }
-            for(i=0; i<2; i++){
-                if(IS_INTRA4x4(left_type[i])){
-                    h->intra4x4_pred_mode_cache[3+8*1 + 2*8*i]= h->intra4x4_pred_mode[left_xy[i]][left_block[0+2*i]];
-                    h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= h->intra4x4_pred_mode[left_xy[i]][left_block[1+2*i]];
+            if(IS_INTRA4x4(mb_type)){
+                if(IS_INTRA4x4(top_type)){
+                    h->intra4x4_pred_mode_cache[4+8*0]= h->intra4x4_pred_mode[top_xy][4];
+                    h->intra4x4_pred_mode_cache[5+8*0]= h->intra4x4_pred_mode[top_xy][5];
+                    h->intra4x4_pred_mode_cache[6+8*0]= h->intra4x4_pred_mode[top_xy][6];
+                    h->intra4x4_pred_mode_cache[7+8*0]= h->intra4x4_pred_mode[top_xy][3];
                 }else{
                     int pred;
-                    if(!(left_type[i] & type_mask))
+                    if(!(top_type & type_mask))
                         pred= -1;
                     else{
                         pred= 2;
                     }
-                    h->intra4x4_pred_mode_cache[3+8*1 + 2*8*i]=
-                    h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= pred;
+                    h->intra4x4_pred_mode_cache[4+8*0]=
+                    h->intra4x4_pred_mode_cache[5+8*0]=
+                    h->intra4x4_pred_mode_cache[6+8*0]=
+                    h->intra4x4_pred_mode_cache[7+8*0]= pred;
+                }
+                for(i=0; i<2; i++){
+                    if(IS_INTRA4x4(left_type[i])){
+                        h->intra4x4_pred_mode_cache[3+8*1 + 2*8*i]= h->intra4x4_pred_mode[left_xy[i]][left_block[0+2*i]];
+                        h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= h->intra4x4_pred_mode[left_xy[i]][left_block[1+2*i]];
+                    }else{
+                        int pred;
+                        if(!(left_type[i] & type_mask))
+                            pred= -1;
+                        else{
+                            pred= 2;
+                        }
+                        h->intra4x4_pred_mode_cache[3+8*1 + 2*8*i]=
+                        h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= pred;
+                    }
                 }
             }
         }
-    }
     }
 
 
@@ -960,23 +960,23 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
     if(top_type){
         *(uint32_t*)&h->non_zero_count_cache[4+8*0]= *(uint32_t*)&h->non_zero_count[top_xy][4+3*8];
         if(!for_deblock){
-        h->non_zero_count_cache[1+8*0]= h->non_zero_count[top_xy][1+1*8];
-        h->non_zero_count_cache[2+8*0]= h->non_zero_count[top_xy][2+1*8];
+            h->non_zero_count_cache[1+8*0]= h->non_zero_count[top_xy][1+1*8];
+            h->non_zero_count_cache[2+8*0]= h->non_zero_count[top_xy][2+1*8];
 
-        h->non_zero_count_cache[1+8*3]= h->non_zero_count[top_xy][1+2*8];
-        h->non_zero_count_cache[2+8*3]= h->non_zero_count[top_xy][2+2*8];
+            h->non_zero_count_cache[1+8*3]= h->non_zero_count[top_xy][1+2*8];
+            h->non_zero_count_cache[2+8*3]= h->non_zero_count[top_xy][2+2*8];
         }
     }else{
         if(for_deblock){
             *(uint32_t*)&h->non_zero_count_cache[4+8*0]= 0;
         }else{
 
-        h->non_zero_count_cache[1+8*0]=
-        h->non_zero_count_cache[2+8*0]=
+            h->non_zero_count_cache[1+8*0]=
+            h->non_zero_count_cache[2+8*0]=
 
-        h->non_zero_count_cache[1+8*3]=
-        h->non_zero_count_cache[2+8*3]=
-        *(uint32_t*)&h->non_zero_count_cache[4+8*0]= CABAC && !IS_INTRA(mb_type) ? 0 : 0x40404040;
+            h->non_zero_count_cache[1+8*3]=
+            h->non_zero_count_cache[2+8*3]=
+            *(uint32_t*)&h->non_zero_count_cache[4+8*0]= CABAC && !IS_INTRA(mb_type) ? 0 : 0x40404040;
         }
 
     }
@@ -986,18 +986,18 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
             h->non_zero_count_cache[3+8*1 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+0+2*i]];
             h->non_zero_count_cache[3+8*2 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+1+2*i]];
             if(!for_deblock){
-            h->non_zero_count_cache[0+8*1 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+4+2*i]];
-            h->non_zero_count_cache[0+8*4 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+5+2*i]];
+                h->non_zero_count_cache[0+8*1 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+4+2*i]];
+                h->non_zero_count_cache[0+8*4 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+5+2*i]];
             }
         }else{
             if(for_deblock){
                 h->non_zero_count_cache[3+8*1 + 2*8*i]=
                 h->non_zero_count_cache[3+8*2 + 2*8*i]= 0;
             }else{
-            h->non_zero_count_cache[3+8*1 + 2*8*i]=
-            h->non_zero_count_cache[3+8*2 + 2*8*i]=
-            h->non_zero_count_cache[0+8*1 +   8*i]=
-            h->non_zero_count_cache[0+8*4 +   8*i]= CABAC && !IS_INTRA(mb_type) ? 0 : 64;
+                h->non_zero_count_cache[3+8*1 + 2*8*i]=
+                h->non_zero_count_cache[3+8*2 + 2*8*i]=
+                h->non_zero_count_cache[0+8*1 +   8*i]=
+                h->non_zero_count_cache[0+8*4 +   8*i]= CABAC && !IS_INTRA(mb_type) ? 0 : 64;
             }
         }
     }
@@ -1087,10 +1087,10 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
                     h->ref_cache[list][scan8[0] + 2 - 1*8]=
                     h->ref_cache[list][scan8[0] + 3 - 1*8]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 1]];
                 }else{
-                h->ref_cache[list][scan8[0] + 0 - 1*8]=
-                h->ref_cache[list][scan8[0] + 1 - 1*8]= s->current_picture.ref_index[list][b8_xy + 0];
-                h->ref_cache[list][scan8[0] + 2 - 1*8]=
-                h->ref_cache[list][scan8[0] + 3 - 1*8]= s->current_picture.ref_index[list][b8_xy + 1];
+                    h->ref_cache[list][scan8[0] + 0 - 1*8]=
+                    h->ref_cache[list][scan8[0] + 1 - 1*8]= s->current_picture.ref_index[list][b8_xy + 0];
+                    h->ref_cache[list][scan8[0] + 2 - 1*8]=
+                    h->ref_cache[list][scan8[0] + 3 - 1*8]= s->current_picture.ref_index[list][b8_xy + 1];
                 }
             }else{
                 *(uint32_t*)h->mv_cache [list][scan8[0] + 0 - 1*8]=
@@ -1112,8 +1112,8 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
                         h->ref_cache[list][cache_idx  ]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[0+i*2]>>1)]];
                         h->ref_cache[list][cache_idx+8]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[1+i*2]>>1)]];
                     }else{
-                    h->ref_cache[list][cache_idx  ]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[0+i*2]>>1)];
-                    h->ref_cache[list][cache_idx+8]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[1+i*2]>>1)];
+                        h->ref_cache[list][cache_idx  ]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[0+i*2]>>1)];
+                        h->ref_cache[list][cache_idx+8]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[1+i*2]>>1)];
                     }
                 }else{
                     *(uint32_t*)h->mv_cache [list][cache_idx  ]=
@@ -1262,7 +1262,7 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
 #endif
 
     if(!for_deblock)
-    h->neighbor_transform_size= !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[0]);
+        h->neighbor_transform_size= !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[0]);
     return 0;
 }
 
