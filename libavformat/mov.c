@@ -925,16 +925,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
             st->codec->width = get_be16(pb); /* width */
             st->codec->height = get_be16(pb); /* height */
 
-            if (st->codec->width != sc->width || st->codec->height != sc->height) {
-                AVRational r = av_d2q(
-                    ((double)st->codec->height * sc->width) /
-                    ((double)st->codec->width * sc->height), INT_MAX);
-                if (st->sample_aspect_ratio.num)
-                    st->sample_aspect_ratio = av_mul_q(st->sample_aspect_ratio, r);
-                else
-                    st->sample_aspect_ratio = r;
-            }
-
             get_be32(pb); /* horiz resolution */
             get_be32(pb); /* vert resolution */
             get_be32(pb); /* data size, always 0 */
@@ -1661,6 +1651,16 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                    dref->volume, dref->nlvl_from, dref->nlvl_to);
     } else
         sc->pb = c->fc->pb;
+
+    if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
+        (st->codec->width != sc->width || st->codec->height != sc->height)) {
+        AVRational r = av_d2q(((double)st->codec->height * sc->width) /
+                              ((double)st->codec->width * sc->height), INT_MAX);
+        if (st->sample_aspect_ratio.num)
+            st->sample_aspect_ratio = av_mul_q(st->sample_aspect_ratio, r);
+        else
+            st->sample_aspect_ratio = r;
+    }
 
     switch (st->codec->codec_id) {
 #if CONFIG_H261_DECODER
