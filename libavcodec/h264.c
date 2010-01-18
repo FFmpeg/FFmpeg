@@ -808,6 +808,7 @@ static void clone_tables(H264Context *dst, H264Context *src){
     dst->mvd_table[0]             = src->mvd_table[0];
     dst->mvd_table[1]             = src->mvd_table[1];
     dst->direct_table             = src->direct_table;
+    dst->list_counts              = src->list_counts;
 
     dst->s.obmc_scratchpad = NULL;
     ff_h264_pred_init(&dst->hpc, src->s.codec_id);
