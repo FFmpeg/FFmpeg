@@ -970,16 +970,13 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
         if(for_deblock){
             *(uint32_t*)&h->non_zero_count_cache[4+8*0]= 0;
         }else{
-        h->non_zero_count_cache[4+8*0]=
-        h->non_zero_count_cache[5+8*0]=
-        h->non_zero_count_cache[6+8*0]=
-        h->non_zero_count_cache[7+8*0]=
 
         h->non_zero_count_cache[1+8*0]=
         h->non_zero_count_cache[2+8*0]=
 
         h->non_zero_count_cache[1+8*3]=
-        h->non_zero_count_cache[2+8*3]= CABAC && !IS_INTRA(mb_type) ? 0 : 64;
+        h->non_zero_count_cache[2+8*3]=
+        *(uint32_t*)&h->non_zero_count_cache[4+8*0]= CABAC && !IS_INTRA(mb_type) ? 0 : 0x40404040;
         }
 
     }
