@@ -1113,6 +1113,7 @@ ppc4xx_deps="ppc"
 
 vis_deps="sparc"
 
+x86_64_select="cmov fast_cmov"
 amd3dnow_deps="mmx"
 amd3dnowext_deps="amd3dnow"
 mmx_deps="x86"
@@ -1120,7 +1121,9 @@ mmx2_deps="mmx"
 sse_deps="mmx"
 ssse3_deps="sse"
 
+fast_64bit_if_any="alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="alpha armv5te avr32 mips ppc x86"
+fast_unaligned_if_any="armv6 ppc x86"
 
 need_memalign="altivec neon sse"
 inline_asm_deps="!tms470"
@@ -1767,6 +1770,49 @@ if test "$cpu" = host; then
     test "${cpu:-host}" = host && die "--cpu=host not supported with compiler $cc"
 fi
 
+# Deal with common $arch aliases
+case "$arch" in
+    arm*)
+        arch="arm"
+    ;;
+    mips|mipsel|IP*)
+        arch="mips"
+    ;;
+    mips64)
+        arch="mips"
+        subarch="mips64"
+    ;;
+    parisc|hppa)
+        arch="parisc"
+    ;;
+    parisc64|hppa64)
+        arch="parisc"
+        subarch="parisc64"
+    ;;
+    "Power Macintosh"|ppc|powerpc)
+        arch="ppc"
+    ;;
+    ppc64)
+        arch="ppc"
+        subarch="ppc64"
+    ;;
+    s390|s390x)
+        arch="s390"
+    ;;
+    sh4|sh)
+        arch="sh4"
+    ;;
+    sun4u|sparc64)
+        arch="sparc"
+        subarch="sparc64"
+    ;;
+    i[3-6]86|i86pc|BePC|x86_64|amd64)
+        arch="x86"
+    ;;
+esac
+
+is_in $arch $ARCH_LIST || echo "WARNING: unknown arch $arch"
+
 # Add processor-specific flags
 case $cpu in
     601|ppc601|PowerPC601)
@@ -1820,11 +1866,9 @@ case $cpu in
     ;;
     arm11*|cortex*)
         cpuflags="-mcpu=$cpu"
-        enable fast_unaligned
     ;;
     armv[67]*)
         cpuflags="-march=$cpu"
-        enable fast_unaligned
     ;;
     armv*)
         cpuflags="-march=$cpu"
@@ -1892,89 +1936,17 @@ EOF
 check_host_cflags -std=c99
 
 case "$arch" in
-    alpha)
-        arch="alpha"
-        enable fast_64bit
-        check_cflags -mieee
+    alpha|ia64|mips|parisc|sparc)
         spic=$shared
     ;;
-    arm|armv[4567]*l)
-        arch="arm"
-    ;;
-    avr32)
-    ;;
-    bfin)
-        arch="bfin"
-    ;;
-    ia64)
-        arch="ia64"
-        enable fast_64bit
-        spic=$shared
-        # HACK: currently fails to build if .bss is > 4MB and shared libs are built
-        enabled shared && enable_weak hardcoded_tables
-    ;;
-    m68k)
-        arch="m68k"
-    ;;
-    mips|mipsel|IP*)
-        arch="mips"
-        spic=$shared
-    ;;
-    mips64)
-        arch="mips"
-        subarch="mips64"
-        enable fast_64bit
-        spic=$shared
-    ;;
-    parisc|hppa)
-        arch="parisc"
-        spic=$shared
-    ;;
-    parisc64|hppa64)
-        arch="parisc"
-        enable fast_64bit
-        spic=$shared
-    ;;
-    "Power Macintosh"|ppc|powerpc)
-        arch="ppc"
-        enable fast_unaligned
-    ;;
-    ppc64)
-        arch="ppc"
-        subarch="ppc64"
-        enable fast_64bit
-        enable fast_unaligned
-    ;;
-    s390|s390x)
-        arch="s390"
-    ;;
-    sh4|sh)
-        arch="sh4"
-    ;;
-    sparc)
-        arch="sparc"
-        spic=$shared
-    ;;
-    sun4u|sparc64)
-        arch="sparc"
-        subarch="sparc64"
-        enable fast_64bit
-        spic=$shared
-    ;;
-    i386|i486|i586|i686|i86pc|BePC|x86_64|amd64)
-        arch="x86"
+    x86)
         subarch="x86_32"
-        enable fast_unaligned
-        check_cc <<EOF && enable fast_64bit && subarch="x86_64" && spic=$shared
+        check_cc <<EOF && subarch="x86_64"
         int test[(int)sizeof(char*) - 7];
 EOF
         if test "$subarch" = "x86_64"; then
-            enable cmov
-            enable fast_cmov
+            spic=$shared
         fi
-    ;;
-    *)
-        arch="unknown"
     ;;
 esac
 
@@ -2242,7 +2214,11 @@ unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -A n -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
-if enabled arm; then
+if enabled alpha; then
+
+    check_cflags -mieee
+
+elif enabled arm; then
 
     check_cflags -marm
 
@@ -2262,6 +2238,11 @@ EOF
     enabled neon    && check_asm neon    '"vadd.i16 q0, q0, q0"'
 
     enabled_all armv6t2 shared !pic && enable_pic
+
+elif enabled ia64; then
+
+    # HACK: currently fails to build if .bss is > 4MB and shared libs are built
+    enabled shared && enable_weak hardcoded_tables
 
 elif enabled mips; then
 
