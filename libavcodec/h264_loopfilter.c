@@ -337,8 +337,8 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
        !(h->slice_type_nos == FF_I_TYPE ||
          h->slice_type_nos == FF_P_TYPE ||
          (s->flags2 & CODEC_FLAG2_FAST)) ||
-       (h->deblocking_filter == 2 && (h->slice_table[mb_xy] != h->slice_table[h->top_mb_xy] || //use slice_num
-                                      h->slice_table[mb_xy] != h->slice_table[mb_xy - 1]))) {
+       (h->deblocking_filter == 2 && (h->slice_num != h->slice_table[h->top_mb_xy] ||
+                                      h->slice_num != h->slice_table[mb_xy - 1]))) {
         ff_h264_filter_mb(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize);
         return;
     }
@@ -461,7 +461,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         start = 1;
     }
 
-    if (h->deblocking_filter==2 && h->slice_table[mbm_xy] != h->slice_table[mb_xy])
+    if (h->deblocking_filter==2 && h->slice_table[mbm_xy] != h->slice_num)
         start = 1;
 
     if (FRAME_MBAFF && (dir == 1) && ((mb_y&1) == 0) && start == 0
@@ -656,7 +656,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
             // and current and left pair do not have the same interlaced type
             && (IS_INTERLACED(mb_type) != IS_INTERLACED(s->current_picture.mb_type[mb_xy-1]))
             // and left mb is in the same slice if deblocking_filter == 2
-            && (h->deblocking_filter!=2 || h->slice_table[mb_xy-1] == h->slice_table[mb_xy])) {
+            && (h->deblocking_filter!=2 || h->slice_table[mb_xy-1] == h->slice_num)) {
         /* First vertical edge is different in MBAFF frames
          * There are 8 different bS to compute and 2 different Qp
          */
