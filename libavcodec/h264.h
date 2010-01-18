@@ -959,14 +959,17 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
 //FIXME constraint_intra_pred & partitioning & nnz (let us hope this is just a typo in the spec)
     if(top_type){
         *(uint32_t*)&h->non_zero_count_cache[4+8*0]= *(uint32_t*)&h->non_zero_count[top_xy][4+3*8];
-
+        if(!for_deblock){
         h->non_zero_count_cache[1+8*0]= h->non_zero_count[top_xy][1+1*8];
         h->non_zero_count_cache[2+8*0]= h->non_zero_count[top_xy][2+1*8];
 
         h->non_zero_count_cache[1+8*3]= h->non_zero_count[top_xy][1+2*8];
         h->non_zero_count_cache[2+8*3]= h->non_zero_count[top_xy][2+2*8];
-
+        }
     }else{
+        if(for_deblock){
+            *(uint32_t*)&h->non_zero_count_cache[4+8*0]= 0;
+        }else{
         h->non_zero_count_cache[4+8*0]=
         h->non_zero_count_cache[5+8*0]=
         h->non_zero_count_cache[6+8*0]=
@@ -977,6 +980,7 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
 
         h->non_zero_count_cache[1+8*3]=
         h->non_zero_count_cache[2+8*3]= CABAC && !IS_INTRA(mb_type) ? 0 : 64;
+        }
 
     }
 
@@ -984,13 +988,20 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
         if(left_type[i]){
             h->non_zero_count_cache[3+8*1 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+0+2*i]];
             h->non_zero_count_cache[3+8*2 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+1+2*i]];
+            if(!for_deblock){
             h->non_zero_count_cache[0+8*1 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+4+2*i]];
             h->non_zero_count_cache[0+8*4 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+5+2*i]];
+            }
         }else{
+            if(for_deblock){
+                h->non_zero_count_cache[3+8*1 + 2*8*i]=
+                h->non_zero_count_cache[3+8*2 + 2*8*i]= 0;
+            }else{
             h->non_zero_count_cache[3+8*1 + 2*8*i]=
             h->non_zero_count_cache[3+8*2 + 2*8*i]=
             h->non_zero_count_cache[0+8*1 +   8*i]=
             h->non_zero_count_cache[0+8*4 +   8*i]= CABAC && !IS_INTRA(mb_type) ? 0 : 64;
+            }
         }
     }
 
