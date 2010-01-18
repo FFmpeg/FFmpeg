@@ -70,7 +70,8 @@ static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, i
 
 // test by ref -> src -> dst -> out & compare out against ref
 // ref & out are YV12
-static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, enum PixelFormat srcFormat, enum PixelFormat dstFormat,
+static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
+                  enum PixelFormat srcFormat, enum PixelFormat dstFormat,
                   int srcW, int srcH, int dstW, int dstH, int flags)
 {
     uint8_t *src[4] = {0};
