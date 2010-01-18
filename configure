@@ -208,6 +208,7 @@ Advanced options (experts only):
                            instruction selection, may crash on older CPUs)
   --enable-powerpc-perf    enable performance report on PPC
                            (requires enabling PMC)
+  --disable-asm            disable all assembler optimizations
   --disable-altivec        disable AltiVec optimizations
   --disable-amd3dnow       disable 3DNow! optimizations
   --disable-amd3dnowext    disable 3DNow! extended optimizations
@@ -1046,6 +1047,7 @@ CMDLINE_SELECT="
     $ARCH_EXT_LIST
     $CONFIG_LIST
     $THREADS_LIST
+    asm
     cross_compile
     debug
     extra_warnings
@@ -1368,6 +1370,7 @@ target_os=$(tolower $(uname -s))
 host_os=$target_os
 
 # configurable options
+enable asm
 enable debug
 enable doc
 enable fastdiv
@@ -2662,6 +2665,8 @@ check_deps $CONFIG_LIST       \
            $INDEV_LIST        \
            $OUTDEV_LIST       \
            $PROTOCOL_LIST     \
+
+enabled asm || disable $ARCH_LIST $ARCH_EXT_LIST
 
 echo "install prefix            $prefix"
 echo "source path               $source_path"
