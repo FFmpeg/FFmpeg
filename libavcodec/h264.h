@@ -799,7 +799,7 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
         //for sufficiently low qp, filtering wouldn't do anything
         //this is a conservative estimate: could also check beta_offset and more accurate chroma_qp
         if(!FRAME_MBAFF){
-            int qp_thresh = h->qp_thresh;
+            int qp_thresh = h->qp_thresh; //FIXME strictly we should store qp_thresh for each mb of a slice
             int qp = s->current_picture.qscale_table[mb_xy];
             if(qp <= qp_thresh
             && (s->mb_x == 0 || ((qp + s->current_picture.qscale_table[mb_xy-1] + 1)>>1) <= qp_thresh)
