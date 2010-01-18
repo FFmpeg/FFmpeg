@@ -1881,44 +1881,26 @@ elif enabled sparc; then
 
 elif enabled arm; then
 
-case $cpu in
-    arm11*|cortex*)
-        cpuflags="-mcpu=$cpu"
-    ;;
-    armv[67]*)
-        cpuflags="-march=$cpu"
-    ;;
-    armv*)
-        cpuflags="-march=$cpu"
-    ;;
-    arm*)
-        cpuflags="-mcpu=$cpu"
-    ;;
-esac
+    case $cpu in
+        armv*)
+            cpuflags="-march=$cpu"
+        ;;
+        *)
+            cpuflags="-mcpu=$cpu"
+        ;;
+    esac
 
 elif enabled alpha; then
 
-case $cpu in
-    ev4|ev45|ev5|ev56|pca56|ev6|ev67)
-        enabled ccc && cpuflags="-arch $cpu" || cpuflags="-mcpu=$cpu"
-    ;;
-esac
+    enabled ccc && cpuflags="-arch $cpu" || cpuflags="-mcpu=$cpu"
 
 elif enabled bfin; then
 
-case $cpu in
-    bf*)
-        cpuflags="-mcpu=$cpu"
-    ;;
-esac
+    cpuflags="-mcpu=$cpu"
 
 elif enabled mips; then
 
-case $cpu in
-    mips*|[45]k*|[237]4k*|m4k|r*000|loongson2[ef])
-        cpuflags="-march=$cpu"
-    ;;
-esac
+    cpuflags="-march=$cpu"
 
 elif enabled avr32; then
 
