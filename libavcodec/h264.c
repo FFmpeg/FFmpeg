@@ -2087,16 +2087,35 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
 
     for(j=0; j<2; j++){
+        int id_list[16];
         int *ref2frm= h->ref2frm[h->slice_num&(MAX_SLICES-1)][j];
+        for(i=0; i<16; i++){
+            id_list[i]= 60;
+            if(h->ref_list[j][i].data[0]){
+                int k;
+                uint8_t *base= h->ref_list[j][i].base[0];
+                for(k=0; k<h->short_ref_count; k++)
+                    if(h->short_ref[k]->base[0] == base){
+                        id_list[i]= k;
+                        break;
+                    }
+                for(k=0; k<h->long_ref_count; k++)
+                    if(h->long_ref[k] && h->long_ref[k]->base[0] == base){
+                        id_list[i]= h->short_ref_count + k;
+                        break;
+                    }
+            }
+        }
+
         ref2frm[0]=
         ref2frm[1]= -1;
         for(i=0; i<16; i++)
-            ref2frm[i+2]= 4*h->ref_list[j][i].frame_num
+            ref2frm[i+2]= 4*id_list[i]
                           +(h->ref_list[j][i].reference&3);
         ref2frm[18+0]=
         ref2frm[18+1]= -1;
         for(i=16; i<48; i++)
-            ref2frm[i+4]= 4*h->ref_list[j][i].frame_num
+            ref2frm[i+4]= 4*id_list[(i-16)>>1]
                           +(h->ref_list[j][i].reference&3);
     }
 
