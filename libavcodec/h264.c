@@ -39,9 +39,6 @@
 #include "vdpau_internal.h"
 
 #include "cabac.h"
-#if ARCH_X86
-#include "x86/h264_i386.h"
-#endif
 
 //#undef NDEBUG
 #include <assert.h>
