@@ -335,7 +335,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
 
     if(mb_x==0 || mb_y==mb_y_firstrow || !s->dsp.h264_loop_filter_strength || h->pps.chroma_qp_diff ||
        !(h->slice_type_nos == FF_I_TYPE ||
-         (CABAC && h->slice_type_nos == FF_P_TYPE && !FIELD_PICTURE) ||
+         (CABAC && h->slice_type_nos == FF_P_TYPE) ||
          (s->flags2 & CODEC_FLAG2_FAST)) ||
        (h->deblocking_filter == 2 && (h->slice_table[mb_xy] != h->slice_table[h->top_mb_xy] || //use slice_num
                                       h->slice_table[mb_xy] != h->slice_table[mb_xy - 1]))) {
