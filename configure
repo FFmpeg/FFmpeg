@@ -1098,22 +1098,27 @@ CMDLINE_APPEND="
 # code dependency declarations
 
 # architecture extensions
-altivec_deps="ppc"
-amd3dnow_deps="mmx"
-amd3dnowext_deps="amd3dnow"
+
 armv5te_deps="arm"
 armv6_deps="arm"
 armv6t2_deps="arm"
 armvfp_deps="arm"
 iwmmxt_deps="arm"
+neon_deps="arm"
+
 mmi_deps="mips"
+
+altivec_deps="ppc"
+ppc4xx_deps="ppc"
+
+vis_deps="sparc"
+
+amd3dnow_deps="mmx"
+amd3dnowext_deps="amd3dnow"
 mmx_deps="x86"
 mmx2_deps="mmx"
-neon_deps="arm"
-ppc4xx_deps="ppc"
 sse_deps="mmx"
 ssse3_deps="sse"
-vis_deps="sparc"
 
 fast_clz_if_any="alpha armv5te avr32 mips ppc x86"
 
