@@ -25,6 +25,7 @@
 #include <stdarg.h>
 
 #undef HAVE_AV_CONFIG_H
+#include "libavutil/mem.h"
 #include "libavutil/avutil.h"
 #include "libavutil/lfg.h"
 #include "swscale.h"
@@ -101,9 +102,9 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
         else
             dstStride[i]= dstW*4;
 
-        src[i]= malloc(srcStride[i]*srcH);
-        dst[i]= malloc(dstStride[i]*dstH);
-        out[i]= malloc(refStride[i]*h);
+        src[i]= av_malloc(srcStride[i]*srcH);
+        dst[i]= av_malloc(dstStride[i]*dstH);
+        out[i]= av_malloc(refStride[i]*h);
         if (!src[i] || !dst[i] || !out[i]) {
             perror("Malloc");
             res = -1;
@@ -173,9 +174,9 @@ end:
     sws_freeContext(outContext);
 
     for (i=0; i<4; i++) {
-        free(src[i]);
-        free(dst[i]);
-        free(out[i]);
+        av_free(src[i]);
+        av_free(dst[i]);
+        av_free(out[i]);
     }
 
     return res;
@@ -216,10 +217,10 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
 
 int main(int argc, char **argv)
 {
-    uint8_t *rgb_data = malloc (W*H*4);
+    uint8_t *rgb_data = av_malloc (W*H*4);
     uint8_t *rgb_src[3]= {rgb_data, NULL, NULL};
     int rgb_stride[3]={4*W, 0, 0};
-    uint8_t *data = malloc (4*W*H);
+    uint8_t *data = av_malloc (4*W*H);
     uint8_t *src[4]= {data, data+W*H, data+W*H*2, data+W*H*3};
     int stride[4]={W, W, W, W};
     int x, y;
@@ -240,10 +241,10 @@ int main(int argc, char **argv)
     }
     sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
     sws_freeContext(sws);
-    free(rgb_data);
+    av_free(rgb_data);
 
     selfTest(src, stride, W, H);
-    free(data);
+    av_free(data);
 
     return 0;
 }
