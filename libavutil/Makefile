@@ -20,6 +20,8 @@ HEADERS = adler32.h                                                     \
           rational.h                                                    \
           sha1.h                                                        \
 
+BUILT_HEADERS = avconfig.h
+
 OBJS = adler32.o                                                        \
        aes.o                                                            \
        avstring.o                                                       \
