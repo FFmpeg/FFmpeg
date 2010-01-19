@@ -42,10 +42,6 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
     /* there is no consistent mapping of mvs to neighboring locations that will
      * make mbaff happy, so we can't move all this logic to fill_caches */
     if(FRAME_MBAFF){
-        const uint32_t *mb_types = s->current_picture_ptr->mb_type;
-        const int16_t *mv;
-        *(uint32_t*)h->mv_cache[list][scan8[0]-2] = 0;
-        *C = h->mv_cache[list][scan8[0]-2];
 
 #define SET_DIAG_MV(MV_OP, REF_OP, X4, Y4)\
                 const int x4 = X4, y4 = Y4;\
@@ -60,6 +56,11 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
         if(topright_ref == PART_NOT_AVAILABLE
            && ((s->mb_y&1) || i >= scan8[0]+8) && (i&7)==4
            && h->ref_cache[list][scan8[0]-1] != PART_NOT_AVAILABLE){
+            const uint32_t *mb_types = s->current_picture_ptr->mb_type;
+            const int16_t *mv;
+            *(uint32_t*)h->mv_cache[list][scan8[0]-2] = 0;
+            *C = h->mv_cache[list][scan8[0]-2];
+
             if(!MB_FIELD
                && IS_INTERLACED(mb_types[h->left_mb_xy[0]])){
                 SET_DIAG_MV(*2, >>1, s->mb_x*4-1, (s->mb_y|1)*4+(s->mb_y&1)*2+(i>>4)-1);
