@@ -2783,6 +2783,44 @@ echo "License: $license"
 
 echo "Creating config.mak and config.h..."
 
+# build tree in object directory if source path is different from current one
+if enabled source_path_used; then
+    DIRS="
+        doc
+        libavcodec
+        libavcodec/$arch
+        libavdevice
+        libavfilter
+        libavformat
+        libavutil
+        libavutil/$arch
+        libpostproc
+        libswscale
+        libswscale/$arch
+        tests
+        tools
+    "
+    FILES="
+        Makefile
+        common.mak
+        subdir.mak
+        doc/texi2pod.pl
+        libavcodec/Makefile
+        libavdevice/Makefile
+        libavfilter/Makefile
+        libavformat/Makefile
+        libavutil/Makefile
+        libpostproc/Makefile
+        libswscale/Makefile
+    "
+    for dir in $DIRS ; do
+        mkdir -p $dir
+    done
+    for f in $FILES ; do
+        $ln_s "$source_path/$f" $f
+    done
+fi
+
 enabled stripping || strip="echo skipping strip"
 
 cat > config.mak <<EOF
@@ -2916,45 +2954,6 @@ echo "endif # FFMPEG_CONFIG_MAK" >> config.mak
 
 # Do not overwrite an unchanged config.h to avoid superfluous rebuilds.
 cp_if_changed $TMPH config.h
-
-# build tree in object directory if source path is different from current one
-if enabled source_path_used; then
-    DIRS="
-        doc
-        libavcodec
-        libavcodec/$arch
-        libavdevice
-        libavfilter
-        libavformat
-        libavutil
-        libavutil/$arch
-        libpostproc
-        libswscale
-        libswscale/$arch
-        tests
-        tools
-    "
-    FILES="
-        Makefile
-        common.mak
-        subdir.mak
-        doc/texi2pod.pl
-        libavcodec/Makefile
-        libavdevice/Makefile
-        libavfilter/Makefile
-        libavformat/Makefile
-        libavutil/Makefile
-        libpostproc/Makefile
-        libswscale/Makefile
-    "
-    for dir in $DIRS ; do
-        mkdir -p $dir
-    done
-    for f in $FILES ; do
-        $ln_s "$source_path/$f" $f
-    done
-fi
-
 
 # build pkg-config files
 
