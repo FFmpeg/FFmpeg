@@ -52,10 +52,6 @@
 #include "rectangle.h"
 #include "vdpau_internal.h"
 
-#if ARCH_X86
-#include "x86/h264_i386.h"
-#endif
-
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif
