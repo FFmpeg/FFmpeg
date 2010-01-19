@@ -29,6 +29,8 @@
  * header, so it should not be directly included in your projects.
  */
 
+#include "libavutil/avconfig.h"
+
 /**
  * Pixel format. Notes:
  *
@@ -127,9 +129,7 @@ enum PixelFormat {
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
-#ifdef HAVE_AV_CONFIG_H
-#include "config.h"
-#if HAVE_BIGENDIAN
+#if AV_HAVE_BIGENDIAN
 #   define PIX_FMT_NE(be, le) PIX_FMT_##be
 #else
 #   define PIX_FMT_NE(be, le) PIX_FMT_##le
@@ -150,6 +150,5 @@ enum PixelFormat {
 #define PIX_FMT_YUV420P16 PIX_FMT_NE(YUV420P16BE, YUV420P16LE)
 #define PIX_FMT_YUV422P16 PIX_FMT_NE(YUV422P16BE, YUV422P16LE)
 #define PIX_FMT_YUV444P16 PIX_FMT_NE(YUV444P16BE, YUV444P16LE)
-#endif
 
 #endif /* AVUTIL_PIXFMT_H */
