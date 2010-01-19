@@ -298,8 +298,6 @@ DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toUVOffset)= 0x0040400000404000ULL;
 
 #endif /* ARCH_X86 && CONFIG_GPL */
 
-static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b);
-
 DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_4[2][8])={
 {  1,   3,   1,   3,   1,   3,   1,   3, },
 {  2,   0,   2,   0,   2,   0,   2,   0, },
