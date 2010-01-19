@@ -2244,7 +2244,7 @@ EOF
 check_cc <<EOF || die "endian test failed"
 unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
-od -A n -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
+od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
 if enabled alpha; then
 
