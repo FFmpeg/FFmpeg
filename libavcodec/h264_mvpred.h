@@ -54,7 +54,7 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
                 return s->current_picture_ptr->ref_index[list][(x4>>1) + (y4>>1)*h->b8_stride] REF_OP;
 
         if(topright_ref == PART_NOT_AVAILABLE
-           && ((s->mb_y&1) || i >= scan8[0]+8) && (i&7)==4
+           && i >= scan8[0]+8 && (i&7)==4
            && h->ref_cache[list][scan8[0]-1] != PART_NOT_AVAILABLE){
             const uint32_t *mb_types = s->current_picture_ptr->mb_type;
             const int16_t *mv;
@@ -66,8 +66,7 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
                 SET_DIAG_MV(*2, >>1, s->mb_x*4-1, (s->mb_y|1)*4+(s->mb_y&1)*2+(i>>4)-1);
             }
             if(MB_FIELD
-               && !IS_INTERLACED(mb_types[h->left_mb_xy[0]])
-               && i >= scan8[0]+8){
+               && !IS_INTERLACED(mb_types[h->left_mb_xy[0]])){
                 // left shift will turn LIST_NOT_USED into PART_NOT_AVAILABLE, but that's OK.
                 SET_DIAG_MV(/2, <<1, s->mb_x*4-1, (s->mb_y&~1)*4 - 1 + ((i-scan8[0])>>3)*2);
             }
