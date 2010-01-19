@@ -656,6 +656,8 @@ Set the number of audio frames to record.
 Set the audio sampling frequency (default = 44100 Hz).
 @item -ab @var{bitrate}
 Set the audio bitrate in bit/s (default = 64k).
+@item -aq @var{q}
+Set the audio quality (codec-specific, VBR).
 @item -ac @var{channels}
 Set the number of audio channels (default = 1).
 @item -an
