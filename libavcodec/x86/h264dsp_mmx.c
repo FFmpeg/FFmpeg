@@ -827,10 +827,6 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                     __asm__ volatile(
                         "movd %0, %%mm1 \n\t"
                         "punpckldq %1, %%mm1 \n\t"
-                        "movq %%mm1, %%mm2 \n\t"
-                        "psrlw $7, %%mm2 \n\t"
-                        "pand %%mm6, %%mm2 \n\t"
-                        "por %%mm2, %%mm1 \n\t" // ref_cache with -2 mapped to -1
                         "punpckldq %%mm1, %%mm2 \n\t"
                         "pcmpeqb %%mm2, %%mm1 \n\t"
                         "paddb %%mm6, %%mm1 \n\t"
