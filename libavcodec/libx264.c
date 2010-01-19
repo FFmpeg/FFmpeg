@@ -109,7 +109,7 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     if (bufsize < 0)
         return -1;
 
-    /* FIXME: dts */
+    /* FIXME: libx264 now provides DTS, but AVFrame doesn't have a field for it. */
     x4->out_pic.pts = pic_out.i_pts;
 
     switch (pic_out.i_type) {
@@ -126,7 +126,7 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
         break;
     }
 
-    x4->out_pic.key_frame = pic_out.i_type == X264_TYPE_IDR;
+    x4->out_pic.key_frame = pic_out.b_keyframe;
     x4->out_pic.quality   = (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA;
 
     return bufsize;
@@ -208,8 +208,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.i_height             = avctx->height;
     x4->params.vui.i_sar_width      = avctx->sample_aspect_ratio.num;
     x4->params.vui.i_sar_height     = avctx->sample_aspect_ratio.den;
-    x4->params.i_fps_num            = avctx->time_base.den;
-    x4->params.i_fps_den            = avctx->time_base.num;
+    x4->params.i_fps_num = x4->params.i_timebase_den = avctx->time_base.den;
+    x4->params.i_fps_den = x4->params.i_timebase_num = avctx->time_base.num;
 
     x4->params.analyse.inter    = 0;
     if (avctx->partitions) {

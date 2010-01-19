@@ -2460,8 +2460,8 @@ enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
 enabled libtheora  && require  libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
 enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 -lm &&
-                      { check_cpp_condition x264.h "X264_BUILD >= 79" ||
-                        die "ERROR: libx264 version must be >= 0.79."; }
+                      { check_cpp_condition x264.h "X264_BUILD >= 83" ||
+                        die "ERROR: libx264 version must be >= 0.83."; }
 enabled libxvid    && require  libxvid xvid.h xvid_global -lxvidcore
 enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 
