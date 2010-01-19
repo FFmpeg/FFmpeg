@@ -18,42 +18,37 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_INTMATH_H
-#define AVUTIL_INTMATH_H
+#ifndef AVUTIL_ARM_INTMATH_H
+#define AVUTIL_ARM_INTMATH_H
 
 #include "config.h"
-#include "common.h"
+#include "libavutil/common.h"
 
-extern const uint32_t ff_inverse[257];
+#if HAVE_INLINE_ASM
 
-#if   ARCH_ARM
-#   include "arm/intmath.h"
-#elif ARCH_X86
-#   include "x86/intmath.h"
-#endif
-
-#if HAVE_FAST_CLZ && AV_GCC_VERSION_AT_LEAST(3,4)
-
-#ifndef av_log2
-
-#define av_log2(x) (31 - __builtin_clz((x)|1))
-
-#ifndef av_log2_16bit
-#define av_log2_16bit av_log2
-#endif
-
-#endif /* av_log2 */
-
-#endif /* AV_GCC_VERSION_AT_LEAST(3,4) */
-
-#ifndef FASTDIV
-
-#if CONFIG_FASTDIV
-#    define FASTDIV(a,b)   ((uint32_t)((((uint64_t)a) * ff_inverse[b]) >> 32))
+#if HAVE_ARMV6
+static inline av_const int FASTDIV(int a, int b)
+{
+    int r, t;
+    __asm__ volatile("cmp     %3, #2               \n\t"
+                     "ldr     %1, [%4, %3, lsl #2] \n\t"
+                     "lsrle   %0, %2, #1           \n\t"
+                     "smmulgt %0, %1, %2           \n\t"
+                     : "=&r"(r), "=&r"(t) : "r"(a), "r"(b), "r"(ff_inverse));
+    return r;
+}
 #else
-#    define FASTDIV(a,b)   ((a) / (b))
+static inline av_const int FASTDIV(int a, int b)
+{
+    int r, t;
+    __asm__ volatile("umull %1, %0, %2, %3"
+                     : "=&r"(r), "=&r"(t) : "r"(a), "r"(ff_inverse[b]));
+    return r;
+}
 #endif
 
-#endif /* FASTDIV */
+#define FASTDIV FASTDIV
 
-#endif /* AVUTIL_INTMATH_H */
+#endif /* HAVE_INLINE_ASM */
+
+#endif /* AVUTIL_ARM_INTMATH_H */

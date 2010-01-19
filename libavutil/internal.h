@@ -120,44 +120,6 @@
 
 /* math */
 
-extern const uint32_t ff_inverse[257];
-
-#if ARCH_X86
-#    define FASTDIV(a,b) \
-    ({\
-        int ret, dmy;\
-        __asm__ volatile(\
-            "mull %3"\
-            :"=d"(ret), "=a"(dmy)\
-            :"1"(a), "g"(ff_inverse[b])\
-            );\
-        ret;\
-    })
-#elif HAVE_ARMV6 && HAVE_INLINE_ASM
-static inline av_const int FASTDIV(int a, int b)
-{
-    int r, t;
-    __asm__ volatile("cmp     %3, #2               \n\t"
-                     "ldr     %1, [%4, %3, lsl #2] \n\t"
-                     "lsrle   %0, %2, #1           \n\t"
-                     "smmulgt %0, %1, %2           \n\t"
-                     : "=&r"(r), "=&r"(t) : "r"(a), "r"(b), "r"(ff_inverse));
-    return r;
-}
-#elif ARCH_ARM && HAVE_INLINE_ASM
-static inline av_const int FASTDIV(int a, int b)
-{
-    int r, t;
-    __asm__ volatile("umull %1, %0, %2, %3"
-                     : "=&r"(r), "=&r"(t) : "r"(a), "r"(ff_inverse[b]));
-    return r;
-}
-#elif CONFIG_FASTDIV
-#    define FASTDIV(a,b)   ((uint32_t)((((uint64_t)a) * ff_inverse[b]) >> 32))
-#else
-#    define FASTDIV(a,b)   ((a) / (b))
-#endif
-
 extern const uint8_t ff_sqrt_tab[256];
 
 static inline av_const unsigned int ff_sqrt(unsigned int a)
