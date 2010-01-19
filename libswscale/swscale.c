@@ -2926,7 +2926,7 @@ static void reset_ptr(const uint8_t* src[], int format)
  * swscale wrapper, so we don't need to export the SwsContext.
  * Assumes planar YUV to be in YUV order instead of YVU.
  */
-int sws_scale(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+int sws_scale(SwsContext *c, const uint8_t* const src[], int srcStride[], int srcSliceY,
               int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int i;
@@ -3046,7 +3046,7 @@ int sws_scale(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSlice
 }
 
 #if LIBSWSCALE_VERSION_MAJOR < 1
-int sws_scale_ordered(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+int sws_scale_ordered(SwsContext *c, const uint8_t* const src[], int srcStride[], int srcSliceY,
                       int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     return sws_scale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
