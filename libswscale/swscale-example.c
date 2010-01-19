@@ -102,6 +102,10 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
         else
             dstStride[i]= dstW*4;
 
+        /* Image buffers passed into libswscale can be allocated any way you
+         * prefer, as long as they're aligned enough for the architecture, and
+         * they're freed appropriately (such as using av_free for buffers
+         * allocated with av_malloc). */
         src[i]= av_malloc(srcStride[i]*srcH);
         dst[i]= av_malloc(dstStride[i]*dstH);
         out[i]= av_malloc(refStride[i]*h);
