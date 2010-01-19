@@ -831,6 +831,12 @@ apply(){
     "$@" < "$file" > "$file.tmp" && mv "$file.tmp" "$file" || rm "$file.tmp"
 }
 
+cp_if_changed(){
+    cmp -s "$1" "$2" &&
+        echo "$2 is unchanged" ||
+        cp -f "$1" "$2"
+}
+
 # CONFIG_LIST contains configurable options, while HAVE_LIST is for
 # system-dependent things.
 
@@ -2909,9 +2915,7 @@ echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
 echo "endif # FFMPEG_CONFIG_MAK" >> config.mak
 
 # Do not overwrite an unchanged config.h to avoid superfluous rebuilds.
-cmp -s $TMPH config.h &&
-    echo "config.h is unchanged" ||
-    mv -f $TMPH config.h
+cp_if_changed $TMPH config.h
 
 # build tree in object directory if source path is different from current one
 if enabled source_path_used; then
