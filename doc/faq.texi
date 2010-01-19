@@ -138,6 +138,25 @@ Notice that @samp{%d} is replaced by the image number.
 
 @file{img%03d.jpg} means the sequence @file{img001.jpg}, @file{img002.jpg}, etc...
 
+If you have large number of pictures to rename, you can use the
+following command to ease the burden. The command, using the bourne
+shell syntax, symbolically links all files in the current directory
+that match @code{*jpg} to the @file{/tmp} directory in the sequence of
+@file{img001.jpg}, @file{img002.jpg} and so on.
+
+@example
+  x=1; for i in *jpg; do counter=$(printf %03d $x); ln "$i" /tmp/img"$counter".jpg; x=$(($x+1)); done
+@end example
+
+If you want to sequence them by oldest modified first, substitute
+@code{$(ls -r -t *jpg)} in place of @code{*jpg}.
+
+Then run:
+
+@example
+  ffmpeg -f image2 -i /tmp/img%03d.jpg /tmp/a.mpg
+@end example
+
 The same logic is used for any image format that ffmpeg reads.
 
 @section How do I encode movie to single pictures?
