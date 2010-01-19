@@ -850,6 +850,40 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                           "m"(mv[l][b_idx+d_idx+2][0])
                     );
                 }
+                if(bidir==1){
+                    __asm__ volatile("pxor %%mm3, %%mm3 \n\t":);
+                    for( l = bidir; l >= 0; l-- ) {
+                    __asm__ volatile(
+                        "movd %0, %%mm1 \n\t"
+                        "punpckldq %1, %%mm1 \n\t"
+                        "punpckldq %%mm1, %%mm2 \n\t"
+                        "pcmpeqb %%mm2, %%mm1 \n\t"
+                        "paddb %%mm6, %%mm1 \n\t"
+                        "punpckhbw %%mm7, %%mm1 \n\t" // ref[b] != ref[bn]
+                        "por %%mm1, %%mm3 \n\t"
+
+                        "movq %2, %%mm1 \n\t"
+                        "movq %3, %%mm2 \n\t"
+                        "psubw %4, %%mm1 \n\t"
+                        "psubw %5, %%mm2 \n\t"
+                        "packsswb %%mm2, %%mm1 \n\t"
+                        "paddb %%mm5, %%mm1 \n\t"
+                        "pminub %%mm4, %%mm1 \n\t"
+                        "pcmpeqb %%mm4, %%mm1 \n\t" // abs(mv[b] - mv[bn]) >= limit
+                        "por %%mm1, %%mm3 \n\t"
+                        ::"m"(ref[l][b_idx]),
+                          "m"(ref[1-l][b_idx+d_idx]),
+                          "m"(mv[l][b_idx][0]),
+                          "m"(mv[l][b_idx+2][0]),
+                          "m"(mv[1-l][b_idx+d_idx][0]),
+                          "m"(mv[1-l][b_idx+d_idx+2][0])
+                    );
+                    }
+                    __asm__ volatile(
+                        "pcmpeqw %%mm7, %%mm3 \n\t"
+                        "psubusw %%mm3, %%mm0 \n\t"
+                    :);
+                }
             }
             __asm__ volatile(
                 "movd %0, %%mm1 \n\t"
