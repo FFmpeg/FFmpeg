@@ -806,6 +806,8 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
            && (top_xy   < 0 || ((qp + s->current_picture.qscale_table[top_xy ] + 1)>>1) <= qp_thresh)){
             return 1;
         }
+        if(IS_INTRA(mb_type))
+            return 0;
 
         *((uint64_t*)&h->non_zero_count_cache[0+8*1])= *((uint64_t*)&h->non_zero_count[mb_xy][ 0]);
         *((uint64_t*)&h->non_zero_count_cache[0+8*2])= *((uint64_t*)&h->non_zero_count[mb_xy][ 8]);
