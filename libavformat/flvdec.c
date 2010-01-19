@@ -362,7 +362,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
  }
 
     // if not streamed and no duration from metadata then seek to end to find the duration from the timestamps
-    if(!url_is_streamed(s->pb) && s->duration==AV_NOPTS_VALUE){
+    if(!url_is_streamed(s->pb) && (!s->duration || s->duration==AV_NOPTS_VALUE)){
         int size;
         const int64_t pos= url_ftell(s->pb);
         const int64_t fsize= url_fsize(s->pb);
