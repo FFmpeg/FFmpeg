@@ -2499,7 +2499,7 @@ texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 if enabled network; then
     check_type "sys/types.h sys/socket.h" socklen_t
     check_type netdb.h "struct addrinfo"
-    check_type sys/socket.h "struct sockaddr_storage"
+    check_type "sys/types.h sys/socket.h" "struct sockaddr_storage"
     # Prefer arpa/inet.h over winsock2
     if check_header arpa/inet.h ; then
         check_func closesocket
