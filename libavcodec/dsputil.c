@@ -2999,10 +2999,12 @@ static inline void h264_loop_filter_luma_c(uint8_t *pix, int xstride, int ystrid
                 int i_delta;
 
                 if( FFABS( p2 - p0 ) < beta ) {
+                    if(tc0[i])
                     pix[-2*xstride] = p1 + av_clip( (( p2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - p1, -tc0[i], tc0[i] );
                     tc++;
                 }
                 if( FFABS( q2 - q0 ) < beta ) {
+                    if(tc0[i])
                     pix[   xstride] = q1 + av_clip( (( q2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - q1, -tc0[i], tc0[i] );
                     tc++;
                 }
