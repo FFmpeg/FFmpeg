@@ -66,4 +66,16 @@ static inline av_const int mid_pred(int a, int b, int c)
 }
 #endif
 
+#if HAVE_CMOV
+#define COPY3_IF_LT(x, y, a, b, c, d)\
+__asm__ volatile(\
+    "cmpl  %0, %3       \n\t"\
+    "cmovl %3, %0       \n\t"\
+    "cmovl %4, %1       \n\t"\
+    "cmovl %5, %2       \n\t"\
+    : "+&r" (x), "+&r" (a), "+r" (c)\
+    : "r" (y), "r" (b), "r" (d)\
+);
+#endif
+
 #endif /* AVCODEC_X86_MATHOPS_H */

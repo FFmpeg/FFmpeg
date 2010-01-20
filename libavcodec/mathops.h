@@ -116,5 +116,14 @@ static inline av_const int sign_extend(int val, unsigned bits)
 }
 #endif
 
+#ifndef COPY3_IF_LT
+#define COPY3_IF_LT(x, y, a, b, c, d)\
+if ((y) < (x)) {\
+    (x) = (y);\
+    (a) = (b);\
+    (c) = (d);\
+}
+#endif
+
 #endif /* AVCODEC_MATHOPS_H */
 

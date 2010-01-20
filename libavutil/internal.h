@@ -156,25 +156,6 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
             level = (level ^ mask) - mask;
 #endif
 
-#if HAVE_CMOV
-#define COPY3_IF_LT(x, y, a, b, c, d)\
-__asm__ volatile(\
-    "cmpl  %0, %3       \n\t"\
-    "cmovl %3, %0       \n\t"\
-    "cmovl %4, %1       \n\t"\
-    "cmovl %5, %2       \n\t"\
-    : "+&r" (x), "+&r" (a), "+r" (c)\
-    : "r" (y), "r" (b), "r" (d)\
-);
-#else
-#define COPY3_IF_LT(x, y, a, b, c, d)\
-if ((y) < (x)) {\
-    (x) = (y);\
-    (a) = (b);\
-    (c) = (d);\
-}
-#endif
-
 /* avoid usage of dangerous/inappropriate system functions */
 #undef  malloc
 #define malloc please_use_av_malloc
