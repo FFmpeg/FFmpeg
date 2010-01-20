@@ -1032,6 +1032,7 @@ HAVE_LIST="
     soundcard_h
     poll_h
     struct_addrinfo
+    struct_sockaddr_sa_len
     struct_sockaddr_storage
     sys_mman_h
     sys_resource_h
@@ -2505,6 +2506,7 @@ if enabled network; then
     check_type "sys/types.h sys/socket.h" socklen_t
     check_type netdb.h "struct addrinfo"
     check_type "sys/types.h sys/socket.h" "struct sockaddr_storage"
+    check_struct "sys/types.h sys/socket.h" "struct sockaddr" sa_len
     # Prefer arpa/inet.h over winsock2
     if check_header arpa/inet.h ; then
         check_func closesocket
@@ -2516,6 +2518,7 @@ if enabled network; then
         check_type ws2tcpip.h socklen_t
         check_type ws2tcpip.h "struct addrinfo"
         check_type ws2tcpip.h "struct sockaddr_storage"
+        check_struct winsock2.h "struct sockaddr" sa_len
     else
         disable network
     fi
