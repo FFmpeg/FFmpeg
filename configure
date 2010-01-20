@@ -2651,6 +2651,9 @@ elif enabled gcc; then
     check_cflags -fno-tree-vectorize
 elif enabled clang; then
     check_cflags -Qunused-arguments
+elif enabled armcc; then
+    # 2523: use of inline assembler is deprecated
+    add_cflags -Wrvct,--diag_suppress=2523
 fi
 
 if enabled gprof; then
