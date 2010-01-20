@@ -198,14 +198,14 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
     enum PixelFormat srcFormat, dstFormat;
 
     for (srcFormat = 0; srcFormat < PIX_FMT_NB; srcFormat++) {
-        if (!sws_isSupportedInput(srcFormat))
+        if (!sws_isSupportedInput(srcFormat) || !sws_isSupportedOutput(srcFormat))
             continue;
 
         for (dstFormat = 0; dstFormat < PIX_FMT_NB; dstFormat++) {
             int i, j, k;
             int res = 0;
 
-            if (!sws_isSupportedOutput(dstFormat))
+            if (!sws_isSupportedInput(dstFormat) || !sws_isSupportedOutput(dstFormat))
                 continue;
 
             printf("%s -> %s\n",
