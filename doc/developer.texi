@@ -414,13 +414,18 @@ The regression tests build a synthetic video stream and a synthetic
 audio stream. These are then encoded and decoded with all codecs or
 formats. The CRC (or MD5) of each generated file is recorded in a
 result file. A 'diff' is launched to compare the reference results and
-the result file.
+the result file. The output is checked immediately after each test
+has run.
 
 The regression tests then go on to test the FFserver code with a
 limited set of streams. It is important that this step runs correctly
 as well.
 
-Run 'make test' to test all the codecs and formats.
+Run 'make test' to test all the codecs and formats. Commands like
+'make regtest-mpeg2' can be used to run a single test. By default,
+make will abort if any test fails. To run all tests regardless,
+use make -k. To get a more verbose output, use 'V=1 make test' or
+'V=2 make test'.
 
 Run 'make fulltest' to test all the codecs, formats and FFserver.
 
