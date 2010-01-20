@@ -899,6 +899,26 @@ int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans);
 void ff_rdft_calc(RDFTContext *s, FFTSample *data);
 void ff_rdft_end(RDFTContext *s);
 
+/* Discrete Cosine Transform */
+
+typedef struct {
+    int nbits;
+    int inverse;
+    FFTSample *data;
+    RDFTContext rdft;
+    const float *costab;
+    FFTSample *csc2;
+} DCTContext;
+
+/**
+ * Sets up (Inverse)DCT.
+ * @param nbits           log2 of the length of the input array
+ * @param inverse         >0 forward transform, <0 inverse transform
+ */
+int  ff_dct_init(DCTContext *s, int nbits, int inverse);
+void ff_dct_calc(DCTContext *s, FFTSample *data);
+void ff_dct_end (DCTContext *s);
+
 #define WRAPPER8_16(name8, name16)\
 static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int stride, int h){\
     return name8(s, dst           , src           , stride, h)\

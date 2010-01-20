@@ -128,6 +128,39 @@ static void mdct_ref(float *output, float *input, int nbits)
     }
 }
 
+static void idct_ref(float *output, float *input, int nbits)
+{
+    int n = 1<<nbits;
+    int k, i;
+    double a, s;
+
+    /* do it by hand */
+    for (i = 0; i < n; i++) {
+        s = 0.5 * input[0];
+        for (k = 1; k < n; k++) {
+            a = M_PI*k*(i+0.5) / n;
+            s += input[k] * cos(a);
+        }
+        output[i] = 2 * s / n;
+    }
+}
+static void dct_ref(float *output, float *input, int nbits)
+{
+    int n = 1<<nbits;
+    int k, i;
+    double a, s;
+
+    /* do it by hand */
+    for (k = 0; k < n; k++) {
+        s = 0;
+        for (i = 0; i < n; i++) {
+            a = M_PI*k*(i+0.5) / n;
+            s += input[i] * cos(a);
+        }
+        output[k] = s;
+    }
+}
+
 
 static float frandom(AVLFG *prng)
 {
@@ -166,6 +199,7 @@ static void help(void)
            "-h     print this help\n"
            "-s     speed test\n"
            "-m     (I)MDCT test\n"
+           "-d     (I)DCT test\n"
            "-i     inverse transform test\n"
            "-n b   set the transform size to 2^b\n"
            "-f x   set scale factor for output data of (I)MDCT to x\n"
@@ -177,6 +211,7 @@ enum tf_transform {
     TRANSFORM_FFT,
     TRANSFORM_MDCT,
     TRANSFORM_RDFT,
+    TRANSFORM_DCT,
 };
 
 int main(int argc, char **argv)
@@ -190,6 +225,7 @@ int main(int argc, char **argv)
     FFTContext s1, *s = &s1;
     FFTContext m1, *m = &m1;
     RDFTContext r1, *r = &r1;
+    DCTContext d1, *d = &d1;
     int fft_nbits, fft_size, fft_size_2;
     double scale = 1.0;
     AVLFG prng;
@@ -197,7 +233,7 @@ int main(int argc, char **argv)
 
     fft_nbits = 9;
     for(;;) {
-        c = getopt(argc, argv, "hsimrn:f:");
+        c = getopt(argc, argv, "hsimrdn:f:");
         if (c == -1)
             break;
         switch(c) {
@@ -215,6 +251,9 @@ int main(int argc, char **argv)
             break;
         case 'r':
             transform = TRANSFORM_RDFT;
+            break;
+        case 'd':
+            transform = TRANSFORM_DCT;
             break;
         case 'n':
             fft_nbits = atoi(optarg);
@@ -256,6 +295,13 @@ int main(int argc, char **argv)
             av_log(NULL, AV_LOG_INFO,"RDFT");
         ff_rdft_init(r, fft_nbits, do_inverse ? IRDFT : RDFT);
         fft_ref_init(fft_nbits, do_inverse);
+        break;
+    case TRANSFORM_DCT:
+        if (do_inverse)
+            av_log(NULL, AV_LOG_INFO,"IDCT");
+        else
+            av_log(NULL, AV_LOG_INFO,"DCT");
+        ff_dct_init(d, fft_nbits, do_inverse);
         break;
     }
     av_log(NULL, AV_LOG_INFO," %d test\n", fft_size);
@@ -321,6 +367,17 @@ int main(int argc, char **argv)
             tab_ref[0].im = tab_ref[fft_size_2].re;
             check_diff((float *)tab_ref, (float *)tab2, fft_size, 1.0);
         }
+        break;
+    case TRANSFORM_DCT:
+        memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
+        ff_dct_calc(d, tab);
+        if (do_inverse) {
+            idct_ref(tab_ref, tab1, fft_nbits);
+        } else {
+            dct_ref(tab_ref, tab1, fft_nbits);
+        }
+        check_diff((float *)tab_ref, (float *)tab, fft_size, 1.0);
+        break;
     }
 
     /* do a speed test */
@@ -351,6 +408,10 @@ int main(int argc, char **argv)
                     memcpy(tab2, tab1, fft_size * sizeof(FFTSample));
                     ff_rdft_calc(r, tab2);
                     break;
+                case TRANSFORM_DCT:
+                    memcpy(tab2, tab1, fft_size * sizeof(FFTSample));
+                    ff_dct_calc(d, tab2);
+                    break;
                 }
             }
             duration = gettime() - time_start;
@@ -373,6 +434,9 @@ int main(int argc, char **argv)
         break;
     case TRANSFORM_RDFT:
         ff_rdft_end(r);
+        break;
+    case TRANSFORM_DCT:
+        ff_dct_end(d);
         break;
     }
     return 0;

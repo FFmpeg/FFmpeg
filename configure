@@ -99,6 +99,7 @@ Configuration options:
   --disable-fastdiv        disable table-based division
   --enable-small           optimize for size instead of speed
   --disable-aandct         disable AAN DCT code
+  --disable-dct            disable DCT code
   --disable-fft            disable FFT code
   --disable-golomb         disable Golomb code
   --disable-lpc            disable LPC code
@@ -862,6 +863,7 @@ CONFIG_LIST="
     avisynth
     beos_netserver
     bzlib
+    dct
     doc
     fastdiv
     ffmpeg
