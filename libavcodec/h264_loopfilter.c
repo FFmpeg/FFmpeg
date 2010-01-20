@@ -456,7 +456,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         int j;
 
         for(j=0; j<2; j++, mbn_xy += s->mb_stride){
-            int16_t bS[4];
+            DECLARE_ALIGNED_8(int16_t, bS[4]);
             int qp;
             if( IS_INTRA(mb_type|s->current_picture.mb_type[mbn_xy]) ) {
                 *(uint64_t*)bS= 0x0003000300030003ULL;
@@ -487,7 +487,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         /* mbn_xy: neighbor macroblock */
         const int mbn_xy = edge > 0 ? mb_xy : mbm_xy;
         const int mbn_type = s->current_picture.mb_type[mbn_xy];
-        int16_t bS[4];
+        DECLARE_ALIGNED_8(int16_t, bS[4]);
         int qp;
 
         if( (edge&1) && IS_8x8DCT(mb_type) )
@@ -631,7 +631,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
          */
         const int pair_xy = mb_x + (mb_y&~1)*s->mb_stride;
         const int left_mb_xy[2] = { pair_xy-1, pair_xy-1+s->mb_stride };
-        int16_t bS[8];
+        DECLARE_ALIGNED_8(int16_t, bS[8]);
         int qp[2];
         int bqp[2];
         int rqp[2];
