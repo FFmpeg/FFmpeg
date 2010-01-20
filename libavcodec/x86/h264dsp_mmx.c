@@ -812,7 +812,7 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
     // could do a special case for dir==0 && edges==1, but it only reduces the
     // average filter time by 1.2%
     for( dir=1; dir>=0; dir-- ) {
-        const int d_idx = dir ? -8 : -1;
+        const x86_reg d_idx = dir ? -8 : -1;
         const int mask_mv = dir ? mask_mv1 : mask_mv0;
         DECLARE_ALIGNED_8(const uint64_t, mask_dir) = dir ? 0 : 0xffffffffffffffffULL;
         int b_idx, edge, l;
@@ -825,54 +825,53 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                 __asm__ volatile("pxor %%mm0, %%mm0 \n\t":);
                 for( l = bidir; l >= 0; l-- ) {
                     __asm__ volatile(
-                        "movd %0, %%mm1 \n\t"
-                        "punpckldq %1, %%mm1 \n\t"
+                        "movd (%0), %%mm1 \n\t"
+                        "punpckldq (%0,%1), %%mm1 \n\t"
                         "punpckldq %%mm1, %%mm2 \n\t"
                         "pcmpeqb %%mm2, %%mm1 \n\t"
                         "paddb %%mm6, %%mm1 \n\t"
                         "punpckhbw %%mm7, %%mm1 \n\t" // ref[b] != ref[bn]
                         "por %%mm1, %%mm0 \n\t"
 
-                        "movq %2, %%mm1 \n\t"
-                        "movq 8+1*%2, %%mm2 \n\t"
-                        "psubw %3, %%mm1 \n\t"
-                        "psubw 8+1*%3, %%mm2 \n\t"
+                        "movq (%2), %%mm1 \n\t"
+                        "movq 8(%2), %%mm2 \n\t"
+                        "psubw (%2,%1,4), %%mm1 \n\t"
+                        "psubw 8(%2,%1,4), %%mm2 \n\t"
                         "packsswb %%mm2, %%mm1 \n\t"
                         "paddb %%mm5, %%mm1 \n\t"
                         "pminub %%mm4, %%mm1 \n\t"
                         "pcmpeqb %%mm4, %%mm1 \n\t" // abs(mv[b] - mv[bn]) >= limit
                         "por %%mm1, %%mm0 \n\t"
-                        ::"m"(ref[l][b_idx]),
-                          "m"(ref[l][b_idx+d_idx]),
-                          "m"(mv[l][b_idx][0]),
-                          "m"(mv[l][b_idx+d_idx][0])
+                        ::"r"(ref[l]+b_idx),
+                          "r"(d_idx),
+                          "r"(mv[l]+b_idx)
                     );
                 }
                 if(bidir==1){
                     __asm__ volatile("pxor %%mm3, %%mm3 \n\t":);
                     for( l = bidir; l >= 0; l-- ) {
                     __asm__ volatile(
-                        "movd %0, %%mm1 \n\t"
-                        "punpckldq %1, %%mm1 \n\t"
+                        "movd (%0), %%mm1 \n\t"
+                        "punpckldq (%1), %%mm1 \n\t"
                         "punpckldq %%mm1, %%mm2 \n\t"
                         "pcmpeqb %%mm2, %%mm1 \n\t"
                         "paddb %%mm6, %%mm1 \n\t"
                         "punpckhbw %%mm7, %%mm1 \n\t" // ref[b] != ref[bn]
                         "por %%mm1, %%mm3 \n\t"
 
-                        "movq %2, %%mm1 \n\t"
-                        "movq 8+1*%2, %%mm2 \n\t"
-                        "psubw %3, %%mm1 \n\t"
-                        "psubw 8+1*%3, %%mm2 \n\t"
+                        "movq (%2), %%mm1 \n\t"
+                        "movq 8(%2), %%mm2 \n\t"
+                        "psubw (%3), %%mm1 \n\t"
+                        "psubw 8(%3), %%mm2 \n\t"
                         "packsswb %%mm2, %%mm1 \n\t"
                         "paddb %%mm5, %%mm1 \n\t"
                         "pminub %%mm4, %%mm1 \n\t"
                         "pcmpeqb %%mm4, %%mm1 \n\t" // abs(mv[b] - mv[bn]) >= limit
                         "por %%mm1, %%mm3 \n\t"
-                        ::"m"(ref[l][b_idx]),
-                          "m"(ref[1-l][b_idx+d_idx]),
-                          "m"(mv[l][b_idx][0]),
-                          "m"(mv[1-l][b_idx+d_idx][0])
+                        ::"r"(ref[l]+b_idx),
+                          "r"(ref[1-l]+b_idx+d_idx),
+                          "r"(mv[l][b_idx]),
+                          "r"(mv[1-l][b_idx+d_idx])
                     );
                     }
                     __asm__ volatile(
