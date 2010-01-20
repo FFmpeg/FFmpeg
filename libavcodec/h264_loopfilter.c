@@ -498,21 +498,14 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         if( (edge&1) && IS_8x8DCT(mb_type) )
             continue;
 
-        if( IS_INTRA(mb_type) ||
-            IS_INTRA(mbn_type) ) {
-            int value;
+        if( IS_INTRA(mb_type|mbn_type)) {
+            *(uint64_t*)bS= 0x0003000300030003ULL;
             if (edge == 0) {
-                if (   (!IS_INTERLACED(mb_type) && !IS_INTERLACED(mbm_type))
+                if (   (!IS_INTERLACED(mb_type|mbm_type))
                     || ((FRAME_MBAFF || (s->picture_structure != PICT_FRAME)) && (dir == 0))
-                ) {
-                    value = 4;
-                } else {
-                    value = 3;
-                }
-            } else {
-                value = 3;
+                )
+                    *(uint64_t*)bS= 0x0004000400040004ULL;
             }
-            bS[0] = bS[1] = bS[2] = bS[3] = value;
         } else {
             int i, l;
             int mv_done;
