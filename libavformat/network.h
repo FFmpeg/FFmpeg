@@ -70,7 +70,15 @@ int inet_aton (const char * str, struct in_addr * add);
 
 #if !HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage {
-    struct sockaddr_in x;
+#if HAVE_STRUCT_SOCKADDR_SA_LEN
+    uint8_t ss_len;
+    uint8_t ss_family;
+#else
+    uint16_t ss_family;
+#endif
+    char ss_pad1[6];
+    int64_t ss_align;
+    char ss_pad2[112];
 };
 #endif
 
