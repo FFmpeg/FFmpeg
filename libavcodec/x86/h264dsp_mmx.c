@@ -834,9 +834,9 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                         "por %%mm1, %%mm0 \n\t"
 
                         "movq %2, %%mm1 \n\t"
-                        "movq %3, %%mm2 \n\t"
-                        "psubw %4, %%mm1 \n\t"
-                        "psubw %5, %%mm2 \n\t"
+                        "movq 8+1*%2, %%mm2 \n\t"
+                        "psubw %3, %%mm1 \n\t"
+                        "psubw 8+1*%3, %%mm2 \n\t"
                         "packsswb %%mm2, %%mm1 \n\t"
                         "paddb %%mm5, %%mm1 \n\t"
                         "pminub %%mm4, %%mm1 \n\t"
@@ -845,9 +845,7 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                         ::"m"(ref[l][b_idx]),
                           "m"(ref[l][b_idx+d_idx]),
                           "m"(mv[l][b_idx][0]),
-                          "m"(mv[l][b_idx+2][0]),
-                          "m"(mv[l][b_idx+d_idx][0]),
-                          "m"(mv[l][b_idx+d_idx+2][0])
+                          "m"(mv[l][b_idx+d_idx][0])
                     );
                 }
                 if(bidir==1){
@@ -863,9 +861,9 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                         "por %%mm1, %%mm3 \n\t"
 
                         "movq %2, %%mm1 \n\t"
-                        "movq %3, %%mm2 \n\t"
-                        "psubw %4, %%mm1 \n\t"
-                        "psubw %5, %%mm2 \n\t"
+                        "movq 8+1*%2, %%mm2 \n\t"
+                        "psubw %3, %%mm1 \n\t"
+                        "psubw 8+1*%3, %%mm2 \n\t"
                         "packsswb %%mm2, %%mm1 \n\t"
                         "paddb %%mm5, %%mm1 \n\t"
                         "pminub %%mm4, %%mm1 \n\t"
@@ -874,9 +872,7 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                         ::"m"(ref[l][b_idx]),
                           "m"(ref[1-l][b_idx+d_idx]),
                           "m"(mv[l][b_idx][0]),
-                          "m"(mv[l][b_idx+2][0]),
-                          "m"(mv[1-l][b_idx+d_idx][0]),
-                          "m"(mv[1-l][b_idx+d_idx+2][0])
+                          "m"(mv[1-l][b_idx+d_idx][0])
                     );
                     }
                     __asm__ volatile(
