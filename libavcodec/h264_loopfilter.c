@@ -459,7 +459,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
 
         for(j=0; j<2; j++, mbn_xy += s->mb_stride){
             if( IS_INTRA(mb_type|s->current_picture.mb_type[mbn_xy]) ) {
-                bS[0] = bS[1] = bS[2] = bS[3] = 3;
+                *(uint64_t*)bS= 0x0003000300030003ULL;
             } else {
                 const uint8_t *mbn_nnz = h->non_zero_count[mbn_xy];
                 for( i = 0; i < 4; i++ ) {
@@ -509,11 +509,11 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
             int mv_done;
 
             if( edge & mask_edge ) {
-                bS[0] = bS[1] = bS[2] = bS[3] = 0;
+                *(uint64_t*)bS= 0;
                 mv_done = 1;
             }
             else if( FRAME_MBAFF && IS_INTERLACED(mb_type ^ mbn_type)) {
-                bS[0] = bS[1] = bS[2] = bS[3] = 1;
+                *(uint64_t*)bS= 0x0001000100010001ULL;
                 mv_done = 1;
             }
             else if( mask_par0 && (edge || (mbn_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir)))) ) {
@@ -641,7 +641,8 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
         first_vertical_edge_done = 1;
 
         if( IS_INTRA(mb_type) )
-            bS[0] = bS[1] = bS[2] = bS[3] = bS[4] = bS[5] = bS[6] = bS[7] = 4;
+            *(uint64_t*)&bS[0]=
+            *(uint64_t*)&bS[4]= 0x0004000400040004ULL;
         else {
             for( i = 0; i < 8; i++ ) {
                 int mbn_xy = MB_FIELD ? left_mb_xy[i>>2] : left_mb_xy[i&1];
