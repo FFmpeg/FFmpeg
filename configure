@@ -1488,7 +1488,7 @@ die_unknown(){
 show_list() {
     suffix=_$1
     shift
-    echo $* | sed s/$suffix//g | tr ' ' '\n' | sort
+    echo $* | sed s/$suffix//g | tr ' ' '\n' | sort | pr -3 -t
     exit 0
 }
 
