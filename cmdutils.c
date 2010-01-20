@@ -41,6 +41,9 @@
 #if CONFIG_NETWORK
 #include "libavformat/network.h"
 #endif
+#if HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 
 #undef exit
 
@@ -254,6 +257,19 @@ int opt_loglevel(const char *opt, const char *arg)
         exit(1);
     }
     av_log_set_level(level);
+    return 0;
+}
+
+int opt_timelimit(const char *opt, const char *arg)
+{
+#if HAVE_SYS_RESOURCE_H
+    int lim = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
+    struct rlimit rl = { lim, lim + 1 };
+    if (setrlimit(RLIMIT_CPU, &rl))
+        perror("setrlimit");
+#else
+    fprintf(stderr, "Warning: -%s not implemented on this OS\n", opt);
+#endif
     return 0;
 }
 
