@@ -86,35 +86,67 @@ typedef struct SwsContext {
     int lumYInc, chrYInc;
     enum PixelFormat dstFormat;   ///< Destination pixel format.
     enum PixelFormat srcFormat;   ///< Source      pixel format.
-    int chrSrcHSubSample, chrSrcVSubSample;
-    int chrDstHSubSample, chrDstVSubSample;
-    int vChrDrop;
-    int sliceDir;
+    int chrSrcHSubSample;         ///< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in source      image.
+    int chrSrcVSubSample;         ///< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in source      image.
+    int chrDstHSubSample;         ///< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in destination image.
+    int chrDstVSubSample;         ///< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in destination image.
+    int vChrDrop;                 ///< Binary logarithm of extra vertical subsampling factor in source image chroma planes specified by user.
+    int sliceDir;                 ///< Direction that slices are fed to the scaler (1 = top-to-bottom, -1 = bottom-to-top).
     double param[2];              ///< Input parameters for scaling algorithms that need them.
 
     uint32_t pal_yuv[256];
     uint32_t pal_rgb[256];
 
-    int16_t **lumPixBuf;
-    int16_t **chrPixBuf;
-    int16_t **alpPixBuf;
-    int16_t *hLumFilter;
-    int16_t *hLumFilterPos;
-    int16_t *hChrFilter;
-    int16_t *hChrFilterPos;
-    int16_t *vLumFilter;
-    int16_t *vLumFilterPos;
-    int16_t *vChrFilter;
-    int16_t *vChrFilterPos;
+    /**
+     * @name Scaled horizontal lines ring buffer.
+     * The horizontal scaler keeps just enough scaled lines in a ring buffer
+     * so they may be passed to the vertical scaler. The pointers to the
+     * allocated buffers for each line are duplicated in sequence in the ring
+     * buffer to simplify indexing and avoid wrapping around between lines
+     * inside the vertical scaler code. The wrapping is done before the
+     * vertical scaler is called.
+     */
+    //@{
+    int16_t **lumPixBuf;          ///< Ring buffer for scaled horizontal luma   plane lines to be fed to the vertical scaler.
+    int16_t **chrPixBuf;          ///< Ring buffer for scaled horizontal chroma plane lines to be fed to the vertical scaler.
+    int16_t **alpPixBuf;          ///< Ring buffer for scaled horizontal alpha  plane lines to be fed to the vertical scaler.
+    int       vLumBufSize;        ///< Number of vertical luma/alpha lines allocated in the ring buffer.
+    int       vChrBufSize;        ///< Number of vertical chroma     lines allocated in the ring buffer.
+    int       lastInLumBuf;       ///< Last scaled horizontal luma/alpha line from source in the ring buffer.
+    int       lastInChrBuf;       ///< Last scaled horizontal chroma     line from source in the ring buffer.
+    int       lumBufIndex;        ///< Index in ring buffer of the last scaled horizontal luma/alpha line from source.
+    int       chrBufIndex;        ///< Index in ring buffer of the last scaled horizontal chroma     line from source.
+    //@}
 
     uint8_t formatConvBuffer[VOF]; //FIXME dynamic allocation, but we have to change a lot of code for this to be useful
 
-    int hLumFilterSize;
-    int hChrFilterSize;
-    int vLumFilterSize;
-    int vChrFilterSize;
-    int vLumBufSize;
-    int vChrBufSize;
+    /**
+     * @name Horizontal and vertical filters.
+     * To better understand the following fields, here is a pseudo-code of
+     * their usage in filtering a horizontal line:
+     * @code
+     * for (i = 0; i < width; i++) {
+     *     dst[i] = 0;
+     *     for (j = 0; j < filterSize; j++)
+     *         dst[i] += src[ filterPos[i] + j ] * filter[ filterSize * i + j ];
+     *     dst[i] >>= FRAC_BITS; // The actual implementation is fixed-point.
+     * }
+     * @endcode
+     */
+    //@{
+    int16_t *hLumFilter;          ///< Array of horizontal filter coefficients for luma/alpha planes.
+    int16_t *hChrFilter;          ///< Array of horizontal filter coefficients for chroma     planes.
+    int16_t *vLumFilter;          ///< Array of vertical   filter coefficients for luma/alpha planes.
+    int16_t *vChrFilter;          ///< Array of vertical   filter coefficients for chroma     planes.
+    int16_t *hLumFilterPos;       ///< Array of horizontal filter starting positions for each dst[i] for luma/alpha planes.
+    int16_t *hChrFilterPos;       ///< Array of horizontal filter starting positions for each dst[i] for chroma     planes.
+    int16_t *vLumFilterPos;       ///< Array of vertical   filter starting positions for each dst[i] for luma/alpha planes.
+    int16_t *vChrFilterPos;       ///< Array of vertical   filter starting positions for each dst[i] for chroma     planes.
+    int      hLumFilterSize;      ///< Horizontal filter size for luma/alpha pixels.
+    int      hChrFilterSize;      ///< Horizontal filter size for chroma     pixels.
+    int      vLumFilterSize;      ///< Vertical   filter size for luma/alpha pixels.
+    int      vChrFilterSize;      ///< Vertical   filter size for chroma     pixels.
+    //@}
 
     int lumMmx2FilterCodeSize;    ///< Runtime-generated MMX2 horizontal fast bilinear scaler code size for luma/alpha planes.
     int chrMmx2FilterCodeSize;    ///< Runtime-generated MMX2 horizontal fast bilinear scaler code size for chroma     planes.
@@ -123,10 +155,6 @@ typedef struct SwsContext {
 
     int canMMX2BeUsed;
 
-    int lastInLumBuf;
-    int lastInChrBuf;
-    int lumBufIndex;
-    int chrBufIndex;
     int dstY;                     ///< Last destination vertical line output from last slice.
     int flags;                    ///< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
     void * yuvTable;            // pointer to the yuv->rgb table start so it can be freed()
@@ -183,7 +211,7 @@ typedef struct SwsContext {
     DECLARE_ALIGNED(8, uint64_t, vOffset);
     int32_t  lumMmxFilter[4*MAX_FILTER_SIZE];
     int32_t  chrMmxFilter[4*MAX_FILTER_SIZE];
-    int dstW;
+    int dstW;                     ///< Width  of destination luma/alpha planes.
     DECLARE_ALIGNED(8, uint64_t, esp);
     DECLARE_ALIGNED(8, uint64_t, vRounder);
     DECLARE_ALIGNED(8, uint64_t, u_temp);
