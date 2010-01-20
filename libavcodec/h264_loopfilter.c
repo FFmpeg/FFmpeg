@@ -444,8 +444,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
 
 
     if (FRAME_MBAFF && (dir == 1) && ((mb_y&1) == 0) && start == 0
-        && !IS_INTERLACED(mb_type)
-        && IS_INTERLACED(mbm_type)
+        && IS_INTERLACED(mbm_type&~mb_type)
         ) {
         // This is a special case in the norm where the filtering must
         // be done twice (one each of the field) even if we are in a
@@ -459,8 +458,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         int16_t bS[4];
 
         for(j=0; j<2; j++, mbn_xy += s->mb_stride){
-            if( IS_INTRA(mb_type) ||
-                IS_INTRA(s->current_picture.mb_type[mbn_xy]) ) {
+            if( IS_INTRA(mb_type|s->current_picture.mb_type[mbn_xy]) ) {
                 bS[0] = bS[1] = bS[2] = bS[3] = 3;
             } else {
                 const uint8_t *mbn_nnz = h->non_zero_count[mbn_xy];
@@ -626,7 +624,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
             // left mb is in picture
             && h->slice_table[mb_xy-1] != 0xFFFF
             // and current and left pair do not have the same interlaced type
-            && (IS_INTERLACED(mb_type) != IS_INTERLACED(s->current_picture.mb_type[mb_xy-1]))
+            && IS_INTERLACED(mb_type^s->current_picture.mb_type[mb_xy-1])
             // and left mb is in the same slice if deblocking_filter == 2
             && (h->deblocking_filter!=2 || h->slice_table[mb_xy-1] == h->slice_num)) {
         /* First vertical edge is different in MBAFF frames
