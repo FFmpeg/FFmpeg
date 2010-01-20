@@ -1722,7 +1722,6 @@ static int stream_component_open(VideoState *is, int stream_index)
     enc->skip_loop_filter= skip_loop_filter;
     enc->error_recognition= error_recognition;
     enc->error_concealment= error_concealment;
-    if (thread_count > 1)
         avcodec_thread_init(enc, thread_count);
 
     set_context_opts(enc, avcodec_opts[enc->codec_type], 0);

@@ -131,6 +131,9 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
 
     s->thread_count= thread_count;
 
+    if (thread_count <= 1)
+        return 0;
+
     assert(!s->thread_opaque);
     c= av_mallocz(sizeof(ThreadContext)*thread_count);
     s->thread_opaque= c;

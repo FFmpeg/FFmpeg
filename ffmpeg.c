@@ -2931,7 +2931,6 @@ static void opt_input_file(const char *filename)
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st = ic->streams[i];
         AVCodecContext *enc = st->codec;
-        if(thread_count>1)
             avcodec_thread_init(enc, thread_count);
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
@@ -3066,7 +3065,6 @@ static void new_video_stream(AVFormatContext *oc)
     bitstream_filters[nb_output_files][oc->nb_streams - 1]= video_bitstream_filters;
     video_bitstream_filters= NULL;
 
-    if(thread_count>1)
         avcodec_thread_init(st->codec, thread_count);
 
     video_enc = st->codec;
@@ -3212,7 +3210,6 @@ static void new_audio_stream(AVFormatContext *oc)
     bitstream_filters[nb_output_files][oc->nb_streams - 1]= audio_bitstream_filters;
     audio_bitstream_filters= NULL;
 
-    if(thread_count>1)
         avcodec_thread_init(st->codec, thread_count);
 
     audio_enc = st->codec;
