@@ -1373,6 +1373,8 @@ ranlib="ranlib"
 strip="strip"
 yasmexe="yasm"
 
+nm_opts='-g'
+
 # machine
 arch=$(uname -m)
 cpu="generic"
@@ -2020,6 +2022,7 @@ case $target_os in
         enabled x86 && SHFLAGS="-mimpure-text $SHFLAGS"
         network_extralibs="-lsocket -lnsl"
         add_cppflags -D__EXTENSIONS__
+        nm_opts='-P -g'
         ;;
     netbsd)
         oss_indev_extralibs="-lossaudio"
@@ -2225,7 +2228,7 @@ enabled pic && enable_pic
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
 EOF
-sym=$($nm -g $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
+sym=$($nm $nm_opts $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
 extern_prefix=${sym%%ff_extern*}
 
 check_cc <<EOF && enable inline_asm
