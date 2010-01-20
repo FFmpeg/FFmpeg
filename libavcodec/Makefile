@@ -3,7 +3,7 @@ include $(SUBDIR)../config.mak
 NAME = avcodec
 FFLIBS = avutil
 
-HEADERS = avcodec.h opt.h vaapi.h vdpau.h xvmc.h
+HEADERS = avcodec.h dxva2.h opt.h vaapi.h vdpau.h xvmc.h
 
 OBJS = allcodecs.o                                                      \
        audioconvert.o                                                   \
@@ -135,6 +135,7 @@ OBJS-$(CONFIG_H263_ENCODER)            += mpegvideo_enc.o mpeg4video.o mpeg4vide
 OBJS-$(CONFIG_H264_DECODER)            += h264.o h264idct.o h264pred.o h264_loopfilter.o h264_direct.o cabac.o \
                                           h264_sei.o h264_ps.o h264_refs.o h264_cavlc.o h264_cabac.o\
                                           mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_H264_DXVA2_HWACCEL)      += dxva2_h264.o
 OBJS-$(CONFIG_H264_ENCODER)            += h264enc.o h264dspenc.o
 OBJS-$(CONFIG_H264_VAAPI_HWACCEL)      += vaapi_h264.o
 OBJS-$(CONFIG_HUFFYUV_DECODER)         += huffyuv.o

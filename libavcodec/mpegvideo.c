@@ -81,6 +81,7 @@ const enum PixelFormat ff_pixfmt_list_420[] = {
 };
 
 const enum PixelFormat ff_hwaccel_pixfmt_list_420[] = {
+    PIX_FMT_DXVA2_VLD,
     PIX_FMT_VAAPI_VLD,
     PIX_FMT_YUV420P,
     PIX_FMT_NONE
