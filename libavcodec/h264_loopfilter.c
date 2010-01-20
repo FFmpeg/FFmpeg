@@ -430,7 +430,6 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
     int edge;
     const int mbm_xy = dir == 0 ? mb_xy -1 : h->top_mb_xy;
     const int mbm_type = s->current_picture.mb_type[mbm_xy];
-    int start = h->slice_table[mbm_xy] == 0xFFFF ? 1 : 0;
 
     const int edges = (mb_type & (MB_TYPE_16x16|MB_TYPE_SKIP))
                               == (MB_TYPE_16x16|MB_TYPE_SKIP) ? 1 : 4;
@@ -439,13 +438,10 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                           (mb_type & (MB_TYPE_8x16 >> dir)) ? 1 : 0;
     // how often to recheck mv-based bS when iterating along each edge
     const int mask_par0 = mb_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir));
+    int start =   h->slice_table[mbm_xy] == 0xFFFF
+               || first_vertical_edge_done
+               || (h->deblocking_filter==2 && h->slice_table[mbm_xy] != h->slice_num);
 
-    if (first_vertical_edge_done) {
-        start = 1;
-    }
-
-    if (h->deblocking_filter==2 && h->slice_table[mbm_xy] != h->slice_num)
-        start = 1;
 
     if (FRAME_MBAFF && (dir == 1) && ((mb_y&1) == 0) && start == 0
         && !IS_INTERLACED(mb_type)
