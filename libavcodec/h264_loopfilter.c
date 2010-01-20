@@ -594,18 +594,20 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         if( dir == 0 ) {
             filter_mb_edgev( h, &img_y[4*edge], linesize, bS, qp );
             if( (edge&1) == 0 ) {
-                filter_mb_edgecv( h, &img_cb[2*edge], uvlinesize, bS,
-                                  ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1);
-                filter_mb_edgecv( h, &img_cr[2*edge], uvlinesize, bS,
-                                  ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1);
+                int qp= ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
+                filter_mb_edgecv( h, &img_cb[2*edge], uvlinesize, bS, qp);
+                if(h->pps.chroma_qp_diff)
+                    qp= ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
+                filter_mb_edgecv( h, &img_cr[2*edge], uvlinesize, bS, qp);
             }
         } else {
             filter_mb_edgeh( h, &img_y[4*edge*linesize], linesize, bS, qp );
             if( (edge&1) == 0 ) {
-                filter_mb_edgech( h, &img_cb[2*edge*uvlinesize], uvlinesize, bS,
-                                  ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1);
-                filter_mb_edgech( h, &img_cr[2*edge*uvlinesize], uvlinesize, bS,
-                                  ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1);
+                int qp= ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
+                filter_mb_edgech( h, &img_cb[2*edge*uvlinesize], uvlinesize, bS, qp);
+                if(h->pps.chroma_qp_diff)
+                    qp= ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
+                filter_mb_edgech( h, &img_cr[2*edge*uvlinesize], uvlinesize, bS, qp);
             }
         }
     }
