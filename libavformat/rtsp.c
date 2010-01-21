@@ -1726,7 +1726,7 @@ static int rtsp_read_close(AVFormatContext *s)
     snprintf(cmd, sizeof(cmd),
              "TEARDOWN %s RTSP/1.0\r\n",
              s->filename);
-    rtsp_send_cmd(s, cmd, reply, NULL);
+    rtsp_send_cmd_async(s, cmd, reply, NULL);
 
     rtsp_close_streams(rt);
     url_close(rt->rtsp_hd);
