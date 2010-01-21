@@ -1589,7 +1589,7 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!rt->need_subscription) {
             if (memcmp (cache, rt->real_setup_cache,
                         sizeof(enum AVDiscard) * s->nb_streams)) {
-                av_strlcatf(cmd, sizeof(cmd),
+                snprintf(cmd, sizeof(cmd),
                             "SET_PARAMETER %s RTSP/1.0\r\n"
                             "Unsubscribe: %s\r\n",
                             s->filename, rt->last_subscription);
