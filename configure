@@ -92,7 +92,6 @@ Configuration options:
   --enable-w32threads      use Win32 threads [no]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
-  --disable-ipv6           disable IPv6 support [no]
   --disable-mpegaudio-hp   faster (but less accurate) MPEG audio decoding [no]
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
@@ -877,7 +876,6 @@ CONFIG_LIST="
     gprof
     gray
     hardcoded_tables
-    ipv6
     libdc1394
     libdirac
     libfaac
@@ -1034,6 +1032,8 @@ HAVE_LIST="
     soundcard_h
     poll_h
     struct_addrinfo
+    struct_ipv6_mreq
+    struct_sockaddr_in6
     struct_sockaddr_sa_len
     struct_sockaddr_storage
     sys_mman_h
@@ -1396,7 +1396,6 @@ enable fastdiv
 enable ffmpeg
 enable ffplay
 enable ffserver
-enable ipv6
 enable mpegaudio_hp
 enable network
 enable optimizations
@@ -2511,6 +2510,8 @@ texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
 if enabled network; then
     check_type "sys/types.h sys/socket.h" socklen_t
     check_type netdb.h "struct addrinfo"
+    check_type netinet/in.h "struct ipv6_mreq"
+    check_type netinet/in.h "struct sockaddr_in6"
     check_type "sys/types.h sys/socket.h" "struct sockaddr_storage"
     check_struct "sys/types.h sys/socket.h" "struct sockaddr" sa_len
     # Prefer arpa/inet.h over winsock2
@@ -2523,26 +2524,14 @@ if enabled network; then
             network_extralibs="-lws2_32"; }
         check_type ws2tcpip.h socklen_t
         check_type ws2tcpip.h "struct addrinfo"
+        check_type ws2tcpip.h "struct ipv6_mreq"
+        check_type ws2tcpip.h "struct sockaddr_in6"
         check_type ws2tcpip.h "struct sockaddr_storage"
         check_struct winsock2.h "struct sockaddr" sa_len
     else
         disable network
     fi
 fi
-
-enabled_all network ipv6 && check_ld <<EOF || disable ipv6
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-int main(void) {
-    struct sockaddr_storage saddr;
-    struct ipv6_mreq mreq6;
-    getaddrinfo(0,0,0,0);
-    getnameinfo(0,0,0,0,0,0,0);
-    IN6_IS_ADDR_MULTICAST((const struct in6_addr *)0);
-}
-EOF
 
 check_header linux/videodev.h
 check_header linux/videodev2.h
@@ -2752,9 +2741,6 @@ echo "postprocessing support    ${postproc-no}"
 echo "new filter support        ${avfilter-no}"
 echo "filters using lavformat   ${avfilter_lavf-no}"
 echo "network support           ${network-no}"
-if enabled network; then
-    echo "IPv6 support              ${ipv6-no}"
-fi
 echo "threading support         ${thread_type-no}"
 echo "SDL support               ${sdl-no}"
 echo "Sun medialib support      ${mlib-no}"
