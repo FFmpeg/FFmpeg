@@ -1664,6 +1664,7 @@ AVCodec name ## _decoder = {                    \
     NULL,                                       \
     adpcm_decode_frame,                         \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
+    .capabilities = CODEC_CAP_SUBFRAMES,        \
 };
 #else
 #define ADPCM_DECODER(id,name,long_name_)
