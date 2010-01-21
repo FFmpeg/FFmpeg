@@ -1590,9 +1590,9 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (memcmp (cache, rt->real_setup_cache,
                         sizeof(enum AVDiscard) * s->nb_streams)) {
                 snprintf(cmd, sizeof(cmd),
-                            "SET_PARAMETER %s RTSP/1.0\r\n"
-                            "Unsubscribe: %s\r\n",
-                            s->filename, rt->last_subscription);
+                         "SET_PARAMETER %s RTSP/1.0\r\n"
+                         "Unsubscribe: %s\r\n",
+                         s->filename, rt->last_subscription);
                 rtsp_send_cmd(s, cmd, reply, NULL);
                 if (reply->status_code != RTSP_STATUS_OK)
                     return AVERROR_INVALIDDATA;
