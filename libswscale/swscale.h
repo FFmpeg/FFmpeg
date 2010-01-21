@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBSWSCALE_VERSION_MAJOR 0
-#define LIBSWSCALE_VERSION_MINOR 8
+#define LIBSWSCALE_VERSION_MINOR 9
 #define LIBSWSCALE_VERSION_MICRO 0
 
 #define LIBSWSCALE_VERSION_INT  AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
@@ -184,8 +184,8 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
  *                  the destination image
  * @return          the height of the output slice
  */
-int sws_scale(struct SwsContext *context, const uint8_t* const srcSlice[], int srcStride[],
-              int srcSliceY, int srcSliceH, uint8_t* dst[], int dstStride[]);
+int sws_scale(struct SwsContext *context, const uint8_t* const srcSlice[], const int srcStride[],
+              int srcSliceY, int srcSliceH, uint8_t* const dst[], const int dstStride[]);
 #if LIBSWSCALE_VERSION_MAJOR < 1
 /**
  * @deprecated Use sws_scale() instead.
