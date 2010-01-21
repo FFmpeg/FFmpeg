@@ -929,9 +929,7 @@ static int rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     return 0;
 }
 
-static void rtsp_send_cmd_async(AVFormatContext *s,
-                                const char *cmd, RTSPMessageHeader *reply,
-                                unsigned char **content_ptr)
+static void rtsp_send_cmd_async(AVFormatContext *s, const char *cmd)
 {
     RTSPState *rt = s->priv_data;
     char buf[4096], buf1[1024];
@@ -960,7 +958,7 @@ static void rtsp_send_cmd(AVFormatContext *s,
                           const char *cmd, RTSPMessageHeader *reply,
                           unsigned char **content_ptr)
 {
-    rtsp_send_cmd_async(s, cmd, reply, content_ptr);
+    rtsp_send_cmd_async(s, cmd);
 
     rtsp_read_reply(s, reply, content_ptr, 0);
 }
@@ -1651,10 +1649,9 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
             snprintf(cmd, sizeof(cmd) - 1,
                      "GET_PARAMETER %s RTSP/1.0\r\n",
                      s->filename);
-            rtsp_send_cmd_async(s, cmd, reply, NULL);
+            rtsp_send_cmd_async(s, cmd);
         } else {
-            rtsp_send_cmd_async(s, "OPTIONS * RTSP/1.0\r\n",
-                                reply, NULL);
+            rtsp_send_cmd_async(s, "OPTIONS * RTSP/1.0\r\n");
         }
     }
 
@@ -1714,7 +1711,6 @@ static int rtsp_read_seek(AVFormatContext *s, int stream_index,
 static int rtsp_read_close(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
-    RTSPMessageHeader reply1, *reply = &reply1;
     char cmd[1024];
 
 #if 0
@@ -1726,7 +1722,7 @@ static int rtsp_read_close(AVFormatContext *s)
     snprintf(cmd, sizeof(cmd),
              "TEARDOWN %s RTSP/1.0\r\n",
              s->filename);
-    rtsp_send_cmd_async(s, cmd, reply, NULL);
+    rtsp_send_cmd_async(s, cmd);
 
     rtsp_close_streams(rt);
     url_close(rt->rtsp_hd);
