@@ -619,6 +619,14 @@ typedef struct RcOverride{
 #define CODEC_CAP_HWACCEL_VDPAU    0x0080
 /**
  * Codec can output multiple frames per AVPacket
+ * Normally demuxers return one frame at a time, demuxers which do not do
+ * are connected to a parser to split what they return into proper frames.
+ * This flag is reserved to the very rare category of codecs which have a
+ * bitstream that cannot be split into frames without timeconsuming
+ * operations like full decoding. Demuxers carring such bitstreams thus
+ * may return multiple frames in a packet. This has many disadvantages like
+ * prohibiting stream copy in many cases thus it should only be considered
+ * as a last resort.
  */
 #define CODEC_CAP_SUBFRAMES        0x0100
 
