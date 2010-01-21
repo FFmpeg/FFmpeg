@@ -75,6 +75,11 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
     c->bit_rate = 64000;
     c->sample_rate = 44100;
     c->channels = 2;
+
+    // some formats want stream headers to be separate
+    if(oc->oformat->flags & AVFMT_GLOBALHEADER)
+        c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
     return st;
 }
 
@@ -156,7 +161,7 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 
     pkt.size= avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
 
-    if (c->coded_frame->pts != AV_NOPTS_VALUE)
+    if (c->coded_frame && c->coded_frame->pts != AV_NOPTS_VALUE)
         pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
     pkt.flags |= PKT_FLAG_KEY;
     pkt.stream_index= st->index;
