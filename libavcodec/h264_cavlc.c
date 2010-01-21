@@ -936,15 +936,15 @@ decode_intra_mb:
 
         dquant= get_se_golomb(&s->gb);
 
-        if( dquant > 25 || dquant < -26 ){
-            av_log(h->s.avctx, AV_LOG_ERROR, "dquant out of range (%d) at %d %d\n", dquant, s->mb_x, s->mb_y);
-            return -1;
-        }
-
         s->qscale += dquant;
+
         if(((unsigned)s->qscale) > 51){
             if(s->qscale<0) s->qscale+= 52;
             else            s->qscale-= 52;
+            if(((unsigned)s->qscale) > 51){
+                av_log(h->s.avctx, AV_LOG_ERROR, "dquant out of range (%d) at %d %d\n", dquant, s->mb_x, s->mb_y);
+                return -1;
+            }
         }
 
         h->chroma_qp[0]= get_chroma_qp(h, 0, s->qscale);
