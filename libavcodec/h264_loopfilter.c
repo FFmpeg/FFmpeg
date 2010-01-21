@@ -434,8 +434,9 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
     const int edges = (mb_type & (MB_TYPE_16x16|MB_TYPE_SKIP))
                               == (MB_TYPE_16x16|MB_TYPE_SKIP) ? 1 : 4;
     // how often to recheck mv-based bS when iterating between edges
-    const int mask_edge = (mb_type & (MB_TYPE_16x16 | (MB_TYPE_16x8 << dir))) ? 3 :
-                          (mb_type & (MB_TYPE_8x16 >> dir)) ? 1 : 0;
+    static const uint8_t mask_edge_tab[2][8]={{0,3,3,3,1,1,1,1},
+                                              {0,3,1,1,3,3,3,3}};
+    const int mask_edge = mask_edge_tab[dir][(mb_type>>3)&7];
     // how often to recheck mv-based bS when iterating along each edge
     const int mask_par0 = mb_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir));
     int start =   h->slice_table[mbm_xy] == 0xFFFF
