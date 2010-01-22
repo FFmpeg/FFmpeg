@@ -251,11 +251,11 @@ DECLARE_ASM_CONST(8, uint64_t, bm00000111)=0x0000000000FFFFFFLL;
 DECLARE_ASM_CONST(8, uint64_t, bm11111000)=0xFFFFFFFFFF000000LL;
 DECLARE_ASM_CONST(8, uint64_t, bm01010101)=0x00FF00FF00FF00FFLL;
 
-const DECLARE_ALIGNED(8, uint64_t, ff_dither4[2]) = {
+const DECLARE_ALIGNED(8, uint64_t, ff_dither4)[2] = {
         0x0103010301030103LL,
         0x0200020002000200LL,};
 
-const DECLARE_ALIGNED(8, uint64_t, ff_dither8[2]) = {
+const DECLARE_ALIGNED(8, uint64_t, ff_dither8)[2] = {
         0x0602060206020602LL,
         0x0004000400040004LL,};
 
@@ -289,7 +289,7 @@ DECLARE_ASM_CONST(8, uint64_t, ff_rgb24toY1Coeff) = 0x20DE0000408720DEULL;
 DECLARE_ASM_CONST(8, uint64_t, ff_rgb24toY2Coeff) = 0x0C88408700000C88ULL;
 DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toYOffset) = 0x0008400000084000ULL;
 
-DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toUV[2][4]) = {
+DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toUV)[2][4] = {
     {0x38380000DAC83838ULL, 0xECFFDAC80000ECFFULL, 0xF6E40000D0E3F6E4ULL, 0x3838D0E300003838ULL},
     {0xECFF0000DAC8ECFFULL, 0x3838DAC800003838ULL, 0x38380000D0E33838ULL, 0xF6E4D0E30000F6E4ULL},
 };
@@ -298,17 +298,17 @@ DECLARE_ASM_CONST(8, uint64_t, ff_bgr24toUVOffset)= 0x0040400000404000ULL;
 
 #endif /* ARCH_X86 && CONFIG_GPL */
 
-DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_4[2][8])={
+DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_4)[2][8]={
 {  1,   3,   1,   3,   1,   3,   1,   3, },
 {  2,   0,   2,   0,   2,   0,   2,   0, },
 };
 
-DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_8[2][8])={
+DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_8)[2][8]={
 {  6,   2,   6,   2,   6,   2,   6,   2, },
 {  0,   4,   0,   4,   0,   4,   0,   4, },
 };
 
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_32[8][8])={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_32)[8][8]={
 { 17,   9,  23,  15,  16,   8,  22,  14, },
 {  5,  29,   3,  27,   4,  28,   2,  26, },
 { 21,  13,  19,  11,  20,  12,  18,  10, },
@@ -319,7 +319,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_32[8][8])={
 {  1,  25,   7,  31,   0,  24,   6,  30, },
 };
 
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_73[8][8])={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_73)[8][8]={
 {  0,  55,  14,  68,   3,  58,  17,  72, },
 { 37,  18,  50,  32,  40,  22,  54,  35, },
 {  9,  64,   5,  59,  13,  67,   8,  63, },
@@ -331,7 +331,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_73[8][8])={
 };
 
 #if 1
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[8][8]={
 {117,  62, 158, 103, 113,  58, 155, 100, },
 { 34, 199,  21, 186,  31, 196,  17, 182, },
 {144,  89, 131,  76, 141,  86, 127,  72, },
@@ -343,7 +343,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
 };
 #elif 1
 // tries to correct a gamma of 1.5
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[8][8]={
 {  0, 143,  18, 200,   2, 156,  25, 215, },
 { 78,  28, 125,  64,  89,  36, 138,  74, },
 { 10, 180,   3, 161,  16, 195,   8, 175, },
@@ -355,7 +355,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
 };
 #elif 1
 // tries to correct a gamma of 2.0
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[8][8]={
 {  0, 124,   8, 193,   0, 140,  12, 213, },
 { 55,  14, 104,  42,  66,  19, 119,  52, },
 {  3, 168,   1, 145,   6, 187,   3, 162, },
@@ -367,7 +367,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
 };
 #else
 // tries to correct a gamma of 2.5
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[8][8]={
 {  0, 107,   3, 187,   0, 125,   6, 212, },
 { 39,   7,  86,  28,  49,  11, 102,  36, },
 {  1, 158,   0, 131,   3, 180,   1, 151, },

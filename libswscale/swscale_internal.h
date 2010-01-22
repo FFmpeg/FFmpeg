@@ -245,7 +245,7 @@ typedef struct SwsContext {
 #endif
 
 #if HAVE_VIS
-    DECLARE_ALIGNED(8, uint64_t, sparc_coeffs[10]);
+    DECLARE_ALIGNED(8, uint64_t, sparc_coeffs)[10];
 #endif
 
     /* function pointers for swScale() */

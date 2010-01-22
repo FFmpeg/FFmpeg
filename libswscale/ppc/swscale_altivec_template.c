@@ -93,7 +93,7 @@ yuv2yuvX_altivec_real(const int16_t *lumFilter, int16_t **lumSrc, int lumFilterS
     const vector signed int vini = {(1 << 18), (1 << 18), (1 << 18), (1 << 18)};
     register int i, j;
     {
-        DECLARE_ALIGNED(16, int, val[dstW]);
+        DECLARE_ALIGNED(16, int, val)[dstW];
 
         for (i = 0; i < (dstW -7); i+=4) {
             vec_st(vini, i << 2, val);
@@ -141,8 +141,8 @@ yuv2yuvX_altivec_real(const int16_t *lumFilter, int16_t **lumSrc, int lumFilterS
         altivec_packIntArrayToCharArray(val, dest, dstW);
     }
     if (uDest != 0) {
-        DECLARE_ALIGNED(16, int, u[chrDstW]);
-        DECLARE_ALIGNED(16, int, v[chrDstW]);
+        DECLARE_ALIGNED(16, int, u)[chrDstW];
+        DECLARE_ALIGNED(16, int, v)[chrDstW];
 
         for (i = 0; i < (chrDstW -7); i+=4) {
             vec_st(vini, i << 2, u);
@@ -215,7 +215,7 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW,
                                        const int16_t *filterPos, int filterSize)
 {
     register int i;
-    DECLARE_ALIGNED(16, int, tempo[4]);
+    DECLARE_ALIGNED(16, int, tempo)[4];
 
     if (filterSize % 4) {
         for (i=0; i<dstW; i++) {
