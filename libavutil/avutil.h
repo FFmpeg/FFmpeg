@@ -29,6 +29,7 @@
 
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
+#define AV_PRAGMA(s) _Pragma(#s)
 
 #define AV_VERSION_INT(a, b, c) (a<<16 | b<<8 | c)
 #define AV_VERSION_DOT(a, b, c) a ##.## b ##.## c
