@@ -1783,7 +1783,11 @@ if test "$cpu" = host; then
         gcc)
             check_native(){
                 $cc $1=native -v -c -o $TMPO $TMPC >$TMPE 2>&1 || return
-                awk "/$1=/{ match(\$0, /$1=(\\w+)/, a);print a[1];exit }" $TMPE
+                sed -n "/$1=/{
+                            s/.*$1=\\([^ ]*\\).*/\\1/
+                            p
+                            q
+                        }" $TMPE
             }
             cpu=$(check_native -march || check_native -mcpu)
         ;;
