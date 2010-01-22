@@ -3514,7 +3514,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                     horizX1Filter(dstBlock-4, stride, QP);
                 else if(mode & H_DEBLOCK){
 #if HAVE_ALTIVEC
-                    DECLARE_ALIGNED(16, unsigned char, tempBlock[272]);
+                    DECLARE_ALIGNED(16, unsigned char, tempBlock)[272];
                     transpose_16x8_char_toPackedAlign_altivec(tempBlock, dstBlock - (4 + 1), stride);
 
                     const int t=vertClassify_altivec(tempBlock-48, 16, &c);

@@ -52,7 +52,7 @@ typedef struct AACEncContext {
     FFTContext mdct1024;                         ///< long (1024 samples) frame transform context
     FFTContext mdct128;                          ///< short (128 samples) frame transform context
     DSPContext  dsp;
-    DECLARE_ALIGNED_16(FFTSample, output[2048]); ///< temporary buffer for MDCT input coefficients
+    DECLARE_ALIGNED_16(FFTSample, output)[2048]; ///< temporary buffer for MDCT input coefficients
     int16_t* samples;                            ///< saved preprocessed input
 
     int samplerate_index;                        ///< MPEG-4 samplerate index
@@ -64,8 +64,8 @@ typedef struct AACEncContext {
     int cur_channel;
     int last_frame;
     float lambda;
-    DECLARE_ALIGNED_16(int,   qcoefs[96][2]);    ///< quantized coefficients
-    DECLARE_ALIGNED_16(float, scoefs[1024]);     ///< scaled coefficients
+    DECLARE_ALIGNED_16(int,   qcoefs)[96][2];    ///< quantized coefficients
+    DECLARE_ALIGNED_16(float, scoefs)[1024];     ///< scaled coefficients
 } AACEncContext;
 
 #endif /* AVCODEC_AACENC_H */

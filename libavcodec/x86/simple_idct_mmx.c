@@ -52,7 +52,7 @@
 DECLARE_ASM_CONST(8, uint64_t, wm1010)= 0xFFFF0000FFFF0000ULL;
 DECLARE_ASM_CONST(8, uint64_t, d40000)= 0x0000000000040000ULL;
 
-DECLARE_ALIGNED(8, static const int16_t, coeffs[])= {
+DECLARE_ALIGNED(8, static const int16_t, coeffs)[]= {
         1<<(ROW_SHIFT-1), 0, 1<<(ROW_SHIFT-1), 0,
 //        1<<(COL_SHIFT-1), 0, 1<<(COL_SHIFT-1), 0,
 //        0, 1<<(COL_SHIFT-1-16), 0, 1<<(COL_SHIFT-1-16),
@@ -211,7 +211,7 @@ row[7] = input[13];
 
 static inline void idct(int16_t *block)
 {
-        DECLARE_ALIGNED(8, int64_t, align_tmp[16]);
+        DECLARE_ALIGNED(8, int64_t, align_tmp)[16];
         int16_t * const temp= (int16_t*)align_tmp;
 
         __asm__ volatile(

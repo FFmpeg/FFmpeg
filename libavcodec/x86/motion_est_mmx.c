@@ -26,7 +26,7 @@
 #include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
 
-DECLARE_ASM_CONST(8, uint64_t, round_tab[3])={
+DECLARE_ASM_CONST(8, uint64_t, round_tab)[3]={
 0x0000000000000000ULL,
 0x0001000100010001ULL,
 0x0002000200020002ULL,

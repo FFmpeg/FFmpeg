@@ -23,7 +23,7 @@
 #include "libavcodec/dsputil.h"
 #include "fft.h"
 
-DECLARE_ALIGNED(16, static const int, m1m1m1m1[4]) =
+DECLARE_ALIGNED(16, static const int, m1m1m1m1)[4] =
     { 1 << 31, 1 << 31, 1 << 31, 1 << 31 };
 
 void ff_fft_dispatch_sse(FFTComplex *z, int nbits);

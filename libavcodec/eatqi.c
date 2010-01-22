@@ -40,7 +40,7 @@ typedef struct TqiContext {
     AVFrame frame;
     void *bitstream_buf;
     unsigned int bitstream_buf_size;
-    DECLARE_ALIGNED_16(DCTELEM, block[6][64]);
+    DECLARE_ALIGNED_16(DCTELEM, block)[6][64];
 } TqiContext;
 
 static av_cold int tqi_decode_init(AVCodecContext *avctx)

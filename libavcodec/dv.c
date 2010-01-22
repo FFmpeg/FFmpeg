@@ -532,9 +532,9 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     PutBitContext pb, vs_pb;
     GetBitContext gb;
     BlockInfo mb_data[5 * DV_MAX_BPM], *mb, *mb1;
-    DECLARE_ALIGNED_16(DCTELEM, sblock[5*DV_MAX_BPM][64]);
-    DECLARE_ALIGNED_16(uint8_t, mb_bit_buffer[80 + 4]); /* allow some slack */
-    DECLARE_ALIGNED_16(uint8_t, vs_bit_buffer[5 * 80 + 4]); /* allow some slack */
+    DECLARE_ALIGNED_16(DCTELEM, sblock)[5*DV_MAX_BPM][64];
+    DECLARE_ALIGNED_16(uint8_t, mb_bit_buffer)[80 + 4]; /* allow some slack */
+    DECLARE_ALIGNED_16(uint8_t, vs_bit_buffer)[5 * 80 + 4]; /* allow some slack */
     const int log2_blocksize = 3-s->avctx->lowres;
     int is_field_mode[5];
 
@@ -833,7 +833,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
 {
     const int *weight;
     const uint8_t* zigzag_scan;
-    DECLARE_ALIGNED_16(DCTELEM, blk[64]);
+    DECLARE_ALIGNED_16(DCTELEM, blk)[64];
     int i, area;
     /* We offer two different methods for class number assignment: the
        method suggested in SMPTE 314M Table 22, and an improved

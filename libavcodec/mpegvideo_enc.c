@@ -3311,7 +3311,7 @@ static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
                         DCTELEM *block, int16_t *weight, DCTELEM *orig,
                         int n, int qscale){
     int16_t rem[64];
-    DECLARE_ALIGNED_16(DCTELEM, d1[64]);
+    DECLARE_ALIGNED_16(DCTELEM, d1)[64];
     const uint8_t *scantable= s->intra_scantable.scantable;
     const uint8_t *perm_scantable= s->intra_scantable.permutated;
 //    unsigned int threshold1, threshold2;

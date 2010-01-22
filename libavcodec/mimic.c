@@ -45,7 +45,7 @@ typedef struct {
     AVFrame         buf_ptrs    [16];
     AVPicture       flipped_ptrs[16];
 
-    DECLARE_ALIGNED_16(DCTELEM, dct_block[64]);
+    DECLARE_ALIGNED_16(DCTELEM, dct_block)[64];
 
     GetBitContext   gb;
     ScanTable       scantable;

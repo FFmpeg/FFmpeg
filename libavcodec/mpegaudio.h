@@ -132,9 +132,9 @@ typedef struct MPADecodeContext {
     uint32_t free_format_next_header;
     GetBitContext gb;
     GetBitContext in_gb;
-    DECLARE_ALIGNED_16(MPA_INT, synth_buf[MPA_MAX_CHANNELS][512 * 2]);
+    DECLARE_ALIGNED_16(MPA_INT, synth_buf)[MPA_MAX_CHANNELS][512 * 2];
     int synth_buf_offset[MPA_MAX_CHANNELS];
-    DECLARE_ALIGNED_16(int32_t, sb_samples[MPA_MAX_CHANNELS][36][SBLIMIT]);
+    DECLARE_ALIGNED_16(int32_t, sb_samples)[MPA_MAX_CHANNELS][36][SBLIMIT];
     int32_t mdct_buf[MPA_MAX_CHANNELS][SBLIMIT * 18]; /* previous samples, for layer 3 MDCT */
     GranuleDef granules[2][2]; /* Used in Layer 3 */
 #ifdef DEBUG

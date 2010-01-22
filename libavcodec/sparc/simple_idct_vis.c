@@ -24,7 +24,7 @@
 
 #include "libavcodec/dsputil.h"
 
-static const DECLARE_ALIGNED_8(int16_t, coeffs[28]) = {
+static const DECLARE_ALIGNED_8(int16_t, coeffs)[28] = {
     - 1259,- 1259,- 1259,- 1259,
     - 4989,- 4989,- 4989,- 4989,
     -11045,-11045,-11045,-11045,
@@ -33,13 +33,13 @@ static const DECLARE_ALIGNED_8(int16_t, coeffs[28]) = {
      25080, 25080, 25080, 25080,
      12785, 12785, 12785, 12785
 };
-static const DECLARE_ALIGNED_8(uint16_t, scale[4]) = {
+static const DECLARE_ALIGNED_8(uint16_t, scale)[4] = {
     65536>>6, 65536>>6, 65536>>6, 65536>>6
 };
-static const DECLARE_ALIGNED_8(uint16_t, rounder[4]) = {
+static const DECLARE_ALIGNED_8(uint16_t, rounder)[4] = {
     1<<5, 1<<5, 1<<5, 1<<5
 };
-static const DECLARE_ALIGNED_8(uint16_t, expand[4]) = {
+static const DECLARE_ALIGNED_8(uint16_t, expand)[4] = {
     1<<14, 1<<14, 1<<14, 1<<14
 };
 
@@ -386,7 +386,7 @@ static const DECLARE_ALIGNED_8(uint16_t, expand[4]) = {
 
 void ff_simple_idct_vis(DCTELEM *data) {
     int out1, out2, out3, out4;
-    DECLARE_ALIGNED_8(int16_t, temp[8*8]);
+    DECLARE_ALIGNED_8(int16_t, temp)[8*8];
 
     __asm__ volatile(
         INIT_IDCT

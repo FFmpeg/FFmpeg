@@ -46,7 +46,7 @@ typedef struct MadContext {
     AVFrame last_frame;
     void *bitstream_buf;
     unsigned int bitstream_buf_size;
-    DECLARE_ALIGNED_16(DCTELEM, block[64]);
+    DECLARE_ALIGNED_16(DCTELEM, block)[64];
 } MadContext;
 
 static void bswap16_buf(uint16_t *dst, const uint16_t *src, int count)

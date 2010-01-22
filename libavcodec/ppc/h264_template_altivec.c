@@ -78,7 +78,7 @@
 void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src,
                                     int stride, int h, int x, int y) {
   POWERPC_PERF_DECLARE(PREFIX_h264_chroma_mc8_num, 1);
-    DECLARE_ALIGNED_16(signed int, ABCD[4]) =
+    DECLARE_ALIGNED_16(signed int, ABCD)[4] =
                         {((8 - x) * (8 - y)),
                          ((    x) * (8 - y)),
                          ((8 - x) * (    y)),
@@ -208,7 +208,7 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src,
 
 /* this code assume that stride % 16 == 0 */
 void PREFIX_no_rnd_vc1_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, int h, int x, int y) {
-   DECLARE_ALIGNED_16(signed int, ABCD[4]) =
+   DECLARE_ALIGNED_16(signed int, ABCD)[4] =
                         {((8 - x) * (8 - y)),
                          ((    x) * (8 - y)),
                          ((8 - x) * (    y)),

@@ -79,7 +79,7 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc00_ ## CODETYPE (uint8_t *dst, uin
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc10_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){ \
-    DECLARE_ALIGNED_16(uint8_t, half[SIZE*SIZE]);\
+    DECLARE_ALIGNED_16(uint8_t, half)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src, half, stride, stride, SIZE);\
 }\
@@ -89,13 +89,13 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc20_ ## CODETYPE(uint8_t *dst, uint
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc30_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, half[SIZE*SIZE]);\
+    DECLARE_ALIGNED_16(uint8_t, half)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src+1, half, stride, stride, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc01_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, half[SIZE*SIZE]);\
+    DECLARE_ALIGNED_16(uint8_t, half)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src, half, stride, stride, SIZE);\
 }\
@@ -105,79 +105,79 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc02_ ## CODETYPE(uint8_t *dst, uint
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc03_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, half[SIZE*SIZE]);\
+    DECLARE_ALIGNED_16(uint8_t, half)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(half, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, src+stride, half, stride, stride, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc11_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, halfH[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(uint8_t, halfV[SIZE*SIZE]);\
+    DECLARE_ALIGNED_16(uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(uint8_t, halfV)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src, SIZE, stride);\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc31_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, halfH[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(uint8_t, halfV[SIZE*SIZE]);\
+    DECLARE_ALIGNED_16(uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(uint8_t, halfV)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src, SIZE, stride);\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src+1, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc13_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, halfH[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(uint8_t, halfV[SIZE*SIZE]);\
+    DECLARE_ALIGNED_16(uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(uint8_t, halfV)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src + stride, SIZE, stride);\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc33_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, halfH[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(uint8_t, halfV[SIZE*SIZE]);\
+    DECLARE_ALIGNED_16(uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(uint8_t, halfV)[SIZE*SIZE];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src + stride, SIZE, stride);\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src+1, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfV, stride, SIZE, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc22_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(int16_t, tmp[SIZE*(SIZE+8)]);\
+    DECLARE_ALIGNED_16(int16_t, tmp)[SIZE*(SIZE+8)];\
     OPNAME ## h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(dst, tmp, src, stride, SIZE, stride);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc21_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, halfH[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(uint8_t, halfHV[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(int16_t, tmp[SIZE*(SIZE+8)]);\
+    DECLARE_ALIGNED_16(uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(uint8_t, halfHV)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(int16_t, tmp)[SIZE*(SIZE+8)];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src, SIZE, stride);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfHV, stride, SIZE, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc23_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, halfH[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(uint8_t, halfHV[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(int16_t, tmp[SIZE*(SIZE+8)]);\
+    DECLARE_ALIGNED_16(uint8_t, halfH)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(uint8_t, halfHV)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(int16_t, tmp)[SIZE*(SIZE+8)];\
     put_h264_qpel ## SIZE ## _h_lowpass_ ## CODETYPE(halfH, src + stride, SIZE, stride);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfH, halfHV, stride, SIZE, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc12_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, halfV[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(uint8_t, halfHV[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(int16_t, tmp[SIZE*(SIZE+8)]);\
+    DECLARE_ALIGNED_16(uint8_t, halfV)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(uint8_t, halfHV)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(int16_t, tmp)[SIZE*(SIZE+8)];\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src, SIZE, stride);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfV, halfHV, stride, SIZE, SIZE);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## CODETYPE(uint8_t *dst, uint8_t *src, int stride){\
-    DECLARE_ALIGNED_16(uint8_t, halfV[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(uint8_t, halfHV[SIZE*SIZE]);\
-    DECLARE_ALIGNED_16(int16_t, tmp[SIZE*(SIZE+8)]);\
+    DECLARE_ALIGNED_16(uint8_t, halfV)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(uint8_t, halfHV)[SIZE*SIZE];\
+    DECLARE_ALIGNED_16(int16_t, tmp)[SIZE*(SIZE+8)];\
     put_h264_qpel ## SIZE ## _v_lowpass_ ## CODETYPE(halfV, src+1, SIZE, stride);\
     put_h264_qpel ## SIZE ## _hv_lowpass_ ## CODETYPE(halfHV, tmp, src, SIZE, SIZE, stride);\
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfV, halfHV, stride, SIZE, SIZE);\
@@ -590,7 +590,7 @@ static void ff_h264_idct_add8_altivec(uint8_t **dest, const int *block_offset, D
 static inline void write16x4(uint8_t *dst, int dst_stride,
                              register vec_u8 r0, register vec_u8 r1,
                              register vec_u8 r2, register vec_u8 r3) {
-    DECLARE_ALIGNED_16(unsigned char, result[64]);
+    DECLARE_ALIGNED_16(unsigned char, result)[64];
     uint32_t *src_int = (uint32_t *)result, *dst_int = (uint32_t *)dst;
     int int_dst_stride = dst_stride/4;
 
@@ -770,7 +770,7 @@ static inline vec_u8 h264_deblock_q1(register vec_u8 p0,
 }
 
 #define h264_loop_filter_luma_altivec(p2, p1, p0, q0, q1, q2, alpha, beta, tc0) {            \
-    DECLARE_ALIGNED_16(unsigned char, temp[16]);                                             \
+    DECLARE_ALIGNED_16(unsigned char, temp)[16];                                             \
     register vec_u8 alphavec;                                                              \
     register vec_u8 betavec;                                                               \
     register vec_u8 mask;                                                                  \
@@ -850,7 +850,7 @@ void weight_h264_WxH_altivec(uint8_t *block, int stride, int log2_denom, int wei
     vec_u8 vblock;
     vec_s16 vtemp, vweight, voffset, v0, v1;
     vec_u16 vlog2_denom;
-    DECLARE_ALIGNED_16(int32_t, temp[4]);
+    DECLARE_ALIGNED_16(int32_t, temp)[4];
     LOAD_ZERO;
 
     offset <<= log2_denom;
@@ -896,7 +896,7 @@ void biweight_h264_WxH_altivec(uint8_t *dst, uint8_t *src, int stride, int log2_
     vec_u8 vsrc, vdst;
     vec_s16 vtemp, vweights, vweightd, voffset, v0, v1, v2, v3;
     vec_u16 vlog2_denom;
-    DECLARE_ALIGNED_16(int32_t, temp[4]);
+    DECLARE_ALIGNED_16(int32_t, temp)[4];
     LOAD_ZERO;
 
     offset = ((offset + 1) | 1) << log2_denom;

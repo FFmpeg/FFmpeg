@@ -34,7 +34,7 @@ void gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int str
 {
 POWERPC_PERF_DECLARE(altivec_gmc1_num, GMC1_PERF_COND);
     const DECLARE_ALIGNED_16(unsigned short, rounder_a) = rounder;
-    const DECLARE_ALIGNED_16(unsigned short, ABCD[8]) =
+    const DECLARE_ALIGNED_16(unsigned short, ABCD)[8] =
         {
             (16-x16)*(16-y16), /* A */
             (   x16)*(16-y16), /* B */

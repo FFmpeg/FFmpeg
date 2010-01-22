@@ -62,7 +62,7 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
     vector by assuming (stride % 16) == 0, unfortunately
     this is not always true.
     */
-    DECLARE_ALIGNED(16, short, data[8]) =
+    DECLARE_ALIGNED(16, short, data)[8] =
                     {
                         ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1,
                         data[0] * 2 + 1,
@@ -222,7 +222,7 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
     const vector signed int zero = vec_splat_s32(0);
     const int properStride = (stride % 16);
     const int srcAlign = ((unsigned long)src2 % 16);
-    DECLARE_ALIGNED(16, short, qp[8]) = {c->QP};
+    DECLARE_ALIGNED(16, short, qp)[8] = {c->QP};
     vector signed short vqp = vec_ld(0, qp);
     vector signed short vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9;
     vector unsigned char vbA0, av_uninit(vbA1), av_uninit(vbA2), av_uninit(vbA3), av_uninit(vbA4), av_uninit(vbA5), av_uninit(vbA6), av_uninit(vbA7), av_uninit(vbA8), vbA9;
@@ -418,7 +418,7 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
     */
     uint8_t *src2 = src + stride*3;
     const vector signed int zero = vec_splat_s32(0);
-    DECLARE_ALIGNED(16, short, qp[8]) = {8*c->QP};
+    DECLARE_ALIGNED(16, short, qp)[8] = {8*c->QP};
     vector signed short vqp = vec_splat(
                                 (vector signed short)vec_ld(0, qp), 0);
 
@@ -538,7 +538,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     src & stride :-(
     */
     uint8_t *srcCopy = src;
-    DECLARE_ALIGNED(16, uint8_t, dt[16]);
+    DECLARE_ALIGNED(16, uint8_t, dt)[16];
     const vector signed int zero = vec_splat_s32(0);
     vector unsigned char v_dt;
     dt[0] = deringThreshold;
@@ -602,7 +602,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     v_avg = vec_avg(v_min, v_max);
     }
 
-    DECLARE_ALIGNED(16, signed int, S[8]);
+    DECLARE_ALIGNED(16, signed int, S)[8];
     {
     const vector unsigned short mask1 = (vector unsigned short)
                                         {0x0001, 0x0002, 0x0004, 0x0008,
@@ -698,7 +698,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     /* I'm not sure the following is actually faster
        than straight, unvectorized C code :-( */
 
-    DECLARE_ALIGNED(16, int, tQP2[4]);
+    DECLARE_ALIGNED(16, int, tQP2)[4];
     tQP2[0]= c->QP/2 + 1;
     vector signed int vQP2 = vec_ld(0, tQP2);
     vQP2 = vec_splat(vQP2, 0);

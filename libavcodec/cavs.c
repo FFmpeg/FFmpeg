@@ -73,7 +73,7 @@ static inline int get_bs(cavs_vector *mvP, cavs_vector *mvQ, int b) {
  *
  */
 void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type) {
-    DECLARE_ALIGNED_8(uint8_t, bs[8]);
+    DECLARE_ALIGNED_8(uint8_t, bs)[8];
     int qp_avg, alpha, beta, tc;
     int i;
 

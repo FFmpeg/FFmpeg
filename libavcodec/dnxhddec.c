@@ -39,7 +39,7 @@ typedef struct {
     VLC ac_vlc, dc_vlc, run_vlc;
     int last_dc[3];
     DSPContext dsp;
-    DECLARE_ALIGNED_16(DCTELEM, blocks[8][64]);
+    DECLARE_ALIGNED_16(DCTELEM, blocks)[8][64];
     ScanTable scantable;
     const CIDEntry *cid_table;
 } DNXHDContext;

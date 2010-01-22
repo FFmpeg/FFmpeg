@@ -122,7 +122,7 @@ typedef struct {
 } FFTCoefficient;
 
 typedef struct {
-    DECLARE_ALIGNED_16(QDM2Complex, complex[MPA_MAX_CHANNELS][256]);
+    DECLARE_ALIGNED_16(QDM2Complex, complex)[MPA_MAX_CHANNELS][256];
 } QDM2FFT;
 
 /**
@@ -172,9 +172,9 @@ typedef struct {
     float output_buffer[1024];
 
     /// Synthesis filter
-    DECLARE_ALIGNED_16(MPA_INT, synth_buf[MPA_MAX_CHANNELS][512*2]);
+    DECLARE_ALIGNED_16(MPA_INT, synth_buf)[MPA_MAX_CHANNELS][512*2];
     int synth_buf_offset[MPA_MAX_CHANNELS];
-    DECLARE_ALIGNED_16(int32_t, sb_samples[MPA_MAX_CHANNELS][128][SBLIMIT]);
+    DECLARE_ALIGNED_16(int32_t, sb_samples)[MPA_MAX_CHANNELS][128][SBLIMIT];
 
     /// Mixed temporary data used in decoding
     float tone_level[MPA_MAX_CHANNELS][30][64];

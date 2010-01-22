@@ -55,7 +55,7 @@ typedef struct DNXHDEncContext {
     int interlaced;
     int cur_field;
 
-    DECLARE_ALIGNED_16(DCTELEM, blocks[8][64]);
+    DECLARE_ALIGNED_16(DCTELEM, blocks)[8][64];
 
     int      (*qmatrix_c)     [64];
     int      (*qmatrix_l)     [64];

@@ -226,7 +226,7 @@ float_to_int16_interleave_altivec(int16_t *dst, const float **src,
             dst+=8;
         }
     } else {
-        DECLARE_ALIGNED(16, int16_t, tmp[len]);
+        DECLARE_ALIGNED(16, int16_t, tmp)[len];
         int c, j;
         for (c = 0; c < channels; c++) {
             float_to_int16_altivec(tmp, src[c], len);

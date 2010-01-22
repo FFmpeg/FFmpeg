@@ -32,8 +32,8 @@
 
 #include <stdint.h>
 
-DECLARE_ALIGNED(16, float,  ff_aac_kbd_long_1024[1024]);
-DECLARE_ALIGNED(16, float,  ff_aac_kbd_short_128[128]);
+DECLARE_ALIGNED(16, float,  ff_aac_kbd_long_1024)[1024];
+DECLARE_ALIGNED(16, float,  ff_aac_kbd_short_128)[128];
 
 const uint8_t ff_aac_num_swb_1024[] = {
     41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40, 40
@@ -409,7 +409,7 @@ const uint16_t ff_aac_spectral_sizes[11] = {
  * 64.0f is a special value indicating the existence of an escape code in the
  * bitstream.
  */
-static const DECLARE_ALIGNED_16(float, codebook_vector0[324]) = {
+static const DECLARE_ALIGNED_16(float, codebook_vector0)[324] = {
  -1.0000000, -1.0000000, -1.0000000, -1.0000000,
  -1.0000000, -1.0000000, -1.0000000,  0.0000000,
  -1.0000000, -1.0000000, -1.0000000,  1.0000000,
@@ -493,7 +493,7 @@ static const DECLARE_ALIGNED_16(float, codebook_vector0[324]) = {
   1.0000000,  1.0000000,  1.0000000,  1.0000000,
 };
 
-static const DECLARE_ALIGNED_16(float, codebook_vector2[324]) = {
+static const DECLARE_ALIGNED_16(float, codebook_vector2)[324] = {
   0.0000000,  0.0000000,  0.0000000,  0.0000000,
   0.0000000,  0.0000000,  0.0000000,  1.0000000,
   0.0000000,  0.0000000,  0.0000000,  2.5198421,
@@ -577,7 +577,7 @@ static const DECLARE_ALIGNED_16(float, codebook_vector2[324]) = {
   2.5198421,  2.5198421,  2.5198421,  2.5198421,
 };
 
-static const DECLARE_ALIGNED_16(float, codebook_vector4[162]) = {
+static const DECLARE_ALIGNED_16(float, codebook_vector4)[162] = {
  -6.3496042, -6.3496042, -6.3496042, -4.3267487,
  -6.3496042, -2.5198421, -6.3496042, -1.0000000,
  -6.3496042,  0.0000000, -6.3496042,  1.0000000,
@@ -621,7 +621,7 @@ static const DECLARE_ALIGNED_16(float, codebook_vector4[162]) = {
   6.3496042,  6.3496042,
 };
 
-static const DECLARE_ALIGNED_16(float, codebook_vector6[128]) = {
+static const DECLARE_ALIGNED_16(float, codebook_vector6)[128] = {
   0.0000000,  0.0000000,  0.0000000,  1.0000000,
   0.0000000,  2.5198421,  0.0000000,  4.3267487,
   0.0000000,  6.3496042,  0.0000000,  8.5498797,
@@ -656,7 +656,7 @@ static const DECLARE_ALIGNED_16(float, codebook_vector6[128]) = {
  13.3905183, 10.9027236, 13.3905183, 13.3905183,
 };
 
-static const DECLARE_ALIGNED_16(float, codebook_vector8[338]) = {
+static const DECLARE_ALIGNED_16(float, codebook_vector8)[338] = {
   0.0000000,  0.0000000,  0.0000000,  1.0000000,
   0.0000000,  2.5198421,  0.0000000,  4.3267487,
   0.0000000,  6.3496042,  0.0000000,  8.5498797,
@@ -744,7 +744,7 @@ static const DECLARE_ALIGNED_16(float, codebook_vector8[338]) = {
  27.4731418, 27.4731418,
 };
 
-static const DECLARE_ALIGNED_16(float, codebook_vector10[578]) = {
+static const DECLARE_ALIGNED_16(float, codebook_vector10)[578] = {
   0.0000000,  0.0000000,  0.0000000,  1.0000000,
   0.0000000,  2.5198421,  0.0000000,  4.3267487,
   0.0000000,  6.3496042,  0.0000000,  8.5498797,

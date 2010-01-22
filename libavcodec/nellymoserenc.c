@@ -53,9 +53,9 @@ typedef struct NellyMoserEncodeContext {
     int             have_saved;
     DSPContext      dsp;
     FFTContext      mdct_ctx;
-    DECLARE_ALIGNED_16(float, mdct_out[NELLY_SAMPLES]);
-    DECLARE_ALIGNED_16(float, in_buff[NELLY_SAMPLES]);
-    DECLARE_ALIGNED_16(float, buf[2][3 * NELLY_BUF_LEN]);     ///< sample buffer
+    DECLARE_ALIGNED_16(float, mdct_out)[NELLY_SAMPLES];
+    DECLARE_ALIGNED_16(float, in_buff)[NELLY_SAMPLES];
+    DECLARE_ALIGNED_16(float, buf)[2][3 * NELLY_BUF_LEN];     ///< sample buffer
     float           (*opt )[NELLY_BANDS];
     uint8_t         (*path)[NELLY_BANDS];
 } NellyMoserEncodeContext;

@@ -142,7 +142,7 @@ typedef struct {
     int*     scale_factors;                           ///< pointer to the scale factor values used for decoding
     uint8_t  table_idx;                               ///< index in sf_offsets for the scale factor reference block
     float*   coeffs;                                  ///< pointer to the subframe decode buffer
-    DECLARE_ALIGNED_16(float, out[WMAPRO_BLOCK_MAX_SIZE + WMAPRO_BLOCK_MAX_SIZE / 2]); ///< output buffer
+    DECLARE_ALIGNED_16(float, out)[WMAPRO_BLOCK_MAX_SIZE + WMAPRO_BLOCK_MAX_SIZE / 2]; ///< output buffer
 } WMAProChannelCtx;
 
 /**
@@ -167,7 +167,7 @@ typedef struct WMAProDecodeCtx {
                       FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
     FFTContext       mdct_ctx[WMAPRO_BLOCK_SIZES];  ///< MDCT context per block size
-    DECLARE_ALIGNED_16(float, tmp[WMAPRO_BLOCK_MAX_SIZE]); ///< IMDCT output buffer
+    DECLARE_ALIGNED_16(float, tmp)[WMAPRO_BLOCK_MAX_SIZE]; ///< IMDCT output buffer
     float*           windows[WMAPRO_BLOCK_SIZES];   ///< windows for the different block sizes
 
     /* frame size dependent frame information (set during initialization) */

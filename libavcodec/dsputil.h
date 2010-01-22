@@ -178,7 +178,7 @@ typedef struct ScanTable{
     uint8_t raster_end[64];
 #if ARCH_PPC
                 /** Used by dct_quantize_altivec to find last-non-zero */
-    DECLARE_ALIGNED(16, uint8_t, inverse[64]);
+    DECLARE_ALIGNED(16, uint8_t, inverse)[64];
 #endif
 } ScanTable;
 
@@ -656,8 +656,8 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
-#define DECLARE_ALIGNED_16(t, v) DECLARE_ALIGNED(16, t, v)
-#define DECLARE_ALIGNED_8(t, v)  DECLARE_ALIGNED(8, t, v)
+#define DECLARE_ALIGNED_16(t, v, ...) DECLARE_ALIGNED(16, t, v)
+#define DECLARE_ALIGNED_8(t, v, ...)  DECLARE_ALIGNED(8, t, v)
 
 #if HAVE_MMX
 
@@ -749,11 +749,11 @@ typedef struct FFTContext {
 #endif
 
 #define COSTABLE(size) \
-    COSTABLE_CONST DECLARE_ALIGNED_16(FFTSample, ff_cos_##size[size/2])
+    COSTABLE_CONST DECLARE_ALIGNED_16(FFTSample, ff_cos_##size)[size/2]
 #define SINTABLE(size) \
-    SINTABLE_CONST DECLARE_ALIGNED_16(FFTSample, ff_sin_##size[size/2])
+    SINTABLE_CONST DECLARE_ALIGNED_16(FFTSample, ff_sin_##size)[size/2]
 #define SINETABLE(size) \
-    SINETABLE_CONST DECLARE_ALIGNED_16(float, ff_sine_##size[size])
+    SINETABLE_CONST DECLARE_ALIGNED_16(float, ff_sine_##size)[size]
 extern COSTABLE(16);
 extern COSTABLE(32);
 extern COSTABLE(64);

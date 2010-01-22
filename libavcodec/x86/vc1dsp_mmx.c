@@ -442,7 +442,7 @@ static void OP ## vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride,\
             static const int shift_value[] = { 0, 5, 1, 5 };\
             int              shift = (shift_value[hmode]+shift_value[vmode])>>1;\
             int              r;\
-            DECLARE_ALIGNED_16(int16_t, tmp[12*8]);\
+            DECLARE_ALIGNED_16(int16_t, tmp)[12*8];\
 \
             r = (1<<(shift-1)) + rnd-1;\
             vc1_put_shift_ver_16bits[vmode](tmp, src-1, stride, r, shift);\

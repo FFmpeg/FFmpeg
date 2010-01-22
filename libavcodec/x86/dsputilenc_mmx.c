@@ -1063,7 +1063,7 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, const uint8_t *src1, c
 
 #define HADAMARD8_DIFF_MMX(cpu) \
 static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int stride, int h){\
-    DECLARE_ALIGNED_8(uint64_t, temp[13]);\
+    DECLARE_ALIGNED_8(uint64_t, temp)[13];\
     int sum;\
 \
     assert(h==8);\
@@ -1146,7 +1146,7 @@ WRAPPER8_16_SQ(hadamard8_diff_##cpu, hadamard8_diff16_##cpu)
 
 #define HADAMARD8_DIFF_SSE2(cpu) \
 static int hadamard8_diff_##cpu(void *s, uint8_t *src1, uint8_t *src2, int stride, int h){\
-    DECLARE_ALIGNED_16(uint64_t, temp[4]);\
+    DECLARE_ALIGNED_16(uint64_t, temp)[4];\
     int sum;\
 \
     assert(h==8);\

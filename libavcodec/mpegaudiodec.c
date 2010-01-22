@@ -95,7 +95,7 @@ static const int32_t scale_factor_mult2[3][3] = {
     SCALE_GEN(4.0 / 9.0), /* 9 steps */
 };
 
-DECLARE_ALIGNED_16(MPA_INT, ff_mpa_synth_window[512]);
+DECLARE_ALIGNED_16(MPA_INT, ff_mpa_synth_window)[512];
 
 /**
  * Convert region offsets to region sizes and truncate

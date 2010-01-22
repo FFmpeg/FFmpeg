@@ -414,7 +414,7 @@ static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg, int jobnr, i
         dnxhd_get_blocks(ctx, mb_x, mb_y);
 
         for (i = 0; i < 8; i++) {
-            DECLARE_ALIGNED_16(DCTELEM, block[64]);
+            DECLARE_ALIGNED_16(DCTELEM, block)[64];
             DCTELEM *src_block = ctx->blocks[i];
             int overflow, nbits, diff, last_index;
             int n = dnxhd_switch_matrix(ctx, i);

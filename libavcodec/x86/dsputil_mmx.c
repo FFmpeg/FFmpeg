@@ -42,7 +42,7 @@ int mm_flags; /* multimedia extension flags */
 DECLARE_ALIGNED_8 (const uint64_t, ff_bone) = 0x0101010101010101ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_wtwo) = 0x0002000200020002ULL;
 
-DECLARE_ALIGNED_16(const uint64_t, ff_pdw_80000000[2]) =
+DECLARE_ALIGNED_16(const uint64_t, ff_pdw_80000000)[2] =
 {0x8000000080000000ULL, 0x8000000080000000ULL};
 
 DECLARE_ALIGNED_8 (const uint64_t, ff_pw_3  ) = 0x0003000300030003ULL;
@@ -69,8 +69,8 @@ DECLARE_ALIGNED_8 (const uint64_t, ff_pb_81 ) = 0x8181818181818181ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_A1 ) = 0xA1A1A1A1A1A1A1A1ULL;
 DECLARE_ALIGNED_8 (const uint64_t, ff_pb_FC ) = 0xFCFCFCFCFCFCFCFCULL;
 
-DECLARE_ALIGNED_16(const double, ff_pd_1[2]) = { 1.0, 1.0 };
-DECLARE_ALIGNED_16(const double, ff_pd_2[2]) = { 2.0, 2.0 };
+DECLARE_ALIGNED_16(const double, ff_pd_1)[2] = { 1.0, 1.0 };
+DECLARE_ALIGNED_16(const double, ff_pd_2)[2] = { 2.0, 2.0 };
 
 #define JUMPALIGN() __asm__ volatile (ASMALIGN(3)::)
 #define MOVQ_ZERO(regd)  __asm__ volatile ("pxor %%" #regd ", %%" #regd ::)
@@ -277,7 +277,7 @@ void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
             :"memory");
 }
 
-DECLARE_ASM_CONST(8, uint8_t, ff_vector128[8]) =
+DECLARE_ASM_CONST(8, uint8_t, ff_vector128)[8] =
   { 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 };
 
 #define put_signed_pixels_clamped_mmx_half(off) \
@@ -754,7 +754,7 @@ static inline void transpose4x4(uint8_t *dst, uint8_t *src, int dst_stride, int 
 static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
     if(CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
     const int strength= ff_h263_loop_filter_strength[qscale];
-    DECLARE_ALIGNED(8, uint64_t, temp[4]);
+    DECLARE_ALIGNED(8, uint64_t, temp)[4];
     uint8_t *btemp= (uint8_t*)temp;
 
     src -= 2;
@@ -2026,7 +2026,7 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2], int out_c
     } else if(in_ch == 5 && out_ch == 1 && matrix_cmp[0][0]==matrix_cmp[2][0] && matrix_cmp[3][0]==matrix_cmp[4][0]) {
         MIX5(IF1,IF0);
     } else {
-        DECLARE_ALIGNED_16(float, matrix_simd[in_ch][2][4]);
+        DECLARE_ALIGNED_16(float, matrix_simd)[in_ch][2][4];
         j = 2*in_ch*sizeof(float);
         __asm__ volatile(
             "1: \n"
@@ -2413,7 +2413,7 @@ static void ff_x264_deblock_v_luma_intra_mmxext(uint8_t *pix, int stride, int al
 #define FLOAT_TO_INT16_INTERLEAVE(cpu, body) \
 /* gcc pessimizes register allocation if this is in the same function as float_to_int16_interleave_sse2*/\
 static av_noinline void float_to_int16_interleave_misc_##cpu(int16_t *dst, const float **src, long len, int channels){\
-    DECLARE_ALIGNED_16(int16_t, tmp[len]);\
+    DECLARE_ALIGNED_16(int16_t, tmp)[len];\
     int i,j,c;\
     for(c=0; c<channels; c++){\
         float_to_int16_##cpu(tmp, src[c], len);\
