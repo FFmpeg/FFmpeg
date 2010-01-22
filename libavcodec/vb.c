@@ -254,6 +254,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->frame      = av_malloc( avctx->width * avctx->height);
     c->prev_frame = av_malloc( avctx->width * avctx->height);
 
+    memset(c->pal, 0, sizeof(c->pal));
+
     return 0;
 }
 
