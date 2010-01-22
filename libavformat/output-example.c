@@ -447,10 +447,10 @@ int main(int argc, char **argv)
 
     /* auto detect the output format from the name. default is
        mpeg. */
-    fmt = guess_format(NULL, filename, NULL);
+    fmt = av_guess_format(NULL, filename, NULL);
     if (!fmt) {
         printf("Could not deduce output format from file extension: using MPEG.\n");
-        fmt = guess_format("mpeg", NULL, NULL);
+        fmt = av_guess_format("mpeg", NULL, NULL);
     }
     if (!fmt) {
         fprintf(stderr, "Could not find suitable output format\n");
