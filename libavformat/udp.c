@@ -59,7 +59,9 @@ typedef struct {
 #define UDP_TX_BUF_SIZE 32768
 #define UDP_MAX_PKT_SIZE 65536
 
-static int udp_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr) {
+static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
+                                 struct sockaddr *addr)
+{
 #ifdef IP_MULTICAST_TTL
     if (addr->sa_family == AF_INET) {
         if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_TTL, &mcastTTL, sizeof(mcastTTL)) < 0) {
@@ -79,7 +81,8 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr
     return 0;
 }
 
-static int udp_join_multicast_group(int sockfd, struct sockaddr *addr) {
+static int udp_join_multicast_group(int sockfd, struct sockaddr *addr)
+{
 #ifdef IP_ADD_MEMBERSHIP
     if (addr->sa_family == AF_INET) {
         struct ip_mreq mreq;
@@ -107,7 +110,8 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr) {
     return 0;
 }
 
-static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr) {
+static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr)
+{
 #ifdef IP_DROP_MEMBERSHIP
     if (addr->sa_family == AF_INET) {
         struct ip_mreq mreq;
@@ -135,7 +139,9 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr) {
     return 0;
 }
 
-static struct addrinfo* udp_resolve_host(const char *hostname, int port, int type, int family, int flags) {
+static struct addrinfo* udp_resolve_host(const char *hostname, int port,
+                                         int type, int family, int flags)
+{
     struct addrinfo hints, *res = 0;
     int error;
     char sport[16];
@@ -159,7 +165,9 @@ static struct addrinfo* udp_resolve_host(const char *hostname, int port, int typ
     return res;
 }
 
-static int udp_set_url(struct sockaddr_storage *addr, const char *hostname, int port) {
+static int udp_set_url(struct sockaddr_storage *addr,
+                       const char *hostname, int port)
+{
     struct addrinfo *res0;
     int addr_len;
 
@@ -186,7 +194,8 @@ static int is_multicast_address(struct sockaddr_storage *addr)
     return 0;
 }
 
-static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr, int *addr_len)
+static int udp_socket_create(UDPContext *s,
+                             struct sockaddr_storage *addr, int *addr_len)
 {
     int udp_fd = -1;
     struct addrinfo *res0 = NULL, *res = NULL;
