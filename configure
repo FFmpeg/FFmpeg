@@ -1696,6 +1696,7 @@ elif $cc -version 2>/dev/null | grep -q TMS470; then
                 -Os)            echo -O3 -mf=2                    ;;
                 -O[0-3])        echo $flag -mf=5                  ;;
                 -g)             echo -g -mn                       ;;
+                -pds=*)         echo $flag                        ;;
             esac
         done
     }
@@ -2648,6 +2649,8 @@ elif enabled clang; then
 elif enabled armcc; then
     # 2523: use of inline assembler is deprecated
     add_cflags -Wrvct,--diag_suppress=2523
+elif enabled tms470; then
+    add_cflags -pds=824 -pds=837
 fi
 
 if enabled gprof; then
