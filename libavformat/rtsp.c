@@ -437,11 +437,16 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             }
         }
         /* put a default control url */
-        av_strlcpy(rtsp_st->control_url, s->filename,
+        av_strlcpy(rtsp_st->control_url, rt->control_uri,
                    sizeof(rtsp_st->control_url));
         break;
     case 'a':
-        if (av_strstart(p, "control:", &p) && s->nb_streams > 0) {
+        if (av_strstart(p, "control:", &p)) {
+            if (s->nb_streams == 0) {
+                if (!strncmp(p, "rtsp://", 7))
+                    av_strlcpy(rt->control_uri, p,
+                               sizeof(rt->control_uri));
+            } else {
             char proto[32];
             /* get the control url */
             st = s->streams[s->nb_streams - 1];
@@ -452,6 +457,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                       NULL, NULL, 0, p);
             if (proto[0] == '\0') {
                 /* relative control URL */
+                if (rtsp_st->control_url[strlen(rtsp_st->control_url)-1]!='/')
                 av_strlcat(rtsp_st->control_url, "/",
                            sizeof(rtsp_st->control_url));
                 av_strlcat(rtsp_st->control_url, p,
@@ -459,6 +465,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             } else
                 av_strlcpy(rtsp_st->control_url, p,
                            sizeof(rtsp_st->control_url));
+            }
         } else if (av_strstart(p, "rtpmap:", &p) && s->nb_streams > 0) {
             /* NOTE: rtpmap is only supported AFTER the 'm=' tag */
             get_word(buf1, sizeof(buf1), &p);
@@ -1203,12 +1210,12 @@ static int rtsp_read_play(AVFormatContext *s)
         if (rt->state == RTSP_STATE_PAUSED) {
             snprintf(cmd, sizeof(cmd),
                      "PLAY %s RTSP/1.0\r\n",
-                     s->filename);
+                     rt->control_uri);
         } else {
             snprintf(cmd, sizeof(cmd),
                      "PLAY %s RTSP/1.0\r\n"
                      "Range: npt=%0.3f-\r\n",
-                     s->filename,
+                     rt->control_uri,
                      (double)rt->seek_timestamp / AV_TIME_BASE);
         }
         rtsp_send_cmd(s, cmd, reply, NULL);
@@ -1290,6 +1297,8 @@ redirect:
 
     /* request options supported by the server; this also detects server
      * type */
+    av_strlcpy(rt->control_uri, s->filename,
+               sizeof(rt->control_uri));
     for (rt->server_type = RTSP_SERVER_RTP;;) {
         snprintf(cmd, sizeof(cmd),
                  "OPTIONS %s RTSP/1.0\r\n", s->filename);
@@ -1590,7 +1599,7 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
                 snprintf(cmd, sizeof(cmd),
                          "SET_PARAMETER %s RTSP/1.0\r\n"
                          "Unsubscribe: %s\r\n",
-                         s->filename, rt->last_subscription);
+                         rt->control_uri, rt->last_subscription);
                 rtsp_send_cmd(s, cmd, reply, NULL);
                 if (reply->status_code != RTSP_STATUS_OK)
                     return AVERROR_INVALIDDATA;
@@ -1608,7 +1617,7 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
             snprintf(cmd, sizeof(cmd),
                      "SET_PARAMETER %s RTSP/1.0\r\n"
                      "Subscribe: ",
-                     s->filename);
+                     rt->control_uri);
             for (i = 0; i < rt->nb_rtsp_streams; i++) {
                 rule_nr = 0;
                 for (r = 0; r < s->nb_streams; r++) {
@@ -1648,7 +1657,7 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (rt->server_type == RTSP_SERVER_WMS) {
             snprintf(cmd, sizeof(cmd) - 1,
                      "GET_PARAMETER %s RTSP/1.0\r\n",
-                     s->filename);
+                     rt->control_uri);
             rtsp_send_cmd_async(s, cmd);
         } else {
             rtsp_send_cmd_async(s, "OPTIONS * RTSP/1.0\r\n");
@@ -1672,7 +1681,7 @@ static int rtsp_read_pause(AVFormatContext *s)
     else if (!(rt->server_type == RTSP_SERVER_REAL && rt->need_subscription)) {
         snprintf(cmd, sizeof(cmd),
                  "PAUSE %s RTSP/1.0\r\n",
-                 s->filename);
+                 rt->control_uri);
         rtsp_send_cmd(s, cmd, reply, NULL);
         if (reply->status_code != RTSP_STATUS_OK) {
             return -1;
