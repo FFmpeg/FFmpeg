@@ -2510,6 +2510,8 @@ void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_stride, ui
                                   int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
 
 
+float ff_scalarproduct_float_sse(const float *v1, const float *v2, int order);
+
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     mm_flags = mm_support();
@@ -2965,6 +2967,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vector_clipf = vector_clipf_sse;
             c->float_to_int16 = float_to_int16_sse;
             c->float_to_int16_interleave = float_to_int16_interleave_sse;
+#if HAVE_YASM
+            c->scalarproduct_float = ff_scalarproduct_float_sse;
+#endif
         }
         if(mm_flags & FF_MM_3DNOW)
             c->vector_fmul_add = vector_fmul_add_3dnow; // faster than sse

@@ -397,3 +397,27 @@ cglobal add_hfyu_left_prediction_sse4, 3,3,7, dst, src, w, left
 .unaligned:
     ADD_HFYU_LEFT_LOOP 0
 
+
+; float ff_scalarproduct_float_sse(const float *v1, const float *v2, int len)
+cglobal scalarproduct_float_sse, 3,3,2, v1, v2, offset
+    neg offsetq
+    shl offsetq, 2
+    sub v1q, offsetq
+    sub v2q, offsetq
+    xorps xmm0, xmm0
+    .loop:
+        movaps   xmm1, [v1q+offsetq]
+        mulps    xmm1, [v2q+offsetq]
+        addps    xmm0, xmm1
+        add      offsetq, 16
+        js       .loop
+    movhlps xmm1, xmm0
+    addps   xmm0, xmm1
+    movss   xmm1, xmm0
+    shufps  xmm0, xmm0, 1
+    addss   xmm0, xmm1
+%ifndef ARCH_X86_64
+    movd    r0m,  xmm0
+    fld     dword r0m
+%endif
+    RET
