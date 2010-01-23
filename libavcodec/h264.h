@@ -817,13 +817,11 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
 
         h->cbp= h->cbp_table[mb_xy];
 
-        topleft_type = 0;
-        topright_type = 0;
         top_type     = h->slice_table[top_xy     ] < 0xFFFF ? s->current_picture.mb_type[top_xy]     : 0;
         left_type[0] = h->slice_table[left_xy[0] ] < 0xFFFF ? s->current_picture.mb_type[left_xy[0]] : 0;
         left_type[1] = h->slice_table[left_xy[1] ] < 0xFFFF ? s->current_picture.mb_type[left_xy[1]] : 0;
 
-        if(!IS_INTRA(mb_type)){
+        {
             int list;
             for(list=0; list<h->list_count; list++){
                 int8_t *ref;
@@ -838,19 +836,13 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
                 }
 
                 ref = &s->current_picture.ref_index[list][h->mb2b8_xy[mb_xy]];
-                if(for_deblock){
+                {
                     int (*ref2frm)[64] = h->ref2frm[ h->slice_num&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
                     *(uint32_t*)&h->ref_cache[list][scan8[ 0]] =
                     *(uint32_t*)&h->ref_cache[list][scan8[ 2]] = (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101;
                     ref += h->b8_stride;
                     *(uint32_t*)&h->ref_cache[list][scan8[ 8]] =
                     *(uint32_t*)&h->ref_cache[list][scan8[10]] = (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101;
-                }else{
-                *(uint32_t*)&h->ref_cache[list][scan8[ 0]] =
-                *(uint32_t*)&h->ref_cache[list][scan8[ 2]] = (pack16to32(ref[0],ref[1])&0x00FF00FF)*0x0101;
-                ref += h->b8_stride;
-                *(uint32_t*)&h->ref_cache[list][scan8[ 8]] =
-                *(uint32_t*)&h->ref_cache[list][scan8[10]] = (pack16to32(ref[0],ref[1])&0x00FF00FF)*0x0101;
                 }
 
                 b_xy = 4*s->mb_x + 4*s->mb_y*h->b_stride;
@@ -1065,7 +1057,7 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
     if(IS_INTER(mb_type) || IS_DIRECT(mb_type)){
         int list;
         for(list=0; list<h->list_count; list++){
-            if(!USES_LIST(mb_type, list) && !IS_DIRECT(mb_type) && !h->deblocking_filter){
+            if(!for_deblock && !USES_LIST(mb_type, list) && !IS_DIRECT(mb_type)){
                 /*if(!h->mv_cache_clean[list]){
                     memset(h->mv_cache [list],  0, 8*5*2*sizeof(int16_t)); //FIXME clean only input? clean at all?
                     memset(h->ref_cache[list], PART_NOT_AVAILABLE, 8*5*sizeof(int8_t));
