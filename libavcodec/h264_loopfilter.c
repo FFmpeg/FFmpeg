@@ -491,7 +491,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         DECLARE_ALIGNED_8(int16_t, bS)[4];
         int qp;
 
-        if( (edge&1) && IS_8x8DCT(mb_type) )
+        if( IS_8x8DCT(mb_type & (edge<<24)) ) // (edge&1) && IS_8x8DCT(mb_type)
             continue;
 
         if( IS_INTRA(mb_type|mbn_type)) {
