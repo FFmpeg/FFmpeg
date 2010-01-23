@@ -37,14 +37,14 @@ struct dxva2_picture_context {
     unsigned              bitstream_size;
 };
 
-static void *get_surface(const Picture *picture)
+static void *ff_dxva2_get_surface(const Picture *picture)
 {
     return picture->data[3];
 }
-static unsigned get_surface_index(const struct dxva_context *ctx,
-                                  const Picture *picture)
+static unsigned ff_dxva2_get_surface_index(const struct dxva_context *ctx,
+                                           const Picture *picture)
 {
-    void *surface = get_surface(picture);
+    void *surface = ff_dxva2_get_surface(picture);
     unsigned i;
 
     for (i = 0; i < ctx->surface_count; i++)
@@ -72,7 +72,7 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     memset(pp, 0, sizeof(*pp));
     /* Configure current picture */
     fill_picture_entry(&pp->CurrPic,
-                       get_surface_index(ctx, current_picture),
+                       ff_dxva2_get_surface_index(ctx, current_picture),
                        s->picture_structure == PICT_BOTTOM_FIELD);
     /* Configure the set of references */
     pp->UsedForReferenceFlags  = 0;
@@ -88,7 +88,7 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
                 assert(r->long_ref);
             }
             fill_picture_entry(&pp->RefFrameList[i],
-                               get_surface_index(ctx, r),
+                               ff_dxva2_get_surface_index(ctx, r),
                                r->long_ref != 0);
 
             if ((r->reference & PICT_TOP_FIELD) && r->field_poc[0] != INT_MAX)
@@ -236,7 +236,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
                 const Picture *r = &h->ref_list[list][i];
                 unsigned plane;
                 fill_picture_entry(&slice->RefPicList[list][i],
-                                   get_surface_index(ctx, r),
+                                   ff_dxva2_get_surface_index(ctx, r),
                                    r->reference == PICT_BOTTOM_FIELD);
                 for (plane = 0; plane < 3; plane++) {
                     int w, o;
@@ -277,11 +277,11 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
     slice->slice_id = h->current_slice - 1;
 }
 
-static int commit_buffer(AVCodecContext *avctx,
-                         struct dxva_context *ctx,
-                         DXVA2_DecodeBufferDesc *dsc,
-                         unsigned type, const void *data, unsigned size,
-                         unsigned mb_count)
+static int ff_dxva2_commit_buffer(AVCodecContext *avctx,
+                                  struct dxva_context *ctx,
+                                  DXVA2_DecodeBufferDesc *dsc,
+                                  unsigned type, const void *data, unsigned size,
+                                  unsigned mb_count)
 {
     void     *dxva_data;
     unsigned dxva_size;
@@ -404,9 +404,9 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         slice_size = ctx_pic->slice_count * sizeof(*ctx_pic->slice_long);
     }
     assert((bs->DataSize & 127) == 0);
-    return commit_buffer(avctx, ctx, sc,
-                         DXVA2_SliceControlBufferType,
-                         slice_data, slice_size, mb_count);
+    return ff_dxva2_commit_buffer(avctx, ctx, sc,
+                                  DXVA2_SliceControlBufferType,
+                                  slice_data, slice_size, mb_count);
 }
 
 
@@ -478,15 +478,15 @@ static int ff_dxva2_common_end_frame(AVCodecContext *avctx, MpegEncContext *s,
     int      result;
 
     if (FAILED(IDirectXVideoDecoder_BeginFrame(ctx->decoder,
-                                               get_surface(s->current_picture_ptr),
+                                               ff_dxva2_get_surface(s->current_picture_ptr),
                                                NULL))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to begin frame\n");
         return -1;
     }
 
-    result = commit_buffer(avctx, ctx, &buffer[buffer_count],
-                           DXVA2_PictureParametersBufferType,
-                           pp, pp_size, 0);
+    result = ff_dxva2_commit_buffer(avctx, ctx, &buffer[buffer_count],
+                                    DXVA2_PictureParametersBufferType,
+                                    pp, pp_size, 0);
     if (result) {
         av_log(avctx, AV_LOG_ERROR,
                "Failed to add picture parameter buffer\n");
@@ -495,9 +495,9 @@ static int ff_dxva2_common_end_frame(AVCodecContext *avctx, MpegEncContext *s,
     buffer_count++;
 
     if (qm_size > 0) {
-        result = commit_buffer(avctx, ctx, &buffer[buffer_count],
-                               DXVA2_InverseQuantizationMatrixBufferType,
-                               qm, qm_size, 0);
+        result = ff_dxva2_commit_buffer(avctx, ctx, &buffer[buffer_count],
+                                        DXVA2_InverseQuantizationMatrixBufferType,
+                                        qm, qm_size, 0);
         if (result) {
             av_log(avctx, AV_LOG_ERROR,
                    "Failed to add inverse quantization matrix buffer\n");
