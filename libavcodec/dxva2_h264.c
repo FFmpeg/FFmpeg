@@ -313,12 +313,15 @@ static int commit_buffer(AVCodecContext *avctx,
 }
 
 static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
-                                             struct dxva_context *ctx,
-                                             struct dxva2_picture_context *ctx_pic,
                                              DXVA2_DecodeBufferDesc *bs,
-                                             DXVA2_DecodeBufferDesc *sc,
-                                             unsigned mb_count)
+                                             DXVA2_DecodeBufferDesc *sc)
 {
+    H264Context *h = avctx->priv_data;
+    MpegEncContext *s = &h->s;
+    const unsigned mb_count = s->mb_width * s->mb_height;
+    struct dxva_context *ctx = avctx->hwaccel_context;
+    const Picture *current_picture = h->s.current_picture_ptr;
+    struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     DXVA_Slice_H264_Short *slice = NULL;
     uint8_t  *dxva_data, *current, *end;
     unsigned dxva_size;
@@ -461,24 +464,21 @@ static int decode_slice(AVCodecContext *avctx,
     return 0;
 }
 
-static int end_frame(AVCodecContext *avctx)
+static int ff_dxva2_common_end_frame(AVCodecContext *avctx, MpegEncContext *s,
+                                     const void *pp, unsigned pp_size,
+                                     const void *qm, unsigned qm_size,
+                                     int (*commit_bs_si)(AVCodecContext *,
+                                                         DXVA2_DecodeBufferDesc *bs,
+                                                         DXVA2_DecodeBufferDesc *slice))
 {
-    H264Context *h = avctx->priv_data;
-    MpegEncContext *s = &h->s;
-    const unsigned mb_count = s->mb_width * s->mb_height;
     struct dxva_context *ctx = avctx->hwaccel_context;
-    const Picture *current_picture = h->s.current_picture_ptr;
-    struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     unsigned               buffer_count = 0;
     DXVA2_DecodeBufferDesc buffer[4];
     DXVA2_DecodeExecuteParams exec;
     int      result;
 
-    if (ctx_pic->slice_count <= 0 || ctx_pic->bitstream_size <= 0)
-        return -1;
-
     if (FAILED(IDirectXVideoDecoder_BeginFrame(ctx->decoder,
-                                               get_surface(current_picture),
+                                               get_surface(s->current_picture_ptr),
                                                NULL))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to begin frame\n");
         return -1;
@@ -486,7 +486,7 @@ static int end_frame(AVCodecContext *avctx)
 
     result = commit_buffer(avctx, ctx, &buffer[buffer_count],
                            DXVA2_PictureParametersBufferType,
-                           &ctx_pic->pp, sizeof(ctx_pic->pp), 0);
+                           pp, pp_size, 0);
     if (result) {
         av_log(avctx, AV_LOG_ERROR,
                "Failed to add picture parameter buffer\n");
@@ -494,20 +494,21 @@ static int end_frame(AVCodecContext *avctx)
     }
     buffer_count++;
 
+    if (qm_size > 0) {
     result = commit_buffer(avctx, ctx, &buffer[buffer_count],
                            DXVA2_InverseQuantizationMatrixBufferType,
-                           &ctx_pic->qm, sizeof(ctx_pic->qm), 0);
+                           qm, qm_size, 0);
     if (result) {
         av_log(avctx, AV_LOG_ERROR,
                "Failed to add inverse quantization matrix buffer\n");
         goto end;
     }
     buffer_count++;
+    }
 
-    result = commit_bitstream_and_slice_buffer(avctx, ctx, ctx_pic,
-                                               &buffer[buffer_count + 0],
-                                               &buffer[buffer_count + 1],
-                                               mb_count);
+    result = commit_bs_si(avctx,
+                          &buffer[buffer_count + 0],
+                          &buffer[buffer_count + 1]);
     if (result) {
         av_log(avctx, AV_LOG_ERROR,
                "Failed to add bitstream or slice control buffer\n");
@@ -517,7 +518,7 @@ static int end_frame(AVCodecContext *avctx)
 
     /* TODO Film Grain when possible */
 
-    assert(buffer_count == 4);
+    assert(buffer_count == 1 + (qm_size > 0) + 2);
 
     memset(&exec, 0, sizeof(exec));
     exec.NumCompBuffers      = buffer_count;
@@ -537,6 +538,21 @@ end:
     if (!result)
         ff_draw_horiz_band(s, 0, s->avctx->height);
     return result;
+}
+
+static int end_frame(AVCodecContext *avctx)
+{
+    H264Context *h = avctx->priv_data;
+    MpegEncContext *s = &h->s;
+    struct dxva2_picture_context *ctx_pic =
+        h->s.current_picture_ptr->hwaccel_picture_private;
+
+    if (ctx_pic->slice_count <= 0 || ctx_pic->bitstream_size <= 0)
+        return -1;
+    return ff_dxva2_common_end_frame(avctx, s,
+                                     &ctx_pic->pp, sizeof(ctx_pic->pp),
+                                     &ctx_pic->qm, sizeof(ctx_pic->qm),
+                                     commit_bitstream_and_slice_buffer);
 }
 
 AVHWAccel h264_dxva2_hwaccel = {
