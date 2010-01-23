@@ -2032,8 +2032,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
 
     h->deblocking_filter = 1;
-    h->slice_alpha_c0_offset = 0;
-    h->slice_beta_offset = 0;
+    h->slice_alpha_c0_offset = 52;
+    h->slice_beta_offset = 52;
     if( h->pps.deblocking_filter_parameters_present ) {
         tmp= get_ue_golomb_31(&s->gb);
         if(tmp > 2){
@@ -2045,8 +2045,13 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             h->deblocking_filter^= 1; // 1<->0
 
         if( h->deblocking_filter ) {
-            h->slice_alpha_c0_offset = get_se_golomb(&s->gb) << 1;
-            h->slice_beta_offset = get_se_golomb(&s->gb) << 1;
+            h->slice_alpha_c0_offset += get_se_golomb(&s->gb) << 1;
+            h->slice_beta_offset     += get_se_golomb(&s->gb) << 1;
+            if(   h->slice_alpha_c0_offset > 104U
+               || h->slice_beta_offset     > 104U){
+                av_log(s->avctx, AV_LOG_ERROR, "deblocking filter parameters %d %d out of range\n", h->slice_alpha_c0_offset, h->slice_beta_offset);
+                return -1;
+            }
         }
     }
 
@@ -2071,7 +2076,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 return 1; // deblocking switched inside frame
         }
     }
-    h->qp_thresh= 15 - FFMIN(h->slice_alpha_c0_offset, h->slice_beta_offset) - FFMAX3(0, h->pps.chroma_qp_index_offset[0], h->pps.chroma_qp_index_offset[1]);
+    h->qp_thresh= 15 + 52 - FFMIN(h->slice_alpha_c0_offset, h->slice_beta_offset) - FFMAX3(0, h->pps.chroma_qp_index_offset[0], h->pps.chroma_qp_index_offset[1]);
 
 #if 0 //FMO
     if( h->pps.num_slice_groups > 1  && h->pps.mb_slice_group_map_type >= 3 && h->pps.mb_slice_group_map_type <= 5)
@@ -2132,7 +2137,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                s->current_picture_ptr->field_poc[0], s->current_picture_ptr->field_poc[1],
                h->ref_count[0], h->ref_count[1],
                s->qscale,
-               h->deblocking_filter, h->slice_alpha_c0_offset/2, h->slice_beta_offset/2,
+               h->deblocking_filter, h->slice_alpha_c0_offset/2-26, h->slice_beta_offset/2-26,
                h->use_weight,
                h->use_weight==1 && h->use_weight_chroma ? "c" : "",
                h->slice_type == FF_B_TYPE ? (h->direct_spatial_mv_pred ? "SPAT" : "TEMP") : ""

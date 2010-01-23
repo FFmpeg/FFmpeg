@@ -100,9 +100,9 @@ static const uint8_t tc0_table[52*3][4] = {
 };
 
 static void av_noinline filter_mb_edgev( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h) {
-    const unsigned int index_a = 52 + qp + h->slice_alpha_c0_offset;
+    const unsigned int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = alpha_table[index_a];
-    const int beta  = (beta_table+52)[qp + h->slice_beta_offset];
+    const int beta  = beta_table[qp + h->slice_beta_offset];
     if (alpha ==0 || beta == 0) return;
 
     if( bS[0] < 4 ) {
@@ -117,9 +117,9 @@ static void av_noinline filter_mb_edgev( uint8_t *pix, int stride, int16_t bS[4]
     }
 }
 static void av_noinline filter_mb_edgecv( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h ) {
-    const unsigned int index_a = 52 + qp + h->slice_alpha_c0_offset;
+    const unsigned int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = alpha_table[index_a];
-    const int beta  = (beta_table+52)[qp + h->slice_beta_offset];
+    const int beta  = beta_table[qp + h->slice_beta_offset];
     if (alpha ==0 || beta == 0) return;
 
     if( bS[0] < 4 ) {
@@ -137,8 +137,8 @@ static void av_noinline filter_mb_edgecv( uint8_t *pix, int stride, int16_t bS[4
 static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int bsi, int qp ) {
     int i;
     int index_a = qp + h->slice_alpha_c0_offset;
-    int alpha = (alpha_table+52)[index_a];
-    int beta  = (beta_table+52)[qp + h->slice_beta_offset];
+    int alpha = alpha_table[index_a];
+    int beta  = beta_table[qp + h->slice_beta_offset];
     for( i = 0; i < 8; i++, pix += stride) {
         const int bS_index = (i >> 1) * bsi;
 
@@ -147,7 +147,7 @@ static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int
         }
 
         if( bS[bS_index] < 4 ) {
-            const int tc0 = (tc0_table+52)[index_a][bS[bS_index]];
+            const int tc0 = tc0_table[index_a][bS[bS_index]];
             const int p0 = pix[-1];
             const int p1 = pix[-2];
             const int p2 = pix[-3];
@@ -226,8 +226,8 @@ static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int
 static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int bsi, int qp ) {
     int i;
     int index_a = qp + h->slice_alpha_c0_offset;
-    int alpha = (alpha_table+52)[index_a];
-    int beta  = (beta_table+52)[qp + h->slice_beta_offset];
+    int alpha = alpha_table[index_a];
+    int beta  = beta_table[qp + h->slice_beta_offset];
     for( i = 0; i < 4; i++, pix += stride) {
         const int bS_index = i*bsi;
 
@@ -236,7 +236,7 @@ static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, in
         }
 
         if( bS[bS_index] < 4 ) {
-            const int tc = (tc0_table+52)[index_a][bS[bS_index]] + 1;
+            const int tc = tc0_table[index_a][bS[bS_index]] + 1;
             const int p0 = pix[-1];
             const int p1 = pix[-2];
             const int q0 = pix[0];
@@ -270,9 +270,9 @@ static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, in
 }
 
 static void av_noinline filter_mb_edgeh( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h ) {
-    const unsigned int index_a = 52 + qp + h->slice_alpha_c0_offset;
+    const unsigned int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = alpha_table[index_a];
-    const int beta  = (beta_table+52)[qp + h->slice_beta_offset];
+    const int beta  = beta_table[qp + h->slice_beta_offset];
     if (alpha ==0 || beta == 0) return;
 
     if( bS[0] < 4 ) {
@@ -288,9 +288,9 @@ static void av_noinline filter_mb_edgeh( uint8_t *pix, int stride, int16_t bS[4]
 }
 
 static void av_noinline filter_mb_edgech( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h ) {
-    const unsigned int index_a = 52 + qp + h->slice_alpha_c0_offset;
+    const unsigned int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = alpha_table[index_a];
-    const int beta  = (beta_table+52)[qp + h->slice_beta_offset];
+    const int beta  = beta_table[qp + h->slice_beta_offset];
     if (alpha ==0 || beta == 0) return;
 
     if( bS[0] < 4 ) {
@@ -332,7 +332,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
     qp1 = (qp + qp1 + 1) >> 1;
     qpc0 = (qpc + qpc0 + 1) >> 1;
     qpc1 = (qpc + qpc1 + 1) >> 1;
-    qp_thresh = 15 - h->slice_alpha_c0_offset;
+    qp_thresh = 15+52 - h->slice_alpha_c0_offset;
     if(qp <= qp_thresh && qp0 <= qp_thresh && qp1 <= qp_thresh &&
        qpc <= qp_thresh && qpc0 <= qp_thresh && qpc1 <= qp_thresh)
         return;
