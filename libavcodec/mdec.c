@@ -201,7 +201,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     p->quality= a->qscale * FF_QP2LAMBDA;
-    memset(p->qscale_table, a->qscale, p->qstride*a->mb_height);
+    memset(p->qscale_table, a->qscale, a->mb_width);
 
     *picture   = a->picture;
     *data_size = sizeof(AVPicture);
@@ -229,8 +229,8 @@ static av_cold int decode_init(AVCodecContext *avctx){
     ff_mpeg12_init_vlcs();
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, ff_zigzag_direct);
 
-    p->qstride= a->mb_width;
-    p->qscale_table= av_mallocz( p->qstride * a->mb_height);
+    p->qstride= 0;
+    p->qscale_table= av_mallocz(a->mb_width);
     avctx->pix_fmt= PIX_FMT_YUV420P;
 
     return 0;
