@@ -960,19 +960,13 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
             h->non_zero_count_cache[1+8*3]= h->non_zero_count[top_xy][1+2*8];
             h->non_zero_count_cache[2+8*3]= h->non_zero_count[top_xy][2+2*8];
         }
-    }else{
-        if(for_deblock){
-            *(uint32_t*)&h->non_zero_count_cache[4+8*0]= 0;
-        }else{
-
+    }else if(!for_deblock){
             h->non_zero_count_cache[1+8*0]=
             h->non_zero_count_cache[2+8*0]=
 
             h->non_zero_count_cache[1+8*3]=
             h->non_zero_count_cache[2+8*3]=
             *(uint32_t*)&h->non_zero_count_cache[4+8*0]= CABAC && !IS_INTRA(mb_type) ? 0 : 0x40404040;
-        }
-
     }
 
     for (i=0; i<2; i++) {
@@ -983,16 +977,11 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
                 h->non_zero_count_cache[0+8*1 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+4+2*i]];
                 h->non_zero_count_cache[0+8*4 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+5+2*i]];
             }
-        }else{
-            if(for_deblock){
-                h->non_zero_count_cache[3+8*1 + 2*8*i]=
-                h->non_zero_count_cache[3+8*2 + 2*8*i]= 0;
-            }else{
+        }else if(!for_deblock){
                 h->non_zero_count_cache[3+8*1 + 2*8*i]=
                 h->non_zero_count_cache[3+8*2 + 2*8*i]=
                 h->non_zero_count_cache[0+8*1 +   8*i]=
                 h->non_zero_count_cache[0+8*4 +   8*i]= CABAC && !IS_INTRA(mb_type) ? 0 : 64;
-            }
         }
     }
 
