@@ -1078,10 +1078,8 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
             if(USES_LIST(top_type, list)){
                 const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
                 const int b8_xy= h->mb2b8_xy[top_xy] + h->b8_stride;
-                *(uint32_t*)h->mv_cache[list][scan8[0] + 0 - 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + 0];
-                *(uint32_t*)h->mv_cache[list][scan8[0] + 1 - 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + 1];
-                *(uint32_t*)h->mv_cache[list][scan8[0] + 2 - 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + 2];
-                *(uint32_t*)h->mv_cache[list][scan8[0] + 3 - 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + 3];
+                *(uint64_t*)h->mv_cache[list][scan8[0] + 0 - 1*8]= *(uint64_t*)s->current_picture.motion_val[list][b_xy + 0];
+                *(uint64_t*)h->mv_cache[list][scan8[0] + 2 - 1*8]= *(uint64_t*)s->current_picture.motion_val[list][b_xy + 2];
                 if(for_deblock){
                     int (*ref2frm)[64] = h->ref2frm[ h->slice_table[top_xy]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
                     h->ref_cache[list][scan8[0] + 0 - 1*8]=
@@ -1095,10 +1093,8 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
                     h->ref_cache[list][scan8[0] + 3 - 1*8]= s->current_picture.ref_index[list][b8_xy + 1];
                 }
             }else{
-                *(uint32_t*)h->mv_cache [list][scan8[0] + 0 - 1*8]=
-                *(uint32_t*)h->mv_cache [list][scan8[0] + 1 - 1*8]=
-                *(uint32_t*)h->mv_cache [list][scan8[0] + 2 - 1*8]=
-                *(uint32_t*)h->mv_cache [list][scan8[0] + 3 - 1*8]= 0;
+                *(uint64_t*)h->mv_cache [list][scan8[0] + 0 - 1*8]=
+                *(uint64_t*)h->mv_cache [list][scan8[0] + 2 - 1*8]= 0;
                 *(uint32_t*)&h->ref_cache[list][scan8[0] + 0 - 1*8]= (((for_deblock||top_type) ? LIST_NOT_USED : PART_NOT_AVAILABLE)&0xFF)*0x01010101;
             }
 
