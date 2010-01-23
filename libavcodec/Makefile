@@ -28,6 +28,7 @@ OBJS = allcodecs.o                                                      \
 OBJS-$(CONFIG_AANDCT)                  += aandcttab.o
 OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
 OBJS-$(CONFIG_DCT)                     += dct.o
+OBJS-$(CONFIG_DXVA2)                   += dxva2.o
 FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o
 OBJS-$(CONFIG_FFT)                     += fft.o $(FFT-OBJS-yes)
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
@@ -665,6 +666,7 @@ OBJS-$(HAVE_MMI)                       += ps2/dsputil_mmi.o             \
 OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
                                           sparc/simple_idct_vis.o       \
 
+SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2_internal.h
 SKIPHEADERS-$(CONFIG_LIBDIRAC)         += libdirac.h
 SKIPHEADERS-$(CONFIG_LIBSCHROEDINGER)  += libschroedinger.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
