@@ -2108,7 +2108,7 @@ case $target_os in
             enabled_any avisynth vfwcap_indev &&
                 { check_cpp_condition w32api.h "(__W32API_MAJOR_VERSION > 3) || (__W32API_MAJOR_VERSION == 3 && __W32API_MINOR_VERSION >= 13)" ||
                   die "ERROR: avisynth and vfwcap_indev require w32api version 3.13 or later."; }
-            fi
+        fi
         ;;
     cygwin*)
         target_os=cygwin
