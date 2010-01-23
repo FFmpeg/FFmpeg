@@ -562,6 +562,9 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
                 if(len<0)
                     continue;
                 goto skip;
+            } else if (state == MKBETAG('D','A','T','A')) {
+                av_log(s, AV_LOG_WARNING,
+                       "DATA tag in middle of chunk, file may be broken.\n");
             }
 
             if(state > (unsigned)0xFFFF || state <= 12)
