@@ -136,19 +136,15 @@ static void av_noinline filter_mb_edgecv( uint8_t *pix, int stride, int16_t bS[4
 
 static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int bsi, int qp ) {
     int i;
+    int index_a = qp + h->slice_alpha_c0_offset;
+    int alpha = (alpha_table+52)[index_a];
+    int beta  = (beta_table+52)[qp + h->slice_beta_offset];
     for( i = 0; i < 8; i++, pix += stride) {
-        int index_a;
-        int alpha;
-        int beta;
         const int bS_index = (i >> 1) * bsi;
 
         if( bS[bS_index] == 0 ) {
             continue;
         }
-
-        index_a = qp + h->slice_alpha_c0_offset;
-        alpha = (alpha_table+52)[index_a];
-        beta  = (beta_table+52)[qp + h->slice_beta_offset];
 
         if( bS[bS_index] < 4 ) {
             const int tc0 = (tc0_table+52)[index_a][bS[bS_index]];
@@ -166,10 +162,12 @@ static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int
                 int i_delta;
 
                 if( FFABS( p2 - p0 ) < beta ) {
+                    if(tc0)
                     pix[-2] = p1 + av_clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0, tc0 );
                     tc++;
                 }
                 if( FFABS( q2 - q0 ) < beta ) {
+                    if(tc0)
                     pix[1] = q1 + av_clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0, tc0 );
                     tc++;
                 }
@@ -227,19 +225,15 @@ static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int
 }
 static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, int16_t bS[4], int bsi, int qp ) {
     int i;
+    int index_a = qp + h->slice_alpha_c0_offset;
+    int alpha = (alpha_table+52)[index_a];
+    int beta  = (beta_table+52)[qp + h->slice_beta_offset];
     for( i = 0; i < 4; i++, pix += stride) {
-        int index_a;
-        int alpha;
-        int beta;
         const int bS_index = i*bsi;
 
         if( bS[bS_index] == 0 ) {
             continue;
         }
-
-        index_a = qp + h->slice_alpha_c0_offset;
-        alpha = (alpha_table+52)[index_a];
-        beta  = (beta_table+52)[qp + h->slice_beta_offset];
 
         if( bS[bS_index] < 4 ) {
             const int tc = (tc0_table+52)[index_a][bS[bS_index]] + 1;
