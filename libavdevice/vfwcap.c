@@ -20,8 +20,8 @@
  */
 
 #include "libavformat/avformat.h"
-#include <vfw.h>
 #include <windows.h>
+#include <vfw.h>
 
 //#define DEBUG_VFW
 
