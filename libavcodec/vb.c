@@ -43,7 +43,7 @@ typedef struct VBDecContext {
     AVFrame pic;
 
     uint8_t *frame, *prev_frame;
-    uint32_t pal[256];
+    uint32_t pal[AVPALETTE_COUNT];
     const uint8_t *stream;
 } VBDecContext;
 
