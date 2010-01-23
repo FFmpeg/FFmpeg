@@ -495,15 +495,15 @@ static int ff_dxva2_common_end_frame(AVCodecContext *avctx, MpegEncContext *s,
     buffer_count++;
 
     if (qm_size > 0) {
-    result = commit_buffer(avctx, ctx, &buffer[buffer_count],
-                           DXVA2_InverseQuantizationMatrixBufferType,
-                           qm, qm_size, 0);
-    if (result) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Failed to add inverse quantization matrix buffer\n");
-        goto end;
-    }
-    buffer_count++;
+        result = commit_buffer(avctx, ctx, &buffer[buffer_count],
+                               DXVA2_InverseQuantizationMatrixBufferType,
+                               qm, qm_size, 0);
+        if (result) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Failed to add inverse quantization matrix buffer\n");
+            goto end;
+        }
+        buffer_count++;
     }
 
     result = commit_bs_si(avctx,
