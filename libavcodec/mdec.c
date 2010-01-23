@@ -239,6 +239,8 @@ static av_cold int decode_init(AVCodecContext *avctx){
 static av_cold int decode_end(AVCodecContext *avctx){
     MDECContext * const a = avctx->priv_data;
 
+    if(a->picture.data[0])
+        avctx->release_buffer(avctx, &a->picture);
     av_freep(&a->bitstream_buffer);
     av_freep(&a->picture.qscale_table);
     a->bitstream_buffer_size=0;
