@@ -1331,7 +1331,7 @@ oss_outdev_deps_any="soundcard_h sys_soundcard_h"
 v4l_indev_deps="linux_videodev_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow"
-vfwcap_indev_extralibs="-lvfw32"
+vfwcap_indev_extralibs="-lavicap32"
 x11_grab_device_indev_deps="x11grab XShmCreateImage"
 x11_grab_device_indev_extralibs="-lX11 -lXext -lXfixes"
 
@@ -2468,7 +2468,7 @@ check_func roundf
 check_func truncf
 
 # these are off by default, so fail if requested and not available
-enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lvfw32
+enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
 enabled libdirac   && add_cflags $(pkg-config --cflags dirac) &&
                       require  libdirac libdirac_decoder/dirac_parser.h dirac_decoder_init $(pkg-config --libs dirac) &&
                       require  libdirac libdirac_encoder/dirac_encoder.h dirac_encoder_init $(pkg-config --libs dirac)
