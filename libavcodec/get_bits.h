@@ -202,7 +202,7 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 #   define GET_CACHE(name, gb)\
         ((uint32_t)name##_cache)
 
-static inline int get_bits_count(GetBitContext *s){
+static inline int get_bits_count(const GetBitContext *s){
     return s->index;
 }
 
@@ -256,7 +256,7 @@ static inline void skip_bits_long(GetBitContext *s, int n){
 #   define GET_CACHE(name, gb)\
         ((uint32_t)name##_cache)
 
-static inline int get_bits_count(GetBitContext *s){
+static inline int get_bits_count(const GetBitContext *s){
     return (s->buffer_ptr - s->buffer)*8 - 16 + s->bit_count;
 }
 
@@ -331,7 +331,7 @@ static inline void skip_bits_long(GetBitContext *s, int n){
 #   define GET_CACHE(name, gb)\
         (name##_cache0)
 
-static inline int get_bits_count(GetBitContext *s){
+static inline int get_bits_count(const GetBitContext *s){
     return ((uint8_t*)s->buffer_ptr - s->buffer)*8 - 32 + s->bit_count;
 }
 
