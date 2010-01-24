@@ -918,8 +918,6 @@ decode_intra_mb:
         GetBitContext *gb= IS_INTRA(mb_type) ? h->intra_gb_ptr : h->inter_gb_ptr;
         const uint8_t *scan, *scan8x8, *dc_scan;
 
-//        fill_non_zero_count_cache(h);
-
         if(IS_INTERLACED(mb_type)){
             scan8x8= s->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
             scan= s->qscale ? h->field_scan : h->field_scan_q0;
