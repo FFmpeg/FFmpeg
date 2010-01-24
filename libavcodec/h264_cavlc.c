@@ -408,7 +408,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 
     if(trailing_ones<total_coeff) {
         int mask, prefix;
-        int suffix_length = total_coeff > 10 && trailing_ones < 3;
+        int suffix_length = total_coeff > 10 & trailing_ones < 3;
         int bitsi= show_bits(gb, LEVEL_TAB_BITS);
         int level_code= cavlc_level_tab[suffix_length][bitsi][0];
 
