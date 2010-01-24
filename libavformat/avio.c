@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* needed for usleep() */
+#define _XOPEN_SOURCE 600
+#include <unistd.h>
 #include "libavutil/avstring.h"
 #include "libavcodec/opt.h"
 #include "os_support.h"
@@ -152,14 +155,21 @@ int url_read(URLContext *h, unsigned char *buf, int size)
 int url_read_complete(URLContext *h, unsigned char *buf, int size)
 {
     int ret, len;
+    int fast_retries = 5;
 
     len = 0;
     while (len < size) {
         ret = url_read(h, buf+len, size-len);
         if (ret == AVERROR(EAGAIN)) {
             ret = 0;
+            if (fast_retries)
+                fast_retries--;
+            else
+                usleep(1000);
         } else if (ret < 1)
             return ret < 0 ? ret : len;
+        if (ret)
+           fast_retries = FFMAX(fast_retries, 2);
         len += ret;
     }
     return len;
