@@ -904,9 +904,7 @@ decode_intra_mb:
     }
 
     if(dct8x8_allowed && (cbp&15) && !IS_INTRA(mb_type)){
-        if(get_bits1(&s->gb)){
-            mb_type |= MB_TYPE_8x8DCT;
-        }
+        mb_type |= MB_TYPE_8x8DCT*get_bits1(&s->gb);
     }
     h->cbp=
     h->cbp_table[mb_xy]= cbp;
