@@ -381,7 +381,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
             int step = IS_8x8DCT(mb_type) ? 2 : 1;
             edges = (mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
             s->dsp.h264_loop_filter_strength( bS, h->non_zero_count_cache, h->ref_cache, h->mv_cache,
-                                              (h->slice_type_nos == FF_B_TYPE), edges, step, mask_edge0, mask_edge1, FIELD_PICTURE);
+                                              h->list_count==2, edges, step, mask_edge0, mask_edge1, FIELD_PICTURE);
         }
         if( IS_INTRA(s->current_picture.mb_type[mb_xy-1]) )
             bSv[0][0] = 0x0004000400040004ULL;
@@ -513,13 +513,13 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 int bn_idx= b_idx - (dir ? 8:1);
                 int v = 0;
 
-                for( l = 0; !v && l < 1 + (h->slice_type_nos == FF_B_TYPE); l++ ) {
+                for( l = 0; !v && l < h->list_count; l++ ) {
                     v |= h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] |
                          h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
                          FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit;
                 }
 
-                if(h->slice_type_nos == FF_B_TYPE && v){
+                if(h->list_count==2 && v){
                     v=0;
                     for( l = 0; !v && l < 2; l++ ) {
                         int ln= 1-l;
@@ -548,7 +548,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 else if(!mv_done)
                 {
                     bS[i] = 0;
-                    for( l = 0; l < 1 + (h->slice_type_nos == FF_B_TYPE); l++ ) {
+                    for( l = 0; l < h->list_count; l++ ) {
                         if( h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] |
                             h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
                             FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit ) {
@@ -557,7 +557,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                         }
                     }
 
-                    if(h->slice_type_nos == FF_B_TYPE && bS[i]){
+                    if(h->list_count == 2 && bS[i]){
                         bS[i] = 0;
                         for( l = 0; l < 2; l++ ) {
                             int ln= 1-l;

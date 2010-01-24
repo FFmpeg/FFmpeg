@@ -2174,12 +2174,6 @@ static void loop_filter(H264Context *h){
                 h->slice_num= h->slice_table[mb_xy];
                 mb_type= s->current_picture.mb_type[mb_xy];
                 h->list_count= h->list_counts[mb_xy];
-                if(h->list_count==2){
-                    h->slice_type= h->slice_type_nos= FF_B_TYPE;
-                }else if(h->list_count==1){
-                    h->slice_type= h->slice_type_nos= FF_P_TYPE;
-                }else
-                    h->slice_type= h->slice_type_nos= FF_I_TYPE;
 
                 if(FRAME_MBAFF)
                     h->mb_mbaff = h->mb_field_decoding_flag = !!IS_INTERLACED(mb_type);
