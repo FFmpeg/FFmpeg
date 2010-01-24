@@ -65,12 +65,6 @@ const char *swscale_license(void)
 
 #define RET 0xC3 //near return opcode for x86
 
-#ifdef M_PI
-#define PI M_PI
-#else
-#define PI 3.14159265358979323846
-#endif
-
 #define isSupportedIn(x)    (       \
            (x)==PIX_FMT_YUV420P     \
         || (x)==PIX_FMT_YUVA420P    \
@@ -299,7 +293,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
                     double c;
 
                     if (floatd<1.0)
-                        c = cos(floatd*PI);
+                        c = cos(floatd*M_PI);
                     else
                         c=-1.0;
                     if (c<0.0)      c= -pow(-c, A);
@@ -315,10 +309,10 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
                     double p= param[0] != SWS_PARAM_DEFAULT ? param[0] : 3.0;
                     coeff = (pow(2.0, - p*floatd*floatd))*fone;
                 } else if (flags & SWS_SINC) {
-                    coeff = (d ? sin(floatd*PI)/(floatd*PI) : 1.0)*fone;
+                    coeff = (d ? sin(floatd*M_PI)/(floatd*M_PI) : 1.0)*fone;
                 } else if (flags & SWS_LANCZOS) {
                     double p= param[0] != SWS_PARAM_DEFAULT ? param[0] : 3.0;
-                    coeff = (d ? sin(floatd*PI)*sin(floatd*PI/p)/(floatd*floatd*PI*PI/p) : 1.0)*fone;
+                    coeff = (d ? sin(floatd*M_PI)*sin(floatd*M_PI/p)/(floatd*floatd*M_PI*M_PI/p) : 1.0)*fone;
                     if (floatd>p) coeff=0;
                 } else if (flags & SWS_BILINEAR) {
                     coeff= (1<<30) - d;
@@ -1287,7 +1281,7 @@ SwsVector *sws_getGaussianVec(double variance, double quality)
 
     for (i=0; i<length; i++) {
         double dist= i-middle;
-        vec->coeff[i]= exp(-dist*dist/(2*variance*variance)) / sqrt(2*variance*PI);
+        vec->coeff[i]= exp(-dist*dist/(2*variance*variance)) / sqrt(2*variance*M_PI);
     }
 
     sws_normalizeVec(vec, 1.0);
