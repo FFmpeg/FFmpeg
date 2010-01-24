@@ -460,4 +460,21 @@ extern const uint64_t ff_dither8[2];
 
 extern const AVClass sws_context_class;
 
+/**
+ * Sets c->swScale to an unscaled converter if one exists for the specific
+ * source and destination formats, bit depths, flags, etc.
+ */
+void ff_get_unscaled_swscale(SwsContext *c);
+
+/**
+ * Returns the SWS_CPU_CAPS for the optimized code compiled into swscale.
+ */
+int ff_hardcodedcpuflags(void);
+
+/**
+ * Returns function pointer to fastest main scaler path function depending
+ * on architecture and available optimizations.
+ */
+SwsFunc ff_getSwsFunc(SwsContext *c);
+
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */
