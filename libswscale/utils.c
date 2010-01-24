@@ -1183,8 +1183,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
             av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR15 converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 
         av_log(c, AV_LOG_VERBOSE, "%dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
-    }
-    if (flags & SWS_PRINT_INFO) {
         av_log(c, AV_LOG_DEBUG, "lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
                c->srcW, c->srcH, c->dstW, c->dstH, c->lumXInc, c->lumYInc);
         av_log(c, AV_LOG_DEBUG, "chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
