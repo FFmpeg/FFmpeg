@@ -939,6 +939,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
                     PUT_UTF8(codec_name[i+1], tmp, st->codec->codec_name[pos++] = tmp;)
                 }
                 st->codec->codec_name[pos] = 0;
+                /* codec_tag YV12 triggers an UV swap in rawdec.c */
+                if (!memcmp(st->codec->codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25))
+                    st->codec->codec_tag=MKTAG('I', '4', '2', '0');
             }
 
             st->codec->bits_per_coded_sample = get_be16(pb); /* depth */
