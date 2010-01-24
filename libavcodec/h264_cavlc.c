@@ -470,9 +470,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
                 level_code= (((2+level_code)>>1) ^ mask) - mask;
             }
             level[i]= level_code;
-
-            if(suffix_limit[suffix_length] + level_code > 2U*suffix_limit[suffix_length])
-                suffix_length++;
+            suffix_length+= suffix_limit[suffix_length] + level_code > 2U*suffix_limit[suffix_length];
         }
     }
 
