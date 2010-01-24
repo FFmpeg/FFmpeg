@@ -59,7 +59,9 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL (H264_VAAPI, h264_vaapi);
     REGISTER_HWACCEL (MPEG2_VAAPI, mpeg2_vaapi);
     REGISTER_HWACCEL (MPEG4_VAAPI, mpeg4_vaapi);
+    REGISTER_HWACCEL (VC1_DXVA2, vc1_dxva2);
     REGISTER_HWACCEL (VC1_VAAPI, vc1_vaapi);
+    REGISTER_HWACCEL (WMV3_DXVA2, wmv3_dxva2);
     REGISTER_HWACCEL (WMV3_VAAPI, wmv3_vaapi);
 
     /* video codecs */
