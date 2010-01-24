@@ -2147,7 +2147,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     return 0;
 }
 
-int ff_h264_get_slice_type(H264Context *h)
+int ff_h264_get_slice_type(const H264Context *h)
 {
     switch (h->slice_type) {
     case FF_P_TYPE:  return 0;
