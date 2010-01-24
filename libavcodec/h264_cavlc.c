@@ -443,9 +443,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
         }else{
             level_code += ((level_code>>31)|1) & -(trailing_ones < 3);
 
-            suffix_length = 1;
-            if(level_code + 3U > 6U)
-                suffix_length++;
+            suffix_length = 1 + (level_code + 3U > 6U);
             level[trailing_ones]= level_code;
         }
 
