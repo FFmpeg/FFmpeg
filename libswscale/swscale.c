@@ -1661,7 +1661,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
     int needsDither;
 
     needsDither= (isBGR(dstFormat) || isRGB(dstFormat))
-        &&  c->srcFormatBpp < 24
+        &&  c->dstFormatBpp < 24
         && (c->dstFormatBpp < c->srcFormatBpp || (!(isRGB(srcFormat) || isBGR(srcFormat))));
 
     /* yv12_to_nv12 */
