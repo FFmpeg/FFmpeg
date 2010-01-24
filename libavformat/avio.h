@@ -65,8 +65,20 @@ typedef struct URLPollEntry {
 
 typedef int URLInterruptCB(void);
 
+/**
+ * Creates an URLContext for accessing to the resource indicated by
+ * filename, and opens it using the URLProtocol up.
+ *
+ * @param puc pointer to the location where, in case of success, the
+ * function puts the pointer to the created URLContext
+ * @param flags flags which control how the resource indicated by filename
+ * is to be opened
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR code in case of failure
+ */
 int url_open_protocol (URLContext **puc, struct URLProtocol *up,
                        const char *filename, int flags);
+
 int url_open(URLContext **h, const char *filename, int flags);
 
 /**
