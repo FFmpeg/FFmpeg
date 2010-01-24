@@ -882,7 +882,7 @@ static inline void yuv2rgbXinC_full(SwsContext *c, const int16_t *lumFilter, con
                                     const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
 {
     int i;
-    int step= fmt_depth(c->dstFormat)/8;
+    int step= c->dstFormatBpp/8;
     int aidx= 3;
 
     switch(c->dstFormat) {
@@ -1430,10 +1430,10 @@ static int rgb2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
 {
     const enum PixelFormat srcFormat= c->srcFormat;
     const enum PixelFormat dstFormat= c->dstFormat;
-    const int srcBpp= (fmt_depth(srcFormat) + 7) >> 3;
-    const int dstBpp= (fmt_depth(dstFormat) + 7) >> 3;
-    const int srcId= fmt_depth(srcFormat) >> 2; /* 1:0, 4:1, 8:2, 15:3, 16:4, 24:6, 32:8 */
-    const int dstId= fmt_depth(dstFormat) >> 2;
+    const int srcBpp= (c->srcFormatBpp + 7) >> 3;
+    const int dstBpp= (c->dstFormatBpp + 7) >> 3;
+    const int srcId= c->srcFormatBpp >> 2; /* 1:0, 4:1, 8:2, 15:3, 16:4, 24:6, 32:8 */
+    const int dstId= c->dstFormatBpp >> 2;
     void (*conv)(const uint8_t *src, uint8_t *dst, long src_size)=NULL;
 
     /* BGR -> BGR */
@@ -1661,8 +1661,8 @@ void ff_get_unscaled_swscale(SwsContext *c)
     int needsDither;
 
     needsDither= (isBGR(dstFormat) || isRGB(dstFormat))
-        && (fmt_depth(dstFormat))<24
-        && ((fmt_depth(dstFormat))<(fmt_depth(srcFormat)) || (!(isRGB(srcFormat) || isBGR(srcFormat))));
+        &&  c->srcFormatBpp < 24
+        && (c->dstFormatBpp < c->srcFormatBpp || (!(isRGB(srcFormat) || isBGR(srcFormat))));
 
     /* yv12_to_nv12 */
     if ((srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) && (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21)) {

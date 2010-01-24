@@ -595,7 +595,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
                         || c->dstFormat==PIX_FMT_RGB4
                         || c->dstFormat==PIX_FMT_RGB4_BYTE
                         || c->dstFormat==PIX_FMT_MONOBLACK;
-    const int bpp = fmt_depth(c->dstFormat);
+    const int bpp = c->dstFormatBpp;
     uint8_t *y_table;
     uint16_t *y_table16;
     uint32_t *y_table32;

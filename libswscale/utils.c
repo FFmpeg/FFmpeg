@@ -854,6 +854,8 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
     c->flags= flags;
     c->dstFormat= dstFormat;
     c->srcFormat= srcFormat;
+    c->dstFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[dstFormat]);
+    c->srcFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[srcFormat]);
     c->vRounder= 4* 0x0001000100010001ULL;
 
     usesHFilter= usesVFilter= 0;
