@@ -2169,7 +2169,7 @@ static void loop_filter(H264Context *h){
     if(h->deblocking_filter) {
         for(mb_x= 0; mb_x<s->mb_width; mb_x++){
             for(mb_y=end_mb_y - FRAME_MBAFF; mb_y<= end_mb_y; mb_y++){
-                int list, mb_xy, mb_type, is_complex;
+                int list, mb_xy, mb_type;
                 mb_xy = h->mb_xy = mb_x + mb_y*s->mb_stride;
                 h->slice_num= h->slice_table[mb_xy];
                 mb_type= s->current_picture.mb_type[mb_xy];
@@ -2177,8 +2177,6 @@ static void loop_filter(H264Context *h){
 
                 if(FRAME_MBAFF)
                     h->mb_mbaff = h->mb_field_decoding_flag = !!IS_INTERLACED(mb_type);
-
-                is_complex = CONFIG_SMALL || h->is_complex || IS_INTRA_PCM(mb_type) || s->qscale == 0; //FIXME qscale might be wrong
 
                 s->mb_x= mb_x;
                 s->mb_y= mb_y;
@@ -2199,13 +2197,13 @@ static void loop_filter(H264Context *h){
                     linesize   = h->mb_linesize   = s->linesize;
                     uvlinesize = h->mb_uvlinesize = s->uvlinesize;
                 }
-                backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, !is_complex);
+                backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0);
                 if(fill_filter_caches(h, mb_type) < 0)
                     continue;
                 h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
                 h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
 
-                if (is_complex && FRAME_MBAFF) {
+                if (FRAME_MBAFF) {
                     ff_h264_filter_mb     (h, mb_x, mb_y, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
                 } else {
                     ff_h264_filter_mb_fast(h, mb_x, mb_y, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
