@@ -1664,110 +1664,110 @@ void ff_get_unscaled_swscale(SwsContext *c)
         && (fmt_depth(dstFormat))<24
         && ((fmt_depth(dstFormat))<(fmt_depth(srcFormat)) || (!(isRGB(srcFormat) || isBGR(srcFormat))));
 
-        /* yv12_to_nv12 */
-        if ((srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) && (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21)) {
-            c->swScale= PlanarToNV12Wrapper;
-        }
-        /* yuv2bgr */
-        if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P || srcFormat==PIX_FMT_YUVA420P) && (isBGR(dstFormat) || isRGB(dstFormat))
-            && !(flags & SWS_ACCURATE_RND) && !(dstH&1)) {
-            c->swScale= ff_yuv2rgb_get_func_ptr(c);
-        }
+    /* yv12_to_nv12 */
+    if ((srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) && (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21)) {
+        c->swScale= PlanarToNV12Wrapper;
+    }
+    /* yuv2bgr */
+    if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P || srcFormat==PIX_FMT_YUVA420P) && (isBGR(dstFormat) || isRGB(dstFormat))
+        && !(flags & SWS_ACCURATE_RND) && !(dstH&1)) {
+        c->swScale= ff_yuv2rgb_get_func_ptr(c);
+    }
 
-        if (srcFormat==PIX_FMT_YUV410P && (dstFormat==PIX_FMT_YUV420P || dstFormat==PIX_FMT_YUVA420P) && !(flags & SWS_BITEXACT)) {
-            c->swScale= yvu9toyv12Wrapper;
-        }
+    if (srcFormat==PIX_FMT_YUV410P && (dstFormat==PIX_FMT_YUV420P || dstFormat==PIX_FMT_YUVA420P) && !(flags & SWS_BITEXACT)) {
+        c->swScale= yvu9toyv12Wrapper;
+    }
 
-        /* bgr24toYV12 */
-        if (srcFormat==PIX_FMT_BGR24 && (dstFormat==PIX_FMT_YUV420P || dstFormat==PIX_FMT_YUVA420P) && !(flags & SWS_ACCURATE_RND))
-            c->swScale= bgr24toyv12Wrapper;
+    /* bgr24toYV12 */
+    if (srcFormat==PIX_FMT_BGR24 && (dstFormat==PIX_FMT_YUV420P || dstFormat==PIX_FMT_YUVA420P) && !(flags & SWS_ACCURATE_RND))
+        c->swScale= bgr24toyv12Wrapper;
 
-        /* RGB/BGR -> RGB/BGR (no dither needed forms) */
-        if (  (isBGR(srcFormat) || isRGB(srcFormat))
-           && (isBGR(dstFormat) || isRGB(dstFormat))
-           && srcFormat != PIX_FMT_BGR8      && dstFormat != PIX_FMT_BGR8
-           && srcFormat != PIX_FMT_RGB8      && dstFormat != PIX_FMT_RGB8
-           && srcFormat != PIX_FMT_BGR4      && dstFormat != PIX_FMT_BGR4
-           && srcFormat != PIX_FMT_RGB4      && dstFormat != PIX_FMT_RGB4
-           && srcFormat != PIX_FMT_BGR4_BYTE && dstFormat != PIX_FMT_BGR4_BYTE
-           && srcFormat != PIX_FMT_RGB4_BYTE && dstFormat != PIX_FMT_RGB4_BYTE
-           && srcFormat != PIX_FMT_MONOBLACK && dstFormat != PIX_FMT_MONOBLACK
-           && srcFormat != PIX_FMT_MONOWHITE && dstFormat != PIX_FMT_MONOWHITE
-                                             && dstFormat != PIX_FMT_RGB32_1
-                                             && dstFormat != PIX_FMT_BGR32_1
-           && srcFormat != PIX_FMT_RGB48LE   && dstFormat != PIX_FMT_RGB48LE
-           && srcFormat != PIX_FMT_RGB48BE   && dstFormat != PIX_FMT_RGB48BE
-           && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
-             c->swScale= rgb2rgbWrapper;
+    /* RGB/BGR -> RGB/BGR (no dither needed forms) */
+    if (  (isBGR(srcFormat) || isRGB(srcFormat))
+        && (isBGR(dstFormat) || isRGB(dstFormat))
+        && srcFormat != PIX_FMT_BGR8      && dstFormat != PIX_FMT_BGR8
+        && srcFormat != PIX_FMT_RGB8      && dstFormat != PIX_FMT_RGB8
+        && srcFormat != PIX_FMT_BGR4      && dstFormat != PIX_FMT_BGR4
+        && srcFormat != PIX_FMT_RGB4      && dstFormat != PIX_FMT_RGB4
+        && srcFormat != PIX_FMT_BGR4_BYTE && dstFormat != PIX_FMT_BGR4_BYTE
+        && srcFormat != PIX_FMT_RGB4_BYTE && dstFormat != PIX_FMT_RGB4_BYTE
+        && srcFormat != PIX_FMT_MONOBLACK && dstFormat != PIX_FMT_MONOBLACK
+        && srcFormat != PIX_FMT_MONOWHITE && dstFormat != PIX_FMT_MONOWHITE
+                                          && dstFormat != PIX_FMT_RGB32_1
+                                          && dstFormat != PIX_FMT_BGR32_1
+        && srcFormat != PIX_FMT_RGB48LE   && dstFormat != PIX_FMT_RGB48LE
+        && srcFormat != PIX_FMT_RGB48BE   && dstFormat != PIX_FMT_RGB48BE
+        && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
+        c->swScale= rgb2rgbWrapper;
 
-        if ((usePal(srcFormat) && (
-                 dstFormat == PIX_FMT_RGB32   ||
-                 dstFormat == PIX_FMT_RGB32_1 ||
-                 dstFormat == PIX_FMT_RGB24   ||
-                 dstFormat == PIX_FMT_BGR32   ||
-                 dstFormat == PIX_FMT_BGR32_1 ||
-                 dstFormat == PIX_FMT_BGR24)))
-             c->swScale= pal2rgbWrapper;
+    if ((usePal(srcFormat) && (
+        dstFormat == PIX_FMT_RGB32   ||
+        dstFormat == PIX_FMT_RGB32_1 ||
+        dstFormat == PIX_FMT_RGB24   ||
+        dstFormat == PIX_FMT_BGR32   ||
+        dstFormat == PIX_FMT_BGR32_1 ||
+        dstFormat == PIX_FMT_BGR24)))
+        c->swScale= pal2rgbWrapper;
 
-        if (srcFormat == PIX_FMT_YUV422P) {
+    if (srcFormat == PIX_FMT_YUV422P) {
+        if (dstFormat == PIX_FMT_YUYV422)
+            c->swScale= YUV422PToYuy2Wrapper;
+        else if (dstFormat == PIX_FMT_UYVY422)
+            c->swScale= YUV422PToUyvyWrapper;
+    }
+
+    /* LQ converters if -sws 0 or -sws 4*/
+    if (c->flags&(SWS_FAST_BILINEAR|SWS_POINT)) {
+        /* yv12_to_yuy2 */
+        if (srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) {
             if (dstFormat == PIX_FMT_YUYV422)
-                c->swScale= YUV422PToYuy2Wrapper;
+                c->swScale= PlanarToYuy2Wrapper;
             else if (dstFormat == PIX_FMT_UYVY422)
-                c->swScale= YUV422PToUyvyWrapper;
+                c->swScale= PlanarToUyvyWrapper;
         }
-
-        /* LQ converters if -sws 0 or -sws 4*/
-        if (c->flags&(SWS_FAST_BILINEAR|SWS_POINT)) {
-            /* yv12_to_yuy2 */
-            if (srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) {
-                if (dstFormat == PIX_FMT_YUYV422)
-                    c->swScale= PlanarToYuy2Wrapper;
-                else if (dstFormat == PIX_FMT_UYVY422)
-                    c->swScale= PlanarToUyvyWrapper;
-            }
-        }
-        if(srcFormat == PIX_FMT_YUYV422 && (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P))
-            c->swScale= YUYV2YUV420Wrapper;
-        if(srcFormat == PIX_FMT_UYVY422 && (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P))
-            c->swScale= UYVY2YUV420Wrapper;
-        if(srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV422P)
-            c->swScale= YUYV2YUV422Wrapper;
-        if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV422P)
-            c->swScale= UYVY2YUV422Wrapper;
+    }
+    if(srcFormat == PIX_FMT_YUYV422 && (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P))
+        c->swScale= YUYV2YUV420Wrapper;
+    if(srcFormat == PIX_FMT_UYVY422 && (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P))
+        c->swScale= UYVY2YUV420Wrapper;
+    if(srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV422P)
+        c->swScale= YUYV2YUV422Wrapper;
+    if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV422P)
+        c->swScale= UYVY2YUV422Wrapper;
 
 #ifdef COMPILE_ALTIVEC
-        if ((c->flags & SWS_CPU_CAPS_ALTIVEC) &&
-            !(c->flags & SWS_BITEXACT) &&
-            srcFormat == PIX_FMT_YUV420P) {
-          // unscaled YV12 -> packed YUV, we want speed
-          if (dstFormat == PIX_FMT_YUYV422)
-              c->swScale= yv12toyuy2_unscaled_altivec;
-          else if (dstFormat == PIX_FMT_UYVY422)
-              c->swScale= yv12touyvy_unscaled_altivec;
-        }
+    if ((c->flags & SWS_CPU_CAPS_ALTIVEC) &&
+        !(c->flags & SWS_BITEXACT) &&
+        srcFormat == PIX_FMT_YUV420P) {
+        // unscaled YV12 -> packed YUV, we want speed
+        if (dstFormat == PIX_FMT_YUYV422)
+            c->swScale= yv12toyuy2_unscaled_altivec;
+        else if (dstFormat == PIX_FMT_UYVY422)
+            c->swScale= yv12touyvy_unscaled_altivec;
+    }
 #endif
 
-        /* simple copy */
-        if (  srcFormat == dstFormat
-            || (srcFormat == PIX_FMT_YUVA420P && dstFormat == PIX_FMT_YUV420P)
-            || (srcFormat == PIX_FMT_YUV420P && dstFormat == PIX_FMT_YUVA420P)
-            || (isPlanarYUV(srcFormat) && isGray(dstFormat))
-            || (isPlanarYUV(dstFormat) && isGray(srcFormat))
-            || (isGray(dstFormat) && isGray(srcFormat))
-            || (isPlanarYUV(srcFormat) && isPlanarYUV(dstFormat)
-                && c->chrDstHSubSample == c->chrSrcHSubSample
-                && c->chrDstVSubSample == c->chrSrcVSubSample
-                && dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21
-                && srcFormat != PIX_FMT_NV12 && srcFormat != PIX_FMT_NV21))
-        {
-            if (isPacked(c->srcFormat))
-                c->swScale= packedCopy;
-            else /* Planar YUV or gray */
-                c->swScale= planarCopy;
-        }
+    /* simple copy */
+    if (  srcFormat == dstFormat
+        || (srcFormat == PIX_FMT_YUVA420P && dstFormat == PIX_FMT_YUV420P)
+        || (srcFormat == PIX_FMT_YUV420P && dstFormat == PIX_FMT_YUVA420P)
+        || (isPlanarYUV(srcFormat) && isGray(dstFormat))
+        || (isPlanarYUV(dstFormat) && isGray(srcFormat))
+        || (isGray(dstFormat) && isGray(srcFormat))
+        || (isPlanarYUV(srcFormat) && isPlanarYUV(dstFormat)
+            && c->chrDstHSubSample == c->chrSrcHSubSample
+            && c->chrDstVSubSample == c->chrSrcVSubSample
+            && dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21
+            && srcFormat != PIX_FMT_NV12 && srcFormat != PIX_FMT_NV21))
+    {
+        if (isPacked(c->srcFormat))
+            c->swScale= packedCopy;
+        else /* Planar YUV or gray */
+            c->swScale= planarCopy;
+    }
 #if ARCH_BFIN
-        if (flags & SWS_CPU_CAPS_BFIN)
-            ff_bfin_get_unscaled_swscale (c);
+    if (flags & SWS_CPU_CAPS_BFIN)
+        ff_bfin_get_unscaled_swscale (c);
 #endif
 }
 
