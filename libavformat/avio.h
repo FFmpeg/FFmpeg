@@ -68,7 +68,18 @@ typedef int URLInterruptCB(void);
 int url_open_protocol (URLContext **puc, struct URLProtocol *up,
                        const char *filename, int flags);
 int url_open(URLContext **h, const char *filename, int flags);
+
+/**
+ * Reads up to size bytes from the resource accessed by h, and stores
+ * the read bytes in buf.
+ *
+ * @return The number of bytes actually read, or a negative value
+ * corresponding to an AVERROR code in case of error. A value of zero
+ * indicates that it is not possible to read more from the accessed
+ * resource (except if the value of the size argument is also zero).
+ */
 int url_read(URLContext *h, unsigned char *buf, int size);
+
 /**
  * Read as many bytes as possible (up to size), calling the
  * read function multiple times if necessary.
