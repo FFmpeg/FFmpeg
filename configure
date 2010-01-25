@@ -1234,7 +1234,7 @@ tiff_encoder_suggest="zlib"
 truehd_decoder_select="mlp_decoder"
 tscc_decoder_select="zlib"
 vc1_decoder_select="h263_decoder"
-vc1_dxva2_hwaccel_deps="dxva2api_h"
+vc1_dxva2_hwaccel_deps="dxva2api_h DXVA_PictureParameters_wDecodedPictureIndex"
 vc1_dxva2_hwaccel_select="dxva2 vc1_decoder"
 vc1_vaapi_hwaccel_deps="va_va_h"
 vc1_vaapi_hwaccel_select="vaapi vc1_decoder"
@@ -2424,6 +2424,8 @@ check_header termios.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
 check_header X11/extensions/XvMClib.h
+
+check_struct dxva2api.h DXVA_PictureParameters wDecodedPictureIndex
 
 if ! enabled_any memalign memalign_hack posix_memalign malloc_aligned &&
      enabled_any $need_memalign ; then
