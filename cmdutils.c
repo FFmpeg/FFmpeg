@@ -346,6 +346,19 @@ static void print_all_lib_versions(FILE* outstream, int indent)
 #endif
 }
 
+static void maybe_print_config(const char *lib, const char *cfg)
+{
+    static int warned_cfg;
+
+    if (strcmp(FFMPEG_CONFIGURATION, cfg)) {
+        if (!warned_cfg) {
+            fprintf(stderr, "  WARNING: library configuration mismatch\n");
+            warned_cfg = 1;
+        }
+        fprintf(stderr, "  %-11s configuration: %s\n", lib, cfg);
+    }
+}
+
 void show_banner(void)
 {
     fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-%d Fabrice Bellard, et al.\n",
@@ -353,6 +366,17 @@ void show_banner(void)
     fprintf(stderr, "  built on %s %s with %s %s\n",
             __DATE__, __TIME__, CC_TYPE, CC_VERSION);
     fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
+    maybe_print_config("libavutil",   avutil_configuration());
+    maybe_print_config("libavcodec",  avcodec_configuration());
+    maybe_print_config("libavformat", avformat_configuration());
+    maybe_print_config("libavdevice", avdevice_configuration());
+#if CONFIG_AVFILTER
+    maybe_print_config("libavfilter", avfilter_configuration());
+#endif
+    maybe_print_config("libswscale",  swscale_configuration());
+#if CONFIG_POSTPROC
+    maybe_print_config("libpostproc", postproc_configuration());
+#endif
     print_all_lib_versions(stderr, 1);
 }
 
