@@ -1126,9 +1126,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
             av_log(c, AV_LOG_INFO, "using AltiVec\n");
         else
             av_log(c, AV_LOG_INFO, "using C\n");
-    }
 
-    if (flags & SWS_PRINT_INFO) {
         if (flags & SWS_CPU_CAPS_MMX) {
             if (c->canMMX2BeUsed && (flags&SWS_FAST_BILINEAR))
                 av_log(c, AV_LOG_VERBOSE, "using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
