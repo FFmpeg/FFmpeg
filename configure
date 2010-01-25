@@ -2533,6 +2533,8 @@ if enabled network; then
             network_extralibs="-lws2" || \
         { check_func_headers winsock2.h closesocket -lws2_32 && \
             network_extralibs="-lws2_32"; }
+        # getaddrinfo is available if _WIN32_WINNT >= 0x0501 is defined
+        check_func_headers ws2tcpip.h getaddrinfo $network_extralibs
         check_type ws2tcpip.h socklen_t
         check_type ws2tcpip.h "struct addrinfo"
         check_type ws2tcpip.h "struct ipv6_mreq"
