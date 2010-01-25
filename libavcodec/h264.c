@@ -987,8 +987,8 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_c
     int deblock_top;
     int mb_xy;
     int top_idx = 1;
-    uint8_t *top_border_m1 = h->top_borders[top_idx][s->mb_x-1];
-    uint8_t *top_border    = h->top_borders[top_idx][s->mb_x];
+    uint8_t *top_border_m1;
+    uint8_t *top_border;
 
     if(!simple && FRAME_MBAFF){
         if(s->mb_y&1){
@@ -1011,6 +1011,9 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_c
     src_y  -=   linesize + 1;
     src_cb -= uvlinesize + 1;
     src_cr -= uvlinesize + 1;
+
+    top_border_m1 = h->top_borders[top_idx][s->mb_x-1];
+    top_border    = h->top_borders[top_idx][s->mb_x];
 
 #define XCHG(a,b,xchg)\
 if (xchg) AV_SWAP64(b,a);\
