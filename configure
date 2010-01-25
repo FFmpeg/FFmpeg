@@ -2075,8 +2075,11 @@ case $target_os in
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
         ;;
     mingw32*)
-        # Only WinXP or greater are supported
-        add_cflags -D_WIN32_WINNT=0x0501
+        # Adding _WIN32_WINNT=0x0501 makes functions that require
+        # XP visible and thus may make it binary incompatible with
+        # earlier versions. Set --target-os=mingw32-prexp if this
+        # isn't desired.
+        test $target_os = "mingw32" && add_cflags -D_WIN32_WINNT=0x0501
         if test $target_os = "mingw32ce"; then
             disable network
         else
