@@ -899,6 +899,10 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
     nb_components = get_bits(&s->gb, 8);
+    if (nb_components == 0 || nb_components > MAX_COMPONENTS){
+        av_log(s->avctx, AV_LOG_ERROR, "decode_sos: nb_components (%d) unsupported\n", nb_components);
+        return -1;
+    }
     if (len != 6+2*nb_components)
     {
         av_log(s->avctx, AV_LOG_ERROR, "decode_sos: invalid len (%d)\n", len);
