@@ -945,6 +945,7 @@ int ff_h264_frame_start(H264Context *h){
 
 static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int simple){
     MpegEncContext * const s = &h->s;
+    uint8_t *top_border;
     int top_idx = 1;
 
     src_y  -=   linesize;
@@ -954,11 +955,11 @@ static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src
     if(!simple && FRAME_MBAFF){
         if(s->mb_y&1){
             if(!MB_MBAFF){
-                *(uint64_t*)(h->top_borders[0][s->mb_x]+ 0)= *(uint64_t*)(src_y +  15*linesize);
-                *(uint64_t*)(h->top_borders[0][s->mb_x]+ 8)= *(uint64_t*)(src_y +8+15*linesize);
+                top_border = h->top_borders[0][s->mb_x];
+                AV_COPY128(top_border, src_y + 15*linesize);
                 if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
-                    *(uint64_t*)(h->top_borders[0][s->mb_x]+16)= *(uint64_t*)(src_cb+7*uvlinesize);
-                    *(uint64_t*)(h->top_borders[0][s->mb_x]+24)= *(uint64_t*)(src_cr+7*uvlinesize);
+                    AV_COPY64(top_border+16, src_cb+7*uvlinesize);
+                    AV_COPY64(top_border+24, src_cr+7*uvlinesize);
                 }
             }
         }else if(MB_MBAFF){
@@ -967,15 +968,14 @@ static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src
             return;
     }
 
+    top_border = h->top_borders[top_idx][s->mb_x];
     // There are two lines saved, the line above the the top macroblock of a pair,
     // and the line above the bottom macroblock
-
-    *(uint64_t*)(h->top_borders[top_idx][s->mb_x]+0)= *(uint64_t*)(src_y +  16*linesize);
-    *(uint64_t*)(h->top_borders[top_idx][s->mb_x]+8)= *(uint64_t*)(src_y +8+16*linesize);
+    AV_COPY128(top_border, src_y + 16*linesize);
 
     if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
-        *(uint64_t*)(h->top_borders[top_idx][s->mb_x]+16)= *(uint64_t*)(src_cb+8*uvlinesize);
-        *(uint64_t*)(h->top_borders[top_idx][s->mb_x]+24)= *(uint64_t*)(src_cr+8*uvlinesize);
+        AV_COPY64(top_border+16, src_cb+8*uvlinesize);
+        AV_COPY64(top_border+24, src_cr+8*uvlinesize);
     }
 }
 
@@ -987,6 +987,8 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_c
     int deblock_top;
     int mb_xy;
     int top_idx = 1;
+    uint8_t *top_border_m1 = h->top_borders[top_idx][s->mb_x-1];
+    uint8_t *top_border    = h->top_borders[top_idx][s->mb_x];
 
     if(!simple && FRAME_MBAFF){
         if(s->mb_y&1){
@@ -1010,31 +1012,29 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_c
     src_cb -= uvlinesize + 1;
     src_cr -= uvlinesize + 1;
 
-#define XCHG(a,b,t,xchg)\
-t= a;\
-if(xchg)\
-    a= b;\
-b= t;
+#define XCHG(a,b,xchg)\
+if (xchg) AV_SWAP64(b,a);\
+else      AV_COPY64(b,a);
 
     if(deblock_top){
         if(deblock_left){
-            XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x-1]+8), *(uint64_t*)(src_y -7), temp64, 1);
+            XCHG(top_border_m1+8, src_y -7, 1);
         }
-        XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x]+0), *(uint64_t*)(src_y +1), temp64, xchg);
-        XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x]+8), *(uint64_t*)(src_y +9), temp64, 1);
+        XCHG(top_border+0, src_y +1, xchg);
+        XCHG(top_border+8, src_y +9, 1);
         if(s->mb_x+1 < s->mb_width){
-            XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x+1]), *(uint64_t*)(src_y +17), temp64, 1);
+            XCHG(h->top_borders[top_idx][s->mb_x+1], src_y +17, 1);
         }
     }
 
     if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         if(deblock_top){
             if(deblock_left){
-                XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x-1]+16), *(uint64_t*)(src_cb -7), temp64, 1);
-                XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x-1]+24), *(uint64_t*)(src_cr -7), temp64, 1);
+                XCHG(top_border_m1+16, src_cb -7, 1);
+                XCHG(top_border_m1+24, src_cr -7, 1);
             }
-            XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x]+16), *(uint64_t*)(src_cb+1), temp64, 1);
-            XCHG(*(uint64_t*)(h->top_borders[top_idx][s->mb_x]+24), *(uint64_t*)(src_cr+1), temp64, 1);
+            XCHG(top_border+16, src_cb+1, 1);
+            XCHG(top_border+24, src_cr+1, 1);
         }
     }
 }
