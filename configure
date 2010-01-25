@@ -1130,7 +1130,7 @@ ppc4xx_deps="ppc"
 
 vis_deps="sparc"
 
-x86_64_select="cmov fast_cmov"
+x86_64_suggest="cmov fast_cmov"
 amd3dnow_deps="mmx"
 amd3dnowext_deps="amd3dnow"
 mmx_deps="x86"
