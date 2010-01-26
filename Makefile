@@ -20,10 +20,14 @@ ALLPROGS    = $(addsuffix   $(EXESUF), $(BASENAMES))
 ALLPROGS_G  = $(addsuffix _g$(EXESUF), $(BASENAMES))
 ALLMANPAGES = $(addsuffix .1, $(BASENAMES))
 
+FFLIBS-$(CONFIG_AVCODEC)  += avcodec
+FFLIBS-$(CONFIG_AVDEVICE) += avdevice
 FFLIBS-$(CONFIG_AVFILTER) += avfilter
+FFLIBS-$(CONFIG_AVFORMAT) += avformat
 FFLIBS-$(CONFIG_POSTPROC) += postproc
+FFLIBS-$(CONFIG_SWSCALE)  += swscale
 
-FFLIBS := avdevice avformat avcodec avutil swscale
+FFLIBS := avutil
 
 DATA_FILES := $(wildcard $(SRC_DIR)/ffpresets/*.ffpreset)
 

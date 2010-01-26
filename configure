@@ -83,6 +83,10 @@ Configuration options:
   --disable-ffmpeg         disable ffmpeg build
   --disable-ffplay         disable ffplay build
   --disable-ffserver       disable ffserver build
+  --disable-avdevice       disable libavdevice build
+  --disable-avcodec        disable libavcodec build
+  --disable-avformat       disable libavformat build
+  --disable-swscale        disable libswscale build
   --enable-postproc        enable GPLed postprocessing support [no]
   --enable-avfilter        video filter support [no]
   --enable-avfilter-lavf   video filters dependent on avformat [no]
@@ -858,8 +862,11 @@ COMPONENT_LIST="
 CONFIG_LIST="
     $COMPONENT_LIST
     aandct
+    avcodec
+    avdevice
     avfilter
     avfilter_lavf
+    avformat
     avisynth
     beos_netserver
     bzlib
@@ -908,6 +915,7 @@ CONFIG_LIST="
     shared
     small
     static
+    swscale
     swscale_alpha
     vaapi
     vdpau
@@ -1348,10 +1356,16 @@ udp_protocol_deps="network"
 
 # filters
 movie_filter_deps="avfilter_lavf"
+avfilter_lavf_deps="avformat"
+
+# libraries
+avdevice_deps="avcodec avformat"
+avformat_deps="avcodec"
 
 # programs
-ffplay_deps="sdl"
-ffserver_deps="ffm_muxer rtp_protocol rtsp_demuxer"
+ffmpeg_deps="avcodec avformat swscale"
+ffplay_deps="avcodec avformat swscale sdl"
+ffserver_deps="avformat ffm_muxer rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 
 doc_deps="texi2html"
@@ -1392,6 +1406,9 @@ target_os=$(tolower $(uname -s))
 host_os=$target_os
 
 # configurable options
+enable avcodec
+enable avdevice
+enable avformat
 enable asm
 enable debug
 enable doc
@@ -1405,6 +1422,7 @@ enable optimizations
 enable protocols
 enable static
 enable stripping
+enable swscale
 enable swscale_alpha
 
 # build settings
