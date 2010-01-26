@@ -815,7 +815,7 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
            && (top_xy   < 0 || ((qp + s->current_picture.qscale_table[top_xy    ] + 1)>>1) <= qp_thresh)){
             if(!FRAME_MBAFF)
                 return 1;
-            if(   (left_xy[0]< 0            || ((qp + s->current_picture.qscale_table[left_xy[0]+s->mb_stride] + 1)>>1) <= qp_thresh)
+            if(   (left_xy[0]< 0            || ((qp + s->current_picture.qscale_table[left_xy[1]             ] + 1)>>1) <= qp_thresh)
                && (top_xy    < s->mb_stride || ((qp + s->current_picture.qscale_table[top_xy    -s->mb_stride] + 1)>>1) <= qp_thresh))
                 return 1;
         }
