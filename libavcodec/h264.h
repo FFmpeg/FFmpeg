@@ -285,6 +285,9 @@ typedef struct H264Context{
     int top_mb_xy;
     int left_mb_xy[2];
 
+    int top_type;
+    int left_type[2];
+
     int8_t intra4x4_pred_mode_cache[5*8];
     int8_t (*intra4x4_pred_mode)[8];
     H264PredContext hpc;
@@ -806,6 +809,16 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
                && (top_xy    < s->mb_stride || ((qp + s->current_picture.qscale_table[top_xy    -s->mb_stride] + 1)>>1) <= qp_thresh))
                 return 1;
         }
+
+        if(h->deblocking_filter == 2){
+            h->top_type    = top_type     = h->slice_table[top_xy     ] == h->slice_num ? s->current_picture.mb_type[top_xy]     : 0;
+            h->left_type[0]= left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
+            h->left_type[1]= left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
+        }else{
+            h->top_type    = top_type     = h->slice_table[top_xy     ] < 0xFFFF ? s->current_picture.mb_type[top_xy]     : 0;
+            h->left_type[0]= left_type[0] = h->slice_table[left_xy[0] ] < 0xFFFF ? s->current_picture.mb_type[left_xy[0]] : 0;
+            h->left_type[1]= left_type[1] = h->slice_table[left_xy[1] ] < 0xFFFF ? s->current_picture.mb_type[left_xy[1]] : 0;
+        }
         if(IS_INTRA(mb_type))
             return 0;
 
@@ -816,10 +829,6 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
         AV_COPY64(&h->non_zero_count_cache[0+8*4], &h->non_zero_count[mb_xy][24]);
 
         h->cbp= h->cbp_table[mb_xy];
-
-        top_type     = h->slice_table[top_xy     ] < 0xFFFF ? s->current_picture.mb_type[top_xy]     : 0;
-        left_type[0] = h->slice_table[left_xy[0] ] < 0xFFFF ? s->current_picture.mb_type[left_xy[0]] : 0;
-        left_type[1] = h->slice_table[left_xy[1] ] < 0xFFFF ? s->current_picture.mb_type[left_xy[1]] : 0;
 
         {
             int list;
