@@ -47,7 +47,9 @@ $(BUILD_ROOT_REL)/version.h: $(SRC_PATH_BARE)/version.sh config.mak
 
 install: install-libs install-headers
 
-.PHONY: all depend dep *clean install* uninstall examples testprogs
+uninstall: uninstall-libs uninstall-headers
+
+.PHONY: all depend dep *clean install* uninstall* examples testprogs
 endif
 
 OBJS-$(HAVE_MMX) +=  $(MMX-OBJS-yes)

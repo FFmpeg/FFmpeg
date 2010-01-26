@@ -84,6 +84,18 @@ ifdef BUILT_HEADERS
 	install -m 644 $(addprefix $(SUBDIR),$(BUILT_HEADERS)) "$(INCINSTDIR)"
 endif
 	install -m 644 $(BUILD_ROOT)/lib$(NAME)/lib$(NAME).pc "$(LIBDIR)/pkgconfig"
+
+uninstall-libs::
+	-rm -f "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \
+	       "$(SHLIBDIR)/$(SLIBNAME)"            \
+	       "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
+	-$(SLIB_UNINSTALL_EXTRA_CMD)
+	-rm -f "$(LIBDIR)/$(LIBNAME)"
+
+uninstall-headers::
+	rm -f $(addprefix "$(INCINSTDIR)/",$(HEADERS))
+	rm -f "$(LIBDIR)/pkgconfig/lib$(NAME).pc"
+	-rmdir "$(INCDIR)"
 endef
 
 $(eval $(RULES))
