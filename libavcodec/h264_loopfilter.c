@@ -622,8 +622,6 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
         /* First vertical edge is different in MBAFF frames
          * There are 8 different bS to compute and 2 different Qp
          */
-        const int pair_xy = mb_x + (mb_y&~1)*s->mb_stride;
-        const int left_mb_xy[2] = { pair_xy-1, pair_xy-1+s->mb_stride };
         DECLARE_ALIGNED_8(int16_t, bS)[8];
         int qp[2];
         int bqp[2];
@@ -637,7 +635,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
             *(uint64_t*)&bS[4]= 0x0004000400040004ULL;
         else {
             for( i = 0; i < 8; i++ ) {
-                int mbn_xy = MB_FIELD ? left_mb_xy[i>>2] : left_mb_xy[i&1];
+                int mbn_xy = MB_FIELD ? h->left_mb_xy[i>>2] : h->left_mb_xy[i&1];
 
                 if( IS_INTRA( s->current_picture.mb_type[mbn_xy] ) )
                     bS[i] = 4;
@@ -653,8 +651,8 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
         }
 
         mb_qp = s->current_picture.qscale_table[mb_xy];
-        mbn0_qp = s->current_picture.qscale_table[left_mb_xy[0]];
-        mbn1_qp = s->current_picture.qscale_table[left_mb_xy[1]];
+        mbn0_qp = s->current_picture.qscale_table[h->left_mb_xy[0]];
+        mbn1_qp = s->current_picture.qscale_table[h->left_mb_xy[1]];
         qp[0] = ( mb_qp + mbn0_qp + 1 ) >> 1;
         bqp[0] = ( get_chroma_qp( h, 0, mb_qp ) +
                    get_chroma_qp( h, 0, mbn0_qp ) + 1 ) >> 1;
