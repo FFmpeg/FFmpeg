@@ -90,8 +90,7 @@ untested special converters
            (x)==PIX_FMT_PAL8        \
         || (x)==PIX_FMT_YUYV422     \
         || (x)==PIX_FMT_UYVY422     \
-        || isRGBinInt(x)                 \
-        || isBGRinInt(x)                 \
+        || isAnyRGB(x)              \
     )
 #define usePal(x) (av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL)
 
@@ -1660,16 +1659,16 @@ void ff_get_unscaled_swscale(SwsContext *c)
     const int dstH = c->dstH;
     int needsDither;
 
-    needsDither= (isBGRinInt(dstFormat) || isRGBinInt(dstFormat))
+    needsDither= isAnyRGB(dstFormat)
         &&  c->dstFormatBpp < 24
-        && (c->dstFormatBpp < c->srcFormatBpp || (!(isRGBinInt(srcFormat) || isBGRinInt(srcFormat))));
+        && (c->dstFormatBpp < c->srcFormatBpp || (!isAnyRGB(srcFormat)));
 
     /* yv12_to_nv12 */
     if ((srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) && (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21)) {
         c->swScale= PlanarToNV12Wrapper;
     }
     /* yuv2bgr */
-    if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P || srcFormat==PIX_FMT_YUVA420P) && (isBGRinInt(dstFormat) || isRGBinInt(dstFormat))
+    if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P || srcFormat==PIX_FMT_YUVA420P) && isAnyRGB(dstFormat)
         && !(flags & SWS_ACCURATE_RND) && !(dstH&1)) {
         c->swScale= ff_yuv2rgb_get_func_ptr(c);
     }
@@ -1683,8 +1682,8 @@ void ff_get_unscaled_swscale(SwsContext *c)
         c->swScale= bgr24toyv12Wrapper;
 
     /* RGB/BGR -> RGB/BGR (no dither needed forms) */
-    if (  (isBGRinInt(srcFormat) || isRGBinInt(srcFormat))
-        && (isBGRinInt(dstFormat) || isRGBinInt(dstFormat))
+    if (   isAnyRGB(srcFormat)
+        && isAnyRGB(dstFormat)
         && srcFormat != PIX_FMT_BGR8      && dstFormat != PIX_FMT_BGR8
         && srcFormat != PIX_FMT_RGB8      && dstFormat != PIX_FMT_RGB8
         && srcFormat != PIX_FMT_BGR4      && dstFormat != PIX_FMT_BGR4

@@ -3048,7 +3048,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         break;
     }
 
-    if (c->srcRange != c->dstRange && !(isRGBinInt(c->dstFormat) || isBGRinInt(c->dstFormat))) {
+    if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
         if (c->srcRange) {
             c->lumConvertRange = RENAME(lumRangeFromJpeg);
             c->chrConvertRange = RENAME(chrRangeFromJpeg);
