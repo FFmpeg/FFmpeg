@@ -920,6 +920,10 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "decode_sos: index(%d) out of components\n", index);
             return -1;
         }
+        /* Metasoft MJPEG codec has Cb and Cr swapped */
+        if (s->avctx->codec_tag == MKTAG('M', 'T', 'S', 'J')
+            && nb_components == 3 && s->nb_components == 3 && i)
+            index = 3 - i;
 
         s->comp_index[i] = index;
 
