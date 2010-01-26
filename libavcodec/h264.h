@@ -741,7 +741,7 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
         {0,2,0,2,7,10,7,10,7+0*8, 7+2*8, 7+0*8, 7+2*8, 2+0*8, 2+3*8, 2+0*8, 2+3*8}
     };
 
-    top_xy     = mb_xy  - (s->mb_stride << FIELD_PICTURE);
+    top_xy     = mb_xy  - (s->mb_stride << MB_FIELD);
 
     //FIXME deblocking could skip the intra and nnz parts.
 //     if(for_deblock && (h->slice_num == 1 || h->slice_table[mb_xy] == h->slice_table[top_xy]) && !FRAME_MBAFF)
@@ -755,38 +755,35 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
     left_xy[1] = left_xy[0] = mb_xy-1;
     left_block = left_block_options[0];
     if(FRAME_MBAFF){
-        const int pair_xy          = s->mb_x     + (s->mb_y & ~1)*s->mb_stride;
-        const int top_pair_xy      = pair_xy     - s->mb_stride;
-        const int topleft_pair_xy  = top_pair_xy - 1;
-        const int topright_pair_xy = top_pair_xy + 1;
-        const int topleft_mb_field_flag  = IS_INTERLACED(s->current_picture.mb_type[topleft_pair_xy]);
-        const int top_mb_field_flag      = IS_INTERLACED(s->current_picture.mb_type[top_pair_xy]);
-        const int topright_mb_field_flag = IS_INTERLACED(s->current_picture.mb_type[topright_pair_xy]);
-        const int left_mb_field_flag     = IS_INTERLACED(s->current_picture.mb_type[pair_xy-1]);
+        const int left_mb_field_flag     = IS_INTERLACED(s->current_picture.mb_type[mb_xy-1]);
         const int curr_mb_field_flag     = IS_INTERLACED(mb_type);
-        const int bottom = (s->mb_y & 1);
-        tprintf(s->avctx, "fill_caches: curr_mb_field_flag:%d, left_mb_field_flag:%d, topleft_mb_field_flag:%d, top_mb_field_flag:%d, topright_mb_field_flag:%d\n", curr_mb_field_flag, left_mb_field_flag, topleft_mb_field_flag, top_mb_field_flag, topright_mb_field_flag);
-
-        if (curr_mb_field_flag && (bottom || top_mb_field_flag)){
-            top_xy -= s->mb_stride;
-        }
-        if (curr_mb_field_flag && (bottom || topleft_mb_field_flag)){
-            topleft_xy -= s->mb_stride;
-        } else if(bottom && !curr_mb_field_flag && left_mb_field_flag) {
-            topleft_xy += s->mb_stride;
-            // take top left mv from the middle of the mb, as opposed to all other modes which use the bottom right partition
-            topleft_partition = 0;
-        }
-        if (curr_mb_field_flag && (bottom || topright_mb_field_flag)){
-            topright_xy -= s->mb_stride;
-        }
-        if (left_mb_field_flag != curr_mb_field_flag) {
-            left_xy[1] = left_xy[0] = pair_xy - 1;
-            if (curr_mb_field_flag) {
-                left_xy[1] += s->mb_stride;
-                left_block = left_block_options[3];
-            } else {
-                left_block= left_block_options[2 - bottom];
+        if(s->mb_y&1){
+            if (left_mb_field_flag != curr_mb_field_flag) {
+                left_xy[1] = left_xy[0] = mb_xy - s->mb_stride - 1;
+                if (curr_mb_field_flag) {
+                    left_xy[1] += s->mb_stride;
+                    left_block = left_block_options[3];
+                } else {
+                    topleft_xy += s->mb_stride;
+                    // take top left mv from the middle of the mb, as opposed to all other modes which use the bottom right partition
+                    topleft_partition = 0;
+                    left_block = left_block_options[1];
+                }
+            }
+        }else{
+            if(curr_mb_field_flag){
+                topleft_xy  += s->mb_stride & (((s->current_picture.mb_type[top_xy - 1]>>7)&1)-1);
+                topright_xy += s->mb_stride & (((s->current_picture.mb_type[top_xy + 1]>>7)&1)-1);
+                top_xy      += s->mb_stride & (((s->current_picture.mb_type[top_xy    ]>>7)&1)-1);
+            }
+            if (left_mb_field_flag != curr_mb_field_flag) {
+                left_xy[1] = left_xy[0] = mb_xy - 1;
+                if (curr_mb_field_flag) {
+                    left_xy[1] += s->mb_stride;
+                    left_block = left_block_options[3];
+                } else {
+                    left_block = left_block_options[2];
+                }
             }
         }
     }
