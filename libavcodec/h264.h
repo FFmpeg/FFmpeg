@@ -1100,6 +1100,33 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
                 *(uint32_t*)&h->ref_cache[list][scan8[0] + 0 - 1*8]= (((for_deblock||top_type) ? LIST_NOT_USED : PART_NOT_AVAILABLE)&0xFF)*0x01010101;
             }
 
+            if(for_deblock){
+                if(!IS_INTERLACED(mb_type^left_type[0])){
+                    if(USES_LIST(left_type[0], list)){
+                        const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
+                        const int b8_xy= h->mb2b8_xy[left_xy[0]] + 1;
+                        int (*ref2frm)[64] = h->ref2frm[ h->slice_table[left_xy[0]]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
+                        *(uint32_t*)h->mv_cache[list][scan8[0] - 1 + 0 ]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*0];
+                        *(uint32_t*)h->mv_cache[list][scan8[0] - 1 + 8 ]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*1];
+                        *(uint32_t*)h->mv_cache[list][scan8[0] - 1 +16 ]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*2];
+                        *(uint32_t*)h->mv_cache[list][scan8[0] - 1 +24 ]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*3];
+                        h->ref_cache[list][scan8[0] - 1 + 0 ]=
+                        h->ref_cache[list][scan8[0] - 1 + 8 ]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + h->b8_stride*0]];
+                        h->ref_cache[list][scan8[0] - 1 +16 ]=
+                        h->ref_cache[list][scan8[0] - 1 +24 ]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + h->b8_stride*1]];
+                    }else{
+                        *(uint32_t*)h->mv_cache [list][scan8[0] - 1 + 0 ]=
+                        *(uint32_t*)h->mv_cache [list][scan8[0] - 1 + 8 ]=
+                        *(uint32_t*)h->mv_cache [list][scan8[0] - 1 +16 ]=
+                        *(uint32_t*)h->mv_cache [list][scan8[0] - 1 +24 ]= 0;
+                        h->ref_cache[list][scan8[0] - 1 + 0  ]=
+                        h->ref_cache[list][scan8[0] - 1 + 8  ]=
+                        h->ref_cache[list][scan8[0] - 1 + 16 ]=
+                        h->ref_cache[list][scan8[0] - 1 + 24 ]= LIST_NOT_USED;
+                    }
+                }
+                continue;
+            }else{
             for(i=0; i<2; i++){
                 int cache_idx = scan8[0] - 1 + i*2*8;
                 if(USES_LIST(left_type[i], list)){
@@ -1107,23 +1134,18 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
                     const int b8_xy= h->mb2b8_xy[left_xy[i]] + 1;
                     *(uint32_t*)h->mv_cache[list][cache_idx  ]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[0+i*2]];
                     *(uint32_t*)h->mv_cache[list][cache_idx+8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[1+i*2]];
-                    if(for_deblock){
-                        int (*ref2frm)[64] = h->ref2frm[ h->slice_table[left_xy[i]]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
-                        h->ref_cache[list][cache_idx  ]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[0+i*2]>>1)]];
-                        h->ref_cache[list][cache_idx+8]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[1+i*2]>>1)]];
-                    }else{
                         h->ref_cache[list][cache_idx  ]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[0+i*2]>>1)];
                         h->ref_cache[list][cache_idx+8]= s->current_picture.ref_index[list][b8_xy + h->b8_stride*(left_block[1+i*2]>>1)];
-                    }
                 }else{
                     *(uint32_t*)h->mv_cache [list][cache_idx  ]=
                     *(uint32_t*)h->mv_cache [list][cache_idx+8]= 0;
                     h->ref_cache[list][cache_idx  ]=
-                    h->ref_cache[list][cache_idx+8]= (for_deblock||left_type[i]) ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+                    h->ref_cache[list][cache_idx+8]= (left_type[i]) ? LIST_NOT_USED : PART_NOT_AVAILABLE;
                 }
             }
+            }
 
-            if(for_deblock || ((IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred) && !FRAME_MBAFF))
+            if((IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred) && !FRAME_MBAFF)
                 continue;
 
             if(USES_LIST(topleft_type, list)){
