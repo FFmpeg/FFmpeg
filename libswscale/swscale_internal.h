@@ -411,6 +411,22 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_MONOBLACK   \
         || (x)==PIX_FMT_MONOWHITE   \
     )
+#define isRGBinBytes(x) (           \
+           (x)==PIX_FMT_RGB48BE     \
+        || (x)==PIX_FMT_RGB48LE     \
+        || (x)==PIX_FMT_RGBA        \
+        || (x)==PIX_FMT_ARGB        \
+        || (x)==PIX_FMT_RGB24       \
+    )
+#define isBGRinBytes(x) (           \
+           (x)==PIX_FMT_BGRA        \
+        || (x)==PIX_FMT_ABGR        \
+        || (x)==PIX_FMT_BGR24       \
+    )
+#define isAnyRGB(x)     (           \
+            isRGBinInt(x)           \
+        ||  isBGRinInt(x)           \
+    )
 #define isALPHA(x)      (           \
            (x)==PIX_FMT_BGR32       \
         || (x)==PIX_FMT_BGR32_1     \
