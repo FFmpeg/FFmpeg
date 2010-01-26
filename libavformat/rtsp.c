@@ -1457,7 +1457,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                 }
             }
 #if CONFIG_RTSP_DEMUXER
-            if (FD_ISSET(tcp_fd, &rfds)) {
+            if (tcp_fd != -1 && FD_ISSET(tcp_fd, &rfds)) {
                 RTSPMessageHeader reply;
 
                 rtsp_read_reply(s, &reply, NULL, 0);
