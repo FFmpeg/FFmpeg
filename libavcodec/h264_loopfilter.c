@@ -633,18 +633,19 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
             *(uint64_t*)&bS[4]= 0x0004000400040004ULL;
         else {
             for( i = 0; i < 8; i++ ) {
-                int mbn_xy = MB_FIELD ? h->left_mb_xy[i>>2] : h->left_mb_xy[i&1];
+                int j= MB_FIELD ? i>>2 : i&1;
+                int mbn_xy = h->left_mb_xy[j];
+                int mbn_type= h->left_type[j];
 
-                if( IS_INTRA( s->current_picture.mb_type[mbn_xy] ) )
+                if( IS_INTRA( mbn_type ) )
                     bS[i] = 4;
-                else if( h->non_zero_count_cache[12+8*(i>>1)] != 0 ||
-                         ((!h->pps.cabac && IS_8x8DCT(s->current_picture.mb_type[mbn_xy])) ?
+                else{
+                    bS[i] = 1 + !!(h->non_zero_count_cache[12+8*(i>>1)] |
+                         ((!h->pps.cabac && IS_8x8DCT(mbn_type)) ?
                             (h->cbp_table[mbn_xy] & ((MB_FIELD ? (i&2) : (mb_y&1)) ? 8 : 2))
                                                                        :
-                            h->non_zero_count[mbn_xy][7+(MB_FIELD ? (i&3) : (i>>2)+(mb_y&1)*2)*8]))
-                    bS[i] = 2;
-                else
-                    bS[i] = 1;
+                            h->non_zero_count[mbn_xy][7+(MB_FIELD ? (i&3) : (i>>2)+(mb_y&1)*2)*8]));
+                }
             }
         }
 
