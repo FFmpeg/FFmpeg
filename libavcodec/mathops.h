@@ -53,6 +53,12 @@ static av_always_inline int MULH(int a, int b){
 }
 #endif
 
+#ifndef UMULH
+static av_always_inline unsigned UMULH(unsigned a, unsigned b){
+    return ((uint64_t)(a) * (uint64_t)(b))>>32;
+}
+#endif
+
 #ifndef MUL64
 #   define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
 #endif
