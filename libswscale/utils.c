@@ -121,8 +121,8 @@ int sws_isSupportedInput(enum PixelFormat pix_fmt)
         || (x)==PIX_FMT_YUV444P     \
         || (x)==PIX_FMT_YUV422P     \
         || (x)==PIX_FMT_YUV411P     \
-        || isRGB(x)                 \
-        || isBGR(x)                 \
+        || isRGBinInt(x)                 \
+        || isBGRinInt(x)                 \
         || (x)==PIX_FMT_NV12        \
         || (x)==PIX_FMT_NV21        \
         || (x)==PIX_FMT_GRAY16BE    \
@@ -872,14 +872,14 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
     getSubSampleFactors(&c->chrDstHSubSample, &c->chrDstVSubSample, dstFormat);
 
     // reuse chroma for 2 pixels RGB/BGR unless user wants full chroma interpolation
-    if ((isBGR(dstFormat) || isRGB(dstFormat)) && !(flags&SWS_FULL_CHR_H_INT)) c->chrDstHSubSample=1;
+    if ((isBGRinInt(dstFormat) || isRGBinInt(dstFormat)) && !(flags&SWS_FULL_CHR_H_INT)) c->chrDstHSubSample=1;
 
     // drop some chroma lines if the user wants it
     c->vChrDrop= (flags&SWS_SRC_V_CHR_DROP_MASK)>>SWS_SRC_V_CHR_DROP_SHIFT;
     c->chrSrcVSubSample+= c->vChrDrop;
 
     // drop every other pixel for chroma calculation unless user wants full chroma
-    if ((isBGR(srcFormat) || isRGB(srcFormat)) && !(flags&SWS_FULL_CHR_H_INP)
+    if ((isBGRinInt(srcFormat) || isRGBinInt(srcFormat)) && !(flags&SWS_FULL_CHR_H_INP)
       && srcFormat!=PIX_FMT_RGB8      && srcFormat!=PIX_FMT_BGR8
       && srcFormat!=PIX_FMT_RGB4      && srcFormat!=PIX_FMT_BGR4
       && srcFormat!=PIX_FMT_RGB4_BYTE && srcFormat!=PIX_FMT_BGR4_BYTE
@@ -903,7 +903,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
     sws_setColorspaceDetails(c, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT], srcRange, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT] /* FIXME*/, dstRange, 0, 1<<16, 1<<16);
 
     /* unscaled special cases */
-    if (unscaled && !usesHFilter && !usesVFilter && (srcRange == dstRange || isBGR(dstFormat) || isRGB(dstFormat))) {
+    if (unscaled && !usesHFilter && !usesVFilter && (srcRange == dstRange || isBGRinInt(dstFormat) || isRGBinInt(dstFormat))) {
         ff_get_unscaled_swscale(c);
 
         if (c->swScale) {

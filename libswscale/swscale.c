@@ -90,8 +90,8 @@ untested special converters
            (x)==PIX_FMT_PAL8        \
         || (x)==PIX_FMT_YUYV422     \
         || (x)==PIX_FMT_UYVY422     \
-        || isRGB(x)                 \
-        || isBGR(x)                 \
+        || isRGBinInt(x)                 \
+        || isBGRinInt(x)                 \
     )
 #define usePal(x) (av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL)
 
@@ -1437,8 +1437,8 @@ static int rgb2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
     void (*conv)(const uint8_t *src, uint8_t *dst, long src_size)=NULL;
 
     /* BGR -> BGR */
-    if (  (isBGR(srcFormat) && isBGR(dstFormat))
-       || (isRGB(srcFormat) && isRGB(dstFormat))) {
+    if (  (isBGRinInt(srcFormat) && isBGRinInt(dstFormat))
+       || (isRGBinInt(srcFormat) && isRGBinInt(dstFormat))) {
         switch(srcId | (dstId<<4)) {
         case 0x34: conv= rgb16to15; break;
         case 0x36: conv= rgb24to15; break;
@@ -1453,8 +1453,8 @@ static int rgb2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
         case 0x84: conv= rgb16to32; break;
         case 0x86: conv= rgb24to32; break;
         }
-    } else if (  (isBGR(srcFormat) && isRGB(dstFormat))
-             || (isRGB(srcFormat) && isBGR(dstFormat))) {
+    } else if (  (isBGRinInt(srcFormat) && isRGBinInt(dstFormat))
+             || (isRGBinInt(srcFormat) && isBGRinInt(dstFormat))) {
         switch(srcId | (dstId<<4)) {
         case 0x33: conv= rgb15tobgr15; break;
         case 0x34: conv= rgb16tobgr15; break;
@@ -1660,16 +1660,16 @@ void ff_get_unscaled_swscale(SwsContext *c)
     const int dstH = c->dstH;
     int needsDither;
 
-    needsDither= (isBGR(dstFormat) || isRGB(dstFormat))
+    needsDither= (isBGRinInt(dstFormat) || isRGBinInt(dstFormat))
         &&  c->dstFormatBpp < 24
-        && (c->dstFormatBpp < c->srcFormatBpp || (!(isRGB(srcFormat) || isBGR(srcFormat))));
+        && (c->dstFormatBpp < c->srcFormatBpp || (!(isRGBinInt(srcFormat) || isBGRinInt(srcFormat))));
 
     /* yv12_to_nv12 */
     if ((srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) && (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21)) {
         c->swScale= PlanarToNV12Wrapper;
     }
     /* yuv2bgr */
-    if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P || srcFormat==PIX_FMT_YUVA420P) && (isBGR(dstFormat) || isRGB(dstFormat))
+    if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P || srcFormat==PIX_FMT_YUVA420P) && (isBGRinInt(dstFormat) || isRGBinInt(dstFormat))
         && !(flags & SWS_ACCURATE_RND) && !(dstH&1)) {
         c->swScale= ff_yuv2rgb_get_func_ptr(c);
     }
@@ -1683,8 +1683,8 @@ void ff_get_unscaled_swscale(SwsContext *c)
         c->swScale= bgr24toyv12Wrapper;
 
     /* RGB/BGR -> RGB/BGR (no dither needed forms) */
-    if (  (isBGR(srcFormat) || isRGB(srcFormat))
-        && (isBGR(dstFormat) || isRGB(dstFormat))
+    if (  (isBGRinInt(srcFormat) || isRGBinInt(srcFormat))
+        && (isBGRinInt(dstFormat) || isRGBinInt(dstFormat))
         && srcFormat != PIX_FMT_BGR8      && dstFormat != PIX_FMT_BGR8
         && srcFormat != PIX_FMT_RGB8      && dstFormat != PIX_FMT_RGB8
         && srcFormat != PIX_FMT_BGR4      && dstFormat != PIX_FMT_BGR4
