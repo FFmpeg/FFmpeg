@@ -762,6 +762,10 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
         const int curr_mb_field_flag     = IS_INTERLACED(mb_type);
         if(s->mb_y&1){
             if (left_mb_field_flag != curr_mb_field_flag) {
+                if(for_deblock){
+                    left_xy[0] = mb_xy - s->mb_stride - 1;
+                    left_xy[1] = mb_xy                - 1;
+                }else{
                 left_xy[1] = left_xy[0] = mb_xy - s->mb_stride - 1;
                 if (curr_mb_field_flag) {
                     left_xy[1] += s->mb_stride;
@@ -772,6 +776,7 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
                     topleft_partition = 0;
                     left_block = left_block_options[1];
                 }
+                }
             }
         }else{
             if(curr_mb_field_flag){
@@ -780,12 +785,17 @@ static av_always_inline int fill_caches(H264Context *h, int mb_type, int for_deb
                 top_xy      += s->mb_stride & (((s->current_picture.mb_type[top_xy    ]>>7)&1)-1);
             }
             if (left_mb_field_flag != curr_mb_field_flag) {
+                if(for_deblock){
+                    left_xy[0] = mb_xy                - 1;
+                    left_xy[1] = mb_xy + s->mb_stride - 1;
+                }else{
                 left_xy[1] = left_xy[0] = mb_xy - 1;
                 if (curr_mb_field_flag) {
                     left_xy[1] += s->mb_stride;
                     left_block = left_block_options[3];
                 } else {
                     left_block = left_block_options[2];
+                }
                 }
             }
         }
