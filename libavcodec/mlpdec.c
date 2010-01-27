@@ -397,7 +397,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     if (m->avctx->request_channels > 0
         && s->max_channel + 1 >= m->avctx->request_channels
         && substr < m->max_decoded_substream) {
-        av_log(m->avctx, AV_LOG_INFO,
+        av_log(m->avctx, AV_LOG_DEBUG,
                "Extracting %d channel downmix from substream %d. "
                "Further substreams will be skipped.\n",
                s->max_channel + 1, substr);
