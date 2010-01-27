@@ -226,6 +226,9 @@ URLProtocol *av_protocol_next(URLProtocol *p);
 attribute_deprecated int register_protocol(URLProtocol *protocol);
 #endif
 
+/**
+ * Registers the URLProtocol protocol.
+ */
 int av_register_protocol(URLProtocol *protocol);
 
 /**
