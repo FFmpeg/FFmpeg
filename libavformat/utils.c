@@ -1823,6 +1823,8 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset
             start_time[pkt->stream_index] != AV_NOPTS_VALUE) {
             end_time = pkt->pts;
             duration = end_time - start_time[pkt->stream_index];
+            if (duration < 0)
+                duration += 1LL<<st->pts_wrap_bits;
             if (duration > 0) {
                 if (st->duration == AV_NOPTS_VALUE ||
                     st->duration < duration)
