@@ -43,9 +43,6 @@
 //#undef NDEBUG
 #include <assert.h>
 
-static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp);
-static void svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
-
 static const uint8_t rem6[52]={
 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3,
 };
@@ -1181,7 +1178,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                                         else
                                             idct_add   (ptr, h->mb + i*16, linesize);
                                     }else
-                                        svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
+                                        ff_svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
                                 }
                             }
                         }
@@ -1193,7 +1190,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                     if(!transform_bypass)
                         h264_luma_dc_dequant_idct_c(h->mb, s->qscale, h->dequant4_coeff[0][s->qscale][0]);
                 }else
-                    svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
+                    ff_svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
             }
             if(h->deblocking_filter)
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0, simple);
@@ -1241,7 +1238,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                 for(i=0; i<16; i++){
                     if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
                         uint8_t * const ptr= dest_y + block_offset[i];
-                        svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, IS_INTRA(mb_type) ? 1 : 0);
+                        ff_svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, IS_INTRA(mb_type) ? 1 : 0);
                     }
                 }
             }
@@ -1276,7 +1273,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
                     for(i=16; i<16+8; i++){
                         if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
                             uint8_t * const ptr= dest[(i&4)>>2] + block_offset[i];
-                            svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, ff_h264_chroma_qp[s->qscale + 12] - 12, 2);
+                            ff_svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, ff_h264_chroma_qp[s->qscale + 12] - 12, 2);
                         }
                     }
                 }
