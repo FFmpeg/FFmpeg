@@ -615,7 +615,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
     if (FRAME_MBAFF
             // and current and left pair do not have the same interlaced type
             && IS_INTERLACED(mb_type^h->left_type[0])
-            // and left mb is in the same slice if deblocking_filter == 2
+            // and left mb is in available to us
             && h->left_type[0]) {
         /* First vertical edge is different in MBAFF frames
          * There are 8 different bS to compute and 2 different Qp
