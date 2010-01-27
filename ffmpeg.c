@@ -89,7 +89,7 @@ typedef struct AVMetaDataMap {
 
 static const OptionDef options[];
 
-#define MAX_FILES 20
+#define MAX_FILES 100
 
 static const char *last_asked_format = NULL;
 static AVFormatContext *input_files[MAX_FILES];
