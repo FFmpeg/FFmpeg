@@ -299,6 +299,7 @@ typedef struct AVInputStream {
                                 is not defined */
     int64_t       pts;       /* current pts */
     int is_start;            /* is 1 at the start and after a discontinuity */
+    int showed_multi_packet_warning;
 } AVInputStream;
 
 typedef struct AVInputFile {
@@ -1312,8 +1313,10 @@ static int output_packet(AVInputStream *ist, int ist_index,
         ist->pts= ist->next_pts;
 
         if(avpkt.size && avpkt.size != pkt->size &&
-           !(ist->st->codec->codec->capabilities & CODEC_CAP_SUBFRAMES) && verbose>0)
+           (!ist->showed_multi_packet_warning && verbose>0 || verbose>1)){
             fprintf(stderr, "Multiple frames in a packet from stream %d\n", pkt->stream_index);
+            ist->showed_multi_packet_warning=1;
+        }
 
         /* decode the packet if needed */
         decoded_data_buf = NULL; /* fail safe */
