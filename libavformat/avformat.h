@@ -520,7 +520,11 @@ typedef struct AVChapter {
     AVMetadata *metadata;
 } AVChapter;
 
+#if LIBAVFORMAT_VERSION_MAJOR < 53
 #define MAX_STREAMS 20
+#else
+#define MAX_STREAMS 100
+#endif
 
 /**
  * Format I/O context.
