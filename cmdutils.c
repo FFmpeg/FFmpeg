@@ -324,12 +324,15 @@ void print_error(const char *filename, int err)
     }
 }
 
-#define PRINT_LIB_VERSION(outstream,libname,LIBNAME,indent) \
-    if (CONFIG_##LIBNAME) { \
-    version= libname##_version(); \
-    fprintf(outstream, "%slib%-10s %2d.%2d.%2d / %2d.%2d.%2d\n", indent? "  " : "", #libname, \
-            LIB##LIBNAME##_VERSION_MAJOR, LIB##LIBNAME##_VERSION_MINOR, LIB##LIBNAME##_VERSION_MICRO, \
-            version >> 16, version >> 8 & 0xff, version & 0xff); \
+#define PRINT_LIB_VERSION(outstream,libname,LIBNAME,indent)             \
+    if (CONFIG_##LIBNAME) {                                             \
+        version= libname##_version();                                   \
+        fprintf(outstream, "%slib%-10s %2d.%2d.%2d / %2d.%2d.%2d\n",    \
+                indent? "  " : "", #libname,                            \
+                LIB##LIBNAME##_VERSION_MAJOR,                           \
+                LIB##LIBNAME##_VERSION_MINOR,                           \
+                LIB##LIBNAME##_VERSION_MICRO,                           \
+                version >> 16, version >> 8 & 0xff, version & 0xff);    \
     }
 
 static void print_all_lib_versions(FILE* outstream, int indent)
