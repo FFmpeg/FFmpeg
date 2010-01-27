@@ -326,7 +326,7 @@ void print_error(const char *filename, int err)
 
 #define PRINT_LIB_VERSION(outstream,libname,LIBNAME,indent)             \
     if (CONFIG_##LIBNAME) {                                             \
-        version= libname##_version();                                   \
+        unsigned int version = libname##_version();                     \
         fprintf(outstream, "%slib%-10s %2d.%2d.%2d / %2d.%2d.%2d\n",    \
                 indent? "  " : "", #libname,                            \
                 LIB##LIBNAME##_VERSION_MAJOR,                           \
@@ -337,7 +337,6 @@ void print_error(const char *filename, int err)
 
 static void print_all_lib_versions(FILE* outstream, int indent)
 {
-    unsigned int version;
     PRINT_LIB_VERSION(outstream, avutil,   AVUTIL,   indent);
     PRINT_LIB_VERSION(outstream, avcodec,  AVCODEC,  indent);
     PRINT_LIB_VERSION(outstream, avformat, AVFORMAT, indent);
