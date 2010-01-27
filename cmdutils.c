@@ -325,10 +325,12 @@ void print_error(const char *filename, int err)
 }
 
 #define PRINT_LIB_VERSION(outstream,libname,LIBNAME,indent) \
+    if (CONFIG_##LIBNAME) { \
     version= libname##_version(); \
     fprintf(outstream, "%slib%-10s %2d.%2d.%2d / %2d.%2d.%2d\n", indent? "  " : "", #libname, \
             LIB##LIBNAME##_VERSION_MAJOR, LIB##LIBNAME##_VERSION_MINOR, LIB##LIBNAME##_VERSION_MICRO, \
-            version >> 16, version >> 8 & 0xff, version & 0xff);
+            version >> 16, version >> 8 & 0xff, version & 0xff); \
+    }
 
 static void print_all_lib_versions(FILE* outstream, int indent)
 {
@@ -337,13 +339,9 @@ static void print_all_lib_versions(FILE* outstream, int indent)
     PRINT_LIB_VERSION(outstream, avcodec,  AVCODEC,  indent);
     PRINT_LIB_VERSION(outstream, avformat, AVFORMAT, indent);
     PRINT_LIB_VERSION(outstream, avdevice, AVDEVICE, indent);
-#if CONFIG_AVFILTER
     PRINT_LIB_VERSION(outstream, avfilter, AVFILTER, indent);
-#endif
     PRINT_LIB_VERSION(outstream, swscale,  SWSCALE,  indent);
-#if CONFIG_POSTPROC
     PRINT_LIB_VERSION(outstream, postproc, POSTPROC, indent);
-#endif
 }
 
 static void maybe_print_config(const char *lib, const char *cfg)
@@ -359,6 +357,11 @@ static void maybe_print_config(const char *lib, const char *cfg)
     }
 }
 
+#define PRINT_LIB_CONFIG(lib, tag, cfg) do {    \
+        if (CONFIG_##lib)                       \
+            maybe_print_config(tag, cfg);       \
+    } while (0)
+
 void show_banner(void)
 {
     fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-%d Fabrice Bellard, et al.\n",
@@ -366,17 +369,13 @@ void show_banner(void)
     fprintf(stderr, "  built on %s %s with %s %s\n",
             __DATE__, __TIME__, CC_TYPE, CC_VERSION);
     fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
-    maybe_print_config("libavutil",   avutil_configuration());
-    maybe_print_config("libavcodec",  avcodec_configuration());
-    maybe_print_config("libavformat", avformat_configuration());
-    maybe_print_config("libavdevice", avdevice_configuration());
-#if CONFIG_AVFILTER
-    maybe_print_config("libavfilter", avfilter_configuration());
-#endif
-    maybe_print_config("libswscale",  swscale_configuration());
-#if CONFIG_POSTPROC
-    maybe_print_config("libpostproc", postproc_configuration());
-#endif
+    PRINT_LIB_CONFIG(AVUTIL,   "libavutil",   avutil_configuration());
+    PRINT_LIB_CONFIG(AVCODEC,  "libavcodec",  avcodec_configuration());
+    PRINT_LIB_CONFIG(AVFORMAT, "libavformat", avformat_configuration());
+    PRINT_LIB_CONFIG(AVDEVICE, "libavdevice", avdevice_configuration());
+    PRINT_LIB_CONFIG(AVFILTER, "libavfilter", avfilter_configuration());
+    PRINT_LIB_CONFIG(SWSCALE,  "libswscale",  swscale_configuration());
+    PRINT_LIB_CONFIG(POSTPROC, "libpostproc", postproc_configuration());
     print_all_lib_versions(stderr, 1);
 }
 
