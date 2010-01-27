@@ -1062,6 +1062,7 @@ HAVE_LIST="
 
 # options emitted with CONFIG_ prefix but not available on command line
 CONFIG_EXTRA="
+    avutil
     gplv3
     lgplv3
 "
@@ -1409,6 +1410,7 @@ host_os=$target_os
 enable avcodec
 enable avdevice
 enable avformat
+enable avutil
 enable asm
 enable debug
 enable doc
