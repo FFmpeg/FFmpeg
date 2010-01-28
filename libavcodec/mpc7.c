@@ -192,7 +192,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx,
     MPCContext *c = avctx->priv_data;
     GetBitContext gb;
     uint8_t *bits;
-    int i, ch, t;
+    int i, ch;
     int mb = -1;
     Band *bands = c->bands;
     int off;
@@ -211,8 +211,9 @@ static int mpc7_decode_frame(AVCodecContext * avctx,
     /* read subband indexes */
     for(i = 0; i <= c->maxbands; i++){
         for(ch = 0; ch < 2; ch++){
+            int t = 4;
             if(i) t = get_vlc2(&gb, hdr_vlc.table, MPC7_HDR_BITS, 1) - 5;
-            if(!i || (t == 4)) bands[i].res[ch] = get_bits(&gb, 4);
+            if(t == 4) bands[i].res[ch] = get_bits(&gb, 4);
             else bands[i].res[ch] = bands[i-1].res[ch] + t;
         }
 
