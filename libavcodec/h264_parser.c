@@ -309,11 +309,17 @@ static void close(AVCodecParserContext *s)
     ff_h264_free_context(h);
 }
 
+static int init(AVCodecParserContext *s)
+{
+    H264Context *h = s->priv_data;
+    h->thread_context[0] = h;
+    return 0;
+}
 
 AVCodecParser h264_parser = {
     { CODEC_ID_H264 },
     sizeof(H264Context),
-    NULL,
+    init,
     h264_parse,
     close,
     h264_split,
