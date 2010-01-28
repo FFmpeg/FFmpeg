@@ -476,24 +476,128 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
     }
 
     /* Calculate bS */
-    for( edge = start; edge < edges; edge++ ) {
-        /* mbn_xy: neighbor macroblock */
-        const int mbn_xy = edge > 0 ? mb_xy : mbm_xy;
-        const int mbn_type = s->current_picture.mb_type[mbn_xy];
+    if(start==0) {
+        DECLARE_ALIGNED_8(int16_t, bS)[4];
+        int qp;
+
+        if( IS_INTRA(mb_type|mbm_type)) {
+            *(uint64_t*)bS= 0x0003000300030003ULL;
+            if (   (!IS_INTERLACED(mb_type|mbm_type))
+                || ((FRAME_MBAFF || (s->picture_structure != PICT_FRAME)) && (dir == 0))
+            )
+                *(uint64_t*)bS= 0x0004000400040004ULL;
+        } else {
+            int i, l;
+            int mv_done;
+
+            if( FRAME_MBAFF && IS_INTERLACED(mb_type ^ mbm_type)) { //FIXME not posible left
+                *(uint64_t*)bS= 0x0001000100010001ULL;
+                mv_done = 1;
+            }
+            else if( mask_par0 && ((mbm_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir)))) ) {
+                int b_idx= 8 + 4;
+                int bn_idx= b_idx - (dir ? 8:1);
+                int v = 0;
+
+                for( l = 0; !v && l < h->list_count; l++ ) {
+                    v |= h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] |
+                         h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
+                         FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit;
+                }
+
+                if(h->list_count==2 && v){
+                    v=0;
+                    for( l = 0; !v && l < 2; l++ ) {
+                        int ln= 1-l;
+                        v |= h->ref_cache[l][b_idx] != h->ref_cache[ln][bn_idx] |
+                            h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] + 3 >= 7U |
+                            FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit;
+                    }
+                }
+
+                bS[0] = bS[1] = bS[2] = bS[3] = v;
+                mv_done = 1;
+            }
+            else
+                mv_done = 0;
+
+            for( i = 0; i < 4; i++ ) {
+                int x = dir == 0 ? 0 : i;
+                int y = dir == 0 ? i    : 0;
+                int b_idx= 8 + 4 + x + 8*y;
+                int bn_idx= b_idx - (dir ? 8:1);
+
+                if( h->non_zero_count_cache[b_idx] |
+                    h->non_zero_count_cache[bn_idx] ) {
+                    bS[i] = 2;
+                }
+                else if(!mv_done)
+                {
+                    bS[i] = 0;
+                    for( l = 0; l < h->list_count; l++ ) {
+                        if( h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] |
+                            h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
+                            FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit ) {
+                            bS[i] = 1;
+                            break;
+                        }
+                    }
+
+                    if(h->list_count == 2 && bS[i]){
+                        bS[i] = 0;
+                        for( l = 0; l < 2; l++ ) {
+                            int ln= 1-l;
+                            if( h->ref_cache[l][b_idx] != h->ref_cache[ln][bn_idx] |
+                                h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] + 3 >= 7U |
+                                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit ) {
+                                bS[i] = 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /* Filter edge */
+        // Do not use s->qscale as luma quantizer because it has not the same
+        // value in IPCM macroblocks.
+        if(bS[0]+bS[1]+bS[2]+bS[3]){
+        qp = ( s->current_picture.qscale_table[mb_xy] + s->current_picture.qscale_table[mbm_xy] + 1 ) >> 1;
+        //tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp[0], s->current_picture.qscale_table[mbn_xy]);
+        tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
+        //{ int i; for (i = 0; i < 4; i++) tprintf(s->avctx, " bS[%d]:%d", i, bS[i]); tprintf(s->avctx, "\n"); }
+        if( dir == 0 ) {
+            filter_mb_edgev( &img_y[0], linesize, bS, qp, h );
+            {
+                int qp= ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbm_xy] ) + 1 ) >> 1;
+                filter_mb_edgecv( &img_cb[0], uvlinesize, bS, qp, h);
+                if(h->pps.chroma_qp_diff)
+                    qp= ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbm_xy] ) + 1 ) >> 1;
+                filter_mb_edgecv( &img_cr[0], uvlinesize, bS, qp, h);
+            }
+        } else {
+            filter_mb_edgeh( &img_y[0], linesize, bS, qp, h );
+            {
+                int qp= ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbm_xy] ) + 1 ) >> 1;
+                filter_mb_edgech( &img_cb[0], uvlinesize, bS, qp, h);
+                if(h->pps.chroma_qp_diff)
+                    qp= ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbm_xy] ) + 1 ) >> 1;
+                filter_mb_edgech( &img_cr[0], uvlinesize, bS, qp, h);
+            }
+        }
+        }
+    }
+    /* Calculate bS */
+    for( edge = 1; edge < edges; edge++ ) {
         DECLARE_ALIGNED_8(int16_t, bS)[4];
         int qp;
 
         if( IS_8x8DCT(mb_type & (edge<<24)) ) // (edge&1) && IS_8x8DCT(mb_type)
             continue;
 
-        if( IS_INTRA(mb_type|mbn_type)) {
+        if( IS_INTRA(mb_type)) {
             *(uint64_t*)bS= 0x0003000300030003ULL;
-            if (edge == 0) {
-                if (   (!IS_INTERLACED(mb_type|mbm_type))
-                    || ((FRAME_MBAFF || (s->picture_structure != PICT_FRAME)) && (dir == 0))
-                )
-                    *(uint64_t*)bS= 0x0004000400040004ULL;
-            }
         } else {
             int i, l;
             int mv_done;
@@ -502,11 +606,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 *(uint64_t*)bS= 0;
                 mv_done = 1;
             }
-            else if( FRAME_MBAFF && IS_INTERLACED(mb_type ^ mbn_type)) {
-                *(uint64_t*)bS= 0x0001000100010001ULL;
-                mv_done = 1;
-            }
-            else if( mask_par0 && (edge || (mbn_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir)))) ) {
+            else if( mask_par0 ) {
                 int b_idx= 8 + 4 + edge * (dir ? 8:1);
                 int bn_idx= b_idx - (dir ? 8:1);
                 int v = 0;
@@ -577,27 +677,21 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         /* Filter edge */
         // Do not use s->qscale as luma quantizer because it has not the same
         // value in IPCM macroblocks.
-        qp = ( s->current_picture.qscale_table[mb_xy] + s->current_picture.qscale_table[mbn_xy] + 1 ) >> 1;
+        qp = s->current_picture.qscale_table[mb_xy];
         //tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp[0], s->current_picture.qscale_table[mbn_xy]);
         tprintf(s->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, linesize, uvlinesize);
         //{ int i; for (i = 0; i < 4; i++) tprintf(s->avctx, " bS[%d]:%d", i, bS[i]); tprintf(s->avctx, "\n"); }
         if( dir == 0 ) {
             filter_mb_edgev( &img_y[4*edge], linesize, bS, qp, h );
             if( (edge&1) == 0 ) {
-                int qp= ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
-                filter_mb_edgecv( &img_cb[2*edge], uvlinesize, bS, qp, h);
-                if(h->pps.chroma_qp_diff)
-                    qp= ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
-                filter_mb_edgecv( &img_cr[2*edge], uvlinesize, bS, qp, h);
+                filter_mb_edgecv( &img_cb[2*edge], uvlinesize, bS, h->chroma_qp[0], h);
+                filter_mb_edgecv( &img_cr[2*edge], uvlinesize, bS, h->chroma_qp[1], h);
             }
         } else {
             filter_mb_edgeh( &img_y[4*edge*linesize], linesize, bS, qp, h );
             if( (edge&1) == 0 ) {
-                int qp= ( h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
-                filter_mb_edgech( &img_cb[2*edge*uvlinesize], uvlinesize, bS, qp, h);
-                if(h->pps.chroma_qp_diff)
-                    qp= ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
-                filter_mb_edgech( &img_cr[2*edge*uvlinesize], uvlinesize, bS, qp, h);
+                filter_mb_edgech( &img_cb[2*edge*uvlinesize], uvlinesize, bS, h->chroma_qp[0], h);
+                filter_mb_edgech( &img_cr[2*edge*uvlinesize], uvlinesize, bS, h->chroma_qp[1], h);
             }
         }
     }
