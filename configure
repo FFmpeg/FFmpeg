@@ -231,6 +231,7 @@ Advanced options (experts only):
   --disable-vis            disable VIS optimizations
   --disable-yasm           disable use of yasm assembler
   --enable-pic             build position-independent code
+  --malloc-prefix=PFX      prefix malloc and related names with PFX
 
 Developer options (useful when working on FFmpeg itself):
   --disable-debug          disable debugging symbols
@@ -1108,6 +1109,7 @@ CMDLINE_SET="
     host_os
     ld
     logfile
+    malloc_prefix
     nm
     source_path
     sysinclude
@@ -2438,9 +2440,9 @@ check_func  gethrtime
 check_func  getrusage
 check_func  inet_aton $network_extralibs
 check_func  isatty
-check_func  memalign
+check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  mkstemp
-check_func  posix_memalign
+check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_func_headers windows.h GetProcessTimes
@@ -2977,6 +2979,9 @@ cat > $TMPH <<EOF
 #define EXTERN_PREFIX "${extern_prefix}"
 #define EXTERN_ASM ${extern_prefix}
 EOF
+
+test -n "$malloc_prefix" &&
+    echo "#define MALLOC_PREFIX $malloc_prefix" >>$TMPH
 
 if enabled small || disabled optimizations; then
     echo "#define av_always_inline"  >> $TMPH
