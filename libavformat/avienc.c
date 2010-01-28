@@ -50,6 +50,7 @@ typedef struct  {
     int64_t frames_hdr_strm;
     int audio_strm_length;
     int packet_count;
+    int entry;
 
     AVIIndex indexes;
 } AVIStream ;
@@ -461,20 +462,24 @@ static int avi_write_idx1(AVFormatContext *s)
     char tag[5];
 
     if (!url_is_streamed(pb)) {
+        AVIStream *avist;
         AVIIentry* ie = 0, *tie;
-        int entry[MAX_STREAMS];
         int empty, stream_id = -1;
 
         idx_chunk = ff_start_tag(pb, "idx1");
-        memset(&entry[0], 0, sizeof(entry));
+        for(i=0; i<s->nb_streams; i++){
+            avist= s->streams[i]->priv_data;
+            avist->entry=0;
+        }
+
         do {
             empty = 1;
             for (i=0; i<s->nb_streams; i++) {
-                AVIStream *avist= s->streams[i]->priv_data;
-                 if (avist->indexes.entry <= entry[i])
+                avist= s->streams[i]->priv_data;
+                 if (avist->indexes.entry <= avist->entry)
                      continue;
 
-                 tie = avi_get_ientry(&avist->indexes, entry[i]);
+                 tie = avi_get_ientry(&avist->indexes, avist->entry);
                  if (empty || tie->pos < ie->pos) {
                      ie = tie;
                      stream_id = i;
@@ -482,13 +487,14 @@ static int avi_write_idx1(AVFormatContext *s)
                  empty = 0;
             }
             if (!empty) {
+                avist= s->streams[stream_id]->priv_data;
                 avi_stream2fourcc(&tag[0], stream_id,
                                   s->streams[stream_id]->codec->codec_type);
                 put_tag(pb, &tag[0]);
                 put_le32(pb, ie->flags);
                 put_le32(pb, ie->pos);
                 put_le32(pb, ie->len);
-                entry[stream_id]++;
+                avist->entry++;
             }
         } while (!empty);
         ff_end_tag(pb, idx_chunk);
