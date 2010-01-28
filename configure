@@ -1657,20 +1657,28 @@ if   $cc -v 2>&1 | grep -qi ^gcc; then
         CC_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
         AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
     fi
+    speed_cflags='-O3'
+    size_cflags='-Os'
 elif $cc --version 2>/dev/null | grep -q Intel; then
     cc_type=icc
     cc_version="AV_STRINGIFY(__INTEL_COMPILER)"
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
+    speed_cflags='-O3'
+    size_cflags='-Os'
 elif $cc -v 2>&1 | grep -q xlc; then
     cc_type=xlc
     cc_version="AV_STRINGIFY(__IBMC__)"
+    speed_cflags='-O5'
+    size_cflags='-O5 -qcompact'
 elif $cc -V 2>/dev/null | grep -q Compaq; then
     cc_type=ccc
     cc_version="AV_STRINGIFY(__DECC_VER)"
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -M'
     debuglevel=3
     add_ldflags -Wl,-z,now # calls to libots crash without this
+    speed_cflags='-fast'
+    size_cflags='-O1'
 elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
     test -d "$sysroot" || die "No valid sysroot specified."
     cc_type=armcc
@@ -1685,6 +1693,8 @@ elif $cc --vsn 2>/dev/null | grep -q "ARM C/C++ Compiler"; then
     as_default="${cross_prefix}gcc"
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
+    speed_cflags='-O3'
+    size_cflags='-Os'
 elif $cc -version 2>/dev/null | grep -q TMS470; then
     cc_type=tms470
     cc_version="AV_STRINGIFY(__TI_COMPILER_VERSION__)"
@@ -1697,6 +1707,8 @@ elif $cc -version 2>/dev/null | grep -q TMS470; then
     add_cflags -D__gnuc_va_list=va_list -D__USER_LABEL_PREFIX__=
     CC_DEPFLAGS='-ppa -ppd=$(@:.o=.d)'
     AS_DEPFLAGS='-MMD'
+    speed_cflags='-O3 -mf=5'
+    size_cflags='-O3 -mf=2'
     filter_cflags=tms470_flags
     tms470_flags(){
         for flag; do
@@ -1716,8 +1728,7 @@ elif $cc -version 2>/dev/null | grep -q TMS470; then
                 -mfpu=vfp)      echo --float_support=vfpv2        ;;
                 -mfpu=vfpv3)    echo --float_support=vfpv3        ;;
                 -msoft-float)   echo --float_support=vfplib       ;;
-                -Os)            echo -O3 -mf=2                    ;;
-                -O[0-3])        echo $flag -mf=5                  ;;
+                -O[0-3]|-mf=*)  echo $flag                        ;;
                 -g)             echo -g -mn                       ;;
                 -pds=*)         echo $flag                        ;;
             esac
@@ -1728,11 +1739,15 @@ elif $cc -v 2>&1 | grep -q clang; then
     cc_version=__VERSION__
     CC_DEPFLAGS='-MMD'
     AS_DEPFLAGS='-MMD'
+    speed_cflags='-O3'
+    size_cflags='-Os'
 elif $cc -V 2>&1 | grep -q Sun; then
     cc_type=suncc
     cc_version="AV_STRINGIFY(__SUNPRO_C)"
     DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -xM1'
+    speed_cflags='-O5'
+    size_cflags='-O5 -xspace'
     filter_cflags=suncc_flags
     suncc_flags(){
         for flag; do
@@ -1761,7 +1776,6 @@ elif $cc -V 2>&1 | grep -q Sun; then
                 -std=c99)             echo -xc99              ;;
                 -fomit-frame-pointer) echo -xregs=frameptr    ;;
                 -fPIC)                echo -KPIC -xcode=pic32 ;;
-                -Os)                  echo -O5 -xspace        ;;
                 -W*,*)                echo $flag              ;;
                 -f*-*|-W*)                                    ;;
                 *)                    echo $flag              ;;
@@ -2632,19 +2646,10 @@ test_ldflags -Wl,--version-script,$TMPV &&
     append SHFLAGS '-Wl,--version-script,\$(SUBDIR)lib\$(NAME).ver'
 
 if enabled small; then
-    check_cflags -Os            # not all compilers support -Os
+    add_cflags $size_cflags
     optimizations="small"
 elif enabled optimizations; then
-    if enabled xlc; then
-        add_cflags  -O5
-        add_ldflags -O5
-    elif enabled suncc; then
-        add_cflags -O5
-    elif enabled ccc; then
-        add_cflags -fast
-    else
-        add_cflags -O3
-    fi
+    add_cflags $speed_cflags
 fi
 check_cflags -fno-math-errno
 check_cflags -fno-signed-zeros
