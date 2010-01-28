@@ -50,6 +50,7 @@ version <next>:
 - Deluxe Paint Animation playback system
 - SIPR decoder
 - Adobe Filmstrip muxer and demuxer
+- RTP depacketization of H.263
 
 
 

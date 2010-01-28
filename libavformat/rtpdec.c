@@ -33,6 +33,7 @@
 #include "rtp_asf.h"
 #include "rtp_h264.h"
 #include "rtp_vorbis.h"
+#include "rtpdec_h263.h"
 
 //#define DEBUG
 
@@ -61,6 +62,8 @@ void av_register_rtp_dynamic_payload_handlers(void)
 {
     ff_register_dynamic_payload_handler(&mp4v_es_handler);
     ff_register_dynamic_payload_handler(&mpeg4_generic_handler);
+    ff_register_dynamic_payload_handler(&ff_h263_1998_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_h263_2000_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_h264_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_vorbis_dynamic_handler);
 
@@ -301,6 +304,7 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
         case CODEC_ID_MP2:
         case CODEC_ID_MP3:
         case CODEC_ID_MPEG4:
+        case CODEC_ID_H263:
         case CODEC_ID_H264:
             st->need_parsing = AVSTREAM_PARSE_FULL;
             break;
