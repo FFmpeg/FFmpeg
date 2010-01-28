@@ -76,7 +76,7 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     URLContext *uc;
     int err;
 
-    uc = av_malloc(sizeof(URLContext) + strlen(filename) + 1);
+    uc = av_mallocz(sizeof(URLContext) + strlen(filename) + 1);
     if (!uc) {
         err = AVERROR(ENOMEM);
         goto fail;
