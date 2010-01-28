@@ -232,12 +232,12 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->duration = last_index - first_index + 1;
     }
 
-    if(ap->video_codec_id){
+    if(s1->video_codec_id){
         st->codec->codec_type = CODEC_TYPE_VIDEO;
-        st->codec->codec_id = ap->video_codec_id;
-    }else if(ap->audio_codec_id){
+        st->codec->codec_id = s1->video_codec_id;
+    }else if(s1->audio_codec_id){
         st->codec->codec_type = CODEC_TYPE_AUDIO;
-        st->codec->codec_id = ap->audio_codec_id;
+        st->codec->codec_id = s1->audio_codec_id;
     }else{
         st->codec->codec_type = CODEC_TYPE_VIDEO;
         st->codec->codec_id = av_str2id(img_tags, s->path);

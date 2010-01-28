@@ -79,7 +79,7 @@ static av_cold int audio_read_header(AVFormatContext *s1,
         return AVERROR(ENOMEM);
     }
     sample_rate = ap->sample_rate;
-    codec_id    = ap->audio_codec_id;
+    codec_id    = s1->audio_codec_id;
 
     ret = ff_alsa_open(s1, SND_PCM_STREAM_CAPTURE, &sample_rate, ap->channels,
         &codec_id);
