@@ -20,6 +20,7 @@ endif
 ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
 CPPFLAGS := -DHAVE_AV_CONFIG_H -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(CPPFLAGS)
+CFLAGS   += $(ECFLAGS)
 
 %.o: %.c
 	$(CCDEP)
@@ -54,7 +55,7 @@ endif
 
 OBJS-$(HAVE_MMX) +=  $(MMX-OBJS-yes)
 
-CFLAGS    += $(CFLAGS-yes) $(ECFLAGS)
+CFLAGS    += $(CFLAGS-yes)
 OBJS      += $(OBJS-yes)
 FFLIBS    := $(FFLIBS-yes) $(FFLIBS)
 TESTPROGS += $(TESTPROGS-yes)
