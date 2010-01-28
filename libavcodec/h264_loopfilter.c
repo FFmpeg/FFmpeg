@@ -99,7 +99,7 @@ static const uint8_t tc0_table[52*3][4] = {
     {-1,13,17,25 }, {-1,13,17,25 }, {-1,13,17,25 }, {-1,13,17,25 },
 };
 
-static void av_noinline filter_mb_edgev( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h) {
+static void av_always_inline filter_mb_edgev( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h) {
     const unsigned int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = alpha_table[index_a];
     const int beta  = beta_table[qp + h->slice_beta_offset];
@@ -116,7 +116,7 @@ static void av_noinline filter_mb_edgev( uint8_t *pix, int stride, int16_t bS[4]
         h->s.dsp.h264_h_loop_filter_luma_intra(pix, stride, alpha, beta);
     }
 }
-static void av_noinline filter_mb_edgecv( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h ) {
+static void av_always_inline filter_mb_edgecv( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h ) {
     const unsigned int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = alpha_table[index_a];
     const int beta  = beta_table[qp + h->slice_beta_offset];
@@ -269,7 +269,7 @@ static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, in
     }
 }
 
-static void av_noinline filter_mb_edgeh( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h ) {
+static void av_always_inline filter_mb_edgeh( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h ) {
     const unsigned int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = alpha_table[index_a];
     const int beta  = beta_table[qp + h->slice_beta_offset];
@@ -287,7 +287,7 @@ static void av_noinline filter_mb_edgeh( uint8_t *pix, int stride, int16_t bS[4]
     }
 }
 
-static void av_noinline filter_mb_edgech( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h ) {
+static void av_always_inline filter_mb_edgech( uint8_t *pix, int stride, int16_t bS[4], unsigned int qp, H264Context *h ) {
     const unsigned int index_a = qp + h->slice_alpha_c0_offset;
     const int alpha = alpha_table[index_a];
     const int beta  = beta_table[qp + h->slice_beta_offset];
