@@ -425,23 +425,26 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
 }
 
 static int check_mv(H264Context *h, long b_idx, long bn_idx, int mvy_limit){
-    int l;
-    int v = 0;
+    int v;
 
-    for( l = 0; !v && l < h->list_count; l++ ) {
-        v |= h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] |
-                h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
-                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit;
-    }
+    v = h->ref_cache[0][b_idx] != h->ref_cache[0][bn_idx] |
+        h->mv_cache[0][b_idx][0] - h->mv_cache[0][bn_idx][0] + 3 >= 7U |
+        FFABS( h->mv_cache[0][b_idx][1] - h->mv_cache[0][bn_idx][1] ) >= mvy_limit;
+    if(h->list_count==2 && !v)
+        v = h->ref_cache[1][b_idx] != h->ref_cache[1][bn_idx] |
+            h->mv_cache[1][b_idx][0] - h->mv_cache[1][bn_idx][0] + 3 >= 7U |
+            FFABS( h->mv_cache[1][b_idx][1] - h->mv_cache[1][bn_idx][1] ) >= mvy_limit;
 
     if(h->list_count==2 && v){
-        v=0;
-        for( l = 0; !v && l < 2; l++ ) {
-            int ln= 1-l;
-            v |= h->ref_cache[l][b_idx] != h->ref_cache[ln][bn_idx] |
-                h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] + 3 >= 7U |
-                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit;
-        }
+        if(h->ref_cache[0][b_idx] != h->ref_cache[1][bn_idx] |
+           h->mv_cache[0][b_idx][0] - h->mv_cache[1][bn_idx][0] + 3 >= 7U |
+           FFABS( h->mv_cache[0][b_idx][1] - h->mv_cache[1][bn_idx][1] ) >= mvy_limit)
+            return 1;
+        if(h->ref_cache[1][b_idx] != h->ref_cache[0][bn_idx] |
+           h->mv_cache[1][b_idx][0] - h->mv_cache[0][bn_idx][0] + 3 >= 7U |
+           FFABS( h->mv_cache[1][b_idx][1] - h->mv_cache[0][bn_idx][1] ) >= mvy_limit)
+            return 1;
+        return 0;
     }
 
     return v;
