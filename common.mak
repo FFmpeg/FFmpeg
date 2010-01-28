@@ -54,7 +54,7 @@ endif
 
 OBJS-$(HAVE_MMX) +=  $(MMX-OBJS-yes)
 
-CFLAGS    += $(CFLAGS-yes)
+CFLAGS    += $(CFLAGS-yes) $(ECFLAGS)
 OBJS      += $(OBJS-yes)
 FFLIBS    := $(FFLIBS-yes) $(FFLIBS)
 TESTPROGS += $(TESTPROGS-yes)
