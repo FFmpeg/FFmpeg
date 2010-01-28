@@ -424,6 +424,28 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
     }
 }
 
+static int check_mv(H264Context *h, long b_idx, long bn_idx, int mvy_limit){
+    int l;
+    int v = 0;
+
+    for( l = 0; !v && l < h->list_count; l++ ) {
+        v |= h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] |
+                h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
+                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit;
+    }
+
+    if(h->list_count==2 && v){
+        v=0;
+        for( l = 0; !v && l < 2; l++ ) {
+            int ln= 1-l;
+            v |= h->ref_cache[l][b_idx] != h->ref_cache[ln][bn_idx] |
+                h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] + 3 >= 7U |
+                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit;
+        }
+    }
+
+    return v;
+}
 
 static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize, int mb_xy, int mb_type, int mvy_limit, int first_vertical_edge_done, int dir) {
     MpegEncContext * const s = &h->s;
@@ -498,25 +520,8 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 else if( mask_par0 && ((mbm_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir)))) ) {
                     int b_idx= 8 + 4;
                     int bn_idx= b_idx - (dir ? 8:1);
-                    int v = 0;
 
-                    for( l = 0; !v && l < h->list_count; l++ ) {
-                        v |= h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] |
-                            h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
-                            FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit;
-                    }
-
-                    if(h->list_count==2 && v){
-                        v=0;
-                        for( l = 0; !v && l < 2; l++ ) {
-                            int ln= 1-l;
-                            v |= h->ref_cache[l][b_idx] != h->ref_cache[ln][bn_idx] |
-                                h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] + 3 >= 7U |
-                                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit;
-                        }
-                    }
-
-                    bS[0] = bS[1] = bS[2] = bS[3] = v;
+                    bS[0] = bS[1] = bS[2] = bS[3] = check_mv(h, 8 + 4, bn_idx, mvy_limit);
                     mv_done = 1;
                 }
                 else
@@ -534,28 +539,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                     }
                     else if(!mv_done)
                     {
-                        bS[i] = 0;
-                        for( l = 0; l < h->list_count; l++ ) {
-                            if( h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] |
-                                h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
-                                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit ) {
-                                bS[i] = 1;
-                                break;
-                            }
-                        }
-
-                        if(h->list_count == 2 && bS[i]){
-                            bS[i] = 0;
-                            for( l = 0; l < 2; l++ ) {
-                                int ln= 1-l;
-                                if( h->ref_cache[l][b_idx] != h->ref_cache[ln][bn_idx] |
-                                    h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] + 3 >= 7U |
-                                    FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit ) {
-                                    bS[i] = 1;
-                                    break;
-                                }
-                            }
-                        }
+                        bS[i] = check_mv(h, b_idx, bn_idx, mvy_limit);
                     }
                 }
             }
@@ -612,25 +596,8 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
             else if( mask_par0 ) {
                 int b_idx= 8 + 4 + edge * (dir ? 8:1);
                 int bn_idx= b_idx - (dir ? 8:1);
-                int v = 0;
 
-                for( l = 0; !v && l < h->list_count; l++ ) {
-                    v |= h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] |
-                         h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
-                         FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit;
-                }
-
-                if(h->list_count==2 && v){
-                    v=0;
-                    for( l = 0; !v && l < 2; l++ ) {
-                        int ln= 1-l;
-                        v |= h->ref_cache[l][b_idx] != h->ref_cache[ln][bn_idx] |
-                            h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] + 3 >= 7U |
-                            FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit;
-                    }
-                }
-
-                bS[0] = bS[1] = bS[2] = bS[3] = v;
+                bS[0] = bS[1] = bS[2] = bS[3] = check_mv(h, b_idx, bn_idx, mvy_limit);
                 mv_done = 1;
             }
             else
@@ -648,28 +615,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 }
                 else if(!mv_done)
                 {
-                    bS[i] = 0;
-                    for( l = 0; l < h->list_count; l++ ) {
-                        if( h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] |
-                            h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] + 3 >= 7U |
-                            FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit ) {
-                            bS[i] = 1;
-                            break;
-                        }
-                    }
-
-                    if(h->list_count == 2 && bS[i]){
-                        bS[i] = 0;
-                        for( l = 0; l < 2; l++ ) {
-                            int ln= 1-l;
-                            if( h->ref_cache[l][b_idx] != h->ref_cache[ln][bn_idx] |
-                                h->mv_cache[l][b_idx][0] - h->mv_cache[ln][bn_idx][0] + 3 >= 7U |
-                                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[ln][bn_idx][1] ) >= mvy_limit ) {
-                                bS[i] = 1;
-                                break;
-                            }
-                        }
-                    }
+                    bS[i] = check_mv(h, b_idx, bn_idx, mvy_limit);
                 }
             }
 
