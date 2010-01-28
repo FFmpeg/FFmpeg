@@ -431,12 +431,12 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
 
     // how often to recheck mv-based bS when iterating along each edge
     const int mask_par0 = mb_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir));
-    int start =   h->slice_table[mbm_xy] == 0xFFFF
+
+    if(!(h->slice_table[mbm_xy] == 0xFFFF
                || first_vertical_edge_done
-               || (h->deblocking_filter==2 && h->slice_table[mbm_xy] != h->slice_num);
+               || (h->deblocking_filter==2 && h->slice_table[mbm_xy] != h->slice_num))){
 
-
-    if (FRAME_MBAFF && (dir == 1) && ((mb_y&1) == 0) && start == 0
+        if (FRAME_MBAFF && (dir == 1) && ((mb_y&1) == 0)
         && IS_INTERLACED(mbm_type&~mb_type)
         ) {
         // This is a special case in the norm where the filtering must
@@ -471,12 +471,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
             filter_mb_edgech( &img_cr[j*uvlinesize], tmp_uvlinesize, bS,
                               ( h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1, h);
         }
-
-        start = 1;
-    }
-
-    /* Calculate bS */
-    if(start==0) {
+        }else{
         DECLARE_ALIGNED_8(int16_t, bS)[4];
         int qp;
 
@@ -588,6 +583,8 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         }
         }
     }
+    }
+
     /* Calculate bS */
     for( edge = 1; edge < edges; edge++ ) {
         DECLARE_ALIGNED_8(int16_t, bS)[4];
