@@ -175,6 +175,14 @@ static inline void idx_to_quant(MPCContext *c, GetBitContext *gb, int idx, int *
     }
 }
 
+static int get_scale_idx(GetBitContext *gb, int ref)
+{
+    int t = get_vlc2(gb, dscf_vlc.table, MPC7_DSCF_BITS, 1) - 7;
+    if (t == 8)
+        return get_bits(gb, 6);
+    return ref + t;
+}
+
 static int mpc7_decode_frame(AVCodecContext * avctx,
                             void *data, int *data_size,
                             AVPacket *avpkt)
@@ -222,24 +230,19 @@ static int mpc7_decode_frame(AVCodecContext * avctx,
         for(ch = 0; ch < 2; ch++){
             if(bands[i].res[ch]){
                 bands[i].scf_idx[ch][2] = c->oldDSCF[ch][i];
-                t = get_vlc2(&gb, dscf_vlc.table, MPC7_DSCF_BITS, 1) - 7;
-                bands[i].scf_idx[ch][0] = (t == 8) ? get_bits(&gb, 6) : (bands[i].scf_idx[ch][2] + t);
+                bands[i].scf_idx[ch][0] = get_scale_idx(&gb, bands[i].scf_idx[ch][2]);
                 switch(bands[i].scfi[ch]){
                 case 0:
-                    t = get_vlc2(&gb, dscf_vlc.table, MPC7_DSCF_BITS, 1) - 7;
-                    bands[i].scf_idx[ch][1] = (t == 8) ? get_bits(&gb, 6) : (bands[i].scf_idx[ch][0] + t);
-                    t = get_vlc2(&gb, dscf_vlc.table, MPC7_DSCF_BITS, 1) - 7;
-                    bands[i].scf_idx[ch][2] = (t == 8) ? get_bits(&gb, 6) : (bands[i].scf_idx[ch][1] + t);
+                    bands[i].scf_idx[ch][1] = get_scale_idx(&gb, bands[i].scf_idx[ch][0]);
+                    bands[i].scf_idx[ch][2] = get_scale_idx(&gb, bands[i].scf_idx[ch][1]);
                     break;
                 case 1:
-                    t = get_vlc2(&gb, dscf_vlc.table, MPC7_DSCF_BITS, 1) - 7;
-                    bands[i].scf_idx[ch][1] = (t == 8) ? get_bits(&gb, 6) : (bands[i].scf_idx[ch][0] + t);
+                    bands[i].scf_idx[ch][1] = get_scale_idx(&gb, bands[i].scf_idx[ch][0]);
                     bands[i].scf_idx[ch][2] = bands[i].scf_idx[ch][1];
                     break;
                 case 2:
                     bands[i].scf_idx[ch][1] = bands[i].scf_idx[ch][0];
-                    t = get_vlc2(&gb, dscf_vlc.table, MPC7_DSCF_BITS, 1) - 7;
-                    bands[i].scf_idx[ch][2] = (t == 8) ? get_bits(&gb, 6) : (bands[i].scf_idx[ch][1] + t);
+                    bands[i].scf_idx[ch][2] = get_scale_idx(&gb, bands[i].scf_idx[ch][1]);
                     break;
                 case 3:
                     bands[i].scf_idx[ch][2] = bands[i].scf_idx[ch][1] = bands[i].scf_idx[ch][0];
