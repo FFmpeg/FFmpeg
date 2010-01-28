@@ -2882,10 +2882,6 @@ static void opt_input_file(const char *filename)
    // ap->sample_fmt = audio_sample_fmt; //FIXME:not implemented in libavformat
     ap->channel = video_channel;
     ap->standard = video_standard;
-    ap->video_codec_id = find_codec_or_die(video_codec_name, CODEC_TYPE_VIDEO, 0);
-    ap->audio_codec_id = find_codec_or_die(audio_codec_name, CODEC_TYPE_AUDIO, 0);
-    if(pgmyuv_compatibility_hack)
-        ap->video_codec_id= CODEC_ID_PGMYUV;
 
     set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM);
 
@@ -2893,6 +2889,9 @@ static void opt_input_file(const char *filename)
     ic->audio_codec_id   = find_codec_or_die(audio_codec_name   , CODEC_TYPE_AUDIO   , 0);
     ic->subtitle_codec_id= find_codec_or_die(subtitle_codec_name, CODEC_TYPE_SUBTITLE, 0);
     ic->flags |= AVFMT_FLAG_NONBLOCK;
+
+    if(pgmyuv_compatibility_hack)
+        ic->video_codec_id= CODEC_ID_PGMYUV;
 
     /* open the input file with generic libav function */
     err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
