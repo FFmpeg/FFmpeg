@@ -340,15 +340,13 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
         int16_t bS4[4] = {4,4,4,4};
         int16_t bS3[4] = {3,3,3,3};
         int16_t *bSH = FIELD_PICTURE ? bS3 : bS4;
+        if(left_type)
+            filter_mb_edgev( &img_y[4*0], linesize, bS4, qp0, h);
         if( IS_8x8DCT(mb_type) ) {
-            if(left_type)
-                filter_mb_edgev( &img_y[4*0], linesize, bS4, qp0, h);
             filter_mb_edgev( &img_y[4*2], linesize, bS3, qp, h);
             filter_mb_edgeh( &img_y[4*0*linesize], linesize, bSH, qp1, h);
             filter_mb_edgeh( &img_y[4*2*linesize], linesize, bS3, qp, h);
         } else {
-            if(left_type)
-                filter_mb_edgev( &img_y[4*0], linesize, bS4, qp0, h);
             filter_mb_edgev( &img_y[4*1], linesize, bS3, qp, h);
             filter_mb_edgev( &img_y[4*2], linesize, bS3, qp, h);
             filter_mb_edgev( &img_y[4*3], linesize, bS3, qp, h);
@@ -399,19 +397,15 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
                 filter_mb_edgec##hv( &img_cr[2*edge*(dir?uvlinesize:1)], uvlinesize, bS[dir][edge], edge ? qpc : qpc##dir, h );\
             }\
         }
+        if(left_type)
+            FILTER(v,0,0);
         if( edges == 1 ) {
-            if(left_type)
-                FILTER(v,0,0);
             FILTER(h,1,0);
         } else if( IS_8x8DCT(mb_type) ) {
-            if(left_type)
-                FILTER(v,0,0);
             FILTER(v,0,2);
             FILTER(h,1,0);
             FILTER(h,1,2);
         } else {
-            if(left_type)
-                FILTER(v,0,0);
             FILTER(v,0,1);
             FILTER(v,0,2);
             FILTER(v,0,3);
