@@ -1236,21 +1236,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     *data_size = 0;
     err = parse_frame_header(s);
 
-    /* check that reported frame size fits in input buffer */
-    if(!err && s->frame_size > buf_size) {
-        av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
-        err = AAC_AC3_PARSE_ERROR_FRAME_SIZE;
-    }
-
-    /* check for crc mismatch */
-    if(err != AAC_AC3_PARSE_ERROR_FRAME_SIZE && avctx->error_recognition >= FF_ER_CAREFUL) {
-        if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2], s->frame_size-2)) {
-            av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
-            err = AAC_AC3_PARSE_ERROR_CRC;
-        }
-    }
-
-    if(err && err != AAC_AC3_PARSE_ERROR_CRC) {
+    if (err) {
         switch(err) {
             case AAC_AC3_PARSE_ERROR_SYNC:
                 av_log(avctx, AV_LOG_ERROR, "frame sync error\n");
@@ -1277,6 +1263,18 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
             default:
                 av_log(avctx, AV_LOG_ERROR, "invalid header\n");
                 break;
+        }
+    } else {
+        /* check that reported frame size fits in input buffer */
+        if (s->frame_size > buf_size) {
+            av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
+            err = AAC_AC3_PARSE_ERROR_FRAME_SIZE;
+        } else if (avctx->error_recognition >= FF_ER_CAREFUL) {
+            /* check for crc mismatch */
+            if (av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2], s->frame_size-2)) {
+                av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
+                err = AAC_AC3_PARSE_ERROR_CRC;
+            }
         }
     }
 
