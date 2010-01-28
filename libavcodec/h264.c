@@ -2527,6 +2527,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             if((err = decode_slice_header(hx, h)))
                break;
 
+            avctx->profile = hx->sps.profile_idc;
+            avctx->level   = hx->sps.level_idc;
+
             if (s->avctx->hwaccel && h->current_slice == 1) {
                 if (s->avctx->hwaccel->start_frame(s->avctx, NULL, 0) < 0)
                     return -1;
@@ -2559,6 +2562,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 
             if ((err = decode_slice_header(hx, h)) < 0)
                 break;
+
+            avctx->profile = hx->sps.profile_idc;
+            avctx->level   = hx->sps.level_idc;
 
             hx->s.data_partitioning = 1;
 

@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 48
+#define LIBAVCODEC_VERSION_MINOR 49
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -2123,10 +2123,20 @@ typedef struct AVCodecContext {
      */
      int profile;
 #define FF_PROFILE_UNKNOWN -99
+
 #define FF_PROFILE_AAC_MAIN 0
 #define FF_PROFILE_AAC_LOW  1
 #define FF_PROFILE_AAC_SSR  2
 #define FF_PROFILE_AAC_LTP  3
+
+#define FF_PROFILE_H264_BASELINE    66
+#define FF_PROFILE_H264_MAIN        77
+#define FF_PROFILE_H264_EXTENDED    88
+#define FF_PROFILE_H264_HIGH        100
+#define FF_PROFILE_H264_HIGH_10     110
+#define FF_PROFILE_H264_HIGH_422    122
+#define FF_PROFILE_H264_HIGH_444    244
+#define FF_PROFILE_H264_CAVLC_444   44
 
     /**
      * level

@@ -185,6 +185,9 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             h->sps = *h->sps_buffers[h->pps.sps_id];
             h->frame_num = get_bits(&h->s.gb, h->sps.log2_max_frame_num);
 
+            avctx->profile = h->sps.profile_idc;
+            avctx->level   = h->sps.level_idc;
+
             if(h->sps.frame_mbs_only_flag){
                 h->s.picture_structure= PICT_FRAME;
             }else{
