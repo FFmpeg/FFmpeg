@@ -408,6 +408,10 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 
 #define AV_COPY(n, d, s) (*(uint##n##_t*)(d) = *(const uint##n##_t*)(s))
 
+#ifndef AV_COPY32
+#   define AV_COPY32(d, s) AV_COPY(32, d, s)
+#endif
+
 #ifndef AV_COPY64
 #   define AV_COPY64(d, s) AV_COPY(64, d, s)
 #endif
