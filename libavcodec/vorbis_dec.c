@@ -984,7 +984,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
         return -1;
     }
 
-    if (vc->audio_channels > 6)
+    if (vc->audio_channels > 8)
         avccontext->channel_layout = 0;
     else
         avccontext->channel_layout = ff_vorbis_channel_layouts[vc->audio_channels - 1];
@@ -1616,7 +1616,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 
     AV_DEBUG("parsed %d bytes %d bits, returned %d samples (*ch*bits) \n", get_bits_count(gb)/8, get_bits_count(gb)%8, len);
 
-    if (vc->audio_channels > 6) {
+    if (vc->audio_channels > 8) {
         for (i = 0; i < vc->audio_channels; i++)
             channel_ptrs[i] = vc->channel_floors + i * len;
     } else {
