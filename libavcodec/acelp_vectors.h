@@ -30,6 +30,7 @@ typedef struct {
     int      n;
     int      x[10];
     float    y[10];
+    int      no_repeat_mask;
     int      pitch_lag;
     float    pitch_fac;
 } AMRFixed;
