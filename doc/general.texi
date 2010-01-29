@@ -995,13 +995,6 @@ and for a build with shared libraries
 ./configure --target-os=mingw32 --enable-memalign-hack --enable-shared --disable-static --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
 @end example
 
-@subsection Win9x/Win2000 support
-
-FFmpeg is built by default for Windows XP and above. To run it on any Windows
-version prior to XP, you must use @code{--target-os=mingw32-prexp}.
-Additionally, for Windows 98/Me you must install KernelEx from:
-http://sourceforge.net/projects/kernelex/
-
 @section BeOS
 
 BeOS support is broken in mysterious ways.
