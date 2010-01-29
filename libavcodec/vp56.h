@@ -110,6 +110,7 @@ struct vp56_context {
     int quantizer;
     uint16_t dequant_dc;
     uint16_t dequant_ac;
+    int8_t *qscale_table;
 
     /* DC predictors management */
     VP56RefDc *above_blocks;
