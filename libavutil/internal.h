@@ -55,6 +55,14 @@
 #endif
 #endif
 
+#ifndef av_alias
+#if HAVE_ATTRIBUTE_MAY_ALIAS
+#   define av_alias __attribute__((may_alias))
+#else
+#   define av_alias
+#endif
+#endif
+
 #ifndef INT16_MIN
 #define INT16_MIN       (-0x7fff - 1)
 #endif
