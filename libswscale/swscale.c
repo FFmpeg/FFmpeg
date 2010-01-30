@@ -1267,7 +1267,7 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
 #endif //!CONFIG_RUNTIME_CPUDETECT
 }
 
-static int PlanarToNV12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int planarToNv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dstParam[], int dstStride[])
 {
     uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
@@ -1293,7 +1293,7 @@ static int PlanarToNV12Wrapper(SwsContext *c, const uint8_t* src[], int srcStrid
     return srcSliceH;
 }
 
-static int PlanarToYuy2Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int planarToYuy2Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dstParam[], int dstStride[])
 {
     uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
@@ -1303,7 +1303,7 @@ static int PlanarToYuy2Wrapper(SwsContext *c, const uint8_t* src[], int srcStrid
     return srcSliceH;
 }
 
-static int PlanarToUyvyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int planarToUyvyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dstParam[], int dstStride[])
 {
     uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
@@ -1313,7 +1313,7 @@ static int PlanarToUyvyWrapper(SwsContext *c, const uint8_t* src[], int srcStrid
     return srcSliceH;
 }
 
-static int YUV422PToYuy2Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int yuv422pToYuy2Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                 int srcSliceH, uint8_t* dstParam[], int dstStride[])
 {
     uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
@@ -1323,7 +1323,7 @@ static int YUV422PToYuy2Wrapper(SwsContext *c, const uint8_t* src[], int srcStri
     return srcSliceH;
 }
 
-static int YUV422PToUyvyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int yuv422pToUyvyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                 int srcSliceH, uint8_t* dstParam[], int dstStride[])
 {
     uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
@@ -1333,7 +1333,7 @@ static int YUV422PToUyvyWrapper(SwsContext *c, const uint8_t* src[], int srcStri
     return srcSliceH;
 }
 
-static int YUYV2YUV420Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int yuyvToYuv420Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dstParam[], int dstStride[])
 {
     uint8_t *ydst=dstParam[0] + dstStride[0]*srcSliceY;
@@ -1348,7 +1348,7 @@ static int YUYV2YUV420Wrapper(SwsContext *c, const uint8_t* src[], int srcStride
     return srcSliceH;
 }
 
-static int YUYV2YUV422Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int yuyvToYuv422Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dstParam[], int dstStride[])
 {
     uint8_t *ydst=dstParam[0] + dstStride[0]*srcSliceY;
@@ -1360,7 +1360,7 @@ static int YUYV2YUV422Wrapper(SwsContext *c, const uint8_t* src[], int srcStride
     return srcSliceH;
 }
 
-static int UYVY2YUV420Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int uyvyToYuv420Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dstParam[], int dstStride[])
 {
     uint8_t *ydst=dstParam[0] + dstStride[0]*srcSliceY;
@@ -1375,7 +1375,7 @@ static int UYVY2YUV420Wrapper(SwsContext *c, const uint8_t* src[], int srcStride
     return srcSliceH;
 }
 
-static int UYVY2YUV422Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int uyvyToYuv422Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dstParam[], int dstStride[])
 {
     uint8_t *ydst=dstParam[0] + dstStride[0]*srcSliceY;
@@ -1387,7 +1387,7 @@ static int UYVY2YUV422Wrapper(SwsContext *c, const uint8_t* src[], int srcStride
     return srcSliceH;
 }
 
-static int pal2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                           int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     const enum PixelFormat srcFormat= c->srcFormat;
@@ -1424,7 +1424,7 @@ static int pal2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
 }
 
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
-static int rgb2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int rgbToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                           int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     const enum PixelFormat srcFormat= c->srcFormat;
@@ -1498,7 +1498,7 @@ static int rgb2rgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], 
     return srcSliceH;
 }
 
-static int bgr24toyv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int bgr24ToYv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                               int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     rgb24toyv12(
@@ -1513,7 +1513,7 @@ static int bgr24toyv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride
     return srcSliceH;
 }
 
-static int yvu9toyv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int yvu9ToYv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                              int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int i;
@@ -1549,7 +1549,7 @@ static int yvu9toyv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[
 }
 
 /* unscaled copy like stuff (assumes nearly identical formats) */
-static int packedCopy(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int packedCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                       int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     if (dstStride[0]==srcStride[0] && srcStride[0] > 0)
@@ -1574,7 +1574,7 @@ static int packedCopy(SwsContext *c, const uint8_t* src[], int srcStride[], int 
     return srcSliceH;
 }
 
-static int planarCopy(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                       int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int plane, i, j;
@@ -1665,7 +1665,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
 
     /* yv12_to_nv12 */
     if ((srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) && (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21)) {
-        c->swScale= PlanarToNV12Wrapper;
+        c->swScale= planarToNv12Wrapper;
     }
     /* yuv2bgr */
     if ((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P || srcFormat==PIX_FMT_YUVA420P) && isAnyRGB(dstFormat)
@@ -1674,12 +1674,12 @@ void ff_get_unscaled_swscale(SwsContext *c)
     }
 
     if (srcFormat==PIX_FMT_YUV410P && (dstFormat==PIX_FMT_YUV420P || dstFormat==PIX_FMT_YUVA420P) && !(flags & SWS_BITEXACT)) {
-        c->swScale= yvu9toyv12Wrapper;
+        c->swScale= yvu9ToYv12Wrapper;
     }
 
     /* bgr24toYV12 */
     if (srcFormat==PIX_FMT_BGR24 && (dstFormat==PIX_FMT_YUV420P || dstFormat==PIX_FMT_YUVA420P) && !(flags & SWS_ACCURATE_RND))
-        c->swScale= bgr24toyv12Wrapper;
+        c->swScale= bgr24ToYv12Wrapper;
 
     /* RGB/BGR -> RGB/BGR (no dither needed forms) */
     if (   isAnyRGB(srcFormat)
@@ -1697,7 +1697,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
         && srcFormat != PIX_FMT_RGB48LE   && dstFormat != PIX_FMT_RGB48LE
         && srcFormat != PIX_FMT_RGB48BE   && dstFormat != PIX_FMT_RGB48BE
         && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
-        c->swScale= rgb2rgbWrapper;
+        c->swScale= rgbToRgbWrapper;
 
     if ((usePal(srcFormat) && (
         dstFormat == PIX_FMT_RGB32   ||
@@ -1706,13 +1706,13 @@ void ff_get_unscaled_swscale(SwsContext *c)
         dstFormat == PIX_FMT_BGR32   ||
         dstFormat == PIX_FMT_BGR32_1 ||
         dstFormat == PIX_FMT_BGR24)))
-        c->swScale= pal2rgbWrapper;
+        c->swScale= palToRgbWrapper;
 
     if (srcFormat == PIX_FMT_YUV422P) {
         if (dstFormat == PIX_FMT_YUYV422)
-            c->swScale= YUV422PToYuy2Wrapper;
+            c->swScale= yuv422pToYuy2Wrapper;
         else if (dstFormat == PIX_FMT_UYVY422)
-            c->swScale= YUV422PToUyvyWrapper;
+            c->swScale= yuv422pToUyvyWrapper;
     }
 
     /* LQ converters if -sws 0 or -sws 4*/
@@ -1720,19 +1720,19 @@ void ff_get_unscaled_swscale(SwsContext *c)
         /* yv12_to_yuy2 */
         if (srcFormat == PIX_FMT_YUV420P || srcFormat == PIX_FMT_YUVA420P) {
             if (dstFormat == PIX_FMT_YUYV422)
-                c->swScale= PlanarToYuy2Wrapper;
+                c->swScale= planarToYuy2Wrapper;
             else if (dstFormat == PIX_FMT_UYVY422)
-                c->swScale= PlanarToUyvyWrapper;
+                c->swScale= planarToUyvyWrapper;
         }
     }
     if(srcFormat == PIX_FMT_YUYV422 && (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P))
-        c->swScale= YUYV2YUV420Wrapper;
+        c->swScale= yuyvToYuv420Wrapper;
     if(srcFormat == PIX_FMT_UYVY422 && (dstFormat == PIX_FMT_YUV420P || dstFormat == PIX_FMT_YUVA420P))
-        c->swScale= UYVY2YUV420Wrapper;
+        c->swScale= uyvyToYuv420Wrapper;
     if(srcFormat == PIX_FMT_YUYV422 && dstFormat == PIX_FMT_YUV422P)
-        c->swScale= YUYV2YUV422Wrapper;
+        c->swScale= yuyvToYuv422Wrapper;
     if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV422P)
-        c->swScale= UYVY2YUV422Wrapper;
+        c->swScale= uyvyToYuv422Wrapper;
 
 #ifdef COMPILE_ALTIVEC
     if ((c->flags & SWS_CPU_CAPS_ALTIVEC) &&
@@ -1760,9 +1760,9 @@ void ff_get_unscaled_swscale(SwsContext *c)
             && srcFormat != PIX_FMT_NV12 && srcFormat != PIX_FMT_NV21))
     {
         if (isPacked(c->srcFormat))
-            c->swScale= packedCopy;
+            c->swScale= packedCopyWrapper;
         else /* Planar YUV or gray */
-            c->swScale= planarCopy;
+            c->swScale= planarCopyWrapper;
     }
 #if ARCH_BFIN
     if (flags & SWS_CPU_CAPS_BFIN)
