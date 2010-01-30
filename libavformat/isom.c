@@ -283,13 +283,12 @@ int ff_mov_iso639_to_lang(const char *lang, int mp4)
         lang = "und";
     /* 5bit ascii */
     for (i = 0; i < 3; i++) {
-        unsigned char c = (unsigned char)lang[i];
-        if (c < 0x60)
-            return -1;
-        if (c > 0x60 + 0x1f)
+        uint8_t c = lang[i];
+        c -= 0x60;
+        if (c > 0x1f)
             return -1;
         code <<= 5;
-        code |= (c - 0x60);
+        code |= c;
     }
     return code;
 }
