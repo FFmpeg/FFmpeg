@@ -23,6 +23,7 @@
  * format and noformat video filters
  */
 
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
 
 typedef struct {
@@ -56,7 +57,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
         memcpy(pix_fmt_name, cur, pix_fmt_name_len);
         pix_fmt_name[pix_fmt_name_len] = 0;
-        pix_fmt = avcodec_get_pix_fmt(pix_fmt_name);
+        pix_fmt = av_get_pix_fmt(pix_fmt_name);
 
         if (pix_fmt == PIX_FMT_NONE) {
             av_log(ctx, AV_LOG_ERROR, "Unknown pixel format: %s\n", pix_fmt_name);
