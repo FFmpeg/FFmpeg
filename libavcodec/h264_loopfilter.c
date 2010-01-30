@@ -374,13 +374,10 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
             edges = 4;
             bSv[0][0] = bSv[0][2] = bSv[1][0] = bSv[1][2] = 0x0002000200020002ULL;
         } else {
-            int mask_edge1 = (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 :
-                             (mb_type & MB_TYPE_16x8) ? 1 : 0;
-            int mask_edge0 = (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16))
-                             && (h->left_type[0] & (MB_TYPE_16x16 | MB_TYPE_8x16))
-                             ? 3 : 0;
-            int step = IS_8x8DCT(mb_type) ? 2 : 1;
-            edges = (mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
+            int mask_edge1 = (3*!!(mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16))) | (mb_type>>4); //(mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 : (mb_type & MB_TYPE_16x8) ? 1 : 0;
+            int mask_edge0 = 3*((mask_edge1>>1) & !!(h->left_type[0] & (MB_TYPE_16x16 | MB_TYPE_8x16))); // (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) && (h->left_type[0] & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 : 0;
+            int step =  1+(mb_type>>24); //IS_8x8DCT(mb_type) ? 2 : 1;
+            edges = 4 - 3*((mb_type>>3) & !(h->cbp & 15)); //(mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
             s->dsp.h264_loop_filter_strength( bS, h->non_zero_count_cache, h->ref_cache, h->mv_cache,
                                               h->list_count==2, edges, step, mask_edge0, mask_edge1, FIELD_PICTURE);
         }
