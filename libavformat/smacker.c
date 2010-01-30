@@ -169,6 +169,7 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
     tbase = 100000;
     av_reduce(&tbase, &smk->pts_inc, tbase, smk->pts_inc, (1UL<<31)-1);
     av_set_pts_info(st, 33, smk->pts_inc, tbase);
+    st->duration = smk->frames;
     /* handle possible audio streams */
     for(i = 0; i < 7; i++) {
         smk->indexes[i] = -1;
