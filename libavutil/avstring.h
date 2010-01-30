@@ -83,7 +83,7 @@ size_t av_strlcat(char *dst, const char *src, size_t size);
 
 /**
  * Append output to a string, according to a format. Never write out of
- * the destination buffer, and and always put a terminating 0 within
+ * the destination buffer, and always put a terminating 0 within
  * the buffer.
  * @param dst destination buffer (string to which the output is
  *  appended)
