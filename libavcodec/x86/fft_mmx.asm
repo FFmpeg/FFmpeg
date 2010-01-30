@@ -419,18 +419,23 @@ DECL_PASS pass_interleave_3dn, PASS_BIG 0
 %define pass_3dn2 pass_3dn
 %define pass_interleave_3dn2 pass_interleave_3dn
 
+%ifdef PIC
+%define SECTION_REL - $$
+%else
+%define SECTION_REL
+%endif
 
 %macro DECL_FFT 2-3 ; nbits, cpu, suffix
-%xdefine list_of_fft fft4%2, fft8%2
+%xdefine list_of_fft fft4%2 SECTION_REL, fft8%2 SECTION_REL
 %if %1==5
-%xdefine list_of_fft list_of_fft, fft16%2
+%xdefine list_of_fft list_of_fft, fft16%2 SECTION_REL
 %endif
 
 %assign n 1<<%1
 %rep 17-%1
 %assign n2 n/2
 %assign n4 n/4
-%xdefine list_of_fft list_of_fft, fft %+ n %+ %3%2
+%xdefine list_of_fft list_of_fft, fft %+ n %+ %3%2 SECTION_REL
 
 align 16
 fft %+ n %+ %3%2:
@@ -448,10 +453,6 @@ fft %+ n %+ %3%2:
 %endrep
 %undef n
 
-%ifidn __OUTPUT_FORMAT__,macho64
-section .rodata
-%endif
-
 align 8
 dispatch_tab%3%2: pointer list_of_fft
 
@@ -462,6 +463,10 @@ section .text
 cglobal fft_dispatch%3%2, 2,5,8, z, nbits
     lea r2, [dispatch_tab%3%2 GLOBAL]
     mov r2, [r2 + (nbitsq-2)*gprsize]
+%ifdef PIC
+    lea r3, [$$ GLOBAL]
+    add r2, r3
+%endif
     call r2
     RET
 %endmacro ; DECL_FFT
