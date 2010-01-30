@@ -1388,7 +1388,7 @@ static int uyvyToYuv422Wrapper(SwsContext *c, const uint8_t* src[], int srcStrid
 }
 
 static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
-                          int srcSliceH, uint8_t* dst[], int dstStride[])
+                           int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     const enum PixelFormat srcFormat= c->srcFormat;
     const enum PixelFormat dstFormat= c->dstFormat;
@@ -1425,7 +1425,7 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
 
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 static int rgbToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
-                          int srcSliceH, uint8_t* dst[], int dstStride[])
+                           int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     const enum PixelFormat srcFormat= c->srcFormat;
     const enum PixelFormat dstFormat= c->dstFormat;
@@ -1550,7 +1550,7 @@ static int yvu9ToYv12Wrapper(SwsContext *c, const uint8_t* src[], int srcStride[
 
 /* unscaled copy like stuff (assumes nearly identical formats) */
 static int packedCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
-                      int srcSliceH, uint8_t* dst[], int dstStride[])
+                             int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     if (dstStride[0]==srcStride[0] && srcStride[0] > 0)
         memcpy(dst[0] + dstStride[0]*srcSliceY, src[0], srcSliceH*dstStride[0]);
@@ -1575,7 +1575,7 @@ static int packedCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
 }
 
 static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
-                      int srcSliceH, uint8_t* dst[], int dstStride[])
+                             int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     int plane, i, j;
     for (plane=0; plane<4; plane++) {
