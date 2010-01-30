@@ -538,7 +538,6 @@ int url_fdopen(ByteIOContext **s, URLContext *h)
     uint8_t *buffer;
     int buffer_size, max_packet_size;
 
-
     max_packet_size = url_get_max_packet_size(h);
     if (max_packet_size) {
         buffer_size = max_packet_size; /* no need to bufferize more than one packet */
