@@ -604,6 +604,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_GENPTS       0x0001 ///< Generate missing pts even if it requires parsing future frames.
 #define AVFMT_FLAG_IGNIDX       0x0002 ///< Ignore index.
 #define AVFMT_FLAG_NONBLOCK     0x0004 ///< Do not block when reading packets from input.
+#define AVFMT_FLAG_IGNDTS       0x0008 ///< Ignore DTS on frames that contain both DTS & PTS
 
     int loop_input;
     /** decoding: size of data to probe; encoding: unused. */
