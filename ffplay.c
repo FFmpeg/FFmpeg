@@ -1881,6 +1881,8 @@ static int decode_thread(void *arg)
     AVFormatParameters params, *ap = &params;
     int eof=0;
 
+    ic = avformat_alloc_context();
+
     video_index = -1;
     audio_index = -1;
     subtitle_index = -1;
@@ -1893,10 +1895,13 @@ static int decode_thread(void *arg)
 
     memset(ap, 0, sizeof(*ap));
 
+    ap->prealloced_context = 1;
     ap->width = frame_width;
     ap->height= frame_height;
     ap->time_base= (AVRational){1, 25};
     ap->pix_fmt = frame_pix_fmt;
+
+    set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM);
 
     err = av_open_input_file(&ic, is->filename, is->iformat, 0, ap);
     if (err < 0) {
