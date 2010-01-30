@@ -1889,15 +1889,19 @@ elif enabled ppc; then
     case $(tolower $cpu) in
         601|ppc601|powerpc601)
             cpuflags="-mcpu=601"
+            disable altivec
         ;;
         603*|ppc603*|powerpc603*)
             cpuflags="-mcpu=603"
+            disable altivec
         ;;
         604*|ppc604*|powerpc604*)
             cpuflags="-mcpu=604"
+            disable altivec
         ;;
         g3|75*|ppc75*|powerpc75*)
             cpuflags="-mcpu=750 -mpowerpc-gfxopt"
+            disable altivec
         ;;
         g4|745*|ppc745*|powerpc745*)
             cpuflags="-mcpu=7450 -mpowerpc-gfxopt"
