@@ -1912,6 +1912,14 @@ elif enabled ppc; then
             cpuflags="-mcpu=cell"
             enable ldbrx
         ;;
+        e500v2)
+            cpuflags="-mcpu=8548 -mhard-float -mfloat-gprs=double"
+            disable altivec
+        ;;
+        e500)
+            cpuflags="-mcpu=8540 -mhard-float"
+            disable altivec
+        ;;
     esac
 
 elif enabled x86; then
