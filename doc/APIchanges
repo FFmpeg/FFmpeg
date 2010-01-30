@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-01-30 - r21545 - lavu 50.8.0 - av_get_pix_fmt()
+  Add av_get_pix_fmt().
+
 2010-01-10 - r21121 - lavfi 1.15.0 - avfilter_graph_config_links()
   Add a log_ctx parameter to avfilter_graph_config_links().
 
