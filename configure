@@ -1886,29 +1886,29 @@ if test "$cpu" = generic; then
     : do nothing
 elif enabled ppc; then
 
-    case $cpu in
-        601|ppc601|PowerPC601)
+    case $(tolower $cpu) in
+        601|ppc601|powerpc601)
             cpuflags="-mcpu=601"
         ;;
-        603*|ppc603*|PowerPC603*)
+        603*|ppc603*|powerpc603*)
             cpuflags="-mcpu=603"
         ;;
-        604*|ppc604*|PowerPC604*)
+        604*|ppc604*|powerpc604*)
             cpuflags="-mcpu=604"
         ;;
-        G3|g3|75*|ppc75*|PowerPC75*)
+        g3|75*|ppc75*|powerpc75*)
             cpuflags="-mcpu=750 -mpowerpc-gfxopt"
         ;;
-        G4|g4|745*|ppc745*|PowerPC745*)
+        g4|745*|ppc745*|powerpc745*)
             cpuflags="-mcpu=7450 -mpowerpc-gfxopt"
         ;;
-        74*|ppc74*|PowerPC74*)
+        74*|ppc74*|powerpc74*)
             cpuflags="-mcpu=7400 -mpowerpc-gfxopt"
         ;;
-        G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
+        g5|970|ppc970|powerpc970|power4*)
             cpuflags="-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
         ;;
-        Cell|CELL|cell)
+        cell)
             cpuflags="-mcpu=cell"
             enable ldbrx
         ;;
