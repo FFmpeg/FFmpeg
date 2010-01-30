@@ -2995,6 +2995,7 @@ void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *
 const char *avcodec_get_pix_fmt_name(enum PixelFormat pix_fmt);
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
 
+#if LIBAVCODEC_VERSION_MAJOR < 53
 /**
  * Returns the pixel format corresponding to the name name.
  *
@@ -3005,8 +3006,11 @@ void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
  * then for "gray16le".
  *
  * Finally if no pixel format has been found, returns PIX_FMT_NONE.
+ *
+ * @deprecated Deprecated in favor of av_get_pix_fmt().
  */
-enum PixelFormat avcodec_get_pix_fmt(const char* name);
+attribute_deprecated enum PixelFormat avcodec_get_pix_fmt(const char* name);
+#endif
 
 /**
  * Returns a value representing the fourCC code associated to the

@@ -654,6 +654,43 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
     },
 };
 
+static enum PixelFormat get_pix_fmt_internal(const char *name)
+{
+    enum PixelFormat pix_fmt;
+
+    for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
+        if (av_pix_fmt_descriptors[pix_fmt].name &&
+            !strcmp(av_pix_fmt_descriptors[pix_fmt].name, name))
+            return pix_fmt;
+
+    return PIX_FMT_NONE;
+}
+
+#if HAVE_BIGENDIAN
+#   define X_NE(be, le) be
+#else
+#   define X_NE(be, le) le
+#endif
+
+enum PixelFormat av_get_pix_fmt(const char *name)
+{
+    enum PixelFormat pix_fmt;
+
+    if (!strcmp(name, "rgb32"))
+        name = X_NE("argb", "bgra");
+    else if (!strcmp(name, "bgr32"))
+        name = X_NE("abgr", "rgba");
+
+    pix_fmt = get_pix_fmt_internal(name);
+    if (pix_fmt == PIX_FMT_NONE) {
+        char name2[32];
+
+        snprintf(name2, sizeof(name2), "%s%s", name, X_NE("be", "le"));
+        pix_fmt = get_pix_fmt_internal(name2);
+    }
+    return pix_fmt;
+}
+
 int av_get_bits_per_pixel(const AVPixFmtDescriptor *pixdesc)
 {
     int c, bits = 0;

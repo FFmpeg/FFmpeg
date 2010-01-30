@@ -391,39 +391,12 @@ const char *avcodec_get_pix_fmt_name(enum PixelFormat pix_fmt)
         return av_pix_fmt_descriptors[pix_fmt].name;
 }
 
-static enum PixelFormat avcodec_get_pix_fmt_internal(const char *name)
-{
-    int i;
-
-    for (i=0; i < PIX_FMT_NB; i++)
-        if (av_pix_fmt_descriptors[i].name && !strcmp(av_pix_fmt_descriptors[i].name, name))
-            return i;
-    return PIX_FMT_NONE;
-}
-
-#if HAVE_BIGENDIAN
-#   define X_NE(be, le) be
-#else
-#   define X_NE(be, le) le
-#endif
-
+#if LIBAVCODEC_VERSION_MAJOR < 53
 enum PixelFormat avcodec_get_pix_fmt(const char *name)
 {
-    enum PixelFormat pix_fmt;
-
-    if (!strcmp(name, "rgb32"))
-        name = X_NE("argb", "bgra");
-    else if (!strcmp(name, "bgr32"))
-        name = X_NE("abgr", "rgba");
-
-    pix_fmt = avcodec_get_pix_fmt_internal(name);
-    if (pix_fmt == PIX_FMT_NONE) {
-        char name2[32];
-        snprintf(name2, sizeof(name2), "%s%s", name, X_NE("be", "le"));
-        pix_fmt = avcodec_get_pix_fmt_internal(name2);
-    }
-    return pix_fmt;
+    return av_get_pix_fmt(name);
 }
+#endif
 
 void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
 {

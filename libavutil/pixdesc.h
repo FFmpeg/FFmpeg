@@ -203,6 +203,19 @@ static inline void write_line(const uint16_t *src, uint8_t *data[4], const int l
 }
 
 /**
+ * Returns the pixel format corresponding to name.
+ *
+ * If there is no pixel format with name name, then looks for a
+ * pixel format with the name corresponding to the native endian
+ * format of name.
+ * For example in a little-endian system, first looks for "gray16",
+ * then for "gray16le".
+ *
+ * Finally if no pixel format has been found, returns PIX_FMT_NONE.
+ */
+enum PixelFormat av_get_pix_fmt(const char *name);
+
+/**
  * Returns the number of bits per pixel used by the pixel format
  * described by pixdesc.
  *
