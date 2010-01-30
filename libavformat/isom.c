@@ -266,7 +266,7 @@ static const char * const mov_mdhd_language_map[] = {
     "cat", "lat", "que", "grn", "aym", "tat", "uig", "dzo", "jav"
 };
 
-int ff_mov_iso639_to_lang(const char *lang, int mp4)
+int ff_mov_iso639_to_lang(const char lang[4], int mp4)
 {
     int i, code = 0;
 
@@ -293,9 +293,10 @@ int ff_mov_iso639_to_lang(const char *lang, int mp4)
     return code;
 }
 
-int ff_mov_lang_to_iso639(unsigned code, char *to)
+int ff_mov_lang_to_iso639(unsigned code, char to[4])
 {
     int i;
+    memset(to, 0, 4);
     /* is it the mangled iso code? */
     /* see http://www.geocities.com/xhelmboyx/quicktime/formats/mp4-layout.txt */
     if (code > 138) {
