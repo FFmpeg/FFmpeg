@@ -110,7 +110,7 @@ void ff_rtmp_packet_destroy(RTMPPacket *pkt);
  * @param chunk_size current chunk size
  * @param prev_pkt   previously read packet headers for all channels
  *                   (may be needed for restoring incomplete packet header)
- * @return zero on success, negative value otherwise
+ * @return number of bytes read on success, negative value otherwise
  */
 int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
                         int chunk_size, RTMPPacket *prev_pkt);
@@ -123,7 +123,7 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
  * @param chunk_size current chunk size
  * @param prev_pkt   previously sent packet headers for all channels
  *                   (may be used for packet header compressing)
- * @return zero on success, negative value otherwise
+ * @return number of bytes written on success, negative value otherwise
  */
 int ff_rtmp_packet_write(URLContext *h, RTMPPacket *p,
                          int chunk_size, RTMPPacket *prev_pkt);
