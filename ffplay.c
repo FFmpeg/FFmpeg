@@ -971,7 +971,7 @@ static double get_master_clock(VideoState *is)
 }
 
 /* seek in the stream */
-static void stream_seek(VideoState *is, int64_t pos, int64_t rel)
+static void stream_seek(VideoState *is, int64_t pos, int64_t rel, int seek_by_bytes)
 {
     if (!is->seek_req) {
         is->seek_pos = pos;
@@ -2319,11 +2319,11 @@ static void event_loop(void)
                         else
                             incr *= 180000.0;
                         pos += incr;
-                        stream_seek(cur_stream, pos, incr);
+                        stream_seek(cur_stream, pos, incr, 1);
                     } else {
                         pos = get_master_clock(cur_stream);
                         pos += incr;
-                        stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE));
+                        stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), (int64_t)(incr * AV_TIME_BASE), 0);
                     }
                 }
                 break;
@@ -2333,6 +2333,10 @@ static void event_loop(void)
             break;
         case SDL_MOUSEBUTTONDOWN:
             if (cur_stream) {
+                if(seek_by_bytes || cur_stream->ic->duration<=0){
+                    uint64_t size=  url_fsize(cur_stream->ic->pb);
+                    stream_seek(cur_stream, size*(double)event.button.x/(double)cur_stream->width, 0, 1);
+                }else{
                 int64_t ts;
                 int ns, hh, mm, ss;
                 int tns, thh, tmm, tss;
@@ -2350,7 +2354,8 @@ static void event_loop(void)
                 ts = frac*cur_stream->ic->duration;
                 if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
                     ts += cur_stream->ic->start_time;
-                stream_seek(cur_stream, ts, 0);
+                stream_seek(cur_stream, ts, 0, 0);
+                }
             }
             break;
         case SDL_VIDEORESIZE:
