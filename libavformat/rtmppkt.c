@@ -153,6 +153,7 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
     uint8_t pkt_hdr[16], *p = pkt_hdr;
     int mode = RTMP_PS_TWELVEBYTES;
     int off = 0;
+
     pkt->ts_delta = pkt->timestamp - prev_pkt[pkt->channel_id].timestamp;
 
     //if channel_id = 0, this is first presentation of prev_pkt, send full hdr.
