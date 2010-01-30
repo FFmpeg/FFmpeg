@@ -19,7 +19,7 @@ API changes, most recent first:
   Add a log_ctx parameter to avfilter_graph_config_links().
 
 2010-01-07 - r30236 - lsws 0.8.0 - sws_isSupported{In,Out}put
-  Add sws_isSupportedInput and sws_isSupportedOutput() functions.
+  Add sws_isSupportedInput() and sws_isSupportedOutput() functions.
 
 2010-01-06 - r21035 - lavfi 1.14.0 - avfilter_add_colorspace()
   Change the avfilter_add_colorspace() signature, make it accept an
