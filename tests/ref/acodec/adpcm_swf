@@ -1,4 +1,4 @@
 42d4639866ed4d692eaf126228a4fa2a *./tests/data/a-adpcm_swf.flv
 269166 ./tests/data/a-adpcm_swf.flv
-628089745a7059ae4055c2515b6d668b *./tests/data/adpcm_swf.vsynth2.out.wav
+628089745a7059ae4055c2515b6d668b *./tests/data/adpcm_swf.acodec.out.wav
 stddev:  933.65 PSNR: 36.93 bytes:  1065004/  1058444

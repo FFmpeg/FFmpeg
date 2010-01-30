@@ -1,4 +1,0 @@
-56b75c3a6dacedcf2ce7b0586aa33594 *./tests/data/a-adpcm_ima.wav
-267324 ./tests/data/a-adpcm_ima.wav
-78a2af1c895792d0c221d127bdd48ece *./tests/data/adpcm_ima_wav.vsynth2.out.wav
-stddev:  903.51 PSNR: 37.21 bytes:  1061792/  1058444

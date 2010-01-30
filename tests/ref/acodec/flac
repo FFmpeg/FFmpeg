@@ -1,4 +1,4 @@
 7781a016edfc242a39e4d65af02d861a *./tests/data/a-flac.flac
 353368 ./tests/data/a-flac.flac
-95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/flac.vsynth2.out.wav
+95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/flac.acodec.out.wav
 stddev:    0.00 PSNR:999.99 bytes:  1058444/  1058444

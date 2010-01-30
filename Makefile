@@ -155,44 +155,46 @@ SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
 ENCDEC = $(and $(CONFIG_$(1)_ENCODER),$(CONFIG_$(1)_DECODER))
 MUXDEM = $(and $(CONFIG_$(1)_MUXER),$(CONFIG_$(or $(2),$(1))_DEMUXER))
 
-CODEC_TESTS =
-CODEC_TESTS-$(call ENCDEC,AC3)               += ac3
-CODEC_TESTS-$(call ENCDEC,ADPCM_G726)        += g726
-CODEC_TESTS-$(call ENCDEC,ADPCM_IMA_QT)      += adpcm_ima_qt
-CODEC_TESTS-$(call ENCDEC,ADPCM_IMA_WAV)     += adpcm_ima_wav
-CODEC_TESTS-$(call ENCDEC,ADPCM_MS)          += adpcm_ms
-CODEC_TESTS-$(call ENCDEC,ADPCM_SWF)         += adpcm_swf
-CODEC_TESTS-$(call ENCDEC,ADPCM_YAMAHA)      += adpcm_yam
-CODEC_TESTS-$(call ENCDEC,ALAC)              += alac
-CODEC_TESTS-$(call ENCDEC,ASV1)              += asv1
-CODEC_TESTS-$(call ENCDEC,ASV2)              += asv2
-CODEC_TESTS-$(call ENCDEC,DNXHD)             += dnxhd_1080i dnxhd_720p dnxhd_720p_rd
-CODEC_TESTS-$(call ENCDEC,DVVIDEO)           += dv dv50
-CODEC_TESTS-$(call ENCDEC,FFV1)              += ffv1
-CODEC_TESTS-$(call ENCDEC,FLAC)              += flac
-CODEC_TESTS-$(call ENCDEC,FLASHSV)           += flashsv
-CODEC_TESTS-$(call ENCDEC,FLV)               += flv
-CODEC_TESTS-$(call ENCDEC,H261)              += h261
-CODEC_TESTS-$(call ENCDEC,H263)              += h263 h263p
-CODEC_TESTS-$(call ENCDEC,HUFFYUV)           += huffyuv
-CODEC_TESTS-$(call ENCDEC,JPEGLS)            += jpegls
-CODEC_TESTS-$(call ENCDEC,MJPEG)             += mjpeg ljpeg
-CODEC_TESTS-$(call ENCDEC,MP2)               += mp2
-CODEC_TESTS-$(call ENCDEC,MPEG1VIDEO)        += mpeg mpeg1b
-CODEC_TESTS-$(call ENCDEC,MPEG2VIDEO)        += mpeg2 mpeg2thread
-CODEC_TESTS-$(call ENCDEC,MPEG4)             += mpeg4 mpeg4adv mpeg4nr mpeg4thread error rc
-CODEC_TESTS-$(call ENCDEC,MSMPEG4V1)         += msmpeg4
-CODEC_TESTS-$(call ENCDEC,MSMPEG4V2)         += msmpeg4v2
-CODEC_TESTS-$(call ENCDEC,PCM_S16LE)         += pcm         # fixme
-CODEC_TESTS-$(call ENCDEC,ROQ)               += roq
-CODEC_TESTS-$(call ENCDEC,RV10)              += rv10
-CODEC_TESTS-$(call ENCDEC,RV20)              += rv20
-CODEC_TESTS-$(call ENCDEC,SNOW)              += snow snowll
-CODEC_TESTS-$(call ENCDEC,SVQ1)              += svq1
-CODEC_TESTS-$(call ENCDEC,WMAV1)             += wmav1
-CODEC_TESTS-$(call ENCDEC,WMAV1)             += wmav2
-CODEC_TESTS-$(call ENCDEC,WMV1)              += wmv1
-CODEC_TESTS-$(call ENCDEC,WMV2)              += wmv2
+VCODEC_TESTS =
+VCODEC_TESTS-$(call ENCDEC,ASV1)             += asv1
+VCODEC_TESTS-$(call ENCDEC,ASV2)             += asv2
+VCODEC_TESTS-$(call ENCDEC,DNXHD)            += dnxhd_1080i dnxhd_720p dnxhd_720p_rd
+VCODEC_TESTS-$(call ENCDEC,DVVIDEO)          += dv dv50
+VCODEC_TESTS-$(call ENCDEC,FFV1)             += ffv1
+VCODEC_TESTS-$(call ENCDEC,FLASHSV)          += flashsv
+VCODEC_TESTS-$(call ENCDEC,FLV)              += flv
+VCODEC_TESTS-$(call ENCDEC,H261)             += h261
+VCODEC_TESTS-$(call ENCDEC,H263)             += h263 h263p
+VCODEC_TESTS-$(call ENCDEC,HUFFYUV)          += huffyuv
+VCODEC_TESTS-$(call ENCDEC,JPEGLS)           += jpegls
+VCODEC_TESTS-$(call ENCDEC,MJPEG)            += mjpeg ljpeg
+VCODEC_TESTS-$(call ENCDEC,MPEG1VIDEO)       += mpeg mpeg1b
+VCODEC_TESTS-$(call ENCDEC,MPEG2VIDEO)       += mpeg2 mpeg2thread
+VCODEC_TESTS-$(call ENCDEC,MPEG4)            += mpeg4 mpeg4adv mpeg4nr mpeg4thread error rc
+VCODEC_TESTS-$(call ENCDEC,MSMPEG4V1)        += msmpeg4
+VCODEC_TESTS-$(call ENCDEC,MSMPEG4V2)        += msmpeg4v2
+VCODEC_TESTS-$(call ENCDEC,ROQ)              += roq
+VCODEC_TESTS-$(call ENCDEC,RV10)             += rv10
+VCODEC_TESTS-$(call ENCDEC,RV20)             += rv20
+VCODEC_TESTS-$(call ENCDEC,SNOW)             += snow snowll
+VCODEC_TESTS-$(call ENCDEC,SVQ1)             += svq1
+VCODEC_TESTS-$(call ENCDEC,WMV1)             += wmv1
+VCODEC_TESTS-$(call ENCDEC,WMV2)             += wmv2
+
+ACODEC_TESTS =
+ACODEC_TESTS-$(call ENCDEC,AC3)              += ac3
+ACODEC_TESTS-$(call ENCDEC,ADPCM_G726)       += g726
+ACODEC_TESTS-$(call ENCDEC,ADPCM_IMA_QT)     += adpcm_ima_qt
+ACODEC_TESTS-$(call ENCDEC,ADPCM_IMA_WAV)    += adpcm_ima_wav
+ACODEC_TESTS-$(call ENCDEC,ADPCM_MS)         += adpcm_ms
+ACODEC_TESTS-$(call ENCDEC,ADPCM_SWF)        += adpcm_swf
+ACODEC_TESTS-$(call ENCDEC,ADPCM_YAMAHA)     += adpcm_yam
+ACODEC_TESTS-$(call ENCDEC,ALAC)             += alac
+ACODEC_TESTS-$(call ENCDEC,FLAC)             += flac
+ACODEC_TESTS-$(call ENCDEC,MP2)              += mp2
+ACODEC_TESTS-$(call ENCDEC,PCM_S16LE)        += pcm         # fixme
+ACODEC_TESTS-$(call ENCDEC,WMAV1)            += wmav1
+ACODEC_TESTS-$(call ENCDEC,WMAV1)            += wmav2
 
 LAVF_TESTS =
 LAVF_TESTS-$(call MUXDEM,AIFF)               += aiff
@@ -232,16 +234,21 @@ LAVF_TESTS-$(call MUXDEM,YUV4MPEGPIPE)       += yuv4mpeg
 
 LAVFI_TESTS =
 
-CODEC_TESTS := $(addprefix regtest-, $(CODEC_TESTS) $(CODEC_TESTS-yes))
+ACODEC_TESTS := $(addprefix regtest-, $(ACODEC_TESTS) $(ACODEC_TESTS-yes))
+VCODEC_TESTS := $(addprefix regtest-, $(VCODEC_TESTS) $(VCODEC_TESTS-yes))
 LAVF_TESTS  := $(addprefix regtest-, $(LAVF_TESTS)  $(LAVF_TESTS-yes))
 LAVFI_TESTS := $(addprefix regtest-, $(LAVFI_TESTS) $(LAVFI_TESTS-yes))
+
+CODEC_TESTS = $(VCODEC_TESTS) $(ACODEC_TESTS)
 
 codectest: $(CODEC_TESTS)
 lavftest:  $(LAVF_TESTS)
 
 # lavfitest: $(LAVFI_TESTS)
 
-$(CODEC_TESTS) $(LAVF_TESTS) $(LAVFI_TESTS): regtest-ref
+$(ACODEC_TESTS): regtest-aref
+$(VCODEC_TESTS): regtest-vref
+$(LAVF_TESTS) $(LAVFI_TESTS): regtest-ref
 
 REFFILE = $(SRC_PATH)/tests/ref/$(1)/$(2:regtest-%=%)
 RESFILE = tests/data/$(2:regtest-%=%).$(1).regression
@@ -251,14 +258,24 @@ define CODECTEST_CMD
 	$(SRC_PATH)/tests/codec-regression.sh $@ vsynth2 tests/vsynth2 a "$(TARGET_EXEC)" "$(TARGET_PATH)"
 endef
 
-regtest-ref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm tests/data/asynth1.sw
+regtest-ref: regtest-aref regtest-vref
+
+regtest-vref: ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
 	$(CODECTEST_CMD)
 
-$(CODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
-	@echo "TEST CODEC $(@:regtest-%=%)"
+regtest-aref: ffmpeg$(EXESUF) tests/data/asynth1.sw
+	@$(SRC_PATH)/tests/codec-regression.sh $@ acodec tests/acodec a "$(TARGET_EXEC)" "$(TARGET_PATH)"
+
+$(VCODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
+	@echo "TEST VCODEC $(@:regtest-%=%)"
 	@$(CODECTEST_CMD)
 	@diff -u -w $(call REFFILE,vsynth1,$@) $(call RESFILE,vsynth1,$@)
 	@diff -u -w $(call REFFILE,vsynth2,$@) $(call RESFILE,vsynth2,$@)
+
+$(ACODEC_TESTS): tests/tiny_psnr$(HOSTEXESUF)
+	@echo "TEST ACODEC $(@:regtest-%=%)"
+	@$(SRC_PATH)/tests/codec-regression.sh $@ acodec tests/acodec a "$(TARGET_EXEC)" "$(TARGET_PATH)"
+	@diff -u -w $(call REFFILE,acodec,$@) $(call RESFILE,acodec,$@)
 
 $(LAVF_TESTS):
 	@echo "TEST LAVF  $(@:regtest-%=%)"

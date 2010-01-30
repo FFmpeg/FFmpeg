@@ -1,5 +1,5 @@
 f6eb0a205350bbd7fb1028a01c7ae8aa *./tests/data/a-mp2.mp2
 96130 ./tests/data/a-mp2.mp2
-74c7b6b15a001add199619fafe4059a1 *./tests/data/mp2.vsynth1.out.wav
+74c7b6b15a001add199619fafe4059a1 *./tests/data/mp2.acodec.out.wav
 stddev: 9315.80 PSNR: 16.94 bytes:  1059884/  1058444
 stddev: 4385.25 PSNR: 23.49 bytes:  1057960/  1058444

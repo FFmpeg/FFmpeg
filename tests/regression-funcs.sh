@@ -34,6 +34,8 @@ pcm_ref="$datadir/$test_ref.ref.wav"
 crcfile="$datadir/$this.crc"
 target_crcfile="$target_datadir/$this.crc"
 
+mkdir -p "$datadir"
+
 [ "${V-0}" -gt 0 ] && echov=echo || echov=:
 [ "${V-0}" -gt 1 ] || exec 2>$errfile
 

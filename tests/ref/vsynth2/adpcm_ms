@@ -1,4 +1,0 @@
-a407b87daeef5b25dfb6c5b3f519e9c1 *./tests/data/a-adpcm_ms.wav
-268378 ./tests/data/a-adpcm_ms.wav
-7be370f937c51e8a967e6a3d08d5156a *./tests/data/adpcm_ms.vsynth2.out.wav
-stddev: 1050.00 PSNR: 35.91 bytes:  1060620/  1058444
