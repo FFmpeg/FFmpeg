@@ -115,7 +115,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     url_fskip(pb, 4);
 
     vst->codec->codec_type = CODEC_TYPE_VIDEO;
-    vst->codec->codec_id   = 0; /* FIXME: CODEC_ID_BINKVIDEO */
+    vst->codec->codec_id   = CODEC_ID_BINKVIDEO;
     bink->num_audio_tracks = get_le32(pb);
 
     if (bink->num_audio_tracks > BINK_MAX_AUDIO_TRACKS) {
