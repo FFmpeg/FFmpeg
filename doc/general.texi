@@ -550,6 +550,8 @@ following image formats are supported:
     @tab QuickTime fourcc 'alac'
 @item Atrac 1                @tab     @tab  X
 @item Atrac 3                @tab     @tab  X
+@item Bink Audio             @tab     @tab  X
+    @tab Used in Bink and Smacker files in many games.
 @item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
 @item COOK                   @tab     @tab  X
