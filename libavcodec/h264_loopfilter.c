@@ -510,7 +510,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 int i, l;
                 int mv_done;
 
-                if( FRAME_MBAFF && IS_INTERLACED(mb_type ^ mbm_type)) { //FIXME not posible left
+                if( dir && FRAME_MBAFF && IS_INTERLACED(mb_type ^ mbm_type)) {
                     *(uint64_t*)bS= 0x0001000100010001ULL;
                     mv_done = 1;
                 }
