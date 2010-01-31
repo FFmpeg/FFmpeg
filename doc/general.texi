@@ -58,6 +58,8 @@ library:
     @tab Audio and video format used in some games by Beam Software.
 @item Bethesda Softworks VID    @tab   @tab X
     @tab Used in some games from Bethesda Softworks.
+@item Bink                      @tab   @tab X
+    @tab Multimedia format used by many games.
 @item Brute Force & Ignorance   @tab   @tab X
     @tab Used in the game Flash Traffic: City of Angels.
 @item Interplay C93             @tab   @tab X

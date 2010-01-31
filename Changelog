@@ -51,6 +51,7 @@ version <next>:
 - SIPR decoder
 - Adobe Filmstrip muxer and demuxer
 - RTP depacketization of H.263
+- Bink demuxer
 
 
 
