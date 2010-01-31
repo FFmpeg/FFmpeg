@@ -92,6 +92,10 @@ const char *swscale_license(void)
         || (x)==PIX_FMT_YUV444P     \
         || (x)==PIX_FMT_YUV422P     \
         || (x)==PIX_FMT_YUV411P     \
+        || (x)==PIX_FMT_YUVJ420P    \
+        || (x)==PIX_FMT_YUVJ422P    \
+        || (x)==PIX_FMT_YUVJ440P    \
+        || (x)==PIX_FMT_YUVJ444P    \
         || (x)==PIX_FMT_PAL8        \
         || (x)==PIX_FMT_BGR8        \
         || (x)==PIX_FMT_RGB8        \
@@ -121,6 +125,10 @@ int sws_isSupportedInput(enum PixelFormat pix_fmt)
         || (x)==PIX_FMT_YUV444P     \
         || (x)==PIX_FMT_YUV422P     \
         || (x)==PIX_FMT_YUV411P     \
+        || (x)==PIX_FMT_YUVJ420P    \
+        || (x)==PIX_FMT_YUVJ422P    \
+        || (x)==PIX_FMT_YUVJ440P    \
+        || (x)==PIX_FMT_YUVJ444P    \
         || isAnyRGB(x)              \
         || (x)==PIX_FMT_NV12        \
         || (x)==PIX_FMT_NV21        \
