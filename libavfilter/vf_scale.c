@@ -24,6 +24,7 @@
  */
 
 #include "avfilter.h"
+#include "libavutil/pixdesc.h"
 #include "libswscale/swscale.h"
 
 typedef struct {
@@ -126,7 +127,7 @@ static int config_props(AVFilterLink *outlink)
                                 SWS_BILINEAR, NULL, NULL, NULL);
 
     av_log(ctx, AV_LOG_INFO, "w:%d h:%d fmt:%s\n",
-           outlink->w, outlink->h, avcodec_get_pix_fmt_name(outlink->format));
+           outlink->w, outlink->h, av_pix_fmt_descriptors[outlink->format].name);
 
     scale->input_is_pal = inlink->format == PIX_FMT_PAL8      ||
                           inlink->format == PIX_FMT_BGR4_BYTE ||
@@ -143,7 +144,8 @@ static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     AVFilterLink *outlink = link->dst->outputs[0];
     AVFilterPicRef *outpicref;
 
-    avcodec_get_chroma_sub_sample(link->format, &scale->hsub, &scale->vsub);
+    scale->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
+    scale->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
     outpicref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
     outpicref->pts = picref->pts;

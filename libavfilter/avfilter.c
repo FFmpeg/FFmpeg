@@ -22,6 +22,7 @@
 /* #define DEBUG */
 
 #include "libavcodec/imgconvert.h"
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
 
 unsigned avfilter_version(void) {
@@ -183,7 +184,7 @@ static void dprintf_link(void *ctx, AVFilterLink *link, int end)
     dprintf(ctx,
             "link[%p s:%dx%d fmt:%-16s %-16s->%-16s]%s",
             link, link->w, link->h,
-            avcodec_get_pix_fmt_name(link->format),
+            av_pix_fmt_descriptors[link->format].name,
             link->src ? link->src->filter->name : "",
             link->dst ? link->dst->filter->name : "",
             end ? "\n" : "");
@@ -298,7 +299,8 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
     /* copy the slice if needed for permission reasons */
     if(link->srcpic) {
-        avcodec_get_chroma_sub_sample(link->format, &hsub, &vsub);
+        hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
+        vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
         for(i = 0; i < 4; i ++) {
             if(link->srcpic->data[i]) {

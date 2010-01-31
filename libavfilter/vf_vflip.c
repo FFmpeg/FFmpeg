@@ -23,6 +23,7 @@
  * video vertical flip filter
  */
 
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
 
 typedef struct {
@@ -32,9 +33,8 @@ typedef struct {
 static int config_input(AVFilterLink *link)
 {
     FlipContext *flip = link->dst->priv;
-    int tmp;
 
-    avcodec_get_chroma_sub_sample(link->format, &tmp, &flip->vsub);
+    flip->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
     return 0;
 }

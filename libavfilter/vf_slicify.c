@@ -24,6 +24,7 @@
  */
 
 #include "avfilter.h"
+#include "libavutil/pixdesc.h"
 
 typedef struct {
     int h;          ///< output slice height
@@ -44,9 +45,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 static int config_props(AVFilterLink *link)
 {
     SliceContext *slice = link->dst->priv;
-    int tmp;
 
-    avcodec_get_chroma_sub_sample(link->format, &tmp, &slice->vshift);
+    slice->vshift = av_pix_fmt_descriptors[link->format].log2_chroma_h;
 
     /* ensure that slices play nice with chroma subsampling, and enforce
      * a reasonable minimum size for the slices */
