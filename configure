@@ -232,6 +232,7 @@ Advanced options (experts only):
   --disable-yasm           disable use of yasm assembler
   --enable-pic             build position-independent code
   --malloc-prefix=PFX      prefix malloc and related names with PFX
+  --enable-sram            allow use of on-chip SRAM
 
 Developer options (useful when working on FFmpeg itself):
   --disable-debug          disable debugging symbols
@@ -915,6 +916,7 @@ CONFIG_LIST="
     runtime_cpudetect
     shared
     small
+    sram
     static
     swscale
     swscale_alpha
