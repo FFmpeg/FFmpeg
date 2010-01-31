@@ -142,4 +142,5 @@ AVCodec v210x_decoder = {
     decode_close,
     decode_frame,
     CODEC_CAP_DR1,
+    .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
 };
