@@ -2337,24 +2337,24 @@ static void event_loop(void)
                     uint64_t size=  url_fsize(cur_stream->ic->pb);
                     stream_seek(cur_stream, size*(double)event.button.x/(double)cur_stream->width, 0, 1);
                 }else{
-                int64_t ts;
-                int ns, hh, mm, ss;
-                int tns, thh, tmm, tss;
-                tns = cur_stream->ic->duration/1000000LL;
-                thh = tns/3600;
-                tmm = (tns%3600)/60;
-                tss = (tns%60);
-                frac = (double)event.button.x/(double)cur_stream->width;
-                ns = frac*tns;
-                hh = ns/3600;
-                mm = (ns%3600)/60;
-                ss = (ns%60);
-                fprintf(stderr, "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac*100,
-                        hh, mm, ss, thh, tmm, tss);
-                ts = frac*cur_stream->ic->duration;
-                if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
-                    ts += cur_stream->ic->start_time;
-                stream_seek(cur_stream, ts, 0, 0);
+                    int64_t ts;
+                    int ns, hh, mm, ss;
+                    int tns, thh, tmm, tss;
+                    tns = cur_stream->ic->duration/1000000LL;
+                    thh = tns/3600;
+                    tmm = (tns%3600)/60;
+                    tss = (tns%60);
+                    frac = (double)event.button.x/(double)cur_stream->width;
+                    ns = frac*tns;
+                    hh = ns/3600;
+                    mm = (ns%3600)/60;
+                    ss = (ns%60);
+                    fprintf(stderr, "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac*100,
+                            hh, mm, ss, thh, tmm, tss);
+                    ts = frac*cur_stream->ic->duration;
+                    if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
+                        ts += cur_stream->ic->start_time;
+                    stream_seek(cur_stream, ts, 0, 0);
                 }
             }
             break;
