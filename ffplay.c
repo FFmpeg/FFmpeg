@@ -177,6 +177,12 @@ typedef struct VideoState {
     //    QETimer *video_timer;
     char filename[1024];
     int width, height, xleft, ytop;
+
+    int64_t faulty_pts;
+    int64_t faulty_dts;
+    int64_t last_dts_for_fault_detection;
+    int64_t last_pts_for_fault_detection;
+
 } VideoState;
 
 static void show_help(void);
@@ -216,7 +222,7 @@ static enum AVDiscard skip_idct= AVDISCARD_DEFAULT;
 static enum AVDiscard skip_loop_filter= AVDISCARD_DEFAULT;
 static int error_recognition = FF_ER_CAREFUL;
 static int error_concealment = 3;
-static int decoder_reorder_pts= 0;
+static int decoder_reorder_pts= -1;
 
 /* current context */
 static int is_full_screen;
@@ -1155,8 +1161,8 @@ static void video_refresh_timer(void *opaque)
             av_diff = 0;
             if (is->audio_st && is->video_st)
                 av_diff = get_audio_clock(is) - get_video_clock(is);
-            printf("%7.2f A-V:%7.3f aq=%5dKB vq=%5dKB sq=%5dB    \r",
-                   get_master_clock(is), av_diff, aqsize / 1024, vqsize / 1024, sqsize);
+            printf("%7.2f A-V:%7.3f aq=%5dKB vq=%5dKB sq=%5dB f=%Ld/%Ld   \r",
+                   get_master_clock(is), av_diff, aqsize / 1024, vqsize / 1024, sqsize, is->faulty_dts, is->faulty_pts);
             fflush(stdout);
             last_time = cur_time;
         }
@@ -1334,6 +1340,8 @@ static int video_thread(void *arg)
 
         if(pkt->data == flush_pkt.data){
             avcodec_flush_buffers(is->video_st->codec);
+            is->last_dts_for_fault_detection=
+            is->last_pts_for_fault_detection= INT64_MIN;
             continue;
         }
 
@@ -1344,7 +1352,18 @@ static int video_thread(void *arg)
                                     frame, &got_picture,
                                     pkt);
 
-        if(   (decoder_reorder_pts || pkt->dts == AV_NOPTS_VALUE)
+        if(pkt->dts != AV_NOPTS_VALUE){
+            is->faulty_dts += pkt->dts <= is->last_dts_for_fault_detection;
+            is->last_dts_for_fault_detection= pkt->dts;
+        }
+        if(frame->reordered_opaque != AV_NOPTS_VALUE){
+            is->faulty_pts += frame->reordered_opaque <= is->last_pts_for_fault_detection;
+            is->last_pts_for_fault_detection= frame->reordered_opaque;
+        }
+
+        if(   (   decoder_reorder_pts==1
+               || decoder_reorder_pts && is->faulty_pts<is->faulty_dts
+               || pkt->dts == AV_NOPTS_VALUE)
            && frame->reordered_opaque != AV_NOPTS_VALUE)
             pts= frame->reordered_opaque;
         else if(pkt->dts != AV_NOPTS_VALUE)
@@ -2486,7 +2505,7 @@ static const OptionDef options[] = {
     { "vismv", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
     { "fast", OPT_BOOL | OPT_EXPERT, {(void*)&fast}, "non spec compliant optimizations", "" },
     { "genpts", OPT_BOOL | OPT_EXPERT, {(void*)&genpts}, "generate pts", "" },
-    { "drp", OPT_BOOL |OPT_EXPERT, {(void*)&decoder_reorder_pts}, "let decoder reorder pts", ""},
+    { "drp", OPT_INT |OPT_EXPERT, {(void*)&decoder_reorder_pts}, "let decoder reorder pts 0=off 1=on -1=auto", ""},
     { "lowres", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&lowres}, "", "" },
     { "skiploop", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_loop_filter}, "", "" },
     { "skipframe", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_frame}, "", "" },
