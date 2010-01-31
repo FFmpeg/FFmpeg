@@ -94,7 +94,7 @@ to do with the memory system.
 */
 
 #define mL3 .text
-#ifdef __FDPIC__
+#if defined(__FDPIC__) && CONFIG_SRAM
 #define mL1 .l1.text
 #else
 #define mL1 mL3
