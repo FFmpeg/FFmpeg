@@ -11,6 +11,7 @@ version 0.5.1:
 - remaining GPL parts in AC-3 decoder converted to LGPL
 - (L)GPL license upgrade support
 - AMR-NB decoding/encoding, AMR-WB decoding via OpenCORE libraries
+- enable symbol versioning by default for linkers that support it
 
 
 
