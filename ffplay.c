@@ -1363,7 +1363,7 @@ static int video_thread(void *arg)
             is->last_dts_for_fault_detection=
             is->last_pts_for_fault_detection= INT64_MIN;
             is->frame_last_pts= AV_NOPTS_VALUE;
-            is->frame_last_delay = 40e-3;
+            is->frame_last_delay = 0;
 
             continue;
         }
