@@ -239,12 +239,15 @@ static AVPacket flush_pkt;
 
 static SDL_Surface *screen;
 
+static int packet_queue_put(PacketQueue *q, AVPacket *pkt);
+
 /* packet queue handling */
 static void packet_queue_init(PacketQueue *q)
 {
     memset(q, 0, sizeof(PacketQueue));
     q->mutex = SDL_CreateMutex();
     q->cond = SDL_CreateCond();
+    packet_queue_put(q, &flush_pkt);
 }
 
 static void packet_queue_flush(PacketQueue *q)
