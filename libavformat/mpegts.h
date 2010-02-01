@@ -56,4 +56,11 @@
 #define STREAM_TYPE_AUDIO_AC3       0x81
 #define STREAM_TYPE_AUDIO_DTS       0x8a
 
+typedef struct MpegTSContext MpegTSContext;
+
+MpegTSContext *ff_mpegts_parse_open(AVFormatContext *s);
+int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
+                           const uint8_t *buf, int len);
+void ff_mpegts_parse_close(MpegTSContext *ts);
+
 #endif /* AVFORMAT_MPEGTS_H */
