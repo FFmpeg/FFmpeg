@@ -2317,6 +2317,10 @@ static int av_encode(AVFormatContext **output_files,
             }
         }
 
+        /* finish if recording time exhausted */
+        if (pkt.pts * av_q2d(ist->st->time_base) >= (recording_time / 1000000.0))
+            goto discard_packet;
+
         //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
         if (output_packet(ist, ist_index, ost_table, nb_ostreams, &pkt) < 0) {
 
