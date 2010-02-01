@@ -9,6 +9,7 @@ vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)
 vpath %.S $(SRC_DIR)
 vpath %.asm $(SRC_DIR)
+vpath %.v   $(SRC_DIR)
 
 ifeq ($(SRC_DIR),$(SRC_PATH_BARE))
 BUILD_ROOT_REL = .
@@ -42,6 +43,9 @@ CFLAGS := -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 %.o: %.d
 
 %$(EXESUF): %.c
+
+%.ver: %.v
+	sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
 
 SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
 ifeq ($(wildcard $(SVN_ENTRIES)),$(SVN_ENTRIES))
@@ -77,7 +81,7 @@ checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
 DEPS := $(OBJS:.o=.d)
 depend dep: $(DEPS)
 
-CLEANSUFFIXES = *.o *~ *.ho
+CLEANSUFFIXES = *.o *~ *.ho *.ver
 LIBSUFFIXES   = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
 DISTCLEANSUFFIXES = *.d *.pc
 

@@ -1,0 +1,3 @@
+LIBSWSCALE_%MAJOR% {
+        global: *;
+};
