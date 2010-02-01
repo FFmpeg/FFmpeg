@@ -1376,14 +1376,14 @@ static int video_thread(void *arg)
                                     pkt);
 
         if (got_picture) {
-        if(pkt->dts != AV_NOPTS_VALUE){
-            is->faulty_dts += pkt->dts <= is->last_dts_for_fault_detection;
-            is->last_dts_for_fault_detection= pkt->dts;
-        }
-        if(frame->reordered_opaque != AV_NOPTS_VALUE){
-            is->faulty_pts += frame->reordered_opaque <= is->last_pts_for_fault_detection;
-            is->last_pts_for_fault_detection= frame->reordered_opaque;
-        }
+            if(pkt->dts != AV_NOPTS_VALUE){
+                is->faulty_dts += pkt->dts <= is->last_dts_for_fault_detection;
+                is->last_dts_for_fault_detection= pkt->dts;
+            }
+            if(frame->reordered_opaque != AV_NOPTS_VALUE){
+                is->faulty_pts += frame->reordered_opaque <= is->last_pts_for_fault_detection;
+                is->last_pts_for_fault_detection= frame->reordered_opaque;
+            }
         }
 
         if(   (   decoder_reorder_pts==1
