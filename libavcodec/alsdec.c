@@ -148,8 +148,6 @@ typedef struct {
     int rlslms;               ///< use "Recursive Least Square-Least Mean Square" predictor: 1 = on, 0 = off
     int chan_config_info;     ///< mapping of channels to loudspeaker locations. Unused until setting channel configuration is implemented.
     int *chan_pos;            ///< original channel positions
-    uint32_t header_size;     ///< header size of original audio file in bytes, provided for debugging
-    uint32_t trailer_size;    ///< trailer size of original audio file in bytes, provided for debugging
 } ALSSpecificConfig;
 
 
@@ -234,8 +232,6 @@ static av_cold void dprint_specific_config(ALSDecContext *ctx)
     dprintf(avctx, "chan_sort = %i\n",            sconf->chan_sort);
     dprintf(avctx, "RLSLMS = %i\n",               sconf->rlslms);
     dprintf(avctx, "chan_config_info = %i\n",     sconf->chan_config_info);
-    dprintf(avctx, "header_size = %i\n",          sconf->header_size);
-    dprintf(avctx, "trailer_size = %i\n",         sconf->trailer_size);
 #endif
 }
 
@@ -250,7 +246,7 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
     MPEG4AudioConfig m4ac;
     ALSSpecificConfig *sconf = &ctx->sconf;
     AVCodecContext *avctx    = ctx->avctx;
-    uint32_t als_id;
+    uint32_t als_id, header_size, trailer_size;
 
     init_get_bits(&gb, avctx->extradata, avctx->extradata_size * 8);
 
@@ -333,14 +329,14 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
     if (get_bits_left(&gb) < 64)
         return -1;
 
-    sconf->header_size  = get_bits_long(&gb, 32);
-    sconf->trailer_size = get_bits_long(&gb, 32);
-    if (sconf->header_size  == 0xFFFFFFFF)
-        sconf->header_size  = 0;
-    if (sconf->trailer_size == 0xFFFFFFFF)
-        sconf->trailer_size = 0;
+    header_size  = get_bits_long(&gb, 32);
+    trailer_size = get_bits_long(&gb, 32);
+    if (header_size  == 0xFFFFFFFF)
+        header_size  = 0;
+    if (trailer_size == 0xFFFFFFFF)
+        trailer_size = 0;
 
-    ht_size = ((int64_t)(sconf->header_size) + (int64_t)(sconf->trailer_size)) << 3;
+    ht_size = ((int64_t)(header_size) + (int64_t)(trailer_size)) << 3;
 
 
     // skip the header and trailer data
