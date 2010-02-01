@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 49
+#define LIBAVFORMAT_VERSION_MINOR 50
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -73,11 +73,44 @@ struct AVFormatContext;
  * 2. Metadata is flat, not hierarchical; there are no subtags. If you
  *    want to store, e.g., the email address of the child of producer Alice
  *    and actor Bob, that could have key=alice_and_bobs_childs_email_address.
- * 3. A tag whose value is localized for a particular language is appended
- *    with a dash character ('-') and the ISO 639-2/B 3-letter language code.
- *    For example: Author-ger=Michael, Author-eng=Mike
- *    The original/default language is in the unqualified "Author" tag.
- *    A demuxer should set a default if it sets any translated tag.
+ * 3. Several modifiers can be applied to the tag name. This is done by
+ *    appending a dash character ('-') and the modifier name in the order
+ *    they appear in the list below -- e.g. foo-eng-sort, not foo-sort-eng.
+ *    a) language -- a tag whose value is localized for a particular language
+ *       is appended with the ISO 639-2/B 3-letter language code.
+ *       For example: Author-ger=Michael, Author-eng=Mike
+ *       The original/default language is in the unqualified "Author" tag.
+ *       A demuxer should set a default if it sets any translated tag.
+ *    b) sorting  -- a modified version of a tag that should be used for
+ *       sorting will have '-sort' appended. E.g. artist="The Beatles",
+ *       artist-sort="Beatles, The".
+ *
+ * 4. Tag names are normally exported exactly as stored in the container to
+ *    allow lossless remuxing to the same format. For container-independent
+ *    handling of metadata, av_metadata_conv() can convert it to ffmpeg generic
+ *    format. Follows a list of generic tag names:
+ *
+ * album        -- name of the set this work belongs to
+ * album_artist -- main creator of the set/album, if different from artist.
+ *                 e.g. "Various Artists" for compilation albums.
+ * artist       -- main creator of the work
+ * comment      -- any additional description of the file.
+ * composer     -- who composed the work, if different from artist.
+ * copyright    -- name of copyright holder.
+ * date         -- date when the work was created, preferably in ISO 8601.
+ * disc         -- number of a subset, e.g. disc in a multi-disc collection.
+ * encoder      -- name/settings of the software/hardware that produced the file.
+ * encoded_by   -- person/group who created the file.
+ * filename     -- original name of the file.
+ * genre        -- <self-evident>.
+ * language     -- main language in which the work is performed, preferably
+ *                 in ISO 639-2 format.
+ * performer    -- artist who performed the work, if different from artist.
+ *                 E.g for "Also sprach Zarathustra", artist would be "Richard
+ *                 Strauss" and performer "London Philharmonic Orchestra".
+ * publisher    -- name of the label/publisher.
+ * title        -- name of the work.
+ * track        -- number of this work in the set, can be in form current/total.
  */
 
 #define AV_METADATA_MATCH_CASE      1
@@ -122,7 +155,8 @@ int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int fl
 
 /**
  * Converts all the metadata sets from ctx according to the source and
- * destination conversion tables.
+ * destination conversion tables. If one of the tables is NULL, then
+ * tags are converted to/from ffmpeg generic tag names.
  * @param d_conv destination tags format conversion table
  * @param s_conv source tags format conversion table
  */

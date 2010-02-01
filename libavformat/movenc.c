@@ -1437,7 +1437,7 @@ static int mov_write_ilst_tag(ByteIOContext *pb, MOVMuxContext *mov,
     mov_write_string_metadata(s, pb, "aART", "album_artist", 1);
     mov_write_string_metadata(s, pb, "\251wrt", "composer" , 1);
     mov_write_string_metadata(s, pb, "\251alb", "album"    , 1);
-    mov_write_string_metadata(s, pb, "\251day", "year"     , 1);
+    mov_write_string_metadata(s, pb, "\251day", "date"     , 1);
     mov_write_string_tag(pb, "\251too", LIBAVFORMAT_IDENT, 0, 1);
     mov_write_string_metadata(s, pb, "\251cmt", "comment"  , 1);
     mov_write_string_metadata(s, pb, "\251gen", "genre"    , 1);
@@ -1511,7 +1511,7 @@ static int mov_write_3gp_udta_tag(ByteIOContext *pb, AVFormatContext *s,
         put_be16(pb, language_code("eng")); /* language */
         put_buffer(pb, t->value, strlen(t->value)+1); /* UTF8 string value */
         if (!strcmp(tag, "albm") &&
-            (t = av_metadata_get(s->metadata, "year", NULL, 0)))
+            (t = av_metadata_get(s->metadata, "date", NULL, 0)))
             put_byte(pb, atoi(t->value));
     }
     return updateSize(pb, pos);
@@ -1540,12 +1540,12 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVMuxContext *mov,
             mov_write_3gp_udta_tag(pb_buf, s, "dscp", "comment");
             mov_write_3gp_udta_tag(pb_buf, s, "albm", "album");
             mov_write_3gp_udta_tag(pb_buf, s, "cprt", "copyright");
-            mov_write_3gp_udta_tag(pb_buf, s, "yrrc", "year");
+            mov_write_3gp_udta_tag(pb_buf, s, "yrrc", "date");
         } else if (mov->mode == MODE_MOV) { // the title field breaks gtkpod with mp4 and my suspicion is that stuff is not valid in mp4
             mov_write_string_metadata(s, pb_buf, "\251nam", "title"      , 0);
             mov_write_string_metadata(s, pb_buf, "\251aut", "author"     , 0);
             mov_write_string_metadata(s, pb_buf, "\251alb", "album"      , 0);
-            mov_write_string_metadata(s, pb_buf, "\251day", "year"       , 0);
+            mov_write_string_metadata(s, pb_buf, "\251day", "date"       , 0);
             mov_write_string_tag(pb_buf, "\251enc", LIBAVFORMAT_IDENT, 0, 0);
             mov_write_string_metadata(s, pb_buf, "\251des", "comment"    , 0);
             mov_write_string_metadata(s, pb_buf, "\251gen", "genre"      , 0);

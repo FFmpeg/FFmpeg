@@ -1342,7 +1342,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st->start_time = 0;
         if (strcmp(track->language, "und"))
             av_metadata_set(&st->metadata, "language", track->language);
-        av_metadata_set(&st->metadata, "description", track->name);
+        av_metadata_set(&st->metadata, "title", track->name);
 
         if (track->flag_default)
             st->disposition |= AV_DISPOSITION_DEFAULT;

@@ -129,12 +129,10 @@ const ff_asf_guid ff_asf_digital_signature = {
 };
 
 const AVMetadataConv ff_asf_metadata_conv[] = {
-    { "AlbumArtist", "artist"    },
+    { "AlbumArtist", "album_artist"},
     { "AlbumTitle" , "album"     },
-    { "Author"     , "author"    },
-    { "Genre"      , "genre"     },
-    { "Copyright"  , "copyright" },
+    { "Author"     , "artist"    },
     { "TrackNumber", "track"     },
-    { "Year"       , "year"      },
+//  { "Year"       , "date"      }, TODO: conversion year<->date
     { 0 }
 };

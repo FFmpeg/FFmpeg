@@ -93,8 +93,7 @@ const CodecMime ff_mkv_mime_tags[] = {
 };
 
 const AVMetadataConv ff_mkv_metadata_conv[] = {
-    { "ARTIST"        , "artist" },
-    { "LEAD_PERFORMER", "artist" },
+    { "LEAD_PERFORMER", "performer" },
     { "PART_NUMBER"   , "track"  },
     { 0 }
 };

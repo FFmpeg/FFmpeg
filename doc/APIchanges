@@ -12,6 +12,10 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-02-01 - r21587 - lavf 52.50.0 - metadata API
+  Add a list of generic tag names, change 'author' -> 'artist',
+  'year' -> 'date'.
+
 2010-01-30 - r21545 - lavu 50.8.0 - av_get_pix_fmt()
   Add av_get_pix_fmt().
 

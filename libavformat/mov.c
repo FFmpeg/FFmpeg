@@ -113,7 +113,7 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'c','m','t'):
     case MKTAG(0xa9,'i','n','f'): key = "comment";   break;
     case MKTAG(0xa9,'a','l','b'): key = "album";     break;
-    case MKTAG(0xa9,'d','a','y'): key = "year";      break;
+    case MKTAG(0xa9,'d','a','y'): key = "date";      break;
     case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
     case MKTAG(0xa9,'t','o','o'):
     case MKTAG(0xa9,'e','n','c'): key = "encoder";   break;
