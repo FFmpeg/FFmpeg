@@ -1363,6 +1363,7 @@ static int video_thread(void *arg)
             is->last_dts_for_fault_detection=
             is->last_pts_for_fault_detection= INT64_MIN;
             is->frame_last_pts= AV_NOPTS_VALUE;
+            is->frame_last_delay = 40e-3;
 
             continue;
         }
@@ -1812,7 +1813,6 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->video_stream = stream_index;
         is->video_st = ic->streams[stream_index];
 
-        is->frame_last_delay = 40e-3;
         is->frame_timer = (double)av_gettime() / 1000000.0;
 //        is->video_current_pts_time = av_gettime();
 
