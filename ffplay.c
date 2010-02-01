@@ -1387,7 +1387,7 @@ static int video_thread(void *arg)
         }
 
         if(   (   decoder_reorder_pts==1
-               || decoder_reorder_pts && is->faulty_pts<is->faulty_dts
+               || (decoder_reorder_pts && is->faulty_pts<is->faulty_dts)
                || pkt->dts == AV_NOPTS_VALUE)
            && frame->reordered_opaque != AV_NOPTS_VALUE)
             pts= frame->reordered_opaque;
