@@ -1061,8 +1061,7 @@ static void video_refresh_timer(void *opaque)
 
     if (is->video_st) {
         if (is->pictq_size == 0) {
-            /* if no picture, need to wait */
-            schedule_refresh(is, 1);
+//            fprintf(stderr, "Internal error detected in the SDL timer\n");
         } else {
             /* dequeue the picture */
             vp = &is->pictq[is->pictq_rindex];
@@ -1070,9 +1069,6 @@ static void video_refresh_timer(void *opaque)
             /* update current video pts */
             is->video_current_pts = vp->pts;
             is->video_current_pts_drift = is->video_current_pts - av_gettime() / 1000000.0;
-
-            /* launch timer for next picture */
-            schedule_refresh(is, (int)(compute_frame_delay(vp->pts, is) * 1000 + 0.5));
 
             if(is->subtitle_st) {
                 if (is->subtitle_stream_changed) {
@@ -1282,6 +1278,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
         SDL_LockMutex(is->pictq_mutex);
         is->pictq_size++;
         SDL_UnlockMutex(is->pictq_mutex);
+        schedule_refresh(is, (int)(compute_frame_delay(vp->pts, is) * 1000 + 0.5));
     }
     return 0;
 }
