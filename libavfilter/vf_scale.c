@@ -129,11 +129,7 @@ static int config_props(AVFilterLink *outlink)
     av_log(ctx, AV_LOG_INFO, "w:%d h:%d fmt:%s\n",
            outlink->w, outlink->h, av_pix_fmt_descriptors[outlink->format].name);
 
-    scale->input_is_pal = inlink->format == PIX_FMT_PAL8      ||
-                          inlink->format == PIX_FMT_BGR4_BYTE ||
-                          inlink->format == PIX_FMT_RGB4_BYTE ||
-                          inlink->format == PIX_FMT_BGR8      ||
-                          inlink->format == PIX_FMT_RGB8;
+    scale->input_is_pal = av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL;
 
     return !scale->sws;
 }
