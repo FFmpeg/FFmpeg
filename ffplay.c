@@ -115,6 +115,7 @@ typedef struct VideoState {
     int seek_flags;
     int64_t seek_pos;
     int64_t seek_rel;
+    int read_pause_return;
     AVFormatContext *ic;
     int dtg_active_format;
 
@@ -991,8 +992,12 @@ static void stream_pause(VideoState *is)
 {
     is->paused = !is->paused;
     if (!is->paused) {
-        is->video_current_pts = get_video_clock(is);
+        if(is->read_pause_return != AVERROR(ENOSYS)){
+            is->video_current_pts = get_video_clock(is);
+        }
+
         is->frame_timer += (av_gettime() - is->video_current_pts_time) / 1000000.0;
+        is->video_current_pts_time= av_gettime();
     }
 }
 
@@ -2007,7 +2012,7 @@ static int decode_thread(void *arg)
         if (is->paused != is->last_paused) {
             is->last_paused = is->paused;
             if (is->paused)
-                av_read_pause(ic);
+                is->read_pause_return= av_read_pause(ic);
             else
                 av_read_play(ic);
         }
