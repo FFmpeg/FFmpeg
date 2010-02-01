@@ -85,7 +85,7 @@ struct Program {
     unsigned int pids[MAX_PIDS_PER_PROGRAM];
 };
 
-typedef struct MpegTSContext {
+struct MpegTSContext {
     /* user data */
     AVFormatContext *stream;
     /** raw packet size, including FEC if present            */
@@ -120,7 +120,7 @@ typedef struct MpegTSContext {
 
     /** filters for various streams specified by PMT + for the PAT and PMT */
     MpegTSFilter *pids[NB_PID_MAX];
-} MpegTSContext;
+};
 
 /* TS stream handling */
 
