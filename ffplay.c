@@ -90,6 +90,7 @@ typedef struct VideoPicture {
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
     int allocated;
+    SDL_TimerID timer_id;
 } VideoPicture;
 
 typedef struct SubPicture {
@@ -913,10 +914,10 @@ static Uint32 sdl_refresh_timer_cb(Uint32 interval, void *opaque)
 }
 
 /* schedule a video refresh in 'delay' ms */
-static void schedule_refresh(VideoState *is, int delay)
+static SDL_TimerID schedule_refresh(VideoState *is, int delay)
 {
     if(!delay) delay=1; //SDL seems to be buggy when the delay is 0
-    SDL_AddTimer(delay, sdl_refresh_timer_cb, is);
+    return SDL_AddTimer(delay, sdl_refresh_timer_cb, is);
 }
 
 /* get the current audio clock value */
@@ -1122,6 +1123,7 @@ static void video_refresh_timer(void *opaque)
                 is->pictq_rindex = 0;
 
             SDL_LockMutex(is->pictq_mutex);
+            vp->timer_id= 0;
             is->pictq_size--;
             SDL_CondSignal(is->pictq_cond);
             SDL_UnlockMutex(is->pictq_mutex);
@@ -1277,8 +1279,9 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
             is->pictq_windex = 0;
         SDL_LockMutex(is->pictq_mutex);
         is->pictq_size++;
+        //We must schedule in a mutex as we must store the timer id before the timer dies or might end up freeing a alraedy freed id
+        vp->timer_id= schedule_refresh(is, (int)(compute_frame_delay(vp->pts, is) * 1000 + 0.5));
         SDL_UnlockMutex(is->pictq_mutex);
-        schedule_refresh(is, (int)(compute_frame_delay(vp->pts, is) * 1000 + 0.5));
     }
     return 0;
 }
@@ -1326,7 +1329,7 @@ static int video_thread(void *arg)
 {
     VideoState *is = arg;
     AVPacket pkt1, *pkt = &pkt1;
-    int len1, got_picture;
+    int len1, got_picture, i;
     AVFrame *frame= avcodec_alloc_frame();
     double pts;
 
@@ -1339,6 +1342,21 @@ static int video_thread(void *arg)
 
         if(pkt->data == flush_pkt.data){
             avcodec_flush_buffers(is->video_st->codec);
+
+            SDL_LockMutex(is->pictq_mutex);
+            //Make sure there are no long delay timers (ideally we should just flush the que but thats harder)
+            for(i=0; i<VIDEO_PICTURE_QUEUE_SIZE; i++){
+                if(is->pictq[i].timer_id){
+                    SDL_RemoveTimer(is->pictq[i].timer_id);
+                    is->pictq[i].timer_id=0;
+                    schedule_refresh(is, 1);
+                }
+            }
+            while (is->pictq_size && !is->videoq.abort_request) {
+                SDL_CondWait(is->pictq_cond, is->pictq_mutex);
+            }
+            SDL_UnlockMutex(is->pictq_mutex);
+
             is->last_dts_for_fault_detection=
             is->last_pts_for_fault_detection= INT64_MIN;
             continue;
