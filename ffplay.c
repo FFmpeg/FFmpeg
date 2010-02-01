@@ -168,7 +168,7 @@ typedef struct VideoState {
     AVStream *video_st;
     PacketQueue videoq;
     double video_current_pts;                    ///<current displayed pts (different from video_clock if frame fifos are used)
-    int64_t video_current_pts_time;              ///<time (av_gettime) at which we updated video_current_pts - used to have running video pts
+    double video_current_pts_drift;              ///<video_current_pts - time (av_gettime) at which we updated video_current_pts - used to have running video pts
     VideoPicture pictq[VIDEO_PICTURE_QUEUE_SIZE];
     int pictq_size, pictq_rindex, pictq_windex;
     SDL_mutex *pictq_mutex;
@@ -942,7 +942,7 @@ static double get_video_clock(VideoState *is)
     if (is->paused) {
         return is->video_current_pts;
     } else {
-        return is->video_current_pts + (av_gettime() - is->video_current_pts_time) / 1000000.0;
+        return is->video_current_pts_drift + av_gettime() / 1000000.0;
     }
 }
 
@@ -990,15 +990,14 @@ static void stream_seek(VideoState *is, int64_t pos, int64_t rel, int seek_by_by
 /* pause or resume the video */
 static void stream_pause(VideoState *is)
 {
-    is->paused = !is->paused;
-    if (!is->paused) {
+    if (is->paused) {
+        is->frame_timer += av_gettime() / 1000000.0 + is->video_current_pts_drift - is->video_current_pts;
         if(is->read_pause_return != AVERROR(ENOSYS)){
-            is->video_current_pts = get_video_clock(is);
+            is->video_current_pts = is->video_current_pts_drift + av_gettime() / 1000000.0;
         }
-
-        is->frame_timer += (av_gettime() - is->video_current_pts_time) / 1000000.0;
-        is->video_current_pts_time= av_gettime();
+        is->video_current_pts_drift = is->video_current_pts - av_gettime() / 1000000.0;
     }
+    is->paused = !is->paused;
 }
 
 static double compute_frame_delay(double frame_current_pts, VideoState *is)
@@ -1070,7 +1069,7 @@ static void video_refresh_timer(void *opaque)
 
             /* update current video pts */
             is->video_current_pts = vp->pts;
-            is->video_current_pts_time = av_gettime();
+            is->video_current_pts_drift = is->video_current_pts - av_gettime() / 1000000.0;
 
             /* launch timer for next picture */
             schedule_refresh(is, (int)(compute_frame_delay(vp->pts, is) * 1000 + 0.5));
@@ -1795,7 +1794,7 @@ static int stream_component_open(VideoState *is, int stream_index)
 
         is->frame_last_delay = 40e-3;
         is->frame_timer = (double)av_gettime() / 1000000.0;
-        is->video_current_pts_time = av_gettime();
+//        is->video_current_pts_time = av_gettime();
 
         packet_queue_init(&is->videoq);
         is->video_tid = SDL_CreateThread(video_thread, is);
