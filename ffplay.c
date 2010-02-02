@@ -1076,6 +1076,7 @@ static void video_refresh_timer(void *opaque)
             /* update current video pts */
             is->video_current_pts = vp->pts;
             is->video_current_pts_drift = is->video_current_pts - av_gettime() / 1000000.0;
+            is->video_current_pos = vp->pos;
 
             if(is->subtitle_st) {
                 if (is->subtitle_stream_changed) {
