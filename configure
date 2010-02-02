@@ -1201,7 +1201,7 @@ vhook="default"
 # build settings
 add_cflags -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
-VHOOKSHFLAGS='$(SHFLAGS)'
+VHOOKSHFLAGS='-shared -Wl,-soname,$$(@F)'
 FFSERVERLDFLAGS=-Wl,-E
 LIBPREF="lib"
 LIBSUF=".a"
