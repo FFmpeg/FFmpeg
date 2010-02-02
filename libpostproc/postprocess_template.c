@@ -27,6 +27,7 @@
 
 #define ALIGN_MASK "$-8"
 
+#undef REAL_PAVGB
 #undef PAVGB
 #undef PMINUB
 #undef PMAXUB
@@ -1059,6 +1060,7 @@ static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c)
 //        0        1        2        3        4        5        6        7        8        9
 //        %0        eax        eax+%1        eax+2%1        %0+4%1        edx        edx+%1        edx+2%1        %0+8%1        edx+4%1
 
+#undef REAL_FIND_MIN_MAX
 #undef FIND_MIN_MAX
 #if HAVE_MMX2
 #define REAL_FIND_MIN_MAX(addr)\
@@ -3007,6 +3009,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
  * Copies a block from src to dst and fixes the blacklevel.
  * levelFix == 0 -> do not touch the brighness & contrast
  */
+#undef REAL_SCALED_CPY
 #undef SCALED_CPY
 
 static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, const uint8_t src[], int srcStride,
