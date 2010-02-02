@@ -955,27 +955,27 @@ static inline void yuv2rgbXinC_full(SwsContext *c, int16_t *lumFilter, int16_t *
 
 //Note: we have C, X86, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
 //Plain C versions
-#if ((!HAVE_MMX || !CONFIG_GPL) && !HAVE_ALTIVEC) || defined (RUNTIME_CPUDETECT)
+#if ((!HAVE_MMX || !CONFIG_GPL) && !HAVE_ALTIVEC) || CONFIG_RUNTIME_CPUDETECT
 #define COMPILE_C
 #endif
 
 #if ARCH_PPC
-#if HAVE_ALTIVEC || defined (RUNTIME_CPUDETECT)
+#if HAVE_ALTIVEC || CONFIG_RUNTIME_CPUDETECT
 #define COMPILE_ALTIVEC
 #endif
 #endif //ARCH_PPC
 
 #if ARCH_X86
 
-#if ((HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
+#if ((HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT) && CONFIG_GPL
 #define COMPILE_MMX
 #endif
 
-#if (HAVE_MMX2 || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
+#if (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT) && CONFIG_GPL
 #define COMPILE_MMX2
 #endif
 
-#if ((HAVE_AMD3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)) && CONFIG_GPL
+#if ((HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT) && CONFIG_GPL
 #define COMPILE_3DNOW
 #endif
 #endif //ARCH_X86
@@ -1636,7 +1636,7 @@ static void globalInit(void){
 
 static SwsFunc getSwsFunc(int flags){
 
-#if defined(RUNTIME_CPUDETECT)
+#if CONFIG_RUNTIME_CPUDETECT
 #if ARCH_X86 && CONFIG_GPL
     // ordered per speed fastest first
     if (flags & SWS_CPU_CAPS_MMX2)
@@ -1657,7 +1657,7 @@ static SwsFunc getSwsFunc(int flags){
 #endif
     return swScale_C;
 #endif /* ARCH_X86 && CONFIG_GPL */
-#else //RUNTIME_CPUDETECT
+#else //CONFIG_RUNTIME_CPUDETECT
 #if   HAVE_MMX2
     return swScale_MMX2;
 #elif HAVE_AMD3DNOW
@@ -1669,7 +1669,7 @@ static SwsFunc getSwsFunc(int flags){
 #else
     return swScale_C;
 #endif
-#endif //!RUNTIME_CPUDETECT
+#endif //!CONFIG_RUNTIME_CPUDETECT
 }
 
 static int PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
@@ -2193,7 +2193,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         __asm__ volatile("emms\n\t"::: "memory");
 #endif
 
-#if !defined(RUNTIME_CPUDETECT) //ensure that the flags match the compiled variant if cpudetect is off
+#if !CONFIG_RUNTIME_CPUDETECT //ensure that the flags match the compiled variant if cpudetect is off
     flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC|SWS_CPU_CAPS_BFIN);
 #if   HAVE_MMX2
     flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2;
@@ -2206,7 +2206,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 #elif ARCH_BFIN
     flags |= SWS_CPU_CAPS_BFIN;
 #endif
-#endif /* RUNTIME_CPUDETECT */
+#endif /* CONFIG_RUNTIME_CPUDETECT */
     if (clip_table[512] != 255) globalInit();
     if (!rgb15to16) sws_rgb2rgb_init(flags);
 
