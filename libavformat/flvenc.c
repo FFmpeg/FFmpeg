@@ -221,7 +221,7 @@ static int flv_write_header(AVFormatContext *s)
 
     put_amf_string(pb, "duration");
     flv->duration_offset= url_ftell(pb);
-    put_amf_double(pb, 0); // delayed write
+    put_amf_double(pb, s->duration / AV_TIME_BASE); // fill in the guessed duration, it'll be corrected later if incorrect
 
     if(video_enc){
         put_amf_string(pb, "width");

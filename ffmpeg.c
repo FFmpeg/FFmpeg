@@ -2104,6 +2104,19 @@ static int av_encode(AVFormatContext **output_files,
         ist->is_start = 1;
     }
 
+    /* set the duration of the output to the duration of the input
+     * if the output ends up being different, it'll be corrected later */
+    for (i=0;i<nb_output_files;i++) {
+        AVFormatContext *out_file = output_files[i];
+        AVFormatContext *in_file = input_files[i];
+
+        if (recording_time != INT64_MAX) {
+            out_file->duration = recording_time / 1000000 * AV_TIME_BASE;
+        } else {
+            out_file->duration = in_file->duration;
+        }
+    }
+
     /* set meta data information from input file if required */
     for (i=0;i<nb_meta_data_maps;i++) {
         AVFormatContext *out_file;
