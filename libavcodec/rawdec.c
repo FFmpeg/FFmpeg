@@ -137,7 +137,8 @@ static int raw_decode(AVCodecContext *avctx,
         buf= dst;
     }
 
-    if(avctx->codec_tag == MKTAG('A', 'V', '1', 'x'))
+    if(avctx->codec_tag == MKTAG('A', 'V', '1', 'x') ||
+       avctx->codec_tag == MKTAG('A', 'V', 'u', 'p'))
         buf += buf_size - context->length;
 
     if(buf_size < context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? 256*4 : 0))
