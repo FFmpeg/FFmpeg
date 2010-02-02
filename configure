@@ -1657,6 +1657,8 @@ case $target_os in
     interix)
         disable vhook
         ;;
+    gnu/kfreebsd)
+        ;;
 
     *)
         die "Unknown OS '$target_os'."
