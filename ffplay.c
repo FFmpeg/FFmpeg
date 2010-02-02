@@ -87,6 +87,7 @@ typedef struct PacketQueue {
 
 typedef struct VideoPicture {
     double pts;                                  ///<presentation time stamp for this picture
+    int64_t pos;                                 ///<byte position in file
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
     int allocated;
@@ -170,6 +171,7 @@ typedef struct VideoState {
     PacketQueue videoq;
     double video_current_pts;                    ///<current displayed pts (different from video_clock if frame fifos are used)
     double video_current_pts_drift;              ///<video_current_pts - time (av_gettime) at which we updated video_current_pts - used to have running video pts
+    int64_t video_current_pos;                   ///<current displayed file pos
     VideoPicture pictq[VIDEO_PICTURE_QUEUE_SIZE];
     int pictq_size, pictq_rindex, pictq_windex;
     SDL_mutex *pictq_mutex;
@@ -1202,7 +1204,7 @@ static void alloc_picture(void *opaque)
  *
  * @param pts the dts of the pkt / pts of the frame and guessed if not known
  */
-static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
+static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t pos)
 {
     VideoPicture *vp;
     int dst_pix_fmt;
@@ -1277,6 +1279,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
         SDL_UnlockYUVOverlay(vp->bmp);
 
         vp->pts = pts;
+        vp->pos = pos;
 
         /* now we can update the picture count */
         if (++is->pictq_windex == VIDEO_PICTURE_QUEUE_SIZE)
@@ -1294,7 +1297,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
  * compute the exact PTS for the picture if it is omitted in the stream
  * @param pts1 the dts of the pkt / pts of the frame
  */
-static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1)
+static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1, int64_t pos)
 {
     double frame_delay, pts;
 
@@ -1326,7 +1329,7 @@ static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1)
                ftype, pts, pts1);
     }
 #endif
-    return queue_picture(is, src_frame, pts);
+    return queue_picture(is, src_frame, pts, pos);
 }
 
 static int video_thread(void *arg)
@@ -1359,6 +1362,7 @@ static int video_thread(void *arg)
             while (is->pictq_size && !is->videoq.abort_request) {
                 SDL_CondWait(is->pictq_cond, is->pictq_mutex);
             }
+            is->video_current_pos= -1;
             SDL_UnlockMutex(is->pictq_mutex);
 
             is->last_dts_for_fault_detection=
@@ -1401,7 +1405,7 @@ static int video_thread(void *arg)
 //            if (len1 < 0)
 //                break;
         if (got_picture) {
-            if (output_picture2(is, frame, pts) < 0)
+            if (output_picture2(is, frame, pts, pkt->pos) < 0)
                 goto the_end;
         }
         av_free_packet(pkt);
@@ -2357,7 +2361,12 @@ static void event_loop(void)
             do_seek:
                 if (cur_stream) {
                     if (seek_by_bytes) {
-                        pos = url_ftell(cur_stream->ic->pb);
+                        if (cur_stream->video_stream >= 0 && cur_stream->video_current_pos>=0){
+                            pos= cur_stream->video_current_pos;
+                        }else if(cur_stream->audio_stream >= 0 && cur_stream->audio_pkt.pos>=0){
+                            pos= cur_stream->audio_pkt.pos;
+                        }else
+                            pos = url_ftell(cur_stream->ic->pb);
                         if (cur_stream->ic->bit_rate)
                             incr *= cur_stream->ic->bit_rate / 60.0;
                         else
