@@ -1068,7 +1068,7 @@ static void video_refresh_timer(void *opaque)
 
     if (is->video_st) {
         if (is->pictq_size == 0) {
-//            fprintf(stderr, "Internal error detected in the SDL timer\n");
+            fprintf(stderr, "Internal error detected in the SDL timer\n");
         } else {
             /* dequeue the picture */
             vp = &is->pictq[is->pictq_rindex];
@@ -2022,6 +2022,9 @@ static int decode_thread(void *arg)
     if (video_index >= 0) {
         stream_component_open(is, video_index);
     } else {
+        /* add the refresh timer to draw the picture */
+        schedule_refresh(is, 40);
+
         if (!display_disable)
             is->show_audio = 1;
     }
@@ -2172,9 +2175,6 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
 
     is->subpq_mutex = SDL_CreateMutex();
     is->subpq_cond = SDL_CreateCond();
-
-    /* add the refresh timer to draw the picture */
-    schedule_refresh(is, 40);
 
     is->av_sync_type = av_sync_type;
     is->parse_tid = SDL_CreateThread(decode_thread, is);
