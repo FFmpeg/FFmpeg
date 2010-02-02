@@ -1026,8 +1026,7 @@ static double compute_frame_delay(double frame_current_pts, VideoState *is)
          is->av_sync_type == AV_SYNC_EXTERNAL_CLOCK)) {
         /* if video is slave, we try to correct big delays by
            duplicating or deleting a frame */
-        ref_clock = get_master_clock(is);
-        diff = frame_current_pts - ref_clock;
+        diff = get_video_clock(is) - get_master_clock(is);
 
         /* skip or repeat frame. We take into account the
            delay to compute the threshold. I still don't know
