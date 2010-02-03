@@ -2089,6 +2089,13 @@ int av_find_stream_info(AVFormatContext *ic)
                 st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
             }
         }
+        assert(!st->codec->codec);
+        //try to just open decoders, in case this is enough to get parameters
+        if(!has_codec_parameters(st->codec)){
+            AVCodec *codec = avcodec_find_decoder(st->codec->codec_id);
+            if (codec)
+                avcodec_open(st->codec, codec);
+        }
     }
 
     for(i=0;i<MAX_STREAMS;i++){
