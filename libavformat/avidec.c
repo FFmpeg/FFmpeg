@@ -415,7 +415,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->nb_frames = get_le32(pb);
 
             st->start_time = 0;
-            st->duration = st->nb_frames;
             get_le32(pb); /* buffer size */
             get_le32(pb); /* quality */
             ast->sample_size = get_le32(pb); /* sample ssize */
@@ -442,6 +441,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_log(s, AV_LOG_ERROR, "unknown stream type %X\n", tag1);
                 goto fail;
             }
+            if(ast->sample_size == 0)
+                st->duration = st->nb_frames;
             ast->frame_offset= ast->cum_len;
             url_fskip(pb, size - 12 * 4);
             break;
