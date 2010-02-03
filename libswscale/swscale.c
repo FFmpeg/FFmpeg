@@ -1423,6 +1423,13 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
     return srcSliceH;
 }
 
+#define isRGBA32(x) (            \
+           (x) == PIX_FMT_ARGB   \
+        || (x) == PIX_FMT_RGBA   \
+        || (x) == PIX_FMT_BGRA   \
+        || (x) == PIX_FMT_ABGR   \
+        )
+
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 static int rgbToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[])
@@ -1435,6 +1442,22 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
     const int dstId= c->dstFormatBpp >> 2;
     void (*conv)(const uint8_t *src, uint8_t *dst, long src_size)=NULL;
 
+#define CONV_IS(src, dst) (srcFormat == PIX_FMT_##src && dstFormat == PIX_FMT_##dst)
+
+    if (isRGBA32(srcFormat) && isRGBA32(dstFormat)) {
+        if (     CONV_IS(ABGR, RGBA)
+              || CONV_IS(ARGB, BGRA)
+              || CONV_IS(BGRA, ARGB)
+              || CONV_IS(RGBA, ABGR)) conv = shuffle_bytes_3210;
+        else if (CONV_IS(ABGR, ARGB)
+              || CONV_IS(ARGB, ABGR)) conv = shuffle_bytes_0321;
+        else if (CONV_IS(ABGR, BGRA)
+              || CONV_IS(ARGB, RGBA)) conv = shuffle_bytes_1230;
+        else if (CONV_IS(BGRA, RGBA)
+              || CONV_IS(RGBA, BGRA)) conv = shuffle_bytes_2103;
+        else if (CONV_IS(BGRA, ABGR)
+              || CONV_IS(RGBA, ARGB)) conv = shuffle_bytes_3012;
+    } else
     /* BGR -> BGR */
     if (  (isBGRinInt(srcFormat) && isBGRinInt(dstFormat))
        || (isRGBinInt(srcFormat) && isRGBinInt(dstFormat))) {
@@ -1470,7 +1493,6 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
         case 0x83: conv= rgb15tobgr32; break;
         case 0x84: conv= rgb16tobgr32; break;
         case 0x86: conv= rgb24tobgr32; break;
-        case 0x88: conv= rgb32tobgr32; break;
         }
     }
 
@@ -1479,14 +1501,18 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
                sws_format_name(srcFormat), sws_format_name(dstFormat));
     } else {
         const uint8_t *srcPtr= src[0];
-        if(srcFormat == PIX_FMT_RGB32_1 || srcFormat == PIX_FMT_BGR32_1)
+              uint8_t *dstPtr= dst[0];
+        if ((srcFormat == PIX_FMT_RGB32_1 || srcFormat == PIX_FMT_BGR32_1) && !isRGBA32(dstFormat))
             srcPtr += ALT32_CORR;
 
+        if ((dstFormat == PIX_FMT_RGB32_1 || dstFormat == PIX_FMT_BGR32_1) && !isRGBA32(srcFormat))
+            dstPtr += ALT32_CORR;
+
         if (dstStride[0]*srcBpp == srcStride[0]*dstBpp && srcStride[0] > 0)
-            conv(srcPtr, dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+            conv(srcPtr, dstPtr + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
         else {
             int i;
-            uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+            dstPtr += dstStride[0]*srcSliceY;
 
             for (i=0; i<srcSliceH; i++) {
                 conv(srcPtr, dstPtr, c->srcW*srcBpp);
@@ -1692,8 +1718,6 @@ void ff_get_unscaled_swscale(SwsContext *c)
         && srcFormat != PIX_FMT_RGB4_BYTE && dstFormat != PIX_FMT_RGB4_BYTE
         && srcFormat != PIX_FMT_MONOBLACK && dstFormat != PIX_FMT_MONOBLACK
         && srcFormat != PIX_FMT_MONOWHITE && dstFormat != PIX_FMT_MONOWHITE
-                                          && dstFormat != PIX_FMT_RGB32_1
-                                          && dstFormat != PIX_FMT_BGR32_1
         && srcFormat != PIX_FMT_RGB48LE   && dstFormat != PIX_FMT_RGB48LE
         && srcFormat != PIX_FMT_RGB48BE   && dstFormat != PIX_FMT_RGB48BE
         && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))

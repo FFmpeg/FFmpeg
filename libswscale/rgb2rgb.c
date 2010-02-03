@@ -442,3 +442,23 @@ void bgr8torgb8(const uint8_t *src, uint8_t *dst, long src_size)
         dst[i] = ((b<<1)&0x07) | ((g&0x07)<<3) | ((r&0x03)<<6);
     }
 }
+
+#define DEFINE_SHUFFLE_BYTES(a, b, c, d)                                \
+void shuffle_bytes_##a##b##c##d(const uint8_t *src, uint8_t *dst, long src_size) \
+{                                                                       \
+    long i;                                                             \
+                                                                        \
+    for (i = 0; i < src_size; i+=4) {                                   \
+        dst[i + 0] = src[i + a];                                        \
+        dst[i + 1] = src[i + b];                                        \
+        dst[i + 2] = src[i + c];                                        \
+        dst[i + 3] = src[i + d];                                        \
+    }                                                                   \
+}
+
+DEFINE_SHUFFLE_BYTES(0, 3, 2, 1);
+DEFINE_SHUFFLE_BYTES(1, 2, 3, 0);
+DEFINE_SHUFFLE_BYTES(2, 1, 0, 3);
+DEFINE_SHUFFLE_BYTES(3, 0, 1, 2);
+DEFINE_SHUFFLE_BYTES(3, 2, 1, 0);
+
