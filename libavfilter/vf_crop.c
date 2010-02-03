@@ -24,6 +24,7 @@
  */
 
 #include "avfilter.h"
+#include "libavutil/pixdesc.h"
 
 typedef struct {
     int  x;             ///< x offset of the non-cropped area with respect to the input area
@@ -173,11 +174,7 @@ static void start_frame(AVFilterLink *link, AVFilterPicRef *picref)
     ref2->data[0] += crop->y * ref2->linesize[0];
     ref2->data[0] += (crop->x * crop->bpp) >> 3;
 
-    if (link->format != PIX_FMT_PAL8      &&
-        link->format != PIX_FMT_BGR4_BYTE &&
-        link->format != PIX_FMT_RGB4_BYTE &&
-        link->format != PIX_FMT_BGR8      &&
-        link->format != PIX_FMT_RGB8) {
+    if (!(av_pix_fmt_descriptors[link->format].flags & PIX_FMT_PAL)) {
         for (i = 1; i < 3; i ++) {
             if (ref2->data[i]) {
                 ref2->data[i] += (crop->y >> crop->vsub) * ref2->linesize[i];
