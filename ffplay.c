@@ -2371,7 +2371,7 @@ static void event_loop(void)
                         }else
                             pos = url_ftell(cur_stream->ic->pb);
                         if (cur_stream->ic->bit_rate)
-                            incr *= cur_stream->ic->bit_rate / 60.0;
+                            incr *= cur_stream->ic->bit_rate / 8.0;
                         else
                             incr *= 180000.0;
                         pos += incr;
