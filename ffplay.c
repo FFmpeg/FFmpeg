@@ -2306,7 +2306,12 @@ static void do_exit(void)
 static void toggle_audio_display(void)
 {
     if (cur_stream) {
+        int bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
         cur_stream->show_audio = !cur_stream->show_audio;
+        fill_rectangle(screen,
+                    cur_stream->xleft, cur_stream->ytop, cur_stream->width, cur_stream->height,
+                    bgcolor);
+        SDL_UpdateRect(screen, cur_stream->xleft, cur_stream->ytop, cur_stream->width, cur_stream->height);
     }
 }
 
