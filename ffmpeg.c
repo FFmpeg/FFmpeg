@@ -2605,7 +2605,7 @@ static void opt_frame_pix_fmt(const char *arg)
             av_exit(1);
         }
     } else {
-        list_fmts(avcodec_pix_fmt_string, PIX_FMT_NB);
+        show_pix_fmts();
         av_exit(0);
     }
 }
