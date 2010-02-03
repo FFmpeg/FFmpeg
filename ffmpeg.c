@@ -2236,9 +2236,6 @@ static int av_encode(AVFormatContext **output_files,
             ist = ist_table[ost->source_index];
             if(no_packet[ist->file_index])
                 continue;
-            if(ost->st->codec->codec_type == CODEC_TYPE_VIDEO)
-                opts = ost->sync_opts * av_q2d(ost->st->codec->time_base);
-            else
                 opts = ost->st->pts.val * av_q2d(ost->st->time_base);
             ipts = (double)ist->pts;
             if (!file_table[ist->file_index].eof_reached){
