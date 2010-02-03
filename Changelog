@@ -53,6 +53,7 @@ version <next>:
 - RTP depacketization of H.263
 - Bink demuxer and Bink Audio decoder
 - enable symbol versioning by default for linkers that support it
+- IFF PBM/ILBM bitmap decoder
 
 
 
