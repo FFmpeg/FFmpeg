@@ -256,14 +256,14 @@ static int iff_read_packet(AVFormatContext *s,
         pkt->flags |= PKT_FLAG_KEY;
 
     if(s->streams[0]->codec->codec_type == CODEC_TYPE_AUDIO) {
-    iff->sent_bytes += PACKET_SIZE;
+        iff->sent_bytes += PACKET_SIZE;
     } else {
         iff->sent_bytes = iff->body_size;
     }
     pkt->stream_index = 0;
     if(s->streams[0]->codec->codec_type == CODEC_TYPE_AUDIO) {
-    pkt->pts = iff->audio_frame_count;
-    iff->audio_frame_count += ret / s->streams[0]->codec->channels;
+        pkt->pts = iff->audio_frame_count;
+        iff->audio_frame_count += ret / s->streams[0]->codec->channels;
     }
     return ret;
 }
