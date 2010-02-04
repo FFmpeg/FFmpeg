@@ -1732,9 +1732,7 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                             if(s->qscale<8){
                                 ll= SHOW_UBITS(re, &s->gb, 3); SKIP_BITS(re, &s->gb, 3);
                                 if(ll==0){
-                                    if(SHOW_UBITS(re, &s->gb, 1)) av_log(s->avctx, AV_LOG_ERROR, "cool a new vlc code ,contact the ffmpeg developers and upload the file\n");
-                                    SKIP_BITS(re, &s->gb, 1);
-                                    ll=8;
+                                    ll= 8+SHOW_UBITS(re, &s->gb, 1); SKIP_BITS(re, &s->gb, 1);
                                 }
                             }else{
                                 ll=2;
