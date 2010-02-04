@@ -1781,11 +1781,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         }
 
         if(h->sps.timing_info_present_flag){
-            s->avctx->time_base= (AVRational){h->sps.num_units_in_tick, h->sps.time_scale};
+            int64_t den= h->sps.time_scale;
             if(h->x264_build > 0 && h->x264_build < 44)
-                s->avctx->time_base.den *= 2;
+                den *= 2;
             av_reduce(&s->avctx->time_base.num, &s->avctx->time_base.den,
-                      s->avctx->time_base.num, s->avctx->time_base.den, 1<<30);
+                      h->sps.num_units_in_tick, den, 1<<30);
         }
         s->avctx->pix_fmt = s->avctx->get_format(s->avctx, s->avctx->codec->pix_fmts);
         s->avctx->hwaccel = ff_find_hwaccel(s->avctx->codec->id, s->avctx->pix_fmt);
