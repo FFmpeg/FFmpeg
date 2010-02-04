@@ -227,6 +227,7 @@ static enum AVDiscard skip_loop_filter= AVDISCARD_DEFAULT;
 static int error_recognition = FF_ER_CAREFUL;
 static int error_concealment = 3;
 static int decoder_reorder_pts= -1;
+static int autoexit;
 
 /* current context */
 static int is_full_screen;
@@ -2102,6 +2103,10 @@ static int decode_thread(void *arg)
                 packet_queue_put(&is->videoq, pkt);
             }
             SDL_Delay(10);
+            if(autoexit && is->audioq.size + is->videoq.size + is->subtitleq.size ==0){
+                ret=AVERROR_EOF;
+                goto fail;
+            }
             continue;
         }
         ret = av_read_frame(ic, pkt);
@@ -2557,6 +2562,7 @@ static const OptionDef options[] = {
     { "ec", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_concealment}, "set error concealment options",  "bit_mask" },
     { "sync", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
     { "threads", HAS_ARG | OPT_FUNC2 | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
+    { "autoexit", OPT_BOOL | OPT_EXPERT, {(void*)&autoexit}, "exit at the end", "" },
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
 };
