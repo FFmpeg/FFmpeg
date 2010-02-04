@@ -77,6 +77,8 @@ typedef struct {
 
     int32_t *outputsamples_buffer[MAX_CHANNELS];
 
+    int32_t *wasted_bits_buffer[MAX_CHANNELS];
+
     /* stuff from setinfo */
     uint32_t setinfo_max_samples_per_frame; /* 0x1000 = 4096 */    /* max samples per frame? */
     uint8_t setinfo_sample_size; /* 0x10 */
@@ -85,6 +87,7 @@ typedef struct {
     uint8_t setinfo_rice_kmodifier; /* 0x0e */
     /* end setinfo stuff */
 
+    int wasted_bits;
 } ALACContext;
 
 static void allocate_buffers(ALACContext *alac)
@@ -96,6 +99,8 @@ static void allocate_buffers(ALACContext *alac)
 
         alac->outputsamples_buffer[chan] =
             av_malloc(alac->setinfo_max_samples_per_frame * 4);
+
+        alac->wasted_bits_buffer[chan] = av_malloc(alac->setinfo_max_samples_per_frame * 4);
     }
 }
 
@@ -398,6 +403,56 @@ static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
     }
 }
 
+static void decorrelate_stereo_24(int32_t *buffer[MAX_CHANNELS],
+                                  int32_t *buffer_out,
+                                  int32_t *wasted_bits_buffer[MAX_CHANNELS],
+                                  int wasted_bits,
+                                  int numchannels, int numsamples,
+                                  uint8_t interlacing_shift,
+                                  uint8_t interlacing_leftweight)
+{
+    int i;
+
+    if (numsamples <= 0)
+        return;
+
+    /* weighted interlacing */
+    if (interlacing_leftweight) {
+        for (i = 0; i < numsamples; i++) {
+            int32_t a, b;
+
+            a = buffer[0][i];
+            b = buffer[1][i];
+
+            a -= (b * interlacing_leftweight) >> interlacing_shift;
+            b += a;
+
+            if (wasted_bits) {
+                b  = (b  << wasted_bits) | wasted_bits_buffer[0][i];
+                a  = (a  << wasted_bits) | wasted_bits_buffer[1][i];
+            }
+
+            buffer_out[i * numchannels]     = b << 8;
+            buffer_out[i * numchannels + 1] = a << 8;
+        }
+    } else {
+        for (i = 0; i < numsamples; i++) {
+            int32_t left, right;
+
+            left  = buffer[0][i];
+            right = buffer[1][i];
+
+            if (wasted_bits) {
+                left   = (left   << wasted_bits) | wasted_bits_buffer[0][i];
+                right  = (right  << wasted_bits) | wasted_bits_buffer[1][i];
+            }
+
+            buffer_out[i * numchannels]     = left  << 8;
+            buffer_out[i * numchannels + 1] = right << 8;
+        }
+    }
+}
+
 static int alac_decode_frame(AVCodecContext *avctx,
                              void *outbuffer, int *outputsize,
                              AVPacket *avpkt)
@@ -410,7 +465,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
     unsigned int outputsamples;
     int hassize;
     unsigned int readsamplesize;
-    int wasted_bytes;
     int isnotcompressed;
     uint8_t interlacing_shift;
     uint8_t interlacing_leftweight;
@@ -452,7 +506,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     /* the output sample size is stored soon */
     hassize = get_bits1(&alac->gb);
 
-    wasted_bytes = get_bits(&alac->gb, 2); /* unknown ? */
+    alac->wasted_bits = get_bits(&alac->gb, 2) << 3;
 
     /* whether the frame is compressed */
     isnotcompressed = get_bits1(&alac->gb);
@@ -467,13 +521,25 @@ static int alac_decode_frame(AVCodecContext *avctx,
     } else
         outputsamples = alac->setinfo_max_samples_per_frame;
 
+    switch (alac->setinfo_sample_size) {
+    case 16: avctx->sample_fmt    = SAMPLE_FMT_S16;
+             alac->bytespersample = channels << 1;
+             break;
+    case 24: avctx->sample_fmt    = SAMPLE_FMT_S32;
+             alac->bytespersample = channels << 2;
+             break;
+    default: av_log(avctx, AV_LOG_ERROR, "Sample depth %d is not supported.\n",
+                    alac->setinfo_sample_size);
+             return -1;
+    }
+
     if(outputsamples > *outputsize / alac->bytespersample){
         av_log(avctx, AV_LOG_ERROR, "sample buffer too small\n");
         return -1;
     }
 
     *outputsize = outputsamples * alac->bytespersample;
-    readsamplesize = alac->setinfo_sample_size - (wasted_bytes * 8) + channels - 1;
+    readsamplesize = alac->setinfo_sample_size - (alac->wasted_bits) + channels - 1;
     if (readsamplesize > MIN_CACHE_BITS) {
         av_log(avctx, AV_LOG_ERROR, "readsamplesize too big (%d)\n", readsamplesize);
         return -1;
@@ -503,9 +569,13 @@ static int alac_decode_frame(AVCodecContext *avctx,
                 predictor_coef_table[chan][i] = (int16_t)get_bits(&alac->gb, 16);
         }
 
-        if (wasted_bytes)
-            av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented, unhandling of wasted_bytes\n");
-
+        if (alac->wasted_bits) {
+            int i, ch;
+            for (i = 0; i < outputsamples; i++) {
+                for (ch = 0; ch < channels; ch++)
+                    alac->wasted_bits_buffer[ch][i] = get_bits(&alac->gb, alac->wasted_bits);
+            }
+        }
         for (chan = 0; chan < channels; chan++) {
             bastardized_rice_decompress(alac,
                                         alac->predicterror_buffer[chan],
@@ -538,6 +608,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     } else {
         /* not compressed, easy case */
         int i, chan;
+        if (alac->setinfo_sample_size <= 16) {
         for (i = 0; i < outputsamples; i++)
             for (chan = 0; chan < channels; chan++) {
                 int32_t audiobits;
@@ -546,7 +617,17 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
                 alac->outputsamples_buffer[chan][i] = audiobits;
             }
-        /* wasted_bytes = 0; */
+        } else {
+            for (i = 0; i < outputsamples; i++) {
+                for (chan = 0; chan < channels; chan++) {
+                    alac->outputsamples_buffer[chan][i] = get_bits(&alac->gb,
+                                                          alac->setinfo_sample_size);
+                    alac->outputsamples_buffer[chan][i] = sign_extend(alac->outputsamples_buffer[chan][i],
+                                                                      alac->setinfo_sample_size);
+                }
+            }
+        }
+        alac->wasted_bits = 0;
         interlacing_shift = 0;
         interlacing_leftweight = 0;
     }
@@ -570,14 +651,21 @@ static int alac_decode_frame(AVCodecContext *avctx,
             }
         }
         break;
-    case 20:
     case 24:
-        // It is not clear if there exist any encoder that creates 24 bit ALAC
-        // files. iTunes convert 24 bit raw files to 16 bit before encoding.
-    case 32:
-        av_log(avctx, AV_LOG_ERROR, "FIXME: unimplemented sample size %i\n", alac->setinfo_sample_size);
-        break;
-    default:
+        if (channels == 2) {
+            decorrelate_stereo_24(alac->outputsamples_buffer,
+                                  outbuffer,
+                                  alac->wasted_bits_buffer,
+                                  alac->wasted_bits,
+                                  alac->numchannels,
+                                  outputsamples,
+                                  interlacing_shift,
+                                  interlacing_leftweight);
+        } else {
+            int i;
+            for (i = 0; i < outputsamples; i++)
+                ((int32_t *)outbuffer)[i] = alac->outputsamples_buffer[0][i] << 8;
+        }
         break;
     }
 
@@ -594,8 +682,6 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     alac->context_initialized = 0;
 
     alac->numchannels = alac->avctx->channels;
-    alac->bytespersample = 2 * alac->numchannels;
-    avctx->sample_fmt = SAMPLE_FMT_S16;
 
     return 0;
 }
@@ -608,6 +694,7 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
     for (chan = 0; chan < MAX_CHANNELS; chan++) {
         av_free(alac->predicterror_buffer[chan]);
         av_free(alac->outputsamples_buffer[chan]);
+        av_freep(&alac->wasted_bits_buffer[chan]);
     }
 
     return 0;
