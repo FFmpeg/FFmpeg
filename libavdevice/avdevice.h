@@ -41,12 +41,12 @@ unsigned avdevice_version(void);
 /**
  * Returns the libavdevice build-time configuration.
  */
-const char * avdevice_configuration(void);
+const char *avdevice_configuration(void);
 
 /**
  * Returns the libavdevice license.
  */
-const char * avdevice_license(void);
+const char *avdevice_license(void);
 
 /**
  * Initialize libavdevice and register all the input and output devices.
