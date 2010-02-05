@@ -227,7 +227,7 @@ static void clean_index(AVFormatContext *s){
     }
 }
 
-static int avi_read_tag(AVFormatContext *s, const char *key, unsigned int size)
+static int avi_read_tag(AVFormatContext *s, AVStream *st, const char *key, unsigned int size)
 {
     ByteIOContext *pb = s->pb;
     char *value;
@@ -239,8 +239,13 @@ static int avi_read_tag(AVFormatContext *s, const char *key, unsigned int size)
     value = av_malloc(size+1);
     if (!value)
         return -1;
-    get_strz(pb, value, size);
+    get_buffer(pb, value, size);
+    value[size]=0;
 
+    if(st)
+        return av_metadata_set2(&st->metadata, key, value,
+                                    AV_METADATA_DONT_STRDUP_VAL);
+    else
     return av_metadata_set2(&s->metadata, key, value,
                                   AV_METADATA_DONT_STRDUP_VAL);
 }
@@ -602,26 +607,31 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             url_fseek(pb, size, SEEK_CUR);
             break;
         case MKTAG('I', 'N', 'A', 'M'):
-            avi_read_tag(s, "Title", size);
+            avi_read_tag(s, NULL, "Title", size);
             break;
         case MKTAG('I', 'A', 'R', 'T'):
-            avi_read_tag(s, "Artist", size);
+            avi_read_tag(s, NULL, "Artist", size);
             break;
         case MKTAG('I', 'C', 'O', 'P'):
-            avi_read_tag(s, "Copyright", size);
+            avi_read_tag(s, NULL, "Copyright", size);
             break;
         case MKTAG('I', 'C', 'M', 'T'):
-            avi_read_tag(s, "Comment", size);
+            avi_read_tag(s, NULL, "Comment", size);
             break;
         case MKTAG('I', 'G', 'N', 'R'):
-            avi_read_tag(s, "Genre", size);
+            avi_read_tag(s, NULL, "Genre", size);
             break;
         case MKTAG('I', 'P', 'R', 'D'):
-            avi_read_tag(s, "Album", size);
+            avi_read_tag(s, NULL, "Album", size);
             break;
         case MKTAG('I', 'P', 'R', 'T'):
-            avi_read_tag(s, "Track", size);
+            avi_read_tag(s, NULL, "Track", size);
             break;
+        case MKTAG('s', 't', 'r', 'n'):
+            if(s->nb_streams){
+                avi_read_tag(s, s->streams[s->nb_streams-1], "Title", size);
+                break;
+            }
         default:
             if(size > 1000000){
                 av_log(s, AV_LOG_ERROR, "Something went wrong during header parsing, "
