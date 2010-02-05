@@ -2077,7 +2077,7 @@ static int decode_thread(void *arg)
         schedule_refresh(is, 40);
 
         if (!display_disable)
-            is->show_audio = 1;
+            is->show_audio = 2;
     }
 
     if (subtitle_index >= 0) {
