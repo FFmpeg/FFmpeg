@@ -132,7 +132,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
         longs_pre_entry,index_type, entries_in_use, chunk_id, base);
 #endif
 
-    if(stream_id > s->nb_streams || stream_id < 0)
+    if(stream_id >= s->nb_streams || stream_id < 0)
         return -1;
     st= s->streams[stream_id];
     ast = st->priv_data;
