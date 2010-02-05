@@ -868,7 +868,7 @@ static void video_audio_display(VideoState *s)
     }else{
         int rdft_bits, nb_freq;
         nb_display_channels= FFMIN(nb_display_channels, 2);
-        for(rdft_bits=1; (1<<rdft_bits)<=s->height; rdft_bits++)
+        for(rdft_bits=1; (1<<rdft_bits)<2*s->height; rdft_bits++)
             ;
         if(rdft_bits != s->rdft_bits){
             ff_rdft_end(&s->rdft);
@@ -890,7 +890,7 @@ static void video_audio_display(VideoState *s)
                 ff_rdft_calc(&s->rdft, data[ch]);
             }
             //least efficient way to do this, we should of course directly access it but its more than fast enough
-            for(y=0; y<nb_freq; y++){
+            for(y=0; y<s->height; y++){
                 double w= 1/sqrt(nb_freq);
                 int a= sqrt(w*sqrt(data[0][2*y+0]*data[0][2*y+0] + data[0][2*y+1]*data[0][2*y+1]));
                 int b= sqrt(w*sqrt(data[1][2*y+0]*data[1][2*y+0] + data[1][2*y+1]*data[1][2*y+1]));
