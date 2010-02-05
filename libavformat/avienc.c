@@ -114,11 +114,18 @@ static void avi_write_info_tag(ByteIOContext *pb, const char *tag, const char *s
     }
 }
 
-static void avi_write_info_tag2(AVFormatContext *s, const char *fourcc, const char *key1, const char *key2)
+static void avi_write_info_tag2(AVFormatContext *s, AVStream *st, const char *fourcc, const char *key1, const char *key2)
 {
-    AVMetadataTag *tag= av_metadata_get(s->metadata, key1, NULL, 0);
+    AVMetadataTag *tag;
+    if(st){
+        tag= av_metadata_get(st->metadata, key1, NULL, 0);
+        if(!tag && key2)
+            tag= av_metadata_get(st->metadata, key2, NULL, 0);
+    }else{
+        tag= av_metadata_get(s->metadata, key1, NULL, 0);
     if(!tag && key2)
         tag= av_metadata_get(s->metadata, key2, NULL, 0);
+    }
     if(tag)
         avi_write_info_tag(s->pb, fourcc, tag->value);
 }
@@ -294,6 +301,7 @@ static int avi_write_header(AVFormatContext *s)
             return -1;
         }
         ff_end_tag(pb, strf);
+        avi_write_info_tag2(s, s->streams[i], "strn", "Title", "Description");
       }
 
         if (!url_is_streamed(pb)) {
@@ -370,13 +378,13 @@ static int avi_write_header(AVFormatContext *s)
 
     list2 = ff_start_tag(pb, "LIST");
     put_tag(pb, "INFO");
-    avi_write_info_tag2(s, "INAM", "Title", NULL);
-    avi_write_info_tag2(s, "IART", "Artist", "Author");
-    avi_write_info_tag2(s, "ICOP", "Copyright", NULL);
-    avi_write_info_tag2(s, "ICMT", "Comment", NULL);
-    avi_write_info_tag2(s, "IPRD", "Album", NULL);
-    avi_write_info_tag2(s, "IGNR", "Genre", NULL);
-    avi_write_info_tag2(s, "IPRT", "Track", NULL);
+    avi_write_info_tag2(s, NULL, "INAM", "Title", NULL);
+    avi_write_info_tag2(s, NULL, "IART", "Artist", "Author");
+    avi_write_info_tag2(s, NULL, "ICOP", "Copyright", NULL);
+    avi_write_info_tag2(s, NULL, "ICMT", "Comment", NULL);
+    avi_write_info_tag2(s, NULL, "IPRD", "Album", NULL);
+    avi_write_info_tag2(s, NULL, "IGNR", "Genre", NULL);
+    avi_write_info_tag2(s, NULL, "IPRT", "Track", NULL);
     if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
         avi_write_info_tag(pb, "ISFT", LIBAVFORMAT_IDENT);
     ff_end_tag(pb, list2);
