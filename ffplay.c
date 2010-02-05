@@ -2327,6 +2327,7 @@ static void event_loop(void)
     double incr, pos, frac;
 
     for(;;) {
+        double x;
         SDL_WaitEvent(&event);
         switch(event.type) {
         case SDL_KEYDOWN:
@@ -2398,10 +2399,18 @@ static void event_loop(void)
             }
             break;
         case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEMOTION:
+            if(event.type ==SDL_MOUSEBUTTONDOWN){
+                x= event.button.x;
+            }else{
+                if(event.motion.state != SDL_PRESSED)
+                    break;
+                x= event.motion.x;
+            }
             if (cur_stream) {
                 if(seek_by_bytes || cur_stream->ic->duration<=0){
                     uint64_t size=  url_fsize(cur_stream->ic->pb);
-                    stream_seek(cur_stream, size*(double)event.button.x/(double)cur_stream->width, 0, 1);
+                    stream_seek(cur_stream, size*x/cur_stream->width, 0, 1);
                 }else{
                     int64_t ts;
                     int ns, hh, mm, ss;
@@ -2410,7 +2419,7 @@ static void event_loop(void)
                     thh = tns/3600;
                     tmm = (tns%3600)/60;
                     tss = (tns%60);
-                    frac = (double)event.button.x/(double)cur_stream->width;
+                    frac = x/cur_stream->width;
                     ns = frac*tns;
                     hh = ns/3600;
                     mm = (ns%3600)/60;
@@ -2650,7 +2659,6 @@ int main(int argc, char **argv)
     }
 
     SDL_EventState(SDL_ACTIVEEVENT, SDL_IGNORE);
-    SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
     SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
     SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
 
