@@ -865,15 +865,14 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
     c->srcFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[srcFormat]);
     c->vRounder= 4* 0x0001000100010001ULL;
 
-    usesHFilter= usesVFilter= 0;
-    if (dstFilter->lumV && dstFilter->lumV->length>1) usesVFilter=1;
-    if (dstFilter->lumH && dstFilter->lumH->length>1) usesHFilter=1;
-    if (dstFilter->chrV && dstFilter->chrV->length>1) usesVFilter=1;
-    if (dstFilter->chrH && dstFilter->chrH->length>1) usesHFilter=1;
-    if (srcFilter->lumV && srcFilter->lumV->length>1) usesVFilter=1;
-    if (srcFilter->lumH && srcFilter->lumH->length>1) usesHFilter=1;
-    if (srcFilter->chrV && srcFilter->chrV->length>1) usesVFilter=1;
-    if (srcFilter->chrH && srcFilter->chrH->length>1) usesHFilter=1;
+    usesVFilter = (srcFilter->lumV && srcFilter->lumV->length>1) ||
+                  (srcFilter->chrV && srcFilter->chrV->length>1) ||
+                  (dstFilter->lumV && dstFilter->lumV->length>1) ||
+                  (dstFilter->chrV && dstFilter->chrV->length>1);
+    usesHFilter = (srcFilter->lumH && srcFilter->lumH->length>1) ||
+                  (srcFilter->chrH && srcFilter->chrH->length>1) ||
+                  (dstFilter->lumH && dstFilter->lumH->length>1) ||
+                  (dstFilter->chrH && dstFilter->chrH->length>1);
 
     getSubSampleFactors(&c->chrSrcHSubSample, &c->chrSrcVSubSample, srcFormat);
     getSubSampleFactors(&c->chrDstHSubSample, &c->chrDstVSubSample, dstFormat);
