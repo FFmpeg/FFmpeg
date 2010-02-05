@@ -105,8 +105,10 @@ const char *swscale_license(void);
 
 /**
  * Returns a pointer to yuv<->rgb coefficients for the given colorspace
- * suitable for sws_setColorspaceDetails()
- * @colorspace one of SWS_CS_*  If invalid, SWS_CS_DEFAULT is used.
+ * suitable for sws_setColorspaceDetails().
+ *
+ * @param colorspace One of the SWS_CS_* macros. If invalid,
+ * SWS_CS_DEFAULT is used.
  */
 const int *sws_getCoefficients(int colorspace);
 
