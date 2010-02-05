@@ -30,6 +30,7 @@
 #include "libavcodec/audioconvert.h"
 #include "libavcodec/colorspace.h"
 #include "libavcodec/opt.h"
+#include "libavcodec/dsputil.h"
 
 #include "cmdutils.h"
 
@@ -151,6 +152,9 @@ typedef struct VideoState {
     int16_t sample_array[SAMPLE_ARRAY_SIZE];
     int sample_array_index;
     int last_i_start;
+    RDFTContext rdft;
+    int rdft_bits;
+    int xpos;
 
     SDL_Thread *subtitle_tid;
     int subtitle_stream;
@@ -799,7 +803,7 @@ static void video_audio_display(VideoState *s)
             delay = s->width;
 
         i_start= x = compute_mod(s->sample_array_index - delay * channels, SAMPLE_ARRAY_SIZE);
-
+        if(s->show_audio==1){
         h= INT_MIN;
         for(i=0; i<1000; i+=channels){
             int idx= (SAMPLE_ARRAY_SIZE + x - i) % SAMPLE_ARRAY_SIZE;
@@ -813,6 +817,7 @@ static void video_audio_display(VideoState *s)
                 i_start= idx;
             }
         }
+        }
 
         s->last_i_start = i_start;
     } else {
@@ -820,6 +825,7 @@ static void video_audio_display(VideoState *s)
     }
 
     bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
+    if(s->show_audio==1){
     fill_rectangle(screen,
                    s->xleft, s->ytop, s->width, s->height,
                    bgcolor);
@@ -859,6 +865,49 @@ static void video_audio_display(VideoState *s)
                        fgcolor);
     }
     SDL_UpdateRect(screen, s->xleft, s->ytop, s->width, s->height);
+    }else{
+        int rdft_bits, nb_freq;
+        nb_display_channels= FFMIN(nb_display_channels, 2);
+        for(rdft_bits=1; (1<<rdft_bits)<=s->height; rdft_bits++)
+            ;
+        if(rdft_bits != s->rdft_bits){
+            ff_rdft_end(&s->rdft);
+            ff_rdft_init(&s->rdft, rdft_bits, RDFT);
+            s->rdft_bits= rdft_bits;
+        }
+        nb_freq= 1<<(rdft_bits-1);
+        {
+            FFTSample data[2][2*nb_freq];
+            for(ch = 0;ch < nb_display_channels; ch++) {
+                i = i_start + ch;
+                for(x = 0; x < 2*nb_freq; x++) {
+                    double w= (x-nb_freq)*(1.0/nb_freq);
+                    data[ch][x]= s->sample_array[i]*(1.0-w*w);
+                    i += channels;
+                    if (i >= SAMPLE_ARRAY_SIZE)
+                        i -= SAMPLE_ARRAY_SIZE;
+                }
+                ff_rdft_calc(&s->rdft, data[ch]);
+            }
+            //least efficient way to do this, we should of course directly access it but its more than fast enough
+            for(y=0; y<nb_freq; y++){
+                double w= 1/sqrt(nb_freq);
+                int a= sqrt(w*sqrt(data[0][2*y+0]*data[0][2*y+0] + data[0][2*y+1]*data[0][2*y+1]));
+                int b= sqrt(w*sqrt(data[1][2*y+0]*data[1][2*y+0] + data[1][2*y+1]*data[1][2*y+1]));
+                a= FFMIN(a,255);
+                b= FFMIN(b,255);
+                fgcolor = SDL_MapRGB(screen->format, a, b, (a+b)/2);
+
+                fill_rectangle(screen,
+                            s->xpos, s->height-y, 1, 1,
+                            fgcolor);
+            }
+        }
+        SDL_UpdateRect(screen, s->xpos, s->ytop, 1, s->height);
+        s->xpos++;
+        if(s->xpos >= s->width)
+            s->xpos= s->xleft;
+    }
 }
 
 static int video_open(VideoState *is){
@@ -2312,7 +2361,7 @@ static void toggle_audio_display(void)
 {
     if (cur_stream) {
         int bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
-        cur_stream->show_audio = !cur_stream->show_audio;
+        cur_stream->show_audio = (cur_stream->show_audio + 1) % 3;
         fill_rectangle(screen,
                     cur_stream->xleft, cur_stream->ytop, cur_stream->width, cur_stream->height,
                     bgcolor);
