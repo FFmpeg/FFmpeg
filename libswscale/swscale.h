@@ -108,7 +108,7 @@ const char *swscale_license(void);
  * suitable for sws_setColorspaceDetails()
  * @colorspace one of SWS_CS_*  If invalid, SWS_CS_DEFAULT is used.
  */
-const int * sws_getCoefficients(int colorspace);
+const int *sws_getCoefficients(int colorspace);
 
 
 // when used for filters they must have an odd number of elements
