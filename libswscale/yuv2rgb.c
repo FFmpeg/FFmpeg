@@ -49,6 +49,13 @@ const int32_t ff_yuv2rgb_coeffs[8][4] = {
     {117579, 136230, 16907, 35559}  /* SMPTE 240M (1987) */
 };
 
+const int * sws_getCoefficients(int colorspace)
+{
+    if (colorspace > 7 || colorspace < 0)
+        colorspace = SWS_CS_DEFAULT;
+    return ff_yuv2rgb_coeffs[colorspace];
+}
+
 #define LOADCHROMA(i)                               \
     U = pu[i];                                      \
     V = pv[i];                                      \

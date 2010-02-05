@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBSWSCALE_VERSION_MAJOR 0
-#define LIBSWSCALE_VERSION_MINOR 9
+#define LIBSWSCALE_VERSION_MINOR 10
 #define LIBSWSCALE_VERSION_MICRO 0
 
 #define LIBSWSCALE_VERSION_INT  AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
@@ -103,6 +103,12 @@ const char *swscale_license(void);
 #define SWS_CS_SMPTE240M      7
 #define SWS_CS_DEFAULT        5
 
+/**
+ * Returns a pointer to yuv<->rgb coefficients for the given colorspace
+ * suitable for sws_setColorspaceDetails()
+ * @colorspace one of SWS_CS_*  If invalid, SWS_CS_DEFAULT is used.
+ */
+const int * sws_getCoefficients(int colorspace);
 
 
 // when used for filters they must have an odd number of elements
