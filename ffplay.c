@@ -782,11 +782,17 @@ static void video_audio_display(VideoState *s)
     int i, i_start, x, y1, y, ys, delay, n, nb_display_channels;
     int ch, channels, h, h2, bgcolor, fgcolor;
     int16_t time_diff;
+    int rdft_bits, nb_freq;
+
+    for(rdft_bits=1; (1<<rdft_bits)<2*s->height; rdft_bits++)
+        ;
+    nb_freq= 1<<(rdft_bits-1);
 
     /* compute display index : center on currently output samples */
     channels = s->audio_st->codec->channels;
     nb_display_channels = channels;
     if (!s->paused) {
+        int data_used= s->show_audio==1 ? s->width : (2*nb_freq);
         n = 2 * channels;
         delay = audio_write_get_buf_size(s);
         delay /= n;
@@ -798,9 +804,9 @@ static void video_audio_display(VideoState *s)
             delay += (time_diff * s->audio_st->codec->sample_rate) / 1000000;
         }
 
-        delay -= s->width / 2;
-        if (delay < s->width)
-            delay = s->width;
+        delay -= data_used / 2;
+        if (delay < data_used)
+            delay = data_used;
 
         i_start= x = compute_mod(s->sample_array_index - delay * channels, SAMPLE_ARRAY_SIZE);
         if(s->show_audio==1){
@@ -866,16 +872,12 @@ static void video_audio_display(VideoState *s)
     }
     SDL_UpdateRect(screen, s->xleft, s->ytop, s->width, s->height);
     }else{
-        int rdft_bits, nb_freq;
         nb_display_channels= FFMIN(nb_display_channels, 2);
-        for(rdft_bits=1; (1<<rdft_bits)<2*s->height; rdft_bits++)
-            ;
         if(rdft_bits != s->rdft_bits){
             ff_rdft_end(&s->rdft);
             ff_rdft_init(&s->rdft, rdft_bits, RDFT);
             s->rdft_bits= rdft_bits;
         }
-        nb_freq= 1<<(rdft_bits-1);
         {
             FFTSample data[2][2*nb_freq];
             for(ch = 0;ch < nb_display_channels; ch++) {
