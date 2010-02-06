@@ -12,12 +12,18 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-02-05 - r30513 - lsws 0.10.0 - sws_getCoefficients()
+  Add sws_getCoefficients().
+
 2010-02-01 - r21587 - lavf 52.50.0 - metadata API
   Add a list of generic tag names, change 'author' -> 'artist',
   'year' -> 'date'.
 
 2010-01-30 - r21545 - lavu 50.8.0 - av_get_pix_fmt()
   Add av_get_pix_fmt().
+
+2010-01-21 - r30381 - lsws 0.9.0 - sws_scale
+  Change constness attributes of sws_scale() parameters.
 
 2010-01-10 - r21121 - lavfi 1.15.0 - avfilter_graph_config_links()
   Add a log_ctx parameter to avfilter_graph_config_links().
