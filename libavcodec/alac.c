@@ -646,8 +646,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
         } else {
             int i;
             for (i = 0; i < outputsamples; i++) {
-                int16_t sample = alac->outputsamples_buffer[0][i];
-                ((int16_t*)outbuffer)[i] = sample;
+                ((int16_t*)outbuffer)[i] = alac->outputsamples_buffer[0][i];
             }
         }
         break;
