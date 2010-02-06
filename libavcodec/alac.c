@@ -692,8 +692,8 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
 
     int chan;
     for (chan = 0; chan < MAX_CHANNELS; chan++) {
-        av_free(alac->predicterror_buffer[chan]);
-        av_free(alac->outputsamples_buffer[chan]);
+        av_freep(&alac->predicterror_buffer[chan]);
+        av_freep(&alac->outputsamples_buffer[chan]);
         av_freep(&alac->wasted_bits_buffer[chan]);
     }
 
