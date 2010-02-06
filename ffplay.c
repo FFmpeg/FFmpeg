@@ -1061,7 +1061,7 @@ static void stream_pause(VideoState *is)
 
 static double compute_frame_delay(double frame_current_pts, VideoState *is)
 {
-    double actual_delay, delay, sync_threshold, ref_clock, diff;
+    double actual_delay, delay, sync_threshold, diff;
 
     /* compute nominal delay */
     delay = frame_current_pts - is->frame_last_pts;
