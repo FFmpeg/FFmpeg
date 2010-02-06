@@ -1314,7 +1314,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
         ist->pts= ist->next_pts;
 
         if(avpkt.size && avpkt.size != pkt->size &&
-           (!ist->showed_multi_packet_warning && verbose>0 || verbose>1)){
+           ((!ist->showed_multi_packet_warning && verbose>0) || verbose>1)){
             fprintf(stderr, "Multiple frames in a packet from stream %d\n", pkt->stream_index);
             ist->showed_multi_packet_warning=1;
         }
