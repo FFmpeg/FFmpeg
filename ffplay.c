@@ -810,19 +810,19 @@ static void video_audio_display(VideoState *s)
 
         i_start= x = compute_mod(s->sample_array_index - delay * channels, SAMPLE_ARRAY_SIZE);
         if(s->show_audio==1){
-        h= INT_MIN;
-        for(i=0; i<1000; i+=channels){
-            int idx= (SAMPLE_ARRAY_SIZE + x - i) % SAMPLE_ARRAY_SIZE;
-            int a= s->sample_array[idx];
-            int b= s->sample_array[(idx + 4*channels)%SAMPLE_ARRAY_SIZE];
-            int c= s->sample_array[(idx + 5*channels)%SAMPLE_ARRAY_SIZE];
-            int d= s->sample_array[(idx + 9*channels)%SAMPLE_ARRAY_SIZE];
-            int score= a-d;
-            if(h<score && (b^c)<0){
-                h= score;
-                i_start= idx;
+            h= INT_MIN;
+            for(i=0; i<1000; i+=channels){
+                int idx= (SAMPLE_ARRAY_SIZE + x - i) % SAMPLE_ARRAY_SIZE;
+                int a= s->sample_array[idx];
+                int b= s->sample_array[(idx + 4*channels)%SAMPLE_ARRAY_SIZE];
+                int c= s->sample_array[(idx + 5*channels)%SAMPLE_ARRAY_SIZE];
+                int d= s->sample_array[(idx + 9*channels)%SAMPLE_ARRAY_SIZE];
+                int score= a-d;
+                if(h<score && (b^c)<0){
+                    h= score;
+                    i_start= idx;
+                }
             }
-        }
         }
 
         s->last_i_start = i_start;
@@ -832,45 +832,45 @@ static void video_audio_display(VideoState *s)
 
     bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
     if(s->show_audio==1){
-    fill_rectangle(screen,
-                   s->xleft, s->ytop, s->width, s->height,
-                   bgcolor);
-
-    fgcolor = SDL_MapRGB(screen->format, 0xff, 0xff, 0xff);
-
-    /* total height for one channel */
-    h = s->height / nb_display_channels;
-    /* graph height / 2 */
-    h2 = (h * 9) / 20;
-    for(ch = 0;ch < nb_display_channels; ch++) {
-        i = i_start + ch;
-        y1 = s->ytop + ch * h + (h / 2); /* position of center line */
-        for(x = 0; x < s->width; x++) {
-            y = (s->sample_array[i] * h2) >> 15;
-            if (y < 0) {
-                y = -y;
-                ys = y1 - y;
-            } else {
-                ys = y1;
-            }
-            fill_rectangle(screen,
-                           s->xleft + x, ys, 1, y,
-                           fgcolor);
-            i += channels;
-            if (i >= SAMPLE_ARRAY_SIZE)
-                i -= SAMPLE_ARRAY_SIZE;
-        }
-    }
-
-    fgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0xff);
-
-    for(ch = 1;ch < nb_display_channels; ch++) {
-        y = s->ytop + ch * h;
         fill_rectangle(screen,
-                       s->xleft, y, s->width, 1,
-                       fgcolor);
-    }
-    SDL_UpdateRect(screen, s->xleft, s->ytop, s->width, s->height);
+                       s->xleft, s->ytop, s->width, s->height,
+                       bgcolor);
+
+        fgcolor = SDL_MapRGB(screen->format, 0xff, 0xff, 0xff);
+
+        /* total height for one channel */
+        h = s->height / nb_display_channels;
+        /* graph height / 2 */
+        h2 = (h * 9) / 20;
+        for(ch = 0;ch < nb_display_channels; ch++) {
+            i = i_start + ch;
+            y1 = s->ytop + ch * h + (h / 2); /* position of center line */
+            for(x = 0; x < s->width; x++) {
+                y = (s->sample_array[i] * h2) >> 15;
+                if (y < 0) {
+                    y = -y;
+                    ys = y1 - y;
+                } else {
+                    ys = y1;
+                }
+                fill_rectangle(screen,
+                               s->xleft + x, ys, 1, y,
+                               fgcolor);
+                i += channels;
+                if (i >= SAMPLE_ARRAY_SIZE)
+                    i -= SAMPLE_ARRAY_SIZE;
+            }
+        }
+
+        fgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0xff);
+
+        for(ch = 1;ch < nb_display_channels; ch++) {
+            y = s->ytop + ch * h;
+            fill_rectangle(screen,
+                           s->xleft, y, s->width, 1,
+                           fgcolor);
+        }
+        SDL_UpdateRect(screen, s->xleft, s->ytop, s->width, s->height);
     }else{
         nb_display_channels= FFMIN(nb_display_channels, 2);
         if(rdft_bits != s->rdft_bits){
