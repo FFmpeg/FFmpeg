@@ -227,10 +227,10 @@ static void clean_index(AVFormatContext *s){
     }
 }
 
-static int avi_read_tag(AVFormatContext *s, AVStream *st, const char *key, unsigned int size)
+static int avi_read_tag(AVFormatContext *s, AVStream *st, uint32_t tag, uint32_t size)
 {
     ByteIOContext *pb = s->pb;
-    char *value;
+    char key[5] = {0}, *value;
 
     size += (size & 1);
 
@@ -242,12 +242,23 @@ static int avi_read_tag(AVFormatContext *s, AVStream *st, const char *key, unsig
     get_buffer(pb, value, size);
     value[size]=0;
 
+    AV_WL32(key, tag);
+
     if(st)
         return av_metadata_set2(&st->metadata, key, value,
                                     AV_METADATA_DONT_STRDUP_VAL);
     else
     return av_metadata_set2(&s->metadata, key, value,
                                   AV_METADATA_DONT_STRDUP_VAL);
+}
+
+static void avi_read_info(AVFormatContext *s, uint64_t end)
+{
+    while (url_ftell(s->pb) < end) {
+        uint32_t tag  = get_le32(s->pb);
+        uint32_t size = get_le32(s->pb);
+        avi_read_tag(s, NULL, tag, size);
+    }
 }
 
 static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -301,6 +312,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 dprintf(NULL, "movi end=%"PRIx64"\n", avi->movi_end);
                 goto end_of_header;
             }
+            else if (tag1 == MKTAG('I', 'N', 'F', 'O'))
+                avi_read_info(s, list_end);
+
             break;
         case MKTAG('d', 'm', 'l', 'h'):
             avi->is_odml = 1;
@@ -606,30 +620,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
             url_fseek(pb, size, SEEK_CUR);
             break;
-        case MKTAG('I', 'N', 'A', 'M'):
-            avi_read_tag(s, NULL, "Title", size);
-            break;
-        case MKTAG('I', 'A', 'R', 'T'):
-            avi_read_tag(s, NULL, "Artist", size);
-            break;
-        case MKTAG('I', 'C', 'O', 'P'):
-            avi_read_tag(s, NULL, "Copyright", size);
-            break;
-        case MKTAG('I', 'C', 'M', 'T'):
-            avi_read_tag(s, NULL, "Comment", size);
-            break;
-        case MKTAG('I', 'G', 'N', 'R'):
-            avi_read_tag(s, NULL, "Genre", size);
-            break;
-        case MKTAG('I', 'P', 'R', 'D'):
-            avi_read_tag(s, NULL, "Album", size);
-            break;
-        case MKTAG('I', 'P', 'R', 'T'):
-            avi_read_tag(s, NULL, "Track", size);
-            break;
         case MKTAG('s', 't', 'r', 'n'):
             if(s->nb_streams){
-                avi_read_tag(s, s->streams[s->nb_streams-1], "Title", size);
+                avi_read_tag(s, s->streams[s->nb_streams-1], tag, size);
                 break;
             }
         default:
@@ -1190,4 +1183,5 @@ AVInputFormat avi_demuxer = {
     avi_read_packet,
     avi_read_close,
     avi_read_seek,
+    .metadata_conv = ff_avi_metadata_conv,
 };

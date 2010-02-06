@@ -21,6 +21,7 @@
 #include "avformat.h"
 #include "avi.h"
 #include "riff.h"
+#include "libavutil/intreadwrite.h"
 
 /*
  * TODO:
@@ -114,22 +115,6 @@ static void avi_write_info_tag(ByteIOContext *pb, const char *tag, const char *s
     }
 }
 
-static void avi_write_info_tag2(AVFormatContext *s, AVStream *st, const char *fourcc, const char *key1, const char *key2)
-{
-    AVMetadataTag *tag;
-    if(st){
-        tag= av_metadata_get(st->metadata, key1, NULL, 0);
-        if(!tag && key2)
-            tag= av_metadata_get(st->metadata, key2, NULL, 0);
-    }else{
-        tag= av_metadata_get(s->metadata, key1, NULL, 0);
-    if(!tag && key2)
-        tag= av_metadata_get(s->metadata, key2, NULL, 0);
-    }
-    if(tag)
-        avi_write_info_tag(s->pb, fourcc, tag->value);
-}
-
 static int avi_write_counters(AVFormatContext* s, int riff_id)
 {
     ByteIOContext *pb = s->pb;
@@ -171,6 +156,7 @@ static int avi_write_header(AVFormatContext *s)
     int bitrate, n, i, nb_frames, au_byterate, au_ssize, au_scale;
     AVCodecContext *stream, *video_enc;
     int64_t list1, list2, strh, strf;
+    AVMetadataTag *t = NULL;
 
     for(n=0;n<s->nb_streams;n++) {
         s->streams[n]->priv_data= av_mallocz(sizeof(AVIStream));
@@ -301,7 +287,15 @@ static int avi_write_header(AVFormatContext *s)
             return -1;
         }
         ff_end_tag(pb, strf);
-        avi_write_info_tag2(s, s->streams[i], "strn", "Title", "Description");
+        if ((t = av_metadata_get(s->streams[i]->metadata, "strn", NULL, 0))) {
+            avi_write_info_tag(s->pb, t->key, t->value);
+            t = NULL;
+        }
+        //FIXME a limitation of metadata conversion system
+        else if ((t = av_metadata_get(s->streams[i]->metadata, "INAM", NULL, 0))) {
+            avi_write_info_tag(s->pb, "strn", t->value);
+            t = NULL;
+        }
       }
 
         if (!url_is_streamed(pb)) {
@@ -378,13 +372,10 @@ static int avi_write_header(AVFormatContext *s)
 
     list2 = ff_start_tag(pb, "LIST");
     put_tag(pb, "INFO");
-    avi_write_info_tag2(s, NULL, "INAM", "Title", NULL);
-    avi_write_info_tag2(s, NULL, "IART", "Artist", "Author");
-    avi_write_info_tag2(s, NULL, "ICOP", "Copyright", NULL);
-    avi_write_info_tag2(s, NULL, "ICMT", "Comment", NULL);
-    avi_write_info_tag2(s, NULL, "IPRD", "Album", NULL);
-    avi_write_info_tag2(s, NULL, "IGNR", "Genre", NULL);
-    avi_write_info_tag2(s, NULL, "IPRT", "Track", NULL);
+    for (i = 0; *ff_avi_tags[i]; i++) {
+        if ((t = av_metadata_get(s->metadata, ff_avi_tags[i], NULL, AV_METADATA_MATCH_CASE)))
+            avi_write_info_tag(s->pb, t->key, t->value);
+    }
     if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
         avi_write_info_tag(pb, "ISFT", LIBAVFORMAT_IDENT);
     ff_end_tag(pb, list2);
@@ -655,4 +646,5 @@ AVOutputFormat avi_muxer = {
     avi_write_trailer,
     .codec_tag= (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .flags= AVFMT_VARIABLE_FPS,
+    .metadata_conv = ff_avi_metadata_conv,
 };

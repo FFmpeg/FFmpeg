@@ -1,5 +1,6 @@
 /*
- * copyright (c) 2001 Fabrice Bellard
+ * AVI common data
+ * Copyright (c) 2010 Anton Khirnov
  *
  * This file is part of FFmpeg.
  *
@@ -18,29 +19,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_AVI_H
-#define AVFORMAT_AVI_H
+#include "avi.h"
 
-#include "metadata.h"
+const AVMetadataConv ff_avi_metadata_conv[] = {
+    { "IART", "artist"    },
+    { "ICMT", "comment"   },
+    { "ICOP", "copyright" },
+    { "ICRD", "date"      },
+    { "IGNR", "genre"     },
+    { "ILNG", "language"  },
+    { "INAM", "title"     },
+    { "IPRD", "album"     },
+    { "IPRT", "track"     },
+    { "ISFT", "encoder"   },
+    { "ITCH", "encoded_by"},
+    { "strn", "title"     },
+    { 0 },
+};
 
-#define AVIF_HASINDEX           0x00000010        // Index at end of file?
-#define AVIF_MUSTUSEINDEX       0x00000020
-#define AVIF_ISINTERLEAVED      0x00000100
-#define AVIF_TRUSTCKTYPE        0x00000800        // Use CKType to find key frames?
-#define AVIF_WASCAPTUREFILE     0x00010000
-#define AVIF_COPYRIGHTED        0x00020000
-
-#define AVI_MAX_RIFF_SIZE       0x40000000LL
-#define AVI_MASTER_INDEX_SIZE   256
-
-/* index flags */
-#define AVIIF_INDEX             0x10
-
-extern const AVMetadataConv ff_avi_metadata_conv[];
-
-/**
- * A list of AVI info tags.
- */
-extern const char ff_avi_tags[][5];
-
-#endif /* AVFORMAT_AVI_H */
+const char ff_avi_tags[][5] = {
+    "IARL", "IART", "ICMS", "ICMT", "ICOP", "ICRD", "ICRP", "IDIM", "IDPI",
+    "IENG", "IGNR", "IKEY", "ILGT", "ILNG", "IMED", "INAM", "IPLT", "IPRD",
+    "IPRT", "ISBJ",/*"ISFT"*/"ISHP", "ISRC", "ISRF", "ITCH",
+    {0}
+};
