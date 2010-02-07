@@ -352,6 +352,7 @@ single_col:
         if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
             /* FIXME assumes direct_8x8_inference == 1 */
             int y_shift  = 2*!IS_INTERLACED(*mb_type);
+            assert(h->sps.direct_8x8_inference_flag);
 
             for(i8=0; i8<4; i8++){
                 const int x8 = i8&1;
