@@ -131,6 +131,7 @@ void ff_h264_direct_ref_list_init(H264Context * const h){
 
     for(list=0; list<2; list++){
         fill_colmap(h, h->map_col_to_list0, list, sidx, ref1sidx, 0);
+        if(FRAME_MBAFF)
         for(field=0; field<2; field++)
             fill_colmap(h, h->map_col_to_list0_field[field], list, field, field, 1);
     }
