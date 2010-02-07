@@ -71,7 +71,7 @@ static void fill_colmap(H264Context *h, int map[2][16+32], int list, int field, 
     Picture * const ref1 = &h->ref_list[1][0];
     int j, old_ref, rfield;
     int start= mbafi ? 16                      : 0;
-    int end  = mbafi ? 16+2*h->ref_count[list] : h->ref_count[list];
+    int end  = mbafi ? 16+2*h->ref_count[0]    : h->ref_count[0];
     int interl= mbafi || s->picture_structure != PICT_FRAME;
 
     /* bogus; fills in for missing frames */
@@ -87,10 +87,10 @@ static void fill_colmap(H264Context *h, int map[2][16+32], int list, int field, 
                 poc= (poc&~3) + rfield + 1;
 
             for(j=start; j<end; j++){
-                if(4*h->ref_list[list][j].frame_num + (h->ref_list[list][j].reference&3) == poc){
+                if(4*h->ref_list[0][j].frame_num + (h->ref_list[0][j].reference&3) == poc){
                     int cur_ref= mbafi ? (j-16)^field : j;
                     map[list][2*old_ref + (rfield^field) + 16] = cur_ref;
-                    if(rfield == field)
+                    if(rfield == field || !interl)
                         map[list][old_ref] = cur_ref;
                     break;
                 }
