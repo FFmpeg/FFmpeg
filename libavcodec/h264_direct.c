@@ -255,7 +255,7 @@ single_col:
                 int y8 = i8>>1;
                 int xy8 = x8+y8*b8_stride;
                 int xy4 = 3*x8+y8*b4_stride;
-                int a=0, b=0;
+                int a,b;
 
                 if(is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
                     continue;
@@ -266,6 +266,7 @@ single_col:
                 if(!IS_INTRA(mb_type_col[y8]) && !h->ref_list[1][0].long_ref
                    && (   (l1ref0[xy8] == 0 && FFABS(l1mv0[xy4][0]) <= 1 && FFABS(l1mv0[xy4][1]) <= 1)
                        || (l1ref0[xy8]  < 0 && l1ref1[xy8] == 0 && FFABS(l1mv1[xy4][0]) <= 1 && FFABS(l1mv1[xy4][1]) <= 1))){
+                    a=b=0;
                     if(ref[0] > 0)
                         a= pack16to32(mv[0][0],mv[0][1]);
                     if(ref[1] > 0)
@@ -278,7 +279,7 @@ single_col:
                 fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, b, 4);
             }
         }else if(IS_16X16(*mb_type)){
-            int a=0, b=0;
+            int a,b;
 
             fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
             fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
@@ -286,6 +287,7 @@ single_col:
                && (   (l1ref0[0] == 0 && FFABS(l1mv0[0][0]) <= 1 && FFABS(l1mv0[0][1]) <= 1)
                    || (l1ref0[0]  < 0 && l1ref1[0] == 0 && FFABS(l1mv1[0][0]) <= 1 && FFABS(l1mv1[0][1]) <= 1
                        && (h->x264_build>33 || !h->x264_build)))){
+                a=b=0;
                 if(ref[0] > 0)
                     a= pack16to32(mv[0][0],mv[0][1]);
                 if(ref[1] > 0)
