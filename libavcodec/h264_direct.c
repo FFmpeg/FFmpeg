@@ -172,7 +172,7 @@ void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type){
             mb_type_col[1] = h->ref_list[1][0].mb_type[mb_xy + s->mb_stride];
             b8_stride *= 3;
             b4_stride *= 6;
-            //FIXME IS_8X8(mb_type_col[0]) && !h->sps.direct_8x8_inference_flag
+
             if(    (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)
                 && (mb_type_col[1] & MB_TYPE_16x16_OR_INTRA)
                 && !is_b8x8){
@@ -357,7 +357,6 @@ single_col:
             ref_offset += 16;
 
         if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
-            /* FIXME assumes direct_8x8_inference == 1 */
             int y_shift  = 2*!IS_INTERLACED(*mb_type);
             assert(h->sps.direct_8x8_inference_flag);
 
