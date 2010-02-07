@@ -173,13 +173,12 @@ void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type){
             b8_stride *= 3;
             b4_stride *= 6;
 
+            sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
             if(    (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)
                 && (mb_type_col[1] & MB_TYPE_16x16_OR_INTRA)
                 && !is_b8x8){
-                sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
                 *mb_type   |= MB_TYPE_16x8 |MB_TYPE_L0L1|MB_TYPE_DIRECT2; /* B_16x8 */
             }else{
-                sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
                 *mb_type   |= MB_TYPE_8x8|MB_TYPE_L0L1;
             }
         }else{                                           //     AFR/FR    -> AFR/FR
