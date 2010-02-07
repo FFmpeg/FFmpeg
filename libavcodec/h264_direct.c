@@ -231,31 +231,22 @@ single_col:
             if(refc == PART_NOT_AVAILABLE)
                 refc = h->ref_cache[list][scan8[0] - 8 - 1];
             ref[list] = FFMIN3((unsigned)refa, (unsigned)refb, (unsigned)refc);
-            if(ref[list] < 0)
+            if(ref[list] >= 0){
+                pred_motion(h, 0, 4, list, ref[list], &mv[list][0], &mv[list][1]);
+            }else{
+                int mask= ~(MB_TYPE_L0 << (2*list));
+                mv[list][0] = mv[list][1] = 0;
                 ref[list] = -1;
-        }
-
-        if(ref[0] < 0 && ref[1] < 0){
-            ref[0] = ref[1] = 0;
-            mv[0][0] = mv[0][1] =
-            mv[1][0] = mv[1][1] = 0;
-        }else{
-            for(list=0; list<2; list++){
-                if(ref[list] >= 0)
-                    pred_motion(h, 0, 4, list, ref[list], &mv[list][0], &mv[list][1]);
-                else
-                    mv[list][0] = mv[list][1] = 0;
+                if(!is_b8x8)
+                    *mb_type &= mask;
+                sub_mb_type &= mask;
             }
         }
-
-        if(ref[1] < 0){
+        if(ref[0] < 0 && ref[1] < 0){
+            ref[0] = ref[1] = 0;
             if(!is_b8x8)
-                *mb_type &= ~MB_TYPE_L1;
-            sub_mb_type &= ~MB_TYPE_L1;
-        }else if(ref[0] < 0){
-            if(!is_b8x8)
-                *mb_type &= ~MB_TYPE_L0;
-            sub_mb_type &= ~MB_TYPE_L0;
+                *mb_type |= MB_TYPE_L0L1;
+            sub_mb_type |= MB_TYPE_L0L1;
         }
 
         if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
