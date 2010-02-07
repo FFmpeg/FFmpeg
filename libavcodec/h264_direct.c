@@ -434,9 +434,9 @@ single_col:
                     continue;
                 }
 
-                ref0 = l1ref0[x8 + y8*b8_stride] + ref_offset;
+                ref0 = l1ref0[x8 + y8*b8_stride];
                 if(ref0 >= 0)
-                    ref0 = map_col_to_list0[0][ref0];
+                    ref0 = map_col_to_list0[0][ref0 + ref_offset];
                 else{
                     ref0 = map_col_to_list0[1][l1ref1[x8 + y8*b8_stride] + ref_offset];
                     l1mv= l1mv1;
