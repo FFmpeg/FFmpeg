@@ -479,10 +479,17 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 if( IS_INTRA(mb_type|s->current_picture.mb_type[mbn_xy]) ) {
                     *(uint64_t*)bS= 0x0003000300030003ULL;
                 } else {
-                    const uint8_t *mbn_nnz = h->non_zero_count[mbn_xy] + 4+3*8; //FIXME  8x8dct?
+                    if(!CABAC && IS_8x8DCT(s->current_picture.mb_type[mbn_xy])){
+                        bS[0]= 1+((h->cbp_table[mbn_xy] & 4)||h->non_zero_count_cache[scan8[0]+0]);
+                        bS[1]= 1+((h->cbp_table[mbn_xy] & 4)||h->non_zero_count_cache[scan8[0]+1]);
+                        bS[2]= 1+((h->cbp_table[mbn_xy] & 8)||h->non_zero_count_cache[scan8[0]+2]);
+                        bS[3]= 1+((h->cbp_table[mbn_xy] & 8)||h->non_zero_count_cache[scan8[0]+3]);
+                    }else{
+                    const uint8_t *mbn_nnz = h->non_zero_count[mbn_xy] + 4+3*8;
                     int i;
                     for( i = 0; i < 4; i++ ) {
                         bS[i] = 1 + !!(h->non_zero_count_cache[scan8[0]+i] | mbn_nnz[i]);
+                    }
                     }
                 }
                 // Do not use s->qscale as luma quantizer because it has not the same
