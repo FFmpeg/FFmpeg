@@ -2741,13 +2741,7 @@ int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
 {
     AVStream *st = s->streams[ pkt ->stream_index];
     AVStream *st2= s->streams[ next->stream_index];
-    int64_t left = st2->time_base.num * (int64_t)st ->time_base.den;
-    int64_t right= st ->time_base.num * (int64_t)st2->time_base.den;
-
-    if (pkt->dts == AV_NOPTS_VALUE)
-        return 0;
-
-    return next->dts * left > pkt->dts * right; //FIXME this can overflow
+    return av_compare_ts(next->dts, st2->time_base, pkt->dts, st->time_base) > 0;
 }
 
 int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
