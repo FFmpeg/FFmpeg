@@ -123,6 +123,12 @@ void ff_h264_direct_ref_list_init(H264Context * const h){
     if(cur->pict_type != FF_B_TYPE || h->direct_spatial_mv_pred)
         return;
 
+    if(s->picture_structure == PICT_FRAME){
+        int cur_poc = s->current_picture_ptr->poc;
+        int *col_poc = h->ref_list[1]->field_poc;
+        ref1sidx=sidx= (FFABS(col_poc[0] - cur_poc) >= FFABS(col_poc[1] - cur_poc));
+    }
+
     for(list=0; list<2; list++){
         fill_colmap(h, h->map_col_to_list0, list, sidx, ref1sidx, 0);
         for(field=0; field<2; field++)
