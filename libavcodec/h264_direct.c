@@ -220,8 +220,6 @@ single_col:
         int mv[2][2];
         int list;
 
-        /* FIXME interlacing + spatial direct uses wrong colocated block positions */
-
         /* ref = min(neighbors) */
         for(list=0; list<2; list++){
             int left_ref = h->ref_cache[list][scan8[0] - 1];
