@@ -990,7 +990,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 }
             }
 
-            if((IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred) && !FRAME_MBAFF)
+            if((IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred))
                 continue;
 
             if(USES_LIST(topleft_type, list)){
