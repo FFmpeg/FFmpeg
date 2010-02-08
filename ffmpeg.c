@@ -301,6 +301,7 @@ typedef struct AVInputStream {
     int64_t       pts;       /* current pts */
     int is_start;            /* is 1 at the start and after a discontinuity */
     int showed_multi_packet_warning;
+    int is_past_recording_time;
 } AVInputStream;
 
 typedef struct AVInputFile {
@@ -2221,7 +2222,7 @@ static int av_encode(AVFormatContext **output_files,
             ost = ost_table[i];
             os = output_files[ost->file_index];
             ist = ist_table[ost->source_index];
-            if(no_packet[ist->file_index])
+            if(ist->is_past_recording_time || no_packet[ist->file_index])
                 continue;
                 opts = ost->st->pts.val * av_q2d(ost->st->time_base);
             ipts = (double)ist->pts;
@@ -2318,8 +2319,10 @@ static int av_encode(AVFormatContext **output_files,
         }
 
         /* finish if recording time exhausted */
-        if (pkt.pts * av_q2d(ist->st->time_base) >= (recording_time / 1000000.0))
+        if (pkt.pts * av_q2d(ist->st->time_base) >= (recording_time / 1000000.0)) {
+            ist->is_past_recording_time = 1;
             goto discard_packet;
+        }
 
         //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
         if (output_packet(ist, ist_index, ost_table, nb_ostreams, &pkt) < 0) {
