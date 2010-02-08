@@ -147,9 +147,11 @@ void ff_freeaddrinfo(struct addrinfo *res);
 int ff_getnameinfo(const struct sockaddr *sa, int salen,
                    char *host, int hostlen,
                    char *serv, int servlen, int flags);
+const char *ff_gai_strerror(int ecode);
 #define getaddrinfo ff_getaddrinfo
 #define freeaddrinfo ff_freeaddrinfo
 #define getnameinfo ff_getnameinfo
+#define gai_strerror ff_gai_strerror
 #endif
 
 #endif /* AVFORMAT_NETWORK_H */

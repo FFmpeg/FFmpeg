@@ -203,6 +203,17 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
 
     return 0;
 }
+
+const char *ff_gai_strerror(int ecode)
+{
+    switch(ecode) {
+    case EAI_FAIL   : return "A non-recoverable error occurred";
+    case EAI_FAMILY : return "The address family was not recognized or the address length was invalid for the specified family";
+    case EAI_NONAME : return "The name does not resolve for the supplied parameters";
+    }
+
+    return "Unknown error";
+}
 #endif
 
 /* resolve host with also IP address parsing */
