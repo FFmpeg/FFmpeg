@@ -270,6 +270,7 @@ single_col:
         }
 
         if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
+            int n=0;
             for(i8=0; i8<4; i8++){
                 int x8 = i8&1;
                 int y8 = i8>>1;
@@ -291,6 +292,7 @@ single_col:
                         a= pack16to32(mv[0][0],mv[0][1]);
                     if(ref[1] > 0)
                         b= pack16to32(mv[1][0],mv[1][1]);
+                    n++;
                 }else{
                     a= pack16to32(mv[0][0],mv[0][1]);
                     b= pack16to32(mv[1][0],mv[1][1]);
@@ -298,6 +300,8 @@ single_col:
                 fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, a, 4);
                 fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, b, 4);
             }
+            if(!is_b8x8 && !(n&3))
+                *mb_type= (*mb_type & ~(MB_TYPE_8x8|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_P1L0|MB_TYPE_P1L1))|MB_TYPE_16x16|MB_TYPE_DIRECT2;
         }else if(IS_16X16(*mb_type)){
             int a,b;
 
