@@ -287,7 +287,7 @@ static int decode_slice(MpegEncContext *s){
     }
 
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
-        if(s->padding_bug_score > -2 && !s->data_partitioning /*&& (s->divx_version || !s->resync_marker)*/)
+        if(s->padding_bug_score > -2 && !s->data_partitioning /*&& (s->divx_version>=0 || !s->resync_marker)*/)
             s->workaround_bugs |=  FF_BUG_NO_PADDING;
         else
             s->workaround_bugs &= ~FF_BUG_NO_PADDING;
@@ -425,26 +425,26 @@ retry:
 
     avctx->has_b_frames= !s->low_delay;
 
-    if(s->xvid_build==0 && s->divx_version==0 && s->lavc_build==0){
+    if(s->xvid_build==-1 && s->divx_version==-1 && s->lavc_build==-1){
         if(s->stream_codec_tag == AV_RL32("XVID") ||
            s->codec_tag == AV_RL32("XVID") || s->codec_tag == AV_RL32("XVIX") ||
            s->codec_tag == AV_RL32("RMP4"))
-            s->xvid_build= -1;
+            s->xvid_build= 0;
 #if 0
         if(s->codec_tag == AV_RL32("DIVX") && s->vo_type==0 && s->vol_control_parameters==1
            && s->padding_bug_score > 0 && s->low_delay) // XVID with modified fourcc
-            s->xvid_build= -1;
+            s->xvid_build= 0;
 #endif
     }
 
-    if(s->xvid_build==0 && s->divx_version==0 && s->lavc_build==0){
+    if(s->xvid_build==-1 && s->divx_version==-1 && s->lavc_build==-1){
         if(s->codec_tag == AV_RL32("DIVX") && s->vo_type==0 && s->vol_control_parameters==0)
             s->divx_version= 400; //divx 4
     }
 
-    if(s->xvid_build && s->divx_version){
+    if(s->xvid_build>=0 && s->divx_version>=0){
         s->divx_version=
-        s->divx_build= 0;
+        s->divx_build= -1;
     }
 
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
@@ -463,16 +463,16 @@ retry:
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA2;
         }
 
-        if(s->xvid_build && s->xvid_build<=3)
+        if(s->xvid_build<=3U)
             s->padding_bug_score= 256*256*256*64;
 
-        if(s->xvid_build && s->xvid_build<=1)
+        if(s->xvid_build<=1U)
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
 
-        if(s->xvid_build && s->xvid_build<=12)
+        if(s->xvid_build<=12U)
             s->workaround_bugs|= FF_BUG_EDGE;
 
-        if(s->xvid_build && s->xvid_build<=32)
+        if(s->xvid_build<=32U)
             s->workaround_bugs|= FF_BUG_DC_CLIP;
 
 #define SET_QPEL_FUNC(postfix1, postfix2) \
@@ -480,30 +480,30 @@ retry:
     s->dsp.put_no_rnd_ ## postfix1 = ff_put_no_rnd_ ## postfix2;\
     s->dsp.avg_ ## postfix1 = ff_avg_ ## postfix2;
 
-        if(s->lavc_build && s->lavc_build<4653)
+        if(s->lavc_build<4653U)
             s->workaround_bugs|= FF_BUG_STD_QPEL;
 
-        if(s->lavc_build && s->lavc_build<4655)
+        if(s->lavc_build<4655U)
             s->workaround_bugs|= FF_BUG_DIRECT_BLOCKSIZE;
 
-        if(s->lavc_build && s->lavc_build<4670){
+        if(s->lavc_build<4670U){
             s->workaround_bugs|= FF_BUG_EDGE;
         }
 
-        if(s->lavc_build && s->lavc_build<=4712)
+        if(s->lavc_build<=4712U)
             s->workaround_bugs|= FF_BUG_DC_CLIP;
 
-        if(s->divx_version)
+        if(s->divx_version>=0)
             s->workaround_bugs|= FF_BUG_DIRECT_BLOCKSIZE;
 //printf("padding_bug_score: %d\n", s->padding_bug_score);
         if(s->divx_version==501 && s->divx_build==20020416)
             s->padding_bug_score= 256*256*256*64;
 
-        if(s->divx_version && s->divx_version<500){
+        if(s->divx_version<500U){
             s->workaround_bugs|= FF_BUG_EDGE;
         }
 
-        if(s->divx_version)
+        if(s->divx_version>=0)
             s->workaround_bugs|= FF_BUG_HPEL_CHROMA;
 #if 0
         if(s->divx_version==500)
@@ -512,11 +512,11 @@ retry:
         /* very ugly XVID padding bug detection FIXME/XXX solve this differently
          * Let us hope this at least works.
          */
-        if(   s->resync_marker==0 && s->data_partitioning==0 && s->divx_version==0
+        if(   s->resync_marker==0 && s->data_partitioning==0 && s->divx_version==-1
            && s->codec_id==CODEC_ID_MPEG4 && s->vo_type==0)
             s->workaround_bugs|= FF_BUG_NO_PADDING;
 
-        if(s->lavc_build && s->lavc_build<4609) //FIXME not sure about the version num but a 4609 file seems ok
+        if(s->lavc_build<4609U) //FIXME not sure about the version num but a 4609 file seems ok
             s->workaround_bugs|= FF_BUG_NO_PADDING;
 #endif
     }
@@ -551,7 +551,7 @@ retry:
 #endif
 
 #if HAVE_MMX
-    if(s->codec_id == CODEC_ID_MPEG4 && s->xvid_build && avctx->idct_algo == FF_IDCT_AUTO && (mm_flags & FF_MM_MMX)){
+    if(s->codec_id == CODEC_ID_MPEG4 && s->xvid_build>=0 && avctx->idct_algo == FF_IDCT_AUTO && (mm_flags & FF_MM_MMX)){
         avctx->idct_algo= FF_IDCT_XVIDMMX;
         avctx->coded_width= 0; // force reinit
 //        dsputil_init(&s->dsp, avctx);
@@ -677,7 +677,7 @@ retry:
                 }
             }
         }
-        if(s->gb.buffer == s->bitstream_buffer && buf_size>7 && s->xvid_build){ //xvid style
+        if(s->gb.buffer == s->bitstream_buffer && buf_size>7 && s->xvid_build>=0){ //xvid style
             startcode_found=1;
             current_pos=0;
         }
