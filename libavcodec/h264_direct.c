@@ -30,7 +30,6 @@
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h264.h"
-#include "h264_mvpred.h"
 #include "rectangle.h"
 
 //#undef NDEBUG
@@ -225,14 +224,37 @@ single_col:
 
         /* ref = min(neighbors) */
         for(list=0; list<2; list++){
-            int refa = h->ref_cache[list][scan8[0] - 1];
-            int refb = h->ref_cache[list][scan8[0] - 8];
+            int left_ref = h->ref_cache[list][scan8[0] - 1];
+            int top_ref  = h->ref_cache[list][scan8[0] - 8];
             int refc = h->ref_cache[list][scan8[0] - 8 + 4];
-            if(refc == PART_NOT_AVAILABLE)
+            const int16_t *C= h->mv_cache[list][ scan8[0] - 8 + 4];
+            if(refc == PART_NOT_AVAILABLE){
                 refc = h->ref_cache[list][scan8[0] - 8 - 1];
-            ref[list] = FFMIN3((unsigned)refa, (unsigned)refb, (unsigned)refc);
+                C    = h-> mv_cache[list][scan8[0] - 8 - 1];
+            }
+            ref[list] = FFMIN3((unsigned)left_ref, (unsigned)top_ref, (unsigned)refc);
             if(ref[list] >= 0){
-                pred_motion(h, 0, 4, list, ref[list], &mv[list][0], &mv[list][1]);
+                //this is just pred_motion() but with the cases removed that cannot happen for direct blocks
+                const int16_t * const A= h->mv_cache[list][ scan8[0] - 1 ];
+                const int16_t * const B= h->mv_cache[list][ scan8[0] - 8 ];
+
+                int match_count= (left_ref==ref[list]) + (top_ref==ref[list]) + (refc==ref[list]);
+                if(match_count > 1){ //most common
+                    mv[list][0]= mid_pred(A[0], B[0], C[0]);
+                    mv[list][1]= mid_pred(A[1], B[1], C[1]);
+                }else {
+                    assert(match_count==1);
+                    if(left_ref==ref[list]){
+                        mv[list][0]= A[0];
+                        mv[list][1]= A[1];
+                    }else if(top_ref==ref[list]){
+                        mv[list][0]= B[0];
+                        mv[list][1]= B[1];
+                    }else{
+                        mv[list][0]= C[0];
+                        mv[list][1]= C[1];
+                    }
+                }
             }else{
                 int mask= ~(MB_TYPE_L0 << (2*list));
                 mv[list][0] = mv[list][1] = 0;
