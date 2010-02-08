@@ -370,10 +370,10 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize)
     ogg->curidx = idx;
     os->incomplete = 0;
 
-    if (os->header < 0){
+    if (!ogg->headers){
         int hdr = os->codec->header (s, idx);
+        os->header = os->seq;
         if (!hdr){
-            os->header = os->seq;
             os->segp = segp;
             os->psize = psize;
             ogg->headers = 1;
