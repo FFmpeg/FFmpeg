@@ -319,6 +319,7 @@ single_col:
             fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, a, 4);
             fill_rectangle(&h->mv_cache[1][scan8[0]], 4, 4, 8, b, 4);
         }else{
+            int n=0;
             for(i8=0; i8<4; i8++){
                 const int x8 = i8&1;
                 const int y8 = i8>>1;
@@ -344,6 +345,7 @@ single_col:
                                 fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, 0, 4);
                             if(ref[1] == 0)
                                 fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, 0, 4);
+                            n+=4;
                         }
                     }else{
                         int m=0;
@@ -359,9 +361,12 @@ single_col:
                     }
                     if(!(m&3))
                         h->sub_mb_type[i8]+= MB_TYPE_16x16 - MB_TYPE_8x8;
+                    n+=m;
                     }
                 }
             }
+            if(!is_b8x8 && !(n&15))
+                *mb_type= (*mb_type & ~(MB_TYPE_8x8|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_P1L0|MB_TYPE_P1L1))|MB_TYPE_16x16|MB_TYPE_DIRECT2;
         }
     }else{ /* direct temporal mv pred */
         const int *map_col_to_list0[2] = {h->map_col_to_list0[0], h->map_col_to_list0[1]};
