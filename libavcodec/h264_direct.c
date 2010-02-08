@@ -345,7 +345,8 @@ single_col:
                             if(ref[1] == 0)
                                 fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, 0, 4);
                         }
-                    }else
+                    }else{
+                        int m=0;
                     for(i4=0; i4<4; i4++){
                         const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*b4_stride];
                         if(FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1){
@@ -353,7 +354,11 @@ single_col:
                                 *(uint32_t*)h->mv_cache[0][scan8[i8*4+i4]] = 0;
                             if(ref[1] == 0)
                                 *(uint32_t*)h->mv_cache[1][scan8[i8*4+i4]] = 0;
+                            m++;
                         }
+                    }
+                    if(!(m&3))
+                        h->sub_mb_type[i8]+= MB_TYPE_16x16 - MB_TYPE_8x8;
                     }
                 }
             }
