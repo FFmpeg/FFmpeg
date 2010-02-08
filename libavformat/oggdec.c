@@ -122,6 +122,7 @@ ogg_reset (struct ogg * ogg)
         os->lastdts = AV_NOPTS_VALUE;
         os->nsegs = 0;
         os->segp = 0;
+        os->incomplete = 0;
     }
 
     ogg->curidx = -1;
@@ -268,7 +269,7 @@ ogg_read_page (AVFormatContext * s, int *str)
     for (i = 0; i < nsegs; i++)
         size += os->segments[i];
 
-    if (flags & OGG_FLAG_CONT){
+    if (flags & OGG_FLAG_CONT || os->incomplete){
         if (!os->psize){
             while (os->segp < os->nsegs){
                 int seg = os->segments[os->segp++];
@@ -356,6 +357,7 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize)
 
         if (!complete && os->segp == os->nsegs){
             ogg->curidx = -1;
+            os->incomplete = 1;
         }
     }while (!complete);
 
@@ -366,6 +368,7 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize)
 #endif
 
     ogg->curidx = idx;
+    os->incomplete = 0;
 
     if (os->header < 0){
         int hdr = os->codec->header (s, idx);
