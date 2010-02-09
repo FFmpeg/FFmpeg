@@ -248,10 +248,9 @@ static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
     else{
         int i, e, a;
         e= 0;
-        while(get_rac(c, state+1 + e)){ //1..10
+        while(get_rac(c, state+1 + e) && e<9){ //1..10
             e++;
         }
-        assert(e<=9);
 
         a= 1;
         for(i=e-1; i>=0; i--){
