@@ -55,6 +55,7 @@ version <next>:
 - enable symbol versioning by default for linkers that support it
 - IFF PBM/ILBM bitmap decoder
 - concat protocol
+- Indeo 5 decoder
 
 
 

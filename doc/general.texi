@@ -394,6 +394,7 @@ following image formats are supported:
 @item Intel H.263            @tab     @tab  X
 @item Intel Indeo 2          @tab     @tab  X
 @item Intel Indeo 3          @tab     @tab  X
+@item Intel Indeo 5          @tab     @tab  X
 @item Interplay C93          @tab     @tab  X
     @tab Used in the game Cyberia from Interplay.
 @item Interplay MVE video    @tab     @tab  X

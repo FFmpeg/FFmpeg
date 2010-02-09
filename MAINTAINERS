@@ -136,7 +136,9 @@ Codecs:
   idcinvideo.c                          Mike Melanson
   imc*                                  Benjamin Larsson
   indeo2*                               Kostya Shishkov
+  indeo5*                               Kostya Shishkov
   interplayvideo.c                      Mike Melanson
+  ivi*                                  Kostya Shishkov
   jpeg_ls.c                             Kostya Shishkov
   kmvc.c                                Kostya Shishkov
   lcl*.c                                Roberto Togni, Reimar Doeffinger
