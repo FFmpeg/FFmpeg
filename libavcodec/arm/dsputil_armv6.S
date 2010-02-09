@@ -564,3 +564,33 @@ function ff_sse16_armv6, export=1
 
         pop             {r4-r9, pc}
 .endfunc
+
+function ff_pix_norm1_armv6, export=1
+        push            {r4-r6, lr}
+        mov             r12, #16
+        mov             lr,  #0
+1:
+        ldm             r0,  {r2-r5}
+        uxtb16          r6,  r2
+        uxtb16          r2,  r2,  ror #8
+        smlad           lr,  r6,  r6,  lr
+        uxtb16          r6,  r3
+        smlad           lr,  r2,  r2,  lr
+        uxtb16          r3,  r3,  ror #8
+        smlad           lr,  r6,  r6,  lr
+        uxtb16          r6,  r4
+        smlad           lr,  r3,  r3,  lr
+        uxtb16          r4,  r4,  ror #8
+        smlad           lr,  r6,  r6,  lr
+        uxtb16          r6,  r5
+        smlad           lr,  r4,  r4,  lr
+        uxtb16          r5,  r5,  ror #8
+        smlad           lr,  r6,  r6,  lr
+        subs            r12, r12, #1
+        add             r0,  r0,  r1
+        smlad           lr,  r5,  r5,  lr
+        bgt             1b
+
+        mov             r0,  lr
+        pop             {r4-r6, pc}
+.endfunc
