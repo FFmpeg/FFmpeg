@@ -2287,6 +2287,9 @@ retry:
     avctx->bit_rate = s->bit_rate;
     avctx->sub_id = s->layer;
 
+    if(*data_size < 1152*avctx->channels*sizeof(OUT_INT))
+        return -1;
+
     if(s->frame_size<=0 || s->frame_size > buf_size){
         av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
         return -1;
