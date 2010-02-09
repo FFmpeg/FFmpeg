@@ -238,9 +238,14 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_dref(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
+    AVStream *st;
+    MOVStreamContext *sc;
     int entries, i, j;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
 
     get_be32(pb); // version + flags
     entries = get_be32(pb);
@@ -381,8 +386,12 @@ static const AVCodecTag mp4_audio_types[] = {
 
 static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    AVStream *st;
     int tag, len;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
 
     get_be32(pb); /* version + flags */
     len = mp4_read_descr(c, pb, &tag);
@@ -440,7 +449,12 @@ static int mov_read_pasp(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
     const int num = get_be32(pb);
     const int den = get_be32(pb);
-    AVStream * const st = c->fc->streams[c->fc->nb_streams-1];
+    AVStream *st;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+
     if (den != 0) {
         if ((st->sample_aspect_ratio.den != 1 || st->sample_aspect_ratio.num) && // default
             (den != st->sample_aspect_ratio.den || num != st->sample_aspect_ratio.num))
@@ -494,12 +508,18 @@ static int mov_read_moof(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
-    int version = get_byte(pb);
+    AVStream *st;
+    MOVStreamContext *sc;
+    int version;
     char language[4] = {0};
     unsigned lang;
 
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
+
+    version = get_byte(pb);
     if (version > 1)
         return -1; /* unsupported */
 
@@ -561,7 +581,11 @@ static int mov_read_mvhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    AVStream *st;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
 
     if((uint64_t)atom.size > (1<<30))
         return -1;
@@ -581,9 +605,14 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_enda(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    int little_endian = get_be16(pb);
+    AVStream *st;
+    int little_endian;
 
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+
+    little_endian = get_be16(pb);
     dprintf(c->fc, "enda %d\n", little_endian);
     if (little_endian == 1) {
         switch (st->codec->codec_id) {
@@ -633,7 +662,11 @@ static int mov_read_extradata(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    AVStream *st;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
 
     if((uint64_t)atom.size > (1<<30))
         return -1;
@@ -660,7 +693,11 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
  */
 static int mov_read_glbl(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    AVStream *st;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
 
     if((uint64_t)atom.size > (1<<30))
         return -1;
@@ -676,9 +713,14 @@ static int mov_read_glbl(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
+    AVStream *st;
+    MOVStreamContext *sc;
     unsigned int i, entries;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
@@ -742,9 +784,14 @@ static enum CodecID mov_get_lpcm_codec_id(int bps, int flags)
 
 static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
+    AVStream *st;
+    MOVStreamContext *sc;
     int j, entries, pseudo_stream_id;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
@@ -1064,9 +1111,14 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
+    AVStream *st;
+    MOVStreamContext *sc;
     unsigned int i, entries;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
@@ -1092,9 +1144,14 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
+    AVStream *st;
+    MOVStreamContext *sc;
     unsigned int i, entries;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
@@ -1119,9 +1176,14 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
+    AVStream *st;
+    MOVStreamContext *sc;
     unsigned int i, entries, sample_size;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
@@ -1150,11 +1212,16 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
+    AVStream *st;
+    MOVStreamContext *sc;
     unsigned int i, entries;
     int64_t duration=0;
     int64_t total_sample_count=0;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
@@ -1194,9 +1261,14 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
+    AVStream *st;
+    MOVStreamContext *sc;
     unsigned int i, entries;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
@@ -1504,10 +1576,16 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     int height;
     int64_t disp_transform[2];
     int display_matrix[3][2];
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = st->priv_data;
-    int version = get_byte(pb);
+    AVStream *st;
+    MOVStreamContext *sc;
+    int version;
 
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
+
+    version = get_byte(pb);
     get_be24(pb); /* flags */
     /*
     MOV_TRACK_ENABLED 0x0001
