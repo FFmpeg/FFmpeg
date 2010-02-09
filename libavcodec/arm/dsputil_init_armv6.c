@@ -51,6 +51,8 @@ void ff_add_pixels_clamped_armv6(const DCTELEM *block,
                                  int line_size);
 
 void ff_get_pixels_armv6(DCTELEM *block, const uint8_t *pixels, int stride);
+void ff_diff_pixels_armv6(DCTELEM *block, const uint8_t *s1,
+                          const uint8_t *s2, int stride);
 
 int ff_pix_abs16_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
                        int line_size, int h);
@@ -95,6 +97,7 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 
     c->add_pixels_clamped = ff_add_pixels_clamped_armv6;
     c->get_pixels = ff_get_pixels_armv6;
+    c->diff_pixels = ff_diff_pixels_armv6;
 
     c->pix_abs[0][0] = ff_pix_abs16_armv6;
     c->pix_abs[0][1] = ff_pix_abs16_x2_armv6;
