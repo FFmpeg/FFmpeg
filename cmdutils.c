@@ -264,7 +264,7 @@ int opt_loglevel(const char *opt, const char *arg)
 
 int opt_timelimit(const char *opt, const char *arg)
 {
-#if HAVE_SYS_RESOURCE_H
+#if HAVE_SETRLIMIT
     int lim = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
     struct rlimit rl = { lim, lim + 1 };
     if (setrlimit(RLIMIT_CPU, &rl))
