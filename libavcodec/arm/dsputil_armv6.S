@@ -428,3 +428,33 @@ function ff_pix_abs16_y2_armv6, export=1
 
         pop             {r4-r11, pc}
 .endfunc
+
+function ff_pix_abs8_armv6, export=1
+        pld             [r2, r3]
+        ldr             r12, [sp]
+        push            {r4-r9, lr}
+        mov             r0,  #0
+        mov             lr,  #0
+        ldrd            r4,  r5,  [r1], r3
+1:
+        subs            r12, r12, #2
+        ldr             r7,  [r2, #4]
+        ldr             r6,  [r2], r3
+        ldrd            r8,  r9,  [r1], r3
+        usada8          r0,  r4,  r6,  r0
+        pld             [r2, r3]
+        usada8          lr,  r5,  r7,  lr
+        ldr             r7,  [r2, #4]
+        ldr             r6,  [r2], r3
+        beq             2f
+        ldrd            r4,  r5,  [r1], r3
+        usada8          r0,  r8,  r6,  r0
+        pld             [r2, r3]
+        usada8          lr,  r9,  r7,  lr
+        b               1b
+2:
+        usada8          r0,  r8,  r6,  r0
+        usada8          lr,  r9,  r7,  lr
+        add             r0,  r0,  lr
+        pop             {r4-r9, pc}
+.endfunc
