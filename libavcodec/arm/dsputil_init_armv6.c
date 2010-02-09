@@ -64,6 +64,9 @@ int ff_pix_abs16_y2_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
 int ff_pix_abs8_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
                        int line_size, int h);
 
+int ff_sse16_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
+                   int line_size, int h);
+
 void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 {
     if (!avctx->lowres && (avctx->idct_algo == FF_IDCT_AUTO ||
@@ -107,4 +110,6 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 
     c->sad[0] = ff_pix_abs16_armv6;
     c->sad[1] = ff_pix_abs8_armv6;
+
+    c->sse[0] = ff_sse16_armv6;
 }

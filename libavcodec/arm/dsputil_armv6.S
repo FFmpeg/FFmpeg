@@ -513,3 +513,54 @@ function ff_pix_abs8_armv6, export=1
         add             r0,  r0,  lr
         pop             {r4-r9, pc}
 .endfunc
+
+function ff_sse16_armv6, export=1
+        ldr             r12, [sp]
+        push            {r4-r9, lr}
+        mov             r0,  #0
+1:
+        ldrd            r4,  r5,  [r1]
+        ldr             r8,  [r2]
+        uxtb16          lr,  r4
+        uxtb16          r4,  r4,  ror #8
+        uxtb16          r9,  r8
+        uxtb16          r8,  r8,  ror #8
+        ldr             r7,  [r2, #4]
+        usub16          lr,  lr,  r9
+        usub16          r4,  r4,  r8
+        smlad           r0,  lr,  lr,  r0
+        uxtb16          r6,  r5
+        uxtb16          lr,  r5,  ror #8
+        uxtb16          r8,  r7
+        uxtb16          r9,  r7,  ror #8
+        smlad           r0,  r4,  r4,  r0
+        ldrd            r4,  r5,  [r1, #8]
+        usub16          r6,  r6,  r8
+        usub16          r8,  lr,  r9
+        ldr             r7,  [r2, #8]
+        smlad           r0,  r6,  r6,  r0
+        uxtb16          lr,  r4
+        uxtb16          r4,  r4,  ror #8
+        uxtb16          r9,  r7
+        uxtb16          r7,  r7, ror #8
+        smlad           r0,  r8,  r8,  r0
+        ldr             r8,  [r2, #12]
+        usub16          lr,  lr,  r9
+        usub16          r4,  r4,  r7
+        smlad           r0,  lr,  lr,  r0
+        uxtb16          r6,  r5
+        uxtb16          r5,  r5,  ror #8
+        uxtb16          r9,  r8
+        uxtb16          r8,  r8,  ror #8
+        smlad           r0,  r4,  r4,  r0
+        usub16          r6,  r6,  r9
+        usub16          r5,  r5,  r8
+        smlad           r0,  r6,  r6,  r0
+        add             r1,  r1,  r3
+        add             r2,  r2,  r3
+        subs            r12, r12, #1
+        smlad           r0,  r5,  r5,  r0
+        bgt             1b
+
+        pop             {r4-r9, pc}
+.endfunc
