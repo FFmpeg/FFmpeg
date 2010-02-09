@@ -668,6 +668,17 @@ int main(void){ $func(); }
 EOF
 }
 
+check_mathfunc(){
+    log check_func "$@"
+    func=$1
+    shift
+    disable $func
+    check_ld "$@" <<EOF && enable $func
+#include <math.h>
+int main(void){ $func(0); return 0; }
+EOF
+}
+
 check_func_headers(){
     log check_func_headers "$@"
     headers=$1
@@ -2519,16 +2530,16 @@ done
 check_lib math.h sin -lm
 check_lib va/va.h vaInitialize -lva
 
-check_func exp2
-check_func exp2f
-check_func llrint
-check_func log2
-check_func log2f
-check_func lrint
-check_func lrintf
-check_func round
-check_func roundf
-check_func truncf
+check_mathfunc exp2
+check_mathfunc exp2f
+check_mathfunc llrint
+check_mathfunc log2
+check_mathfunc log2f
+check_mathfunc lrint
+check_mathfunc lrintf
+check_mathfunc round
+check_mathfunc roundf
+check_mathfunc truncf
 
 # these are off by default, so fail if requested and not available
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
