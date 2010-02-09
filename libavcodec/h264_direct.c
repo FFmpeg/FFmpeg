@@ -184,19 +184,18 @@ void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type){
 single_col:
             mb_type_col[0] =
             mb_type_col[1] = h->ref_list[1][0].mb_type[mb_xy];
-            if(IS_8X8(mb_type_col[0]) && !h->sps.direct_8x8_inference_flag){
-                /* FIXME save sub mb types from previous frames (or derive from MVs)
-                * so we know exactly what block size to use */
-                sub_mb_type = MB_TYPE_8x8|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_4x4 */
-                *mb_type   |= MB_TYPE_8x8|MB_TYPE_L0L1;
-            }else if(!is_b8x8 && (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)){
-                sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
+
+            sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
+            if(!is_b8x8 && (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)){
                 *mb_type   |= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_16x16 */
             }else if(!is_b8x8 && (mb_type_col[0] & (MB_TYPE_16x8|MB_TYPE_8x16))){
-                sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
                 *mb_type   |= MB_TYPE_L0L1|MB_TYPE_DIRECT2 | (mb_type_col[0] & (MB_TYPE_16x8|MB_TYPE_8x16));
             }else{
-                sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
+                if(!h->sps.direct_8x8_inference_flag){
+                    /* FIXME save sub mb types from previous frames (or derive from MVs)
+                    * so we know exactly what block size to use */
+                    sub_mb_type = MB_TYPE_8x8|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_4x4 */
+                }
                 *mb_type   |= MB_TYPE_8x8|MB_TYPE_L0L1;
             }
         }
