@@ -2217,7 +2217,8 @@ case $target_os in
         ;;
     gnu)
         ;;
-
+    none)
+        ;;
     *)
         die "Unknown OS '$target_os'."
         ;;
