@@ -54,6 +54,8 @@ int ff_pix_abs16_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
                        int line_size, int h);
 int ff_pix_abs16_x2_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
                           int line_size, int h);
+int ff_pix_abs16_y2_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
+                          int line_size, int h);
 
 void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 {
@@ -90,6 +92,7 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 
     c->pix_abs[0][0] = ff_pix_abs16_armv6;
     c->pix_abs[0][1] = ff_pix_abs16_x2_armv6;
+    c->pix_abs[0][2] = ff_pix_abs16_y2_armv6;
 
     c->sad[0] = ff_pix_abs16_armv6;
 }

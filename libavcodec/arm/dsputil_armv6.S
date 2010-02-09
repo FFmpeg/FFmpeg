@@ -370,3 +370,61 @@ function ff_pix_abs16_x2_armv6, export=1
 
         pop             {r4-r11, pc}
 .endfunc
+
+.macro  usad_y2         p0,  p1,  p2,  p3,  n0,  n1,  n2,  n3
+        ldr             \n0, [r2]
+        eor             \n1, \p0, \n0
+        uhadd8          \p0, \p0, \n0
+        and             \n1, \n1, lr
+        ldr             \n2, [r1]
+        uadd8           \p0, \p0, \n1
+        ldr             \n1, [r2, #4]
+        usada8          r0,  \p0, \n2, r0
+        pld             [r1,  r3]
+        eor             \n3, \p1, \n1
+        uhadd8          \p1, \p1, \n1
+        and             \n3, \n3, lr
+        ldr             \p0, [r1, #4]
+        uadd8           \p1, \p1, \n3
+        ldr             \n2, [r2, #8]
+        usada8          r0,  \p1, \p0, r0
+        pld             [r2,  r3]
+        eor             \p0, \p2, \n2
+        uhadd8          \p2, \p2, \n2
+        and             \p0, \p0, lr
+        ldr             \p1, [r1, #8]
+        uadd8           \p2, \p2, \p0
+        ldr             \n3, [r2, #12]
+        usada8          r0,  \p2, \p1, r0
+        eor             \p1, \p3, \n3
+        uhadd8          \p3, \p3, \n3
+        and             \p1, \p1, lr
+        ldr             \p0,  [r1, #12]
+        uadd8           \p3, \p3, \p1
+        add             r1,  r1,  r3
+        usada8          r0,  \p3, \p0,  r0
+        add             r2,  r2,  r3
+.endm
+
+function ff_pix_abs16_y2_armv6, export=1
+        pld             [r1]
+        pld             [r2]
+        ldr             r12, [sp]
+        push            {r4-r11, lr}
+        mov             r0,  #0
+        mov             lr,  #1
+        orr             lr,  lr,  lr,  lsl #8
+        orr             lr,  lr,  lr,  lsl #16
+        ldr             r4,  [r2]
+        ldr             r5,  [r2, #4]
+        ldr             r6,  [r2, #8]
+        ldr             r7,  [r2, #12]
+        add             r2,  r2,  r3
+1:
+        usad_y2         r4,  r5,  r6,  r7,  r8,  r9,  r10, r11
+        subs            r12, r12, #2
+        usad_y2         r8,  r9,  r10, r11, r4,  r5,  r6,  r7
+        bgt             1b
+
+        pop             {r4-r11, pc}
+.endfunc
