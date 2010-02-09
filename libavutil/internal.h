@@ -225,10 +225,8 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
 #endif /* HAVE_EXP2F */
 
 #if !HAVE_LLRINT
-static av_always_inline av_const long long llrint(double x)
-{
-    return rint(x);
-}
+#undef llrint
+#define llrint(x) rint(x)
 #endif /* HAVE_LLRINT */
 
 #if !HAVE_LOG2
