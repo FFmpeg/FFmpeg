@@ -50,6 +50,9 @@ void ff_add_pixels_clamped_armv6(const DCTELEM *block,
                                  uint8_t *restrict pixels,
                                  int line_size);
 
+int ff_pix_abs16_armv6(void *s, uint8_t *blk1, uint8_t *blk2,
+                       int line_size, int h);
+
 void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 {
     if (!avctx->lowres && (avctx->idct_algo == FF_IDCT_AUTO ||
@@ -82,4 +85,8 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
     c->avg_pixels_tab[1][0] = ff_avg_pixels8_armv6;
 
     c->add_pixels_clamped = ff_add_pixels_clamped_armv6;
+
+    c->pix_abs[0][0] = ff_pix_abs16_armv6;
+
+    c->sad[0] = ff_pix_abs16_armv6;
 }
