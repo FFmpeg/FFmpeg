@@ -287,6 +287,28 @@ function ff_add_pixels_clamped_armv6, export=1
         pop             {r4-r8,pc}
 .endfunc
 
+function ff_get_pixels_armv6, export=1
+        pld             [r1, r2]
+        push            {r4-r8, lr}
+        mov             lr,  #8
+1:
+        ldrd            r4,  r5,  [r1],  r2
+        subs            lr,  lr,  #1
+        uxtb16          r6,  r4
+        uxtb16          r4,  r4,  ror #8
+        uxtb16          r12, r5
+        uxtb16          r8,  r5,  ror #8
+        pld             [r1, r2]
+        pkhbt           r5,  r6,  r4,  lsl #16
+        pkhtb           r6,  r4,  r6,  asr #16
+        pkhbt           r7,  r12, r8,  lsl #16
+        pkhtb           r12, r8,  r12, asr #16
+        stm             r0!, {r5,r6,r7,r12}
+        bgt             1b
+
+        pop             {r4-r8, pc}
+.endfunc
+
 function ff_pix_abs16_armv6, export=1
         ldr             r0,  [sp]
         push            {r4-r9, lr}
