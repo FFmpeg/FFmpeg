@@ -12,6 +12,9 @@ libavutil:   2009-03-08
 
 API changes, most recent first:
 
+2010-02-07 - r21673 - lavu 50.9.0 - av_compare_ts()
+  Add av_compare_ts().
+
 2010-02-05 - r30513 - lsws 0.10.0 - sws_getCoefficients()
   Add sws_getCoefficients().
 
