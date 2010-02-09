@@ -12,7 +12,7 @@ version 0.5.1:
 - (L)GPL license upgrade support
 - AMR-NB decoding/encoding, AMR-WB decoding via OpenCORE libraries
 - enable symbol versioning by default for linkers that support it
-
+- backport av_lockmgr_register(), see doc/APIchanges for details
 
 
 version 0.5:

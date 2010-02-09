@@ -1,3 +1,11 @@
+20090601 - r19025 - lavc 52.30.0 - av_lockmgr_register()
+  av_lockmgr_register() can be used to register a callback function
+  that lavc (and in the future, libraries that depend on lavc) can use
+  to implement mutexes. The application should provide a callback function
+  the implements the AV_LOCK_* operations described in avcodec.h.
+  When the lock manager is registered FFmpeg is guaranteed to behave
+  correct also in a multi-threaded application.
+
 20090301 - r17682 - lavf 52.31.0 - Generic metadata API
   This version introduce a new metadata API (see av_metadata_get() and friends).
   The old API is now deprecated and shouldn't be used anymore. This especially

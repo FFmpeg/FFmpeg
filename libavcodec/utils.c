@@ -65,6 +65,8 @@ const uint8_t ff_reverse[256]={
 };
 
 static int volatile entangled_thread_counter=0;
+int (*ff_lockmgr_cb)(void **mutex, enum AVLockOp op);
+static void *codec_mutex;
 
 void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size)
 {
@@ -420,6 +422,12 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 {
     int ret= -1;
 
+    /* If there is a user-supplied mutex locking routine, call it. */
+    if (ff_lockmgr_cb) {
+        if ((*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
+            return -1;
+    }
+
     entangled_thread_counter++;
     if(entangled_thread_counter != 1){
         av_log(avctx, AV_LOG_ERROR, "insufficient thread locking around avcodec_open/close()\n");
@@ -464,6 +472,11 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     ret=0;
 end:
     entangled_thread_counter--;
+
+    /* Release any user-supplied mutex. */
+    if (ff_lockmgr_cb) {
+        (*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE);
+    }
     return ret;
 }
 
@@ -583,6 +596,12 @@ int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
 
 int avcodec_close(AVCodecContext *avctx)
 {
+    /* If there is a user-supplied mutex locking routine, call it. */
+    if (ff_lockmgr_cb) {
+        if ((*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
+            return -1;
+    }
+
     entangled_thread_counter++;
     if(entangled_thread_counter != 1){
         av_log(avctx, AV_LOG_ERROR, "insufficient thread locking around avcodec_open/close()\n");
@@ -598,6 +617,11 @@ int avcodec_close(AVCodecContext *avctx)
     av_freep(&avctx->priv_data);
     avctx->codec = NULL;
     entangled_thread_counter--;
+
+    /* Release any user-supplied mutex. */
+    if (ff_lockmgr_cb) {
+        (*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE);
+    }
     return 0;
 }
 
@@ -1151,4 +1175,20 @@ AVHWAccel *ff_find_hwaccel(enum CodecID codec_id, enum PixelFormat pix_fmt)
             return hwaccel;
     }
     return NULL;
+}
+
+int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
+{
+    if (ff_lockmgr_cb) {
+        if (ff_lockmgr_cb(&codec_mutex, AV_LOCK_DESTROY))
+            return -1;
+    }
+
+    ff_lockmgr_cb = cb;
+
+    if (ff_lockmgr_cb) {
+        if (ff_lockmgr_cb(&codec_mutex, AV_LOCK_CREATE))
+            return -1;
+    }
+    return 0;
 }
