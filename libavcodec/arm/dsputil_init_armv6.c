@@ -18,12 +18,33 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
+#include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
 void ff_simple_idct_armv6(DCTELEM *data);
 void ff_simple_idct_put_armv6(uint8_t *dest, int line_size, DCTELEM *data);
 void ff_simple_idct_add_armv6(uint8_t *dest, int line_size, DCTELEM *data);
+
+void ff_put_pixels16_armv6(uint8_t *, const uint8_t *, int, int);
+void ff_put_pixels16_x2_armv6(uint8_t *, const uint8_t *, int, int);
+void ff_put_pixels16_y2_armv6(uint8_t *, const uint8_t *, int, int);
+
+void ff_put_pixels16_x2_no_rnd_armv6(uint8_t *, const uint8_t *, int, int);
+void ff_put_pixels16_y2_no_rnd_armv6(uint8_t *, const uint8_t *, int, int);
+
+void ff_avg_pixels16_armv6(uint8_t *, const uint8_t *, int, int);
+
+void ff_put_pixels8_armv6(uint8_t *, const uint8_t *, int, int);
+void ff_put_pixels8_x2_armv6(uint8_t *, const uint8_t *, int, int);
+void ff_put_pixels8_y2_armv6(uint8_t *, const uint8_t *, int, int);
+
+void ff_put_pixels8_x2_no_rnd_armv6(uint8_t *, const uint8_t *, int, int);
+void ff_put_pixels8_y2_no_rnd_armv6(uint8_t *, const uint8_t *, int, int);
+
+void ff_avg_pixels8_armv6(uint8_t *, const uint8_t *, int, int);
 
 void ff_add_pixels_clamped_armv6(const DCTELEM *block,
                                  uint8_t *restrict pixels,
@@ -38,6 +59,27 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
         c->idct                  = ff_simple_idct_armv6;
         c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
     }
+
+    c->put_pixels_tab[0][0] = ff_put_pixels16_armv6;
+    c->put_pixels_tab[0][1] = ff_put_pixels16_x2_armv6;
+    c->put_pixels_tab[0][2] = ff_put_pixels16_y2_armv6;
+/*     c->put_pixels_tab[0][3] = ff_put_pixels16_xy2_armv6; */
+    c->put_pixels_tab[1][0] = ff_put_pixels8_armv6;
+    c->put_pixels_tab[1][1] = ff_put_pixels8_x2_armv6;
+    c->put_pixels_tab[1][2] = ff_put_pixels8_y2_armv6;
+/*     c->put_pixels_tab[1][3] = ff_put_pixels8_xy2_armv6; */
+
+    c->put_no_rnd_pixels_tab[0][0] = ff_put_pixels16_armv6;
+    c->put_no_rnd_pixels_tab[0][1] = ff_put_pixels16_x2_no_rnd_armv6;
+    c->put_no_rnd_pixels_tab[0][2] = ff_put_pixels16_y2_no_rnd_armv6;
+/*     c->put_no_rnd_pixels_tab[0][3] = ff_put_pixels16_xy2_no_rnd_armv6; */
+    c->put_no_rnd_pixels_tab[1][0] = ff_put_pixels8_armv6;
+    c->put_no_rnd_pixels_tab[1][1] = ff_put_pixels8_x2_no_rnd_armv6;
+    c->put_no_rnd_pixels_tab[1][2] = ff_put_pixels8_y2_no_rnd_armv6;
+/*     c->put_no_rnd_pixels_tab[1][3] = ff_put_pixels8_xy2_no_rnd_armv6; */
+
+    c->avg_pixels_tab[0][0] = ff_avg_pixels16_armv6;
+    c->avg_pixels_tab[1][0] = ff_avg_pixels8_armv6;
 
     c->add_pixels_clamped = ff_add_pixels_clamped_armv6;
 }
