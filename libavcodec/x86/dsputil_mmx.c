@@ -2840,10 +2840,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->avg_h264_qpel_pixels_tab[1][x+y*4] = avg_h264_qpel8_mc##x##y##_##CPU;
         if((mm_flags & FF_MM_SSE2) && !(mm_flags & FF_MM_3DNOW)){
             // these functions are slower than mmx on AMD, but faster on Intel
-/* FIXME works in most codecs, but crashes svq1 due to unaligned chroma
             c->put_pixels_tab[0][0] = put_pixels16_sse2;
             c->avg_pixels_tab[0][0] = avg_pixels16_sse2;
-*/
             H264_QPEL_FUNCS(0, 0, sse2);
         }
         if(mm_flags & FF_MM_SSE2){
