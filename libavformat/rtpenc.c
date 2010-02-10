@@ -91,7 +91,7 @@ static int rtp_write_header(AVFormatContext *s1)
     s->cur_timestamp = 0;
     s->ssrc = 0; /* FIXME: was random(), what should this be? */
     s->first_packet = 1;
-    s->first_rtcp_ntp_time = AV_NOPTS_VALUE;
+    s->first_rtcp_ntp_time = ntp_time();
 
     max_packet_size = url_fget_max_packet_size(s1->pb);
     if (max_packet_size <= 12)
@@ -171,7 +171,6 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
 
     dprintf(s1, "RTCP: %02x %"PRIx64" %x\n", s->payload_type, ntp_time, s->timestamp);
 
-    if (s->first_rtcp_ntp_time == AV_NOPTS_VALUE) s->first_rtcp_ntp_time = ntp_time;
     s->last_rtcp_ntp_time = ntp_time;
     rtp_ts = av_rescale_q(ntp_time - s->first_rtcp_ntp_time, (AVRational){1, 1000000},
                           s1->streams[0]->time_base) + s->base_timestamp;
