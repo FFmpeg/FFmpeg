@@ -131,9 +131,8 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     if (c && c->name)
         c_name = c->name;
     else
-        c_name = (char *) NULL;
+        c_name = "(null)";
 
-    if (c_name) {
         get_word_sep(buf, sizeof(buf), "/", &p);
         i = atoi(buf);
         switch (codec->codec_type) {
@@ -164,9 +163,6 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
             break;
         }
         return 0;
-    }
-
-    return -1;
 }
 
 /* return the length and optionally the data */
