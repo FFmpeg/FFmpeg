@@ -669,7 +669,7 @@ EOF
 }
 
 check_mathfunc(){
-    log check_func "$@"
+    log check_mathfunc "$@"
     func=$1
     shift
     disable $func
