@@ -56,6 +56,7 @@ version <next>:
 - IFF PBM/ILBM bitmap decoder
 - concat protocol
 - Indeo 5 decoder
+- RTP depacketization of AMR
 
 
 

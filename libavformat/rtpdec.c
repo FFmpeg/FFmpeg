@@ -33,6 +33,7 @@
 #include "rtp_asf.h"
 #include "rtp_h264.h"
 #include "rtp_vorbis.h"
+#include "rtpdec_amr.h"
 #include "rtpdec_h263.h"
 
 //#define DEBUG
@@ -62,6 +63,8 @@ void av_register_rtp_dynamic_payload_handlers(void)
 {
     ff_register_dynamic_payload_handler(&mp4v_es_handler);
     ff_register_dynamic_payload_handler(&mpeg4_generic_handler);
+    ff_register_dynamic_payload_handler(&ff_amr_nb_dynamic_handler);
+    ff_register_dynamic_payload_handler(&ff_amr_wb_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_h263_1998_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_h263_2000_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_h264_dynamic_handler);
