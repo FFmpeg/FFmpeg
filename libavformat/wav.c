@@ -227,6 +227,9 @@ static int wav_read_header(AVFormatContext *s,
         size = data_size;
     if (size < 0)
         return -1;
+    if (!size) {
+        wav->data_end = INT64_MAX;
+    } else
     wav->data_end= url_ftell(pb) + size;
     return 0;
 }
