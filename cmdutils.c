@@ -35,6 +35,7 @@
 #include "libswscale/swscale.h"
 #include "libpostproc/postprocess.h"
 #include "libavutil/avstring.h"
+#include "libavutil/pixdesc.h"
 #include "libavcodec/opt.h"
 #include "cmdutils.h"
 #include "version.h"
@@ -627,7 +628,30 @@ void show_filters(void)
 
 void show_pix_fmts(void)
 {
-    list_fmts(avcodec_pix_fmt_string, PIX_FMT_NB);
+    enum PixelFormat pix_fmt;
+
+    printf(
+        "Pixel formats:\n"
+        "I.... = Supported Input  format for conversion\n"
+        ".O... = Supported Output format for conversion\n"
+        "..H.. = Hardware accelerated format\n"
+        "...P. = Paletted format\n"
+        "....B = Bitstream format\n"
+        "FLAGS NAME            NB_COMPONENTS BITS_PER_PIXEL\n"
+        "-----\n");
+
+    for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++) {
+        const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[pix_fmt];
+        printf("%c%c%c%c%c %-16s       %d            %2d\n",
+               sws_isSupportedInput (pix_fmt)      ? 'I' : '.',
+               sws_isSupportedOutput(pix_fmt)      ? 'O' : '.',
+               pix_desc->flags & PIX_FMT_HWACCEL   ? 'H' : '.',
+               pix_desc->flags & PIX_FMT_PAL       ? 'P' : '.',
+               pix_desc->flags & PIX_FMT_BITSTREAM ? 'B' : '.',
+               pix_desc->name,
+               pix_desc->nb_components,
+               av_get_bits_per_pixel(pix_desc));
+    }
 }
 
 int read_yesno(void)
