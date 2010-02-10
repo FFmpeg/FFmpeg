@@ -48,38 +48,6 @@ typedef struct {
 } AVSyncPoint;
 
 /**
- * Compare two timestamps exactly, taking their respective time bases into account.
- *
- * @param ts_a timestamp A
- * @param tb_a time base for timestamp A
- * @param ts_b timestamp B
- * @param tb_b time base for timestamp A
- * @return -1, 0 or 1 if timestamp A is less than, equal or greater than timestamp B
- */
-static int compare_ts(int64_t ts_a, AVRational tb_a, int64_t ts_b, AVRational tb_b)
-{
-    int64_t a, b, res;
-
-    if (ts_a == INT64_MIN)
-        return ts_a < ts_b ? -1 : 0;
-    if (ts_a == INT64_MAX)
-        return ts_a > ts_b ?  1 : 0;
-    if (ts_b == INT64_MIN)
-        return ts_a > ts_b ?  1 : 0;
-    if (ts_b == INT64_MAX)
-        return ts_a < ts_b ? -1 : 0;
-
-    a = ts_a * tb_a.num * tb_b.den;
-    b = ts_b * tb_b.num * tb_a.den;
-
-    res = a - b;
-    if (!res)
-        return 0;
-    else
-        return (res >> 63) | 1;
-}
-
-/**
  * Compute a distance between timestamps.
  *
  * Distances are only comparable, if same time bases are used for computing
@@ -216,7 +184,7 @@ static void search_hi_lo_keyframes(AVFormatContext *s,
             }
 
             if (sp->term_ts != AV_NOPTS_VALUE &&
-                compare_ts(ts, ts_tb, sp->term_ts, sp->term_ts_tb) > 0) {
+                av_compare_ts(ts, ts_tb, sp->term_ts, sp->term_ts_tb) > 0) {
                 // past the end position from last iteration, ignore packet
                 if (!sp->terminated) {
                     sp->terminated = 1;
@@ -233,7 +201,7 @@ static void search_hi_lo_keyframes(AVFormatContext *s,
                 continue;
             }
 
-            if (compare_ts(ts, ts_tb, timestamp, timebase) <= 0) {
+            if (av_compare_ts(ts, ts_tb, timestamp, timebase) <= 0) {
                 // keyframe found before target timestamp
                 if (sp->pos_lo == INT64_MAX) {
                     // found first keyframe lower than target timestamp
@@ -246,7 +214,7 @@ static void search_hi_lo_keyframes(AVFormatContext *s,
                     sp->pos_lo = pos;
                 }
             }
-            if (compare_ts(ts, ts_tb, timestamp, timebase) >= 0) {
+            if (av_compare_ts(ts, ts_tb, timestamp, timebase) >= 0) {
                 // keyframe found after target timestamp
                 if (sp->pos_hi == INT64_MAX) {
                     // found first keyframe higher than target timestamp
@@ -391,15 +359,15 @@ int64_t ff_gen_syncpoint_search(AVFormatContext *s,
             min_distance = INT64_MAX;
             // Find timestamp closest to requested timestamp within min/max limits.
             if (sp->pos_lo != INT64_MAX
-                && compare_ts(ts_min, time_base, sp->ts_lo, st->time_base) <= 0
-                && compare_ts(sp->ts_lo, st->time_base, ts_max, time_base) <= 0) {
+                && av_compare_ts(ts_min, time_base, sp->ts_lo, st->time_base) <= 0
+                && av_compare_ts(sp->ts_lo, st->time_base, ts_max, time_base) <= 0) {
                 // low timestamp is in range
                 min_distance = ts_distance(ts, time_base, sp->ts_lo, st->time_base);
                 min_pos = sp->pos_lo;
             }
             if (sp->pos_hi != INT64_MAX
-                && compare_ts(ts_min, time_base, sp->ts_hi, st->time_base) <= 0
-                && compare_ts(sp->ts_hi, st->time_base, ts_max, time_base) <= 0) {
+                && av_compare_ts(ts_min, time_base, sp->ts_hi, st->time_base) <= 0
+                && av_compare_ts(sp->ts_hi, st->time_base, ts_max, time_base) <= 0) {
                 // high timestamp is in range, check distance
                 distance = ts_distance(sp->ts_hi, st->time_base, ts, time_base);
                 if (distance < min_distance) {
