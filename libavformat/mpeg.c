@@ -247,8 +247,13 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         startcode = find_next_start_code(s->pb, &size, &m->header_state);
         last_sync = url_ftell(s->pb);
     //printf("startcode=%x pos=0x%"PRIx64"\n", startcode, url_ftell(s->pb));
-    if (startcode < 0)
-        return AVERROR(EIO);
+    if (startcode < 0){
+        if(url_feof(s->pb))
+            return AVERROR_EOF;
+        //FIXME we should remember header_state
+        return AVERROR(EAGAIN);
+    }
+
     if (startcode == PACK_START_CODE)
         goto redo;
     if (startcode == SYSTEM_HEADER_START_CODE)
