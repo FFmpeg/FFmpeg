@@ -320,7 +320,7 @@ void av_sha_final(AVSHA* ctx, uint8_t *digest)
         av_sha_update(ctx, "", 1);
     av_sha_update(ctx, (uint8_t *)&finalcount, 8); /* Should cause a transform() */
     for (i = 0; i < ctx->digest_len; i++)
-        AV_WN32(digest + i*4, be2me_32(ctx->state[i]));
+        AV_WB32(digest + i*4, ctx->state[i]);
 }
 
 #if LIBAVUTIL_VERSION_MAJOR < 51
