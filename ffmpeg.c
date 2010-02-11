@@ -2252,10 +2252,6 @@ static int av_encode(AVFormatContext **output_files,
             break;
         }
 
-        /* finish if recording time exhausted */
-        if (opts_min >= (recording_time / 1000000.0))
-            break;
-
         /* finish if limit size exhausted */
         if (limit_filesize != 0 && limit_filesize < url_ftell(output_files[0]->pb))
             break;
