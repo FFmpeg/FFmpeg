@@ -672,7 +672,8 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
         FFSWAP(int16_t, band->rv_map->valtab[idx1], band->rv_map->valtab[idx2]);
     }
 
-    if (IVI_DEBUG && band->checksum_present) {
+#if IVI_DEBUG
+    if (band->checksum_present) {
         chksum = ivi_calc_band_checksum(band);
         if (chksum != band->checksum) {
             av_log(avctx, AV_LOG_ERROR,
@@ -680,6 +681,7 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
                    band->plane, band->band_num, band->checksum, chksum);
         }
     }
+#endif
 
     return result;
 }
