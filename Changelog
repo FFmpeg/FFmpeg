@@ -15,6 +15,7 @@ version 0.5.1:
 - backport av_lockmgr_register(), see doc/APIchanges for details
 
 
+
 version 0.5:
 
 - The "device" muxers and demuxers are now in a new libavdevice library
