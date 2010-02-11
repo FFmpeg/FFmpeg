@@ -964,6 +964,7 @@ ARCH_LIST='
     sh4
     sparc
     sparc64
+    tomi
     x86
     x86_32
     x86_64
