@@ -601,7 +601,6 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
 {
     int         result, i, t, idx1, idx2;
     IVITile     *tile;
-    uint16_t    chksum;
 
     band->buf     = band->bufs[ctx->dst_buf];
     band->ref_buf = band->bufs[ctx->ref_buf];
@@ -674,7 +673,7 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
 
 #if IVI_DEBUG
     if (band->checksum_present) {
-        chksum = ivi_calc_band_checksum(band);
+        uint16_t chksum = ivi_calc_band_checksum(band);
         if (chksum != band->checksum) {
             av_log(avctx, AV_LOG_ERROR,
                    "Band checksum mismatch! Plane %d, band %d, received: %x, calculated: %x\n",
