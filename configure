@@ -1393,6 +1393,7 @@ avformat_deps="avcodec"
 # programs
 ffmpeg_deps="avcodec avformat swscale"
 ffplay_deps="avcodec avformat swscale sdl"
+ffplay_select="rdft"
 ffserver_deps="avformat ffm_muxer rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 
