@@ -1626,6 +1626,7 @@ static int alloc_blocks(SnowContext *s){
     s->b_width = w;
     s->b_height= h;
 
+    av_free(s->block);
     s->block= av_mallocz(w * h * sizeof(BlockNode) << (s->block_max_depth*2));
     return 0;
 }
@@ -4515,7 +4516,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
                                               && p->hcoeff[2]==2;
     }
 
-    if(!s->block) alloc_blocks(s);
+    alloc_blocks(s);
 
     frame_start(s);
     //keyframe flag duplication mess FIXME
