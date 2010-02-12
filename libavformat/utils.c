@@ -2546,7 +2546,7 @@ int av_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "time base not set\n");
                 return -1;
             }
-            if(st->codec->width<=0 || st->codec->height<=0){
+            if((st->codec->width<=0 || st->codec->height<=0) && !(s->oformat->flags & AVFMT_NODIMENSIONS)){
                 av_log(s, AV_LOG_ERROR, "dimensions not set\n");
                 return -1;
             }
