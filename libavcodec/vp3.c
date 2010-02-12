@@ -2109,7 +2109,7 @@ static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
 static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
-    int visible_width, visible_height;
+    int visible_width, visible_height, colorspace;
 
     s->theora = get_bits_long(gb, 24);
     av_log(avctx, AV_LOG_DEBUG, "Theora bitstream version %X\n", s->theora);
@@ -2146,7 +2146,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 
     if (s->theora < 0x030200)
         skip_bits(gb, 5); /* keyframe frequency force */
-    skip_bits(gb, 8); /* colorspace */
+    colorspace = get_bits(gb, 8);
     skip_bits(gb, 24); /* bitrate */
 
     skip_bits(gb, 6); /* quality hint */
@@ -2165,6 +2165,16 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
         avcodec_set_dimensions(avctx, visible_width, visible_height);
     else
         avcodec_set_dimensions(avctx, s->width, s->height);
+
+    if (colorspace == 1) {
+        avctx->color_primaries = AVCOL_PRI_BT470M;
+    } else if (colorspace == 2) {
+        avctx->color_primaries = AVCOL_PRI_BT470BG;
+    }
+    if (colorspace == 1 || colorspace == 2) {
+        avctx->colorspace = AVCOL_SPC_BT470BG;
+        avctx->color_trc  = AVCOL_TRC_BT709;
+    }
 
     return 0;
 }
