@@ -153,6 +153,7 @@ static const AVOption options[]={
 {"hpel_chroma", NULL, 0, FF_OPT_TYPE_CONST, FF_BUG_HPEL_CHROMA, INT_MIN, INT_MAX, V|D, "bug"},
 {"dc_clip", NULL, 0, FF_OPT_TYPE_CONST, FF_BUG_DC_CLIP, INT_MIN, INT_MAX, V|D, "bug"},
 {"ms", "workaround various bugs in microsofts broken decoders", 0, FF_OPT_TYPE_CONST, FF_BUG_MS, INT_MIN, INT_MAX, V|D, "bug"},
+{"trunc", "trancated frames", 0, FF_OPT_TYPE_CONST,FF_BUG_TRUNCATED, INT_MIN, INT_MAX, V|D, "bug"},
 {"lelim", "single coefficient elimination threshold for luminance (negative values also consider dc coefficient)", OFFSET(luma_elim_threshold), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"celim", "single coefficient elimination threshold for chrominance (negative values also consider dc coefficient)", OFFSET(chroma_elim_threshold), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"strict", "how strictly to follow the standards", OFFSET(strict_std_compliance), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, A|V|D|E, "strict"},

@@ -2257,6 +2257,10 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             }
             eos = get_cabac_terminate( &h->cabac );
 
+            if((s->workaround_bugs & FF_BUG_TRUNCATED) && h->cabac.bytestream > h->cabac.bytestream_end + 2){
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+                return 0;
+            }
             if( ret < 0 || h->cabac.bytestream > h->cabac.bytestream_end + 2) {
                 av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d, bytestream (%td)\n", s->mb_x, s->mb_y, h->cabac.bytestream_end - h->cabac.bytestream);
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
@@ -2492,8 +2496,15 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
         if (ptr==NULL || dst_length < 0){
             return -1;
         }
+        i= buf_index + consumed;
+        if((s->workaround_bugs & FF_BUG_AUTODETECT) && i+3<next_avc &&
+           buf[i]==0x00 && buf[i+1]==0x00 && buf[i+2]==0x01 && buf[i+3]==0xE0)
+            s->workaround_bugs |= FF_BUG_TRUNCATED;
+
+        if(!(s->workaround_bugs & FF_BUG_TRUNCATED)){
         while(ptr[dst_length - 1] == 0 && dst_length > 0)
             dst_length--;
+        }
         bit_length= !dst_length ? 0 : (8*dst_length - ff_h264_decode_rbsp_trailing(h, ptr + dst_length - 1));
 
         if(s->avctx->debug&FF_DEBUG_STARTCODE){
