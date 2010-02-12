@@ -1389,21 +1389,19 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
     }
 }
 
-static void apply_loop_filter(Vp3DecodeContext *s)
+static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int yend)
 {
-    int plane;
     int x, y;
     int *bounding_values= s->bounding_values_array+127;
 
-    for (plane = 0; plane < 3; plane++) {
         int width           = s->fragment_width  >> !!plane;
         int height          = s->fragment_height >> !!plane;
-        int fragment        = s->fragment_start        [plane];
+        int fragment        = s->fragment_start        [plane] + ystart * width;
         int stride          = s->current_frame.linesize[plane];
         uint8_t *plane_data = s->current_frame.data    [plane];
         if (!s->flipped_image) stride = -stride;
 
-        for (y = 0; y < height; y++) {
+        for (y = ystart; y < yend; y++) {
 
             for (x = 0; x < width; x++) {
                 /* This code basically just deblocks on the edges of coded blocks.
@@ -1450,7 +1448,6 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                 fragment++;
             }
         }
-    }
 }
 
 /*
@@ -1612,6 +1609,10 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 
                 }
             }
+            // Filter the previous block row. We can't filter the current row yet
+            // since it needs pixels from the next row
+            if (y > 0)
+                apply_loop_filter(s, plane, (y>>3)-1, (y>>3));
         }
     }
 
@@ -2010,7 +2011,11 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     for (i = 0; i < s->macroblock_height; i++)
         render_slice(s, i);
 
-    apply_loop_filter(s);
+    // filter the last row
+    for (i = 0; i < 3; i++) {
+        int row = (s->height >> (3+!!i)) - 1;
+        apply_loop_filter(s, i, row, row+1);
+    }
 
     *data_size=sizeof(AVFrame);
     *(AVFrame*)data= s->current_frame;
