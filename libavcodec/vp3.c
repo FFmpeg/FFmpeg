@@ -53,9 +53,6 @@ typedef struct Coeff {
 //FIXME split things out into their own arrays
 typedef struct Vp3Fragment {
     Coeff *next_coeff;
-    /* address of first pixel taking into account which plane the fragment
-     * lives on as well as the plane stride */
-    int first_pixel;
     /* this is the macroblock that the fragment belongs to */
     uint16_t macroblock;
     uint8_t coding_method;
@@ -163,6 +160,7 @@ typedef struct Vp3DecodeContext {
     Coeff *coeffs;
     Coeff *next_coeff;
     int fragment_start[3];
+    int data_offset[3];
 
     ScanTable scantable;
 
@@ -178,7 +176,6 @@ typedef struct Vp3DecodeContext {
      * which of the fragments are coded */
     int *coded_fragment_list;
     int coded_fragment_list_index;
-    int pixel_addresses_initialized;
 
     /* track which fragments have already been decoded; called 'fast'
      * because this data structure avoids having to iterate through every
@@ -1401,6 +1398,7 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int ye
     int stride          = s->current_frame.linesize[plane];
     uint8_t *plane_data = s->current_frame.data    [plane];
     if (!s->flipped_image) stride = -stride;
+    plane_data += s->data_offset[plane] + 8*ystart*stride;
 
     for (y = ystart; y < yend; y++) {
 
@@ -1414,14 +1412,14 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int ye
                 /* do not perform left edge filter for left columns frags */
                 if (x > 0) {
                     s->dsp.vp3_h_loop_filter(
-                        plane_data + s->all_fragments[fragment].first_pixel,
+                        plane_data + 8*x,
                         stride, bounding_values);
                 }
 
                 /* do not perform top edge filter for top row fragments */
                 if (y > 0) {
                     s->dsp.vp3_v_loop_filter(
-                        plane_data + s->all_fragments[fragment].first_pixel,
+                        plane_data + 8*x,
                         stride, bounding_values);
                 }
 
@@ -1431,7 +1429,7 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int ye
                 if ((x < width - 1) &&
                     (s->all_fragments[fragment + 1].coding_method == MODE_COPY)) {
                     s->dsp.vp3_h_loop_filter(
-                        plane_data + s->all_fragments[fragment + 1].first_pixel,
+                        plane_data + 8*x + 8,
                         stride, bounding_values);
                 }
 
@@ -1441,13 +1439,14 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int ye
                 if ((y < height - 1) &&
                     (s->all_fragments[fragment + width].coding_method == MODE_COPY)) {
                     s->dsp.vp3_v_loop_filter(
-                        plane_data + s->all_fragments[fragment + width].first_pixel,
+                        plane_data + 8*x + 8*stride,
                         stride, bounding_values);
                 }
             }
 
             fragment++;
         }
+        plane_data += 8*stride;
     }
 }
 
@@ -1501,9 +1500,9 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         return;
 
     for (plane = 0; plane < 3; plane++) {
-        uint8_t *output_plane = s->current_frame.data    [plane];
-        uint8_t *  last_plane = s->   last_frame.data    [plane];
-        uint8_t *golden_plane = s-> golden_frame.data    [plane];
+        uint8_t *output_plane = s->current_frame.data    [plane] + s->data_offset[plane];
+        uint8_t *  last_plane = s->   last_frame.data    [plane] + s->data_offset[plane];
+        uint8_t *golden_plane = s-> golden_frame.data    [plane] + s->data_offset[plane];
         int stride            = s->current_frame.linesize[plane];
         int plane_width       = s->width  >> !!plane;
         int plane_height      = s->height >> !!plane;
@@ -1522,6 +1521,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 
             /* for each fragment in a row... */
             for (x = 0; x < plane_width; x += 8, i++) {
+                int first_pixel = y*stride + x;
 
                 if ((i < 0) || (i >= s->fragment_count)) {
                     av_log(s->avctx, AV_LOG_ERROR, "  vp3:render_slice(): bad fragment number (%d)\n", i);
@@ -1538,7 +1538,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                     else
                         motion_source= last_plane;
 
-                    motion_source += s->all_fragments[i].first_pixel;
+                    motion_source += first_pixel;
                     motion_halfpel_index = 0;
 
                     /* sort out the motion vector if this fragment is coded
@@ -1584,12 +1584,12 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                            put_no_rnd_pixels_tab is better optimzed */
                         if(motion_halfpel_index != 3){
                             s->dsp.put_no_rnd_pixels_tab[1][motion_halfpel_index](
-                                output_plane + s->all_fragments[i].first_pixel,
+                                output_plane + first_pixel,
                                 motion_source, stride, 8);
                         }else{
                             int d= (motion_x ^ motion_y)>>31; // d is 0 if motion_x and _y have the same sign, else -1
                             s->dsp.put_no_rnd_pixels_l2[1](
-                                output_plane + s->all_fragments[i].first_pixel,
+                                output_plane + first_pixel,
                                 motion_source - d,
                                 motion_source + stride + 1 + d,
                                 stride, 8);
@@ -1622,12 +1622,12 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                         if(s->avctx->idct_algo!=FF_IDCT_VP3)
                             block[0] += 128<<3;
                         s->dsp.idct_put(
-                            output_plane + s->all_fragments[i].first_pixel,
+                            output_plane + first_pixel,
                             stride,
                             block);
                     } else {
                         s->dsp.idct_add(
-                            output_plane + s->all_fragments[i].first_pixel,
+                            output_plane + first_pixel,
                             stride,
                             block);
                     }
@@ -1635,8 +1635,8 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 
                     /* copy directly from the previous frame */
                     s->dsp.put_pixels_tab[1][0](
-                        output_plane + s->all_fragments[i].first_pixel,
-                        last_plane + s->all_fragments[i].first_pixel,
+                        output_plane + first_pixel,
+                        last_plane + first_pixel,
                         stride, 8);
 
                 }
@@ -1659,54 +1659,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
     // now that we've filtered the last rows, they're safe to display
     if (slice)
         vp3_draw_horiz_band(s, 16*slice);
-}
-
-/*
- * This function computes the first pixel addresses for each fragment.
- * This function needs to be invoked after the first frame is allocated
- * so that it has access to the plane strides.
- */
-static void vp3_calculate_pixel_addresses(Vp3DecodeContext *s)
-{
-#define Y_INITIAL(chroma_shift)  s->flipped_image ? 1  : s->fragment_height >> chroma_shift
-#define Y_FINISHED(chroma_shift) s->flipped_image ? y <= s->fragment_height >> chroma_shift : y > 0
-
-    int i, x, y;
-    const int y_inc = s->flipped_image ? 1 : -1;
-
-    /* figure out the first pixel addresses for each of the fragments */
-    /* Y plane */
-    i = 0;
-    for (y = Y_INITIAL(0); Y_FINISHED(0); y += y_inc) {
-        for (x = 0; x < s->fragment_width; x++) {
-            s->all_fragments[i++].first_pixel =
-                s->golden_frame.linesize[0] * y * FRAGMENT_PIXELS -
-                    s->golden_frame.linesize[0] +
-                    x * FRAGMENT_PIXELS;
-        }
-    }
-
-    /* U plane */
-    i = s->fragment_start[1];
-    for (y = Y_INITIAL(1); Y_FINISHED(1); y += y_inc) {
-        for (x = 0; x < s->fragment_width / 2; x++) {
-            s->all_fragments[i++].first_pixel =
-                s->golden_frame.linesize[1] * y * FRAGMENT_PIXELS -
-                    s->golden_frame.linesize[1] +
-                    x * FRAGMENT_PIXELS;
-        }
-    }
-
-    /* V plane */
-    i = s->fragment_start[2];
-    for (y = Y_INITIAL(1); Y_FINISHED(1); y += y_inc) {
-        for (x = 0; x < s->fragment_width / 2; x++) {
-            s->all_fragments[i++].first_pixel =
-                s->golden_frame.linesize[2] * y * FRAGMENT_PIXELS -
-                    s->golden_frame.linesize[2] +
-                    x * FRAGMENT_PIXELS;
-        }
-    }
 }
 
 /*
@@ -1775,7 +1727,6 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     s->coeffs = av_malloc(s->fragment_count * sizeof(Coeff) * 65);
     s->coded_fragment_list = av_malloc(s->fragment_count * sizeof(int));
     s->fast_fragment_list = av_malloc(s->fragment_count * sizeof(int));
-    s->pixel_addresses_initialized = 0;
     if (!s->superblock_coding || !s->all_fragments || !s->coeff_counts ||
         !s->coeffs || !s->coded_fragment_list || !s->fast_fragment_list) {
         vp3_decode_end(avctx);
@@ -1996,17 +1947,10 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
         /* golden frame is also the current frame */
         s->current_frame= s->golden_frame;
-
-        /* time to figure out pixel addresses? */
-        if (!s->pixel_addresses_initialized)
-        {
-            vp3_calculate_pixel_addresses(s);
-            s->pixel_addresses_initialized = 1;
-        }
     } else {
         /* allocate a new current frame */
         s->current_frame.reference = 3;
-        if (!s->pixel_addresses_initialized) {
+        if (!s->golden_frame.data[0]) {
             av_log(s->avctx, AV_LOG_ERROR, "vp3: first frame not a keyframe\n");
             return -1;
         }
@@ -2040,6 +1984,13 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     if (unpack_dct_coeffs(s, &gb)){
         av_log(s->avctx, AV_LOG_ERROR, "error in unpack_dct_coeffs\n");
         return -1;
+    }
+
+    for (i = 0; i < 3; i++) {
+        if (s->flipped_image)
+            s->data_offset[i] = 0;
+        else
+            s->data_offset[i] = ((s->height>>!!i)-1) * s->current_frame.linesize[i];
     }
 
     s->last_slice_end = 0;
