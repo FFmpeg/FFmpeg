@@ -265,7 +265,9 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
 //picture size unneccessarily in some cases. The solution here is not
 //pretty and better ideas are welcome!
 #if HAVE_MMX
-                if(s->codec_id == CODEC_ID_SVQ1)
+                if(s->codec_id == CODEC_ID_SVQ1 || s->codec_id == CODEC_ID_VP5 ||
+                   s->codec_id == CODEC_ID_VP6 || s->codec_id == CODEC_ID_VP6F ||
+                   s->codec_id == CODEC_ID_VP6A)
                     stride_align[i]= 16;
                 else
 #endif
