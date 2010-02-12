@@ -1547,39 +1547,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                         stride, 8);
 
                 }
-#if 0
-                /* perform the left edge filter if:
-                 *   - the fragment is not on the left column
-                 *   - the fragment is coded in this frame
-                 *   - the fragment is not coded in this frame but the left
-                 *     fragment is coded in this frame (this is done instead
-                 *     of a right edge filter when rendering the left fragment
-                 *     since this fragment is not available yet) */
-                if ((x > 0) &&
-                    ((s->all_fragments[i].coding_method != MODE_COPY) ||
-                     ((s->all_fragments[i].coding_method == MODE_COPY) &&
-                      (s->all_fragments[i - 1].coding_method != MODE_COPY)) )) {
-                    horizontal_filter(
-                        output_plane + s->all_fragments[i].first_pixel + 7*stride,
-                        -stride, s->bounding_values_array + 127);
-                }
-
-                /* perform the top edge filter if:
-                 *   - the fragment is not on the top row
-                 *   - the fragment is coded in this frame
-                 *   - the fragment is not coded in this frame but the above
-                 *     fragment is coded in this frame (this is done instead
-                 *     of a bottom edge filter when rendering the above
-                 *     fragment since this fragment is not available yet) */
-                if ((y > 0) &&
-                    ((s->all_fragments[i].coding_method != MODE_COPY) ||
-                     ((s->all_fragments[i].coding_method == MODE_COPY) &&
-                      (s->all_fragments[i - fragment_width].coding_method != MODE_COPY)) )) {
-                    vertical_filter(
-                        output_plane + s->all_fragments[i].first_pixel - stride,
-                        -stride, s->bounding_values_array + 127);
-                }
-#endif
             }
         }
     }
@@ -1600,27 +1567,6 @@ static void apply_loop_filter(Vp3DecodeContext *s)
     int plane;
     int x, y;
     int *bounding_values= s->bounding_values_array+127;
-
-#if 0
-    int bounding_values_array[256];
-    int filter_limit;
-
-    /* find the right loop limit value */
-    for (x = 63; x >= 0; x--) {
-        if (vp31_ac_scale_factor[x] >= s->quality_index)
-            break;
-    }
-    filter_limit = vp31_filter_limit_values[s->quality_index];
-
-    /* set up the bounding values */
-    memset(bounding_values_array, 0, 256 * sizeof(int));
-    for (x = 0; x < filter_limit; x++) {
-        bounding_values[-x - filter_limit] = -filter_limit + x;
-        bounding_values[-x] = -x;
-        bounding_values[x] = x;
-        bounding_values[x + filter_limit] = filter_limit - x;
-    }
-#endif
 
     for (plane = 0; plane < 3; plane++) {
         int width           = s->fragment_width  >> !!plane;
