@@ -149,7 +149,7 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
             memset(row, 0, avctx->width);
             for (plane = 0; plane < avctx->bits_per_coded_sample; plane++) {
                 for(x = 0; x < planewidth && buf < buf_end; ) {
-                    char value = *buf++;
+                    int8_t value = *buf++;
                     int length;
                     if (value >= 0) {
                         length = value + 1;
@@ -166,7 +166,7 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
             }
         } else {
             for(x = 0; x < avctx->width && buf < buf_end; ) {
-                char value = *buf++;
+                int8_t value = *buf++;
                 int length;
                 if (value >= 0) {
                     length = value + 1;
