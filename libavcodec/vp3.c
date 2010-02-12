@@ -135,6 +135,7 @@ typedef struct Vp3DecodeContext {
     int keyframe;
     DSPContext dsp;
     int flipped_image;
+    int last_slice_end;
 
     int qps[3];
     int nqps;
@@ -1450,6 +1451,37 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int ye
     }
 }
 
+/**
+ * called when all pixels up to row y are complete
+ */
+static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
+{
+    int h, cy;
+    int offset[4];
+
+    if(s->avctx->draw_horiz_band==NULL)
+        return;
+
+    h= y - s->last_slice_end;
+    y -= h;
+
+    if (!s->flipped_image) {
+        if (y == 0)
+            h -= s->height - s->avctx->height;  // account for non-mod16
+        y = s->height - y - h;
+    }
+
+    cy = y >> 1;
+    offset[0] = s->current_frame.linesize[0]*y;
+    offset[1] = s->current_frame.linesize[1]*cy;
+    offset[2] = s->current_frame.linesize[2]*cy;
+    offset[3] = 0;
+
+    emms_c();
+    s->avctx->draw_horiz_band(s->avctx, &s->current_frame, offset, y, 3, h);
+    s->last_slice_end= y + h;
+}
+
 /*
  * Perform the final rendering for a particular slice of data.
  * The slice number ranges from 0..(macroblock_height - 1).
@@ -1624,7 +1656,9 @@ static void render_slice(Vp3DecodeContext *s, int slice)
       *     dispatch (slice - 1);
       */
 
-    emms_c();
+    // now that we've filtered the last rows, they're safe to display
+    if (slice)
+        vp3_draw_horiz_band(s, 16*slice);
 }
 
 /*
@@ -2008,6 +2042,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
+    s->last_slice_end = 0;
     for (i = 0; i < s->macroblock_height; i++)
         render_slice(s, i);
 
@@ -2016,6 +2051,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         int row = (s->height >> (3+!!i)) - 1;
         apply_loop_filter(s, i, row, row+1);
     }
+    vp3_draw_horiz_band(s, s->height);
 
     *data_size=sizeof(AVFrame);
     *(AVFrame*)data= s->current_frame;
@@ -2367,7 +2403,7 @@ AVCodec theora_decoder = {
     NULL,
     vp3_decode_end,
     vp3_decode_frame,
-    CODEC_CAP_DR1,
+    CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Theora"),
 };
@@ -2382,7 +2418,7 @@ AVCodec vp3_decoder = {
     NULL,
     vp3_decode_end,
     vp3_decode_frame,
-    CODEC_CAP_DR1,
+    CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("On2 VP3"),
 };
