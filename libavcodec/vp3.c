@@ -2131,15 +2131,6 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
         return -1;
     }
 
-    if (s->theora >= 0x030400)
-    {
-        skip_bits(gb, 32); /* total number of superblocks in a frame */
-        // fixme, the next field is 36bits long
-        skip_bits(gb, 32); /* total number of blocks in a frame */
-        skip_bits(gb, 4); /* total number of blocks in a frame */
-        skip_bits(gb, 32); /* total number of macroblocks in a frame */
-    }
-
     if (s->theora >= 0x030200) {
         visible_width  = get_bits_long(gb, 24);
         visible_height = get_bits_long(gb, 24);
@@ -2156,8 +2147,6 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     if (s->theora < 0x030200)
         skip_bits(gb, 5); /* keyframe frequency force */
     skip_bits(gb, 8); /* colorspace */
-    if (s->theora >= 0x030400)
-        skip_bits(gb, 2); /* pixel format: 420,res,422,444 */
     skip_bits(gb, 24); /* bitrate */
 
     skip_bits(gb, 6); /* quality hint */
@@ -2165,9 +2154,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     if (s->theora >= 0x030200)
     {
         skip_bits(gb, 5); /* keyframe frequency force */
-
-        if (s->theora < 0x030400)
-            skip_bits(gb, 5); /* spare bits */
+        skip_bits(gb, 2); /* pixel format: 420,res,422,444 */
+        skip_bits(gb, 3); /* reserved */
     }
 
 //    align_get_bits(gb);
