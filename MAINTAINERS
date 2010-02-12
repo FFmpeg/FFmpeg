@@ -207,6 +207,7 @@ Codecs:
   vqavideo.c                            Mike Melanson
   wavpack.c                             Kostya Shishkov
   wmaprodec.c                           Sascha Sommer
+  wmavoice.c                            Ronald S. Bultje
   wmv2.c                                Michael Niedermayer
   wnv1.c                                Kostya Shishkov
   xan.c                                 Mike Melanson

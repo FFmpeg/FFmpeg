@@ -57,6 +57,7 @@ version <next>:
 - concat protocol
 - Indeo 5 decoder
 - RTP depacketization of AMR
+- WMAVoice decoder
 
 
 
