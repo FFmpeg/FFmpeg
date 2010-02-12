@@ -39,7 +39,7 @@ typedef struct {
     int page_table_offset;
 #define MAX_PAGES  256        /** Deluxe Paint hardcoded value */
     Page pt[MAX_PAGES];       /** page table */
-    int page;                 /** current page */
+    int page;                 /** current page (or AVERROR_xxx code) */
     int record;               /** current record (with in page) */
 } AnmDemuxContext;
 
@@ -185,7 +185,7 @@ static int read_packet(AVFormatContext *s,
         return AVERROR(EIO);
 
     if (anm->page < 0)
-        return 0;
+        return anm->page;
 
 repeat:
     p = &anm->pt[anm->page];
