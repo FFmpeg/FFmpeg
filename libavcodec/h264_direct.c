@@ -379,7 +379,6 @@ single_col:
             if(!is_b8x8 && !(n&15))
                 *mb_type= (*mb_type & ~(MB_TYPE_8x8|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_P1L0|MB_TYPE_P1L1))|MB_TYPE_16x16|MB_TYPE_DIRECT2;
         }
-    }
 }
 
 static void pred_temp_direct_motion(H264Context * const h, int *mb_type){
