@@ -1406,6 +1406,8 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         int i = s->fragment_start[plane] + (y>>3)*(s->fragment_width>>!!plane);
 
         if (!s->flipped_image) stride = -stride;
+        if (CONFIG_GRAY && plane && (s->avctx->flags & CODEC_FLAG_GRAY))
+            continue;
 
 
         if(FFABS(stride) > 2048)
@@ -1424,8 +1426,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                 }
 
                 /* transform if this block was coded */
-                if ((s->all_fragments[i].coding_method != MODE_COPY) &&
-                    !((s->avctx->flags & CODEC_FLAG_GRAY) && plane)) {
+                if (s->all_fragments[i].coding_method != MODE_COPY) {
 
                     if ((s->all_fragments[i].coding_method == MODE_USING_GOLDEN) ||
                         (s->all_fragments[i].coding_method == MODE_GOLDEN_MV))
