@@ -216,7 +216,7 @@ single_col:
 
     if(h->direct_spatial_mv_pred){
         int ref[2];
-        int mv[2][2];
+        int mv[2];
         int list;
 
         /* ref = min(neighbors) */
@@ -237,24 +237,21 @@ single_col:
 
                 int match_count= (left_ref==ref[list]) + (top_ref==ref[list]) + (refc==ref[list]);
                 if(match_count > 1){ //most common
-                    mv[list][0]= mid_pred(A[0], B[0], C[0]);
-                    mv[list][1]= mid_pred(A[1], B[1], C[1]);
+                    mv[list]= (mid_pred(A[0], B[0], C[0])&0xFFFF)
+                             +(mid_pred(A[1], B[1], C[1])<<16);
                 }else {
                     assert(match_count==1);
                     if(left_ref==ref[list]){
-                        mv[list][0]= A[0];
-                        mv[list][1]= A[1];
+                        mv[list]= *(uint32_t*)A;
                     }else if(top_ref==ref[list]){
-                        mv[list][0]= B[0];
-                        mv[list][1]= B[1];
+                        mv[list]= *(uint32_t*)B;
                     }else{
-                        mv[list][0]= C[0];
-                        mv[list][1]= C[1];
+                        mv[list]= *(uint32_t*)C;
                     }
                 }
             }else{
                 int mask= ~(MB_TYPE_L0 << (2*list));
-                mv[list][0] = mv[list][1] = 0;
+                mv[list] = 0;
                 ref[list] = -1;
                 if(!is_b8x8)
                     *mb_type &= mask;
@@ -288,13 +285,13 @@ single_col:
                        || (l1ref0[xy8]  < 0 && l1ref1[xy8] == 0 && FFABS(l1mv1[xy4][0]) <= 1 && FFABS(l1mv1[xy4][1]) <= 1))){
                     a=b=0;
                     if(ref[0] > 0)
-                        a= pack16to32(mv[0][0],mv[0][1]);
+                        a= mv[0];
                     if(ref[1] > 0)
-                        b= pack16to32(mv[1][0],mv[1][1]);
+                        b= mv[1];
                     n++;
                 }else{
-                    a= pack16to32(mv[0][0],mv[0][1]);
-                    b= pack16to32(mv[1][0],mv[1][1]);
+                    a= mv[0];
+                    b= mv[1];
                 }
                 fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, a, 4);
                 fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, b, 4);
@@ -312,12 +309,12 @@ single_col:
                        && h->x264_build>33U))){
                 a=b=0;
                 if(ref[0] > 0)
-                    a= pack16to32(mv[0][0],mv[0][1]);
+                    a= mv[0];
                 if(ref[1] > 0)
-                    b= pack16to32(mv[1][0],mv[1][1]);
+                    b= mv[1];
             }else{
-                a= pack16to32(mv[0][0],mv[0][1]);
-                b= pack16to32(mv[1][0],mv[1][1]);
+                a= mv[0];
+                b= mv[1];
             }
             fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, a, 4);
             fill_rectangle(&h->mv_cache[1][scan8[0]], 4, 4, 8, b, 4);
@@ -331,8 +328,8 @@ single_col:
                     continue;
                 h->sub_mb_type[i8] = sub_mb_type;
 
-                fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, pack16to32(mv[0][0],mv[0][1]), 4);
-                fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, pack16to32(mv[1][0],mv[1][1]), 4);
+                fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, mv[0], 4);
+                fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, mv[1], 4);
                 fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[0], 1);
                 fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[1], 1);
 
