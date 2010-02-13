@@ -1136,7 +1136,6 @@ static int fill_filter_caches(H264Context *h, int mb_type){
     const int mb_xy= h->mb_xy;
     int top_xy, left_xy[2];
     int top_type, left_type[2];
-    int i;
 
     top_xy     = mb_xy  - (s->mb_stride << MB_FIELD);
 

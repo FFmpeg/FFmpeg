@@ -514,7 +514,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 )
                     *(uint64_t*)bS= 0x0004000400040004ULL;
             } else {
-                int i, l;
+                int i;
                 int mv_done;
 
                 if( dir && FRAME_MBAFF && IS_INTERLACED(mb_type ^ mbm_type)) {
@@ -590,7 +590,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         if( IS_INTRA(mb_type)) {
             *(uint64_t*)bS= 0x0003000300030003ULL;
         } else {
-            int i, l;
+            int i;
             int mv_done;
 
             if( edge & mask_edge ) {
@@ -657,7 +657,6 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
     const int mvy_limit = IS_INTERLACED(mb_type) ? 2 : 4;
     int first_vertical_edge_done = 0;
     av_unused int dir;
-    int list;
 
     if (FRAME_MBAFF
             // and current and left pair do not have the same interlaced type
