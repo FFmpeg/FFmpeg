@@ -265,7 +265,13 @@ single_col:
             sub_mb_type |= MB_TYPE_L0L1;
         }
 
-        if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
+        if(!is_b8x8 && (mv[0]|mv[1]) == 0){
+            fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
+            fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
+            fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, 0, 4);
+            fill_rectangle(&h->mv_cache[1][scan8[0]], 4, 4, 8, 0, 4);
+            *mb_type= (*mb_type & ~(MB_TYPE_8x8|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_P1L0|MB_TYPE_P1L1))|MB_TYPE_16x16|MB_TYPE_DIRECT2;
+        }else if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
             int n=0;
             for(i8=0; i8<4; i8++){
                 int x8 = i8&1;
