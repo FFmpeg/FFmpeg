@@ -206,12 +206,6 @@ typedef struct Vp3DecodeContext {
      * index. */
     int *superblock_fragments;
 
-    /* This table contains superblock_count * 4 entries. Each set of 4
-     * numbers corresponds to the macroblock indexes 0..3 of the superblock.
-     * An entry will be -1 to indicate that no entry corresponds to that
-     * index. */
-    int *superblock_macroblocks;
-
     /* This table contains macroblock_count * 6 entries. Each set of 6
      * numbers corresponds to the fragment indexes 0..5 which comprise
      * the macroblock (4 Y fragments and 2 C fragments). */
@@ -278,14 +272,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
          1,  1,  0, -1,
          0,  1,  0, -1,
         -1,  0, -1,  0
-    };
-
-    static const signed char travel_width_mb[4] = {
-         1,  0,  1,  0
-    };
-
-    static const signed char travel_height_mb[4] = {
-         0,  1,  0, -1
     };
 
     hilbert_walk_mb[0] = 1;
@@ -358,45 +344,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
                 s->superblock_fragments[mapping_index] = current_fragment;
             } else {
                 s->superblock_fragments[mapping_index] = -1;
-            }
-
-            mapping_index++;
-        }
-    }
-
-    /* initialize the superblock <-> macroblock mapping; iterate through
-     * all of the Y plane superblocks to build this mapping */
-    right_edge = s->macroblock_width;
-    bottom_edge = s->macroblock_height;
-    current_width = -1;
-    current_height = 0;
-    superblock_row_inc = s->macroblock_width -
-        (s->y_superblock_width * 2 - s->macroblock_width);
-    mapping_index = 0;
-    current_macroblock = -1;
-    for (i = 0; i < s->u_superblock_start; i++) {
-
-        if (current_width >= right_edge - 1) {
-            /* reset width and move to next superblock row */
-            current_width = -1;
-            current_height += 2;
-
-            /* macroblock is now at the start of a new superblock row */
-            current_macroblock += superblock_row_inc;
-        }
-
-        /* iterate through each potential macroblock in the superblock */
-        for (j = 0; j < 4; j++) {
-            current_macroblock += hilbert_walk_mb[j];
-            current_width += travel_width_mb[j];
-            current_height += travel_height_mb[j];
-
-            /* check if the macroblock is in bounds */
-            if ((current_width < right_edge) &&
-                (current_height < bottom_edge)) {
-                s->superblock_macroblocks[mapping_index] = current_macroblock;
-            } else {
-                s->superblock_macroblocks[mapping_index] = -1;
             }
 
             mapping_index++;
@@ -757,7 +704,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
  */
 static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
 {
-    int i, j, k;
+    int i, j, k, sb_x, sb_y;
     int scheme;
     int current_macroblock;
     int current_fragment;
@@ -783,18 +730,17 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
 
         /* iterate through all of the macroblocks that contain 1 or more
          * coded fragments */
-        for (i = 0; i < s->u_superblock_start; i++) {
+        for (sb_y = 0; sb_y < s->y_superblock_height; sb_y++) {
+            for (sb_x = 0; sb_x < s->y_superblock_width; sb_x++) {
 
             for (j = 0; j < 4; j++) {
-                current_macroblock = s->superblock_macroblocks[i * 4 + j];
-                if ((current_macroblock == -1) ||
+                int mb_x = 2*sb_x +   (j>>1);
+                int mb_y = 2*sb_y + (((j>>1)+j)&1);
+                current_macroblock = mb_y * s->macroblock_width + mb_x;
+
+                if (mb_x >= s->macroblock_width || mb_y >= s->macroblock_height ||
                     (s->macroblock_coding[current_macroblock] == MODE_COPY))
                     continue;
-                if (current_macroblock >= s->macroblock_count) {
-                    av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_modes(): bad macroblock number (%d >= %d)\n",
-                        current_macroblock, s->macroblock_count);
-                    return 1;
-                }
 
                 /* mode 7 means get 3 bits for each coding mode */
                 if (scheme == 7)
@@ -823,6 +769,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                             coding_mode;
                 }
             }
+            }
         }
     }
 
@@ -835,7 +782,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
  */
 static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
 {
-    int i, j, k, l;
+    int j, k, l, sb_x, sb_y;
     int coding_mode;
     int motion_x[6];
     int motion_y[6];
@@ -857,18 +804,17 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
 
     /* iterate through all of the macroblocks that contain 1 or more
      * coded fragments */
-    for (i = 0; i < s->u_superblock_start; i++) {
+    for (sb_y = 0; sb_y < s->y_superblock_height; sb_y++) {
+        for (sb_x = 0; sb_x < s->y_superblock_width; sb_x++) {
 
         for (j = 0; j < 4; j++) {
-            current_macroblock = s->superblock_macroblocks[i * 4 + j];
-            if ((current_macroblock == -1) ||
+            int mb_x = 2*sb_x +   (j>>1);
+            int mb_y = 2*sb_y + (((j>>1)+j)&1);
+            current_macroblock = mb_y * s->macroblock_width + mb_x;
+
+            if (mb_x >= s->macroblock_width || mb_y >= s->macroblock_height ||
                 (s->macroblock_coding[current_macroblock] == MODE_COPY))
                 continue;
-            if (current_macroblock >= s->macroblock_count) {
-                av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_vectors(): bad macroblock number (%d >= %d)\n",
-                    current_macroblock, s->macroblock_count);
-                return 1;
-            }
 
             current_fragment = s->macroblock_fragments[current_macroblock * 6];
             if (current_fragment >= s->fragment_count) {
@@ -985,6 +931,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     s->all_fragments[current_fragment].motion_y = motion_y[0];
                 }
             }
+        }
         }
     }
 
@@ -1834,10 +1781,9 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
 
     /* work out the block mapping tables */
     s->superblock_fragments = av_malloc(s->superblock_count * 16 * sizeof(int));
-    s->superblock_macroblocks = av_malloc(s->superblock_count * 4 * sizeof(int));
     s->macroblock_fragments = av_malloc(s->macroblock_count * 6 * sizeof(int));
     s->macroblock_coding = av_malloc(s->macroblock_count + 1);
-    if (!s->superblock_fragments || !s->superblock_macroblocks ||
+    if (!s->superblock_fragments ||
         !s->macroblock_fragments || !s->macroblock_coding) {
         vp3_decode_end(avctx);
         return -1;
@@ -2035,7 +1981,6 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     av_free(s->coded_fragment_list);
     av_free(s->fast_fragment_list);
     av_free(s->superblock_fragments);
-    av_free(s->superblock_macroblocks);
     av_free(s->macroblock_fragments);
     av_free(s->macroblock_coding);
 
