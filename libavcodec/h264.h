@@ -950,7 +950,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
     if(IS_INTER(mb_type) || (IS_DIRECT(mb_type) && h->direct_spatial_mv_pred)){
         int list;
         for(list=0; list<h->list_count; list++){
-            if(!USES_LIST(mb_type, list) && !IS_DIRECT(mb_type)){
+            if(!USES_LIST(mb_type, list)){
                 /*if(!h->mv_cache_clean[list]){
                     memset(h->mv_cache [list],  0, 8*5*2*sizeof(int16_t)); //FIXME clean only input? clean at all?
                     memset(h->ref_cache[list], PART_NOT_AVAILABLE, 8*5*sizeof(int8_t));
@@ -1449,7 +1449,7 @@ static void decode_mb_skip(H264Context *h){
     if( h->slice_type_nos == FF_B_TYPE )
     {
         // just for fill_caches. pred_direct_motion will set the real mb_type
-        mb_type|= MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;
+        mb_type|= MB_TYPE_L0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;
 
         fill_decode_caches(h, mb_type); //FIXME check what is needed and what not ...
         ff_h264_pred_direct_motion(h, &mb_type);

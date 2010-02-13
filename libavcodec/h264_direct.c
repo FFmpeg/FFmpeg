@@ -159,7 +159,6 @@ static void pred_spatial_direct_motion(H264Context * const h, int *mb_type){
 
 #define MB_TYPE_16x16_OR_INTRA (MB_TYPE_16x16|MB_TYPE_INTRA4x4|MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM)
 
-    *mb_type |= MB_TYPE_L0L1;
 
     /* ref = min(neighbors) */
     for(list=0; list<2; list++){

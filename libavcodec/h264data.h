@@ -197,7 +197,7 @@ static const PMbInfo p_sub_mb_type_info[4]={
 };
 
 static const PMbInfo b_mb_type_info[23]={
-{MB_TYPE_DIRECT2                                                   , 1, },
+{MB_TYPE_DIRECT2|MB_TYPE_L0L1                                      , 1, },
 {MB_TYPE_16x16|MB_TYPE_P0L0                                       , 1, },
 {MB_TYPE_16x16             |MB_TYPE_P0L1                          , 1, },
 {MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1                          , 1, },
