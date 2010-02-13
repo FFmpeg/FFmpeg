@@ -648,6 +648,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
     int current_fragment;
     int coding_mode;
     int custom_mode_alphabet[CODING_MODE_COUNT];
+    const int *alphabet;
 
     if (s->keyframe) {
         for (i = 0; i < s->fragment_count; i++)
@@ -664,7 +665,9 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                 custom_mode_alphabet[i] = MODE_INTER_NO_MV;
             for (i = 0; i < 8; i++)
                 custom_mode_alphabet[get_bits(gb, 3)] = i;
-        }
+            alphabet = custom_mode_alphabet;
+        } else
+            alphabet = ModeAlphabet[scheme-1];
 
         /* iterate through all of the macroblocks that contain 1 or more
          * coded fragments */
@@ -697,11 +700,8 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                 /* mode 7 means get 3 bits for each coding mode */
                 if (scheme == 7)
                     coding_mode = get_bits(gb, 3);
-                else if(scheme == 0)
-                    coding_mode = custom_mode_alphabet
-                        [get_vlc2(gb, s->mode_code_vlc.table, 3, 3)];
                 else
-                    coding_mode = ModeAlphabet[scheme-1]
+                    coding_mode = alphabet
                         [get_vlc2(gb, s->mode_code_vlc.table, 3, 3)];
 
                 s->macroblock_coding[current_macroblock] = coding_mode;
