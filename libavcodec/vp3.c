@@ -53,8 +53,6 @@ typedef struct Coeff {
 //FIXME split things out into their own arrays
 typedef struct Vp3Fragment {
     Coeff *next_coeff;
-    /* this is the macroblock that the fragment belongs to */
-    uint16_t macroblock;
     uint8_t coding_method;
     int8_t motion_x;
     int8_t motion_y;
@@ -346,48 +344,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
         }
     }
 
-    /* initialize the macroblock <-> fragment mapping */
-    current_fragment = 0;
-    current_macroblock = 0;
-    for (i = 0; i < s->fragment_height; i += 2) {
-
-        for (j = 0; j < s->fragment_width; j += 2) {
-
-            s->all_fragments[current_fragment].macroblock = current_macroblock;
-
-            if (j + 1 < s->fragment_width) {
-                s->all_fragments[current_fragment + 1].macroblock = current_macroblock;
-            }
-
-            if (i + 1 < s->fragment_height) {
-                s->all_fragments[current_fragment + s->fragment_width].macroblock =
-                    current_macroblock;
-            }
-
-            if ((j + 1 < s->fragment_width) && (i + 1 < s->fragment_height)) {
-                s->all_fragments[current_fragment + s->fragment_width + 1].macroblock =
-                    current_macroblock;
-            }
-
-            /* C planes */
-            c_fragment = s->fragment_start[1] +
-                (i * s->fragment_width / 4) + (j / 2);
-            s->all_fragments[c_fragment].macroblock = s->macroblock_count;
-
-            c_fragment = s->fragment_start[2] +
-                (i * s->fragment_width / 4) + (j / 2);
-            s->all_fragments[c_fragment].macroblock = s->macroblock_count;
-
-            if (j + 2 <= s->fragment_width)
-                current_fragment += 2;
-            else
-                current_fragment++;
-            current_macroblock++;
-        }
-
-        current_fragment += s->fragment_width;
-    }
-
     return 0;  /* successful path out */
 }
 
@@ -623,7 +579,6 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                             first_c_fragment_seen = 1;
                         }
                         s->coded_fragment_list_index++;
-                        s->macroblock_coding[s->all_fragments[current_fragment].macroblock] = MODE_INTER_NO_MV;
                     } else {
                         /* not coded; copy this fragment from the prior frame */
                         s->all_fragments[current_fragment].coding_method =
@@ -647,7 +602,6 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                         first_c_fragment_seen = 1;
                     }
                     s->coded_fragment_list_index++;
-                    s->macroblock_coding[s->all_fragments[current_fragment].macroblock] = MODE_INTER_NO_MV;
                 }
             }
         }
@@ -720,14 +674,25 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
             for (j = 0; j < 4; j++) {
                 int mb_x = 2*sb_x +   (j>>1);
                 int mb_y = 2*sb_y + (((j>>1)+j)&1);
+                int frags_coded = 0;
                 current_macroblock = mb_y * s->macroblock_width + mb_x;
 
-                if (mb_x >= s->macroblock_width || mb_y >= s->macroblock_height ||
-                    (s->macroblock_coding[current_macroblock] == MODE_COPY))
+                if (mb_x >= s->macroblock_width || mb_y >= s->macroblock_height)
                     continue;
 
 #define BLOCK_X (2*mb_x + (k&1))
 #define BLOCK_Y (2*mb_y + (k>>1))
+                /* coding modes are only stored if the macroblock has at least one
+                 * luma block coded, otherwise it must be INTER_NO_MV */
+                for (k = 0; k < 4; k++) {
+                    current_fragment = BLOCK_Y*s->fragment_width + BLOCK_X;
+                    if (s->all_fragments[current_fragment].coding_method != MODE_COPY)
+                        break;
+                }
+                if (k == 4) {
+                    s->macroblock_coding[current_macroblock] = MODE_INTER_NO_MV;
+                    continue;
+                }
 
                 /* mode 7 means get 3 bits for each coding mode */
                 if (scheme == 7)
