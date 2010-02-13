@@ -28,7 +28,7 @@
 // The idiosyncrasies of GSM-in-WAV are explained at http://kbs.cs.tu-berlin.de/~jutta/toast.html
 
 #include "avcodec.h"
-#include <gsm.h>
+#include <gsm/gsm.h>
 
 // gsm.h misses some essential constants
 #define GSM_BLOCK_SIZE 33
