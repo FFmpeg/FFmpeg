@@ -1015,7 +1015,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
             if((IS_SKIP(mb_type) || IS_DIRECT(mb_type)) && !FRAME_MBAFF)
                 continue;
 
-            if(!IS_DIRECT(mb_type)) {
+            if(!(mb_type&(MB_TYPE_SKIP|MB_TYPE_DIRECT2))) {
             h->ref_cache[list][scan8[5 ]+1] =
             h->ref_cache[list][scan8[7 ]+1] =
             h->ref_cache[list][scan8[13]+1] =  //FIXME remove past 3 (init somewhere else)
