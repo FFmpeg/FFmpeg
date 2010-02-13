@@ -947,7 +947,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
     }
 
 #if 1
-    if(IS_INTER(mb_type) || IS_DIRECT(mb_type)){
+    if(IS_INTER(mb_type) || (IS_DIRECT(mb_type) && h->direct_spatial_mv_pred)){
         int list;
         for(list=0; list<h->list_count; list++){
             if(!USES_LIST(mb_type, list) && !IS_DIRECT(mb_type)){
@@ -958,6 +958,8 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 }*/
                 continue;
             }
+            assert(!(IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred));
+
             h->mv_cache_clean[list]= 0;
 
             if(USES_LIST(top_type, list)){
@@ -989,9 +991,6 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                     h->ref_cache[list][cache_idx+8]= (left_type[i]) ? LIST_NOT_USED : PART_NOT_AVAILABLE;
                 }
             }
-
-            if((IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred))
-                continue;
 
             if(USES_LIST(topleft_type, list)){
                 const int b_xy = h->mb2b_xy[topleft_xy] + 3 + h->b_stride + (topleft_partition & 2*h->b_stride);
