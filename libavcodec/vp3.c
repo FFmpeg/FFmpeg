@@ -206,10 +206,6 @@ typedef struct Vp3DecodeContext {
      * index. */
     int *superblock_fragments;
 
-    /* This table contains macroblock_count * 6 entries. Each set of 6
-     * numbers corresponds to the fragment indexes 0..5 which comprise
-     * the macroblock (4 Y fragments and 2 C fragments). */
-    int *macroblock_fragments;
     /* This is an array that indicates how a particular macroblock
      * is coded. */
     unsigned char *macroblock_coding;
@@ -353,46 +349,34 @@ static int init_block_mapping(Vp3DecodeContext *s)
     /* initialize the macroblock <-> fragment mapping */
     current_fragment = 0;
     current_macroblock = 0;
-    mapping_index = 0;
     for (i = 0; i < s->fragment_height; i += 2) {
 
         for (j = 0; j < s->fragment_width; j += 2) {
 
             s->all_fragments[current_fragment].macroblock = current_macroblock;
-            s->macroblock_fragments[mapping_index++] = current_fragment;
 
             if (j + 1 < s->fragment_width) {
                 s->all_fragments[current_fragment + 1].macroblock = current_macroblock;
-                s->macroblock_fragments[mapping_index++] = current_fragment + 1;
-            } else
-                s->macroblock_fragments[mapping_index++] = -1;
+            }
 
             if (i + 1 < s->fragment_height) {
                 s->all_fragments[current_fragment + s->fragment_width].macroblock =
                     current_macroblock;
-                s->macroblock_fragments[mapping_index++] =
-                    current_fragment + s->fragment_width;
-            } else
-                s->macroblock_fragments[mapping_index++] = -1;
+            }
 
             if ((j + 1 < s->fragment_width) && (i + 1 < s->fragment_height)) {
                 s->all_fragments[current_fragment + s->fragment_width + 1].macroblock =
                     current_macroblock;
-                s->macroblock_fragments[mapping_index++] =
-                    current_fragment + s->fragment_width + 1;
-            } else
-                s->macroblock_fragments[mapping_index++] = -1;
+            }
 
             /* C planes */
             c_fragment = s->fragment_start[1] +
                 (i * s->fragment_width / 4) + (j / 2);
             s->all_fragments[c_fragment].macroblock = s->macroblock_count;
-            s->macroblock_fragments[mapping_index++] = c_fragment;
 
             c_fragment = s->fragment_start[2] +
                 (i * s->fragment_width / 4) + (j / 2);
             s->all_fragments[c_fragment].macroblock = s->macroblock_count;
-            s->macroblock_fragments[mapping_index++] = c_fragment;
 
             if (j + 2 <= s->fragment_width)
                 current_fragment += 2;
@@ -742,6 +726,9 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                     (s->macroblock_coding[current_macroblock] == MODE_COPY))
                     continue;
 
+#define BLOCK_X (2*mb_x + (k&1))
+#define BLOCK_Y (2*mb_y + (k>>1))
+
                 /* mode 7 means get 3 bits for each coding mode */
                 if (scheme == 7)
                     coding_mode = get_bits(gb, 3);
@@ -753,16 +740,17 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                         [get_vlc2(gb, s->mode_code_vlc.table, 3, 3)];
 
                 s->macroblock_coding[current_macroblock] = coding_mode;
-                for (k = 0; k < 6; k++) {
+                for (k = 0; k < 4; k++) {
                     current_fragment =
-                        s->macroblock_fragments[current_macroblock * 6 + k];
-                    if (current_fragment == -1)
-                        continue;
-                    if (current_fragment >= s->fragment_count) {
-                        av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_modes(): bad fragment number (%d >= %d)\n",
-                            current_fragment, s->fragment_count);
-                        return 1;
-                    }
+                        BLOCK_Y*s->fragment_width + BLOCK_X;
+                    if (s->all_fragments[current_fragment].coding_method !=
+                        MODE_COPY)
+                        s->all_fragments[current_fragment].coding_method =
+                            coding_mode;
+                }
+                for (k = 0; k < 2; k++) {
+                    current_fragment = s->fragment_start[k+1] +
+                        mb_y*(s->fragment_width>>1) + mb_x;
                     if (s->all_fragments[current_fragment].coding_method !=
                         MODE_COPY)
                         s->all_fragments[current_fragment].coding_method =
@@ -816,12 +804,6 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 (s->macroblock_coding[current_macroblock] == MODE_COPY))
                 continue;
 
-            current_fragment = s->macroblock_fragments[current_macroblock * 6];
-            if (current_fragment >= s->fragment_count) {
-                av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_vectors(): bad fragment number (%d >= %d\n",
-                    current_fragment, s->fragment_count);
-                return 1;
-            }
             switch (s->macroblock_coding[current_macroblock]) {
 
             case MODE_INTER_PLUS_MV:
@@ -854,8 +836,9 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                  * Y fragment, then average for the C fragment vectors */
                 motion_x[4] = motion_y[4] = 0;
                 for (k = 0; k < 4; k++) {
+                    current_fragment = BLOCK_Y*s->fragment_width + BLOCK_X;
                     for (l = 0; l < s->coded_fragment_list_index; l++)
-                        if (s->coded_fragment_list[l] == s->macroblock_fragments[6*current_macroblock + k])
+                        if (s->coded_fragment_list[l] == current_fragment)
                             break;
                     if (l < s->coded_fragment_list_index) {
                         if (coding_mode == 0) {
@@ -913,19 +896,23 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
             }
 
             /* assign the motion vectors to the correct fragments */
-            for (k = 0; k < 6; k++) {
+            for (k = 0; k < 4; k++) {
                 current_fragment =
-                    s->macroblock_fragments[current_macroblock * 6 + k];
-                if (current_fragment == -1)
-                    continue;
-                if (current_fragment >= s->fragment_count) {
-                    av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_vectors(): bad fragment number (%d >= %d)\n",
-                        current_fragment, s->fragment_count);
-                    return 1;
-                }
+                    BLOCK_Y*s->fragment_width + BLOCK_X;
                 if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
                     s->all_fragments[current_fragment].motion_x = motion_x[k];
                     s->all_fragments[current_fragment].motion_y = motion_y[k];
+                } else {
+                    s->all_fragments[current_fragment].motion_x = motion_x[0];
+                    s->all_fragments[current_fragment].motion_y = motion_y[0];
+                }
+            }
+            for (k = 0; k < 2; k++) {
+                current_fragment = s->fragment_start[k+1] +
+                    mb_y*(s->fragment_width>>1) + mb_x;
+                if (s->macroblock_coding[current_macroblock] == MODE_INTER_FOURMV) {
+                    s->all_fragments[current_fragment].motion_x = motion_x[k+4];
+                    s->all_fragments[current_fragment].motion_y = motion_y[k+4];
                 } else {
                     s->all_fragments[current_fragment].motion_x = motion_x[0];
                     s->all_fragments[current_fragment].motion_y = motion_y[0];
@@ -1441,7 +1428,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
     int motion_halfpel_index;
     uint8_t *motion_source;
     int plane;
-    int current_macroblock_entry = slice * s->macroblock_width * 6;
 
     if (slice >= s->macroblock_height)
         return;
@@ -1455,7 +1441,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         int plane_height      = s->height >> !!plane;
         int y =        slice *  FRAGMENT_PIXELS << !plane ;
         int slice_height = y + (FRAGMENT_PIXELS << !plane);
-        int i = s->macroblock_fragments[current_macroblock_entry + plane + 3*!!plane];
+        int i = s->fragment_start[plane] + (y>>3)*(s->fragment_width>>!!plane);
 
         if (!s->flipped_image) stride = -stride;
 
@@ -1781,10 +1767,8 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
 
     /* work out the block mapping tables */
     s->superblock_fragments = av_malloc(s->superblock_count * 16 * sizeof(int));
-    s->macroblock_fragments = av_malloc(s->macroblock_count * 6 * sizeof(int));
     s->macroblock_coding = av_malloc(s->macroblock_count + 1);
-    if (!s->superblock_fragments ||
-        !s->macroblock_fragments || !s->macroblock_coding) {
+    if (!s->superblock_fragments || !s->macroblock_coding) {
         vp3_decode_end(avctx);
         return -1;
     }
@@ -1981,7 +1965,6 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     av_free(s->coded_fragment_list);
     av_free(s->fast_fragment_list);
     av_free(s->superblock_fragments);
-    av_free(s->macroblock_fragments);
     av_free(s->macroblock_coding);
 
     for (i = 0; i < 16; i++) {
