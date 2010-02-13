@@ -1014,7 +1014,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 h->ref_cache[list][scan8[0] + 4 - 1*8]= topright_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
             }
 
-            if((IS_SKIP(mb_type) || IS_DIRECT(mb_type)) && !FRAME_MBAFF)
+            if((mb_type&(MB_TYPE_SKIP|MB_TYPE_DIRECT2)) && !FRAME_MBAFF)
                 continue;
 
             if(!(mb_type&(MB_TYPE_SKIP|MB_TYPE_DIRECT2))) {
