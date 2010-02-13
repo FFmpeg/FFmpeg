@@ -1215,7 +1215,7 @@ static int fill_filter_caches(H264Context *h, int mb_type){
                 *(uint32_t*)&h->ref_cache[list][scan8[ 0]] =
                 *(uint32_t*)&h->ref_cache[list][scan8[ 2]] =
                 *(uint32_t*)&h->ref_cache[list][scan8[ 8]] =
-                *(uint32_t*)&h->ref_cache[list][scan8[10]] = ((LIST_NOT_USED)&0xFF)*0x01010101;
+                *(uint32_t*)&h->ref_cache[list][scan8[10]] = ((LIST_NOT_USED)&0xFF)*0x01010101U;
                 continue;
             }
 
@@ -1306,7 +1306,7 @@ static int fill_filter_caches(H264Context *h, int mb_type){
                 h->ref_cache[list][scan8[0] + 3 - 1*8]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 1]];
             }else{
                 AV_ZERO128(h->mv_cache[list][scan8[0] + 0 - 1*8]);
-                *(uint32_t*)&h->ref_cache[list][scan8[0] + 0 - 1*8]= ((LIST_NOT_USED)&0xFF)*0x01010101;
+                *(uint32_t*)&h->ref_cache[list][scan8[0] + 0 - 1*8]= ((LIST_NOT_USED)&0xFF)*0x01010101U;
             }
 
             if(!IS_INTERLACED(mb_type^left_type[0])){
