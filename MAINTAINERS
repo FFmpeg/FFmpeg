@@ -107,6 +107,7 @@ Codecs:
   aacenc.* aaccoder.* aacpsy.*          Alex Converse
   ac3*                                  Justin Ruggles
   alacenc.c                             Jaikrishnan Menon
+  alsdec.c                              Thilo Borgmann
   apedec.c                              Kostya Shishkov
   asv*                                  Michael Niedermayer
   atrac3*                               Benjamin Larsson
