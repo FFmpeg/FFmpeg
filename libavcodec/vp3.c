@@ -735,7 +735,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
  */
 static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
 {
-    int j, k, l, sb_x, sb_y;
+    int j, k, sb_x, sb_y;
     int coding_mode;
     int motion_x[6];
     int motion_y[6];
@@ -802,10 +802,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 motion_x[4] = motion_y[4] = 0;
                 for (k = 0; k < 4; k++) {
                     current_fragment = BLOCK_Y*s->fragment_width + BLOCK_X;
-                    for (l = 0; l < s->coded_fragment_list_index; l++)
-                        if (s->coded_fragment_list[l] == current_fragment)
-                            break;
-                    if (l < s->coded_fragment_list_index) {
+                    if (s->all_fragments[current_fragment].coding_method != MODE_COPY) {
                         if (coding_mode == 0) {
                             motion_x[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
                             motion_y[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
