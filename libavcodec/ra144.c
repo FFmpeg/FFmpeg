@@ -219,7 +219,7 @@ static void int_to_int16(int16_t *out, const int *inp)
 {
     int i;
 
-    for (i=0; i < 30; i++)
+    for (i=0; i < 10; i++)
         *out++ = *inp++;
 }
 
@@ -276,7 +276,7 @@ static int interp(RA144Context *ractx, int16_t *out, int a,
 
     // Interpolate block coefficients from the this frame's forth block and
     // last frame's forth block.
-    for (i=0; i<30; i++)
+    for (i=0; i<10; i++)
         out[i] = (a * ractx->lpc_coef[0][i] + b * ractx->lpc_coef[1][i])>> 2;
 
     if (eval_refl(work, out, ractx->avctx)) {
@@ -297,7 +297,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
     int buf_size = avpkt->size;
     static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
     unsigned int refl_rms[4];    // RMS of the reflection coefficients
-    uint16_t block_coefs[4][30]; // LPC coefficients of each sub-block
+    uint16_t block_coefs[4][10]; // LPC coefficients of each sub-block
     unsigned int lpc_refl[10];   // LPC reflection coefficients of the frame
     int i, j;
     int16_t *data = vdata;
