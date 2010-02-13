@@ -1026,7 +1026,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
             *(uint32_t*)h->mv_cache [list][scan8[4 ]]=
             *(uint32_t*)h->mv_cache [list][scan8[12]]= 0;
 
-            if( CABAC ) {
+            if( CABAC && !IS_DIRECT(mb_type)) {
                 /* XXX beurk, Load mvd */
                 if(USES_LIST(top_type, list)){
                     const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
