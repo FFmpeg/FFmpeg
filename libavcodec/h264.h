@@ -1015,6 +1015,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
             if((IS_SKIP(mb_type) || IS_DIRECT(mb_type)) && !FRAME_MBAFF)
                 continue;
 
+            if(!IS_DIRECT(mb_type)) {
             h->ref_cache[list][scan8[5 ]+1] =
             h->ref_cache[list][scan8[7 ]+1] =
             h->ref_cache[list][scan8[13]+1] =  //FIXME remove past 3 (init somewhere else)
@@ -1026,7 +1027,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
             *(uint32_t*)h->mv_cache [list][scan8[4 ]]=
             *(uint32_t*)h->mv_cache [list][scan8[12]]= 0;
 
-            if( CABAC && !IS_DIRECT(mb_type)) {
+            if( CABAC ) {
                 /* XXX beurk, Load mvd */
                 if(USES_LIST(top_type, list)){
                     const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
@@ -1084,7 +1085,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                         h->direct_cache[scan8[0] - 1 + 2*8]= 0;
                 }
             }
-
+            }
             if(FRAME_MBAFF){
 #define MAP_MVS\
                     MAP_F2F(scan8[0] - 1 - 1*8, topleft_type)\
