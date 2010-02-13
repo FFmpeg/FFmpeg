@@ -140,7 +140,7 @@ void ff_h264_direct_ref_list_init(H264Context * const h){
     }
 }
 
-void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type){
+static void pred_spatial_direct_motion(H264Context * const h, int *mb_type){
     MpegEncContext * const s = &h->s;
     int b8_stride = h->b8_stride;
     int b4_stride = h->b_stride;
@@ -214,7 +214,7 @@ single_col:
         }
     }
 
-    if(h->direct_spatial_mv_pred){
+    {
         int ref[2];
         int mv[2];
         int list;
@@ -374,7 +374,83 @@ single_col:
             if(!is_b8x8 && !(n&15))
                 *mb_type= (*mb_type & ~(MB_TYPE_8x8|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_P1L0|MB_TYPE_P1L1))|MB_TYPE_16x16|MB_TYPE_DIRECT2;
         }
-    }else{ /* direct temporal mv pred */
+    }
+}
+
+static void pred_temp_direct_motion(H264Context * const h, int *mb_type){
+    MpegEncContext * const s = &h->s;
+    int b8_stride = h->b8_stride;
+    int b4_stride = h->b_stride;
+    int mb_xy = h->mb_xy;
+    int mb_type_col[2];
+    const int16_t (*l1mv0)[2], (*l1mv1)[2];
+    const int8_t *l1ref0, *l1ref1;
+    const int is_b8x8 = IS_8X8(*mb_type);
+    unsigned int sub_mb_type;
+    int i8, i4;
+
+    assert(h->ref_list[1][0].reference&3);
+
+    if(IS_INTERLACED(h->ref_list[1][0].mb_type[mb_xy])){ // AFL/AFR/FR/FL -> AFL/FL
+        if(!IS_INTERLACED(*mb_type)){                    //     AFR/FR    -> AFL/FL
+            mb_xy= s->mb_x + ((s->mb_y&~1) + h->col_parity)*s->mb_stride;
+            b8_stride = 0;
+        }else{
+            mb_xy += h->col_fieldoff; // non zero for FL -> FL & differ parity
+        }
+        goto single_col;
+    }else{                                               // AFL/AFR/FR/FL -> AFR/FR
+        if(IS_INTERLACED(*mb_type)){                     // AFL       /FL -> AFR/FR
+            mb_xy= s->mb_x + (s->mb_y&~1)*s->mb_stride;
+            mb_type_col[0] = h->ref_list[1][0].mb_type[mb_xy];
+            mb_type_col[1] = h->ref_list[1][0].mb_type[mb_xy + s->mb_stride];
+            b8_stride *= 3;
+            b4_stride *= 6;
+
+            sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
+
+            if(    (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)
+                && (mb_type_col[1] & MB_TYPE_16x16_OR_INTRA)
+                && !is_b8x8){
+                *mb_type   |= MB_TYPE_16x8 |MB_TYPE_L0L1|MB_TYPE_DIRECT2; /* B_16x8 */
+            }else{
+                *mb_type   |= MB_TYPE_8x8|MB_TYPE_L0L1;
+            }
+        }else{                                           //     AFR/FR    -> AFR/FR
+single_col:
+            mb_type_col[0] =
+            mb_type_col[1] = h->ref_list[1][0].mb_type[mb_xy];
+
+            sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
+            if(!is_b8x8 && (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)){
+                *mb_type   |= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_16x16 */
+            }else if(!is_b8x8 && (mb_type_col[0] & (MB_TYPE_16x8|MB_TYPE_8x16))){
+                *mb_type   |= MB_TYPE_L0L1|MB_TYPE_DIRECT2 | (mb_type_col[0] & (MB_TYPE_16x8|MB_TYPE_8x16));
+            }else{
+                if(!h->sps.direct_8x8_inference_flag){
+                    /* FIXME save sub mb types from previous frames (or derive from MVs)
+                    * so we know exactly what block size to use */
+                    sub_mb_type = MB_TYPE_8x8|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_4x4 */
+                }
+                *mb_type   |= MB_TYPE_8x8|MB_TYPE_L0L1;
+            }
+        }
+    }
+
+    l1mv0  = &h->ref_list[1][0].motion_val[0][h->mb2b_xy [mb_xy]];
+    l1mv1  = &h->ref_list[1][0].motion_val[1][h->mb2b_xy [mb_xy]];
+    l1ref0 = &h->ref_list[1][0].ref_index [0][h->mb2b8_xy[mb_xy]];
+    l1ref1 = &h->ref_list[1][0].ref_index [1][h->mb2b8_xy[mb_xy]];
+    if(!b8_stride){
+        if(s->mb_y&1){
+            l1ref0 += h->b8_stride;
+            l1ref1 += h->b8_stride;
+            l1mv0  +=  2*b4_stride;
+            l1mv1  +=  2*b4_stride;
+        }
+    }
+
+    {
         const int *map_col_to_list0[2] = {h->map_col_to_list0[0], h->map_col_to_list0[1]};
         const int *dist_scale_factor = h->dist_scale_factor;
         int ref_offset;
@@ -498,5 +574,13 @@ single_col:
                 }
             }
         }
+    }
+}
+
+void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type){
+    if(h->direct_spatial_mv_pred){
+        pred_spatial_direct_motion(h, mb_type);
+    }else{
+        pred_temp_direct_motion(h, mb_type);
     }
 }
