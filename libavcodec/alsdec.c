@@ -794,7 +794,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
                     }
                 }
 
-            *current_res++ = res;
+                *current_res++ = res;
             }
         }
     } else {
