@@ -1221,7 +1221,7 @@ static int fill_filter_caches(H264Context *h, int mb_type){
 
             ref = &s->current_picture.ref_index[list][h->mb2b8_xy[mb_xy]];
             {
-                int (*ref2frm)[64] = h->ref2frm[ h->slice_num&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
+                int (*ref2frm)[64] = h->ref2frm[ h->slice_num&(MAX_SLICES-1) ] + (MB_MBAFF ? 20 : 2);
                 *(uint32_t*)&h->ref_cache[list][scan8[ 0]] =
                 *(uint32_t*)&h->ref_cache[list][scan8[ 2]] = (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101;
                 ref += h->b8_stride;
@@ -1298,7 +1298,7 @@ static int fill_filter_caches(H264Context *h, int mb_type){
             if(USES_LIST(top_type, list)){
                 const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
                 const int b8_xy= h->mb2b8_xy[top_xy] + h->b8_stride;
-                int (*ref2frm)[64] = h->ref2frm[ h->slice_table[top_xy]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
+                int (*ref2frm)[64] = h->ref2frm[ h->slice_table[top_xy]&(MAX_SLICES-1) ] + (MB_MBAFF ? 20 : 2);
                 AV_COPY128(h->mv_cache[list][scan8[0] + 0 - 1*8], s->current_picture.motion_val[list][b_xy + 0]);
                 h->ref_cache[list][scan8[0] + 0 - 1*8]=
                 h->ref_cache[list][scan8[0] + 1 - 1*8]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 0]];
@@ -1313,7 +1313,7 @@ static int fill_filter_caches(H264Context *h, int mb_type){
                 if(USES_LIST(left_type[0], list)){
                     const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
                     const int b8_xy= h->mb2b8_xy[left_xy[0]] + 1;
-                    int (*ref2frm)[64] = h->ref2frm[ h->slice_table[left_xy[0]]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
+                    int (*ref2frm)[64] = h->ref2frm[ h->slice_table[left_xy[0]]&(MAX_SLICES-1) ] + (MB_MBAFF ? 20 : 2);
                     *(uint32_t*)h->mv_cache[list][scan8[0] - 1 + 0 ]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*0];
                     *(uint32_t*)h->mv_cache[list][scan8[0] - 1 + 8 ]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*1];
                     *(uint32_t*)h->mv_cache[list][scan8[0] - 1 +16 ]= *(uint32_t*)s->current_picture.motion_val[list][b_xy + h->b_stride*2];
