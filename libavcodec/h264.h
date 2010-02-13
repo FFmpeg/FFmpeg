@@ -801,6 +801,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
         left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
         left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
 
+    if(!IS_SKIP(mb_type)){
         if(IS_INTRA(mb_type)){
             int type_mask= h->pps.constrained_intra_pred ? IS_INTRA(-1) : -1;
             h->topleft_samples_available=
@@ -944,6 +945,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
         if (left_type[1]) {
             h->left_cbp |= ((h->cbp_table[left_xy[1]]>>((left_block[2]&(~1))+1))&0x1) << 3;
         }
+    }
     }
 
 #if 1
