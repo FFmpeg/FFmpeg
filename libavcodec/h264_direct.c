@@ -207,7 +207,7 @@ static void pred_spatial_direct_motion(H264Context * const h, int *mb_type){
         sub_mb_type |= MB_TYPE_L0L1;
     }
 
-    if(!is_b8x8 && (mv[0]|mv[1]) == 0){
+    if(!(is_b8x8|mv[0]|mv[1])){
         fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
         fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
         fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, 0, 4);
