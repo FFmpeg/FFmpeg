@@ -1452,7 +1452,7 @@ static void decode_mb_skip(H264Context *h){
     {
         // just for fill_caches. pred_direct_motion will set the real mb_type
         mb_type|= MB_TYPE_L0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;
-
+        if(h->direct_spatial_mv_pred)
         fill_decode_caches(h, mb_type); //FIXME check what is needed and what not ...
         ff_h264_pred_direct_motion(h, &mb_type);
         mb_type|= MB_TYPE_SKIP;
