@@ -1447,11 +1447,8 @@ decode_intra_mb:
                 h->ref_cache[1][scan8[4]] =
                 h->ref_cache[0][scan8[12]] =
                 h->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
-                if( h->ref_count[0] > 1 || h->ref_count[1] > 1 ) {
                     for( i = 0; i < 4; i++ )
-                        if( IS_DIRECT(h->sub_mb_type[i]) )
-                            fill_rectangle( &h->direct_cache[scan8[4*i]], 2, 2, 8, MB_TYPE_DIRECT2>>1, 1 );
-                }
+                        fill_rectangle( &h->direct_cache[scan8[4*i]], 2, 2, 8, (h->sub_mb_type[i]>>1)&0xFF, 1 );
             }
         } else {
             for( i = 0; i < 4; i++ ) {
