@@ -1060,31 +1060,31 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 *(uint32_t*)h->mvd_cache [list][scan8[12]]= 0;
 
                 if(h->slice_type_nos == FF_B_TYPE){
-                    fill_rectangle(&h->direct_cache[scan8[0]], 4, 4, 8, 0, 1);
+                    fill_rectangle(&h->direct_cache[scan8[0]], 4, 4, 8, MB_TYPE_16x16>>1, 1);
 
                     if(IS_DIRECT(top_type)){
-                        *(uint32_t*)&h->direct_cache[scan8[0] - 1*8]= 0x01010101;
+                        *(uint32_t*)&h->direct_cache[scan8[0] - 1*8]= 0x01010101*(MB_TYPE_DIRECT2>>1);
                     }else if(IS_8X8(top_type)){
                         int b8_xy = h->mb2b8_xy[top_xy] + h->b8_stride;
                         h->direct_cache[scan8[0] + 0 - 1*8]= h->direct_table[b8_xy];
                         h->direct_cache[scan8[0] + 2 - 1*8]= h->direct_table[b8_xy + 1];
                     }else{
-                        *(uint32_t*)&h->direct_cache[scan8[0] - 1*8]= 0;
+                        *(uint32_t*)&h->direct_cache[scan8[0] - 1*8]= 0x01010101*(MB_TYPE_16x16>>1);
                     }
 
                     if(IS_DIRECT(left_type[0]))
-                        h->direct_cache[scan8[0] - 1 + 0*8]= 1;
+                        h->direct_cache[scan8[0] - 1 + 0*8]= MB_TYPE_DIRECT2>>1;
                     else if(IS_8X8(left_type[0]))
                         h->direct_cache[scan8[0] - 1 + 0*8]= h->direct_table[h->mb2b8_xy[left_xy[0]] + 1 + h->b8_stride*(left_block[0]>>1)];
                     else
-                        h->direct_cache[scan8[0] - 1 + 0*8]= 0;
+                        h->direct_cache[scan8[0] - 1 + 0*8]= MB_TYPE_16x16>>1;
 
                     if(IS_DIRECT(left_type[1]))
-                        h->direct_cache[scan8[0] - 1 + 2*8]= 1;
+                        h->direct_cache[scan8[0] - 1 + 2*8]= MB_TYPE_DIRECT2>>1;
                     else if(IS_8X8(left_type[1]))
                         h->direct_cache[scan8[0] - 1 + 2*8]= h->direct_table[h->mb2b8_xy[left_xy[1]] + 1 + h->b8_stride*(left_block[2]>>1)];
                     else
-                        h->direct_cache[scan8[0] - 1 + 2*8]= 0;
+                        h->direct_cache[scan8[0] - 1 + 2*8]= MB_TYPE_16x16>>1;
                 }
             }
             }
@@ -1409,9 +1409,9 @@ static inline void write_back_motion(H264Context *h, int mb_type){
     if(h->slice_type_nos == FF_B_TYPE && CABAC){
         if(IS_8X8(mb_type)){
             uint8_t *direct_table = &h->direct_table[b8_xy];
-            direct_table[1+0*h->b8_stride] = IS_DIRECT(h->sub_mb_type[1]) ? 1 : 0;
-            direct_table[0+1*h->b8_stride] = IS_DIRECT(h->sub_mb_type[2]) ? 1 : 0;
-            direct_table[1+1*h->b8_stride] = IS_DIRECT(h->sub_mb_type[3]) ? 1 : 0;
+            direct_table[1+0*h->b8_stride] = h->sub_mb_type[1]>>1;
+            direct_table[0+1*h->b8_stride] = h->sub_mb_type[2]>>1;
+            direct_table[1+1*h->b8_stride] = h->sub_mb_type[3]>>1;
         }
     }
 }

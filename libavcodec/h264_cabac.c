@@ -951,9 +951,9 @@ static int decode_cabac_mb_ref( H264Context *h, int list, int n ) {
     int ctx  = 0;
 
     if( h->slice_type_nos == FF_B_TYPE) {
-        if( refa > 0 && !h->direct_cache[scan8[n] - 1] )
+        if( refa > 0 && !(h->direct_cache[scan8[n] - 1]&(MB_TYPE_DIRECT2>>1)) )
             ctx++;
-        if( refb > 0 && !h->direct_cache[scan8[n] - 8] )
+        if( refb > 0 && !(h->direct_cache[scan8[n] - 8]&(MB_TYPE_DIRECT2>>1)) )
             ctx += 2;
     } else {
         if( refa > 0 )
@@ -1450,7 +1450,7 @@ decode_intra_mb:
                 if( h->ref_count[0] > 1 || h->ref_count[1] > 1 ) {
                     for( i = 0; i < 4; i++ )
                         if( IS_DIRECT(h->sub_mb_type[i]) )
-                            fill_rectangle( &h->direct_cache[scan8[4*i]], 2, 2, 8, 1, 1 );
+                            fill_rectangle( &h->direct_cache[scan8[4*i]], 2, 2, 8, MB_TYPE_DIRECT2>>1, 1 );
                 }
             }
         } else {
