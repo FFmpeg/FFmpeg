@@ -1688,12 +1688,12 @@ decode_intra_mb:
                 val= -((val + 1)>>1);
             h->last_qscale_diff = val;
             s->qscale += val;
-        if(((unsigned)s->qscale) > 51){
-            if(s->qscale<0) s->qscale+= 52;
-            else            s->qscale-= 52;
-        }
-        h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
-        h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
+            if(((unsigned)s->qscale) > 51){
+                if(s->qscale<0) s->qscale+= 52;
+                else            s->qscale-= 52;
+            }
+            h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
+            h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
         }else
             h->last_qscale_diff=0;
 
