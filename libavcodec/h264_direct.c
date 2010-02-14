@@ -179,7 +179,7 @@ static void pred_spatial_direct_motion(H264Context * const h, int *mb_type){
             int match_count= (left_ref==ref[list]) + (top_ref==ref[list]) + (refc==ref[list]);
             if(match_count > 1){ //most common
                 mv[list]= (mid_pred(A[0], B[0], C[0])&0xFFFF)
-                            +(mid_pred(A[1], B[1], C[1])<<16);
+                         +(mid_pred(A[1], B[1], C[1])<<16);
             }else {
                 assert(match_count==1);
                 if(left_ref==ref[list]){
