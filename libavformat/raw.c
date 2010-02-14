@@ -497,6 +497,10 @@ static int h261_probe(AVProbeData *p)
     init_get_bits(&gb, p->buf, p->buf_size*8);
 
     for(i=0; i<p->buf_size*8; i++){
+        if ((code & 0x01ff0000) || !(code & 0xff00)) {
+            code = (code<<8) + get_bits(&gb, 8);
+            i += 7;
+        } else
         code = (code<<1) + get_bits1(&gb);
         if ((code & 0xffff0000) == 0x10000) {
             int gn= (code>>12)&0xf;
