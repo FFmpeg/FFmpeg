@@ -111,6 +111,7 @@ Codecs:
   apedec.c                              Kostya Shishkov
   asv*                                  Michael Niedermayer
   atrac3*                               Benjamin Larsson
+  bgmc.c, bgmc.h                        Thilo Borgmann
   bmp.c                                 Mans Rullgard, Kostya Shishkov
   cavs*                                 Stefan Gehrer
   celp_filters.*                        Vitor Sessak
