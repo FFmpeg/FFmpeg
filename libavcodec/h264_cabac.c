@@ -898,22 +898,7 @@ static int decode_cabac_mb_cbp_chroma( H264Context *h) {
     if( cbp_b == 2 ) ctx += 2;
     return 1 + get_cabac_noinline( &h->cabac, &h->cabac_state[77 + ctx] );
 }
-static int decode_cabac_mb_dqp( H264Context *h) {
-    int   ctx= h->last_qscale_diff != 0;
-    int   val = 0;
 
-    while( get_cabac_noinline( &h->cabac, &h->cabac_state[60 + ctx] ) ) {
-        ctx= 2+(ctx>>1);
-        val++;
-        if(val > 102) //prevent infinite loop
-            return INT_MIN;
-    }
-
-    if( val&0x01 )
-        return   (val + 1)>>1 ;
-    else
-        return -((val + 1)>>1);
-}
 static int decode_cabac_p_mb_sub_type( H264Context *h ) {
     if( get_cabac( &h->cabac, &h->cabac_state[21] ) )
         return 0;   /* 8x8 */
@@ -1672,7 +1657,6 @@ decode_intra_mb:
     if( cbp || IS_INTRA16x16( mb_type ) ) {
         const uint8_t *scan, *scan8x8, *dc_scan;
         const uint32_t *qmul;
-        int dqp;
 
         if(IS_INTERLACED(mb_type)){
             scan8x8= s->qscale ? h->field_scan8x8 : h->field_scan8x8_q0;
@@ -1684,18 +1668,34 @@ decode_intra_mb:
             dc_scan= luma_dc_zigzag_scan;
         }
 
-        h->last_qscale_diff = dqp = decode_cabac_mb_dqp( h );
-        if( dqp == INT_MIN ){
-            av_log(h->s.avctx, AV_LOG_ERROR, "cabac decode of qscale diff failed at %d %d\n", s->mb_x, s->mb_y);
-            return -1;
-        }
-        s->qscale += dqp;
+        // decode_cabac_mb_dqp
+        if(get_cabac_noinline( &h->cabac, &h->cabac_state[60 + (h->last_qscale_diff != 0)])){
+            int val = 1;
+            int ctx= 2;
+
+            while( get_cabac_noinline( &h->cabac, &h->cabac_state[60 + ctx] ) ) {
+                ctx= 3;
+                val++;
+                if(val > 102){ //prevent infinite loop
+                    av_log(h->s.avctx, AV_LOG_ERROR, "cabac decode of qscale diff failed at %d %d\n", s->mb_x, s->mb_y);
+                    return -1;
+                }
+            }
+
+            if( val&0x01 )
+                val=   (val + 1)>>1 ;
+            else
+                val= -((val + 1)>>1);
+            h->last_qscale_diff = val;
+            s->qscale += val;
         if(((unsigned)s->qscale) > 51){
             if(s->qscale<0) s->qscale+= 52;
             else            s->qscale-= 52;
         }
         h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
         h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
+        }else
+            h->last_qscale_diff=0;
 
         if( IS_INTRA16x16( mb_type ) ) {
             int i;
