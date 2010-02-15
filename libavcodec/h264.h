@@ -282,11 +282,18 @@ typedef struct H264Context{
     int chroma_pred_mode;
     int intra16x16_pred_mode;
 
+    int topleft_mb_xy;
     int top_mb_xy;
+    int topright_mb_xy;
     int left_mb_xy[2];
 
+    int topleft_type;
     int top_type;
+    int topright_type;
     int left_type[2];
+
+    const uint8_t * left_block;
+    int topleft_partition;
 
     int8_t intra4x4_pred_mode_cache[5*8];
     int8_t (*intra4x4_pred_mode)[8];
@@ -734,20 +741,18 @@ static inline int get_chroma_qp(H264Context *h, int t, int qscale){
 
 static inline void pred_pskip_motion(H264Context * const h, int * const mx, int * const my);
 
-static void fill_decode_caches(H264Context *h, int mb_type){
+static void fill_decode_neighbors(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
-    int topleft_type, top_type, topright_type, left_type[2];
-    const uint8_t * left_block;
-    int topleft_partition= -1;
-    int i;
     static const uint8_t left_block_options[4][16]={
         {0,1,2,3,7,10,8,11,7+0*8, 7+1*8, 7+2*8, 7+3*8, 2+0*8, 2+3*8, 2+1*8, 2+2*8},
         {2,2,3,3,8,11,8,11,7+2*8, 7+2*8, 7+3*8, 7+3*8, 2+1*8, 2+2*8, 2+1*8, 2+2*8},
         {0,0,1,1,7,10,7,10,7+0*8, 7+0*8, 7+1*8, 7+1*8, 2+0*8, 2+3*8, 2+0*8, 2+3*8},
         {0,2,0,2,7,10,7,10,7+0*8, 7+2*8, 7+0*8, 7+2*8, 2+0*8, 2+3*8, 2+0*8, 2+3*8}
     };
+
+    h->topleft_partition= -1;
 
     top_xy     = mb_xy  - (s->mb_stride << MB_FIELD);
 
@@ -757,7 +762,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
     topleft_xy = top_xy - 1;
     topright_xy= top_xy + 1;
     left_xy[1] = left_xy[0] = mb_xy-1;
-    left_block = left_block_options[0];
+    h->left_block = left_block_options[0];
     if(FRAME_MBAFF){
         const int left_mb_field_flag     = IS_INTERLACED(s->current_picture.mb_type[mb_xy-1]);
         const int curr_mb_field_flag     = IS_INTERLACED(mb_type);
@@ -766,12 +771,12 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 left_xy[1] = left_xy[0] = mb_xy - s->mb_stride - 1;
                 if (curr_mb_field_flag) {
                     left_xy[1] += s->mb_stride;
-                    left_block = left_block_options[3];
+                    h->left_block = left_block_options[3];
                 } else {
                     topleft_xy += s->mb_stride;
                     // take top left mv from the middle of the mb, as opposed to all other modes which use the bottom right partition
-                    topleft_partition = 0;
-                    left_block = left_block_options[1];
+                    h->topleft_partition = 0;
+                    h->left_block = left_block_options[1];
                 }
             }
         }else{
@@ -784,22 +789,45 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 left_xy[1] = left_xy[0] = mb_xy - 1;
                 if (curr_mb_field_flag) {
                     left_xy[1] += s->mb_stride;
-                    left_block = left_block_options[3];
+                    h->left_block = left_block_options[3];
                 } else {
-                    left_block = left_block_options[2];
+                    h->left_block = left_block_options[2];
                 }
             }
         }
     }
 
-    h->top_mb_xy = top_xy;
+    h->topleft_mb_xy = topleft_xy;
+    h->top_mb_xy     = top_xy;
+    h->topright_mb_xy= topright_xy;
     h->left_mb_xy[0] = left_xy[0];
     h->left_mb_xy[1] = left_xy[1];
-        topleft_type = h->slice_table[topleft_xy ] == h->slice_num ? s->current_picture.mb_type[topleft_xy] : 0;
-        top_type     = h->slice_table[top_xy     ] == h->slice_num ? s->current_picture.mb_type[top_xy]     : 0;
-        topright_type= h->slice_table[topright_xy] == h->slice_num ? s->current_picture.mb_type[topright_xy]: 0;
-        left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
-        left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
+    //FIXME do we need all in the context?
+    h->topleft_type = h->slice_table[topleft_xy ] == h->slice_num ? s->current_picture.mb_type[topleft_xy] : 0;
+    h->top_type     = h->slice_table[top_xy     ] == h->slice_num ? s->current_picture.mb_type[top_xy]     : 0;
+    h->topright_type= h->slice_table[topright_xy] == h->slice_num ? s->current_picture.mb_type[topright_xy]: 0;
+    h->left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
+    h->left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
+}
+
+static void fill_decode_caches(H264Context *h, int mb_type){
+    MpegEncContext * const s = &h->s;
+    const int mb_xy= h->mb_xy;
+    int topleft_xy, top_xy, topright_xy, left_xy[2];
+    int topleft_type, top_type, topright_type, left_type[2];
+    const uint8_t * left_block= h->left_block;
+    int i;
+
+    topleft_xy   = h->topleft_mb_xy ;
+    top_xy       = h->top_mb_xy     ;
+    topright_xy  = h->topright_mb_xy;
+    left_xy[0]   = h->left_mb_xy[0] ;
+    left_xy[1]   = h->left_mb_xy[1] ;
+    topleft_type = h->topleft_type  ;
+    top_type     = h->top_type      ;
+    topright_type= h->topright_type ;
+    left_type[0] = h->left_type[0]  ;
+    left_type[1] = h->left_type[1]  ;
 
     if(!IS_SKIP(mb_type)){
         if(IS_INTRA(mb_type)){
@@ -995,8 +1023,8 @@ static void fill_decode_caches(H264Context *h, int mb_type){
             }
 
             if(USES_LIST(topleft_type, list)){
-                const int b_xy = h->mb2b_xy[topleft_xy] + 3 + h->b_stride + (topleft_partition & 2*h->b_stride);
-                const int b8_xy= h->mb2b8_xy[topleft_xy] + 1 + (topleft_partition & h->b8_stride);
+                const int b_xy = h->mb2b_xy [topleft_xy] + 3 + h->b_stride + (h->topleft_partition & 2*h->b_stride);
+                const int b8_xy= h->mb2b8_xy[topleft_xy] + 1 + (h->topleft_partition & h->b8_stride);
                 *(uint32_t*)h->mv_cache[list][scan8[0] - 1 - 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy];
                 h->ref_cache[list][scan8[0] - 1 - 1*8]= s->current_picture.ref_index[list][b8_xy];
             }else{
@@ -1452,8 +1480,10 @@ static void decode_mb_skip(H264Context *h){
     {
         // just for fill_caches. pred_direct_motion will set the real mb_type
         mb_type|= MB_TYPE_L0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;
-        if(h->direct_spatial_mv_pred)
+        if(h->direct_spatial_mv_pred){
+            fill_decode_neighbors(h, mb_type);
         fill_decode_caches(h, mb_type); //FIXME check what is needed and what not ...
+        }
         ff_h264_pred_direct_motion(h, &mb_type);
         mb_type|= MB_TYPE_SKIP;
     }
@@ -1462,6 +1492,7 @@ static void decode_mb_skip(H264Context *h){
         int mx, my;
         mb_type|= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P1L0|MB_TYPE_SKIP;
 
+        fill_decode_neighbors(h, mb_type);
         fill_decode_caches(h, mb_type); //FIXME check what is needed and what not ...
         pred_pskip_motion(h, &mx, &my);
         fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, 0, 1);

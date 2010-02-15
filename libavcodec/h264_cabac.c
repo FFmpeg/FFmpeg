@@ -1365,6 +1365,7 @@ decode_intra_mb:
         h->ref_count[1] <<= 1;
     }
 
+    fill_decode_neighbors(h, mb_type);
     fill_decode_caches(h, mb_type);
 
     if( IS_INTRA( mb_type ) ) {
