@@ -483,6 +483,15 @@ static int decode_pic(AVSContext *h) {
         h->pic_type = FF_I_TYPE;
         if(get_bits1(&s->gb))
             skip_bits(&s->gb,24);//time_code
+        /* old sample clips were all progressive and no low_delay,
+           bump stream revision if detected otherwise */
+        if((s->low_delay) || !(show_bits(&s->gb,9) & 1))
+            h->stream_revision = 1;
+        /* similarly test top_field_first and repeat_first_field */
+        else if(show_bits(&s->gb,11) & 3)
+            h->stream_revision = 1;
+        if(h->stream_revision > 0)
+            skip_bits(&s->gb,1); //marker_bit
     }
     /* release last B frame */
     if(h->picture.data[0])

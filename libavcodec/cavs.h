@@ -160,6 +160,7 @@ typedef struct {
     int aspect_ratio;
     int mb_width, mb_height;
     int pic_type;
+    int stream_revision; ///<0 for samples from 2006, 1 for rm52j encoder
     int progressive;
     int pic_structure;
     int skip_mode_flag; ///< select between skip_count or one skip_flag per MB
