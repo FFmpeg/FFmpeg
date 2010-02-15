@@ -149,7 +149,7 @@ static void pred_spatial_direct_motion(H264Context * const h, int *mb_type){
     const int16_t (*l1mv0)[2], (*l1mv1)[2];
     const int8_t *l1ref0, *l1ref1;
     const int is_b8x8 = IS_8X8(*mb_type);
-    unsigned int sub_mb_type= MB_TYPE_L0L1;;
+    unsigned int sub_mb_type= MB_TYPE_L0L1;
     int i8, i4;
     int ref[2];
     int mv[2];
