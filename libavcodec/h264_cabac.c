@@ -1182,32 +1182,6 @@ static void decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int 
 #endif
 }
 
-static inline void compute_mb_neighbors(H264Context *h)
-{
-    MpegEncContext * const s = &h->s;
-    const int mb_xy  = h->mb_xy;
-    h->top_mb_xy     = mb_xy - s->mb_stride;
-    h->left_mb_xy[0] = mb_xy - 1;
-    if(FRAME_MBAFF){
-        const int pair_xy          = s->mb_x     + (s->mb_y & ~1)*s->mb_stride;
-        const int top_pair_xy      = pair_xy     - s->mb_stride;
-        const int top_mb_field_flag  = IS_INTERLACED(s->current_picture.mb_type[top_pair_xy]);
-        const int left_mb_field_flag = IS_INTERLACED(s->current_picture.mb_type[pair_xy-1]);
-        const int curr_mb_field_flag = MB_FIELD;
-        const int bottom = (s->mb_y & 1);
-
-        if (curr_mb_field_flag && (bottom || top_mb_field_flag)){
-            h->top_mb_xy -= s->mb_stride;
-        }
-        if (!left_mb_field_flag == curr_mb_field_flag) {
-            h->left_mb_xy[0] = pair_xy - 1;
-        }
-    } else if (FIELD_PICTURE) {
-        h->top_mb_xy -= s->mb_stride;
-    }
-    return;
-}
-
 /**
  * decodes a macroblock
  * @returns 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
@@ -1257,7 +1231,7 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
 
     h->prev_mb_skipped = 0;
 
-    compute_mb_neighbors(h);
+    fill_decode_neighbors(h, -(MB_FIELD));
 
     if( h->slice_type_nos == FF_B_TYPE ) {
         const int mba_xy = h->left_mb_xy[0];
@@ -1365,7 +1339,6 @@ decode_intra_mb:
         h->ref_count[1] <<= 1;
     }
 
-    fill_decode_neighbors(h, mb_type);
     fill_decode_caches(h, mb_type);
 
     if( IS_INTRA( mb_type ) ) {
