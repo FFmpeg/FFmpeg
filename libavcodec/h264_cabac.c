@@ -750,44 +750,6 @@ static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_sl
     return mb_type;
 }
 
-static int decode_cabac_mb_type_b( H264Context *h ) {
-    MpegEncContext * const s = &h->s;
-
-        const int mba_xy = h->left_mb_xy[0];
-        const int mbb_xy = h->top_mb_xy;
-        int ctx = 0;
-        int bits;
-        assert(h->slice_type_nos == FF_B_TYPE);
-
-        if( h->slice_table[mba_xy] == h->slice_num && !IS_DIRECT( s->current_picture.mb_type[mba_xy] ) )
-            ctx++;
-        if( h->slice_table[mbb_xy] == h->slice_num && !IS_DIRECT( s->current_picture.mb_type[mbb_xy] ) )
-            ctx++;
-
-        if( !get_cabac_noinline( &h->cabac, &h->cabac_state[27+ctx] ) )
-            return 0; /* B_Direct_16x16 */
-
-        if( !get_cabac_noinline( &h->cabac, &h->cabac_state[27+3] ) ) {
-            return 1 + get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] ); /* B_L[01]_16x16 */
-        }
-
-        bits = get_cabac_noinline( &h->cabac, &h->cabac_state[27+4] ) << 3;
-        bits|= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] ) << 2;
-        bits|= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] ) << 1;
-        bits|= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] );
-        if( bits < 8 )
-            return bits + 3; /* B_Bi_16x16 through B_L1_L0_16x8 */
-        else if( bits == 13 ) {
-            return decode_cabac_intra_mb_type(h, 32, 0) + 23;
-        } else if( bits == 14 )
-            return 11; /* B_L1_L0_8x16 */
-        else if( bits == 15 )
-            return 22; /* B_8x8 */
-
-        bits= ( bits<<1 ) | get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] );
-        return bits - 4; /* B_L0_Bi_* through B_Bi_Bi_* */
-}
-
 static int decode_cabac_mb_skip( H264Context *h, int mb_x, int mb_y ) {
     MpegEncContext * const s = &h->s;
     int mba_xy, mbb_xy;
@@ -1301,14 +1263,42 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
     compute_mb_neighbors(h);
 
     if( h->slice_type_nos == FF_B_TYPE ) {
-        mb_type = decode_cabac_mb_type_b( h );
-        if( mb_type < 23 ){
+        const int mba_xy = h->left_mb_xy[0];
+        const int mbb_xy = h->top_mb_xy;
+        int ctx = 0;
+        assert(h->slice_type_nos == FF_B_TYPE);
+
+        if( h->slice_table[mba_xy] == h->slice_num && !IS_DIRECT( s->current_picture.mb_type[mba_xy] ) )
+            ctx++;
+        if( h->slice_table[mbb_xy] == h->slice_num && !IS_DIRECT( s->current_picture.mb_type[mbb_xy] ) )
+            ctx++;
+
+        if( !get_cabac_noinline( &h->cabac, &h->cabac_state[27+ctx] ) ){
+            mb_type= 0; /* B_Direct_16x16 */
+        }else if( !get_cabac_noinline( &h->cabac, &h->cabac_state[27+3] ) ) {
+            mb_type= 1 + get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] ); /* B_L[01]_16x16 */
+        }else{
+            int bits;
+            bits = get_cabac_noinline( &h->cabac, &h->cabac_state[27+4] ) << 3;
+            bits|= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] ) << 2;
+            bits|= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] ) << 1;
+            bits|= get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] );
+            if( bits < 8 ){
+                mb_type= bits + 3; /* B_Bi_16x16 through B_L1_L0_16x8 */
+            }else if( bits == 13 ){
+                mb_type= decode_cabac_intra_mb_type(h, 32, 0);
+                goto decode_intra_mb;
+            }else if( bits == 14 ){
+                mb_type= 11; /* B_L1_L0_8x16 */
+            }else if( bits == 15 ){
+                mb_type= 22; /* B_8x8 */
+            }else{
+                bits= ( bits<<1 ) | get_cabac_noinline( &h->cabac, &h->cabac_state[27+5] );
+                mb_type= bits - 4; /* B_L0_Bi_* through B_Bi_Bi_* */
+            }
+        }
             partition_count= b_mb_type_info[mb_type].partition_count;
             mb_type=         b_mb_type_info[mb_type].type;
-        }else{
-            mb_type -= 23;
-            goto decode_intra_mb;
-        }
     } else if( h->slice_type_nos == FF_P_TYPE ) {
         if( get_cabac_noinline( &h->cabac, &h->cabac_state[14] ) == 0 ) {
             /* P-type */
