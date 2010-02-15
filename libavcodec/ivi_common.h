@@ -183,7 +183,6 @@ static inline int ivi_pic_config_cmp(IVIPicConfig *str1, IVIPicConfig *str2)
     ((((tile_width) + (mb_size) - 1) / (mb_size)) * (((tile_height) + (mb_size) - 1) / (mb_size)))
 
 /** convert unsigned values into signed ones (the sign is in the LSB) */
-/* TODO: find a way to calculate this without the conditional using bit magic */
 #define IVI_TOSIGNED(val) (-(((val) >> 1) ^ -((val) & 1)))
 
 /** scales motion vector */
