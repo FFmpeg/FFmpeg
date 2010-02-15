@@ -796,10 +796,7 @@ static int decode_cabac_mb_intra4x4_pred_mode( H264Context *h, int pred_mode ) {
     mode += 2 * get_cabac( &h->cabac, &h->cabac_state[69] );
     mode += 4 * get_cabac( &h->cabac, &h->cabac_state[69] );
 
-    if( mode >= pred_mode )
-        return mode + 1;
-    else
-        return mode;
+    return mode + ( mode >= pred_mode );
 }
 
 static int decode_cabac_mb_chroma_pre_mode( H264Context *h) {
