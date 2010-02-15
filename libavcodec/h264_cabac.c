@@ -925,10 +925,6 @@ static int decode_cabac_b_mb_sub_type( H264Context *h ) {
     return type;
 }
 
-static inline int decode_cabac_mb_transform_size( H264Context *h ) {
-    return get_cabac_noinline( &h->cabac, &h->cabac_state[399 + h->neighbor_transform_size] );
-}
-
 static int decode_cabac_mb_ref( H264Context *h, int list, int n ) {
     int refa = h->ref_cache[list][scan8[n] - 1];
     int refb = h->ref_cache[list][scan8[n] - 8];
@@ -1387,7 +1383,7 @@ decode_intra_mb:
     if( IS_INTRA( mb_type ) ) {
         int i, pred_mode;
         if( IS_INTRA4x4( mb_type ) ) {
-            if( dct8x8_allowed && decode_cabac_mb_transform_size( h ) ) {
+            if( dct8x8_allowed && get_cabac_noinline( &h->cabac, &h->cabac_state[399 + h->neighbor_transform_size] ) ) {
                 mb_type |= MB_TYPE_8x8DCT;
                 for( i = 0; i < 16; i+=4 ) {
                     int pred = pred_intra_mode( h, i );
@@ -1649,8 +1645,7 @@ decode_intra_mb:
     h->cbp_table[mb_xy] = h->cbp = cbp;
 
     if( dct8x8_allowed && (cbp&15) && !IS_INTRA( mb_type ) ) {
-        if( decode_cabac_mb_transform_size( h ) )
-            mb_type |= MB_TYPE_8x8DCT;
+        mb_type |= MB_TYPE_8x8DCT * get_cabac_noinline( &h->cabac, &h->cabac_state[399 + h->neighbor_transform_size] );
     }
     s->current_picture.mb_type[mb_xy]= mb_type;
 
