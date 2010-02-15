@@ -169,7 +169,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int che_configure(AACContext *ac,
+static av_cold int che_configure(AACContext *ac,
                          enum ChannelPosition che_pos[4][MAX_ELEM_ID],
                          int type, int id,
                          int *channels)
