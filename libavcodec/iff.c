@@ -26,6 +26,13 @@
 
 #include "bytestream.h"
 #include "avcodec.h"
+#include "get_bits.h"
+
+typedef struct {
+    AVFrame frame;
+    int planesize;
+    uint8_t * planebuf;
+} IffContext;
 
 /**
  * Convert CMAP buffer (stored in extradata) to lavc palette format
@@ -45,65 +52,71 @@ int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
         return AVERROR_INVALIDDATA;
     }
     for (i=0; i < count; i++) {
-        pal[i] = AV_RB24( avctx->extradata + i*3 );
+        pal[i] = 0xFF000000 | AV_RB24( avctx->extradata + i*3 );
     }
     return 0;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    AVFrame *frame = avctx->priv_data;
+    IffContext *s = avctx->priv_data;
 
-    avctx->pix_fmt = PIX_FMT_PAL8;
-    frame->reference = 1;
+    if (avctx->bits_per_coded_sample <= 8) {
+        avctx->pix_fmt = PIX_FMT_PAL8;
+    } else if (avctx->bits_per_coded_sample <= 32) {
+        avctx->pix_fmt = PIX_FMT_BGR32;
+    } else {
+        return AVERROR_INVALIDDATA;
+    }
 
-    if (avctx->get_buffer(avctx, frame) < 0) {
+    s->planesize = avctx->width / 8;
+    s->planebuf = av_malloc(s->planesize + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!s->planebuf)
+        return AVERROR(ENOMEM);
+
+    s->frame.reference = 1;
+    if (avctx->get_buffer(avctx, &s->frame) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return AVERROR_UNKNOWN;
     }
-    return ff_cmap_read_palette(avctx, (uint32_t*)frame->data[1]);
+
+    return avctx->bits_per_coded_sample <= 8 ?
+       ff_cmap_read_palette(avctx, (uint32_t*)s->frame.data[1]) : 0;
 }
 
 /**
- * Interleaved memcpy
+ * Decode interleaved plane buffer
+ * @param dst Destination buffer
+ * @param buf Source buffer
+ * @param buf_size
+ * @param bps bits_per_coded_sample
+ * @param plane plane number to decode as
  */
-static void imemcpy(uint8_t *dst, const uint8_t const *buf, int x, int bps, int plane, int length)
-{
-    int i, b;
-    for(i = 0; i < length; i++) {
-        int value = buf[i];
-        for (b = 0; b < bps; b++) {
-            if (value & (1<<b))
-                dst[ (x+i)*bps + 7 - b] |= 1<<plane;
-       }
-    }
+#define DECLARE_DECODEPLANE(suffix, type) \
+static void decodeplane##suffix(void *dst, const uint8_t const *buf, int buf_size, int bps, int plane) \
+{ \
+    GetBitContext gb; \
+    int i, b; \
+    init_get_bits(&gb, buf, buf_size * 8); \
+    for(i = 0; i < (buf_size * 8 + bps - 1) / bps; i++) { \
+        for (b = 0; b < bps; b++) { \
+            ((type *)dst)[ i*bps + b ] |= get_bits1(&gb) << plane; \
+        } \
+    } \
 }
-
-/**
- * Interleaved memset
- */
-static void imemset(uint8_t *dst, int value, int x, int bps, int plane, int length)
-{
-    int i, b;
-    for(i = 0; i < length; i++) {
-        for (b = 0; b < bps; b++) {
-            if (value & (1<<b))
-                dst[ (x+i)*bps + 7 - b] |= 1<<plane;
-       }
-    }
-}
+DECLARE_DECODEPLANE(8, uint8_t)
+DECLARE_DECODEPLANE(32, uint32_t)
 
 static int decode_frame_ilbm(AVCodecContext *avctx,
                             void *data, int *data_size,
                             AVPacket *avpkt)
 {
-    AVFrame *frame = avctx->priv_data;
+    IffContext *s = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    int planewidth = avctx->width / avctx->bits_per_coded_sample;
     int y, plane;
 
-    if (avctx->reget_buffer(avctx, frame) < 0){
+    if (avctx->reget_buffer(avctx, &s->frame) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
@@ -114,16 +127,20 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
     }
 
     for(y = 0; y < avctx->height; y++ ) {
-        uint8_t *row = &frame->data[0][ y*frame->linesize[0] ];
-        memset(row, 0, avctx->width);
+        uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
+        memset(row, 0, avctx->pix_fmt == PIX_FMT_PAL8 ? avctx->width : (avctx->width * 4));
         for (plane = 0; plane < avctx->bits_per_coded_sample; plane++) {
-            imemcpy(row, buf, 0, avctx->bits_per_coded_sample, plane, planewidth);
-            buf += planewidth;
+            if (avctx->pix_fmt == PIX_FMT_PAL8) {
+                decodeplane8(row, buf, s->planesize, avctx->bits_per_coded_sample, plane);
+            } else { // PIX_FMT_BGR32
+                decodeplane32(row, buf, s->planesize, avctx->bits_per_coded_sample, plane);
+            }
+            buf += s->planesize;
         }
     }
 
     *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = *frame;
+    *(AVFrame*)data = s->frame;
     return buf_size;
 }
 
@@ -131,37 +148,41 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
                             void *data, int *data_size,
                             AVPacket *avpkt)
 {
-    AVFrame *frame = avctx->priv_data;
+    IffContext *s = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     const uint8_t *buf_end = buf+buf_size;
-    int planewidth = avctx->width / avctx->bits_per_coded_sample;
     int y, plane, x;
 
-    if (avctx->reget_buffer(avctx, frame) < 0){
+    if (avctx->reget_buffer(avctx, &s->frame) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 
     for(y = 0; y < avctx->height ; y++ ) {
-        uint8_t *row = &frame->data[0][ y*frame->linesize[0] ];
+        uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
         if (avctx->codec_tag == MKTAG('I','L','B','M')) { //interleaved
-            memset(row, 0, avctx->width);
+            memset(row, 0, avctx->pix_fmt == PIX_FMT_PAL8 ? avctx->width : (avctx->width * 4));
             for (plane = 0; plane < avctx->bits_per_coded_sample; plane++) {
-                for(x = 0; x < planewidth && buf < buf_end; ) {
+                for(x = 0; x < s->planesize && buf < buf_end; ) {
                     int8_t value = *buf++;
                     int length;
                     if (value >= 0) {
                         length = value + 1;
-                        imemcpy(row, buf, x, avctx->bits_per_coded_sample, plane, FFMIN3(length, buf_end - buf, planewidth - x));
+                        memcpy(s->planebuf + x, buf, FFMIN3(length, s->planesize - x, buf_end - buf));
                         buf += length;
                     } else if (value > -128) {
                         length = -value + 1;
-                        imemset(row, *buf++, x, avctx->bits_per_coded_sample, plane, FFMIN(length, planewidth - x));
+                        memset(s->planebuf + x, *buf++, FFMIN(length, s->planesize - x));
                     } else { //noop
                         continue;
                     }
                     x += length;
+                }
+                if (avctx->pix_fmt == PIX_FMT_PAL8) {
+                    decodeplane8(row, s->planebuf, s->planesize, avctx->bits_per_coded_sample, plane);
+                } else { //PIX_FMT_BGR32
+                    decodeplane32(row, s->planebuf, s->planesize, avctx->bits_per_coded_sample, plane);
                 }
             }
         } else {
@@ -184,15 +205,16 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
     }
 
     *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = *frame;
+    *(AVFrame*)data = s->frame;
     return buf_size;
 }
 
 static av_cold int decode_end(AVCodecContext *avctx)
 {
-    AVFrame *frame = avctx->priv_data;
-    if (frame->data[0])
-        avctx->release_buffer(avctx, frame);
+    IffContext *s = avctx->priv_data;
+    if (s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
+    av_freep(&s->planebuf);
     return 0;
 }
 
@@ -200,7 +222,7 @@ AVCodec iff_ilbm_decoder = {
     "iff_ilbm",
     CODEC_TYPE_VIDEO,
     CODEC_ID_IFF_ILBM,
-    sizeof(AVFrame),
+    sizeof(IffContext),
     decode_init,
     NULL,
     decode_end,
@@ -213,7 +235,7 @@ AVCodec iff_byterun1_decoder = {
     "iff_byterun1",
     CODEC_TYPE_VIDEO,
     CODEC_ID_IFF_BYTERUN1,
-    sizeof(AVFrame),
+    sizeof(IffContext),
     decode_init,
     NULL,
     decode_end,
