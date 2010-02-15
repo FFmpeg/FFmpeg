@@ -352,13 +352,13 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         hpos = put_header(pb, &ff_asf_extended_content_header);
         put_le16(pb, metadata_count);
         while ((tag = av_metadata_get(s->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
-            put_le16(pb, 2*(strlen(tag->key) + 3) + 1);
+            put_le16(pb, 2*(strlen(tag->key) + 4));
             put_le16(pb, 'W');
             put_le16(pb, 'M');
             put_le16(pb, '/');
             put_str16_nolen(pb, tag->key);
             put_le16(pb, 0);
-            put_le16(pb, 2*strlen(tag->value) + 1);
+            put_le16(pb, 2*(strlen(tag->value) + 1));
             put_str16_nolen(pb, tag->value);
         }
         end_header(pb, hpos);
