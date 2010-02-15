@@ -436,9 +436,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     char name[1024];
 
                     name_len = get_le16(pb);
+                    if (name_len%2)     // must be even, broken lavf versions wrote len-1
+                        name_len += 1;
                     get_str16_nolen(pb, name_len, name, sizeof(name));
                     value_type = get_le16(pb);
                     value_len  = get_le16(pb);
+                    if (value_len%2)
+                        value_len += 1;
                     get_tag(s, name, value_type, value_len);
             }
         } else if (!guidcmp(&g, &ff_asf_metadata_header)) {
