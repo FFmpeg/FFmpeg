@@ -688,19 +688,20 @@ static const int8_t cabac_context_init_PB[3][460][2] =
 void ff_h264_init_cabac_states(H264Context *h) {
     MpegEncContext * const s = &h->s;
     int i;
+    const int8_t (*tab)[2];
+
+    if( h->slice_type_nos == FF_I_TYPE ) tab = cabac_context_init_I;
+    else                                 tab = cabac_context_init_PB[h->cabac_init_idc];
 
     /* calculate pre-state */
     for( i= 0; i < 460; i++ ) {
-        int pre;
-        if( h->slice_type_nos == FF_I_TYPE )
-            pre = av_clip( ((cabac_context_init_I[i][0] * s->qscale) >>4 ) + cabac_context_init_I[i][1], 1, 126 );
-        else
-            pre = av_clip( ((cabac_context_init_PB[h->cabac_init_idc][i][0] * s->qscale) >>4 ) + cabac_context_init_PB[h->cabac_init_idc][i][1], 1, 126 );
+        int pre = 2*(((tab[i][0] * s->qscale) >>4 ) + tab[i][1]) - 127;
 
-        if( pre <= 63 )
-            h->cabac_state[i] = 2 * ( 63 - pre ) + 0;
-        else
-            h->cabac_state[i] = 2 * ( pre - 64 ) + 1;
+        pre^= pre>>31;
+        if(pre > 124)
+            pre= 124 + (pre&1);
+
+        h->cabac_state[i] =  pre;
     }
 }
 
