@@ -45,4 +45,7 @@ void ff_metadata_demux_compat(AVFormatContext *s);
 void ff_metadata_mux_compat(AVFormatContext *s);
 #endif
 
+void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
+                                    const AVMetadataConv *s_conv);
+
 #endif /* AVFORMAT_METADATA_H */

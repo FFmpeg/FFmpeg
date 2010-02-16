@@ -105,7 +105,7 @@ void av_metadata_free(AVMetadata **pm)
     av_freep(pm);
 }
 
-static void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
+void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
                                            const AVMetadataConv *s_conv)
 {
     /* TODO: use binary search to look up the two conversion tables

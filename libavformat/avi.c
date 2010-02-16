@@ -40,6 +40,6 @@ const AVMetadataConv ff_avi_metadata_conv[] = {
 const char ff_avi_tags[][5] = {
     "IARL", "IART", "ICMS", "ICMT", "ICOP", "ICRD", "ICRP", "IDIM", "IDPI",
     "IENG", "IGNR", "IKEY", "ILGT", "ILNG", "IMED", "INAM", "IPLT", "IPRD",
-    "IPRT", "ISBJ",/*"ISFT"*/"ISHP", "ISRC", "ISRF", "ITCH",
+    "IPRT", "ISBJ", "ISFT", "ISHP", "ISRC", "ISRF", "ITCH",
     {0}
 };

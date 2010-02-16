@@ -376,8 +376,6 @@ static int avi_write_header(AVFormatContext *s)
         if ((t = av_metadata_get(s->metadata, ff_avi_tags[i], NULL, AV_METADATA_MATCH_CASE)))
             avi_write_info_tag(s->pb, t->key, t->value);
     }
-    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
-        avi_write_info_tag(pb, "ISFT", LIBAVFORMAT_IDENT);
     ff_end_tag(pb, list2);
 
     /* some padding for easier tag editing */

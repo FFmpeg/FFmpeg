@@ -2583,6 +2583,20 @@ int av_write_header(AVFormatContext *s)
     ff_metadata_mux_compat(s);
 #endif
 
+    /* set muxer identification string */
+    if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
+        AVMetadata *m;
+        AVMetadataTag *t;
+
+        if (!(m = av_mallocz(sizeof(AVMetadata))))
+            return AVERROR(ENOMEM);
+        av_metadata_set2(&m, "encoder", LIBAVFORMAT_IDENT, 0);
+        metadata_conv(&m, s->oformat->metadata_conv, NULL);
+        if ((t = av_metadata_get(m, "", NULL, AV_METADATA_IGNORE_SUFFIX)))
+            av_metadata_set2(&s->metadata, t->key, t->value, 0);
+        av_metadata_free(&m);
+    }
+
     if(s->oformat->write_header){
         ret = s->oformat->write_header(s);
         if (ret < 0)

@@ -313,7 +313,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     while ((t = av_metadata_get(s->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
         uint32_t tag = 0;
 
-        if (t->key[0] == 'T' && strcmp(t->key, "TSSE")) {
+        if (t->key[0] == 'T' && strlen(t->key) == 4) {
             int i;
             for (i = 0; *ff_id3v2_tags[i]; i++)
                 if (AV_RB32(t->key) == AV_RB32(ff_id3v2_tags[i])) {
@@ -337,11 +337,6 @@ static int mp3_write_header(struct AVFormatContext *s)
             totlen += len + len1 + ID3v2_HEADER_SIZE + 3;
             av_free(buf);
         }
-    }
-    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
-        totlen += strlen(LIBAVFORMAT_IDENT) + ID3v2_HEADER_SIZE + 2;
-        id3v2_put_ttag(s, LIBAVFORMAT_IDENT, strlen(LIBAVFORMAT_IDENT) + 1,
-                       MKBETAG('T', 'S', 'S', 'E'));
     }
 
     cur_pos = url_ftell(s->pb);
