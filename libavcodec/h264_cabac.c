@@ -722,13 +722,10 @@ static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_sl
     int mb_type;
 
     if(intra_slice){
-        MpegEncContext * const s = &h->s;
-        const int mba_xy = h->left_mb_xy[0];
-        const int mbb_xy = h->top_mb_xy;
         int ctx=0;
-        if( h->slice_table[mba_xy] == h->slice_num && !IS_INTRA4x4( s->current_picture.mb_type[mba_xy] ) )
+        if( h->left_type[0] && !IS_INTRA4x4(h->left_type[0]))
             ctx++;
-        if( h->slice_table[mbb_xy] == h->slice_num && !IS_INTRA4x4( s->current_picture.mb_type[mbb_xy] ) )
+        if( h->top_type     && !IS_INTRA4x4(h->top_type) )
             ctx++;
         if( get_cabac_noinline( &h->cabac, &state[ctx] ) == 0 )
             return 0;   /* I4x4 */
@@ -806,10 +803,10 @@ static int decode_cabac_mb_chroma_pre_mode( H264Context *h) {
     int ctx = 0;
 
     /* No need to test for IS_INTRA4x4 and IS_INTRA16x16, as we set chroma_pred_mode_table to 0 */
-    if( h->slice_table[mba_xy] == h->slice_num && h->chroma_pred_mode_table[mba_xy] != 0 )
+    if( h->left_type[0] && h->chroma_pred_mode_table[mba_xy] != 0 )
         ctx++;
 
-    if( h->slice_table[mbb_xy] == h->slice_num && h->chroma_pred_mode_table[mbb_xy] != 0 )
+    if( h->top_type     && h->chroma_pred_mode_table[mbb_xy] != 0 )
         ctx++;
 
     if( get_cabac_noinline( &h->cabac, &h->cabac_state[64+ctx] ) == 0 )
@@ -1234,14 +1231,12 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
     fill_decode_neighbors(h, -(MB_FIELD));
 
     if( h->slice_type_nos == FF_B_TYPE ) {
-        const int mba_xy = h->left_mb_xy[0];
-        const int mbb_xy = h->top_mb_xy;
         int ctx = 0;
         assert(h->slice_type_nos == FF_B_TYPE);
 
-        if( h->slice_table[mba_xy] == h->slice_num && !IS_DIRECT( s->current_picture.mb_type[mba_xy] ) )
+        if( !IS_DIRECT( h->left_type[0]-1 ) )
             ctx++;
-        if( h->slice_table[mbb_xy] == h->slice_num && !IS_DIRECT( s->current_picture.mb_type[mbb_xy] ) )
+        if( !IS_DIRECT( h->top_type-1 ) )
             ctx++;
 
         if( !get_cabac_noinline( &h->cabac, &h->cabac_state[27+ctx] ) ){
