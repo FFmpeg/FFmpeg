@@ -24,8 +24,6 @@
 
 #include <inttypes.h>
 
-#include "intreadwrite.h"
-
 typedef struct AVComponentDescriptor{
     uint16_t plane        :2;            ///< which of the 4 planes contains the component
 
@@ -110,46 +108,8 @@ extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
  * component c in data[1] to dst, rather than the palette indexes in
  * data[0]. The behavior is undefined if the format is not paletted.
  */
-static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4],
-                             const AVPixFmtDescriptor *desc, int x, int y, int c, int w, int read_pal_component)
-{
-    AVComponentDescriptor comp= desc->comp[c];
-    int plane= comp.plane;
-    int depth= comp.depth_minus1+1;
-    int mask = (1<<depth)-1;
-    int shift= comp.shift;
-    int step = comp.step_minus1+1;
-    int flags= desc->flags;
-
-    if (flags & PIX_FMT_BITSTREAM){
-        int skip = x*step + comp.offset_plus1-1;
-        const uint8_t *p = data[plane] + y*linesize[plane] + (skip>>3);
-        int shift = 8 - depth - (skip&7);
-
-        while(w--){
-            int val = (*p >> shift) & mask;
-            if(read_pal_component)
-                val= data[1][4*val + c];
-            shift -= step;
-            p -= shift>>3;
-            shift &= 7;
-            *dst++= val;
-        }
-    } else {
-        const uint8_t *p = data[plane]+ y*linesize[plane] + x*step + comp.offset_plus1-1;
-
-        while(w--){
-            int val;
-            if(flags & PIX_FMT_BE) val= AV_RB16(p);
-            else                   val= AV_RL16(p);
-            val = (val>>shift) & mask;
-            if(read_pal_component)
-                val= data[1][4*val + c];
-            p+= step;
-            *dst++= val;
-        }
-    }
-}
+void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4],
+               const AVPixFmtDescriptor *desc, int x, int y, int c, int w, int read_pal_component);
 
 /**
  * Writes the values from src to the pixel format component c of an
@@ -165,42 +125,8 @@ static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int li
  * @param w the width of the line to write, that is the number of
  * values to write to the image line
  */
-static inline void write_line(const uint16_t *src, uint8_t *data[4], const int linesize[4],
-                              const AVPixFmtDescriptor *desc, int x, int y, int c, int w)
-{
-    AVComponentDescriptor comp = desc->comp[c];
-    int plane = comp.plane;
-    int depth = comp.depth_minus1+1;
-    int step  = comp.step_minus1+1;
-    int flags = desc->flags;
-
-    if (flags & PIX_FMT_BITSTREAM) {
-        int skip = x*step + comp.offset_plus1-1;
-        uint8_t *p = data[plane] + y*linesize[plane] + (skip>>3);
-        int shift = 8 - depth - (skip&7);
-
-        while (w--) {
-            *p |= *src++ << shift;
-            shift -= step;
-            p -= shift>>3;
-            shift &= 7;
-        }
-    } else {
-        int shift = comp.shift;
-        uint8_t *p = data[plane]+ y*linesize[plane] + x*step + comp.offset_plus1-1;
-
-        while (w--) {
-            if (flags & PIX_FMT_BE) {
-                uint16_t val = AV_RB16(p) | (*src++<<shift);
-                AV_WB16(p, val);
-            } else {
-                uint16_t val = AV_RL16(p) | (*src++<<shift);
-                AV_WL16(p, val);
-            }
-            p+= step;
-        }
-    }
-}
+void write_line(const uint16_t *src, uint8_t *data[4], const int linesize[4],
+                const AVPixFmtDescriptor *desc, int x, int y, int c, int w);
 
 /**
  * Returns the pixel format corresponding to name.
