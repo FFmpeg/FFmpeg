@@ -1795,49 +1795,49 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 static int stream_component_open(VideoState *is, int stream_index)
 {
     AVFormatContext *ic = is->ic;
-    AVCodecContext *enc;
+    AVCodecContext *avctx;
     AVCodec *codec;
     SDL_AudioSpec wanted_spec, spec;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return -1;
-    enc = ic->streams[stream_index]->codec;
+    avctx = ic->streams[stream_index]->codec;
 
     /* prepare audio output */
-    if (enc->codec_type == CODEC_TYPE_AUDIO) {
-        if (enc->channels > 0) {
-            enc->request_channels = FFMIN(2, enc->channels);
+    if (avctx->codec_type == CODEC_TYPE_AUDIO) {
+        if (avctx->channels > 0) {
+            avctx->request_channels = FFMIN(2, avctx->channels);
         } else {
-            enc->request_channels = 2;
+            avctx->request_channels = 2;
         }
     }
 
-    codec = avcodec_find_decoder(enc->codec_id);
-    enc->debug_mv = debug_mv;
-    enc->debug = debug;
-    enc->workaround_bugs = workaround_bugs;
-    enc->lowres = lowres;
-    if(lowres) enc->flags |= CODEC_FLAG_EMU_EDGE;
-    enc->idct_algo= idct;
-    if(fast) enc->flags2 |= CODEC_FLAG2_FAST;
-    enc->skip_frame= skip_frame;
-    enc->skip_idct= skip_idct;
-    enc->skip_loop_filter= skip_loop_filter;
-    enc->error_recognition= error_recognition;
-    enc->error_concealment= error_concealment;
-    avcodec_thread_init(enc, thread_count);
+    codec = avcodec_find_decoder(avctx->codec_id);
+    avctx->debug_mv = debug_mv;
+    avctx->debug = debug;
+    avctx->workaround_bugs = workaround_bugs;
+    avctx->lowres = lowres;
+    if(lowres) avctx->flags |= CODEC_FLAG_EMU_EDGE;
+    avctx->idct_algo= idct;
+    if(fast) avctx->flags2 |= CODEC_FLAG2_FAST;
+    avctx->skip_frame= skip_frame;
+    avctx->skip_idct= skip_idct;
+    avctx->skip_loop_filter= skip_loop_filter;
+    avctx->error_recognition= error_recognition;
+    avctx->error_concealment= error_concealment;
+    avcodec_thread_init(avctx, thread_count);
 
-    set_context_opts(enc, avcodec_opts[enc->codec_type], 0);
+    set_context_opts(avctx, avcodec_opts[avctx->codec_type], 0);
 
     if (!codec ||
-        avcodec_open(enc, codec) < 0)
+        avcodec_open(avctx, codec) < 0)
         return -1;
 
     /* prepare audio output */
-    if (enc->codec_type == CODEC_TYPE_AUDIO) {
-        wanted_spec.freq = enc->sample_rate;
+    if (avctx->codec_type == CODEC_TYPE_AUDIO) {
+        wanted_spec.freq = avctx->sample_rate;
         wanted_spec.format = AUDIO_S16SYS;
-        wanted_spec.channels = enc->channels;
+        wanted_spec.channels = avctx->channels;
         wanted_spec.silence = 0;
         wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
         wanted_spec.callback = sdl_audio_callback;
@@ -1851,7 +1851,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     }
 
     ic->streams[stream_index]->discard = AVDISCARD_DEFAULT;
-    switch(enc->codec_type) {
+    switch(avctx->codec_type) {
     case CODEC_TYPE_AUDIO:
         is->audio_stream = stream_index;
         is->audio_st = ic->streams[stream_index];
@@ -1863,7 +1863,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->audio_diff_avg_count = 0;
         /* since we do not have a precise anough audio fifo fullness,
            we correct audio sync only if larger than this threshold */
-        is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / enc->sample_rate;
+        is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / avctx->sample_rate;
 
         memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
         packet_queue_init(&is->audioq);
@@ -1894,13 +1894,13 @@ static int stream_component_open(VideoState *is, int stream_index)
 static void stream_component_close(VideoState *is, int stream_index)
 {
     AVFormatContext *ic = is->ic;
-    AVCodecContext *enc;
+    AVCodecContext *avctx;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return;
-    enc = ic->streams[stream_index]->codec;
+    avctx = ic->streams[stream_index]->codec;
 
-    switch(enc->codec_type) {
+    switch(avctx->codec_type) {
     case CODEC_TYPE_AUDIO:
         packet_queue_abort(&is->audioq);
 
@@ -1943,8 +1943,8 @@ static void stream_component_close(VideoState *is, int stream_index)
     }
 
     ic->streams[stream_index]->discard = AVDISCARD_ALL;
-    avcodec_close(enc);
-    switch(enc->codec_type) {
+    avcodec_close(avctx);
+    switch(avctx->codec_type) {
     case CODEC_TYPE_AUDIO:
         is->audio_st = NULL;
         is->audio_stream = -1;
@@ -2042,9 +2042,9 @@ static int decode_thread(void *arg)
     }
 
     for(i = 0; i < ic->nb_streams; i++) {
-        AVCodecContext *enc = ic->streams[i]->codec;
+        AVCodecContext *avctx = ic->streams[i]->codec;
         ic->streams[i]->discard = AVDISCARD_ALL;
-        switch(enc->codec_type) {
+        switch(avctx->codec_type) {
         case CODEC_TYPE_AUDIO:
             if (wanted_audio_stream-- >= 0 && !audio_disable)
                 audio_index = i;
