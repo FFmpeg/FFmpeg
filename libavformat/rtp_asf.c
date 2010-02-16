@@ -197,7 +197,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
             }
             if (!len_off && !asf->pktbuf &&
                 !(res = url_open_dyn_packet_buf(&asf->pktbuf, rt->asf_ctx->packet_size)))
-                return AVERROR(EIO);
+                return res;
             if (!asf->pktbuf)
                 return AVERROR(EIO);
 
