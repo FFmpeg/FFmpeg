@@ -273,6 +273,45 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
     return 0;
 }
 
+void rtp_send_punch_packets(URLContext* rtp_handle)
+{
+    ByteIOContext *pb;
+    uint8_t *buf;
+    int len;
+
+    /* Send a small RTP packet */
+    if (url_open_dyn_buf(&pb) < 0)
+        return;
+
+    put_byte(pb, (RTP_VERSION << 6));
+    put_byte(pb, 0); /* Payload type */
+    put_be16(pb, 0); /* Seq */
+    put_be32(pb, 0); /* Timestamp */
+    put_be32(pb, 0); /* SSRC */
+
+    put_flush_packet(pb);
+    len = url_close_dyn_buf(pb, &buf);
+    if ((len > 0) && buf)
+        url_write(rtp_handle, buf, len);
+    av_free(buf);
+
+    /* Send a minimal RTCP RR */
+    if (url_open_dyn_buf(&pb) < 0)
+        return;
+
+    put_byte(pb, (RTP_VERSION << 6));
+    put_byte(pb, 201); /* receiver report */
+    put_be16(pb, 1); /* length in words - 1 */
+    put_be32(pb, 0); /* our own SSRC */
+
+    put_flush_packet(pb);
+    len = url_close_dyn_buf(pb, &buf);
+    if ((len > 0) && buf)
+        url_write(rtp_handle, buf, len);
+    av_free(buf);
+}
+
+
 /**
  * open a new RTP parse context for stream 'st'. 'st' can be NULL for
  * MPEG2TS streams to indicate that they should be demuxed inside the

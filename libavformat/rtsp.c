@@ -1146,6 +1146,12 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
+            /* Try to initialize the connection state in a
+             * potential NAT router by sending dummy packets.
+             * RTP/RTCP dummy packets are used for RDT, too.
+             */
+            if (!(rt->server_type == RTSP_SERVER_WMS && i > 1))
+                rtp_send_punch_packets(rtsp_st->rtp_handle);
             break;
         }
         case RTSP_LOWER_TRANSPORT_UDP_MULTICAST: {
