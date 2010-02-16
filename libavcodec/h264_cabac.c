@@ -723,9 +723,9 @@ static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_sl
 
     if(intra_slice){
         int ctx=0;
-        if( h->left_type[0] && !IS_INTRA4x4(h->left_type[0]))
+        if( h->left_type[0] & (MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM))
             ctx++;
-        if( h->top_type     && !IS_INTRA4x4(h->top_type) )
+        if( h->top_type     & (MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM))
             ctx++;
         if( get_cabac_noinline( &h->cabac, &state[ctx] ) == 0 )
             return 0;   /* I4x4 */
