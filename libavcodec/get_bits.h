@@ -551,9 +551,9 @@ void free_vlc(VLC *vlc);
 
 /**
  *
- * if the vlc code is invalid and max_depth=1 than no bits will be removed
- * if the vlc code is invalid and max_depth>1 than the number of bits removed
- * is undefined
+ * If the vlc code is invalid and max_depth=1, then no bits will be removed.
+ * If the vlc code is invalid and max_depth>1, then the number of bits removed
+ * is undefined.
  */
 #define GET_VLC(code, name, gb, table, bits, max_depth)\
 {\
