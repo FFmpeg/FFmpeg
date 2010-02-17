@@ -131,5 +131,13 @@ if ((y) < (x)) {\
 }
 #endif
 
+#ifndef NEG_SSR32
+#   define NEG_SSR32(a,s) ((( int32_t)(a))>>(32-(s)))
+#endif
+
+#ifndef NEG_USR32
+#   define NEG_USR32(a,s) (((uint32_t)(a))>>(32-(s)))
+#endif
+
 #endif /* AVCODEC_MATHOPS_H */
 

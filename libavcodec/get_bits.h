@@ -49,27 +49,6 @@
 #   endif
 #endif
 
-#if ARCH_X86
-// avoid +32 for shift optimization (gcc should do that ...)
-static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
-    __asm__ ("sarl %1, %0\n\t"
-         : "+r" (a)
-         : "ic" ((uint8_t)(-s))
-    );
-    return a;
-}
-static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
-    __asm__ ("shrl %1, %0\n\t"
-         : "+r" (a)
-         : "ic" ((uint8_t)(-s))
-    );
-    return a;
-}
-#else
-#    define NEG_SSR32(a,s) ((( int32_t)(a))>>(32-(s)))
-#    define NEG_USR32(a,s) (((uint32_t)(a))>>(32-(s)))
-#endif
-
 /* bit input */
 /* buffer, buffer_end and size_in_bits must be present and used by every reader */
 typedef struct GetBitContext {
