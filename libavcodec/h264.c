@@ -2200,6 +2200,17 @@ static void loop_filter(H264Context *h){
     h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
 }
 
+static void predict_field_decoding_flag(H264Context *h){
+    MpegEncContext * const s = &h->s;
+    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+    int mb_type = (h->slice_table[mb_xy-1] == h->slice_num)
+                ? s->current_picture.mb_type[mb_xy-1]
+                : (h->slice_table[mb_xy-s->mb_stride] == h->slice_num)
+                ? s->current_picture.mb_type[mb_xy-s->mb_stride]
+                : 0;
+    h->mb_mbaff = h->mb_field_decoding_flag = IS_INTERLACED(mb_type) ? 1 : 0;
+}
+
 static int decode_slice(struct AVCodecContext *avctx, void *arg){
     H264Context *h = *(void**)arg;
     MpegEncContext * const s = &h->s;

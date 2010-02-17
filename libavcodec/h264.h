@@ -1451,17 +1451,6 @@ static inline int get_dct8x8_allowed(H264Context *h){
         return !(*(uint64_t*)h->sub_mb_type & ((MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_8x8|MB_TYPE_DIRECT2)*0x0001000100010001ULL));
 }
 
-static void predict_field_decoding_flag(H264Context *h){
-    MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
-    int mb_type = (h->slice_table[mb_xy-1] == h->slice_num)
-                ? s->current_picture.mb_type[mb_xy-1]
-                : (h->slice_table[mb_xy-s->mb_stride] == h->slice_num)
-                ? s->current_picture.mb_type[mb_xy-s->mb_stride]
-                : 0;
-    h->mb_mbaff = h->mb_field_decoding_flag = IS_INTERLACED(mb_type) ? 1 : 0;
-}
-
 /**
  * decodes a P_SKIP or B_SKIP macroblock
  */
