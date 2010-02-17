@@ -20,7 +20,7 @@ outfile="$datadir/${outfile_prefix}-"
 errfile="$datadir/$this.err"
 
 # various files
-ffmpeg="$target_exec ${target_path}/ffmpeg_g"
+ffmpeg="$target_exec ${target_path}/ffmpeg"
 tiny_psnr="tests/tiny_psnr"
 benchfile="$datadir/$this.bench"
 bench="$datadir/$this.bench.tmp"
