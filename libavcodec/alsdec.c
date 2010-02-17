@@ -1563,7 +1563,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     // allocate and assign channel data buffer for mcc mode
     if (sconf->mc_coding) {
         ctx->chan_data_buffer  = av_malloc(sizeof(*ctx->chan_data_buffer) *
-                                           num_buffers);
+                                           num_buffers * num_buffers);
         ctx->chan_data         = av_malloc(sizeof(ALSChannelData) *
                                            num_buffers);
         ctx->reverted_channels = av_malloc(sizeof(*ctx->reverted_channels) *
@@ -1576,7 +1576,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
 
         for (c = 0; c < num_buffers; c++)
-            ctx->chan_data[c] = ctx->chan_data_buffer + c;
+            ctx->chan_data[c] = ctx->chan_data_buffer + c * num_buffers;
     } else {
         ctx->chan_data         = NULL;
         ctx->chan_data_buffer  = NULL;
