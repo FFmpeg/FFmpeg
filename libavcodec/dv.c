@@ -532,16 +532,16 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     PutBitContext pb, vs_pb;
     GetBitContext gb;
     BlockInfo mb_data[5 * DV_MAX_BPM], *mb, *mb1;
-    DECLARE_ALIGNED_16(DCTELEM, sblock)[5*DV_MAX_BPM][64];
-    DECLARE_ALIGNED_16(uint8_t, mb_bit_buffer)[80 + 4]; /* allow some slack */
-    DECLARE_ALIGNED_16(uint8_t, vs_bit_buffer)[5 * 80 + 4]; /* allow some slack */
+    LOCAL_ALIGNED_16(DCTELEM, sblock, [5*DV_MAX_BPM], [64]);
+    LOCAL_ALIGNED_16(uint8_t, mb_bit_buffer, [80 + 4]); /* allow some slack */
+    LOCAL_ALIGNED_16(uint8_t, vs_bit_buffer, [5 * 80 + 4]); /* allow some slack */
     const int log2_blocksize = 3-s->avctx->lowres;
     int is_field_mode[5];
 
     assert((((int)mb_bit_buffer) & 7) == 0);
     assert((((int)vs_bit_buffer) & 7) == 0);
 
-    memset(sblock, 0, sizeof(sblock));
+    memset(sblock, 0, 5*DV_MAX_BPM*sizeof(*sblock));
 
     /* pass 1 : read DC and AC coefficients in blocks */
     buf_ptr = &s->buf[work_chunk->buf_offset*80];
@@ -833,7 +833,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
 {
     const int *weight;
     const uint8_t* zigzag_scan;
-    DECLARE_ALIGNED_16(DCTELEM, blk)[64];
+    LOCAL_ALIGNED_16(DCTELEM, blk, [64]);
     int i, area;
     /* We offer two different methods for class number assignment: the
        method suggested in SMPTE 314M Table 22, and an improved
@@ -866,7 +866,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
     } else {
         /* We rely on the fact that encoding all zeros leads to an immediate EOB,
            which is precisely what the spec calls for in the "dummy" blocks. */
-        memset(blk, 0, sizeof(blk));
+        memset(blk, 0, 64*sizeof(*blk));
         bi->dct_mode = 0;
     }
     bi->mb[0] = blk[0];

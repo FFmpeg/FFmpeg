@@ -563,7 +563,7 @@ not_coded:
 
 static int h263_skip_b_part(MpegEncContext *s, int cbp)
 {
-    DECLARE_ALIGNED(16, DCTELEM, dblock)[64];
+    LOCAL_ALIGNED_16(DCTELEM, dblock, [64]);
     int i, mbi;
 
     /* we have to set s->mb_intra to zero to decode B-part of PB-frame correctly

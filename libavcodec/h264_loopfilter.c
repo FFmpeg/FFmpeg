@@ -367,7 +367,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
         filter_mb_edgech( &img_cr[2*2*uvlinesize], uvlinesize, bS3, qpc, h);
         return;
     } else {
-        DECLARE_ALIGNED_8(int16_t, bS)[2][4][4];
+        LOCAL_ALIGNED_8(int16_t, bS, [2], [4][4]);
         uint64_t (*bSv)[4] = (uint64_t(*)[4])bS;
         int edges;
         if( IS_8x8DCT(mb_type) && (h->cbp&7) == 7 ) {

@@ -398,6 +398,7 @@ static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg, int jobnr, i
     DNXHDEncContext *ctx = avctx->priv_data;
     int mb_y = jobnr, mb_x;
     int qscale = ctx->qscale;
+    LOCAL_ALIGNED_16(DCTELEM, block, [64]);
     ctx = ctx->thread[threadnr];
 
     ctx->m.last_dc[0] =
@@ -414,12 +415,11 @@ static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg, int jobnr, i
         dnxhd_get_blocks(ctx, mb_x, mb_y);
 
         for (i = 0; i < 8; i++) {
-            DECLARE_ALIGNED_16(DCTELEM, block)[64];
             DCTELEM *src_block = ctx->blocks[i];
             int overflow, nbits, diff, last_index;
             int n = dnxhd_switch_matrix(ctx, i);
 
-            memcpy(block, src_block, sizeof(block));
+            memcpy(block, src_block, 64*sizeof(*block));
             last_index = ctx->m.dct_quantize((MpegEncContext*)ctx, block, i, qscale, &overflow);
             ac_bits += dnxhd_calc_ac_bits(ctx, block, last_index);
 

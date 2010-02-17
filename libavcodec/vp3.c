@@ -1385,7 +1385,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 {
     int x;
     int16_t *dequantizer;
-    DECLARE_ALIGNED_16(DCTELEM, block)[64];
+    LOCAL_ALIGNED_16(DCTELEM, block, [64]);
     int motion_x = 0xdeadbeef, motion_y = 0xdeadbeef;
     int motion_halfpel_index;
     uint8_t *motion_source;
