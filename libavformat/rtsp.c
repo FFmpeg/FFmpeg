@@ -932,7 +932,10 @@ static int rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     return 0;
 }
 
-static void rtsp_send_cmd_async(AVFormatContext *s, const char *cmd)
+static void rtsp_send_cmd_with_content_async(AVFormatContext *s,
+                                             const char *cmd,
+                                             const unsigned char *send_content,
+                                             int send_content_length)
 {
     RTSPState *rt = s->priv_data;
     char buf[4096], buf1[1024];
@@ -949,12 +952,21 @@ static void rtsp_send_cmd_async(AVFormatContext *s, const char *cmd)
         av_strlcatf(buf, sizeof(buf),
                     "Authorization: Basic %s\r\n",
                     rt->auth_b64);
+    if (send_content_length > 0 && send_content)
+        av_strlcatf(buf, sizeof(buf), "Content-Length: %d\r\n", send_content_length);
     av_strlcat(buf, "\r\n", sizeof(buf));
 
     dprintf(s, "Sending:\n%s--\n", buf);
 
     url_write(rt->rtsp_hd, buf, strlen(buf));
+    if (send_content_length > 0 && send_content)
+        url_write(rt->rtsp_hd, send_content, send_content_length);
     rt->last_cmd_time = av_gettime();
+}
+
+static void rtsp_send_cmd_async(AVFormatContext *s, const char *cmd)
+{
+    rtsp_send_cmd_with_content_async(s, cmd, NULL, 0);
 }
 
 static void rtsp_send_cmd(AVFormatContext *s,
@@ -962,6 +974,18 @@ static void rtsp_send_cmd(AVFormatContext *s,
                           unsigned char **content_ptr)
 {
     rtsp_send_cmd_async(s, cmd);
+
+    rtsp_read_reply(s, reply, content_ptr, 0);
+}
+
+static void rtsp_send_cmd_with_content(AVFormatContext *s,
+                                       const char *cmd,
+                                       RTSPMessageHeader *reply,
+                                       unsigned char **content_ptr,
+                                       const unsigned char *send_content,
+                                       int send_content_length)
+{
+    rtsp_send_cmd_with_content_async(s, cmd, send_content, send_content_length);
 
     rtsp_read_reply(s, reply, content_ptr, 0);
 }
