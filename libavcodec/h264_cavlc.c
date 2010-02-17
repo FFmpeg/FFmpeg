@@ -547,8 +547,6 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
             if(FRAME_MBAFF && (s->mb_y&1) == 0){
                 if(s->mb_skip_run==0)
                     h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&s->gb);
-                else
-                    predict_field_decoding_flag(h);
             }
             decode_mb_skip(h);
             return 0;

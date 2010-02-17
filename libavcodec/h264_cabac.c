@@ -1196,8 +1196,6 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
     if( h->slice_type_nos != FF_I_TYPE ) {
         int skip;
         /* a skipped mb needs the aff flag from the following mb */
-        if( FRAME_MBAFF && s->mb_x==0 && (s->mb_y&1)==0 )
-            predict_field_decoding_flag(h);
         if( FRAME_MBAFF && (s->mb_y&1)==1 && h->prev_mb_skipped )
             skip = h->next_mb_skipped;
         else

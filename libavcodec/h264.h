@@ -1453,7 +1453,7 @@ static inline int get_dct8x8_allowed(H264Context *h){
 
 static void predict_field_decoding_flag(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= h->mb_xy;
+    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     int mb_type = (h->slice_table[mb_xy-1] == h->slice_num)
                 ? s->current_picture.mb_type[mb_xy-1]
                 : (h->slice_table[mb_xy-s->mb_stride] == h->slice_num)

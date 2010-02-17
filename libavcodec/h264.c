@@ -2257,6 +2257,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
                 ++s->mb_y;
                 if(FIELD_OR_MBAFF_PICTURE) {
                     ++s->mb_y;
+                    if(FRAME_MBAFF && s->mb_y < s->mb_height)
+                        predict_field_decoding_flag(h);
                 }
             }
 
@@ -2295,6 +2297,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
                 ++s->mb_y;
                 if(FIELD_OR_MBAFF_PICTURE) {
                     ++s->mb_y;
+                    if(FRAME_MBAFF && s->mb_y < s->mb_height)
+                        predict_field_decoding_flag(h);
                 }
                 if(s->mb_y >= s->mb_height){
                     tprintf(s->avctx, "slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
