@@ -1035,6 +1035,8 @@ HAVE_LIST="
     libdc1394_1
     libdc1394_2
     llrint
+    local_aligned_16
+    local_aligned_8
     log2
     log2f
     loongson

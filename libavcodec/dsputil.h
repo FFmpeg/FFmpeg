@@ -700,6 +700,22 @@ static inline void emms(void)
 #   define STRIDE_ALIGN 8
 #endif
 
+#define LOCAL_ALIGNED(a, t, v, s, ...)                          \
+    uint8_t la_##v[sizeof(t s __VA_ARGS__) + (a)];              \
+    t (*v) __VA_ARGS__ = (void *)FFALIGN((uintptr_t)la_##v, a)
+
+#if HAVE_LOCAL_ALIGNED_8
+#   define LOCAL_ALIGNED_8((t, v, s, ...) DECLARE_ALIGNED_8(t, v) s __VA_ARGS__
+#else
+#   define LOCAL_ALIGNED_8(t, v, s, ...) LOCAL_ALIGNED(8, t, v, s, __VA_ARGS__)
+#endif
+
+#if HAVE_LOCAL_ALIGNED_16
+#   define LOCAL_ALIGNED_16((t, v, s, ...) DECLARE_ALIGNED_16(t, v) s __VA_ARGS__
+#else
+#   define LOCAL_ALIGNED_16(t, v, s, ...) LOCAL_ALIGNED(16, t, v, s, __VA_ARGS__)
+#endif
+
 /* PSNR */
 void get_psnr(uint8_t *orig_image[3], uint8_t *coded_image[3],
               int orig_linesize[3], int coded_linesize,
