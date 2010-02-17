@@ -1564,7 +1564,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (sconf->mc_coding) {
         ctx->chan_data_buffer  = av_malloc(sizeof(*ctx->chan_data_buffer) *
                                            num_buffers * num_buffers);
-        ctx->chan_data         = av_malloc(sizeof(ALSChannelData) *
+        ctx->chan_data         = av_malloc(sizeof(*ctx->chan_data) *
                                            num_buffers);
         ctx->reverted_channels = av_malloc(sizeof(*ctx->reverted_channels) *
                                            num_buffers);
