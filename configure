@@ -1131,6 +1131,7 @@ CMDLINE_SET="
     malloc_prefix
     nm
     source_path
+    strip
     sysinclude
     sysroot
     target_exec
@@ -1424,7 +1425,7 @@ ln_s="ln -sf"
 nm_default="nm"
 objformat="elf"
 ranlib="ranlib"
-strip="strip"
+strip_default="strip"
 yasmexe="yasm"
 
 nm_opts='-g'
@@ -1620,11 +1621,11 @@ ar="${cross_prefix}${ar}"
 cc_default="${cross_prefix}${cc_default}"
 nm_default="${cross_prefix}${nm_default}"
 ranlib="${cross_prefix}${ranlib}"
-strip="${cross_prefix}${strip}"
+strip_default="${cross_prefix}${strip_default}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default cc nm sysinclude
+set_default cc nm strip sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
