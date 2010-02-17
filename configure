@@ -2388,6 +2388,8 @@ elif enabled mips; then
 
 elif enabled ppc; then
 
+    enable local_aligned_8 local_aligned_16
+
     check_asm dcbzl     '"dcbzl 0, 1"'
     check_asm ppc4xx    '"maclhw r10, r11, r12"'
     check_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
@@ -2421,6 +2423,8 @@ elif enabled sparc; then
         add_cflags -mcpu=ultrasparc -mtune=ultrasparc
 
 elif enabled x86; then
+
+    enable local_aligned_8 local_aligned_16
 
     # check whether EBP is available on x86
     # As 'i' is stored on the stack, this program will crash
