@@ -705,13 +705,13 @@ static inline void emms(void)
     t (*v) __VA_ARGS__ = (void *)FFALIGN((uintptr_t)la_##v, a)
 
 #if HAVE_LOCAL_ALIGNED_8
-#   define LOCAL_ALIGNED_8((t, v, s, ...) DECLARE_ALIGNED_8(t, v) s __VA_ARGS__
+#   define LOCAL_ALIGNED_8(t, v, s, ...) DECLARE_ALIGNED_8(t, v) s __VA_ARGS__
 #else
 #   define LOCAL_ALIGNED_8(t, v, s, ...) LOCAL_ALIGNED(8, t, v, s, __VA_ARGS__)
 #endif
 
 #if HAVE_LOCAL_ALIGNED_16
-#   define LOCAL_ALIGNED_16((t, v, s, ...) DECLARE_ALIGNED_16(t, v) s __VA_ARGS__
+#   define LOCAL_ALIGNED_16(t, v, s, ...) DECLARE_ALIGNED_16(t, v) s __VA_ARGS__
 #else
 #   define LOCAL_ALIGNED_16(t, v, s, ...) LOCAL_ALIGNED(16, t, v, s, __VA_ARGS__)
 #endif
