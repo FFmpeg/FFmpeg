@@ -72,6 +72,9 @@ typedef struct RTMPContext {
     int           flv_size;                   ///< current buffer size
     int           flv_off;                    ///< number of bytes read from current buffer
     RTMPPacket    out_pkt;                    ///< rtmp packet, created from flv a/v or metadata (for output)
+    uint32_t      client_report_size;         ///< number of bytes after which client should report to server
+    uint32_t      bytes_read;                 ///< number of bytes read from server
+    uint32_t      last_bytes_read;            ///< number of bytes read last reported to server
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -337,6 +340,21 @@ static void gen_pong(URLContext *s, RTMPContext *rt, RTMPPacket *ppkt)
     ff_rtmp_packet_destroy(&pkt);
 }
 
+/**
+ * Generates report on bytes read so far and sends it to the server.
+ */
+static void gen_bytes_read(URLContext *s, RTMPContext *rt, uint32_t ts)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+
+    ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL, RTMP_PT_BYTES_READ, ts, 4);
+    p = pkt.data;
+    bytestream_put_be32(&p, rt->bytes_read);
+    ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size, rt->prev_pkt[1]);
+    ff_rtmp_packet_destroy(&pkt);
+}
+
 //TODO: Move HMAC code somewhere. Eventually.
 #define HMAC_IPAD_VAL 0x36
 #define HMAC_OPAD_VAL 0x5C
@@ -556,6 +574,16 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
         if (t == 6)
             gen_pong(s, rt, pkt);
         break;
+    case RTMP_PT_CLIENT_BW:
+        if (pkt->data_size < 4) {
+            av_log(LOG_CONTEXT, AV_LOG_ERROR,
+                   "Client bandwidth report packet is less than 4 bytes long (%d)\n",
+                   pkt->data_size);
+            return -1;
+        }
+        av_log(LOG_CONTEXT, AV_LOG_DEBUG, "Client bandwidth = %d\n", AV_RB32(pkt->data));
+        rt->client_report_size = AV_RB32(pkt->data) >> 1;
+        break;
     case RTMP_PT_INVOKE:
         //TODO: check for the messages sent for wrong state?
         if (!memcmp(pkt->data, "\002\000\006_error", 9)) {
@@ -668,6 +696,12 @@ static int get_packet(URLContext *s, int for_header)
             } else {
                 return AVERROR(EIO);
             }
+        }
+        rt->bytes_read += ret;
+        if (rt->bytes_read > rt->last_bytes_read + rt->client_report_size) {
+            av_log(LOG_CONTEXT, AV_LOG_DEBUG, "Sending bytes read report\n");
+            gen_bytes_read(s, rt, rpkt.timestamp + 1);
+            rt->last_bytes_read = rt->bytes_read;
         }
 
         ret = rtmp_parse_result(s, rt, &rpkt);
@@ -825,6 +859,10 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         rt->playpath[0] = 0;
     }
     strncat(rt->playpath, fname, sizeof(rt->playpath) - 5);
+
+    rt->client_report_size = 1048576;
+    rt->bytes_read = 0;
+    rt->last_bytes_read = 0;
 
     av_log(LOG_CONTEXT, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
            proto, path, rt->app, rt->playpath);
