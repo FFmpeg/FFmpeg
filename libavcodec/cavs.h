@@ -248,8 +248,13 @@ static inline void modify_pred(const int_fast8_t *mod_table, int *mode) {
 }
 
 static inline void set_intra_mode_default(AVSContext *h) {
-    h->pred_mode_Y[3] =  h->pred_mode_Y[6] = INTRA_L_LP;
-    h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = INTRA_L_LP;
+    if(h->stream_revision > 0) {
+        h->pred_mode_Y[3] =  h->pred_mode_Y[6] = NOT_AVAIL;
+        h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = NOT_AVAIL;
+    } else {
+        h->pred_mode_Y[3] =  h->pred_mode_Y[6] = INTRA_L_LP;
+        h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = INTRA_L_LP;
+    }
 }
 
 static inline void set_mvs(cavs_vector *mv, enum cavs_block size) {
