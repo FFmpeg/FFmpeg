@@ -707,12 +707,11 @@ void ff_h264_init_cabac_states(H264Context *h) {
 
 static int decode_cabac_field_decoding_flag(H264Context *h) {
     MpegEncContext * const s = &h->s;
-    const long mba_xy = h->mb_xy - 1L;
     const long mbb_xy = h->mb_xy - 2L*s->mb_stride;
 
     unsigned long ctx = 0;
 
-    ctx += (s->current_picture.mb_type[mba_xy]>>7)&(h->slice_table[mba_xy] == h->slice_num);
+    ctx += h->mb_field_decoding_flag & !!s->mb_x; //for FMO:(s->current_picture.mb_type[mba_xy]>>7)&(h->slice_table[mba_xy] == h->slice_num);
     ctx += (s->current_picture.mb_type[mbb_xy]>>7)&(h->slice_table[mbb_xy] == h->slice_num);
 
     return get_cabac_noinline( &h->cabac, &(h->cabac_state+70)[ctx] );
