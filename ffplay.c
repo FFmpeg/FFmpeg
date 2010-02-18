@@ -2070,9 +2070,11 @@ static int decode_thread(void *arg)
         stream_component_open(is, audio_index);
     }
 
+    ret=-1;
     if (video_index >= 0) {
-        stream_component_open(is, video_index);
-    } else {
+        ret= stream_component_open(is, video_index);
+    }
+    if(ret<0) {
         /* add the refresh timer to draw the picture */
         schedule_refresh(is, 40);
 
