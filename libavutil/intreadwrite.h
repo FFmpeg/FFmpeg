@@ -428,7 +428,8 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
  * afterwards.
  */
 
-#define AV_COPY(n, d, s) (*(uint##n##_t*)(d) = *(const uint##n##_t*)(s))
+#define AV_COPY(n, d, s) \
+    (((av_alias##n*)(d))->u##n = ((const av_alias##n*)(s))->u##n)
 
 #ifndef AV_COPY32
 #   define AV_COPY32(d, s) AV_COPY(32, d, s)
@@ -446,13 +447,17 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
     } while(0)
 #endif
 
-#define AV_SWAP(n, a, b) FFSWAP(uint##n##_t, *(uint##n##_t*)(a), *(uint##n##_t*)(b))
+#define AV_SWAP(n, a, b) FFSWAP(av_alias##n, *(av_alias##n*)(a), *(av_alias##n*)(b))
 
 #ifndef AV_SWAP64
 #   define AV_SWAP64(a, b) AV_SWAP(64, a, b)
 #endif
 
-#define AV_ZERO(n, d) (*(uint##n##_t*)(d) = 0)
+#define AV_ZERO(n, d) (((av_alias##n*)(d))->u##n = 0)
+
+#ifndef AV_ZERO32
+#   define AV_ZERO32(d) AV_ZERO(32, d)
+#endif
 
 #ifndef AV_ZERO64
 #   define AV_ZERO64(d) AV_ZERO(64, d)
