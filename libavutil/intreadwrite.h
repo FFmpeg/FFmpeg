@@ -422,6 +422,38 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
     } while(0)
 #endif
 
+/*
+ * The AV_[RW]NA macros access naturally aligned data
+ * in a type-safe way.
+ */
+
+#define AV_RNA(s, p)    (((const av_alias##s*)(p))->u##s)
+#define AV_WNA(s, p, v) (((av_alias##s*)(p))->u##s = (v))
+
+#ifndef AV_RN16A
+#   define AV_RN16A(p) AV_RNA(16, p)
+#endif
+
+#ifndef AV_RN32A
+#   define AV_RN32A(p) AV_RNA(32, p)
+#endif
+
+#ifndef AV_RN64A
+#   define AV_RN64A(p) AV_RNA(64, p)
+#endif
+
+#ifndef AV_WN16A
+#   define AV_WN16A(p, v) AV_WNA(16, p, v)
+#endif
+
+#ifndef AV_WN32A
+#   define AV_WN32A(p, v) AV_WNA(32, p, v)
+#endif
+
+#ifndef AV_WN64A
+#   define AV_WN64A(p, v) AV_WNA(64, p, v)
+#endif
+
 /* Parameters for AV_COPY*, AV_SWAP*, AV_ZERO* must be
  * naturally aligned. They may be implemented using MMX,
  * so emms_c() must be called before using any float code
