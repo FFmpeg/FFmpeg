@@ -183,11 +183,11 @@ static void pred_spatial_direct_motion(H264Context * const h, int *mb_type){
             }else {
                 assert(match_count==1);
                 if(left_ref==ref[list]){
-                    mv[list]= *(uint32_t*)A;
+                    mv[list]= AV_RN32A(A);
                 }else if(top_ref==ref[list]){
-                    mv[list]= *(uint32_t*)B;
+                    mv[list]= AV_RN32A(B);
                 }else{
-                    mv[list]= *(uint32_t*)C;
+                    mv[list]= AV_RN32A(C);
                 }
             }
         }else{
@@ -362,9 +362,9 @@ single_col:
                         const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*b4_stride];
                         if(FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1){
                             if(ref[0] == 0)
-                                *(uint32_t*)h->mv_cache[0][scan8[i8*4+i4]] = 0;
+                                AV_ZERO32(h->mv_cache[0][scan8[i8*4+i4]]);
                             if(ref[1] == 0)
-                                *(uint32_t*)h->mv_cache[1][scan8[i8*4+i4]] = 0;
+                                AV_ZERO32(h->mv_cache[1][scan8[i8*4+i4]]);
                             m++;
                         }
                     }
@@ -571,8 +571,8 @@ single_col:
                     int16_t *mv_l0 = h->mv_cache[0][scan8[i8*4+i4]];
                     mv_l0[0] = (scale * mv_col[0] + 128) >> 8;
                     mv_l0[1] = (scale * mv_col[1] + 128) >> 8;
-                    *(uint32_t*)h->mv_cache[1][scan8[i8*4+i4]] =
-                        pack16to32(mv_l0[0]-mv_col[0],mv_l0[1]-mv_col[1]);
+                    AV_WN32A(h->mv_cache[1][scan8[i8*4+i4]],
+                        pack16to32(mv_l0[0]-mv_col[0],mv_l0[1]-mv_col[1]));
                 }
             }
         }

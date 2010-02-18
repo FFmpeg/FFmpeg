@@ -58,7 +58,7 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
            && h->ref_cache[list][scan8[0]-1] != PART_NOT_AVAILABLE){
             const uint32_t *mb_types = s->current_picture_ptr->mb_type;
             const int16_t *mv;
-            *(uint32_t*)h->mv_cache[list][scan8[0]-2] = 0;
+            AV_ZERO32(h->mv_cache[list][scan8[0]-2]);
             *C = h->mv_cache[list][scan8[0]-2];
 
             if(!MB_FIELD
@@ -220,8 +220,8 @@ static inline void pred_pskip_motion(H264Context * const h, int * const mx, int 
     tprintf(h->s.avctx, "pred_pskip: (%d) (%d) at %2d %2d\n", top_ref, left_ref, h->s.mb_x, h->s.mb_y);
 
     if(top_ref == PART_NOT_AVAILABLE || left_ref == PART_NOT_AVAILABLE
-       || !( top_ref | *(uint32_t*)h->mv_cache[0][ scan8[0] - 8 ])
-       || !(left_ref | *(uint32_t*)h->mv_cache[0][ scan8[0] - 1 ])){
+       || !( top_ref | AV_RN32A(h->mv_cache[0][ scan8[0] - 8 ]))
+       || !(left_ref | AV_RN32A(h->mv_cache[0][ scan8[0] - 1 ]))){
 
         *mx = *my = 0;
         return;
