@@ -1575,11 +1575,10 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
          context->dstFormat != dstFormat ||
          context->flags     != flags     ||
          context->param[0]  != param[0]  ||
-         context->param[1]  != param[1]))
-        {
-            sws_freeContext(context);
-            context = NULL;
-        }
+         context->param[1]  != param[1])) {
+        sws_freeContext(context);
+        context = NULL;
+    }
 
     if (!context) {
         return sws_getContext(srcW, srcH, srcFormat,
