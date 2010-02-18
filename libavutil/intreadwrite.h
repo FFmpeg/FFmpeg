@@ -177,12 +177,12 @@ typedef union {
 
 #if   HAVE_ATTRIBUTE_PACKED
 
-struct unaligned_64 { uint64_t l; } __attribute__((packed));
-struct unaligned_32 { uint32_t l; } __attribute__((packed));
-struct unaligned_16 { uint16_t l; } __attribute__((packed));
+union unaligned_64 { uint64_t l; } __attribute__((packed)) av_alias;
+union unaligned_32 { uint32_t l; } __attribute__((packed)) av_alias;
+union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 
-#   define AV_RN(s, p) (((const struct unaligned_##s *) (p))->l)
-#   define AV_WN(s, p, v) ((((struct unaligned_##s *) (p))->l) = (v))
+#   define AV_RN(s, p) (((const union unaligned_##s *) (p))->l)
+#   define AV_WN(s, p, v) ((((union unaligned_##s *) (p))->l) = (v))
 
 #elif defined(__DECC)
 
@@ -191,8 +191,8 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 
 #elif HAVE_FAST_UNALIGNED
 
-#   define AV_RN(s, p) (*((const uint##s##_t*)(p)))
-#   define AV_WN(s, p, v) (*((uint##s##_t*)(p)) = (v))
+#   define AV_RN(s, p) (((const av_alias##s*)(p))->u##s)
+#   define AV_WN(s, p, v) (((uint##s##_t*)(p))->u##s = (v))
 
 #else
 
