@@ -22,6 +22,28 @@
 #include <stdint.h>
 #include "config.h"
 #include "bswap.h"
+#include "common.h"
+
+typedef union {
+    uint64_t u64;
+    uint32_t u32[2];
+    uint16_t u16[4];
+    uint8_t  u8 [8];
+    double   f64;
+    float    f32[2];
+} av_alias av_alias64;
+
+typedef union {
+    uint32_t u32;
+    uint16_t u16[2];
+    uint8_t  u8 [4];
+    float    f32;
+} av_alias av_alias32;
+
+typedef union {
+    uint16_t u16;
+    uint8_t  u8 [2];
+} av_alias av_alias16;
 
 /*
  * Arch-specific headers can provide any combination of
