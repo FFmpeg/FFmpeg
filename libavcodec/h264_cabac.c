@@ -910,8 +910,8 @@ static int decode_cabac_mb_ref( H264Context *h, int list, int n ) {
 }
 
 static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
-    int amvd = abs( h->mvd_cache[list][scan8[n] - 1][l] ) +
-               abs( h->mvd_cache[list][scan8[n] - 8][l] );
+    int amvd = h->mvd_cache[list][scan8[n] - 1][l] +
+               h->mvd_cache[list][scan8[n] - 8][l];
     int ctxbase = (l == 0) ? 40 : 47;
     int mvd;
     int ctx = (amvd>2) + (amvd>32);
@@ -1439,6 +1439,8 @@ decode_intra_mb:
                         my = mpy + decode_cabac_mb_mvd( h, list, index, 1 );
                         tprintf(s->avctx, "final mv:%d %d\n", mx, my);
 
+                        mpx= abs(mpx-mx);
+                        mpy= abs(mpy-my);
                         if(IS_SUB_8X8(sub_mb_type)){
                             mv_cache[ 1 ][0]=
                             mv_cache[ 8 ][0]= mv_cache[ 9 ][0]= mx;
@@ -1446,27 +1448,27 @@ decode_intra_mb:
                             mv_cache[ 8 ][1]= mv_cache[ 9 ][1]= my;
 
                             mvd_cache[ 1 ][0]=
-                            mvd_cache[ 8 ][0]= mvd_cache[ 9 ][0]= mx - mpx;
+                            mvd_cache[ 8 ][0]= mvd_cache[ 9 ][0]= mpx;
                             mvd_cache[ 1 ][1]=
-                            mvd_cache[ 8 ][1]= mvd_cache[ 9 ][1]= my - mpy;
+                            mvd_cache[ 8 ][1]= mvd_cache[ 9 ][1]= mpy;
                         }else if(IS_SUB_8X4(sub_mb_type)){
                             mv_cache[ 1 ][0]= mx;
                             mv_cache[ 1 ][1]= my;
 
-                            mvd_cache[ 1 ][0]= mx - mpx;
-                            mvd_cache[ 1 ][1]= my - mpy;
+                            mvd_cache[ 1 ][0]=  mpx;
+                            mvd_cache[ 1 ][1]= mpy;
                         }else if(IS_SUB_4X8(sub_mb_type)){
                             mv_cache[ 8 ][0]= mx;
                             mv_cache[ 8 ][1]= my;
 
-                            mvd_cache[ 8 ][0]= mx - mpx;
-                            mvd_cache[ 8 ][1]= my - mpy;
+                            mvd_cache[ 8 ][0]= mpx;
+                            mvd_cache[ 8 ][1]= mpy;
                         }
                         mv_cache[ 0 ][0]= mx;
                         mv_cache[ 0 ][1]= my;
 
-                        mvd_cache[ 0 ][0]= mx - mpx;
-                        mvd_cache[ 0 ][1]= my - mpy;
+                        mvd_cache[ 0 ][0]= mpx;
+                        mvd_cache[ 0 ][1]= mpy;
                     }
                 }else{
                     uint32_t *p= (uint32_t *)&h->mv_cache[list][ scan8[4*i] ][0];
@@ -1507,7 +1509,7 @@ decode_intra_mb:
                     my = mpy + decode_cabac_mb_mvd( h, list, 0, 1 );
                     tprintf(s->avctx, "final mv:%d %d\n", mx, my);
 
-                    fill_rectangle(h->mvd_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx-mpx,my-mpy), 4);
+                    fill_rectangle(h->mvd_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(abs(mx-mpx),abs(my-mpy)), 4);
                     fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
                 }else
                     fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, 0, 4);
@@ -1539,7 +1541,7 @@ decode_intra_mb:
                         my = mpy + decode_cabac_mb_mvd( h, list, 8*i, 1 );
                         tprintf(s->avctx, "final mv:%d %d\n", mx, my);
 
-                        fill_rectangle(h->mvd_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(mx-mpx,my-mpy), 4);
+                        fill_rectangle(h->mvd_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(abs(mx-mpx),abs(my-mpy)), 4);
                         fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(mx,my), 4);
                     }else{
                         fill_rectangle(h->mvd_cache[list][ scan8[0] + 16*i ], 4, 2, 8, 0, 4);
@@ -1574,7 +1576,7 @@ decode_intra_mb:
                         my = mpy + decode_cabac_mb_mvd( h, list, 4*i, 1 );
 
                         tprintf(s->avctx, "final mv:%d %d\n", mx, my);
-                        fill_rectangle(h->mvd_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(mx-mpx,my-mpy), 4);
+                        fill_rectangle(h->mvd_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(abs(mx-mpx),abs(my-mpy)), 4);
                         fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(mx,my), 4);
                     }else{
                         fill_rectangle(h->mvd_cache[list][ scan8[0] + 2*i ], 2, 4, 8, 0, 4);
