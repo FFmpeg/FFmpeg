@@ -162,6 +162,7 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
     ByteIOContext *pb = s->pb;
     CinFrameHeader *hdr = &cin->frame_header;
     int rc, palette_type, pkt_size;
+    int ret;
 
     if (cin->audio_buffer_size == 0) {
         rc = cin_read_frame_header(cin, pb);
@@ -178,8 +179,9 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* palette and video packet */
         pkt_size = (palette_type + 3) * hdr->pal_colors_count + hdr->video_frame_size;
 
-        if (av_new_packet(pkt, 4 + pkt_size))
-            return AVERROR(ENOMEM);
+        ret = av_new_packet(pkt, 4 + pkt_size);
+        if (ret < 0)
+            return ret;
 
         pkt->stream_index = cin->video_stream_index;
         pkt->pts = cin->video_stream_pts++;
@@ -189,8 +191,13 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->data[2] = hdr->pal_colors_count >> 8;
         pkt->data[3] = hdr->video_frame_type;
 
-        if (get_buffer(pb, &pkt->data[4], pkt_size) != pkt_size)
-            return AVERROR(EIO);
+        ret = get_buffer(pb, &pkt->data[4], pkt_size);
+        if (ret < 0) {
+            av_free_packet(pkt);
+            return ret;
+        }
+        if (ret < pkt_size)
+            av_shrink_packet(pkt, 4 + ret);
 
         /* sound buffer will be processed on next read_packet() call */
         cin->audio_buffer_size = hdr->audio_frame_size;
@@ -198,16 +205,13 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     /* audio packet */
-    if (av_new_packet(pkt, cin->audio_buffer_size))
-        return AVERROR(ENOMEM);
+    ret = av_get_packet(pb, pkt, cin->audio_buffer_size);
+    if (ret < 0)
+        return ret;
 
     pkt->stream_index = cin->audio_stream_index;
     pkt->pts = cin->audio_stream_pts;
     cin->audio_stream_pts += cin->audio_buffer_size * 2 / cin->file_header.audio_frame_size;
-
-    if (get_buffer(pb, pkt->data, cin->audio_buffer_size) != cin->audio_buffer_size)
-        return AVERROR(EIO);
-
     cin->audio_buffer_size = 0;
     return 0;
 }
