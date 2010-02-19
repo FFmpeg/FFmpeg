@@ -315,7 +315,6 @@ typedef struct RTSPStream {
     //@}
 } RTSPStream;
 
-int rtsp_init(void);
 void rtsp_parse_line(RTSPMessageHeader *reply, const char *buf);
 
 #if LIBAVFORMAT_VERSION_INT < (53 << 16)
