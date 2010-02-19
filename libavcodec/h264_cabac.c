@@ -914,17 +914,16 @@ static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
                h->mvd_cache[list][scan8[n] - 8][l];
     int ctxbase = (l == 0) ? 40 : 47;
     int mvd;
-    int ctx = (amvd>2) + (amvd>32);
 
-    if(!get_cabac(&h->cabac, &h->cabac_state[ctxbase+ctx]))
+    if(!get_cabac(&h->cabac, &h->cabac_state[ctxbase+(amvd>2) + (amvd>32)]))
         return 0;
 
     mvd= 1;
-    ctx= 3;
-    while( mvd < 9 && get_cabac( &h->cabac, &h->cabac_state[ctxbase+ctx] ) ) {
+    ctxbase+= 3;
+    while( mvd < 9 && get_cabac( &h->cabac, &h->cabac_state[ctxbase] ) ) {
+        if( mvd < 4 )
+            ctxbase++;
         mvd++;
-        if( ctx < 6 )
-            ctx++;
     }
 
     if( mvd >= 9 ) {
