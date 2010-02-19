@@ -60,6 +60,8 @@ typedef union {
 #   include "mips/intreadwrite.h"
 #elif ARCH_PPC
 #   include "ppc/intreadwrite.h"
+#elif ARCH_TOMI
+#   include "tomi/intreadwrite.h"
 #elif ARCH_X86
 #   include "x86/intreadwrite.h"
 #endif
