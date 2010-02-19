@@ -30,6 +30,7 @@
 #define ALT_BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
+#include "dsputil.h"
 #include "ivi_dsp.h"
 #include "ivi_common.h"
 #include "indeo5data.h"
@@ -183,25 +184,25 @@ static int decode_gop_header(IVI5DecContext *ctx, AVCodecContext *avctx)
             case 0:
                 band->inv_transform = ff_ivi_inverse_slant_8x8;
                 band->dc_transform  = ff_ivi_dc_slant_2d;
-                band->scan          = ivi5_scans8x8[0];
+                band->scan          = ff_zigzag_direct;
                 break;
 
             case 1:
                 band->inv_transform = ff_ivi_row_slant8;
                 band->dc_transform  = ff_ivi_dc_row_slant;
-                band->scan          = ivi5_scans8x8[1];
+                band->scan          = ivi5_scans8x8[0];
                 break;
 
             case 2:
                 band->inv_transform = ff_ivi_col_slant8;
                 band->dc_transform  = ff_ivi_dc_col_slant;
-                band->scan          = ivi5_scans8x8[2];
+                band->scan          = ivi5_scans8x8[1];
                 break;
 
             case 3:
                 band->inv_transform = ff_ivi_put_pixels_8x8;
                 band->dc_transform  = ff_ivi_put_dc_pixel_8x8;
-                band->scan          = ivi5_scans8x8[2];
+                band->scan          = ivi5_scans8x8[1];
                 break;
 
             case 4:
