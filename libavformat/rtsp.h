@@ -158,7 +158,7 @@ typedef struct RTSPMessageHeader {
  */
 enum RTSPClientState {
     RTSP_STATE_IDLE,    /**< not initialized */
-    RTSP_STATE_PLAYING, /**< initialized and receiving data */
+    RTSP_STATE_STREAMING, /**< initialized and sending/receiving data */
     RTSP_STATE_PAUSED,  /**< initialized, but not receiving data */
     RTSP_STATE_SEEKING, /**< initialized, requesting a seek */
 };

@@ -1249,7 +1249,7 @@ static int rtsp_read_play(AVFormatContext *s)
             return -1;
         }
     }
-    rt->state = RTSP_STATE_PLAYING;
+    rt->state = RTSP_STATE_STREAMING;
     return 0;
 }
 
@@ -1488,7 +1488,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
 
                 rtsp_read_reply(s, &reply, NULL, 0);
                 /* XXX: parse message */
-                if (rt->state != RTSP_STATE_PLAYING)
+                if (rt->state != RTSP_STATE_STREAMING)
                     return 0;
             }
 #endif
@@ -1516,7 +1516,7 @@ redo:
         if (ret == 1) /* received '$' */
             break;
         /* XXX: parse message */
-        if (rt->state != RTSP_STATE_PLAYING)
+        if (rt->state != RTSP_STATE_STREAMING)
             return 0;
     }
     ret = url_read_complete(rt->rtsp_hd, buf, 3);
@@ -1667,7 +1667,7 @@ static int rtsp_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR_INVALIDDATA;
             rt->need_subscription = 0;
 
-            if (rt->state == RTSP_STATE_PLAYING)
+            if (rt->state == RTSP_STATE_STREAMING)
                 rtsp_read_play (s);
         }
     }
@@ -1702,7 +1702,7 @@ static int rtsp_read_pause(AVFormatContext *s)
 
     rt = s->priv_data;
 
-    if (rt->state != RTSP_STATE_PLAYING)
+    if (rt->state != RTSP_STATE_STREAMING)
         return 0;
     else if (!(rt->server_type == RTSP_SERVER_REAL && rt->need_subscription)) {
         snprintf(cmd, sizeof(cmd),
@@ -1729,7 +1729,7 @@ static int rtsp_read_seek(AVFormatContext *s, int stream_index,
     default:
     case RTSP_STATE_IDLE:
         break;
-    case RTSP_STATE_PLAYING:
+    case RTSP_STATE_STREAMING:
         if (rtsp_read_pause(s) != 0)
             return -1;
         rt->state = RTSP_STATE_SEEKING;
