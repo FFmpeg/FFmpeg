@@ -347,6 +347,7 @@ OBJS-$(CONFIG_WMAVOICE_DECODER)        += wmavoice.o \
                                           celp_math.o celp_filters.o \
                                           acelp_vectors.o acelp_filters.o \
                                           lsp.o
+OBJS-$(CONFIG_WMV1_DECODER)            += msmpeg4.o msmpeg4data.o
 OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o        \
                                           msmpeg4.o msmpeg4data.o \
                                           intrax8.o intrax8dsp.o
