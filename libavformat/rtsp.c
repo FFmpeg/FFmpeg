@@ -1295,8 +1295,7 @@ static int rtsp_setup_input_streams(AVFormatContext *s)
     return 0;
 }
 
-static int rtsp_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
+static int rtsp_connect(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
     char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128];
@@ -1424,14 +1423,6 @@ redirect:
 
     rt->state = RTSP_STATE_IDLE;
     rt->seek_timestamp = 0; /* default is to start stream at position zero */
-    if (ap->initial_pause) {
-        /* do not start immediately */
-    } else {
-        if (rtsp_read_play(s) < 0) {
-            err = AVERROR_INVALIDDATA;
-            goto fail;
-        }
-    }
     return 0;
  fail:
     rtsp_close_streams(s);
@@ -1444,6 +1435,29 @@ redirect:
         goto redirect;
     }
     return err;
+}
+
+static int rtsp_read_header(AVFormatContext *s,
+                            AVFormatParameters *ap)
+{
+    RTSPState *rt = s->priv_data;
+    int ret;
+
+    ret = rtsp_connect(s);
+    if (ret)
+        return ret;
+
+    if (ap->initial_pause) {
+         /* do not start immediately */
+    } else {
+         if (rtsp_read_play(s) < 0) {
+            rtsp_close_streams(s);
+            url_close(rt->rtsp_hd);
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    return 0;
 }
 
 static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
