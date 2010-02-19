@@ -1109,7 +1109,9 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
             snprintf(transport, sizeof(transport) - 1,
                      "%s/UDP;multicast", trans_pref);
         }
-        if (rt->server_type == RTSP_SERVER_REAL ||
+        if (s->oformat) {
+            av_strlcat(transport, ";mode=receive", sizeof(transport));
+        } else if (rt->server_type == RTSP_SERVER_REAL ||
             rt->server_type == RTSP_SERVER_WMS)
             av_strlcat(transport, ";mode=play", sizeof(transport));
         snprintf(cmd, sizeof(cmd),
