@@ -197,7 +197,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         bink->current_track = 0;
     }
 
-    if (bink->current_track < bink->num_audio_tracks) {
+    while (bink->current_track < bink->num_audio_tracks) {
         uint32_t audio_size = get_le32(pb);
         if (audio_size > bink->remain_packet_size - 4) {
             av_log(s, AV_LOG_ERROR,
