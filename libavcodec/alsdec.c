@@ -703,10 +703,14 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
         *bd->use_ltp = get_bits1(gb);
 
         if (*bd->use_ltp) {
+            int r, c;
+
             bd->ltp_gain[0]   = decode_rice(gb, 1) << 3;
             bd->ltp_gain[1]   = decode_rice(gb, 2) << 3;
 
-            bd->ltp_gain[2]   = ltp_gain_values[get_unary(gb, 0, 4)][get_bits(gb, 2)];
+            r                 = get_unary(gb, 0, 4);
+            c                 = get_bits(gb, 2);
+            bd->ltp_gain[2]   = ltp_gain_values[r][c];
 
             bd->ltp_gain[3]   = decode_rice(gb, 2) << 3;
             bd->ltp_gain[4]   = decode_rice(gb, 1) << 3;
