@@ -1177,7 +1177,7 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
              * potential NAT router by sending dummy packets.
              * RTP/RTCP dummy packets are used for RDT, too.
              */
-            if (!(rt->server_type == RTSP_SERVER_WMS && i > 1))
+            if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) && s->iformat)
                 rtp_send_punch_packets(rtsp_st->rtp_handle);
             break;
         }
