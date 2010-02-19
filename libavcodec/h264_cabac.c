@@ -937,8 +937,7 @@ static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
             }
         }
         while( k-- ) {
-            if( get_cabac_bypass( &h->cabac ) )
-                mvd += 1 << k;
+            mvd += get_cabac_bypass( &h->cabac )<<k;
         }
     }
     return get_cabac_bypass_sign( &h->cabac, -mvd );
