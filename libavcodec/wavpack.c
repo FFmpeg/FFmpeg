@@ -67,6 +67,13 @@ enum WP_ID{
     WP_ID_CHANINFO
 };
 
+typedef struct SavedContext {
+    int offset;
+    int size;
+    int bits_used;
+    uint32_t crc;
+} SavedContext;
+
 #define MAX_TERMS 16
 
 typedef struct Decorr {
@@ -107,6 +114,10 @@ typedef struct WavpackContext {
     int float_shift;
     int float_max_exp;
     WvChannel ch[2];
+    int samples_left;
+    int max_samples;
+    int pos;
+    SavedContext sc, extra_sc;
 } WavpackContext;
 
 // exponent table copied from WavPack source
@@ -439,18 +450,25 @@ static float wv_get_value_float(WavpackContext *s, uint32_t *crc, int S)
     return value.f;
 }
 
+static void wv_reset_saved_context(WavpackContext *s)
+{
+    s->pos = 0;
+    s->sc.crc = s->extra_sc.crc = 0xFFFFFFFF;
+}
+
 static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *dst, const int type)
 {
     int i, j, count = 0;
     int last, t;
     int A, B, L, L2, R, R2;
-    int pos = 0;
-    uint32_t crc = 0xFFFFFFFF;
-    uint32_t crc_extra_bits = 0xFFFFFFFF;
+    int pos = s->pos;
+    uint32_t crc = s->sc.crc;
+    uint32_t crc_extra_bits = s->extra_sc.crc;
     int16_t *dst16 = dst;
     int32_t *dst32 = dst;
     float   *dstfl = dst;
 
+    if(s->samples_left == s->samples)
     s->one = s->zero = s->zeroes = 0;
     do{
         L = wv_get_value(s, gb, 0, &last);
@@ -539,8 +557,10 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
             *dst16++ = wv_get_value_integer(s, &crc_extra_bits, R);
         }
         count++;
-    }while(!last && count < s->samples);
+    }while(!last && count < s->max_samples);
 
+    s->samples_left -= count;
+    if(!s->samples_left){
     if(crc != s->CRC){
         av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
         return -1;
@@ -548,6 +568,16 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
     if(s->got_extra_bits && crc_extra_bits != s->crc_extra_bits){
         av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
         return -1;
+    }
+    wv_reset_saved_context(s);
+    }else{
+        s->pos = pos;
+        s->sc.crc = crc;
+        s->sc.bits_used = get_bits_count(&s->gb);
+        if(s->got_extra_bits){
+            s->extra_sc.crc = crc_extra_bits;
+            s->extra_sc.bits_used = get_bits_count(&s->gb_extra_bits);
+        }
     }
     return count * 2;
 }
@@ -557,13 +587,14 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
     int i, j, count = 0;
     int last, t;
     int A, S, T;
-    int pos = 0;
-    uint32_t crc = 0xFFFFFFFF;
-    uint32_t crc_extra_bits = 0xFFFFFFFF;
+    int pos = s->pos;
+    uint32_t crc = s->sc.crc;
+    uint32_t crc_extra_bits = s->extra_sc.crc;
     int16_t *dst16 = dst;
     int32_t *dst32 = dst;
     float   *dstfl = dst;
 
+    if(s->samples_left == s->samples)
     s->one = s->zero = s->zeroes = 0;
     do{
         T = wv_get_value(s, gb, 0, &last);
@@ -601,6 +632,8 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
         count++;
     }while(!last && count < s->samples);
 
+    s->samples_left -= count;
+    if(!s->samples_left){
     if(crc != s->CRC){
         av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
         return -1;
@@ -608,6 +641,16 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
     if(s->got_extra_bits && crc_extra_bits != s->crc_extra_bits){
         av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
         return -1;
+    }
+    wv_reset_saved_context(s);
+    }else{
+        s->pos = pos;
+        s->sc.crc = crc;
+        s->sc.bits_used = get_bits_count(&s->gb);
+        if(s->got_extra_bits){
+            s->extra_sc.crc = crc_extra_bits;
+            s->extra_sc.bits_used = get_bits_count(&s->gb_extra_bits);
+        }
     }
     return count;
 }
@@ -623,6 +666,8 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
     else
         avctx->sample_fmt = SAMPLE_FMT_S32;
     avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
+
+    wv_reset_saved_context(s);
 
     return 0;
 }
@@ -647,11 +692,13 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         return 0;
     }
 
+    if(!s->samples_left){
     memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
     memset(s->ch, 0, sizeof(s->ch));
     s->extra_bits = 0;
     s->and = s->or = s->shift = 0;
     s->got_extra_bits = 0;
+    }
 
     s->samples = AV_RL32(buf); buf += 4;
     if(!s->samples){
@@ -676,10 +723,11 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     s->post_shift = 8 * (bpp-1-(s->frame_flags&0x03)) + ((s->frame_flags >> 13) & 0x1f);
     s->CRC = AV_RL32(buf); buf += 4;
 
-    /* should not happen but who knows */
-    if(s->samples * bpp * avctx->channels > *data_size){
-        av_log(avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
-        return -1;
+    s->max_samples = *data_size / (bpp * avctx->channels);
+    s->max_samples = FFMIN(s->max_samples, s->samples);
+    if(s->samples_left > 0){
+        s->max_samples = FFMIN(s->max_samples, s->samples_left);
+        buf = buf_end;
     }
 
     // parse metadata blocks
@@ -847,6 +895,8 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             got_float = 1;
             break;
         case WP_ID_DATA:
+            s->sc.offset = buf - avpkt->data;
+            s->sc.size   = size * 8;
             init_get_bits(&s->gb, buf, size * 8);
             s->data_size = size * 8;
             buf += size;
@@ -858,6 +908,8 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
                 buf += size;
                 continue;
             }
+            s->extra_sc.offset = buf - avpkt->data;
+            s->extra_sc.size   = size * 8;
             init_get_bits(&s->gb_extra_bits, buf, size * 8);
             s->crc_extra_bits = get_bits_long(&s->gb_extra_bits, 32);
             buf += size;
@@ -868,6 +920,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         }
         if(id & WP_IDF_ODD) buf++;
     }
+    if(!s->samples_left){
     if(!got_terms){
         av_log(avctx, AV_LOG_ERROR, "No block with decorrelation terms\n");
         return -1;
@@ -902,6 +955,16 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         if(size < wanted){
             av_log(avctx, AV_LOG_ERROR, "Too small EXTRABITS\n");
             s->got_extra_bits = 0;
+        }
+    }
+    s->samples_left = s->samples;
+    }else{
+        init_get_bits(&s->gb, avpkt->data + s->sc.offset, s->sc.size);
+        skip_bits_long(&s->gb, s->sc.bits_used);
+        if(s->got_extra_bits){
+            init_get_bits(&s->gb_extra_bits, avpkt->data + s->extra_sc.offset,
+                          s->extra_sc.size);
+            skip_bits_long(&s->gb_extra_bits, s->extra_sc.bits_used);
         }
     }
 
@@ -952,7 +1015,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     }
     *data_size = samplecount * bpp;
 
-    return buf_size;
+    return s->samples_left > 0 ? 0 : buf_size;
 }
 
 AVCodec wavpack_decoder = {
