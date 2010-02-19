@@ -116,9 +116,9 @@ static int wma_decode_init(AVCodecContext * avctx)
     }
 
     if (s->use_exp_vlc) {
-        init_vlc(&s->exp_vlc, EXPVLCBITS, sizeof(ff_wma_scale_huffbits), //FIXME move out of context
-                 ff_wma_scale_huffbits, 1, 1,
-                 ff_wma_scale_huffcodes, 4, 4, 0);
+        init_vlc(&s->exp_vlc, EXPVLCBITS, sizeof(ff_aac_scalefactor_bits), //FIXME move out of context
+                 ff_aac_scalefactor_bits, 1, 1,
+                 ff_aac_scalefactor_code, 4, 4, 0);
     } else {
         wma_lsp_to_curve_init(s, s->frame_len);
     }
