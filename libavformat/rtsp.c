@@ -1256,6 +1256,45 @@ static int rtsp_read_play(AVFormatContext *s)
     return 0;
 }
 
+static int rtsp_setup_input_streams(AVFormatContext *s)
+{
+    RTSPState *rt = s->priv_data;
+    RTSPMessageHeader reply1, *reply = &reply1;
+    char cmd[1024];
+    unsigned char *content = NULL;
+    int ret;
+
+    /* describe the stream */
+    snprintf(cmd, sizeof(cmd),
+             "DESCRIBE %s RTSP/1.0\r\n"
+             "Accept: application/sdp\r\n",
+             s->filename);
+    if (rt->server_type == RTSP_SERVER_REAL) {
+        /**
+         * The Require: attribute is needed for proper streaming from
+         * Realmedia servers.
+         */
+        av_strlcat(cmd,
+                   "Require: com.real.retain-entity-for-setup\r\n",
+                   sizeof(cmd));
+    }
+    rtsp_send_cmd(s, cmd, reply, &content);
+    if (!content)
+        return AVERROR_INVALIDDATA;
+    if (reply->status_code != RTSP_STATUS_OK) {
+        av_freep(&content);
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* now we got the SDP description, we parse it */
+    ret = sdp_parse(s, (const char *)content);
+    av_freep(&content);
+    if (ret < 0)
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
 static int rtsp_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
@@ -1263,9 +1302,8 @@ static int rtsp_read_header(AVFormatContext *s,
     char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128];
     char *option_list, *option, *filename;
     URLContext *rtsp_hd;
-    int port, ret, err;
+    int port, err;
     RTSPMessageHeader reply1, *reply = &reply1;
-    unsigned char *content = NULL;
     int lower_transport_mask = 0;
     char real_challenge[64];
 redirect:
@@ -1364,37 +1402,9 @@ redirect:
         break;
     }
 
-    /* describe the stream */
-    snprintf(cmd, sizeof(cmd),
-             "DESCRIBE %s RTSP/1.0\r\n"
-             "Accept: application/sdp\r\n",
-             s->filename);
-    if (rt->server_type == RTSP_SERVER_REAL) {
-        /**
-         * The Require: attribute is needed for proper streaming from
-         * Realmedia servers.
-         */
-        av_strlcat(cmd,
-                   "Require: com.real.retain-entity-for-setup\r\n",
-                   sizeof(cmd));
-    }
-    rtsp_send_cmd(s, cmd, reply, &content);
-    if (!content) {
-        err = AVERROR_INVALIDDATA;
+    err = rtsp_setup_input_streams(s);
+    if (err)
         goto fail;
-    }
-    if (reply->status_code != RTSP_STATUS_OK) {
-        err = AVERROR_INVALIDDATA;
-        goto fail;
-    }
-
-    /* now we got the SDP description, we parse it */
-    ret = sdp_parse(s, (const char *)content);
-    av_freep(&content);
-    if (ret < 0) {
-        err = AVERROR_INVALIDDATA;
-        goto fail;
-    }
 
     do {
         int lower_transport = ff_log2_tab[lower_transport_mask &
@@ -1425,7 +1435,6 @@ redirect:
     return 0;
  fail:
     rtsp_close_streams(s);
-    av_freep(&content);
     url_close(rt->rtsp_hd);
     if (reply->status_code >=300 && reply->status_code < 400) {
         av_strlcpy(s->filename, reply->location, sizeof(s->filename));
