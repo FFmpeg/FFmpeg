@@ -106,8 +106,8 @@ static int xa_read_packet(AVFormatContext *s,
     packet_size = 15*st->codec->channels;
 
     ret = av_get_packet(pb, pkt, packet_size);
-    if(ret != packet_size)
-        return AVERROR(EIO);
+    if(ret < 0)
+        return ret;
 
     pkt->stream_index = st->index;
     xa->sent_bytes += packet_size;
