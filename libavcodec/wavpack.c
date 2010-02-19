@@ -469,7 +469,7 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
     float   *dstfl = dst;
 
     if(s->samples_left == s->samples)
-    s->one = s->zero = s->zeroes = 0;
+        s->one = s->zero = s->zeroes = 0;
     do{
         L = wv_get_value(s, gb, 0, &last);
         if(last) break;
@@ -561,15 +561,15 @@ static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *d
 
     s->samples_left -= count;
     if(!s->samples_left){
-    if(crc != s->CRC){
-        av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
-        return -1;
-    }
-    if(s->got_extra_bits && crc_extra_bits != s->crc_extra_bits){
-        av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
-        return -1;
-    }
-    wv_reset_saved_context(s);
+        if(crc != s->CRC){
+            av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
+            return -1;
+        }
+        if(s->got_extra_bits && crc_extra_bits != s->crc_extra_bits){
+            av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
+            return -1;
+        }
+        wv_reset_saved_context(s);
     }else{
         s->pos = pos;
         s->sc.crc = crc;
@@ -595,7 +595,7 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
     float   *dstfl = dst;
 
     if(s->samples_left == s->samples)
-    s->one = s->zero = s->zeroes = 0;
+        s->one = s->zero = s->zeroes = 0;
     do{
         T = wv_get_value(s, gb, 0, &last);
         S = 0;
@@ -634,15 +634,15 @@ static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst
 
     s->samples_left -= count;
     if(!s->samples_left){
-    if(crc != s->CRC){
-        av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
-        return -1;
-    }
-    if(s->got_extra_bits && crc_extra_bits != s->crc_extra_bits){
-        av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
-        return -1;
-    }
-    wv_reset_saved_context(s);
+        if(crc != s->CRC){
+            av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
+            return -1;
+        }
+        if(s->got_extra_bits && crc_extra_bits != s->crc_extra_bits){
+            av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
+            return -1;
+        }
+        wv_reset_saved_context(s);
     }else{
         s->pos = pos;
         s->sc.crc = crc;
@@ -693,11 +693,11 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     }
 
     if(!s->samples_left){
-    memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
-    memset(s->ch, 0, sizeof(s->ch));
-    s->extra_bits = 0;
-    s->and = s->or = s->shift = 0;
-    s->got_extra_bits = 0;
+        memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
+        memset(s->ch, 0, sizeof(s->ch));
+        s->extra_bits = 0;
+        s->and = s->or = s->shift = 0;
+        s->got_extra_bits = 0;
     }
 
     s->samples = AV_RL32(buf); buf += 4;
@@ -921,43 +921,43 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         if(id & WP_IDF_ODD) buf++;
     }
     if(!s->samples_left){
-    if(!got_terms){
-        av_log(avctx, AV_LOG_ERROR, "No block with decorrelation terms\n");
-        return -1;
-    }
-    if(!got_weights){
-        av_log(avctx, AV_LOG_ERROR, "No block with decorrelation weights\n");
-        return -1;
-    }
-    if(!got_samples){
-        av_log(avctx, AV_LOG_ERROR, "No block with decorrelation samples\n");
-        return -1;
-    }
-    if(!got_entropy){
-        av_log(avctx, AV_LOG_ERROR, "No block with entropy info\n");
-        return -1;
-    }
-    if(s->hybrid && !got_hybrid){
-        av_log(avctx, AV_LOG_ERROR, "Hybrid config not found\n");
-        return -1;
-    }
-    if(!got_bs){
-        av_log(avctx, AV_LOG_ERROR, "Packed samples not found\n");
-        return -1;
-    }
-    if(!got_float && avctx->sample_fmt == SAMPLE_FMT_FLT){
-        av_log(avctx, AV_LOG_ERROR, "Float information not found\n");
-        return -1;
-    }
-    if(s->got_extra_bits && avctx->sample_fmt != SAMPLE_FMT_FLT){
-        const int size = get_bits_left(&s->gb_extra_bits);
-        const int wanted = s->samples * s->extra_bits << s->stereo_in;
-        if(size < wanted){
-            av_log(avctx, AV_LOG_ERROR, "Too small EXTRABITS\n");
-            s->got_extra_bits = 0;
+        if(!got_terms){
+            av_log(avctx, AV_LOG_ERROR, "No block with decorrelation terms\n");
+            return -1;
         }
-    }
-    s->samples_left = s->samples;
+        if(!got_weights){
+            av_log(avctx, AV_LOG_ERROR, "No block with decorrelation weights\n");
+            return -1;
+        }
+        if(!got_samples){
+            av_log(avctx, AV_LOG_ERROR, "No block with decorrelation samples\n");
+            return -1;
+        }
+        if(!got_entropy){
+            av_log(avctx, AV_LOG_ERROR, "No block with entropy info\n");
+            return -1;
+        }
+        if(s->hybrid && !got_hybrid){
+            av_log(avctx, AV_LOG_ERROR, "Hybrid config not found\n");
+            return -1;
+        }
+        if(!got_bs){
+            av_log(avctx, AV_LOG_ERROR, "Packed samples not found\n");
+            return -1;
+        }
+        if(!got_float && avctx->sample_fmt == SAMPLE_FMT_FLT){
+            av_log(avctx, AV_LOG_ERROR, "Float information not found\n");
+            return -1;
+        }
+        if(s->got_extra_bits && avctx->sample_fmt != SAMPLE_FMT_FLT){
+            const int size = get_bits_left(&s->gb_extra_bits);
+            const int wanted = s->samples * s->extra_bits << s->stereo_in;
+            if(size < wanted){
+                av_log(avctx, AV_LOG_ERROR, "Too small EXTRABITS\n");
+                s->got_extra_bits = 0;
+            }
+        }
+        s->samples_left = s->samples;
     }else{
         init_get_bits(&s->gb, avpkt->data + s->sc.offset, s->sc.size);
         skip_bits_long(&s->gb, s->sc.bits_used);
