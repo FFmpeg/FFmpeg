@@ -572,8 +572,9 @@ static int sdp_parse(AVFormatContext *s, const char *content)
 }
 
 /* close and free RTSP streams */
-static void rtsp_close_streams(RTSPState *rt)
+static void rtsp_close_streams(AVFormatContext *s)
 {
+    RTSPState *rt = s->priv_data;
     int i;
     RTSPStream *rtsp_st;
 
@@ -1421,7 +1422,7 @@ redirect:
     }
     return 0;
  fail:
-    rtsp_close_streams(rt);
+    rtsp_close_streams(s);
     av_freep(&content);
     url_close(rt->rtsp_hd);
     if (reply->status_code >=300 && reply->status_code < 400) {
@@ -1759,7 +1760,7 @@ static int rtsp_read_close(AVFormatContext *s)
              s->filename);
     rtsp_send_cmd_async(s, cmd);
 
-    rtsp_close_streams(rt);
+    rtsp_close_streams(s);
     url_close(rt->rtsp_hd);
     return 0;
 }
@@ -1839,14 +1840,13 @@ static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     return 0;
 fail:
-    rtsp_close_streams(rt);
+    rtsp_close_streams(s);
     return err;
 }
 
 static int sdp_read_close(AVFormatContext *s)
 {
-    RTSPState *rt = s->priv_data;
-    rtsp_close_streams(rt);
+    rtsp_close_streams(s);
     return 0;
 }
 
