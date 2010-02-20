@@ -56,7 +56,7 @@
 #endif
 
 #ifndef av_alias
-#if HAVE_ATTRIBUTE_MAY_ALIAS
+#if HAVE_ATTRIBUTE_MAY_ALIAS && (!defined(__ICC) || __ICC > 1110) && AV_GCC_VERSION_AT_LEAST(3,3)
 #   define av_alias __attribute__((may_alias))
 #else
 #   define av_alias
