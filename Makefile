@@ -139,7 +139,7 @@ clean:: testclean
 
 distclean::
 	rm -f $(DISTCLEANSUFFIXES)
-	rm -f version.h config.*
+	rm -f version.h config.* libavutil/avconfig.h
 
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
