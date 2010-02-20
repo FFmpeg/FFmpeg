@@ -903,10 +903,6 @@ static const float codebook_vector0_vals[] = {
    -1.0000000,  0.0000000,  1.0000000
 };
 
-static const float codebook_vector2_vals[] = {
-    0.0000000,  1.0000000,  2.5198421,
-};
-
 /*
  * bits  0:1, 2:3, 4:5, 6:7  index into _vals array
  *       8:11                number of non-zero values
@@ -947,11 +943,6 @@ static const uint16_t codebook_vector4_idx[] = {
     0x0008, 0x0018, 0x0028, 0x0038, 0x0048, 0x0058, 0x0068, 0x0078, 0x0088,
 };
 
-static const float codebook_vector6_vals[] = {
-    0.0000000,  1.0000000,  2.5198421,  4.3267487,
-    6.3496042,  8.5498797, 10.9027236, 13.3905183,
-};
-
 /*
  * bits  0:3, 4:7  index into _vals array
  *       8:11      number of non-zero values
@@ -967,16 +958,6 @@ static const uint16_t codebook_vector6_idx[] = {
     0x1105, 0x0215, 0x0225, 0x0235, 0x0245, 0x0255, 0x0265, 0x0275,
     0x1106, 0x0216, 0x0226, 0x0236, 0x0246, 0x0256, 0x0266, 0x0276,
     0x1107, 0x0217, 0x0227, 0x0237, 0x0247, 0x0257, 0x0267, 0x0277,
-};
-
-static const float codebook_vector8_vals[] = {
-     0.0000000,  1.0000000,
-     2.5198421,  4.3267487,
-     6.3496042,  8.5498797,
-    10.9027236, 13.3905183,
-    16.0000000, 18.7207544,
-    21.5443469, 24.4637810,
-    27.4731418,
 };
 
 /*
@@ -1068,11 +1049,11 @@ static const uint16_t codebook_vector10_idx[] = {
 };
 
 const float *const ff_aac_codebook_vector_vals[] = {
-    codebook_vector0_vals, codebook_vector0_vals,
-    codebook_vector2_vals, codebook_vector2_vals,
-    codebook_vector4_vals, codebook_vector4_vals,
-    codebook_vector6_vals, codebook_vector6_vals,
-    codebook_vector8_vals, codebook_vector8_vals,
+    codebook_vector0_vals,  codebook_vector0_vals,
+    codebook_vector10_vals, codebook_vector10_vals,
+    codebook_vector4_vals,  codebook_vector4_vals,
+    codebook_vector10_vals, codebook_vector10_vals,
+    codebook_vector10_vals, codebook_vector10_vals,
     codebook_vector10_vals,
 };
 
