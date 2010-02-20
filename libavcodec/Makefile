@@ -582,11 +582,12 @@ MMX-OBJS-$(CONFIG_VP6_DECODER)         += x86/vp3dsp_mmx.o              \
 MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
                                           $(YASM-OBJS-yes)
 
+MMX-OBJS-$(CONFIG_FFT)                 += x86/fft.o
+
 OBJS-$(HAVE_MMX)                       += x86/cpuid.o                   \
                                           x86/dnxhd_mmx.o               \
                                           x86/dsputil_mmx.o             \
                                           x86/fdct_mmx.o                \
-                                          x86/fft.o                     \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
                                           x86/motion_est_mmx.o          \
