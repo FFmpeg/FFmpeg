@@ -221,12 +221,12 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
 
 #if !HAVE_EXP2F
 #undef exp2f
-#define exp2f(x) exp2(x)
+#define exp2f(x) ((float)exp2(x))
 #endif /* HAVE_EXP2F */
 
 #if !HAVE_LLRINT
 #undef llrint
-#define llrint(x) rint(x)
+#define llrint(x) ((long long)rint(x))
 #endif /* HAVE_LLRINT */
 
 #if !HAVE_LOG2
@@ -236,7 +236,7 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
 
 #if !HAVE_LOG2F
 #undef log2f
-#define log2f(x) log2(x)
+#define log2f(x) ((float)log2(x))
 #endif /* HAVE_LOG2F */
 
 #if !HAVE_LRINT
