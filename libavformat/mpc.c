@@ -170,6 +170,8 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->data[0] = curbits;
     pkt->data[1] = (c->curframe > c->fcount);
+    pkt->data[2] = 0;
+    pkt->data[3] = 0;
 
     pkt->stream_index = 0;
     pkt->pts = cur;
