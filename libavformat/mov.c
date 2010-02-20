@@ -1580,7 +1580,7 @@ static int mov_open_dref(ByteIOContext **pb, char *src, MOVDref *ref)
             }
 
         /* compose filename if next level down to target was found */
-        if (i == ref->nlvl_to - 1) {
+        if (i == ref->nlvl_to - 1 && src_path - src  < sizeof(filename)) {
             memcpy(filename, src, src_path - src);
             filename[src_path - src] = 0;
 
