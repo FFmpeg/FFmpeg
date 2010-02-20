@@ -126,14 +126,15 @@ uninstall-man:
 	rm -f $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
 
 testclean:
-	rm -rf tests/vsynth1 tests/vsynth2 tests/data tests/*~
+	rm -rf tests/vsynth1 tests/vsynth2 tests/data
+	rm -f $(addprefix tests/,$(CLEANSUFFIXES))
+	rm -f tests/seek_test$(EXESUF) tests/seek_test.o
+	rm -f $(addprefix tests/,$(addsuffix $(HOSTEXESUF),audiogen videogen rotozoom tiny_psnr))
 
 clean:: testclean
 	rm -f $(ALLPROGS) $(ALLPROGS_G)
 	rm -f $(CLEANSUFFIXES)
 	rm -f doc/*.html doc/*.pod doc/*.1
-	rm -f tests/seek_test$(EXESUF) tests/seek_test.o
-	rm -f $(addprefix tests/,$(addsuffix $(HOSTEXESUF),audiogen videogen rotozoom tiny_psnr))
 	rm -f $(TOOLS)
 
 distclean::
