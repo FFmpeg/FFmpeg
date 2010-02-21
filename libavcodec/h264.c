@@ -981,7 +981,6 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_c
     MpegEncContext * const s = &h->s;
     int deblock_left;
     int deblock_top;
-    int mb_xy;
     int top_idx = 1;
     uint8_t *top_border_m1;
     uint8_t *top_border;
