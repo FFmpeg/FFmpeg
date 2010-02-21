@@ -159,44 +159,44 @@ static int build_table(VLC *vlc, int table_nb_bits,
         /* if code matches the prefix, it is in the table */
         n -= n_prefix;
         if (n > 0) {
-        if(flags & INIT_VLC_LE)
-            code_prefix2= code & (n_prefix>=32 ? 0xffffffff : (1 << n_prefix)-1);
-        else
-            code_prefix2= code >> n;
-        if (code_prefix2 == code_prefix) {
-            if (n <= table_nb_bits) {
-                /* no need to add another table */
-                j = (code << (table_nb_bits - n)) & (table_size - 1);
-                nb = 1 << (table_nb_bits - n);
-                for(k=0;k<nb;k++) {
-                    if(flags & INIT_VLC_LE)
-                        j = (code >> n_prefix) + (k<<n);
+            if(flags & INIT_VLC_LE)
+                code_prefix2= code & (n_prefix>=32 ? 0xffffffff : (1 << n_prefix)-1);
+            else
+                code_prefix2= code >> n;
+            if (code_prefix2 == code_prefix) {
+                if (n <= table_nb_bits) {
+                    /* no need to add another table */
+                    j = (code << (table_nb_bits - n)) & (table_size - 1);
+                    nb = 1 << (table_nb_bits - n);
+                    for(k=0;k<nb;k++) {
+                        if(flags & INIT_VLC_LE)
+                            j = (code >> n_prefix) + (k<<n);
 #ifdef DEBUG_VLC
-                    av_log(NULL, AV_LOG_DEBUG, "%4x: code=%d n=%d\n",
-                           j, i, n);
+                        av_log(NULL, AV_LOG_DEBUG, "%4x: code=%d n=%d\n",
+                               j, i, n);
 #endif
-                    if (table[j][1] /*bits*/ != 0) {
-                        av_log(NULL, AV_LOG_ERROR, "incorrect codes\n");
-                        return -1;
+                        if (table[j][1] /*bits*/ != 0) {
+                            av_log(NULL, AV_LOG_ERROR, "incorrect codes\n");
+                            return -1;
+                        }
+                        table[j][1] = n; //bits
+                        table[j][0] = symbol;
+                        j++;
                     }
-                    table[j][1] = n; //bits
-                    table[j][0] = symbol;
-                    j++;
-                }
-            } else {
-                n -= table_nb_bits;
-                j = (code >> ((flags & INIT_VLC_LE) ? n_prefix : n)) & ((1 << table_nb_bits) - 1);
+                } else {
+                    n -= table_nb_bits;
+                    j = (code >> ((flags & INIT_VLC_LE) ? n_prefix : n)) & ((1 << table_nb_bits) - 1);
 #ifdef DEBUG_VLC
-                av_log(NULL,AV_LOG_DEBUG,"%4x: n=%d (subtable)\n",
-                       j, n);
+                    av_log(NULL,AV_LOG_DEBUG,"%4x: n=%d (subtable)\n",
+                           j, n);
 #endif
-                /* compute table size */
-                n1 = -table[j][1]; //bits
-                if (n > n1)
-                    n1 = n;
-                table[j][1] = -n1; //bits
+                    /* compute table size */
+                    n1 = -table[j][1]; //bits
+                    if (n > n1)
+                        n1 = n;
+                    table[j][1] = -n1; //bits
+                }
             }
-        }
         }
     }
 
