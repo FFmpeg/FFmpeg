@@ -166,10 +166,10 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 
 # ifdef ALT_BITSTREAM_READER_LE
 #   define SHOW_UBITS(name, gb, num)\
-        ((name##_cache) & (NEG_USR32(0xffffffff,num)))
+        zero_extend(name##_cache, num)
 
 #   define SHOW_SBITS(name, gb, num)\
-        NEG_SSR32((name##_cache)<<(32-(num)), num)
+        sign_extend(name##_cache, num)
 # else
 #   define SHOW_UBITS(name, gb, num)\
         NEG_USR32(name##_cache, num)
