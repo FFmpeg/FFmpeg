@@ -1,5 +1,5 @@
 /*
- * FFplay : Simple Media Player based on the ffmpeg libraries
+ * FFplay : Simple Media Player based on the FFmpeg libraries
  * Copyright (c) 2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
