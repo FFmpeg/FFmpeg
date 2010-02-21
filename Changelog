@@ -59,6 +59,7 @@ version <next>:
 - RTP depacketization of AMR
 - WMAVoice decoder
 - FFprobe tool
+- AMR-NB decoder
 
 
 

@@ -549,8 +549,8 @@ following image formats are supported:
 @item ADPCM Westwood Studios IMA @tab     @tab  X
     @tab Used in Westwood Studios games like Command and Conquer.
 @item ADPCM Yamaha           @tab  X  @tab  X
-@item AMR-NB                 @tab  E  @tab  E
-    @tab supported through external library libopencore-amrnb
+@item AMR-NB                 @tab  X  @tab  E
+    @tab encoding supported through external library libopencore-amrnb
 @item AMR-WB                 @tab     @tab  E
     @tab decoding supported through external library libopencore-amrwb
 @item Apple lossless audio   @tab  X  @tab  X
