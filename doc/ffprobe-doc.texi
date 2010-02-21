@@ -65,6 +65,10 @@ ffprobe [options] [@file{input_file}]
 @section Main options
 
 @table @option
+
+@item -f @var{format}
+Force format to use.
+
 @item -unit
 Show the unit of the displayed values.
 

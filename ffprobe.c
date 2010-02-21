@@ -42,6 +42,7 @@ static const OptionDef options[];
 
 /* FFprobe context */
 static const char *input_filename;
+static AVInputFormat *iformat = NULL;
 
 static const char *binary_unit_prefixes [] = { "", "Ki", "Mi", "Gi", "Ti", "Pi" };
 static const char *decimal_unit_prefixes[] = { "", "K" , "M" , "G" , "T" , "P"  };
@@ -221,7 +222,7 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
 
     fmt_ctx = avformat_alloc_context();
 
-    if ((err = av_open_input_file(&fmt_ctx, filename, NULL, 0, NULL)) < 0) {
+    if ((err = av_open_input_file(&fmt_ctx, filename, iformat, 0, NULL)) < 0) {
         print_error(filename, err);
         return err;
     }
@@ -278,6 +279,15 @@ static void show_usage(void)
     printf("\n");
 }
 
+static void opt_format(const char *arg)
+{
+    iformat = av_find_input_format(arg);
+    if (!iformat) {
+        fprintf(stderr, "Unknown input format: %s\n", arg);
+        exit(1);
+    }
+}
+
 static void opt_input_file(const char *filename)
 {
     if (!strcmp(filename, "-"))
@@ -302,6 +312,7 @@ static void opt_pretty(void)
 
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
+    { "f", HAS_ARG, {(void*)opt_format}, "force format", "format" },
     { "unit",          OPT_BOOL, {(void*)&show_value_unit},   "show unit of the displayed values" },
     { "prefix",        OPT_BOOL, {(void*)&use_value_prefix}, "use SI prefixes for the displayed values"  },
     { "byte_binary_prefix", OPT_BOOL, {(void*)&use_byte_value_binary_prefix},
