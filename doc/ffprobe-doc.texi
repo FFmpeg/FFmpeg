@@ -1,0 +1,114 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FFprobe Documentation
+@titlepage
+@sp 7
+@center @titlefont{FFprobe Documentation}
+@sp 3
+@end titlepage
+
+@chapter Introduction
+
+@c man begin DESCRIPTION
+
+FFprobe gathers information from multimedia streams and prints it in
+human- and machine-readable fashion.
+
+For example it can be used to check the format of the container used
+by a multimedia stream and the format and type of each media stream
+contained in it.
+
+If a filename is specified in input, ffprobe will try to open and
+probe the file content. If the file cannot be opened or recognized as
+a multimedia file, a positive exit code is returned.
+
+FFprobe may be employed both as a standalone application or in
+combination with a textual filter, which may perform more
+sophisticated processing, e.g. statistical processing or plotting.
+
+Options are used to list some of the formats supported by ffprobe or
+for specifying which information to display, and for setting how
+ffprobe will show it.
+
+FFprobe output is designed to be easily parsable by a textual filter,
+and consists of one or more sections of the form:
+@example
+[SECTION]
+key1=val1
+...
+keyN=valN
+[/SECTION]
+@end example
+
+Metadata tags stored in the container or in the streams are recognized
+and printed in the corresponding ``FORMAT'' or ``STREAM'' section, and
+are prefixed by the string ``TAG:''.
+
+@c man end
+
+@chapter Invocation
+
+@section Syntax
+
+The generic syntax is:
+
+@example
+@c man begin SYNOPSIS
+ffprobe [options] [@file{input_file}]
+@c man end
+@end example
+
+@c man begin OPTIONS
+
+@include fftools-common-opts.texi
+
+@section Main options
+
+@table @option
+@item -unit
+Show the unit of the displayed values.
+
+@item -prefix
+Show a SI prefixes of the displayed values.
+Unless ``-byte_binary_prefix'' option is used all the prefix
+are decimal.
+
+@item -byte_binary_prefix
+Force the use of binary prefixes for byte values.
+
+@item -sexagesimal
+Use sexagesimal format HH:MM:SS.MICROSECONDS for time values.
+
+@item -pretty
+Prettify the format of the displayed values, it corresponds to the
+options ``-unit -prefix -byte_binary_prefix -sexagesimal''.
+
+@item -show_format
+Show information about the container format of the input multimedia
+stream.
+
+All the container format information is printed within a section with
+name ``FORMAT''.
+
+@item -show_streams
+Show information about each media stream contained in the input
+multimedia stream.
+
+Each media stream information is printed within a dedicated section
+with name ``STREAM''.
+
+@end table
+@c man end
+
+@ignore
+
+@setfilename ffprobe
+@settitle FFprobe media prober
+
+@c man begin SEEALSO
+ffmpeg(1), ffplay(1), ffserver(1)
+@c man end
+
+@end ignore
+
+@bye
