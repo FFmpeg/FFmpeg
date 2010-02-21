@@ -813,7 +813,6 @@ static void fill_decode_neighbors(H264Context *h, int mb_type){
 
 static void fill_decode_caches(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= h->mb_xy;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
     int topleft_type, top_type, topright_type, left_type[2];
     const uint8_t * left_block= h->left_block;
