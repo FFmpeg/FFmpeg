@@ -158,11 +158,12 @@ static int build_table(VLC *vlc, int table_nb_bits,
 #endif
         /* if code matches the prefix, it is in the table */
         n -= n_prefix;
+        if (n > 0) {
         if(flags & INIT_VLC_LE)
             code_prefix2= code & (n_prefix>=32 ? 0xffffffff : (1 << n_prefix)-1);
         else
             code_prefix2= code >> n;
-        if (n > 0 && code_prefix2 == code_prefix) {
+        if (code_prefix2 == code_prefix) {
             if (n <= table_nb_bits) {
                 /* no need to add another table */
                 j = (code << (table_nb_bits - n)) & (table_size - 1);
@@ -195,6 +196,7 @@ static int build_table(VLC *vlc, int table_nb_bits,
                     n1 = n;
                 table[j][1] = -n1; //bits
             }
+        }
         }
     }
 
