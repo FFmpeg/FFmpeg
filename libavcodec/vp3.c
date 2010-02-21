@@ -452,8 +452,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     int bit = 0;
     int current_superblock = 0;
     int current_run = 0;
-    int decode_fully_flags = 0;
-    int decode_partial_blocks = 0;
+    int num_partial_superblocks = 0;
     int first_c_fragment_seen;
 
     int i, j;
@@ -480,52 +479,46 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
             memset(s->superblock_coding + current_superblock, bit, current_run);
 
             current_superblock += current_run;
-
-                /* if any of the superblocks are not partially coded, flag
-                 * a boolean to decode the list of fully-coded superblocks */
-                if (bit == 0) {
-                    decode_fully_flags = 1;
-                } else {
-
-                    /* make a note of the fact that there are partially coded
-                     * superblocks */
-                    decode_partial_blocks = 1;
-                }
+            if (bit)
+                num_partial_superblocks += current_run;
 
                 bit ^= 1;
         }
 
         /* unpack the list of fully coded superblocks if any of the blocks were
          * not marked as partially coded in the previous step */
-        if (decode_fully_flags) {
+        if (num_partial_superblocks < s->superblock_count) {
+            int superblocks_decoded = 0;
 
             current_superblock = 0;
-            current_run = 0;
             bit = get_bits1(gb);
-            /* toggle the bit because as soon as the first run length is
-             * fetched the bit will be toggled again */
-            bit ^= 1;
-            while (current_superblock < s->superblock_count) {
+            while (superblocks_decoded < s->superblock_count - num_partial_superblocks) {
+                        current_run = get_vlc2(gb,
+                            s->superblock_run_length_vlc.table, 6, 2) + 1;
+                        if (current_run == 34)
+                            current_run += get_bits(gb, 12);
+
+                for (j = 0; j < current_run; current_superblock++) {
+                    if (current_superblock >= s->superblock_count) {
+                        av_log(s->avctx, AV_LOG_ERROR, "Invalid fully coded superblock run length\n");
+                        return -1;
+                    }
 
                 /* skip any superblocks already marked as partially coded */
                 if (s->superblock_coding[current_superblock] == SB_NOT_CODED) {
-
-                    if (current_run-- == 0) {
-                        bit ^= 1;
-                        current_run = get_vlc2(gb,
-                            s->superblock_run_length_vlc.table, 6, 2);
-                        if (current_run == 33)
-                            current_run += get_bits(gb, 12);
-                    }
                     s->superblock_coding[current_superblock] = 2*bit;
+                    j++;
                 }
-                current_superblock++;
+                }
+                superblocks_decoded += current_run;
+
+                    bit ^= 1;
             }
         }
 
         /* if there were partial blocks, initialize bitstream for
          * unpacking fragment codings */
-        if (decode_partial_blocks) {
+        if (num_partial_superblocks) {
 
             current_run = 0;
             bit = get_bits1(gb);
