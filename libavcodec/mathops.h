@@ -122,6 +122,13 @@ static inline av_const int sign_extend(int val, unsigned bits)
 }
 #endif
 
+#ifndef zero_extend
+static inline av_const unsigned zero_extend(unsigned val, unsigned bits)
+{
+    return (val << (INT_BIT - bits)) >> (INT_BIT - bits);
+}
+#endif
+
 #ifndef COPY3_IF_LT
 #define COPY3_IF_LT(x, y, a, b, c, d)\
 if ((y) < (x)) {\
