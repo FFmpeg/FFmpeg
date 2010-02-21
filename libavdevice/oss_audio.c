@@ -251,7 +251,7 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     if ((ret=av_new_packet(pkt, s->frame_size)) < 0)
         return ret;
 
-        ret = read(s->fd, pkt->data, pkt->size);
+    ret = read(s->fd, pkt->data, pkt->size);
     if (ret <= 0){
         av_free_packet(pkt);
         pkt->size = 0;
