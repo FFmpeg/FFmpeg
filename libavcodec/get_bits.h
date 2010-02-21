@@ -422,7 +422,7 @@ static inline void skip_bits1(GetBitContext *s){
  * reads 0-32 bits.
  */
 static inline unsigned int get_bits_long(GetBitContext *s, int n){
-    if(n<=17) return get_bits(s, n);
+    if(n<=MIN_CACHE_BITS) return get_bits(s, n);
     else{
 #ifdef ALT_BITSTREAM_READER_LE
         int ret= get_bits(s, 16);
@@ -445,7 +445,7 @@ static inline int get_sbits_long(GetBitContext *s, int n) {
  * shows 0-32 bits.
  */
 static inline unsigned int show_bits_long(GetBitContext *s, int n){
-    if(n<=17) return show_bits(s, n);
+    if(n<=MIN_CACHE_BITS) return show_bits(s, n);
     else{
         GetBitContext gb= *s;
         return get_bits_long(&gb, n);
