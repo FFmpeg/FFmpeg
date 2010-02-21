@@ -555,13 +555,9 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                 return 1;
             }
             if (current_fragment != -1) {
-                if (s->superblock_coding[i] == SB_NOT_CODED) {
+                int coded = s->superblock_coding[i];
 
-                    /* copy all the fragments from the prior frame */
-                    s->all_fragments[current_fragment].coding_method =
-                        MODE_COPY;
-
-                } else if (s->superblock_coding[i] == SB_PARTIALLY_CODED) {
+                if (s->superblock_coding[i] == SB_PARTIALLY_CODED) {
 
                     /* fragment may or may not be coded; this is the case
                      * that cares about the fragment coding runs */
@@ -570,8 +566,10 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                         current_run = get_vlc2(gb,
                             s->fragment_run_length_vlc.table, 5, 2);
                     }
+                    coded = bit;
+                }
 
-                    if (bit) {
+                    if (coded) {
                         /* default mode; actual mode will be decoded in
                          * the next phase */
                         s->all_fragments[current_fragment].coding_method =
@@ -592,25 +590,6 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                         s->all_fragments[current_fragment].coding_method =
                             MODE_COPY;
                     }
-
-                } else {
-
-                    /* fragments are fully coded in this superblock; actual
-                     * coding will be determined in next step */
-                    s->all_fragments[current_fragment].coding_method =
-                        MODE_INTER_NO_MV;
-                    s->all_fragments[current_fragment].next_coeff= s->coeffs + current_fragment;
-                    s->coded_fragment_list[s->coded_fragment_list_index] =
-                        current_fragment;
-                    if ((current_fragment >= s->fragment_start[1]) &&
-                        (s->last_coded_y_fragment == -1) &&
-                        (!first_c_fragment_seen)) {
-                        s->first_coded_c_fragment = s->coded_fragment_list_index;
-                        s->last_coded_y_fragment = s->first_coded_c_fragment - 1;
-                        first_c_fragment_seen = 1;
-                    }
-                    s->coded_fragment_list_index++;
-                }
             }
         }
     }
