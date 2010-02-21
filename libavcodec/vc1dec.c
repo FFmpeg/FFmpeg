@@ -29,6 +29,7 @@
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
+#include "h263.h"
 #include "vc1.h"
 #include "vc1data.h"
 #include "vc1acdata.h"
