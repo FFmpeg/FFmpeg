@@ -482,6 +482,9 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
             if (bit)
                 num_partial_superblocks += current_run;
 
+            if (s->theora && current_run == MAXIMUM_LONG_BIT_RUN)
+                bit = get_bits1(gb);
+            else
                 bit ^= 1;
         }
 
@@ -512,6 +515,9 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                 }
                 superblocks_decoded += current_run;
 
+                if (s->theora && current_run == MAXIMUM_LONG_BIT_RUN)
+                    bit = get_bits1(gb);
+                else
                     bit ^= 1;
             }
         }
