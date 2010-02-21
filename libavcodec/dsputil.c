@@ -55,6 +55,11 @@ void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w
 /* eaidct.c */
 void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
 
+/* binkidct.c */
+void ff_bink_idct_c    (DCTELEM *block);
+void ff_bink_idct_add_c(uint8_t *dest, int linesize, DCTELEM *block);
+void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
+
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 
@@ -656,6 +661,27 @@ static void put_signed_pixels_clamped_c(const DCTELEM *block,
     }
 }
 
+static void put_pixels_nonclamped_c(const DCTELEM *block, uint8_t *restrict pixels,
+                                    int line_size)
+{
+    int i;
+
+    /* read the pixels */
+    for(i=0;i<8;i++) {
+        pixels[0] = block[0];
+        pixels[1] = block[1];
+        pixels[2] = block[2];
+        pixels[3] = block[3];
+        pixels[4] = block[4];
+        pixels[5] = block[5];
+        pixels[6] = block[6];
+        pixels[7] = block[7];
+
+        pixels += line_size;
+        block += 8;
+    }
+}
+
 static void add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
                           int line_size)
 {
@@ -745,6 +771,42 @@ static int sum_abs_dctelem_c(DCTELEM *block)
     for(i=0; i<64; i++)
         sum+= FFABS(block[i]);
     return sum;
+}
+
+static void fill_block16_c(uint8_t *block, uint8_t value, int line_size, int h)
+{
+    int i;
+
+    for (i = 0; i < h; i++) {
+        memset(block, value, 16);
+        block += line_size;
+    }
+}
+
+static void fill_block8_c(uint8_t *block, uint8_t value, int line_size, int h)
+{
+    int i;
+
+    for (i = 0; i < h; i++) {
+        memset(block, value, 8);
+        block += line_size;
+    }
+}
+
+static void scale_block_c(const uint8_t src[64]/*align 8*/, uint8_t *dst/*align 8*/, int linesize)
+{
+    int i, j;
+    uint16_t *dst1 = dst;
+    uint16_t *dst2 = dst + linesize;
+
+    for (j = 0; j < 8; j++) {
+        for (i = 0; i < 8; i++) {
+            dst1[i] = dst2[i] = src[i] * 0x0101;
+        }
+        src  += 8;
+        dst1 += linesize;
+        dst2 += linesize;
+    }
 }
 
 #if 0
@@ -4557,6 +4619,11 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         }else if(CONFIG_EATGQ_DECODER && avctx->idct_algo==FF_IDCT_EA) {
             c->idct_put= ff_ea_idct_put_c;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
+        }else if(CONFIG_BINK_DECODER && avctx->idct_algo==FF_IDCT_BINK) {
+            c->idct     = ff_bink_idct_c;
+            c->idct_add = ff_bink_idct_add_c;
+            c->idct_put = ff_bink_idct_put_c;
+            c->idct_permutation_type = FF_NO_IDCT_PERM;
         }else{ //accurate/default
             c->idct_put= ff_simple_idct_put;
             c->idct_add= ff_simple_idct_add;
@@ -4580,6 +4647,7 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->diff_pixels = diff_pixels_c;
     c->put_pixels_clamped = put_pixels_clamped_c;
     c->put_signed_pixels_clamped = put_signed_pixels_clamped_c;
+    c->put_pixels_nonclamped = put_pixels_nonclamped_c;
     c->add_pixels_clamped = add_pixels_clamped_c;
     c->add_pixels8 = add_pixels8_c;
     c->add_pixels4 = add_pixels4_c;
@@ -4590,6 +4658,10 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->clear_blocks = clear_blocks_c;
     c->pix_sum = pix_sum_c;
     c->pix_norm1 = pix_norm1_c;
+
+    c->fill_block_tab[0] = fill_block16_c;
+    c->fill_block_tab[1] = fill_block8_c;
+    c->scale_block = scale_block_c;
 
     /* TODO [0] 16  [1] 8 */
     c->pix_abs[0][0] = pix_abs16_c;

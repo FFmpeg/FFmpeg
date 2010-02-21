@@ -51,7 +51,7 @@ version <next>:
 - SIPR decoder
 - Adobe Filmstrip muxer and demuxer
 - RTP depacketization of H.263
-- Bink demuxer and Bink Audio decoder
+- Bink demuxer and audio/video decoders
 - enable symbol versioning by default for linkers that support it
 - IFF PBM/ILBM bitmap decoder
 - concat protocol

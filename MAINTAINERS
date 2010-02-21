@@ -112,6 +112,7 @@ Codecs:
   asv*                                  Michael Niedermayer
   atrac3*                               Benjamin Larsson
   bgmc.c, bgmc.h                        Thilo Borgmann
+  bink.c                                Kostya Shishkov
   bmp.c                                 Mans Rullgard, Kostya Shishkov
   cavs*                                 Stefan Gehrer
   celp_filters.*                        Vitor Sessak
