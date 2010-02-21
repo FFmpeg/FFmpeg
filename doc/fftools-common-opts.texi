@@ -1,3 +1,9 @@
+@section Generic options
+
+These options are shared amongst the ff* tools.
+
+@table @option
+
 @item -L
 Show license.
 
@@ -63,3 +69,4 @@ Set the logging level used by the library.
 @item debug
 @end table
 
+@end table

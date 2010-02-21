@@ -222,10 +222,12 @@ specified for the inputs.
 @c man end
 
 @c man begin OPTIONS
+
+@include fftools-common-opts.texi
+
 @section Main options
 
 @table @option
-@include fftools-common-opts.texi
 
 @item -f @var{fmt}
 Force format.

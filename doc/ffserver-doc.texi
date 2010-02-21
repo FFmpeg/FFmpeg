@@ -236,8 +236,10 @@ ffserver [options]
 
 @section Options
 @c man begin OPTIONS
-@table @option
+
 @include fftools-common-opts.texi
+
+@table @option
 @item -f @var{configfile}
 Use @file{configfile} instead of @file{/etc/ffserver.conf}.
 @item -n

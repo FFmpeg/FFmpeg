@@ -26,10 +26,12 @@ ffplay [options] @file{input_file}
 @end example
 
 @c man begin OPTIONS
+
+@include fftools-common-opts.texi
+
 @section Main options
 
 @table @option
-@include fftools-common-opts.texi
 @item -x @var{width}
 Force displayed width.
 @item -y @var{height}
