@@ -63,6 +63,11 @@ typedef struct Vp3Fragment {
 #define SB_PARTIALLY_CODED  1
 #define SB_FULLY_CODED      2
 
+// This is the maximum length of a single long bit run that can be encoded
+// for superblock coding or block qps. Theora special-cases this to read a
+// bit instead of flipping the current bit to allow for runs longer than 4129.
+#define MAXIMUM_LONG_BIT_RUN 4129
+
 #define MODE_INTER_NO_MV      0
 #define MODE_INTRA            1
 #define MODE_INTER_PLUS_MV    2
@@ -920,7 +925,7 @@ static int unpack_block_qpis(Vp3DecodeContext *s, GetBitContext *gb)
                 }
             }
 
-            if (run_length == 4129)
+            if (run_length == MAXIMUM_LONG_BIT_RUN)
                 bit = get_bits1(gb);
             else
                 bit ^= 1;
