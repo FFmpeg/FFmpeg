@@ -491,7 +491,7 @@ OBJS-$(CONFIG_LIBGSM_MS_ENCODER)          += libgsm.o
 OBJS-$(CONFIG_LIBMP3LAME_ENCODER)         += libmp3lame.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRNB_DECODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRNB_ENCODER)  += libopencore-amr.o
-OBJS-$(CONFIG_LIBOPENCORE_AMRWB_ENCODER)  += libopencore-amr.o
+OBJS-$(CONFIG_LIBOPENCORE_AMRWB_DECODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENJPEG_DECODER)        += libopenjpeg.o
 OBJS-$(CONFIG_LIBSCHROEDINGER_DECODER)    += libschroedingerdec.o \
                                              libschroedinger.o    \
