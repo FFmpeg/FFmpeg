@@ -2120,7 +2120,7 @@ int av_find_stream_info(AVFormatContext *ic)
             if (!has_codec_parameters(st->codec))
                 break;
             /* variable fps and no guess at the real fps */
-            if(   tb_unreliable(st->codec)
+            if(   tb_unreliable(st->codec) && !(st->r_frame_rate.num && st->avg_frame_rate.num)
                && duration_count[i]<20 && st->codec->codec_type == CODEC_TYPE_VIDEO)
                 break;
             if(st->parser && st->parser->parser->split && !st->codec->extradata)
@@ -2251,9 +2251,9 @@ int av_find_stream_info(AVFormatContext *ic)
             // the check for tb_unreliable() is not completely correct, since this is not about handling
             // a unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
             // ipmovie.c produces.
-            if (tb_unreliable(st->codec) && duration_count[i] > 15 && duration_gcd[i] > 1)
+            if (tb_unreliable(st->codec) && duration_count[i] > 15 && duration_gcd[i] > 1 && !st->r_frame_rate.num)
                 av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, st->time_base.den, st->time_base.num * duration_gcd[i], INT_MAX);
-            if(duration_count[i]
+            if(duration_count[i] && !st->r_frame_rate.num
                && tb_unreliable(st->codec) /*&&
                //FIXME we should not special-case MPEG-2, but this needs testing with non-MPEG-2 ...
                st->time_base.num*duration_sum[i]/duration_count[i]*101LL > st->time_base.den*/){
