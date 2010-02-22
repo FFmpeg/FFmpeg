@@ -1914,6 +1914,8 @@ static int has_codec_parameters(AVCodecContext *enc)
         if(!enc->frame_size &&
            (enc->codec_id == CODEC_ID_VORBIS ||
             enc->codec_id == CODEC_ID_AAC ||
+            enc->codec_id == CODEC_ID_MP1 ||
+            enc->codec_id == CODEC_ID_MP2 ||
             enc->codec_id == CODEC_ID_MP3 ||
             enc->codec_id == CODEC_ID_SPEEX))
             return 0;
