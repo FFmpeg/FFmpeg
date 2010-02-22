@@ -45,8 +45,8 @@ typedef struct {
     uint8_t     xbits[16];
 } IVIHuffDesc;
 
-extern const IVIHuffDesc ff_ivi_mb_huff_desc[8];  ///< static macroblock huffman tables
-extern const IVIHuffDesc ff_ivi_blk_huff_desc[8]; ///< static block huffman tables
+extern VLC ff_ivi_mb_vlc_tabs [8]; ///< static macroblock Huffman tables
+extern VLC ff_ivi_blk_vlc_tabs[8]; ///< static block Huffman tables
 
 
 /**
@@ -201,6 +201,11 @@ static inline int ivi_scale_mv(int mv, int mv_scale)
  *  @return     result code: 0 - OK, -1 = error (invalid codebook descriptor)
  */
 int  ff_ivi_create_huff_from_desc(const IVIHuffDesc *cb, VLC *vlc, int flag);
+
+/**
+ * Initializes static codes used for macroblock and block decoding.
+ */
+void ff_ivi_init_static_vlc();
 
 /**
  *  Decodes a huffman codebook descriptor from the bitstream.

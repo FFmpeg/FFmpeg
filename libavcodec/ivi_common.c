@@ -33,6 +33,12 @@
 #include "libavutil/common.h"
 #include "ivi_dsp.h"
 
+extern const IVIHuffDesc ff_ivi_mb_huff_desc[8];  ///< static macroblock huffman tables
+extern const IVIHuffDesc ff_ivi_blk_huff_desc[8]; ///< static block huffman tables
+
+VLC ff_ivi_mb_vlc_tabs [8];
+VLC ff_ivi_blk_vlc_tabs[8];
+
 /**
  *  Reverses "nbits" bits of the value "val" and returns the result
  *  in the least significant bits.
@@ -80,7 +86,26 @@ int ff_ivi_create_huff_from_desc(const IVIHuffDesc *cb, VLC *vlc, int flag)
 
     /* number of codewords = pos */
     return init_vlc(vlc, IVI_VLC_BITS, pos, bits, 1, 1, codewords, 2, 2,
-                    (flag & 1) | INIT_VLC_LE);
+                    (flag ? INIT_VLC_USE_NEW_STATIC : 0) | INIT_VLC_LE);
+}
+
+void ff_ivi_init_static_vlc()
+{
+    int i;
+    static VLC table_data[8192 * 16][2];
+    static int initialized_vlcs = 0;
+
+    if (initialized_vlcs)
+        return;
+    for (i = 0; i < 8; i++) {
+        ff_ivi_mb_vlc_tabs[i].table = table_data + i * 2 * 8192;
+        ff_ivi_mb_vlc_tabs[i].table_allocated = 8192;
+        ff_ivi_create_huff_from_desc(&ff_ivi_mb_huff_desc[i],  &ff_ivi_mb_vlc_tabs[i],  1);
+        ff_ivi_blk_vlc_tabs[i].table = table_data + (i * 2 + 1) * 8192;
+        ff_ivi_blk_vlc_tabs[i].table_allocated = 8192;
+        ff_ivi_create_huff_from_desc(&ff_ivi_blk_huff_desc[i], &ff_ivi_blk_vlc_tabs[i], 1);
+    }
+    initialized_vlcs = 1;
 }
 
 int ff_ivi_dec_huff_desc(GetBitContext *gb, IVIHuffDesc *desc)

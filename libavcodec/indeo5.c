@@ -79,10 +79,6 @@ typedef struct {
     IVIPicConfig    pic_conf;
 } IVI5DecContext;
 
-//! static vlc tables (initialized at startup)
-static VLC mb_vlc_tabs [8];
-static VLC blk_vlc_tabs[8];
-
 
 /**
  *  Decodes Indeo5 GOP (Group of pictures) header.
@@ -346,7 +342,7 @@ static int decode_pic_hdr(IVI5DecContext *ctx, AVCodecContext *avctx)
         if (ctx->frame_flags & 0x40) {
             ctx->mb_huff_sel = ff_ivi_dec_huff_desc(&ctx->gb, &new_huff);
             if (ctx->mb_huff_sel != 7) {
-                ctx->mb_vlc = &mb_vlc_tabs[ctx->mb_huff_sel];
+                ctx->mb_vlc = &ff_ivi_mb_vlc_tabs[ctx->mb_huff_sel];
             } else {
                 if (ff_ivi_huff_desc_cmp(&new_huff, &ctx->mb_huff_desc)) {
                     ff_ivi_huff_desc_copy(&ctx->mb_huff_desc, &new_huff);
@@ -363,7 +359,7 @@ static int decode_pic_hdr(IVI5DecContext *ctx, AVCodecContext *avctx)
                 ctx->mb_vlc = &ctx->mb_vlc_cust;
             }
         } else {
-            ctx->mb_vlc = &mb_vlc_tabs[7]; /* select the default macroblock huffman table */
+            ctx->mb_vlc = &ff_ivi_mb_vlc_tabs[7]; /* select the default macroblock huffman table */
         }
 
         skip_bits(&ctx->gb, 3); /* FIXME: unknown meaning! */
@@ -426,7 +422,7 @@ static int decode_band_hdr(IVI5DecContext *ctx, IVIBandDesc *band,
     if (band_flags & 0x80) {
         band->huff_sel = ff_ivi_dec_huff_desc(&ctx->gb, &new_huff);
         if (band->huff_sel != 7) {
-            band->blk_vlc = &blk_vlc_tabs[band->huff_sel];
+            band->blk_vlc = &ff_ivi_blk_vlc_tabs[band->huff_sel];
         } else {
             if (ff_ivi_huff_desc_cmp(&new_huff, &band->huff_desc)) {
                 ff_ivi_huff_desc_copy(&band->huff_desc, &new_huff);
@@ -443,7 +439,7 @@ static int decode_band_hdr(IVI5DecContext *ctx, IVIBandDesc *band,
             band->blk_vlc = &band->blk_vlc_cust;
         }
     } else {
-        band->blk_vlc = &blk_vlc_tabs[7]; /* select the default macroblock huffman table */
+        band->blk_vlc = &ff_ivi_blk_vlc_tabs[7]; /* select the default macroblock huffman table */
     }
 
     band->checksum_present = get_bits1(&ctx->gb);
@@ -752,13 +748,9 @@ static void switch_buffers(IVI5DecContext *ctx, AVCodecContext *avctx)
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     IVI5DecContext  *ctx = avctx->priv_data;
-    int             i, result;
+    int             result;
 
-    /* initialize static vlc tables for macroblock/block signals */
-    for (i = 0; i < 8; i++) {
-        ff_ivi_create_huff_from_desc(&ff_ivi_mb_huff_desc[i],  &mb_vlc_tabs[i],  1);
-        ff_ivi_create_huff_from_desc(&ff_ivi_blk_huff_desc[i], &blk_vlc_tabs[i], 1);
-    }
+    ff_ivi_init_static_vlc();
 
     /* copy rvmap tables in our context so we can apply changes to them */
     memcpy(ctx->rvmap_tabs, ff_ivi_rvmap_tabs, sizeof(ff_ivi_rvmap_tabs));
