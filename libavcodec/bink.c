@@ -681,6 +681,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     DECLARE_ALIGNED_16(DCTELEM, block[64]);
     DECLARE_ALIGNED_16(uint8_t, ublock[64]);
     int coordmap[64];
+    int bits_count = pkt->size << 3;
 
     if(c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
@@ -690,7 +691,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         return -1;
     }
 
-    init_get_bits(&gb, pkt->data, pkt->size*8);
+    init_get_bits(&gb, pkt->data, bits_count);
     if (c->version >= 'i')
         skip_bits_long(&gb, 32);
 
@@ -901,6 +902,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         }
         if (get_bits_count(&gb) & 0x1F) //next plane data starts at 32-bit boundary
             skip_bits_long(&gb, 32 - (get_bits_count(&gb) & 0x1F));
+        if (get_bits_count(&gb) >= bits_count)
+            break;
     }
     emms_c();
 
