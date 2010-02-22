@@ -77,6 +77,7 @@ typedef struct BinkContext {
     DSPContext     dsp;
     AVFrame        pic, last;
     int            version;              ///< internal Bink file version
+    int            has_alpha;
     int            swap_planes;
     ScanTable      scantable;            ///< permutated scantable for DCT coeffs decoding
 
@@ -692,6 +693,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
     init_get_bits(&gb, pkt->data, bits_count);
+    if (c->has_alpha) {
+        int aplane_bits = get_bits_long(&gb, 32) << 3;
+        if (aplane_bits <= 32 || (aplane_bits & 0x1F)) {
+            av_log(avctx, AV_LOG_ERROR, "Incorrect alpha plane size %d\n", aplane_bits);
+            return -1;
+        }
+        skip_bits_long(&gb, aplane_bits - 32);
+    }
     if (c->version >= 'i')
         skip_bits_long(&gb, 32);
 
@@ -927,6 +936,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Too old version '%c'\n", c->version);
         return -1;
     }
+    c->has_alpha = 0; //TODO: demuxer should supply decoder with flags
     c->swap_planes = c->version >= 'i';
     if (!bink_trees[15].table) {
         for (i = 0; i < 16; i++) {
