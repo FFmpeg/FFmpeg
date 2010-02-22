@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "avio.h"
 
-const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end)
+static const uint8_t *ff_avc_find_startcode_internal(const uint8_t *p, const uint8_t *end)
 {
     const uint8_t *a = p + 4 - ((intptr_t)p & 3);
 
@@ -39,15 +39,15 @@ const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end)
         if ((x - 0x01010101) & (~x) & 0x80808080) { // generic
             if (p[1] == 0) {
                 if (p[0] == 0 && p[2] == 1)
-                    return p-1;
-                if (p[2] == 0 && p[3] == 1)
                     return p;
+                if (p[2] == 0 && p[3] == 1)
+                    return p+1;
             }
             if (p[3] == 0) {
                 if (p[2] == 0 && p[4] == 1)
-                    return p+1;
-                if (p[4] == 0 && p[5] == 1)
                     return p+2;
+                if (p[4] == 0 && p[5] == 1)
+                    return p+3;
             }
         }
     }
@@ -58,6 +58,12 @@ const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end)
     }
 
     return end + 3;
+}
+
+const uint8_t *ff_avc_find_startcode(const uint8_t *p, const uint8_t *end){
+    const uint8_t *out= ff_avc_find_startcode_internal(p, end);
+    if(p<out && out<end && !out[-1]) out--;
+    return out;
 }
 
 int ff_avc_parse_nal_units(ByteIOContext *pb, const uint8_t *buf_in, int size)
