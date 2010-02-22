@@ -1166,7 +1166,7 @@ static int make_setup_request(AVFormatContext *s, const char *host, int port,
         if (s->oformat) {
             av_strlcat(transport, ";mode=receive", sizeof(transport));
         } else if (rt->server_type == RTSP_SERVER_REAL ||
-            rt->server_type == RTSP_SERVER_WMS)
+                   rt->server_type == RTSP_SERVER_WMS)
             av_strlcat(transport, ";mode=play", sizeof(transport));
         snprintf(cmd, sizeof(cmd),
                  "SETUP %s RTSP/1.0\r\n"
@@ -1515,7 +1515,7 @@ redirect:
     }
 
     if (s->iformat)
-    err = rtsp_setup_input_streams(s);
+        err = rtsp_setup_input_streams(s);
     else
         err = rtsp_setup_output_streams(s);
     if (err)
