@@ -20,6 +20,8 @@
 
 #include "asm.S"
 
+        preserve8
+
         .text
 
 .macro  call_2x_pixels  type, subp
