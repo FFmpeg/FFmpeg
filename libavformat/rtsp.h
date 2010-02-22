@@ -281,7 +281,7 @@ typedef struct RTSPState {
  */
 typedef struct RTSPStream {
     URLContext *rtp_handle;   /**< RTP stream handle (if UDP) */
-    void *transport_priv; /**< RTP/RDT parse context */
+    void *transport_priv; /**< RTP/RDT parse context if input, RTP AVFormatContext if output */
 
     /** corresponding stream index, if any. -1 if none (MPEG2TS case) */
     int stream_index;

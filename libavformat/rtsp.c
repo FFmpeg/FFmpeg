@@ -582,7 +582,13 @@ static void rtsp_close_streams(AVFormatContext *s)
         rtsp_st = rt->rtsp_streams[i];
         if (rtsp_st) {
             if (rtsp_st->transport_priv) {
-                if (rt->transport == RTSP_TRANSPORT_RDT)
+                if (s->oformat) {
+                    AVFormatContext *rtpctx = rtsp_st->transport_priv;
+                    av_write_trailer(rtpctx);
+                    url_fclose(rtpctx->pb);
+                    av_free(rtpctx->streams[0]);
+                    av_free(rtpctx);
+                } else if (rt->transport == RTSP_TRANSPORT_RDT)
                     ff_rdt_parse_close(rtsp_st->transport_priv);
                 else
                     rtp_parse_close(rtsp_st->transport_priv);
@@ -602,6 +608,50 @@ static void rtsp_close_streams(AVFormatContext *s)
     av_freep(&rt->auth_b64);
 }
 
+static void *rtsp_rtp_mux_open(AVFormatContext *s, AVStream *st, URLContext *handle) {
+    AVFormatContext *rtpctx;
+    int ret;
+    AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
+
+    if (!rtp_format)
+        return NULL;
+
+    /* Allocate an AVFormatContext for each output stream */
+    rtpctx = avformat_alloc_context();
+    if (!rtpctx)
+        return NULL;
+
+    rtpctx->oformat = rtp_format;
+    if (!av_new_stream(rtpctx, 0)) {
+        av_free(rtpctx);
+        return NULL;
+    }
+    /* Copy the max delay setting; the rtp muxer reads this. */
+    rtpctx->max_delay = s->max_delay;
+    /* Copy other stream parameters. */
+    rtpctx->streams[0]->sample_aspect_ratio = st->sample_aspect_ratio;
+
+    /* Remove the local codec, link to the original codec
+     * context instead, to give the rtp muxer access to
+     * codec parameters. */
+    av_free(rtpctx->streams[0]->codec);
+    rtpctx->streams[0]->codec = st->codec;
+
+    url_fdopen(&rtpctx->pb, handle);
+    ret = av_write_header(rtpctx);
+
+    if (ret) {
+        url_fclose(rtpctx->pb);
+        av_free(rtpctx->streams[0]);
+        av_free(rtpctx);
+        return NULL;
+    }
+
+    /* Copy the RTP AVStream timebase back to the original AVStream */
+    st->time_base = rtpctx->streams[0]->time_base;
+    return rtpctx;
+}
+
 static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 {
     RTSPState *rt = s->priv_data;
@@ -613,7 +663,11 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
     if (!st)
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
-    if (rt->transport == RTSP_TRANSPORT_RDT)
+    if (s->oformat) {
+        rtsp_st->transport_priv = rtsp_rtp_mux_open(s, st, rtsp_st->rtp_handle);
+        /* Ownage of rtp_handle is passed to the rtp mux context */
+        rtsp_st->rtp_handle = NULL;
+    } else if (rt->transport == RTSP_TRANSPORT_RDT)
         rtsp_st->transport_priv = ff_rdt_parse_open(s, st->index,
                                             rtsp_st->dynamic_protocol_context,
                                             rtsp_st->dynamic_handler);
