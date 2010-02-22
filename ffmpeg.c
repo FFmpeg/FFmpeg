@@ -44,9 +44,14 @@
 
 #if HAVE_SYS_RESOURCE_H
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/resource.h>
 #elif HAVE_GETPROCESSTIMES
 #include <windows.h>
+#endif
+#if HAVE_GETPROCESSMEMORYINFO
+#include <windows.h>
+#include <psapi.h>
 #endif
 
 #if HAVE_SYS_SELECT_H
@@ -3535,6 +3540,24 @@ static int64_t getutime(void)
 #endif
 }
 
+static int64_t getmaxrss(void)
+{
+#if HAVE_GETRUSAGE && HAVE_STRUCT_RUSAGE_RU_MAXRSS
+    struct rusage rusage;
+    getrusage(RUSAGE_SELF, &rusage);
+    return (int64_t)rusage.ru_maxrss * 1024;
+#elif HAVE_GETPROCESSMEMORYINFO
+    HANDLE proc;
+    PROCESS_MEMORY_COUNTERS memcounters;
+    proc = GetCurrentProcess();
+    memcounters.cb = sizeof(memcounters);
+    GetProcessMemoryInfo(proc, &memcounters, sizeof(memcounters));
+    return memcounters.PeakPagefileUsage;
+#else
+    return 0;
+#endif
+}
+
 static void parse_matrix_coeffs(uint16_t *dest, const char *str)
 {
     int i;
@@ -4029,7 +4052,8 @@ int main(int argc, char **argv)
         av_exit(1);
     ti = getutime() - ti;
     if (do_benchmark) {
-        printf("bench: utime=%0.3fs\n", ti / 1000000.0);
+        int maxrss = getmaxrss() / 1024;
+        printf("bench: utime=%0.3fs maxrss=%ikB\n", ti / 1000000.0, maxrss);
     }
 
     return av_exit(0);

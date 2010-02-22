@@ -1028,8 +1028,10 @@ HAVE_LIST="
     fork
     getaddrinfo
     gethrtime
+    GetProcessMemoryInfo
     GetProcessTimes
     getrusage
+    struct_rusage_ru_maxrss
     inet_aton
     inline_asm
     isatty
@@ -2497,6 +2499,7 @@ check_func  fork
 check_func  getaddrinfo $network_extralibs
 check_func  gethrtime
 check_func  getrusage
+check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_func  inet_aton $network_extralibs
 check_func  isatty
 check_func  ${malloc_prefix}memalign            && enable memalign
@@ -2505,6 +2508,7 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func  setrlimit
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
+check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h VirtualAlloc
 
