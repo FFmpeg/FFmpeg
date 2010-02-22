@@ -698,8 +698,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         const int stride = c->pic.linesize[plane];
         int bw = plane ? (avctx->width  + 15) >> 4 : (avctx->width  + 7) >> 3;
         int bh = plane ? (avctx->height + 15) >> 4 : (avctx->height + 7) >> 3;
+        int width = avctx->width >> !!plane;
 
-        init_lengths(c, avctx->width >> !!plane, bw);
+        init_lengths(c, FFMAX(width, 8), bw);
         for (i = 0; i < BINK_NB_SRC; i++)
             read_bundle(&gb, c, i);
 
