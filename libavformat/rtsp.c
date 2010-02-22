@@ -880,8 +880,8 @@ static void rtsp_skip_packet(AVFormatContext *s)
 }
 
 int rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
-                           unsigned char **content_ptr,
-                           int return_on_interleaved_data)
+                    unsigned char **content_ptr,
+                    int return_on_interleaved_data)
 {
     RTSPState *rt = s->priv_data;
     char buf[4096], buf1[1024], *q;
@@ -967,9 +967,9 @@ int rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
 }
 
 void rtsp_send_cmd_with_content_async(AVFormatContext *s,
-                                             const char *cmd,
-                                             const unsigned char *send_content,
-                                             int send_content_length)
+                                      const char *cmd,
+                                      const unsigned char *send_content,
+                                      int send_content_length)
 {
     RTSPState *rt = s->priv_data;
     char buf[4096], buf1[1024];
@@ -1004,8 +1004,8 @@ void rtsp_send_cmd_async(AVFormatContext *s, const char *cmd)
 }
 
 void rtsp_send_cmd(AVFormatContext *s,
-                          const char *cmd, RTSPMessageHeader *reply,
-                          unsigned char **content_ptr)
+                   const char *cmd, RTSPMessageHeader *reply,
+                   unsigned char **content_ptr)
 {
     rtsp_send_cmd_async(s, cmd);
 
@@ -1013,11 +1013,11 @@ void rtsp_send_cmd(AVFormatContext *s,
 }
 
 void rtsp_send_cmd_with_content(AVFormatContext *s,
-                                       const char *cmd,
-                                       RTSPMessageHeader *reply,
-                                       unsigned char **content_ptr,
-                                       const unsigned char *send_content,
-                                       int send_content_length)
+                                const char *cmd,
+                                RTSPMessageHeader *reply,
+                                unsigned char **content_ptr,
+                                const unsigned char *send_content,
+                                int send_content_length)
 {
     rtsp_send_cmd_with_content_async(s, cmd, send_content, send_content_length);
 
