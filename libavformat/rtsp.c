@@ -586,6 +586,8 @@ void rtsp_close_streams(AVFormatContext *s)
                     AVFormatContext *rtpctx = rtsp_st->transport_priv;
                     av_write_trailer(rtpctx);
                     url_fclose(rtpctx->pb);
+                    av_metadata_free(&rtpctx->streams[0]->metadata);
+                    av_metadata_free(&rtpctx->metadata);
                     av_free(rtpctx->streams[0]);
                     av_free(rtpctx);
                 } else if (rt->transport == RTSP_TRANSPORT_RDT)
