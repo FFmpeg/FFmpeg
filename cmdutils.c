@@ -214,8 +214,10 @@ int opt_default(const char *opt, const char *arg){
         fprintf(stderr, "Invalid value '%s' for option '%s'\n", arg, opt);
         exit(1);
     }
-    if(!o)
-        return -1;
+    if (!o) {
+        fprintf(stderr, "Unrecognized option '%s'\n", opt);
+        exit(1);
+    }
 
 //    av_log(NULL, AV_LOG_ERROR, "%s:%s: %f 0x%0X\n", opt, arg, av_get_double(avcodec_opts, opt, NULL), (int)av_get_int(avcodec_opts, opt, NULL));
 
