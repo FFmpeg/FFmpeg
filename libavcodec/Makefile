@@ -641,6 +641,7 @@ NEON-OBJS-$(CONFIG_VP3_DECODER)        += arm/vp3dsp_neon.o
 
 OBJS-$(HAVE_NEON)                      += arm/dsputil_init_neon.o       \
                                           arm/dsputil_neon.o            \
+                                          arm/int_neon.o                \
                                           arm/simple_idct_neon.o        \
                                           $(NEON-OBJS-yes)
 
