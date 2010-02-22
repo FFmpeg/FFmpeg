@@ -210,7 +210,7 @@ library:
 @item RTMP                      @tab X @tab X
     @tab Output is performed by publishing stream to RTMP server
 @item RTP                       @tab   @tab X
-@item RTSP                      @tab   @tab X
+@item RTSP                      @tab X @tab X
 @item SDP                       @tab   @tab X
 @item Sega FILM/CPK             @tab   @tab X
     @tab Used in many Sega Saturn console games.

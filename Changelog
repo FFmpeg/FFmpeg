@@ -60,6 +60,7 @@ version <next>:
 - WMAVoice decoder
 - FFprobe tool
 - AMR-NB decoder
+- RTSP muxer
 
 
 

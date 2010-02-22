@@ -691,7 +691,7 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
     return 0;
 }
 
-#if CONFIG_RTSP_DEMUXER
+#if CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER
 static int rtsp_probe(AVProbeData *p)
 {
     if (av_strstart(p->filename, "rtsp:", NULL))
@@ -1533,7 +1533,9 @@ redirect:
     }
     return err;
 }
+#endif
 
+#if CONFIG_RTSP_DEMUXER
 static int rtsp_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
