@@ -572,7 +572,7 @@ static int sdp_parse(AVFormatContext *s, const char *content)
 }
 
 /* close and free RTSP streams */
-static void rtsp_close_streams(AVFormatContext *s)
+void rtsp_close_streams(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
     int i;
@@ -879,28 +879,7 @@ static void rtsp_skip_packet(AVFormatContext *s)
     }
 }
 
-/**
- * Read a RTSP message from the server, or prepare to read data
- * packets if we're reading data interleaved over the TCP/RTSP
- * connection as well.
- *
- * @param s RTSP demuxer context
- * @param reply pointer where the RTSP message header will be stored
- * @param content_ptr pointer where the RTSP message body, if any, will
- *                    be stored (length is in reply)
- * @param return_on_interleaved_data whether the function may return if we
- *                   encounter a data marker ('$'), which precedes data
- *                   packets over interleaved TCP/RTSP connections. If this
- *                   is set, this function will return 1 after encountering
- *                   a '$'. If it is not set, the function will skip any
- *                   data packets (if they are encountered), until a reply
- *                   has been fully parsed. If no more data is available
- *                   without parsing a reply, it will return an error.
- *
- * @returns 1 if a data packets is ready to be received, -1 on error,
- *          and 0 on success.
- */
-static int rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
+int rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
                            unsigned char **content_ptr,
                            int return_on_interleaved_data)
 {
@@ -987,7 +966,7 @@ static int rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     return 0;
 }
 
-static void rtsp_send_cmd_with_content_async(AVFormatContext *s,
+void rtsp_send_cmd_with_content_async(AVFormatContext *s,
                                              const char *cmd,
                                              const unsigned char *send_content,
                                              int send_content_length)
@@ -1019,12 +998,12 @@ static void rtsp_send_cmd_with_content_async(AVFormatContext *s,
     rt->last_cmd_time = av_gettime();
 }
 
-static void rtsp_send_cmd_async(AVFormatContext *s, const char *cmd)
+void rtsp_send_cmd_async(AVFormatContext *s, const char *cmd)
 {
     rtsp_send_cmd_with_content_async(s, cmd, NULL, 0);
 }
 
-static void rtsp_send_cmd(AVFormatContext *s,
+void rtsp_send_cmd(AVFormatContext *s,
                           const char *cmd, RTSPMessageHeader *reply,
                           unsigned char **content_ptr)
 {
@@ -1033,7 +1012,7 @@ static void rtsp_send_cmd(AVFormatContext *s,
     rtsp_read_reply(s, reply, content_ptr, 0);
 }
 
-static void rtsp_send_cmd_with_content(AVFormatContext *s,
+void rtsp_send_cmd_with_content(AVFormatContext *s,
                                        const char *cmd,
                                        RTSPMessageHeader *reply,
                                        unsigned char **content_ptr,
@@ -1397,7 +1376,7 @@ static int rtsp_setup_output_streams(AVFormatContext *s)
     return 0;
 }
 
-static int rtsp_connect(AVFormatContext *s)
+int rtsp_connect(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
     char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128];
