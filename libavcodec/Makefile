@@ -357,7 +357,7 @@ OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o        \
                                           msmpeg4.o msmpeg4data.o \
                                           intrax8.o intrax8dsp.o
 OBJS-$(CONFIG_WMV2_ENCODER)            += wmv2enc.o wmv2.o \
-                                          msmpeg4.o msmpeg4data.o
+                                          msmpeg4.o msmpeg4data.o mpeg4videodec.o ituh263dec.o h263dec.o
 OBJS-$(CONFIG_WNV1_DECODER)            += wnv1.o
 OBJS-$(CONFIG_WS_SND1_DECODER)         += ws-snd1.o
 OBJS-$(CONFIG_XAN_DPCM_DECODER)        += dpcm.o
