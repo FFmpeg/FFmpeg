@@ -293,5 +293,5 @@ AVCodecParser mlp_parser = {
     sizeof(MLPParseContext),
     mlp_init,
     mlp_parse,
-    NULL,
+    ff_parse_close,
 };
