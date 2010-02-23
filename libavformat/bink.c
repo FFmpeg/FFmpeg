@@ -112,10 +112,12 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     av_set_pts_info(vst, 64, fps_den, fps_num);
 
-    url_fskip(pb, 4);
-
     vst->codec->codec_type = CODEC_TYPE_VIDEO;
     vst->codec->codec_id   = CODEC_ID_BINKVIDEO;
+    vst->codec->extradata  = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
+    vst->codec->extradata_size = 4;
+    get_buffer(pb, vst->codec->extradata, 4);
+
     bink->num_audio_tracks = get_le32(pb);
 
     if (bink->num_audio_tracks > BINK_MAX_AUDIO_TRACKS) {
