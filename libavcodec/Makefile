@@ -285,7 +285,7 @@ OBJS-$(CONFIG_SNOW_DECODER)            += snow.o rangecoder.o
 OBJS-$(CONFIG_SNOW_ENCODER)            += snow.o rangecoder.o motion_est.o \
                                           ratecontrol.o h263.o             \
                                           mpegvideo.o error_resilience.o   \
-                                          ituh263enc.o mpegvideo_enc.o
+                                          ituh263enc.o mpegvideo_enc.o mpeg12data.o
 OBJS-$(CONFIG_SOL_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_SONIC_DECODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_ENCODER)           += sonic.o
