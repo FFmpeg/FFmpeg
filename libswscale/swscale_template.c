@@ -2662,26 +2662,26 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
         assert(firstLumSrcY >= lastInLumBuf - vLumBufSize + 1);
         assert(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1);
 
-        // Do we have enough lines in this slice to output the dstY line
-        enough_lines = lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < -((-srcSliceY - srcSliceH)>>c->chrSrcVSubSample);
-        if (!enough_lines) {
-            lastLumSrcY = srcSliceY + srcSliceH - 1;
-            lastChrSrcY = chrSrcSliceY + chrSrcSliceH - 1;
-        }
-
         DEBUG_BUFFERS("dstY: %d\n", dstY);
         DEBUG_BUFFERS("\tfirstLumSrcY: %d lastLumSrcY: %d lastInLumBuf: %d\n",
                          firstLumSrcY,    lastLumSrcY,    lastInLumBuf);
         DEBUG_BUFFERS("\tfirstChrSrcY: %d lastChrSrcY: %d lastInChrBuf: %d\n",
                          firstChrSrcY,    lastChrSrcY,    lastInChrBuf);
 
+        // Do we have enough lines in this slice to output the dstY line
+        enough_lines = lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < -((-srcSliceY - srcSliceH)>>c->chrSrcVSubSample);
+        if (!enough_lines) {
+            lastLumSrcY = srcSliceY + srcSliceH - 1;
+            lastChrSrcY = chrSrcSliceY + chrSrcSliceH - 1;
+            DEBUG_BUFFERS("buffering slice: lastLumSrcY %d lastChrSrcY %d\n",
+                                            lastLumSrcY, lastChrSrcY);
+        }
+
         //Do horizontal scaling
         while(lastInLumBuf < lastLumSrcY) {
             const uint8_t *src1= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
             const uint8_t *src2= src[3]+(lastInLumBuf + 1 - srcSliceY)*srcStride[3];
             lumBufIndex++;
-            DEBUG_BUFFERS("\t\tlumBufIndex %d: lastInLumBuf: %d\n",
-                               lumBufIndex,    lastInLumBuf);
             assert(lumBufIndex < 2*vLumBufSize);
             assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
             assert(lastInLumBuf + 1 - srcSliceY >= 0);
@@ -2695,13 +2695,13 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
                                 formatConvBuffer,
                                 pal, 1);
             lastInLumBuf++;
+            DEBUG_BUFFERS("\t\tlumBufIndex %d: lastInLumBuf: %d\n",
+                               lumBufIndex,    lastInLumBuf);
         }
         while(lastInChrBuf < lastChrSrcY) {
             const uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
             const uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
             chrBufIndex++;
-            DEBUG_BUFFERS("\t\tchrBufIndex %d: lastInChrBuf: %d\n",
-                               chrBufIndex,    lastInChrBuf);
             assert(chrBufIndex < 2*vChrBufSize);
             assert(lastInChrBuf + 1 - chrSrcSliceY < (chrSrcSliceH));
             assert(lastInChrBuf + 1 - chrSrcSliceY >= 0);
@@ -2713,6 +2713,8 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
                                 formatConvBuffer,
                                 pal);
             lastInChrBuf++;
+            DEBUG_BUFFERS("\t\tchrBufIndex %d: lastInChrBuf: %d\n",
+                               chrBufIndex,    lastInChrBuf);
         }
         //wrap buf index around to stay inside the ring buffer
         if (lumBufIndex >= vLumBufSize) lumBufIndex-= vLumBufSize;
