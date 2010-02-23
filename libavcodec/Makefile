@@ -134,14 +134,20 @@ OBJS-$(CONFIG_H261_ENCODER)            += h261enc.o h261.o             \
                                           mpegvideo_enc.o motion_est.o \
                                           ratecontrol.o mpeg12data.o   \
                                           mpegvideo.o
-OBJS-$(CONFIG_H263_DECODER)            += h263dec.o h263.o ituh263dec.o mpeg4video.o mpeg4videodec.o flvdec.o intelh263dec.o \
-                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_H263_DECODER)            += h263dec.o h263.o ituh263dec.o        \
+                                          mpeg4video.o mpeg4videodec.o flvdec.o\
+                                          intelh263dec.o mpegvideo.o           \
+                                          error_resilience.o
 OBJS-$(CONFIG_H263_VAAPI_HWACCEL)      += vaapi_mpeg4.o
-OBJS-$(CONFIG_H263_ENCODER)            += mpegvideo_enc.o mpeg4video.o mpeg4videoenc.o motion_est.o      \
-                                          ratecontrol.o h263.o ituh263enc.o flvenc.o mpeg12data.o \
+OBJS-$(CONFIG_H263_ENCODER)            += mpegvideo_enc.o mpeg4video.o      \
+                                          mpeg4videoenc.o motion_est.o      \
+                                          ratecontrol.o h263.o ituh263enc.o \
+                                          flvenc.o mpeg12data.o             \
                                           mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_H264_DECODER)            += h264.o h264idct.o h264pred.o h264_loopfilter.o h264_direct.o cabac.o \
-                                          h264_sei.o h264_ps.o h264_refs.o h264_cavlc.o h264_cabac.o\
+OBJS-$(CONFIG_H264_DECODER)            += h264.o h264idct.o h264pred.o         \
+                                          h264_loopfilter.o h264_direct.o      \
+                                          cabac.o h264_sei.o h264_ps.o         \
+                                          h264_refs.o h264_cavlc.o h264_cabac.o\
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_H264_DXVA2_HWACCEL)      += dxva2_h264.o
 OBJS-$(CONFIG_H264_ENCODER)            += h264enc.o h264dspenc.o
@@ -189,7 +195,8 @@ OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudioenc.o mpegaudio.o \
 OBJS-$(CONFIG_MP3ADU_DECODER)          += mpegaudiodec.o mpegaudiodecheader.o \
                                           mpegaudio.o mpegaudiodata.o
 OBJS-$(CONFIG_MP3ON4_DECODER)          += mpegaudiodec.o mpegaudiodecheader.o \
-                                          mpegaudio.o mpegaudiodata.o mpeg4audio.o
+                                          mpegaudio.o mpegaudiodata.o         \
+                                          mpeg4audio.o
 OBJS-$(CONFIG_MP3_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o \
                                           mpegaudio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPC7_DECODER)            += mpc7.o mpc.o mpegaudiodec.o      \
@@ -216,11 +223,16 @@ OBJS-$(CONFIG_MPEG2VIDEO_ENCODER)      += mpeg12enc.o mpegvideo_enc.o \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_MPEG4_VAAPI_HWACCEL)     += vaapi_mpeg4.o
 OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4.o msmpeg4data.o
-OBJS-$(CONFIG_MSMPEG4V1_ENCODER)       += msmpeg4.o msmpeg4data.o h263dec.o h263.o ituh263dec.o mpeg4videodec.o
-OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o h263.o ituh263dec.o mpeg4videodec.o
-OBJS-$(CONFIG_MSMPEG4V2_ENCODER)       += msmpeg4.o msmpeg4data.o h263dec.o h263.o ituh263dec.o mpeg4videodec.o
-OBJS-$(CONFIG_MSMPEG4V3_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o h263.o ituh263dec.o mpeg4videodec.o
-OBJS-$(CONFIG_MSMPEG4V3_ENCODER)       += msmpeg4.o msmpeg4data.o h263dec.o h263.o ituh263dec.o mpeg4videodec.o
+OBJS-$(CONFIG_MSMPEG4V1_ENCODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
+                                          h263.o ituh263dec.o mpeg4videodec.o
+OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
+                                          h263.o ituh263dec.o mpeg4videodec.o
+OBJS-$(CONFIG_MSMPEG4V2_ENCODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
+                                          h263.o ituh263dec.o mpeg4videodec.o
+OBJS-$(CONFIG_MSMPEG4V3_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
+                                          h263.o ituh263dec.o mpeg4videodec.o
+OBJS-$(CONFIG_MSMPEG4V3_ENCODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
+                                          h263.o ituh263dec.o mpeg4videodec.o
 OBJS-$(CONFIG_MSRLE_DECODER)           += msrle.o msrledec.o
 OBJS-$(CONFIG_MSVIDEO1_DECODER)        += msvideo1.o
 OBJS-$(CONFIG_MSZH_DECODER)            += lcldec.o
@@ -285,7 +297,8 @@ OBJS-$(CONFIG_SNOW_DECODER)            += snow.o rangecoder.o
 OBJS-$(CONFIG_SNOW_ENCODER)            += snow.o rangecoder.o motion_est.o \
                                           ratecontrol.o h263.o             \
                                           mpegvideo.o error_resilience.o   \
-                                          ituh263enc.o mpegvideo_enc.o mpeg12data.o
+                                          ituh263enc.o mpegvideo_enc.o     \
+                                          mpeg12data.o
 OBJS-$(CONFIG_SOL_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_SONIC_DECODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_ENCODER)           += sonic.o
@@ -296,11 +309,14 @@ OBJS-$(CONFIG_SVQ1_DECODER)            += svq1dec.o svq1.o h263.o \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o    \
                                           motion_est.o h263.o \
-                                          mpegvideo.o error_resilience.o ituh263enc.o mpegvideo_enc.o ratecontrol.o mpeg12data.o
-OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o svq3.o h264idct.o h264pred.o h264_loopfilter.o h264_direct.o  \
-                                          h264_sei.o h264_ps.o h264_refs.o h264_cavlc.o h264_cabac.o \
-                                          cabac.o          \
                                           mpegvideo.o error_resilience.o \
+                                          ituh263enc.o mpegvideo_enc.o   \
+                                          ratecontrol.o mpeg12data.o
+OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o svq3.o h264idct.o h264pred.o \
+                                          h264_loopfilter.o h264_direct.o     \
+                                          h264_sei.o h264_ps.o h264_refs.o    \
+                                          h264_cavlc.o h264_cabac.o cabac.o   \
+                                          mpegvideo.o error_resilience.o      \
                                           svq1dec.o svq1.o h263.o
 OBJS-$(CONFIG_TARGA_DECODER)           += targa.o
 OBJS-$(CONFIG_TARGA_ENCODER)           += targaenc.o rle.o
@@ -357,7 +373,8 @@ OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o        \
                                           msmpeg4.o msmpeg4data.o \
                                           intrax8.o intrax8dsp.o
 OBJS-$(CONFIG_WMV2_ENCODER)            += wmv2enc.o wmv2.o \
-                                          msmpeg4.o msmpeg4data.o mpeg4videodec.o ituh263dec.o h263dec.o
+                                          msmpeg4.o msmpeg4data.o \
+                                          mpeg4videodec.o ituh263dec.o h263dec.o
 OBJS-$(CONFIG_WNV1_DECODER)            += wnv1.o
 OBJS-$(CONFIG_WS_SND1_DECODER)         += ws-snd1.o
 OBJS-$(CONFIG_XAN_DPCM_DECODER)        += dpcm.o
@@ -521,12 +538,16 @@ OBJS-$(CONFIG_H261_PARSER)             += h261_parser.o
 OBJS-$(CONFIG_H263_PARSER)             += h263_parser.o
 OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264.o h264idct.o \
                                           h264pred.o cabac.o              \
-                                          h264_refs.o h264_sei.o h264_loopfilter.o h264_direct.o h264_cabac.o h264_cavlc.o h264_ps.o \
+                                          h264_refs.o h264_sei.o h264_direct.o \
+                                          h264_loopfilter.o h264_cabac.o \
+                                          h264_cavlc.o h264_ps.o \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_MJPEG_PARSER)            += mjpeg_parser.o
 OBJS-$(CONFIG_MLP_PARSER)              += mlp_parser.o mlp.o
 OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o h263.o \
-                                          mpegvideo.o error_resilience.o mpeg4videodec.o mpeg4video.o ituh263dec.o h263dec.o
+                                          mpegvideo.o error_resilience.o \
+                                          mpeg4videodec.o mpeg4video.o \
+                                          ituh263dec.o h263dec.o
 OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o \
                                           mpegaudiodecheader.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o    \
@@ -534,8 +555,8 @@ OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o    \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o \
-                                          msmpeg4.o msmpeg4data.o mpeg4video.o h263.o \
-                                          mpegvideo.o error_resilience.o
+                                          msmpeg4.o msmpeg4data.o mpeg4video.o \
+                                          h263.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 
 # bitstream filters
