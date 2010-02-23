@@ -272,11 +272,7 @@ static int decode_frame(AVCodecContext *avctx,
         get_bits_align32(gb);
     }
 
-    *data_size = (uint8_t*)samples - (uint8_t*)data;
-    if (reported_size != *data_size) {
-        av_log(avctx, AV_LOG_WARNING, "reported data size (%d) does not match output data size (%d)\n",
-             reported_size, *data_size);
-    }
+    *data_size = FFMIN(reported_size, (uint8_t*)samples - (uint8_t*)data);
     return buf_size;
 }
 
