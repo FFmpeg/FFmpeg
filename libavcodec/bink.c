@@ -27,6 +27,9 @@
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"
 
+#define BINK_FLAG_ALPHA 0x00100000
+#define BINK_FLAG_GRAY  0x00020000
+
 static VLC bink_trees[16];
 
 /**
@@ -930,13 +933,19 @@ static av_cold int decode_init(AVCodecContext *avctx)
     BinkContext * const c = avctx->priv_data;
     static VLC_TYPE table[16 * 128][2];
     int i;
+    int flags;
 
     c->version = avctx->codec_tag >> 24;
     if (c->version < 'c') {
         av_log(avctx, AV_LOG_ERROR, "Too old version '%c'\n", c->version);
         return -1;
     }
-    c->has_alpha = 0; //TODO: demuxer should supply decoder with flags
+    if (avctx->extradata_size < 4) {
+        av_log(avctx, AV_LOG_ERROR, "Extradata missing or too short\n");
+        return -1;
+    }
+    flags = AV_RL32(avctx->extradata);
+    c->has_alpha = flags & BINK_FLAG_ALPHA;
     c->swap_planes = c->version >= 'i';
     if (!bink_trees[15].table) {
         for (i = 0; i < 16; i++) {
