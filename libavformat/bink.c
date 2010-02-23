@@ -44,7 +44,6 @@ enum BinkAudFlags {
 
 typedef struct {
     uint32_t file_size;
-    uint32_t total_frames;
 
     uint32_t num_audio_tracks;
     int current_track;      ///< audio track to return in next packet
@@ -86,9 +85,9 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     vst->codec->codec_tag = get_le32(pb);
 
     bink->file_size = get_le32(pb) + 8;
-    bink->total_frames = get_le32(pb);
+    vst->duration   = get_le32(pb);
 
-    if (bink->total_frames > 1000000) {
+    if (vst->duration > 1000000) {
         av_log(s, AV_LOG_ERROR, "invalid header: more than 1000000 frames\n");
         return AVERROR(EIO);
     }
@@ -149,9 +148,9 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     /* frame index table */
     pos = get_le32(pb) & ~1;
-    for (i = 0; i < bink->total_frames; i++) {
+    for (i = 0; i < vst->duration; i++) {
         prev_pos = pos;
-        if (i == bink->total_frames - 1) {
+        if (i == vst->duration - 1) {
             pos = bink->file_size;
             keyframe = 0;
         } else {
@@ -183,7 +182,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         int index_entry;
         AVStream *st = s->streams[0]; // stream 0 is video stream with index
 
-        if (bink->video_pts >= bink->total_frames)
+        if (bink->video_pts >= st->duration)
             return AVERROR(EIO);
 
         index_entry = av_index_search_timestamp(st, bink->video_pts,
