@@ -917,6 +917,10 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
         if(decode_nal_units(h, s->avctx->extradata, s->avctx->extradata_size) < 0)
             return -1;
     }
+    if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames < h->sps.num_reorder_frames){
+        s->avctx->has_b_frames = h->sps.num_reorder_frames;
+        s->low_delay = 0;
+    }
 
     return 0;
 }
