@@ -1980,6 +1980,7 @@ static int decode_thread(void *arg)
     AVFormatContext *ic;
     int err, i, ret;
     int st_index[CODEC_TYPE_NB];
+    int st_count[CODEC_TYPE_NB]={0};
     AVPacket pkt1, *pkt = &pkt1;
     AVFormatParameters params, *ap = &params;
     int eof=0;
@@ -2045,18 +2046,20 @@ static int decode_thread(void *arg)
     for(i = 0; i < ic->nb_streams; i++) {
         AVCodecContext *avctx = ic->streams[i]->codec;
         ic->streams[i]->discard = AVDISCARD_ALL;
+        if(avctx->codec_type >= (unsigned)CODEC_TYPE_NB)
+            exit(1);
+        if(st_count[avctx->codec_type]++ != wanted_stream[avctx->codec_type] && wanted_stream[avctx->codec_type] >= 0)
+            continue;
+
         switch(avctx->codec_type) {
         case CODEC_TYPE_AUDIO:
-            if (wanted_stream[CODEC_TYPE_AUDIO]-- >= 0 && !audio_disable)
+            if (!audio_disable)
                 st_index[CODEC_TYPE_AUDIO] = i;
             break;
         case CODEC_TYPE_VIDEO:
-            if (wanted_stream[CODEC_TYPE_VIDEO]-- >= 0 && !video_disable)
-                st_index[CODEC_TYPE_VIDEO] = i;
-            break;
         case CODEC_TYPE_SUBTITLE:
-            if (wanted_stream[CODEC_TYPE_SUBTITLE]-- >= 0 && !video_disable)
-                st_index[CODEC_TYPE_SUBTITLE] = i;
+            if (!video_disable)
+                st_index[avctx->codec_type] = i;
             break;
         default:
             break;
