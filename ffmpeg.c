@@ -2090,8 +2090,10 @@ static int av_encode(AVFormatContext **output_files,
 
     /* init pts */
     for(i=0;i<nb_istreams;i++) {
+        AVStream *st;
         ist = ist_table[i];
-        ist->pts = 0;
+        st= ist->st;
+        ist->pts = st->avg_frame_rate.num ? - st->codec->has_b_frames*AV_TIME_BASE / av_q2d(st->avg_frame_rate) : 0;
         ist->next_pts = AV_NOPTS_VALUE;
         ist->is_start = 1;
     }
