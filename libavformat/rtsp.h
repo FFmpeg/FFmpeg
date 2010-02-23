@@ -333,9 +333,9 @@ extern int rtsp_rtp_port_max;
  *                            send_content is null
  */
 void ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
-                                      const char *cmd,
-                                      const unsigned char *send_content,
-                                      int send_content_length);
+                                         const char *cmd,
+                                         const unsigned char *send_content,
+                                         int send_content_length);
 /**
  * Send a command to the RTSP server without waiting for the reply.
  *
@@ -356,11 +356,11 @@ void ff_rtsp_send_cmd_async(AVFormatContext *s, const char *cmd);
  *                            send_content is null
  */
 void ff_rtsp_send_cmd_with_content(AVFormatContext *s,
-                                const char *cmd,
-                                RTSPMessageHeader *reply,
-                                unsigned char **content_ptr,
-                                const unsigned char *send_content,
-                                int send_content_length);
+                                   const char *cmd,
+                                   RTSPMessageHeader *reply,
+                                   unsigned char **content_ptr,
+                                   const unsigned char *send_content,
+                                   int send_content_length);
 
 /**
  * Send a command to the RTSP server and wait for the reply.
@@ -368,7 +368,7 @@ void ff_rtsp_send_cmd_with_content(AVFormatContext *s,
  * @see rtsp_send_cmd_with_content
  */
 void ff_rtsp_send_cmd(AVFormatContext *s, const char *cmd,
-                   RTSPMessageHeader *reply, unsigned char **content_ptr);
+                      RTSPMessageHeader *reply, unsigned char **content_ptr);
 
 /**
  * Read a RTSP message from the server, or prepare to read data
@@ -392,8 +392,8 @@ void ff_rtsp_send_cmd(AVFormatContext *s, const char *cmd,
  *          and 0 on success.
  */
 int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
-                    unsigned char **content_ptr,
-                    int return_on_interleaved_data);
+                       unsigned char **content_ptr,
+                       int return_on_interleaved_data);
 
 /**
  * Connect to the RTSP server and set up the individual media streams.

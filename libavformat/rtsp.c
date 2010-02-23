@@ -251,7 +251,7 @@ static const AttrNameMap attr_names[]=
  * is broken out as a function because it is used in rtp_h264.c, which is
  * forthcoming. */
 int ff_rtsp_next_attr_and_value(const char **p, char *attr, int attr_size,
-                             char *value, int value_size)
+                                char *value, int value_size)
 {
     skip_spaces(p);
     if (**p) {
@@ -280,7 +280,7 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
 
     /* loop on each attribute */
     while (ff_rtsp_next_attr_and_value(&p, attr, sizeof(attr),
-                                    value, sizeof(value))) {
+                                       value, sizeof(value))) {
         /* grab the codec extra_data from the config parameter of the fmtp
          * line */
         sdp_parse_fmtp_config(codec, rtsp_st->dynamic_protocol_context,
@@ -882,8 +882,8 @@ static void rtsp_skip_packet(AVFormatContext *s)
 }
 
 int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
-                    unsigned char **content_ptr,
-                    int return_on_interleaved_data)
+                       unsigned char **content_ptr,
+                       int return_on_interleaved_data)
 {
     RTSPState *rt = s->priv_data;
     char buf[4096], buf1[1024], *q;
@@ -969,9 +969,9 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
 }
 
 void ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
-                                      const char *cmd,
-                                      const unsigned char *send_content,
-                                      int send_content_length)
+                                         const char *cmd,
+                                         const unsigned char *send_content,
+                                         int send_content_length)
 {
     RTSPState *rt = s->priv_data;
     char buf[4096], buf1[1024];
@@ -1006,8 +1006,8 @@ void ff_rtsp_send_cmd_async(AVFormatContext *s, const char *cmd)
 }
 
 void ff_rtsp_send_cmd(AVFormatContext *s,
-                   const char *cmd, RTSPMessageHeader *reply,
-                   unsigned char **content_ptr)
+                      const char *cmd, RTSPMessageHeader *reply,
+                      unsigned char **content_ptr)
 {
     ff_rtsp_send_cmd_async(s, cmd);
 
