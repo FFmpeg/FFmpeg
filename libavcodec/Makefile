@@ -533,7 +533,7 @@ OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o    \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o \
-                                          msmpeg4.o msmpeg4data.o h263.o \
+                                          msmpeg4.o msmpeg4data.o mpeg4video.o h263.o \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 
