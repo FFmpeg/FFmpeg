@@ -220,7 +220,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
                                            != audio_size)
                 return ret;
             pkt->stream_index = bink->current_track;
-            pkt->pts = bink->audio_pts[bink->current_track - 1] += reported_size;
+            pkt->pts = bink->audio_pts[bink->current_track - 1];
+            bink->audio_pts[bink->current_track -1] += reported_size;
             return 0;
         }
     }
