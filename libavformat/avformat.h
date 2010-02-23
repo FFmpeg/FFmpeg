@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 53
+#define LIBAVFORMAT_VERSION_MINOR 54
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -519,6 +519,11 @@ typedef struct AVStream {
      * Average framerate
      */
     AVRational avg_frame_rate;
+
+    /**
+     * Number of frames that have been demuxed during av_find_stream_info()
+     */
+    int codec_info_nb_frames;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1

@@ -2074,7 +2074,6 @@ int av_find_stream_info(AVFormatContext *ic)
     double (*duration_error)[MAX_STD_TIMEBASES];
     int64_t old_offset = url_ftell(ic->pb);
     int64_t codec_info_duration[MAX_STREAMS]={0};
-    int codec_info_nb_frames[MAX_STREAMS]={0};
 
     duration_error = av_mallocz(MAX_STREAMS * sizeof(*duration_error));
     if (!duration_error) return AVERROR(ENOMEM);
@@ -2178,7 +2177,7 @@ int av_find_stream_info(AVFormatContext *ic)
         read_size += pkt->size;
 
         st = ic->streams[pkt->stream_index];
-        if(codec_info_nb_frames[st->index]>1) {
+        if(st->codec_info_nb_frames>1) {
             if (st->time_base.den > 0 && av_rescale_q(codec_info_duration[st->index], st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration){
                 av_log(ic, AV_LOG_WARNING, "max_analyze_duration reached\n");
                 break;
@@ -2186,7 +2185,7 @@ int av_find_stream_info(AVFormatContext *ic)
             codec_info_duration[st->index] += pkt->duration;
         }
         if (pkt->duration != 0)
-            codec_info_nb_frames[st->index]++;
+            st->codec_info_nb_frames++;
 
         {
             int index= pkt->stream_index;
@@ -2242,9 +2241,9 @@ int av_find_stream_info(AVFormatContext *ic)
     }
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
-        if(codec_info_nb_frames[i]>2 && !st->avg_frame_rate.num)
+        if(st->codec_info_nb_frames>2 && !st->avg_frame_rate.num)
             av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
-                     (codec_info_nb_frames[i]-2)*(int64_t)st->time_base.den,
+                     (st->codec_info_nb_frames-2)*(int64_t)st->time_base.den,
                       codec_info_duration[i]    *(int64_t)st->time_base.num, 60000);
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
             if(st->codec->codec_id == CODEC_ID_RAWVIDEO && !st->codec->codec_tag && !st->codec->bits_per_coded_sample)
@@ -2937,7 +2936,7 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
         av_log(NULL, AV_LOG_INFO, "[0x%x]", st->id);
     if (lang)
         av_log(NULL, AV_LOG_INFO, "(%s)", lang->value);
-    av_log(NULL, AV_LOG_DEBUG, ", %d/%d", st->time_base.num/g, st->time_base.den/g);
+    av_log(NULL, AV_LOG_DEBUG, ", %d, %d/%d", st->codec_info_nb_frames, st->time_base.num/g, st->time_base.den/g);
     av_log(NULL, AV_LOG_INFO, ": %s", buf);
     if (st->sample_aspect_ratio.num && // default
         av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)) {
