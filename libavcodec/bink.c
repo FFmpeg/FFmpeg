@@ -911,12 +911,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     init_get_bits(&gb, pkt->data, bits_count);
     if (c->has_alpha) {
-        int aplane_bits = get_bits_long(&gb, 32) << 3;
-        if (aplane_bits <= 32 || (aplane_bits & 0x1F)) {
-            av_log(avctx, AV_LOG_ERROR, "Incorrect alpha plane size %d\n", aplane_bits);
+        if (c->version >= 'i')
+            skip_bits_long(&gb, 32);
+        if (bink_decode_plane(c, &gb, 3, 0) < 0)
             return -1;
-        }
-        skip_bits_long(&gb, aplane_bits - 32);
     }
     if (c->version >= 'i')
         skip_bits_long(&gb, 32);
@@ -977,7 +975,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return 1;
     }
 
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = c->has_alpha ? PIX_FMT_YUVA420P : PIX_FMT_YUV420P;
 
     avctx->idct_algo = FF_IDCT_BINK;
     dsputil_init(&c->dsp, avctx);
