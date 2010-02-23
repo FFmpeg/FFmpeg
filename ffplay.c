@@ -1976,16 +1976,15 @@ static int decode_thread(void *arg)
 {
     VideoState *is = arg;
     AVFormatContext *ic;
-    int err, i, ret, video_index, audio_index, subtitle_index;
+    int err, i, ret;
+    int st_index[CODEC_TYPE_NB];
     AVPacket pkt1, *pkt = &pkt1;
     AVFormatParameters params, *ap = &params;
     int eof=0;
 
     ic = avformat_alloc_context();
 
-    video_index = -1;
-    audio_index = -1;
-    subtitle_index = -1;
+    memset(st_index, -1, sizeof(st_index));
     is->video_stream = -1;
     is->audio_stream = -1;
     is->subtitle_stream = -1;
@@ -2047,15 +2046,15 @@ static int decode_thread(void *arg)
         switch(avctx->codec_type) {
         case CODEC_TYPE_AUDIO:
             if (wanted_audio_stream-- >= 0 && !audio_disable)
-                audio_index = i;
+                st_index[CODEC_TYPE_AUDIO] = i;
             break;
         case CODEC_TYPE_VIDEO:
             if (wanted_video_stream-- >= 0 && !video_disable)
-                video_index = i;
+                st_index[CODEC_TYPE_VIDEO] = i;
             break;
         case CODEC_TYPE_SUBTITLE:
             if (wanted_subtitle_stream-- >= 0 && !video_disable)
-                subtitle_index = i;
+                st_index[CODEC_TYPE_SUBTITLE] = i;
             break;
         default:
             break;
@@ -2066,13 +2065,13 @@ static int decode_thread(void *arg)
     }
 
     /* open the streams */
-    if (audio_index >= 0) {
-        stream_component_open(is, audio_index);
+    if (st_index[CODEC_TYPE_AUDIO] >= 0) {
+        stream_component_open(is, st_index[CODEC_TYPE_AUDIO]);
     }
 
     ret=-1;
-    if (video_index >= 0) {
-        ret= stream_component_open(is, video_index);
+    if (st_index[CODEC_TYPE_VIDEO] >= 0) {
+        ret= stream_component_open(is, st_index[CODEC_TYPE_VIDEO]);
     }
     if(ret<0) {
         /* add the refresh timer to draw the picture */
@@ -2082,8 +2081,8 @@ static int decode_thread(void *arg)
             is->show_audio = 2;
     }
 
-    if (subtitle_index >= 0) {
-        stream_component_open(is, subtitle_index);
+    if (st_index[CODEC_TYPE_SUBTITLE] >= 0) {
+        stream_component_open(is, st_index[CODEC_TYPE_SUBTITLE]);
     }
 
     if (is->video_stream < 0 && is->audio_stream < 0) {
