@@ -208,9 +208,11 @@ static int frame_height = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static int audio_disable;
 static int video_disable;
-static int wanted_audio_stream= 0;
-static int wanted_video_stream= 0;
-static int wanted_subtitle_stream= -1;
+static int wanted_stream[CODEC_TYPE_NB]={
+    [CODEC_TYPE_AUDIO]=0,
+    [CODEC_TYPE_VIDEO]=0,
+    [CODEC_TYPE_SUBTITLE]=-1,
+};
 static int seek_by_bytes=-1;
 static int display_disable;
 static int show_status = 1;
@@ -2045,15 +2047,15 @@ static int decode_thread(void *arg)
         ic->streams[i]->discard = AVDISCARD_ALL;
         switch(avctx->codec_type) {
         case CODEC_TYPE_AUDIO:
-            if (wanted_audio_stream-- >= 0 && !audio_disable)
+            if (wanted_stream[CODEC_TYPE_AUDIO]-- >= 0 && !audio_disable)
                 st_index[CODEC_TYPE_AUDIO] = i;
             break;
         case CODEC_TYPE_VIDEO:
-            if (wanted_video_stream-- >= 0 && !video_disable)
+            if (wanted_stream[CODEC_TYPE_VIDEO]-- >= 0 && !video_disable)
                 st_index[CODEC_TYPE_VIDEO] = i;
             break;
         case CODEC_TYPE_SUBTITLE:
-            if (wanted_subtitle_stream-- >= 0 && !video_disable)
+            if (wanted_stream[CODEC_TYPE_SUBTITLE]-- >= 0 && !video_disable)
                 st_index[CODEC_TYPE_SUBTITLE] = i;
             break;
         default:
@@ -2599,9 +2601,9 @@ static const OptionDef options[] = {
     { "fs", OPT_BOOL, {(void*)&is_full_screen}, "force full screen" },
     { "an", OPT_BOOL, {(void*)&audio_disable}, "disable audio" },
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
-    { "ast", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_audio_stream}, "select desired audio stream", "stream_number" },
-    { "vst", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_video_stream}, "select desired video stream", "stream_number" },
-    { "sst", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_subtitle_stream}, "select desired subtitle stream", "stream_number" },
+    { "ast", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_stream[CODEC_TYPE_AUDIO]}, "select desired audio stream", "stream_number" },
+    { "vst", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_stream[CODEC_TYPE_VIDEO]}, "select desired video stream", "stream_number" },
+    { "sst", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_stream[CODEC_TYPE_SUBTITLE]}, "select desired subtitle stream", "stream_number" },
     { "ss", HAS_ARG | OPT_FUNC2, {(void*)&opt_seek}, "seek to a given position in seconds", "pos" },
     { "bytes", OPT_INT | HAS_ARG, {(void*)&seek_by_bytes}, "seek by bytes 0=off 1=on -1=auto", "val" },
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
