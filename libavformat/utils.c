@@ -2184,7 +2184,6 @@ int av_find_stream_info(AVFormatContext *ic)
             }
             codec_info_duration[st->index] += pkt->duration;
         }
-        if (pkt->duration != 0)
             st->codec_info_nb_frames++;
 
         {
@@ -2241,7 +2240,7 @@ int av_find_stream_info(AVFormatContext *ic)
     }
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
-        if(st->codec_info_nb_frames>2 && !st->avg_frame_rate.num)
+        if(st->codec_info_nb_frames>2 && !st->avg_frame_rate.num && codec_info_duration[i])
             av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                      (st->codec_info_nb_frames-2)*(int64_t)st->time_base.den,
                       codec_info_duration[i]    *(int64_t)st->time_base.num, 60000);
