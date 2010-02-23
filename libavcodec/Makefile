@@ -296,7 +296,7 @@ OBJS-$(CONFIG_SVQ1_DECODER)            += svq1dec.o svq1.o h263.o \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o    \
                                           motion_est.o h263.o \
-                                          mpegvideo.o error_resilience.o
+                                          mpegvideo.o error_resilience.o ituh263enc.o mpegvideo_enc.o ratecontrol.o mpeg12data.o
 OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o svq3.o h264idct.o h264pred.o h264_loopfilter.o h264_direct.o  \
                                           h264_sei.o h264_ps.o h264_refs.o h264_cavlc.o h264_cabac.o \
                                           cabac.o          \
