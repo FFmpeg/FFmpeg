@@ -92,7 +92,7 @@ int ff_ivi_create_huff_from_desc(const IVIHuffDesc *cb, VLC *vlc, int flag)
 void ff_ivi_init_static_vlc()
 {
     int i;
-    static VLC table_data[8192 * 16][2];
+    static VLC_TYPE table_data[8192 * 16][2];
     static int initialized_vlcs = 0;
 
     if (initialized_vlcs)
