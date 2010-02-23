@@ -1777,6 +1777,7 @@ static int av_encode(AVFormatContext **output_files,
                 }
 
             } else {
+                int best_nb_frames=-1;
                     /* get corresponding input stream index : we select the first one with the right type */
                     found = 0;
                     for(j=0;j<nb_istreams;j++) {
@@ -1797,9 +1798,11 @@ static int av_encode(AVFormatContext **output_files,
                         }
                         if (ist->discard && ist->st->discard != AVDISCARD_ALL && !skip &&
                             ist->st->codec->codec_type == ost->st->codec->codec_type) {
-                            ost->source_index = j;
-                            found = 1;
-                            break;
+                            if(best_nb_frames < ist->st->codec_info_nb_frames){
+                                best_nb_frames= ist->st->codec_info_nb_frames;
+                                ost->source_index = j;
+                                found = 1;
+                            }
                         }
                     }
 
