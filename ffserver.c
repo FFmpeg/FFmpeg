@@ -2693,7 +2693,7 @@ static int rtsp_parse_request(HTTPContext *c)
             len = sizeof(line) - 1;
         memcpy(line, p, len);
         line[len] = '\0';
-        rtsp_parse_line(header, line);
+        ff_rtsp_parse_line(header, line);
         p = p1 + 1;
     }
 

@@ -388,7 +388,7 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
         while (*p && *p == ' ') p++; // strip trailing spaces.
 
         /* loop on each attribute */
-        while (rtsp_next_attr_and_value
+        while (ff_rtsp_next_attr_and_value
                (&p, attr, sizeof(attr), value, sizeof(value))) {
             /* grab the codec extra_data from the config parameter of the fmtp line */
             sdp_parse_fmtp_config_h264(stream, h264_data, attr, value);

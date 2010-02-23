@@ -141,7 +141,7 @@ static int amr_parse_sdp_line(AVFormatContext *s, int st_index,
         while (*p && *p != ' ') p++; /* eat protocol identifier */
         while (*p && *p == ' ') p++; /* strip trailing spaces */
 
-        while (rtsp_next_attr_and_value(&p, attr, sizeof(attr), value, sizeof(value))) {
+        while (ff_rtsp_next_attr_and_value(&p, attr, sizeof(attr), value, sizeof(value))) {
             if (!strcmp(attr, "octet-align"))
                 octet_align = atoi(value);
             else if (!strcmp(attr, "crc"))

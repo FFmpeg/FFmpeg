@@ -39,7 +39,7 @@ static int rtsp_write_record(AVFormatContext *s)
              "Range: npt=%0.3f-\r\n",
              s->filename,
              (double) 0);
-    rtsp_send_cmd(s, cmd, reply, NULL);
+    ff_rtsp_send_cmd(s, cmd, reply, NULL);
     if (reply->status_code != RTSP_STATUS_OK)
         return -1;
     rt->state = RTSP_STATE_STREAMING;
@@ -51,12 +51,12 @@ static int rtsp_write_header(AVFormatContext *s)
     RTSPState *rt = s->priv_data;
     int ret;
 
-    ret = rtsp_connect(s);
+    ret = ff_rtsp_connect(s);
     if (ret)
         return ret;
 
     if (rtsp_write_record(s) < 0) {
-        rtsp_close_streams(s);
+        ff_rtsp_close_streams(s);
         url_close(rt->rtsp_hd);
         return AVERROR_INVALIDDATA;
     }
@@ -83,7 +83,7 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (FD_ISSET(tcp_fd, &rfds)) {
             RTSPMessageHeader reply;
 
-            if (rtsp_read_reply(s, &reply, NULL, 0) < 0)
+            if (ff_rtsp_read_reply(s, &reply, NULL, 0) < 0)
                 return AVERROR(EPIPE);
             /* XXX: parse message */
             if (rt->state != RTSP_STATE_STREAMING)
@@ -108,9 +108,9 @@ static int rtsp_write_close(AVFormatContext *s)
     snprintf(cmd, sizeof(cmd),
              "TEARDOWN %s RTSP/1.0\r\n",
              s->filename);
-    rtsp_send_cmd_async(s, cmd);
+    ff_rtsp_send_cmd_async(s, cmd);
 
-    rtsp_close_streams(s);
+    ff_rtsp_close_streams(s);
     url_close(rt->rtsp_hd);
     return 0;
 }
