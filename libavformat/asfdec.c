@@ -441,7 +441,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_str16_nolen(pb, name_len, name, sizeof(name));
                     value_type = get_le16(pb);
                     value_len  = get_le16(pb);
-                    if (value_len%2)
+                    if (!value_type && value_len%2)
                         value_len += 1;
                     get_tag(s, name, value_type, value_len);
             }
