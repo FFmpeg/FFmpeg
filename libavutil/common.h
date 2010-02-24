@@ -335,6 +335,36 @@ static inline av_const int av_ceil_log2(int x)
         }\
     }
 
+/*!
+ * \def PUT_UTF16(val, tmp, PUT_16BIT)
+ * Converts a 32-bit Unicode character to its UTF-16 encoded form (2 or 4 bytes).
+ * \param val is an input-only argument and should be of type uint32_t. It holds
+ * a UCS-4 encoded Unicode character that is to be converted to UTF-16. If
+ * val is given as a function it is executed only once.
+ * \param tmp is a temporary variable and should be of type uint16_t. It
+ * represents an intermediate value during conversion that is to be
+ * output by PUT_16BIT.
+ * \param PUT_16BIT writes the converted UTF-16 data to any proper destination
+ * in desired endianness. It could be a function or a statement, and uses tmp
+ * as the input byte.  For example, PUT_BYTE could be "*output++ = tmp;"
+ * PUT_BYTE will be executed 1 or 2 times depending on input character.
+ */
+#define PUT_UTF16(val, tmp, PUT_16BIT)\
+    {\
+        uint32_t in = val;\
+        if (in < 0x10000) {\
+            tmp = in;\
+            PUT_16BIT\
+        } else {\
+            tmp = 0xD800 | ((in - 0x10000) >> 10);\
+            PUT_16BIT\
+            tmp = 0xDC00 | ((in - 0x10000) & 0x3FF);\
+            PUT_16BIT\
+        }\
+    }\
+
+
+
 #include "mem.h"
 
 #ifdef HAVE_AV_CONFIG_H
