@@ -161,9 +161,9 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
     if (!value)
         return;
 
-    if (type <= 1) {         // unicode or byte
+    if (type == 0) {         // UTF16-LE
         get_str16_nolen(s->pb, len, value, len);
-    } else if (type <= 5) {  // boolean or DWORD or QWORD or WORD
+    } else if (type > 1 && type <= 5) {  // boolean or DWORD or QWORD or WORD
         uint64_t num = get_value(s->pb, type);
         snprintf(value, len, "%"PRIu64, num);
     } else {
