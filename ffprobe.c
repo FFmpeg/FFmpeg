@@ -290,6 +290,10 @@ static void opt_format(const char *arg)
 
 static void opt_input_file(const char *filename)
 {
+    if (input_filename) {
+        fprintf(stderr, "Input filename already specified: %s\n", filename);
+        exit(1);
+    }
     if (!strcmp(filename, "-"))
         filename = "pipe:";
     input_filename = filename;
