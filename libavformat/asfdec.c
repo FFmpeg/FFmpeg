@@ -168,6 +168,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
         snprintf(value, len, "%"PRIu64, num);
     } else {
         url_fskip(s->pb, len);
+        av_freep(&value);
         return;
     }
     if (!strncmp(key, "WM/", 3))
