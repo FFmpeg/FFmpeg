@@ -912,7 +912,7 @@ static int decode_cabac_mb_ref( H264Context *h, int list, int n ) {
 static int decode_cabac_mb_mvd( H264Context *h, int ctxbase, int amvd ) {
     int mvd;
 
-    if(!get_cabac(&h->cabac, &h->cabac_state[ctxbase+FFMIN(((amvd+28)*17)>>9,2)]))
+    if(!get_cabac(&h->cabac, &h->cabac_state[ctxbase+(amvd>2)+(amvd>32)]))
         return 0;
 
     mvd= 1;
