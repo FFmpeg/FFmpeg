@@ -715,6 +715,10 @@ static int decode_band_types(AACContext *ac, enum BandType band_type[120],
             while ((sect_len_incr = get_bits(gb, bits)) == (1 << bits) - 1)
                 sect_end += sect_len_incr;
             sect_end += sect_len_incr;
+            if (get_bits_left(gb) < 0) {
+                av_log(ac->avccontext, AV_LOG_ERROR, overread_err);
+                return -1;
+            }
             if (sect_end > ics->max_sfb) {
                 av_log(ac->avccontext, AV_LOG_ERROR,
                        "Number of bands (%d) exceeds limit (%d).\n",
