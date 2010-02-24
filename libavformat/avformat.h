@@ -63,7 +63,9 @@ struct AVFormatContext;
 /*
  * Public Metadata API.
  * The metadata API allows libavformat to export metadata tags to a client
- * application using a sequence of key/value pairs.
+ * application using a sequence of key/value pairs. Like all strings in FFmpeg,
+ * metadata must be stored as UTF-8 encoded Unicode. Note that metadata
+ * exported by demuxers isn't checked to be valid UTF-8 in most cases.
  * Important concepts to keep in mind:
  * 1. Keys are unique; there can never be 2 tags with the same key. This is
  *    also meant semantically, i.e., a demuxer should not knowingly produce
