@@ -203,13 +203,6 @@ static void put_guid(ByteIOContext *s, const ff_asf_guid *g)
     put_buffer(s, *g, sizeof(*g));
 }
 
-static void put_str16_nolen(ByteIOContext *s, const char *tag);
-static void put_str16(ByteIOContext *s, const char *tag)
-{
-    put_le16(s,strlen(tag) + 1);
-    put_str16_nolen(s, tag);
-}
-
 static void put_str16_nolen(ByteIOContext *s, const char *tag)
 {
     int c;
@@ -449,6 +442,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     put_le32(pb, s->nb_streams);
     for(n=0;n<s->nb_streams;n++) {
         AVCodec *p;
+        const char *desc;
 
         enc = s->streams[n]->codec;
         p = avcodec_find_encoder(enc->codec_id);
@@ -461,9 +455,11 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
             put_le16(pb, -1);
 
         if(enc->codec_id == CODEC_ID_WMAV2)
-            put_str16(pb, "Windows Media Audio V8");
+            desc = "Windows Media Audio V8";
         else
-            put_str16(pb, p ? p->name : enc->codec_name);
+            desc = p ? p->name : enc->codec_name;
+        put_le16(pb, strlen(desc) + 1); // "number of characters" = length in bytes / 2
+        put_str16_nolen(pb, desc);
         put_le16(pb, 0); /* no parameters */
 
 
