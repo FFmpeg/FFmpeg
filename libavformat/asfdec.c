@@ -122,9 +122,12 @@ static void get_str16(ByteIOContext *pb, char *buf, int buf_size)
 static void get_str16_nolen(ByteIOContext *pb, int len, char *buf, int buf_size)
 {
     char* q = buf;
-    for (; len > 1; len -= 2) {
+    while (len > 1) {
         uint8_t tmp;
-        PUT_UTF8(get_le16(pb), tmp, if (q - buf < buf_size - 1) *q++ = tmp;)
+        uint32_t ch;
+
+        GET_UTF16(ch, (len -= 2) >= 0 ? get_le16(pb) : 0, break;)
+        PUT_UTF8(ch, tmp, if (q - buf < buf_size - 1) *q++ = tmp;)
     }
     if (len > 0)
         url_fskip(pb, len);
@@ -154,15 +157,15 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
 {
     char *value;
 
-    if ((unsigned)len >= UINT_MAX)
+    if ((unsigned)len >= (UINT_MAX - 1)/2)
         return;
 
-    value = av_malloc(len+1);
+    value = av_malloc(2*len+1);
     if (!value)
         return;
 
     if (type == 0) {         // UTF16-LE
-        get_str16_nolen(s->pb, len, value, len);
+        get_str16_nolen(s->pb, len, value, 2*len + 1);
     } else if (type > 1 && type <= 5) {  // boolean or DWORD or QWORD or WORD
         uint64_t num = get_value(s->pb, type);
         snprintf(value, len, "%"PRIu64, num);
@@ -174,7 +177,8 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
     }
     if (!strncmp(key, "WM/", 3))
         key += 3;
-    av_metadata_set2(&s->metadata, key, value, AV_METADATA_DONT_STRDUP_VAL);
+    av_metadata_set2(&s->metadata, key, value, 0);
+    av_freep(&value);
 }
 
 static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
