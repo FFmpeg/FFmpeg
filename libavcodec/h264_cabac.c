@@ -1469,10 +1469,8 @@ decode_intra_mb:
                         mvd_cache[ 0 ][1]= mpy;
                     }
                 }else{
-                    uint32_t *p= (uint32_t *)&h->mv_cache[list][ scan8[4*i] ][0];
-                    uint32_t *pd= (uint32_t *)&h->mvd_cache[list][ scan8[4*i] ][0];
-                    p[0] = p[1] = p[8] = p[9] = 0;
-                    pd[0]= pd[1]= pd[8]= pd[9]= 0;
+                    fill_rectangle(h->mv_cache [list][ scan8[4*i] ], 2, 2, 8, 0, 4);
+                    fill_rectangle(h->mvd_cache[list][ scan8[4*i] ], 2, 2, 8, 0, 4);
                 }
             }
         }
