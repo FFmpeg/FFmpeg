@@ -87,7 +87,7 @@ static av_always_inline void fill_rectangle(void *vp, int w, int h, int stride, 
         *(uint64_t*)(p + 0+3*stride)= v;
         *(uint64_t*)(p + 8+3*stride)= v;
 #else
-        const uint32_t v= size==2 ? val*0x00010001 : val*0x01010101;
+        const uint32_t v= size==2 ? val*0x00010001 : val;
         *(uint32_t*)(p + 0+0*stride)= v;
         *(uint32_t*)(p + 4+0*stride)= v;
         if(h==1) return;
