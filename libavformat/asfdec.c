@@ -169,6 +169,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
     } else {
         url_fskip(s->pb, len);
         av_freep(&value);
+        av_log(s, AV_LOG_DEBUG, "Unsupported value type %d in tag %s.\n", type, key);
         return;
     }
     if (!strncmp(key, "WM/", 3))
