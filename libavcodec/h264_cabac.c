@@ -915,7 +915,7 @@ static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
     int ctxbase = (l == 0) ? 40 : 47;
     int mvd;
 
-    if(!get_cabac(&h->cabac, &h->cabac_state[ctxbase+(amvd>2) + (amvd>32)]))
+    if(!get_cabac(&h->cabac, &h->cabac_state[ctxbase+FFMIN(((amvd+28)*17)>>9,2)]))
         return 0;
 
     mvd= 1;
