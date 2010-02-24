@@ -448,7 +448,7 @@ static int add_info(ByteIOContext *bc, const char *type, const char *value){
 
 static int write_globalinfo(NUTContext *nut, ByteIOContext *bc){
     AVFormatContext *s= nut->avf;
-    AVMetadataTag *title, *author, *copyright;
+    AVMetadataTag *t = NULL;
     ByteIOContext *dyn_bc;
     uint8_t *dyn_buf=NULL;
     int count=0, dyn_size;
@@ -456,15 +456,8 @@ static int write_globalinfo(NUTContext *nut, ByteIOContext *bc){
     if(ret < 0)
         return ret;
 
-    title     = av_metadata_get(s->metadata, "Title"    , NULL, 0);
-    author    = av_metadata_get(s->metadata, "Author"   , NULL, 0);
-    copyright = av_metadata_get(s->metadata, "Copyright", NULL, 0);
-
-    if(title    ) count+= add_info(dyn_bc, "Title"    , title->value);
-    if(author   ) count+= add_info(dyn_bc, "Author"   , author->value);
-    if(copyright) count+= add_info(dyn_bc, "Copyright", copyright->value);
-    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
-                        count+= add_info(dyn_bc, "Encoder"  , LIBAVFORMAT_IDENT);
+    while ((t = av_metadata_get(s->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
+        count += add_info(dyn_bc, t->key, t->value);
 
     put_v(bc, 0); //stream_if_plus1
     put_v(bc, 0); //chapter_id
@@ -827,4 +820,5 @@ AVOutputFormat nut_muxer = {
     write_trailer,
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag= (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, ff_nut_subtitle_tags, 0},
+    .metadata_conv = ff_nut_metadata_conv,
 };

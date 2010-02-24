@@ -27,6 +27,7 @@
 //#include "libavcodec/mpegaudio.h"
 #include "avformat.h"
 #include "riff.h"
+#include "metadata.h"
 
 #define      MAIN_STARTCODE (0x7A561F5F04ADULL + (((uint64_t)('N'<<8) + 'M')<<48))
 #define    STREAM_STARTCODE (0x11405BF2F9DBULL + (((uint64_t)('N'<<8) + 'S')<<48))
@@ -111,5 +112,7 @@ int ff_nut_sp_pts_cmp(Syncpoint *a, Syncpoint *b);
 void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts);
 
 extern const Dispositions ff_nut_dispositions[];
+
+extern const AVMetadataConv ff_nut_metadata_conv[];
 
 #endif /* AVFORMAT_NUT_H */

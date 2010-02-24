@@ -79,3 +79,16 @@ const Dispositions ff_nut_dispositions[] = {
     {""            , 0}
 };
 
+const AVMetadataConv ff_nut_metadata_conv[] = {
+    { "Author",         "artist"      },
+    { "X-CreationTime", "date"        },
+    { "CreationTime",   "date"        },
+    { "SourceFilename", "filename"    },
+    { "X-Language",     "language"    },
+    { "X-Disposition",  "disposition" },
+    { "X-Replaces",     "replaces"    },
+    { "X-Depends",      "depends"     },
+    { "X-Uses",         "uses"        },
+    { "X-UsesFont",     "usesfont"    },
+    { 0 },
+};

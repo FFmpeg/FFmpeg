@@ -915,5 +915,6 @@ AVInputFormat nut_demuxer = {
     nut_read_close,
     read_seek,
     .extensions = "nut",
+    .metadata_conv = ff_nut_metadata_conv,
 };
 #endif
