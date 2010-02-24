@@ -15,5 +15,6 @@ qmin=10
 qmax=51
 qdiff=4
 directpred=1
-flags2=+fastpskip
+flags2=+fastpskip+mbtree
 cqp=0
+wpredp=2
